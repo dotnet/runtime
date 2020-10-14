@@ -440,7 +440,7 @@ namespace System
         /// <param name="left">Cursor column.</param>
         /// <param name="top">Cursor row.</param>
         /// <param name="reinitializeForRead">Indicates whether this method is called as part of a on-going Read operation.</param>
-        internal static unsafe bool TryGetCursorPosition(out int left, out int top, bool reinitializeForRead = false)
+        internal static bool TryGetCursorPosition(out int left, out int top, bool reinitializeForRead = false)
         {
             left = top = 0;
 
@@ -570,7 +570,7 @@ namespace System
                     s_firstCursorPositionRequest = false;
                 }
 
-                bool BufferUntil(byte toFind, StdInReader src, ref Span<byte> dst, ref int dstPos, out int foundPos)
+                static unsafe bool BufferUntil(byte toFind, StdInReader src, ref Span<byte> dst, ref int dstPos, out int foundPos)
                 {
                     // Loop until we find the target byte.
                     while (true)
@@ -603,8 +603,7 @@ namespace System
                     }
                 }
 
-                unsafe bool AppendToStdInReaderUntil(
-                    byte toFind, StdInReader reader, Span<byte> foundByteDst, ref int foundByteDstPos, out int foundPos)
+                static unsafe bool AppendToStdInReaderUntil(byte toFind, StdInReader reader, Span<byte> foundByteDst, ref int foundByteDstPos, out int foundPos)
                 {
                     // Loop until we find the target byte.
                     while (true)
@@ -631,7 +630,7 @@ namespace System
                     }
                 }
 
-                void ReadRowOrCol(int startExclusive, int endExclusive, StdInReader reader, ReadOnlySpan<byte> source, ref int result)
+                static void ReadRowOrCol(int startExclusive, int endExclusive, StdInReader reader, ReadOnlySpan<byte> source, ref int result)
                 {
                     int row = 0;
 
