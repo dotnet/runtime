@@ -48,7 +48,7 @@ namespace Microsoft.Extensions.DependencyModel
                 throw new ArgumentException(nameof(count));
 
             if (_written > _rentedBuffer.Length - count)
-                throw new InvalidOperationException("Cannot advance past the end of the buffer.");
+                throw new InvalidOperationException(SR.CannotAdvancePastEndOfBuffer);
 
             _written += count;
         }

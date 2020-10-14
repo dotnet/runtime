@@ -606,4 +606,7 @@
   <data name="net_http_null_from_plaintext_filter" xml:space="preserve">
     <value>The user-supplied PlaintextStreamFilter returned null.</value>
   </data>
+  <data name="net_http_marshalling_error" xml:space="preserve">
+    <value>Internal error marshalling the response Promise from `fetch`.</value>
+  </data>
 </root>

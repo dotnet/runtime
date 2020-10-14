@@ -120,7 +120,7 @@ namespace Microsoft.Extensions.Hosting
         {
             if (_hostBuilt)
             {
-                throw new InvalidOperationException("Build can only be called once.");
+                throw new InvalidOperationException(SR.BuildCalled);
             }
             _hostBuilt = true;
 

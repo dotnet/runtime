@@ -54,7 +54,7 @@ namespace Microsoft.Extensions.Logging
                 string[] categoryParts = rule.CategoryName.Split(WildcardChar);
                 if (categoryParts.Length > 2)
                 {
-                    throw new InvalidOperationException("Only one wildcard character is allowed in category name.");
+                    throw new InvalidOperationException(SR.MoreThanOneWildcard);
                 }
 
                 string prefix = categoryParts[0];

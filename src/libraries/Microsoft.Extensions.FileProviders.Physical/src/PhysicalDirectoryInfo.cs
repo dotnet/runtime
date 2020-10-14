@@ -53,7 +53,7 @@ namespace Microsoft.Extensions.FileProviders.Physical
         /// <returns>Never returns</returns>
         public Stream CreateReadStream()
         {
-            throw new InvalidOperationException("Cannot create a stream for a directory.");
+            throw new InvalidOperationException(SR.CannotCreateStream);
         }
     }
 }

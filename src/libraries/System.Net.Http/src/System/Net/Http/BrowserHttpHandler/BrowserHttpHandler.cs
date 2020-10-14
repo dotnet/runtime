@@ -247,7 +247,7 @@ namespace System.Net.Http
                 var response = s_fetch?.Invoke("apply", s_window, args) as Task<object>;
                 args.Dispose();
                 if (response == null)
-                    throw new Exception("Internal error marshalling the response Promise from `fetch`.");
+                    throw new Exception(SR.net_http_marshalling_error);
 
                 JSObject t = (JSObject)await response.ConfigureAwait(continueOnCapturedContext: true);
 
