@@ -946,20 +946,27 @@ GenTreeCall::Use* Compiler::impPopCallArgs(unsigned count, CORINFO_SIG_INFO* sig
 
             CorInfoType corType = strip(info.compCompHnd->getArgType(sig, argLst, &argClass));
 
+            var_types jitSigType = JITtype2varType(corType);
+
+            if (!impCheckImplicitArgumentCoercion(jitSigType, arg->GetNode()->TypeGet()))
+            {
+                BADCODE("the call argument has a type that can't be implicitly converted to the signature type");
+            }
+
             // insert implied casts (from float to double or double to float)
 
-            if ((corType == CORINFO_TYPE_DOUBLE) && (arg->GetNode()->TypeGet() == TYP_FLOAT))
+            if ((jitSigType == TYP_DOUBLE) && (arg->GetNode()->TypeGet() == TYP_FLOAT))
             {
                 arg->SetNode(gtNewCastNode(TYP_DOUBLE, arg->GetNode(), false, TYP_DOUBLE));
             }
-            else if ((corType == CORINFO_TYPE_FLOAT) && (arg->GetNode()->TypeGet() == TYP_DOUBLE))
+            else if ((jitSigType == TYP_FLOAT) && (arg->GetNode()->TypeGet() == TYP_DOUBLE))
             {
                 arg->SetNode(gtNewCastNode(TYP_FLOAT, arg->GetNode(), false, TYP_FLOAT));
             }
 
             // insert any widening or narrowing casts for backwards compatibility
 
-            arg->SetNode(impImplicitIorI4Cast(arg->GetNode(), JITtype2varType(corType)));
+            arg->SetNode(impImplicitIorI4Cast(arg->GetNode(), jitSigType));
 
             if (corType != CORINFO_TYPE_CLASS && corType != CORINFO_TYPE_BYREF && corType != CORINFO_TYPE_PTR &&
                 corType != CORINFO_TYPE_VAR && (argRealClass = info.compCompHnd->getArgClass(sig, argLst)) != nullptr)
@@ -991,6 +998,100 @@ GenTreeCall::Use* Compiler::impPopCallArgs(unsigned count, CORINFO_SIG_INFO* sig
         }
     }
     return argList;
+}
+
+static bool TypeIs(var_types type1, var_types type2)
+{
+    return type1 == type2;
+}
+
+// Check if type1 matches any type from the list.
+template <typename... T>
+static bool TypeIs(var_types type1, var_types type2, T... rest)
+{
+    return TypeIs(type1, type2) || TypeIs(type1, rest...);
+}
+
+//------------------------------------------------------------------------
+// impCheckImplicitArgumentCoercion: check that the node's type is compatible with
+//   the signature's type using ECMA implicit argument coercion table.
+//
+// Arguments:
+//    sigType  - the type in the call signature;
+//    nodeType - the node type.
+//
+// Return Value:
+//    true if they are compatible, false otherwise.
+//
+// Notes:
+//   - it is currently allowing byref->long passing, should be fixed in VM;
+//   - it can't check long -> native int case on 64-bit platforms,
+//      so the behavior is different depending on the target bitness.
+//
+bool Compiler::impCheckImplicitArgumentCoercion(var_types sigType, var_types nodeType) const
+{
+    if (sigType == nodeType)
+    {
+        return true;
+    }
+
+    if (TypeIs(sigType, TYP_BOOL, TYP_UBYTE, TYP_BYTE, TYP_USHORT, TYP_SHORT, TYP_UINT, TYP_INT))
+    {
+        if (TypeIs(nodeType, TYP_BOOL, TYP_UBYTE, TYP_BYTE, TYP_USHORT, TYP_SHORT, TYP_UINT, TYP_INT, TYP_I_IMPL))
+        {
+            return true;
+        }
+    }
+    else if (TypeIs(sigType, TYP_ULONG, TYP_LONG))
+    {
+        if (TypeIs(nodeType, TYP_LONG))
+        {
+            return true;
+        }
+    }
+    else if (TypeIs(sigType, TYP_FLOAT, TYP_DOUBLE))
+    {
+        if (TypeIs(nodeType, TYP_FLOAT, TYP_DOUBLE))
+        {
+            return true;
+        }
+    }
+    else if (TypeIs(sigType, TYP_BYREF))
+    {
+        if (TypeIs(nodeType, TYP_I_IMPL))
+        {
+            return true;
+        }
+    }
+    else if (varTypeIsStruct(sigType))
+    {
+        if (varTypeIsStruct(nodeType))
+        {
+            return true;
+        }
+    }
+
+    // This condition should not be under `else` because `TYP_I_IMPL`
+    // intersects with `TYP_LONG` or `TYP_INT`.
+    if (TypeIs(sigType, TYP_I_IMPL, TYP_U_IMPL))
+    {
+        // Note that it allows `ldc.i8 1; call(nint)` on 64-bit platforms,
+        // but we can't distinguish `nint` from `long` there.
+        if (TypeIs(nodeType, TYP_I_IMPL, TYP_U_IMPL, TYP_INT, TYP_UINT))
+        {
+            return true;
+        }
+
+        // Ecma says we should not pass byrefs as longs, but there are many examples
+        // where we do it.
+        // TODO: fix them in VM and delete this condition.
+        if (TypeIs(nodeType, TYP_BYREF))
+        {
+            return true;
+        }
+    }
+
+    return false;
 }
 
 /*****************************************************************************
