@@ -173,15 +173,12 @@ namespace System.Threading.Tests
         [Fact]
         public void Mutex_OpenExisting_RightsOutOfRange()
         {
-            Assert.Throws<ArgumentOutOfRangeException>(() =>
+            Assert.Throws<WaitHandleCannotBeOpenedException>(() =>
             {
                 MutexAcl.OpenExisting("name", (MutexRights)(-1)).Dispose();
             });
 
-            Assert.Throws<ArgumentOutOfRangeException>(() =>
-            {
-                MutexAcl.TryOpenExisting("name", (MutexRights)(-1), out _);
-            });
+            Assert.False(MutexAcl.TryOpenExisting("name", (MutexRights)(-1), out _));
         }
 
         private MutexSecurity GetBasicMutexSecurity()

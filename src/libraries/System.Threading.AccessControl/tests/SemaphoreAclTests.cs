@@ -241,15 +241,12 @@ namespace System.Threading.Tests
         [Fact]
         public void Semaphore_OpenExisting_RightsOutOfRange()
         {
-            Assert.Throws<ArgumentOutOfRangeException>(() =>
+            Assert.Throws<WaitHandleCannotBeOpenedException>(() =>
             {
                 SemaphoreAcl.OpenExisting("name", (SemaphoreRights)(-1)).Dispose();
             });
 
-            Assert.Throws<ArgumentOutOfRangeException>(() =>
-            {
-                SemaphoreAcl.TryOpenExisting("name", (SemaphoreRights)(-1), out _);
-            });
+            Assert.False(SemaphoreAcl.TryOpenExisting("name", (SemaphoreRights)(-1), out _));
         }
 
         private SemaphoreSecurity GetBasicSemaphoreSecurity()

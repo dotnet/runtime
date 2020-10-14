@@ -278,15 +278,12 @@ namespace System.Threading.Tests
         [Fact]
         public void EventWaitHandle_OpenExisting_RightsOutOfRange()
         {
-            Assert.Throws<ArgumentOutOfRangeException>(() =>
+            Assert.Throws<WaitHandleCannotBeOpenedException>(() =>
             {
                 EventWaitHandleAcl.OpenExisting("name", (EventWaitHandleRights)(-1)).Dispose();
             });
 
-            Assert.Throws<ArgumentOutOfRangeException>(() =>
-            {
-                EventWaitHandleAcl.TryOpenExisting("name", (EventWaitHandleRights)(-1), out _);
-            });
+            Assert.False(EventWaitHandleAcl.TryOpenExisting("name", (EventWaitHandleRights)(-1), out _));
         }
 
         private EventWaitHandleSecurity GetBasicEventWaitHandleSecurity()

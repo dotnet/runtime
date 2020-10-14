@@ -125,10 +125,6 @@ namespace System.Threading
             {
                 throw new ArgumentException(SR.Argument_EmptyName, nameof(name));
             }
-            if (rights < 0)
-            {
-                throw new ArgumentOutOfRangeException(nameof(rights), SR.ArgumentOutOfRange_Enum);
-            }
 
             result = null;
             SafeWaitHandle existingHandle = Interop.Kernel32.OpenMutex((uint)rights, false, name);
