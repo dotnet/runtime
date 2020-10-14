@@ -36,6 +36,7 @@ jobs:
       container: ${{ parameters.container }}
       condition: and(succeeded(), ${{ parameters.condition }})
       helixRepo: dotnet/runtime
+      enableRichCodeNavigation: ${{ parameters.enableRichCodeNavigation }}
       pool: ${{ parameters.pool }}
       variables:
         - _buildScriptFileName: build

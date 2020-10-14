@@ -50,6 +50,7 @@ jobs:
       pool: ${{ parameters.pool }}
       runtimeVariant: ${{ parameters.runtimeVariant }}
       testScope: ${{ parameters.testScope }}
+      enableRichCodeNavigation: ${{ parameters.enableRichCodeNavigation }}
       name: build
       displayName: 'Build'
 

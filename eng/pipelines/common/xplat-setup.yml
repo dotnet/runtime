@@ -95,6 +95,7 @@ jobs:
     archType: ${{ parameters.archType }}
     targetRid: ${{ parameters.targetRid }}
     platform: ${{ parameters.platform }}
+    enableRichCodeNavigation: ${{ parameters.jobParameters.enableRichCodeNavigation }}
 
     ${{ if ne(parameters.container, '') }}:
       ${{ if eq(parameters.container.registry, 'mcr') }}:

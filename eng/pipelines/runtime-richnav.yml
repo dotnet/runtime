@@ -27,14 +27,17 @@ stages:
   - template: /eng/pipelines/common/checkout-job.yml
 
   #
-  # Build CoreCLR for Windows
+  # Build CoreCLR and libraries for Windows
   #
-  - template: /eng/pipelines/common/xplat-setup.yml
+  - template: /eng/pipelines/common/platform-matrix-multijob.yml
     parameters:
-      jobTemplate: /eng/pipelines/coreclr/templates/build-job.yml
-      osGroup: Windows_NT
-      archType: x64
-      targetRid: win-x64
-      platform: Windows_NT_x64
-      jobParameters:
-        buildConfig: checked
+      platforms:
+      - Windows_NT_X64
+      buildConfig: checked
+      jobTemplates:
+      - jobTemplate: /eng/pipelines/coreclr/templates/build-job.yml
+        jobParameters:
+          enableRichCodeNavigation: true
+      - jobTemplate: /eng/pipelines/libraries/build-job.yml
+        jobParameters:
+          enableRichCodeNavigation: true

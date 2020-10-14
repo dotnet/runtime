@@ -34,10 +34,7 @@ jobs:
     stagedBuild: ${{ parameters.stagedBuild }}
     pool: ${{ parameters.pool }}
     condition: ${{ parameters.condition }}
-
-    # Only run Rich Nav indexer on Windows NT_x64 platform for now
-    ${{ if and(eq(parameters.buildConfig, 'checked'), eq(parameters.platform, 'Windows_NT_x64')) }}:
-      enableRichCodeNavigation: true
+    enableRichCodeNavigation: ${{ parameters.enableRichCodeNavigation }}
 
     # Compute job name from template parameters
     ${{ if and(ne(parameters.testGroup, 'clrTools'), eq(parameters.compilerName, 'gcc')) }}:
