@@ -528,6 +528,10 @@ bool Compiler::isSingleFloat32Struct(CORINFO_CLASS_HANDLE clsHnd)
 bool Compiler::isTrivialPointerSizedStruct(CORINFO_CLASS_HANDLE clsHnd)
 {
     assert(info.compCompHnd->isValueClass(clsHnd));
+    if (info.compCompHnd->getClassSize(clsHnd) != TARGET_POINTER_SIZE)
+    {
+        return false;
+    }
     for (;;)
     {
         // all of class chain must be of value type and must have only one field
