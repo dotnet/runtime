@@ -2869,7 +2869,11 @@ of each annotation, see the advanced annotations section.
 #define __on_failure(annotes)                _On_failure_impl_(annotes _SAL_nop_impl_)
 
 #ifndef __fallthrough // [
-#define __fallthrough [[fallthrough]];
+#if __has_attribute(fallthrough)
+#define __fallthrough __attribute__((fallthrough));
+#else
+#define __fallthrough
+#endif
 #endif // ]
 
 #ifndef __analysis_assume // [

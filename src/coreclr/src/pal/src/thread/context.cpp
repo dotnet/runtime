@@ -1094,7 +1094,7 @@ CONTEXT_GetThreadContextFromThreadState(
             }
 
             // Intentional fall-through, the AVX states are supersets of the FLOAT state
-            [[fallthrough]];
+            FALLTHROUGH;
 
         case x86_FLOAT_STATE64:
             if (lpContext->ContextFlags & CONTEXT_FLOATING_POINT & CONTEXT_AREA_MASK)
