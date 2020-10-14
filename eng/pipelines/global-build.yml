@@ -41,6 +41,7 @@ jobs:
   parameters:
     jobTemplate: /eng/pipelines/common/global-build-job.yml
     buildConfig: release
+    timeoutInMinutes: 90
     platforms:
     - Windows_NT_x86
     - OSX_x64
