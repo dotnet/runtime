@@ -45,40 +45,13 @@ BOOL WINAPI DllMain(HANDLE hInstance, DWORD dwReason, LPVOID lpReserved)
 {
     STATIC_CONTRACT_NOTHROW;
 
-    switch (dwReason)
+    if (dwReason == DLL_THREAD_DETACH)
     {
-    case DLL_PROCESS_ATTACH:
-        {
-            g_hmodCoreCLR = (HINSTANCE)hInstance;
-
-            // Save the module handle.
-            g_hThisInst = (HINSTANCE)hInstance;
-
-            // Prevent buffer-overruns
-            // If buffer is overrun, it is possible the saved callback has been trashed.
-            // The callback is unsafe.
-            //SetBufferOverrunHandler();
-            if (!EEDllMain((HINSTANCE)hInstance, dwReason, lpReserved))
-            {
-                return FALSE;
-            }
-        }
-        break;
-
-    case DLL_PROCESS_DETACH:
-        {
-            EEDllMain((HINSTANCE)hInstance, dwReason, lpReserved);
-        }
-        break;
-
-    case DLL_THREAD_DETACH:
-        {
-            EEDllMain((HINSTANCE)hInstance, dwReason, lpReserved);
-        }
-        break;
+        // TODO: WIP HACK HACK HACK. this is to test an alternative way to handle thread detach
+        return TRUE;
     }
 
-    return TRUE;
+    return EEDllMain((HINSTANCE)hInstance, dwReason, lpReserved);
 }
 
 #endif // CROSSGEN_COMPILE

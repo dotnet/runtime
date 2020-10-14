@@ -252,6 +252,25 @@ bool g_coreclr_embedded = false;
 bool g_hostpolicy_embedded = false; // In this case the value may come from a runtime property and may change
 #endif
 
+#ifndef CROSSGEN_COMPILE
+BOOL STDMETHODCALLTYPE EEDllMain( // TRUE on success, FALSE on error.
+    HINSTANCE   hInst,             // Instance handle of the loaded module.
+    DWORD       dwReason,          // Reason for loading.
+    LPVOID      lpReserved);
+
+struct TlsDestructionMonitor
+{
+    ~TlsDestructionMonitor()
+    {
+        EEDllMain(NULL, DLL_THREAD_DETACH, NULL);
+    }
+};
+
+// This thread local object is used to detect thread shutdown. Its destructor
+// is called when a thread is being shut down.
+thread_local TlsDestructionMonitor tls_destructionMonitor;
+#endif
+
 // Remember how the last startup of EE went.
 HRESULT g_EEStartupStatus = S_OK;
 
@@ -1820,6 +1839,11 @@ BOOL STDMETHODCALLTYPE EEDllMain( // TRUE on success, FALSE on error.
         {
             case DLL_PROCESS_ATTACH:
             {
+                g_hmodCoreCLR = pParam->hInst;
+
+                // Save the module handle.
+                g_hThisInst = pParam->hInst;
+
                 // We cache the SystemInfo for anyone to use throughout the
                 // life of the DLL.
                 GetSystemInfo(&g_SystemInfo);
@@ -1868,24 +1892,24 @@ BOOL STDMETHODCALLTYPE EEDllMain( // TRUE on success, FALSE on error.
                 Thread* thread = GetThread();
                 if (thread)
                 {
-//#ifdef FEATURE_COMINTEROP
-//                    // reset the CoInitialize state
-//                    // so we don't call CoUninitialize during thread detach
-//                    thread->ResetCoInitialized();
-//#endif // FEATURE_COMINTEROP
-//                    // For case where thread calls ExitThread directly, we need to reset the
-//                    // frame pointer. Otherwise stackwalk would AV. We need to do it in cooperative mode.
-//                    // We need to set m_GCOnTransitionsOK so this thread won't trigger GC when toggle GC mode
-//                    if (thread->m_pFrame != FRAME_TOP)
-//                    {
-//#ifdef _DEBUG
-//                        thread->m_GCOnTransitionsOK = FALSE;
-//#endif
-//                        GCX_COOP_NO_DTOR();
-//                        thread->m_pFrame = FRAME_TOP;
-//                        GCX_COOP_NO_DTOR_END();
-//                    }
-//                    thread->DetachThread(TRUE);
+#ifdef FEATURE_COMINTEROP
+                    // reset the CoInitialize state
+                    // so we don't call CoUninitialize during thread detach
+                    thread->ResetCoInitialized();
+#endif // FEATURE_COMINTEROP
+                    // For case where thread calls ExitThread directly, we need to reset the
+                    // frame pointer. Otherwise stackwalk would AV. We need to do it in cooperative mode.
+                    // We need to set m_GCOnTransitionsOK so this thread won't trigger GC when toggle GC mode
+                    if (thread->m_pFrame != FRAME_TOP)
+                    {
+#ifdef _DEBUG
+                        thread->m_GCOnTransitionsOK = FALSE;
+#endif
+                        GCX_COOP_NO_DTOR();
+                        thread->m_pFrame = FRAME_TOP;
+                        GCX_COOP_NO_DTOR_END();
+                    }
+                    thread->DetachThread(TRUE);
                 }
             }
         }
