@@ -16,7 +16,6 @@ namespace System.Threading
 
             try
             {
-                Debug.Assert(OperatingSystem.IsWindows());
                 // ThreadPool.BindHandle will always return true, otherwise, it throws. See the underlying FCall
                 // implementation in ThreadPoolNative::CorBindIoCompletionCallback to see the implementation.
                 bool succeeded = ThreadPool.BindHandle(handle);

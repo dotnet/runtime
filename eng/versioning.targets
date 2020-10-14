@@ -22,7 +22,7 @@
     </AssemblyMetadata>
   </ItemGroup>
 
-  <!-- Adds SupportedOSPlatform attribute for Windows Specific libraries -->
+  <!-- Adds SupportedOSPlatform attribute for Windows Specific libraries and Windows targets -->
   <ItemGroup Condition="('$(IsWindowsSpecific)' == 'true' or '$(TargetsWindows)' == 'true') and '$(IsTestProject)' != 'true'">
     <AssemblyAttribute Include="System.Runtime.Versioning.SupportedOSPlatform">
         <_Parameter1>windows</_Parameter1>

@@ -71,6 +71,13 @@
     <CrossTargetComponentFolder Condition="'$(TargetArchitecture)' == 'arm' and '$(TargetsLinux)' == 'true'">x64</CrossTargetComponentFolder>
   </PropertyGroup>
 
+  <!-- Adds SupportedOSPlatform attribute for Windows target -->
+  <ItemGroup Condition="'$(TargetsWindows)' == 'true' and '$(MSBuildProjectName)' == 'System.Private.CoreLib'">
+    <AssemblyAttribute Include="System.Runtime.Versioning.SupportedOSPlatform">
+        <_Parameter1>windows</_Parameter1>
+    </AssemblyAttribute>
+  </ItemGroup>
+  
   <!-- Set the kind of PDB to Portable -->
   <PropertyGroup>
     <DebugType Condition="'$(DebugType)' == ''">Portable</DebugType>

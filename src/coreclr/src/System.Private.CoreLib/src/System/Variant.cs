@@ -279,7 +279,6 @@ namespace System
             else if (obj is DispatchWrapper)
             {
                 vt = VarEnum.VT_DISPATCH;
-                Debug.Assert(OperatingSystem.IsWindows());
                 obj = ((DispatchWrapper)obj).WrappedObject;
             }
             else if (obj is ErrorWrapper)
@@ -402,7 +401,6 @@ namespace System
                 switch (vt)
                 {
                     case 9: /*VT_DISPATCH*/
-                        Debug.Assert(OperatingSystem.IsWindows());
                         v = new Variant(new DispatchWrapper(pValue));
                         break;
 
