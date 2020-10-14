@@ -1014,7 +1014,7 @@ var BindingSupportLib = {
 		},
 
 		_verify_args_for_method_call: function (args_marshal, args) {
-			var has_args = (typeof args === "object") && args.length > 0;
+			var has_args = args && (typeof args === "object") && args.length > 0;
 			var has_args_marshal = typeof args_marshal === "string";
 
 			if (has_args) {
@@ -1144,6 +1144,8 @@ var BindingSupportLib = {
 			// Detect someone accidentally passing the wrong type of value to method
 			if ((method | 0) !== method)
 				throw new Error ("method must be an address in the native heap");
+			if (!method)
+				throw new Error ("no method specified");
 
 			var needs_converter = this._verify_args_for_method_call (args_marshal, args);
 

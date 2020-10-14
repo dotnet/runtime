@@ -106,10 +106,20 @@ mono_wasm_invoke_js (MonoString *str, int *is_exception)
 			res = res.toString ();
 			setValue ($2, 0, "i32");
 		} catch (e) {
-			res = e.toString ();
+			res = e.toString();
 			setValue ($2, 1, "i32");
 			if (res === null || res === undefined)
 				res = "unknown exception";
+
+			var stack = e.stack;
+			if (stack) {
+				// Some JS runtimes insert the error message at the top of the stack, some don't,
+				//  so normalize it by using the stack as the result if it already contains the error
+				if (stack.startsWith(res))
+					res = stack;
+				else
+ 					res += "\n" + stack;
+ 			}
 		}
 		var buff = Module._malloc((res.length + 1) * 2);
 		stringToUTF16 (res, buff, (res.length + 1) * 2);

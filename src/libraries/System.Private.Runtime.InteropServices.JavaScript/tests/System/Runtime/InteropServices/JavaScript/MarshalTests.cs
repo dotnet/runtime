@@ -564,9 +564,10 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
         {
             Runtime.InvokeJS(@"
                 var obj = { };
-                App.call_test_method (""SetTypedArrayInt"", ""o"", [ obj ]);
-                App.call_test_method (""GetTypedArrayInt"", ""o"", [ obj ]);
+                App.call_test_method (""SetTypedArrayInt"", [ obj ]);
+                App.call_test_method (""GetTypedArrayInt"", [ obj ]);
             ");
+            Assert.NotEqual(null, HelperMarshal._taInt);
             Assert.Equal(15, HelperMarshal._taInt.Length);
             Assert.Equal(32, HelperMarshal._taInt[0]);
             Assert.Equal(32, HelperMarshal._taInt[HelperMarshal._taInt.Length - 1]);
@@ -603,8 +604,8 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
         {
             Runtime.InvokeJS(@"
                 var obj = { };
-                App.call_test_method (""SetTypedArrayDouble"", ""o"", [ obj ]);
-                App.call_test_method (""GetTypedArrayDouble"", ""o"", [ obj ]);
+                App.call_test_method (""SetTypedArrayDouble"", [ obj ]);
+                App.call_test_method (""GetTypedArrayDouble"", [ obj ]);
             ");
             Assert.Equal(18, HelperMarshal._taDouble.Length);
             Assert.Equal(3.14d, HelperMarshal._taDouble[0]);
@@ -616,8 +617,8 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
         {
             HelperMarshal._sumValue = 0;
             Runtime.InvokeJS(@"
-                App.call_test_method (""CreateFunctionSum"", null, [ ]);
-                App.call_test_method (""CallFunctionSum"", null, [  ]);
+                App.call_test_method (""CreateFunctionSum"", []);
+                App.call_test_method (""CallFunctionSum"", []);
             ");
             Assert.Equal(8, HelperMarshal._sumValue);
         }
@@ -627,8 +628,8 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
         {
             HelperMarshal._minValue = 0;
             Runtime.InvokeJS(@"
-                App.call_test_method (""CreateFunctionApply"", null, [ ]);
-                App.call_test_method (""CallFunctionApply"", null, [  ]);
+                App.call_test_method (""CreateFunctionApply"", []);
+                App.call_test_method (""CallFunctionApply"", []);
             ");
             Assert.Equal(2, HelperMarshal._minValue);
         }
