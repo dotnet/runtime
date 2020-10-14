@@ -845,8 +845,8 @@ x_incwidth:
                         /* force %p to be 64 bit in WIN64 */
                         ++integer64;
                         num64 = 0;
-                        [[fallthrough]];
 #endif  /* HOST_64BIT */
+                        [[fallthrough]];
                     case _T('o') :
                     case _T('u') :
                     case _T('d') :
