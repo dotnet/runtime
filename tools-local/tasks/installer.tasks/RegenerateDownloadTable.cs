@@ -9,13 +9,13 @@ using System.Text;
 
 namespace Microsoft.DotNet.Build.Tasks
 {
-    public class RegenerateReadmeTable : BuildTask
+    public class RegenerateDownloadTable : BuildTask
     {
         private const string TableComment = "generated table";
         private const string LinksComment = "links to include in table";
 
         /// <summary>
-        /// A readme file that contains a Markdown table and a list of links. This task reads the
+        /// A file that contains a Markdown table and a list of links. This task reads the
         /// "links to include in table" section to find available links, then updates the
         /// "generated table" section to include a Markdown table. Cells in the table are generated
         /// by looking for links that apply to the current combination of platform and branch.
