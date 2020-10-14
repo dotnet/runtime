@@ -38,9 +38,9 @@ namespace System.Net.Sockets.Tests
             }
         }
 
-        public static (Socket, Socket) CreateConnectedSocketPair() => CreateConnectedSocketPair(IPAddress.Loopback, false);
+        public static (Socket client, Socket server) CreateConnectedSocketPair() => CreateConnectedSocketPair(IPAddress.Loopback, false);
 
-        public static (Socket, Socket) CreateConnectedSocketPair(IPAddress serverAddress, bool dualModeClient)
+        public static (Socket client, Socket server) CreateConnectedSocketPair(IPAddress serverAddress, bool dualModeClient)
         {
             using Socket listener = new Socket(serverAddress.AddressFamily, SocketType.Stream, ProtocolType.Tcp);
             listener.Bind(new IPEndPoint(serverAddress, 0));

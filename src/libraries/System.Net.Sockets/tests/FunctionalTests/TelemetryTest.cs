@@ -168,12 +168,6 @@ namespace System.Net.Sockets.Tests
         [MemberData(nameof(SocketMethods_WithBools_MemberData))]
         public void EventSource_SocketConnectFailure_LogsConnectFailed(string connectMethod, bool useDnsEndPoint)
         {
-            if (connectMethod == "Sync" && PlatformDetection.IsRedHatFamily7)
-            {
-                // [ActiveIssue("https://github.com/dotnet/runtime/issues/42686")]
-                throw new SkipTestException("Disposing a Socket performing a sync operation can hang on RedHat7 systems");
-            }
-
             RemoteExecutor.Invoke(async (connectMethod, useDnsEndPointString) =>
             {
                 EndPoint endPoint = await GetRemoteEndPointAsync(useDnsEndPointString, port: 12345);

@@ -7,6 +7,7 @@ using System.Runtime.InteropServices;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.DotNet.RemoteExecutor;
+using Microsoft.DotNet.XUnitExtensions;
 using Xunit;
 using Xunit.Abstractions;
 
@@ -1027,10 +1028,17 @@ namespace System.Net.Sockets.Tests
             { false, IPAddress.IPv6Loopback, false },
         };
 
-        [Theory(Timeout = 30000)]
+        [Theory(Timeout = 40000)]
         [MemberData(nameof(TcpReceiveSendGetsCanceledByDispose_Data))]
         public async Task TcpReceiveSendGetsCanceledByDispose(bool receiveOrSend, IPAddress serverAddress, bool dualModeClient)
         {
+            if (UsesSync && PlatformDetection.IsRedHatFamily7 &&
+                receiveOrSend && (serverAddress.AddressFamily == AddressFamily.InterNetworkV6 || dualModeClient))
+            {
+                // TODO: open a new issue for this case, if the PR gets accepted.
+                throw new SkipTestException("The IPV6 synchronous Receive case times out on RedHat7 systems");
+            }
+
             // We try this a couple of times to deal with a timing race: if the Dispose happens
             // before the operation is started, the peer won't see a ConnectionReset SocketException and we won't
             // see a SocketException either.
@@ -1064,7 +1072,7 @@ namespace System.Net.Sockets.Tests
                     Task disposeTask = Task.Run(() => socket1.Dispose());
 
                     var cts = new CancellationTokenSource();
-                    Task timeoutTask = Task.Delay(15000, cts.Token);
+                    Task timeoutTask = Task.Delay(30000, cts.Token);
                     Assert.NotSame(timeoutTask, await Task.WhenAny(disposeTask, socketOperation, timeoutTask));
                     cts.Cancel();
 
