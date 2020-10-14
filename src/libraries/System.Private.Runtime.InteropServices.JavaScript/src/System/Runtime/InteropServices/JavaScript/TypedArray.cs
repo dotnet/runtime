@@ -169,12 +169,6 @@ namespace System.Runtime.InteropServices.JavaScript
 
         public static unsafe T From(ReadOnlySpan<U> span)
         {
-            // source has to be instantiated.
-            if (span is null)
-            {
-                throw new System.ArgumentException($"Invalid argument: {nameof(span)} can not be null.");
-            }
-
             TypedArrayTypeCode type = (TypedArrayTypeCode)Type.GetTypeCode(typeof(U));
             // Special case for Uint8ClampedArray, a clamped array which represents an array of 8-bit unsigned integers clamped to 0-255;
             if (type == TypedArrayTypeCode.Uint8Array && typeof(T) == typeof(Uint8ClampedArray))
@@ -206,7 +200,7 @@ namespace System.Runtime.InteropServices.JavaScript
         public unsafe int CopyFrom(ReadOnlySpan<U> span)
         {
             // source has to be instantiated.
-            if (span is null || span.Length == 0)
+            if (span.Length == 0)
             {
                 throw new System.ArgumentException($"Invalid argument: {nameof(span)} can not be null and must have a length");
             }
