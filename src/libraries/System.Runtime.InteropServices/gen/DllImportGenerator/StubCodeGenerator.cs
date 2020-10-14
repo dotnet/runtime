@@ -59,25 +59,23 @@ namespace Microsoft.Interop
             this.diagnostics = generatorDiagnostics;
 
             // Get marshallers for parameters
-            this.paramMarshallers = paramsTypeInfo.Select(p =>
-            {
-                IMarshallingGenerator generator;
-                if (!MarshallingGenerators.TryCreate(p, this, out generator))
-                {
-                    this.diagnostics.ReportMarshallingNotSupported(this.stubMethod, p);
-                }
-
-                return (p, generator);
-            }).ToList();
+            this.paramMarshallers = paramsTypeInfo.Select(p => CreateGenerator(p)).ToList();
 
             // Get marshaller for return
-            IMarshallingGenerator retGenerator;
-            if (!MarshallingGenerators.TryCreate(retTypeInfo, this, out retGenerator))
-            {
-                this.diagnostics.ReportMarshallingNotSupported(this.stubMethod, retTypeInfo);
-            }
+            this.retMarshaller = CreateGenerator(retTypeInfo);
 
-            this.retMarshaller = (retTypeInfo, retGenerator);
+            (TypePositionInfo info, IMarshallingGenerator gen) CreateGenerator(TypePositionInfo p)
+            {
+                try
+                {
+                    return (p, MarshallingGenerators.Create(p, this));
+                }
+                catch (MarshallingNotSupportedException e)
+                {
+                    this.diagnostics.ReportMarshallingNotSupported(this.stubMethod, p, e.NotSupportedDetails);
+                    return (p, MarshallingGenerators.Forwarder);
+                }
+            }
         }
 
         public override (string managed, string native) GetIdentifiers(TypePositionInfo info)

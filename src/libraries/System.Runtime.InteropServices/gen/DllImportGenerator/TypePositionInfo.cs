@@ -10,6 +10,13 @@ using Microsoft.CodeAnalysis.CSharp.Syntax;
 namespace Microsoft.Interop
 {
     /// <summary>
+    /// Type used to pass on default marshalling details.
+    /// </summary>
+    internal sealed record DefaultMarshallingInfo (
+        CharEncoding CharEncoding
+    );
+
+    /// <summary>
     /// Positional type information involved in unmanaged/managed scenarios.
     /// </summary>
     internal sealed class TypePositionInfo
@@ -41,9 +48,9 @@ namespace Microsoft.Interop
 
         public MarshallingInfo MarshallingAttributeInfo { get; private set; }
 
-        public static TypePositionInfo CreateForParameter(IParameterSymbol paramSymbol, Compilation compilation, GeneratorDiagnostics diagnostics)
+        public static TypePositionInfo CreateForParameter(IParameterSymbol paramSymbol, DefaultMarshallingInfo defaultInfo, Compilation compilation, GeneratorDiagnostics diagnostics)
         {
-            var marshallingInfo = GetMarshallingInfo(paramSymbol.Type, paramSymbol.GetAttributes(), compilation, diagnostics);
+            var marshallingInfo = GetMarshallingInfo(paramSymbol.Type, paramSymbol.GetAttributes(), defaultInfo, compilation, diagnostics);
             var typeInfo = new TypePositionInfo()
             {
                 ManagedType = paramSymbol.Type,
@@ -56,9 +63,9 @@ namespace Microsoft.Interop
             return typeInfo;
         }
 
-        public static TypePositionInfo CreateForType(ITypeSymbol type, IEnumerable<AttributeData> attributes, Compilation compilation, GeneratorDiagnostics diagnostics)
+        public static TypePositionInfo CreateForType(ITypeSymbol type, IEnumerable<AttributeData> attributes, DefaultMarshallingInfo defaultInfo, Compilation compilation, GeneratorDiagnostics diagnostics)
         {
-            var marshallingInfo = GetMarshallingInfo(type, attributes, compilation, diagnostics);
+            var marshallingInfo = GetMarshallingInfo(type, attributes, defaultInfo, compilation, diagnostics);
             var typeInfo = new TypePositionInfo()
             {
                 ManagedType = type,
@@ -72,10 +79,11 @@ namespace Microsoft.Interop
         }
 
 #nullable enable
-        private static MarshallingInfo? GetMarshallingInfo(ITypeSymbol type, IEnumerable<AttributeData> attributes, Compilation compilation, GeneratorDiagnostics diagnostics)
+        private static MarshallingInfo? GetMarshallingInfo(ITypeSymbol type, IEnumerable<AttributeData> attributes, DefaultMarshallingInfo defaultInfo, Compilation compilation, GeneratorDiagnostics diagnostics)
         {
             MarshallingInfo? marshallingInfo = null;
-            // Look at attributes on the type.
+
+            // Look at attributes passed in - usage specific.
             foreach (var attrData in attributes)
             {
                 INamedTypeSymbol attributeClass = attrData.AttributeClass!;
@@ -87,7 +95,7 @@ namespace Microsoft.Interop
                         // TODO: diagnostic
                     }
                     // https://docs.microsoft.com/dotnet/api/system.runtime.interopservices.marshalasattribute
-                    marshallingInfo = CreateMarshalAsInfo(attrData, diagnostics);
+                    marshallingInfo = CreateMarshalAsInfo(attrData, defaultInfo, diagnostics);
                 }
                 else if (SymbolEqualityComparer.Default.Equals(compilation.GetTypeByMetadataName(TypeNames.MarshalUsingAttribute), attributeClass))
                 {
@@ -95,7 +103,7 @@ namespace Microsoft.Interop
                     {
                         // TODO: diagnostic
                     }
-                    marshallingInfo = CreateNativeMarshallingInfo(attrData, false);
+                    marshallingInfo = CreateNativeMarshallingInfo(type, compilation, attrData, allowGetPinnableReference: false);
                 }
             }
 
@@ -121,7 +129,7 @@ namespace Microsoft.Interop
                         {
                             // TODO: diagnostic
                         }
-                        marshallingInfo = CreateNativeMarshallingInfo(attrData, true);
+                        marshallingInfo = CreateNativeMarshallingInfo(type, compilation, attrData, allowGetPinnableReference: true);
                     }
                     else if (SymbolEqualityComparer.Default.Equals(compilation.GetTypeByMetadataName(TypeNames.GeneratedMarshallingAttribute), attributeClass))
                     {
@@ -134,14 +142,26 @@ namespace Microsoft.Interop
                 }
             }
 
+            // If the type doesn't have custom attributes that dictate marshalling,
+            // then consider the type itself.
             if (marshallingInfo is null)
             {
                 marshallingInfo = CreateTypeBasedMarshallingInfo(type, compilation);
             }
 
+            // No marshalling info was computed, but a character encoding was provided.
+            // If the type is a character or string then pass on these details.
+            if (marshallingInfo is null
+                && defaultInfo.CharEncoding != CharEncoding.Undefined
+                && (type.SpecialType == SpecialType.System_Char
+                    || type.SpecialType == SpecialType.System_String))
+            {
+                marshallingInfo = new MarshallingInfoStringSupport(defaultInfo.CharEncoding);
+            }
+
             return marshallingInfo;
 
-            static MarshalAsInfo CreateMarshalAsInfo(AttributeData attrData, GeneratorDiagnostics diagnostics)
+            static MarshalAsInfo CreateMarshalAsInfo(AttributeData attrData, DefaultMarshallingInfo defaultInfo, GeneratorDiagnostics diagnostics)
             {
                 object unmanagedTypeObj = attrData.ConstructorArguments[0].Value!;
                 UnmanagedType unmanagedType = unmanagedTypeObj is short
@@ -196,11 +216,12 @@ namespace Microsoft.Interop
                     CustomMarshallerCookie: customMarshallerCookie,
                     UnmanagedArraySubType: unmanagedArraySubType,
                     ArraySizeConst: arraySizeConst,
-                    ArraySizeParamIndex: arraySizeParamIndex
+                    ArraySizeParamIndex: arraySizeParamIndex,
+                    CharEncoding: defaultInfo.CharEncoding
                 );
             }
 
-            NativeMarshallingAttributeInfo CreateNativeMarshallingInfo(AttributeData attrData, bool allowGetPinnableReference)
+            static NativeMarshallingAttributeInfo CreateNativeMarshallingInfo(ITypeSymbol type, Compilation compilation, AttributeData attrData, bool allowGetPinnableReference)
             {
                 ITypeSymbol spanOfByte = compilation.GetTypeByMetadataName(TypeNames.System_Span)!.Construct(compilation.GetSpecialType(SpecialType.System_Byte));
                 INamedTypeSymbol nativeType = (INamedTypeSymbol)attrData.ConstructorArguments[0].Value!;

@@ -159,6 +159,12 @@
   <data name="GetPinnableReferenceShouldSupportAllocatingMarshallingFallbackMessage" xml:space="preserve">
     <value>Type '{0}' has a 'GetPinnableReference' method but its native type does not support marshalling in scenarios where pinning is impossible</value>
   </data>
+  <data name="MarshallingCharAsCharSetAnsiNotSupported" xml:space="preserve">
+    <value>Marshalling char with CharSet.Ansi is not supported. Instead, manually convert the char type to the desired byte representation and pass to the source-generated P/Invoke.</value>
+  </data>
+  <data name="MarshallingCharAsCharSetAutoNotSupported" xml:space="preserve">
+    <value>Marshalling char with CharSet.Auto is not supported. Instead, manually convert the char type to the desired byte representation and pass to the source-generated P/Invoke.</value>
+  </data>
   <data name="NativeTypeMustBeBlittableDescription" xml:space="preserve">
     <value>A native type for a given type must be blittable.</value>
   </data>
@@ -201,8 +207,14 @@
   <data name="TypeNotSupportedMessageParameter" xml:space="preserve">
     <value>The type '{0}' is not supported by source-generated P/Invokes. The generated source will not handle marshalling of parameter '{1}'.</value>
   </data>
+  <data name="TypeNotSupportedMessageParameterWithDetails" xml:space="preserve">
+    <value>{0} The generated source will not handle marshalling of parameter '{1}'.</value>
+  </data>
   <data name="TypeNotSupportedMessageReturn" xml:space="preserve">
     <value>The type '{0}' is not supported by source-generated P/Invokes. The generated source will not handle marshalling of the return value of method '{1}'.</value>
+  </data>
+  <data name="TypeNotSupportedMessageReturnWithDetails" xml:space="preserve">
+    <value>{0} The generated source will not handle marshalling of the return value of method '{1}'.</value>
   </data>
   <data name="TypeNotSupportedTitle" xml:space="preserve">
     <value>Specified type is not supported by source-generated P/Invokes</value>

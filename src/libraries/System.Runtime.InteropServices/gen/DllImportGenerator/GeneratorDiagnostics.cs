@@ -65,7 +65,7 @@ namespace Microsoft.Interop
                 Category,
                 DiagnosticSeverity.Error,
                 isEnabledByDefault: true,
-                description: GetResourceString(Resources.TypeNotSupportedDescription));
+                description: GetResourceString(nameof(Resources.TypeNotSupportedDescription)));
 
         public readonly static DiagnosticDescriptor ReturnTypeNotSupported =
             new DiagnosticDescriptor(
@@ -75,7 +75,27 @@ namespace Microsoft.Interop
                 Category,
                 DiagnosticSeverity.Error,
                 isEnabledByDefault: true,
-                description: GetResourceString(Resources.TypeNotSupportedDescription));
+                description: GetResourceString(nameof(Resources.TypeNotSupportedDescription)));
+
+        public readonly static DiagnosticDescriptor ParameterTypeNotSupportedWithDetails =
+            new DiagnosticDescriptor(
+                Ids.TypeNotSupported,
+                GetResourceString(nameof(Resources.TypeNotSupportedTitle)),
+                GetResourceString(nameof(Resources.TypeNotSupportedMessageParameterWithDetails)),
+                Category,
+                DiagnosticSeverity.Error,
+                isEnabledByDefault: true,
+                description: GetResourceString(nameof(Resources.TypeNotSupportedDescription)));
+
+        public readonly static DiagnosticDescriptor ReturnTypeNotSupportedWithDetails =
+            new DiagnosticDescriptor(
+                Ids.TypeNotSupported,
+                GetResourceString(nameof(Resources.TypeNotSupportedTitle)),
+                GetResourceString(nameof(Resources.TypeNotSupportedMessageReturnWithDetails)),
+                Category,
+                DiagnosticSeverity.Error,
+                isEnabledByDefault: true,
+                description: GetResourceString(nameof(Resources.TypeNotSupportedDescription)));
 
         public readonly static DiagnosticDescriptor ParameterConfigurationNotSupported =
             new DiagnosticDescriptor(
@@ -85,7 +105,7 @@ namespace Microsoft.Interop
                 Category,
                 DiagnosticSeverity.Error,
                 isEnabledByDefault: true,
-                description: GetResourceString(Resources.ConfigurationNotSupportedDescription));
+                description: GetResourceString(nameof(Resources.ConfigurationNotSupportedDescription)));
 
         public readonly static DiagnosticDescriptor ReturnConfigurationNotSupported =
             new DiagnosticDescriptor(
@@ -95,7 +115,7 @@ namespace Microsoft.Interop
                 Category,
                 DiagnosticSeverity.Error,
                 isEnabledByDefault: true,
-                description: GetResourceString(Resources.ConfigurationNotSupportedDescription));
+                description: GetResourceString(nameof(Resources.ConfigurationNotSupportedDescription)));
 
         public readonly static DiagnosticDescriptor ConfigurationNotSupported =
             new DiagnosticDescriptor(
@@ -105,7 +125,7 @@ namespace Microsoft.Interop
                 Category,
                 DiagnosticSeverity.Error,
                 isEnabledByDefault: true,
-                description: GetResourceString(Resources.ConfigurationNotSupportedDescription));
+                description: GetResourceString(nameof(Resources.ConfigurationNotSupportedDescription)));
 
         public readonly static DiagnosticDescriptor ConfigurationValueNotSupported =
             new DiagnosticDescriptor(
@@ -115,7 +135,7 @@ namespace Microsoft.Interop
                 Category,
                 DiagnosticSeverity.Error,
                 isEnabledByDefault: true,
-                description: GetResourceString(Resources.ConfigurationNotSupportedDescription));
+                description: GetResourceString(nameof(Resources.ConfigurationNotSupportedDescription)));
 
         private readonly GeneratorExecutionContext context;
 
@@ -157,11 +177,35 @@ namespace Microsoft.Interop
         /// </summary>
         /// <param name="method">Method with the parameter/return</param>
         /// <param name="info">Type info for the parameter/return</param>
+        /// <param name="notSupportedDetails">[Optional] Specific reason for lack of support</param>
         internal void ReportMarshallingNotSupported(
             IMethodSymbol method,
-            TypePositionInfo info)
+            TypePositionInfo info,
+            string? notSupportedDetails)
         {
-            if (info.MarshallingAttributeInfo != null && info.MarshallingAttributeInfo is MarshalAsInfo)
+            if (!string.IsNullOrEmpty(notSupportedDetails))
+            {
+                // Report the specific not-supported reason.
+                if (info.IsManagedReturnPosition)
+                {
+                    this.context.ReportDiagnostic(
+                        method.CreateDiagnostic(
+                            GeneratorDiagnostics.ReturnTypeNotSupportedWithDetails,
+                            notSupportedDetails!,
+                            method.Name));
+                }
+                else
+                {
+                    Debug.Assert(info.ManagedIndex <= method.Parameters.Length);
+                    IParameterSymbol paramSymbol = method.Parameters[info.ManagedIndex];
+                    this.context.ReportDiagnostic(
+                        paramSymbol.CreateDiagnostic(
+                            GeneratorDiagnostics.ParameterTypeNotSupportedWithDetails,
+                            notSupportedDetails!,
+                            paramSymbol.Name));
+                }
+            }
+            else if (info.MarshallingAttributeInfo != null && info.MarshallingAttributeInfo is MarshalAsInfo)
             {
                 // Report that the specified marshalling configuration is not supported.
                 // We don't forward marshalling attributes, so this is reported differently

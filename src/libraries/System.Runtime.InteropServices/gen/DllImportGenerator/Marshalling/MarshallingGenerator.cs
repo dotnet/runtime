@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Runtime.InteropServices;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
@@ -59,21 +60,61 @@ namespace Microsoft.Interop
         bool UsesNativeIdentifier(TypePositionInfo info, StubCodeContext context);
     }
 
+    /// <summary>
+    /// Exception used to indicate marshalling isn't supported.
+    /// </summary>
+    internal class MarshallingNotSupportedException : Exception
+    {
+        /// <summary>
+        /// Construct a new <see cref="MarshallingNotSupportedException"/> instance.
+        /// </summary>
+        /// <param name="info"><see cref="Microsoft.Interop.TypePositionInfo"/> instance</param>
+        /// <param name="context"><see cref="Microsoft.Interop.StubCodeContext"/> instance</param>
+        public MarshallingNotSupportedException(TypePositionInfo info, StubCodeContext context)
+        {
+            this.TypePositionInfo = info;
+            this.StubCodeContext = context;
+        }
+
+        /// <summary>
+        /// Type that is being marshalled.
+        /// </summary>
+        public TypePositionInfo TypePositionInfo { get; private init; }
+
+        /// <summary>
+        /// Context the marshalling is taking place.
+        /// </summary>
+        public StubCodeContext StubCodeContext { get; private init; }
+
+        /// <summary>
+        /// [Optional] Specific reason marshalling of the supplied type isn't supported.
+        /// </summary>
+        public string NotSupportedDetails { get; init; }
+    }
+
     internal class MarshallingGenerators
     {
         public static readonly ByteBoolMarshaller ByteBool = new ByteBoolMarshaller();
         public static readonly WinBoolMarshaller WinBool = new WinBoolMarshaller();
         public static readonly VariantBoolMarshaller VariantBool = new VariantBoolMarshaller();
+        public static readonly Utf16CharMarshaller Utf16Char = new Utf16CharMarshaller();
         public static readonly Forwarder Forwarder = new Forwarder();
         public static readonly BlittableMarshaller Blittable = new BlittableMarshaller();
         public static readonly DelegateMarshaller Delegate = new DelegateMarshaller();
         public static readonly SafeHandleMarshaller SafeHandle = new SafeHandleMarshaller();
 
-        public static bool TryCreate(TypePositionInfo info, StubCodeContext context, out IMarshallingGenerator generator)
+        /// <summary>
+        /// Create an <see cref="IMarshallingGenerator"/> instance to marshalling the supplied type.
+        /// </summary>
+        /// <param name="info">Type details</param>
+        /// <param name="context">Metadata about the stub the type is associated with</param>
+        /// <returns>A <see cref="IMarshallingGenerator"/> instance.</returns>
+        public static IMarshallingGenerator Create(
+            TypePositionInfo info,
+            StubCodeContext context)
         {
 #if GENERATE_FORWARDER
-            generator = MarshallingGenerators.Forwarder;
-            return true;
+            return MarshallingGenerators.Forwarder;
 #else
             if (info.IsNativeReturnPosition && !info.IsManagedReturnPosition)
             {
@@ -96,51 +137,58 @@ namespace Microsoft.Interop
                     or { ManagedType: { SpecialType: SpecialType.System_UIntPtr }, MarshallingAttributeInfo: null}
                     or { ManagedType: { SpecialType: SpecialType.System_Single }, MarshallingAttributeInfo: null or MarshalAsInfo { UnmanagedType: UnmanagedType.R4 } }
                     or { ManagedType: { SpecialType: SpecialType.System_Double }, MarshallingAttributeInfo: null or MarshalAsInfo { UnmanagedType: UnmanagedType.R8 } }:
-                    generator = Blittable;
-                    return true;
+                    return Blittable;
 
                 case { ManagedType: { SpecialType: SpecialType.System_Boolean }, MarshallingAttributeInfo: null }:
-                    generator = WinBool; // [Compat] Matching the default for the built-in runtime marshallers.
-                    return true;
+                    return WinBool; // [Compat] Matching the default for the built-in runtime marshallers.
                 case { ManagedType: { SpecialType: SpecialType.System_Boolean }, MarshallingAttributeInfo: MarshalAsInfo { UnmanagedType: UnmanagedType.I1 or UnmanagedType.U1 } }:
-                    generator = ByteBool;
-                    return true;
+                    return ByteBool;
                 case { ManagedType: { SpecialType: SpecialType.System_Boolean }, MarshallingAttributeInfo: MarshalAsInfo { UnmanagedType: UnmanagedType.I4 or UnmanagedType.U4 or UnmanagedType.Bool } }:
-                    generator = WinBool;
-                    return true;
+                    return WinBool;
                 case { ManagedType: { SpecialType: SpecialType.System_Boolean }, MarshallingAttributeInfo: MarshalAsInfo { UnmanagedType: UnmanagedType.VariantBool } }:
-                    generator = VariantBool;
-                    return true;
+                    return VariantBool;
+
+                case { ManagedType: { SpecialType: SpecialType.System_Char }, MarshallingAttributeInfo: null }:
+                    return Utf16Char; // [Compat] Default marshalling is UTF-16.
+                case { ManagedType: { SpecialType: SpecialType.System_Char }, MarshallingAttributeInfo: MarshalAsInfo { UnmanagedType: UnmanagedType.I2 } }:
+                    return Utf16Char;
+                case { ManagedType: { SpecialType: SpecialType.System_Char }, MarshallingAttributeInfo: MarshalAsInfo { UnmanagedType: UnmanagedType.U2 } }:
+                    return Utf16Char;
+                case { ManagedType: { SpecialType: SpecialType.System_Char }, MarshallingAttributeInfo: MarshallingInfoStringSupport { CharEncoding: CharEncoding.Utf16 } }:
+                    return Utf16Char;
+                case { ManagedType: { SpecialType: SpecialType.System_Char }, MarshallingAttributeInfo: MarshallingInfoStringSupport { CharEncoding: CharEncoding.Utf8 } }:
+                    throw new MarshallingNotSupportedException(info, context) // [Compat] See conversion from CharSet.Ansi to UTF-8.
+                    {
+                        NotSupportedDetails = Resources.MarshallingCharAsCharSetAnsiNotSupported
+                    };
+                case { ManagedType: { SpecialType: SpecialType.System_Char }, MarshallingAttributeInfo: MarshallingInfoStringSupport { CharEncoding: CharEncoding.PlatformDefined } }:
+                    throw new MarshallingNotSupportedException(info, context) // [Compat] See conversion of CharSet.Auto.
+                    {
+                        NotSupportedDetails = Resources.MarshallingCharAsCharSetAutoNotSupported
+                    };
 
                 case { ManagedType: { TypeKind: TypeKind.Delegate }, MarshallingAttributeInfo: null or MarshalAsInfo { UnmanagedType: UnmanagedType.FunctionPtr } }:
-                    generator = Delegate;
-                    return true;
+                    return Delegate;
 
                 case { MarshallingAttributeInfo: BlittableTypeAttributeInfo _ }:
-                    generator = Blittable;
-                    return true;
+                    return Blittable;
 
                 // Marshalling in new model
                 case { MarshallingAttributeInfo: NativeMarshallingAttributeInfo marshalInfo }:
-                    generator = Forwarder;
-                    return false;
+                    return Forwarder;
 
                 // Simple marshalling with new attribute model, only have type name.
                 case { MarshallingAttributeInfo: GeneratedNativeMarshallingAttributeInfo { NativeMarshallingFullyQualifiedTypeName: string name } }:
-                    generator = Forwarder;
-                    return false;
+                    return Forwarder;
 
                 case { MarshallingAttributeInfo: SafeHandleMarshallingInfo _}:
-                    generator = SafeHandle;
-                    return true;
+                    return SafeHandle;
 
                 case { ManagedType: { SpecialType: SpecialType.System_Void } }:
-                    generator = Forwarder;
-                    return true;
+                    return Forwarder;
 
                 default:
-                    generator = Forwarder;
-                    return false;
+                    throw new MarshallingNotSupportedException(info, context);
             }
 #endif
         }

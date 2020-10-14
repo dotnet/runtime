@@ -131,18 +131,32 @@ namespace Microsoft.Interop
                 currType = currType.ContainingType;
             }
 
+            // Compute the current default string encoding value.
+            var defaultEncoding = CharEncoding.Undefined;
+            if (dllImportData.IsUserDefined.HasFlag(DllImportMember.CharSet))
+            {
+                defaultEncoding = dllImportData.CharSet switch
+                {
+                    CharSet.Unicode => CharEncoding.Utf16,
+                    CharSet.Auto => CharEncoding.PlatformDefined,
+                    _ => CharEncoding.Utf8, // [Compat] ANSI is no longer ANSI code pages on Windows and UTF-8, on non-Windows.
+                };
+            }
+
+            var defaultInfo = new DefaultMarshallingInfo(defaultEncoding);
+
             // Determine parameter and return types
             var paramsTypeInfo = new List<TypePositionInfo>();
             for (int i = 0; i < method.Parameters.Length; i++)
             {
                 var param = method.Parameters[i];
-                var typeInfo = TypePositionInfo.CreateForParameter(param, compilation, diagnostics);
+                var typeInfo = TypePositionInfo.CreateForParameter(param, defaultInfo, compilation, diagnostics);
                 typeInfo.ManagedIndex = i;
                 typeInfo.NativeIndex = paramsTypeInfo.Count;
                 paramsTypeInfo.Add(typeInfo);
             }
 
-            TypePositionInfo retTypeInfo = TypePositionInfo.CreateForType(method.ReturnType, method.GetReturnTypeAttributes(), compilation, diagnostics);
+            TypePositionInfo retTypeInfo = TypePositionInfo.CreateForType(method.ReturnType, method.GetReturnTypeAttributes(), defaultInfo, compilation, diagnostics);
             retTypeInfo.ManagedIndex = TypePositionInfo.ReturnIndex;
             retTypeInfo.NativeIndex = TypePositionInfo.ReturnIndex;
             if (!dllImportData.PreserveSig)

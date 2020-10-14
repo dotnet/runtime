@@ -15,6 +15,24 @@ namespace Microsoft.Interop
     internal abstract record MarshallingInfo {}
 
     /// <summary>
+    /// Character encoding enumeration.
+    /// </summary>
+    internal enum CharEncoding
+    {
+        Undefined,
+        Utf8,
+        Utf16,
+        PlatformDefined
+    }
+
+    /// <summary>
+    /// Details that are required when scenario supports strings.
+    /// </summary>
+    internal record MarshallingInfoStringSupport(
+        CharEncoding CharEncoding
+    ) : MarshallingInfo;
+
+    /// <summary>
     /// User-applied System.Runtime.InteropServices.MarshalAsAttribute
     /// </summary>
     internal sealed record MarshalAsInfo(
@@ -23,7 +41,8 @@ namespace Microsoft.Interop
         string? CustomMarshallerCookie,
         UnmanagedType UnmanagedArraySubType,
         int ArraySizeConst,
-        short ArraySizeParamIndex) : MarshallingInfo;
+        short ArraySizeParamIndex,
+        CharEncoding CharEncoding) : MarshallingInfoStringSupport(CharEncoding);
 
     /// <summary>
     /// User-applied System.Runtime.InteropServices.BlittableTypeAttribute

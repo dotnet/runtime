@@ -187,6 +187,24 @@ namespace Microsoft.Interop {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to Marshalling char with CharSet.Ansi is not supported. Instead, manually convert the char type to the desired byte representation and pass to the source-generated P/Invoke..
+        /// </summary>
+        internal static string MarshallingCharAsCharSetAnsiNotSupported {
+            get {
+                return ResourceManager.GetString("MarshallingCharAsCharSetAnsiNotSupported", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Marshalling char with CharSet.Auto is not supported. Instead, manually convert the char type to the desired byte representation and pass to the source-generated P/Invoke..
+        /// </summary>
+        internal static string MarshallingCharAsCharSetAutoNotSupported {
+            get {
+                return ResourceManager.GetString("MarshallingCharAsCharSetAutoNotSupported", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to A native type for a given type must be blittable..
         /// </summary>
         internal static string NativeTypeMustBeBlittableDescription {
@@ -313,11 +331,29 @@ namespace Microsoft.Interop {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to {0} The generated source will not handle marshalling of parameter &apos;{1}&apos;..
+        /// </summary>
+        internal static string TypeNotSupportedMessageParameterWithDetails {
+            get {
+                return ResourceManager.GetString("TypeNotSupportedMessageParameterWithDetails", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to The type &apos;{0}&apos; is not supported by source-generated P/Invokes. The generated source will not handle marshalling of the return value of method &apos;{1}&apos;..
         /// </summary>
         internal static string TypeNotSupportedMessageReturn {
             get {
                 return ResourceManager.GetString("TypeNotSupportedMessageReturn", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to {0} The generated source will not handle marshalling of the return value of method &apos;{1}&apos;..
+        /// </summary>
+        internal static string TypeNotSupportedMessageReturnWithDetails {
+            get {
+                return ResourceManager.GetString("TypeNotSupportedMessageReturnWithDetails", resourceCulture);
             }
         }
         
