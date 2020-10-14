@@ -2254,6 +2254,10 @@ public:
     bool isSingleFloat32Struct(CORINFO_CLASS_HANDLE hClass);
 #endif // ARM_SOFTFP
 
+#ifdef TARGET_X86
+    bool isTrivialPointerSizedStruct(CORINFO_CLASS_HANDLE clsHnd);
+#endif // TARGET_X86
+
     //-------------------------------------------------------------------------
     // Functions to handle homogeneous floating-point aggregates (HFAs) in ARM/ARM64.
     // HFAs are one to four element structs where each element is the same

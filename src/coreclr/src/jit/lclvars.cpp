@@ -837,6 +837,12 @@ void Compiler::lvaInitUserArgs(InitVarDscInfo* varDscInfo, unsigned skipArgs, un
             canPassArgInRegisters = structDesc.passedInRegisters;
         }
         else
+#elif defined(TARGET_X86)
+        if (varTypeIsStruct(argType) && isTrivialPointerSizedStruct(typeHnd))
+        {
+            canPassArgInRegisters = varDscInfo->canEnreg(TYP_I_IMPL, cSlotsToEnregister);
+        }
+        else
 #endif // defined(UNIX_AMD64_ABI)
         {
             canPassArgInRegisters = varDscInfo->canEnreg(argType, cSlotsToEnregister);

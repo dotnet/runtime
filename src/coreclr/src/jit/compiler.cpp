@@ -512,6 +512,52 @@ bool Compiler::isSingleFloat32Struct(CORINFO_CLASS_HANDLE clsHnd)
 }
 #endif // ARM_SOFTFP
 
+#ifdef TARGET_X86
+//---------------------------------------------------------------------------
+// isTrivialPointerSizedStruct:
+//    Check if the given struct type contains only one pointer-sized integer value type
+//
+// Arguments:
+//    clsHnd     - the handle for the struct type
+//
+// Return Value:
+//    true if the given struct type contains only one pointer-sized integer value type,
+//    false otherwise.
+//
+
+bool Compiler::isTrivialPointerSizedStruct(CORINFO_CLASS_HANDLE clsHnd)
+{
+    assert(info.compCompHnd->isValueClass(clsHnd));
+    for (;;)
+    {
+        // all of class chain must be of value type and must have only one field
+        if (!info.compCompHnd->isValueClass(clsHnd) || info.compCompHnd->getClassNumInstanceFields(clsHnd) != 1)
+        {
+            return false;
+        }
+
+        CORINFO_CLASS_HANDLE* pClsHnd   = &clsHnd;
+        CORINFO_FIELD_HANDLE  fldHnd    = info.compCompHnd->getFieldInClass(clsHnd, 0);
+        CorInfoType           fieldType = info.compCompHnd->getFieldType(fldHnd, pClsHnd);
+
+        var_types vt = JITtype2varType(fieldType);
+
+        if (fieldType == CORINFO_TYPE_VALUECLASS)
+        {
+            clsHnd = *pClsHnd;
+        }
+        else if (varTypeIsI(vt) && !varTypeIsGC(vt))
+        {
+            return true;
+        }
+        else
+        {
+            return false;
+        }
+    }
+}
+#endif // TARGET_X86
+
 //-----------------------------------------------------------------------------
 // getPrimitiveTypeForStruct:
 //     Get the "primitive" type that is is used for a struct
@@ -693,7 +739,7 @@ var_types Compiler::getArgTypeForStruct(CORINFO_CLASS_HANDLE clsHnd,
     assert(structSize != 0);
 
 // Determine if we can pass the struct as a primitive type.
-// Note that on x86 we never pass structs as primitive types (unless the VM unwraps them for us).
+// Note that on x86 we only pass specific pointer-sized structs as primitives that the VM used to unwrap.
 #ifndef TARGET_X86
 #ifdef UNIX_AMD64_ABI
 
@@ -728,7 +774,11 @@ var_types Compiler::getArgTypeForStruct(CORINFO_CLASS_HANDLE clsHnd,
         // and also examine the clsHnd to see if it is an HFA of count one
         useType = getPrimitiveTypeForStruct(structSize, clsHnd, isVarArg);
     }
-
+#else
+    if (isTrivialPointerSizedStruct(clsHnd))
+    {
+        useType = TYP_I_IMPL;
+    }
 #endif // !TARGET_X86
 
     // Did we change this struct type into a simple "primitive" type?
