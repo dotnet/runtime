@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Security.AccessControl;
 using System.Security.Principal;
@@ -196,15 +197,27 @@ namespace System.Threading.Tests
         }
 
         [Fact]
-        public void Semaphore_OpenExisting_BadPathName()
+        public void Semaphore_OpenExisting_PathNotFound()
         {
-            string name = @"\\?\Path";
-            Assert.Throws<System.IO.IOException>(() =>
+            string name = @"global\foo";
+            Assert.Throws<IOException>(() =>
             {
                 SemaphoreAcl.OpenExisting(name, SemaphoreRights.FullControl).Dispose();
             });
 
-            Assert.Throws<System.IO.IOException>(() =>
+            Assert.False(SemaphoreAcl.TryOpenExisting(name, SemaphoreRights.FullControl, out _));
+        }
+
+        [Fact]
+        public void Semaphore_OpenExisting_BadPathName()
+        {
+            string name = @"\\?\Path";
+            Assert.Throws<IOException>(() =>
+            {
+                SemaphoreAcl.OpenExisting(name, SemaphoreRights.FullControl).Dispose();
+            });
+
+            Assert.Throws<IOException>(() =>
             {
                 SemaphoreAcl.TryOpenExisting(name, SemaphoreRights.FullControl, out _);
             });
@@ -236,17 +249,6 @@ namespace System.Threading.Tests
             {
                 SemaphoreAcl.TryOpenExisting(string.Empty, SemaphoreRights.FullControl, out _);
             });
-        }
-
-        [Fact]
-        public void Semaphore_OpenExisting_RightsOutOfRange()
-        {
-            Assert.Throws<WaitHandleCannotBeOpenedException>(() =>
-            {
-                SemaphoreAcl.OpenExisting("name", (SemaphoreRights)(-1)).Dispose();
-            });
-
-            Assert.False(SemaphoreAcl.TryOpenExisting("name", (SemaphoreRights)(-1), out _));
         }
 
         private SemaphoreSecurity GetBasicSemaphoreSecurity()

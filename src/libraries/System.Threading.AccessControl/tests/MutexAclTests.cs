@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Security.AccessControl;
 using System.Security.Principal;
@@ -128,6 +129,19 @@ namespace System.Threading.Tests
             Assert.False(MutexAcl.TryOpenExisting(name, MutexRights.FullControl, out _));
         }
 
+
+        [Fact]
+        public void Mutex_OpenExisting_PathNotFound()
+        {
+            string name = @"global\foo";
+            Assert.Throws<DirectoryNotFoundException>(() =>
+            {
+                MutexAcl.OpenExisting(name, MutexRights.FullControl).Dispose();
+            });
+
+            Assert.False(MutexAcl.TryOpenExisting(name, MutexRights.FullControl, out _));
+        }
+
         [Fact]
         public void Mutex_OpenExisting_BadPathName()
         {
@@ -168,17 +182,6 @@ namespace System.Threading.Tests
             {
                 MutexAcl.TryOpenExisting(string.Empty, MutexRights.FullControl, out _);
             });
-        }
-
-        [Fact]
-        public void Mutex_OpenExisting_RightsOutOfRange()
-        {
-            Assert.Throws<WaitHandleCannotBeOpenedException>(() =>
-            {
-                MutexAcl.OpenExisting("name", (MutexRights)(-1)).Dispose();
-            });
-
-            Assert.False(MutexAcl.TryOpenExisting("name", (MutexRights)(-1), out _));
         }
 
         private MutexSecurity GetBasicMutexSecurity()

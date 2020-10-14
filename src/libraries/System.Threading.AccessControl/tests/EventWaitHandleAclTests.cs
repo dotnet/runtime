@@ -233,6 +233,18 @@ namespace System.Threading.Tests
         }
 
         [Fact]
+        public void EventWaitHandle_OpenExisting_PathNotFound()
+        {
+            string name = @"global\foo";
+            Assert.Throws<DirectoryNotFoundException>(() =>
+            {
+                EventWaitHandleAcl.OpenExisting(name, EventWaitHandleRights.FullControl).Dispose();
+            });
+
+            Assert.False(EventWaitHandleAcl.TryOpenExisting(name, EventWaitHandleRights.FullControl, out _));
+        }
+
+        [Fact]
         public void EventWaitHandle_OpenExisting_BadPathName()
         {
             string name = @"\\?\Path";
@@ -273,17 +285,6 @@ namespace System.Threading.Tests
             {
                 EventWaitHandleAcl.TryOpenExisting(string.Empty, EventWaitHandleRights.FullControl, out _);
             });
-        }
-
-        [Fact]
-        public void EventWaitHandle_OpenExisting_RightsOutOfRange()
-        {
-            Assert.Throws<WaitHandleCannotBeOpenedException>(() =>
-            {
-                EventWaitHandleAcl.OpenExisting("name", (EventWaitHandleRights)(-1)).Dispose();
-            });
-
-            Assert.False(EventWaitHandleAcl.TryOpenExisting("name", (EventWaitHandleRights)(-1), out _));
         }
 
         private EventWaitHandleSecurity GetBasicEventWaitHandleSecurity()
