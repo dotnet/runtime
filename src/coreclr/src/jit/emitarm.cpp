@@ -7087,8 +7087,6 @@ void emitter::emitDispInsHelp(
         case IF_T2_N:
             emitDispReg(id->idReg1(), attr, true);
             imm = emitGetInsSC(id);
-            if (emitComp->opts.disDiffable)
-                imm = 0xD1FF;
             emitDispImm(imm, false, true);
             break;
 
