@@ -729,8 +729,8 @@ const char StackOverflowMessage[] = "Stack overflow.\n";
 
 #endif // __cplusplus
 
-#if __has_attribute(fallthrough)
-#define FALLTHROUGH __attribute__((fallthrough));
+#if __has_cpp_attribute(fallthrough)
+#define FALLTHROUGH [[fallthrough]]
 #else
 #define FALLTHROUGH
 #endif
