@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Buffers.Binary;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Globalization;
@@ -4449,35 +4450,9 @@ namespace System.Xml
             return (ulong)((ulong)hi) << 32 | lo;
         }
 
-        private float GetSingle(int offset)
-        {
-            byte[] data = _data;
-            uint tmp = (uint)(data[offset]
-                            | data[offset + 1] << 8
-                            | data[offset + 2] << 16
-                            | data[offset + 3] << 24);
-            unsafe
-            {
-                return *((float*)&tmp);
-            }
-        }
+        private float GetSingle(int offset) => BinaryPrimitives.ReadSingleLittleEndian(_data.AsSpan(offset));
 
-        private double GetDouble(int offset)
-        {
-            uint lo = (uint)(_data[offset + 0]
-                            | _data[offset + 1] << 8
-                            | _data[offset + 2] << 16
-                            | _data[offset + 3] << 24);
-            uint hi = (uint)(_data[offset + 4]
-                            | _data[offset + 5] << 8
-                            | _data[offset + 6] << 16
-                            | _data[offset + 7] << 24);
-            ulong tmp = ((ulong)hi) << 32 | lo;
-            unsafe
-            {
-                return *((double*)&tmp);
-            }
-        }
+        private double GetDouble(int offset) => BinaryPrimitives.ReadDoubleLittleEndian(_data.AsSpan(offset));
 
         private Exception ThrowUnexpectedToken(BinXmlToken token)
         {
