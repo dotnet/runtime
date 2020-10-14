@@ -29,19 +29,19 @@ namespace Microsoft.Extensions.DependencyModel
             // it is safe to skip escaping certain characters in this scenario
             // (that would otherwise be escaped, by default, as part of defense-in-depth, such as +).
             var options = new JsonWriterOptions { Indented = true, Encoder = JavaScriptEncoder.UnsafeRelaxedJsonEscaping };
-            var jsonWriter = new Utf8JsonWriter(stream, options);
-
-            jsonWriter.WriteStartObject();
-            WriteRuntimeTargetInfo(context, jsonWriter);
-            WriteCompilationOptions(context.CompilationOptions, jsonWriter);
-            WriteTargets(context, jsonWriter);
-            WriteLibraries(context, jsonWriter);
-            if (context.RuntimeGraph.Any())
+            using (var jsonWriter = new Utf8JsonWriter(stream, options))
             {
-                WriteRuntimeGraph(context, jsonWriter);
+                jsonWriter.WriteStartObject();
+                WriteRuntimeTargetInfo(context, jsonWriter);
+                WriteCompilationOptions(context.CompilationOptions, jsonWriter);
+                WriteTargets(context, jsonWriter);
+                WriteLibraries(context, jsonWriter);
+                if (context.RuntimeGraph.Any())
+                {
+                    WriteRuntimeGraph(context, jsonWriter);
+                }
+                jsonWriter.WriteEndObject();
             }
-            jsonWriter.WriteEndObject();
-            jsonWriter.Flush();
         }
 
         private void WriteRuntimeTargetInfo(DependencyContext context, Utf8JsonWriter jsonWriter)
