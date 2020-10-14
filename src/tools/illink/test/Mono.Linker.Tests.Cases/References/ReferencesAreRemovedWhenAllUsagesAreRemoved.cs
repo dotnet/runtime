@@ -11,6 +11,8 @@ namespace Mono.Linker.Tests.Cases.References
 	// Il8n & the blacklist step pollute the results with extra stuff that didn't need to be
 	// preserved for this test case so we need to disable them
 	[Il8n ("none")]
+	// Used to give consistent test behavior when linking against .NET Framework class libs
+	[SetupLinkerArgument ("--used-attrs-only", "true")]
 	[Reference ("System.dll")]
 	[RemovedAssembly ("System.dll")]
 	[KeptReference (PlatformAssemblies.CoreLib)]
