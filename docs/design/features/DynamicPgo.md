@@ -1,6 +1,6 @@
 # Dynamic PGO
 
-The following document outlines the overall approach to profile guided optimization (aka PGO) that I'd like to see us adopt in the jit.
+The following document outlines the overall approach to profile guided optimization (aka PGO) that I'd like to see us adopt in the JIT.
 
 It is based on past experience and familiarity with profile guided optimization in several different AOT compilation toolchains, namely
 * HP-UX Compilers (circa 1993-1997, known as PBO)
@@ -26,7 +26,7 @@ Observations are most often block counts, but can cover many different aspects o
 
 A number of important optimizations are really only practical when profile feedback is available. Key among these is aggressive inlining, but many other speculative, time-consuming, or size-expanding optimizations fall in this category.
 
-Profile feedback is especially crucial in jit-based environments, where compile time is at a premium. Indeed, one can argue that the performance of modern Java and Javascript implementations hinges crucially on effective leverage of profile feedback.
+Profile feedback is especially crucial in JIT-based environments, where compile time is at a premium. Indeed, one can argue that the performance of modern Java and Javascript implementations hinges crucially on effective leverage of profile feedback.
 
 Profile guided optimization benefits both JIT and AOT compilation. While this document focuses largely on the benefits to JIT compilation, but much of what follows is also applicable to AOT. The big distinction is ease of use -- in a jitted environment profile based optimization can be done automatically, and so can be offered as a platform feature without requiring any changes to applications.
 
@@ -64,7 +64,7 @@ Instrumentation describes techniques where some version of the code being measur
 
 #### The "Fixed Point"
 
-For a given class of instrumentation, there is typically one place in the jit -- the so-called fixed point -- where code is instrumented and/or profile data is read from an external source.
+For a given class of instrumentation, there is typically one place in the JIT -- the so-called fixed point -- where code is instrumented and/or profile data is read from an external source.
 
 If the profile data is being used to drive optimization, the fixed point must happen before the optimizations. Since the major beneficiary of profile feedback is the inliner and the inlining phase runs quite early, the nominal place for the fixed point is just before inlining.
 
@@ -128,11 +128,11 @@ Whenever code is duplicated like this there is an opportunity here to instead cr
 
 For dynamic PGO the probes need to write their data into some sort of storage pool that lives as long as the associated method.
 
-The current prototype (TieredPGO) has the runtime allocate a fixed-sized slab for profile data. As each method is instrumented during Tier0, a chunk of this slab is reserved for that method. The jit fills in key bits of keying and schema information, and bakes the addresses of the counter slots into the individual probes. As the instrumented method runs these slots accumulate the counts. If the slab fills up then subsequently jitted Tier0 methods simply aren't instrumented.
+The current prototype (TieredPGO) has the runtime allocate a fixed-sized slab for profile data. As each method is instrumented during Tier0, a chunk of this slab is reserved for that method. The JIT fills in key bits of keying and schema information, and bakes the addresses of the counter slots into the individual probes. As the instrumented method runs these slots accumulate the counts. If the slab fills up then subsequently jitted Tier0 methods simply aren't instrumented.
 
-When a Tier1 method is jitted, the jit asks the runtime to find the associated profile data; this currently uses the keying information to search the slab, and returns the reserved section. The jit then reads the values from the section.
+When a Tier1 method is jitted, the JIT asks the runtime to find the associated profile data; this currently uses the keying information to search the slab, and returns the reserved section. The JIT then reads the values from the section.
 
-Note the Tier0 method may still be running when the Tier1 rejit happens, so it's possible for the count data to be changing as the Tier1 rejit is reading it. This may cause issues for count consistency and may also make accurate SPMI replay tricky (SPMI will record possibly a different count snapshot than the jit sees).
+Note the Tier0 method may still be running when the Tier1 rejit happens, so it's possible for the count data to be changing as the Tier1 rejit is reading it. This may cause issues for count consistency and may also make accurate SPMI replay tricky (SPMI will record possibly a different count snapshot than the JIT sees).
 
 The implementation for TieredPGO was intentionally kept simple (in part to allow easy import and export) and a "production ready" implementation will likely do things differently:
 * allow one slab per method, or multiple slabs
@@ -144,7 +144,7 @@ The implementation for TieredPGO was intentionally kept simple (in part to allow
 
 If we want to externalize data for offline analysis or to feed into a subsequent run of the program, we also need to produce some keying data so that the per-method data can be matched up properly later on.
 
-This is surprisingly challenging in .NET as there's not a strong external notion of method identity from one run to the next. We currently rely on token, hash, and il size as keys. Note things like the multi-core jit must solve similar problems. We will leverage David Wrighton's [dotnet-pgo](https://github.com/dotnet/runtime/blob/master/src/coreclr/src/tools/dotnet-pgo/dotnet-pgo-experiment.md) work here.
+This is surprisingly challenging in .NET as there's not a strong external notion of method identity from one run to the next. We currently rely on token, hash, and il size as keys. Note things like the multi-core JIT must solve similar problems. We will leverage David Wrighton's [dotnet-pgo](https://github.com/dotnet/runtime/blob/master/src/coreclr/src/tools/dotnet-pgo/dotnet-pgo-experiment.md) work here.
 
 We may also wish to externalize flow graphs to allow offline analysis or to allow some kind of fuzzy matching of old profile data in a new version of the program (this is done by MSVC for example).
 
@@ -168,13 +168,13 @@ Profile synthesis is the term we use for fabricating profile data out of thin ai
 
 Indeed many program optimizations already leverage program structure to guide their decision making, e.g. boosting the importance of code within loops, or reducing the importance of code that leads to exceptions. Profile synthesis, in effect, simply recasts this idea of leverage in the guise of profile data, so that these sorts of importance estimations are made uniformly and consistently across the compiler.
 
-And once we've done this all jit optimizations can leverage profile data in a consistent and uniform manner, as profile data is always present, and always incorporates "the best information available."
+And once we've done this all JIT optimizations can leverage profile data in a consistent and uniform manner, as profile data is always present, and always incorporates "the best information available."
 
 The classic paper on profile synthesis is [Ball-Larus](#BL93), which presents a set of local or near-local heuristics to predict block successor probabilities. These can be turned into profile counts using an algorithm like [Wu-Larus](#WL94) or by simply solving the associated system of linear equations. Other researchers have extended this work in various dimensions but the basic principle remains: use aspects of the program structure, operations, and data to predict execution flow.
 
 Profile synthesis is interesting even if instrumented or sampled profile data is available.
 
-First, even in a jitted environment, the jit may be asked to generate code for methods that have not yet executed, or that have for various reasons bypassed the stage of the system that runs instrumented versions. Profile synthesis can step in and provide provisional profile data. 
+First, even in a jitted environment, the JIT may be asked to generate code for methods that have not yet executed, or that have for various reasons bypassed the stage of the system that runs instrumented versions. Profile synthesis can step in and provide provisional profile data. 
 
 Second, even if profile feedback is available, it may not be as representative as one might like. In particular parts of methods may not have been executed, or may have distorted profiles. Given the linearity of profile data, we can blend together the actual observations with a synthetic profile to produce a hybrid profile, so that our optimizations do not over-react to the actual profile (think of this as a kind of insurance policy: we want to make sure that if program behavior changes and we suddenly veer into un-profiled or thinly profiled areas, we don't fall off some kind of performance cliff). More on this below.
 
@@ -204,7 +204,7 @@ if (Unlikely(b))
     // this code is fairly cold
 }
 ```
-We can consider others, e.g. for indicating likely types. Note if the probability is not a jit-time constant the construct is ignored.
+We can consider others, e.g. for indicating likely types. Note if the probability is not a JIT-time constant the construct is ignored.
 
 GCC / LLVM have similar constructs.
 
@@ -240,21 +240,24 @@ Ideally we'd be smart enough when instrumenting to not create redundant histogra
 one probe would be sufficient to describe the possible types for `x`. But our current plans call for instrumenting at Tier0, and currently Tier0 has no dataflow analysis capabilities. We'll have to experiment to see whether or not we need to adjust our strategy here.
 
 ### Other Considerations
+
+#### Global Importance
 <a name="Global"></a>
+
 TieredPGO doesn't give us profile data for all methods. And what data it does give us may not be sufficient to really optimize effectively.
 
-Ideally the JIT would focus optimization efforts on the methods that use the most CPU, or are otherwise performance critical -- that is the methods that are globally most important. We get hints of this from the fact that a method gets promoted to Tier1, but it's not as direct or strong a signal as we'd like.
+Ideally the JIT would focus optimization efforts on the methods that use the most CPU, or are otherwise performance critical -- that is the methods that are globally most important. We get hints of this from the fact that a method gets promoted to Tier1, but it's not a direct or strong a signal.
 
 If we do not have a good measure of global importance then we don't know which methods we should optimize more aggressively, so we have to be a bit more conservative than we'd like.
 
-If we confidently could identify the top N% of methods (say 5%) then one could imagine optimizing those more aggressively than others, with a larger code size and jit time budget than normal.
+If we confidently could identify the top N% of methods (say 5%) then one could imagine optimizing those more aggressively than others, with a larger code size and JIT time budget than normal.
 
 #### Dynamic PGO and R2R
 
 R2R methods bypass Tier0 and so don't get instrumentation in the current TieredPGO prototype. We probably don't want to instrument the code in the R2R image. And many of these R2R methods are key framework methods that are important for performance. So we need to find a way to get data for these methods.
 
 There are a few basic ideas:
-* Leverage IBC. If there is IBC data in the R2R image then we can make that data available to the jit. It may not be as relevant as in-process collected data, but it's quite likely better than synthetic data or no data.
+* Leverage IBC. If there is IBC data in the R2R image then we can make that data available to the JIT. It may not be as relevant as in-process collected data, but it's quite likely better than synthetic data or no data.
 * Sampled instrumentation for R2R methods. Produce an instrumented version and run it every so often before the method gets promoted to Tier1. This may be costly, especially if we have to use unoptimized methods for instrumentation, as we'll do quite a bit of extra jitting.
 * Make R2R methods go through Tier0 on their way to Tier1. Likely introduces an unacceptable perf hit.
 
@@ -274,9 +277,9 @@ It's possible we may not get good quality data out of the current scheme where w
 
 ### Gathering Profile Data: Proposal for Initial Work
 
-For DynamicPGO, initially we'll rely on Tier0 for instrumentation, and use that to build up the capabilities of the jit. We'll do both block instrumentation and some form of type profiling for virtual and interface calls.
+For DynamicPGO, initially we'll rely on Tier0 for instrumentation, and use that to build up the capabilities of the JIT. We'll do both block instrumentation and some form of type profiling for virtual and interface calls.
 
-As the abilities of the jit mature we will likely come back to ensuring that all the important code ends up passing through a profile gathering stage, and that the profiling process is efficient.
+As the abilities of the JIT mature we will likely come back to ensuring that all the important code ends up passing through a profile gathering stage, and that the profiling process is efficient.
 
 ## Handling of Profile Data in the JIT
 <a name="RepMain"></a>
@@ -345,7 +348,7 @@ Normalized values greater than 1 are only possible in methods with loops.
 
 An alternative representation to having node and edge counts is to have node counts and outgoing edge probabilities (`eij`). This is a kind of fine-scale normalization where edge counts are now implicit: `Eij = Ni * eij`.
 
-The benefit of this representation is that these edge probabilities tend to be somewhat stable as we modify the flow graph in various jit phases.
+The benefit of this representation is that these edge probabilities tend to be somewhat stable as we modify the flow graph in various JIT phases.
 
 Also note there is redundancy here as `SUM(j){eij} == 1`, that is, the sum outgoing probabilities is 1 -- flow must leave this block somehow. Since most blocks have exactly 1 or 2 successors, we generally only need to record a single value for the probability.
 
@@ -402,11 +405,11 @@ As noted above there is some redundancy in a system that represents counts on bo
 
 If the primary representation for profile data is block counts and successor probabilities then local maintenance is simple and does not require much data.
 
-One challenge we'd face here is that the current jit flowgraph is predecessor oriented -- that is, from a node, one can easily enumerate the predecessor flow edges, but not so easily the successor edges. Updating it to be successor oriented may not be practical, and representing edge counts as block counts and predecessor probabilities is not semantically as meaningful.
+One challenge we'd face here is that the current JIT flowgraph is predecessor oriented -- that is, from a node, one can easily enumerate the predecessor flow edges, but not so easily the successor edges. Updating it to be successor oriented may not be practical, and representing edge counts as block counts and predecessor probabilities is not semantically as meaningful.
 
 ### Min and Max Edge Counts
 
-The current jit actually keeps two sets of counts for edges, min and max. The motivation for this is unclear but it immediately poses a dilemma for any consumer: which count to use? I do not see this as adding value and suggest we simply rely on a single value (which would be the node count * successor probability).
+The current JIT actually keeps two sets of counts for edges, min and max. The motivation for this is unclear but it immediately poses a dilemma for any consumer: which count to use? I do not see this as adding value and suggest we simply rely on a single value (which would be the node count * successor probability).
 
 ### Dynamic Range and Fractional Counts
 
@@ -489,7 +492,7 @@ Second, if we intend to assess or prioritize inlines based on profile feedback, 
 
 ### Handling Profile Data: Proposal for Initial Work
 
-The initial goal will be to ensure that the inliner and indirect call transformations see profile data. From there we'll broaden out to work on simplifying how data is represented in the jit and to ensuring that downstream phases see reasonable data, perhaps working on count reconstruction.
+The initial goal will be to ensure that the inliner and indirect call transformations see profile data. From there we'll broaden out to work on simplifying how data is represented in the JIT and to ensuring that downstream phases see reasonable data, perhaps working on count reconstruction.
 
 As we gain experience with Dynamic PGO we'll consider adding synthesis and hedging strategies to ensure that even unprofiled code gets reasonable performance.
 
@@ -500,7 +503,7 @@ Experience has shown that while profile data can improve many optimizations, the
 
 ### Guarded Devirtualization
 
-In [dotnet/coreclr#21270](https://github.com/dotnet/coreclr/pull/21270) we introduced the Guarded Devirtualization optimization, where the jit introduces an explicit class test upstream of a virtual or interface call, and then devirtualizes (and inlines) the call if the test succeeds.
+In [dotnet/coreclr#21270](https://github.com/dotnet/coreclr/pull/21270) we introduced the Guarded Devirtualization optimization, where the JIT introduces an explicit class test upstream of a virtual or interface call, and then devirtualizes (and inlines) the call if the test succeeds.
 
 This is not enabled by default; two key ingredients are missing:
 * what class to guess for
@@ -522,17 +525,17 @@ Block layout can have a significant impact on code execution time, and profile d
 
 It also provides a built-in scoring mechanism (figure of merit) for a given layout that allows us to implement hill climbing or other randomized optimization approaches.
 
-In Midori we developed an algorithm based on an approach proposed by [Young et al](#Y93) that models block layout as a variant of a travelling salesperson problem (TSP) and then uses well-known iterative technique (3-OPT) to search for a better layout. It proved quite effective and I propose that we port it over to the jit.
+In Midori we developed an algorithm based on an approach proposed by [Young et al](#Y93) that models block layout as a variant of a travelling salesperson problem (TSP) and then uses well-known iterative technique (3-OPT) to search for a better layout. It proved quite effective and I propose that we port it over to the JIT.
 
 One complication here is that it does not take code alignment demands into account; adding that in may be a challenge.
 
-Profile data also naturally leads to identification of hot and cold parts of methods. Performance gains can be had if the method is then split into two parts that are physically separated, aka hot/cold splitting. We already have jit and runtime support for this in places (though mainly for prejitted code), so we propose to extend this to also cover jitted code.
+Profile data also naturally leads to identification of hot and cold parts of methods. Performance gains can be had if the method is then split into two parts that are physically separated, aka hot/cold splitting. We already have JIT and runtime support for this in places (though mainly for prejitted code), so we propose to extend this to also cover jitted code.
 
 These gains mainly come because splitting allows the runtime to pack the hot parts of the application code into smaller numbers of cache lines and pages, reducing ICache and ITLB miss rates. For applications with large amounts of code these sorts of misses can often severely impact performance.
 
 ### Other Optimizations
 
-Many other current and possible future heuristic-driven optimizations in the jit can leverage profile data. We list some of them here:
+Many other current and possible future heuristic-driven optimizations in the JIT can leverage profile data. We list some of them here:
 * basic block cloning
 * loop rotation (for loop -> do while loop)
 * loop cloning
@@ -575,8 +578,8 @@ The key initial target for unlocking performance gains is the inliner. It would 
 1. Make DynamicPGO data available for inlinees (done)
 2. Implement profile count checker to look for inconsistencies (done)
 3. Fix significant profile maintenance issues
-4. Change profile data in jit to be floating point
-5. Change most of jit to only ever deal with normalized counts
+4. Change profile data in JIT to be floating point
+5. Change most of JIT to only ever deal with normalized counts
 6. Remove min/max edge count in favor of just one count
 7. Read profiled data for R2R methods (runtime dependence)
 8. Support user annotations
@@ -615,7 +618,7 @@ We likely need at least item 1 here to meet our aspirational goals.
 #### Group 4: Efficient Instrumentation
 
 1. Don't instrument methods with no control flow
-2. Have the jit produce compact instrumentation sequences
+2. Have the JIT produce compact instrumentation sequences
 3. Design and implement efficient probe for histogramming
 4. Implement spanning tree approach for flow counts
 5. Investigate feasibility of using float/double as counter type
@@ -644,7 +647,7 @@ Likewise we may find that we need to enable QuickJitForLoops, and that may entai
 
 We may find that after aggressively inlining that downstream phases require modifications and upgrades, so that we can't exhibit the full performance we hope to see.
 
-We may need some  better measure of [global importance](#Global) effectively manage code size growth and jit time. Many methods in a long running program will eventually jit at Tier1; not all of them are important.
+We may need some  better measure of [global importance](#Global) effectively manage code size growth and JIT time. Many methods in a long running program will eventually JIT at Tier1; not all of them are important.
 
 We may find that Tier0 instrumentation doesn't give us good quality profile data, because Tier0 methods run for unpredictable amounts of time.
 
@@ -666,13 +669,13 @@ We may find that Tier0 methods don't give us representative sample data, because
 
 NET's legacy approach to PGO is called IBC (Instrumented Block Counts). It is available for prejitted code only.
 
-A special instrumentation mode in crossgen/ngen instructs the jit add code to collect per-block counts and (for ngen) also instructs the runtime to track which ngen data structures are accessed at runtime, on a per-assembly basis. This information is externalized from the runtime and can be inspected and manipulated by IBCMerge. It is eventually packaged up and added back to the corresponding assembly, where it can be accessed by a subsequent "optimizing" run of crossgen/ngen. This run makes the per-block data available to the jit and (for ngen) uses the internal runtime counters to rearrange the runtime data structures so they can be accessed more efficiently. Prejitting can also use the data to determine which methods should be prejitted (so called partial ngen).
+A special instrumentation mode in crossgen/ngen instructs the JIT to add code to collect per-block counts and (for ngen) also instructs the runtime to track which ngen data structures are accessed at runtime, on a per-assembly basis. This information is externalized from the runtime and can be inspected and manipulated by IBCMerge. It is eventually packaged up and added back to the corresponding assembly, where it can be accessed by a subsequent "optimizing" run of crossgen/ngen. This run makes the per-block data available to the JIT and (for ngen) uses the internal runtime counters to rearrange the runtime data structures so they can be accessed more efficiently. Prejitting can also use the data to determine which methods should be prejitted (so called partial ngen).
 
-The jit (when prejitting) uses the IBC data much as we propose to use PGO data to optimize the generated code. It also splits methods into hot and cold portions. The runtime leverages IBC data to 
+The JIT (when prejitting) uses the IBC data much as we propose to use PGO data to optimize the generated code. It also splits methods into hot and cold portions. The runtime leverages IBC data to 
 
 The main aspiration of IBC is to improve startup, by ensuring that the important parts of prejitted code and data are compact and can be fetched efficiently from disk.
 
-IBC count data is not currently available to the jit as the IBC payload is not copied to the optimized assembly.
+IBC count data is not currently available to the JIT as the IBC payload is not copied to the optimized assembly.
 
 IBC is available in .NET Core, but is only usable by first-party assemblies; the IBCMerge tool is not available externally.
 
