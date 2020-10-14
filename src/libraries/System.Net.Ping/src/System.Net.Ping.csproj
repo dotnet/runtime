@@ -80,6 +80,8 @@
              Link="Common\Interop\Windows\WinSock\Interop.closesocket.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\WinSock\Interop.WSASocketW.cs"
              Link="Common\Interop\Windows\WinSock\Interop.WSASocketW.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\WinSock\Interop.WSAStartup.cs"
+             Link="Common\Interop\Windows\WinSock\Interop.WSAStartup.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\WinSock\Interop.SocketConstructorFlags.cs"
              Link="Common\Interop\Windows\WinSock\Interop.SocketConstructorFlags.cs" />
     <!-- System.Net.Internals -->

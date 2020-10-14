@@ -126,7 +126,7 @@ namespace MonoTests.System.Drawing.Imaging
             string sInFile = Helpers.GetTestBitmapPath("48x48_multiple_entries_4bit.ico");
             using (Bitmap bmp = new Bitmap(sInFile))
             {
-                // These values are inconsistent accross Windows & Unix: 0 on Windows, 16 on Unix
+                // These values are inconsistent across Windows & Unix: 0 on Windows, 16 on Unix
                 Assert.Equal(16, bmp.Palette.Entries.Length);
                 Assert.Equal(-16777216, bmp.Palette.Entries[0].ToArgb());
                 Assert.Equal(-16777216, bmp.Palette.Entries[1].ToArgb());
@@ -155,7 +155,7 @@ namespace MonoTests.System.Drawing.Imaging
             string sInFile = Helpers.GetTestBitmapPath("48x48_multiple_entries_4bit.ico");
             using (Bitmap bmp = new Bitmap(sInFile))
             {
-                // These values are inconsistent accross Windows & Unix: 0 on Windows, 16 on Unix
+                // These values are inconsistent across Windows & Unix: 0 on Windows, 16 on Unix
                 Assert.Equal(0, bmp.Palette.Entries.Length);
             }
         }
@@ -313,7 +313,7 @@ namespace MonoTests.System.Drawing.Imaging
             string sInFile = Helpers.GetTestBitmapPath("VisualPng.ico");
             using (Bitmap bmp = new Bitmap(sInFile))
             {
-                // These values areinconsistent accross Windows & Unix: 0 on Windows, 16 on Unix
+                // These values areinconsistent across Windows & Unix: 0 on Windows, 16 on Unix
                 Assert.Equal(16, bmp.Palette.Entries.Length);
 
                 Assert.Equal(-16777216, bmp.Palette.Entries[0].ToArgb());
@@ -342,7 +342,7 @@ namespace MonoTests.System.Drawing.Imaging
             string sInFile = Helpers.GetTestBitmapPath("VisualPng.ico");
             using (Bitmap bmp = new Bitmap(sInFile))
             {
-                // These values areinconsistent accross Windows & Unix: 0 on Windows, 16 on Unix
+                // These values areinconsistent across Windows & Unix: 0 on Windows, 16 on Unix
                 Assert.Equal(0, bmp.Palette.Entries.Length);
             }
         }
@@ -557,7 +557,7 @@ namespace MonoTests.System.Drawing.Imaging
             string sInFile = Helpers.GetTestBitmapPath("48x48_one_entry_1bit.ico");
             using (Bitmap bmp = new Bitmap(sInFile))
             {
-                // These values are inconsistent accross Windows & Unix: 0 on Windows, 16 on Unix
+                // These values are inconsistent across Windows & Unix: 0 on Windows, 16 on Unix
                 Assert.Equal(2, bmp.Palette.Entries.Length);
                 Assert.Equal(-16777216, bmp.Palette.Entries[0].ToArgb());
                 Assert.Equal(-1, bmp.Palette.Entries[1].ToArgb());
@@ -571,7 +571,7 @@ namespace MonoTests.System.Drawing.Imaging
             string sInFile = Helpers.GetTestBitmapPath("48x48_one_entry_1bit.ico");
             using (Bitmap bmp = new Bitmap(sInFile))
             {
-                // These values are inconsistent accross Windows & Unix: 0 on Windows, 16 on Unix
+                // These values are inconsistent across Windows & Unix: 0 on Windows, 16 on Unix
                 Assert.Equal(0, bmp.Palette.Entries.Length);
             }
         }
@@ -803,7 +803,7 @@ namespace MonoTests.System.Drawing.Imaging
             string sInFile = Helpers.GetTestBitmapPath("64x64_one_entry_8bit.ico");
             using (Bitmap bmp = new Bitmap(sInFile))
             {
-                // This value is inconsistent accross Windows & Unix: 0 on Windows, 256 on Unix
+                // This value is inconsistent across Windows & Unix: 0 on Windows, 256 on Unix
                 Assert.Equal(256, bmp.Palette.Entries.Length);
             }
         }
@@ -815,7 +815,7 @@ namespace MonoTests.System.Drawing.Imaging
             string sInFile = Helpers.GetTestBitmapPath("64x64_one_entry_8bit.ico");
             using (Bitmap bmp = new Bitmap(sInFile))
             {
-                // This value is inconsistent accross Windows & Unix: 0 on Windows, 256 on Unix
+                // This value is inconsistent across Windows & Unix: 0 on Windows, 256 on Unix
                 Assert.Equal(0, bmp.Palette.Entries.Length);
             }
         }
@@ -1083,7 +1083,7 @@ namespace MonoTests.System.Drawing.Imaging
             string sInFile = Helpers.GetTestBitmapPath("96x96_one_entry_8bit.ico");
             using (Bitmap bmp = new Bitmap(sInFile))
             {
-                // This value is inconsistent accross Unix and Windows.
+                // This value is inconsistent across Unix and Windows.
                 Assert.Equal(256, bmp.Palette.Entries.Length);
             }
         }
@@ -1095,7 +1095,7 @@ namespace MonoTests.System.Drawing.Imaging
             string sInFile = Helpers.GetTestBitmapPath("96x96_one_entry_8bit.ico");
             using (Bitmap bmp = new Bitmap(sInFile))
             {
-                // This value is inconsistent accross Unix and Windows.
+                // This value is inconsistent across Unix and Windows.
                 Assert.Equal(0, bmp.Palette.Entries.Length);
             }
         }

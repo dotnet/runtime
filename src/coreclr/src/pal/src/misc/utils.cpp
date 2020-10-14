@@ -332,6 +332,9 @@ Function:
 --*/
 BOOL IsRunningOnMojaveHardenedRuntime()
 {
+#if defined(TARGET_ARM64)
+    return true;
+#else //  defined(TARGET_ARM64)
     static volatile int isRunningOnMojaveHardenedRuntime = -1;
 
     if (isRunningOnMojaveHardenedRuntime == -1)
@@ -359,6 +362,7 @@ BOOL IsRunningOnMojaveHardenedRuntime()
     }
 
     return (BOOL)isRunningOnMojaveHardenedRuntime;
+#endif  // defined(TARGET_ARM64)
 }
 
 #endif // __APPLE__

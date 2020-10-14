@@ -468,7 +468,7 @@ BOOL DacDbiInterfaceImpl::IsLeftSideInitialized()
 }
 
 
-// Determines if a given adddress is a CLR stub.
+// Determines if a given address is a CLR stub.
 BOOL DacDbiInterfaceImpl::IsTransitionStub(CORDB_ADDRESS address)
 {
     DD_ENTER_MAY_THROW;

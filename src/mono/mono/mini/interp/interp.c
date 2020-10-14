@@ -407,6 +407,14 @@ interp_free_context (gpointer ctx)
 {
 	ThreadContext *context = (ThreadContext*)ctx;
 
+	ThreadContext *current_context = (ThreadContext *) mono_native_tls_get_value (thread_context_id);
+	/* at thread exit, we can be called from the JIT TLS key destructor with current_context == NULL */
+	if (current_context != NULL) {
+		/* check that the context we're freeing is the current one before overwriting TLS */
+		g_assert (context == current_context);
+		set_context (NULL);
+	}
+
 	mono_vfree (context->stack_start, INTERP_STACK_SIZE, MONO_MEM_ACCOUNT_INTERP_STACK);
 	/* Prevent interp_mark_stack from trying to scan the data_stack, before freeing it */
 	context->stack_start = NULL;

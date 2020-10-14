@@ -18,21 +18,6 @@ namespace System.IO.Compression
         protected override string CompressedTestFile(string uncompressedPath) => Path.Combine("GZipTestData", Path.GetFileName(uncompressedPath) + ".gz");
 
         [Fact]
-        public void Precancellation()
-        {
-            var ms = new MemoryStream();
-            using (Stream compressor = new GZipStream(ms, CompressionMode.Compress, leaveOpen: true))
-            {
-                Assert.True(compressor.WriteAsync(new byte[1], 0, 1, new CancellationToken(true)).IsCanceled);
-                Assert.True(compressor.FlushAsync(new CancellationToken(true)).IsCanceled);
-            }
-            using (Stream decompressor = CreateStream(ms, CompressionMode.Decompress, leaveOpen: true))
-            {
-                Assert.True(decompressor.ReadAsync(new byte[1], 0, 1, new CancellationToken(true)).IsCanceled);
-            }
-        }
-
-        [Fact]
         public void ConcatenatedGzipStreams()
         {
             using (MemoryStream concatStream = new MemoryStream())
@@ -63,7 +48,8 @@ namespace System.IO.Compression
         /// that bypasses buffering.
         /// </summary>
         private class DerivedMemoryStream : MemoryStream
-        { }
+        {
+        }
 
         [Fact]
         public async Task ConcatenatedEmptyGzipStreams()
@@ -292,52 +278,6 @@ namespace System.IO.Compression
             {
                 compressor.WriteAsync(new ReadOnlyMemory<byte>(new byte[1])).AsTask().Wait();
                 Assert.True(compressor.WriteArrayInvoked);
-            }
-        }
-
-        [Theory]
-        [InlineData(false, false)]
-        [InlineData(false, true)]
-        [InlineData(true, false)]
-        [InlineData(true, true)]
-        public async Task DisposeAsync_Flushes(bool derived, bool leaveOpen)
-        {
-            var ms = new MemoryStream();
-            var gs = derived ?
-                new DerivedGZipStream(ms, CompressionMode.Compress, leaveOpen) :
-                new GZipStream(ms, CompressionMode.Compress, leaveOpen);
-            gs.WriteByte(1);
-            await gs.FlushAsync();
-
-            long pos = ms.Position;
-            gs.WriteByte(1);
-            Assert.Equal(pos, ms.Position);
-
-            await gs.DisposeAsync();
-            Assert.InRange(ms.ToArray().Length, pos + 1, int.MaxValue);
-            if (leaveOpen)
-            {
-                Assert.InRange(ms.Position, pos + 1, int.MaxValue);
-            }
-            else
-            {
-                Assert.Throws<ObjectDisposedException>(() => ms.Position);
-            }
-        }
-
-        [Theory]
-        [InlineData(false, false)]
-        [InlineData(false, true)]
-        [InlineData(true, false)]
-        [InlineData(true, true)]
-        public async Task DisposeAsync_MultipleCallsAllowed(bool derived, bool leaveOpen)
-        {
-            using (var gs = derived ?
-                new DerivedGZipStream(new MemoryStream(), CompressionMode.Compress, leaveOpen) :
-                new GZipStream(new MemoryStream(), CompressionMode.Compress, leaveOpen))
-            {
-                await gs.DisposeAsync();
-                await gs.DisposeAsync();
             }
         }
 

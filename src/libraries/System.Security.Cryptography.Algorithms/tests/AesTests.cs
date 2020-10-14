@@ -15,6 +15,7 @@ namespace System.Security.Cryptography.Algorithms.Tests
             {
                 Assert.Equal(256, aes.KeySize);
                 Assert.Equal(128, aes.BlockSize);
+                Assert.Equal(8, aes.FeedbackSize);
                 Assert.Equal(CipherMode.CBC, aes.Mode);
                 Assert.Equal(PaddingMode.PKCS7, aes.Padding);
             }

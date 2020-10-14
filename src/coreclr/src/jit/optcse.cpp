@@ -2785,7 +2785,7 @@ public:
         if (varTypeIsStruct(cseLclVarTyp))
         {
             // Retrieve the struct handle that we recorded while bulding the list of CSE candidates.
-            // If all occurances were in GT_IND nodes it could still be NO_CLASS_HANDLE
+            // If all occurrences were in GT_IND nodes it could still be NO_CLASS_HANDLE
             //
             CORINFO_CLASS_HANDLE structHnd = successfulCandidate->CseDsc()->csdStructHnd;
             if (structHnd == NO_CLASS_HANDLE)

@@ -416,7 +416,7 @@ void InitCodeAllocHint(SIZE_T base, SIZE_T size, int randomPageOffset)
         pStart = (BYTE *)(base + size);
     }
 
-    // Randomize the adddress space
+    // Randomize the address space
     pStart += GetOsPageSize() * randomPageOffset;
 
     s_CodeAllocStart = pStart;
