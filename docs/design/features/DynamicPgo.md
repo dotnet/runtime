@@ -8,7 +8,7 @@ It is based on past experience and familiarity with profile guided optimization 
 * Midori's implementation of PGO in Bartok/Phoenix
 * LLVM's implementation of PGO (known as FDO)
 
-However, the approach described here differs materially from those efforts because the primary focus of this work is a jitted environment. As such, it presents unique challenges and compelling new opportunities. That being said,much of the work proposed below will also benefit AOT scenarios.
+However, the approach described here differs materially from those efforts because the primary focus of this work is a jitted environment. As such, it presents unique challenges and compelling new opportunities. That being said, much of the work proposed below will also benefit AOT scenarios.
 
 We are calling this effort "Dynamic PGO".
 
@@ -211,11 +211,11 @@ GCC / LLVM have similar constructs.
 If used in a control flow context, these would feed values into profile synthesis, or additional `{eij}` into blended/hedged profile modes, if we also have actual profile feedback.
 
 ### Contextual Profiling
-<a href="context"></a>
+<a name="context"></a>
 
 As noted above we sometimes may want to profile dependent aspects of program behavior. Assuming B and C call A, we could for instance keep separate counts for A called by B and A called by C. Since we expect callee behavior to be (to some extent) caller dependent, this potentially gives us a more precise picture.
 
-More simply, we may want to track context-dependent behavior of a block we know we are likely to duplicate based on flow. The common example here is the loop exit test for a `for loop` or `while loop`; frontend compilers will typically just include one such copy of this test block, but we commonly will duplicate the test block to create guarded `do-while` loops so we know loop bodies will execute at least one iteration (so we can do loop invariant code hosting, etc). The key here is that we have a "critical block" in the flow graph, one with two incoming and two outgoing edges. For critical blocks a custom instrumentation scheme can track the outgoing edge probability based on which incoming edge was taken.
+More simply, we may want to track context-dependent behavior of a block we know we are likely to duplicate based on flow. The common example here is the loop exit test for a `for loop` or `while loop`; frontend compilers will typically just include one such copy of this test block, but we commonly will duplicate the test block to create guarded `do-while` loops so we know loop bodies will execute at least one iteration (so we can do loop invariant code hoisting, etc). The key here is that we have a "critical block" in the flow graph, one with two incoming and two outgoing edges. For critical blocks a custom instrumentation scheme can track the outgoing edge probability based on which incoming edge was taken.
 
 Another example in this category is profiling to detect inherently unpredictable branches (to enable profitable use of `cmov` and similar instructions). A flat profile can identify potentially unpredictable branches; these are blocks with two successors where the successor probabilities are close to .50/.50. But that's not sufficient; the branch behavior may still be predictable by hardware. So a more sophisticated probing scheme is needed, one that keeps track of the recent history of the branch.
 
@@ -240,7 +240,7 @@ Ideally we'd be smart enough when instrumenting to not create redundant histogra
 one probe would be sufficient to describe the possible types for `x`. But our current plans call for instrumenting at Tier0, and currently Tier0 has no dataflow analysis capabilities. We'll have to experiment to see whether or not we need to adjust our strategy here.
 
 ### Other Considerations
-<a href="Global"></a>
+<a name="Global"></a>
 TieredPGO doesn't give us profile data for all methods. And what data it does give us may not be sufficient to really optimize effectively.
 
 Ideally the JIT would focus optimization efforts on the methods that use the most CPU, or are otherwise performance critical -- that is the methods that are globally most important. We get hints of this from the fact that a method gets promoted to Tier1, but it's not as direct or strong a signal as we'd like.
@@ -386,7 +386,7 @@ eij * Bi = I
 ```
 where `I` is the input count vector may not hold (note if we've normalized and the entry block is `Bk` then `I` is a vector with `Ik=1` and all other entries zero).
 
-To solve this we simply find an `B'i` such that the above holds -- this is a straightforward linear system solution. Then we and adjust the block counts as needed. Note we need to ensure that the solution `B'i` is strictly non-negative; it turns out that for a well-formed `eij` (exit probabilities between 0 and 1, and sum to 1 for each node) this is the case.
+To solve this we simply find an `B'i` such that the above holds -- this is a straightforward linear system solution. Then we adjust the block counts as needed. Note we need to ensure that the solution `B'i` is strictly non-negative; it turns out that for a well-formed `eij` (exit probabilities between 0 and 1, and sum to 1 for each node) this is the case.
 
 If we have a mixture of profiled and synthesized nodes the above works equally well as synthesis establishes the `{eij}` for the unprofiled nodes.
 
@@ -644,7 +644,7 @@ Likewise we may find that we need to enable QuickJitForLoops, and that may entai
 
 We may find that after aggressively inlining that downstream phases require modifications and upgrades, so that we can't exhibit the full performance we hope to see.
 
-We may need some  better measure of [global importance](#global) effectively manage code size growth and jit time. Many methods in a long running program will eventually jit at Tier1; not all of them are important.
+We may need some  better measure of [global importance](#Global) effectively manage code size growth and jit time. Many methods in a long running program will eventually jit at Tier1; not all of them are important.
 
 We may find that Tier0 instrumentation doesn't give us good quality profile data, because Tier0 methods run for unpredictable amounts of time.
 
