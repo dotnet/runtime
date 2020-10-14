@@ -3633,7 +3633,7 @@ bool Compiler::optIsCSEcandidate(GenTree* tree)
             {
                 return false;
             }
-            __fallthrough;
+            return true;
 
         case GT_EQ:
         case GT_NE:
