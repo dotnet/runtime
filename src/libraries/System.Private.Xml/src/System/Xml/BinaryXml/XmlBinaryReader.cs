@@ -3512,63 +3512,55 @@ namespace System.Xml
             return XmlNodeType.Text;
         }
 
-        private unsafe XmlNodeType CheckText(bool attr)
+        private XmlNodeType CheckText(bool attr)
         {
             Debug.Assert(_checkCharacters, "this.checkCharacters");
-            // assert that size is an even number
-            Debug.Assert(0 == ((_pos - _tokDataPos) & 1), "Data size should not be odd");
             // grab local copy (perf)
 
-            fixed (byte* pb = _data)
+            ReadOnlySpan<byte> data = _data.AsSpan(_tokDataPos, _end - _tokDataPos);
+            Debug.Assert(data.Length % 2 == 0, "Data size should not be odd");
+
+            if (!attr)
             {
-                int end = _pos;
-                int pos = _tokDataPos;
-
-                if (!attr)
-                {
-                    // scan if this is whitespace
-                    while (true)
-                    {
-                        int posNext = pos + 2;
-                        if (posNext > end)
-                            return _xmlspacePreserve ? XmlNodeType.SignificantWhitespace : XmlNodeType.Whitespace;
-                        if (pb[pos + 1] != 0 || !XmlCharType.IsWhiteSpace((char)pb[pos]))
-                            break;
-                        pos = posNext;
-                    }
-                }
-
+                // scan if this is whitespace
                 while (true)
                 {
-                    char ch;
-                    while (true)
-                    {
-                        int posNext = pos + 2;
-                        if (posNext > end)
-                            return XmlNodeType.Text;
-                        ch = (char)(pb[pos] | ((int)(pb[pos + 1]) << 8));
-                        if (!XmlCharType.IsCharData(ch))
-                            break;
-                        pos = posNext;
-                    }
+                    if (!BinaryPrimitives.TryReadUInt16LittleEndian(data, out ushort value))
+                        return _xmlspacePreserve ? XmlNodeType.SignificantWhitespace : XmlNodeType.Whitespace;
+                    if (value > byte.MaxValue || !XmlCharType.IsWhiteSpace((char)value))
+                        break;
+                    data = data.Slice(2); // we consumed one ANSI whitespace char
+                }
+            }
 
-                    if (!XmlCharType.IsHighSurrogate(ch))
+            while (true)
+            {
+                char ch;
+                while (true)
+                {
+                    if (!BinaryPrimitives.TryReadUInt16LittleEndian(data, out ushort value))
+                        return XmlNodeType.Text;
+                    data = data.Slice(2); // we consumed one char (possibly a high surrogate)
+                    ch = (char)value;
+                    if (!XmlCharType.IsCharData(ch))
+                        break;
+                }
+
+                if (!XmlCharType.IsHighSurrogate(ch))
+                {
+                    throw XmlConvert.CreateInvalidCharException(ch, '\0', ExceptionType.XmlException);
+                }
+                else
+                {
+                    if (!BinaryPrimitives.TryReadUInt16LittleEndian(data, out ushort lowSurr))
                     {
-                        throw XmlConvert.CreateInvalidCharException(ch, '\0', ExceptionType.XmlException);
+                        throw ThrowXmlException(SR.Xml_InvalidSurrogateMissingLowChar);
                     }
-                    else
+                    if (!XmlCharType.IsLowSurrogate((char)lowSurr))
                     {
-                        if ((pos + 4) > end)
-                        {
-                            throw ThrowXmlException(SR.Xml_InvalidSurrogateMissingLowChar);
-                        }
-                        char chNext = (char)(pb[pos + 2] | ((int)(pb[pos + 3]) << 8));
-                        if (!XmlCharType.IsLowSurrogate(chNext))
-                        {
-                            throw XmlConvert.CreateInvalidSurrogatePairException(ch, chNext);
-                        }
+                        throw XmlConvert.CreateInvalidSurrogatePairException(ch, (char)lowSurr);
                     }
-                    pos += 4;
+                    data = data.Slice(2); //consumed a low surrogate char
                 }
             }
         }
