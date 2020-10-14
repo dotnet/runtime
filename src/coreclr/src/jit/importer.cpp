@@ -1081,6 +1081,17 @@ bool Compiler::impCheckImplicitArgumentCoercion(var_types sigType, var_types nod
         {
             return true;
         }
+
+        // TODO-CleanUp: it covers IL like:
+        //   V02 loc1           struct <RTL_OSVERSIONINFOEX, 32>
+        //   ldloca.s     0x2
+        //   call(native int)
+        // It is not clear if we need a cast between byref, that ldloca.s returns and long that is
+        // expected by the call signature.
+        if (TypeIs(nodeType, TYP_BYREF))
+        {
+            return true;
+        }
     }
 
     return false;
