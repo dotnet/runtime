@@ -8,9 +8,14 @@
 #include <mutex>
 #include <pthread.h>
 #include <errno.h>
-#include "config.gc.h"
-#include "common.h"
 
+#ifdef HAVE_CORE_GC 
+#include "config.h"
+#else
+#include "config.gc.h"
+#endif
+
+#include "common.h"
 #include "gcenv.structs.h"
 #include "gcenv.base.h"
 #include "gcenv.os.h"
