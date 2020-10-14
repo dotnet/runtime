@@ -280,7 +280,7 @@ namespace $([System.String]::Copy($(Category)).Replace(".","_").Replace("\","").
 
                   System.IO.Directory.CreateDirectory(_Global.reportBase + testSubfolder)%3B
 
-                  ret = wrapper.RunTest(testExecutable, outputFile, errorFile, _Global.testBinaryBase, _Global.nameSpace)%3B
+                  ret = wrapper.RunTest(testExecutable, outputFile, errorFile, _Global.nameSpace)%3B
                 }
                 catch (Exception ex)
                 {
@@ -456,7 +456,6 @@ namespace $([System.String]::Copy($(Category)).Replace(".","_").Replace("\","").
   </Target>
 
   <Target Name="BuildAllAndroidApp" DependsOnTargets="GetListOfTestCmds;FindCmdDirectories">
-    <Message Importance="High" Text="!!!_CMDDIR: $(_CMDDIR)"/>
     <MSBuild Projects="$(MSBuildProjectFile)" Targets="BuildAndroidApp" Properties="_CMDDIR=%(TestDirectories.Identity)" />
   </Target>
 
