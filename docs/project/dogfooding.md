@@ -1,10 +1,8 @@
 # How to get up and running on .NET Core
 
-This document provides the steps necessary to consume a nightly build of
-.NET runtime and SDK.
+This document provides the steps necessary to consume a nightly build of .NET runtime and SDK.
 
-Please note that these steps are likely to change as we're simplifying
-this experience. Make sure to consult this document often.
+Please note that these steps are likely to change as we're simplifying this experience. Make sure to consult this document often.
 
 ## Obtaining nightly builds of NuGet packages
 
@@ -31,9 +29,9 @@ To use nightly builds of the entire runtime, follow the steps given in the rest 
 
 ## Install prerequisites
 
-1. Acquire the latest nightly .NET SDK by downloading the zip or tarball listed in https://github.com/dotnet/core-sdk#installers-and-binaries (for example, https://dotnetcli.blob.core.windows.net/dotnet/Sdk/master/dotnet-sdk-latest-win-x64.zip ) into a new folder, for instance `C:\dotnet`.
+1. Acquire the latest nightly .NET SDK by downloading and extracting a zip/tarball or using an installer from the [installers and binaries table in dotnet/installer](https://github.com/dotnet/installer#installers-and-binaries) (for example, https://aka.ms/dotnet/net6/dev/Sdk/dotnet-sdk-win-x64.zip).
 
-2. By default, the dotnet CLI will use the globally installed SDK if it matches the major/minor version you request and has a higher revision. To force it to use the locally installed SDK, you must set an environment variable `DOTNET_MULTILEVEL_LOOKUP=0` in your shell. You can use `dotnet --info` to verify what version of the Shared Framework it is using.
+2. By default, the dotnet CLI will use the globally installed SDK if it matches the major/minor version you request and has a higher revision. To force it to use a locally installed SDK, you must set an environment variable `DOTNET_MULTILEVEL_LOOKUP=0` in your shell. You can use `dotnet --info` to verify what version of the Shared Framework it is using.
 
 3. Reminder: if you are using a local copy of the dotnet CLI, take care that when you type `dotnet` you do not inadvertently pick up a different copy that you may have in your path. On Windows, for example, if you use a Command Prompt, a global copy may be in the path, so use the fully qualified path to your local `dotnet` (e.g. `C:\dotnet\dotnet.exe`). If you receive an error "error NETSDK1045:  The current .NET SDK does not support targeting .NET Core 5.0." then you may be executing an older `dotnet`.
 
@@ -110,8 +108,7 @@ this, there are two options you can take.
 This is the default case for applications - running against an installed .NET runtime.
 
 1. You still need to install the prerequisite .NET SDK from above.
-2. Optionally, install the specific .NET runtime you require:
-    - https://github.com/dotnet/core-sdk#installers-and-binaries
+2. Optionally, install the specific .NET runtime you require globally or download get the latest one available from the [nightly build table](#nightly-builds-table)
 3. Modify your .csproj to reference the nightly build of Microsoft.NETCore.App
 
 ```XML
@@ -190,15 +187,15 @@ $ bin\Debug\net5.0\win-x64\publish\App.exe
 
 ## More Advanced Scenario - Using your local CoreFx build
 
-If you built corefx locally with `build -allconfigurations` after building binaries it will build NuGet packages containing them. You can use those in your projects.
+If you built the libraries locally with `build libs` after building binaries it will build NuGet packages containing them. You can use those in your projects.
 
-To use your local built corefx packages you will need to be a self-contained application and so you will
+To use your locally built libraries packages you will need to be a self-contained application and so you will
 need to follow the "Self-contained" steps from above. Once you can successfully restore, build, publish,
 and run a self-contained application you need the following steps to consume your local built package.
 
 #### 1 - Get the Version number of the CoreFx package you built.
 
-Look for a package named `Microsoft.Private.CoreFx.NETCoreApp.<version>.nupkg` under `corefx\artifacts\packages\Debug` (or Release if you built a release version of corefx).
+Look for a package named `Microsoft.Private.CoreFx.NETCoreApp.<version>.nupkg` under `REPO_ROOT\artifacts\packages\Debug` (or Release if you built a release version of corefx).
 
 Once you find the version number (for this example assume it is `4.6.0-dev.18626.1`) you need to add the following line to your project file:
 
@@ -230,7 +227,7 @@ as a reference to our nightly dotnet-core blob feed. The Nuget.Config file conte
 ```xml
 <configuration>
   <packageSources>
-    <add key="local coreclr" value="D:\git\corefx\artifacts\packages\Debug" /> <!-- Change this to your own output path -->
+    <add key="local coreclr" value="D:\git\runtime\artifacts\packages\Debug" /> <!-- Change this to your own output path -->
     <add key="dotnetcore-feed" value="https://dotnetfeed.blob.core.windows.net/dotnet-core/index.json" />
   </packageSources>
 </configuration>
@@ -250,7 +247,7 @@ Once have made these modifications you will need to rerun the restore and publis
 dotnet restore
 dotnet publish
 ```
-Now your publication directory should contain your local built CoreFx binaries.
+Now your publication directory should contain your local built libraries binaries.
 
 #### 3 - Consuming subsequent code changes by overwriting the binary (Alternative 1)
 
