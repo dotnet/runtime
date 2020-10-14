@@ -1,7 +1,9 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Runtime.ExceptionServices;
 using System.Runtime.InteropServices;
+using System.Threading;
 using System.Threading.Tasks;
 using Internal.Runtime.CompilerServices;
 
@@ -168,6 +170,66 @@ namespace System.Runtime.CompilerServices
                 }
 
                 return m_task;
+            }
+        }
+
+        internal static void Execute(object stateMachineBox, ExecutionContext? context, ContextCallback callback)
+        {
+
+            // As we can't annotate to Jit which branch is unlikely to be taken
+            // this is arranged to prefer specific paths.
+            if (context is not null)
+            {
+                if (context.IsDefault)
+                {
+                    // 1st preference: Default context
+                    Thread currentThread = Thread.CurrentThread;
+                    ExecutionContext? currentContext = currentThread._executionContext;
+                    if (currentContext == null || currentContext.IsDefault)
+                    {
+                        // Preferred: On Default and to run on Default; however we need to undo any changes that happen in call.
+                        SynchronizationContext? previousSyncCtx = currentThread._synchronizationContext;
+                        ExceptionDispatchInfo? edi = null;
+                        try
+                        {
+                            // Run directly
+                            callback(stateMachineBox);
+                        }
+                        catch (Exception ex)
+                        {
+                            edi = ExceptionDispatchInfo.Capture(ex);
+                        }
+
+                        if (currentThread._executionContext == null)
+                        {
+                            if (currentThread._synchronizationContext != previousSyncCtx)
+                            {
+                                currentThread._synchronizationContext = previousSyncCtx;
+                            }
+
+                            edi?.Throw();
+                        }
+                        else
+                        {
+                            ExecutionContext.RestoreDefaultContextThrowIfNeeded(currentThread, previousSyncCtx, edi);
+                        }
+                    }
+                    else
+                    {
+                        // Not preferred: Current thread is not on Default
+                        ExecutionContext.RunOnDefaultContext(currentThread, currentContext, callback, stateMachineBox);
+                    }
+                }
+                else
+                {
+                    // 2nd preference: non-default context
+                    ExecutionContext.RunInternal(context, callback, stateMachineBox);
+                }
+            }
+            else
+            {
+                // 3rd preference: flow supressed context
+                callback(stateMachineBox);
             }
         }
     }

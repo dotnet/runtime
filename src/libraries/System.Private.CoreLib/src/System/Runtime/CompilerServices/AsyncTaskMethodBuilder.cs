@@ -2,6 +2,8 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics;
+using System.Runtime.ExceptionServices;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace System.Runtime.CompilerServices
@@ -128,6 +130,166 @@ namespace System.Runtime.CompilerServices
         /// </param>
         internal void SetNotificationForWaitCompletion(bool enabled) =>
             AsyncTaskMethodBuilder<VoidTaskResult>.SetNotificationForWaitCompletion(enabled, ref m_task);
+
+        internal static void ExecuteFromThreadPool(Thread threadPoolThread, Task asyncStateMachineBox, ExecutionContext? context, ContextCallback callback)
+        {
+            Debug.Assert(!asyncStateMachineBox.IsCompleted);
+            Debug.Assert(threadPoolThread == Thread.CurrentThread);
+
+            bool loggingOn = TplEventSource.Log.IsEnabled();
+            if (loggingOn)
+            {
+                // Jump forward for logging, so its not picked.
+                goto LogStart;
+            }
+
+        Start:
+            if (context is not null && !context.IsDefault)
+            {
+                ExecutionContext.RestoreNonDefaultContextToThreadPool(threadPoolThread, context);
+            }
+
+            callback(asyncStateMachineBox);
+            // ThreadPoolWorkQueue.Dispatch will handle notifications and reset EC and SyncCtx back to default
+
+            // Can't do much here to work with the branch predictor without excessive gotos.
+            if (asyncStateMachineBox.IsCompleted)
+            {
+                // If async debugging is enabled, remove the task from tracking.
+                if (System.Threading.Tasks.Task.s_asyncDebuggingEnabled)
+                {
+                    System.Threading.Tasks.Task.RemoveFromActiveTasks(asyncStateMachineBox);
+                }
+
+#if !CORERT
+                // In case this is a state machine box with a finalizer, suppress its finalization
+                // as it's now complete.  We only need the finalizer to run if the box is collected
+                // without having been completed.
+                if (AsyncMethodBuilderCore.TrackAsyncMethodCompletion)
+                {
+                    GC.SuppressFinalize(asyncStateMachineBox);
+                }
+#endif
+            }
+
+            if (!loggingOn)
+            {
+                // Logging off: Preferred.
+                return;
+            }
+
+            // Logging on: Not preferred.
+            TplEventSource.Log.TraceSynchronousWorkEnd(CausalitySynchronousWork.Execution);
+            return;
+
+        LogStart:
+            TplEventSource.Log.TraceSynchronousWorkBegin(asyncStateMachineBox.Id, CausalitySynchronousWork.Execution);
+            goto Start;
+        }
+
+        internal static void Execute(Task asyncStateMachineBox, ExecutionContext? context, ContextCallback callback)
+        {
+            Debug.Assert(!asyncStateMachineBox.IsCompleted);
+            // As we can't annotate to Jit which branch is unlikely to be taken
+            // this is arranged to prefer specific paths.
+            bool loggingOn = TplEventSource.Log.IsEnabled();
+            if (loggingOn)
+            {
+                // Jump forward for logging, so its not picked.
+                goto LogStart;
+            }
+
+        Start:
+            if (context is not null)
+            {
+                if (context.IsDefault)
+                {
+                    // 1st preference: Default context.
+                    Thread currentThread = Thread.CurrentThread;
+                    ExecutionContext? currentContext = currentThread._executionContext;
+                    if (currentContext is null || currentContext.IsDefault)
+                    {
+                        // Preferred: On Default and to run on Default; however we need to undo any changes that happen in call.
+                        SynchronizationContext? previousSyncCtx = currentThread._synchronizationContext;
+                        ExceptionDispatchInfo? edi = null;
+                        try
+                        {
+                            // Run directly
+                            callback(asyncStateMachineBox);
+                        }
+                        catch (Exception ex)
+                        {
+                            edi = ExceptionDispatchInfo.Capture(ex);
+                        }
+
+                        if (currentThread._executionContext is null)
+                        {
+                            if (currentThread._synchronizationContext != previousSyncCtx)
+                            {
+                                currentThread._synchronizationContext = previousSyncCtx;
+                            }
+
+                            edi?.Throw();
+                        }
+                        else
+                        {
+                            ExecutionContext.RestoreDefaultContextThrowIfNeeded(currentThread, previousSyncCtx, edi);
+                        }
+                    }
+                    else
+                    {
+                        // Not preferred: Current thread is not on Default.
+                        ExecutionContext.RunOnDefaultContext(currentThread, currentContext, callback, asyncStateMachineBox);
+                    }
+                }
+                else
+                {
+                    // 2nd preference: non-default context.
+                    ExecutionContext.RunInternal(context, callback, asyncStateMachineBox);
+                }
+            }
+            else
+            {
+                // 3rd preference: flow supressed context.
+                callback(asyncStateMachineBox);
+            }
+
+            // Can't do much here to work with the branch predictor without excessive gotos.
+            if (asyncStateMachineBox.IsCompleted)
+            {
+                // If async debugging is enabled, remove the task from tracking.
+                if (System.Threading.Tasks.Task.s_asyncDebuggingEnabled)
+                {
+                    System.Threading.Tasks.Task.RemoveFromActiveTasks(asyncStateMachineBox);
+                }
+
+#if !CORERT
+                // In case this is a state machine box with a finalizer, suppress its finalization
+                // as it's now complete.  We only need the finalizer to run if the box is collected
+                // without having been completed.
+                if (AsyncMethodBuilderCore.TrackAsyncMethodCompletion)
+                {
+                    GC.SuppressFinalize(asyncStateMachineBox);
+                }
+#endif
+            }
+
+            if (!loggingOn)
+            {
+                // Logging Off: Preferred.
+                return;
+            }
+
+            // Logging on: Not preferred.
+            TplEventSource.Log.TraceSynchronousWorkEnd(CausalitySynchronousWork.Execution);
+            return;
+
+        LogStart:
+            TplEventSource.Log.TraceSynchronousWorkBegin(asyncStateMachineBox.Id, CausalitySynchronousWork.Execution);
+            goto Start;
+
+        }
+
 
         /// <summary>
         /// Gets an object that may be used to uniquely identify this builder to the debugger.

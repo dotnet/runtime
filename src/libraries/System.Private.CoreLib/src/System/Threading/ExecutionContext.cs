@@ -242,7 +242,6 @@ namespace System.Threading
             }
         }
 
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal static void RestoreNonDefaultContextToThreadPool(Thread threadPoolThread, ExecutionContext executionContext)
         {
             Debug.Assert(threadPoolThread == Thread.CurrentThread);

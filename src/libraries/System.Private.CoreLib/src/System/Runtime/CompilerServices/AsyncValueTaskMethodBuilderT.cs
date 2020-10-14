@@ -476,64 +476,8 @@ namespace System.Runtime.CompilerServices
             /// <summary>Calls MoveNext on <see cref="StateMachine"/></summary>
             public void MoveNext()
             {
-                Debug.Assert(!(StateMachine is null));
-
-                ExecutionContext? context = Context;
-                // As we can't annotate to Jit which branch is unlikely to be taken
-                // this is arranged to prefer specific paths.
-                if (context != null)
-                {
-                    if (context.IsDefault)
-                    {
-                        // 1st preference: Default context
-                        Thread currentThread = Thread.CurrentThread;
-                        ExecutionContext? currentContext = currentThread._executionContext;
-                        if (currentContext == null || currentContext.IsDefault)
-                        {
-                            // Preferred: On Default and to run on Default; however we need to undo any changes that happen in call.
-                            SynchronizationContext? previousSyncCtx = currentThread._synchronizationContext;
-                            ExceptionDispatchInfo? edi = null;
-                            try
-                            {
-                                // Run directly
-                                StateMachine.MoveNext();
-                            }
-                            catch (Exception ex)
-                            {
-                                edi = ExceptionDispatchInfo.Capture(ex);
-                            }
-
-                            if (currentThread._executionContext == null)
-                            {
-                                if (currentThread._synchronizationContext != previousSyncCtx)
-                                {
-                                    currentThread._synchronizationContext = previousSyncCtx;
-                                }
-
-                                edi?.Throw();
-                            }
-                            else
-                            {
-                                ExecutionContext.RestoreDefaultContextThrowIfNeeded(currentThread, previousSyncCtx, edi);
-                            }
-                        }
-                        else
-                        {
-                            // Not preferred: Current thread is not on Default
-                            ExecutionContext.RunOnDefaultContext(currentThread, currentContext, s_callback, this);
-                        }
-                    }
-                    else
-                    {
-                        // 2nd preference: non-default context
-                        ExecutionContext.RunInternal(context, s_callback, this);
-                    }
-                }
-                else
-                {
-                    // 3rd preference: flow supressed context
-                    StateMachine.MoveNext();
-                }
+                Debug.Assert(StateMachine is not null);
+                AsyncValueTaskMethodBuilder.Execute(this, Context, s_callback);
             }
 
             /// <summary>Get the result of the operation.</summary>

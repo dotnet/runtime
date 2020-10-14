@@ -304,179 +304,29 @@ namespace System.Runtime.CompilerServices
             {
                 Debug.Assert(!IsCompleted);
                 Debug.Assert(threadPoolThread == Thread.CurrentThread);
-
-                bool loggingOn = TplEventSource.Log.IsEnabled();
-                if (loggingOn)
-                {
-                    // Jump forward for logging, so its not picked.
-                    goto LogStart;
-                }
-
-            Start:
                 Debug.Assert(StateMachine is not null);
 
-                ExecutionContext? context = Context;
-                if (context is not null && !context.IsDefault)
-                {
-                    ExecutionContext.RestoreNonDefaultContextToThreadPool(threadPoolThread, context);
-                }
+                AsyncTaskMethodBuilder.ExecuteFromThreadPool(threadPoolThread, this, Context, s_callback);
 
-                StateMachine.MoveNext();
-                // ThreadPoolWorkQueue.Dispatch will handle notifications and reset EC and SyncCtx back to default
-
-                // Can't do much here to work with the branch predictor without excessive gotos.
-                if (IsCompleted)
-                {
-                    // If async debugging is enabled, remove the task from tracking.
-                    if (System.Threading.Tasks.Task.s_asyncDebuggingEnabled)
-                    {
-                        System.Threading.Tasks.Task.RemoveFromActiveTasks(this);
-                    }
-
-                    // Clear out state now that the async method has completed.
-                    // This avoids keeping arbitrary state referenced by lifted locals
-                    // if this Task / state machine box is held onto.
-                    StateMachine = default;
-                    Context = default;
-
-#if !CORERT
-                    // In case this is a state machine box with a finalizer, suppress its finalization
-                    // as it's now complete.  We only need the finalizer to run if the box is collected
-                    // without having been completed.
-                    if (AsyncMethodBuilderCore.TrackAsyncMethodCompletion)
-                    {
-                        GC.SuppressFinalize(this);
-                    }
-#endif
-                }
-
-                if (!loggingOn)
-                {
-                    // Logging off: Preferred.
-                    return;
-                }
-
-                // Logging on: Not preferred.
-                TplEventSource.Log.TraceSynchronousWorkEnd(CausalitySynchronousWork.Execution);
-                return;
-
-            LogStart:
-                TplEventSource.Log.TraceSynchronousWorkBegin(this.Id, CausalitySynchronousWork.Execution);
-                goto Start;
+                // Clear out state now that the async method has completed.
+                // This avoids keeping arbitrary state referenced by lifted locals
+                // if this Task / state machine box is held onto.
+                StateMachine = default;
+                Context = default;
             }
 
             /// <summary>Calls MoveNext on <see cref="StateMachine"/></summary>
             public void MoveNext()
             {
                 Debug.Assert(!IsCompleted);
-                // As we can't annotate to Jit which branch is unlikely to be taken
-                // this is arranged to prefer specific paths.
-                bool loggingOn = TplEventSource.Log.IsEnabled();
-                if (loggingOn)
-                {
-                    // Jump forward for logging, so its not picked.
-                    goto LogStart;
-                }
-
-            Start:
                 Debug.Assert(StateMachine is not null);
+                AsyncTaskMethodBuilder.Execute(this, Context, s_callback);
 
-                ExecutionContext? context = Context;
-
-                if (context is not null)
-                {
-                    if (context.IsDefault)
-                    {
-                        // 1st preference: Default context.
-                        Thread currentThread = Thread.CurrentThread;
-                        ExecutionContext? currentContext = currentThread._executionContext;
-                        if (currentContext is null || currentContext.IsDefault)
-                        {
-                            // Preferred: On Default and to run on Default; however we need to undo any changes that happen in call.
-                            SynchronizationContext? previousSyncCtx = currentThread._synchronizationContext;
-                            ExceptionDispatchInfo? edi = null;
-                            try
-                            {
-                                // Run directly
-                                StateMachine.MoveNext();
-                            }
-                            catch (Exception ex)
-                            {
-                                edi = ExceptionDispatchInfo.Capture(ex);
-                            }
-
-                            if (currentThread._executionContext is null)
-                            {
-                                if (currentThread._synchronizationContext != previousSyncCtx)
-                                {
-                                    currentThread._synchronizationContext = previousSyncCtx;
-                                }
-
-                                edi?.Throw();
-                            }
-                            else
-                            {
-                                ExecutionContext.RestoreDefaultContextThrowIfNeeded(currentThread, previousSyncCtx, edi);
-                            }
-                        }
-                        else
-                        {
-                            // Not preferred: Current thread is not on Default.
-                            ExecutionContext.RunOnDefaultContext(currentThread, currentContext, s_callback, this);
-                        }
-                    }
-                    else
-                    {
-                        // 2nd preference: non-default context.
-                        ExecutionContext.RunInternal(context, s_callback, this);
-                    }
-                }
-                else
-                {
-                    // 3rd preference: flow supressed context.
-                    StateMachine.MoveNext();
-                }
-
-                // Can't do much here to work with the branch predictor without excessive gotos.
-                if (IsCompleted)
-                {
-                    // If async debugging is enabled, remove the task from tracking.
-                    if (System.Threading.Tasks.Task.s_asyncDebuggingEnabled)
-                    {
-                        System.Threading.Tasks.Task.RemoveFromActiveTasks(this);
-                    }
-
-                    // Clear out state now that the async method has completed.
-                    // This avoids keeping arbitrary state referenced by lifted locals
-                    // if this Task / state machine box is held onto.
-                    StateMachine = default;
-                    Context = default;
-
-#if !CORERT
-                    // In case this is a state machine box with a finalizer, suppress its finalization
-                    // as it's now complete.  We only need the finalizer to run if the box is collected
-                    // without having been completed.
-                    if (AsyncMethodBuilderCore.TrackAsyncMethodCompletion)
-                    {
-                        GC.SuppressFinalize(this);
-                    }
-#endif
-                }
-
-                if (!loggingOn)
-                {
-                    // Logging Off: Preferred.
-                    return;
-                }
-
-                // Logging on: Not preferred.
-                TplEventSource.Log.TraceSynchronousWorkEnd(CausalitySynchronousWork.Execution);
-                return;
-
-            LogStart:
-                TplEventSource.Log.TraceSynchronousWorkBegin(this.Id, CausalitySynchronousWork.Execution);
-                goto Start;
-
+                // Clear out state now that the async method has completed.
+                // This avoids keeping arbitrary state referenced by lifted locals
+                // if this Task / state machine box is held onto.
+                StateMachine = default;
+                Context = default;
             }
 
             /// <summary>Gets the state machine as a boxed object.  This should only be used for debugging purposes.</summary>
