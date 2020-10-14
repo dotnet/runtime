@@ -173,7 +173,9 @@ namespace Microsoft.DotNet.Build.Tasks
 
             AddLink("Runtime-Deps", "runtime-deps");
             AddLink("Host", "host");
+            AddLink("App Hosts", "apphost-pack");
             AddLink("Host FX Resolver", "hostfxr");
+            AddLink("Targeting Pack", "targeting-pack");
             AddLink("Shared Framework", "sharedfx");
 
             AddLink("zip", "zip");
