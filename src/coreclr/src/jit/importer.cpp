@@ -1081,14 +1081,6 @@ bool Compiler::impCheckImplicitArgumentCoercion(var_types sigType, var_types nod
         {
             return true;
         }
-
-        // Ecma says we should not pass byrefs as longs, but there are many examples
-        // where we do it.
-        // TODO: fix them in VM and delete this condition.
-        if (TypeIs(nodeType, TYP_BYREF))
-        {
-            return true;
-        }
     }
 
     return false;
