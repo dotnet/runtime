@@ -66,7 +66,7 @@ namespace System.Reflection.Emit
 
         // Return the Token for this property within the TypeBuilder that the
         // property is defined within.
-        public int PropertyToken => m_tkProperty;
+        internal int PropertyToken => m_tkProperty;
 
         public override Module Module => m_containingType.Module;
 

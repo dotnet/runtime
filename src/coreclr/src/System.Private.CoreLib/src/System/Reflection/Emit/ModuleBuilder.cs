@@ -1078,7 +1078,7 @@ namespace System.Reflection.Emit
             }
         }
 
-        public int GetTypeToken(Type type)
+        internal int GetTypeToken(Type type)
         {
             return GetTypeTokenInternal(type, getGenericDefinition: true);
         }
@@ -1161,7 +1161,7 @@ namespace System.Reflection.Emit
             return GetTypeRefNested(type, refedModule, referencedModuleFileName);
         }
 
-        public int GetTypeToken(string name)
+        internal int GetTypeToken(string name)
         {
             // Return a token for the class relative to the Module.
             // Module.GetType() verifies name
@@ -1172,15 +1172,7 @@ namespace System.Reflection.Emit
             return GetTypeToken(InternalModule.GetType(name, false, true)!);
         }
 
-        public int GetMethodToken(MethodInfo method)
-        {
-            lock (SyncRoot)
-            {
-                return GetMethodTokenNoLock(method, true);
-            }
-        }
-
-        internal int GetMethodTokenInternal(MethodInfo method)
+        internal int GetMethodToken(MethodInfo method)
         {
             lock (SyncRoot)
             {
@@ -1328,7 +1320,7 @@ namespace System.Reflection.Emit
                 }
                 else
                 {
-                    tk = GetMethodTokenInternal(methodInfoUnbound);
+                    tk = GetMethodToken(methodInfoUnbound);
                 }
 
                 // For Ldtoken, Ldftn, and Ldvirtftn, we should emit the method def/ref token for a generic method definition.
@@ -1351,7 +1343,7 @@ namespace System.Reflection.Emit
                 {
                     if (methodInfo != null)
                     {
-                        tk = GetMethodTokenInternal(methodInfo);
+                        tk = GetMethodToken(methodInfo);
                     }
                     else
                     {
@@ -1367,7 +1359,7 @@ namespace System.Reflection.Emit
             return tk;
         }
 
-        public int GetArrayMethodToken(Type arrayClass, string methodName, CallingConventions callingConvention,
+        internal int GetArrayMethodToken(Type arrayClass, string methodName, CallingConventions callingConvention,
             Type? returnType, Type[]? parameterTypes)
         {
             lock (SyncRoot)
@@ -1427,13 +1419,13 @@ namespace System.Reflection.Emit
             return new SymbolMethod(this, token, arrayClass, methodName, callingConvention, returnType, parameterTypes);
         }
 
-        public int GetConstructorToken(ConstructorInfo con)
+        internal int GetConstructorToken(ConstructorInfo con)
         {
             // Return a token for the ConstructorInfo relative to the Module.
             return InternalGetConstructorToken(con, false);
         }
 
-        public int GetFieldToken(FieldInfo field)
+        internal int GetFieldToken(FieldInfo field)
         {
             lock (SyncRoot)
             {
@@ -1519,7 +1511,7 @@ namespace System.Reflection.Emit
             return mr;
         }
 
-        public int GetStringConstant(string str)
+        internal int GetStringConstant(string str)
         {
             if (str == null)
             {
@@ -1532,7 +1524,7 @@ namespace System.Reflection.Emit
             return GetStringConstant(new QCallModule(ref thisModule), str, str.Length);
         }
 
-        public int GetSignatureToken(SignatureHelper sigHelper)
+        internal int GetSignatureToken(SignatureHelper sigHelper)
         {
             // Define signature token given a signature helper. This will define a metadata
             // token for the signature described by SignatureHelper.
@@ -1547,7 +1539,7 @@ namespace System.Reflection.Emit
             return TypeBuilder.GetTokenFromSig(new QCallModule(ref thisModule), sigBytes, sigLength);
         }
 
-        public int GetSignatureToken(byte[] sigBytes, int sigLength)
+        internal int GetSignatureToken(byte[] sigBytes, int sigLength)
         {
             if (sigBytes == null)
             {

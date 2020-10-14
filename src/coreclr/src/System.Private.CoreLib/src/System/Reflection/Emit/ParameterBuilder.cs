@@ -66,7 +66,7 @@ namespace System.Reflection.Emit
                         paramName);
         }
 
-        public virtual int GetToken()
+        internal int GetToken()
         {
             return _token;
         }

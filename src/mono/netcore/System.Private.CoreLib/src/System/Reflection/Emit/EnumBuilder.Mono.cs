@@ -168,7 +168,7 @@ namespace System.Reflection.Emit
             }
         }
 
-        public int TypeToken
+        internal int TypeToken
         {
             get
             {

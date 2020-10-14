@@ -1225,8 +1225,8 @@ namespace System.Reflection.Emit
                 // Loader restriction: body method has to be from this class
                 throw new ArgumentException(SR.ArgumentException_BadMethodImplBody);
 
-            int tkBody = m_module.GetMethodTokenInternal(methodInfoBody);
-            int tkDecl = m_module.GetMethodTokenInternal(methodInfoDeclaration);
+            int tkBody = m_module.GetMethodToken(methodInfoBody);
+            int tkDecl = m_module.GetMethodToken(methodInfoDeclaration);
 
             ModuleBuilder module = m_module;
             DefineMethodImpl(new QCallModule(ref module), m_tdType, tkBody, tkDecl);
@@ -2114,7 +2114,7 @@ namespace System.Reflection.Emit
             m_typeInterfaces!.Add(interfaceType);
         }
 
-        public int TypeToken
+        internal int TypeToken
         {
             get
             {

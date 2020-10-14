@@ -545,7 +545,7 @@ namespace System.Reflection.Emit
             return copy;
         }
 
-        public int GetMethodToken(MethodInfo method)
+        internal int GetMethodToken(MethodInfo method)
         {
             if (method == null)
                 throw new ArgumentNullException(nameof(method));
@@ -553,13 +553,13 @@ namespace System.Reflection.Emit
             return method.MetadataToken;
         }
 
-        public int GetArrayMethodToken(Type arrayClass, string methodName, CallingConventions callingConvention, Type? returnType, Type[]? parameterTypes)
+        internal int GetArrayMethodToken(Type arrayClass, string methodName, CallingConventions callingConvention, Type? returnType, Type[]? parameterTypes)
         {
             return GetMethodToken(GetArrayMethod(arrayClass, methodName, callingConvention, returnType, parameterTypes));
         }
 
         [ComVisible(true)]
-        public int GetConstructorToken(ConstructorInfo con)
+        internal int GetConstructorToken(ConstructorInfo con)
         {
             if (con == null)
                 throw new ArgumentNullException(nameof(con));
@@ -567,7 +567,7 @@ namespace System.Reflection.Emit
             return con.MetadataToken;
         }
 
-        public int GetFieldToken(FieldInfo field)
+        internal int GetFieldToken(FieldInfo field)
         {
             if (field == null)
                 throw new ArgumentNullException(nameof(field));
@@ -576,26 +576,26 @@ namespace System.Reflection.Emit
         }
 
         // FIXME:
-        public int GetSignatureToken(byte[] sigBytes, int sigLength)
+        internal int GetSignatureToken(byte[] sigBytes, int sigLength)
         {
             throw new NotImplementedException();
         }
 
-        public int GetSignatureToken(SignatureHelper sigHelper)
+        internal int GetSignatureToken(SignatureHelper sigHelper)
         {
             if (sigHelper == null)
                 throw new ArgumentNullException(nameof(sigHelper));
             return GetToken(sigHelper);
         }
 
-        public int GetStringConstant(string str)
+        internal int GetStringConstant(string str)
         {
             if (str == null)
                 throw new ArgumentNullException(nameof(str));
             return GetToken(str);
         }
 
-        public int GetTypeToken(Type type)
+        internal int GetTypeToken(Type type)
         {
             if (type == null)
                 throw new ArgumentNullException(nameof(type));
@@ -608,7 +608,7 @@ namespace System.Reflection.Emit
 
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
             Justification = "Reflection.Emit is not subject to trimming")]
-        public int GetTypeToken(string name)
+        internal int GetTypeToken(string name)
         {
             return GetTypeToken(GetType(name)!);
         }

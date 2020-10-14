@@ -41,7 +41,7 @@ namespace System.Reflection.Emit
 
         // Return the Token for this event within the TypeBuilder that the
         // event is defined within.
-        public int GetEventToken()
+        internal int GetEventToken()
         {
             return m_evToken;
         }
