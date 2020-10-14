@@ -361,8 +361,6 @@ void StgIO::Close()
         __fallthrough;
 
         case STGIO_MEM:
-        __fallthrough;
-
         case STGIO_HFILEMEM:
         if (m_bFreeMem && m_pBaseData)
         {
