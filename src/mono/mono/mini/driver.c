@@ -2162,7 +2162,8 @@ mono_main (int argc, char* argv[])
 	enable_debugging = TRUE;
 #endif
 
-	mono_options_parse_options ((const char**)argv, argc, &argc, error);
+	mono_options_parse_options ((const char**)argv + 1, argc - 1, &argc, error);
+	argc ++;
 	if (!is_ok (error)) {
 		g_printerr ("%s", mono_error_get_message (error));
 		mono_error_cleanup (error);
