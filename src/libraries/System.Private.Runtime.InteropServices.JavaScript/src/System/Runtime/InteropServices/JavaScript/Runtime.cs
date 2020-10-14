@@ -326,7 +326,7 @@ namespace System.Runtime.InteropServices.JavaScript
                         else
                         {
                             if (t.IsValueType)
-                                throw new NotSupportedException("ValueType arguments are not supported.");
+                                throw new NotSupportedException(SR.ValueTypeNotSupported);
                             res[c] = 'o';
                         }
                         break;

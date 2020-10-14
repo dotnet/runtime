@@ -3781,4 +3781,7 @@
   <data name="NotSupported_CodeBase" xml:space="preserve">
     <value>CodeBase is not supported on assemblies loaded from a single-file bundle.</value>
   </data>
+  <data name="Argv_IncludeDoubleQuote" xml:space="preserve">
+    <value>The argv[0] argument cannot include a double quote.</value>
+  </data>
 </root>

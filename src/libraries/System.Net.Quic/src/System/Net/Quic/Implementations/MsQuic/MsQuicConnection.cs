@@ -250,7 +250,7 @@ namespace System.Net.Quic.Implementations.MsQuic
             {
                 DnsEndPoint dnsEp => (dnsEp.Host, dnsEp.Port),
                 IPEndPoint ipEp => (ipEp.Address.ToString(), ipEp.Port),
-                _ => throw new Exception($"Unsupported remote endpoint type '{_remoteEndPoint.GetType()}'.")
+                _ => throw new Exception(SR.Format(SR.net_quic_unsupported_endpoint_type, _remoteEndPoint.GetType()))
             };
 
             // values taken from https://github.com/microsoft/msquic/blob/main/docs/api/ConnectionStart.md
@@ -259,7 +259,7 @@ namespace System.Net.Quic.Implementations.MsQuic
                 AddressFamily.Unspecified => 0,
                 AddressFamily.InterNetwork => 2,
                 AddressFamily.InterNetworkV6 => 23,
-                _ => throw new Exception($"Unsupported address family of '{_remoteEndPoint.AddressFamily}' for remote endpoint.")
+                _ => throw new Exception(SR.Format(SR.net_quic_unsupported_address_family, _remoteEndPoint.AddressFamily))
             };
 
             QuicExceptionHelpers.ThrowIfFailed(

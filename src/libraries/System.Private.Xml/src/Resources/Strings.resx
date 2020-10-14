@@ -3456,4 +3456,7 @@ Usage: dotnet {0} [--assembly &lt;assembly file path&gt;] [--type &lt;type name&
   <data name="CompilingScriptsNotSupported" xml:space="preserve">
     <value>Compiling JScript/CSharp scripts is not supported</value>
   </data>
+  <data name="XPath_UnexpectedTokens" xml:space="preserve">
+    <value>XPath failed to match an elements</value>
+  </data>
 </root>

@@ -25,7 +25,7 @@ namespace System.Net.Quic.Implementations.Mock
         {
             if (options.ListenEndPoint is null || options.ListenEndPoint.Address != IPAddress.Loopback || options.ListenEndPoint.Port != 0)
             {
-                throw new ArgumentException("Must pass loopback address and port 0");
+                throw new ArgumentException(SR.net_quic_noloopback);
             }
 
             _options = options;

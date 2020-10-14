@@ -120,4 +120,10 @@
   <data name="SystemRuntimeInteropServicesJavaScript_PlatformNotSupported" xml:space="preserve">
     <value>System.Private.Runtime.InteropServices.JavaScript is not supported on this platform.</value>
   </data>
+  <data name="TypedArrayNotCorrectType" xml:space="preserve">
+    <value>TypedArray is not of correct type.</value>
+  </data>
+  <data name="ValueTypeNotSupported" xml:space="preserve">
+    <value>ValueType arguments are not supported.</value>
+  </data>
 </root>

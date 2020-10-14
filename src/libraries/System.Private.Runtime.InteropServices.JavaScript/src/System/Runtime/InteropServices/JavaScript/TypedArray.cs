@@ -101,7 +101,7 @@ namespace System.Runtime.InteropServices.JavaScript
                 case Float64Array _:
                     return TypedArrayTypeCode.Float64Array;
                 default:
-                    throw new ArrayTypeMismatchException("TypedArray is not of correct type.");
+                    throw new ArrayTypeMismatchException(SR.TypedArrayNotCorrectType);
             }
         }
 

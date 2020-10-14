@@ -58,7 +58,7 @@ namespace System.Net.Quic.Implementations.MsQuic.Internal
                         socketAddress.Ipv6._family = IPv6;
                         break;
                     default:
-                        throw new ArgumentException("Only IPv4 or IPv6 are supported");
+                        throw new ArgumentException(SR.net_quic_addressfamily_notsupported);
                 }
             }
 

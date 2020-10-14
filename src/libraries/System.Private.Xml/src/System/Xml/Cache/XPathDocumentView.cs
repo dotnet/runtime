@@ -533,7 +533,7 @@ namespace System.Xml.XPath.DataBinding
                 }
             }
             if (0 == rows.Count) {
-                throw new NotImplementedException("XPath failed to match an elements");
+                throw new NotImplementedException(SR.XPath_FailedMatchElements);
             }
             if (null == schemaInfo) {
                 rows.Clear();
