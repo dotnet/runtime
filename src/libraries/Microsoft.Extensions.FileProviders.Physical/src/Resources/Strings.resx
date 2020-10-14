@@ -120,6 +120,9 @@
   <data name="CannotCreateStream" xml:space="preserve">
     <value>Cannot create a stream for a directory.</value>
   </data>
+  <data name="CannotModifyWhenFileWatcherInitialized" xml:space="preserve">
+    <value>Cannot modify {0} once file watcher has been initialized.</value>
+  </data>
   <data name="UnexpectedFileSystemInfo" xml:space="preserve">
     <value>Unexpected type of FileSystemInfo</value>
   </data>

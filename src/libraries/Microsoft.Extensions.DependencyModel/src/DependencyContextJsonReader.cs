@@ -598,7 +598,7 @@ namespace Microsoft.Extensions.DependencyModel
 
             if (libraryStubs == null || !libraryStubs.TryGetValue(nameWithVersion, out LibraryStub stub))
             {
-                throw new InvalidOperationException($"Cannot find library information for {nameWithVersion}");
+                throw new InvalidOperationException(SR.Format(SR.LibraryInformationNotFound, nameWithVersion));
             }
 
             int separatorPosition = nameWithVersion.IndexOf(DependencyContextStrings.VersionSeparator);

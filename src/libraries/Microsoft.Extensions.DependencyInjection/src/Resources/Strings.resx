@@ -168,4 +168,7 @@
   <data name="ServiceDescriptorNotExist" xml:space="preserve">
     <value>Requested service descriptor doesn't exist.</value>
   </data>
+  <data name="CallSiteTypeNotSupported" xml:space="preserve">
+    <value>Call site type {0} is not supported</value>
+  </data>
 </root>

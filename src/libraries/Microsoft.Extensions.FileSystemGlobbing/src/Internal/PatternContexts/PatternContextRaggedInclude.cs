@@ -18,7 +18,7 @@ namespace Microsoft.Extensions.FileSystemGlobbing.Internal.PatternContexts
         {
             if (IsStackEmpty())
             {
-                throw new InvalidOperationException(SR.CantDeclarePathSegment);
+                throw new InvalidOperationException(SR.CannotDeclarePathSegment);
             }
 
             if (Frame.IsNotApplicable)
@@ -40,7 +40,7 @@ namespace Microsoft.Extensions.FileSystemGlobbing.Internal.PatternContexts
         {
             if (IsStackEmpty())
             {
-                throw new InvalidOperationException(SR.CantTestDirectory);
+                throw new InvalidOperationException(SR.CannotTestDirectory);
             }
 
             if (Frame.IsNotApplicable)

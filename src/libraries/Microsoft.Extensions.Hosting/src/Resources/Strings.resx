@@ -123,6 +123,9 @@
   <data name="CreateBuilderCallBeforeCreateServiceProvider" xml:space="preserve">
     <value>CreateBuilder must be called before CreateServiceProvider</value>
   </data>
+  <data name="NullIServiceProvider" xml:space="preserve">
+    <value>The IServiceProviderFactory returned a null IServiceProvider</value>
+  </data>
   <data name="ResolverReturnedNull" xml:space="preserve">
     <value>The resolver returned a null IServiceProviderFactory</value>
   </data>

@@ -19,7 +19,7 @@ namespace Microsoft.Extensions.FileSystemGlobbing.Internal.PatternContexts
         {
             if (IsStackEmpty())
             {
-                throw new InvalidOperationException(SR.CantTestFile);
+                throw new InvalidOperationException(SR.CannotTestFile);
             }
 
             if (!Frame.IsNotApplicable && IsLastSegment() && TestMatchingSegment(file.Name))

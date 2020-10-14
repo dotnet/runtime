@@ -56,7 +56,7 @@ namespace System.Runtime.InteropServices.JavaScript
             {
                 if (!_rawToJS.Remove(obj, out jsobj))
                 {
-                    throw new JSException($"Error releasing object {obj}");
+                    throw new JSException(SR.Format(SR.ErrorReleasingObject, obj));
                 }
             }
         }
@@ -92,7 +92,7 @@ namespace System.Runtime.InteropServices.JavaScript
                 {
                     var instance = existingObj.Target as JSObject;
                     if (instance?.Int32Handle != (int)(IntPtr)h && h.IsAllocated)
-                        throw new JSException($"Multiple handles pointing at jsId: {jsId}");
+                        throw new JSException(SR.Format(SR.MultipleHandlesPointingJsId, jsId));
 
                     obj = instance;
                 }
@@ -387,7 +387,7 @@ namespace System.Runtime.InteropServices.JavaScript
             if (dtv == null)
                 throw new ArgumentNullException(nameof(dtv));
             if (!(dtv is DateTime dt))
-                throw new InvalidCastException($"Unable to cast object of type {dtv.GetType()} to type DateTime.");
+                throw new InvalidCastException(SR.Format(SR.UnableCastObjectToDateTime, dtv.GetType()));
             if (dt.Kind == DateTimeKind.Local)
                 dt = dt.ToUniversalTime();
             else if (dt.Kind == DateTimeKind.Unspecified)

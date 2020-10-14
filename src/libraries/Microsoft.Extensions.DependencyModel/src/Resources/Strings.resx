@@ -120,11 +120,20 @@
   <data name="CannotAdvancePastEndOfBuffer" xml:space="preserve">
     <value>Cannot advance past the end of the buffer.</value>
   </data>
+  <data name="LibraryInformationNotFound" xml:space="preserve">
+    <value>Cannot find library information for {0}</value>
+  </data>
+  <data name="LibraryLocationNotFound" xml:space="preserve">
+    <value>Cannot find compilation library location for package '{0}'</value>
+  </data>
   <data name="NoRuntimeTarget" xml:space="preserve">
     <value>No runtime target found</value>
   </data>
   <data name="NoTargetsSection" xml:space="preserve">
     <value>Dependency file does not have 'targets' section</value>
+  </data>
+  <data name="ReferenceAssemblyNotFound" xml:space="preserve">
+    <value>Cannot find reference assembly '{0}' file for package {1}</value>
   </data>
   <data name="TargetNotFound" xml:space="preserve">
     <value>Target with name {0} not found</value>

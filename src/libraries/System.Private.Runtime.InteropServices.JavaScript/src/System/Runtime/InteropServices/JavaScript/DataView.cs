@@ -223,7 +223,7 @@ namespace System.Runtime.InteropServices.JavaScript
         {
             if (jsValue == null)
             {
-                throw new InvalidCastException($"Unable to cast null to type {typeof(U)}.");
+                throw new InvalidCastException(SR.Format(SR.UnableCastNullToType, typeof(U)));
             }
 
             var type = jsValue.GetType();
@@ -233,7 +233,7 @@ namespace System.Runtime.InteropServices.JavaScript
             }
             else
             {
-                throw new InvalidCastException($"Unable to cast object of type {type} to type {typeof(U)}.");
+                throw new InvalidCastException(SR.Format(SR.UnableCastObjectToType, type, typeof(U)));
             }
         }
 

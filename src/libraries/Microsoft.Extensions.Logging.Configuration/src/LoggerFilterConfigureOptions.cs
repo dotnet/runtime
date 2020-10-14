@@ -82,7 +82,7 @@ namespace Microsoft.Extensions.Logging
             }
             else
             {
-                throw new InvalidOperationException($"Configuration value '{value}' is not supported.");
+                throw new InvalidOperationException(SR.Format(SR.ValueNotSupported, value));
             }
         }
     }

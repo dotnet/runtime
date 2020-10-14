@@ -1,7 +1,7 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <root>
-  <!-- 
-    Microsoft ResX Schema 
+  <!--
+    Microsoft ResX Schema
 
     Version 2.0
 
@@ -45,7 +45,7 @@
     read any of the formats listed below.
 
     mimetype: application/x-microsoft.net.object.binary.base64
-    value   : The object must be serialized with 
+    value   : The object must be serialized with
             : System.Runtime.Serialization.Formatters.Binary.BinaryFormatter
             : and then encoded with base64 encoding.
 
@@ -117,16 +117,7 @@
   <resheader name="writer">
     <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </resheader>
-  <data name="CannotDeclarePathSegment" xml:space="preserve">
-    <value>Can't declare path segment before entering a directory.</value>
-  </data>
-  <data name="CannotTestDirectory" xml:space="preserve">
-    <value>Can't test directory before entering a directory.</value>
-  </data>
-  <data name="CannotTestFile" xml:space="preserve">
-    <value>Can't test file before entering a directory.</value>
-  </data>
-  <data name="UnexpectedStringComparisonType" xml:space="preserve">
-    <value>Unexpected StringComparison type: {0}</value>
+  <data name="ValueNotSupported" xml:space="preserve">
+    <value>Configuration value '{0}' is not supported.</value>
   </data>
 </root>

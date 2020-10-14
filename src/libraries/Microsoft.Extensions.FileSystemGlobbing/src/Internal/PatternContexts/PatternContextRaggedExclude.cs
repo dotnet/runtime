@@ -17,7 +17,7 @@ namespace Microsoft.Extensions.FileSystemGlobbing.Internal.PatternContexts
         {
             if (IsStackEmpty())
             {
-                throw new InvalidOperationException(SR.CantTestDirectory);
+                throw new InvalidOperationException(SR.CannotTestDirectory);
             }
 
             if (Frame.IsNotApplicable)

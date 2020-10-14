@@ -55,7 +55,7 @@ namespace Microsoft.Extensions.FileProviders
         /// <returns>Does not return</returns>
         public Stream CreateReadStream()
         {
-            throw new FileNotFoundException($"The file {Name} does not exist.");
+            throw new FileNotFoundException(SR.Format(SR.FileNotExists, Name));
         }
     }
 }

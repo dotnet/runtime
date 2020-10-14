@@ -75,7 +75,7 @@ namespace System.Net.Quic.Implementations.Mock
                     return new IPEndPoint(IPAddress.Loopback, dnsEndPoint.Port);
                 }
 
-                throw new InvalidOperationException($"invalid DNS name {dnsEndPoint.Host}");
+                throw new InvalidOperationException(SR.Format(SR.net_quic_invalid_dns, dnsEndPoint.Host));
             }
 
             throw new InvalidOperationException(SR.net_quic_unknown_endpoint_type);
