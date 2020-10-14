@@ -43,7 +43,8 @@
       <DataCollector friendlyName="blame" enabled="True">
         <Configuration>
           <CollectDump DumpType="Full" />
-          <CollectDumpOnTestSessionHang TestTimeout="15min" HangDumpType="Full" />
+          <!-- Re-enabled locally when https://github.com/microsoft/vstest/issues/2595 is fixed.
+          <CollectDumpOnTestSessionHang TestTimeout="30min" HangDumpType="Full" /> -->
         </Configuration>
       </DataCollector>
     </DataCollectors>

@@ -1,5 +1,6 @@
 parameters:
   buildConfig: ''
+  archType: ''
   testLibrary: ''
   testRunner: ''
   condition: always()
@@ -10,6 +11,7 @@ steps:
     - script: dotnet test
               $(Build.SourcesDirectory)/src/libraries/${{ parameters.testLibrary }}/
               -c ${{ parameters.buildConfig }}
+              /p:TargetArchitecture=${{ parameters.archType }}
               /p:TestRunner=${{ parameters.testRunner }}
               /bl:$(Build.SourcesDirectory)/artifacts/log/$(_BuildConfig)/innerloop-steps-test.binlog
       displayName: Build and test leaf solution
