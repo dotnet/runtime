@@ -378,8 +378,10 @@ HRESULT Assembler::CreateExportDirectory()
     char*                   szOutputFileName = new char[Ldllname];
     memset(szOutputFileName,0,wcslen(m_wzOutputFileName)*3+3);
     WszWideCharToMultiByte(CP_ACP,0,m_wzOutputFileName,-1,szOutputFileName,Ldllname,NULL,NULL);
-    pszDllName = strrchr(szOutputFileName,'\\');
+    pszDllName = strrchr(szOutputFileName,DIRECTORY_SEPARATOR_CHAR_A);
+#ifdef TARGET_WINDOWS
     if(pszDllName == NULL) pszDllName = strrchr(szOutputFileName,':');
+#endif
     if(pszDllName == NULL) pszDllName = szOutputFileName;
     Ldllname = (unsigned)strlen(pszDllName)+1;
 
@@ -1146,8 +1148,10 @@ HRESULT Assembler::CreatePEFile(__in __nullterminated WCHAR *pwzOutputFilename)
     else
     {
         WCHAR* pwc;
-        if ((pwc = wcsrchr(m_wzOutputFileName, '\\')) != NULL) pwc++;
+        if ((pwc = wcsrchr(m_wzOutputFileName, DIRECTORY_SEPARATOR_CHAR_A)) != NULL) pwc++;
+#ifdef TARGET_WINDOWS
         else if ((pwc = wcsrchr(m_wzOutputFileName, ':')) != NULL) pwc++;
+#endif
         else pwc = m_wzOutputFileName;
 
         wcsncpy_s(wzScopeName, MAX_SCOPE_LENGTH, pwc, _TRUNCATE);

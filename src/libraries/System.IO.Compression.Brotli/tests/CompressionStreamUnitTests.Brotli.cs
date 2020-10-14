@@ -24,42 +24,6 @@ namespace System.IO.Compression
         protected override string CompressedTestFile(string uncompressedPath) => Path.Combine("BrotliTestData", Path.GetFileName(uncompressedPath) + ".br");
 
         [Fact]
-        public void Precancellation()
-        {
-            var ms = new MemoryStream();
-            using (Stream compressor = new BrotliStream(ms, CompressionMode.Compress, leaveOpen: true))
-            {
-                Assert.True(compressor.WriteAsync(new byte[1], 0, 1, new CancellationToken(true)).IsCanceled);
-                Assert.True(compressor.FlushAsync(new CancellationToken(true)).IsCanceled);
-            }
-            using (Stream decompressor = CreateStream(ms, CompressionMode.Decompress, leaveOpen: true))
-            {
-                Assert.True(decompressor.ReadAsync(new byte[1], 0, 1, new CancellationToken(true)).IsCanceled);
-            }
-        }
-
-        [Theory]
-        [InlineData(false)]
-        [InlineData(true)]
-        public async Task DisposeAsync_Flushes(bool leaveOpen)
-        {
-            var ms = new MemoryStream();
-            var bs = new BrotliStream(ms, CompressionMode.Compress, leaveOpen);
-            bs.WriteByte(1);
-            Assert.Equal(0, ms.Position);
-            await bs.DisposeAsync();
-            Assert.InRange(ms.ToArray().Length, 1, int.MaxValue);
-            if (leaveOpen)
-            {
-                Assert.InRange(ms.Position, 1, int.MaxValue);
-            }
-            else
-            {
-                Assert.Throws<ObjectDisposedException>(() => ms.Position);
-            }
-        }
-
-        [Fact]
         [OuterLoop("Test takes ~6 seconds to run")]
         public override void FlushAsync_DuringWriteAsync() { base.FlushAsync_DuringWriteAsync(); }
 

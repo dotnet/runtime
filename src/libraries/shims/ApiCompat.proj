@@ -5,9 +5,9 @@
     <TargetFramework Condition="'$(TargetFramework)' == ''">$(NetCoreAppCurrent)</TargetFramework>
     <!-- Set to true to build this project -->
     <BaselineApiCompat Condition="'$(BaselineApiCompat)' == ''">false</BaselineApiCompat>
-    <PreviousNetCoreApp>netcoreapp3.1</PreviousNetCoreApp>
+    <PreviousNetCoreApp>net5.0</PreviousNetCoreApp>
     <PreviousNetCoreAppPackageId>microsoft.netcore.app.ref</PreviousNetCoreAppPackageId>
-    <PreviousNetCoreAppPackageVersion>3.1.0</PreviousNetCoreAppPackageVersion>
+    <PreviousNetCoreAppPackageVersion>5.0.0-rc.1.20451.14</PreviousNetCoreAppPackageVersion>
   </PropertyGroup>
 
   <ItemGroup>
@@ -111,7 +111,7 @@
       <_previousNetCoreAppBaselineParam Condition="'$(UpdatePreviousNetCoreAppBaseline)' == 'true'">&gt; &quot;$(_previousNetCoreAppBaselineFile)&quot;</_previousNetCoreAppBaselineParam>
     </PropertyGroup>
  
-    <Error Condition="'$(NetCoreAppCurrent)' != 'net5.0'" Text="Update value of PreviousNetCoreApp" />
+    <Error Condition="'$(NetCoreAppCurrent)' != 'net6.0'" Text="Update value of PreviousNetCoreApp" />
     <Error Condition="!Exists($(PreviousNetCoreAppRefPath))" Text="Missing reference assemblies for '$(PreviousNetCoreApp)'" />
     <Exec Command="$(_ApiCompatCommand) &quot;$(PreviousNetCoreAppRefPath.TrimEnd('\/'))&quot;  @&quot;$(ApiCompatResponseFile)&quot; $(_previousNetCoreAppBaselineParam)"
           CustomErrorRegularExpression="^[a-zA-Z]+ :"

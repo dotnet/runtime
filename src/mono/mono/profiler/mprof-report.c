@@ -2430,7 +2430,7 @@ decode_buffer (ProfContext *ctx)
 					add_image (ptr_base + ptrdiff, (char*)p);
 				while (*p) p++;
 				p++;
-				if (ctx->data_version >= 16) {
+				if (ctx->data_version >= 16 && subtype == TYPE_END_LOAD) {
 					while (*p) p++; // mvid
 					p++;
 				}

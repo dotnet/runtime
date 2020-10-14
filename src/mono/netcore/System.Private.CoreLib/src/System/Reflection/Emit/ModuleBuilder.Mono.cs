@@ -372,7 +372,7 @@ namespace System.Reflection.Emit
             return GetType(className, false, ignoreCase);
         }
 
-        private TypeBuilder? search_in_array(TypeBuilder[] arr, int validElementsInArray, ITypeName className)
+        private static TypeBuilder? search_in_array(TypeBuilder[] arr, int validElementsInArray, ITypeName className)
         {
             int i;
             for (i = 0; i < validElementsInArray; ++i)
@@ -385,7 +385,7 @@ namespace System.Reflection.Emit
             return null;
         }
 
-        private TypeBuilder? search_nested_in_array(TypeBuilder[] arr, int validElementsInArray, ITypeName className)
+        private static TypeBuilder? search_nested_in_array(TypeBuilder[] arr, int validElementsInArray, ITypeName className)
         {
             int i;
             for (i = 0; i < validElementsInArray; ++i)
@@ -396,7 +396,7 @@ namespace System.Reflection.Emit
             return null;
         }
 
-        private TypeBuilder? GetMaybeNested(TypeBuilder t, IEnumerable<ITypeName> nested)
+        private static TypeBuilder? GetMaybeNested(TypeBuilder t, IEnumerable<ITypeName> nested)
         {
             TypeBuilder? result = t;
 

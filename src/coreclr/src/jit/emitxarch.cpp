@@ -8238,10 +8238,14 @@ void emitter::emitDispIns(
     // printf("[A=%08X] " , emitSimpleByrefStkMask);
     // printf("[L=%02u] " , id->idCodeSize());
 
-    if (!emitComp->opts.dspEmit && !isNew && !asmfm)
+    if (!isNew && !asmfm)
     {
         doffs = true;
     }
+
+    /* Display the instruction address */
+
+    emitDispInsAddr(code);
 
     /* Display the instruction offset */
 
@@ -13680,7 +13684,7 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
     assert(*dp != dst || emitInstHasNoCode(ins));
 
 #ifdef DEBUG
-    if (emitComp->opts.disAsm || emitComp->opts.dspEmit || emitComp->verbose)
+    if (emitComp->opts.disAsm || emitComp->verbose)
     {
         emitDispIns(id, false, dspOffs, true, emitCurCodeOffs(*dp), *dp, (dst - *dp));
     }
@@ -13985,6 +13989,7 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
 
     switch (ins)
     {
+        case INS_align:
         case INS_nop:
         case INS_int3:
             assert(memFmt == IF_NONE);

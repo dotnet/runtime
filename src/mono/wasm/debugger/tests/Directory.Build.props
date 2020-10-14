@@ -1,0 +1,14 @@
+<Project>
+  <Import Project="$(MSBuildThisFileDirectory)..\..\..\Directory.Build.props" />
+  <PropertyGroup>
+    <TargetFramework>$(AspNetCoreAppCurrent)</TargetFramework>
+    <TargetArchitecture>wasm</TargetArchitecture>
+    <TargetOS>Browser</TargetOS>
+    <OutputType>Library</OutputType>
+    <Configuration>Debug</Configuration>
+    <RuntimeBuildConfig Condition="'$(RuntimeBuildConfig)' == ''">$(Configuration)</RuntimeBuildConfig>
+
+    <AppDir>$(ArtifactsBinDir)debugger-test\$(Configuration)\publish</AppDir>
+    <OutDir>$(ArtifactsBinDir)debugger-test\$(Configuration)\wasm</OutDir>
+  </PropertyGroup>
+</Project>

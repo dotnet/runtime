@@ -179,7 +179,7 @@ namespace System.IO
                             _readLineSB.Length = len - 1;
                             if (!previouslyProcessed)
                             {
-                                // The ReadLine input may wrap accross terminal rows and we need to handle that.
+                                // The ReadLine input may wrap across terminal rows and we need to handle that.
                                 // note: ConsolePal will cache the cursor position to avoid making many slow cursor position fetch operations.
                                 if (ConsolePal.TryGetCursorPosition(out int left, out int top, reinitializeForRead: true) &&
                                     left == 0 && top > 0)

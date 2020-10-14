@@ -45,7 +45,7 @@
 
 LOCAL_LABEL(\__PInvokeStubFuncName\()_0):
 
-        EPILOG_BRANCH       \__PInvokeGenStubFuncName
+        EPILOG_BRANCH       C_FUNC(\__PInvokeGenStubFuncName)
 
         NESTED_END \__PInvokeStubFuncName, _TEXT
 
@@ -69,7 +69,7 @@ LOCAL_LABEL(\__PInvokeStubFuncName\()_0):
         // save VASigCookieReg
         mov                 x20, \VASigCookieReg
 
-        bl                  \__PInvokeStubWorkerName
+        bl                  C_FUNC(\__PInvokeStubWorkerName)
 
         // restore VASigCookieReg
         mov                 \VASigCookieReg, x20
@@ -80,7 +80,7 @@ LOCAL_LABEL(\__PInvokeStubFuncName\()_0):
 
         EPILOG_WITH_TRANSITION_BLOCK_TAILCALL
 
-        EPILOG_BRANCH       \__PInvokeStubFuncName
+        EPILOG_BRANCH       C_FUNC(\__PInvokeStubFuncName)
 
         NESTED_END \__PInvokeGenStubFuncName, _TEXT
 .endm

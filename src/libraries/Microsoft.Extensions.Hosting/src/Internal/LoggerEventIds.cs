@@ -15,5 +15,6 @@ namespace Microsoft.Extensions.Hosting.Internal
         public static readonly EventId ApplicationStartupException = new EventId(6, "ApplicationStartupException");
         public static readonly EventId ApplicationStoppingException = new EventId(7, "ApplicationStoppingException");
         public static readonly EventId ApplicationStoppedException = new EventId(8, "ApplicationStoppedException");
+        public static readonly EventId BackgroundServiceFaulted = new EventId(9, "BackgroundServiceFaulted");
     }
 }

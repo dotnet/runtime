@@ -401,7 +401,7 @@ void Compiler::lvaInitArgs(InitVarDscInfo* varDscInfo)
        but it will be very difficult for fully interruptible code */
 
     if (compArgSize != (size_t)(unsigned short)compArgSize)
-        NO_WAY("Too many arguments for the \"ret\" instruction to pop");
+        IMPL_LIMITATION("Too many arguments for the \"ret\" instruction to pop");
 #endif
 }
 
@@ -1027,7 +1027,7 @@ void Compiler::lvaInitUserArgs(InitVarDscInfo* varDscInfo)
 #else  // !UNIX_AMD64_ABI
         compArgSize += argSize;
 #endif // !UNIX_AMD64_ABI
-        if (info.compIsVarArgs || (isHfaArg && varDsc->lvHfaSlots() != 1) || isSoftFPPreSpill)
+        if (info.compIsVarArgs || isSoftFPPreSpill)
         {
 #if defined(TARGET_X86)
             varDsc->SetStackOffset(compArgSize);
@@ -1832,17 +1832,6 @@ bool Compiler::StructPromotionHelper::CanPromoteStructVar(unsigned lclNum)
         return false;
     }
 
-    // Explicitly check for HFA reg args and reject them for promotion here.
-    // Promoting HFA args will fire an assert in lvaAssignFrameOffsets
-    // when the HFA reg arg is struct promoted.
-    //
-    // TODO-PERF - Allow struct promotion for HFA register arguments
-    if (varDsc->lvIsHfaRegArg())
-    {
-        JITDUMP("  struct promotion of V%02u is disabled because lvIsHfaRegArg()\n", lclNum);
-        return false;
-    }
-
     if (!compiler->lvaEnregMultiRegVars && varDsc->lvIsMultiRegArgOrRet())
     {
         JITDUMP("  struct promotion of V%02u is disabled because lvIsMultiRegArgOrRet()\n", lclNum);
@@ -1862,17 +1851,54 @@ bool Compiler::StructPromotionHelper::CanPromoteStructVar(unsigned lclNum)
     bool canPromote = CanPromoteStructType(typeHnd);
     if (canPromote && varDsc->lvIsMultiRegArgOrRet())
     {
-        if (structPromotionInfo.fieldCnt > MAX_MULTIREG_COUNT)
+        unsigned fieldCnt = structPromotionInfo.fieldCnt;
+        if (fieldCnt > MAX_MULTIREG_COUNT)
         {
             canPromote = false;
         }
-#ifdef UNIX_AMD64_ABI
+#if defined(FEATURE_SIMD) && defined(TARGET_ARMARCH)
+        else if (fieldCnt > 1)
+        {
+            // If we have a register-passed struct with mixed non-opaque SIMD types (i.e. with defined fields)
+            // and non-SIMD types, we don't currently handle that case in the prolog, so we can't promote.
+            for (unsigned i = 0; canPromote && (i < fieldCnt); i++)
+            {
+                if (varTypeIsStruct(structPromotionInfo.fields[i].fldType) &&
+                    !compiler->isOpaqueSIMDType(structPromotionInfo.fields[i].fldTypeHnd))
+                {
+                    canPromote = false;
+                }
+            }
+        }
+#elif defined(UNIX_AMD64_ABI)
         else
         {
             SortStructFields();
-            if ((structPromotionInfo.fieldCnt == 2) && (structPromotionInfo.fields[1].fldOffset != TARGET_POINTER_SIZE))
+            // Only promote if the field types match the registers.
+            SYSTEMV_AMD64_CORINFO_STRUCT_REG_PASSING_DESCRIPTOR structDesc;
+            compiler->eeGetSystemVAmd64PassStructInRegisterDescriptor(typeHnd, &structDesc);
+            unsigned regCount = structDesc.eightByteCount;
+            if (structPromotionInfo.fieldCnt != regCount)
             {
                 canPromote = false;
+            }
+            else
+            {
+                for (unsigned i = 0; canPromote && (i < regCount); i++)
+                {
+                    lvaStructFieldInfo* fieldInfo = &(structPromotionInfo.fields[i]);
+                    var_types           fieldType = fieldInfo->fldType;
+                    // We don't currently support passing SIMD types in registers.
+                    if (varTypeIsSIMD(fieldType))
+                    {
+                        canPromote = false;
+                    }
+                    else if (varTypeUsesFloatReg(fieldType) !=
+                             (structDesc.eightByteClassifications[i] == SystemVClassificationTypeSSE))
+                    {
+                        canPromote = false;
+                    }
+                }
             }
         }
 #endif // UNIX_AMD64_ABI
@@ -1948,7 +1974,7 @@ bool Compiler::StructPromotionHelper::ShouldPromoteStructVar(unsigned lclNum)
         shouldPromote = false;
     }
 #endif // TARGET_AMD64 || TARGET_ARM64 || TARGET_ARM
-    else if (varDsc->lvIsParam && !compiler->lvaIsImplicitByRefLocal(lclNum))
+    else if (varDsc->lvIsParam && !compiler->lvaIsImplicitByRefLocal(lclNum) && !varDsc->lvIsHfa())
     {
 #if FEATURE_MULTIREG_STRUCT_PROMOTE
         // Is this a variable holding a value with exactly two fields passed in
@@ -2250,25 +2276,49 @@ void Compiler::StructPromotionHelper::PromoteStructVar(unsigned lclNum)
         // Reset the implicitByRef flag.
         fieldVarDsc->lvIsImplicitByRef = 0;
 
+#endif
+
+#if defined(TARGET_AMD64) || defined(TARGET_ARM64) || defined(TARGET_ARM)
+
         // Do we have a parameter that can be enregistered?
         //
         if (varDsc->lvIsRegArg)
         {
             fieldVarDsc->lvIsRegArg = true;
-            fieldVarDsc->SetArgReg(varDsc->GetArgReg());
-#if FEATURE_MULTIREG_ARGS && defined(FEATURE_SIMD)
-            if (varTypeIsSIMD(fieldVarDsc) && !compiler->lvaIsImplicitByRefLocal(lclNum))
+            regNumber parentArgReg  = varDsc->GetArgReg();
+#if FEATURE_MULTIREG_ARGS
+            if (!compiler->lvaIsImplicitByRefLocal(lclNum))
             {
-                // This field is a SIMD type, and will be considered to be passed in multiple registers
-                // if the parent struct was. Note that this code relies on the fact that if there is
-                // a SIMD field of an enregisterable struct, it is the only field.
-                // We will assert that, in case future changes are made to the ABI.
-                assert(varDsc->lvFieldCnt == 1);
-                fieldVarDsc->SetOtherArgReg(varDsc->GetOtherArgReg());
+#ifdef UNIX_AMD64_ABI
+                if (varTypeIsSIMD(fieldVarDsc) && (varDsc->lvFieldCnt == 1))
+                {
+                    // This SIMD typed field may be passed in multiple registers.
+                    fieldVarDsc->SetArgReg(parentArgReg);
+                    fieldVarDsc->SetOtherArgReg(varDsc->GetOtherArgReg());
+                }
+                else
+#endif // UNIX_AMD64_ABI
+                {
+                    // TODO: Need to determine if/how to handle split args.
+                    // TODO: Assert that regs are always sequential.
+                    unsigned regIncrement = fieldVarDsc->lvFldOrdinal;
+#ifdef TARGET_ARM
+                    if (varDsc->lvIsHfa() && (varDsc->GetHfaType() == TYP_DOUBLE))
+                    {
+                        regIncrement = (fieldVarDsc->lvFldOrdinal * 2);
+                    }
+#endif // TARGET_ARM
+                    regNumber fieldRegNum = (regNumber)(parentArgReg + regIncrement);
+                    fieldVarDsc->SetArgReg(fieldRegNum);
+                }
             }
+            else
 #endif // FEATURE_MULTIREG_ARGS && defined(FEATURE_SIMD)
+            {
+                fieldVarDsc->SetArgReg(parentArgReg);
+            }
         }
-#endif
+#endif // defined(TARGET_AMD64) || defined(TARGET_ARM64) || defined(TARGET_ARM)
 
 #ifdef FEATURE_SIMD
         if (varTypeIsSIMD(pFieldInfo->fldType))
@@ -5142,10 +5192,11 @@ bool Compiler::lvaIsPreSpilled(unsigned lclNum, regMaskTP preSpillMask)
 #endif // TARGET_ARM
 
 //------------------------------------------------------------------------
-// UpdateLifeFieldVar: Update live sets for only the given field of a multi-reg LclVar node.
+// lvaUpdateArgWithInitialReg: Set the initial register of a local variable
+//                             to the one assigned by the register allocator.
 //
 // Arguments:
-//    lclNode - the GT_LCL_VAR node.
+//    varDsc - the local variable descriptor
 //
 void Compiler::lvaUpdateArgWithInitialReg(LclVarDsc* varDsc)
 {
@@ -5174,15 +5225,14 @@ void Compiler::lvaUpdateArgsWithInitialReg()
 
         if (varDsc->lvPromotedStruct())
         {
-            noway_assert(varDsc->lvFieldCnt == 1); // We only handle one field here
-
-            unsigned fieldVarNum = varDsc->lvFieldLclStart;
-            varDsc               = lvaTable + fieldVarNum;
+            for (unsigned fieldVarNum = varDsc->lvFieldLclStart;
+                 fieldVarNum < varDsc->lvFieldLclStart + varDsc->lvFieldCnt; ++fieldVarNum)
+            {
+                LclVarDsc* fieldVarDsc = lvaGetDesc(fieldVarNum);
+                lvaUpdateArgWithInitialReg(fieldVarDsc);
+            }
         }
-
-        noway_assert(varDsc->lvIsParam);
-
-        if (varDsc->lvIsRegCandidate())
+        else
         {
             lvaUpdateArgWithInitialReg(varDsc);
         }
@@ -5463,12 +5513,6 @@ int Compiler::lvaAssignVirtualFrameOffsetToArg(unsigned lclNum,
             fieldVarDsc->SetStackOffset(offset);
             offset += fieldVarDsc->lvFldOffset;
         }
-    }
-    // For an independent promoted struct field we also assign the parent struct stack offset
-    else if (varDsc->lvIsStructField)
-    {
-        noway_assert(varDsc->lvParentLcl < lvaCount);
-        lvaTable[varDsc->lvParentLcl].SetStackOffset(varDsc->GetStackOffset());
     }
 
     if (Target::g_tgtArgOrder == Target::ARG_ORDER_R2L && !varDsc->lvIsRegArg)
@@ -6403,23 +6447,24 @@ void Compiler::lvaAssignVirtualFrameOffsetsToLocals()
 
             // Reserve the stack space for this variable
             stkOffs = lvaAllocLocalAndSetVirtualOffset(lclNum, lvaLclSize(lclNum), stkOffs);
-#ifdef TARGET_ARM64
+#ifdef TARGET_ARMARCH
             // If we have an incoming register argument that has a struct promoted field
             // then we need to copy the lvStkOff (the stack home) from the reg arg to the field lclvar
             //
             if (varDsc->lvIsRegArg && varDsc->lvPromotedStruct())
             {
-                noway_assert(varDsc->lvFieldCnt == 1); // We only handle one field here
-
-                unsigned fieldVarNum = varDsc->lvFieldLclStart;
-                lvaTable[fieldVarNum].SetStackOffset(varDsc->GetStackOffset());
+                unsigned firstFieldNum = varDsc->lvFieldLclStart;
+                for (unsigned i = 0; i < varDsc->lvFieldCnt; i++)
+                {
+                    LclVarDsc* fieldVarDsc = lvaGetDesc(firstFieldNum + i);
+                    fieldVarDsc->SetStackOffset(varDsc->GetStackOffset() + fieldVarDsc->lvFldOffset);
+                }
             }
-#endif // TARGET_ARM64
 #ifdef TARGET_ARM
             // If we have an incoming register argument that has a promoted long
             // then we need to copy the lvStkOff (the stack home) from the reg arg to the field lclvar
             //
-            if (varDsc->lvIsRegArg && varDsc->lvPromoted)
+            else if (varDsc->lvIsRegArg && varDsc->lvPromoted)
             {
                 assert(varTypeIsLong(varDsc) && (varDsc->lvFieldCnt == 2));
 
@@ -6428,6 +6473,7 @@ void Compiler::lvaAssignVirtualFrameOffsetsToLocals()
                 lvaTable[fieldVarNum + 1].SetStackOffset(varDsc->GetStackOffset() + 4);
             }
 #endif // TARGET_ARM
+#endif // TARGET_ARM64
         }
     }
 

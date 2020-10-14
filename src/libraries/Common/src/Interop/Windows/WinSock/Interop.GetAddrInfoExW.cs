@@ -15,8 +15,6 @@ internal static partial class Interop
 
         internal const int NS_ALL = 0;
 
-        internal unsafe delegate void LPLOOKUPSERVICE_COMPLETION_ROUTINE([In] int dwError, [In] int dwBytes, [In] NativeOverlapped* lpOverlapped);
-
         [DllImport(Libraries.Ws2_32, ExactSpelling = true, CharSet = CharSet.Unicode, SetLastError = true)]
         internal static extern unsafe int GetAddrInfoExW(
             [In] string pName,
@@ -27,7 +25,7 @@ internal static partial class Interop
             [Out] AddressInfoEx** ppResult,
             [In] IntPtr timeout,
             [In] NativeOverlapped* lpOverlapped,
-            [In] LPLOOKUPSERVICE_COMPLETION_ROUTINE lpCompletionRoutine,
+            [In] delegate* unmanaged<int, int, NativeOverlapped*, void> lpCompletionRoutine,
             [Out] IntPtr* lpNameHandle);
 
         [DllImport(Libraries.Ws2_32, ExactSpelling = true)]

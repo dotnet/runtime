@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
@@ -236,6 +237,11 @@ namespace ILCompiler
         public ReadyToRunSymbolNodeFactory SymbolNodeFactory { get; }
         public ReadyToRunCompilationModuleGroupBase CompilationModuleGroup { get; }
         private readonly int? _customPESectionAlignment;
+        /// <summary>
+        /// Determining whether a type's layout is fixed is a little expensive and the question can be asked many times
+        /// for the same type during compilation so preserve the computed value.
+        /// </summary>
+        private ConcurrentDictionary<TypeDesc, bool> _computedFixedLayoutTypes = new ConcurrentDictionary<TypeDesc, bool>();
 
         internal ReadyToRunCodegenCompilation(
             DependencyAnalyzerBase<NodeFactory> dependencyGraph,
@@ -375,7 +381,7 @@ namespace ILCompiler
             }
         }
 
-        public bool IsLayoutFixedInCurrentVersionBubble(TypeDesc type)
+        private bool IsLayoutFixedInCurrentVersionBubbleInternal(TypeDesc type)
         {
             // Primitive types and enums have fixed layout
             if (type.IsPrimitive || type.IsEnum)
@@ -422,6 +428,9 @@ namespace ILCompiler
 
             return true;
         }
+
+        public bool IsLayoutFixedInCurrentVersionBubble(TypeDesc type) =>
+            _computedFixedLayoutTypes.GetOrAdd(type, (t) => IsLayoutFixedInCurrentVersionBubbleInternal(t));
 
         public bool IsInheritanceChainLayoutFixedInCurrentVersionBubble(TypeDesc type)
         {

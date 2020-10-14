@@ -18,7 +18,6 @@
 #include <winsock2.h>
 #include <windows.h>
 
-#include <mono/metadata/object-internals.h>
 #include <mono/metadata/w32process.h>
 #include <mono/metadata/assembly.h>
 #include <mono/metadata/appdomain.h>
@@ -28,17 +27,10 @@
 #include <mono/metadata/threadpool-io.h>
 #include <mono/utils/strenc.h>
 #include <mono/utils/mono-proclib.h>
-/* FIXME: fix this code to not depend so much on the internals */
-#include <mono/metadata/class-internals.h>
 #include <mono/metadata/w32handle.h>
 #include <mono/utils/w32api.h>
 #include <mono/utils/mono-threads-coop.h>
-
-#if G_HAVE_API_SUPPORT(HAVE_CLASSIC_WINAPI_SUPPORT)
-#include <shellapi.h>
-#endif
-
-#include "icall-decl.h"
+#include <mono/utils/w32subset.h>
 
 void
 mono_w32process_init (void)
@@ -55,8 +47,140 @@ mono_w32process_signal_finished (void)
 {
 }
 
-#if G_HAVE_API_SUPPORT(HAVE_CLASSIC_WINAPI_SUPPORT)
+guint32
+mono_w32process_get_pid (gpointer handle)
+{
+	return GetProcessId (handle);
+}
 
+#if HAVE_API_SUPPORT_WIN32_ENUM_PROCESS_MODULES
+gboolean
+mono_w32process_try_get_modules (gpointer process, gpointer *modules, guint32 size, guint32 *needed)
+{
+	return EnumProcessModules (process, (HMODULE *)modules, size, (PDWORD)needed);
+}
+#elif !HAVE_EXTERN_DEFINED_WIN32_ENUM_PROCESS_MODULES
+gboolean
+mono_w32process_try_get_modules (gpointer process, gpointer *modules, guint32 size, guint32 *needed)
+{
+	g_unsupported_api ("EnumProcessModules");
+	SetLastError (ERROR_NOT_SUPPORTED);
+	return FALSE;
+}
+#endif
+
+#if HAVE_API_SUPPORT_WIN32_GET_MODULE_BASE_NAME
+gboolean
+mono_w32process_module_get_name (gpointer process, gpointer module, gunichar2 **str, guint32 *len)
+{
+	return mono_get_module_basename (process, module, str, len);
+}
+#elif !HAVE_EXTERN_DEFINED_WIN32_GET_MODULE_BASE_NAME
+gboolean
+mono_w32process_module_get_name (gpointer process, gpointer module, gunichar2 **str, guint32 *len)
+{
+	g_unsupported_api ("GetModuleBaseName");
+	SetLastError (ERROR_NOT_SUPPORTED);
+	return FALSE;
+ }
+#endif /* HAVE_API_SUPPORT_WIN32_GET_MODULE_BASE_NAME */
+
+#if HAVE_API_SUPPORT_WIN32_GET_MODULE_FILE_NAME_EX
+gboolean
+mono_w32process_module_get_filename (gpointer process, gpointer module, gunichar2 **str, guint32 *len)
+{
+	return mono_get_module_filename_ex (process, module, str, len);
+}
+#elif !HAVE_EXTERN_DEFINED_WIN32_GET_MODULE_FILE_NAME_EX
+gboolean
+mono_w32process_module_get_filename (gpointer process, gpointer module, gunichar2 **str, guint32 *len)
+{
+	g_unsupported_api ("GetModuleFileNameEx");
+	SetLastError (ERROR_NOT_SUPPORTED);
+	return FALSE;
+ }
+#endif /* HAVE_API_SUPPORT_WIN32_GET_MODULE_FILE_NAME_EX */
+
+#if HAVE_API_SUPPORT_WIN32_GET_MODULE_INFORMATION
+gboolean
+mono_w32process_module_get_information (gpointer process, gpointer module, gpointer modinfo, guint32 size)
+{
+	return GetModuleInformation (process, (HMODULE)module, (MODULEINFO *)modinfo, size);
+}
+#elif !HAVE_EXTERN_DEFINED_WIN32_GET_MODULE_INFORMATION
+gboolean
+mono_w32process_module_get_information (gpointer process, gpointer module, gpointer modinfo, guint32 size)
+{
+	g_unsupported_api ("GetModuleInformation");
+	SetLastError (ERROR_NOT_SUPPORTED);
+	return FALSE;
+}
+#endif /* HAVE_API_SUPPORT_WIN32_GET_MODULE_INFORMATION */
+
+#if HAVE_API_SUPPORT_WIN32_GET_FILE_VERSION_INFO
+gboolean
+mono_w32process_get_fileversion_info (const gunichar2 *filename, gpointer *data)
+{
+	DWORD handle;
+
+	g_assert (data);
+	*data = NULL;
+
+	DWORD datasize = GetFileVersionInfoSizeW (filename, &handle);
+	if (datasize <= 0)
+		return FALSE;
+
+	*data = g_malloc0 (datasize);
+	if (!GetFileVersionInfoW (filename, handle, datasize, *data)) {
+		g_free (*data);
+		return FALSE;
+	}
+
+	return TRUE;
+}
+#elif !HAVE_EXTERN_DEFINED_WIN32_GET_FILE_VERSION_INFO
+gboolean
+mono_w32process_get_fileversion_info (const gunichar2 *filename, gpointer *data)
+{
+	g_unsupported_api ("GetFileVersionInfo");
+	SetLastError (ERROR_NOT_SUPPORTED);
+	return FALSE;
+}
+#endif /* HAVE_API_SUPPORT_WIN32_GET_FILE_VERSION_INFO */
+
+#if HAVE_API_SUPPORT_WIN32_VER_QUERY_VALUE
+gboolean
+mono_w32process_ver_query_value (gconstpointer datablock, const gunichar2 *subblock, gpointer *buffer, guint32 *len)
+{
+	return VerQueryValueW (datablock, subblock, buffer, len);
+}
+#elif !HAVE_EXTERN_DEFINED_WIN32_VER_QUERY_VALUE
+gboolean
+mono_w32process_ver_query_value (gconstpointer datablock, const gunichar2 *subblock, gpointer *buffer, guint32 *len)
+{
+	g_unsupported_api ("VerQueryValue");
+	SetLastError (ERROR_NOT_SUPPORTED);
+	return FALSE;
+}
+#endif /* HAVE_API_SUPPORT_WIN32_VER_QUERY_VALUE */
+
+#if HAVE_API_SUPPORT_WIN32_VER_LANGUAGE_NAME
+guint32
+mono_w32process_ver_language_name (guint32 lang, gunichar2 *lang_out, guint32 lang_len)
+{
+	return VerLanguageNameW (lang, lang_out, lang_len);
+}
+#elif !HAVE_EXTERN_DEFINED_WIN32_VER_LANGUAGE_NAME
+guint32
+mono_w32process_ver_language_name (guint32 lang, gunichar2 *lang_out, guint32 lang_len)
+{
+	g_unsupported_api ("VerLanguageName");
+	SetLastError (ERROR_NOT_SUPPORTED);
+	return 0;
+}
+#endif /* HAVE_API_SUPPORT_WIN32_VER_LANGUAGE_NAME */
+
+#if HAVE_API_SUPPORT_WIN32_OPEN_PROCESS
 HANDLE
 ves_icall_System_Diagnostics_Process_GetProcess_internal (guint32 pid, MonoError *error)
 {
@@ -71,14 +195,26 @@ ves_icall_System_Diagnostics_Process_GetProcess_internal (guint32 pid, MonoError
 		return NULL;
 	return handle;
 }
+#elif !HAVE_EXTERN_DEFINED_WIN32_OPEN_PROCESS
+HANDLE
+ves_icall_System_Diagnostics_Process_GetProcess_internal (guint32 pid, MonoError *error)
+{
+	g_unsupported_api ("OpenProcess");
+	mono_error_set_not_supported (error, G_UNSUPPORTED_API, "OpenProcess");
+	SetLastError (ERROR_NOT_SUPPORTED);
+	return NULL;
+}
+#endif /* HAVE_API_SUPPORT_WIN32_OPEN_PROCESS */
 
+#if HAVE_API_SUPPORT_WIN32_SHELL_EXECUTE_EX
+#include <shellapi.h>
 MonoBoolean
 ves_icall_System_Diagnostics_Process_ShellExecuteEx_internal (MonoW32ProcessStartInfoHandle proc_start_info, MonoW32ProcessInfo *process_info, MonoError *error)
 {
 	MonoCreateProcessCoop coop;
 	mono_createprocess_coop_init (&coop, proc_start_info, process_info);
 
-	SHELLEXECUTEINFO shellex = {0};
+	SHELLEXECUTEINFOW shellex = {0};
 	gboolean ret;
 
 	shellex.cbSize = sizeof(SHELLEXECUTEINFO);
@@ -101,7 +237,7 @@ ves_icall_System_Diagnostics_Process_ShellExecuteEx_internal (MonoW32ProcessStar
 		shellex.fMask = (gulong)(shellex.fMask | SEE_MASK_FLAG_NO_UI);
 
 	MONO_ENTER_GC_SAFE;
-	ret = ShellExecuteEx (&shellex);
+	ret = ShellExecuteExW (&shellex);
 	MONO_EXIT_GC_SAFE;
 	
 	if (ret == FALSE) {
@@ -119,28 +255,45 @@ ves_icall_System_Diagnostics_Process_ShellExecuteEx_internal (MonoW32ProcessStar
 
 	return ret;
 }
-
-static void
-mono_process_init_startup_info (HANDLE stdin_handle, HANDLE stdout_handle, HANDLE stderr_handle, STARTUPINFO *startinfo)
+#elif !HAVE_EXTERN_DEFINED_WIN32_SHELL_EXECUTE_EX
+MonoBoolean
+ves_icall_System_Diagnostics_Process_ShellExecuteEx_internal (MonoW32ProcessStartInfoHandle proc_start_info, MonoW32ProcessInfo *process_info, MonoError *error)
 {
-	startinfo->cb = sizeof(STARTUPINFO);
-	startinfo->dwFlags = STARTF_USESTDHANDLES;
-	startinfo->hStdInput = stdin_handle;
-	startinfo->hStdOutput = stdout_handle;
-	startinfo->hStdError = stderr_handle;
+	g_unsupported_api ("ShellExecuteEx");
+	mono_error_set_not_supported (error, G_UNSUPPORTED_API, "ShellExecuteEx");
+	process_info->pid = (guint32)(-ERROR_NOT_SUPPORTED);
+	SetLastError (ERROR_NOT_SUPPORTED);
+	return FALSE;
 }
+#endif /* HAVE_API_SUPPORT_WIN32_SHELL_EXECUTE_EX */
 
+#if HAVE_API_SUPPORT_WIN32_CREATE_PROCESS_WITH_LOGON || HAVE_API_SUPPORT_WIN32_CREATE_PROCESS
 static gboolean
 mono_process_create_process (MonoCreateProcessCoop *coop, MonoW32ProcessInfo *mono_process_info,
-	MonoStringHandle cmd, guint32 creation_flags, gunichar2 *env_vars, gunichar2 *dir, STARTUPINFO *start_info,
-	PROCESS_INFORMATION *process_info)
+	MonoStringHandle cmd, guint32 creation_flags, gunichar2 *env_vars, gunichar2 *dir,
+	HANDLE stdin_handle, HANDLE stdout_handle, HANDLE stderr_handle, PROCESS_INFORMATION *process_info, MonoError *error)
 {
 	gboolean result = FALSE;
 	MonoGCHandle cmd_gchandle = NULL;
 	gunichar2 *cmd_chars = MONO_HANDLE_IS_NULL (cmd) ? NULL : mono_string_handle_pin_chars (cmd, &cmd_gchandle);
 
+	STARTUPINFOW start_info={0};
+#if HAVE_API_SUPPORT_WIN32_CONSOLE
+	start_info.cb = sizeof(STARTUPINFOW);
+	start_info.dwFlags = STARTF_USESTDHANDLES;
+	start_info.hStdInput = stdin_handle;
+	start_info.hStdOutput = stdout_handle;
+	start_info.hStdError = stderr_handle;
+#else
+	start_info.dwFlags = 0;
+	start_info.hStdInput = INVALID_HANDLE_VALUE;
+	start_info.hStdOutput = INVALID_HANDLE_VALUE;
+	start_info.hStdError = INVALID_HANDLE_VALUE;
+#endif /* HAVE_API_SUPPORT_WIN32_CONSOLE */
+
 	MONO_ENTER_GC_SAFE;
 	if (coop->username) {
+#if HAVE_API_SUPPORT_WIN32_CREATE_PROCESS_WITH_LOGON
 		guint32 logon_flags = mono_process_info->load_user_profile ? LOGON_WITH_PROFILE : 0;
 
 		result = CreateProcessWithLogonW (coop->username,
@@ -150,8 +303,15 @@ mono_process_create_process (MonoCreateProcessCoop *coop, MonoW32ProcessInfo *mo
 						  NULL,
 						  cmd_chars,
 						  creation_flags,
-						  env_vars, dir, start_info, process_info);
+						  env_vars, dir, &start_info, process_info);
+#else
+		memset (process_info, 0, sizeof (PROCESS_INFORMATION));
+		g_unsupported_api ("CreateProcessWithLogon");
+		mono_error_set_not_supported (error, G_UNSUPPORTED_API, "CreateProcessWithLogon");
+		SetLastError (ERROR_NOT_SUPPORTED);
+#endif /* HAVE_API_SUPPORT_WIN32_CREATE_PROCESS_WITH_LOGON */
 	} else {
+#if HAVE_API_SUPPORT_WIN32_CREATE_PROCESS
 		result = CreateProcessW (NULL,
 					cmd_chars,
 					NULL,
@@ -160,8 +320,14 @@ mono_process_create_process (MonoCreateProcessCoop *coop, MonoW32ProcessInfo *mo
 					creation_flags,
 					env_vars,
 					dir,
-					start_info,
+					&start_info,
 					process_info);
+#else
+		memset (process_info, 0, sizeof (PROCESS_INFORMATION));
+		g_unsupported_api ("CreateProcess");
+		mono_error_set_not_supported (error, G_UNSUPPORTED_API, "CreateProcess");
+		SetLastError (ERROR_NOT_SUPPORTED);
+#endif
 	}
 	MONO_EXIT_GC_SAFE;
 
@@ -169,6 +335,19 @@ mono_process_create_process (MonoCreateProcessCoop *coop, MonoW32ProcessInfo *mo
 
 	return result;
 }
+#elif !HAVE_EXTERN_DEFINED_WIN32_CREATE_PROCESS_WITH_LOGON && !HAVE_EXTERN_DEFINED_WIN32_CREATE_PROCESS
+static gboolean
+mono_process_create_process (MonoCreateProcessCoop *coop, MonoW32ProcessInfo *mono_process_info,
+	MonoStringHandle cmd, guint32 creation_flags, gunichar2 *env_vars, gunichar2 *dir,
+	HANDLE stdin_handle, HANDLE stdout_handle, HANDLE stderr_handle, PROCESS_INFORMATION *process_info, MonoError *error)
+{
+	memset (process_info, 0, sizeof (PROCESS_INFORMATION));
+	g_unsupported_api ("CreateProcessWithLogon, CreateProcess");
+	mono_error_set_not_supported (error, G_UNSUPPORTED_API, "CreateProcessWithLogon, CreateProcess");
+	SetLastError (ERROR_NOT_SUPPORTED);
+	return FALSE;
+}
+#endif /* HAVE_API_SUPPORT_WIN32_CREATE_PROCESS_WITH_LOGON || HAVE_API_SUPPORT_WIN32_CREATE_PROCESS */
 
 static gchar*
 process_unquote_application_name (gchar *appname)
@@ -265,13 +444,10 @@ ves_icall_System_Diagnostics_Process_CreateProcess_internal (MonoW32ProcessStart
 
 	gboolean ret;
 	gunichar2 *dir = NULL;
-	STARTUPINFOW startinfo={0};
 	PROCESS_INFORMATION procinfo;
 	gunichar2 *env_vars = NULL;
 	MonoStringHandle cmd = NULL_HANDLE_STRING;
 	guint32 creation_flags;
-
-	mono_process_init_startup_info (stdin_handle, stdout_handle, stderr_handle, &startinfo);
 
 	creation_flags = CREATE_UNICODE_ENVIRONMENT;
 	if (MONO_HANDLE_GETVAL (proc_start_info, create_no_window))
@@ -316,7 +492,7 @@ ves_icall_System_Diagnostics_Process_CreateProcess_internal (MonoW32ProcessStart
 	if (coop.length.working_directory)
 		dir = coop.working_directory;
 
-	ret = mono_process_create_process (&coop, process_info, cmd, creation_flags, env_vars, dir, &startinfo, &procinfo);
+	ret = mono_process_create_process (&coop, process_info, cmd, creation_flags, env_vars, dir, stdin_handle, stdout_handle, stderr_handle, &procinfo, error);
 
 	g_free (env_vars);
 
@@ -336,6 +512,7 @@ exit:
 	return ret;
 }
 
+#if HAVE_API_SUPPORT_WIN32_ENUM_PROCESSES
 MonoArrayHandle
 ves_icall_System_Diagnostics_Process_GetProcesses_internal (MonoError *error)
 {
@@ -378,6 +555,16 @@ exit:
 	g_free (pids);
 	return procs;
 }
+#elif !HAVE_EXTERN_DEFINED_WIN32_ENUM_PROCESSES
+MonoArrayHandle
+ves_icall_System_Diagnostics_Process_GetProcesses_internal (MonoError *error)
+{
+	g_unsupported_api ("EnumProcesses");
+	mono_error_set_not_supported (error, G_UNSUPPORTED_API, "EnumProcesses");
+	SetLastError (ERROR_NOT_SUPPORTED);
+	return NULL_HANDLE_ARRAY;
+}
+#endif /* HAVE_API_SUPPORT_WIN32_ENUM_PROCESSES */
 
 MonoBoolean
 ves_icall_Microsoft_Win32_NativeMethods_CloseProcess (gpointer handle)
@@ -397,29 +584,81 @@ ves_icall_Microsoft_Win32_NativeMethods_GetExitCodeProcess (gpointer handle, gin
 	return GetExitCodeProcess (handle, (PDWORD)exitcode);
 }
 
+#if HAVE_API_SUPPORT_WIN32_GET_WORKING_SET_SIZE
 MonoBoolean
 ves_icall_Microsoft_Win32_NativeMethods_GetProcessWorkingSetSize (gpointer handle, gsize *min, gsize *max)
 {
 	return GetProcessWorkingSetSize (handle, (PSIZE_T)min, (PSIZE_T)max);
 }
+#elif !HAVE_EXTERN_DEFINED_WIN32_GET_WORKING_SET_SIZE
+MonoBoolean
+ves_icall_Microsoft_Win32_NativeMethods_GetProcessWorkingSetSize (gpointer handle, gsize *min, gsize *max)
+{
+	ERROR_DECL (error);
+	g_unsupported_api ("GetProcessWorkingSetSize");
+	mono_error_set_not_supported(error, G_UNSUPPORTED_API, "GetProcessWorkingSetSize");
+	mono_error_set_pending_exception (error);
+	SetLastError (ERROR_NOT_SUPPORTED);
+	return FALSE;
+}
+#endif /* HAVE_API_SUPPORT_WIN32_GET_WORKING_SET_SIZE */
 
+#if HAVE_API_SUPPORT_WIN32_SET_WORKING_SET_SIZE
 MonoBoolean
 ves_icall_Microsoft_Win32_NativeMethods_SetProcessWorkingSetSize (gpointer handle, gsize min, gsize max)
 {
 	return SetProcessWorkingSetSize (handle, min, max);
 }
+#elif !HAVE_EXTERN_DEFINED_WIN32_SET_WORKING_SET_SIZE
+MonoBoolean
+ves_icall_Microsoft_Win32_NativeMethods_SetProcessWorkingSetSize (gpointer handle, gsize min, gsize max)
+{
+	ERROR_DECL (error);
+	g_unsupported_api ("SetProcessWorkingSetSize");
+	mono_error_set_not_supported (error, G_UNSUPPORTED_API, "SetProcessWorkingSetSize");
+	mono_error_set_pending_exception (error);
+	SetLastError (ERROR_NOT_SUPPORTED);
+	return FALSE;
+}
+#endif /* HAVE_API_SUPPORT_WIN32_SET_WORKING_SET_SIZE */
 
+#if HAVE_API_SUPPORT_WIN32_GET_PRIORITY_CLASS
 gint32
 ves_icall_Microsoft_Win32_NativeMethods_GetPriorityClass (gpointer handle)
 {
 	return GetPriorityClass (handle);
 }
+#elif !HAVE_EXTERN_DEFINED_WIN32_GET_PRIORITY_CLASS
+gint32
+ves_icall_Microsoft_Win32_NativeMethods_GetPriorityClass (gpointer handle)
+{
+	ERROR_DECL (error);
+	g_unsupported_api ("GetPriorityClass");
+	mono_error_set_not_supported (error, G_UNSUPPORTED_API, "GetPriorityClass");
+	mono_error_set_pending_exception (error);
+	SetLastError (ERROR_NOT_SUPPORTED);
+	return FALSE;
+}
+#endif /* HAVE_API_SUPPORT_WIN32_GET_PRIORITY_CLASS */
 
+#if HAVE_API_SUPPORT_WIN32_SET_PRIORITY_CLASS
 MonoBoolean
 ves_icall_Microsoft_Win32_NativeMethods_SetPriorityClass (gpointer handle, gint32 priorityClass)
 {
 	return SetPriorityClass (handle, (guint32) priorityClass);
 }
+#elif !HAVE_EXTERN_DEFINED_WIN32_SET_PRIORITY_CLASS
+MonoBoolean
+ves_icall_Microsoft_Win32_NativeMethods_SetPriorityClass (gpointer handle, gint32 priorityClass)
+{
+	ERROR_DECL (error);
+	g_unsupported_api ("SetPriorityClass");
+	mono_error_set_not_supported(error, G_UNSUPPORTED_API, "SetPriorityClass");
+	mono_error_set_pending_exception (error);
+	SetLastError (ERROR_NOT_SUPPORTED);
+	return FALSE;
+}
+#endif /* HAVE_API_SUPPORT_WIN32_SET_PRIORITY_CLASS */
 
 MonoBoolean
 ves_icall_Microsoft_Win32_NativeMethods_GetProcessTimes (gpointer handle, gint64 *creationtime, gint64 *exittime, gint64 *kerneltime, gint64 *usertime)
@@ -432,5 +671,3 @@ ves_icall_Microsoft_Win32_NativeMethods_GetCurrentProcess (void)
 {
 	return GetCurrentProcess ();
 }
-
-#endif

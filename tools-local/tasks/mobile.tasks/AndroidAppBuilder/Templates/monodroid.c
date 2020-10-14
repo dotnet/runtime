@@ -21,9 +21,22 @@
 #include <unistd.h>
 
 static char *bundle_path;
+static char *executable;
 
 #define LOG_INFO(fmt, ...) __android_log_print(ANDROID_LOG_DEBUG, "DOTNET", fmt, ##__VA_ARGS__)
 #define LOG_ERROR(fmt, ...) __android_log_print(ANDROID_LOG_ERROR, "DOTNET", fmt, ##__VA_ARGS__)
+
+#if defined(__arm__)
+#define ANDROID_RUNTIME_IDENTIFIER "android-arm"
+#elif defined(__aarch64__)
+#define ANDROID_RUNTIME_IDENTIFIER "android-arm64"
+#elif defined(__i386__)
+#define ANDROID_RUNTIME_IDENTIFIER "android-x86"
+#elif defined(__x86_64__)
+#define ANDROID_RUNTIME_IDENTIFIER "android-x64"
+#else
+#error Unknown architecture
+#endif
 
 static MonoAssembly*
 load_assembly (const char *name, const char *culture)
@@ -152,7 +165,7 @@ mono_mobile_runtime_init (void)
     appctx_keys[1] = "APP_CONTEXT_BASE_DIRECTORY";
 
     const char* appctx_values[2];
-    appctx_values[0] = "%RID%";
+    appctx_values[0] = ANDROID_RUNTIME_IDENTIFIER;
     appctx_values[1] = bundle_path;
     
     monovm_initialize(2, appctx_keys, appctx_values);
@@ -170,7 +183,6 @@ mono_mobile_runtime_init (void)
     }
     mono_jit_init_version ("dotnet.android", "mobile");
 
-    const char* executable = "%EntryPointLibName%";
     MonoAssembly *assembly = load_assembly (executable, NULL);
     assert (assembly);
     LOG_INFO ("Executable: %s", executable);
@@ -194,16 +206,19 @@ strncpy_str (JNIEnv *env, char *buff, jstring str, int nbuff)
 }
 
 int
-Java_net_dot_MonoRunner_initRuntime (JNIEnv* env, jobject thiz, jstring j_files_dir, jstring j_cache_dir, jstring j_docs_dir)
+Java_net_dot_MonoRunner_initRuntime (JNIEnv* env, jobject thiz, jstring j_files_dir, jstring j_cache_dir, jstring j_docs_dir, jstring j_entryPointLibName)
 {
     char file_dir[2048];
     char cache_dir[2048];
     char docs_dir[2048];
+    char entryPointLibName[2048];
     strncpy_str (env, file_dir, j_files_dir, sizeof(file_dir));
     strncpy_str (env, cache_dir, j_cache_dir, sizeof(cache_dir));
     strncpy_str (env, docs_dir, j_docs_dir, sizeof(docs_dir));
+    strncpy_str (env, entryPointLibName, j_entryPointLibName, sizeof(entryPointLibName));
 
     bundle_path = file_dir;
+    executable = entryPointLibName;
     setenv ("HOME", bundle_path, true);
     setenv ("TMPDIR", cache_dir, true); 
     setenv ("DOCSDIR", docs_dir, true); 

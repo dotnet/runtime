@@ -866,10 +866,9 @@ mono_jit_thread_attach (MonoDomain *domain)
 	attached = mono_tls_get_jit_tls () != NULL;
 
 	if (!attached) {
-		mono_thread_attach (domain);
-
 		// #678164
-		mono_thread_set_state (mono_thread_internal_current (), ThreadState_Background);
+		gboolean background = TRUE;
+		mono_thread_attach_external_native_thread (domain, background);
 
 		/* mono_jit_thread_attach is external-only and not called by
 		 * the runtime on any of our own threads.  So if we get here,
@@ -4310,7 +4309,7 @@ mini_add_profiler_argument (const char *desc)
 	if (!profile_options)
 		profile_options = g_ptr_array_new ();
 
-	g_ptr_array_add (profile_options, (gpointer) desc);
+	g_ptr_array_add (profile_options, (gpointer) g_strdup (desc));
 }
 
 
@@ -4564,6 +4563,12 @@ mini_init (const char *filename, const char *runtime_version)
 	mono_profiler_state.context_get_result = mini_profiler_context_get_result;
 	mono_profiler_state.context_free_buffer = mini_profiler_context_free_buffer;
 
+	if (g_hasenv ("MONO_PROFILE")) {
+		gchar *profile_env = g_getenv ("MONO_PROFILE");
+		mini_add_profiler_argument (profile_env);
+		g_free (profile_env);
+	}
+
 	if (profile_options)
 		for (guint i = 0; i < profile_options->len; i++)
 			mono_profiler_load ((const char *) g_ptr_array_index (profile_options, i));
@@ -4649,7 +4654,7 @@ mini_init (const char *filename, const char *runtime_version)
 	mono_install_runtime_cleanup (runtime_cleanup);
 	mono_runtime_init_checked (domain, (MonoThreadStartCB)mono_thread_start_cb, mono_thread_attach_cb, error);
 	mono_error_assert_ok (error);
-	mono_thread_attach (domain);
+	mono_thread_internal_attach (domain);
 	MONO_PROFILER_RAISE (thread_name, (MONO_NATIVE_THREAD_ID_TO_UINT (mono_native_thread_id_get ()), "Main"));
 #endif
 	mono_threads_set_runtime_startup_finished ();
@@ -5084,8 +5089,11 @@ mini_cleanup (MonoDomain *domain)
 
 	mono_profiler_cleanup ();
 
-	if (profile_options)
+	if (profile_options) {
+		for (guint i = 0; i < profile_options->len; ++i)
+			g_free (g_ptr_array_index (profile_options, i));
 		g_ptr_array_free (profile_options, TRUE);
+	}
 
 	mono_icall_cleanup ();
 

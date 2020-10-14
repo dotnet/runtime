@@ -441,8 +441,12 @@ class Object
         // A method table pointer should always be aligned.  During GC we set the least
         // significant bit for marked objects, and the second to least significant
         // bit is reserved.  So if we want the actual MT pointer during a GC
-        // we must zero out the lowest 2 bits.
+        // we must zero out the lowest 2 bits on 32-bit and 3 bits on 64-bit.
+#ifdef TARGET_64BIT
+        return dac_cast<PTR_MethodTable>((dac_cast<TADDR>(m_pMethTab)) & ~((UINT_PTR)7));
+#else 
         return dac_cast<PTR_MethodTable>((dac_cast<TADDR>(m_pMethTab)) & ~((UINT_PTR)3));
+#endif //TARGET_64BIT
     }
 
     // There are some cases where it is unsafe to get the type handle during a GC.

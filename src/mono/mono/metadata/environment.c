@@ -69,10 +69,10 @@ ves_icall_System_Environment_GetOSVersionString (MonoError *error)
 {
 	error_init (error);
 #ifdef HOST_WIN32
-	OSVERSIONINFOEX verinfo;
-
+	MONO_DISABLE_WARNING (4996) // 'GetVersionExW': was declared deprecated
+	OSVERSIONINFOEXW verinfo;
 	verinfo.dwOSVersionInfoSize = sizeof (OSVERSIONINFOEX);
-	if (GetVersionEx ((OSVERSIONINFO*)&verinfo)) {
+	if (GetVersionExW ((OSVERSIONINFO*)&verinfo)) {
 		char version [128];
 		/* maximum string length is 45 bytes
 		   4 x 10 bytes per number, 1 byte for 0, 3 x 1 byte for dots, 1 for NULL */
@@ -83,6 +83,7 @@ ves_icall_System_Environment_GetOSVersionString (MonoError *error)
 				 verinfo.wServicePackMajor << 16);
 		return mono_string_new_handle (mono_domain_get (), version, error);
 	}
+	MONO_RESTORE_WARNING
 #elif defined(HAVE_SYS_UTSNAME_H) && defined(_AIX)
 	/*
 	 * AIX puts the major version number in .version and minor in .release; so make a
