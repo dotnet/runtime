@@ -53,8 +53,6 @@ namespace System.Reflection.Tests
             TypeBuilder type = module.DefineType("T");
             MethodInfo method = type.DefineMethod("M", MethodAttributes.Public);
 
-            // Previously get_MetadataToken was always thrown due to MemberInfo.get_MetadataToken not being
-            // overridden in MethodBuilder. Now MethodBuilder overrides that and creates the token.
             Assert.True(method.HasMetadataToken());
             Assert.NotEqual(0, method.GetMetadataToken());
         }
