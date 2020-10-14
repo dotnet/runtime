@@ -12,10 +12,11 @@ namespace Microsoft.Interop
     [DiagnosticAnalyzer(LanguageNames.CSharp)]
     public class ManualTypeMarshallingAnalyzer : DiagnosticAnalyzer
     {
+        public const string Prefix = "DLLIMPORTGENANALYZER";
         private const string Category = "Usage";
         public readonly static DiagnosticDescriptor BlittableTypeMustBeBlittableRule =
             new DiagnosticDescriptor(
-                "INTEROPGEN001",
+                Prefix + "001",
                 "BlittableTypeMustBeBlittable",
                 new LocalizableResourceString(nameof(Resources.BlittableTypeMustBeBlittableMessage), Resources.ResourceManager, typeof(Resources)),
                 Category,
@@ -25,7 +26,7 @@ namespace Microsoft.Interop
 
         public readonly static DiagnosticDescriptor CannotHaveMultipleMarshallingAttributesRule =
             new DiagnosticDescriptor(
-                "INTEROPGEN002",
+                Prefix + "002",
                 "CannotHaveMultipleMarshallingAttributes",
                 new LocalizableResourceString(nameof(Resources.CannotHaveMultipleMarshallingAttributesMessage), Resources.ResourceManager, typeof(Resources)),
                 Category,
@@ -36,7 +37,7 @@ namespace Microsoft.Interop
                 
         public readonly static DiagnosticDescriptor NativeTypeMustBeNonNullRule =
             new DiagnosticDescriptor(
-                "INTEROPGEN003",
+                Prefix + "003",
                 "NativeTypeMustBeNonNull",
                 new LocalizableResourceString(nameof(Resources.NativeTypeMustBeNonNullMessage), Resources.ResourceManager, typeof(Resources)),
                 Category,
@@ -46,7 +47,7 @@ namespace Microsoft.Interop
 
         public readonly static DiagnosticDescriptor NativeTypeMustBeBlittableRule =
             new DiagnosticDescriptor(
-                "INTEROPGEN004",
+                Prefix + "004",
                 "NativeTypeMustBeBlittable",
                 new LocalizableResourceString(nameof(Resources.NativeTypeMustBeBlittableMessage), Resources.ResourceManager, typeof(Resources)),
                 Category,
@@ -56,7 +57,7 @@ namespace Microsoft.Interop
 
         public readonly static DiagnosticDescriptor GetPinnableReferenceReturnTypeBlittableRule =
             new DiagnosticDescriptor(
-                "INTEROPGEN005",
+                Prefix + "005",
                 "GetPinnableReferenceReturnTypeBlittable",
                 new LocalizableResourceString(nameof(Resources.GetPinnableReferenceReturnTypeBlittableMessage), Resources.ResourceManager, typeof(Resources)),
                 Category,
@@ -66,7 +67,7 @@ namespace Microsoft.Interop
     
         public readonly static DiagnosticDescriptor NativeTypeMustBePointerSizedRule =
             new DiagnosticDescriptor(
-                "INTEROPGEN006",
+                Prefix + "006",
                 "NativeTypeMustBePointerSized",
                 new LocalizableResourceString(nameof(Resources.NativeTypeMustBePointerSizedMessage), Resources.ResourceManager, typeof(Resources)),
                 Category,
@@ -76,7 +77,7 @@ namespace Microsoft.Interop
 
         public readonly static DiagnosticDescriptor NativeTypeMustHaveRequiredShapeRule =
             new DiagnosticDescriptor(
-                "INTEROPGEN007",
+                Prefix + "007",
                 "NativeTypeMustHaveRequiredShape",
                 new LocalizableResourceString(nameof(Resources.NativeTypeMustHaveRequiredShapeMessage), Resources.ResourceManager, typeof(Resources)),
                 Category,
@@ -86,7 +87,7 @@ namespace Microsoft.Interop
 
         public readonly static DiagnosticDescriptor ValuePropertyMustHaveSetterRule =
             new DiagnosticDescriptor(
-                "INTEROPGEN008",
+                Prefix + "008",
                 "ValuePropertyMustHaveSetter",
                 new LocalizableResourceString(nameof(Resources.ValuePropertyMustHaveSetterMessage), Resources.ResourceManager, typeof(Resources)),
                 Category,
@@ -96,7 +97,7 @@ namespace Microsoft.Interop
 
         public readonly static DiagnosticDescriptor ValuePropertyMustHaveGetterRule =
             new DiagnosticDescriptor(
-                "INTEROPGEN009",
+                Prefix + "009",
                 "ValuePropertyMustHaveGetter",
                 new LocalizableResourceString(nameof(Resources.ValuePropertyMustHaveGetterMessage), Resources.ResourceManager, typeof(Resources)),
                 Category,
@@ -106,7 +107,7 @@ namespace Microsoft.Interop
 
         public readonly static DiagnosticDescriptor GetPinnableReferenceShouldSupportAllocatingMarshallingFallbackRule =
             new DiagnosticDescriptor(
-                "INTEROPGEN010",
+                Prefix + "010",
                 "GetPinnableReferenceShouldSupportAllocatingMarshallingFallback",
                 new LocalizableResourceString(nameof(Resources.GetPinnableReferenceShouldSupportAllocatingMarshallingFallbackMessage), Resources.ResourceManager, typeof(Resources)),
                 Category,
@@ -116,7 +117,7 @@ namespace Microsoft.Interop
 
         public readonly static DiagnosticDescriptor StackallocMarshallingShouldSupportAllocatingMarshallingFallbackRule =
             new DiagnosticDescriptor(
-                "INTEROPGEN011",
+                Prefix + "011",
                 "StackallocMarshallingShouldSupportAllocatingMarshallingFallback",
                 new LocalizableResourceString(nameof(Resources.StackallocMarshallingShouldSupportAllocatingMarshallingFallbackMessage), Resources.ResourceManager, typeof(Resources)),
                 Category,
@@ -126,7 +127,7 @@ namespace Microsoft.Interop
 
         public readonly static DiagnosticDescriptor StackallocConstructorMustHaveStackBufferSizeConstantRule =
             new DiagnosticDescriptor(
-                "INTEROPGEN012",
+                Prefix + "012",
                 "StackallocConstructorMustHaveStackBufferSizeConstant",
                 new LocalizableResourceString(nameof(Resources.StackallocConstructorMustHaveStackBufferSizeConstantMessage), Resources.ResourceManager, typeof(Resources)),
                 Category,
