@@ -100,10 +100,6 @@ namespace System.Reflection.Emit
         {
             get { return name; }
         }
-        public PropertyToken PropertyToken
-        {
-            get { return default; }
-        }
         public override Type PropertyType
         {
             get { return type; }
