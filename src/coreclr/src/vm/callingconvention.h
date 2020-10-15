@@ -405,6 +405,7 @@ public:
                     FieldDesc * pFD = pMT->GetApproxFieldDescListRaw();	
                     CorElementType type = pFD->GetFieldType();
 
+                    bool exitLoop = false;
                     switch (type)	
                     {
                         case ELEMENT_TYPE_VALUETYPE:
@@ -422,8 +423,16 @@ public:
                         {	
                             typ = type;
                             break;	
-                        }	
-                    }	
+                        }
+                        default:
+                            exitLoop = true;
+                            break;
+                    }
+
+                    if (exitLoop)
+                    {
+                        break;
+                    }
                 }
             }
             if (gElementTypeInfo[typ].m_enregister)
