@@ -6,12 +6,12 @@ using System.Runtime.Versioning;
 
 namespace System.Runtime.CompilerServices
 {
+    [SupportedOSPlatform("windows")]
     [AttributeUsage(AttributeTargets.Field | AttributeTargets.Parameter, Inherited = false)]
     public sealed partial class IDispatchConstantAttribute : CustomConstantAttribute
     {
         public IDispatchConstantAttribute() { }
 
-        [SupportedOSPlatform("windows")]
         public override object Value => new DispatchWrapper(null);
     }
 }

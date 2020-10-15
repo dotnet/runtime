@@ -70,7 +70,7 @@
     <CrossTargetComponentFolder Condition="'$(TargetArchitecture)' == 'arm' and '$(TargetsWindows)' == 'true'">x86</CrossTargetComponentFolder>
     <CrossTargetComponentFolder Condition="'$(TargetArchitecture)' == 'arm' and '$(TargetsLinux)' == 'true'">x64</CrossTargetComponentFolder>
   </PropertyGroup>
-  
+
   <!-- Set the kind of PDB to Portable -->
   <PropertyGroup>
     <DebugType Condition="'$(DebugType)' == ''">Portable</DebugType>

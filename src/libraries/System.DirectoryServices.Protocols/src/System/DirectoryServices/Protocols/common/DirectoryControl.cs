@@ -1021,19 +1021,18 @@ namespace System.DirectoryServices.Protocols
         public ResultCode Result { get; }
     }
 
+    [SupportedOSPlatform("windows")]
     public class QuotaControl : DirectoryControl
     {
         private byte[] _sid;
 
         public QuotaControl() : base("1.2.840.113556.1.4.1852", null, true, true) { }
 
-        [SupportedOSPlatform("windows")]
         public QuotaControl(SecurityIdentifier querySid) : this()
         {
             QuerySid = querySid;
         }
 
-        [SupportedOSPlatform("windows")]
         public SecurityIdentifier QuerySid
         {
             get => _sid == null ? null : new SecurityIdentifier(_sid, 0);
