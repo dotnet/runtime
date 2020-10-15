@@ -285,4 +285,15 @@
     </When>
   </Choose>
 
+  <!-- The upfront vertical builds already generates the dependency file. -->
+  <PropertyGroup Condition="'$(BuildingInsideVisualStudio)' == 'true' and Exists('$(ProjectDepsFilePath)')">
+    <GenerateDependencyFile>false</GenerateDependencyFile>
+  </PropertyGroup>
+
+  <Target Name="CheckVSRestoreRequirements"
+          Condition="'$(BuildingInsideVisualStudio)' == 'true'"
+          BeforeTargets="ResolvePackageAssets" >
+    <Error Text="Please run dotnet restore from command line for $(MSBuildProjectName) because the project contains platform specific target frameworks." Condition="!Exists('$(ProjectAssetsFile)')" />
+  </Target>
+
 </Project>
