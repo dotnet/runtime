@@ -3504,7 +3504,8 @@ HRESULT ThreadSuspend::SuspendRuntime(ThreadSuspend::SUSPEND_REASON reason)
 
     for (;;)
     {
-        for (Thread *thread = ThreadStore::GetThreadList(NULL); thread != NULL; thread = ThreadStore::GetThreadList(thread))
+        Thread* thread = NULL;
+        while ((thread = ThreadStore::GetThreadList(thread)) != NULL)
         {
             if (thread == pCurThread)
                 continue;
@@ -3710,7 +3711,7 @@ HRESULT ThreadSuspend::SuspendRuntime(ThreadSuspend::SUSPEND_REASON reason)
 
         // If we have just updated hijacks/redirects, then do a pass while only observing.
         // Repeat observing only as long as we see progress. Most threads react to hijack/redirect very fast and
-        // typically we can avoid waiting on an event. (except on uniporocessor where we do not spin)
+        // typically we can avoid waiting on an event. (except on uniprocessor where we do not spin)
         //
         // Otherwise redo hijacks, but check g_pGCSuspendEvent event on the way.
         // Re-hijacking unconditionally is likely to execute exactly the same hijacks,
@@ -3769,7 +3770,8 @@ HRESULT ThreadSuspend::SuspendRuntime(ThreadSuspend::SUSPEND_REASON reason)
                 _ASSERTE(!"Timed out trying to suspend EE due to thread");
                 char message[256];
 
-                for (Thread *thread = ThreadStore::GetThreadList(NULL); thread != NULL; thread = ThreadStore::GetThreadList(thread))
+                Thread* thread = NULL;
+                while ((thread = ThreadStore::GetThreadList(thread)) != NULL)
                 {
                     if (thread == pCurThread)
                         continue;
@@ -3820,7 +3822,8 @@ HRESULT ThreadSuspend::SuspendRuntime(ThreadSuspend::SUSPEND_REASON reason)
     // gcstress instruction updates need to occur.  Each thread can
     // have only one pending at a time.
     //
-    for (Thread *thread = ThreadStore::GetThreadList(NULL); thread != NULL; thread = ThreadStore::GetThreadList(thread))
+    Thread* thread = NULL;
+    while ((thread = ThreadStore::GetThreadList(thread)) != NULL)
     {
         thread->CommitGCStressInstructionUpdate();
     }
@@ -5869,7 +5872,6 @@ retry_for_debugger:
             // I wonder how much confusion this has caused....)
             // It seems like much of the above is redundant.  We should investigate reducing the number
             // of mechanisms we use to indicate that a suspension is in progress.
-            // +1
             GCHeapUtilities::GetGCHeap()->SetGCInProgress(true);
 
             // set tls flags for compat with SOS
