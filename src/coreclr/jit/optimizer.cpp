@@ -2550,7 +2550,6 @@ NO_MORE_LOOPS:
             if ((optLoopTable[loopInd].lpChild == BasicBlock::NOT_IN_LOOP) &&
                 (compJitAlignLoopMinBlockWeight <= first->getBBWeight(this)))
             {
-                assert(false);
                 first->bbFlags |= BBF_FIRST_BLOCK_IN_INNERLOOP;
             }
         }

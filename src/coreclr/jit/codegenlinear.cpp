@@ -660,10 +660,6 @@ void CodeGen::genCodeForBBlist()
 
         switch (block->bbJumpKind)
         {
-            case BBJ_ALWAYS:
-                inst_JMP(EJ_jmp, block->bbJumpDest);
-                break;
-
             case BBJ_RETURN:
                 genExitCode(block);
                 break;
@@ -734,10 +730,12 @@ void CodeGen::genCodeForBBlist()
 #endif // !FEATURE_EH_FUNCLETS
 
             case BBJ_NONE:
+            case BBJ_SWITCH:
                 break;
 
-            //TODO: Should this be done for BB_ALWAYS as well?
-            case BBJ_SWITCH:
+            case BBJ_ALWAYS:
+                inst_JMP(EJ_jmp, block->bbJumpDest);
+                __fallthrough;
             case BBJ_COND:
                 if (block->bbJumpDest->bbFlags & BBF_FIRST_BLOCK_IN_INNERLOOP)
                 {
@@ -749,7 +747,11 @@ void CodeGen::genCodeForBBlist()
                     insGroup* dstIG = (insGroup*)block->bbJumpDest->bbEmitCookie;
 
                     // Only track back edges to the loop.
-                    if (dstIG->igNum <= srcIG->igNum)
+                    // Here dstIG != nullptr checks if we have already generated dstIG for a block.
+                    // If block->bbJumpDest was a forward block, it might have not been created yet.
+                    // We don't rely on (block->bbJumpDest->bbNum <= block->bbNum) because the basic
+                    // block numbering is not guaranteed to be sequential.
+                    if (dstIG != nullptr && dstIG->igNum <= srcIG->igNum)
                     {
                         srcIG->igLoopBackEdge = dstIG;
                         if (verbose)
@@ -767,7 +769,6 @@ void CodeGen::genCodeForBBlist()
 
         if ((block->bbNext != nullptr) && (block->bbNext->bbFlags & BBF_FIRST_BLOCK_IN_INNERLOOP))
         {
-            assert(false);
             if (verbose)
             {
                 printf("Adding 'align' instruction to align loop header block " FMT_BB, block->bbNext->bbNum);

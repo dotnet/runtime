@@ -12603,12 +12603,13 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
                 // Candidate for loop alignment
                 if (ig->igFlags & IGF_ALIGN_LOOP)
                 {
-                    unsigned totalInstrCount = 0;
-                    bool foundBackEdge   = false;
-                    for (insGroup* igInLoop = ig->igNext; igInLoop; igInLoop = igInLoop->igNext)
+                    unsigned  totalInstrCount = 0;
+                    bool      foundBackEdge   = false;
+                    insGroup* loopHeaderIg    = ig->igNext;
+                    for (insGroup* igInLoop = loopHeaderIg; igInLoop; igInLoop = igInLoop->igNext)
                     {
                         totalInstrCount += igInLoop->igInsCnt;
-                        if (igInLoop->igLoopBackEdge == ig)
+                        if (igInLoop->igLoopBackEdge == loopHeaderIg)
                         {
                             foundBackEdge = true;
                             break;
