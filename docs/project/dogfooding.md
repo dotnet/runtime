@@ -152,8 +152,6 @@ $ bin\Debug\net6.0\win-x64\publish\App.exe
 
 ### Nightly builds table
 
-Columns containing CoreCLR in name of the column have links to download runtimes that are backed by the CoreCLR VM.
-
 <!--
   To update this table, run 'build.sh/cmd RegenerateDownloadTable'. See
   'tools-local/regenerate-readme-table.proj' to add or remove rows or columns,
@@ -161,7 +159,7 @@ Columns containing CoreCLR in name of the column have links to download runtimes
 -->
 <!-- BEGIN generated table -->
 
-| Platform | Master (CoreCLR VM) |
+| Platform | Master |
 | --- |  :---: |
 | **Windows (x64)** | [![][win-x64-badge-6.0.X-coreclr]][win-x64-version-6.0.X-coreclr]<br>[Installer][win-x64-installer-6.0.X-coreclr] ([Checksum][win-x64-installer-checksum-6.0.X-coreclr])<br>[zip][win-x64-zip-6.0.X-coreclr] ([Checksum][win-x64-zip-checksum-6.0.X-coreclr])<br>[NetHost (zip)][win-x64-nethost-zip-6.0.X-coreclr]<br>[Symbols (zip)][win-x64-symbols-zip-6.0.X-coreclr] |
 | **Windows (x86)** | [![][win-x86-badge-6.0.X-coreclr]][win-x86-version-6.0.X-coreclr]<br>[Installer][win-x86-installer-6.0.X-coreclr] ([Checksum][win-x86-installer-checksum-6.0.X-coreclr])<br>[zip][win-x86-zip-6.0.X-coreclr] ([Checksum][win-x86-zip-checksum-6.0.X-coreclr])<br>[NetHost (zip)][win-x86-nethost-zip-6.0.X-coreclr]<br>[Symbols (zip)][win-x86-symbols-zip-6.0.X-coreclr] |
