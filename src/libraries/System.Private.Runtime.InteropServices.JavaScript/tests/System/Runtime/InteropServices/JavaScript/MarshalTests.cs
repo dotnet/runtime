@@ -267,6 +267,7 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
             Assert.Equal(30, HelperMarshal._functionResultValue);
             Assert.Equal(60, HelperMarshal._i32Value);
         }
+
         [Fact]
         public static void BindStaticMethod()
         {
@@ -608,6 +609,106 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
                 App.call_test_method (""CallFunctionApply"", []);
             ");
             Assert.Equal(2, HelperMarshal._minValue);
+        }
+        
+        [Fact]
+        public static void BoundStaticMethodMissingArgs()
+        {
+            // TODO: We currently have code that relies on this behavior (missing args default to 0) but
+            //  it would be better if it threw an exception about the missing arguments. This test is here
+            //  to ensure we do not break things by accidentally changing this behavior -kg
+
+            HelperMarshal._intValue = 1;
+            Runtime.InvokeJS(@$"
+                var invoke_int = Module.mono_bind_static_method (""{HelperMarshal.INTEROP_CLASS}InvokeInt"");
+                invoke_int ();
+            ");
+            Assert.Equal(0, HelperMarshal._intValue);
+        }
+        
+        [Fact]
+        public static void BoundStaticMethodExtraArgs()
+        {
+            HelperMarshal._intValue = 0;
+            Runtime.InvokeJS(@$"
+                var invoke_int = Module.mono_bind_static_method (""{HelperMarshal.INTEROP_CLASS}InvokeInt"");
+                invoke_int (200, 400);
+            ");
+            Assert.Equal(200, HelperMarshal._intValue);
+        }
+        
+        [Fact]
+        public static void BoundStaticMethodArgumentTypeCoercion()
+        {
+            // TODO: As above, the type coercion behavior on display in this test is not ideal, but
+            //  changing it risks breakage in existing code so for now it is verified by a test -kg
+
+            HelperMarshal._intValue = 0;
+            Runtime.InvokeJS(@$"
+                var invoke_int = Module.mono_bind_static_method (""{HelperMarshal.INTEROP_CLASS}InvokeInt"");
+                invoke_int (""200"");
+            ");
+            Assert.Equal(200, HelperMarshal._intValue);
+
+            Runtime.InvokeJS(@$"
+                var invoke_int = Module.mono_bind_static_method (""{HelperMarshal.INTEROP_CLASS}InvokeInt"");
+                invoke_int (400.5);
+            ");
+            Assert.Equal(400, HelperMarshal._intValue);
+        }
+        
+        [Fact]
+        public static void BoundStaticMethodUnpleasantArgumentTypeCoercion()
+        {
+            HelperMarshal._intValue = 100;
+            Runtime.InvokeJS(@$"
+                var invoke_int = Module.mono_bind_static_method (""{HelperMarshal.INTEROP_CLASS}InvokeInt"");
+                invoke_int (""hello"");
+            ");
+            Assert.Equal(0, HelperMarshal._intValue);
+
+            // In this case at the very least, the leading "7" is not turned into the number 7
+            Runtime.InvokeJS(@$"
+                var invoke_int = Module.mono_bind_static_method (""{HelperMarshal.INTEROP_CLASS}InvokeInt"");
+                invoke_int (""7apples"");
+            ");
+            Assert.Equal(0, HelperMarshal._intValue);
+        }
+
+        [Fact]
+        public static void PassUintArgument()
+        {
+            HelperMarshal._uintValue = 0;
+            Runtime.InvokeJS(@$"
+                var invoke_uint = Module.mono_bind_static_method (""{HelperMarshal.INTEROP_CLASS}InvokeUInt"");
+                invoke_uint (0xFFFFFFFE);
+            ");
+
+            Assert.Equal(0xFFFFFFFEu, HelperMarshal._uintValue);
+        }
+        
+        [Fact]
+        public static void ReturnUintEnum ()
+        {
+            HelperMarshal._enumValue = TestEnum.BigValue;
+            Runtime.InvokeJS(@$"
+                var get_value = Module.mono_bind_static_method (""{HelperMarshal.INTEROP_CLASS}GetEnumValue"");
+                var e = get_value ();
+                var invoke_str = Module.mono_bind_static_method (""{HelperMarshal.INTEROP_CLASS}InvokeString"");
+                invoke_str (e);
+            ");
+            Assert.Equal("BigValue", HelperMarshal._stringResource);
+        }
+        
+        [Fact]
+        public static void PassUintEnumByName ()
+        {
+            HelperMarshal._enumValue = TestEnum.Zero;
+            Runtime.InvokeJS(@$"
+                var set_enum = Module.mono_bind_static_method (""{HelperMarshal.INTEROP_CLASS}SetEnumValue"");
+                set_enum (""BigValue"");
+            ");
+            Assert.Equal(TestEnum.BigValue, HelperMarshal._enumValue);
         }
     }
 }

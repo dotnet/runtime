@@ -108,9 +108,9 @@ var BindingSupportLib = {
 				return BINDING.bind_method (method, 0, signature, "BINDINGS_" + method_name);
 			};
 
-			// FIXME: The bound methods have a _ prefix on their names to ensure
+			// NOTE: The bound methods have a _ prefix on their names to ensure
 			//  that any code relying on the old get_method/call_method pattern will
-			//  break in a more understandable way
+			//  break in a more understandable way.
 
 			this._bind_js_obj = bind_runtime_method ("BindJSObject", "iii");
 			this._bind_core_clr_obj = bind_runtime_method ("BindCoreCLRObject", "ii");
@@ -262,7 +262,7 @@ var BindingSupportLib = {
 			obj.__mono_delegate_alive__ = true;
 			// FIXME: Should we root the object as long as this function has not been GCd?
 			return function () {
-				// FIXME: Just use Function.bind
+				// TODO: Just use Function.bind
 				return BINDING.invoke_delegate (obj, arguments);
 			};
 		},
@@ -289,7 +289,6 @@ var BindingSupportLib = {
 		_unbox_safehandle_rooted: function (mono_obj) {
 			var addRef = true;
 			var js_handle = this.call_method(this.safehandle_get_handle, null, "mi", [ mono_obj, addRef ]);
-			// FIXME: Is this a GC object that needs to be rooted?
 			var requiredObject = BINDING.mono_wasm_require_handle (js_handle);
 			if (addRef)
 			{
@@ -307,7 +306,7 @@ var BindingSupportLib = {
 				case 1: // int
 					return this.mono_unbox_int (mono_obj);
 				case 25: // uint
-					return this.mono_unbox_int (mono_obj) >>> 0; // FIXME: Is this right?
+					return this.mono_unbox_int (mono_obj) >>> 0;
 				case 26: // int64
 				case 27: // uint64
 					// TODO: Fix this once emscripten offers HEAPI64/HEAPU64 or can return them
@@ -435,7 +434,8 @@ var BindingSupportLib = {
 					var the_task = this.try_extract_mono_obj (js_obj);
 					if (the_task)
 						return the_task;
-					// FIXME: We need to root tcs for an appropriate timespan
+					// FIXME: We need to root tcs for an appropriate timespan, at least until the Task
+					//  is resolved
 					var tcs = this.create_task_completion_source ();
 					js_obj.then (function (result) {
 						BINDING.set_task_result (tcs, result);
@@ -1053,7 +1053,7 @@ var BindingSupportLib = {
 				result = converter.scratchRootBuffer;
 				converter.scratchRootBuffer = null;
 			} else {
-				// FIXME: Expand the converter's heap allocation and then use
+				// TODO: Expand the converter's heap allocation and then use
 				//  mono_wasm_new_root_buffer_from_pointer instead. Not that important
 				//  at present because the scratch buffer will be reused unless we are
 				//  recursing through a re-entrant call
@@ -1148,7 +1148,7 @@ var BindingSupportLib = {
 
 			// Detect someone accidentally passing the wrong type of value to method
 			if ((method | 0) !== method)
-				throw new Error ("method must be an address in the native heap");
+				throw new Error (`method must be an address in the native heap, but was '${method}'`);
 			if (!method)
 				throw new Error ("no method specified");
 

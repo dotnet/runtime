@@ -356,5 +356,27 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
             _blobURI = blobUri;
         }
 
+        internal static uint _uintValue;
+        private static void InvokeUInt(uint value)
+        {
+            _uintValue = value;
+        }
+
+        internal static TestEnum _enumValue;
+        private static void SetEnumValue(TestEnum value)
+        {
+            _enumValue = value;
+        }
+        private static TestEnum GetEnumValue()
+        {
+            return _enumValue;
+        }
+    }
+
+    public enum TestEnum : uint {
+        FirstValue = 1,
+        Zero = 0,
+        Five = 5,
+        BigValue = 0xFFFFFFFEu
     }
 }
