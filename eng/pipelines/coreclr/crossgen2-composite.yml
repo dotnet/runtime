@@ -19,6 +19,7 @@ jobs:
     jobTemplate: /eng/pipelines/common/build-coreclr-and-libraries-job.yml
     buildConfig: checked
     platforms:
+    - Linux_arm
     - Linux_x64
     - Linux_arm64
     - OSX_x64
@@ -45,6 +46,7 @@ jobs:
     helixQueuesTemplate: /eng/pipelines/coreclr/templates/helix-queues-setup.yml
     buildConfig: checked
     platforms:
+    - Linux_arm
     - Linux_x64
     - Linux_arm64
     - OSX_x64
