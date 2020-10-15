@@ -113,7 +113,7 @@ eventpipe_thread_attach (gboolean background_thread)
 
 	// NOTE, under netcore, only root domain exists.
 	if (!mono_thread_current ()) {
-		thread = mono_thread_attach (mono_get_root_domain ());
+		thread = mono_thread_internal_attach (mono_get_root_domain ());
 		if (background_thread) {
 			mono_thread_set_state (thread, ThreadState_Background);
 			mono_thread_info_set_flags (MONO_THREAD_INFO_FLAGS_NO_SAMPLE);
@@ -129,7 +129,7 @@ eventpipe_thread_detach (void)
 {
 	MonoThread *current_thread = mono_thread_current ();
 	if (current_thread)
-		mono_thread_detach (current_thread);
+		mono_thread_internal_detach (current_thread);
 }
 
 void

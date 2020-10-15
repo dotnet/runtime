@@ -1112,7 +1112,7 @@ var_types Compiler::getReturnTypeForStruct(CORINFO_CLASS_HANDLE clsHnd,
 
 ///////////////////////////////////////////////////////////////////////////////
 //
-// MEASURE_NOWAY: code to measure and rank dynamic occurences of noway_assert.
+// MEASURE_NOWAY: code to measure and rank dynamic occurrences of noway_assert.
 // (Just the appearances of noway_assert, whether the assert is true or false.)
 // This might help characterize the cost of noway_assert in non-DEBUG builds,
 // or determine which noway_assert should be simple DEBUG-only asserts.
@@ -1689,6 +1689,7 @@ void Compiler::compShutdown()
     fprintf(fout, "---------------------------------------------------\n");
     fprintf(fout, "   badCode:             %u\n", fatal_badCode);
     fprintf(fout, "   noWay:               %u\n", fatal_noWay);
+    fprintf(fout, "   implLimitation:      %u\n", fatal_implLimitation);
     fprintf(fout, "   NOMEM:               %u\n", fatal_NOMEM);
     fprintf(fout, "   noWayAssertBody:     %u\n", fatal_noWayAssertBody);
 #ifdef DEBUG
@@ -1876,7 +1877,6 @@ void Compiler::compInit(ArenaAllocator*       pAlloc,
 
 #ifdef DEBUG
     compCodeGenDone        = false;
-    compRegSetCheckLevel   = 0;
     opts.compMinOptsIsUsed = false;
 #endif
     opts.compMinOptsIsSet = false;
@@ -2813,13 +2813,13 @@ void Compiler::compInitOptions(JitFlags* jitFlags)
 
 #ifdef DEBUG
     opts.dspInstrs       = false;
-    opts.dspEmit         = false;
     opts.dspLines        = false;
     opts.varNames        = false;
     opts.dmpHex          = false;
     opts.disAsm          = false;
     opts.disAsmSpilled   = false;
     opts.disDiffable     = false;
+    opts.disAddr         = false;
     opts.dspCode         = false;
     opts.dspEHTable      = false;
     opts.dspDebugInfo    = false;
@@ -2960,6 +2960,12 @@ void Compiler::compInitOptions(JitFlags* jitFlags)
         {
             opts.disDiffable = true;
             opts.dspDiffable = true;
+        }
+
+        // This one applies to both Ngen/Jit Disasm output: COMPlus_JitDasmWithAddress=1
+        if (JitConfig.JitDasmWithAddress() != 0)
+        {
+            opts.disAddr = true;
         }
 
         if (JitConfig.JitLongAddress() != 0)
@@ -3370,7 +3376,7 @@ bool Compiler::compStressCompile(compStressArea stressArea, unsigned weight)
 //------------------------------------------------------------------------
 // compStressCompileHelper: helper to determine if a stress mode should be enabled
 //
-// Argumemnts:
+// Arguments:
 //   stressArea - stress mode to possibly enable
 //   weight - percent of time this mode should be turned on
 //     (range 0 to 100); weight 0 effectively disables
@@ -4600,6 +4606,7 @@ void Compiler::compCompile(void** methodCodePtr, ULONG* methodCodeSize, JitFlags
     // Morph the trees in all the blocks of the method
     //
     auto morphGlobalPhase = [this]() {
+        unsigned prevBBCount = fgBBcount;
         fgMorphBlocks();
 
         // Fix any LclVar annotations on discarded struct promotion temps for implicit by-ref args
@@ -4624,6 +4631,12 @@ void Compiler::compCompile(void** methodCodePtr, ULONG* methodCodeSize, JitFlags
         compCurBB = nullptr;
 #endif // DEBUG
 
+        // If we needed to create any new BasicBlocks then renumber the blocks
+        if (fgBBcount > prevBBCount)
+        {
+            fgRenumberBlocks();
+        }
+
         // We can now enable all phase checking
         activePhaseChecks = PhaseChecks::CHECK_ALL;
     };
@@ -4632,6 +4645,7 @@ void Compiler::compCompile(void** methodCodePtr, ULONG* methodCodeSize, JitFlags
     // GS security checks for unsafe buffers
     //
     auto gsPhase = [this]() {
+        unsigned prevBBCount = fgBBcount;
         if (getNeedsGSSecurityCookie())
         {
             gsGSChecksInitCookie();
@@ -4639,6 +4653,12 @@ void Compiler::compCompile(void** methodCodePtr, ULONG* methodCodeSize, JitFlags
             if (compGSReorderStackLayout)
             {
                 gsCopyShadowParams();
+            }
+
+            // If we needed to create any new BasicBlocks then renumber the blocks
+            if (fgBBcount > prevBBCount)
+            {
+                fgRenumberBlocks();
             }
         }
         else
@@ -6090,7 +6110,7 @@ int Compiler::compCompileHelper(CORINFO_MODULE_HANDLE classPtr,
 #ifdef DEBUG
     /* Give the function a unique number */
 
-    if (opts.disAsm || opts.dspEmit || verbose)
+    if (opts.disAsm || verbose)
     {
         compMethodID = ~info.compMethodHash() & 0xffff;
     }
@@ -6808,7 +6828,9 @@ START:
 
         result = param.result;
 
-    if (!inlineInfo && (result == CORJIT_INTERNALERROR || result == CORJIT_RECOVERABLEERROR) && !jitFallbackCompile)
+    if (!inlineInfo &&
+        (result == CORJIT_INTERNALERROR || result == CORJIT_RECOVERABLEERROR || result == CORJIT_IMPLLIMITATION) &&
+        !jitFallbackCompile)
     {
         // If we failed the JIT, reattempt with debuggable code.
         jitFallbackCompile = true;

@@ -149,14 +149,6 @@ namespace System.Reflection
 #endregion
         private string? toString;
 
-        internal BindingFlags BindingFlags
-        {
-            get
-            {
-                return 0;
-            }
-        }
-
         public override Module Module
         {
             get
@@ -792,14 +784,6 @@ namespace System.Reflection
         internal RuntimeModule GetRuntimeModule()
         {
             return RuntimeTypeHandle.GetModule((RuntimeType)DeclaringType);
-        }
-
-        internal BindingFlags BindingFlags
-        {
-            get
-            {
-                return 0;
-            }
         }
 
         private RuntimeType? ReflectedTypeInternal

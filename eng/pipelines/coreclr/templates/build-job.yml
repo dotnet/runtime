@@ -125,7 +125,7 @@ jobs:
     # and FreeBSD builds use a build agent with dependencies
     # preinstalled, so we only need this step for OSX and Windows.
     - ${{ if eq(parameters.osGroup, 'OSX') }}:
-      - script: $(Build.SourcesDirectory)/eng/install-native-dependencies.sh $(osGroup)
+      - script: $(Build.SourcesDirectory)/eng/install-native-dependencies.sh $(osGroup) ${{ parameters.archType }} azDO
         displayName: Install native dependencies
     - ${{ if eq(parameters.osGroup, 'Windows_NT') }}:
       # Necessary to install python

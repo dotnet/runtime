@@ -73,11 +73,8 @@ namespace System.Net.Sockets
         // Bool marked true if the native socket option IP_PKTINFO or IPV6_PKTINFO has been set.
         private bool _receivingPacketInformation;
 
-        private static object? s_internalSyncObject;
         private int _closeTimeout = Socket.DefaultCloseTimeout;
         private int _disposed; // 0 == false, anything else == true
-
-        internal static volatile bool s_initialized;
 
         #region Constructors
         public Socket(SocketType socketType, ProtocolType protocolType)
@@ -93,7 +90,6 @@ namespace System.Net.Sockets
         public Socket(AddressFamily addressFamily, SocketType socketType, ProtocolType protocolType)
         {
             if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, addressFamily);
-            InitializeSockets();
 
             SocketError errorCode = SocketPal.CreateSocket(addressFamily, socketType, protocolType, out _handle);
             if (errorCode != SocketError.Success)
@@ -130,8 +126,6 @@ namespace System.Net.Sockets
 
         private unsafe Socket(SafeSocketHandle handle, bool loadPropertiesFromHandle)
         {
-            InitializeSockets();
-
             _handle = handle;
             _addressFamily = AddressFamily.Unknown;
             _socketType = SocketType.Unknown;
@@ -259,32 +253,9 @@ namespace System.Net.Sockets
         [Obsolete("SupportsIPv6 is obsoleted for this type, please use OSSupportsIPv6 instead. https://go.microsoft.com/fwlink/?linkid=14202")]
         public static bool SupportsIPv6 => OSSupportsIPv6;
 
-        public static bool OSSupportsIPv4
-        {
-            get
-            {
-                InitializeSockets();
-                return SocketProtocolSupportPal.OSSupportsIPv4;
-            }
-        }
-
-        public static bool OSSupportsIPv6
-        {
-            get
-            {
-                InitializeSockets();
-                return SocketProtocolSupportPal.OSSupportsIPv6;
-            }
-        }
-
-        public static bool OSSupportsUnixDomainSockets
-        {
-            get
-            {
-                InitializeSockets();
-                return SocketProtocolSupportPal.OSSupportsUnixDomainSockets;
-            }
-        }
+        public static bool OSSupportsIPv4 => SocketProtocolSupportPal.OSSupportsIPv4;
+        public static bool OSSupportsIPv6 => SocketProtocolSupportPal.OSSupportsIPv6;
+        public static bool OSSupportsUnixDomainSockets => SocketProtocolSupportPal.OSSupportsUnixDomainSockets;
 
         // Gets the amount of data pending in the network's input buffer that can be
         // read from the socket.
@@ -4201,18 +4172,6 @@ namespace System.Net.Sockets
         #endregion
 
         #region Internal and private properties
-        private static object InternalSyncObject
-        {
-            get
-            {
-                if (s_internalSyncObject == null)
-                {
-                    object o = new object();
-                    Interlocked.CompareExchange(ref s_internalSyncObject, o, null);
-                }
-                return s_internalSyncObject;
-            }
-        }
 
         private CacheSet Caches
         {
@@ -4265,26 +4224,6 @@ namespace System.Net.Sockets
             }
 
             return IPEndPointExtensions.Serialize(remoteEP);
-        }
-
-        internal static void InitializeSockets()
-        {
-            if (!s_initialized)
-            {
-                InitializeSocketsCore();
-            }
-
-            static void InitializeSocketsCore()
-            {
-                lock (InternalSyncObject)
-                {
-                    if (!s_initialized)
-                    {
-                        SocketPal.Initialize();
-                        s_initialized = true;
-                    }
-                }
-            }
         }
 
         private void DoConnect(EndPoint endPointSnapshot, Internals.SocketAddress socketAddress)

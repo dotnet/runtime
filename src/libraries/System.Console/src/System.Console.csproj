@@ -21,8 +21,8 @@
   <!-- iOS/tvOS -->
   <ItemGroup Condition="'$(TargetsiOS)' == 'true' or '$(TargetstvOS)' == 'true'">
     <Compile Include="System\ConsolePal.iOS.cs" />
-    <Compile Include="$(CommonPath)Interop\OSX\System.Native\Interop.Log.cs"
-             Link="Common\Interop\OSX\Interop.Log.cs" />
+    <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.Log.cs"
+             Link="Common\Interop\Unix\Interop.Log.cs" />
     <Compile Include="$(CommonPath)Interop\Unix\Interop.Libraries.cs"
              Link="Common\Interop\Unix\Interop.Libraries.cs" />
   </ItemGroup>
@@ -164,8 +164,6 @@
              Link="Common\System\Text\StringBuilderCache.cs" />
     <Compile Include="$(CommonPath)System\Text\EncodingHelper.Unix.cs"
              Link="Common\System\Text\EncodingHelper.Unix.cs" />
-    <Compile Include="$(CommonPath)System\Text\StringOrCharArray.cs"
-             Link="Common\System\Text\StringOrCharArray.cs" />
     <Compile Include="$(CommonPath)Interop\Unix\Interop.Libraries.cs"
              Link="Common\Interop\Unix\Interop.Libraries.cs" />
     <Compile Include="$(CommonPath)Interop\Unix\Interop.Errors.cs"
@@ -235,5 +233,8 @@
   </ItemGroup>
   <ItemGroup Condition="'$(TargetsUnix)' == 'true'">
     <Reference Include="System.Threading.Thread" />
+  </ItemGroup>
+  <ItemGroup Condition=" '$(TargetsBrowser)' == 'true'">
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Private.Runtime.InteropServices.JavaScript\src\System.Private.Runtime.InteropServices.JavaScript.csproj" />
   </ItemGroup>
 </Project>
