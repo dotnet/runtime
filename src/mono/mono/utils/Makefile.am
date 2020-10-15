@@ -231,6 +231,7 @@ monoutils_sources = \
 	os-event.h \
 	refcount.h	\
 	w32api.h	\
+	w32subset.h	\
 	unlocked.h	\
 	ward.h
 
