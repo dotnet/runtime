@@ -223,7 +223,6 @@ jobs:
           artifactName: '$(coreClrProductArtifactName)'
           displayName: 'CoreCLR product download for Mono'
 
-
     # Download and unzip the Microsoft.NET.Sdk.IL package needed for traversing
     # ilproj test projects during copynativeonly.
     - template: /eng/pipelines/common/download-artifact-step.yml
@@ -262,6 +261,20 @@ jobs:
     # in ReadyToRun jobs.
     - script: $(Build.SourcesDirectory)/src/tests/build$(scriptExt) generatelayoutonly $(runtimeFlavorArgs) $(crossgenArg) $(buildConfig) $(archType) $(crossArg) $(priorityArg) $(librariesOverrideArg)
       displayName: Generate CORE_ROOT
+
+    # Build a Mono LLVM AOT cross-compiler for non-amd64 targets (in this case, just arm64)
+    - ${{ if and(eq(parameters.runtimeFlavor, 'mono'), eq(parameters.runtimeVariant, 'llvmaot')) }}:
+      - ${{ if eq(parameters.archType, 'arm64') }}:
+        - script: $(_msbuildCommand)
+                  $(Build.SourcesDirectory)/src/mono/mono.proj
+                  /p:BuildMonoAotCrossCompiler=true
+                  /p:BuildMonoAotCrossCompilerOnly=true
+                  /p:MonoLibClang="/usr/lib/llvm-9/lib/libclang-cpp.so.9"
+                  /p:Configuration=$(buildConfigUpper)
+                  /p:TargetArchitecture=$(archType)
+                  /p:MonoEnableLLVM=true
+                  /p:MonoLLVMUseCxx11Abi=true
+          displayName: "Build Mono LLVM AOT cross compiler"
 
 
     # Overwrite coreclr runtime binaries with mono ones
