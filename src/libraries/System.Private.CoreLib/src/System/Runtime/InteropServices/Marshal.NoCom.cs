@@ -195,24 +195,11 @@ namespace System.Runtime.InteropServices
             throw new PlatformNotSupportedException(SR.PlatformNotSupported_ComInterop);
         }
 
-        public static bool IsComObject(object o)
-        {
-            if (o is null)
-            {
-                throw new ArgumentNullException(nameof(o));
-            }
+        public static bool IsComObject(object o) => false;
 
-            return false;
-        }
+        public static bool IsTypeVisibleFromCom(Type t) => false;
 
-        public static bool IsTypeVisibleFromCom(Type t)
-        {
-            if (t is null)
-            {
-                throw new ArgumentNullException(nameof(t));
-            }
-            return false;
-        }
+        internal static bool IsComSupported => false;
 
         [SupportedOSPlatform("windows")]
         public static int QueryInterface(IntPtr pUnk, ref Guid iid, out IntPtr ppv)

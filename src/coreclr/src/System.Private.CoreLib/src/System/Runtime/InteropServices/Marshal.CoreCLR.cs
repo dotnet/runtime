@@ -445,6 +445,8 @@ namespace System.Runtime.InteropServices
         [MethodImpl(MethodImplOptions.InternalCall)]
         public static extern bool IsComObject(object o);
 
+        internal static bool IsComSupported => true;
+
         /// <summary>
         /// Release the COM component and if the reference hits 0 zombie this object.
         /// Further usage of this Object might throw an exception
