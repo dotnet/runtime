@@ -4,6 +4,11 @@
     <OutputType>Exe</OutputType>
     <CLRTestKind>BuildAndRun</CLRTestKind>
     <CLRTestPriority>0</CLRTestPriority>
+    <!-- The test is not compatible with the unloadability testing, since the test loads the IReturnSpan
+    into the default context, but with runincontext, the test itself runs in a secondary context including
+    all of the dependencies, so the IReturnSpan is loaded into the secondary context in the test and
+    the types don't match -->
+    <UnloadabilityIncompatible>true</UnloadabilityIncompatible>
   </PropertyGroup>
   <ItemGroup>
     <ProjectReference Include="Unloaded.csproj" />
