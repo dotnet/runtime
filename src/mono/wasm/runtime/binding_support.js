@@ -1734,7 +1734,7 @@ var BindingSupportLib = {
 
 		var js_name = BINDING.conv_string (global_name);
 
-		var globalObj = BINDING.mono_wasm_get_global ();
+		var globalObj;
 
 		if (!js_name) {
 			globalObj = globalThis;
