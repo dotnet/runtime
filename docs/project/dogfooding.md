@@ -1,8 +1,6 @@
-# How to get up and running on .NET Core
+# Dogfooding nightly builds of .NET
 
 This document provides the steps necessary to consume a nightly build of .NET runtime and SDK.
-
-Please note that these steps are likely to change as we're simplifying this experience. Make sure to consult this document often.
 
 ## Obtaining nightly builds of NuGet packages
 
@@ -15,14 +13,14 @@ dotnet new nugetconfig
 
 Next, add the package source to NuGet.Config with the [dotnet nuget add source](https://docs.microsoft.com/en-us/dotnet/core/tools/dotnet-nuget-add-source) command:
 ```
-dotnet nuget add source -n dotnet5 https://dnceng.pkgs.visualstudio.com/public/_packaging/dotnet5/nuget/v3/index.json
+dotnet nuget add source -n dotnet5 https://dnceng.pkgs.visualstudio.com/public/_packaging/dotnet6/nuget/v3/index.json
 ```
 
 Then, you will be able to add the latest prerelease version of the desired package to your project.
 
-**Example:** To add version 5.0.0-preview.1.20120.5 of the System.Data.OleDb package, use the [dotnet add package](https://docs.microsoft.com/en-us/dotnet/core/tools/dotnet-add-package) command:
+**Example:** To add version 6.0.0-alpha.1.20468.7 of the System.Data.OleDb package, use the [dotnet add package](https://docs.microsoft.com/en-us/dotnet/core/tools/dotnet-add-package) command:
 ```
-dotnet add package System.Data.OleDb -v 5.0.0-preview.1.20120.5
+dotnet add package System.Data.OleDb -v 6.0.0-alpha.1.20468.7
 ```
 
 To use nightly builds of the entire runtime, follow the steps given in the rest of this document instead.
@@ -33,33 +31,33 @@ To use nightly builds of the entire runtime, follow the steps given in the rest 
 
 2. By default, the dotnet CLI will use the globally installed SDK if it matches the major/minor version you request and has a higher revision. To force it to use a locally installed SDK, you must set an environment variable `DOTNET_MULTILEVEL_LOOKUP=0` in your shell. You can use `dotnet --info` to verify what version of the Shared Framework it is using.
 
-3. Reminder: if you are using a local copy of the dotnet CLI, take care that when you type `dotnet` you do not inadvertently pick up a different copy that you may have in your path. On Windows, for example, if you use a Command Prompt, a global copy may be in the path, so use the fully qualified path to your local `dotnet` (e.g. `C:\dotnet\dotnet.exe`). If you receive an error "error NETSDK1045:  The current .NET SDK does not support targeting .NET Core 5.0." then you may be executing an older `dotnet`.
+3. Reminder: if you are using a local copy of the dotnet CLI, take care that when you type `dotnet` you do not inadvertently pick up a different copy that you may have in your path. On Windows, for example, if you use a Command Prompt, a global copy may be in the path, so use the fully qualified path to your local `dotnet` (e.g. `C:\dotnet\dotnet.exe`). If you receive an error "error NETSDK1045:  The current .NET SDK does not support targeting .NET 6.0." then you may be executing an older `dotnet`.
 
 After setting up dotnet you can verify you are using the dogfooding version by executing `dotnet --info`. Here is an example output at the time of writing:
 ```
 >dotnet --info
-.NET Core SDK (reflecting any global.json):
- Version:   5.0.100-preview.1.20167.6
- Commit:    00255dd10b
+.NET SDK (reflecting any global.json):
+ Version:   6.0.100-alpha.1.20514.11
+ Commit:    69ee2fdd13
 
 Runtime Environment:
  OS Name:     Windows
- OS Version:  10.0.18363
+ OS Version:  10.0.19042
  OS Platform: Windows
  RID:         win10-x64
- Base Path:   c:\dotnet\sdk\5.0.100-preview.1.20167.6\
+ Base Path:   c:\dotnet\sdk\6.0.100-alpha.1.20514.11\
 
 Host (useful for support):
-  Version: 5.0.0-preview.1.20120.5
-  Commit:  3c523a6a7a
+  Version: 6.0.0-alpha.1.20468.7
+  Commit:  a820ca1c4f
 
 .NET Core SDKs installed:
-  5.0.100-preview.1.20167.6 [c:\dotnet\sdk]
+  6.0.100-alpha.1.20514.11 [c:\dotnet\sdk]
 
 .NET Core runtimes installed:
-  Microsoft.AspNetCore.App 5.0.0-preview.1.20124.5 [c:\dotnet\shared\Microsoft.AspNetCore.App]
-  Microsoft.NETCore.App 5.0.0-preview.1.20120.5 [c:\dotnet\shared\Microsoft.NETCore.App]
-  Microsoft.WindowsDesktop.App 5.0.0-preview.1.20127.5 [c:\dotnet\shared\Microsoft.WindowsDesktop.App]
+  Microsoft.AspNetCore.App 5.0.0-rc.2.20466.8 [c:\dotnet\shared\Microsoft.AspNetCore.App]
+  Microsoft.NETCore.App 6.0.0-alpha.1.20468.7 [c:\dotnet\shared\Microsoft.NETCore.App]
+  Microsoft.WindowsDesktop.App 5.0.0-rc.1.20417.4 [c:\dotnet\shared\Microsoft.WindowsDesktop.App]
 
 To install additional .NET Core runtimes or SDKs:
   https://aka.ms/dotnet-download
@@ -68,7 +66,7 @@ To install additional .NET Core runtimes or SDKs:
 4. Our nightly builds are uploaded to dotnet-blob feeds, not NuGet - so ensure the .NET Core blob feed is in your nuget configuration in case you need other packages from .NET Core that aren't included in the download. For example, on Windows you could edit `%userprofile%\appdata\roaming\nuget\nuget.config` or on Linux edit `~/.nuget/NuGet/NuGet.Config` to add these lines:
 ```xml
 <packageSources>
-    <add key="dotnet5" value="https://dnceng.pkgs.visualstudio.com/public/_packaging/dotnet5/nuget/v3/index.json" />
+    <add key="dotnet6" value="https://dnceng.pkgs.visualstudio.com/public/_packaging/dotnet6/nuget/v3/index.json" />
     <add key="gRPC repository" value="https://grpc.jfrog.io/grpc/api/nuget/v3/grpc-nuget-dev" />
     ...
 </packageSources>
@@ -114,10 +112,10 @@ This is the default case for applications - running against an installed .NET ru
 ```XML
   <PropertyGroup>
     <OutputType>Exe</OutputType>
-    <!-- Ensure that the target framework is correct e.g. 'net5.0' -->
-    <TargetFramework>net5.0</TargetFramework>
+    <!-- Ensure that the target framework is correct e.g. 'net6.0' -->
+    <TargetFramework>net6.0</TargetFramework>
     <!-- modify version in this line with one reported by `dotnet --info` under ".NET runtimes installed" -> Microsoft.NETCore.App -->
-    <RuntimeFrameworkVersion>5.0.0-preview.1.20120.5</RuntimeFrameworkVersion>
+    <RuntimeFrameworkVersion>6.0.0-alpha.1.20468.7</RuntimeFrameworkVersion>
   </PropertyGroup>
 ```
 
@@ -137,11 +135,11 @@ make it self-contained by adding a RuntimeIdentifier (RID).
 ```XML
   <PropertyGroup>
     <OutputType>Exe</OutputType>
-    <!-- Ensure that the target framework is correct e.g. 'net5.0' -->
-    <TargetFramework>net5.0</TargetFramework>
+    <!-- Ensure that the target framework is correct e.g. 'net6.0' -->
+    <TargetFramework>net6.0</TargetFramework>
     <!-- modify build in this line with version reported by `dotnet --info` as above under ".NET runtimes installed" -> Microsoft.NETCore.App -->
-    <!-- moreover, this can be any valid Microsoft.NETCore.App package version from https://dotnetfeed.blob.core.windows.net/dotnet-core/index.json -->
-    <RuntimeFrameworkVersion>5.0.0-preview.1.20120.5</RuntimeFrameworkVersion>
+    <!-- moreover, this can be any valid Microsoft.NETCore.App package version from https://pkgs.dev.azure.com/dnceng/public/_packaging/dotnet6/nuget/v3/index.json -->
+    <RuntimeFrameworkVersion>6.0.0-alpha.1.20468.7</RuntimeFrameworkVersion>
     <RuntimeIdentifier>win-x64</RuntimeIdentifier> <!-- RID to make it self-contained -->
   </PropertyGroup>
 ```
@@ -149,19 +147,21 @@ make it self-contained by adding a RuntimeIdentifier (RID).
 ```
 $ dotnet restore
 $ dotnet publish
-$ bin\Debug\net5.0\win-x64\publish\App.exe
+$ bin\Debug\net6.0\win-x64\publish\App.exe
 ```
 
 ### Nightly builds table
 
+Columns containing CoreCLR in name of the column have links to download runtimes that are backed by the CoreCLR VM.
+
 <!--
-  To update this table, run 'build.sh/cmd /p:Subset=RegenerateReadmeTable'. See
+  To update this table, run 'build.sh/cmd RegenerateDownloadTable'. See
   'tools-local/regenerate-readme-table.proj' to add or remove rows or columns,
   and add links below to fill out the table's contents.
 -->
 <!-- BEGIN generated table -->
 
-| Platform | Master (CoreCLR) |
+| Platform | Master (CoreCLR VM) |
 | --- |  :---: |
 | **Windows (x64)** | [![][win-x64-badge-6.0.X-coreclr]][win-x64-version-6.0.X-coreclr]<br>[Installer][win-x64-installer-6.0.X-coreclr] ([Checksum][win-x64-installer-checksum-6.0.X-coreclr])<br>[zip][win-x64-zip-6.0.X-coreclr] ([Checksum][win-x64-zip-checksum-6.0.X-coreclr])<br>[NetHost (zip)][win-x64-nethost-zip-6.0.X-coreclr]<br>[Symbols (zip)][win-x64-symbols-zip-6.0.X-coreclr] |
 | **Windows (x86)** | [![][win-x86-badge-6.0.X-coreclr]][win-x86-version-6.0.X-coreclr]<br>[Installer][win-x86-installer-6.0.X-coreclr] ([Checksum][win-x86-installer-checksum-6.0.X-coreclr])<br>[zip][win-x86-zip-6.0.X-coreclr] ([Checksum][win-x86-zip-checksum-6.0.X-coreclr])<br>[NetHost (zip)][win-x86-nethost-zip-6.0.X-coreclr]<br>[Symbols (zip)][win-x86-symbols-zip-6.0.X-coreclr] |
@@ -171,109 +171,19 @@ $ bin\Debug\net5.0\win-x64\publish\App.exe
 | **Linux (x64)** (for glibc based OS) | [![][linux-x64-badge-6.0.X-coreclr]][linux-x64-version-6.0.X-coreclr]<br>[tar.gz][linux-x64-targz-6.0.X-coreclr] ([Checksum][linux-x64-targz-checksum-6.0.X-coreclr])<br>[NetHost (tar.gz)][linux-x64-nethost-targz-6.0.X-coreclr]<br>[Symbols (tar.gz)][linux-x64-symbols-targz-6.0.X-coreclr] |
 | **Linux (armhf)** (for glibc based OS) | [![][linux-arm-badge-6.0.X-coreclr]][linux-arm-version-6.0.X-coreclr]<br>[tar.gz][linux-arm-targz-6.0.X-coreclr] ([Checksum][linux-arm-targz-checksum-6.0.X-coreclr])<br>[NetHost (tar.gz)][linux-arm-nethost-targz-6.0.X-coreclr]<br>[Symbols (tar.gz)][linux-arm-symbols-targz-6.0.X-coreclr] |
 | **Linux (arm64)** (for glibc based OS) | [![][linux-arm64-badge-6.0.X-coreclr]][linux-arm64-version-6.0.X-coreclr]<br>[tar.gz][linux-arm64-targz-6.0.X-coreclr] ([Checksum][linux-arm64-targz-checksum-6.0.X-coreclr])<br>[NetHost (tar.gz)][linux-arm64-nethost-targz-6.0.X-coreclr]<br>[Symbols (tar.gz)][linux-arm64-symbols-targz-6.0.X-coreclr] |
+| **Linux-musl (x64)** | [![][linux-musl-x64-badge-6.0.X-coreclr]][linux-musl-x64-version-6.0.X-coreclr]<br>[tar.gz][linux-musl-x64-targz-6.0.X-coreclr] ([Checksum][linux-musl-x64-targz-checksum-6.0.X-coreclr])<br>[NetHost (tar.gz)][linux-musl-x64-nethost-targz-6.0.X-coreclr]<br>[Symbols (tar.gz)][linux-musl-x64-symbols-targz-6.0.X-coreclr] |
+| **Linux-musl (arm)** | [![][linux-musl-arm-badge-6.0.X-coreclr]][linux-musl-arm-version-6.0.X-coreclr]<br>[tar.gz][linux-musl-arm-targz-6.0.X-coreclr] ([Checksum][linux-musl-arm-targz-checksum-6.0.X-coreclr])<br>[NetHost (tar.gz)][linux-musl-arm-nethost-targz-6.0.X-coreclr]<br>[Symbols (tar.gz)][linux-musl-arm-symbols-targz-6.0.X-coreclr] |
+| **Linux-musl (arm64)** | [![][linux-musl-arm64-badge-6.0.X-coreclr]][linux-musl-arm64-version-6.0.X-coreclr]<br>[tar.gz][linux-musl-arm64-targz-6.0.X-coreclr] ([Checksum][linux-musl-arm64-targz-checksum-6.0.X-coreclr])<br>[NetHost (tar.gz)][linux-musl-arm64-nethost-targz-6.0.X-coreclr]<br>[Symbols (tar.gz)][linux-musl-arm64-symbols-targz-6.0.X-coreclr] |
 | **Dpkg Based Systems (x64)** | [![][deb-badge-6.0.X-coreclr]][deb-version-6.0.X-coreclr]<br>[Runtime-Deps][deb-runtime-deps-6.0.X-coreclr] ([Checksum][deb-runtime-deps-checksum-6.0.X-coreclr])<br>[Host][deb-host-6.0.X-coreclr] ([Checksum][deb-host-checksum-6.0.X-coreclr])<br>[App Hosts][deb-apphost-pack-6.0.X-coreclr] ([Checksum][deb-apphost-pack-checksum-6.0.X-coreclr])<br>[Host FX Resolver][deb-hostfxr-6.0.X-coreclr] ([Checksum][deb-hostfxr-checksum-6.0.X-coreclr])<br>[Targeting Pack][deb-targeting-pack-6.0.X-coreclr] ([Checksum][deb-targeting-pack-checksum-6.0.X-coreclr])<br>[Shared Framework][deb-sharedfx-6.0.X-coreclr] ([Checksum][deb-sharedfx-checksum-6.0.X-coreclr]) |
 | **CentOS 7 (x64)** | [![][centos-7-badge-6.0.X-coreclr]][centos-7-version-6.0.X-coreclr]<br>[Runtime-Deps][centos-7-runtime-deps-6.0.X-coreclr] ([Checksum][centos-7-runtime-deps-checksum-6.0.X-coreclr])<br>[Host][centos-7-host-6.0.X-coreclr] ([Checksum][centos-7-host-checksum-6.0.X-coreclr])<br>[App Hosts][centos-7-apphost-pack-6.0.X-coreclr] ([Checksum][centos-7-apphost-pack-checksum-6.0.X-coreclr])<br>[Host FX Resolver][centos-7-hostfxr-6.0.X-coreclr] ([Checksum][centos-7-hostfxr-checksum-6.0.X-coreclr])<br>[Targeting Pack][centos-7-targeting-pack-6.0.X-coreclr] ([Checksum][centos-7-targeting-pack-checksum-6.0.X-coreclr])<br>[Shared Framework][centos-7-sharedfx-6.0.X-coreclr] ([Checksum][centos-7-sharedfx-checksum-6.0.X-coreclr]) |
 | **RHEL 7.2 (x64)** | [![][rhel7-badge-6.0.X-coreclr]][rhel7-version-6.0.X-coreclr]<br>[Host][rhel7-host-6.0.X-coreclr] ([Checksum][rhel7-host-checksum-6.0.X-coreclr])<br>[App Hosts][rhel7-apphost-pack-6.0.X-coreclr] ([Checksum][rhel7-apphost-pack-checksum-6.0.X-coreclr])<br>[Host FX Resolver][rhel7-hostfxr-6.0.X-coreclr] ([Checksum][rhel7-hostfxr-checksum-6.0.X-coreclr])<br>[Targeting Pack][rhel7-targeting-pack-6.0.X-coreclr] ([Checksum][rhel7-targeting-pack-checksum-6.0.X-coreclr])<br>[Shared Framework][rhel7-sharedfx-6.0.X-coreclr] ([Checksum][rhel7-sharedfx-checksum-6.0.X-coreclr]) |
 | **Fedora 27 (x64)** | [![][fedora-27-badge-6.0.X-coreclr]][fedora-27-version-6.0.X-coreclr]<br>[Runtime-Deps][fedora-27-runtime-deps-6.0.X-coreclr] ([Checksum][fedora-27-runtime-deps-checksum-6.0.X-coreclr])<br>[Host][fedora-27-host-6.0.X-coreclr] ([Checksum][fedora-27-host-checksum-6.0.X-coreclr])<br>[App Hosts][fedora-27-apphost-pack-6.0.X-coreclr] ([Checksum][fedora-27-apphost-pack-checksum-6.0.X-coreclr])<br>[Host FX Resolver][fedora-27-hostfxr-6.0.X-coreclr] ([Checksum][fedora-27-hostfxr-checksum-6.0.X-coreclr])<br>[Targeting Pack][fedora-27-targeting-pack-6.0.X-coreclr] ([Checksum][fedora-27-targeting-pack-checksum-6.0.X-coreclr])<br>[Shared Framework][fedora-27-sharedfx-6.0.X-coreclr] ([Checksum][fedora-27-sharedfx-checksum-6.0.X-coreclr]) |
 | **SLES 12 (x64)** | [![][sles-12-badge-6.0.X-coreclr]][sles-12-version-6.0.X-coreclr]<br>[Runtime-Deps][sles-12-runtime-deps-6.0.X-coreclr] ([Checksum][sles-12-runtime-deps-checksum-6.0.X-coreclr])<br>[Host][sles-12-host-6.0.X-coreclr] ([Checksum][sles-12-host-checksum-6.0.X-coreclr])<br>[App Hosts][sles-12-apphost-pack-6.0.X-coreclr] ([Checksum][sles-12-apphost-pack-checksum-6.0.X-coreclr])<br>[Host FX Resolver][sles-12-hostfxr-6.0.X-coreclr] ([Checksum][sles-12-hostfxr-checksum-6.0.X-coreclr])<br>[Targeting Pack][sles-12-targeting-pack-6.0.X-coreclr] ([Checksum][sles-12-targeting-pack-checksum-6.0.X-coreclr])<br>[Shared Framework][sles-12-sharedfx-6.0.X-coreclr] ([Checksum][sles-12-sharedfx-checksum-6.0.X-coreclr]) |
 | **OpenSUSE 42 (x64)** | [![][OpenSUSE-42-badge-6.0.X-coreclr]][OpenSUSE-42-version-6.0.X-coreclr]<br>[Runtime-Deps][OpenSUSE-42-runtime-deps-6.0.X-coreclr] ([Checksum][OpenSUSE-42-runtime-deps-checksum-6.0.X-coreclr])<br>[Host][OpenSUSE-42-host-6.0.X-coreclr] ([Checksum][OpenSUSE-42-host-checksum-6.0.X-coreclr])<br>[App Hosts][OpenSUSE-42-apphost-pack-6.0.X-coreclr] ([Checksum][OpenSUSE-42-apphost-pack-checksum-6.0.X-coreclr])<br>[Host FX Resolver][OpenSUSE-42-hostfxr-6.0.X-coreclr] ([Checksum][OpenSUSE-42-hostfxr-checksum-6.0.X-coreclr])<br>[Targeting Pack][OpenSUSE-42-targeting-pack-6.0.X-coreclr] ([Checksum][OpenSUSE-42-targeting-pack-checksum-6.0.X-coreclr])<br>[Shared Framework][OpenSUSE-42-sharedfx-6.0.X-coreclr] ([Checksum][OpenSUSE-42-sharedfx-checksum-6.0.X-coreclr]) |
-| **Linux-musl (x64)** | [![][linux-musl-x64-badge-6.0.X-coreclr]][linux-musl-x64-version-6.0.X-coreclr]<br>[tar.gz][linux-musl-x64-targz-6.0.X-coreclr] ([Checksum][linux-musl-x64-targz-checksum-6.0.X-coreclr])<br>[NetHost (tar.gz)][linux-musl-x64-nethost-targz-6.0.X-coreclr]<br>[Symbols (tar.gz)][linux-musl-x64-symbols-targz-6.0.X-coreclr] |
-| **Linux-musl (arm)** | [![][linux-musl-arm-badge-6.0.X-coreclr]][linux-musl-arm-version-6.0.X-coreclr]<br>[tar.gz][linux-musl-arm-targz-6.0.X-coreclr] ([Checksum][linux-musl-arm-targz-checksum-6.0.X-coreclr])<br>[NetHost (tar.gz)][linux-musl-arm-nethost-targz-6.0.X-coreclr]<br>[Symbols (tar.gz)][linux-musl-arm-symbols-targz-6.0.X-coreclr] |
-| **Linux-musl (arm64)** | [![][linux-musl-arm64-badge-6.0.X-coreclr]][linux-musl-arm64-version-6.0.X-coreclr]<br>[tar.gz][linux-musl-arm64-targz-6.0.X-coreclr] ([Checksum][linux-musl-arm64-targz-checksum-6.0.X-coreclr])<br>[NetHost (tar.gz)][linux-musl-arm64-nethost-targz-6.0.X-coreclr]<br>[Symbols (tar.gz)][linux-musl-arm64-symbols-targz-6.0.X-coreclr] |
 
 <!-- END generated table -->
 
 *Note: Our Linux packages (.deb and .rpm) are put together slightly differently than the Windows and Mac specific installers. Instead of combining everything, we have separate component packages that depend on each other. If you're installing these directly from the installer files (via dpkg or similar), then you'll need to install them in the order presented above.*
-
-## More Advanced Scenario - Using your local CoreFx build
-
-If you built the libraries locally with `build libs` after building binaries it will build NuGet packages containing them. You can use those in your projects.
-
-To use your locally built libraries packages you will need to be a self-contained application and so you will
-need to follow the "Self-contained" steps from above. Once you can successfully restore, build, publish,
-and run a self-contained application you need the following steps to consume your local built package.
-
-#### 1 - Get the Version number of the CoreFx package you built.
-
-Look for a package named `Microsoft.Private.CoreFx.NETCoreApp.<version>.nupkg` under `REPO_ROOT\artifacts\packages\Debug` (or Release if you built a release version of corefx).
-
-Once you find the version number (for this example assume it is `4.6.0-dev.18626.1`) you need to add the following line to your project file:
-
-```
-  <ItemGroup>
-    <PackageReference Include="Microsoft.Private.CoreFx.NETCoreApp" Version="4.6.0-dev.18626.1" />
-  </ItemGroup>
-```
-
-Because assets in `Microsoft.Private.CoreFx.NETCoreApp` conflict with the normal `Microsoft.NETCore.App` package,
-you need to tell the tooling to use the assets from your local package. To do this, add the following property to your project file:
-
-```xml
-  <PropertyGroup>
-    <PackageConflictPreferredPackages>Microsoft.Private.CoreFx.NETCoreApp;runtime.win-x64.Microsoft.Private.CoreFx.NETCoreApp;$(PackageConflictPreferredPackages)</PackageConflictPreferredPackages>
-  </PropertyGroup>
-```
-
-Replacing the RID (`win-x64` in this case) in `runtime.win-x64.Microsoft.Private.CoreFx.NETCoreApp` with the RID of your current build.
-
-Note these instructions above were only about updates to the binaries that are part of Microsoft.NETCore.App, if you want to test a package for library that ships in its own nuget package you can follow the same steps above but instead add a package reference to that package instead of "Microsoft.Private.CoreFx.NETCoreApp".
-
-#### 2 - Add your bin directory to the Nuget feed list
-
-By default the dogfooding dotnet SDK will create a Nuget.Config file next to your project, if it doesn't
-you can create one. Your config file will need a source for your local corefx package directory as well
-as a reference to our nightly dotnet-core blob feed. The Nuget.Config file content should be:
-
-```xml
-<configuration>
-  <packageSources>
-    <add key="local coreclr" value="D:\git\runtime\artifacts\packages\Debug" /> <!-- Change this to your own output path -->
-    <add key="dotnetcore-feed" value="https://dotnetfeed.blob.core.windows.net/dotnet-core/index.json" />
-  </packageSources>
-</configuration>
-```
-Be sure to correct the path to your build output above.
-
-You also have the alternative of modifying the Nuget.Config
-at `%HOMEPATH%\AppData\Roaming\Nuget\Nuget.Config` (Windows) or `~/.nuget/NuGet/NuGet.Config` (Linux) with the new location.
-This will allow your new runtime to be used on any 'dotnet restore' run by the current user.
-Alternatively you can skip creating this file and pass the path to your package directory using
-the -s SOURCE qualifier on the dotnet restore command below. The important part is that somehow
-you have told the tools where to find your new package.
-
-Once have made these modifications you will need to rerun the restore and publish as such.
-
-```
-dotnet restore
-dotnet publish
-```
-Now your publication directory should contain your local built libraries binaries.
-
-#### 3 - Consuming subsequent code changes by overwriting the binary (Alternative 1)
-
-To apply changes you subsequently make in your source tree, it's usually easiest to just overwrite the binary in the publish folder. Build the assembly containing your change as normal, then overwrite the assembly in your publish folder and running the app will pick up that binary. This relies on the fact that all the other binaries still match what is in your bin folder so everything works together.
-
-#### 3 - Consuming subsequent code changes by rebuilding the package (Alternative 2)
-
-This is more cumbersome than just overwriting the binaries, but is more correct.
-
-First note that Nuget assumes that distinct builds have distinct version numbers.
-Thus if you modify the source and create a new NuGet package you must give it a new version number and use that in your
-application's project. Otherwise the dotnet.exe tool will assume that the existing version is fine and you
-won't get the updated bits. This is what the Minor Build number is all about. By default it is 0, but you can
-give it a value by setting the BuildNumberMinor environment variable.
-```bat
-    set BuildNumberMinor=3
-```
-before packaging. You should see this number show up in the version number (e.g. 4.6.0-dev.18626.1).
-
-Alternatively just delete the existing copy of the package from the Nuget cache. For example on
-windows (on Linux substitute ~/ for %HOMEPATH%) you could delete
-```bat
-     %HOMEPATH%\.nuget\packages\Microsoft.Private.CoreFx.NETCoreApp\4.6.0-dev.18626.1
-     %HOMEPATH%\.nuget\packages\runtime.win-x64.microsoft.private.corefx.netcoreapp\4.6.0-dev.18626.1
-```
-which should make `dotnet restore` now pick up the new copy.
 
 <!-- BEGIN links to include in table -->
 

@@ -13,6 +13,8 @@
     </PropertyGroup>
 
     <ItemGroup>
+      <!-- The parenthetical coreclr points that the links have a CoreCLR VM backed runtime. Similarly the abbreviation should have
+      the runtime in them to be able to differentiate between download links for mono and coreclr runtimes for equivalent platforms. -->
       <Branches Include="Master (CoreCLR)" Abbr="6.0.X-coreclr" />
 
       <Platforms Include="Windows (x64)" Abbr="win-x64" />
