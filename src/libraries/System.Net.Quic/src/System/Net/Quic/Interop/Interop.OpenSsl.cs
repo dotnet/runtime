@@ -3,11 +3,8 @@
 
 using System;
 using System.Collections.Generic;
-using System.IO;
-using System.Net.Quic.Implementations.Managed.Internal;
 using System.Net.Quic.Implementations.Managed.Internal.Tls.OpenSsl;
 using System.Net.Security;
-using System.Reflection;
 using System.Runtime.InteropServices;
 
 internal static partial class Interop
@@ -18,57 +15,28 @@ internal static partial class Interop
         internal const int SSL_TLSEXT_ERR_NOACK = 3;
         internal const int SSL_TLSEXT_ERR_OK = 0;
 
-        internal const string QuicNative = "QuicNative";
-        internal const string Ssl = QuicNative;
-        internal const string Crypto = QuicNative;
+        internal const string Ssl = "ssl";
+        internal const string Crypto = "crypto";
 
-        private const string EntryPointPrefix = "QuicNative_";
+        private const string EntryPointPrefix = "";
 
-        internal static bool IsSupported()
+        internal static bool IsSupported { get; }
+
+        static OpenSslQuic()
         {
             try
             {
-                // try invoke arbitrary function from the dll;
+                // this function does not really check that we are using the modified openssl which is required for the
+                // openssl based support, but there does not seem to be a function that can be safely called to check that
                 TlsMethod();
-                return true;
+                IsSupported = true;
             }
             catch (DllNotFoundException)
             {
                 // nope
-                return false;
+                IsSupported = false;
             }
         }
-
-#if FEATURE_QUIC_STANDALONE
-        [DllImport("libdl.so")]
-        private static extern IntPtr dlopen(string filename, int flags);
-
-        [DllImport("kernel32.dll")]
-        private static extern IntPtr LoadLibrary(string filename);
-
-        static OpenSslQuic()
-        {
-            // manually load the platform dependent library to the process to that the relative name gets resolved correctly
-
-            string? baseDir = Path.GetDirectoryName(Assembly.GetCallingAssembly().Location);
-            baseDir = baseDir != null ? baseDir + "/" : "";
-            IntPtr handle = IntPtr.Zero;
-            if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
-            {
-                const int RTLD_NOW = 2;
-                handle = dlopen($"{baseDir}native/linux86_64/lib{QuicNative}.so", RTLD_NOW);
-            }
-            else if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
-            {
-                handle = LoadLibrary($"{baseDir}native/win{(Environment.Is64BitProcess ? "64" : "32")}/{QuicNative}.dll");
-            }
-
-            if (handle == IntPtr.Zero)
-            {
-                throw new DllNotFoundException($"Cannot find {QuicNative}");
-            }
-        }
-#endif
 
         [DllImport(Ssl, EntryPoint = EntryPointPrefix + "TLS_method")]
         internal static extern IntPtr TlsMethod();

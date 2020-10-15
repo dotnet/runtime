@@ -5,7 +5,7 @@ namespace System.Net.Quic.Implementations.Managed
 {
     internal class ManagedQuicImplementationProvider : QuicImplementationProvider
     {
-        public override bool IsSupported => Interop.OpenSslQuic.IsSupported();
+        public override bool IsSupported => true;
 
         internal override QuicListenerProvider CreateListener(QuicListenerOptions options) => new ManagedQuicListener(options);
 

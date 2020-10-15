@@ -202,7 +202,6 @@ endif(CLR_CMAKE_TARGET_UNIX)
 include(configure.cmake)
 
 add_subdirectory(System.IO.Compression.Native)
-add_subdirectory(../AnyOS/QuicNative "${CMAKE_CURRENT_BINARY_DIR}/QuicNative")
 
 if (NOT CLR_CMAKE_TARGET_BROWSER AND NOT CLR_CMAKE_TARGET_IOS AND NOT CLR_CMAKE_TARGET_TVOS AND NOT CLR_CMAKE_TARGET_ANDROID)
     add_subdirectory(System.IO.Ports.Native)

@@ -1,5 +1,0 @@
-[submodule "src/libraries/Native/AnyOS/QuicNative/openssl"]
-	path = src/libraries/Native/AnyOS/QuicNative/openssl
-	url = https://github.com/akamai/openssl.git
-	branch = OpenSSL_1_1_1g-quic
-	shallow = true

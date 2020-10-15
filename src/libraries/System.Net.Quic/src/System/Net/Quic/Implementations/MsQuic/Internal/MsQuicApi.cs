@@ -4,11 +4,9 @@
 #nullable enable
 using System.Buffers;
 using System.Collections.Generic;
-using System.IO;
 using System.Net.Security;
 using System.Runtime.InteropServices;
 using System.Security.Cryptography.X509Certificates;
-using System.Text;
 using System.Threading.Tasks;
 
 namespace System.Net.Quic.Implementations.MsQuic.Internal

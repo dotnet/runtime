@@ -8,7 +8,7 @@ namespace System.Net.Quic.Implementations.Managed.Internal.Tls
     internal abstract class TlsFactory
     {
         internal static readonly TlsFactory Instance =
-            Environment.GetEnvironmentVariable("DOTNETQUIC_OPENSSL") != null
+            Interop.OpenSslQuic.IsSupported
                 ? (TlsFactory)new OpenSslTlsFactory()
                 : (TlsFactory) new MockTlsFactory();
                 // new OpenSslTlsFactory();
