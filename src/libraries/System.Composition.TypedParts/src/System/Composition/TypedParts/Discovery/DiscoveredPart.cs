@@ -139,11 +139,15 @@ namespace System.Composition.TypedParts.Discovery
         {
             var genericPartTypeInfo = type.GetGenericTypeDefinition().GetTypeInfo();
             var genericPartType = type.GetGenericTypeDefinition();
-            int indexConstructorFound = -1;
             ConstructorInfo constructor = null;
 
-            foreach (var c in genericPartTypeInfo.DeclaredConstructors.Where(ci => ci.IsPublic && !(ci.IsStatic)))
+            int index = -1;
+            foreach (var c in genericPartTypeInfo.DeclaredConstructors)
             {
+                ++index;
+
+                if (!c.IsPublic || c.IsStatic) continue;
+
                 if (_attributeContext.GetDeclaredAttribute<ImportingConstructorAttribute>(genericPartType, c) != null)
                 {
                     if (constructor != null)
@@ -152,12 +156,9 @@ namespace System.Composition.TypedParts.Discovery
                         throw new CompositionFailedException(message);
                     }
 
-                    ++indexConstructorFound;
-                    constructor = c;
+                    constructor = type.DeclaredConstructors.ElementAt(index);
                 }
             }
-            if (constructor != null)
-                constructor = type.DeclaredConstructors.Where(ci => ci.IsPublic && !(ci.IsStatic)).ElementAt(indexConstructorFound);
 
             return constructor;
         }
