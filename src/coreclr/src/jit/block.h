@@ -382,69 +382,69 @@ struct BasicBlock : private LIR::Range
 
 // clang-format off
 
-#define BBF_VISITED             0x00000001 // BB visited during optimizations
-#define BBF_MARKED              0x00000002 // BB marked  during optimizations
-#define BBF_CHANGED             0x00000004 // input/output of this block has changed
-#define BBF_REMOVED             0x00000008 // BB has been removed from bb-list
+#define BBF_VISITED             0x00000001ULL // BB visited during optimizations
+#define BBF_MARKED              0x00000002ULL // BB marked  during optimizations
+#define BBF_CHANGED             0x00000004ULL // input/output of this block has changed
+#define BBF_REMOVED             0x00000008ULL // BB has been removed from bb-list
 
-#define BBF_DONT_REMOVE         0x00000010 // BB should not be removed during flow graph optimizations
-#define BBF_IMPORTED            0x00000020 // BB byte-code has been imported
-#define BBF_INTERNAL            0x00000040 // BB has been added by the compiler
-#define BBF_FAILED_VERIFICATION 0x00000080 // BB has verification exception
+#define BBF_DONT_REMOVE         0x00000010ULL // BB should not be removed during flow graph optimizations
+#define BBF_IMPORTED            0x00000020ULL // BB byte-code has been imported
+#define BBF_INTERNAL            0x00000040ULL // BB has been added by the compiler
+#define BBF_FAILED_VERIFICATION 0x00000080ULL // BB has verification exception
 
-#define BBF_TRY_BEG             0x00000100 // BB starts a 'try' block
-#define BBF_FUNCLET_BEG         0x00000200 // BB is the beginning of a funclet
-#define BBF_HAS_NULLCHECK       0x00000400 // BB contains a null check
+#define BBF_TRY_BEG             0x00000100ULL // BB starts a 'try' block
+#define BBF_FUNCLET_BEG         0x00000200ULL // BB is the beginning of a funclet
+#define BBF_HAS_NULLCHECK       0x00000400ULL // BB contains a null check
 
-#define BBF_RUN_RARELY          0x00001000 // BB is rarely run (catch clauses, blocks with throws etc)
-#define BBF_LOOP_HEAD           0x00002000 // BB is the head of a loop
-#define BBF_LOOP_CALL0          0x00004000 // BB starts a loop that sometimes won't call
-#define BBF_LOOP_CALL1          0x00008000 // BB starts a loop that will always     call
+#define BBF_RUN_RARELY          0x00001000ULL // BB is rarely run (catch clauses, blocks with throws etc)
+#define BBF_LOOP_HEAD           0x00002000ULL // BB is the head of a loop
+#define BBF_LOOP_CALL0          0x00004000ULL // BB starts a loop that sometimes won't call
+#define BBF_LOOP_CALL1          0x00008000ULL // BB starts a loop that will always     call
 
-#define BBF_HAS_LABEL           0x00010000 // BB needs a label
-#define BBF_JMP_TARGET          0x00020000 // BB is a target of an implicit/explicit jump
-#define BBF_HAS_JMP             0x00040000 // BB executes a JMP instruction (instead of return)
-#define BBF_GC_SAFE_POINT       0x00080000 // BB has a GC safe point (a call).  More abstractly, BB does not require a
-                                           // (further) poll -- this may be because this BB has a call, or, in some
-                                           // cases, because the BB occurs in a loop, and we've determined that all
-                                           // paths in the loop body leading to BB include a call.
+#define BBF_HAS_LABEL           0x00010000ULL // BB needs a label
+#define BBF_JMP_TARGET          0x00020000ULL // BB is a target of an implicit/explicit jump
+#define BBF_HAS_JMP             0x00040000ULL // BB executes a JMP instruction (instead of return)
+#define BBF_GC_SAFE_POINT       0x00080000ULL // BB has a GC safe point (a call).  More abstractly, BB does not require a
+                                              // (further) poll -- this may be because this BB has a call, or, in some
+                                              // cases, because the BB occurs in a loop, and we've determined that all
+                                              // paths in the loop body leading to BB include a call.
 
-#define BBF_HAS_VTABREF         0x00100000 // BB contains reference of vtable
-#define BBF_HAS_IDX_LEN         0x00200000 // BB contains simple index or length expressions on an array local var.
-#define BBF_HAS_NEWARRAY        0x00400000 // BB contains 'new' of an array
-#define BBF_HAS_NEWOBJ          0x00800000 // BB contains 'new' of an object type.
+#define BBF_HAS_VTABREF         0x00100000ULL // BB contains reference of vtable
+#define BBF_HAS_IDX_LEN         0x00200000ULL // BB contains simple index or length expressions on an array local var.
+#define BBF_HAS_NEWARRAY        0x00400000ULL // BB contains 'new' of an array
+#define BBF_HAS_NEWOBJ          0x00800000ULL // BB contains 'new' of an object type.
 
 #if defined(FEATURE_EH_FUNCLETS) && defined(TARGET_ARM)
 
-#define BBF_FINALLY_TARGET      0x01000000 // BB is the target of a finally return: where a finally will return during
-                                           // non-exceptional flow. Because the ARM calling sequence for calling a
-                                           // finally explicitly sets the return address to the finally target and jumps
-                                           // to the finally, instead of using a call instruction, ARM needs this to
-                                           // generate correct code at the finally target, to allow for proper stack
-                                           // unwind from within a non-exceptional call to a finally.
+#define BBF_FINALLY_TARGET      0x01000000ULL // BB is the target of a finally return: where a finally will return during
+                                              // non-exceptional flow. Because the ARM calling sequence for calling a
+                                              // finally explicitly sets the return address to the finally target and jumps
+                                              // to the finally, instead of using a call instruction, ARM needs this to
+                                              // generate correct code at the finally target, to allow for proper stack
+                                              // unwind from within a non-exceptional call to a finally.
 
 #endif // defined(FEATURE_EH_FUNCLETS) && defined(TARGET_ARM)
 
-#define BBF_BACKWARD_JUMP       0x02000000 // BB is surrounded by a backward jump/switch arc
-#define BBF_RETLESS_CALL        0x04000000 // BBJ_CALLFINALLY that will never return (and therefore, won't need a paired
-                                           // BBJ_ALWAYS); see isBBCallAlwaysPair().
-#define BBF_LOOP_PREHEADER      0x08000000 // BB is a loop preheader block
+#define BBF_BACKWARD_JUMP       0x02000000ULL // BB is surrounded by a backward jump/switch arc
+#define BBF_RETLESS_CALL        0x04000000ULL // BBJ_CALLFINALLY that will never return (and therefore, won't need a paired
+                                              // BBJ_ALWAYS); see isBBCallAlwaysPair().
+#define BBF_LOOP_PREHEADER      0x08000000ULL // BB is a loop preheader block
 
-#define BBF_COLD                0x10000000 // BB is cold
-#define BBF_PROF_WEIGHT         0x20000000 // BB weight is computed from profile data
-#define BBF_IS_LIR              0x40000000 // Set if the basic block contains LIR (as opposed to HIR)
-#define BBF_KEEP_BBJ_ALWAYS     0x80000000 // A special BBJ_ALWAYS block, used by EH code generation. Keep the jump kind
-                                           // as BBJ_ALWAYS. Used for the paired BBJ_ALWAYS block following the
-                                           // BBJ_CALLFINALLY block, as well as, on x86, the final step block out of a
-                                           // finally.
+#define BBF_COLD                0x10000000ULL // BB is cold
+#define BBF_PROF_WEIGHT         0x20000000ULL // BB weight is computed from profile data
+#define BBF_IS_LIR              0x40000000ULL // Set if the basic block contains LIR (as opposed to HIR)
+#define BBF_KEEP_BBJ_ALWAYS     0x80000000ULL // A special BBJ_ALWAYS block, used by EH code generation. Keep the jump kind
+                                              // as BBJ_ALWAYS. Used for the paired BBJ_ALWAYS block following the
+                                              // BBJ_CALLFINALLY block, as well as, on x86, the final step block out of a
+                                              // finally.
 
-#define BBF_CLONED_FINALLY_BEGIN           0x100000000 // First block of a cloned finally region
-#define BBF_CLONED_FINALLY_END             0x200000000 // Last block of a cloned finally region
-#define BBF_HAS_CALL                       0x400000000 // BB contains a call
-#define BBF_DOMINATED_BY_EXCEPTIONAL_ENTRY 0x800000000 // Block is dominated by exceptional entry.
-#define BBF_BACKWARD_JUMP_TARGET          0x1000000000 // Block is a target of a backward jump
-#define BBF_PATCHPOINT                    0x2000000000 // Block is a patchpoint
-#define BBF_HAS_SUPPRESSGC_CALL           0x4000000000 // BB contains a call to a method with SuppressGCTransitionAttribute
+#define BBF_CLONED_FINALLY_BEGIN           0x100000000ULL // First block of a cloned finally region
+#define BBF_CLONED_FINALLY_END             0x200000000ULL // Last block of a cloned finally region
+#define BBF_HAS_CALL                       0x400000000ULL // BB contains a call
+#define BBF_DOMINATED_BY_EXCEPTIONAL_ENTRY 0x800000000ULL // Block is dominated by exceptional entry.
+#define BBF_BACKWARD_JUMP_TARGET          0x1000000000ULL // Block is a target of a backward jump
+#define BBF_PATCHPOINT                    0x2000000000ULL // Block is a patchpoint
+#define BBF_HAS_SUPPRESSGC_CALL           0x4000000000ULL // BB contains a call to a method with SuppressGCTransitionAttribute
 
 // clang-format on
 
