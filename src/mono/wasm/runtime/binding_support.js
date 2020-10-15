@@ -942,7 +942,7 @@ var BindingSupportLib = {
 							heapArrayName = "HEAPF32";
 							break;
 						case "double":
-							body.push (`Module.HEAPF64[indirect64 + ${(indirectLocalOffset / 8)} = ${valueKey};`);
+							body.push (`Module.HEAPF64[indirect64 + ${(indirectLocalOffset / 8)}] = ${valueKey};`);
 							break;
 						case "i64":
 							body.push (`Module.setValue (indirectStart + ${indirectLocalOffset}, ${valueKey}, 'i64');`);
@@ -952,7 +952,7 @@ var BindingSupportLib = {
 					}
 
 					if (heapArrayName)
-						body.push (`Module.${heapArrayName}[indirect32 + ${(indirectLocalOffset / 4)} = ${valueKey};`);
+						body.push (`Module.${heapArrayName}[indirect32 + ${(indirectLocalOffset / 4)}] = ${valueKey};`);
 
 					body.push (`Module.HEAP32[buffer32 + ${i}] = indirectStart + ${indirectLocalOffset};`, "");
 					indirectLocalOffset += step.size;
