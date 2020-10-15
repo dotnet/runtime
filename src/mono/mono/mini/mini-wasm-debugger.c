@@ -1,3 +1,4 @@
+#include <glib.h>
 #include "mini.h"
 #include "mini-runtime.h"
 #include <mono/metadata/mono-debug.h>
@@ -22,8 +23,6 @@
 #include "mono/metadata/debug-mono-ppdb.h"
 
 static int log_level = 1;
-
-#define DEBUG_PRINTF(level, ...) do { if (G_UNLIKELY ((level) <= log_level)) { fprintf (stdout, __VA_ARGS__); } } while (0)
 
 enum {
 	EXCEPTION_MODE_NONE,
@@ -101,6 +100,35 @@ to_string_as_descr_names[] = {
 };
 
 #define THREAD_TO_INTERNAL(thread) (thread)->internal_thread
+
+void wasm_debugger_log(int level, const gchar *format, ...)
+{
+	va_list args;
+	char *mesg;
+
+	va_start (args, format);
+	mesg = g_strdup_vprintf (format, args);
+	va_end (args);
+
+	EM_ASM ({
+		var level = $0;
+		var message = Module.UTF8ToString ($1);
+		var namespace = "Debugger.Debug";
+
+		switch (level) {
+		case 1:
+			console.log("%s: %s", namespace, message);
+			break;
+		case 2:
+			console.debug("%s: %s", namespace, message);
+			break;
+		default:
+			console.trace("%s: %s", namespace, message);
+			break;
+		}
+	}, level, mesg);
+	g_free (mesg);
+}
 
 static void
 inplace_tolower (char *c)
