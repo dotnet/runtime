@@ -180,7 +180,7 @@ namespace System.Data
                             }
 
                             FillErrorEventArgs? fillError = null;
-                            if (null != errorHandler)
+                            if (errorHandler is not null)
                             {
                                 fillError = new FillErrorEventArgs(table, values)
                                 {
@@ -188,7 +188,7 @@ namespace System.Data
                                 };
                                 errorHandler.Invoke(rows, fillError);
                             }
-                            if (null == fillError)
+                            if (fillError is null)
                             {
                                 throw;
                             }
@@ -215,7 +215,7 @@ namespace System.Data
                     table.EndLoadData();
                 }
             }
-            Debug.Assert(null != table, "null DataTable");
+            Debug.Assert(table is not null, "null DataTable");
             return table;
         }
 

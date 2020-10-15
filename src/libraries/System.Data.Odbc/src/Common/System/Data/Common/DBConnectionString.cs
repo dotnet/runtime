@@ -64,7 +64,7 @@ namespace System.Data.Common
 
         private DBConnectionString(DbConnectionOptions connectionOptions, string? restrictions, KeyRestrictionBehavior behavior, Dictionary<string, string>? synonyms, bool mustCloneDictionary)
         { // used by DBDataPermission
-            Debug.Assert(null != connectionOptions, "null connectionOptions");
+            Debug.Assert(connectionOptions is not null, "null connectionOptions");
             switch (behavior)
             {
                 case KeyRestrictionBehavior.PreventUsage:
@@ -157,10 +157,10 @@ namespace System.Data.Common
             get
             {
                 string? restrictions = _restrictions;
-                if (null == restrictions)
+                if (restrictions is null)
                 {
                     string[]? restrictionValues = _restrictionValues;
-                    if ((null != restrictionValues) && (0 < restrictionValues.Length))
+                    if ((restrictionValues is not null) && (0 < restrictionValues.Length))
                     {
                         StringBuilder builder = new StringBuilder();
                         for (int i = 0; i < restrictionValues.Length; ++i)
@@ -180,7 +180,7 @@ namespace System.Data.Common
                         restrictions = builder.ToString();
                     }
                 }
-                return ((null != restrictions) ? restrictions : "");
+                return ((restrictions is not null) ? restrictions : "");
             }
         }
 
@@ -199,7 +199,7 @@ namespace System.Data.Common
             KeyRestrictionBehavior behavior = _behavior;
             string[]? restrictionValues = null;
 
-            if (null == entry)
+            if (entry is null)
             {
                 //Debug.WriteLine("0 entry AllowNothing");
                 behavior = KeyRestrictionBehavior.AllowOnly;
@@ -284,7 +284,7 @@ namespace System.Data.Common
 
             // verify _hasPassword & _parsetable are in [....] between Everett/Whidbey
             Debug.Assert(!_hasPassword || ContainsKey(KEY.Password) || ContainsKey(KEY.Pwd), "OnDeserialized password mismatch this");
-            Debug.Assert(null == entry || !entry._hasPassword || entry.ContainsKey(KEY.Password) || entry.ContainsKey(KEY.Pwd), "OnDeserialized password mismatch entry");
+            Debug.Assert(entry is null || !entry._hasPassword || entry.ContainsKey(KEY.Password) || entry.ContainsKey(KEY.Pwd), "OnDeserialized password mismatch entry");
 
             DBConnectionString value = new DBConnectionString(this, restrictionValues, behavior);
             ValidateCombinedSet(this, value);
@@ -362,7 +362,7 @@ namespace System.Data.Common
                 case KeyRestrictionBehavior.AllowOnly:
                     // every key must either be in the resticted connection string or in the allowed keywords
                     // keychain may contain duplicates, but it is better than GetEnumerator on _parsetable.Keys
-                    for (NameValuePair? current = entry.KeyChain; null != current; current = current.Next)
+                    for (NameValuePair? current = entry.KeyChain; current is not null; current = current.Next)
                     {
                         if (!ContainsKey(current.Name) && IsRestrictedKeyword(current.Name))
                         {
@@ -397,7 +397,7 @@ namespace System.Data.Common
             {
                 if (0 > Array.BinarySearch(preventusage, allowonly[i], StringComparer.Ordinal))
                 {
-                    if (null == newlist)
+                    if (newlist is null)
                     {
                         newlist = new List<string>();
                     }
@@ -405,7 +405,7 @@ namespace System.Data.Common
                 }
             }
             string[]? restrictionValues = null;
-            if (null != newlist)
+            if (newlist is not null)
             {
                 restrictionValues = newlist.ToArray();
             }
@@ -420,7 +420,7 @@ namespace System.Data.Common
             {
                 if (0 <= Array.BinarySearch(b, a[i], StringComparer.Ordinal))
                 {
-                    if (null == newlist)
+                    if (newlist is null)
                     {
                         newlist = new List<string>();
                     }
@@ -439,8 +439,8 @@ namespace System.Data.Common
         private static string[] NoDuplicateUnion(string[] a, string[] b)
         {
 #if DEBUG
-            Debug.Assert(null != a && 0 < a.Length, "empty a");
-            Debug.Assert(null != b && 0 < b.Length, "empty b");
+            Debug.Assert(a is not null && 0 < a.Length, "empty a");
+            Debug.Assert(b is not null && 0 < b.Length, "empty b");
             Verify(a);
             Verify(b);
 #endif
@@ -477,7 +477,7 @@ namespace System.Data.Common
                 nextStartPosition = DbConnectionOptions.GetKeyValuePair(restrictions, startPosition, buffer, false, out keyname, out keyvalue);
                 if (!string.IsNullOrEmpty(keyname))
                 {
-                    string realkeyname = ((null != synonyms) ? (string)synonyms[keyname] : keyname); // MDAC 85144
+                    string realkeyname = ((synonyms is not null) ? (string)synonyms[keyname] : keyname); // MDAC 85144
                     if (string.IsNullOrEmpty(realkeyname))
                     {
                         throw ADP.KeywordNotSupported(keyname);
@@ -530,7 +530,7 @@ namespace System.Data.Common
         [ConditionalAttribute("DEBUG")]
         private static void Verify(string?[]? restrictionValues)
         {
-            if (null != restrictionValues)
+            if (restrictionValues is not null)
             {
                 for (int i = 1; i < restrictionValues.Length; ++i)
                 {

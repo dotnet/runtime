@@ -60,7 +60,7 @@ namespace System.Collections.Immutable
         [DebuggerStepThrough]
         public static void NotNullAllowStructs<T>([ValidatedNotNull]T value, string? parameterName)
         {
-            if (null == value)
+            if (value is null)
             {
                 FailArgumentNullException(parameterName);
             }

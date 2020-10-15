@@ -140,7 +140,7 @@ namespace System.Data.Odbc
             get
             {
                 string? sourceColumn = _sourceColumn;
-                return ((null != sourceColumn) ? sourceColumn : string.Empty);
+                return ((sourceColumn is not null) ? sourceColumn : string.Empty);
             }
             set
             {

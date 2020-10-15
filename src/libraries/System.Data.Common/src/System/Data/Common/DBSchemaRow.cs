@@ -15,7 +15,7 @@ namespace System.Data.Common
         internal static DbSchemaRow[] GetSortedSchemaRows(DataTable dataTable, bool returnProviderSpecificTypes)
         {
             DataColumn? sortindex = dataTable.Columns[SchemaMappingUnsortedIndex];
-            if (null == sortindex)
+            if (sortindex is null)
             {
                 sortindex = new DataColumn(SchemaMappingUnsortedIndex, typeof(int));
                 dataTable.Columns.Add(sortindex);
@@ -29,7 +29,7 @@ namespace System.Data.Common
 
             const DataViewRowState rowStates = DataViewRowState.Unchanged | DataViewRowState.Added | DataViewRowState.ModifiedCurrent;
             DataRow[] dataRows = dataTable.Select(null, "ColumnOrdinal ASC", rowStates);
-            Debug.Assert(null != dataRows, "GetSchemaRows: unexpected null dataRows");
+            Debug.Assert(dataRows is not null, "GetSchemaRows: unexpected null dataRows");
 
             DbSchemaRow[] schemaRows = new DbSchemaRow[dataRows.Length];
 

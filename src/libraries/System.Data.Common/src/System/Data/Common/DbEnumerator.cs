@@ -20,7 +20,7 @@ namespace System.Data.Common
         // users must get enumerators off of the datareader interfaces
         public DbEnumerator(IDataReader reader)
         {
-            if (null == reader)
+            if (reader is null)
             {
                 throw ADP.ArgumentNull(nameof(reader));
             }
@@ -29,7 +29,7 @@ namespace System.Data.Common
 
         public DbEnumerator(IDataReader reader, bool closeReader)
         {
-            if (null == reader)
+            if (reader is null)
             {
                 throw ADP.ArgumentNull(nameof(reader));
             }

@@ -61,18 +61,18 @@ namespace System.Xml.XPath.DataBinding
         }
 
         public override object GetValue(object o) {
-            if (null == o)
+            if (o is null)
                 throw new ArgumentNullException("XPathNodeViewPropertyDescriptor.GetValue");
             XPathNodeView xiv = (XPathNodeView)o;
             if (xiv.Collection.RowShape != this.rowShape)
                 throw new ArgumentException("XPathNodeViewPropertyDescriptor.GetValue");
             object val = xiv.Column(this.colIndex);
             XPathNode nd = val as XPathNode;
-            if (null != nd) {
+            if (nd is not null) {
                 XPathDocumentNavigator nav = new XPathDocumentNavigator(nd, null);
                 XmlSchemaType xst = nd.SchemaType;
                 XmlSchemaComplexType xsct = xst as XmlSchemaComplexType;
-                if (null == xst || ( (null != xsct) && xsct.IsMixed) ) {
+                if (xst is null || ( (xsct is not null) && xsct.IsMixed) ) {
                     return nav.InnerXml;
                 }
                 else {

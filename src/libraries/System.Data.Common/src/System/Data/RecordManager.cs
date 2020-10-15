@@ -226,11 +226,11 @@ namespace System.Data
                 {
                     DataColumn dstColumn = _table.Columns[i];
                     DataColumn? srcColumn = src.Columns[dstColumn.ColumnName];
-                    if (null != srcColumn)
+                    if (srcColumn is not null)
                     {
                         object value = srcColumn[record];
                         ICloneable? cloneableObject = value as ICloneable;
-                        if (null != cloneableObject)
+                        if (cloneableObject is not null)
                         {
                             dstColumn[newRecord] = cloneableObject.Clone();
                         }
@@ -268,7 +268,7 @@ namespace System.Data
         {
             Debug.Assert((record < _lastFreeRecord) && (-1 == _freeRecordList.IndexOf(record)), "accessing free record");
             var r = _rows[record];
-            Debug.Assert((null == r) ||
+            Debug.Assert((r is null) ||
                          (record == r._oldRecord) ||
                          (record == r._newRecord) ||
                          (record == r._tempRecord), "record of a different row");

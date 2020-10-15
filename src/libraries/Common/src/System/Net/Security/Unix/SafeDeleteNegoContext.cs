@@ -45,7 +45,7 @@ namespace System.Net.Security
         public SafeDeleteNegoContext(SafeFreeNegoCredentials credential)
             : base(credential)
         {
-            Debug.Assert((null != credential), "Null credential in SafeDeleteNegoContext");
+            Debug.Assert((credential is not null), "Null credential in SafeDeleteNegoContext");
         }
 
         public SafeDeleteNegoContext(SafeFreeNegoCredentials credential, string targetName)

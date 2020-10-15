@@ -1301,7 +1301,7 @@ namespace System.Data
                     Debug.Assert(0 <= bitMatrix[i].HasChanges, "negative change count");
                     if (0 < bitMatrix[i].HasChanges)
                     {
-                        if (null == dsNew)
+                        if (dsNew is null)
                         {
                             dsNew = Clone();
                             fEnforceConstraints = dsNew.EnforceConstraints;
@@ -1324,7 +1324,7 @@ namespace System.Data
                     }
                 }
 
-                if (null != dsNew)
+                if (dsNew is not null)
                 {
                     dsNew.EnforceConstraints = fEnforceConstraints;
                 }
@@ -2295,7 +2295,7 @@ namespace System.Data
             long logScopeId = DataCommonEventSource.Log.EnterScope("<ds.DataSet.InferSchema|INFO> {0}, mode={1}", ObjectID, mode);
             try
             {
-                if (null == excludedNamespaces)
+                if (excludedNamespaces is null)
                 {
                     excludedNamespaces = Array.Empty<string>();
                 }
@@ -3080,7 +3080,7 @@ namespace System.Data
         internal void OnRemovedTable(DataTable table)
         {
             DataViewManager? viewManager = _defaultViewManager;
-            if (null != viewManager)
+            if (viewManager is not null)
             {
                 viewManager.DataViewSettings.Remove(table);
             }
@@ -3462,7 +3462,7 @@ namespace System.Data
                 var adapter = new LoadAdapter();
                 adapter.FillLoadOption = loadOption;
                 adapter.MissingSchemaAction = MissingSchemaAction.AddWithKey;
-                if (null != errorHandler)
+                if (errorHandler is not null)
                 {
                     adapter.FillError += errorHandler;
                 }
@@ -3489,7 +3489,7 @@ namespace System.Data
             for (int i = 0; i < tables.Length; i++)
             {
                 DataTable? tempDT = Tables[tables[i]];
-                if (null == tempDT)
+                if (tempDT is null)
                 {
                     tempDT = new DataTable(tables[i]);
                     Tables.Add(tempDT);

@@ -57,7 +57,7 @@ namespace System.Data.Common
                 for (int i = 0; i < schemaRows.Length; i++)
                 {
                     var schemaRow = schemaRows[i];
-                    if (null == schemaRow)
+                    if (schemaRow is null)
                     {
                         continue;
                     }
@@ -189,7 +189,7 @@ namespace System.Data.Common
                 for (int i = 0; i < _count - 1; i++)
                 {
                     string? name = _baseParameterNames[i];
-                    if (null != name)
+                    if (name is not null)
                     {
                         for (int j = i + 1; j < _count; j++)
                         {
@@ -223,7 +223,7 @@ namespace System.Data.Common
                 for (int i = 0; i < _baseParameterNames.Length; i++)
                 {
                     name = _baseParameterNames[i];
-                    if (null == name)
+                    if (name is null)
                     {
                         _baseParameterNames[i] = GetNextGenericParameterName();
                         _originalParameterNames[i] = GetNextGenericParameterName();
@@ -390,7 +390,7 @@ namespace System.Data.Common
             get
             {
                 string? catalogSeparator = _catalogSeparator;
-                return (((null != catalogSeparator) && (0 < catalogSeparator.Length)) ? catalogSeparator : NameSeparator);
+                return (((catalogSeparator is not null) && (0 < catalogSeparator.Length)) ? catalogSeparator : NameSeparator);
             }
             set
             {
@@ -422,7 +422,7 @@ namespace System.Data.Common
                         SetRowUpdatingHandler(_dataAdapter);
                         _dataAdapter = null;
                     }
-                    if (null != value)
+                    if (value is not null)
                     {
                         // derived should add event handler to new adapter
                         SetRowUpdatingHandler(value);
@@ -478,7 +478,7 @@ namespace System.Data.Common
             get
             {
                 string? quoteSuffix = _quoteSuffix;
-                return ((null != quoteSuffix) ? quoteSuffix : string.Empty);
+                return ((quoteSuffix is not null) ? quoteSuffix : string.Empty);
             }
             set
             {
@@ -498,7 +498,7 @@ namespace System.Data.Common
             get
             {
                 string? schemaSeparator = _schemaSeparator;
-                return (((null != schemaSeparator) && (0 < schemaSeparator.Length)) ? schemaSeparator : NameSeparator);
+                return (((schemaSeparator is not null) && (0 < schemaSeparator.Length)) ? schemaSeparator : NameSeparator);
             }
             set
             {
@@ -571,7 +571,7 @@ namespace System.Data.Common
 
             DbCommand srcCommand = GetSelectCommand();
             DbConnection? connection = srcCommand.Connection;
-            if (null == connection)
+            if (connection is null)
             {
                 throw ADP.MissingSourceCommandConnection();
             }
@@ -620,7 +620,7 @@ namespace System.Data.Common
                 }
             }
 
-            if (null == schemaTable)
+            if (schemaTable is null)
             {
                 throw ADP.DynamicSQLNoTableInfo();
             }
@@ -657,7 +657,7 @@ namespace System.Data.Common
         private void BuildInformation(DataTable schemaTable)
         {
             DbSchemaRow?[]? rows = DbSchemaRow.GetSortedSchemaRows(schemaTable, false);
-            if ((null == rows) || (0 == rows.Length))
+            if ((rows is null) || (0 == rows.Length))
             {
                 throw ADP.DynamicSQLNoTableInfo();
             }
@@ -671,7 +671,7 @@ namespace System.Data.Common
             {
                 DbSchemaRow row = rows[i]!;
                 string tableName = row.BaseTableName;
-                if ((null == tableName) || (0 == tableName.Length))
+                if ((tableName is null) || (0 == tableName.Length))
                 {
                     rows[i] = null;
                     continue;
@@ -680,19 +680,19 @@ namespace System.Data.Common
                 string serverName = row.BaseServerName;
                 string catalogName = row.BaseCatalogName;
                 string schemaName = row.BaseSchemaName;
-                if (null == serverName)
+                if (serverName is null)
                 {
                     serverName = string.Empty;
                 }
-                if (null == catalogName)
+                if (catalogName is null)
                 {
                     catalogName = string.Empty;
                 }
-                if (null == schemaName)
+                if (schemaName is null)
                 {
                     schemaName = string.Empty;
                 }
-                if (null == baseTableName)
+                if (baseTableName is null)
                 {
                     baseServerName = serverName;
                     baseCatalogName = catalogName;
@@ -722,7 +722,7 @@ namespace System.Data.Common
                 baseCatalogName = null;
                 baseSchemaName = null;
             }
-            if ((null == baseTableName) || (0 == baseTableName.Length))
+            if ((baseTableName is null) || (0 == baseTableName.Length))
             {
                 throw ADP.DynamicSQLNoTableInfo();
             }
@@ -746,18 +746,18 @@ namespace System.Data.Common
             System.Text.StringBuilder builder = new System.Text.StringBuilder();
             if (CatalogLocation.Start == location)
             {
-                if (null != baseServerName)
+                if (baseServerName is not null)
                 {
                     builder.Append(ADP.BuildQuotedString(quotePrefix, quoteSuffix, baseServerName));
                     builder.Append(catalogSeparator);
                 }
-                if (null != baseCatalogName)
+                if (baseCatalogName is not null)
                 {
                     builder.Append(ADP.BuildQuotedString(quotePrefix, quoteSuffix, baseCatalogName));
                     builder.Append(catalogSeparator);
                 }
             }
-            if (null != baseSchemaName)
+            if (baseSchemaName is not null)
             {
                 builder.Append(ADP.BuildQuotedString(quotePrefix, quoteSuffix, baseSchemaName));
                 builder.Append(schemaSeparator);
@@ -766,12 +766,12 @@ namespace System.Data.Common
 
             if (CatalogLocation.End == location)
             {
-                if (null != baseServerName)
+                if (baseServerName is not null)
                 {
                     builder.Append(catalogSeparator);
                     builder.Append(ADP.BuildQuotedString(quotePrefix, quoteSuffix, baseServerName));
                 }
-                if (null != baseCatalogName)
+                if (baseCatalogName is not null)
                 {
                     builder.Append(catalogSeparator);
                     builder.Append(ADP.BuildQuotedString(quotePrefix, quoteSuffix, baseCatalogName));
@@ -782,7 +782,7 @@ namespace System.Data.Common
             _hasPartialPrimaryKey = false;
             foreach (DbSchemaRow? row in rows)
             {
-                if ((null != row) && (row.IsKey || row.IsUnique) && !row.IsLong && !row.IsRowVersion && row.IsHidden)
+                if ((row is not null) && (row.IsKey || row.IsUnique) && !row.IsLong && !row.IsRowVersion && row.IsHidden)
                 {
                     _hasPartialPrimaryKey = true;
                     break;
@@ -831,7 +831,7 @@ namespace System.Data.Common
             {
                 DbSchemaRow row = schemaRows[i];
 
-                if ((null == row) || (0 == row.BaseColumnName.Length) || !IncludeInInsertValues(row))
+                if ((row is null) || (0 == row.BaseColumnName.Length) || !IncludeInInsertValues(row))
                     continue;
 
                 object? currentValue = null;
@@ -840,11 +840,11 @@ namespace System.Data.Common
                 // If we're building a statement for a specific row, then check the
                 // values to see whether the column should be included in the insert
                 // statement or not
-                if ((null != mappings) && (null != dataRow))
+                if ((mappings is not null) && (null != dataRow))
                 {
                     DataColumn? dataColumn = GetDataColumn(sourceColumn, mappings, dataRow);
 
-                    if (null == dataColumn)
+                    if (dataColumn is null)
                         continue;
 
                     // Don't bother inserting if the column is readonly in both the data
@@ -857,7 +857,7 @@ namespace System.Data.Common
                     // If the value is null, and the column doesn't support nulls, then
                     // the user is requesting the server-specified default value, so don't
                     // include it in the set-list.
-                    if (!row.AllowDBNull && (null == currentValue || Convert.IsDBNull(currentValue)))
+                    if (!row.AllowDBNull && (currentValue is null || Convert.IsDBNull(currentValue)))
                         continue;
                 }
 
@@ -920,7 +920,7 @@ namespace System.Data.Common
             {
                 DbSchemaRow row = schemaRows[i];
 
-                if ((null == row) || (0 == row.BaseColumnName.Length) || !IncludeInUpdateSet(row))
+                if ((row is null) || (0 == row.BaseColumnName.Length) || !IncludeInUpdateSet(row))
                     continue;
 
                 object? currentValue = null;
@@ -929,11 +929,11 @@ namespace System.Data.Common
                 // If we're building a statement for a specific row, then check the
                 // values to see whether the column should be included in the update
                 // statement or not
-                if ((null != mappings) && (null != dataRow))
+                if ((mappings is not null) && (null != dataRow))
                 {
                     DataColumn? dataColumn = GetDataColumn(sourceColumn, mappings, dataRow);
 
-                    if (null == dataColumn)
+                    if (dataColumn is null)
                         continue;
 
                     // Don't bother updating if the column is readonly in both the data
@@ -951,7 +951,7 @@ namespace System.Data.Common
                         object originalValue = GetColumnValue(dataRow, dataColumn, DataRowVersion.Original);
 
                         if ((originalValue == currentValue)
-                            || ((null != originalValue) && originalValue.Equals(currentValue)))
+                            || ((originalValue is not null) && originalValue.Equals(currentValue)))
                         {
                             continue;
                         }
@@ -1009,7 +1009,7 @@ namespace System.Data.Common
             {
                 DbSchemaRow row = schemaRows[i];
 
-                if ((null == row) || (0 == row.BaseColumnName.Length) || !IncludeInWhereClause(row, isUpdate))
+                if ((row is null) || (0 == row.BaseColumnName.Length) || !IncludeInWhereClause(row, isUpdate))
                 {
                     continue;
                 }
@@ -1020,7 +1020,7 @@ namespace System.Data.Common
                 string sourceColumn = _sourceColumnNames![i];
                 string baseColumnName = QuotedColumn(row.BaseColumnName);
 
-                if ((null != mappings) && (null != dataRow))
+                if ((mappings is not null) && (null != dataRow))
                     value = GetColumnValue(dataRow, sourceColumn, mappings, DataRowVersion.Original);
 
                 if (!row.AllowDBNull)
@@ -1134,7 +1134,7 @@ namespace System.Data.Common
             DbParameter p = GetNextParameter(command, parameterCount);
 
             Debug.Assert(!string.IsNullOrEmpty(sourceColumn), "empty source column");
-            if (null == parameterName)
+            if (parameterName is null)
             {
                 p.ParameterName = GetParameterName(1 + parameterCount);
             }
@@ -1159,7 +1159,7 @@ namespace System.Data.Common
                 command.Parameters.Add(p);
             }
 
-            if (null == parameterName)
+            if (parameterName is null)
             {
                 return GetParameterPlaceholder(1 + parameterCount);
             }
@@ -1186,7 +1186,7 @@ namespace System.Data.Common
         {
             DbParameter p = GetNextParameter(command, parameterCount);
 
-            if (null == parameterName)
+            if (parameterName is null)
             {
                 p.ParameterName = GetParameterName(1 + parameterCount);
             }
@@ -1208,7 +1208,7 @@ namespace System.Data.Common
                 command.Parameters.Add(p);
             }
 
-            if (null == parameterName)
+            if (parameterName is null)
             {
                 return GetParameterPlaceholder(1 + parameterCount);
             }
@@ -1236,13 +1236,13 @@ namespace System.Data.Common
         private DataTableMapping? GetTableMapping(DataRow? dataRow)
         {
             DataTableMapping? tableMapping = null;
-            if (null != dataRow)
+            if (dataRow is not null)
             {
                 DataTable dataTable = dataRow.Table;
-                if (null != dataTable)
+                if (dataTable is not null)
                 {
                     DbDataAdapter? adapter = DataAdapter;
-                    if (null != adapter)
+                    if (adapter is not null)
                     {
                         tableMapping = adapter.GetTableMapping(dataTable);
                     }
@@ -1294,7 +1294,7 @@ namespace System.Data.Common
         {
             DbCommand? select = null;
             DbDataAdapter? adapter = DataAdapter;
-            if (null != adapter)
+            if (adapter is not null)
             {
                 if (0 == _missingMappingAction)
                 {
@@ -1302,7 +1302,7 @@ namespace System.Data.Common
                 }
                 select = adapter.SelectCommand;
             }
-            if (null == select)
+            if (select is null)
             {
                 throw ADP.MissingSourceCommand();
             }
@@ -1364,7 +1364,7 @@ namespace System.Data.Common
         private object? GetColumnValue(DataRow row, DataColumn? column, DataRowVersion version)
         {
             object? value = null;
-            if (null != column)
+            if (column is not null)
             {
                 value = row[column, version];
             }
@@ -1391,11 +1391,11 @@ namespace System.Data.Common
             else
             {
                 p = command.CreateParameter();
-                /*if (null == p) {
+                /*if (p is null) {
                     // CONSIDER: throw exception
                 }*/
             }
-            Debug.Assert(null != p, "null CreateParameter");
+            Debug.Assert(p is not null, "null CreateParameter");
             return p;
         }
 
@@ -1449,11 +1449,11 @@ namespace System.Data.Common
 
         protected virtual DbCommand InitializeCommand(DbCommand? command)
         {
-            if (null == command)
+            if (command is null)
             {
                 DbCommand select = GetSelectCommand();
                 command = select.Connection!.CreateCommand();
-                /*if (null == command) {
+                /*if (command is null) {
                     // CONSIDER: throw exception
                 }*/
 
@@ -1486,7 +1486,7 @@ namespace System.Data.Common
             _quotedBaseTableName = null;
 
             DbDataAdapter? adapter = DataAdapter;
-            if (null != adapter)
+            if (adapter is not null)
             {
                 if (InsertCommand == adapter.InsertCommand)
                 {
@@ -1529,7 +1529,7 @@ namespace System.Data.Common
 
         protected void RowUpdatingHandler(RowUpdatingEventArgs rowUpdatingEvent)
         {
-            if (null == rowUpdatingEvent)
+            if (rowUpdatingEvent is null)
             {
                 throw ADP.ArgumentNull(nameof(rowUpdatingEvent));
             }
@@ -1540,7 +1540,7 @@ namespace System.Data.Common
                     StatementType stmtType = rowUpdatingEvent.StatementType;
                     DbCommand? command = (DbCommand?)rowUpdatingEvent.Command;
 
-                    if (null != command)
+                    if (command is not null)
                     {
                         switch (stmtType)
                         {
@@ -1563,11 +1563,11 @@ namespace System.Data.Common
                         if (command != rowUpdatingEvent.Command)
                         {
                             command = (DbCommand?)rowUpdatingEvent.Command;
-                            if ((null != command) && (null == command.Connection))
+                            if ((command is not null) && (command.Connection is null))
                             {
                                 DbDataAdapter? adapter = DataAdapter;
-                                DbCommand? select = ((null != adapter) ? adapter.SelectCommand : null);
-                                if (null != select)
+                                DbCommand? select = ((adapter is not null) ? adapter.SelectCommand : null);
+                                if (select is not null)
                                 {
                                     command.Connection = select.Connection;
                                 }
@@ -1576,7 +1576,7 @@ namespace System.Data.Common
                         }
                         else command = null;
                     }
-                    if (null == command)
+                    if (command is null)
                     {
                         RowUpdatingHandlerBuilder(rowUpdatingEvent);
                     }
@@ -1616,9 +1616,9 @@ namespace System.Data.Common
                 default:
                     throw ADP.InvalidStatementType(rowUpdatingEvent.StatementType);
             }
-            if (null == command)
+            if (command is null)
             {
-                if (null != datarow)
+                if (datarow is not null)
                 {
                     datarow.AcceptChanges();
                 }

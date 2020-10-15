@@ -11,7 +11,7 @@ namespace System.Reflection.Context.Virtual
         {
             protected FuncPropertyAccessorBase(VirtualPropertyBase declaringProperty)
             {
-                Debug.Assert(null != declaringProperty);
+                Debug.Assert(declaringProperty is not null);
 
                 DeclaringProperty = declaringProperty;
             }

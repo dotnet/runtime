@@ -21,7 +21,7 @@ namespace System.DirectoryServices.AccountManagement
 
         public PrincipalSearcher(Principal queryFilter)
         {
-            if (null == queryFilter)
+            if (queryFilter is null)
                 throw new ArgumentException(null, nameof(queryFilter));
 
             _ctx = queryFilter.Context;
@@ -54,7 +54,7 @@ namespace System.DirectoryServices.AccountManagement
 
             set
             {
-                if (null == value)
+                if (value is null)
                     throw new ArgumentNullException(nameof(QueryFilter));
 
                 CheckDisposed();

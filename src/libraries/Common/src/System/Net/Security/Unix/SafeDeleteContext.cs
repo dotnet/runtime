@@ -18,7 +18,7 @@ namespace System.Net.Security
         protected SafeDeleteContext(SafeFreeCredentials credential)
             : base(IntPtr.Zero, true)
         {
-            Debug.Assert((null != credential), "Invalid credential passed to SafeDeleteContext");
+            Debug.Assert((credential is not null), "Invalid credential passed to SafeDeleteContext");
 
             // When a credential handle is first associated with the context we keep credential
             // ref count bumped up to ensure ordered finalization. The credential properties

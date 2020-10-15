@@ -13,7 +13,7 @@ namespace System.Reflection.Context.Projection
         public ProjectingEventInfo(EventInfo @event, Projector projector)
             : base(@event)
         {
-            Debug.Assert(null != projector);
+            Debug.Assert(projector is not null);
 
             Projector = projector;
         }

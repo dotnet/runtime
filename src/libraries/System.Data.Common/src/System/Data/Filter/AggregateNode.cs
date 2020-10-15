@@ -135,7 +135,7 @@ namespace System.Data
 
         internal static void Bind(DataRelation? relation, List<DataColumn> list)
         {
-            if (null != relation)
+            if (relation is not null)
             {
                 // add the ends of the relationship the expression depends on
                 foreach (DataColumn c in relation.ChildColumnsReference)

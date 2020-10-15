@@ -221,7 +221,7 @@ namespace System.Configuration
         /// </summary>
         private static void PreloadConfiguration(Configuration configuration)
         {
-            if (null == configuration) return;
+            if (configuration is null) return;
 
             // Preload root-level sections.
             foreach (ConfigurationSection section in configuration.Sections) { }
@@ -233,7 +233,7 @@ namespace System.Configuration
 
         private static void PreloadConfigurationSectionGroup(ConfigurationSectionGroup sectionGroup)
         {
-            if (null == sectionGroup) return;
+            if (sectionGroup is null) return;
 
             // Preload sections just by iterating.
             foreach (ConfigurationSection section in sectionGroup.Sections) { }

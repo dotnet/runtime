@@ -333,7 +333,7 @@ namespace System.Data
         internal int InternalIndexOf(string? name)
         {
             int cachedI = -1;
-            if ((null != name) && (0 < name.Length))
+            if ((name is not null) && (0 < name.Length))
             {
                 int count = List.Count;
                 int result = 0;

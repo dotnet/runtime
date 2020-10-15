@@ -825,7 +825,7 @@ namespace System.Data
             for (int i = foundColumns.Length - 1; i >= 0; --i)
             {
                 // Check all columns
-                if (null == foundColumns[i])
+                if (foundColumns[i] is null)
                 {              // Got data for this column ?
                     c = collection[i];                      // No. Get column for this index
 
@@ -1066,7 +1066,7 @@ namespace System.Data
                     // Check all columns
                     c = collection[i];                      // Get column for this index
 
-                    c[row._tempRecord] = null != foundColumns[i] ? foundColumns[i] : DBNull.Value;
+                    c[row._tempRecord] = foundColumns[i] is not null ? foundColumns[i] : DBNull.Value;
                     // Set column to loaded value of to
                     // DBNull if value is missing.
                 }
@@ -1091,7 +1091,7 @@ namespace System.Data
                 for (int i = foundColumns.Length - 1; i >= 0; --i)
                 {
                     // Check all columns
-                    if (null == foundColumns[i])
+                    if (foundColumns[i] is null)
                     {          // Got data for this column ?
                         c = collection[i];                  // No. Get column for this index
 
@@ -1185,7 +1185,7 @@ namespace System.Data
                         }
                     }
 
-                    if (null == columnValue)
+                    if (columnValue is null)
                     {                  // If no value,
                         columnValue = DBNull.Value;             // change to DBNull;
                     }

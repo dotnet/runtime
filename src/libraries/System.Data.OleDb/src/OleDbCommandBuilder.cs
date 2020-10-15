@@ -102,7 +102,7 @@ namespace System.Data.OleDb
 
         public static void DeriveParameters(OleDbCommand command)
         {
-            if (null == command)
+            if (command is null)
             {
                 throw ADP.ArgumentNull("command");
             }
@@ -123,7 +123,7 @@ namespace System.Data.OleDb
                 throw ADP.CommandTextRequired(ADP.DeriveParameters);
             }
             OleDbConnection? connection = command.Connection;
-            if (null == connection)
+            if (connection is null)
             {
                 throw ADP.ConnectionRequired(ADP.DeriveParameters);
             }
@@ -156,7 +156,7 @@ namespace System.Data.OleDb
                 connection.GetLiteralQuotes(ADP.DeriveParameters, out quotePrefix, out quoteSuffix);
 
                 object?[] parsed = MultipartIdentifier.ParseMultipartIdentifier(command.CommandText, quotePrefix, quoteSuffix, '.', 4, true, SR.OLEDB_OLEDBCommandText, false);
-                if (null == parsed[3])
+                if (parsed[3] is null)
                 {
                     throw ADP.NoStoredProcedureExists(command.CommandText);
                 }
@@ -184,7 +184,7 @@ namespace System.Data.OleDb
                 //}
                 DataTable? table = connection.GetSchemaRowset(OleDbSchemaGuid.Procedure_Parameters, restrictions);
 
-                if (null != table)
+                if (table is not null)
                 {
                     DataColumnCollection columns = table.Columns;
 
@@ -232,23 +232,23 @@ namespace System.Data.OleDb
 
                         OleDbParameter parameter = new OleDbParameter();
 
-                        if ((null != parameterName) && !dataRow.IsNull(parameterName, DataRowVersion.Default))
+                        if ((parameterName is not null) && !dataRow.IsNull(parameterName, DataRowVersion.Default))
                         {
                             // $CONSIDER - not trimming the @ from the beginning but to left the designer do that
                             parameter.ParameterName = Convert.ToString(dataRow[parameterName, DataRowVersion.Default], CultureInfo.InvariantCulture)!.TrimStart(new char[] { '@', ' ', ':' });
                         }
-                        if ((null != parameterDirection) && !dataRow.IsNull(parameterDirection, DataRowVersion.Default))
+                        if ((parameterDirection is not null) && !dataRow.IsNull(parameterDirection, DataRowVersion.Default))
                         {
                             short direction = Convert.ToInt16(dataRow[parameterDirection, DataRowVersion.Default], CultureInfo.InvariantCulture);
                             parameter.Direction = ConvertToParameterDirection(direction);
                         }
-                        if ((null != dataType) && !dataRow.IsNull(dataType, DataRowVersion.Default))
+                        if ((dataType is not null) && !dataRow.IsNull(dataType, DataRowVersion.Default))
                         {
                             // need to ping FromDBType, otherwise WChar->WChar when the user really wants VarWChar
                             short wType = Convert.ToInt16(dataRow[dataType, DataRowVersion.Default], CultureInfo.InvariantCulture);
                             parameter.OleDbType = NativeDBType.FromDBType(wType, false, false).enumOleDbType;
                         }
-                        if ((null != maxLen) && !dataRow.IsNull(maxLen, DataRowVersion.Default))
+                        if ((maxLen is not null) && !dataRow.IsNull(maxLen, DataRowVersion.Default))
                         {
                             parameter.Size = Convert.ToInt32(dataRow[maxLen, DataRowVersion.Default], CultureInfo.InvariantCulture);
                         }
@@ -257,12 +257,12 @@ namespace System.Data.OleDb
                             case OleDbType.Decimal:
                             case OleDbType.Numeric:
                             case OleDbType.VarNumeric:
-                                if ((null != numericPrecision) && !dataRow.IsNull(numericPrecision, DataRowVersion.Default))
+                                if ((numericPrecision is not null) && !dataRow.IsNull(numericPrecision, DataRowVersion.Default))
                                 {
                                     // @devnote: unguarded cast from Int16 to Byte
                                     parameter.PrecisionInternal = (byte)Convert.ToInt16(dataRow[numericPrecision], CultureInfo.InvariantCulture);
                                 }
-                                if ((null != numericScale) && !dataRow.IsNull(numericScale, DataRowVersion.Default))
+                                if ((numericScale is not null) && !dataRow.IsNull(numericScale, DataRowVersion.Default))
                                 {
                                     // @devnote: unguarded cast from Int16 to Byte
                                     parameter.ScaleInternal = (byte)Convert.ToInt16(dataRow[numericScale], CultureInfo.InvariantCulture);

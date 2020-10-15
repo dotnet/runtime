@@ -164,13 +164,13 @@ namespace System.Data.Common
 
         public override int CompareValueTo(int recordNo, object? value)
         {
-            Debug.Assert(null != value, "null value");
+            Debug.Assert(value is not null, "null value");
             return _values[recordNo].CompareTo((SqlInt16)value);
         }
 
         public override object ConvertValue(object? value)
         {
-            if (null != value)
+            if (value is not null)
             {
                 return SqlConvert.ConvertToSqlInt16(value);
             }

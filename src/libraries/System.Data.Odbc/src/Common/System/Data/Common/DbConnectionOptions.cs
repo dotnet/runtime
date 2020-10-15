@@ -45,7 +45,7 @@ namespace System.Data.Common
         {
             _useOdbcRules = useOdbcRules;
             _parsetable = new Dictionary<string, string?>();
-            _usersConnectionString = ((null != connectionString) ? connectionString : "");
+            _usersConnectionString = ((connectionString is not null) ? connectionString : "");
 
             // first pass on parsing, initial syntax check
             if (0 < _usersConnectionString.Length)
@@ -120,11 +120,11 @@ namespace System.Data.Common
             ADP.CheckArgumentNull(builder, nameof(builder));
             ADP.CheckArgumentLength(keyName, nameof(keyName));
 
-            if ((null == keyName) || !s_connectionStringValidKeyRegex.IsMatch(keyName))
+            if ((keyName is null) || !s_connectionStringValidKeyRegex.IsMatch(keyName))
             {
                 throw ADP.InvalidKeyname(keyName);
             }
-            if ((null != keyValue) && !IsValueValidInternal(keyValue))
+            if ((keyValue is not null) && !IsValueValidInternal(keyValue))
             {
                 throw ADP.InvalidValue(keyName);
             }
@@ -144,7 +144,7 @@ namespace System.Data.Common
             }
             builder.Append('=');
 
-            if (null != keyValue)
+            if (keyValue is not null)
             { // else <keyword>=;
                 if (useOdbcRules)
                 {
@@ -194,7 +194,7 @@ namespace System.Data.Common
         public bool ConvertValueToIntegratedSecurity()
         {
             object? value = _parsetable[KEY.Integrated_Security];
-            if (null == value)
+            if (value is null)
             {
                 return false;
             }
@@ -224,7 +224,7 @@ namespace System.Data.Common
         public int ConvertValueToInt32(string keyName, int defaultValue)
         {
             object? value = _parsetable[keyName];
-            if (null == value)
+            if (value is null)
             {
                 return defaultValue;
             }
@@ -250,7 +250,7 @@ namespace System.Data.Common
         public string ConvertValueToString(string keyName, string defaultValue)
         {
             string? value = _parsetable[keyName];
-            return ((null != value) ? value : defaultValue);
+            return ((value is not null) ? value : defaultValue);
         }
 
         public bool ContainsKey(string keyword)
@@ -265,15 +265,15 @@ namespace System.Data.Common
         internal static string? ExpandDataDirectory(string keyword, string? value, ref string? datadir)
         {
             string? fullPath = null;
-            if ((null != value) && value.StartsWith(DataDirectory, StringComparison.OrdinalIgnoreCase))
+            if ((value is not null) && value.StartsWith(DataDirectory, StringComparison.OrdinalIgnoreCase))
             {
                 string? rootFolderPath = datadir;
-                if (null == rootFolderPath)
+                if (rootFolderPath is null)
                 {
                     // find the replacement path
                     object? rootFolderObject = AppDomain.CurrentDomain.GetData("DataDirectory");
                     rootFolderPath = (rootFolderObject as string);
-                    if ((null != rootFolderObject) && (null == rootFolderPath))
+                    if ((rootFolderObject is not null) && (rootFolderPath is null))
                     {
                         throw ADP.InvalidDataDirectory();
                     }
@@ -281,7 +281,7 @@ namespace System.Data.Common
                     {
                         rootFolderPath = AppDomain.CurrentDomain.BaseDirectory;
                     }
-                    if (null == rootFolderPath)
+                    if (rootFolderPath is null)
                     {
                         rootFolderPath = "";
                     }
@@ -329,7 +329,7 @@ namespace System.Data.Common
             int copyPosition = 0;
             bool expanded = false;
 
-            for (NameValuePair? current = _keyChain; null != current; current = current.Next)
+            for (NameValuePair? current = _keyChain; current is not null; current = current.Next)
             {
                 value = current.Value;
 
@@ -372,7 +372,7 @@ namespace System.Data.Common
                             break;
                     }
                 }
-                if (null == value)
+                if (value is null)
                 {
                     value = current.Value;
                 }
@@ -420,7 +420,7 @@ namespace System.Data.Common
             int copyPosition = 0;
 
             StringBuilder builder = new StringBuilder(_usersConnectionString.Length);
-            for (NameValuePair? current = _keyChain; null != current; current = current.Next)
+            for (NameValuePair? current = _keyChain; current is not null; current = current.Next)
             {
                 if ((current.Name == keyword) && (current.Value == this[keyword]))
                 {
@@ -448,11 +448,11 @@ namespace System.Data.Common
 
         internal static void ValidateKeyValuePair(string keyword, string value)
         {
-            if ((null == keyword) || !s_connectionStringValidKeyRegex.IsMatch(keyword))
+            if ((keyword is null) || !s_connectionStringValidKeyRegex.IsMatch(keyword))
             {
                 throw ADP.InvalidKeyname(keyword);
             }
-            if ((null != value) && !s_connectionStringValidValueRegex.IsMatch(value))
+            if ((value is not null) && !s_connectionStringValidValueRegex.IsMatch(value))
             {
                 throw ADP.InvalidValue(keyword);
             }

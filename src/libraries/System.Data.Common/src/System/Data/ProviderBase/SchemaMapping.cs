@@ -59,10 +59,10 @@ namespace System.Data.ProviderBase
                                     SchemaType schemaType, string? sourceTableName, bool gettingData,
                                     DataColumn? parentChapterColumn, object? parentChapterValue)
         {
-            Debug.Assert(null != adapter, nameof(adapter));
-            Debug.Assert(null != dataReader, nameof(dataReader));
+            Debug.Assert(adapter is not null, nameof(adapter));
+            Debug.Assert(dataReader is not null, nameof(dataReader));
             Debug.Assert(0 < dataReader.FieldCount, "FieldCount");
-            Debug.Assert(null != dataset || null != datatable, "SchemaMapping - null dataSet");
+            Debug.Assert(dataset is not null || null != datatable, "SchemaMapping - null dataSet");
             Debug.Assert(SchemaType.Mapped == schemaType || SchemaType.Source == schemaType, "SetupSchema - invalid schemaType");
 
             _dataSet = dataset;     // setting DataSet implies chapters are supported
@@ -315,7 +315,7 @@ namespace System.Data.ProviderBase
                     {
                         // get the string/SqlString xml value
                         string? xml = _readerDataValues[i] as string;
-                        if ((null == xml) && (_readerDataValues[i] is System.Data.SqlTypes.SqlString x))
+                        if ((xml is null) && (_readerDataValues[i] is System.Data.SqlTypes.SqlString x))
                         {
                             if (!x.IsNull)
                             {
@@ -332,7 +332,7 @@ namespace System.Data.ProviderBase
                                 };
                             }
                         }
-                        if (null != xml)
+                        if (xml is not null)
                         {
                             switch (_xmlMap[i])
                             {
@@ -437,7 +437,7 @@ namespace System.Data.ProviderBase
                 if (_chapterMap[i])
                 {
                     IDisposable? disposable = (_readerDataValues![i] as IDisposable);
-                    if (null != disposable)
+                    if (disposable is not null)
                     {
                         _readerDataValues[i] = null;
                         disposable.Dispose();
@@ -456,7 +456,7 @@ namespace System.Data.ProviderBase
                 if (_chapterMap[i])
                 {
                     object? readerValue = _readerDataValues![i];
-                    if ((null != readerValue) && !Convert.IsDBNull(readerValue))
+                    if ((readerValue is not null) && !Convert.IsDBNull(readerValue))
                     {
                         _readerDataValues[i] = null;
 
@@ -524,7 +524,7 @@ namespace System.Data.ProviderBase
 
         private void AddItemToAllowRollback(ref List<object>? items, object value)
         {
-            if (null == items)
+            if (items is null)
             {
                 items = new List<object>();
             }
@@ -533,17 +533,17 @@ namespace System.Data.ProviderBase
 
         private void RollbackAddedItems(List<object>? items)
         {
-            if (null != items)
+            if (items is not null)
             {
                 for (int i = items.Count - 1; 0 <= i; --i)
                 {
                     // remove columns that were added now that we are failing
-                    if (null != items[i])
+                    if (items[i] is not null)
                     {
                         DataColumn? column = (items[i] as DataColumn);
-                        if (null != column)
+                        if (column is not null)
                         {
-                            if (null != column.Table)
+                            if (column.Table is not null)
                             {
                                 column.Table.Columns.Remove(column);
                             }
@@ -551,9 +551,9 @@ namespace System.Data.ProviderBase
                         else
                         {
                             DataTable? table = (items[i] as DataTable);
-                            if (null != table)
+                            if (table is not null)
                             {
-                                if (null != table.DataSet)
+                                if (table.DataSet is not null)
                                 {
                                     table.DataSet.Tables.Remove(table);
                                 }
@@ -590,7 +590,7 @@ namespace System.Data.ProviderBase
                     bool ischapter = false;
                     Type fieldType = _dataReader.GetFieldType(i);
 
-                    if (null == fieldType)
+                    if (fieldType is null)
                     {
                         throw ADP.MissingDataReaderFieldType(i);
                     }
@@ -598,7 +598,7 @@ namespace System.Data.ProviderBase
                     // if IDataReader, hierarchy exists and we will use an Int32,AutoIncrementColumn in this table
                     if (typeof(IDataReader).IsAssignableFrom(fieldType))
                     {
-                        if (null == chapterIndexMap)
+                        if (chapterIndexMap is null)
                         {
                             chapterIndexMap = new bool[count];
                         }
@@ -633,9 +633,9 @@ namespace System.Data.ProviderBase
                         dataColumn = _tableMapping.GetDataColumn(_fieldNames[i], fieldType, _dataTable, mappingAction, schemaAction);
                     }
 
-                    if (null == dataColumn)
+                    if (dataColumn is null)
                     {
-                        if (null == columnIndexMap)
+                        if (columnIndexMap is null)
                         {
                             columnIndexMap = CreateIndexMap(count, i);
                         }
@@ -668,7 +668,7 @@ namespace System.Data.ProviderBase
                         }
                     }
 
-                    if (null == dataColumn.Table)
+                    if (dataColumn.Table is null)
                     {
                         if (ischapter)
                         {
@@ -685,7 +685,7 @@ namespace System.Data.ProviderBase
                     }
 
 
-                    if (null != columnIndexMap)
+                    if (columnIndexMap is not null)
                     {
                         columnIndexMap[i] = dataColumn.Ordinal;
                     }
@@ -700,18 +700,18 @@ namespace System.Data.ProviderBase
                 }
                 bool addDataRelation = false;
                 DataColumn? chapterColumn = null;
-                if (null != chapterValue)
+                if (chapterValue is not null)
                 { // add the extra column in the child table
                     Type fieldType = chapterValue.GetType();
 
                     chapterColumn = _tableMapping.GetDataColumn(_tableMapping.SourceTable, fieldType, _dataTable, mappingAction, schemaAction);
-                    if (null != chapterColumn)
+                    if (chapterColumn is not null)
                     {
-                        if (null == chapterColumn.Table)
+                        if (chapterColumn.Table is null)
                         {
                             AddItemToAllowRollback(ref addedItems, chapterColumn);
                             columnCollection.Add(chapterColumn);
-                            addDataRelation = (null != parentChapterColumn);
+                            addDataRelation = (parentChapterColumn is not null);
                         }
                         mappingCount++;
                     }
@@ -727,7 +727,7 @@ namespace System.Data.ProviderBase
                     }
                     if (gettingData)
                     {
-                        if (null == columnCollection)
+                        if (columnCollection is null)
                         {
                             columnCollection = _dataTable.Columns;
                         }
@@ -768,7 +768,7 @@ namespace System.Data.ProviderBase
 
             // must sort rows from schema table by ordinal because Jet is sorted by coumn name
             DbSchemaRow[] schemaRows = DbSchemaRow.GetSortedSchemaRows(_schemaTable, _dataReader.ReturnProviderSpecificTypes);
-            Debug.Assert(null != schemaRows, "SchemaSetup - null DbSchemaRow[]");
+            Debug.Assert(schemaRows is not null, "SchemaSetup - null DbSchemaRow[]");
             Debug.Assert(_dataReader.FieldCount <= schemaRows.Length, "unexpected fewer rows in Schema than FieldCount");
 
             if (0 == schemaRows.Length)
@@ -810,11 +810,11 @@ namespace System.Data.ProviderBase
 
                     bool ischapter = false;
                     Type? fieldType = schemaRow.DataType;
-                    if (null == fieldType)
+                    if (fieldType is null)
                     {
                         fieldType = _dataReader.GetFieldType(sortedIndex);
                     }
-                    if (null == fieldType)
+                    if (fieldType is null)
                     {
                         throw ADP.MissingDataReaderFieldType(sortedIndex);
                     }
@@ -822,7 +822,7 @@ namespace System.Data.ProviderBase
                     // if IDataReader, hierarchy exists and we will use an Int32,AutoIncrementColumn in this table
                     if (typeof(IDataReader).IsAssignableFrom(fieldType))
                     {
-                        if (null == chapterIndexMap)
+                        if (chapterIndexMap is null)
                         {
                             chapterIndexMap = new bool[schemaRows.Length];
                         }
@@ -854,9 +854,9 @@ namespace System.Data.ProviderBase
                     }
 
                     string basetable = /*schemaRow.BaseServerName+schemaRow.BaseCatalogName+schemaRow.BaseSchemaName+*/ schemaRow.BaseTableName;
-                    if (null == dataColumn)
+                    if (dataColumn is null)
                     {
-                        if (null == columnIndexMap)
+                        if (columnIndexMap is null)
                         {
                             columnIndexMap = CreateIndexMap(schemaRows.Length, unsortedIndex);
                         }
@@ -905,7 +905,7 @@ namespace System.Data.ProviderBase
                     {
                         if (basetable != keyBaseTable)
                         {
-                            if (null == keyBaseTable)
+                            if (keyBaseTable is null)
                             {
                                 keyBaseTable = basetable;
                             }
@@ -915,7 +915,7 @@ namespace System.Data.ProviderBase
 
                     if (ischapter)
                     {
-                        if (null == dataColumn.Table)
+                        if (dataColumn.Table is null)
                         {
                             dataColumn.AllowDBNull = false;
                             dataColumn.AutoIncrement = true;
@@ -932,7 +932,7 @@ namespace System.Data.ProviderBase
                         {
                             if ((basetable != commonBaseTable) && (!string.IsNullOrEmpty(basetable)))
                             {
-                                if (null == commonBaseTable)
+                                if (commonBaseTable is null)
                                 {
                                     commonBaseTable = basetable;
                                 }
@@ -984,7 +984,7 @@ namespace System.Data.ProviderBase
                                 }
                             }
                         }
-                        else if (null == dataColumn.Table)
+                        else if (dataColumn.Table is null)
                         {
                             dataColumn.AutoIncrement = schemaRow.IsAutoIncrement;
                             dataColumn.AllowDBNull = schemaRow.AllowDBNull;
@@ -998,7 +998,7 @@ namespace System.Data.ProviderBase
                             }
                         }
                     }
-                    if (null == dataColumn.Table)
+                    if (dataColumn.Table is null)
                     {
                         if (4 > (int)_loadOption)
                         {
@@ -1034,7 +1034,7 @@ namespace System.Data.ProviderBase
                         }
                     }
 
-                    if (null != columnIndexMap)
+                    if (columnIndexMap is not null)
                     {
                         columnIndexMap[unsortedIndex] = dataColumn.Ordinal;
                     }
@@ -1048,20 +1048,20 @@ namespace System.Data.ProviderBase
 
                 bool addDataRelation = false;
                 DataColumn? chapterColumn = null;
-                if (null != chapterValue)
+                if (chapterValue is not null)
                 { // add the extra column in the child table
                     Type fieldType = chapterValue.GetType();
                     chapterColumn = _tableMapping.GetDataColumn(_tableMapping.SourceTable, fieldType, _dataTable, mappingAction, schemaAction);
-                    if (null != chapterColumn)
+                    if (chapterColumn is not null)
                     {
-                        if (null == chapterColumn.Table)
+                        if (chapterColumn.Table is null)
                         {
                             chapterColumn.ReadOnly = true;
                             chapterColumn.AllowDBNull = false;
 
                             AddItemToAllowRollback(ref addedItems, chapterColumn);
                             columnCollection.Add(chapterColumn);
-                            addDataRelation = (null != parentChapterColumn);
+                            addDataRelation = (parentChapterColumn is not null);
                         }
                         mappingCount++;
                     }
@@ -1075,7 +1075,7 @@ namespace System.Data.ProviderBase
                         _dataSet.Tables.Add(_dataTable);
                     }
                     // setup the key
-                    if (addPrimaryKeys && (null != keys))
+                    if (addPrimaryKeys && (keys is not null))
                     {
                         if (keyCount < keys.Length)
                         {
@@ -1099,7 +1099,7 @@ namespace System.Data.ProviderBase
                                     break;
                                 }
                             }
-                            if (null != unique)
+                            if (unique is not null)
                             {
                                 constraints.Add(unique);
                             }
@@ -1144,13 +1144,13 @@ namespace System.Data.ProviderBase
             DataColumn? column;
 
             column = columns[SchemaTableOptionalColumn.DefaultValue];
-            if (null != column)
+            if (column is not null)
             {
                 targetColumn.DefaultValue = schemaRow[column];
             }
 
             column = columns[SchemaTableOptionalColumn.AutoIncrementSeed];
-            if (null != column)
+            if (column is not null)
             {
                 object value = schemaRow[column];
                 if (DBNull.Value != value)
@@ -1160,7 +1160,7 @@ namespace System.Data.ProviderBase
             }
 
             column = columns[SchemaTableOptionalColumn.AutoIncrementStep];
-            if (null != column)
+            if (column is not null)
             {
                 object value = schemaRow[column];
                 if (DBNull.Value != value)
@@ -1170,7 +1170,7 @@ namespace System.Data.ProviderBase
             }
 
             column = columns[SchemaTableOptionalColumn.ColumnMapping];
-            if (null != column)
+            if (column is not null)
             {
                 object value = schemaRow[column];
                 if (DBNull.Value != value)
@@ -1180,7 +1180,7 @@ namespace System.Data.ProviderBase
             }
 
             column = columns[SchemaTableOptionalColumn.BaseColumnNamespace];
-            if (null != column)
+            if (column is not null)
             {
                 object value = schemaRow[column];
                 if (DBNull.Value != value)
@@ -1190,7 +1190,7 @@ namespace System.Data.ProviderBase
             }
 
             column = columns[SchemaTableOptionalColumn.Expression];
-            if (null != column)
+            if (column is not null)
             {
                 object value = schemaRow[column];
                 if (DBNull.Value != value)
@@ -1254,7 +1254,7 @@ namespace System.Data.ProviderBase
                 _mappedMode = ((null == _chapterMap) ? MapReorderedValues : MapChaptersReordered);
                 _mappedLength = count;
             }
-            if (null != chapterColumn)
+            if (chapterColumn is not null)
             { // value from parent tracked into child table
                 _mappedDataValues![chapterColumn.Ordinal] = chapterValue;
             }

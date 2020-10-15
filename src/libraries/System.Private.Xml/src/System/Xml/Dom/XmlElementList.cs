@@ -378,7 +378,7 @@ namespace System.Xml
                 if (_elemList is not null)
                 {
                     XmlElementList? el = (XmlElementList?)_elemList.Target;
-                    if (null != el)
+                    if (el is not null)
                     {
                         el.ConcurrencyCheck(args);
                     }

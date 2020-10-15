@@ -150,7 +150,7 @@ namespace System.Data
         {
             Debug.Assert(null == _index, "DataviewListener already registered index");
             _index = index;
-            if (null != index)
+            if (index is not null)
             {
                 lock (index)
                 {

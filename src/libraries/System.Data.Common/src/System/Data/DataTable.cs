@@ -983,13 +983,13 @@ namespace System.Data
                             catch (Exception e) when (ADP.IsCatchableExceptionType(e))
                             {
                                 ExceptionBuilder.TraceExceptionWithoutRethrow(e);
-                                if (null == first)
+                                if (first is null)
                                 {
                                     first = e;
                                 }
                             }
                         }
-                        if (null != first)
+                        if (first is not null)
                         {
                             throw first;
                         }
@@ -1211,7 +1211,7 @@ namespace System.Data
             get
             {
                 DataView? view = _defaultView;
-                if (null == view)
+                if (view is null)
                 {
                     if (null != _dataSet)
                     {
@@ -1224,7 +1224,7 @@ namespace System.Data
                     }
 
                     view = Interlocked.CompareExchange(ref _defaultView, view, null);
-                    if (null == view)
+                    if (view is null)
                     {
                         view = _defaultView;
                     }
@@ -1380,7 +1380,7 @@ namespace System.Data
                 try
                 {
                     bool userSet = true;
-                    if (null == value)
+                    if (value is null)
                     {
                         // reset Locale to inherit from DataSet
                         userSet = false;
@@ -1396,7 +1396,7 @@ namespace System.Data
                         {
                             _cultureUserSet = true;
                             SetLocaleValue(value, true, false);
-                            if ((null == DataSet) || DataSet.ValidateLocaleConstraint())
+                            if ((DataSet is null) || DataSet.ValidateLocaleConstraint())
                             {
                                 flag = false;
                                 SetLocaleValue(value, true, true);
@@ -1442,7 +1442,7 @@ namespace System.Data
 
         internal bool SetLocaleValue(CultureInfo culture, bool userSet, bool resetIndexes)
         {
-            Debug.Assert(null != culture, "SetLocaleValue: no locale");
+            Debug.Assert(culture is not null, "SetLocaleValue: no locale");
             if (userSet || resetIndexes || (!_cultureUserSet && !_culture.Equals(culture)))
             {
                 _culture = culture;
@@ -1535,7 +1535,7 @@ namespace System.Data
                 Debug.Assert(nRel.Length == _nestedParentRelations.Length, "nestedParent cache is broken");
                 for (int i = 0; i < nRel.Length; i++)
                 {
-                    Debug.Assert(null != nRel[i], "null relation");
+                    Debug.Assert(nRel[i] is not null, "null relation");
                     Debug.Assert(null != _nestedParentRelations[i], "null relation");
                     Debug.Assert(nRel[i] == _nestedParentRelations[i], "unequal relations");
                 }
@@ -1556,7 +1556,7 @@ namespace System.Data
             {
                 if (relation.Nested)
                 {
-                    if (null == nestedParents)
+                    if (nestedParents is null)
                     {
                         nestedParents = new List<DataRelation>();
                     }
@@ -1564,7 +1564,7 @@ namespace System.Data
                 }
             }
 
-            return (null == nestedParents) || (nestedParents.Count == 0) ?
+            return (nestedParents is null) || (nestedParents.Count == 0) ?
                 Array.Empty<DataRelation>() :
                 nestedParents.ToArray();
         }
@@ -1597,7 +1597,7 @@ namespace System.Data
             get
             {
                 UniqueConstraint? primayKeyConstraint = _primaryKey;
-                if (null != primayKeyConstraint)
+                if (primayKeyConstraint is not null)
                 {
                     Debug.Assert(2 <= primayKeyConstraint.ConstraintIndex.RefCount, "bad primaryKey index RefCount");
                     return primayKeyConstraint.Key.ToArray();
@@ -1812,7 +1812,7 @@ namespace System.Data
             get
             {
                 string? encodedTblName = _encodedTableName;
-                if (null == encodedTblName)
+                if (encodedTblName is null)
                 {
                     encodedTblName = XmlConvert.EncodeLocalName(TableName);
                     _encodedTableName = encodedTblName;
@@ -3573,7 +3573,7 @@ namespace System.Data
         {
             if ((null != _onRowChangedDelegate) || IsTypedDataTable)
             {
-                if (null == args)
+                if (args is null)
                 {
                     args = new DataRowChangeEventArgs(eRow, eAction);
                 }
@@ -3586,7 +3586,7 @@ namespace System.Data
         {
             if ((null != _onRowChangingDelegate) || IsTypedDataTable)
             {
-                if (null == args)
+                if (args is null)
                 {
                     args = new DataRowChangeEventArgs(eRow, eAction);
                 }
@@ -3600,7 +3600,7 @@ namespace System.Data
         /// </summary>
         protected virtual void OnRowChanged(DataRowChangeEventArgs e)
         {
-            Debug.Assert((null != e) && ((null != _onRowChangedDelegate) || IsTypedDataTable), "OnRowChanged arguments");
+            Debug.Assert((e is not null) && ((null != _onRowChangedDelegate) || IsTypedDataTable), "OnRowChanged arguments");
             if (_onRowChangedDelegate is not null)
             {
                 DataCommonEventSource.Log.Trace("<ds.DataTable.OnRowChanged|INFO> {0}", ObjectID);
@@ -3613,7 +3613,7 @@ namespace System.Data
         /// </summary>
         protected virtual void OnRowChanging(DataRowChangeEventArgs e)
         {
-            Debug.Assert((null != e) && ((null != _onRowChangingDelegate) || IsTypedDataTable), "OnRowChanging arguments");
+            Debug.Assert((e is not null) && ((null != _onRowChangingDelegate) || IsTypedDataTable), "OnRowChanging arguments");
             if (_onRowChangingDelegate is not null)
             {
                 DataCommonEventSource.Log.Trace("<ds.DataTable.OnRowChanging|INFO> {0}", ObjectID);
@@ -3626,7 +3626,7 @@ namespace System.Data
         /// </summary>
         protected virtual void OnRowDeleting(DataRowChangeEventArgs e)
         {
-            Debug.Assert((null != e) && ((null != _onRowDeletingDelegate) || IsTypedDataTable), "OnRowDeleting arguments");
+            Debug.Assert((e is not null) && ((null != _onRowDeletingDelegate) || IsTypedDataTable), "OnRowDeleting arguments");
             if (_onRowDeletingDelegate is not null)
             {
                 DataCommonEventSource.Log.Trace("<ds.DataTable.OnRowDeleting|INFO> {0}", ObjectID);
@@ -3639,7 +3639,7 @@ namespace System.Data
         /// </summary>
         protected virtual void OnRowDeleted(DataRowChangeEventArgs e)
         {
-            Debug.Assert((null != e) && ((null != _onRowDeletedDelegate) || IsTypedDataTable), "OnRowDeleted arguments");
+            Debug.Assert((e is not null) && ((null != _onRowDeletedDelegate) || IsTypedDataTable), "OnRowDeleted arguments");
             if (_onRowDeletedDelegate is not null)
             {
                 DataCommonEventSource.Log.Trace("<ds.DataTable.OnRowDeleted|INFO> {0}", ObjectID);
@@ -3686,7 +3686,7 @@ namespace System.Data
         internal IndexField[] ParseSortString(string? sortString)
         {
             IndexField[] indexDesc = Array.Empty<IndexField>();
-            if ((null != sortString) && (0 < sortString.Length))
+            if ((sortString is not null) && (0 < sortString.Length))
             {
                 string[] split = sortString.Split(',', StringSplitOptions.TrimEntries);
                 indexDesc = new IndexField[split.Length];
@@ -4056,7 +4056,7 @@ namespace System.Data
                     Index ndx = _shadowIndexes[i]; // shadowindexes may change, see ShadowIndexCopy()
                     if (0 < ndx.RefCount)
                     {
-                        if (null == column)
+                        if (column is null)
                         {
                             ndx.Reset();
                         }
@@ -4102,7 +4102,7 @@ namespace System.Data
                 // check if we deleting good row
                 else if (DataRowAction.Delete == eAction && eRow._newRecord == -1 && (IsTypedDataTable || (null != _onRowDeletedDelegate)))
                 {
-                    if (null == args)
+                    if (args is null)
                     {
                         args = new DataRowChangeEventArgs(eRow, eAction);
                     }
@@ -4139,7 +4139,7 @@ namespace System.Data
                 // don't catch
                 try
                 {
-                    if (null == args)
+                    if (args is null)
                     {
                         args = new DataRowChangeEventArgs(eRow, eAction);
                     }
@@ -4974,7 +4974,7 @@ namespace System.Data
                 Common.LoadAdapter adapter = new Common.LoadAdapter();
                 adapter.FillLoadOption = loadOption;
                 adapter.MissingSchemaAction = MissingSchemaAction.AddWithKey;
-                if (null != errorHandler)
+                if (errorHandler is not null)
                 {
                     adapter.FillError += errorHandler;
                 }
@@ -5031,7 +5031,7 @@ namespace System.Data
                         // values array is being reused by DataAdapter, do not modify the values array
                         for (int count = 0; count < values.Length; count++)
                         {
-                            if (null == values[count])
+                            if (values[count] is null)
                             {
                                 _columnCollection[count].Copy(resultRecord, recordNo);
                             }
@@ -5371,7 +5371,7 @@ namespace System.Data
                         {
                             DataSet? ds = null;
                             string? tablenamespace = _tableNamespace;
-                            if (null == DataSet)
+                            if (DataSet is null)
                             {
                                 ds = new DataSet();
 
@@ -5394,7 +5394,7 @@ namespace System.Data
                                 XmlDataTreeWriter xmldataWriter = new XmlDataTreeWriter(this, writeHierarchy);
                                 xmldataWriter.Save(writer, /*mode == XmlWriteMode.WriteSchema*/true);
                             }
-                            if (null != ds)
+                            if (ds is not null)
                             {
                                 ds.Tables.Remove(this);
                                 _tableNamespace = tablenamespace;
@@ -5523,7 +5523,7 @@ namespace System.Data
                 string? tablenamespace = _tableNamespace; //SQL BU Defect Tracking 286968
 
                 // Generate SchemaTree and write it out
-                if (null == DataSet)
+                if (DataSet is null)
                 {
                     ds = new DataSet();
                     // if user set values on DataTable, it isn't necessary
@@ -5545,7 +5545,7 @@ namespace System.Data
                     XmlTreeGen treeGen = new XmlTreeGen(SchemaFormat.Public);
                     treeGen.Save(null, this, writer, writeHierarchy);
                 }
-                if (null != ds)
+                if (ds is not null)
                 {
                     ds.Tables.Remove(this);
                     _tableNamespace = tablenamespace;

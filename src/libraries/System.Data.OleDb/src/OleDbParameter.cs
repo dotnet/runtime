@@ -113,7 +113,7 @@ namespace System.Data.OleDb
             set
             {
                 NativeDBType? dbtype = _metaType;
-                if ((null == dbtype) || (dbtype.enumDbType != value))
+                if ((dbtype is null) || (dbtype.enumDbType != value))
                 {
                     PropertyTypeChanging();
                     _metaType = NativeDBType.FromDbType(value);
@@ -139,7 +139,7 @@ namespace System.Data.OleDb
             set
             {
                 NativeDBType? dbtype = _metaType;
-                if ((null == dbtype) || (dbtype.enumOleDbType != value))
+                if ((dbtype is null) || (dbtype.enumOleDbType != value))
                 {
                     PropertyTypeChanging();
                     _metaType = NativeDBType.FromDataType(value);
@@ -167,7 +167,7 @@ namespace System.Data.OleDb
             get
             {
                 string? parameterName = _parameterName;
-                return ((null != parameterName) ? parameterName : string.Empty);
+                return ((parameterName is not null) ? parameterName : string.Empty);
             }
             set
             {
@@ -464,8 +464,8 @@ namespace System.Data.OleDb
 
         private static object? CoerceValue(object? value, NativeDBType destinationType)
         {
-            Debug.Assert(null != destinationType, "null destinationType");
-            if ((null != value) && (DBNull.Value != value) && (typeof(object) != destinationType.dataType))
+            Debug.Assert(destinationType is not null, "null destinationType");
+            if ((value is not null) && (DBNull.Value != value) && (typeof(object) != destinationType.dataType))
             {
                 Type currentType = value.GetType();
                 if (currentType != destinationType.dataType)
@@ -502,7 +502,7 @@ namespace System.Data.OleDb
         private NativeDBType GetBindType(object? value)
         {
             NativeDBType? dbtype = _metaType;
-            if (null == dbtype)
+            if (dbtype is null)
             {
                 if (ADP.IsNull(value))
                 {
@@ -519,7 +519,7 @@ namespace System.Data.OleDb
         internal object? GetCoercedValue()
         {
             object? value = CoercedValue; // will also be set during binding, will rebind everytime if _metaType not set
-            if (null == value)
+            if (value is null)
             {
                 value = CoerceValue(Value, _coerceMetaType!);
                 CoercedValue = value;
@@ -530,7 +530,7 @@ namespace System.Data.OleDb
         internal bool IsParameterComputed()
         {
             NativeDBType? metaType = _metaType;
-            return ((null == metaType)
+            return ((metaType is null)
                     || (!ShouldSerializeSize() && metaType.IsVariableLength)
                     || ((NativeDBType.DECIMAL == metaType.dbType) || (NativeDBType.NUMERIC == metaType.dbType)
                         && (!ShouldSerializeScale() || !ShouldSerializePrecision())
@@ -639,7 +639,7 @@ namespace System.Data.OleDb
 
             public override object ConvertTo(ITypeDescriptorContext context, CultureInfo culture, object value, Type destinationType)
             {
-                if (null == destinationType)
+                if (destinationType is null)
                 {
                     throw ADP.ArgumentNull("destinationType");
                 }
@@ -666,7 +666,7 @@ namespace System.Data.OleDb
                 {
                     flags |= 4;
                 }
-                if (null != p.Value)
+                if (p.Value is not null)
                 {
                     flags |= 8;
                 }

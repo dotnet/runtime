@@ -285,7 +285,7 @@ namespace System.Data.ProviderBase
         internal void NotifyWeakReference(int message)
         {
             DbReferenceCollection? referenceCollection = ReferenceCollection;
-            if (null != referenceCollection)
+            if (referenceCollection is not null)
             {
                 referenceCollection.Notify(message);
             }
@@ -334,7 +334,7 @@ namespace System.Data.ProviderBase
                     connectionFactory.SetInnerConnectionTo(outerConnection, this);
                     throw;
                 }
-                if (null == openConnection)
+                if (openConnection is null)
                 {
                     connectionFactory.SetInnerConnectionTo(outerConnection, this);
                     throw ADP.InternalConnectionError(ADP.ConnectionError.GetConnectionReturnsNull);
@@ -355,7 +355,7 @@ namespace System.Data.ProviderBase
             // ReclaimEmancipatedObjects.
 
             //3 // The following tests are retail assertions of things we can't allow to happen.
-            if (null == expectedOwner)
+            if (expectedOwner is null)
             {
                 if (null != _owningObject.Target)
                 {
@@ -399,7 +399,7 @@ namespace System.Data.ProviderBase
             _owningObject.Target = newOwner;
             _pooledCount--;
             //3 // The following tests are retail assertions of things we can't allow to happen.
-            if (null != Pool)
+            if (Pool is not null)
             {
                 if (0 != _pooledCount)
                 {
@@ -415,7 +415,7 @@ namespace System.Data.ProviderBase
         internal void RemoveWeakReference(object value)
         {
             DbReferenceCollection? referenceCollection = ReferenceCollection;
-            if (null != referenceCollection)
+            if (referenceCollection is not null)
             {
                 referenceCollection.Remove(value);
             }

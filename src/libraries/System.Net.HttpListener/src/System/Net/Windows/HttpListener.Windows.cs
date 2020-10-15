@@ -1279,7 +1279,7 @@ namespace System.Net
 
             // Setting 401 without setting WWW-Authenticate is a protocol violation
             // but throwing from HttpListener would be a breaking change.
-            if (challenges is not null) // null == Anonymous
+            if (challenges is not null) // Anonymous is null
             {
                 // Add the new WWW-Authenticate headers
                 foreach (string challenge in challenges)

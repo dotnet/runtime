@@ -65,7 +65,7 @@ namespace System.Data.Odbc
             get
             {
                 System.Data.ProviderBase.DbConnectionPoolGroup? poolGroup = PoolGroup;
-                return ((null != poolGroup) ? poolGroup.ConnectionOptions : null);
+                return ((poolGroup is not null) ? poolGroup.ConnectionOptions : null);
             }
         }
 
@@ -73,7 +73,7 @@ namespace System.Data.Odbc
         {
             bool hidePassword = InnerConnection.ShouldHidePassword;
             DbConnectionOptions? connectionOptions = UserConnectionOptions;
-            return ((null != connectionOptions) ? connectionOptions.UsersConnectionString(hidePassword) : "");
+            return ((connectionOptions is not null) ? connectionOptions.UsersConnectionString(hidePassword) : "");
         }
 
         private void ConnectionString_Set(string? value)
@@ -121,7 +121,7 @@ namespace System.Data.Odbc
             }
             set
             {
-                Debug.Assert(null != value, "null poolGroup");
+                Debug.Assert(value is not null, "null poolGroup");
                 _poolGroup = value;
             }
         }
@@ -199,13 +199,13 @@ namespace System.Data.Odbc
         {
             Debug.Assert(DbConnectionClosedConnecting.SingletonInstance == _innerConnection, "not connecting");
             System.Data.ProviderBase.DbConnectionPoolGroup? poolGroup = PoolGroup;
-            DbConnectionOptions? connectionOptions = ((null != poolGroup) ? poolGroup.ConnectionOptions : null);
-            if ((null == connectionOptions) || connectionOptions.IsEmpty)
+            DbConnectionOptions? connectionOptions = ((poolGroup is not null) ? poolGroup.ConnectionOptions : null);
+            if ((connectionOptions is null) || connectionOptions.IsEmpty)
             {
                 throw ADP.NoConnectionString();
             }
             DbConnectionOptions? userConnectionOptions = UserConnectionOptions;
-            Debug.Assert(null != userConnectionOptions, "null UserConnectionOptions");
+            Debug.Assert(userConnectionOptions is not null, "null UserConnectionOptions");
         }
 
         internal void RemoveWeakReference(object value)
@@ -216,7 +216,7 @@ namespace System.Data.Odbc
         internal void SetInnerConnectionEvent(DbConnectionInternal to)
         {
             Debug.Assert(null != _innerConnection, "null InnerConnection");
-            Debug.Assert(null != to, "to null InnerConnection");
+            Debug.Assert(to is not null, "to null InnerConnection");
 
             ConnectionState originalState = _innerConnection.State & ConnectionState.Open;
             ConnectionState currentState = to.State & ConnectionState.Open;
@@ -247,8 +247,8 @@ namespace System.Data.Odbc
         internal bool SetInnerConnectionFrom(DbConnectionInternal to, DbConnectionInternal from)
         {
             Debug.Assert(null != _innerConnection, "null InnerConnection");
-            Debug.Assert(null != from, "from null InnerConnection");
-            Debug.Assert(null != to, "to null InnerConnection");
+            Debug.Assert(from is not null, "from null InnerConnection");
+            Debug.Assert(to is not null, "to null InnerConnection");
             bool result = (from == Interlocked.CompareExchange<DbConnectionInternal>(ref _innerConnection, to, from));
             return result;
         }
@@ -256,7 +256,7 @@ namespace System.Data.Odbc
         internal void SetInnerConnectionTo(DbConnectionInternal to)
         {
             Debug.Assert(null != _innerConnection, "null InnerConnection");
-            Debug.Assert(null != to, "to null InnerConnection");
+            Debug.Assert(to is not null, "to null InnerConnection");
             _innerConnection = to;
         }
     }

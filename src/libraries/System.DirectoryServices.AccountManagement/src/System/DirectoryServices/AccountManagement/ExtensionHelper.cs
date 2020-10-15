@@ -30,7 +30,7 @@ namespace System.DirectoryServices.AccountManagement
 
                 for (int i = 0; i < MyAttribute.Length; i++)
                 {
-                    if (MyAttribute[i].Context is null && null == defaultRdn)
+                    if (MyAttribute[i].Context is null && defaultRdn is null)
                     {
                         defaultRdn = MyAttribute[i].RdnPrefix;
                     }
@@ -56,7 +56,7 @@ namespace System.DirectoryServices.AccountManagement
 
             for (int i = 0; i < MyAttribute.Length; i++)
             {
-                if (MyAttribute[i].Context is null && null == defaultObjectClass)
+                if (MyAttribute[i].Context is null && defaultObjectClass is null)
                 {
                     defaultObjectClass = MyAttribute[i].ObjectClass;
                 }
@@ -85,7 +85,7 @@ namespace System.DirectoryServices.AccountManagement
 
                 for (int i = 0; i < MyAttribute.Length; i++)
                 {
-                    if (MyAttribute[i].Context is null && null == defaultObjectClass)
+                    if (MyAttribute[i].Context is null && defaultObjectClass is null)
                     {
                         defaultObjectClass = MyAttribute[i].ObjectClass;
                     }
@@ -103,7 +103,7 @@ namespace System.DirectoryServices.AccountManagement
                 {
                     System.Reflection.PropertyInfo propInfo = this.GetType().GetProperty(propertyName);
 
-                    if ( null == propInfo )
+                    if ( propInfo is null )
                         return null;
 
                     DirectoryPropertyAttribute[] MyAttribute = (DirectoryPropertyAttribute[])Attribute.GetCustomAttributes(propInfo, typeof(DirectoryPropertyAttribute));

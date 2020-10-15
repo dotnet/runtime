@@ -81,8 +81,8 @@ namespace System.Data.ProviderBase
             set
             {
                 SysTx.Transaction? currentEnlistedTransaction = _enlistedTransaction;
-                if (((null == currentEnlistedTransaction) && (null != value))
-                    || ((null != currentEnlistedTransaction) && !currentEnlistedTransaction.Equals(value)))
+                if (((currentEnlistedTransaction is null) && (value is not null))
+                    || ((currentEnlistedTransaction is not null) && !currentEnlistedTransaction.Equals(value)))
                 {
                     // Pay attention to the order here:
                     // 1) defect from any notifications
@@ -96,7 +96,7 @@ namespace System.Data.ProviderBase
                     SysTx.Transaction? previousTransactionClone = null;
                     try
                     {
-                        if (null != value)
+                        if (value is not null)
                         {
                             valueClone = value.Clone();
                         }
@@ -131,12 +131,12 @@ namespace System.Data.ProviderBase
                         // we really need to dispose our clones; they may have
                         // native resources and GC may not happen soon enough.
                         // don't dispose if still holding reference in _enlistedTransaction
-                        if (null != previousTransactionClone &&
+                        if (previousTransactionClone is not null &&
                                 !object.ReferenceEquals(previousTransactionClone, _enlistedTransaction))
                         {
                             previousTransactionClone.Dispose();
                         }
-                        if (null != valueClone && !object.ReferenceEquals(valueClone, _enlistedTransaction))
+                        if (valueClone is not null && !object.ReferenceEquals(valueClone, _enlistedTransaction))
                         {
                             valueClone.Dispose();
                         }
@@ -379,7 +379,7 @@ namespace System.Data.ProviderBase
 
                 DbConnectionPool? pool = Pool;
 
-                if (null == pool)
+                if (pool is null)
                 {
                     throw ADP.InternalError(ADP.InternalErrorCode.PooledObjectWithoutPool);      // pooled connection does not have a pool
                 }
@@ -457,7 +457,7 @@ namespace System.Data.ProviderBase
         internal void NotifyWeakReference(int message)
         {
             DbReferenceCollection? referenceCollection = ReferenceCollection;
-            if (null != referenceCollection)
+            if (referenceCollection is not null)
             {
                 referenceCollection.Notify(message);
             }
@@ -501,7 +501,7 @@ namespace System.Data.ProviderBase
                     connectionFactory.SetInnerConnectionTo(outerConnection, this);
                     throw;
                 }
-                if (null == openConnection)
+                if (openConnection is null)
                 {
                     connectionFactory.SetInnerConnectionTo(outerConnection, this);
                     throw ADP.InternalConnectionError(ADP.ConnectionError.GetConnectionReturnsNull);
@@ -522,7 +522,7 @@ namespace System.Data.ProviderBase
             // ReclaimEmancipatedObjects.
 
             //3 // The following tests are retail assertions of things we can't allow to happen.
-            if (null == expectedOwner)
+            if (expectedOwner is null)
             {
                 if (null != _owningObject.Target)
                 {
@@ -566,7 +566,7 @@ namespace System.Data.ProviderBase
             _owningObject.Target = newOwner;
             _pooledCount--;
             //3 // The following tests are retail assertions of things we can't allow to happen.
-            if (null != Pool)
+            if (Pool is not null)
             {
                 if (0 != _pooledCount)
                 {
@@ -582,7 +582,7 @@ namespace System.Data.ProviderBase
         internal void RemoveWeakReference(object value)
         {
             DbReferenceCollection? referenceCollection = ReferenceCollection;
-            if (null != referenceCollection)
+            if (referenceCollection is not null)
             {
                 referenceCollection.Remove(value);
             }
@@ -620,7 +620,7 @@ namespace System.Data.ProviderBase
             {
                 // Detach if detach-on-end behavior, or if outer connection was closed
                 DbConnection? owner = (DbConnection?)Owner;
-                if (isExplicitlyReleasing || UnbindOnTransactionCompletion || null == owner)
+                if (isExplicitlyReleasing || UnbindOnTransactionCompletion || owner is null)
                 {
                     SysTx.Transaction? currentEnlistedTransaction = _enlistedTransaction;
                     if (currentEnlistedTransaction is not null && transaction.Equals(currentEnlistedTransaction))

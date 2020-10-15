@@ -33,7 +33,7 @@ namespace System.Xml.XPath.DataBinding
 
         public object this[string fieldname] {
             get {
-                if (null == fieldname)
+                if (fieldname is null)
                     throw new ArgumentNullException(nameof(fieldname));
                 int col = this.collection.RowShape.FindNamedSubShape(fieldname);
                 if (col == -1)
@@ -62,7 +62,7 @@ namespace System.Xml.XPath.DataBinding
 
         public XPathNavigator CreateNavigator() {
             XPathNode nd = this.rowNd;
-            if (null != nd)
+            if (nd is not null)
                 return new XPathDocumentNavigator(this.rowNd, null);
             return null;
         }

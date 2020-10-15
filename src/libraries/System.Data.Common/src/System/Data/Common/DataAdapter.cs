@@ -167,10 +167,10 @@ namespace System.Data.Common
             get
             {
                 DataTableMappingCollection? mappings = _tableMappings;
-                if (null == mappings)
+                if (mappings is null)
                 {
                     mappings = CreateTableMappings();
-                    if (null == mappings)
+                    if (mappings is null)
                     {
                         mappings = new DataTableMappingCollection();
                     }
@@ -218,7 +218,7 @@ namespace System.Data.Common
             _missingMappingAction = from._missingMappingAction;
             _missingSchemaAction = from._missingSchemaAction;
 
-            if ((null != from._tableMappings) && (0 < from.TableMappings.Count))
+            if ((from._tableMappings is not null) && (0 < from.TableMappings.Count))
             {
                 DataTableMappingCollection parameters = TableMappings;
                 foreach (object parameter in from.TableMappings)
@@ -256,7 +256,7 @@ namespace System.Data.Common
             long logScopeId = DataCommonEventSource.Log.EnterScope("<comm.DataAdapter.FillSchema|API> {0}, dataSet, schemaType={1}, srcTable, dataReader", ObjectID, schemaType);
             try
             {
-                if (null == dataSet)
+                if (dataSet is null)
                 {
                     throw ADP.ArgumentNull(nameof(dataSet));
                 }
@@ -268,7 +268,7 @@ namespace System.Data.Common
                 {
                     throw ADP.FillSchemaRequiresSourceTableName(nameof(srcTable));
                 }
-                if ((null == dataReader) || dataReader.IsClosed)
+                if ((dataReader is null) || dataReader.IsClosed)
                 {
                     throw ADP.FillRequires(nameof(dataReader));
                 }
@@ -288,7 +288,7 @@ namespace System.Data.Common
             long logScopeId = DataCommonEventSource.Log.EnterScope("<comm.DataAdapter.FillSchema|API> {0}, dataTable, schemaType, dataReader", ObjectID);
             try
             {
-                if (null == dataTable)
+                if (dataTable is null)
                 {
                     throw ADP.ArgumentNull(nameof(dataTable));
                 }
@@ -296,7 +296,7 @@ namespace System.Data.Common
                 {
                     throw ADP.InvalidSchemaType(schemaType);
                 }
-                if ((null == dataReader) || dataReader.IsClosed)
+                if ((dataReader is null) || dataReader.IsClosed)
                 {
                     throw ADP.FillRequires(nameof(dataReader));
                 }
@@ -325,7 +325,7 @@ namespace System.Data.Common
                     continue;
                 }
                 string? tmp = null;
-                if (null != dataset)
+                if (dataset is not null)
                 {
                     tmp = DataAdapter.GetSourceTableName(srcTable!, schemaCount);
                     schemaCount++; // don't increment if no SchemaTable ( a non-row returning result )
@@ -333,14 +333,14 @@ namespace System.Data.Common
 
                 SchemaMapping mapping = new SchemaMapping(this, dataset, datatable, readerHandler, true, schemaType, tmp, false, null, null);
 
-                if (null != datatable)
+                if (datatable is not null)
                 {
                     // do not read remaining results in single DataTable case
                     return mapping.DataTable;
                 }
-                else if (null != mapping.DataTable)
+                else if (mapping.DataTable is not null)
                 {
-                    if (null == dataTables)
+                    if (dataTables is null)
                     {
                         dataTables = new DataTable[1] { mapping.DataTable };
                     }
@@ -352,7 +352,7 @@ namespace System.Data.Common
             } while (dataReader.NextResult()); // FillSchema does not capture errors for FillError event
 
             object? value = dataTables;
-            if ((null == value) && (null == datatable))
+            if ((value is null) && (null == datatable))
             {
                 value = Array.Empty<DataTable>();
             }
@@ -369,7 +369,7 @@ namespace System.Data.Common
             long logScopeId = DataCommonEventSource.Log.EnterScope("<comm.DataAdapter.Fill|API> {0}, dataSet, srcTable, dataReader, startRecord, maxRecords", ObjectID);
             try
             {
-                if (null == dataSet)
+                if (dataSet is null)
                 {
                     throw ADP.FillRequires(nameof(dataSet));
                 }
@@ -377,7 +377,7 @@ namespace System.Data.Common
                 {
                     throw ADP.FillRequiresSourceTableName(nameof(srcTable));
                 }
-                if (null == dataReader)
+                if (dataReader is null)
                 {
                     throw ADP.FillRequires(nameof(dataReader));
                 }
@@ -415,11 +415,11 @@ namespace System.Data.Common
             try
             {
                 ADP.CheckArgumentLength(dataTables, nameof(dataTables));
-                if ((null == dataTables) || (0 == dataTables.Length) || (null == dataTables[0]))
+                if ((dataTables is null) || (0 == dataTables.Length) || (null == dataTables[0]))
                 {
                     throw ADP.FillRequires("dataTable");
                 }
-                if (null == dataReader)
+                if (dataReader is null)
                 {
                     throw ADP.FillRequires(nameof(dataReader));
                 }
@@ -433,14 +433,14 @@ namespace System.Data.Common
                 DataSet? commonDataSet = dataTables[0].DataSet;
                 try
                 {
-                    if (null != commonDataSet)
+                    if (commonDataSet is not null)
                     {
                         enforceContraints = commonDataSet.EnforceConstraints;
                         commonDataSet.EnforceConstraints = false;
                     }
                     for (int i = 0; i < dataTables.Length; ++i)
                     {
-                        Debug.Assert(null != dataTables[i], "null DataTable Fill");
+                        Debug.Assert(dataTables[i] is not null, "null DataTable Fill");
 
                         if (dataReader.IsClosed)
                         {
@@ -516,15 +516,15 @@ namespace System.Data.Common
                 SchemaMapping? mapping = FillMapping(dataset, datatable, srcTable, dataReader, schemaCount, parentChapterColumn, parentChapterValue);
                 schemaCount++; // don't increment if no SchemaTable ( a non-row returning result )
 
-                if (null == mapping)
+                if (mapping is null)
                 {
                     continue; // loop to next result
                 }
-                if (null == mapping.DataValues)
+                if (mapping.DataValues is null)
                 {
                     continue; // loop to next result
                 }
-                if (null == mapping.DataTable)
+                if (mapping.DataTable is null)
                 {
                     continue; // loop to next result
                 }
@@ -552,7 +552,7 @@ namespace System.Data.Common
                 {
                     mapping.DataTable.EndLoadData();
                 }
-                if (null != datatable)
+                if (datatable is not null)
                 {
                     break; // do not read remaining results in single DataTable case
                 }
@@ -646,7 +646,7 @@ namespace System.Data.Common
         {
             bool withKeyInfo = (Data.MissingSchemaAction.AddWithKey == MissingSchemaAction);
             string? tmp = null;
-            if (null != dataset)
+            if (dataset is not null)
             {
                 tmp = DataAdapter.GetSourceTableName(srcTable!, schemaCount);
             }
@@ -731,7 +731,7 @@ namespace System.Data.Common
 
             if (!fillErrorEvent.Continue)
             {
-                if (null != fillErrorEvent.Errors)
+                if (fillErrorEvent.Errors is not null)
                 {
                     throw fillErrorEvent.Errors;
                 }
@@ -766,7 +766,7 @@ namespace System.Data.Common
         // dynamically generate source table names
         private static string GetSourceTableName(string srcTable, int index)
         {
-            //if ((null != srcTable) && (0 <= index) && (index < srcTable.Length)) {
+            //if ((srcTable is not null) && (0 <= index) && (index < srcTable.Length)) {
             if (0 == index)
             {
                 return srcTable; //[index];

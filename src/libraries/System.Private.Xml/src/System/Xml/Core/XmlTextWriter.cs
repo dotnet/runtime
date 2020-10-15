@@ -737,14 +737,14 @@ namespace System.Xml
             try
             {
                 AutoComplete(Token.CData);
-                if (null != text && text.Contains("]]>"))
+                if (text is not null && text.Contains("]]>"))
                 {
                     throw new ArgumentException(SR.Xml_InvalidCDataChars);
                 }
 
                 _textWriter.Write("<![CDATA[");
 
-                if (null != text)
+                if (text is not null)
                 {
                     _xmlEncoder.WriteRawWithSurrogateChecking(text);
                 }
@@ -763,13 +763,13 @@ namespace System.Xml
         {
             try
             {
-                if (null != text && (text.Contains("--") || (text.Length != 0 && text[text.Length - 1] == '-')))
+                if (text is not null && (text.Contains("--") || (text.Length != 0 && text[text.Length - 1] == '-')))
                 {
                     throw new ArgumentException(SR.Xml_InvalidCommentChars);
                 }
                 AutoComplete(Token.Comment);
                 _textWriter.Write("<!--");
-                if (null != text)
+                if (text is not null)
                 {
                     _xmlEncoder.WriteRawWithSurrogateChecking(text);
                 }
@@ -787,7 +787,7 @@ namespace System.Xml
         {
             try
             {
-                if (null != text && text.Contains("?>"))
+                if (text is not null && text.Contains("?>"))
                 {
                     throw new ArgumentException(SR.Xml_InvalidPiChars);
                 }
@@ -843,7 +843,7 @@ namespace System.Xml
         {
             try
             {
-                if (null == ws)
+                if (ws is null)
                 {
                     ws = string.Empty;
                 }
@@ -867,7 +867,7 @@ namespace System.Xml
         {
             try
             {
-                if (null != text && text.Length != 0)
+                if (text is not null && text.Length != 0)
                 {
                     AutoComplete(Token.Content);
                     _xmlEncoder.Write(text);
@@ -1603,7 +1603,7 @@ namespace System.Xml
             _textWriter.Write(name);
             _textWriter.Write(' ');
 
-            if (null != text)
+            if (text is not null)
             {
                 _xmlEncoder.WriteRawWithSurrogateChecking(text);
             }

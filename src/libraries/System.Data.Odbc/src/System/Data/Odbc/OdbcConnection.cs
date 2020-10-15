@@ -147,7 +147,7 @@ namespace System.Data.Odbc
         {
             get
             {
-                Debug.Assert(null != this.PoolGroup, "PoolGroup must never be null when accessing ProviderInfo");
+                Debug.Assert(this.PoolGroup is not null, "PoolGroup must never be null when accessing ProviderInfo");
                 return (OdbcConnectionPoolGroupProviderInfo)this.PoolGroup.ProviderInfo!;
             }
         }
@@ -184,7 +184,7 @@ namespace System.Data.Odbc
             {
                 _weakTransaction = null;
 
-                if (null != value)
+                if (value is not null)
                 {
                     _weakTransaction = new WeakReference((OdbcTransaction)value);
                 }
@@ -291,7 +291,7 @@ namespace System.Data.Odbc
         private void RollbackDeadTransaction()
         {
             WeakReference? weak = _weakTransaction;
-            if ((null != weak) && !weak.IsAlive)
+            if ((weak is not null) && !weak.IsAlive)
             {
                 _weakTransaction = null;
                 ConnectionHandle!.CompleteTransaction(ODBC32.SQL_ROLLBACK);
@@ -353,17 +353,17 @@ namespace System.Data.Odbc
 
             OdbcConnectionHandle? connectionHandle = _connectionHandle;
 
-            if (null != connectionHandle)
+            if (connectionHandle is not null)
             {
                 _connectionHandle = null;
 
                 // If there is a pending transaction, automatically rollback.
                 WeakReference? weak = _weakTransaction;
-                if (null != weak)
+                if (weak is not null)
                 {
                     _weakTransaction = null;
                     IDisposable? transaction = weak.Target as OdbcTransaction;
-                    if ((null != transaction) && weak.IsAlive)
+                    if ((transaction is not null) && weak.IsAlive)
                     {
                         transaction.Dispose();
                     }
@@ -383,7 +383,7 @@ namespace System.Data.Odbc
             int cbActual = 0;
             byte[] buffer = new byte[100];
             OdbcConnectionHandle? connectionHandle = ConnectionHandle;
-            if (null != connectionHandle)
+            if (connectionHandle is not null)
             {
                 ODBC32.RetCode retcode = connectionHandle.GetConnectionAttribute(attribute, buffer, out cbActual);
                 if (buffer.Length + 2 <= cbActual)
@@ -416,7 +416,7 @@ namespace System.Data.Odbc
             int cbActual = 0;
             byte[] buffer = new byte[4];
             OdbcConnectionHandle? connectionHandle = ConnectionHandle;
-            if (null != connectionHandle)
+            if (connectionHandle is not null)
             {
                 ODBC32.RetCode retcode = connectionHandle.GetConnectionAttribute(attribute, buffer, out cbActual);
 
@@ -486,7 +486,7 @@ namespace System.Data.Odbc
             short cbActual = 0;
             byte[] buffer = new byte[100];
             OdbcConnectionHandle? connectionHandle = ConnectionHandle;
-            if (null != connectionHandle)
+            if (connectionHandle is not null)
             {
                 ODBC32.RetCode retcode = connectionHandle.GetInfo2(info, buffer, out cbActual);
                 if (buffer.Length < cbActual - 2)
@@ -552,10 +552,10 @@ namespace System.Data.Odbc
             {
                 case ODBC32.RetCode.SUCCESS:
                 case ODBC32.RetCode.SUCCESS_WITH_INFO:
-                    Debug.Assert(null == e, "success exception");
+                    Debug.Assert(e is null, "success exception");
                     break;
                 default:
-                    Debug.Assert(null != e, "failure without exception");
+                    Debug.Assert(e is not null, "failure without exception");
                     throw e;
             }
         }
@@ -611,7 +611,7 @@ namespace System.Data.Odbc
                 OdbcTransaction? weak = (_weakTransaction.Target as OdbcTransaction);
                 if (transaction != weak)
                 { // transaction doesn't exist
-                    if (null == transaction)
+                    if (transaction is null)
                     { // transaction exists
                         throw ADP.TransactionRequired(method);
                     }
@@ -624,9 +624,9 @@ namespace System.Data.Odbc
                     transaction = null; // MDAC 69264
                 }
             }
-            else if (null != transaction)
+            else if (transaction is not null)
             { // no transaction started
-                if (null != transaction.Connection)
+                if (transaction.Connection is not null)
                 {
                     // transaction can't have come from this connection
                     throw ADP.TransactionConnectionMismatch();
@@ -782,7 +782,7 @@ namespace System.Data.Odbc
             short fExists;
             Debug.Assert((short)odbcFunction != 0, "SQL_API_ALL_FUNCTIONS is not supported");
             OdbcConnectionHandle? connectionHandle = ConnectionHandle;
-            if (null != connectionHandle)
+            if (connectionHandle is not null)
             {
                 retcode = connectionHandle.GetFunctions(odbcFunction, out fExists);
             }

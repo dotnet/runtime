@@ -39,7 +39,7 @@ namespace System.Management
 
         public static implicit operator IntPtr(IWbemClassObjectFreeThreaded wbemClassObject)
         {
-            if (null == wbemClassObject)
+            if (wbemClassObject is null)
                 return IntPtr.Zero;
             return wbemClassObject.pWbemClassObject;
         }

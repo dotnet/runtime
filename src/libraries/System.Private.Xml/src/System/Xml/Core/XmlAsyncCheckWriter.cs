@@ -40,7 +40,7 @@ namespace System.Xml
             {
                 XmlWriterSettings? settings = _coreWriter.Settings;
 
-                if (null != settings)
+                if (settings is not null)
                 {
                     settings = settings.Clone();
                 }

@@ -202,7 +202,7 @@ namespace System.DirectoryServices.AccountManagement
             else
             {
                 string objClass = ExtensionHelper.ReadStructuralObjectClass(principalType);
-                if (null == objClass)
+                if (objClass is null)
                 {
                     Debug.Fail($"ADStoreCtx.GetObjectClassPortion: fell off end looking for {principalType}");
                     throw new InvalidOperationException(SR.Format(SR.StoreCtxUnsupportedPrincipalTypeForQuery, principalType));
@@ -601,7 +601,7 @@ namespace System.DirectoryServices.AccountManagement
                 {
                     // Now we convert the native SID to a byte[] SID
                     sidB = Utils.ConvertNativeSidToByteArray(pBytePtr);
-                    if (null == sidB)
+                    if (sidB is null)
                     {
                         if (throwOnFail)
                             throw new ArgumentException(SR.StoreCtxSecurityIdentityClaimBadFormat);

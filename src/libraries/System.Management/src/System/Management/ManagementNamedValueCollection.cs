@@ -141,7 +141,7 @@ namespace System.Management
                 // If we can clone the value, do so. Otherwise throw.
                 object val = base.BaseGet(name);
 
-                if (null != val)
+                if (val is not null)
                 {
                     Type valueType = val.GetType();
 

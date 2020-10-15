@@ -1904,7 +1904,7 @@ namespace System.Data
 #if VerifyPath
             internal void VerifyPath(RBTree<K> tree)
             {
-                Debug.Assert(null != tree, "null tree");
+                Debug.Assert(tree is not null, "null tree");
                 Debug.Assert((NIL == _nodeID && NIL == _mainTreeNodeID) || (NIL != _nodeID), "MainTreeNodeID is not NIL");
 
                 if (NIL != _mainTreeNodeID)

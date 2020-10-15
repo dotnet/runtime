@@ -72,7 +72,7 @@ namespace System.Management
                 this.className = className;
                 this.isLocal = false;
 
-                if (null != path)
+                if (path is not null)
                 {
                     this.path = new ManagementPath(path);
                     if ((0 == string.Compare(this.path.Server, ".", StringComparison.OrdinalIgnoreCase)) ||
@@ -82,10 +82,10 @@ namespace System.Management
                     }
                 }
 
-                if (null != scope)
+                if (scope is not null)
                 {
                     this.scope = (ManagementScope)scope.Clone();
-                    if (null == path) // use scope to see if sink is local
+                    if (path is null) // use scope to see if sink is local
                     {
                         if ((0 == string.Compare(this.scope.Path.Server, ".", StringComparison.OrdinalIgnoreCase)) ||
                             (0 == string.Compare(this.scope.Path.Server, System.Environment.MachineName, StringComparison.OrdinalIgnoreCase)))
@@ -112,7 +112,7 @@ namespace System.Management
             {
                 try
                 {
-                    return (null != stub) ? (IWbemObjectSink)stub : null;
+                    return (stub is not null) ? (IWbemObjectSink)stub : null;
                 }
                 catch
                 {
@@ -152,15 +152,15 @@ namespace System.Management
                 if (flags == (int)tag_WBEM_STATUS_TYPE.WBEM_STATUS_COMPLETE)
                 {
                     // Is this a Put? If so fire the ObjectPut event
-                    if (null != path)
+                    if (path is not null)
                     {
-                        if (null == className)
+                        if (className is null)
                             path.RelativePath = message;
                         else
                             path.RelativePath = className;
 
                         // Fire the internal event (if anyone is interested)
-                        if (null != InternalObjectPut)
+                        if (InternalObjectPut is not null)
                         {
                             try
                             {
@@ -222,7 +222,7 @@ namespace System.Management
                  * We force a release of the stub here so as to allow
                  * unsecapp.exe to die as soon as possible.
                  */
-                if (null != stub)
+                if (stub is not null)
                 {
                     System.Runtime.InteropServices.Marshal.ReleaseComObject(stub);
                     stub = null;
@@ -288,7 +288,7 @@ namespace System.Management
         {
             Marshal.AddRef(pIWbemClassObject);
             IWbemClassObjectFreeThreaded obj = new IWbemClassObjectFreeThreaded(pIWbemClassObject);
-            if (null != managementObject)
+            if (managementObject is not null)
             {
                 try
                 {

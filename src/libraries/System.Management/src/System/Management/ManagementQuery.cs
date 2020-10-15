@@ -74,7 +74,7 @@ namespace System.Management
         /// </value>
         public virtual string QueryString
         {
-            get { return (null != queryString) ? queryString : string.Empty; }
+            get { return (queryString is not null) ? queryString : string.Empty; }
             set
             {
                 if (queryString != value)
@@ -96,7 +96,7 @@ namespace System.Management
         /// </value>
         public virtual string QueryLanguage
         {
-            get { return (null != queryLanguage) ? queryLanguage : string.Empty; }
+            get { return (queryLanguage is not null) ? queryLanguage : string.Empty; }
             set
             {
                 if (queryLanguage != value)
@@ -656,7 +656,7 @@ namespace System.Management
         {
             selectedProperties = new StringCollection();
 
-            if (null != queryOrClassName)
+            if (queryOrClassName is not null)
             {
                 // Minimally determine if the string is a query or class name.
                 //
@@ -726,7 +726,7 @@ namespace System.Management
             this.condition = condition;
             this.selectedProperties = new StringCollection();
 
-            if (null != selectedProperties)
+            if (selectedProperties is not null)
                 this.selectedProperties.AddRange(selectedProperties);
 
             BuildQuery();
@@ -844,7 +844,7 @@ namespace System.Management
         /// </example>
         public string ClassName
         {
-            get { return (null != className) ? className : string.Empty; }
+            get { return (className is not null) ? className : string.Empty; }
             set { className = value; BuildQuery(); FireIdentifierChanged(); }
         }
 
@@ -863,7 +863,7 @@ namespace System.Management
         /// </remarks>
         public string Condition
         {
-            get { return (null != condition) ? condition : string.Empty; }
+            get { return (condition is not null) ? condition : string.Empty; }
             set { condition = value; BuildQuery(); FireIdentifierChanged(); }
         }
 
@@ -885,7 +885,7 @@ namespace System.Management
             get { return selectedProperties; }
             set
             {
-                if (null != value)
+                if (value is not null)
                 {
                     // A tad painful since StringCollection doesn't support ICloneable
                     StringCollection src = (StringCollection)value;
@@ -925,7 +925,7 @@ namespace System.Management
                 s = TokenSelect;
 
                 //If properties are specified list them
-                if ((null != selectedProperties) && (0 < selectedProperties.Count))
+                if ((selectedProperties is not null) && (0 < selectedProperties.Count))
                 {
                     int count = selectedProperties.Count;
 
@@ -981,7 +981,7 @@ namespace System.Management
                     ParseToken(ref q, keyword, ref bFound);
                     if (q[0] != '*') //we have properties
                     {
-                        if (null != selectedProperties)
+                        if (selectedProperties is not null)
                             selectedProperties.Clear();
                         else
                             selectedProperties = new StringCollection();
@@ -1106,7 +1106,7 @@ namespace System.Management
         {
             string[] strArray = null;
 
-            if (null != selectedProperties)
+            if (selectedProperties is not null)
             {
                 int count = selectedProperties.Count;
 
@@ -1253,7 +1253,7 @@ namespace System.Management
         /// </example>
         public RelatedObjectQuery(string queryOrSourceObject)
         {
-            if (null != queryOrSourceObject)
+            if (queryOrSourceObject is not null)
             {
                 // Minimally determine if the string is a query or instance name.
                 //
@@ -1404,7 +1404,7 @@ namespace System.Management
         /// </remarks>
         public string SourceObject
         {
-            get { return (null != sourceObject) ? sourceObject : string.Empty; }
+            get { return (sourceObject is not null) ? sourceObject : string.Empty; }
             set { sourceObject = value; BuildQuery(); FireIdentifierChanged(); }
         }
 
@@ -1432,7 +1432,7 @@ namespace System.Management
         /// </example>
         public string RelatedClass
         {
-            get { return (null != relatedClass) ? relatedClass : string.Empty; }
+            get { return (relatedClass is not null) ? relatedClass : string.Empty; }
             set { relatedClass = value; BuildQuery(); FireIdentifierChanged(); }
         }
 
@@ -1460,7 +1460,7 @@ namespace System.Management
         /// </example>
         public string RelationshipClass
         {
-            get { return (null != relationshipClass) ? relationshipClass : string.Empty; }
+            get { return (relationshipClass is not null) ? relationshipClass : string.Empty; }
             set { relationshipClass = value; BuildQuery(); FireIdentifierChanged(); }
         }
 
@@ -1478,7 +1478,7 @@ namespace System.Management
         /// </remarks>
         public string RelatedQualifier
         {
-            get { return (null != relatedQualifier) ? relatedQualifier : string.Empty; }
+            get { return (relatedQualifier is not null) ? relatedQualifier : string.Empty; }
             set { relatedQualifier = value; BuildQuery(); FireIdentifierChanged(); }
         }
 
@@ -1496,7 +1496,7 @@ namespace System.Management
         /// </remarks>
         public string RelationshipQualifier
         {
-            get { return (null != relationshipQualifier) ? relationshipQualifier : string.Empty; }
+            get { return (relationshipQualifier is not null) ? relationshipQualifier : string.Empty; }
             set { relationshipQualifier = value; BuildQuery(); FireIdentifierChanged(); }
         }
 
@@ -1514,7 +1514,7 @@ namespace System.Management
         /// </remarks>
         public string RelatedRole
         {
-            get { return (null != relatedRole) ? relatedRole : string.Empty; }
+            get { return (relatedRole is not null) ? relatedRole : string.Empty; }
             set { relatedRole = value; BuildQuery(); FireIdentifierChanged(); }
         }
 
@@ -1531,7 +1531,7 @@ namespace System.Management
         /// </remarks>
         public string ThisRole
         {
-            get { return (null != thisRole) ? thisRole : string.Empty; }
+            get { return (thisRole is not null) ? thisRole : string.Empty; }
             set { thisRole = value; BuildQuery(); FireIdentifierChanged(); }
         }
 
@@ -1881,7 +1881,7 @@ namespace System.Management
         /// </example>
         public RelationshipQuery(string queryOrSourceObject)
         {
-            if (null != queryOrSourceObject)
+            if (queryOrSourceObject is not null)
             {
                 // Minimally determine if the string is a query or instance name.
                 //
@@ -2014,7 +2014,7 @@ namespace System.Management
         /// </remarks>
         public string SourceObject
         {
-            get { return (null != sourceObject) ? sourceObject : string.Empty; }
+            get { return (sourceObject is not null) ? sourceObject : string.Empty; }
             set { sourceObject = value; BuildQuery(); FireIdentifierChanged(); }
         }
 
@@ -2032,7 +2032,7 @@ namespace System.Management
         /// </remarks>
         public string RelationshipClass
         {
-            get { return (null != relationshipClass) ? relationshipClass : string.Empty; }
+            get { return (relationshipClass is not null) ? relationshipClass : string.Empty; }
             set { relationshipClass = value; BuildQuery(); FireIdentifierChanged(); }
         }
 
@@ -2050,7 +2050,7 @@ namespace System.Management
         /// </remarks>
         public string RelationshipQualifier
         {
-            get { return (null != relationshipQualifier) ? relationshipQualifier : string.Empty; }
+            get { return (relationshipQualifier is not null) ? relationshipQualifier : string.Empty; }
             set { relationshipQualifier = value; BuildQuery(); FireIdentifierChanged(); }
         }
 
@@ -2068,7 +2068,7 @@ namespace System.Management
         /// </remarks>
         public string ThisRole
         {
-            get { return (null != thisRole) ? thisRole : string.Empty; }
+            get { return (thisRole is not null) ? thisRole : string.Empty; }
             set { thisRole = value; BuildQuery(); FireIdentifierChanged(); }
         }
 
@@ -2474,7 +2474,7 @@ namespace System.Management
         {
             groupByPropertyList = new StringCollection();
 
-            if (null != queryOrEventClassName)
+            if (queryOrEventClassName is not null)
             {
                 // Minimally determine if the string is a query or event class name.
                 //
@@ -2694,7 +2694,7 @@ namespace System.Management
             this.groupWithinInterval = groupWithinInterval;
             this.groupByPropertyList = new StringCollection();
 
-            if (null != groupByPropertyList)
+            if (groupByPropertyList is not null)
                 this.groupByPropertyList.AddRange(groupByPropertyList);
 
             this.havingCondition = havingCondition;
@@ -2762,7 +2762,7 @@ namespace System.Management
         /// </example>
         public string EventClassName
         {
-            get { return (null != eventClassName) ? eventClassName : string.Empty; }
+            get { return (eventClassName is not null) ? eventClassName : string.Empty; }
             set { eventClassName = value; BuildQuery(); }
         }
 
@@ -2796,7 +2796,7 @@ namespace System.Management
         /// </example>
         public string Condition
         {
-            get { return (null != condition) ? condition : string.Empty; }
+            get { return (condition is not null) ? condition : string.Empty; }
             set { condition = value; BuildQuery(); }
         }
 
@@ -2953,7 +2953,7 @@ namespace System.Management
         /// </example>
         public string HavingCondition
         {
-            get { return (null != havingCondition) ? havingCondition : string.Empty; }
+            get { return (havingCondition is not null) ? havingCondition : string.Empty; }
             set { havingCondition = value; BuildQuery(); }
         }
 
@@ -2991,7 +2991,7 @@ namespace System.Management
                 s = s + " group within " + groupWithinInterval.TotalSeconds.ToString((IFormatProvider)CultureInfo.InvariantCulture.GetFormat(typeof(double)));
 
                 //Group By clause
-                if ((null != groupByPropertyList) && (0 < groupByPropertyList.Count))
+                if ((groupByPropertyList is not null) && (0 < groupByPropertyList.Count))
                 {
                     int count = groupByPropertyList.Count;
                     s = s + " by ";
@@ -3077,7 +3077,7 @@ namespace System.Management
                 if ((q.Length >= keyword.Length) && (0 == string.Compare(q, 0, keyword, 0, keyword.Length, StringComparison.OrdinalIgnoreCase)))
                 {
                     q = q.Remove(0, keyword.Length);
-                    if (null != groupByPropertyList)
+                    if (groupByPropertyList is not null)
                         groupByPropertyList.Clear();
                     else
                         groupByPropertyList = new StringCollection();
@@ -3148,7 +3148,7 @@ namespace System.Management
         {
             string[] strArray = null;
 
-            if (null != groupByPropertyList)
+            if (groupByPropertyList is not null)
             {
                 int count = groupByPropertyList.Count;
 

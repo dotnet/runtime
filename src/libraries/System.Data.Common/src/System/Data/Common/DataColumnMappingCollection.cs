@@ -153,7 +153,7 @@ namespace System.Data.Common
 
         private void AddEnumerableRange(IEnumerable values, bool doClone)
         {
-            if (null == values)
+            if (values is null)
             {
                 throw ADP.ArgumentNull(nameof(values));
             }
@@ -252,7 +252,7 @@ namespace System.Data.Common
 
         public int IndexOf(object? value)
         {
-            if (null != value)
+            if (value is not null)
             {
                 ValidateType(value);
                 for (int i = 0; i < Count; ++i)
@@ -306,7 +306,7 @@ namespace System.Data.Common
 
         public void Insert(int index, DataColumnMapping value)
         {
-            if (null == value)
+            if (value is null)
             {
                 throw ADP.ColumnsAddNullAttempt(nameof(value));
             }
@@ -360,7 +360,7 @@ namespace System.Data.Common
 
         public void Remove(DataColumnMapping value)
         {
-            if (null == value)
+            if (value is null)
             {
                 throw ADP.ColumnsAddNullAttempt(nameof(value));
             }
@@ -387,7 +387,7 @@ namespace System.Data.Common
 
         private void ValidateType([NotNull] object? value)
         {
-            if (null == value)
+            if (value is null)
             {
                 throw ADP.ColumnsAddNullAttempt(nameof(value));
             }
@@ -399,11 +399,11 @@ namespace System.Data.Common
 
         private void Validate(int index, [NotNull] DataColumnMapping? value)
         {
-            if (null == value)
+            if (value is null)
             {
                 throw ADP.ColumnsAddNullAttempt(nameof(value));
             }
-            if (null != value.Parent)
+            if (value.Parent is not null)
             {
                 if (this != value.Parent)
                 {
@@ -444,7 +444,7 @@ namespace System.Data.Common
         [EditorBrowsable(EditorBrowsableState.Advanced)]
         public static DataColumn? GetDataColumn(DataColumnMappingCollection? columnMappings, string sourceColumn, Type? dataType, DataTable dataTable, MissingMappingAction mappingAction, MissingSchemaAction schemaAction)
         {
-            if (null != columnMappings)
+            if (columnMappings is not null)
             {
                 int index = columnMappings.IndexOf(sourceColumn);
                 if (-1 != index)
@@ -473,7 +473,7 @@ namespace System.Data.Common
         [EditorBrowsable(EditorBrowsableState.Advanced)]
         public static DataColumnMapping? GetColumnMappingBySchemaAction(DataColumnMappingCollection? columnMappings, string sourceColumn, MissingMappingAction mappingAction)
         {
-            if (null != columnMappings)
+            if (columnMappings is not null)
             {
                 int index = columnMappings.IndexOf(sourceColumn);
                 if (-1 != index)

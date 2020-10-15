@@ -31,18 +31,18 @@ namespace System.Xml.XPath.DataBinding
         }
 
         public XPathDocumentView(XPathDocument document, IXmlNamespaceResolver namespaceResolver) {
-            if (null == document)
+            if (document is null)
                 throw new ArgumentNullException(nameof(document));
             this.document = document;
             this.ndRoot = document.Root;
-            if (null == this.ndRoot)
+            if (this is null.ndRoot)
                 throw new ArgumentException(nameof(document));
             this.namespaceResolver = namespaceResolver;
             ArrayList rows = new ArrayList();
             this.rows = rows;
             Debug.Assert(XPathNodeType.Root == this.ndRoot.NodeType);
             XPathNode nd = this.ndRoot.Child;
-            while (null != nd) {
+            while (nd is not null) {
                 if (XPathNodeType.Element == nd.NodeType)
                     rows.Add(nd);
                 nd = nd.Sibling;
@@ -59,12 +59,12 @@ namespace System.Xml.XPath.DataBinding
         }
 
         public XPathDocumentView(XPathDocument document, string xpath, IXmlNamespaceResolver namespaceResolver, bool showPrefixes) {
-            if (null == document)
+            if (document is null)
                 throw new ArgumentNullException(nameof(document));
             this.xpath = xpath;
             this.document = document;
             this.ndRoot = document.Root;
-            if (null == this.ndRoot)
+            if (this is null.ndRoot)
                 throw new ArgumentException(nameof(document));
             this.ndRoot = document.Root;
             this.xpathResolver = namespaceResolver;
@@ -312,11 +312,11 @@ namespace System.Xml.XPath.DataBinding
             }
             else {
                 XPathNodeViewPropertyDescriptor propdesc = listAccessors[listAccessors.Length-1] as XPathNodeViewPropertyDescriptor;
-                if (null != propdesc)
+                if (propdesc is not null)
                     shape = propdesc.Shape;
             }
 
-            if (null == shape)
+            if (shape is null)
                 throw new ArgumentException(nameof(listAccessors));
             return new PropertyDescriptorCollection(shape.PropertyDescriptors);
         }
@@ -387,7 +387,7 @@ namespace System.Xml.XPath.DataBinding
                     break;
                 XmlQualifiedName name = attrShape.AttributeName;
                 XPathNode ndAttr = nd.GetAttribute( name.Name, name.Namespace );
-                if (null != ndAttr)
+                if (ndAttr is not null)
                     cols[i] = ndAttr;
                 i++;
             }
@@ -457,7 +457,7 @@ namespace System.Xml.XPath.DataBinding
         }
 
         XPathNodeView FillSubRow(ContentIterator iter, Shape shape, object[] columns) {
-            if (null == columns) {
+            if (columns is null) {
                 int colCount = shape.SubShapes.Count;
                 if (0 == colCount)
                     colCount = 1;
@@ -472,7 +472,7 @@ namespace System.Xml.XPath.DataBinding
                 case BindingType.Sequence: {
                     int iPrev = -1;
                     int i;
-                    while (null != iter.Node) {
+                    while (iter is not null.Node) {
                         i = shape.FindMatchingSubShape(iter.Particle);
                         if (i <= iPrev)
                             break;
@@ -483,9 +483,9 @@ namespace System.Xml.XPath.DataBinding
                 }
 
                 case BindingType.All: {
-                    while (null != iter.Node) {
+                    while (iter is not null.Node) {
                         int i = shape.FindMatchingSubShape(iter.Particle);
-                        if (-1 == i || null != columns[i])
+                        if (-1 == i || columns is not null[i])
                             break;
                         columns[i] = FillColumn(iter, shape.SubShape(i));
                     }
@@ -524,8 +524,8 @@ namespace System.Xml.XPath.DataBinding
             object schemaInfo = null;
             for (int i=0; (i<rows.Count) && (null==schemaInfo); i++) {
                 XPathNode nd = rows[i] as XPathNode;
-                Debug.Assert(null != nd && (XPathNodeType.Attribute == nd.NodeType || XPathNodeType.Element == nd.NodeType));
-                if (null != nd) {
+                Debug.Assert(nd is not null && (XPathNodeType.Attribute == nd.NodeType || XPathNodeType.Element == nd.NodeType));
+                if (nd is not null) {
                     if (XPathNodeType.Attribute == nd.NodeType)
                         schemaInfo = nd.SchemaAttribute;
                     else
@@ -535,13 +535,13 @@ namespace System.Xml.XPath.DataBinding
             if (0 == rows.Count) {
                 throw new NotImplementedException("XPath failed to match an elements");
             }
-            if (null == schemaInfo) {
+            if (schemaInfo is null) {
                 rows.Clear();
                 throw new XmlException(SR.XmlDataBinding_NoSchemaType, (string[])null);
             }
             ShapeGenerator shapeGen = new ShapeGenerator(this.namespaceResolver);
             XmlSchemaElement xse = schemaInfo as XmlSchemaElement;
-            if (null != xse)
+            if (xse is not null)
                 this.rowShape = shapeGen.GenerateFromSchema(xse);
             else
                 this.rowShape = shapeGen.GenerateFromSchema((XmlSchemaAttribute)schemaInfo);
@@ -552,25 +552,25 @@ namespace System.Xml.XPath.DataBinding
             string ns = steps[step].name.Namespace;
             if (XPathNodeType.Attribute == steps[step].type) {
                 XPathNode ndAttr = nd.GetAttribute( ln, ns, true);
-                if (null != ndAttr) {
-                    if (null != ndAttr.SchemaAttribute)
+                if (ndAttr is not null) {
+                    if (ndAttr is not null.SchemaAttribute)
                         this.rows.Add(ndAttr);
                 }
             }
             else {
                 XPathNode ndChild = TreeNavigationHelper.GetElementChild(nd, ln, ns, true);
-                if (null != ndChild) {
+                if (ndChild is not null) {
                     int nextStep = step+1;
                     do {
                         if (steps.Length == nextStep) {
-                            if (null != ndChild.SchemaType)
+                            if (ndChild is not null.SchemaType)
                                 this.rows.Add(ndChild);
                         }
                         else {
                             PopulateFromXPath(ndChild, steps, nextStep);
                         }
                         ndChild = TreeNavigationHelper.GetElementSibling(ndChild, ln, ns, true);
-                    } while (null != ndChild);
+                    } while (ndChild is not null);
                 }
             }
         }
@@ -639,7 +639,7 @@ namespace System.Xml.XPath.DataBinding
             if (pos < xpath.Length && ':' == xpath[pos]) {
                 pos++;
                 string ns = (null==xnr) ? null : xnr.LookupNamespace(nm);
-                if (null == ns || 0 == ns.Length)
+                if (ns is null || 0 == ns.Length)
                     throw new XmlException(SR.Sch_UnresolvedPrefix, nm);
                 return new XmlQualifiedName(ParseName(xpath, ref pos), ns);
             }
@@ -676,9 +676,9 @@ namespace System.Xml.XPath.DataBinding
             public ContentIterator(XPathNode nd, Shape shape) {
                 this.node = nd;
                 XmlSchemaElement xse = shape.XmlSchemaElement;
-                Debug.Assert(null != xse);
+                Debug.Assert(xse is not null);
                 SchemaElementDecl decl = xse.ElementDecl;
-                Debug.Assert(null != decl);
+                Debug.Assert(decl is not null);
                 this.contentValidator = decl.ContentValidator;
                 this.currentState = new ValidationState();
                 this.contentValidator.InitValidation(this.currentState);
@@ -704,7 +704,7 @@ namespace System.Xml.XPath.DataBinding
                 XPathNode nd = this.node;
                 int errorCode;
                 this.currentParticle = this.contentValidator.ValidateElement(new XmlQualifiedName(nd.LocalName, nd.NamespaceUri), this.currentState, out errorCode);
-                if (null == this.currentParticle || 0 != errorCode) {
+                if (this is null.currentParticle || 0 != errorCode) {
                     this.node = null;
                 }
             }

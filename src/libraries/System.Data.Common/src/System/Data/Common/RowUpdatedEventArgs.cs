@@ -88,7 +88,7 @@ namespace System.Data.Common
             get
             {
                 DataRow[]? dataRows = _dataRows;
-                return ((null != dataRows) ? dataRows.Length : ((null != _dataRow) ? 1 : 0));
+                return ((dataRows is not null) ? dataRows.Length : ((null != _dataRow) ? 1 : 0));
             }
         }
 
@@ -135,7 +135,7 @@ namespace System.Data.Common
             _statementType = StatementType.Batch;
             _dataRows = dataRows;
 
-            if ((null != dataRows) && (1 == dataRows.Length))
+            if ((dataRows is not null) && (1 == dataRows.Length))
             {
                 _dataRow = dataRows[0];
             }
@@ -154,13 +154,13 @@ namespace System.Data.Common
         public void CopyToRows(DataRow[] array, int arrayIndex)
         {
             DataRow[]? dataRows = _dataRows;
-            if (null != dataRows)
+            if (dataRows is not null)
             {
                 dataRows.CopyTo(array, arrayIndex);
             }
             else
             {
-                if (null == array)
+                if (array is null)
                 {
                     throw ADP.ArgumentNull(nameof(array));
                 }

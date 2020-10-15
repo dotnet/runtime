@@ -21,7 +21,7 @@ namespace System.Data.ProviderBase
 
         public BasicFieldNameLookup(string[] fieldNames)
         {
-            if (null == fieldNames)
+            if (fieldNames is null)
             {
                 throw ADP.ArgumentNull(nameof(fieldNames));
             }
@@ -53,7 +53,7 @@ namespace System.Data.ProviderBase
 
         public int GetOrdinal(string fieldName)
         {
-            if (null == fieldName)
+            if (fieldName is null)
             {
                 throw ADP.ArgumentNull(nameof(fieldName));
             }

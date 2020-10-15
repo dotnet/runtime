@@ -79,7 +79,7 @@ namespace System.Transactions
                 localStartedEventHandler = s_distributedTransactionStartedDelegate;
             }
 
-            if (null != localStartedEventHandler)
+            if (localStartedEventHandler is not null)
             {
                 TransactionEventArgs args = new TransactionEventArgs();
                 args._transaction = transaction.InternalClone();
@@ -138,12 +138,12 @@ namespace System.Transactions
                 throw new ArgumentException(SR.BadResourceManagerId, nameof(resourceManagerIdentifier));
             }
 
-            if (null == recoveryInformation)
+            if (recoveryInformation is null)
             {
                 throw new ArgumentNullException(nameof(recoveryInformation));
             }
 
-            if (null == enlistmentNotification)
+            if (enlistmentNotification is null)
             {
                 throw new ArgumentNullException(nameof(enlistmentNotification));
             }
@@ -423,7 +423,7 @@ namespace System.Transactions
         {
             Hashtable promotedTransactionTable = PromotedTransactionTable;
             WeakReference? weakRef = (WeakReference?)promotedTransactionTable[transactionIdentifier];
-            if (null != weakRef)
+            if (weakRef is not null)
             {
                 if (weakRef.Target is Transaction tx)
                 {
@@ -448,10 +448,10 @@ namespace System.Transactions
             lock (promotedTransactionTable)
             {
                 WeakReference? weakRef = (WeakReference?)promotedTransactionTable[transactionIdentifier];
-                if (null != weakRef)
+                if (weakRef is not null)
                 {
                     tx = weakRef.Target as Transaction;
-                    if (null != tx)
+                    if (tx is not null)
                     {
                         // If we found a transaction then dispose it
                         dtx.Dispose();

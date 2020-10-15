@@ -61,7 +61,7 @@ namespace System.Runtime.Serialization
             get => _rootTypeName;
             set
             {
-                if (null == value)
+                if (value is null)
                 {
                     throw new ArgumentNullException(nameof(value));
                 }
@@ -76,7 +76,7 @@ namespace System.Runtime.Serialization
             get => _rootTypeAssemblyName;
             set
             {
-                if (null == value)
+                if (value is null)
                 {
                     throw new ArgumentNullException(nameof(value));
                 }
@@ -160,7 +160,7 @@ namespace System.Runtime.Serialization
 
         public void AddValue(string name, object? value)
         {
-            if (null == value)
+            if (value is null)
             {
                 AddValue(name, value, typeof(object));
             }
@@ -285,8 +285,8 @@ namespace System.Runtime.Serialization
         /// <param name="type"> The type of the data being added.</param>
         public void UpdateValue(string name, object value, Type type)
         {
-            Debug.Assert(null != name, "[SerializationInfo.UpdateValue]name!=null");
-            Debug.Assert(null != value, "[SerializationInfo.UpdateValue]value!=null");
+            Debug.Assert(name is not null, "[SerializationInfo.UpdateValue]name!=null");
+            Debug.Assert(value is not null, "[SerializationInfo.UpdateValue]value!=null");
             Debug.Assert(type is not null, "[SerializationInfo.UpdateValue]type!=null");
 
             int index = FindElement(name);
@@ -303,7 +303,7 @@ namespace System.Runtime.Serialization
 
         private int FindElement(string name)
         {
-            if (null == name)
+            if (name is null)
             {
                 throw new ArgumentNullException(nameof(name));
             }

@@ -118,10 +118,10 @@ namespace System.Data.Odbc
                 // MDAC 58177, 64513
                 // prevent someone from registering two different command builders on the adapter by
                 // silently removing the old one
-                if ((null != handler) && (value!.Target is OdbcCommandBuilder))
+                if ((handler is not null) && (value!.Target is OdbcCommandBuilder))
                 {
                     OdbcRowUpdatingEventHandler? d = (OdbcRowUpdatingEventHandler?)ADP.FindBuilder(handler);
-                    if (null != d)
+                    if (d is not null)
                     {
                         Events.RemoveHandler(s_eventRowUpdating, d);
                     }
@@ -153,7 +153,7 @@ namespace System.Data.Odbc
         protected override void OnRowUpdated(RowUpdatedEventArgs value)
         {
             OdbcRowUpdatedEventHandler? handler = (OdbcRowUpdatedEventHandler?)Events[s_eventRowUpdated];
-            if ((null != handler) && (value is OdbcRowUpdatedEventArgs))
+            if ((handler is not null) && (value is OdbcRowUpdatedEventArgs))
             {
                 handler(this, (OdbcRowUpdatedEventArgs)value);
             }
@@ -163,7 +163,7 @@ namespace System.Data.Odbc
         protected override void OnRowUpdating(RowUpdatingEventArgs value)
         {
             OdbcRowUpdatingEventHandler? handler = (OdbcRowUpdatingEventHandler?)Events[s_eventRowUpdating];
-            if ((null != handler) && (value is OdbcRowUpdatingEventArgs))
+            if ((handler is not null) && (value is OdbcRowUpdatingEventArgs))
             {
                 handler(this, (OdbcRowUpdatingEventArgs)value);
             }

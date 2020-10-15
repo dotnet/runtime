@@ -281,7 +281,7 @@ namespace System.Data
                         // Getting our own copy instead. ndxSearch = dst.primaryKey.Key.GetSortIndex();
                         // IMO, Better would be to reuse index
                         // ndxSearch = dst.primaryKey.Key.GetSortIndex(DataViewRowState.OriginalRows | DataViewRowState.Added );
-                        if (null != ndxSearch)
+                        if (ndxSearch is not null)
                         {
                             ndxSearch.RemoveRef();
                             ndxSearch = null;
@@ -310,7 +310,7 @@ namespace System.Data
                     targetRow.Table.EvaluateExpressions(targetRow, DataRowAction.Change, null);
                 }
             }
-            if (null != ndxSearch)
+            if (ndxSearch is not null)
             {
                 ndxSearch.RemoveRef();
                 ndxSearch = null;

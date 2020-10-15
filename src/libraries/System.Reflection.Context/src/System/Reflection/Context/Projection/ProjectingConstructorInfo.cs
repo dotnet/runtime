@@ -13,7 +13,7 @@ namespace System.Reflection.Context.Projection
         public ProjectingConstructorInfo(ConstructorInfo constructor, Projector projector)
             : base(constructor)
         {
-            Debug.Assert(null != projector);
+            Debug.Assert(projector is not null);
 
             Projector = projector;
         }

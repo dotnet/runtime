@@ -308,7 +308,7 @@ namespace System.Text.RegularExpressions
                 {
                     if (chTest < 128)
                         advance = NegativeASCII[chTest];
-                    else if (null != NegativeUnicode && (null != (unicodeLookup = NegativeUnicode[chTest >> 8])))
+                    else if (NegativeUnicode is not null && (null != (unicodeLookup = NegativeUnicode[chTest >> 8])))
                         advance = unicodeLookup[chTest & 0xFF];
                     else
                         advance = defadv;
@@ -338,7 +338,7 @@ namespace System.Text.RegularExpressions
                             advance = Positive[match];
                             if ((chTest & 0xFF80) == 0)
                                 test2 = (match - startmatch) + NegativeASCII[chTest];
-                            else if (null != NegativeUnicode && (null != (unicodeLookup = NegativeUnicode[chTest >> 8])))
+                            else if (NegativeUnicode is not null && (null != (unicodeLookup = NegativeUnicode[chTest >> 8])))
                                 test2 = (match - startmatch) + unicodeLookup[chTest & 0xFF];
                             else
                             {

@@ -255,7 +255,7 @@ namespace System.Data.OleDb
             _rowBinding = rowBinding;
 
             ColumnBinding[] columnBindings = rowBinding.SetBindings(dataReader, this, indexStart, indexForAccessor, _parameters, _dbbindings, _ifIRowsetElseIRow);
-            Debug.Assert(null != columnBindings, "null column bindings");
+            Debug.Assert(columnBindings is not null, "null column bindings");
             _columnBindings = columnBindings;
 
             if (!_ifIRowsetElseIRow)
@@ -318,7 +318,7 @@ namespace System.Data.OleDb
 
         internal bool AreParameterBindingsInvalid(OleDbParameterCollection collection)
         {
-            Debug.Assert(null != collection, "null parameter collection");
+            Debug.Assert(collection is not null, "null parameter collection");
             Debug.Assert(null != _parameters, "null parameters");
 
             ColumnBinding[] columnBindings = this.ColumnBindings();
@@ -328,7 +328,7 @@ namespace System.Data.OleDb
                 {
                     ColumnBinding binding = columnBindings[i];
 
-                    Debug.Assert(null != binding, "null column binding");
+                    Debug.Assert(binding is not null, "null column binding");
                     Debug.Assert(binding.Parameter() == _parameters[i], "parameter mismatch");
                     if (binding.IsParameterBindingInvalid(collection[i]))
                     {
@@ -346,7 +346,7 @@ namespace System.Data.OleDb
         internal void CleanupBindings()
         {
             RowBinding? rowBinding = this.RowBinding();
-            if (null != rowBinding)
+            if (rowBinding is not null)
             {
                 rowBinding.ResetValues();
 
@@ -354,7 +354,7 @@ namespace System.Data.OleDb
                 for (int i = 0; i < columnBindings.Length; ++i)
                 {
                     ColumnBinding binding = columnBindings[i];
-                    if (null != binding)
+                    if (binding is not null)
                     {
                         binding.ResetValue();
                     }
@@ -386,7 +386,7 @@ namespace System.Data.OleDb
 
             RowBinding? rowBinding = _rowBinding;
             _rowBinding = null;
-            if (null != rowBinding)
+            if (rowBinding is not null)
             {
                 rowBinding.Dispose();
             }

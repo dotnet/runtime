@@ -121,7 +121,7 @@ namespace System.Data.OleDb
                                              int indexStart, int indexForAccessor,
                                              OleDbParameter[]? parameters, tagDBBINDING[] dbbindings, bool ifIRowsetElseIRow)
         {
-            Debug.Assert(null != bindings, "null bindings");
+            Debug.Assert(bindings is not null, "null bindings");
             Debug.Assert(dbbindings.Length == BindingCount(), "count mismatch");
 
             bool mustRelease = false;
@@ -150,7 +150,7 @@ namespace System.Data.OleDb
             for (int indexWithinAccessor = 0; indexWithinAccessor < columns.Length; ++indexWithinAccessor)
             {
                 int index = indexStart + indexWithinAccessor;
-                OleDbParameter? parameter = ((null != parameters) ? parameters[index] : null);
+                OleDbParameter? parameter = ((parameters is not null) ? parameters[index] : null);
                 columns[indexWithinAccessor] = new ColumnBinding(
                     dataReader!, index, indexForAccessor, indexWithinAccessor,
                     parameter, this, bindings, dbbindings[indexWithinAccessor], _headerLength,
@@ -190,7 +190,7 @@ namespace System.Data.OleDb
                 }
             }
 
-            return ((null != value) ? value : DBNull.Value);
+            return ((value is not null) ? value : DBNull.Value);
         }
 
         // translate to native
@@ -326,7 +326,7 @@ namespace System.Data.OleDb
             _iaccessor = null;
             _accessorHandle = ODB.DB_INVALID_HACCESSOR;
 
-            if ((ODB.DB_INVALID_HACCESSOR != accessorHandle) && (null != iaccessor))
+            if ((ODB.DB_INVALID_HACCESSOR != accessorHandle) && (iaccessor is not null))
             {
                 OleDbHResult hr;
                 int refcount;
@@ -423,7 +423,7 @@ namespace System.Data.OleDb
                         FreeBstr(buffer, valueOffset);
                         break;
                     case NativeDBType.HCHAPTER:
-                        if (null != iaccessor)
+                        if (iaccessor is not null)
                         {
                             // iaccessor will always be null when from ReleaseHandle
                             FreeChapter(buffer, valueOffset, iaccessor);

@@ -196,7 +196,7 @@ namespace System.Data.OleDb
             }
             finally
             {
-                if (null != wrapper)
+                if (wrapper is not null)
                 {
                     Marshal.ReleaseComObject(wrapper);
                 }
@@ -239,7 +239,7 @@ namespace System.Data.OleDb
             if (null != _nestedTransaction)
             {
                 OleDbTransaction? transaction = (OleDbTransaction?)_nestedTransaction.Target;
-                if ((null != transaction) && _nestedTransaction.IsAlive)
+                if ((transaction is not null) && _nestedTransaction.IsAlive)
                 {
                     transaction.CommitInternal();
                 }
@@ -297,7 +297,7 @@ namespace System.Data.OleDb
         private void ProcessResults(OleDbHResult hr)
         {
             Exception? e = OleDbConnection.ProcessResults(hr, _parentConnection, this);
-            if (null != e)
+            if (e is not null)
             { throw e; }
         }
 
@@ -320,7 +320,7 @@ namespace System.Data.OleDb
                 if (null != _nestedTransaction)
                 {
                     OleDbTransaction? transaction = (OleDbTransaction?)_nestedTransaction.Target;
-                    if ((null != transaction) && _nestedTransaction.IsAlive)
+                    if ((transaction is not null) && _nestedTransaction.IsAlive)
                     {
                         hr = transaction.RollbackInternal(exceptionHandling);
                         if (exceptionHandling && (hr < 0))
@@ -351,10 +351,10 @@ namespace System.Data.OleDb
 
         internal static OleDbTransaction TransactionLast(OleDbTransaction head)
         {
-            if (null != head._nestedTransaction)
+            if (head._nestedTransaction is not null)
             {
                 OleDbTransaction? current = (OleDbTransaction?)head._nestedTransaction.Target;
-                if ((null != current) && head._nestedTransaction.IsAlive)
+                if ((current is not null) && head._nestedTransaction.IsAlive)
                 {
                     return TransactionLast(current);
                 }
@@ -364,7 +364,7 @@ namespace System.Data.OleDb
 
         internal static OleDbTransaction? TransactionUpdate(OleDbTransaction? transaction)
         {
-            if ((null != transaction) && (null == transaction._transaction))
+            if ((transaction is not null) && (transaction._transaction is null))
             {
                 return null;
             }

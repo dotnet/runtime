@@ -620,7 +620,7 @@ namespace System.Xml
                     for (int i = _elemDepth; i >= 0; i--)
                     {
                         string? xl = _elementStack[i].xmlLang;
-                        if (null != xl)
+                        if (xl is not null)
                             return xl;
                     }
                     return string.Empty;
@@ -676,9 +676,9 @@ namespace System.Xml
             }
             else
             {
-                if (null == name)
+                if (name is null)
                     throw new ArgumentNullException(nameof(name));
-                if (null == ns)
+                if (ns is null)
                     ns = string.Empty;
                 int index = LocateAttribute(name, ns);
                 if (-1 == index)
@@ -727,9 +727,9 @@ namespace System.Xml
             }
             else
             {
-                if (null == name)
+                if (name is null)
                     throw new ArgumentNullException(nameof(name));
-                if (null == ns)
+                if (ns is null)
                     ns = string.Empty;
                 int index = LocateAttribute(name, ns);
                 if ((-1 != index) && (_state < ScanState.Init))
@@ -1847,7 +1847,7 @@ namespace System.Xml
                     if (_elemDepth > 0)
                     {
                         NamespaceDecl? nsdecl = _elementStack[_elemDepth].nsdecls;
-                        while (null != nsdecl)
+                        while (nsdecl is not null)
                         {
                             nstable.Add(nsdecl.prefix, nsdecl.uri);
                             nsdecl = nsdecl.scopeLink;
@@ -1881,17 +1881,17 @@ namespace System.Xml
             }
             else
             {
-                if (null == namespaceName)
+                if (namespaceName is null)
                     return null;
 
                 string? atomizedNamespaceName = _xnt.Get(namespaceName);
-                if (null == atomizedNamespaceName)
+                if (atomizedNamespaceName is null)
                     return null;
 
                 for (int i = _elemDepth; i >= 0; i--)
                 {
                     NamespaceDecl? nsdecl = _elementStack[i].nsdecls;
-                    while (null != nsdecl)
+                    while (nsdecl is not null)
                     {
                         if ((object)nsdecl.uri == (object?)atomizedNamespaceName)
                             return nsdecl.prefix;
@@ -2377,7 +2377,7 @@ namespace System.Xml
         {
             string? val = _attributes[i].val;
 
-            if (null != val)
+            if (val is not null)
                 return val;
             else
             {
@@ -2473,7 +2473,7 @@ namespace System.Xml
             int elemDepth = _elemDepth;
             NamespaceDecl? curDecl;
             _namespaces.TryGetValue(prefix, out curDecl);
-            if (null != curDecl)
+            if (curDecl is not null)
             {
                 if (curDecl.uri == ns)
                 {
@@ -2508,9 +2508,9 @@ namespace System.Xml
         private void PopNamespaces(NamespaceDecl? firstInScopeChain)
         {
             NamespaceDecl? decl = firstInScopeChain;
-            while (null != decl)
+            while (decl is not null)
             {
-                if (null == decl.prevLink)
+                if (decl.prevLink is null)
                     _namespaces.Remove(decl.prefix);
                 else
                     _namespaces[decl.prefix] = decl.prevLink;
@@ -2526,7 +2526,7 @@ namespace System.Xml
         {
             QName name;
             NamespaceDecl? decl = _elementStack[_elemDepth].nsdecls;
-            while (null != decl)
+            while (decl is not null)
             {
                 if (decl.implied)
                 {
@@ -2631,7 +2631,7 @@ namespace System.Xml
                 if (BinXmlToken.Attr == token)
                 {
                     // watch out for nsdecl with no actual content
-                    if (null != curDeclPrefix)
+                    if (curDeclPrefix is not null)
                     {
                         PushNamespace(curDeclPrefix, string.Empty, false);
                         curDeclPrefix = null;
@@ -2688,7 +2688,7 @@ namespace System.Xml
                     // might as well store the saved string for quick attr value access
                     string? val = _stringValue;
 
-                    if (null != val)
+                    if (val is not null)
                     {
                         _attributes[_attrCount - 1].val = val;
                         _stringValue = null;
@@ -2696,7 +2696,7 @@ namespace System.Xml
 
                     // namespace decls can only have text values, and should only
                     // have a single value, so we just grab it here...
-                    if (null != curDeclPrefix)
+                    if (curDeclPrefix is not null)
                     {
                         string nsuri = _xnt.Add(ValueAsString(token));
                         PushNamespace(curDeclPrefix, nsuri, false);

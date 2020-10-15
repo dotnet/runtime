@@ -61,7 +61,7 @@ namespace System.DirectoryServices.AccountManagement
                     {
                         objectClass = p.ExtensionHelper.StructuralObjectClass;
 
-                        if (null == objectClass || null == rdnPrefix)
+                        if (objectClass is null || null == rdnPrefix)
                         {
                             throw new InvalidOperationException(SR.ExtensionInvalidClassAttributes);
                         }
@@ -87,7 +87,7 @@ namespace System.DirectoryServices.AccountManagement
                             // that matches the principals context or the first rdnPrefix that has a null context type
                             for (int i = 0; i < MyAttribute.Length; i++)
                             {
-                                if ((MyAttribute[i].Context is null && null == defaultRdn) ||
+                                if ((MyAttribute[i].Context is null && defaultRdn is null) ||
                                     (p.ContextType == MyAttribute[i].Context))
                                 {
                                     defaultRdn = MyAttribute[i].RdnPrefix;
@@ -159,7 +159,7 @@ namespace System.DirectoryServices.AccountManagement
                         de = this.ctxBase.Children.Add(rdn, objectClass);
                     }
 
-                    if (null != baseObjectRdnPrefix)
+                    if (baseObjectRdnPrefix is not null)
                     {
                         de.Properties[baseObjectRdnPrefix].Value = rdnValue;
                     }
@@ -255,7 +255,7 @@ namespace System.DirectoryServices.AccountManagement
                 distinguishedName = (string)sr.Properties["distinguishedName"][0];
             }
 
-            GlobalDebug.WriteLineIf(GlobalDebug.Info, "ADStoreCtx", "GetAsPrincipal: using path={0}", (null != de ? de.Path : "searchResult"));
+            GlobalDebug.WriteLineIf(GlobalDebug.Info, "ADStoreCtx", "GetAsPrincipal: using path={0}", (de is not null ? de.Path : "searchResult"));
 
             // Construct an appropriate Principal object.
 
@@ -358,7 +358,7 @@ namespace System.DirectoryServices.AccountManagement
             dSPropertyCollection props;
 
             SearchResult sr = (SearchResult)p.UnderlyingSearchObject;
-            if (null == sr)
+            if (sr is null)
             {
                 DirectoryEntry de = (DirectoryEntry)p.UnderlyingObject;
                 Debug.Assert(de is not null);
@@ -379,13 +379,13 @@ namespace System.DirectoryServices.AccountManagement
             if (entries is null)
                 return;
 
-            Debug.Assert(null != entries);
+            Debug.Assert(entries is not null);
 
             try
             {
                 foreach (PropertyMappingTableEntry entry in entries)
                 {
-                    if (null != entry.ldapToPapiConverter)
+                    if (entry.ldapToPapiConverter is not null)
                     {
                         GlobalDebug.WriteLineIf(GlobalDebug.Info, "ADStoreCtx", "Load_PropertyName: loading {0}", entry.propertyName);
                         entry.ldapToPapiConverter(props, entry.suggestedADPropertyName, p, entry.propertyName);
@@ -623,7 +623,7 @@ namespace System.DirectoryServices.AccountManagement
                     foreach (string urnSchemeToTry in urnSchemesToTry)
                     {
                         if (BuildLdapFilterFromIdentityClaim(urnValue, urnSchemeToTry, ref filterVal, useSidHistory, false))
-                            if (null != filterVal)
+                            if (filterVal is not null)
                                 innerLdapFilter.Append(filterVal);
                     }
 
@@ -1331,7 +1331,7 @@ namespace System.DirectoryServices.AccountManagement
 
             foreach (KeyValuePair<string, ExtensionCacheValue> kvp in cacheValues.properties)
             {
-                if (!kvp.Value.Filter && null != kvp.Value.Value && kvp.Value.Value.Length != 0)
+                if (!kvp.Value.Filter && kvp.Value.Value is not null && kvp.Value.Value.Length != 0)
                 {
                     // array of objects   ( .Length > 1 && typeof(array[0] != ICollection or IList )
                     // Single collection ( .Length == 1 ) &&  typeof(array[0] == ICollection ) && typeof(array[0][0] != ICollection or IList )
@@ -1359,7 +1359,7 @@ namespace System.DirectoryServices.AccountManagement
 
                         foreach (object oVal in valueCollection)
                         {
-                            if (null != oVal)
+                            if (oVal is not null)
                             {
                                 if ((oVal is ICollection || oVal is IList) && !(oVal is byte[]))
                                     throw new ArgumentException(SR.InvalidExtensionCollectionType);
@@ -1370,7 +1370,7 @@ namespace System.DirectoryServices.AccountManagement
 
                             // Do nothing if we are not persisted and the value is null.  We can't delete a property that
                             // has not already been set.
-                            if (p.unpersisted && null == oVal)
+                            if (p.unpersisted && oVal is null)
                                 continue;
 
                             de.Properties[kvp.Key].Add(oVal);
@@ -1382,7 +1382,7 @@ namespace System.DirectoryServices.AccountManagement
                         GlobalDebug.WriteLineIf(GlobalDebug.Info, "ADStoreCtx", "ExtensionCacheToLdapConverter - Adding " + kvp.Value.Value.ToString());
                         // Do nothing if we are not persisted and the value is null.  We can't delete a property that
                         // has not already been set.
-                        if (p.unpersisted && (null == kvp.Value.Value[0]))
+                        if (p.unpersisted && (kvp.Value.Value[0] is null))
                             continue;
 
                         de.Properties[kvp.Key].Value = kvp.Value.Value[0];
@@ -1628,7 +1628,7 @@ namespace System.DirectoryServices.AccountManagement
             }
             finally
             {
-                if (null != groupDe)
+                if (groupDe is not null)
                     groupDe.Dispose();
             }
         }

@@ -89,7 +89,7 @@ namespace System.Data.OleDb
             }
             set
             {
-                if (null != value)
+                if (value is not null)
                 {
                     ADP.CheckArgumentNull(keyword, "keyword");
                     Keywords index;
@@ -204,7 +204,7 @@ namespace System.Data.OleDb
             get
             {
                 string[]? knownKeywords = _knownKeywords;
-                if (null == knownKeywords)
+                if (knownKeywords is null)
                 {
                     Dictionary<string, OleDbPropertyInfo> dynamic = GetProviderInfo(Provider);
                     if (0 < dynamic.Count)
@@ -411,7 +411,7 @@ namespace System.Data.OleDb
         private Dictionary<string, OleDbPropertyInfo> GetProviderInfo(string provider)
         {
             Dictionary<string, OleDbPropertyInfo>? providerInfo = _propertyInfo;
-            if (null == providerInfo)
+            if (providerInfo is null)
             {
                 providerInfo = new Dictionary<string, OleDbPropertyInfo>(StringComparer.OrdinalIgnoreCase);
                 if (!ADP.IsEmpty(provider))
@@ -485,7 +485,7 @@ namespace System.Data.OleDb
                                                         {
                                                             info._defaultValue = prop.vValue;
 
-                                                            if (null == info._defaultValue)
+                                                            if (info._defaultValue is null)
                                                             {
                                                                 if (typeof(string) == info._type)
                                                                 {
@@ -617,7 +617,7 @@ namespace System.Data.OleDb
             public override object ConvertFrom(ITypeDescriptorContext context, System.Globalization.CultureInfo culture, object value)
             {
                 string? svalue = (value as string);
-                if (null != svalue)
+                if (svalue is not null)
                 {
                     int services;
                     if (int.TryParse(svalue, out services))
@@ -653,7 +653,7 @@ namespace System.Data.OleDb
 
             public override object ConvertTo(ITypeDescriptorContext context, System.Globalization.CultureInfo culture, object value, Type destinationType)
             {
-                if ((typeof(string) == destinationType) && (null != value) && (typeof(int) == value.GetType()))
+                if ((typeof(string) == destinationType) && (value is not null) && (typeof(int) == value.GetType()))
                 {
                     return Enum.Format(typeof(OleDbServiceValues), ((OleDbServiceValues)(int)value), "G");
                 }
@@ -673,7 +673,7 @@ namespace System.Data.OleDb
             public override StandardValuesCollection GetStandardValues(ITypeDescriptorContext context)
             {
                 StandardValuesCollection? standardValues = _standardValues;
-                if (null == standardValues)
+                if (standardValues is null)
                 {
                     Array objValues = Enum.GetValues(typeof(OleDbServiceValues));
                     Array.Sort(objValues, 0, objValues.Length);
@@ -715,7 +715,7 @@ namespace System.Data.OleDb
                 if (typeof(System.ComponentModel.Design.Serialization.InstanceDescriptor) == destinationType)
                 {
                     OleDbConnectionStringBuilder? obj = (value as OleDbConnectionStringBuilder);
-                    if (null != obj)
+                    if (obj is not null)
                     {
                         return ConvertToInstanceDescriptor(obj);
                     }

@@ -628,7 +628,7 @@ namespace System.Data
         internal int InternalIndexOf(string? tableName)
         {
             int cachedI = -1;
-            if ((null != tableName) && (0 < tableName.Length))
+            if ((tableName is not null) && (0 < tableName.Length))
             {
                 int count = _list.Count;
                 int result = 0;
@@ -665,7 +665,7 @@ namespace System.Data
         internal int InternalIndexOf(string? tableName, string tableNamespace)
         {
             int cachedI = -1;
-            if ((null != tableName) && (0 < tableName.Length))
+            if ((tableName is not null) && (0 < tableName.Length))
             {
                 int count = _list.Count;
                 int result = 0;

@@ -30,7 +30,7 @@ namespace System.Data.OleDb
             source.CloneHelper(this);
 
             ICloneable? cloneable = (_value as ICloneable);
-            if (null != cloneable)
+            if (cloneable is not null)
             {
                 _value = cloneable.Clone();
             }
@@ -141,7 +141,7 @@ namespace System.Data.OleDb
             get
             {
                 string? sourceColumn = _sourceColumn;
-                return ((null != sourceColumn) ? sourceColumn : string.Empty);
+                return ((sourceColumn is not null) ? sourceColumn : string.Empty);
             }
             set
             {
@@ -249,17 +249,17 @@ namespace System.Data.OleDb
             if (!ADP.IsNull(value))
             {
                 string? svalue = (value as string);
-                if (null != svalue)
+                if (svalue is not null)
                 {
                     return svalue.Length;
                 }
                 byte[]? bvalue = (value as byte[]);
-                if (null != bvalue)
+                if (bvalue is not null)
                 {
                     return bvalue.Length;
                 }
                 char[]? cvalue = (value as char[]);
-                if (null != cvalue)
+                if (cvalue is not null)
                 {
                     return cvalue.Length;
                 }

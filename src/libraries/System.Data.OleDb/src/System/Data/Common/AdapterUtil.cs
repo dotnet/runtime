@@ -203,7 +203,7 @@ namespace System.Data.Common
 
         internal static void CheckArgumentNull(object value, string parameterName)
         {
-            if (null == value)
+            if (value is null)
             {
                 throw ArgumentNull(parameterName);
             }
@@ -711,8 +711,8 @@ namespace System.Data.Common
         }
         internal static Exception ParameterConversionFailed(object value, Type destType, Exception inner)
         {
-            Debug.Assert(null != value, "null value on conversion failure");
-            Debug.Assert(null != inner, "null inner on conversion failure");
+            Debug.Assert(value is not null, "null value on conversion failure");
+            Debug.Assert(inner is not null, "null inner on conversion failure");
 
             Exception e;
             string message = SR.GetString(SR.ADP_ParameterConversionFailed, value.GetType().Name, destType.Name);
@@ -912,7 +912,7 @@ namespace System.Data.Common
 
         internal static Delegate? FindBuilder(MulticastDelegate? mcd)
         { // V1.2.3300
-            if (null != mcd)
+            if (mcd is not null)
             {
                 Delegate[] d = mcd.GetInvocationList();
                 for (int i = 0; i < d.Length; i++)
@@ -943,7 +943,7 @@ namespace System.Data.Common
         {
             SysTx.IDtcTransaction? oleTxTransaction = null;
 
-            if (null != transaction)
+            if (transaction is not null)
             {
                 oleTxTransaction = SysTx.TransactionInterop.GetDtcTransaction(transaction);
             }
@@ -1099,7 +1099,7 @@ namespace System.Data.Common
             {
                 using (RegistryKey? key = Registry.ClassesRoot.OpenSubKey(subkey, false))
                 {
-                    return ((null != key) ? key.GetValue(queryvalue) : null);
+                    return ((key is not null) ? key.GetValue(queryvalue) : null);
                 }
             }
             catch (SecurityException e)
@@ -1117,7 +1117,7 @@ namespace System.Data.Common
             {
                 using (RegistryKey? key = Registry.LocalMachine.OpenSubKey(subkey, false))
                 {
-                    return ((null != key) ? key.GetValue(queryvalue) : null);
+                    return ((key is not null) ? key.GetValue(queryvalue) : null);
                 }
             }
             catch (SecurityException e)
@@ -1315,17 +1315,17 @@ namespace System.Data.Common
 
         internal static bool IsEmpty([NotNullWhen(false)] string? str)
         {
-            return ((null == str) || (0 == str.Length));
+            return ((str is null) || (0 == str.Length));
         }
 
         internal static bool IsEmptyArray([NotNullWhen(false)] string?[]? array)
         {
-            return ((null == array) || (0 == array.Length));
+            return ((array is null) || (0 == array.Length));
         }
 
         internal static bool IsNull([NotNullWhen(false)] object? value)
         {
-            if ((null == value) || (DBNull.Value == value))
+            if ((value is null) || (DBNull.Value == value))
             {
                 return true;
             }

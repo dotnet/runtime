@@ -289,7 +289,7 @@ namespace System.DirectoryServices.AccountManagement
                         {
                             foreach (SearchResult res in searchResCollection)
                             {
-                                if (null == res.Properties["ldapDisplayName"])
+                                if (res.Properties["ldapDisplayName"] is null)
                                 {
                                     GlobalDebug.WriteLineIf(GlobalDebug.Error, "ADAMStoreCtx", "PopulatAuxObjectList Unable to read ldapDisplayName from " + SchemaNamingContext);
                                     throw new PrincipalOperationException(SR.ADAMStoreUnableToPopulateSchemaList);

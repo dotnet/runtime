@@ -27,7 +27,7 @@ namespace System.Xml.XPath.DataBinding
             XmlQualifiedName xseName = xse.QualifiedName;
             XmlSchemaType schemaType = xse.ElementSchemaType;
             XmlSchemaComplexType complexType = schemaType as XmlSchemaComplexType;
-            if (null != complexType) {
+            if (complexType is not null) {
                 XmlSchemaParticle particle = null;
                 Shape rootShape = null;
 
@@ -124,7 +124,7 @@ namespace System.Xml.XPath.DataBinding
         Shape ProcessParticleElement(XmlSchemaElement xse) {
             // watch out for recursive schema
             Shape s = (Shape)this.elementTypesProcessed[xse];
-            if (null != s)
+            if (s is not null)
                 return s;
 
             bool complex = xse.ElementSchemaType is XmlSchemaComplexType;
@@ -173,7 +173,7 @@ namespace System.Xml.XPath.DataBinding
 
         string GenAttrName(XmlQualifiedName xqn, string[] names) {
             string name = GenName(xqn);
-            if (null != names) {
+            if (names is not null) {
                 for (int i=0; i<names.Length; i++) {
                     if (name == names[i]) {
                         return String.Concat("@", name);

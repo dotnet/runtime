@@ -106,7 +106,7 @@ namespace System.Data.Common
         private DataColumn? CachedDataColumn(ColumnEnum column, ColumnEnum column2)
         {
             DataColumn? dataColumn = _columnCache[(int)column];
-            if (null == dataColumn)
+            if (dataColumn is null)
             {
                 int index = _columns.IndexOf(s_DBCOLUMN_NAME[(int)column]);
                 if ((-1 == index) && (column != column2))

@@ -79,7 +79,7 @@ namespace System.Data
         {
             get
             {
-                if (null == name)
+                if (name is null)
                 {
                     throw ExceptionBuilder.ArgumentNull(nameof(name));
                 }
@@ -695,7 +695,7 @@ namespace System.Data
         /// </summary>
         public int IndexOf(string? columnName)
         {
-            if ((null != columnName) && (0 < columnName.Length))
+            if ((columnName is not null) && (0 < columnName.Length))
             {
                 int count = Count;
                 DataColumn? column;
@@ -832,7 +832,7 @@ namespace System.Data
             {
                 _columnFromName.Add(name, column);
 
-                if (null != column)
+                if (column is not null)
                 {
                     column._hashCode = _table.GetSpecialHashCode(name);
                 }

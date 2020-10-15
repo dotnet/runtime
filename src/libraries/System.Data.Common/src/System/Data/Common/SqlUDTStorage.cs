@@ -106,7 +106,7 @@ namespace System.Data.Common
                 _values[recordNo] = _nullValue;
                 SetNullBit(recordNo, true);
             }
-            else if (null == value)
+            else if (value is null)
             {
                 if (_isValueType)
                 {
@@ -168,13 +168,13 @@ namespace System.Data.Common
         [MethodImpl(MethodImplOptions.NoInlining)]
         public override object ConvertXmlToObject(XmlReader xmlReader, XmlRootAttribute xmlAttrib)
         {
-            if (null == xmlAttrib)
+            if (xmlAttrib is null)
             {
                 string? typeName = xmlReader.GetAttribute(Keywords.MSD_INSTANCETYPE, Keywords.MSDNS);
                 if (typeName is null)
                 {
                     string? xsdTypeName = xmlReader.GetAttribute(Keywords.MSD_INSTANCETYPE, Keywords.XSINS); // this xsd type
-                    if (null != xsdTypeName)
+                    if (xsdTypeName is not null)
                     {
                         typeName = XSDSchema.XsdtoClr(xsdTypeName).FullName!;
                     }
@@ -213,7 +213,7 @@ namespace System.Data.Common
 
         public override void ConvertObjectToXml(object value, XmlWriter xmlWriter, XmlRootAttribute? xmlAttrib)
         {
-            if (null == xmlAttrib)
+            if (xmlAttrib is null)
             {
                 Debug.Assert(xmlWriter is DataTextWriter, "Invalid DataTextWriter is being passed to customer");
                 ((IXmlSerializable)value).WriteXml(xmlWriter);

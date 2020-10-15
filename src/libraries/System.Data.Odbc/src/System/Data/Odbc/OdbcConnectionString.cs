@@ -25,7 +25,7 @@ namespace System.Data.Odbc
             if (validate || (null == _expandedConnectionString))
             {
                 // do not check string length if it was expanded because the final result may be shorter than the original
-                if ((null != connectionString) && (ODBC32.MAX_CONNECTION_STRING_LENGTH < connectionString.Length))
+                if ((connectionString is not null) && (ODBC32.MAX_CONNECTION_STRING_LENGTH < connectionString.Length))
                 { // MDAC 83536
                     throw ODBC.ConnectionStringTooLong();
                 }

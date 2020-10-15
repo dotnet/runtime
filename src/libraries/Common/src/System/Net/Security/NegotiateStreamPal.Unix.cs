@@ -332,7 +332,7 @@ namespace System.Net.Security
 
                 // Save the inner context handle for further calls to NetSecurity
                 Debug.Assert(negoContext.GssContext is null || contextHandle == negoContext.GssContext);
-                if (null == negoContext.GssContext)
+                if (negoContext.GssContext is null)
                 {
                     negoContext.SetGssContext(contextHandle!);
                 }
@@ -420,7 +420,7 @@ namespace System.Net.Security
 
                 // Save the inner context handle for further calls to NetSecurity
                 Debug.Assert(negoContext.GssContext is null || contextHandle == negoContext.GssContext);
-                if (null == negoContext.GssContext)
+                if (negoContext.GssContext is null)
                 {
                     negoContext.SetGssContext(contextHandle!);
                 }

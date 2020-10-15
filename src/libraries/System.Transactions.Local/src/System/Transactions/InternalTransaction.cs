@@ -336,7 +336,7 @@ namespace System.Transactions
                 fo = tx._finalizedObject;
             }
 
-            if (null != fo)
+            if (fo is not null)
             {
                 fo.Dispose();
             }

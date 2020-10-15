@@ -137,9 +137,9 @@ namespace System.Data.ProviderBase
                             DbConnectionPoolIdentity identity,
                             DbConnectionPoolProviderInfo? connectionPoolProviderInfo)
         {
-            Debug.Assert(null != connectionPoolGroup, "null connectionPoolGroup");
+            Debug.Assert(connectionPoolGroup is not null, "null connectionPoolGroup");
 
-            if ((null != identity) && identity.IsRestricted)
+            if ((identity is not null) && identity.IsRestricted)
             {
                 throw ADP.InternalError(ADP.InternalErrorCode.AttemptingToPoolOnRestrictedToken);
             }
@@ -356,7 +356,7 @@ namespace System.Data.ProviderBase
                 {
                     obj = _objectList[i];
 
-                    if (null != obj)
+                    if (obj is not null)
                     {
                         obj.DoNotPoolThisConnection();
                     }
@@ -394,7 +394,7 @@ namespace System.Data.ProviderBase
             try
             {
                 newObj = _connectionFactory.CreatePooledConnection(this, owningObject, _connectionPoolGroup.ConnectionOptions, _connectionPoolGroup.PoolKey, userOptions);
-                if (null == newObj)
+                if (newObj is null)
                 {
                     throw ADP.InternalError(ADP.InternalErrorCode.CreateObjectReturnedNull);    // CreateObject succeeded, but null object
                 }
@@ -731,7 +731,7 @@ namespace System.Data.ProviderBase
         private bool TryGetConnection(DbConnection owningObject, uint waitForMultipleObjectsTimeout, bool allowCreate, bool onlyOneCheckConnection, DbConnectionOptions? userOptions, out DbConnectionInternal? connection)
         {
             DbConnectionInternal? obj = null;
-            if (null == obj)
+            if (obj is null)
             {
                 Interlocked.Increment(ref _waitCount);
 
@@ -774,7 +774,7 @@ namespace System.Data.ProviderBase
                                 }
                                 catch
                                 {
-                                    if (null == obj)
+                                    if (obj is null)
                                     {
                                         Interlocked.Decrement(ref _waitCount);
                                     }
@@ -784,13 +784,13 @@ namespace System.Data.ProviderBase
                                 {
                                     // Ensure that we release this waiter, regardless
                                     // of any exceptions that may be thrown.
-                                    if (null != obj)
+                                    if (obj is not null)
                                     {
                                         Interlocked.Decrement(ref _waitCount);
                                     }
                                 }
 
-                                if (null == obj)
+                                if (obj is null)
                                 {
                                     // If we were not able to create an object, check to see if
                                     // we reached MaxPoolSize.  If so, we will no longer wait on
@@ -854,10 +854,10 @@ namespace System.Data.ProviderBase
                             _waitHandles.CreationSemaphore.Release(1);
                         }
                     }
-                } while (null == obj);
+                } while (obj is null);
             }
 
-            if (null != obj)
+            if (obj is not null)
             {
                 PrepareConnection(owningObject, obj);
             }
@@ -932,7 +932,7 @@ namespace System.Data.ProviderBase
             // following assert to fire, which really mucks up stress against
             //  checked bits.
 
-            if (null != obj)
+            if (obj is not null)
             {
             }
             return (obj);
@@ -994,7 +994,7 @@ namespace System.Data.ProviderBase
 
                                         // We do not need to check error flag here, since we know if
                                         // CreateObject returned null, we are in error case.
-                                        if (null != newObj)
+                                        if (newObj is not null)
                                         {
                                             PutNewObject(newObj);
                                         }
@@ -1027,7 +1027,7 @@ namespace System.Data.ProviderBase
 
         internal void PutNewObject(DbConnectionInternal obj)
         {
-            Debug.Assert(null != obj, "why are we adding a null object to the pool?");
+            Debug.Assert(obj is not null, "why are we adding a null object to the pool?");
             // Debug.Assert(obj.CanBePooled,    "non-poolable object in pool");
 
 
@@ -1037,7 +1037,7 @@ namespace System.Data.ProviderBase
 
         internal void PutObject(DbConnectionInternal obj, object owningObject)
         {
-            Debug.Assert(null != obj, "null obj?");
+            Debug.Assert(obj is not null, "null obj?");
 
 
             // Once a connection is closing (which is the state that we're in at
@@ -1085,7 +1085,7 @@ namespace System.Data.ProviderBase
                 {
                     DbConnectionInternal obj = _objectList[i];
 
-                    if (null != obj)
+                    if (obj is not null)
                     {
                         bool locked = false;
 
@@ -1149,7 +1149,7 @@ namespace System.Data.ProviderBase
             // deactivate timer callbacks
             Timer? t = _cleanupTimer;
             _cleanupTimer = null;
-            if (null != t)
+            if (t is not null)
             {
                 t.Dispose();
             }

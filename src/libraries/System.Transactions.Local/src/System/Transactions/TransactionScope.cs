@@ -464,7 +464,7 @@ namespace System.Transactions
             TimeSpan scopeTimeout,
             bool interopModeSpecified)
         {
-            if (null == transactionToUse)
+            if (transactionToUse is null)
             {
                 throw new ArgumentNullException(nameof(transactionToUse));
             }
@@ -571,15 +571,15 @@ namespace System.Transactions
                     // Verify that expectedCurrent is the same as the "current" current if we the interopOption value is None.
                     else if (EnterpriseServicesInteropOption.None == actualCurrentScope._interopOption)
                     {
-                        if (((null != actualCurrentScope._expectedCurrent) && (!actualCurrentScope._expectedCurrent.Equals(current)))
+                        if (((actualCurrentScope._expectedCurrent is not null) && (!actualCurrentScope._expectedCurrent.Equals(current)))
                             ||
-                            ((null != current) && (null == actualCurrentScope._expectedCurrent))
+                            ((current is not null) && (actualCurrentScope._expectedCurrent is null))
                             )
                         {
                             TransactionTraceIdentifier myId;
                             TransactionTraceIdentifier currentId;
 
-                            if (null == current)
+                            if (current is null)
                             {
                                 currentId = TransactionTraceIdentifier.Empty;
                             }
@@ -672,13 +672,13 @@ namespace System.Transactions
                     if (EnterpriseServicesInteropOption.None == _interopOption)
                     {
                         if (((null != _expectedCurrent) && (!_expectedCurrent.Equals(current)))
-                            || ((null != current) && (null == _expectedCurrent))
+                            || ((current is not null) && (null == _expectedCurrent))
                             )
                         {
                             TransactionTraceIdentifier myId;
                             TransactionTraceIdentifier currentId;
 
-                            if (null == current)
+                            if (current is null)
                             {
                                 currentId = TransactionTraceIdentifier.Empty;
                             }
@@ -742,7 +742,7 @@ namespace System.Transactions
             // No try..catch here.  Just let any exception thrown by InternalDispose go out.
             InternalDispose();
 
-            if (null != exToThrow)
+            if (exToThrow is not null)
             {
                 throw exToThrow;
             }
@@ -810,7 +810,7 @@ namespace System.Transactions
                         }
                         else
                         {
-                            Debug.Assert(null != _dependentTransaction, "null != this.dependentTransaction");
+                            Debug.Assert(_dependentTransaction is not null, "this.dependentTransaction is not null");
                             _dependentTransaction.Complete();
                         }
                     }
@@ -867,7 +867,7 @@ namespace System.Transactions
         private static void TimerCallback(object? state)
         {
             TransactionScope? scope = state as TransactionScope;
-            if (null == scope)
+            if (scope is null)
             {
                 TransactionsEtwProvider etwLog = TransactionsEtwProvider.Log;
                 if (etwLog.IsEnabled())

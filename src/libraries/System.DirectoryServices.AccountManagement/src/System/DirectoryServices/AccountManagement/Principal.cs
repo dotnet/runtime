@@ -122,7 +122,7 @@ namespace System.DirectoryServices.AccountManagement
 
             set
             {
-                if (null == value || 0 == value.Length)
+                if (value is null || 0 == value.Length)
                     throw new ArgumentNullException(nameof(value));
 
                 if (!GetStoreCtxToUse().IsValidProperty(this, PropertyNames.PrincipalSamAccountName))
@@ -242,7 +242,7 @@ namespace System.DirectoryServices.AccountManagement
             }
             set
             {
-                if (null == value || 0 == value.Length)
+                if (value is null || 0 == value.Length)
                     throw new ArgumentNullException(nameof(value));
 
                 if (!GetStoreCtxToUse().IsValidProperty(this, PropertyNames.PrincipalName))
@@ -619,7 +619,7 @@ namespace System.DirectoryServices.AccountManagement
 
         protected object[] ExtensionGet(string attribute)
         {
-            if (null == attribute)
+            if (attribute is null)
                 throw new ArgumentException(SR.NullArguments);
 
             ExtensionCacheValue val;
@@ -692,7 +692,7 @@ namespace System.DirectoryServices.AccountManagement
 
         protected void ExtensionSet(string attribute, object value)
         {
-            if (null == attribute)
+            if (attribute is null)
                 throw new ArgumentException(SR.NullArguments);
 
             ValidateExtensionObject(value);
@@ -707,7 +707,7 @@ namespace System.DirectoryServices.AccountManagement
 
         internal void AdvancedFilterSet(string attribute, object value, Type objectType, MatchType mt)
         {
-            if (null == attribute)
+            if (attribute is null)
                 throw new ArgumentException(SR.NullArguments);
 
             ValidateExtensionObject(value);
@@ -778,14 +778,14 @@ namespace System.DirectoryServices.AccountManagement
 
             System.Reflection.ConstructorInfo CI = principalType.GetConstructor(new Type[] { typeof(PrincipalContext) });
 
-            if (null == CI)
+            if (CI is null)
             {
                 throw new NotSupportedException(SR.ExtensionInvalidClassDefinitionConstructor);
             }
 
             p = (Principal)CI.Invoke(new object[] { ctx });
 
-            if (null == p)
+            if (p is null)
             {
                 throw new NotSupportedException(SR.ExtensionInvalidClassDefinitionConstructor);
             }

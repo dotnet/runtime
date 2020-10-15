@@ -50,7 +50,7 @@ namespace System.Data.Common
             get
             {
                 Dictionary<string, object>? values = _currentValues;
-                if (null == values)
+                if (values is null)
                 {
                     values = new Dictionary<string, object>(StringComparer.OrdinalIgnoreCase);
                     _currentValues = values;
@@ -85,7 +85,7 @@ namespace System.Data.Common
             {
                 ADP.CheckArgumentNull(keyword, nameof(keyword));
                 bool flag = false;
-                if (null != value)
+                if (value is not null)
                 {
                     string keyvalue = DbConnectionStringBuilderUtil.ConvertToString(value);
                     DbConnectionOptions.ValidateKeyValuePair(keyword, keyvalue);
@@ -132,7 +132,7 @@ namespace System.Data.Common
             {
                 DataCommonEventSource.Log.Trace("<comm.DbConnectionStringBuilder.get_ConnectionString|API> {0}", ObjectID);
                 string? connectionString = _connectionString;
-                if (null == connectionString)
+                if (connectionString is null)
                 {
                     StringBuilder builder = new StringBuilder();
                     foreach (string keyword in Keys)
@@ -158,9 +158,9 @@ namespace System.Data.Common
                 Clear();
                 try
                 {
-                    for (NameValuePair? pair = constr._keyChain; null != pair; pair = pair.Next)
+                    for (NameValuePair? pair = constr._keyChain; pair is not null; pair = pair.Next)
                     {
-                        if (null != pair.Value)
+                        if (pair.Value is not null)
                         {
                             this[pair.Name] = pair.Value;
                         }
@@ -241,7 +241,7 @@ namespace System.Data.Common
                 {
                     keylist.MoveNext();
                     values[i] = this[keylist.Current];
-                    Debug.Assert(null != values[i], "null value " + keylist.Current);
+                    Debug.Assert(values[i] is not null, "null value " + keylist.Current);
                 }
                 return new ReadOnlyCollection<object>(values);
             }
@@ -390,7 +390,7 @@ namespace System.Data.Common
         private PropertyDescriptorCollection GetProperties()
         {
             PropertyDescriptorCollection? propertyDescriptors = _propertyDescriptors;
-            if (null == propertyDescriptors)
+            if (propertyDescriptors is null)
             {
                 long logScopeId = DataCommonEventSource.Log.EnterScope("<comm.DbConnectionStringBuilder.GetProperties|INFO> {0}", ObjectID);
                 try
@@ -457,7 +457,7 @@ namespace System.Data.Common
                             object value = this[keyword];
 
                             Type vtype;
-                            if (null != value)
+                            if (value is not null)
                             {
                                 vtype = value.GetType();
                                 if (typeof(string) == vtype)
@@ -492,7 +492,7 @@ namespace System.Data.Common
                                     RefreshPropertiesAttribute.All,
                                 };
                             }
-                            else if (null == attributes)
+                            else if (attributes is null)
                             {
                                 attributes = new Attribute[] {
                                     BrowsableAttribute.Yes,
@@ -517,7 +517,7 @@ namespace System.Data.Common
         private PropertyDescriptorCollection GetProperties(Attribute[]? attributes)
         {
             PropertyDescriptorCollection propertyDescriptors = GetProperties();
-            if ((null == attributes) || (0 == attributes.Length))
+            if ((attributes is null) || (0 == attributes.Length))
             {
                 // Basic case has no filtering
                 return propertyDescriptors;

@@ -452,7 +452,7 @@ namespace System.Data
         private bool IsOperatorIn(ExpressionNode? enode)
         {
             BinaryNode? bnode = (enode as BinaryNode);
-            if (null != bnode)
+            if (bnode is not null)
             {
                 if (Operators.In == bnode._op ||
                     IsOperatorIn(bnode._right) ||

@@ -15,7 +15,7 @@ namespace System.Reflection.Context.Projection
         public ProjectingType(Type type, Projector projector)
             :  base(type)
         {
-            Debug.Assert(null != projector);
+            Debug.Assert(projector is not null);
 
             _projector = projector;
         }

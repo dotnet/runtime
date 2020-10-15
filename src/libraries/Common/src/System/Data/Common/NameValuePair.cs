@@ -37,7 +37,7 @@ namespace System.Data.Common
             get { return _next; }
             set
             {
-                if ((null != _next) || (null == value))
+                if ((null != _next) || (value is null))
                 {
                     throw ADP.InternalError(ADP.InternalErrorCode.NameValuePairNext);
                 }

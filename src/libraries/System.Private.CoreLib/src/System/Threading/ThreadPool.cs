@@ -457,7 +457,7 @@ namespace System.Threading
             if (!forceGlobal)
                 tl = ThreadPoolWorkQueueThreadLocals.threadLocals;
 
-            if (null != tl)
+            if (tl is not null)
             {
                 tl.workStealingQueue.LocalPush(callback);
             }
@@ -724,14 +724,14 @@ namespace System.Threading
         ~ThreadPoolWorkQueueThreadLocals()
         {
             // Transfer any pending workitems into the global queue so that they will be executed by another thread
-            if (null != workStealingQueue)
+            if (workStealingQueue is not null)
             {
-                if (null != workQueue)
+                if (workQueue is not null)
                 {
                     object? cb;
                     while ((cb = workStealingQueue.LocalPop()) is not null)
                     {
-                        Debug.Assert(null != cb);
+                        Debug.Assert(cb is not null);
                         workQueue.Enqueue(cb, forceGlobal: true);
                     }
                 }
@@ -1185,7 +1185,7 @@ namespace System.Threading
         // This method tries to take the target callback out of the current thread's queue.
         internal static bool TryPopCustomWorkItem(object workItem)
         {
-            Debug.Assert(null != workItem);
+            Debug.Assert(workItem is not null);
             return ThreadPoolWorkQueue.LocalFindAndPop(workItem);
         }
 

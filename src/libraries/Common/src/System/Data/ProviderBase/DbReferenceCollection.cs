@@ -85,7 +85,7 @@ namespace System.Data.ProviderBase
 
         protected void AddItem(object value, int tag)
         {
-            Debug.Assert(null != value && 0 != tag, "AddItem with null value or 0 tag");
+            Debug.Assert(value is not null && 0 != tag, "AddItem with null value or 0 tag");
             bool itemAdded = false;
 
             lock (_itemLock)
@@ -196,7 +196,7 @@ namespace System.Data.ProviderBase
                             for (int index = 0; index <= _lastItemIndex; ++index)
                             {
                                 object? value = _items[index].Target; // checks tag & gets target
-                                if (null != value)
+                                if (value is not null)
                                 {
                                     NotifyItem(message, _items[index].Tag, value);
                                     _items[index].RemoveTarget();
@@ -231,7 +231,7 @@ namespace System.Data.ProviderBase
 
         protected void RemoveItem(object value)
         {
-            Debug.Assert(null != value, "RemoveItem with null");
+            Debug.Assert(value is not null, "RemoveItem with null");
 
             bool lockObtained = false;
             try

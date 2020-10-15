@@ -349,7 +349,7 @@ namespace System.Data.Common
         {
             if (type == typeof(System.Numerics.BigInteger))
             {
-                if ((DBNull.Value == value) || (null == value)) { return DBNull.Value; }
+                if ((DBNull.Value == value) || (value is null)) { return DBNull.Value; }
                 return BigIntegerStorage.ConvertToBigInteger(value, formatProvider);
             }
             else if (value is System.Numerics.BigInteger)
@@ -402,7 +402,7 @@ namespace System.Data.Common
                                 goto default;
                 */
                 default: // destination is CLR
-                    if ((DBNull.Value == value) || (null == value))
+                    if ((DBNull.Value == value) || (value is null))
                     {
                         return DBNull.Value;
                     }
@@ -475,13 +475,13 @@ namespace System.Data.Common
                                         break;
                                     default:
                                         IConvertible? iconvertible = (value as IConvertible);
-                                        if (null != iconvertible)
+                                        if (iconvertible is not null)
                                         {
                                             return iconvertible.ToString(formatProvider);
                                         }
                                         // catch additional classes like Guid
                                         IFormattable? iformattable = (value as IFormattable);
-                                        if (null != iformattable)
+                                        if (iformattable is not null)
                                         {
                                             return iformattable.ToString(null, formatProvider);
                                         }
@@ -646,7 +646,7 @@ namespace System.Data.Common
                     };
                 default:
                     {
-                        if ((DBNull.Value == value) || (null == value))
+                        if ((DBNull.Value == value) || (value is null))
                         {
                             return DBNull.Value;
                         }
@@ -723,13 +723,13 @@ namespace System.Data.Common
                                 return XmlConvert.ToString((DateTimeOffset)value);
                             default:
                                 IConvertible? iconvertible = (value as IConvertible);
-                                if (null != iconvertible)
+                                if (iconvertible is not null)
                                 {
                                     return iconvertible.ToString(System.Globalization.CultureInfo.InvariantCulture);
                                 }
                                 // catch additional classes like Guid
                                 IFormattable? iformattable = (value as IFormattable);
-                                if (null != iformattable)
+                                if (iformattable is not null)
                                 {
                                     return iformattable.ToString(null, System.Globalization.CultureInfo.InvariantCulture);
                                 }

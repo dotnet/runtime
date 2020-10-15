@@ -107,7 +107,7 @@ namespace System.Data.Common
 
         private void AddEnumerableRange(IEnumerable values, bool doClone)
         {
-            if (null == values)
+            if (values is null)
             {
                 throw ADP.ArgumentNull(nameof(values));
             }
@@ -189,7 +189,7 @@ namespace System.Data.Common
 
         public int IndexOf(object? value)
         {
-            if (null != value)
+            if (value is not null)
             {
                 ValidateType(value);
                 for (int i = 0; i < Count; ++i)
@@ -210,7 +210,7 @@ namespace System.Data.Common
                 for (int i = 0; i < Count; ++i)
                 {
                     string value = _items![i].SourceTable;
-                    if ((null != value) && (0 == ADP.SrcCompare(sourceTable, value)))
+                    if ((value is not null) && (0 == ADP.SrcCompare(sourceTable, value)))
                     {
                         return i;
                     }
@@ -226,7 +226,7 @@ namespace System.Data.Common
                 for (int i = 0; i < Count; ++i)
                 {
                     string value = _items![i].DataSetTable;
-                    if ((null != value) && (0 == ADP.DstCompare(dataSetTable, value)))
+                    if ((value is not null) && (0 == ADP.DstCompare(dataSetTable, value)))
                     {
                         return i;
                     }
@@ -243,7 +243,7 @@ namespace System.Data.Common
 
         public void Insert(int index, DataTableMapping value)
         {
-            if (null == value)
+            if (value is null)
             {
                 throw ADP.TablesAddNullAttempt(nameof(value));
             }
@@ -297,7 +297,7 @@ namespace System.Data.Common
 
         public void Remove(DataTableMapping value)
         {
-            if (null == value)
+            if (value is null)
             {
                 throw ADP.TablesAddNullAttempt(nameof(value));
             }
@@ -323,7 +323,7 @@ namespace System.Data.Common
 
         private void ValidateType([NotNull] object? value)
         {
-            if (null == value)
+            if (value is null)
             {
                 throw ADP.TablesAddNullAttempt(nameof(value));
             }
@@ -335,11 +335,11 @@ namespace System.Data.Common
 
         private void Validate(int index, [NotNull] DataTableMapping? value)
         {
-            if (null == value)
+            if (value is null)
             {
                 throw ADP.TablesAddNullAttempt(nameof(value));
             }
-            if (null != value.Parent)
+            if (value.Parent is not null)
             {
                 if (this != value.Parent)
                 {
@@ -380,7 +380,7 @@ namespace System.Data.Common
         [EditorBrowsable(EditorBrowsableState.Advanced)]
         public static DataTableMapping? GetTableMappingBySchemaAction(DataTableMappingCollection? tableMappings, string sourceTable, string dataSetTable, MissingMappingAction mappingAction)
         {
-            if (null != tableMappings)
+            if (tableMappings is not null)
             {
                 int index = tableMappings.IndexOf(sourceTable);
                 if (-1 != index)

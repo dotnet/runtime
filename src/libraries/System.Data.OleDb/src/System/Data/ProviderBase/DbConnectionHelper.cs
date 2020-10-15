@@ -57,7 +57,7 @@ namespace System.Data.OleDb
             get
             {
                 System.Data.ProviderBase.DbConnectionPoolGroup? poolGroup = PoolGroup;
-                return ((null != poolGroup) ? poolGroup.ConnectionOptions : null);
+                return ((poolGroup is not null) ? poolGroup.ConnectionOptions : null);
             }
         }
 
@@ -65,7 +65,7 @@ namespace System.Data.OleDb
         {
             bool hidePassword = InnerConnection.ShouldHidePassword;
             DbConnectionOptions? connectionOptions = UserConnectionOptions;
-            return ((null != connectionOptions) ? connectionOptions.UsersConnectionString(hidePassword) : "");
+            return ((connectionOptions is not null) ? connectionOptions.UsersConnectionString(hidePassword) : "");
         }
 
         private void ConnectionString_Set(string? value)
@@ -124,7 +124,7 @@ namespace System.Data.OleDb
             set
             {
                 // when a poolgroup expires and the connection eventually activates, the pool entry will be replaced
-                Debug.Assert(null != value, "null poolGroup");
+                Debug.Assert(value is not null, "null poolGroup");
                 _poolGroup = value;
             }
         }
@@ -172,7 +172,7 @@ namespace System.Data.OleDb
         //private void EnlistDistributedTransactionHelper(System.EnterpriseServices.ITransaction transaction) {
         //    SysTx.Transaction indigoTransaction = null;
 
-        //    if (null != transaction) {
+        //    if (transaction is not null) {
         //        indigoTransaction = SysTx.TransactionInterop.GetTransactionFromDtcTransaction((SysTx.IDtcTransaction)transaction);
         //    }
 
@@ -252,14 +252,14 @@ namespace System.Data.OleDb
             Debug.Assert(DbConnectionClosedConnecting.SingletonInstance == _innerConnection, "not connecting");
 
             System.Data.ProviderBase.DbConnectionPoolGroup? poolGroup = PoolGroup;
-            DbConnectionOptions? connectionOptions = ((null != poolGroup) ? poolGroup.ConnectionOptions : null);
-            if ((null == connectionOptions) || connectionOptions.IsEmpty)
+            DbConnectionOptions? connectionOptions = ((poolGroup is not null) ? poolGroup.ConnectionOptions : null);
+            if ((connectionOptions is null) || connectionOptions.IsEmpty)
             {
                 throw ADP.NoConnectionString();
             }
 
             DbConnectionOptions? userConnectionOptions = UserConnectionOptions;
-            Debug.Assert(null != userConnectionOptions, "null UserConnectionOptions");
+            Debug.Assert(userConnectionOptions is not null, "null UserConnectionOptions");
         }
 
         internal void RemoveWeakReference(object value)
@@ -273,7 +273,7 @@ namespace System.Data.OleDb
         {
             // Set's the internal connection without verifying that it's a specific value
             Debug.Assert(null != _innerConnection, "null InnerConnection");
-            Debug.Assert(null != to, "to null InnerConnection");
+            Debug.Assert(to is not null, "to null InnerConnection");
 
             ConnectionState originalState = _innerConnection.State & ConnectionState.Open;
             ConnectionState currentState = to.State & ConnectionState.Open;
@@ -312,8 +312,8 @@ namespace System.Data.OleDb
         {
             // Set's the internal connection, verifying that it's a specific value before doing so.
             Debug.Assert(null != _innerConnection, "null InnerConnection");
-            Debug.Assert(null != from, "from null InnerConnection");
-            Debug.Assert(null != to, "to null InnerConnection");
+            Debug.Assert(from is not null, "from null InnerConnection");
+            Debug.Assert(to is not null, "to null InnerConnection");
 
             bool result = (from == Interlocked.CompareExchange<DbConnectionInternal>(ref _innerConnection, to, from));
             return result;
@@ -325,7 +325,7 @@ namespace System.Data.OleDb
         {
             // Set's the internal connection without verifying that it's a specific value
             Debug.Assert(null != _innerConnection, "null InnerConnection");
-            Debug.Assert(null != to, "to null InnerConnection");
+            Debug.Assert(to is not null, "to null InnerConnection");
             _innerConnection = to;
         }
     }

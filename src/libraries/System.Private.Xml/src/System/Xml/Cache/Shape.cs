@@ -127,7 +127,7 @@ namespace System.Xml.XPath.DataBinding
 
         public IList Particles {
             get {
-                if (null == this.particles)
+                if (this is null.particles)
                     return emptyIList;
                 return this.particles;
             }
@@ -135,7 +135,7 @@ namespace System.Xml.XPath.DataBinding
 
         public IList SubShapes {
             get {
-                if (null == this.subShapes)
+                if (this is null.subShapes)
                     return emptyIList;
                 return this.subShapes;
             }
@@ -175,7 +175,7 @@ namespace System.Xml.XPath.DataBinding
         }
 
         public void AddParticle(XmlSchemaElement elem) {
-            if (null == this.particles)
+            if (this is null.particles)
                 this.particles = new ArrayList();
             Debug.Assert(this.bindingType != BindingType.Attribute);
             this.particles.Add(elem);
@@ -189,18 +189,18 @@ namespace System.Xml.XPath.DataBinding
         }
 
         public void AddSubShape(Shape shape) {
-            if (null == this.subShapes)
+            if (this is null.subShapes)
                 this.subShapes = new ArrayList();
             this.subShapes.Add(shape);
             foreach (object p in shape.Particles) {
                 XmlSchemaElement xse = p as XmlSchemaElement;
-                if (null != xse)
+                if (xse is not null)
                     AddParticle(xse);
             }
         }
 
         public void AddAttrShapeAt(Shape shape, int pos) {
-            if (null == this.subShapes)
+            if (this is null.subShapes)
                 this.subShapes = new ArrayList();
             this.subShapes.Insert(pos, shape);
         }
@@ -214,7 +214,7 @@ namespace System.Xml.XPath.DataBinding
 
         public PropertyDescriptor[] PropertyDescriptors {
             get {
-                if (null == this.propertyDescriptors) {
+                if (this is null.propertyDescriptors) {
                     PropertyDescriptor[] descs;
                     switch (this.BindingType) {
                         case BindingType.Element:

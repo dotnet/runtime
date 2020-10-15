@@ -29,7 +29,7 @@ namespace System.Data.OleDb
 
         private OleDbException(string? message, Exception? inner, string? source, OleDbHResult errorCode, OleDbErrorCollection errors) : base(message, inner)
         {
-            Debug.Assert(null != errors, "OleDbException without OleDbErrorCollection");
+            Debug.Assert(errors is not null, "OleDbException without OleDbErrorCollection");
             Source = source;
             HResult = (int)errorCode;
             this.oledbErrors = errors;
@@ -37,7 +37,7 @@ namespace System.Data.OleDb
 
         public override void GetObjectData(SerializationInfo si, StreamingContext context)
         {
-            if (null == si)
+            if (si is null)
             {
                 throw new ArgumentNullException(nameof(si));
             }
@@ -60,7 +60,7 @@ namespace System.Data.OleDb
             get
             {
                 OleDbErrorCollection errors = this.oledbErrors;
-                return ((null != errors) ? errors : new OleDbErrorCollection(null));
+                return ((errors is not null) ? errors : new OleDbErrorCollection(null));
             }
         }
 
@@ -71,7 +71,7 @@ namespace System.Data.OleDb
             string? source = null;
             OleDbHResult hr = 0;
 
-            if (null != errorInfo)
+            if (errorInfo is not null)
             {
                 hr = errorInfo.GetDescription(out message);
 
@@ -83,7 +83,7 @@ namespace System.Data.OleDb
             {
                 StringBuilder builder = new StringBuilder();
 
-                if ((null != message) && (message != errors[0].Message))
+                if ((message is not null) && (message != errors[0].Message))
                 {
                     builder.Append(message.TrimEnd(ODB.ErrorTrimCharacters));
                     if (1 < count)

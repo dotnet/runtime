@@ -79,8 +79,8 @@ namespace System.Xml.XPath
             IXmlLineInfo? xli = nav as IXmlLineInfo;
             IXmlSchemaInfo? xsi = nav as IXmlSchemaInfo;
 #if NAVREADER_SUPPORTSLINEINFO
-            if (null == xsi) {
-                if (null == xli) {
+            if (xsi is null) {
+                if (xli is null) {
                     return new XPathNavigatorReader(nav, xli, xsi);
                 }
                 else {
@@ -88,7 +88,7 @@ namespace System.Xml.XPath
                 }
             }
             else {
-                if (null == xli) {
+                if (xli is null) {
                     return new XPathNavigatorReaderWithSI(nav, xli, xsi);
                 }
                 else {
@@ -96,7 +96,7 @@ namespace System.Xml.XPath
                 }
             }
 #else
-            if (null == xsi)
+            if (xsi is null)
             {
                 return new XPathNavigatorReader(nav, xli, xsi);
             }
@@ -386,7 +386,7 @@ namespace System.Xml.XPath
                     // attribute count works for element, regardless of where you are in start tag
                     XPathNavigator? tempNav = GetElemNav();
                     int count = 0;
-                    if (null != tempNav)
+                    if (tempNav is not null)
                     {
                         if (tempNav.MoveToFirstNamespace(XPathNamespaceScope.Local))
                         {
@@ -457,7 +457,7 @@ namespace System.Xml.XPath
 
         public override string? GetAttribute(string localName, string? namespaceURI)
         {
-            if (null == localName)
+            if (localName is null)
                 throw new ArgumentNullException(nameof(localName));
             // reader allows calling GetAttribute, even when positioned inside attributes
             XPathNavigator nav = _nav;
@@ -480,7 +480,7 @@ namespace System.Xml.XPath
                     localName = string.Empty;
                 return nav.GetNamespace(localName);
             }
-            if (null == namespaceURI)
+            if (namespaceURI is null)
                 namespaceURI = string.Empty;
             // We need to clone the navigator and move the clone to the attribute to see whether the attribute exists,
             // because XPathNavigator.GetAttribute return string.Empty for both when the attribute is not there or when
@@ -523,7 +523,7 @@ namespace System.Xml.XPath
             if (index < 0)
                 goto Error;
             XPathNavigator? nav = GetElemNav();
-            if (null == nav)
+            if (nav is null)
                 goto Error;
             if (nav.MoveToFirstNamespace(XPathNamespaceScope.Local))
             {
@@ -532,7 +532,7 @@ namespace System.Xml.XPath
                 // so first count the namespaces
                 int nsCount;
                 string? value = GetNamespaceByIndex(nav, index, out nsCount);
-                if (null != value)
+                if (value is not null)
                 {
                     return value;
                 }
@@ -556,11 +556,11 @@ namespace System.Xml.XPath
 
         public override bool MoveToAttribute(string localName, string? namespaceName)
         {
-            if (null == localName)
+            if (localName is null)
                 throw new ArgumentNullException(nameof(localName));
             int depth = _depth;
             XPathNavigator? nav = GetElemNav(out depth);
-            if (null != nav)
+            if (nav is not null)
             {
                 if (namespaceName == XmlReservedNs.NsXmlNs)
                 {
@@ -577,7 +577,7 @@ namespace System.Xml.XPath
                 }
                 else
                 {
-                    if (null == namespaceName)
+                    if (namespaceName is null)
                         namespaceName = string.Empty;
                     if (nav.MoveToAttribute(localName, namespaceName))
                         goto FoundMatch;
@@ -599,7 +599,7 @@ namespace System.Xml.XPath
         {
             int depth;
             XPathNavigator? nav = GetElemNav(out depth);
-            if (null != nav)
+            if (nav is not null)
             {
                 if (nav.MoveToFirstNamespace(XPathNamespaceScope.Local))
                 {
@@ -704,7 +704,7 @@ namespace System.Xml.XPath
         {
             int depth;
             XPathNavigator? nav = GetElemNav(out depth);
-            if (null == nav)
+            if (nav is null)
                 return false;
 
             string prefix, localname;

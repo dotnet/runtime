@@ -200,7 +200,7 @@ namespace Internal.NativeCrypto
         {
             string providerName;
             string? containerName = null;
-            if (null == cspParameters)
+            if (cspParameters is null)
             {
                 throw new ArgumentException(SR.Format(SR.CspParameter_invalid, nameof(cspParameters)));
             }
@@ -210,7 +210,7 @@ namespace Internal.NativeCrypto
 
             //look for provider name in the cspParamters
             //if CSP provider is not null then use the provider name from cspParameters
-            if (null != cspParameters.ProviderName)
+            if (cspParameters.ProviderName is not null)
             {
                 providerName = cspParameters.ProviderName;
             }
@@ -229,7 +229,7 @@ namespace Internal.NativeCrypto
             if (!IsFlagBitSet((uint)cspProviderFlags, (uint)CspProviderFlags.UseDefaultKeyContainer))
             {
                 //look for key container name in the cspParameters
-                if (null != cspParameters.KeyContainerName)
+                if (cspParameters.KeyContainerName is not null)
                 {
                     containerName = cspParameters.KeyContainerName;
                 }
@@ -349,7 +349,7 @@ namespace Internal.NativeCrypto
             {
                 throw GetErrorCode().ToCryptographicException();
             }
-            if (null != impType && cb == Constants.SIZE_OF_DWORD)
+            if (impType is not null && cb == Constants.SIZE_OF_DWORD)
             {
                 impTypeReturn = BitConverter.ToInt32(impType, 0);
             }

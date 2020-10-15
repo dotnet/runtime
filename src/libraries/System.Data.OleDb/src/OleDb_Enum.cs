@@ -266,7 +266,7 @@ namespace System.Data.OleDb
         internal static NativeDBType FromSystemType(object value)
         {
             IConvertible? ic = (value as IConvertible);
-            if (null != ic)
+            if (ic is not null)
             {
                 return ic.GetTypeCode() switch
                 {

@@ -53,7 +53,7 @@ namespace System.Data.ProviderBase
             //     if the DbConnectionInternal derived class needs to close the connection it should
             //     delegate to the DbConnection if one exists or directly call dispose
             //         DbConnection owningObject = (DbConnection)Owner;
-            //         if (null != owningObject) {
+            //         if (owningObject is not null) {
             //             owningObject.Close(); // force the closed state on the outer object.
             //         }
             //         else {
@@ -63,8 +63,8 @@ namespace System.Data.ProviderBase
             ////////////////////////////////////////////////////////////////
             // DON'T MESS WITH THIS CODE UNLESS YOU KNOW WHAT YOU'RE DOING!
             ////////////////////////////////////////////////////////////////
-            Debug.Assert(null != owningObject, "null owningObject");
-            Debug.Assert(null != connectionFactory, "null connectionFactory");
+            Debug.Assert(owningObject is not null, "null owningObject");
+            Debug.Assert(connectionFactory is not null, "null connectionFactory");
 
             // if an exception occurs after the state change but before the try block
             // the connection will be stuck in OpenBusy state.  The commented out try-catch
@@ -89,7 +89,7 @@ namespace System.Data.ProviderBase
                         // The singleton closed classes won't have owners and
                         // connection pools, and we won't want to put them back
                         // into the pool.
-                        if (null != connectionPool)
+                        if (connectionPool is not null)
                         {
                             connectionPool.PutObject(this, owningObject);   // PutObject calls Deactivate for us...
                                                                             // NOTE: Before we leave the PutObject call, another

@@ -20,7 +20,7 @@ namespace System.Management
     {
         public static object GetSafeObject(object theValue)
         {
-            if (null == theValue)
+            if (theValue is null)
                 return null;
             else if (theValue.GetType().IsPrimitive)
                 return ((IConvertible)theValue).ToType(typeof(object), null);
@@ -284,7 +284,7 @@ namespace System.Management
         {
             object val = null;
 
-            if ((System.DBNull.Value != wmiValue) && (null != wmiValue))
+            if ((System.DBNull.Value != wmiValue) && (wmiValue is not null))
             {
                 if (isArray)
                 {
@@ -376,7 +376,7 @@ namespace System.Management
         {
             object wmiValue = System.DBNull.Value;
             CultureInfo culInfo = CultureInfo.InvariantCulture;
-            if (null != val)
+            if (val is not null)
             {
                 if (isArray)
                 {
@@ -600,7 +600,7 @@ namespace System.Management
             isArray = false;
             type = 0;
 
-            if (null != val)
+            if (val is not null)
             {
                 isArray = val.GetType().IsArray;
                 Type valueType = val.GetType();

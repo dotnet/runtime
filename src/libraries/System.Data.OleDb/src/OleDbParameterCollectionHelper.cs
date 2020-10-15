@@ -27,7 +27,7 @@ namespace System.Data.OleDb
             {
                 List<OleDbParameter>? items = _items;
 
-                if (null == items)
+                if (items is null)
                 {
                     items = new List<OleDbParameter>();
                     _items = items;
@@ -80,7 +80,7 @@ namespace System.Data.OleDb
         public override void AddRange(System.Array values)
         {
             OnChange();
-            if (null == values)
+            if (values is null)
             {
                 throw ADP.ArgumentNull(nameof(values));
             }
@@ -110,7 +110,7 @@ namespace System.Data.OleDb
             OnChange();
             List<OleDbParameter> items = InnerList;
 
-            if (null != items)
+            if (items is not null)
             {
                 foreach (OleDbParameter item in items)
                 {
@@ -153,7 +153,7 @@ namespace System.Data.OleDb
 
         private static int IndexOf(System.Collections.IEnumerable items, string parameterName)
         {
-            if (null != items)
+            if (items is not null)
             {
                 int i = 0;
 
@@ -186,13 +186,13 @@ namespace System.Data.OleDb
 
         public override int IndexOf(object value)
         {
-            if (null != value)
+            if (value is not null)
             {
                 ValidateType(value);
 
                 List<OleDbParameter> items = InnerList;
 
-                if (null != items)
+                if (items is not null)
                 {
                     int count = items.Count;
 
@@ -256,7 +256,7 @@ namespace System.Data.OleDb
         private void RemoveIndex(int index)
         {
             List<OleDbParameter> items = InnerList;
-            Debug.Assert((null != items) && (0 <= index) && (index < Count), "RemoveIndex, invalid");
+            Debug.Assert((items is not null) && (0 <= index) && (index < Count), "RemoveIndex, invalid");
             OleDbParameter item = items[index];
             items.RemoveAt(index);
             item.ResetParent();
@@ -265,7 +265,7 @@ namespace System.Data.OleDb
         private void Replace(int index, object newValue)
         {
             List<OleDbParameter> items = InnerList;
-            Debug.Assert((null != items) && (0 <= index) && (index < Count), "Replace Index invalid");
+            Debug.Assert((items is not null) && (0 <= index) && (index < Count), "Replace Index invalid");
             ValidateType(newValue);
             Validate(index, newValue);
             OleDbParameter item = items[index];
@@ -293,13 +293,13 @@ namespace System.Data.OleDb
 
         private void Validate(int index, object value)
         {
-            if (null == value)
+            if (value is null)
             {
                 throw ADP.ParameterNull(nameof(value), this, s_itemType);
             }
 
             object? parent = ((OleDbParameter)value).CompareExchangeParent(this, null);
-            if (null != parent)
+            if (parent is not null)
             {
                 if (this != parent)
                 {
@@ -326,7 +326,7 @@ namespace System.Data.OleDb
 
         private void ValidateType(object value)
         {
-            if (null == value)
+            if (value is null)
             {
                 throw ADP.ParameterNull(nameof(value), this, s_itemType);
             }

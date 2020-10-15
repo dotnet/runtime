@@ -41,7 +41,7 @@ namespace System.Data.Common
         public override int CompareValueTo(int recordNo, object? value)
         {
             Debug.Assert(0 <= recordNo, "Invalid record");
-            Debug.Assert(null != value, "null value");
+            Debug.Assert(value is not null, "null value");
 
             if (_nullValue == value)
             {
@@ -95,7 +95,7 @@ namespace System.Data.Common
         {
             if (_nullValue != value)
             {
-                if (null != value)
+                if (value is not null)
                 {
                     value = ConvertToBigInteger(value, FormatProvider);
                 }
@@ -125,7 +125,7 @@ namespace System.Data.Common
 
         public override void Set(int record, object value)
         {
-            Debug.Assert(null != value, "null value");
+            Debug.Assert(value is not null, "null value");
             if (_nullValue == value)
             {
                 _values[record] = BigInteger.Zero;

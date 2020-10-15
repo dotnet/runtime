@@ -39,7 +39,7 @@ namespace System.Data.Odbc
             get
             {
                 OdbcConnection? connection = _connection;
-                if (null == connection)
+                if (connection is null)
                 {
                     throw ADP.TransactionZombied(this);
                 }
@@ -68,7 +68,7 @@ namespace System.Data.Odbc
         public override void Commit()
         {
             OdbcConnection? connection = _connection;
-            if (null == connection)
+            if (connection is null)
             {
                 throw ADP.TransactionZombied(this);
             }
@@ -102,7 +102,7 @@ namespace System.Data.Odbc
             {
                 OdbcConnectionHandle? handle = _handle;
                 _handle = null;
-                if (null != handle)
+                if (handle is not null)
                 {
                     try
                     {
@@ -142,7 +142,7 @@ namespace System.Data.Odbc
         public override void Rollback()
         {
             OdbcConnection? connection = _connection;
-            if (null == connection)
+            if (connection is null)
             {
                 throw ADP.TransactionZombied(this);
             }

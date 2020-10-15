@@ -12,7 +12,7 @@ namespace System.Reflection.Context.Delegation
     {
         public DelegatingMethodInfo(MethodInfo method)
         {
-            Debug.Assert(null != method);
+            Debug.Assert(method is not null);
 
             UnderlyingMethod = method;
         }

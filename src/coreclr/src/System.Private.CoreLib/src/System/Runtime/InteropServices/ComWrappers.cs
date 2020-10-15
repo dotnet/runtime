@@ -341,7 +341,7 @@ namespace System.Runtime.InteropServices
             if (instance is null)
                 throw new ArgumentNullException(nameof(instance));
 
-            if (null != Interlocked.CompareExchange(ref s_globalInstanceForTrackerSupport, instance, null))
+            if (Interlocked.CompareExchange(ref s_globalInstanceForTrackerSupport, instance, null) is not null)
             {
                 throw new InvalidOperationException(SR.InvalidOperation_ResetGlobalComWrappersInstance);
             }
@@ -372,7 +372,7 @@ namespace System.Runtime.InteropServices
             if (instance is null)
                 throw new ArgumentNullException(nameof(instance));
 
-            if (null != Interlocked.CompareExchange(ref s_globalInstanceForMarshalling, instance, null))
+            if (Interlocked.CompareExchange(ref s_globalInstanceForMarshalling, instance, null) is not null)
             {
                 throw new InvalidOperationException(SR.InvalidOperation_ResetGlobalComWrappersInstance);
             }

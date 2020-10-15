@@ -121,7 +121,7 @@ namespace System.Data.ProviderBase
             internal void Decrement()
             {
                 PerformanceCounter? instance = _instance;
-                if (null != instance)
+                if (instance is not null)
                 {
                     instance.Decrement();
                 }
@@ -131,7 +131,7 @@ namespace System.Data.ProviderBase
             { // TODO: race condition, Dispose at the same time as Increment/Decrement
                 PerformanceCounter? instance = _instance;
                 _instance = null;
-                if (null != instance)
+                if (instance is not null)
                 {
                     instance.RemoveInstance();
                     // should we be calling instance.Close?
@@ -143,7 +143,7 @@ namespace System.Data.ProviderBase
             internal void Increment()
             {
                 PerformanceCounter? instance = _instance;
-                if (null != instance)
+                if (instance is not null)
                 {
                     instance.Increment();
                 }
@@ -224,7 +224,7 @@ namespace System.Data.ProviderBase
             // First try GetEntryAssembly name, then AppDomain.FriendlyName.
             Assembly? assembly = Assembly.GetEntryAssembly();
 
-            if (null != assembly)
+            if (assembly is not null)
             {
                 AssemblyName name = assembly.GetName();
                 if (name is not null)
@@ -246,7 +246,7 @@ namespace System.Data.ProviderBase
             if (ADP.IsEmpty(instanceName))
             {
                 AppDomain appDomain = AppDomain.CurrentDomain;
-                if (null != appDomain)
+                if (appDomain is not null)
                 {
                     instanceName = appDomain.FriendlyName;
                 }
@@ -305,7 +305,7 @@ namespace System.Data.ProviderBase
 
         private void SafeDispose(Counter counter)
         {
-            if (null != counter)
+            if (counter is not null)
             {
                 counter.Dispose();
             }
@@ -313,7 +313,7 @@ namespace System.Data.ProviderBase
 
         private void ExceptionEventHandler(object sender, UnhandledExceptionEventArgs e)
         {
-            if ((null != e) && e.IsTerminating)
+            if ((e is not null) && e.IsTerminating)
             {
                 Dispose();
             }

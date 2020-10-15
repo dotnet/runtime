@@ -20,7 +20,7 @@ namespace System.Data.ProviderBase
 
         internal WrappedIUnknown(object? unknown) : this()
         {
-            if (null != unknown)
+            if (unknown is not null)
             {
                 RuntimeHelpers.PrepareConstrainedRegions();
                 try

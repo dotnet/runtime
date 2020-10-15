@@ -64,7 +64,7 @@ namespace System.Xml.XPath
             bool hasPrefix;
             Query query = new QueryBuilder().Build(xpath, out hasPrefix);
             CompiledXpathExpr expr = new CompiledXpathExpr(query, xpath, hasPrefix);
-            if (null != nsResolver)
+            if (nsResolver is not null)
             {
                 expr.SetContext(nsResolver);
             }

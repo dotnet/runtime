@@ -101,7 +101,7 @@ namespace System.Reflection.Context.Projection
 
         private T[] ProjectAll<T>(IList<T> values, Func<T, T> project)
         {
-            Debug.Assert(null != project);
+            Debug.Assert(project is not null);
             Debug.Assert(values is not null && values.Count > 0);
 
             var projected = new T[values.Count];

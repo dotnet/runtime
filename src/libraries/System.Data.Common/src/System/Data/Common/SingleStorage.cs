@@ -165,7 +165,7 @@ namespace System.Data.Common
         public override int CompareValueTo(int recordNo, object? value)
         {
             System.Diagnostics.Debug.Assert(0 <= recordNo, "Invalid record");
-            System.Diagnostics.Debug.Assert(null != value, "null value");
+            System.Diagnostics.Debug.Assert(value is not null, "null value");
 
             if (_nullValue == value)
             {
@@ -188,7 +188,7 @@ namespace System.Data.Common
         {
             if (_nullValue != value)
             {
-                if (null != value)
+                if (value is not null)
                 {
                     value = ((IConvertible)value).ToSingle(FormatProvider);
                 }
@@ -218,7 +218,7 @@ namespace System.Data.Common
 
         public override void Set(int record, object value)
         {
-            System.Diagnostics.Debug.Assert(null != value, "null value");
+            System.Diagnostics.Debug.Assert(value is not null, "null value");
             if (_nullValue == value)
             {
                 _values[record] = defaultValue;

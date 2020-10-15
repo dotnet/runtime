@@ -231,7 +231,7 @@ namespace System.Net.Security
             {
                 SafeDeleteSslContext? sslContext = ((SafeDeleteSslContext?)context);
 
-                if ((null == context) || context.IsInvalid)
+                if ((context is null) || context.IsInvalid)
                 {
                     sslContext = new SafeDeleteSslContext((credential as SafeFreeSslCredentials)!, sslAuthenticationOptions);
                     context = sslContext;

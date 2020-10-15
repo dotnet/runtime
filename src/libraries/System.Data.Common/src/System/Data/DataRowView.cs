@@ -75,7 +75,7 @@ namespace System.Data
             get
             {
                 DataColumn? column = _dataView.Table!.Columns[property];
-                if (null != column)
+                if (column is not null)
                 {
                     return Row[column, RowVersionDefault];
                 }
@@ -88,7 +88,7 @@ namespace System.Data
             set
             {
                 DataColumn? column = _dataView.Table!.Columns[property];
-                if (null == column)
+                if (column is null)
                 {
                     throw ExceptionBuilder.SetFailed(property);
                 }

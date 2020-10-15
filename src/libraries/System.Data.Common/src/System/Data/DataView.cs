@@ -193,7 +193,7 @@ namespace System.Data
             }
 
             _comparison = comparison;
-            SetIndex2("", RowState, ((null != predicate) ? new RowPredicateFilter(predicate) : null), true);
+            SetIndex2("", RowState, ((predicate is not null) ? new RowPredicateFilter(predicate) : null), true);
         }
 
         /// <summary>
@@ -347,13 +347,13 @@ namespace System.Data
             get
             {
                 RowPredicateFilter? filter = (GetFilter() as RowPredicateFilter);
-                return ((null != filter) ? filter._predicateFilter : null);
+                return ((filter is not null) ? filter._predicateFilter : null);
             }
             set
             {
                 if (!ReferenceEquals(RowPredicate, value))
                 {
-                    SetIndex(Sort, RowStateFilter, ((null != value) ? new RowPredicateFilter(value) : null));
+                    SetIndex(Sort, RowStateFilter, ((value is not null) ? new RowPredicateFilter(value) : null));
                 }
             }
         }
@@ -365,7 +365,7 @@ namespace System.Data
             /// <summary></summary>
             internal RowPredicateFilter(Predicate<DataRow> predicate)
             {
-                Debug.Assert(null != predicate, "null predicate");
+                Debug.Assert(predicate is not null, "null predicate");
                 _predicateFilter = predicate;
             }
 
@@ -688,7 +688,7 @@ namespace System.Data
 
         internal void Delete(DataRow row)
         {
-            if (null != row)
+            if (row is not null)
             {
                 long logScopeId = DataCommonEventSource.Log.EnterScope("<ds.DataView.Delete|API> {0}, row={1}", ObjectID, row._objectID);
                 try
@@ -868,7 +868,7 @@ namespace System.Data
         /// <remarks>Behavioral change: will now return -1 once a DataRowView becomes detached.</remarks>
         internal int IndexOf(DataRowView? rowview)
         {
-            if (null != rowview)
+            if (rowview is not null)
             {
                 if (ReferenceEquals(_addNewRow, rowview.Row))
                 {
@@ -1035,7 +1035,7 @@ namespace System.Data
                 }
                 finally
                 {
-                    if (created && (null != findIndex))
+                    if (created && (findIndex is not null))
                     {
                         findIndex.RemoveRef();
                         if (findIndex.RefCount == 1)
@@ -1308,7 +1308,7 @@ namespace System.Data
             switch (changedType)
             {
                 case ListChangedType.ItemAdded:
-                    Debug.Assert(null != row, "MaintainDataView.ItemAdded with null DataRow");
+                    Debug.Assert(row is not null, "MaintainDataView.ItemAdded with null DataRow");
                     if (trackAddRemove)
                     {
                         if (_rowViewBuffer.TryGetValue(row, out buffer))
@@ -1337,14 +1337,14 @@ namespace System.Data
                     }
                     break;
                 case ListChangedType.ItemDeleted:
-                    Debug.Assert(null != row, "MaintainDataView.ItemDeleted with null DataRow");
+                    Debug.Assert(row is not null, "MaintainDataView.ItemDeleted with null DataRow");
                     Debug.Assert(row != _addNewRow, "addNewRow being deleted");
 
                     if (trackAddRemove)
                     {
                         // help turn expression add/remove into a changed/move
                         _rowViewCache.TryGetValue(row, out buffer);
-                        if (null != buffer)
+                        if (buffer is not null)
                         {
                             _rowViewBuffer.Add(row, buffer);
                         }
@@ -1359,7 +1359,7 @@ namespace System.Data
                     }
                     break;
                 case ListChangedType.Reset:
-                    Debug.Assert(null == row, "MaintainDataView.Reset with non-null DataRow");
+                    Debug.Assert(row is null, "MaintainDataView.Reset with non-null DataRow");
                     ResetRowViewCache();
                     break;
                 case ListChangedType.ItemChanged:
@@ -1404,7 +1404,7 @@ namespace System.Data
                             if (dr.HasPropertyChanged)
                             {
                                 col = dr.LastChangedColumn;
-                                propertyName = (null != col) ? col.ColumnName : string.Empty;
+                                propertyName = (col is not null) ? col.ColumnName : string.Empty;
                             }
                         }
 
@@ -1431,7 +1431,7 @@ namespace System.Data
                         _onListChanged(this, e);
                     }
                 }
-                if (null != propertyName)
+                if (propertyName is not null)
                 {
                     // empty string if more than 1 column changed
                     this[e.NewIndex].RaisePropertyChangedEvent(propertyName);
@@ -1488,7 +1488,7 @@ namespace System.Data
             if (null != _addNewRow)
             {
                 _rowViewCache.TryGetValue(_addNewRow, out drv);
-                Debug.Assert(null != drv, "didn't contain addNewRow");
+                Debug.Assert(drv is not null, "didn't contain addNewRow");
                 rvc.Add(_addNewRow, drv);
             }
             Debug.Assert(rvc.Count == CountFromIndex, "didn't add expected count");
@@ -1594,7 +1594,7 @@ namespace System.Data
                     {
                         if (_table is not null)
                         {
-                            if (null != SortComparison)
+                            if (SortComparison is not null)
                             {
                                 // because an Index with a Comparison<DataRow is not sharable, directly create the index here
                                 newIndex = new Index(_table, SortComparison, ((DataViewRowState)_recordStates), GetFilter());
@@ -1698,7 +1698,7 @@ namespace System.Data
             DataTable dt = new DataTable();
             dt.Locale = _table!.Locale;
             dt.CaseSensitive = _table.CaseSensitive;
-            dt.TableName = ((null != tableName) ? tableName : _table.TableName);
+            dt.TableName = ((tableName is not null) ? tableName : _table.TableName);
             dt.Namespace = _table.Namespace;
             dt.Prefix = _table.Prefix;
 
@@ -1768,7 +1768,7 @@ namespace System.Data
         /// </summary>
         public virtual bool Equals(DataView? view)
         {
-            if ((null == view) ||
+            if ((view is null) ||
                Table != view.Table ||
                Count != view.Count ||
                !string.Equals(RowFilter, view.RowFilter, StringComparison.OrdinalIgnoreCase) ||  // case insensitive

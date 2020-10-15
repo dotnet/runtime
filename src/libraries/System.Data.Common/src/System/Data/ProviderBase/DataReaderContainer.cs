@@ -16,7 +16,7 @@ namespace System.Data.ProviderBase
             if (returnProviderSpecificTypes)
             {
                 DbDataReader? providerSpecificDataReader = (dataReader as DbDataReader);
-                if (null != providerSpecificDataReader)
+                if (providerSpecificDataReader is not null)
                 {
                     return new ProviderSpecificDataReader(dataReader, providerSpecificDataReader);
                 }
@@ -26,7 +26,7 @@ namespace System.Data.ProviderBase
 
         protected DataReaderContainer(IDataReader dataReader)
         {
-            Debug.Assert(null != dataReader, "null dataReader");
+            Debug.Assert(dataReader is not null, "null dataReader");
             _dataReader = dataReader;
         }
 
@@ -48,8 +48,8 @@ namespace System.Data.ProviderBase
         internal string GetName(int ordinal)
         {
             string fieldName = _dataReader.GetName(ordinal);
-            Debug.Assert(null != fieldName, "null GetName");
-            return ((null != fieldName) ? fieldName : "");
+            Debug.Assert(fieldName is not null, "null GetName");
+            return ((fieldName is not null) ? fieldName : "");
         }
         internal DataTable? GetSchemaTable()
         {
@@ -76,7 +76,7 @@ namespace System.Data.ProviderBase
 
             internal ProviderSpecificDataReader(IDataReader dataReader, DbDataReader dbDataReader) : base(dataReader)
             {
-                Debug.Assert(null != dataReader, "null dbDataReader");
+                Debug.Assert(dataReader is not null, "null dbDataReader");
                 _providerSpecificDataReader = dbDataReader;
                 _fieldCount = VisibleFieldCount;
             }
@@ -101,7 +101,7 @@ namespace System.Data.ProviderBase
             internal override Type GetFieldType(int ordinal)
             {
                 Type fieldType = _providerSpecificDataReader.GetProviderSpecificFieldType(ordinal);
-                Debug.Assert(null != fieldType, "null FieldType");
+                Debug.Assert(fieldType is not null, "null FieldType");
                 return fieldType;
             }
             internal override object GetValue(int ordinal)

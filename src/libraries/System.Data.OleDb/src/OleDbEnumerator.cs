@@ -44,7 +44,7 @@ namespace System.Data.OleDb
             {
                 throw ODB.ISourcesRowsetNotSupported();
             }
-            if (null == srcrowset)
+            if (srcrowset is null)
             {
                 throw ODB.ISourcesRowsetNotSupported();
             }
@@ -55,7 +55,7 @@ namespace System.Data.OleDb
             OleDbHResult hr = srcrowset.GetSourcesRowset(ADP.PtrZero, ODB.IID_IRowset, propCount, propSets, out value);
 
             Exception? f = OleDbConnection.ProcessResults(hr, null, null);
-            if (null != f)
+            if (f is not null)
             {
                 throw f;
             }

@@ -70,7 +70,7 @@ namespace System.Data.Odbc
             get
             {
                 CNativeBuffer? value = _cmdWrapper!._dataReaderBuf;
-                if (null == value)
+                if (value is null)
                 {
                     Debug.Fail("object is disposed");
                     throw new ObjectDisposedException(GetType().Name);
@@ -320,7 +320,7 @@ namespace System.Data.Odbc
             Exception? error = null;
 
             CMDWrapper? wrapper = _cmdWrapper;
-            if (null != wrapper && wrapper.StatementHandle is not null)
+            if (wrapper is not null && wrapper.StatementHandle is not null)
             {
                 // disposing
                 // true to release both managed and unmanaged resources; false to release only unmanaged resources.
@@ -357,12 +357,12 @@ namespace System.Data.Odbc
 
                 if (IsCommandBehavior(CommandBehavior.CloseConnection))
                 {
-                    Debug.Assert(null != Connection, "null cmd connection");
+                    Debug.Assert(Connection is not null, "null cmd connection");
                     _command.Parameters.RebindCollection = true;
                     Connection.Close();
                 }
             }
-            else if (null != wrapper)
+            else if (wrapper is not null)
             {
                 wrapper.Dispose();
             }
@@ -381,7 +381,7 @@ namespace System.Data.Odbc
 
             SetCurrentRowColumnInfo(-1, 0);
 
-            if ((null != error) && !disposing)
+            if ((error is not null) && !disposing)
             {
                 throw error;
             }
@@ -439,7 +439,7 @@ namespace System.Data.Odbc
                 if (info._name is null)
                 {
                     info._name = GetColAttributeStr(i, ODBC32.SQL_DESC.NAME, ODBC32.SQL_COLUMN.NAME, ODBC32.HANDLER.THROW);
-                    if (null == info._name)
+                    if (info._name is null)
                     { // MDAC 66681
                         info._name = "";
                     }
@@ -1745,7 +1745,7 @@ namespace System.Data.Odbc
             {
                 throw ADP.DataReaderNoData();
             }
-            Debug.Assert(null != StatementHandle, "Statement handle is null in DateReader");
+            Debug.Assert(StatementHandle is not null, "Statement handle is null in DateReader");
 
             // see notes on ODBC32.RetCode.NO_DATA case below.
             Debug.Assert(_dataCache is null || !Convert.IsDBNull(_dataCache[i]), "Cannot call GetData without checking for cache first!");
@@ -1976,7 +1976,7 @@ namespace System.Data.Odbc
                 else if (!disposing && (retcode != ODBC32.RetCode.NO_DATA) && (ODBC32.RetCode.SUCCESS != retcode))
                 {
                     // allow for building comulative error messages.
-                    if (null == errors)
+                    if (errors is null)
                     {
                         firstRetCode = retcode;
                         errors = new OdbcErrorCollection();
@@ -2007,7 +2007,7 @@ namespace System.Data.Odbc
                 _dataCache = null;
                 _noMoreResults = true;
             }
-            if (null != errors)
+            if (errors is not null)
             {
                 Debug.Assert(!disposing, "errors while disposing");
                 errors.SetSource(Connection!.Driver);

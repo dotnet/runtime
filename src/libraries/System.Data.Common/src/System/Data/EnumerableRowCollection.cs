@@ -100,13 +100,13 @@ namespace System.Data
         /// </summary>
         internal EnumerableRowCollection(EnumerableRowCollection<TRow>? source, IEnumerable<TRow> enumerableRows, Func<TRow, TRow>? selector)
         {
-            Debug.Assert(null != enumerableRows, "null enumerableRows");
+            Debug.Assert(enumerableRows is not null, "null enumerableRows");
 
             _enumerableRows = enumerableRows;
             _selector = selector;
-            if (null != source)
+            if (source is not null)
             {
-                if (null == source._selector)
+                if (source._selector is null)
                 {
                     _table = source._table;
                 }
@@ -216,7 +216,7 @@ namespace System.Data
 
 
             // Filter AND Sort
-            if ((null != finalPredicate) && (0 < _sortExpression.Count))
+            if ((finalPredicate is not null) && (0 < _sortExpression.Count))
             {
                 // A lot more work here because constructor does not know type K,
                 // so the responsibility to create appropriate delegate comparers
@@ -235,7 +235,7 @@ namespace System.Data
                                        _sortExpression.Select((TRow)(object)row)),
                                 _sortExpression.CloneCast<DataRow>());
             }
-            else if (null != finalPredicate)
+            else if (finalPredicate is not null)
             {
                 // Only Filtering
                 view = new LinqDataView(

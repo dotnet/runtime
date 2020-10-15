@@ -51,7 +51,7 @@ namespace System.Data
 
         private static bool CompareArray(Array a, Array? b)
         {
-            if ((null == b) ||
+            if ((b is null) ||
                 (1 != a.Rank) ||
                 (1 != b.Rank) ||
                 (a.Length != b.Length))

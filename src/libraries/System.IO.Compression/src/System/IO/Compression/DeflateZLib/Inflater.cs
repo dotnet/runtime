@@ -62,7 +62,7 @@ namespace System.IO.Compression
             if (length == 0)
                 return 0;
 
-            Debug.Assert(null != bytes, "Can't pass in a null output buffer!");
+            Debug.Assert(bytes is not null, "Can't pass in a null output buffer!");
             fixed (byte* bufPtr = bytes)
             {
                 return InflateVerified(bufPtr + offset, length);

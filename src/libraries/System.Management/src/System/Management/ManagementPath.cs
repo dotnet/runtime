@@ -100,7 +100,7 @@ namespace System.Management
             string path = null;
             int status = (int)ManagementStatus.Failed;
 
-            if (null != wbemObject)
+            if (wbemObject is not null)
             {
                 int dummy1 = 0, dummy2 = 0;
                 object val = null;
@@ -190,7 +190,7 @@ namespace System.Management
         /// <param name='path'> The object path. </param>
         public ManagementPath(string path)
         {
-            if ((null != path) && (0 < path.Length))
+            if ((path is not null) && (0 < path.Length))
                 wmiPath = CreateWbemPath(path);
         }
 
@@ -264,7 +264,7 @@ namespace System.Management
 
         private static void SetWbemPath(IWbemPath wbemPath, string path)
         {
-            if (null != wbemPath)
+            if (wbemPath is not null)
             {
                 uint flags = (uint)tag_WBEM_PATH_CREATE_FLAG.WBEMPATH_CREATE_ACCEPT_ALL;
 
@@ -295,7 +295,7 @@ namespace System.Management
         {
             string pathStr = string.Empty;
 
-            if (null != wbemPath)
+            if (wbemPath is not null)
             {
                 // Requesting the path from a parser which has
                 // been only given a relative path results in an incorrect
@@ -351,12 +351,12 @@ namespace System.Management
 
             try
             {
-                if (null != wmiPath)
+                if (wmiPath is not null)
                 {
                     IWbemPathKeyList keyList = null;
                     status = wmiPath.GetKeyList_(out keyList);
 
-                    if (null != keyList)
+                    if (keyList is not null)
                     {
                         status = keyList.RemoveAllKeys_(0);
                         if ((status & 0x80000000) == 0)
@@ -498,7 +498,7 @@ namespace System.Management
             {
                 string pathStr = string.Empty;
 
-                if (null != wmiPath)
+                if (wmiPath is not null)
                 {
                     // Get the space we need to reserve
                     uint bufLen = 0;
@@ -601,7 +601,7 @@ namespace System.Management
             {
                 string pathStr = string.Empty;
 
-                if (null != wmiPath)
+                if (wmiPath is not null)
                 {
 
                     uint uLen = 0;
@@ -636,7 +636,7 @@ namespace System.Management
                 // Only set if changed
                 if (0 != string.Compare(oldValue, value, StringComparison.OrdinalIgnoreCase))
                 {
-                    if (null == wmiPath)
+                    if (wmiPath is null)
                         wmiPath = (IWbemPath)MTAHelper.CreateInMTA(typeof(WbemDefPath)); //new WbemDefPath ();
                     else if (isWbemPathShared)
                     {
@@ -793,7 +793,7 @@ namespace System.Management
         {
             string pathStr = string.Empty;
 
-            if (null != wbemPath)
+            if (wbemPath is not null)
             {
                 // Requesting the namespace path from a parser which has
                 // been only given a relative path results in an incorrect
@@ -904,7 +904,7 @@ namespace System.Management
                 string pathStr = string.Empty;
                 int status = (int)ManagementStatus.NoError;
 
-                if (null != wmiPath)
+                if (wmiPath is not null)
                 {
                     uint bufLen = 0;
                     status = wmiPath.GetClassName_(ref bufLen, null);
@@ -966,7 +966,7 @@ namespace System.Management
         {
             get
             {
-                if (null == wmiPath)
+                if (wmiPath is null)
                     return false;
 
                 ulong uInfo = 0;
@@ -995,7 +995,7 @@ namespace System.Management
         {
             get
             {
-                if (null == wmiPath)
+                if (wmiPath is null)
                     return false;
 
                 ulong uInfo = 0;
@@ -1024,7 +1024,7 @@ namespace System.Management
         {
             get
             {
-                if (null == wmiPath)
+                if (wmiPath is null)
                     return false;
 
                 ulong uInfo = 0;

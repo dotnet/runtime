@@ -102,7 +102,7 @@ namespace System.Data.Odbc
         {
             // MDAC 65927
 
-            if (null == command)
+            if (command is null)
             {
                 throw ADP.ArgumentNull(nameof(command));
             }
@@ -125,7 +125,7 @@ namespace System.Data.Odbc
 
             OdbcConnection? connection = command.Connection;
 
-            if (null == connection)
+            if (connection is null)
             {
                 throw ADP.ConnectionRequired(ADP.DeriveParameters);
             }
@@ -177,7 +177,7 @@ namespace System.Data.Odbc
             //
             string quote = connection.QuoteChar(ADP.DeriveParameters);
             string?[] parts = MultipartIdentifier.ParseMultipartIdentifier(command.CommandText, quote, quote, '.', 4, true, SR.ODBC_ODBCCommandText, false);
-            if (null == parts[3])
+            if (parts[3] is null)
             { // match Everett behavior, if the commandtext is nothing but whitespace set the command text to the whitespace
                 parts[3] = command.CommandText;
             }

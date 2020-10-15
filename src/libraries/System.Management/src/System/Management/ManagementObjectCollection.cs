@@ -71,12 +71,12 @@ namespace System.Management
             EnumerationOptions options,
             IEnumWbemClassObject enumWbem)
         {
-            if (null != options)
+            if (options is not null)
                 this.options = (EnumerationOptions)options.Clone();
             else
                 this.options = new EnumerationOptions();
 
-            if (null != scope)
+            if (scope is not null)
                 this.scope = (ManagementScope)scope.Clone();
             else
                 this.scope = ManagementScope._Clone(null);
@@ -201,7 +201,7 @@ namespace System.Management
             if (isDisposed)
                 throw new ObjectDisposedException(name);
 
-            if (null == array)
+            if (array is null)
                 throw new ArgumentNullException(nameof(array));
 
             if ((index < array.GetLowerBound(0)) || (index > array.GetUpperBound(0)))
@@ -440,7 +440,7 @@ namespace System.Management
             {
                 if (!isDisposed)
                 {
-                    if (null != enumWbem)
+                    if (enumWbem is not null)
                     {
                         Marshal.ReleaseComObject(enumWbem);
                         enumWbem = null;

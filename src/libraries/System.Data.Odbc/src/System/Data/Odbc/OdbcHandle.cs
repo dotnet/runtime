@@ -27,13 +27,13 @@ namespace System.Data.Odbc
                 switch (handleType)
                 {
                     case ODBC32.SQL_HANDLE.ENV:
-                        Debug.Assert(null == parentHandle, "did not expect a parent handle");
+                        Debug.Assert(parentHandle is null, "did not expect a parent handle");
                         retcode = Interop.Odbc.SQLAllocHandle(handleType, IntPtr.Zero, out base.handle);
                         break;
                     case ODBC32.SQL_HANDLE.DBC:
                     case ODBC32.SQL_HANDLE.STMT:
                         // must addref before calling native so it won't be released just after
-                        Debug.Assert(null != parentHandle, "expected a parent handle"); // safehandle can't be null
+                        Debug.Assert(parentHandle is not null, "expected a parent handle"); // safehandle can't be null
                         parentHandle.DangerousAddRef(ref mustRelease);
 
                         retcode = Interop.Odbc.SQLAllocHandle(handleType, parentHandle, out base.handle);
@@ -166,7 +166,7 @@ namespace System.Data.Odbc
             // our reference on our parent.
             OdbcHandle? parentHandle = _parentHandle;
             _parentHandle = null;
-            if (null != parentHandle)
+            if (parentHandle is not null)
             {
                 parentHandle.DangerousRelease();
                 parentHandle = null;

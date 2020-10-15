@@ -43,7 +43,7 @@ namespace System.Data.Common
                 return 1;
 
             IComparable? icomparable = (valueNo1 as IComparable);
-            if (null != icomparable)
+            if (icomparable is not null)
             {
                 try
                 {
@@ -78,7 +78,7 @@ namespace System.Data.Common
                 }
                 return -1;
             }
-            if ((_nullValue == value) || (null == value))
+            if ((_nullValue == value) || (value is null))
             {
                 return 1;
             }
@@ -175,7 +175,7 @@ namespace System.Data.Common
         public override object Get(int recordNo)
         {
             object? value = _values[recordNo];
-            if (null != value)
+            if (value is not null)
             {
                 return value;
             }
@@ -224,7 +224,7 @@ namespace System.Data.Common
 
         public override void Set(int recordNo, object value)
         {
-            Debug.Assert(null != value, "null value");
+            Debug.Assert(value is not null, "null value");
             if (_nullValue == value)
             {
                 _values[recordNo] = null;
@@ -352,14 +352,14 @@ namespace System.Data.Common
             bool isBaseCLRType = false;
             bool legacyUDT = false; // in 1.0 and 1.1 we used to call ToString on CDT obj. so if we have the same case
             // we need to handle the case when we have column type as object.
-            if (null == xmlAttrib)
+            if (xmlAttrib is null)
             { // this means type implements IXmlSerializable
                 Type? type = null;
                 string? typeName = xmlReader.GetAttribute(Keywords.MSD_INSTANCETYPE, Keywords.MSDNS);
                 if (typeName is null || typeName.Length == 0)
                 { // No CDT polumorphism
                     string? xsdTypeName = xmlReader.GetAttribute(Keywords.TYPE, Keywords.XSINS); // this xsd type: Base type polymorphism
-                    if (null != xsdTypeName && xsdTypeName.Length > 0)
+                    if (xsdTypeName is not null && xsdTypeName.Length > 0)
                     {
                         string[] _typename = xsdTypeName.Split(':');
                         if (_typename.Length == 2)
@@ -391,7 +391,7 @@ namespace System.Data.Common
                     }
                     else
                     {
-                        if (null == type)
+                        if (type is null)
                         {
                             type = (typeName is null) ? _dataType : DataStorage.GetType(typeName);
                         }
@@ -486,7 +486,7 @@ namespace System.Data.Common
 
         public override void ConvertObjectToXml(object value, XmlWriter xmlWriter, XmlRootAttribute? xmlAttrib)
         {
-            if (null == xmlAttrib)
+            if (xmlAttrib is null)
             { // implements IXmlSerializable
                 Debug.Assert(xmlWriter is DataTextWriter, "Invalid DataTextWriter is being passed to customer");
                 ((IXmlSerializable)value).WriteXml(xmlWriter);
@@ -569,19 +569,19 @@ namespace System.Data.Common
 
             // _tempAssemblyCache is a readonly instance, lock on write to copy & add then replace the original instance.
             Dictionary<KeyValuePair<Type, XmlRootAttribute>, XmlSerializer>? cache = s_tempAssemblyCache;
-            if ((null == cache) || !cache.TryGetValue(key, out serializer))
+            if ((cache is null) || !cache.TryGetValue(key, out serializer))
             {   // not in cache, try again with lock because it may need to grow
                 lock (s_tempAssemblyCacheLock)
                 {
                     cache = s_tempAssemblyCache;
-                    if ((null == cache) || !cache.TryGetValue(key, out serializer))
+                    if ((cache is null) || !cache.TryGetValue(key, out serializer))
                     {
                         // prevent writing an instance which implements IDynamicMetaObjectProvider and not IXmlSerializable
                         // the check here prevents the instance data from being written
                         VerifyIDynamicMetaObjectProvider(type);
 
                         // if still not in cache, make cache larger and add new XmlSerializer
-                        if (null != cache)
+                        if (cache is not null)
                         {   // create larger cache, because dictionary is not reader/writer safe
                             // copy cache so that all readers don't take lock - only potential new writers
                             // same logic used by DbConnectionFactory

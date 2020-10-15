@@ -44,10 +44,10 @@ namespace System.Data.OleDb
 
         internal DBPropSet(UnsafeNativeMethods.IDBProperties properties, PropertyIDSet? propidset, out OleDbHResult hr) : this()
         {
-            Debug.Assert(null != properties, "null IDBProperties");
+            Debug.Assert(properties is not null, "null IDBProperties");
 
             int propidsetcount = 0;
-            if (null != propidset)
+            if (propidset is not null)
             {
                 propidsetcount = propidset.Count;
             }
@@ -62,10 +62,10 @@ namespace System.Data.OleDb
 
         internal DBPropSet(UnsafeNativeMethods.IRowsetInfo properties, PropertyIDSet? propidset, out OleDbHResult hr) : this()
         {
-            Debug.Assert(null != properties, "null IRowsetInfo");
+            Debug.Assert(properties is not null, "null IRowsetInfo");
 
             int propidsetcount = 0;
-            if (null != propidset)
+            if (propidset is not null)
             {
                 propidsetcount = propidset.Count;
             }
@@ -80,10 +80,10 @@ namespace System.Data.OleDb
 
         internal DBPropSet(UnsafeNativeMethods.ICommandProperties properties, PropertyIDSet? propidset, out OleDbHResult hr) : this()
         {
-            Debug.Assert(null != properties, "null ICommandProperties");
+            Debug.Assert(properties is not null, "null ICommandProperties");
 
             int propidsetcount = 0;
-            if (null != propidset)
+            if (propidset is not null)
             {
                 propidsetcount = propidset.Count;
             }
@@ -217,7 +217,7 @@ namespace System.Data.OleDb
                 }
             }
             Debug.Assert(Guid.Empty != propertySet, "invalid propertySet");
-            Debug.Assert((null != properties) && (0 < properties.Length), "invalid properties");
+            Debug.Assert((properties is not null) && (0 < properties.Length), "invalid properties");
 
             IntPtr countOfBytes = (IntPtr)(properties.Length * ODB.SizeOf_tagDBPROP);
             tagDBPROPSET propset = new tagDBPROPSET(properties.Length, propertySet);
@@ -254,7 +254,7 @@ namespace System.Data.OleDb
 
                 for (int i = 0; i < properties.Length; ++i)
                 {
-                    Debug.Assert(null != properties[i], "null tagDBPROP " + i.ToString(CultureInfo.InvariantCulture));
+                    Debug.Assert(properties[i] is not null, "null tagDBPROP " + i.ToString(CultureInfo.InvariantCulture));
                     IntPtr propertyPtr = ADP.IntPtrOffset(propset.rgProperties, i * ODB.SizeOf_tagDBPROP);
                     Marshal.StructureToPtr(properties[i], propertyPtr, false/*deleteold*/);
                 }

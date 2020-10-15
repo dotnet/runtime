@@ -12,7 +12,7 @@ namespace System.Reflection.Context.Delegation
 
         public DelegatingMethodBody(MethodBody body)
         {
-            Debug.Assert(null != body);
+            Debug.Assert(body is not null);
 
             _body = body;
         }

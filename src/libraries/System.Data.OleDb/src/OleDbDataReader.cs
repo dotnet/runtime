@@ -74,7 +74,7 @@ namespace System.Data.OleDb
             _command = command;
             _commandBehavior = commandBehavior;
 
-            if ((null != command) && (0 == _depth))
+            if ((command is not null) && (0 == _depth))
             {
                 _parameterBindings = command.TakeBindingOwnerShip();
             }
@@ -150,7 +150,7 @@ namespace System.Data.OleDb
                     throw ADP.DataReaderClosed("FieldCount");
                 }
                 MetaData[]? metadata = MetaData;
-                return ((null != metadata) ? metadata.Length : 0);
+                return ((metadata is not null) ? metadata.Length : 0);
             }
         }
 
@@ -233,7 +233,7 @@ namespace System.Data.OleDb
         private UnsafeNativeMethods.IRowset IRowset()
         {
             UnsafeNativeMethods.IRowset? irowset = _irowset;
-            if (null == irowset)
+            if (irowset is null)
             {
                 Debug.Assert(false, "object is disposed");
                 throw new ObjectDisposedException(GetType().Name);
@@ -244,7 +244,7 @@ namespace System.Data.OleDb
         private UnsafeNativeMethods.IRow IRow()
         {
             UnsafeNativeMethods.IRow? irow = _irow;
-            if (null == irow)
+            if (irow is null)
             {
                 Debug.Assert(false, "object is disposed");
                 throw new ObjectDisposedException(GetType().Name);
@@ -255,10 +255,10 @@ namespace System.Data.OleDb
         public override DataTable? GetSchemaTable()
         {
             DataTable? schemaTable = _dbSchemaTable;
-            if (null == schemaTable)
+            if (schemaTable is null)
             {
                 MetaData[]? metadata = MetaData;
-                if ((null != metadata) && (0 < metadata.Length))
+                if ((metadata is not null) && (0 < metadata.Length))
                 {
                     if ((0 < metadata.Length) && _useIColumnsRowset && (null != _connection))
                     {
@@ -317,7 +317,7 @@ namespace System.Data.OleDb
         private DataTable BuildSchemaTable(MetaData[] metadata)
         {
             Debug.Assert(null == _dbSchemaTable, "BuildSchemaTable: schema table already exists");
-            Debug.Assert(null != metadata, "BuildSchemaTable: no _metadata");
+            Debug.Assert(metadata is not null, "BuildSchemaTable: no _metadata");
 
             DataTable schemaTable = new DataTable("SchemaTable");
             schemaTable.Locale = CultureInfo.InvariantCulture;
@@ -414,19 +414,19 @@ namespace System.Data.OleDb
                     newRow[isHidden] = info.isHidden;
                 }
 
-                if (null != info.baseSchemaName)
+                if (info.baseSchemaName is not null)
                 {
                     newRow[baseSchemaName] = info.baseSchemaName;
                 }
-                if (null != info.baseCatalogName)
+                if (info.baseCatalogName is not null)
                 {
                     newRow[baseCatalogName] = info.baseCatalogName;
                 }
-                if (null != info.baseTableName)
+                if (info.baseTableName is not null)
                 {
                     newRow[baseTableName] = info.baseTableName;
                 }
-                if (null != info.baseColumnName)
+                if (info.baseColumnName is not null)
                 {
                     newRow[baseColumnName] = info.baseColumnName;
                 }
@@ -450,9 +450,9 @@ namespace System.Data.OleDb
         {
             Debug.Assert(null == _dbSchemaTable, "non-null SchemaTable");
             Debug.Assert(null == _metadata, "non-null metadata");
-            Debug.Assert(null != handle, "unexpected null rowset");
+            Debug.Assert(handle is not null, "unexpected null rowset");
             UnsafeNativeMethods.IColumnsInfo? icolumnsInfo = (handle as UnsafeNativeMethods.IColumnsInfo);
-            if (null == icolumnsInfo)
+            if (icolumnsInfo is null)
             {
                 _dbSchemaTable = null;
 #if DEBUG
@@ -510,7 +510,7 @@ namespace System.Data.OleDb
                     continue;
                 }
 
-                if (null == dbColumnInfo.pwszName)
+                if (dbColumnInfo.pwszName is null)
                 {
                     dbColumnInfo.pwszName = "";
                 }
@@ -605,10 +605,10 @@ namespace System.Data.OleDb
         private void BuildSchemaTableRowset(object handle)
         {
             Debug.Assert(null == _dbSchemaTable, "BuildSchemaTableRowset - non-null SchemaTable");
-            Debug.Assert(null != handle, "BuildSchemaTableRowset(object) - unexpected null handle");
+            Debug.Assert(handle is not null, "BuildSchemaTableRowset(object) - unexpected null handle");
             UnsafeNativeMethods.IColumnsRowset? icolumnsRowset = (handle as UnsafeNativeMethods.IColumnsRowset);
 
-            if (null != icolumnsRowset)
+            if (icolumnsRowset is not null)
             {
                 UnsafeNativeMethods.IRowset? rowset = null;
                 IntPtr cOptColumns;
@@ -620,7 +620,7 @@ namespace System.Data.OleDb
                     hr = icolumnsRowset.GetColumnsRowset(ADP.PtrZero, cOptColumns, prgOptColumns, ref ODB.IID_IRowset, 0, ADP.PtrZero, out rowset);
                 }
 
-                Debug.Assert((0 <= hr) || (null == rowset), "if GetColumnsRowset failed, rowset should be null");
+                Debug.Assert((0 <= hr) || (rowset is null), "if GetColumnsRowset failed, rowset should be null");
                 if (hr < 0)
                 {
                     ProcessResults(hr);
@@ -629,7 +629,7 @@ namespace System.Data.OleDb
 
                 // release the rowset to avoid race condition between the GC and the user code causing
                 // "Connection is busy with results for another command" exception
-                if (null != rowset)
+                if (rowset is not null)
                 {
                     Marshal.ReleaseComObject(rowset);
                 }
@@ -655,11 +655,11 @@ namespace System.Data.OleDb
             DisposeOpenResults();
             _hasRows = false;
 
-            if ((null != cmd) && cmd.canceling)
+            if ((cmd is not null) && cmd.canceling)
             {
                 DisposeNativeMultipleResults();
 
-                if (null != bindings)
+                if (bindings is not null)
                 {
                     bindings.CloseFromConnection();
                     bindings = null;
@@ -670,7 +670,7 @@ namespace System.Data.OleDb
                 UnsafeNativeMethods.IMultipleResults? multipleResults = _imultipleResults;
                 _imultipleResults = null;
 
-                if (null != multipleResults)
+                if (multipleResults is not null)
                 {
                     // if we don't have a cmd, same as a cancel (don't call NextResults) which is ADODB behavior
 
@@ -679,12 +679,12 @@ namespace System.Data.OleDb
                         // tricky code path is an exception is thrown
                         // causing connection to do a ResetState and connection.Close
                         // resulting in OleDbCommand.CloseFromConnection
-                        if ((null != cmd) && !cmd.canceling)
+                        if ((cmd is not null) && !cmd.canceling)
                         {
                             IntPtr affected = IntPtr.Zero;
                             OleDbException? nextResultsFailure = NextResults(multipleResults, null, cmd, out affected);
                             _recordsAffected = AddRecordsAffected(_recordsAffected, affected);
-                            if (null != nextResultsFailure)
+                            if (nextResultsFailure is not null)
                             {
                                 throw nextResultsFailure;
                             }
@@ -692,7 +692,7 @@ namespace System.Data.OleDb
                     }
                     finally
                     {
-                        if (null != multipleResults)
+                        if (multipleResults is not null)
                         {
                             Marshal.ReleaseComObject(multipleResults);
                         }
@@ -700,13 +700,13 @@ namespace System.Data.OleDb
                 }
             }
 
-            if ((null != cmd) && (0 == _depth))
+            if ((cmd is not null) && (0 == _depth))
             {
                 // return bindings back to the cmd after closure of root DataReader
                 cmd.CloseFromDataReader(bindings);
             }
 
-            if (null != con)
+            if (con is not null)
             {
                 con.RemoveWeakReference(this);
 
@@ -720,7 +720,7 @@ namespace System.Data.OleDb
             // release unmanaged objects
             RowHandleBuffer? rowHandleNativeBuffer = _rowHandleNativeBuffer;
             _rowHandleNativeBuffer = null;
-            if (null != rowHandleNativeBuffer)
+            if (rowHandleNativeBuffer is not null)
             {
                 rowHandleNativeBuffer.Dispose();
             }
@@ -757,7 +757,7 @@ namespace System.Data.OleDb
             Bindings?[]? bindings = _bindings;
             _bindings = null;
 
-            if (null != bindings)
+            if (bindings is not null)
             {
                 for (int i = 0; i < bindings.Length; ++i)
                 {
@@ -782,7 +782,7 @@ namespace System.Data.OleDb
             UnsafeNativeMethods.IMultipleResults? imultipleResults = _imultipleResults;
             _imultipleResults = null;
 
-            if (null != imultipleResults)
+            if (imultipleResults is not null)
             {
                 Marshal.ReleaseComObject(imultipleResults);
             }
@@ -801,7 +801,7 @@ namespace System.Data.OleDb
                 chapter.Dispose();
             }
 
-            if (null != irowset)
+            if (irowset is not null)
             {
                 Marshal.ReleaseComObject(irowset);
             }
@@ -812,7 +812,7 @@ namespace System.Data.OleDb
             UnsafeNativeMethods.IRow? irow = _irow;
             _irow = null;
 
-            if (null != irow)
+            if (irow is not null)
             {
                 Marshal.ReleaseComObject(irow);
             }
@@ -865,7 +865,7 @@ namespace System.Data.OleDb
             ColumnBinding binding = DoSequentialCheck(ordinal, dataIndex, ADP.GetBytes);
             byte[] value = binding.ValueByteArray();
 
-            if (null == buffer)
+            if (buffer is null)
             {
                 return value.Length;
             }
@@ -901,7 +901,7 @@ namespace System.Data.OleDb
             ColumnBinding binding = DoSequentialCheck(ordinal, dataIndex, ADP.GetChars);
             string value = binding.ValueString();
 
-            if (null == buffer)
+            if (buffer is null)
             {
                 return value.Length;
             }
@@ -967,7 +967,7 @@ namespace System.Data.OleDb
 
             OleDbDataReader? reader = null;
             // TODO: Not sure if GetReferenceRowset above actually returns null, calling code seems to assume it doesn't
-            if (null != result)
+            if (result is not null)
             {
                 // only when the first datareader is closed will the connection close
                 ChapterHandle chapterHandle = ChapterHandle.CreateChapterHandle(result, rowbinding, valueOffset);
@@ -1117,7 +1117,7 @@ namespace System.Data.OleDb
         private ColumnBinding GetValueBinding(MetaData info)
         {
             ColumnBinding binding = info.columnBinding;
-            Debug.Assert(null != binding, "null binding");
+            Debug.Assert(binding is not null, "null binding");
 
             // do we need to jump to the next accessor
             for (int i = _nextAccessorForRetrieval; i <= binding.IndexForAccessor; ++i)
@@ -1162,7 +1162,7 @@ namespace System.Data.OleDb
 
         public override int GetValues(object[] values)
         {
-            if (null == values)
+            if (values is null)
             {
                 throw ADP.ArgumentNull("values");
             }
@@ -1198,7 +1198,7 @@ namespace System.Data.OleDb
             {
                 e = OleDbConnection.ProcessResults(hr, _connection, _connection);
             }
-            if (null != e)
+            if (e is not null)
             { throw e; }
         }
 
@@ -1255,7 +1255,7 @@ namespace System.Data.OleDb
         {
             recordsAffected = ADP.RecordsUnaffected;
             List<OleDbException>? exceptions = null;
-            if (null != imultipleResults)
+            if (imultipleResults is not null)
             {
                 object result;
                 IntPtr affected;
@@ -1265,7 +1265,7 @@ namespace System.Data.OleDb
                 // we want to break out of that infinite loop for ExecuteNonQuery and the multiple result Close scenarios
                 for (int loop = 0; ; ++loop)
                 {
-                    if ((null != command) && command.canceling)
+                    if ((command is not null) && command.canceling)
                     {
                         break;
                     }
@@ -1278,15 +1278,15 @@ namespace System.Data.OleDb
                     {
                         break;
                     }
-                    if (null != connection)
+                    if (connection is not null)
                     {
                         Exception? e = OleDbConnection.ProcessResults(hr, connection, command);
-                        if (null != e)
+                        if (e is not null)
                         {
                             OleDbException? excep = (e as OleDbException);
-                            if (null != excep)
+                            if (excep is not null)
                             {
-                                if (null == exceptions)
+                                if (exceptions is null)
                                 {
                                     exceptions = new List<OleDbException>();
                                 }
@@ -1317,7 +1317,7 @@ namespace System.Data.OleDb
                     }
                 }
             }
-            if (null != exceptions)
+            if (exceptions is not null)
             {
                 return OleDbException.CombineExceptions(exceptions);
             }
@@ -1341,7 +1341,7 @@ namespace System.Data.OleDb
 
             OleDbCommand? command = _command;
             UnsafeNativeMethods.IMultipleResults? imultipleResults = _imultipleResults;
-            if (null != imultipleResults)
+            if (imultipleResults is not null)
             {
                 DisposeOpenResults();
                 _hasRows = false;
@@ -1355,14 +1355,14 @@ namespace System.Data.OleDb
                     OleDbHResult hr;
                     IntPtr affected;
 
-                    if ((null != command) && command.canceling)
+                    if ((command is not null) && command.canceling)
                     {
                         Close();
                         break;
                     }
                     hr = imultipleResults.GetResult(ADP.PtrZero, ODB.DBRESULTFLAG_DEFAULT, ref ODB.IID_IRowset, out affected, out result);
 
-                    if ((0 <= hr) && (null != result))
+                    if ((0 <= hr) && (result is not null))
                     {
                         _irowset = (UnsafeNativeMethods.IRowset)result;
                     }
@@ -1397,7 +1397,7 @@ namespace System.Data.OleDb
         {
             bool retflag = false;
             OleDbCommand? command = _command;
-            if ((null != command) && command.canceling)
+            if ((command is not null) && command.canceling)
             {
                 DisposeOpenResults();
             }
@@ -1457,7 +1457,7 @@ namespace System.Data.OleDb
 
             _sequentialOrdinal = -1; // sequentialBytesRead will reset when used
 
-            // making the check if (null != irowset) unnecessary
+            // making the check if (irowset is not null) unnecessary
             // if necessary, get next group of row handles
             if (IntPtr.Zero == _rowFetchedCount)
             { // starts at (-1 <= 0)
@@ -1480,7 +1480,7 @@ namespace System.Data.OleDb
             {
                 // release the data in the current row
                 Bindings?[]? bindings = _bindings;
-                Debug.Assert(null != bindings, "ReleaseCurrentRow: null dbBindings");
+                Debug.Assert(bindings is not null, "ReleaseCurrentRow: null dbBindings");
                 for (int i = 0; (i < bindings.Length) && (i < _nextAccessorForRetrieval); ++i)
                 {
                     bindings[i]!.CleanupBindings();
@@ -1613,7 +1613,7 @@ namespace System.Data.OleDb
             {
                 Debug.Assert(indexToBinding[index] < dbbindings.Length, "bad indexToAccessor");
                 bindings = dbbindings[indexToBinding[index]];
-                if (null == bindings)
+                if (bindings is null)
                 {
                     bindingCount = 0;
                     for (int i = index; (i < metadata.Length) && (bindingCount == indexWithinBinding[i]); ++i)
@@ -1643,8 +1643,8 @@ namespace System.Data.OleDb
                     else if (-1 == maxLen)
                     {
                         // @devnote: not using provider owned memory for PDC, no one really supports it anyway.
-                        /*if (((null != connection) && connection.PropertyGetProviderOwnedMemory())
-                            || ((null != command) && command.Connection.PropertyGetProviderOwnedMemory())) {
+                        /*if (((connection is not null) && connection.PropertyGetProviderOwnedMemory())
+                            || ((command is not null) && command.Connection.PropertyGetProviderOwnedMemory())) {
                             bindings.MemOwner = DBMemOwner.ProviderOwned;
 
                             bindings.MaxLen = ADP.PtrSize;
@@ -1670,8 +1670,8 @@ namespace System.Data.OleDb
                 else if (maxLen < 0)
                 {
                     // if variable length and no defined size we require this to be byref at this time
-                    /*if (((null != connection) && connection.PropertyGetProviderOwnedMemory())
-                        || ((null != command) && command.Connection.PropertyGetProviderOwnedMemory())) {
+                    /*if (((connection is not null) && connection.PropertyGetProviderOwnedMemory())
+                        || ((command is not null) && command.Connection.PropertyGetProviderOwnedMemory())) {
                         bindings.MemOwner = DBMemOwner.ProviderOwned;
                     }*/
                     maxLen = ADP.PtrSize;
@@ -1896,7 +1896,7 @@ namespace System.Data.OleDb
 
                     sptr[i]!.DangerousAddRef(ref mustRelease[i]);
 
-                    IntPtr ulPropid = ((null != sptr[i]) ? sptr[i]!.DangerousGetHandle() : info.propid);
+                    IntPtr ulPropid = ((sptr[i] is not null) ? sptr[i]!.DangerousGetHandle() : info.propid);
                     bindings.GuidKindName(info.guid, info.kind, ulPropid);
                 }
 
@@ -1930,7 +1930,7 @@ namespace System.Data.OleDb
         {
             // via case sensitive search, first match with lowest ordinal matches
             object? index = hash[name];
-            if (null != index)
+            if (index is not null)
             {
                 return (int)index; // match via case-insensitive or by chance lowercase
             }
@@ -1938,7 +1938,7 @@ namespace System.Data.OleDb
             // via case insensitive search, first match with lowest ordinal matches
             string tmp = name.ToLowerInvariant();
             index = hash[tmp]; // match via lowercase
-            return ((null != index) ? (int)index : -1);
+            return ((index is not null) ? (int)index : -1);
         }
 
         private void AppendSchemaInfo()
@@ -1969,11 +1969,11 @@ namespace System.Data.OleDb
             for (int i = 0; i < _metadata.Length; ++i)
             {
                 MetaData info = _metadata[i];
-                if ((null != info.baseTableName) && (0 < info.baseTableName.Length))
+                if ((info.baseTableName is not null) && (0 < info.baseTableName.Length))
                 {
-                    catalogName = ((null != info.baseCatalogName) ? info.baseCatalogName : "");
-                    schemaName = ((null != info.baseSchemaName) ? info.baseSchemaName : "");
-                    if (null == baseTableName)
+                    catalogName = ((info.baseCatalogName is not null) ? info.baseCatalogName : "");
+                    schemaName = ((info.baseSchemaName is not null) ? info.baseSchemaName : "");
+                    if (baseTableName is null)
                     {
                         baseSchemaName = schemaName;
                         baseCatalogName = catalogName;
@@ -1996,7 +1996,7 @@ namespace System.Data.OleDb
                     }
                 }
             }
-            if (null == baseTableName)
+            if (baseTableName is null)
             {
                 return;
             }
@@ -2009,11 +2009,11 @@ namespace System.Data.OleDb
                 {
                     string? p = null, s = null;
                     _connection.GetLiteralQuotes(ADP.GetSchemaTable, out s, out p);
-                    if (null == s)
+                    if (s is null)
                     {
                         s = "";
                     }
-                    if (null == p)
+                    if (p is null)
                     {
                         p = "";
                     }
@@ -2082,7 +2082,7 @@ namespace System.Data.OleDb
 
                 ADP.TraceExceptionWithoutRethrow(e);
             }
-            if (null != table)
+            if (table is not null)
             {
                 DataColumnCollection dataColumns = table.Columns;
                 int nameColumnIndex = dataColumns.IndexOf(ODB.COLUMN_NAME);
@@ -2145,7 +2145,7 @@ namespace System.Data.OleDb
 
                 ADP.TraceExceptionWithoutRethrow(e);
             }
-            if (null != table)
+            if (table is not null)
             {
                 DataColumnCollection dataColumns = table.Columns;
 
@@ -2184,12 +2184,12 @@ namespace System.Data.OleDb
                                 {
                                     keys[metaindex] = true;
                                 }
-                                if (isUniq && (null != uniq))
+                                if (isUniq && (uniq is not null))
                                 {
                                     uniq[metaindex] = true;
 
                                     string indexname = (string)dataRow[indxColumn, DataRowVersion.Default];
-                                    if (null == uniqueIndexName)
+                                    if (uniqueIndexName is null)
                                     {
                                         uniqueIndexName = indexname;
                                     }
@@ -2216,7 +2216,7 @@ namespace System.Data.OleDb
                                 partialPrimaryKey = true;
                                 break;
                             }
-                            else if (null != uniqueIndexName)
+                            else if (uniqueIndexName is not null)
                             {
                                 string indexname = (string)dataRow[indxColumn, DataRowVersion.Default];
 
@@ -2241,7 +2241,7 @@ namespace System.Data.OleDb
                         }
                         return;
                     }
-                    else if (null != uniq)
+                    else if (uniq is not null)
                     {
 #if DEBUG
                         if (AdapterSwitches.DataSchema.TraceVerbose)
@@ -2282,7 +2282,7 @@ namespace System.Data.OleDb
                     return;
                 }
 
-                Debug.Assert(null == dataReader._fieldNameLookup, "lookup already exists");
+                Debug.Assert(dataReader._fieldNameLookup is null, "lookup already exists");
                 FieldNameLookup lookup = new FieldNameLookup(dataReader, -1);
                 dataReader._fieldNameLookup = lookup;
 
@@ -2389,7 +2389,7 @@ namespace System.Data.OleDb
 
                     info.type = dbType;
 
-                    if (null != isautoincrement)
+                    if (isautoincrement is not null)
                     {
                         binding = isautoincrement.columnBinding;
                         if (!binding.IsValueNull())
@@ -2397,7 +2397,7 @@ namespace System.Data.OleDb
                             info.isAutoIncrement = binding.Value_BOOL();
                         }
                     }
-                    if (null != isunique)
+                    if (isunique is not null)
                     {
                         binding = isunique.columnBinding;
                         if (!binding.IsValueNull())
@@ -2405,7 +2405,7 @@ namespace System.Data.OleDb
                             info.isUnique = binding.Value_BOOL();
                         }
                     }
-                    if (null != iskeycolumn)
+                    if (iskeycolumn is not null)
                     {
                         binding = iskeycolumn.columnBinding;
                         if (!binding.IsValueNull())
@@ -2413,7 +2413,7 @@ namespace System.Data.OleDb
                             info.isKeyColumn = binding.Value_BOOL();
                         }
                     }
-                    if (null != baseschemaname)
+                    if (baseschemaname is not null)
                     {
                         binding = baseschemaname.columnBinding;
                         if (!binding.IsValueNull())
@@ -2421,7 +2421,7 @@ namespace System.Data.OleDb
                             info.baseSchemaName = binding.ValueString();
                         }
                     }
-                    if (null != basecatalogname)
+                    if (basecatalogname is not null)
                     {
                         binding = basecatalogname.columnBinding;
                         if (!binding.IsValueNull())
@@ -2429,7 +2429,7 @@ namespace System.Data.OleDb
                             info.baseCatalogName = binding.ValueString();
                         }
                     }
-                    if (null != basetablename)
+                    if (basetablename is not null)
                     {
                         binding = basetablename.columnBinding;
                         if (!binding.IsValueNull())
@@ -2437,7 +2437,7 @@ namespace System.Data.OleDb
                             info.baseTableName = binding.ValueString();
                         }
                     }
-                    if (null != basecolumnname)
+                    if (basecolumnname is not null)
                     {
                         binding = basecolumnname.columnBinding;
                         if (!binding.IsValueNull())
@@ -2546,7 +2546,7 @@ namespace System.Data.OleDb
                 dataReader.BuildSchemaTableInfo(handle, false, false); // only tries IColumnsInfo
             }
             MetaData[]? metadata = dataReader.MetaData;
-            if ((null != metadata) && (0 < metadata.Length))
+            if ((metadata is not null) && (0 < metadata.Length))
             {
                 dataReader.BuildSchemaTable(metadata);
             }

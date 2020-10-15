@@ -96,7 +96,7 @@ namespace System.Data.OleDb
             {
                 Bindings? bindings = _dbBindings;
                 _dbBindings = value;
-                if ((null != bindings) && (value != bindings))
+                if ((bindings is not null) && (value != bindings))
                 {
                     bindings.Dispose();
                 }
@@ -113,7 +113,7 @@ namespace System.Data.OleDb
             get
             {
                 string? value = _commandText;
-                return ((null != value) ? value : string.Empty);
+                return ((value is not null) ? value : string.Empty);
             }
             set
             {
@@ -198,7 +198,7 @@ namespace System.Data.OleDb
 
                     _connection = value;
 
-                    if (null != value)
+                    if (value is not null)
                     {
                         _transaction = OleDbTransaction.TransactionUpdate(_transaction);
                     }
@@ -209,7 +209,7 @@ namespace System.Data.OleDb
         private void ResetConnection()
         {
             OleDbConnection? connection = _connection;
-            if (null != connection)
+            if (connection is not null)
             {
                 PropertyChanging();
                 CloseInternal();
@@ -285,7 +285,7 @@ namespace System.Data.OleDb
             get
             {
                 OleDbParameterCollection? value = _parameters;
-                if (null == value)
+                if (value is null)
                 {
                     // delay the creation of the OleDbParameterCollection
                     // until user actually uses the Parameters property
@@ -299,7 +299,7 @@ namespace System.Data.OleDb
         private bool HasParameters()
         {
             OleDbParameterCollection? value = _parameters;
-            return (null != value) && (0 < value.Count);
+            return (value is not null) && (0 < value.Count);
         }
 
         [
@@ -313,7 +313,7 @@ namespace System.Data.OleDb
                 // find the last non-zombied local transaction object, but not transactions
                 // that may have been started after the current local transaction
                 OleDbTransaction? transaction = _transaction;
-                while ((null != transaction) && (null == transaction.Connection))
+                while ((transaction is not null) && (transaction.Connection is null))
                 {
                     transaction = transaction.Parent;
                     _transaction = transaction;
@@ -377,7 +377,7 @@ namespace System.Data.OleDb
         {
             Debug.Assert(null != _icommandText, "ICommandWithParameters: null ICommandText");
             UnsafeNativeMethods.ICommandWithParameters? value = (_icommandText as UnsafeNativeMethods.ICommandWithParameters);
-            if (null == value)
+            if (value is null)
             {
                 throw ODB.NoProviderSupportForParameters(_connection!.Provider, null);
             }
@@ -463,7 +463,7 @@ namespace System.Data.OleDb
             { _changeID++; }
 
             UnsafeNativeMethods.ICommandText? icmdtxt = _icommandText;
-            if (null != icmdtxt)
+            if (icmdtxt is not null)
             {
                 OleDbHResult hr = OleDbHResult.S_OK;
 
@@ -526,7 +526,7 @@ namespace System.Data.OleDb
         //      via OleDbCommand.Dispose or OleDbConnection.Close
         internal void CloseFromDataReader(Bindings? bindings)
         {
-            if (null != bindings)
+            if (bindings is not null)
             {
                 if (canceling)
                 {
@@ -550,7 +550,7 @@ namespace System.Data.OleDb
             _isPrepared = false;
 
             UnsafeNativeMethods.ICommandText? ict = Interlocked.Exchange(ref _icommandText, null);
-            if (null != ict)
+            if (ict is not null)
             {
                 lock (ict)
                 {
@@ -564,7 +564,7 @@ namespace System.Data.OleDb
             Debug.Assert(null != _connection, "no connection, CloseInternalParameters");
             Bindings? bindings = _dbBindings;
             _dbBindings = null;
-            if (null != bindings)
+            if (bindings is not null)
             {
                 bindings.Dispose();
             }
@@ -706,14 +706,14 @@ namespace System.Data.OleDb
                         if (ODB.InternalStateOpen != state)
                         {
                             this.canceling = true;
-                            if (null != dataReader)
+                            if (dataReader is not null)
                             {
                                 ((IDisposable)dataReader).Dispose();
                                 dataReader = null;
                             }
                         }
                     }
-                    Debug.Assert(null != dataReader, "ExecuteReader should never return a null DataReader");
+                    Debug.Assert(dataReader is not null, "ExecuteReader should never return a null DataReader");
                 }
                 else
                 { // optimized code path for ExecuteNonQuery to not create a OleDbDataReader object
@@ -731,7 +731,7 @@ namespace System.Data.OleDb
                     {
                         try
                         {
-                            if (null != executeResult)
+                            if (executeResult is not null)
                             {
                                 Marshal.ReleaseComObject(executeResult);
                                 executeResult = null;
@@ -745,7 +745,7 @@ namespace System.Data.OleDb
                             {
                                 throw;
                             }
-                            if (null != nextResultsFailure)
+                            if (nextResultsFailure is not null)
                             {
                                 nextResultsFailure = new OleDbException(nextResultsFailure, e);
                             }
@@ -761,7 +761,7 @@ namespace System.Data.OleDb
             { // finally clear executing state
                 try
                 {
-                    if ((null == dataReader) && (ODB.InternalStateOpen != state))
+                    if ((dataReader is null) && (ODB.InternalStateOpen != state))
                     {
                         ParameterCleanup();
                     }
@@ -773,7 +773,7 @@ namespace System.Data.OleDb
                     {
                         throw;
                     }
-                    if (null != nextResultsFailure)
+                    if (nextResultsFailure is not null)
                     {
                         nextResultsFailure = new OleDbException(nextResultsFailure, e);
                     }
@@ -782,7 +782,7 @@ namespace System.Data.OleDb
                         throw;
                     }
                 }
-                if (null != nextResultsFailure)
+                if (nextResultsFailure is not null)
                 {
                     throw nextResultsFailure;
                 }
@@ -819,7 +819,7 @@ namespace System.Data.OleDb
             try
             {
                 // TODO-NULLABLE: Code below seems to assume that bindings will always be non-null
-                if (null != bindings)
+                if (bindings is not null)
                 { // parameters may be suppressed
                     rowbinding = bindings.RowBinding();
 
@@ -917,7 +917,7 @@ namespace System.Data.OleDb
         private void ExecuteCommandTextErrorHandling(OleDbHResult hr)
         {
             Exception? e = OleDbConnection.ProcessResults(hr, _connection, this);
-            if (null != e)
+            if (e is not null)
             {
                 e = ExecuteCommandTextSpecialErrorHandling(hr, e);
                 throw e;
@@ -933,7 +933,7 @@ namespace System.Data.OleDb
                 // of invalid parameter types being passed to a provider that doesn't understand
                 // the user specified parameter OleDbType
 
-                Debug.Assert(null != e, "missing inner exception");
+                Debug.Assert(e is not null, "missing inner exception");
 
                 StringBuilder builder = new StringBuilder();
                 ParameterBindings!.ParameterStatus(builder);
@@ -991,7 +991,7 @@ namespace System.Data.OleDb
                     {
                         using (DBPropSet? propSet = CommandPropertySets())
                         {
-                            if (null != propSet)
+                            if (propSet is not null)
                             {
                                 bool mustRelease = false;
                                 RuntimeHelpers.PrepareConstrainedRegions();
@@ -1128,7 +1128,7 @@ namespace System.Data.OleDb
         private void ParameterCleanup()
         {
             Bindings? bindings = ParameterBindings;
-            if (null != bindings)
+            if (bindings is not null)
             {
                 bindings.CleanupBindings();
             }
@@ -1209,7 +1209,7 @@ namespace System.Data.OleDb
         private void PrepareCommandText(int expectedExecutionCount)
         {
             OleDbParameterCollection? parameters = _parameters;
-            if (null != parameters)
+            if (parameters is not null)
             {
                 foreach (OleDbParameter parameter in parameters)
                 {
@@ -1223,7 +1223,7 @@ namespace System.Data.OleDb
                 }
             }
             UnsafeNativeMethods.ICommandPrepare? icommandPrepare = ICommandPrepare();
-            if (null != icommandPrepare)
+            if (icommandPrepare is not null)
             {
                 OleDbHResult hr;
                 hr = icommandPrepare.Prepare(expectedExecutionCount);
@@ -1238,14 +1238,14 @@ namespace System.Data.OleDb
         private void ProcessResults(OleDbHResult hr)
         {
             Exception? e = OleDbConnection.ProcessResults(hr, _connection, this);
-            if (null != e)
+            if (e is not null)
             { throw e; }
         }
 
         private void ProcessResultsNoReset(OleDbHResult hr)
         {
             Exception? e = OleDbConnection.ProcessResults(hr, null, this);
-            if (null != e)
+            if (e is not null)
             { throw e; }
         }
 
@@ -1309,7 +1309,7 @@ namespace System.Data.OleDb
 
             using (DBPropSet? propSet = CommandPropertySets())
             {
-                if (null != propSet)
+                if (propSet is not null)
                 {
                     UnsafeNativeMethods.ICommandProperties icommandProperties = ICommandProperties();
                     OleDbHResult hr = icommandProperties.SetProperties(propSet.PropertySetCount, propSet);

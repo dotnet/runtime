@@ -284,7 +284,7 @@ namespace System.Data.Common
         public static DataStorage CreateStorage(DataColumn column, Type dataType, StorageType typeCode)
         {
             Debug.Assert(typeCode == GetStorageType(dataType), "Incorrect storage type specified");
-            if ((StorageType.Empty == typeCode) && (null != dataType))
+            if ((StorageType.Empty == typeCode) && (dataType is not null))
             {
                 if (typeof(INullable).IsAssignableFrom(dataType))
                 { // Udt, OracleTypes
@@ -516,13 +516,13 @@ namespace System.Data.Common
 
         public static bool IsObjectNull(object value)
         {
-            return ((null == value) || (DBNull.Value == value) || IsObjectSqlNull(value));
+            return ((value is null) || (DBNull.Value == value) || IsObjectSqlNull(value));
         }
 
         public static bool IsObjectSqlNull(object value)
         {
             INullable? inullable = (value as INullable);
-            return ((null != inullable) && inullable.IsNull);
+            return ((inullable is not null) && inullable.IsNull);
         }
 
         internal object GetEmptyStorageInternal(int recordCount)
@@ -560,7 +560,7 @@ namespace System.Data.Common
         internal static Type GetType(string value)
         {
             Type? dataType = Type.GetType(value); // throwOnError=false, ignoreCase=fase
-            if (null == dataType)
+            if (dataType is null)
             {
                 if ("System.Numerics.BigInteger" == value)
                 {
@@ -580,7 +580,7 @@ namespace System.Data.Common
         /// <exception cref="InvalidOperationException">when type implements IDynamicMetaObjectProvider and not IXmlSerializable</exception>
         internal static string GetQualifiedName(Type type)
         {
-            Debug.Assert(null != type, "null type");
+            Debug.Assert(type is not null, "null type");
             ObjectStorage.VerifyIDynamicMetaObjectProvider(type);
             return type.AssemblyQualifiedName!;
         }

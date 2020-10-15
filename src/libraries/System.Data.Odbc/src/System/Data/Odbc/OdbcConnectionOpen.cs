@@ -21,7 +21,7 @@ namespace System.Data.Odbc
             {
                 OdbcConnection? outerConnection = (OdbcConnection?)Owner;
 
-                if (null == outerConnection)
+                if (outerConnection is null)
                     throw ODBC.OpenConnectionNoOwner();
 
                 return outerConnection;

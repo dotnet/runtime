@@ -806,7 +806,7 @@ namespace System.DirectoryServices.AccountManagement
 
             try
             {
-                if (null == computerName)
+                if (computerName is null)
                     err = UnsafeNativeMethods.DsRoleGetPrimaryDomainInformation(null, UnsafeNativeMethods.DSROLE_PRIMARY_DOMAIN_INFO_LEVEL.DsRolePrimaryDomainInfoBasic, out dsRoleInfoPtr);
                 else
                     err = UnsafeNativeMethods.DsRoleGetPrimaryDomainInformation(computerName, UnsafeNativeMethods.DSROLE_PRIMARY_DOMAIN_INFO_LEVEL.DsRolePrimaryDomainInfoBasic, out dsRoleInfoPtr);

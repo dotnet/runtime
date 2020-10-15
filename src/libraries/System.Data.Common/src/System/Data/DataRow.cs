@@ -315,8 +315,8 @@ namespace System.Data
                     throw ExceptionBuilder.ReadOnly(column.ColumnName);
                 }
 
-                object? proposed = ((null != e) ? e.ProposedValue : value);
-                if (null == proposed)
+                object? proposed = ((e is not null) ? e.ProposedValue : value);
+                if (proposed is null)
                 {
                     if (column.IsValueType)
                     {
@@ -346,7 +346,7 @@ namespace System.Data
 
                 // note: we intentionally do not try/catch this event.
                 // infinite loops are possible if user calls Item or ItemArray during the event
-                if (null != e)
+                if (e is not null)
                 {
                     _table.OnColumnChanged(e); // user may call CancelEdit or EndEdit
                 }
@@ -432,7 +432,7 @@ namespace System.Data
             }
             set
             {
-                if (null == value)
+                if (value is null)
                 {
                     throw ExceptionBuilder.ArgumentNull(nameof(ItemArray));
                 }
@@ -464,7 +464,7 @@ namespace System.Data
                         // note: we intentionally do not try/catch this event.
                         // note: we also allow user to do anything at this point
                         // infinite loops are possible if user calls Item or ItemArray during the event
-                        if (null != e)
+                        if (e is not null)
                         {
                             e.InitializeColumnChangeEvent(column, item);
                             _table.OnColumnChanging(e);
@@ -486,8 +486,8 @@ namespace System.Data
                             BeginEditInternal();
                         }
 
-                        object? proposed = (null != e) ? e.ProposedValue : item;
-                        if (null == proposed)
+                        object? proposed = (e is not null) ? e.ProposedValue : item;
+                        if (proposed is null)
                         {
                             if (column.IsValueType)
                             {
@@ -518,7 +518,7 @@ namespace System.Data
 
                         // note: we intentionally do not try/catch this event.
                         // infinite loops are possible if user calls Item or ItemArray during the event
-                        if (null != e)
+                        if (e is not null)
                         {
                             _table.OnColumnChanged(e);  // user may call CancelEdit or EndEdit
                         }
@@ -834,7 +834,7 @@ namespace System.Data
         internal DataColumn GetDataColumn(string columnName)
         {
             DataColumn? column = _columns[columnName];
-            if (null != column)
+            if (column is not null)
             {
                 return column;
             }

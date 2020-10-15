@@ -110,7 +110,7 @@ namespace System.Xml
 
         internal void Write(char[] array, int offset, int count)
         {
-            if (null == array)
+            if (array is null)
             {
                 throw new ArgumentNullException(nameof(array));
             }
@@ -450,7 +450,7 @@ namespace System.Xml
 
         internal void WriteRaw(char[] array, int offset, int count)
         {
-            if (null == array)
+            if (array is null)
             {
                 throw new ArgumentNullException(nameof(array));
             }

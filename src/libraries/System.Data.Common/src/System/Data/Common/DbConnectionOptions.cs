@@ -37,7 +37,7 @@ namespace System.Data.Common
         {
             _useOdbcRules = useOdbcRules;
             _parsetable = new Dictionary<string, string?>();
-            _usersConnectionString = ((null != connectionString) ? connectionString : "");
+            _usersConnectionString = ((connectionString is not null) ? connectionString : "");
 
             // first pass on parsing, initial syntax check
             if (0 < _usersConnectionString.Length)
@@ -57,11 +57,11 @@ namespace System.Data.Common
             ADP.CheckArgumentNull(builder, nameof(builder));
             ADP.CheckArgumentLength(keyName, nameof(keyName));
 
-            if ((null == keyName) || !s_connectionStringValidKeyRegex.IsMatch(keyName))
+            if ((keyName is null) || !s_connectionStringValidKeyRegex.IsMatch(keyName))
             {
                 throw ADP.InvalidKeyname(keyName);
             }
-            if ((null != keyValue) && !IsValueValidInternal(keyValue))
+            if ((keyValue is not null) && !IsValueValidInternal(keyValue))
             {
                 throw ADP.InvalidValue(keyName);
             }
@@ -81,7 +81,7 @@ namespace System.Data.Common
             }
             builder.Append('=');
 
-            if (null != keyValue)
+            if (keyValue is not null)
             {
                 // else <keyword>=;
                 if (useOdbcRules)
@@ -137,7 +137,7 @@ namespace System.Data.Common
             int copyPosition = 0;
 
             var builder = new StringBuilder(_usersConnectionString.Length);
-            for (NameValuePair? current = _keyChain; null != current; current = current.Next)
+            for (NameValuePair? current = _keyChain; current is not null; current = current.Next)
             {
                 if ((current.Name == keyword) && (current.Value == this[keyword]))
                 {
@@ -167,11 +167,11 @@ namespace System.Data.Common
         {
             Debug.Assert(keyname == keyname.ToLowerInvariant(), "missing ToLower");
 
-            string realkeyname = ((null != synonyms) ? (string)synonyms[keyname] : keyname);
+            string realkeyname = ((synonyms is not null) ? (string)synonyms[keyname] : keyname);
             if ((KEY.Password != realkeyname) && (SYNONYM.Pwd != realkeyname))
             {
                 // don't trace passwords ever!
-                if (null != keyvalue)
+                if (keyvalue is not null)
                 {
                     DataCommonEventSource.Log.Trace("<comm.DbConnectionOptions|INFO|ADV> KeyName='{0}', KeyValue='{1}'", keyname, keyvalue);
                 }
@@ -184,11 +184,11 @@ namespace System.Data.Common
 
         internal static void ValidateKeyValuePair(string keyword, string value)
         {
-            if ((null == keyword) || !s_connectionStringValidKeyRegex.IsMatch(keyword))
+            if ((keyword is null) || !s_connectionStringValidKeyRegex.IsMatch(keyword))
             {
                 throw ADP.InvalidKeyname(keyword);
             }
-            if ((null != value) && !s_connectionStringValidValueRegex.IsMatch(value))
+            if ((value is not null) && !s_connectionStringValidValueRegex.IsMatch(value))
             {
                 throw ADP.InvalidValue(keyword);
             }

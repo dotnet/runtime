@@ -63,7 +63,7 @@ namespace System.Data.OleDb
 
         internal OleDbConnectionInternal(OleDbConnectionString constr, OleDbConnection? connection) : base()
         {
-            Debug.Assert((null != constr) && !constr.IsEmpty, "empty connectionstring");
+            Debug.Assert((constr is not null) && !constr.IsEmpty, "empty connectionstring");
             ConnectionString = constr;
 
             if (constr.PossiblePrompt && !System.Environment.UserInteractive)
@@ -84,7 +84,7 @@ namespace System.Data.OleDb
 
                 // initialization is delayed because of OleDbConnectionStringBuilder only wants
                 // pre-Initialize IDBPropertyInfo & IDBProperties on the data source
-                if (null != connection)
+                if (connection is not null)
                 {
                     _sessionwrp = new SessionWrapper();
 
@@ -101,7 +101,7 @@ namespace System.Data.OleDb
                     else
                     {
                         Exception? e = OleDbConnection.ProcessResults(hr, null, null);
-                        Debug.Assert(null != e, "CreateSessionError");
+                        Debug.Assert(e is not null, "CreateSessionError");
                         throw e;
                     }
                     Debug.Assert(!_sessionwrp.IsInvalid, "bad Session");
@@ -144,7 +144,7 @@ namespace System.Data.OleDb
             get
             {
                 OleDbTransaction? result = null;
-                if (null != weakTransaction)
+                if (weakTransaction is not null)
                 {
                     result = ((OleDbTransaction?)weakTransaction.Target);
                 }
@@ -154,7 +154,7 @@ namespace System.Data.OleDb
             {
                 weakTransaction = null;
 
-                if (null != value)
+                if (value is not null)
                 {
                     weakTransaction = new WeakReference((OleDbTransaction)value);
                 }
@@ -226,7 +226,7 @@ namespace System.Data.OleDb
             object? icommandText = null;
             OleDbHResult hr = _sessionwrp.CreateCommand(ref icommandText);
 
-            Debug.Assert((0 <= hr) || (null == icommandText), "CreateICommandText: error with ICommandText");
+            Debug.Assert((0 <= hr) || (icommandText is null), "CreateICommandText: error with ICommandText");
             if (hr < 0)
             {
                 if (OleDbHResult.E_NOINTERFACE != hr)
@@ -249,7 +249,7 @@ namespace System.Data.OleDb
         public override DbTransaction BeginTransaction(IsolationLevel isolationLevel)
         {
             OleDbConnection outerConnection = Connection!;
-            if (null != LocalTransaction)
+            if (LocalTransaction is not null)
             {
                 throw ADP.ParallelTransactionsNotSupported(outerConnection);
             }
@@ -263,7 +263,7 @@ namespace System.Data.OleDb
                 Debug.Assert(null != _sessionwrp, "ITransactionLocal: null session");
                 unknown = _sessionwrp.ComWrapper();
                 UnsafeNativeMethods.ITransactionLocal? value = (unknown as UnsafeNativeMethods.ITransactionLocal);
-                if (null == value)
+                if (value is null)
                 {
                     throw ODB.TransactionsNotSupported(Provider, null);
                 }
@@ -271,7 +271,7 @@ namespace System.Data.OleDb
             }
             finally
             {
-                if (null != unknown)
+                if (unknown is not null)
                 {
                     Marshal.ReleaseComObject(unknown);
                 }
@@ -295,7 +295,7 @@ namespace System.Data.OleDb
                 EnlistTransactionInternal(null);
             }
             OleDbTransaction? transaction = LocalTransaction;
-            if (null != transaction)
+            if (transaction is not null)
             {
                 LocalTransaction = null;
                 // required to rollback any transactions on this connection
@@ -306,7 +306,7 @@ namespace System.Data.OleDb
 
         public override void Dispose()
         {
-            Debug.Assert(null == LocalTransaction, "why was Deactivate not called first");
+            Debug.Assert(LocalTransaction is null, "why was Deactivate not called first");
             if (null != _sessionwrp)
             {
                 _sessionwrp.Dispose();
@@ -320,7 +320,7 @@ namespace System.Data.OleDb
 
         public override void EnlistTransaction(SysTx.Transaction? transaction)
         {
-            if (null != LocalTransaction)
+            if (LocalTransaction is not null)
             {
                 throw ADP.LocalTransactionPresent();
             }
@@ -333,12 +333,12 @@ namespace System.Data.OleDb
 
             using (ITransactionJoinWrapper transactionJoin = ITransactionJoin())
             {
-                if (null == transactionJoin.Value)
+                if (transactionJoin.Value is null)
                 {
                     throw ODB.TransactionsNotSupported(Provider, null);
                 }
                 transactionJoin.Value.JoinTransaction(oleTxTransaction, (int)IsolationLevel.Unspecified, 0, IntPtr.Zero);
-                _unEnlistDuringDeactivate = (null != transaction);
+                _unEnlistDuringDeactivate = (transaction is not null);
             }
             EnlistedTransaction = transaction;
         }
@@ -386,7 +386,7 @@ namespace System.Data.OleDb
             {
                 UnsafeNativeMethods.IDBInfo dbInfo = wrapper.Value;
                 // TODO-NULLABLE: check may not be necessary (and thus method may return non-nullable)
-                if (null == dbInfo)
+                if (dbInfo is null)
                 {
                     return null;
                 }
@@ -466,7 +466,7 @@ namespace System.Data.OleDb
             using (IDBInfoWrapper wrapper = IDBInfo())
             {
                 UnsafeNativeMethods.IDBInfo dbInfo = wrapper.Value;
-                if (null == dbInfo)
+                if (dbInfo is null)
                 {
                     return false;
                 }
@@ -480,7 +480,7 @@ namespace System.Data.OleDb
                     ProcessResults(hr);
                 }
 
-                if (null != keywords)
+                if (keywords is not null)
                 {
                     string[] values = keywords.Split(new char[1] { ',' });
                     for (int i = 0; i < values.Length; ++i)
@@ -509,7 +509,7 @@ namespace System.Data.OleDb
 
             SchemaSupport[]? supportedSchemas = GetSchemaRowsetInformation();
 
-            if (null != supportedSchemas)
+            if (supportedSchemas is not null)
             {
                 object[] values = new object[2];
                 table.BeginLoadData();
@@ -529,7 +529,7 @@ namespace System.Data.OleDb
             using (IDBInfoWrapper wrapper = IDBInfo())
             {
                 UnsafeNativeMethods.IDBInfo dbInfo = wrapper.Value;
-                if (null == dbInfo)
+                if (dbInfo is null)
                 {
                     return null;
                 }
@@ -565,14 +565,14 @@ namespace System.Data.OleDb
         {
             OleDbConnectionString constr = ConnectionString;
             SchemaSupport[]? supportedSchemas = constr.SchemaSupport;
-            if (null != supportedSchemas)
+            if (supportedSchemas is not null)
             {
                 return supportedSchemas;
             }
             using (IDBSchemaRowsetWrapper wrapper = IDBSchemaRowset())
             {
                 UnsafeNativeMethods.IDBSchemaRowset? dbSchemaRowset = wrapper.Value;
-                if (null == dbSchemaRowset)
+                if (dbSchemaRowset is null)
                 {
                     return null; // IDBSchemaRowset not supported
                 }
@@ -614,7 +614,7 @@ namespace System.Data.OleDb
 
         internal DataTable? GetSchemaRowset(Guid schema, object?[]? restrictions)
         {
-            if (null == restrictions)
+            if (restrictions is null)
             {
                 restrictions = Array.Empty<object>();
             }
@@ -622,7 +622,7 @@ namespace System.Data.OleDb
             using (IDBSchemaRowsetWrapper wrapper = IDBSchemaRowset())
             {
                 UnsafeNativeMethods.IDBSchemaRowset dbSchemaRowset = wrapper.Value;
-                if (null == dbSchemaRowset)
+                if (dbSchemaRowset is null)
                 {
                     throw ODB.SchemaRowsetsNotSupported(Provider);
                 }
@@ -636,7 +636,7 @@ namespace System.Data.OleDb
                     ProcessResults(hr);
                 }
 
-                if (null != rowset)
+                if (rowset is not null)
                 {
                     using (OleDbDataReader dataReader = new OleDbDataReader(Connection, null, 0, CommandBehavior.Default))
                     {
@@ -659,7 +659,7 @@ namespace System.Data.OleDb
         {
             OleDbDataReader? reader = null;
 
-            if (null != ReferenceCollection)
+            if (ReferenceCollection is not null)
             {
                 reader = ReferenceCollection.FindItem<OleDbDataReader>(OleDbReferenceCollection.DataReaderTag, (dataReader) => cmd == dataReader.Command);
             }
@@ -671,14 +671,14 @@ namespace System.Data.OleDb
         {
             OleDbConnection? connection = Connection; // get value from weakref only once
             Exception? e = OleDbConnection.ProcessResults(hr, connection, connection);
-            if (null != e)
+            if (e is not null)
             { throw e; }
         }
 
         internal bool SupportSchemaRowset(Guid schema)
         {
             SchemaSupport[]? schemaSupport = GetSchemaRowsetInformation();
-            if (null != schemaSupport)
+            if (schemaSupport is not null)
             {
                 for (int i = 0; i < schemaSupport.Length; ++i)
                 {
@@ -703,12 +703,12 @@ namespace System.Data.OleDb
         private static OleDbServicesWrapper GetObjectPool()
         {
             OleDbServicesWrapper? wrapper = OleDbConnectionInternal.idataInitialize;
-            if (null == wrapper)
+            if (wrapper is null)
             {
                 lock (dataInitializeLock)
                 {
                     wrapper = OleDbConnectionInternal.idataInitialize;
-                    if (null == wrapper)
+                    if (wrapper is null)
                     {
                         VersionCheck();
 
@@ -727,7 +727,7 @@ namespace System.Data.OleDb
 
                             throw ODB.MDACNotAvailable(e);
                         }
-                        if (null == datalinks)
+                        if (datalinks is null)
                         {
                             throw ODB.MDACNotAvailable(null);
                         }
@@ -736,7 +736,7 @@ namespace System.Data.OleDb
                     }
                 }
             }
-            Debug.Assert(null != wrapper, "GetObjectPool: null dataInitialize");
+            Debug.Assert(wrapper is not null, "GetObjectPool: null dataInitialize");
             return wrapper;
         }
 
@@ -767,21 +767,21 @@ namespace System.Data.OleDb
 
         internal OleDbTransaction? ValidateTransaction(OleDbTransaction? transaction, string method)
         {
-            if (null != this.weakTransaction)
+            if (this.weakTransaction is not null)
             {
                 OleDbTransaction? head = (OleDbTransaction?)this.weakTransaction.Target;
-                if ((null != head) && this.weakTransaction.IsAlive)
+                if ((head is not null) && this.weakTransaction.IsAlive)
                 {
                     head = OleDbTransaction.TransactionUpdate(head);
 
                     // either we are wrong or finalize was called and object still alive
-                    Debug.Assert(null != head, "unexcpted Transaction state");
+                    Debug.Assert(head is not null, "unexcpted Transaction state");
                 }
                 // else transaction has finalized on user
 
-                if (null != head)
+                if (head is not null)
                 {
-                    if (null == transaction)
+                    if (transaction is null)
                     {
                         // valid transaction exists and cmd doesn't have it
                         throw ADP.TransactionRequired(method);
@@ -807,7 +807,7 @@ namespace System.Data.OleDb
                     this.weakTransaction = null;
                 }
             }
-            else if ((null != transaction) && (null != transaction.Connection))
+            else if ((transaction is not null) && (null != transaction.Connection))
             {
                 throw ADP.TransactionConnectionMismatch();
             }
@@ -822,7 +822,7 @@ namespace System.Data.OleDb
         {
             Dictionary<string, OleDbPropertyInfo>? properties = null;
 
-            if (null == propertySets)
+            if (propertySets is null)
             {
                 propertySets = Array.Empty<Guid>();
             }

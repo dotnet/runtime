@@ -30,7 +30,7 @@ namespace System.Data.ProviderBase
             for (int i = 0; i < length; ++i)
             {
                 fieldNames[i] = reader.GetName(i);
-                Debug.Assert(null != fieldNames[i]);
+                Debug.Assert(fieldNames[i] is not null);
             }
             _fieldNames = fieldNames;
             _defaultLocaleID = defaultLocaleID;
@@ -38,7 +38,7 @@ namespace System.Data.ProviderBase
 
         public int GetOrdinal(string fieldName)
         { // V1.2.3300
-            if (null == fieldName)
+            if (fieldName is null)
             {
                 throw ADP.ArgumentNull("fieldName");
             }
@@ -58,7 +58,7 @@ namespace System.Data.ProviderBase
             }
             // via case sensitive search, first match with lowest ordinal matches
             object? value = _fieldNameLookup![fieldName];
-            return ((null != value) ? (int)value : -1);
+            return ((value is not null) ? (int)value : -1);
         }
 
         public int IndexOf(string fieldName)
@@ -69,7 +69,7 @@ namespace System.Data.ProviderBase
             }
             int index;
             object? value = _fieldNameLookup![fieldName];
-            if (null != value)
+            if (value is not null)
             {
                 // via case sensitive search, first match with lowest ordinal matches
                 index = (int)value;
@@ -90,13 +90,13 @@ namespace System.Data.ProviderBase
         private int LinearIndexOf(string fieldName, CompareOptions compareOptions)
         {
             CompareInfo? compareInfo = _compareInfo;
-            if (null == compareInfo)
+            if (compareInfo is null)
             {
                 if (-1 != _defaultLocaleID)
                 {
                     compareInfo = CompareInfo.GetCompareInfo(_defaultLocaleID);
                 }
-                if (null == compareInfo)
+                if (compareInfo is null)
                 {
                     compareInfo = CultureInfo.InvariantCulture.CompareInfo;
                 }

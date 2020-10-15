@@ -110,25 +110,25 @@ namespace System.Data
             DataCommonEventSource.Log.Trace("<ds.Index.Index|API> {0}, table={1}, recordStates={2}",
                             ObjectID, (table is not null) ? table.ObjectID : 0, recordStates);
             Debug.Assert(indexFields is not null);
-            Debug.Assert(null != table, "null table");
+            Debug.Assert(table is not null, "null table");
             if ((recordStates &
                  (~(DataViewRowState.CurrentRows | DataViewRowState.OriginalRows))) != 0)
             {
                 throw ExceptionBuilder.RecordStateRange();
             }
             _table = table;
-            _listeners = new Listeners<DataViewListener>(ObjectID, listener => null != listener);
+            _listeners = new Listeners<DataViewListener>(ObjectID, listener => listener is not null);
 
             _indexFields = indexFields;
             _recordStates = recordStates;
             _comparison = comparison;
 
             _isSharable = (rowFilter is null) && (comparison is null); // a filter or comparison make an index unsharable
-            if (null != rowFilter)
+            if (rowFilter is not null)
             {
                 _rowFilter = new WeakReference(rowFilter);
                 DataExpression? expr = (rowFilter as DataExpression);
-                if (null != expr)
+                if (expr is not null)
                 {
                     _hasRemoteAggregate = expr.HasRemoteAggregate();
                 }
@@ -144,7 +144,7 @@ namespace System.Data
             if (!_isSharable ||
                 _indexFields.Length != indexDesc.Length ||
                 _recordStates != recordStates ||
-                null != rowFilter)
+                rowFilter is not null)
             {
                 return false;
             }
@@ -322,8 +322,8 @@ namespace System.Data
             {
                 var (row1, row2) = (_table._recordManager[record1], _table._recordManager[record2]);
 
-                Debug.Assert(null != row1, "record1 no datarow");
-                Debug.Assert(null != row2, "record2 no datarow");
+                Debug.Assert(row1 is not null, "record1 no datarow");
+                Debug.Assert(row2 is not null, "record2 no datarow");
 
                 // Need to use compare because subtraction will wrap
                 // to positive for very large neg numbers, etc.
@@ -358,14 +358,14 @@ namespace System.Data
             }
 #endif
             var (row1, row2) = (_table._recordManager[record1], _table._recordManager[record2]);
-            Debug.Assert(null != row1, "record1 no datarow");
-            Debug.Assert(null != row2, "record2 no datarow");
+            Debug.Assert(row1 is not null, "record1 no datarow");
+            Debug.Assert(row2 is not null, "record2 no datarow");
 
-            if (null == row1)
+            if (row1 is null)
             {
-                return ((null == row2) ? 0 : -1);
+                return ((row2 is null) ? 0 : -1);
             }
-            else if (null == row2)
+            else if (row2 is null)
             {
                 return 1;
             }
@@ -575,7 +575,7 @@ namespace System.Data
         private int FindNodeByKeys(object?[]? originalKey)
         {
             int x, c;
-            c = ((null != originalKey) ? originalKey.Length : 0);
+            c = ((originalKey is not null) ? originalKey.Length : 0);
             if (originalKey is null || 0 == c || _indexFields.Length != c)
             {
                 throw ExceptionBuilder.IndexKeyLength(_indexFields.Length, c);
@@ -1024,7 +1024,7 @@ namespace System.Data
 
         internal static int IndexOfReference<T>(List<T?>? list, T item) where T : class
         {
-            if (null != list)
+            if (list is not null)
             {
                 for (int i = 0; i < list.Count; ++i)
                 {
@@ -1068,7 +1068,7 @@ namespace System.Data
         /// <remarks>Only call from inside a lock</remarks>
         internal void Add(TElem listener)
         {
-            Debug.Assert(null != listener, "null listener");
+            Debug.Assert(listener is not null, "null listener");
             Debug.Assert(!Index.ContainsReference(_listeners, listener), "already contains reference");
             _listeners.Add(listener);
         }
@@ -1081,7 +1081,7 @@ namespace System.Data
         /// <remarks>Only call from inside a lock</remarks>
         internal void Remove(TElem listener)
         {
-            Debug.Assert(null != listener, "null listener");
+            Debug.Assert(listener is not null, "null listener");
 
             int index = IndexOfReference(listener);
             Debug.Assert(0 <= index, "listeners don't contain listener");
@@ -1099,7 +1099,7 @@ namespace System.Data
         /// </summary>
         internal void Notify<T1, T2, T3>(T1 arg1, T2 arg2, T3 arg3, Action<TElem, T1, T2, T3> action)
         {
-            Debug.Assert(null != action, "no action");
+            Debug.Assert(action is not null, "no action");
             Debug.Assert(0 <= _listenerReaderCount, "negative _listEventCount");
 
             int count = _listeners.Count;

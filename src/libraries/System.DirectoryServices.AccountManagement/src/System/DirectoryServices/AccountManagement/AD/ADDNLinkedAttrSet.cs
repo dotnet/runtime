@@ -54,7 +54,7 @@ namespace System.DirectoryServices.AccountManagement
             _storeCtx = storeCtx;
             _originalStoreCtx = storeCtx;
 
-            if (null != members)
+            if (members is not null)
             {
                 foreach (IEnumerable enumerator in members)
                 {
@@ -109,7 +109,7 @@ namespace System.DirectoryServices.AccountManagement
             if (primaryGroupDN is null)
                 _returnedPrimaryGroup = true;    // so we don't bother trying to return the primary group
 
-            if (null != membersSearcher)
+            if (membersSearcher is not null)
             {
                 foreach (DirectorySearcher ds in membersSearcher)
                 {
@@ -672,7 +672,7 @@ namespace System.DirectoryServices.AccountManagement
 
                     // sidIssuerName is null only if SID was not resolved
                     // return a unknown principal back
-                    if (null == foreignSid.sidIssuerName)
+                    if (foreignSid.sidIssuerName is null)
                     {
                         // create and return the unknown principal if it is not yet present in usersVisited
                         if (!_usersVisited.ContainsKey(foreignSid.name))
@@ -729,7 +729,7 @@ namespace System.DirectoryServices.AccountManagement
                                                      (new SecurityIdentifier(Utils.ConvertNativeSidToByteArray(_foreignMembersToReturn[0].pSid), 0)).ToString(),
                                                      DateTime.UtcNow);
 
-                    if (null == foreignPrincipal)
+                    if (foreignPrincipal is null)
                     {
                         GlobalDebug.WriteLineIf(GlobalDebug.Warn, "ADDNLinkedAttrSet", "MoveNextForeign: no matching principal");
                         throw new PrincipalOperationException(SR.ADStoreCtxFailedFindCrossStoreTarget);
@@ -1178,7 +1178,7 @@ namespace System.DirectoryServices.AccountManagement
             {
                 _membersQueue.Clear();
 
-                if (null != adBookmark.membersQueue)
+                if (adBookmark.membersQueue is not null)
                 {
                     foreach (IEnumerable ie in adBookmark.membersQueue)
                     {
@@ -1196,7 +1196,7 @@ namespace System.DirectoryServices.AccountManagement
 
                 _memberSearchersQueue.Clear();
 
-                if (null != adBookmark.memberSearcherQueue)
+                if (adBookmark.memberSearcherQueue is not null)
                 {
                     foreach (DirectorySearcher ds in adBookmark.memberSearcherQueue)
                     {

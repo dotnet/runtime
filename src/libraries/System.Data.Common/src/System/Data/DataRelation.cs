@@ -553,7 +553,7 @@ namespace System.Data
                                 {
                                     if (rel.Nested)
                                     {
-                                        if (null == parentNs)
+                                        if (parentNs is null)
                                         {
                                             parentNs = rel.ParentTable.Namespace;
                                         }

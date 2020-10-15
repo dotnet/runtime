@@ -1947,7 +1947,7 @@ namespace System.Transactions
             // If we have a phase1Volatile.VolatileDemux, we have a phase1 volatile enlistment
             // on the promoted transaction and it will take care of checking for incomplete aborting
             // dependent clones in its Prepare processing.
-            if (null != tx._phase1Volatiles.VolatileDemux)
+            if (tx._phase1Volatiles.VolatileDemux is not null)
             {
                 tx._phase1Volatiles._dependentClones--;
                 Debug.Assert(tx._phase1Volatiles._dependentClones >= 0);
@@ -2005,7 +2005,7 @@ namespace System.Transactions
         {
             // If we have a VolatileDemux in phase1Volatiles, then we have a phase1 volatile enlistment
             // on the promoted transaction, so we can depend on that to deal with our aborting dependent clones.
-            if (null != tx._phase1Volatiles.VolatileDemux)
+            if (tx._phase1Volatiles.VolatileDemux is not null)
             {
                 tx._phase1Volatiles._dependentClones++;
             }
@@ -3065,7 +3065,7 @@ namespace System.Transactions
 
         protected override void PromotedTransactionOutcome(InternalTransaction tx)
         {
-            if ((null == tx._innerException) && (null != tx.PromotedTransaction))
+            if ((tx._innerException is null) && (tx.PromotedTransaction is not null))
             {
                 tx._innerException = tx.PromotedTransaction.InnerException;
             }
@@ -3248,7 +3248,7 @@ namespace System.Transactions
 
         protected override void PromotedTransactionOutcome(InternalTransaction tx)
         {
-            if ((null == tx._innerException) && (null != tx.PromotedTransaction))
+            if ((tx._innerException is null) && (tx.PromotedTransaction is not null))
             {
                 tx._innerException = tx.PromotedTransaction.InnerException;
             }
@@ -4153,7 +4153,7 @@ namespace System.Transactions
 
         protected override void PromotedTransactionOutcome(InternalTransaction tx)
         {
-            if ((null == tx._innerException) && (null != tx.PromotedTransaction))
+            if ((tx._innerException is null) && (tx.PromotedTransaction is not null))
             {
                 tx._innerException = tx.PromotedTransaction.InnerException;
             }
@@ -4265,7 +4265,7 @@ namespace System.Transactions
 
         protected override void PromotedTransactionOutcome(InternalTransaction tx)
         {
-            if ((null == tx._innerException) && (null != tx.PromotedTransaction))
+            if ((tx._innerException is null) && (tx.PromotedTransaction is not null))
             {
                 tx._innerException = tx.PromotedTransaction.InnerException;
             }

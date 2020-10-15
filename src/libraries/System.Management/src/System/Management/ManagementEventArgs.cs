@@ -251,7 +251,7 @@ namespace System.Management
         {
             get
             {
-                return (null != message) ? message : string.Empty;
+                return (message is not null) ? message : string.Empty;
             }
         }
     }

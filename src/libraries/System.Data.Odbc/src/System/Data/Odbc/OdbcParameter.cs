@@ -226,7 +226,7 @@ namespace System.Data.Odbc
             get
             {
                 string? parameterName = _parameterName;
-                return ((null != parameterName) ? parameterName : string.Empty);
+                return ((parameterName is not null) ? parameterName : string.Empty);
             }
             set
             {
@@ -339,7 +339,7 @@ namespace System.Data.Odbc
                         {
                             throw ADP.UninitializedParameterSize(ordinal, _bindtype._type);
                         }
-                        if ((null == value) || Convert.IsDBNull(value))
+                        if ((value is null) || Convert.IsDBNull(value))
                         {
                             cch = 0;
                         }
@@ -478,7 +478,7 @@ namespace System.Data.Odbc
                         {
                             throw ADP.UninitializedParameterSize(ordinal, _bindtype._type);
                         }
-                        if ((null == value) || Convert.IsDBNull(value))
+                        if ((value is null) || Convert.IsDBNull(value))
                         {
                             if (_bindtype._sql_c == ODBC32.SQL_C.WCHAR)
                             {
@@ -550,7 +550,7 @@ namespace System.Data.Odbc
                 }
                 return ADP.DecimalMaxPrecision;
             }
-            if ((null == value) || (value is decimal) || Convert.IsDBNull(value))
+            if ((value is null) || (value is decimal) || Convert.IsDBNull(value))
             { // MDAC 60882
                 return ADP.DecimalMaxPrecision28;
             }
@@ -680,7 +680,7 @@ namespace System.Data.Odbc
                         // No support for NUMERIC
                         // Change the type
                         _bindtype = TypeMap._VarChar;
-                        if ((null != value) && !Convert.IsDBNull(value))
+                        if ((value is not null) && !Convert.IsDBNull(value))
                         {
                             value = ((decimal)value).ToString(CultureInfo.CurrentCulture);
                             size = ((string)value).Length;
@@ -694,7 +694,7 @@ namespace System.Data.Odbc
                         // No support for BIGINT
                         // Change the type
                         _bindtype = TypeMap._VarChar;
-                        if ((null != value) && !Convert.IsDBNull(value))
+                        if ((value is not null) && !Convert.IsDBNull(value))
                         {
                             value = ((long)value).ToString(CultureInfo.CurrentCulture);
                             size = ((string)value).Length;
@@ -736,7 +736,7 @@ namespace System.Data.Odbc
                 {
                     sql_c_type = ODBC32.SQL_C.CHAR;
 
-                    if (null != value)
+                    if (value is not null)
                     {
                         if (!Convert.IsDBNull(value) && value is string)
                         {
@@ -965,7 +965,7 @@ namespace System.Data.Odbc
 
                     if (_boundSqlCType == ODBC32.SQL_C.CHAR)
                     {
-                        if ((null != Value) && !Convert.IsDBNull(Value))
+                        if ((Value is not null) && !Convert.IsDBNull(Value))
                         {
                             int lcid = System.Globalization.CultureInfo.CurrentCulture.LCID;
                             CultureInfo culInfo = new CultureInfo(lcid);
@@ -974,7 +974,7 @@ namespace System.Data.Odbc
                         }
                     }
 
-                    if ((typemap != _typemap) && (null != Value) && !Convert.IsDBNull(Value) && (Value.GetType() != _typemap!._type))
+                    if ((typemap != _typemap) && (Value is not null) && !Convert.IsDBNull(Value) && (Value.GetType() != _typemap!._type))
                     {
                         Debug.Assert(ODBC32.SQL_C.NUMERIC == _typemap._sql_c, "unexpected");
                         Value = decimal.Parse((string)Value, System.Globalization.CultureInfo.CurrentCulture);
@@ -988,7 +988,7 @@ namespace System.Data.Odbc
             object? value = _internalValue;
             if (_internalUserSpecifiedType)
             {
-                if ((null != value) && !Convert.IsDBNull(value))
+                if ((value is not null) && !Convert.IsDBNull(value))
                 {
                     Type valueType = value.GetType();
                     if (!valueType.IsArray)
@@ -1019,7 +1019,7 @@ namespace System.Data.Odbc
             }
             else if (null == _typemap)
             {
-                if ((null == value) || Convert.IsDBNull(value))
+                if ((value is null) || Convert.IsDBNull(value))
                 {
                     _typemap = TypeMap._NVarChar; // default type
                 }
@@ -1053,7 +1053,7 @@ namespace System.Data.Odbc
                 //Note: (lang) "null" means to use the servers default (not DBNull).
                 //We probably should just not have bound this parameter, period, but that
                 //would mess up the users question marks, etc...
-                if ((null == value))
+                if ((value is null))
                 {
                     parameterBuffer.WriteIntPtr(_preparedIntOffset, (IntPtr)ODBC32.SQL_DEFAULT_PARAM);
                 }

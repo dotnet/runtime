@@ -32,7 +32,7 @@ namespace System.Data.Common
         {
             SourceTable = sourceTable;
             DataSetTable = dataSetTable;
-            if ((null != columnMappings) && (0 < columnMappings.Length))
+            if ((columnMappings is not null) && (0 < columnMappings.Length))
             {
                 ColumnMappings.AddRange(columnMappings);
             }
@@ -50,7 +50,7 @@ namespace System.Data.Common
             get
             {
                 DataColumnMappingCollection? columnMappings = _columnMappings;
-                if (null == columnMappings)
+                if (columnMappings is null)
                 {
                     columnMappings = new DataColumnMappingCollection();
                     _columnMappings = columnMappings;
@@ -86,7 +86,7 @@ namespace System.Data.Common
             get { return _sourceTableName ?? string.Empty; }
             set
             {
-                if ((null != Parent) && (0 != ADP.SrcCompare(_sourceTableName, value)))
+                if ((Parent is not null) && (0 != ADP.SrcCompare(_sourceTableName, value)))
                 {
                     Parent.ValidateSourceTable(-1, value);
                 }
@@ -126,7 +126,7 @@ namespace System.Data.Common
         [EditorBrowsable(EditorBrowsableState.Advanced)]
         public DataTable? GetDataTableBySchemaAction(DataSet dataSet, MissingSchemaAction schemaAction)
         {
-            if (null == dataSet)
+            if (dataSet is null)
             {
                 throw ADP.ArgumentNull(nameof(dataSet));
             }
@@ -180,7 +180,7 @@ namespace System.Data.Common
 
             public override object ConvertTo(ITypeDescriptorContext context, CultureInfo culture, object value, Type destinationType)
             {
-                if (null == destinationType)
+                if (destinationType is null)
                 {
                     throw ADP.ArgumentNull(nameof(destinationType));
                 }

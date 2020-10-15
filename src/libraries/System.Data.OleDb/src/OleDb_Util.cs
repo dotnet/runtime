@@ -708,7 +708,7 @@ namespace System.Data.OleDb
         internal static string WLookup(short id)
         {
             string? value = (string?)g_wlookpup[id];
-            if (null == value)
+            if (value is null)
             {
                 value = "0x" + ((short)id).ToString("X2", CultureInfo.InvariantCulture) + " " + ((short)id);
                 value += " " + ((DBTypeEnum)id).ToString();

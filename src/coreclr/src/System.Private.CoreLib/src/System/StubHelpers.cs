@@ -47,7 +47,7 @@ namespace System.StubHelpers
     {
         internal static unsafe IntPtr ConvertToNative(int flags, string strManaged, IntPtr pNativeBuffer)
         {
-            if (null == strManaged)
+            if (strManaged is null)
             {
                 return IntPtr.Zero;
             }
@@ -212,7 +212,7 @@ namespace System.StubHelpers
         private const int MAX_UTF8_CHAR_SIZE = 3;
         internal static unsafe IntPtr ConvertToNative(int flags, string strManaged, IntPtr pNativeBuffer)
         {
-            if (null == strManaged)
+            if (strManaged is null)
             {
                 return IntPtr.Zero;
             }
@@ -265,7 +265,7 @@ namespace System.StubHelpers
     {
         internal static unsafe IntPtr ConvertToNative(StringBuilder sb, IntPtr pNativeBuffer, int flags)
         {
-            if (null == sb)
+            if (sb is null)
             {
                 return IntPtr.Zero;
             }
@@ -299,7 +299,7 @@ namespace System.StubHelpers
     {
         internal static unsafe IntPtr ConvertToNative(string strManaged, IntPtr pNativeBuffer)
         {
-            if (null == strManaged)
+            if (strManaged is null)
             {
                 return IntPtr.Zero;
             }
@@ -412,7 +412,7 @@ namespace System.StubHelpers
     {
         internal static unsafe IntPtr ConvertToNative(string strManaged, bool fBestFit, bool fThrowOnUnmappableChar, ref int cch)
         {
-            if (null == strManaged)
+            if (strManaged is null)
             {
                 return IntPtr.Zero;
             }
@@ -474,7 +474,7 @@ namespace System.StubHelpers
     {
         internal static unsafe IntPtr ConvertToNative(int flags, string strManaged)
         {
-            if (null == strManaged)
+            if (strManaged is null)
             {
                 return IntPtr.Zero;
             }

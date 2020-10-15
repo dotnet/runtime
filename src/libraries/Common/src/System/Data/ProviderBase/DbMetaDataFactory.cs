@@ -238,7 +238,7 @@ namespace System.Data.ProviderBase
 
             DataColumn? collectionNameColumn = metaDataCollectionsTable.Columns[DbMetaDataColumnNames.CollectionName];
 
-            if ((null == collectionNameColumn) || (typeof(string) != collectionNameColumn.DataType))
+            if ((collectionNameColumn is null) || (typeof(string) != collectionNameColumn.DataType))
             {
                 throw ADP.InvalidXmlMissingColumn(DbMetaDataCollectionNames.MetaDataCollections, DbMetaDataColumnNames.CollectionName);
             }

@@ -129,7 +129,7 @@ namespace System.Data
             _columnName = columnName ?? string.Empty;
 
             SimpleType? stype = SimpleType.CreateSimpleType(typeCode, dataType);
-            if (null != stype)
+            if (stype is not null)
             {
                 SimpleType = stype;
             }
@@ -1144,7 +1144,7 @@ namespace System.Data
                 {
                     _table!._recordManager.VerifyRecord(record);
                     Debug.Assert(null != _storage, "no storage");
-                    Debug.Assert(null != value, "setting null, expecting dbnull");
+                    Debug.Assert(value is not null, "setting null, expecting dbnull");
                     _storage.Set(record, value);
                     Debug.Assert(null != _table, "storage with no DataTable on column");
                 }
@@ -1185,7 +1185,7 @@ namespace System.Data
             // just silently set the value
             try
             {
-                Debug.Assert(null != value, "setting null, expecting dbnull");
+                Debug.Assert(value is not null, "setting null, expecting dbnull");
                 Debug.Assert(null != _table, "storage with no DataTable on column");
                 Debug.Assert(null != _storage, "no storage");
                 _storage.Set(record, value);
@@ -1241,7 +1241,7 @@ namespace System.Data
                                 for (IEnumerator e = _table.Constraints.GetEnumerator(); e.MoveNext();)
                                 {
                                     UniqueConstraint? o = (e.Current as UniqueConstraint);
-                                    if ((null != o) && (o.ColumnsReference.Length == 1) && (o.ColumnsReference[0] == this))
+                                    if ((o is not null) && (o.ColumnsReference.Length == 1) && (o.ColumnsReference[0] == this))
                                         oldConstraint = o;
                                 }
                                 Debug.Assert(oldConstraint is not null, "Should have found a column to remove from the collection.");
@@ -1379,7 +1379,7 @@ namespace System.Data
 
         internal bool CheckMaxLength()
         {
-            if ((0 <= _maxLength) && (null != Table) && (0 < Table.Rows.Count))
+            if ((0 <= _maxLength) && (Table is not null) && (0 < Table.Rows.Count))
             {
                 Debug.Assert(IsStringType, "not a String or SqlString column");
                 foreach (DataRow dr in Table.Rows)
@@ -1849,7 +1849,7 @@ namespace System.Data
                 dependency = oldExpression.GetDependency();
                 foreach (DataColumn col in dependency)
                 {
-                    Debug.Assert(null != col, "null datacolumn in expression dependencies");
+                    Debug.Assert(col is not null, "null datacolumn in expression dependencies");
                     col.RemoveDependentColumn(this);
                     if (col._table != _table)
                     {
@@ -1970,7 +1970,7 @@ namespace System.Data
 
         internal override void SetCurrentAndIncrement(object value)
         {
-            Debug.Assert(null != value && DataColumn.IsAutoIncrementType(value.GetType()) && !(value is BigInteger), "unexpected value for autoincrement");
+            Debug.Assert(value is not null && DataColumn.IsAutoIncrementType(value.GetType()) && !(value is BigInteger), "unexpected value for autoincrement");
             long v = (long)SqlConvert.ChangeType2(value, StorageType.Int64, typeof(long), CultureInfo.InvariantCulture);
             if (BoundaryCheck(v))
             {

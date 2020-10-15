@@ -106,7 +106,7 @@ namespace System.Data.OleDb
                     { // fail via new FileStream vs. GetFullPath
                         udlFileName = ADP.GetFullPath(udlFileName);
                     }
-                    if (null != udlFileName)
+                    if (udlFileName is not null)
                     {
                         udlConnectionString = LoadStringFromStorage(udlFileName);
 
@@ -246,10 +246,10 @@ namespace System.Data.OleDb
             string? udlConnectionString = null;
             Dictionary<string, string>? udlcache = UDL._Pool;
 
-            if ((null == udlcache) || !udlcache.TryGetValue(udlfilename, out udlConnectionString))
+            if ((udlcache is null) || !udlcache.TryGetValue(udlfilename, out udlConnectionString))
             {
                 udlConnectionString = LoadStringFromFileStorage(udlfilename);
-                if (null != udlConnectionString)
+                if (udlConnectionString is not null)
                 {
                     Debug.Assert(!ADP.IsEmpty(udlfilename), "empty filename didn't fail");
 
@@ -257,14 +257,14 @@ namespace System.Data.OleDb
                     {
                         Debug.Assert(udlfilename == ADP.GetFullPath(udlfilename), "only cache full path filenames");
 
-                        if (null == udlcache)
+                        if (udlcache is null)
                         {
                             udlcache = new Dictionary<string, string>();
                             udlcache[udlfilename] = udlConnectionString;
 
                             lock (UDL._PoolLock)
                             {
-                                if (null != UDL._Pool)
+                                if (UDL._Pool is not null)
                                 {
                                     udlcache = UDL._Pool;
                                 }
@@ -275,7 +275,7 @@ namespace System.Data.OleDb
                                 }
                             }
                         }
-                        if (null != udlcache)
+                        if (udlcache is not null)
                         {
                             lock (udlcache)
                             {
@@ -338,7 +338,7 @@ namespace System.Data.OleDb
 
                 throw ADP.UdlFileError(e);
             }
-            if (null != failure)
+            if (failure is not null)
             {
                 throw failure;
             }
@@ -359,7 +359,7 @@ namespace System.Data.OleDb
             }
 
             string? progid = ConvertValueToString(KEY.Data_Provider, null);
-            if (null != progid)
+            if (progid is not null)
             {
                 progid = progid.Trim();
                 if (0 < progid.Length)
@@ -368,7 +368,7 @@ namespace System.Data.OleDb
                 }
             }
             progid = ConvertValueToString(KEY.RemoteProvider, null);
-            if (null != progid)
+            if (progid is not null)
             {
                 progid = progid.Trim();
                 if (0 < progid.Length)
@@ -389,7 +389,7 @@ namespace System.Data.OleDb
             if (!hasOleDBServices)
             { // don't touch registry if they have OLE DB Services
                 string? classid = (string?)ADP.ClassesRootRegistryValue(progid + "\\CLSID", string.Empty);
-                if ((null != classid) && (0 < classid.Length))
+                if ((classid is not null) && (0 < classid.Length))
                 {
                     // CLSID detection of 'Microsoft OLE DB Provider for ODBC Drivers'
                     Guid classidProvider = new Guid(classid);
@@ -398,7 +398,7 @@ namespace System.Data.OleDb
                         throw ODB.MSDASQLNotSupported();
                     }
                     object? tmp = ADP.ClassesRootRegistryValue("CLSID\\{" + classidProvider.ToString("D", CultureInfo.InvariantCulture) + "}", ODB.OLEDB_SERVICES);
-                    if (null != tmp)
+                    if (tmp is not null)
                     {
                         // @devnote: some providers like MSDataShape don't have the OLEDB_SERVICES value
                         // the MSDataShape provider doesn't support the 'Ole Db Services' keyword

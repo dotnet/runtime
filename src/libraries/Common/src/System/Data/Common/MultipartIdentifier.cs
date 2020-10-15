@@ -146,7 +146,7 @@ namespace System.Data.Common
                             if (IsWhitespace(testchar))
                             { // If it is Whitespace
                                 parsedNames[stringCount] = sb.ToString(); // Set the currently parsed string
-                                if (null == whitespaceSB)
+                                if (whitespaceSB is null)
                                 {
                                     whitespaceSB = new StringBuilder();
                                 }

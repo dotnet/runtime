@@ -709,7 +709,7 @@ namespace System.Data
             if (_dsElement is not null)
             {
                 string mainName = GetStringAttribute(_dsElement, Keywords.MSD_MAINDATATABLE, "");
-                if (null != mainName)
+                if (mainName is not null)
                 {
                     ds.MainTableName = XmlConvert.DecodeName(mainName);
                 }
@@ -749,7 +749,7 @@ namespace System.Data
                         foreach (XmlSchemaAnnotated el in items)
                         {
                             XmlSchemaElement sel = el as XmlSchemaElement;
-                            if (null != sel)
+                            if (sel is not null)
                             {
                                 if (sel.RefName.Name.Length != 0)
                                 {
@@ -1588,7 +1588,7 @@ namespace System.Data
                 }
 
                 value = GetMsdataAttribute(node, Keywords.MSD_LOCALE);
-                if (null != value)
+                if (value is not null)
                 { // set by user
                     if (0 < value.Length)
                     {
@@ -2541,7 +2541,7 @@ namespace System.Data
             List<DataTable> tableSequenceList = new List<DataTable>();
 
             string value = GetMsdataAttribute(node, Keywords.MSD_LOCALE);
-            if (null != value)
+            if (value is not null)
             { // set by user
                 if (0 != value.Length)
                 {

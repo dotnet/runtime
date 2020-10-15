@@ -400,7 +400,7 @@ namespace System.Data.Common
 #pragma warning disable CA2249 // Consider using 'string.Contains' instead of 'string.IndexOf'. This file is built into libraries that don't have string.Contains(char).
         private static bool IsValueValidInternal(string? keyvalue)
         {
-            if (null != keyvalue)
+            if (keyvalue is not null)
             {
 #if DEBUG
                 bool compValue = s_connectionStringValidValueRegex.IsMatch(keyvalue);
@@ -414,7 +414,7 @@ namespace System.Data.Common
 
         private static bool IsKeyNameValid([NotNullWhen(true)] string? keyname)
         {
-            if (null != keyname)
+            if (keyname is not null)
             {
 #if DEBUG
                 bool compValue = s_connectionStringValidKeyRegex.IsMatch(keyname);
@@ -437,7 +437,7 @@ namespace System.Data.Common
             Debug.Assert(KeyIndex == parser.GroupNumberFromName("key"), "wrong key index");
             Debug.Assert(ValueIndex == parser.GroupNumberFromName("value"), "wrong value index");
 
-            if (null != connectionString)
+            if (connectionString is not null)
             {
                 Match match = parser.Match(connectionString);
                 if (!match.Success || (match.Length != connectionString.Length))
@@ -473,7 +473,7 @@ namespace System.Data.Common
                     }
                     DebugTraceKeyValuePair(keyname, keyvalue, synonyms);
                     string? synonym;
-                    string? realkeyname = null != synonyms ?
+                    string? realkeyname = synonyms is not null ?
                         (synonyms.TryGetValue(keyname, out synonym) ? synonym : null) : keyname;
 
                     if (!IsKeyNameValid(realkeyname))
@@ -506,7 +506,7 @@ namespace System.Data.Common
             }
             catch (ArgumentException f)
             {
-                if (null != e)
+                if (e is not null)
                 {
                     string msg1 = e.Message;
                     string msg2 = f.Message;
@@ -534,7 +534,7 @@ namespace System.Data.Common
                 }
                 e = null;
             }
-            if (null != e)
+            if (e is not null)
             {
                 Debug.Fail("ParseInternal code threw exception vs regex mismatch");
             }
@@ -543,7 +543,7 @@ namespace System.Data.Common
 
         private static NameValuePair? ParseInternal(Dictionary<string, string?> parsetable, string connectionString, bool buildChain, Dictionary<string, string>? synonyms, bool firstKey)
         {
-            Debug.Assert(null != connectionString, "null connectionstring");
+            Debug.Assert(connectionString is not null, "null connectionstring");
             StringBuilder buffer = new StringBuilder();
             NameValuePair? localKeychain = null, keychain = null;
 #if DEBUG
@@ -569,7 +569,7 @@ namespace System.Data.Common
                     Debug.Assert(IsValueValidInternal(keyvalue), "parse failure, invalid keyvalue");
 #endif
                     string? synonym;
-                    string? realkeyname = null != synonyms ?
+                    string? realkeyname = synonyms is not null ?
                         (synonyms.TryGetValue(keyname, out synonym) ? synonym : null) :
                         keyname;
 
@@ -582,7 +582,7 @@ namespace System.Data.Common
                         parsetable[realkeyname] = keyvalue; // last key-value pair wins (or first)
                     }
 
-                    if (null != localKeychain)
+                    if (localKeychain is not null)
                     {
                         localKeychain = localKeychain.Next = new NameValuePair(realkeyname, keyvalue, nextStartPosition - startPosition);
                     }
@@ -610,7 +610,7 @@ namespace System.Data.Common
             int copyPosition = 0;
             NameValuePair? head = null, tail = null, next = null;
             StringBuilder builder = new StringBuilder(_usersConnectionString.Length);
-            for (NameValuePair? current = _keyChain; null != current; current = current.Next)
+            for (NameValuePair? current = _keyChain; current is not null; current = current.Next)
             {
                 if ((KEY.Password != current.Name) && (SYNONYM.Pwd != current.Name))
                 {
@@ -636,7 +636,7 @@ namespace System.Data.Common
 
                 if (fakePassword)
                 {
-                    if (null != tail)
+                    if (tail is not null)
                     {
                         tail = tail.Next = next;
                     }

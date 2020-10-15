@@ -191,7 +191,7 @@ namespace System.Data.SqlTypes
 
         public static SqlBoolean Parse(string s)
         {
-            if (null == s)
+            if (s is null)
                 // Let Boolean.Parse throw exception
                 return new SqlBoolean(bool.Parse(s!));
             if (s == SQLResource.NullString)

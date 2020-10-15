@@ -23,7 +23,7 @@ namespace System.Data.OleDb
         // IDBInfo.GetLiteralInfo
         internal DualCoTaskMem(UnsafeNativeMethods.IDBInfo dbInfo, int[]? literals, out int literalCount, out IntPtr literalInfo, out OleDbHResult hr) : this()
         {
-            int count = (null != literals) ? literals.Length : 0;
+            int count = (literals is not null) ? literals.Length : 0;
             hr = dbInfo.GetLiteralInfo(count, literals, out literalCount, out base.handle, out this.handle2);
             literalInfo = base.handle;
         }
@@ -93,9 +93,9 @@ namespace System.Data.OleDb
 
     internal sealed class StringMemHandle : DbBuffer
     {
-        internal StringMemHandle(string? value) : base((null != value) ? checked(2 + 2 * value.Length) : 0)
+        internal StringMemHandle(string? value) : base((value is not null) ? checked(2 + 2 * value.Length) : 0)
         {
-            if (null != value)
+            if (value is not null)
             {
                 // null-termination exists because of the extra 2+ which is zero'd during on allocation
                 WriteCharArray(0, value.ToCharArray(), 0, value.Length);
@@ -110,7 +110,7 @@ namespace System.Data.OleDb
 
         internal static ChapterHandle CreateChapterHandle(object chapteredRowset, RowBinding binding, int valueOffset)
         {
-            if ((null == chapteredRowset) || (IntPtr.Zero == binding.ReadIntPtr(valueOffset)))
+            if ((chapteredRowset is null) || (IntPtr.Zero == binding.ReadIntPtr(valueOffset)))
             {
                 return ChapterHandle.DB_NULL_HCHAPTER;
             }

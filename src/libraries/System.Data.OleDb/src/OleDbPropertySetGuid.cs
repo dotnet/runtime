@@ -38,7 +38,7 @@ namespace System.Data.OleDb
         /*
         internal static string GetTextFromValue(Guid guid) {
             string value = ConvertToString(guid);
-            if (null == value) {
+            if (value is null) {
                 value = "{" + guid.ToString("D", CultureInfo.InvariantCulture) + "}";
             }
             return value;

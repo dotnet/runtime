@@ -99,10 +99,10 @@ namespace System.Data.Common
         public override int CompareValueTo(int recordNo, object? value)
         {
             Debug.Assert(recordNo != -1, "Invalid (-1) parameter: 'recordNo'");
-            Debug.Assert(null != value, "null value");
+            Debug.Assert(value is not null, "null value");
             string? valueNo1 = _values[recordNo];
 
-            if (null == valueNo1)
+            if (valueNo1 is null)
             {
                 if (_nullValue == value)
                 {
@@ -124,7 +124,7 @@ namespace System.Data.Common
         {
             if (_nullValue != value)
             {
-                if (null != value)
+                if (value is not null)
                 {
                     value = value.ToString()!;
                 }
@@ -145,7 +145,7 @@ namespace System.Data.Common
         {
             string? value = _values[recordNo];
 
-            if (null != value)
+            if (value is not null)
             {
                 return value;
             }
@@ -155,7 +155,7 @@ namespace System.Data.Common
         public override int GetStringLength(int record)
         {
             string? value = _values[record];
-            return ((null != value) ? value.Length : 0);
+            return ((value is not null) ? value.Length : 0);
         }
 
         public override bool IsNull(int record)
@@ -165,7 +165,7 @@ namespace System.Data.Common
 
         public override void Set(int record, object value)
         {
-            Debug.Assert(null != value, "null value");
+            Debug.Assert(value is not null, "null value");
             if (_nullValue == value)
             {
                 _values[record] = null;

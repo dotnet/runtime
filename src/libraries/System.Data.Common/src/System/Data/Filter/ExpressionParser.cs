@@ -618,7 +618,7 @@ namespace System.Data
         {
             Debug.Assert(_topNode > 0, "NodePop(): Corrupted node stack");
             ExpressionNode node = _nodeStack[--_topNode];
-            Debug.Assert(null != node, "null NodePop");
+            Debug.Assert(node is not null, "null NodePop");
             return node;
         }
 
@@ -638,7 +638,7 @@ namespace System.Data
         /// </summary>
         private void NodePush(ExpressionNode node)
         {
-            Debug.Assert(null != node, "null NodePush");
+            Debug.Assert(node is not null, "null NodePush");
 
             if (_topNode >= MaxPredicates - 2)
             {

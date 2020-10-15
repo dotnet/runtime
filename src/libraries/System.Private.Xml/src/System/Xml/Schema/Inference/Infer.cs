@@ -666,14 +666,14 @@ namespace System.Xml.Schema
             {
                 if (!bCreatingNewType)
                 {
-                    if (null != ct)
+                    if (ct is not null)
                     {
-                        if (null != ct.Particle)
+                        if (ct.Particle is not null)
 
                         {
                             ct.Particle.MinOccurs = 0;
                         }
-                        else if (null != ct.ContentModel)
+                        else if (ct.ContentModel is not null)
                         {
                             XmlSchemaSimpleContentExtension sce = CheckSimpleContentExtension(ct);
                             sce.BaseTypeName = ST_string;
@@ -713,7 +713,7 @@ namespace System.Xml.Schema
                 {
                     if (ct is not null)
                     {
-                        if (null != ct.ContentModel)
+                        if (ct.ContentModel is not null)
                         {
                             XmlSchemaSimpleContentExtension sce = CheckSimpleContentExtension(ct);
                             sce.BaseTypeName = ST_string;
@@ -748,13 +748,13 @@ namespace System.Xml.Schema
                 }
                 else
                 {
-                    if (null != ct)
+                    if (ct is not null)
                     {
-                        if (null != ct.Particle)
+                        if (ct.Particle is not null)
                         {
                             ct.Particle.MinOccurs = 0;
                         }
-                        else if (null != ct.ContentModel)
+                        else if (ct.ContentModel is not null)
                         {
                             XmlSchemaSimpleContentExtension sce = CheckSimpleContentExtension(ct);
                             sce.BaseTypeName = ST_string;
@@ -778,9 +778,9 @@ namespace System.Xml.Schema
                 iChildNumber++;
                 if ((_xtr.NodeType == XmlNodeType.Text) || (_xtr.NodeType == XmlNodeType.CDATA)) //node can be simple type, complex with simple content or complex with mixed content
                 {
-                    if (null != ct)
+                    if (ct is not null)
                     {
-                        if (null != ct.Particle)
+                        if (ct.Particle is not null)
                         {
                             ct.IsMixed = true;
                             if (iChildNumber == 1)
@@ -792,7 +792,7 @@ namespace System.Xml.Schema
                                     ct.Particle.MinOccurs = decimal.Zero;
                             }
                         }
-                        else if (null != ct.ContentModel)
+                        else if (ct.ContentModel is not null)
                         {   //complexType with simpleContent
                             XmlSchemaSimpleContentExtension sce = CheckSimpleContentExtension(ct);
                             if ((_xtr.NodeType == XmlNodeType.Text) && (iChildNumber == 1))
@@ -1180,7 +1180,7 @@ namespace System.Xml.Schema
                             actualElement = FindGlobalElement(childURI, xtr.LocalName, out parentSchema);
                         }
                     }
-                    if (null != subElement)
+                    if (subElement is not null)
                     {
                         XmlSchemaChoice xsc = new XmlSchemaChoice();
                         xsc.MaxOccurs = decimal.MaxValue;
@@ -1436,14 +1436,14 @@ namespace System.Xml.Schema
                     {
                         if (attr.RefName.Name.Length == 0)
                         { //If the attribute is not present in this instance, make it optional
-                            if (null == FindAttribute(attributesInInstance, attr.Name!))
+                            if (FindAttribute(attributesInInstance, attr.Name!) is null)
                             {
                                 attr.Use = XmlSchemaUse.Optional;
                             }
                         }
                         else
                         {
-                            if (null == FindAttributeRef(attributesInInstance, attr.RefName.Name, attr.RefName.Namespace))
+                            if (FindAttributeRef(attributesInInstance, attr.RefName.Name, attr.RefName.Namespace) is null)
                             {
                                 attr.Use = XmlSchemaUse.Optional;
                             }

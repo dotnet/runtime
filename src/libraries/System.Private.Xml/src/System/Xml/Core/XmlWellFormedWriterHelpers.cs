@@ -94,7 +94,7 @@ namespace System.Xml
             internal void WriteDecl(XmlWriter writer, XmlRawWriter? rawWriter)
             {
                 Debug.Assert(kind == NamespaceKind.NeedToWrite);
-                if (null != rawWriter)
+                if (rawWriter is not null)
                 {
                     rawWriter.WriteNamespaceDeclaration(prefix, namespaceUri);
                 }

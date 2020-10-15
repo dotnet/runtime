@@ -53,8 +53,8 @@ namespace System.Data.OleDb
                                 OleDbParameter? parameter, RowBinding rowbinding, Bindings bindings, tagDBBINDING binding, int offset,
                                 bool ifIRowsetElseIRow)
         {
-            Debug.Assert(null != rowbinding, "null rowbinding");
-            Debug.Assert(null != bindings, "null bindings");
+            Debug.Assert(rowbinding is not null, "null rowbinding");
+            Debug.Assert(bindings is not null, "null bindings");
             Debug.Assert(ODB.SizeOf_tagDBBINDING <= offset, "invalid offset" + offset);
 
             _dataReader = dataReader;
@@ -64,7 +64,7 @@ namespace System.Data.OleDb
             _indexForAccessor = indexForAccessor;
             _indexWithinAccessor = indexWithinAccessor;
 
-            if (null != parameter)
+            if (parameter is not null)
             {
                 _parameter = parameter;
                 _parameterChangeID = parameter.ChangeID;
@@ -163,7 +163,7 @@ namespace System.Data.OleDb
 
         internal bool IsParameterBindingInvalid(OleDbParameter parameter)
         {
-            Debug.Assert((null != _parameter) && (null != parameter), "null parameter");
+            Debug.Assert((null != _parameter) && (parameter is not null), "null parameter");
             return ((_parameter.ChangeID != _parameterChangeID) || (_parameter != parameter));
         }
 
@@ -206,7 +206,7 @@ namespace System.Data.OleDb
             StringMemHandle? sptr = _sptr;
             _sptr = null;
 
-            if (null != sptr)
+            if (sptr is not null)
             {
                 sptr.Dispose();
             }
@@ -437,7 +437,7 @@ namespace System.Data.OleDb
         }
         internal void Value(object? value)
         {
-            if (null == value)
+            if (value is null)
             {
                 SetValueEmpty();
             }
@@ -652,7 +652,7 @@ namespace System.Data.OleDb
         }
         private void Value_BSTR(string value)
         {
-            Debug.Assert((null != value), "Value_BSTR null");
+            Debug.Assert((value is not null), "Value_BSTR null");
             Debug.Assert((NativeDBType.BSTR == DbType), "Value_BSTR");
             LengthValue(value.Length * 2); /* bytecount*/
             StatusValue(DBStatus.S_OK);
@@ -684,11 +684,11 @@ namespace System.Data.OleDb
                     bindings.DangerousRelease();
                 }
             }
-            return ((null != value) ? value : Array.Empty<byte>());
+            return ((value is not null) ? value : Array.Empty<byte>());
         }
         private void Value_ByRefBYTES(byte[] value)
         {
-            Debug.Assert(null != value, "Value_ByRefBYTES null");
+            Debug.Assert(value is not null, "Value_ByRefBYTES null");
             Debug.Assert((NativeDBType.BYREF | NativeDBType.BYTES) == DbType, "Value_ByRefBYTES");
 
             // we expect the provider/server to apply the silent truncation when binding BY_REF
@@ -736,7 +736,7 @@ namespace System.Data.OleDb
         }
         private void Value_ByRefWSTR(string value)
         {
-            Debug.Assert(null != value, "Value_ByRefWSTR null");
+            Debug.Assert(value is not null, "Value_ByRefWSTR null");
             Debug.Assert((NativeDBType.BYREF | NativeDBType.WSTR) == DbType, "Value_ByRefWSTR");
             // we expect the provider/server to apply the silent truncation when binding BY_REF
             // if (value.Length < ValueBindingOffset) { throw "Offset must refer to a location within the value" }
@@ -755,7 +755,7 @@ namespace System.Data.OleDb
         }
         private void Value_ByRefWSTR(char[] value)
         {
-            Debug.Assert(null != value, "Value_ByRefWSTR null");
+            Debug.Assert(value is not null, "Value_ByRefWSTR null");
             Debug.Assert((NativeDBType.BYREF | NativeDBType.WSTR) == DbType, "Value_ByRefWSTR");
             // we expect the provider/server to apply the silent truncation when binding BY_REF
             // if (value.Length < ValueBindingOffset) { throw "Offset must refer to a location within the value" }
@@ -784,7 +784,7 @@ namespace System.Data.OleDb
         }
         private void Value_BYTES(byte[] value)
         {
-            Debug.Assert(null != value, "Value_BYTES null");
+            Debug.Assert(value is not null, "Value_BYTES null");
             // we silently truncate when the user has specified a given Size
             int bytecount = ((ValueBindingOffset < value.Length) ? Math.Min(value.Length - ValueBindingOffset, ColumnBindingMaxLen) : 0);
             LengthValue(bytecount);
@@ -1206,7 +1206,7 @@ namespace System.Data.OleDb
         }
         private void Value_WSTR(string value)
         {
-            Debug.Assert(null != value, "Value_BYTES null");
+            Debug.Assert(value is not null, "Value_BYTES null");
             Debug.Assert(NativeDBType.WSTR == DbType, "Value_WSTR");
             // we silently truncate when the user has specified a given Size
             int charCount = ((ValueBindingOffset < value.Length) ? Math.Min(value.Length - ValueBindingOffset, (ColumnBindingMaxLen - 2) / 2) : 0);
@@ -1221,7 +1221,7 @@ namespace System.Data.OleDb
         }
         private void Value_WSTR(char[] value)
         {
-            Debug.Assert(null != value, "Value_BYTES null");
+            Debug.Assert(value is not null, "Value_BYTES null");
             Debug.Assert(NativeDBType.WSTR == DbType, "Value_WSTR");
             // we silently truncate when the user has specified a given Size
             int charCount = ((ValueBindingOffset < value.Length) ? Math.Min(value.Length - ValueBindingOffset, (ColumnBindingMaxLen - 2) / 2) : 0);
@@ -1274,7 +1274,7 @@ namespace System.Data.OleDb
         internal byte[] ValueByteArray()
         {
             byte[]? value = (byte[]?)_value;
-            if (null == value)
+            if (value is null)
             {
                 switch (StatusValue())
                 {
@@ -1342,7 +1342,7 @@ namespace System.Data.OleDb
         internal OleDbDataReader ValueChapter()
         {
             OleDbDataReader? value = (OleDbDataReader?)_value;
-            if (null == value)
+            if (value is null)
             {
                 switch (StatusValue())
                 {
@@ -1607,7 +1607,7 @@ namespace System.Data.OleDb
         internal string ValueString()
         {
             string? value = (string?)_value;
-            if (null == value)
+            if (value is null)
             {
                 switch (StatusValue())
                 {
@@ -1654,7 +1654,7 @@ namespace System.Data.OleDb
         private object ValueVariant()
         {
             object? value = _value;
-            if (null == value)
+            if (value is null)
             {
                 value = Value_VARIANT();
                 _value = value;
