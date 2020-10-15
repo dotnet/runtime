@@ -326,31 +326,11 @@ var MonoSupportLib = {
 			return result;
 		},
 
-		_zero_region_fast: function (byteOffset, sizeBytes) {
-			var elementOffset = byteOffset / 4;
-			var end = elementOffset + (sizeBytes / 4);
-
-			var heap = Module.HEAP32;
-			while (elementOffset < end) {
-				heap[elementOffset] = 0;
-				elementOffset++;
-			}
-		},
-
-		_zero_region_slow: function (byteOffset, sizeBytes) {
-			var end = byteOffset + sizeBytes;
-			var heap = Module.HEAPU8;
-			while (byteOffset < end) {
-				heap[byteOffset] = 0;
-				byteOffset++;
-			}
-		},
-
 		_zero_region: function (byteOffset, sizeBytes) {
 			if (((byteOffset % 4) === 0) && ((sizeBytes % 4) === 0))
-				return this._zero_region_fast (byteOffset, sizeBytes);
-
-			return this._zero_region_slow (byteOffset, sizeBytes);
+				Module.HEAP32.fill(0, byteOffset / 4, sizeBytes / 4);
+			else
+				Module.HEAP8.fill(0, byteOffset, sizeBytes);
 		},
 
 		/**
