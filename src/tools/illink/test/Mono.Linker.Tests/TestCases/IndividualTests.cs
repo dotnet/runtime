@@ -13,7 +13,6 @@ using Mono.Linker.Tests.Cases.Warnings.Individual;
 using Mono.Linker.Tests.Extensions;
 using Mono.Linker.Tests.TestCasesRunner;
 using NUnit.Framework;
-using NUnit.Framework.Internal;
 
 namespace Mono.Linker.Tests.TestCases
 {
@@ -69,7 +68,7 @@ namespace Mono.Linker.Tests.TestCases
 				if (!outputPath.Exists ())
 					Assert.Fail ($"A cs file with a list of UnconditionalSuppressMessage attributes was expected to exist at {outputPath}");
 
-				Assert.IsTrue (File.ReadAllLines (outputPath).SequenceEqual (
+				Assert.That (File.ReadAllLines (outputPath), Is.EquivalentTo (
 					File.ReadAllLines (TestsDirectory.Combine ($"TestCases/Dependencies/WarningSuppressionExpectations{i + 1}.cs"))));
 			}
 		}
@@ -83,7 +82,7 @@ namespace Mono.Linker.Tests.TestCases
 			if (!outputPath.Exists ())
 				Assert.Fail ($"An XML file with a list of UnconditionalSuppressMessage attributes was expected to exist at {outputPath}");
 
-			Assert.IsTrue (File.ReadAllLines (outputPath).SequenceEqual (
+			Assert.That (File.ReadAllLines (outputPath), Is.EquivalentTo (
 				File.ReadAllLines (TestsDirectory.Combine ($"TestCases/Dependencies/WarningSuppressionExpectations3.xml"))));
 		}
 
@@ -96,8 +95,8 @@ namespace Mono.Linker.Tests.TestCases
 				.Where (lm => lm.Category != MessageCategory.Info && lm.Category != MessageCategory.Diagnostic).ToList ();
 			loggedMessages.Sort ();
 
-			Assert.IsTrue (string.Join (Environment.NewLine, loggedMessages).SequenceEqual (
-				File.ReadAllText (TestsDirectory.Combine ($"TestCases/Dependencies/SortedWarnings.txt"))));
+			Assert.That (loggedMessages.Select (m => m.ToString ()), Is.EquivalentTo (
+				File.ReadAllLines (TestsDirectory.Combine ($"TestCases/Dependencies/SortedWarnings.txt"))));
 		}
 
 		[Test]
