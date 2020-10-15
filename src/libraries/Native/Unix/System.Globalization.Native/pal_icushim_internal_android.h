@@ -513,4 +513,6 @@ int32_t usearch_first(UStringSearch * strsrch, UErrorCode * status);
 int32_t usearch_getMatchedLength(const UStringSearch * strsrch);
 int32_t usearch_last(UStringSearch * strsrch, UErrorCode * status);
 UStringSearch * usearch_openFromCollator(const UChar * pattern, int32_t patternlength, const UChar * text, int32_t textlength, const UCollator * collator, UBreakIterator * breakiter, UErrorCode * status);
+void usearch_setPattern(UStringSearch * strsrch, const UChar * pattern, int32_t patternlength, UErrorCode * status);
+void usearch_setText(UStringSearch * strsrch, const UChar * text, int32_t textlength, UErrorCode * status);
 void ucol_setMaxVariable(UCollator * coll, UColReorderCode group, UErrorCode * pErrorCode);
