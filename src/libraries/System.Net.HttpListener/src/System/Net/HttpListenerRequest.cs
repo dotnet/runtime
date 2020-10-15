@@ -110,7 +110,6 @@ namespace System.Net
 
         public string? ContentType => Headers[HttpKnownHeaderNames.ContentType];
 
-        
         public bool IsLocal => LocalEndPoint!.Address.Equals(RemoteEndPoint!.Address);
 
         public bool IsWebSocketRequest
@@ -207,7 +206,6 @@ namespace System.Net
 
         public string UserAgent => Headers[HttpKnownHeaderNames.UserAgent]!;
 
-        
         public string UserHostAddress => LocalEndPoint!.ToString();
 
         public string UserHostName => Headers[HttpKnownHeaderNames.Host]!;
