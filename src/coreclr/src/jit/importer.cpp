@@ -1062,6 +1062,15 @@ bool Compiler::impCheckImplicitArgumentCoercion(var_types sigType, var_types nod
         {
             return true;
         }
+
+        // This condition tolerates such IL:
+        // ;  V00 this              ref  this class-hnd
+        // ldarg.0
+        // call(byref)
+        if (TypeIs(nodeType, TYP_REF))
+        {
+            return true;
+        }
     }
     else if (varTypeIsStruct(sigType))
     {
@@ -1082,12 +1091,11 @@ bool Compiler::impCheckImplicitArgumentCoercion(var_types sigType, var_types nod
             return true;
         }
 
-        // TODO-CleanUp: it covers IL like:
+        // It tolerates IL that ECMA does not allow but that is commonly used.
+        // Example:
         //   V02 loc1           struct <RTL_OSVERSIONINFOEX, 32>
         //   ldloca.s     0x2
         //   call(native int)
-        // It is not clear if we need a cast between byref, that ldloca.s returns and long that is
-        // expected by the call signature.
         if (TypeIs(nodeType, TYP_BYREF))
         {
             return true;
