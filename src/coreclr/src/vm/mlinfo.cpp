@@ -3025,18 +3025,32 @@ void MarshalInfo::SetupArgumentSizes()
     }
     CONTRACTL_END;
 
+    const unsigned targetPointerSize = TARGET_POINTER_SIZE;
+#if !defined(TARGET_ARM64)
+    _ASSERTE(targetPointerSize == StackElemSize(TARGET_POINTER_SIZE));
     if (m_byref)
     {
-        m_nativeArgSize = StackElemSize(TARGET_POINTER_SIZE);
+        m_nativeArgSize = targetPointerSize;
     }
     else
     {
         m_nativeArgSize = StackElemSize(GetNativeSize(m_type));
     }
+#else
+    _ASSERTE(targetPointerSize == StackElemSize(TARGET_POINTER_SIZE, false));
+    if (m_byref)
+    {
+        m_nativeArgSize = targetPointerSize;
+    }
+    else
+    {
+        m_nativeArgSize = StackElemSize(GetNativeSize(m_type), IsValueClass(m_type));
+    }
+#endif
 
 #ifdef ENREGISTERED_PARAMTYPE_MAXSIZE
     if (m_nativeArgSize > ENREGISTERED_PARAMTYPE_MAXSIZE)
-        m_nativeArgSize = StackElemSize(TARGET_POINTER_SIZE);
+        m_nativeArgSize = targetPointerSize;
 #endif // ENREGISTERED_PARAMTYPE_MAXSIZE
 }
 

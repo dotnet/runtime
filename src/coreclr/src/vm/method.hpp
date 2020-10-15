@@ -2743,7 +2743,10 @@ public:
     void SetNativeStackArgSize(WORD cbArgSize)
     {
         LIMITED_METHOD_CONTRACT;
-        _ASSERTE(IsILStub() && (cbArgSize % TARGET_POINTER_SIZE) == 0);
+        _ASSERTE(IsILStub());
+#if !defined(OSX_ARM64_ABI)
+        _ASSERTE((cbArgSize % TARGET_POINTER_SIZE) == 0);
+#endif
         m_dwExtendedFlags = (m_dwExtendedFlags & ~nomdStackArgSize) | ((DWORD)cbArgSize << 16);
     }
 

@@ -1383,9 +1383,15 @@ int ArgIteratorTemplate<ARGITERATOR_BASE>::GetNextOffset()
     default:
         break;
     }
+    const bool isValueType = (argType == ELEMENT_TYPE_VALUETYPE);
+    int cbArg = StackElemSize(argSize, isValueType);
 
-    int cbArg = StackElemSize(argSize);
+#if !defined(OSX_ARM64_ABI)
+    _ASSERTE(cbArg% STACK_ELEM_SIZE == 0);
     int cArgSlots = cbArg / STACK_ELEM_SIZE;
+#else
+    int cArgSlots = (cbArg + STACK_ELEM_SIZE - 1) / STACK_ELEM_SIZE;
+#endif
 
     if (cFPRegs>0 && !this->IsVarArg())
     {
@@ -1689,7 +1695,12 @@ void ArgIteratorTemplate<ARGITERATOR_BASE>::ForceSigWalk()
         stackElemSize = STACK_ELEM_SIZE;
 #endif // UNIX_AMD64_ABI
 #else // TARGET_AMD64
+#if defined(TARGET_ARM64)
+        const bool isValueType = (GetArgType() == ELEMENT_TYPE_VALUETYPE);
+        stackElemSize = StackElemSize(GetArgSize(), isValueType);
+#else
         stackElemSize = StackElemSize(GetArgSize());
+#endif
 #if defined(ENREGISTERED_PARAMTYPE_MAXSIZE)
         if (IsArgPassedByRef())
             stackElemSize = STACK_POINTER_SIZE;

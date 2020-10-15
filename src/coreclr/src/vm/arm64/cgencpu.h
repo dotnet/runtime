@@ -81,14 +81,34 @@ void     R8ToFPSpill(void* pSpillSlot, SIZE_T  srcDoubleAsSIZE_T)
 // Parameter size
 //**********************************************************************
 
-typedef INT64 StackElemType;
-#define STACK_ELEM_SIZE sizeof(StackElemType)
+#if defined(OSX_ARM64_ABI)
+#define STACK_ELEM_SIZE 1
+#define STACK_POINTER_SIZE 8
+#else
+#define STACK_ELEM_SIZE 8
 #define STACK_POINTER_SIZE 8
 
-// The expression below assumes STACK_ELEM_SIZE is a power of 2, so check that.
-static_assert(((STACK_ELEM_SIZE & (STACK_ELEM_SIZE-1)) == 0), "STACK_ELEM_SIZE must be a power of 2");
+#endif
 
-#define StackElemSize(parmSize) (((parmSize) + STACK_ELEM_SIZE - 1) & ~((ULONG)(STACK_ELEM_SIZE - 1)))
+inline unsigned StackElemSize(unsigned parmSize, bool isValueType = true)
+{
+#if defined(OSX_ARM64_ABI)
+    if (isValueType)
+    {
+        const unsigned STACK_STRUCT_ALIGNMENT = sizeof(INT64);
+        static_assert(((STACK_STRUCT_ALIGNMENT & (STACK_STRUCT_ALIGNMENT-1)) == 0), "STACK_STRUCT_ALIGNMENT must be a power of 2");
+        return ((parmSize + STACK_STRUCT_ALIGNMENT - 1) & ~(STACK_STRUCT_ALIGNMENT - 1));
+    }
+    else
+    {
+        return parmSize;
+    }
+#else
+    // The expression below assumes STACK_ELEM_SIZE is a power of 2, so check that.
+    static_assert(((STACK_ELEM_SIZE & (STACK_ELEM_SIZE-1)) == 0), "STACK_ELEM_SIZE must be a power of 2");
+    return ((parmSize + STACK_ELEM_SIZE - 1) & ~(STACK_ELEM_SIZE - 1));
+#endif
+}
 
 //
 // JIT HELPERS.
