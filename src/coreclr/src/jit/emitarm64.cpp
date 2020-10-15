@@ -11537,7 +11537,7 @@ void emitter::emitDispImm(ssize_t imm, bool addComma, bool alwaysHex /* =false *
     // significant bits beyond the lowest 8-bits.
     if (emitComp->opts.disDiffable)
     {
-        ssize_t top32bits = (val >> 32);
+        ssize_t top32bits = (imm >> 32);
         if ((top32bits != 0) && (top32bits != -1))
         {
             imm = 0xD1FFAB1ED1FFAB1Eull;
@@ -11545,8 +11545,8 @@ void emitter::emitDispImm(ssize_t imm, bool addComma, bool alwaysHex /* =false *
         else
         {
             INT32 lo32bits  = (INT32)imm;
-            INT32 top12bits = (lo32bits >> 20);
-            if ((top12bits != 0) && (top12bits != -1))
+            INT32 top16bits = (lo32bits >> 16);
+            if ((top16bits != 0) && (top16bits != -1))
             {
                 imm = 0xD1FFAB1E;
             }
