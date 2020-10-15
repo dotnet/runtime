@@ -95,7 +95,7 @@ namespace System.Net.Security.Tests
                 Task t2 = server.AuthenticateAsServerAsync(certificate);
 
                 await Assert.ThrowsAsync<AuthenticationException>(() => t1);
-                await t2;
+                // Ignore outcome of t2. It can succeed or fail depending on timing.
             }
         }
 
