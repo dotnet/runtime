@@ -394,6 +394,8 @@ namespace System.Net.Quic.Implementations.Managed
                 return;
             }
 
+            ProcessLostPackets(ctx);
+
             var level = GetWriteLevel(ctx.Timestamp);
             var origMemory = writer.Buffer;
             int written = 0;
@@ -439,6 +441,22 @@ namespace System.Net.Quic.Implementations.Managed
                 _trace?.OnDatagramSent(written);
         }
 
+        private void ProcessLostPackets(QuicSocketContext.SendContext ctx)
+        {
+            for (var space = PacketSpace.Initial; space <= PacketSpace.Application; space++)
+            {
+                var recoverySpace = Recovery.GetPacketNumberSpace(space);
+                // process lost packets
+                var lostPackets = recoverySpace.LostPackets;
+                while (lostPackets.TryDequeue(out var i))
+                {
+                    _trace?.OnPacketLost(recoverySpace.PacketType, i.packet.PacketNumber, i.trigger);
+                    OnPacketLost(i.packet, GetPacketNumberSpace((EncryptionLevel)space));
+                    ctx.ReturnPacket(i.packet);
+                }
+            }
+        }
+
         private bool SendOne(QuicWriter writer, EncryptionLevel level, QuicSocketContext.SendContext context)
         {
             (PacketType packetType, PacketSpace packetSpace) = level switch
@@ -453,15 +471,6 @@ namespace System.Net.Quic.Implementations.Managed
             var pnSpace = GetPacketNumberSpace(level);
             var recoverySpace = Recovery.GetPacketNumberSpace(packetSpace);
             var seal = pnSpace.SendCryptoSeal!;
-
-            // process lost packets
-            var lostPackets = recoverySpace.LostPackets;
-            while (lostPackets.TryDequeue(out var i))
-            {
-                _trace?.OnPacketLost(pnSpace.PacketType, i.packet.PacketNumber, i.trigger);
-                OnPacketLost(i.packet, pnSpace);
-                context.ReturnPacket(i.packet);
-            }
 
             int maxPacketLength = (int)(Tls.IsHandshakeComplete
                 // Limit maximum size so that it can be always encoded into the reserved 2 bytes of `payloadLengthSpan`

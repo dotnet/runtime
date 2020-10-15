@@ -373,7 +373,10 @@ namespace System.Net.Quic.Implementations.Managed
                 return;
             }
 
-            if (!ReferenceEquals(_peerTransportParameters, TransportParameters.Default))
+            // get peer transport parameters, if we didn't do so already
+            if (!ReferenceEquals(_peerTransportParameters, TransportParameters.Default)
+                // the transport parameters may not have been received yet
+                || Tls.WriteLevel == EncryptionLevel.Initial)
             {
                 return;
             }
@@ -456,8 +459,11 @@ namespace System.Net.Quic.Implementations.Managed
             }
 
             // if pending errors, send them in appropriate epoch,
-            if (_outboundError != null && _outboundError.IsQuicError)
+            if (_outboundError?.IsQuicError == true)
             {
+                if (!ShouldSendConnectionClose(timestamp))
+                    return EncryptionLevel.None;
+
                 EncryptionLevel desiredLevel = Tls.WriteLevel;
                 if (!Connected && desiredLevel == EncryptionLevel.Application)
                 {
@@ -472,12 +478,9 @@ namespace System.Net.Quic.Implementations.Managed
             {
                 var level = (EncryptionLevel)i;
                 var pnSpace = _pnSpaces[i];
-                var recoverySpace = Recovery.GetPacketNumberSpace((PacketSpace)i);
 
                 // to advance handshake
                 if (pnSpace.CryptoOutboundStream.IsFlushable ||
-                    // resend lost data
-                    recoverySpace.LostPackets.Count > 0 ||
                     // send acknowledgement if needed, prefer sending acks in Initial and Handshake
                     // immediately since there is a great chance of coalescing with next level
                     (i < 2 ? pnSpace.AckElicited : pnSpace.NextAckTimer <= timestamp))
@@ -489,7 +492,7 @@ namespace System.Net.Quic.Implementations.Managed
             if (_pingWanted ||
                 _streams.HasFlushableStreams ||
                 _streams.HasUpdateableStreams ||
-                _outboundError != null)
+                ShouldSendConnectionClose(timestamp))
             {
                 return EncryptionLevel.Application;
             }

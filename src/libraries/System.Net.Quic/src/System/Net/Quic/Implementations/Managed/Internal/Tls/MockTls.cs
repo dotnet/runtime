@@ -6,6 +6,7 @@ using System.Buffers.Binary;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
+using System.Linq;
 using System.Net.Mail;
 using System.Net.Quic.Implementations.Managed.Internal.Headers;
 using System.Net.Quic.Implementations.Managed.Internal.Tls.OpenSsl;
@@ -48,6 +49,8 @@ namespace System.Net.Quic.Implementations.Managed.Internal.Tls
         private ArrayBuffer _recvBufferHandshake = new ArrayBuffer(1200, true);
 
         private readonly bool _isServer;
+
+        private bool _sentInitial;
 
         public MockTls(ManagedQuicConnection connection, QuicClientConnectionOptions options, TransportParameters localTransportParams)
             : this(connection, localTransportParams, options.ClientAuthenticationOptions?.ApplicationProtocols)
@@ -104,75 +107,51 @@ namespace System.Net.Quic.Implementations.Managed.Internal.Tls
            //
            //                                           Handshake[1]: ACK[0]
 
+           if (IsHandshakeComplete)
+               return true;
+
            if (!_isServer)
            {
-               switch (WriteLevel)
+               if (!_sentInitial)
                {
-                   case EncryptionLevel.Initial:
-                   {
-                       WriteInitial();
+                   WriteInitial();
+                   _sentInitial = true;
+               }
 
-                       // wait for server reply
-                       WriteLevel = EncryptionLevel.Handshake;
-                       break;
-                   }
+               if (_recvBufferInitial.ActiveLength > 0)
+               {
+                   ReadInitial();
+                   WriteLevel = EncryptionLevel.Handshake;
+               }
 
-                   case EncryptionLevel.Handshake:
-                   {
-                       if (_recvBufferInitial.ActiveLength > 0)
-                       {
-                           ReadInitial();
-                       }
+               if (_recvBufferHandshake.ActiveLength > 0)
+               {
+                   ReadHandshake();
+                   WriteHandshake();
 
-                       if (_recvBufferHandshake.ActiveLength > 0)
-                       {
-                           ReadHandshake();
-                           WriteHandshake();
-
-                           WriteLevel = EncryptionLevel.Application;
-                           IsHandshakeComplete = true;
-                       }
-
-                       break;
-                   }
-                   case EncryptionLevel.Application:
-                       return true; // done
-                   default:
-                       // should be unreachable
-                       throw new ArgumentOutOfRangeException();
+                   WriteLevel = EncryptionLevel.Application;
+                   IsHandshakeComplete = true;
                }
            }
            else // server
            {
-               switch (WriteLevel)
+               if (_recvBufferInitial.ActiveLength > 0)
                {
-                   case EncryptionLevel.Initial:
-                       if (_recvBufferInitial.ActiveLength > 0)
-                       {
-                           ReadInitial();
+                   ReadInitial();
 
-                           WriteInitial();
-                           WriteHandshake();
+                   WriteInitial();
+                   WriteHandshake();
 
-                           WriteLevel = EncryptionLevel.Handshake;
-                       }
+                   WriteLevel = EncryptionLevel.Handshake;
+               }
 
-                       break;
-                   case EncryptionLevel.Handshake:
-                       if (_recvBufferHandshake.ActiveLength > 0)
-                       {
-                           IsHandshakeComplete = true;
-                           WriteLevel = EncryptionLevel.Application;
+               if (_recvBufferHandshake.ActiveLength > 0)
+               {
+                   IsHandshakeComplete = true;
+                   WriteLevel = EncryptionLevel.Application;
 
-                           // send an improvised fin message
-                           AddHandshakeData(EncryptionLevel.Application, _magicBytes);
-                       }
-                       break;
-                   case EncryptionLevel.Application:
-                       break;
-                   default:
-                       // should be unreachable
-                       throw new ArgumentOutOfRangeException();
+                   // send an improvised fin message
+                   AddHandshakeData(EncryptionLevel.Application, _magicBytes);
                }
            }
 
@@ -254,7 +233,7 @@ namespace System.Net.Quic.Implementations.Managed.Internal.Tls
 
         public TransportParameters? GetPeerTransportParameters(bool isServer) => _remoteTransportParams;
 
-        public SslApplicationProtocol GetNegotiatedProtocol() => throw new NotImplementedException();
+        public SslApplicationProtocol GetNegotiatedProtocol() => _alpn[0];
 
         private void AddHandshakeData(EncryptionLevel level, ReadOnlySpan<byte> data)
         {

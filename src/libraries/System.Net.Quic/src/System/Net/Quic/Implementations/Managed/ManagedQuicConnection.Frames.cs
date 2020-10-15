@@ -643,7 +643,6 @@ namespace System.Net.Quic.Implementations.Managed
                 buffer.Receive(frame.Offset, frame.StreamData, frame.Fin);
             }
 
-
             return ProcessPacketResult.Ok;
         }
 
@@ -728,29 +727,34 @@ namespace System.Net.Quic.Implementations.Managed
             }
         }
 
-        private void WriteConnectionCloseFrame(QuicWriter writer, QuicSocketContext.SendContext context)
+        private bool ShouldSendConnectionClose(long timestamp)
         {
             if (_outboundError == null)
             {
                 // nothing to send
+                return false;
+            }
+
+            // TODO-RZ: During the closing period, an endpoint SHOULD limit the number of packets it generates
+            // containing a CONNECTION_CLOSE frame. For instance, wait progressively increasing number of packets or
+            // amount of time before responding.
+            return _lastConnectionCloseSentTimestamp < timestamp;
+        }
+
+        private void WriteConnectionCloseFrame(QuicWriter writer, QuicSocketContext.SendContext context)
+        {
+            if (!ShouldSendConnectionClose(context.Timestamp))
+            {
                 return;
             }
 
             if (_closingPeriodEndTimestamp == null)
             {
                 // After sending a CONNECTION_CLOSE frame, an endpoint immediately enters the closing state.
-                StartClosing(context.Timestamp, _outboundError);
+                StartClosing(context.Timestamp, _outboundError!);
             }
 
-            // TODO-RZ: During the closing period, an endpoint SHOULD limit the number of packets it generates
-            // containing a CONNECTION_CLOSE frame. For instance, wait progressively increasing number of packets or
-            // amount of time before responding.
-            if (_lastConnectionCloseSentTimestamp >= context.Timestamp)
-            {
-                return;
-            }
-
-            var frame = new ConnectionCloseFrame((long)_outboundError.ErrorCode,
+            var frame = new ConnectionCloseFrame((long)_outboundError!.ErrorCode,
                 _outboundError.IsQuicError,
                 _outboundError.FrameType,
                 _outboundError.ReasonPhrase);
