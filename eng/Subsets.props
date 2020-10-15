@@ -64,6 +64,7 @@
 
     <DefaultInstallerSubsets>corehost+installer.managed+installer.depprojs+installer.pkgprojs+bundles+installers+installer.tests</DefaultInstallerSubsets>
     <DefaultInstallerSubsets Condition="'$(RuntimeFlavor)' == 'Mono'">installer.pkgprojs</DefaultInstallerSubsets>
+    <DefaultInstallerSubsets Condition="'$(RuntimeFlavor)' == 'Mono' and '$(TargetsMobile)' != 'true'">corehost+$(DefaultInstallerSubsets)</DefaultInstallerSubsets>
   </PropertyGroup>
 
   <PropertyGroup>
