@@ -11048,6 +11048,11 @@ void Compiler::fgUpdateLoopsAfterCompacting(BasicBlock* block, BasicBlock* bNext
             optLoopTable[loopNum].lpEntry = block;
         }
     }
+
+    if (bNext->bbFlags & BBF_FIRST_BLOCK_IN_INNERLOOP)
+    {
+        block->bbFlags |= BBF_FIRST_BLOCK_IN_INNERLOOP;
+    }
 }
 
 /*****************************************************************************************************
@@ -11545,6 +11550,11 @@ void Compiler::fgRemoveBlock(BasicBlock* block, bool unreachable)
         else if (succBlock->isLoopHead() && bPrev && (succBlock->bbNum <= bPrev->bbNum))
         {
             skipUnmarkLoop = true;
+        }
+
+        if (block->bbFlags & BBF_FIRST_BLOCK_IN_INNERLOOP)
+        {
+            succBlock->bbFlags |= BBF_FIRST_BLOCK_IN_INNERLOOP;
         }
 
         noway_assert(succBlock);
