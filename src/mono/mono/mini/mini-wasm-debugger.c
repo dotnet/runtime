@@ -53,6 +53,7 @@ EMSCRIPTEN_KEEPALIVE gboolean mono_wasm_get_array_values (int object_id, int sta
 EMSCRIPTEN_KEEPALIVE gboolean mono_wasm_invoke_getter_on_object (int object_id, const char* name);
 EMSCRIPTEN_KEEPALIVE gboolean mono_wasm_invoke_getter_on_value (void *value, MonoClass *klass, const char *name);
 EMSCRIPTEN_KEEPALIVE gboolean mono_wasm_get_deref_ptr_value (void *value_addr, MonoClass *klass);
+EMSCRIPTEN_KEEPALIVE void mono_wasm_set_is_debugger_attached (gboolean is_attached);
 
 //JS functions imported that we use
 extern void mono_wasm_add_frame (int il_offset, int method_token, int frame_id, const char *assembly_name, const char *method_name);
@@ -75,6 +76,8 @@ static void assembly_loaded (MonoProfiler *prof, MonoAssembly *assembly);
 
 //FIXME move all of those fields to the profiler object
 static gboolean debugger_enabled;
+
+static gboolean has_pending_lazy_loaded_assemblies;
 
 static int event_request_id;
 static GHashTable *objrefs;
@@ -497,6 +500,15 @@ assembly_loaded (MonoProfiler *prof, MonoAssembly *assembly)
 	DEBUG_PRINTF (2, "assembly_loaded callback called for %s\n", assembly->aname.name);
 	MonoImage *assembly_image = assembly->image;
 	MonoImage *pdb_image = NULL;
+
+	if (!mono_is_debugger_attached ()) {
+		has_pending_lazy_loaded_assemblies = TRUE;
+		return;
+	}
+
+	if (mono_wasm_assembly_already_added(assembly->aname.name))
+		return;
+
 	if (mono_has_pdb_checksum ((char *) assembly_image->raw_data, assembly_image->raw_data_len)) { //if it's a release assembly we don't need to send to DebuggerProxy
 		MonoDebugHandle *handle = mono_debug_get_handle (assembly_image);
 		if (handle) {
@@ -1555,6 +1567,24 @@ mono_wasm_invoke_getter_on_value (void *value, MonoClass *klass, const char *nam
 	}
 
 	return invoke_getter (value, klass, name);
+}
+
+EMSCRIPTEN_KEEPALIVE void 
+mono_wasm_set_is_debugger_attached (gboolean is_attached)
+{
+	mono_set_is_debugger_attached (is_attached);
+	if (is_attached && has_pending_lazy_loaded_assemblies)
+	{
+		MonoDomain* domain =  mono_domain_get ();
+		mono_domain_assemblies_lock (domain);
+		GSList *tmp;
+		for (tmp = domain->domain_assemblies; tmp; tmp = tmp->next) {
+			MonoAssembly *ass = (MonoAssembly *)tmp->data;
+			assembly_loaded (NULL, ass);
+		}
+		mono_domain_assemblies_unlock (domain);
+		has_pending_lazy_loaded_assemblies = FALSE;
+	}
 }
 
 // Functions required by debugger-state-machine.
