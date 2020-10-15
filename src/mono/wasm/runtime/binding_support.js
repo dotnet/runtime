@@ -770,7 +770,7 @@ var BindingSupportLib = {
 			rawFunctionText = 
 				uriPrefix + strictPrefix + 
 				rawFunctionText.replace(lineBreakRE, "\r\n    ") + 
-				"    return " + escapedFunctionIdentifier + ";\r\n";
+				`    return ${escapedFunctionIdentifier};\r\n`;
 
 			var result = null, keys = null;
 
@@ -900,8 +900,8 @@ var BindingSupportLib = {
 			var indirectLocalOffset = 0;
 
 			body.push (
-				"if (!buffer) buffer = Module._malloc (" + bufferSizeBytes + ");",
-				"var indirectStart = buffer + " + indirectBaseOffset + ";",
+				`if (!buffer) buffer = Module._malloc (${bufferSizeBytes});`,
+				`var indirectStart = buffer + ${indirectBaseOffset};`,
 				"var indirect32 = (indirectStart / 4) | 0, indirect64 = (indirectStart / 8) | 0;",
 				"var buffer32 = (buffer / 4) | 0;",
 				""
@@ -918,41 +918,46 @@ var BindingSupportLib = {
 				if (step.convert) {
 					closure[closureKey] = step.convert;
 					// body.push ("console.log('calling converter " + step.key + "', " + closureKey + ", 'with value', " + argKey + ");"); 
-					body.push ("var " + valueKey + " = " + closureKey + "(" + argKey + ", method, " + i + ");");
+					body.push (`var ${valueKey} = ${closureKey}(${argKey}, method, ${i});`);
 					// body.push ("console.log('converter result', " + valueKey + ");");
 				} else {
-					body.push ("var " + valueKey + " = " + argKey + ";");
+					body.push (`var ${valueKey} = ${argKey};`);
 					// body.push ("console.log('arg" + i + " value', " + valueKey + ");");
 				}
 
 				if (step.needs_root)
-					body.push ("rootBuffer.set (" + i + ", " + valueKey + ");");
+					body.push (`rootBuffer.set (${i}, ${valueKey});`);
 
 				if (step.indirect) {
+					var heapArrayName = null;
+
 					switch (step.indirect) {
 						case "u32":
-							body.push ("Module.HEAPU32[indirect32 + " + (indirectLocalOffset / 4) + "] = " + valueKey + ";");
+							heapArrayName = "HEAPU32";
 							break;
 						case "i32":
-							body.push ("Module.HEAP32[indirect32 + " + (indirectLocalOffset / 4) + "] = " + valueKey + ";");
+							heapArrayName = "HEAP32";
 							break;
 						case "float":
-							body.push ("Module.HEAPF32[indirect32 + " + (indirectLocalOffset / 4) + "] = " + valueKey + ";");
+							heapArrayName = "HEAPF32";
 							break;
 						case "double":
-							body.push ("Module.HEAPF64[indirect64 + " + (indirectLocalOffset / 8) + "] = " + valueKey + ";");
+							body.push (`Module.HEAPF64[indirect64 + ${(indirectLocalOffset / 8)} = ${valueKey};`);
 							break;
 						case "i64":
-							body.push ("Module.setValue (indirectStart + " + indirectLocalOffset + ", " + valueKey + ", 'i64');");					
+							body.push (`Module.setValue (indirectStart + ${indirectLocalOffset}, ${valueKey}, 'i64');`);
 							break;
 						default:
 							throw new Error ("Unimplemented indirect type: " + step.indirect);
 					}
 
-					body.push ("Module.HEAP32[buffer32 + " + i + "] = indirectStart + " + indirectLocalOffset + ";", "");
+					if (heapArrayName)
+						body.push (`Module.${heapArrayName}[indirect32 + ${(indirectLocalOffset / 4)} = ${valueKey};`);
+
+					body.push (`Module.HEAP32[buffer32 + ${i}] = indirectStart + ${indirectLocalOffset};`, "");
 					indirectLocalOffset += step.size;
 				} else {
-					body.push ("Module.HEAP32[buffer32 + " + i + "] = " + valueKey + ";");
+					body.push (`Module.HEAP32[buffer32 + ${i}] = ${valueKey};`, "");
 					indirectLocalOffset += 4;
 				}
 
@@ -1253,9 +1258,9 @@ var BindingSupportLib = {
 
 			if (converter) {
 				body.push(
-					"var argsRootBuffer = binding_support._get_args_root_buffer_for_method_call (" + converterKey + ");",
-					"var scratchBuffer = binding_support._get_buffer_for_method_call (" + converterKey + ");",
-					"var buffer = " + converterKey + ".compiled_function (",
+					`var argsRootBuffer = binding_support._get_args_root_buffer_for_method_call (${converterKey});`,
+					`var scratchBuffer = binding_support._get_buffer_for_method_call (${converterKey});`,
+					`var buffer = ${converterKey}.compiled_function (`,
 					"    scratchBuffer, argsRootBuffer, method,"
 				);
 
@@ -1281,7 +1286,7 @@ var BindingSupportLib = {
 			if (converter.is_result_definitely_unmarshaled) {
 				body.push ("var is_result_marshaled = false;");
 			} else if (converter.is_result_possibly_unmarshaled) {
-				body.push ("var is_result_marshaled = arguments.length !== " + converter.result_unmarshaled_if_argc + ";");
+				body.push (`var is_result_marshaled = arguments.length !== ${converter.result_unmarshaled_if_argc};`);
 				// body.push ("console.log('is_result_marshaled=', is_result_marshaled, 'for argc', arguments.length, 'and signature " + converter.args_marshal + " (bound)');");
 			} else {
 				body.push ("var is_result_marshaled = true;");
@@ -1299,7 +1304,7 @@ var BindingSupportLib = {
 			body.push(
 				"",
 				"resultRoot.value = binding_support.invoke_method (method, this_arg, buffer, exceptionRoot.get_address ());",
-				"binding_support._handle_exception_for_call (" + converterKey + ", buffer, resultRoot, exceptionRoot, argsRootBuffer);",
+				`binding_support._handle_exception_for_call (${converterKey}, buffer, resultRoot, exceptionRoot, argsRootBuffer);`,
 				"",
 				"var resultPtr = resultRoot.value, result = undefined;",
 				"if (!is_result_marshaled) ",
@@ -1328,7 +1333,7 @@ var BindingSupportLib = {
 				"    }",
 				"}",
 				"",
-				"binding_support._teardown_after_call (" + converterKey + ", buffer, resultRoot, exceptionRoot, argsRootBuffer);",
+				`binding_support._teardown_after_call (${converterKey}, buffer, resultRoot, exceptionRoot, argsRootBuffer);`,
 				"return result;"
 			);
 
