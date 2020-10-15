@@ -420,6 +420,7 @@ namespace $([System.String]::Copy($(Category)).Replace(".","_").Replace("\","").
       <AllCMDsPresent Include="$(_CMDDIR)\**\*.sh" />
       <TestAssemblies Include="@(AllCMDsPresent->'%(RelativeDir)%(Filename).dll')" />
       <TestAssemblyDirs Include="@(AllCMDsPresent->'%(RelativeDir)')" />
+      <AssembliesInTestDirs Include="%(AllCMDsPresent.RelativeDir)*.dll" Exclude="@(TestAssemblies)"/>
       <AssemblySearchPaths Include="@(TestAssemblyDirs)"/>
       <AssemblySearchPaths Include="$(MicrosoftNetCoreAppRuntimePackDir)native"/>
       <AssemblySearchPaths Include="$(MicrosoftNetCoreAppRuntimePackDir)lib/$(NetCoreAppCurrent)"/>
@@ -431,6 +432,10 @@ namespace $([System.String]::Copy($(Category)).Replace(".","_").Replace("\","").
 
     <Copy 
         SourceFiles="@(TestAssemblies)"
+        DestinationFolder="$(OutputDir)" />
+
+    <Copy 
+        SourceFiles="@(AssembliesInTestDirs)"
         DestinationFolder="$(OutputDir)" />
 
     <Copy 
