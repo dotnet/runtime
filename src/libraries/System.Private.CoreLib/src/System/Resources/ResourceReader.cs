@@ -2,12 +2,14 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 #nullable enable
+using System.Buffers.Binary;
 using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Text;
+using Internal.Runtime.CompilerServices;
 
 namespace System.Resources
 #if RESOURCES_EXTENSIONS
@@ -172,11 +174,14 @@ namespace System.Resources
 
         internal static unsafe int ReadUnalignedI4(int* p)
         {
-            byte* buffer = (byte*)p;
             // Unaligned, little endian format
-            return buffer[0] | (buffer[1] << 8) | (buffer[2] << 16) | (buffer[3] << 24);
+            int value = Unsafe.ReadUnaligned<int>(p);
+            if (!BitConverter.IsLittleEndian)
+            {
+                value = BinaryPrimitives.ReverseEndianness(value);
+            }
+            return value;
         }
-
 
         private void SkipString()
         {

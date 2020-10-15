@@ -11,6 +11,10 @@ using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Threading;
 
+#if BIGENDIAN
+using System.Buffers.Binary;
+#endif
+
 namespace System.Net.Sockets
 {
     internal static class SocketPal
@@ -648,17 +652,11 @@ namespace System.Net.Sockets
             }
 
 #if BIGENDIAN
-            ipmr.MulticastAddress = (int) (((uint) ipmr.MulticastAddress << 24) |
-                                           (((uint) ipmr.MulticastAddress & 0x0000FF00) << 8) |
-                                           (((uint) ipmr.MulticastAddress >> 8) & 0x0000FF00) |
-                                           ((uint) ipmr.MulticastAddress >> 24));
+            ipmr.MulticastAddress = BinaryPrimitives.ReverseEndianness(ipmr.MulticastAddress);
 
             if (optionValue.LocalAddress != null)
             {
-                ipmr.InterfaceAddress = (int) (((uint) ipmr.InterfaceAddress << 24) |
-                                           (((uint) ipmr.InterfaceAddress & 0x0000FF00) << 8) |
-                                           (((uint) ipmr.InterfaceAddress >> 8) & 0x0000FF00) |
-                                           ((uint) ipmr.InterfaceAddress >> 24));
+                ipmr.InterfaceAddress = BinaryPrimitives.ReverseEndianness(ipmr.InterfaceAddress);
             }
 #endif
 
@@ -791,14 +789,8 @@ namespace System.Net.Sockets
             }
 
 #if BIGENDIAN
-            ipmr.MulticastAddress = (int) (((uint) ipmr.MulticastAddress << 24) |
-                                           (((uint) ipmr.MulticastAddress & 0x0000FF00) << 8) |
-                                           (((uint) ipmr.MulticastAddress >> 8) & 0x0000FF00) |
-                                           ((uint) ipmr.MulticastAddress >> 24));
-            ipmr.InterfaceAddress = (int) (((uint) ipmr.InterfaceAddress << 24) |
-                                           (((uint) ipmr.InterfaceAddress & 0x0000FF00) << 8) |
-                                           (((uint) ipmr.InterfaceAddress >> 8) & 0x0000FF00) |
-                                           ((uint) ipmr.InterfaceAddress >> 24));
+            ipmr.MulticastAddress = BinaryPrimitives.ReverseEndianness(ipmr.MulticastAddress);
+            ipmr.InterfaceAddress = BinaryPrimitives.ReverseEndianness(ipmr.InterfaceAddress);
 #endif  // BIGENDIAN
 
             IPAddress multicastAddr = new IPAddress(ipmr.MulticastAddress);
