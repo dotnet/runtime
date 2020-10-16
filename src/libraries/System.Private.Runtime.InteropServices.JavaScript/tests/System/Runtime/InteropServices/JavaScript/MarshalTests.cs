@@ -690,23 +690,25 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
         [Fact]
         public static void ReturnUintEnum ()
         {
+            HelperMarshal._uintValue = 0;
             HelperMarshal._enumValue = TestEnum.BigValue;
             Runtime.InvokeJS(@$"
                 var get_value = Module.mono_bind_static_method (""{HelperMarshal.INTEROP_CLASS}GetEnumValue"");
                 var e = get_value ();
-                var invoke_str = Module.mono_bind_static_method (""{HelperMarshal.INTEROP_CLASS}InvokeString"");
-                invoke_str (e);
+                console.log(e);
+                var invoke_uint = Module.mono_bind_static_method (""{HelperMarshal.INTEROP_CLASS}InvokeUInt"");
+                invoke_uint (e);
             ");
-            Assert.Equal("BigValue", HelperMarshal._stringResource);
+            Assert.Equal((uint)TestEnum.BigValue, HelperMarshal._uintValue);
         }
         
         [Fact]
-        public static void PassUintEnumByName ()
+        public static void PassUintEnumByValue ()
         {
             HelperMarshal._enumValue = TestEnum.Zero;
             Runtime.InvokeJS(@$"
                 var set_enum = Module.mono_bind_static_method (""{HelperMarshal.INTEROP_CLASS}SetEnumValue"");
-                set_enum (""BigValue"");
+                set_enum (0xFFFFFFFE);
             ");
             Assert.Equal(TestEnum.BigValue, HelperMarshal._enumValue);
         }

@@ -892,7 +892,11 @@ mono_wasm_try_unbox_primitive_and_get_type (MonoObject *obj, void *result)
 
 	/* Process obj before calling into the runtime, class_from_name () can invoke managed code */
 	MonoClass *klass = mono_object_get_class (obj);
-	MonoType *type = mono_class_get_type (klass);
+	MonoType *type = mono_class_get_type (klass), *original_type = type;
+
+	if (mono_class_is_enum (klass))
+		type = mono_type_get_underlying_type (type);
+	
 	int mono_type = mono_type_get_type (type);
 	
 	// FIXME: We would prefer to unbox once here but it will fail if the value isn't unboxable
@@ -933,10 +937,15 @@ mono_wasm_try_unbox_primitive_and_get_type (MonoObject *obj, void *result)
 			*resultL = *(int64_t*)mono_object_unbox (obj);
 			break;
 		default:
+			// If we failed to do a fast unboxing, return the original type information so
+			//  that the caller can do a proper, slow unboxing later
 			*resultL = 0;
-			break;
+			obj = NULL;
+			return mono_wasm_marshal_type_from_mono_type (mono_type, klass, original_type);
 	}
 
+	// We successfully performed a fast unboxing here so use the type information
+	//  matching what we unboxed (i.e. an enum's underlying type instead of its type)
 	obj = NULL;
 	return mono_wasm_marshal_type_from_mono_type (mono_type, klass, type);
 }
