@@ -2,10 +2,6 @@
 <Project ToolsVersion="12.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <Import Project="$([MSBuild]::GetPathOfFileAbove(Directory.Build.props))" />
 
-  <PropertyGroup>
-    <IsShipping>false</IsShipping>
-  </PropertyGroup>
-
   <ItemGroup>
     <ProjectReference Include="$(RepoToolsLocalDir)tasks\mobile.tasks\AppleAppBuilder\AppleAppBuilder.csproj" />
   </ItemGroup>
