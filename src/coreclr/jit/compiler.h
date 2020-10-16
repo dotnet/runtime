@@ -2243,7 +2243,7 @@ public:
 //#define ALIGN_LOOP_MAX_CODE_SIZE 20 // Maximum code size of a loop for which loop alignment will be done.
 
     unsigned compJitAlignLoopMinBlockWeight;
-    unsigned compJitAlignLoopMaxInstrCount;
+    unsigned compJitAlignLoopMaxCodeSize;
 
 #ifdef DEBUG
     bool verbose;

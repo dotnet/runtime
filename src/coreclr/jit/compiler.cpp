@@ -2616,7 +2616,7 @@ void Compiler::compInitOptions(JitFlags* jitFlags)
     opts.compDbgEnC  = jitFlags->IsSet(JitFlags::JIT_FLAG_DEBUG_EnC);
 
     compJitAlignLoopMinBlockWeight = JitConfig.JitAlignLoopMinBlockWeight();
-    compJitAlignLoopMaxInstrCount = JitConfig.JitAlignLoopMaxInstrCount();
+    compJitAlignLoopMaxCodeSize    = JitConfig.JitAlignLoopMaxCodeSize();
 
 #if REGEN_SHORTCUTS || REGEN_CALLPAT
     // We never want to have debugging enabled when regenerating GC encoding patterns

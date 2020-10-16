@@ -12603,24 +12603,22 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
                 // Candidate for loop alignment
                 if (ig->igFlags & IGF_ALIGN_LOOP)
                 {
-                    unsigned  totalInstrCount = 0;
-                    bool      foundBackEdge   = false;
+                    unsigned  totalCodeSize = 0;
                     insGroup* loopHeaderIg    = ig->igNext;
                     for (insGroup* igInLoop = loopHeaderIg; igInLoop; igInLoop = igInLoop->igNext)
                     {
-                        totalInstrCount += igInLoop->igInsCnt;
-                        if (igInLoop->igLoopBackEdge == loopHeaderIg)
+                        totalCodeSize += igInLoop->igSize;
+                        if ((igInLoop->igLoopBackEdge == loopHeaderIg) ||
+                            (totalCodeSize > emitComp->compJitAlignLoopMaxCodeSize))
                         {
-                            foundBackEdge = true;
                             break;
                         }
                     }
 
-                    assert(foundBackEdge);
-
                     // Only align if it matches the heuristics
-                    if (totalInstrCount <= emitComp->compJitAlignLoopMaxInstrCount)
+                    if (totalCodeSize <= emitComp->compJitAlignLoopMaxCodeSize)
                     {
+                        //printf("Aligning loop in %s.\n", emitComp->info.compMethodName);
                         dst = emitOutputNOP(dst, (-(int)(size_t)dst) & 0x0f);
                         assert(((size_t)dst & 0x0f) == 0);
                     }
