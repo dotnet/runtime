@@ -121,10 +121,6 @@ namespace System.Text.Unicode
                         byte* pInputBufferFinalPosAtWhichCanSafelyLoop = pFinalPosWhereCanReadDWordFromInputBuffer - 3 * sizeof(uint); // can safely read 4 DWORDs here
                         nuint trailingZeroCount;
 
-                        Vector128<byte> bitMask128 = BitConverter.IsLittleEndian ?
-                            Vector128.Create((ushort)0x1001).AsByte() :
-                            Vector128.Create((ushort)0x0110).AsByte();
-
                         do
                         {
                             // pInputBuffer is 32-bit aligned but not necessary 128-bit aligned, so we're
@@ -134,7 +130,7 @@ namespace System.Text.Unicode
                             // within the all-ASCII vectorized code at the entry to this method).
                             if (AdvSimd.Arm64.IsSupported && BitConverter.IsLittleEndian)
                             {
-                                ulong mask = GetNonAsciiBytes(AdvSimd.LoadVector128(pInputBuffer), bitMask128);
+                                ulong mask = GetNonAsciiBytes(AdvSimd.LoadVector128(pInputBuffer));
                                 if (mask != 0)
                                 {
                                     trailingZeroCount = (nuint)BitOperations.TrailingZeroCount(mask) >> 2;
@@ -736,8 +732,12 @@ namespace System.Text.Unicode
             return pInputBuffer;
         }
 
+        private static readonly Vector128<byte> s_NonAsciiBitMask128 = BitConverter.IsLittleEndian ?
+            Vector128.Create((ushort)0x1001).AsByte() :
+            Vector128.Create((ushort)0x0110).AsByte();
+
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static ulong GetNonAsciiBytes(Vector128<byte> value, Vector128<byte> bitMask128)
+        private static ulong GetNonAsciiBytes(Vector128<byte> value)
         {
             if (!AdvSimd.Arm64.IsSupported || !BitConverter.IsLittleEndian)
             {
@@ -745,7 +745,7 @@ namespace System.Text.Unicode
             }
 
             Vector128<byte> mostSignificantBitIsSet = AdvSimd.ShiftRightArithmetic(value.AsSByte(), 7).AsByte();
-            Vector128<byte> extractedBits = AdvSimd.And(mostSignificantBitIsSet, bitMask128);
+            Vector128<byte> extractedBits = AdvSimd.And(mostSignificantBitIsSet, s_NonAsciiBitMask128);
             extractedBits = AdvSimd.Arm64.AddPairwise(extractedBits, extractedBits);
             return extractedBits.AsUInt64().ToScalar();
         }
