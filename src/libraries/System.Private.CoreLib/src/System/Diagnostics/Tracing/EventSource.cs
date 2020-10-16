@@ -229,7 +229,7 @@ namespace System.Diagnostics.Tracing
 #pragma warning restore CA1823
 #endif //FEATURE_EVENTSOURCE_XPLAT
 
-        internal static bool IsSupported { get; } = InitializeIsSupported();
+        private static bool IsSupported { get; } = InitializeIsSupported();
 
         private static bool InitializeIsSupported() =>
             AppContext.TryGetSwitch("System.Diagnostics.Tracing.EventSource.IsSupported", out bool isSupported) ? isSupported : true;
