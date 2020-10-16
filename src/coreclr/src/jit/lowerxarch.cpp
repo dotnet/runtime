@@ -5594,7 +5594,6 @@ void Lowering::ContainCheckHWIntrinsic(GenTreeHWIntrinsic* node)
                             }
                         }
                     }
-                    unreached();
                     break;
                 }
 
