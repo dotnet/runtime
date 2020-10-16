@@ -15,8 +15,8 @@ internal static partial class Interop
         internal const int SSL_TLSEXT_ERR_NOACK = 3;
         internal const int SSL_TLSEXT_ERR_OK = 0;
 
-        internal const string Ssl = "ssl";
-        internal const string Crypto = "crypto";
+        internal const string Ssl = Interop.Libraries.Ssl;
+        internal const string Crypto = Interop.Libraries.Crypto;
 
         private const string EntryPointPrefix = "";
 
@@ -24,18 +24,38 @@ internal static partial class Interop
 
         static OpenSslQuic()
         {
+            IntPtr ctx = IntPtr.Zero;
+            IntPtr ssl = IntPtr.Zero;
+
             try
             {
-                // this function does not really check that we are using the modified openssl which is required for the
-                // openssl based support, but there does not seem to be a function that can be safely called to check that
-                TlsMethod();
+                ctx = SslCtxNew(TlsMethod());
+                ssl = SslNew(ctx);
+
+                // this function is present only in the modified OpenSSL library
+                SslSetQuicMethod(ssl, IntPtr.Zero);
+
                 IsSupported = true;
             }
-            catch (DllNotFoundException)
+            // propagate the exception if the user explicitly states to use the OpenSSL based implementation
+            catch (Exception e) when (e is DllNotFoundException || e is EntryPointNotFoundException)
             {
+                if (Environment.GetEnvironmentVariable("DOTNETQUIC_OPENSSL") != null)
+                {
+                    throw new NotSupportedException(
+                        "QUIC via OpenSSL is not available. Make sure the appropriate OpenSSL version is in PATH", e);
+                }
                 // nope
                 IsSupported = false;
             }
+
+
+            // Free up the allocated native resources
+            if (ssl != IntPtr.Zero)
+                SslFree(ssl);
+
+            if (ctx != IntPtr.Zero)
+                SslCtxFree(ctx);
         }
 
         [DllImport(Ssl, EntryPoint = EntryPointPrefix + "TLS_method")]

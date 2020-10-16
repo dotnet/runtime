@@ -33,6 +33,8 @@ internal static partial class Interop
         internal const string Wtsapi32 = "wtsapi32.dll";
         internal const string CompressionNative = "clrcompression.dll";
         internal const string MsQuic = "msquic.dll";
+        internal const string Ssl = "libssl-1_1-x64.dll";
+        internal const string Crypto = "libcrypto-1_1-x64.dll";
         internal const string HostPolicy = "hostpolicy.dll";
     }
 }

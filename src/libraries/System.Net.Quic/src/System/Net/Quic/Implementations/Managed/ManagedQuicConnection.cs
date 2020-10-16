@@ -272,7 +272,7 @@ namespace System.Net.Quic.Implementations.Managed
         {
             if (Environment.GetEnvironmentVariable("DOTNETQUIC_TRACE") != null)
             {
-                string filename = $"{DateTime.Now:s}-{(isServer ? "server" : "client")}.qlog";
+                string filename = $"{DateTime.Now:yyyy-MM-dd_HH-mm-ss.fff}-{(isServer ? "server" : "client")}.qlog";
                 return new QuicTrace(File.Open(filename, FileMode.Create), odcid, isServer);
             }
 
