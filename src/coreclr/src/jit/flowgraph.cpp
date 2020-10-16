@@ -4016,8 +4016,11 @@ BasicBlock* Compiler::fgCreateGCPoll(GCPollType pollType, BasicBlock* block)
             value = gtNewIndOfIconHandleNode(TYP_INT, (size_t)addrTrap, GTF_ICON_GLOBAL_PTR, false);
         }
 
-        // Do not allow CSE. We want every read of the flag to actually happen.
-        value->gtFlags |= GTF_DONT_CSE;
+        // NOTE: in c++ an equivalent load is done via LoadWithoutBarrier() to ensure that the
+        // program order is preserved. (not hoisted out of a loop or cached in a local, for example)
+        //
+        // Here we introduce the read really late after all major optimizations are done, and the location
+        // is formally unknown, so noone could optimize the load, thus no special flags are needed.
 
         // Compare for equal to zero
         GenTree* trapRelop = gtNewOperNode(GT_EQ, TYP_INT, value, gtNewIconNode(0, TYP_INT));
