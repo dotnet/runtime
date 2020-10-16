@@ -46,7 +46,6 @@ namespace System.Security.Cryptography
         ECB = 2,
         [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
         OFB = 3,
-        [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
         CFB = 4,
         CTS = 5,
     }

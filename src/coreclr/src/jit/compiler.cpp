@@ -1877,7 +1877,6 @@ void Compiler::compInit(ArenaAllocator*       pAlloc,
 
 #ifdef DEBUG
     compCodeGenDone        = false;
-    compRegSetCheckLevel   = 0;
     opts.compMinOptsIsUsed = false;
 #endif
     opts.compMinOptsIsSet = false;
@@ -4216,9 +4215,7 @@ void Compiler::EndPhase(Phases phase)
         pCompJitTimer->EndPhase(this, phase);
     }
 #endif
-#if DUMP_FLOWGRAPHS
-    fgDumpFlowGraph(phase);
-#endif // DUMP_FLOWGRAPHS
+
     mostRecentlyActivePhase = phase;
 }
 

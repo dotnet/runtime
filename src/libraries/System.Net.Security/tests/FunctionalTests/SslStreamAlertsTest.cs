@@ -24,7 +24,7 @@ namespace System.Net.Security.Tests
         [ActiveIssue("https://github.com/dotnet/runtime/issues/18837", TestPlatforms.AnyUnix)]
         public async Task SslStream_StreamToStream_HandshakeAlert_Ok()
         {
-            (Stream stream1, Stream stream2) = ConnectedStreams.CreateBidirectional();
+            (Stream stream1, Stream stream2) = TestHelper.GetConnectedStreams();
             using (var client = new SslStream(stream1, true, AllowAnyServerCertificate))
             using (var server = new SslStream(stream2, true, FailClientCertificate))
             using (X509Certificate2 certificate = Configuration.Certificates.GetServerCertificate())
@@ -55,7 +55,7 @@ namespace System.Net.Security.Tests
         [Fact]
         public async Task SslStream_StreamToStream_ServerInitiatedCloseNotify_Ok()
         {
-            (Stream stream1, Stream stream2) = ConnectedStreams.CreateBidirectional();
+            (Stream stream1, Stream stream2) = TestHelper.GetConnectedStreams();
             using (var client = new SslStream(stream1, true, AllowAnyServerCertificate))
             using (var server = new SslStream(stream2))
             using (X509Certificate2 certificate = Configuration.Certificates.GetServerCertificate())
@@ -125,7 +125,7 @@ namespace System.Net.Security.Tests
         [Fact]
         public async Task SslStream_StreamToStream_DataAfterShutdown_Fail()
         {
-            (Stream stream1, Stream stream2) = ConnectedStreams.CreateBidirectional();
+            (Stream stream1, Stream stream2) = TestHelper.GetConnectedStreams();
             using (var client = new SslStream(stream1, true, AllowAnyServerCertificate))
             using (var server = new SslStream(stream2))
             using (X509Certificate2 certificate = Configuration.Certificates.GetServerCertificate())

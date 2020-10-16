@@ -39,7 +39,6 @@ void mono_wasm_enable_debugging (int);
 
 int mono_wasm_register_root (char *start, size_t size, const char *name);
 void mono_wasm_deregister_root (char *addr);
-int mono_wasm_assembly_already_added (const char *assembly_name);
 
 void mono_ee_interp_init (const char *opts);
 void mono_marshal_ilgen_init (void);
@@ -206,7 +205,7 @@ mono_wasm_add_assembly (const char *name, const unsigned char *data, unsigned in
 	return mono_has_pdb_checksum (data, size);
 }
 
-EMSCRIPTEN_KEEPALIVE int
+int
 mono_wasm_assembly_already_added (const char *assembly_name)
 {
 	if (assembly_count == 0)
@@ -214,7 +213,7 @@ mono_wasm_assembly_already_added (const char *assembly_name)
 
 	WasmAssembly *entry = assemblies;
 	while (entry != NULL) {
-		if (strcmp (entry->assembly.name, assembly_name) == 0)
+		if (strlen(entry->assembly.name - 4) == strlen(assembly_name) && strncmp (entry->assembly.name, assembly_name, strlen(entry->assembly.name - 4)) == 0)
 			return 1;
 		entry = entry->next;
 	}

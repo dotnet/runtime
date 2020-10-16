@@ -595,7 +595,7 @@ namespace System.Reflection.Emit
             TypeBuilder.DefineCustomAttribute(
                 _manifestModuleBuilder,     // pass in the in-memory assembly module
                 AssemblyBuilderData.AssemblyDefToken,
-                _manifestModuleBuilder.GetConstructorToken(con).Token,
+                _manifestModuleBuilder.GetConstructorToken(con),
                 binaryAttribute,
                 false,
                 typeof(DebuggableAttribute) == con.DeclaringType);

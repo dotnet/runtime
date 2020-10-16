@@ -23,7 +23,7 @@ namespace System.Reflection.Emit
 
             m_methodBuilder.GetMethodSignature().InternalGetSignature(out _);
 
-            m_methodBuilder.GetToken();
+            int dummy = m_methodBuilder.MetadataToken;
         }
 
         internal ConstructorBuilder(string name, MethodAttributes attributes, CallingConventions callingConvention,
@@ -60,7 +60,7 @@ namespace System.Reflection.Emit
         #endregion
 
         #region MemberInfo Overrides
-        internal int MetadataTokenInternal => m_methodBuilder.MetadataTokenInternal;
+        public override int MetadataToken => m_methodBuilder.MetadataToken;
 
         public override Module Module => m_methodBuilder.Module;
 
@@ -122,11 +122,6 @@ namespace System.Reflection.Emit
         #endregion
 
         #region Public Members
-        public MethodToken GetToken()
-        {
-            return m_methodBuilder.GetToken();
-        }
-
         public ParameterBuilder DefineParameter(int iSequence, ParameterAttributes attributes, string? strParamName)
         {
             // Theoretically we shouldn't allow iSequence to be 0 because in reflection ctors don't have

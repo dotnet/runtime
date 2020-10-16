@@ -92,6 +92,12 @@ genmdesc:
 clean-genmdesc:
 	$(top_srcdir)/msvc/run-msbuild.sh "clean" "$(host_cpu)" "release" "sgen" "" "genmdesc.vcxproj"
 
+mprof-report:
+	$(top_srcdir)/msvc/run-msbuild.sh "build" "$(host_cpu)" "release" "sgen" "" "mprof-report.vcxproj"
+
+clean-mprof-report:
+	$(top_srcdir)/msvc/run-msbuild.sh "clean" "$(host_cpu)" "release" "sgen" "" "mprof-report.vcxproj"
+
 jay:
 	$(top_srcdir)/msvc/run-msbuild.sh "build" "$(host_cpu)" "release" "sgen" "" "$(top_srcdir)/mcs/jay/jay.vcxproj"
 
