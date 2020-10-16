@@ -1134,6 +1134,21 @@ private:
      * Register management
      ****************************************************************************/
     RegisterType getRegisterType(Interval* currentInterval, RefPosition* refPosition);
+
+    regMaskTP applyFreeHeuristic(regMaskTP candidates, var_types regType)
+    {
+        regMaskTP result = candidates & m_AvailableRegs;
+#ifdef TARGET_ARM
+        // For TYP_DOUBLE on ARM, we can only use register for which the odd half is
+        // also available.
+        if (regType == TYP_DOUBLE)
+        {
+            result &= (m_AvailableRegs << 1);
+        }
+#endif // TARGET_ARM
+        return result;
+    }
+
     regNumber allocateReg(Interval* current, RefPosition* refPosition);
     regNumber assignCopyReg(RefPosition* refPosition);
 
@@ -1566,6 +1581,7 @@ private:
         regMaskTP regMask = getRegMask(reg, regType);
         return (m_RegistersWithConstants & regMask) == regMask;
     }
+    regMaskTP getMatchingConstants(regMaskTP mask, Interval* currentInterval, RefPosition* refPosition);
 
     LsraLocation nextFixedRef[REG_COUNT];
     void updateNextFixedRef(RegRecord* regRecord, RefPosition* nextRefPosition);
