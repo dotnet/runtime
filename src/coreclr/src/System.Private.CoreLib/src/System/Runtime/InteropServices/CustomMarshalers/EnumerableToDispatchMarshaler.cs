@@ -2,9 +2,11 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections;
+using System.Runtime.Versioning;
 
 namespace System.Runtime.InteropServices.CustomMarshalers
 {
+    [SupportedOSPlatform("windows")]
     internal class EnumerableToDispatchMarshaler : ICustomMarshaler
     {
         private static readonly EnumerableToDispatchMarshaler s_enumerableToDispatchMarshaler = new EnumerableToDispatchMarshaler();
