@@ -16,6 +16,7 @@ using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using Xunit;
 using Xunit.Sdk;
+using System.Text.RegularExpressions;
 
 namespace DebuggerTests
 {
@@ -58,7 +59,6 @@ namespace DebuggerTests
 
         async Task OnMessage(string method, JObject args, CancellationToken token)
         {
-            //System.Console.WriteLine("OnMessage " + method + args);
             switch (method)
             {
                 case "Debugger.paused":
@@ -67,9 +67,20 @@ namespace DebuggerTests
                 case "Mono.runtimeReady":
                     NotifyOf(READY, args);
                     break;
-                case "Runtime.consoleAPICalled":
-                    Console.WriteLine("CWL: {0}", args?["args"]?[0]?["value"]);
+                case "Runtime.consoleAPICalled": {
+                    var type = args?["type"]?.Value<string>();
+                    var consoleArgs = args?["args"].Select (a => a?["value"].ToString());
+                    // https://console.spec.whatwg.org/#formatting-specifiers
+                    var consoleRegex = new Regex (@"(%[sdifoOc])");
+                    int position = 0;
+                    var first = consoleArgs.First();
+                    var format = consoleRegex.Replace(consoleArgs.First(), (Match _) => "{" + position++.ToString() + "}");
+                    if (format != first)
+                        Console.Write(format, consoleArgs.Skip(1).ToArray());
+                    else
+                        Console.WriteLine(String.Join(' ', consoleArgs.ToArray()));
                     break;
+                }
             }
             if (eventListeners.ContainsKey(method))
                 await eventListeners[method](args, token);
