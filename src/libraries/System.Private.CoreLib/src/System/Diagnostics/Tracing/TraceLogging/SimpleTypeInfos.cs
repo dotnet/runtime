@@ -29,9 +29,8 @@ namespace System.Diagnostics.Tracing
             collector.AddGroup(name);
         }
 
-        public override void WriteData(TraceLoggingDataCollector collector, PropertyValue value)
+        public override void WriteData(PropertyValue value)
         {
-            return;
         }
 
         public override object? GetData(object? value)
@@ -63,7 +62,7 @@ namespace System.Diagnostics.Tracing
             collector.AddScalar(name!, formatFunc(format, nativeFormat));
         }
 
-        public override void WriteData(TraceLoggingDataCollector collector, PropertyValue value)
+        public override void WriteData(PropertyValue value)
         {
             TraceLoggingDataCollector.AddScalar(value);
         }
@@ -112,7 +111,7 @@ namespace System.Diagnostics.Tracing
             collector.AddArray(name!, formatFunc(format, nativeFormat));
         }
 
-        public override void WriteData(TraceLoggingDataCollector collector, PropertyValue value)
+        public override void WriteData(PropertyValue value)
         {
             TraceLoggingDataCollector.AddArray(value, elementSize);
         }
@@ -153,7 +152,7 @@ namespace System.Diagnostics.Tracing
             collector.AddNullTerminatedString(name, Statics.MakeDataType(TraceLoggingDataType.Utf16String, format));
         }
 
-        public override void WriteData(TraceLoggingDataCollector collector, PropertyValue value)
+        public override void WriteData(PropertyValue value)
         {
             TraceLoggingDataCollector.AddNullTerminatedString((string?)value.ReferenceValue);
         }
@@ -184,7 +183,7 @@ namespace System.Diagnostics.Tracing
             collector.AddScalar(name!, Statics.MakeDataType(TraceLoggingDataType.FileTime, format));
         }
 
-        public override void WriteData(TraceLoggingDataCollector collector, PropertyValue value)
+        public override void WriteData(PropertyValue value)
         {
             DateTime dateTime = value.ScalarValue.AsDateTime;
             const long UTCMinTicks = 504911232000000000;
@@ -211,7 +210,7 @@ namespace System.Diagnostics.Tracing
             group.AddScalar("Offset", TraceLoggingDataType.Int64);
         }
 
-        public override void WriteData(TraceLoggingDataCollector collector, PropertyValue value)
+        public override void WriteData(PropertyValue value)
         {
             DateTimeOffset dateTimeOffset = value.ScalarValue.AsDateTimeOffset;
             long ticks = dateTimeOffset.Ticks;
@@ -235,7 +234,7 @@ namespace System.Diagnostics.Tracing
             collector.AddScalar(name!, Statics.MakeDataType(TraceLoggingDataType.Int64, format));
         }
 
-        public override void WriteData(TraceLoggingDataCollector collector, PropertyValue value)
+        public override void WriteData(PropertyValue value)
         {
             TraceLoggingDataCollector.AddScalar(value.ScalarValue.AsTimeSpan.Ticks);
         }
@@ -256,7 +255,7 @@ namespace System.Diagnostics.Tracing
             collector.AddScalar(name!, Statics.MakeDataType(TraceLoggingDataType.Double, format));
         }
 
-        public override void WriteData(TraceLoggingDataCollector collector, PropertyValue value)
+        public override void WriteData(PropertyValue value)
         {
             TraceLoggingDataCollector.AddScalar((double)value.ScalarValue.AsDecimal);
         }
@@ -289,14 +288,14 @@ namespace System.Diagnostics.Tracing
             this.valueInfo.WriteMetadata(group, "Value", format);
         }
 
-        public override void WriteData(TraceLoggingDataCollector collector, PropertyValue value)
+        public override void WriteData(PropertyValue value)
         {
             // It's not currently possible to get the HasValue property of a nullable type through reflection when the
             // value is null. Instead, we simply check that the nullable is not null.
             bool hasValue = value.ReferenceValue != null;
             TraceLoggingDataCollector.AddScalar(hasValue);
             PropertyValue val = hasValue ? valueGetter(value) : valueInfo.PropertyValueFactory(Activator.CreateInstance(valueInfo.DataType));
-            this.valueInfo.WriteData(collector, val);
+            this.valueInfo.WriteData(val);
         }
     }
 }

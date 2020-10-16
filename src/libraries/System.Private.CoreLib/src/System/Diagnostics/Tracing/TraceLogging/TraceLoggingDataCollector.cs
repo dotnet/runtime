@@ -21,15 +21,8 @@ namespace System.Diagnostics.Tracing
     /// full-trust code, this abstraction is unnecessary (though it probably
     /// doesn't hurt anything).
     /// </summary>
-    internal unsafe class TraceLoggingDataCollector
+    internal static unsafe class TraceLoggingDataCollector
     {
-        internal static readonly TraceLoggingDataCollector Instance = new TraceLoggingDataCollector();
-
-        private TraceLoggingDataCollector()
-        {
-            return;
-        }
-
         /// <summary>
         /// Marks the start of a non-blittable array or enumerable.
         /// </summary>
@@ -47,17 +40,6 @@ namespace System.Diagnostics.Tracing
         public static void EndBufferedArray(int bookmark, int count)
         {
             DataCollector.ThreadInstance.EndBufferedArray(bookmark, count);
-        }
-
-        /// <summary>
-        /// Adds the start of a group to the event.
-        /// This has no effect on the event payload, but is provided to allow
-        /// WriteMetadata and WriteData implementations to have similar
-        /// sequences of calls, allowing for easier verification of correctness.
-        /// </summary>
-        public TraceLoggingDataCollector AddGroup()
-        {
-            return this;
         }
 
         public static void AddScalar(PropertyValue value)

@@ -32,7 +32,7 @@ namespace System.Diagnostics.Tracing
             collector.EndBufferedArray();
         }
 
-        public override void WriteData(TraceLoggingDataCollector collector, PropertyValue value)
+        public override void WriteData(PropertyValue value)
         {
             int bookmark = TraceLoggingDataCollector.BeginBufferedArray();
 
@@ -43,7 +43,7 @@ namespace System.Diagnostics.Tracing
                 count = array.Length;
                 for (int i = 0; i < array.Length; i++)
                 {
-                    this.elementInfo.WriteData(collector, elementInfo.PropertyValueFactory(array.GetValue(i)));
+                    this.elementInfo.WriteData(elementInfo.PropertyValueFactory(array.GetValue(i)));
                 }
             }
 
