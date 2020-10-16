@@ -861,7 +861,6 @@ void SString::ConvertToANSI(SString &s) const
     case REPRESENTATION_UTF8:
         // No direct conversion to ANSI
         ConvertToUnicode();
-        // fall through
         __fallthrough;
 
     case REPRESENTATION_UNICODE:
@@ -914,7 +913,6 @@ COUNT_T SString::ConvertToUTF8(SString &s) const
     case REPRESENTATION_ANSI:
         // No direct conversion from ANSI to UTF8
         ConvertToUnicode();
-        // fall through
         __fallthrough;
 
     case REPRESENTATION_UNICODE:
@@ -2427,7 +2425,6 @@ const SString &SString::GetCompatibleString(const SString &s, SString &scratch, 
 
         // We can't in general convert to ASCII, so try unicode.
         ConvertToUnicode(i);
-        // fall through
         __fallthrough;
 
     case REPRESENTATION_UNICODE:
@@ -2487,7 +2484,6 @@ const SString &SString::GetCompatibleString(const SString &s, SString &scratch) 
 
         // We can't in general convert to ASCII, so try unicode.
         ConvertToUnicode();
-        // fall through
         __fallthrough;
 
     case REPRESENTATION_UNICODE:

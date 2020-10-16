@@ -2019,7 +2019,7 @@ yynewstate:
 
 		yyerrlab:
 			++yynerrs;
-            __fallthrough;
+			__fallthrough;
 
 		case 1:
 		case 2: /* incompletely recovered error ... try again */

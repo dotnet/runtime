@@ -3762,7 +3762,6 @@ MetaSig::CompareElementType(
         {
             // Unknown type!
             THROW_BAD_FORMAT(BFA_BAD_COMPLUS_SIG, pModule1);
-            break;
         }
 
         case ELEMENT_TYPE_U:
@@ -4542,7 +4541,6 @@ MetaSig::CompareElementTypeToToken(
         default:
         {   // Unknown type!
             THROW_BAD_FORMAT(BFA_BAD_COMPLUS_SIG, pModule1);
-            break;
         }
 
         case ELEMENT_TYPE_U:

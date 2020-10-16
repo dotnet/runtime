@@ -5883,7 +5883,6 @@ bool DebuggerStepper::TrapStep(ControllerStackInfo *info, bool in)
                 // the case we want to use...
                 fIsJump = true;
 
-                // fall through...
                 __fallthrough;
 
             case WALK_CALL:
