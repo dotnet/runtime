@@ -18,8 +18,14 @@
     <type fullname="System.Threading.Tasks.Task" feature="System.Diagnostics.Debugger.IsSupported" featurevalue="false">
       <field name="s_asyncDebuggingEnabled" value="false" initialize="false" />
     </type>
-    <type fullname="System.Type" feature="System.Runtime.InteropServices.Marshal.IsComSupported" featurevalue="false">
+  </assembly>
+  <assembly fullname="System.Private.CoreLib" feature="System.Runtime.InteropServices.Marshal.IsComSupported" featurevalue="false">
+    <type fullname="System.Type" >
       <method signature="System.Boolean get_IsCOMObject()" body="stub" value="false" />
+    </type>
+    <type fullname="System.Runtime.InteropServices.Marshal">
+      <method signature="System.Boolean IsComObject(System.Object)" body="stub" value="false" />
+      <method signature="System.Boolean IsTypeVisibleFromCom(System.Type)" body="stub" value="false" />
     </type>
   </assembly>
 </linker>
