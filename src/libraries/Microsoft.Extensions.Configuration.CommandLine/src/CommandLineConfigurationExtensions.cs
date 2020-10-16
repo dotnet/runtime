@@ -31,15 +31,15 @@ namespace Microsoft.Extensions.Configuration
         ///     an equals sign the prefix can be left out altogether.
         ///   </para>
         ///   <para>
-        ///     There are seven basic alternative formats for arguments:
-        ///     <c>key1=value1 --key2=value2 /key3=value3 --key4 value4 /key5 value5 --key6 /key7</c>.
-        ///     The last two evaluate to the value "true".
+        ///     There are eight basic alternative formats for arguments:
+        ///     <c>key1=value1 --key2=value2 /key3=value3 --key4 value4 /key5 value5 -key6 --key7 /key8</c>.
+        ///     The last three evaluate to the value "true".
         ///   </para>
         /// </remarks>
         /// <example>
-        ///   A simple console application that has seven values.
+        ///   A simple console application that has eight values.
         ///   <code>
-        ///     // dotnet run key1=value1 --key2=value2 /key3=value3 --key4 value4 /key5 value5 --key6 /key7
+        ///     // dotnet run key1=value1 --key2=value2 /key3=value3 --key4 value4 /key5 value5 -key6 --key7 /key8
         ///
         ///     using Microsoft.Extensions.Configuration;
         ///     using System;
@@ -62,6 +62,7 @@ namespace Microsoft.Extensions.Configuration
         ///                Console.WriteLine($"Key5: '{config["Key5"]}'");
         ///                Console.WriteLine($"Key6: '{config["Key6"]}'");
         ///                Console.WriteLine($"Key7: '{config["Key7"]}'");
+        ///                Console.WriteLine($"Key8: '{config["Key8"]}'");
         ///            }
         ///        }
         ///     }

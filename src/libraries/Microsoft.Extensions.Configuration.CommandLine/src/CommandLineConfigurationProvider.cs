@@ -71,7 +71,7 @@ namespace Microsoft.Extensions.Configuration.CommandLine
                 string value;
                 if (separator < 0)
                 {
-                    // If there is neither equal sign nor prefix in current arugment, it is an invalid format
+                    // If there is neither equal sign nor prefix in current argument, it is an invalid format
                     if (keyStartIndex == 0)
                     {
                         // Ignore invalid formats
@@ -86,23 +86,21 @@ namespace Microsoft.Extensions.Configuration.CommandLine
                     {
                         key = mappedKey;
                     }
-                    // If the switch starts with a single "-" and it isn't in given mappings , it is an invalid usage so ignore it
-                    else if (keyStartIndex == 1)
-                    {
-                        continue;
-                    }
-                    // Otherwise, use the switch name directly as a key
+                    // If the switch starts with a single "-" and it isn't in given mappings,
+                    // or in any other case, use the switch name directly as a key
                     else
                     {
                         key = currentArg.Substring(keyStartIndex);
                     }
 
-                    // If argument is last in list or next argument begins with
-                    // arg delimiter, treat as switch and record value of "true"
+                    // If the argument is last in list, the next argument begins
+                    // with an arg delimiter, or the next argument contains '=',
+                    // then treat argument as switch and record value of "true"
                     if (nextArg == null
                         || nextArg.StartsWith("--")
                         || nextArg.StartsWith("-")
-                        || nextArg.StartsWith("/"))
+                        || nextArg.StartsWith("/")
+                        || nextArg.Contains("="))
                     {
                         value = "true";
                     }
