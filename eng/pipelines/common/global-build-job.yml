@@ -31,6 +31,9 @@ jobs:
     timeoutInMinutes: ${{ parameters.timeoutInMinutes }}
     workspace:
       clean: all
+    ${{ if ne(parameters.enableRichCodeNavigation, '') }}:
+      enableRichCodeNavigation: true
+      richCodeNavigationLanguage: csharp,cpp
 
     variables:
       - name: _osParameter

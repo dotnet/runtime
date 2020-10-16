@@ -47,7 +47,6 @@ jobs:
     timeoutInMinutes: ${{ parameters.timeoutInMinutes }}
     enableMicrobuild: ${{ parameters.enableMicrobuild }}
     gatherAssetManifests: ${{ parameters.gatherAssetManifests }}
-    enableRichCodeNavigation: ${{ parameters.enableRichCodeNavigation }}
 
     variables:
     - ${{ if ne(parameters.testGroup, '') }}:

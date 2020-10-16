@@ -9,14 +9,8 @@ pr: none
 
 variables:
 - template: /eng/pipelines/common/variables.yml
-# TODO: (Consolidation) Switch away from old signing/validation variables from former Core-Setup. https://github.com/dotnet/runtime/issues/1027
 - name: TeamName
   value: dotnet-core-acquisition
-# Set the target blob feed for package publish during official and validation builds.
-- name: _DotNetArtifactsCategory
-  value: .NETCore
-- name: _DotNetValidationArtifactsCategory
-  value: .NETCoreValidation
 
 stages:
 - stage: Build
@@ -26,18 +20,24 @@ stages:
   #
   - template: /eng/pipelines/common/checkout-job.yml
 
-  #
-  # Build CoreCLR and libraries for Windows
-  #
-  - template: /eng/pipelines/common/platform-matrix-multijob.yml
+  - template: /eng/pipelines/common/platform-matrix.yml
     parameters:
+      jobTemplate: /eng/pipelines/common/global-build-job.yml
+      buildConfig: Checked
       platforms:
-      - Windows_NT_X64
-      buildConfig: checked
-      jobTemplates:
-      - jobTemplate: /eng/pipelines/coreclr/templates/build-job.yml
-        jobParameters:
-          enableRichCodeNavigation: true
-      - jobTemplate: /eng/pipelines/libraries/build-job.yml
-        jobParameters:
-          enableRichCodeNavigation: true
+      - Windows_NT_x64
+      jobParameters:
+        enableRichCodeNavigation: true
+        timeoutInMinutes: 120
+        buildArgs: -s libs.ref+libs.src -c debug -runtimeConfiguration Checked
+
+  - template: /eng/pipelines/common/platform-matrix.yml
+    parameters:
+      jobTemplate: /eng/pipelines/common/global-build-job.yml
+      buildConfig: debug
+      platforms:
+      - Windows_NT_x64
+      jobParameters:
+        testGroup: innerloop
+        nameSuffix: Mono_Libraries
+        buildArgs: -s mono -c debug -runtimeConfiguration Checked

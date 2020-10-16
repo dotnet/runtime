@@ -34,7 +34,6 @@ jobs:
     stagedBuild: ${{ parameters.stagedBuild }}
     pool: ${{ parameters.pool }}
     condition: ${{ parameters.condition }}
-    enableRichCodeNavigation: ${{ parameters.enableRichCodeNavigation }}
 
     # Compute job name from template parameters
     ${{ if and(ne(parameters.testGroup, 'clrTools'), eq(parameters.compilerName, 'gcc')) }}:
