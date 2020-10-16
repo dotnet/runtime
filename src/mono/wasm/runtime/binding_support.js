@@ -159,9 +159,11 @@ var BindingSupportLib = {
 
 		find_method: function (klass, name, n) {
 			var result = this._find_method(klass, name, n);
-			if (!this._method_descriptions)
-				this._method_descriptions = new Map();
-			this._method_descriptions.set(result, name);
+			if (result) {
+				if (!this._method_descriptions)
+					this._method_descriptions = new Map();
+				this._method_descriptions.set(result, name);
+			}
 			return result;
 		},
 
