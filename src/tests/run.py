@@ -32,8 +32,8 @@
 # standard please pass the -test_native_bin_location flag to the script.
 #
 # Use the instructions here:
-#    https://github.com/dotnet/runtime/blob/master/docs/workflow/testing/windows-test-instructions.md
-#    https://github.com/dotnet/runtime/blob/master/docs/workflow/testing/unix-test-instructions.md
+#    https://github.com/dotnet/runtime/blob/master/docs/workflow/testing/coreclr/windows-test-instructions.md
+#    https://github.com/dotnet/runtime/blob/master/docs/workflow/testing/coreclr/unix-test-instructions.md
 #
 ################################################################################
 ################################################################################
