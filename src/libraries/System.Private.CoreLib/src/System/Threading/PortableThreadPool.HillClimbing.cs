@@ -188,10 +188,9 @@ namespace System.Threading
                 // Add the current thread count and throughput sample to our history
                 //
                 double throughput = numCompletions / sampleDurationSeconds;
-                PortableThreadPoolEventSource log = PortableThreadPoolEventSource.Log;
-                if (log.IsEnabled())
+                if (PortableThreadPoolEventSource.Log.IsEnabled())
                 {
-                    log.ThreadPoolWorkerThreadAdjustmentSample(throughput);
+                    PortableThreadPoolEventSource.Log.ThreadPoolWorkerThreadAdjustmentSample(throughput);
                 }
 
                 int sampleIndex = (int)(_totalSamples % _samplesToMeasure);
@@ -363,9 +362,9 @@ namespace System.Threading
                 // Record these numbers for posterity
                 //
 
-                if (log.IsEnabled())
+                if (PortableThreadPoolEventSource.Log.IsEnabled())
                 {
-                    log.ThreadPoolWorkerThreadAdjustmentStats(sampleDurationSeconds, throughput, threadWaveComponent.Real, throughputWaveComponent.Real,
+                    PortableThreadPoolEventSource.Log.ThreadPoolWorkerThreadAdjustmentStats(sampleDurationSeconds, throughput, threadWaveComponent.Real, throughputWaveComponent.Real,
                         throughputErrorEstimate, _averageThroughputNoise, ratio.Real, confidence, _currentControlSetting, (ushort)newThreadWaveMagnitude);
                 }
 
@@ -424,10 +423,9 @@ namespace System.Threading
 
                 _logSize++;
 
-                PortableThreadPoolEventSource log = PortableThreadPoolEventSource.Log;
-                if (log.IsEnabled())
+                if (PortableThreadPoolEventSource.Log.IsEnabled())
                 {
-                    log.ThreadPoolWorkerThreadAdjustmentAdjustment(
+                    PortableThreadPoolEventSource.Log.ThreadPoolWorkerThreadAdjustmentAdjustment(
                         throughput,
                         (uint)newThreadCount,
                         (PortableThreadPoolEventSource.ThreadAdjustmentReasonMap)stateOrTransition);

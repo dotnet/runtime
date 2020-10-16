@@ -33,7 +33,6 @@ namespace System.Threading
                 _ = cpuUtilizationReader.CurrentUtilization;
 
                 PortableThreadPool threadPoolInstance = ThreadPoolInstance;
-                PortableThreadPoolEventSource log = PortableThreadPoolEventSource.Log;
                 LowLevelLock hillClimbingThreadAdjustmentLock = threadPoolInstance._hillClimbingThreadAdjustmentLock;
 
                 while (true)
@@ -46,9 +45,11 @@ namespace System.Threading
                         Thread.Sleep(GateThreadDelayMs);
 
                         if (ThreadPool.EnableWorkerTracking &&
-                            log.IsEnabled(EventLevel.Verbose, PortableThreadPoolEventSource.Keywords.ThreadingKeyword))
+                            PortableThreadPoolEventSource.Log.IsEnabled(
+                                EventLevel.Verbose,
+                                PortableThreadPoolEventSource.Keywords.ThreadingKeyword))
                         {
-                            log.ThreadPoolWorkingThreadCount(
+                            PortableThreadPoolEventSource.Log.ThreadPoolWorkingThreadCount(
                                 (uint)threadPoolInstance.GetAndResetHighWatermarkCountOfThreadsProcessingUserCallbacks());
                         }
 

@@ -20,10 +20,9 @@ namespace System.Threading
                     AppContextConfigHelper.GetInt32Config("System.Threading.ThreadPool.UnfairSemaphoreSpinLimit", 70, false),
                     onWait: () =>
                     {
-                        PortableThreadPoolEventSource log = PortableThreadPoolEventSource.Log;
-                        if (log.IsEnabled())
+                        if (PortableThreadPoolEventSource.Log.IsEnabled())
                         {
-                            log.ThreadPoolWorkerThreadWait(
+                            PortableThreadPoolEventSource.Log.ThreadPoolWorkerThreadWait(
                                 (uint)ThreadPoolInstance._separated.counts.VolatileRead().NumExistingThreads);
                         }
                     });
@@ -34,10 +33,9 @@ namespace System.Threading
 
                 PortableThreadPool threadPoolInstance = ThreadPoolInstance;
 
-                PortableThreadPoolEventSource log = PortableThreadPoolEventSource.Log;
-                if (log.IsEnabled())
+                if (PortableThreadPoolEventSource.Log.IsEnabled())
                 {
-                    log.ThreadPoolWorkerThreadStart(
+                    PortableThreadPoolEventSource.Log.ThreadPoolWorkerThreadStart(
                         (uint)threadPoolInstance._separated.counts.VolatileRead().NumExistingThreads);
                 }
 
@@ -99,9 +97,9 @@ namespace System.Threading
                             {
                                 HillClimbing.ThreadPoolHillClimber.ForceChange(newNumThreadsGoal, HillClimbing.StateOrTransition.ThreadTimedOut);
 
-                                if (log.IsEnabled())
+                                if (PortableThreadPoolEventSource.Log.IsEnabled())
                                 {
-                                    log.ThreadPoolWorkerThreadStop((uint)newNumExistingThreads);
+                                    PortableThreadPoolEventSource.Log.ThreadPoolWorkerThreadStop((uint)newNumExistingThreads);
                                 }
                                 return;
                             }

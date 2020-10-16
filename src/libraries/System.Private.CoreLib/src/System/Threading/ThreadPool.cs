@@ -488,7 +488,7 @@ namespace System.Threading
         {
             Debug.Assert(ThreadPool.SupportsTimeSensitiveWorkItems);
 
-            if (loggingEnabled)
+            if (loggingEnabled && FrameworkEventSource.Log.IsEnabled())
             {
                 FrameworkEventSource.Log.ThreadPoolEnqueueWorkObject(timeSensitiveWorkItem);
             }
