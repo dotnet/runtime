@@ -594,6 +594,46 @@ mono_wasm_assembly_find_method (MonoClass *klass, const char *name, int argument
 	return mono_class_get_method_from_name (klass, name, arguments);
 }
 
+EMSCRIPTEN_KEEPALIVE MonoType*
+mono_wasm_get_method_parameter_type (MonoMethod *method, int index)
+{
+	if (!method)
+		return NULL;
+
+	MonoMethodSignature *sig = mono_method_signature (method);
+	if (!sig)
+		return NULL;
+
+	void *iter = NULL;
+	for (int i = 0; i <= index; i++) {
+		MonoType *type = mono_signature_get_params (sig, &iter);
+		if (i == index)
+			return type;
+		else if (type == NULL)
+			break;
+	}
+
+	return NULL;
+}
+
+EMSCRIPTEN_KEEPALIVE MonoObject*
+mono_wasm_box_primitive_value_32 (MonoType *type, int value)
+{
+	if (!type)
+		return NULL;
+
+	int alignment;
+	if (mono_type_size (type, &alignment) > sizeof(value))
+		return NULL;
+
+	MonoClass *klass = mono_type_get_class (type);
+	if (!klass)
+		return NULL;
+
+	// TODO: use mono_value_box_checked and propagate error out
+	return mono_value_box (root_domain, klass, &value);
+}
+
 EMSCRIPTEN_KEEPALIVE MonoObject*
 mono_wasm_invoke_method (MonoMethod *method, MonoObject *this_arg, void *params[], MonoObject **out_exc)
 {

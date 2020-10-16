@@ -68,6 +68,8 @@ var BindingSupportLib = {
 			this.mono_wasm_register_bundled_satellite_assemblies = Module.cwrap ('mono_wasm_register_bundled_satellite_assemblies', 'void', [ ]);
 			this.mono_unbox_enum = Module.cwrap ('mono_wasm_unbox_enum', 'number', ['number']);
 			this.mono_wasm_try_unbox_primitive_and_get_type = Module.cwrap ('mono_wasm_try_unbox_primitive_and_get_type', 'number', ['number', 'number']);
+			this.mono_wasm_get_method_parameter_type = Module.cwrap ('mono_wasm_get_method_parameter_type', 'number', ['number', 'number']);
+			this.mono_wasm_box_primitive_value_32 = Module.cwrap ('mono_wasm_box_primitive_value_32', 'number', ['number', 'number']);
 			this.assembly_get_entry_point = Module.cwrap ('mono_wasm_assembly_get_entry_point', 'number', ['number']);
 
 			// receives a byteoffset into allocated Heap with a size.
@@ -613,13 +615,23 @@ var BindingSupportLib = {
 			this.typedarray_copy_from(newTypedArray, pinned_array, begin, end, bytes_per_element);
 			return newTypedArray;
 		},
-		js_to_mono_enum: function (method, parmIdx, js_obj) {
+		js_to_mono_enum: function (js_obj, method, parmIdx) {
 			this.bindings_lazy_init ();
     
-			if (js_obj === null || typeof js_obj === "undefined")
-				return 0;
+			if (typeof (js_obj) !== "number")
+				throw new Error (`Expected numeric value for enum argument, got '${js_obj}'`);
 
-			throw new Error ("Constructing boxed enum instances from JS values is not currently supported");
+			/*
+			var parameterType = this.mono_wasm_get_method_parameter_type (method, parmIdx);
+			if (!parameterType)
+				throw new Error (`Failed to get type of parameter #${parmIdx} of method ${method}`);
+			
+			var result = this.mono_wasm_box_primitive_value_32(parameterType, js_obj | 0);
+			if (!result)
+				throw new Error (`Failed to box enum value '${js_obj}' to type ${parameterType} for method ${method}`);
+			*/
+			
+			return js_obj | 0;
 		},
 		wasm_binding_obj_new: function (js_obj_id, ownsHandle, type)
 		{
@@ -782,11 +794,8 @@ var BindingSupportLib = {
 			result.set ('o', { steps: [{ convert: this.js_to_mono_obj.bind (this) }], size: 0, needs_root: true });
 			result.set ('u', { steps: [{ convert: this.js_to_mono_uri.bind (this) }], size: 0, needs_root: true });
 
-			var enumAdapter = (function js_to_mono_enum_adapter (obj, method, parmIdx) {
-				return this.js_to_mono_enum(method, parmIdx, obj);
-			}).bind(this);
-			result.set ('k', { steps: [{ convert: enumAdapter, indirect: 'i64'}], size: 8});
-			result.set ('j', { steps: [{ convert: enumAdapter, indirect: 'i32'}], size: 8});
+			// result.set ('k', { steps: [{ convert: this.js_to_mono_enum.bind (this), indirect: 'i64'}], size: 8});
+			result.set ('j', { steps: [{ convert: this.js_to_mono_enum.bind (this), indirect: 'i32'}], size: 8});
 
 			result.set ('i', { steps: [{ indirect: 'i32'}], size: 8});
 			result.set ('l', { steps: [{ indirect: 'i64'}], size: 8});
