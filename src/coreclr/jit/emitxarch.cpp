@@ -12600,6 +12600,17 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
             {
                 sz = SMALL_IDSC_SIZE;
 
+                instrDesc* nextId = id;
+                castto(nextId, BYTE*) += sz;
+
+                if (emitComp->compJitAlignLoopWith32BPadding && (nextId->idIns() != INS_align))
+                {
+                    // If 32B was alignment was needed and next instruction is not alignment,
+                    // we already handled this while emitting the previous alignment instruction.
+                    // nothing to do now.
+                    break;
+                }
+
                 // Candidate for loop alignment
                 if (ig->igFlags & IGF_ALIGN_LOOP)
                 {
@@ -12619,8 +12630,26 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
                     if (totalCodeSize <= emitComp->compJitAlignLoopMaxCodeSize)
                     {
                         //printf("Aligning loop in %s.\n", emitComp->info.compMethodName);
-                        dst = emitOutputNOP(dst, (-(int)(size_t)dst) & 0x0f);
-                        assert(((size_t)dst & 0x0f) == 0);
+                        size_t nBytes = (-(int)(size_t)dst) & 0x0f;
+                        dst = emitOutputNOP(dst, nBytes);
+                        
+                        if (nextId->idIns() == INS_align)
+                        {
+                            // If next instruction is also alignment, this better be 32B padding.
+                            assert(emitComp->compJitAlignLoopWith32BPadding);
+
+                            // Align further to 32B boundary, if it is not yet.
+                            if (((size_t)dst & 0x1f) != 0)
+                            {
+                                dst = emitOutputNOP(dst, 1);
+                                dst = emitOutputNOP(dst, 15);
+                            }
+                            assert(((size_t)dst & 0x1f) == 0);
+                        }
+                        else
+                        {
+                            assert(((size_t)dst & 0x0f) == 0);
+                        }
                     }
                 }
 
@@ -13665,7 +13694,7 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
     }
 
     // Make sure we set the instruction descriptor size correctly
-    assert(sz == emitSizeOfInsDsc(id));
+    assert((sz == emitSizeOfInsDsc(id)) || (ins == INS_align));
 
 #if !FEATURE_FIXED_OUT_ARGS
     bool updateStackLevel = !emitIGisInProlog(ig) && !emitIGisInEpilog(ig);

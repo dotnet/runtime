@@ -3649,7 +3649,7 @@ size_t emitter::emitIssue1Instr(insGroup* ig, instrDesc* id, BYTE** dp)
 
     UNATIVE_OFFSET csz = (UNATIVE_OFFSET)(*dp - curInsAdr);
 
-    if (csz != id->idCodeSize())
+    if ((id->idIns() != INS_align) && (csz != id->idCodeSize()))
     {
         /* It is fatal to under-estimate the instruction size */
         noway_assert(id->idCodeSize() >= csz);
@@ -3678,7 +3678,7 @@ size_t emitter::emitIssue1Instr(insGroup* ig, instrDesc* id, BYTE** dp)
 
 #ifdef DEBUG
     /* Make sure the instruction descriptor size also matches our expectations */
-    if (is != emitSizeOfInsDsc(id))
+    if ((id->idIns() != INS_align) && (is != emitSizeOfInsDsc(id)))
     {
         printf("%s at %u: Expected size = %u , actual size = %u\n", emitIfName(id->idInsFmt()),
                id->idDebugOnlyInfo()->idNum, is, emitSizeOfInsDsc(id));

@@ -774,6 +774,10 @@ void CodeGen::genCodeForBBlist()
                 printf("Adding 'align' instruction to align loop header block " FMT_BB, block->bbNext->bbNum);
             }
             GetEmitter()->emitLoopAlign();
+            if (compiler->compJitAlignLoopWith32BPadding)
+            {
+                GetEmitter()->emitLoopAlign();
+            }
 
             // Mark this IG as need alignment so during emitter we can check the instruction count heuristics of
             // all IGs that follows this IG and participate in a loop.
