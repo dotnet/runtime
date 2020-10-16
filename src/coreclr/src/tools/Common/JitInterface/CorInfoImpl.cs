@@ -22,6 +22,7 @@ using Internal.CorConstants;
 
 using ILCompiler;
 using ILCompiler.DependencyAnalysis;
+using Internal.IL.Stubs;
 
 #if READYTORUN
 using System.Reflection.Metadata.Ecma335;
@@ -1300,9 +1301,17 @@ namespace Internal.JitInterface
 
             Get_CORINFO_SIG_INFO(methodSig, sig);
 
-            if (sig->callConv == CorInfoCallConv.CORINFO_CALLCONV_UNMANAGED)
+            // CORINFO_CALLCONV_UNMANAGED is handled by Get_CORINFO_SIG_INFO
+            Debug.Assert(sig->callConv != CorInfoCallConv.CORINFO_CALLCONV_UNMANAGED);
+
+            // TODO: Replace this with a public mechanism to mark calli with SuppressGCTransition once it becomes available.
+            if (methodIL is PInvokeILStubMethodIL stubIL)
             {
-                throw new NotImplementedException();
+                var method = stubIL.OwningMethod;
+                if (method.IsPInvoke && method.IsSuppressGCTransition())
+                {
+                    sig->flags |= CorInfoSigInfoFlags.CORINFO_SIGFLAG_SUPPRESS_GC_TRANSITION;
+                }
             }
 
 #if !READYTORUN
@@ -2700,7 +2709,11 @@ namespace Internal.JitInterface
         {
             // Slow tailcalls are not supported yet
             // https://github.com/dotnet/runtime/issues/35423
+#if READYTORUN
             throw new NotImplementedException(nameof(getTailCallHelpers));
+#else
+            return false;
+#endif
         }
 
         private byte[] _code;
@@ -2915,11 +2928,14 @@ namespace Internal.JitInterface
             if (targetArchitecture != TargetArchitecture.ARM64)
                 return (RelocType)fRelocType;
 
+            const ushort IMAGE_REL_ARM64_BRANCH26 = 3;
             const ushort IMAGE_REL_ARM64_PAGEBASE_REL21 = 4;
             const ushort IMAGE_REL_ARM64_PAGEOFFSET_12A = 6;
 
             switch (fRelocType)
             {
+                case IMAGE_REL_ARM64_BRANCH26:
+                    return RelocType.IMAGE_REL_BASED_ARM64_BRANCH26;
                 case IMAGE_REL_ARM64_PAGEBASE_REL21:
                     return RelocType.IMAGE_REL_BASED_ARM64_PAGEBASE_REL21;
                 case IMAGE_REL_ARM64_PAGEOFFSET_12A:
