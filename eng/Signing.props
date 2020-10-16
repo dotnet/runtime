@@ -50,12 +50,12 @@
     <FileExtensionSignInfo Include=".deb;.rpm" CertificateName="LinuxSign" />
   </ItemGroup>
 
-  <ItemGroup Condition="'$(CrossTargetComponentFolder)' != ''">
-    <CoreCLRCrossTargetItemsToSign Include="$(CoreCLRArtifactsPath)$(CrossTargetComponentFolder)/sharedFramework/*.dll" />
-    <CoreCLRCrossTargetItemsToSign Include="$(CoreCLRArtifactsPath)$(CrossTargetComponentFolder)/sharedFramework/*.exe" />
+  <ItemGroup Condition="'$(CoreCLRCrossTargetComponentDirName)' != ''">
+    <CoreCLRCrossTargetItemsToSign Include="$(CoreCLRArtifactsPath)$(CoreCLRCrossTargetComponentDirName)/sharedFramework/*.dll" />
+    <CoreCLRCrossTargetItemsToSign Include="$(CoreCLRArtifactsPath)$(CoreCLRCrossTargetComponentDirName)/sharedFramework/*.exe" />
   </ItemGroup>
 
-  <!-- When doing post build signing, the file containers (e.g. nupkg, msi, etc.) are 
+  <!-- When doing post build signing, the file containers (e.g. nupkg, msi, etc.) are
        processed for signing (opened up, individually signed, etc.) and these individual ItemsToSign
        elements are unnecessary. When signing within the build, we need to individually process
        dll's, exes, etc. that go into msi's because these containers are not able to be processed
