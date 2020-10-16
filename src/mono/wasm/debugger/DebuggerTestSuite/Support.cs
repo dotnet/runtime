@@ -29,6 +29,15 @@ namespace DebuggerTests
         public const string PAUSE = "pause";
         public const string READY = "ready";
 
+        ILogger _logger;
+        ILoggerFactory _loggerFactory;
+
+        public Inspector ()
+        {
+            _loggerFactory = TestHarnessStartup.LoggerFactory;
+            _logger = _loggerFactory.CreateLogger<Inspector>();
+        }
+
         public Task<JObject> WaitFor(string what)
         {
             if (notifications.ContainsKey(what))
@@ -74,11 +83,47 @@ namespace DebuggerTests
                     var consoleRegex = new Regex (@"(%[sdifoOc])");
                     int position = 0;
                     var first = consoleArgs.First();
-                    var format = consoleRegex.Replace(consoleArgs.First(), (Match _) => "{" + position++.ToString() + "}");
-                    if (format != first)
-                        Console.Write(format, consoleArgs.Skip(1).ToArray());
-                    else
-                        Console.WriteLine(String.Join(' ', consoleArgs.ToArray()));
+                    //var format = consoleRegex.Replace(consoleArgs.First(), (Match _) => $"{{{position++}}}");
+                    var format = consoleRegex.Replace(first, (Match _) => "{" + position++.ToString() + "}");
+                    var formatted = format != first;
+                    if (!formatted) {
+                        // generate a format string to leep _logger happy
+                        format = Enumerable.Range (0, consoleArgs.Count ()).Aggregate ("", (a, b) => a == "" ? $"{{{b}}}" : $"{a} {{{b}}}");
+                    } else {
+                        consoleArgs = consoleArgs.Skip(1);
+                    }
+
+                    switch (type) {
+                        case "info":
+                        case "log":
+                            _logger.LogInformation(format, consoleArgs.ToArray());
+                            break;
+                        case "debug":
+                            _logger.LogDebug(format, consoleArgs.ToArray());
+                            break;
+                        case "error":
+                            _logger.LogError(format, consoleArgs.ToArray());
+                            break;
+                        case "warning":
+                            _logger.LogWarning(format, consoleArgs.ToArray());
+                            break;
+                        case "dir":
+                        case "dirxml":
+                        case "table":
+                        case "trace":
+                        case "clear":
+                        case "startGroup":
+                        case "startGroupCollapsed":
+                        case "endGroup":
+                        case "assert":
+                        case "profile":
+                        case "profileEnd":
+                        case "count":
+                        case "timeEnd":
+                        default:
+                            break;
+                    }
+                    //Console.WriteLine("CWL: {0}", args?["args"]?[0]?["value"]);
                     break;
                 }
             }
@@ -94,9 +139,7 @@ namespace DebuggerTests
             {
                 cts.CancelAfter(span?.Milliseconds ?? 60 * 1000); //tests have 1 minute to complete by default
                 var uri = new Uri($"ws://{TestHarnessProxy.Endpoint.Authority}/launch-chrome-and-connect");
-                using var loggerFactory = LoggerFactory.Create(
-                    builder => builder.AddConsole().AddFilter(null, LogLevel.Information));
-                using (var client = new InspectorClient(loggerFactory.CreateLogger<Inspector>()))
+                using (var client = new InspectorClient(_loggerFactory.CreateLogger<InspectorClient>()))
                 {
                     await client.Connect(uri, OnMessage, async token =>
                     {
@@ -108,12 +151,12 @@ namespace DebuggerTests
                     WaitFor(READY),
                         };
                         // await Task.WhenAll (init_cmds);
-                        Console.WriteLine("waiting for the runtime to be ready");
+                        _logger.LogInformation("waiting for the runtime to be ready");
                         await init_cmds[4];
-                        Console.WriteLine("runtime ready, TEST TIME");
+                        _logger.LogInformation("runtime ready, TEST TIME");
                         if (cb != null)
                         {
-                            Console.WriteLine("await cb(client, token)");
+                            _logger.LogInformation("await cb(client, token)");
                             await cb(client, token);
                         }
 

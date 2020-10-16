@@ -145,11 +145,13 @@ namespace Microsoft.WebAssembly.Diagnostics
             }
         }
 
+        public static ILoggerFactory LoggerFactory {get; private set; }
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
         public void Configure(IApplicationBuilder app, IOptionsMonitor<TestHarnessOptions> optionsAccessor, IWebHostEnvironment env, ILogger<TestHarnessProxy> logger, ILoggerFactory loggerFactory)
         {
             this.Logger = logger;
             this._loggerFactory = loggerFactory;
+            LoggerFactory = _loggerFactory;
 
             app.UseWebSockets();
             app.UseStaticFiles();
