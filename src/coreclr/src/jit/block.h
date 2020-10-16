@@ -568,9 +568,28 @@ struct BasicBlock : private LIR::Range
     }
 
     // this block will inherit the same weight and relevant bbFlags as bSrc
+    //
     void inheritWeight(BasicBlock* bSrc)
     {
-        this->bbWeight = bSrc->bbWeight;
+        inheritWeightPercentage(bSrc, 100);
+    }
+
+    // Similar to inheritWeight(), but we're splitting a block (such as creating blocks for qmark removal).
+    // So, specify a percentage (0 to 100) of the weight the block should inherit.
+    //
+    void inheritWeightPercentage(BasicBlock* bSrc, unsigned percentage)
+    {
+        assert(0 <= percentage && percentage <= 100);
+
+        // Check for overflow
+        if ((bSrc->bbWeight * 100) <= bSrc->bbWeight)
+        {
+            this->bbWeight = bSrc->bbWeight;
+        }
+        else
+        {
+            this->bbWeight = (bSrc->bbWeight * percentage) / 100;
+        }
 
         if (bSrc->hasProfileWeight())
         {
@@ -580,35 +599,6 @@ struct BasicBlock : private LIR::Range
         {
             this->bbFlags &= ~BBF_PROF_WEIGHT;
         }
-
-        if (this->bbWeight == 0)
-        {
-            this->bbFlags |= BBF_RUN_RARELY;
-        }
-        else
-        {
-            this->bbFlags &= ~BBF_RUN_RARELY;
-        }
-    }
-
-    // Similar to inheritWeight(), but we're splitting a block (such as creating blocks for qmark removal).
-    // So, specify a percentage (0 to 99; if it's 100, just use inheritWeight()) of the weight that we're
-    // going to inherit. Since the number isn't exact, clear the BBF_PROF_WEIGHT flag.
-    void inheritWeightPercentage(BasicBlock* bSrc, unsigned percentage)
-    {
-        assert(0 <= percentage && percentage < 100);
-
-        // Check for overflow
-        if (bSrc->bbWeight * 100 <= bSrc->bbWeight)
-        {
-            this->bbWeight = bSrc->bbWeight;
-        }
-        else
-        {
-            this->bbWeight = bSrc->bbWeight * percentage / 100;
-        }
-
-        this->bbFlags &= ~BBF_PROF_WEIGHT;
 
         if (this->bbWeight == 0)
         {
