@@ -25,7 +25,7 @@ namespace System
             throw new PlatformNotSupportedException();
         }
 
-#pragma warning disable CA1822
+#pragma warning disable CA1822 // Mark members as static
         public ref T Value
         {
             // Implemented as a JIT intrinsic - This default implementation is for

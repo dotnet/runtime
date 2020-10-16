@@ -48,7 +48,7 @@ namespace System
         [DynamicDependency("Ctor(System.Char[])")]
         public extern String(char[]? value);
 
-#pragma warning disable CA1822
+#pragma warning disable CA1822 // Mark members as static
 
         private
 #if !CORECLR

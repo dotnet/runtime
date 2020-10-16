@@ -503,7 +503,7 @@ namespace System.Threading
         // we will record that in a readonly static so that it could become a JIT constant and bypass caching entirely.
         private static readonly bool s_isProcessorNumberReallyFast = ProcessorIdCache.ProcessorNumberSpeedCheck();
 
-#pragma warning disable CA1822
+#pragma warning disable CA1822 // Mark members as static
         internal void ResetThreadPoolThread()
         {
             // Currently implemented in unmanaged method Thread::InternalReset and

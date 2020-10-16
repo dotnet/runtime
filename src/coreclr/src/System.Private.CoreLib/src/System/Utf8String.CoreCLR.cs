@@ -63,7 +63,7 @@ namespace System
         [MethodImpl(MethodImplOptions.InternalCall)]
         public extern Utf8String(ReadOnlySpan<byte> value);
 
-#pragma warning disable CA1822
+#pragma warning disable CA1822 // Mark members as static
 
 #if !CORECLR
         static
