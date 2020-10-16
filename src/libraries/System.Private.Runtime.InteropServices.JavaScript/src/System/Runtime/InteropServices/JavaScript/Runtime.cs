@@ -238,26 +238,6 @@ namespace System.Runtime.InteropServices.JavaScript
                 js.GetWrappedObject() ?? h.Target : h.Target;
         }
 
-        private static object BoxInt(int i)
-        {
-            return i;
-        }
-
-        private static object BoxUInt(uint i)
-        {
-            return i;
-        }
-
-        private static object BoxDouble(double d)
-        {
-            return d;
-        }
-
-        private static object BoxBool(int b)
-        {
-            return b == 0 ? false : true;
-        }
-
         private static bool IsSimpleArray(object a)
         {
             return a is System.Array arr && arr.Rank == 1 && arr.GetLowerBound(0) == 0;
