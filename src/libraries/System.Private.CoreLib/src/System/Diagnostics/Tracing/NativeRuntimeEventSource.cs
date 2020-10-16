@@ -28,6 +28,11 @@ namespace System.Diagnostics.Tracing
         [NonEvent]
         internal unsafe void ProcessEvent(uint eventID, uint osThreadID, DateTime timeStamp, Guid activityId, Guid childActivityId, ReadOnlySpan<byte> payload)
         {
+            if (!IsSupported)
+            {
+                return;
+            }
+
             // Make sure the eventID is valid.
             if (eventID >= m_eventData!.Length)
             {
