@@ -27,12 +27,11 @@ import java.util.zip.ZipInputStream;
 
 public class MonoRunner extends Instrumentation
 {
-    static MonoRunner inst;
-    static String entryPointLibName = "%EntryPointLibName%";
-
     static {
         System.loadLibrary("monodroid");
     }
+
+    static String entryPointLibName = "%EntryPointLibName%";
 
     @Override
     public void onCreate(Bundle arguments) {
@@ -47,42 +46,46 @@ public class MonoRunner extends Instrumentation
         start();
     }
 
-    @Override
-    public void onStart() {
-        super.onStart();
+    private static String getDocsDir(Context ctx) {
+        File docsPath  = ctx.getExternalFilesDir(Environment.DIRECTORY_DOCUMENTS);
+        if (docsPath == null) {
+            docsPath = ctx.getCacheDir();
+        }
+        return docsPath.getAbsolutePath();
+    }
 
-        MonoRunner.inst = this;
-        Context context = getContext();
+    public static int initialize(String entryPointLibName, Context context) {
         String filesDir = context.getFilesDir().getAbsolutePath();
         String cacheDir = context.getCacheDir().getAbsolutePath();
-        File docsPath  = context.getExternalFilesDir(Environment.DIRECTORY_DOCUMENTS);
-        if (docsPath == null) {
-            docsPath = context.getCacheDir();
-        }
-        String docsDir = docsPath.getAbsolutePath();
+        String docsDir = getDocsDir(context);
 
         // unzip libs and test files to filesDir
         unzipAssets(context, filesDir, "assets.zip");
+
+        Log.i("DOTNET", "initRuntime, entryPointLibName=" + entryPointLibName);
+        return initRuntime(filesDir, cacheDir, docsDir, entryPointLibName);
+    }
+
+    @Override
+    public void onStart() {
+        super.onStart();
 
         if (entryPointLibName == "") {
             Log.e("DOTNET", "Missing entryPointLibName argument, pass '-e entryPointLibName <name.dll>' to adb to specify which program to run.");
             finish(1, null);
             return;
         }
-
-        Log.i("DOTNET", "initRuntime");
-        int retcode = initRuntime(filesDir, cacheDir, docsDir, entryPointLibName);
+        int retcode = initialize(entryPointLibName, getContext());
         runOnMainSync(new Runnable() {
             public void run() {
                 Bundle result = new Bundle();
                 result.putInt("return-code", retcode);
 
                 // Xharness cli expects "test-results-path" with test results
-                File testResults = new File(docsDir + "/testResults.xml");
+                File testResults = new File(getDocsDir(getContext()) + "/testResults.xml");
                 if (testResults.exists()) {
                     result.putString("test-results-path", testResults.getAbsolutePath());
                 }
-
                 finish(retcode, result);
             }
         });
@@ -122,5 +125,5 @@ public class MonoRunner extends Instrumentation
         }
     }
 
-    native int initRuntime(String libsDir, String cacheDir, String docsDir, String entryPointLibName);
+    static native int initRuntime(String libsDir, String cacheDir, String docsDir, String entryPointLibName);
 }
