@@ -3,7 +3,6 @@
 
 using System;
 using System.Collections.Generic;
-using System.Linq;
 
 namespace Microsoft.Extensions.Configuration.CommandLine
 {
@@ -40,13 +39,13 @@ namespace Microsoft.Extensions.Configuration.CommandLine
         public override void Load()
         {
             var data = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
-            var argArray = Args as string[] ?? Args.ToArray();
+            var argList = new List<string>(Args);
 
-            for (int i = 0; i < argArray.Length; i++)
+            for (int i = 0; i < argList.Count; i++)
             {
-                string currentArg = argArray[i];
+                string currentArg = argList[i];
                 string nextArg =
-                    i + 1 < argArray.Length ? argArray[i + 1] : null;
+                    i + 1 < argList.Count ? argList[i + 1] : null;
                 int keyStartIndex = 0;
 
                 if (currentArg.StartsWith("--"))
