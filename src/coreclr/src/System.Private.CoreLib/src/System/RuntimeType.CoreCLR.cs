@@ -1744,6 +1744,9 @@ namespace System
             return retval;
         }
 
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2070:UnrecognizedReflectionPattern",
+            Justification = "The code in this method looks up the method by name, but it always starts with a method handle." +
+                            "To get here something somwhere had to get the method handle and thus the method must exist.")]
         internal static MethodBase? GetMethodBase(RuntimeType? reflectedType, RuntimeMethodHandleInternal methodHandle)
         {
             Debug.Assert(!methodHandle.IsNullHandle());
