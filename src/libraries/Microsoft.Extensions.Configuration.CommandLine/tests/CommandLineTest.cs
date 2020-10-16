@@ -37,7 +37,9 @@ namespace Microsoft.Extensions.Configuration.CommandLine.Test
                     "--Key4", "Value4",
                     "Bogus2",
                     "/Key5", "Value5",
-                    "Bogus3"
+                    "Bogus3",
+                    "--Key6",
+                    "/Key7"
                 };
             var cmdLineConfig = new CommandLineConfigurationProvider(args);
 
@@ -48,7 +50,9 @@ namespace Microsoft.Extensions.Configuration.CommandLine.Test
             Assert.Equal("Value3", cmdLineConfig.Get("Key3"));
             Assert.Equal("Value4", cmdLineConfig.Get("Key4"));
             Assert.Equal("Value5", cmdLineConfig.Get("Key5"));
-            Assert.Equal(5, cmdLineConfig.GetChildKeys(new string[0], null).Count());
+            Assert.Equal("true", cmdLineConfig.Get("Key6"));
+            Assert.Equal("true", cmdLineConfig.Get("Key7"));
+            Assert.Equal(7, cmdLineConfig.GetChildKeys(new string[0], null).Count());
         }
 
 
@@ -61,7 +65,9 @@ namespace Microsoft.Extensions.Configuration.CommandLine.Test
                     "--Key2=Value2",
                     "/Key3=Value3",
                     "--Key4", "Value4",
-                    "/Key5", "Value5"
+                    "/Key5", "Value5",
+                    "--Key6",
+                    "/Key7"
                 };
             var cmdLineConfig = new CommandLineConfigurationProvider(args);
 
@@ -72,6 +78,8 @@ namespace Microsoft.Extensions.Configuration.CommandLine.Test
             Assert.Equal("Value3", cmdLineConfig.Get("Key3"));
             Assert.Equal("Value4", cmdLineConfig.Get("Key4"));
             Assert.Equal("Value5", cmdLineConfig.Get("Key5"));
+            Assert.Equal("true", cmdLineConfig.Get("Key6"));
+            Assert.Equal("true", cmdLineConfig.Get("Key7"));
         }
 
         [Fact]
@@ -202,18 +210,21 @@ namespace Microsoft.Extensions.Configuration.CommandLine.Test
         }
 
         [Fact]
-        public void IgnoreWhenValueForAKeyIsMissing()
+        public void EvaluateAsTrueWhenValueForAKeyIsMissing()
         {
             var args = new string[]
             {
                 "--Key1", "Value1",
-                "/Key2" /* The value for Key2 is missing here */
+                "--Key2", /* The value for Key2 is missing here, so treat as a switch */
+                "/Key3"   /* The value for Key3 is missing here, so treat as a switch */
             };
 
             var cmdLineConfig = new CommandLineConfigurationProvider(args);
             cmdLineConfig.Load();
-            Assert.Single(cmdLineConfig.GetChildKeys(new string[0], null));
+            Assert.Equal(3, cmdLineConfig.GetChildKeys(new string[0], null).Count());
             Assert.Equal("Value1", cmdLineConfig.Get("Key1"));
+            Assert.Equal("true", cmdLineConfig.Get("Key2"));
+            Assert.Equal("true", cmdLineConfig.Get("Key3"));
         }
 
         [Fact]
