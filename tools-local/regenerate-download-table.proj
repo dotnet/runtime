@@ -13,7 +13,7 @@
     </PropertyGroup>
 
     <ItemGroup>
-      <Branches Include="Master" Abbr="6.0.X-coreclr" />
+      <Branches Include="Master" Abbr="6.0.X" />
 
       <Platforms Include="Windows (x64)" Abbr="win-x64" />
       <Platforms Include="Windows (x86)" Abbr="win-x86" />
