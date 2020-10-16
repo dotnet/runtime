@@ -6,7 +6,6 @@ using System.Collections.Generic;
 using System.Security.Authentication.ExtendedProtection;
 using System.Diagnostics;
 using System.Globalization;
-using System.Runtime.Versioning;
 
 namespace System.Net
 {
@@ -15,7 +14,6 @@ namespace System.Net
         private readonly List<string> _serviceNames;
         private ServiceNameCollection? _serviceNameCollection;
 
-        [UnsupportedOSPlatform("browser")]
         public ServiceNameCollection ServiceNames
         {
             get
@@ -293,7 +291,6 @@ namespace System.Net
                 // or the query fails for some reason, don't add an SPN.
                 try
                 {
-                    Debug.Assert(!OperatingSystem.IsBrowser());
                     string machineName = Dns.GetHostEntry(string.Empty).HostName;
                     return new string[] { "HTTP/" + machineName };
                 }
@@ -312,7 +309,6 @@ namespace System.Net
                 // or the query fails for some reason, add only the dotless name.
                 try
                 {
-                    Debug.Assert(!OperatingSystem.IsBrowser());
                     string fqdn = Dns.GetHostEntry(hostname).HostName;
                     return new string[] { "HTTP/" + hostname, "HTTP/" + fqdn };
                 }

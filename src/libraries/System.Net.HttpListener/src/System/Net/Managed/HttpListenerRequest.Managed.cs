@@ -185,7 +185,6 @@ namespace System.Net
             else
                 path = _rawUrl;
 
-            Debug.Assert(!OperatingSystem.IsBrowser());
             if ((host == null || host.Length == 0))
                 host = UserHostAddress;
 

@@ -62,9 +62,7 @@ namespace System.Net
                 CheckSentHeaders();
                 if (value == EntitySendFormat.Chunked && HttpListenerRequest.ProtocolVersion.Minor == 0)
                 {
-#pragma warning disable CA1416 // Validate platform compatibility
                     throw new ProtocolViolationException(SR.net_nochunkuploadonhttp10);
-#pragma warning restore CA1416
                 }
                 _boundaryType = (BoundaryType)value;
                 if (value != EntitySendFormat.ContentLength)

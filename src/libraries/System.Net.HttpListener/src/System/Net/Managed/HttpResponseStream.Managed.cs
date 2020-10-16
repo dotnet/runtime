@@ -36,7 +36,6 @@ using System.Runtime.ExceptionServices;
 using System.Runtime.InteropServices;
 using System.Threading;
 using System.Threading.Tasks;
-using System.Runtime.Versioning;
 
 namespace System.Net
 {
@@ -87,9 +86,7 @@ namespace System.Net
                     // Ignore error due to connection reset by peer
                 }
             }
-#pragma warning disable CA1416 // Validate platform compatibility
             _response.Close();
-#pragma warning restore CA1416
         }
 
         internal async Task WriteWebSocketHandshakeHeadersAsync()

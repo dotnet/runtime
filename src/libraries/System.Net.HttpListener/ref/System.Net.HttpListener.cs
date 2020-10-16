@@ -12,7 +12,6 @@ namespace System.Net
         public HttpListener() { }
         public System.Net.AuthenticationSchemes AuthenticationSchemes { get { throw null; } set { } }
         public System.Net.AuthenticationSchemeSelector? AuthenticationSchemeSelectorDelegate { get { throw null; } set { } }
-        [System.Runtime.Versioning.UnsupportedOSPlatform("browser")]
         public System.Security.Authentication.ExtendedProtection.ServiceNameCollection DefaultServiceNames { get { throw null; } }
         public System.Security.Authentication.ExtendedProtection.ExtendedProtectionPolicy ExtendedProtectionPolicy { get { throw null; } set { } }
         [System.Diagnostics.CodeAnalysis.DisallowNullAttribute]

@@ -39,9 +39,7 @@ namespace System.Net
 
             // default: no CBT checks on any platform (appcompat reasons); applies also to PolicyEnforcement
             // config element
-#pragma warning disable CA1416 // Validate platform compatibility
             _extendedProtectionPolicy = new ExtendedProtectionPolicy(PolicyEnforcement.Never);
-#pragma warning restore CA1416
         }
 
         public AuthenticationSchemeSelector? AuthenticationSchemeSelectorDelegate
@@ -99,7 +97,6 @@ namespace System.Net
             }
         }
 
-        [UnsupportedOSPlatform("browser")]
         public ServiceNameCollection DefaultServiceNames => _defaultServiceNames.ServiceNames;
 
         public HttpListenerPrefixCollection Prefixes

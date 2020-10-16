@@ -32,11 +32,9 @@
 
 using System.Collections.Generic;
 using System.Net.Sockets;
-using System.Runtime.Versioning;
 using System.Security.Cryptography.X509Certificates;
 using System.Threading;
 
-#pragma warning disable CA1416 // Validate platform compatibility
 namespace System.Net
 {
     internal sealed class HttpEndPointListener

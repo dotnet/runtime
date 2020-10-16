@@ -31,7 +31,6 @@
 
 using System.Collections;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.Net.Sockets;
 
 namespace System.Net
@@ -120,7 +119,6 @@ namespace System.Net
                 const int NotSupportedErrorCode = 50;
                 try
                 {
-                    Debug.Assert(!OperatingSystem.IsBrowser());
                     addr = Dns.GetHostAddresses(host)[0];
                 }
                 catch
