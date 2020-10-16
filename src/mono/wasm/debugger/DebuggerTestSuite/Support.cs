@@ -93,29 +93,40 @@ namespace DebuggerTests
                         consoleArgs = consoleArgs.Skip(1);
                     }
 
+                    // https://console.spec.whatwg.org/#loglevel-severity
+                    // vs 
+                    // https://docs.microsoft.com/en-us/dotnet/api/microsoft.extensions.logging.loglevel?view=dotnet-plat-ext-3.1#fields
                     switch (type) {
                         case "info":
                         case "log":
+                        case "trace":
+                        //case "dir":
+                        //case "dirxml":
+                        case "group":
+                        case "groupCollapsed":
+                        case "timeLog":
                             _logger.LogInformation(format, consoleArgs.ToArray());
                             break;
                         case "debug":
                             _logger.LogDebug(format, consoleArgs.ToArray());
+                            // _logger.LogTrace
                             break;
                         case "error":
+                        case "assert":
                             _logger.LogError(format, consoleArgs.ToArray());
                             break;
-                        case "warning":
+                        case "warn":
+                        case "countReset":
                             _logger.LogWarning(format, consoleArgs.ToArray());
                             break;
                         case "dir":
                         case "dirxml":
                         case "table":
-                        case "trace":
+                        //case "trace":
                         case "clear":
-                        case "startGroup":
-                        case "startGroupCollapsed":
+                        //case "startGroup":
+                        //case "startGroupCollapsed":
                         case "endGroup":
-                        case "assert":
                         case "profile":
                         case "profileEnd":
                         case "count":

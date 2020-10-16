@@ -115,17 +115,12 @@ void wasm_debugger_log(int level, const gchar *format, ...)
 		var message = Module.UTF8ToString ($1);
 		var namespace = "Debugger.Debug";
 
-		switch (level) {
-		case 1:
-			console.log("%s: %s", namespace, message);
-			break;
-		case 2:
-			console.debug("%s: %s", namespace, message);
-			break;
-		default:
-			console.trace("%s: %s", namespace, message);
-			break;
+		if (MONO["logging"] && MONO.logging["debugger"]) {
+			MONO.logging.debugger  (level, message);
+			return;
 		}
+
+		console.debug("%s: %s", namespace, message);
 	}, level, mesg);
 	g_free (mesg);
 }
