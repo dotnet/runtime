@@ -13,7 +13,7 @@ dotnet new nugetconfig
 
 Next, add the package source to NuGet.Config with the [dotnet nuget add source](https://docs.microsoft.com/en-us/dotnet/core/tools/dotnet-nuget-add-source) command:
 ```
-dotnet nuget add source -n dotnet5 https://dnceng.pkgs.visualstudio.com/public/_packaging/dotnet6/nuget/v3/index.json
+dotnet nuget add source -n dotnet6 https://dnceng.pkgs.visualstudio.com/public/_packaging/dotnet6/nuget/v3/index.json
 ```
 
 Then, you will be able to add the latest prerelease version of the desired package to your project.
