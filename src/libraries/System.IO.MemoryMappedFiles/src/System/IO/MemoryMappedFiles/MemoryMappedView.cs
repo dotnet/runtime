@@ -13,8 +13,7 @@ namespace System.IO.MemoryMappedFiles
         private readonly long _size;
         private readonly MemoryMappedFileAccess _access;
 
-        private unsafe MemoryMappedView(SafeMemoryMappedViewHandle viewHandle, long pointerOffset,
-                                        long size, MemoryMappedFileAccess access)
+        private MemoryMappedView(SafeMemoryMappedViewHandle viewHandle, long pointerOffset, long size, MemoryMappedFileAccess access)
         {
             Debug.Assert(viewHandle != null);
 
