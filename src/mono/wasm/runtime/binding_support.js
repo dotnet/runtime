@@ -354,9 +354,9 @@ var BindingSupportLib = {
 			var type = this.mono_wasm_try_unbox_primitive_and_get_type (mono_obj, this._unbox_buffer);
 			switch (type) {
 				case 1: // int
-				    return Module.HEAP32[this._unbox_buffer / 4];
+					return Module.HEAP32[this._unbox_buffer / 4];
 				case 25: // uint32
-				    return Module.HEAPU32[this._unbox_buffer / 4];
+					return Module.HEAPU32[this._unbox_buffer / 4];
 				case 24: // float32
 					return Module.HEAPF32[this._unbox_buffer / 4];
 				case 2: // float64
