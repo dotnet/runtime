@@ -1032,13 +1032,13 @@ namespace System.Net.Sockets.Tests
         [MemberData(nameof(TcpReceiveSendGetsCanceledByDispose_Data))]
         public async Task TcpReceiveSendGetsCanceledByDispose(bool receiveOrSend, bool ipv6Server, bool dualModeClient)
         {
-            if (UsesSync && PlatformDetection.IsRedHatFamily7 &&
-                receiveOrSend && (ipv6Server || dualModeClient))
-            {
-                // The IPV6 synchronous Receive case times out on RedHat7 systems
-                // TODO: open a new issue for this case, if the PR gets accepted.
-                return;
-            }
+            //if (UsesSync && PlatformDetection.IsRedHatFamily7 &&
+            //    receiveOrSend && (ipv6Server || dualModeClient))
+            //{
+            //    // The IPV6 synchronous Receive case times out on RedHat7 systems
+            //    // TODO: open a new issue for this case, if the PR gets accepted.
+            //    return;
+            //}
 
             // We try this a couple of times to deal with a timing race: if the Dispose happens
             // before the operation is started, the peer won't see a ConnectionReset SocketException and we won't
@@ -1077,12 +1077,15 @@ namespace System.Net.Sockets.Tests
                     Assert.NotSame(timeoutTask, await Task.WhenAny(disposeTask, socketOperation, timeoutTask));
                     cts.Cancel();
 
+                    _output.WriteLine("awaiting disposeTask...");
                     await disposeTask;
+                    _output.WriteLine("disposeTask completed.");
 
                     SocketError? localSocketError = null;
                     bool disposedException = false;
                     try
                     {
+                        _output.WriteLine("awaiting socketOperation...");
                         await socketOperation;
                     }
                     catch (SocketException se)
@@ -1093,6 +1096,7 @@ namespace System.Net.Sockets.Tests
                     {
                         disposedException = true;
                     }
+                    _output.WriteLine("socketOperation completed or failed");
 
                     try
                     {
@@ -1120,7 +1124,9 @@ namespace System.Net.Sockets.Tests
                             {
                                 try
                                 {
+                                    _output.WriteLine("awaiting ReceiveAsync(socket2) ...");
                                     int received = await ReceiveAsync(socket2, receiveBuffer);
+                                    _output.WriteLine("ReceiveAsync(socket2) done.");
                                     if (received == 0)
                                     {
                                         break;
@@ -1129,6 +1135,7 @@ namespace System.Net.Sockets.Tests
                                 catch (SocketException se)
                                 {
                                     peerSocketError = se.SocketErrorCode;
+                                    _output.WriteLine("ReceiveAsync(socket2) thrown: " + peerSocketError);
                                     break;
                                 }
                             }
