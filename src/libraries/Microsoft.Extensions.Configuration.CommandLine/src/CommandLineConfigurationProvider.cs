@@ -39,111 +39,158 @@ namespace Microsoft.Extensions.Configuration.CommandLine
         public override void Load()
         {
             var data = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
-            var argList = new List<string>(Args);
 
-            for (int i = 0; i < argList.Count; i++)
+            using (IEnumerator<string> enumerator = Args.GetEnumerator())
             {
-                string currentArg = argList[i];
-                string nextArg =
-                    i + 1 < argList.Count ? argList[i + 1] : null;
-                int keyStartIndex = 0;
+                bool isNext = enumerator.MoveNext();
 
-                if (currentArg.StartsWith("--"))
+                // Store 1st argument here and start while loop with the 2nd,
+                // or 'Current', argument. This is so we can look at the
+                // 'Current' argument in relation to the 1st while evaluating
+                // the 1st.
+                string previousArg = enumerator.Current;
+
+                // If no first arg, return empty dictionary
+                if (!isNext || previousArg == null)
                 {
-                    keyStartIndex = 2;
-                }
-                else if (currentArg.StartsWith("-"))
-                {
-                    keyStartIndex = 1;
-                }
-                else if (currentArg.StartsWith("/"))
-                {
-                    // "/SomeSwitch" is equivalent to "--SomeSwitch" when interpreting switch mappings
-                    // So we do a conversion to simplify later processing
-                    currentArg = $"--{currentArg.Substring(1)}";
-                    keyStartIndex = 2;
+                    Data = data;
+                    return;
                 }
 
-                int separator = currentArg.IndexOf('=');
-
-                string key;
-                string value;
-                if (separator < 0)
+                while (enumerator.MoveNext())
                 {
-                    // If there is neither equal sign nor prefix in current argument, it is an invalid format
-                    if (keyStartIndex == 0)
+                    // 'Current' is now the 2nd argument in Args
+                    string currentArg = enumerator.Current;
+                    KeyValuePair<string, string>? kvp = ProcessArgs(previousArg, currentArg);
+                    // ProcessArgs will return null if previousArg is invalid
+                    if (kvp.HasValue)
                     {
-                        // Ignore invalid formats
-                        continue;
+                        // Override value when key is duplicated,
+                        // so we always have the last argument win.
+                        data[kvp.Value.Key] = kvp.Value.Value;
                     }
-
-                    // If the switch is a key in given switch mappings, interpret it
-                    if (_switchMappings != null
-                        && _switchMappings.TryGetValue(
-                            currentArg,
-                            out string mappedKey))
-                    {
-                        key = mappedKey;
-                    }
-                    // If the switch starts with a single "-" and it isn't in given mappings,
-                    // or in any other case, use the switch name directly as a key
-                    else
-                    {
-                        key = currentArg.Substring(keyStartIndex);
-                    }
-
-                    // If the argument is last in list, the next argument begins
-                    // with an arg delimiter, or the next argument contains '=',
-                    // then treat argument as switch and record value of "true"
-                    if (nextArg == null
-                        || nextArg.StartsWith("--")
-                        || nextArg.StartsWith("-")
-                        || nextArg.StartsWith("/")
-                        || nextArg.Contains("="))
-                    {
-                        value = "true";
-                    }
-                    else
-                    {
-                        value = nextArg;
-                    }
-                }
-                else
-                {
-                    string keySegment = currentArg.Substring(0, separator);
-
-                    // If the switch is a key in given switch mappings, interpret it
-                    if (_switchMappings != null
-                        && _switchMappings.TryGetValue(
-                            keySegment,
-                            out string mappedKeySegment))
-                    {
-                        key = mappedKeySegment;
-                    }
-                    // If the switch starts with a single "-" and it isn't in given mappings , it is an invalid usage
-                    else if (keyStartIndex == 1)
-                    {
-                        throw new FormatException(
-                            SR.Format(
-                                SR.Error_ShortSwitchNotDefined,
-                                currentArg));
-                    }
-                    // Otherwise, use the switch name directly as a key
-                    else
-                    {
-                        key = currentArg.Substring(
-                            keyStartIndex,
-                            separator - keyStartIndex);
-                    }
-
-                    value = currentArg.Substring(separator + 1);
+                    previousArg = enumerator.Current;
                 }
 
-                // Override value when key is duplicated. So we always have the last argument win.
-                data[key] = value;
+                // Process the last previousArg after exiting loop
+                KeyValuePair<string, string>? lastPair = ProcessArgs(previousArg, null);
+                if (lastPair.HasValue)
+                {
+                    data[lastPair.Value.Key] = lastPair.Value.Value;
+                }
             }
 
             Data = data;
+        }
+
+        /// <summary>
+        /// Reconcile two consecutive arguments into a key-value pair for the first.
+        /// </summary>
+        /// <remarks>
+        /// Helper function to reduce repeated code in <see cref="Load"/> method.
+        /// </remarks>
+        /// <param name="previousArg">The first string argument</param>
+        /// <param name="currentArg">The second string argument</param>
+        /// <returns>
+        /// A properly resolved configuration key-value pair, or null if previous argument is invalid.
+        /// </returns>
+        private KeyValuePair<string, string>? ProcessArgs(
+            string previousArg,
+            string currentArg)
+        {
+            string key, value;
+            int keyStartIndex = 0;
+
+            if (previousArg.StartsWith("--"))
+            {
+                keyStartIndex = 2;
+            }
+            else if (previousArg.StartsWith("-"))
+            {
+                keyStartIndex = 1;
+            }
+            else if (previousArg.StartsWith("/"))
+            {
+                // "/SomeSwitch" is equivalent to "--SomeSwitch" when interpreting switch mappings
+                // So we do a conversion to simplify later processing
+                previousArg = $"--{previousArg.Substring(1)}";
+                keyStartIndex = 2;
+            }
+
+            int separator = previousArg.IndexOf('=');
+
+            if (separator < 0)
+            {
+                // If there is neither equal sign nor prefix in current argument, it is an invalid format
+                if (keyStartIndex == 0)
+                {
+                    // Ignore invalid formats
+                    return null;
+                }
+
+                // If the switch is a key in given switch mappings, interpret it
+                if (_switchMappings != null
+                    && _switchMappings.TryGetValue(
+                        previousArg,
+                        out string mappedKey))
+                {
+                    key = mappedKey;
+                }
+                // If the switch starts with a single "-" and it isn't in given mappings,
+                // or in any other case, use the switch name directly as a key
+                else
+                {
+                    key = previousArg.Substring(keyStartIndex);
+                }
+
+                // If the argument is last in list, the next argument begins
+                // with an arg delimiter, or the next argument contains '=',
+                // then treat argument as switch and record value of "true"
+                if (currentArg == null
+                    || currentArg.StartsWith("--")
+                    || currentArg.StartsWith("-")
+                    || currentArg.StartsWith("/")
+                    || currentArg.Contains("="))
+                {
+                    value = "true";
+                }
+                else
+                {
+                    value = currentArg;
+                }
+            }
+            else
+            {
+                string keySegment = previousArg.Substring(0, separator);
+
+                // If the switch is a key in given switch mappings, interpret it
+                if (_switchMappings != null
+                    && _switchMappings.TryGetValue(
+                        keySegment,
+                        out string mappedKeySegment))
+                {
+                    key = mappedKeySegment;
+                }
+                // If the switch starts with a single "-" and it isn't in given mappings , it is an invalid usage
+                else if (keyStartIndex == 1)
+                {
+                    throw new FormatException(
+                        SR.Format(
+                            SR.Error_ShortSwitchNotDefined,
+                            previousArg));
+                }
+                // Otherwise, use the switch name directly as a key
+                else
+                {
+                    key = previousArg.Substring(
+                        keyStartIndex,
+                        separator - keyStartIndex);
+                }
+
+                value = previousArg.Substring(separator + 1);
+            }
+
+            return new KeyValuePair<string, string>(key, value);
         }
 
         private Dictionary<string, string> GetValidatedSwitchMappingsCopy(IDictionary<string, string> switchMappings)

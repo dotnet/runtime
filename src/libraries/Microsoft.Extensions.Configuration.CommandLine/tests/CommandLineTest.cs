@@ -12,6 +12,36 @@ namespace Microsoft.Extensions.Configuration.CommandLine.Test
     public class CommandLineTest
     {
         [Fact]
+        public void CanLoadSinglePair()
+        {
+            var args = new string[]
+            {
+                "--Key1=Value1"
+            };
+            var cmdLineConfig = new CommandLineConfigurationProvider(args);
+
+            cmdLineConfig.Load();
+
+            Assert.Equal("Value1", cmdLineConfig.Get("Key1"));
+            Assert.Single(cmdLineConfig.GetChildKeys(new string[0], null));
+        }
+
+        [Fact]
+        public void CanLoadSingleSwitch()
+        {
+            var args = new string[]
+            {
+                "--Key1"
+            };
+            var cmdLineConfig = new CommandLineConfigurationProvider(args);
+
+            cmdLineConfig.Load();
+
+            Assert.Equal("true", cmdLineConfig.Get("Key1"));
+            Assert.Single(cmdLineConfig.GetChildKeys(new string[0], null));
+        }
+
+        [Fact]
         public void IgnoresOnlyUnknownArgs()
         {
             var args = new string[]
@@ -83,7 +113,6 @@ namespace Microsoft.Extensions.Configuration.CommandLine.Test
             Assert.Equal("Value7", cmdLineConfig.Get("Key7"));
             Assert.Equal(7, cmdLineConfig.GetChildKeys(new string[0], null).Count());
         }
-
 
         [Fact]
         public void LoadKeyValuePairsFromCommandLineArgumentsWithoutSwitchMappings()
