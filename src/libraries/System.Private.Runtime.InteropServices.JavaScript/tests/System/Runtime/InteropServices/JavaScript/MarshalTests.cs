@@ -695,7 +695,6 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
             Runtime.InvokeJS(@$"
                 var get_value = Module.mono_bind_static_method (""{HelperMarshal.INTEROP_CLASS}GetEnumValue"");
                 var e = get_value ();
-                console.log(e);
                 var invoke_uint = Module.mono_bind_static_method (""{HelperMarshal.INTEROP_CLASS}InvokeUInt"");
                 invoke_uint (e);
             ");
@@ -706,8 +705,23 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
         public static void PassUintEnumByValue ()
         {
             HelperMarshal._enumValue = TestEnum.Zero;
+            // FIXME: Producing a boxed enum requires type information and runtime support
+            //  that is not currently available, so using the appropriate signature doesn't work
             Runtime.InvokeJS(@$"
-                var set_enum = Module.mono_bind_static_method (""{HelperMarshal.INTEROP_CLASS}SetEnumValue"");
+                var set_enum = Module.mono_bind_static_method (""{HelperMarshal.INTEROP_CLASS}SetEnumValue"", ""j"");
+                set_enum (0xFFFFFFFE);
+            ");
+            Assert.Equal(TestEnum.BigValue, HelperMarshal._enumValue);
+        }
+        
+        [Fact]
+        public static void PassUintEnumByValueMasqueradingAsInt ()
+        {
+            HelperMarshal._enumValue = TestEnum.Zero;
+            // HACK: We're explicitly telling the bindings layer to pass an int here, not an enum
+            // Because we know the enum is : uint, this is compatible, so it works.
+            Runtime.InvokeJS(@$"
+                var set_enum = Module.mono_bind_static_method (""{HelperMarshal.INTEROP_CLASS}SetEnumValue"", ""i"");
                 set_enum (0xFFFFFFFE);
             ");
             Assert.Equal(TestEnum.BigValue, HelperMarshal._enumValue);

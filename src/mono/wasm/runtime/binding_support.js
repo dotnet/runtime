@@ -618,17 +618,8 @@ var BindingSupportLib = {
     
 			if (js_obj === null || typeof js_obj === "undefined")
 				return 0;
-			
-			var monoObj, monoEnum;
-			try {
-				monoObj = MONO.mono_wasm_new_root (this.js_to_mono_obj (js_obj));
-				// Check enum contract
-				monoEnum = MONO.mono_wasm_new_root (this.call_method (this.object_to_enum, null, "iim!", [ method, parmIdx, monoObj.value ]))
-				// return the unboxed enum value.
-				return this.mono_unbox_enum (monoEnum.value);
-			} finally {
-				MONO.mono_wasm_release_roots (monoObj, monoEnum);
-			}
+
+			throw new Error ("Constructing boxed enum instances from JS values is not currently supported");
 		},
 		wasm_binding_obj_new: function (js_obj_id, ownsHandle, type)
 		{
