@@ -218,26 +218,21 @@ namespace System.Text.Json
 
                 if (Length >= _data.Length - DbRow.Size)
                 {
-                    Enlarge();
+                    Debug.Assert(!_isLocked, "Appending to a locked database");
+
+                    byte[] toReturn = _data;
+                    _data = ArrayPool<byte>.Shared.Rent(toReturn.Length * 2);
+                    Buffer.BlockCopy(toReturn, 0, _data, 0, toReturn.Length);
+
+                    // The data in this rented buffer only conveys the positions and
+                    // lengths of tokens in a document, but no content; so it does not
+                    // need to be cleared.
+                    ArrayPool<byte>.Shared.Return(toReturn);
                 }
 
                 DbRow row = new DbRow(tokenType, startLocation, length);
                 MemoryMarshal.Write(_data.AsSpan(Length), ref row);
                 Length += DbRow.Size;
-            }
-
-            private void Enlarge()
-            {
-                Debug.Assert(!_isLocked, "Appending to a locked database");
-
-                byte[] toReturn = _data;
-                _data = ArrayPool<byte>.Shared.Rent(toReturn.Length * 2);
-                Buffer.BlockCopy(toReturn, 0, _data, 0, toReturn.Length);
-
-                // The data in this rented buffer only conveys the positions and
-                // lengths of tokens in a document, but no content; so it does not
-                // need to be cleared.
-                ArrayPool<byte>.Shared.Return(toReturn);
             }
 
             [Conditional("DEBUG")]
