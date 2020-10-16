@@ -938,6 +938,9 @@
         <ExcludeList Include="$(XunitTestBinBase)/Interop/StructMarshalling/PInvoke/MarshalStructAsLayoutExp/*">
             <Issue>https://github.com/dotnet/runtime/issues/43461</Issue>
         </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/Loader/classloader/regressions/dev10_715437/dev10_715437/*">
+            <Issue>https://github.com/dotnet/runtime/issues/43498</Issue>
+        </ExcludeList>
     </ItemGroup>
 
     <!-- Crossgen2 type generator tests currently failing outerloop Windows legs -->
