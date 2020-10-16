@@ -61,22 +61,20 @@ namespace Microsoft.Extensions.Configuration.CommandLine
                 {
                     // 'Current' is now the 2nd argument in Args
                     string currentArg = enumerator.Current;
-                    KeyValuePair<string, string>? kvp = ProcessArgs(previousArg, currentArg);
-                    // ProcessArgs will return null if previousArg is invalid
-                    if (kvp.HasValue)
+                    // TryProcessArgs will return false if previousArg is invalid
+                    if (TryProcessArgs(previousArg, currentArg, out (string key, string value) loopPair))
                     {
                         // Override value when key is duplicated,
                         // so we always have the last argument win.
-                        data[kvp.Value.Key] = kvp.Value.Value;
+                        data[loopPair.key] = loopPair.value;
                     }
                     previousArg = enumerator.Current;
                 }
 
                 // Process the last previousArg after exiting loop
-                KeyValuePair<string, string>? lastPair = ProcessArgs(previousArg, null);
-                if (lastPair.HasValue)
+                if (TryProcessArgs(previousArg, null, out (string key, string value) lastPair))
                 {
-                    data[lastPair.Value.Key] = lastPair.Value.Value;
+                    data[lastPair.key] = lastPair.value;
                 }
             }
 
@@ -91,12 +89,13 @@ namespace Microsoft.Extensions.Configuration.CommandLine
         /// </remarks>
         /// <param name="previousArg">The first string argument</param>
         /// <param name="currentArg">The second string argument</param>
-        /// <returns>
+        /// <param name="pair">
         /// A properly resolved configuration key-value pair, or null if previous argument is invalid.
+        /// </param>
+        /// <returns>
+        /// True if the args can be resolved to a proper configuration key-value pair.
         /// </returns>
-        private KeyValuePair<string, string>? ProcessArgs(
-            string previousArg,
-            string currentArg)
+        private bool TryProcessArgs(string previousArg, string currentArg, out (string key, string value) pair)
         {
             string key, value;
             int keyStartIndex = 0;
@@ -125,7 +124,8 @@ namespace Microsoft.Extensions.Configuration.CommandLine
                 if (keyStartIndex == 0)
                 {
                     // Ignore invalid formats
-                    return null;
+                    pair = (null, null);
+                    return false;
                 }
 
                 // If the switch is a key in given switch mappings, interpret it
@@ -190,7 +190,8 @@ namespace Microsoft.Extensions.Configuration.CommandLine
                 value = previousArg.Substring(separator + 1);
             }
 
-            return new KeyValuePair<string, string>(key, value);
+            pair = (key, value);
+            return true;
         }
 
         private Dictionary<string, string> GetValidatedSwitchMappingsCopy(IDictionary<string, string> switchMappings)
