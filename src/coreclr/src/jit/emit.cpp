@@ -1211,6 +1211,14 @@ void emitter::appendToCurIG(instrDesc* id)
 
 #ifdef DEBUG
 
+void emitter::emitDispInsAddr(BYTE* code)
+{
+    if (emitComp->opts.disAddr)
+    {
+        printf(FMT_ADDR, DBG_ADDR(code));
+    }
+}
+
 void emitter::emitDispInsOffs(unsigned offs, bool doffs)
 {
     if (doffs)
@@ -5054,7 +5062,7 @@ unsigned emitter::emitEndCodeGen(Compiler* comp,
             assert(coldCodeBlock);
             cp = coldCodeBlock;
 #ifdef DEBUG
-            if (emitComp->opts.disAsm || emitComp->opts.dspEmit || emitComp->verbose)
+            if (emitComp->opts.disAsm || emitComp->verbose)
             {
                 printf("\n************** Beginning of cold code **************\n");
             }
@@ -5077,7 +5085,7 @@ unsigned emitter::emitEndCodeGen(Compiler* comp,
 #ifdef DEBUG
         /* Print the IG label, but only if it is a branch label */
 
-        if (emitComp->opts.disAsm || emitComp->opts.dspEmit || emitComp->verbose)
+        if (emitComp->opts.disAsm || emitComp->verbose)
         {
             if (emitComp->verbose || emitComp->opts.disasmWithGC)
             {
@@ -5086,7 +5094,12 @@ unsigned emitter::emitEndCodeGen(Compiler* comp,
             }
             else
             {
-                printf("\nG_M%03u_IG%02u:\n", emitComp->compMethodID, ig->igNum);
+                printf("\nG_M%03u_IG%02u:", emitComp->compMethodID, ig->igNum);
+                if (!emitComp->opts.disDiffable)
+                {
+                    printf("              ;; offset=%04XH", ig->igOffs);
+                }
+                printf("\n");
             }
         }
 #endif // DEBUG
@@ -5184,7 +5197,7 @@ unsigned emitter::emitEndCodeGen(Compiler* comp,
         }
 
 #ifdef DEBUG
-        if (emitComp->opts.disAsm || emitComp->opts.dspEmit || emitComp->verbose)
+        if (emitComp->opts.disAsm || emitComp->verbose)
         {
             printf("\t\t\t\t\t\t;; bbWeight=%s PerfScore %.2f", refCntWtd2str(ig->igWeight), ig->igPerfScore);
         }
@@ -6472,10 +6485,6 @@ unsigned char emitter::emitOutputByte(BYTE* dst, ssize_t val)
     *castto(dst, unsigned char*) = (unsigned char)val;
 
 #ifdef DEBUG
-    if (emitComp->opts.dspEmit)
-    {
-        printf("; emit_byte 0%02XH\n", val & 0xFF);
-    }
 #ifdef TARGET_AMD64
     // if we're emitting code bytes, ensure that we've already emitted the rex prefix!
     assert(((val & 0xFF00000000LL) == 0) || ((val & 0xFFFFFFFF00000000LL) == 0xFFFFFFFF00000000LL));
@@ -6495,10 +6504,6 @@ unsigned char emitter::emitOutputWord(BYTE* dst, ssize_t val)
     MISALIGNED_WR_I2(dst, (short)val);
 
 #ifdef DEBUG
-    if (emitComp->opts.dspEmit)
-    {
-        printf("; emit_word 0%02XH,0%02XH\n", (val & 0xFF), (val >> 8) & 0xFF);
-    }
 #ifdef TARGET_AMD64
     // if we're emitting code bytes, ensure that we've already emitted the rex prefix!
     assert(((val & 0xFF00000000LL) == 0) || ((val & 0xFFFFFFFF00000000LL) == 0xFFFFFFFF00000000LL));
@@ -6518,10 +6523,6 @@ unsigned char emitter::emitOutputLong(BYTE* dst, ssize_t val)
     MISALIGNED_WR_I4(dst, (int)val);
 
 #ifdef DEBUG
-    if (emitComp->opts.dspEmit)
-    {
-        printf("; emit_long 0%08XH\n", (int)val);
-    }
 #ifdef TARGET_AMD64
     // if we're emitting code bytes, ensure that we've already emitted the rex prefix!
     assert(((val & 0xFF00000000LL) == 0) || ((val & 0xFFFFFFFF00000000LL) == 0xFFFFFFFF00000000LL));
@@ -6543,17 +6544,6 @@ unsigned char emitter::emitOutputSizeT(BYTE* dst, ssize_t val)
 #else
     MISALIGNED_WR_ST(dst, val);
 #endif
-
-#ifdef DEBUG
-    if (emitComp->opts.dspEmit)
-    {
-#ifdef TARGET_AMD64
-        printf("; emit_size_t 0%016llXH\n", val);
-#else  // TARGET_AMD64
-        printf("; emit_size_t 0%08XH\n", val);
-#endif // TARGET_AMD64
-    }
-#endif // DEBUG
 
     return TARGET_POINTER_SIZE;
 }

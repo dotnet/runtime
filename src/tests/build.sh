@@ -457,7 +457,6 @@ usage_list+=("-skiptestwrappers: Don't generate test wrappers.")
 usage_list+=("-buildtestwrappersonly: only build the test wrappers.")
 usage_list+=("-copynativeonly: Only copy the native test binaries to the managed output. Do not build the native or managed tests.")
 usage_list+=("-generatelayoutonly: only pull down dependencies and build coreroot.")
-usage_list+=("-crossgenframeworkonly: only compile the framework in CORE_ROOT with Crossgen / Crossgen2.")
 
 usage_list+=("-crossgen: Precompiles the framework managed assemblies in coreroot.")
 usage_list+=("-crossgen2: Precompiles the framework managed assemblies in coreroot using the Crossgen2 compiler.")
@@ -491,13 +490,6 @@ handle_arguments_local() {
             __CopyNativeProjectsAfterCombinedTestBuild=true
             __SkipGenerateLayout=1
             __SkipCrossgenFramework=1
-            ;;
-
-        crossgenframeworkonly|-crossgenframeworkonly)
-            __SkipStressDependencies=1
-            __SkipNative=1
-            __SkipManaged=1
-            __SkipGenerateLayout=1
             ;;
 
         crossgen|-crossgen)

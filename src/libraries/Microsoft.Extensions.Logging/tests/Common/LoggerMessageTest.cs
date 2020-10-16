@@ -322,6 +322,26 @@ namespace Microsoft.Extensions.Logging.Test
             Assert.Equal(expectedMessage, exception.Message);
         }
 
+        [Theory]
+        [MemberData(nameof(DefineMethodsData))]
+        public void DefineMessage_ThrowsException_WhenFormatString_IsNull(Func<LogLevel, EventId, string, Delegate> define)
+        {
+            // Act
+            var exception = Assert.Throws<ArgumentNullException>(
+                () => define.Invoke(LogLevel.Error, 0, null));
+        }
+
+        public static IEnumerable<object[]> DefineMethodsData => new[]
+        {
+            new object[] { (Func<LogLevel, EventId, string, Delegate>)LoggerMessage.Define },
+            new object[] { (Func<LogLevel, EventId, string, Delegate>)LoggerMessage.Define<string> },
+            new object[] { (Func<LogLevel, EventId, string, Delegate>)LoggerMessage.Define<string, string> },
+            new object[] { (Func<LogLevel, EventId, string, Delegate>)LoggerMessage.Define<string, string, string> },
+            new object[] { (Func<LogLevel, EventId, string, Delegate>)LoggerMessage.Define<string, string, string, string> },
+            new object[] { (Func<LogLevel, EventId, string, Delegate>)LoggerMessage.Define<string, string, string, string, string> },
+            new object[] { (Func<LogLevel, EventId, string, Delegate>)LoggerMessage.Define<string, string, string, string, string, string> }
+        };
+
         public static IEnumerable<object[]> LogMessagesData => new[]
         {
             new object[] { LoggerMessage.Define(LogLevel.Error, 0, "Log "), 0 },

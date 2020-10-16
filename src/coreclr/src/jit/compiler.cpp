@@ -1877,7 +1877,6 @@ void Compiler::compInit(ArenaAllocator*       pAlloc,
 
 #ifdef DEBUG
     compCodeGenDone        = false;
-    compRegSetCheckLevel   = 0;
     opts.compMinOptsIsUsed = false;
 #endif
     opts.compMinOptsIsSet = false;
@@ -2814,13 +2813,13 @@ void Compiler::compInitOptions(JitFlags* jitFlags)
 
 #ifdef DEBUG
     opts.dspInstrs       = false;
-    opts.dspEmit         = false;
     opts.dspLines        = false;
     opts.varNames        = false;
     opts.dmpHex          = false;
     opts.disAsm          = false;
     opts.disAsmSpilled   = false;
     opts.disDiffable     = false;
+    opts.disAddr         = false;
     opts.dspCode         = false;
     opts.dspEHTable      = false;
     opts.dspDebugInfo    = false;
@@ -2961,6 +2960,12 @@ void Compiler::compInitOptions(JitFlags* jitFlags)
         {
             opts.disDiffable = true;
             opts.dspDiffable = true;
+        }
+
+        // This one applies to both Ngen/Jit Disasm output: COMPlus_JitDasmWithAddress=1
+        if (JitConfig.JitDasmWithAddress() != 0)
+        {
+            opts.disAddr = true;
         }
 
         if (JitConfig.JitLongAddress() != 0)
@@ -6105,7 +6110,7 @@ int Compiler::compCompileHelper(CORINFO_MODULE_HANDLE classPtr,
 #ifdef DEBUG
     /* Give the function a unique number */
 
-    if (opts.disAsm || opts.dspEmit || verbose)
+    if (opts.disAsm || verbose)
     {
         compMethodID = ~info.compMethodHash() & 0xffff;
     }

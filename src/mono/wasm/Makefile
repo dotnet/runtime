@@ -3,6 +3,7 @@ TOP=$(realpath $(CURDIR)/../../..)
 
 DOTNET=$(TOP)/dotnet.sh
 JSVU=$(HOME)/.jsvu
+CHROMEDRIVER?=$(HOME)/.chromedriver
 
 #
 # These variables are set by wasm.proj
@@ -149,6 +150,9 @@ run-tests-jsc-%:
 
 run-tests-%:
 	PATH="$(JSVU):$(PATH)" $(DOTNET) build $(TOP)/src/libraries/$*/tests/ /t:Test /p:TargetOS=Browser /p:TargetArchitecture=wasm /p:Configuration=$(CONFIG) $(MSBUILD_ARGS)
+
+run-browser-tests-%:
+	PATH="$(CHROMEDRIVER):$(PATH)" XHARNESS_COMMAND=test-browser $(DOTNET) build $(TOP)/src/libraries/$*/tests/ /t:Test /p:TargetOS=Browser /p:TargetArchitecture=wasm /p:Configuration=$(CONFIG) $(MSBUILD_ARGS)
 
 run-debugger-tests:
 	if [ ! -z "$(TEST_FILTER)" ]; then \
