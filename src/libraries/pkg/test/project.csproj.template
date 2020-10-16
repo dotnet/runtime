@@ -9,7 +9,7 @@
     <CheckEolTargetFramework>false</CheckEolTargetFramework>
     <NETCoreAppMaximumVersion>99.0</NETCoreAppMaximumVersion>
 
-    <SupportFilesDir Condition="'$(SupportFilesDir)' == ''">$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), Directory.Build.props))\support</SupportFilesDir>
+    <SupportFilesDir Condition="'$(SupportFilesDir)' == ''">$([MSBuild]::GetPathOfFileAbove(Directory.Build.props))</SupportFilesDir>
   </PropertyGroup>
 
   <ItemGroup>
