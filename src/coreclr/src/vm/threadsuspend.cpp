@@ -2259,19 +2259,19 @@ void Thread::RareDisablePreemptiveGC()
                 status = GCHeapUtilities::GetGCHeap()->WaitUntilGCComplete();
                 ResetThreadStateNC(TSNC_WaitUntilGCFinished);
 
-                    if (status == (DWORD)COR_E_STACKOVERFLOW)
+                if (status == (DWORD)COR_E_STACKOVERFLOW)
+                {
+                    // One of two things can happen here:
+                    // 1. Spin until EE restarts.
+                    // 2. Suspending thread lets us to cooperative mode and waits until we suspend.
+                    SetThreadState(TS_BlockGCForSO);
+                    while (GCHeapUtilities::IsGCInProgress() && m_fPreemptiveGCDisabled.Load() == 0)
                     {
-                        // One of two things can happen here:
-                        // 1. Spin until EE restarts.
-                        // 2. Suspending thread lets us to cooperative mode and waits until we suspend.
-                        SetThreadState(TS_BlockGCForSO);
-                        while (GCHeapUtilities::IsGCInProgress() && m_fPreemptiveGCDisabled.Load() == 0)
-                        {
-#undef Sleep
                         // We can not go to a host for blocking operation due ot lack of stack.
                         // Instead we will spin here until
                         // 1. GC is finished; Or
                         // 2. GC lets this thread to run and will wait for it
+#undef Sleep
                         Sleep(10);
 #define Sleep(a) Dont_Use_Sleep(a)
                     }
@@ -3502,7 +3502,7 @@ HRESULT ThreadSuspend::SuspendRuntime(ThreadSuspend::SUSPEND_REASON reason)
     DWORD dbgStartTimeout = GetTickCount();
 #endif
 
-    for (;;)
+    while (true)
     {
         Thread* thread = NULL;
         while ((thread = ThreadStore::GetThreadList(thread)) != NULL)
