@@ -408,7 +408,7 @@ namespace $([System.String]::Copy($(Category)).Replace(".","_").Replace("\","").
       <CategoryWithSlash>$([System.String]::Copy('$(_CMDDIR)').Replace("$(CMDDIR_Grandparent)/",""))</CategoryWithSlash>
       <Category>$([System.String]::Copy('$(CategoryWithSlash)').Replace('/','_'))</Category>
       <OutputDir>$(CORE_ROOT)\$(Category)\AndroidApp</OutputDir>
-      <ApkDir>$(OutputDir)\apk</ApkDir>
+      <ApkDir>$(CORE_ROOT)\$(Category)\apk</ApkDir>
       <StripDebugSymbols>False</StripDebugSymbols>
       <StripDebugSymbols Condition="'$(Configuration)' == 'Release'">True</StripDebugSymbols>
       <MicrosoftNetCoreAppRuntimePackDir>$(ArtifactsBinDir)microsoft.netcore.app.runtime.android-$(TargetArchitecture)\$(Configuration)\runtimes\android-$(TargetArchitecture)\</MicrosoftNetCoreAppRuntimePackDir>
@@ -456,8 +456,11 @@ namespace $([System.String]::Copy($(Category)).Replace(".","_").Replace("\","").
         <Output TaskParameter="ApkBundlePath" PropertyName="ApkBundlePath" />
         <Output TaskParameter="ApkPackageId" PropertyName="ApkPackageId" />
     </AndroidAppBuilderTask>
+
     <Message Importance="High" Text="Apk:       $(ApkBundlePath)"/>
     <Message Importance="High" Text="PackageId: $(ApkPackageId)"/>
+
+    <RemoveDir Directories="$(OutputDir)" />
   </Target>
 
   <Target Name="BuildAllAndroidApp" DependsOnTargets="GetListOfTestCmds;FindCmdDirectories">
