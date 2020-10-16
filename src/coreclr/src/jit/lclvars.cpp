@@ -2317,7 +2317,7 @@ void Compiler::StructPromotionHelper::PromoteStructVar(unsigned lclNum)
 
 #endif
 
-#if defined(TARGET_AMD64) || defined(TARGET_ARM64) || defined(TARGET_ARM)
+#if defined(TARGET_AMD64) || defined(TARGET_ARM64) || defined(TARGET_ARM) || defined(TARGET_X86)
 
         // Do we have a parameter that can be enregistered?
         //
@@ -2357,7 +2357,7 @@ void Compiler::StructPromotionHelper::PromoteStructVar(unsigned lclNum)
                 fieldVarDsc->SetArgReg(parentArgReg);
             }
         }
-#endif // defined(TARGET_AMD64) || defined(TARGET_ARM64) || defined(TARGET_ARM)
+#endif // defined(TARGET_AMD64) || defined(TARGET_ARM64) || defined(TARGET_ARM) || defined(TARGET_X86)
 
 #ifdef FEATURE_SIMD
         if (varTypeIsSIMD(pFieldInfo->fldType))
@@ -5129,12 +5129,18 @@ void Compiler::lvaFixVirtualFrameOffsets()
         // Is this a non-param promoted struct field?
         //   if so then set doAssignStkOffs to false.
         //
-        if (varDsc->lvIsStructField && !varDsc->lvIsParam)
+        if (varDsc->lvIsStructField)
         {
             LclVarDsc*       parentvarDsc  = &lvaTable[varDsc->lvParentLcl];
             lvaPromotionType promotionType = lvaGetPromotionType(parentvarDsc);
 
-            if (promotionType == PROMOTION_TYPE_DEPENDENT)
+#if defined(TARGET_X86)
+            // On x86, we set the stack offset for a promoted field
+            // to match a struct parameter in lvAssignFrameOffsetsToPromotedStructs.
+            if ((!varDsc->lvIsParam || parentvarDsc->lvIsParam) && promotionType == PROMOTION_TYPE_DEPENDENT)
+#else
+            if (!varDsc->lvIsParam && promotionType == PROMOTION_TYPE_DEPENDENT)
+#endif
             {
                 doAssignStkOffs = false; // Assigned later in lvaAssignFrameOffsetsToPromotedStructs()
             }
@@ -6944,17 +6950,16 @@ void Compiler::lvaAssignFrameOffsetsToPromotedStructs()
         // outgoing args space. Assign the dependently promoted fields properly.
         //
         if (varDsc->lvIsStructField
-#ifndef UNIX_AMD64_ABI
-#if !defined(TARGET_ARM)
+#if !defined(UNIX_AMD64_ABI) && !defined(TARGET_ARM) && !defined(TARGET_X86)
             // ARM: lo/hi parts of a promoted long arg need to be updated.
 
             // For System V platforms there is no outgoing args space.
-            // A register passed struct arg is homed on the stack in a separate local var.
+
+            // For System V and x86, a register passed struct arg is homed on the stack in a separate local var.
             // The offset of these structs is already calculated in lvaAssignVirtualFrameOffsetToArg methos.
             // Make sure the code below is not executed for these structs and the offset is not changed.
             && !varDsc->lvIsParam
-#endif // !defined(TARGET_ARM)
-#endif // !UNIX_AMD64_ABI
+#endif // !defined(UNIX_AMD64_ABI) && !defined(TARGET_ARM) && !defined(TARGET_X86)
             )
         {
             LclVarDsc*       parentvarDsc  = &lvaTable[varDsc->lvParentLcl];
