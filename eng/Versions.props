@@ -30,6 +30,8 @@
       release, increase this number by one.
     -->
     <NETStandardPatchVersion>0</NETStandardPatchVersion>
+    <!-- Remove when arcade switched to track dev16.9 version -->
+    <MicrosoftNetCompilersToolsetVersion>3.9.0-2.20516.4</MicrosoftNetCompilersToolsetVersion>
   </PropertyGroup>
   <!--
     Servicing build settings for Setup/Installer packages. Instructions:
