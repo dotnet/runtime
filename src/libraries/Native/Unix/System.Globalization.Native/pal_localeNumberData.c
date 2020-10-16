@@ -406,7 +406,7 @@ int32_t GlobalizationNative_GetLocaleInfoInt(
     const UChar* localeName, LocaleNumberData localeNumberData, int32_t* value)
 {
     UErrorCode status = U_ZERO_ERROR;
-    char locale[ULOC_FULLNAME_CAPACITY]{};
+    char locale[ULOC_FULLNAME_CAPACITY];
     GetLocale(localeName, locale, ULOC_FULLNAME_CAPACITY, FALSE, &status);
 
     if (U_FAILURE(status))

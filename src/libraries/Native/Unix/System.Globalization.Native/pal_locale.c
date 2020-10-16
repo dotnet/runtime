@@ -72,7 +72,7 @@ int32_t GetLocale(const UChar* localeName,
         // Make sure the "language" part of the locale is reasonable (i.e. we can fetch it and it is within range).
         // This mimics how the C++ ICU API determines if a locale is "bogus" or not.
 
-        char language[ULOC_LANG_CAPACITY]{};
+        char language[ULOC_LANG_CAPACITY];
         uloc_getLanguage(localeNameTemp, language, ULOC_LANG_CAPACITY, err);
 
         if (*err == U_BUFFER_OVERFLOW_ERROR || *err == U_STRING_NOT_TERMINATED_WARNING)
@@ -190,7 +190,7 @@ int32_t GlobalizationNative_GetLocaleName(const UChar* localeName, UChar* value,
 {
     UErrorCode status = U_ZERO_ERROR;
 
-    char localeNameBuffer[ULOC_FULLNAME_CAPACITY]{};
+    char localeNameBuffer[ULOC_FULLNAME_CAPACITY];
     GetLocale(localeName, localeNameBuffer, ULOC_FULLNAME_CAPACITY, TRUE, &status);
     u_charsToUChars_safe(localeNameBuffer, value, valueLength, &status);
 

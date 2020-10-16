@@ -368,7 +368,7 @@ static int FindICULibs(const char* versionPrefix, char* symbolName, char* symbol
 
 static void ValidateICUDataCanLoad()
 {
-    UVersionInfo version{};
+    UVersionInfo version;
     UErrorCode err = U_ZERO_ERROR;
     ulocdata_getCLDRVersion(version, &err);
 
@@ -427,7 +427,7 @@ void GlobalizationNative_InitICUFunctions(void* icuuc, void* icuin, const char* 
     int minor = -1;
     int build = -1;
 
-    char symbolName[SYMBOL_NAME_SIZE]{};
+    char symbolName[SYMBOL_NAME_SIZE];
     char symbolVersion[MaxICUVersionStringWithSuffixLength + 1]="";
     char symbolSuffix[SYMBOL_CUSTOM_SUFFIX_SIZE]="";
 
@@ -476,7 +476,7 @@ int32_t GlobalizationNative_GetICUVersion()
     if (u_getVersion_ptr == NULL)
         return 0;
     
-    UVersionInfo versionInfo{};
+    UVersionInfo versionInfo;
     u_getVersion(versionInfo);
 
     return (versionInfo[0] << 24) + (versionInfo[1] << 16) + (versionInfo[2] << 8) + versionInfo[3];

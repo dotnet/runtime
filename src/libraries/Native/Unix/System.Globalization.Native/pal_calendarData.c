@@ -195,7 +195,7 @@ ResultCode GlobalizationNative_GetCalendarInfo(
     const UChar* localeName, CalendarId calendarId, CalendarDataType dataType, UChar* result, int32_t resultCapacity)
 {
     UErrorCode err = U_ZERO_ERROR;
-    char locale[ULOC_FULLNAME_CAPACITY]{};
+    char locale[ULOC_FULLNAME_CAPACITY];
     GetLocale(localeName, locale, ULOC_FULLNAME_CAPACITY, FALSE, &err);
 
     if (U_FAILURE(err))
@@ -313,7 +313,7 @@ static int32_t EnumSymbols(const char* locale,
     if (U_FAILURE(err))
         return FALSE;
 
-    char localeWithCalendarName[ULOC_FULLNAME_CAPACITY]{};
+    char localeWithCalendarName[ULOC_FULLNAME_CAPACITY];
     STRING_COPY(localeWithCalendarName, sizeof(localeWithCalendarName), locale);
 
     uloc_setKeywordValue("calendar", GetCalendarName(calendarId), localeWithCalendarName, ULOC_FULLNAME_CAPACITY, &err);
@@ -329,7 +329,7 @@ static int32_t EnumSymbols(const char* locale,
     udat_setCalendar(pFormat, pCalendar);
 
     const int32_t symbolCount = udat_countSymbols(pFormat, type);
-    UChar stackSymbolBuf[100]{};
+    UChar stackSymbolBuf[100];
     UChar* symbolBuf;
 
     for (int32_t i = startIndex; U_SUCCESS(err) && i < symbolCount; i++)
@@ -416,8 +416,8 @@ static int32_t EnumAbbrevEraNames(const char* locale,
     // The C-API for ICU provides no way to get at the abbreviated era names for a calendar (so we can't use EnumSymbols
     // here). Instead we will try to walk the ICU resource tables directly and fall back to regular era names if can't
     // find good data.
-    char localeNameBuf[ULOC_FULLNAME_CAPACITY]{};
-    char parentNameBuf[ULOC_FULLNAME_CAPACITY]{};
+    char localeNameBuf[ULOC_FULLNAME_CAPACITY];
+    char parentNameBuf[ULOC_FULLNAME_CAPACITY];
 
     char* localeNamePtr = localeNameBuf;
     char* parentNamePtr = parentNameBuf;
@@ -490,7 +490,7 @@ int32_t GlobalizationNative_EnumCalendarInfo(EnumCalendarInfoCallback callback,
                                              const void* context)
 {
     UErrorCode err = U_ZERO_ERROR;
-    char locale[ULOC_FULLNAME_CAPACITY]{};
+    char locale[ULOC_FULLNAME_CAPACITY];
     GetLocale(localeName, locale, ULOC_FULLNAME_CAPACITY, FALSE, &err);
 
     if (U_FAILURE(err))

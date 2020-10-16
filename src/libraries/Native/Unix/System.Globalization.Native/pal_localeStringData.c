@@ -209,7 +209,7 @@ int32_t GlobalizationNative_GetLocaleInfoString(const UChar* localeName,
                                                 int32_t valueLength)
 {
     UErrorCode status = U_ZERO_ERROR;
-    char locale[ULOC_FULLNAME_CAPACITY]{};
+    char locale[ULOC_FULLNAME_CAPACITY];
     GetLocale(localeName, locale, ULOC_FULLNAME_CAPACITY, FALSE, &status);
 
     if (U_FAILURE(status))
@@ -314,7 +314,7 @@ int32_t GlobalizationNative_GetLocaleInfoString(const UChar* localeName,
         {
             // ICU supports lang[-script][-region][-variant] so up to 4 parents
             // including invariant locale
-            char localeNameTemp[ULOC_FULLNAME_CAPACITY]{};
+            char localeNameTemp[ULOC_FULLNAME_CAPACITY];
 
             uloc_getParent(locale, localeNameTemp, ULOC_FULLNAME_CAPACITY, &status);
             u_charsToUChars_safe(localeNameTemp, value, valueLength, &status);
@@ -351,7 +351,7 @@ int32_t GlobalizationNative_GetLocaleTimeFormat(const UChar* localeName,
                                                 int32_t valueLength)
 {
     UErrorCode err = U_ZERO_ERROR;
-    char locale[ULOC_FULLNAME_CAPACITY]{};
+    char locale[ULOC_FULLNAME_CAPACITY];
     GetLocale(localeName, locale, ULOC_FULLNAME_CAPACITY, FALSE, &err);
     const UDateFormatStyle style = (shortFormat != 0) ? UDAT_SHORT : UDAT_MEDIUM;
     UDateFormat* pFormat = udat_open(style, UDAT_NONE, locale, NULL, 0, NULL, 0, &err);
