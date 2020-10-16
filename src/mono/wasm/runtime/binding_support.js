@@ -52,6 +52,7 @@ var BindingSupportLib = {
 			Float64Array.prototype[Symbol.for("wasm type")] = 18;
 
 			this.assembly_load = Module.cwrap ('mono_wasm_assembly_load', 'number', ['string']);
+			this.find_corlib_class = Module.cwrap ('mono_wasm_find_corlib_class', 'number', ['string', 'string']);
 			this.find_class = Module.cwrap ('mono_wasm_assembly_find_class', 'number', ['number', 'string', 'string']);
 			this._find_method = Module.cwrap ('mono_wasm_assembly_find_method', 'number', ['number', 'string', 'number']);
 			this.invoke_method = Module.cwrap ('mono_wasm_invoke_method', 'number', ['number', 'number', 'number', 'number']);
@@ -64,9 +65,15 @@ var BindingSupportLib = {
 			this.mono_obj_array_set = Module.cwrap ('mono_wasm_obj_array_set', 'void', ['number', 'number', 'number']);
 			this.mono_wasm_register_bundled_satellite_assemblies = Module.cwrap ('mono_wasm_register_bundled_satellite_assemblies', 'void', [ ]);
 			this.mono_wasm_try_unbox_primitive_and_get_type = Module.cwrap ('mono_wasm_try_unbox_primitive_and_get_type', 'number', ['number', 'number']);
-			this.mono_wasm_get_method_parameter_type = Module.cwrap ('mono_wasm_get_method_parameter_type', 'number', ['number', 'number']);
-			this.mono_wasm_box_primitive_value_32 = Module.cwrap ('mono_wasm_box_primitive_value_32', 'number', ['number', 'number']);
+			this.mono_wasm_box_primitive = Module.cwrap ('mono_wasm_box_primitive', 'number', ['number', 'number', 'number']);
 			this.assembly_get_entry_point = Module.cwrap ('mono_wasm_assembly_get_entry_point', 'number', ['number']);
+			
+			this._box_buffer = Module._malloc(16);
+			this._unbox_buffer = Module._malloc(16);
+			this._class_int32 = this.find_corlib_class ("System", "Int32");
+			this._class_uint32 = this.find_corlib_class ("System", "UInt32");
+			this._class_double = this.find_corlib_class ("System", "Double");
+			this._class_boolean = this.find_corlib_class ("System", "Boolean");
 
 			// receives a byteoffset into allocated Heap with a size.
 			this.mono_typed_array_new = Module.cwrap ('mono_wasm_typed_array_new', 'number', ['number','number','number','number']);
@@ -117,10 +124,6 @@ var BindingSupportLib = {
 			this._get_js_id = bind_runtime_method ("GetJSObjectId", "m");
 			this._get_raw_mono_obj = bind_runtime_method ("GetDotNetObject", "i!");
 
-			this._box_js_int = bind_runtime_method ("BoxInt", "i!");
-			this._box_js_uint = bind_runtime_method ("BoxUInt", "i!");
-			this._box_js_double = bind_runtime_method ("BoxDouble", "d!");
-			this._box_js_bool = bind_runtime_method ("BoxBool", "i!");
 			this._is_simple_array = bind_runtime_method ("IsSimpleArray", "m");
 			this.setup_js_cont = get_method ("SetupJSContinuation");
 
@@ -346,10 +349,7 @@ var BindingSupportLib = {
 			if (mono_obj === 0)
 				return undefined;
 			
-			if (!this.unbox_buffer)
-				this.unbox_buffer = Module._malloc(16);
-			
-			var type = this.mono_wasm_try_unbox_primitive_and_get_type (mono_obj, this.unbox_buffer);
+			var type = this.mono_wasm_try_unbox_primitive_and_get_type (mono_obj, this._unbox_buffer);
 			switch (type) {
 				case 1: // int
 				    return Module.HEAP32[this.unbox_buffer / 4];
@@ -394,6 +394,27 @@ var BindingSupportLib = {
 			heapBytes.set(new Uint8Array(typedArray.buffer, typedArray.byteOffset, numBytes));
 			return heapBytes;
 		},
+
+		_box_js_int: function (js_obj) {
+			Module.HEAP32[this._box_buffer / 4] = js_obj;
+			return this.mono_wasm_box_primitive (this._class_int32, this._box_buffer, 4);
+		},
+
+		_box_js_uint: function (js_obj) {
+			Module.HEAPU32[this._box_buffer / 4] = js_obj;
+			return this.mono_wasm_box_primitive (this._class_uint32, this._box_buffer, 4);
+		},
+
+		_box_js_double: function (js_obj) {
+			Module.HEAPF64[this._box_buffer / 8] = js_obj;
+			return this.mono_wasm_box_primitive (this._class_double, this._box_buffer, 8);
+		},
+
+		_box_js_bool: function (js_obj) {
+			Module.HEAP32[this._box_buffer / 4] = js_obj ? 1 : 0;
+			return this.mono_wasm_box_primitive (this._class_boolean, this._box_buffer, 4);
+		},
+
 		js_to_mono_obj: function (js_obj) {
 			this.bindings_lazy_init ();
 
@@ -417,9 +438,9 @@ var BindingSupportLib = {
 				case typeof js_obj === "number": {
 					// console.log("boxing value", js_obj);
 					if ((js_obj | 0) === js_obj)
-						result = this._box_js_int (js_obj | 0);
+						result = this._box_js_int (js_obj);
 					else if ((js_obj >>> 0) === js_obj)
-						result = this._box_js_uint (js_obj >>> 0);
+						result = this._box_js_uint (js_obj);
 					else
 						result = this._box_js_double (js_obj);
 

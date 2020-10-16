@@ -582,6 +582,12 @@ mono_wasm_assembly_load (const char *name)
 	return res;
 }
 
+EMSCRIPTEN_KEEPALIVE MonoClass* 
+mono_wasm_find_corlib_class (const char *namespace, const char *name)
+{
+	return mono_class_from_name (mono_get_corlib (), namespace, name);
+}
+
 EMSCRIPTEN_KEEPALIVE MonoClass*
 mono_wasm_assembly_find_class (MonoAssembly *assembly, const char *namespace, const char *name)
 {
@@ -594,44 +600,19 @@ mono_wasm_assembly_find_method (MonoClass *klass, const char *name, int argument
 	return mono_class_get_method_from_name (klass, name, arguments);
 }
 
-EMSCRIPTEN_KEEPALIVE MonoType*
-mono_wasm_get_method_parameter_type (MonoMethod *method, int index)
-{
-	if (!method)
-		return NULL;
-
-	MonoMethodSignature *sig = mono_method_signature (method);
-	if (!sig)
-		return NULL;
-
-	void *iter = NULL;
-	for (int i = 0; i <= index; i++) {
-		MonoType *type = mono_signature_get_params (sig, &iter);
-		if (i == index)
-			return type;
-		else if (type == NULL)
-			break;
-	}
-
-	return NULL;
-}
-
 EMSCRIPTEN_KEEPALIVE MonoObject*
-mono_wasm_box_primitive_value_32 (MonoType *type, int value)
+mono_wasm_box_primitive (MonoClass *klass, void *value, int value_size)
 {
-	if (!type)
-		return NULL;
-
-	int alignment;
-	if (mono_type_size (type, &alignment) > sizeof(value))
-		return NULL;
-
-	MonoClass *klass = mono_type_get_class (type);
 	if (!klass)
 		return NULL;
 
+	MonoType *type = mono_class_get_type (klass);
+	int alignment;
+	if (mono_type_size (type, &alignment) > value_size)
+		return NULL;
+
 	// TODO: use mono_value_box_checked and propagate error out
-	return mono_value_box (root_domain, klass, &value);
+	return mono_value_box (root_domain, klass, value);
 }
 
 EMSCRIPTEN_KEEPALIVE MonoObject*
