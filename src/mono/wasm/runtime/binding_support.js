@@ -10,7 +10,7 @@ var BindingSupportLib = {
 		mono_wasm_free_list: [],
 		mono_wasm_owned_objects_frames: [],
 		mono_wasm_owned_objects_LMF: [],
-		mono_wasm_marshal_enum_as_int: false,
+		mono_wasm_marshal_enum_as_int: true,
 		mono_bindings_init: function (binding_asm) {
 			this.BINDING_ASM = binding_asm;
 		},
@@ -58,15 +58,11 @@ var BindingSupportLib = {
 			this.mono_string_get_utf8 = Module.cwrap ('mono_wasm_string_get_utf8', 'number', ['number']);
 			this.mono_wasm_string_from_utf16 = Module.cwrap ('mono_wasm_string_from_utf16', 'number', ['number', 'number']);
 			this.mono_get_obj_type = Module.cwrap ('mono_wasm_get_obj_type', 'number', ['number']);
-			this.mono_unbox_int = Module.cwrap ('mono_unbox_int', 'number', ['number']);
-			this.mono_unbox_float32 = Module.cwrap ('mono_wasm_unbox_float32', 'number', ['number']);
-			this.mono_unbox_float64 = Module.cwrap ('mono_wasm_unbox_float64', 'number', ['number']);
 			this.mono_array_length = Module.cwrap ('mono_wasm_array_length', 'number', ['number']);
 			this.mono_array_get = Module.cwrap ('mono_wasm_array_get', 'number', ['number', 'number']);
 			this.mono_obj_array_new = Module.cwrap ('mono_wasm_obj_array_new', 'number', ['number']);
 			this.mono_obj_array_set = Module.cwrap ('mono_wasm_obj_array_set', 'void', ['number', 'number', 'number']);
 			this.mono_wasm_register_bundled_satellite_assemblies = Module.cwrap ('mono_wasm_register_bundled_satellite_assemblies', 'void', [ ]);
-			this.mono_unbox_enum = Module.cwrap ('mono_wasm_unbox_enum', 'number', ['number']);
 			this.mono_wasm_try_unbox_primitive_and_get_type = Module.cwrap ('mono_wasm_try_unbox_primitive_and_get_type', 'number', ['number', 'number']);
 			this.mono_wasm_get_method_parameter_type = Module.cwrap ('mono_wasm_get_method_parameter_type', 'number', ['number', 'number']);
 			this.mono_wasm_box_primitive_value_32 = Module.cwrap ('mono_wasm_box_primitive_value_32', 'number', ['number', 'number']);
@@ -302,25 +298,15 @@ var BindingSupportLib = {
 			return requiredObject;
 		},
 
-		_unbox_mono_obj_rooted_with_known_type: function (mono_obj, type) {
+		_unbox_mono_obj_rooted_with_known_nonprimitive_type: function (mono_obj, type) {
 			//See MARSHAL_TYPE_ defines in driver.c
 			switch (type) {
-				case 1: // int
-					return this.mono_unbox_int (mono_obj);
-				case 25: // uint
-					return this.mono_unbox_int (mono_obj) >>> 0;
 				case 26: // int64
 				case 27: // uint64
 					// TODO: Fix this once emscripten offers HEAPI64/HEAPU64 or can return them
 					throw new Error ("int64 not available");
-				case 24: // single
-					return Math.fround (this.mono_unbox_float32 (mono_obj));
-				case 2: // double
-					return this.mono_unbox_float64 (mono_obj);
 				case 3: //string
 					return this.conv_string (mono_obj);
-				case 28: // char
-					return String.fromCharCode(this.mono_unbox_int (mono_obj));
 				case 4: //vts
 					throw new Error ("no idea on how to unbox value types");
 				case 5: // delegate
@@ -329,15 +315,6 @@ var BindingSupportLib = {
 					return this._unbox_task_rooted (mono_obj);
 				case 7: // ref type
 					return this.extract_js_obj (mono_obj);
-				case 8: // bool
-					return this.mono_unbox_int (mono_obj) !== 0;
-				case 9: { // enum
-					if(this.mono_wasm_marshal_enum_as_int)
-						return this.mono_unbox_enum (mono_obj);
-	
-					enumValue = this._object_to_string (mono_obj);
-					return enumValue;
-				}
 				case 10: // arrays
 				case 11: 
 				case 12: 
@@ -369,8 +346,26 @@ var BindingSupportLib = {
 			if (mono_obj === 0)
 				return undefined;
 			
-			var type = this.mono_get_obj_type (mono_obj);
-			return this._unbox_mono_obj_rooted_with_known_type (mono_obj, type);
+			if (!this.unbox_buffer)
+				this.unbox_buffer = Module._malloc(16);
+			
+			var type = this.mono_wasm_try_unbox_primitive_and_get_type (mono_obj, this.unbox_buffer);
+			switch (type) {
+				case 1: // int
+				    return Module.HEAP32[this.unbox_buffer / 4];
+				case 25: // uint32
+				    return Module.HEAPU32[this.unbox_buffer / 4];
+				case 24: // float32
+					return Module.HEAPF32[this.unbox_buffer / 4];
+				case 2: // float64
+					return Module.HEAPF64[this.unbox_buffer / 8];
+				case 8: // boolean
+					return (Module.HEAP32[this.unbox_buffer / 4]) !== 0;
+				case 28: // char
+					return String.fromCharCode(Module.HEAP32[this.unbox_buffer / 4]);
+				default:
+					return this._unbox_mono_obj_rooted_with_known_nonprimitive_type (mono_obj, type);
+			}
 		},
 
 		create_task_completion_source: function () {
@@ -420,6 +415,7 @@ var BindingSupportLib = {
 				case typeof js_obj === "undefined":
 					return 0;
 				case typeof js_obj === "number": {
+					// console.log("boxing value", js_obj);
 					if ((js_obj | 0) === js_obj)
 						result = this._box_js_int (js_obj | 0);
 					else if ((js_obj >>> 0) === js_obj)
@@ -1319,7 +1315,7 @@ var BindingSupportLib = {
 				"    case 28:", // char
 				"        result = String.fromCharCode(Module.HEAP32[buffer / 4]); break;",
 				"    default:",
-				"        result = binding_support._unbox_mono_obj_rooted_with_known_type (resultRoot, resultType); break;",
+				"        result = binding_support._unbox_mono_obj_rooted_with_known_nonprimitive_type (resultRoot, resultType); break;",
 				"    }",
 				"}",
 				"",
