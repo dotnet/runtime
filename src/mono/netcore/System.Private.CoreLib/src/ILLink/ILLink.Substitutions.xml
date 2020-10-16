@@ -1,0 +1,7 @@
+<linker>
+  <assembly fullname="System.Private.CoreLib">
+    <type fullname="System.Resources.ResourceReader">
+      <method signature="System.Boolean InitializeBinaryFormatter()" body="stub" value="false" />
+    </type>
+  </assembly>
+</linker>

@@ -9,8 +9,5 @@
     <type fullname="System.Runtime.CompilerServices.RuntimeFeature">
       <method signature="System.Boolean get_IsDynamicCodeCompiled()" body="stub" value="false" />
     </type>
-    <type fullname="System.Resources.ResourceReader">
-      <method signature="System.Boolean InitializeBinaryFormatter()" body="stub" value="false" />
-    </type>
   </assembly>
 </linker>
