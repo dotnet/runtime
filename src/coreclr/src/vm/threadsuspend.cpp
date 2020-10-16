@@ -3813,6 +3813,27 @@ HRESULT ThreadSuspend::SuspendRuntime(ThreadSuspend::SUSPEND_REASON reason)
         g_pGCSuspendEvent->Reset();
     }
 
+#ifdef PROFILING_SUPPORTED
+    // If a profiler is keeping track of GC events, notify it
+    {
+    BEGIN_PIN_PROFILER(CORProfilerTrackSuspends());
+    g_profControlBlock.pProfInterface->RuntimeSuspendFinished();
+    END_PIN_PROFILER();
+    }
+#endif // PROFILING_SUPPORTED
+
+#ifdef _DEBUG
+    if (reason == ThreadSuspend::SUSPEND_FOR_GC)
+    {
+        Thread* thread = NULL;
+        while ((thread = ThreadStore::GetThreadList(thread)) != NULL)
+        {
+            thread->DisableStressHeap();
+            _ASSERTE(!thread->HasThreadState(Thread::TS_GCSuspendPending));
+        }
+    }
+#endif
+
     // We know all threads are in preemptive mode, so go ahead and reset the event.
     g_pGCSuspendEvent->Reset();
 
