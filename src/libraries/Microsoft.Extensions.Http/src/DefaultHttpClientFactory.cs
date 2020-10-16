@@ -215,6 +215,13 @@ namespace Microsoft.Extensions.Http
 
         private ActiveHandlerTrackingEntry CreateHandlerEntryInternal(string name, IServiceProvider services, IServiceScope? scope, HttpClientFactoryOptions options)
         {
+            // fast track if no one accessed primary handler config
+            if (options.PreserveExistingScope && !options.SuppressHandlerScope && !options._primaryHandlerExposed)
+            {
+                var primaryHandler = new LifetimeTrackingHttpMessageHandler(new HttpClientHandler());
+                return new ActiveHandlerTrackingEntry(name, primaryHandler, true, scope, options.HandlerLifetime);
+            }
+
             HttpMessageHandlerBuilder builder = services.GetRequiredService<HttpMessageHandlerBuilder>();
             builder.Name = name;
 

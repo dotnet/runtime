@@ -3,6 +3,7 @@
 
 using System;
 using System.Diagnostics.CodeAnalysis;
+using System.Linq;
 using System.Net.Http;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Http;
@@ -58,6 +59,37 @@ namespace Microsoft.Extensions.DependencyInjection
             services.TryAddTransient(s =>
             {
                 return s.GetRequiredService<IHttpClientFactory>().CreateClient(string.Empty);
+            });
+
+            // should be executed after all options configured...
+            services.PostConfigureAll<HttpClientFactoryOptions>(o =>
+            {
+                bool customFiltersRegistered = services.Where(d => d.ServiceType == typeof(IHttpMessageHandlerBuilderFilter))
+                    .Select(d =>
+                    {
+                        // copied from
+                        // internal Type Microsoft.Extensions.DependencyInjection.ServiceDescriptor.GetImplementationType()
+                        if (d.ImplementationType != null)
+                        {
+                            return d.ImplementationType;
+                        }
+                        else if (d.ImplementationInstance != null)
+                        {
+                            return d.ImplementationInstance.GetType();
+                        }
+                        else if (d.ImplementationFactory != null)
+                        {
+                            Type[]? typeArguments = d.ImplementationFactory.GetType().GenericTypeArguments;
+                            return typeArguments[1];
+                        }
+                        return null;
+                    })
+                    .Any(implType => implType != typeof(LoggingHttpMessageHandlerBuilderFilter));
+
+                if (customFiltersRegistered)
+                {
+                    o._primaryHandlerExposed = true;
+                }
             });
 
             return services;

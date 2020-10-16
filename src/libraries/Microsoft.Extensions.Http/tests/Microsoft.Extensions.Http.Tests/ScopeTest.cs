@@ -287,7 +287,8 @@ namespace Microsoft.Extensions.Http
 
 
         private static readonly FieldInfo HttpClientHandlerField =
-            typeof(HttpMessageInvoker).GetField("_handler", System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic);
+            typeof(HttpMessageInvoker).GetField("_handler", System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic) ?? // core
+            typeof(HttpMessageInvoker).GetField("handler", System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic); // framework
 
         private (HttpMessageHandler TopHandler, HttpMessageHandler PrimaryHandler) GetTopAndPrimaryHandlers(string name, HttpClient client, DefaultHttpClientFactory factory)
         {

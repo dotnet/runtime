@@ -195,6 +195,8 @@ namespace Microsoft.Extensions.DependencyInjection
             builder.Services.Configure<HttpClientFactoryOptions>(builder.Name, options =>
             {
                 options.HttpMessageHandlerBuilderActions.Add(b => b.PrimaryHandler = configureHandler());
+                options._primaryHandlerExposed = true;
+                options._primaryHandlerChanged = true;
             });
 
             return builder;
@@ -232,6 +234,8 @@ namespace Microsoft.Extensions.DependencyInjection
             builder.Services.Configure<HttpClientFactoryOptions>(builder.Name, options =>
             {
                 options.HttpMessageHandlerBuilderActions.Add(b => b.PrimaryHandler = configureHandler(b.Services));
+                options._primaryHandlerExposed = true;
+                options._primaryHandlerChanged = true;
             });
 
             return builder;
@@ -263,6 +267,8 @@ namespace Microsoft.Extensions.DependencyInjection
             builder.Services.Configure<HttpClientFactoryOptions>(builder.Name, options =>
             {
                 options.HttpMessageHandlerBuilderActions.Add(b => b.PrimaryHandler = b.Services.GetRequiredService<THandler>());
+                options._primaryHandlerExposed = true;
+                options._primaryHandlerChanged = true;
             });
 
             return builder;
@@ -287,7 +293,11 @@ namespace Microsoft.Extensions.DependencyInjection
                 throw new ArgumentNullException(nameof(configureBuilder));
             }
 
-            builder.Services.Configure<HttpClientFactoryOptions>(builder.Name, options => options.HttpMessageHandlerBuilderActions.Add(configureBuilder));
+            builder.Services.Configure<HttpClientFactoryOptions>(builder.Name, options =>
+            {
+                options.HttpMessageHandlerBuilderActions.Add(configureBuilder);
+                options._primaryHandlerExposed = true;
+            });
 
             return builder;
         }
