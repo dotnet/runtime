@@ -2004,7 +2004,7 @@ void ThreadSuspend::LockThreadStore(ThreadSuspend::SUSPEND_REASON reason)
         // runtime threads for a GC that depends on the fact that we
         // do an EnablePreemptiveGC and a DisablePreemptiveGC around
         // taking this lock.
-        // besides, if the suspension is in progress, the lock is taken, we better be in premptive mode while blocked on this lock.
+        // besides, if the suspension is in progress, the lock is taken, we better be in preemptive mode while blocked on this lock.
         if (toggleGC)
             pCurThread->EnablePreemptiveGC();
 
