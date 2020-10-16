@@ -371,6 +371,11 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
         {
             return _enumValue;
         }
+
+        private static UInt64 GetUInt64()
+        {
+            return UInt64.MaxValue;
+        }
     }
 
     public enum TestEnum : uint {

@@ -737,5 +737,17 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
             );
             Assert.StartsWith("Error: Expected numeric value for enum argument, got 'BigValue'", exc.Message);
         }
+        
+        [Fact]
+        public static void CannotUnboxUint64 ()
+        {
+            var exc = Assert.Throws<JSException>( () => 
+                Runtime.InvokeJS(@$"
+                    var get_u64 = Module.mono_bind_static_method (""{HelperMarshal.INTEROP_CLASS}GetUInt64"", """");
+                    var u64 = get_u64();
+                ")
+            );
+            Assert.StartsWith("Error: int64 not available", exc.Message);
+        }
     }
 }
