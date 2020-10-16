@@ -352,17 +352,17 @@ var BindingSupportLib = {
 			var type = this.mono_wasm_try_unbox_primitive_and_get_type (mono_obj, this._unbox_buffer);
 			switch (type) {
 				case 1: // int
-				    return Module.HEAP32[this.unbox_buffer / 4];
+				    return Module.HEAP32[this._unbox_buffer / 4];
 				case 25: // uint32
-				    return Module.HEAPU32[this.unbox_buffer / 4];
+				    return Module.HEAPU32[this._unbox_buffer / 4];
 				case 24: // float32
-					return Module.HEAPF32[this.unbox_buffer / 4];
+					return Module.HEAPF32[this._unbox_buffer / 4];
 				case 2: // float64
-					return Module.HEAPF64[this.unbox_buffer / 8];
+					return Module.HEAPF64[this._unbox_buffer / 8];
 				case 8: // boolean
-					return (Module.HEAP32[this.unbox_buffer / 4]) !== 0;
+					return (Module.HEAP32[this._unbox_buffer / 4]) !== 0;
 				case 28: // char
-					return String.fromCharCode(Module.HEAP32[this.unbox_buffer / 4]);
+					return String.fromCharCode(Module.HEAP32[this._unbox_buffer / 4]);
 				default:
 					return this._unbox_mono_obj_rooted_with_known_nonprimitive_type (mono_obj, type);
 			}
@@ -436,13 +436,15 @@ var BindingSupportLib = {
 				case typeof js_obj === "undefined":
 					return 0;
 				case typeof js_obj === "number": {
-					// console.log("boxing value", js_obj);
 					if ((js_obj | 0) === js_obj)
 						result = this._box_js_int (js_obj);
 					else if ((js_obj >>> 0) === js_obj)
 						result = this._box_js_uint (js_obj);
 					else
 						result = this._box_js_double (js_obj);
+					
+					if (!result)
+						throw new Error (`Boxing failed for ${js_obj}`);
 
 					return result;
 				} case typeof js_obj === "string":
@@ -814,8 +816,6 @@ var BindingSupportLib = {
 		},
 
 		_create_converter_for_marshal_string: function (args_marshal) {
-			// console.log("_create_converter_for_marshal_string", args_marshal);
-
 			var primitiveConverters = this._primitive_converters;
 			if (!primitiveConverters)
 				primitiveConverters = this._create_primitive_converters ();
@@ -865,8 +865,6 @@ var BindingSupportLib = {
 		},
 
 		_get_converter_for_marshal_string: function (args_marshal) {
-			// console.log("_get_converter_for_marshal_string", args_marshal);
-
 			if (!this._signature_converters)
 				this._signature_converters = new Map();
 
@@ -876,14 +874,10 @@ var BindingSupportLib = {
 				this._signature_converters.set (args_marshal, converter);
 			}
 
-			// console.log("result.args_marshal", converter.args_marshal);
-
 			return converter;
 		},
 
 		_compile_converter_for_marshal_string: function (args_marshal) {
-			// console.log("_compile_converter_for_marshal_string", args_marshal);
-
 			var converter = this._get_converter_for_marshal_string (args_marshal);
 			if (typeof (converter.args_marshal) !== "string")
 				throw new Error ("Corrupt converter for '" + args_marshal + "'");
@@ -924,12 +918,9 @@ var BindingSupportLib = {
 
 				if (step.convert) {
 					closure[closureKey] = step.convert;
-					// body.push ("console.log('calling converter " + step.key + "', " + closureKey + ", 'with value', " + argKey + ");"); 
 					body.push (`var ${valueKey} = ${closureKey}(${argKey}, method, ${i});`);
-					// body.push ("console.log('converter result', " + valueKey + ");");
 				} else {
 					body.push (`var ${valueKey} = ${argKey};`);
-					// body.push ("console.log('arg" + i + " value', " + valueKey + ");");
 				}
 
 				if (step.needs_root)
@@ -967,11 +958,7 @@ var BindingSupportLib = {
 					body.push (`Module.HEAP32[buffer32 + ${i}] = ${valueKey};`, "");
 					indirectLocalOffset += 4;
 				}
-
-				// body.push ("console.log ('wrote ptr', valueAddress, 'to address', (buffer32 + " + i + ") * 4);");
 			}
-
-			// body.push ("console.log ('conversion finished');");
 
 			body.push ("return buffer;");
 
@@ -979,7 +966,6 @@ var BindingSupportLib = {
 			try {
 				compiledFunction = this._create_named_function("converter_" + converterName, argumentNames, bodyJs, closure);
 				converter.compiled_function = compiledFunction;
-				// console.log("compiled converter", compiledFunction);
 			} catch (exc) {
 				converter.compiled_function = null;
 				console.warn("compiling converter failed for", bodyJs, "with error", exc);
@@ -1012,7 +998,6 @@ var BindingSupportLib = {
 			try {
 				compiledVariadicFunction = this._create_named_function("variadic_converter_" + converterName, argumentNames, bodyJs, closure);
 				converter.compiled_variadic_function = compiledVariadicFunction;
-				// console.log("compiled converter", compiledFunction);
 			} catch (exc) {
 				converter.compiled_variadic_function = null;
 				console.warn("compiling converter failed for", bodyJs, "with error", exc);
@@ -1169,14 +1154,11 @@ var BindingSupportLib = {
 				converter = this._compile_converter_for_marshal_string (args_marshal);
 
 				is_result_marshaled = this._decide_if_result_is_marshaled (converter, args.length);
-
-				// console.log('is_result_marshaled=', is_result_marshaled, 'for argc', args.length, 'and signature ' + converter.args_marshal);
 	
 				argsRootBuffer = this._get_args_root_buffer_for_method_call (converter);
 
 				var scratchBuffer = this._get_buffer_for_method_call (converter);
 
-				// console.log ("converting args for", this._get_method_description (method), args_marshal, ":", args);
 				buffer = converter.compiled_variadic_function (scratchBuffer, argsRootBuffer, method, args);
 			}
 
@@ -1239,8 +1221,6 @@ var BindingSupportLib = {
 
 			this_arg = this_arg | 0;
 
-			// console.log ("bind_method", method, this_arg, args_marshal);
-
 			var converter = null;
 			if (typeof (args_marshal) === "string")
 				converter = this._compile_converter_for_marshal_string (args_marshal);
@@ -1294,7 +1274,6 @@ var BindingSupportLib = {
 				body.push ("var is_result_marshaled = false;");
 			} else if (converter.is_result_possibly_unmarshaled) {
 				body.push (`var is_result_marshaled = arguments.length !== ${converter.result_unmarshaled_if_argc};`);
-				// body.push ("console.log('is_result_marshaled=', is_result_marshaled, 'for argc', arguments.length, 'and signature " + converter.args_marshal + " (bound)');");
 			} else {
 				body.push ("var is_result_marshaled = true;");
 			}
