@@ -2,15 +2,12 @@ trigger:
   branches:
     include:
     - master
-    - dev/infrastructure
     - release/*.*
 
 pr: none
 
 variables:
 - template: /eng/pipelines/common/variables.yml
-- name: TeamName
-  value: dotnet-core-acquisition
 
 stages:
 - stage: Build
@@ -23,13 +20,14 @@ stages:
   - template: /eng/pipelines/common/platform-matrix.yml
     parameters:
       jobTemplate: /eng/pipelines/common/global-build-job.yml
-      buildConfig: Checked
+      buildConfig: debug
       platforms:
       - Windows_NT_x64
       jobParameters:
         enableRichCodeNavigation: true
+        richCodeNavigationLanguage: 'csharp'
         timeoutInMinutes: 120
-        buildArgs: -s libs.ref+libs.src -c debug -runtimeConfiguration Checked
+        buildArgs: -s libs.ref+libs.src -c debug
 
   - template: /eng/pipelines/common/platform-matrix.yml
     parameters:
@@ -38,6 +36,7 @@ stages:
       platforms:
       - Windows_NT_x64
       jobParameters:
-        testGroup: innerloop
-        nameSuffix: Mono_Libraries
-        buildArgs: -s mono -c debug -runtimeConfiguration Checked
+        enableRichCodeNavigation: true
+        nameSuffix: Mono
+        richCodeNavigationLanguage: 'csharp,cpp'
+        buildArgs: -s mono -c debug

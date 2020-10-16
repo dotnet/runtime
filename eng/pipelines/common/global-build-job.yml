@@ -18,6 +18,8 @@ parameters:
   helixQueues: ''
   extraStepsTemplate: ''
   extraStepsParameters: {}
+  enableRichCodeNavigation: false
+  richCodeNavigationLanguage: 'csharp'
 
 jobs:
 - template: /eng/common/templates/job/job.yml
@@ -31,9 +33,8 @@ jobs:
     timeoutInMinutes: ${{ parameters.timeoutInMinutes }}
     workspace:
       clean: all
-    ${{ if ne(parameters.enableRichCodeNavigation, '') }}:
-      enableRichCodeNavigation: true
-      richCodeNavigationLanguage: csharp,cpp
+    enableRichCodeNavigation: ${{ parameters.enableRichCodeNavigation }}
+    richCodeNavigationLanguage: ${{ parameters.richCodeNavigationLanguage }}
 
     variables:
       - name: _osParameter
@@ -58,6 +59,12 @@ jobs:
           value: /p:OfficialBuildId=$(Build.BuildNumber)
         ${{ if ne(parameters.isOfficialBuild, true) }}:
           value: ''
+      
+      - name: _richCodeNavigationParam
+        ${{ if eq(parameters.enableRichCodeNavigation, true) }}:
+          value: /p:EnableRichCodeNavigation=true
+        ${{ if ne(parameters.enableRichCodeNavigation, true) }}:
+          value: ''
 
       - ${{ each variable in parameters.variables }}:
         - ${{ variable }}
@@ -78,7 +85,7 @@ jobs:
         displayName: Disk Usage before Build
 
     # Build
-    - script: $(Build.SourcesDirectory)$(dir)build$(scriptExt) -ci -arch ${{ parameters.archType }} $(_osParameter) ${{ parameters.buildArgs }} $(_officialBuildParameter) $(_crossBuildPropertyArg) $(_cxx11Parameter)
+    - script: $(Build.SourcesDirectory)$(dir)build$(scriptExt) -ci -arch ${{ parameters.archType }} $(_osParameter) ${{ parameters.buildArgs }} $(_officialBuildParameter) $(_crossBuildPropertyArg) $(_cxx11Parameter) $(_richCodeNavigationParam)
       displayName: Build product
 
     - ${{ if in(parameters.osGroup, 'OSX', 'iOS','tvOS') }}: 
