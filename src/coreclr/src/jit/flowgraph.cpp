@@ -5652,18 +5652,18 @@ unsigned Compiler::fgMakeBasicBlocks(const BYTE* codeAddr, IL_OFFSET codeSize, F
                 }
             }
 
-            /* For tail call, we just call CORINFO_HELP_TAILCALL, and it jumps to the
-               target. So we don't need an epilog - just like CORINFO_HELP_THROW.
-               Make the block BBJ_RETURN, but we will change it to BBJ_THROW
-               if the tailness of the call is satisfied.
-               NOTE : The next instruction is guaranteed to be a CEE_RET
-               and it will create another BasicBlock. But there may be an
-               jump directly to that CEE_RET. If we want to avoid creating
-               an unnecessary block, we need to check if the CEE_RETURN is
-               the target of a jump.
-             */
+                /* For tail call, we just call CORINFO_HELP_TAILCALL, and it jumps to the
+                   target. So we don't need an epilog - just like CORINFO_HELP_THROW.
+                   Make the block BBJ_RETURN, but we will change it to BBJ_THROW
+                   if the tailness of the call is satisfied.
+                   NOTE : The next instruction is guaranteed to be a CEE_RET
+                   and it will create another BasicBlock. But there may be an
+                   jump directly to that CEE_RET. If we want to avoid creating
+                   an unnecessary block, we need to check if the CEE_RETURN is
+                   the target of a jump.
+                 */
 
-            __fallthrough;
+                __fallthrough;
 
             case CEE_JMP:
             /* These are equivalent to a return from the current method

@@ -3054,10 +3054,6 @@ unsigned Compiler::lvaLclSize(unsigned varNum)
             assert(!"Unknown size");
             NO_WAY("Target doesn't support TYP_LCLBLK");
 
-            // Keep prefast happy
-            // TODO: do we need to keep the fallthrough? Clang complains about it.
-            // __fallthrough;
-
 #endif // FEATURE_FIXED_OUT_ARGS
 
         default: // This must be a primitive var. Fall out of switch statement
@@ -3100,9 +3096,6 @@ unsigned Compiler::lvaLclExactSize(unsigned varNum)
 #else // FEATURE_FIXED_OUT_ARGS
             assert(!"Unknown size");
             NO_WAY("Target doesn't support TYP_LCLBLK");
-
-            // Keep prefast happy
-            // __fallthrough; // TODO: is this still necessary for prefast?
 
 #endif // FEATURE_FIXED_OUT_ARGS
 

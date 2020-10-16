@@ -2843,9 +2843,9 @@ void emitter::emitIns_R_R_I(instruction ins,
                     }
                 }
             }
-            //
-            // If we did not find a thumb-1 encoding above
-            //
+        //
+        // If we did not find a thumb-1 encoding above
+        //
 
         COMMON_THUMB2_LDST:
             assert(fmt == IF_NONE);
