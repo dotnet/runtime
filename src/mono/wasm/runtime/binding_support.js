@@ -620,16 +620,6 @@ var BindingSupportLib = {
     
 			if (typeof (js_obj) !== "number")
 				throw new Error (`Expected numeric value for enum argument, got '${js_obj}'`);
-
-			/*
-			var parameterType = this.mono_wasm_get_method_parameter_type (method, parmIdx);
-			if (!parameterType)
-				throw new Error (`Failed to get type of parameter #${parmIdx} of method ${method}`);
-			
-			var result = this.mono_wasm_box_primitive_value_32(parameterType, js_obj | 0);
-			if (!result)
-				throw new Error (`Failed to box enum value '${js_obj}' to type ${parameterType} for method ${method}`);
-			*/
 			
 			return js_obj | 0;
 		},

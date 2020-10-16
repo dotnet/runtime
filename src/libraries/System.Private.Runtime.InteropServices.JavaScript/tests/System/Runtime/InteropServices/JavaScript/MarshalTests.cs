@@ -705,8 +705,6 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
         public static void PassUintEnumByValue ()
         {
             HelperMarshal._enumValue = TestEnum.Zero;
-            // FIXME: Producing a boxed enum requires type information and runtime support
-            //  that is not currently available, so using the appropriate signature doesn't work
             Runtime.InvokeJS(@$"
                 var set_enum = Module.mono_bind_static_method (""{HelperMarshal.INTEROP_CLASS}SetEnumValue"", ""j"");
                 set_enum (0xFFFFFFFE);
@@ -725,6 +723,19 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
                 set_enum (0xFFFFFFFE);
             ");
             Assert.Equal(TestEnum.BigValue, HelperMarshal._enumValue);
+        }
+        
+        [Fact]
+        public static void PassUintEnumByNameIsNotImplemented ()
+        {
+            HelperMarshal._enumValue = TestEnum.Zero;
+            var exc = Assert.Throws<JSException>( () => 
+                Runtime.InvokeJS(@$"
+                    var set_enum = Module.mono_bind_static_method (""{HelperMarshal.INTEROP_CLASS}SetEnumValue"", ""j"");
+                    set_enum (""BigValue"");
+                ")
+            );
+            Assert.StartsWith("Error: Expected numeric value for enum argument, got 'BigValue'", exc.Message);
         }
     }
 }
