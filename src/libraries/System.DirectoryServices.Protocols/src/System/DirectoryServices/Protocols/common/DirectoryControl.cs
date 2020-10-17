@@ -7,6 +7,7 @@ using System.Diagnostics;
 using System.Text;
 using System.Runtime.InteropServices;
 using System.Security.Principal;
+using System.Runtime.Versioning;
 
 namespace System.DirectoryServices.Protocols
 {
@@ -1020,6 +1021,7 @@ namespace System.DirectoryServices.Protocols
         public ResultCode Result { get; }
     }
 
+    [SupportedOSPlatform("windows")]
     public class QuotaControl : DirectoryControl
     {
         private byte[] _sid;

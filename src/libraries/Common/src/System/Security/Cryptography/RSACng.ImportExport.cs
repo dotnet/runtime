@@ -33,114 +33,111 @@ namespace System.Security.Cryptography
         ///     if <paramref name="parameters" /> is not a valid RSA key or if <paramref name="parameters"
         ///     /> is a full key pair and the default KSP is used.
         /// </exception>
-        public override void ImportParameters(RSAParameters parameters)
+        public override unsafe void ImportParameters(RSAParameters parameters)
         {
-            unsafe
+            if (parameters.Exponent == null || parameters.Modulus == null)
+                throw new CryptographicException(SR.Cryptography_InvalidRsaParameters);
+
+            bool includePrivate;
+            if (parameters.D == null)
             {
-                if (parameters.Exponent == null || parameters.Modulus == null)
+                includePrivate = false;
+
+                if (parameters.P != null ||
+                    parameters.DP != null ||
+                    parameters.Q != null ||
+                    parameters.DQ != null ||
+                    parameters.InverseQ != null)
+                {
                     throw new CryptographicException(SR.Cryptography_InvalidRsaParameters);
-
-                bool includePrivate;
-                if (parameters.D == null)
-                {
-                    includePrivate = false;
-
-                    if (parameters.P != null ||
-                        parameters.DP != null ||
-                        parameters.Q != null ||
-                        parameters.DQ != null ||
-                        parameters.InverseQ != null)
-                    {
-                        throw new CryptographicException(SR.Cryptography_InvalidRsaParameters);
-                    }
                 }
-                else
+            }
+            else
+            {
+                includePrivate = true;
+
+                if (parameters.P == null ||
+                    parameters.DP == null ||
+                    parameters.Q == null ||
+                    parameters.DQ == null ||
+                    parameters.InverseQ == null)
                 {
-                    includePrivate = true;
-
-                    if (parameters.P == null ||
-                        parameters.DP == null ||
-                        parameters.Q == null ||
-                        parameters.DQ == null ||
-                        parameters.InverseQ == null)
-                    {
-                        throw new CryptographicException(SR.Cryptography_InvalidRsaParameters);
-                    }
-
-                    // Half, rounded up.
-                    int halfModulusLength = (parameters.Modulus.Length + 1) / 2;
-
-                    // The same checks are done by RSACryptoServiceProvider on import (when building the key blob)
-                    // Historically RSACng let CNG handle this (reporting NTE_NOT_SUPPORTED), but on RS1 CNG let the
-                    // import succeed, then on private key use (e.g. signing) it would report NTE_INVALID_PARAMETER.
-                    //
-                    // Doing the check here prevents the state in RS1 where the Import succeeds, but corrupts the key,
-                    // and makes for a friendlier exception message.
-                    if (parameters.D.Length != parameters.Modulus.Length ||
-                        parameters.P.Length != halfModulusLength ||
-                        parameters.Q.Length != halfModulusLength ||
-                        parameters.DP.Length != halfModulusLength ||
-                        parameters.DQ.Length != halfModulusLength ||
-                        parameters.InverseQ.Length != halfModulusLength)
-                    {
-                        throw new CryptographicException(SR.Cryptography_InvalidRsaParameters);
-                    }
+                    throw new CryptographicException(SR.Cryptography_InvalidRsaParameters);
                 }
 
-                //
-                // We need to build a key blob structured as follows:
-                //
-                //     BCRYPT_RSAKEY_BLOB   header
-                //     byte[cbPublicExp]    publicExponent      - Exponent
-                //     byte[cbModulus]      modulus             - Modulus
-                //     -- Only if "includePrivate" is true --
-                //     byte[cbPrime1]       prime1              - P
-                //     byte[cbPrime2]       prime2              - Q
-                //     ------------------
-                //
+                // Half, rounded up.
+                int halfModulusLength = (parameters.Modulus.Length + 1) / 2;
 
-                int blobSize = sizeof(BCRYPT_RSAKEY_BLOB) +
-                               parameters.Exponent.Length +
-                               parameters.Modulus.Length;
+                // The same checks are done by RSACryptoServiceProvider on import (when building the key blob)
+                // Historically RSACng let CNG handle this (reporting NTE_NOT_SUPPORTED), but on RS1 CNG let the
+                // import succeed, then on private key use (e.g. signing) it would report NTE_INVALID_PARAMETER.
+                //
+                // Doing the check here prevents the state in RS1 where the Import succeeds, but corrupts the key,
+                // and makes for a friendlier exception message.
+                if (parameters.D.Length != parameters.Modulus.Length ||
+                    parameters.P.Length != halfModulusLength ||
+                    parameters.Q.Length != halfModulusLength ||
+                    parameters.DP.Length != halfModulusLength ||
+                    parameters.DQ.Length != halfModulusLength ||
+                    parameters.InverseQ.Length != halfModulusLength)
+                {
+                    throw new CryptographicException(SR.Cryptography_InvalidRsaParameters);
+                }
+            }
+
+            //
+            // We need to build a key blob structured as follows:
+            //
+            //     BCRYPT_RSAKEY_BLOB   header
+            //     byte[cbPublicExp]    publicExponent      - Exponent
+            //     byte[cbModulus]      modulus             - Modulus
+            //     -- Only if "includePrivate" is true --
+            //     byte[cbPrime1]       prime1              - P
+            //     byte[cbPrime2]       prime2              - Q
+            //     ------------------
+            //
+
+            int blobSize = sizeof(BCRYPT_RSAKEY_BLOB) +
+                            parameters.Exponent.Length +
+                            parameters.Modulus.Length;
+            if (includePrivate)
+            {
+                blobSize += parameters.P!.Length +
+                            parameters.Q!.Length;
+            }
+
+            byte[] rsaBlob = new byte[blobSize];
+            fixed (byte* pRsaBlob = &rsaBlob[0])
+            {
+                // Build the header
+                BCRYPT_RSAKEY_BLOB* pBcryptBlob = (BCRYPT_RSAKEY_BLOB*)pRsaBlob;
+                pBcryptBlob->Magic = includePrivate ? KeyBlobMagicNumber.BCRYPT_RSAPRIVATE_MAGIC : KeyBlobMagicNumber.BCRYPT_RSAPUBLIC_MAGIC;
+                pBcryptBlob->BitLength = parameters.Modulus.Length * 8;
+                pBcryptBlob->cbPublicExp = parameters.Exponent.Length;
+                pBcryptBlob->cbModulus = parameters.Modulus.Length;
+
                 if (includePrivate)
                 {
-                    blobSize += parameters.P!.Length +
-                                parameters.Q!.Length;
+                    pBcryptBlob->cbPrime1 = parameters.P!.Length;
+                    pBcryptBlob->cbPrime2 = parameters.Q!.Length;
                 }
 
-                byte[] rsaBlob = new byte[blobSize];
-                fixed (byte* pRsaBlob = &rsaBlob[0])
+                int offset = sizeof(BCRYPT_RSAKEY_BLOB);
+
+                Interop.BCrypt.Emit(rsaBlob, ref offset, parameters.Exponent);
+                Interop.BCrypt.Emit(rsaBlob, ref offset, parameters.Modulus);
+
+                if (includePrivate)
                 {
-                    // Build the header
-                    BCRYPT_RSAKEY_BLOB* pBcryptBlob = (BCRYPT_RSAKEY_BLOB*)pRsaBlob;
-                    pBcryptBlob->Magic = includePrivate ? KeyBlobMagicNumber.BCRYPT_RSAPRIVATE_MAGIC : KeyBlobMagicNumber.BCRYPT_RSAPUBLIC_MAGIC;
-                    pBcryptBlob->BitLength = parameters.Modulus.Length * 8;
-                    pBcryptBlob->cbPublicExp = parameters.Exponent.Length;
-                    pBcryptBlob->cbModulus = parameters.Modulus.Length;
-
-                    if (includePrivate)
-                    {
-                        pBcryptBlob->cbPrime1 = parameters.P!.Length;
-                        pBcryptBlob->cbPrime2 = parameters.Q!.Length;
-                    }
-
-                    int offset = sizeof(BCRYPT_RSAKEY_BLOB);
-
-                    Interop.BCrypt.Emit(rsaBlob, ref offset, parameters.Exponent);
-                    Interop.BCrypt.Emit(rsaBlob, ref offset, parameters.Modulus);
-
-                    if (includePrivate)
-                    {
-                        Interop.BCrypt.Emit(rsaBlob, ref offset, parameters.P!);
-                        Interop.BCrypt.Emit(rsaBlob, ref offset, parameters.Q!);
-                    }
-
-                    // We better have computed the right allocation size above!
-                    Debug.Assert(offset == blobSize, "offset == blobSize");
+                    Interop.BCrypt.Emit(rsaBlob, ref offset, parameters.P!);
+                    Interop.BCrypt.Emit(rsaBlob, ref offset, parameters.Q!);
                 }
 
-                ImportKeyBlob(rsaBlob, includePrivate);
+                // We better have computed the right allocation size above!
+                Debug.Assert(offset == blobSize, "offset == blobSize");
             }
+
+            ImportKeyBlob(rsaBlob, includePrivate);
         }
 
             public override void ImportPkcs8PrivateKey(ReadOnlySpan<byte> source, out int bytesRead)

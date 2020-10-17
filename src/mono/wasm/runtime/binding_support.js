@@ -937,7 +937,7 @@ var BindingSupportLib = {
 			if (typeof obj  !== "undefined" && obj !== null) {
 				// if this is the global object then do not
 				// unregister it.
-				if (typeof ___mono_wasm_global___ !== "undefined" && ___mono_wasm_global___ === obj)
+				if (globalThis === obj)
 					return obj;
 
 				var gc_handle = obj.__mono_gchandle__;
@@ -966,7 +966,7 @@ var BindingSupportLib = {
 			if (typeof obj  !== "undefined" && obj !== null) {
 				// if this is the global object then do not
 				// unregister it.
-				if (typeof ___mono_wasm_global___ !== "undefined" && ___mono_wasm_global___ === obj)
+				if (globalThis === obj)
 					return obj;
 
 				var gc_handle = obj.__mono_gchandle__;
@@ -980,32 +980,6 @@ var BindingSupportLib = {
 				}
 			}
 			return obj;
-		},
-		mono_wasm_get_global: function() {
-			function testGlobal(obj) {
-				obj['___mono_wasm_global___'] = obj;
-				var success = typeof ___mono_wasm_global___ === 'object' && obj['___mono_wasm_global___'] === obj;
-				if (!success) {
-					delete obj['___mono_wasm_global___'];
-				}
-				return success;
-			}
-			if (typeof ___mono_wasm_global___ === 'object') {
-				return ___mono_wasm_global___;
-			}
-			if (typeof global === 'object' && testGlobal(global)) {
-				___mono_wasm_global___ = global;
-			} else if (typeof window === 'object' && testGlobal(window)) {
-				___mono_wasm_global___ = window;
-			} else if (testGlobal((function(){return Function;})()('return this')())) {
-
-				___mono_wasm_global___ = (function(){return Function;})()('return this')();
-
-			}
-			if (typeof ___mono_wasm_global___ === 'object') {
-				return ___mono_wasm_global___;
-			}
-			throw Error('Unable to get mono wasm global object.');
 		},
 		mono_wasm_parse_args : function (args) {
 			var js_args = this.mono_array_to_js_array(args);
@@ -1202,10 +1176,10 @@ var BindingSupportLib = {
 		var globalObj = undefined;
 
 		if (!js_name) {
-			globalObj = BINDING.mono_wasm_get_global();
+			globalObj = globalThis;
 		}
 		else {
-			globalObj = BINDING.mono_wasm_get_global()[js_name];
+			globalObj = globalThis[js_name];
 		}
 
 		if (globalObj === null || typeof globalObj === undefined) {
@@ -1262,7 +1236,7 @@ var BindingSupportLib = {
 			return BINDING.js_string_to_mono_string ("Core object '" + js_name + "' not found.");
 		}
 
-		var coreObj = BINDING.mono_wasm_get_global()[js_name];
+		var coreObj = globalThis[js_name];
 
 		if (coreObj === null || typeof coreObj === "undefined") {
 			setValue (is_exception, 1, "i32");

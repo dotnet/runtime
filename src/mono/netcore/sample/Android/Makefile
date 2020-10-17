@@ -8,11 +8,11 @@ runtimepack:
 	../../../../.././build.sh Mono+Libs -os Android -arch $(MONO_ARCH) -c $(MONO_CONFIG)
 
 run:
-	$(DOTNET) build \
+	$(DOTNET) publish \
 	/p:TargetArchitecture=$(MONO_ARCH) \
 	/p:TargetOS=Android \
 	/p:Configuration=$(MONO_CONFIG) \
 	/p:DeployAndRun=true
 
 clean:
-	rm -rf bin
+	rm -rf ../../../../../artifacts/bin/AndroidSampleApp

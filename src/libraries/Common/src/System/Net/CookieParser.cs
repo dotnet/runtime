@@ -59,6 +59,7 @@ namespace System.Net
         {
             _length = tokenStream.Length;
             _tokenStream = tokenStream;
+            _value = string.Empty;
         }
 
         internal bool EndOfCookie

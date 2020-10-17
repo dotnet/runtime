@@ -10,12 +10,6 @@ namespace System.Net
     {
         public static bool SupportsGetAddrInfoAsync => false;
 
-        internal static int FakesEnsureSocketsAreInitializedCallCount
-        {
-            get;
-            private set;
-        }
-
         internal static int FakesGetHostByNameCallCount
         {
             get;
@@ -24,13 +18,7 @@ namespace System.Net
 
         internal static void FakesReset()
         {
-            FakesEnsureSocketsAreInitializedCallCount = 0;
             FakesGetHostByNameCallCount = 0;
-        }
-
-        internal static void EnsureSocketsAreInitialized()
-        {
-            FakesEnsureSocketsAreInitializedCallCount++;
         }
 
         internal static SocketError TryGetAddrInfo(string name, bool justAddresses, out string hostName, out string[] aliases, out IPAddress[] addresses, out int nativeErrorCode)

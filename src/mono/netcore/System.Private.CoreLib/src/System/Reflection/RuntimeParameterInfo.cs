@@ -191,7 +191,7 @@ namespace System.Reflection
             return CustomAttribute.GetCustomAttributes(this, attributeType, inherit);
         }
 
-        internal object? GetDefaultValueImpl(ParameterInfo pinfo)
+        internal static object? GetDefaultValueImpl(ParameterInfo pinfo)
         {
             FieldInfo field = typeof(ParameterInfo).GetField("DefaultValueImpl", BindingFlags.Instance | BindingFlags.NonPublic)!;
             return field.GetValue(pinfo);

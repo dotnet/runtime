@@ -164,8 +164,6 @@
              Link="Common\System\Text\StringBuilderCache.cs" />
     <Compile Include="$(CommonPath)System\Text\EncodingHelper.Unix.cs"
              Link="Common\System\Text\EncodingHelper.Unix.cs" />
-    <Compile Include="$(CommonPath)System\Text\StringOrCharArray.cs"
-             Link="Common\System\Text\StringOrCharArray.cs" />
     <Compile Include="$(CommonPath)Interop\Unix\Interop.Libraries.cs"
              Link="Common\Interop\Unix\Interop.Libraries.cs" />
     <Compile Include="$(CommonPath)Interop\Unix\Interop.Errors.cs"

@@ -153,7 +153,7 @@ namespace System
             return true;
         }
 
-        private bool TrySetSlot(object?[] a, int index, object o)
+        private static bool TrySetSlot(object?[] a, int index, object o)
         {
             if (a[index] == null && System.Threading.Interlocked.CompareExchange<object?>(ref a[index], o, null) == null)
                 return true;
@@ -322,7 +322,7 @@ namespace System
             return newInvocationList;
         }
 
-        private bool EqualInvocationLists(object[] a, object[] b, int start, int count)
+        private static bool EqualInvocationLists(object[] a, object[] b, int start, int count)
         {
             for (int i = 0; i < count; i++)
             {

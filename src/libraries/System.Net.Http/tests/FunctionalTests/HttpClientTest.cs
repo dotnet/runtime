@@ -848,16 +848,16 @@ namespace System.Net.Http.Functional.Tests
         [InlineData(HttpCompletionOption.ResponseHeadersRead)]
         public void Send_SingleThread_Succeeds(HttpCompletionOption completionOption)
         {
-            int currentThreadId = Thread.CurrentThread.ManagedThreadId;
+            int currentThreadId = Environment.CurrentManagedThreadId;
 
             var client = new HttpClient(new CustomResponseHandler((r, c) => 
             {
-                Assert.Equal(currentThreadId, Thread.CurrentThread.ManagedThreadId);
+                Assert.Equal(currentThreadId, Environment.CurrentManagedThreadId);
                 return Task.FromResult(new HttpResponseMessage()
                     {
                         Content = new CustomContent(stream =>
                         {
-                            Assert.Equal(currentThreadId, Thread.CurrentThread.ManagedThreadId);
+                            Assert.Equal(currentThreadId, Environment.CurrentManagedThreadId);
                         })
                     });
             }));
@@ -867,12 +867,12 @@ namespace System.Net.Http.Functional.Tests
                     {
                         Content = new CustomContent(stream =>
                         {
-                            Assert.Equal(currentThreadId, Thread.CurrentThread.ManagedThreadId);
+                            Assert.Equal(currentThreadId, Environment.CurrentManagedThreadId);
                         })
                     }, completionOption);
                     
                 Stream contentStream = response.Content.ReadAsStream();
-                Assert.Equal(currentThreadId, Thread.CurrentThread.ManagedThreadId);
+                Assert.Equal(currentThreadId, Environment.CurrentManagedThreadId);
             }
         }
 
@@ -894,20 +894,20 @@ namespace System.Net.Http.Functional.Tests
                         // To prevent deadlock
                         await Task.Yield();
 
-                        int currentThreadId = Thread.CurrentThread.ManagedThreadId;
+                        int currentThreadId = Environment.CurrentManagedThreadId;
 
                         using HttpClient httpClient = CreateHttpClient();
 
                         HttpResponseMessage response = httpClient.Send(new HttpRequestMessage(HttpMethod.Get, uri) {
                             Content = new CustomContent(stream =>
                             {
-                                Assert.Equal(currentThreadId, Thread.CurrentThread.ManagedThreadId);
+                                Assert.Equal(currentThreadId, Environment.CurrentManagedThreadId);
                                 stream.Write(Encoding.UTF8.GetBytes(content));
                             })
                         }, completionOption);
 
                         Stream contentStream = response.Content.ReadAsStream();
-                        Assert.Equal(currentThreadId, Thread.CurrentThread.ManagedThreadId);                        
+                        Assert.Equal(currentThreadId, Environment.CurrentManagedThreadId);                        
                         using (StreamReader sr = new StreamReader(contentStream))
                         {
                             Assert.Equal(content, sr.ReadToEnd());

@@ -139,7 +139,7 @@ namespace System.Net.Quic.Implementations.MsQuic
             MsQuicApi.Api.ListenerStopDelegate(_ptr);
         }
 
-        private unsafe void SetListenPort()
+        private void SetListenPort()
         {
             SOCKADDR_INET inetAddress = MsQuicParameterHelpers.GetINetParam(MsQuicApi.Api, _ptr, (uint)QUIC_PARAM_LEVEL.LISTENER, (uint)QUIC_PARAM_LISTENER.LOCAL_ADDRESS);
 
