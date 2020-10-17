@@ -130,9 +130,11 @@
     <ILLinkDescriptorsXmls Include="$(ILLinkDirectory)ILLink.Descriptors.xml" />
     <ILLinkDescriptorsXmls Include="$(CoreLibSharedDir)ILLink\ILLink.Descriptors.Shared.xml" />
 
+    <ILLinkSubstitutionsXmls Include="$(ILLinkDirectory)ILLink.Substitutions.xml" />
     <ILLinkSubstitutionsXmls Include="$(ILLinkDirectory)ILLink.Substitutions.$(Platform).xml"
                              Condition="Exists('$(ILLinkDirectory)ILLink.Substitutions.$(Platform).xml')" />
 
+    <ILLinkLinkAttributesXmls Include="$(ILLinkDirectory)ILLink.LinkAttributes.xml" />
     <ILLinkLinkAttributesXmls Include="$(ILLinkDirectory)ILLink.LinkAttributes.$(Platform).xml"
                               Condition="Exists('$(ILLinkDirectory)ILLink.LinkAttributes.$(Platform).xml')" />
   </ItemGroup>
