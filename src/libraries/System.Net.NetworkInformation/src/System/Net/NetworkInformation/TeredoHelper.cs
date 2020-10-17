@@ -50,18 +50,13 @@ namespace System.Net.NetworkInformation
         {
             Debug.Assert(callback != null);
 
-            TeredoHelper? helper = null;
+            TeredoHelper? helper = new TeredoHelper(callback, state);
             try
             {
-                helper = new TeredoHelper(callback, state);
-
                 uint err = Interop.IpHlpApi.NotifyStableUnicastIpAddressTable(AddressFamily.Unspecified,
                     out SafeFreeMibTable table, &OnStabilized, GCHandle.ToIntPtr(helper._gcHandle), out helper._cancelHandle);
 
-                if (table != null)
-                {
-                    table.Dispose();
-                }
+                table.Dispose();
 
                 if (err == Interop.IpHlpApi.ERROR_IO_PENDING)
                 {
@@ -93,18 +88,6 @@ namespace System.Net.NetworkInformation
                 _gcHandle.Free();
         }
 
-        private static void RunCallback(object? o)
-        {
-            TeredoHelper helper = (TeredoHelper)o!;
-
-            Debug.Assert(helper._runCallbackCalled);
-            Debug.Assert(helper._cancelHandle != null && !helper._cancelHandle.IsInvalid);
-
-            helper.Dispose();
-
-            helper._callback.Invoke(helper._state);
-        }
-
         // This callback gets run on a native worker thread, which we don't want to allow arbitrary user code to
         // execute on (it will block AppDomain unload, for one).  Free the MibTable and delegate (exactly once)
         // to the managed ThreadPool for the rest of the processing.
@@ -125,7 +108,17 @@ namespace System.Net.NetworkInformation
                     if (!helper._runCallbackCalled)
                     {
                         helper._runCallbackCalled = true;
-                        ThreadPool.QueueUserWorkItem(RunCallback, helper);
+
+                        ThreadPool.QueueUserWorkItem(o =>
+                        {
+                            TeredoHelper helper = (TeredoHelper)o!;
+
+                            // We are intentionally not calling Dispose synchronously inside the OnStabilized callback.
+                            // According to MSDN, calling CancelMibChangeNotify2 inside the callback results into deadlock.
+                            helper.Dispose();
+
+                            helper._callback.Invoke(helper._state);
+                        }, helper);
                     }
                 }
             }

@@ -48,17 +48,15 @@ namespace System.Diagnostics
         [UnmanagedCallersOnly]
         private static unsafe Interop.BOOL EnumWindowsCallback(IntPtr handle, IntPtr extraParameter)
         {
-            ref MainWindowFinder instance = ref *(MainWindowFinder*)extraParameter;
+            MainWindowFinder* instance = (MainWindowFinder*)extraParameter;
 
-            Interop.User32.GetWindowThreadProcessId(handle, out int processId);
+            int processId = 0; // Avoid uninitialized variable if the window got closed in the meantime
+            Interop.User32.GetWindowThreadProcessId(handle, out processId);
 
-            if (processId == instance._processId)
+            if ((processId == instance->_processId) && IsMainWindow(handle))
             {
-                if (IsMainWindow(handle))
-                {
-                    instance._bestHandle = handle;
-                    return Interop.BOOL.FALSE;
-                }
+                instance->_bestHandle = handle;
+                return Interop.BOOL.FALSE;
             }
             return Interop.BOOL.TRUE;
         }
