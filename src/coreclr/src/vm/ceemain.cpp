@@ -638,7 +638,13 @@ void EEStartupHelper()
         g_fEEInit = true;
 
 #if CORECLR_EMBEDDED
+
+#ifdef TARGET_WINDOWS
         HINSTANCE curModule = WszGetModuleHandle(NULL);
+#else
+        HINSTANCE curModule = PAL_LoadLibraryDirect(NULL);
+#endif
+
         g_hmodCoreCLR = curModule;
         g_hThisInst = curModule;
 #endif
