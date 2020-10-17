@@ -185,11 +185,11 @@ namespace System.IO.Compression.Tests
         }
 
         [Fact]
-        public static async Task TestEmptyLastModifiedEntryValueNotThrowingInternalException()
+        public static void TestEmptyLastModifiedEntryValueNotThrowingInternalException()
         {
             var emptyDateIndicator = new DateTime(1980, 1, 1, 1, 0, 0);
             var buffer = new byte[100];//empty archive we will make will have exact this size
-            await using var memoryStream = new MemoryStream(buffer);
+            using var memoryStream = new MemoryStream(buffer);
 
             using (var singleEntryArchive = new ZipArchive(memoryStream, ZipArchiveMode.Create, true))
             {
@@ -205,7 +205,7 @@ namespace System.IO.Compression.Tests
             memoryStream.Seek(0, SeekOrigin.Begin);
 
             using var archive = new ZipArchive(memoryStream, ZipArchiveMode.Read, true);
-            Assert.Equal(archive.Entries[0].LastWriteTime, emptyZipDateIndicator);
+            Assert.Equal(archive.Entries[0].LastWriteTime, new DateTimeOffset(emptyDateIndicator));
         }
     }
 }
