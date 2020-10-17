@@ -407,14 +407,16 @@ namespace $([System.String]::Copy($(Category)).Replace(".","_").Replace("\","").
       <CMDDIR_Grandparent>$([System.IO.Path]::GetDirectoryName($(CMDDIR_Parent)))</CMDDIR_Grandparent>
       <CategoryWithSlash>$([System.String]::Copy('$(_CMDDIR)').Replace("$(CMDDIR_Grandparent)/",""))</CategoryWithSlash>
       <Category>$([System.String]::Copy('$(CategoryWithSlash)').Replace('/','_'))</Category>
-      <OutputDir>$(CORE_ROOT)\$(Category)\AndroidApp</OutputDir>
-      <ApkDir>$(CORE_ROOT)\$(Category)\apk</ApkDir>
+      <AppDir>$(CORE_ROOT)\AndroidApps\$(Category)</AppDir>
+      <SourceDir>$(AppDir)\SourceDir</SourceDir>
+      <ApkDir>$(AppDir)\apk</ApkDir>
       <StripDebugSymbols>False</StripDebugSymbols>
       <StripDebugSymbols Condition="'$(Configuration)' == 'Release'">True</StripDebugSymbols>
       <MicrosoftNetCoreAppRuntimePackDir>$(ArtifactsBinDir)microsoft.netcore.app.runtime.android-$(TargetArchitecture)\$(Configuration)\runtimes\android-$(TargetArchitecture)\</MicrosoftNetCoreAppRuntimePackDir>
     </PropertyGroup>
 
-    <MakeDir Directories="$(OutputDir)"/>
+    <RemoveDir Directories="$(AppDir)" />
+    <MakeDir Directories="$(SourceDir)"/>
 
     <ItemGroup>
       <AllCMDsPresent Include="$(_CMDDIR)\**\*.sh" />
@@ -428,39 +430,36 @@ namespace $([System.String]::Copy($(Category)).Replace(".","_").Replace("\","").
       <RuntimePackNativeLibs Include="$(MicrosoftNetCoreAppRuntimePackDir)/**/*.dll;$(MicrosoftNetCoreAppRuntimePackDir)native/**/*.a;$(MicrosoftNetCoreAppRuntimePackDir)native/**/*.so" />
     </ItemGroup>
 
-    <RemoveDir Directories="$(ApkDir)" />
-
     <Copy 
         SourceFiles="@(TestAssemblies)"
-        DestinationFolder="$(OutputDir)" />
+        DestinationFolder="$(SourceDir)" />
 
     <Copy 
         SourceFiles="@(AssembliesInTestDirs)"
-        DestinationFolder="$(OutputDir)" />
+        DestinationFolder="$(SourceDir)" />
 
     <Copy 
         SourceFiles="@(RuntimePackNativeLibs)"
-        DestinationFolder="$(OutputDir)" />
+        DestinationFolder="$(SourceDir)" />
 
     <Copy 
         SourceFiles="@(RuntimePackLibs)"
-        DestinationFolder="$(OutputDir)" />
+        DestinationFolder="$(SourceDir)" />
 
     <AndroidAppBuilderTask
         RuntimeIdentifier="$(RuntimeIdentifier)"
         ProjectName="$(Category)"
         MonoRuntimeHeaders="$(MicrosoftNetCoreAppRuntimePackDir)/native/include/mono-2.0"
         StripDebugSymbols="$(StripDebugSymbols)"
-        SourceDir="$(OutputDir)"
+        SourceDir="$(SourceDir)"
         OutputDir="$(ApkDir)">
         <Output TaskParameter="ApkBundlePath" PropertyName="ApkBundlePath" />
         <Output TaskParameter="ApkPackageId" PropertyName="ApkPackageId" />
     </AndroidAppBuilderTask>
-
     <Message Importance="High" Text="Apk:       $(ApkBundlePath)"/>
     <Message Importance="High" Text="PackageId: $(ApkPackageId)"/>
-
-    <RemoveDir Directories="$(OutputDir)" />
+    <!-- delete the SourceDir in CI builds to save disk space on build agents since they're no longer needed -->
+    <RemoveDir Condition="'$(ContinuousIntegrationBuild)' == 'true'" Directories="$(SourceDir)" />
   </Target>
 
   <Target Name="BuildAllAndroidApp" DependsOnTargets="GetListOfTestCmds;FindCmdDirectories">
