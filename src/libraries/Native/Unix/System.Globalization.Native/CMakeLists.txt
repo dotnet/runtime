@@ -84,14 +84,14 @@ if (GEN_SHARED_LIB)
 endif()
 
 
-add_library(System.Globalization.Native-static
+add_library(System.Globalization.Native-Static
     STATIC
     ${NATIVEGLOBALIZATION_SOURCES}
 )
 
-set_target_properties(System.Globalization.Native-static PROPERTIES OUTPUT_NAME System.Globalization.Native  CLEAN_DIRECT_OUTPUT 1)
+set_target_properties(System.Globalization.Native-Static PROPERTIES OUTPUT_NAME System.Globalization.Native  CLEAN_DIRECT_OUTPUT 1)
 
-install (TARGETS System.Globalization.Native-static DESTINATION lib)
+install (TARGETS System.Globalization.Native-Static DESTINATION .)
 
 if(NOT CLR_CMAKE_TARGET_OSX AND NOT CLR_CMAKE_TARGET_IOS AND NOT CLR_CMAKE_TARGET_TVOS AND NOT CLR_CMAKE_TARGET_ANDROID)
     if (GEN_SHARED_LIB)
