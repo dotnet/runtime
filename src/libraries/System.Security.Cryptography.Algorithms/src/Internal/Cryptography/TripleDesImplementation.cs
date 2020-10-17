@@ -11,6 +11,13 @@ namespace Internal.Cryptography
     {
         private const int BitsPerByte = 8;
 
+        public TripleDesImplementation()
+        {
+            // Default CFB to CFB8 to match .NET Framework's default for TripleDES.Create()
+            // and TripleDESCryptoServiceProvider.
+            FeedbackSizeValue = 8;
+        }
+
         public override ICryptoTransform CreateDecryptor()
         {
             return CreateTransform(Key, IV, encrypting: false);

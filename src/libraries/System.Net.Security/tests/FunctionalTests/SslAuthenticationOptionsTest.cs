@@ -45,7 +45,7 @@ namespace System.Net.Security.Tests
                 RemoteCertificateValidationCallback serverRemoteCallback = new RemoteCertificateValidationCallback(delegate { return true; });
                 SslStreamCertificateContext certificateContext = SslStreamCertificateContext.Create(serverCert, null, false);
 
-                (Stream stream1, Stream stream2) = ConnectedStreams.CreateBidirectional();
+                (Stream stream1, Stream stream2) = TestHelper.GetConnectedStreams();
                 using (var client = new SslStream(stream1))
                 using (var server = new SslStream(stream2))
                 {

@@ -4629,6 +4629,7 @@ namespace System
         public static readonly string SchemeDelimiter;
         public static readonly string UriSchemeFile;
         public static readonly string UriSchemeFtp;
+        public static readonly string UriSchemeFtps;
         public static readonly string UriSchemeGopher;
         public static readonly string UriSchemeHttp;
         public static readonly string UriSchemeHttps;
@@ -4637,6 +4638,11 @@ namespace System
         public static readonly string UriSchemeNetTcp;
         public static readonly string UriSchemeNews;
         public static readonly string UriSchemeNntp;
+        public static readonly string UriSchemeSftp;
+        public static readonly string UriSchemeSsh;
+        public static readonly string UriSchemeTelnet;
+        public static readonly string UriSchemeWs;
+        public static readonly string UriSchemeWss;
         protected Uri(System.Runtime.Serialization.SerializationInfo serializationInfo, System.Runtime.Serialization.StreamingContext streamingContext) { }
         public Uri(string uriString) { }
         [System.ObsoleteAttribute("The constructor has been deprecated. Please use new Uri(string). The dontEscape parameter is deprecated and is always false. https://go.microsoft.com/fwlink/?linkid=14202")]

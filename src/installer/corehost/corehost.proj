@@ -36,6 +36,7 @@
       <BuildArgs Condition="'$(CMakeArgs)' != ''">$(BuildArgs) $(CMakeArgs)</BuildArgs>
       <BuildArgs>$(BuildArgs) -coreclrartifacts $(CoreCLRArtifactsPath)</BuildArgs>
       <BuildArgs>$(BuildArgs) -nativelibsartifacts $(LibrariesArtifactsPath)/bin/native/$(NetCoreAppCurrent)-$(TargetOS)-$(LibrariesConfiguration)-$(TargetArchitecture)</BuildArgs>
+      <BuildArgs>$(BuildArgs) -runtimeflavor $(RuntimeFlavor)</BuildArgs>
     </PropertyGroup>
 
     <!--
@@ -90,6 +91,7 @@
       <BuildArgs>$(BuildArgs) rootdir $(RepoRoot)</BuildArgs>
       <BuildArgs>$(BuildArgs) coreclrartifacts $(CoreCLRArtifactsPath)</BuildArgs>
       <BuildArgs>$(BuildArgs) nativelibsartifacts $(LibrariesArtifactsPath)/bin/native/$(NetCoreAppCurrent)-$(TargetOS)-$(LibrariesConfiguration)-$(TargetArchitecture)</BuildArgs>
+      <BuildArgs>$(BuildArgs) runtimeflavor $(RuntimeFlavor)</BuildArgs>
     </PropertyGroup>
 
     <!--

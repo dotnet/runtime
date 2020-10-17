@@ -52,7 +52,7 @@ namespace System.Diagnostics
         /// <summary>
         /// Gets or sets which processors the threads in this process can be scheduled to run on.
         /// </summary>
-        private unsafe IntPtr ProcessorAffinityCore
+        private IntPtr ProcessorAffinityCore
         {
             get { throw new PlatformNotSupportedException(); }
             set { throw new PlatformNotSupportedException(); }

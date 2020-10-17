@@ -168,11 +168,11 @@ namespace System.Reflection.Emit
             }
         }
 
-        public TypeToken TypeToken
+        internal int TypeToken
         {
             get
             {
-                return _tb.TypeToken;
+                return _tb.MetadataToken;
             }
         }
 

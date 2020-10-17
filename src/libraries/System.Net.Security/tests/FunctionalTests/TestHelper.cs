@@ -49,7 +49,7 @@ namespace System.Net.Security.Tests
                 return GetConnectedTcpStreams();
             }
 
-            return ConnectedStreams.CreateBidirectional();
+            return ConnectedStreams.CreateBidirectional(initialBufferSize: 4096, maxBufferSize: int.MaxValue);
         }
 
         internal static (NetworkStream ClientStream, NetworkStream ServerStream) GetConnectedTcpStreams()

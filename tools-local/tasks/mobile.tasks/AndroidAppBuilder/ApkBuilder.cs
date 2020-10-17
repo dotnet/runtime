@@ -18,8 +18,6 @@ public class ApkBuilder
     public string? BuildToolsVersion { get; set; }
     public string? OutputDir { get; set; }
     public bool StripDebugSymbols { get; set; }
-    public string[]? AssemblySearchPaths { get; set; }
-    public string[]? ExtraAssemblies { get; set; }
 
     public (string apk, string packageId) BuildApk(
         string sourceDir, string abi, string entryPointLib, string monoRuntimeHeaders)
@@ -100,41 +98,6 @@ public class ApkBuilder
         {
             extensionsToIgnore.Add(".pdb");
             extensionsToIgnore.Add(".dbg");
-        }
-
-        var assembliesToResolve = new List<string>();
-
-        if (!string.IsNullOrEmpty(entryPointLibPath))
-                assembliesToResolve.Add(entryPointLibPath);
-
-        if (ExtraAssemblies != null)
-            assembliesToResolve.AddRange(ExtraAssemblies);
-
-        // try to resolve dependencies of entryPointLib + ExtraAssemblies from AssemblySearchPaths
-        // and copy them to sourceDir
-        if (AssemblySearchPaths?.Length > 0)
-        {
-            string[] resolvedDependencies = AssemblyResolver.ResolveDependencies(assembliesToResolve.ToArray(), AssemblySearchPaths, true);
-            foreach (string resolvedDependency in resolvedDependencies)
-            {
-                string destination = Path.Combine(sourceDir, Path.GetFileName(resolvedDependency));
-                if (!File.Exists(destination))
-                    File.Copy(resolvedDependency, destination);
-            }
-        }
-        else
-        {
-            AssemblySearchPaths = new[] {OutputDir};
-        }
-
-        // copy all native libs from AssemblySearchPaths to sourceDir
-        // TODO: skip some if not used by the app
-        string[] allFiles = AssemblySearchPaths.SelectMany(p => Directory.GetFiles(p, "*", SearchOption.AllDirectories)).ToArray();
-        foreach (string nativeLib in allFiles.Where(f => f.EndsWith(".a") || f.EndsWith(".so")))
-        {
-            string destination = Path.Combine(sourceDir, Path.GetFileName(nativeLib));
-            if (!File.Exists(destination))
-                File.Copy(nativeLib, destination);
         }
 
         // Copy sourceDir to OutputDir/assets-tozip (ignore native files)

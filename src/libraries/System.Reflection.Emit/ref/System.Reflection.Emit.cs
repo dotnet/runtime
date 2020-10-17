@@ -79,6 +79,7 @@ namespace System.Reflection.Emit
         public override object Invoke(object? obj, System.Reflection.BindingFlags invokeAttr, System.Reflection.Binder? binder, object?[]? parameters, System.Globalization.CultureInfo? culture) { throw null; }
         public override object Invoke(System.Reflection.BindingFlags invokeAttr, System.Reflection.Binder? binder, object?[]? parameters, System.Globalization.CultureInfo? culture) { throw null; }
         public override bool IsDefined(System.Type attributeType, bool inherit) { throw null; }
+        public override int MetadataToken { get { throw null; } }
         public void SetCustomAttribute(System.Reflection.ConstructorInfo con, byte[] binaryAttribute) { }
         public void SetCustomAttribute(System.Reflection.Emit.CustomAttributeBuilder customBuilder) { }
         public void SetImplementationFlags(System.Reflection.MethodImplAttributes attributes) { }
@@ -179,6 +180,7 @@ namespace System.Reflection.Emit
         public override System.Type? DeclaringType { get { throw null; } }
         public override System.RuntimeFieldHandle FieldHandle { get { throw null; } }
         public override System.Type FieldType { get { throw null; } }
+        public override int MetadataToken { get { throw null; } }
         public override System.Reflection.Module Module { get { throw null; } }
         public override string Name { get { throw null; } }
         public override System.Type? ReflectedType { get { throw null; } }
@@ -213,6 +215,7 @@ namespace System.Reflection.Emit
         public override bool IsSZArray { get { throw null; } }
         public override bool IsTypeDefinition { get { throw null; } }
         public override bool IsVariableBoundArray { get { throw null; } }
+        public override int MetadataToken { get { throw null; } }
         public override System.Reflection.Module Module { get { throw null; } }
         public override string Name { get { throw null; } }
         public override string? Namespace { get { throw null; } }
@@ -298,6 +301,7 @@ namespace System.Reflection.Emit
         public override bool IsSecurityCritical { get { throw null; } }
         public override bool IsSecuritySafeCritical { get { throw null; } }
         public override bool IsSecurityTransparent { get { throw null; } }
+        public override int MetadataToken { get { throw null; } }
         public override System.RuntimeMethodHandle MethodHandle { get { throw null; } }
         public override System.Reflection.Module Module { get { throw null; } }
         public override string Name { get { throw null; } }
@@ -446,6 +450,7 @@ namespace System.Reflection.Emit
         public override bool IsSZArray { get { throw null; } }
         public override bool IsTypeDefinition { get { throw null; } }
         public override bool IsVariableBoundArray { get { throw null; } }
+        public override int MetadataToken { get { throw null; } }
         public override System.Reflection.Module Module { get { throw null; } }
         public override string Name { get { throw null; } }
         public override string? Namespace { get { throw null; } }

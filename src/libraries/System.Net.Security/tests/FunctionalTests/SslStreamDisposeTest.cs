@@ -28,7 +28,7 @@ namespace System.Net.Security.Tests
         [Fact]
         public async Task DisposeAsync_Connected_ClosesStream()
         {
-            (Stream stream1, Stream stream2) = ConnectedStreams.CreateBidirectional();
+            (Stream stream1, Stream stream2) = TestHelper.GetConnectedStreams();
             var trackingStream1 = new CallTrackingStream(stream1);
             var trackingStream2 = new CallTrackingStream(stream2);
 

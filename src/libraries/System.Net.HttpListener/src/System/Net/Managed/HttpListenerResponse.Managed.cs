@@ -31,7 +31,6 @@
 
 using System.Globalization;
 using System.IO;
-using System.Runtime.Versioning;
 using System.Text;
 
 namespace System.Net
@@ -94,7 +93,6 @@ namespace System.Net
 
         private void Dispose() => Close(true);
 
-        [UnsupportedOSPlatform("browser")]
         public void Close()
         {
             if (Disposed)
@@ -103,7 +101,6 @@ namespace System.Net
             Close(false);
         }
 
-        [UnsupportedOSPlatform("browser")]
         public void Abort()
         {
             if (Disposed)
@@ -118,7 +115,6 @@ namespace System.Net
             _httpContext!.Connection.Close(force);
         }
 
-        [UnsupportedOSPlatform("browser")]
         public void Close(byte[] responseEntity, bool willBlock)
         {
             CheckDisposed();

@@ -38,7 +38,7 @@ namespace System.Net.Security.Tests
         [InlineData(1)]
         public async Task NegotiateStream_StreamToStream_Authentication_Success(int delay)
         {
-            (Stream stream1, Stream stream2) = ConnectedStreams.CreateBidirectional();
+            (Stream stream1, Stream stream2) = TestHelper.GetConnectedStreams();
 
             using (var clientStream = new DelayStream(stream1, delay))
             using (var serverStream = new DelayStream(stream2, delay))
@@ -90,7 +90,7 @@ namespace System.Net.Security.Tests
         [InlineData(1)]
         public async Task NegotiateStream_StreamToStream_Authenticated_DisposeAsync(int delay)
         {
-            (Stream stream1, Stream stream2) = ConnectedStreams.CreateBidirectional();
+            (Stream stream1, Stream stream2) = TestHelper.GetConnectedStreams();
             await using (var client = new NegotiateStream(new DelayStream(stream1, delay)))
             await using (var server = new NegotiateStream(new DelayStream(stream2, delay)))
             {
@@ -127,7 +127,7 @@ namespace System.Net.Security.Tests
         {
             string targetName = "testTargetName";
 
-            (Stream stream1, Stream stream2) = ConnectedStreams.CreateBidirectional();
+            (Stream stream1, Stream stream2) = TestHelper.GetConnectedStreams();
             using (var client = new NegotiateStream(stream1))
             using (var server = new NegotiateStream(stream2))
             {
@@ -186,7 +186,7 @@ namespace System.Net.Security.Tests
             Assert.NotEqual(emptyNetworkCredential, CredentialCache.DefaultCredentials);
             Assert.NotEqual(emptyNetworkCredential, CredentialCache.DefaultNetworkCredentials);
 
-            (Stream stream1, Stream stream2) = ConnectedStreams.CreateBidirectional();
+            (Stream stream1, Stream stream2) = TestHelper.GetConnectedStreams();
             using (var client = new NegotiateStream(stream1))
             using (var server = new NegotiateStream(stream2))
             {
@@ -241,7 +241,7 @@ namespace System.Net.Security.Tests
             byte[] recvBuf = new byte[s_sampleMsg.Length];
             int bytesRead = 0;
 
-            (Stream stream1, Stream stream2) = ConnectedStreams.CreateBidirectional();
+            (Stream stream1, Stream stream2) = TestHelper.GetConnectedStreams();
             using (var client = new NegotiateStream(new DelayStream(stream1, delay)))
             using (var server = new NegotiateStream(new DelayStream(stream2, delay)))
             {
@@ -280,7 +280,7 @@ namespace System.Net.Security.Tests
             byte[] recvBuf = new byte[s_longMsg.Length];
             int bytesRead = 0;
 
-            (Stream stream1, Stream stream2) = ConnectedStreams.CreateBidirectional(4096, int.MaxValue);
+            (Stream stream1, Stream stream2) = TestHelper.GetConnectedStreams();
             using (var client = new NegotiateStream(new DelayStream(stream1, delay)))
             using (var server = new NegotiateStream(new DelayStream(stream2, delay)))
             {
@@ -302,7 +302,7 @@ namespace System.Net.Security.Tests
         [ConditionalFact(nameof(IsNtlmInstalled))]
         public void NegotiateStream_StreamToStream_Flush_Propagated()
         {
-            (Stream stream1, Stream stream2) = ConnectedStreams.CreateBidirectional();
+            (Stream stream1, Stream stream2) = TestHelper.GetConnectedStreams();
             using (var stream = new CallTrackingStream(stream1))
             using (var negotiateStream = new NegotiateStream(stream))
             using (stream2)
@@ -316,7 +316,7 @@ namespace System.Net.Security.Tests
         [ConditionalFact(nameof(IsNtlmInstalled))]
         public async Task NegotiateStream_StreamToStream_FlushAsync_Propagated()
         {
-            (Stream stream1, Stream stream2) = ConnectedStreams.CreateBidirectional();
+            (Stream stream1, Stream stream2) = TestHelper.GetConnectedStreams();
             var tcs = new TaskCompletionSource();
 
             using (var stream = new DelegateDelegatingStream(stream1) { FlushAsyncFunc = async cancellationToken => { await tcs.Task.WithCancellation(cancellationToken); await stream1.FlushAsync(cancellationToken); } })
@@ -342,7 +342,7 @@ namespace System.Net.Security.Tests
 
             byte[] recvBuf = new byte[s_sampleMsg.Length];
 
-            (Stream stream1, Stream stream2) = ConnectedStreams.CreateBidirectional();
+            (Stream stream1, Stream stream2) = TestHelper.GetConnectedStreams();
             using (var clientStream = new DelayStream(stream1))
             using (var serverStream = new DelayStream(stream2))
             using (var client = new NegotiateStream(clientStream))

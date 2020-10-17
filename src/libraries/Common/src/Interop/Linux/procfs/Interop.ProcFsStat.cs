@@ -199,23 +199,23 @@ internal static partial class Interop
             return GetTaskDirectoryPathForProcess(pid) + tid.ToString(CultureInfo.InvariantCulture) + StatFileName;
         }
 
-        internal static bool TryReadStatFile(int pid, out ParsedStat result, ReusableTextReader reusableReader)
+        internal static bool TryReadStatFile(int pid, out ParsedStat result)
         {
-            bool b = TryParseStatFile(GetStatFilePathForProcess(pid), out result, reusableReader);
+            bool b = TryParseStatFile(GetStatFilePathForProcess(pid), out result);
             Debug.Assert(!b || result.pid == pid, "Expected process ID from stat file to match supplied pid");
             return b;
         }
 
-        internal static bool TryReadStatFile(int pid, int tid, out ParsedStat result, ReusableTextReader reusableReader)
+        internal static bool TryReadStatFile(int pid, int tid, out ParsedStat result)
         {
-            bool b = TryParseStatFile(GetStatFilePathForThread(pid, tid), out result, reusableReader);
+            bool b = TryParseStatFile(GetStatFilePathForThread(pid, tid), out result);
             Debug.Assert(!b || result.pid == tid, "Expected thread ID from stat file to match supplied tid");
             return b;
         }
 
-        internal static bool TryParseStatFile(string statFilePath, out ParsedStat result, ReusableTextReader reusableReader)
+        internal static bool TryParseStatFile(string statFilePath, out ParsedStat result)
         {
-            if (!TryReadFile(statFilePath, reusableReader, out string? statFileContents))
+            if (!TryReadFile(statFilePath, out string? statFileContents))
             {
                 // Between the time that we get an ID and the time that we try to read the associated stat
                 // file(s), the process could be gone.

@@ -1,5 +1,7 @@
 MAKEFLAGS := $(MAKEFLAGS) --no-builtin-rules
 
+if !ENABLE_MSVC_ONLY
+
 AM_CPPFLAGS = \
 	-DSUPPRESSION_DIR=\""$(datadir)/mono-$(API_VER)/mono/profiler"\" \
 	-I$(top_srcdir) \
@@ -207,3 +209,19 @@ EXTRA_DIST = \
 	$(PLOG_TESTS_SRC) \
 	ptestrunner.pl \
 	$(suppression_DATA)
+
+endif # !ENABLE_MSVC_ONLY
+
+if ENABLE_MSVC_ONLY
+
+all-local:
+
+	$(MAKE) -C $(top_srcdir)/msvc mprof-report
+	cp -f $(mono_msvc_build_bin_dir)/mprof-report$(EXEEXT) ./mprof-report$(EXEEXT)
+
+clean-local:
+
+	$(MAKE) -C $(top_srcdir)/msvc clean-mprof-report
+	rm ./mprof-report$(EXEEXT)
+
+endif # ENABLE_MSVC_ONLY
