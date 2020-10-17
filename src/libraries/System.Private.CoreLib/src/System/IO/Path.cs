@@ -56,21 +56,9 @@ namespace System.IO
             if (subLength == 0)
                 return string.Empty;
 
-            for (int i = path.Length - 1; i >= 0; i--)
-            {
-                char ch = path[i];
-
-                if (ch == '.')
-                {
-                    subLength = i;
-                    break;
-                }
-
-                if (PathInternal.IsDirectorySeparator(ch))
-                {
-                    break;
-                }
-            }
+            int i = PathInternal.GetExtensionStart(path.AsSpan());
+            if (i >= 0)
+                subLength = i;
 
             if (extension == null)
             {
@@ -129,11 +117,12 @@ namespace System.IO
         private static int GetDirectoryNameOffset(ReadOnlySpan<char> path)
         {
             int rootLength = PathInternal.GetRootLength(path);
-            int end = path.Length;
-            if (end <= rootLength)
+            if (path.Length <= rootLength)
                 return -1;
 
-            while (end > rootLength && !PathInternal.IsDirectorySeparator(path[--end])) ;
+            int end = PathInternal.GetLastDirectorySeparator(path);
+            if (end <= rootLength)
+                return rootLength;
 
             // Trim off any remaining separators (to deal with C:\foo\\bar)
             while (end > rootLength && PathInternal.IsDirectorySeparator(path[end - 1]))
@@ -165,22 +154,9 @@ namespace System.IO
         /// </remarks>
         public static ReadOnlySpan<char> GetExtension(ReadOnlySpan<char> path)
         {
-            int length = path.Length;
-
-            for (int i = length - 1; i >= 0; i--)
-            {
-                char ch = path[i];
-                if (ch == '.')
-                {
-                    if (i != length - 1)
-                        return path.Slice(i, length - i);
-                    else
-                        return ReadOnlySpan<char>.Empty;
-                }
-                if (PathInternal.IsDirectorySeparator(ch))
-                    break;
-            }
-            return ReadOnlySpan<char>.Empty;
+            int i = PathInternal.GetExtensionStart(path);
+            // Found and not last char
+            return (i >= 0 && i < path.Length - 1) ? path.Slice(i) : default;
         }
 
         /// <summary>
@@ -210,14 +186,13 @@ namespace System.IO
 
             // We don't want to cut off "C:\file.txt:stream" (i.e. should be "file.txt:stream")
             // but we *do* want "C:Foo" => "Foo". This necessitates checking for the root.
-
-            for (int i = path.Length; --i >= 0;)
+            if (root > 0)
             {
-                if (i < root || PathInternal.IsDirectorySeparator(path[i]))
-                    return path.Slice(i + 1, path.Length - i - 1);
+                path = path.Slice(root);
             }
 
-            return path;
+            int i = PathInternal.GetLastDirectorySeparator(path) + 1;
+            return (i > 0) ? path.Slice(i) : path;
         }
 
         [return: NotNullIfNotNull("path")]
@@ -306,17 +281,9 @@ namespace System.IO
 
         public static bool HasExtension(ReadOnlySpan<char> path)
         {
-            for (int i = path.Length - 1; i >= 0; i--)
-            {
-                char ch = path[i];
-                if (ch == '.')
-                {
-                    return i != path.Length - 1;
-                }
-                if (PathInternal.IsDirectorySeparator(ch))
-                    break;
-            }
-            return false;
+            int i = PathInternal.GetExtensionStart(path);
+            // Found and not last char
+            return (i >= 0 && i < path.Length - 1);
         }
 
         public static string Combine(string path1, string path2)

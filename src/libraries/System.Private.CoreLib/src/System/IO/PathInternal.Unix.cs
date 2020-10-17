@@ -31,6 +31,15 @@ namespace System.IO
             return c == DirectorySeparatorChar;
         }
 
+        internal static int GetExtensionStart(ReadOnlySpan<char> path)
+        {
+            int i = path.LastIndexOfAny('.', DirectorySeparatorChar);
+            return (i >= 0 && path[i] == '.') ? i : -1;
+        }
+
+        internal static int GetLastDirectorySeparator(ReadOnlySpan<char> path)
+            => path.LastIndexOf(DirectorySeparatorChar);
+
         /// <summary>
         /// Normalize separators in the given path. Compresses forward slash runs.
         /// </summary>
