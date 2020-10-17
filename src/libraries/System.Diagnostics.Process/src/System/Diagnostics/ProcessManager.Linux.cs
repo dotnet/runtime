@@ -151,19 +151,16 @@ namespace System.Diagnostics
                     if (int.TryParse(dirName, NumberStyles.Integer, CultureInfo.InvariantCulture, out tid) &&
                         Interop.procfs.TryReadStatFile(pid, tid, out stat))
                     {
-                        unsafe
+                        pi._threadInfoList.Add(new ThreadInfo()
                         {
-                            pi._threadInfoList.Add(new ThreadInfo()
-                            {
-                                _processId = pid,
-                                _threadId = (ulong)tid,
-                                _basePriority = pi.BasePriority,
-                                _currentPriority = (int)stat.nice,
-                                _startAddress = IntPtr.Zero,
-                                _threadState = ProcFsStateToThreadState(stat.state),
-                                _threadWaitReason = ThreadWaitReason.Unknown
-                            });
-                        }
+                            _processId = pid,
+                            _threadId = (ulong)tid,
+                            _basePriority = pi.BasePriority,
+                            _currentPriority = (int)stat.nice,
+                            _startAddress = IntPtr.Zero,
+                            _threadState = ProcFsStateToThreadState(stat.state),
+                            _threadWaitReason = ThreadWaitReason.Unknown
+                        });
                     }
                 }
             }
