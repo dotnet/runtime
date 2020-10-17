@@ -183,5 +183,35 @@ namespace System.IO.Compression.Tests
 
             s.Dispose();
         }
+
+        [Fact]
+        public static async Task TestEmptyLastModifiedEntryValueNotThrowingInternalException()
+        {
+            const int lastWritePosition = 50;
+
+            var emptyZipDateIndicator = new DateTimeOffset(1980, 1, 1, 0, 0, 0);
+            byte[] buffer = CreateArchiveWithSingleEmptyEntry();
+
+            //set LastWriteTime bits to 0
+            buffer[lastWritePosition] = 0;
+            buffer[lastWritePosition + 1] = 0;
+            buffer[lastWritePosition + 2] = 0;
+            buffer[lastWritePosition + 3] = 0;
+
+            using var archive = new ZipArchive(new MemoryStream(buffer), ZipArchiveMode.Read);
+            Assert.Equal(archive.Entries[0].LastWriteTime, emptyZipDateIndicator);
+
+            static byte[] CreateArchiveWithSingleEmptyEntry()
+            {
+                const int emptyArchiveSize = 111;
+
+                var buffer = new byte[emptyArchiveSize];
+
+                using var archive = new ZipArchive(new MemoryStream(buffer), ZipArchiveMode.Create);
+                archive.CreateEntry("empty");
+
+                return buffer;
+            }
+        }
     }
 }
