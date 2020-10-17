@@ -43,9 +43,7 @@ namespace Mono.Linker.Tests.Cases.BCLFeatures.ETW
 		[Kept]
 		[ExpectedInstructionSequence (new[]
 		{
-			"ldstr",
-			"newobj",
-			"throw",
+			"ret"
 		})]
 		[ExpectedExceptionHandlerSequence (new string[0])]
 		protected override void OnEventCommand (EventCommandEventArgs command)
@@ -66,9 +64,7 @@ namespace Mono.Linker.Tests.Cases.BCLFeatures.ETW
 		[Kept]
 		[ExpectedInstructionSequence (new[]
 		{
-			"ldstr",
-			"newobj",
-			"throw",
+			"ret"
 		})]
 		[Event (8)]
 		public void SomeMethod ()
