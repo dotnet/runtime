@@ -63,7 +63,7 @@ public:
             return nullptr;
 
         // Allocate extra char for the null terminator
-        wchar_t* retBuffer = (wchar_t*)calloc(numCharacters + 1, sizeof(wchar_t));
+        wchar_t* retBuffer = static_cast<wchar_t*>(calloc(static_cast<size_t>(numCharacters) + 1, sizeof(wchar_t)));
         pConfigProvider->getStringConfigValue(name, retBuffer, numCharacters);
 
         return retBuffer;
