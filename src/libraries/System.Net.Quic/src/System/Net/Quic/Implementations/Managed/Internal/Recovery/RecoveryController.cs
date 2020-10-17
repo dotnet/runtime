@@ -101,6 +101,11 @@ namespace System.Net.Quic.Implementations.Managed.Internal.Recovery
             internal long TimeOfLastAckElicitingPacketSent { get; set; }
 
             /// <summary>
+            ///     Number of ack eliciting packets that are currently considered in-flight
+            /// </summary>
+            internal int AckElicitingPacketsInFlightCount { get; set; }
+
+            /// <summary>
             ///     The time at which the next packet in the packet number space will be considered lost based on exceeding
             ///     the reordering window in time. MaxValue if no packet in flight.
             /// </summary>
@@ -270,6 +275,7 @@ namespace System.Net.Quic.Implementations.Managed.Internal.Recovery
                 if (packet.AckEliciting)
                 {
                     pnSpace.TimeOfLastAckElicitingPacketSent = packet.TimeSent;
+                    pnSpace.AckElicitingPacketsInFlightCount++;
                 }
 
                 CongestionController.OnPacketSent(this, packet);
@@ -387,8 +393,14 @@ namespace System.Net.Quic.Implementations.Managed.Internal.Recovery
                     CongestionController.OnPacketAcked(this, packet, now);
                 }
 
+                if (packet.AckEliciting)
+                {
+                    pnSpace.AckElicitingPacketsInFlightCount--;
+                }
+
                 pnSpace.LargestTransportedPacketNumber = Math.Max(pn, pnSpace.LargestTransportedPacketNumber);
                 pnSpace.AckedPackets.Enqueue(packet);
+
                 toRemove++;
             }
 
@@ -469,11 +481,14 @@ namespace System.Net.Quic.Implementations.Managed.Internal.Recovery
             }
 
             // probe timeout
-            long lastAckElicitingSent = GetEarliestSpace(isHandshakeComplete, PacketNumberSpace.TimeOfLastAckElicitingPacketSentComparer).TimeOfLastAckElicitingPacketSent;
-            if (lastAckElicitingSent == long.MaxValue)
+            var lastAckElicitingSentPnSpace = GetEarliestSpace(isHandshakeComplete, PacketNumberSpace.TimeOfLastAckElicitingPacketSentComparer);
+            long lastAckElicitingSent = lastAckElicitingSentPnSpace.TimeOfLastAckElicitingPacketSent;
+            if (lastAckElicitingSentPnSpace.AckElicitingPacketsInFlightCount == 0)
             {
                 return;
             }
+
+            Debug.Assert(lastAckElicitingSent != long.MaxValue);
 
             LossRecoveryTimer = lastAckElicitingSent + GetProbeTimeoutInterval();
         }
@@ -523,12 +538,15 @@ namespace System.Net.Quic.Implementations.Managed.Internal.Recovery
             pnSpace = GetEarliestSpace(isHandshakeComplete,
                 PacketNumberSpace.TimeOfLastAckElicitingPacketSentComparer);
 
-            Debug.Assert(pnSpace.TimeOfLastAckElicitingPacketSent != long.MaxValue);
+            if (pnSpace.AckElicitingPacketsInFlightCount > 0)
+            {
+                Debug.Assert(pnSpace.TimeOfLastAckElicitingPacketSent != long.MaxValue);
 
-            pnSpace.RemainingLossProbes = 2;
-            PtoCount++;
+                pnSpace.RemainingLossProbes = 2;
+                PtoCount++;
 
-            SetLossDetectionTimer(isHandshakeComplete);
+                SetLossDetectionTimer(isHandshakeComplete);
+            }
         }
 
         private void DetectLostPackets(PacketNumberSpace pnSpace, long now)
@@ -573,6 +591,10 @@ namespace System.Net.Quic.Implementations.Managed.Internal.Recovery
                 {
                     // Mark packet as lost
                     pnSpace.LostPackets.Enqueue((packet, trigger.Value));
+                    if (packet.AckEliciting)
+                    {
+                        pnSpace.AckElicitingPacketsInFlightCount--;
+                    }
 
                     if (packet.InFlight)
                     {
