@@ -637,6 +637,12 @@ void EEStartupHelper()
     {
         g_fEEInit = true;
 
+#if CORECLR_EMBEDDED
+        HINSTANCE curModule = WszGetModuleHandle(NULL);
+        g_hmodCoreCLR = curModule;
+        g_hThisInst = curModule;
+#endif
+
 #ifndef CROSSGEN_COMPILE
 
         // We cache the SystemInfo for anyone to use throughout the life of the EE.

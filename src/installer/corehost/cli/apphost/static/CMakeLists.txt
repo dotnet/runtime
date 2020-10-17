@@ -51,6 +51,10 @@ if(CLR_CMAKE_TARGET_WIN32)
     set_property(TARGET ${PROJECT_NAME} PROPERTY
             LINK_FLAGS "/MANIFEST:NO"
         )
+
+    # Incremental linking results in the linker inserting extra padding and routing function calls via thunks that can break the
+    # invariants (e.g. size of region between Jit_PatchedCodeLast-Jit_PatchCodeStart needs to fit in a page).
+    add_linker_flag("/INCREMENTAL:NO")
 endif()
 
 # Specify non-default Windows libs to be used for Arm/Arm64 builds
@@ -66,8 +70,8 @@ message ("Looking for coreclr_static lib at location: '${CORECLR_STATIC_LIB_LOCA
 
 if(CLR_CMAKE_TARGET_WIN32)
     set(CORECLR_LIBRARIES
-        # Disable superhost on Win32 for now.
-        # ${CORECLR_STATIC_LIB_LOCATION}/coreclr_static.lib
+        ${CORECLR_STATIC_LIB_LOCATION}/coreclr_static.lib
+        ${CORECLR_STATIC_LIB_LOCATION}/System.Globalization.Native.lib
         ${STATIC_MT_CRT_LIB}
         ${STATIC_MT_VCRT_LIB}
         kernel32.lib
@@ -81,7 +85,7 @@ if(CLR_CMAKE_TARGET_WIN32)
         bcrypt.lib
         RuntimeObject.lib
     )
-elseif(CLR_CMAKE_TARGET_LINUX)
+else()
     set(CORECLR_LIBRARIES
         ${CORECLR_STATIC_LIB_LOCATION}/libcoreclr_static.a
         ${CORECLR_STATIC_LIB_LOCATION}/libcoreclrpal.a
@@ -89,32 +93,29 @@ elseif(CLR_CMAKE_TARGET_LINUX)
         ${CORECLR_STATIC_LIB_LOCATION}/libeventprovider.a
         ${CORECLR_STATIC_LIB_LOCATION}/libnativeresourcestring.a
     )
+endif()
 
-    # currently linking coreclr into the singlefilehost is only supported on linux
-    # the following code here would be needed if/when BSD and OSX are supported too
-    #
-    # if(CLR_CMAKE_TARGET_OSX)
-    #   find_library(COREFOUNDATION CoreFoundation)
-    #   find_library(CORESERVICES CoreServices)
-    #   find_library(SECURITY Security)
-    #   find_library(SYSTEM System)
-    # 
-    #   LIST(APPEND CORECLR_LIBRARIES
-    #     ${COREFOUNDATION}
-    #     ${CORESERVICES}
-    #     ${SECURITY}
-    #     ${SYSTEM}
-    #   )
-    # endif(CLR_CMAKE_TARGET_OSX)
-    # 
-    # if(CLR_CMAKE_TARGET_NETBSD)
-    #     find_library(KVM kvm)
-    # 
-    #     LIST(APPEND CORECLR_LIBRARIES
-    #       ${KVM}
-    #     )
-    # endif(CLR_CMAKE_TARGET_NETBSD)
-endif(CLR_CMAKE_TARGET_WIN32)
+if(CLR_CMAKE_TARGET_OSX)
+   find_library(COREFOUNDATION CoreFoundation)
+   find_library(CORESERVICES CoreServices)
+   find_library(SECURITY Security)
+   find_library(SYSTEM System)
+ 
+   LIST(APPEND CORECLR_LIBRARIES
+     ${COREFOUNDATION}
+     ${CORESERVICES}
+     ${SECURITY}
+     ${SYSTEM}
+   )
+endif(CLR_CMAKE_TARGET_OSX)
+ 
+if(CLR_CMAKE_TARGET_NETBSD)
+     find_library(KVM kvm)
+ 
+     LIST(APPEND CORECLR_LIBRARIES
+       ${KVM}
+     )
+endif(CLR_CMAKE_TARGET_NETBSD)
 
 # Path like: artifacts/bin/native/net5.0-Linux-Release-arm/
 set(NATIVE_LIBS_LOCATION "${NATIVE_LIBS_ARTIFACTS}")
