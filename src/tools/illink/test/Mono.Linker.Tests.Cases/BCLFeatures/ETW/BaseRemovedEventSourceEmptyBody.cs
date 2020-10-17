@@ -50,17 +50,19 @@ namespace Mono.Linker.Tests.Cases.BCLFeatures.ETW
 		}
 
 		[Kept]
+		[ExpectedInstructionSequence (new[]
+		{
+			"ret"
+		})]
 		protected override void OnEventCommand (EventCommandEventArgs command)
 		{
-			// Not converted to throw because the body is empty
+			// A nop is removed
 		}
 
 		[Kept]
 		[ExpectedInstructionSequence (new[]
 		{
-			"ldstr",
-			"newobj",
-			"throw",
+			"ret"
 		})]
 		[Event (8)]
 		public void SomeMethod ()

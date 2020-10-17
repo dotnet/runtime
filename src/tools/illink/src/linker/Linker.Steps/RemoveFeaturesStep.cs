@@ -174,17 +174,16 @@ namespace Mono.Linker.Steps
 					method.CustomAttributes.Clear ();
 
 				if (method.IsDefaultConstructor ()) {
-					annotations.SetAction (method, MethodAction.ConvertToStub);
+					SetSafestActionForETWMethod (annotations, method, MethodAction.ConvertToStub);
 					continue;
 				}
 
 				if (method.Name == "IsEnabled" || BCL.IsIDisposableImplementation (method) || method.IsFinalizer ()) {
-					annotations.SetAction (method, MethodAction.ConvertToStub);
+					SetSafestActionForETWMethod (annotations, method, MethodAction.ConvertToStub);
 					continue;
 				}
 
-				if (MethodBodyScanner.IsWorthConvertingToThrow (method.Body))
-					annotations.SetAction (method, MethodAction.ConvertToThrow);
+				SetSafestActionForETWMethod (annotations, method, MethodAction.ConvertToThrow);
 			}
 		}
 
@@ -219,7 +218,7 @@ namespace Mono.Linker.Steps
 				}
 
 				if (method.IsFinalizer ()) {
-					annotations.SetAction (method, MethodAction.ConvertToStub);
+					SetSafestActionForETWMethod (annotations, method, MethodAction.ConvertToStub);
 					continue;
 				}
 
@@ -228,14 +227,32 @@ namespace Mono.Linker.Steps
 					// Skip when it cannot be easily stubbed 
 					//
 					if (type.BaseType.HasDefaultConstructor ())
-						annotations.SetAction (method, MethodAction.ConvertToStub);
+						SetSafestActionForETWMethod (annotations, method, MethodAction.ConvertToStub);
 
 					continue;
 				}
 
-				if (!skip && MethodBodyScanner.IsWorthConvertingToThrow (method.Body))
-					annotations.SetAction (method, MethodAction.ConvertToThrow);
+				if (!skip)
+					SetSafestActionForETWMethod (annotations, method, MethodAction.ConvertToThrow);
 			}
+		}
+
+		void SetSafestActionForETWMethod (AnnotationStore annotations, MethodDefinition method, MethodAction desiredAction)
+		{
+			if (desiredAction == MethodAction.ConvertToThrow) {
+				// If the desired action is a throw but the method has a void return let's just clear the body.
+				// If the method does not have a void return, let's still insert a throw just in case.  stubbing the body could result in
+				// an unexpected value being returned from the method which may lead to a more confusing error down the road
+				if (method.ReturnType.MetadataType == MetadataType.Void) {
+					annotations.SetAction (method, MethodAction.ConvertToStub);
+					return;
+				}
+
+				if (!MethodBodyScanner.IsWorthConvertingToThrow (method.Body))
+					return;
+			}
+
+			annotations.SetAction (method, desiredAction);
 		}
 
 		void ExcludeMonoCollation (TypeDefinition type)
