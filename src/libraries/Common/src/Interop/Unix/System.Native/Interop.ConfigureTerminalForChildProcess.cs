@@ -9,6 +9,6 @@ internal static partial class Interop
     internal static partial class Sys
     {
         [DllImport(Libraries.SystemNative, EntryPoint = "SystemNative_ConfigureTerminalForChildProcess")]
-        internal static extern unsafe void ConfigureTerminalForChildProcess(bool childUsesTerminal);
+        internal static extern void ConfigureTerminalForChildProcess(bool childUsesTerminal);
     }
 }

@@ -51,6 +51,8 @@
   </ItemGroup>
   <PropertyGroup>
     <!-- Arcade dependencies -->
+	<MicrosoftCodeAnalysisNetAnalyzersVersion>6.0.0-preview1.20513.4</MicrosoftCodeAnalysisNetAnalyzersVersion>
+    <MicrosoftCodeAnalysisCSharpCodeStyleVersion>3.8.0-4.20503.2</MicrosoftCodeAnalysisCSharpCodeStyleVersion>
     <MicrosoftDotNetApiCompatVersion>5.0.0-beta.20506.7</MicrosoftDotNetApiCompatVersion>
     <MicrosoftDotNetBuildTasksFeedVersion>5.0.0-beta.20506.7</MicrosoftDotNetBuildTasksFeedVersion>
     <MicrosoftDotNetCodeAnalysisVersion>5.0.0-beta.20506.7</MicrosoftDotNetCodeAnalysisVersion>
@@ -69,6 +71,7 @@
     <!-- CoreClr dependencies -->
     <MicrosoftNETCoreILAsmVersion>5.0.0-preview.8.20359.4</MicrosoftNETCoreILAsmVersion>
     <!-- Libraries dependencies -->
+	<StyleCopAnalyzersVersion>1.2.0-beta.205</StyleCopAnalyzersVersion>
     <SystemBuffersVersion>4.5.1</SystemBuffersVersion>
     <SystemCollectionsVersion>4.3.0</SystemCollectionsVersion>
     <SystemCollectionsConcurrentVersion>4.3.0</SystemCollectionsConcurrentVersion>

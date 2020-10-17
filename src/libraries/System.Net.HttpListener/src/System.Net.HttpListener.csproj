@@ -4,6 +4,7 @@
     <ForceManagedImplementation>false</ForceManagedImplementation>
     <TargetFrameworks>$(NetCoreAppCurrent)-Windows_NT;$(NetCoreAppCurrent)-Unix;$(NetCoreAppCurrent)-Browser</TargetFrameworks>
     <Nullable>enable</Nullable>
+    <GeneratePlatformNotSupportedAssemblyMessage Condition="'$(TargetsBrowser)' == 'true'">SR.SystemNetHttpListener_PlatformNotSupported</GeneratePlatformNotSupportedAssemblyMessage>
   </PropertyGroup>
   <ItemGroup>
     <ProjectReference Include="$(LibrariesProjectRoot)System.Security.Principal.Windows\src\System.Security.Principal.Windows.csproj" />
@@ -33,7 +34,7 @@
     <Reference Include="System.Threading" />
     <Reference Include="System.Threading.Overlapped" />
   </ItemGroup>
-  <ItemGroup>
+  <ItemGroup Condition="'$(TargetsBrowser)' != 'true'">
     <Compile Include="System\Net\BoundaryType.cs" />
     <Compile Include="System\Net\EntitySendFormat.cs" />
     <Compile Include="System\Net\HttpListenerPrefixCollection.cs" />
@@ -247,7 +248,7 @@
     <Compile Include="$(CommonPath)Interop\Windows\SspiCli\SSPIWrapper.cs"
              Link="Common\Interop\Windows\SspiCli\SSPIWrapper.cs" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetsUnix)' == 'true' or '$(TargetsBrowser)' == 'true' or '$(ForceManagedImplementation)' == 'true'">
+  <ItemGroup Condition="'$(TargetsUnix)' == 'true' or '$(ForceManagedImplementation)' == 'true'">
     <Compile Include="System\Net\Managed\HttpEndPointListener.cs" />
     <Compile Include="System\Net\Managed\HttpEndPointManager.cs" />
     <Compile Include="System\Net\Managed\HttpConnection.cs" />

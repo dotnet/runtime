@@ -5,7 +5,7 @@ using System.Runtime.InteropServices;
 
 internal static partial class Interop
 {
-    internal unsafe partial class Sys
+    internal partial class Sys
     {
         [DllImport(Interop.Libraries.SystemNative, EntryPoint = "SystemNative_GetSystemTimeAsTicks")]
         internal static extern long GetSystemTimeAsTicks();

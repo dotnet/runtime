@@ -817,9 +817,11 @@ namespace System.Text.Json.Serialization.Tests
         [InlineData("NaNa")]
         [InlineData("Infinitya")]
         [InlineData("-Infinitya")]
+#pragma warning disable xUnit1025 // Theory method 'FloatingPointConstants_Fail' on test class 'NumberHandlingTests' has InlineData duplicate(s)
         [InlineData("\u006EaN")] // "naN"
         [InlineData("\u0020Inf\u0069ni\u0074y")] // " Infinity"
         [InlineData("\u002BInf\u0069nity")] // "+Infinity"
+#pragma warning restore xUnit1025
         public static void FloatingPointConstants_Fail(string testString)
         {
             string testStringAsJson = $@"""{testString}""";

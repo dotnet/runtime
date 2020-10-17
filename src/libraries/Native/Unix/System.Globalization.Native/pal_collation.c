@@ -495,7 +495,7 @@ static inline int32_t RestoreSearchHandle(SortHandle* pSortHandle, UStringSearch
 }
 
 // return -1 if couldn't borrow search handle from the SortHandle cache, otherwise, it return the slot number of the cache.
-static const int32_t GetSearchIteratorUsingCollator(
+static int32_t GetSearchIteratorUsingCollator(
                         SortHandle* pSortHandle,
                         const UCollator* pColl,
                         const UChar* lpTarget,
@@ -568,7 +568,8 @@ static const int32_t GetSearchIteratorUsingCollator(
     usearch_setText(*pSearchIterator, lpSource, cwSourceLength, &err);
     if (!U_SUCCESS(err))
     {
-        int32_t r = RestoreSearchHandle(pSortHandle, *pSearchIterator, options);
+        int32_t r;
+        r = RestoreSearchHandle(pSortHandle, *pSearchIterator, options);
         assert(r && "restoring search handle shouldn't fail.");
         return -1;
     }
@@ -576,7 +577,8 @@ static const int32_t GetSearchIteratorUsingCollator(
     usearch_setPattern(*pSearchIterator, lpTarget, cwTargetLength, &err);
     if (!U_SUCCESS(err))
     {
-        int32_t r = RestoreSearchHandle(pSortHandle, *pSearchIterator, options);
+        int32_t r;
+        r = RestoreSearchHandle(pSortHandle, *pSearchIterator, options);
         assert(r && "restoring search handle shouldn't fail.");
         return -1;
     }
@@ -585,7 +587,7 @@ static const int32_t GetSearchIteratorUsingCollator(
 }
 
 // return -1 if couldn't borrow search handle from the SortHandle cache, otherwise, it return the slot number of the cache.
-static inline const int32_t GetSearchIterator(
+static inline int32_t GetSearchIterator(
                         SortHandle* pSortHandle,
                         const UChar* lpTarget,
                         int32_t cwTargetLength,

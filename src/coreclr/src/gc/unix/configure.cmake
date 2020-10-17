@@ -71,17 +71,10 @@ check_cxx_source_runs("
 
 check_library_exists(pthread pthread_condattr_setclock "" HAVE_PTHREAD_CONDATTR_SETCLOCK)
 
-check_cxx_source_runs("
-#include <stdlib.h>
-#include <time.h>
-
-int main()
-{
-  int ret;
-  ret = clock_gettime_nsec_np(CLOCK_UPTIME_RAW);
-  exit((ret == 0) ? 1 : 0);
-}" HAVE_CLOCK_GETTIME_NSEC_NP)
-
+check_symbol_exists(
+    clock_gettime_nsec_np
+    time.h
+    HAVE_CLOCK_GETTIME_NSEC_NP)
 
 check_library_exists(c sched_getaffinity "" HAVE_SCHED_GETAFFINITY)
 check_library_exists(c sched_setaffinity "" HAVE_SCHED_SETAFFINITY)

@@ -538,7 +538,7 @@ PosRem:
             /// <returns>Returns new scale factor. bufRes updated in place, always 3 uints.</returns>
             private static unsafe int ScaleResult(Buf24* bufRes, uint hiRes, int scale)
             {
-                Debug.Assert(hiRes < bufRes->Length);
+                Debug.Assert(hiRes < Buf24.Length);
                 uint* result = (uint*)bufRes;
 
                 // See if we need to scale the result.  The combined scale must
@@ -666,7 +666,7 @@ PosRem:
                             uint cur = 0;
                             do
                             {
-                                Debug.Assert(cur + 1 < bufRes->Length);
+                                Debug.Assert(cur + 1 < Buf24.Length);
                             }
                             while (++result[++cur] == 0);
 
@@ -1007,7 +1007,7 @@ ThrowOverflow:
                         uint* rgulNum = (uint*)&bufNum;
                         for (uint cur = 0; ;)
                         {
-                            Debug.Assert(cur < bufNum.Length);
+                            Debug.Assert(cur < Buf24.Length);
                             tmp64 += UInt32x32To64(rgulNum[cur], power);
                             rgulNum[cur] = (uint)tmp64;
                             cur++;
@@ -1019,7 +1019,7 @@ ThrowOverflow:
                         if ((uint)tmp64 != 0)
                         {
                             // We're extending the result by another uint.
-                            Debug.Assert(hiProd + 1 < bufNum.Length);
+                            Debug.Assert(hiProd + 1 < Buf24.Length);
                             rgulNum[++hiProd] = (uint)tmp64;
                         }
                     }
@@ -1055,9 +1055,9 @@ ThrowOverflow:
                         uint cur = 3;
                         do
                         {
-                            Debug.Assert(cur < bufNum.Length);
+                            Debug.Assert(cur < Buf24.Length);
                         } while (number[cur++]-- == 0);
-                        Debug.Assert(hiProd < bufNum.Length);
+                        Debug.Assert(hiProd < Buf24.Length);
                         if (number[hiProd] == 0 && --hiProd <= 2)
                             goto ReturnResult;
                     }
@@ -1082,7 +1082,7 @@ ThrowOverflow:
                         uint* number = (uint*)&bufNum;
                         for (uint cur = 3; ++number[cur++] == 0;)
                         {
-                            Debug.Assert(cur < bufNum.Length);
+                            Debug.Assert(cur < Buf24.Length);
                             if (hiProd < cur)
                             {
                                 number[cur] = 1;
@@ -2327,7 +2327,7 @@ ThrowOverflow:
                     // The high bit of the dividend must not be set.
                     if (tmp64 > int.MaxValue)
                     {
-                        Debug.Assert(high + 1 < b.Length);
+                        Debug.Assert(high + 1 < Buf28.Length);
                         buf[++high] = (uint)(tmp64 >> 32);
                     }
 
@@ -2683,7 +2683,7 @@ done:
 #endif
                 }
 
-                public int Length => 6;
+                public const int Length = 6;
             }
 
             private struct Buf28
@@ -2691,7 +2691,7 @@ done:
                 public Buf24 Buf24;
                 public uint U6;
 
-                public int Length => 7;
+                public const int Length = 7;
             }
         }
     }
