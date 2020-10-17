@@ -856,6 +856,8 @@
       <Output TaskParameter="ExitCode" PropertyName="MonoNinjaFound"/>
     </Exec>
     <PropertyGroup>
+      <_MonoVerboseArg Condition="'$(ContinuousIntegrationBuild)' == 'true' and '$(MonoNinjaFound)' == '0'">-v</_MonoVerboseArg>
+      <_MonoVerboseArg Condition="'$(ContinuousIntegrationBuild)' == 'true' and '$(MonoNinjaFound)' != '0'">VERBOSE=1</_MonoVerboseArg>
       <MonoBuildTool Condition="'$(MonoNinjaFound)' == '0'">ninja</MonoBuildTool>
       <MonoBuildTool Condition="'$(MonoNinjaFound)' != '0'">make -j$([System.Environment]::ProcessorCount)</MonoBuildTool>
     </PropertyGroup>
@@ -1017,8 +1019,8 @@
     <Exec Condition="'$(TargetsBrowser)' != 'true' and '$(_MonoRunInitCompiler)' == 'false'" Command="$(_MonoCCOption) $(_MonoCXXOption) @(_MonoBuildEnv, ' ') cmake @(_MonoCMakeArgs, ' ') $(MonoProjectRoot)" IgnoreStandardErrorWarningFormat="true" WorkingDirectory="$(MonoObjDir)"/>
     <Exec Condition="'$(TargetsBrowser)' == 'true'" Command="bash -c 'source $(EMSDK_PATH)/emsdk_env.sh &amp;&amp; emcmake cmake @(_MonoCMakeArgs, ' ') $(MonoProjectRoot)'" IgnoreStandardErrorWarningFormat="true" WorkingDirectory="$(MonoObjDir)" />
     <!-- ninja/make -->
-    <Exec Condition="'$(TargetsBrowser)' != 'true'" Command="@(_MonoBuildEnv, ' ') $(MonoBuildTool) all install" IgnoreStandardErrorWarningFormat="true" WorkingDirectory="$(MonoObjDir)"/>
-    <Exec Condition="'$(TargetsBrowser)' == 'true'" Command="bash -c 'source $(EMSDK_PATH)/emsdk_env.sh &amp;&amp; $(MonoBuildTool) all install'" IgnoreStandardErrorWarningFormat="true" WorkingDirectory="$(MonoObjDir)" />
+    <Exec Condition="'$(TargetsBrowser)' != 'true'" Command="@(_MonoBuildEnv, ' ') $(MonoBuildTool) $(_MonoVerboseArg) all install" IgnoreStandardErrorWarningFormat="true" WorkingDirectory="$(MonoObjDir)"/>
+    <Exec Condition="'$(TargetsBrowser)' == 'true'" Command="bash -c 'source $(EMSDK_PATH)/emsdk_env.sh &amp;&amp; $(MonoBuildTool) $(_MonoVerboseArg) all install'" IgnoreStandardErrorWarningFormat="true" WorkingDirectory="$(MonoObjDir)" />
   </Target>
 
   <!-- Build AOT cross compiler (if available) -->
