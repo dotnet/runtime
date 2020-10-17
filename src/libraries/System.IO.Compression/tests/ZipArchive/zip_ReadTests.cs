@@ -187,31 +187,26 @@ namespace System.IO.Compression.Tests
         [Fact]
         public static async Task TestEmptyLastModifiedEntryValueNotThrowingInternalException()
         {
-            const int lastWritePosition = 50;
+            var emptyDateIndicator = new DateTime(1980, 1, 1, 1, 0, 0);
+            var buffer = ArrayPool<byte>.Shared.Rent(100);//empty array we will make will have exact this size
+            await using var memoryStream = new MemoryStream(buffer);
 
-            var emptyZipDateIndicator = new DateTimeOffset(1980, 1, 1, 0, 0, 0);
-            byte[] buffer = CreateArchiveWithSingleEmptyEntry();
+            using (var singleEntryArchive = new ZipArchive(memoryStream, ZipArchiveMode.Create, true))
+            {
+                singleEntryArchive.CreateEntry("1");
+            }
 
-            //set LastWriteTime bits to 0
+            //set LastWriteTime bits to 0 in this trivial archive
+            const int lastWritePosition = 43;
             buffer[lastWritePosition] = 0;
             buffer[lastWritePosition + 1] = 0;
             buffer[lastWritePosition + 2] = 0;
             buffer[lastWritePosition + 3] = 0;
+            memoryStream.Seek(0, SeekOrigin.Begin);
 
-            using var archive = new ZipArchive(new MemoryStream(buffer), ZipArchiveMode.Read);
+            using var archive = new ZipArchive(memoryStream, ZipArchiveMode.Read, true);
+            ArrayPool<byte>.Shared.Return(buffer);
             Assert.Equal(archive.Entries[0].LastWriteTime, emptyZipDateIndicator);
-
-            static byte[] CreateArchiveWithSingleEmptyEntry()
-            {
-                const int emptyArchiveSize = 111;
-
-                var buffer = new byte[emptyArchiveSize];
-
-                using var archive = new ZipArchive(new MemoryStream(buffer), ZipArchiveMode.Create);
-                archive.CreateEntry("empty");
-
-                return buffer;
-            }
         }
     }
 }
