@@ -123,5 +123,14 @@ namespace System.Reflection.Tests
 
             Assert.False(a.Equals(b));
         }
+
+        [Fact]
+        public unsafe void DifferentPointerTypes_Null_AreEqual()
+        {
+            object a = Pointer.Box(null, typeof(int*));
+            object b = Pointer.Box(null, typeof(long*));
+
+            Assert.True(a.Equals(b));
+        }
     }
 }
