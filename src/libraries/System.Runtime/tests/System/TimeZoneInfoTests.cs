@@ -122,7 +122,7 @@ namespace System.Tests
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsWindows))]
         public static void TestYukunTZ()
         {
-            var yukon = TimeZoneInfo.FindSystemTimeZoneById("Yukon Standard Time");
+            TimeZoneInfo yukon = TimeZoneInfo.FindSystemTimeZoneById("Yukon Standard Time");
 
             // First, ensure we have the updated data
             TimeZoneInfo.AdjustmentRule [] rules = yukon.GetAdjustmentRules();
