@@ -845,7 +845,7 @@ namespace Microsoft.Extensions.Configuration.Binder.Test
             var config = configurationBuilder.Build();
 
             var options = config.Get<ByteArrayOptions>();
-            Assert.Equal(null, options.MyByteArray);
+            Assert.Null(options.MyByteArray);
         }
 
         [Fact]
