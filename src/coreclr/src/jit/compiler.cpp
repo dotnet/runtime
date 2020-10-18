@@ -4215,9 +4215,7 @@ void Compiler::EndPhase(Phases phase)
         pCompJitTimer->EndPhase(this, phase);
     }
 #endif
-#if DUMP_FLOWGRAPHS
-    fgDumpFlowGraph(phase);
-#endif // DUMP_FLOWGRAPHS
+
     mostRecentlyActivePhase = phase;
 }
 

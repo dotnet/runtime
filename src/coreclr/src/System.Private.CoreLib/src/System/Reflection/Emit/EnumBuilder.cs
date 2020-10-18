@@ -50,7 +50,7 @@ namespace System.Reflection.Emit
         }
 
         // Get the internal metadata token for this class.
-        public TypeToken TypeToken => m_typeBuilder.TypeToken;
+        internal int TypeToken => m_typeBuilder.TypeToken;
 
 
         // return the underlying field for the enum

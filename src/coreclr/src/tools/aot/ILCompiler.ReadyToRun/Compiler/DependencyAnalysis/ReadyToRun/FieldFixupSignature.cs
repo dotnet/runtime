@@ -46,7 +46,9 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                 {
                     TypeDesc baseType = _fieldDesc.OwningType.BaseType;
                     if ((_fieldDesc.OwningType.BaseType != null) && !_fieldDesc.IsStatic && !_fieldDesc.OwningType.IsValueType)
-                        dataBuilder.EmitUInt((uint)_fieldDesc.OwningType.BaseType.InstanceByteCount.AsInt);
+                    {
+                        dataBuilder.EmitUInt((uint)_fieldDesc.OwningType.FieldBaseOffset().AsInt);
+                    }
                     else
                         dataBuilder.EmitUInt(0);
                 }

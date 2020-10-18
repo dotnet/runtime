@@ -21,9 +21,9 @@ internal static partial class Interop
         internal const int IPv4AddressSize = 16;
         internal const int IPv6AddressSize = 28;
 
-        private static unsafe bool InitHttpApi(HTTPAPI_VERSION version)
+        private static bool InitHttpApi(HTTPAPI_VERSION version)
         {
-            uint statusCode = HttpInitialize(version, (uint)HTTP_FLAGS.HTTP_INITIALIZE_SERVER, null);
+            uint statusCode = HttpInitialize(version, (uint)HTTP_FLAGS.HTTP_INITIALIZE_SERVER, IntPtr.Zero);
             return statusCode == ERROR_SUCCESS;
         }
 
@@ -456,7 +456,7 @@ internal static partial class Interop
 
 
         [DllImport(Libraries.HttpApi, SetLastError = true)]
-        internal static extern unsafe uint HttpInitialize(HTTPAPI_VERSION version, uint flags, void* pReserved);
+        internal static extern uint HttpInitialize(HTTPAPI_VERSION version, uint flags, IntPtr pReserved);
 
         [DllImport(Libraries.HttpApi, SetLastError = true)]
         internal static extern uint HttpSetUrlGroupProperty(ulong urlGroupId, HTTP_SERVER_PROPERTY serverProperty, IntPtr pPropertyInfo, uint propertyInfoLength);
@@ -496,7 +496,7 @@ internal static partial class Interop
         internal static extern unsafe uint HttpSendResponseEntityBody(SafeHandle requestQueueHandle, ulong requestId, uint flags, ushort entityChunkCount, HTTP_DATA_CHUNK* pEntityChunks, uint* pBytesSent, SafeLocalAllocHandle pRequestBuffer, uint requestBufferLength, NativeOverlapped* pOverlapped, void* pLogData);
 
         [DllImport(Libraries.HttpApi, SetLastError = true)]
-        internal static extern unsafe uint HttpCloseRequestQueue(IntPtr pReqQueueHandle);
+        internal static extern uint HttpCloseRequestQueue(IntPtr pReqQueueHandle);
 
         [DllImport(Libraries.HttpApi, SetLastError = true)]
         internal static extern uint HttpCancelHttpRequest(SafeHandle requestQueueHandle, ulong requestId, IntPtr pOverlapped);
