@@ -441,9 +441,9 @@ jobs:
         - name: _HelixSource
           value: ci/dotnet/runtime/$(Build.SourceBranch)
       - name: timeoutPerTestInMinutes
-        value: 10
+        value: 60
       - name: timeoutPerTestCollectionInMinutes
-        value: 200
+        value: 1200
     jobParameters:
       testGroup: innerloop
       nameSuffix: AllSubsets_Mono_RuntimeTests
