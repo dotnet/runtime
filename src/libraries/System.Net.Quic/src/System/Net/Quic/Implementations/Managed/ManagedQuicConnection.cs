@@ -480,7 +480,7 @@ namespace System.Net.Quic.Implementations.Managed
                 var pnSpace = _pnSpaces[i];
 
                 // to advance handshake
-                if (pnSpace.CryptoOutboundStream.IsFlushable ||
+                if (pnSpace.CryptoSendStream.IsFlushable ||
                     // send acknowledgement if needed, prefer sending acks in Initial and Handshake
                     // immediately since there is a great chance of coalescing with next level
                     (i < 2 ? pnSpace.AckElicited : pnSpace.NextAckTimer <= timestamp))
@@ -603,7 +603,7 @@ namespace System.Net.Quic.Implementations.Managed
 
         internal void AddHandshakeData(EncryptionLevel level, ReadOnlySpan<byte> data)
         {
-            OutboundBuffer cryptoOutboundStream = GetPacketNumberSpace(level).CryptoOutboundStream;
+            SendStream cryptoOutboundStream = GetPacketNumberSpace(level).CryptoSendStream;
             cryptoOutboundStream.Enqueue(data);
         }
 
@@ -611,7 +611,7 @@ namespace System.Net.Quic.Implementations.Managed
         {
             for (int i = 0; i < 3; i++)
             {
-                OutboundBuffer cryptoOutboundStream = GetPacketNumberSpace((EncryptionLevel)i).CryptoOutboundStream;
+                SendStream cryptoOutboundStream = GetPacketNumberSpace((EncryptionLevel)i).CryptoSendStream;
                 cryptoOutboundStream.ForceFlushPartialChunk();
             }
         }

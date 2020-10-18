@@ -66,12 +66,12 @@ namespace System.Net.Quic.Implementations.Managed.Internal
         /// <summary>
         ///     Outbound messages to be carried in CRYPTO frames.
         /// </summary>
-        internal OutboundBuffer CryptoOutboundStream { get; } = new OutboundBuffer(long.MaxValue);
+        internal SendStream CryptoSendStream { get; } = new SendStream(long.MaxValue);
 
         /// <summary>
         ///     Inbound messages from CRYPTO frames.
         /// </summary>
-        internal InboundBuffer CryptoInboundBuffer { get; } = new InboundBuffer(long.MaxValue);
+        internal ReceiveStream CryptoReceiveStream { get; } = new ReceiveStream(long.MaxValue);
 
         /// <summary>
         ///     Gets packet number and it's minimum safe encoding length for the next packet sent.

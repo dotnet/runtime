@@ -141,6 +141,7 @@ namespace System.Net.Quic.Implementations.Managed.Internal.Tracing
             internal static readonly byte[] offset = GetBytesHelper("offset");
             internal static readonly byte[] length = GetBytesHelper("length");
             internal static readonly byte[] fin = GetBytesHelper("fin");
+            internal static readonly byte[] maximum = GetBytesHelper("maximum");
             internal static readonly byte[] raw_frame_type = GetBytesHelper("raw_frame_type");
             internal static readonly byte[] raw_length = GetBytesHelper("raw_length");
             internal static readonly byte[] frame_type = GetBytesHelper("frame_type");
@@ -624,6 +625,7 @@ namespace System.Net.Quic.Implementations.Managed.Internal.Tracing
                 return;
 
             WriteFrameProlog(Frame.MaxData);
+            _writer.WriteNumber(Field.maximum, frame.MaximumData);
             WriteFrameEpilog();
         }
 
@@ -633,6 +635,8 @@ namespace System.Net.Quic.Implementations.Managed.Internal.Tracing
                 return;
 
             WriteFrameProlog(Frame.MaxStreamData);
+            _writer.WriteNumber(Field.stream_id, frame.StreamId);
+            _writer.WriteNumber(Field.maximum, frame.MaximumStreamData);
             WriteFrameEpilog();
         }
 

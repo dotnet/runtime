@@ -278,7 +278,7 @@ namespace System.Net.Quic.Implementations.Managed
             Debug.Assert(stream!.CanRead);
 
             // duplicate receipt is handled internally (guarded state transitions)
-            stream.InboundBuffer!.OnResetStream(frame.ApplicationErrorCode);
+            stream.ReceiveStream!.OnResetStream(frame.ApplicationErrorCode);
             return ProcessPacketResult.Ok;
         }
 
@@ -300,7 +300,7 @@ namespace System.Net.Quic.Implementations.Managed
             // treated as a connection error of type STREAM_STATE_ERROR.
             if (StreamHelpers.IsLocallyInitiated(IsServer, frame.StreamId) &&
                 // Streams are Created by sending a STREAM frame, if we didn't send anything, report error
-                !(stream?.OutboundBuffer?.SentBytes > 0))
+                !(stream?.SendStream?.SentBytes > 0))
                 return CloseConnection(TransportErrorCode.StreamStateError,
                     QuicError.StreamNotCreated,
                     FrameType.StopSending);
@@ -313,7 +313,7 @@ namespace System.Net.Quic.Implementations.Managed
             Debug.Assert(stream!.CanWrite);
 
             // duplicate receipt is handled internally (guarded state transitions)
-            stream.OutboundBuffer!.RequestAbort(frame.ApplicationErrorCode);
+            stream.SendStream!.RequestAbort(frame.ApplicationErrorCode);
             _streams.MarkForUpdate(stream);
 
             return ProcessPacketResult.Ok;
@@ -327,7 +327,7 @@ namespace System.Net.Quic.Implementations.Managed
             if (IsClosing) return ProcessPacketResult.Ok;
 
             EncryptionLevel level = GetEncryptionLevel(packetType);
-            var stream = GetPacketNumberSpace(level).CryptoInboundBuffer;
+            var stream = GetPacketNumberSpace(level).CryptoReceiveStream;
 
             stream.Receive(frame.Offset, frame.CryptoData);
 
@@ -383,7 +383,7 @@ namespace System.Net.Quic.Implementations.Managed
 
             Debug.Assert(stream!.CanWrite);
 
-            var buffer = stream.OutboundBuffer!;
+            var buffer = stream.SendStream!;
             buffer.UpdateMaxData(frame.MaximumStreamData);
 
             if (buffer.IsFlushable)
@@ -597,7 +597,7 @@ namespace System.Net.Quic.Implementations.Managed
 
             Debug.Assert(stream!.CanRead);
 
-            var buffer = stream.InboundBuffer!;
+            var buffer = stream.ReceiveStream!;
             long writtenOffset = frame.Offset + frame.StreamData.Length;
 
             if (writtenOffset > buffer.Size)
@@ -783,14 +783,14 @@ namespace System.Net.Quic.Implementations.Managed
             const int minSize = 5;
             while (writer.BytesAvailable > minSize)
             {
-                if (!pnSpace.CryptoOutboundStream.IsFlushable)
+                if (!pnSpace.CryptoSendStream.IsFlushable)
                     return;
 
-                (long offset, long count) = pnSpace.CryptoOutboundStream.GetNextSendableRange();
+                (long offset, long count) = pnSpace.CryptoSendStream.GetNextSendableRange();
 
                 count = Math.Min(count, (long)writer.BytesAvailable - minSize);
                 var destination = CryptoFrame.ReservePayloadBuffer(writer, offset, count);
-                pnSpace.CryptoOutboundStream.CheckOut(destination);
+                pnSpace.CryptoSendStream.CheckOut(destination);
                 _trace?.OnCryptoFrame(new CryptoFrame(offset, destination));
 
                 context.SentPacket.StreamFrames.Add(
@@ -900,7 +900,7 @@ namespace System.Net.Quic.Implementations.Managed
         private bool WriteStreamMaxDataFrame(QuicWriter writer, ManagedQuicStream stream,
             QuicSocketContext.SendContext context)
         {
-            var buffer = stream.InboundBuffer;
+            var buffer = stream.ReceiveStream;
 
             if (buffer == null ||
                 // only in Receive state do the frames make any sense
@@ -927,7 +927,7 @@ namespace System.Net.Quic.Implementations.Managed
         private bool WriteStopSendingFrame(QuicWriter writer, ManagedQuicStream stream,
             QuicSocketContext.SendContext context)
         {
-            var buffer = stream.InboundBuffer;
+            var buffer = stream.ReceiveStream;
 
             if (buffer?.Error == null ||
                 buffer.StreamState != RecvStreamState.WantStopSending)
@@ -953,7 +953,7 @@ namespace System.Net.Quic.Implementations.Managed
         private bool WriteResetStreamFrame(QuicWriter writer, ManagedQuicStream stream,
             QuicSocketContext.SendContext context)
         {
-            var buffer = stream.OutboundBuffer;
+            var buffer = stream.SendStream;
 
             if (buffer?.Error == null ||
                 buffer.StreamState != SendStreamState.WantReset)
@@ -1002,7 +1002,7 @@ namespace System.Net.Quic.Implementations.Managed
             ManagedQuicStream? stream;
             while (writer.BytesAvailable > StreamFrame.MinSize && (stream = _streams.GetFirstFlushableStream()) != null)
             {
-                var buffer = stream!.OutboundBuffer!;
+                var buffer = stream!.SendStream!;
 
                 if (!buffer.IsFlushable && !buffer.SizeKnown)
                 {

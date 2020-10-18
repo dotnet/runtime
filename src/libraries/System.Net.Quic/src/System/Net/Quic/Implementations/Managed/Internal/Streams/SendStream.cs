@@ -12,7 +12,7 @@ namespace System.Net.Quic.Implementations.Managed.Internal.Streams
     /// <summary>
     ///     Structure for containing outbound stream data, represents sending direction of the stream.
     /// </summary>
-    internal sealed class OutboundBuffer
+    internal sealed class SendStream
     {
         // TODO-RZ: tie this to control flow limits
         private const int MaximumHeldChunks = 20;
@@ -32,7 +32,7 @@ namespace System.Net.Quic.Implementations.Managed.Internal.Streams
         /// <summary>
         ///     Ranges of bytes currently in-flight.
         /// </summary>
-        private readonly RangeSet _checkedOut = new RangeSet();
+        private readonly RangeSet _inFlight = new RangeSet();
 
         /// <summary>
         ///     Ranges of bytes awaiting to be sent.
@@ -73,7 +73,7 @@ namespace System.Net.Quic.Implementations.Managed.Internal.Streams
         /// </summary>
         internal long? Error { get; private set; }
 
-        public OutboundBuffer(long maxData)
+        public SendStream(long maxData)
         {
             UpdateMaxData(maxData);
         }
@@ -315,8 +315,8 @@ namespace System.Net.Quic.Implementations.Managed.Internal.Streams
         }
 
         /// <summary>
-        ///     Returns length of the next contiguous range of data that can be checked out, respecting the
-        ///     <see cref="MaxData" /> parameter.
+        ///     Returns length of the next contiguous range of data that can be sent in the next STREAM frame,
+        ///     respecting the <see cref="MaxData" /> parameter.
         /// </summary>
         /// <returns></returns>
         internal (long offset, long count) GetNextSendableRange()
@@ -355,7 +355,7 @@ namespace System.Net.Quic.Implementations.Managed.Internal.Streams
                 long end = start + destination.Length - 1;
 
                 _pending.Remove(start, end);
-                _checkedOut.Add(start, end);
+                _inFlight.Add(start, end);
 
                 // skip chunks which are not interesting to us.
                 int chunkIndex = 0;
@@ -408,10 +408,10 @@ namespace System.Net.Quic.Implementations.Managed.Internal.Streams
         {
             long end = offset + count - 1;
 
-            Debug.Assert(_checkedOut.Includes(offset, end));
+            Debug.Assert(_inFlight.Includes(offset, end));
             Debug.Assert(!_pending.Includes(offset, end));
 
-            _checkedOut.Remove(offset, end);
+            _inFlight.Remove(offset, end);
             _pending.Add(offset, end);
         }
 
@@ -433,9 +433,9 @@ namespace System.Net.Quic.Implementations.Managed.Internal.Streams
             {
                 long end = offset + count - 1;
 
-                Debug.Assert(_checkedOut.Includes(offset, end));
+                Debug.Assert(_inFlight.Includes(offset, end));
 
-                _checkedOut.Remove(offset, end);
+                _inFlight.Remove(offset, end);
                 _acked.Add(offset, end);
 
                 if (_acked[0].Start != 0)

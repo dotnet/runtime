@@ -64,7 +64,7 @@ namespace System.Net.Quic.Implementations.Managed
             get
             {
                 // if it is false, then it surely is not-null
-                while (_flushable.First?.Value.OutboundBuffer?.IsFlushable == false)
+                while (_flushable.First?.Value.SendStream?.IsFlushable == false)
                 {
                     GetFirstFlushableStream();
                 }
@@ -168,15 +168,15 @@ namespace System.Net.Quic.Implementations.Managed
                 (false, false) => ((long?)localParams.InitialMaxStreamDataBidiRemote, (long?)remoteParams.InitialMaxStreamDataBidiLocal),
             };
 
-            InboundBuffer? inboundBuffer = maxDataInbound != null
-                ? new InboundBuffer(maxDataInbound.Value)
+            ReceiveStream? recvStream = maxDataInbound != null
+                ? new ReceiveStream(maxDataInbound.Value)
                 : null;
 
-            OutboundBuffer? outboundBuffer = maxDataOutbound != null
-                ? new OutboundBuffer(maxDataOutbound.Value)
+            SendStream? sendStream = maxDataOutbound != null
+                ? new SendStream(maxDataOutbound.Value)
                 : null;
 
-            return new ManagedQuicStream(streamId, inboundBuffer, outboundBuffer, connection);
+            return new ManagedQuicStream(streamId, recvStream, sendStream, connection);
         }
 
         internal void MarkFlushable(ManagedQuicStream stream)

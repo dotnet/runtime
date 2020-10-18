@@ -255,7 +255,7 @@ namespace System.Net.Quic.Tests
             // next time, the receiver should send max data update
             var frame = Get1RttToSend(Server).ShouldHaveFrame<MaxStreamDataFrame>();
             Assert.Equal(senderStream.StreamId, frame.StreamId);
-            Assert.Equal(senderStream.OutboundBuffer!.MaxData + data.Length, frame.MaximumStreamData);
+            Assert.Equal(senderStream.SendStream!.MaxData + data.Length, frame.MaximumStreamData);
         }
 
         [Fact]

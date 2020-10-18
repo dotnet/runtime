@@ -20,7 +20,7 @@ namespace System.Net.Quic.Implementations.Managed
             {
                 if (data.IsCryptoStream)
                 {
-                    pnSpace.CryptoOutboundStream.OnAck(data.Offset, data.Count);
+                    pnSpace.CryptoSendStream.OnAck(data.Offset, data.Count);
                 }
                 else
                 {
@@ -28,7 +28,7 @@ namespace System.Net.Quic.Implementations.Managed
                     Debug.Assert(data.Count > 0 || data.Fin);
 
                     var stream = _streams[data.StreamId];
-                    var buffer = stream.OutboundBuffer!;
+                    var buffer = stream.SendStream!;
 
                     buffer.OnAck(data.Offset, data.Count, data.Fin);
 
@@ -42,13 +42,13 @@ namespace System.Net.Quic.Implementations.Managed
             foreach (var frame in packet.MaxStreamDataFrames)
             {
                 var stream = GetStream(frame.StreamId);
-                Debug.Assert(stream.InboundBuffer != null);
-                stream.InboundBuffer.UpdateRemoteMaxData(frame.MaximumStreamData);
+                Debug.Assert(stream.ReceiveStream != null);
+                stream.ReceiveStream.UpdateRemoteMaxData(frame.MaximumStreamData);
             }
 
             foreach (long streamId in packet.StreamsReset)
             {
-                GetStream(streamId).OutboundBuffer!.OnResetAcked();
+                GetStream(streamId).SendStream!.OnResetAcked();
             }
 
             if (packet.MaxDataFrame != null)
@@ -81,7 +81,7 @@ namespace System.Net.Quic.Implementations.Managed
             {
                 if (data.IsCryptoStream)
                 {
-                    pnSpace.CryptoOutboundStream.OnLost(data.Offset, data.Count);
+                    pnSpace.CryptoSendStream.OnLost(data.Offset, data.Count);
                 }
                 else
                 {
@@ -91,7 +91,7 @@ namespace System.Net.Quic.Implementations.Managed
                     Debug.Assert(data.Count > 0 || data.Fin);
                     if (data.Count > 0)
                     {
-                        stream.OutboundBuffer!.OnLost(data.Offset, data.Count);
+                        stream.SendStream!.OnLost(data.Offset, data.Count);
                     }
 
                     _streams.MarkFlushable(stream);
@@ -106,7 +106,7 @@ namespace System.Net.Quic.Implementations.Managed
             foreach (var frame in packet.MaxStreamDataFrames)
             {
                 var stream = GetStream(frame.StreamId);
-                if (frame.MaximumStreamData > stream.InboundBuffer!.RemoteMaxData)
+                if (frame.MaximumStreamData > stream.ReceiveStream!.RemoteMaxData)
                 {
                     _streams.MarkForUpdate(stream);
                 }
@@ -115,14 +115,14 @@ namespace System.Net.Quic.Implementations.Managed
             foreach (long streamId in packet.StreamsReset)
             {
                 var stream = GetStream(streamId);
-                stream.OutboundBuffer!.OnResetLost();
+                stream.SendStream!.OnResetLost();
                 _streams.MarkForUpdate(stream);
             }
 
             foreach (long streamId in packet.StreamsStopped)
             {
                 var stream= GetStream(streamId);
-                stream.InboundBuffer!.OnStopSendingLost();
+                stream.ReceiveStream!.OnStopSendingLost();
                 _streams.MarkForUpdate(stream);
             }
 

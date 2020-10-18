@@ -42,24 +42,24 @@ namespace System.Net.Quic.Implementations.Managed
         private readonly ManagedQuicConnection _connection;
 
         /// <summary>
-        ///     If the stream can receive data, contains buffer representing receiving part of the stream. Otherwise null.
+        ///     If the stream can receive data, contains the receiving part of the stream. Otherwise null.
         /// </summary>
-        internal InboundBuffer? InboundBuffer { get; }
+        internal ReceiveStream? ReceiveStream { get; }
 
         /// <summary>
-        ///     If the stream can send data, contains buffer representing sending part of the stream.
+        ///     If the stream can send data, contains the sending part of the stream. Otherwise null.
         /// </summary>
-        internal OutboundBuffer? OutboundBuffer { get; }
+        internal SendStream? SendStream { get; }
 
-        internal ManagedQuicStream(long streamId, InboundBuffer? inboundBuffer, OutboundBuffer? outboundBuffer, ManagedQuicConnection connection)
+        internal ManagedQuicStream(long streamId, ReceiveStream? receiveStream, SendStream? sendStream, ManagedQuicConnection connection)
         {
             // trivial check whether buffer nullable combination makes sense with respect to streamId
-            Debug.Assert(inboundBuffer != null || outboundBuffer != null);
-            Debug.Assert(StreamHelpers.IsBidirectional(streamId) == (inboundBuffer != null && outboundBuffer != null));
+            Debug.Assert(receiveStream != null || sendStream != null);
+            Debug.Assert(StreamHelpers.IsBidirectional(streamId) == (receiveStream != null && sendStream != null));
 
             StreamId = streamId;
-            InboundBuffer = inboundBuffer;
-            OutboundBuffer = outboundBuffer;
+            ReceiveStream = receiveStream;
+            SendStream = sendStream;
             _connection = connection;
 
             _flushableListNode = new LinkedListNode<ManagedQuicStream>(this);
@@ -69,15 +69,15 @@ namespace System.Net.Quic.Implementations.Managed
         private async ValueTask WriteAsyncInternal(ReadOnlyMemory<byte> buffer, bool endStream,
             CancellationToken cancellationToken)
         {
-            await OutboundBuffer!.EnqueueAsync(buffer, cancellationToken).ConfigureAwait(false);
+            await SendStream!.EnqueueAsync(buffer, cancellationToken).ConfigureAwait(false);
 
             if (endStream)
             {
-                OutboundBuffer.MarkEndOfData();
-                await OutboundBuffer.FlushChunkAsync(cancellationToken).ConfigureAwait(false);
+                SendStream.MarkEndOfData();
+                await SendStream.FlushChunkAsync(cancellationToken).ConfigureAwait(false);
             }
 
-            if (OutboundBuffer.WrittenBytes - buffer.Length < OutboundBuffer.MaxData)
+            if (SendStream.WrittenBytes - buffer.Length < SendStream.MaxData)
             {
                 _connection.OnStreamDataWritten(this);
             }
@@ -90,7 +90,7 @@ namespace System.Net.Quic.Implementations.Managed
 
         #region Public API
         internal override long StreamId { get; }
-        internal override bool CanRead => InboundBuffer != null;
+        internal override bool CanRead => ReceiveStream != null;
 
         internal override int Read(Span<byte> buffer)
         {
@@ -98,7 +98,7 @@ namespace System.Net.Quic.Implementations.Managed
             ThrowIfConnectionError();
             ThrowIfNotReadable();
 
-            int result = InboundBuffer!.Deliver(buffer);
+            int result = ReceiveStream!.Deliver(buffer);
             if (result > 0)
             {
                 _connection.OnStreamDataRead(this, result);
@@ -113,7 +113,7 @@ namespace System.Net.Quic.Implementations.Managed
             ThrowIfConnectionError();
             ThrowIfNotReadable();
 
-            int result = await InboundBuffer!.DeliverAsync(buffer, cancellationToken).ConfigureAwait(false);
+            int result = await ReceiveStream!.DeliverAsync(buffer, cancellationToken).ConfigureAwait(false);
             if (result > 0)
             {
                 _connection.OnStreamDataRead(this, result);
@@ -127,9 +127,9 @@ namespace System.Net.Quic.Implementations.Managed
             ThrowIfDisposed();
             ThrowIfNotReadable();
 
-            if (InboundBuffer!.Error != null) return;
+            if (ReceiveStream!.Error != null) return;
 
-            InboundBuffer.RequestAbort(errorCode);
+            ReceiveStream.RequestAbort(errorCode);
             _connection.OnStreamStateUpdated(this);
         }
 
@@ -138,14 +138,14 @@ namespace System.Net.Quic.Implementations.Managed
             ThrowIfDisposed();
             ThrowIfNotWritable();
 
-            if (OutboundBuffer!.Error != null) return;
+            if (SendStream!.Error != null) return;
 
-            OutboundBuffer.RequestAbort(errorCode);
+            SendStream.RequestAbort(errorCode);
             _shutdownCompleted.TryCompleteException(new QuicStreamAbortedException("Stream was aborted", errorCode));
             _connection.OnStreamStateUpdated(this);
         }
 
-        internal override bool CanWrite => OutboundBuffer != null;
+        internal override bool CanWrite => SendStream != null;
         internal override void Write(ReadOnlySpan<byte> buffer) => Write(buffer, false);
 
         internal void Write(ReadOnlySpan<byte> buffer, bool endStream)
@@ -153,15 +153,15 @@ namespace System.Net.Quic.Implementations.Managed
             ThrowIfDisposed();
             ThrowIfConnectionError();
             ThrowIfNotWritable();
-            OutboundBuffer!.Enqueue(buffer);
+            SendStream!.Enqueue(buffer);
 
             if (endStream)
             {
-                OutboundBuffer.MarkEndOfData();
-                OutboundBuffer.FlushChunk();
+                SendStream.MarkEndOfData();
+                SendStream.FlushChunk();
             }
 
-            if (OutboundBuffer.WrittenBytes - buffer.Length < OutboundBuffer.MaxData)
+            if (SendStream.WrittenBytes - buffer.Length < SendStream.MaxData)
             {
                 _connection.OnStreamDataWritten(this);
             }
@@ -205,7 +205,7 @@ namespace System.Net.Quic.Implementations.Managed
                 await WriteAsyncInternal(buffer, false, cancellationToken).ConfigureAwait(false);
             }
 
-            OutboundBuffer!.MarkEndOfData();
+            SendStream!.MarkEndOfData();
         }
 
         internal override ValueTask WriteAsync(ReadOnlyMemory<ReadOnlyMemory<byte>> buffers, CancellationToken cancellationToken = default)
@@ -231,8 +231,8 @@ namespace System.Net.Quic.Implementations.Managed
             ThrowIfConnectionError();
             ThrowIfNotWritable();
 
-            OutboundBuffer!.MarkEndOfData();
-            await OutboundBuffer!.FlushChunkAsync(cancellationToken).ConfigureAwait(false);
+            SendStream!.MarkEndOfData();
+            await SendStream!.FlushChunkAsync(cancellationToken).ConfigureAwait(false);
             _connection.OnStreamDataWritten(this);
 
             await using CancellationTokenRegistration registration = cancellationToken.Register(() =>
@@ -246,8 +246,8 @@ namespace System.Net.Quic.Implementations.Managed
 
         internal void OnFatalException(Exception exception)
         {
-            InboundBuffer?.OnFatalException(exception);
-            OutboundBuffer?.OnFatalException(exception);
+            ReceiveStream?.OnFatalException(exception);
+            SendStream?.OnFatalException(exception);
         }
 
         internal void OnConnectionClosed(QuicConnectionAbortedException exception)
@@ -266,8 +266,8 @@ namespace System.Net.Quic.Implementations.Managed
 
             if (CanWrite)
             {
-                OutboundBuffer!.MarkEndOfData();
-                OutboundBuffer!.FlushChunk();
+                SendStream!.MarkEndOfData();
+                SendStream!.FlushChunk();
                 _connection.OnStreamDataWritten(this);
             }
         }
@@ -278,7 +278,7 @@ namespace System.Net.Quic.Implementations.Managed
             ThrowIfConnectionError();
             ThrowIfNotWritable();
 
-            OutboundBuffer!.FlushChunk();
+            SendStream!.FlushChunk();
             _connection.OnStreamDataWritten(this);
         }
 
@@ -288,7 +288,7 @@ namespace System.Net.Quic.Implementations.Managed
             ThrowIfConnectionError();
             ThrowIfNotWritable();
 
-            await OutboundBuffer!.FlushChunkAsync(cancellationToken).ConfigureAwait(false);
+            await SendStream!.FlushChunkAsync(cancellationToken).ConfigureAwait(false);
             _connection.OnStreamDataWritten(this);
         }
 
@@ -301,15 +301,15 @@ namespace System.Net.Quic.Implementations.Managed
 
             if (CanWrite)
             {
-                OutboundBuffer!.MarkEndOfData();
-                OutboundBuffer!.FlushChunk();
+                SendStream!.MarkEndOfData();
+                SendStream!.FlushChunk();
                 _connection.OnStreamDataWritten(this);
             }
 
             if (CanRead)
             {
                 // TODO-RZ: should we use this error code?
-                InboundBuffer!.RequestAbort(0);
+                ReceiveStream!.RequestAbort(0);
                 _connection.OnStreamStateUpdated(this);
             }
 
@@ -326,15 +326,15 @@ namespace System.Net.Quic.Implementations.Managed
             _disposed = true;
             if (CanWrite)
             {
-                OutboundBuffer!.MarkEndOfData();
-                await OutboundBuffer!.FlushChunkAsync().ConfigureAwait(false);
+                SendStream!.MarkEndOfData();
+                await SendStream!.FlushChunkAsync().ConfigureAwait(false);
                 _connection.OnStreamDataWritten(this);
             }
 
             if (CanRead)
             {
                 // TODO-RZ: should we use this error code?
-                InboundBuffer!.RequestAbort(0);
+                ReceiveStream!.RequestAbort(0);
                 _connection.OnStreamStateUpdated(this);
             }
         }
@@ -356,10 +356,10 @@ namespace System.Net.Quic.Implementations.Managed
                 throw new InvalidOperationException("Writing is not allowed on this stream.");
             }
 
-            // OutboundBuffer not null is implied by CanWrite
-            if (OutboundBuffer!.Error != null)
+            // SendStream not null is implied by CanWrite
+            if (SendStream!.Error != null)
             {
-                throw new QuicStreamAbortedException("Writing was aborted on the stream",  OutboundBuffer.Error.Value);
+                throw new QuicStreamAbortedException("Writing was aborted on the stream",  SendStream.Error.Value);
             }
         }
 
@@ -370,10 +370,10 @@ namespace System.Net.Quic.Implementations.Managed
                 throw new InvalidOperationException("Reading is not allowed on this stream.");
             }
 
-            // InboundBuffer not null is implied by CanRead
-            if (InboundBuffer!.Error != null)
+            // ReceiveStream not null is implied by CanRead
+            if (ReceiveStream!.Error != null)
             {
-                throw new QuicStreamAbortedException("Reading was aborted on the stream",  InboundBuffer.Error.Value);
+                throw new QuicStreamAbortedException("Reading was aborted on the stream",  ReceiveStream.Error.Value);
             }
         }
 

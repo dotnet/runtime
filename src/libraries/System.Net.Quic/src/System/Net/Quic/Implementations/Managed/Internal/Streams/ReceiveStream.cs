@@ -3,6 +3,7 @@
 
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Net.Quic.Implementations.Managed.Internal.Headers;
 using System.Threading;
 using System.Threading.Channels;
 using System.Threading.Tasks;
@@ -12,7 +13,7 @@ namespace System.Net.Quic.Implementations.Managed.Internal.Streams
     /// <summary>
     ///     Class for receiving and buffering inbound stream data.
     /// </summary>
-    internal sealed class InboundBuffer
+    internal sealed class ReceiveStream
     {
         private int ReorderBuffersSize => QuicBufferPool.BufferSize;
 
@@ -75,7 +76,7 @@ namespace System.Net.Quic.Implementations.Managed.Internal.Streams
             RemoteMaxData = Math.Max(RemoteMaxData, value);
         }
 
-        public InboundBuffer(long maxData)
+        public ReceiveStream(long maxData)
         {
             MaxData = maxData;
             RemoteMaxData = maxData;

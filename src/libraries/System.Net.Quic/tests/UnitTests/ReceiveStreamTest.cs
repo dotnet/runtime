@@ -10,9 +10,9 @@ using Xunit;
 
 namespace System.Net.Quic.Tests
 {
-    public class InboundBufferTest
+    public class ReceiveStreamTest
     {
-        private InboundBuffer buffer = new InboundBuffer(1000);
+        private ReceiveStream stream = new ReceiveStream(1000);
 
         private void ReceiveBytes(long offset, int count, bool end = false)
         {
@@ -24,7 +24,7 @@ namespace System.Net.Quic.Tests
                 tmp[i] = (byte)(offset + i);
             }
 
-            buffer.Receive(offset, tmp, end);
+            stream.Receive(offset, tmp, end);
         }
 
         [Fact]
@@ -32,24 +32,24 @@ namespace System.Net.Quic.Tests
         {
             ReceiveBytes(0, 10);
             var destination = new byte[10];
-            Assert.Equal(10u, buffer.BytesAvailable);
-            buffer.Deliver(destination);
+            Assert.Equal(10u, stream.BytesAvailable);
+            stream.Deliver(destination);
 
             Assert.Equal(new byte[]{0,1,2,3,4,5,6,7,8,9}, destination);
-            Assert.Equal(10u, buffer.BytesRead);
-            Assert.Equal(0u, buffer.BytesAvailable);
+            Assert.Equal(10u, stream.BytesRead);
+            Assert.Equal(0u, stream.BytesAvailable);
         }
 
         [Fact]
         public void ReceivesOutOfOrderData()
         {
             ReceiveBytes(5, 5);
-            Assert.Equal(0u, buffer.BytesAvailable);
+            Assert.Equal(0u, stream.BytesAvailable);
             ReceiveBytes(0, 5);
-            Assert.Equal(10u, buffer.BytesAvailable);
+            Assert.Equal(10u, stream.BytesAvailable);
 
             var destination = new byte[10];
-            buffer.Deliver(destination);
+            stream.Deliver(destination);
 
             Assert.Equal(new byte[]{0,1,2,3,4,5,6,7,8,9}, destination);
         }
@@ -63,10 +63,10 @@ namespace System.Net.Quic.Tests
 
             ReceiveBytes(0, 25);
 
-            Assert.Equal(25u, buffer.BytesAvailable);
+            Assert.Equal(25u, stream.BytesAvailable);
             var destination = new byte[25];
 
-            buffer.Deliver(destination);
+            stream.Deliver(destination);
             Assert.Equal(Enumerable.Range(0, 25).Select(i => (byte) i), destination);
         }
 
@@ -74,7 +74,7 @@ namespace System.Net.Quic.Tests
         public async Task BlocksWhenNoDataAvailable()
         {
             var destination = new byte[10];
-            var task = buffer.DeliverAsync(destination, CancellationToken.None);
+            var task = stream.DeliverAsync(destination, CancellationToken.None);
             Assert.False(task.IsCompleted);
 
             ReceiveBytes(0, 10);
@@ -87,7 +87,7 @@ namespace System.Net.Quic.Tests
         {
             ReceiveBytes(0, 10);
             var destination = new byte[10];
-            var task = buffer.DeliverAsync(destination, CancellationToken.None);
+            var task = stream.DeliverAsync(destination, CancellationToken.None);
             Assert.True(task.IsCompleted);
 
             int written = await task;
@@ -99,11 +99,11 @@ namespace System.Net.Quic.Tests
         {
             ReceiveBytes(0, 10, true);
             var destination = new byte[10];
-            buffer.Deliver(destination);
+            stream.Deliver(destination);
 
             // all data has been read, and stream is finished
-            Assert.Equal(0, buffer.BytesAvailable);
-            var task = buffer.DeliverAsync(destination, CancellationToken.None);
+            Assert.Equal(0, stream.BytesAvailable);
+            var task = stream.DeliverAsync(destination, CancellationToken.None);
             Assert.True(task.IsCompleted);
 
             Assert.Equal(0, await task);
@@ -113,7 +113,7 @@ namespace System.Net.Quic.Tests
         public async Task EmptyFrameWithFinUnblocksReader()
         {
             var destination = new byte[10];
-            var task = buffer.DeliverAsync(destination, CancellationToken.None);
+            var task = stream.DeliverAsync(destination, CancellationToken.None);
             Assert.False(task.IsCompleted);
 
             ReceiveBytes(0, 0, true);
@@ -130,9 +130,9 @@ namespace System.Net.Quic.Tests
             ReceiveBytes(5, 5, true);
             ReceiveBytes(0, 5);
 
-            int read = buffer.Deliver(destination);
+            int read = stream.Deliver(destination);
             Assert.Equal(10, read);
-            var task = buffer.DeliverAsync(destination, CancellationToken.None);
+            var task = stream.DeliverAsync(destination, CancellationToken.None);
 
             // All data have been read, no blocking is expected.
             Assert.True(task.IsCompleted);
@@ -144,11 +144,11 @@ namespace System.Net.Quic.Tests
         {
             var destination = new byte[10];
             ReceiveBytes(0, 10);
-            long oldMaxData = buffer.MaxData;
+            long oldMaxData = stream.MaxData;
 
-            buffer.Deliver(destination);
+            stream.Deliver(destination);
 
-            Assert.Equal(oldMaxData + 10, buffer.MaxData);
+            Assert.Equal(oldMaxData + 10, stream.MaxData);
         }
 
         [Fact]
@@ -157,9 +157,9 @@ namespace System.Net.Quic.Tests
             var destination = new byte[100];
 
             var exnTask = Assert.ThrowsAsync<QuicStreamAbortedException>(
-                () => buffer.DeliverAsync(destination, CancellationToken.None).AsTask());
+                () => stream.DeliverAsync(destination, CancellationToken.None).AsTask());
 
-            buffer.RequestAbort(10000);
+            stream.RequestAbort(10000);
 
             var exn = await exnTask.TimeoutAfter(5_000);
             Assert.Equal(10000, exn.ErrorCode);

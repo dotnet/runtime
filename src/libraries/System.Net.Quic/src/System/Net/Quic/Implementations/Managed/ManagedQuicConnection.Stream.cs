@@ -163,7 +163,7 @@ namespace System.Net.Quic.Implementations.Managed
         internal void OnStreamDataRead(ManagedQuicStream stream, int bytesRead)
         {
             _localLimits.AddMaxData(bytesRead);
-            if (stream.InboundBuffer!.ShouldUpdateMaxData())
+            if (stream.ReceiveStream!.ShouldUpdateMaxData())
             {
                 OnStreamStateUpdated(stream);
             }
