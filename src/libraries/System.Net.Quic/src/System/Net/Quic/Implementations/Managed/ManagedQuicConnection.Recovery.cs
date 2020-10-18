@@ -57,6 +57,12 @@ namespace System.Net.Quic.Implementations.Managed
                 _peerReceivedLocalLimits.UpdateMaxData(packet.MaxDataFrame.Value.MaximumData);
             }
 
+            if (packet.HandshakeDoneSent)
+            {
+                // the handshake completion has been confirmed
+                _handshakeDoneReceived = true;
+            }
+
             // Since we know the acks arrived, we don't want to send acks sent by this packet anymore.
             pnSpace.UnackedPacketNumbers.Remove(packet.AckedRanges);
         }
@@ -96,11 +102,6 @@ namespace System.Net.Quic.Implementations.Managed
 
                     _streams.MarkFlushable(stream);
                 }
-            }
-
-            if (packet.HandshakeDoneSent)
-            {
-                _handshakeDoneSent = false;
             }
 
             foreach (var frame in packet.MaxStreamDataFrames)

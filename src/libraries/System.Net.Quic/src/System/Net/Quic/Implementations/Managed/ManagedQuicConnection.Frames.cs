@@ -687,8 +687,8 @@ namespace System.Net.Quic.Implementations.Managed
             // we can simply track if this packet by tracking the written offset.
             int writtenAfterNonAckEliciting = writer.BytesWritten;
 
-            if (writer.BytesAvailable > 0 && IsServer && !_handshakeDoneSent && packetType == PacketType.OneRtt &&
-                Tls.IsHandshakeComplete)
+            if (writer.BytesAvailable > 0 && IsServer && packetType == PacketType.OneRtt &&
+                Tls.IsHandshakeComplete && !_handshakeDoneReceived)
             {
                 _trace?.OnHandshakeDoneFrame();
                 writer.WriteFrameType(FrameType.HandshakeDone);
@@ -696,7 +696,6 @@ namespace System.Net.Quic.Implementations.Managed
 
                 SignalConnected();
                 context.SentPacket.HandshakeDoneSent = true;
-                _handshakeDoneSent = true;
 
                 // handshake is done
                 DropPacketNumberSpace(PacketSpace.Handshake, context.SentPacketPool);

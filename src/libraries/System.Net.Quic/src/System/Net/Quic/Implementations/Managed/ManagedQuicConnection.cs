@@ -127,14 +127,10 @@ namespace System.Net.Quic.Implementations.Managed
         private bool HandshakeConfirmed => IsServer ? Tls.IsHandshakeComplete : _handshakeDoneReceived;
 
         /// <summary>
-        ///     True if HANDSHAKE_DONE frame has been received. Valid only for client.
+        ///     For client: True if HANDSHAKE_DONE frame has been received.
+        ///     For Server: true if HANDSHAKE_DONE frame has been delivered.
         /// </summary>
         private bool _handshakeDoneReceived;
-
-        /// <summary>
-        ///     True if HANDSHAKE_DONE frame has been sent. Valid only for server.
-        /// </summary>
-        private bool _handshakeDoneSent;
 
         /// <summary>
         ///     True if this side of connection belongs to the server.
