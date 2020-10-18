@@ -46,7 +46,7 @@ internal static partial class Interop
         private static extern SocketError WSACleanup();
 
         [StructLayout(LayoutKind.Sequential, Size = 408)]
-        private unsafe struct WSAData
+        private struct WSAData
         {
             // WSADATA is defined as follows:
             //

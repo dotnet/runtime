@@ -167,6 +167,11 @@ namespace Microsoft.WebAssembly.Diagnostics
                         break;
                     }
 
+                case "Target.targetDestroyed":
+                    {
+                        await SendMonoCommand(sessionId, MonoCommands.DetachDebugger(), token);
+                        break;
+                    }
             }
 
             return false;

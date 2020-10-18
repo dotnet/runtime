@@ -1612,13 +1612,7 @@ namespace System.Reflection.Emit
             return DefineField(name, datablobtype, attributes | FieldAttributes.Static | FieldAttributes.HasFieldRVA);
         }
 
-        public TypeToken TypeToken
-        {
-            get
-            {
-                return new TypeToken(0x02000000 | table_idx);
-            }
-        }
+        public override int MetadataToken => 0x02000000 | table_idx;
 
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2074:UnrecognizedReflectionPattern",
             Justification = "Linker doesn't recongnize ResolveUserType")]

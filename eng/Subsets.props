@@ -64,6 +64,7 @@
 
     <DefaultInstallerSubsets>corehost+installer.managed+installer.depprojs+installer.pkgprojs+bundles+installers+installer.tests</DefaultInstallerSubsets>
     <DefaultInstallerSubsets Condition="'$(RuntimeFlavor)' == 'Mono'">installer.pkgprojs</DefaultInstallerSubsets>
+    <DefaultInstallerSubsets Condition="'$(RuntimeFlavor)' == 'Mono' and '$(TargetsMobile)' != 'true'">corehost+$(DefaultInstallerSubsets)</DefaultInstallerSubsets>
   </PropertyGroup>
 
   <PropertyGroup>
@@ -125,6 +126,10 @@
     <SubsetName Include="Installers" Description="Generates additional installers. This produces the shared frameworks and their installers." />
     <SubsetName Include="Installer.Tests" Description="The test projects. Note that building this doesn't execute tests: you must also pass the '-test' argument." />
     <SubsetName Include="Installer.Publish" OnDemand="true" Description="Builds the installer publish infrastructure." />
+
+    <!-- Utility -->
+    <SubsetName Include="RegenerateDownloadTable" OnDemand="true" Description="Regenerates the nightly build download table" />
+
   </ItemGroup>
 
   <!-- Default targets, parallelization and configurations. -->
@@ -287,6 +292,11 @@
 
   <ItemGroup Condition="$(_subset.Contains('+installer.publish+'))">
     <ProjectToBuild Include="$(InstallerProjectRoot)publish\prepare-artifacts.proj" Pack="true" BuildInParallel="false" Category="installer" />
+  </ItemGroup>
+
+  <!-- Utility -->
+  <ItemGroup Condition="$(_subset.Contains('+regeneratedownloadtable+'))">
+    <ProjectToBuild Include="$(RepoToolsLocalDir)regenerate-download-table.proj" Pack="true" BuildInParallel="false" Category="installer" />
   </ItemGroup>
 
   <!-- Set default configurations. -->

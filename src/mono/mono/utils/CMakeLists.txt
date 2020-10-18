@@ -182,7 +182,10 @@ set(utils_common_sources
     refcount.h
     w32api.h
     unlocked.h
-    ward.h)
+    ward.h
+    options.h
+    options-def.h
+    options.c)
 
 if(MONO_CROSS_COMPILE)
 set(utils_arch_sources mach-support-unknown.c)

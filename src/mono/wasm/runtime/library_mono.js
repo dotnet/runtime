@@ -1255,6 +1255,12 @@ var MonoSupportLib = {
 			return this.mono_wasm_pause_on_exceptions (state_enum);
 		},
 
+		mono_wasm_detach_debugger: function () {
+			if (!this.mono_wasm_set_is_debugger_attached)
+				this.mono_wasm_set_is_debugger_attached = Module.cwrap ('mono_wasm_set_is_debugger_attached', 'void', ['bool']);
+			this.mono_wasm_set_is_debugger_attached(false);
+		},
+
 		_register_c_fn: function (name, ...args) {
 			Object.defineProperty (this._c_fn_table, name + '_wrapper', { value: Module.cwrap (name, ...args) });
 		},
@@ -1817,6 +1823,9 @@ var MonoSupportLib = {
 
 		// Used by the debugger to enumerate loaded dlls and pdbs
 		mono_wasm_get_loaded_files: function() {
+			if (!this.mono_wasm_set_is_debugger_attached)
+				this.mono_wasm_set_is_debugger_attached = Module.cwrap ('mono_wasm_set_is_debugger_attached', 'void', ['bool']);
+			this.mono_wasm_set_is_debugger_attached (true);
 			return MONO.loaded_files;
 		},
 
@@ -2357,10 +2366,7 @@ var MonoSupportLib = {
 		if (!this.mono_wasm_assembly_already_added)
 			this.mono_wasm_assembly_already_added = Module.cwrap ("mono_wasm_assembly_already_added", 'number', ['string']);
 
-		// And for assemblies that have not already been loaded
 		const assembly_name_str = assembly_name !== 0 ? Module.UTF8ToString(assembly_name).concat('.dll') : '';
-		if (this.mono_wasm_assembly_already_added(assembly_name_str))
-			return;
 
 		const assembly_data = new Uint8Array(Module.HEAPU8.buffer, assembly_ptr, assembly_len);
 		const assembly_b64 = MONO._base64Converter.toBase64StringImpl(assembly_data);

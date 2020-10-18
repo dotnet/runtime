@@ -379,9 +379,9 @@ namespace Internal.TypeSystem
             return computedLayout;
         }
 
-        private static LayoutInt AlignUpInstanceFieldOffset(TypeDesc typeWithField, LayoutInt cumulativeInstanceFieldPos, LayoutInt alignment, TargetDetails target)
+        private static LayoutInt AlignUpInstanceFieldOffset(TypeDesc typeWithField, LayoutInt cumulativeInstanceFieldPos, LayoutInt alignment, TargetDetails target, bool armAlignFromStartOfFields = false)
         {
-            if (!typeWithField.IsValueType && target.Architecture == TargetArchitecture.X86 && cumulativeInstanceFieldPos != new LayoutInt(0))
+            if (!typeWithField.IsValueType && (target.Architecture == TargetArchitecture.X86 || (armAlignFromStartOfFields && target.Architecture == TargetArchitecture.ARM)) && cumulativeInstanceFieldPos != new LayoutInt(0))
             {
                 // Alignment of fields is relative to the start of the field list, not the start of the object
                 //
@@ -421,7 +421,10 @@ namespace Internal.TypeSystem
 
                 largestAlignmentRequirement = LayoutInt.Max(fieldSizeAndAlignment.Alignment, largestAlignmentRequirement);
 
-                cumulativeInstanceFieldPos = AlignUpInstanceFieldOffset(type, cumulativeInstanceFieldPos, fieldSizeAndAlignment.Alignment, type.Context.Target);
+                cumulativeInstanceFieldPos = AlignUpInstanceFieldOffset(type, cumulativeInstanceFieldPos, fieldSizeAndAlignment.Alignment, type.Context.Target
+                                                                        , armAlignFromStartOfFields: true // In what appears to have been a bug in the design of the arm32 type layout code
+                                                                                                          // this portion of the layout algorithm does not layout from the start of the object
+                                                                        );
                 offsets[fieldOrdinal] = new FieldAndOffset(field, cumulativeInstanceFieldPos);
                 cumulativeInstanceFieldPos = checked(cumulativeInstanceFieldPos + fieldSizeAndAlignment.Size);
 
@@ -548,7 +551,20 @@ namespace Internal.TypeSystem
 
             largestAlignmentRequired = context.Target.GetObjectAlignment(largestAlignmentRequired);
             bool requiresAlign8 = !largestAlignmentRequired.IsIndeterminate && largestAlignmentRequired.AsInt > 4;
-            AlignBaseOffsetIfNecessary(type, ref cumulativeInstanceFieldPos, requiresAlign8);
+
+            if (!type.IsValueType)
+            {
+                DefType baseType = type.BaseType;
+                if (baseType != null && !baseType.IsObject)
+                {
+                    if (!requiresAlign8 && baseType.RequiresAlign8())
+                    {
+                        requiresAlign8 = true;
+                    }
+
+                    AlignBaseOffsetIfNecessary(type, ref cumulativeInstanceFieldPos, requiresAlign8);
+                }
+            }
 
             // We've finished placing the fields into their appropriate arrays
             // The next optimization may place non-GC Pointers, so repurpose our
@@ -691,6 +707,10 @@ namespace Internal.TypeSystem
             else if (cumulativeInstanceFieldPos.AsInt > context.Target.PointerSize)
             {
                 minAlign = context.Target.LayoutPointerSize;
+                if (requiresAlign8 && minAlign.AsInt == 4)
+                {
+                    minAlign = new LayoutInt(8);
+                }
             }
             else
             {

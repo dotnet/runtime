@@ -48,6 +48,8 @@ namespace System
         [DynamicDependency("Ctor(System.Char[])")]
         public extern String(char[]? value);
 
+#pragma warning disable CA1822 // Mark members as static
+
         private
 #if !CORECLR
         static
@@ -355,6 +357,8 @@ namespace System
             Buffer.Memmove(ref result._firstChar, ref MemoryMarshal.GetReference(value), (uint)value.Length);
             return result;
         }
+
+#pragma warning restore CA1822
 
         public static string Create<TState>(int length, TState state, SpanAction<char, TState> action)
         {
