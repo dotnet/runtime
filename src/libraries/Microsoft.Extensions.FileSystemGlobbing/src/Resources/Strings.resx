@@ -118,13 +118,13 @@
     <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </resheader>
   <data name="CannotDeclarePathSegment" xml:space="preserve">
-    <value>Can't declare path segment before entering a directory.</value>
+    <value>Cannot declare path segment before entering a directory.</value>
   </data>
   <data name="CannotTestDirectory" xml:space="preserve">
-    <value>Can't test directory before entering a directory.</value>
+    <value>Cannot test directory before entering a directory.</value>
   </data>
   <data name="CannotTestFile" xml:space="preserve">
-    <value>Can't test file before entering a directory.</value>
+    <value>Cannot test file before entering a directory.</value>
   </data>
   <data name="UnexpectedStringComparisonType" xml:space="preserve">
     <value>Unexpected StringComparison type: {0}</value>
