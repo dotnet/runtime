@@ -143,6 +143,7 @@ namespace System.Net.Quic.Implementations.Managed.Internal.Recovery
                 SentPackets.Clear();
                 NextLossTime = long.MaxValue;
                 LargestAckedPacketNumber = 0;
+                AckElicitingPacketsInFlightCount = 0;
                 TimeOfLastAckElicitingPacketSent = long.MaxValue;
             }
         }
