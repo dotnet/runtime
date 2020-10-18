@@ -117,9 +117,6 @@
   <resheader name="writer">
     <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </resheader>
-  <data name="CannotAdvancePastEndOfBuffer" xml:space="preserve">
-    <value>Cannot advance past the end of the buffer.</value>
-  </data>
   <data name="LibraryInformationNotFound" xml:space="preserve">
     <value>Cannot find library information for {0}</value>
   </data>
