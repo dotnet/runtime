@@ -169,6 +169,7 @@ namespace System.Net.Quic.Implementations.Managed
                     // sending an ack back. Set timer to fire immediately to ensure ack is sent as
                     // soon as possible to the peer.
                     pnSpace.NextAckTimer = context.Timestamp;
+                    _nextAckTimer = context.Timestamp;
                 }
             }
 
@@ -1047,11 +1048,6 @@ namespace System.Net.Quic.Implementations.Managed
                     // no more data can fit into this packet.
                     break;
                 }
-            }
-
-            if (_streams.HasFlushableStreams)
-            {
-                _socketContext.Ping(); // make sure we get another go on sending
             }
         }
     }

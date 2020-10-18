@@ -43,9 +43,9 @@ namespace System.Net.Quic.Implementations.Managed
         /// </summary>
         private readonly PacketNumberSpace[] _pnSpaces = new PacketNumberSpace[3]
         {
-            new PacketNumberSpace(PacketType.Initial),
-            new PacketNumberSpace(PacketType.Handshake),
-            new PacketNumberSpace(PacketType.OneRtt)
+            new PacketNumberSpace(PacketType.Initial, PacketSpace.Initial),
+            new PacketNumberSpace(PacketType.Handshake, PacketSpace.Handshake),
+            new PacketNumberSpace(PacketType.OneRtt, PacketSpace.Application)
         };
 
         /// <summary>

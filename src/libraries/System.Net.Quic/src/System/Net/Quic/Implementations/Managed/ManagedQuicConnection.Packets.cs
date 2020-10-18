@@ -379,6 +379,10 @@ namespace System.Net.Quic.Implementations.Managed
             var result = ProcessFrames(reader, packetType, context);
             _trace?.OnPacketReceiveEnd();
 
+            // we may have new lost packets because of received ACK frame
+            var packetPool = context.SentPacketPool;
+            ProcessLostPackets(pnSpace, packetPool);
+
             reader.Reset(originalSegment);
             return result;
         }
@@ -387,14 +391,14 @@ namespace System.Net.Quic.Implementations.Managed
         {
             receiver = _remoteEndpoint;
 
+            ProcessLostPackets(ctx.SentPacketPool);
+
             if (_isDraining)
             {
                 // While otherwise identical to the closing state, an endpoint in the draining state MUST NOT
                 // send any packets
                 return;
             }
-
-            ProcessLostPackets(ctx);
 
             var level = GetWriteLevel(ctx.Timestamp);
             var origMemory = writer.Buffer;
@@ -441,19 +445,22 @@ namespace System.Net.Quic.Implementations.Managed
                 _trace?.OnDatagramSent(written);
         }
 
-        private void ProcessLostPackets(QuicSocketContext.SendContext ctx)
+        private void ProcessLostPackets(ObjectPool<SentPacket> packetPool)
         {
-            for (var space = PacketSpace.Initial; space <= PacketSpace.Application; space++)
+            for (var level = EncryptionLevel.Initial; level <= EncryptionLevel.Application; level++)
             {
-                var recoverySpace = Recovery.GetPacketNumberSpace(space);
-                // process lost packets
-                var lostPackets = recoverySpace.LostPackets;
-                while (lostPackets.TryDequeue(out var i))
-                {
-                    _trace?.OnPacketLost(recoverySpace.PacketType, i.packet.PacketNumber, i.trigger);
-                    OnPacketLost(i.packet, GetPacketNumberSpace((EncryptionLevel)space));
-                    ctx.ReturnPacket(i.packet);
-                }
+                ProcessLostPackets(GetPacketNumberSpace(level), packetPool);
+            }
+        }
+
+        private void ProcessLostPackets(PacketNumberSpace pnSpace, ObjectPool<SentPacket> packetPool)
+        {
+            var lostPackets = Recovery.GetPacketNumberSpace(pnSpace.PacketSpace).LostPackets;
+            while (lostPackets.TryDequeue(out var i))
+            {
+                _trace?.OnPacketLost(pnSpace.PacketType, i.packet.PacketNumber, i.trigger);
+                OnPacketLost(i.packet, pnSpace);
+                packetPool.Return(i.packet);
             }
         }
 

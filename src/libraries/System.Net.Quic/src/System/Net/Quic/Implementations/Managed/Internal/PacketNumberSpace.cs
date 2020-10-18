@@ -13,9 +13,10 @@ namespace System.Net.Quic.Implementations.Managed.Internal
     /// </summary>
     internal class PacketNumberSpace
     {
-        public PacketNumberSpace(PacketType packetType)
+        public PacketNumberSpace(PacketType packetType, PacketSpace packetSpace)
         {
             PacketType = packetType;
+            PacketSpace = packetSpace;
         }
 
         /// <summary>
@@ -91,5 +92,10 @@ namespace System.Net.Quic.Implementations.Managed.Internal
         ///     Timestamp when the next ACK frame should be sent.
         /// </summary>
         internal long NextAckTimer { get; set; } = long.MaxValue;
+
+        /// <summary>
+        ///     Packet space of this instace.
+        /// </summary>
+        public PacketSpace PacketSpace { get; }
     }
 }

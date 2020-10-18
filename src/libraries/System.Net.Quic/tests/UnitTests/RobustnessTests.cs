@@ -15,6 +15,7 @@ namespace System.Net.Quic.Tests
         public RobustnessTests(ITestOutputHelper output)
             : base(output)
         {
+            CurrentTimestamp = 0;
         }
 
         [Theory]
@@ -60,6 +61,7 @@ namespace System.Net.Quic.Tests
                              !Client.Connected && !Server.Connected,
                     "Deadlock reached");
 
+                long lastTimestamp = CurrentTimestamp;
                 Output.WriteLine($"Event {i}:");
                 if (flights.Count > 0 && flights.Peek().TimeSent + rttTime < timeoutConnection.GetNextTimerTimestamp())
                 {
@@ -82,7 +84,7 @@ namespace System.Net.Quic.Tests
                 }
                 else if (timeoutConnection.GetNextTimerTimestamp() < long.MaxValue)
                 {
-                    CurrentTimestamp = timeoutConnection.GetNextTimerTimestamp();
+                    CurrentTimestamp = Math.Max(timeoutConnection.GetNextTimerTimestamp(), CurrentTimestamp);
                     timeoutConnection.OnTimeout(CurrentTimestamp);
 
                     // maxValue here would lead to deadlock during connection establishment
@@ -92,6 +94,8 @@ namespace System.Net.Quic.Tests
                 {
                     break;
                 }
+
+                Assert.True(lastTimestamp <= CurrentTimestamp);
             }
 
             Assert.True(Client.Connected && Server.Connected);

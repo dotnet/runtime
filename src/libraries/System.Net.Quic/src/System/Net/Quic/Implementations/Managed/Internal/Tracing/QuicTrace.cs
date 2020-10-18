@@ -114,15 +114,15 @@ namespace System.Net.Quic.Implementations.Managed.Internal.Tracing
             internal static readonly byte[] active_connection_id_limit = GetBytesHelper("active_connection_id_limit");
             internal static readonly byte[] initial_max_data = GetBytesHelper("initial_max_data");
 
-            internal static readonly byte[] initial_stream_data_bidi_local =
-                GetBytesHelper("initial_stream_data_bidi_local");
+            internal static readonly byte[] initial_max_stream_data_bidi_local =
+                GetBytesHelper("initial_max_stream_data_bidi_local");
 
-            internal static readonly byte[] initial_stream_data_bidi_remote =
-                GetBytesHelper("initial_stream_data_bidi_remote");
+            internal static readonly byte[] initial_max_stream_data_bidi_remote =
+                GetBytesHelper("initial_max_stream_data_bidi_remote");
 
-            internal static readonly byte[] initial_stream_data_uni = GetBytesHelper("initial_stream_data_uni");
-            internal static readonly byte[] initial_streams_bidi = GetBytesHelper("initial_streams_bidi");
-            internal static readonly byte[] initial_streams_uni = GetBytesHelper("initial_streams_uni");
+            internal static readonly byte[] initial_max_stream_data_uni = GetBytesHelper("initial_max_stream_data_uni");
+            internal static readonly byte[] initial_max_streams_bidi = GetBytesHelper("initial_max_streams_bidi");
+            internal static readonly byte[] initial_max_streams_uni = GetBytesHelper("initial_max_streams_uni");
             internal static readonly byte[] key_type = GetBytesHelper("key_type");
             internal static readonly byte[] @new = GetBytesHelper("new");
             internal static readonly byte[] byte_length = GetBytesHelper("byte_length");
@@ -343,11 +343,11 @@ namespace System.Net.Quic.Implementations.Managed.Internal.Tracing
             _writer.WriteNumber(Field.active_connection_id_limit, parameters.ActiveConnectionIdLimit);
 
             _writer.WriteNumber(Field.initial_max_data, parameters.InitialMaxData);
-            _writer.WriteNumber(Field.initial_stream_data_bidi_local, parameters.InitialMaxStreamDataBidiLocal);
-            _writer.WriteNumber(Field.initial_stream_data_bidi_remote, parameters.InitialMaxStreamDataBidiRemote);
-            _writer.WriteNumber(Field.initial_stream_data_uni, parameters.InitialMaxStreamDataUni);
-            _writer.WriteNumber(Field.initial_streams_bidi, parameters.InitialMaxStreamsBidi);
-            _writer.WriteNumber(Field.initial_streams_uni, parameters.InitialMaxStreamsUni);
+            _writer.WriteNumber(Field.initial_max_stream_data_bidi_local, parameters.InitialMaxStreamDataBidiLocal);
+            _writer.WriteNumber(Field.initial_max_stream_data_bidi_remote, parameters.InitialMaxStreamDataBidiRemote);
+            _writer.WriteNumber(Field.initial_max_stream_data_uni, parameters.InitialMaxStreamDataUni);
+            _writer.WriteNumber(Field.initial_max_streams_bidi, parameters.InitialMaxStreamsBidi);
+            _writer.WriteNumber(Field.initial_max_streams_uni, parameters.InitialMaxStreamsUni);
 
             // TODO: perferred_address
 
