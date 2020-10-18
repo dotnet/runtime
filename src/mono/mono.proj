@@ -6,7 +6,8 @@
   -->
 
   <PropertyGroup>
-    <MonoEnableCMake Condition="'$(TargetsBrowser)' == 'true' or '$(TargetsOSX)' == 'true' or '$(TargetsAndroid)' == 'true' or '$(TargetsiOS)' == 'true' or '$(TargetstvOS)' == 'true'">true</MonoEnableCMake>
+    <!--<MonoEnableCMake Condition="'$(TargetsBrowser)' == 'true' or '$(TargetsOSX)' == 'true' or '$(TargetsAndroid)' == 'true' or '$(TargetsiOS)' == 'true' or '$(TargetstvOS)' == 'true'">true</MonoEnableCMake>-->
+    <MonoEnableCMake Condition="'$(TargetsWindows)' != 'true'">true</MonoEnableCMake>
     <MonoCrossDir Condition="'$(MonoCrossDir)' == '' and '$(ROOTFS_DIR)' != ''">$(ROOTFS_DIR)</MonoCrossDir>
     <MonoEnableInterpreter Condition="'$(MonoEnableInterpreter)' == ''">false</MonoEnableInterpreter>
     <ScriptExt Condition="'$(OS)' == 'Windows_NT'">.cmd</ScriptExt>
