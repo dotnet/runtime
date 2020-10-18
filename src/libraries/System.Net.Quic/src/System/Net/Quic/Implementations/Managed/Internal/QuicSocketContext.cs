@@ -398,7 +398,7 @@ namespace System.Net.Quic.Implementations.Managed.Internal
                         lastAction = now;
                     }
 
-                    const int asyncWaitThreshold = 20;
+                    const int asyncWaitThreshold = 5;
                     if (Timestamp.GetMilliseconds(now - lastAction) > asyncWaitThreshold)
                     {
                         // there has been no action for some time, stop consuming CPU and wait until an event wakes us
@@ -411,7 +411,7 @@ namespace System.Net.Quic.Implementations.Managed.Internal
                         socketReceiveTask ??= ReceiveFromAsync(_recvBuffer, _localEndPoint!,
                             CancellationToken.None).AsTask();
 
-                        _signalTcs = new TaskCompletionSource<int>();
+                        _signalTcs = new TaskCompletionSource<int>(TaskCreationOptions.RunContinuationsAsynchronously);
                         Task signalTask = _signalTcs.Task;
 
                         if (_signalWanted) // guard against race condition that would deadlock the wait

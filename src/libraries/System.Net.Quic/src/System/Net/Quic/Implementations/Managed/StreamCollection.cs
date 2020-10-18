@@ -179,19 +179,19 @@ namespace System.Net.Quic.Implementations.Managed
             return new ManagedQuicStream(streamId, recvStream, sendStream, connection);
         }
 
-        internal void MarkFlushable(ManagedQuicStream stream)
+        internal bool MarkFlushable(ManagedQuicStream stream)
         {
             Debug.Assert(stream.CanWrite);
 
-            AddToListSynchronized(_flushable, stream._flushableListNode);
+            return AddToListSynchronized(_flushable, stream._flushableListNode);
         }
 
-        internal void MarkForUpdate(ManagedQuicStream stream)
+        internal bool MarkForUpdate(ManagedQuicStream stream)
         {
-            AddToListSynchronized(_updateQueue, stream._updateQueueListNode);
+            return AddToListSynchronized(_updateQueue, stream._updateQueueListNode);
         }
 
-        private static void AddToListSynchronized(LinkedList<ManagedQuicStream> list, LinkedListNode<ManagedQuicStream> node)
+        private static bool AddToListSynchronized(LinkedList<ManagedQuicStream> list, LinkedListNode<ManagedQuicStream> node)
         {
             // use double checking to prevent frequent locking
             if (node.List == null)
@@ -199,9 +199,14 @@ namespace System.Net.Quic.Implementations.Managed
                 lock (list)
                 {
                     if (node.List == null)
+                    {
                         list.AddLast(node);
+                        return true;
+                    }
                 }
             }
+
+            return false;
         }
 
         internal IEnumerable<ManagedQuicStream> AllStreams => _streams.Values;
