@@ -773,14 +773,7 @@ GenTree* Compiler::impBaseIntrinsic(NamedIntrinsic        intrinsic,
                 GenTreeArgList* tmpList = nullptr;
                 for (unsigned i = 0; i < sig->numArgs; i++)
                 {
-                    if (tmpList == nullptr)
-                    {
-                        tmpList = gtNewArgList(impPopStack().val);
-                    }
-                    else
-                    {
-                        tmpList = new (this, GT_LIST) GenTreeArgList(impPopStack().val, tmpList);
-                    }
+                    tmpList = new (this, GT_LIST) GenTreeArgList(impPopStack().val, tmpList);
                 }
                 op1     = tmpList;
                 retNode = gtNewSimdHWIntrinsicNode(retType, op1, intrinsic, baseType, simdSize);
