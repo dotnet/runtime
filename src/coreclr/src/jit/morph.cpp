@@ -11611,7 +11611,6 @@ GenTree* Compiler::fgMorphFieldAssignToSIMDIntrinsicSet(GenTree* tree)
 
 #endif // FEATURE_SIMD
 
-
 //------------------------------------------------------------------------------
 // fgMorphCommutative : Try to simplify "(X op C1) op C2" to "X op (C1 op C2)"
 //                      for commutative operators.
