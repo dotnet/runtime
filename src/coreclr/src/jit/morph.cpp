@@ -11625,20 +11625,20 @@ GenTree* Compiler::fgMorphFieldAssignToSIMDIntrinsicSet(GenTree* tree)
 
 GenTree* Compiler::fgMorphCommutative(GenTreeOp* tree)
 {
+    assert(varTypeIsIntegralOrI(tree->TypeGet()));
     assert(tree->OperIs(GT_ADD, GT_MUL, GT_OR, GT_AND, GT_XOR));
 
-    // op1 can be GT_COMMA
+    // op1 can be GT_COMMA, in this case we're going to fold
+    // "COMMA(..., (X op C1)) op C2" to "COMMA(..., X op (C1 op C2))"
     GenTree*   op1  = tree->gtGetOp1()->gtEffectiveVal(true);
     genTreeOps oper = tree->OperGet();
 
-    // op1 must be "X op C1" at this point
     if (!op1->OperIs(oper) || !tree->gtGetOp2()->IsCnsIntOrI() || !op1->gtGetOp2()->IsCnsIntOrI() ||
         op1->gtGetOp1()->IsCnsIntOrI() || gtIsActiveCSE_Candidate(op1))
     {
         return nullptr;
     }
 
-    // Don't fold if anything can overflow
     if (tree->OperMayOverflow() && (tree->gtOverflow() || op1->gtOverflow()))
     {
         return nullptr;
@@ -11662,7 +11662,8 @@ GenTree* Compiler::fgMorphCommutative(GenTreeOp* tree)
     cns1->gtIconVal = foldedCns->AsIntCon()->IconValue();
     if ((oper == GT_ADD) && foldedCns->IsCnsIntOrI())
     {
-        cns1->AsIntCon()->gtFieldSeq = GetFieldSeqStore()->Append(cns1->AsIntCon()->gtFieldSeq, cns2->AsIntCon()->gtFieldSeq);
+        cns1->AsIntCon()->gtFieldSeq =
+            GetFieldSeqStore()->Append(cns1->AsIntCon()->gtFieldSeq, cns2->AsIntCon()->gtFieldSeq);
     }
 
     GenTreeOp* newTree = tree->gtGetOp1()->AsOp();
@@ -13690,14 +13691,14 @@ DONE_MORPHING_CHILDREN:
                 op2  = tree->AsOp()->gtOp2;
             }
 
-            if (tree->OperIs(GT_ADD, GT_MUL, GT_AND, GT_OR, GT_XOR))
+            if (varTypeIsIntegralOrI(tree->TypeGet()) && tree->OperIs(GT_ADD, GT_MUL, GT_AND, GT_OR, GT_XOR))
             {
                 GenTree* foldedTree = fgMorphCommutative(tree->AsOp());
                 if (foldedTree != nullptr)
                 {
                     tree = foldedTree;
-                    op1 = tree->gtGetOp1();
-                    op2 = tree->gtGetOp2();
+                    op1  = tree->gtGetOp1();
+                    op2  = tree->gtGetOp2();
                     if (!tree->OperIs(oper))
                     {
                         return tree;
