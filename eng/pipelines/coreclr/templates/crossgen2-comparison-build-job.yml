@@ -78,7 +78,7 @@ jobs:
       - name: crossgen2location
         value: $(productDirectory)$(dir)$(targetFlavor)$(dir)x64$(dir)crossgen2$(dir)crossgen2.dll
     - name: librariesProductDllDir
-      value: $(Build.SourcesDirectory)$(dir)artifacts$(dir)bin$(dir)runtime$(dir)net5.0-$(osGroup)$(osSubgroup)-$(buildConfig)-$(archType)
+      value: $(Build.SourcesDirectory)$(dir)artifacts$(dir)bin$(dir)runtime$(dir)net6.0-$(osGroup)$(osSubgroup)-$(buildConfig)-$(archType)
 
     - ${{ parameters.variables }}
 
@@ -126,6 +126,7 @@ jobs:
           cp $(librariesProductDllDir)/* $(workItemDirectory)/dlls
           cp $(productDirectory)/$(targetFlavor)/IL/System.Private.CoreLib.dll $(workItemDirectory)/dlls
         displayName: Create directories
+        failOnStderr: true
     - ${{ if eq(parameters.osGroup, 'Windows_NT') }}:
       - script: |
           md $(workItemDirectory)\log
@@ -135,6 +136,7 @@ jobs:
           echo copy $(productDirectory)\$(targetFlavor)\IL\System.Private.CoreLib.dll $(workItemDirectory)\dlls
           copy $(productDirectory)\$(targetFlavor)\IL\System.Private.CoreLib.dll $(workItemDirectory)\dlls
         displayName: Create directories
+        failOnStderr: true
 
     # Create baseline output on the host (x64) machine
     - task: PythonScript@0

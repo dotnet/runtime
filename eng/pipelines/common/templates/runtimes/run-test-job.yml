@@ -99,6 +99,8 @@ jobs:
       - ${{ if eq(parameters.compositeBuildMode, true) }}:
         - name: crossgenArg
           value: 'composite'
+        - name: LogNamePrefix
+          value: TestRunLogs_R2R_CG2_Composite
 
     # Set job timeouts
     #
