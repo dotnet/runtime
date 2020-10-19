@@ -770,18 +770,19 @@ GenTree* Compiler::impBaseIntrinsic(NamedIntrinsic        intrinsic,
             {
                 assert(sig->numArgs >= 3);
 
-                GenTreeArgList* tmp = nullptr;
-
+                GenTreeArgList* tmpList = nullptr;
                 for (unsigned i = 0; i < sig->numArgs; i++)
                 {
-                    tmp        = gtNewArgList(impPopStack().val);
-                    tmp->gtOp2 = op1;
-
-                    // propagate GTF_CALL if needed
-                    if ((op1 != nullptr) && (op1->gtFlags & GTF_CALL))
-                        tmp->gtFlags |= GTF_CALL;
-                    op1 = tmp;
+                    if (tmpList == nullptr)
+                    {
+                        tmpList = gtNewArgList(impPopStack().val);
+                    }
+                    else
+                    {
+                        tmpList = new (this, GT_LIST) GenTreeArgList(impPopStack().val, tmpList);
+                    }
                 }
+                op1 = tmpList;
 
                 retNode = gtNewSimdHWIntrinsicNode(retType, op1, intrinsic, baseType, simdSize);
             }
