@@ -24,12 +24,6 @@ namespace System.Net.Sockets
 
         private static bool GetPlatformSupportsDualModeIPv4PacketInfo() =>
             Interop.Sys.PlatformSupportsDualModeIPv4PacketInfo() != 0;
-
-        public static void Initialize()
-        {
-            // nop.  No initialization required.
-        }
-
         public static SocketError GetSocketErrorForErrorCode(Interop.Error errorCode)
         {
             return SocketErrorPal.GetSocketErrorForNativeError(errorCode);

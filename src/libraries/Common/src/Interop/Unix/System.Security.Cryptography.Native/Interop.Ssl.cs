@@ -72,7 +72,7 @@ internal static partial class Interop
         }
 
         [DllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_SslWrite")]
-        internal static extern unsafe int SslWrite(SafeSslHandle ssl, ref byte buf, int num);
+        internal static extern int SslWrite(SafeSslHandle ssl, ref byte buf, int num);
 
         [DllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_SslRead")]
         internal static extern unsafe int SslRead(SafeSslHandle ssl, byte* buf, int num);
@@ -102,7 +102,7 @@ internal static partial class Interop
         internal static extern unsafe int BioWrite(SafeBioHandle b, byte* data, int len);
 
         [DllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_BioWrite")]
-        internal static extern unsafe int BioWrite(SafeBioHandle b, ref byte data, int len);
+        internal static extern int BioWrite(SafeBioHandle b, ref byte data, int len);
 
         [DllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_SslGetPeerCertificate")]
         internal static extern SafeX509Handle SslGetPeerCertificate(SafeSslHandle ssl);

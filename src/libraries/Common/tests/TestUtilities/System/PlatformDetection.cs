@@ -332,8 +332,10 @@ namespace System
                     }
                 }
                 catch { };
-                // assume no if key is missing or on error.
-                return false;
+                // assume no if positive entry is missing on older Windows
+                // Latest insider builds have TLS 1.3 enabled by default.
+                // The build number is approximation.
+                return IsWindows10Version2004Build19573OrGreater;
             }
             else if (IsOSX || IsiOS || IstvOS)
             {

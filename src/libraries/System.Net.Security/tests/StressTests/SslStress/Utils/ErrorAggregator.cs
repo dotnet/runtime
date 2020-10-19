@@ -38,7 +38,7 @@ namespace SslStress.Utils
             (Type, string, string)[] key = ClassifyFailure(exception);
 
             ErrorType failureType = _failureTypes.GetOrAdd(key, _ => new ErrorType(exception.ToString()));
-            failureType.OccurencesQueue.Enqueue((timestamp.Value, metadata));
+            failureType.OccurrencesQueue.Enqueue((timestamp.Value, metadata));
 
             // classify exception according to type, message and callsite of itself and any inner exceptions
             static (Type exception, string message, string callSite)[] ClassifyFailure(Exception exn)
@@ -101,14 +101,14 @@ namespace SslStress.Utils
         private sealed class ErrorType : IErrorType
         {
             public string ErrorMessage { get; }
-            public ConcurrentQueue<(DateTime, string?)> OccurencesQueue = new ConcurrentQueue<(DateTime, string?)>();
+            public ConcurrentQueue<(DateTime, string?)> OccurrencesQueue = new ConcurrentQueue<(DateTime, string?)>();
 
             public ErrorType(string errorText)
             {
                 ErrorMessage = errorText;
             }
 
-            public IReadOnlyCollection<(DateTime timestamp, string? metadata)> Occurrences => OccurencesQueue;
+            public IReadOnlyCollection<(DateTime timestamp, string? metadata)> Occurrences => OccurrencesQueue;
         }
 
         private class StructuralEqualityComparer<T> : IEqualityComparer<T> where T : IStructuralEquatable

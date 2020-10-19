@@ -9,6 +9,7 @@ using System.Reflection.Emit;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Text;
+using System.Threading.Tasks;
 using Microsoft.DotNet.RemoteExecutor;
 using Xunit;
 
@@ -1774,6 +1775,64 @@ namespace System.Tests
                 Assert.True(rom.Span.SequenceEqual(rom.TrimStart().Span));
                 Assert.True(rom.Span.SequenceEqual(rom.TrimEnd().Span));
             }
+        }
+
+        [OuterLoop]
+        [Theory]
+        [InlineData(CompareOptions.None)]
+        [InlineData(CompareOptions.IgnoreCase)]
+        [InlineData(CompareOptions.IgnoreNonSpace)]
+        [InlineData(CompareOptions.IgnoreCase | CompareOptions.IgnoreNonSpace)]
+        public void TestStringSearchCacheSynchronization(CompareOptions options)
+        {
+            int parallelism = Environment.ProcessorCount / 2;
+            if (Environment.ProcessorCount == 0) // 1 processor case
+            {
+                return;
+            }
+
+            string source = "Abcdefgh Abcdefgh Abcdefgh Abcdefgh Abcdefgh Abcdefgh Abcdefgh Abcdefgh Abcdefgh Abcdefgh Abcdefgh Abcdefgh Abcdefgh Abcdefgh Abcdefgh Abcdefgh Abcdefgh Abcdefgh Abcdefgh Abcdefgh Abcdefgh " +
+                            "Abcdefgh Abcdefgh Abcdefgh Abcdefgh Abcdefgh Abcdefgh Abcdefgh Abcdefgh Abcdefgh Abcdefgh Abcdefgh Abcdefgh Abcdefgh Abcdefgh Abcdefgh Abcdefgh Abcdefgh Abcdefgh Abcdefgh Abcdefgh Abcdefgh " +
+                            "Abcdefgh Abcdefgh Abcdefgh Abcdefgh Abcdefgh Abcdefgh Abcdefgh Abcdefgh Abcdefgh Abcdefgh Abcdefgh Abcdefgh Abcdefgh Abcdefgh Abcdefgh Abcdefgh Abcdefgh Abcdefgh Abcdefgh Abcdefgh Abcdefgh " +
+                            "сентября Abcdefgh Abcdefgh Abcdefgh Abcdefgh Abcdefgh Abcdefgh Abcdefgh Abcdefgh Abcdefgh Abcdefgh Abcdefgh Abcdefgh Abcdefgh Abcdefgh Abcdefgh Abcdefgh Abcdefgh Abcdefgh Abcdefgh Abcdefgh " +
+                            "Abcdefgh Abcdefgh Abcdefgh Abcdefgh Abcdefgh Abcdefgh Abcdefgh Abcdefgh Abcdefgh Abcdefgh Abcdefgh Abcdefgh Abcdefgh Abcdefgh Abcdefgh Abcdefgh Abcdefgh Abcdefgh Abcdefgh Abcdefgh Abcdefgh " +
+                            "Abcdefgh Abcdefgh Abcdefgh Abcdefgh Abcdefgh Abcdefgh Abcdefgh Abcdefgh Abcdefgh Abcdefgh Abcdefgh Abcdefgh Abcdefgh Abcdefgh Abcdefgh Abcdefgh Abcdefgh Abcdefgh Abcdefgh Abcdefgh Abcdefgh ";
+
+            string source1 = "сентября Abcdefgh сентября ";
+
+            string pattern = "сентября ";
+            string pattern1 = "сентябряnone";
+
+            CompareInfo ci = CultureInfo.CurrentCulture.CompareInfo;
+
+            Task [] tasks = new Task[parallelism];
+            for (int i = 0; i < parallelism; i++)
+            {
+                tasks[i] = new Task(() =>
+                {
+                    for (int i = 0; i < 1_00_000; i++)
+                    {
+                        Assert.True(ci.IndexOf(source, pattern, options) > 0, "ci.IndexOf 1");
+                        Assert.True(ci.LastIndexOf(source, pattern, options) > 0, "LastIndexOf 1");
+
+                        Assert.False(ci.IndexOf(source, pattern1, options) > 0, "IndexOf 2");
+                        Assert.False(ci.LastIndexOf(source, pattern1, options) > 0, "LastIndexOf 2");
+
+                        Assert.True(ci.IsPrefix(source1, pattern, options), "IsPrefix 1");
+                        Assert.True(ci.IsSuffix(source1, pattern, options), "IsSuffix 1");
+
+                        Assert.False(ci.IsPrefix(source, pattern, options), "IsPrefix 2");
+                        Assert.False(ci.IsSuffix(source, pattern, options), "IsPrefix 2");
+                    }
+                });
+            }
+
+            for (int i = 0; i < parallelism; i++)
+            {
+                tasks[i].Start();
+            }
+
+            Task.WaitAll(tasks);
         }
     }
 }

@@ -76,6 +76,7 @@ namespace System.IO
 }
 namespace System.Runtime.CompilerServices
 {
+    [System.Runtime.Versioning.SupportedOSPlatformAttribute("windows")]
     [System.AttributeUsageAttribute(System.AttributeTargets.Field | System.AttributeTargets.Parameter, Inherited=false)]
     public sealed partial class IDispatchConstantAttribute : System.Runtime.CompilerServices.CustomConstantAttribute
     {

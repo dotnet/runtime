@@ -4,7 +4,7 @@
 using System;
 using System.Runtime.InteropServices;
 
-internal static unsafe partial class Interop
+internal static partial class Interop
 {
     internal static partial class Kernel32
     {
@@ -20,15 +20,15 @@ internal static unsafe partial class Interop
         }
 
         [DllImport(Libraries.Kernel32, ExactSpelling = true)]
-        internal static extern void InitializeCriticalSection(CRITICAL_SECTION* lpCriticalSection);
+        internal static extern unsafe void InitializeCriticalSection(CRITICAL_SECTION* lpCriticalSection);
 
         [DllImport(Libraries.Kernel32, ExactSpelling = true)]
-        internal static extern void EnterCriticalSection(CRITICAL_SECTION* lpCriticalSection);
+        internal static extern unsafe void EnterCriticalSection(CRITICAL_SECTION* lpCriticalSection);
 
         [DllImport(Libraries.Kernel32, ExactSpelling = true)]
-        internal static extern void LeaveCriticalSection(CRITICAL_SECTION* lpCriticalSection);
+        internal static extern unsafe void LeaveCriticalSection(CRITICAL_SECTION* lpCriticalSection);
 
         [DllImport(Libraries.Kernel32, ExactSpelling = true)]
-        internal static extern void DeleteCriticalSection(CRITICAL_SECTION* lpCriticalSection);
+        internal static extern unsafe void DeleteCriticalSection(CRITICAL_SECTION* lpCriticalSection);
     }
 }

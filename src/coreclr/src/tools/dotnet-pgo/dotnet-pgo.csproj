@@ -3,7 +3,7 @@
   <PropertyGroup>
     <AssemblyName>dotnet-pgo</AssemblyName>
     <OutputType>Exe</OutputType>
-    <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
+    <TargetFramework>$(NetCoreAppToolCurrent)</TargetFramework>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <LangVersion>8.0</LangVersion>
     <OutputPath>$(RuntimeBinDir)/dotnet-pgo</OutputPath>

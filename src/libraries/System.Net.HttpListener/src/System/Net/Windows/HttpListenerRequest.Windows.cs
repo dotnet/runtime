@@ -7,7 +7,6 @@ using System.Globalization;
 using System.IO;
 using System.Net.WebSockets;
 using System.Runtime.InteropServices;
-using System.Runtime.Versioning;
 using System.Security;
 using System.Security.Authentication.ExtendedProtection;
 using System.Security.Cryptography;
@@ -289,7 +288,6 @@ namespace System.Net
             }
         }
 
-        [UnsupportedOSPlatform("browser")]
         public IPEndPoint RemoteEndPoint
         {
             get
@@ -303,7 +301,6 @@ namespace System.Net
             }
         }
 
-        [UnsupportedOSPlatform("browser")]
         public IPEndPoint LocalEndPoint
         {
             get

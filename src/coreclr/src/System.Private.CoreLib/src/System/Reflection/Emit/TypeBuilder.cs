@@ -50,7 +50,7 @@ namespace System.Reflection.Emit
                 if (m_customBuilder == null)
                 {
                     Debug.Assert(m_con != null);
-                    DefineCustomAttribute(module, token, module.GetConstructorToken(m_con).Token,
+                    DefineCustomAttribute(module, token, module.GetConstructorToken(m_con),
                         m_binaryAttribute, false, false);
                 }
                 else
@@ -394,7 +394,7 @@ namespace System.Reflection.Emit
 
         #region Private Data Members
         private List<CustAttr>? m_ca;
-        private TypeToken m_tdType;
+        private int m_tdType;
         private readonly ModuleBuilder m_module;
         private readonly string? m_strName;
         private readonly string? m_strNameSpace;
@@ -432,7 +432,7 @@ namespace System.Reflection.Emit
         // ctor for the global (module) type
         internal TypeBuilder(ModuleBuilder module)
         {
-            m_tdType = new TypeToken((int)MetadataTokenType.TypeDef);
+            m_tdType = ((int)MetadataTokenType.TypeDef);
             m_isHiddenGlobalType = true;
             m_module = module;
             m_listMethods = new List<MethodBuilder>();
@@ -514,7 +514,7 @@ namespace System.Reflection.Emit
                 interfaceTokens = new int[interfaces.Length + 1];
                 for (i = 0; i < interfaces.Length; i++)
                 {
-                    interfaceTokens[i] = m_module.GetTypeTokenInternal(interfaces[i]).Token;
+                    interfaceTokens[i] = m_module.GetTypeTokenInternal(interfaces[i]);
                 }
             }
 
@@ -545,21 +545,21 @@ namespace System.Reflection.Emit
 
             int tkParent = 0;
             if (m_typeParent != null)
-                tkParent = m_module.GetTypeTokenInternal(m_typeParent).Token;
+                tkParent = m_module.GetTypeTokenInternal(m_typeParent);
 
             int tkEnclosingType = 0;
             if (enclosingType != null)
             {
-                tkEnclosingType = enclosingType.m_tdType.Token;
+                tkEnclosingType = enclosingType.m_tdType;
             }
 
-            m_tdType = new TypeToken(DefineType(new QCallModule(ref module),
-                fullname, tkParent, m_iAttr, tkEnclosingType, interfaceTokens!));
+            m_tdType = DefineType(new QCallModule(ref module),
+                fullname, tkParent, m_iAttr, tkEnclosingType, interfaceTokens!);
 
             m_iPackingSize = iPackingSize;
             m_iTypeSize = iTypeSize;
             if ((m_iPackingSize != 0) || (m_iTypeSize != 0))
-                SetClassLayout(new QCallModule(ref module), m_tdType.Token, m_iPackingSize, m_iTypeSize);
+                SetClassLayout(new QCallModule(ref module), m_tdType, m_iPackingSize, m_iTypeSize);
 
             m_module.AddType(FullName!, this);
         }
@@ -728,7 +728,7 @@ namespace System.Reflection.Emit
 
         public override bool IsByRefLike => false;
 
-        internal int MetadataTokenInternal => m_tdType.Token;
+        public override int MetadataToken => m_tdType;
 
         #endregion
 
@@ -1225,11 +1225,11 @@ namespace System.Reflection.Emit
                 // Loader restriction: body method has to be from this class
                 throw new ArgumentException(SR.ArgumentException_BadMethodImplBody);
 
-            MethodToken tkBody = m_module.GetMethodTokenInternal(methodInfoBody);
-            MethodToken tkDecl = m_module.GetMethodTokenInternal(methodInfoDeclaration);
+            int tkBody = m_module.GetMethodToken(methodInfoBody);
+            int tkDecl = m_module.GetMethodToken(methodInfoDeclaration);
 
             ModuleBuilder module = m_module;
-            DefineMethodImpl(new QCallModule(ref module), m_tdType.Token, tkBody.Token, tkDecl.Token);
+            DefineMethodImpl(new QCallModule(ref module), m_tdType, tkBody, tkDecl);
         }
 
         public MethodBuilder DefineMethod(string name, MethodAttributes attributes, Type? returnType, Type[]? parameterTypes)
@@ -1399,7 +1399,7 @@ namespace System.Reflection.Emit
                 }
                 m_listMethods.Add(method);
 
-                MethodToken token = method.GetToken();
+                int token = method.MetadataToken;
 
                 int linkFlags = 0;
                 switch (nativeCallConv)
@@ -1440,8 +1440,9 @@ namespace System.Reflection.Emit
                 SetPInvokeData(new QCallModule(ref module),
                     dllName,
                     importName,
-                    token.Token,
+                    token,
                     linkFlags);
+
                 method.SetToken(token);
 
                 return method;
@@ -1792,13 +1793,13 @@ namespace System.Reflection.Emit
 
             ModuleBuilder module = m_module;
 
-            PropertyToken prToken = new PropertyToken(DefineProperty(
+            int prToken = DefineProperty(
                 new QCallModule(ref module),
-                m_tdType.Token,
+                m_tdType,
                 name,
                 attributes,
                 sigBytes,
-                sigLength));
+                sigLength);
 
             // create the property builder now.
             return new PropertyBuilder(
@@ -1829,22 +1830,22 @@ namespace System.Reflection.Emit
                 throw new ArgumentException(SR.Argument_IllegalName, nameof(name));
 
             int tkType;
-            EventToken evToken;
+            int evToken;
 
             AssemblyBuilder.CheckContext(eventtype);
 
             ThrowIfCreated();
 
-            tkType = m_module.GetTypeTokenInternal(eventtype).Token;
+            tkType = m_module.GetTypeTokenInternal(eventtype);
 
             // Internal helpers to define property records
             ModuleBuilder module = m_module;
-            evToken = new EventToken(DefineEvent(
+            evToken = DefineEvent(
                 new QCallModule(ref module),
-                m_tdType.Token,
+                m_tdType,
                 name,
                 attributes,
-                tkType));
+                tkType);
 
             // create the property builder now.
             return new EventBuilder(
@@ -1886,12 +1887,12 @@ namespace System.Reflection.Emit
             int[] interfaceTokens = new int[m_typeInterfaces.Count];
             for (int i = 0; i < m_typeInterfaces.Count; i++)
             {
-                interfaceTokens[i] = m_module.GetTypeTokenInternal(m_typeInterfaces[i]).Token;
+                interfaceTokens[i] = m_module.GetTypeTokenInternal(m_typeInterfaces[i]);
             }
 
             int tkParent = 0;
             if (m_typeParent != null)
-                tkParent = m_module.GetTypeTokenInternal(m_typeParent).Token;
+                tkParent = m_module.GetTypeTokenInternal(m_typeParent);
 
             ModuleBuilder module = m_module;
 
@@ -1911,17 +1912,17 @@ namespace System.Reflection.Emit
 
                 for (int i = 0; i < m_typeInterfaces.Count; i++)
                 {
-                    constraints[i] = m_module.GetTypeTokenInternal(m_typeInterfaces[i]).Token;
+                    constraints[i] = m_module.GetTypeTokenInternal(m_typeInterfaces[i]);
                 }
 
-                int declMember = m_declMeth == null ? m_DeclaringType!.m_tdType.Token : m_declMeth.GetToken().Token;
-                m_tdType = new TypeToken(DefineGenericParam(new QCallModule(ref module),
-                    m_strName!, declMember, m_genParamAttributes, m_genParamPos, constraints));
+                int declMember = m_declMeth == null ? m_DeclaringType!.m_tdType : m_declMeth.MetadataToken;
+                m_tdType = DefineGenericParam(new QCallModule(ref module),
+                    m_strName!, declMember, m_genParamAttributes, m_genParamPos, constraints);
 
                 if (m_ca != null)
                 {
                     foreach (CustAttr ca in m_ca)
-                        ca.Bake(m_module, MetadataTokenInternal);
+                        ca.Bake(m_module, MetadataToken);
                 }
 
                 m_hasBeenCreated = true;
@@ -1933,9 +1934,9 @@ namespace System.Reflection.Emit
             else
             {
                 // Check for global typebuilder
-                if (((m_tdType.Token & 0x00FFFFFF) != 0) && ((tkParent & 0x00FFFFFF) != 0))
+                if (((m_tdType & 0x00FFFFFF) != 0) && ((tkParent & 0x00FFFFFF) != 0))
                 {
-                    SetParentType(new QCallModule(ref module), m_tdType.Token, tkParent);
+                    SetParentType(new QCallModule(ref module), m_tdType, tkParent);
                 }
 
                 if (m_inst != null)
@@ -1964,7 +1965,9 @@ namespace System.Reflection.Emit
                 MethodBuilder meth = m_listMethods[i];
 
                 if (meth.IsGenericMethodDefinition)
-                    meth.GetToken(); // Doubles as "CreateMethod" for MethodBuilder -- analogous to CreateType()
+                {
+                    int dummy = meth.MetadataToken; // Doubles as "CreateMethod" for MethodBuilder -- analogous to CreateType()
+                }
 
                 MethodAttributes methodAttrs = meth.Attributes;
 
@@ -2018,7 +2021,7 @@ namespace System.Reflection.Emit
                 ExceptionHandler[]? exceptions = meth.GetExceptionHandlers();
                 int[]? tokenFixups = meth.GetTokenFixups();
 
-                SetMethodIL(new QCallModule(ref module), meth.GetToken().Token, meth.InitLocals,
+                SetMethodIL(new QCallModule(ref module), meth.MetadataToken, meth.InitLocals,
                     body, (body != null) ? body.Length : 0,
                     localSig, sigLength, maxStack,
                     exceptions, (exceptions != null) ? exceptions.Length : 0,
@@ -2036,7 +2039,7 @@ namespace System.Reflection.Emit
 
             // Terminate the process.
             RuntimeType? cls = null;
-            TermCreateClass(new QCallModule(ref module), m_tdType.Token, ObjectHandleOnStack.Create(ref cls));
+            TermCreateClass(new QCallModule(ref module), m_tdType, ObjectHandleOnStack.Create(ref cls));
 
             if (!m_isHiddenGlobalType)
             {
@@ -2104,14 +2107,14 @@ namespace System.Reflection.Emit
 
             ThrowIfCreated();
 
-            TypeToken tkInterface = m_module.GetTypeTokenInternal(interfaceType);
+            int tkInterface = m_module.GetTypeTokenInternal(interfaceType);
             ModuleBuilder module = m_module;
-            AddInterfaceImpl(new QCallModule(ref module), m_tdType.Token, tkInterface.Token);
+            AddInterfaceImpl(new QCallModule(ref module), m_tdType, tkInterface);
 
             m_typeInterfaces!.Add(interfaceType);
         }
 
-        public TypeToken TypeToken
+        internal int TypeToken
         {
             get
             {
@@ -2130,7 +2133,7 @@ namespace System.Reflection.Emit
             if (binaryAttribute == null)
                 throw new ArgumentNullException(nameof(binaryAttribute));
 
-            DefineCustomAttribute(m_module, m_tdType.Token, ((ModuleBuilder)m_module).GetConstructorToken(con).Token,
+            DefineCustomAttribute(m_module, m_tdType, ((ModuleBuilder)m_module).GetConstructorToken(con),
                 binaryAttribute, false, false);
         }
 
@@ -2139,7 +2142,7 @@ namespace System.Reflection.Emit
             if (customBuilder == null)
                 throw new ArgumentNullException(nameof(customBuilder));
 
-            customBuilder.CreateCustomAttribute((ModuleBuilder)m_module, m_tdType.Token);
+            customBuilder.CreateCustomAttribute((ModuleBuilder)m_module, m_tdType);
         }
 
         #endregion

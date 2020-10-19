@@ -18,7 +18,9 @@
 #if !defined(__APPLE__) && !defined(__FreeBSD__) && !defined(__OpenBSD__)
 #include <malloc.h>
 #endif
+#ifndef HOST_WIN32
 #include <unistd.h>
+#endif
 #include <stdlib.h>
 #if defined (HAVE_SYS_ZLIB)
 #include <zlib.h>
@@ -2430,7 +2432,7 @@ decode_buffer (ProfContext *ctx)
 					add_image (ptr_base + ptrdiff, (char*)p);
 				while (*p) p++;
 				p++;
-				if (ctx->data_version >= 16) {
+				if (ctx->data_version >= 16 && subtype == TYPE_END_LOAD) {
 					while (*p) p++; // mvid
 					p++;
 				}

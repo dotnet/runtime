@@ -14,7 +14,7 @@
 
   <PropertyGroup Condition="'$(TargetOS)' == 'Browser'">
     <!-- We need to set this in order to get extensibility on xunit category traits and other arguments we pass down to xunit via MSBuild properties -->
-    <RunScriptCommand>$HARNESS_RUNNER wasm $XHARNESS_COMMAND  --app=. --engine=$(JSEngine) $(JSEngineArgs) --js-file=runtime.js -v --output-directory=$XHARNESS_OUT --  $(RunTestsJSArguments) --run WasmTestRunner.dll $(AssemblyName).dll</RunScriptCommand>
+    <RunScriptCommand>$HARNESS_RUNNER wasm $XHARNESS_COMMAND  --app=. --engine=$(JSEngine) $(JSEngineArgs) --js-file=runtime.js --output-directory=$XHARNESS_OUT --  $(RunTestsJSArguments) --run WasmTestRunner.dll $(AssemblyName).dll</RunScriptCommand>
   </PropertyGroup>
 
   <ItemGroup>
@@ -28,6 +28,9 @@
              AssemblyFile="$(AndroidAppBuilderTasksAssemblyPath)" />
 
   <Target Condition="'$(TargetOS)' == 'Android'" Name="BundleTestAndroidApp">
+    <Error Condition="!Exists('$(MicrosoftNetCoreAppRuntimePackRidDir)')" Text="MicrosoftNetCoreAppRuntimePackRidDir=$(MicrosoftNetCoreAppRuntimePackRidDir) doesn't exist" />
+
+    <!-- TEMP: consume OpenSSL binaries from external sources via env. variables.-->
     <PropertyGroup>
       <AndroidAbi Condition="'$(TargetArchitecture)' == 'arm64'">arm64-v8a</AndroidAbi>
       <AndroidAbi Condition="'$(TargetArchitecture)' == 'arm'">armeabi-v7a</AndroidAbi>
@@ -35,9 +38,6 @@
       <AndroidAbi Condition="'$(TargetArchitecture)' == 'x86'">x86</AndroidAbi>
     </PropertyGroup>
 
-    <Error Condition="!Exists('$(MicrosoftNetCoreAppRuntimePackRidDir)')" Text="MicrosoftNetCoreAppRuntimePackRidDir=$(MicrosoftNetCoreAppRuntimePackRidDir) doesn't exist" />
-
-    <!-- TEMP: consume OpenSSL binaries from external sources via env. variables -->
     <Copy Condition="'$(ANDROID_OPENSSL_AAR)' != ''"
           SourceFiles="$(ANDROID_OPENSSL_AAR)\prefab\modules\crypto\libs\android.$(AndroidAbi)\libcrypto.so"
           DestinationFolder="$(PublishDir)" SkipUnchangedFiles="true"/>
@@ -49,7 +49,7 @@
 
     <RemoveDir Directories="$(BundleDir)" />
     <AndroidAppBuilderTask
-        Abi="$(AndroidAbi)"
+        RuntimeIdentifier="$(RuntimeIdentifier)"
         ProjectName="$(AssemblyName)"
         MonoRuntimeHeaders="$(MicrosoftNetCoreAppRuntimePackNativeDir)include\mono-2.0"
         MainLibraryFileName="AndroidTestRunner.dll"

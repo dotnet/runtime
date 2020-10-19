@@ -635,6 +635,15 @@ void EEStartupHelper()
 
 #ifndef CROSSGEN_COMPILE
 
+        // We cache the SystemInfo for anyone to use throughout the life of the EE.
+        GetSystemInfo(&g_SystemInfo);
+
+        // Set callbacks so that LoadStringRC knows which language our
+        // threads are in so that it can return the proper localized string.
+    // TODO: This shouldn't rely on the LCID (id), but only the name
+        SetResourceCultureCallbacks(GetThreadUICultureNames,
+        GetThreadUICultureId);
+
 #ifndef TARGET_UNIX
         ::SetConsoleCtrlHandler(DbgCtrlCHandler, TRUE/*add*/);
 #endif
@@ -971,6 +980,10 @@ void EEStartupHelper()
 #endif
 
 #endif // CROSSGEN_COMPILE
+
+#if defined(HOST_OSX) && defined(HOST_ARM64)
+        PAL_JITWriteEnable(true);
+#endif // defined(HOST_OSX) && defined(HOST_ARM64)
 
         SystemDomain::System()->Init();
 
@@ -1816,16 +1829,9 @@ BOOL STDMETHODCALLTYPE EEDllMain( // TRUE on success, FALSE on error.
         {
             case DLL_PROCESS_ATTACH:
             {
-                // We cache the SystemInfo for anyone to use throughout the
-                // life of the DLL.
-                GetSystemInfo(&g_SystemInfo);
-
-                // Set callbacks so that LoadStringRC knows which language our
-                // threads are in so that it can return the proper localized string.
-            // TODO: This shouldn't rely on the LCID (id), but only the name
-                SetResourceCultureCallbacks(GetThreadUICultureNames,
-                                            GetThreadUICultureId);
-
+                g_hmodCoreCLR = pParam->hInst;
+                // Save the module handle.
+                g_hThisInst = pParam->hInst;
                 break;
             }
 
@@ -1855,35 +1861,6 @@ BOOL STDMETHODCALLTYPE EEDllMain( // TRUE on success, FALSE on error.
                 }
                 break;
             }
-
-            case DLL_THREAD_DETACH:
-            {
-                // Don't destroy threads here if we're in shutdown (shutdown will
-                // clean up for us instead).
-
-                Thread* thread = GetThread();
-                if (thread)
-                {
-#ifdef FEATURE_COMINTEROP
-                    // reset the CoInitialize state
-                    // so we don't call CoUninitialize during thread detach
-                    thread->ResetCoInitialized();
-#endif // FEATURE_COMINTEROP
-                    // For case where thread calls ExitThread directly, we need to reset the
-                    // frame pointer. Otherwise stackwalk would AV. We need to do it in cooperative mode.
-                    // We need to set m_GCOnTransitionsOK so this thread won't trigger GC when toggle GC mode
-                    if (thread->m_pFrame != FRAME_TOP)
-                    {
-#ifdef _DEBUG
-                        thread->m_GCOnTransitionsOK = FALSE;
-#endif
-                        GCX_COOP_NO_DTOR();
-                        thread->m_pFrame = FRAME_TOP;
-                        GCX_COOP_NO_DTOR_END();
-                    }
-                    thread->DetachThread(TRUE);
-                }
-            }
         }
 
     }
@@ -1892,12 +1869,46 @@ BOOL STDMETHODCALLTYPE EEDllMain( // TRUE on success, FALSE on error.
     }
     PAL_ENDTRY;
 
-    if (dwReason == DLL_THREAD_DETACH || dwReason == DLL_PROCESS_DETACH)
-    {
-        ThreadDetaching();
-    }
     return TRUE;
 }
+
+struct TlsDestructionMonitor
+{
+    ~TlsDestructionMonitor()
+    {
+        // Don't destroy threads here if we're in shutdown (shutdown will
+        // clean up for us instead).
+
+        Thread* thread = GetThread();
+        if (thread)
+        {
+#ifdef FEATURE_COMINTEROP
+            // reset the CoInitialize state
+            // so we don't call CoUninitialize during thread detach
+            thread->ResetCoInitialized();
+#endif // FEATURE_COMINTEROP
+            // For case where thread calls ExitThread directly, we need to reset the
+            // frame pointer. Otherwise stackwalk would AV. We need to do it in cooperative mode.
+            // We need to set m_GCOnTransitionsOK so this thread won't trigger GC when toggle GC mode
+            if (thread->m_pFrame != FRAME_TOP)
+            {
+#ifdef _DEBUG
+                thread->m_GCOnTransitionsOK = FALSE;
+#endif
+                GCX_COOP_NO_DTOR();
+                thread->m_pFrame = FRAME_TOP;
+                GCX_COOP_NO_DTOR_END();
+            }
+            thread->DetachThread(TRUE);
+        }
+
+        ThreadDetaching();
+    }
+};
+
+// This thread local object is used to detect thread shutdown. Its destructor
+// is called when a thread is being shut down.
+thread_local TlsDestructionMonitor tls_destructionMonitor;
 
 #ifdef DEBUGGING_SUPPORTED
 //
