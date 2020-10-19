@@ -15,7 +15,7 @@
     <DebugSymbols>true</DebugSymbols>
 
     <!-- Force System.Private.CoreLib.dll into a special IL output directory -->
-    <OutputPath>$(BinDir)IL/</OutputPath>
+    <OutputPath>$(RuntimeBinDir)IL/</OutputPath>
     <Configurations>Debug;Release;Checked</Configurations>
     <Platforms>x64;x86;arm;arm64;wasm</Platforms>
   </PropertyGroup>
@@ -105,7 +105,7 @@
   <PropertyGroup>
     <NoWarn>$(NoWarn),618,67</NoWarn>
 
-    <DefineConstants>NETCORE;DISABLE_REMOTING;MONO_FEATURE_SRE;$(DefineConstants)</DefineConstants>
+    <DefineConstants>MONO_FEATURE_SRE;$(DefineConstants)</DefineConstants>
 
     <FeatureManagedEtwChannels>true</FeatureManagedEtwChannels>
     <FeatureManagedEtw>true</FeatureManagedEtw>
@@ -130,16 +130,17 @@
     <ILLinkDescriptorsXmls Include="$(ILLinkDirectory)ILLink.Descriptors.xml" />
     <ILLinkDescriptorsXmls Include="$(CoreLibSharedDir)ILLink\ILLink.Descriptors.Shared.xml" />
 
+    <ILLinkSubstitutionsXmls Include="$(ILLinkDirectory)ILLink.Substitutions.xml" />
     <ILLinkSubstitutionsXmls Include="$(ILLinkDirectory)ILLink.Substitutions.$(Platform).xml"
                              Condition="Exists('$(ILLinkDirectory)ILLink.Substitutions.$(Platform).xml')" />
 
+    <ILLinkLinkAttributesXmls Include="$(ILLinkDirectory)ILLink.LinkAttributes.xml" />
     <ILLinkLinkAttributesXmls Include="$(ILLinkDirectory)ILLink.LinkAttributes.$(Platform).xml"
                               Condition="Exists('$(ILLinkDirectory)ILLink.LinkAttributes.$(Platform).xml')" />
   </ItemGroup>
 
   <!-- Sources -->
   <ItemGroup>
-      <Compile Include="$(BclSourcesRoot)\Mono\Console.Mono.cs" />
       <Compile Include="$(BclSourcesRoot)\Mono\MonoListItem.cs" />
       <Compile Include="$(BclSourcesRoot)\Mono\MonoDomain.cs" />
       <Compile Include="$(BclSourcesRoot)\Mono\MonoDomainSetup.cs" />
@@ -239,7 +240,6 @@
       <Compile Include="$(BclSourcesRoot)\System\Runtime\CompilerServices\JitHelpers.cs" />
       <Compile Include="$(BclSourcesRoot)\System\Runtime\CompilerServices\RuntimeHelpers.Mono.cs" />
       <Compile Include="$(BclSourcesRoot)\System\Runtime\CompilerServices\RuntimeFeature.Mono.cs" />
-      <Compile Include="$(BclSourcesRoot)\System\Runtime\InteropServices\CriticalHandle.Mono.cs" />
       <Compile Include="$(BclSourcesRoot)\System\Runtime\InteropServices\GCHandle.Mono.cs" />
       <Compile Include="$(BclSourcesRoot)\System\Runtime\InteropServices\Marshal.Mono.cs" />
       <Compile Include="$(BclSourcesRoot)\System\Runtime\InteropServices\MemoryMarshal.Mono.cs" />
@@ -306,8 +306,8 @@
   <Import Project="$(LibrariesProjectRoot)\System.Private.CoreLib\src\System.Private.CoreLib.Shared.projitems" Label="Shared" />
 
   <Target Name="CopyCoreLibToBinDir" AfterTargets="Build">
-    <Copy SourceFiles="$(BinDir)/IL/System.Private.CoreLib.dll;$(BinDir)/IL/System.Private.CoreLib.pdb"
-        DestinationFolder="$(BinDir)"
+    <Copy SourceFiles="$(RuntimeBinDir)/IL/System.Private.CoreLib.dll;$(RuntimeBinDir)/IL/System.Private.CoreLib.pdb"
+        DestinationFolder="$(RuntimeBinDir)"
         SkipUnchangedFiles="true" />
   </Target>
 

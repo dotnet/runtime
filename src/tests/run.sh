@@ -87,7 +87,7 @@ function check_cpu_architecture {
         armv7l)
             __arch=arm
             ;;
-        aarch64)
+        aarch64|arm64)
             __arch=arm64
             ;;
         *)

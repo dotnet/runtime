@@ -14,8 +14,6 @@
 #include "jitinterface.h"
 #include "ecall.h"
 
-EXTERN_C void JIT_UpdateWriteBarrierState(bool skipEphemeralCheck);
-
 
 #ifndef DACCESS_COMPILE
 //-----------------------------------------------------------------------
@@ -571,6 +569,10 @@ void StubPrecode::Init(MethodDesc* pMD, LoaderAllocator *pLoaderAllocator)
 {
     WRAPPER_NO_CONTRACT;
 
+#if defined(HOST_OSX) && defined(HOST_ARM64)
+    auto jitWriteEnableHolder = PAL_JITWriteEnable(true);
+#endif // defined(HOST_OSX) && defined(HOST_ARM64)
+
     int n = 0;
 
     m_rgCode[n++] = 0x10000089; // adr x9, #16
@@ -604,6 +606,10 @@ void NDirectImportPrecode::Init(MethodDesc* pMD, LoaderAllocator *pLoaderAllocat
 {
     WRAPPER_NO_CONTRACT;
 
+#if defined(HOST_OSX) && defined(HOST_ARM64)
+    auto jitWriteEnableHolder = PAL_JITWriteEnable(true);
+#endif // defined(HOST_OSX) && defined(HOST_ARM64)
+
     int n = 0;
 
     m_rgCode[n++] = 0x1000008B; // adr x11, #16
@@ -636,6 +642,10 @@ void NDirectImportPrecode::Fixup(DataImage *image)
 void FixupPrecode::Init(MethodDesc* pMD, LoaderAllocator *pLoaderAllocator, int iMethodDescChunkIndex /*=0*/, int iPrecodeChunkIndex /*=0*/)
 {
     WRAPPER_NO_CONTRACT;
+
+#if defined(HOST_OSX) && defined(HOST_ARM64)
+    auto jitWriteEnableHolder = PAL_JITWriteEnable(true);
+#endif // defined(HOST_OSX) && defined(HOST_ARM64)
 
     InitCommon();
 
@@ -1058,6 +1068,17 @@ void JIT_TailCall()
 }
 
 #if !defined(DACCESS_COMPILE) && !defined(CROSSGEN_COMPILE)
+EXTERN_C void JIT_UpdateWriteBarrierState(bool skipEphemeralCheck);
+
+static void UpdateWriteBarrierState(bool skipEphemeralCheck)
+{
+#if defined(HOST_OSX) && defined(HOST_ARM64)
+    auto jitWriteEnableHolder = PAL_JITWriteEnable(true);
+#endif // defined(HOST_OSX) && defined(HOST_ARM64)
+
+    JIT_UpdateWriteBarrierState(GCHeapUtilities::IsServerHeap());
+}
+
 void InitJITHelpers1()
 {
     STANDARD_VM_CONTRACT;
@@ -1083,11 +1104,12 @@ void InitJITHelpers1()
         }
     }
 
-    JIT_UpdateWriteBarrierState(GCHeapUtilities::IsServerHeap());
+    UpdateWriteBarrierState(GCHeapUtilities::IsServerHeap());
 }
 
+
 #else
-EXTERN_C void JIT_UpdateWriteBarrierState(bool) {}
+void UpdateWriteBarrierState(bool) {}
 #endif // !defined(DACCESS_COMPILE) && !defined(CROSSGEN_COMPILE)
 
 PTR_CONTEXT GetCONTEXTFromRedirectedStubStackFrame(T_DISPATCHER_CONTEXT * pDispatcherContext)
@@ -1198,6 +1220,9 @@ UMEntryThunk * UMEntryThunk::Decode(void *pCallback)
 
 void UMEntryThunkCode::Encode(BYTE* pTargetCode, void* pvSecretParam)
 {
+#if defined(HOST_OSX) && defined(HOST_ARM64)
+    auto jitWriteEnableHolder = PAL_JITWriteEnable(true);
+#endif // defined(HOST_OSX) && defined(HOST_ARM64)
     // adr x12, _label
     // ldp x16, x12, [x12]
     // br x16
@@ -1213,7 +1238,6 @@ void UMEntryThunkCode::Encode(BYTE* pTargetCode, void* pvSecretParam)
 
     m_pTargetCode = (TADDR)pTargetCode;
     m_pvSecretParam = (TADDR)pvSecretParam;
-
     FlushInstructionCache(GetCurrentProcess(),&m_code,sizeof(m_code));
 }
 
@@ -1221,11 +1245,14 @@ void UMEntryThunkCode::Encode(BYTE* pTargetCode, void* pvSecretParam)
 
 void UMEntryThunkCode::Poison()
 {
+#if defined(HOST_OSX) && defined(HOST_ARM64)
+    auto jitWriteEnableHolder = PAL_JITWriteEnable(true);
+#endif // defined(HOST_OSX) && defined(HOST_ARM64)
+
     m_pTargetCode = (TADDR)UMEntryThunk::ReportViolation;
 
     // ldp x16, x0, [x12]
     m_code[1] = 0xa9400190;
-
     ClrFlushInstructionCache(&m_code,sizeof(m_code));
 }
 
@@ -1251,26 +1278,26 @@ void FlushWriteBarrierInstructionCache()
 #ifndef CROSSGEN_COMPILE
 int StompWriteBarrierEphemeral(bool isRuntimeSuspended)
 {
-    JIT_UpdateWriteBarrierState(GCHeapUtilities::IsServerHeap());
+    UpdateWriteBarrierState(GCHeapUtilities::IsServerHeap());
     return SWB_PASS;
 }
 
 int StompWriteBarrierResize(bool isRuntimeSuspended, bool bReqUpperBoundsCheck)
 {
-    JIT_UpdateWriteBarrierState(GCHeapUtilities::IsServerHeap());
+    UpdateWriteBarrierState(GCHeapUtilities::IsServerHeap());
     return SWB_PASS;
 }
 
 #ifdef FEATURE_USE_SOFTWARE_WRITE_WATCH_FOR_GC_HEAP
 int SwitchToWriteWatchBarrier(bool isRuntimeSuspended)
 {
-    JIT_UpdateWriteBarrierState(GCHeapUtilities::IsServerHeap());
+    UpdateWriteBarrierState(GCHeapUtilities::IsServerHeap());
     return SWB_PASS;
 }
 
 int SwitchToNonWriteWatchBarrier(bool isRuntimeSuspended)
 {
-    JIT_UpdateWriteBarrierState(GCHeapUtilities::IsServerHeap());
+    UpdateWriteBarrierState(GCHeapUtilities::IsServerHeap());
     return SWB_PASS;
 }
 #endif // FEATURE_USE_SOFTWARE_WRITE_WATCH_FOR_GC_HEAP
@@ -1804,6 +1831,20 @@ void StubLinkerCPU::EmitCallManagedMethod(MethodDesc *pMD, BOOL fTailCall)
 
 #define DYNAMIC_HELPER_ALIGNMENT sizeof(TADDR)
 
+#if defined(HOST_OSX) && defined(HOST_ARM64)
+#define BEGIN_DYNAMIC_HELPER_EMIT(size) \
+    SIZE_T cb = size; \
+    SIZE_T cbAligned = ALIGN_UP(cb, DYNAMIC_HELPER_ALIGNMENT); \
+    BYTE * pStart = (BYTE *)(void *)pAllocator->GetDynamicHelpersHeap()->AllocAlignedMem(cbAligned, DYNAMIC_HELPER_ALIGNMENT); \
+    BYTE * p = pStart; \
+    auto jitWriteEnableHolder = PAL_JITWriteEnable(true);
+
+#define END_DYNAMIC_HELPER_EMIT() \
+    _ASSERTE(pStart + cb == p); \
+    while (p < pStart + cbAligned) { *(DWORD*)p = 0xBADC0DF0; p += 4; }\
+    ClrFlushInstructionCache(pStart, cbAligned); \
+    return (PCODE)pStart
+#else // defined(HOST_OSX) && defined(HOST_ARM64)
 #define BEGIN_DYNAMIC_HELPER_EMIT(size) \
     SIZE_T cb = size; \
     SIZE_T cbAligned = ALIGN_UP(cb, DYNAMIC_HELPER_ALIGNMENT); \
@@ -1815,6 +1856,7 @@ void StubLinkerCPU::EmitCallManagedMethod(MethodDesc *pMD, BOOL fTailCall)
     while (p < pStart + cbAligned) { *(DWORD*)p = 0xBADC0DF0; p += 4; }\
     ClrFlushInstructionCache(pStart, cbAligned); \
     return (PCODE)pStart
+#endif // defined(HOST_OSX) && defined(HOST_ARM64)
 
 // Uses x8 as scratch register to store address of data label
 // After load x8 is increment to point to next data

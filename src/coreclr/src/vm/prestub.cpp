@@ -326,6 +326,10 @@ PCODE MethodDesc::PrepareCode(PrepareCodeConfig* pConfig)
 {
     STANDARD_VM_CONTRACT;
 
+#if defined(HOST_OSX) && defined(HOST_ARM64)
+    auto jitWriteEnableHolder = PAL_JITWriteEnable(true);
+#endif // defined(HOST_OSX) && defined(HOST_ARM64)
+
     // If other kinds of code need multi-versioning we could add more cases here,
     // but for now generation of all other code/stubs occurs in other code paths
     _ASSERTE(IsIL() || IsNoMetadata());
@@ -1915,6 +1919,10 @@ extern "C" PCODE STDCALL PreStubWorker(TransitionBlock* pTransitionBlock, Method
 
     ETWOnStartup(PrestubWorker_V1, PrestubWorkerEnd_V1);
 
+#if defined(HOST_OSX) && defined(HOST_ARM64)
+    auto jitWriteEnableHolder = PAL_JITWriteEnable(true);
+#endif // defined(HOST_OSX) && defined(HOST_ARM64)
+
     MAKE_CURRENT_THREAD_AVAILABLE();
 
     // Attempt to check what GC mode we are running under.
@@ -2473,7 +2481,7 @@ EXTERN_C PCODE STDCALL ExternalMethodFixupWorker(TransitionBlock * pTransitionBl
     // Decode indirection cell from callsite if it is not present
     if (pIndirection == NULL)
     {
-        // Asssume that the callsite is call [xxxxxxxx]
+        // Assume that the callsite is call [xxxxxxxx]
         PCODE retAddr = pEMFrame->GetReturnAddress();
 #ifdef TARGET_X86
         pIndirection = *(((TADDR *)retAddr) - 1);
@@ -3495,7 +3503,7 @@ extern "C" SIZE_T STDCALL DynamicHelperWorker(TransitionBlock * pTransitionBlock
     // Decode indirection cell from callsite if it is not present
     if (pCell == NULL)
     {
-        // Asssume that the callsite is call [xxxxxxxx]
+        // Assume that the callsite is call [xxxxxxxx]
         PCODE retAddr = pFrame->GetReturnAddress();
 #ifdef TARGET_X86
         pCell = *(((TADDR **)retAddr) - 1);

@@ -14,9 +14,7 @@
 
     <BaseOutputPath>$(ArtifactsDir)tests\coreclr</BaseOutputPath>
     <BaseOutputPathWithConfig>$([MSBuild]::NormalizePath('$(BaseOutputPath)\$(OSPlatformConfig)\'))</BaseOutputPathWithConfig>
-    <BinDir>$(BaseOutputPathWithConfig)</BinDir>
-
-    <TestWorkingDir>$(BaseOutputPathWithConfig)</TestWorkingDir>
+    <TestBinDir>$(BaseOutputPathWithConfig)</TestBinDir>
 
     <TestSrcDir>$([MSBuild]::NormalizePath('$(RepoRoot)/src/tests/'))</TestSrcDir>
     <TestSrcDir Condition="$([System.String]::new('$(MSBuildProjectDirectory)').StartsWith('$(BaseOutputPathWithConfig)'))">$(BaseOutputPathWithConfig)</TestSrcDir>

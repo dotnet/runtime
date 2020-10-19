@@ -3,7 +3,7 @@
     <OutputType>Exe</OutputType>
     <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
     <Platform>AnyCPU</Platform>
-    <OutputPath>$(BinDir)\DacTableGen</OutputPath>
+    <OutputPath>$(RuntimeBinDir)\DacTableGen</OutputPath>
     <IsShipping>false</IsShipping>
     <RunAnalyzers>false</RunAnalyzers>
   </PropertyGroup>

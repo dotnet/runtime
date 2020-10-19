@@ -95,7 +95,7 @@ namespace System.Threading.Tasks
             return FilterTasksFromWorkItems(ThreadPool.GetQueuedWorkItems());
         }
 
-        private IEnumerable<Task> FilterTasksFromWorkItems(IEnumerable<object> tpwItems)
+        private static IEnumerable<Task> FilterTasksFromWorkItems(IEnumerable<object> tpwItems)
         {
             foreach (object tpwi in tpwItems)
             {

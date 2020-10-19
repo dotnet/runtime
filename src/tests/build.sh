@@ -170,7 +170,8 @@ precompile_coreroot_fx()
         __NumProc=$(nproc --all)
     fi
 
-    local crossgenCmd="\"$__DotNetCli\" \"$CORE_ROOT/R2RTest/R2RTest.dll\" compile-framework -cr \"$CORE_ROOT\" --output-directory \"$CORE_ROOT/crossgen.out\" --target-arch $__BuildArch -dop $__NumProc"
+    local outputDir="$__TestIntermediatesDir/crossgen.out"
+    local crossgenCmd="\"$__DotNetCli\" \"$CORE_ROOT/R2RTest/R2RTest.dll\" compile-framework -cr \"$CORE_ROOT\" --output-directory \"$outputDir\" --large-bubble --release --nocleanup --target-arch $__BuildArch -dop $__NumProc"
 
     if [[ "$__CompositeBuildMode" != 0 ]]; then
         crossgenCmd="$crossgenCmd --composite"
@@ -196,8 +197,7 @@ precompile_coreroot_fx()
         return 1
     fi
 
-    mv "$CORE_ROOT"/crossgen.out/*.dll "$CORE_ROOT"
-    rm -r "$CORE_ROOT/crossgen.out"
+    mv "$outputDir"/*.dll "$CORE_ROOT"
 
     return 0
 }
@@ -290,7 +290,7 @@ build_Tests()
     fi
 
     if [[ "$__SkipNative" != 1 && "$__BuildArch" != "wasm" ]]; then
-        build_native "$__BuildArch" "$__TestDir" "$__TryRunDir" "$__NativeTestIntermediatesDir" "CoreCLR test component"
+        build_native "$__TargetOS" "$__BuildArch" "$__TestDir" "$__TryRunDir" "$__NativeTestIntermediatesDir" "CoreCLR test component"
 
         if [[ "$?" -ne 0 ]]; then
             echo "${__ErrMsgPrefix}${__MsgPrefix}Error: native test build failed. Refer to the build log files for details (above)"
@@ -457,7 +457,6 @@ usage_list+=("-skiptestwrappers: Don't generate test wrappers.")
 usage_list+=("-buildtestwrappersonly: only build the test wrappers.")
 usage_list+=("-copynativeonly: Only copy the native test binaries to the managed output. Do not build the native or managed tests.")
 usage_list+=("-generatelayoutonly: only pull down dependencies and build coreroot.")
-usage_list+=("-crossgenframeworkonly: only compile the framework in CORE_ROOT with Crossgen / Crossgen2.")
 
 usage_list+=("-crossgen: Precompiles the framework managed assemblies in coreroot.")
 usage_list+=("-crossgen2: Precompiles the framework managed assemblies in coreroot using the Crossgen2 compiler.")
@@ -491,13 +490,6 @@ handle_arguments_local() {
             __CopyNativeProjectsAfterCombinedTestBuild=true
             __SkipGenerateLayout=1
             __SkipCrossgenFramework=1
-            ;;
-
-        crossgenframeworkonly|-crossgenframeworkonly)
-            __SkipStressDependencies=1
-            __SkipNative=1
-            __SkipManaged=1
-            __SkipGenerateLayout=1
             ;;
 
         crossgen|-crossgen)
@@ -626,13 +618,14 @@ __LogsDir="$__RootBinDir/log"
 __MsbuildDebugLogsDir="$__LogsDir/MsbuildDebugLogs"
 
 # Set the remaining variables based upon the determined build configuration
-__BinDir="$__RootBinDir/bin/coreclr/$__TargetOS.$__BuildArch.$__BuildType"
+__OSPlatformConfig="$__TargetOS.$__BuildArch.$__BuildType"
+__BinDir="$__RootBinDir/bin/coreclr/$__OSPlatformConfig"
 __PackagesBinDir="$__BinDir/.nuget"
 __TestDir="$__RepoRootDir/src/tests"
 __TryRunDir="$__RepoRootDir/src/coreclr"
-__TestWorkingDir="$__RootBinDir/tests/coreclr/$__TargetOS.$__BuildArch.$__BuildType"
-__IntermediatesDir="$__RootBinDir/obj/coreclr/$__TargetOS.$__BuildArch.$__BuildType"
-__TestIntermediatesDir="$__RootBinDir/tests/coreclr/obj/$__TargetOS.$__BuildArch.$__BuildType"
+__TestWorkingDir="$__RootBinDir/tests/coreclr/$__OSPlatformConfig"
+__IntermediatesDir="$__RootBinDir/obj/coreclr/$__OSPlatformConfig"
+__TestIntermediatesDir="$__RootBinDir/tests/coreclr/obj/$__OSPlatformConfig"
 __CrossComponentBinDir="$__BinDir"
 __CrossCompIntermediatesDir="$__IntermediatesDir/crossgen"
 

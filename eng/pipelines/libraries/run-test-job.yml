@@ -3,7 +3,8 @@ parameters:
   osGroup: ''
   osSubgroup: ''
   archType: ''
-  framework: 'net5.0'
+  targetRid: ''
+  framework: 'net6.0'
   isOfficialBuild: false
   liveRuntimeBuildConfig: ''
   runtimeFlavor: 'coreclr'
@@ -113,6 +114,7 @@ jobs:
           parameters:
             runtimeFlavor: ${{ parameters.runtimeFlavor }}
             osGroup: ${{ parameters.osGroup }}
+            targetRid: ${{ parameters.targetRid }}
             archType: ${{ parameters.archType }}
             buildConfig: ${{ parameters.buildConfig }}
             helixQueues: ${{ parameters.helixQueues }}
@@ -127,7 +129,7 @@ jobs:
             # for clarity), and should remain in sync. This is only a subset; only the testGroups that are
             # used to test the libraries have been added here. More could be added if we decided to test the
             # libraries with more stress modes. The scenario tags are interpreted by
-            # src\coreclr\tests\testenvironment.proj.
+            # src\tests\Common\testenvironment.proj.
             #
             # The one difference here compared to eng/pipelines/common/templates/runtimes/run-test-job.yml is
             # that 'jitstress' contains 'no_tiered_compilation'. The 'normal' (default) test mode

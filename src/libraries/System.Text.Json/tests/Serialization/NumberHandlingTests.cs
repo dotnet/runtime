@@ -626,13 +626,13 @@ namespace System.Text.Json.Serialization.Tests
 
             string jsonNumbersAsStrings = jsonBuilder_NumbersAsStrings.ToString();
 
-            foreach (Type type in CollectionTestTypes.DeserializableDictionaryTypes<T>())
+            foreach (Type type in CollectionTestTypes.DeserializableDictionaryTypes<string, T>())
             {
                 object obj = JsonSerializer.Deserialize(jsonNumbersAsStrings, type, s_optionReadAndWriteFromStr);
                 JsonTestHelper.AssertJsonEqual(jsonNumbersAsStrings, JsonSerializer.Serialize(obj, s_optionReadAndWriteFromStr));
             }
 
-            foreach (Type type in CollectionTestTypes.DeserializableNonDictionaryTypes<T>())
+            foreach (Type type in CollectionTestTypes.DeserializableNonGenericDictionaryTypes())
             {
                 Dictionary<T, T> dict = JsonSerializer.Deserialize<Dictionary<T, T>>(jsonNumbersAsStrings, s_optionReadAndWriteFromStr);
 
@@ -817,9 +817,11 @@ namespace System.Text.Json.Serialization.Tests
         [InlineData("NaNa")]
         [InlineData("Infinitya")]
         [InlineData("-Infinitya")]
+#pragma warning disable xUnit1025 // Theory method 'FloatingPointConstants_Fail' on test class 'NumberHandlingTests' has InlineData duplicate(s)
         [InlineData("\u006EaN")] // "naN"
         [InlineData("\u0020Inf\u0069ni\u0074y")] // " Infinity"
         [InlineData("\u002BInf\u0069nity")] // "+Infinity"
+#pragma warning restore xUnit1025
         public static void FloatingPointConstants_Fail(string testString)
         {
             string testStringAsJson = $@"""{testString}""";

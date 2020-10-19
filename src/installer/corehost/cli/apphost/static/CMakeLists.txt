@@ -136,6 +136,7 @@ if(NOT CLR_CMAKE_TARGET_LINUX)
     )
 else()
     set(NATIVE_LIBS
+      ${NATIVE_LIBS_LOCATION}/libSystem.Globalization.Native.a
       ${NATIVE_LIBS_LOCATION}/libSystem.IO.Compression.Native.a
       ${NATIVE_LIBS_LOCATION}/libSystem.Native.a
       ${NATIVE_LIBS_LOCATION}/libSystem.Net.Security.Native.a

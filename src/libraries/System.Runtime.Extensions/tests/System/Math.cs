@@ -2615,5 +2615,103 @@ namespace System.Tests
             Assert.Equal(expected, Math.Round(x, 0, mode));
             Assert.Equal(expected, decimal.Round(x, 0, mode));
         }
+
+        [Fact]
+        public static void Round_Double_Constant_Arg()
+        {
+            Assert.Equal( 0, Math.Round( 0.5));
+            Assert.Equal( 0, Math.Round(-0.5));
+            Assert.Equal( 1, Math.Round( 1.0));
+            Assert.Equal(-1, Math.Round(-1.0));
+            Assert.Equal( 2, Math.Round( 1.5));
+            Assert.Equal(-2, Math.Round(-1.5));
+            Assert.Equal( 2, Math.Round( 2.0));
+            Assert.Equal(-2, Math.Round(-2.0));
+            Assert.Equal( 2, Math.Round( 2.5));
+            Assert.Equal(-2, Math.Round(-2.5));
+            Assert.Equal( 3, Math.Round( 3.0));
+            Assert.Equal(-3, Math.Round(-3.0));
+            Assert.Equal( 4, Math.Round( 3.5));
+            Assert.Equal(-4, Math.Round(-3.5));
+            
+            Assert.Equal( 0, Math.Round( 0.5, MidpointRounding.ToZero));
+            Assert.Equal( 0, Math.Round( 0.5, MidpointRounding.ToZero));
+            Assert.Equal( 1, Math.Round( 1.0, MidpointRounding.ToZero));
+            Assert.Equal(-1, Math.Round(-1.0, MidpointRounding.ToZero));
+            Assert.Equal( 1, Math.Round( 1.5, MidpointRounding.ToZero));
+            Assert.Equal(-1, Math.Round(-1.5, MidpointRounding.ToZero));
+            Assert.Equal( 2, Math.Round( 2.0, MidpointRounding.ToZero));
+            Assert.Equal(-2, Math.Round(-2.0, MidpointRounding.ToZero));
+            Assert.Equal( 2, Math.Round( 2.5, MidpointRounding.ToZero));
+            Assert.Equal(-2, Math.Round(-2.5, MidpointRounding.ToZero));
+            Assert.Equal( 3, Math.Round( 3.0, MidpointRounding.ToZero));
+            Assert.Equal(-3, Math.Round(-3.0, MidpointRounding.ToZero));
+            Assert.Equal( 3, Math.Round( 3.5, MidpointRounding.ToZero));
+            Assert.Equal(-3, Math.Round(-3.5, MidpointRounding.ToZero));
+
+            Assert.Equal( 1, Math.Round( 0.5, MidpointRounding.AwayFromZero));
+            Assert.Equal( 1, Math.Round( 0.5, MidpointRounding.AwayFromZero));
+            Assert.Equal( 1, Math.Round( 1.0, MidpointRounding.AwayFromZero));
+            Assert.Equal(-1, Math.Round(-1.0, MidpointRounding.AwayFromZero));
+            Assert.Equal( 2, Math.Round( 1.5, MidpointRounding.AwayFromZero));
+            Assert.Equal(-2, Math.Round(-1.5, MidpointRounding.AwayFromZero));
+            Assert.Equal( 2, Math.Round( 2.0, MidpointRounding.AwayFromZero));
+            Assert.Equal(-2, Math.Round(-2.0, MidpointRounding.AwayFromZero));
+            Assert.Equal( 3, Math.Round( 2.5, MidpointRounding.AwayFromZero));
+            Assert.Equal(-3, Math.Round(-2.5, MidpointRounding.AwayFromZero));
+            Assert.Equal( 3, Math.Round( 3.0, MidpointRounding.AwayFromZero));
+            Assert.Equal(-3, Math.Round(-3.0, MidpointRounding.AwayFromZero));
+            Assert.Equal( 4, Math.Round( 3.5, MidpointRounding.AwayFromZero));
+            Assert.Equal(-4, Math.Round(-3.5, MidpointRounding.AwayFromZero));
+        }
+
+        [Fact]
+        public static void Round_Float_Constant_Arg()
+        {
+            Assert.Equal( 0, MathF.Round( 0.5f));
+            Assert.Equal( 0, MathF.Round(-0.5f));
+            Assert.Equal( 1, MathF.Round( 1.0f));
+            Assert.Equal(-1, MathF.Round(-1.0f));
+            Assert.Equal( 2, MathF.Round( 1.5f));
+            Assert.Equal(-2, MathF.Round(-1.5f));
+            Assert.Equal( 2, MathF.Round( 2.0f));
+            Assert.Equal(-2, MathF.Round(-2.0f));
+            Assert.Equal( 2, MathF.Round( 2.5f));
+            Assert.Equal(-2, MathF.Round(-2.5f));
+            Assert.Equal( 3, MathF.Round( 3.0f));
+            Assert.Equal(-3, MathF.Round(-3.0f));
+            Assert.Equal( 4, MathF.Round( 3.5f));
+            Assert.Equal(-4, MathF.Round(-3.5f));
+            
+            Assert.Equal( 0, MathF.Round( 0.5f, MidpointRounding.ToZero));
+            Assert.Equal( 0, MathF.Round( 0.5f, MidpointRounding.ToZero));
+            Assert.Equal( 1, MathF.Round( 1.0f, MidpointRounding.ToZero));
+            Assert.Equal(-1, MathF.Round(-1.0f, MidpointRounding.ToZero));
+            Assert.Equal( 1, MathF.Round( 1.5f, MidpointRounding.ToZero));
+            Assert.Equal(-1, MathF.Round(-1.5f, MidpointRounding.ToZero));
+            Assert.Equal( 2, MathF.Round( 2.0f, MidpointRounding.ToZero));
+            Assert.Equal(-2, MathF.Round(-2.0f, MidpointRounding.ToZero));
+            Assert.Equal( 2, MathF.Round( 2.5f, MidpointRounding.ToZero));
+            Assert.Equal(-2, MathF.Round(-2.5f, MidpointRounding.ToZero));
+            Assert.Equal( 3, MathF.Round( 3.0f, MidpointRounding.ToZero));
+            Assert.Equal(-3, MathF.Round(-3.0f, MidpointRounding.ToZero));
+            Assert.Equal( 3, MathF.Round( 3.5f, MidpointRounding.ToZero));
+            Assert.Equal(-3, MathF.Round(-3.5f, MidpointRounding.ToZero));
+
+            Assert.Equal( 1, MathF.Round( 0.5f, MidpointRounding.AwayFromZero));
+            Assert.Equal( 1, MathF.Round( 0.5f, MidpointRounding.AwayFromZero));
+            Assert.Equal( 1, MathF.Round( 1.0f, MidpointRounding.AwayFromZero));
+            Assert.Equal(-1, MathF.Round(-1.0f, MidpointRounding.AwayFromZero));
+            Assert.Equal( 2, MathF.Round( 1.5f, MidpointRounding.AwayFromZero));
+            Assert.Equal(-2, MathF.Round(-1.5f, MidpointRounding.AwayFromZero));
+            Assert.Equal( 2, MathF.Round( 2.0f, MidpointRounding.AwayFromZero));
+            Assert.Equal(-2, MathF.Round(-2.0f, MidpointRounding.AwayFromZero));
+            Assert.Equal( 3, MathF.Round( 2.5f, MidpointRounding.AwayFromZero));
+            Assert.Equal(-3, MathF.Round(-2.5f, MidpointRounding.AwayFromZero));
+            Assert.Equal( 3, MathF.Round( 3.0f, MidpointRounding.AwayFromZero));
+            Assert.Equal(-3, MathF.Round(-3.0f, MidpointRounding.AwayFromZero));
+            Assert.Equal( 4, MathF.Round( 3.5f, MidpointRounding.AwayFromZero));
+            Assert.Equal(-4, MathF.Round(-3.5f, MidpointRounding.AwayFromZero));
+        }
     }
 }

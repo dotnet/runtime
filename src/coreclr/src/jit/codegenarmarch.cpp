@@ -3281,7 +3281,7 @@ void CodeGen::genCreateAndStoreGCInfo(unsigned codeSize,
         unsigned reversePInvokeFrameVarNumber = compiler->lvaReversePInvokeFrameVar;
         assert(reversePInvokeFrameVarNumber != BAD_VAR_NUM && reversePInvokeFrameVarNumber < compiler->lvaRefCount);
         LclVarDsc& reversePInvokeFrameVar = compiler->lvaTable[reversePInvokeFrameVarNumber];
-        gcInfoEncoder->SetReversePInvokeFrameSlot(reversePInvokeFrameVar.lvStkOffs);
+        gcInfoEncoder->SetReversePInvokeFrameSlot(reversePInvokeFrameVar.GetStackOffset());
     }
 
     gcInfoEncoder->Build();

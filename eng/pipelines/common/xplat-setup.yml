@@ -6,6 +6,7 @@ parameters:
   container: ''
   helixQueuesTemplate: ''
   platform: ''
+  targetRid: ''
   jobParameters: {}
   variables: []
 
@@ -92,6 +93,7 @@ jobs:
     osGroup: ${{ parameters.osGroup }}
     osSubgroup: ${{ parameters.osSubgroup }}
     archType: ${{ parameters.archType }}
+    targetRid: ${{ parameters.targetRid }}
     platform: ${{ parameters.platform }}
 
     ${{ if ne(parameters.container, '') }}:
@@ -103,21 +105,18 @@ jobs:
     ${{ if eq(parameters.jobParameters.pool, '') }}:
       pool:
         # Public Linux Build Pool
-        ${{ if and(in(parameters.osGroup, 'Linux', 'FreeBSD'), eq(variables['System.TeamProject'], 'public')) }}:
+        ${{ if and(in(parameters.osGroup, 'Linux', 'FreeBSD', 'Browser'), eq(variables['System.TeamProject'], 'public')) }}:
           name:  NetCorePublic-Pool
           queue: BuildPool.Ubuntu.1604.Amd64.Open
 
         # Official Build Linux Pool
-        ${{ if and(in(parameters.osGroup, 'Linux', 'FreeBSD'), ne(variables['System.TeamProject'], 'public')) }}:
+        ${{ if and(in(parameters.osGroup, 'Linux', 'FreeBSD', 'Browser'), ne(variables['System.TeamProject'], 'public')) }}:
           name: NetCoreInternal-Pool
           queue: BuildPool.Ubuntu.1604.Amd64
 
         # OSX Build Pool (we don't have on-prem OSX BuildPool
         ${{ if in(parameters.osGroup, 'OSX', 'iOS', 'tvOS') }}:
-          vmImage: 'macOS-10.14'
-
-        ${{ if eq(parameters.osGroup, 'Browser') }}:
-          vmImage: 'ubuntu-latest'
+          vmImage: 'macOS-10.15'
 
         # Official Build Windows Pool
         ${{ if and(eq(parameters.osGroup, 'Windows_NT'), ne(variables['System.TeamProject'], 'public')) }}:

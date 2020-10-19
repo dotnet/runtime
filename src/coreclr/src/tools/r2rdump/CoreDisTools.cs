@@ -358,6 +358,18 @@ namespace R2RDump
             return instrSize;
         }
 
+        private bool TryGetImportCellName(int target, out string targetName)
+        {
+            targetName = null;
+            _reader.ImportSignatures.TryGetValue(target, out ReadyToRunSignature targetSignature);
+            if (targetSignature != null)
+            {
+                targetName = targetSignature.ToString(_options.GetSignatureFormattingOptions());
+                return true;
+            }
+            return false;
+        }
+
         const string RelIPTag = "[rip ";
 
         /// <summary>
@@ -379,7 +391,7 @@ namespace R2RDump
                 StringBuilder translated = new StringBuilder();
                 translated.Append(instruction, 0, leftBracket);
 
-                _reader.ImportCellNames.TryGetValue(target, out string targetName);
+                TryGetImportCellName(target, out string targetName);
 
                 if (_options.Naked)
                 {
@@ -432,7 +444,7 @@ namespace R2RDump
                 StringBuilder translated = new StringBuilder();
                 translated.Append(instruction, 0, leftBracket);
 
-                _reader.ImportCellNames.TryGetValue(target, out string targetName);
+                TryGetImportCellName(target, out string targetName);
 
                 if (_options.Naked)
                 {
@@ -495,7 +507,7 @@ namespace R2RDump
                 if (pointsOutsideRuntimeFunction && IsIntel2ByteIndirectJumpPCRelativeInstruction(targetImageOffset, out int instructionRelativeOffset))
                 {
                     int thunkTargetRVA = targetRVA + instructionRelativeOffset;
-                    bool haveImportCell = _reader.ImportCellNames.TryGetValue(thunkTargetRVA, out string importCellName);
+                    bool haveImportCell = TryGetImportCellName(thunkTargetRVA, out string importCellName); ;
 
                     if (_options.Naked && haveImportCell)
                     {
@@ -799,7 +811,7 @@ namespace R2RDump
                     var translated = new StringBuilder();
                     translated.Append(instruction, 0, hashPos);
 
-                    _reader.ImportCellNames.TryGetValue(target, out string targetName);
+                    TryGetImportCellName(target, out string targetName);
 
                     if (_options.Naked && (targetName != null))
                     {
@@ -824,7 +836,7 @@ namespace R2RDump
                 var translated = new StringBuilder();
                 translated.Append(instruction, 0, hashPos);
 
-                _reader.ImportCellNames.TryGetValue(target, out string targetName);
+                TryGetImportCellName(target, out string targetName);
 
                 if (_options.Naked && (targetName != null))
                 {
@@ -886,7 +898,7 @@ namespace R2RDump
                     {
                         int labelOffset = ldr1ImageOffset + ldr1Offset;
                         int target = checked((int)(BitConverter.ToUInt64(_reader.Image, labelOffset) - _reader.ImageBase));
-                        _reader.ImportCellNames.TryGetValue(target, out string targetName);
+                        TryGetImportCellName(target, out string targetName);
                         var translated = new StringBuilder();
 
                         if (_options.Naked && (targetName != null))

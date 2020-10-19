@@ -48,24 +48,21 @@ namespace System.Net.Sockets
             return true;
         }
 
-        private void FreeNativeOverlapped()
+        private unsafe void FreeNativeOverlapped()
         {
             // Do not call free during AppDomain shutdown, there may be an outstanding operation.
             // Overlapped will take care calling free when the native callback completes.
             IntPtr oldHandle = Interlocked.Exchange(ref handle, IntPtr.Zero);
             if (oldHandle != IntPtr.Zero && !Environment.HasShutdownStarted)
             {
-                unsafe
-                {
-                    Debug.Assert(OperatingSystem.IsWindows());
-                    Debug.Assert(_socketHandle != null, "_socketHandle is null.");
+                Debug.Assert(OperatingSystem.IsWindows());
+                Debug.Assert(_socketHandle != null, "_socketHandle is null.");
 
-                    ThreadPoolBoundHandle? boundHandle = _socketHandle.IOCPBoundHandle;
-                    Debug.Assert(boundHandle != null, "SafeNativeOverlapped::FreeNativeOverlapped - boundHandle is null");
+                ThreadPoolBoundHandle? boundHandle = _socketHandle.IOCPBoundHandle;
+                Debug.Assert(boundHandle != null, "SafeNativeOverlapped::FreeNativeOverlapped - boundHandle is null");
 
-                    // FreeNativeOverlapped will be called even if boundHandle was previously disposed.
-                    boundHandle?.FreeNativeOverlapped((NativeOverlapped*)oldHandle);
-                }
+                // FreeNativeOverlapped will be called even if boundHandle was previously disposed.
+                boundHandle?.FreeNativeOverlapped((NativeOverlapped*)oldHandle);
             }
         }
     }

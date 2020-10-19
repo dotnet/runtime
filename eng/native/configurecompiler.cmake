@@ -238,6 +238,7 @@ if (CLR_CMAKE_HOST_UNIX)
   add_definitions(-DHOST_UNIX)
 
   if(CLR_CMAKE_HOST_OSX)
+    add_definitions(-DHOST_OSX)
     if(CLR_CMAKE_HOST_UNIX_AMD64)
       message("Detected OSX x86_64")
     elseif(CLR_CMAKE_HOST_UNIX_ARM64)
@@ -321,6 +322,7 @@ if (CLR_CMAKE_HOST_UNIX)
   add_compile_options(-Wno-unused-variable)
   add_compile_options(-Wno-unused-value)
   add_compile_options(-Wno-unused-function)
+  add_compile_options(-Wno-tautological-compare)
 
   #These seem to indicate real issues
   add_compile_options($<$<COMPILE_LANGUAGE:CXX>:-Wno-invalid-offsetof>)
@@ -334,8 +336,6 @@ if (CLR_CMAKE_HOST_UNIX)
     add_compile_options(-Wno-unused-private-field)
     # Explicit constructor calls are not supported by clang (this->ClassName::ClassName())
     add_compile_options(-Wno-microsoft)
-    # This warning is caused by comparing 'this' to NULL
-    add_compile_options(-Wno-tautological-compare)
     # There are constants of type BOOL used in a condition. But BOOL is defined as int
     # and so the compiler thinks that there is a mistake.
     add_compile_options(-Wno-constant-logical-operand)
@@ -375,7 +375,16 @@ if (CLR_CMAKE_HOST_UNIX)
 
   # Specify the minimum supported version of macOS
   if(CLR_CMAKE_HOST_OSX)
-    set(MACOS_VERSION_MIN_FLAGS -mmacosx-version-min=10.13)
+    if(CLR_CMAKE_HOST_ARCH_ARM64)
+      # 'pthread_jit_write_protect_np' is only available on macOS 11.0 or newer
+      set(MACOS_VERSION_MIN_FLAGS -mmacosx-version-min=11.0)
+      add_compile_options(-arch arm64)
+    elseif(CLR_CMAKE_HOST_ARCH_AMD64)
+      set(MACOS_VERSION_MIN_FLAGS -mmacosx-version-min=10.13)
+      add_compile_options(-arch x86_64)
+    else()
+      clr_unknown_arch()
+    endif()
     add_compile_options(${MACOS_VERSION_MIN_FLAGS})
     add_linker_flag(${MACOS_VERSION_MIN_FLAGS})
   endif(CLR_CMAKE_HOST_OSX)

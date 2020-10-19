@@ -21,14 +21,6 @@ namespace System.Threading
         [ThreadStatic]
         private static SafeWaitHandle?[]? t_safeWaitHandlesForRent;
 
-        private protected enum OpenExistingResult
-        {
-            Success,
-            NameNotFound,
-            PathNotFound,
-            NameInvalid
-        }
-
         // The wait result values below match Win32 wait result codes (WAIT_OBJECT_0,
         // WAIT_ABANDONED, WAIT_TIMEOUT).
 

@@ -35,6 +35,7 @@ jobs:
       variables: ${{ parameters.variables }}
       osGroup: Linux
       archType: arm
+      targetRid: linux-arm
       platform: Linux_arm
       container:
         image: ubuntu-16.04-cross-20200413125008-09ec757
@@ -46,6 +47,7 @@ jobs:
         ${{ if eq(parameters.passPlatforms, true) }}:
           platforms: ${{ parameters.platforms }}
         helixQueueGroup: ${{ parameters.helixQueueGroup }}
+        crossBuild: true
         crossrootfsDir: '/crossrootfs/arm'
         ${{ insert }}: ${{ parameters.jobParameters }}
 
@@ -59,6 +61,7 @@ jobs:
       variables: ${{ parameters.variables }}
       osGroup: Linux
       archType: arm64
+      targetRid: linux-arm64
       platform: Linux_arm64
       container:
         image: ubuntu-16.04-cross-arm64-20200413125008-cfdd435
@@ -70,6 +73,7 @@ jobs:
         ${{ if eq(parameters.passPlatforms, true) }}:
           platforms: ${{ parameters.platforms }}
         helixQueueGroup: ${{ parameters.helixQueueGroup }}
+        crossBuild: true
         crossrootfsDir: '/crossrootfs/arm64'
         ${{ insert }}: ${{ parameters.jobParameters }}
 
@@ -84,6 +88,7 @@ jobs:
       osGroup: Linux
       osSubgroup: _musl
       archType: x64
+      targetRid: linux-musl-x64
       platform: Linux_musl_x64
       container:
         image: alpine-3.9-WithNode-20200602002639-0fc54a3
@@ -108,6 +113,7 @@ jobs:
       osGroup: Linux
       osSubgroup: _musl
       archType: arm
+      targetRid: linux-musl-arm
       platform: Linux_musl_arm
       container:
         image: ubuntu-18.04-cross-arm-alpine-20200818211451-14441ae
@@ -119,6 +125,7 @@ jobs:
         ${{ if eq(parameters.passPlatforms, true) }}:
           platforms: ${{ parameters.platforms }}
         helixQueueGroup: ${{ parameters.helixQueueGroup }}
+        crossBuild: true
         crossrootfsDir: '/crossrootfs/arm'
         ${{ insert }}: ${{ parameters.jobParameters }}
 
@@ -133,6 +140,7 @@ jobs:
       osGroup: Linux
       osSubgroup: _musl
       archType: arm64
+      targetRid: linux-musl-arm64
       platform: Linux_musl_arm64
       container:
         image: ubuntu-16.04-cross-arm64-alpine-20200413125008-406629a
@@ -144,6 +152,7 @@ jobs:
         ${{ if eq(parameters.passPlatforms, true) }}:
           platforms: ${{ parameters.platforms }}
         helixQueueGroup: ${{ parameters.helixQueueGroup }}
+        crossBuild: true
         crossrootfsDir: '/crossrootfs/arm64'
         ${{ insert }}: ${{ parameters.jobParameters }}
 
@@ -157,6 +166,7 @@ jobs:
       variables: ${{ parameters.variables }}
       osGroup: Linux
       archType: x64
+      targetRid: linux-x64
       platform: Linux_x64
       container:
         image: centos-7-359e48e-20200313130914
@@ -180,6 +190,7 @@ jobs:
       variables: ${{ parameters.variables }}
       osGroup: Browser
       archType: wasm
+      targetRid: browser-wasm
       platform: Browser_wasm
       container:
         image: ubuntu-18.04-webassembly-20200827125937-9740252
@@ -201,6 +212,7 @@ jobs:
       variables: ${{ parameters.variables }}
       osGroup: FreeBSD
       archType: x64
+      targetRid: freebsd-x64
       platform: FreeBSD_x64
       container:
         image: ubuntu-18.04-cross-freebsd-11-20200407092345-a84b0d2
@@ -209,6 +221,7 @@ jobs:
         runtimeFlavor: ${{ parameters.runtimeFlavor }}
         buildConfig: ${{ parameters.buildConfig }}
         helixQueueGroup: ${{ parameters.helixQueueGroup }}
+        crossBuild: true
         crossrootfsDir: '/crossrootfs/x64'
         ${{ if eq(parameters.passPlatforms, true) }}:
           platforms: ${{ parameters.platforms }}
@@ -224,6 +237,7 @@ jobs:
       variables: ${{ parameters.variables }}
       osGroup: Android
       archType: x64
+      targetRid: android-x64
       platform: Android_x64
       container:
         image: ubuntu-18.04-android-20200422191843-e2c3f83
@@ -247,6 +261,7 @@ jobs:
       variables: ${{ parameters.variables }}
       osGroup: Android
       archType: x86
+      targetRid: android-x86
       platform: Android_x86
       container:
         image: ubuntu-18.04-android-20200422191843-e2c3f83
@@ -270,6 +285,7 @@ jobs:
       variables: ${{ parameters.variables }}
       osGroup: Android
       archType: arm
+      targetRid: android-arm
       platform: Android_arm
       container:
         image: ubuntu-18.04-android-20200422191843-e2c3f83
@@ -293,6 +309,7 @@ jobs:
       variables: ${{ parameters.variables }}
       osGroup: Android
       archType: arm64
+      targetRid: android-arm64
       platform: Android_arm64
       container:
         image: ubuntu-18.04-android-20200422191843-e2c3f83
@@ -316,6 +333,7 @@ jobs:
       variables: ${{ parameters.variables }}
       osGroup: tvOS
       archType: x64
+      targetRid: tvos-x64
       platform: tvOS_x64
       jobParameters:
         runtimeFlavor: mono
@@ -336,6 +354,7 @@ jobs:
       variables: ${{ parameters.variables }}
       osGroup: tvOS
       archType: arm64
+      targetRid: tvos-arm64
       platform: tvOS_arm64
       jobParameters:
         runtimeFlavor: mono
@@ -356,6 +375,7 @@ jobs:
       variables: ${{ parameters.variables }}
       osGroup: iOS
       archType: x64
+      targetRid: ios-x64
       platform: iOS_x64
       jobParameters:
         runtimeFlavor: mono
@@ -376,6 +396,7 @@ jobs:
       variables: ${{ parameters.variables }}
       osGroup: iOS
       archType: x86
+      targetRid: ios-x86
       platform: iOS_x86
       jobParameters:
         runtimeFlavor: mono
@@ -397,6 +418,7 @@ jobs:
       variables: ${{ parameters.variables }}
       osGroup: iOS
       archType: arm
+      targetRid: ios-arm
       platform: iOS_arm
       jobParameters:
         runtimeFlavor: mono
@@ -417,6 +439,7 @@ jobs:
       variables: ${{ parameters.variables }}
       osGroup: iOS
       archType: arm64
+      targetRid: ios-arm64
       platform: iOS_arm64
       jobParameters:
         runtimeFlavor: mono
@@ -425,6 +448,28 @@ jobs:
         ${{ if eq(parameters.passPlatforms, true) }}:
           platforms: ${{ parameters.platforms }}
         helixQueueGroup: ${{ parameters.helixQueueGroup }}
+        ${{ insert }}: ${{ parameters.jobParameters }}
+
+# macOS arm64
+
+- ${{ if or(containsValue(parameters.platforms, 'OSX_arm64'), eq(parameters.platformGroup, 'all')) }}:
+  - template: xplat-setup.yml
+    parameters:
+      jobTemplate: ${{ parameters.jobTemplate }}
+      helixQueuesTemplate: ${{ parameters.helixQueuesTemplate }}
+      variables: ${{ parameters.variables }}
+      osGroup: OSX
+      archType: arm64
+      targetRid: osx-arm64
+      platform: OSX_arm64
+      jobParameters:
+        runtimeFlavor: ${{ parameters.runtimeFlavor }}
+        stagedBuild: ${{ parameters.stagedBuild }}
+        buildConfig: ${{ parameters.buildConfig }}
+        ${{ if eq(parameters.passPlatforms, true) }}:
+          platforms: ${{ parameters.platforms }}
+        helixQueueGroup: ${{ parameters.helixQueueGroup }}
+        crossBuild: true
         ${{ insert }}: ${{ parameters.jobParameters }}
 
 # macOS x64
@@ -437,6 +482,7 @@ jobs:
       variables: ${{ parameters.variables }}
       osGroup: OSX
       archType: x64
+      targetRid: osx-x64
       platform: OSX_x64
       jobParameters:
         runtimeFlavor: ${{ parameters.runtimeFlavor }}
@@ -457,6 +503,7 @@ jobs:
       variables: ${{ parameters.variables }}
       osGroup: Windows_NT
       archType: x64
+      targetRid: win-x64
       platform: Windows_NT_x64
       jobParameters:
         runtimeFlavor: ${{ parameters.runtimeFlavor }}
@@ -477,6 +524,7 @@ jobs:
       variables: ${{ parameters.variables }}
       osGroup: Windows_NT
       archType: x86
+      targetRid: win-x86
       platform: Windows_NT_x86
       jobParameters:
         runtimeFlavor: ${{ parameters.runtimeFlavor }}
@@ -496,6 +544,7 @@ jobs:
       variables: ${{ parameters.variables }}
       osGroup: Windows_NT
       archType: arm
+      targetRid: win-arm
       platform: Windows_NT_arm
       jobParameters:
         runtimeFlavor: ${{ parameters.runtimeFlavor }}
@@ -516,6 +565,7 @@ jobs:
       variables: ${{ parameters.variables }}
       osGroup: Windows_NT
       archType: arm64
+      targetRid: win-arm64
       platform: Windows_NT_arm64
       jobParameters:
         runtimeFlavor: ${{ parameters.runtimeFlavor }}

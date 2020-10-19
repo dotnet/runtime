@@ -964,16 +964,6 @@ GenTreeCall::Use* Compiler::impPopCallArgs(unsigned count, CORINFO_SIG_INFO* sig
             if (corType != CORINFO_TYPE_CLASS && corType != CORINFO_TYPE_BYREF && corType != CORINFO_TYPE_PTR &&
                 corType != CORINFO_TYPE_VAR && (argRealClass = info.compCompHnd->getArgClass(sig, argLst)) != nullptr)
             {
-                // Everett MC++ could generate IL with a mismatched valuetypes. It used to work with Everett JIT,
-                // but it stopped working in Whidbey when we have started passing simple valuetypes as underlying
-                // primitive types.
-                // We will try to adjust for this case here to avoid breaking customers code (see VSW 485789 for
-                // details).
-                if (corType == CORINFO_TYPE_VALUECLASS && !varTypeIsStruct(arg->GetNode()->TypeGet()))
-                {
-                    arg->SetNode(impNormStructVal(arg->GetNode(), argRealClass, (unsigned)CHECK_SPILL_ALL, true));
-                }
-
                 // Make sure that all valuetypes (including enums) that we push are loaded.
                 // This is to guarantee that if a GC is triggered from the prestub of this methods,
                 // all valuetypes in the method signature are already loaded.
@@ -7287,7 +7277,7 @@ GenTree* Compiler::impImportStaticFieldAccess(CORINFO_RESOLVED_TOKEN* pResolvedT
 
         default:
         {
-            // Do we need the addrees of a static field?
+            // Do we need the address of a static field?
             //
             if (access & CORINFO_ACCESS_ADDRESS)
             {
@@ -10834,6 +10824,25 @@ GenTree* Compiler::impCastClassOrIsInstToTree(GenTree*                op1,
     } while (0)
 #endif // DEBUG
 
+//------------------------------------------------------------------------
+// impBlockIsInALoop: check if a block might be in a loop
+//
+// Arguments:
+//    block - block to check
+//
+// Returns:
+//    true if the block might be in a loop.
+//
+// Notes:
+//    Conservatively correct; may return true for some blocks that are
+//    not actually in loops.
+//
+bool Compiler::impBlockIsInALoop(BasicBlock* block)
+{
+    return (compIsForInlining() && ((impInlineInfo->iciBlock->bbFlags & BBF_BACKWARD_JUMP) != 0)) ||
+           ((block->bbFlags & BBF_BACKWARD_JUMP) != 0);
+}
+
 #ifdef _PREFAST_
 #pragma warning(push)
 #pragma warning(disable : 21000) // Suppress PREFast warning about overly large function
@@ -14041,9 +14050,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                             lvaSetStruct(lclNum, resolvedToken.hClass, true /* unsafe value cls check */);
                         }
 
-                        bool bbInALoop =
-                            (compIsForInlining() && ((impInlineInfo->iciBlock->bbFlags & BBF_BACKWARD_JUMP) != 0)) ||
-                            ((block->bbFlags & BBF_BACKWARD_JUMP) != 0);
+                        bool bbInALoop  = impBlockIsInALoop(block);
                         bool bbIsReturn = (block->bbJumpKind == BBJ_RETURN) &&
                                           (!compIsForInlining() || (impInlineInfo->iciBlock->bbJumpKind == BBJ_RETURN));
                         LclVarDsc* const lclDsc = lvaGetDesc(lclNum);
@@ -15156,6 +15163,8 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                     {
                         const ssize_t allocSize = op2->AsIntCon()->IconValue();
 
+                        bool bbInALoop = impBlockIsInALoop(block);
+
                         if (allocSize == 0)
                         {
                             // Result is nullptr
@@ -15163,7 +15172,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                             op1              = gtNewIconNode(0, TYP_I_IMPL);
                             convertedToLocal = true;
                         }
-                        else if ((allocSize > 0) && ((compCurBB->bbFlags & BBF_BACKWARD_JUMP) == 0))
+                        else if ((allocSize > 0) && !bbInALoop)
                         {
                             // Get the size threshold for local conversion
                             ssize_t maxSize = DEFAULT_MAX_LOCALLOC_TO_LOCAL_SIZE;
@@ -19145,7 +19154,7 @@ void Compiler::impInlineRecordArgInfo(
 //      expression from some set of inlines.
 //    - when argument type casting is needed the necessary casts are added
 //      around the argument node.
-//    - if an argment can be simplified by folding then the node here is the
+//    - if an argument can be simplified by folding then the node here is the
 //      folded value.
 //
 //   The method may make observations that lead to marking this candidate as

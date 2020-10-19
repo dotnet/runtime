@@ -125,7 +125,8 @@ namespace System.IO.Pipes.Tests
     {
         public static bool IsAdminOnSupportedWindowsVersions => PlatformDetection.IsWindowsAndElevated
             && !PlatformDetection.IsWindows7
-            && !PlatformDetection.IsWindowsNanoServer;
+            && !PlatformDetection.IsWindowsNanoServer
+            && !PlatformDetection.IsWindowsServerCore;
 
         private TestAccountImpersonator _testAccountImpersonator;
 

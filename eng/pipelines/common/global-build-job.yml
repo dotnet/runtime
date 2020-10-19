@@ -6,10 +6,13 @@ parameters:
   osGroup: ''
   osSubgroup: ''
   container: ''
+  crossBuild: false
   crossrootfsDir: ''
   variables: []
+  targetRid: ''
   timeoutInMinutes: ''
   pool: ''
+  platform: ''
   condition: true
   isOfficialBuild: false
   runtimeFlavor: 'coreclr'
@@ -40,7 +43,7 @@ jobs:
 
       # Do not rename as it clashes with MSBuild property in libraries/build-native.proj
       - name: _crossBuildPropertyArg
-        value: /p:CrossBuild=${{ ne(parameters.crossrootfsDir, '') }}
+        value: /p:CrossBuild=${{ parameters.crossBuild }}
 
       - name: _cxx11Parameter
         ${{ if and(eq(parameters.osGroup, 'Linux'), eq(parameters.archType, 'arm64')) }}:
@@ -64,7 +67,7 @@ jobs:
       - template: /eng/pipelines/common/restore-internal-tools.yml
 
     - ${{ if in(parameters.osGroup, 'OSX', 'iOS', 'tvOS') }}:
-      - script: $(Build.SourcesDirectory)/eng/install-native-dependencies.sh ${{ parameters.osGroup }}
+      - script: $(Build.SourcesDirectory)/eng/install-native-dependencies.sh ${{ parameters.osGroup }} ${{ parameters.archType }} azDO
         displayName: Install Build Dependencies
 
       - script: |
@@ -92,6 +95,9 @@ jobs:
           buildConfig: ${{ parameters.buildConfig }}
           runtimeFlavor: ${{ parameters.runtimeFlavor }}
           helixQueues: ${{ parameters.helixQueues }}
+          targetRid: ${{ parameters.targetRid }}
+          nameSuffix: ${{ parameters.nameSuffix }}
+          platform: ${{ parameters.platform }}
           ${{ insert }}: ${{ parameters.extraStepsParameters }}
 
     - task: PublishBuildArtifacts@1

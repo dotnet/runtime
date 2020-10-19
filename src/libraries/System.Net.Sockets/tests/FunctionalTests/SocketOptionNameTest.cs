@@ -64,14 +64,14 @@ namespace System.Net.Sockets.Tests
             }
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsNanoServer))] // Skip on Nano: https://github.com/dotnet/runtime/issues/26286
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsNanoNorServerCore))] // Skip on Nano: https://github.com/dotnet/runtime/issues/26286
         public async Task MulticastInterface_Set_AnyInterface_Succeeds()
         {
             // On all platforms, index 0 means "any interface"
             await MulticastInterface_Set_Helper(0);
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsNanoServer))] // Skip on Nano: https://github.com/dotnet/runtime/issues/26286
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsNanoNorServerCore))] // Skip on Nano: https://github.com/dotnet/runtime/issues/26286
         [PlatformSpecific(TestPlatforms.Windows)] // see comment below
         public async Task MulticastInterface_Set_Loopback_Succeeds()
         {
@@ -127,7 +127,7 @@ namespace System.Net.Sockets.Tests
             }
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsNanoServer))] // Skip on Nano: https://github.com/dotnet/runtime/issues/26286
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsNanoNorServerCore))] // Skip on Nano: https://github.com/dotnet/runtime/issues/26286
         [PlatformSpecific(~(TestPlatforms.OSX | TestPlatforms.FreeBSD))]
         public async Task MulticastInterface_Set_IPv6_AnyInterface_Succeeds()
         {
@@ -155,7 +155,7 @@ namespace System.Net.Sockets.Tests
             }
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsNanoServer))] // Skip on Nano: https://github.com/dotnet/runtime/issues/26286
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsNanoNorServerCore))] // Skip on Nano: https://github.com/dotnet/runtime/issues/26286
         public void MulticastTTL_Set_IPv6_Succeeds()
         {
             using (Socket socket = new Socket(AddressFamily.InterNetworkV6, SocketType.Dgram, ProtocolType.Udp))
@@ -184,7 +184,7 @@ namespace System.Net.Sockets.Tests
             }
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsNanoServer))] // Skip on Nano: https://github.com/dotnet/runtime/issues/26286
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsNanoNorServerCore))] // Skip on Nano: https://github.com/dotnet/runtime/issues/26286
         [PlatformSpecific(TestPlatforms.Windows)]
         public async Task MulticastInterface_Set_IPv6_Loopback_Succeeds()
         {

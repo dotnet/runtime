@@ -109,6 +109,7 @@ jobs:
             - Windows.10.Amd64.Server19H1.Open
             - ${{ if ne(parameters.jobParameters.runtimeFlavor, 'mono') }}:
               - (Windows.Nano.1809.Amd64.Open)windows.10.amd64.serverrs5.open@mcr.microsoft.com/dotnet-buildtools/prereqs:nanoserver-1809-helix-amd64-08e8e40-20200107182504
+              - (Windows.Server.Core.1909.Amd64.Open)windows.10.amd64.server20h1.open@mcr.microsoft.com/dotnet-buildtools/prereqs:windowsservercore-2004-helix-amd64-20200904200251-272704c
           - ${{ if eq(parameters.jobParameters.isFullMatrix, false) }}:
             - Windows.81.Amd64.Open
             - Windows.10.Amd64.Server19H1.ES.Open
