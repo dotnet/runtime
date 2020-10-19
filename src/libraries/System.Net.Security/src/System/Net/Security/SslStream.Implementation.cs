@@ -562,7 +562,8 @@ namespace System.Net.Security
                     }
 
                     frameSize = nextHeader.Length + TlsFrameHelper.HeaderSize;
-                    if (nextHeader.Type == TlsContentType.AppData || frameSize > _handshakeBuffer.ActiveLength)
+                    // Can can process more handshake frames in single step but we should avood processing too much re presreve API boundary between handshake and I/O.
+                    if (nextHeader.Type != TlsContentType.Handshake || frameSize > _handshakeBuffer.ActiveLength)
                     {
                         // We don't have full frame left or we already have app data which needs to be processed by decrypt.
                         break;
