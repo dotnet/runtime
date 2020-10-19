@@ -29,7 +29,7 @@
 #undef max
 
 #if __has_cpp_attribute(fallthrough)
-#define FALLTHROUGH [[fallthrough]];
+#define FALLTHROUGH [[fallthrough]]
 #else
 #define FALLTHROUGH
 #endif

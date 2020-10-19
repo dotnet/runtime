@@ -48,6 +48,9 @@ if (NOT CLR_CMAKE_TARGET_BROWSER)
         ../../AnyOS/brotli/enc/static_dict.c
         ../../AnyOS/brotli/enc/utf8_util.c
     )
+
+    # Disable implicit fallthrough warning for Brotli
+    set_source_files_properties(${NATIVECOMPRESSION_SOURCES} PROPERTIES COMPILE_FLAGS -Wno-implicit-fallthrough)
 endif()
 
 if (GEN_SHARED_LIB)

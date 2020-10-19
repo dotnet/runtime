@@ -46,7 +46,7 @@
 #define ARRAY_SIZE(a) (sizeof(a)/sizeof(a[0]))
 
 #if __has_attribute(fallthrough)
-#define FALLTHROUGH __attribute__((fallthrough));
+#define FALLTHROUGH __attribute__((fallthrough))
 #else
 #define FALLTHROUGH
 #endif
