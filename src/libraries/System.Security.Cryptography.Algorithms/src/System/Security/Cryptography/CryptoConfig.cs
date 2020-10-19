@@ -8,7 +8,6 @@ using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Reflection;
 using System.Runtime.InteropServices;
-using System.Runtime.Versioning;
 
 namespace System.Security.Cryptography
 {
