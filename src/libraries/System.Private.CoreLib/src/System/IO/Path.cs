@@ -665,9 +665,9 @@ namespace System.IO
             }
         }
 
-        private readonly struct Join3Payload
+        private unsafe readonly struct Join3Payload
         {
-            public Join3Payload (IntPtr first, int firstLength, IntPtr second, int secondLength, IntPtr third, int thirdLength, byte separators)
+            public Join3Payload (char* first, int firstLength, char* second, int secondLength, char* third, int thirdLength, byte separators)
             {
                 First = first;
                 FirstLength = firstLength;
@@ -678,11 +678,11 @@ namespace System.IO
                 Separators = separators;
             }
 
-            public readonly IntPtr First;
+            public readonly char* First;
             public readonly int FirstLength;
-            public readonly IntPtr Second;
+            public readonly char* Second;
             public readonly int SecondLength;
-            public readonly IntPtr Third;
+            public readonly char* Third;
             public readonly int ThirdLength;
             public readonly byte Separators;
         }
@@ -705,24 +705,24 @@ namespace System.IO
 #endif
                     first.Length + second.Length + third.Length + firstNeedsSeparator + secondNeedsSeparator,
                     new Join3Payload (
-                            (IntPtr)f, first.Length, (IntPtr)s, second.Length, (IntPtr)t, third.Length,
+                            f, first.Length, s, second.Length, t, third.Length,
                             (byte)(firstNeedsSeparator | secondNeedsSeparator << 1)),
                     static (destination, state) =>
                     {
-                        new Span<char>((char*)state.First, state.FirstLength).CopyTo(destination);
+                        new Span<char>(state.First, state.FirstLength).CopyTo(destination);
                         if ((state.Separators & 0b1) != 0)
                             destination[state.FirstLength] = PathInternal.DirectorySeparatorChar;
-                        new Span<char>((char*)state.Second, state.SecondLength).CopyTo(destination.Slice(state.FirstLength + (state.Separators & 0b1)));
+                        new Span<char>(state.Second, state.SecondLength).CopyTo(destination.Slice(state.FirstLength + (state.Separators & 0b1)));
                         if ((state.Separators & 0b10) != 0)
                             destination[destination.Length - state.ThirdLength - 1] = PathInternal.DirectorySeparatorChar;
-                        new Span<char>((char*)state.Third, state.ThirdLength).CopyTo(destination.Slice(destination.Length - state.ThirdLength));
+                        new Span<char>(state.Third, state.ThirdLength).CopyTo(destination.Slice(destination.Length - state.ThirdLength));
                     });
             }
         }
 
-        private readonly struct Join4Payload
+        private unsafe readonly struct Join4Payload
         {
-            public Join4Payload (IntPtr first, int firstLength, IntPtr second, int secondLength, IntPtr third, int thirdLength, IntPtr fourth, int fourthLength, byte separators)
+            public Join4Payload (char* first, int firstLength, char* second, int secondLength, char* third, int thirdLength, char* fourth, int fourthLength, byte separators)
             {
                 First = first;
                 FirstLength = firstLength;
@@ -735,13 +735,13 @@ namespace System.IO
                 Separators = separators;
             }
 
-            public readonly IntPtr First;
+            public readonly char* First;
             public readonly int FirstLength;
-            public readonly IntPtr Second;
+            public readonly char* Second;
             public readonly int SecondLength;
-            public readonly IntPtr Third;
+            public readonly char* Third;
             public readonly int ThirdLength;
-            public readonly IntPtr Fourth;
+            public readonly char* Fourth;
             public readonly int FourthLength;
             public readonly byte Separators;
         }
@@ -766,23 +766,23 @@ namespace System.IO
 #endif
                     first.Length + second.Length + third.Length + fourth.Length + firstNeedsSeparator + secondNeedsSeparator + thirdNeedsSeparator,
                     new Join4Payload (
-                            (IntPtr)f, first.Length, (IntPtr)s, second.Length, (IntPtr)t, third.Length, (IntPtr)u, fourth.Length,
+                            f, first.Length, s, second.Length, t, third.Length, u, fourth.Length,
                             (byte)(firstNeedsSeparator | secondNeedsSeparator << 1 | thirdNeedsSeparator << 2)),
                     static (destination, state) =>
                     {
-                        new Span<char>((char*)state.First, state.FirstLength).CopyTo(destination);
+                        new Span<char>(state.First, state.FirstLength).CopyTo(destination);
                         int insertionPoint = state.FirstLength;
                         if ((state.Separators & 0b1) != 0)
                             destination[insertionPoint++] = PathInternal.DirectorySeparatorChar;
-                        new Span<char>((char*)state.Second, state.SecondLength).CopyTo(destination.Slice(insertionPoint));
+                        new Span<char>(state.Second, state.SecondLength).CopyTo(destination.Slice(insertionPoint));
                         insertionPoint += state.SecondLength;
                         if ((state.Separators & 0b10) != 0)
                             destination[insertionPoint++] = PathInternal.DirectorySeparatorChar;
-                        new Span<char>((char*)state.Third, state.ThirdLength).CopyTo(destination.Slice(insertionPoint));
+                        new Span<char>(state.Third, state.ThirdLength).CopyTo(destination.Slice(insertionPoint));
                         insertionPoint += state.ThirdLength;
                         if ((state.Separators & 0b100) != 0)
                             destination[insertionPoint++] = PathInternal.DirectorySeparatorChar;
-                        new Span<char>((char*)state.Fourth, state.FourthLength).CopyTo(destination.Slice(insertionPoint));
+                        new Span<char>(state.Fourth, state.FourthLength).CopyTo(destination.Slice(insertionPoint));
                     });
             }
         }
