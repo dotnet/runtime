@@ -63,6 +63,8 @@ namespace System
         [MethodImpl(MethodImplOptions.InternalCall)]
         public extern Utf8String(ReadOnlySpan<byte> value);
 
+#pragma warning disable CA1822 // Mark members as static
+
 #if !CORECLR
         static
 #endif
@@ -261,6 +263,8 @@ namespace System
 
             return Ctor(value.AsSpan());
         }
+
+#pragma warning restore CA1822
 
         /*
          * METHODS

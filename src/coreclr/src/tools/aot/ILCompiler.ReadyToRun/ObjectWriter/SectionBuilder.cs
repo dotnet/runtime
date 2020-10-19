@@ -756,6 +756,7 @@ namespace ILCompiler.PEWriter
             // Emit the name pointer table; it should be alphabetically sorted.
             // Also, we can now fill in the export address table as we've detected its size
             // in the previous pass.
+            builder.Align(4);
             int namePointerTableRVA = sectionLocation.RelativeVirtualAddress + builder.Count;
             foreach (ExportSymbol symbol in _exportSymbols)
             {
@@ -774,6 +775,7 @@ namespace ILCompiler.PEWriter
             }
 
             // Emit the address table
+            builder.Align(4);
             int addressTableRVA = sectionLocation.RelativeVirtualAddress + builder.Count;
             foreach (int addressTableEntry in addressTable)
             {
@@ -781,6 +783,7 @@ namespace ILCompiler.PEWriter
             }
             
             // Emit the export directory table
+            builder.Align(4);
             int exportDirectoryTableRVA = sectionLocation.RelativeVirtualAddress + builder.Count;
             // +0x00: reserved
             builder.WriteInt32(0);

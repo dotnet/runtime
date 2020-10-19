@@ -4344,6 +4344,7 @@ void Compiler::fgSwitchToOptimized()
     JITDUMP("****\n**** JIT Tier0 jit request switching to Tier1 because of loop\n****\n");
     assert(opts.jitFlags->IsSet(JitFlags::JIT_FLAG_TIER0));
     opts.jitFlags->Clear(JitFlags::JIT_FLAG_TIER0);
+    opts.jitFlags->Clear(JitFlags::JIT_FLAG_BBINSTR);
 
     // Leave a note for jit diagnostics
     compSwitchedToOptimized = true;
@@ -19929,8 +19930,7 @@ bool Compiler::fgDumpFlowGraph(Phases phase)
         return false;
     }
     bool        validWeights  = fgHaveValidEdgeWeights;
-    unsigned    calledCount   = max(fgCalledCount, BB_UNITY_WEIGHT) / BB_UNITY_WEIGHT;
-    double      weightDivisor = (double)(calledCount * BB_UNITY_WEIGHT);
+    double      weightDivisor = (double)fgCalledCount;
     const char* escapedString;
     const char* regionString = "NONE";
 
@@ -19972,7 +19972,7 @@ bool Compiler::fgDumpFlowGraph(Phases phase)
 
         if (fgHaveProfileData())
         {
-            fprintf(fgxFile, "\n    calledCount=\"%d\"", calledCount);
+            fprintf(fgxFile, "\n    calledCount=\"%d\"", fgCalledCount);
             fprintf(fgxFile, "\n    profileData=\"true\"");
         }
         if (compHndBBtabCount > 0)
@@ -20122,20 +20122,32 @@ bool Compiler::fgDumpFlowGraph(Phases phase)
                 {
                     fprintf(fgxFile, "    " FMT_BB " -> " FMT_BB, bSource->bbNum, bTarget->bbNum);
 
+                    const char* sep = "";
+
                     if (bSource->bbNum > bTarget->bbNum)
                     {
                         // Lexical backedge
-                        fprintf(fgxFile, " [color=green]\n");
+                        fprintf(fgxFile, " [color=green");
+                        sep = ", ";
                     }
                     else if ((bSource->bbNum + 1) == bTarget->bbNum)
                     {
                         // Lexical successor
-                        fprintf(fgxFile, " [color=blue, weight=20]\n");
+                        fprintf(fgxFile, " [color=blue, weight=20");
+                        sep = ", ";
                     }
                     else
                     {
-                        fprintf(fgxFile, ";\n");
+                        fprintf(fgxFile, " [");
                     }
+
+                    if (validWeights)
+                    {
+                        unsigned edgeWeight = (edge->edgeWeightMin() + edge->edgeWeightMax()) / 2;
+                        fprintf(fgxFile, "%slabel=\"%7.2f\"", sep, (double)edgeWeight / weightDivisor);
+                    }
+
+                    fprintf(fgxFile, "];\n");
                 }
                 else
                 {

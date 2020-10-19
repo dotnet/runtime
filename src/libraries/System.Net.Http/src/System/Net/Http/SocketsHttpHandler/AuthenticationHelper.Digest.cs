@@ -389,7 +389,7 @@ namespace System.Net.Http
                 return StringBuilderCache.GetStringAndRelease(sb);
             }
 
-            private unsafe void Parse(string challenge)
+            private void Parse(string challenge)
             {
                 int parsedIndex = 0;
                 while (parsedIndex < challenge.Length)

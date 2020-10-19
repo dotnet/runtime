@@ -5,6 +5,7 @@
     <TargetFrameworks>net461-Windows_NT</TargetFrameworks>
     <Nullable>enable</Nullable>
     <DocumentationFile>$(OutputPath)$(AssemblyName).xml</DocumentationFile>
+    <IncludePlatformAttributes>true</IncludePlatformAttributes>
   </PropertyGroup>
   <PropertyGroup>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>

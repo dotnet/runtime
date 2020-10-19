@@ -46,7 +46,17 @@ namespace System.Reflection.Emit.Tests
 
             Type createdType = type.CreateTypeInfo().AsType();
             Assert.Equal(type.AsType().GetFields(Helpers.AllFlags), createdType.GetFields(Helpers.AllFlags));
-            Assert.Equal(type.AsType().GetField(name, Helpers.AllFlags), createdType.GetField(name, Helpers.AllFlags));
+
+            FieldInfo fieldInfo = createdType.GetField(name, Helpers.AllFlags);
+            Assert.Equal(type.AsType().GetField(name, Helpers.AllFlags), fieldInfo);
+
+            if (fieldInfo != null)
+            {
+                // Verify MetadataToken
+                Assert.Equal(field.MetadataToken, fieldInfo.MetadataToken);
+                FieldInfo fieldFromToken = (FieldInfo)fieldInfo.Module.ResolveField(fieldInfo.MetadataToken);
+                Assert.Equal(fieldInfo, fieldFromToken);
+            }
         }
 
         [Fact]

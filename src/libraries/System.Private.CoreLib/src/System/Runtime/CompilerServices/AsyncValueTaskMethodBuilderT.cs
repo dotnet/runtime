@@ -405,8 +405,7 @@ namespace System.Runtime.CompilerServices
                 // Clear out the state machine and associated context to avoid keeping arbitrary state referenced by
                 // lifted locals.  We want to do this regardless of whether we end up caching the box or not, in case
                 // the caller keeps the box alive for an arbitrary period of time.
-                StateMachine = default;
-                Context = default;
+                ClearStateUponCompletion();
 
                 // Reset the MRVTSC.  We can either do this here, in which case we may be paying the (small) overhead
                 // to reset the box even if we're going to drop it, or we could do it while holding the lock, in which
@@ -441,6 +440,16 @@ namespace System.Runtime.CompilerServices
                     // Release the lock.
                     Volatile.Write(ref s_cacheLock, 0);
                 }
+            }
+
+            /// <summary>
+            /// Clear out the state machine and associated context to avoid keeping arbitrary state referenced by lifted locals.
+            /// </summary>
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            public void ClearStateUponCompletion()
+            {
+                StateMachine = default;
+                Context = default;
             }
 
             /// <summary>

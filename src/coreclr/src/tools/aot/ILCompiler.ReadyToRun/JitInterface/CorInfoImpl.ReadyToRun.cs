@@ -2076,8 +2076,9 @@ namespace Internal.JitInterface
                 }
 
                 // ENCODE_FIELD_BASE_OFFSET
-                Debug.Assert(pResult->offset >= (uint)pMT.BaseType.InstanceByteCount.AsInt);
-                pResult->offset -= (uint)pMT.BaseType.InstanceByteCount.AsInt;
+                int fieldBaseOffset = pMT.FieldBaseOffset().AsInt;
+                Debug.Assert(pResult->offset >= (uint)fieldBaseOffset);
+                pResult->offset -= (uint)fieldBaseOffset;
                 pResult->fieldAccessor = CORINFO_FIELD_ACCESSOR.CORINFO_FIELD_INSTANCE_WITH_BASE;
                 pResult->fieldLookup = CreateConstLookupToSymbol(_compilation.SymbolNodeFactory.FieldBaseOffset(field.OwningType));
             }

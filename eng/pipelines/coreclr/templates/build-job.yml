@@ -6,6 +6,7 @@ parameters:
   compilerName: ''
   condition: true
   container: ''
+  crossBuild: false
   crossrootfsDir: ''
   isOfficialBuild: false
   osGroup: ''
@@ -52,6 +53,7 @@ jobs:
 
     timeoutInMinutes: ${{ parameters.timeoutInMinutes }}
 
+    crossBuild: ${{ parameters.crossBuild }}
     crossrootfsDir: ${{ parameters.crossrootfsDir }}
 
     gatherAssetManifests: true

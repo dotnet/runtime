@@ -34,6 +34,8 @@
              Link="Interop\Windows\Kernel32\Interop.Semaphore.cs" />
     <Compile Include="$(CommonPath)System\IO\Win32Marshal.cs"
              Link="Common\System\IO\Win32Marshal.cs" />
+    <Compile Include="$(CommonPath)System\Threading\OpenExistingResult.cs"
+             Link="Common\System\Threading\OpenExistingResult.cs" />
     <Compile Include="System\Security\AccessControl\MutexSecurity.cs" />
     <Compile Include="System\Security\AccessControl\EventWaitHandleSecurity.cs" />
     <Compile Include="System\Security\AccessControl\SemaphoreSecurity.cs" />
