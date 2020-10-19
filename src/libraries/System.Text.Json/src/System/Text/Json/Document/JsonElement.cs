@@ -33,7 +33,8 @@ namespace System.Text.Json
         {
             bool ret = JsonDocument.TryParseValue(ref reader, out JsonDocument? document, shouldThrow: true, useArrayPools: false);
 
-            Debug.Assert(document != null, "Parse returned false with shouldThrow: true.");
+            Debug.Assert(ret != false, "Parse returned false with shouldThrow: true.");
+            Debug.Assert(document != null, "null document returned with shouldThrow: true.");
             return document.RootElement;
         }
 
