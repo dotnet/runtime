@@ -857,8 +857,10 @@
       <Output TaskParameter="ExitCode" PropertyName="MonoNinjaFound"/>
     </Exec>
     <PropertyGroup>
+      <!--
       <_MonoVerboseArg Condition="'$(ContinuousIntegrationBuild)' == 'true' and '$(MonoNinjaFound)' == '0'">-v</_MonoVerboseArg>
       <_MonoVerboseArg Condition="'$(ContinuousIntegrationBuild)' == 'true' and '$(MonoNinjaFound)' != '0'">VERBOSE=1</_MonoVerboseArg>
+      -->
       <MonoBuildTool Condition="'$(MonoNinjaFound)' == '0'">ninja</MonoBuildTool>
       <MonoBuildTool Condition="'$(MonoNinjaFound)' != '0'">make -j$([System.Environment]::ProcessorCount)</MonoBuildTool>
     </PropertyGroup>
