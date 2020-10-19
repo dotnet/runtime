@@ -392,12 +392,14 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
             {
                 assert(sig->numArgs >= 3);
 
-                GenTreeArgList* tmpList = nullptr;
+                GenTreeArgList* tmp = nullptr;
+
                 for (unsigned i = 0; i < sig->numArgs; i++)
                 {
-                    tmpList = new (this, GT_LIST) GenTreeArgList(impPopStack().val, tmpList);
+                    tmp = new (this, GT_LIST) GenTreeArgList(impPopStack().val, tmp);
+                    op1 = tmp;
                 }
-                op1     = tmpList;
+
                 retNode = gtNewSimdHWIntrinsicNode(retType, op1, intrinsic, baseType, simdSize);
             }
             break;
