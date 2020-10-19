@@ -2607,7 +2607,7 @@ void ILStubLinker::TransformArgForJIT(LocalDesc *pLoc)
                 _ASSERTE(pLoc->InternalToken.IsBlittable());
                 break;
             }
-            __fallthrough;
+            FALLTHROUGH;
         }
 
         // pointers, byrefs, strings, arrays, other ref types -> ELEMENT_TYPE_I

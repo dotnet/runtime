@@ -743,7 +743,7 @@ ULONG NativeVarLocations(const ICorDebugInfo::VarLoc &   varLoc,
 
     case ICorDebugInfo::VLT_REG_BYREF:
         fByRef = true;                  // fall through
-        __fallthrough;
+        FALLTHROUGH;
     case ICorDebugInfo::VLT_REG:
         regOffs = GetRegOffsInCONTEXT(varLoc.vlReg.vlrReg);
         locs->addr = (ULONG64)(ULONG_PTR)pCtx + regOffs;
@@ -759,7 +759,7 @@ ULONG NativeVarLocations(const ICorDebugInfo::VarLoc &   varLoc,
 
     case ICorDebugInfo::VLT_STK_BYREF:
         fByRef = true;                      // fall through
-        __fallthrough;
+        FALLTHROUGH;
     case ICorDebugInfo::VLT_STK:
         regOffs = GetRegOffsInCONTEXT(varLoc.vlStk.vlsBaseReg);
         baseReg = *(TADDR *)(regOffs + (BYTE*)pCtx);
@@ -855,7 +855,7 @@ SIZE_T *NativeVarStackAddr(const ICorDebugInfo::VarLoc &   varLoc,
 
     case ICorDebugInfo::VLT_REG_BYREF:
         fByRef = true;                      // fall through
-        __fallthrough;
+        FALLTHROUGH;
     case ICorDebugInfo::VLT_REG:
         regOffs = GetRegOffsInCONTEXT(varLoc.vlReg.vlrReg);
         dwAddr = (SIZE_T *)(regOffs + (BYTE*)pCtx);
@@ -868,7 +868,7 @@ SIZE_T *NativeVarStackAddr(const ICorDebugInfo::VarLoc &   varLoc,
 
     case ICorDebugInfo::VLT_STK_BYREF:
         fByRef = true;                      // fall through
-        __fallthrough;
+        FALLTHROUGH;
     case ICorDebugInfo::VLT_STK:
         regOffs = GetRegOffsInCONTEXT(varLoc.vlStk.vlsBaseReg);
         baseReg = (const BYTE *)*(SIZE_T *)(regOffs + (BYTE*)pCtx);

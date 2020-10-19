@@ -2428,7 +2428,7 @@ SigPointer::PeekElemTypeClosed(
                     return type;
             }
 
-            __fallthrough;
+            FALLTHROUGH;
 
             case ELEMENT_TYPE_INTERNAL:
             {

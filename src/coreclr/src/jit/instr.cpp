@@ -774,7 +774,7 @@ AGAIN:
             {
                 case INS_mov:
                     ins = ins_Load(tree->TypeGet());
-                    __fallthrough;
+                    FALLTHROUGH;
 
                 case INS_lea:
                 case INS_ldr:

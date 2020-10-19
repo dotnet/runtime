@@ -1063,7 +1063,7 @@ void InvokeUtil::SetValidField(CorElementType fldType,
                 pField->SetValuePtr(*target,valueptr);
             break;
         }
-        __fallthrough;
+        FALLTHROUGH;
 
     case ELEMENT_TYPE_FNPTR:
         valueptr = *valueObj != 0 ? GetIntPtrValue(*valueObj) : NULL;

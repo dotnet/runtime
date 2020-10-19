@@ -1065,7 +1065,7 @@ Dictionary::PopulateEntry(
             }
             IfFailThrow(ptr.SkipExactlyOne());
 
-            __fallthrough;
+            FALLTHROUGH;
         }
 
         case TypeHandleSlot:
@@ -1116,7 +1116,7 @@ Dictionary::PopulateEntry(
             }
             IfFailThrow(ptr.SkipExactlyOne());
 
-            __fallthrough;
+            FALLTHROUGH;
         }
 
         case MethodDescSlot:

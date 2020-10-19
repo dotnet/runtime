@@ -358,7 +358,7 @@ void StgIO::Close()
             break;
         }
 
-        __fallthrough;
+        FALLTHROUGH;
 
         case STGIO_MEM:
         case STGIO_HFILEMEM:
@@ -368,7 +368,7 @@ void StgIO::Close()
             m_pBaseData = m_pData = 0;
         }
         // Intentional fall through to file case, if we kept handle open.
-        __fallthrough;
+        FALLTHROUGH;
 
         case STGIO_HFILE:
         {

@@ -356,7 +356,7 @@ TypeName::TypeNameParser::TypeNameTokens TypeName::TypeNameParser::LexAToken(BOO
         case W('&'): return TypeNameAmpersand;
         case W('*'): return TypeNameAstrix;
         case W('+'): if (!ignorePlus) return TypeNamePlus;
-                     __fallthrough;
+                     FALLTHROUGH;
         case W('\\'):
             m_itr--;
             return TypeNameIdentifier;

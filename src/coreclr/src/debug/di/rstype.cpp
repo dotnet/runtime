@@ -590,7 +590,7 @@ HRESULT CordbType::MkType(CordbAppDomain * pAppDomain,
 
       pClass->SetIsValueClass(true);
       pClass->SetIsValueClassKnown(true);
-      __fallthrough;
+      FALLTHROUGH;
 
     case ELEMENT_TYPE_CLASS:
         {

@@ -720,7 +720,7 @@ void CodeGen::genCodeForBBlist()
 
             case BBJ_EHCATCHRET:
                 genEHCatchRet(block);
-                __fallthrough;
+                FALLTHROUGH;
 
             case BBJ_EHFINALLYRET:
             case BBJ_EHFILTERRET:

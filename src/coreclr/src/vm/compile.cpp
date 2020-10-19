@@ -1453,7 +1453,7 @@ void CEECompileInfo::EncodeGenericSignature(
     case DeclaringTypeHandleSlot:
         EncodeTypeInDictionarySignature(pInfoModule, ptr, pSigBuilder, encodeContext, pfnEncodeModule);
         IfFailThrow(ptr.SkipExactlyOne());
-        __fallthrough;
+        FALLTHROUGH;
 
     case TypeHandleSlot:
         EncodeTypeInDictionarySignature(pInfoModule, ptr, pSigBuilder, encodeContext, pfnEncodeModule);
@@ -1463,7 +1463,7 @@ void CEECompileInfo::EncodeGenericSignature(
     case ConstrainedMethodEntrySlot:
         EncodeTypeInDictionarySignature(pInfoModule, ptr, pSigBuilder, encodeContext, pfnEncodeModule);
         IfFailThrow(ptr.SkipExactlyOne());
-        __fallthrough;
+        FALLTHROUGH;
 
     case MethodDescSlot:
     case MethodEntrySlot:

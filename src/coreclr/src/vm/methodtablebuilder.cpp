@@ -3893,7 +3893,7 @@ VOID    MethodTableBuilder::InitializeFieldDescs(FieldDesc *pFieldDescList,
                 dwR8Fields++;
 
                 // Deliberate fall through...
-                __fallthrough;
+                FALLTHROUGH;
             }
 
         case ELEMENT_TYPE_I8:

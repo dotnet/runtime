@@ -2339,7 +2339,7 @@ typedef struct __F_ __F_;
  __blocksOn(resource) f :
      Function f blocks on the resource 'resource'.
 
- __fallthrough :
+ FALLTHROUGH :
      Annotates switch statement labels where fall-through is desired, to distinguish
      from forgotten break statements.
 
