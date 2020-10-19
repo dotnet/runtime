@@ -4234,6 +4234,7 @@ namespace System
                             aArgs[i] = new UnknownWrapper(aArgs[i]);
                             break;
                         case DispatchWrapperType.Dispatch:
+                            Debug.Assert(OperatingSystem.IsWindows());
                             aArgs[i] = new DispatchWrapper(aArgs[i]);
                             break;
                         case DispatchWrapperType.Error:

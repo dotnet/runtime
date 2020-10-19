@@ -262,64 +262,61 @@ namespace System.Security.Cryptography
             }
         }
 
-        internal static byte[] GetPrimeCurveParameterBlob(ref ECCurve curve)
+        internal static unsafe byte[] GetPrimeCurveParameterBlob(ref ECCurve curve)
         {
-            unsafe
+            // We need to build a key blob structured as follows:
+            //     BCRYPT_ECC_PARAMETER_HEADER  header
+            //     byte[cbFieldLength]          P
+            //     byte[cbFieldLength]          A
+            //     byte[cbFieldLength]          B
+            //     byte[cbFieldLength]          G.X
+            //     byte[cbFieldLength]          G.Y
+            //     byte[cbSubgroupOrder]        Order (n)
+            //     byte[cbCofactor]             Cofactor (h)
+            //     byte[cbSeed]                 Seed
+
+            int blobSize = sizeof(BCRYPT_ECC_PARAMETER_HEADER) +
+                curve.Prime!.Length +
+                curve.A!.Length +
+                curve.B!.Length +
+                curve.G.X!.Length +
+                curve.G.Y!.Length +
+                curve.Order!.Length +
+                curve.Cofactor!.Length +
+                (curve.Seed == null ? 0 : curve.Seed.Length);
+
+            byte[] blob = new byte[blobSize];
+            fixed (byte* pBlob = &blob[0])
             {
-                // We need to build a key blob structured as follows:
-                //     BCRYPT_ECC_PARAMETER_HEADER  header
-                //     byte[cbFieldLength]          P
-                //     byte[cbFieldLength]          A
-                //     byte[cbFieldLength]          B
-                //     byte[cbFieldLength]          G.X
-                //     byte[cbFieldLength]          G.Y
-                //     byte[cbSubgroupOrder]        Order (n)
-                //     byte[cbCofactor]             Cofactor (h)
-                //     byte[cbSeed]                 Seed
+                // Build the header
+                BCRYPT_ECC_PARAMETER_HEADER* pBcryptBlob = (BCRYPT_ECC_PARAMETER_HEADER*)pBlob;
+                pBcryptBlob->Version = Interop.BCrypt.BCRYPT_ECC_PARAMETER_HEADER_V1;
+                pBcryptBlob->cbCofactor = curve.Cofactor.Length;
+                pBcryptBlob->cbFieldLength = curve.A.Length; // P, A, B, X, Y have the same length
+                pBcryptBlob->cbSeed = curve.Seed == null ? 0 : curve.Seed.Length;
+                pBcryptBlob->cbSubgroupOrder = curve.Order.Length;
+                pBcryptBlob->CurveGenerationAlgId = ECCng.GetHashAlgorithmId(curve.Hash);
+                pBcryptBlob->CurveType = ECCng.ConvertToCurveTypeEnum(curve.CurveType);
 
-                int blobSize = sizeof(BCRYPT_ECC_PARAMETER_HEADER) +
-                    curve.Prime!.Length +
-                    curve.A!.Length +
-                    curve.B!.Length +
-                    curve.G.X!.Length +
-                    curve.G.Y!.Length +
-                    curve.Order!.Length +
-                    curve.Cofactor!.Length +
-                    (curve.Seed == null ? 0 : curve.Seed.Length);
-
-                byte[] blob = new byte[blobSize];
-                fixed (byte* pBlob = &blob[0])
+                // Emit the blob
+                int offset = sizeof(BCRYPT_ECC_PARAMETER_HEADER);
+                Interop.BCrypt.Emit(blob, ref offset, curve.Prime);
+                Interop.BCrypt.Emit(blob, ref offset, curve.A);
+                Interop.BCrypt.Emit(blob, ref offset, curve.B);
+                Interop.BCrypt.Emit(blob, ref offset, curve.G.X);
+                Interop.BCrypt.Emit(blob, ref offset, curve.G.Y);
+                Interop.BCrypt.Emit(blob, ref offset, curve.Order);
+                Interop.BCrypt.Emit(blob, ref offset, curve.Cofactor);
+                if (curve.Seed != null)
                 {
-                    // Build the header
-                    BCRYPT_ECC_PARAMETER_HEADER* pBcryptBlob = (BCRYPT_ECC_PARAMETER_HEADER*)pBlob;
-                    pBcryptBlob->Version = Interop.BCrypt.BCRYPT_ECC_PARAMETER_HEADER_V1;
-                    pBcryptBlob->cbCofactor = curve.Cofactor.Length;
-                    pBcryptBlob->cbFieldLength = curve.A.Length; // P, A, B, X, Y have the same length
-                    pBcryptBlob->cbSeed = curve.Seed == null ? 0 : curve.Seed.Length;
-                    pBcryptBlob->cbSubgroupOrder = curve.Order.Length;
-                    pBcryptBlob->CurveGenerationAlgId = ECCng.GetHashAlgorithmId(curve.Hash);
-                    pBcryptBlob->CurveType = ECCng.ConvertToCurveTypeEnum(curve.CurveType);
-
-                    // Emit the blob
-                    int offset = sizeof(BCRYPT_ECC_PARAMETER_HEADER);
-                    Interop.BCrypt.Emit(blob, ref offset, curve.Prime);
-                    Interop.BCrypt.Emit(blob, ref offset, curve.A);
-                    Interop.BCrypt.Emit(blob, ref offset, curve.B);
-                    Interop.BCrypt.Emit(blob, ref offset, curve.G.X);
-                    Interop.BCrypt.Emit(blob, ref offset, curve.G.Y);
-                    Interop.BCrypt.Emit(blob, ref offset, curve.Order);
-                    Interop.BCrypt.Emit(blob, ref offset, curve.Cofactor);
-                    if (curve.Seed != null)
-                    {
-                        Interop.BCrypt.Emit(blob, ref offset, curve.Seed);
-                    }
-
-                    // We better have computed the right allocation size above!
-                    Debug.Assert(offset == blobSize, "offset == blobSize");
+                    Interop.BCrypt.Emit(blob, ref offset, curve.Seed);
                 }
 
-                return blob;
+                // We better have computed the right allocation size above!
+                Debug.Assert(offset == blobSize, "offset == blobSize");
             }
+
+            return blob;
         }
 
         /// <summary>

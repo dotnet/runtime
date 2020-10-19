@@ -10,8 +10,6 @@ if (CLR_CMAKE_HOST_WIN32)
 
     list(APPEND CLR_SOURCES ${CMAKE_CURRENT_BINARY_DIR}/coreclr.def)
 
-    add_linker_flag("/ENTRY:CoreDllMain")
-
     # Incremental linking results in the linker inserting extra padding and routing function calls via thunks that can break the
     # invariants (e.g. size of region between Jit_PatchedCodeLast-Jit_PatchCodeStart needs to fit in a page).
     add_linker_flag("/INCREMENTAL:NO")
@@ -109,7 +107,7 @@ set(CORECLR_LIBRARIES
     ildbsymlib
     utilcode
     v3binder
-    System.Globalization.Native-static
+    System.Globalization.Native-Static
     interop
 )
 
