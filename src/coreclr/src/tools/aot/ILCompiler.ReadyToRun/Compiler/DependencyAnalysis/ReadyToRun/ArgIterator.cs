@@ -120,17 +120,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                 return CorElementType.ELEMENT_TYPE_BYREF;
             }
 
-            Internal.TypeSystem.TypeFlags category;
-            switch (_type.Context.Target.Architecture)
-            {
-                case TargetArchitecture.X86:
-                    category = ((CompilerTypeSystemContext)_type.Context).NormalizedCategoryFor4ByteStructOnX86(_type.UnderlyingType);
-                    break;
-
-                default:
-                    category = _type.UnderlyingType.Category;
-                    break;
-            }
+            Internal.TypeSystem.TypeFlags category = _type.UnderlyingType.Category;
             // We use the UnderlyingType to handle Enums properly
             return category switch
             {

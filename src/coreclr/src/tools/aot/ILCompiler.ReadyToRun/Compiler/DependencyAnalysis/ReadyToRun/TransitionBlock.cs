@@ -198,10 +198,58 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                             }
                             break;
                         }
+#elif READYTORUN
+                    case CorElementType.ELEMENT_TYPE_VALUETYPE:
+                        if (IsTrivialPointerSizedStruct(thArgType))
+                        {
+                            pNumRegistersUsed++;
+                            return true;
+                        }
+                        break;
 #endif
                 }
             }
 
+            return false;
+        }
+
+        private bool IsTrivialPointerSizedStruct(TypeHandle thArgType)
+        {
+            Debug.Assert(IsX86);
+            Debug.Assert(thArgType.IsValueType());
+            if (thArgType.GetSize() != 4)
+            {
+                // Type does not have trivial layout or has the wrong size.
+                return false;
+            }
+            TypeDesc typeOfEmbeddedField = null;
+            foreach (var field in thArgType.GetRuntimeTypeHandle().GetFields())
+            {
+                if (field.IsStatic)
+                    continue;
+                if (typeOfEmbeddedField != null)
+                {
+                    // Type has more than one instance field
+                    return false;
+                }
+
+                typeOfEmbeddedField = field.FieldType;
+            }
+
+            if ((typeOfEmbeddedField != null) && ((typeOfEmbeddedField.IsValueType) || (typeOfEmbeddedField.IsPointer)))
+            {
+                switch (typeOfEmbeddedField.UnderlyingType.Category)
+                {
+                    case TypeFlags.IntPtr:
+                    case TypeFlags.UIntPtr:
+                    case TypeFlags.Int32:
+                    case TypeFlags.UInt32:
+                    case TypeFlags.Pointer:
+                        return true;
+                    case TypeFlags.ValueType:
+                        return IsTrivialPointerSizedStruct(new TypeHandle(typeOfEmbeddedField));
+                }
+            }
             return false;
         }
 
