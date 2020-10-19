@@ -774,10 +774,10 @@ GenTree* Compiler::impBaseIntrinsic(NamedIntrinsic        intrinsic,
 
                 for (unsigned i = 0; i < sig->numArgs; i++)
                 {
-                    tmp = new (this, GT_LIST) GenTreeArgList(impPopStack().val, tmp);
-                    op1 = tmp;
+                    tmp = gtNewListNode(impPopStack().val, tmp);
                 }
 
+                op1     = tmp;
                 retNode = gtNewSimdHWIntrinsicNode(retType, op1, intrinsic, baseType, simdSize);
             }
             break;
