@@ -150,7 +150,7 @@ namespace Microsoft.Extensions.DependencyModel
 
         private static string GetNormalizedCodeBasePath(Assembly assembly)
         {
-            if (Uri.TryCreate(assembly.CodeBase, UriKind.Absolute, out Uri codeBase)
+            if (Uri.TryCreate(assembly.Location, UriKind.Absolute, out Uri codeBase)
                 && codeBase.IsFile)
             {
                 return codeBase.LocalPath;
