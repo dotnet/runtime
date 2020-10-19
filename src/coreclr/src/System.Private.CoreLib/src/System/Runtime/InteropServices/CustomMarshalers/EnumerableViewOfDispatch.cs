@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Diagnostics;
 using System.Runtime.InteropServices.ComTypes;
 
 namespace System.Runtime.InteropServices.CustomMarshalers
@@ -38,6 +39,7 @@ namespace System.Runtime.InteropServices.CustomMarshalers
                     IntPtr.Zero);
             }
 
+            Debug.Assert(OperatingSystem.IsWindows());
             IntPtr enumVariantPtr = IntPtr.Zero;
             try
             {

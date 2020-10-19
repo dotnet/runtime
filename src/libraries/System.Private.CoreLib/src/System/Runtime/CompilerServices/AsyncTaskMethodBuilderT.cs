@@ -332,35 +332,41 @@ namespace System.Runtime.CompilerServices
                     }
                 }
 
-                if (IsCompleted)
-                {
-                    // If async debugging is enabled, remove the task from tracking.
-                    if (System.Threading.Tasks.Task.s_asyncDebuggingEnabled)
-                    {
-                        System.Threading.Tasks.Task.RemoveFromActiveTasks(this);
-                    }
-
-                    // Clear out state now that the async method has completed.
-                    // This avoids keeping arbitrary state referenced by lifted locals
-                    // if this Task / state machine box is held onto.
-                    StateMachine = default;
-                    Context = default;
-
-#if !CORERT
-                    // In case this is a state machine box with a finalizer, suppress its finalization
-                    // as it's now complete.  We only need the finalizer to run if the box is collected
-                    // without having been completed.
-                    if (AsyncMethodBuilderCore.TrackAsyncMethodCompletion)
-                    {
-                        GC.SuppressFinalize(this);
-                    }
-#endif
-                }
-
                 if (loggingOn)
                 {
                     TplEventSource.Log.TraceSynchronousWorkEnd(CausalitySynchronousWork.Execution);
                 }
+            }
+
+            /// <summary>Clears out all state associated with a completed box.</summary>
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            public void ClearStateUponCompletion()
+            {
+                Debug.Assert(IsCompleted);
+
+                // This logic may be invoked multiple times on the same instance and needs to be robust against that.
+
+                // If async debugging is enabled, remove the task from tracking.
+                if (s_asyncDebuggingEnabled)
+                {
+                    RemoveFromActiveTasks(this);
+                }
+
+                // Clear out state now that the async method has completed.
+                // This avoids keeping arbitrary state referenced by lifted locals
+                // if this Task / state machine box is held onto.
+                StateMachine = default;
+                Context = default;
+
+#if !CORERT
+                // In case this is a state machine box with a finalizer, suppress its finalization
+                // as it's now complete.  We only need the finalizer to run if the box is collected
+                // without having been completed.
+                if (AsyncMethodBuilderCore.TrackAsyncMethodCompletion)
+                {
+                    GC.SuppressFinalize(this);
+                }
+#endif
             }
 
             /// <summary>Gets the state machine as a boxed object.  This should only be used for debugging purposes.</summary>
