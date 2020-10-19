@@ -2505,6 +2505,8 @@ void Thread::RareEnablePreemptiveGC()
     // holding a spin lock in coop mode and transit to preemp mode will cause deadlock on GC
     _ASSERTE ((m_StateNC & Thread::TSNC_OwnsSpinLock) == 0);
 
+    _ASSERTE(!MethodDescBackpatchInfoTracker::IsLockOwnedByCurrentThread() || IsInForbidSuspendForDebuggerRegion());
+
 #if defined(STRESS_HEAP) && defined(_DEBUG)
     if (!IsDetached())
         PerformPreemptiveGC();
