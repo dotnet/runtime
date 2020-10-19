@@ -8,7 +8,7 @@ namespace System.Net.Http.HPack
 {
     internal class Huffman
     {
-        private static ushort[] s_decodingTree;
+        private static ushort[]? s_decodingTree;
 
         // TODO: this can be constructed from _decodingTable
         private static readonly (uint code, int bitLength)[] _encodingTable = new (uint code, int bitLength)[]
