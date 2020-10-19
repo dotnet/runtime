@@ -460,6 +460,20 @@ namespace System.Diagnostics.Tests
             }
         }
 
+        [Fact]        
+        public void TestToString_OnExitedProcess()
+        {
+            var p = Process.Start("dotnet");
+            Assert.Equal("System.Diagnostics.Process (dotnet)", p.ToString());
+
+            p.Kill();
+
+            // Ensure ToString does not throw an exception, but still returns
+            // a representation of the object.
+            Assert.Equal("System.Diagnostics.Process", p.ToString());
+        }
+
+
         [Fact]
         public void HasExited_GetNotStarted_ThrowsInvalidOperationException()
         {

@@ -1343,7 +1343,7 @@ namespace System.Diagnostics
 
         public override string ToString()
         {
-            if (Associated)
+            if (Associated && !HasExited)
             {
                 string processName = ProcessName;
                 if (processName.Length != 0)
