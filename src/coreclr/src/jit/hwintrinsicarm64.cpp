@@ -398,7 +398,11 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
                 {
                     tmp        = gtNewArgList(impPopStack().val);
                     tmp->gtOp2 = op1;
-                    op1        = tmp;
+
+                    // propagate GTF_CALL if needed
+                    if ((op1 != nullptr) && (op1->gtFlags & GTF_CALL))
+                        tmp->gtFlags |= GTF_CALL;
+                    op1 = tmp;
                 }
 
                 retNode = gtNewSimdHWIntrinsicNode(retType, op1, intrinsic, baseType, simdSize);
