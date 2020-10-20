@@ -5062,8 +5062,8 @@ unsigned emitter::emitEndCodeGen(Compiler* comp,
 
             assert(coldCodeBlock);
             cp          = coldCodeBlock;
-#ifdef DEBUG
             isColdBlock = true;
+#ifdef DEBUG
             if (emitComp->opts.disAsm || emitComp->verbose)
             {
                 printf("\n************** Beginning of cold code **************\n");
