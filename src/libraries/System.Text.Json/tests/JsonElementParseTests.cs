@@ -2,14 +2,11 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using Xunit;
-using System.Buffers;
-using System.IO;
-using System.Text.Encodings.Web;
 using System.Collections.Generic;
 
 namespace System.Text.Json.Tests
 {
-    public static class JsonElementReadTests
+    public static class JsonElementParseTests
     {
         public static IEnumerable<object[]> ElementParseCases
         {

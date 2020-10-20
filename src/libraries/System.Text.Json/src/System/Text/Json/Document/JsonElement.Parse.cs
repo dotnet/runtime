@@ -13,7 +13,7 @@ namespace System.Text.Json
         /// </summary>
         /// <param name="reader">The reader to read.</param>
         /// <returns>
-        ///   A JsonDocument representing the value (and nested values) read from the reader.
+        ///   A JsonElement representing the value (and nested values) read from the reader.
         /// </returns>
         /// <remarks>
         ///   <para>
