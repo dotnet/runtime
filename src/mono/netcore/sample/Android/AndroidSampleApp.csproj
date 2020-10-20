@@ -56,7 +56,8 @@
     <Message Condition="'$(DeployAndRun)' == 'true'" Importance="High" Text="Uninstalling apk (ignore errors if any):"/>
     <Exec Condition="'$(DeployAndRun)' == 'true'" Command="$(AdbTool) uninstall net.dot.HelloAndroid" ContinueOnError="WarnAndContinue" />
     <Exec Condition="'$(DeployAndRun)' == 'true'" Command="$(AdbTool) install $(ApkDir)/bin/HelloAndroid.apk" />
-    <Exec Condition="'$(DeployAndRun)' == 'true'" Command="$(AdbTool) shell am instrument -w net.dot.HelloAndroid/net.dot.MonoRunner" />
+    <Exec Condition="'$(DeployAndRun)' == 'true' and '$(RunActivity)' != 'true'" Command="$(AdbTool) shell am instrument -w net.dot.HelloAndroid/net.dot.MonoRunner" />
+    <Exec Condition="'$(DeployAndRun)' == 'true' and '$(RunActivity)' == 'true'" Command="$(AdbTool) shell am start -n net.dot.HelloAndroid/net.dot.MainActivity" />
     <Exec Condition="'$(DeployAndRun)' == 'true'" Command="$(AdbTool) logcat -d -s DOTNET" />
   </Target>
 
