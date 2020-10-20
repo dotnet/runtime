@@ -124,7 +124,7 @@ namespace Microsoft.Extensions.Configuration.CommandLine
                 if (keyStartIndex == 0)
                 {
                     // Ignore invalid formats
-                    pair = (null, null);
+                    pair = default;
                     return false;
                 }
 
