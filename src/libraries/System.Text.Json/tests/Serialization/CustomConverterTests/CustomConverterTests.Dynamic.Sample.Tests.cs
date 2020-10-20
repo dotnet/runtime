@@ -11,6 +11,10 @@ namespace System.Text.Json.Serialization.Tests
 {
     public static partial class CustomConverterTests
     {
+        private const string ExpectedDomJson = "{\"MyString\":\"Hello!\",\"MyNull\":null,\"MyBoolean\":false,\"MyArray\":[2,3,42]," +
+            "\"MyInt\":43,\"MyDateTime\":\"2020-07-08T00:00:00\",\"MyGuid\":\"ed957609-cdfe-412f-88c1-02daca1b4f51\"," +
+            "\"MyObject\":{\"MyString\":\"Hello!!\"},\"Child\":{\"ChildProp\":1}}";
+
         private enum MyCustomEnum
         {
             Default = 0,
@@ -61,7 +65,6 @@ namespace System.Text.Json.Serialization.Tests
             dbl = double.Parse(temp, System.Globalization.CultureInfo.InvariantCulture);
 #endif
             Assert.Equal(4.2, dbl);
-
         }
 
         [Fact]
@@ -95,7 +98,7 @@ namespace System.Text.Json.Serialization.Tests
         }
 
         [Fact]
-        public static void DirectUseOfDynamicTypes()
+        public static void JsonDynamicTypes_Serialize()
         {
             var options = new JsonSerializerOptions();
             options.EnableDynamicTypes();
@@ -131,26 +134,23 @@ namespace System.Text.Json.Serialization.Tests
             Assert.Equal("true", json);
 
             // Array
-            List<object> list = new List<object>();
-            list.Add(1);
-            list.Add(2);
-
-            dynamic dynamicArray = new JsonDynamicArray(list, options);
-            json = JsonSerializer.Serialize(dynamicArray, options);
+            dynamic arr = new JsonDynamicArray(options);
+            arr.Add(1);
+            arr.Add(2);
+            json = JsonSerializer.Serialize(arr, options);
             Assert.Equal("[1,2]", json);
 
             // Object
-            Dictionary<string, object> dictionary = new Dictionary<string, object>();
-            dictionary["One"] = 1;
-            dictionary["Two"] = 2;
+            dynamic dynamicObject = new JsonDynamicObject(options);
+            dynamicObject["One"] = 1;
+            dynamicObject["Two"] = 2;
 
-            dynamic dynamicObject = new JsonDynamicObject(dictionary, options);
             json = JsonSerializer.Serialize(dynamicObject, options);
             JsonTestHelper.AssertJsonEqual("{\"One\":1,\"Two\":2}", json);
         }
 
         [Fact]
-        public static void DirectUseOfDynamicTypes_Deserialize()
+        public static void JsonDynamicTypes_Deserialize()
         {
             var options = new JsonSerializerOptions();
             options.EnableDynamicTypes();
@@ -159,12 +159,13 @@ namespace System.Text.Json.Serialization.Tests
             JsonSerializer.Deserialize<JsonDynamicArray>("[]", options);
             JsonSerializer.Deserialize<JsonDynamicBoolean>("true", options);
             JsonSerializer.Deserialize<JsonDynamicNumber>("0", options);
+            JsonSerializer.Deserialize<JsonDynamicNumber>("1.2", options);
             JsonSerializer.Deserialize<JsonDynamicObject>("{}", options);
             JsonSerializer.Deserialize<JsonDynamicString>("\"str\"", options);
         }
 
         [Fact]
-        public static void DirectUseOfDynamicTypes_AsObject_Deserialize()
+        public static void JsonDynamicTypes_Deserialize_AsObject()
         {
             var options = new JsonSerializerOptions();
             options.EnableDynamicTypes();
@@ -172,71 +173,137 @@ namespace System.Text.Json.Serialization.Tests
             Assert.IsType<JsonDynamicArray>(JsonSerializer.Deserialize<object>("[]", options));
             Assert.IsType<JsonDynamicBoolean>(JsonSerializer.Deserialize<object>("true", options));
             Assert.IsType<JsonDynamicNumber>(JsonSerializer.Deserialize<object>("0", options));
+            Assert.IsType<JsonDynamicNumber>(JsonSerializer.Deserialize<object>("1.2", options));
             Assert.IsType<JsonDynamicObject>(JsonSerializer.Deserialize<object>("{}", options));
             Assert.IsType<JsonDynamicString>(JsonSerializer.Deserialize<object>("\"str\"", options));
         }
 
+        /// <summary>
+        /// Use a mutable DOM with the 'dynamic' keyword.
+        /// </summary>
         [Fact]
-        public static void VerifyMutableDom()
+        public static void VerifyMutableDom_UsingDynamicKeyword()
         {
-            const string ExpectedJson ="{\"MyString\":\"Hello!\",\"MyNull\":null,\"MyBoolean\":false,\"MyArray\":[\"2\"]," +
-                "\"MyInt\":43,\"MyDateTime\":\"2020-07-08T00:00:00\",\"MyGuid\":\"ed957609-cdfe-412f-88c1-02daca1b4f51\"," +
-                "\"MyObject\":{\"MyString\":\"Hello!!\"},\"Child\":{\"ChildProp\":1}}";
-
             var options = new JsonSerializerOptions();
             options.EnableDynamicTypes();
 
             dynamic obj = JsonSerializer.Deserialize<dynamic>(DynamicTests.Json, options);
             Assert.IsType<JsonDynamicObject>(obj);
 
-            // Change some values
+            // Change some primitives.
             obj.MyString = "Hello!";
             obj.MyBoolean = false;
             obj.MyInt = 43;
-            obj.MyObject = new ExpandoObject();
-            obj.MyObject.MyString = "Hello!!";
-            obj.MyArray.Clear();
-            obj.MyArray.Add("2");
 
-            // Use ExpandoObject for new property
-            dynamic child = new ExpandoObject();
+            // Add nested objects.
+            // Use JsonDynamicObject; ExpandoObject should not be used since it doesn't have the same semantics including
+            // null handling and case-sensitivity that respects JsonSerializerOptions.PropertyNameCaseInsensitive.
+            dynamic myObject = new JsonDynamicObject(options);
+            myObject.MyString = "Hello!!";
+            obj.MyObject = myObject;
+
+            dynamic child = new JsonDynamicObject(options);
             child.ChildProp = 1;
             obj.Child = child;
 
+            // Modify number elements.
+            dynamic arr = obj["MyArray"];
+            arr[0] = (int)arr[0] + 1;
+            arr[1] = (int)arr[1] + 1;
+
+            // Add an element.
+            arr.Add(42);
+
             string json = JsonSerializer.Serialize(obj, options);
-            JsonTestHelper.AssertJsonEqual(ExpectedJson, json);
+            JsonTestHelper.AssertJsonEqual(ExpectedDomJson, json);
         }
 
+        /// <summary>
+        /// Use a mutable DOM without the 'dynamic' keyword.
+        /// </summary>
         [Fact]
-        public static void VerifyMutableDom_WithIndexers()
+        public static void VerifyMutableDom_WithoutUsingDynamicKeyword()
         {
-            const string ExpectedJson = "{\"MyString\":\"Hello!\",\"MyNull\":null,\"MyBoolean\":false,\"MyArray\":[\"2\"]," +
-                "\"MyInt\":43,\"MyDateTime\":\"2020-07-08T00:00:00\",\"MyGuid\":\"ed957609-cdfe-412f-88c1-02daca1b4f51\"," +
-                "\"MyObject\":{\"MyString\":\"Hello!!\"},\"Child\":{\"ChildProp\":1}}";
-
             var options = new JsonSerializerOptions();
             options.EnableDynamicTypes();
 
             JsonDynamicObject obj = (JsonDynamicObject)JsonSerializer.Deserialize<object>(DynamicTests.Json, options);
 
-            // Change some primitives
+            // Change some primitives.
             obj["MyString"] = "Hello!";
             obj["MyBoolean"] = false;
             obj["MyInt"] = 43;
 
-            ((IDictionary<string, object>)obj["MyObject"])["MyString"] = "Hello!!";
+            // Add nested objects.
+            obj["MyObject"] = new JsonDynamicObject(options)
+            {
+                ["MyString"] = "Hello!!"
+            };
 
-            // Use Dictionary for new child property
-            var child = new Dictionary<string, object>();
-            child["ChildProp"] = 1;
-            obj["Child"] = child;
+            obj["Child"] = new JsonDynamicObject(options)
+            {
+                ["ChildProp"] = 1
+            };
 
-            ((IList<object>)obj["MyArray"]).Clear();
-            ((IList<object>)obj["MyArray"]).Add("1");
-            ((IList<object>)obj["MyArray"])[0]="2"; // replace the "1"
+            // Modify number elements.
+            var arr = (JsonDynamicArray)obj["MyArray"];
+            var elem = (JsonDynamicNumber)arr[0];
+            elem.SetValue(elem.GetValue<int>() + 1);
+            elem = (JsonDynamicNumber)arr[1];
+            elem.SetValue(elem.GetValue<int>() + 1);
+
+            // Add an element.
+            arr.Add(42);
 
             string json = JsonSerializer.Serialize(obj, options);
-            JsonTestHelper.AssertJsonEqual(ExpectedJson, json);
+            JsonTestHelper.AssertJsonEqual(ExpectedDomJson, json);
+        }
+
+        /// <summary>
+        /// Use a mutable DOM without the 'dynamic' keyword and use round-trippable values
+        /// meaning the 'JsonDynamicType' values are used instead of raw primitives.
+        /// </summary>
+        [Fact]
+        public static void VerifyMutableDom_WithoutUsingDynamicKeyword_JsonDynamicType()
+        {
+            var options = new JsonSerializerOptions();
+            options.EnableDynamicTypes();
+
+            JsonDynamicObject obj = (JsonDynamicObject)JsonSerializer.Deserialize<object>(DynamicTests.Json, options);
+            Verify();
+
+            // Verify the values are round-trippable.
+            ((JsonDynamicArray)obj["MyArray"]).RemoveAt(2);
+            Verify();
+
+            void Verify()
+            {
+                // Change some primitives.
+                ((JsonDynamicType)obj["MyString"]).SetValue("Hello!");
+                ((JsonDynamicType)obj["MyBoolean"]).SetValue(false);
+                ((JsonDynamicType)obj["MyInt"]).SetValue(43);
+
+                // Add nested objects.
+                obj["MyObject"] = new JsonDynamicObject(options)
+                {
+                    ["MyString"] = new JsonDynamicString("Hello!!", options)
+                };
+                obj["Child"] = new JsonDynamicObject(options)
+                {
+                    ["ChildProp"] = new JsonDynamicNumber(1, options)
+                };
+
+                // Modify number elements.
+                var arr = (JsonDynamicArray)obj["MyArray"];
+                ((JsonDynamicType)arr[0]).SetValue(2);
+                ((JsonDynamicType)arr[1]).SetValue(3);
+
+                // Add an element.
+                arr.Add(new JsonDynamicNumber(42, options));
+
+                string json = JsonSerializer.Serialize(obj, options);
+                JsonTestHelper.AssertJsonEqual(ExpectedDomJson, json);
+            }
         }
 
         [Fact]
