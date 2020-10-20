@@ -698,17 +698,19 @@ namespace System.IO
 
             fixed (char* f = &MemoryMarshal.GetReference(first), s = &MemoryMarshal.GetReference(second), t = &MemoryMarshal.GetReference(third))
             {
+                var payload = new Join3Payload (
+                    f, first.Length, s, second.Length, t, third.Length,
+                    (byte)(firstNeedsSeparator | secondNeedsSeparator << 1));
 #if MS_IO_REDIST
                 return StringExtensions.Create(
 #else
                 return string.Create(
 #endif
                     first.Length + second.Length + third.Length + firstNeedsSeparator + secondNeedsSeparator,
-                    new Join3Payload (
-                            f, first.Length, s, second.Length, t, third.Length,
-                            (byte)(firstNeedsSeparator | secondNeedsSeparator << 1)),
-                    static (destination, state) =>
+                    (IntPtr)(&payload),
+                    static (destination, statePtr) =>
                     {
+                        ref Join3Payload state = ref *(Join3Payload*)statePtr;
                         new Span<char>(state.First, state.FirstLength).CopyTo(destination);
                         if ((state.Separators & 0b1) != 0)
                             destination[state.FirstLength] = PathInternal.DirectorySeparatorChar;
@@ -759,17 +761,19 @@ namespace System.IO
 
             fixed (char* f = &MemoryMarshal.GetReference(first), s = &MemoryMarshal.GetReference(second), t = &MemoryMarshal.GetReference(third), u = &MemoryMarshal.GetReference(fourth))
             {
+                var payload = new Join4Payload (
+                    f, first.Length, s, second.Length, t, third.Length, u, fourth.Length,
+                    (byte)(firstNeedsSeparator | secondNeedsSeparator << 1 | thirdNeedsSeparator << 2));
 #if MS_IO_REDIST
                 return StringExtensions.Create(
 #else
                 return string.Create(
 #endif
                     first.Length + second.Length + third.Length + fourth.Length + firstNeedsSeparator + secondNeedsSeparator + thirdNeedsSeparator,
-                    new Join4Payload (
-                            f, first.Length, s, second.Length, t, third.Length, u, fourth.Length,
-                            (byte)(firstNeedsSeparator | secondNeedsSeparator << 1 | thirdNeedsSeparator << 2)),
-                    static (destination, state) =>
+                    (IntPtr)(&payload),
+                    static (destination, statePtr) =>
                     {
+                        ref Join4Payload state = ref *(Join4Payload*)statePtr;
                         new Span<char>(state.First, state.FirstLength).CopyTo(destination);
                         int insertionPoint = state.FirstLength;
                         if ((state.Separators & 0b1) != 0)
