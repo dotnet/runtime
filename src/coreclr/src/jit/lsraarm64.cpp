@@ -1134,29 +1134,62 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree)
     {
         if (intrin.op2 != nullptr)
         {
-            if (isRMW)
+            // RMW intrinsic operands doesn't have to be delayFree when they can be assigned the same register as op1Reg
+            // (i.e. a register that corresponds to read-modify-write operand) and one of them is the last use.
+
+            bool op2DelayFree = isRMW;
+            bool op3DelayFree = isRMW;
+            bool op4DelayFree = isRMW;
+
+            assert(intrin.op1 != nullptr);
+
+            if (isRMW && intrin.op1->OperIs(GT_LCL_VAR))
             {
-                srcCount += BuildDelayFreeUses(intrin.op2);
+                unsigned int varNum1    = intrin.op1->AsLclVar()->GetLclNum();
+                bool         op1LastUse = false;
+
+                unsigned int varNum2 = BAD_VAR_NUM;
+                unsigned int varNum3 = BAD_VAR_NUM;
+                unsigned int varNum4 = BAD_VAR_NUM;
+
+                if (intrin.op2->OperIs(GT_LCL_VAR))
+                {
+                    varNum2 = intrin.op2->AsLclVar()->GetLclNum();
+                    op1LastUse |= ((varNum1 == varNum2) && intrin.op2->HasLastUse());
+                }
 
                 if (intrin.op3 != nullptr)
                 {
-                    srcCount += BuildDelayFreeUses(intrin.op3);
-
-                    if (intrin.op4 != nullptr)
+                    if (intrin.op3->OperIs(GT_LCL_VAR))
                     {
-                        srcCount += BuildDelayFreeUses(intrin.op4);
+                        varNum3 = intrin.op3->AsLclVar()->GetLclNum();
+                        op1LastUse |= ((varNum1 == varNum3) && intrin.op3->HasLastUse());
+                    }
+
+                    if ((intrin.op4 != nullptr) && intrin.op4->OperIs(GT_LCL_VAR))
+                    {
+                        varNum4 = intrin.op4->AsLclVar()->GetLclNum();
+                        op1LastUse |= ((varNum1 == varNum4) && intrin.op4->HasLastUse());
                     }
                 }
-            }
-            else
-            {
-                srcCount += BuildOperandUses(intrin.op2);
 
-                if (intrin.op3 != nullptr)
+                if (op1LastUse)
                 {
-                    assert(intrin.op4 == nullptr);
+                    op2DelayFree = (varNum1 != varNum2);
+                    op3DelayFree = (varNum1 != varNum3);
+                    op4DelayFree = (varNum1 != varNum4);
+                }
+            }
 
-                    srcCount += BuildOperandUses(intrin.op3);
+            srcCount += op2DelayFree ? BuildDelayFreeUses(intrin.op2) : BuildOperandUses(intrin.op2);
+
+            if (intrin.op3 != nullptr)
+            {
+                srcCount += op3DelayFree ? BuildDelayFreeUses(intrin.op3) : BuildOperandUses(intrin.op3);
+
+                if (intrin.op4 != nullptr)
+                {
+                    srcCount += op4DelayFree ? BuildDelayFreeUses(intrin.op4) : BuildOperandUses(intrin.op4);
                 }
             }
         }

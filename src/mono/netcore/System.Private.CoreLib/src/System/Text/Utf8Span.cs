@@ -85,11 +85,6 @@ namespace System.Text
             throw new PlatformNotSupportedException();
         }
 
-        internal unsafe string ToStringNoReplacement()
-        {
-            throw new PlatformNotSupportedException();
-        }
-
         public Utf8String ToUtf8String()
         {
             throw new PlatformNotSupportedException();

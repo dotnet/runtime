@@ -10,7 +10,7 @@ namespace System.IO.MemoryMappedFiles
     {
         private readonly MemoryMappedView _view;
 
-        internal unsafe MemoryMappedViewStream(MemoryMappedView view)
+        internal MemoryMappedViewStream(MemoryMappedView view)
         {
             Debug.Assert(view != null, "view is null");
 

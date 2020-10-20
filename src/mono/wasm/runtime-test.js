@@ -47,6 +47,7 @@ if (is_browser) {
 if (typeof console === "undefined") {
 	var Console = function () {
 		this.log = function(msg){ print(msg) };
+		this.clear = function() { };
 	};
 	console = new Console();
 }
@@ -62,12 +63,14 @@ if (typeof console !== "undefined") {
 		console.error = console.log;
 }
 
-if (typeof crypto == 'undefined') {
+if (typeof crypto === 'undefined') {
+	// **NOTE** this is a simple insecure polyfill for testing purposes only
 	// /dev/random doesn't work on js shells, so define our own
 	// See library_fs.js:createDefaultDevices ()
 	var crypto = {
 		getRandomValues: function (buffer) {
-			buffer[0] = (Math.random()*256)|0;
+			for (var i = 0; i < buffer.length; i++)
+				buffer [i] = (Math.random () * 256) | 0;
 		}
 	}
 }

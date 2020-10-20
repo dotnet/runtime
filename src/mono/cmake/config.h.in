@@ -1302,9 +1302,6 @@
 /* inotify_rm_watch with unsigned wd */
 #cmakedefine INOTIFY_RM_WATCH_WD_UNSIGNED 1
 
-/* shm_open that works well enough with mmap */
-#cmakedefine HAVE_SHM_OPEN_THAT_WORKS_WELL_ENOUGH_WITH_MMAP 1
-
 /* getpriority with int who */
 #cmakedefine PRIORITY_REQUIRES_INT_WHO 1
 

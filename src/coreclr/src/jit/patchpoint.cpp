@@ -54,6 +54,10 @@ public:
         {
             if (block->bbFlags & BBF_PATCHPOINT)
             {
+                // Clear the patchpoint flag.
+                //
+                block->bbFlags &= ~BBF_PATCHPOINT;
+
                 // If block is in a handler region, don't insert a patchpoint.
                 // We can't OSR from funclets.
                 //

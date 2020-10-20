@@ -59,7 +59,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             if (!_method.Unboxing && !_isInstantiatingStub && _method.ConstrainedType == null &&
                 fixupKind == ReadyToRunFixupKind.MethodEntry)
             {
-                if (!_method.Method.OwningType.HasInstantiation && !_method.Method.OwningType.IsArray)
+                if (!_method.Method.HasInstantiation && !_method.Method.OwningType.HasInstantiation && !_method.Method.OwningType.IsArray)
                 {
                     if (_method.Token.TokenType == CorTokenType.mdtMethodDef)
                     {

@@ -51,11 +51,10 @@ namespace System.Net.Http
         private void RegisterCancellation(CancellationToken cancellationToken)
         {
             _cancellationToken = cancellationToken;
-            _registration = cancellationToken.UnsafeRegister(static s =>
+            _registration = cancellationToken.UnsafeRegister(static (s, cancellationToken) =>
             {
                 // The callback will only fire if cancellation owns the right to complete the instance.
-                var thisRef = (CreditWaiter)s!;
-                thisRef._source.SetException(ExceptionDispatchInfo.SetCurrentStackTrace(new OperationCanceledException(thisRef._cancellationToken)));
+                ((CreditWaiter)s!)._source.SetException(ExceptionDispatchInfo.SetCurrentStackTrace(new OperationCanceledException(cancellationToken)));
             }, this);
         }
 

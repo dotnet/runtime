@@ -265,7 +265,8 @@ namespace Microsoft.Extensions.DependencyInjection.Tests
             Assert.NotNull(provider.CreateScope());
         }
 
-        [Theory(Skip = "https://github.com/dotnet/runtime/issues/42160 - We don't support value task services currently")]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/42160")] // We don't support value task services currently
+        [Theory]
         [InlineData(ServiceLifetime.Transient)]
         [InlineData(ServiceLifetime.Scoped)]
         [InlineData(ServiceLifetime.Singleton)]

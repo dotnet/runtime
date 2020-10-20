@@ -45,7 +45,7 @@ namespace System
         }
 
         [ConditionalFact(nameof(ManualTestsEnabled))]
-        public static void ReadLine_BackSpaceCanMoveAccrossWrappedLines()
+        public static void ReadLine_BackSpaceCanMoveAcrossWrappedLines()
         {
             Console.WriteLine("Please press 'a' until it wraps to the next terminal line, then press 'Backspace' until the input is erased, and then type a single 'a' and press 'Enter'.");
             Console.Write("Input: ");
@@ -145,7 +145,7 @@ namespace System
                 return new object[]
                 {
                     requestedKeyChord,
-                    new ConsoleKeyInfo(keyChar, consoleKey, 
+                    new ConsoleKeyInfo(keyChar, consoleKey,
                         control: modifiers.HasFlag(ConsoleModifiers.Control),
                         alt: modifiers.HasFlag(ConsoleModifiers.Alt),
                         shift: modifiers.HasFlag(ConsoleModifiers.Shift))

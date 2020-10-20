@@ -157,4 +157,4 @@ ep_buffer_ensure_consistency (const EventPipeBuffer *buffer);
 #endif
 
 #endif /* ENABLE_PERFTRACING */
-#endif /** __EVENTPIPE_BUFFER_H__ **/
+#endif /* __EVENTPIPE_BUFFER_H__ */

@@ -82,43 +82,6 @@
 #undef CONFIG_STRING_INFO_DIRECT_ACCESS
 
 
-
-
-// Return if a quirk is a enabled.
-// This will also return enabled as true when the quirk has a value set.
-BOOL CLRConfig::IsConfigEnabled(const ConfigDWORDInfo & info)
-{
-    CONTRACTL
-    {
-        NOTHROW;
-        GC_NOTRIGGER;
-        FORBID_FAULT;
-    }
-    CONTRACTL_END;
-
-    DWORD result = info.defaultValue;
-
-    //
-    // Set up REGUTIL options.
-    //
-    REGUTIL::CORConfigLevel level = GetConfigLevel(info.options);
-    BOOL prependCOMPlus = !CheckLookupOption(info, DontPrependCOMPlus_);
-
-    REGUTIL::GetConfigDWORD_DontUse_(info.name, info.defaultValue, &result, level, prependCOMPlus);
-    if(result>0)
-        return TRUE;
-    LPWSTR result2 = REGUTIL::GetConfigString_DontUse_(info.name, prependCOMPlus, level);
-    if(result2 != NULL && result2[0] != 0)
-    {
-        return TRUE;
-    }
-
-    if(info.defaultValue>0)
-        return TRUE;
-    else
-        return FALSE;
-}
-
 //
 // Look up a DWORD config value.
 //
@@ -418,11 +381,5 @@ REGUTIL::CORConfigLevel CLRConfig::GetConfigLevel(LookupOptions options)
     if(CheckLookupOption(options, IgnoreEnv) == FALSE)
         level = static_cast<REGUTIL::CORConfigLevel>(level | REGUTIL::COR_CONFIG_ENV);
 
-    if(CheckLookupOption(options, IgnoreHKCU) == FALSE)
-        level = static_cast<REGUTIL::CORConfigLevel>(level | REGUTIL::COR_CONFIG_USER);
-
-    if(CheckLookupOption(options, IgnoreHKLM) == FALSE)
-        level = static_cast<REGUTIL::CORConfigLevel>(level | REGUTIL::COR_CONFIG_MACHINE);
-
-    return level;
+    return static_cast<REGUTIL::CORConfigLevel>(level | REGUTIL::COR_CONFIG_USER | REGUTIL::COR_CONFIG_MACHINE);
 }

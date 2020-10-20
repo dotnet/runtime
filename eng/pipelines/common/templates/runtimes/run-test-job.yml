@@ -5,6 +5,7 @@ parameters:
   osSubgroup: ''
   container: ''
   testGroup: ''
+  crossBuild: false
   crossrootfsDir: ''
   readyToRun: false
   liveLibrariesBuildConfig: ''
@@ -36,6 +37,7 @@ jobs:
     osSubgroup: ${{ parameters.osSubgroup }}
     container: ${{ parameters.container }}
     testGroup: ${{ parameters.testGroup }}
+    crossBuild: ${{ parameters.crossBuild }}
     crossrootfsDir: ${{ parameters.crossrootfsDir }}
     stagedBuild: ${{ parameters.stagedBuild }}
     liveLibrariesBuildConfig: ${{ parameters.liveLibrariesBuildConfig }}
@@ -97,6 +99,8 @@ jobs:
       - ${{ if eq(parameters.compositeBuildMode, true) }}:
         - name: crossgenArg
           value: 'composite'
+        - name: LogNamePrefix
+          value: TestRunLogs_R2R_CG2_Composite
 
     # Set job timeouts
     #
@@ -254,15 +258,11 @@ jobs:
 
 
     # Compose the Core_Root folder containing all artifacts needed for running
-    # CoreCLR tests.
+    # CoreCLR tests. This step also compiles the framework using Crossgen / Crossgen2
+    # in ReadyToRun jobs.
     - script: $(Build.SourcesDirectory)/src/tests/build$(scriptExt) generatelayoutonly $(runtimeFlavorArgs) $(crossgenArg) $(buildConfig) $(archType) $(crossArg) $(priorityArg) $(librariesOverrideArg)
       displayName: Generate CORE_ROOT
 
-
-    # Crossgen framework assemblies prior to triggering readyToRun execution runs.
-    - ${{ if eq(parameters.readyToRun, true) }}:
-      - script: $(Build.SourcesDirectory)/src/tests/build$(scriptExt) crossgenframeworkonly $(crossgenArg) $(buildConfig) $(archType) $(crossArg) $(priorityArg) $(librariesOverrideArg)
-        displayName: Crossgen framework assemblies
 
     # Overwrite coreclr runtime binaries with mono ones
     - ${{ if eq(parameters.runtimeFlavor, 'mono') }}:

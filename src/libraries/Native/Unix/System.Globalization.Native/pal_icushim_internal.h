@@ -142,7 +142,9 @@
     PER_FUNCTION_BLOCK(usearch_first, libicui18n) \
     PER_FUNCTION_BLOCK(usearch_getMatchedLength, libicui18n) \
     PER_FUNCTION_BLOCK(usearch_last, libicui18n) \
-    PER_FUNCTION_BLOCK(usearch_openFromCollator, libicui18n)
+    PER_FUNCTION_BLOCK(usearch_openFromCollator, libicui18n) \
+    PER_FUNCTION_BLOCK(usearch_setPattern, libicui18n) \
+    PER_FUNCTION_BLOCK(usearch_setText, libicui18n)
 
 #if HAVE_SET_MAX_VARIABLE
 #define FOR_ALL_SET_VARIABLE_ICU_FUNCTIONS \
@@ -280,5 +282,8 @@ FOR_ALL_ICU_FUNCTIONS
 #define usearch_getMatchedLength(...) usearch_getMatchedLength_ptr(__VA_ARGS__)
 #define usearch_last(...) usearch_last_ptr(__VA_ARGS__)
 #define usearch_openFromCollator(...) usearch_openFromCollator_ptr(__VA_ARGS__)
+#define usearch_reset(...) usearch_reset_ptr(__VA_ARGS__)
+#define usearch_setPattern(...) usearch_setPattern_ptr(__VA_ARGS__)
+#define usearch_setText(...) usearch_setText_ptr(__VA_ARGS__)
 
 #endif // !defined(STATIC_ICU)

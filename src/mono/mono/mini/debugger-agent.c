@@ -549,7 +549,7 @@ static AgentConfig agent_config;
  * establishment and the startup of the agent thread is only done in response to
  * an event.
  */
-static gint32 inited;
+static gint32 agent_inited;
 
 #ifndef DISABLE_SOCKET_TRANSPORT
 static int conn_fd;
@@ -1046,7 +1046,7 @@ debugger_agent_init (void)
 static void
 finish_agent_init (gboolean on_startup)
 {
-	if (mono_atomic_cas_i32 (&inited, 1, 0) == 1)
+	if (mono_atomic_cas_i32 (&agent_inited, 1, 0) == 1)
 		return;
 
 	if (agent_config.launch) {
@@ -1088,7 +1088,7 @@ finish_agent_init (gboolean on_startup)
 static void
 mono_debugger_agent_cleanup (void)
 {
-	if (!inited)
+	if (!agent_inited)
 		return;
 
 	stop_debugger_thread ();
@@ -1621,7 +1621,7 @@ transport_handshake (void)
 static void
 stop_debugger_thread (void)
 {
-	if (!inited)
+	if (!agent_inited)
 		return;
 
 	transport_close1 ();
@@ -2822,6 +2822,8 @@ process_suspend (DebuggerTlsData *tls, MonoContext *ctx)
 static gboolean
 try_process_suspend (void *the_tls, MonoContext *ctx, gboolean from_breakpoint)
 {
+	MONO_REQ_GC_UNSAFE_MODE;
+	
 	DebuggerTlsData *tls = (DebuggerTlsData*)the_tls;
 	/* if there is a suspend pending that is not executed yes */
 	if (suspend_count > 0) { 
@@ -3858,7 +3860,7 @@ process_event (EventKind event, gpointer arg, gint32 il_offset, MonoContext *ctx
 	static int ecount;
 	int nevents;
 
-	if (!inited) {
+	if (!agent_inited) {
 		DEBUG_PRINTF (2, "Debugger agent not initialized yet: dropping %s\n", event_to_string (event));
 		return;
 	}
@@ -4810,7 +4812,13 @@ debugger_agent_single_step_from_context (MonoContext *ctx)
 	mono_thread_state_init_from_monoctx (&tls->restore_state, ctx);
 	memcpy (&tls->handler_ctx, ctx, sizeof (MonoContext));
 
+	/* We might be called while the thread is already running some native
+	 * code after an native-to-managed transition, so the thread might be
+	 * in GC Safe mode.
+	 */
+	MONO_ENTER_GC_UNSAFE;
 	mono_de_process_single_step (tls, FALSE);
+	MONO_EXIT_GC_UNSAFE;
 
 	memcpy (ctx, &tls->restore_state.ctx, sizeof (MonoContext));
 	memcpy (&tls->restore_state, &orig_restore_state, sizeof (MonoThreadUnwindState));
@@ -4840,7 +4848,13 @@ debugger_agent_breakpoint_from_context (MonoContext *ctx)
 	mono_thread_state_init_from_monoctx (&tls->restore_state, ctx);
 	memcpy (&tls->handler_ctx, ctx, sizeof (MonoContext));
 
+	/* We might be called while the thread is already running some native
+	 * code after an native-to-managed transition, so the thread might be
+	 * in GC Safe mode.
+	 */
+	MONO_ENTER_GC_UNSAFE;
 	mono_de_process_breakpoint (tls, FALSE);
+	MONO_EXIT_GC_UNSAFE;
 
 	memcpy (ctx, &tls->restore_state.ctx, sizeof (MonoContext));
 	memcpy (&tls->restore_state, &orig_restore_state, sizeof (MonoThreadUnwindState));
@@ -5117,7 +5131,7 @@ debugger_agent_unhandled_exception (MonoException *exc)
 	GSList *events;
 	EventInfo ei;
 
-	if (!inited)
+	if (!agent_inited)
 		return;
 
 	memset (&ei, 0, sizeof (ei));
@@ -5163,7 +5177,7 @@ debugger_agent_handle_exception (MonoException *exc, MonoContext *throw_ctx,
 
 	/* Just-In-Time debugging */
 	if (!catch_ctx) {
-		if (agent_config.onuncaught && !inited) {
+		if (agent_config.onuncaught && !agent_inited) {
 			finish_agent_init (FALSE);
 
 			/*
@@ -5174,7 +5188,7 @@ debugger_agent_handle_exception (MonoException *exc, MonoContext *throw_ctx,
 			process_event (EVENT_KIND_EXCEPTION, &ei, 0, throw_ctx, events, SUSPEND_POLICY_ALL);
 			return;
 		}
-	} else if (agent_config.onthrow && !inited) {
+	} else if (agent_config.onthrow && !agent_inited) {
 		GSList *l;
 		gboolean found = FALSE;
 
@@ -5201,7 +5215,7 @@ debugger_agent_handle_exception (MonoException *exc, MonoContext *throw_ctx,
 		}
 	}
 
-	if (!inited)
+	if (!agent_inited)
 		return;
 
 	ji = mini_jit_info_table_find (mono_domain_get (), (char *)MONO_CONTEXT_GET_IP (throw_ctx), NULL);
@@ -5263,7 +5277,7 @@ debugger_agent_begin_exception_filter (MonoException *exc, MonoContext *ctx, Mon
 {
 	DebuggerTlsData *tls;
 
-	if (!inited)
+	if (!agent_inited)
 		return;
 
 	tls = (DebuggerTlsData *)mono_native_tls_get_value (debugger_tls_id);
@@ -5302,7 +5316,7 @@ debugger_agent_end_exception_filter (MonoException *exc, MonoContext *ctx, MonoC
 {
 	DebuggerTlsData *tls;
 
-	if (!inited)
+	if (!agent_inited)
 		return;
 
 	tls = (DebuggerTlsData *)mono_native_tls_get_value (debugger_tls_id);
@@ -5439,7 +5453,8 @@ buffer_add_value_full (Buffer *buf, MonoType *t, void *addr, MonoDomain *domain,
 	case MONO_TYPE_U:
 		/* Treat it as a vtype */
 		goto handle_vtype;
-	case MONO_TYPE_PTR: {
+	case MONO_TYPE_PTR:
+	case MONO_TYPE_FNPTR: {
 		gssize val = *(gssize*)addr;
 		
 		buffer_add_byte (buf, t->type);
@@ -5683,6 +5698,7 @@ decode_value_internal (MonoType *t, int type, MonoDomain *domain, guint8 *addr, 
 		!(type == VALUE_TYPE_ID_FIXED_ARRAY) &&
 		!(t->type == MONO_TYPE_U && type == MONO_TYPE_VALUETYPE) &&
 		!(t->type == MONO_TYPE_PTR && type == MONO_TYPE_I8) &&
+		!(t->type == MONO_TYPE_FNPTR && type == MONO_TYPE_I8) &&
 		!(t->type == MONO_TYPE_GENERICINST && type == MONO_TYPE_VALUETYPE) &&
 		!(t->type == MONO_TYPE_VALUETYPE && type == MONO_TYPE_OBJECT)) {
 		char *name = mono_type_full_name (t);
@@ -5733,6 +5749,7 @@ decode_value_internal (MonoType *t, int type, MonoDomain *domain, guint8 *addr, 
 		*(guint64*)addr = decode_long (buf, &buf, limit);
 		break;
 	case MONO_TYPE_PTR:
+	case MONO_TYPE_FNPTR:
 		/* We send these as I8, so we get them back as such */
 		g_assert (type == MONO_TYPE_I8);
 		*(gssize*)addr = decode_long (buf, &buf, limit);
@@ -8003,7 +8020,7 @@ type_commands_internal (int command, MonoClass *klass, MonoDomain *domain, guint
 		// FIXME: Can't decide whenever a class represents a byref type
 		if (FALSE)
 			b |= (1 << 0);
-		if (type->type == MONO_TYPE_PTR)
+		if (type->type == MONO_TYPE_PTR || type->type == MONO_TYPE_FNPTR)
 			b |= (1 << 1);
 		if (!type->byref && (((type->type >= MONO_TYPE_BOOLEAN) && (type->type <= MONO_TYPE_R8)) || (type->type == MONO_TYPE_I) || (type->type == MONO_TYPE_U)))
 			b |= (1 << 2);

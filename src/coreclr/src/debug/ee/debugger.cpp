@@ -1899,7 +1899,7 @@ void Debugger::CleanupTransportSocket(void)
 // Initialize Left-Side debugger object
 //
 // Return Value:
-//    S_OK on successs. May also throw.
+//    S_OK on success. May also throw.
 //
 // Assumptions:
 //    This is called in the startup path.
@@ -12896,7 +12896,7 @@ private:
 //
 EnCSequencePointHelper::EnCSequencePointHelper(DebuggerJitInfo *pJitInfo)
     : m_pJitInfo(pJitInfo),
-    m_pOffsetToHandlerInfo(NULL)      
+    m_pOffsetToHandlerInfo(NULL)
 {
     CONTRACTL
     {

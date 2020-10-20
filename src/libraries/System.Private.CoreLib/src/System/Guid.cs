@@ -798,7 +798,7 @@ namespace System
                 Unsafe.Add(ref g._a, 3) == Unsafe.Add(ref _a, 3);
         }
 
-        private int GetResult(uint me, uint them) => me < them ? -1 : 1;
+        private static int GetResult(uint me, uint them) => me < them ? -1 : 1;
 
         public int CompareTo(object? value)
         {

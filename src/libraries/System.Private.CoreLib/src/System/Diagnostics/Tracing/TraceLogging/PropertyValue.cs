@@ -205,7 +205,7 @@ namespace System.Diagnostics.Tracing
         {
             public abstract Func<PropertyValue, PropertyValue> GetPropertyGetter(PropertyInfo property);
 
-            protected Delegate GetGetMethod(PropertyInfo property, Type propertyType)
+            protected static Delegate GetGetMethod(PropertyInfo property, Type propertyType)
             {
                 return property.GetMethod!.CreateDelegate(typeof(Func<,>).MakeGenericType(property.DeclaringType!, propertyType));
             }

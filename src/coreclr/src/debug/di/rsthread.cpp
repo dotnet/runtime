@@ -2254,7 +2254,7 @@ HRESULT CordbThread::HasUnhandledException()
 //    ppStackWalk - out parameter; return the new stackwalker
 //
 // Return Value:
-//    Return S_OK on succcess.
+//    Return S_OK on success.
 //    Return E_FAIL on error.
 //
 // Notes:

@@ -22,6 +22,7 @@ using Internal.CorConstants;
 
 using ILCompiler;
 using ILCompiler.DependencyAnalysis;
+using Internal.IL.Stubs;
 
 #if READYTORUN
 using System.Reflection.Metadata.Ecma335;
@@ -197,6 +198,14 @@ namespace Internal.JitInterface
             if (result == CorJitResult.CORJIT_BADCODE)
             {
                 ThrowHelper.ThrowInvalidProgramException();
+            }
+            if (result == CorJitResult.CORJIT_IMPLLIMITATION)
+            {
+#if READYTORUN
+                throw new RequiresRuntimeJitException("JIT implementation limitation");
+#else
+                ThrowHelper.ThrowInvalidProgramException();
+#endif
             }
             if (result != CorJitResult.CORJIT_OK)
             {
@@ -634,6 +643,11 @@ namespace Internal.JitInterface
 
         private CorInfoType asCorInfoType(TypeDesc type)
         {
+            return asCorInfoType(type, out _);
+        }
+
+        private CorInfoType asCorInfoType(TypeDesc type, out TypeDesc typeIfNotPrimitive)
+        {
             if (type.IsEnum)
             {
                 type = type.UnderlyingType;
@@ -641,11 +655,14 @@ namespace Internal.JitInterface
 
             if (type.IsPrimitive)
             {
+                typeIfNotPrimitive = null;
                 Debug.Assert((CorInfoType)TypeFlags.Void == CorInfoType.CORINFO_TYPE_VOID);
                 Debug.Assert((CorInfoType)TypeFlags.Double == CorInfoType.CORINFO_TYPE_DOUBLE);
 
                 return (CorInfoType)type.Category;
             }
+
+            typeIfNotPrimitive = type;
 
             if (type.IsPointer || type.IsFunctionPointer)
             {
@@ -693,11 +710,8 @@ namespace Internal.JitInterface
 
         private CorInfoType asCorInfoType(TypeDesc type, CORINFO_CLASS_STRUCT_** structType)
         {
-            var corInfoType = asCorInfoType(type);
-            *structType = ((corInfoType == CorInfoType.CORINFO_TYPE_CLASS) ||
-                (corInfoType == CorInfoType.CORINFO_TYPE_VALUECLASS) ||
-                (corInfoType == CorInfoType.CORINFO_TYPE_BYREF) ||
-                (corInfoType == CorInfoType.CORINFO_TYPE_PTR)) ? ObjectToHandle(type) : null;
+            var corInfoType = asCorInfoType(type, out TypeDesc typeIfNotPrimitive);
+            *structType = (typeIfNotPrimitive != null) ? ObjectToHandle(typeIfNotPrimitive) : null;
             return corInfoType;
         }
 
@@ -1287,9 +1301,17 @@ namespace Internal.JitInterface
 
             Get_CORINFO_SIG_INFO(methodSig, sig);
 
-            if (sig->callConv == CorInfoCallConv.CORINFO_CALLCONV_UNMANAGED)
+            // CORINFO_CALLCONV_UNMANAGED is handled by Get_CORINFO_SIG_INFO
+            Debug.Assert(sig->callConv != CorInfoCallConv.CORINFO_CALLCONV_UNMANAGED);
+
+            // TODO: Replace this with a public mechanism to mark calli with SuppressGCTransition once it becomes available.
+            if (methodIL is PInvokeILStubMethodIL stubIL)
             {
-                throw new NotImplementedException();
+                var method = stubIL.OwningMethod;
+                if (method.IsPInvoke && method.IsSuppressGCTransition())
+                {
+                    sig->flags |= CorInfoSigInfoFlags.CORINFO_SIGFLAG_SUPPRESS_GC_TRANSITION;
+                }
             }
 
 #if !READYTORUN
@@ -2687,7 +2709,11 @@ namespace Internal.JitInterface
         {
             // Slow tailcalls are not supported yet
             // https://github.com/dotnet/runtime/issues/35423
+#if READYTORUN
             throw new NotImplementedException(nameof(getTailCallHelpers));
+#else
+            return false;
+#endif
         }
 
         private byte[] _code;
@@ -2902,11 +2928,14 @@ namespace Internal.JitInterface
             if (targetArchitecture != TargetArchitecture.ARM64)
                 return (RelocType)fRelocType;
 
+            const ushort IMAGE_REL_ARM64_BRANCH26 = 3;
             const ushort IMAGE_REL_ARM64_PAGEBASE_REL21 = 4;
             const ushort IMAGE_REL_ARM64_PAGEOFFSET_12A = 6;
 
             switch (fRelocType)
             {
+                case IMAGE_REL_ARM64_BRANCH26:
+                    return RelocType.IMAGE_REL_BASED_ARM64_BRANCH26;
                 case IMAGE_REL_ARM64_PAGEBASE_REL21:
                     return RelocType.IMAGE_REL_BASED_ARM64_PAGEBASE_REL21;
                 case IMAGE_REL_ARM64_PAGEOFFSET_12A:

@@ -10,6 +10,10 @@ project(CoreFX C)
 include(${CLR_ENG_NATIVE_DIR}/configuretools.cmake)
 
 set(CMAKE_MACOSX_RPATH ON)
+if(CLR_CMAKE_TARGET_IOS OR CLR_CMAKE_TARGET_TVOS) 
+    set(CMAKE_BUILD_WITH_INSTALL_NAME_DIR ON)
+    set(CMAKE_INSTALL_NAME_DIR "@rpath")
+endif()
 set(CMAKE_INSTALL_PREFIX $ENV{__CMakeBinDir})
 set(CMAKE_INCLUDE_CURRENT_DIR ON)
 set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -std=gnu99")
@@ -156,10 +160,6 @@ if (CLR_CMAKE_TARGET_LINUX)
    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -D_GNU_SOURCE")
 endif ()
 
-if(CLR_CMAKE_TARGET_FREEBSD)
-    add_definitions(-D_BSD_SOURCE) # required for getline
-endif(CLR_CMAKE_TARGET_FREEBSD)
-
 # CLR_ADDITIONAL_LINKER_FLAGS - used for passing additional arguments to linker
 # CLR_ADDITIONAL_COMPILER_OPTIONS - used for passing additional arguments to compiler
 #
@@ -221,6 +221,7 @@ elseif(CLR_CMAKE_TARGET_ANDROID AND NOT CROSS_ROOTFS)
         add_subdirectory(System.Security.Cryptography.Native)
     endif()
 else()
+    add_subdirectory(System.Globalization.Native)
     add_subdirectory(System.Net.Security.Native)
     add_subdirectory(System.Security.Cryptography.Native)
 endif()

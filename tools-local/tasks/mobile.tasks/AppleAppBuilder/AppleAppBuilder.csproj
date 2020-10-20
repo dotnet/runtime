@@ -21,4 +21,7 @@
     <Compile Include="Utils.cs" />
     <Compile Include="Xcode.cs" />
   </ItemGroup>
+
+  <Target Name="GetFilesToPackage" />
+
 </Project>

@@ -112,11 +112,12 @@ typedef struct _rt_mono_array_iterator_internal_t ep_rt_thread_array_iterator_t;
 typedef struct _rt_mono_array_internal_t ep_rt_session_id_array_t;
 typedef struct _rt_mono_array_iterator_internal_t ep_rt_session_id_array_iterator_t;
 
+typedef struct _rt_mono_array_internal_t ep_rt_provider_config_array_t;
+typedef struct _rt_mono_array_iterator_internal_t ep_rt_provider_config_array_iterator_t;
+
 typedef MonoThreadHandle ep_rt_thread_handle_t;
 
 typedef gpointer ep_rt_file_handle_t;
-
-typedef gpointer ep_rt_ipc_handle_t;
 
 typedef MonoMethod ep_rt_method_desc_t;
 
