@@ -526,7 +526,6 @@ namespace System.Text.Json.Serialization.Samples
                         break;
                     }
 
-                    reader.Read();
                     object element = Read(ref reader, typeof(object), options);
                     dynamicArray.Add(element);
                 }
