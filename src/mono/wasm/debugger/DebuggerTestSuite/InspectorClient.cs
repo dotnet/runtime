@@ -28,7 +28,7 @@ namespace Microsoft.WebAssembly.Diagnostics
 
             var id = res.ToObject<MessageId>();
             if (!pending_cmds.Remove(id, out var item))
-                logger.LogError ($"Unable to find command {id}");
+                logger.LogError($"Unable to find command {id}");
 
             item.SetResult(Result.FromJson(res));
             return null;
