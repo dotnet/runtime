@@ -1034,7 +1034,7 @@ static SimdIntrinsic sse41_methods [] = {
 	{SN_Blend},
 	{SN_BlendVariable},
 	{SN_Ceiling, OP_SSE41_ROUNDP, 10 /*round mode*/},
-	{SN_CeilingScalar, OP_SSE41_ROUNDS, 10 /*round mode*/},
+	{SN_CeilingScalar, 0, 10 /*round mode*/},
 	{SN_CompareEqual, OP_XCOMPARE, CMP_EQ},
 	{SN_ConvertToVector128Int16, OP_SSE_CVTII, MONO_TYPE_I2},
 	{SN_ConvertToVector128Int32, OP_SSE_CVTII, MONO_TYPE_I4},
@@ -1042,7 +1042,7 @@ static SimdIntrinsic sse41_methods [] = {
 	{SN_DotProduct},
 	{SN_Extract},
 	{SN_Floor, OP_SSE41_ROUNDP, 9 /*round mode*/},
-	{SN_FloorScalar, OP_SSE41_ROUNDS, 9 /*round mode*/},
+	{SN_FloorScalar, 0, 9 /*round mode*/},
 	{SN_Insert},
 	{SN_LoadAlignedVector128NonTemporal, OP_SSE41_LOADANT},
 	{SN_Max, OP_XBINOP, OP_IMAX},
@@ -1053,15 +1053,15 @@ static SimdIntrinsic sse41_methods [] = {
 	{SN_MultiplyLow, OP_SSE41_MULLO},
 	{SN_PackUnsignedSaturate, OP_XOP_X_X_X, SIMD_OP_SSE_PACKUSDW},
 	{SN_RoundCurrentDirection, OP_SSE41_ROUNDP, 4 /*round mode*/},
-	{SN_RoundCurrentDirectionScalar, OP_SSE41_ROUNDS, 4 /*round mode*/},
+	{SN_RoundCurrentDirectionScalar, 0, 4 /*round mode*/},
 	{SN_RoundToNearestInteger, OP_SSE41_ROUNDP, 8 /*round mode*/},
-	{SN_RoundToNearestIntegerScalar, OP_SSE41_ROUNDS, 8 /*round mode*/},
+	{SN_RoundToNearestIntegerScalar, 0, 8 /*round mode*/},
 	{SN_RoundToNegativeInfinity, OP_SSE41_ROUNDP, 9 /*round mode*/},
-	{SN_RoundToNegativeInfinityScalar, OP_SSE41_ROUNDS, 9 /*round mode*/},
+	{SN_RoundToNegativeInfinityScalar, 0, 9 /*round mode*/},
 	{SN_RoundToPositiveInfinity, OP_SSE41_ROUNDP, 10 /*round mode*/},
-	{SN_RoundToPositiveInfinityScalar, OP_SSE41_ROUNDS, 10 /*round mode*/},
+	{SN_RoundToPositiveInfinityScalar, 0, 10 /*round mode*/},
 	{SN_RoundToZero, OP_SSE41_ROUNDP, 11 /*round mode*/},
-	{SN_RoundToZeroScalar, OP_SSE41_ROUNDS, 11 /*round mode*/},
+	{SN_RoundToZeroScalar, 0, 11 /*round mode*/},
 	{SN_TestC, OP_XOP_I4_X_X, SIMD_OP_SSE_TESTC},
 	{SN_TestNotZAndNotC, OP_XOP_I4_X_X, SIMD_OP_SSE_TESTNZ},
 	{SN_TestZ, OP_XOP_I4_X_X, SIMD_OP_SSE_TESTZ},
@@ -1600,6 +1600,22 @@ emit_x86_intrinsics (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature 
 				return emit_simd_ins_for_sig (cfg, klass, OP_SSE41_INSERT, -1, arg0_type, fsig, args);
 			// FIXME: handle non-constant index (generate a switch)
 			return emit_invalid_operation (cfg, "index in Sse41.Insert must be constant");
+		case SN_CeilingScalar:
+		case SN_FloorScalar:
+		case SN_RoundCurrentDirectionScalar:
+		case SN_RoundToNearestIntegerScalar:
+		case SN_RoundToNegativeInfinityScalar:
+		case SN_RoundToPositiveInfinityScalar:
+		case SN_RoundToZeroScalar:
+			if (fsig->param_count == 2) {
+				return emit_simd_ins_for_sig (cfg, klass, OP_SSE41_ROUNDS, info->instc0, arg0_type, fsig, args);
+			} else {
+				MonoInst* ins = emit_simd_ins (cfg, klass, OP_SSE41_ROUNDS, args [0]->dreg, args [0]->dreg);
+				ins->inst_c0 = info->instc0;
+				ins->inst_c1 = arg0_type;
+				return ins;
+			}
+			break;
 		default:
 			g_assert_not_reached ();
 			break;
@@ -1680,7 +1696,7 @@ emit_x86_intrinsics (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature 
 		if (info->op != 0)
 			return emit_simd_ins_for_sig (cfg, klass, info->op, info->instc0, arg0_type, fsig, args);
 
-		supported = COMPILE_LLVM (cfg) && (mini_get_cpu_features (cfg) & MONO_CPU_X86_AES) != 0; 
+		supported = COMPILE_LLVM (cfg) && (mini_get_cpu_features (cfg) & MONO_CPU_X86_AES) != 0;
 
 		switch (id) {
 		case SN_get_IsSupported:
