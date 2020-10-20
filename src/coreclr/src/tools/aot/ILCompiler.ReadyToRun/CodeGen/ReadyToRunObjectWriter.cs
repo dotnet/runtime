@@ -53,6 +53,14 @@ namespace ILCompiler.DependencyAnalysis
         /// Set to non-null when the executable generator should output a map file.
         /// </summary>
         private readonly MapFileBuilder _mapFileBuilder;
+        /// <summary>
+        /// True when the map file builder should emit a textual map file
+        /// </summary>
+        private bool _generateMapFile;
+        /// <summary>
+        /// True when the map file builder should emit a CSV formatted map file
+        /// </summary>
+        private bool _generateMapCsvFile;
 
         /// <summary>
         /// If non-null, the PE file will be laid out such that it can naturally be mapped with a higher alignment than 4KB
@@ -79,15 +87,17 @@ namespace ILCompiler.DependencyAnalysis
         Dictionary<string, NodeInfo> _previouslyWrittenNodeNames = new Dictionary<string, NodeInfo>();
 #endif
 
-        public ReadyToRunObjectWriter(string objectFilePath, EcmaModule componentModule, IEnumerable<DependencyNode> nodes, NodeFactory factory, bool generateMapFile, int? customPESectionAlignment)
+        public ReadyToRunObjectWriter(string objectFilePath, EcmaModule componentModule, IEnumerable<DependencyNode> nodes, NodeFactory factory, bool generateMapFile, bool generateMapCsvFile, int? customPESectionAlignment)
         {
             _objectFilePath = objectFilePath;
             _componentModule = componentModule;
             _nodes = nodes;
             _nodeFactory = factory;
             _customPESectionAlignment = customPESectionAlignment;
-
-            if (generateMapFile)
+            _generateMapFile = generateMapFile;
+            _generateMapCsvFile = generateMapCsvFile;
+            
+            if (generateMapFile || generateMapCsvFile)
             {
                 _mapFileBuilder = new MapFileBuilder();
             }
@@ -241,8 +251,18 @@ namespace ILCompiler.DependencyAnalysis
                 {
                     r2rPeBuilder.AddSections(_mapFileBuilder);
 
-                    string mapFileName = Path.ChangeExtension(_objectFilePath, ".map");
-                    _mapFileBuilder.Save(mapFileName);
+                    if (_generateMapFile)
+                    {
+                        string mapFileName = Path.ChangeExtension(_objectFilePath, ".map");
+                        _mapFileBuilder.SaveMap(mapFileName);
+                    }
+
+                    if (_generateMapCsvFile)
+                    {
+                        string nodeStatsCsvFileName = Path.ChangeExtension(_objectFilePath, ".nodestats.csv");
+                        string mapCsvFileName = Path.ChangeExtension(_objectFilePath, ".map.csv");
+                        _mapFileBuilder.SaveCsv(nodeStatsCsvFileName, mapCsvFileName);
+                    }
                 }
 
                 succeeded = true;
@@ -302,10 +322,10 @@ namespace ILCompiler.DependencyAnalysis
             r2rPeBuilder.AddObjectData(data, section, name, mapFileBuilder);
         }
 
-        public static void EmitObject(string objectFilePath, EcmaModule componentModule, IEnumerable<DependencyNode> nodes, NodeFactory factory, bool generateMapFile, int? customPESectionAlignment)
+        public static void EmitObject(string objectFilePath, EcmaModule componentModule, IEnumerable<DependencyNode> nodes, NodeFactory factory, bool generateMapFile, bool generateMapCsvFile, int? customPESectionAlignment)
         {
             Console.WriteLine($@"Emitting R2R PE file: {objectFilePath}");
-            ReadyToRunObjectWriter objectWriter = new ReadyToRunObjectWriter(objectFilePath, componentModule, nodes, factory, generateMapFile, customPESectionAlignment);
+            ReadyToRunObjectWriter objectWriter = new ReadyToRunObjectWriter(objectFilePath, componentModule, nodes, factory, generateMapFile, generateMapCsvFile, customPESectionAlignment);
             objectWriter.EmitPortableExecutable();
         }
     }

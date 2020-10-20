@@ -23,6 +23,7 @@ namespace ILCompiler
         private bool _ibcTuning;
         private bool _resilient;
         private bool _generateMapFile;
+        private bool _generateMapCsvFile;
         private int _parallelism;
         private InstructionSetSupport _instructionSetSupport;
         private ProfileDataManager _profileData;
@@ -126,6 +127,12 @@ namespace ILCompiler
         public ReadyToRunCodegenCompilationBuilder UseMapFile(bool generateMapFile)
         {
             _generateMapFile = generateMapFile;
+            return this;
+        }
+
+        public ReadyToRunCodegenCompilationBuilder UseMapCsvFile(bool generateMapCsvFile)
+        {
+            _generateMapCsvFile = generateMapCsvFile;
             return this;
         }
 
@@ -243,6 +250,7 @@ namespace ILCompiler
                 _instructionSetSupport,
                 _resilient,
                 _generateMapFile,
+                _generateMapCsvFile,
                 _parallelism,
                 _profileData,
                 _r2rMethodLayoutAlgorithm,
