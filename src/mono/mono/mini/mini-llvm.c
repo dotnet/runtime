@@ -554,7 +554,8 @@ type_to_llvm_type (EmitContext *ctx, MonoType *t)
 		return LLVMVoidType ();
 	case MONO_TYPE_OBJECT:
 		return ObjRefType ();
-	case MONO_TYPE_PTR: {
+	case MONO_TYPE_PTR:
+	case MONO_TYPE_FNPTR: {
 		MonoClass *klass = mono_class_from_mono_type_internal (t);
 		MonoClass *ptr_klass = m_class_get_element_class (klass);
 		MonoType *ptr_type = m_class_get_byval_arg (ptr_klass);
@@ -11327,11 +11328,6 @@ mono_llvm_emit_aot_module (const char *filename, const char *cu_name)
 		g_hash_table_destroy (specializable);
 	}
 
-	/* Note: You can still dump an invalid bitcode file by running `llvm-dis`
-	 * in a debugger, set a breakpoint on `LLVMVerifyModule` and fake its
-	 * result to 0 (indicating success). */
-	LLVMWriteBitcodeToFile (module->lmodule, filename);
-
 #if 0
 	{
 		char *verifier_err;
@@ -11342,6 +11338,11 @@ mono_llvm_emit_aot_module (const char *filename, const char *cu_name)
 		}
 	}
 #endif
+
+	/* Note: You can still dump an invalid bitcode file by running `llvm-dis`
+	 * in a debugger, set a breakpoint on `LLVMVerifyModule` and fake its
+	 * result to 0 (indicating success). */
+	LLVMWriteBitcodeToFile (module->lmodule, filename);
 }
 
 
