@@ -64,7 +64,7 @@ internal static partial class Interop
 
         // sys/resource.h
         [StructLayout(LayoutKind.Sequential)]
-        internal unsafe struct rusage
+        internal struct rusage
         {
             public timeval ru_utime;        /* user time used */
             public timeval ru_stime;        /* system time used */

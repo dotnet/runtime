@@ -212,7 +212,6 @@ elseif(CMAKE_SYSTEM_NAME STREQUAL "iOS" OR CMAKE_SYSTEM_NAME STREQUAL "tvOS")
   set(ENABLE_MONOTOUCH 1)
   add_definitions(-DMONOTOUCH=1)
   set(HAVE_SYSTEM 0)
-  set(MONO_DL_NEED_USCORE 1)
   if(CMAKE_SYSTEM_NAME STREQUAL "tvOS")
     set(HOST_TVOS 1)
   endif()
@@ -347,36 +346,70 @@ endif()
 ######################################
 # LLVM CHECKS
 ######################################
+set(LLVM_LIBS)
 if(LLVM_PREFIX)
-  # FIXME: windows
-
-  set(LLVM_CONFIG ${LLVM_PREFIX}/bin/llvm-config)
-  if (NOT EXISTS ${LLVM_CONFIG})
-    message(FATAL_ERROR "LLVM executable '${LLVM_CONFIG}' not found.")
-  endif()
-
   if(TARGET_ARCH STREQUAL "x86_64")
     set(llvm_codegen_libs "x86codegen")
   elseif(TARGET_ARCH STREQUAL "x86")
     set(llvm_codegen_libs "x86codegen")
-  elseif(TARGET_ARCH STREQUAL "arm64")
+  elseif(TARGET_ARCH STREQUAL "arm64" OR TARGET_ARCH STREQUAL "aarch64")
     set(llvm_codegen_libs "aarch64codegen")
   elseif(TARGET_ARCH STREQUAL "arm")
     set(llvm_codegen_libs "armcodegen")
   elseif(TARGET_ARCH STREQUAL "wasm")
     set(llvm_codegen_libs "")
   else()
-    message(FATAL_ERROR "FIXME")
+    message(FATAL_ERROR "FIXME: ${TARGET_ARCH}")
   endif()
 
-  execute_process(COMMAND ${LLVM_CONFIG} --mono-api-version RESULT_VARIABLE llvm_config_res OUTPUT_VARIABLE llvm_api_version OUTPUT_STRIP_TRAILING_WHITESPACE)
-  if (NOT ${llvm_config_res} EQUAL 0)
-    message(FATAL_ERROR "'${LLVM_CONFIG} --mono-api-version' failed. Use the llvm fork at https://github.com/dotnet/llvm-project.")
-  endif()
-  execute_process(COMMAND ${LLVM_CONFIG} --cflags OUTPUT_VARIABLE llvm_cflags OUTPUT_STRIP_TRAILING_WHITESPACE)
-  execute_process(COMMAND ${LLVM_CONFIG} --cxxflags OUTPUT_VARIABLE llvm_cxxflags OUTPUT_STRIP_TRAILING_WHITESPACE)
-  execute_process(COMMAND ${LLVM_CONFIG} --system-libs OUTPUT_VARIABLE llvm_system_libs OUTPUT_STRIP_TRAILING_WHITESPACE)
-  execute_process(COMMAND ${LLVM_CONFIG} --libs analysis core bitwriter orcjit ${llvm_codegen_libs} OUTPUT_VARIABLE llvm_libs OUTPUT_STRIP_TRAILING_WHITESPACE)
+  if(CMAKE_CROSSCOMPILING)
+    # Can't run llvm-config, hardcode results
+    set(llvm_config_path "${LLVM_PREFIX}/include/llvm/Config/llvm-config.h")
+
+    # llvm-config --mono-api-version
+    find_program(AWK awk mawk gawk)
+    execute_process(COMMAND /bin/sh -c "\"${AWK}\" '/MONO_API_VERSION/ { print $3 }' ${llvm_config_path}" RESULT_VARIABLE awk_res OUTPUT_VARIABLE llvm_api_version OUTPUT_STRIP_TRAILING_WHITESPACE)
+
+    # llvm-config --cflags
+    set(llvm_cflags "-I${LLVM_PREFIX}/include")
+    set(llvm_cxxflags "-I${LLVM_PREFIX}/include")
+
+    # llvm-config --system-libs
+    set(llvm_system_libs "-lz -lrt -ldl -lpthread -lm")
+
+    # llvm-config --libs analysis core bitwriter mcjit orcjit
+    set(llvm_core_libs "-lLLVMOrcJIT -lLLVMJITLink -lLLVMMCJIT -lLLVMExecutionEngine -lLLVMRuntimeDyld -lLLVMAsmPrinter -lLLVMDebugInfoDWARF -lLLVMCodeGen -lLLVMTarget -lLLVMScalarOpts -lLLVMInstCombine -lLLVMAggressiveInstCombine -lLLVMTransformUtils -lLLVMBitWriter -lLLVMAnalysis -lLLVMProfileData -lLLVMObject -lLLVMMCParser -lLLVMMC -lLLVMDebugInfoCodeView -lLLVMDebugInfoMSF -lLLVMBitReader -lLLVMBitstreamReader -lLLVMCore -lLLVMRemarks -lLLVMBinaryFormat -lLLVMSupport -lLLVMDemangle")
+
+    # Check codegen libs and add needed libraries.
+    if("${llvm_codegen_libs}" STREQUAL "x86codegen")
+      # llvm-config --libs x86codegen
+      set(llvm_extra "-lLLVMX86CodeGen -lLLVMGlobalISel -lLLVMX86Desc -lLLVMX86Utils -lLLVMX86Info -lLLVMMCDisassembler -lLLVMSelectionDAG -lLLVMAsmPrinter -lLLVMDebugInfoDWARF -lLLVMCodeGen -lLLVMTarget -lLLVMScalarOpts -lLLVMInstCombine -lLLVMAggressiveInstCombine -lLLVMTransformUtils -lLLVMBitWriter -lLLVMAnalysis -lLLVMProfileData -lLLVMObject -lLLVMMCParser -lLLVMMC -lLLVMDebugInfoCodeView -lLLVMDebugInfoMSF -lLLVMBitReader -lLLVMBitstreamReader -lLLVMCore -lLLVMRemarks -lLLVMBinaryFormat -lLLVMSupport -lLLVMDemangle")
+    elseif("${llvm_codegen_libs}" STREQUAL "armcodegen")
+      # llvm-config --libs armcodegen
+      set(llvm_extra "-lLLVMARMCodeGen -lLLVMGlobalISel -lLLVMSelectionDAG -lLLVMAsmPrinter -lLLVMDebugInfoDWARF -lLLVMCodeGen -lLLVMTarget -lLLVMScalarOpts -lLLVMInstCombine -lLLVMAggressiveInstCombine -lLLVMTransformUtils -lLLVMBitWriter -lLLVMAnalysis -lLLVMProfileData -lLLVMObject -lLLVMMCParser -lLLVMBitReader -lLLVMBitstreamReader -lLLVMCore -lLLVMRemarks -lLLVMARMDesc -lLLVMMCDisassembler -lLLVMMC -lLLVMDebugInfoCodeView -lLLVMDebugInfoMSF -lLLVMBinaryFormat -lLLVMARMUtils -lLLVMARMInfo -lLLVMSupport -lLLVMDemangle")
+    elseif("${llvm_codegen_libs}" STREQUAL "aarch64codegen")
+      # llvm-config --libs aarch64codegen
+      set(llvm_extra "-lLLVMAArch64CodeGen -lLLVMGlobalISel -lLLVMSelectionDAG -lLLVMAsmPrinter -lLLVMDebugInfoDWARF -lLLVMCodeGen -lLLVMTarget -lLLVMScalarOpts -lLLVMInstCombine -lLLVMAggressiveInstCombine -lLLVMTransformUtils -lLLVMBitWriter -lLLVMAnalysis -lLLVMProfileData -lLLVMObject -lLLVMMCParser -lLLVMBitReader -lLLVMBitstreamReader -lLLVMCore -lLLVMRemarks -lLLVMAArch64Desc -lLLVMMC -lLLVMDebugInfoCodeView -lLLVMDebugInfoMSF -lLLVMBinaryFormat -lLLVMAArch64Utils -lLLVMAArch64Info -lLLVMSupport -lLLVMDemangle")
+    else()
+      message(FATAL_ERROR "FIXME: ${TARGET_ARCH}")
+    endif()
+
+    set(llvm_libs ${llvm_core_libs} ${llvm_extra})
+  else()
+    set(LLVM_CONFIG ${LLVM_PREFIX}/bin/llvm-config)
+    if (NOT EXISTS ${LLVM_CONFIG})
+      message(FATAL_ERROR "LLVM executable '${LLVM_CONFIG}' not found.")
+    endif()
+
+    execute_process(COMMAND ${LLVM_CONFIG} --mono-api-version RESULT_VARIABLE llvm_config_res OUTPUT_VARIABLE llvm_api_version OUTPUT_STRIP_TRAILING_WHITESPACE)
+    if (NOT ${llvm_config_res} EQUAL 0)
+      message(FATAL_ERROR "'${LLVM_CONFIG} --mono-api-version' failed. Use the llvm fork at https://github.com/dotnet/llvm-project.")
+    endif()
+    execute_process(COMMAND ${LLVM_CONFIG} --cflags OUTPUT_VARIABLE llvm_cflags OUTPUT_STRIP_TRAILING_WHITESPACE)
+    execute_process(COMMAND ${LLVM_CONFIG} --cxxflags OUTPUT_VARIABLE llvm_cxxflags OUTPUT_STRIP_TRAILING_WHITESPACE)
+    execute_process(COMMAND ${LLVM_CONFIG} --system-libs OUTPUT_VARIABLE llvm_system_libs OUTPUT_STRIP_TRAILING_WHITESPACE)
+    execute_process(COMMAND ${LLVM_CONFIG} --libs analysis core bitwriter mcjit orcjit ${llvm_codegen_libs} OUTPUT_VARIABLE llvm_libs OUTPUT_STRIP_TRAILING_WHITESPACE)
+endif()
 
   if (${llvm_api_version} LESS 900)
     message(FATAL_ERROR "LLVM version too old.")
@@ -389,8 +422,6 @@ if(LLVM_PREFIX)
   set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${llvm_cflags}")
   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${llvm_cxxflags} -fexceptions -fno-rtti")
   add_definitions(-DLLVM_API_VERSION=${llvm_api_version})
-else()
-  set(LLVM_LIBS)
 endif()
 
 ######################################

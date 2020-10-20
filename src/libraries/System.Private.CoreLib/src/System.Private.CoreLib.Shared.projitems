@@ -1134,6 +1134,9 @@
     <Compile Include="$(CommonPath)System\Text\ValueStringBuilder.cs">
       <Link>Common\System\Text\ValueStringBuilder.cs</Link>
     </Compile>
+    <Compile Include="$(CommonPath)System\Threading\OpenExistingResult.cs">
+      <Link>Common\System\Threading\OpenExistingResult.cs</Link>
+    </Compile>
     <Compile Include="$(CommonPath)System\Threading\Tasks\TaskToApm.cs">
       <Link>Common\System\Threading\Tasks\TaskToApm.cs</Link>
     </Compile>

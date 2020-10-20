@@ -225,7 +225,8 @@
     <CheckForOverflowUnderflow>false</CheckForOverflowUnderflow>
     <GenFacadesIgnoreBuildAndRevisionMismatch>true</GenFacadesIgnoreBuildAndRevisionMismatch>
     <!-- Disable analyzers for tests and unsupported projects -->
-    <RunAnalyzers Condition="'$(IsSourceProject)' != 'true' or '$(MSBuildProjectExtension)' == '.ilproj'">false</RunAnalyzers>
+    <RunAnalyzers Condition="'$(IsTestProject)' != 'true' and '$(IsSourceProject)' != 'true'">false</RunAnalyzers>
+    <CodeAnalysisRuleset Condition="'$(IsTestProject)' == 'true'">$(RepositoryEngineeringDir)CodeAnalysis.test.ruleset</CodeAnalysisRuleset>
   </PropertyGroup>
 
   <!-- Set up common paths -->

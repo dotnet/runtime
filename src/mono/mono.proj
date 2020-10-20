@@ -6,7 +6,7 @@
   -->
 
   <PropertyGroup>
-    <MonoEnableCMake Condition="'$(TargetsBrowser)' == 'true' or '$(TargetsOSX)' == 'true' or '$(TargetsAndroid)' == 'true'">true</MonoEnableCMake>
+    <MonoEnableCMake Condition="'$(TargetsBrowser)' == 'true' or '$(TargetsOSX)' == 'true' or '$(TargetsAndroid)' == 'true' or '$(TargetsiOS)' == 'true' or '$(TargetstvOS)' == 'true'">true</MonoEnableCMake>
     <MonoCrossDir Condition="'$(MonoCrossDir)' == '' and '$(ROOTFS_DIR)' != ''">$(ROOTFS_DIR)</MonoCrossDir>
     <MonoEnableInterpreter Condition="'$(MonoEnableInterpreter)' == ''">false</MonoEnableInterpreter>
     <ScriptExt Condition="'$(OS)' == 'Windows_NT'">.cmd</ScriptExt>
@@ -863,7 +863,26 @@
       <_MonoCMakeArgs Condition="'$(MonoBuildTool)' == 'ninja'" Include="-G Ninja"/>
       <_MonoCMakeArgs Include="-DCMAKE_INSTALL_PREFIX=$(MonoObjDir)out"/>
       <_MonoCMakeArgs Include="-DCMAKE_BUILD_TYPE=$(Configuration)"/>
+      <_MonoCMakeArgs Condition="'$(MonoEnableLLVM)' == 'true'" Include="-DLLVM_PREFIX=$(MonoLLVMDir)" />
     </ItemGroup>
+
+    <!-- We build LLVM bits for x64 Linux without C++11 ABI (CentOS 7 has libstdc++ < 5.1) -->
+    <ItemGroup Condition="'$(TargetOS)' == 'Linux' and '$(MonoEnableLLVM)' == 'true' and '$(MonoLLVMUseCxx11Abi)' != 'true'">
+      <_MonoCXXFLAGS Include="-D_GLIBCXX_USE_CXX11_ABI=0" />
+    </ItemGroup>
+
+    <!-- We build LLVM bits for ARM64 Linux with C++11 ABI (Ubuntu 16.04 has libstdc++ > 5.1)-->
+    <ItemGroup Condition="'$(TargetOS)' == 'Linux' and '$(MonoEnableLLVM)' == 'true' and '$(MonoLLVMUseCxx11Abi)' == 'true'">
+      <_MonoCXXFLAGS Include="-D_GLIBCXX_USE_CXX11_ABI=1" />
+    </ItemGroup>
+
+    <!-- ARM Linux cross build options on CI -->
+    <ItemGroup Condition="'$(TargetsAndroid)' != 'true' and '$(MonoCrossDir)' != '' and ('$(TargetArchitecture)' == 'arm' or '$(TargetArchitecture)' == 'arm64')">
+	  <_MonoCMakeArgs Include="-DCMAKE_TOOLCHAIN_FILE=$(RepositoryEngineeringDir)/common/cross/toolchain.cmake" />
+      <_MonoBuildEnv Condition="'$(Platform)' == 'arm64'" Include="TARGET_BUILD_ARCH=arm64" />
+      <_MonoBuildEnv Condition="'$(Platform)' == 'arm'" Include="TARGET_BUILD_ARCH=arm" />
+    </ItemGroup>
+
     <!-- OSX specific options -->
     <ItemGroup Condition="'$(TargetsOSX)' == 'true'">
       <_MonoCMakeArgs Include="-DCMAKE_OSX_DEPLOYMENT_TARGET=$(macOSVersionMin)" />
@@ -930,7 +949,7 @@
     </ItemGroup>
     <!-- Android specific options -->
     <PropertyGroup Condition="'$(TargetsAndroid)' == 'true'">
-      <MonoRunInitCompiler>false</MonoRunInitCompiler>
+      <_MonoRunInitCompiler>false</_MonoRunInitCompiler>
     </PropertyGroup>
     <ItemGroup Condition="'$(TargetsAndroid)' == 'true'">
       <_MonoCMakeArgs Include="-DCMAKE_SYSTEM_NAME=Android"/>
@@ -992,8 +1011,8 @@
     <MakeDir Directories="$(MonoObjDir)" />
     <Message Text="Running 'cmake @(_MonoCMakeArgs, ' ') $(MonoProjectRoot)' in '$(MonoObjDir)'" Importance="High"/>
     <!-- cmake -->
-    <Exec Condition="'$(TargetsBrowser)' != 'true' and '$(MonoRunInitCompiler)' != 'false'" Command="bash -c 'source $(RepositoryEngineeringDir)native/init-compiler.sh $(Platform) $(MonoCCompiler) &amp;&amp; @(_MonoBuildEnv, ' ') cmake @(_MonoCMakeArgs, ' ') $(MonoProjectRoot)'" IgnoreStandardErrorWarningFormat="true" WorkingDirectory="$(MonoObjDir)"/>
-    <Exec Condition="'$(TargetsBrowser)' != 'true' and '$(MonoRunInitCompiler)' == 'false'" Command="$(_MonoCCOption) $(_MonoCXXOption) cmake @(_MonoCMakeArgs, ' ') $(MonoProjectRoot)" IgnoreStandardErrorWarningFormat="true" WorkingDirectory="$(MonoObjDir)"/>
+    <Exec Condition="'$(TargetsBrowser)' != 'true' and '$(_MonoRunInitCompiler)' != 'false'" Command="bash -c 'source $(RepositoryEngineeringDir)native/init-compiler.sh $(Platform) $(MonoCCompiler) &amp;&amp; @(_MonoBuildEnv, ' ') cmake @(_MonoCMakeArgs, ' ') $(MonoProjectRoot)'" IgnoreStandardErrorWarningFormat="true" WorkingDirectory="$(MonoObjDir)"/>
+    <Exec Condition="'$(TargetsBrowser)' != 'true' and '$(_MonoRunInitCompiler)' == 'false'" Command="$(_MonoCCOption) $(_MonoCXXOption) @(_MonoBuildEnv, ' ') cmake @(_MonoCMakeArgs, ' ') $(MonoProjectRoot)" IgnoreStandardErrorWarningFormat="true" WorkingDirectory="$(MonoObjDir)"/>
     <Exec Condition="'$(TargetsBrowser)' == 'true'" Command="bash -c 'source $(EMSDK_PATH)/emsdk_env.sh &amp;&amp; emcmake cmake @(_MonoCMakeArgs, ' ') $(MonoProjectRoot)'" IgnoreStandardErrorWarningFormat="true" WorkingDirectory="$(MonoObjDir)" />
     <!-- ninja/make -->
     <Exec Condition="'$(TargetsBrowser)' != 'true'" Command="@(_MonoBuildEnv, ' ') $(MonoBuildTool) all install" IgnoreStandardErrorWarningFormat="true" WorkingDirectory="$(MonoObjDir)"/>

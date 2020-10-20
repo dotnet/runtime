@@ -4,6 +4,7 @@ parameters:
   osGroup: ''
   osSubgroup: ''
   container: ''
+  crossBuild: false
   crossrootfsDir: ''
   timeoutInMinutes: ''
   stagedBuild: false
@@ -20,6 +21,7 @@ jobs:
     osGroup: ${{ parameters.osGroup }}
     osSubgroup: ${{ parameters.osSubgroup }}
     container: ${{ parameters.container }}
+    crossBuild: ${{ parameters.crossBuild }}
     crossrootfsDir: ${{ parameters.crossrootfsDir }}
     stagedBuild: ${{ parameters.stagedBuild }}
     timeoutInMinutes: ${{ parameters.timeoutInMinutes }}

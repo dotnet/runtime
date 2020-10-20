@@ -38,6 +38,7 @@ namespace ILCompiler
         public bool Partial { get; set; }
         public bool Resilient { get; set; }
         public bool Map { get; set; }
+        public bool MapCsv { get; set; }
         public int Parallelism { get; set; }
         public ReadyToRunMethodLayoutAlgorithm MethodLayout { get; set; }
         public ReadyToRunFileLayoutAlgorithm FileLayout { get; set; }
@@ -187,6 +188,10 @@ namespace ILCompiler
                     Argument = new Argument<int?>()
                 },
                 new Option(new[] { "--map" }, SR.MapFileOption)
+                {
+                    Argument = new Argument<bool>()
+                },
+                new Option(new[] { "--mapcsv" }, SR.MapCsvFileOption)
                 {
                     Argument = new Argument<bool>()
                 },
