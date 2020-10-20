@@ -46,7 +46,7 @@ namespace Microsoft.WebAssembly.Diagnostics
         }
 
         public Task<Result> SendCommand(string method, JObject args, CancellationToken token)
-            => SendCommand (new SessionId (null), method, args, token);
+            => SendCommand(new SessionId(null), method, args, token);
 
         public Task<Result> SendCommand(SessionId sessionId, string method, JObject args, CancellationToken token)
         {
