@@ -8949,6 +8949,7 @@ bool CEEInfo::resolveVirtualMethodHelper(CORINFO_DEVIRTUALIZATION_INFO * info)
                     FALSE,                                  // allowInstParam
                     TRUE                                    // forceRemoteableMethod
                 );
+                _ASSERTE(pDevirtMD->IsInstantiatingStub());
             }
         }
     }
