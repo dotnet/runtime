@@ -1168,6 +1168,8 @@ void CEECompileInfo::EncodeMethod(
     STANDARD_VM_CONTRACT;
 
     COOPERATIVE_TRANSITION_BEGIN();
+
+    _ASSERTE(referencingModule);
     MethodDesc *pMethod = GetMethod(handle);
 
     BOOL fSuccess;
