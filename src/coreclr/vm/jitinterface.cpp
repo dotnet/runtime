@@ -8937,12 +8937,19 @@ bool CEEInfo::resolveVirtualMethodHelper(CORINFO_DEVIRTUALIZATION_INFO * info)
             return false;
         }
 
-        // If we devirtualized into a default interface method on a generic type, we should actually return an
-        // instantiating stub but this is not happening.
-        // Making this work is tracked by https://github.com/dotnet/runtime/issues/9588
         if (pDevirtMD->GetMethodTable()->IsInterface() && pDevirtMD->HasClassInstantiation())
         {
-            return false;
+            if (!pDevirtMD->IsInstantiatingStub())
+            {
+                pDevirtMD = MethodDesc::FindOrCreateAssociatedMethodDesc(
+                    pDevirtMD,
+                    pDerivedMT,
+                    FALSE,                                  // forceBoxedEntryPoint
+                    pDevirtMD->GetMethodInstantiation(),    // for method themselves that are generic
+                    FALSE,                                  // allowInstParam
+                    TRUE                                    // forceRemoteableMethod
+                );
+            }
         }
     }
     else
