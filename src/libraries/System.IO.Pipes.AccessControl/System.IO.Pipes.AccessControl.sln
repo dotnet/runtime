@@ -26,6 +26,8 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.IO.Pipes", "..\Syste
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.Security.AccessControl", "..\System.Security.AccessControl\src\System.Security.AccessControl.csproj", "{7C35E697-38D0-4A2C-BC25-816732BA2D91}"
 EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.Security.Principal.Windows", "..\System.Security.Principal.Windows\src\System.Security.Principal.Windows.csproj", "{9FF89FBB-D353-490B-8AB8-FD22D9F7078F}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -56,6 +58,10 @@ Global
 		{7C35E697-38D0-4A2C-BC25-816732BA2D91}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{7C35E697-38D0-4A2C-BC25-816732BA2D91}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{7C35E697-38D0-4A2C-BC25-816732BA2D91}.Release|Any CPU.Build.0 = Release|Any CPU
+		{9FF89FBB-D353-490B-8AB8-FD22D9F7078F}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{9FF89FBB-D353-490B-8AB8-FD22D9F7078F}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{9FF89FBB-D353-490B-8AB8-FD22D9F7078F}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{9FF89FBB-D353-490B-8AB8-FD22D9F7078F}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -67,6 +73,7 @@ Global
 		{3B8D8597-DC68-4915-8C2A-1DC33E78E607} = {1A2F9F4A-A032-433E-B914-ADD5992BB178}
 		{D0711B56-E234-45DB-A620-2F43041826BB} = {E107E9C1-E893-4E87-987E-04EF0DCEAEFD}
 		{7C35E697-38D0-4A2C-BC25-816732BA2D91} = {E107E9C1-E893-4E87-987E-04EF0DCEAEFD}
+		{9FF89FBB-D353-490B-8AB8-FD22D9F7078F} = {E107E9C1-E893-4E87-987E-04EF0DCEAEFD}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {AFD36AE1-C562-46E4-8D24-6F36C0F106B1}

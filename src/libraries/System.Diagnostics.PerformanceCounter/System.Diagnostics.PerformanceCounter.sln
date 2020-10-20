@@ -20,7 +20,9 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "src", "src", "{E107E9C1-E89
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "ref", "ref", "{2E666815-2EDB-464B-9DF6-380BF4789AD4}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TestUtilities", "..\Common\tests\TestUtilities\TestUtilities.csproj", "{69B86C3B-8C7E-4B19-ADF9-931B1C17E7AC}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "TestUtilities", "..\Common\tests\TestUtilities\TestUtilities.csproj", "{69B86C3B-8C7E-4B19-ADF9-931B1C17E7AC}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.Security.Principal.Windows", "..\System.Security.Principal.Windows\src\System.Security.Principal.Windows.csproj", "{E2D3F10F-A9B7-4694-81CA-20D7F3AD6EEE}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -44,6 +46,10 @@ Global
 		{69B86C3B-8C7E-4B19-ADF9-931B1C17E7AC}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{69B86C3B-8C7E-4B19-ADF9-931B1C17E7AC}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{69B86C3B-8C7E-4B19-ADF9-931B1C17E7AC}.Release|Any CPU.Build.0 = Release|Any CPU
+		{E2D3F10F-A9B7-4694-81CA-20D7F3AD6EEE}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{E2D3F10F-A9B7-4694-81CA-20D7F3AD6EEE}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{E2D3F10F-A9B7-4694-81CA-20D7F3AD6EEE}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{E2D3F10F-A9B7-4694-81CA-20D7F3AD6EEE}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -53,6 +59,7 @@ Global
 		{9758106C-5D4E-475D-B5E7-B7ABC46B1DDA} = {E107E9C1-E893-4E87-987E-04EF0DCEAEFD}
 		{5BDC8641-E3EE-47B5-BE7B-2D2275402412} = {2E666815-2EDB-464B-9DF6-380BF4789AD4}
 		{69B86C3B-8C7E-4B19-ADF9-931B1C17E7AC} = {1A2F9F4A-A032-433E-B914-ADD5992BB178}
+		{E2D3F10F-A9B7-4694-81CA-20D7F3AD6EEE} = {E107E9C1-E893-4E87-987E-04EF0DCEAEFD}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {E55827A2-8680-4A49-858D-70A4E41D2B9F}
