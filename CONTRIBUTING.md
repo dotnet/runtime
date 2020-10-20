@@ -67,7 +67,7 @@ We use and recommend the following workflow:
     - The next official build will automatically include your change.
     - You can delete the branch you used for making the change.
 
-Note: It is OK for your PR to include a large number of commits. Once your change is accepted, you will be asked to squash your commits into one or some appropriately small number of commits before your PR is merged.
+Note: It is OK for your PR to include a large number of commits. Once your change is accepted, you will be asked to squash your commits into one or some appropriately small number of commits before your PR is merged. Often it is not necessary to merge multiple commits, then it's preferable to not manually squash commits before merge, as typically the "Squash and merge" option in GitHub would be used to perform both in one step.
 
 Note: It is OK to create your PR as "[WIP]" on the upstream repo before the implementation is done. This can be useful if you'd like to start the feedback process concurrent with your implementation. State that this is the case in the initial PR comment.
 
