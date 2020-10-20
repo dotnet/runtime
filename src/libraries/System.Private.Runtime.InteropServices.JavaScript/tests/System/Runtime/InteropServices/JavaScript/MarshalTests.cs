@@ -556,7 +556,6 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
         public static void MarshalTypedArrayInt()
         {
             RunMarshalTypedArrayJS("Int");
-            Assert.NotEqual(null, HelperMarshal._taInt);
             Assert.Equal(15, HelperMarshal._taInt.Length);
             Assert.Equal(32, HelperMarshal._taInt[0]);
             Assert.Equal(32, HelperMarshal._taInt[HelperMarshal._taInt.Length - 1]);
