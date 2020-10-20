@@ -5061,7 +5061,7 @@ unsigned emitter::emitEndCodeGen(Compiler* comp,
             assert(emitCurCodeOffs(cp) == emitTotalHotCodeSize);
 
             assert(coldCodeBlock);
-            cp          = coldCodeBlock;
+            cp = coldCodeBlock;
 #ifdef DEBUG
             isColdBlock = true;
             if (emitComp->opts.disAsm || emitComp->verbose)
