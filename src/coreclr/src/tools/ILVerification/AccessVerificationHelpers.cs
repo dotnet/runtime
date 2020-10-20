@@ -3,6 +3,7 @@
 
 using System;
 using System.Diagnostics;
+using System.Linq;
 using System.Reflection;
 using Internal.TypeSystem;
 using Internal.TypeSystem.Ecma;
@@ -21,6 +22,14 @@ namespace ILVerify
 
             if (targetClass.IsParameterizedType)
                 return currentClass.CanAccess(((ParameterizedType)targetClass).ParameterType);
+
+            if (targetClass.IsFunctionPointer)
+            {
+                var signatureBeingPointed = ((FunctionPointerType)targetClass).Signature;
+
+                return currentClass.CanAccess(signatureBeingPointed.ReturnType) &&
+                    signatureBeingPointed._parameters.All(p => currentClass.CanAccess(p));
+            };
 
 #if false
             // perform transparency check on the type, if the caller is transparent
