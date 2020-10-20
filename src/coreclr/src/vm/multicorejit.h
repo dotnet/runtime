@@ -304,11 +304,6 @@ public:
     static DWORD EncodeModuleHelper(void * pModuleContext,
                                     Module * pReferencedModule);
 
-    static void TokenDefinitionHelper(void* pModuleContext,
-                                      Module *pReferencedModule,
-                                      DWORD index,
-                                      mdToken* pToken);
-
     static Module * DecodeModuleFromIndex(void * pModuleContext,
                                           DWORD  ix);
 };

@@ -404,7 +404,7 @@ HRESULT MulticoreJitRecorder::WriteOutput(IStream * pStream)
             BOOL fSuccess = false;
             EX_TRY
             {
-                fSuccess = ZapSig::EncodeMethod(pMethod, NULL, &sigBuilder, (LPVOID)this, (ENCODEMODULE_CALLBACK)MulticoreJitManager::EncodeModuleHelper, (DEFINETOKEN_CALLBACK)MulticoreJitManager::TokenDefinitionHelper);
+                fSuccess = ZapSig::EncodeMethod(pMethod, NULL, &sigBuilder, (LPVOID)this, (ENCODEMODULE_CALLBACK)MulticoreJitManager::EncodeModuleHelper, NULL);
             }
             EX_CATCH
             {
@@ -1545,12 +1545,6 @@ DWORD MulticoreJitManager::EncodeModuleHelper(void * pModuleContext, Module * pR
         return ENCODE_MODULE_FAILED;
     }
     return ((MulticoreJitRecorder*)pModuleContext)->EncodeModule(pReferencedModule);
-}
-
-// static
-void MulticoreJitManager::TokenDefinitionHelper(void* pModuleContext, Module *pReferencedModule, DWORD index, mdToken* pToken)
-{
-    LIMITED_METHOD_CONTRACT
 }
 
 //---------------------------------------------------------------------------------------

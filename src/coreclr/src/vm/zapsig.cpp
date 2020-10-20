@@ -244,12 +244,10 @@ BOOL ZapSig::GetSignatureForTypeHandle(TypeHandle      handle,
 
         // During IBC profiling this calls
         //     code:Module::TokenDefinitionHelper
-        // During MulticoreJit profiling this calls
-        //     code:MulticoreJitManager::TokenDefinitionHelper
         (*this->pfnTokenDefinition)(this->context.pModuleContext, pTypeHandleModule, index, &token);
 
         // ibcExternalType tokens are actually encoded as mdtTypeDef tokens in the signature
-        _ASSERTE(this->context.externalTokens != ZapSig::MulticoreJitTokens && TypeFromToken(token) == ibcExternalType);
+        _ASSERTE(TypeFromToken(token) == ibcExternalType);
         token = TokenFromRid(RidFromToken(token), mdtTypeDef);
     }
 
@@ -1234,7 +1232,7 @@ BOOL ZapSig::EncodeMethod(
     }
 
     ZapSig::ExternalTokens externalTokens = ZapSig::NormalTokens;
-    if (pInfoModule == NULL && pfnDefineToken != NULL)
+    if (pInfoModule == NULL)
     {
         externalTokens = ZapSig::MulticoreJitTokens;
         pInfoModule = pMethod->GetModule_NoLogging();
