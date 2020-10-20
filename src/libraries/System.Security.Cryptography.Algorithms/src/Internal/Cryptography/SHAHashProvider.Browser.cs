@@ -5,6 +5,8 @@ using System;
 using System.IO;
 using System.Diagnostics;
 using System.Security.Cryptography;
+using System.Threading;
+using System.Threading.Tasks;
 
 namespace Internal.Cryptography
 {
@@ -49,6 +51,7 @@ namespace Internal.Cryptography
             buffer.Write(data);
         }
 
+        public override Task AppendHashDataAsync(byte[] array, int ibStart, int cbSize, CancellationToken cancellationToken) => throw new NotImplementedException();
         public override int FinalizeHashAndReset(Span<byte> destination)
         {
             GetCurrentHash(destination);
@@ -56,6 +59,8 @@ namespace Internal.Cryptography
 
             return hashSizeInBytes;
         }
+
+        public override Task<int> FinalizeHashAndResetAsync(byte[] destination, CancellationToken cancellationToken) => throw new NotImplementedException();
 
         public override int GetCurrentHash(Span<byte> destination)
         {

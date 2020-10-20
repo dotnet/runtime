@@ -135,7 +135,10 @@ namespace System.Security.Cryptography
         protected override void Dispose(bool disposing) { }
         protected override void HashCore(byte[] array, int ibStart, int cbSize) { }
         protected override void HashCore(System.ReadOnlySpan<byte> source) { }
+        protected override System.Threading.Tasks.Task HashCoreAsync(byte[] array, int ibStart, int cbSize, System.Threading.CancellationToken cancellationToken) {  throw null; }
         protected override byte[] HashFinal() { throw null; }
+        protected override System.Threading.Tasks.Task<byte[]> HashFinalAsync(System.Threading.CancellationToken cancellationToken) { throw null; }
+
         public override void Initialize() { }
         protected override bool TryHashFinal(System.Span<byte> destination, out int bytesWritten) { throw null; }
     }
@@ -231,7 +234,9 @@ namespace System.Security.Cryptography
         protected override void Dispose(bool disposing) { }
         protected override void HashCore(byte[] array, int ibStart, int cbSize) { }
         protected override void HashCore(System.ReadOnlySpan<byte> source) { }
+        protected override System.Threading.Tasks.Task HashCoreAsync(byte[] array, int ibStart, int cbSize, System.Threading.CancellationToken cancellationToken) {  throw null; }
         protected override byte[] HashFinal() { throw null; }
+        protected override System.Threading.Tasks.Task<byte[]> HashFinalAsync(System.Threading.CancellationToken cancellationToken) { throw null; }
         public override void Initialize() { }
         protected override bool TryHashFinal(System.Span<byte> destination, out int bytesWritten) { throw null; }
     }
@@ -242,7 +247,9 @@ namespace System.Security.Cryptography
         protected override void Dispose(bool disposing) { }
         protected override void HashCore(byte[] array, int ibStart, int cbSize) { }
         protected override void HashCore(System.ReadOnlySpan<byte> source) { }
+        protected override System.Threading.Tasks.Task HashCoreAsync(byte[] array, int ibStart, int cbSize, System.Threading.CancellationToken cancellationToken) {  throw null; }
         protected override byte[] HashFinal() { throw null; }
+        protected override System.Threading.Tasks.Task<byte[]> HashFinalAsync(System.Threading.CancellationToken cancellationToken) { throw null; }
         public override void Initialize() { }
         protected override bool TryHashFinal(System.Span<byte> destination, out int bytesWritten) { throw null; }
     }
@@ -253,7 +260,9 @@ namespace System.Security.Cryptography
         protected override void Dispose(bool disposing) { }
         protected override void HashCore(byte[] array, int ibStart, int cbSize) { }
         protected override void HashCore(System.ReadOnlySpan<byte> source) { }
+        protected override System.Threading.Tasks.Task HashCoreAsync(byte[] array, int ibStart, int cbSize, System.Threading.CancellationToken cancellationToken) {  throw null; }
         protected override byte[] HashFinal() { throw null; }
+        protected override System.Threading.Tasks.Task<byte[]> HashFinalAsync(System.Threading.CancellationToken cancellationToken) { throw null; }
         public override void Initialize() { }
         protected override bool TryHashFinal(System.Span<byte> destination, out int bytesWritten) { throw null; }
     }
@@ -264,7 +273,9 @@ namespace System.Security.Cryptography
         protected override void Dispose(bool disposing) { }
         protected override void HashCore(byte[] array, int ibStart, int cbSize) { }
         protected override void HashCore(System.ReadOnlySpan<byte> source) { }
+        protected override System.Threading.Tasks.Task HashCoreAsync(byte[] array, int ibStart, int cbSize, System.Threading.CancellationToken cancellationToken) {  throw null; }
         protected override byte[] HashFinal() { throw null; }
+        protected override System.Threading.Tasks.Task<byte[]> HashFinalAsync(System.Threading.CancellationToken cancellationToken) { throw null; }
         public override void Initialize() { }
         protected override bool TryHashFinal(System.Span<byte> destination, out int bytesWritten) { throw null; }
     }

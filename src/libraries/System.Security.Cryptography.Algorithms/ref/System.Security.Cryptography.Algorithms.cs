@@ -427,7 +427,9 @@ namespace System.Security.Cryptography
         protected override void Dispose(bool disposing) { }
         protected override void HashCore(byte[] rgb, int ib, int cb) { }
         protected override void HashCore(System.ReadOnlySpan<byte> source) { }
+        protected override System.Threading.Tasks.Task HashCoreAsync(byte[] rgb, int ib, int cb, System.Threading.CancellationToken cancellationToken) { throw null; }
         protected override byte[] HashFinal() { throw null; }
+        protected override System.Threading.Tasks.Task<byte[]> HashFinalAsync(System.Threading.CancellationToken cancellationToken) { throw null; }
         public override void Initialize() { }
         protected override bool TryHashFinal(System.Span<byte> destination, out int bytesWritten) { throw null; }
     }
@@ -442,7 +444,9 @@ namespace System.Security.Cryptography
         protected override void Dispose(bool disposing) { }
         protected override void HashCore(byte[] rgb, int ib, int cb) { }
         protected override void HashCore(System.ReadOnlySpan<byte> source) { }
+        protected override System.Threading.Tasks.Task HashCoreAsync(byte[] rgb, int ib, int cb, System.Threading.CancellationToken cancellationToken) { throw null; }
         protected override byte[] HashFinal() { throw null; }
+        protected override System.Threading.Tasks.Task<byte[]> HashFinalAsync(System.Threading.CancellationToken cancellationToken) { throw null; }
         public override void Initialize() { }
         protected override bool TryHashFinal(System.Span<byte> destination, out int bytesWritten) { throw null; }
     }
@@ -455,7 +459,9 @@ namespace System.Security.Cryptography
         protected override void Dispose(bool disposing) { }
         protected override void HashCore(byte[] rgb, int ib, int cb) { }
         protected override void HashCore(System.ReadOnlySpan<byte> source) { }
+        protected override System.Threading.Tasks.Task HashCoreAsync(byte[] rgb, int ib, int cb, System.Threading.CancellationToken cancellationToken) { throw null; }
         protected override byte[] HashFinal() { throw null; }
+        protected override System.Threading.Tasks.Task<byte[]> HashFinalAsync(System.Threading.CancellationToken cancellationToken) { throw null; }
         public override void Initialize() { }
         protected override bool TryHashFinal(System.Span<byte> destination, out int bytesWritten) { throw null; }
     }
@@ -469,7 +475,9 @@ namespace System.Security.Cryptography
         protected override void Dispose(bool disposing) { }
         protected override void HashCore(byte[] rgb, int ib, int cb) { }
         protected override void HashCore(System.ReadOnlySpan<byte> source) { }
+        protected override System.Threading.Tasks.Task HashCoreAsync(byte[] rgb, int ib, int cb, System.Threading.CancellationToken cancellationToken) { throw null; }
         protected override byte[] HashFinal() { throw null; }
+        protected override System.Threading.Tasks.Task<byte[]> HashFinalAsync(System.Threading.CancellationToken cancellationToken) { throw null; }
         public override void Initialize() { }
         protected override bool TryHashFinal(System.Span<byte> destination, out int bytesWritten) { throw null; }
     }
@@ -483,7 +491,9 @@ namespace System.Security.Cryptography
         protected override void Dispose(bool disposing) { }
         protected override void HashCore(byte[] rgb, int ib, int cb) { }
         protected override void HashCore(System.ReadOnlySpan<byte> source) { }
+        protected override System.Threading.Tasks.Task HashCoreAsync(byte[] rgb, int ib, int cb, System.Threading.CancellationToken cancellationToken) { throw null; }
         protected override byte[] HashFinal() { throw null; }
+        protected override System.Threading.Tasks.Task<byte[]> HashFinalAsync(System.Threading.CancellationToken cancellationToken) { throw null; }
         public override void Initialize() { }
         protected override bool TryHashFinal(System.Span<byte> destination, out int bytesWritten) { throw null; }
     }
@@ -781,9 +791,12 @@ namespace System.Security.Cryptography
         public static new System.Security.Cryptography.SHA1 Create() { throw null; }
         public static new System.Security.Cryptography.SHA1? Create(string hashName) { throw null; }
         public static byte[] HashData(byte[] source) { throw null; }
+        public static System.Threading.Tasks.Task<byte[]> HashDataAsync(byte[] source, System.Threading.CancellationToken cancellationToken = default) { throw null; }
+        public static System.Threading.Tasks.Task<int> HashDataAsync(byte[] source, byte[] destination, System.Threading.CancellationToken cancellationToken = default) { throw null; }
         public static byte[] HashData(System.ReadOnlySpan<byte> source) { throw null; }
         public static int HashData(System.ReadOnlySpan<byte> source, System.Span<byte> destination) { throw null; }
         public static bool TryHashData(System.ReadOnlySpan<byte> source, System.Span<byte> destination, out int bytesWritten) { throw null; }
+        public static System.Threading.Tasks.Task<(bool IsSuccess, int BytesWritten)> TryHashDataAsync(byte[] source, byte[] destination, System.Threading.CancellationToken cancellationToken = default) { throw null; }
     }
     [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
     public sealed partial class SHA1Managed : System.Security.Cryptography.SHA1
@@ -792,7 +805,9 @@ namespace System.Security.Cryptography
         protected sealed override void Dispose(bool disposing) { }
         protected sealed override void HashCore(byte[] array, int ibStart, int cbSize) { }
         protected sealed override void HashCore(System.ReadOnlySpan<byte> source) { }
+        protected sealed override System.Threading.Tasks.Task HashCoreAsync(byte[] array, int ibStart, int cbSize, System.Threading.CancellationToken cancellationToken) { throw null; }
         protected sealed override byte[] HashFinal() { throw null; }
+        protected sealed override System.Threading.Tasks.Task<byte[]> HashFinalAsync(System.Threading.CancellationToken cancellationToken) { throw null; }
         public sealed override void Initialize() { }
         protected sealed override bool TryHashFinal(System.Span<byte> destination, out int bytesWritten) { throw null; }
     }
@@ -802,9 +817,12 @@ namespace System.Security.Cryptography
         public static new System.Security.Cryptography.SHA256 Create() { throw null; }
         public static new System.Security.Cryptography.SHA256? Create(string hashName) { throw null; }
         public static byte[] HashData(byte[] source) { throw null; }
+        public static System.Threading.Tasks.Task<byte[]> HashDataAsync(byte[] source, System.Threading.CancellationToken cancellationToken = default) { throw null; }
+        public static System.Threading.Tasks.Task<int> HashDataAsync(byte[] source, byte[] destination, System.Threading.CancellationToken cancellationToken = default) { throw null; }
         public static byte[] HashData(System.ReadOnlySpan<byte> source) { throw null; }
         public static int HashData(System.ReadOnlySpan<byte> source, System.Span<byte> destination) { throw null; }
         public static bool TryHashData(System.ReadOnlySpan<byte> source, System.Span<byte> destination, out int bytesWritten) { throw null; }
+        public static System.Threading.Tasks.Task<(bool IsSuccess, int BytesWritten)> TryHashDataAsync(byte[] source, byte[] destination, System.Threading.CancellationToken cancellationToken = default) { throw null; }
     }
     [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
     public sealed partial class SHA256Managed : System.Security.Cryptography.SHA256
@@ -813,7 +831,9 @@ namespace System.Security.Cryptography
         protected sealed override void Dispose(bool disposing) { }
         protected sealed override void HashCore(byte[] array, int ibStart, int cbSize) { }
         protected sealed override void HashCore(System.ReadOnlySpan<byte> source) { }
+        protected sealed override System.Threading.Tasks.Task HashCoreAsync(byte[] array, int ibStart, int cbSize, System.Threading.CancellationToken cancellationToken) { throw null; }
         protected sealed override byte[] HashFinal() { throw null; }
+        protected sealed override System.Threading.Tasks.Task<byte[]> HashFinalAsync(System.Threading.CancellationToken cancellationToken) { throw null; }
         public sealed override void Initialize() { }
         protected sealed override bool TryHashFinal(System.Span<byte> destination, out int bytesWritten) { throw null; }
     }
@@ -823,9 +843,13 @@ namespace System.Security.Cryptography
         public static new System.Security.Cryptography.SHA384 Create() { throw null; }
         public static new System.Security.Cryptography.SHA384? Create(string hashName) { throw null; }
         public static byte[] HashData(byte[] source) { throw null; }
+        public static System.Threading.Tasks.Task<byte[]> HashDataAsync(byte[] source, System.Threading.CancellationToken cancellationToken = default) { throw null; }
+        public static System.Threading.Tasks.Task<int> HashDataAsync(byte[] source, byte[] destination, System.Threading.CancellationToken cancellationToken = default) { throw null; }
         public static byte[] HashData(System.ReadOnlySpan<byte> source) { throw null; }
         public static int HashData(System.ReadOnlySpan<byte> source, System.Span<byte> destination) { throw null; }
         public static bool TryHashData(System.ReadOnlySpan<byte> source, System.Span<byte> destination, out int bytesWritten) { throw null; }
+        public static System.Threading.Tasks.Task<(bool IsSuccess, int BytesWritten)> TryHashDataAsync(byte[] source, byte[] destination, System.Threading.CancellationToken cancellationToken = default) { throw null; }
+
     }
     [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
     public sealed partial class SHA384Managed : System.Security.Cryptography.SHA384
@@ -834,7 +858,9 @@ namespace System.Security.Cryptography
         protected sealed override void Dispose(bool disposing) { }
         protected sealed override void HashCore(byte[] array, int ibStart, int cbSize) { }
         protected sealed override void HashCore(System.ReadOnlySpan<byte> source) { }
+        protected sealed override System.Threading.Tasks.Task HashCoreAsync(byte[] array, int ibStart, int cbSize, System.Threading.CancellationToken cancellationToken) { throw null; }
         protected sealed override byte[] HashFinal() { throw null; }
+        protected sealed override System.Threading.Tasks.Task<byte[]> HashFinalAsync(System.Threading.CancellationToken cancellationToken) { throw null; }
         public sealed override void Initialize() { }
         protected sealed override bool TryHashFinal(System.Span<byte> destination, out int bytesWritten) { throw null; }
     }
@@ -844,9 +870,13 @@ namespace System.Security.Cryptography
         public static new System.Security.Cryptography.SHA512 Create() { throw null; }
         public static new System.Security.Cryptography.SHA512? Create(string hashName) { throw null; }
         public static byte[] HashData(byte[] source) { throw null; }
+        public static System.Threading.Tasks.Task<byte[]> HashDataAsync(byte[] source, System.Threading.CancellationToken cancellationToken = default) { throw null; }
+        public static System.Threading.Tasks.Task<int> HashDataAsync(byte[] source, byte[] destination, System.Threading.CancellationToken cancellationToken = default) { throw null; }
         public static byte[] HashData(System.ReadOnlySpan<byte> source) { throw null; }
         public static int HashData(System.ReadOnlySpan<byte> source, System.Span<byte> destination) { throw null; }
         public static bool TryHashData(System.ReadOnlySpan<byte> source, System.Span<byte> destination, out int bytesWritten) { throw null; }
+        public static System.Threading.Tasks.Task<(bool IsSuccess, int BytesWritten)> TryHashDataAsync(byte[] source, byte[] destination, System.Threading.CancellationToken cancellationToken = default) { throw null; }
+
     }
     [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
     public sealed partial class SHA512Managed : System.Security.Cryptography.SHA512
@@ -855,7 +885,9 @@ namespace System.Security.Cryptography
         protected sealed override void Dispose(bool disposing) { }
         protected sealed override void HashCore(byte[] array, int ibStart, int cbSize) { }
         protected sealed override void HashCore(System.ReadOnlySpan<byte> source) { }
+        protected sealed override System.Threading.Tasks.Task HashCoreAsync(byte[] array, int ibStart, int cbSize, System.Threading.CancellationToken cancellationToken) { throw null; }
         protected sealed override byte[] HashFinal() { throw null; }
+        protected sealed override System.Threading.Tasks.Task<byte[]> HashFinalAsync(System.Threading.CancellationToken cancellationToken) { throw null; }
         public sealed override void Initialize() { }
         protected sealed override bool TryHashFinal(System.Span<byte> destination, out int bytesWritten) { throw null; }
     }

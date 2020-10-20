@@ -4,6 +4,8 @@
 using System.Diagnostics;
 using System.Runtime.Versioning;
 using Internal.Cryptography;
+using System.Threading;
+using System.Threading.Tasks;
 
 namespace System.Security.Cryptography
 {
@@ -118,9 +120,13 @@ namespace System.Security.Cryptography
 
             protected sealed override void HashCore(ReadOnlySpan<byte> source) =>
                 _hashProvider.AppendHashData(source);
+            protected sealed override Task HashCoreAsync(byte[] array, int ibStart, int cbSize, CancellationToken cancellationToken) =>
+                _hashProvider.AppendHashDataAsync(array, ibStart, cbSize, cancellationToken);
 
             protected sealed override byte[] HashFinal() =>
                 _hashProvider.FinalizeHashAndReset();
+
+            protected override Task<byte[]> HashFinalAsync(CancellationToken cancellationToken) => throw new PlatformNotSupportedException();
 
             protected sealed override bool TryHashFinal(Span<byte> destination, out int bytesWritten) =>
                 _hashProvider.TryFinalizeHashAndReset(destination, out bytesWritten);

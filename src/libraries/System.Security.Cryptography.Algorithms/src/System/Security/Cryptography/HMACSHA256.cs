@@ -6,6 +6,8 @@ using System.Diagnostics;
 using System.Runtime.Versioning;
 using System.Security.Cryptography;
 using Internal.Cryptography;
+using System.Threading;
+using System.Threading.Tasks;
 
 namespace System.Security.Cryptography
 {
@@ -62,8 +64,12 @@ namespace System.Security.Cryptography
         protected override void HashCore(ReadOnlySpan<byte> source) =>
             _hMacCommon.AppendHashData(source);
 
+        protected override Task HashCoreAsync(byte[] array, int ibStart, int cbSize, CancellationToken cancellationToken) => throw new PlatformNotSupportedException();
+
         protected override byte[] HashFinal() =>
             _hMacCommon.FinalizeHashAndReset();
+
+        protected override Task<byte[]> HashFinalAsync(CancellationToken cancellationToken) => throw new PlatformNotSupportedException();
 
         protected override bool TryHashFinal(Span<byte> destination, out int bytesWritten) =>
             _hMacCommon.TryFinalizeHashAndReset(destination, out bytesWritten);

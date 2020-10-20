@@ -8,6 +8,8 @@ using Microsoft.Win32.SafeHandles;
 using NTSTATUS = Interop.BCrypt.NTSTATUS;
 using BCryptOpenAlgorithmProviderFlags = Interop.BCrypt.BCryptOpenAlgorithmProviderFlags;
 using BCryptCreateHashFlags = Interop.BCrypt.BCryptCreateHashFlags;
+using System.Threading;
+using System.Threading.Tasks;
 
 namespace Internal.Cryptography
 {
@@ -68,7 +70,7 @@ namespace Internal.Cryptography
                 throw Interop.BCrypt.CreateCryptographicException(ntStatus);
             }
         }
-
+        public override Task AppendHashDataAsync(byte[] array, int ibStart, int cbSize, CancellationToken cancellationToken) => throw new NotImplementedException();
         public override int FinalizeHashAndReset(Span<byte> destination)
         {
             Debug.Assert(destination.Length >= _hashSize);
@@ -83,6 +85,8 @@ namespace Internal.Cryptography
             ResetHashObject();
             return _hashSize;
         }
+
+        public override Task<int> FinalizeHashAndResetAsync(byte[] destination, CancellationToken cancellationToken) => throw new NotImplementedException();
 
         public override int GetCurrentHash(Span<byte> destination)
         {

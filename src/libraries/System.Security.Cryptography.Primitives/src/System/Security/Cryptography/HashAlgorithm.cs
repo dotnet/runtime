@@ -50,6 +50,24 @@ namespace System.Security.Cryptography
             return CaptureHashCodeAndReinitialize();
         }
 
+        public Task<byte[]> ComputeHashAsync(byte[] buffer, CancellationToken cancellationToken = default)
+        {
+            if (_disposed)
+                throw new ObjectDisposedException(null);
+            if (buffer == null)
+                throw new ArgumentNullException(nameof(buffer));
+
+            return ComputeHashAsyncCore(buffer, 0, buffer.Length, cancellationToken);
+        }
+
+        private async Task<byte[]> ComputeHashAsyncCore(
+            byte[] array, int ibStart, int cbSize,
+            CancellationToken cancellationToken)
+        {
+            await HashCoreAsync(array, ibStart, cbSize, cancellationToken).ConfigureAwait(false);
+            return await CaptureHashCodeAndReinitializeAsync(cancellationToken).ConfigureAwait(false);
+        }
+
         public bool TryComputeHash(ReadOnlySpan<byte> source, Span<byte> destination, out int bytesWritten)
         {
             if (_disposed)
@@ -132,6 +150,7 @@ namespace System.Security.Cryptography
             return ComputeHashAsyncCore(inputStream, cancellationToken);
         }
 
+
         private async Task<byte[]> ComputeHashAsyncCore(
             Stream inputStream,
             CancellationToken cancellationToken)
@@ -167,6 +186,18 @@ namespace System.Security.Cryptography
             Initialize();
             return tmp;
         }
+
+        private async Task<byte[]> CaptureHashCodeAndReinitializeAsync(CancellationToken cancellationToken)
+        {
+            HashValue = await HashFinalAsync(cancellationToken).ConfigureAwait(false);
+
+            // Clone the hash value prior to invoking Initialize in case the user-defined Initialize
+            // manipulates the array.
+            byte[] tmp = (byte[])HashValue.Clone();
+            Initialize();
+            return await Task.FromResult<byte[]>(tmp).ConfigureAwait(false);
+        }
+
 
         public void Dispose()
         {
@@ -254,7 +285,9 @@ namespace System.Security.Cryptography
         }
 
         protected abstract void HashCore(byte[] array, int ibStart, int cbSize);
+        protected abstract Task HashCoreAsync(byte[] array, int ibStart, int cbSize, CancellationToken cancellationToken);
         protected abstract byte[] HashFinal();
+        protected abstract Task<byte[]> HashFinalAsync(CancellationToken cancellationToken);
         public abstract void Initialize();
 
         protected virtual void HashCore(ReadOnlySpan<byte> source)

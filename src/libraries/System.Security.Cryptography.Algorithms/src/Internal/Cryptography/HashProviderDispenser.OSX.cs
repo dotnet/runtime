@@ -5,6 +5,8 @@ using System;
 using System.Diagnostics;
 using System.Security.Cryptography;
 using System.Security.Cryptography.Apple;
+using System.Threading;
+using System.Threading.Tasks;
 
 namespace Internal.Cryptography
 {
@@ -59,6 +61,8 @@ namespace Internal.Cryptography
                     return digestSize;
                 }
             }
+
+            public static Task<int> HashDataAsync(string hashAlgorithmId, byte[] source, byte[] destination, CancellationToken cancellationToken) => throw new NotImplementedException();
         }
 
         private sealed class AppleHmacProvider : HashProvider
@@ -107,6 +111,7 @@ namespace Internal.Cryptography
                 }
             }
 
+            public override Task AppendHashDataAsync(byte[] array, int ibStart, int cbSize, CancellationToken cancellationToken) => throw new NotImplementedException();
             private void SetKey()
             {
                 if (Interop.AppleCrypto.HmacInit(_ctx, _key, _key.Length) != 1)
@@ -134,6 +139,8 @@ namespace Internal.Cryptography
                 _running = false;
                 return HashSizeInBytes;
             }
+
+            public override Task<int> FinalizeHashAndResetAsync(byte[] destination, CancellationToken cancellationToken) => throw new NotImplementedException();
 
             public override unsafe int GetCurrentHash(Span<byte> destination)
             {
@@ -202,6 +209,8 @@ namespace Internal.Cryptography
                 }
             }
 
+            public override Task AppendHashDataAsync(byte[] array, int ibStart, int cbSize, CancellationToken cancellationToken) => throw new NotImplementedException();
+
             public override int FinalizeHashAndReset(Span<byte> destination)
             {
                 Debug.Assert(destination.Length >= HashSizeInBytes);
@@ -216,6 +225,8 @@ namespace Internal.Cryptography
 
                 return HashSizeInBytes;
             }
+
+            public override Task<int> FinalizeHashAndResetAsync(byte[] destination, CancellationToken cancellationToken) => throw new NotImplementedException();
 
             public override int GetCurrentHash(Span<byte> destination)
             {

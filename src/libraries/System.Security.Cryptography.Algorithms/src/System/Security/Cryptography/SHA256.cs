@@ -3,6 +3,8 @@
 
 using Internal.Cryptography;
 using System.Diagnostics;
+using System.Threading;
+using System.Threading.Tasks;
 
 namespace System.Security.Cryptography
 {
@@ -40,6 +42,60 @@ namespace System.Security.Cryptography
                 throw new ArgumentNullException(nameof(source));
 
             return HashData(new ReadOnlySpan<byte>(source));
+        }
+
+        /// <summary>
+        /// Async Computes the hash of data using the SHA256 algorithm.
+        /// </summary>
+        /// <param name="source">The data to hash.</param>
+        /// <param name="cancellationToken">CancellationToken used to cancel the hash operation.</param>
+        /// <returns>The hash of the data.</returns>
+        /// <exception cref="ArgumentNullException">
+        /// <paramref name="source" /> is <see langword="null" />.
+        /// </exception>
+        public static async Task<byte[]> HashDataAsync(byte[] source, CancellationToken cancellationToken = default)
+        {
+            if (source is null)
+                throw new ArgumentNullException(nameof(source));
+
+            // Note to self:  Verify if this will leak or not.
+            byte[] buffer = GC.AllocateUninitializedArray<byte>(HashSizeBytes);
+
+            int written = await HashDataAsync(source, buffer, cancellationToken).ConfigureAwait(false);
+
+            return buffer;
+        }
+
+        /// <summary>
+        /// Async Computes the hash of data using the SHA256 algorithm.
+        /// </summary>
+        /// <param name="source">The data to hash.</param>
+        /// <param name="destination">The buffer to receive the hash value.</param>
+        /// <param name="cancellationToken">CancellationToken used to cancel the hash operation.</param>
+        /// <returns>The total number of bytes written to <paramref name="destination" />.</returns>
+        /// <exception cref="ArgumentException">
+        /// The buffer in <paramref name="destination"/> is too small to hold the calculated hash
+        /// size. The SHA256 algorithm always produces a 256-bit hash, or 32 bytes.
+        /// </exception>
+        /// <exception cref="ArgumentNullException">
+        /// <paramref name="source" /> is <see langword="null" />.
+        /// </exception>
+        /// <exception cref="ArgumentNullException">
+        /// <paramref name="destination" /> is <see langword="null" />.
+        /// </exception>
+        public static async Task<int> HashDataAsync(byte[] source, byte[] destination, CancellationToken cancellationToken = default)
+        {
+            if (source is null)
+                throw new ArgumentNullException(nameof(source));
+
+            if (destination is null)
+                throw new ArgumentNullException(nameof(destination));
+
+            (bool IsSuccess, int BytesWritten) hashResult = await TryHashDataAsync(source, destination, cancellationToken).ConfigureAwait(false);
+            if (!hashResult.IsSuccess)
+                throw new ArgumentException(SR.Argument_DestinationTooShort, nameof(destination));
+            Debug.Assert(hashResult.BytesWritten == destination.Length);
+            return hashResult.BytesWritten;
         }
 
         /// <summary>
@@ -102,6 +158,29 @@ namespace System.Security.Cryptography
             return true;
         }
 
+        /// <summary>
+        /// Attempts to compute the hash of data using the SHA1 algorithm.
+        /// </summary>
+        /// <param name="source">The data to hash.</param>
+        /// <param name="destination">The buffer to receive the hash value.</param>
+        /// <param name="cancellationToken">CancellationToken used to cancel the hash operation.</param>
+        /// <returns>
+        /// <see langword="false"/> if <paramref name="destination"/> is too small to hold the
+        /// calculated hash, <see langword="true"/> otherwise.
+        /// </returns>
+        public static async Task<(bool IsSuccess, int BytesWritten)> TryHashDataAsync(byte[] source, byte[] destination, CancellationToken cancellationToken = default)
+        {
+            if (destination.Length < HashSizeBytes)
+            {
+                return (false, (int)0);
+            }
+
+            int bytesWritten = await HashProviderDispenser.OneShotHashProvider.HashDataAsync(HashAlgorithmNames.SHA256, source, destination, cancellationToken).ConfigureAwait(false);
+            Debug.Assert(bytesWritten == HashSizeBytes);
+
+            return (true, (int)bytesWritten);
+        }
+
         private sealed class Implementation : SHA256
         {
             private readonly HashProvider _hashProvider;
@@ -117,9 +196,12 @@ namespace System.Security.Cryptography
 
             protected sealed override void HashCore(ReadOnlySpan<byte> source) =>
                 _hashProvider.AppendHashData(source);
-
+            protected sealed override Task HashCoreAsync(byte[] array, int ibStart, int cbSize, CancellationToken cancellationToken) =>
+                _hashProvider.AppendHashDataAsync(array, ibStart, cbSize, cancellationToken);
             protected sealed override byte[] HashFinal() =>
                 _hashProvider.FinalizeHashAndReset();
+
+            protected sealed override Task<byte[]> HashFinalAsync(CancellationToken cancellationToken) => _hashProvider.FinalizeHashAndResetAsync(cancellationToken);
 
             protected sealed override bool TryHashFinal(Span<byte> destination, out int bytesWritten) =>
                 _hashProvider.TryFinalizeHashAndReset(destination, out bytesWritten);

@@ -3,6 +3,8 @@
 
 using System;
 using System.Diagnostics;
+using System.Threading;
+using System.Threading.Tasks;
 
 namespace Internal.Cryptography
 {
@@ -33,9 +35,11 @@ namespace Internal.Cryptography
 
         public abstract void AppendHashData(ReadOnlySpan<byte> data);
 
+        public abstract Task AppendHashDataAsync(byte[] array, int ibStart, int cbSize, CancellationToken cancellationToken);
+
         // Compute the hash based on the appended data and resets the HashProvider for more hashing.
         public abstract int FinalizeHashAndReset(Span<byte> destination);
-
+        public abstract Task<int> FinalizeHashAndResetAsync(byte[] destination, CancellationToken cancellationToken);
         public abstract int GetCurrentHash(Span<byte> destination);
 
         public byte[] FinalizeHashAndReset()
@@ -43,6 +47,16 @@ namespace Internal.Cryptography
             byte[] ret = new byte[HashSizeInBytes];
 
             int written = FinalizeHashAndReset(ret);
+            Debug.Assert(written == HashSizeInBytes);
+
+            return ret;
+        }
+
+        public async Task<byte[]> FinalizeHashAndResetAsync(CancellationToken cancellationToken)
+        {
+            byte[] ret = new byte[HashSizeInBytes];
+
+            int written = await FinalizeHashAndResetAsync(ret, cancellationToken).ConfigureAwait(false);
             Debug.Assert(written == HashSizeInBytes);
 
             return ret;

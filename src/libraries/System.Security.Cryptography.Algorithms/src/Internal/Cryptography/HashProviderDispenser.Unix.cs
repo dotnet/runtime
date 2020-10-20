@@ -6,6 +6,8 @@ using System.Diagnostics;
 using System.Runtime.InteropServices;
 using System.Security.Cryptography;
 using Microsoft.Win32.SafeHandles;
+using System.Threading;
+using System.Threading.Tasks;
 
 namespace Internal.Cryptography
 {
@@ -60,6 +62,8 @@ namespace Internal.Cryptography
 
                 return hashSize;
             }
+
+            public static Task<int> HashDataAsync(string hashAlgorithmId, byte[] source, byte[] destination, CancellationToken cancellationToken) => throw new NotImplementedException();
         }
 
         private sealed class EvpHashProvider : HashProvider
@@ -87,6 +91,7 @@ namespace Internal.Cryptography
             public override void AppendHashData(ReadOnlySpan<byte> data) =>
                 Check(Interop.Crypto.EvpDigestUpdate(_ctx, data, data.Length));
 
+            public override Task AppendHashDataAsync(byte[] array, int ibStart, int cbSize, CancellationToken cancellationToken) => throw new NotImplementedException();
             public override int FinalizeHashAndReset(Span<byte> destination)
             {
                 Debug.Assert(destination.Length >= _hashSize);
@@ -100,6 +105,8 @@ namespace Internal.Cryptography
 
                 return _hashSize;
             }
+
+            public override Task<int> FinalizeHashAndResetAsync(byte[] destination, CancellationToken cancellationToken) => throw new NotImplementedException();
 
             public override int GetCurrentHash(Span<byte> destination)
             {
@@ -144,6 +151,7 @@ namespace Internal.Cryptography
 
             public override void AppendHashData(ReadOnlySpan<byte> data) =>
                 Check(Interop.Crypto.HmacUpdate(_hmacCtx, data, data.Length));
+            public override Task AppendHashDataAsync(byte[] array, int ibStart, int cbSize, CancellationToken cancellationToken) => throw new NotImplementedException();
 
             public override int FinalizeHashAndReset(Span<byte> destination)
             {
@@ -156,6 +164,8 @@ namespace Internal.Cryptography
                 Check(Interop.Crypto.HmacReset(_hmacCtx));
                 return _hashSize;
             }
+
+            public override Task<int> FinalizeHashAndResetAsync(byte[] destination, CancellationToken cancellationToken) => throw new NotImplementedException();
 
             public override int GetCurrentHash(Span<byte> destination)
             {

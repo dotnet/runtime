@@ -112,6 +112,7 @@ namespace System.Security.Cryptography
         public void Clear() { }
         public byte[] ComputeHash(byte[] buffer) { throw null; }
         public byte[] ComputeHash(byte[] buffer, int offset, int count) { throw null; }
+        public System.Threading.Tasks.Task<byte[]> ComputeHashAsync(byte[] buffer, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
         public byte[] ComputeHash(System.IO.Stream inputStream) { throw null; }
         public System.Threading.Tasks.Task<byte[]> ComputeHashAsync(System.IO.Stream inputStream, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
         [System.ObsoleteAttribute("The default implementation of this cryptography algorithm is not supported", DiagnosticId = "SYSLIB0007", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
@@ -120,8 +121,10 @@ namespace System.Security.Cryptography
         public void Dispose() { }
         protected virtual void Dispose(bool disposing) { }
         protected abstract void HashCore(byte[] array, int ibStart, int cbSize);
+        protected abstract System.Threading.Tasks.Task HashCoreAsync(byte[] array, int ibStart, int cbSize, System.Threading.CancellationToken cancellationToken);
         protected virtual void HashCore(System.ReadOnlySpan<byte> source) { }
         protected abstract byte[] HashFinal();
+        protected abstract System.Threading.Tasks.Task<byte[]> HashFinalAsync(System.Threading.CancellationToken cancellationToken);
         public abstract void Initialize();
         public int TransformBlock(byte[] inputBuffer, int inputOffset, int inputCount, byte[]? outputBuffer, int outputOffset) { throw null; }
         public byte[] TransformFinalBlock(byte[] inputBuffer, int inputOffset, int inputCount) { throw null; }

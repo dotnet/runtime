@@ -5,6 +5,8 @@ using System;
 using System.Diagnostics;
 using System.Runtime.InteropServices;
 using System.Security.Cryptography;
+using System.Threading;
+using System.Threading.Tasks;
 using Microsoft.Win32.SafeHandles;
 using NTSTATUS = Interop.BCrypt.NTSTATUS;
 using BCryptOpenAlgorithmProviderFlags = Interop.BCrypt.BCryptOpenAlgorithmProviderFlags;
@@ -162,6 +164,8 @@ namespace Internal.Cryptography
                     Interop.BCrypt.BCryptFinishHash(hHash, destination, hashSize, 0);
                 }
             }
+
+            public static Task<int> HashDataAsync(string hashAlgorithmId, byte[] source, byte[] destination, CancellationToken cancellationToken) => throw new NotImplementedException();
         }
     }
 }
