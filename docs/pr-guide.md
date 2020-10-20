@@ -27,7 +27,7 @@ Anyone with write access can merge a pull request manually or by setting the [au
 * The PR successfully builds and passes all tests in the Continuous Integration (CI) system.
     * Depending on your change, you may need to re-run validation. See [rerunning validation](#rerunning-validation) below.
 
-Please always **squash** the pull request unless there are special circumstances. Do so, even if the PR contains only one commit. It creates a simpler history than a Merge Commit. "Special circumstances" are rare, and typically mean that there are a series of cleanly separated changes that will be too hard to understand if squashed together, or for some reason we want to preserve the ability to bisect them.
+Typically, PRs are merged as one commit. It creates a simpler history than a Merge Commit. "Special circumstances" are rare, and typically mean that there are a series of cleanly separated changes that will be too hard to understand if squashed together, or for some reason we want to preserve the ability to bisect them.
 
 ## Rerunning Validation
 
