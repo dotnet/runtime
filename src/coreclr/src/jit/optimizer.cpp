@@ -7561,7 +7561,7 @@ void Compiler::fgCreateLoopPreHeader(unsigned lnum)
                         preHead->bbFlags |= BBF_JMP_TARGET | BBF_HAS_LABEL;
                     }
                 } while (++jumpTab, --jumpCnt);
-                FALLTHROUGH; // TODO: seems like a bug
+                break;
 
             default:
                 noway_assert(!"Unexpected bbJumpKind");
