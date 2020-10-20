@@ -1,6 +1,9 @@
 cmake_minimum_required(VERSION 3.6.2)
 
 cmake_policy(SET CMP0042 NEW)
+if (CMAKE_VERSION VERSION_GREATER 3.15 OR CMAKE_VERSION VERSION_EQUAL 3.15)
+  cmake_policy(SET CMP0091 NEW)
+endif()
 project(Tests)
 
 include(${CLR_ENG_NATIVE_DIR}/configurecompiler.cmake)
