@@ -2,6 +2,9 @@
 if (CLR_CMAKE_TARGET_WIN32)
   if(CLR_CMAKE_HOST_ARCH_ARM OR CLR_CMAKE_HOST_ARCH_ARM64)
     preprocess_files(VM_SOURCES_WKS_ARCH_ASM ${VM_SOURCES_WKS_ARCH_ASM})
+    if (CMAKE_GENERATOR MATCHES "Visual Studio")
+      compile_asm(TARGET cee_wks_core ASM_FILES ${VM_SOURCES_WKS_ARCH_ASM} OUTPUT_OBJECTS VM_WKS_ARCH_ASM_OBJECTS)
+    endif()
   endif()
 endif (CLR_CMAKE_TARGET_WIN32)
 
@@ -60,16 +63,16 @@ if (CLR_CMAKE_TARGET_WIN32)
 
 endif (CLR_CMAKE_TARGET_WIN32)
 
-add_custom_target(preprocessd_asm DEPENDS ${VM_WKS_ARCH_ASM_OBJECTS})
-add_dependencies(cee_wks_core preprocessd_asm)
-add_dependencies(cee_wks_obj preprocessd_asm)
-add_dependencies(cee_wks_mergeable_obj preprocessd_asm)
+add_custom_target(precompiled_asm DEPENDS ${VM_WKS_ARCH_ASM_OBJECTS})
+add_dependencies(cee_wks_core precompiled_asm)
+add_dependencies(cee_wks_obj precompiled_asm)
+add_dependencies(cee_wks_mergeable_obj precompiled_asm)
 
 
 target_compile_definitions(cee_wks_mergeable_obj PUBLIC FEATURE_MERGE_JIT_AND_ENGINE)
 target_compile_definitions(cee_wks_mergeable_obj PUBLIC CORECLR_EMBEDDED)
 
 add_library(cee_wks INTERFACE)
-target_sources(cee_wks INTERFACE $<TARGET_OBJECTS:cee_wks_obj> $<TARGET_OBJECTS:cee_wks_core>)
+target_sources(cee_wks INTERFACE $<TARGET_OBJECTS:cee_wks_obj> $<TARGET_OBJECTS:cee_wks_core> ${VM_WKS_ARCH_ASM_OBJECTS})
 add_library(cee_wks_mergeable INTERFACE)
-target_sources(cee_wks_mergeable INTERFACE $<TARGET_OBJECTS:cee_wks_mergeable_obj> $<TARGET_OBJECTS:cee_wks_core>)
+target_sources(cee_wks_mergeable INTERFACE $<TARGET_OBJECTS:cee_wks_mergeable_obj> $<TARGET_OBJECTS:cee_wks_core> ${VM_WKS_ARCH_ASM_OBJECTS})

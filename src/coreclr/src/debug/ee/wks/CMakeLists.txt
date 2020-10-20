@@ -10,8 +10,11 @@ if (CLR_CMAKE_TARGET_WIN32)
   if(CLR_CMAKE_HOST_ARCH_ARM OR CLR_CMAKE_HOST_ARCH_ARM64)
 
     preprocess_files(ASM_FILE ${ASM_FILE})
+    if (CMAKE_GENERATOR MATCHES "Visual Studio")
+      compile_asm(TARGET cordbee_wks_obj ASM_FILES ${ASM_FILE} OUTPUT_OBJECTS ASM_OBJECTS)
+    endif()
 
-    add_library_clr(cordbee_wks_obj OBJECT ${CORDBEE_SOURCES_WKS} ${ASM_FILE})
+    add_library_clr(cordbee_wks_obj OBJECT ${CORDBEE_SOURCES_WKS} ${ASM_FILE} ${ASM_OBJECTS})
 
   else ()
 
