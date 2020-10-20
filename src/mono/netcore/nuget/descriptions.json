@@ -8,5 +8,10 @@
         "Name": "Microsoft.NETCore.BrowserDebugHost.Transport",
         "Description": "Internal package for sharing BrowserDebugHost.",
         "CommonTypes": [ ]
+    },
+    {
+        "Name": "Microsoft.NET.Runtime.iOS.Sample.Mono",
+        "Description": "Internal package for sharing embedded Mono runtime and iOS App Builder.",
+        "CommonTypes": [ ]
     }
 ]
