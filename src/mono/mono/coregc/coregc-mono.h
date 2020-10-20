@@ -7,7 +7,8 @@
 #define __MONO_COREGC_MONO_H__
 
 #include <../coreclr/src/gc/env/gcenv.base.h>
-#include <../coreclr/src/gc/gcinterface.h>
+#include "../coreclr/src/inc/debugmacros.h"
+#include "mono/coregc/gcenv.mono.h"
 
 /* FIXME: what's the correct struct? */
 #define COREGC_CLIENT_OBJECT_HEADER_SIZE (sizeof (MonoObject))
