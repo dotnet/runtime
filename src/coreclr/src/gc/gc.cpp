@@ -2616,6 +2616,7 @@ alloc_list gc_heap::poh_alloc_list [NUM_POH_ALIST-1];
 #ifdef DOUBLY_LINKED_FL
 // size we removed with no undo; only for recording purpose
 size_t gc_heap::gen2_removed_no_undo = 0;
+size_t gc_heap::saved_pinned_plug_index = 0;
 #endif //DOUBLY_LINKED_FL
 
 dynamic_data gc_heap::dynamic_data_table [total_generation_count];
@@ -3795,6 +3796,10 @@ public:
     }
     void ClearFreeObjInCompactBit()
     {
+#ifdef _DEBUG
+        // check this looks like an object
+        Validate();
+#endif //_DEBUG
         RawSetMethodTable((MethodTable *)(((size_t) RawGetMethodTable()) & (~MAKE_FREE_OBJ_IN_COMPACT)));
     }
 #endif //DOUBLY_LINKED_FL
@@ -11783,7 +11788,7 @@ void gc_heap::adjust_limit (uint8_t* start, size_t limit_size, generation* gen)
                     // This means we cannot simply make a filler free object right after what's allocated in this alloc context if
                     // that's < 5-ptr sized.
                     //
-                    if (allocated_size < min_free_item_no_prev)
+                    if (allocated_size <= min_free_item_no_prev)
                     {
                         // We can't make the free object just yet. Need to record the size.
                         size_t* filler_free_obj_size_location = (size_t*)(generation_allocation_context_start_region (gen) + min_free_item_no_prev);
@@ -11803,7 +11808,20 @@ void gc_heap::adjust_limit (uint8_t* start, size_t limit_size, generation* gen)
                         generation_free_obj_space (gen) += filler_free_obj_size;
                         *filler_free_obj_size_location = filler_free_obj_size;
                         uint8_t* old_loc = generation_last_free_list_allocated (gen);
-                        set_free_obj_in_compact_bit (old_loc);
+                        // check if old_loc happens to be in a saved plug_and_gap with a pinned plug after it
+                        if (old_loc == mark_stack_array[saved_pinned_plug_index].first - sizeof(plug_and_gap))
+                        {
+                            // if so, set the bit in the saved info instead
+                            set_free_obj_in_compact_bit ((uint8_t*)(&mark_stack_array[saved_pinned_plug_index].saved_pre_plug_reloc));
+                        }
+                        else
+                        {
+#ifdef _DEBUG
+                            // check this looks like an object
+                            header(old_loc)->Validate();
+#endif //_DEBUG
+                            set_free_obj_in_compact_bit (old_loc);
+                        }
 
                         dprintf (3333, ("[h%d] ac: %Ix->%Ix((%Id < %Id), Pset %Ix s->%Id", heap_number,
                             generation_allocation_context_start_region (gen), generation_allocation_pointer (gen),
@@ -15313,8 +15331,8 @@ BOOL gc_heap::should_set_bgc_mark_bit (uint8_t* o)
 {
     if (!current_sweep_seg)
     {
-        assert (current_bgc_state == bgc_not_in_process);
-        return FALSE;
+        // check for the case that sweep has just started and current_sweep_seg is not yet set
+        return (current_bgc_state == bgc_sweep_soh);
     }
 
     // This is cheaper so I am doing this comparision first before having to get the seg for o.
@@ -23334,6 +23352,12 @@ void gc_heap::store_plug_gap_info (uint8_t* plug_start,
 
             if (save_pre_plug_info_p)
             {
+#ifdef DOUBLY_LINKED_FL
+                if (last_object_in_last_plug == generation_last_free_list_allocated(generation_of(max_generation)))
+                {
+                    saved_pinned_plug_index = mark_stack_tos;
+                }
+#endif //DOUBLY_LINKED_FL
                 set_gap_size (plug_start, sizeof (gap_reloc_pair));
             }
         }
@@ -23718,6 +23742,7 @@ void gc_heap::plan_phase (int condemned_gen_number)
 
 #ifdef DOUBLY_LINKED_FL
     gen2_removed_no_undo = 0;
+    saved_pinned_plug_index = 0;
 #endif //DOUBLY_LINKED_FL
 
     while (1)
@@ -26606,7 +26631,7 @@ void  gc_heap::gcmemcopy (uint8_t* dest, uint8_t* src, size_t len, BOOL copy_car
         }
 
         BOOL make_free_obj_p = FALSE;
-        if (len < min_free_item_no_prev)
+        if (len <= min_free_item_no_prev)
         {
             make_free_obj_p = is_free_obj_in_compact_bit_set (src);
 
@@ -26869,6 +26894,7 @@ void gc_heap::compact_in_brick (uint8_t* tree, compact_args* args)
         uint8_t*  gap = (plug - gap_size);
         uint8_t*  last_plug_end = gap;
         size_t last_plug_size = (last_plug_end - args->last_plug);
+        assert ((last_plug_size & (sizeof(PTR_PTR) - 1)) == 0);
         dprintf (3, ("tree: %Ix, last_plug: %Ix, gap: %Ix(%Ix), last_plug_end: %Ix, size: %Ix",
             tree, args->last_plug, gap, gap_size, last_plug_end, last_plug_size));
 
