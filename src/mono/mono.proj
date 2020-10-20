@@ -6,8 +6,7 @@
   -->
 
   <PropertyGroup>
-    <!--<MonoEnableCMake Condition="'$(TargetsBrowser)' == 'true' or '$(TargetsOSX)' == 'true' or '$(TargetsAndroid)' == 'true' or '$(TargetsiOS)' == 'true' or '$(TargetstvOS)' == 'true'">true</MonoEnableCMake>-->
-    <MonoEnableCMake Condition="'$(TargetsWindows)' != 'true'">true</MonoEnableCMake>
+    <MonoEnableCMake>true</MonoEnableCMake>
     <MonoCrossDir Condition="'$(MonoCrossDir)' == '' and '$(ROOTFS_DIR)' != ''">$(ROOTFS_DIR)</MonoCrossDir>
     <MonoEnableInterpreter Condition="'$(MonoEnableInterpreter)' == ''">false</MonoEnableInterpreter>
     <ScriptExt Condition="'$(OS)' == 'Windows_NT'">.cmd</ScriptExt>
@@ -785,7 +784,7 @@
   </Target>
 
   <!-- Windows Mono runtime build -->
-  <Target Name="BuildMonoRuntimeWindows" Condition="'$(OS)' == 'Windows_NT' and '$(MonoEnableCMake)' != 'true'">
+  <Target Name="BuildMonoRuntimeWindows" Condition="'$(OS)' == 'Windows_NT'">
 
     <!-- Sanity checks -->
     <Error Condition="'$(TargetsiOS)' == 'true' or '$(TargetstvOS)' == 'true'" Text="Error: Mono runtime for $(TargetOS) can't be built on Windows." />
@@ -852,7 +851,7 @@
     <Exec Condition="'$(OS)' != 'Windows_NT'" Command="$(MonoProjectRoot)../tests/run.sh $(CoreClrTestConfig)" ContinueOnError="ErrorAndContinue" />
   </Target>
 
-  <Target Name="BuildMonoRuntimeCMake" Condition="'$(MonoEnableCMake)' == 'true'">
+  <Target Name="BuildMonoRuntimeCMake" Condition="'$(OS)' != 'Windows_NT' and '$(MonoEnableCMake)' == 'true'">
     <Exec Command="which ninja" IgnoreExitCode="true" IgnoreStandardErrorWarningFormat="true">
       <Output TaskParameter="ExitCode" PropertyName="MonoNinjaFound"/>
     </Exec>
