@@ -137,8 +137,8 @@ namespace System.Composition.TypedParts.Discovery
 
         private ConstructorInfo GetConstructorInfoFromGenericType(TypeInfo type)
         {
-            var genericPartTypeInfo = type.GetGenericTypeDefinition().GetTypeInfo();
             var genericPartType = type.GetGenericTypeDefinition();
+            var genericPartTypeInfo = genericPartType.GetTypeInfo();
             ConstructorInfo constructor = null;
 
             int index = -1;
