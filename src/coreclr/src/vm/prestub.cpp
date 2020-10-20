@@ -2223,7 +2223,22 @@ PCODE MethodDesc::DoPrestub(MethodTable *pDispatchingMT, CallerGCMode callerGCMo
         }
 
         if (pCode == NULL)
+        {
             pCode = GetStubForInteropMethod(this);
+#ifdef FEATURE_MULTICOREJIT
+            if (pCode)
+            {
+                MulticoreJitManager & mcJitManager = GetAppDomain()->GetMulticoreJitManager();
+                if (mcJitManager.IsRecorderActive())
+                {
+                    if (MulticoreJitManager::IsMethodSupported(this))
+                    {
+                        mcJitManager.RecordMethodJit(this); // Tell multi-core JIT manager to record method on successful JITting
+                    }
+                }
+            }
+#endif // FEATURE_MULTICOREJIT
+        }
 
         GetOrCreatePrecode();
     }
