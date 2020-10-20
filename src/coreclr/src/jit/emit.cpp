@@ -5097,7 +5097,7 @@ unsigned emitter::emitEndCodeGen(Compiler* comp,
                 printf("\nG_M%03u_IG%02u:", emitComp->compMethodID, ig->igNum);
                 if (!emitComp->opts.disDiffable)
                 {
-                    printf("              ;; offset=%04XH", ig->igOffs);
+                    printf("              ;; offset=%04XH", emitCurCodeOffs(cp));
                 }
                 printf("\n");
             }
