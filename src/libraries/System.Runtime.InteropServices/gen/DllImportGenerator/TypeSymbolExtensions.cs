@@ -9,8 +9,6 @@ using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 
-#nullable enable
-
 namespace Microsoft.Interop
 {
     static class TypeSymbolExtensions

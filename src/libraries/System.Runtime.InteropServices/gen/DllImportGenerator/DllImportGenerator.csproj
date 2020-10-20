@@ -7,6 +7,7 @@
     <GeneratePackageOnBuild>True</GeneratePackageOnBuild>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <LangVersion>Preview</LangVersion>
+    <Nullable>enable</Nullable>
     <RootNamespace>Microsoft.Interop</RootNamespace>
 
     <!-- Uncomment to generate stub code that simply forwards parameters to p/invoke (i.e. no marshalling) -->

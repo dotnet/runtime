@@ -5,8 +5,6 @@ using System.Linq;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.Diagnostics;
 
-#nullable enable
-
 namespace Microsoft.Interop
 {
     [DiagnosticAnalyzer(LanguageNames.CSharp)]

@@ -89,7 +89,7 @@ namespace Microsoft.Interop
         /// <summary>
         /// [Optional] Specific reason marshalling of the supplied type isn't supported.
         /// </summary>
-        public string NotSupportedDetails { get; init; }
+        public string? NotSupportedDetails { get; init; }
     }
 
     internal class MarshallingGenerators

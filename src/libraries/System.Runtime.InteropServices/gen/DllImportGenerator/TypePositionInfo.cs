@@ -24,12 +24,17 @@ namespace Microsoft.Interop
         public const int UnsetIndex = int.MinValue;
         public const int ReturnIndex = UnsetIndex + 1;
 
+// We don't need the warnings around not setting the various
+// non-nullable fields/properties on this type in the constructor
+// since we always use a property initializer.
+#pragma warning disable 8618
         private TypePositionInfo()
         {
             this.ManagedIndex = UnsetIndex;
             this.NativeIndex = UnsetIndex;
             this.UnmanagedLCIDConversionArgIndex = UnsetIndex;
         }
+#pragma warning restore
 
         public string InstanceIdentifier { get; private set; }
         public ITypeSymbol ManagedType { get; private set; }
@@ -46,7 +51,7 @@ namespace Microsoft.Interop
         public int NativeIndex { get; set; }
         public int UnmanagedLCIDConversionArgIndex { get; private set; }
 
-        public MarshallingInfo MarshallingAttributeInfo { get; private set; }
+        public MarshallingInfo? MarshallingAttributeInfo { get; private set; }
 
         public static TypePositionInfo CreateForParameter(IParameterSymbol paramSymbol, DefaultMarshallingInfo defaultInfo, Compilation compilation, GeneratorDiagnostics diagnostics)
         {
@@ -78,7 +83,6 @@ namespace Microsoft.Interop
             return typeInfo;
         }
 
-#nullable enable
         private static MarshallingInfo? GetMarshallingInfo(ITypeSymbol type, IEnumerable<AttributeData> attributes, DefaultMarshallingInfo defaultInfo, Compilation compilation, GeneratorDiagnostics diagnostics)
         {
             MarshallingInfo? marshallingInfo = null;
@@ -276,7 +280,6 @@ namespace Microsoft.Interop
                 return null;
             }
         }
-#nullable restore
 
         private static SyntaxKind RefKindToSyntax(RefKind refKind)
         {

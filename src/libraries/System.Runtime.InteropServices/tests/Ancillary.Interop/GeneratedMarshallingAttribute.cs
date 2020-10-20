@@ -1,4 +1,3 @@
-#nullable enable
 
 namespace System.Runtime.InteropServices
 {

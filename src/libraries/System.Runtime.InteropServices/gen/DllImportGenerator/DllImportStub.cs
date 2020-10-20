@@ -18,11 +18,16 @@ namespace Microsoft.Interop
         private TypePositionInfo returnTypeInfo;
         private IEnumerable<TypePositionInfo> paramsTypeInfo;
 
+// We don't need the warnings around not setting the various
+// non-nullable fields/properties on this type in the constructor
+// since we always use a property initializer.
+#pragma warning disable 8618
         private DllImportStub()
         {
         }
+#pragma warning restore
 
-        public string StubTypeNamespace { get; private set; }
+        public string? StubTypeNamespace { get; private set; }
 
         public IEnumerable<TypeDeclarationSyntax> StubContainingTypes { get; private set; }
 
@@ -75,7 +80,7 @@ namespace Microsoft.Interop
         /// </remarks>
         public class GeneratedDllImportData
         {
-            public string ModuleName { get; set; }
+            public string ModuleName { get; set; } = null!;
 
             /// <summary>
             /// Value set by the user on the original declaration.
@@ -88,7 +93,7 @@ namespace Microsoft.Interop
             public bool BestFitMapping { get; set; } = true;
             public CallingConvention CallingConvention { get; set; } = CallingConvention.Winapi;
             public CharSet CharSet { get; set; } = CharSet.Ansi;
-            public string EntryPoint { get; set; } = null;
+            public string EntryPoint { get; set; } = null!;
             public bool ExactSpelling { get; set; } = false; // VB has different and unusual default behavior here.
             public bool PreserveSig { get; set; } = true;
             public bool SetLastError { get; set; } = false;
@@ -106,7 +111,7 @@ namespace Microsoft.Interop
             token.ThrowIfCancellationRequested();
 
             // Determine the namespace
-            string stubTypeNamespace = null;
+            string? stubTypeNamespace = null;
             if (!(method.ContainingNamespace is null)
                 && !method.ContainingNamespace.IsGlobalNamespace)
             {

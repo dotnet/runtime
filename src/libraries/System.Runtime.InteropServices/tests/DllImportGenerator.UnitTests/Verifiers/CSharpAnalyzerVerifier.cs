@@ -48,8 +48,8 @@ namespace DllImportGenerator.UnitTests.Verifiers
                 ReferenceAssemblies = refAssem;
                 SolutionTransforms.Add((solution, projectId) =>
                 {
-                    var project = solution.GetProject(projectId);
-                    var compilationOptions = project.CompilationOptions;
+                    var project = solution.GetProject(projectId)!;
+                    var compilationOptions = project.CompilationOptions!;
                     compilationOptions = compilationOptions.WithSpecificDiagnosticOptions(
                         compilationOptions.SpecificDiagnosticOptions.SetItems(CSharpVerifierHelper.NullableWarnings));
                     solution = solution.WithProjectCompilationOptions(projectId, compilationOptions);

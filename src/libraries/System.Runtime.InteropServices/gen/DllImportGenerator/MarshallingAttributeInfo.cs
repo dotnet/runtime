@@ -4,8 +4,6 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Runtime.InteropServices;
 
-#nullable enable
-
 namespace Microsoft.Interop
 {
     // The following types are modeled to fit with the current prospective spec
