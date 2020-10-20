@@ -19,6 +19,8 @@
 #include <mono/sgen/gc-internal-agnostic.h>
 #include <mono/metadata/icalls.h>
 
+G_BEGIN_DECLS
+
 #define mono_domain_finalizers_lock(domain) mono_os_mutex_lock (&(domain)->finalizable_objects_hash_lock);
 #define mono_domain_finalizers_unlock(domain) mono_os_mutex_unlock (&(domain)->finalizable_objects_hash_lock);
 
@@ -167,7 +169,7 @@ mono_gc_alloc_handle_string (MonoVTable *vtable, gsize size, gint32 len);
 MonoObject*
 mono_gc_alloc_mature (MonoVTable *vtable, size_t size);
 
-MonoGCDescriptor mono_gc_make_descr_for_string (gsize *bitmap, int numbits);
+MonoGCDescriptor mono_gc_make_descr_for_string (gsize *bitmap, int numbits, GPtrArray **gc_descr_full);
 
 MonoObjectHandle
 mono_gc_alloc_handle_mature (MonoVTable *vtable, gsize size);
@@ -430,4 +432,5 @@ extern gboolean mono_do_not_finalize;
 /* List of names of classes not to finalize. */
 extern gchar **mono_do_not_finalize_class_names;
 
+G_END_DECLS
 #endif /* __MONO_METADATA_GC_INTERNAL_H__ */

@@ -21,7 +21,9 @@ typedef struct _CoreGCThreadInfo CoreGCThreadInfo;
 #include <mono/metadata/mono-gc.h>
 #include <mono/metadata/gc-internals.h>
 #include <mono/metadata/class-init.h>
+#include <mono/metadata/class-internals.h>
 #include <mono/metadata/runtime.h>
+#include <mono/metadata/object-forward.h>
 #include <mono/metadata/w32handle.h>
 #include <mono/metadata/abi-details.h>
 #include <mono/utils/atomic.h>
@@ -310,7 +312,7 @@ typedef union {
 // vtable which contains header_ptr, vtable_ptr, sync_ptr and length
 #define MIN_OBJECT_SIZE (4 * sizeof (void*))
 
-void*
+MonoGCDescriptor
 mono_gc_make_descr_for_object (gpointer klass, gsize *bitmap, int numbits, size_t obj_size, GPtrArray **gc_descr_full)
 {
 	MonoClass *casted_class = (MonoClass*) klass;

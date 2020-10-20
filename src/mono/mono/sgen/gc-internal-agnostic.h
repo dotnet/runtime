@@ -22,6 +22,8 @@
 #include "mono/sgen/sgen-conf.h"
 #endif
 
+G_BEGIN_DECLS
+
 /* h indicates whether to hide or just tag.
  * (-!!h ^ p) is used instead of (h ? ~p : p) to avoid multiple mentions of p.
  */
@@ -85,9 +87,9 @@ typedef void* MonoGCDescriptor;
 
 gboolean mono_gc_parse_environment_string_extract_number (const char *str, size_t *out);
 
-MonoGCDescriptor mono_gc_make_descr_for_object (gsize *bitmap, int numbits, size_t obj_size)
+MonoGCDescriptor mono_gc_make_descr_for_object (gpointer klass, gsize *bitmap, int numbits, size_t obj_size, GPtrArray **gc_descr_full)
     MONO_PERMIT (need (sgen_lock_gc));
-MonoGCDescriptor mono_gc_make_descr_for_array (int vector, gsize *elem_bitmap, int numbits, size_t elem_size)
+MonoGCDescriptor mono_gc_make_descr_for_array (int vector, gsize *elem_bitmap, int numbits, size_t elem_size, GPtrArray **gc_descr_full)
     MONO_PERMIT (need (sgen_lock_gc));
 
 /* simple interface for data structures needed in the runtime */
@@ -120,4 +122,8 @@ void mono_gc_params_set (const char* options);
 /* equivalent to options set via MONO_GC_DEBUG */
 void mono_gc_debug_set (const char* options);
 
+G_END_DECLS
+
 #endif
+
+

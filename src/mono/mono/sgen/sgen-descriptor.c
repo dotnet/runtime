@@ -113,7 +113,7 @@ sgen_get_complex_descriptor (SgenDescriptor desc)
  * Descriptor builders.
  */
 SgenDescriptor
-mono_gc_make_descr_for_object (gsize *bitmap, int numbits, size_t obj_size)
+mono_gc_make_descr_for_object (gpointer klass, gsize *bitmap, int numbits, size_t obj_size, GPtrArray **gc_descr_full)
 {
 	int first_set = -1, num_set = 0, last_set = -1, i;
 	SgenDescriptor desc = 0;
@@ -165,7 +165,7 @@ mono_gc_make_descr_for_object (gsize *bitmap, int numbits, size_t obj_size)
 
 /* If the array holds references, numbits == 1 and the first bit is set in elem_bitmap */
 SgenDescriptor
-mono_gc_make_descr_for_array (int vector, gsize *elem_bitmap, int numbits, size_t elem_size)
+mono_gc_make_descr_for_array (int vector, gsize *elem_bitmap, int numbits, size_t elem_size, GPtrArray **gc_descr_full)
 {
 	int first_set = -1, num_set = 0, last_set = -1, i;
 	SgenDescriptor desc = DESC_TYPE_VECTOR | (vector ? VECTOR_KIND_SZARRAY : VECTOR_KIND_ARRAY);
