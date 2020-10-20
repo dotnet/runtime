@@ -137,18 +137,18 @@ namespace System.Composition.TypedParts.Discovery
 
         private ConstructorInfo GetConstructorInfoFromGenericType(TypeInfo type)
         {
-            var genericPartType = type.GetGenericTypeDefinition();
-            var genericPartTypeInfo = genericPartType.GetTypeInfo();
+            Type genericPartType = type.GetGenericTypeDefinition();
+            TypeInfo genericPartTypeInfo = genericPartType.GetTypeInfo();
+            int constructorsCount = genericPartTypeInfo.DeclaredConstructors.Count();
             ConstructorInfo constructor = null;
 
-            int index = -1;
-            foreach (var c in genericPartTypeInfo.DeclaredConstructors)
+            for (var index = 0; index < constructorsCount; index++)
             {
-                ++index;
+                ConstructorInfo constructorInfo = genericPartTypeInfo.DeclaredConstructors.ElementAt(index);
 
-                if (!c.IsPublic || c.IsStatic) continue;
+                if (!constructorInfo.IsPublic || constructorInfo.IsStatic) continue;
 
-                if (_attributeContext.GetDeclaredAttribute<ImportingConstructorAttribute>(genericPartType, c) != null)
+                if (_attributeContext.GetDeclaredAttribute<ImportingConstructorAttribute>(genericPartType, constructorInfo) != null)
                 {
                     if (constructor != null)
                     {
