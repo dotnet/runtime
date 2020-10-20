@@ -4,6 +4,7 @@ parameters:
   archType: ''
   osSubgroup: ''
   platform: ''
+  crossBuild: false
   crossrootfsDir: ''
   timeoutInMinutes: 120
   condition: true
@@ -67,8 +68,7 @@ jobs:
       not(in(parameters.archType, 'x64', 'x86')),
       eq(parameters.runtimeFlavor, 'mono'),
       eq(parameters.isOfficialBuild, true),
-      ne(parameters.crossrootfsDir, ''),
-      and(eq(parameters.osGroup, 'OSX'), eq(parameters.archType, 'arm64'))) }}
+      eq(parameters.crossBuild, true)) }}
 
   - name: BuildAction
     value: -test
@@ -132,7 +132,7 @@ jobs:
         /p:SkipTests=$(SkipTests)
         /p:RuntimeFlavor=${{ parameters.runtimeFlavor }}
         /p:TargetArchitecture=${{ parameters.archType }}
-        /p:CrossBuild=${{ eq(parameters.archType, 'arm64') }}
+        /p:CrossBuild=${{ parameters.crossBuild }}
         $(llvmParameter)
 
     - name: BaseJobBuildCommand
@@ -219,7 +219,7 @@ jobs:
       value: >-
         -subset installer -ci
         $(BuildAction)
-        /p:CrossBuild=${{ ne(parameters.crossrootfsDir, '') }}
+        /p:CrossBuild=${{ parameters.crossBuild }}
         /p:PortableBuild=$(_PortableBuild)
         /p:SkipTests=$(SkipTests)
         $(LiveOverridePathArgs)

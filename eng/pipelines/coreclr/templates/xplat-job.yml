@@ -6,6 +6,7 @@ parameters:
   name: ''
   helixType: '(unspecified)'
   container: ''
+  crossBuild: false
   crossrootfsDir: ''
   stagedBuild: false
   strategy: ''
@@ -93,10 +94,7 @@ jobs:
 
     - name: crossArg
       value: ''
-    - ${{ if ne(parameters.crossrootfsDir, '') }}:
-      - name: crossArg
-        value: '-cross'
-    - ${{ if and(eq(parameters.osGroup, 'OSX'), eq(parameters.archType, 'arm64')) }}:
+    - ${{ if eq(parameters.crossBuild, true) }}:
       - name: crossArg
         value: '-cross'
 

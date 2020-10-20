@@ -10824,6 +10824,25 @@ GenTree* Compiler::impCastClassOrIsInstToTree(GenTree*                op1,
     } while (0)
 #endif // DEBUG
 
+//------------------------------------------------------------------------
+// impBlockIsInALoop: check if a block might be in a loop
+//
+// Arguments:
+//    block - block to check
+//
+// Returns:
+//    true if the block might be in a loop.
+//
+// Notes:
+//    Conservatively correct; may return true for some blocks that are
+//    not actually in loops.
+//
+bool Compiler::impBlockIsInALoop(BasicBlock* block)
+{
+    return (compIsForInlining() && ((impInlineInfo->iciBlock->bbFlags & BBF_BACKWARD_JUMP) != 0)) ||
+           ((block->bbFlags & BBF_BACKWARD_JUMP) != 0);
+}
+
 #ifdef _PREFAST_
 #pragma warning(push)
 #pragma warning(disable : 21000) // Suppress PREFast warning about overly large function
@@ -14031,9 +14050,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                             lvaSetStruct(lclNum, resolvedToken.hClass, true /* unsafe value cls check */);
                         }
 
-                        bool bbInALoop =
-                            (compIsForInlining() && ((impInlineInfo->iciBlock->bbFlags & BBF_BACKWARD_JUMP) != 0)) ||
-                            ((block->bbFlags & BBF_BACKWARD_JUMP) != 0);
+                        bool bbInALoop  = impBlockIsInALoop(block);
                         bool bbIsReturn = (block->bbJumpKind == BBJ_RETURN) &&
                                           (!compIsForInlining() || (impInlineInfo->iciBlock->bbJumpKind == BBJ_RETURN));
                         LclVarDsc* const lclDsc = lvaGetDesc(lclNum);
@@ -15146,6 +15163,8 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                     {
                         const ssize_t allocSize = op2->AsIntCon()->IconValue();
 
+                        bool bbInALoop = impBlockIsInALoop(block);
+
                         if (allocSize == 0)
                         {
                             // Result is nullptr
@@ -15153,7 +15172,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                             op1              = gtNewIconNode(0, TYP_I_IMPL);
                             convertedToLocal = true;
                         }
-                        else if ((allocSize > 0) && ((compCurBB->bbFlags & BBF_BACKWARD_JUMP) == 0))
+                        else if ((allocSize > 0) && !bbInALoop)
                         {
                             // Get the size threshold for local conversion
                             ssize_t maxSize = DEFAULT_MAX_LOCALLOC_TO_LOCAL_SIZE;

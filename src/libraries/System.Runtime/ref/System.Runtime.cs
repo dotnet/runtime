@@ -8563,6 +8563,8 @@ namespace System.Reflection
         public unsafe static object Box(void* ptr, System.Type type) { throw null; }
         void System.Runtime.Serialization.ISerializable.GetObjectData(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
         public unsafe static void* Unbox(object ptr) { throw null; }
+        public override bool Equals(object? obj) { throw null; }
+        public override int GetHashCode() { throw null; }
     }
     [System.FlagsAttribute]
     public enum PortableExecutableKinds
