@@ -14532,10 +14532,18 @@ GenTree* Compiler::gtFoldExprConst(GenTree* tree)
             if (op1->OperIs(GT_CNS_STR) || op2->OperIs(GT_CNS_STR))
             {
                 // Fold "ldstr" ==/!= null
-                if (tree->OperIs(GT_EQ, GT_NE, GT_GT) && op2->IsIntegralConst(0))
+                if (op2->IsIntegralConst(0))
                 {
-                    i1 = tree->OperIs(GT_NE, GT_GT);
-                    goto FOLD_COND;
+                    if (tree->OperIs(GT_EQ))
+                    {
+                        i1 = 0;
+                        goto FOLD_COND;
+                    }
+                    if (tree->OperIs(GT_NE) || (tree->OperIs(GT_GT) && tree->IsUnsigned()))
+                    {
+                        i1 = 1;
+                        goto FOLD_COND;
+                    }
                 }
                 return tree;
             }
