@@ -84,7 +84,7 @@ namespace System.Net.NetworkInformation.Tests
             }
         }
 
-        [OuterLoop("ttps://github.com/dotnet/runtime/issues/1332")]
+        [OuterLoop("https://github.com/dotnet/runtime/issues/1332")]
         [Fact]
         [PlatformSpecific(TestPlatforms.OSX|TestPlatforms.FreeBSD)]
         public void BasicTest_AccessInstanceProperties_NoExceptions_Bsd()
