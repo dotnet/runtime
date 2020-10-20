@@ -18,6 +18,11 @@ namespace System.Text.Json.Serialization.Tests
         public ConstructorTests_Stream() : base(DeserializationWrapper.StreamDeserializer) { }
     }
 
+    public class ConstructorTests_Span : ConstructorTests
+    {
+        public ConstructorTests_Span() : base(DeserializationWrapper.SpanDeserializer) { }
+    }
+
     public abstract partial class ConstructorTests
     {
         private DeserializationWrapper Serializer { get; }

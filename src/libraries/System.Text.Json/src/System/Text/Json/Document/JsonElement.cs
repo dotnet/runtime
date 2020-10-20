@@ -27,6 +27,17 @@ namespace System.Text.Json
             _idx = idx;
         }
 
+        // Currently used only as an optimization by the serializer, which does not want to
+        // return elements that are based on the <see cref="JsonDocument.Dispose"/> pattern.
+        internal static JsonElement ParseValue(ref Utf8JsonReader reader)
+        {
+            bool ret = JsonDocument.TryParseValue(ref reader, out JsonDocument? document, shouldThrow: true, useArrayPools: false);
+
+            Debug.Assert(ret != false, "Parse returned false with shouldThrow: true.");
+            Debug.Assert(document != null, "null document returned with shouldThrow: true.");
+            return document.RootElement;
+        }
+
         [DebuggerBrowsable(DebuggerBrowsableState.Never)]
         private JsonTokenType TokenType
         {

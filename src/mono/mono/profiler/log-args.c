@@ -1,6 +1,7 @@
 #include <config.h>
 #include <mono/utils/mono-logger-internals.h>
 #include <mono/utils/mono-proclib.h>
+#include <mono/utils/w32subset.h>
 #include "log.h"
 
 #ifdef HAVE_UNISTD_H
@@ -80,7 +81,11 @@ parse_arg (const char *arg, ProfilerConfig *config)
 	} else if (match_option (arg, "nodefaults", NULL)) {
 		mono_profiler_printf_err ("The nodefaults option can only be used as the first argument.");
 	} else if (match_option (arg, "report", NULL)) {
+#if HAVE_API_SUPPORT_WIN32_PIPE_OPEN_CLOSE && !defined (HOST_WIN32)
 		config->do_report = TRUE;
+#else
+		mono_profiler_printf_err ("'report' argument not supported on platform.");
+#endif
 	} else if (match_option (arg, "debug", NULL)) {
 		config->do_debug = TRUE;
 	} else if (match_option (arg, "heapshot", &val)) {

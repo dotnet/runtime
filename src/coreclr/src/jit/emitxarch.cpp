@@ -3825,7 +3825,7 @@ void emitter::emitIns_R_I(instruction ins, emitAttr attr, regNumber reg, ssize_t
     UNATIVE_OFFSET sz;
     instrDesc*     id;
     insFormat      fmt       = emitInsModeFormat(ins, IF_RRD_CNS);
-    bool           valInByte = ((signed char)val == val) && (ins != INS_mov) && (ins != INS_test);
+    bool           valInByte = ((signed char)val == (target_ssize_t)val) && (ins != INS_mov) && (ins != INS_test);
 
     // BT reg,imm might be useful but it requires special handling of the immediate value
     // (it is always encoded in a byte). Let's not complicate things until this is needed.
@@ -3952,7 +3952,7 @@ void emitter::emitIns_I(instruction ins, emitAttr attr, cnsval_ssize_t val)
 {
     UNATIVE_OFFSET sz;
     instrDesc*     id;
-    bool           valInByte = ((signed char)val == val);
+    bool           valInByte = ((signed char)val == (target_ssize_t)val);
 
 #ifdef TARGET_AMD64
     // mov reg, imm64 is the only opcode which takes a full 8 byte immediate
@@ -8238,10 +8238,14 @@ void emitter::emitDispIns(
     // printf("[A=%08X] " , emitSimpleByrefStkMask);
     // printf("[L=%02u] " , id->idCodeSize());
 
-    if (!emitComp->opts.dspEmit && !isNew && !asmfm)
+    if (!isNew && !asmfm)
     {
         doffs = true;
     }
+
+    /* Display the instruction address */
+
+    emitDispInsAddr(code);
 
     /* Display the instruction offset */
 
@@ -11760,7 +11764,7 @@ BYTE* emitter::emitOutputRI(BYTE* dst, instrDesc* id)
     instruction ins       = id->idIns();
     regNumber   reg       = id->idReg1();
     ssize_t     val       = emitGetInsSC(id);
-    bool        valInByte = ((signed char)val == val) && (ins != INS_mov) && (ins != INS_test);
+    bool        valInByte = ((signed char)val == (target_ssize_t)val) && (ins != INS_mov) && (ins != INS_test);
 
     // BT reg,imm might be useful but it requires special handling of the immediate value
     // (it is always encoded in a byte). Let's not complicate things until this is needed.
@@ -12111,7 +12115,7 @@ BYTE* emitter::emitOutputIV(BYTE* dst, instrDesc* id)
     instruction ins       = id->idIns();
     emitAttr    size      = id->idOpSize();
     ssize_t     val       = emitGetInsSC(id);
-    bool        valInByte = ((signed char)val == val);
+    bool        valInByte = ((signed char)val == (target_ssize_t)val);
 
     // We would to update GC info correctly
     assert(!IsSSEInstruction(ins));
@@ -13680,7 +13684,7 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
     assert(*dp != dst || emitInstHasNoCode(ins));
 
 #ifdef DEBUG
-    if (emitComp->opts.disAsm || emitComp->opts.dspEmit || emitComp->verbose)
+    if (emitComp->opts.disAsm || emitComp->verbose)
     {
         emitDispIns(id, false, dspOffs, true, emitCurCodeOffs(*dp), *dp, (dst - *dp));
     }
@@ -13985,6 +13989,7 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
 
     switch (ins)
     {
+        case INS_align:
         case INS_nop:
         case INS_int3:
             assert(memFmt == IF_NONE);

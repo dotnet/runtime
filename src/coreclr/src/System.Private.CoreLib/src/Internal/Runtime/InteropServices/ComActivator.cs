@@ -9,6 +9,7 @@ using System.IO;
 using System.Reflection;
 using System.Runtime.InteropServices;
 using System.Runtime.Loader;
+using System.Runtime.Versioning;
 
 //
 // Types in this file marked as 'public' are done so only to aid in
@@ -108,6 +109,7 @@ namespace Internal.Runtime.InteropServices
         }
     }
 
+    [SupportedOSPlatform("windows")]
     public static class ComActivator
     {
 #if FEATURE_COMINTEROP_UNMANAGED_ACTIVATION

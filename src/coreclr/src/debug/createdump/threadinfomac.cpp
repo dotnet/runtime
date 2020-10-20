@@ -25,6 +25,7 @@ ThreadInfo::Initialize()
     m_ppid = 0;
     m_tgid = 0;
 
+#if defined(TARGET_AMD64)
     x86_thread_state64_t state;
     mach_msg_type_number_t stateCount = x86_THREAD_STATE64_COUNT;
     kern_return_t result = ::thread_get_state(Port(), x86_THREAD_STATE64, (thread_state_t)&state, &stateCount);
@@ -88,6 +89,38 @@ ThreadInfo::Initialize()
 
     memcpy(m_fpRegisters.st_space, &fpstate.__fpu_stmm0, sizeof(m_fpRegisters.st_space));
     memcpy(m_fpRegisters.xmm_space, &fpstate.__fpu_xmm0, sizeof(m_fpRegisters.xmm_space));
+#elif defined(TARGET_ARM64)
+    arm_thread_state64_t state;
+    mach_msg_type_number_t stateCount = ARM_THREAD_STATE64_COUNT;
+    kern_return_t result = ::thread_get_state(Port(), ARM_THREAD_STATE64, (thread_state_t)&state, &stateCount);
+    if (result != KERN_SUCCESS)
+    {
+        fprintf(stderr, "thread_get_state(%x) FAILED %x %s\n", m_tid, result, mach_error_string(result));
+        return false;
+    }
+
+    memcpy(m_gpRegisters.regs, &state.__x, sizeof(state.__x));
+    m_gpRegisters.regs[29] =  arm_thread_state64_get_fp(state);
+    m_gpRegisters.regs[30] =  (uint64_t)arm_thread_state64_get_lr_fptr(state);
+
+    m_gpRegisters.sp = arm_thread_state64_get_sp(state);
+    m_gpRegisters.pc = (uint64_t)arm_thread_state64_get_pc_fptr(state);
+
+    arm_neon_state64_t fpstate;
+    stateCount = ARM_NEON_STATE64_COUNT;
+    result = ::thread_get_state(Port(), ARM_NEON_STATE64, (thread_state_t)&fpstate, &stateCount);
+    if (result != KERN_SUCCESS)
+    {
+        fprintf(stderr, "thread_get_state(%x) FAILED %x %s\n", m_tid, result, mach_error_string(result));
+        return false;
+    }
+
+    memcpy(m_fpRegisters.vregs, &fpstate.__v, sizeof(m_fpRegisters.vregs));
+    m_fpRegisters.fpsr = fpstate.__fpsr;
+    m_fpRegisters.fpcr = fpstate.__fpcr;
+#else
+#error Unexpected architecture
+#endif
 
     return true;
 }

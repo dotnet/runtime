@@ -40,6 +40,7 @@
     <Compile Include="SocketTestHelper.cs" />
     <Compile Include="SelectAndPollTests.cs" />
     <Compile Include="SocketInformationTest.cs" />
+    <Compile Include="StartupTests.Windows.cs" />
     <Compile Include="TcpListenerTest.cs" />
     <Compile Include="TelemetryTest.cs" />
     <Compile Include="TimeoutTest.cs" />

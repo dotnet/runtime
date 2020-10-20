@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
@@ -229,6 +230,7 @@ namespace ILCompiler
         private int _parallelism;
 
         private bool _generateMapFile;
+        private bool _generateMapCsvFile;
 
         private ProfileDataManager _profileData;
         private ReadyToRunFileLayoutOptimizer _fileLayoutOptimizer;
@@ -236,6 +238,11 @@ namespace ILCompiler
         public ReadyToRunSymbolNodeFactory SymbolNodeFactory { get; }
         public ReadyToRunCompilationModuleGroupBase CompilationModuleGroup { get; }
         private readonly int? _customPESectionAlignment;
+        /// <summary>
+        /// Determining whether a type's layout is fixed is a little expensive and the question can be asked many times
+        /// for the same type during compilation so preserve the computed value.
+        /// </summary>
+        private ConcurrentDictionary<TypeDesc, bool> _computedFixedLayoutTypes = new ConcurrentDictionary<TypeDesc, bool>();
 
         internal ReadyToRunCodegenCompilation(
             DependencyAnalyzerBase<NodeFactory> dependencyGraph,
@@ -249,6 +256,7 @@ namespace ILCompiler
             InstructionSetSupport instructionSetSupport,
             bool resilient,
             bool generateMapFile,
+            bool generateMapCsvFile,
             int parallelism,
             ProfileDataManager profileData,
             ReadyToRunMethodLayoutAlgorithm methodLayoutAlgorithm,
@@ -268,6 +276,7 @@ namespace ILCompiler
             _resilient = resilient;
             _parallelism = parallelism;
             _generateMapFile = generateMapFile;
+            _generateMapCsvFile = generateMapCsvFile;
             _customPESectionAlignment = customPESectionAlignment;
             SymbolNodeFactory = new ReadyToRunSymbolNodeFactory(nodeFactory, verifyTypeAndFieldLayout);
             _corInfoImpls = new ConditionalWeakTable<Thread, CorInfoImpl>();
@@ -298,7 +307,7 @@ namespace ILCompiler
             using (PerfEventSource.StartStopEvents.EmittingEvents())
             {
                 NodeFactory.SetMarkingComplete();
-                ReadyToRunObjectWriter.EmitObject(outputFile, componentModule: null, nodes, NodeFactory, _generateMapFile, _customPESectionAlignment);
+                ReadyToRunObjectWriter.EmitObject(outputFile, componentModule: null, nodes, NodeFactory, _generateMapFile, _generateMapCsvFile, _customPESectionAlignment);
                 CompilationModuleGroup moduleGroup = _nodeFactory.CompilationModuleGroup;
 
                 if (moduleGroup.IsCompositeBuildMode)
@@ -363,7 +372,7 @@ namespace ILCompiler
             }
             componentGraph.ComputeMarkedNodes();
             componentFactory.Header.Add(Internal.Runtime.ReadyToRunSectionType.OwnerCompositeExecutable, ownerExecutableNode, ownerExecutableNode);
-            ReadyToRunObjectWriter.EmitObject(outputFile, componentModule: inputModule, componentGraph.MarkedNodeList, componentFactory, generateMapFile: false, customPESectionAlignment: null);
+            ReadyToRunObjectWriter.EmitObject(outputFile, componentModule: inputModule, componentGraph.MarkedNodeList, componentFactory, generateMapFile: false, generateMapCsvFile: false, customPESectionAlignment: null);
         }
 
         public override void WriteDependencyLog(string outputFileName)
@@ -375,7 +384,7 @@ namespace ILCompiler
             }
         }
 
-        public bool IsLayoutFixedInCurrentVersionBubble(TypeDesc type)
+        private bool IsLayoutFixedInCurrentVersionBubbleInternal(TypeDesc type)
         {
             // Primitive types and enums have fixed layout
             if (type.IsPrimitive || type.IsEnum)
@@ -422,6 +431,9 @@ namespace ILCompiler
 
             return true;
         }
+
+        public bool IsLayoutFixedInCurrentVersionBubble(TypeDesc type) =>
+            _computedFixedLayoutTypes.GetOrAdd(type, (t) => IsLayoutFixedInCurrentVersionBubbleInternal(t));
 
         public bool IsInheritanceChainLayoutFixedInCurrentVersionBubble(TypeDesc type)
         {

@@ -38,8 +38,6 @@
   <ItemGroup Condition=" '$(TargetsWindows)' == 'true' ">
     <Compile Include="..\..\src\System\Net\NameResolutionPal.Windows.cs"
              Link="ProductionCode\System\Net\NameResolutionPal.Windows.cs" />
-    <Compile Include="..\..\src\System\Net\NameResolutionPal.Win32.cs"
-             Link="ProductionCode\System\Net\NameResolutionPal.Win32.cs" />
     <Compile Include="$(CommonPath)System\Net\InternalException.cs"
              Link="Common\System\Net\InternalException.cs" />
     <Compile Include="$(CommonPath)System\Net\SocketProtocolSupportPal.Windows.cs"

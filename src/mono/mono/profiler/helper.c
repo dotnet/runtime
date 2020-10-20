@@ -88,10 +88,12 @@ mono_profhelper_add_to_fd_set (fd_set *set, int fd, int *max_fd)
 	 * the profiler really can't function, and we're better off printing an
 	 * error and exiting.
 	 */
+#ifndef HOST_WIN32
 	if (fd >= FD_SETSIZE) {
 		mono_profiler_printf_err ("File descriptor is out of bounds for fd_set: %d", fd);
 		exit (1);
 	}
+#endif
 
 	FD_SET (fd, set);
 

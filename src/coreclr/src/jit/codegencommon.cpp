@@ -3375,8 +3375,6 @@ void CodeGen::genFnPrologCalleeRegArgs(regNumber xtraReg, bool* pXtraRegClobbere
 
             if (promotionType == Compiler::PROMOTION_TYPE_INDEPENDENT)
             {
-                noway_assert(parentVarDsc->lvFieldCnt == 1); // We only handle one field here
-
                 // For register arguments that are independent promoted structs we put the promoted field varNum in the
                 // regArgTab[]
                 if (varDsc->lvPromoted)
@@ -3730,11 +3728,33 @@ void CodeGen::genFnPrologCalleeRegArgs(regNumber xtraReg, bool* pXtraRegClobbere
                 regNumber regNum  = genMapRegArgNumToRegNum(argNum, regType);
 
                 regNumber destRegNum = REG_NA;
-                if (regArgTab[argNum].slot == 1)
+                if (varTypeIsStruct(varDsc) &&
+                    (compiler->lvaGetPromotionType(varDsc) == Compiler::PROMOTION_TYPE_INDEPENDENT))
+                {
+                    assert(regArgTab[argNum].slot <= varDsc->lvFieldCnt);
+                    LclVarDsc* fieldVarDsc = compiler->lvaGetDesc(varDsc->lvFieldLclStart + regArgTab[argNum].slot - 1);
+                    destRegNum             = fieldVarDsc->GetRegNum();
+                }
+                else if (regArgTab[argNum].slot == 1)
                 {
                     destRegNum = varDsc->GetRegNum();
                 }
-#if FEATURE_MULTIREG_ARGS && defined(FEATURE_SIMD) && defined(TARGET_64BIT)
+#if defined(TARGET_ARM64) && defined(FEATURE_SIMD)
+                else if (varDsc->lvIsHfa())
+                {
+                    // This must be a SIMD type that's fully enregistered, but is passed as an HFA.
+                    // Each field will be inserted into the same destination register.
+                    assert(varTypeIsSIMD(varDsc) &&
+                           !compiler->isOpaqueSIMDType(varDsc->lvVerTypeInfo.GetClassHandle()));
+                    assert(regArgTab[argNum].slot <= (int)varDsc->lvHfaSlots());
+                    assert(argNum > 0);
+                    assert(regArgTab[argNum - 1].varNum == varNum);
+                    regArgMaskLive &= ~genRegMask(regNum);
+                    regArgTab[argNum].circular = false;
+                    change                     = true;
+                    continue;
+                }
+#elif defined(UNIX_AMD64_ABI) && defined(FEATURE_SIMD)
                 else
                 {
                     assert(regArgTab[argNum].slot == 2);
@@ -3747,7 +3767,8 @@ void CodeGen::genFnPrologCalleeRegArgs(regNumber xtraReg, bool* pXtraRegClobbere
                     change                     = true;
                     continue;
                 }
-#elif !defined(TARGET_64BIT)
+#endif // defined(UNIX_AMD64_ABI) && defined(FEATURE_SIMD)
+#if !defined(TARGET_64BIT)
                 else if (regArgTab[argNum].slot == 2 && genActualType(varDsc->TypeGet()) == TYP_LONG)
                 {
                     destRegNum = varDsc->GetOtherReg();
@@ -4447,23 +4468,55 @@ void CodeGen::genFnPrologCalleeRegArgs(regNumber xtraReg, bool* pXtraRegClobbere
                 destRegNum = regNum;
             }
 #endif // defined(UNIX_AMD64_ABI) && defined(FEATURE_SIMD)
-#if defined(TARGET_ARM64) && defined(FEATURE_SIMD)
-            if (varTypeIsSIMD(varDsc) && argNum < (argMax - 1) && regArgTab[argNum + 1].slot == 2)
+#ifdef TARGET_ARMARCH
+            if (varDsc->lvIsHfa())
             {
-                // For a SIMD type that is passed in two integer registers,
-                // Code above copies the first integer argument register into the lower 8 bytes
-                // of the target register. Here we must handle the second 8 bytes of the slot pair by
-                // inserting the second integer register into the upper 8 bytes of the target
-                // SIMD floating point register.
-                argRegCount          = 2;
-                int       nextArgNum = argNum + 1;
-                regNumber nextRegNum = genMapRegArgNumToRegNum(nextArgNum, regArgTab[nextArgNum].getRegType(compiler));
-                noway_assert(regArgTab[nextArgNum].varNum == varNum);
-                noway_assert(genIsValidIntReg(nextRegNum));
-                noway_assert(genIsValidFloatReg(destRegNum));
-                GetEmitter()->emitIns_R_R_I(INS_mov, EA_8BYTE, destRegNum, nextRegNum, 1);
-            }
+                // This includes both fixed-size SIMD types that are independently promoted, as well
+                // as other HFA structs.
+                argRegCount = varDsc->lvHfaSlots();
+                if (argNum < (argMax - argRegCount + 1))
+                {
+                    if (compiler->lvaGetPromotionType(varDsc) == Compiler::PROMOTION_TYPE_INDEPENDENT)
+                    {
+                        // For an HFA type that is passed in multiple registers and promoted, we copy each field to its
+                        // destination register.
+                        for (int i = 0; i < argRegCount; i++)
+                        {
+                            int        nextArgNum  = argNum + i;
+                            LclVarDsc* fieldVarDsc = compiler->lvaGetDesc(varDsc->lvFieldLclStart + i);
+                            regNumber  nextRegNum =
+                                genMapRegArgNumToRegNum(nextArgNum, regArgTab[nextArgNum].getRegType(compiler));
+                            destRegNum = fieldVarDsc->GetRegNum();
+                            noway_assert(regArgTab[nextArgNum].varNum == varNum);
+                            noway_assert(genIsValidFloatReg(nextRegNum));
+                            noway_assert(genIsValidFloatReg(destRegNum));
+                            GetEmitter()->emitIns_R_R(INS_mov, EA_8BYTE, destRegNum, nextRegNum);
+                        }
+                    }
+#if defined(TARGET_ARM64) && defined(FEATURE_SIMD)
+                    else
+                    {
+                        // For a SIMD type that is passed in multiple registers but enregistered as a vector,
+                        // the code above copies the first argument register into the lower 4 or 8 bytes
+                        // of the target register. Here we must handle the subsequent fields by
+                        // inserting them into the upper bytes of the target SIMD floating point register.
+                        argRegCount = varDsc->lvHfaSlots();
+                        for (int i = 1; i < argRegCount; i++)
+                        {
+                            int         nextArgNum  = argNum + i;
+                            regArgElem* nextArgElem = &regArgTab[nextArgNum];
+                            var_types   nextArgType = nextArgElem->getRegType(compiler);
+                            regNumber   nextRegNum  = genMapRegArgNumToRegNum(nextArgNum, nextArgType);
+                            noway_assert(nextArgElem->varNum == varNum);
+                            noway_assert(genIsValidFloatReg(nextRegNum));
+                            noway_assert(genIsValidFloatReg(destRegNum));
+                            GetEmitter()->emitIns_R_R_I_I(INS_mov, EA_4BYTE, destRegNum, nextRegNum, i, 0);
+                        }
+                    }
 #endif // defined(TARGET_ARM64) && defined(FEATURE_SIMD)
+                }
+            }
+#endif // TARGET_ARMARCH
 
             // Mark the rest of the argument registers corresponding to this multi-reg type as
             // being processed and no longer live.
@@ -11787,12 +11840,16 @@ void CodeGen::genMultiRegStoreToLocal(GenTreeLclVar* lclNode)
             }
             else
             {
+                varReg = REG_STK;
+            }
+            if ((varReg == REG_STK) || fieldVarDsc->lvLiveInOutOfHndlr)
+            {
                 if (!lclNode->AsLclVar()->IsLastUse(i))
                 {
                     GetEmitter()->emitIns_S_R(ins_Store(type), emitTypeSize(type), reg, fieldLclNum, 0);
                 }
-                fieldVarDsc->SetRegNum(REG_STK);
             }
+            fieldVarDsc->SetRegNum(varReg);
         }
         else
         {

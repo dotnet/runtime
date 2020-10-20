@@ -85,9 +85,8 @@
   </PropertyGroup>
 
   <PropertyGroup>
-    <BinDir>$([MSBuild]::NormalizeDirectory($(TestWorkingDir)))</BinDir>
-    <CoreRootDirectory>$(BinDir)Tests\Core_Root\</CoreRootDirectory>
-    <PayloadsRootDirectory>$(BinDir)Payloads\</PayloadsRootDirectory>
+    <CoreRootDirectory>$(TestBinDir)Tests\Core_Root\</CoreRootDirectory>
+    <PayloadsRootDirectory>$(TestBinDir)Payloads\</PayloadsRootDirectory>
     <PayloadsRootDirectory>$([MSBuild]::NormalizeDirectory($(PayloadsRootDirectory)))</PayloadsRootDirectory>
     <TestEnvFileName Condition=" '$(TargetsWindows)' == 'true' ">SetStressModes_$(Scenario).cmd</TestEnvFileName>
     <TestEnvFileName Condition=" '$(TargetsWindows)' != 'true' ">SetStressModes_$(Scenario).sh</TestEnvFileName>
@@ -115,10 +114,10 @@
       </_XUnitWrapperDll>
       <_XUnitWrapperDll Include="@(XUnitWrapperGrouping)" />
 
-      <!-- This adds the remaining *.XUnitWrapper.dll files in BinDir unless
+      <!-- This adds the remaining *.XUnitWrapper.dll files in TestBinDir unless
            1) they are in PayloadsRootDirectory or
            2) they are grouped by XUnitWrapperGrouping. -->
-      <_XUnitWrapperDll Include="$(BinDir)**\*.XUnitWrapper.dll" Exclude="$(PayloadsRootDirectory)**\*.XUnitWrapper.dll;@(XUnitWrapperGrouping->Metadata('FullPath'))">
+      <_XUnitWrapperDll Include="$(TestBinDir)**\*.XUnitWrapper.dll" Exclude="$(PayloadsRootDirectory)**\*.XUnitWrapper.dll;@(XUnitWrapperGrouping->Metadata('FullPath'))">
          <!-- Set PayloadGroup to empty string, so we can update _XUnitWrapperDll items with no PayloadGroup to default value. Unfortunatelly, we can't do this right here. -->
          <PayloadGroup></PayloadGroup>
       </_XUnitWrapperDll>
@@ -155,7 +154,7 @@
       <_PayloadFiles Update="@(_PayloadFiles)">
         <!-- Never use [MSBuild]::MakeRelative here! We have some files containing Unicode characters in their %(FullPath) and
              MakeRelative function calls Escape function internally that replaces all the Unicode characters with %<xx>. -->
-        <FileRelativeToPayloadsRootDirectory>$(_PayloadGroup)\$([System.IO.Path]::GetRelativePath($(BinDir), %(FullPath)))</FileRelativeToPayloadsRootDirectory>
+        <FileRelativeToPayloadsRootDirectory>$(_PayloadGroup)\$([System.IO.Path]::GetRelativePath($(TestBinDir), %(FullPath)))</FileRelativeToPayloadsRootDirectory>
       </_PayloadFiles>
     </ItemGroup>
 

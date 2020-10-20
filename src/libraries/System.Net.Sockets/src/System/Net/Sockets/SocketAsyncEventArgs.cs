@@ -676,7 +676,7 @@ namespace System.Net.Sockets
             }
         }
 
-        internal void FinishWrapperConnectSuccess(Socket? connectSocket, int bytesTransferred, SocketFlags flags)
+        internal void FinishWrapperConnectSyncSuccess(Socket? connectSocket, int bytesTransferred, SocketFlags flags)
         {
             SetResults(SocketError.Success, bytesTransferred, flags);
             _currentSocket = connectSocket;
@@ -685,8 +685,15 @@ namespace System.Net.Sockets
             if (SocketsTelemetry.Log.IsEnabled()) LogBytesTransferEvents(connectSocket?.SocketType, SocketAsyncOperation.Connect, bytesTransferred);
 
             // Complete the operation and raise the event.
-            ExecutionContext? context = _context; // store context before it's cleared as part of completing the operation
             Complete();
+        }
+
+        internal void FinishWrapperConnectAsyncSuccess(Socket? connectSocket, int bytesTransferred, SocketFlags flags)
+        {
+            ExecutionContext? context = _context; // store context before it's cleared as part of completing the operation
+
+            FinishWrapperConnectSyncSuccess(connectSocket, bytesTransferred, flags);
+
             if (context == null)
             {
                 OnCompletedInternal();

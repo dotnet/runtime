@@ -813,7 +813,7 @@ class Stub
         UINT32  m_signature;
 #else
 #ifdef HOST_64BIT
-        //README ALIGNEMENT: in retail mode UINT m_numCodeBytes does not align to 16byte for the code
+        //README ALIGNMENT: in retail mode UINT m_numCodeBytes does not align to 16byte for the code
         //                   after the Stub struct. This is to pad properly
         UINT    m_pad_code_bytes;
 #endif // HOST_64BIT

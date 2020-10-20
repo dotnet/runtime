@@ -89,7 +89,7 @@ jobs:
       displayName: ${{ format('SuperPMI setup ({0})', parameters.osGroup) }}
 
       # Run superpmi collection in helix
-    - template: /eng/common/templates/steps/superpmi-send-to-helix.yml
+    - template: /eng/pipelines/coreclr/templates/superpmi-send-to-helix.yml
       parameters:
         HelixSource: '$(HelixSourcePrefix)/$(Build.Repository.Name)/$(Build.SourceBranch)' # sources must start with pr/, official/, prodcon/, or agent/
         HelixType: 'test/superpmi/$(Kind)/$(_Framework)/$(Architecture)'

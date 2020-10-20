@@ -553,6 +553,7 @@ namespace ILCompiler
                         .UseIbcTuning(_commandLineOptions.Tuning)
                         .UseResilience(_commandLineOptions.Resilient)
                         .UseMapFile(_commandLineOptions.Map)
+                        .UseMapCsvFile(_commandLineOptions.MapCsv)
                         .UseParallelism(_commandLineOptions.Parallelism)
                         .UseProfileData(profileDataManager)
                         .FileLayoutAlgorithms(_commandLineOptions.MethodLayout, _commandLineOptions.FileLayout)

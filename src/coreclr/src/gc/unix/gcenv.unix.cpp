@@ -366,14 +366,6 @@ bool GCToOSInterface::Initialize()
         }
     }
 
-#if HAVE_MACH_ABSOLUTE_TIME
-    kern_return_t machRet;
-    if ((machRet = mach_timebase_info(&g_TimebaseInfo)) != KERN_SUCCESS)
-    {
-        return false;
-    }
-#endif // HAVE_MACH_ABSOLUTE_TIME
-
     InitializeCGroup();
 
 #if HAVE_SCHED_GETAFFINITY
@@ -857,7 +849,7 @@ static size_t GetLogicalProcessorCacheSizeFromOS()
     }
 #endif
 
-#if defined(HOST_ARM64)
+#if defined(HOST_ARM64) && !defined(TARGET_OSX)
     if (cacheSize == 0)
     {
         // It is currently expected to be missing cache size info

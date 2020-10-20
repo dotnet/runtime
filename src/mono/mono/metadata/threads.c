@@ -57,10 +57,10 @@
 #include <mono/utils/mono-os-wait.h>
 #include <mono/metadata/exception-internals.h>
 #include <mono/utils/mono-state.h>
-#include <mono/metadata/w32subset.h>
 #include <mono/metadata/mono-config.h>
 #include <mono/utils/mono-tls-inline.h>
 #include <mono/utils/lifo-semaphore.h>
+#include <mono/utils/w32subset.h>
 
 #ifdef HAVE_SYS_WAIT_H
 #include <sys/wait.h>
@@ -73,7 +73,11 @@
 #endif
 
 #if defined(HOST_WIN32)
+#include <mono/utils/mono-compiler.h>
+MONO_PRAGMA_WARNING_PUSH()
+MONO_PRAGMA_WARNING_DISABLE (4115) // warning C4115: 'IRpcStubBuffer': named type definition in parentheses
 #include <objbase.h>
+MONO_PRAGMA_WARNING_POP()
 #include <sys/timeb.h>
 extern gboolean
 mono_native_thread_join_handle (HANDLE thread_handle, gboolean close_handle);
@@ -208,7 +212,7 @@ static void mono_free_static_data (gpointer* static_data);
 static void mono_init_static_data_info (StaticDataInfo *static_data);
 static guint32 mono_alloc_static_data_slot (StaticDataInfo *static_data, guint32 size, guint32 align);
 static gboolean mono_thread_resume (MonoInternalThread* thread);
-static void async_abort_internal (MonoInternalThread *thread, gboolean install_async_abort);
+static gboolean async_abort_internal (MonoInternalThread *thread, gboolean install_async_abort);
 static void self_abort_internal (MonoError *error);
 static void async_suspend_internal (MonoInternalThread *thread, gboolean interrupt);
 static void self_suspend_internal (void);
@@ -698,6 +702,8 @@ init_internal_thread_object (MonoInternalThread *thread)
 static MonoInternalThread*
 create_internal_thread_object (void)
 {
+	MONO_REQ_GC_UNSAFE_MODE;
+
 	ERROR_DECL (error);
 	MonoInternalThread *thread;
 	MonoVTable *vt;
@@ -1522,6 +1528,58 @@ mono_thread_create_checked (MonoDomain *domain, gpointer func, gpointer arg, Mon
 MonoThread *
 mono_thread_attach (MonoDomain *domain)
 {
+	return mono_thread_attach_external_native_thread (domain, FALSE);
+}
+
+/**
+ * mono_thread_attach_external_native_thread:
+ *
+ * Attach the current thread (that was created outside the runtime or managed
+ * code) to the runtime.  If \p background is TRUE, set the IsBackground
+ * property on the thread.
+ *
+ * COOP: On return, the thread is in GC Unsafe mode
+ */
+MonoThread *
+mono_thread_attach_external_native_thread (MonoDomain *domain, gboolean background)
+{
+	MonoThread *thread = mono_thread_internal_attach (domain);
+
+	if (background)
+		mono_thread_set_state (mono_thread_internal_current (), ThreadState_Background);
+
+#if 0
+	/* Can't do this - would break embedders who do their own GC thread
+	 * state transitions.  Also while the conversion of MONO_API entry
+	 * points to do a transition to GC Unsafe is not complete, doing a
+	 * transition here potentially means running runtime code while in GC
+	 * Safe mode.
+	 */
+	if (mono_threads_is_blocking_transition_enabled ()) {
+		/* mono_jit_thread_attach and mono_thread_attach are external-only and
+		 * not called by the runtime on any of our own threads.  So if we get
+		 * here, the thread is running native code - leave it in GC Safe mode
+		 * and leave it to the n2m invoke wrappers or MONO_API entry points to
+		 * switch to GC Unsafe.
+		 */
+		MONO_STACKDATA (stackdata);
+		mono_threads_enter_gc_safe_region_unbalanced_internal (&stackdata);
+	}
+#endif
+	return thread;
+}
+
+/**
+ * mono_thread_internal_attach:
+ *
+ * Attach the current thread to the runtime.  The thread was created on behalf
+ * of the runtime and the runtime is responsible for it.
+ *
+ * COOP: On return, the thread is in GC Unsafe mode
+ */
+MonoThread *
+mono_thread_internal_attach (MonoDomain *domain)
+{
 	MonoInternalThread *internal;
 	MonoThread *thread;
 	MonoThreadInfo *info;
@@ -1534,7 +1592,34 @@ mono_thread_attach (MonoDomain *domain)
 		return mono_thread_current ();
 	}
 
-	info = mono_thread_info_attach ();
+	if (G_UNLIKELY ((info = mono_thread_info_current_unchecked ()))) {
+		/* 
+		 * We are not attached currently, but we were earlier.  Ensure the thread is in GC Unsafe mode.
+		 * Have to do this before creating the managed thread object.
+		 *
+		 */
+		if (mono_threads_is_blocking_transition_enabled ()) {
+			/*
+			 * Ensure the thread is in RUNNING state.
+			 * If the thread is doing something like this
+			 *
+			 * while (cond) {
+			 *   t = mono_thread_attach (domain);
+			 *   <...>
+			 *   mono_thread_detach (t);
+			 * }
+			 *
+			 * The call to mono_thread_detach will put it in GC Safe
+			 * (blocking, preemptive suspend) mode, so the next time we
+			 * come back to attach, we need to switch to GC Unsafe
+			 * (running, cooperative suspend) mode.
+			 */
+			MONO_STACKDATA (stackdata);
+			mono_threads_enter_gc_unsafe_region_unbalanced_internal (&stackdata);
+		}
+	} else {
+		info = mono_thread_info_attach ();
+	}
 	g_assert (info);
 
 	tid=mono_native_thread_id_get ();
@@ -1592,12 +1677,39 @@ mono_threads_attach_tools_thread (void)
 
 /**
  * mono_thread_detach:
+ *
+ * COOP: On return, the thread is in GC Safe mode
  */
 void
 mono_thread_detach (MonoThread *thread)
 {
-	if (thread)
-		mono_thread_detach_internal (thread->internal_thread);
+	if (!thread)
+		return;
+	mono_thread_internal_detach (thread);
+	/*
+	 * If the thread wasn't created by the runtime, leave it in GC
+	 * Safe mode.  Under hybrid and coop suspend, we don't want to
+	 * wait for it to cooperatively suspend.
+	 */
+	if (mono_threads_is_blocking_transition_enabled ()) {
+		MONO_STACKDATA (stackdata);
+		mono_threads_enter_gc_safe_region_unbalanced_internal (&stackdata);
+	}
+}
+
+/**
+ * mono_thread_internal_detach:
+ *
+ * COOP: GC thread state is unchanged
+ */
+void
+mono_thread_internal_detach (MonoThread *thread)
+{
+	if (!thread)
+		return;
+	MONO_ENTER_GC_UNSAFE;
+	mono_thread_detach_internal (thread->internal_thread);
+	MONO_EXIT_GC_UNSAFE;
 }
 
 
@@ -1754,7 +1866,7 @@ ves_icall_System_Threading_Thread_Thread_internal (MonoThreadObjectHandle thread
 
 	internal->state &= ~ThreadState_Unstarted;
 
-	THREAD_DEBUG (g_message ("%s: Started thread ID %" G_GSIZE_FORMAT " (handle %p)", __func__, tid, thread));
+	THREAD_DEBUG (g_message ("%s: Started thread ID %" G_GSIZE_FORMAT " (handle %p)", __func__, (gsize)internal->tid, internal));
 
 	UNLOCK_THREAD (internal);
 	return TRUE;
@@ -2376,7 +2488,6 @@ ves_icall_System_Threading_WaitHandle_Wait_internal (gpointer *handles, gint32 n
 	return map_native_wait_result_to_managed (ret, numhandles);
 }
 
-#if HAVE_API_SUPPORT_WIN32_SIGNAL_OBJECT_AND_WAIT
 gint32
 ves_icall_System_Threading_WaitHandle_SignalAndWait_Internal (gpointer toSignal, gpointer toWait, gint32 ms, MonoError *error)
 {
@@ -2397,8 +2508,6 @@ ves_icall_System_Threading_WaitHandle_SignalAndWait_Internal (gpointer toSignal,
 
 	return map_native_wait_result_to_managed (ret, 1);
 }
-
-#endif
 
 gint32 ves_icall_System_Threading_Interlocked_Increment_Int (gint32 *location)
 {
@@ -2789,15 +2898,16 @@ ves_icall_System_Threading_Thread_Abort (MonoInternalThreadHandle thread_handle,
  * mono_thread_internal_abort:
  * Request thread \p thread to be aborted.
  * \p thread MUST NOT be the current thread.
+ * \returns true if the request was successful
  */
-void
+gboolean
 mono_thread_internal_abort (MonoInternalThread *thread, gboolean appdomain_unload)
 {
 	g_assert (thread != mono_thread_internal_current ());
 
 	if (!request_thread_abort (thread, NULL, appdomain_unload))
-		return;
-	async_abort_internal (thread, TRUE);
+		return FALSE;
+	return async_abort_internal (thread, TRUE);
 }
 
 #ifndef ENABLE_NETCORE
@@ -3667,12 +3777,20 @@ abort_threads (gpointer key, gpointer value, gpointer user)
 	if ((thread->flags & MONO_THREAD_FLAG_DONT_MANAGE))
 		return;
 
-	wait->handles[wait->num] = mono_threads_open_thread_handle (thread->handle);
-	wait->threads[wait->num] = thread;
-	wait->num++;
-
+	MonoThreadHandle *handle = mono_threads_open_thread_handle (thread->handle);
 	THREAD_DEBUG (g_print ("%s: Aborting id: %" G_GSIZE_FORMAT "\n", __func__, (gsize)thread->tid));
-	mono_thread_internal_abort (thread, FALSE);
+	if (!mono_thread_internal_abort (thread, FALSE)) {
+		g_warning ("%s: Failed aborting id: %p, mono_thread_manage will ignore it\n", __func__, (void*)(intptr_t)(gsize)thread->tid);
+		/* close the handle, we're not going to wait for the thread to be aborted */
+		mono_threads_close_thread_handle (handle);
+	} else {
+		/* commit to waiting for the thread to be aborted */
+		wait->handles[wait->num] = handle;
+		wait->threads[wait->num] = thread;
+		wait->num++;
+	}
+
+
 }
 
 /** 
@@ -3788,6 +3906,8 @@ mono_thread_manage_internal (void)
 	 * Also abort all the background threads
 	 * */
 	do {
+		THREAD_DEBUG (g_message ("%s: abort phase", __func__));
+
 		mono_threads_lock ();
 
 		wait->num = 0;
@@ -5504,8 +5624,11 @@ mono_thread_info_get_last_managed (MonoThreadInfo *info)
 }
 
 typedef struct {
+	/* inputs */
 	MonoInternalThread *thread;
 	gboolean install_async_abort;
+	/* outputs */
+	gboolean thread_will_abort;
 	MonoThreadInfoInterruptToken *interrupt_token;
 } AbortThreadData;
 
@@ -5517,6 +5640,8 @@ async_abort_critical (MonoThreadInfo *info, gpointer ud)
 	MonoJitInfo *ji = NULL;
 	gboolean protected_wrapper;
 	gboolean running_managed;
+
+	data->thread_will_abort = TRUE;
 
 	if (mono_get_eh_callbacks ()->mono_install_handler_block_guard (mono_thread_info_get_suspend_state (info)))
 		return MonoResumeThread;
@@ -5545,11 +5670,20 @@ async_abort_critical (MonoThreadInfo *info, gpointer ud)
 		 */
 		data->interrupt_token = mono_thread_info_prepare_interrupt (info);
 
+		if (!ji && !info->runtime_thread) {
+			/* Under full cooperative suspend, if a thread is in GC Safe mode (blocking
+			 * state), mono_thread_info_safe_suspend_and_run will treat the thread as
+			 * suspended and run async_abort_critical.  If the thread has no managed
+			 * frames, it is some native thread that may not call Mono again anymore, so
+			 * don't wait for it to abort.
+			 */
+			data->thread_will_abort = FALSE;
+		}
 		return MonoResumeThread;
 	}
 }
 
-static void
+static gboolean
 async_abort_internal (MonoInternalThread *thread, gboolean install_async_abort)
 {
 	AbortThreadData data;
@@ -5557,6 +5691,7 @@ async_abort_internal (MonoInternalThread *thread, gboolean install_async_abort)
 	g_assert (thread != mono_thread_internal_current ());
 
 	data.thread = thread;
+	data.thread_will_abort = FALSE;
 	data.install_async_abort = install_async_abort;
 	data.interrupt_token = NULL;
 
@@ -5564,6 +5699,12 @@ async_abort_internal (MonoInternalThread *thread, gboolean install_async_abort)
 	if (data.interrupt_token)
 		mono_thread_info_finish_interrupt (data.interrupt_token);
 	/*FIXME we need to wait for interruption to complete -- figure out how much into interruption we should wait for here*/
+
+	/* If the thread was not suspended (async_abort_critical did not run), or the thread is
+	 * "suspended" (BLOCKING) under full coop, and the thread was running native code without
+	 * any managed callers, we can't be sure that it will aknowledge the abort request and
+	 * actually abort. */
+	return data.thread_will_abort;
 }
 
 static void
@@ -6073,7 +6214,7 @@ mono_threads_attach_coop_internal (MonoDomain *domain, gpointer *cookie, MonoSta
 		external = !(info = mono_thread_info_current_unchecked ()) || !mono_thread_info_is_live (info);
 
 	if (!mono_thread_internal_current ()) {
-		mono_thread_attach (domain);
+		mono_thread_internal_attach (domain);
 
 		// #678164
 		mono_thread_set_state (mono_thread_internal_current (), ThreadState_Background);
@@ -6081,7 +6222,7 @@ mono_threads_attach_coop_internal (MonoDomain *domain, gpointer *cookie, MonoSta
 
 	if (mono_threads_is_blocking_transition_enabled ()) {
 		if (external) {
-			/* mono_thread_attach put the thread in RUNNING mode from STARTING, but we need to
+			/* mono_thread_internal_attach put the thread in RUNNING mode from STARTING, but we need to
 			 * return the right cookie. */
 			*cookie = mono_threads_enter_gc_unsafe_region_cookie ();
 		} else {

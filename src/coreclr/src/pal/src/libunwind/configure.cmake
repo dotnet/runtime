@@ -59,6 +59,16 @@ int main(int argc, char **argv)
     return 0;
 }" HAVE__BUILTIN_UNREACHABLE)
 
+check_c_source_compiles("
+#include <stdalign.h>
+
+int main(void)
+{
+    alignas(128) char result = 0;
+
+    return result;
+}" HAVE_STDALIGN_ALIGNAS)
+
 configure_file(${CMAKE_CURRENT_SOURCE_DIR}/config.h.in ${CMAKE_CURRENT_BINARY_DIR}/include/config.h)
 add_definitions(-DHAVE_CONFIG_H=1)
 

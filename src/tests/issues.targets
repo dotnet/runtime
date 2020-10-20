@@ -908,26 +908,258 @@
         <ExcludeList Include="$(XunitTestBinBase)/Interop/IJW/FixupCallsHostWhenLoaded/FixupCallsHostWhenLoaded/*">
             <Issue>https://github.com/dotnet/runtime/issues/38096</Issue>
         </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/JIT/Methodical/tailcall_v4/hijacking/*">
-            <Issue>https://github.com/dotnet/runtime/issues/7597</Issue>
-        </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/JIT/Regression/clr-x64-JIT/v4.0/devdiv374539/DevDiv_374539/*">
-            <Issue>https://github.com/dotnet/runtime/issues/32732</Issue>
-        </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/JIT/Regression/CLR-x86-JIT/V2.0-Beta2/b399444/**/*">
-            <Issue>https://github.com/dotnet/runtime/issues/38259</Issue>
-        </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/JIT/Regression/CLR-x86-JIT/v2.1/DDB/B168384/LdfldaHack/*">
             <Issue>https://github.com/dotnet/runtime/issues/615</Issue>
-        </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/JIT/SIMD/SimpleSIMDProgram/*">
-            <Issue>https://github.com/dotnet/runtime/issues/35724</Issue>
         </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/JIT/superpmi/superpmicollect/*">
             <Issue>Not compatible with crossgen2</Issue>
         </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/Loader/AssemblyDependencyResolver/AssemblyDependencyResolverTests/AssemblyDependencyResolverTests/*">
-            <Issue>https://github.com/dotnet/runtime/issues/34905</Issue>
+        <ExcludeList Include="$(XunitTestBinBase)/Loader/classloader/MethodImpl/CovariantReturns/UnitTest/UnitTest_GVM/*">
+            <Issue>https://github.com/dotnet/runtime/issues/42924</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/JIT/Directed/coverage/importer/refanytype1/*">
+            <Issue>https://github.com/dotnet/runtime/issues/43460</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/JIT/Directed/coverage/importer/Desktop/refanytype1_il_r/*">
+            <Issue>https://github.com/dotnet/runtime/issues/43460</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/JIT/Directed/coverage/importer/Desktop/refanytype1_il_d/*">
+            <Issue>https://github.com/dotnet/runtime/issues/43460</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/JIT/Regression/CLR-x86-JIT/V1-M10/b09254/b09254/*">
+            <Issue>https://github.com/dotnet/runtime/issues/43460</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/JIT/Regression/CLR-x86-JIT/V1-M09.5-PDC/b29583/b29583/*">
+            <Issue>https://github.com/dotnet/runtime/issues/43460</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/JIT/IL_Conformance/Old/objectmodel/ldtoken/*">
+            <Issue>https://github.com/dotnet/runtime/issues/43460</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/Interop/StructMarshalling/PInvoke/MarshalStructAsLayoutExp/*">
+            <Issue>https://github.com/dotnet/runtime/issues/43461</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/Loader/classloader/regressions/dev10_715437/dev10_715437/*">
+            <Issue>https://github.com/dotnet/runtime/issues/43498</Issue>
+        </ExcludeList>
+    </ItemGroup>
+
+    <!-- Crossgen2 type generator tests currently failing outerloop Windows legs -->
+    <ItemGroup Condition="'$(XunitTestBinBase)' != '' and '$(TestBuildMode)' == 'crossgen2' and '$(RuntimeFlavor)' == 'coreclr' and '$(TargetsWindows)' == 'true'">
+        <ExcludeList Include="$(XunitTestBinBase)/Loader/classloader/TypeGeneratorTests/TypeGeneratorTest612/Generated612/*">
+            <Issue>https://github.com/dotnet/runtime/issues/43466</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/Loader/classloader/TypeGeneratorTests/TypeGeneratorTest613/Generated613/*">
+            <Issue>https://github.com/dotnet/runtime/issues/43466</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/Loader/classloader/TypeGeneratorTests/TypeGeneratorTest614/Generated614/*">
+            <Issue>https://github.com/dotnet/runtime/issues/43466</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/Loader/classloader/TypeGeneratorTests/TypeGeneratorTest681/Generated681/*">
+            <Issue>https://github.com/dotnet/runtime/issues/43466</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/Loader/classloader/TypeGeneratorTests/TypeGeneratorTest682/Generated682/*">
+            <Issue>https://github.com/dotnet/runtime/issues/43466</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/Loader/classloader/TypeGeneratorTests/TypeGeneratorTest683/Generated683/*">
+            <Issue>https://github.com/dotnet/runtime/issues/43466</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/Loader/classloader/TypeGeneratorTests/TypeGeneratorTest1/Generated1/*">
+            <Issue>https://github.com/dotnet/runtime/issues/43467</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/Loader/classloader/TypeGeneratorTests/TypeGeneratorTest14/Generated14/*">
+            <Issue>https://github.com/dotnet/runtime/issues/43467</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/Loader/classloader/TypeGeneratorTests/TypeGeneratorTest15/Generated15/*">
+            <Issue>https://github.com/dotnet/runtime/issues/43467</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/Loader/classloader/TypeGeneratorTests/TypeGeneratorTest16/Generated16/*">
+            <Issue>https://github.com/dotnet/runtime/issues/43467</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/Loader/classloader/TypeGeneratorTests/TypeGeneratorTest17/Generated17/*">
+            <Issue>https://github.com/dotnet/runtime/issues/43467</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/Loader/classloader/TypeGeneratorTests/TypeGeneratorTest18/Generated18/*">
+            <Issue>https://github.com/dotnet/runtime/issues/43467</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/Loader/classloader/TypeGeneratorTests/TypeGeneratorTest19/Generated19/*">
+            <Issue>https://github.com/dotnet/runtime/issues/43467</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/Loader/classloader/TypeGeneratorTests/TypeGeneratorTest20/Generated20/*">
+            <Issue>https://github.com/dotnet/runtime/issues/43467</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/Loader/classloader/TypeGeneratorTests/TypeGeneratorTest21/Generated21/*">
+            <Issue>https://github.com/dotnet/runtime/issues/43467</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/Loader/classloader/TypeGeneratorTests/TypeGeneratorTest22/Generated22/*">
+            <Issue>https://github.com/dotnet/runtime/issues/43467</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/Loader/classloader/TypeGeneratorTests/TypeGeneratorTest23/Generated23/*">
+            <Issue>https://github.com/dotnet/runtime/issues/43467</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/Loader/classloader/TypeGeneratorTests/TypeGeneratorTest24/Generated24/*">
+            <Issue>https://github.com/dotnet/runtime/issues/43467</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/Loader/classloader/TypeGeneratorTests/TypeGeneratorTest25/Generated25/*">
+            <Issue>https://github.com/dotnet/runtime/issues/43467</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/Loader/classloader/TypeGeneratorTests/TypeGeneratorTest26/Generated26/*">
+            <Issue>https://github.com/dotnet/runtime/issues/43467</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/Loader/classloader/TypeGeneratorTests/TypeGeneratorTest27/Generated27/*">
+            <Issue>https://github.com/dotnet/runtime/issues/43467</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/Loader/classloader/TypeGeneratorTests/TypeGeneratorTest28/Generated28/*">
+            <Issue>https://github.com/dotnet/runtime/issues/43467</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/Loader/classloader/TypeGeneratorTests/TypeGeneratorTest62/Generated62/*">
+            <Issue>https://github.com/dotnet/runtime/issues/43467</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/Loader/classloader/TypeGeneratorTests/TypeGeneratorTest63/Generated63/*">
+            <Issue>https://github.com/dotnet/runtime/issues/43467</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/Loader/classloader/TypeGeneratorTests/TypeGeneratorTest64/Generated64/*">
+            <Issue>https://github.com/dotnet/runtime/issues/43467</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/Loader/classloader/TypeGeneratorTests/TypeGeneratorTest65/Generated65/*">
+            <Issue>https://github.com/dotnet/runtime/issues/43467</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/Loader/classloader/TypeGeneratorTests/TypeGeneratorTest66/Generated66/*">
+            <Issue>https://github.com/dotnet/runtime/issues/43467</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/Loader/classloader/TypeGeneratorTests/TypeGeneratorTest67/Generated67/*">
+            <Issue>https://github.com/dotnet/runtime/issues/43467</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/Loader/classloader/TypeGeneratorTests/TypeGeneratorTest68/Generated68/*">
+            <Issue>https://github.com/dotnet/runtime/issues/43467</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/Loader/classloader/TypeGeneratorTests/TypeGeneratorTest69/Generated69/*">
+            <Issue>https://github.com/dotnet/runtime/issues/43467</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/Loader/classloader/TypeGeneratorTests/TypeGeneratorTest70/Generated70/*">
+            <Issue>https://github.com/dotnet/runtime/issues/43467</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/Loader/classloader/TypeGeneratorTests/TypeGeneratorTest171/Generated171/*">
+            <Issue>https://github.com/dotnet/runtime/issues/43467</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/Loader/classloader/TypeGeneratorTests/TypeGeneratorTest192/Generated192/*">
+            <Issue>https://github.com/dotnet/runtime/issues/43467</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/Loader/classloader/TypeGeneratorTests/TypeGeneratorTest193/Generated193/*">
+            <Issue>https://github.com/dotnet/runtime/issues/43467</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/Loader/classloader/TypeGeneratorTests/TypeGeneratorTest194/Generated194/*">
+            <Issue>https://github.com/dotnet/runtime/issues/43467</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/Loader/classloader/TypeGeneratorTests/TypeGeneratorTest195/Generated195/*">
+            <Issue>https://github.com/dotnet/runtime/issues/43467</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/Loader/classloader/TypeGeneratorTests/TypeGeneratorTest196/Generated196/*">
+            <Issue>https://github.com/dotnet/runtime/issues/43467</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/Loader/classloader/TypeGeneratorTests/TypeGeneratorTest197/Generated197/*">
+            <Issue>https://github.com/dotnet/runtime/issues/43467</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/Loader/classloader/TypeGeneratorTests/TypeGeneratorTest198/Generated198/*">
+            <Issue>https://github.com/dotnet/runtime/issues/43467</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/Loader/classloader/TypeGeneratorTests/TypeGeneratorTest199/Generated199/*">
+            <Issue>https://github.com/dotnet/runtime/issues/43467</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/Loader/classloader/TypeGeneratorTests/TypeGeneratorTest200/Generated200/*">
+            <Issue>https://github.com/dotnet/runtime/issues/43467</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/Loader/classloader/TypeGeneratorTests/TypeGeneratorTest201/Generated201/*">
+            <Issue>https://github.com/dotnet/runtime/issues/43467</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/Loader/classloader/TypeGeneratorTests/TypeGeneratorTest202/Generated202/*">
+            <Issue>https://github.com/dotnet/runtime/issues/43467</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/Loader/classloader/TypeGeneratorTests/TypeGeneratorTest203/Generated203/*">
+            <Issue>https://github.com/dotnet/runtime/issues/43467</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/Loader/classloader/TypeGeneratorTests/TypeGeneratorTest204/Generated204/*">
+            <Issue>https://github.com/dotnet/runtime/issues/43467</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/Loader/classloader/TypeGeneratorTests/TypeGeneratorTest205/Generated205/*">
+            <Issue>https://github.com/dotnet/runtime/issues/43467</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/Loader/classloader/TypeGeneratorTests/TypeGeneratorTest206/Generated206/*">
+            <Issue>https://github.com/dotnet/runtime/issues/43467</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/Loader/classloader/TypeGeneratorTests/TypeGeneratorTest207/Generated207/*">
+            <Issue>https://github.com/dotnet/runtime/issues/43467</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/Loader/classloader/TypeGeneratorTests/TypeGeneratorTest208/Generated208/*">
+            <Issue>https://github.com/dotnet/runtime/issues/43467</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/Loader/classloader/TypeGeneratorTests/TypeGeneratorTest209/Generated209/*">
+            <Issue>https://github.com/dotnet/runtime/issues/43467</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/Loader/classloader/TypeGeneratorTests/TypeGeneratorTest210/Generated210/*">
+            <Issue>https://github.com/dotnet/runtime/issues/43467</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/Loader/classloader/TypeGeneratorTests/TypeGeneratorTest211/Generated211/*">
+            <Issue>https://github.com/dotnet/runtime/issues/43467</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/Loader/classloader/TypeGeneratorTests/TypeGeneratorTest212/Generated212/*">
+            <Issue>https://github.com/dotnet/runtime/issues/43467</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/Loader/classloader/TypeGeneratorTests/TypeGeneratorTest213/Generated213/*">
+            <Issue>https://github.com/dotnet/runtime/issues/43467</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/Loader/classloader/TypeGeneratorTests/TypeGeneratorTest214/Generated214/*">
+            <Issue>https://github.com/dotnet/runtime/issues/43467</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/Loader/classloader/TypeGeneratorTests/TypeGeneratorTest215/Generated215/*">
+            <Issue>https://github.com/dotnet/runtime/issues/43467</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/Loader/classloader/TypeGeneratorTests/TypeGeneratorTest292/Generated292/*">
+            <Issue>https://github.com/dotnet/runtime/issues/43467</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/Loader/classloader/TypeGeneratorTests/TypeGeneratorTest293/Generated293/*">
+            <Issue>https://github.com/dotnet/runtime/issues/43467</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/Loader/classloader/TypeGeneratorTests/TypeGeneratorTest294/Generated294/*">
+            <Issue>https://github.com/dotnet/runtime/issues/43467</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/Loader/classloader/TypeGeneratorTests/TypeGeneratorTest295/Generated295/*">
+            <Issue>https://github.com/dotnet/runtime/issues/43467</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/Loader/classloader/TypeGeneratorTests/TypeGeneratorTest296/Generated296/*">
+            <Issue>https://github.com/dotnet/runtime/issues/43467</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/Loader/classloader/TypeGeneratorTests/TypeGeneratorTest297/Generated297/*">
+            <Issue>https://github.com/dotnet/runtime/issues/43467</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/Loader/classloader/TypeGeneratorTests/TypeGeneratorTest298/Generated298/*">
+            <Issue>https://github.com/dotnet/runtime/issues/43467</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/Loader/classloader/TypeGeneratorTests/TypeGeneratorTest299/Generated299/*">
+            <Issue>https://github.com/dotnet/runtime/issues/43467</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/Loader/classloader/TypeGeneratorTests/TypeGeneratorTest300/Generated300/*">
+            <Issue>https://github.com/dotnet/runtime/issues/43467</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/Loader/classloader/TypeGeneratorTests/TypeGeneratorTest301/Generated301/*">
+            <Issue>https://github.com/dotnet/runtime/issues/43467</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/Loader/classloader/TypeGeneratorTests/TypeGeneratorTest302/Generated302/*">
+            <Issue>https://github.com/dotnet/runtime/issues/43467</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/Loader/classloader/TypeGeneratorTests/TypeGeneratorTest303/Generated303/*">
+            <Issue>https://github.com/dotnet/runtime/issues/43467</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/Loader/classloader/TypeGeneratorTests/TypeGeneratorTest304/Generated304/*">
+            <Issue>https://github.com/dotnet/runtime/issues/43467</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/Loader/classloader/TypeGeneratorTests/TypeGeneratorTest305/Generated305/*">
+            <Issue>https://github.com/dotnet/runtime/issues/43467</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/Loader/classloader/TypeGeneratorTests/TypeGeneratorTest306/Generated306/*">
+            <Issue>https://github.com/dotnet/runtime/issues/43467</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/Loader/classloader/TypeGeneratorTests/TypeGeneratorTest307/Generated307/*">
+            <Issue>https://github.com/dotnet/runtime/issues/43467</Issue>
         </ExcludeList>
     </ItemGroup>
 
@@ -1799,9 +2031,6 @@
         <ExcludeList Include = "$(XunitTestBinBase)/tracing/eventpipe/rundownvalidation/rundownvalidation/**">
             <Issue>needs triage</Issue>
         </ExcludeList>
-        <ExcludeList Include = "$(XunitTestBinBase)/tracing/eventpipe/buffersize/buffersize/**">
-            <Issue>needs triage</Issue>
-        </ExcludeList>
         <ExcludeList Include = "$(XunitTestBinBase)/tracing/eventpipe/reverse/reverse/**">
             <Issue>needs triage</Issue>
         </ExcludeList>
@@ -1833,9 +2062,6 @@
             <Issue>needs triage</Issue>
         </ExcludeList>
         <ExcludeList Include = "$(XunitTestBinBase)/tracing/eventpipe/rundownvalidation/rundownvalidation/**">
-            <Issue>needs triage</Issue>
-        </ExcludeList>
-        <ExcludeList Include = "$(XunitTestBinBase)/tracing/eventpipe/buffersize/buffersize/**">
             <Issue>needs triage</Issue>
         </ExcludeList>
         <ExcludeList Include = "$(XunitTestBinBase)/tracing/eventpipe/reverse/reverse/**">

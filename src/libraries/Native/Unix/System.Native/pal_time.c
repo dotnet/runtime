@@ -12,8 +12,8 @@
 #include <fcntl.h>
 #include <sys/time.h>
 #include <sys/resource.h>
-#if HAVE_MACH_ABSOLUTE_TIME
-#include <mach/mach_time.h>
+#if HAVE_CLOCK_GETTIME_NSEC_NP
+#include <time.h>
 #endif
 
 enum
@@ -47,40 +47,10 @@ int32_t SystemNative_UTimensat(const char* path, TimeSpec* times)
     return result;
 }
 
-// Gets the number of "ticks per second" of the underlying monotonic timer.
-//
-// On most Unix platforms, the methods that query the resolution return a value
-// that is "nanoseconds per tick" in which case we need to scale before returning.
-uint64_t SystemNative_GetTimestampResolution()
-{
-#if HAVE_MACH_ABSOLUTE_TIME
-    mach_timebase_info_data_t mtid;
-
-    if (mach_timebase_info(&mtid) != KERN_SUCCESS)
-    {
-        return 0;
-    }
-
-    // (numer / denom) gives you the nanoseconds per tick, so the below code
-    // computes the number of ticks per second. We explicitly do the multiplication
-    // first in order to help minimize the error that is produced by integer division.
-
-    return (SecondsToNanoSeconds * (uint64_t)(mtid.denom)) / (uint64_t)(mtid.numer);
-#else
-    // clock_gettime() returns a result in terms of nanoseconds rather than a count. This
-    // means that we need to either always scale the result by the actual resolution (to
-    // get a count) or we need to say the resolution is in terms of nanoseconds. We prefer
-    // the latter since it allows the highest throughput and should minimize error propagated
-    // to the user.
-
-    return SecondsToNanoSeconds;
-#endif
-}
-
 uint64_t SystemNative_GetTimestamp()
 {
-#if HAVE_MACH_ABSOLUTE_TIME
-    return mach_absolute_time();
+#if HAVE_CLOCK_GETTIME_NSEC_NP
+    return clock_gettime_nsec_np(CLOCK_UPTIME_RAW);
 #else
     struct timespec ts;
 
@@ -113,10 +83,7 @@ int32_t SystemNative_GetCpuUtilization(ProcessCpuInformation* previousCpuInfo)
             ((uint64_t)(resUsage.ru_utime.tv_usec) * MicroSecondsToNanoSeconds);
     }
 
-    uint64_t resolution = SystemNative_GetTimestampResolution();
-    uint64_t timestamp = SystemNative_GetTimestamp();
-
-    uint64_t currentTime = (uint64_t)((double)timestamp * ((double)SecondsToNanoSeconds / (double)resolution));
+    uint64_t currentTime = SystemNative_GetTimestamp();
 
     uint64_t lastRecordedCurrentTime = previousCpuInfo->lastRecordedCurrentTime;
     uint64_t lastRecordedKernelTime = previousCpuInfo->lastRecordedKernelTime;

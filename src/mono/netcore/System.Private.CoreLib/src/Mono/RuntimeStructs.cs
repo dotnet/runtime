@@ -72,12 +72,7 @@ namespace Mono
         internal uint hash_alg;
         internal uint hash_len;
         internal uint flags;
-#if NETCORE
-        internal int major, minor, build, revision;
-#else
-		internal ushort major, minor, build, revision;
-#endif
-        internal ushort arch;
+        internal int major, minor, build, revision, arch;
     }
 
     // Used to implement generic sharing

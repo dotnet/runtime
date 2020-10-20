@@ -555,10 +555,10 @@ mono_mmap_map (void *handle, gint64 offset, gint64 *size, int access, void **mma
 }
 
 MonoBoolean
-mono_mmap_unmap (void *mmap_handle, MonoError *error)
+mono_mmap_unmap (void *base_address, MonoError *error)
 {
 	int res = 0;
-	MmapInstance *h = (MmapInstance *)mmap_handle;
+	MmapInstance *h = (MmapInstance *)base_address;
 
 	MONO_ENTER_GC_SAFE;
 	res = mono_file_unmap (h->address, h->free_handle);

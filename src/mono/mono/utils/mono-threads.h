@@ -22,6 +22,7 @@
 #include <mono/utils/os-event.h>
 #include <mono/utils/refcount.h>
 #include <mono/utils/mono-error-internals.h>
+#include <mono/utils/w32subset.h>
 
 #include <glib.h>
 #include <config.h>
@@ -73,10 +74,10 @@ typedef gsize (*MonoThreadStart)(gpointer);
 
 #endif /* #ifdef HOST_WIN32 */
 
-#if G_HAVE_API_SUPPORT(HAVE_CLASSIC_WINAPI_SUPPORT) && defined(HOST_WIN32) && defined(_DEBUG)
+#if HAVE_API_SUPPORT_WIN32_SET_THREAD_STACK_GUARANTEE && defined(HOST_WIN32) && defined(_DEBUG)
 // Need more memory on Windows debug build (due to less optimization) to handle stack overflows.
 #define MONO_STACK_OVERFLOW_GUARD_SIZE (64 * 1024)
-#elif G_HAVE_API_SUPPORT(HAVE_CLASSIC_WINAPI_SUPPORT) && defined(HOST_WIN32)
+#elif HAVE_API_SUPPORT_WIN32_SET_THREAD_STACK_GUARANTEE && defined(HOST_WIN32)
 #define MONO_STACK_OVERFLOW_GUARD_SIZE (32 * 1024)
 #elif defined(HOST_WIN32)
 // Not supported.
