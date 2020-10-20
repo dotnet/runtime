@@ -85,7 +85,7 @@ namespace System.Runtime.CompilerServices
                 SynchronizationContext? syncCtx = SynchronizationContext.Current;
                 if (syncCtx != null && syncCtx.GetType() != typeof(SynchronizationContext))
                 {
-                    syncCtx.Post(s_sendOrPostCallbackRunAction, continuation);
+                    syncCtx.Post(static s => ((Action)s!)(), continuation);
                 }
                 else
                 {
@@ -97,11 +97,11 @@ namespace System.Runtime.CompilerServices
                     {
                         if (flowContext)
                         {
-                            ThreadPool.QueueUserWorkItem(s_waitCallbackRunAction, continuation);
+                            ThreadPool.QueueUserWorkItem(s_runAction, continuation, preferLocal: false);
                         }
                         else
                         {
-                            ThreadPool.UnsafeQueueUserWorkItem(s_waitCallbackRunAction, continuation);
+                            ThreadPool.UnsafeQueueUserWorkItem(s_runAction, continuation, preferLocal: false);
                         }
                     }
                     // We're targeting a custom scheduler, so queue a task.
@@ -179,13 +179,8 @@ namespace System.Runtime.CompilerServices
 #endif
             }
 
-            /// <summary>WaitCallback that invokes the Action supplied as object state.</summary>
-            private static readonly WaitCallback s_waitCallbackRunAction = RunAction;
-            /// <summary>SendOrPostCallback that invokes the Action supplied as object state.</summary>
-            private static readonly SendOrPostCallback s_sendOrPostCallbackRunAction = RunAction;
-            /// <summary>Runs an Action delegate provided as state.</summary>
-            /// <param name="state">The Action delegate to invoke.</param>
-            private static void RunAction(object? state) { ((Action)state!)(); }
+            /// <summary>Action that invokes the Action supplied as object state.</summary>
+            private static readonly Action<Action> s_runAction = action => action();
 
             /// <summary>Ends the await operation.</summary>
             public void GetResult() { } // Nop. It exists purely because the compiler pattern demands it.
