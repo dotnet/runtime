@@ -22,6 +22,8 @@ Debugging CoreCLR on Windows
 9. Set Environment=`CORE_LIBRARIES=$(SolutionDir)\..\..\..\bin\runtime\<current tfm>-Windows_NT-$(Configuration)-$(Platform)`,
     where '\<current tfm\>' is the target framework of current branch, for example `netcoreapp3.1` `net5.0`.
     1. This points to the folder containing core libraries except `System.Private.CoreLib`.
+    2. This step can be skipped if you are debugging CLR tests that references only `System.Private.CoreLib`.
+    Otherwise, it's required to debug a realworld application that references anything else, including `System.Runtime`.
 10. Right-click the INSTALL project and choose 'Build'
     1. This will load necessary information from cmake to Visual Studio.
 11. Press F11 to start debugging at wmain in corerun (or set a breakpoint in source and press F5 to run to it)
