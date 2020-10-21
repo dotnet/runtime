@@ -187,20 +187,20 @@ namespace Microsoft.Interop {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to Marshalling char with CharSet.Ansi is not supported. Instead, manually convert the char type to the desired byte representation and pass to the source-generated P/Invoke..
+        ///   Looks up a localized string similar to Marshalling char with &apos;CharSet.{0}&apos; is not supported. Instead, manually convert the char type to the desired byte representation and pass to the source-generated P/Invoke..
         /// </summary>
-        internal static string MarshallingCharAsCharSetAnsiNotSupported {
+        internal static string MarshallingCharAsSpecifiedCharSetNotSupported {
             get {
-                return ResourceManager.GetString("MarshallingCharAsCharSetAnsiNotSupported", resourceCulture);
+                return ResourceManager.GetString("MarshallingCharAsSpecifiedCharSetNotSupported", resourceCulture);
             }
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to Marshalling char with CharSet.Auto is not supported. Instead, manually convert the char type to the desired byte representation and pass to the source-generated P/Invoke..
+        ///   Looks up a localized string similar to Marshalling string or char without explicit marshalling information is not supported. Specify either &apos;GeneratedDllImportAttribute.CharSet&apos; or &apos;MarshalAsAttribute&apos;..
         /// </summary>
-        internal static string MarshallingCharAsCharSetAutoNotSupported {
+        internal static string MarshallingStringOrCharAsUndefinedNotSupported {
             get {
-                return ResourceManager.GetString("MarshallingCharAsCharSetAutoNotSupported", resourceCulture);
+                return ResourceManager.GetString("MarshallingStringOrCharAsUndefinedNotSupported", resourceCulture);
             }
         }
         

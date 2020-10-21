@@ -7,12 +7,6 @@ namespace DllImportGenerator.IntegrationTests
 {
     partial class NativeExportsNE
     {
-        [GeneratedDllImport(nameof(NativeExportsNE), EntryPoint = "unicode_return_as_uint")]
-        public static partial uint ReturnDefaultAsUInt(char input);
-
-        [GeneratedDllImport(nameof(NativeExportsNE), EntryPoint = "char_return_as_uint")]
-        public static partial char ReturnUIntAsDefault(uint input);
-
         [GeneratedDllImport(nameof(NativeExportsNE), EntryPoint = "unicode_return_as_uint", CharSet = CharSet.Unicode)]
         public static partial uint ReturnUnicodeAsUInt(char input);
 
@@ -50,7 +44,6 @@ namespace DllImportGenerator.IntegrationTests
         [MemberData(nameof(CharacterMappings))]
         public void ValidateUnicodeCharIsMarshalledAsExpected(char value, uint expected)
         {
-            Assert.Equal(expected, NativeExportsNE.ReturnDefaultAsUInt(value));
             Assert.Equal(expected, NativeExportsNE.ReturnUnicodeAsUInt(value));
         }
 
@@ -58,7 +51,6 @@ namespace DllImportGenerator.IntegrationTests
         [MemberData(nameof(CharacterMappings))]
         public void ValidateUnicodeReturns(char expected, uint value)
         {
-            Assert.Equal(expected, NativeExportsNE.ReturnUIntAsDefault(value));
             Assert.Equal(expected, NativeExportsNE.ReturnUIntAsUnicode(value));
 
             char result = '\u0000';

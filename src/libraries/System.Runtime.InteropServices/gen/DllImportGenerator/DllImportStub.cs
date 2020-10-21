@@ -144,7 +144,8 @@ namespace Microsoft.Interop
                 {
                     CharSet.Unicode => CharEncoding.Utf16,
                     CharSet.Auto => CharEncoding.PlatformDefined,
-                    _ => CharEncoding.Utf8, // [Compat] ANSI is no longer ANSI code pages on Windows and UTF-8, on non-Windows.
+                    CharSet.Ansi => CharEncoding.Ansi,
+                    _ => CharEncoding.Undefined, // [Compat] Do not assume a specific value for None
                 };
             }
 

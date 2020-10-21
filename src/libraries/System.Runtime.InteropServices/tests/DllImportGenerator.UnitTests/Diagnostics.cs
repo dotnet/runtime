@@ -91,6 +91,65 @@ partial class Test
         }
 
         [Fact]
+        public async Task ParameterTypeNotSupportedWithDetails_ReportsDiagnostic()
+        {
+            string source = @"
+using System.Runtime.InteropServices;
+partial class Test
+{
+    [GeneratedDllImport(""DoesNotExist"")]
+    public static partial void Method(char c, string s);
+}
+";
+            Compilation comp = await TestUtils.CreateCompilation(source);
+            TestUtils.AssertPreSourceGeneratorCompilation(comp);
+
+            var newComp = TestUtils.RunGenerators(comp, out var generatorDiags, new Microsoft.Interop.DllImportGenerator());
+            DiagnosticResult[] expectedDiags = new DiagnosticResult[]
+            {
+                (new DiagnosticResult(GeneratorDiagnostics.ParameterTypeNotSupportedWithDetails))
+                    .WithSpan(6, 44, 6, 45),
+                (new DiagnosticResult(GeneratorDiagnostics.ParameterTypeNotSupportedWithDetails))
+                    .WithSpan(6, 54, 6, 55),
+            };
+            VerifyDiagnostics(expectedDiags, GetSortedDiagnostics(generatorDiags));
+
+            var newCompDiags = newComp.GetDiagnostics();
+            Assert.Empty(newCompDiags);
+        }
+
+        [Fact]
+        public async Task ReturnTypeNotSupportedWithDetails_ReportsDiagnostic()
+        {
+            string source = @"
+using System.Runtime.InteropServices;
+partial class Test
+{
+    [GeneratedDllImport(""DoesNotExist"")]
+    public static partial char Method1();
+
+    [GeneratedDllImport(""DoesNotExist"")]
+    public static partial string Method2();
+}
+";
+            Compilation comp = await TestUtils.CreateCompilation(source);
+            TestUtils.AssertPreSourceGeneratorCompilation(comp);
+
+            var newComp = TestUtils.RunGenerators(comp, out var generatorDiags, new Microsoft.Interop.DllImportGenerator());
+            DiagnosticResult[] expectedDiags = new DiagnosticResult[]
+            {
+                (new DiagnosticResult(GeneratorDiagnostics.ReturnTypeNotSupportedWithDetails))
+                    .WithSpan(6, 32, 6, 39),
+                (new DiagnosticResult(GeneratorDiagnostics.ReturnTypeNotSupportedWithDetails))
+                    .WithSpan(9, 34, 9, 41),
+            };
+            VerifyDiagnostics(expectedDiags, GetSortedDiagnostics(generatorDiags));
+
+            var newCompDiags = newComp.GetDiagnostics();
+            Assert.Empty(newCompDiags);
+        }
+
+        [Fact]
         public async Task ParameterConfigurationNotSupported_ReportsDiagnostic()
         {
             string source = @"
@@ -240,13 +299,21 @@ partial class Test
                 Diagnostic actual = actualDiagnostics[i];
 
                 Assert.Equal(expected.Id, actual.Id);
-                Assert.Equal(expected.Message, actual.GetMessage());
                 Assert.Equal(expected.Severity, actual.Severity);
                 if (expected.HasLocation)
                 {
                     FileLinePositionSpan expectedSpan = expected.Spans[0].Span;
                     FileLinePositionSpan actualSpan = actual.Location.GetLineSpan();
                     Assert.Equal(expectedSpan, actualSpan);
+                }
+
+                if (expected.MessageArguments is null)
+                {
+                    Assert.Equal(expected.MessageFormat, actual.Descriptor.MessageFormat);
+                }
+                else
+                {
+                    Assert.Equal(expected.Message, actual.GetMessage());
                 }
             }
         }

@@ -20,6 +20,7 @@ namespace Microsoft.Interop
         Undefined,
         Utf8,
         Utf16,
+        Ansi,
         PlatformDefined
     }
 

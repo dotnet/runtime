@@ -159,11 +159,11 @@
   <data name="GetPinnableReferenceShouldSupportAllocatingMarshallingFallbackMessage" xml:space="preserve">
     <value>Type '{0}' has a 'GetPinnableReference' method but its native type does not support marshalling in scenarios where pinning is impossible</value>
   </data>
-  <data name="MarshallingCharAsCharSetAnsiNotSupported" xml:space="preserve">
-    <value>Marshalling char with CharSet.Ansi is not supported. Instead, manually convert the char type to the desired byte representation and pass to the source-generated P/Invoke.</value>
+  <data name="MarshallingCharAsSpecifiedCharSetNotSupported" xml:space="preserve">
+    <value>Marshalling char with 'CharSet.{0}' is not supported. Instead, manually convert the char type to the desired byte representation and pass to the source-generated P/Invoke.</value>
   </data>
-  <data name="MarshallingCharAsCharSetAutoNotSupported" xml:space="preserve">
-    <value>Marshalling char with CharSet.Auto is not supported. Instead, manually convert the char type to the desired byte representation and pass to the source-generated P/Invoke.</value>
+  <data name="MarshallingStringOrCharAsUndefinedNotSupported" xml:space="preserve">
+    <value>Marshalling string or char without explicit marshalling information is not supported. Specify either 'GeneratedDllImportAttribute.CharSet' or 'MarshalAsAttribute'.</value>
   </data>
   <data name="NativeTypeMustBeBlittableDescription" xml:space="preserve">
     <value>A native type for a given type must be blittable.</value>
