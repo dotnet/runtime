@@ -2107,6 +2107,7 @@ HANDLE Thread::CreateUtilityThread(Thread::StackSizeBucket stackSizeBucket, LPTH
 
     default:
         _ASSERTE(!"Bad stack size bucket");
+        break;
     case StackSize_Large:
         stackSize = 1024 * 1024;
         break;

@@ -4215,9 +4215,7 @@ void Compiler::EndPhase(Phases phase)
         pCompJitTimer->EndPhase(this, phase);
     }
 #endif
-#if DUMP_FLOWGRAPHS
-    fgDumpFlowGraph(phase);
-#endif // DUMP_FLOWGRAPHS
+
     mostRecentlyActivePhase = phase;
 }
 
@@ -8747,7 +8745,7 @@ void cTreeFlags(Compiler* comp, GenTree* tree)
                 {
                     chars += printf("[INX_STRING_LAYOUT]");
                 }
-                __fallthrough;
+                FALLTHROUGH;
             case GT_INDEX_ADDR:
                 if (tree->gtFlags & GTF_INX_RNGCHK)
                 {
@@ -8965,7 +8963,7 @@ void cTreeFlags(Compiler* comp, GenTree* tree)
                 {
                     chars += printf("[BLK_HASGCPTR]");
                 }
-                __fallthrough;
+                FALLTHROUGH;
 
             case GT_BLK:
             case GT_DYN_BLK:

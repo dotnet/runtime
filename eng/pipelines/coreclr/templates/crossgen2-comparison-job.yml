@@ -6,6 +6,7 @@ parameters:
   container: ''
   helixQueues: ''
   runtimeVariant: ''
+  crossBuild: false
   crossrootfsDir: ''
   stagedBuild: false
   variables: {}
@@ -44,6 +45,7 @@ jobs:
     name: ${{ format('test_crossgen2_comparison_{0}{1}_{2}_{3}_{4}_{5}', parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.buildConfig, parameters.targetarch, parameters.targetos) }}
     displayName: ${{ format('Test crossgen2-comparison {0}{1} {2} {3} to {4} {5}', parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.buildConfig, parameters.targetarch, parameters.targetos) }}
 
+    crossBuild: ${{ parameters.crossBuild }}
     crossrootfsDir: ${{ parameters.crossrootfsDir }}
 
     variables:

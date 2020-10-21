@@ -32,10 +32,7 @@ internal static partial class Interop
         /// <returns>Returns a list of PIDs corresponding to all running processes</returns>
         internal static unsafe int[] ListAllPids()
         {
-            int[] pids;
-            kinfo_proc * entries = GetProcInfo(0, false, out int numProcesses);
-            int idx;
-
+            kinfo_proc* entries = GetProcInfo(0, false, out int numProcesses);
             try
             {
                 if (numProcesses <= 0)
@@ -44,9 +41,10 @@ internal static partial class Interop
                 }
 
                 var list = new ReadOnlySpan<kinfo_proc>(entries, numProcesses);
-                pids = new int[numProcesses];
-                idx = 0;
+                var pids = new int[numProcesses];
+
                 // walk through process list and skip kernel threads
+                int idx = 0;
                 for (int i = 0; i < list.Length; i++)
                 {
                     if (list[i].ki_ppid == 0)
@@ -60,14 +58,15 @@ internal static partial class Interop
                         idx += 1;
                     }
                 }
+
                 // Remove extra elements
                 Array.Resize<int>(ref pids, numProcesses);
+                return pids;
             }
             finally
             {
                 Marshal.FreeHGlobal((IntPtr)entries);
             }
-            return pids;
         }
 
 
@@ -86,10 +85,12 @@ internal static partial class Interop
             sysctlName[2] = KERN_PROC_PATHNAME;
             sysctlName[3] = pid;
 
-            int ret = Interop.Sys.Sysctl(sysctlName, ref pBuffer, ref bytesLength);
-            if (ret  != 0 ) {
+            if (Interop.Sys.Sysctl(sysctlName, ref pBuffer, ref bytesLength) != 0)
+            {
                 return null;
             }
+
+            // TODO Fix freeing of pBuffer: https://github.com/dotnet/runtime/issues/43418
             return System.Text.Encoding.UTF8.GetString(pBuffer, (int)bytesLength-1);
         }
 
@@ -167,7 +168,7 @@ internal static partial class Interop
 
             try
             {
-                info =  GetProcInfo(pid, (tid != 0), out count);
+                info = GetProcInfo(pid, (tid != 0), out count);
                 if (info != null && count >= 1)
                 {
                     if (tid == 0)

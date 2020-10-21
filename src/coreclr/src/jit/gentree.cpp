@@ -1852,7 +1852,7 @@ AGAIN:
             {
                 return true;
             }
-            __fallthrough;
+            FALLTHROUGH;
         case GT_DYN_BLK:
             if (gtHasRef(tree->AsDynBlk()->Addr(), lclNum, defOnly))
             {
@@ -2258,7 +2258,7 @@ AGAIN:
 
         case GT_STORE_DYN_BLK:
             hash = genTreeHashAdd(hash, gtHashValue(tree->AsDynBlk()->Data()));
-            __fallthrough;
+            FALLTHROUGH;
         case GT_DYN_BLK:
             hash = genTreeHashAdd(hash, gtHashValue(tree->AsDynBlk()->Addr()));
             hash = genTreeHashAdd(hash, gtHashValue(tree->AsDynBlk()->gtDynamicSize));
@@ -3974,7 +3974,7 @@ unsigned Compiler::gtSetEvalOrder(GenTree* tree)
                     }
                 }
 
-                __fallthrough;
+                FALLTHROUGH;
 
             case GT_DIV:
             case GT_UDIV:
@@ -4183,7 +4183,8 @@ unsigned Compiler::gtSetEvalOrder(GenTree* tree)
                         break;
                     }
 
-                // fall through and set GTF_REVERSE_OPS
+                    // fall through and set GTF_REVERSE_OPS
+                    FALLTHROUGH;
 
                 case GT_LCL_VAR:
                 case GT_LCL_FLD:
@@ -4350,7 +4351,7 @@ unsigned Compiler::gtSetEvalOrder(GenTree* tree)
                             tree->SetOper(GenTree::SwapRelop(oper), GenTree::PRESERVE_VN);
                         }
 
-                        __fallthrough;
+                        FALLTHROUGH;
 
                     case GT_ADD:
                     case GT_MUL:
@@ -5689,9 +5690,9 @@ bool GenTree::OperMayThrow(Compiler* comp)
                 //
                 return true;
             }
+            break;
         }
 #endif // FEATURE_HW_INTRINSICS
-
         default:
             break;
     }
@@ -6152,7 +6153,7 @@ GenTree* Compiler::gtNewZeroConNode(var_types type)
             break;
 
         case TYP_BYREF:
-            __fallthrough;
+            FALLTHROUGH;
 
         case TYP_REF:
             zero         = gtNewIconNode(0);
@@ -9549,7 +9550,7 @@ void          GenTreeUseEdgeIterator::AdvanceCall()
                 m_edge = &call->gtCallThisArg->NodeRef();
                 return;
             }
-            __fallthrough;
+            FALLTHROUGH;
 
         case CALL_ARGS:
             if (m_statePtr != nullptr)
@@ -9561,7 +9562,7 @@ void          GenTreeUseEdgeIterator::AdvanceCall()
             }
             m_statePtr = call->gtCallLateArgs;
             m_advance  = &GenTreeUseEdgeIterator::AdvanceCall<CALL_LATE_ARGS>;
-            __fallthrough;
+            FALLTHROUGH;
 
         case CALL_LATE_ARGS:
             if (m_statePtr != nullptr)
@@ -9572,7 +9573,7 @@ void          GenTreeUseEdgeIterator::AdvanceCall()
                 return;
             }
             m_advance = &GenTreeUseEdgeIterator::AdvanceCall<CALL_CONTROL_EXPR>;
-            __fallthrough;
+            FALLTHROUGH;
 
         case CALL_CONTROL_EXPR:
             if (call->gtControlExpr != nullptr)
@@ -9593,7 +9594,7 @@ void          GenTreeUseEdgeIterator::AdvanceCall()
                 m_state = -1;
                 return;
             }
-            __fallthrough;
+            FALLTHROUGH;
 
         case CALL_COOKIE:
             assert(call->gtCallType == CT_INDIRECT);
@@ -9604,7 +9605,7 @@ void          GenTreeUseEdgeIterator::AdvanceCall()
                 m_edge = &call->gtCallCookie;
                 return;
             }
-            __fallthrough;
+            FALLTHROUGH;
 
         case CALL_ADDRESS:
             assert(call->gtCallType == CT_INDIRECT);
@@ -10148,7 +10149,7 @@ void Compiler::gtDispNode(GenTree* tree, IndentStack* indentStack, __in __in_z _
                         break;
                     }
                 }
-                __fallthrough;
+                FALLTHROUGH;
 
             case GT_INDEX:
             case GT_INDEX_ADDR:
@@ -11140,7 +11141,7 @@ void Compiler::gtDispLeaf(GenTree* tree, IndentStack* indentStack)
         case GT_LCL_FLD_ADDR:
         case GT_STORE_LCL_FLD:
             isLclFld = true;
-            __fallthrough;
+            FALLTHROUGH;
 
         case GT_PHI_ARG:
         case GT_LCL_VAR:
@@ -11320,6 +11321,7 @@ void Compiler::gtDispLeaf(GenTree* tree, IndentStack* indentStack)
         case GT_JCMP:
             printf(" cond=%s%s", (tree->gtFlags & GTF_JCMP_TST) ? "TEST_" : "",
                    (tree->gtFlags & GTF_JCMP_EQ) ? "EQ" : "NE");
+            break;
 
         default:
             assert(!"don't know how to display tree leaf node");
@@ -13254,7 +13256,7 @@ GenTree* Compiler::gtFoldExprSpecial(GenTree* tree)
                 // unsigned (0 > x) is always false
                 return NewMorphedIntConNode(0);
             }
-            __fallthrough;
+            FALLTHROUGH;
         case GT_EQ:
         case GT_NE:
 
@@ -14534,7 +14536,7 @@ GenTree* Compiler::gtFoldExprConst(GenTree* tree)
                 return tree;
             }
 
-            __fallthrough;
+            FALLTHROUGH;
 
         case TYP_BYREF:
 
@@ -14581,6 +14583,7 @@ GenTree* Compiler::gtFoldExprConst(GenTree* tree)
 #endif
                         goto DONE;
                     }
+                    break;
 
                 default:
                     break;
@@ -17456,8 +17459,8 @@ GenTree* Compiler::gtGetSIMDZero(var_types simdType, var_types baseType, CORINFO
                         break;
                     case TYP_UINT:
                         assert(simdHandle == m_simdHandleCache->Vector64UIntHandle);
-                        break;
 #endif // defined(TARGET_ARM64) && defined(FEATURE_HW_INTRINSICS)
+                        break;
                     default:
                         break;
                 }
@@ -19242,7 +19245,7 @@ void ReturnTypeDesc::InitializeStructReturnType(Compiler* comp, CORINFO_CLASS_HA
     {
         case Compiler::SPK_EnclosingType:
             m_isEnclosingType = true;
-            __fallthrough;
+            FALLTHROUGH;
 
         case Compiler::SPK_PrimitiveType:
         {

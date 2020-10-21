@@ -1376,6 +1376,7 @@ CorElementType EEClass::ComputeInternalCorElementTypeForValueType(MethodTable * 
             // for creating a TI_STRUCT.
             case ELEMENT_TYPE_PTR:
                 type = ELEMENT_TYPE_U;
+                FALLTHROUGH;
 
             case ELEMENT_TYPE_I:
             case ELEMENT_TYPE_U:

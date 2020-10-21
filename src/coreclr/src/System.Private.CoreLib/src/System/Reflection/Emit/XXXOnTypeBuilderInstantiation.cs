@@ -122,14 +122,14 @@ namespace System.Reflection.Emit
         public override object[] GetCustomAttributes(bool inherit) { return m_ctor.GetCustomAttributes(inherit); }
         public override object[] GetCustomAttributes(Type attributeType, bool inherit) { return m_ctor.GetCustomAttributes(attributeType, inherit); }
         public override bool IsDefined(Type attributeType, bool inherit) { return m_ctor.IsDefined(attributeType, inherit); }
-        internal int MetadataTokenInternal
+        public override int MetadataToken
         {
             get
             {
                 ConstructorBuilder? cb = m_ctor as ConstructorBuilder;
 
                 if (cb != null)
-                    return cb.MetadataTokenInternal;
+                    return cb.MetadataToken;
                 else
                 {
                     Debug.Assert(m_ctor is RuntimeConstructorInfo);
@@ -223,14 +223,14 @@ namespace System.Reflection.Emit
         public override object[] GetCustomAttributes(bool inherit) { return m_field.GetCustomAttributes(inherit); }
         public override object[] GetCustomAttributes(Type attributeType, bool inherit) { return m_field.GetCustomAttributes(attributeType, inherit); }
         public override bool IsDefined(Type attributeType, bool inherit) { return m_field.IsDefined(attributeType, inherit); }
-        internal int MetadataTokenInternal
+        public override int MetadataToken
         {
             get
             {
                 FieldBuilder? fb = m_field as FieldBuilder;
 
                 if (fb != null)
-                    return fb.MetadataTokenInternal;
+                    return fb.MetadataToken;
                 else
                 {
                     Debug.Assert(m_field is RuntimeFieldInfo);
