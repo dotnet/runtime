@@ -698,7 +698,7 @@ namespace System.IO
 
             fixed (char* f = &MemoryMarshal.GetReference(first), s = &MemoryMarshal.GetReference(second), t = &MemoryMarshal.GetReference(third))
             {
-                var payload = new Join3Payload (
+                var payload = new Join3Payload(
                     f, first.Length, s, second.Length, t, third.Length,
                     (byte)(firstNeedsSeparator | secondNeedsSeparator << 1));
 #if MS_IO_REDIST
