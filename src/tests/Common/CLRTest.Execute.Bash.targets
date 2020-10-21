@@ -303,7 +303,7 @@ $(BashLinkerTestCleanupCmds)
       <BashCLRTestLaunchCmds Condition="'$(CLRTestKind)' == 'BuildAndRun' And $(TargetArchitecture) == 'wasm' ">
       <![CDATA[
 cd WasmApp
-./run-v8.sh $(MsBuildProjectName)
+./run-v8.sh
 CLRTestExitCode=$?
       ]]>
       </BashCLRTestLaunchCmds>

@@ -337,7 +337,8 @@ namespace System.Text.Json
             bool ret = TryParseValue(ref reader, out JsonDocument? document, shouldThrow: true, useArrayPools: true);
 
             Debug.Assert(ret, "TryParseValue returned false with shouldThrow: true.");
-            return document!;
+            Debug.Assert(document != null, "null document returned with shouldThrow: true.");
+            return document;
         }
 
         internal static bool TryParseValue(

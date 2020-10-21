@@ -495,7 +495,7 @@ int32_t SystemIoPortsNative_TermiosReset(intptr_t handle, int32_t speed, int32_t
             break;
         case HandshakeBoth: /* software & hardware flow control */
             term.c_cflag |= CRTSCTS;
-            // fall through
+            FALLTHROUGH;
         case HandshakeSoft: /* XOn/XOff */
             term.c_iflag |= IXOFF | IXON;
             break;

@@ -1534,7 +1534,7 @@ void Compiler::fgRemoveBlockAsPred(BasicBlock* block)
                 }
             }
 
-            __fallthrough;
+            FALLTHROUGH;
 
         case BBJ_COND:
         case BBJ_ALWAYS:
@@ -1549,7 +1549,7 @@ void Compiler::fgRemoveBlockAsPred(BasicBlock* block)
             }
 
             /* If BBJ_COND fall through */
-            __fallthrough;
+            FALLTHROUGH;
 
         case BBJ_NONE:
 
@@ -3227,7 +3227,7 @@ void Compiler::fgComputePreds()
                     block->bbNext->bbFlags |= (BBF_JMP_TARGET | BBF_HAS_LABEL);
                 }
 
-                __fallthrough;
+                FALLTHROUGH;
 
             case BBJ_LEAVE: // Sometimes fgComputePreds is called before all blocks are imported, so BBJ_LEAVE
                             // blocks are still in the BB list.
@@ -3250,7 +3250,7 @@ void Compiler::fgComputePreds()
                 noway_assert(block->bbNext);
 
                 /* Fall through, the next block is also reachable */
-                __fallthrough;
+                FALLTHROUGH;
 
             case BBJ_NONE:
 
@@ -4066,7 +4066,7 @@ BasicBlock* Compiler::fgCreateGCPoll(GCPollType pollType, BasicBlock* block)
                 fgReplacePred(bottom->bbNext, top, bottom);
 
                 // fall through for the jump target
-                __fallthrough;
+                FALLTHROUGH;
 
             case BBJ_ALWAYS:
             case BBJ_CALLFINALLY:
@@ -4285,7 +4285,7 @@ private:
                 break;
             case 1:
                 ++depth;
-                __fallthrough;
+                FALLTHROUGH;
             case 2:
                 slot1 = slot0;
                 slot0 = type;
@@ -4892,7 +4892,7 @@ void Compiler::fgFindJumpTargets(const BYTE* codeAddr, IL_OFFSET codeSize, Fixed
                 // If we are inlining, we need to fail for a CEE_JMP opcode, just like
                 // the list of other opcodes (for all platforms).
 
-                __fallthrough;
+                FALLTHROUGH;
             case CEE_MKREFANY:
             case CEE_RETHROW:
                 if (makeInlineObservations)
@@ -4969,6 +4969,7 @@ void Compiler::fgFindJumpTargets(const BYTE* codeAddr, IL_OFFSET codeSize, Fixed
                 break;
             case CEE_RET:
                 retBlocks++;
+                break;
 
             default:
                 break;
@@ -5300,7 +5301,8 @@ void Compiler::fgLinkBasicBlocks()
                     BADCODE("Fall thru the end of a method");
                 }
 
-            // Fall through, the next block is also reachable
+                // Fall through, the next block is also reachable
+                FALLTHROUGH;
 
             case BBJ_NONE:
                 curBBdesc->bbNext->bbRefs++;
@@ -5572,7 +5574,7 @@ unsigned Compiler::fgMakeBasicBlocks(const BYTE* codeAddr, IL_OFFSET codeSize, F
                     return retBlocks;
                 }
 
-                __fallthrough;
+                FALLTHROUGH;
 
             case CEE_READONLY:
             case CEE_CONSTRAINED:
@@ -5651,18 +5653,18 @@ unsigned Compiler::fgMakeBasicBlocks(const BYTE* codeAddr, IL_OFFSET codeSize, F
                 }
             }
 
-            /* For tail call, we just call CORINFO_HELP_TAILCALL, and it jumps to the
-               target. So we don't need an epilog - just like CORINFO_HELP_THROW.
-               Make the block BBJ_RETURN, but we will change it to BBJ_THROW
-               if the tailness of the call is satisfied.
-               NOTE : The next instruction is guaranteed to be a CEE_RET
-               and it will create another BasicBlock. But there may be an
-               jump directly to that CEE_RET. If we want to avoid creating
-               an unnecessary block, we need to check if the CEE_RETURN is
-               the target of a jump.
-             */
+                /* For tail call, we just call CORINFO_HELP_TAILCALL, and it jumps to the
+                   target. So we don't need an epilog - just like CORINFO_HELP_THROW.
+                   Make the block BBJ_RETURN, but we will change it to BBJ_THROW
+                   if the tailness of the call is satisfied.
+                   NOTE : The next instruction is guaranteed to be a CEE_RET
+                   and it will create another BasicBlock. But there may be an
+                   jump directly to that CEE_RET. If we want to avoid creating
+                   an unnecessary block, we need to check if the CEE_RETURN is
+                   the target of a jump.
+                 */
 
-            // fall-through
+                FALLTHROUGH;
 
             case CEE_JMP:
             /* These are equivalent to a return from the current method
@@ -7181,11 +7183,11 @@ GenTreeCall* Compiler::fgGetStaticsCCtorHelper(CORINFO_CLASS_HANDLE cls, CorInfo
     {
         case CORINFO_HELP_GETSHARED_GCSTATIC_BASE_NOCTOR:
             bNeedClassID = false;
-            __fallthrough;
+            FALLTHROUGH;
 
         case CORINFO_HELP_GETSHARED_GCTHREADSTATIC_BASE_NOCTOR:
             callFlags |= GTF_CALL_HOISTABLE;
-            __fallthrough;
+            FALLTHROUGH;
 
         case CORINFO_HELP_GETSHARED_GCSTATIC_BASE:
         case CORINFO_HELP_GETSHARED_GCSTATIC_BASE_DYNAMICCLASS:
@@ -7198,11 +7200,11 @@ GenTreeCall* Compiler::fgGetStaticsCCtorHelper(CORINFO_CLASS_HANDLE cls, CorInfo
 
         case CORINFO_HELP_GETSHARED_NONGCSTATIC_BASE_NOCTOR:
             bNeedClassID = false;
-            __fallthrough;
+            FALLTHROUGH;
 
         case CORINFO_HELP_GETSHARED_NONGCTHREADSTATIC_BASE_NOCTOR:
             callFlags |= GTF_CALL_HOISTABLE;
-            __fallthrough;
+            FALLTHROUGH;
 
         case CORINFO_HELP_GETSHARED_NONGCSTATIC_BASE:
         case CORINFO_HELP_GETSHARED_NONGCTHREADSTATIC_BASE:
@@ -10614,7 +10616,7 @@ void Compiler::fgCompactBlocks(BasicBlock* block, BasicBlock* bNext)
             // Propagate RETLESS property
             block->bbFlags |= (bNext->bbFlags & BBF_RETLESS_CALL);
 
-            __fallthrough;
+            FALLTHROUGH;
 
         case BBJ_COND:
         case BBJ_ALWAYS:
@@ -11374,7 +11376,7 @@ void Compiler::fgRemoveBlock(BasicBlock* block, bool unreachable)
                     }
 
                     /* Fall through for the jump case */
-                    __fallthrough;
+                    FALLTHROUGH;
 
                 case BBJ_CALLFINALLY:
                 case BBJ_ALWAYS:
@@ -14056,7 +14058,7 @@ bool Compiler::fgOptimizeEmptyBlock(BasicBlock* block)
             /* Can fall through since this is similar with removing
              * a BBJ_NONE block, only the successor is different */
 
-            __fallthrough;
+            FALLTHROUGH;
 
         case BBJ_NONE:
 
@@ -16629,6 +16631,7 @@ void Compiler::fgDetermineFirstColdBlock()
             {
                 default:
                     noway_assert(!"Unhandled jumpkind in fgDetermineFirstColdBlock()");
+                    break;
 
                 case BBJ_CALLFINALLY:
                     // A BBJ_CALLFINALLY that falls through is always followed
@@ -21519,6 +21522,7 @@ void Compiler::fgDebugCheckFlags(GenTree* tree)
                 break;
             case GT_ADDR:
                 assert(!op1->CanCSE());
+                break;
 
             case GT_IND:
                 // Do we have a constant integer address as op1?
@@ -21590,6 +21594,7 @@ void Compiler::fgDebugCheckFlags(GenTree* tree)
                         //                 +--------------+----------------+
                     }
                 }
+                break;
 
             default:
                 break;

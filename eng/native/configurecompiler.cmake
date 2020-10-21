@@ -324,6 +324,11 @@ if (CLR_CMAKE_HOST_UNIX)
   add_compile_options(-Wno-unused-function)
   add_compile_options(-Wno-tautological-compare)
 
+  check_cxx_compiler_flag(-Wimplicit-fallthrough COMPILER_SUPPORTS_W_IMPLICIT_FALLTHROUGH)
+  if (COMPILER_SUPPORTS_W_IMPLICIT_FALLTHROUGH)
+    add_compile_options(-Wimplicit-fallthrough)
+  endif()
+
   #These seem to indicate real issues
   add_compile_options($<$<COMPILE_LANGUAGE:CXX>:-Wno-invalid-offsetof>)
 

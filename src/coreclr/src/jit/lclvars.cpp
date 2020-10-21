@@ -3054,9 +3054,6 @@ unsigned Compiler::lvaLclSize(unsigned varNum)
             assert(!"Unknown size");
             NO_WAY("Target doesn't support TYP_LCLBLK");
 
-            // Keep prefast happy
-            __fallthrough;
-
 #endif // FEATURE_FIXED_OUT_ARGS
 
         default: // This must be a primitive var. Fall out of switch statement
@@ -3099,9 +3096,6 @@ unsigned Compiler::lvaLclExactSize(unsigned varNum)
 #else // FEATURE_FIXED_OUT_ARGS
             assert(!"Unknown size");
             NO_WAY("Target doesn't support TYP_LCLBLK");
-
-            // Keep prefast happy
-            __fallthrough;
 
 #endif // FEATURE_FIXED_OUT_ARGS
 
@@ -3539,7 +3533,7 @@ void Compiler::lvaSortByRefCount()
                     noway_assert(!"lvType not set correctly");
                     varDsc->lvType = TYP_INT;
 
-                    __fallthrough;
+                    FALLTHROUGH;
 
                 default:
                     varDsc->lvTracked = 0;
@@ -3848,7 +3842,7 @@ void Compiler::lvaMarkLclRefs(GenTree* tree, BasicBlock* block, Statement* stmt,
                         }
 
                         // Not 0 or 1, fall through ....
-                        __fallthrough;
+                        FALLTHROUGH;
 
                     default:
 
@@ -5628,7 +5622,7 @@ int Compiler::lvaAssignVirtualFrameOffsetToArg(unsigned lclNum,
                     {
                         break;
                     }
-                    __fallthrough;
+                    FALLTHROUGH;
 
                 case TYP_DOUBLE:
                 case TYP_LONG:
@@ -5769,7 +5763,7 @@ int Compiler::lvaAssignVirtualFrameOffsetToArg(unsigned lclNum,
                 if (!varDsc->lvStructDoubleAlign)
                     break;
 
-                __fallthrough;
+                FALLTHROUGH;
 
             case TYP_DOUBLE:
             case TYP_LONG:

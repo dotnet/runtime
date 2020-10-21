@@ -893,6 +893,7 @@ void DumpILToConsoleBare(unsigned char* ilCode, int len)
                         LogError("unknown ilCode 0xfe%2x at offset %d in MethodGen::PrettyPrint", ilCode[i], i);
                         break;
                 }
+                break;
             default:
                 LogError("unknown ilCode 0x%02x at offset %d in MethodGen::PrettyPrint", ilCode[i], i);
                 break;
