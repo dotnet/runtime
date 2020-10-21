@@ -724,7 +724,7 @@ namespace System.IO
 
         private unsafe readonly struct Join4Payload
         {
-            public Join4Payload (char* first, int firstLength, char* second, int secondLength, char* third, int thirdLength, char* fourth, int fourthLength, byte separators)
+            public Join4Payload(char* first, int firstLength, char* second, int secondLength, char* third, int thirdLength, char* fourth, int fourthLength, byte separators)
             {
                 First = first;
                 FirstLength = firstLength;
