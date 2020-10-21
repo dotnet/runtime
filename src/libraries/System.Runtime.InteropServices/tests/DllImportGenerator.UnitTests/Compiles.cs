@@ -20,7 +20,6 @@ namespace DllImportGenerator.UnitTests
             yield return new[] { CodeSnippets.AllDllImportNamedArguments };
             yield return new[] { CodeSnippets.DefaultParameters };
             yield return new[] { CodeSnippets.UseCSharpFeaturesForConstants };
-            //yield return new[] { CodeSnippets.MarshalAsAttributeOnTypes };
             yield return new[] { CodeSnippets.BasicParametersAndModifiers<byte>() };
             yield return new[] { CodeSnippets.BasicParametersAndModifiers<sbyte>() };
             yield return new[] { CodeSnippets.BasicParametersAndModifiers<short>() };
@@ -101,8 +100,6 @@ namespace DllImportGenerator.UnitTests
 
         public static IEnumerable<object[]> CodeSnippetsToCompile_WithDiagnostics()
         {
-            yield return new[] { CodeSnippets.MarshalAsAttributeOnTypes };
-
             yield return new[] { CodeSnippets.BasicParametersAndModifiers<byte[]>() };
             yield return new[] { CodeSnippets.BasicParametersAndModifiers<sbyte[]>() };
             yield return new[] { CodeSnippets.BasicParametersAndModifiers<short[]>() };

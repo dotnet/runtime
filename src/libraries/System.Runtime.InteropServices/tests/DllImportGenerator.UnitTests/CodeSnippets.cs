@@ -207,9 +207,9 @@ partial class Test
 ";
 
         /// <summary>
-        /// Apply MarshalAsAttribute to parameters and return types.
+        /// Define a MarshalAsAttribute with a customer marshaller to parameters and return types.
         /// </summary>
-        public static readonly string MarshalAsAttributeOnTypes = @"
+        public static readonly string MarshalAsCustomMarshalerOnTypes = @"
 using System;
 using System.Runtime.InteropServices;
 namespace NS
@@ -239,16 +239,12 @@ namespace NS
 partial class Test
 {
     [GeneratedDllImport(""DoesNotExist"")]
-    [return: MarshalAs(UnmanagedType.LPWStr)]
-    public static partial string Method1([MarshalAs(UnmanagedType.LPStr)]string t);
+    [return: MarshalAs(UnmanagedType.CustomMarshaler, MarshalTypeRef = typeof(NS.MyCustomMarshaler), MarshalCookie=""COOKIE1"")]
+    public static partial bool Method1([MarshalAs(UnmanagedType.CustomMarshaler, MarshalTypeRef = typeof(NS.MyCustomMarshaler), MarshalCookie=""COOKIE2"")]bool t);
 
     [GeneratedDllImport(""DoesNotExist"")]
-    [return: MarshalAs(UnmanagedType.LPWStr)]
-    public static partial string Method2([MarshalAs(UnmanagedType.CustomMarshaler, MarshalTypeRef = typeof(NS.MyCustomMarshaler), MarshalCookie=""COOKIE1"")]string t);
-
-    [GeneratedDllImport(""DoesNotExist"")]
-    [return: MarshalAs(UnmanagedType.LPWStr)]
-    public static partial string Method3([MarshalAs(UnmanagedType.CustomMarshaler, MarshalType = ""NS.MyCustomMarshaler"", MarshalCookie=""COOKIE2"")]string t);
+    [return: MarshalAs(UnmanagedType.CustomMarshaler, MarshalType = ""NS.MyCustomMarshaler"", MarshalCookie=""COOKIE3"")]
+    public static partial bool Method2([MarshalAs(UnmanagedType.CustomMarshaler, MarshalType = ""NS.MyCustomMarshaler"", MarshalCookie=""COOKIE4"")]bool t);
 }
 ";
 

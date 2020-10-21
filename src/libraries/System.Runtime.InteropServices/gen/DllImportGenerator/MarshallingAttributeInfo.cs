@@ -35,9 +35,7 @@ namespace Microsoft.Interop
     /// User-applied System.Runtime.InteropServices.MarshalAsAttribute
     /// </summary>
     internal sealed record MarshalAsInfo(
-        UnmanagedType UnmanagedType, 
-        string? CustomMarshallerTypeName,
-        string? CustomMarshallerCookie,
+        UnmanagedType UnmanagedType,
         UnmanagedType UnmanagedArraySubType,
         int ArraySizeConst,
         short ArraySizeParamIndex,

@@ -171,12 +171,11 @@ namespace Microsoft.Interop
                 UnmanagedType unmanagedType = unmanagedTypeObj is short
                     ? (UnmanagedType)(short)unmanagedTypeObj
                     : (UnmanagedType)unmanagedTypeObj;
-                if (!Enum.IsDefined(typeof(UnmanagedType), unmanagedType))
+                if (!Enum.IsDefined(typeof(UnmanagedType), unmanagedType)
+                    || unmanagedType == UnmanagedType.CustomMarshaler)
                 {
                     diagnostics.ReportConfigurationNotSupported(attrData, nameof(UnmanagedType), unmanagedType.ToString());
                 }
-                string? customMarshallerTypeName = null;
-                string? customMarshallerCookie = null;
                 UnmanagedType unmanagedArraySubType = 0;
                 int arraySizeConst = 0;
                 short arraySizeParamIndex = 0;
@@ -192,15 +191,10 @@ namespace Microsoft.Interop
                         case nameof(MarshalAsAttribute.SafeArraySubType):
                         case nameof(MarshalAsAttribute.SafeArrayUserDefinedSubType):
                         case nameof(MarshalAsAttribute.IidParameterIndex):
-                            diagnostics.ReportConfigurationNotSupported(attrData, $"{attrData.AttributeClass!.Name}{Type.Delimiter}{namedArg.Key}");
-                            break;
                         case nameof(MarshalAsAttribute.MarshalTypeRef):
                         case nameof(MarshalAsAttribute.MarshalType):
-                            // Call ToString() to handle INamedTypeSymbol as well.
-                            customMarshallerTypeName = namedArg.Value.Value!.ToString();
-                            break;
                         case nameof(MarshalAsAttribute.MarshalCookie):
-                            customMarshallerCookie = (string)namedArg.Value.Value!;
+                            diagnostics.ReportConfigurationNotSupported(attrData, $"{attrData.AttributeClass!.Name}{Type.Delimiter}{namedArg.Key}");
                             break;
                         case nameof(MarshalAsAttribute.ArraySubType):
                             unmanagedArraySubType = (UnmanagedType)namedArg.Value.Value!;
@@ -216,8 +210,6 @@ namespace Microsoft.Interop
 
                 return new MarshalAsInfo(
                     UnmanagedType: unmanagedType,
-                    CustomMarshallerTypeName: customMarshallerTypeName,
-                    CustomMarshallerCookie: customMarshallerCookie,
                     UnmanagedArraySubType: unmanagedArraySubType,
                     ArraySizeConst: arraySizeConst,
                     ArraySizeParamIndex: arraySizeParamIndex,
