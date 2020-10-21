@@ -70,7 +70,7 @@ namespace System.Net.Security.Tests
             return EndToEndHelper(host);
         }
 
-        [ConditionalTheory]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.SupportsTls12))]
         [OuterLoop("Uses external servers")]
         [InlineData("api.nuget.org")]
         [InlineData("")]
