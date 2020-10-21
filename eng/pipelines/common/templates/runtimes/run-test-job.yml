@@ -272,8 +272,8 @@ jobs:
                   /p:MonoLibClang="/usr/lib/llvm-9/lib/libclang-cpp.so.9"
                   /p:Configuration=$(buildConfigUpper)
                   /p:TargetArchitecture=$(archType)
-                  /p:MonoEnableLLVM=true
-                  /p:MonoLLVMUseCxx11Abi=true
+                  /p:MonoAOTEnableLLVM=true
+                  /p:MonoAOTLLVMUseCxx11Abi=true
           displayName: "Build Mono LLVM AOT cross compiler"
 
 
