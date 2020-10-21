@@ -171,6 +171,7 @@ using System.Diagnostics%3B
 using System.Reflection%3B
 using System.Text.RegularExpressions%3B
 using CoreclrTestLib%3B
+using System.IO%3B
 
 namespace $([System.String]::Copy($(Category)).Replace(".","_").Replace("\","").Replace("-","_"))
 {
@@ -339,10 +340,14 @@ namespace $([System.String]::Copy($(Category)).Replace(".","_").Replace("\","").
                         output.WriteLine(line)%3B
                     }
 
+                    // Add Android app running log to testOutput
                     if ("$(TargetOS)" == "Android")
                     {
                         string androidLogFile = System.IO.Path.GetFullPath(_Global.coreRoot + "/AndroidApps" + "/" + _Global.nameSpace + "/adb-logcat-net.dot." + _Global.nameSpace + ".log")%3B
-                        testOutput.AddRange(System.IO.File.ReadAllLines(androidLogFile))%3B
+                        if(File.Exists(androidLogFile))
+                        {
+                            testOutput.AddRange(System.IO.File.ReadAllLines(androidLogFile))%3B
+                        }
                     }
 
                     Assert.True(ret == CoreclrTestWrapperLib.EXIT_SUCCESS_CODE, string.Join(Environment.NewLine, testOutput))%3B
