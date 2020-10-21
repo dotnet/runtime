@@ -184,7 +184,7 @@ namespace Microsoft.Interop
 
         private static IMarshallingGenerator CreateCharMarshaller(TypePositionInfo info, StubCodeContext context)
         {
-            MarshallingInfo marshalInfo = info.MarshallingAttributeInfo;
+            MarshallingInfo? marshalInfo = info.MarshallingAttributeInfo;
             if (marshalInfo == null)
             {
                 // [Compat] Require explicit marshalling information.
@@ -228,7 +228,7 @@ namespace Microsoft.Interop
 
         private static IMarshallingGenerator CreateStringMarshaller(TypePositionInfo info, StubCodeContext context)
         {
-            MarshallingInfo marshalInfo = info.MarshallingAttributeInfo;
+            MarshallingInfo? marshalInfo = info.MarshallingAttributeInfo;
             if (marshalInfo == null)
             {
                 // [Compat] Require explicit marshalling information.
