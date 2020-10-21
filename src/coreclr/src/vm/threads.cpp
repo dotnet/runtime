@@ -7902,15 +7902,24 @@ UINT64 Thread::GetTotalThreadPoolCompletionCount()
     }
     CONTRACTL_END;
 
+    bool usePortableThreadPool = ThreadpoolMgr::UsePortableThreadPool();
+
     // enumerate all threads, summing their local counts.
     ThreadStoreLockHolder tsl;
 
-    UINT64 total = GetWorkerThreadPoolCompletionCountOverflow() + GetIOThreadPoolCompletionCountOverflow();
+    UINT64 total = GetIOThreadPoolCompletionCountOverflow();
+    if (!usePortableThreadPool)
+    {
+        total += GetWorkerThreadPoolCompletionCountOverflow();
+    }
 
     Thread *pThread = NULL;
     while ((pThread = ThreadStore::GetAllThreadList(pThread, 0, 0)) != NULL)
     {
-        total += pThread->m_workerThreadPoolCompletionCount;
+        if (!usePortableThreadPool)
+        {
+            total += pThread->m_workerThreadPoolCompletionCount;
+        }
         total += pThread->m_ioThreadPoolCompletionCount;
     }
 
