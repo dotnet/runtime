@@ -911,6 +911,7 @@ namespace Microsoft.Extensions.Configuration.Test
             var config = builder.Build();
 
             // Assert
+            Assert.NotNull(config);
         }
     }
 }
