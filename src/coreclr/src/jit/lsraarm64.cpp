@@ -83,7 +83,7 @@ int LinearScan::BuildNode(GenTree* tree)
             {
                 return 0;
             }
-            __fallthrough;
+            FALLTHROUGH;
 
         case GT_LCL_FLD:
         {
@@ -108,7 +108,7 @@ int LinearScan::BuildNode(GenTree* tree)
             {
                 dstCount = compiler->lvaGetDesc(tree->AsLclVar()->GetLclNum())->lvFieldCnt;
             }
-            __fallthrough;
+            FALLTHROUGH;
 
         case GT_STORE_LCL_FLD:
             srcCount = BuildStoreLoc(tree->AsLclVarCommon());
@@ -159,7 +159,7 @@ int LinearScan::BuildNode(GenTree* tree)
                 buildInternalRegisterUses();
             }
         }
-            __fallthrough;
+            FALLTHROUGH;
 
         case GT_CNS_INT:
         {
@@ -266,7 +266,7 @@ int LinearScan::BuildNode(GenTree* tree)
                 assert(tree->gtGetOp1()->TypeGet() == tree->gtGetOp2()->TypeGet());
             }
 
-            __fallthrough;
+            FALLTHROUGH;
 
         case GT_AND:
         case GT_OR:
@@ -304,7 +304,7 @@ int LinearScan::BuildNode(GenTree* tree)
                 buildInternalIntRegisterDefForNode(tree);
                 setInternalRegsDelayFree = true;
             }
-            __fallthrough;
+            FALLTHROUGH;
 
         case GT_DIV:
         case GT_MULHI:
@@ -905,7 +905,7 @@ int LinearScan::BuildSIMD(GenTreeSIMD* simdTree)
         case SIMDIntrinsicWiden:
         case SIMDIntrinsicInvalid:
             assert(!"These intrinsics should not be seen during register allocation");
-            __fallthrough;
+            FALLTHROUGH;
 
         default:
             noway_assert(!"Unimplemented SIMD node type.");

@@ -57,6 +57,10 @@ jobs:
         ${{ if ne(parameters.isOfficialBuild, true) }}:
           value: ''
 
+      - ${{ if eq(parameters.osGroup, 'Android') }}:
+        - name: ANDROID_OPENSSL_AAR
+          value: /tmp/openssl-android
+
       - ${{ each variable in parameters.variables }}:
         - ${{ variable }}
 
@@ -66,7 +70,7 @@ jobs:
     - ${{ if eq(parameters.isOfficialBuild, true) }}:
       - template: /eng/pipelines/common/restore-internal-tools.yml
 
-    - ${{ if in(parameters.osGroup, 'OSX', 'iOS', 'tvOS') }}:
+    - ${{ if in(parameters.osGroup, 'OSX', 'iOS', 'tvOS', 'Android') }}:
       - script: $(Build.SourcesDirectory)/eng/install-native-dependencies.sh ${{ parameters.osGroup }} ${{ parameters.archType }} azDO
         displayName: Install Build Dependencies
 
@@ -79,7 +83,7 @@ jobs:
     - script: $(Build.SourcesDirectory)$(dir)build$(scriptExt) -ci -arch ${{ parameters.archType }} $(_osParameter) ${{ parameters.buildArgs }} $(_officialBuildParameter) $(_crossBuildPropertyArg) $(_cxx11Parameter)
       displayName: Build product
 
-    - ${{ if in(parameters.osGroup, 'OSX', 'iOS','tvOS') }}: 
+    - ${{ if in(parameters.osGroup, 'OSX', 'iOS', 'tvOS', 'Android') }}:
       - script: |
           du -sh $(Build.SourcesDirectory)/*
           df -h

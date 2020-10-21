@@ -4347,7 +4347,7 @@ void GenTree::VisitOperands(TVisitor visitor)
             {
                 return;
             }
-            __fallthrough;
+            FALLTHROUGH;
 
         // Standard unary operators
         case GT_STORE_LCL_VAR:

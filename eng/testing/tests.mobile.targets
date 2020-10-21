@@ -8,15 +8,14 @@
     <JSEngineArgs Condition="'$(JSEngine)' == 'V8'">$(JSEngineArgs) --engine-arg=--stack-trace-limit=1000</JSEngineArgs>
   </PropertyGroup>
 
-  <ItemGroup>
-    <RunScriptCommands Include="TARGET_ARCH=$(TargetArchitecture)" />
-  </ItemGroup>
-
   <PropertyGroup Condition="'$(TargetOS)' == 'Browser'">
     <!-- We need to set this in order to get extensibility on xunit category traits and other arguments we pass down to xunit via MSBuild properties -->
     <RunScriptCommand>$HARNESS_RUNNER wasm $XHARNESS_COMMAND  --app=. --engine=$(JSEngine) $(JSEngineArgs) --js-file=runtime.js --output-directory=$XHARNESS_OUT --  $(RunTestsJSArguments) --run WasmTestRunner.dll $(AssemblyName).dll</RunScriptCommand>
   </PropertyGroup>
 
+  <PropertyGroup Condition="'$(TargetOS)' == 'Android'">
+    <RunScriptCommand>$HARNESS_RUNNER android test --instrumentation="net.dot.MonoRunner" --package-name="net.dot.$(AssemblyName)" --app=$EXECUTION_DIR/bin/$(TestProjectName).apk --output-directory=$XHARNESS_OUT -v --</RunScriptCommand>
+  </PropertyGroup>
   <ItemGroup>
     <RunScriptCommands Include="TEST_NAME=$(TestProjectName)" />
     <RunScriptCommands Include="TARGET_ARCH=$(TargetArchitecture)" />
@@ -59,9 +58,15 @@
         <Output TaskParameter="ApkPackageId"  PropertyName="ApkPackageId" />
         <Output TaskParameter="ApkBundlePath" PropertyName="ApkBundlePath" />
     </AndroidAppBuilderTask>
+
     <Message Importance="High" Text="PackageId:       $(ApkPackageId)"/>
     <Message Importance="High" Text="Instrumentation: net.dot.MonoRunner"/>
     <Message Importance="High" Text="Apk:             $(ApkBundlePath)"/>
+
+    <Copy SourceFiles="$(ApkBundlePath)"
+          DestinationFolder="$(TestArchiveTestsDir)"
+          SkipUnchangedFiles="true"
+          Condition="'$(ArchiveTests)' == 'true' and '$(IgnoreForCI)' != 'true'" />
   </Target>
 
   <!-- Generate a self-contained app bundle for iOS with tests. -->

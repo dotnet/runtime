@@ -419,6 +419,7 @@ BOOL ZapSig::GetSignatureForTypeHandle(TypeHandle      handle,
             _ASSERTE(sigType == ELEMENT_TYPE_VALUETYPE);
 
             if (!handle.IsNativeValueType()) RETURN(FALSE);
+            FALLTHROUGH;
         } // fall-through
 
         case ELEMENT_TYPE_VALUETYPE:

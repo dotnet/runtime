@@ -2505,6 +2505,12 @@ public:
         return m_State & (Thread::TS_TPWorkerThread | Thread::TS_CompletionPortThread);
     }
 
+    void        SetIsThreadPoolThread()
+    {
+        LIMITED_METHOD_CONTRACT;
+        FastInterlockOr((ULONG *)&m_State, Thread::TS_TPWorkerThread);
+    }
+
     // public suspend functions.  System ones are internal, like for GC.  User ones
     // correspond to suspend/resume calls on the exposed System.Thread object.
     static bool    SysStartSuspendForDebug(AppDomain *pAppDomain);

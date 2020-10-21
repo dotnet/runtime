@@ -1008,7 +1008,7 @@ void Lowering::LowerHWIntrinsic(GenTreeHWIntrinsic* node)
                 break;
             }
 
-            __fallthrough;
+            FALLTHROUGH;
         }
 
         case NI_SSE_CompareGreaterThan:
@@ -1728,7 +1728,7 @@ void Lowering::LowerHWIntrinsicCreate(GenTreeHWIntrinsic* node)
                 BlockRange().InsertAfter(tmp2, tmp1);
                 LowerNode(tmp1);
 
-                __fallthrough;
+                FALLTHROUGH;
             }
 
             case TYP_SHORT:
@@ -1765,7 +1765,7 @@ void Lowering::LowerHWIntrinsicCreate(GenTreeHWIntrinsic* node)
                 BlockRange().InsertAfter(tmp2, tmp1);
                 LowerNode(tmp1);
 
-                __fallthrough;
+                FALLTHROUGH;
             }
 
             case TYP_INT:
@@ -5594,6 +5594,7 @@ void Lowering::ContainCheckHWIntrinsic(GenTreeHWIntrinsic* node)
                             }
                         }
                     }
+                    break;
                 }
 
                 case HW_Category_IMM:

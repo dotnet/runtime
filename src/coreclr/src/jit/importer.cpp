@@ -1671,7 +1671,7 @@ GenTree* Compiler::impNormStructVal(GenTree*             structVal,
             structLcl = structVal->AsLclVarCommon();
             // Wrap it in a GT_OBJ.
             structVal = gtNewObjNode(structHnd, gtNewOperNode(GT_ADDR, TYP_BYREF, structVal));
-            __fallthrough;
+            FALLTHROUGH;
 
         case GT_OBJ:
         case GT_BLK:
@@ -5629,7 +5629,8 @@ void Compiler::verVerifyCall(OPCODE                  opcode,
                 goto DONE_ARGS;
             }
         }
-        // fall thru to default checks
+            // fall thru to default checks
+            FALLTHROUGH;
         default:
             VerifyOrReturn(!(mflags & CORINFO_FLG_ABSTRACT), "method abstract");
     }
@@ -13158,6 +13159,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                         case CEE_CONV_OVF_U_UN:
                         case CEE_CONV_U:
                             isNative = true;
+                            break;
                         default:
                             // leave 'isNative' = false;
                             break;
@@ -14125,7 +14127,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                     }
                 }
 
-            // fall through
+                FALLTHROUGH;
 
             case CEE_CALLVIRT:
             case CEE_CALL:
@@ -14551,7 +14553,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
 #else
                         fieldInfo.fieldAccessor = CORINFO_FIELD_STATIC_ADDR_HELPER;
 
-                        __fallthrough;
+                        FALLTHROUGH;
 #endif
 
                     case CORINFO_FIELD_STATIC_ADDR_HELPER:
@@ -14593,7 +14595,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                             }
                         }
 
-                        __fallthrough;
+                        FALLTHROUGH;
 
                     case CORINFO_FIELD_STATIC_RVA_ADDRESS:
                     case CORINFO_FIELD_STATIC_SHARED_STATIC_HELPER:
@@ -14858,7 +14860,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
 #else
                         fieldInfo.fieldAccessor = CORINFO_FIELD_STATIC_ADDR_HELPER;
 
-                        __fallthrough;
+                        FALLTHROUGH;
 #endif
 
                     case CORINFO_FIELD_STATIC_ADDR_HELPER:
@@ -16365,6 +16367,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
 
             case 0xCC:
                 OutputDebugStringA("CLR: Invalid x86 breakpoint in IL stream\n");
+                FALLTHROUGH;
 
             case CEE_ILLEGAL:
             case CEE_MACRO_END:

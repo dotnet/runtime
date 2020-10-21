@@ -6110,8 +6110,8 @@ GenTree* Compiler::fgMorphField(GenTree* tree, MorphAddrContext* mac)
 
         bool addExplicitNullCheck = false;
 
-        // Implicit byref locals are never null.
-        if (!((objRef->gtOper == GT_LCL_VAR) && lvaIsImplicitByRefLocal(objRef->AsLclVarCommon()->GetLclNum())))
+        // Implicit byref locals and string literals are never null.
+        if (fgAddrCouldBeNull(objRef))
         {
             // If the objRef is a GT_ADDR node, it, itself, never requires null checking.  The expression
             // whose address is being taken is either a local or static variable, whose address is necessarily
@@ -10054,7 +10054,7 @@ GenTree* Compiler::fgMorphPromoteLocalInitBlock(GenTreeLclVar* destLclNode, GenT
                 // Promoted fields are expected to be "normalize on load". If that changes then
                 // we may need to adjust this code to widen the constant correctly.
                 assert(fieldDesc->lvNormalizeOnLoad());
-                __fallthrough;
+                FALLTHROUGH;
             case TYP_INT:
             {
                 int64_t mask = (int64_t(1) << (genTypeSize(dest->TypeGet()) * 8)) - 1;
@@ -12230,7 +12230,7 @@ GenTree* Compiler::fgMorphSmpOp(GenTree* tree, MorphAddrContext* mac)
             }
         }
 
-            __fallthrough;
+            FALLTHROUGH;
 
         case GT_GT:
         {
@@ -14291,6 +14291,7 @@ DONE_MORPHING_CHILDREN:
 
                 return tree;
             }
+            break;
 
         default:
             break;
@@ -16018,7 +16019,7 @@ bool Compiler::fgFoldConditional(BasicBlock* block)
                             newMaxWeight = bUpdated->bbWeight;
                             newMinWeight = min(edge->edgeWeightMin(), newMaxWeight);
                             edge->setEdgeWeights(newMinWeight, newMaxWeight);
-                            __fallthrough;
+                            FALLTHROUGH;
 
                         case BBJ_ALWAYS:
                             edge         = fgGetPredForBlock(bUpdated->bbJumpDest, bUpdated);

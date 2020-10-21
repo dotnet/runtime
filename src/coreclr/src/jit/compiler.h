@@ -10349,7 +10349,7 @@ public:
                         return result;
                     }
                 }
-                __fallthrough;
+                FALLTHROUGH;
 
             // Leaf nodes
             case GT_CATCH_ARG:
@@ -10394,7 +10394,7 @@ public:
                         return result;
                     }
                 }
-                __fallthrough;
+                FALLTHROUGH;
 
             // Standard unary operators
             case GT_NOT:
