@@ -12,7 +12,13 @@
 #include <pthread.h>
 #include <signal.h>
 
+// TODO: Mono uses a different naem for config.h; sort this out.
+#ifdef HAVE_CORE_GC
+#include "config.h"
+#else
 #include "config.gc.h"
+#endif // USE_CORE
+
 #include "common.h"
 
 #include "gcenv.structs.h"
