@@ -290,8 +290,8 @@
     <Exec Condition="'$(TargetsBrowser)' != 'true' and '$(_MonoRunInitCompiler)' == 'false'" Command="$(_MonoCCOption) $(_MonoCXXOption) @(_MonoBuildEnv, ' ') cmake @(_MonoCMakeArgs, ' ') $(MonoProjectRoot)" IgnoreStandardErrorWarningFormat="true" WorkingDirectory="$(MonoObjDir)"/>
     <Exec Condition="'$(TargetsBrowser)' == 'true'" Command="bash -c 'source $(EMSDK_PATH)/emsdk_env.sh &amp;&amp; emcmake cmake @(_MonoCMakeArgs, ' ') $(MonoProjectRoot)'" IgnoreStandardErrorWarningFormat="true" WorkingDirectory="$(MonoObjDir)" />
     <!-- ninja/make -->
-    <Exec Condition="'$(TargetsBrowser)' != 'true'" Command="@(_MonoBuildEnv, ' ') $(MonoBuildTool) $(_MonoVerboseArg) all install" IgnoreStandardErrorWarningFormat="true" WorkingDirectory="$(MonoObjDir)"/>
-    <Exec Condition="'$(TargetsBrowser)' == 'true'" Command="bash -c 'source $(EMSDK_PATH)/emsdk_env.sh &amp;&amp; $(MonoBuildTool) $(_MonoVerboseArg) all install'" IgnoreStandardErrorWarningFormat="true" WorkingDirectory="$(MonoObjDir)" />
+    <Exec Condition="'$(TargetsBrowser)' != 'true' and '$(BuildMonoAOTCrossCompilerOnly)' != 'true'" Command="@(_MonoBuildEnv, ' ') $(MonoBuildTool) $(_MonoVerboseArg) all install" IgnoreStandardErrorWarningFormat="true" WorkingDirectory="$(MonoObjDir)"/>
+    <Exec Condition="'$(TargetsBrowser)' == 'true' and '$(BuildMonoAOTCrossCompilerOnly)' != 'true'" Command="bash -c 'source $(EMSDK_PATH)/emsdk_env.sh &amp;&amp; $(MonoBuildTool) $(_MonoVerboseArg) all install'" IgnoreStandardErrorWarningFormat="true" WorkingDirectory="$(MonoObjDir)" />
   </Target>
 
   <!-- Build AOT cross compiler (if available) -->
@@ -319,6 +319,12 @@
       <MonoAotAbi Condition="'$(Platform)' == 'x64'">x86_64-apple-darwin10</MonoAotAbi>
     </PropertyGroup>
 
+    <PropertyGroup Condition="'$(TargetOS)' == 'Linux' and '$(Platform)' == 'arm64'">
+      <MonoAotAbi>aarch64-linux-gnu</MonoAotAbi>
+      <MonoAotOffsetsFile>$(MonoObjDir)cross/offsets-aarch-linux-gnu.h</MonoAotOffsetsFile>
+      <MonoAotIncludePrefix>$(MonoCrossDir)/usr/lib/gcc/aarch64-linux-gnu/5</MonoAotIncludePrefix>
+    </PropertyGroup>
+
     <!-- WASM specific options -->
     <PropertyGroup Condition="'$(TargetsBrowser)' == 'true'">
       <MonoUseCrossTool>true</MonoUseCrossTool>
@@ -330,6 +336,7 @@
 
     <PropertyGroup>
       <MonoLibClang Condition="'$(MonoLibClang)' == ''">$(XcodeDir)/Toolchains/XcodeDefault.xctoolchain/usr/lib/libclang.dylib</MonoLibClang>
+      <MonoCMakeSysroot Condition="'$(MonoCMakeSysroot)' == ''">$(MonoCrossDir)</MonoCMakeSysroot>
     </PropertyGroup>
     <ItemGroup Condition="'$(MonoUseCrossTool)' == 'true'">
       <MonoAotCrossOffsetsToolParams Include="--abi=$(MonoAotAbi)" />
@@ -338,6 +345,7 @@
       <MonoAotCrossOffsetsToolParams Include="--monodir=&quot;$(MonoProjectRoot)&quot;" />
       <MonoAotCrossOffsetsToolParams Include="--outfile=&quot;$(MonoAotOffsetsFile)&quot;" />
       <MonoAotCrossOffsetsToolParams Include="--libclang=&quot;$(MonoLibClang)&quot;" />
+      <MonoAotCrossOffsetsToolParams Condition="'$(MonoAotIncludePrefix)' != ''" Include="--include-prefix=&quot;$(MonoAotIncludePrefix)&quot;" />
       <MonoAotCrossOffsetsToolParams Condition="'$(MonoCMakeSysroot)' != ''" Include="--sysroot=&quot;$(MonoCMakeSysroot)&quot;" />
       <MonoAotCrossOffsetsToolParams Condition="'$(TargetsBrowser)' == 'true'" Include="--emscripten-sdk=&quot;$(EMSDK_PATH)/upstream/emscripten&quot;" />
     </ItemGroup>
