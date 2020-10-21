@@ -667,7 +667,7 @@ namespace System.IO
 
         private unsafe readonly struct Join3Payload
         {
-            public Join3Payload (char* first, int firstLength, char* second, int secondLength, char* third, int thirdLength, byte separators)
+            public Join3Payload(char* first, int firstLength, char* second, int secondLength, char* third, int thirdLength, byte separators)
             {
                 First = first;
                 FirstLength = firstLength;
