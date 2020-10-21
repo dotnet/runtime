@@ -197,8 +197,8 @@ namespace Microsoft.Extensions.Hosting.Tests
             {
                 configReloadedCancelTokenSource.Cancel();
             }, null);
-            // Wait for up to 10 seconds, if config reloads at any time, cancel the wait.
-            await Task.WhenAny(Task.Delay(10000, configReloadedCancelToken)); // Task.WhenAny ignores the task throwing on cancellation.
+            // Wait for up to 1 minute, if config reloads at any time, cancel the wait.
+            await Task.WhenAny(Task.Delay(TimeSpan.FromMinutes(1), configReloadedCancelToken)); // Task.WhenAny ignores the task throwing on cancellation.
             Assert.NotEqual(dynamicConfigMessage1, dynamicConfigMessage2); // Messages are different.
             Assert.Equal(dynamicConfigMessage2, config["Hello"]); // Config DID reload from disk
         }

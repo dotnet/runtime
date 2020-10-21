@@ -1223,7 +1223,7 @@ namespace Microsoft.Extensions.Hosting.Internal
         /// (after an await), the exception gets logged correctly.
         /// </summary>
         [Fact]
-        public void BackgroundServiceAsyncExceptionGetsLogged()
+        public async Task BackgroundServiceAsyncExceptionGetsLogged()
         {
             using TestEventListener listener = new TestEventListener();
 
@@ -1238,8 +1238,8 @@ namespace Microsoft.Extensions.Hosting.Internal
                 })
                 .Start();
 
-            // give the background service 5 seconds to log the failure
-            Task timeout = Task.Delay(new TimeSpan(0, 0, 5));
+            // give the background service 1 minute to log the failure
+            Task timeout = Task.Delay(TimeSpan.FromMinutes(1));
 
             while (true)
             {
@@ -1254,6 +1254,10 @@ namespace Microsoft.Extensions.Hosting.Internal
                 if (timeout.IsCompleted)
                 {
                     Assert.True(false, "'BackgroundService failed' did not get logged");
+                }
+                else
+                {
+                    await Task.Delay(TimeSpan.FromMilliseconds(30));
                 }
             }
         }
