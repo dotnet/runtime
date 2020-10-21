@@ -221,10 +221,7 @@ internal static partial class Interop
             }
             finally
             {
-                if (pBuffer != null)
-                {
-                    Marshal.FreeHGlobal((IntPtr)pBuffer);
-                }
+                Marshal.FreeHGlobal((IntPtr)pBuffer);
             }
 
             return kinfo;

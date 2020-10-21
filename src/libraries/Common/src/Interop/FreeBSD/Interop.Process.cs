@@ -83,17 +83,11 @@ internal static partial class Interop
             try
             {
                 Interop.Sys.Sysctl(sysctlName, ref pBuffer, ref bytesLength);
-                string path = System.Text.Encoding.UTF8.GetString(pBuffer, (int)bytesLength - 1);
-                Marshal.FreeHGlobal((IntPtr)pBuffer);
-
-                return path;
+                return System.Text.Encoding.UTF8.GetString(pBuffer, (int)bytesLength - 1);
             }
             finally
             {
-                if (pBuffer != null)
-                {
-                    Marshal.FreeHGlobal((IntPtr)pBuffer);
-                }
+                Marshal.FreeHGlobal((IntPtr)pBuffer);
             }
         }
 
