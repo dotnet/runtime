@@ -520,6 +520,19 @@ namespace Microsoft.Extensions.Configuration
                 return true;
             }
 
+            if (type == typeof(byte[]))
+            {
+                try
+                {
+                    result = Convert.FromBase64String(value);
+                }
+                catch (FormatException ex)
+                {
+                    error = new InvalidOperationException(SR.Format(SR.Error_FailedBinding, path, type), ex);
+                }
+                return true;
+            }
+
             return false;
         }
 

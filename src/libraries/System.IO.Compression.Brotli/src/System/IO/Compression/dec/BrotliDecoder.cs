@@ -89,18 +89,15 @@ namespace System.IO.Compression
             }
         }
 
-        public static bool TryDecompress(ReadOnlySpan<byte> source, Span<byte> destination, out int bytesWritten)
+        public static unsafe bool TryDecompress(ReadOnlySpan<byte> source, Span<byte> destination, out int bytesWritten)
         {
-            unsafe
+            fixed (byte* inBytes = &MemoryMarshal.GetReference(source))
+            fixed (byte* outBytes = &MemoryMarshal.GetReference(destination))
             {
-                fixed (byte* inBytes = &MemoryMarshal.GetReference(source))
-                fixed (byte* outBytes = &MemoryMarshal.GetReference(destination))
-                {
-                    size_t availableOutput = (size_t)destination.Length;
-                    bool success = Interop.Brotli.BrotliDecoderDecompress((size_t)source.Length, inBytes, ref availableOutput, outBytes);
-                    bytesWritten = (int)availableOutput;
-                    return success;
-                }
+                size_t availableOutput = (size_t)destination.Length;
+                bool success = Interop.Brotli.BrotliDecoderDecompress((size_t)source.Length, inBytes, ref availableOutput, outBytes);
+                bytesWritten = (int)availableOutput;
+                return success;
             }
         }
     }

@@ -362,7 +362,7 @@ namespace System.Net.Security
                         payload = message.Payload;
                         size = message.Size;
                     }
-                    else if (message.Failed && _lastFrame.Header.Type == TlsContentType.Handshake)
+                    else if (message.Failed && (_lastFrame.Header.Type == TlsContentType.Handshake || _lastFrame.Header.Type == TlsContentType.ChangeCipherSpec))
                     {
                         // If we failed without OS sending out alert, inject one here to be consistent across platforms.
                         payload = TlsFrameHelper.CreateAlertFrame(_lastFrame.Header.Version, TlsAlertDescription.ProtocolVersion);
@@ -562,7 +562,8 @@ namespace System.Net.Security
                     }
 
                     frameSize = nextHeader.Length + TlsFrameHelper.HeaderSize;
-                    if (nextHeader.Type == TlsContentType.AppData || frameSize > _handshakeBuffer.ActiveLength)
+                    // Can process more handshake frames in single step, but we should avoid processing too much so as to preserve API boundary between handshake and I/O.
+                    if ((nextHeader.Type != TlsContentType.Handshake && nextHeader.Type != TlsContentType.ChangeCipherSpec) || frameSize > _handshakeBuffer.ActiveLength)
                     {
                         // We don't have full frame left or we already have app data which needs to be processed by decrypt.
                         break;

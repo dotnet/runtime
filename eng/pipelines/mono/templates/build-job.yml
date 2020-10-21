@@ -11,6 +11,7 @@ parameters:
   condition: true
   runtimeVariant: ''
   isOfficialBuild: false
+  crossBuild: false
   crossrootfsDir: ''
 
 ### Product build
@@ -25,6 +26,7 @@ jobs:
     enableMicrobuild: true
     pool: ${{ parameters.pool }}
     runtimeVariant: ${{ parameters.runtimeVariant }}
+    crossBuild: ${{ parameters.crossBuild }}
     crossrootfsDir: ${{ parameters.crossroofsDir }}
     condition: ${{ parameters.condition }}
 

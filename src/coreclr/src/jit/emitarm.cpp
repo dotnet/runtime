@@ -1938,7 +1938,7 @@ void emitter::emitIns_R_I(
                 fmt = IF_T2_K3;
                 sf  = INS_FLAGS_NOT_SET;
             }
-            __fallthrough;
+            FALLTHROUGH;
 #endif // FEATURE_PLI_INSTRUCTION
 
         case INS_pld:
@@ -2029,7 +2029,7 @@ void emitter::emitIns_R_R(
                 sf  = INS_FLAGS_NOT_SET;
                 break;
             }
-            __fallthrough;
+            FALLTHROUGH;
 
         case INS_sub:
             assert(reg1 != REG_PC); // VM debugging single stepper doesn't support PC register with this instruction.
@@ -2117,7 +2117,7 @@ void emitter::emitIns_R_R(
             assert(reg1 != REG_PC); // VM debugging single stepper doesn't support PC register with this instruction.
             assert(reg2 != REG_PC);
             assert(reg1 != reg2);
-            __fallthrough;
+            FALLTHROUGH;
 
         case INS_vabs:
         case INS_vsqrt:
@@ -2133,7 +2133,6 @@ void emitter::emitIns_R_R(
                 assert(isFloatReg(reg1));
                 assert(isFloatReg(reg2));
             }
-            __fallthrough;
 
         VCVT_COMMON:
             fmt = IF_T2_VFP2;
@@ -2177,7 +2176,7 @@ void emitter::emitIns_R_R(
                 sf  = INS_FLAGS_SET;
                 break;
             }
-            __fallthrough;
+            FALLTHROUGH;
 
         case INS_orn:
             // assert below fired for bug 281892 where the two operands of an OR were
@@ -2437,7 +2436,7 @@ void emitter::emitIns_R_R_I(instruction ins,
                     break;
                 }
             }
-            __fallthrough;
+            FALLTHROUGH;
 
         case INS_sub:
             assert(reg1 != REG_PC); // VM debugging single stepper doesn't support PC register with this instruction.
@@ -2573,7 +2572,7 @@ void emitter::emitIns_R_R_I(instruction ins,
                 sf  = INS_FLAGS_SET;
                 break;
             }
-            __fallthrough;
+            FALLTHROUGH;
 
         case INS_adc:
         case INS_eor:
@@ -2844,10 +2843,9 @@ void emitter::emitIns_R_R_I(instruction ins,
                     }
                 }
             }
-            //
-            // If we did not find a thumb-1 encoding above
-            //
-            __fallthrough;
+        //
+        // If we did not find a thumb-1 encoding above
+        //
 
         COMMON_THUMB2_LDST:
             assert(fmt == IF_NONE);
@@ -2963,7 +2961,7 @@ void emitter::emitIns_R_R_R(instruction ins,
                 reg3 = reg2;
                 reg2 = REG_SP;
             }
-            __fallthrough;
+            FALLTHROUGH;
 
         case INS_sub:
             assert(reg3 != REG_SP);
@@ -3013,7 +3011,7 @@ void emitter::emitIns_R_R_R(instruction ins,
                 emitIns_R_R(ins, attr, reg1, reg3, flags);
                 return;
             }
-            __fallthrough;
+            FALLTHROUGH;
 
         case INS_orn:
             assert(reg1 != REG_PC); // VM debugging single stepper doesn't support PC register with this instruction.
@@ -3035,7 +3033,7 @@ void emitter::emitIns_R_R_R(instruction ins,
                 emitIns_R_R(ins, attr, reg1, reg3, flags);
                 return;
             }
-            __fallthrough;
+            FALLTHROUGH;
 
         case INS_ror:
             assert(reg1 != REG_PC); // VM debugging single stepper doesn't support PC register with this instruction.
@@ -3070,9 +3068,9 @@ void emitter::emitIns_R_R_R(instruction ins,
                     assert(!"Instruction cannot be encoded");
                 }
             }
-            __fallthrough;
 
 #if !defined(USE_HELPERS_FOR_INT_DIV)
+            FALLTHROUGH;
         case INS_sdiv:
         case INS_udiv:
 #endif // !USE_HELPERS_FOR_INT_DIV
@@ -3306,7 +3304,7 @@ void emitter::emitIns_R_R_R_I(instruction ins,
                     }
                 }
             }
-            __fallthrough;
+            FALLTHROUGH;
 
         case INS_adc:
         case INS_and:
@@ -6189,7 +6187,7 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
                 case INS_vneg:
                     if (id->idOpSize() == EA_8BYTE)
                         szCode |= (1 << 8);
-                    __fallthrough;
+                    FALLTHROUGH;
 
                 default:
                     srcSize = dstSize = id->idOpSize();
@@ -7472,13 +7470,13 @@ void emitter::emitDispInsHelp(
 
         case IF_T1_I: // Special Compare-and-branch
             emitDispReg(id->idReg1(), attr, true);
-            __fallthrough;
+            FALLTHROUGH;
 
         case IF_T1_K: // Special Branch, conditional
         case IF_T1_M:
             assert(((instrDescJmp*)id)->idjShort);
             printf("SHORT ");
-            __fallthrough;
+            FALLTHROUGH;
 
         case IF_T2_N1:
             if (fmt == IF_T2_N1)
@@ -7486,7 +7484,7 @@ void emitter::emitDispInsHelp(
                 emitDispReg(id->idReg1(), attr, true);
                 printf("%s ADDRESS ", (id->idIns() == INS_movw) ? "LOW" : "HIGH");
             }
-            __fallthrough;
+            FALLTHROUGH;
 
         case IF_T2_J1:
         case IF_T2_J2:

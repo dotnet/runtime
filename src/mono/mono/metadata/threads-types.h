@@ -294,7 +294,8 @@ MONO_PROFILER_API MonoInternalThread *mono_thread_internal_current (void);
 MonoInternalThreadHandle
 mono_thread_internal_current_handle (void);
 
-void mono_thread_internal_abort (MonoInternalThread *thread, gboolean appdomain_unload);
+gboolean
+mono_thread_internal_abort (MonoInternalThread *thread, gboolean appdomain_unload);
 void mono_thread_internal_suspend_for_shutdown (MonoInternalThread *thread);
 
 gboolean mono_thread_internal_has_appdomain_ref (MonoInternalThread *thread, MonoDomain *domain);

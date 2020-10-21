@@ -2,6 +2,7 @@ parameters:
   archType: ''
   buildConfig: ''
   container: ''
+  crossBuild: false
   crossrootfsDir: ''
   osGroup: ''
   osSubgroup: ''
@@ -33,6 +34,7 @@ jobs:
 
     timeoutInMinutes: ${{ parameters.timeoutInMinutes }}
 
+    crossBuild: ${{ parameters.crossBuild }}
     crossrootfsDir: ${{ parameters.crossrootfsDir }}
 
     gatherAssetManifests: true

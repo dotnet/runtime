@@ -246,8 +246,6 @@ void SSL_get0_alpn_selected(const SSL* ssl, const unsigned char** protocol, unsi
     REQUIRED_FUNCTION(d2i_BASIC_CONSTRAINTS) \
     REQUIRED_FUNCTION(d2i_EXTENDED_KEY_USAGE) \
     REQUIRED_FUNCTION(d2i_OCSP_RESPONSE) \
-    REQUIRED_FUNCTION(d2i_PKCS12) \
-    REQUIRED_FUNCTION(d2i_PKCS12_bio) \
     REQUIRED_FUNCTION(d2i_PKCS12_fp) \
     REQUIRED_FUNCTION(d2i_PKCS7) \
     REQUIRED_FUNCTION(d2i_PKCS7_bio) \
@@ -396,7 +394,6 @@ void SSL_get0_alpn_selected(const SSL* ssl, const unsigned char** protocol, unsi
     REQUIRED_FUNCTION(i2d_ASN1_TYPE) \
     REQUIRED_FUNCTION(i2d_OCSP_REQUEST) \
     REQUIRED_FUNCTION(i2d_OCSP_RESPONSE) \
-    REQUIRED_FUNCTION(i2d_PKCS12) \
     REQUIRED_FUNCTION(i2d_PKCS7) \
     REQUIRED_FUNCTION(i2d_X509) \
     REQUIRED_FUNCTION(i2d_X509_PUBKEY) \
@@ -438,7 +435,6 @@ void SSL_get0_alpn_selected(const SSL* ssl, const unsigned char** protocol, unsi
     REQUIRED_FUNCTION(PEM_read_bio_X509_AUX) \
     REQUIRED_FUNCTION(PEM_read_bio_X509_CRL) \
     REQUIRED_FUNCTION(PEM_write_bio_X509_CRL) \
-    REQUIRED_FUNCTION(PKCS12_create) \
     REQUIRED_FUNCTION(PKCS12_free) \
     REQUIRED_FUNCTION(PKCS12_parse) \
     REQUIRED_FUNCTION(PKCS7_sign) \
@@ -660,8 +656,6 @@ FOR_ALL_OPENSSL_FUNCTIONS
 #define d2i_BASIC_CONSTRAINTS d2i_BASIC_CONSTRAINTS_ptr
 #define d2i_EXTENDED_KEY_USAGE d2i_EXTENDED_KEY_USAGE_ptr
 #define d2i_OCSP_RESPONSE d2i_OCSP_RESPONSE_ptr
-#define d2i_PKCS12 d2i_PKCS12_ptr
-#define d2i_PKCS12_bio d2i_PKCS12_bio_ptr
 #define d2i_PKCS12_fp d2i_PKCS12_fp_ptr
 #define d2i_PKCS7 d2i_PKCS7_ptr
 #define d2i_PKCS7_bio d2i_PKCS7_bio_ptr
@@ -810,7 +804,6 @@ FOR_ALL_OPENSSL_FUNCTIONS
 #define i2d_ASN1_TYPE i2d_ASN1_TYPE_ptr
 #define i2d_OCSP_REQUEST i2d_OCSP_REQUEST_ptr
 #define i2d_OCSP_RESPONSE i2d_OCSP_RESPONSE_ptr
-#define i2d_PKCS12 i2d_PKCS12_ptr
 #define i2d_PKCS7 i2d_PKCS7_ptr
 #define i2d_X509 i2d_X509_ptr
 #define i2d_X509_PUBKEY i2d_X509_PUBKEY_ptr
@@ -852,7 +845,6 @@ FOR_ALL_OPENSSL_FUNCTIONS
 #define PEM_read_bio_X509_AUX PEM_read_bio_X509_AUX_ptr
 #define PEM_read_bio_X509_CRL PEM_read_bio_X509_CRL_ptr
 #define PEM_write_bio_X509_CRL PEM_write_bio_X509_CRL_ptr
-#define PKCS12_create PKCS12_create_ptr
 #define PKCS12_free PKCS12_free_ptr
 #define PKCS12_parse PKCS12_parse_ptr
 #define PKCS7_sign PKCS7_sign_ptr

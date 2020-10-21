@@ -6,6 +6,7 @@ parameters:
   name: ''
   helixType: '(unspecified)'
   container: ''
+  crossBuild: false
   crossrootfsDir: ''
   strategy: ''
   pool: ''

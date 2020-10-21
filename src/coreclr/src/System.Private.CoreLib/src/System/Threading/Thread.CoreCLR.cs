@@ -420,7 +420,7 @@ namespace System.Threading
         [MethodImpl(MethodImplOptions.InternalCall)]
         internal extern int SetApartmentStateNative(int state);
 #else // FEATURE_COMINTEROP_APARTMENT_SUPPORT
-        private bool TrySetApartmentStateUnchecked(ApartmentState state)
+        private static bool TrySetApartmentStateUnchecked(ApartmentState state)
         {
             return state == ApartmentState.Unknown;
         }
@@ -503,10 +503,12 @@ namespace System.Threading
         // we will record that in a readonly static so that it could become a JIT constant and bypass caching entirely.
         private static readonly bool s_isProcessorNumberReallyFast = ProcessorIdCache.ProcessorNumberSpeedCheck();
 
+#pragma warning disable CA1822 // Mark members as static
         internal void ResetThreadPoolThread()
         {
             // Currently implemented in unmanaged method Thread::InternalReset and
             // called internally from the ThreadPool in NotifyWorkItemComplete.
         }
+#pragma warning restore CA1822
     } // End of class Thread
 }

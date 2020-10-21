@@ -203,33 +203,32 @@ CrashInfo::TryFindDyLinker(mach_vm_address_t address, mach_vm_size_t size, bool*
 
     if (size > sizeof(mach_header_64))
     {
-        mach_header_64* header = nullptr;
-        mach_msg_type_number_t read = 0;
-        kern_return_t kresult = ::vm_read(Task(), address, sizeof(mach_header_64), (vm_offset_t*)&header, &read);
-        if (kresult == KERN_SUCCESS)
-        {
-            if (header->magic == MH_MAGIC_64)
+        mach_header_64 header;
+        size_t read = 0;
+        if (ReadProcessMemory((void*)address, &header, sizeof(mach_header_64), &read))
+        { 
+            if (header.magic == MH_MAGIC_64)
             {
                 TRACE("TryFindDyLinker: found module header at %016llx %08llx ncmds %d sizeofcmds %08x type %02x\n",
                     address,
                     size,
-                    header->ncmds,
-                    header->sizeofcmds,
-                    header->filetype);
+                    header.ncmds,
+                    header.sizeofcmds,
+                    header.filetype);
 
-                if (header->filetype == MH_DYLINKER)
+                if (header.filetype == MH_DYLINKER)
                 {
                     TRACE("TryFindDyLinker: found dylinker\n");
                     *found = true;
 
                     // Enumerate all the modules in dyld's image cache. VisitModule is called for every module found.
-                    result = EnumerateModules(address, header);
+                    result = EnumerateModules(address, &header);
                 }
             }
         }
-        if (header != nullptr)
+        else 
         {
-            ::vm_deallocate(Task(), (vm_address_t)header, sizeof(mach_header_64));
+            TRACE("TryFindDyLinker: ReadProcessMemory header at %p %d FAILED\n", address, read);
         }
     }
 
@@ -349,37 +348,35 @@ CrashInfo::ReadProcessMemory(void* address, void* buffer, size_t size, size_t* r
     // and the size be a multiple of the page size.  We can't differentiate
     // between the cases in which that's required and those in which it
     // isn't, so we do it all the time.
-    int* addressAligned = (int*)((SIZE_T)address & ~(PAGE_SIZE - 1));
-    ssize_t offset = ((SIZE_T)address & (PAGE_SIZE - 1));
+    vm_address_t addressAligned = (vm_address_t)address & ~(PAGE_SIZE - 1);
+    ssize_t offset = (ssize_t)address & (PAGE_SIZE - 1);
     char *data = (char*)alloca(PAGE_SIZE);
     ssize_t numberOfBytesRead = 0;
-    ssize_t bytesToRead;
+    ssize_t bytesLeft = size;
 
-    while (size > 0)
+    while (bytesLeft > 0)
     {
-        vm_size_t bytesRead;
-        
-        bytesToRead = PAGE_SIZE - offset;
-        if (bytesToRead > size)
-        {
-            bytesToRead = size;
-        }
-        bytesRead = PAGE_SIZE;
-        kern_return_t result = ::vm_read_overwrite(Task(), (vm_address_t)addressAligned, PAGE_SIZE, (vm_address_t)data, &bytesRead);
+        vm_size_t bytesRead = PAGE_SIZE;
+        kern_return_t result = ::vm_read_overwrite(Task(), addressAligned, PAGE_SIZE, (vm_address_t)data, &bytesRead);
         if (result != KERN_SUCCESS || bytesRead != PAGE_SIZE)
         {
-            TRACE_VERBOSE("vm_read_overwrite failed for %d bytes from %p: %x %s\n", PAGE_SIZE, (char *)addressAligned, result, mach_error_string(result));
-            *read = 0;
-            return false;
+            TRACE_VERBOSE("ReadProcessMemory(%p %d): vm_read_overwrite failed bytesLeft %d bytesRead %d from %p: %x %s\n",
+                address, size, bytesLeft, bytesRead, (void*)addressAligned, result, mach_error_string(result));
+            break;
         }
-        memcpy((LPSTR)buffer + numberOfBytesRead, data + offset, bytesToRead);
-        addressAligned = (int*)((char*)addressAligned + PAGE_SIZE);
-        numberOfBytesRead += bytesToRead;
-        size -= bytesToRead;
+        ssize_t bytesToCopy = PAGE_SIZE - offset;
+        if (bytesToCopy > bytesLeft)
+        {
+            bytesToCopy = bytesLeft;
+        }
+        memcpy((LPSTR)buffer + numberOfBytesRead, data + offset, bytesToCopy);
+        addressAligned = addressAligned + PAGE_SIZE;
+        numberOfBytesRead += bytesToCopy;
+        bytesLeft -= bytesToCopy;
         offset = 0;
     }
     *read = numberOfBytesRead;
-    return true;
+    return size == 0 || numberOfBytesRead > 0;
 }
 
 // For src/inc/llvm/ELF.h

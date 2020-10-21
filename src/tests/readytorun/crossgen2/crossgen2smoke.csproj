@@ -7,9 +7,6 @@
 
     <!-- ilasm round-trip testing doesn't make sense for this test -->
     <IlasmRoundTripIncompatible>true</IlasmRoundTripIncompatible>
-    
-    <!-- Crossgen2 currently targets x64 and ARM64 only -->
-    <CLRTestTargetUnsupported Condition="'$(TargetArchitecture)' != 'x64' and '$(TargetArchitecture)' != 'arm64' and '$(TargetArchitecture)' != 'x86'">true</CLRTestTargetUnsupported>
 
     <!-- This is an explicit crossgen test -->
     <AlwaysUseCrossGen2>true</AlwaysUseCrossGen2>
