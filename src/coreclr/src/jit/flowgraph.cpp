@@ -7321,6 +7321,10 @@ bool Compiler::fgAddrCouldBeNull(GenTree* addr)
     {
         return false;
     }
+    else if (addr->OperIs(GT_CNS_STR))
+    {
+        return false;
+    }
     else if (addr->gtOper == GT_LCL_VAR)
     {
         unsigned varNum = addr->AsLclVarCommon()->GetLclNum();
@@ -23763,10 +23767,13 @@ Statement* Compiler::fgInlinePrependStatements(InlineInfo* inlineInfo)
     if (call->gtFlags & GTF_CALL_NULLCHECK && !inlineInfo->thisDereferencedFirst)
     {
         // Call impInlineFetchArg to "reserve" a temp for the "this" pointer.
-        nullcheck = gtNewNullCheck(impInlineFetchArg(0, inlArgInfo, lclVarInfo), block);
-
-        // The NULL-check statement will be inserted to the statement list after those statements
-        // that assign arguments to temps and before the actual body of the inlinee method.
+        GenTree* thisOp = impInlineFetchArg(0, inlArgInfo, lclVarInfo);
+        if (fgAddrCouldBeNull(thisOp))
+        {
+            nullcheck = gtNewNullCheck(impInlineFetchArg(0, inlArgInfo, lclVarInfo), block);
+            // The NULL-check statement will be inserted to the statement list after those statements
+            // that assign arguments to temps and before the actual body of the inlinee method.
+        }
     }
 
     /* Treat arguments that had to be assigned to temps */

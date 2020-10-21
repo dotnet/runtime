@@ -14531,8 +14531,22 @@ GenTree* Compiler::gtFoldExprConst(GenTree* tree)
 
             /* String nodes are an RVA at this point */
 
-            if (op1->gtOper == GT_CNS_STR || op2->gtOper == GT_CNS_STR)
+            if (op1->OperIs(GT_CNS_STR) || op2->OperIs(GT_CNS_STR))
             {
+                // Fold "ldstr" ==/!= null
+                if (op2->IsIntegralConst(0))
+                {
+                    if (tree->OperIs(GT_EQ))
+                    {
+                        i1 = 0;
+                        goto FOLD_COND;
+                    }
+                    if (tree->OperIs(GT_NE) || (tree->OperIs(GT_GT) && tree->IsUnsigned()))
+                    {
+                        i1 = 1;
+                        goto FOLD_COND;
+                    }
+                }
                 return tree;
             }
 
