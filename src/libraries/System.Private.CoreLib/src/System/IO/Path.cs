@@ -761,7 +761,7 @@ namespace System.IO
 
             fixed (char* f = &MemoryMarshal.GetReference(first), s = &MemoryMarshal.GetReference(second), t = &MemoryMarshal.GetReference(third), u = &MemoryMarshal.GetReference(fourth))
             {
-                var payload = new Join4Payload (
+                var payload = new Join4Payload(
                     f, first.Length, s, second.Length, t, third.Length, u, fourth.Length,
                     (byte)(firstNeedsSeparator | secondNeedsSeparator << 1 | thirdNeedsSeparator << 2));
 #if MS_IO_REDIST
