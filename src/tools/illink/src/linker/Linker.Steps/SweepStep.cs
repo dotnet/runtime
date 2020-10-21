@@ -134,7 +134,8 @@ namespace Mono.Linker.Steps
 					continue;
 				}
 
-				if (type.Name == "<Module>")
+				// Is <Module> type.
+				if (type.MetadataToken.RID == 1)
 					types.Add (type);
 				else
 					ElementRemoved (type);
