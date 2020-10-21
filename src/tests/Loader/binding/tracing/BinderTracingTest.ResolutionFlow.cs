@@ -444,7 +444,7 @@ namespace BinderTracingTests
             var assemblyName = new AssemblyName(SubdirectoryAssemblyName);
             using (var handlers = new Handlers(HandlerReturn.Exception, AssemblyLoadContext.Default))
             {
-                Assert.Throws<FileLoadException>(() => AssemblyLoadContext.Default.LoadFromAssemblyName(assemblyName));
+                Assert.Throws<FileLoadException, Exception>(() => AssemblyLoadContext.Default.LoadFromAssemblyName(assemblyName));
 
                 return new BindOperation()
                 {
