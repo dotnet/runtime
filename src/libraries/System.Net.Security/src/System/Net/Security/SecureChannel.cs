@@ -47,11 +47,7 @@ namespace System.Net.Security
             if (NetEventSource.Log.IsEnabled()) NetEventSource.Log.SecureChannelCtor(this, sslStream, sslAuthenticationOptions.TargetHost!, sslAuthenticationOptions.ClientCertificates, sslAuthenticationOptions.EncryptionPolicy);
 
             SslStreamPal.VerifyPackageInfo();
-
-            if (sslAuthenticationOptions.TargetHost == null)
-            {
-                NetEventSource.Fail(this, "sslAuthenticationOptions.TargetHost == null");
-            }
+            Debug.Assert(sslAuthenticationOptions.TargetHost != null, "sslAuthenticationOptions.TargetHost == null");
 
             _securityContext = null;
             _refreshCredentialNeeded = true;
@@ -550,13 +546,9 @@ namespace System.Net.Security
                 }
             }
 
-            if ((object?)clientCertificate != (object?)selectedCert && !clientCertificate!.Equals(selectedCert))
-            {
-                NetEventSource.Fail(this, "'selectedCert' does not match 'clientCertificate'.");
-            }
+            Debug.Assert((object?)clientCertificate == (object?)selectedCert || clientCertificate!.Equals(selectedCert), "'selectedCert' does not match 'clientCertificate'.");
 
-            if (NetEventSource.Log.IsEnabled())
-                NetEventSource.Info(this, $"Selected cert = {selectedCert}");
+            if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, $"Selected cert = {selectedCert}");
 
             try
             {
@@ -695,11 +687,7 @@ namespace System.Net.Security
                     throw new NotSupportedException(SR.net_ssl_io_no_server_cert);
                 }
 
-                if (!localCertificate.Equals(selectedCert))
-                {
-                    NetEventSource.Fail(this, "'selectedCert' does not match 'localCertificate'.");
-                }
-
+                Debug.Assert(localCertificate.Equals(selectedCert), "'selectedCert' does not match 'localCertificate'.");
                 _sslAuthenticationOptions.CertificateContext = SslStreamCertificateContext.Create(selectedCert);
             }
 
@@ -856,19 +844,10 @@ namespace System.Net.Security
 
             SslStreamPal.QueryContextStreamSizes(_securityContext!, out StreamSizes streamSizes);
 
-            try
-            {
-                _headerSize = streamSizes.Header;
-                _trailerSize = streamSizes.Trailer;
-                _maxDataSize = checked(streamSizes.MaximumMessage - (_headerSize + _trailerSize));
-
-                Debug.Assert(_maxDataSize > 0, "_maxDataSize > 0");
-            }
-            catch (Exception e) when (!ExceptionCheck.IsFatal(e))
-            {
-                NetEventSource.Fail(this, "StreamSizes out of range.");
-                throw;
-            }
+            _headerSize = streamSizes.Header;
+            _trailerSize = streamSizes.Trailer;
+            _maxDataSize = checked(streamSizes.MaximumMessage - (_headerSize + _trailerSize));
+            Debug.Assert(_maxDataSize > 0, "_maxDataSize > 0");
 
             SslStreamPal.QueryContextConnectionInfo(_securityContext!, out _connectionInfo);
         }
@@ -915,13 +894,13 @@ namespace System.Net.Security
         {
             if ((uint)offset > (uint)(payload == null ? 0 : payload.Length))
             {
-                NetEventSource.Fail(this, "Argument 'offset' out of range.");
+                Debug.Fail("Argument 'offset' out of range.");
                 throw new ArgumentOutOfRangeException(nameof(offset));
             }
 
             if ((uint)count > (uint)(payload == null ? 0 : payload.Length - offset))
             {
-                NetEventSource.Fail(this, "Argument 'count' out of range.");
+                Debug.Fail("Argument 'count' out of range.");
                 throw new ArgumentOutOfRangeException(nameof(count));
             }
 
