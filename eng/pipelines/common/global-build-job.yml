@@ -20,6 +20,7 @@ parameters:
   extraStepsParameters: {}
   enableRichCodeNavigation: false
   richCodeNavigationLanguage: 'csharp'
+  richCodeNavigationEnvironment: 'production'
 
 jobs:
 - template: /eng/common/templates/job/job.yml
@@ -35,6 +36,7 @@ jobs:
       clean: all
     enableRichCodeNavigation: ${{ parameters.enableRichCodeNavigation }}
     richCodeNavigationLanguage: ${{ parameters.richCodeNavigationLanguage }}
+    richCodeNavigationEnvironment: ${{ parameters.richCodeNavigationEnvironment }}
 
     variables:
       - name: _osParameter
