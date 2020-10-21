@@ -47,6 +47,16 @@
 
     <ItemGroup>
       <TasksSrc Include="$(MSBuildThisFileDirectory)**\*.cs*;$(MSBuildThisFileDirectory)**\*.*proj" />
+      <TasksSrc Remove="$(MSBuildThisFileDirectory)mobile.tasks\AndroidAppBuilder\AndroidAppBuilder.csproj"
+                        Condition="'$(TargetOS)' != 'Android'" />
+      <TasksSrc Remove="$(MSBuildThisFileDirectory)mobile.tasks\AppleAppBuilder\AppleAppBuilder.csproj"
+                        Condition="'$(TargetOS)' != 'iOS' and '$(TargetOS)' != 'tvOS'" />
+      <TasksSrc Remove="$(MSBuildThisFileDirectory)mobile.tasks\WasmAppBuilder\WasmAppBuilder.csproj"
+                        Condition="'$(TargetOS)' != 'Browser'" />
+      <TasksSrc Remove="$(MSBuildThisFileDirectory)mobile.tasks\WasmBuildTasks\WasmBuildTasks.csproj"
+                        Condition="'$(TargetOS)' != 'Browser'" />
+      <TasksSrc Remove="$(MSBuildThisFileDirectory)mobile.tasks\AotCompilerTask\MonoAOTCompiler.csproj"
+                        Condition="'$(TargetsMobile)' != 'true'" />
     </ItemGroup>
   </Target>
 </Project>
