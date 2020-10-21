@@ -264,7 +264,6 @@ jobs:
     runtimeFlavor: mono
     platforms:
     - Android_x86
-    - Android_arm64
     - tvOS_x64
     - iOS_arm64
     - iOS_x86
@@ -354,6 +353,7 @@ jobs:
     buildConfig: Release
     runtimeFlavor: mono
     platforms:
+    - Android_arm64
     - Android_x64
     - iOS_x64
     variables:
