@@ -585,12 +585,8 @@
              Link="Internal\Cryptography\HashProvider.cs" />
     <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.GetRandomBytes.cs"
              Link="Common\Interop\Unix\System.Native\Interop.GetRandomBytes.cs" />
-    <Compile Include="$(CommonPath)Interop\Browser\Interop.Libraries.cs"
-             Link="Common\Interop\Browser\Interop.Libraries.cs" />
-    <Compile Include="$(CommonPath)Interop\Browser\System.Security.Cryptography.Native\Interop.Digest.cs"
-             Link="Common\Interop\Browser\System.Security.Cryptography.Native\Interop.Digest.cs" />
-    <Compile Include="$(CommonPath)Interop\Browser\System.Security.Cryptography.Native\Interop.PAL_HashAlgorithm.cs"
-             Link="Common\Interop\Browser\System.Security.Cryptography.Native\Interop.PAL_HashAlgorithm.cs" />
+    <Compile Include="$(CommonPath)Interop\Unix\Interop.Libraries.cs"
+             Link="Common\Interop\Unix\Interop.Libraries.cs" />
     <Compile Include="Internal\Cryptography\HashAlgorithmNames.cs" />
     <Compile Include="Internal\Cryptography\HashProviderDispenser.Browser.cs" />
     <Compile Include="Internal\Cryptography\HMACCommon.cs" />
@@ -607,6 +603,9 @@
     <Compile Include="System\Security\Cryptography\SHA384Managed.cs" />
     <Compile Include="System\Security\Cryptography\SHA512.cs" />
     <Compile Include="System\Security\Cryptography\SHA512Managed.cs" />
+    <Reference Include="System.Private.Runtime.InteropServices.JavaScript">
+       <HintPath>$(ArtifactsDir)bin/System.Private.Runtime.InteropServices.JavaScript/$(BuildTargetFramework)-$(TargetOS)-$(Configuration)/System.Private.Runtime.InteropServices.JavaScript.dll</HintPath>
+    </Reference>
   </ItemGroup>
   <ItemGroup>
     <Reference Include="System.Collections" />

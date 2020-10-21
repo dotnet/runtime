@@ -17,7 +17,6 @@ MONO_BIN_DIR?=$(BINDIR)/mono/Browser.wasm.$(CONFIG)
 NATIVE_BIN_DIR?=$(BINDIR)/native/net6.0-Browser-$(CONFIG)-wasm
 ICU_LIBDIR?=
 SYSTEM_NATIVE_LIBDIR?=$(TOP)/src/libraries/Native/Unix/System.Native
-SYSTEM_CRYPTO_NATIVE_BROWSER_LIBDIR?=$(TOP)/src/libraries/Native/Unix/System.Security.Cryptography.Native.Browser
 ENABLE_ES6?=false
 
 all: build-native icu-data
@@ -58,7 +57,6 @@ MONO_LIBS = \
 	$(MONO_BIN_DIR)/libmono-icall-table.a \
 	${NATIVE_BIN_DIR}/libSystem.Native.a \
 	${NATIVE_BIN_DIR}/libSystem.IO.Compression.Native.a \
-	${NATIVE_BIN_DIR}/libSystem.Security.Cryptography.Native.Browser.a \
 	$(ICU_LIBDIR)/libicuuc.a \
 	$(ICU_LIBDIR)/libicui18n.a \
 	$(ICU_LIBDIR)/libicudata.a
@@ -85,8 +83,8 @@ $(NATIVE_BIN_DIR):
 $(BUILDS_OBJ_DIR):
 	mkdir -p $$@
 
-$(NATIVE_BIN_DIR)/dotnet.js: $(BUILDS_OBJ_DIR)/driver.o $(BUILDS_OBJ_DIR)/pinvoke.o $(BUILDS_OBJ_DIR)/corebindings.o runtime/library_mono.js runtime/binding_support.js runtime/dotnet_support.js $(SYSTEM_NATIVE_LIBDIR)/pal_random.js $(SYSTEM_CRYPTO_NATIVE_BROWSER_LIBDIR)/pal_digest.js $(2) | $(NATIVE_BIN_DIR)
-	$(EMCC) $(EMCC_FLAGS) $(1) --js-library runtime/library_mono.js --js-library runtime/binding_support.js --js-library runtime/dotnet_support.js --js-library $(SYSTEM_NATIVE_LIBDIR)/pal_random.js --js-library $(SYSTEM_CRYPTO_NATIVE_BROWSER_LIBDIR)/pal_digest.js $(BUILDS_OBJ_DIR)/driver.o $(BUILDS_OBJ_DIR)/pinvoke.o $(BUILDS_OBJ_DIR)/corebindings.o $(2) -o $(NATIVE_BIN_DIR)/dotnet.js
+$(NATIVE_BIN_DIR)/dotnet.js: $(BUILDS_OBJ_DIR)/driver.o $(BUILDS_OBJ_DIR)/pinvoke.o $(BUILDS_OBJ_DIR)/corebindings.o runtime/library_mono.js runtime/binding_support.js runtime/dotnet_support.js $(SYSTEM_NATIVE_LIBDIR)/pal_random.js $(2) | $(NATIVE_BIN_DIR)
+	$(EMCC) $(EMCC_FLAGS) $(1) --js-library runtime/library_mono.js --js-library runtime/binding_support.js --js-library runtime/dotnet_support.js --js-library $(SYSTEM_NATIVE_LIBDIR)/pal_random.js $(BUILDS_OBJ_DIR)/driver.o $(BUILDS_OBJ_DIR)/pinvoke.o $(BUILDS_OBJ_DIR)/corebindings.o $(2) -o $(NATIVE_BIN_DIR)/dotnet.js
 
 $(BUILDS_OBJ_DIR)/pinvoke-table.h: $(PINVOKE_TABLE) | $(BUILDS_OBJ_DIR)
 	if cmp -s $(PINVOKE_TABLE) $$@ ; then : ; else cp $(PINVOKE_TABLE) $$@ ; fi
