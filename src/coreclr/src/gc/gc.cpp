@@ -11808,11 +11808,14 @@ void gc_heap::adjust_limit (uint8_t* start, size_t limit_size, generation* gen)
                         generation_free_obj_space (gen) += filler_free_obj_size;
                         *filler_free_obj_size_location = filler_free_obj_size;
                         uint8_t* old_loc = generation_last_free_list_allocated (gen);
+
                         // check if old_loc happens to be in a saved plug_and_gap with a pinned plug after it
-                        if (old_loc == mark_stack_array[saved_pinned_plug_index].first - sizeof(plug_and_gap))
+                        uint8_t* saved_plug_and_gap = pinned_plug (pinned_plug_of (saved_pinned_plug_index)) - sizeof(plug_and_gap);
+                        size_t offset = old_loc - saved_plug_and_gap;
+                        if (offset < sizeof(gap_reloc_pair))
                         {
                             // if so, set the bit in the saved info instead
-                            set_free_obj_in_compact_bit ((uint8_t*)(&mark_stack_array[saved_pinned_plug_index].saved_pre_plug_reloc));
+                            set_free_obj_in_compact_bit ((uint8_t*)(&pinned_plug_of (saved_pinned_plug_index)->saved_pre_plug_reloc) + offset);
                         }
                         else
                         {
@@ -15331,8 +15334,8 @@ BOOL gc_heap::should_set_bgc_mark_bit (uint8_t* o)
 {
     if (!current_sweep_seg)
     {
-        // check for the case that sweep has just started and current_sweep_seg is not yet set
-        return (current_bgc_state == bgc_sweep_soh);
+        assert (current_bgc_state == bgc_not_in_process);
+        return FALSE;
     }
 
     // This is cheaper so I am doing this comparision first before having to get the seg for o.
@@ -34730,6 +34733,12 @@ void gc_heap::background_sweep()
 
     current_bgc_state = bgc_sweep_soh;
     verify_soh_segment_list();
+
+#ifdef DOUBLY_LINKED_FL
+    // set the initial segment and position so that foreground GC knows where BGC is with the sweep
+    current_sweep_seg = heap_segment_rw (generation_start_segment (generation_of (max_generation)));
+    current_sweep_pos = 0;
+#endif //DOUBLY_LINKED_FL
 
 #ifdef FEATURE_BASICFREEZE
     generation* max_gen         = generation_of (max_generation);
