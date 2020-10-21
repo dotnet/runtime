@@ -122,7 +122,7 @@ jobs:
       value: ''
     - ${{ if eq(parameters.osGroup, 'Windows_NT') }}:
       - name: ninjaArg
-        value: '-ninja'
+        value: '-ninja '
 
     - ${{ parameters.variables }}
 
@@ -160,7 +160,7 @@ jobs:
 
     # Build CoreCLR Runtime
     - ${{ if ne(parameters.osGroup, 'Windows_NT') }}:
-      - script: $(Build.SourcesDirectory)/src/coreclr/build-runtime$(scriptExt) $(buildConfig) $(archType) $(crossArg) $(osArg) -ci $(compilerArg) $(clrBuildPALTestsBuildArg) $(officialBuildIdArg) $(clrInterpreterBuildArg) $(ninjaArg)
+      - script: $(Build.SourcesDirectory)/src/coreclr/build-runtime$(scriptExt) $(buildConfig) $(archType) $(crossArg) $(osArg) -ci $(compilerArg) $(clrBuildPALTestsBuildArg) $(ninjaArg) $(officialBuildIdArg) $(clrInterpreterBuildArg)
         displayName: Build CoreCLR Runtime
     - ${{ if eq(parameters.osGroup, 'Windows_NT') }}:
       - script: set __TestIntermediateDir=int&&$(Build.SourcesDirectory)/src/coreclr/build-runtime$(scriptExt) $(buildConfig) $(archType) -ci $(enforcePgoArg) $(officialBuildIdArg) $(clrInterpreterBuildArg)
