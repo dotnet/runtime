@@ -1371,8 +1371,11 @@ private:
     Thread       *m_InternalThread;
     INT32         m_Priority;
 
-    //We need to cache the thread id in managed code for perf reasons.
+    // We need to cache the thread id in managed code for perf reasons.
     INT32         m_ManagedThreadId;
+
+    // Only used by managed code, see comment there
+    bool          m_MayNeedResetForThreadPool;
 
 protected:
     // the ctor and dtor can do no useful work.

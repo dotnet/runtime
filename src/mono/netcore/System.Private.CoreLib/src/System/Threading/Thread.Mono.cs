@@ -79,6 +79,11 @@ namespace System.Threading
         internal ExecutionContext? _executionContext;
         internal SynchronizationContext? _synchronizationContext;
 
+        // This is used for a quick check on thread pool threads after running a work item to determine if the name, background
+        // state, or priority were changed by the work item, and if so to reset it. Other threads may also change some of those,
+        // but those types of changes may race with the reset anyway, so this field doesn't need to be synchronized.
+        private bool _mayNeedResetForThreadPool;
+
         private Thread()
         {
             InitInternal(this);
@@ -123,6 +128,7 @@ namespace System.Threading
                 else
                 {
                     ClrState(this, ThreadState.Background);
+                    _mayNeedResetForThreadPool = true;
                 }
             }
         }
@@ -162,6 +168,10 @@ namespace System.Threading
             {
                 // TODO: arguments check
                 SetPriority(this, (int)value);
+                if (value != ThreadPriority.Normal)
+                {
+                    _mayNeedResetForThreadPool = true;
+                }
             }
         }
 
@@ -205,18 +215,6 @@ namespace System.Threading
             if (millisecondsTimeout < Timeout.Infinite)
                 throw new ArgumentOutOfRangeException(nameof(millisecondsTimeout), millisecondsTimeout, SR.ArgumentOutOfRange_NeedNonNegOrNegative1);
             return JoinInternal(this, millisecondsTimeout);
-        }
-
-        internal void ResetThreadPoolThread()
-        {
-            if (_name != null)
-                Name = null;
-
-            if ((state & ThreadState.Background) == 0)
-                IsBackground = true;
-
-            if ((ThreadPriority)priority != ThreadPriority.Normal)
-                Priority = ThreadPriority.Normal;
         }
 
         private void SetCultureOnUnstartedThreadNoCheck(CultureInfo value, bool uiCulture)

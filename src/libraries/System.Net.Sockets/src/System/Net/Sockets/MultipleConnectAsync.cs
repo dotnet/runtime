@@ -41,12 +41,10 @@ namespace System.Net.Sockets
             Debug.Assert(!Monitor.IsEntered(_lockObject));
             lock (_lockObject)
             {
-                if (endPoint.AddressFamily != AddressFamily.Unspecified &&
-                    endPoint.AddressFamily != AddressFamily.InterNetwork &&
-                    endPoint.AddressFamily != AddressFamily.InterNetworkV6)
-                {
-                    NetEventSource.Fail(this, $"Unexpected endpoint address family: {endPoint.AddressFamily}");
-                }
+                Debug.Assert(endPoint.AddressFamily == AddressFamily.Unspecified ||
+                             endPoint.AddressFamily == AddressFamily.InterNetwork ||
+                             endPoint.AddressFamily == AddressFamily.InterNetworkV6,
+                             $"Unexpected endpoint address family: {endPoint.AddressFamily}");
 
                 _userArgs = args;
                 _endPoint = endPoint;
@@ -59,10 +57,7 @@ namespace System.Net.Sockets
                     return false;
                 }
 
-                if (_state != State.NotStarted)
-                {
-                    NetEventSource.Fail(this, "MultipleConnectAsync.StartConnectAsync(): Unexpected object state");
-                }
+                Debug.Assert(_state == State.NotStarted, "MultipleConnectAsync.StartConnectAsync(): Unexpected object state");
 
                 _state = State.DnsQuery;
 
@@ -106,18 +101,12 @@ namespace System.Net.Sockets
                     return true;
                 }
 
-                if (_state != State.DnsQuery)
-                {
-                    NetEventSource.Fail(this, "MultipleConnectAsync.DoDnsCallback(): Unexpected object state");
-                }
+                Debug.Assert(_state == State.DnsQuery, "MultipleConnectAsync.DoDnsCallback(): Unexpected object state");
 
                 try
                 {
                     _addressList = Dns.EndGetHostAddresses(result);
-                    if (_addressList == null)
-                    {
-                        NetEventSource.Fail(this, "MultipleConnectAsync.DoDnsCallback(): EndGetHostAddresses returned null!");
-                    }
+                    Debug.Assert(_addressList != null, "MultipleConnectAsync.DoDnsCallback(): EndGetHostAddresses returned null!");
                 }
                 catch (Exception e)
                 {
@@ -394,7 +383,7 @@ namespace System.Net.Sockets
                         break;
 
                     default:
-                        NetEventSource.Fail(this, "Unexpected object state");
+                        Debug.Fail($"Unexpected object state: {_state}");
                         break;
                 }
 

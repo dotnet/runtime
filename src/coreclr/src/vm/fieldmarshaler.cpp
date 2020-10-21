@@ -251,6 +251,7 @@ bool IsFieldBlittable(
             break;
         case ELEMENT_TYPE_R4:
             isBlittable = (nativeType == NATIVE_TYPE_DEFAULT) || (nativeType == NATIVE_TYPE_R4);
+            break;
         case ELEMENT_TYPE_R8:
             isBlittable = (nativeType == NATIVE_TYPE_DEFAULT) || (nativeType == NATIVE_TYPE_R8);
             break;
