@@ -176,6 +176,10 @@
 #include "stacksampler.h"
 #endif
 
+#ifndef CROSSGEN_COMPILE
+#include "win32threadpool.h"
+#endif
+
 #include <shlwapi.h>
 
 #include "bbsweep.h"
@@ -673,6 +677,8 @@ void EEStartupHelper()
         // Initialize global configuration settings based on startup flags
         // This needs to be done before the EE has started
         InitializeStartupFlags();
+
+        ThreadpoolMgr::StaticInitialize();
 
         MethodDescBackpatchInfoTracker::StaticInitialize();
         CodeVersionManager::StaticInitialize();

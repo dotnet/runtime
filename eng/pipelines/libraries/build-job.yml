@@ -4,6 +4,7 @@ parameters:
   osSubgroup: ''
   archType: ''
   targetRid: ''
+  crossBuild: false
   crossrootfsDir: ''
   framework: 'net6.0'
   isOfficialBuild: false
@@ -36,6 +37,7 @@ jobs:
       osGroup:  ${{ parameters.osGroup }}
       osSubgroup:  ${{ parameters.osSubgroup }}
       archType:  ${{ parameters.archType }}
+      crossBuild: ${{ parameters.crossBuild }}
       crossrootfsDir: ${{ parameters.crossrootfsDir }}
       framework:  ${{ parameters.framework }}
       isOfficialBuild: ${{ parameters.isOfficialBuild }}

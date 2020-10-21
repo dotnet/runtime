@@ -13,7 +13,7 @@ namespace Microsoft.WebAssembly.Diagnostics
 {
     internal class InspectorClient : DevToolsClient
     {
-        List<(int, TaskCompletionSource<Result>)> pending_cmds = new List<(int, TaskCompletionSource<Result>)>();
+        Dictionary<MessageId, TaskCompletionSource<Result>> pending_cmds = new Dictionary<MessageId, TaskCompletionSource<Result>>();
         Func<string, JObject, CancellationToken, Task> onEvent;
         int next_cmd_id;
 
@@ -22,18 +22,15 @@ namespace Microsoft.WebAssembly.Diagnostics
         Task HandleMessage(string msg, CancellationToken token)
         {
             var res = JObject.Parse(msg);
-            if (res["id"] == null)
-                DumpProtocol(string.Format("Event method: {0} params: {1}", res["method"], res["params"]));
-            else
-                DumpProtocol(string.Format("Response id: {0} res: {1}", res["id"], res));
 
             if (res["id"] == null)
                 return onEvent(res["method"].Value<string>(), res["params"] as JObject, token);
-            var id = res["id"].Value<int>();
-            var idx = pending_cmds.FindIndex(e => e.Item1 == id);
-            var item = pending_cmds[idx];
-            pending_cmds.RemoveAt(idx);
-            item.Item2.SetResult(Result.FromJson(res));
+
+            var id = res.ToObject<MessageId>();
+            if (!pending_cmds.Remove(id, out var item))
+                logger.LogError($"Unable to find command {id}");
+
+            item.SetResult(Result.FromJson(res));
             return null;
         }
 
@@ -49,6 +46,9 @@ namespace Microsoft.WebAssembly.Diagnostics
         }
 
         public Task<Result> SendCommand(string method, JObject args, CancellationToken token)
+            => SendCommand(new SessionId(null), method, args, token);
+
+        public Task<Result> SendCommand(SessionId sessionId, string method, JObject args, CancellationToken token)
         {
             int id = ++next_cmd_id;
             if (args == null)
@@ -62,20 +62,13 @@ namespace Microsoft.WebAssembly.Diagnostics
             });
 
             var tcs = new TaskCompletionSource<Result>();
-            pending_cmds.Add((id, tcs));
+            pending_cmds[new MessageId(sessionId.sessionId, id)] = tcs;
 
             var str = o.ToString();
-            //Log ("protocol", $"SendCommand: id: {id} method: {method} params: {args}");
 
             var bytes = Encoding.UTF8.GetBytes(str);
             Send(bytes, token);
             return tcs.Task;
-        }
-
-        protected virtual void DumpProtocol(string msg)
-        {
-            // Console.WriteLine (msg);
-            //XXX make logging not stupid
         }
     }
 }

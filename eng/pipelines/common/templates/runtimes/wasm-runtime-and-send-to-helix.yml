@@ -5,6 +5,7 @@ parameters:
   osSubgroup: ''
   container: ''
   testGroup: ''
+  crossBuild: false
   crossrootfsDir: ''
   readyToRun: false
   liveLibrariesBuildConfig: ''
@@ -80,4 +81,4 @@ steps:
 
         helixProjectArguments: '$(Build.SourcesDirectory)/src/tests/Common/helixpublishwitharcade.proj'
 
-        scenarios: normal 
+        scenarios: normal

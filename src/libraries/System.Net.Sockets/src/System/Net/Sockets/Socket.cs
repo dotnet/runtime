@@ -3160,7 +3160,7 @@ namespace System.Net.Sockets
                     // That same map is implemented here just in case.
                     if (errorCode == SocketError.MessageSize)
                     {
-                        NetEventSource.Fail(this, "Returned WSAEMSGSIZE!");
+                        Debug.Fail("Returned WSAEMSGSIZE!");
                         errorCode = SocketError.IOPending;
                     }
                 }
@@ -4391,7 +4391,6 @@ namespace System.Net.Sockets
                     }
                     catch (ObjectDisposedException)
                     {
-                        NetEventSource.Fail(this, $"handle:{handle}, Closing the handle threw ObjectDisposedException.");
                     }
                 }
             }

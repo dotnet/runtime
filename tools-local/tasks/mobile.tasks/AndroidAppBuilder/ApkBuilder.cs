@@ -180,7 +180,8 @@ public class ApkBuilder
         string packageId = $"net.dot.{ProjectName}";
 
         File.WriteAllText(Path.Combine(javaSrcFolder, "MainActivity.java"),
-            Utils.GetEmbeddedResource("MainActivity.java"));
+            Utils.GetEmbeddedResource("MainActivity.java")
+                .Replace("%EntryPointLibName%", Path.GetFileName(entryPointLib)));
 
         string monoRunner = Utils.GetEmbeddedResource("MonoRunner.java")
             .Replace("%EntryPointLibName%", Path.GetFileName(entryPointLib));

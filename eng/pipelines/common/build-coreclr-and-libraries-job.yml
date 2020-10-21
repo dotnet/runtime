@@ -6,6 +6,7 @@ parameters:
   targetRid: ''
   container: ''
   testGroup: ''
+  crossBuild: false
   crossrootfsDir: ''
   timeoutInMinutes: ''
   signBinaries: false
@@ -25,6 +26,7 @@ jobs:
     targetRid: ${{ parameters.targetRid }}
     container: ${{ parameters.container }}
     testGroup: ${{ parameters.testGroup }}
+    crossBuild: ${{ parameters.crossBuild }}
     crossrootfsDir: ${{ parameters.crossrootfsDir }}
     timeoutInminutes: ${{ parameters.timeoutInMinutes }}
     signBinaries: ${{ parameters.signBinaries }}
@@ -43,6 +45,7 @@ jobs:
     osSubgroup: ${{ parameters.osSubgroup }}
     container: ${{ parameters.container }}
     testGroup: ${{ parameters.testGroup }}
+    crossBuild: ${{ parameters.crossBuild }}
     crossrootfsDir: ${{ parameters.crossrootfsDir }}
     timeoutInminutes: ${{ parameters.timeoutInMinutes }}
     variables: ${{ parameters.variables }}

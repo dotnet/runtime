@@ -204,17 +204,17 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
         case 4:
             assert(intrin.op4 != nullptr);
             op4Reg = intrin.op4->GetRegNum();
-            __fallthrough;
+            FALLTHROUGH;
 
         case 3:
             assert(intrin.op3 != nullptr);
             op3Reg = intrin.op3->GetRegNum();
-            __fallthrough;
+            FALLTHROUGH;
 
         case 2:
             assert(intrin.op2 != nullptr);
             op2Reg = intrin.op2->GetRegNum();
-            __fallthrough;
+            FALLTHROUGH;
 
         case 1:
             assert(intrin.op1 != nullptr);
