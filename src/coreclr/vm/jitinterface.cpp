@@ -8944,7 +8944,7 @@ bool CEEInfo::resolveVirtualMethodHelper(CORINFO_DEVIRTUALIZATION_INFO * info)
                 pDevirtMD = MethodDesc::FindOrCreateAssociatedMethodDesc(
                     pDevirtMD,
                     pDerivedMT,
-                    (!pDerivedMT->IsStatic() && pDerivedMT->GetMethodTable()->IsValueType()),       // forceBoxedEntryPoint
+                    (!pDevirtMD->IsStatic() && pDerivedMT->IsValueType()),       // forceBoxedEntryPoint
                     pDevirtMD->GetMethodInstantiation(),                                            // for method themselves that are generic
                     FALSE,                                                                          // don't want MD that requires inst. arguments
                     TRUE                                                                            // ensure that methods on generic interfaces are returned as instantiated method descs
