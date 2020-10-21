@@ -8945,11 +8945,11 @@ bool CEEInfo::resolveVirtualMethodHelper(CORINFO_DEVIRTUALIZATION_INFO * info)
                     pDevirtMD,
                     pDerivedMT,
                     (!pDevirtMD->IsStatic() && pDerivedMT->IsValueType()),       // forceBoxedEntryPoint
-                    pDevirtMD->GetMethodInstantiation(),                                            // for method themselves that are generic
-                    FALSE,                                                                          // don't want MD that requires inst. arguments
-                    TRUE                                                                            // ensure that methods on generic interfaces are returned as instantiated method descs
+                    pDevirtMD->GetMethodInstantiation(),                         // for method themselves that are generic
+                    FALSE,                                                       // don't want MD that requires inst. arguments
+                    TRUE                                                         // ensure that methods on generic interfaces are returned as instantiated method descs
                 );
-                _ASSERTE(pDevirtMD->IsInstantiatingStub());
+                _ASSERTE(pDevirtMD->IsWrapperStub());
             }
         }
     }
