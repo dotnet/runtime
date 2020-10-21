@@ -3385,7 +3385,6 @@
             <Issue>https://github.com/dotnet/runtime/issues/41471</Issue>
         </ExcludeList>
     </ItemGroup>
-    </ItemGroup>
 
     <ItemGroup Condition=" $(TargetOS) == 'Android' " >
         <ExcludeList Include = "$(XunitTestBinBase)/baseservices/TieredCompilation/**">
