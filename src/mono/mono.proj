@@ -4,6 +4,9 @@
       Build properties:
       - MonoEnableInterpreter - enable the interpreter
       - MonoEnableLLVM - enable LLVM
+      - MonoLLVMDir - [optional] the directory where LLVM is located
+      - MonoAOTEnableLLVM - enable LLVM for an AOT-only Mono
+      - MonoAOTLLVMDir - [optional] the directory where LLVM is located, for an AOT-only Mono
       - MonoVerboseBuild - enable verbose build
   -->
 
@@ -31,6 +34,7 @@
     <BuildMonoAOTCrossCompiler Condition="'$(TargetsBrowser)' == 'true'">true</BuildMonoAOTCrossCompiler>
     <CrossConfigH Condition="'$(BuildMonoAOTCrossCompiler)' == 'true'">$(MonoObjDir)cross\config.h</CrossConfigH>
     <MonoBundleLLVMOptimizer Condition="'$(MonoEnableLLVM)' == 'true'">true</MonoBundleLLVMOptimizer>
+    <MonoAOTBundleLLVMOptimizer Condition="'$(MonoAOTEnableLLVM)' == 'true'">true</MonoAOTBundleLLVMOptimizer>
     <MonoCCompiler>$(Compiler)</MonoCCompiler>
     <MonoCCompiler Condition="'$(MonoCCompiler)' == ''">clang</MonoCCompiler>
     <!-- when we use runtime/build.sh -gcc, it is passed to eng/build.sh which sets the raw value to $(Compiler); strip the leading hyphens. -->
@@ -143,10 +147,16 @@
     <ItemGroup Condition="'$(TargetOS)' == 'Linux' and '$(MonoEnableLLVM)' == 'true' and '$(MonoLLVMUseCxx11Abi)' != 'true'">
       <_MonoCXXFLAGS Include="-D_GLIBCXX_USE_CXX11_ABI=0" />
     </ItemGroup>
+    <ItemGroup Condition="'$(TargetOS)' == 'Linux' and '$(MonoAOTEnableLLVM)' == 'true' and '$(MonoAOTLLVMUseCxx11Abi)' != 'true'">
+      <_MonoAOTCXXFLAGS Include="-D_GLIBCXX_USE_CXX11_ABI=0" />
+    </ItemGroup>
 
     <!-- We build LLVM bits for ARM64 Linux with C++11 ABI (Ubuntu 16.04 has libstdc++ > 5.1)-->
     <ItemGroup Condition="'$(TargetOS)' == 'Linux' and '$(MonoEnableLLVM)' == 'true' and '$(MonoLLVMUseCxx11Abi)' == 'true'">
       <_MonoCXXFLAGS Include="-D_GLIBCXX_USE_CXX11_ABI=1" />
+    </ItemGroup>
+    <ItemGroup Condition="'$(TargetOS)' == 'Linux' and '$(MonoAOTEnableLLVM)' == 'true' and '$(MonoAOTLLVMUseCxx11Abi)' == 'true'">
+      <_MonoAOTCXXFLAGS Include="-D_GLIBCXX_USE_CXX11_ABI=1" />
     </ItemGroup>
 
     <!-- ARM Linux cross build options on CI -->
@@ -354,6 +364,10 @@
       <MonoAotCrossOffsetsCommand>python3 $(MonoProjectRoot)mono/tools/offsets-tool/offsets-tool.py @(MonoAotCrossOffsetsToolParams, ' ')</MonoAotCrossOffsetsCommand>
     </PropertyGroup>
 
+    <PropertyGroup>
+      <_MonoAOTCXXFLAGSOption>-DCMAKE_CXX_FLAGS="@(_MonoAOTCXXFLAGS, ' ')"</_MonoAOTCXXFLAGSOption>
+    </PropertyGroup>
+
     <ItemGroup>
       <MonoAOTCMakeArgs Include="-DAOT_TARGET_TRIPLE=$(MonoAotAbi)"/>
       <MonoAOTCMakeArgs Condition="'$(MonoBuildTool)' == 'ninja'" Include="-G Ninja"/>
@@ -365,7 +379,8 @@
       <MonoAOTCMakeArgs Include="-DDISABLE_SHARED_LIBS=1" />
       <MonoAOTCMakeArgs Include="-DDISABLE_LIBS=1" />
       <MonoAOTCMakeArgs Condition="'$(MonoAotOffsetsFile)' != ''" Include="-DAOT_OFFSETS_FILE=&quot;$(MonoAotOffsetsFile)&quot;" />
-      <MonoAOTCMakeArgs Include="-DLLVM_PREFIX=$(MonoLLVMDir)" />
+      <MonoAOTCMakeArgs Condition="'$(MonoAOTEnableLLVM)' == 'true'" Include="-DLLVM_PREFIX=$(MonoAOTLLVMDir)" />
+      <MonoAOTCMakeArgs Include="$(_MonoAOTCXXFLAGSOption)" />
     </ItemGroup>
 
     <MakeDir Directories="$(MonoObjDir)/cross" />
@@ -415,6 +430,12 @@
         <Destination>$(RuntimeBinDir)cross\llc</Destination>
       </_MonoRuntimeArtifacts>
       <_MonoRuntimeArtifacts Condition="'$(TargetOS)' == 'iOS' or '$(TargetOS)' == 'tvOS'" Include="$(MonoLLVMDir)\bin\opt">
+        <Destination>$(RuntimeBinDir)cross\opt</Destination>
+      </_MonoRuntimeArtifacts>
+      <_MonoRuntimeArtifacts Condition="'$(MonoAOTBundleLLVMOptimizer)' == 'true'" Include="$(MonoAOTLLVMDir)\bin\llc">
+        <Destination>$(RuntimeBinDir)cross\llc</Destination>
+      </_MonoRuntimeArtifacts>
+      <_MonoRuntimeArtifacts Condition="'$(MonoAOTBundleLLVMOptimizer)' == 'true'" Include="$(MonoAOTLLVMDir)\bin\opt">
         <Destination>$(RuntimeBinDir)cross\opt</Destination>
       </_MonoRuntimeArtifacts>
       <_MonoIncludeArtifacts Include="$(MonoObjDir)out\include\**" />
