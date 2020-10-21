@@ -13,6 +13,7 @@ using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 
+#pragma warning disable CA1416 // Validate platform compatibility
 namespace System.Net.WebSockets
 {
     internal sealed class WebSocketHandle

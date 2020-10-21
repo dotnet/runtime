@@ -15,6 +15,7 @@ using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Diagnostics;
+using System.Runtime.Versioning;
 
 namespace System.Linq.Parallel
 {
@@ -84,6 +85,7 @@ namespace System.Linq.Parallel
         /// This method is responsible for enumerating results and enqueuing them to
         /// the output buffer as appropriate.  Each base class implements its own.
         /// </summary>
+        [UnsupportedOSPlatform("browser")]
         protected override void SpoolingWork()
         {
             TOutput element = default(TOutput)!;

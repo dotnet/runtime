@@ -16,7 +16,9 @@ namespace System.Transactions
         bool System.IAsyncResult.CompletedSynchronously { get { throw null; } }
         bool System.IAsyncResult.IsCompleted { get { throw null; } }
         public System.IAsyncResult BeginCommit(System.AsyncCallback? asyncCallback, object? asyncState) { throw null; }
+        [System.Runtime.Versioning.UnsupportedOSPlatform("browser")]
         public void Commit() { }
+        [System.Runtime.Versioning.UnsupportedOSPlatform("browser")]
         public void EndCommit(System.IAsyncResult asyncResult) { }
     }
     public enum DependentCloneOption

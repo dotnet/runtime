@@ -5,6 +5,7 @@ using System.Collections;
 using System.Globalization;
 using System.Net.NetworkInformation;
 using System.Runtime.Serialization;
+using System.Runtime.Versioning;
 using System.Text.RegularExpressions;
 
 namespace System.Net
@@ -157,7 +158,7 @@ namespace System.Net
             }
 
             string hostString = host.Host;
-
+#pragma warning disable CA1416 // Validate platform compatibility, it might need annotated as Unsupported on browser, but several public APIs will be affected, suppressing for now
             if (IPAddress.TryParse(hostString, out IPAddress? hostAddress))
             {
                 return IPAddress.IsLoopback(hostAddress) || IsAddressLocal(hostAddress);
@@ -172,11 +173,13 @@ namespace System.Net
 
             // If it matches the primary domain, it's local.  (Whether or not the hostname matches.)
             string local = "." + IPGlobalProperties.GetIPGlobalProperties().DomainName;
+#pragma warning restore CA1416 // Validate platform compatibility
             return
                 local.Length == (hostString.Length - dot) &&
                 string.Compare(local, 0, hostString, dot, local.Length, StringComparison.OrdinalIgnoreCase) == 0;
         }
 
+        [UnsupportedOSPlatform("browser")]
         private static bool IsAddressLocal(IPAddress ipAddress)
         {
             // Perf note: The .NET Framework caches this and then uses network change notifications to track

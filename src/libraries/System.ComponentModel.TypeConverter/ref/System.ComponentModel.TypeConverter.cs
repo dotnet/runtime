@@ -1023,6 +1023,7 @@ namespace System.ComponentModel
         public virtual bool SupportsChangeEvents { get { throw null; } }
         public virtual void AddValueChanged(object component, System.EventHandler handler) { }
         public abstract bool CanResetValue(object component);
+        [System.Runtime.Versioning.UnsupportedOSPlatform("browser")]
         protected object CreateInstance(System.Type type) { throw null; }
         public override bool Equals(object obj) { throw null; }
         protected override void FillAttributes(System.Collections.IList attributeList) { }

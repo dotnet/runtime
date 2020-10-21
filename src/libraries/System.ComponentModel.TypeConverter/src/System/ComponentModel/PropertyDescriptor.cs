@@ -4,6 +4,7 @@
 using System.Collections;
 using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
+using System.Runtime.Versioning;
 
 namespace System.ComponentModel
 {
@@ -69,7 +70,7 @@ namespace System.ComponentModel
                     if (attr.ConverterTypeName != null && attr.ConverterTypeName.Length > 0)
                     {
                         Type converterType = GetTypeFromName(attr.ConverterTypeName);
-                        if (converterType != null && typeof(TypeConverter).IsAssignableFrom(converterType))
+                        if (converterType != null && typeof(TypeConverter).IsAssignableFrom(converterType) && !OperatingSystem.IsBrowser())
                         {
                             _converter = (TypeConverter)CreateInstance(converterType);
                         }
@@ -183,6 +184,7 @@ namespace System.ComponentModel
         /// <summary>
         /// Creates an instance of the specified type.
         /// </summary>
+        [UnsupportedOSPlatform("browser")]
         protected object CreateInstance(Type type)
         {
             Type[] typeArgs = new Type[] { typeof(Type) };
@@ -272,7 +274,7 @@ namespace System.ComponentModel
                     if (editorBaseType == editorType)
                     {
                         Type type = GetTypeFromName(attr.EditorTypeName);
-                        if (type != null)
+                        if (type != null && !OperatingSystem.IsBrowser())
                         {
                             editor = CreateInstance(type);
                             break;

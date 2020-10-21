@@ -28,6 +28,7 @@ namespace Microsoft.Extensions.Logging.Console
             return SetForegroundColor(foreground) || backgroundChanged;
         }
 
+#pragma warning disable CA1416 // Validate platform compatibility, not sure if this assembly is used for browser, suppressing for now
         private bool SetBackgroundColor(ConsoleColor? background)
         {
             if (background.HasValue)
@@ -52,6 +53,7 @@ namespace Microsoft.Extensions.Logging.Console
         {
             System.Console.ResetColor();
         }
+#pragma warning restore CA1416
 
         private void WriteToConsole(string message, int startIndex, int length, ConsoleColor? background, ConsoleColor? foreground)
         {

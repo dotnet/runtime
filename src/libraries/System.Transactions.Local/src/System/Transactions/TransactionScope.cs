@@ -806,7 +806,9 @@ namespace System.Transactions
                         // If we are supposed to commit on dispose, cast to CommittableTransaction and commit it.
                         if (null != _committableTransaction)
                         {
+#pragma warning disable CA1416 // Validate platform compatibility, not sure if we need to add condition instead
                             _committableTransaction.Commit();
+#pragma warning restore CA1416
                         }
                         else
                         {

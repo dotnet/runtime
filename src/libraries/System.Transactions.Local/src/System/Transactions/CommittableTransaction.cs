@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics;
+using System.Runtime.Versioning;
 using System.Threading;
 
 namespace System.Transactions
@@ -76,6 +77,7 @@ namespace System.Transactions
 
         // Forward the commit to the state machine to take the appropriate action.
         //
+        [UnsupportedOSPlatform("browser")]
         public void Commit()
         {
             TransactionsEtwProvider etwLog = TransactionsEtwProvider.Log;
@@ -156,6 +158,7 @@ namespace System.Transactions
             }
         }
 
+        [UnsupportedOSPlatform("browser")]
         public void EndCommit(IAsyncResult asyncResult)
         {
             TransactionsEtwProvider etwLog = TransactionsEtwProvider.Log;
