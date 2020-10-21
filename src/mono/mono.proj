@@ -397,15 +397,15 @@
   <!-- General targets -->
   <Target Name="BuildMono" AfterTargets="Build" DependsOnTargets="CheckEnv;BuildMonoRuntimeUnix;BuildMonoCrossUnix;BuildMonoRuntimeWindows">
     <PropertyGroup>
-      <_MonoRuntimeFilePath Condition="'$(TargetsWindows)' == 'true' and '$(Platform)' == 'x64'">$(MonoObjDir)x64\Bin\$(Configuration)\mono-2.0-sgen.dll</_MonoRuntimeFilePath>
-      <_MonoRuntimeFilePath Condition="'$(TargetsWindows)' == 'true' and '$(Platform)' == 'x86'">$(MonoObjDir)Win32\Bin\$(Configuration)\mono-2.0-sgen.dll</_MonoRuntimeFilePath>
-      <_MonoRuntimeFilePath Condition="'$(TargetsOSX)' == 'true'">$(MonoObjDir)out\lib\libmonosgen-2.0.dylib</_MonoRuntimeFilePath>
-      <_MonoRuntimeFilePath Condition="'$(TargetsiOS)' == 'true'">$(MonoObjDir)out\lib\libmonosgen-2.0.dylib</_MonoRuntimeFilePath>
-      <_MonoRuntimeFilePath Condition="'$(TargetstvOS)' == 'true'">$(MonoObjDir)out\lib\libmonosgen-2.0.dylib</_MonoRuntimeFilePath>
-      <_MonoRuntimeFilePath Condition="'$(TargetsAndroid)' == 'true'">$(MonoObjDir)out\lib\libmonosgen-2.0.so</_MonoRuntimeFilePath>
-      <_MonoRuntimeFilePath Condition="'$(TargetsBrowser)' == 'true'">$(MonoObjDir)out\lib\libmonosgen-2.0.a</_MonoRuntimeFilePath>
-      <_MonoRuntimeFilePath Condition="'$(_MonoRuntimeFilePath)' == ''">$(MonoObjDir)mono\mini\.libs\libmonosgen-2.0.so</_MonoRuntimeFilePath>
-      <_MonoRuntimeStaticFilePath Condition="'$(TargetsiOS)' == 'true' or '$(TargetstvOS)' == 'true' or '$(TargetsAndroid)' == 'true'">$(MonoObjDir)out\lib\libmonosgen-2.0.a</_MonoRuntimeStaticFilePath>
+      <_MonoRuntimeFilePath Condition="'$(BuildMonoAOTCrossCompilerOnly)' != 'true' and '$(TargetsWindows)' == 'true' and '$(Platform)' == 'x64'">$(MonoObjDir)x64\Bin\$(Configuration)\mono-2.0-sgen.dll</_MonoRuntimeFilePath>
+      <_MonoRuntimeFilePath Condition="'$(BuildMonoAOTCrossCompilerOnly)' != 'true' and '$(TargetsWindows)' == 'true' and '$(Platform)' == 'x86'">$(MonoObjDir)Win32\Bin\$(Configuration)\mono-2.0-sgen.dll</_MonoRuntimeFilePath>
+      <_MonoRuntimeFilePath Condition="'$(BuildMonoAOTCrossCompilerOnly)' != 'true' and '$(TargetsOSX)' == 'true'">$(MonoObjDir)out\lib\libmonosgen-2.0.dylib</_MonoRuntimeFilePath>
+      <_MonoRuntimeFilePath Condition="'$(BuildMonoAOTCrossCompilerOnly)' != 'true' and '$(TargetsiOS)' == 'true'">$(MonoObjDir)out\lib\libmonosgen-2.0.dylib</_MonoRuntimeFilePath>
+      <_MonoRuntimeFilePath Condition="'$(BuildMonoAOTCrossCompilerOnly)' != 'true' and '$(TargetstvOS)' == 'true'">$(MonoObjDir)out\lib\libmonosgen-2.0.dylib</_MonoRuntimeFilePath>
+      <_MonoRuntimeFilePath Condition="'$(BuildMonoAOTCrossCompilerOnly)' != 'true' and '$(TargetsAndroid)' == 'true'">$(MonoObjDir)out\lib\libmonosgen-2.0.so</_MonoRuntimeFilePath>
+      <_MonoRuntimeFilePath Condition="'$(BuildMonoAOTCrossCompilerOnly)' != 'true' and '$(TargetsBrowser)' == 'true'">$(MonoObjDir)out\lib\libmonosgen-2.0.a</_MonoRuntimeFilePath>
+      <_MonoRuntimeFilePath Condition="'$(BuildMonoAOTCrossCompilerOnly)' != 'true' and '$(_MonoRuntimeFilePath)' == ''">$(MonoObjDir)mono\mini\.libs\libmonosgen-2.0.so</_MonoRuntimeFilePath>
+      <_MonoRuntimeStaticFilePath Condition="'$(BuildMonoAOTCrossCompilerOnly)' != 'true' and ('$(TargetsiOS)' == 'true' or '$(TargetstvOS)' == 'true' or '$(TargetsAndroid)' == 'true')">$(MonoObjDir)out\lib\libmonosgen-2.0.a</_MonoRuntimeStaticFilePath>
       <_MonoAotCrossFilePath Condition="'$(BuildMonoAOTCrossCompiler)' == 'true'">$(MonoObjDir)cross\out\bin\mono-sgen</_MonoAotCrossFilePath>
     </PropertyGroup>
 
