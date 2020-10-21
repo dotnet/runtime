@@ -16,6 +16,7 @@ Param(
   [ValidateSet("Debug","Release","Checked")][string][Alias('rc')]$runtimeConfiguration,
   [ValidateSet("Debug","Release")][string][Alias('lc')]$librariesConfiguration,
   [ValidateSet("CoreCLR","Mono")][string][Alias('rf')]$runtimeFlavor,
+  [switch]$ninja,
   [Parameter(ValueFromRemainingArguments=$true)][String[]]$properties
 )
 
@@ -73,6 +74,9 @@ function Get-Help() {
   Write-Host "  -testnobuild            Skip building tests when invoking -test."
   Write-Host "  -testscope              Scope tests, allowed values: innerloop, outerloop, all."
   Write-Host ""
+
+  Write-Host "Native build settings:"
+  Write-Host "  -ninja                  Use Ninja instead of MSBuild to run the native build."
 
   Write-Host "Command-line arguments not listed above are passed through to MSBuild."
   Write-Host "The above arguments can be shortened as much as to be unambiguous."
@@ -225,6 +229,7 @@ foreach ($argument in $PSBoundParameters.Keys)
     "allconfigurations"      { $arguments += " /p:BuildAllConfigurations=true" }
     "properties"             { $arguments += " " + $properties }
     "verbosity"              { $arguments += " -$argument " + $($PSBoundParameters[$argument]) }
+    "ninja"                  { $arguments += " /p:Ninja=$($PSBoundParameters[$argument])" }
     # configuration and arch can be specified multiple times, so they should be no-ops here
     "configuration"          {}
     "arch"                   {}
