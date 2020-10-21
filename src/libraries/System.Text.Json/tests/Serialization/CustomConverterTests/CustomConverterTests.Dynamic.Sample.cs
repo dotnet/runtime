@@ -472,10 +472,6 @@ namespace System.Text.Json.Serialization.Samples
                     typeof(JsonDynamicType).IsAssignableFrom(typeToConvert);
             }
 
-            // Instead of re-implementing these converters, forward to them.
-            // We don't forward to other converters at this time.
-            private JsonConverter<JsonElement> _jsonElementConverter;
-
             public override sealed object Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
             {
                 switch (reader.TokenType)
@@ -495,8 +491,7 @@ namespace System.Text.Json.Serialization.Samples
                     case JsonTokenType.True:
                         return new JsonDynamicBoolean(true, options);
                     case JsonTokenType.Number:
-                        _jsonElementConverter ??= (JsonConverter<JsonElement>)options.GetConverter(typeof(JsonElement));
-                        JsonElement jsonElement = _jsonElementConverter.Read(ref reader, typeof(JsonElement), options);
+                        JsonElement jsonElement = JsonElement.ParseValue(ref reader);
                         return new JsonDynamicNumber(jsonElement, options);
                     case JsonTokenType.Null:
                         return null;
@@ -526,8 +521,8 @@ namespace System.Text.Json.Serialization.Samples
                         break;
                     }
 
-                    object element = Read(ref reader, typeof(object), options);
-                    dynamicArray.Add(element);
+                    object value = Read(ref reader, typeof(object), options);
+                    dynamicArray.Add(value);
                 }
             }
 
@@ -549,8 +544,8 @@ namespace System.Text.Json.Serialization.Samples
                     string key = reader.GetString();
 
                     reader.Read();
-                    object element = Read(ref reader, typeof(object), options);
-                    dynamicObject.Add(key, element);
+                    object value = Read(ref reader, typeof(object), options);
+                    dynamicObject.Add(key, value);
                 }
             }
         }
