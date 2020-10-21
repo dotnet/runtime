@@ -55,8 +55,8 @@ namespace System.Threading
         [Conditional("DEBUG")]
         private void ResetOwnerThread()
         {
-#if DEBUG
             VerifyIsLocked();
+#if DEBUG
             _ownerThread = null;
 #endif
         }
@@ -64,8 +64,8 @@ namespace System.Threading
         [Conditional("DEBUG")]
         private void SetOwnerThreadToCurrent()
         {
-#if DEBUG
             VerifyIsNotLockedByAnyThread();
+#if DEBUG
             _ownerThread = Thread.CurrentThread;
 #endif
         }

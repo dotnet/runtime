@@ -809,7 +809,7 @@ namespace ILCompiler
                 return ComputeExplicitFieldLayout(type, numInstanceFields);
             }
             else
-            if (MarshalUtils.IsBlittableType(type) || IsManagedSequentialType(type))
+            if (type.IsEnum || MarshalUtils.IsBlittableType(type) || IsManagedSequentialType(type))
             {
                 return ComputeSequentialFieldLayout(type, numInstanceFields);
             }
