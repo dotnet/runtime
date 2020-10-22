@@ -122,7 +122,7 @@ jobs:
       value: ''
     - ${{ if eq(parameters.osGroup, 'Windows_NT') }}:
       - name: ninjaArg
-        value: '-ninja '
+        value: '-ninja'
 
     - ${{ parameters.variables }}
 
