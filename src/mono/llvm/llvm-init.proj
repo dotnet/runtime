@@ -35,16 +35,16 @@
       <LLVMFiles Include="$(NuGetPackageRoot)\runtime.$(MonoLLVMHostOS)-$(MonoLLVMTargetArchitecture).microsoft.netcore.runtime.mono.llvm.sdk\$(MonoLLVMSDKVersion)\tools\$(MonoLLVMHostOS)-$(MonoLLVMTargetArchitecture)\**" />
       <LLVMFiles Include="$(NuGetPackageRoot)\runtime.$(MonoLLVMHostOS)-$(MonoLLVMTargetArchitecture).microsoft.netcore.runtime.mono.llvm.tools\$(MonoLLVMSDKVersion)\tools\$(MonoLLVMHostOS)-$(MonoLLVMTargetArchitecture)\**" />
     </ItemGroup>
-    <ItemGroup Condition="'$(BuildMonoAOTCrossCompiler)' == 'true'">
+    <ItemGroup>
       <AOTLLVMFiles Include="$(NuGetPackageRoot)\runtime.$(MonoLLVMHostOS)-$(HostArch).microsoft.netcore.runtime.mono.llvm.sdk\$(MonoLLVMSDKVersion)\tools\$(MonoLLVMHostOS)-$(HostArch)\**" />
       <AOTLLVMFiles Include="$(NuGetPackageRoot)\runtime.$(MonoLLVMHostOS)-$(HostArch).microsoft.netcore.runtime.mono.llvm.tools\$(MonoLLVMSDKVersion)\tools\$(MonoLLVMHostOS)-$(HostArch)\**" />
     </ItemGroup>
 
-    <Copy SourceFiles="@(LLVMFiles)" DestinationFolder="$(MonoLLVMDir)\%(RecursiveDir)">
+    <Copy Condition="'$(MonoEnableLLVM)' == 'true'" SourceFiles="@(LLVMFiles)" DestinationFolder="$(MonoLLVMDir)\%(RecursiveDir)">
       <Output TaskParameter="DestinationFiles" ItemName="FileWrites"/>
     </Copy>
 
-    <Copy Condition="'$(BuildMonoAOTCrossCompiler)' == 'true'" SourceFiles="@(AOTLLVMFiles)" DestinationFolder="$(MonoAOTLLVMDir)\%(RecursiveDir)">
+    <Copy Condition="'$(MonoAOTEnableLLVM)' == 'true'" SourceFiles="@(AOTLLVMFiles)" DestinationFolder="$(MonoAOTLLVMDir)\%(RecursiveDir)">
       <Output TaskParameter="DestinationFiles" ItemName="FileWrites"/>
     </Copy>
   </Target>
