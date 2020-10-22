@@ -27,7 +27,7 @@ namespace System.Threading
 
     public static partial class ThreadPool
     {
-        // Time-senstiive work items are those that may need to run ahead of normal work items at least periodically. For a
+        // Time-sensitive work items are those that may need to run ahead of normal work items at least periodically. For a
         // runtime that does not support time-sensitive work items on the managed side, the thread pool yields the thread to the
         // runtime periodically (by exiting the dispatch loop) so that the runtime may use that thread for processing
         // any time-sensitive work. For a runtime that supports time-sensitive work items on the managed side, the thread pool

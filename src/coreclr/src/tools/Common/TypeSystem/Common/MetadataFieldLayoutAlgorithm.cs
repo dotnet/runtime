@@ -421,9 +421,9 @@ namespace Internal.TypeSystem
 
                 largestAlignmentRequirement = LayoutInt.Max(fieldSizeAndAlignment.Alignment, largestAlignmentRequirement);
 
-                cumulativeInstanceFieldPos = AlignUpInstanceFieldOffset(type, cumulativeInstanceFieldPos, fieldSizeAndAlignment.Alignment, type.Context.Target
-                                                                        , armAlignFromStartOfFields: true // In what appears to have been a bug in the design of the arm32 type layout code
-                                                                                                          // this portion of the layout algorithm does not layout from the start of the object
+                cumulativeInstanceFieldPos = AlignUpInstanceFieldOffset(type, cumulativeInstanceFieldPos, fieldSizeAndAlignment.Alignment, type.Context.Target,
+                                                                        armAlignFromStartOfFields: true // In what appears to have been a bug in the design of the arm32 type layout code
+                                                                                                        // this portion of the layout algorithm does not layout from the start of the object
                                                                         );
                 offsets[fieldOrdinal] = new FieldAndOffset(field, cumulativeInstanceFieldPos);
                 cumulativeInstanceFieldPos = checked(cumulativeInstanceFieldPos + fieldSizeAndAlignment.Size);
