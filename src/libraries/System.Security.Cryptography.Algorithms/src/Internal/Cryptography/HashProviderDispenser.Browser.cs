@@ -18,7 +18,6 @@ namespace Internal.Cryptography
 
         public static HashProvider CreateHashProvider(string hashAlgorithmId)
         {
-            //System.Diagnostics.Debug.WriteLine($"HashProviderDispenser::CreateHashProvider {hashAlgorithmId}");
             if (s_subtle == null)
             {
                 Debug.Fail($"WebCrypto can not be found");
@@ -52,13 +51,18 @@ namespace Internal.Cryptography
                 {
                     using Uint8Array taSource = Uint8Array.From(source);
                     using (digest)
-                        if (digest!.Call(s_subtle, algorithm, taSource) is Task<object> hic)
+                        if (digest.Call(s_subtle, algorithm, taSource) is Task<object> hic)
                         {
                             using ArrayBuffer? digestValue = await hic.ConfigureAwait(false) as ArrayBuffer;
                             using Uint8Array hashArray = new Uint8Array(digestValue!);
                             written = hashArray.Length;
                             Debug.Assert(written == destination.Length);
                             System.Array.Copy(hashArray.ToArray(), destination, destination.Length);
+                        }
+                        else
+                        {
+                            Debug.Fail($"WebCrypto digest() error.");
+                            throw new CryptographicException();
                         }
                 }
                 else
@@ -158,6 +162,7 @@ namespace Internal.Cryptography
                 if (disposing)
                 {
                     _dataToHash?.Dispose();
+                    _dataToHash = null;
                 }
             }
         }
