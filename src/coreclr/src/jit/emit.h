@@ -2167,6 +2167,9 @@ public:
 
     struct dataSection
     {
+        const static unsigned MIN_DATA_ALIGN = 4;
+        const static unsigned MAX_DATA_ALIGN = 32;
+
         enum sectionType
         {
             data,
@@ -2177,7 +2180,6 @@ public:
         dataSection*   dsNext;
         UNATIVE_OFFSET dsSize;
         sectionType    dsType;
-        BYTE           dsAlign;
         var_types      dsDataType;
 
         // variable-sized array used to store the constant data

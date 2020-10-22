@@ -1541,8 +1541,9 @@ void Lowering::LowerHWIntrinsicCreate(GenTreeHWIntrinsic* node)
             }
         }
 
-        unsigned  cnsSize  = (simdSize != 12) ? simdSize : 16;
-        unsigned  cnsAlign = (comp->compCodeOpt() != Compiler::SMALL_CODE) ? cnsSize : 1;
+        unsigned cnsSize = (simdSize != 12) ? simdSize : 16;
+        unsigned cnsAlign =
+            (comp->compCodeOpt() != Compiler::SMALL_CODE) ? cnsSize : emitter::dataSection::MIN_DATA_ALIGN;
         var_types dataType = Compiler::getSIMDTypeForSize(simdSize);
 
         UNATIVE_OFFSET       cnum = comp->GetEmitter()->emitDataConst(&vecCns, cnsSize, cnsAlign, dataType);

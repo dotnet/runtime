@@ -5522,26 +5522,26 @@ UNATIVE_OFFSET emitter::emitDataGenBeg(unsigned size, unsigned alignment, var_ty
 
     assert(emitDataSecCur == nullptr);
 
-    // The size must not be zero and must be a multiple of 4 bytes
-    // Additionally, 4 bytes is the minimum alignment that will
+    // The size must not be zero and must be a multiple of MIN_DATA_ALIGN
+    // Additionally, MIN_DATA_ALIGN is the minimum alignment that will
     // actually be used. That is, if the user requests an alignment
     // of 1 or 2, they will get  something that is at least 4-byte
     // aligned. We allow the others since 4 is at least 1/2 and its
     // simpler to allow it than to check and block.
-    assert((size != 0) && ((size % 4) == 0));
+    assert((size != 0) && ((size % dataSection::MIN_DATA_ALIGN) == 0));
 
     // This restricts the alignment to: 1, 2, 4, 8, 16, or 32 bytes
     // Alignments greater than 32 would require VM support in ICorJitInfo::allocMem
 
-    const size_t MaxAlignment = 32;
+    const size_t MaxAlignment = dataSection::MAX_DATA_ALIGN;
     assert(isPow2(alignment) && (alignment <= MaxAlignment));
 
     /* Get hold of the current offset */
     secOffs = emitConsDsc.dsdOffs;
 
-    if (((secOffs % alignment) != 0) && (alignment > 4))
+    if (((secOffs % alignment) != 0) && (alignment > dataSection::MIN_DATA_ALIGN))
     {
-        // As per the above comment, the minimum alignment is actually 4
+        // As per the above comment, the minimum alignment is actually 4 (MIN_DATA_ALIGN)
         // bytes so we don't need to make any adjustments if the requested
         // alignment is 1, 2, or 4.
         //
@@ -5553,7 +5553,7 @@ UNATIVE_OFFSET emitter::emitDataGenBeg(unsigned size, unsigned alignment, var_ty
         uint8_t zeros[MaxAlignment] = {};
 
         unsigned  zeroSize  = alignment - (secOffs % alignment);
-        unsigned  zeroAlign = 4;
+        unsigned  zeroAlign = dataSection::MIN_DATA_ALIGN;
         var_types zeroType  = TYP_INT;
 
         emitBlkConst(&zeros, zeroSize, zeroAlign, zeroType);
@@ -5575,8 +5575,6 @@ UNATIVE_OFFSET emitter::emitDataGenBeg(unsigned size, unsigned alignment, var_ty
     secDesc->dsType = dataSection::data;
 
     secDesc->dsDataType = dataType;
-
-    secDesc->dsAlign = (BYTE)alignment;
 
     secDesc->dsNext = nullptr;
 
@@ -5713,19 +5711,22 @@ UNATIVE_OFFSET emitter::emitDataGenFind(const void* cnsAddr, unsigned cnsSize, u
 {
     UNATIVE_OFFSET cnum = INVALID_UNATIVE_OFFSET;
 
-    dataSection*   secDesc = emitConsDsc.dsdList;
-    UNATIVE_OFFSET curOff  = 0;
+    dataSection* secDesc = emitConsDsc.dsdList;
     while (secDesc != nullptr)
     {
-        if ((secDesc->dsSize == cnsSize) && (secDesc->dsAlign == alignment) && (secDesc->dsDataType == dataType))
+        // Search the existing secDesc entries
+        unsigned curOffs = 0;
+
+        if ((secDesc->dsSize == cnsSize) && (secDesc->dsDataType == dataType) && ((curOffs % alignment) == 0))
         {
             if (memcmp(cnsAddr, secDesc->dsCont, cnsSize) == 0)
             {
-                cnum = curOff;
+                cnum = curOffs;
                 break;
             }
         }
-        curOff += secDesc->dsSize;
+
+        curOffs += secDesc->dsSize;
         secDesc = secDesc->dsNext;
     }
 
@@ -5822,7 +5823,7 @@ CORINFO_FIELD_HANDLE emitter::emitFltOrDblConst(double constValue, emitAttr attr
         // Some platforms don't require doubles to be aligned and so
         // we can use a smaller alignment to help with smaller code
 
-        cnsAlign = 1;
+        cnsAlign = dataSection::MIN_DATA_ALIGN;
     }
 #endif // TARGET_XARCH
 
@@ -5858,6 +5859,7 @@ void emitter::emitOutputDataSec(dataSecDsc* sec, BYTE* dst)
     /* Walk and emit the contents of all the data blocks */
 
     dataSection* dsc;
+    size_t       curOffs = 0;
 
     for (dsc = sec->dsdList; dsc; dsc = dsc->dsNext)
     {
@@ -5918,8 +5920,6 @@ void emitter::emitOutputDataSec(dataSecDsc* sec, BYTE* dst)
         }
         else
         {
-            JITDUMP("  section %3u, size %2u, raw data:\t", secNum++, dscSize);
-
             // Simple binary data: copy the bytes to the target
             assert(dsc->dsType == dataSection::data);
 
@@ -5928,7 +5928,8 @@ void emitter::emitOutputDataSec(dataSecDsc* sec, BYTE* dst)
 #ifdef DEBUG
             if (EMITVERBOSE)
             {
-                printf("  ");
+                printf("  section %3u, size %2u, RWD%2u:\t", secNum++, dscSize, curOffs);
+
                 for (size_t i = 0; i < dscSize; i++)
                 {
                     printf("%02x ", dsc->dsCont[i]);
@@ -5952,6 +5953,8 @@ void emitter::emitOutputDataSec(dataSecDsc* sec, BYTE* dst)
             }
 #endif // DEBUG
         }
+
+        curOffs += dscSize;
         dst += dscSize;
     }
 }
@@ -5982,6 +5985,9 @@ void emitter::emitDispDataSec(dataSecDsc* section)
         sprintf_s(label, _countof(label), "RWD%02u", offset);
         printf(labelFormat, label);
         offset += data->dsSize;
+
+        // printf(" (DEBUG) data->dsType = %d,dsDataType = %d, data->dsSize = %d\n", data->dsType, data->dsDataType,
+        // data->dsSize);
 
         if ((data->dsType == dataSection::blockRelative32) || (data->dsType == dataSection::blockAbsoluteAddr))
         {
@@ -6130,6 +6136,7 @@ void emitter::emitDispDataSec(dataSecDsc* section)
                                 i += j;
                                 break;
 
+                            case 32:
                             case 16:
                             case 8:
                                 assert((data->dsSize % 8) == 0);
