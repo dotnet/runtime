@@ -954,9 +954,6 @@ namespace System.Net.Sockets.Tests
             // We try this a couple of times to deal with a timing race: if the Dispose happens
             // before the operation is started, we won't see a SocketException.
             int msDelay = 100;
-            // We try this a couple of times to deal with a timing race: if the Dispose happens
-            // before the operation is started, we won't see a SocketException.
-            int msDelay = 100;
             await RetryHelper.ExecuteAsync(async () =>
             {
                 var socket = new Socket(address.AddressFamily, SocketType.Dgram, ProtocolType.Udp);
