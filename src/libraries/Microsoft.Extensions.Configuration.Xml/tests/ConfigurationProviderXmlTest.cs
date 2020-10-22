@@ -31,12 +31,12 @@ namespace Microsoft.Extensions.Configuration.Xml.Test
         }
 
         public override void Has_debug_view()
-    {
-        var configRoot = BuildConfigRoot(LoadThroughProvider(TestSection.TestConfig));
-        var providerTag = configRoot.Providers.Single().ToString();
+        {
+            var configRoot = BuildConfigRoot(LoadThroughProvider(TestSection.TestConfig));
+            var providerTag = configRoot.Providers.Single().ToString();
 
-        var expected =
-            $@"Key1=Value1 ({providerTag})
+            var expected =
+                $@"Key1=Value1 ({providerTag})
 Section1:
   Key2=Value12 ({providerTag})
   Section2:
@@ -53,49 +53,49 @@ Section3:
     Key4=Value344 ({providerTag})
 ";
 
-        AssertDebugView(configRoot, expected);
-    }
+            AssertDebugView(configRoot, expected);
+        }
 
-    protected override (IConfigurationProvider Provider, Action Initializer) LoadThroughProvider(TestSection testConfig)
-    {
-        var xmlBuilder = new StringBuilder();
-        SectionToXml(xmlBuilder, "settings", testConfig);
-
-        var provider = new XmlConfigurationProvider(
-            new XmlConfigurationSource
-            {
-                Optional = true
-            });
-
-        var xml = xmlBuilder.ToString();
-        return (provider, () => provider.Load(TestStreamHelpers.StringToStream(xml)));
-    }
-
-    private void SectionToXml(StringBuilder xmlBuilder, string sectionName, TestSection section)
-    {
-        xmlBuilder.AppendLine($"<{sectionName}>");
-
-        foreach (var tuple in section.Values)
+        protected override (IConfigurationProvider Provider, Action Initializer) LoadThroughProvider(TestSection testConfig)
         {
-            if (tuple.Value.AsArray == null)
-            {
-                xmlBuilder.AppendLine($"<{tuple.Key}>{tuple.Value.AsString}</{tuple.Key}>");
-            }
-            else
-            {
-                for (var i = 0; i < tuple.Value.AsArray.Length; i++)
+            var xmlBuilder = new StringBuilder();
+            SectionToXml(xmlBuilder, "settings", testConfig);
+
+            var provider = new XmlConfigurationProvider(
+                new XmlConfigurationSource
                 {
-                    xmlBuilder.AppendLine($"<{tuple.Key} Name=\"{i}\">{tuple.Value.AsArray[i]}</{tuple.Key}>");
+                    Optional = true
+                });
+
+            var xml = xmlBuilder.ToString();
+            return (provider, () => provider.Load(TestStreamHelpers.StringToStream(xml)));
+        }
+
+        private void SectionToXml(StringBuilder xmlBuilder, string sectionName, TestSection section)
+        {
+            xmlBuilder.AppendLine($"<{sectionName}>");
+
+            foreach (var tuple in section.Values)
+            {
+                if (tuple.Value.AsArray == null)
+                {
+                    xmlBuilder.AppendLine($"<{tuple.Key}>{tuple.Value.AsString}</{tuple.Key}>");
+                }
+                else
+                {
+                    for (var i = 0; i < tuple.Value.AsArray.Length; i++)
+                    {
+                        xmlBuilder.AppendLine($"<{tuple.Key} Name=\"{i}\">{tuple.Value.AsArray[i]}</{tuple.Key}>");
+                    }
                 }
             }
-        }
 
-        foreach (var tuple in section.Sections)
-        {
-            SectionToXml(xmlBuilder, tuple.Key, tuple.Section);
-        }
+            foreach (var tuple in section.Sections)
+            {
+                SectionToXml(xmlBuilder, tuple.Key, tuple.Section);
+            }
 
-        xmlBuilder.AppendLine($"</{sectionName}>");
+            xmlBuilder.AppendLine($"</{sectionName}>");
+        }
     }
-}
 }
