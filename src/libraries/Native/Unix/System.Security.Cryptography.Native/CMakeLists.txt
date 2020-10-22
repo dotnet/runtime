@@ -68,6 +68,12 @@ set(NATIVECRYPTO_SOURCES
     pal_x509ext.c
 )
 
+if (CLR_CMAKE_TARGET_ANDROID)
+    list(APPEND NATIVECRYPTO_SOURCES
+    android_security.c
+    )
+endif()
+
 # Always build portable on macOS because OpenSSL is not a system component
 # and our prebuilts should not assume a specific ABI version for the types
 # that use OpenSSL at runtime.
@@ -120,6 +126,12 @@ else()
     target_link_libraries(System.Security.Cryptography.Native.OpenSsl
       ${OPENSSL_CRYPTO_LIBRARY}
       ${OPENSSL_SSL_LIBRARY}
+    )
+endif()
+
+if (CLR_CMAKE_TARGET_ANDROID)
+    target_link_libraries(System.Security.Cryptography.Native.OpenSsl
+    -llog
     )
 endif()
 

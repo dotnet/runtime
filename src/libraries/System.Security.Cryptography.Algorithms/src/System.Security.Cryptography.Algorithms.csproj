@@ -445,8 +445,10 @@
              Link="Common\Interop\Unix\System.Security.Cryptography.Native\Interop.EVP.cs" />
     <Compile Include="$(CommonPath)Interop\Unix\System.Security.Cryptography.Native\Interop.Hmac.cs"
              Link="Common\Interop\Unix\System.Security.Cryptography.Native\Interop.Hmac.cs" />
-    <Compile Include="$(CommonPath)Interop\Unix\System.Security.Cryptography.Native\Interop.RAND.cs"
+    <Compile Condition="'$(TargetsAndroid)' != 'true'" Include="$(CommonPath)Interop\Unix\System.Security.Cryptography.Native\Interop.RAND.cs"
              Link="Common\Interop\Unix\System.Security.Cryptography.Native\Interop.RAND.cs" />
+    <Compile Condition="'$(TargetsAndroid)' == 'true'" Include="$(CommonPath)Interop\Android\System.Security.Cryptography.Native\Interop.SecureRandom.cs"
+             Link="Common\Interop\Android\System.Security.Cryptography.Native\Interop.SecureRandom.cs" />
     <Compile Include="$(CommonPath)Interop\Unix\System.Security.Cryptography.Native\Interop.Rsa.cs"
              Link="Common\Interop\Unix\System.Security.Cryptography.Native\Interop.Rsa.cs" />
     <Compile Include="$(CommonPath)Microsoft\Win32\SafeHandles\Asn1SafeHandles.Unix.cs"
