@@ -30,7 +30,8 @@ namespace Internal.Cryptography
 
         public static unsafe HashProvider CreateMacProvider(string hashAlgorithmId, ReadOnlySpan<byte> key) => throw new PlatformNotSupportedException(SR.SystemSecurityCryptographyAlgorithms_PlatformNotSupported);
         private static string HashAlgorithmToPal(string hashAlgorithmId) => hashAlgorithmId switch {
-            HashAlgorithmNames.MD5 => "MD5",
+            // https://developer.mozilla.org/en-US/docs/Web/API/SubtleCrypto/digest
+            // Note: MD5 is not supported by WebCrypt digest API
             HashAlgorithmNames.SHA1 => "SHA-1",
             HashAlgorithmNames.SHA256 => "SHA-256",
             HashAlgorithmNames.SHA384 => "SHA-384",
