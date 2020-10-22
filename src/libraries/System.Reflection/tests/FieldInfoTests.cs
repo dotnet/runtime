@@ -91,6 +91,9 @@ namespace System.Reflection.Tests
             yield return new object[] { typeof(FieldInfoTests), nameof(FieldInfoTests.intField), new FieldInfoTests(), 1000 };
             yield return new object[] { typeof(FieldInfoTests), nameof(FieldInfoTests.s_stringField), new FieldInfoTests(), "new" };
             yield return new object[] { typeof(FieldInfoTests), nameof(FieldInfoTests.stringField), new FieldInfoTests(), "new" };
+            yield return new object[] { typeof(FieldInfoTests), nameof(FieldInfoTests.shortEnumField), new FieldInfoTests(), (byte)1 };
+            yield return new object[] { typeof(FieldInfoTests), nameof(FieldInfoTests.intEnumField), new FieldInfoTests(), (short)2 };
+            yield return new object[] { typeof(FieldInfoTests), nameof(FieldInfoTests.longEnumField), new FieldInfoTests(), (int)3 };
         }
 
         [Theory]
@@ -452,6 +455,13 @@ namespace System.Reflection.Tests
 
         public int intField = 101;
         public string stringField = "non static";
+
+        public enum ShortEnum : short {}
+        public enum IntEnum {}
+        public enum LongEnum : long {}
+        public ShortEnum shortEnumField;
+        public IntEnum intEnumField;
+        public LongEnum longEnumField;
 
         private int privateIntField = 1;
         private string privateStringField = "privateStringField";

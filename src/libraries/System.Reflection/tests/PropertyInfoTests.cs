@@ -96,6 +96,9 @@ namespace System.Reflection.Tests
             yield return new object[] { typeof(BaseClass), nameof(BaseClass.Name), new BaseClass(), "hello", null, "hello" };
             yield return new object[] { typeof(AdvancedIndexerClass), "Item", new AdvancedIndexerClass(), "hello", new object[] { 99, 2, new string[] { "hello" }, "f" }, "992f1" };
             yield return new object[] { typeof(AdvancedIndexerClass), "Item", new AdvancedIndexerClass(), "pw", new object[] { 99, 2, new string[] { "hello" }, "SOME string" }, "992SOME string1" };
+            yield return new object[] { typeof(BaseClass), nameof(BaseClass.ShortEnumProperty), typeof(BaseClass), (byte)1, null, (short)1 };
+            yield return new object[] { typeof(BaseClass), nameof(BaseClass.IntEnumProperty), typeof(BaseClass), (short)2, null, (int)2 };
+            yield return new object[] { typeof(BaseClass), nameof(BaseClass.ShortEnumProperty), typeof(BaseClass), (int)3, null, (long)3 };
         }
 
         [Theory]
@@ -357,6 +360,13 @@ namespace System.Reflection.Tests
                 get { return _staticObjectArrayProperty; }
                 set { _staticObjectArrayProperty = value; }
             }
+
+            public enum ShortEnum : short {}
+            public enum IntEnum {}
+            public enum LongEnum : long {}
+            public ShortEnum ShortEnumProperty { get; set; }
+            public IntEnum IntEnumProperty { get; set; }
+            public LongEnum LongEnumProperty { get; set; }
 
             public object[] _objectArray;
             public object[] ObjectArrayProperty
