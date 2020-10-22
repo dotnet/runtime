@@ -58,7 +58,9 @@ namespace System.IO
 
             int i = PathInternal.GetExtensionStart(path.AsSpan());
             if (i >= 0)
+            {
                 subLength = i;
+            }
 
             if (extension == null)
             {
@@ -122,7 +124,9 @@ namespace System.IO
 
             int end = PathInternal.GetLastDirectorySeparator(path);
             if (end <= rootLength)
+            {
                 return rootLength;
+            }
 
             // Trim off any remaining separators (to deal with C:\foo\\bar)
             while (end > rootLength && PathInternal.IsDirectorySeparator(path[end - 1]))
@@ -283,7 +287,7 @@ namespace System.IO
         {
             int i = PathInternal.GetExtensionStart(path);
             // Found and not last char
-            return (i >= 0 && i < path.Length - 1);
+            return (i > 0 && i < path.Length - 1);
         }
 
         public static string Combine(string path1, string path2)
