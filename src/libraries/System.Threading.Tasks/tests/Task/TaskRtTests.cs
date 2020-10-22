@@ -495,6 +495,29 @@ namespace System.Threading.Tasks.Tests
             Assert.True((bool)isHandledField.GetValue(holderObject), "Expected FromException task to be observed after accessing Exception");
         }
 
+        [Theory]
+        [InlineData(-2L)]
+        [InlineData((long)int.MinValue)]
+        [InlineData((long)uint.MaxValue)]
+        public static void TaskDelay_OutOfBounds_ThrowsException(long delay)
+        {
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("delay", () => { Task.Delay(TimeSpan.FromMilliseconds(delay)); });
+            if (delay >= int.MinValue && delay <= int.MaxValue)
+            {
+                AssertExtensions.Throws<ArgumentOutOfRangeException>("millisecondsDelay", () => { Task.Delay((int)delay); });
+            }
+        }
+
+        [Fact]
+        public static void TaskDelay_MaxSupported_Success()
+        {
+            var cts = new CancellationTokenSource();
+            Task t = Task.Delay(TimeSpan.FromMilliseconds(uint.MaxValue - 2), cts.Token);
+            Assert.False(t.IsCompleted);
+            cts.Cancel();
+            Assert.True(t.IsCanceled);
+        }
+
         [Fact]
         public static void RunDelayTests()
         {
