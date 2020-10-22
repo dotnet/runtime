@@ -333,6 +333,7 @@
     </PropertyGroup>
 
     <PropertyGroup Condition="'$(TargetOS)' == 'Linux' and '$(Platform)' == 'arm64'">
+      <MonoUseCrossTool>true</MonoUseCrossTool>
       <MonoAotAbi>aarch64-linux-gnu</MonoAotAbi>
       <MonoAotOffsetsFile>$(MonoObjDir)cross/offsets-aarch-linux-gnu.h</MonoAotOffsetsFile>
       <MonoAotIncludePrefix>$(MonoCrossDir)/usr/lib/gcc/aarch64-linux-gnu/5</MonoAotIncludePrefix>
