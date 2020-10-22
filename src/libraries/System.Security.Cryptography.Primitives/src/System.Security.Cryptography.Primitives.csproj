@@ -2,7 +2,7 @@
   <PropertyGroup>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <IsPartialFacadeAssembly>true</IsPartialFacadeAssembly>
-    <TargetFrameworks>$(NetCoreAppCurrent)</TargetFrameworks>
+    <TargetFrameworks>$(NetCoreAppCurrent);$(NetCoreAppCurrent)-Browser</TargetFrameworks>
     <Nullable>enable</Nullable>
   </PropertyGroup>
   <ItemGroup>
@@ -14,6 +14,8 @@
     <Compile Include="System\Security\Cryptography\CryptoStream.cs" />
     <Compile Include="System\Security\Cryptography\CryptoStreamMode.cs" />
     <Compile Include="System\Security\Cryptography\HashAlgorithm.cs" />
+    <Compile Include="System\Security\Cryptography\HashAlgorithm.AnyOS.cs" Condition="'$(TargetsBrowser)' != 'true'" />
+    <Compile Include="System\Security\Cryptography\HashAlgorithm.Browser.cs" Condition="'$(TargetsBrowser)' == 'true'" />
     <Compile Include="System\Security\Cryptography\HashAlgorithmName.cs" />
     <Compile Include="System\Security\Cryptography\HMAC.cs" />
     <Compile Include="System\Security\Cryptography\ICryptoTransform.cs" />
