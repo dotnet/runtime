@@ -12,7 +12,7 @@ include_directories(
   ${PROJECT_BINARY_DIR}/
   ${PROJECT_BINARY_DIR}/../..
   ${PROJECT_BINARY_DIR}/../../mono/eglib
-  ${CMAKE_SOURCE_DIR}/
+  ${CMAKE_CURRENT_SOURCE_DIR}/../..
   ${PROJECT_SOURCE_DIR}/../
   ${PROJECT_SOURCE_DIR}/../eglib
   ${PROJECT_SOURCE_DIR}/../sgen)
@@ -50,7 +50,7 @@ set(icu_shim_sources_base
     ${pal_icushim_sources_base})
 addprefix(icu_shim_sources "${ICU_SHIM_PATH}" "${icu_shim_sources_base}")
 set_source_files_properties(${icu_shim_sources} PROPERTIES COMPILE_DEFINITIONS OSX_ICU_LIBRARY_PATH="${OSX_ICU_LIBRARY_PATH}")
-set_source_files_properties(${icu_shim_sources} PROPERTIES COMPILE_FLAGS "-I${ICU_INCLUDEDIR} -I${CMAKE_SOURCE_DIR}/../libraries/Native/Unix/System.Globalization.Native/ -I${CMAKE_SOURCE_DIR}/../libraries/Native/Unix/Common/ ${ICU_FLAGS}")
+set_source_files_properties(${icu_shim_sources} PROPERTIES COMPILE_FLAGS "-I${ICU_INCLUDEDIR} -I${CMAKE_CURRENT_SOURCE_DIR}/../../../libraries/Native/Unix/System.Globalization.Native/ -I${CMAKE_CURRENT_SOURCE_DIR}/../../../libraries/Native/Unix/Common/ ${ICU_FLAGS}")
 if(ICU_LIBDIR)
   set(ICU_LDFLAGS "-L${ICU_LIBDIR}")
 endif()
