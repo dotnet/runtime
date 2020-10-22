@@ -101,8 +101,8 @@
 
   <PropertyGroup>
     <MonoObjDir>$(ArtifactsObjDir)mono/$(PlatformConfigPathPart)/</MonoObjDir>
-    <MonoLLVMDir Condition="('$(MonoEnableLLVM)' == 'true' or '$(TargetOS)' == 'iOS' or '$(TargetOS)' == 'tvOS' or '$(TargetOS)' == 'Browser') and '$(MonoLLVMDir)' == ''">$(MonoObjDir)llvm</MonoLLVMDir>
-    <MonoAOTLLVMDir Condition="('$(MonoAOTEnableLLVM)' == 'true' or '$(TargetOS)' == 'iOS' or '$(TargetOS)' == 'tvOS' or '$(TargetOS)' == 'Browser') and '$(MonoAOTLLVMDir)' == ''">$(MonoObjDir)cross/llvm</MonoAOTLLVMDir>
+    <MonoLLVMDir Condition="'$(MonoLLVMDir)' == ''">$(MonoObjDir)llvm</MonoLLVMDir>
+    <MonoAOTLLVMDir Condition="'$(MonoAOTLLVMDir)' == ''">$(MonoObjDir)cross/llvm</MonoAOTLLVMDir>
   </PropertyGroup>
 
   <!-- Paths for Mobile App Projects  -->
