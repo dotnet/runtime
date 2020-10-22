@@ -49,7 +49,6 @@ namespace System.Net.Sockets.Tests
             IPEndPoint connectTo = (IPEndPoint)listener.LocalEndPoint;
             if (dualModeClient) connectTo = new IPEndPoint(connectTo.Address.MapToIPv6(), connectTo.Port);
 
-
             Socket client = new Socket(connectTo.AddressFamily, SocketType.Stream, ProtocolType.Tcp);
             if (dualModeClient) client.DualMode = true;
             client.Connect(connectTo);
