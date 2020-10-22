@@ -495,16 +495,16 @@ jobs:
 
 # Windows x64
 
-- ${{ if or(containsValue(parameters.platforms, 'Windows_NT_x64'), in(parameters.platformGroup, 'all', 'gcstress')) }}:
+- ${{ if or(containsValue(parameters.platforms, 'windows_x64'), in(parameters.platformGroup, 'all', 'gcstress')) }}:
   - template: xplat-setup.yml
     parameters:
       jobTemplate: ${{ parameters.jobTemplate }}
       helixQueuesTemplate: ${{ parameters.helixQueuesTemplate }}
       variables: ${{ parameters.variables }}
-      osGroup: Windows_NT
+      osGroup: windows
       archType: x64
       targetRid: win-x64
-      platform: Windows_NT_x64
+      platform: windows_x64
       jobParameters:
         runtimeFlavor: ${{ parameters.runtimeFlavor }}
         stagedBuild: ${{ parameters.stagedBuild }}
@@ -516,16 +516,16 @@ jobs:
 
 # Windows x86
 
-- ${{ if or(containsValue(parameters.platforms, 'Windows_NT_x86'), in(parameters.platformGroup, 'all', 'gcstress')) }}:
+- ${{ if or(containsValue(parameters.platforms, 'windows_x86'), in(parameters.platformGroup, 'all', 'gcstress')) }}:
   - template: xplat-setup.yml
     parameters:
       jobTemplate: ${{ parameters.jobTemplate }}
       helixQueuesTemplate: ${{ parameters.helixQueuesTemplate }}
       variables: ${{ parameters.variables }}
-      osGroup: Windows_NT
+      osGroup: windows
       archType: x86
       targetRid: win-x86
-      platform: Windows_NT_x86
+      platform: windows_x86
       jobParameters:
         runtimeFlavor: ${{ parameters.runtimeFlavor }}
         stagedBuild: ${{ parameters.stagedBuild }}
@@ -536,16 +536,16 @@ jobs:
         ${{ insert }}: ${{ parameters.jobParameters }}
 
 # Windows arm
-- ${{ if or(containsValue(parameters.platforms, 'Windows_NT_arm'), eq(parameters.platformGroup, 'all')) }}:
+- ${{ if or(containsValue(parameters.platforms, 'windows_arm'), eq(parameters.platformGroup, 'all')) }}:
   - template: xplat-setup.yml
     parameters:
       jobTemplate: ${{ parameters.jobTemplate }}
       helixQueuesTemplate: ${{ parameters.helixQueuesTemplate }}
       variables: ${{ parameters.variables }}
-      osGroup: Windows_NT
+      osGroup: windows
       archType: arm
       targetRid: win-arm
-      platform: Windows_NT_arm
+      platform: windows_arm
       jobParameters:
         runtimeFlavor: ${{ parameters.runtimeFlavor }}
         stagedBuild: ${{ parameters.stagedBuild }}
@@ -557,16 +557,16 @@ jobs:
 
 # Windows arm64
 
-- ${{ if or(containsValue(parameters.platforms, 'Windows_NT_arm64'), in(parameters.platformGroup, 'all', 'gcstress')) }}:
+- ${{ if or(containsValue(parameters.platforms, 'windows_arm64'), in(parameters.platformGroup, 'all', 'gcstress')) }}:
   - template: xplat-setup.yml
     parameters:
       jobTemplate: ${{ parameters.jobTemplate }}
       helixQueuesTemplate: ${{ parameters.helixQueuesTemplate }}
       variables: ${{ parameters.variables }}
-      osGroup: Windows_NT
+      osGroup: windows
       archType: arm64
       targetRid: win-arm64
-      platform: Windows_NT_arm64
+      platform: windows_arm64
       jobParameters:
         runtimeFlavor: ${{ parameters.runtimeFlavor }}
         stagedBuild: ${{ parameters.stagedBuild }}

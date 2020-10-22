@@ -102,11 +102,11 @@ jobs:
             - _testRunNamePrefixSuffix: ${{ parameters.testDisplayName }}
 
         # Windows variables
-        - ${{ if eq(parameters.osGroup, 'Windows_NT') }}:
+        - ${{ if eq(parameters.osGroup, 'windows') }}:
           - _runtimeOSArg: /p:RuntimeOS=win10
 
         # Non-Windows variables
-        - ${{ if ne(parameters.osGroup, 'Windows_NT') }}:
+        - ${{ if ne(parameters.osGroup, 'windows') }}:
           - _buildScript: ./$(_buildScriptFileName)$(scriptExt)
 
         - _buildArguments: $(_runtimeConfigurationArg) -configuration ${{ parameters.buildConfig }} -ci -arch ${{ parameters.archType }} $(_finalFrameworkArg) $(_testModeArg) $(_testScopeArg) $(_runtimeOSArg) $(_msbuildCommonParameters) $(_runtimeArtifactsPathArg) $(_crossBuildPropertyArg)

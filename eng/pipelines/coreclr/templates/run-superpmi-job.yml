@@ -54,7 +54,7 @@ jobs:
     - HelixPreCommand: ''
     - MchFileTag: '${{ parameters.osGroup }}.${{ parameters.archType }}.${{ parameters.buildConfig }}'
 
-    - ${{ if eq(parameters.osGroup, 'Windows_NT') }}:
+    - ${{ if eq(parameters.osGroup, 'windows') }}:
       - name: PythonScript
         value: 'py -3'
       - name: PipScript
@@ -63,7 +63,7 @@ jobs:
         value: '$(Build.SourcesDirectory)\artifacts\tests\coreclr\${{ parameters.osGroup }}.${{ parameters.archType }}.${{ parameters.buildConfig }}\Tests\Core_Root'
       - name: MchFilesLocation
         value: '$(Build.SourcesDirectory)\artifacts\helixresults\'
-    - ${{ if ne(parameters.osGroup, 'Windows_NT') }}:
+    - ${{ if ne(parameters.osGroup, 'windows') }}:
       - name: PythonScript
         value: 'python3'
       - name: PipScript
