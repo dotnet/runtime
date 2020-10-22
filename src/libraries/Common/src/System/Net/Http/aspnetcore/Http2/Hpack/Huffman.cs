@@ -10,7 +10,7 @@ namespace System.Net.Http.HPack
     {
         private static ushort[]? s_decodingTree;
 
-        // TODO: this can be constructed from _decodingTable
+        // HPack static huffman code. see: https://httpwg.org/specs/rfc7541.html#huffman.code
         private static readonly (uint code, int bitLength)[] _encodingTable = new (uint code, int bitLength)[]
         {
             (0b11111111_11000000_00000000_00000000, 13),
@@ -336,7 +336,7 @@ namespace System.Net.Http.HPack
                         // +-------------------------------+
                         // next_code_bits are 'random' bits of next huffman code, so in order for lookup
                         // to work, lookup value has to be stored for all 4 unused bits, in this case for suffix 0..15
-                        var suffixCount = 1 << (8 - bitsLeft);
+                        int suffixCount = 1 << (8 - bitsLeft);
                         for (int suffix = 0; suffix < suffixCount; suffix++)
                         {
                             if (octet == 256)
@@ -365,7 +365,7 @@ namespace System.Net.Http.HPack
                     else
                     {
                         // More than 8 bits left in huffman code means that we need to traverse to another lookup table for next 8 bits
-                        var lookupValue = lut[(lookupTableIndex << 8) + indexInLookupTable];
+                        ushort lookupValue = lut[(lookupTableIndex << 8) + indexInLookupTable];
 
                         // Because next_lookup_table_index can not be 0, as 0 is index of root table, default value of array element
                         // means that we have not initialized it yet => lookup table MUST be allocated and its index assigned to that lookup value
@@ -415,6 +415,7 @@ namespace System.Net.Http.HPack
             {
                 Volatile.Write(ref s_decodingTree, GenerateDecodingLookupTree());
             }
+            ushort[] decodingTree = s_decodingTree;
 
             int lookupTableIndex = 0;
             int lookupIndex;
@@ -440,7 +441,7 @@ namespace System.Net.Http.HPack
                 {
                     lookupIndex = (byte)(acc >> (bitsInAcc - 8));
 
-                    var lookupValue = s_decodingTree[(lookupTableIndex << 8) + lookupIndex];
+                    ushort lookupValue = decodingTree[(lookupTableIndex << 8) + lookupIndex];
 
                     if (lookupValue >= 0x80_00)
                     {
@@ -500,7 +501,7 @@ namespace System.Net.Http.HPack
                 // Lookup index has to be 8 bits aligned to MSB
                 lookupIndex = (byte)(acc << (8 - bitsInAcc));
 
-                var lookupValue = s_decodingTree[(lookupTableIndex << 8) + lookupIndex];
+                ushort lookupValue = decodingTree[(lookupTableIndex << 8) + lookupIndex];
 
                 if (lookupValue >= 0x80_00)
                 {
