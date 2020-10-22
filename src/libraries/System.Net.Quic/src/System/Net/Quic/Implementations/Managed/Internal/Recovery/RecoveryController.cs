@@ -5,6 +5,7 @@ using System.Buffers;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Net.Quic.Implementations.Managed.Internal.Frames;
+using System.Net.Quic.Implementations.Managed.Internal.Headers;
 using System.Net.Quic.Implementations.Managed.Internal.Tracing;
 
 namespace System.Net.Quic.Implementations.Managed.Internal.Recovery
@@ -23,11 +24,6 @@ namespace System.Net.Quic.Implementations.Managed.Internal.Recovery
             CongestionController = NewRenoCongestionController.Instance;
             Reset();
         }
-
-        /// <summary>
-        ///     Object for logging traces for the connection events.
-        /// </summary>
-        public QuicTrace? Trace { get; }
 
         /// <summary>
         ///     Maximum reordering in packets before packet threshold loss detection considers a packet lost.
@@ -62,7 +58,6 @@ namespace System.Net.Quic.Implementations.Managed.Internal.Recovery
         /// </summary>
         internal static readonly int InitialWindowSize =
             Math.Min(10 * MaxDatagramSize, Math.Max(2 * MaxDatagramSize, 14720));
-
 
         /// <summary>
         ///     Helper structure for holding packet number space related data together.
@@ -155,7 +150,10 @@ namespace System.Net.Quic.Implementations.Managed.Internal.Recovery
             new PacketNumberSpace(PacketType.OneRtt)
         };
 
-        internal PacketNumberSpace GetPacketNumberSpace(PacketSpace space) => _pnSpaces[(int)space];
+        /// <summary>
+        ///     Object for logging traces for the connection events.
+        /// </summary>
+        public QuicTrace? Trace { get; }
 
         /// <summary>
         ///     The most recent RTT measurement in ticks made when receiving ack for a previously unacked packet.
@@ -194,18 +192,71 @@ namespace System.Net.Quic.Implementations.Managed.Internal.Recovery
         internal long MaxAckDelay { get; set; }
 
         /// <summary>
+        ///     Timestamp of the last time a packet was sent. Used for pacing.
+        /// </summary>
+        internal long LastDatagramSentTimestamp { get; set; }
+
+        /// <summary>
         ///     Congestion controller algorithm used.
         /// </summary>
         internal ICongestionController CongestionController { get; }
 
+        internal bool IsPacing => LastDatagramSentTimestamp != long.MinValue && SmoothedRtt != 0;
+
         /// <summary>
         ///     Returns bytes available with respect to the current congestion window
         /// </summary>
-        /// <returns></returns>
         internal int GetAvailableCongestionWindowBytes()
         {
              return Math.Max(0, CongestionWindow - BytesInFlight);
         }
+
+        /// <summary>
+        ///     Returns the paced sending allowance based on the current congestion window and provided timestamp
+        /// </summary>
+        internal int GetSendingAllowance(long timestamp)
+        {
+            if (!IsPacing)
+            {
+                // initial state, no pacing yet, send everything we can
+                return GetAvailableCongestionWindowBytes();
+            }
+
+            // use pacing, ideal pacer would spread the entire width of congestion window over the
+            // RTT period.
+
+            // we will approximate the pacer by calculating the sending rate based on the current
+            // RTT and congestion window width
+
+            _rate = CongestionWindow / (double) SmoothedRtt;
+
+            // and we use this rate to gauge how much can we send now
+            long elapsed = timestamp - LastDatagramSentTimestamp;
+
+            int allowance = (int) (CongestionWindow * elapsed / SmoothedRtt);
+            allowance = Math.Min(allowance, GetAvailableCongestionWindowBytes());
+            // do not send more than half the current congestion window
+            allowance = Math.Min(allowance, CongestionWindow / 2);
+
+            return _allowance = allowance;
+        }
+
+        internal int _allowance;
+        internal double _rate;
+        internal long _nextPacing;
+
+        /// <summary>
+        ///     Returns timestamp when the pacer will allow sending next full packet
+        /// </summary>
+        /// <returns></returns>
+        internal long GetPacingTimerForNextFullPacket()
+        {
+            Debug.Assert(IsPacing);
+
+            // double rate = CongestionWindow / (double) SmoothedRtt;
+            return _nextPacing = LastDatagramSentTimestamp + (QuicConstants.MaximumAllowedDatagramSize * SmoothedRtt / CongestionWindow);
+        }
+
 
         /// <summary>
         ///     The sum of the size in bytes of all sent packets that contain at least one ack-eliciting or PADDING
@@ -237,6 +288,8 @@ namespace System.Net.Quic.Implementations.Managed.Internal.Recovery
         /// </summary>
         public CongestionState CongestionState { get; set; }
 
+        internal PacketNumberSpace GetPacketNumberSpace(PacketSpace space) => _pnSpaces[(int)space];
+
         /// <summary>
         ///     Resets the recovery controller to the initial state.
         /// </summary>
@@ -247,9 +300,11 @@ namespace System.Net.Quic.Implementations.Managed.Internal.Recovery
             SmoothedRtt = 0;
             MinimumRtt = 0;
             CongestionWindow = InitialWindowSize;
+            CongestionState = CongestionState.SlowStart;
             SlowStartThreshold = int.MaxValue;
             LossRecoveryTimer = long.MaxValue;
             MaxAckDelay = Timestamp.FromMilliseconds(25);
+            LastDatagramSentTimestamp = long.MinValue;
             BytesInFlight = 0;
 
             foreach (PacketNumberSpace space in _pnSpaces)

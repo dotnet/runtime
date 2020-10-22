@@ -77,17 +77,6 @@ namespace System.Net.Quic.Tests
 
         protected ManualTransmissionQuicTestBase(ITestOutputHelper output)
         {
-            ClientOptions = new QuicClientConnectionOptions()
-            {
-                ClientAuthenticationOptions = new SslClientAuthenticationOptions()
-                {
-                    ApplicationProtocols = new List<SslApplicationProtocol>()
-                    {
-                        new SslApplicationProtocol("quictest")
-                    }
-                }
-            };
-
             ListenerOptions = new QuicListenerOptions
             {
                 CertificateFilePath = CertificateFilePath,
@@ -98,11 +87,23 @@ namespace System.Net.Quic.Tests
                     {
                         new SslApplicationProtocol("quictest")
                     }
-                }
+                },
+                ListenEndPoint = new IPEndPoint(IPAddress.Loopback, 0)
             };
-
-            Client = CreateClient(ClientOptions);
             Server = CreateServer(ListenerOptions);
+
+            ClientOptions = new QuicClientConnectionOptions()
+            {
+                ClientAuthenticationOptions = new SslClientAuthenticationOptions()
+                {
+                    ApplicationProtocols = new List<SslApplicationProtocol>()
+                    {
+                        new SslApplicationProtocol("quictest")
+                    }
+                },
+                RemoteEndPoint = new IPEndPoint(IPAddress.Loopback, Server.LocalEndPoint.Port)
+            };
+            Client = CreateClient(ClientOptions);
 
             Output = output;
 

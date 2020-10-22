@@ -442,7 +442,11 @@ namespace System.Net.Quic.Implementations.Managed
 
             writer.Reset(origMemory, written);
             if (written > 0)
+            {
                 _trace?.OnDatagramSent(written);
+                Debug.Assert(Recovery.LastDatagramSentTimestamp <= ctx.Timestamp);
+                Recovery.LastDatagramSentTimestamp = ctx.Timestamp;
+            }
         }
 
         private void ProcessLostPackets(ObjectPool<SentPacket> packetPool)
@@ -491,7 +495,7 @@ namespace System.Net.Quic.Implementations.Managed
             _pingWanted |= isProbePacket;
 
             // TODO-RZ: Although ping should always work, the actual algorithm for probe packet is following
-            // if (!isServer && GetPacketNumberSpace(EncryptionLevel.Application).RecvCryptoSeal == null)
+            // if (!isServer && GetPacketNumberSpace(PacketSpace.Application).RecvCryptoSeal == null)
             // {
             // TODO-RZ: Client needs to send an anti-deadlock packet:
             // }
@@ -505,7 +509,7 @@ namespace System.Net.Quic.Implementations.Managed
             // probe packets are not limited by congestion window
             if (!isProbePacket)
             {
-                maxPacketLength = Math.Min(maxPacketLength, Recovery.GetAvailableCongestionWindowBytes());
+                maxPacketLength = Math.Min(maxPacketLength, GetSendingAllowance(context.Timestamp, ShouldIgnorePacer(context.Timestamp)));
             }
 
             // ensuring that we can even send something should be handled by GetWriteLevel function

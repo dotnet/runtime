@@ -22,7 +22,7 @@ namespace System.Net.Quic.Implementations.Managed
     internal sealed partial class ManagedQuicConnection : QuicConnectionProvider
     {
         // This limit should ensure that if we can fit at least an ack frame into the packet,
-        private const int RequiredCongestionWindowSizeForSending = 2 * ConnectionId.MaximumLength + 10;
+        private const int RequiredAllowanceForSending = 2 * ConnectionId.MaximumLength + 40;
 
         private readonly SingleEventValueTaskSource _connectTcs = new SingleEventValueTaskSource();
 
@@ -202,12 +202,15 @@ namespace System.Net.Quic.Implementations.Managed
         /// </summary>
         private bool _disposed;
 
-
         /// <summary>
         ///     If not null, contains the exception that terminated the socket maintenance task.
         /// </summary>
         private Exception? _socketContextException;
 
+        /// <summary>
+        ///     Timestamp of last moment this connection was updated.
+        /// </summary>
+        private long _lastUpdateTimestamp;
 
         /// <summary>
         ///     Requests sending PING frame to the peer, requiring the peer to send acknowledgement back.
@@ -317,6 +320,12 @@ namespace System.Net.Quic.Implementations.Managed
                 return long.MaxValue;
             }
 
+            // if (GetWriteLevel(_lastUpdateTimestamp) != PacketSpace.None)
+            // {
+            //     // start immediately
+            //     return _lastUpdateTimestamp;
+            // }
+
             long timer = _idleTimeout;
 
             if (_closingPeriodEndTimestamp != null)
@@ -326,12 +335,19 @@ namespace System.Net.Quic.Implementations.Managed
             }
 
             // do not incorporate next ack timer if we cannot send ack anyway
-            if (Recovery.GetAvailableCongestionWindowBytes() >= RequiredCongestionWindowSizeForSending)
+            if (Recovery.GetAvailableCongestionWindowBytes() >= RequiredAllowanceForSending)
             {
                 timer = Math.Min(timer, _nextAckTimer);
+
+                if (Recovery.IsPacing && _streams.HasFlushableStreams)
+                {
+                    timer = Math.Min(timer, Recovery.GetPacingTimerForNextFullPacket());
+                }
             }
 
-            return Math.Min(timer, Recovery.LossRecoveryTimer);
+            timer = Math.Min(timer, Recovery.LossRecoveryTimer);
+
+            return timer;
         }
 
         internal void OnTimeout(long timestamp)
@@ -423,6 +439,26 @@ namespace System.Net.Quic.Implementations.Managed
         }
 
         /// <summary>
+        ///     Gets the amount of data this endpoint can send at this time
+        /// </summary>
+        /// <returns></returns>
+        internal int GetSendingAllowance(long timestamp, bool ignorePacer)
+        {
+            // ignore the pacer if we need to send an ack
+            if (ignorePacer)
+            {
+                return Recovery.GetAvailableCongestionWindowBytes();
+            }
+
+            return Recovery.GetSendingAllowance(timestamp);
+        }
+
+        bool ShouldIgnorePacer(long timestamp)
+        {
+            return _nextAckTimer <= timestamp || _pingWanted || ShouldSendConnectionClose(timestamp);
+        }
+
+        /// <summary>
         ///     Gets <see cref="EncryptionLevel"/> at which the next packet should be sent.
         /// </summary>
         internal EncryptionLevel GetWriteLevel(long timestamp)
@@ -448,12 +484,6 @@ namespace System.Net.Quic.Implementations.Managed
                 return (EncryptionLevel)probeSpace;
             }
 
-            if (Recovery.GetAvailableCongestionWindowBytes() < RequiredCongestionWindowSizeForSending)
-            {
-                // can't send anything anyway
-                return EncryptionLevel.None;
-            }
-
             // if pending errors, send them in appropriate epoch,
             if (_outboundError?.IsQuicError == true)
             {
@@ -470,6 +500,14 @@ namespace System.Net.Quic.Implementations.Managed
                 return desiredLevel;
             }
 
+            // Check if the pacer allow us to send something. note that this also handles the case when we need to
+            // ignore the pacer due to pending ack.
+            if (GetSendingAllowance(timestamp, ShouldIgnorePacer(timestamp)) < RequiredAllowanceForSending)
+            {
+                // can't send anything now
+                return EncryptionLevel.None;
+            }
+
             for (int i = 0; i < _pnSpaces.Length; i++)
             {
                 var level = (EncryptionLevel)i;
@@ -483,7 +521,7 @@ namespace System.Net.Quic.Implementations.Managed
                     return level;
             }
 
-            // otherwise check if we have something to send.
+            // check if we have something to send.
             // TODO-RZ: this list may be incomplete
             if (_pingWanted ||
                 _streams.HasFlushableStreams ||

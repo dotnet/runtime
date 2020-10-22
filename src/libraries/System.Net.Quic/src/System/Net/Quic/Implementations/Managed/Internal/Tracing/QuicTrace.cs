@@ -801,6 +801,10 @@ namespace System.Net.Quic.Implementations.Managed.Internal.Tracing
             if (_sstresh != recovery.SlowStartThreshold)
                 _writer.WriteNumber(Field.ssthresh, _sstresh = recovery.SlowStartThreshold);
 
+            _writer.WriteNumber("pacer_allowance", recovery._allowance);
+            _writer.WriteNumber("pacer_rate", recovery._rate);
+            _writer.WriteNumber("pacer_timer", recovery._nextPacing);
+
             // TODO: total packets in flight?
             // _Writer.WriteNumber(Field.packets_in_flight, ???);
 

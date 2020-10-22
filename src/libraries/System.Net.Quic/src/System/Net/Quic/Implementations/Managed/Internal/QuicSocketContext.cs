@@ -136,30 +136,23 @@ namespace System.Net.Quic.Implementations.Managed.Internal
 
         protected void Update(ManagedQuicConnection connection, QuicConnectionState previousState)
         {
-            // TODO-RZ: I would like to have unbound loop there, but this might loop indefinitely
-            for (int i = 0; i < 2; i++)
+            _writer.Reset(_sendBuffer);
+            _sendContext.Timestamp = Timestamp.Now;
+            _sendContext.SentPacket.Reset();
+            connection.SendData(_writer, out var receiver, _sendContext);
+
+            if (_writer.BytesWritten > 0)
             {
-                _writer.Reset(_sendBuffer);
-                _sendContext.Timestamp = Timestamp.Now;
-                _sendContext.SentPacket.Reset();
-                connection.SendData(_writer, out var receiver, _sendContext);
+                if (NetEventSource.IsEnabled)
+                    NetEventSource.DatagramSent(connection, _writer.Buffer.Span.Slice(0, _writer.BytesWritten));
 
-                if (_writer.BytesWritten > 0)
-                {
-                    if (NetEventSource.IsEnabled)
-                        NetEventSource.DatagramSent(connection, _writer.Buffer.Span.Slice(0, _writer.BytesWritten));
+                SendTo(_sendBuffer, _writer.BytesWritten, receiver!);
+            }
 
-                    SendTo(_sendBuffer, _writer.BytesWritten, receiver!);
-                }
-
-                var newState = connection.ConnectionState;
-                if (newState != previousState && OnConnectionStateChanged(connection, newState) ||
-                    _writer.BytesWritten == 0)
-                {
-                    break;
-                }
-
-                previousState = newState;
+            var newState = connection.ConnectionState;
+            if (newState != previousState)
+            {
+                OnConnectionStateChanged(connection, newState);
             }
         }
 
@@ -194,7 +187,9 @@ namespace System.Net.Quic.Implementations.Managed.Internal
                 _recvContext.Timestamp = Timestamp.Now;
                 connection.ReceiveData(_reader, sender, _recvContext);
 
-                if (connection.GetWriteLevel(_recvContext.Timestamp) != EncryptionLevel.None)
+                var writeLevel = connection.GetWriteLevel(_recvContext.Timestamp);
+                if (writeLevel == EncryptionLevel.Initial ||
+                    writeLevel == EncryptionLevel.Handshake)
                 {
                     // the connection has some data to send in response
                     Update(connection, previousState);

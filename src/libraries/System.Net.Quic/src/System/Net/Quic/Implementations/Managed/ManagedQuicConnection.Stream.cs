@@ -156,8 +156,13 @@ namespace System.Net.Quic.Implementations.Managed
 
         internal void OnStreamDataWritten(ManagedQuicStream stream)
         {
-            _streams.MarkFlushable(stream);
-            _socketContext!.Ping();
+            // no need to ping if the thread is already spinning
+            var doPing = _streams.MarkFlushable(stream);
+
+            if (doPing)
+            {
+                _socketContext!.Ping();
+            }
         }
 
         internal void OnStreamDataRead(ManagedQuicStream stream, int bytesRead)

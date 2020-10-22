@@ -28,7 +28,7 @@ namespace System.Net.Quic.Implementations.Managed.Internal
         internal const long DefaultActiveConnectionIdLimit = MinActiveConnectionIdLimit;
 
         // defaults specific for this implementation, since many values cannot be set from user code
-        internal const long DefaultMaxStreamData = 1024 * 1024;
+        internal const long DefaultMaxStreamData = 4 * 1024 * 1024;
         // TODO-RZ: decrease this, maybe use size of socket recv bufer
         internal const long DefaultMaxData = 1024 * 1024 * 1024;
 
