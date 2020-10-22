@@ -9,8 +9,13 @@ using Microsoft.Win32.SafeHandles;
 
 namespace System.Threading
 {
-    public sealed partial class RegisteredWaitHandle : MarshalByRefObject
+    [UnsupportedOSPlatform("browser")]
+    public sealed class RegisteredWaitHandle : MarshalByRefObject
     {
+        internal RegisteredWaitHandle()
+        {
+        }
+
         public bool Unregister(WaitHandle? waitObject)
         {
             throw new PlatformNotSupportedException();
