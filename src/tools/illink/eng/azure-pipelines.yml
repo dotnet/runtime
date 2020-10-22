@@ -41,6 +41,7 @@ stages:
       enablePublishUsingPipelines: true
       enablePublishBuildArtifacts: true # publish build logs to pipeline storage
       enablePublishTestResults: true
+      testResultsFormat: vstest
       enablePublishBuildAssets: true # generate build manifests and publish to BAR in internal builds
       enableMicrobuild: true # only affects internal builds
 
