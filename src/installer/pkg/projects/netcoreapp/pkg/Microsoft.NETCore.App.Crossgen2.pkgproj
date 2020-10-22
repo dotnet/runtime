@@ -44,7 +44,7 @@
 
     <PropertyGroup>
       <TargetOSComponent>unix</TargetOSComponent>
-      <TargetOSComponent Condition="'$(TargetOS)' == 'Windows_NT'">win</TargetOSComponent>
+      <TargetOSComponent Condition="'$(TargetOS)' == 'windows'">win</TargetOSComponent>
     </PropertyGroup>
 
     <ItemGroup>
