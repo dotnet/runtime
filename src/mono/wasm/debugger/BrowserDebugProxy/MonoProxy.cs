@@ -26,13 +26,10 @@ namespace Microsoft.WebAssembly.Diagnostics
         private HashSet<SessionId> sessions = new HashSet<SessionId>();
         private Dictionary<SessionId, ExecutionContext> contexts = new Dictionary<SessionId, ExecutionContext>();
 
-        public MonoProxy(ILoggerFactory loggerFactory, IList<string> urlSymbolServerList, bool hideWebDriver = true) : base(loggerFactory)
+        public MonoProxy(ILoggerFactory loggerFactory, IList<string> urlSymbolServerList) : base(loggerFactory)
         {
-            this.hideWebDriver = hideWebDriver;
             this.urlSymbolServerList = urlSymbolServerList ?? new List<string>();
         }
-
-        private readonly bool hideWebDriver;
 
         internal ExecutionContext GetContext(SessionId sessionId)
         {
@@ -200,7 +197,7 @@ namespace Microsoft.WebAssembly.Diagnostics
         {
             // Inspector doesn't use the Target domain or sessions
             // so we try to init immediately
-            if (hideWebDriver && id == SessionId.Null)
+            if (id == SessionId.Null)
                 await DeleteWebDriver(id, token);
 
             if (!contexts.TryGetValue(id, out ExecutionContext context))
@@ -1175,7 +1172,7 @@ namespace Microsoft.WebAssembly.Diagnostics
         private async Task DeleteWebDriver(SessionId sessionId, CancellationToken token)
         {
             // see https://github.com/mono/mono/issues/19549 for background
-            if (hideWebDriver && sessions.Add(sessionId))
+            if (sessions.Add(sessionId))
             {
                 await SendMonoCommand(sessionId, new MonoCommands("globalThis.dotnetDebugger = true"), token);
                 Result res = await SendCommand(sessionId,
