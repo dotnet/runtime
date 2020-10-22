@@ -21,7 +21,7 @@ namespace System.Net.Quic.Tests.Harness
         /// <summary>
         ///     Cryptographic message data;
         /// </summary>
-        internal byte[] CryptoData;
+        internal byte[] CryptoData = Array.Empty<byte>();
 
         internal override FrameType FrameType => FrameType.Crypto;
 

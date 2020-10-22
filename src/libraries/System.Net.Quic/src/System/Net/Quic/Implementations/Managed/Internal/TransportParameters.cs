@@ -4,6 +4,7 @@
 #nullable enable
 
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Net.Quic.Implementations.Managed.Internal.Headers;
 using System.Numerics;
 
@@ -164,7 +165,7 @@ namespace System.Net.Quic.Implementations.Managed.Internal
                 _ => false
             };
 
-        internal static bool Read(ReadOnlySpan<byte> buffer, bool isServer, out TransportParameters? parameters)
+        internal static bool Read(ReadOnlySpan<byte> buffer, bool isServer, [NotNullWhen(true)] out TransportParameters? parameters)
         {
             parameters = new TransportParameters();
 

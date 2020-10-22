@@ -29,7 +29,7 @@ namespace System.Net.Quic.Tests.Harness
         /// <summary>
         ///     Connection Id.
         /// </summary>
-        internal byte[] ConnectionId;
+        internal byte[] ConnectionId = Array.Empty<byte>();
 
         /// <summary>
         ///     Stateless reset token to be used when <see cref="ConnectionId" /> is used.

@@ -50,7 +50,7 @@ namespace System.Net.Quic.Tests
 
             var serverStream = Server.AcceptStream();
             Assert.NotNull(serverStream);
-            Assert.Equal(clientStream.StreamId, serverStream.StreamId);
+            Assert.Equal(clientStream.StreamId, serverStream!.StreamId);
             Assert.True(serverStream.CanRead);
             Assert.Equal(!unidirectional, serverStream.CanWrite);
 
@@ -234,7 +234,7 @@ namespace System.Net.Quic.Tests
             Assert.Equal(data, frame.StreamData);
         }
 
-        [Fact(Skip = "Sending of MaxStreamData frames has been reduced")]
+        [Fact(Skip = "Sending of MaxStreamData frames is currently broken")]
         public void ReceiverSendsMaxDataAfterReadingFromStream()
         {
             byte[] data = {0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 0};
@@ -249,7 +249,7 @@ namespace System.Net.Quic.Tests
             // read data
             var receiverStream = Server.AcceptStream();
             Assert.NotNull(receiverStream);
-            int read = receiverStream.Read(recvBuf);
+            int read = receiverStream!.Read(recvBuf);
             Assert.Equal(recvBuf.Length, read);
 
             // next time, the receiver should send max data update
@@ -272,7 +272,7 @@ namespace System.Net.Quic.Tests
             // read data
             var receiverStream = Server.AcceptStream();
             Assert.NotNull(receiverStream);
-            receiverStream.Read(recvBuf);
+            receiverStream!.Read(recvBuf);
 
             Server.Ping();
             Intercept1Rtt(Server, Client, packet =>

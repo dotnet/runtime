@@ -54,7 +54,7 @@ namespace System.Net.Quic.Implementations.Managed
             if (packet.MaxDataFrame != null)
             {
                 MaxDataFrameSent = false;
-                _peerReceivedLocalLimits.UpdateMaxData(packet.MaxDataFrame.Value.MaximumData);
+                _receiveLimitsAtPeer.UpdateMaxData(packet.MaxDataFrame.Value.MaximumData);
             }
 
             if (packet.HandshakeDoneSent)

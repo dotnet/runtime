@@ -10,6 +10,7 @@ using System.Net.Quic.Implementations.Managed.Internal.Crypto;
 using System.Net.Quic.Implementations.Managed.Internal.Recovery;
 using System.Net.Quic.Tests.Harness;
 using System.Net.Security;
+using System.Threading.Channels;
 using Xunit;
 using Xunit.Abstractions;
 
@@ -48,7 +49,7 @@ namespace System.Net.Quic.Tests
         private const string CertificateFilePath = "Certs/cert.crt";
         private const string PrivateKeyFilePath = "Certs/cert.key";
 
-        private static readonly QuicServerSocketContext _dummySocketContext = new QuicServerSocketContext(new IPEndPoint(IPAddress.Any, 0), null, null);
+        private static readonly QuicServerSocketContext _dummySocketContext = new QuicServerSocketContext(new IPEndPoint(IPAddress.Any, 0), new QuicListenerOptions(), Channel.CreateUnbounded<ManagedQuicConnection>().Writer);
         private static readonly IPEndPoint _ipAnyEndpoint = new IPEndPoint(IPAddress.Any, 0);
 
         internal readonly QuicClientConnectionOptions ClientOptions;

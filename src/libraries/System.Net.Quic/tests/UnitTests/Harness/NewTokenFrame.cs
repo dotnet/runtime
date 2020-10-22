@@ -16,7 +16,7 @@ namespace System.Net.Quic.Tests.Harness
         /// <summary>
         ///     Opaque blob that the client must use with a future Initial packet.
         /// </summary>
-        internal byte[] Token;
+        internal byte[] Token = Array.Empty<byte>();
 
         internal override FrameType FrameType => FrameType.NewToken;
 

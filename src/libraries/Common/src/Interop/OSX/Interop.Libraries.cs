@@ -16,6 +16,8 @@ internal static partial class Interop
         internal const string OpenLdap = "libldap.dylib";
         internal const string SystemConfigurationLibrary = "/System/Library/Frameworks/SystemConfiguration.framework/SystemConfiguration";
         internal const string AppleCryptoNative = "libSystem.Security.Cryptography.Native.Apple.dylib";
+        internal const string Ssl = "libssl.1.1.dylib";
+        internal const string Crypto = "libcrypto.1.1.dylib";
         internal const string MsQuic = "libmsquic.dylib";
     }
 }

@@ -47,7 +47,7 @@ namespace System.Net.Quic.Tests
             reader.Reset(buffer.AsMemory(0, writer.BytesWritten));
             Assert.True(TransportParameters.Read(buffer.AsSpan(0, written), true, out var actual));
 
-            Assert.Equal(expected.PreferredAddress, actual.PreferredAddress);
+            Assert.Equal(expected.PreferredAddress, actual!.PreferredAddress);
             Assert.Equal(expected.AckDelayExponent, actual.AckDelayExponent);
             Assert.Equal(expected.DisableActiveMigration, actual.DisableActiveMigration);
             Assert.Equal(expected.InitialMaxData, actual.InitialMaxData);

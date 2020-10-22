@@ -26,7 +26,7 @@ namespace System.Net.Quic.Tests.Harness
 
     internal abstract class CommonPacket : LongHeaderPacket, IFramePacket
     {
-        internal byte[] Token;
+        internal byte[]? Token;
 
         public List<FrameBase> Frames { get; } = new List<FrameBase>();
 
@@ -49,7 +49,7 @@ namespace System.Net.Quic.Tests.Harness
 
             SharedPacketData.Read(reader, reader.Buffer.Span[0], out var data);
 
-            Token = data.Token.IsEmpty ? null : data.Token.ToArray();
+            Token = data.Token.IsEmpty ? Array.Empty<byte>() : data.Token.ToArray();
             Length = data.Length;
 
             (PacketNumberLength, PacketNumber) = DeserializePayloadWithFrames(reader, context, Frames, PacketType, (int) Length);

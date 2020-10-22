@@ -155,17 +155,17 @@ namespace System.Net.Quic.Implementations.Managed
         /// <summary>
         ///     Flow control limits set by this endpoint for the peer for the entire connection.
         /// </summary>
-        private ConnectionFlowControlLimits _localLimits;
+        private ConnectionFlowControlLimits _receiveLimits;
 
         /// <summary>
-        ///     Values of <see cref="_localLimits"/> that peer has confirmed received.
+        ///     Values of <see cref="_receiveLimits"/> that peer has confirmed received.
         /// </summary>
-        private ConnectionFlowControlLimits _peerReceivedLocalLimits;
+        private ConnectionFlowControlLimits _receiveLimitsAtPeer;
 
         /// <summary>
         ///     Flow control limits set by the peer for this endpoint for the entire connection.
         /// </summary>
-        private ConnectionFlowControlLimits _peerLimits;
+        private ConnectionFlowControlLimits _sendLimits;
 
         /// <summary>
         ///     QUIC transport parameters requested by peer endpoint.
@@ -279,10 +279,10 @@ namespace System.Net.Quic.Implementations.Managed
         {
             _trace?.OnTransportParametersSet(_localTransportParameters);
 
-            _localLimits.UpdateMaxData(_localTransportParameters.InitialMaxData);
-            _localLimits.UpdateMaxStreamsBidi(_localTransportParameters.InitialMaxStreamsBidi);
-            _localLimits.UpdateMaxStreamsUni(_localTransportParameters.InitialMaxStreamsUni);
-            _peerReceivedLocalLimits = _localLimits;
+            _receiveLimits.UpdateMaxData(_localTransportParameters.InitialMaxData);
+            _receiveLimits.UpdateMaxStreamsBidi(_localTransportParameters.InitialMaxStreamsBidi);
+            _receiveLimits.UpdateMaxStreamsUni(_localTransportParameters.InitialMaxStreamsUni);
+            _receiveLimitsAtPeer = _receiveLimits;
         }
 
 
@@ -386,7 +386,7 @@ namespace System.Net.Quic.Implementations.Managed
                 return;
             }
 
-            ref ConnectionFlowControlLimits limits = ref _peerLimits;
+            ref ConnectionFlowControlLimits limits = ref _sendLimits;
 
             limits.UpdateMaxData(param.InitialMaxData);
             limits.UpdateMaxStreamsBidi(param.InitialMaxStreamsBidi);
@@ -686,7 +686,7 @@ namespace System.Net.Quic.Implementations.Managed
             ThrowIfDisposed();
             ThrowIfError();
 
-            return _peerLimits.MaxStreamsUni;
+            return _sendLimits.MaxStreamsUni;
         }
 
         internal override long GetRemoteAvailableBidirectionalStreamCount()
@@ -694,7 +694,7 @@ namespace System.Net.Quic.Implementations.Managed
             ThrowIfDisposed();
             ThrowIfError();
 
-            return _peerLimits.MaxStreamsBidi;
+            return _sendLimits.MaxStreamsBidi;
         }
 
         internal override async ValueTask<QuicStreamProvider>

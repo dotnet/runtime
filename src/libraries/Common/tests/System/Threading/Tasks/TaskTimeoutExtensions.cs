@@ -14,7 +14,7 @@ namespace System.Threading.Tasks
         public static async Task WithCancellation(this Task task, CancellationToken cancellationToken)
         {
             var tcs = new TaskCompletionSource<bool>();
-            using (cancellationToken.Register(s => ((TaskCompletionSource<bool>)s).TrySetResult(true), tcs))
+            using (cancellationToken.Register(s => ((TaskCompletionSource<bool>)s!).TrySetResult(true), tcs))
             {
                 if (task != await Task.WhenAny(task, tcs.Task).ConfigureAwait(false))
                 {
@@ -111,7 +111,7 @@ namespace System.Threading.Tasks
                 {
                     switch (t.Status)
                     {
-                        case TaskStatus.Faulted: exceptions.Add(t.Exception); break;
+                        case TaskStatus.Faulted: exceptions.Add(t.Exception!); break;
                         case TaskStatus.Canceled: exceptions.Add(new TaskCanceledException(t)); break;
                     }
                 }
@@ -135,7 +135,7 @@ namespace System.Threading.Tasks
                 {
                     if (a.IsFaulted)
                     {
-                        tcs.TrySetException(a.Exception.InnerExceptions);
+                        tcs.TrySetException(a.Exception!.InnerExceptions);
                         Interlocked.Decrement(ref remaining);
                     }
                     else if (a.IsCanceled)

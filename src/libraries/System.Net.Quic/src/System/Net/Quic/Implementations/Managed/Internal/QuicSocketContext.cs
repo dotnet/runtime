@@ -83,21 +83,17 @@ namespace System.Net.Quic.Implementations.Managed.Internal
                 Socket.Connect(remoteEndPoint);
             }
 
-            // TODO-RZ: Find out why I can't use RuntimeInformation when building inside .NET Runtime
-#if FEATURE_QUIC_STANDALONE
-            if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
-#endif
-            {
-                // disable exception when client forcibly closes the socket.
-                // https://stackoverflow.com/questions/38191968/c-sharp-udp-an-existing-connection-was-forcibly-closed-by-the-remote-host
+#if WINDOWS
+            // disable exception when client forcibly closes the socket.
+            // https://stackoverflow.com/questions/38191968/c-sharp-udp-an-existing-connection-was-forcibly-closed-by-the-remote-host
 
-                const int SIO_UDP_CONNRESET = -1744830452;
-                Socket.IOControl(
-                    (IOControlCode)SIO_UDP_CONNRESET,
-                    new byte[] {0, 0, 0, 0},
-                    null
-                );
-            }
+            const int SIO_UDP_CONNRESET = -1744830452;
+            Socket.IOControl(
+                (IOControlCode)SIO_UDP_CONNRESET,
+                new byte[] {0, 0, 0, 0},
+                null
+            );
+#endif
         }
 
         public IPEndPoint LocalEndPoint => (IPEndPoint)Socket.LocalEndPoint!;
@@ -110,7 +106,7 @@ namespace System.Net.Quic.Implementations.Managed.Internal
             }
 
             _started = true;
-            _backgroundWorkerTask = Task.Factory.StartNew(BackgroundWorker, TaskCreationOptions.LongRunning);
+            _backgroundWorkerTask = Task.Factory.StartNew(BackgroundWorker, CancellationToken.None, TaskCreationOptions.LongRunning, TaskScheduler.Default);
         }
 
         protected void SignalStop()

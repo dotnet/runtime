@@ -11,14 +11,10 @@ namespace System.Net.Quic.Implementations.MsQuic.Internal
     {
         internal const ushort IPv4 = 2;
 
-            // TODO-RZ: Find out why I can't use RuntimeInformation when building inside .NET Runtime
-#if FEATURE_QUIC_STANDALONE
-        // the AF_INET6 define in msquic code comes from system headers and is different on windows and linux
-        private static ushort _ipv6 = (ushort) (RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? 23 : 10);
-        internal static ushort IPv6 => _ipv6;
-#else
-        // TODO-RZ: This constant works only on Windows
+#if WINDOWS
         internal const ushort IPv6 = 23;
+#else // Assume Linux
+        internal const ushort IPv6 = 10;
 #endif
 
 

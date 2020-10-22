@@ -179,16 +179,6 @@ namespace System.Net.Quic.Implementations.Managed.Internal.Tls.OpenSsl
                 throw new ArgumentException("Selected server certificate does not contain a private key.");
             }
 
-            // TODO-RZ: Find out why I can't use RuntimeInformation when building inside .NET Runtime
-#if FEATURE_QUIC_STANDALONE
-            if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
-            {
-                // .NET runtime on linux uses OpenSSL, so we do not need to marshal the certificate.
-                Interop.OpenSslQuic.SslUseCertificate(_ssl, cert.Handle);
-                return;
-            }
-#endif
-
             var data = cert.Export(X509ContentType.Pfx);
             IntPtr pkcsHandle;
 

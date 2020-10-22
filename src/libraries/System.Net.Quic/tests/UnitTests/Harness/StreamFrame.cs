@@ -33,7 +33,7 @@ namespace System.Net.Quic.Tests.Harness
         /// <summary>
         ///     Bytes from the designated stream to be delivered.
         /// </summary>
-        internal byte[] StreamData;
+        internal byte[] StreamData = Array.Empty<byte>();
 
         public override string ToString() => $"Stream[{StreamId}, Off={Offset}, Len={StreamData.Length}{(Fin ? ", Fin" : "")}]";
 

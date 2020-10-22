@@ -301,7 +301,7 @@ namespace System.Net.Quic.Implementations.Managed
             // treated as a connection error of type STREAM_STATE_ERROR.
             if (StreamHelpers.IsLocallyInitiated(IsServer, frame.StreamId) &&
                 // Streams are Created by sending a STREAM frame, if we didn't send anything, report error
-                !(stream?.SendStream?.SentBytes > 0))
+                !(stream?.SendStream?.UnsentOffset > 0))
                 return CloseConnection(TransportErrorCode.StreamStateError,
                     QuicError.StreamNotCreated,
                     FrameType.StopSending);
@@ -362,7 +362,7 @@ namespace System.Net.Quic.Implementations.Managed
                 return ProcessPacketResult.Error;
             _trace?.OnMaxDataFrame(frame);
 
-            _peerLimits.UpdateMaxData(frame.MaximumData);
+            _sendLimits.UpdateMaxData(frame.MaximumData);
             return ProcessPacketResult.Ok;
         }
 
@@ -404,9 +404,9 @@ namespace System.Net.Quic.Implementations.Managed
             if (IsClosing) return ProcessPacketResult.Ok;
 
             if (frame.Bidirectional)
-                _peerLimits.UpdateMaxStreamsBidi(frame.MaximumStreams);
+                _sendLimits.UpdateMaxStreamsBidi(frame.MaximumStreams);
             else
-                _peerLimits.UpdateMaxStreamsUni(frame.MaximumStreams);
+                _sendLimits.UpdateMaxStreamsUni(frame.MaximumStreams);
 
             return ProcessPacketResult.Ok;
         }
@@ -605,7 +605,7 @@ namespace System.Net.Quic.Implementations.Managed
             {
                 // receiving data on largest offset yet, check also connection-level control flow
                 ReceivedData += writtenOffset - buffer.Size;
-                if (ReceivedData > _peerLimits.MaxData)
+                if (ReceivedData > _sendLimits.MaxData)
                 {
                     return CloseConnection(TransportErrorCode.FlowControlError, QuicError.MaxDataViolated, frameType);
                 }
@@ -962,7 +962,7 @@ namespace System.Net.Quic.Implementations.Managed
                 return true;
             }
 
-            var frame = new ResetStreamFrame(stream.StreamId, buffer.Error.Value, buffer.SentBytes);
+            var frame = new ResetStreamFrame(stream.StreamId, buffer.Error.Value, buffer.UnsentOffset);
             if (writer.BytesAvailable < frame.GetSerializedLength())
             {
                 return false;
@@ -978,13 +978,14 @@ namespace System.Net.Quic.Implementations.Managed
 
         private void WriteMaxDataFrame(QuicWriter writer, QuicSocketContext.SendContext context)
         {
+            // Update Max Data if the sender has surpassed at least half the data window
             if (MaxDataFrameSent ||
-                _localLimits.MaxData - _peerReceivedLocalLimits.MaxData < _peerReceivedLocalLimits.MaxData - ReceivedData)
+                _receiveLimits.MaxData - _receiveLimitsAtPeer.MaxData < _receiveLimitsAtPeer.MaxData - ReceivedData)
             {
                 return;
             }
 
-            var frame = new MaxDataFrame(_localLimits.MaxData);
+            var frame = new MaxDataFrame(_receiveLimits.MaxData);
 
             if (writer.BytesAvailable <= frame.GetSerializedLength())
             {
@@ -1017,8 +1018,8 @@ namespace System.Net.Quic.Implementations.Managed
                 count = Math.Min(count, writer.BytesAvailable - overhead);
 
                 // respect connection-level control flow
-                long flowControlAvailable = _peerLimits.MaxData - SentData;
-                count = Math.Min(count, buffer.SentBytes + flowControlAvailable - offset);
+                long flowControlAvailable = _sendLimits.MaxData - SentData;
+                count = Math.Min(count, buffer.UnsentOffset + flowControlAvailable - offset);
 
                 // if size is known, WrittenBytes is no longer mutable
                 bool fin = buffer.SizeKnown && buffer.WrittenBytes == offset + count;
@@ -1029,7 +1030,7 @@ namespace System.Net.Quic.Implementations.Managed
                     _trace?.OnStreamFrame(new StreamFrame(stream!.StreamId, offset, fin, payloadDestination));
 
                     // add the newly sent data to the flow control counter
-                    SentData += Math.Max(0, offset + count - buffer.SentBytes);
+                    SentData += Math.Max(0, offset + count - buffer.UnsentOffset);
                     buffer.CheckOut(payloadDestination);
 
                     // record sent data

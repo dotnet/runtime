@@ -9,7 +9,7 @@ namespace System.Net.Quic.Tests.Harness
 {
     internal abstract class LongHeaderPacket : PacketBase
     {
-        internal byte[] SourceConnectionId;
+        internal byte[] SourceConnectionId = Array.Empty<byte>();
 
         internal QuicVersion Version;
 

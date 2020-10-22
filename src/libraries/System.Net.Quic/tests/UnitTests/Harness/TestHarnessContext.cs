@@ -43,7 +43,7 @@ namespace System.Net.Quic.Tests.Harness
             if (!_sealMap.TryGetValue((Sender, packetType), out var seal))
             {
                 // encryption is symmetric
-                _sealMap[(Sender, packetType)] = seal = GetSenderPacketNumberSpace(packetType).SendCryptoSeal;
+                _sealMap[(Sender, packetType)] = seal = GetSenderPacketNumberSpace(packetType).SendCryptoSeal!;
             }
 
             return seal;

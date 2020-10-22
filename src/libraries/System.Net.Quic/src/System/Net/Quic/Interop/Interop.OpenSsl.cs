@@ -15,8 +15,8 @@ internal static partial class Interop
         internal const int SSL_TLSEXT_ERR_NOACK = 3;
         internal const int SSL_TLSEXT_ERR_OK = 0;
 
-        internal const string Ssl = Interop.Libraries.Ssl;
-        internal const string Crypto = Interop.Libraries.Crypto;
+        internal const string Ssl = Libraries.Ssl;
+        internal const string Crypto = Libraries.Crypto;
 
         private const string EntryPointPrefix = "";
 

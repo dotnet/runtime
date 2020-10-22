@@ -13,7 +13,7 @@ namespace System.Net.Quic.Tests.Harness
 {
     internal abstract class PacketBase
     {
-        internal byte[] DestinationConnectionId;
+        internal byte[] DestinationConnectionId = Array.Empty<byte>();
 
         internal abstract PacketType PacketType { get; }
 

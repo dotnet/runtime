@@ -97,9 +97,9 @@ namespace System.Net.Quic.Implementations.Managed.Internal.Streams
         internal long MaxData { get; private set; }
 
         /// <summary>
-        ///     Number of bytes from the beginning of the stream which were sent (and not necessarily acknowledged).
+        ///     Index of the first byte in the stream which was never sent. Used to ensure flow control limits are met.
         /// </summary>
-        internal long SentBytes { get; private set; }
+        internal long UnsentOffset { get; private set; }
 
         /// <summary>
         ///     Synchronization for avoiding overfilling the buffer.
@@ -376,10 +376,10 @@ namespace System.Net.Quic.Implementations.Managed.Internal.Streams
                     chunkIndex++;
                 }
 
-                SentBytes = Math.Max(SentBytes, end + 1);
+                UnsentOffset = Math.Max(UnsentOffset, end + 1);
             }
 
-            if (SizeKnown && StreamState == SendStreamState.Send && SentBytes == WrittenBytes)
+            if (SizeKnown && StreamState == SendStreamState.Send && UnsentOffset == WrittenBytes)
             {
                 lock (SyncObject)
                 {

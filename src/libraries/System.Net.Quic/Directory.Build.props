@@ -3,5 +3,7 @@
   <PropertyGroup>
     <StrongNameKeyId>Microsoft</StrongNameKeyId>
     <IncludePlatformAttributes>true</IncludePlatformAttributes>
+    <DefineConstants Condition="'$(TargetsWindows)' == 'true'">$(DefineConstants);WINDOWS</DefineConstants>
+    <DefineConstants Condition="'$(TargetsLinux)' == 'true'">$(DefineConstants);LINUX</DefineConstants>
   </PropertyGroup>
 </Project>

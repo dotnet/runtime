@@ -85,7 +85,7 @@ namespace System.Net.Quic.Implementations.Managed
         {
             var type = StreamHelpers.GetLocallyInitiatedType(IsServer, unidirectional);
             ref int counter = ref (unidirectional ? ref _uniStreamsOpened : ref _bidirStreamsOpened);
-            long limit = unidirectional ? _peerLimits.MaxStreamsUni : _peerLimits.MaxStreamsBidi;
+            long limit = unidirectional ? _sendLimits.MaxStreamsUni : _sendLimits.MaxStreamsBidi;
 
             // atomically increment the respective counter
             int priorCounter = Volatile.Read(ref counter);
@@ -131,8 +131,8 @@ namespace System.Net.Quic.Implementations.Managed
             long index = StreamHelpers.GetStreamIndex(streamId);
             bool local = StreamHelpers.IsLocallyInitiated(IsServer, streamId);
             var param = local
-                ? _peerLimits
-                : _localLimits;
+                ? _sendLimits
+                : _receiveLimits;
 
             long limit = StreamHelpers.IsBidirectional(streamId)
                 ? param.MaxStreamsBidi
@@ -162,7 +162,7 @@ namespace System.Net.Quic.Implementations.Managed
 
         internal void OnStreamDataRead(ManagedQuicStream stream, int bytesRead)
         {
-            _localLimits.AddMaxData(bytesRead);
+            _receiveLimits.AddMaxData(bytesRead);
             if (stream.ReceiveStream!.ShouldUpdateMaxData())
             {
                 OnStreamStateUpdated(stream);

@@ -35,7 +35,7 @@ namespace System.Net.Quic.Tests.Harness
         /// <summary>
         ///     Human readable explanation why the connection was closed.
         /// </summary>
-        internal string ReasonPhrase;
+        internal string? ReasonPhrase;
 
         protected override string GetAdditionalInfo() => $"[{ErrorCode}: {(IsQuicError && ErrorFrameType != FrameType.Padding ? ErrorFrameType + ", " : "")}{ReasonPhrase}]";
 
