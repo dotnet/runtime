@@ -3,6 +3,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Diagnostics.Tracing;
 using System.Linq;
 using System.Threading;
@@ -1239,7 +1240,8 @@ namespace Microsoft.Extensions.Hosting.Internal
                 .Start();
 
             // give the background service 1 minute to log the failure
-            Task timeout = Task.Delay(TimeSpan.FromMinutes(1));
+            TimeSpan timeout = TimeSpan.FromMinutes(1);
+            Stopwatch sw = Stopwatch.StartNew();
 
             while (true)
             {
@@ -1251,14 +1253,8 @@ namespace Microsoft.Extensions.Hosting.Internal
                     break;
                 }
 
-                if (timeout.IsCompleted)
-                {
-                    Assert.True(false, "'BackgroundService failed' did not get logged");
-                }
-                else
-                {
-                    await Task.Delay(TimeSpan.FromMilliseconds(30));
-                }
+                Assert.InRange(sw.Elapsed, TimeSpan.Zero, timeout);
+                await Task.Delay(TimeSpan.FromMilliseconds(30));
             }
         }
 
