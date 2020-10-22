@@ -646,13 +646,14 @@ namespace System.IO
             bool hasSeparator = PathInternal.IsDirectorySeparator(first[first.Length - 1])
                 || PathInternal.IsDirectorySeparator(second[0]);
 
+#if !MS_IO_REDIST
+            return hasSeparator ?
+                string.Concat(first, second) :
+                string.Concat(first, PathInternal.DirectorySeparatorCharAsString, second);
+#else
             fixed (char* f = &MemoryMarshal.GetReference(first), s = &MemoryMarshal.GetReference(second))
             {
-#if MS_IO_REDIST
                 return StringExtensions.Create(
-#else
-                return string.Create(
-#endif
                     first.Length + second.Length + (hasSeparator ? 0 : 1),
                     (First: (IntPtr)f, FirstLength: first.Length, Second: (IntPtr)s, SecondLength: second.Length),
                     static (destination, state) =>
@@ -663,6 +664,7 @@ namespace System.IO
                         new Span<char>((char*)state.Second, state.SecondLength).CopyTo(destination.Slice(destination.Length - state.SecondLength));
                     });
             }
+#endif
         }
 
         private unsafe readonly struct Join3Payload
