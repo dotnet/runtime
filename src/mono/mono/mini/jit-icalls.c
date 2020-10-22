@@ -1425,7 +1425,7 @@ mono_gsharedvt_constrained_call (gpointer mp, MonoMethod *cmethod, MonoClass *kl
 		MonoVTable *vt;
 
 		/* Object.GetType () is an intrinsic under netcore */
-		g_assert (!strcmp (cmethod->name, "GetType"));
+		g_assertf (!strcmp (cmethod->name, "GetType"), "%s.%s", m_class_get_name (cmethod->klass), cmethod->name);
 		vt = mono_class_vtable_checked (mono_domain_get (), klass, error);
 		if (!is_ok (error)) {
 			mono_error_set_pending_exception (error);
