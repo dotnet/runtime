@@ -12,7 +12,9 @@
 #include "clrnt.h"
 #include "contract.h"
 
+#ifdef HOST_WINDOWS
 HINSTANCE g_hmodCoreCLR;
+#endif
 
 thread_local int t_CantAllocCount;
 
@@ -90,7 +92,7 @@ int RFS_HashStack ()
 #endif // FAILPOINTS_ENABLED
 
 
-
+#ifdef HOST_WINDOWS
 //-----------------------------------------------------------------------------------
 // This is the approved way to get a module handle to mscorwks.dll (or coreclr.dll).
 // Never call GetModuleHandle(mscorwks) yourself as this will break side-by-side inproc.
@@ -119,7 +121,7 @@ HMODULE GetCLRModule ()
 
     return g_hmodCoreCLR;
 }
-
+#endif
 
 
 #if defined(SELF_NO_HOST)

@@ -5630,7 +5630,9 @@ ClrDataAccess::Initialize(void)
     // Thus, when DAC is initialized, initialize utilcode with the base address of the runtime loaded in the
     // target process. This is similar to work done in CorDB::SetTargetCLR for mscordbi.
 
+#if HOST_WINDOWS
     g_hmodCoreCLR = (HINSTANCE)m_globalBase; // Base address of the runtime in the target process
+#endif
 
     return S_OK;
 }

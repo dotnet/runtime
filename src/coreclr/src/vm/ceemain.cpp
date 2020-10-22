@@ -1849,8 +1849,11 @@ BOOL STDMETHODCALLTYPE EEDllMain( // TRUE on success, FALSE on error.
         {
             case DLL_PROCESS_ATTACH:
             {
+#if HOST_WINDOWS
                 g_hmodCoreCLR = pParam->hInst;
                 // Save the module handle.
+#endif
+
                 g_hThisInst = pParam->hInst;
                 break;
             }

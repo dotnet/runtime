@@ -4719,7 +4719,9 @@ typedef HMODULE HMODULE_TGT;
 
 BOOL IsIPInModule(HMODULE_TGT hModule, PCODE ip);
 
+#ifdef HOST_WINDOWS
 extern HINSTANCE g_hmodCoreCLR;
+#endif
 
 namespace UtilCode
 {

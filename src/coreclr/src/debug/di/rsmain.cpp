@@ -1432,7 +1432,9 @@ HRESULT Cordb::SetTargetCLR(HMODULE hmodTargetCLR)
     // the same model because coreclr.dll isn't in this process and hmodTargetCLR
     // is the debuggee target, not the coreclr.dll to bind utilcode to..
 
+#if HOST_WINDOWS
     g_hmodCoreCLR = hmodTargetCLR;
+#endif
 
     return S_OK;
 }
