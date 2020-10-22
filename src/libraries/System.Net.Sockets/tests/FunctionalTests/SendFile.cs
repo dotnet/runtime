@@ -8,6 +8,7 @@ using System.Threading;
 using System.Threading.Tasks;
 
 using Xunit;
+using Xunit.Sdk;
 
 namespace System.Net.Sockets.Tests
 {
@@ -288,8 +289,7 @@ namespace System.Net.Sockets.Tests
             // before the operation is started, the peer won't see a ConnectionReset SocketException and we won't
             // see a SocketException either.
             int msDelay = 100;
-            int retries = 10;
-            while (true)
+            await RetryHelper.ExecuteAsync(async () =>
             {
                 (Socket socket1, Socket socket2) = SocketTestExtensions.CreateConnectedSocketPair();
                 using (socket2)
@@ -329,48 +329,34 @@ namespace System.Net.Sockets.Tests
                     }
                     catch (ObjectDisposedException)
                     { }
+                    Assert.Equal(SocketError.ConnectionAborted, localSocketError);
 
-                    try
+                    // On OSX, we're unable to unblock the on-going socket operations and
+                    // perform an abortive close.
+                    if (!PlatformDetection.IsOSXLike)
                     {
-                        Assert.Equal(SocketError.ConnectionAborted, localSocketError);
-
-                        // On OSX, we're unable to unblock the on-going socket operations and
-                        // perform an abortive close.
-                        if (!PlatformDetection.IsOSXLike)
+                        SocketError? peerSocketError = null;
+                        var receiveBuffer = new byte[4096];
+                        while (true)
                         {
-                            SocketError? peerSocketError = null;
-                            var receiveBuffer = new byte[4096];
-                            while (true)
+                            try
                             {
-                                try
+                                int received = socket2.Receive(receiveBuffer);
+                                if (received == 0)
                                 {
-                                    int received = socket2.Receive(receiveBuffer);
-                                    if (received == 0)
-                                    {
-                                        break;
-                                    }
-                                }
-                                catch (SocketException se)
-                                {
-                                    peerSocketError = se.SocketErrorCode;
                                     break;
                                 }
                             }
-                            Assert.Equal(SocketError.ConnectionReset, peerSocketError);
+                            catch (SocketException se)
+                            {
+                                peerSocketError = se.SocketErrorCode;
+                                break;
+                            }
                         }
-                        break;
-                    }
-                    catch
-                    {
-                        if (retries-- > 0)
-                        {
-                            continue;
-                        }
-
-                        throw;
+                        Assert.Equal(SocketError.ConnectionReset, peerSocketError);
                     }
                 }
-            }
+            }, maxAttempts: 10, retryWhen: e => e is XunitException);
         }
 
         [OuterLoop]
