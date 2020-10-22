@@ -5,6 +5,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using Xunit;
 using Xunit.Abstractions;
+using Xunit.Sdk;
 
 namespace System.Net.Sockets.Tests
 {
@@ -303,8 +304,7 @@ namespace System.Net.Sockets.Tests
             // We try this a couple of times to deal with a timing race: if the Dispose happens
             // before the operation is started, we won't see a SocketException.
             int msDelay = 100;
-            int retries = 10;
-            while (true)
+            await RetryHelper.ExecuteAsync(async () =>
             {
                 var listener = new Socket(loopback.AddressFamily, SocketType.Stream, ProtocolType.Tcp);
                 if (loopback.IsIPv4MappedToIPv6) listener.DualMode = true;
@@ -318,11 +318,7 @@ namespace System.Net.Sockets.Tests
                 msDelay *= 2;
                 Task disposeTask = Task.Run(() => listener.Dispose());
 
-                var cts = new CancellationTokenSource();
-                Task timeoutTask = Task.Delay(30000, cts.Token);
-                Assert.NotSame(timeoutTask, await Task.WhenAny(disposeTask, acceptTask, timeoutTask));
-                cts.Cancel();
-
+                await Task.WhenAny(disposeTask, acceptTask).TimeoutAfter(30000);
                 await disposeTask;
 
                 SocketError? localSocketError = null;
@@ -340,33 +336,20 @@ namespace System.Net.Sockets.Tests
                     disposedException = true;
                 }
 
-                try
+                if (UsesApm)
                 {
-                    if (UsesApm)
-                    {
-                        Assert.Null(localSocketError);
-                        Assert.True(disposedException);
-                    }
-                    else if (UsesSync)
-                    {
-                        Assert.Equal(SocketError.Interrupted, localSocketError);
-                    }
-                    else
-                    {
-                        Assert.Equal(SocketError.OperationAborted, localSocketError);
-                    }
-                    break;
+                    Assert.Null(localSocketError);
+                    Assert.True(disposedException);
                 }
-                catch
+                else if (UsesSync)
                 {
-                    if (retries-- > 0)
-                    {
-                        continue;
-                    }
-
-                    throw;
+                    Assert.Equal(SocketError.Interrupted, localSocketError);
                 }
-            }
+                else
+                {
+                    Assert.Equal(SocketError.OperationAborted, localSocketError);
+                }
+            }, maxAttempts: 10, retryWhen: e => e is XunitException);
         }
 
         [Fact]
