@@ -170,7 +170,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                 case "Target.attachedToTarget":
                     {
                         if (args["targetInfo"]["type"]?.ToString() == "page")
-                            await DeleteWebDriver(new SessionId(args["sessionId"]?.ToString()), token);
+                            await AttachToTarget(new SessionId(args["sessionId"]?.ToString()), token);
                         break;
                     }
 
@@ -198,7 +198,7 @@ namespace Microsoft.WebAssembly.Diagnostics
             // Inspector doesn't use the Target domain or sessions
             // so we try to init immediately
             if (id == SessionId.Null)
-                await DeleteWebDriver(id, token);
+                await AttachToTarget(id, token);
 
             if (!contexts.TryGetValue(id, out ExecutionContext context))
                 return false;
@@ -208,7 +208,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                 case "Target.attachToTarget":
                     {
                         Result resp = await SendCommand(id, method, args, token);
-                        await DeleteWebDriver(new SessionId(resp.Value["sessionId"]?.ToString()), token);
+                        await AttachToTarget(new SessionId(resp.Value["sessionId"]?.ToString()), token);
                         break;
                     }
 
@@ -1169,7 +1169,7 @@ namespace Microsoft.WebAssembly.Diagnostics
             return true;
         }
 
-        private async Task DeleteWebDriver(SessionId sessionId, CancellationToken token)
+        private async Task AttachToTarget(SessionId sessionId, CancellationToken token)
         {
             // see https://github.com/mono/mono/issues/19549 for background
             if (sessions.Add(sessionId))
