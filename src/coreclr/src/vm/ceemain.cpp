@@ -642,7 +642,7 @@ void EEStartupHelper()
 #ifdef TARGET_WINDOWS
         HINSTANCE curModule = WszGetModuleHandle(NULL);
 #else
-        HINSTANCE curModule = PAL_LoadLibraryDirect(NULL);
+        HINSTANCE curModule = PAL_GetPalHostModule();
 #endif
 
         g_hmodCoreCLR = curModule;
