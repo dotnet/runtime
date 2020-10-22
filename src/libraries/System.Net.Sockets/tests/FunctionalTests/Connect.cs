@@ -5,6 +5,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using Xunit;
 using Xunit.Abstractions;
+using Xunit.Sdk;
 
 namespace System.Net.Sockets.Tests
 {
@@ -123,11 +124,10 @@ namespace System.Net.Sockets.Tests
         public static readonly TheoryData<IPAddress> ConnectGetsCanceledByDispose_Data = new TheoryData<IPAddress>
         {
             { IPAddress.Parse("1.1.1.1") },
-            // TODO: Figure out how to test this with vanilla IPV6
             { IPAddress.Parse("1.1.1.1").MapToIPv6() },
         };
 
-        [OuterLoop("Uses external server")]
+        [OuterLoop("Connects to external server")]
         [Theory]
         [MemberData(nameof(ConnectGetsCanceledByDispose_Data))]
         [PlatformSpecific(~(TestPlatforms.OSX | TestPlatforms.FreeBSD))] // Not supported on BSD like OSes.
@@ -136,8 +136,7 @@ namespace System.Net.Sockets.Tests
             // We try this a couple of times to deal with a timing race: if the Dispose happens
             // before the operation is started, we won't see a SocketException.
             int msDelay = 100;
-            int retries = 10;
-            while (true)
+            await RetryHelper.ExecuteAsync(async () =>
             {
                 var client = new Socket(address.AddressFamily, SocketType.Stream, ProtocolType.Tcp);
                 if (address.IsIPv4MappedToIPv6) client.DualMode = true;
@@ -149,11 +148,7 @@ namespace System.Net.Sockets.Tests
                 msDelay *= 2;
                 Task disposeTask = Task.Run(() => client.Dispose());
 
-                var cts = new CancellationTokenSource();
-                Task timeoutTask = Task.Delay(30000, cts.Token);
-                Assert.NotSame(timeoutTask, await Task.WhenAny(disposeTask, connectTask, timeoutTask));
-                cts.Cancel();
-
+                await Task.WhenAny(disposeTask, connectTask).TimeoutAfter(30000);
                 await disposeTask;
 
                 SocketError? localSocketError = null;
@@ -164,6 +159,9 @@ namespace System.Net.Sockets.Tests
                 }
                 catch (SocketException se)
                 {
+                    // On connection timeout, retry.
+                    Assert.NotEqual(SocketError.TimedOut, se.SocketErrorCode);
+
                     localSocketError = se.SocketErrorCode;
                 }
                 catch (ObjectDisposedException)
@@ -171,36 +169,20 @@ namespace System.Net.Sockets.Tests
                     disposedException = true;
                 }
 
-                try
+                if (UsesApm)
                 {
-                    // On connection timeout, retry.
-                    Assert.NotEqual(SocketError.TimedOut, localSocketError);
-
-                    if (UsesApm)
-                    {
-                        Assert.Null(localSocketError);
-                        Assert.True(disposedException);
-                    }
-                    else if (UsesSync)
-                    {
-                        Assert.Equal(SocketError.NotSocket, localSocketError);
-                    }
-                    else
-                    {
-                        Assert.Equal(SocketError.OperationAborted, localSocketError);
-                    }
-                    break;
+                    Assert.Null(localSocketError);
+                    Assert.True(disposedException);
                 }
-                catch
+                else if (UsesSync)
                 {
-                    if (retries-- > 0)
-                    {
-                        continue;
-                    }
-
-                    throw;
+                    Assert.Equal(SocketError.NotSocket, localSocketError);
                 }
-            }
+                else
+                {
+                    Assert.Equal(SocketError.OperationAborted, localSocketError);
+                }
+            }, maxAttempts: 10, retryWhen: e => e is XunitException);
         }
     }
 
