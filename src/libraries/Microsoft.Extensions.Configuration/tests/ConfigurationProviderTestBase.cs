@@ -95,20 +95,6 @@ Section3:
                     LoadThroughProvider(TestSection.TestConfig)));
         }
 
-        [Fact]
-        public virtual void Load_from_single_provider_with_duplicates_throws()
-        {
-            AssertFormatOrArgumentException(
-                () => BuildConfigRoot(LoadThroughProvider(TestSection.DuplicatesTestConfig)));
-        }
-
-        [Fact]
-        public virtual void Load_from_single_provider_with_differing_case_duplicates_throws()
-        {
-            AssertFormatOrArgumentException(
-                () => BuildConfigRoot(LoadThroughProvider(TestSection.DuplicatesDifferentCaseTestConfig)));
-        }
-
         private void AssertFormatOrArgumentException(Action test)
         {
             Exception caught = null;
@@ -570,100 +556,6 @@ Section3:
                                 ("SectioN4", new TestSection
                                 {
                                     Values = new[] {("KeY4", (TestKeyValue)"Value344")}
-                                })
-                            }
-                        })
-                    }
-                };
-
-            public static TestSection DuplicatesTestConfig { get; }
-                = new TestSection
-                {
-                    Values = new[]
-                    {
-                        ("Key1", (TestKeyValue)"Value1"),
-                        ("Key1", (TestKeyValue)"Value1")
-                    },
-                    Sections = new[]
-                    {
-                        ("Section1", new TestSection
-                        {
-                            Values = new[] {("Key2", (TestKeyValue)"Value12")},
-                            Sections = new[]
-                            {
-                                ("Section2", new TestSection
-                                {
-                                    Values = new[]
-                                    {
-                                        ("Key3", (TestKeyValue)"Value123"),
-                                        ("Key3a", (TestKeyValue)new[] {"ArrayValue0", "ArrayValue1", "ArrayValue2"})
-                                    },
-                                }),
-                                ("Section2", new TestSection
-                                {
-                                    Values = new[]
-                                    {
-                                        ("Key3", (TestKeyValue)"Value123"),
-                                        ("Key3a", (TestKeyValue)new[] {"ArrayValue0", "ArrayValue1", "ArrayValue2"})
-                                    },
-                                })
-
-                            }
-                        }),
-                        ("Section3", new TestSection
-                        {
-                            Sections = new[]
-                            {
-                                ("Section4", new TestSection
-                                {
-                                    Values = new[] {("Key4", (TestKeyValue)"Value344")}
-                                })
-                            }
-                        })
-                    }
-                };
-
-            public static TestSection DuplicatesDifferentCaseTestConfig { get; }
-                = new TestSection
-                {
-                    Values = new[]
-                    {
-                        ("Key1", (TestKeyValue)"Value1"),
-                        ("KeY1", (TestKeyValue)"Value1")
-                    },
-                    Sections = new[]
-                    {
-                        ("Section1", new TestSection
-                        {
-                            Values = new[] {("Key2", (TestKeyValue)"Value12")},
-                            Sections = new[]
-                            {
-                                ("Section2", new TestSection
-                                {
-                                    Values = new[]
-                                    {
-                                        ("Key3", (TestKeyValue)"Value123"),
-                                        ("Key3a", (TestKeyValue)new[] {"ArrayValue0", "ArrayValue1", "ArrayValue2"})
-                                    },
-                                }),
-                                ("SectioN2", new TestSection
-                                {
-                                    Values = new[]
-                                    {
-                                        ("KeY3", (TestKeyValue)"Value123"),
-                                        ("KeY3a", (TestKeyValue)new[] {"ArrayValue0", "ArrayValue1", "ArrayValue2"})
-                                    },
-                                })
-
-                            }
-                        }),
-                        ("Section3", new TestSection
-                        {
-                            Sections = new[]
-                            {
-                                ("Section4", new TestSection
-                                {
-                                    Values = new[] {("Key4", (TestKeyValue)"Value344")}
                                 })
                             }
                         })

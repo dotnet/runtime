@@ -169,6 +169,32 @@ namespace Microsoft.Extensions.Configuration.Xml.Test
         }
 
         [Fact]
+        public void LowercaseNameAttributeContributesToPrefix()
+        {
+            var xml =
+                @"<settings>
+                    <Data name='DefaultConnection'>
+                        <ConnectionString>TestConnectionString</ConnectionString>
+                        <Provider>SqlClient</Provider>
+                    </Data>
+                    <Data name='Inventory'>
+                        <ConnectionString>AnotherTestConnectionString</ConnectionString>
+                        <Provider>MySql</Provider>
+                    </Data>
+                </settings>";
+            var xmlConfigSrc = new XmlConfigurationProvider(new XmlConfigurationSource());
+
+            xmlConfigSrc.Load(TestStreamHelpers.StringToStream(xml));
+
+            Assert.Equal("DefaultConnection", xmlConfigSrc.Get("Data:DefaultConnection:Name"));
+            Assert.Equal("TestConnectionString", xmlConfigSrc.Get("Data:DefaultConnection:ConnectionString"));
+            Assert.Equal("SqlClient", xmlConfigSrc.Get("Data:DefaultConnection:Provider"));
+            Assert.Equal("Inventory", xmlConfigSrc.Get("Data:Inventory:Name"));
+            Assert.Equal("AnotherTestConnectionString", xmlConfigSrc.Get("Data:Inventory:ConnectionString"));
+            Assert.Equal("MySql", xmlConfigSrc.Get("Data:Inventory:Provider"));
+        }
+
+        [Fact]
         public void NameAttributeInRootElementContributesToPrefix()
         {
             var xml =
@@ -191,6 +217,125 @@ namespace Microsoft.Extensions.Configuration.Xml.Test
             Assert.Equal("SqlClient", xmlConfigSrc.Get("Data:DefaultConnection:Provider"));
             Assert.Equal("AnotherTestConnectionString", xmlConfigSrc.Get("Data:Inventory:ConnectionString"));
             Assert.Equal("MySql", xmlConfigSrc.Get("Data:Inventory:Provider"));
+        }
+
+        [Fact]
+        public void RepeatedElementsContributeToPrefix()
+        {
+            var xml =
+              @"<settings>
+                  <DefaultConnection>
+                      <ConnectionString>TestConnectionString1</ConnectionString>
+                      <Provider>SqlClient1</Provider>
+                  </DefaultConnection>
+                  <DefaultConnection>
+                      <ConnectionString>TestConnectionString2</ConnectionString>
+                      <Provider>SqlClient2</Provider>
+                  </DefaultConnection>
+                </settings>";
+            var xmlConfigSrc = new XmlConfigurationProvider(new XmlConfigurationSource());
+            xmlConfigSrc.Load(TestStreamHelpers.StringToStream(xml));
+
+            Assert.Equal("TestConnectionString1", xmlConfigSrc.Get("DefaultConnection:0:ConnectionString"));
+            Assert.Equal("SqlClient1", xmlConfigSrc.Get("DefaultConnection:0:Provider"));
+            Assert.Equal("TestConnectionString2", xmlConfigSrc.Get("DefaultConnection:1:ConnectionString"));
+            Assert.Equal("SqlClient2", xmlConfigSrc.Get("DefaultConnection:1:Provider"));
+        }
+
+        [Fact]
+        public void RepeatedElementsUnderNameContributeToPrefix()
+        {
+            var xml =
+              @"<settings Name='Data'>
+                  <DefaultConnection>
+                      <ConnectionString>TestConnectionString1</ConnectionString>
+                      <Provider>SqlClient1</Provider>
+                  </DefaultConnection>
+                  <DefaultConnection>
+                      <ConnectionString>TestConnectionString2</ConnectionString>
+                      <Provider>SqlClient2</Provider>
+                  </DefaultConnection>
+                </settings>";
+            var xmlConfigSrc = new XmlConfigurationProvider(new XmlConfigurationSource());
+
+            xmlConfigSrc.Load(TestStreamHelpers.StringToStream(xml));
+
+            Assert.Equal("TestConnectionString1", xmlConfigSrc.Get("Data:DefaultConnection:0:ConnectionString"));
+            Assert.Equal("SqlClient1", xmlConfigSrc.Get("Data:DefaultConnection:0:Provider"));
+            Assert.Equal("TestConnectionString2", xmlConfigSrc.Get("Data:DefaultConnection:1:ConnectionString"));
+            Assert.Equal("SqlClient2", xmlConfigSrc.Get("Data:DefaultConnection:1:Provider"));
+        }
+
+        [Fact]
+        public void RepeatedElementsWithSameNameContributeToPrefix()
+        {
+            var xml =
+              @"<settings>
+                  <DefaultConnection Name='Data'>
+                      <ConnectionString>TestConnectionString1</ConnectionString>
+                      <Provider>SqlClient1</Provider>
+                  </DefaultConnection>
+                  <DefaultConnection Name='Data'>
+                      <ConnectionString>TestConnectionString2</ConnectionString>
+                      <Provider>SqlClient2</Provider>
+                  </DefaultConnection>
+                </settings>";
+            var xmlConfigSrc = new XmlConfigurationProvider(new XmlConfigurationSource());
+
+            xmlConfigSrc.Load(TestStreamHelpers.StringToStream(xml));
+
+            Assert.Equal("TestConnectionString1", xmlConfigSrc.Get("DefaultConnection:Data:0:ConnectionString"));
+            Assert.Equal("SqlClient1", xmlConfigSrc.Get("DefaultConnection:Data:0:Provider"));
+            Assert.Equal("TestConnectionString2", xmlConfigSrc.Get("DefaultConnection:Data:1:ConnectionString"));
+            Assert.Equal("SqlClient2", xmlConfigSrc.Get("DefaultConnection:Data:1:Provider"));
+        }
+
+        [Fact]
+        public void RepeatedElementsWithDifferentNamesContributeToPrefix()
+        {
+            var xml =
+              @"<settings>
+                  <DefaultConnection Name='Data1'>
+                      <ConnectionString>TestConnectionString1</ConnectionString>
+                      <Provider>SqlClient1</Provider>
+                  </DefaultConnection>
+                  <DefaultConnection Name='Data2'>
+                      <ConnectionString>TestConnectionString2</ConnectionString>
+                      <Provider>SqlClient2</Provider>
+                  </DefaultConnection>
+                </settings>";
+            var xmlConfigSrc = new XmlConfigurationProvider(new XmlConfigurationSource());
+
+            xmlConfigSrc.Load(TestStreamHelpers.StringToStream(xml));
+
+            Assert.Equal("TestConnectionString1", xmlConfigSrc.Get("DefaultConnection:Data1:ConnectionString"));
+            Assert.Equal("SqlClient1", xmlConfigSrc.Get("DefaultConnection:Data1:Provider"));
+            Assert.Equal("TestConnectionString2", xmlConfigSrc.Get("DefaultConnection:Data2:ConnectionString"));
+            Assert.Equal("SqlClient2", xmlConfigSrc.Get("DefaultConnection:Data2:Provider"));
+        }
+
+        [Fact]
+        public void NestedRepeatedElementsContributeToPrefix()
+        {
+            var xml =
+              @"<settings>
+                  <DefaultConnection>
+                      <ConnectionString>TestConnectionString1</ConnectionString>
+                      <ConnectionString>TestConnectionString2</ConnectionString>
+                  </DefaultConnection>
+                  <DefaultConnection>
+                      <ConnectionString>TestConnectionString3</ConnectionString>
+                      <ConnectionString>TestConnectionString4</ConnectionString>
+                  </DefaultConnection>
+                </settings>";
+            var xmlConfigSrc = new XmlConfigurationProvider(new XmlConfigurationSource());
+
+            xmlConfigSrc.Load(TestStreamHelpers.StringToStream(xml));
+
+            Assert.Equal("TestConnectionString1", xmlConfigSrc.Get("DefaultConnection:0:ConnectionString:0"));
+            Assert.Equal("TestConnectionString2", xmlConfigSrc.Get("DefaultConnection:0:ConnectionString:1"));
+            Assert.Equal("TestConnectionString3", xmlConfigSrc.Get("DefaultConnection:1:ConnectionString:0"));
+            Assert.Equal("TestConnectionString4", xmlConfigSrc.Get("DefaultConnection:1:ConnectionString:1"));
         }
 
         [Fact]
