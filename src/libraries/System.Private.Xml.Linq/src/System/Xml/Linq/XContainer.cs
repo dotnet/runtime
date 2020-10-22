@@ -165,16 +165,16 @@ namespace System.Xml.Linq
                 AddNode(new XElement(x));
                 return;
             }
-            object[]? o = content as object[];
+            object?[]? o = content as object?[];
             if (o != null)
             {
-                foreach (object obj in o) Add(obj);
+                foreach (object? obj in o) Add(obj);
                 return;
             }
             IEnumerable? e = content as IEnumerable;
             if (e != null)
             {
-                foreach (object obj in e) Add(obj);
+                foreach (object? obj in e) Add(obj);
                 return;
             }
             AddString(GetStringValue(content));
@@ -190,7 +190,7 @@ namespace System.Xml.Linq
         /// See XContainer.Add(object content) for details about the content that can be added
         /// using this method.
         /// </remarks>
-        public void Add(params object[] content)
+        public void Add(params object?[] content)
         {
             Add((object)content);
         }
@@ -229,7 +229,7 @@ namespace System.Xml.Linq
         /// <exception cref="InvalidOperationException">
         /// Thrown if the parent is null.
         /// </exception>
-        public void AddFirst(params object[] content)
+        public void AddFirst(params object?[] content)
         {
             AddFirst((object)content);
         }
@@ -452,7 +452,7 @@ namespace System.Xml.Linq
         /// See XContainer.Add(object content) for details about the content that can be added
         /// using this method.
         /// </remarks>
-        public void ReplaceNodes(params object[] content)
+        public void ReplaceNodes(params object?[] content)
         {
             ReplaceNodes((object)content);
         }
@@ -492,16 +492,16 @@ namespace System.Xml.Linq
                 AddNodeSkipNotify(new XElement(x));
                 return;
             }
-            object[]? o = content as object[];
+            object?[]? o = content as object?[];
             if (o != null)
             {
-                foreach (object obj in o) AddContentSkipNotify(obj);
+                foreach (object? obj in o) AddContentSkipNotify(obj);
                 return;
             }
             IEnumerable? e = content as IEnumerable;
             if (e != null)
             {
-                foreach (object obj in e) AddContentSkipNotify(obj);
+                foreach (object? obj in e) AddContentSkipNotify(obj);
                 return;
             }
             AddStringSkipNotify(GetStringValue(content));
@@ -1398,7 +1398,7 @@ namespace System.Xml.Linq
             }
             else
             {
-                foreach (object obj in e)
+                foreach (object? obj in e)
                 {
                     if (obj != null) AddContentToList(list, obj);
                 }
