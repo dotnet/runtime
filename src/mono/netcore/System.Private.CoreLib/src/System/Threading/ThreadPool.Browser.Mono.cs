@@ -17,14 +17,6 @@ namespace System.Threading
         }
     }
 
-    internal sealed partial class CompleteWaitThreadPoolWorkItem : IThreadPoolWorkItem
-    {
-        void IThreadPoolWorkItem.Execute()
-        {
-            Debug.Fail("Registered wait handles are currently not supported");
-        }
-    }
-
     public static partial class ThreadPool
     {
         // Time-sensitive work items are those that may need to run ahead of normal work items at least periodically. For a

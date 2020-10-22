@@ -28,15 +28,9 @@ namespace System.Threading
 
         private static AutoResetEvent? s_cachedEvent;
 
-        private static AutoResetEvent RentEvent()
-        {
-            AutoResetEvent? resetEvent = Interlocked.Exchange(ref s_cachedEvent, (AutoResetEvent?)null);
-            if (resetEvent == null)
-            {
-                resetEvent = new AutoResetEvent(false);
-            }
-            return resetEvent;
-        }
+        private static AutoResetEvent RentEvent() =>
+            Interlocked.Exchange(ref s_cachedEvent, null) ??
+            new AutoResetEvent(false);
 
         private static void ReturnEvent(AutoResetEvent resetEvent)
         {
@@ -101,9 +95,7 @@ namespace System.Threading
 
         private bool _unregisterCalled;
 
-#pragma warning disable CS0414 // The field is assigned but its value is never used. Some runtimes may not support registered wait handles.
         private bool _unregistered;
-#pragma warning restore CS0414
 
         private AutoResetEvent? _callbacksComplete;
 
