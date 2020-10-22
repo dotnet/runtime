@@ -57,6 +57,11 @@ namespace Microsoft.Extensions.Configuration.Xml
 
         public bool IsSibling(XmlConfigurationElement xmlConfigurationElement)
         {
+            if (xmlConfigurationElement is null)
+            {
+                throw new ArgumentNullException(nameof(xmlConfigurationElement));
+            }
+
             return Parent != null
                 && xmlConfigurationElement.Parent == Parent
                 && string.Equals(ElementName, xmlConfigurationElement.ElementName)
