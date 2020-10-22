@@ -21,6 +21,11 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			TestArrayOnGeneric ();
 			TestGenericArray ();
 			TestGenericArrayOnGeneric ();
+			TestArrayGetTypeFromMethodParam ();
+			TestArrayGetTypeFromField ();
+			TestArrayTypeGetType ();
+			TestArrayCreateInstanceByName ();
+			TestArrayInAttributeParameter ();
 		}
 
 		[Kept]
@@ -50,14 +55,6 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 		static void RequirePublicMethodsOnArrayOfGeneric<T> ()
 		{
 			RequirePublicMethods (typeof (T[]));
-		}
-
-		[Kept]
-		private static void RequirePublicMethods (
-			[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicMethods)]
-			[KeptAttributeAttribute(typeof(DynamicallyAccessedMembersAttribute))]
-			Type type)
-		{
 		}
 
 		[Kept]
@@ -95,6 +92,105 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 		static void RequirePublicMethodsOnArrayOfGenericParameter<T> ()
 		{
 			_ = new RequirePublicMethodsGeneric<T[]> ();
+		}
+
+		[Kept]
+		sealed class ArrayGetTypeFromMethodParamElement
+		{
+			[Kept] // This is a bug - the method should not be marked, instead Array.* should be marked
+			public void PublicMethod () { }
+		}
+
+		[Kept]
+		static void TestArrayGetTypeFromMethodParamHelper (ArrayGetTypeFromMethodParamElement[] p)
+		{
+			RequirePublicMethods (p.GetType ());
+		}
+
+		[Kept]
+		static void TestArrayGetTypeFromMethodParam ()
+		{
+			TestArrayGetTypeFromMethodParamHelper (null);
+		}
+
+		[Kept]
+		sealed class ArrayGetTypeFromFieldElement
+		{
+			[Kept] // This is a bug - the method should not be marked, instead Array.* should be marked
+			public void PublicMethod () { }
+		}
+
+		[Kept]
+		static ArrayGetTypeFromFieldElement[] _arrayGetTypeFromField;
+
+		[Kept]
+		static void TestArrayGetTypeFromField ()
+		{
+			RequirePublicMethods (_arrayGetTypeFromField.GetType ());
+		}
+
+		[Kept]
+		sealed class ArrayTypeGetTypeElement
+		{
+			[Kept] // This is a bug - the method should not be marked, instead Array.* should be marked
+			public void PublicMethod () { }
+		}
+
+		[Kept]
+		static void TestArrayTypeGetType ()
+		{
+			RequirePublicMethods (Type.GetType ("Mono.Linker.Tests.Cases.DataFlow.ComplexTypeHandling+ArrayTypeGetTypeElement[]"));
+		}
+
+		[Kept]
+		class ArrayCreateInstanceByNameElement
+		{
+			[Kept] // This is a bug - the .ctor should not be marked - in fact in this case nothing should be marked as CreateInstance doesn't work on arrays
+			public ArrayCreateInstanceByNameElement ()
+			{
+			}
+		}
+
+		[Kept]
+		static void TestArrayCreateInstanceByName ()
+		{
+			Activator.CreateInstance ("test", "Mono.Linker.Tests.Cases.DataFlow.ComplexTypeHandling+ArrayCreateInstanceByNameElement[]");
+		}
+
+		[Kept]
+		class ArrayInAttributeParamElement
+		{
+			[Kept] // This is a bug - the method should not be marked, instead Array.* should be marked
+			public void PublicMethod () { }
+		}
+
+		[Kept]
+		[KeptAttributeAttribute (typeof (RequiresPublicMethodAttribute))]
+		[RequiresPublicMethod (typeof (ArrayInAttributeParamElement[]))]
+		static void TestArrayInAttributeParameter ()
+		{
+		}
+
+
+		[Kept]
+		private static void RequirePublicMethods (
+			[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicMethods)]
+			[KeptAttributeAttribute(typeof(DynamicallyAccessedMembersAttribute))]
+			Type type)
+		{
+		}
+
+		[Kept]
+		[KeptBaseType (typeof (Attribute))]
+		class RequiresPublicMethodAttribute : Attribute
+		{
+			[Kept]
+			public RequiresPublicMethodAttribute (
+				[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicMethods)]
+				[KeptAttributeAttribute(typeof(DynamicallyAccessedMembersAttribute))]
+				Type t)
+			{
+			}
 		}
 	}
 }
