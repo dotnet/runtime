@@ -86,8 +86,16 @@ namespace System.Threading
 
         internal static object? GetOrCreateThreadLocalCompletionCountObject() => null;
 
-        private static void RegisterWaitForSingleObjectCore(WaitHandle? waitObject, RegisteredWaitHandle registeredWaitHandle) =>
+        private static RegisteredWaitHandle RegisterWaitForSingleObject(
+             WaitHandle? waitObject,
+             WaitOrTimerCallback? callBack,
+             object? state,
+             uint millisecondsTimeOutInterval,
+             bool executeOnlyOnce,
+             bool flowExecutionContext)
+        {
             throw new PlatformNotSupportedException();
+        }
 
         [DynamicDependency("Callback")]
         [DynamicDependency("PumpThreadPool")]
