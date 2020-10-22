@@ -75,10 +75,10 @@ namespace System.Net.Quic.Implementations.Mock
                     return new IPEndPoint(IPAddress.Loopback, dnsEndPoint.Port);
                 }
 
-                throw new InvalidOperationException(SR.Format(SR.net_quic_invalid_dns, dnsEndPoint.Host));
+                throw new InvalidOperationException($"invalid DNS name {dnsEndPoint.Host}");
             }
 
-            throw new InvalidOperationException(SR.net_quic_unknown_endpoint_type);
+            throw new InvalidOperationException("unknown EndPoint type");
         }
 
         internal override bool Connected
@@ -103,7 +103,7 @@ namespace System.Net.Quic.Implementations.Mock
             {
                 if (_state is null)
                 {
-                    throw new InvalidOperationException(SR.net_quic_notconnected);
+                    throw new InvalidOperationException("not connected");
                 }
 
                 return _state._applicationProtocol;
@@ -116,7 +116,7 @@ namespace System.Net.Quic.Implementations.Mock
 
             if (Connected)
             {
-                throw new InvalidOperationException(SR.net_quic_connected);
+                throw new InvalidOperationException("Already connected");
             }
 
             Debug.Assert(_isClient, "not connected but also not _isClient??");
@@ -124,14 +124,14 @@ namespace System.Net.Quic.Implementations.Mock
             MockListener? listener = MockListener.TryGetListener(_remoteEndPoint);
             if (listener is null)
             {
-                throw new InvalidOperationException(SR.net_quic_listener_notfound);
+                throw new InvalidOperationException("Could not find listener");
             }
 
             // TODO: deal with protocol negotiation
             _state = new ConnectionState(_sslClientAuthenticationOptions!.ApplicationProtocols![0]);
             if (!listener.TryConnect(_state))
             {
-                throw new QuicException(SR.net_quic_connection_refused);
+                throw new QuicException("Connection refused");
             }
 
             return ValueTask.CompletedTask;
@@ -166,7 +166,7 @@ namespace System.Net.Quic.Implementations.Mock
             ConnectionState? state = _state;
             if (state is null)
             {
-                throw new InvalidOperationException(SR.net_quic_notconnected);
+                throw new InvalidOperationException("Not connected");
             }
 
             MockStream.StreamState streamState = new MockStream.StreamState(streamId, bidirectional);
@@ -187,7 +187,7 @@ namespace System.Net.Quic.Implementations.Mock
             ConnectionState? state = _state;
             if (state is null)
             {
-                throw new InvalidOperationException(SR.net_quic_notconnected);
+                throw new InvalidOperationException("Not connected");
             }
 
             Channel<MockStream.StreamState> streamChannel = _isClient ? state._serverInitiatedStreamChannel : state._clientInitiatedStreamChannel;

@@ -388,6 +388,6 @@
     <value>{0} must contain child element {1}</value>
   </data>
   <data name="WrongRootElement" xml:space="preserve">
-    <value>Root element must be {0} element in namepsace {1}</value>
+    <value>Root element must be {0} element in namespace {1}</value>
   </data>
 </root>
