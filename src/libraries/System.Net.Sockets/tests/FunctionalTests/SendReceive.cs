@@ -1129,13 +1129,13 @@ namespace System.Net.Sockets.Tests
                                     break;
                                 }
                             }
-                            if (expectGracefulShutdown)
+                            if (!expectGracefulShutdown)
                             {
                                 Assert.Equal(SocketError.ConnectionReset, peerSocketError);
                             }
                             else
                             {
-                                Assert.Equal(null, peerSocketError);
+                                Assert.Null(peerSocketError);
                             }
                             
                         }
