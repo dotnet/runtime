@@ -47,8 +47,8 @@ dotnet R2RDump.dll --in &lt;path to ReadyToRun image&gt;
 
 |             | x64 | x86 | ARM       | ARM64 |
 | ----------- | --- | --- | --------- | ----- |
-| **Windows** | yes | yes | no disasm | yes   |
-| **Linux**   | yes | yes | no disasm |       |
+| **Windows** | yes | yes | yes       | yes   |
+| **Linux**   | yes | yes | yes       | yes   |
 | **OSX**     | yes | -   | -         | -     |
 
 ## ReadyToRun Format
