@@ -12303,12 +12303,18 @@ void emitter::emitDispIns(
                 /* Display a data section reference */
 
                 if (doffs & 1)
-                    printf("@CNS%02u", doffs - 1);
+                {
+                    printf("@RWD%02u", doffs - 1);  // Read/Write data (currently unused)
+                }
                 else
-                    printf("@RWD%02u", doffs);
+                {
+                    printf("@CNS%02u", doffs);      // Read only data
+                }
 
                 if (imm != 0)
+                {
                     printf("%+Id", imm);
+                }
             }
             else
             {

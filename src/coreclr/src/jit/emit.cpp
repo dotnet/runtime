@@ -5928,7 +5928,7 @@ void emitter::emitOutputDataSec(dataSecDsc* sec, BYTE* dst)
 #ifdef DEBUG
             if (EMITVERBOSE)
             {
-                printf("  section %3u, size %2u, RWD%2u:\t", secNum++, dscSize, curOffs);
+                printf("  section %3u, size %2u, CNS%2u:\t", secNum++, dscSize, curOffs);
 
                 for (size_t i = 0; i < dscSize; i++)
                 {
@@ -5982,7 +5982,7 @@ void emitter::emitDispDataSec(dataSecDsc* section)
     {
         const char* labelFormat = "%-7s";
         char        label[64];
-        sprintf_s(label, _countof(label), "RWD%02u", offset);
+        sprintf_s(label, _countof(label), "CNS%02u", offset);
         printf(labelFormat, label);
         offset += data->dsSize;
 

@@ -7665,11 +7665,11 @@ void emitter::emitDispClsVar(CORINFO_FIELD_HANDLE fldHnd, ssize_t offs, bool rel
     {
         if (doffs & 1)
         {
-            printf("@CNS%02u", doffs - 1);
+            printf("@RWD%02u", doffs - 1);  // Read/Write data (currently unused)
         }
         else
         {
-            printf("@RWD%02u", doffs);
+            printf("@CNS%02u", doffs);      // Read only data
         }
 
         if (offs)
@@ -8189,10 +8189,14 @@ void emitter::emitDispIns(
                     }
                 }
 
-                if (offs & 1)
-                    printf("@CNS%02u", offs);
+                if (doffs & 1)
+                {
+                    printf("@RWD%02u", doffs - 1);  // Read/Write data (currently unused)
+                }
                 else
-                    printf("@RWD%02u", offs);
+                {
+                    printf("@CNS%02u", doffs);      // Read only data
+                }
 
                 printf("      ");
 
