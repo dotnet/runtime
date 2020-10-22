@@ -1022,6 +1022,7 @@ int32_t CryptoNative_PushX509StackField(STACK_OF(X509) * stack, X509* x509)
     return sk_X509_push(stack, x509);
 }
 
+#ifndef TARGET_ANDROID
 /*
 Function:
 GetRandomBytes
@@ -1039,6 +1040,7 @@ int32_t CryptoNative_GetRandomBytes(uint8_t* buf, int32_t num)
 
     return ret == 1;
 }
+#endif
 
 /*
 Function:
