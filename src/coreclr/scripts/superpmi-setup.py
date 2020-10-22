@@ -23,7 +23,7 @@
 # 4.  Lastly, it sets the pipeline variables.
 
 # Below are the helix queues it sets depending on the OS/architecture:
-# | Arch  | Windows_NT       | Linux                                                                                                                                |
+# | Arch  | windows       | Linux                                                                                                                                |
 # |-------|------------------|--------------------------------------------------------------------------------------------------------------------------------------|
 # | x86   | Windows.10.Amd64 | -                                                                                                                                    |
 # | x64   | Windows.10.Amd64 | Ubuntu.1804.Amd64                                                                                                                    |
