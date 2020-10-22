@@ -613,7 +613,7 @@ int32_t SystemNative_GetNativeIPInterfaceStatistics(char* interfaceName, NativeI
                     {
                         // WI-FI on macOS sometimes does not report link when interface is disabled. (still has _UP flag)
                         // For other interface types, report Unknown status.
-                        if (IFM_TYPE(ifmr.ifm_current) == IFM_IEEE80211)
+                        if (IFM_TYPE(ifmr.ifm_current) != IFM_IEEE80211)
                         {
                             retStats->Flags |= InterfaceError;
                         }
