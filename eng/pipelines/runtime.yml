@@ -27,7 +27,7 @@ stages:
         enableRichCodeNavigation: true
         richCodeNavigationEnvironment: 'production'
         richCodeNavigationLanguage: 'csharp'
-        timeoutInMinutes: 120
+        timeoutInMinutes: 240
         buildArgs: -s libs.ref+libs.src -c debug -allConfigurations
 
   - template: /eng/pipelines/common/platform-matrix.yml
