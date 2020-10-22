@@ -52,7 +52,6 @@
       <Crossgen2File Include="$(CoreCLRCrossgen2Dir)crossgen2.dll" />
       <Crossgen2File Include="$(CoreCLRCrossgen2Dir)ILCompiler*.dll" />
       <Crossgen2File Include="$(CoreCLRCrossgen2Dir)Microsoft.DiaSymReader.dll" />
-      <Crossgen2File Include="$(CoreCLRCrossgen2Dir)System.CommandLine.dll" />
       <Crossgen2File Include="$(CoreCLRCrossgen2Dir)$(LibraryFilePrefix)jitinterface_$(TargetArchitecture)$(LibraryFileExtension)" />
       <Crossgen2File Include="$(CoreCLRCrossgen2Dir)$(LibraryFilePrefix)clrjit_win_x86_$(TargetArchitecture)$(LibraryFileExtension)" />
       <Crossgen2File Include="$(CoreCLRCrossgen2Dir)$(LibraryFilePrefix)clrjit_win_arm_$(TargetArchitecture)$(LibraryFileExtension)" />

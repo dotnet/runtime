@@ -885,10 +885,9 @@ namespace System.Net.Security
 
                         if (status.ErrorCode == SecurityStatusPalErrorCode.Renegotiate)
                         {
-                            // We determine above that we will not process it.
+                            // We determined above that we will not process it.
                             if (_handshakeWaiter == null)
                             {
-                                if (NetEventSource.Log.IsEnabled()) NetEventSource.Fail(this, "Renegotiation was requested but it is disallowed");
                                 throw new IOException(SR.net_ssl_io_renego);
                             }
 
@@ -1172,10 +1171,7 @@ namespace System.Net.Security
 
             int version = -1;
 
-            if (bytes.Length == 0)
-            {
-                NetEventSource.Fail(this, "Header buffer is not allocated.");
-            }
+            Debug.Assert(bytes.Length != 0, "Header buffer is not allocated.");
 
             // If the first byte is SSL3 HandShake, then check if we have a SSLv3 Type3 client hello.
             if (bytes[0] == (byte)TlsContentType.Handshake || bytes[0] == (byte)TlsContentType.AppData

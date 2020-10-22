@@ -1279,6 +1279,7 @@ void ScanRootsHelper(Object* pObj, Object ** ppRoot, ScanContext *pSC, uint32_t 
 
     case    kEtwGCRootKindHandle:
         _ASSERT(!"Shouldn't see handle here");
+        break;
 
     case    kEtwGCRootKindFinalizer:
     default:

@@ -4546,7 +4546,7 @@ void Compiler::optImpliedByCopyAssertion(AssertionDsc* copyAssertion, AssertionD
                 // This is the ngen case where we have an indirection of an address.
                 noway_assert((impAssertion->op1.kind == O1K_EXACT_TYPE) || (impAssertion->op1.kind == O1K_SUBTYPE));
 
-                __fallthrough;
+                FALLTHROUGH;
 
             case O2K_CONST_INT:
                 usable = op1MatchesCopy && (impAssertion->op2.u1.iconVal == depAssertion->op2.u1.iconVal);

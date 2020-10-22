@@ -2437,7 +2437,8 @@ SigPointer::PeekElemTypeClosed(
                     return type;
             }
 
-            // intentionally fall through
+            FALLTHROUGH;
+
             case ELEMENT_TYPE_INTERNAL:
             {
                 TypeHandle th;
@@ -4068,6 +4069,7 @@ MetaSig::CompareElementType(
         }
     } // switch
     // Unreachable
+    UNREACHABLE();
 } // MetaSig::CompareElementType
 #ifdef _PREFAST_
 #pragma warning(pop)

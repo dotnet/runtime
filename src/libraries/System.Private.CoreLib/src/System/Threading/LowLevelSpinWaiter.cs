@@ -5,8 +5,52 @@ using System.Diagnostics;
 
 namespace System.Threading
 {
+    /// <summary>
+    /// A lightweight spin-waiter intended to be used as the first-level wait for a condition before the user forces the thread
+    /// into a wait state, and where the condition to be checked in each iteration is relatively cheap, like just an interlocked
+    /// operation.
+    ///
+    /// Used by the wait subsystem on Unix, so this class cannot have any dependencies on the wait subsystem.
+    /// </summary>
     internal struct LowLevelSpinWaiter
     {
+        private int _spinningThreadCount;
+
+        public bool SpinWaitForCondition(Func<bool> condition, int spinCount, int sleep0Threshold)
+        {
+            Debug.Assert(condition != null);
+
+            int processorCount = Environment.ProcessorCount;
+            int spinningThreadCount = Interlocked.Increment(ref _spinningThreadCount);
+            try
+            {
+                // Limit the maximum spinning thread count to the processor count to prevent unnecessary context switching
+                // caused by an excessive number of threads spin waiting, perhaps even slowing down the thread holding the
+                // resource being waited upon
+                if (spinningThreadCount <= processorCount)
+                {
+                    // For uniprocessor systems, start at the yield threshold since the pause instructions used for waiting
+                    // prior to that threshold would not help other threads make progress
+                    for (int spinIndex = processorCount > 1 ? 0 : sleep0Threshold; spinIndex < spinCount; ++spinIndex)
+                    {
+                        // The caller should check the condition in a fast path before calling this method, so wait first
+                        Wait(spinIndex, sleep0Threshold, processorCount);
+
+                        if (condition())
+                        {
+                            return true;
+                        }
+                    }
+                }
+            }
+            finally
+            {
+                Interlocked.Decrement(ref _spinningThreadCount);
+            }
+
+            return false;
+        }
+
         public static void Wait(int spinIndex, int sleep0Threshold, int processorCount)
         {
             Debug.Assert(spinIndex >= 0);
@@ -40,10 +84,8 @@ namespace System.Threading
                 return;
             }
 
-            // Thread.Sleep(int) is interruptible. The current operation may not allow thread interrupt
-            // (for instance, LowLevelLock.Acquire as part of EventWaitHandle.Set). Use the
-            // uninterruptible version of Sleep(0). Not doing Thread.Yield, it does not seem to have any
-            // benefit over Sleep(0).
+            // Thread.Sleep is interruptible. The current operation may not allow thread interrupt. Use the uninterruptible
+            // version of Sleep(0). Not doing Thread.Yield, it does not seem to have any benefit over Sleep(0).
             Thread.UninterruptibleSleep0();
 
             // Don't want to Sleep(1) in this spin wait:
