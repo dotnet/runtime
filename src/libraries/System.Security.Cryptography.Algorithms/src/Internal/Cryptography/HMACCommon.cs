@@ -4,6 +4,8 @@
 using System;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
+using System.Threading;
+using System.Threading.Tasks;
 
 namespace Internal.Cryptography
 {
@@ -81,6 +83,9 @@ namespace Internal.Cryptography
         public void AppendHashData(byte[] data, int offset, int count) =>
             _hMacProvider.AppendHashData(data, offset, count);
 
+        public Task AppendHashDataAsync(byte[] data, int offset, int count, CancellationToken cancellationToken) =>
+            _hMacProvider.AppendHashDataAsync(data, offset, count, cancellationToken);
+
         public void AppendHashData(ReadOnlySpan<byte> source) =>
             _hMacProvider.AppendHashData(source);
 
@@ -90,6 +95,12 @@ namespace Internal.Cryptography
 
         public int FinalizeHashAndReset(Span<byte> destination) =>
             _hMacProvider.FinalizeHashAndReset(destination);
+
+        public Task<byte[]> FinalizeHashAndResetAsync(CancellationToken cancellationToken) =>
+            _hMacProvider.FinalizeHashAndResetAsync(cancellationToken);
+
+        public Task<int> FinalizeHashAndResetAsync(byte[] destination, CancellationToken cancellationToken) =>
+            _hMacProvider.FinalizeHashAndResetAsync(destination, cancellationToken);
 
         public bool TryFinalizeHashAndReset(Span<byte> destination, out int bytesWritten) =>
             _hMacProvider.TryFinalizeHashAndReset(destination, out bytesWritten);
