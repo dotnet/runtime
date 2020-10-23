@@ -86,9 +86,9 @@
       <Uri>https://dev.azure.com/dnceng/internal/_git/dotnet-optimization</Uri>
       <Sha>f69d7fc09c4fdb9e9427741b9a176e867dab577f</Sha>
     </Dependency>
-    <Dependency Name="Microsoft.NET.Test.Sdk" Version="16.8.0-release-20201009-01">
+    <Dependency Name="Microsoft.NET.Test.Sdk" Version="16.8.0-release-20201022-02">
       <Uri>https://github.com/microsoft/vstest</Uri>
-      <Sha>0b1e2e51743cc083d99b88673fe518672e2af9f0</Sha>
+      <Sha>b195e2589980861425b331e73a859252c3f2b71a</Sha>
     </Dependency>
     <Dependency Name="System.ComponentModel.TypeConverter.TestData" Version="5.0.0-beta.20505.2">
       <Uri>https://github.com/dotnet/runtime-assets</Uri>
