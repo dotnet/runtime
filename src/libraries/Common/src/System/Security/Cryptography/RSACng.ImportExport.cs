@@ -64,26 +64,7 @@ namespace System.Security.Cryptography
                 {
                     throw new CryptographicException(SR.Cryptography_InvalidRsaParameters);
                 }
-
-                // Half, rounded up.
-                int halfModulusLength = (parameters.Modulus.Length + 1) / 2;
-
-                // The same checks are done by RSACryptoServiceProvider on import (when building the key blob)
-                // Historically RSACng let CNG handle this (reporting NTE_NOT_SUPPORTED), but on RS1 CNG let the
-                // import succeed, then on private key use (e.g. signing) it would report NTE_INVALID_PARAMETER.
-                //
-                // Doing the check here prevents the state in RS1 where the Import succeeds, but corrupts the key,
-                // and makes for a friendlier exception message.
-                if (parameters.D.Length != parameters.Modulus.Length ||
-                    parameters.P.Length != halfModulusLength ||
-                    parameters.Q.Length != halfModulusLength ||
-                    parameters.DP.Length != halfModulusLength ||
-                    parameters.DQ.Length != halfModulusLength ||
-                    parameters.InverseQ.Length != halfModulusLength)
-                {
-                    throw new CryptographicException(SR.Cryptography_InvalidRsaParameters);
                 }
-            }
 
             //
             // We need to build a key blob structured as follows:
@@ -335,11 +316,13 @@ namespace System.Security.Cryptography
 
                     if (includePrivateParameters)
                     {
-                        rsaParams.P = Interop.BCrypt.Consume(rsaBlob, ref offset, pBcryptBlob->cbPrime1);
-                        rsaParams.Q = Interop.BCrypt.Consume(rsaBlob, ref offset, pBcryptBlob->cbPrime2);
-                        rsaParams.DP = Interop.BCrypt.Consume(rsaBlob, ref offset, pBcryptBlob->cbPrime1);
-                        rsaParams.DQ = Interop.BCrypt.Consume(rsaBlob, ref offset, pBcryptBlob->cbPrime2);
-                        rsaParams.InverseQ = Interop.BCrypt.Consume(rsaBlob, ref offset, pBcryptBlob->cbPrime1);
+                        int halfModulusLength = (rsaParams.Modulus.Length + 1) / 2;
+
+                        rsaParams.P = Interop.BCrypt.Consume(rsaBlob, ref offset, pBcryptBlob->cbPrime1, halfModulusLength);
+                        rsaParams.Q = Interop.BCrypt.Consume(rsaBlob, ref offset, pBcryptBlob->cbPrime2, halfModulusLength);
+                        rsaParams.DP = Interop.BCrypt.Consume(rsaBlob, ref offset, pBcryptBlob->cbPrime1, halfModulusLength);
+                        rsaParams.DQ = Interop.BCrypt.Consume(rsaBlob, ref offset, pBcryptBlob->cbPrime2, halfModulusLength);
+                        rsaParams.InverseQ = Interop.BCrypt.Consume(rsaBlob, ref offset, pBcryptBlob->cbPrime1, halfModulusLength);
                         rsaParams.D = Interop.BCrypt.Consume(rsaBlob, ref offset, pBcryptBlob->cbModulus);
                     }
                 }

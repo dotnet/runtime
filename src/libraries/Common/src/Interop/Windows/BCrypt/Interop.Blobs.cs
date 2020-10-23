@@ -69,6 +69,15 @@ internal partial class Interop
             return value;
         }
 
+        internal static byte[] Consume(byte[] blob, ref int offset, int count, int minLength)
+        {
+            byte[] value = new byte[Math.Max(count, minLength)];
+            int dstOffset = count >= minLength ? 0 : minLength - count;
+            Buffer.BlockCopy(blob, offset, value, dstOffset, count);
+            offset += count;
+            return value;
+        }
+
         /// <summary>
         ///     Magic numbers identifying blob types
         /// </summary>

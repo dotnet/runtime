@@ -148,6 +148,26 @@ namespace System.Security.Cryptography
             if (parameters.Exponent == null || parameters.Exponent.Length > 4)
                 throw new CryptographicException(SR.Argument_InvalidValue);
 
+            if (parameters.Modulus is not null)
+            {
+                // _impl supports P, Q (and thus DP, DQ, Coff.) which are
+                // greater than ceil(len(n) / 2) in length. CAPI does not support this,
+                // so we continue to enforce this limitation here.
+                // The other validation like (P != null) == (Q != null) will be
+                // handled by _impl.
+                int halfModulusLength = (parameters.Modulus.Length + 1) / 2;
+
+                if (parameters.P?.Length != halfModulusLength ||
+                    parameters.DP?.Length != halfModulusLength ||
+                    parameters.Q?.Length != halfModulusLength ||
+                    parameters.DQ?.Length != halfModulusLength ||
+                    parameters.InverseQ?.Length != halfModulusLength ||
+                    parameters.D?.Length != parameters.Modulus.Length)
+                {
+                    throw new CryptographicException(SR.Argument_InvalidValue);
+                }
+            }
+
             _impl.ImportParameters(parameters);
 
             // P was verified in ImportParameters

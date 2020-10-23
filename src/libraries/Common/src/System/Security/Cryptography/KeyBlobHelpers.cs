@@ -48,7 +48,7 @@ namespace System.Security.Cryptography
             return span.ToArray();
         }
 
-        internal static byte[] ExportKeyParameter(this BigInteger value, int length)
+        internal static byte[] ExportKeyParameter(this BigInteger value, int length, bool exceedLength = false)
         {
             byte[] target = new byte[length];
 
@@ -61,6 +61,11 @@ namespace System.Security.Cryptography
                 }
 
                 return target;
+            }
+
+            if (exceedLength)
+            {
+                return value.ToByteArray(isUnsigned: true, isBigEndian: true);
             }
 
             throw new CryptographicException(SR.Cryptography_NotValidPublicOrPrivateKey);

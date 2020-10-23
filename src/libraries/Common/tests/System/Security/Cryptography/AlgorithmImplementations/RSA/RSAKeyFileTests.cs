@@ -12,6 +12,7 @@ namespace System.Security.Cryptography.Rsa.Tests
     {
         public static bool Supports384BitPrivateKey { get; } = RSAFactory.Supports384PrivateKey;
         public static bool SupportsLargeExponent { get; } = RSAFactory.SupportsLargeExponent;
+        public static bool SupportsMismatchedParameterSizes => RSAFactory.SupportsMismatchedParameterSizes;
 
         [Theory]
         [InlineData(false)]
@@ -70,6 +71,75 @@ namespace System.Security.Cryptography.Rsa.Tests
             pwBytes = Array.Empty<byte>();
             Assert.Throws<ObjectDisposedException>(() => rsa.ImportEncryptedPkcs8PrivateKey("", pkcs8EncryptedPrivate, out _));
             Assert.Throws<ObjectDisposedException>(() => rsa.ImportEncryptedPkcs8PrivateKey(pwBytes, pkcs8EncryptedPrivate, out _));
+        }
+
+        [Fact]
+        public static void ReadWritePkcs1PrimesDifferentLength()
+        {
+            ReadWriteBase64PrivatePkcs1(
+                @"
+MIIEqAIBAAKCAQEAhAKYdtoeoy8zcAcR874L8cnZxKzAGwd7v36APp7Pv6Q2jdsP
+BRrwWEBnez6d0UDKDwGbc6nxfEXAy5mbhgajzrw3MOEt8uA5txSKobBpKDeBLOsd
+JKFqMGmXCQvEG7YemcxDTRPxAleIAgYYRjTSd/QBwVW9OwNFhekro3RtlinV0a75
+jfZgkne/YiktSvLG34lw2zqXBDTC5NHROUqGTlML4PlNZS5Ri2U4aCNx2rUPRcKI
+lE0PuKxI4T+HIaFpv8+rdV6eUgOrB2xeI1dSFFn/nnv5OoZJEIB+VmuKn3DCUcCZ
+SFlQPSXSfBDiUGhwOw76WuSSsf1D4b/vLoJ10wIDAQABAoIBAG/JZuSWdoVHbi56
+vjgCgkjg3lkO1KrO3nrdm6nrgA9P9qaPjxuKoWaKO1cBQlE1pSWp/cKncYgD5WxE
+CpAnRUXG2pG4zdkzCYzAh1i+c34L6oZoHsirK6oNcEnHveydfzJL5934egm6p8DW
++m1RQ70yUt4uRc0YSor+q1LGJvGQHReF0WmJBZHrhz5e63Pq7lE0gIwuBqL8SMaA
+yRXtK+JGxZpImTq+NHvEWWCu09SCq0r838ceQI55SvzmTkwqtC+8AT2zFviMZkKR
+Qo6SPsrqItxZWRty2izawTF0Bf5S2VAx7O+6t3wBsQ1sLptoSgX3QblELY5asI0J
+YFz7LJECgYkAsqeUJmqXE3LP8tYoIjMIAKiTm9o6psPlc8CrLI9CH0UbuaA2JCOM
+cCNq8SyYbTqgnWlB9ZfcAm/cFpA8tYci9m5vYK8HNxQr+8FS3Qo8N9RJ8d0U5Csw
+DzMYfRghAfUGwmlWj5hp1pQzAuhwbOXFtxKHVsMPhz1IBtF9Y8jvgqgYHLbmyiu1
+mwJ5AL0pYF0G7x81prlARURwHo0Yf52kEw1dxpx+JXER7hQRWQki5/NsUEtv+8RT
+qn2m6qte5DXLyn83b1qRscSdnCCwKtKWUug5q2ZbwVOCJCtmRwmnP131lWRYfj67
+B/xJ1ZA6X3GEf4sNReNAtaucPEelgR2nsN0gKQKBiGoqHWbK1qYvBxX2X3kbPDkv
+9C+celgZd2PW7aGYLCHq7nPbmfDV0yHcWjOhXZ8jRMjmANVR/eLQ2EfsRLdW69bn
+f3ZD7JS1fwGnO3exGmHO3HZG+6AvberKYVYNHahNFEw5TsAcQWDLRpkGybBcxqZo
+81YCqlqidwfeO5YtlO7etx1xLyqa2NsCeG9A86UjG+aeNnXEIDk1PDK+EuiThIUa
+/2IxKzJKWl1BKr2d4xAfR0ZnEYuRrbeDQYgTImOlfW6/GuYIxKYgEKCFHFqJATAG
+IxHrq1PDOiSwXd2GmVVYyEmhZnbcp8CxaEMQoevxAta0ssMK3w6UsDtvUvYvF22m
+qQKBiD5GwESzsFPy3Ga0MvZpn3D6EJQLgsnrtUPZx+z2Ep2x0xc5orneB5fGyF1P
+WtP+fG5Q6Dpdz3LRfm+KwBCWFKQjg7uTxcjerhBWEYPmEMKYwTJF5PBG9/ddvHLQ
+EQeNC8fHGg4UXU8mhHnSBt3EA10qQJfRDs15M38eG2cYwB1PZpDHScDnDA0=",
+                TestData.RSA2048PrimesDifferentLength,
+                SupportsMismatchedParameterSizes);
+        }
+
+        [Fact]
+        public static void ReadWritePkcs8PrimesDifferentLength()
+        {
+            ReadWriteBase64Pkcs8(
+                @"
+MIIEwgIBADANBgkqhkiG9w0BAQEFAASCBKwwggSoAgEAAoIBAQCEAph22h6jLzNw
+BxHzvgvxydnErMAbB3u/foA+ns+/pDaN2w8FGvBYQGd7Pp3RQMoPAZtzqfF8RcDL
+mZuGBqPOvDcw4S3y4Dm3FIqhsGkoN4Es6x0koWowaZcJC8Qbth6ZzENNE/ECV4gC
+BhhGNNJ39AHBVb07A0WF6SujdG2WKdXRrvmN9mCSd79iKS1K8sbfiXDbOpcENMLk
+0dE5SoZOUwvg+U1lLlGLZThoI3HatQ9FwoiUTQ+4rEjhP4choWm/z6t1Xp5SA6sH
+bF4jV1IUWf+ee/k6hkkQgH5Wa4qfcMJRwJlIWVA9JdJ8EOJQaHA7Dvpa5JKx/UPh
+v+8ugnXTAgMBAAECggEAb8lm5JZ2hUduLnq+OAKCSODeWQ7Uqs7eet2bqeuAD0/2
+po+PG4qhZoo7VwFCUTWlJan9wqdxiAPlbEQKkCdFRcbakbjN2TMJjMCHWL5zfgvq
+hmgeyKsrqg1wSce97J1/Mkvn3fh6CbqnwNb6bVFDvTJS3i5FzRhKiv6rUsYm8ZAd
+F4XRaYkFkeuHPl7rc+ruUTSAjC4GovxIxoDJFe0r4kbFmkiZOr40e8RZYK7T1IKr
+Svzfxx5AjnlK/OZOTCq0L7wBPbMW+IxmQpFCjpI+yuoi3FlZG3LaLNrBMXQF/lLZ
+UDHs77q3fAGxDWwum2hKBfdBuUQtjlqwjQlgXPsskQKBiQCyp5QmapcTcs/y1igi
+MwgAqJOb2jqmw+VzwKssj0IfRRu5oDYkI4xwI2rxLJhtOqCdaUH1l9wCb9wWkDy1
+hyL2bm9grwc3FCv7wVLdCjw31Enx3RTkKzAPMxh9GCEB9QbCaVaPmGnWlDMC6HBs
+5cW3EodWww+HPUgG0X1jyO+CqBgctubKK7WbAnkAvSlgXQbvHzWmuUBFRHAejRh/
+naQTDV3GnH4lcRHuFBFZCSLn82xQS2/7xFOqfabqq17kNcvKfzdvWpGxxJ2cILAq
+0pZS6DmrZlvBU4IkK2ZHCac/XfWVZFh+PrsH/EnVkDpfcYR/iw1F40C1q5w8R6WB
+Haew3SApAoGIaiodZsrWpi8HFfZfeRs8OS/0L5x6WBl3Y9btoZgsIeruc9uZ8NXT
+IdxaM6FdnyNEyOYA1VH94tDYR+xEt1br1ud/dkPslLV/Aac7d7EaYc7cdkb7oC9t
+6sphVg0dqE0UTDlOwBxBYMtGmQbJsFzGpmjzVgKqWqJ3B947li2U7t63HXEvKprY
+2wJ4b0DzpSMb5p42dcQgOTU8Mr4S6JOEhRr/YjErMkpaXUEqvZ3jEB9HRmcRi5Gt
+t4NBiBMiY6V9br8a5gjEpiAQoIUcWokBMAYjEeurU8M6JLBd3YaZVVjISaFmdtyn
+wLFoQxCh6/EC1rSywwrfDpSwO29S9i8XbaapAoGIPkbARLOwU/LcZrQy9mmfcPoQ
+lAuCyeu1Q9nH7PYSnbHTFzmiud4Hl8bIXU9a0/58blDoOl3PctF+b4rAEJYUpCOD
+u5PFyN6uEFYRg+YQwpjBMkXk8Eb39128ctARB40Lx8caDhRdTyaEedIG3cQDXSpA
+l9EOzXkzfx4bZxjAHU9mkMdJwOcMDQ==",
+                TestData.RSA2048PrimesDifferentLength,
+                SupportsMismatchedParameterSizes);
         }
 
         [ConditionalFact(nameof(SupportsLargeExponent))]
@@ -1401,28 +1471,55 @@ gpX/dwXfODsj4zcOw4gyP70lDxUWLEPtxhS5Ti0FEuge1XKn3+GOp3clVjGpXKpJTNLsPA/wlqlo
 
         private static void ReadWriteBase64PrivatePkcs1(
             string base64PrivatePkcs1,
-            in RSAParameters expected)
+            in RSAParameters expected,
+            bool isSupported = true)
         {
-            ReadWriteKey(
-                base64PrivatePkcs1,
-                expected,
-                (RSA rsa, ReadOnlySpan<byte> source, out int read) =>
-                    rsa.ImportRSAPrivateKey(source, out read),
-                rsa => rsa.ExportRSAPrivateKey(),
-                (RSA rsa, Span<byte> destination, out int written) =>
-                    rsa.TryExportRSAPrivateKey(destination, out written));
+            if (isSupported)
+            {
+                ReadWriteKey(
+                    base64PrivatePkcs1,
+                    expected,
+                    (RSA rsa, ReadOnlySpan<byte> source, out int read) =>
+                        rsa.ImportRSAPrivateKey(source, out read),
+                    rsa => rsa.ExportRSAPrivateKey(),
+                    (RSA rsa, Span<byte> destination, out int written) =>
+                        rsa.TryExportRSAPrivateKey(destination, out written));
+            }
+            else
+            {
+                using RSA rsa = RSAFactory.Create();
+                Exception ex = Assert.ThrowsAny<Exception>(() =>
+                    rsa.ImportRSAPrivateKey(Convert.FromBase64String(base64PrivatePkcs1), out _));
+
+                Assert.True(
+                    ex is PlatformNotSupportedException or CryptographicException,
+                    "ex is PlatformNotSupportedException or CryptographicException");
+            }
         }
 
-        private static void ReadWriteBase64Pkcs8(string base64Pkcs8, in RSAParameters expected)
+        private static void ReadWriteBase64Pkcs8(string base64Pkcs8, in RSAParameters expected, bool isSupported = true)
         {
-            ReadWriteKey(
-                base64Pkcs8,
-                expected,
-                (RSA rsa, ReadOnlySpan<byte> source, out int read) =>
-                    rsa.ImportPkcs8PrivateKey(source, out read),
-                rsa => rsa.ExportPkcs8PrivateKey(),
-                (RSA rsa, Span<byte> destination, out int written) =>
-                    rsa.TryExportPkcs8PrivateKey(destination, out written));
+            if (isSupported)
+            {
+                ReadWriteKey(
+                    base64Pkcs8,
+                    expected,
+                    (RSA rsa, ReadOnlySpan<byte> source, out int read) =>
+                        rsa.ImportPkcs8PrivateKey(source, out read),
+                    rsa => rsa.ExportPkcs8PrivateKey(),
+                    (RSA rsa, Span<byte> destination, out int written) =>
+                        rsa.TryExportPkcs8PrivateKey(destination, out written));
+            }
+            else
+            {
+                using RSA rsa = RSAFactory.Create();
+                Exception ex = Assert.ThrowsAny<Exception>(() =>
+                    rsa.ImportPkcs8PrivateKey(Convert.FromBase64String(base64Pkcs8), out _));
+
+                Assert.True(
+                    ex is PlatformNotSupportedException or CryptographicException,
+                    "ex is PlatformNotSupportedException or CryptographicException");
+            }
         }
 
         private static void ReadWriteKey(

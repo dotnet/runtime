@@ -43,6 +43,8 @@ namespace System.Security.Cryptography.Rsa.Tests
         public bool SupportsSha2Oaep { get; } = true;
 
         public bool SupportsPss { get; } = true;
+
+        public bool SupportsMismatchedParameterSizes => true;
     }
 
     public partial class RSAFactory

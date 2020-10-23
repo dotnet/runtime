@@ -46,11 +46,11 @@ namespace System.Security.Cryptography
                 Modulus = n,
                 Exponent = key.PublicExponent.ToByteArray(isUnsigned: true, isBigEndian: true),
                 D = key.PrivateExponent.ExportKeyParameter(n.Length),
-                P = key.Prime1.ExportKeyParameter(halfModulusLength),
-                Q = key.Prime2.ExportKeyParameter(halfModulusLength),
-                DP = key.Exponent1.ExportKeyParameter(halfModulusLength),
-                DQ = key.Exponent2.ExportKeyParameter(halfModulusLength),
-                InverseQ = key.Coefficient.ExportKeyParameter(halfModulusLength),
+                P = key.Prime1.ExportKeyParameter(halfModulusLength, exceedLength: true),
+                Q = key.Prime2.ExportKeyParameter(halfModulusLength, exceedLength: true),
+                DP = key.Exponent1.ExportKeyParameter(halfModulusLength, exceedLength: true),
+                DQ = key.Exponent2.ExportKeyParameter(halfModulusLength, exceedLength: true),
+                InverseQ = key.Coefficient.ExportKeyParameter(halfModulusLength, exceedLength: true),
             };
         }
 
