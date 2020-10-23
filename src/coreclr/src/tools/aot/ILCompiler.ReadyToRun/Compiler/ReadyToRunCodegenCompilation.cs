@@ -230,13 +230,14 @@ namespace ILCompiler
         private int _parallelism;
 
         private bool _generateMapFile;
+        private bool _generateMapCsvFile;
 
         private ProfileDataManager _profileData;
         private ReadyToRunFileLayoutOptimizer _fileLayoutOptimizer;
 
         public ReadyToRunSymbolNodeFactory SymbolNodeFactory { get; }
         public ReadyToRunCompilationModuleGroupBase CompilationModuleGroup { get; }
-        private readonly int? _customPESectionAlignment;
+        private readonly int _customPESectionAlignment;
         /// <summary>
         /// Determining whether a type's layout is fixed is a little expensive and the question can be asked many times
         /// for the same type during compilation so preserve the computed value.
@@ -255,11 +256,12 @@ namespace ILCompiler
             InstructionSetSupport instructionSetSupport,
             bool resilient,
             bool generateMapFile,
+            bool generateMapCsvFile,
             int parallelism,
             ProfileDataManager profileData,
             ReadyToRunMethodLayoutAlgorithm methodLayoutAlgorithm,
             ReadyToRunFileLayoutAlgorithm fileLayoutAlgorithm,
-            int? customPESectionAlignment,
+            int customPESectionAlignment,
             bool verifyTypeAndFieldLayout)
             : base(
                   dependencyGraph,
@@ -274,6 +276,7 @@ namespace ILCompiler
             _resilient = resilient;
             _parallelism = parallelism;
             _generateMapFile = generateMapFile;
+            _generateMapCsvFile = generateMapCsvFile;
             _customPESectionAlignment = customPESectionAlignment;
             SymbolNodeFactory = new ReadyToRunSymbolNodeFactory(nodeFactory, verifyTypeAndFieldLayout);
             _corInfoImpls = new ConditionalWeakTable<Thread, CorInfoImpl>();
@@ -304,7 +307,7 @@ namespace ILCompiler
             using (PerfEventSource.StartStopEvents.EmittingEvents())
             {
                 NodeFactory.SetMarkingComplete();
-                ReadyToRunObjectWriter.EmitObject(outputFile, componentModule: null, nodes, NodeFactory, _generateMapFile, _customPESectionAlignment);
+                ReadyToRunObjectWriter.EmitObject(outputFile, componentModule: null, nodes, NodeFactory, _generateMapFile, _generateMapCsvFile, _customPESectionAlignment);
                 CompilationModuleGroup moduleGroup = _nodeFactory.CompilationModuleGroup;
 
                 if (moduleGroup.IsCompositeBuildMode)
@@ -369,7 +372,7 @@ namespace ILCompiler
             }
             componentGraph.ComputeMarkedNodes();
             componentFactory.Header.Add(Internal.Runtime.ReadyToRunSectionType.OwnerCompositeExecutable, ownerExecutableNode, ownerExecutableNode);
-            ReadyToRunObjectWriter.EmitObject(outputFile, componentModule: inputModule, componentGraph.MarkedNodeList, componentFactory, generateMapFile: false, customPESectionAlignment: null);
+            ReadyToRunObjectWriter.EmitObject(outputFile, componentModule: inputModule, componentGraph.MarkedNodeList, componentFactory, generateMapFile: false, generateMapCsvFile: false, customPESectionAlignment: 0);
         }
 
         public override void WriteDependencyLog(string outputFileName)

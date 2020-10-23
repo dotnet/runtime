@@ -16,6 +16,20 @@ using Internal.CorConstants;
 
 namespace ILCompiler
 {
+    public static class ReadyToRunTypeExtensions
+    {
+        public static LayoutInt FieldBaseOffset(this TypeDesc type)
+        {
+            LayoutInt baseOffset = type.BaseType.InstanceByteCount;
+            if (type.RequiresAlign8())
+            {
+                baseOffset = LayoutInt.AlignUp(baseOffset, new LayoutInt(8), type.Context.Target);
+            }
+
+            return baseOffset;
+        }
+    }
+
     internal class ReadyToRunMetadataFieldLayoutAlgorithm : MetadataFieldLayoutAlgorithm
     {
         /// <summary>
@@ -795,7 +809,7 @@ namespace ILCompiler
                 return ComputeExplicitFieldLayout(type, numInstanceFields);
             }
             else
-            if (MarshalUtils.IsBlittableType(type) || IsManagedSequentialType(type))
+            if (type.IsEnum || MarshalUtils.IsBlittableType(type) || IsManagedSequentialType(type))
             {
                 return ComputeSequentialFieldLayout(type, numInstanceFields);
             }
@@ -811,16 +825,8 @@ namespace ILCompiler
         /// </summary>
         protected override void AlignBaseOffsetIfNecessary(MetadataType type, ref LayoutInt baseOffset, bool requiresAlign8)
         {
-            if (type.IsValueType)
-            {
-                return;
-            }
             DefType baseType = type.BaseType;
-            if (baseType == null || baseType.IsObject)
-            {
-                return;
-            }
-
+            
             if (!_compilationGroup.NeedsAlignmentBetweenBaseTypeAndDerived(baseType: (MetadataType)baseType, derivedType: type))
             {
                 // The type is defined in the module that's currently being compiled and the type layout doesn't depend on other modules

@@ -96,7 +96,6 @@ namespace System.Security.Cryptography
         public abstract void SetHashAlgorithm(string strName);
         public abstract void SetKey(System.Security.Cryptography.AsymmetricAlgorithm key);
     }
-    [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
     public partial class CryptoConfig
     {
         public CryptoConfig() { }

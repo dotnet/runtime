@@ -5278,15 +5278,12 @@ namespace System.Threading.Tasks
         /// <param name="delay">The time span to wait before completing the returned Task</param>
         /// <returns>A Task that represents the time delay</returns>
         /// <exception cref="System.ArgumentOutOfRangeException">
-        /// The <paramref name="delay"/> is less than -1 or greater than int.MaxValue.
+        /// The <paramref name="delay"/> is less than -1 or greater than the maximum allowed timer duration.
         /// </exception>
         /// <remarks>
         /// After the specified time delay, the Task is completed in RanToCompletion state.
         /// </remarks>
-        public static Task Delay(TimeSpan delay)
-        {
-            return Delay(delay, default);
-        }
+        public static Task Delay(TimeSpan delay) => Delay(delay, default);
 
         /// <summary>
         /// Creates a Task that will complete after a time delay.
@@ -5295,7 +5292,7 @@ namespace System.Threading.Tasks
         /// <param name="cancellationToken">The cancellation token that will be checked prior to completing the returned Task</param>
         /// <returns>A Task that represents the time delay</returns>
         /// <exception cref="System.ArgumentOutOfRangeException">
-        /// The <paramref name="delay"/> is less than -1 or greater than int.MaxValue.
+        /// The <paramref name="delay"/> is less than -1 or greater than the maximum allowed timer duration.
         /// </exception>
         /// <exception cref="System.ObjectDisposedException">
         /// The provided <paramref name="cancellationToken"/> has already been disposed.
@@ -5308,12 +5305,12 @@ namespace System.Threading.Tasks
         public static Task Delay(TimeSpan delay, CancellationToken cancellationToken)
         {
             long totalMilliseconds = (long)delay.TotalMilliseconds;
-            if (totalMilliseconds < -1 || totalMilliseconds > int.MaxValue)
+            if (totalMilliseconds < -1 || totalMilliseconds > Timer.MaxSupportedTimeout)
             {
                 ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.delay, ExceptionResource.Task_Delay_InvalidDelay);
             }
 
-            return Delay((int)totalMilliseconds, cancellationToken);
+            return Delay((uint)totalMilliseconds, cancellationToken);
         }
 
         /// <summary>
@@ -5327,10 +5324,7 @@ namespace System.Threading.Tasks
         /// <remarks>
         /// After the specified time delay, the Task is completed in RanToCompletion state.
         /// </remarks>
-        public static Task Delay(int millisecondsDelay)
-        {
-            return Delay(millisecondsDelay, default);
-        }
+        public static Task Delay(int millisecondsDelay) => Delay(millisecondsDelay, default);
 
         /// <summary>
         /// Creates a Task that will complete after a time delay.
@@ -5357,19 +5351,21 @@ namespace System.Threading.Tasks
                 ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.millisecondsDelay, ExceptionResource.Task_Delay_InvalidMillisecondsDelay);
             }
 
-            return
-                cancellationToken.IsCancellationRequested ? FromCanceled(cancellationToken) :
-                millisecondsDelay == 0 ? CompletedTask :
-                cancellationToken.CanBeCanceled ? new DelayPromiseWithCancellation(millisecondsDelay, cancellationToken) :
-                new DelayPromise(millisecondsDelay);
+            return Delay((uint)millisecondsDelay, cancellationToken);
         }
+
+        private static Task Delay(uint millisecondsDelay, CancellationToken cancellationToken) =>
+            cancellationToken.IsCancellationRequested ? FromCanceled(cancellationToken) :
+            millisecondsDelay == 0 ? CompletedTask :
+            cancellationToken.CanBeCanceled ? new DelayPromiseWithCancellation(millisecondsDelay, cancellationToken) :
+            new DelayPromise(millisecondsDelay);
 
         /// <summary>Task that also stores the completion closure and logic for Task.Delay implementation.</summary>
         private class DelayPromise : Task
         {
             private readonly TimerQueueTimer? _timer;
 
-            internal DelayPromise(int millisecondsDelay)
+            internal DelayPromise(uint millisecondsDelay)
             {
                 Debug.Assert(millisecondsDelay != 0);
 
@@ -5379,9 +5375,9 @@ namespace System.Threading.Tasks
                 if (s_asyncDebuggingEnabled)
                     AddToActiveTasks(this);
 
-                if (millisecondsDelay != Timeout.Infinite) // no need to create the timer if it's an infinite timeout
+                if (millisecondsDelay != Timeout.UnsignedInfinite) // no need to create the timer if it's an infinite timeout
                 {
-                    _timer = new TimerQueueTimer(state => ((DelayPromise)state!).CompleteTimedOut(), this, (uint)millisecondsDelay, Timeout.UnsignedInfinite, flowExecutionContext: false);
+                    _timer = new TimerQueueTimer(state => ((DelayPromise)state!).CompleteTimedOut(), this, millisecondsDelay, Timeout.UnsignedInfinite, flowExecutionContext: false);
                     if (IsCompleted)
                     {
                         // Handle rare race condition where completion occurs prior to our having created and stored the timer, in which case
@@ -5414,7 +5410,7 @@ namespace System.Threading.Tasks
         {
             private readonly CancellationTokenRegistration _registration;
 
-            internal DelayPromiseWithCancellation(int millisecondsDelay, CancellationToken token) : base(millisecondsDelay)
+            internal DelayPromiseWithCancellation(uint millisecondsDelay, CancellationToken token) : base(millisecondsDelay)
             {
                 Debug.Assert(token.CanBeCanceled);
 

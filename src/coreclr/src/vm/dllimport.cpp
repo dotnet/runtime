@@ -3209,7 +3209,7 @@ BOOL NDirect::MarshalingRequired(
                     THROW_BAD_FORMAT(BFA_BAD_SIGNATURE, (Module*)pModule);
 #endif
 
-                /* Fall thru */
+                FALLTHROUGH;
 
             case ELEMENT_TYPE_VALUETYPE:
             {

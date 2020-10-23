@@ -88,10 +88,6 @@ namespace System.Reflection.Emit
             other_methods[other_methods.Length - 1] = mdBuilder;
         }
 
-        public EventToken GetEventToken()
-        {
-            return new EventToken(0x14000000 | table_idx);
-        }
         public void SetAddOnMethod(MethodBuilder mdBuilder)
         {
             if (mdBuilder == null)

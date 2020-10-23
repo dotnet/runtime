@@ -26,13 +26,10 @@ namespace Microsoft.WebAssembly.Diagnostics
         private HashSet<SessionId> sessions = new HashSet<SessionId>();
         private Dictionary<SessionId, ExecutionContext> contexts = new Dictionary<SessionId, ExecutionContext>();
 
-        public MonoProxy(ILoggerFactory loggerFactory, IList<string> urlSymbolServerList, bool hideWebDriver = true) : base(loggerFactory)
+        public MonoProxy(ILoggerFactory loggerFactory, IList<string> urlSymbolServerList) : base(loggerFactory)
         {
-            this.hideWebDriver = hideWebDriver;
             this.urlSymbolServerList = urlSymbolServerList ?? new List<string>();
         }
-
-        private readonly bool hideWebDriver;
 
         internal ExecutionContext GetContext(SessionId sessionId)
         {
@@ -130,10 +127,20 @@ namespace Microsoft.WebAssembly.Diagnostics
                     {
                         //TODO figure out how to stich out more frames and, in particular what happens when real wasm is on the stack
                         string top_func = args?["callFrames"]?[0]?["functionName"]?.Value<string>();
-
-                        if (top_func == "mono_wasm_fire_bp" || top_func == "_mono_wasm_fire_bp" || top_func == "_mono_wasm_fire_exception")
-                        {
-                            return await OnPause(sessionId, args, token);
+                        switch (top_func) {
+                            case "mono_wasm_runtime_ready":
+                            case "_mono_wasm_runtime_ready":
+                                {
+                                    await RuntimeReady(sessionId, token);
+                                    await SendCommand(sessionId, "Debugger.resume", new JObject(), token);
+                                    return true;
+                                }
+                            case "mono_wasm_fire_bp":
+                            case "_mono_wasm_fire_bp":
+                            case "_mono_wasm_fire_exception":
+                                {
+                                    return await OnPause(sessionId, args, token);
+                                }
                         }
                         break;
                     }
@@ -163,10 +170,15 @@ namespace Microsoft.WebAssembly.Diagnostics
                 case "Target.attachedToTarget":
                     {
                         if (args["targetInfo"]["type"]?.ToString() == "page")
-                            await DeleteWebDriver(new SessionId(args["sessionId"]?.ToString()), token);
+                            await AttachToTarget(new SessionId(args["sessionId"]?.ToString()), token);
                         break;
                     }
 
+                case "Target.targetDestroyed":
+                    {
+                        await SendMonoCommand(sessionId, MonoCommands.DetachDebugger(), token);
+                        break;
+                    }
             }
 
             return false;
@@ -185,8 +197,8 @@ namespace Microsoft.WebAssembly.Diagnostics
         {
             // Inspector doesn't use the Target domain or sessions
             // so we try to init immediately
-            if (hideWebDriver && id == SessionId.Null)
-                await DeleteWebDriver(id, token);
+            if (id == SessionId.Null)
+                await AttachToTarget(id, token);
 
             if (!contexts.TryGetValue(id, out ExecutionContext context))
                 return false;
@@ -196,7 +208,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                 case "Target.attachToTarget":
                     {
                         Result resp = await SendCommand(id, method, args, token);
-                        await DeleteWebDriver(new SessionId(resp.Value["sessionId"]?.ToString()), token);
+                        await AttachToTarget(new SessionId(resp.Value["sessionId"]?.ToString()), token);
                         break;
                     }
 
@@ -1157,14 +1169,15 @@ namespace Microsoft.WebAssembly.Diagnostics
             return true;
         }
 
-        private async Task DeleteWebDriver(SessionId sessionId, CancellationToken token)
+        private async Task AttachToTarget(SessionId sessionId, CancellationToken token)
         {
             // see https://github.com/mono/mono/issues/19549 for background
-            if (hideWebDriver && sessions.Add(sessionId))
+            if (sessions.Add(sessionId))
             {
+                await SendMonoCommand(sessionId, new MonoCommands("globalThis.dotnetDebugger = true"), token);
                 Result res = await SendCommand(sessionId,
                     "Page.addScriptToEvaluateOnNewDocument",
-                    JObject.FromObject(new { source = "delete navigator.constructor.prototype.webdriver" }),
+                    JObject.FromObject(new { source = "globalThis.dotnetDebugger = true; delete navigator.constructor.prototype.webdriver" }),
                     token);
 
                 if (sessionId != SessionId.Null && !res.IsOk)

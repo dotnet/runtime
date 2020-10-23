@@ -201,8 +201,7 @@ namespace System.Net.Security.Tests
                 // Initiate Read operation, that results in starting renegotiation as per server response to the above request.
                 int bytesRead = useSync ? ssl.Read(message, 0, message.Length) : await ssl.ReadAsync(message, 0, message.Length);
 
-                // renegotiation will trigger validation callback again.
-                Assert.InRange(validationCount, 2, int.MaxValue);
+                Assert.Equal(1, validationCount);
                 Assert.InRange(bytesRead, 1, message.Length);
                 Assert.Contains("HTTP/1.1 200 OK", Encoding.UTF8.GetString(message));
             }

@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Diagnostics;
 using System.Diagnostics.Tracing;
 using System.Net.Sockets;
 using System.Runtime.CompilerServices;
@@ -99,7 +100,7 @@ namespace System.Net
             {
                 if (offset < 0 || offset > buffer.Length - count)
                 {
-                    Fail(thisOrContextObject, $"Invalid {nameof(DumpBuffer)} Args. Length={buffer.Length}, Offset={offset}, Count={count}", memberName);
+                    Debug.Fail($"Invalid {nameof(DumpBuffer)} Args. Length={buffer.Length}, Offset={offset}, Count={count}");
                     return;
                 }
 

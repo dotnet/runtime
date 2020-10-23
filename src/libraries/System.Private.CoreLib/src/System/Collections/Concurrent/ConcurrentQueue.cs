@@ -666,9 +666,28 @@ namespace System.Collections.Concurrent
         /// true if an element was removed and returned from the beginning of the
         /// <see cref="ConcurrentQueue{T}"/> successfully; otherwise, false.
         /// </returns>
-        public bool TryDequeue([MaybeNullWhen(false)] out T result) =>
-            _head.TryDequeue(out result) || // fast-path that operates just on the head segment
-            TryDequeueSlow(out result); // slow path that needs to fix up segments
+        public bool TryDequeue([MaybeNullWhen(false)] out T result)
+        {
+            // Get the current head
+            ConcurrentQueueSegment<T> head = _head;
+
+            // Try to take.  If we're successful, we're done.
+            if (head.TryDequeue(out result))
+            {
+                return true;
+            }
+
+            // Check to see whether this segment is the last. If it is, we can consider
+            // this to be a moment-in-time empty condition (even though between the TryDequeue
+            // check and this check, another item could have arrived).
+            if (head._nextSegment == null)
+            {
+                result = default!;
+                return false;
+            }
+
+            return TryDequeueSlow(out result); // slow path that needs to fix up segments
+        }
 
         /// <summary>Tries to dequeue an item, removing empty segments as needed.</summary>
         private bool TryDequeueSlow([MaybeNullWhen(false)] out T item)

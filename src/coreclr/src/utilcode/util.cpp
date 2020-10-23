@@ -1902,6 +1902,7 @@ HRESULT validateOneArg(
         {
             case ELEMENT_TYPE_VOID:
                 if(bNoVoidAllowed) IfFailGo(VLDTR_E_SIG_BADVOID);
+                FALLTHROUGH;
 
             case ELEMENT_TYPE_BOOLEAN:
             case ELEMENT_TYPE_CHAR:
@@ -1927,6 +1928,7 @@ HRESULT validateOneArg(
                 break;
             case ELEMENT_TYPE_BYREF:  //fallthru
                 if(TypeFromToken(tk)==mdtFieldDef) IfFailGo(VLDTR_E_SIG_BYREFINFIELD);
+                FALLTHROUGH;
             case ELEMENT_TYPE_PINNED:
             case ELEMENT_TYPE_SZARRAY:
                 // Validate the referenced type.
@@ -1935,6 +1937,7 @@ HRESULT validateOneArg(
             case ELEMENT_TYPE_CMOD_OPT:
             case ELEMENT_TYPE_CMOD_REQD:
                 bRepeat = TRUE; // go on validating, we're not done with this arg
+                FALLTHROUGH;
             case ELEMENT_TYPE_VALUETYPE: //fallthru
             case ELEMENT_TYPE_CLASS:
                 // See if the token is missing.
@@ -2120,6 +2123,7 @@ HRESULT validateTokenSig(
             if (!(ulCallConv & IMAGE_CEE_CS_CALLCONV_HASTHIS) &&
                 !IsMdStatic(dwFlags)) return VLDTR_E_MD_NOTTHISNOTSTATIC;
             // fall thru to callconv check;
+            FALLTHROUGH;
 
         case mdtMemberRef:
             if(i == IMAGE_CEE_CS_CALLCONV_FIELD) return validateOneArg(tk, &sig, NULL, pImport, TRUE);

@@ -70,7 +70,7 @@ namespace System.Net.Security.Tests
             return EndToEndHelper(host);
         }
 
-        [ConditionalTheory]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.SupportsTls12))]
         [OuterLoop("Uses external servers")]
         [InlineData("api.nuget.org")]
         [InlineData("")]
@@ -82,7 +82,7 @@ namespace System.Net.Security.Tests
             }
 
             await EndToEndHelper(host);
-            // Second try may change the handshake becasue of TLS resume.
+            // Second try may change the handshake because of TLS resume.
             await EndToEndHelper(host);
         }
 

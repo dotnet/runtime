@@ -95,19 +95,10 @@ namespace System.Net.Security
             bool success = SSPIWrapper.QueryBlittableContextAttributes(GlobalSSPI.SSPIAuth, securityContext, Interop.SspiCli.ContextAttribute.SECPKG_ATTR_SIZES, ref sizes);
             Debug.Assert(success);
 
-            try
+            int maxCount = checked(int.MaxValue - 4 - sizes.cbBlockSize - sizes.cbSecurityTrailer);
+            if (buffer.Length > maxCount)
             {
-                int maxCount = checked(int.MaxValue - 4 - sizes.cbBlockSize - sizes.cbSecurityTrailer);
-
-                if (buffer.Length > maxCount)
-                {
-                    throw new ArgumentOutOfRangeException(nameof(buffer.Length), SR.Format(SR.net_io_out_range, maxCount));
-                }
-            }
-            catch (Exception e) when (!ExceptionCheck.IsFatal(e))
-            {
-                NetEventSource.Fail(null, "Arguments out of range.");
-                throw;
+                throw new ArgumentOutOfRangeException(nameof(buffer.Length), SR.Format(SR.net_io_out_range, maxCount));
             }
 
             int resultSize = buffer.Length + sizes.cbSecurityTrailer + sizes.cbBlockSize;
@@ -187,13 +178,13 @@ namespace System.Net.Security
         {
             if (offset < 0 || offset > (buffer == null ? 0 : buffer.Length))
             {
-                NetEventSource.Fail(null, "Argument 'offset' out of range.");
+                Debug.Fail("Argument 'offset' out of range.");
                 throw new ArgumentOutOfRangeException(nameof(offset));
             }
 
             if (count < 0 || count > (buffer == null ? 0 : buffer.Length - offset))
             {
-                NetEventSource.Fail(null, "Argument 'count' out of range.");
+                Debug.Fail("Argument 'count' out of range.");
                 throw new ArgumentOutOfRangeException(nameof(count));
             }
 
@@ -249,7 +240,7 @@ namespace System.Net.Security
             // For the most part the arguments are verified in Decrypt().
             if (count < ntlmSignatureLength)
             {
-                NetEventSource.Fail(null, "Argument 'count' out of range.");
+                Debug.Fail("Argument 'count' out of range.");
                 throw new ArgumentOutOfRangeException(nameof(count));
             }
 

@@ -438,5 +438,40 @@ namespace Internal.TypeSystem
 
             return false;
         }
+
+        /// <summary>
+        /// Determines whether an object of type '<paramref name="type"/>' requires 8-byte alignment on
+        /// 32bit ARM or 32bit Wasm architectures.
+        /// </summary>
+        public static bool RequiresAlign8(this TypeDesc type)
+        {
+            if (type.Context.Target.Architecture != TargetArchitecture.ARM && type.Context.Target.Architecture != TargetArchitecture.Wasm32)
+            {
+                return false;
+            }
+
+            if (type.IsArray)
+            {
+                var elementType = ((ArrayType)type).ElementType;
+                if (elementType.IsValueType)
+                {
+                    var alignment = ((DefType)elementType).InstanceByteAlignment;
+                    if (!alignment.IsIndeterminate && alignment.AsInt > 4)
+                    {
+                        return true;
+                    }
+                }
+            }
+            else if (type.IsDefType)
+            {
+                var alignment = ((DefType)type).InstanceByteAlignment;
+                if (!alignment.IsIndeterminate && alignment.AsInt > 4)
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        }
     }
 }

@@ -11,6 +11,5 @@ internal partial class Interop
     {
         [DllImport(Libraries.Advapi32, CharSet = CharSet.Unicode, SetLastError = true)]
         internal static extern unsafe bool QueryServiceStatus(SafeServiceHandle serviceHandle, SERVICE_STATUS* pStatus);
-
     }
 }

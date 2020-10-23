@@ -237,7 +237,7 @@ namespace System.Net.Quic.Implementations.MsQuic
             return MsQuicParameterHelpers.GetUShortParam(MsQuicApi.Api, _ptr, (uint)QUIC_PARAM_LEVEL.CONNECTION, (uint)QUIC_PARAM_CONN.PEER_BIDI_STREAM_COUNT);
         }
 
-        private unsafe void SetIdleTimeout(TimeSpan timeout)
+        private void SetIdleTimeout(TimeSpan timeout)
         {
             MsQuicParameterHelpers.SetULongParam(MsQuicApi.Api, _ptr, (uint)QUIC_PARAM_LEVEL.CONNECTION, (uint)QUIC_PARAM_CONN.IDLE_TIMEOUT, (ulong)timeout.TotalMilliseconds);
         }
