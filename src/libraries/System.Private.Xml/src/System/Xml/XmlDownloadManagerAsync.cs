@@ -38,7 +38,8 @@ namespace System.Xml
                 {
                     handler.Proxy = proxy;
                 }
-#pragma warning restore CA1416 // Validate platform compatibility
+#pragma warning restore CA1416
+
                 using (Stream respStream = await client.GetStreamAsync(uri).ConfigureAwait(false))
                 {
                     var result = new MemoryStream();

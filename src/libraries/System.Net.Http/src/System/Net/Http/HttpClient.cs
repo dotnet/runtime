@@ -510,7 +510,7 @@ namespace System.Net.Http
                 // Wait for the send request to complete, getting back the response.
                 response = async ?
                     await base.SendAsync(request, cts.Token).ConfigureAwait(false) :
-#pragma warning disable CA1416 // Validate platform compatibility
+#pragma warning disable CA1416 // Validate platform compatibility, not supported on browser, safe to suppress
                     base.Send(request, cts.Token);
 #pragma warning restore CA1416
                 ThrowForNullResponse(response);

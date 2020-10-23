@@ -452,7 +452,7 @@ namespace System.Transactions
                     retVal = false;
                     break;
 
-#pragma warning disable CA1416 // Validate platform compatibility, un supported on browser
+#pragma warning disable CA1416 // Validate platform compatibility, not supported on browser
                 case TransactionScopeOption.Required:
                     _expectedCurrent = _savedCurrent;
                     // If current is null, we need to create one.
@@ -466,6 +466,7 @@ namespace System.Transactions
                     retVal = true;
                     break;
 #pragma warning restore CA1416
+
                 default:
                     throw new ArgumentOutOfRangeException(nameof(scopeOption));
             }

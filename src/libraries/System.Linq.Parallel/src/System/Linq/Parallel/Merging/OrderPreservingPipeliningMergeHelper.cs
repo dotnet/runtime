@@ -399,7 +399,7 @@ namespace System.Linq.Parallel
                         }
 
                         _mergeHelper._consumerWaiting[producer] = true;
-#pragma warning disable CA1416 // Validate platform compatibility, it might not reachable on browser, suppressing for now
+#pragma warning disable CA1416 // Validate platform compatibility, not supported on browser
                         Monitor.Wait(bufferLock);
 #pragma warning restore CA1416
 
