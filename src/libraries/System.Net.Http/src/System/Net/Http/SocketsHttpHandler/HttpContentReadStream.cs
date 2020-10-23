@@ -17,7 +17,7 @@ namespace System.Net.Http
             {
             }
 
-            public sealed override bool CanRead => true;
+            public sealed override bool CanRead => _disposed == 0;
             public sealed override bool CanWrite => false;
 
             public sealed override void Write(ReadOnlySpan<byte> buffer) => throw new NotSupportedException(SR.net_http_content_readonly_stream);
