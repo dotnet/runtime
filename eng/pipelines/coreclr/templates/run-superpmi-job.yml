@@ -20,7 +20,6 @@ parameters:
   codeGenType: 'JIT'              # optional -- Decides on the codegen technology if running on mono
   projectFile: 'superpmi.proj'    # optional -- project file to build helix workitems
   runKind: ''                     # required -- test category
-  collectionName: ''              # required -- name of collection
 
 jobs:
 - template: xplat-pipeline-job.yml
@@ -28,7 +27,6 @@ jobs:
     dependsOn: ${{ parameters.dependsOn }}
     buildConfig: ${{ parameters.buildConfig }}
     archType: ${{ parameters.archType }}
-    collectionName: $ {{ parameters.collectionName }}
     osGroup: ${{ parameters.osGroup }}
     osSubgroup: ${{ parameters.osSubgroup }}
     liveLibrariesBuildConfig: ${{ parameters.liveLibrariesBuildConfig }}
@@ -112,7 +110,7 @@ jobs:
         BuildConfig: ${{ parameters.buildConfig }}
         osGroup: ${{ parameters.osGroup }}
         InputArtifacts: '$(InputArtifacts)'
-        CollectionName: '${{ collectionName }}'
+        CollectionName: '$(collectionName)'
 
     - task: PublishPipelineArtifact@1
       displayName: Publish SuperPMI collection

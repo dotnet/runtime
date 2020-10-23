@@ -74,7 +74,7 @@
     <Project DefaultTargets="printItems">
 
     Once you've done that you can run this to see the results:
-    dotnet msbuild .\scenarios.proj /v:n
+    dotnet msbuild .\superpmi.proj /v:n
    -->
 <!--    
    <PropertyGroup>
