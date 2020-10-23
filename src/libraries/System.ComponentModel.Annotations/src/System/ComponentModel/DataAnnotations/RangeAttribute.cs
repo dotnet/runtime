@@ -39,6 +39,19 @@ namespace System.ComponentModel.DataAnnotations
         }
 
         /// <summary>
+        ///     Constructor that takes decimal minimum and maximum values
+        /// </summary>
+        /// <param name="minimum">The minimum value, inclusive</param>
+        /// <param name="maximum">The maximum value, inclusive</param>
+        public RangeAttribute(decimal minimum, decimal maximum)
+            : base(() => SR.RangeAttribute_ValidationError)
+        {
+            Minimum = minimum;
+            Maximum = maximum;
+            OperandType = typeof(decimal);
+        }
+
+        /// <summary>
         ///     Allows for specifying range for arbitrary types. The minimum and maximum strings
         ///     will be converted to the target type.
         /// </summary>
@@ -64,7 +77,7 @@ namespace System.ComponentModel.DataAnnotations
         public object Maximum { get; private set; }
 
         /// <summary>
-        ///     Gets the type of the <see cref="Minimum" /> and <see cref="Maximum" /> values (e.g. Int32, Double, or some custom
+        ///     Gets the type of the <see cref="Minimum" /> and <see cref="Maximum" /> values (e.g. Int32, Double, Decimal, or some custom
         ///     type)
         /// </summary>
         public Type OperandType { get; }
@@ -80,7 +93,7 @@ namespace System.ComponentModel.DataAnnotations
         /// by the <c>type</c> parameter of the <see cref="RangeAttribute(Type, string, string)"/> constructor are carried
         /// out in the invariant culture rather than the current culture in effect at the time of the validation.
         /// </summary>
-        /// <remarks>This property has no effects with the constructors with <see cref="int"/> or <see cref="double"/>
+        /// <remarks>This property has no effects with the constructors with <see cref="int"/> or <see cref="double"/> or <see cref="decimal"/>
         /// parameters, for which the invariant culture is always used for any conversions of the validated value.</remarks>
         public bool ConvertValueInInvariantCulture { get; set; }
 
@@ -170,7 +183,7 @@ namespace System.ComponentModel.DataAnnotations
                     throw new InvalidOperationException(SR.RangeAttribute_Must_Set_Min_And_Max);
                 }
 
-                // Careful here -- OperandType could be int or double if they used the long form of the ctor.
+                // Careful here -- OperandType could be int or double or decimal if they used the long form of the ctor.
                 // But the min and max would still be strings.  Do use the type of the min/max operands to condition
                 // the following code.
                 Type operandType = minimum.GetType();
@@ -183,6 +196,11 @@ namespace System.ComponentModel.DataAnnotations
                 {
                     Initialize((double)minimum, (double)maximum,
                         v => Convert.ToDouble(v, CultureInfo.InvariantCulture));
+                }
+                else if (operandType == typeof(decimal))
+                {
+                    Initialize((decimal)minimum, (decimal)maximum,
+                        v => Convert.ToDecimal(v, CultureInfo.InvariantCulture));
                 }
                 else
                 {

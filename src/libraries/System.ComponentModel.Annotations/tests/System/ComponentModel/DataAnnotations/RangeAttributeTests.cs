@@ -28,6 +28,14 @@ namespace System.ComponentModel.DataAnnotations.Tests
             yield return new TestCase(doubleRange, 3.0);
             yield return new TestCase(new RangeAttribute(1.0, 1.0), 1);
 
+            RangeAttribute decimalRange = new RangeAttribute(1m, 3m);
+            yield return new TestCase(decimalRange, null);
+            yield return new TestCase(decimalRange, string.Empty);
+            yield return new TestCase(decimalRange, 1m);
+            yield return new TestCase(decimalRange, 2m);
+            yield return new TestCase(decimalRange, 3m);
+            yield return new TestCase(new RangeAttribute(1m, 1m), 1);
+
             RangeAttribute stringIntRange = new RangeAttribute(typeof(int), "1", "3");
             yield return new TestCase(stringIntRange, null);
             yield return new TestCase(stringIntRange, string.Empty);
@@ -47,6 +55,16 @@ namespace System.ComponentModel.DataAnnotations.Tests
             yield return new TestCase(stringDoubleRange, (2.0).ToString("F1"));
             yield return new TestCase(stringDoubleRange, 3.0);
             yield return new TestCase(stringDoubleRange, (3.0).ToString("F1"));
+
+            RangeAttribute stringDecimalRange = new RangeAttribute(typeof(decimal), (1m).ToString("F1"), (3m).ToString("F1"));
+            yield return new TestCase(stringDecimalRange, null);
+            yield return new TestCase(stringDecimalRange, string.Empty);
+            yield return new TestCase(stringDecimalRange, 1m);
+            yield return new TestCase(stringDecimalRange, (1m).ToString("F1"));
+            yield return new TestCase(stringDecimalRange, 2m);
+            yield return new TestCase(stringDecimalRange, (2m).ToString("F1"));
+            yield return new TestCase(stringDecimalRange, 3m);
+            yield return new TestCase(stringDecimalRange, (3m).ToString("F1"));
         }
 
         protected override IEnumerable<TestCase> InvalidValues()
@@ -67,6 +85,14 @@ namespace System.ComponentModel.DataAnnotations.Tests
             // Implements IConvertible (throws NotSupportedException - is caught)
             yield return new TestCase(doubleRange, new IConvertibleImplementor() { DoubleThrow = new NotSupportedException() });
 
+            RangeAttribute decimalRange = new RangeAttribute(1m, 3m);
+            yield return new TestCase(decimalRange, 0.9999999m);
+            yield return new TestCase(decimalRange, 3.0000001m);
+            yield return new TestCase(decimalRange, "abc");
+            yield return new TestCase(decimalRange, new object());
+            // Implements IConvertible (throws NotSupportedException - is caught)
+            yield return new TestCase(decimalRange, new IConvertibleImplementor() { DecimalThrow = new NotSupportedException() });
+
             RangeAttribute stringIntRange = new RangeAttribute(typeof(int), "1", "3");
             yield return new TestCase(stringIntRange, 0);
             yield return new TestCase(stringIntRange, "0");
@@ -84,6 +110,15 @@ namespace System.ComponentModel.DataAnnotations.Tests
             yield return new TestCase(stringDoubleRange, new object());
             // Implements IConvertible (throws NotSupportedException - is caught)
             yield return new TestCase(stringDoubleRange, new IConvertibleImplementor() { DoubleThrow = new NotSupportedException() });
+
+            RangeAttribute stringDecimalRange = new RangeAttribute(typeof(decimal), (1m).ToString("F1"), (3m).ToString("F1"));
+            yield return new TestCase(stringDecimalRange, 0.9999999m);
+            yield return new TestCase(stringDecimalRange, (0.9999999m).ToString());
+            yield return new TestCase(stringDecimalRange, 3.0000001m);
+            yield return new TestCase(stringDecimalRange, (3.0000001m).ToString());
+            yield return new TestCase(stringDecimalRange, new object());
+            // Implements IConvertible (throws NotSupportedException - is caught)
+            yield return new TestCase(stringDecimalRange, new IConvertibleImplementor() { DecimalThrow = new NotSupportedException() });
         }
 
         public static IEnumerable<object[]> DotDecimalRanges()
@@ -511,7 +546,6 @@ namespace System.ComponentModel.DataAnnotations.Tests
             }
         }
 
-
         [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotInvariantGlobalization))]
         [MemberData(nameof(DotDecimalInvalidValues))]
         [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "2648 not fixed on NetFX")]
@@ -788,6 +822,7 @@ namespace System.ComponentModel.DataAnnotations.Tests
         [Theory]
         [InlineData(typeof(int), "1", "3")]
         [InlineData(typeof(double), "1", "3")]
+        [InlineData(typeof(decimal), "1", "3")]
         public static void Validate_CantConvertValueToTargetType_ThrowsException(Type type, string minimum, string maximum)
         {
             var attribute = new RangeAttribute(type, minimum, maximum);
@@ -811,6 +846,15 @@ namespace System.ComponentModel.DataAnnotations.Tests
             Assert.Equal(1.0, attribute.Minimum);
             Assert.Equal(3.0, attribute.Maximum);
             Assert.Equal(typeof(double), attribute.OperandType);
+        }
+
+        [Fact]
+        public static void Ctor_Decimal_Decimal()
+        {
+            var attribute = new RangeAttribute(1m, 3m);
+            Assert.Equal(1m, attribute.Minimum);
+            Assert.Equal(3m, attribute.Maximum);
+            Assert.Equal(typeof(decimal), attribute.OperandType);
         }
 
         [Theory]
@@ -848,6 +892,9 @@ namespace System.ComponentModel.DataAnnotations.Tests
             attribute = new RangeAttribute(typeof(double), (3.0).ToString("F1"), (1.0).ToString("F1"));
             Assert.Throws<InvalidOperationException>(() => attribute.Validate("Any", new ValidationContext(new object())));
 
+            attribute = new RangeAttribute(typeof(decimal), (3m).ToString("F1"), (1m).ToString("F1"));
+            Assert.Throws<InvalidOperationException>(() => attribute.Validate("Any", new ValidationContext(new object())));
+
             attribute = new RangeAttribute(typeof(string), "z", "a");
             Assert.Throws<InvalidOperationException>(() => attribute.Validate("Any", new ValidationContext(new object())));
         }
@@ -866,6 +913,8 @@ namespace System.ComponentModel.DataAnnotations.Tests
         [InlineData(typeof(int), "1", "Cannot Convert")]
         [InlineData(typeof(double), "Cannot Convert", "3")]
         [InlineData(typeof(double), "1", "Cannot Convert")]
+        [InlineData(typeof(decimal), "Cannot Convert", "3")]
+        [InlineData(typeof(decimal), "1", "Cannot Convert")]
         public static void Validate_MinimumOrMaximumCantBeConvertedToIntegralType_ThrowsException(Type type, string minimum, string maximum)
         {
             RangeAttribute attribute = new RangeAttribute(type, minimum, maximum);
@@ -895,6 +944,15 @@ namespace System.ComponentModel.DataAnnotations.Tests
         [InlineData(1.0, 2.0, "-2E+308")]
         [SkipOnTargetFramework(~TargetFrameworkMonikers.NetFramework)]
         public static void Validate_DoubleConversionOverflows_ThrowsOverflowException(double minimum, double maximum, object value)
+        {
+            RangeAttribute attribute = new RangeAttribute(minimum, maximum);
+            Assert.Throws<OverflowException>(() => attribute.Validate(value, new ValidationContext(new object())));
+        }
+
+        [Theory]
+        [InlineData(1m, 2m, "79228162514264337593543950336")]
+        [InlineData(1m, 2m, "-79228162514264337593543950336")]
+        public static void Validate_DecimalConversionOverflows_ThrowsOverflowException(decimal minimum, decimal maximum, object value)
         {
             RangeAttribute attribute = new RangeAttribute(minimum, maximum);
             Assert.Throws<OverflowException>(() => attribute.Validate(value, new ValidationContext(new object())));

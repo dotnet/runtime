@@ -183,6 +183,7 @@ namespace System.ComponentModel.DataAnnotations.Tests
 
     public class IConvertibleImplementor : IConvertible
     {
+        public Exception DecimalThrow { get; set; }
         public Exception DoubleThrow { get; set; }
         public Exception IntThrow { get; set; }
 
@@ -193,7 +194,14 @@ namespace System.ComponentModel.DataAnnotations.Tests
         public char ToChar(IFormatProvider provider) => '\0';
         public DateTime ToDateTime(IFormatProvider provider) => DateTime.Now;
 
-        public decimal ToDecimal(IFormatProvider provider) => 1m;
+        public decimal ToDecimal(IFormatProvider provider)
+        {
+            if (DecimalThrow != null)
+            {
+                throw DecimalThrow;
+            }
+            return 0m;
+        }
 
         public double ToDouble(IFormatProvider provider)
         {
