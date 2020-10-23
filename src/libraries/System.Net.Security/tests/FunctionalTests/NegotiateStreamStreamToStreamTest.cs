@@ -380,7 +380,7 @@ namespace System.Net.Security.Tests
         [ConditionalFact(nameof(IsNtlmInstalled))]
         public async Task NegotiateStream_ReadToEof_Returns0()
         {
-            (Stream stream1, Stream stream2) = TestHelper.GetConnectedStreams();
+            (Stream stream1, Stream stream2) = TestHelper.GetConnectedTcpStreams();
             using (var client = new NegotiateStream(stream1))
             using (var server = new NegotiateStream(stream2))
             {
