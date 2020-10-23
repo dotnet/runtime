@@ -206,7 +206,7 @@ int32_t SystemNative_EnumerateInterfaceAddresses(IPv4AddressFound onIpv4Found,
                 if (lla.HardwareType == NetworkInterfaceType_Ethernet)
                 {
                     // WI-FI and Ethernet have same address type so we can try to distinguish more
-                    int fd =  socket(AF_INET, SOCK_DGRAM, 0);
+                    int fd = socket(AF_INET, SOCK_DGRAM, 0);
                     if (fd >= 0)
                     {
                         struct ifmediareq ifmr;
