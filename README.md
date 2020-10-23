@@ -48,6 +48,7 @@ For other issues, please use the following repos:
 * [API Reference docs](https://docs.microsoft.com/dotnet/api/?view=netcore-3.1)
 * [.NET API Catalog](http://apisof.net) (incl. APIs from daily builds and API usage info)
 * [API docs writing guidelines](https://github.com/dotnet/dotnet-api-docs/wiki) - useful when writing /// comments
+* [.NET Discord Server](https://aka.ms/dotnet-discord) - a place to talk and hang out with .NET community
 
 ## .NET Foundation
 
