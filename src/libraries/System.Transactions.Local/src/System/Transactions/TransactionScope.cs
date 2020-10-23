@@ -9,9 +9,7 @@ namespace System.Transactions
 {
     public enum TransactionScopeOption
     {
-        [UnsupportedOSPlatform("browser")]
         Required,
-        [UnsupportedOSPlatform("browser")]
         RequiresNew,
         Suppress,
     }
@@ -35,9 +33,9 @@ namespace System.Transactions
         Full = 2
     }
 
+    [UnsupportedOSPlatform("browser")]
     public sealed class TransactionScope : IDisposable
     {
-        [UnsupportedOSPlatform("browser")]
         public TransactionScope() : this(TransactionScopeOption.Required)
         {
         }
@@ -47,7 +45,6 @@ namespace System.Transactions
         {
         }
 
-        [UnsupportedOSPlatform("browser")]
         public TransactionScope(TransactionScopeAsyncFlowOption asyncFlowOption)
             : this(TransactionScopeOption.Required, asyncFlowOption)
         {
@@ -68,9 +65,7 @@ namespace System.Transactions
 
             if (NeedToCreateTransaction(scopeOption))
             {
-#pragma warning disable CA1416 // Validate platform compatibility, not supported on browser
                 _committableTransaction = new CommittableTransaction();
-#pragma warning restore CA1416
                 _expectedCurrent = _committableTransaction.Clone();
             }
 
@@ -132,9 +127,7 @@ namespace System.Transactions
 
             if (NeedToCreateTransaction(scopeOption))
             {
-#pragma warning disable CA1416 // Validate platform compatibility, not supported on browser
                 _committableTransaction = new CommittableTransaction(txTimeout);
-#pragma warning restore CA1416
                 _expectedCurrent = _committableTransaction.Clone();
             }
 
@@ -209,9 +202,7 @@ namespace System.Transactions
 
             if (NeedToCreateTransaction(scopeOption))
             {
-#pragma warning disable CA1416 // Validate platform compatibility, not supported on browser
                 _committableTransaction = new CommittableTransaction(transactionOptions);
-#pragma warning restore CA1416
                 _expectedCurrent = _committableTransaction.Clone();
             }
             else
@@ -293,9 +284,7 @@ namespace System.Transactions
 
             if (NeedToCreateTransaction(scopeOption))
             {
-#pragma warning disable CA1416 // Validate platform compatibility, not supported on browser
                 _committableTransaction = new CommittableTransaction(transactionOptions);
-#pragma warning restore CA1416
                 _expectedCurrent = _committableTransaction.Clone();
             }
             else
@@ -452,7 +441,6 @@ namespace System.Transactions
                     retVal = false;
                     break;
 
-#pragma warning disable CA1416 // Validate platform compatibility, not supported on browser
                 case TransactionScopeOption.Required:
                     _expectedCurrent = _savedCurrent;
                     // If current is null, we need to create one.
@@ -465,7 +453,6 @@ namespace System.Transactions
                 case TransactionScopeOption.RequiresNew:
                     retVal = true;
                     break;
-#pragma warning restore CA1416
 
                 default:
                     throw new ArgumentOutOfRangeException(nameof(scopeOption));
@@ -821,9 +808,7 @@ namespace System.Transactions
                         // If we are supposed to commit on dispose, cast to CommittableTransaction and commit it.
                         if (null != _committableTransaction)
                         {
-#pragma warning disable CA1416 // Validate platform compatibility, not supported on browser
                             _committableTransaction.Commit();
-#pragma warning restore CA1416
                         }
                         else
                         {
