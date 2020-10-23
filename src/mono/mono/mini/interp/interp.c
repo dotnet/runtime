@@ -80,6 +80,15 @@
 #endif
 #include <mono/metadata/icall-decl.h>
 
+#define COUNT_OPS 0
+
+#if PROFILE_INTERP
+static void interp_print_method_counts (void);
+#endif
+#if COUNT_OPS
+static void interp_print_op_count ();
+#endif
+
 /* Arguments that are passed when invoking only a finally/filter clause from the frame */
 struct FrameClauseArgs {
 	/* Where we start the frame execution from */
@@ -256,7 +265,6 @@ typedef void (*ICallMethod) (InterpFrame *frame);
 static MonoNativeTlsKey thread_context_id;
 
 #define DEBUG_INTERP 0
-#define COUNT_OPS 0
 
 #if DEBUG_INTERP
 int mono_interp_traceopt = 2;
@@ -6390,6 +6398,11 @@ call:
 			mono_memory_barrier ();
 			MINT_IN_BREAK;
 		}
+		MINT_IN_CASE(MINT_MONO_EXCHANGE_LONG)
+			sp--;
+			sp [-1].data.l = ves_icall_System_Threading_Interlocked_Exchange_Long ((gint64*) sp [-1].data.p, sp [0].data.l);
+			++ip;
+			MINT_IN_BREAK;
 		MINT_IN_CASE(MINT_MONO_LDDOMAIN)
 			sp->data.p = mono_domain_get ();
 			++sp;
@@ -7040,6 +7053,14 @@ exit_frame:
 	if (frame->parent && frame->parent->state.ip) {
 		/* Return to the main loop after a non-recursive interpreter call */
 		//printf ("R: %s -> %s %p\n", mono_method_get_full_name (frame->imethod->method), mono_method_get_full_name (frame->parent->imethod->method), frame->parent->state.ip);
+		if (!strcmp(mono_method_get_full_name (frame->imethod->method),"void Test:Main (string[])")) {
+			#if COUNT_OPS
+			        interp_print_op_count ();
+			#endif
+                        #if PROFILE_INTERP
+			        interp_print_method_counts ();
+                        #endif
+	        }
 		g_assert_checked (frame->stack);
 		frame = frame->parent;
 		/*
