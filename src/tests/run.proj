@@ -414,8 +414,7 @@ namespace $([System.String]::Copy($(Category)).Replace(".","_").Replace("\","").
 
     <PropertyGroup>
       <RuntimeIdentifier>android-$(TargetArchitecture)</RuntimeIdentifier>
-      <CMDDIR_Parent>$([System.IO.Path]::GetDirectoryName($(_CMDDIR)))</CMDDIR_Parent>
-      <CMDDIR_Grandparent>$([System.IO.Path]::GetDirectoryName($(CMDDIR_Parent)))</CMDDIR_Grandparent>
+      <CMDDIR_Grandparent>$([System.IO.Path]::GetDirectoryName($([System.IO.Path]::GetDirectoryName($(_CMDDIR)))))</CMDDIR_Grandparent>
       <CategoryWithSlash>$([System.String]::Copy('$(_CMDDIR)').Replace("$(CMDDIR_Grandparent)/",""))</CategoryWithSlash>
       <Category>$([System.String]::Copy('$(CategoryWithSlash)').Replace('/','_'))</Category>
       <AppDir>$(CORE_ROOT)\AndroidApps\$(Category)</AppDir>
