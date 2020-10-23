@@ -8341,6 +8341,7 @@ namespace System.Reflection
         public static System.Reflection.MethodBase? GetCurrentMethod() { throw null; }
         public virtual System.Type[] GetGenericArguments() { throw null; }
         public override int GetHashCode() { throw null; }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Trimming may change method bodies. For example it can change some instructions, remove branches or local variables.")]
         public virtual System.Reflection.MethodBody? GetMethodBody() { throw null; }
         public static System.Reflection.MethodBase? GetMethodFromHandle(System.RuntimeMethodHandle handle) { throw null; }
         public static System.Reflection.MethodBase? GetMethodFromHandle(System.RuntimeMethodHandle handle, System.RuntimeTypeHandle declaringType) { throw null; }
