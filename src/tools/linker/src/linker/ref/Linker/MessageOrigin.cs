@@ -2,11 +2,17 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using Mono.Cecil;
+
 namespace Mono.Linker
 {
 	public readonly struct MessageOrigin
 	{
 		public MessageOrigin (string fileName, int sourceLine = 0, int sourceColumn = 0)
+		{
+		}
+
+		public MessageOrigin (IMemberDefinition memberDefinition, int? ilOffset = null)
 		{
 		}
 	}
