@@ -127,21 +127,21 @@ namespace Microsoft.Interop
             switch (info)
             {
                 // Blittable primitives with no marshalling info or with a compatible [MarshalAs] attribute.
-                case { ManagedType: { SpecialType: SpecialType.System_SByte }, MarshallingAttributeInfo: null or MarshalAsInfo { UnmanagedType: UnmanagedType.I1 } }
-                    or { ManagedType: { SpecialType: SpecialType.System_Byte }, MarshallingAttributeInfo: null or MarshalAsInfo { UnmanagedType: UnmanagedType.U1 } }
-                    or { ManagedType: { SpecialType: SpecialType.System_Int16 }, MarshallingAttributeInfo: null or MarshalAsInfo { UnmanagedType: UnmanagedType.I2 } }
-                    or { ManagedType: { SpecialType: SpecialType.System_UInt16 }, MarshallingAttributeInfo: null or MarshalAsInfo { UnmanagedType: UnmanagedType.U2 } }
-                    or { ManagedType: { SpecialType: SpecialType.System_Int32 }, MarshallingAttributeInfo: null or MarshalAsInfo { UnmanagedType: UnmanagedType.I4 } }
-                    or { ManagedType: { SpecialType: SpecialType.System_UInt32 }, MarshallingAttributeInfo: null or MarshalAsInfo { UnmanagedType: UnmanagedType.U4 } }
-                    or { ManagedType: { SpecialType: SpecialType.System_Int64 }, MarshallingAttributeInfo: null or MarshalAsInfo { UnmanagedType: UnmanagedType.I8 } }
-                    or { ManagedType: { SpecialType: SpecialType.System_UInt64 }, MarshallingAttributeInfo: null or MarshalAsInfo { UnmanagedType: UnmanagedType.U8 } }
-                    or { ManagedType: { SpecialType: SpecialType.System_IntPtr }, MarshallingAttributeInfo: null }
-                    or { ManagedType: { SpecialType: SpecialType.System_UIntPtr }, MarshallingAttributeInfo: null}
-                    or { ManagedType: { SpecialType: SpecialType.System_Single }, MarshallingAttributeInfo: null or MarshalAsInfo { UnmanagedType: UnmanagedType.R4 } }
-                    or { ManagedType: { SpecialType: SpecialType.System_Double }, MarshallingAttributeInfo: null or MarshalAsInfo { UnmanagedType: UnmanagedType.R8 } }:
+                case { ManagedType: { SpecialType: SpecialType.System_SByte }, MarshallingAttributeInfo: NoMarshallingInfo or MarshalAsInfo { UnmanagedType: UnmanagedType.I1 } }
+                    or { ManagedType: { SpecialType: SpecialType.System_Byte }, MarshallingAttributeInfo: NoMarshallingInfo or MarshalAsInfo { UnmanagedType: UnmanagedType.U1 } }
+                    or { ManagedType: { SpecialType: SpecialType.System_Int16 }, MarshallingAttributeInfo: NoMarshallingInfo or MarshalAsInfo { UnmanagedType: UnmanagedType.I2 } }
+                    or { ManagedType: { SpecialType: SpecialType.System_UInt16 }, MarshallingAttributeInfo: NoMarshallingInfo or MarshalAsInfo { UnmanagedType: UnmanagedType.U2 } }
+                    or { ManagedType: { SpecialType: SpecialType.System_Int32 }, MarshallingAttributeInfo: NoMarshallingInfo or MarshalAsInfo { UnmanagedType: UnmanagedType.I4 } }
+                    or { ManagedType: { SpecialType: SpecialType.System_UInt32 }, MarshallingAttributeInfo: NoMarshallingInfo or MarshalAsInfo { UnmanagedType: UnmanagedType.U4 } }
+                    or { ManagedType: { SpecialType: SpecialType.System_Int64 }, MarshallingAttributeInfo: NoMarshallingInfo or MarshalAsInfo { UnmanagedType: UnmanagedType.I8 } }
+                    or { ManagedType: { SpecialType: SpecialType.System_UInt64 }, MarshallingAttributeInfo: NoMarshallingInfo or MarshalAsInfo { UnmanagedType: UnmanagedType.U8 } }
+                    or { ManagedType: { SpecialType: SpecialType.System_IntPtr }, MarshallingAttributeInfo: NoMarshallingInfo }
+                    or { ManagedType: { SpecialType: SpecialType.System_UIntPtr }, MarshallingAttributeInfo: NoMarshallingInfo}
+                    or { ManagedType: { SpecialType: SpecialType.System_Single }, MarshallingAttributeInfo: NoMarshallingInfo or MarshalAsInfo { UnmanagedType: UnmanagedType.R4 } }
+                    or { ManagedType: { SpecialType: SpecialType.System_Double }, MarshallingAttributeInfo: NoMarshallingInfo or MarshalAsInfo { UnmanagedType: UnmanagedType.R8 } }:
                     return Blittable;
 
-                case { ManagedType: { SpecialType: SpecialType.System_Boolean }, MarshallingAttributeInfo: null }:
+                case { ManagedType: { SpecialType: SpecialType.System_Boolean }, MarshallingAttributeInfo: NoMarshallingInfo }:
                     return WinBool; // [Compat] Matching the default for the built-in runtime marshallers.
                 case { ManagedType: { SpecialType: SpecialType.System_Boolean }, MarshallingAttributeInfo: MarshalAsInfo { UnmanagedType: UnmanagedType.I1 or UnmanagedType.U1 } }:
                     return ByteBool;
@@ -156,7 +156,7 @@ namespace Microsoft.Interop
                 case { ManagedType: { SpecialType: SpecialType.System_String } }:
                     return CreateStringMarshaller(info, context);
 
-                case { ManagedType: { TypeKind: TypeKind.Delegate }, MarshallingAttributeInfo: null or MarshalAsInfo { UnmanagedType: UnmanagedType.FunctionPtr } }:
+                case { ManagedType: { TypeKind: TypeKind.Delegate }, MarshallingAttributeInfo: NoMarshallingInfo or MarshalAsInfo { UnmanagedType: UnmanagedType.FunctionPtr } }:
                     return Delegate;
 
                 case { MarshallingAttributeInfo: BlittableTypeAttributeInfo _ }:
@@ -184,8 +184,8 @@ namespace Microsoft.Interop
 
         private static IMarshallingGenerator CreateCharMarshaller(TypePositionInfo info, StubCodeContext context)
         {
-            MarshallingInfo? marshalInfo = info.MarshallingAttributeInfo;
-            if (marshalInfo == null)
+            MarshallingInfo marshalInfo = info.MarshallingAttributeInfo;
+            if (marshalInfo is NoMarshallingInfo)
             {
                 // [Compat] Require explicit marshalling information.
                 throw new MarshallingNotSupportedException(info, context)
@@ -228,8 +228,8 @@ namespace Microsoft.Interop
 
         private static IMarshallingGenerator CreateStringMarshaller(TypePositionInfo info, StubCodeContext context)
         {
-            MarshallingInfo? marshalInfo = info.MarshallingAttributeInfo;
-            if (marshalInfo == null)
+            MarshallingInfo marshalInfo = info.MarshallingAttributeInfo;
+            if (marshalInfo is NoMarshallingInfo)
             {
                 // [Compat] Require explicit marshalling information.
                 throw new MarshallingNotSupportedException(info, context)

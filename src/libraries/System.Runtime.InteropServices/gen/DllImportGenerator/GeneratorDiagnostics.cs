@@ -205,7 +205,7 @@ namespace Microsoft.Interop
                             paramSymbol.Name));
                 }
             }
-            else if (info.MarshallingAttributeInfo != null && info.MarshallingAttributeInfo is MarshalAsInfo)
+            else if (info.MarshallingAttributeInfo is MarshalAsInfo)
             {
                 // Report that the specified marshalling configuration is not supported.
                 // We don't forward marshalling attributes, so this is reported differently
