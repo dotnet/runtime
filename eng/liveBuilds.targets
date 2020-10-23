@@ -195,7 +195,10 @@
         $(LibrariesNativeArtifactsPath)dotnet.js;
         $(LibrariesNativeArtifactsPath)dotnet.wasm;
         $(LibrariesNativeArtifactsPath)dotnet.timezones.blat;
-        $(LibrariesNativeArtifactsPath)*.dat;"
+        $(LibrariesNativeArtifactsPath)*.dat;
+        $(LibrariesNativeArtifactsPath)*.c;
+        $(LibrariesNativeArtifactsPath)*.h;
+        $(LibrariesNativeArtifactsPath)*.js;"
         IsNative="true" />
     </ItemGroup>
 

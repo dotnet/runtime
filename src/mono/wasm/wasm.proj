@@ -84,12 +84,29 @@
           AfterTargets="Build"
           DependsOnTargets="BuildPInvokeTable;BundleTimeZones">
 
-    <Exec Command="make -C $(MonoProjectRoot)wasm all SHELL=/bin/bash BINDIR=$(ArtifactsBinDir) MONO_BIN_DIR=$(MonoArtifactsPath) OBJDIR=$(ArtifactsObjDir) NATIVE_BIN_DIR=$(NativeBinDir) CONFIG=$(Configuration) PINVOKE_TABLE=$(WasmPInvokeTablePath) ICU_LIBDIR=$(PkgMicrosoft_NETCore_Runtime_ICU_Transport)/runtimes/browser-wasm/native/lib ENABLE_ES6=$(WasmEnableES6)"
+    <PropertyGroup>
+      <_IcuLibdir>$(PkgMicrosoft_NETCore_Runtime_ICU_Transport)/runtimes/browser-wasm/native/lib</_IcuLibdir>
+    </PropertyGroup>
+
+    <Exec Command="make -C $(MonoProjectRoot)wasm all SHELL=/bin/bash BINDIR=$(ArtifactsBinDir) MONO_BIN_DIR=$(MonoArtifactsPath) OBJDIR=$(ArtifactsObjDir) NATIVE_BIN_DIR=$(NativeBinDir) CONFIG=$(Configuration) PINVOKE_TABLE=$(WasmPInvokeTablePath) ICU_LIBDIR=$(_IcuLibdir) ENABLE_ES6=$(WasmEnableES6)"
           IgnoreStandardErrorWarningFormat="true" />
 
     <Copy SourceFiles="$(NativeBinDir)dotnet.js;
                        $(NativeBinDir)dotnet.wasm;
-                       $(NativeBinDir)dotnet.timezones.blat"
+                       $(NativeBinDir)dotnet.timezones.blat;
+                       $(MonoProjectRoot)wasm\runtime\driver.c;
+                       $(MonoProjectRoot)wasm\runtime\pinvoke.c;
+                       $(MonoProjectRoot)wasm\runtime\corebindings.c;
+                       $(MonoProjectRoot)wasm\runtime\pinvoke.h;
+                       $(MonoProjectRoot)wasm\runtime\binding_support.js;
+                       $(MonoProjectRoot)wasm\runtime\dotnet_support.js;
+                       $(MonoProjectRoot)wasm\runtime\library_mono.js;
+                       $(LibrariesProjectRoot)Native\Unix\System.Native\pal_random.js;
+                       $(_IcuLibdir)\libicudata.a;
+                       $(_IcuLibdir)\libicui18n.a;
+                       $(_IcuLibdir)\libicutest.a;
+                       $(_IcuLibdir)\libicutu.a;
+                       $(_IcuLibdir)\libicuuc.a"
           DestinationFolder="$(MicrosoftNetCoreAppRuntimePackNativeDir)"
           SkipUnchangedFiles="true" />
 
