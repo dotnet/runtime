@@ -12304,11 +12304,11 @@ void emitter::emitDispIns(
 
                 if (doffs & 1)
                 {
-                    printf("@RWD%02u", doffs - 1);  // Read/Write data (currently unused)
+                    printf("@RWD%02u", doffs - 1); // Read/Write data (currently unused)
                 }
                 else
                 {
-                    printf("@CNS%02u", doffs);      // Read only data
+                    printf("@CNS%02u", doffs); // Read only data
                 }
 
                 if (imm != 0)
