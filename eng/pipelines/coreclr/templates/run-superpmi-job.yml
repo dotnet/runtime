@@ -18,8 +18,9 @@ parameters:
   liveLibrariesBuildConfig: ''    # optional -- live-live libraries configuration to use for the run
   runtimeType: 'coreclr'          # optional -- Sets the runtime as coreclr or mono
   codeGenType: 'JIT'              # optional -- Decides on the codegen technology if running on mono
-  projectFile: 'superpmi.proj'   # optional -- project file to build helix workitems
+  projectFile: 'superpmi.proj'    # optional -- project file to build helix workitems
   runKind: ''                     # required -- test category
+  collectionName: ''              # required -- name of collection
 
 jobs:
 - template: xplat-pipeline-job.yml
@@ -27,6 +28,7 @@ jobs:
     dependsOn: ${{ parameters.dependsOn }}
     buildConfig: ${{ parameters.buildConfig }}
     archType: ${{ parameters.archType }}
+    collectionName: $ {{ parameters.collectionName }}
     osGroup: ${{ parameters.osGroup }}
     osSubgroup: ${{ parameters.osSubgroup }}
     liveLibrariesBuildConfig: ${{ parameters.liveLibrariesBuildConfig }}
@@ -72,6 +74,12 @@ jobs:
         value: '$(Build.SourcesDirectory)/artifacts/tests/coreclr/${{ parameters.osGroup }}.${{ parameters.archType }}.$(buildConfigUpper)/Tests/Core_Root'
       - name: MchFilesLocation
         value: '$(Build.SourcesDirectory)/artifacts/helixresults/'
+    - ${{ if eq(collectionName, 'libraries') }}:
+      - name: InputDirectory
+        value: '$(Core_Root_Dir)'
+    - ${{ if eq(collectionName, 'tests') }}:
+      - name: InputDirectory
+        value: '$(managedTestArtifactRootFolderPath)'
     workspace:
       clean: all
     pool:
@@ -85,7 +93,7 @@ jobs:
     steps:
     - ${{ parameters.steps }}
   
-    - script: $(PythonScript) $(Build.SourcesDirectory)/src/coreclr/scripts/superpmi-setup.py -source_directory $(Build.SourcesDirectory) -core_root_directory $(Core_Root_Dir) -arch $(archType) -mch_file_tag $(MchFileTag) -libraries_directory $(Core_Root_Dir) -tests_directory $(managedTestArtifactRootFolderPath) -max_size 50 # size in MB
+    - script: $(PythonScript) $(Build.SourcesDirectory)/src/coreclr/scripts/superpmi-setup.py -source_directory $(Build.SourcesDirectory) -core_root_directory $(Core_Root_Dir) -arch $(archType) -mch_file_tag $(MchFileTag) -input_directory $(InputDirectory) -collection_name $(collectionName) -max_size 50 # size in MB
       displayName: ${{ format('SuperPMI setup ({0})', parameters.osGroup) }}
 
       # Run superpmi collection in helix
@@ -103,8 +111,8 @@ jobs:
         ProjectFile: ${{ parameters.projectFile }}
         BuildConfig: ${{ parameters.buildConfig }}
         osGroup: ${{ parameters.osGroup }}
-        LibrariesArtifacts: '$(LibrariesArtifacts)'
-        TestsArtifacts: '$(TestsArtifacts)'
+        InputArtifacts: '$(InputArtifacts)'
+        CollectionName: '${{ collectionName }}'
 
     - task: PublishPipelineArtifact@1
       displayName: Publish SuperPMI collection
