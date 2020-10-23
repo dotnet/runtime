@@ -1,6 +1,7 @@
+name: SPMI_COLLECTION_$(collectionName)
+
 trigger: none
-variables:
-  collectionName: $(collectionName)
+
 pr: none
 
 schedules:
@@ -15,6 +16,7 @@ jobs:
 #
 # Checkout repository
 #
+
 - template: /eng/pipelines/common/checkout-job.yml
 
 - template: /eng/pipelines/common/platform-matrix.yml
