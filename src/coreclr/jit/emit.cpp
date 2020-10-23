@@ -4795,7 +4795,9 @@ unsigned emitter::emitEndCodeGen(Compiler* comp,
     // For x64/x86, align methods that are "optimizations enabled" to 32 byte boundaries if
     // they are larger than 16 bytes and contain a loop.
     //
-    if (emitComp->opts.OptimizationEnabled() && !emitComp->opts.jitFlags->IsSet(JitFlags::JIT_FLAG_PREJIT) &&
+    if (
+        //emitComp->opts.jitFlags->IsSet(JitFlags::JIT_FLAG_TIER1) &&
+        emitComp->opts.OptimizationEnabled() && !emitComp->opts.jitFlags->IsSet(JitFlags::JIT_FLAG_PREJIT) &&
         (emitTotalHotCodeSize > 16) && emitComp->fgHasLoops)
     {
         allocMemFlag = CORJIT_ALLOCMEM_FLG_32BYTE_ALIGN;
@@ -5208,7 +5210,21 @@ unsigned emitter::emitEndCodeGen(Compiler* comp,
 
         for (unsigned cnt = ig->igInsCnt; cnt; cnt--)
         {
+#ifdef DEBUG
+            int oldCp = ((size_t)cp & 0xf0) >> 4;
+#endif
             castto(id, BYTE*) += emitIssue1Instr(ig, id, &cp);
+#ifdef DEBUG
+            
+            if ((emitComp->opts.disAsm || emitComp->verbose) && emitComp->opts.disAddr)
+            {
+                int newCp = ((size_t)cp & 0xf0) >> 4;
+                if ((oldCp != newCp) && ((newCp % 2) == 0))
+                {
+                    printf("; =========================== 32B boundary ===========================\n");
+                }
+            }
+#endif
         }
 
 #ifdef DEBUG

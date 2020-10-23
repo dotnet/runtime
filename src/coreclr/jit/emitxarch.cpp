@@ -2671,6 +2671,27 @@ void emitter::emitLoopAlign()
 
 /*****************************************************************************
  *
+ *  The next instruction will be a loop head entry point
+ *  So insert a dummy instruction here to ensure that
+ *  the x86 I-cache alignment rule is followed.
+ */
+
+void emitter::emitLoopAlign32Bytes()
+{
+    emitLoopAlign();
+    emitLoopAlign();
+
+    /* Insert a pseudo-instruction to ensure that we align
+       the next instruction properly */
+
+    instrDesc* id = emitNewInstrSmall(EA_1BYTE);
+    id->idIns(INS_align);
+    id->idCodeSize(1); // We may need to skip up to 15 bytes of code
+    emitCurIGsize += 1;
+}
+
+/*****************************************************************************
+ *
  *  Add a NOP instruction of the given size.
  */
 
@@ -12598,58 +12619,91 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
             // the loop alignment pseudo instruction
             if (ins == INS_align)
             {
+                // Candidate for loop alignment
+                assert(ig->igFlags & IGF_ALIGN_LOOP);
                 sz = SMALL_IDSC_SIZE;
+
+                if (emitComp->compJitAlignLoopWith32BPadding)
+                {
+                    // If 32B alignment is needed and we are already on 32B boundary
+                    // no need to emit anything.
+                    if (((size_t)dst & 0x1f) == 0)
+                    {
+                        break;
+                    }
+                }
+                else
+                {
+                    // If 16B alignment is needed and we are already on 16B boundary
+                    // no need to emit anything.
+                    if ((((size_t)dst & 0x0f) == 0))
+                    {
+                        break;
+                    }
+                }
 
                 instrDesc* nextId = id;
                 castto(nextId, BYTE*) += sz;
 
-                if (emitComp->compJitAlignLoopWith32BPadding && (nextId->idIns() != INS_align))
+                // If we already know that the code size heuristics won't match,
+                // do not bother checking it again. Same applies for next instruction
+                // if that too is INS_align.
+                if ((id->idCodeSize() == 0))
                 {
-                    // If 32B was alignment was needed and next instruction is not alignment,
-                    // we already handled this while emitting the previous alignment instruction.
-                    // nothing to do now.
+                    if (nextId->idIns() == INS_align)
+                    {
+                        id->idCodeSize(0);
+                    }
                     break;
                 }
 
-                // Candidate for loop alignment
-                if (ig->igFlags & IGF_ALIGN_LOOP)
+                unsigned  totalCodeSize = 0;
+                insGroup* loopHeaderIg  = ig->igNext;
+                for (insGroup* igInLoop = loopHeaderIg; igInLoop; igInLoop = igInLoop->igNext)
                 {
-                    unsigned  totalCodeSize = 0;
-                    insGroup* loopHeaderIg    = ig->igNext;
-                    for (insGroup* igInLoop = loopHeaderIg; igInLoop; igInLoop = igInLoop->igNext)
+                    totalCodeSize += igInLoop->igSize;
+                    if ((igInLoop->igLoopBackEdge == loopHeaderIg) ||
+                        (totalCodeSize > emitComp->compJitAlignLoopMaxCodeSize))
                     {
-                        totalCodeSize += igInLoop->igSize;
-                        if ((igInLoop->igLoopBackEdge == loopHeaderIg) ||
-                            (totalCodeSize > emitComp->compJitAlignLoopMaxCodeSize))
-                        {
-                            break;
-                        }
+                        break;
                     }
+                }
 
-                    // Only align if it matches the heuristics
-                    if (totalCodeSize <= emitComp->compJitAlignLoopMaxCodeSize)
+                // Only align if it matches the heuristics
+                if (totalCodeSize <= emitComp->compJitAlignLoopMaxCodeSize)
+                {
+                    // printf("Aligning loop in %s.\n", emitComp->info.compMethodName);
+                    // TODO: OK if it is close enough to 32B boundary like what if dst is 0xXXXXX21?
+                    // TODO: If the dst + totalCodeSize is within 32B, then no alignment needed.
+                    // TODO: Should we do the alignment only in hotCode and not in coldCodeBlock?
+                    size_t nBytes = (-(int)(size_t)dst) & 0x0f;
+                    dst           = emitOutputNOP(dst, nBytes);
+
+                    if (nextId->idIns() == INS_align)
                     {
-                        //printf("Aligning loop in %s.\n", emitComp->info.compMethodName);
-                        size_t nBytes = (-(int)(size_t)dst) & 0x0f;
-                        dst = emitOutputNOP(dst, nBytes);
-                        
-                        if (nextId->idIns() == INS_align)
-                        {
-                            // If next instruction is also alignment, this better be 32B padding.
-                            assert(emitComp->compJitAlignLoopWith32BPadding);
+                        // If next instruction is also alignment, this better be 32B padding.
+                        assert(emitComp->compJitAlignLoopWith32BPadding);
 
-                            // Align further to 32B boundary, if it is not yet.
-                            if (((size_t)dst & 0x1f) != 0)
-                            {
-                                dst = emitOutputNOP(dst, 1);
-                                dst = emitOutputNOP(dst, 15);
-                            }
-                            assert(((size_t)dst & 0x1f) == 0);
-                        }
-                        else
+                        // Align further to 32B boundary, if it is not yet.
+                        if (((size_t)dst & 0x1f) != 0)
                         {
-                            assert(((size_t)dst & 0x0f) == 0);
+                            dst = emitOutputNOP(dst, 15);
+                            dst = emitOutputNOP(dst, 1);
                         }
+                        assert(((size_t)dst & 0x1f) == 0);
+                    }
+                    else
+                    {
+                        assert(((size_t)dst & 0x0f) == 0);
+                    }
+                }
+                else
+                {
+                    // If next instruction is align, skip it so
+                    // we do not check the heuristics again.
+                    if (nextId->idIns() == INS_align)
+                    {
+                        nextId->idCodeSize(0);
                     }
                 }
 

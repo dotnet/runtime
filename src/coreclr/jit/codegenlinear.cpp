@@ -773,8 +773,11 @@ void CodeGen::genCodeForBBlist()
             {
                 printf("Adding 'align' instruction to align loop header block " FMT_BB, block->bbNext->bbNum);
             }
-            GetEmitter()->emitLoopAlign();
             if (compiler->compJitAlignLoopWith32BPadding)
+            {
+                GetEmitter()->emitLoopAlign32Bytes();
+            }
+            else
             {
                 GetEmitter()->emitLoopAlign();
             }
