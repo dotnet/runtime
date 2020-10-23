@@ -21,15 +21,12 @@ JNI_OnLoad (JavaVM *vm, void *reserved)
 {
     (void)reserved;
     __android_log_write(ANDROID_LOG_INFO, "DOTNET", "JNI_OnLoad in android_security.c");
-    fflush(stdout);
     gJvm = vm;
     return JNI_VERSION_1_6;
 }
 
 static JNIEnv* GetJniEnv()
 {
-    //assert(!gJvm && "JNI_OnLoad wasn't called in android_security.c. Did you call System.loadLibrary() for this lib?");
-
     JNIEnv *env;
     (*gJvm)->GetEnv(gJvm, (void**)&env, JNI_VERSION_1_6);
     if (env)
@@ -46,7 +43,7 @@ int32_t CryptoNative_GetRandomBytes(uint8_t* buff, int32_t len)
     jmethodID randCtor = (*jniEnv)->GetMethodID(jniEnv, randClass, "<init>", "()V");
     jmethodID randNextBytes = (*jniEnv)->GetMethodID(jniEnv, randClass, "nextBytes", "([B)V");
 
-    // Should we cache SecureRandom instance?
+    // TODO: should we cache SecureRandom instance?
     jobject randObj = (*jniEnv)->NewObject(jniEnv, randClass, randCtor);
     jbyteArray buffArray = (*jniEnv)->NewByteArray(jniEnv, len);
     (*jniEnv)->SetByteArrayRegion(jniEnv, buffArray, 0, len, (jbyte*)buff);
@@ -79,7 +76,8 @@ int32_t CryptoNative_EvpDigestOneShot(intptr_t type, void* source, int32_t sourc
     // hashed = md.digest(src);
 
     jclass mdClass = (*jniEnv)->FindClass (jniEnv, "java/security/MessageDigest");
-    jmethodID mdGetInstanceMethodId = (*jniEnv)->GetStaticMethodID(jniEnv, mdClass, "getInstance", "(Ljava/lang/String;)Ljava/security/MessageDigest;");
+    jmethodID mdGetInstanceMethodId = (*jniEnv)->GetStaticMethodID(
+        jniEnv, mdClass, "getInstance", "(Ljava/lang/String;)Ljava/security/MessageDigest;");
     jmethodID mdDigestMethodId = (*jniEnv)->GetMethodID(jniEnv, mdClass, "digest", "([B)[B");
 
     jstring mdName = NULL;
@@ -108,5 +106,37 @@ int32_t CryptoNative_EvpDigestOneShot(intptr_t type, void* source, int32_t sourc
     (*jniEnv)->GetByteArrayRegion(jniEnv, hashedBytes, 0, hashedBytesLen, (jbyte*) md);
     *mdSize = (uint32_t)hashedBytesLen;
 
+    __android_log_write(ANDROID_LOG_INFO, "DOTNET", "EGORKA");
+    // TODO: should we delete all locals by hands here?
+
     return SUCCESS;
 }
+
+
+// TODO: implement these for Stream/Async Hashing APIs
+
+/*
+intptr_t CryptoNative_EvpMdCtxCreate(intptr_t type)
+{
+    return type;
+}
+
+void CryptoNative_EvpMdCtxDestroy(intptr_t ctx)
+{
+}
+
+int32_t CryptoNative_EvpDigestReset(intptr_t ctx, intptr_t type)
+{
+    return -1;
+}
+
+int32_t CryptoNative_EvpDigestUpdate(intptr_t ctx, const void* d, int32_t cnt)
+{
+    return -1;
+}
+
+int32_t CryptoNative_EvpDigestFinalEx(intptr_t ctx, uint8_t* md, uint32_t* s)
+{
+    return -1;
+}
+*/

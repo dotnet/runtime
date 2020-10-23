@@ -1022,7 +1022,7 @@ int32_t CryptoNative_PushX509StackField(STACK_OF(X509) * stack, X509* x509)
     return sk_X509_push(stack, x509);
 }
 
-#ifndef TARGET_ANDROID
+#ifndef USE_ANDROID_CRYPTO
 /*
 Function:
 GetRandomBytes

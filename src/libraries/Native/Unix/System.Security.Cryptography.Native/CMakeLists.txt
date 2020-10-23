@@ -68,10 +68,15 @@ set(NATIVECRYPTO_SOURCES
     pal_x509ext.c
 )
 
-if (CLR_CMAKE_TARGET_ANDROID)
+# uncomment to use Android SDK instead of OpenSSL where possible
+# set(USE_ANDROID_CRYPTO 1)
+
+if (CLR_CMAKE_TARGET_ANDROID AND USE_ANDROID_CRYPTO)
     list(APPEND NATIVECRYPTO_SOURCES
     android_security.c
     )
+
+    add_definitions(-DUSE_ANDROID_CRYPTO)
 endif()
 
 # Always build portable on macOS because OpenSSL is not a system component
@@ -129,7 +134,7 @@ else()
     )
 endif()
 
-if (CLR_CMAKE_TARGET_ANDROID)
+if (CLR_CMAKE_TARGET_ANDROID AND USE_ANDROID_CRYPTO)
     target_link_libraries(System.Security.Cryptography.Native.OpenSsl
     -llog
     )

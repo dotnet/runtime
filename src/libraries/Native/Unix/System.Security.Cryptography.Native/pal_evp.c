@@ -93,7 +93,7 @@ int32_t CryptoNative_EvpDigestCurrent(const EVP_MD_CTX* ctx, uint8_t* md, uint32
     return 0;
 }
 
-#ifndef TARGET_ANDROID
+#ifndef USE_ANDROID_CRYPTO
 
 int32_t CryptoNative_EvpDigestOneShot(const EVP_MD* type, const void* source, int32_t sourceSize, uint8_t* md, uint32_t* mdSize)
 {
