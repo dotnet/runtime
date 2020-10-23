@@ -155,14 +155,10 @@ namespace System.Net.Security.Tests
                 {
                     Task t1 = Assert.ThrowsAsync<AuthenticationException>(() => clientStream.AuthenticateAsClientAsync(TestAuthenticateAsync, clientOptions));
 
-                    try
-                    {
-                        await serverStream.AuthenticateAsServerAsync(TestAuthenticateAsync, serverOptions);
-                        Assert.True(false, "AuthenticationException was not thrown.");
-                    }
-                    catch (AuthenticationException) { serverStream.Dispose(); }
+                    await Assert.ThrowsAsync<AuthenticationException>(() => serverStream.AuthenticateAsServerAsync(TestAuthenticateAsync, serverOptions));
+                    serverStream.Dispose();
 
-                    await TestConfiguration.WhenAllOrAnyFailedWithTimeout(t1);
+                    await t1.TimeoutAfter(TestConfiguration.PassingTestTimeoutMilliseconds);
                 }
                 else
                 {
