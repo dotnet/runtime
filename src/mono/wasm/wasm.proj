@@ -61,6 +61,7 @@
       <TimeZoneToCompile Include="europe" />
       <TimeZoneToCompile Include="northamerica" />
       <TimeZoneToCompile Include="southamerica" />
+      <TimeZoneToCompile Include="backward" />
     </ItemGroup>
     <CompileTimeZoneData
       TimeZones="@(TimeZoneToCompile)"
