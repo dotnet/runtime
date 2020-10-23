@@ -28,6 +28,9 @@ namespace Microsoft.Interop
                 return;
             }
 
+            // Fire the start/stop pair for source generation
+            using var _ = Diagnostics.Events.SourceGenerationStartStop(synRec.Methods.Count);
+
             // Store a mapping between SyntaxTree and SemanticModel.
             // SemanticModels cache results and since we could be looking at
             // method declarations in the same SyntaxTree we want to benefit from
