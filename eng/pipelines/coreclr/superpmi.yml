@@ -1,4 +1,4 @@
-name: SPMI_COLLECTION_$(collectionName)
+name: superpmi-collection for $(collectionName)
 
 trigger: none
 
@@ -11,6 +11,9 @@ schedules:
     include:
     - master
   always: true
+
+variables:
+- spmiCollectionName: $(collectionName)
 
 jobs:
 #
@@ -40,7 +43,7 @@ jobs:
   parameters:
     jobTemplate: /eng/pipelines/common/templates/runtimes/build-test-job.yml
     buildConfig: checked
-    condition: ${{ eq(variables.collectionName, 'tests') }}
+    condition: ${{ eq(variables.spmiCollectionName, 'tests') }}
     platforms:
     - CoreClrTestBuildHost # Either OSX_x64 or Linux_x64
     jobParameters:
