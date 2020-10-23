@@ -62,7 +62,7 @@ class OffsetsTool:
 		parser.add_argument ('--targetdir', dest='target_path', help='path to mono tree configured for target', required=True)
 		parser.add_argument ('--abi=', dest='abi', help='ABI triple to generate', required=True)
 		parser.add_argument ('--sysroot=', dest='sysroot', help='path to sysroot headers of target')
-		parser.add_argument ('--include-prefix=', dest='include_prefix', action='append', help='prefix path to include directory of target')
+		parser.add_argument ('--prefix=', dest='prefixes', action='append', help='prefix path to include directory of target')
 		parser.add_argument ('--netcore', dest='netcore', help='target runs with netcore', action='store_true')
 		args = parser.parse_args ()
 
@@ -94,13 +94,13 @@ class OffsetsTool:
 			self.target_args += ["--target=arm---gnueabihf"]
 			self.target_args += ["-I", args.sysroot + "/include"]
 
-			if args.include_prefix:
-				for prefix in args.include_prefix:
-					if not os.path.isdir (args.include_prefix):
-						print ("provided path via --include-prefix (\"" + args.include_prefix + "\") doesn't exist.", file=sys.stderr)
+			if args.prefixes:
+				for prefix in args.prefixes:
+					if not os.path.isdir (prefix):
+						print ("provided path via --prefix (\"" + prefix + "\") doesn't exist.", file=sys.stderr)
 						sys.exit (1)
-					self.target_args += ["-I", args.include_prefix + "/include"]
-					self.target_args += ["-I", args.include_prefix + "/include-fixed"]
+					self.target_args += ["-I", prefix + "/include"]
+					self.target_args += ["-I", prefix + "/include-fixed"]
 			else:
 				found = False
 				for i in range (11, 5, -1):
@@ -113,7 +113,7 @@ class OffsetsTool:
 					break
 
 				if not found:
-					print ("could not find a valid include path for target, provide one via --include-prefix=<path>.", file=sys.stderr)
+					print ("could not find a valid include path for target, provide one via --prefix=<path>.", file=sys.stderr)
 					sys.exit (1)
 
 		elif "aarch64-linux-gnu" == args.abi:
@@ -122,10 +122,10 @@ class OffsetsTool:
 			self.target_args += ["--target=aarch64-linux-gnu"]
 			self.target_args += ["--sysroot", args.sysroot]
 			self.target_args += ["-I", args.sysroot + "/include"]
-			if args.include_prefix:
-				for prefix in args.include_prefix:
+			if args.prefixes:
+				for prefix in args.prefixes:
 					if not os.path.isdir (prefix):
-						print ("provided path via --include-prefix (\"" + args.include_prefix + "\") doesn't exist.", file=sys.stderr)
+						print ("provided path via --prefix (\"" + prefix + "\") doesn't exist.", file=sys.stderr)
 						sys.exit (1)
 					self.target_args += ["-I", prefix + "/include"]
 					self.target_args += ["-I", prefix + "/include-fixed"]

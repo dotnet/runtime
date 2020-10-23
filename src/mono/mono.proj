@@ -336,7 +336,7 @@
       <MonoUseCrossTool>true</MonoUseCrossTool>
       <MonoAotAbi>aarch64-linux-gnu</MonoAotAbi>
       <MonoAotOffsetsFile>$(MonoObjDir)cross/offsets-aarch-linux-gnu.h</MonoAotOffsetsFile>
-      <MonoAotIncludePrefix>$(MonoCrossDir)/usr/lib/gcc/aarch64-linux-gnu/5</MonoAotIncludePrefix>
+      <MonoAotOffsetsPrefix>$(MonoCrossDir)/usr/lib/gcc/aarch64-linux-gnu/5</MonoAotOffsetsPrefix>
     </PropertyGroup>
 
     <!-- WASM specific options -->
@@ -359,7 +359,7 @@
       <MonoAotCrossOffsetsToolParams Include="--monodir=&quot;$(MonoProjectRoot)&quot;" />
       <MonoAotCrossOffsetsToolParams Include="--outfile=&quot;$(MonoAotOffsetsFile)&quot;" />
       <MonoAotCrossOffsetsToolParams Include="--libclang=&quot;$(MonoLibClang)&quot;" />
-      <MonoAotCrossOffsetsToolParams Condition="'$(MonoAotIncludePrefix)' != ''" Include="--include-prefix=&quot;$(MonoAotIncludePrefix)&quot;" />
+      <MonoAotCrossOffsetsToolParams Condition="'$(MonoAotOffsetsPrefix)' != ''" Include="--prefix=&quot;$(MonoAotOffsetsPrefix)&quot;" />
       <MonoAotCrossOffsetsToolParams Condition="'$(MonoCMakeSysroot)' != ''" Include="--sysroot=&quot;$(MonoCMakeSysroot)&quot;" />
       <MonoAotCrossOffsetsToolParams Condition="'$(TargetsBrowser)' == 'true'" Include="--emscripten-sdk=&quot;$(EMSDK_PATH)/upstream/emscripten&quot;" />
     </ItemGroup>
@@ -400,17 +400,19 @@
 
   <!-- General targets -->
   <Target Name="BuildMono" AfterTargets="Build" DependsOnTargets="CheckEnv;BuildMonoRuntimeUnix;BuildMonoCrossUnix;BuildMonoRuntimeWindows">
-    <PropertyGroup>
-      <_MonoRuntimeFilePath Condition="'$(BuildMonoAOTCrossCompilerOnly)' != 'true' and '$(TargetsWindows)' == 'true' and '$(Platform)' == 'x64'">$(MonoObjDir)x64\Bin\$(Configuration)\mono-2.0-sgen.dll</_MonoRuntimeFilePath>
-      <_MonoRuntimeFilePath Condition="'$(BuildMonoAOTCrossCompilerOnly)' != 'true' and '$(TargetsWindows)' == 'true' and '$(Platform)' == 'x86'">$(MonoObjDir)Win32\Bin\$(Configuration)\mono-2.0-sgen.dll</_MonoRuntimeFilePath>
-      <_MonoRuntimeFilePath Condition="'$(BuildMonoAOTCrossCompilerOnly)' != 'true' and '$(TargetsOSX)' == 'true'">$(MonoObjDir)out\lib\libmonosgen-2.0.dylib</_MonoRuntimeFilePath>
-      <_MonoRuntimeFilePath Condition="'$(BuildMonoAOTCrossCompilerOnly)' != 'true' and '$(TargetsiOS)' == 'true'">$(MonoObjDir)out\lib\libmonosgen-2.0.dylib</_MonoRuntimeFilePath>
-      <_MonoRuntimeFilePath Condition="'$(BuildMonoAOTCrossCompilerOnly)' != 'true' and '$(TargetstvOS)' == 'true'">$(MonoObjDir)out\lib\libmonosgen-2.0.dylib</_MonoRuntimeFilePath>
-      <_MonoRuntimeFilePath Condition="'$(BuildMonoAOTCrossCompilerOnly)' != 'true' and '$(TargetsAndroid)' == 'true'">$(MonoObjDir)out\lib\libmonosgen-2.0.so</_MonoRuntimeFilePath>
-      <_MonoRuntimeFilePath Condition="'$(BuildMonoAOTCrossCompilerOnly)' != 'true' and '$(TargetsBrowser)' == 'true'">$(MonoObjDir)out\lib\libmonosgen-2.0.a</_MonoRuntimeFilePath>
-      <_MonoRuntimeFilePath Condition="'$(BuildMonoAOTCrossCompilerOnly)' != 'true' and '$(_MonoRuntimeFilePath)' == ''">$(MonoObjDir)mono\mini\.libs\libmonosgen-2.0.so</_MonoRuntimeFilePath>
-      <_MonoRuntimeStaticFilePath Condition="'$(BuildMonoAOTCrossCompilerOnly)' != 'true' and ('$(TargetsiOS)' == 'true' or '$(TargetstvOS)' == 'true' or '$(TargetsAndroid)' == 'true')">$(MonoObjDir)out\lib\libmonosgen-2.0.a</_MonoRuntimeStaticFilePath>
-      <_MonoAotCrossFilePath Condition="'$(BuildMonoAOTCrossCompiler)' == 'true'">$(MonoObjDir)cross\out\bin\mono-sgen</_MonoAotCrossFilePath>
+    <PropertyGroup Condition="'$(BuildMonoAOTCrossCompilerOnly)' != 'true'">
+      <_MonoRuntimeFilePath Condition="'$(TargetsWindows)' == 'true' and '$(Platform)' == 'x64'">$(MonoObjDir)x64\Bin\$(Configuration)\mono-2.0-sgen.dll</_MonoRuntimeFilePath>
+      <_MonoRuntimeFilePath Condition="'$(TargetsWindows)' == 'true' and '$(Platform)' == 'x86'">$(MonoObjDir)Win32\Bin\$(Configuration)\mono-2.0-sgen.dll</_MonoRuntimeFilePath>
+      <_MonoRuntimeFilePath Condition="'$(TargetsOSX)' == 'true'">$(MonoObjDir)out\lib\libmonosgen-2.0.dylib</_MonoRuntimeFilePath>
+      <_MonoRuntimeFilePath Condition="'$(TargetsiOS)' == 'true'">$(MonoObjDir)out\lib\libmonosgen-2.0.dylib</_MonoRuntimeFilePath>
+      <_MonoRuntimeFilePath Condition="'$(TargetstvOS)' == 'true'">$(MonoObjDir)out\lib\libmonosgen-2.0.dylib</_MonoRuntimeFilePath>
+      <_MonoRuntimeFilePath Condition="'$(TargetsAndroid)' == 'true'">$(MonoObjDir)out\lib\libmonosgen-2.0.so</_MonoRuntimeFilePath>
+      <_MonoRuntimeFilePath Condition="'$(TargetsBrowser)' == 'true'">$(MonoObjDir)out\lib\libmonosgen-2.0.a</_MonoRuntimeFilePath>
+      <_MonoRuntimeFilePath Condition="'$(_MonoRuntimeFilePath)' == ''">$(MonoObjDir)mono\mini\.libs\libmonosgen-2.0.so</_MonoRuntimeFilePath>
+      <_MonoRuntimeStaticFilePath Condition="'$(TargetsiOS)' == 'true' or '$(TargetstvOS)' == 'true' or '$(TargetsAndroid)' == 'true'">$(MonoObjDir)out\lib\libmonosgen-2.0.a</_MonoRuntimeStaticFilePath>
+    </PropertyGroup>
+    <PropertyGroup Condition="'$(BuildMonoAOTCrossCompiler)' == 'true'">
+      <_MonoAotCrossFilePath >$(MonoObjDir)cross\out\bin\mono-sgen</_MonoAotCrossFilePath>
     </PropertyGroup>
 
     <!-- Copy Mono runtime files to artifacts directory -->
