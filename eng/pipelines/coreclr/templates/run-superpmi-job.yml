@@ -72,10 +72,10 @@ jobs:
         value: '$(Build.SourcesDirectory)/artifacts/tests/coreclr/${{ parameters.osGroup }}.${{ parameters.archType }}.$(buildConfigUpper)/Tests/Core_Root'
       - name: MchFilesLocation
         value: '$(Build.SourcesDirectory)/artifacts/helixresults/'
-    - ${{ if eq(variables['collectionName'], 'libraries') }}:
+    - ${{ if eq($[variables.collectionName], 'libraries') }}:
       - name: InputDirectory
         value: '$(Core_Root_Dir)'
-    - ${{ if eq(variables['collectionName'], 'tests') }}:
+    - ${{ if eq($[variables.collectionName], 'tests') }}:
       - name: InputDirectory
         value: '$(managedTestArtifactRootFolderPath)'
     workspace:
