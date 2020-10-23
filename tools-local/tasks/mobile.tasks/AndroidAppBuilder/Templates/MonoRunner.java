@@ -9,6 +9,7 @@ import android.content.pm.PackageInfo;
 import android.content.pm.PackageManager;
 import android.content.res.AssetManager;
 import android.os.Bundle;
+import android.os.Looper;
 import android.util.Log;
 import android.view.View;
 import android.app.Activity;
@@ -32,6 +33,7 @@ public class MonoRunner extends Instrumentation
     }
 
     static String entryPointLibName = "%EntryPointLibName%";
+    static Bundle result = new Bundle();
 
     @Override
     public void onCreate(Bundle arguments) {
@@ -62,13 +64,13 @@ public class MonoRunner extends Instrumentation
         // unzip libs and test files to filesDir
         unzipAssets(context, filesDir, "assets.zip");
 
-        Log.i("DOTNET", "initRuntime, entryPointLibName=" + entryPointLibName);
+        Log.i("DOTNET", "MonoRunner initialize, entryPointLibName=" + entryPointLibName);
         return initRuntime(filesDir, cacheDir, docsDir, entryPointLibName);
     }
 
     @Override
     public void onStart() {
-        super.onStart();
+        Looper.prepare();
 
         if (entryPointLibName == "") {
             Log.e("DOTNET", "Missing entryPointLibName argument, pass '-e entryPointLibName <name.dll>' to adb to specify which program to run.");
@@ -76,19 +78,18 @@ public class MonoRunner extends Instrumentation
             return;
         }
         int retcode = initialize(entryPointLibName, getContext());
-        runOnMainSync(new Runnable() {
-            public void run() {
-                Bundle result = new Bundle();
-                result.putInt("return-code", retcode);
 
-                // Xharness cli expects "test-results-path" with test results
-                File testResults = new File(getDocsDir(getContext()) + "/testResults.xml");
-                if (testResults.exists()) {
-                    result.putString("test-results-path", testResults.getAbsolutePath());
-                }
-                finish(retcode, result);
-            }
-        });
+        Log.i("DOTNET", "MonoRunner finished, return-code=" + retcode);
+        result.putInt("return-code", retcode);
+
+        // Xharness cli expects "test-results-path" with test results
+        File testResults = new File(getDocsDir(getContext()) + "/testResults.xml");
+        if (testResults.exists()) {
+            Log.i("DOTNET", "MonoRunner finished, test-results-path=" + testResults.getAbsolutePath());
+            result.putString("test-results-path", testResults.getAbsolutePath());
+        }
+
+        finish(retcode, result);
     }
 
     static void unzipAssets(Context context, String toPath, String zipName) {
