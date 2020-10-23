@@ -1,6 +1,8 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+#nullable disable
+
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -20,7 +22,7 @@ public class SingleFileTestRunner : XunitTestFramework
     public static int Main(string[] args)
     {
         var asm = typeof(SingleFileTestRunner).Assembly;
-        Console.WriteLine(asm.FullName);
+        Console.WriteLine("Running assembly:" + asm.FullName);
 
         var diagnosticSink = new ConsoleDiagnosticMessageSink();
         var testsFinished = new TaskCompletionSource();
@@ -35,7 +37,7 @@ public class SingleFileTestRunner : XunitTestFramework
         testSink.Execution.TestSkippedEvent += args => { Console.WriteLine($"[SKIP] {args.Message.Test.DisplayName}"); };
         testSink.Execution.TestFailedEvent += args => { Console.WriteLine($"[FAIL] {args.Message.Test.DisplayName}{Environment.NewLine}{Xunit.ExceptionUtility.CombineMessages(args.Message)}{Environment.NewLine}{Xunit.ExceptionUtility.CombineStackTraces(args.Message)}"); };
 
-        testSink.Execution.TestAssemblyStartingEvent += args => { Console.WriteLine($"Running tests for {args.Message.TestAssembly.Assembly}"); };
+        //testSink.Execution.TestAssemblyStartingEvent += args => { Console.WriteLine($"Running tests for {args.Message.TestAssembly.Assembly}"); };
         testSink.Execution.TestAssemblyFinishedEvent += args =>
         {
             Console.WriteLine($"Finished {args.Message.TestAssembly.Assembly}{Environment.NewLine}");
@@ -62,7 +64,7 @@ internal class ConsoleDiagnosticMessageSink : IMessageSink
     {
         if (message is IDiagnosticMessage diagnosticMessage)
         {
-            Console.WriteLine(diagnosticMessage.Message);
+            //Console.WriteLine(diagnosticMessage.Message);
             return true;
         }
         return false;

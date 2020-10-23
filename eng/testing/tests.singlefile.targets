@@ -2,6 +2,8 @@
   <PropertyGroup>
     <OutputType>Exe</OutputType>
 
+    <BundleDir>$([MSBuild]::NormalizeDirectory('$(OutDir)', 'publish'))</BundleDir>
+    <RunScriptOutputPath>$([MSBuild]::NormalizePath('$(BundleDir)', '$(RunScriptOutputName)'))</RunScriptOutputPath>
     <PublishSingleFile>true</PublishSingleFile>
     <UseAppHost>true</UseAppHost>
     <RuntimeIdentifier>$(PackageRID)</RuntimeIdentifier>

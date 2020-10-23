@@ -5,7 +5,7 @@
     <UseXunitExcludesTxtFile Condition="'$(TargetOS)' == 'Android' or '$(TargetOS)' == 'iOS' or '$(TargetOS)' == 'iOSSimulator' or '$(TargetOS)' == 'tvOS' or '$(TargetOS)' == 'tvOSSimulator'">true</UseXunitExcludesTxtFile>
   </PropertyGroup>
 
-  <PropertyGroup Condition="'$(TargetsMobile)' != 'true'">
+  <PropertyGroup Condition="'$(TargetsMobile)' != 'true' and '$(TestSingleFile)' != 'true'">
     <_depsFileArgument Condition="'$(GenerateDependencyFile)' == 'true'">--depsfile $(AssemblyName).deps.json</_depsFileArgument>
     <RunScriptCommand Condition="'$(TargetFrameworkIdentifier)' == '.NETCoreApp'">"$(RunScriptHost)" exec --runtimeconfig $(AssemblyName).runtimeconfig.json $(_depsFileArgument) xunit.console.dll</RunScriptCommand>
     <RunScriptCommand Condition="'$(TargetFrameworkIdentifier)' == '.NETFramework'">xunit.console.exe</RunScriptCommand>
@@ -19,7 +19,15 @@
     <RunScriptCommand Condition="'$(XUnitShowProgress)' == 'true'">$(RunScriptCommand) -verbose</RunScriptCommand>
   </PropertyGroup>
 
+<<<<<<< HEAD
   <PropertyGroup Condition="'$(UseXunitExcludesTxtFile)' != 'true'">
+=======
+  <PropertyGroup Condition="'$(TestSingleFile)' == 'true'">
+    <RunScriptCommand>$(AssemblyName).exe</RunScriptCommand>
+  </PropertyGroup>
+
+  <PropertyGroup>
+>>>>>>> d5386cf2b45 (Opt-in specific libraries for single-file testing support)
     <!-- Add local and global options to the argument stack. -->
     <RunScriptCommand Condition="'$(XUnitMethodName)' != ''">$(RunScriptCommand) -method $(XUnitMethodName)</RunScriptCommand>
     <RunScriptCommand Condition="'$(XUnitClassName)' != ''">$(RunScriptCommand) -class $(XUnitClassName)</RunScriptCommand>

@@ -12,7 +12,7 @@
     <TestPackages Condition="'$(TestPackages)' == ''">false</TestPackages>
     <TestTrimming Condition="'$(TestTrimming)' == ''">false</TestTrimming>
   </PropertyGroup>
-  
+
   <!-- Projects that don't support code coverage measurement. -->
   <ItemGroup Condition="'$(Coverage)' == 'true'">
     <ProjectExclusions Include="$(CommonTestPath)Common.Tests.csproj" />
@@ -321,9 +321,14 @@
   </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="$(MSBuildThisFileDirectory)System.Collections\tests\System.Collections.Tests.csproj"
+                      Condition="'$(TestAssemblies)' == 'true' and '$(TestSingleFile)' == 'true'" />
+  </ItemGroup>
+
+  <ItemGroup>
     <ProjectReference Include="$(MSBuildThisFileDirectory)*\tests\**\*.Tests.csproj"
                       Exclude="@(ProjectExclusions)"
-                      Condition="'$(TestAssemblies)' == 'true'" />
+                      Condition="'$(TestAssemblies)' == 'true' and '$(TestSingleFile)' != 'true'" />
     <ProjectReference Include="$(MSBuildThisFileDirectory)pkg\test\testPackages.proj"
                       Condition="'$(TestPackages)' == 'true'" />
     <TrimmingTestProjects Include="$(MSBuildThisFileDirectory)*\tests\**\*.TrimmingTests.proj"
