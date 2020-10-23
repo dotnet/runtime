@@ -2322,7 +2322,10 @@ namespace System.Tests
         }
 
         [Theory]
+<<<<<<< HEAD
         [PlatformSpecific(TestPlatforms.AnyUnix)]
+=======
+>>>>>>> d12955cfce8... add tests to check for backwards compatibility
         [InlineData("America/Buenos_Aires", "America/Argentina/Buenos_Aires")]
         [InlineData("America/Catamarca", "America/Argentina/Catamarca")]
         [InlineData("America/Cordoba", "America/Argentina/Cordoba")]
@@ -2350,7 +2353,6 @@ namespace System.Tests
         {
             TimeZoneInfo.ClearCachedData();
             Environment.SetEnvironmentVariable("TZ", id);
-
             TimeZoneInfo localtz = TimeZoneInfo.Local;
             TimeZoneInfo tz = TimeZoneInfo.FindSystemTimeZoneById(id);
 
