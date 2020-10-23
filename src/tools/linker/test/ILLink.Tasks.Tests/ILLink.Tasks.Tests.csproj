@@ -14,6 +14,8 @@
   <ItemGroup>
     <ProjectReference Include="..\..\src\ILLink.Tasks\ILLink.Tasks.csproj" />
     <ProjectReference Include="..\..\src\linker\Mono.Linker.csproj" />
+    <ProjectReference Condition="'$(UseCecilPackage)' != 'true'" Include="../../external/cecil/Mono.Cecil.csproj" PrivateAssets="All" />
+    <ProjectReference Condition="('$(UseCecilPackage)' != 'true') And ('$(TargetFramework)' != 'net472')" Include="../../external/cecil/symbols/pdb/Mono.Cecil.Pdb.csproj" PrivateAssets="All" />
   </ItemGroup>
 
 </Project>
