@@ -353,24 +353,46 @@ namespace System.Threading
         [MethodImpl(MethodImplOptions.InternalCall)]
         private static extern long GetPendingUnmanagedWorkItemCount();
 
-        private static void RegisterWaitForSingleObjectCore(WaitHandle waitObject, RegisteredWaitHandle registeredWaitHandle)
+        private static RegisteredWaitHandle RegisterWaitForSingleObject(
+             WaitHandle? waitObject,
+             WaitOrTimerCallback? callBack,
+             object? state,
+             uint millisecondsTimeOutInterval,
+             bool executeOnlyOnce,
+             bool flowExecutionContext)
         {
+
+            if (waitObject == null)
+                throw new ArgumentNullException(nameof(waitObject));
+
+            if (callBack == null)
+                throw new ArgumentNullException(nameof(callBack));
+
+            RegisteredWaitHandle registeredWaitHandle = new RegisteredWaitHandle(
+                waitObject,
+                new _ThreadPoolWaitOrTimerCallback(callBack, state, flowExecutionContext),
+                (int)millisecondsTimeOutInterval,
+                !executeOnlyOnce);
+
             registeredWaitHandle.OnBeforeRegister();
 
             if (UsePortableThreadPool)
             {
                 PortableThreadPool.ThreadPoolInstance.RegisterWaitHandle(registeredWaitHandle);
-                return;
+            }
+            else
+            {
+                IntPtr nativeRegisteredWaitHandle =
+                    RegisterWaitForSingleObjectNative(
+                        waitObject,
+                        registeredWaitHandle.Callback,
+                        (uint)registeredWaitHandle.TimeoutDurationMs,
+                        !registeredWaitHandle.Repeating,
+                        registeredWaitHandle);
+                registeredWaitHandle.SetNativeRegisteredWaitHandle(nativeRegisteredWaitHandle);
             }
 
-            IntPtr nativeRegisteredWaitHandle =
-                RegisterWaitForSingleObjectNative(
-                    waitObject,
-                    registeredWaitHandle.Callback,
-                    (uint)registeredWaitHandle.TimeoutDurationMs,
-                    !registeredWaitHandle.Repeating,
-                    registeredWaitHandle);
-            registeredWaitHandle.SetNativeRegisteredWaitHandle(nativeRegisteredWaitHandle);
+            return registeredWaitHandle;
         }
 
         internal static void UnsafeQueueWaitCompletion(CompleteWaitThreadPoolWorkItem completeWaitWorkItem)

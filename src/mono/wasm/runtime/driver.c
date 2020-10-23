@@ -213,7 +213,8 @@ mono_wasm_assembly_already_added (const char *assembly_name)
 
 	WasmAssembly *entry = assemblies;
 	while (entry != NULL) {
-		if (strlen(entry->assembly.name - 4) == strlen(assembly_name) && strncmp (entry->assembly.name, assembly_name, strlen(entry->assembly.name - 4)) == 0)
+		int entry_name_minus_extn_len = strlen(entry->assembly.name) - 4;
+		if (entry_name_minus_extn_len == strlen(assembly_name) && strncmp (entry->assembly.name, assembly_name, entry_name_minus_extn_len) == 0)
 			return 1;
 		entry = entry->next;
 	}

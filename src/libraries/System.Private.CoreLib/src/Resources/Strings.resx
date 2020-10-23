@@ -3359,7 +3359,7 @@
     <value>The specified TaskContinuationOptions excluded all continuation kinds.</value>
   </data>
   <data name="Task_Delay_InvalidDelay" xml:space="preserve">
-    <value>The value needs to translate in milliseconds to -1 (signifying an infinite timeout), 0 or a positive integer less than or equal to Int32.MaxValue.</value>
+    <value>The value needs to translate in milliseconds to -1 (signifying an infinite timeout), 0 or a positive integer less than or equal to the maximum allowed timer duration.</value>
   </data>
   <data name="Task_Delay_InvalidMillisecondsDelay" xml:space="preserve">
     <value>The value needs to be either -1 (signifying an infinite timeout), 0 or a positive integer.</value>

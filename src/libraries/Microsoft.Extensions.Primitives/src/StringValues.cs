@@ -5,9 +5,9 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Numerics.Hashing;
 using System.Runtime.CompilerServices;
 using System.Text;
-using Microsoft.Extensions.Internal;
 
 namespace Microsoft.Extensions.Primitives
 {
@@ -740,12 +740,12 @@ namespace Microsoft.Extensions.Primitives
                 {
                     return Unsafe.As<string>(this[0])?.GetHashCode() ?? Count.GetHashCode();
                 }
-                var hcc = default(HashCodeCombiner);
+                int hashCode = 0;
                 for (int i = 0; i < values.Length; i++)
                 {
-                    hcc.Add(values[i]);
+                    hashCode = HashHelpers.Combine(hashCode, values[i]?.GetHashCode() ?? 0);
                 }
-                return hcc.CombinedHash;
+                return hashCode;
             }
             else
             {

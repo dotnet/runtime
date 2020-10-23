@@ -63,10 +63,10 @@ namespace ILCompiler.DependencyAnalysis
         private bool _generateMapCsvFile;
 
         /// <summary>
-        /// If non-null, the PE file will be laid out such that it can naturally be mapped with a higher alignment than 4KB
-        /// This is used to support loading via large pages on Linux
+        /// If non-zero, the PE file will be laid out such that it can naturally be mapped with a higher alignment than 4KB.
+        /// This is used to support loading via large pages on Linux.
         /// </summary>
-        private readonly int? _customPESectionAlignment;
+        private readonly int _customPESectionAlignment;
 
 
 #if DEBUG
@@ -87,7 +87,7 @@ namespace ILCompiler.DependencyAnalysis
         Dictionary<string, NodeInfo> _previouslyWrittenNodeNames = new Dictionary<string, NodeInfo>();
 #endif
 
-        public ReadyToRunObjectWriter(string objectFilePath, EcmaModule componentModule, IEnumerable<DependencyNode> nodes, NodeFactory factory, bool generateMapFile, bool generateMapCsvFile, int? customPESectionAlignment)
+        public ReadyToRunObjectWriter(string objectFilePath, EcmaModule componentModule, IEnumerable<DependencyNode> nodes, NodeFactory factory, bool generateMapFile, bool generateMapCsvFile, int customPESectionAlignment)
         {
             _objectFilePath = objectFilePath;
             _componentModule = componentModule;
@@ -322,7 +322,7 @@ namespace ILCompiler.DependencyAnalysis
             r2rPeBuilder.AddObjectData(data, section, name, mapFileBuilder);
         }
 
-        public static void EmitObject(string objectFilePath, EcmaModule componentModule, IEnumerable<DependencyNode> nodes, NodeFactory factory, bool generateMapFile, bool generateMapCsvFile, int? customPESectionAlignment)
+        public static void EmitObject(string objectFilePath, EcmaModule componentModule, IEnumerable<DependencyNode> nodes, NodeFactory factory, bool generateMapFile, bool generateMapCsvFile, int customPESectionAlignment)
         {
             Console.WriteLine($@"Emitting R2R PE file: {objectFilePath}");
             ReadyToRunObjectWriter objectWriter = new ReadyToRunObjectWriter(objectFilePath, componentModule, nodes, factory, generateMapFile, generateMapCsvFile, customPESectionAlignment);

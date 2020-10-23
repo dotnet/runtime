@@ -368,6 +368,29 @@ namespace System.Net.Security.Tests
                 await Assert.ThrowsAnyAsync<OperationCanceledException>(() => t);
             }
         }
+
+        [ConditionalFact(nameof(IsNtlmInstalled))]
+        public async Task NegotiateStream_ReadToEof_Returns0()
+        {
+            (Stream stream1, Stream stream2) = TestHelper.GetConnectedStreams();
+            using (var client = new NegotiateStream(stream1))
+            using (var server = new NegotiateStream(stream2))
+            {
+                await TestConfiguration.WhenAllOrAnyFailedWithTimeout(
+                    AuthenticateAsClientAsync(client, CredentialCache.DefaultNetworkCredentials, string.Empty),
+                    AuthenticateAsServerAsync(server));
+
+                client.Write(Encoding.UTF8.GetBytes("hello"));
+                client.Dispose();
+
+                Assert.Equal('h', server.ReadByte());
+                Assert.Equal('e', server.ReadByte());
+                Assert.Equal('l', server.ReadByte());
+                Assert.Equal('l', server.ReadByte());
+                Assert.Equal('o', server.ReadByte());
+                Assert.Equal(-1, server.ReadByte());
+            }
+        }
     }
 
     public sealed class NegotiateStreamStreamToStreamTest_Async_Array : NegotiateStreamStreamToStreamTest
