@@ -12,9 +12,6 @@ schedules:
     - master
   always: true
 
-variables:
-- spmiCollectionName: $(collectionName)
-
 jobs:
 #
 # Checkout repository
@@ -43,7 +40,7 @@ jobs:
   parameters:
     jobTemplate: /eng/pipelines/common/templates/runtimes/build-test-job.yml
     buildConfig: checked
-    condition: ${{ eq(variables.spmiCollectionName, 'tests') }}
+    condition: $[eq(variables.collectionName, 'tests')]
     platforms:
     - CoreClrTestBuildHost # Either OSX_x64 or Linux_x64
     jobParameters:
