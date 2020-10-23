@@ -258,16 +258,14 @@ namespace System.Diagnostics
             string? processName = s_processName;
             if (processName is null)
             {
-                try
-                {
-#pragma warning disable CA1416 // Validate platform compatibility
-                    using Process process = Process.GetCurrentProcess();
-                    s_processName = processName = process.ProcessName;
-#pragma warning restore CA1416
-                }
-                catch (PlatformNotSupportedException) // Process isn't supported on Browser
+                if (OperatingSystem.IsBrowser()) // Process isn't supported on Browser
                 {
                     s_processName = processName = string.Empty;
+                }
+                else
+                {
+                    using Process process = Process.GetCurrentProcess();
+                    s_processName = processName = process.ProcessName;
                 }
             }
 

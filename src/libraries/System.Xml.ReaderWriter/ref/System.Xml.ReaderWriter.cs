@@ -1138,7 +1138,9 @@ namespace System.Xml
     {
         public XmlUrlResolver() { }
         public System.Net.Cache.RequestCachePolicy CachePolicy { set { } }
+        [System.Runtime.Versioning.UnsupportedOSPlatform("browser")]
         public override System.Net.ICredentials? Credentials { set { } }
+        [System.Runtime.Versioning.UnsupportedOSPlatform("browser")]
         public System.Net.IWebProxy? Proxy { set { } }
         public override object? GetEntity(System.Uri absoluteUri, string? role, System.Type? ofObjectToReturn) { throw null; }
         public override System.Threading.Tasks.Task<object> GetEntityAsync(System.Uri absoluteUri, string? role, System.Type? ofObjectToReturn) { throw null; }

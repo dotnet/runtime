@@ -3,10 +3,12 @@
 
 using System;
 using System.Collections.Concurrent;
+using System.Runtime.Versioning;
 using System.Threading;
 
 namespace Microsoft.Extensions.Logging.Console
 {
+    [UnsupportedOSPlatform("browser")]
     internal class ConsoleLoggerProcessor : IDisposable
     {
         private const int _maxQueuedMessages = 1024;
@@ -25,9 +27,7 @@ namespace Microsoft.Extensions.Logging.Console
                 IsBackground = true,
                 Name = "Console logger queue processing thread"
             };
-#pragma warning disable CA1416 // Validate platform compatibility, not sure if this assembly is used for browser, suppressing for now
             _outputThread.Start();
-#pragma warning restore CA1416
         }
 
         public virtual void EnqueueMessage(LogMessageEntry message)

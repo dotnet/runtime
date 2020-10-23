@@ -6,6 +6,7 @@
 
 namespace System.Transactions
 {
+    [System.Runtime.Versioning.UnsupportedOSPlatform("browser")]
     public sealed partial class CommittableTransaction : System.Transactions.Transaction, System.IAsyncResult
     {
         public CommittableTransaction() { }
@@ -16,9 +17,7 @@ namespace System.Transactions
         bool System.IAsyncResult.CompletedSynchronously { get { throw null; } }
         bool System.IAsyncResult.IsCompleted { get { throw null; } }
         public System.IAsyncResult BeginCommit(System.AsyncCallback? asyncCallback, object? asyncState) { throw null; }
-        [System.Runtime.Versioning.UnsupportedOSPlatform("browser")]
         public void Commit() { }
-        [System.Runtime.Versioning.UnsupportedOSPlatform("browser")]
         public void EndCommit(System.IAsyncResult asyncResult) { }
     }
     public enum DependentCloneOption
@@ -222,12 +221,14 @@ namespace System.Transactions
     }
     public sealed partial class TransactionScope : System.IDisposable
     {
+        [System.Runtime.Versioning.UnsupportedOSPlatform("browser")]
         public TransactionScope() { }
         public TransactionScope(System.Transactions.Transaction transactionToUse) { }
         public TransactionScope(System.Transactions.Transaction transactionToUse, System.TimeSpan scopeTimeout) { }
         public TransactionScope(System.Transactions.Transaction transactionToUse, System.TimeSpan scopeTimeout, System.Transactions.EnterpriseServicesInteropOption interopOption) { }
         public TransactionScope(System.Transactions.Transaction transactionToUse, System.TimeSpan scopeTimeout, System.Transactions.TransactionScopeAsyncFlowOption asyncFlowOption) { }
         public TransactionScope(System.Transactions.Transaction transactionToUse, System.Transactions.TransactionScopeAsyncFlowOption asyncFlowOption) { }
+        [System.Runtime.Versioning.UnsupportedOSPlatform("browser")]
         public TransactionScope(System.Transactions.TransactionScopeAsyncFlowOption asyncFlowOption) { }
         public TransactionScope(System.Transactions.TransactionScopeOption scopeOption) { }
         public TransactionScope(System.Transactions.TransactionScopeOption scopeOption, System.TimeSpan scopeTimeout) { }
@@ -246,7 +247,9 @@ namespace System.Transactions
     }
     public enum TransactionScopeOption
     {
+        [System.Runtime.Versioning.UnsupportedOSPlatform("browser")]
         Required = 0,
+        [System.Runtime.Versioning.UnsupportedOSPlatform("browser")]
         RequiresNew = 1,
         Suppress = 2,
     }

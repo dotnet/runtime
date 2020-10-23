@@ -17,6 +17,7 @@ namespace System.Net.Connections
     /// When constructed with <see cref="ProtocolType.Tcp"/>, this factory will create connections with <see cref="Socket.NoDelay"/> enabled.
     /// In case of IPv6 sockets <see cref="Socket.DualMode"/> is also enabled.
     /// </remarks>
+    [UnsupportedOSPlatform("browser")]
     public class SocketsConnectionFactory : ConnectionFactory
     {
         private readonly AddressFamily _addressFamily;
@@ -53,7 +54,6 @@ namespace System.Net.Connections
 
         /// <inheritdoc />
         /// <exception cref="ArgumentNullException">When <paramref name="endPoint"/> is <see langword="null"/>.</exception>
-        [UnsupportedOSPlatform("browser")]
         public override async ValueTask<Connection> ConnectAsync(
             EndPoint? endPoint,
             IConnectionProperties? options = null,
@@ -94,7 +94,6 @@ namespace System.Net.Connections
         /// In case of TCP sockets, the default implementation of this method will create a socket with <see cref="Socket.NoDelay"/> enabled.
         /// In case of IPv6 sockets <see cref="Socket.DualMode"/> is also be enabled.
         /// </remarks>
-        [UnsupportedOSPlatform("browser")]
         protected virtual Socket CreateSocket(
             AddressFamily addressFamily,
             SocketType socketType,

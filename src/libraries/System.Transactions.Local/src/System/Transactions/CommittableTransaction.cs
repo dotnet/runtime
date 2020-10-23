@@ -7,6 +7,7 @@ using System.Threading;
 
 namespace System.Transactions
 {
+    [UnsupportedOSPlatform("browser")]
     public sealed class CommittableTransaction : Transaction, IAsyncResult
     {
         // Create a transaction with defaults
@@ -77,7 +78,6 @@ namespace System.Transactions
 
         // Forward the commit to the state machine to take the appropriate action.
         //
-        [UnsupportedOSPlatform("browser")]
         public void Commit()
         {
             TransactionsEtwProvider etwLog = TransactionsEtwProvider.Log;
@@ -158,7 +158,6 @@ namespace System.Transactions
             }
         }
 
-        [UnsupportedOSPlatform("browser")]
         public void EndCommit(IAsyncResult asyncResult)
         {
             TransactionsEtwProvider etwLog = TransactionsEtwProvider.Log;

@@ -6,6 +6,7 @@ using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
 using System.Runtime.InteropServices;
+using System.Runtime.Versioning;
 using Microsoft.Extensions.Options;
 
 namespace Microsoft.Extensions.Logging.Console
@@ -13,6 +14,7 @@ namespace Microsoft.Extensions.Logging.Console
     /// <summary>
     /// A provider of <see cref="ConsoleLogger"/> instances.
     /// </summary>
+    [UnsupportedOSPlatform("browser")]
     [ProviderAlias("Console")]
     public class ConsoleLoggerProvider : ILoggerProvider, ISupportExternalScope
     {
