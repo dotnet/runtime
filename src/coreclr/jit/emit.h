@@ -250,6 +250,7 @@ struct insGroup
     unsigned int   igFuncIdx; // Which function/funclet does this belong to? (Index into Compiler::compFuncInfos array.)
     unsigned short igFlags;   // see IGF_xxx below
     unsigned short igSize;    // # of bytes of code in this group
+    insGroup*      igLoopBackEdge;
 
 #define IGF_GC_VARS 0x0001    // new set of live GC ref variables
 #define IGF_BYREF_REGS 0x0002 // new set of live by-ref registers
@@ -293,7 +294,6 @@ struct insGroup
 #endif
     regMaskSmall  igGCregs; // set of registers with live GC refs
     unsigned char igInsCnt; // # of instructions  in this group
-    insGroup*     igLoopBackEdge;
 
 #else // REGMASK_BITS
 
