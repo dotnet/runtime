@@ -230,6 +230,34 @@ namespace System.IO.Pipelines.Tests
         }
 
         [Fact]
+        public async Task WriteAsync_ThrowsIfReaderCompletedWithException()
+        {
+            void ThrowTestException()
+            {
+                try
+                {
+                    throw new InvalidOperationException("Reader exception");
+                }
+                catch (Exception e)
+                {
+                    _pipe.Reader.Complete(e);
+                }
+            }
+
+            ThrowTestException();
+
+            InvalidOperationException invalidOperationException =
+                await Assert.ThrowsAsync<InvalidOperationException>(async () => await _pipe.Writer.WriteAsync(new byte[1]));
+
+            Assert.Equal("Reader exception", invalidOperationException.Message);
+            Assert.Contains("ThrowTestException", invalidOperationException.StackTrace);
+
+            invalidOperationException = await Assert.ThrowsAsync<InvalidOperationException>(async () => await _pipe.Writer.WriteAsync(new byte[1]));
+            Assert.Equal("Reader exception", invalidOperationException.Message);
+            Assert.Contains("ThrowTestException", invalidOperationException.StackTrace);
+        }
+
+        [Fact]
         public async Task ReaderShouldNotGetUnflushedBytes()
         {
             // Write 10 and flush
