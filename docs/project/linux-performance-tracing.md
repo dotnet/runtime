@@ -260,7 +260,7 @@ dotnet tool install --global dotnet-trace
 ## Collecting a trace ##
 To see which .NET processes are available for collecting traces on, you can run the following command to get their process IDs (PID):
 ```
-dotnet-trace list-processes
+dotnet-trace ps
 ```
 
 Once you know the PID of the process you want to collect traces, you can run the following command to start tracing:
