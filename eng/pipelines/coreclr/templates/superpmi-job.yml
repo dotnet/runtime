@@ -49,7 +49,7 @@ jobs:
        - ${{ format('coreclr_{0}_product_build_{1}{2}_x64_{3}', parameters.runtimeVariant, parameters.osGroup, parameters.osSubgroup, parameters.buildConfig) }}
      - ${{ if ne(parameters.liveLibrariesBuildConfig, '') }}:
        - ${{ format('libraries_build_{0}{1}_{2}_{3}', parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.liveLibrariesBuildConfig) }}
-     - ${{ if eq(collectionName, 'tests') }}:
+     - ${{ if eq(variables['collectionName'], 'tests') }}:
         - '${{ parameters.runtimeType }}_common_test_build_p1_AnyOS_AnyCPU_${{parameters.buildConfig }}'
 
     variables: ${{ parameters.variables }}
