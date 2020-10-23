@@ -1090,10 +1090,11 @@ class SuperPMIReplay:
             if self.coreclr_args.spmi_log_file is not None:
                 flags += [ "-w", self.coreclr_args.spmi_log_file ]
 
-            if self.coreclr_args.arch == "arm":
-                flags += [ "-target", "arm" ]
-            elif self.coreclr_args.arch == "arm64":
-                flags += [ "-target", "arm64" ]
+            if self.coreclr_args.altjit:
+                if self.coreclr_args.arch == "arm":
+                    flags += [ "-target", "arm" ]
+                elif self.coreclr_args.arch == "arm64":
+                    flags += [ "-target", "arm64" ]
 
             # For each MCH file that we are going to replay, do the replay and replay post-processing.
             #
@@ -1296,10 +1297,11 @@ class SuperPMIReplayAsmDiffs:
                     if self.coreclr_args.spmi_log_file is not None:
                         flags += [ "-w", self.coreclr_args.spmi_log_file ]
 
-                    if self.coreclr_args.arch == "arm":
-                        flags += [ "-target", "arm" ]
-                    elif self.coreclr_args.arch == "arm64":
-                        flags += [ "-target", "arm64" ]
+                    if self.coreclr_args.altjit:
+                        if self.coreclr_args.arch == "arm":
+                            flags += [ "-target", "arm" ]
+                        elif self.coreclr_args.arch == "arm64":
+                            flags += [ "-target", "arm64" ]
 
                     # Change the working directory to the Core_Root we will call SuperPMI from.
                     # This is done to allow libcoredistools to be loaded correctly on unix
