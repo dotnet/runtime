@@ -87,6 +87,8 @@ else()
   message(FATAL_ERROR "Building without -DENABLE_NETCORE=1 is not supported.")
 endif()
 
+
+
 # Dependencies between options
 if(DISABLE_ASSEMBLY_REMAPPING)
   set(DISABLE_DESKTOP_LOADER 1)
