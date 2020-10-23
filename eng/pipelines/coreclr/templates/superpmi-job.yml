@@ -27,7 +27,7 @@ jobs:
   parameters:
     # Compute job name from template parameters
     jobName: ${{ format('superpmibuild_{0}{1}_{2}_{3}_{4}_{5}_{6}', parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.buildConfig, parameters.runtimeType, parameters.codeGenType, parameters.runKind) }}
-    displayName: ${{ format('SuperPMI {7} {0}{1} {2} {3} {4} {5} {6}', parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.buildConfig, parameters.runtimeType, parameters.codeGenType, parameters.runKind, variables.collectionName) }}
+    displayName: ${{ format('SuperPMI {7} {0}{1} {2} {3} {4} {5} {6}', parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.buildConfig, parameters.runtimeType, parameters.codeGenType, parameters.runKind, collectionName) }}
     pool: ${{ parameters.pool }}
     buildConfig: ${{ parameters.buildConfig }}
     archType: ${{ parameters.archType }}
