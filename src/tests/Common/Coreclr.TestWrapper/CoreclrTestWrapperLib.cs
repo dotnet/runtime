@@ -319,7 +319,7 @@ namespace CoreclrTestLib
                 process.StartInfo.UseShellExecute = false;
                 process.StartInfo.RedirectStandardOutput = true;
                 process.StartInfo.RedirectStandardError = true;
-                process.StartInfo.EnvironmentVariables.Add("NameSpace", nameSpace);
+                process.StartInfo.EnvironmentVariables.Add("__NameSpace", nameSpace);
 
                 DateTime startTime = DateTime.Now;
                 process.Start();

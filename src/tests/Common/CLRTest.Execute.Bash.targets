@@ -332,8 +332,8 @@ else
 	HARNESS_RUNNER="xharness"
 fi
 
-cd $CORE_ROOT/AndroidApps/$NameSpace/
-$__Command $HARNESS_RUNNER android test --instrumentation="net.dot.MonoRunner" --package-name="net.dot.$NameSpace" --app=apk/bin/$NameSpace.apk --output-directory=`pwd` --arg=entryPointLibName=$(MsBuildProjectName).dll --expected-exit-code=100
+cd $CORE_ROOT/AndroidApps/$__NameSpace/
+$__Command $HARNESS_RUNNER android test --instrumentation="net.dot.MonoRunner" --package-name="net.dot.$__NameSpace" --app=apk/bin/$__NameSpace.apk --output-directory=`pwd` --arg=entryPointLibName=$(MsBuildProjectName).dll --expected-exit-code=100
 CLRTestExitCode=$?
 
 # Exist code of xharness is zero when tests finished successfully
