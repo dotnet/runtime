@@ -50,7 +50,6 @@ set(NATIVECRYPTO_SOURCES
     pal_ecc_import_export.c
     pal_eckey.c
     pal_err.c
-    pal_evp.c
     pal_evp_pkey.c
     pal_evp_pkey_dsa.c
     pal_evp_pkey_ecdh.c
@@ -69,14 +68,17 @@ set(NATIVECRYPTO_SOURCES
 )
 
 # uncomment to use Android SDK instead of OpenSSL where possible
-# set(USE_ANDROID_CRYPTO 1)
+set(USE_ANDROID_CRYPTO 1)
 
 if (CLR_CMAKE_TARGET_ANDROID AND USE_ANDROID_CRYPTO)
     list(APPEND NATIVECRYPTO_SOURCES
-    android_security.c
+        android_security.c
     )
-
     add_definitions(-DUSE_ANDROID_CRYPTO)
+else()
+    list(APPEND NATIVECRYPTO_SOURCES
+        pal_evp.c
+    )
 endif()
 
 # Always build portable on macOS because OpenSSL is not a system component

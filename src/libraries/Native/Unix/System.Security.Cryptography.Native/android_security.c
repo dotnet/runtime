@@ -17,12 +17,21 @@
 static JavaVM *gJvm;
 
 PALEXPORT JNIEXPORT jint JNICALL
-JNI_OnLoad (JavaVM *vm, void *reserved)
+JNI_OnLoad(JavaVM *vm, void *reserved)
 {
     (void)reserved;
     __android_log_write(ANDROID_LOG_INFO, "DOTNET", "JNI_OnLoad in android_security.c");
     gJvm = vm;
     return JNI_VERSION_1_6;
+}
+
+static jobject ToGRef(JNIEnv *env, jobject lref)
+{
+    if (lref == 0)
+        return 0;
+    jobject gref = (*env)->NewGlobalRef(env, lref);
+    (*env)->DeleteLocalRef(env, lref);
+    return gref;
 }
 
 static JNIEnv* GetJniEnv()
@@ -68,20 +77,15 @@ int32_t CryptoNative_EvpMdSize(intptr_t md)
     return (int32_t)md;
 }
 
-int32_t CryptoNative_EvpDigestOneShot(intptr_t type, void* source, int32_t sourceSize, uint8_t* md, uint32_t* mdSize)
+static jobject GetMessageDigestInstance(JNIEnv* jniEnv, intptr_t type)
 {
-    JNIEnv* jniEnv = GetJniEnv();
-
-    // MessageDigest md = MessageDigest.getInstance("SHA-256");
-    // hashed = md.digest(src);
+    // return MessageDigest.getInstance("...");
 
     jclass mdClass = (*jniEnv)->FindClass (jniEnv, "java/security/MessageDigest");
     jmethodID mdGetInstanceMethodId = (*jniEnv)->GetStaticMethodID(
         jniEnv, mdClass, "getInstance", "(Ljava/lang/String;)Ljava/security/MessageDigest;");
-    jmethodID mdDigestMethodId = (*jniEnv)->GetMethodID(jniEnv, mdClass, "digest", "([B)[B");
 
     jstring mdName = NULL;
-    
     if (type == CryptoNative_EvpMd5())
         mdName = (jstring)(*jniEnv)->NewStringUTF(jniEnv, "MD5");
     else if (type == CryptoNative_EvpSha1())
@@ -93,10 +97,28 @@ int32_t CryptoNative_EvpDigestOneShot(intptr_t type, void* source, int32_t sourc
     else if (type == CryptoNative_EvpSha512())
         mdName = (jstring)(*jniEnv)->NewStringUTF(jniEnv, "SHA-512");
     else
-        assert(0 && "CryptoNative_EvpDigestOneShot: unknown type");
+        return NULL;
 
-    // TODO: cache mdObj? (gref)
-    jobject mdObj = (*jniEnv)->CallStaticObjectMethod(jniEnv, mdClass, mdGetInstanceMethodId, mdName);
+    return (*jniEnv)->CallStaticObjectMethod(jniEnv, mdClass, mdGetInstanceMethodId, mdName);
+}
+
+int32_t CryptoNative_EvpDigestOneShot(intptr_t type, void* source, int32_t sourceSize, uint8_t* md, uint32_t* mdSize)
+{
+    if (!type || !md || !mdSize || sourceSize < 0)
+        return 0;
+
+    JNIEnv* jniEnv = GetJniEnv();
+
+    // MessageDigest md = MessageDigest.getInstance("...");
+    // hashed = md.digest(src);
+
+    jclass mdClass = (*jniEnv)->FindClass(jniEnv, "java/security/MessageDigest");
+    jmethodID mdDigestMethodId = (*jniEnv)->GetMethodID(jniEnv, mdClass, "digest", "([B)[B");
+
+    // TODO: for one-shot digest()s it makes sense to cache instance (convert to a gref)
+    jobject mdObj = GetMessageDigestInstance(jniEnv, type);
+    if (!mdObj)
+        return 0;
 
     jbyteArray bytes = (*jniEnv)->NewByteArray(jniEnv, sourceSize);
     (*jniEnv)->SetByteArrayRegion(jniEnv, bytes, 0, sourceSize, (jbyte*) source);
@@ -106,37 +128,69 @@ int32_t CryptoNative_EvpDigestOneShot(intptr_t type, void* source, int32_t sourc
     (*jniEnv)->GetByteArrayRegion(jniEnv, hashedBytes, 0, hashedBytesLen, (jbyte*) md);
     *mdSize = (uint32_t)hashedBytesLen;
 
-    __android_log_write(ANDROID_LOG_INFO, "DOTNET", "EGORKA");
     // TODO: should we delete all locals by hands here?
 
     return SUCCESS;
 }
 
-
-// TODO: implement these for Stream/Async Hashing APIs
-
-/*
-intptr_t CryptoNative_EvpMdCtxCreate(intptr_t type)
+void* CryptoNative_EvpMdCtxCreate(intptr_t type)
 {
-    return type;
+    JNIEnv* jniEnv = GetJniEnv();
+    jobject md = ToGRef(jniEnv, GetMessageDigestInstance(jniEnv, type));
+    return (void*)md;
 }
 
-void CryptoNative_EvpMdCtxDestroy(intptr_t ctx)
+int32_t CryptoNative_EvpDigestReset(void* ctx, intptr_t type)
 {
+    (void)type;
+
+    JNIEnv* jniEnv = GetJniEnv();
+    jobject mdObj = (jobject)ctx;
+    jclass mdClass = (*jniEnv)->FindClass(jniEnv, "java/security/MessageDigest");
+    jmethodID mdResetMethodId = (*jniEnv)->GetMethodID(jniEnv, mdClass, "reset", "()V");
+    (*jniEnv)->CallVoidMethod(jniEnv, mdObj, mdResetMethodId);
+    return SUCCESS;
 }
 
-int32_t CryptoNative_EvpDigestReset(intptr_t ctx, intptr_t type)
+int32_t CryptoNative_EvpDigestUpdate(void* ctx, void* d, int32_t cnt)
 {
-    return -1;
+    JNIEnv* jniEnv = GetJniEnv();
+    jobject mdObj = (jobject)ctx;
+    jclass mdClass = (*jniEnv)->FindClass(jniEnv, "java/security/MessageDigest");
+    jmethodID mdUpdateMethodId = (*jniEnv)->GetMethodID(jniEnv, mdClass, "update", "([B)V");
+
+    jbyteArray bytes = (*jniEnv)->NewByteArray(jniEnv, cnt);
+    (*jniEnv)->SetByteArrayRegion(jniEnv, bytes, 0, cnt, (jbyte*) d);
+    (*jniEnv)->CallVoidMethod(jniEnv, mdObj, mdUpdateMethodId, bytes);
+
+    return SUCCESS;
 }
 
-int32_t CryptoNative_EvpDigestUpdate(intptr_t ctx, const void* d, int32_t cnt)
+int32_t CryptoNative_EvpDigestFinalEx(void* ctx, uint8_t* md, uint32_t* s)
 {
-    return -1;
+    int32_t ret = CryptoNative_EvpDigestCurrent(ctx, md, s);
+    return ret;
 }
 
-int32_t CryptoNative_EvpDigestFinalEx(intptr_t ctx, uint8_t* md, uint32_t* s)
+int32_t CryptoNative_EvpDigestCurrent(void* ctx, uint8_t* md, uint32_t* s)
 {
-    return -1;
+    JNIEnv* jniEnv = GetJniEnv();
+    jobject mdObj = (jobject)ctx;
+    jclass mdClass = (*jniEnv)->FindClass(jniEnv, "java/security/MessageDigest");
+    jmethodID mdDigestMethodId = (*jniEnv)->GetMethodID(jniEnv, mdClass, "digest", "()[B");
+    jbyteArray bytes = (jbyteArray)(*jniEnv)->CallObjectMethod(jniEnv, mdObj, mdDigestMethodId);
+    jsize bytesLen = (*jniEnv)->GetArrayLength(jniEnv, bytes);
+    *s = (uint32_t)bytesLen;
+    (*jniEnv)->GetByteArrayRegion(jniEnv, bytes, 0, bytesLen, (jbyte*) md);
+    return SUCCESS;
 }
-*/
+
+void CryptoNative_EvpMdCtxDestroy(void* ctx)
+{
+    if (ctx)
+    {
+        JNIEnv* jniEnv = GetJniEnv();
+        (*jniEnv)->DeleteGlobalRef(jniEnv, (jobject)ctx);
+    }
+}
+
