@@ -2365,9 +2365,6 @@ var MonoSupportLib = {
 		if (MONO.mono_wasm_runtime_is_ready !== true)
 			return;
 
-		if (!this.mono_wasm_assembly_already_added)
-			this.mono_wasm_assembly_already_added = Module.cwrap ("mono_wasm_assembly_already_added", 'number', ['string']);
-
 		const assembly_name_str = assembly_name !== 0 ? Module.UTF8ToString(assembly_name).concat('.dll') : '';
 
 		const assembly_data = new Uint8Array(Module.HEAPU8.buffer, assembly_ptr, assembly_len);
