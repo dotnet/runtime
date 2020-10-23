@@ -407,11 +407,20 @@ done
 $(BashCLRTestArgPrep)
       ]]></BashCLRTestArgPrep>
 
-      <!-- NOTE! semicolons must be escaped with %3B boooo -->
-      <_CLRTestExecutionScriptText>
+      <CLRTestExecutionScriptHeader Condition=" $(TargetOS) == 'Android' ">
         <![CDATA[
 %23%21/usr/bin/env bash
 set -e
+      ]]></CLRTestExecutionScriptHeader>
+      <CLRTestExecutionScriptHeader Condition=" $(TargetOS) != 'Android' ">
+        <![CDATA[
+%23%21/usr/bin/env bash
+      ]]></CLRTestExecutionScriptHeader>
+
+      <!-- NOTE! semicolons must be escaped with %3B boooo -->
+      <_CLRTestExecutionScriptText>
+        <![CDATA[
+$(CLRTestExecutionScriptHeader)
 TakeLock()
 {
     echo "in takeLock"
