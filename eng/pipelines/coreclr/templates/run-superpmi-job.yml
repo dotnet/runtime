@@ -20,6 +20,7 @@ parameters:
   codeGenType: 'JIT'              # optional -- Decides on the codegen technology if running on mono
   projectFile: 'superpmi.proj'    # optional -- project file to build helix workitems
   runKind: ''                     # required -- test category
+  collectionName: ''
 
 jobs:
 - template: xplat-pipeline-job.yml
@@ -33,6 +34,7 @@ jobs:
     enableTelemetry: ${{ parameters.enableTelemetry }}
     enablePublishBuildArtifacts: true
     continueOnError: ${{ parameters.continueOnError }}
+    collectionName: ${{ parameters.collectionName }}
     
     ${{ if ne(parameters.displayName, '') }}:
       displayName: '${{ parameters.displayName }}'
@@ -72,10 +74,10 @@ jobs:
         value: '$(Build.SourcesDirectory)/artifacts/tests/coreclr/${{ parameters.osGroup }}.${{ parameters.archType }}.$(buildConfigUpper)/Tests/Core_Root'
       - name: MchFilesLocation
         value: '$(Build.SourcesDirectory)/artifacts/helixresults/'
-    - ${{ if eq(variables.collectionName, 'libraries') }}:
+    - ${{ if eq(parameters.collectionName, 'libraries') }}:
       - name: InputDirectory
         value: '$(Core_Root_Dir)'
-    - ${{ if eq(variables.collectionName, 'tests') }}:
+    - ${{ if eq(parameters.collectionName, 'tests') }}:
       - name: InputDirectory
         value: '$(managedTestArtifactRootFolderPath)'
     workspace:

@@ -1,5 +1,3 @@
-name: superpmi-collection for $(collectionName)
-
 trigger: none
 
 pr: none
@@ -40,7 +38,7 @@ jobs:
   parameters:
     jobTemplate: /eng/pipelines/common/templates/runtimes/build-test-job.yml
     buildConfig: checked
-    condition: $[eq(variables.collectionName, 'tests')]
+    condition: $[eq(variables['collectionName'], 'tests')]
     platforms:
     - CoreClrTestBuildHost # Either OSX_x64 or Linux_x64
     jobParameters:
@@ -66,4 +64,5 @@ jobs:
     jobParameters:
       testGroup: outerloop
       liveLibrariesBuildConfig: Release
+      collectionName: tests
 
