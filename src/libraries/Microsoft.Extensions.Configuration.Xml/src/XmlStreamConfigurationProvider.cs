@@ -54,11 +54,12 @@ namespace Microsoft.Extensions.Configuration.Xml
                     switch (reader.NodeType)
                     {
                         case XmlNodeType.Element:
-                            var parent = currentPath.Any() ? currentPath.Peek() : null;
+                            XmlConfigurationElement parent = currentPath.Any() ? currentPath.Peek() : null;
+
                             var element = new XmlConfigurationElement(parent, reader.LocalName, GetName(reader), GetLineInfo(reader));
 
                             // check if this element has appeared before
-                            var sibling = allElements.Where(e => e.IsSibling(element)).OrderByDescending(e => e.Index).FirstOrDefault();
+                            XmlConfigurationElement sibling = allElements.Where(e => e.IsSibling(element)).OrderByDescending(e => e.Index).FirstOrDefault();
                             if (sibling != null)
                             {
                                 sibling.Multiple = element.Multiple = true;
