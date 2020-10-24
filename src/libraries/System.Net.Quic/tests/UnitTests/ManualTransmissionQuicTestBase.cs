@@ -50,7 +50,8 @@ namespace System.Net.Quic.Tests
         private const string PrivateKeyFilePath = "Certs/cert.key";
 
         private static readonly QuicServerSocketContext _dummySocketContext = new QuicServerSocketContext(new IPEndPoint(IPAddress.Any, 0), new QuicListenerOptions(), Channel.CreateUnbounded<ManagedQuicConnection>().Writer);
-        private static readonly IPEndPoint _ipAnyEndpoint = new IPEndPoint(IPAddress.Any, 0);
+        private static readonly IPEndPoint _dummyServerEndpoint = new IPEndPoint(IPAddress.Loopback, 12345);
+        private static readonly IPEndPoint _dummyListenEndpoint = new IPEndPoint(IPAddress.Any, 0);
 
         internal readonly QuicClientConnectionOptions ClientOptions;
         internal readonly QuicListenerOptions ListenerOptions;
@@ -119,14 +120,14 @@ namespace System.Net.Quic.Tests
 
         private static ManagedQuicConnection CreateClient(QuicClientConnectionOptions options)
         {
-            options.RemoteEndPoint = _ipAnyEndpoint;
+            options.RemoteEndPoint = _dummyServerEndpoint;
             return new ManagedQuicConnection(options);
         }
 
         private static ManagedQuicConnection CreateServer(QuicListenerOptions options)
         {
             Span<byte> odcid = stackalloc byte[20];
-            return new ManagedQuicConnection(options, _dummySocketContext, _ipAnyEndpoint, odcid);
+            return new ManagedQuicConnection(options, _dummySocketContext, _dummyListenEndpoint, odcid);
         }
 
         /// <summary>
@@ -331,7 +332,7 @@ namespace System.Net.Quic.Tests
 
             _reader.Reset(buffer.AsMemory(0, written));
             _recvContext.Timestamp = CurrentTimestamp;
-            destination.ReceiveData(_reader, _ipAnyEndpoint, _recvContext);
+            destination.ReceiveData(_reader, _dummyListenEndpoint, _recvContext);
         }
 
         /// <summary>
@@ -392,7 +393,7 @@ namespace System.Net.Quic.Tests
 
             _reader.Reset(buffer.AsMemory(0, written));
             _recvContext.Timestamp = CurrentTimestamp;
-            destination.ReceiveData(_reader, _ipAnyEndpoint, _recvContext);
+            destination.ReceiveData(_reader, _dummyServerEndpoint, _recvContext);
 
             return new PacketFlight(packets, written, source, CurrentTimestamp);
         }
