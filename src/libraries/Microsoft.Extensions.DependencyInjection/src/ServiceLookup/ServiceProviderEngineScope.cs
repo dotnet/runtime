@@ -122,6 +122,7 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
             static async ValueTask Await(int i, ValueTask vt, List<object> toDispose)
             {
                 await vt.ConfigureAwait(false);
+                i--;
 
                 for (; i >= 0; i--)
                 {
