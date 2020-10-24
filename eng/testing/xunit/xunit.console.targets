@@ -20,12 +20,15 @@
   </PropertyGroup>
 
 <<<<<<< HEAD
+<<<<<<< HEAD
   <PropertyGroup Condition="'$(UseXunitExcludesTxtFile)' != 'true'">
 =======
   <PropertyGroup Condition="'$(TestSingleFile)' == 'true'">
     <RunScriptCommand>$(AssemblyName).exe</RunScriptCommand>
   </PropertyGroup>
 
+=======
+>>>>>>> ef65e03f526 (Config testing using single-file in build.cmd)
   <PropertyGroup>
 >>>>>>> d5386cf2b45 (Opt-in specific libraries for single-file testing support)
     <!-- Add local and global options to the argument stack. -->

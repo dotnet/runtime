@@ -347,11 +347,12 @@ jobs:
     helixQueuesTemplate: /eng/pipelines/libraries/helix-queues-setup.yml
     buildConfig: Release
     platforms:
+    - Windows_NT_x64
     - Linux_x64
     jobParameters:
       testGroup: innerloop
       nameSuffix: AllSubsets_Mono
-      buildArgs: -s clr+corehost+libs+libs.tests -c $(_BuildConfig) /p:ArchiveTests=true /p:TestSingleFile=true
+      buildArgs: -s clr+corehost+libs+libs.tests -c $(_BuildConfig) /p:TestSingleFile=true
       timeoutInMinutes: 120
       # extra steps, run tests
       extraStepsTemplate: /eng/pipelines/libraries/helix.yml
