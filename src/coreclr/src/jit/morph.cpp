@@ -12282,17 +12282,18 @@ GenTree* Compiler::fgMorphSmpOp(GenTree* tree, MorphAddrContext* mac)
                 if (power == 2.0)
                 {
                     // Math.Pow(x, 2) -> x*x
-                    GenTree* arg0Clone = op1;
-                    if (op1->OperIsLeaf())
+                    if (op1->OperIsLeaf() || optValnumCSE_phase)
                     {
-                        return gtNewOperNode(GT_MUL, tree->TypeGet(), op1, gtCloneExpr(arg0Clone));
-                    }
-                    if (optValnumCSE_phase )
-                    {
-                        // if op1 is not a leaf op we need to introduce a variable
-                        // and it should be done after LoopHoisting phase
-                        arg0Clone = fgMakeMultiUse(&op1);
-                        return gtNewOperNode(GT_MUL, tree->TypeGet(), op1, gtCloneExpr(arg0Clone));
+                        GenTree* arg0Clone = op1;
+                        if (!op1->OperIsLeaf())
+                        {
+                            // if op1 is not a leaf op we need to introduce a variable
+                            // and it should be done after LoopHoisting phase
+                            arg0Clone = fgMakeMultiUse(&op1);
+                        }
+                        tree = gtNewOperNode(GT_MUL, tree->TypeGet(), op1, gtCloneExpr(arg0Clone));
+                        INDEBUG(tree->gtDebugFlags |= GTF_DEBUG_NODE_MORPHED);
+                        return tree;
                     }
                 }
             }
