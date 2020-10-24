@@ -2356,6 +2356,9 @@ namespace System.Tests
 
             Assert.Equal(tz.StandardName, localtz.StandardName);
             Assert.Equal(tz.DisplayName, localtz.DisplayName); 
+
+            TimeZoneInfo.ClearCachedData();
+            Environment.SetEnvironmentVariable("TZ", "");
         }
 
         private static bool IsEnglishUILanguageAndRemoteExecutorSupported => (CultureInfo.CurrentUICulture.Name == "en" || CultureInfo.CurrentUICulture.Name.StartsWith("en-", StringComparison.Ordinal)) && RemoteExecutor.IsSupported;
