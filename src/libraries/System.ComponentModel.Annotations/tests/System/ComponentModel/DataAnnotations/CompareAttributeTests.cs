@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
 using System.Reflection;
@@ -72,6 +71,34 @@ namespace System.ComponentModel.DataAnnotations.Tests
             Assert.NotNull(attribute.GetValidationResult("b", s_context).ErrorMessage);
             Assert.Equal(ValidationResult.Success, attribute.GetValidationResult(null, s_context));
             Assert.Equal(nameof(CompareObject.comparepropertycased), attribute.OtherPropertyDisplayName);
+        }
+
+        [Fact]
+        [SkipOnTargetFramework(~TargetFrameworkMonikers.NetFramework)]
+        public static void Validate_IncludesMemberName_NetFx()
+        {
+            ValidationContext validationContext = new ValidationContext(new CompareObject("a"));
+            validationContext.MemberName = nameof(CompareObject.CompareProperty);
+            CompareAttribute attribute = new CompareAttribute(nameof(CompareObject.ComparePropertyCased));
+
+            ValidationResult validationResult = attribute.GetValidationResult("b", validationContext);
+
+            Assert.NotNull(validationResult.ErrorMessage);
+            Assert.Empty(validationResult.MemberNames);
+        }
+
+        [Fact]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework)]
+        public static void Validate_IncludesMemberName_Netcoreapp()
+        {
+            ValidationContext validationContext = new ValidationContext(new CompareObject("a"));
+            validationContext.MemberName = nameof(CompareObject.CompareProperty);
+            CompareAttribute attribute = new CompareAttribute(nameof(CompareObject.ComparePropertyCased));
+
+            ValidationResult validationResult = attribute.GetValidationResult("b", validationContext);
+
+            Assert.NotNull(validationResult.ErrorMessage);
+            Assert.Equal(new[] { nameof(CompareObject.CompareProperty) }, validationResult.MemberNames);
         }
 
         [Fact]

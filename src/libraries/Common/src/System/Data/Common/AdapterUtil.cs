@@ -1,10 +1,10 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections;
 using System.Data.SqlTypes;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Runtime.CompilerServices;
 using System.Security;
@@ -19,11 +19,11 @@ namespace System.Data.Common
     {
         // NOTE: Initializing a Task in SQL CLR requires the "UNSAFE" permission set (https://docs.microsoft.com/en-us/dotnet/framework/performance/sql-server-programming-and-host-protection-attributes)
         // Therefore we are lazily initializing these Tasks to avoid forcing customers to use the "UNSAFE" set when they are actually using no Async features
-        private static Task<bool> _trueTask;
-        internal static Task<bool> TrueTask => _trueTask ?? (_trueTask = Task.FromResult(true));
+        private static Task<bool>? _trueTask;
+        internal static Task<bool> TrueTask => _trueTask ??= Task.FromResult(true);
 
-        private static Task<bool> _falseTask;
-        internal static Task<bool> FalseTask => _falseTask ?? (_falseTask = Task.FromResult(false));
+        private static Task<bool>? _falseTask;
+        internal static Task<bool> FalseTask => _falseTask ??= Task.FromResult(false);
 
         internal const CompareOptions DefaultCompareOptions = CompareOptions.IgnoreKanaType | CompareOptions.IgnoreWidth | CompareOptions.IgnoreCase;
         internal const int DefaultConnectionTimeout = DbConnectionStringDefaults.ConnectTimeout;
@@ -48,14 +48,14 @@ namespace System.Data.Common
             return e;
         }
 
-        internal static ArgumentException Argument(string error, Exception inner)
+        internal static ArgumentException Argument(string error, Exception? inner)
         {
             ArgumentException e = new ArgumentException(error, inner);
             TraceExceptionAsReturnValue(e);
             return e;
         }
 
-        internal static ArgumentException Argument(string error, string parameter)
+        internal static ArgumentException Argument(string error, string? parameter)
         {
             ArgumentException e = new ArgumentException(error, parameter);
             TraceExceptionAsReturnValue(e);
@@ -102,7 +102,7 @@ namespace System.Data.Common
             return InvalidCast(error, null);
         }
 
-        internal static InvalidCastException InvalidCast(string error, Exception inner)
+        internal static InvalidCastException InvalidCast(string error, Exception? inner)
         {
             InvalidCastException e = new InvalidCastException(error, inner);
             TraceExceptionAsReturnValue(e);
@@ -132,7 +132,7 @@ namespace System.Data.Common
 
         // the return value is true if the string was quoted and false if it was not
         // this allows the caller to determine if it is an error or not for the quotedString to not be quoted
-        internal static bool RemoveStringQuotes(string quotePrefix, string quoteSuffix, string quotedString, out string unquotedString)
+        internal static bool RemoveStringQuotes(string? quotePrefix, string? quoteSuffix, string? quotedString, out string? unquotedString)
         {
             int prefixLength = quotePrefix != null ? quotePrefix.Length : 0;
             int suffixLength = quoteSuffix != null ? quoteSuffix.Length : 0;
@@ -161,7 +161,7 @@ namespace System.Data.Common
             // is the prefix present?
             if (prefixLength > 0)
             {
-                if (!quotedString.StartsWith(quotePrefix, StringComparison.Ordinal))
+                if (!quotedString.StartsWith(quotePrefix!, StringComparison.Ordinal))
                 {
                     unquotedString = quotedString;
                     return false;
@@ -171,7 +171,7 @@ namespace System.Data.Common
             // is the suffix present?
             if (suffixLength > 0)
             {
-                if (!quotedString.EndsWith(quoteSuffix, StringComparison.Ordinal))
+                if (!quotedString.EndsWith(quoteSuffix!, StringComparison.Ordinal))
                 {
                     unquotedString = quotedString;
                     return false;
@@ -221,7 +221,7 @@ namespace System.Data.Common
             return e;
         }
 
-        internal static void CheckArgumentNull(object value, string parameterName)
+        internal static void CheckArgumentNull([NotNull] object? value, string parameterName)
         {
             if (null == value)
             {
@@ -287,7 +287,7 @@ namespace System.Data.Common
         {
             return Argument(SR.Format(SR.ADP_KeywordNotSupported, keyword));
         }
-        internal static ArgumentException ConvertFailed(Type fromType, Type toType, Exception innerException)
+        internal static ArgumentException ConvertFailed(Type fromType, Type toType, Exception? innerException)
         {
             return ADP.Argument(SR.Format(SR.SqlConvert_ConvertFailed, fromType.FullName, toType.FullName), innerException);
         }
@@ -299,7 +299,7 @@ namespace System.Data.Common
         {
             return InvalidConnectionOptionValue(key, null);
         }
-        internal static Exception InvalidConnectionOptionValue(string key, Exception inner)
+        internal static Exception InvalidConnectionOptionValue(string key, Exception? inner)
         {
             return Argument(SR.Format(SR.ADP_InvalidConnectionOptionValue, key), inner);
         }
@@ -472,20 +472,20 @@ namespace System.Data.Common
             return IndexOutOfRange(SR.Format(SR.SQL_InvalidDataLength, length.ToString(CultureInfo.InvariantCulture)));
         }
 
-        internal static bool CompareInsensitiveInvariant(string strvalue, string strconst) =>
+        internal static bool CompareInsensitiveInvariant(string? strvalue, string? strconst) =>
             0 == CultureInfo.InvariantCulture.CompareInfo.Compare(strvalue, strconst, CompareOptions.IgnoreCase);
 
         internal static int DstCompare(string strA, string strB) => CultureInfo.CurrentCulture.CompareInfo.Compare(strA, strB, ADP.DefaultCompareOptions);
 
-        internal static bool IsEmptyArray(string[] array) => (null == array) || (0 == array.Length);
+        internal static bool IsEmptyArray([NotNullWhen(false)] string?[]? array) => (null == array) || (0 == array.Length);
 
-        internal static bool IsNull(object value)
+        internal static bool IsNull(object? value)
         {
             if ((null == value) || (DBNull.Value == value))
             {
                 return true;
             }
-            INullable nullable = (value as INullable);
+            INullable? nullable = (value as INullable);
             return ((null != nullable) && nullable.IsNull);
         }
 

@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
 using System.Runtime.Versioning;
@@ -98,7 +97,7 @@ namespace System
         // Otherwise, returns the underlying type of the Nullable type
         public static Type? GetUnderlyingType(Type nullableType)
         {
-            if ((object)nullableType == null)
+            if (nullableType is null)
             {
                 throw new ArgumentNullException(nameof(nullableType));
             }
@@ -111,7 +110,7 @@ namespace System
                 {
                     if (nullableEEType.IsNullable)
                     {
-                        return Internal.Reflection.Core.NonPortable.RuntimeTypeUnifier.GetRuntimeTypeForEEType(nullableEEType.NullableType);
+                        return Type.GetTypeFromEETypePtr(nullableEEType.NullableType);
                     }
                 }
                 return null;

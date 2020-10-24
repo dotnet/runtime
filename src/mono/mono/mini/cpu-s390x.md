@@ -187,7 +187,7 @@ loadu1_membase: dest:i src1:b len:30
 loadu2_membase: dest:i src1:b len:30
 loadu4_mem: dest:i len:8
 loadu4_membase: dest:i src1:b len:30
-localloc: dest:i src1:i len:106
+localloc: dest:i src1:i len:110
 memory_barrier: len:10
 move: dest:i src1:i len:4
 mul_imm: dest:i src1:i len:24
@@ -207,11 +207,11 @@ rcall_reg: dest:f src1:i len:8 clob:c
 rcall_membase: dest:f src1:b len:12 clob:c
 rem_un_imm: dest:i src1:i len:24
 s390_bkchain: len:8 dest:i src1:i
-s390_move: len:48 dest:b src1:b
+s390_move: len:48 src2:b src1:b
 s390_setf4ret: dest:f src1:f len:4
 sbb: dest:i src1:i src2:i len:6
 sbb_imm: dest:i src1:i len:14
-seq_point: len:54
+seq_point: len:64
 il_seq_point: len:0
 sext_i4: dest:i src1:i len:4
 zext_i4: dest:i src1:i len:4
@@ -229,15 +229,16 @@ storei2_membase_reg: dest:b src1:i len:26
 storei4_membase_imm: dest:b len:46
 storei4_membase_reg: dest:b src1:i len:26
 storei8_membase_imm: dest:b len:46
-storei8_membase_reg: dest:b src1:i len:26 
+storei8_membase_reg: dest:b src1:i len:26
 storer4_membase_reg: dest:b src1:f len:28
 storer8_membase_reg: dest:b src1:f len:24
 sub_imm: dest:i src1:i len:18
 sub_ovf_carry: dest:i src1:1 src2:i len:28
 sub_ovf_un_carry: dest:i src1:1 src2:i len:12
 subcc: dest:i src1:i src2:i len:12
-tailcall: len:120 clob:c
-tailcall_membase: src1:b len:120 clob:c
+tailcall: len:32 clob:c
+tailcall_reg: len:32 clob:c
+tailcall_membase: src1:b len:32 clob:c
 
 # Tailcall parameters are moved with one instruction per 256 bytes,
 # of stacked parameters. Zero and six are the most common
@@ -331,8 +332,8 @@ long_div: dest:i src1:i src2:i len:12
 long_div_un: dest:i src1:i src2:i len:16
 long_mul: dest:i src1:i src2:i len:12
 long_mul_imm: dest:i src1:i len:20
-long_mul_ovf: dest:i src1:i src2:i len:56 
-long_mul_ovf_un: dest:i src1:i src2:i len:64 
+long_mul_ovf: dest:i src1:i src2:i len:56
+long_mul_ovf_un: dest:i src1:i src2:i len:64
 long_and: dest:i src1:i src2:i len:8
 long_or: dest:i src1:i src2:i len:8
 long_xor: dest:i src1:i src2:i len:8
@@ -367,7 +368,7 @@ long_conv_to_u2: dest:i src1:i len:24
 long_conv_to_u4: dest:i src1:i len:4
 long_conv_to_u8: dest:i src1:i len:4
 long_conv_to_u:  dest:i src1:i len:4
-long_conv_to_r_un: dest:f src1:i len:37 
+long_conv_to_r_un: dest:f src1:i len:37
 
 long_beq: len:8
 long_bge_un: len:8
@@ -398,7 +399,7 @@ int_conv_to_i: dest:i src1:i len:4
 int_conv_to_u1: dest:i src1:i len:10
 int_conv_to_u2: dest:i src1:i len:16
 int_conv_to_u4: dest:i src1:i len:4
-int_conv_to_r_un: dest:f src1:i len:37 
+int_conv_to_r_un: dest:f src1:i len:37
 
 cond_exc_ic: len:8
 cond_exc_ieq: len:8
@@ -430,9 +431,9 @@ vcall2_membase: src1:b len:12 clob:c
 vcall2_reg: src1:i len:8 clob:c
 
 s390_int_add_ovf: len:32 dest:i src1:i src2:i
-s390_int_add_ovf_un: len:32 dest:i src1:i src2:i 
+s390_int_add_ovf_un: len:32 dest:i src1:i src2:i
 s390_int_sub_ovf: len:32 dest:i src1:i src2:i
-s390_int_sub_ovf_un: len:32 dest:i src1:i src2:i 
+s390_int_sub_ovf_un: len:32 dest:i src1:i src2:i
 
 s390_long_add_ovf: dest:i src1:i src2:i len:32
 s390_long_add_ovf_un: dest:i src1:i src2:i len:32

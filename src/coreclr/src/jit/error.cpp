@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 /*XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
@@ -20,6 +19,7 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 #if MEASURE_FATAL
 unsigned fatal_badCode;
 unsigned fatal_noWay;
+unsigned fatal_implLimitation;
 unsigned fatal_NOMEM;
 unsigned fatal_noWayAssertBody;
 #ifdef DEBUG
@@ -64,6 +64,16 @@ void DECLSPEC_NORETURN noWay()
 #endif // MEASURE_FATAL
 
     fatal(CORJIT_INTERNALERROR);
+}
+
+/*****************************************************************************/
+void DECLSPEC_NORETURN implLimitation()
+{
+#if MEASURE_FATAL
+    fatal_implLimitation += 1;
+#endif // MEASURE_FATAL
+
+    fatal(CORJIT_IMPLLIMITATION);
 }
 
 /*****************************************************************************/

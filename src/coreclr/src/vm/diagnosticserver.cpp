@@ -1,12 +1,13 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 #include "common.h"
 #include "diagnosticserver.h"
+#include "ipcstreamfactory.h"
 #include "eventpipeprotocolhelper.h"
 #include "dumpdiagnosticprotocolhelper.h"
 #include "profilerdiagnosticprotocolhelper.h"
+#include "processdiagnosticsprotocolhelper.h"
 #include "diagnosticsprotocol.h"
 
 #ifdef TARGET_UNIX
@@ -19,21 +20,24 @@
 
 #ifdef FEATURE_PERFTRACING
 
-IpcStream::DiagnosticsIpc *DiagnosticServer::s_pIpc = nullptr;
 Volatile<bool> DiagnosticServer::s_shuttingDown(false);
+CLREventStatic *DiagnosticServer::s_ResumeRuntimeStartupEvent = nullptr;
+GUID DiagnosticsIpc::AdvertiseCookie_V1 = GUID_NULL;
 
 DWORD WINAPI DiagnosticServer::DiagnosticsServerThread(LPVOID)
 {
     CONTRACTL
     {
+#ifndef DEBUG
         NOTHROW;
+#endif
         GC_TRIGGERS;
         MODE_PREEMPTIVE;
-        PRECONDITION(s_pIpc != nullptr);
+        PRECONDITION(s_shuttingDown || IpcStreamFactory::HasActivePorts());
     }
     CONTRACTL_END;
 
-    if (s_pIpc == nullptr)
+    if (!IpcStreamFactory::HasActivePorts())
     {
         STRESS_LOG0(LF_DIAGNOSTICS_PORT, LL_ERROR, "Diagnostics IPC listener was undefined\n");
         return 1;
@@ -43,12 +47,13 @@ DWORD WINAPI DiagnosticServer::DiagnosticsServerThread(LPVOID)
         STRESS_LOG2(LF_DIAGNOSTICS_PORT, LL_WARNING, "warning (%d): %s.\n", code, szMessage);
     };
 
+#ifndef DEBUG
     EX_TRY
     {
+#endif
         while (!s_shuttingDown)
         {
-            // FIXME: Ideally this would be something like a std::shared_ptr
-            IpcStream *pStream = s_pIpc->Accept(LoggingCallback);
+            IpcStream *pStream = IpcStreamFactory::GetNextAvailableStream(LoggingCallback);
 
             if (pStream == nullptr)
                 continue;
@@ -70,21 +75,25 @@ DWORD WINAPI DiagnosticServer::DiagnosticsServerThread(LPVOID)
                 continue;
             }
 
+            STRESS_LOG2(LF_DIAGNOSTICS_PORT, LL_INFO10, "DiagnosticServer - received IPC message with command set (%d) and command id (%d)\n", message.GetHeader().CommandSet, message.GetHeader().CommandId);
+
             switch ((DiagnosticsIpc::DiagnosticServerCommandSet)message.GetHeader().CommandSet)
             {
             case DiagnosticsIpc::DiagnosticServerCommandSet::EventPipe:
                 EventPipeProtocolHelper::HandleIpcMessage(message, pStream);
                 break;
 
-#ifdef TARGET_UNIX
             case DiagnosticsIpc::DiagnosticServerCommandSet::Dump:
                 DumpDiagnosticProtocolHelper::HandleIpcMessage(message, pStream);
                 break;
-#endif
+
+            case DiagnosticsIpc::DiagnosticServerCommandSet::Process:
+                ProcessDiagnosticsProtocolHelper::HandleIpcMessage(message,pStream);
+                break;
 
 #ifdef FEATURE_PROFAPI_ATTACH_DETACH
             case DiagnosticsIpc::DiagnosticServerCommandSet::Profiler:
-                ProfilerDiagnosticProtocolHelper::AttachProfiler(message, pStream);
+                ProfilerDiagnosticProtocolHelper::HandleIpcMessage(message, pStream);
                 break;
 #endif // FEATURE_PROFAPI_ATTACH_DETACH
 
@@ -95,13 +104,14 @@ DWORD WINAPI DiagnosticServer::DiagnosticsServerThread(LPVOID)
                 break;
             }
         }
+#ifndef DEBUG
     }
     EX_CATCH
     {
         STRESS_LOG0(LF_DIAGNOSTICS_PORT, LL_ERROR, "Exception caught in diagnostic thread. Leaving thread now.\n");
-        _ASSERTE(!"Hit an error in the diagnostic server thread\n.");
     }
     EX_END_CATCH(SwallowAllExceptions);
+#endif
 
     return 0;
 }
@@ -135,24 +145,21 @@ bool DiagnosticServer::Initialize()
                 szMessage);                                           // data2
         };
 
-        NewArrayHolder<char> address = nullptr;
-        CLRConfigStringHolder wAddress = CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_DOTNET_DiagnosticsServerAddress);
-        int nCharactersWritten = 0;
-        if (wAddress != nullptr)
+        // Initialize the RuntimeIndentifier before use
+        CoCreateGuid(&DiagnosticsIpc::AdvertiseCookie_V1);
+
+        // Ports can fail to be configured 
+        bool fAnyErrors = IpcStreamFactory::Configure(ErrorCallback);
+        if (fAnyErrors)
+            STRESS_LOG0(LF_DIAGNOSTICS_PORT, LL_ERROR, "At least one Diagnostic Port failed to be configured.\n");
+
+        if (IpcStreamFactory::AnySuspendedPorts())
         {
-            nCharactersWritten = WideCharToMultiByte(CP_UTF8, 0, wAddress, -1, NULL, 0, NULL, NULL);
-            if (nCharactersWritten != 0)
-            {
-                address = new char[nCharactersWritten];
-                nCharactersWritten = WideCharToMultiByte(CP_UTF8, 0, wAddress, -1, address, nCharactersWritten, NULL, NULL);
-                assert(nCharactersWritten != 0);
-            }
+            s_ResumeRuntimeStartupEvent = new CLREventStatic();
+            s_ResumeRuntimeStartupEvent->CreateManualEvent(false);
         }
 
-        // TODO: Should we handle/assert that (s_pIpc == nullptr)?
-        s_pIpc = IpcStream::DiagnosticsIpc::Create(address, ErrorCallback);
-
-        if (s_pIpc != nullptr)
+        if (IpcStreamFactory::HasActivePorts())
         {
 #ifdef FEATURE_AUTO_TRACE
             auto_trace_init();
@@ -163,14 +170,13 @@ bool DiagnosticServer::Initialize()
                 nullptr,                     // no security attribute
                 0,                           // default stack size
                 DiagnosticsServerThread,     // thread proc
-                (LPVOID)s_pIpc,              // thread parameter
+                nullptr,                     // thread parameter
                 0,                           // not suspended
                 &dwThreadId);                // returns thread ID
 
             if (hServerThread == NULL)
             {
-                delete s_pIpc;
-                s_pIpc = nullptr;
+                IpcStreamFactory::ClosePorts();
 
                 // Failed to create IPC thread.
                 STRESS_LOG1(
@@ -215,7 +221,7 @@ bool DiagnosticServer::Shutdown()
 
     EX_TRY
     {
-        if (s_pIpc != nullptr)
+        if (IpcStreamFactory::HasActivePorts())
         {
             auto ErrorCallback = [](const char *szMessage, uint32_t code) {
                 STRESS_LOG2(
@@ -225,7 +231,8 @@ bool DiagnosticServer::Shutdown()
                     code,                                                 // data1
                     szMessage);                                           // data2
             };
-            s_pIpc->Close(ErrorCallback); // This will break the accept waiting for client connection.
+
+            IpcStreamFactory::Shutdown(ErrorCallback);
         }
         fSuccess = true;
     }
@@ -237,6 +244,47 @@ bool DiagnosticServer::Shutdown()
     EX_END_CATCH(SwallowAllExceptions);
 
     return fSuccess;
+}
+
+// This method will block runtime bring-up IFF DOTNET_DiagnosticsMonitorAddress != nullptr and DOTNET_DiagnosticsMonitorPauseOnStart!=0 (it's default state)
+// The s_ResumeRuntimeStartupEvent event will be signaled when the Diagnostics Monitor uses the ResumeRuntime Diagnostics IPC Command
+void DiagnosticServer::PauseForDiagnosticsMonitor()
+{
+    CONTRACTL
+    {
+      THROWS;
+      GC_NOTRIGGER;
+      MODE_PREEMPTIVE;
+    }
+    CONTRACTL_END;
+
+    if (IpcStreamFactory::AnySuspendedPorts())
+    {
+        _ASSERTE(s_ResumeRuntimeStartupEvent != nullptr && s_ResumeRuntimeStartupEvent->IsValid());
+        STRESS_LOG0(LF_DIAGNOSTICS_PORT, LL_ALWAYS, "The runtime has been configured to pause during startup and is awaiting a Diagnostics IPC ResumeStartup command.");
+        const DWORD dwFiveSecondWait = s_ResumeRuntimeStartupEvent->Wait(5000, false);
+        if (dwFiveSecondWait == WAIT_TIMEOUT)
+        {
+            CLRConfigStringHolder dotnetDiagnosticPortString = CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_DOTNET_DiagnosticPorts);
+            WCHAR empty[] = W("");
+            DWORD dotnetDiagnosticPortSuspend = CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_DOTNET_DefaultDiagnosticPortSuspend);
+            wprintf(W("The runtime has been configured to pause during startup and is awaiting a Diagnostics IPC ResumeStartup command from a Diagnostic Port.\n"));
+            wprintf(W("DOTNET_DiagnosticPorts=\"%s\"\n"), dotnetDiagnosticPortString == nullptr ? empty : dotnetDiagnosticPortString.GetValue());
+            wprintf(W("DOTNET_DefaultDiagnosticPortSuspend=%d\n"), dotnetDiagnosticPortSuspend);
+            fflush(stdout);
+            STRESS_LOG0(LF_DIAGNOSTICS_PORT, LL_ALWAYS, "The runtime has been configured to pause during startup and is awaiting a Diagnostics IPC ResumeStartup command and has waited 5 seconds.");
+            const DWORD dwWait = s_ResumeRuntimeStartupEvent->Wait(INFINITE, false);
+        }
+    }
+    // allow wait failures to fall through and the runtime to continue coming up
+}
+
+void DiagnosticServer::ResumeRuntimeStartup()
+{
+    LIMITED_METHOD_CONTRACT;
+    IpcStreamFactory::ResumeCurrentPort();
+    if (!IpcStreamFactory::AnySuspendedPorts() && s_ResumeRuntimeStartupEvent != nullptr && s_ResumeRuntimeStartupEvent->IsValid())
+        s_ResumeRuntimeStartupEvent->Set();
 }
 
 #endif // FEATURE_PERFTRACING

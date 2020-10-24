@@ -1,7 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
+#nullable disable
 using System.Diagnostics;
 
 namespace System.Xml.Xsl.Runtime
@@ -72,7 +72,6 @@ namespace System.Xml.Xsl.Runtime
         /// </summary>
         public override bool Read()
         {
-            XmlCharType xmlCharType = XmlCharType.Instance;
             string ws = null;
 
             // Clear text value
@@ -107,7 +106,7 @@ namespace System.Xml.Xsl.Runtime
                         if (_shouldStrip)
                         {
                             // Reader may report whitespace as Text or CDATA
-                            if (xmlCharType.IsOnlyWhitespace(base.Value))
+                            if (XmlCharType.IsOnlyWhitespace(base.Value))
                                 goto case XmlNodeType.Whitespace;
 
                             // If whitespace was cached, then prepend it to text or CDATA value

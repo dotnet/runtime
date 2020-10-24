@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using Xunit;
 using System.Collections.Generic;
@@ -169,7 +168,7 @@ namespace System.Threading.Tasks.Tests
             Assert.True(future3.IsCanceled, "    > FAILED.  Future(unwrapped) w/ canceled token should have ended in Canceled state");
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public static void RunRunTests_FastPathTests()
         {
             CancellationTokenSource cts = new CancellationTokenSource();
@@ -255,7 +254,7 @@ namespace System.Threading.Tasks.Tests
             }
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public static void RunRunTests_Unwrap_NegativeCases()
         {
             //
@@ -496,6 +495,29 @@ namespace System.Threading.Tasks.Tests
             Assert.True((bool)isHandledField.GetValue(holderObject), "Expected FromException task to be observed after accessing Exception");
         }
 
+        [Theory]
+        [InlineData(-2L)]
+        [InlineData((long)int.MinValue)]
+        [InlineData((long)uint.MaxValue)]
+        public static void TaskDelay_OutOfBounds_ThrowsException(long delay)
+        {
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("delay", () => { Task.Delay(TimeSpan.FromMilliseconds(delay)); });
+            if (delay >= int.MinValue && delay <= int.MaxValue)
+            {
+                AssertExtensions.Throws<ArgumentOutOfRangeException>("millisecondsDelay", () => { Task.Delay((int)delay); });
+            }
+        }
+
+        [Fact]
+        public static void TaskDelay_MaxSupported_Success()
+        {
+            var cts = new CancellationTokenSource();
+            Task t = Task.Delay(TimeSpan.FromMilliseconds(uint.MaxValue - 2), cts.Token);
+            Assert.False(t.IsCompleted);
+            cts.Cancel();
+            Assert.True(t.IsCanceled);
+        }
+
         [Fact]
         public static void RunDelayTests()
         {
@@ -533,7 +555,7 @@ namespace System.Threading.Tasks.Tests
             Assert.False(task7.IsCompleted, "RunDelayTests:    > FAILED.  Delay(10000) appears to have completed too soon(2).");
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public static void RunDelayTests_NegativeCases()
         {
             CancellationTokenSource disposedCTS = new CancellationTokenSource();
@@ -600,7 +622,7 @@ namespace System.Threading.Tasks.Tests
 
         // Test that exceptions are properly wrapped when thrown in various scenarios.
         // Make sure that "indirect" logic does not add superfluous exception wrapping.
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public static void RunExceptionWrappingTest()
         {
             Action throwException = delegate { throw new InvalidOperationException(); };
@@ -748,7 +770,7 @@ namespace System.Threading.Tasks.Tests
             AsyncExceptionChecker(asyncFuture, "Future-based FromAsync(beginMethod, ...)");
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public static void RunHideSchedulerTests()
         {
             TaskScheduler[] schedules = new TaskScheduler[2];
@@ -818,7 +840,7 @@ namespace System.Threading.Tasks.Tests
                () => { new TaskCompletionSource<int>(TaskCreationOptions.HideScheduler); });
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public static void RunDenyChildAttachTests()
         {
             // StartNew, Task and Future

@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Diagnostics;
 using System.IO;
@@ -11,11 +10,11 @@ namespace System.Net
     public sealed unsafe partial class HttpListenerResponse : IDisposable
     {
         private BoundaryType _boundaryType = BoundaryType.None;
-        private CookieCollection _cookies;
-        private readonly HttpListenerContext _httpContext;
+        private CookieCollection? _cookies;
+        private readonly HttpListenerContext? _httpContext;
         private bool _keepAlive = true;
-        private HttpResponseStream _responseStream;
-        private string _statusDescription;
+        private HttpResponseStream? _responseStream;
+        private string? _statusDescription;
         private WebHeaderCollection _webHeaders = new WebHeaderCollection();
 
         public WebHeaderCollection Headers
@@ -31,9 +30,9 @@ namespace System.Net
             }
         }
 
-        public Encoding ContentEncoding { get; set; }
+        public Encoding? ContentEncoding { get; set; }
 
-        public string ContentType
+        public string? ContentType
         {
             get => Headers[HttpKnownHeaderNames.ContentType];
             set
@@ -50,9 +49,9 @@ namespace System.Net
             }
         }
 
-        private HttpListenerContext HttpListenerContext => _httpContext;
+        private HttpListenerContext HttpListenerContext => _httpContext!;
 
-        private HttpListenerRequest HttpListenerRequest => HttpListenerContext.Request;
+        private HttpListenerRequest HttpListenerRequest => HttpListenerContext!.Request;
 
         internal EntitySendFormat EntitySendFormat
         {
@@ -135,11 +134,11 @@ namespace System.Net
             {
                 CheckDisposed();
                 EnsureResponseStream();
-                return _responseStream;
+                return _responseStream!;
             }
         }
 
-        public string RedirectLocation
+        public string? RedirectLocation
         {
             get => Headers[HttpResponseHeader.Location];
             set
@@ -188,7 +187,7 @@ namespace System.Net
                     char c = (char)(0x000000ff & (uint)value[i]);
                     if ((c <= 31 && c != (byte)'\t') || c == 127)
                     {
-                        throw new ArgumentException(SR.net_WebHeaderInvalidControlChars, "name");
+                        throw new ArgumentException(SR.net_WebHeaderInvalidControlChars, nameof(value));
                     }
                 }
 
@@ -198,13 +197,13 @@ namespace System.Net
 
         public void AddHeader(string name, string value)
         {
-            if (NetEventSource.IsEnabled) NetEventSource.Info(this, $"name={name}, value={value}");
+            if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, $"name={name}, value={value}");
             Headers.Set(name, value);
         }
 
         public void AppendHeader(string name, string value)
         {
-            if (NetEventSource.IsEnabled) NetEventSource.Info(this, $"name={name}, value={value}");
+            if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, $"name={name}, value={value}");
             Headers.Add(name, value);
         }
 
@@ -214,18 +213,18 @@ namespace System.Net
             {
                 throw new ArgumentNullException(nameof(cookie));
             }
-            if (NetEventSource.IsEnabled) NetEventSource.Info(this, $"cookie: {cookie}");
+            if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, $"cookie: {cookie}");
             Cookies.Add(cookie);
         }
 
         private void ComputeCookies()
         {
-            if (NetEventSource.IsEnabled) NetEventSource.Info(this, $"Entering Set-Cookie: {Headers[HttpResponseHeader.SetCookie]}, Set-Cookie2: {Headers[HttpKnownHeaderNames.SetCookie2]}");
+            if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, $"Entering Set-Cookie: {Headers[HttpResponseHeader.SetCookie]}, Set-Cookie2: {Headers[HttpKnownHeaderNames.SetCookie2]}");
 
             if (_cookies != null)
             {
                 // now go through the collection, and concatenate all the cookies in per-variant strings
-                string setCookie2 = null, setCookie = null;
+                string? setCookie2 = null, setCookie = null;
                 for (int index = 0; index < _cookies.Count; index++)
                 {
                     Cookie cookie = _cookies[index];
@@ -234,7 +233,7 @@ namespace System.Net
                     {
                         continue;
                     }
-                    if (NetEventSource.IsEnabled) NetEventSource.Info(this, $"Now looking at index:{index} cookie: {cookie}");
+                    if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, $"Now looking at index:{index} cookie: {cookie}");
                     if (cookie.IsRfc2965Variant())
                     {
                         setCookie2 = setCookie2 == null ? cookieString : setCookie2 + ", " + cookieString;
@@ -264,15 +263,15 @@ namespace System.Net
                 }
             }
 
-            if (NetEventSource.IsEnabled) NetEventSource.Info(this, $"Exiting Set-Cookie: {Headers[HttpResponseHeader.SetCookie]} Set-Cookie2: {Headers[HttpKnownHeaderNames.SetCookie2]}");
+            if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, $"Exiting Set-Cookie: {Headers[HttpResponseHeader.SetCookie]} Set-Cookie2: {Headers[HttpKnownHeaderNames.SetCookie2]}");
         }
 
         public void Redirect(string url)
         {
-            if (NetEventSource.IsEnabled) NetEventSource.Info(this, $"url={url}");
+            if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, $"url={url}");
             Headers[HttpResponseHeader.Location] = url;
             StatusCode = (int)HttpStatusCode.Redirect;
-            StatusDescription = HttpStatusDescription.Get(StatusCode);
+            StatusDescription = HttpStatusDescription.Get(StatusCode)!;
         }
 
         public void SetCookie(Cookie cookie)
@@ -285,7 +284,7 @@ namespace System.Net
             Cookie newCookie = cookie.Clone();
             int added = Cookies.InternalAdd(newCookie, true);
 
-            if (NetEventSource.IsEnabled) NetEventSource.Info(this, $"cookie: {cookie}");
+            if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, $"cookie: {cookie}");
 
             if (added != 1)
             {

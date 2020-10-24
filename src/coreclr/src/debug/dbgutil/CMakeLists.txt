@@ -1,10 +1,13 @@
 set(CMAKE_INCLUDE_CURRENT_DIR ON)
 
 if(CLR_CMAKE_HOST_WIN32)
-  include_directories(${CLR_DIR}/src/inc/llvm)
   #use static crt
   add_definitions(-MT)
 endif(CLR_CMAKE_HOST_WIN32)
+
+if(CLR_CMAKE_HOST_WIN32 OR CLR_CMAKE_HOST_OSX)
+  include_directories(${CLR_DIR}/src/inc/llvm)
+endif(CLR_CMAKE_HOST_WIN32 OR CLR_CMAKE_HOST_OSX)
 
 add_definitions(-DPAL_STDCPP_COMPAT)
 
@@ -21,5 +24,11 @@ if(CLR_CMAKE_TARGET_LINUX)
         elfreader.cpp
     )
 endif(CLR_CMAKE_TARGET_LINUX)
+
+if(CLR_CMAKE_HOST_OSX)
+    list(APPEND DBGUTIL_SOURCES
+        machoreader.cpp
+    )
+endif(CLR_CMAKE_HOST_OSX)
 
 add_library_clr(dbgutil STATIC ${DBGUTIL_SOURCES})

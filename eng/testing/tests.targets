@@ -1,9 +1,11 @@
 <Project>
   <PropertyGroup>
-    <RunWorkingDirectory>$(OutDir)</RunWorkingDirectory>
-
     <RunScriptInputName Condition="'$(TargetOS)' == 'Windows_NT'">RunnerTemplate.cmd</RunScriptInputName>
     <RunScriptInputName Condition="'$(TargetOS)' != 'Windows_NT'">RunnerTemplate.sh</RunScriptInputName>
+    <RunScriptInputName Condition="'$(TargetOS)' == 'iOS'">AppleRunnerTemplate.sh</RunScriptInputName>
+    <RunScriptInputName Condition="'$(TargetOS)' == 'Android'">AndroidRunnerTemplate.sh</RunScriptInputName>
+    <RunScriptInputName Condition="'$(TargetOS)' == 'Browser'">WasmRunnerTemplate.sh</RunScriptInputName>
+
     <RunScriptInputPath>$(MSBuildThisFileDirectory)$(RunScriptInputName)</RunScriptInputPath>
 
     <RunScriptOutputName Condition="'$(TargetOS)' == 'Windows_NT'">RunTests.cmd</RunScriptOutputName>
@@ -15,33 +17,46 @@
 
     <RunScriptHost Condition="'$(TargetOS)' == 'Windows_NT'">$(RunScriptHostDir)dotnet.exe</RunScriptHost>
     <RunScriptHost Condition="'$(TargetOS)' != 'Windows_NT'">$(RunScriptHostDir)dotnet</RunScriptHost>
+  </PropertyGroup>
 
+  <PropertyGroup>
+    <ArchiveTestsAfterTargets>PrepareForRun</ArchiveTestsAfterTargets>
+
+    <!-- For browser we need to hook up the target with DependsOnTargets in PublishTestAsSelfContained
+    because we do a Publish which runs after Build, if we run after PrepareForRun we would generated
+    an empty zip because we haven't published the selfcontained app.  -->
+    <ArchiveTestsAfterTargets Condition="'$(TargetOS)' == 'Browser'" />
   </PropertyGroup>
 
   <!-- Archive test binaries. -->
   <Target Name="ArchiveTests"
-          Condition="'$(ArchiveTests)' == 'true' and '$(IgnoreForCI)' != 'true'"
-          AfterTargets="PrepareForRun"
+          Condition="'$(ArchiveTests)' == 'true' and '$(IgnoreForCI)' != 'true' and ('$(TargetsMobile)' != 'true' or '$(TargetOS)' == 'Browser')"
+          AfterTargets="$(ArchiveTestsAfterTargets)"
           DependsOnTargets="GenerateRunScript">
     <Error Condition="'$(TestArchiveTestsDir)' == ''" Text="TestArchiveTestsDir property to archive the test folder must be set." />
 
+    <PropertyGroup>
+      <_ZipSourceDirectory>$(OutDir)</_ZipSourceDirectory>
+      <_ZipSourceDirectory Condition="'$(TargetOS)' == 'Browser'">$(BundleDir)</_ZipSourceDirectory>
+    </PropertyGroup>
+
     <MakeDir Directories="$(TestArchiveTestsDir)" />
-    <ZipDirectory SourceDirectory="$(OutDir)"
+    <ZipDirectory SourceDirectory="$(_ZipSourceDirectory)"
                   DestinationFile="$([MSBuild]::NormalizePath('$(TestArchiveTestsDir)', '$(TestProjectName).zip'))"
                   Overwrite="true" />
+    <!-- delete the BundleDir and PublishDir in CI builds to save disk space on build agents since they're no longer needed -->
+    <RemoveDir Condition="'$(ContinuousIntegrationBuild)' == 'true'" Directories="$(BundleDir);$(PublishDir)" />
   </Target>
 
   <UsingTask TaskName="GenerateRunScript" AssemblyFile="$(InstallerTasksAssemblyPath)"/>
   <Target Name="GenerateRunScript">
     <PropertyGroup>
       <!-- RSP file support. -->
-      <RunArguments Condition="'$(TargetOS)' == 'Windows_NT'">$(RunArguments) %RSP_FILE%</RunArguments>
-      <RunArguments Condition="'$(TargetOS)' != 'Windows_NT'">$(RunArguments) $RSP_FILE</RunArguments>
+      <RunScriptCommand Condition="'$(TargetOS)' == 'Windows_NT'">$(RunScriptCommand) %RSP_FILE%</RunScriptCommand>
+      <RunScriptCommand Condition="'$(TargetOS)' != 'Windows_NT'">$(RunScriptCommand) $RSP_FILE</RunScriptCommand>
 
-      <!-- Escape arguments with user inputs. -->
-      <RunArguments>$([MSBuild]::Escape('$(RunArguments)'))</RunArguments>
-
-      <RunScriptCommand Condition="'$(RunScriptCommand)' == ''">$(RunCommand) $(RunArguments)</RunScriptCommand>
+      <!-- Escape potential user input. -->
+      <RunScriptCommand>$([MSBuild]::Escape('$(RunScriptCommand)'))</RunScriptCommand>
     </PropertyGroup>
 
     <!-- Set $(TestDebugger) to eg c:\debuggers\windbg.exe to run tests under a debugger. -->
@@ -71,31 +86,18 @@
                        TemplatePath="$(RunScriptInputPath)"
                        OutputPath="$(RunScriptOutputPath)" />
 
-    <Exec Condition="'$(TargetOS)' != 'Windows_NT'" Command="chmod +x $(RunScriptOutputPath)" />
-
+    <Exec Condition="'$(TargetOS)' != 'Windows_NT' and '$(OS)' != 'Windows_NT'" Command="chmod +x $(RunScriptOutputPath)" />
   </Target>
 
-  <Target Name="ValidateTestPlatform">
-    <ItemGroup>
-      <UnsupportedPlatformsItems Include="$(UnsupportedPlatforms)" />
-    </ItemGroup>
-
+  <Target Name="RunTests">
     <PropertyGroup>
-      <TestDisabled Condition="'%(UnsupportedPlatformsItems.Identity)' == '$(TargetOS)' or '$(ConfigurationErrorMsg)' != ''">true</TestDisabled>
-    </PropertyGroup>
-
-    <Message Text="ValidateTestPlatform found TargetOS of [$(TargetOS)]." Importance="Low" />
-
-    <Message Condition="'%(UnsupportedPlatformsItems.Identity)' == '$(TargetOS)'"
-             Text="Skipping tests in $(AssemblyName) because it is not supported on $(TargetOS)" />
-  </Target>
-
-  <Target Name="RunTests"
-          Condition="'$(TestDisabled)' != 'true'"
-          DependsOnTargets="ValidateTestPlatform">
-    <PropertyGroup>
-      <RunTestsCommand>"$(RunScriptOutputPath)" --runtime-path "$(TestHostRootPath.TrimEnd('\/'))"</RunTestsCommand>
+      <RunTestsCommand>"$(RunScriptOutputPath)"</RunTestsCommand>
+      <!-- Use runtime path only for the live built shared framework (NetCoreAppCurrent). -->
+      <RunTestsCommand Condition="'$(TargetFrameworkIdentifier)' == '.NETCoreApp' and
+                                  $([MSBuild]::VersionGreaterThanOrEquals($(TargetFrameworkVersion), '$(NETCoreAppCurrentVersion)'))">$(RunTestsCommand) --runtime-path "$(TestHostRootPath.TrimEnd('\/'))"</RunTestsCommand>
       <RunTestsCommand Condition="'$(TestRspFile)' != '' and '$(RuntimeFlavor)' != 'Mono'">$(RunTestsCommand) --rsp-file "$(TestRspFile)"</RunTestsCommand>
+      <RunTestsCommand Condition="'$(TargetsMobile)' == 'true'">"$(RunScriptOutputPath)" $(AssemblyName) $(TargetArchitecture)</RunTestsCommand>
+      <RunTestsCommand Condition="'$(TargetOS)' == 'Browser'">"$(RunScriptOutputPath)" $(JSEngine) $(AssemblyName).dll $(_withoutCategories.Replace(';', ' -notrait category='))</RunTestsCommand>
     </PropertyGroup>
 
     <!-- Invoke the run script with the test host as the runtime path. -->
@@ -107,7 +109,7 @@
     </Exec>
 
     <PropertyGroup Condition="'$(TestRunExitCode)' != '0'">
-      <TestResultsPath>$(RunWorkingDirectory)$(TestResultsName)</TestResultsPath>
+      <TestResultsPath>$(OutputPath)$(TestResultsName)</TestResultsPath>
       <TestRunErrorMessage>One or more tests failed while running tests from '$(TestProjectName)'.</TestRunErrorMessage>
       <TestRunErrorMessage Condition="Exists('$(TestResultsPath)')">$(TestRunErrorMessage) Please check $(TestResultsPath) for details!</TestRunErrorMessage>
     </PropertyGroup>
@@ -115,6 +117,7 @@
     <Error Condition="'$(TestRunExitCode)' != '0'" Text="$(TestRunErrorMessage)" />
   </Target>
 
+  <Import Project="$(MSBuildThisFileDirectory)tests.mobile.targets" Condition="'$(TargetsMobile)' == 'true'" />
   <Import Project="$(MSBuildThisFileDirectory)xunit\xunit.targets" Condition="'$(TestFramework)' == 'xunit'" />
 
   <!-- Main test targets -->

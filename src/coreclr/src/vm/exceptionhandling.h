@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 //
 
 //
@@ -70,11 +69,6 @@ public:
         m_WatsonBucketTracker.Init();
 #endif // !TARGET_UNIX
 
-#ifdef FEATURE_CORRUPTING_EXCEPTIONS
-        // Initialize the default exception severity to NotCorrupting
-        m_CorruptionSeverity = NotSet;
-#endif // FEATURE_CORRUPTING_EXCEPTIONS
-
         // By default, mark the tracker as not having delivered the first
         // chance exception notification
         m_fDeliveredFirstChanceNotification = FALSE;
@@ -129,11 +123,6 @@ public:
         // Init the WatsonBucketTracker
         m_WatsonBucketTracker.Init();
 #endif // !TARGET_UNIX
-
-#ifdef FEATURE_CORRUPTING_EXCEPTIONS
-        // Initialize the default exception severity to NotCorrupting
-        m_CorruptionSeverity = NotSet;
-#endif // FEATURE_CORRUPTING_EXCEPTIONS
 
         // By default, mark the tracker as not having delivered the first
         // chance exception notification
@@ -585,25 +574,6 @@ public:
         return PTR_EHWatsonBucketTracker(PTR_HOST_MEMBER_TADDR(ExceptionTracker, this, m_WatsonBucketTracker));
     }
 #endif // !TARGET_UNIX
-
-#ifdef FEATURE_CORRUPTING_EXCEPTIONS
-private:
-    CorruptionSeverity      m_CorruptionSeverity;
-public:
-    inline CorruptionSeverity GetCorruptionSeverity()
-    {
-        LIMITED_METHOD_CONTRACT;
-
-        return (CorruptionSeverity)GET_CORRUPTION_SEVERITY(m_CorruptionSeverity);
-    }
-
-    inline void SetCorruptionSeverity(CorruptionSeverity severityToSet)
-    {
-        LIMITED_METHOD_CONTRACT;
-
-        m_CorruptionSeverity = severityToSet;
-    }
-#endif // FEATURE_CORRUPTING_EXCEPTIONS
 
 private:
     BOOL                    m_fDeliveredFirstChanceNotification;

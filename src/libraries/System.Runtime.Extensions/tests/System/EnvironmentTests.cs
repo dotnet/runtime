@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections;
 using System.Collections.Generic;
@@ -37,7 +36,7 @@ namespace System.Tests
             Assert.Throws<DirectoryNotFoundException>(() => Environment.CurrentDirectory = GetTestFilePath());
         }
 
-        [Fact]
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         public void CurrentDirectory_SetToValidOtherDirectory()
         {
             RemoteExecutor.Invoke(() =>
@@ -45,7 +44,7 @@ namespace System.Tests
                 Environment.CurrentDirectory = TestDirectory;
                 Assert.Equal(Directory.GetCurrentDirectory(), Environment.CurrentDirectory);
 
-                if (!RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
+                if (!OperatingSystem.IsMacOS())
                 {
                     // On OSX, the temp directory /tmp/ is a symlink to /private/tmp, so setting the current
                     // directory to a symlinked path will result in GetCurrentDirectory returning the absolute
@@ -61,7 +60,7 @@ namespace System.Tests
             Assert.Equal(Environment.CurrentManagedThreadId, Environment.CurrentManagedThreadId);
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public void CurrentManagedThreadId_DifferentForActiveThreads()
         {
             var ids = new HashSet<int>();
@@ -74,6 +73,33 @@ namespace System.Tests
                               b.SignalAndWait();
                           }, CancellationToken.None, TaskCreationOptions.LongRunning, TaskScheduler.Default)).ToArray());
             Assert.Equal(b.ParticipantCount, ids.Count);
+        }
+
+        [Fact]
+        public void ProcessId_Idempotent()
+        {
+            Assert.InRange(Environment.ProcessId, 1, int.MaxValue);
+            Assert.Equal(Environment.ProcessId, Environment.ProcessId);
+        }
+
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        public void ProcessId_MatchesExpectedValue()
+        {
+            using RemoteInvokeHandle handle = RemoteExecutor.Invoke(() => Console.WriteLine(Environment.ProcessId), new RemoteInvokeOptions { StartInfo = new ProcessStartInfo { RedirectStandardOutput = true } });
+            Assert.Equal(handle.Process.Id, int.Parse(handle.Process.StandardOutput.ReadToEnd()));
+        }
+
+        [Fact]
+        public void ProcessPath_Idempotent()
+        {
+            Assert.Same(Environment.ProcessPath, Environment.ProcessPath);
+        }
+
+        [Fact]
+        public void ProcessPath_MatchesExpectedValue()
+        {
+            string expectedProcessPath = PlatformDetection.IsBrowser ? null : Process.GetCurrentProcess().MainModule.FileName;
+            Assert.Equal(expectedProcessPath, Environment.ProcessPath);
         }
 
         [Fact]
@@ -114,9 +140,8 @@ namespace System.Tests
         public void OSVersion_MatchesPlatform()
         {
             PlatformID id = Environment.OSVersion.Platform;
-            Assert.Equal(
-                RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? PlatformID.Win32NT : PlatformID.Unix,
-                id);
+            PlatformID expected = OperatingSystem.IsWindows() ? PlatformID.Win32NT : OperatingSystem.IsBrowser() ? PlatformID.Other : PlatformID.Unix;
+            Assert.Equal(expected, id);
         }
 
         [Fact]
@@ -129,12 +154,14 @@ namespace System.Tests
             Assert.True(version.Major > 0);
 
             Assert.Contains(version.ToString(2), versionString);
-            Assert.Contains(RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? "Windows" : "Unix", versionString);
+
+            string expectedOS = OperatingSystem.IsWindows() ? "Windows " : OperatingSystem.IsBrowser() ? "Other " : "Unix ";
+            Assert.Contains(expectedOS, versionString);
         }
 
-        // On Unix, we must parse the version from uname -r
+        // On non-OSX Unix, we must parse the version from uname -r
         [Theory]
-        [PlatformSpecific(TestPlatforms.AnyUnix)]
+        [PlatformSpecific(TestPlatforms.AnyUnix & ~TestPlatforms.OSX & ~TestPlatforms.Browser)]
         [InlineData("2.6.19-1.2895.fc6", 2, 6, 19, 1)]
         [InlineData("xxx1yyy2zzz3aaa4bbb", 1, 2, 3, 4)]
         [InlineData("2147483647.2147483647.2147483647.2147483647", int.MaxValue, int.MaxValue, int.MaxValue, int.MaxValue)]
@@ -152,6 +179,19 @@ namespace System.Tests
             var actual = ((OperatingSystem)getOSMethod.Invoke(null, new object[] { input })).Version;
 
             Assert.Equal(expected, actual);
+        }
+
+        [Fact]
+        [PlatformSpecific(TestPlatforms.OSX)]
+        public void OSVersion_ValidVersion_OSX()
+        {
+            Version version = Environment.OSVersion.Version;
+
+            // verify that the Environment.OSVersion.Version matches the current RID
+            Assert.Contains(version.ToString(2), RuntimeInformation.RuntimeIdentifier);
+
+            Assert.True(version.Build >= 0, "OSVersion Build should be non-negative");
+            Assert.Equal(-1, version.Revision); // Revision is never set on OSX
         }
 
         [Fact]
@@ -194,12 +234,15 @@ namespace System.Tests
         [Fact]
         public void WorkingSet_Valid()
         {
-            Assert.True(Environment.WorkingSet > 0, "Expected positive WorkingSet value");
+            if (PlatformDetection.IsBrowser)
+                Assert.Equal(0, Environment.WorkingSet);
+            else
+                Assert.True(Environment.WorkingSet > 0, "Expected positive WorkingSet value");
         }
 
         [Trait(XunitConstants.Category, XunitConstants.IgnoreForCI)] // fail fast crashes the process
         [OuterLoop]
-        [Fact]
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         public void FailFast_ExpectFailureExitCode()
         {
             using (RemoteInvokeHandle handle = RemoteExecutor.Invoke(() => Environment.FailFast("message")))
@@ -220,7 +263,7 @@ namespace System.Tests
         }
 
         [Trait(XunitConstants.Category, XunitConstants.IgnoreForCI)] // fail fast crashes the process
-        [Fact]
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         public void FailFast_ExceptionStackTrace_ArgumentException()
         {
             var psi = new ProcessStartInfo();
@@ -241,7 +284,7 @@ namespace System.Tests
         }
 
         [Trait(XunitConstants.Category, XunitConstants.IgnoreForCI)] // fail fast crashes the process
-        [Fact]
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         public void FailFast_ExceptionStackTrace_StackOverflowException()
         {
             // Test using another type of exception
@@ -263,7 +306,7 @@ namespace System.Tests
         }
 
         [Trait(XunitConstants.Category, XunitConstants.IgnoreForCI)] // fail fast crashes the process
-        [Fact]
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         public void FailFast_ExceptionStackTrace_InnerException()
         {
             // Test if inner exception details are also logged
@@ -287,7 +330,7 @@ namespace System.Tests
         }
 
         [Fact]
-        [PlatformSpecific(TestPlatforms.AnyUnix)]  // Tests OS-specific environment
+        [PlatformSpecific(TestPlatforms.AnyUnix | TestPlatforms.Browser)]  // Tests OS-specific environment
         public void GetFolderPath_Unix_PersonalIsHomeAndUserProfile()
         {
             Assert.Equal(Environment.GetEnvironmentVariable("HOME"), Environment.GetFolderPath(Environment.SpecialFolder.Personal));
@@ -432,54 +475,59 @@ namespace System.Tests
             Assert.True((attributes & FileAttributes.Directory) == FileAttributes.Directory, $"not a directory: {path}");
         }
 
-        // The commented out folders aren't set on all systems.
+        public static IEnumerable<object[]> GetFolderPath_WindowsTestData
+        {
+            get
+            {
+                yield return new object[] { Environment.SpecialFolder.ApplicationData };
+                yield return new object[] { Environment.SpecialFolder.CommonApplicationData };
+                yield return new object[] { Environment.SpecialFolder.LocalApplicationData };
+                yield return new object[] { Environment.SpecialFolder.Cookies };
+                yield return new object[] { Environment.SpecialFolder.Desktop };
+                yield return new object[] { Environment.SpecialFolder.Favorites };
+                yield return new object[] { Environment.SpecialFolder.History };
+                yield return new object[] { Environment.SpecialFolder.InternetCache };
+                yield return new object[] { Environment.SpecialFolder.Programs };
+                yield return new object[] { Environment.SpecialFolder.MyMusic };
+                yield return new object[] { Environment.SpecialFolder.MyPictures };
+                yield return new object[] { Environment.SpecialFolder.MyVideos };
+                yield return new object[] { Environment.SpecialFolder.Recent };
+                yield return new object[] { Environment.SpecialFolder.SendTo };
+                yield return new object[] { Environment.SpecialFolder.StartMenu };
+                yield return new object[] { Environment.SpecialFolder.System };
+                yield return new object[] { Environment.SpecialFolder.DesktopDirectory };
+                yield return new object[] { Environment.SpecialFolder.Personal };
+                yield return new object[] { Environment.SpecialFolder.ProgramFiles };
+                yield return new object[] { Environment.SpecialFolder.CommonProgramFiles };
+                yield return new object[] { Environment.SpecialFolder.CommonAdminTools };
+                yield return new object[] { Environment.SpecialFolder.CommonDocuments };
+                yield return new object[] { Environment.SpecialFolder.CommonMusic };
+                yield return new object[] { Environment.SpecialFolder.CommonPictures };
+                yield return new object[] { Environment.SpecialFolder.CommonStartMenu };
+                yield return new object[] { Environment.SpecialFolder.CommonPrograms };
+                yield return new object[] { Environment.SpecialFolder.CommonStartup };
+                yield return new object[] { Environment.SpecialFolder.CommonDesktopDirectory };
+                yield return new object[] { Environment.SpecialFolder.CommonTemplates };
+                yield return new object[] { Environment.SpecialFolder.CommonVideos };
+                yield return new object[] { Environment.SpecialFolder.Fonts };
+                yield return new object[] { Environment.SpecialFolder.UserProfile };
+                yield return new object[] { Environment.SpecialFolder.CommonProgramFilesX86 };
+                yield return new object[] { Environment.SpecialFolder.ProgramFilesX86 };
+                yield return new object[] { Environment.SpecialFolder.Resources };
+                yield return new object[] { Environment.SpecialFolder.SystemX86 };
+                yield return new object[] { Environment.SpecialFolder.Windows };
+
+                if (PlatformDetection.IsNotWindowsNanoNorServerCore)
+                {
+                    // Our windows docker containers don't have these folders.
+                    yield return new object[] { Environment.SpecialFolder.Startup };
+                    yield return new object[] { Environment.SpecialFolder.AdminTools };
+                }
+            }
+        }
+
         [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsNanoServer))] // https://github.com/dotnet/runtime/issues/21430
-        [InlineData(Environment.SpecialFolder.ApplicationData)]
-        [InlineData(Environment.SpecialFolder.CommonApplicationData)]
-        [InlineData(Environment.SpecialFolder.LocalApplicationData)]
-        [InlineData(Environment.SpecialFolder.Cookies)]
-        [InlineData(Environment.SpecialFolder.Desktop)]
-        [InlineData(Environment.SpecialFolder.Favorites)]
-        [InlineData(Environment.SpecialFolder.History)]
-        [InlineData(Environment.SpecialFolder.InternetCache)]
-        [InlineData(Environment.SpecialFolder.Programs)]
-        // [InlineData(Environment.SpecialFolder.MyComputer)]
-        [InlineData(Environment.SpecialFolder.MyMusic)]
-        [InlineData(Environment.SpecialFolder.MyPictures)]
-        [InlineData(Environment.SpecialFolder.MyVideos)]
-        [InlineData(Environment.SpecialFolder.Recent)]
-        [InlineData(Environment.SpecialFolder.SendTo)]
-        [InlineData(Environment.SpecialFolder.StartMenu)]
-        [InlineData(Environment.SpecialFolder.Startup)]
-        [InlineData(Environment.SpecialFolder.System)]
-        //[InlineData(Environment.SpecialFolder.Templates)]
-        [InlineData(Environment.SpecialFolder.DesktopDirectory)]
-        [InlineData(Environment.SpecialFolder.Personal)]
-        [InlineData(Environment.SpecialFolder.ProgramFiles)]
-        [InlineData(Environment.SpecialFolder.CommonProgramFiles)]
-        [InlineData(Environment.SpecialFolder.AdminTools)]
-        //[InlineData(Environment.SpecialFolder.CDBurning)]  // Not available on Server Core
-        [InlineData(Environment.SpecialFolder.CommonAdminTools)]
-        [InlineData(Environment.SpecialFolder.CommonDocuments)]
-        [InlineData(Environment.SpecialFolder.CommonMusic)]
-        // [InlineData(Environment.SpecialFolder.CommonOemLinks)]
-        [InlineData(Environment.SpecialFolder.CommonPictures)]
-        [InlineData(Environment.SpecialFolder.CommonStartMenu)]
-        [InlineData(Environment.SpecialFolder.CommonPrograms)]
-        [InlineData(Environment.SpecialFolder.CommonStartup)]
-        [InlineData(Environment.SpecialFolder.CommonDesktopDirectory)]
-        [InlineData(Environment.SpecialFolder.CommonTemplates)]
-        [InlineData(Environment.SpecialFolder.CommonVideos)]
-        [InlineData(Environment.SpecialFolder.Fonts)]
-        //[InlineData(Environment.SpecialFolder.NetworkShortcuts)]
-        // [InlineData(Environment.SpecialFolder.PrinterShortcuts)]
-        [InlineData(Environment.SpecialFolder.UserProfile)]
-        [InlineData(Environment.SpecialFolder.CommonProgramFilesX86)]
-        [InlineData(Environment.SpecialFolder.ProgramFilesX86)]
-        [InlineData(Environment.SpecialFolder.Resources)]
-        // [InlineData(Environment.SpecialFolder.LocalizedResources)]
-        [InlineData(Environment.SpecialFolder.SystemX86)]
-        [InlineData(Environment.SpecialFolder.Windows)]
+        [MemberData(nameof(GetFolderPath_WindowsTestData))]
         [PlatformSpecific(TestPlatforms.Windows)]  // Tests OS-specific environment
         public unsafe void GetFolderPath_Windows(Environment.SpecialFolder folder)
         {

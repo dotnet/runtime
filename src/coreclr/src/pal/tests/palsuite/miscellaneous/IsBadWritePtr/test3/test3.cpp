@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 /*============================================================
 **
@@ -14,7 +13,8 @@
 
 #include <palsuite.h>
 
-int __cdecl main(int argc, char *argv[]) {
+PALTEST(miscellaneous_IsBadWritePtr_test3_paltest_isbadwriteptr_test3, "miscellaneous/IsBadWritePtr/test3/paltest_isbadwriteptr_test3")
+{
     
     LPVOID PageOne;
 

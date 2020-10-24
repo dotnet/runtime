@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections;
 using System.Collections.Generic;
@@ -73,8 +72,7 @@ namespace System.Linq
         IOrderedEnumerable<TElement> IOrderedEnumerable<TElement>.CreateOrderedEnumerable<TKey>(Func<TElement, TKey> keySelector, IComparer<TKey>? comparer, bool descending) =>
             new OrderedEnumerable<TElement, TKey>(_source, keySelector, comparer, @descending, this);
 
-        [return: MaybeNull]
-        public TElement TryGetFirst(Func<TElement, bool> predicate, out bool found)
+        public TElement? TryGetLast(Func<TElement, bool> predicate, out bool found)
         {
             CachingComparer<TElement> comparer = GetComparer();
             using (IEnumerator<TElement> e = _source.GetEnumerator())
@@ -85,41 +83,7 @@ namespace System.Linq
                     if (!e.MoveNext())
                     {
                         found = false;
-                        return default!;
-                    }
-
-                    value = e.Current;
-                }
-                while (!predicate(value));
-
-                comparer.SetElement(value);
-                while (e.MoveNext())
-                {
-                    TElement x = e.Current;
-                    if (predicate(x) && comparer.Compare(x, true) < 0)
-                    {
-                        value = x;
-                    }
-                }
-
-                found = true;
-                return value;
-            }
-        }
-
-        [return: MaybeNull]
-        public TElement TryGetLast(Func<TElement, bool> predicate, out bool found)
-        {
-            CachingComparer<TElement> comparer = GetComparer();
-            using (IEnumerator<TElement> e = _source.GetEnumerator())
-            {
-                TElement value;
-                do
-                {
-                    if (!e.MoveNext())
-                    {
-                        found = false;
-                        return default!;
+                        return default;
                     }
 
                     value = e.Current;
@@ -211,7 +175,7 @@ namespace System.Linq
         protected readonly Func<TElement, TKey> _keySelector;
         protected readonly IComparer<TKey> _comparer;
         protected readonly bool _descending;
-        [MaybeNull] protected TKey _lastKey = default!;
+        protected TKey? _lastKey;
 
         public CachingComparer(Func<TElement, TKey> keySelector, IComparer<TKey> comparer, bool descending)
         {

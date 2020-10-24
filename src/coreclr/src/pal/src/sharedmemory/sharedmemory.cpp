@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 #include "pal/sharedmemory.h"
 
@@ -878,6 +877,7 @@ void SharedMemoryProcessDataHeader::Close()
     // nonzero, don't clean up any object or global process-local state.
     if (m_refCount == 0)
     {
+        _ASSERTE(m_data == nullptr || m_data->CanClose());
         SharedMemoryManager::RemoveProcessDataHeader(this);
     }
 
@@ -1015,7 +1015,12 @@ void SharedMemoryProcessDataHeader::IncRefCount()
     _ASSERTE(SharedMemoryManager::IsCreationDeletionProcessLockAcquired());
     _ASSERTE(m_refCount != 0);
 
-    ++m_refCount;
+    if (++m_refCount == 2 && m_data != nullptr && m_data->HasImplicitRef())
+    {
+        // The synchronization object got an explicit ref that will govern its lifetime, remove the implicit ref
+        --m_refCount;
+        m_data->SetHasImplicitRef(false);
+    }
 }
 
 void SharedMemoryProcessDataHeader::DecRefCount()
@@ -1023,10 +1028,21 @@ void SharedMemoryProcessDataHeader::DecRefCount()
     _ASSERTE(SharedMemoryManager::IsCreationDeletionProcessLockAcquired());
     _ASSERTE(m_refCount != 0);
 
-    if (--m_refCount == 0)
+    if (--m_refCount != 0)
     {
-        InternalDelete(this);
+        return;
     }
+
+    if (m_data != nullptr && !m_data->CanClose())
+    {
+        // Extend the lifetime of the synchronization object. The process data object is responsible for removing this extra ref
+        // when the synchronization object transitions into a state where it can be closed.
+        ++m_refCount;
+        m_data->SetHasImplicitRef(true);
+        return;
+    }
+
+    InternalDelete(this);
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////

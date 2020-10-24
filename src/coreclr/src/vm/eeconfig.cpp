@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 // EEConfig.CPP
 //
 
@@ -11,9 +10,6 @@
 
 
 #include "common.h"
-#ifdef FEATURE_COMINTEROP
-#include <appxutil.h>
-#endif
 #include "eeconfig.h"
 #include "method.hpp"
 #include "eventtrace.h"
@@ -42,7 +38,7 @@ Volatile<DWORD> GCStressPolicy::InhibitHolder::s_nGcStressDisabled = 0;
 
 /**************************************************************/
 // Poor mans narrow
-LPUTF8 NarrowWideChar(__inout_z LPWSTR str)
+LPUTF8 NarrowWideChar(__inout_z LPCWSTR str)
 {
     CONTRACT (LPUTF8)
     {
@@ -54,7 +50,7 @@ LPUTF8 NarrowWideChar(__inout_z LPWSTR str)
     } CONTRACT_END;
 
     if (str != 0) {
-        LPWSTR fromPtr = str;
+        LPCWSTR fromPtr = str;
         LPUTF8 toPtr = (LPUTF8) str;
         LPUTF8 result = toPtr;
         while(*fromPtr != 0)
@@ -104,23 +100,9 @@ HRESULT EEConfig::Init()
 #endif
 
     fGCBreakOnOOM = false;
-    iGCgen0size = 0;
-    iGCSegmentSize = 0;
     iGCconcurrent = 0;
-#ifdef _DEBUG
-    iGCLatencyMode = -1;
-#endif //_DEBUG
-    iGCForceCompact = 0;
     iGCHoardVM = 0;
-    iGCLOHCompactionMode = 0;
     iGCLOHThreshold = 0;
-    iGCHeapCount = 0;
-    iGCNoAffinitize = 0;
-    iGCAffinityMask = 0;
-
-#ifdef GCTRIMCOMMIT
-    iGCTrimCommit = 0;
-#endif
 
     m_fFreepZapSet = false;
 
@@ -139,14 +121,6 @@ HRESULT EEConfig::Init()
     fJitAlignLoops = false;
     fJitMinOpts = false;
     fPInvokeRestoreEsp = (DWORD)-1;
-
-    fLegacyNullReferenceExceptionPolicy = false;
-    fLegacyUnhandledExceptionPolicy = false;
-
-#ifdef FEATURE_CORRUPTING_EXCEPTIONS
-    // By default, there is not pre-V4 CSE policy
-    fLegacyCorruptedStateExceptionsPolicy = false;
-#endif // FEATURE_CORRUPTING_EXCEPTIONS
 
     fNgenBindOptimizeNonGac = false;
     fStressLog = false;
@@ -237,8 +211,6 @@ HRESULT EEConfig::Init()
     dwNgenForceFailureCount = 0;
     dwNgenForceFailureKind  = 0;
 #endif
-
-    iGCPollType = GCPOLL_TYPE_DEFAULT;
 
 #ifdef _DEBUG
     fShouldInjectFault = 0;
@@ -471,7 +443,6 @@ fTrackDynamicMethodDebugInfo = CLRConfig::GetConfigValue(CLRConfig::UNSUPPORTED_
 
     IfFailRet(CLRConfig::GetConfigValue(CLRConfig::INTERNAL_GcCoverage, (LPWSTR*)&pszGcCoverageOnMethod));
     pszGcCoverageOnMethod = NarrowWideChar((LPWSTR)pszGcCoverageOnMethod);
-    iGCLatencyMode = GetConfigDWORD_DontUse_(CLRConfig::INTERNAL_GCLatencyMode, iGCLatencyMode);
 #endif
 
     bool gcConcurrentWasForced = false;
@@ -562,24 +533,6 @@ fTrackDynamicMethodDebugInfo = CLRConfig::GetConfigValue(CLRConfig::UNSUPPORTED_
 
 #endif //STRESS_HEAP
 
-#ifdef HOST_64BIT
-    iGCAffinityMask = GetConfigULONGLONG_DontUse_(CLRConfig::EXTERNAL_GCHeapAffinitizeMask, iGCAffinityMask);
-    if (!iGCAffinityMask) iGCAffinityMask =  Configuration::GetKnobULONGLONGValue(W("System.GC.HeapAffinitizeMask"));
-    if (!iGCSegmentSize) iGCSegmentSize =  GetConfigULONGLONG_DontUse_(CLRConfig::UNSUPPORTED_GCSegmentSize, iGCSegmentSize);
-    if (!iGCgen0size) iGCgen0size = GetConfigULONGLONG_DontUse_(CLRConfig::UNSUPPORTED_GCgen0size, iGCgen0size);
-#else
-    iGCAffinityMask = GetConfigDWORD_DontUse_(CLRConfig::EXTERNAL_GCHeapAffinitizeMask, iGCAffinityMask);
-    if (!iGCAffinityMask) iGCAffinityMask = Configuration::GetKnobDWORDValue(W("System.GC.HeapAffinitizeMask"), 0);
-    if (!iGCSegmentSize) iGCSegmentSize =  GetConfigDWORD_DontUse_(CLRConfig::UNSUPPORTED_GCSegmentSize, iGCSegmentSize);
-    if (!iGCgen0size) iGCgen0size = GetConfigDWORD_DontUse_(CLRConfig::UNSUPPORTED_GCgen0size, iGCgen0size);
-#endif //HOST_64BIT
-
-    const ULONGLONG ullHeapHardLimit = Configuration::GetKnobULONGLONGValue(W("System.GC.HeapHardLimit"));
-    iGCHeapHardLimit = FitsIn<size_t, ULONGLONG>(ullHeapHardLimit)
-        ? static_cast<size_t>(ullHeapHardLimit)
-        : ClrSafeInt<size_t>::MaxInt();
-    iGCHeapHardLimitPercent = Configuration::GetKnobDWORDValue(W("System.GC.HeapHardLimitPercent"), 0);
-
     if (g_IGCHoardVM)
         iGCHoardVM = g_IGCHoardVM;
     else
@@ -590,15 +543,6 @@ fTrackDynamicMethodDebugInfo = CLRConfig::GetConfigValue(CLRConfig::UNSUPPORTED_
         iGCLOHThreshold = Configuration::GetKnobDWORDValue(W("System.GC.LOHThreshold"), CLRConfig::EXTERNAL_GCLOHThreshold);
         iGCLOHThreshold = max (iGCLOHThreshold, LARGE_OBJECT_SIZE);
     }
-
-    if (!iGCLOHCompactionMode) iGCLOHCompactionMode = GetConfigDWORD_DontUse_(CLRConfig::UNSUPPORTED_GCLOHCompact, iGCLOHCompactionMode);
-
-#ifdef GCTRIMCOMMIT
-    if (g_IGCTrimCommit)
-        iGCTrimCommit = g_IGCTrimCommit;
-    else
-        iGCTrimCommit = GetConfigDWORD_DontUse_(CLRConfig::EXTERNAL_gcTrimCommitOnLowMemory, iGCTrimCommit);
-#endif
 
 #ifdef FEATURE_CONSERVATIVE_GC
     iGCConservative =  (CLRConfig::GetConfigValue(CLRConfig::UNSUPPORTED_gcConservative) != 0);
@@ -637,12 +581,6 @@ fTrackDynamicMethodDebugInfo = CLRConfig::GetConfigValue(CLRConfig::UNSUPPORTED_
         IfFailRet(hr);
     }
 #endif
-
-    iGCForceCompact     =  GetConfigDWORD_DontUse_(CLRConfig::UNSUPPORTED_gcForceCompact, iGCForceCompact);
-    iGCNoAffinitize = Configuration::GetKnobBooleanValue(W("System.GC.NoAffinitize"),
-                                                         CLRConfig::EXTERNAL_GCNoAffinitize);
-    iGCHeapCount = Configuration::GetKnobDWORDValue(W("System.GC.HeapCount"), CLRConfig::EXTERNAL_GCHeapCount);
-
     fStressLog        =  GetConfigDWORD_DontUse_(CLRConfig::UNSUPPORTED_StressLog, fStressLog) != 0;
     fForceEnc         =  GetConfigDWORD_DontUse_(CLRConfig::UNSUPPORTED_ForceEnc, fForceEnc) != 0;
 
@@ -899,21 +837,6 @@ fTrackDynamicMethodDebugInfo = CLRConfig::GetConfigValue(CLRConfig::UNSUPPORTED_
     dwNgenForceFailureKind  = CLRConfig::GetConfigValue(CLRConfig::INTERNAL_NgenForceFailureKind);
 #endif
 #endif // FEATURE_PREJIT
-
-    DWORD iGCPollTypeOverride = GetConfigDWORD_DontUse_(CLRConfig::EXTERNAL_GCPollType, iGCPollType);
-
-#ifndef FEATURE_HIJACK
-    // Platforms that do not support hijacking MUST support GC polling.
-    // Reject attempts by the user to configure the GC polling type as
-    // GCPOLL_TYPE_HIJACK.
-    _ASSERTE(EEConfig::GCPOLL_TYPE_HIJACK != iGCPollTypeOverride);
-    if (EEConfig::GCPOLL_TYPE_HIJACK == iGCPollTypeOverride)
-        iGCPollTypeOverride = EEConfig::GCPOLL_TYPE_DEFAULT;
-#endif
-
-    _ASSERTE(iGCPollTypeOverride < GCPOLL_TYPE_COUNT);
-    if (iGCPollTypeOverride < GCPOLL_TYPE_COUNT)
-        iGCPollType = GCPollType(iGCPollTypeOverride);
 
 #if defined(_DEBUG) && defined(FEATURE_EH_FUNCLETS)
     fSuppressLockViolationsOnReentryFromOS = (CLRConfig::GetConfigValue(CLRConfig::INTERNAL_SuppressLockViolationsOnReentryFromOS) != 0);

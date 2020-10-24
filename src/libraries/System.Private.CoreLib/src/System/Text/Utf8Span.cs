@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Buffers;
 using System.ComponentModel;
@@ -14,20 +13,6 @@ using Internal.Runtime.CompilerServices;
 #endif
 
 #pragma warning disable 0809  //warning CS0809: Obsolete member 'Utf8Span.Equals(object)' overrides non-obsolete member 'object.Equals(object)'
-
-#pragma warning disable SA1121 // explicitly using type aliases instead of built-in types
-#if SYSTEM_PRIVATE_CORELIB
-#if TARGET_64BIT
-using nint = System.Int64;
-using nuint = System.UInt64;
-#else
-using nint = System.Int32;
-using nuint = System.UInt32;
-#endif
-#else
-using nint = System.Int64; // https://github.com/dotnet/runtime/issues/33575 - use long/ulong outside of corelib until the compiler supports it
-using nuint = System.UInt64;
-#endif
 
 namespace System.Text
 {
@@ -132,7 +117,7 @@ namespace System.Text
 #if SYSTEM_PRIVATE_CORELIB
             return ref Unsafe.AddByteOffset(ref DangerousGetMutableReference(), index);
 #else
-            return ref Unsafe.AddByteOffset(ref DangerousGetMutableReference(), (IntPtr)index);
+            return ref Unsafe.AddByteOffset(ref DangerousGetMutableReference(), (nint)index);
 #endif
         }
 
@@ -245,7 +230,7 @@ namespace System.Text
             // TODO_UTF8STRING: Since we know the underlying data is immutable, well-formed UTF-8,
             // we can perform transcoding using an optimized code path that skips all safety checks.
 
-#if !NETSTANDARD2_0
+#if (!NETSTANDARD2_0 && !NETFRAMEWORK)
             return Encoding.UTF8.GetString(Bytes);
 #else
             if (IsEmpty)
@@ -288,9 +273,9 @@ namespace System.Text
                 int utf16CharCount = Length + utf16CodeUnitCountAdjustment;
                 Debug.Assert(utf16CharCount <= Length && utf16CharCount >= 0);
 
-#if !NETSTANDARD2_0
+#if (!NETSTANDARD2_0 && !NETFRAMEWORK)
                 // TODO_UTF8STRING: Can we call string.FastAllocate directly?
-                return string.Create(utf16CharCount, (pbData: (IntPtr)pData, cbData: Length), (chars, state) =>
+                return string.Create(utf16CharCount, (pbData: (IntPtr)pData, cbData: Length), static (chars, state) =>
                 {
                     OperationStatus status = Utf8.ToUtf16(new ReadOnlySpan<byte>((byte*)state.pbData, state.cbData), chars, out _, out _, replaceInvalidSequences: false);
                     Debug.Assert(status == OperationStatus.Done, "Did somebody mutate this Utf8String instance unexpectedly?");

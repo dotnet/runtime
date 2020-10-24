@@ -1,6 +1,5 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
@@ -31,16 +30,13 @@ namespace System.Linq
             return first!;
         }
 
-        [return: MaybeNull]
-        public static TSource FirstOrDefault<TSource>(this IEnumerable<TSource> source) =>
+        public static TSource? FirstOrDefault<TSource>(this IEnumerable<TSource> source) =>
             source.TryGetFirst(out bool _);
 
-        [return: MaybeNull]
-        public static TSource FirstOrDefault<TSource>(this IEnumerable<TSource> source, Func<TSource, bool> predicate) =>
+        public static TSource? FirstOrDefault<TSource>(this IEnumerable<TSource> source, Func<TSource, bool> predicate) =>
             source.TryGetFirst(predicate, out bool _);
 
-        [return: MaybeNull]
-        private static TSource TryGetFirst<TSource>(this IEnumerable<TSource> source, out bool found)
+        private static TSource? TryGetFirst<TSource>(this IEnumerable<TSource> source, out bool found)
         {
             if (source == null)
             {
@@ -73,11 +69,10 @@ namespace System.Linq
             }
 
             found = false;
-            return default!;
+            return default;
         }
 
-        [return: MaybeNull]
-        private static TSource TryGetFirst<TSource>(this IEnumerable<TSource> source, Func<TSource, bool> predicate, out bool found)
+        private static TSource? TryGetFirst<TSource>(this IEnumerable<TSource> source, Func<TSource, bool> predicate, out bool found)
         {
             if (source == null)
             {
@@ -87,11 +82,6 @@ namespace System.Linq
             if (predicate == null)
             {
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.predicate);
-            }
-
-            if (source is OrderedEnumerable<TSource> ordered)
-            {
-                return ordered.TryGetFirst(predicate, out found);
             }
 
             foreach (TSource element in source)
@@ -104,7 +94,7 @@ namespace System.Linq
             }
 
             found = false;
-            return default!;
+            return default;
         }
     }
 }

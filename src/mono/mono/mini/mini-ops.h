@@ -1100,7 +1100,7 @@ MINI_OP3(OP_SSSE3_ALIGNR, "ssse3_alignr", XREG, XREG, XREG, IREG)
 
 /* sse 4.1 */
 MINI_OP(OP_SSE41_ROUNDP, "roundp", XREG, XREG, NONE) // packed, inst_c0 - mode, inst_c1 - r4 or r8
-MINI_OP(OP_SSE41_ROUNDS, "rounds", XREG, XREG, NONE) // scalar, inst_c0 - mode, inst_c1 - r4 or r8
+MINI_OP(OP_SSE41_ROUNDS, "rounds", XREG, XREG, XREG) // scalar, inst_c0 - mode, inst_c1 - r4 or r8
 MINI_OP3(OP_SSE41_INSERT, "sse41_insert", XREG, XREG, XREG, IREG)
 MINI_OP3(OP_SSE41_BLENDV, "sse41_blendv", XREG, XREG, XREG, XREG)
 MINI_OP(OP_SSE41_BLEND_IMM, "sse41_blend", XREG, XREG, XREG)
@@ -1330,6 +1330,10 @@ MINI_OP(OP_X86_FP_LOAD_I4,         "x86_fp_load_i4", FREG, IREG, NONE)
 MINI_OP(OP_X86_SETEQ_MEMBASE,      "x86_seteq_membase", NONE, IREG, NONE)
 MINI_OP(OP_X86_SETNE_MEMBASE,      "x86_setne_membase", NONE, IREG, NONE)
 MINI_OP(OP_X86_FXCH,               "x86_fxch", NONE, NONE, NONE)
+MINI_OP(OP_X86_BSF32,              "x86_bsf32", IREG, IREG, NONE)
+MINI_OP(OP_X86_BSR32,              "x86_bsr32", IREG, IREG, NONE)
+MINI_OP(OP_X86_BSF64,              "x86_bsf64", LREG, LREG, NONE)
+MINI_OP(OP_X86_BSR64,              "x86_bsr64", LREG, LREG, NONE)
 #endif
 
 #if defined(TARGET_AMD64)
@@ -1405,7 +1409,7 @@ MINI_OP(OP_S390_LOADARG,	   "s390_loadarg", NONE, NONE, NONE)
 MINI_OP(OP_S390_ARGREG, 	   "s390_argreg", NONE, NONE, NONE)
 MINI_OP(OP_S390_ARGPTR, 	   "s390_argptr", NONE, NONE, NONE)
 MINI_OP(OP_S390_STKARG, 	   "s390_stkarg", NONE, NONE, NONE)
-MINI_OP(OP_S390_MOVE,	 	   "s390_move", IREG, IREG, NONE)
+MINI_OP(OP_S390_MOVE,	 	   "s390_move", NONE, IREG, IREG)
 MINI_OP(OP_S390_SETF4RET,	   "s390_setf4ret", FREG, FREG, NONE)
 MINI_OP(OP_S390_BKCHAIN, 	   "s390_bkchain", IREG, IREG, NONE)
 MINI_OP(OP_S390_LADD,          "s390_long_add", LREG, IREG, IREG)

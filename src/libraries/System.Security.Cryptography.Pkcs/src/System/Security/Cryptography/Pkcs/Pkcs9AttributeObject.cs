@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System;
 using System.Diagnostics;
@@ -32,12 +31,12 @@ namespace System.Security.Cryptography.Pkcs
             : base(asnEncodedData)
         {
             if (asnEncodedData.Oid == null)
-                throw new ArgumentNullException(nameof(asnEncodedData.Oid));
+                throw new ArgumentException(SR.Format(SR.Arg_EmptyOrNullString_Named, "asnEncodedData.Oid"), nameof(asnEncodedData));
             string? szOid = base.Oid!.Value;
             if (szOid == null)
-                throw new ArgumentNullException("oid.Value");
+                throw new ArgumentException(SR.Format(SR.Arg_EmptyOrNullString_Named, "oid.Value"), nameof(asnEncodedData));
             if (szOid.Length == 0)
-                throw new ArgumentException(SR.Arg_EmptyOrNullString, "oid.Value");
+                throw new ArgumentException(SR.Format(SR.Arg_EmptyOrNullString_Named, "oid.Value"), nameof(asnEncodedData));
         }
 
         internal Pkcs9AttributeObject(Oid oid)

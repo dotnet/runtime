@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
@@ -142,6 +141,7 @@ namespace System
             return ret;
         }
 
+        [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)]
         public virtual MemberInfo[] FindMembers(MemberTypes memberType, BindingFlags bindingAttr, MemberFilter? filter, object? filterCriteria)
         {
             // Define the work arrays
@@ -304,7 +304,7 @@ namespace System
             {
                 for (i = 0; i < e.Length; i++)
                     if (e[i] != null)
-                        ret[cnt++] = e[i]!;  // TODO-NULLABLE: Indexer nullability tracked (https://github.com/dotnet/roslyn/issues/34644)
+                        ret[cnt++] = e[i]!; // TODO-NULLABLE: Indexer nullability tracked (https://github.com/dotnet/roslyn/issues/34644)
             }
 
             // Copy the Types
@@ -312,7 +312,7 @@ namespace System
             {
                 for (i = 0; i < t.Length; i++)
                     if (t[i] != null)
-                        ret[cnt++] = t[i]!;  // TODO-NULLABLE: Indexer nullability tracked (https://github.com/dotnet/roslyn/issues/34644)
+                        ret[cnt++] = t[i]!; // TODO-NULLABLE: Indexer nullability tracked (https://github.com/dotnet/roslyn/issues/34644)
             }
 
             return ret;

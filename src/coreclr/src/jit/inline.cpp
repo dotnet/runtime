@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 #include "jitpch.h"
 #ifdef _MSC_VER
@@ -1151,8 +1150,16 @@ void InlineStrategy::NoteOutcome(InlineContext* context)
 
 bool InlineStrategy::BudgetCheck(unsigned ilSize)
 {
-    int timeDelta = EstimateInlineTime(ilSize);
-    return (timeDelta + m_CurrentTimeEstimate > m_CurrentTimeBudget);
+    const int  timeDelta = EstimateInlineTime(ilSize);
+    const bool result    = (timeDelta + m_CurrentTimeEstimate > m_CurrentTimeBudget);
+
+    if (result)
+    {
+        JITDUMP("\nBudgetCheck: for IL Size %d, timeDelta %d +  currentEstimate %d > currentBudget %d\n", ilSize,
+                timeDelta, m_CurrentTimeEstimate, m_CurrentTimeBudget);
+    }
+
+    return result;
 }
 
 //------------------------------------------------------------------------
@@ -1577,7 +1584,7 @@ void InlineStrategy::DumpXml(FILE* file, unsigned indent)
     strncpy(buf, methodName, sizeof(buf));
     buf[sizeof(buf) - 1] = 0;
 
-    for (int i = 0; i < _countof(buf); i++)
+    for (size_t i = 0; i < _countof(buf); i++)
     {
         switch (buf[i])
         {
@@ -1617,7 +1624,7 @@ void InlineStrategy::DumpXml(FILE* file, unsigned indent)
 
     // Root context will be null if we're not optimizing the method.
     //
-    // Note there are cases of this in mscorlib even in release builds,
+    // Note there are cases of this in System.Private.CoreLib even in release builds,
     // eg Task.NotifyDebuggerOfWaitCompletion.
     //
     // For such methods there aren't any inlines.

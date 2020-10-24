@@ -1,9 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
-using System.Diagnostics.Contracts;
 
 namespace System.Collections.Immutable
 {
@@ -17,7 +15,6 @@ namespace System.Collections.Immutable
         /// </summary>
         /// <typeparam name="T">The type of items stored by the collection.</typeparam>
         /// <returns>The immutable collection.</returns>
-        [Pure]
         public static ImmutableList<T> Create<T>() => ImmutableList<T>.Empty;
 
         /// <summary>
@@ -26,7 +23,6 @@ namespace System.Collections.Immutable
         /// <typeparam name="T">The type of items stored by the collection.</typeparam>
         /// <param name="item">The item to prepopulate.</param>
         /// <returns>The new immutable collection.</returns>
-        [Pure]
         public static ImmutableList<T> Create<T>(T item) => ImmutableList<T>.Empty.Add(item);
 
         /// <summary>
@@ -35,7 +31,6 @@ namespace System.Collections.Immutable
         /// <typeparam name="T">The type of items stored by the collection.</typeparam>
         /// <param name="items">The items to prepopulate.</param>
         /// <returns>The new immutable collection.</returns>
-        [Pure]
         public static ImmutableList<T> CreateRange<T>(IEnumerable<T> items) => ImmutableList<T>.Empty.AddRange(items);
 
         /// <summary>
@@ -44,7 +39,6 @@ namespace System.Collections.Immutable
         /// <typeparam name="T">The type of items stored by the collection.</typeparam>
         /// <param name="items">The items to prepopulate.</param>
         /// <returns>The new immutable collection.</returns>
-        [Pure]
         public static ImmutableList<T> Create<T>(params T[] items) => ImmutableList<T>.Empty.AddRange(items);
 
         /// <summary>
@@ -52,7 +46,6 @@ namespace System.Collections.Immutable
         /// </summary>
         /// <typeparam name="T">The type of items stored by the collection.</typeparam>
         /// <returns>The immutable collection builder.</returns>
-        [Pure]
         public static ImmutableList<T>.Builder CreateBuilder<T>() => Create<T>().ToBuilder();
 
         /// <summary>
@@ -61,7 +54,6 @@ namespace System.Collections.Immutable
         /// <typeparam name="TSource">The type of element in the sequence.</typeparam>
         /// <param name="source">The sequence to enumerate.</param>
         /// <returns>An immutable list.</returns>
-        [Pure]
         public static ImmutableList<TSource> ToImmutableList<TSource>(this IEnumerable<TSource> source)
         {
             var existingList = source as ImmutableList<TSource>;
@@ -78,7 +70,6 @@ namespace System.Collections.Immutable
         /// </summary>
         /// <param name="builder">The builder to create the immutable list from.</param>
         /// <returns>An immutable list.</returns>
-        [Pure]
         public static ImmutableList<TSource> ToImmutableList<TSource>(this ImmutableList<TSource>.Builder builder)
         {
             Requires.NotNull(builder, nameof(builder));
@@ -94,7 +85,6 @@ namespace System.Collections.Immutable
         /// <param name="newValue">The element to replace the old element with.</param>
         /// <returns>The new list -- even if the value being replaced is equal to the new value for that position.</returns>
         /// <exception cref="ArgumentException">Thrown when the old value does not exist in the list.</exception>
-        [Pure]
         public static IImmutableList<T> Replace<T>(this IImmutableList<T> list, T oldValue, T newValue)
         {
             Requires.NotNull(list, nameof(list));
@@ -107,7 +97,6 @@ namespace System.Collections.Immutable
         /// <param name="list">The list to search.</param>
         /// <param name="value">The value to remove.</param>
         /// <returns>A new list with the element removed, or this list if the element is not in this list.</returns>
-        [Pure]
         public static IImmutableList<T> Remove<T>(this IImmutableList<T> list, T value)
         {
             Requires.NotNull(list, nameof(list));
@@ -122,7 +111,6 @@ namespace System.Collections.Immutable
         /// <returns>
         /// A new list with the elements removed.
         /// </returns>
-        [Pure]
         public static IImmutableList<T> RemoveRange<T>(this IImmutableList<T> list, IEnumerable<T> items)
         {
             Requires.NotNull(list, nameof(list));
@@ -143,7 +131,6 @@ namespace System.Collections.Immutable
         /// elements in the <see cref="IImmutableList{T}"/> that extends from index
         /// to the last element, if found; otherwise, -1.
         /// </returns>
-        [Pure]
         public static int IndexOf<T>(this IImmutableList<T> list, T item)
         {
             Requires.NotNull(list, nameof(list));
@@ -165,7 +152,6 @@ namespace System.Collections.Immutable
         /// elements in the <see cref="IImmutableList{T}"/> that extends from index
         /// to the last element, if found; otherwise, -1.
         /// </returns>
-        [Pure]
         public static int IndexOf<T>(this IImmutableList<T> list, T item, IEqualityComparer<T>? equalityComparer)
         {
             Requires.NotNull(list, nameof(list));
@@ -191,7 +177,6 @@ namespace System.Collections.Immutable
         /// elements in the <see cref="IImmutableList{T}"/> that extends from index
         /// to the last element, if found; otherwise, -1.
         /// </returns>
-        [Pure]
         public static int IndexOf<T>(this IImmutableList<T> list, T item, int startIndex)
         {
             Requires.NotNull(list, nameof(list));
@@ -220,7 +205,6 @@ namespace System.Collections.Immutable
         /// elements in the <see cref="IImmutableList{T}"/> that extends from index
         /// to the last element, if found; otherwise, -1.
         /// </returns>
-        [Pure]
         public static int IndexOf<T>(this IImmutableList<T> list, T item, int startIndex, int count)
         {
             Requires.NotNull(list, nameof(list));
@@ -240,7 +224,6 @@ namespace System.Collections.Immutable
         /// The zero-based index of the last occurrence of item within the entire the
         /// <see cref="IImmutableList{T}"/>, if found; otherwise, -1.
         /// </returns>
-        [Pure]
         public static int LastIndexOf<T>(this IImmutableList<T> list, T item)
         {
             Requires.NotNull(list, nameof(list));
@@ -268,7 +251,6 @@ namespace System.Collections.Immutable
         /// The zero-based index of the last occurrence of item within the entire the
         /// <see cref="IImmutableList{T}"/>, if found; otherwise, -1.
         /// </returns>
-        [Pure]
         public static int LastIndexOf<T>(this IImmutableList<T> list, T item, IEqualityComparer<T>? equalityComparer)
         {
             Requires.NotNull(list, nameof(list));
@@ -300,7 +282,6 @@ namespace System.Collections.Immutable
         /// in the <see cref="IImmutableList{T}"/> that extends from the first element
         /// to index, if found; otherwise, -1.
         /// </returns>
-        [Pure]
         public static int LastIndexOf<T>(this IImmutableList<T> list, T item, int startIndex)
         {
             Requires.NotNull(list, nameof(list));
@@ -334,7 +315,6 @@ namespace System.Collections.Immutable
         /// in the <see cref="IImmutableList{T}"/> that extends from the first element
         /// to index, if found; otherwise, -1.
         /// </returns>
-        [Pure]
         public static int LastIndexOf<T>(this IImmutableList<T> list, T item, int startIndex, int count)
         {
             Requires.NotNull(list, nameof(list));

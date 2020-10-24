@@ -1,6 +1,5 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Net.Sockets;
 using System.Threading.Tasks;
@@ -11,12 +10,6 @@ namespace System.Net
     {
         public static bool SupportsGetAddrInfoAsync => false;
 
-        internal static int FakesEnsureSocketsAreInitializedCallCount
-        {
-            get;
-            private set;
-        }
-
         internal static int FakesGetHostByNameCallCount
         {
             get;
@@ -25,13 +18,7 @@ namespace System.Net
 
         internal static void FakesReset()
         {
-            FakesEnsureSocketsAreInitializedCallCount = 0;
             FakesGetHostByNameCallCount = 0;
-        }
-
-        internal static void EnsureSocketsAreInitialized()
-        {
-            FakesEnsureSocketsAreInitializedCallCount++;
         }
 
         internal static SocketError TryGetAddrInfo(string name, bool justAddresses, out string hostName, out string[] aliases, out IPAddress[] addresses, out int nativeErrorCode)

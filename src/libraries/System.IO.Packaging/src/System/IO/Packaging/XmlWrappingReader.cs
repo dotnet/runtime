@@ -1,20 +1,20 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System;
 using System.Xml;
 using System.Xml.Schema;
 using System.Diagnostics;
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 
 namespace System.IO.Packaging
 {
     internal class XmlWrappingReader : XmlReader, IXmlLineInfo, IXmlNamespaceResolver
     {
         protected XmlReader _reader;
-        protected IXmlLineInfo _readerAsIXmlLineInfo;
-        protected IXmlNamespaceResolver _readerAsResolver;
+        protected IXmlLineInfo? _readerAsIXmlLineInfo;
+        protected IXmlNamespaceResolver? _readerAsResolver;
 
         internal XmlWrappingReader(XmlReader baseReader)
         {
@@ -29,7 +29,7 @@ namespace System.IO.Packaging
         public override string NamespaceURI { get { return _reader.NamespaceURI; } }
         public override string Prefix { get { return _reader.Prefix; } }
         public override bool HasValue { get { return _reader.HasValue; } }
-        public override string Value { get { return _reader.Value; } }
+        public override string? Value { get { return _reader.Value; } }
         public override int Depth { get { return _reader.Depth; } }
         public override string BaseURI { get { return _reader.BaseURI; } }
         public override bool IsEmptyElement { get { return _reader.IsEmptyElement; } }
@@ -47,12 +47,12 @@ namespace System.IO.Packaging
         public override bool HasAttributes { get { return _reader.HasAttributes; } }
         public override XmlNameTable NameTable { get { return _reader.NameTable; } }
 
-        public override string GetAttribute(string name)
+        public override string? GetAttribute(string name)
         {
             return _reader.GetAttribute(name);
         }
 
-        public override string GetAttribute(string name, string namespaceURI)
+        public override string? GetAttribute(string name, string namespaceURI)
         {
             return _reader.GetAttribute(name, namespaceURI);
         }
@@ -102,17 +102,17 @@ namespace System.IO.Packaging
             _reader.Skip();
         }
 
-        public override string LookupNamespace(string prefix)
+        public override string? LookupNamespace(string prefix)
         {
             return _reader.LookupNamespace(prefix);
         }
 
-        string IXmlNamespaceResolver.LookupPrefix(string namespaceName)
+        string? IXmlNamespaceResolver.LookupPrefix(string namespaceName)
         {
             return (_readerAsResolver == null) ? null : _readerAsResolver.LookupPrefix(namespaceName);
         }
 
-        IDictionary<string, string> IXmlNamespaceResolver.GetNamespacesInScope(XmlNamespaceScope scope)
+        IDictionary<string, string>? IXmlNamespaceResolver.GetNamespacesInScope(XmlNamespaceScope scope)
         {
             return (_readerAsResolver == null) ? null : _readerAsResolver.GetNamespacesInScope(scope);
         }
@@ -175,6 +175,7 @@ namespace System.IO.Packaging
             {
                 return _reader;
             }
+            [MemberNotNull(nameof(_reader))]
             set
             {
                 _reader = value;

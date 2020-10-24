@@ -8,6 +8,8 @@
     <ClInclude Include="$(MonoSourceLocation)\mono\mini\interp\interp.h" />
     <ClInclude Include="$(MonoSourceLocation)\mono\mini\interp\interp-internals.h" />
     <ClCompile Include="$(MonoSourceLocation)\mono\mini\interp\interp.c" />
+    <ClInclude Include="$(MonoSourceLocation)\mono\mini\interp\interp-intrins.h" />
+    <ClCompile Include="$(MonoSourceLocation)\mono\mini\interp\interp-intrins.c" />
     <ClInclude Include="$(MonoSourceLocation)\mono\mini\interp\mintops.h" />
     <None Include="$(MonoSourceLocation)\mono\mini\interp\mintops.def" />
     <ClCompile Include="$(MonoSourceLocation)\mono\mini\interp\mintops.c" />

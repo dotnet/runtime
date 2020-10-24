@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections.Concurrent;
 using System.Diagnostics;
@@ -18,18 +17,18 @@ namespace System.Net.Security.Tests
             Type esType = typeof(SslStream).Assembly.GetType("System.Net.NetEventSource", throwOnError: true, ignoreCase: false);
             Assert.NotNull(esType);
 
-            Assert.Equal("Microsoft-System-Net-Security", EventSource.GetName(esType));
-            Assert.Equal(Guid.Parse("066c0e27-a02d-5a98-9a4d-078cc3b1a896"), EventSource.GetGuid(esType));
+            Assert.Equal("Private.InternalDiagnostics.System.Net.Security", EventSource.GetName(esType));
+            Assert.Equal(Guid.Parse("a0d627f0-c0f5-5a45-558a-6634a894c155"), EventSource.GetGuid(esType));
 
             Assert.NotEmpty(EventSource.GenerateManifest(esType, esType.Assembly.Location));
         }
 
-        [Fact]
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         public void EventSource_EventsRaisedAsExpected()
         {
             RemoteExecutor.Invoke(() =>
             {
-                using (var listener = new TestEventListener("Microsoft-System-Net-Security", EventLevel.Verbose))
+                using (var listener = new TestEventListener("Private.InternalDiagnostics.System.Net.Security", EventLevel.Verbose))
                 {
                     var events = new ConcurrentQueue<EventWrittenEventArgs>();
                     listener.RunWithCallback(events.Enqueue, () =>

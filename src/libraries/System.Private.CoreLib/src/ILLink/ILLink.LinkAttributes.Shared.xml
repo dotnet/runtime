@@ -1,0 +1,54 @@
+<linker>
+  <!-- The following attributes are only necessary when debugging is supported -->
+  <assembly fullname="System.Private.CoreLib" feature="System.Diagnostics.Debugger.IsSupported" featurevalue="false">
+    <!-- Debugger specific attributes -->
+    <type fullname="System.Diagnostics.DebuggableAttribute">
+      <attribute internal="RemoveAttributeInstances" />
+    </type>
+    <type fullname="System.Diagnostics.DebuggerBrowsableAttribute">
+      <attribute internal="RemoveAttributeInstances" />
+    </type>
+    <type fullname="System.Diagnostics.DebuggerDisplayAttribute">
+      <attribute internal="RemoveAttributeInstances" />
+    </type>
+    <type fullname="System.Diagnostics.DebuggerHiddenAttribute">
+      <attribute internal="RemoveAttributeInstances" />
+    </type>
+    <type fullname="System.Diagnostics.DebuggerNonUserCodeAttribute">
+      <attribute internal="RemoveAttributeInstances" />
+    </type>
+    <type fullname="System.Diagnostics.DebuggerStepperBoundaryAttribute">
+      <attribute internal="RemoveAttributeInstances" />
+    </type>
+    <type fullname="System.Diagnostics.DebuggerStepThroughAttribute">
+      <attribute internal="RemoveAttributeInstances" />
+    </type>
+    <type fullname="System.Diagnostics.DebuggerTypeProxyAttribute">
+      <attribute internal="RemoveAttributeInstances" />
+    </type>
+    <type fullname="System.Diagnostics.DebuggerVisualizerAttribute">
+      <attribute internal="RemoveAttributeInstances" />
+    </type>
+  </assembly>
+
+  <assembly fullname="System.Private.CoreLib" feature="System.Diagnostics.Tracing.EventSource.IsSupported" featurevalue="false">
+    <type fullname="System.Diagnostics.Tracing.EventSourceAttribute">
+      <attribute internal="RemoveAttributeInstances" />
+    </type>
+    <type fullname="System.Diagnostics.Tracing.EventAttribute">
+      <attribute internal="RemoveAttributeInstances" />
+    </type>
+    <type fullname="System.Diagnostics.Tracing.EventDataAttribute">
+      <attribute internal="RemoveAttributeInstances" />
+    </type>
+    <type fullname="System.Diagnostics.Tracing.EventFieldAttribute">
+      <attribute internal="RemoveAttributeInstances" />
+    </type>
+    <type fullname="System.Diagnostics.Tracing.EventIgnoreAttribute">
+      <attribute internal="RemoveAttributeInstances" />
+    </type>
+    <type fullname="System.Diagnostics.Tracing.NonEventAttribute">
+      <attribute internal="RemoveAttributeInstances" />
+    </type>
+  </assembly>
+</linker>

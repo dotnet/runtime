@@ -1,6 +1,5 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
 using System.Linq;
@@ -15,7 +14,7 @@ namespace System.IO.Compression
     {
         private const int TaskTimeout = 30 * 1000; // Generous timeout for official test runs
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public virtual void FlushAsync_DuringWriteAsync()
         {
             if (FlushNoOps)
@@ -50,7 +49,7 @@ namespace System.IO.Compression
             }
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public async Task FlushAsync_DuringReadAsync()
         {
             if (FlushNoOps)
@@ -79,7 +78,7 @@ namespace System.IO.Compression
             }
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public async Task FlushAsync_DuringFlushAsync()
         {
             if (FlushNoOps)
@@ -122,7 +121,7 @@ namespace System.IO.Compression
             }
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public virtual void WriteAsync_DuringWriteAsync()
         {
             byte[] buffer = new byte[100000];
@@ -155,7 +154,7 @@ namespace System.IO.Compression
             }
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public async Task ReadAsync_DuringReadAsync()
         {
             byte[] buffer = new byte[32];
@@ -180,7 +179,7 @@ namespace System.IO.Compression
             }
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public virtual async Task Dispose_WithUnfinishedReadAsync()
         {
             string compressedPath = CompressedTestFile(UncompressedTestFile());
@@ -1227,7 +1226,7 @@ namespace System.IO.Compression
                 baseStream.Read(bytes, 0, size);
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public async Task Parallel_CompressDecompressMultipleStreamsConcurrently()
         {
             const int ParallelOperations = 20;
@@ -1254,6 +1253,59 @@ namespace System.IO.Compression
 
                 Assert.Equal(sourceData, decompressedStream.ToArray());
             })));
+        }
+
+        [Fact]
+        public void Precancellation()
+        {
+            var ms = new MemoryStream();
+            using (Stream compressor = CreateStream(ms, CompressionMode.Compress, leaveOpen: true))
+            {
+                Assert.True(compressor.WriteAsync(new byte[1], 0, 1, new CancellationToken(true)).IsCanceled);
+                Assert.True(compressor.FlushAsync(new CancellationToken(true)).IsCanceled);
+            }
+            using (Stream decompressor = CreateStream(ms, CompressionMode.Decompress, leaveOpen: true))
+            {
+                Assert.True(decompressor.ReadAsync(new byte[1], 0, 1, new CancellationToken(true)).IsCanceled);
+            }
+        }
+
+        [Theory]
+        [InlineData(false)]
+        [InlineData(true)]
+        public async Task DisposeAsync_Flushes(bool leaveOpen)
+        {
+            var ms = new MemoryStream();
+            var cs = CreateStream(ms, CompressionMode.Compress, leaveOpen);
+            cs.WriteByte(1);
+            await cs.FlushAsync();
+
+            long pos = ms.Position;
+            cs.WriteByte(1);
+            Assert.Equal(pos, ms.Position);
+
+            await cs.DisposeAsync();
+            Assert.InRange(ms.ToArray().Length, pos + 1, int.MaxValue);
+            if (leaveOpen)
+            {
+                Assert.InRange(ms.Position, pos + 1, int.MaxValue);
+            }
+            else
+            {
+                Assert.Throws<ObjectDisposedException>(() => ms.Position);
+            }
+        }
+
+        [Theory]
+        [InlineData(false)]
+        [InlineData(true)]
+        public async Task DisposeAsync_MultipleCallsAllowed(bool leaveOpen)
+        {
+            using (var cs = CreateStream(new MemoryStream(), CompressionMode.Compress, leaveOpen))
+            {
+                await cs.DisposeAsync();
+                await cs.DisposeAsync();
+            }
         }
     }
 

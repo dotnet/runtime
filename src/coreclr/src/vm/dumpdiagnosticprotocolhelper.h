@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 #ifndef __DUMP_DIAGNOSTIC_PROTOCOL_HELPER_H__
 #define __DUMP_DIAGNOSTIC_PROTOCOL_HELPER_H__
@@ -41,10 +40,8 @@ class DumpDiagnosticProtocolHelper
 {
 public:
     // IPC event handlers.
-#ifdef HOST_UNIX
     static void GenerateCoreDump(DiagnosticsIpc::IpcMessage& message, IpcStream *pStream); // `dotnet-dump collect`
     static void HandleIpcMessage(DiagnosticsIpc::IpcMessage& message, IpcStream* pStream);
-#endif
 
 private:
     const static uint32_t IpcStreamReadBufferSize = 8192;

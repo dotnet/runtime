@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 /*=====================================================================
 **
@@ -13,10 +12,10 @@
 
 #include <palsuite.h>
 
-const char* szFileName = "testing.tmp";
-
-int __cdecl main(int argc, char *argv[])
+PALTEST(file_io_GetFullPathNameW_test1_paltest_getfullpathnamew_test1, "file_io/GetFullPathNameW/test1/paltest_getfullpathnamew_test1")
 {
+    const char* szFileName = "testing.tmp";
+
     DWORD dwRc = 0;
     WCHAR szwReturnedPath[_MAX_DIR+1];
     WCHAR szwShortBuff[2];
@@ -42,7 +41,7 @@ int __cdecl main(int argc, char *argv[])
     }
 
 
-    memset(szwReturnedPath, 0, _MAX_DIR+1);
+    memset(szwReturnedPath, 0, sizeof(szwReturnedPath));
     dwRc = GetFullPathNameW(szwFileName,
         _MAX_DIR,
         szwReturnedPath,

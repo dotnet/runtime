@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System;
 using System.Collections.Generic;
@@ -18,7 +17,7 @@ namespace System.IO.Tests
 {
     public partial class DangerousFileSystemWatcherTests
     {
-        [ConditionalFact]
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         [OuterLoop("Slow test with significant resource usage.")]
         public void FileSystemWatcher_Unix_DoesNotLeak()
         {

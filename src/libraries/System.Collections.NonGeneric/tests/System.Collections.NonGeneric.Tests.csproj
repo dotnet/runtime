@@ -5,27 +5,20 @@
   </PropertyGroup>
   <ItemGroup>
     <!-- Common Collections tests -->
-    <Compile Include="$(CommonTestPath)System\Collections\ICollection.NonGeneric.Tests.cs">
-      <Link>Common\System\Collections\ICollection.NonGeneric.Tests.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonTestPath)System\Collections\IDictionary.NonGeneric.Tests.cs">
-      <Link>Common\System\Collections\IDictionary.NonGeneric.Tests.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonTestPath)System\Collections\IEnumerable.NonGeneric.Tests.cs">
-      <Link>Common\System\Collections\IEnumerable.NonGeneric.Tests.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonTestPath)System\Collections\IList.NonGeneric.Tests.cs">
-      <Link>Common\System\Collections\IList.NonGeneric.Tests.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonTestPath)System\Collections\TestBase.NonGeneric.cs">
-      <Link>Common\System\Collections\TestBase.NonGeneric.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonTestPath)System\Collections\TestingTypes.cs">
-      <Link>Common\System\Collections\TestingTypes.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonTestPath)System\Runtime\Serialization\Formatters\BinaryFormatterHelpers.cs">
-      <Link>Common\System\Runtime\Serialization\Formatters\BinaryFormatterHelpers.cs</Link>
-    </Compile>
+    <Compile Include="$(CommonTestPath)System\Collections\ICollection.NonGeneric.Tests.cs"
+             Link="Common\System\Collections\ICollection.NonGeneric.Tests.cs" />
+    <Compile Include="$(CommonTestPath)System\Collections\IDictionary.NonGeneric.Tests.cs"
+             Link="Common\System\Collections\IDictionary.NonGeneric.Tests.cs" />
+    <Compile Include="$(CommonTestPath)System\Collections\IEnumerable.NonGeneric.Tests.cs"
+             Link="Common\System\Collections\IEnumerable.NonGeneric.Tests.cs" />
+    <Compile Include="$(CommonTestPath)System\Collections\IList.NonGeneric.Tests.cs"
+             Link="Common\System\Collections\IList.NonGeneric.Tests.cs" />
+    <Compile Include="$(CommonTestPath)System\Collections\TestBase.NonGeneric.cs"
+             Link="Common\System\Collections\TestBase.NonGeneric.cs" />
+    <Compile Include="$(CommonTestPath)System\Collections\TestingTypes.cs"
+             Link="Common\System\Collections\TestingTypes.cs" />
+    <Compile Include="$(CommonTestPath)System\Runtime\Serialization\Formatters\BinaryFormatterHelpers.cs"
+             Link="Common\System\Runtime\Serialization\Formatters\BinaryFormatterHelpers.cs" />
     <Compile Include="ArrayListTests.cs" />
     <Compile Include="ArrayList\ArrayList.IList.Tests.cs" />
     <Compile Include="Hashtable\Hashtable.Values.Tests.cs" />
@@ -42,12 +35,10 @@
     <Compile Include="ReadOnlyCollectionBaseTests.cs" />
     <Compile Include="SortedListTests.cs" />
     <Compile Include="StackTests.cs" />
-    <Compile Include="$(CommonTestPath)System\Diagnostics\DebuggerAttributes.cs">
-      <Link>Common\System\Diagnostics\DebuggerAttributes.cs</Link>
-    </Compile>
+    <Compile Include="$(CommonTestPath)System\Diagnostics\DebuggerAttributes.cs"
+             Link="Common\System\Diagnostics\DebuggerAttributes.cs" />
     <Compile Include="CaseInsensitiveHashCodeProviderTests.cs" />
-    <Compile Include="$(CommonTestPath)System\Collections\IEnumerable.NonGeneric.Serialization.Tests.cs">
-      <Link>Common\System\Collections\IEnumerable.NonGeneric.Serialization.Tests.cs</Link>
-    </Compile>
+    <Compile Include="$(CommonTestPath)System\Collections\IEnumerable.NonGeneric.Serialization.Tests.cs"
+             Link="Common\System\Collections\IEnumerable.NonGeneric.Serialization.Tests.cs" />
   </ItemGroup>
 </Project>

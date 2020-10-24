@@ -1,12 +1,12 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading;
+using System.Reflection;
 using System.Threading.Tasks;
 using Microsoft.DotNet.RemoteExecutor;
 using Xunit;
@@ -99,6 +99,69 @@ namespace System.Diagnostics.Tests
             }
         }
 
+        [Fact]
+        public void TestBaggageOrderAndDuplicateKeys()
+        {
+            Activity a = new Activity("Baggage");
+            a.AddBaggage("1", "1");
+            a.AddBaggage("1", "2");
+            a.AddBaggage("1", "3");
+            a.AddBaggage("1", "4");
+
+            int value = 4;
+
+            foreach (KeyValuePair<string, string> kvp in a.Baggage)
+            {
+                Assert.Equal("1", kvp.Key);
+                Assert.Equal(value.ToString(), kvp.Value);
+                value--;
+            }
+
+            Assert.Equal("4", a.GetBaggageItem("1"));
+        }
+
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        public void TestBaggageWithChainedActivities()
+        {
+            RemoteExecutor.Invoke(() => {
+                Activity a1 = new Activity("a1");
+                a1.Start();
+
+                a1.AddBaggage("1", "1");
+                a1.AddBaggage("2", "2");
+
+                IEnumerable<KeyValuePair<string, string>> baggages = a1.Baggage;
+                Assert.Equal(2, baggages.Count());
+                Assert.Equal(new KeyValuePair<string, string>("2", "2"), baggages.ElementAt(0));
+                Assert.Equal(new KeyValuePair<string, string>("1", "1"), baggages.ElementAt(1));
+
+                Activity a2 = new Activity("a2");
+                a2.Start();
+
+                a2.AddBaggage("3", "3");
+                baggages = a2.Baggage;
+                Assert.Equal(3, baggages.Count());
+                Assert.Equal(new KeyValuePair<string, string>("3", "3"), baggages.ElementAt(0));
+                Assert.Equal(new KeyValuePair<string, string>("2", "2"), baggages.ElementAt(1));
+                Assert.Equal(new KeyValuePair<string, string>("1", "1"), baggages.ElementAt(2));
+
+                Activity a3 = new Activity("a3");
+                a3.Start();
+
+                a3.AddBaggage("4", "4");
+                baggages = a3.Baggage;
+                Assert.Equal(4, baggages.Count());
+                Assert.Equal(new KeyValuePair<string, string>("4", "4"), baggages.ElementAt(0));
+                Assert.Equal(new KeyValuePair<string, string>("3", "3"), baggages.ElementAt(1));
+                Assert.Equal(new KeyValuePair<string, string>("2", "2"), baggages.ElementAt(2));
+                Assert.Equal(new KeyValuePair<string, string>("1", "1"), baggages.ElementAt(3));
+
+                a3.Dispose();
+                a2.Dispose();
+                a1.Dispose();
+            }).Dispose();
+        }
+
         /// <summary>
         /// Tests Tags operations
         /// </summary>
@@ -115,8 +178,8 @@ namespace System.Diagnostics.Tests
                 Assert.Equal(activity, activity.AddTag(Key + i, Value + i));
                 List<KeyValuePair<string, string>> tags = activity.Tags.ToList();
                 Assert.Equal(i + 1, tags.Count);
-                Assert.Equal(tags[tags.Count - i - 1].Key, Key + i);
-                Assert.Equal(tags[tags.Count - i - 1].Value, Value + i);
+                Assert.Equal(tags[i].Key, Key + i);
+                Assert.Equal(tags[i].Value, Value + i);
             }
         }
 
@@ -187,32 +250,6 @@ namespace System.Diagnostics.Tests
             Assert.Equal('#', activity.Id[activity.Id.Length - 1]);
         }
 
-        /// <summary>
-        /// Tests overflow in Id generation when parentId has a single (root) node
-        /// </summary>
-        [Fact]
-        public void ActivityIdNonHierarchicalOverflow()
-        {
-            // find out Activity Id length on this platform in this AppDomain
-            Activity testActivity = new Activity("activity")
-                .Start();
-            var expectedIdLength = testActivity.Id.Length;
-            testActivity.Stop();
-
-            // check that if parentId '|aaa...a' 1024 bytes long is set with single node (no dots or underscores in the Id)
-            // it causes overflow during Id generation, and new root Id is generated for the new Activity
-            var parentId = '|' + new string('a', 1022) + '.';
-
-            var activity = new Activity("activity")
-                .SetParentId(parentId)
-                .Start();
-
-            Assert.Equal(parentId, activity.ParentId);
-
-            // With probability 1/MaxLong, Activity.Id length may be expectedIdLength + 1
-            Assert.InRange(activity.Id.Length, expectedIdLength, expectedIdLength + 1);
-            Assert.DoesNotContain('#', activity.Id);
-        }
 
         /// <summary>
         /// Tests activity start and stop
@@ -237,7 +274,7 @@ namespace System.Diagnostics.Tests
         /// <summary>
         /// Tests Id generation
         /// </summary>
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public void IdGenerationNoParent()
         {
             var orphan1 = new Activity("orphan1");
@@ -253,10 +290,11 @@ namespace System.Diagnostics.Tests
         /// <summary>
         /// Tests Id generation
         /// </summary>
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public void IdGenerationInternalParent()
         {
             var parent = new Activity("parent");
+            parent.SetIdFormat(ActivityIdFormat.Hierarchical);
             parent.Start();
             var child1 = new Activity("child1");
             var child2 = new Activity("child2");
@@ -534,11 +572,11 @@ namespace System.Diagnostics.Tests
         /****** WC3 Format tests *****/
 
         [Fact]
-        public void IdFormat_HierarchicalIsDefault()
+        public void IdFormat_W3CIsDefaultForNet5()
         {
             Activity activity = new Activity("activity1");
             activity.Start();
-            Assert.Equal(ActivityIdFormat.Hierarchical, activity.IdFormat);
+            Assert.Equal(PlatformDetection.IsNetCore ? ActivityIdFormat.W3C : ActivityIdFormat.Hierarchical, activity.IdFormat);
         }
 
         [Fact]
@@ -603,7 +641,7 @@ namespace System.Diagnostics.Tests
             Assert.True(IdIsW3CFormat(activity.Id));
         }
 
-        [Fact]
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         public void IdFormat_W3CWhenDefaultIsW3C()
         {
             RemoteExecutor.Invoke(() =>
@@ -616,7 +654,21 @@ namespace System.Diagnostics.Tests
             }).Dispose();
         }
 
-        [Fact]
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        public void IdFormat_WithTheEnvironmentSwitch()
+        {
+            var psi = new ProcessStartInfo();
+            psi.Environment.Add("DOTNET_SYSTEM_DIAGNOSTICS_DEFAULTACTIVITYIDFORMATISHIERARCHIAL", "true");
+
+            RemoteExecutor.Invoke(() =>
+            {
+                Activity activity = new Activity("activity15");
+                activity.Start();
+                 Assert.Equal(ActivityIdFormat.Hierarchical, activity.IdFormat);
+            }, new RemoteInvokeOptions() { StartInfo = psi }).Dispose();
+        }
+
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         public void IdFormat_HierarchicalWhenDefaultIsW3CButHierarchicalParentId()
         {
             RemoteExecutor.Invoke(() =>
@@ -632,16 +684,26 @@ namespace System.Diagnostics.Tests
         }
 
         [Fact]
-        public void IdFormat_ZeroTraceIdAndSpanIdWithHierarchicalFormat()
+        public void IdFormat_ZeroTraceIdAndSpanIdWithW3CFormat()
         {
             Activity activity = new Activity("activity");
             activity.Start();
-            Assert.Equal(ActivityIdFormat.Hierarchical, activity.IdFormat);
-            Assert.Equal("00000000000000000000000000000000", activity.TraceId.ToHexString());
-            Assert.Equal("0000000000000000", activity.SpanId.ToHexString());
+
+            if (PlatformDetection.IsNetCore)
+            {
+                Assert.Equal(ActivityIdFormat.W3C, activity.IdFormat);
+                Assert.NotEqual("00000000000000000000000000000000", activity.TraceId.ToHexString());
+                Assert.NotEqual("0000000000000000", activity.SpanId.ToHexString());
+            }
+            else
+            {
+                Assert.Equal(ActivityIdFormat.Hierarchical, activity.IdFormat);
+                Assert.Equal("00000000000000000000000000000000", activity.TraceId.ToHexString());
+                Assert.Equal("0000000000000000", activity.SpanId.ToHexString());
+            }
         }
 
-        [Fact]
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         public void IdFormat_W3CWhenForcedAndHierarchicalParentId()
         {
             RemoteExecutor.Invoke(() =>
@@ -762,7 +824,7 @@ namespace System.Diagnostics.Tests
             Assert.Equal(ActivityTraceFlags.None, activity.ActivityTraceFlags);
         }
 
-        [Fact]
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         public void IdFormat_W3CForcedOverridesParentActivityIdFormat()
         {
             RemoteExecutor.Invoke(() =>
@@ -840,7 +902,7 @@ namespace System.Diagnostics.Tests
             Assert.Equal(ActivityIdFormat.W3C, activity.IdFormat);
         }
 
-        [Fact]
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         public void SetIdFormat_OverridesForcedW3C()
         {
             RemoteExecutor.Invoke(() =>
@@ -854,7 +916,7 @@ namespace System.Diagnostics.Tests
             }).Dispose();
         }
 
-        [Fact]
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         public void SetIdFormat_OverridesForcedHierarchical()
         {
             RemoteExecutor.Invoke(() =>
@@ -935,7 +997,7 @@ namespace System.Diagnostics.Tests
             Assert.Equal("00000000000000000000000000000000", activity.TraceId.ToHexString());
         }
 
-        [Fact]
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         public void TraceIdBeforeStart_NoParent()
         {
             RemoteExecutor.Invoke(() =>
@@ -1238,7 +1300,7 @@ namespace System.Diagnostics.Tests
         /// <summary>
         /// Tests that Activity.Current flows correctly within async methods
         /// </summary>
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public async Task ActivityCurrentFlowsWithAsyncSimple()
         {
             Activity activity = new Activity("activity").Start();
@@ -1255,7 +1317,7 @@ namespace System.Diagnostics.Tests
         /// <summary>
         /// Tests that Activity.Current flows correctly within async methods
         /// </summary>
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public async Task ActivityCurrentFlowsWithAsyncComplex()
         {
             Activity originalActivity = Activity.Current;
@@ -1294,7 +1356,7 @@ namespace System.Diagnostics.Tests
         /// <summary>
         /// Tests that Activity.Current could be set
         /// </summary>
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public async Task ActivityCurrentSet()
         {
             Activity activity = new Activity("activity");
@@ -1345,6 +1407,202 @@ namespace System.Diagnostics.Tests
 
             Activity.Current = stopped;
             Assert.Same(started, Activity.Current);
+        }
+
+        [Fact]
+        public void TestDispose()
+        {
+            Activity current = Activity.Current;
+            using (Activity activity = new Activity("Mine").Start())
+            {
+                Assert.Same(activity, Activity.Current);
+                Assert.Same(current, activity.Parent);
+            }
+
+            Assert.Same(current, Activity.Current);
+        }
+
+        [Fact]
+        public void TestCustomProperties()
+        {
+            Activity activity = new Activity("Custom");
+            activity.SetCustomProperty("P1", "Prop1");
+            activity.SetCustomProperty("P2", "Prop2");
+            activity.SetCustomProperty("P3", null);
+
+            Assert.Equal("Prop1", activity.GetCustomProperty("P1"));
+            Assert.Equal("Prop2", activity.GetCustomProperty("P2"));
+            Assert.Null(activity.GetCustomProperty("P3"));
+            Assert.Null(activity.GetCustomProperty("P4"));
+
+            activity.SetCustomProperty("P1", "Prop5");
+            Assert.Equal("Prop5", activity.GetCustomProperty("P1"));
+
+        }
+
+        [Fact]
+        public void TestKind()
+        {
+            Activity activity = new Activity("Kind");
+            Assert.Equal(ActivityKind.Internal, activity.Kind);
+        }
+
+        [Fact]
+        public void TestDisplayName()
+        {
+            Activity activity = new Activity("Op1");
+            Assert.Equal("Op1", activity.OperationName);
+            Assert.Equal("Op1", activity.DisplayName);
+
+            activity.DisplayName = "Op2";
+            Assert.Equal("Op1", activity.OperationName);
+            Assert.Equal("Op2", activity.DisplayName);
+        }
+
+        [Fact]
+        public void TestEvent()
+        {
+            Activity activity = new Activity("EventTest");
+            Assert.Equal(0, activity.Events.Count());
+
+            DateTimeOffset ts1 = DateTimeOffset.UtcNow;
+            DateTimeOffset ts2 = ts1.AddMinutes(1);
+
+            Assert.True(object.ReferenceEquals(activity, activity.AddEvent(new ActivityEvent("Event1", ts1))));
+            Assert.True(object.ReferenceEquals(activity, activity.AddEvent(new ActivityEvent("Event2", ts2))));
+
+            Assert.Equal(2, activity.Events.Count());
+            Assert.Equal("Event1", activity.Events.ElementAt(0).Name);
+            Assert.Equal(ts1, activity.Events.ElementAt(0).Timestamp);
+            Assert.Equal(0, activity.Events.ElementAt(0).Tags.Count());
+
+            Assert.Equal("Event2", activity.Events.ElementAt(1).Name);
+            Assert.Equal(ts2, activity.Events.ElementAt(1).Timestamp);
+            Assert.Equal(0, activity.Events.ElementAt(1).Tags.Count());
+        }
+
+        [Fact]
+        public void TestIsAllDataRequested()
+        {
+            // Activity constructor allways set IsAllDataRequested to true for compatability.
+            Activity a1 = new Activity("a1");
+            Assert.True(a1.IsAllDataRequested);
+            Assert.True(object.ReferenceEquals(a1, a1.AddTag("k1", "v1")));
+            Assert.Equal(1, a1.Tags.Count());
+        }
+
+        [Fact]
+        public void TestTagObjects()
+        {
+            Activity activity = new Activity("TagObjects");
+            Assert.Equal(0, activity.Tags.Count());
+            Assert.Equal(0, activity.TagObjects.Count());
+
+            activity.AddTag("s1", "s1").AddTag("s2", "s2").AddTag("s3", null);
+            Assert.Equal(3, activity.Tags.Count());
+            Assert.Equal(3, activity.TagObjects.Count());
+
+            KeyValuePair<string, string>[] tags = activity.Tags.ToArray();
+            KeyValuePair<string, object>[] tagObjects = activity.TagObjects.ToArray();
+            Assert.Equal(tags.Length, tagObjects.Length);
+
+            for (int i = 0; i < tagObjects.Length; i++)
+            {
+                Assert.Equal(tags[i].Key, tagObjects[i].Key);
+                Assert.Equal(tags[i].Value, tagObjects[i].Value);
+            }
+
+            activity.AddTag("s4", (object) null);
+            Assert.Equal(4, activity.Tags.Count());
+            Assert.Equal(4, activity.TagObjects.Count());
+            tags = activity.Tags.ToArray();
+            tagObjects = activity.TagObjects.ToArray();
+            Assert.Equal(tags[3].Key, tagObjects[3].Key);
+            Assert.Equal(tags[3].Value, tagObjects[3].Value);
+
+            activity.AddTag("s5", 5);
+            Assert.Equal(4, activity.Tags.Count());
+            Assert.Equal(5, activity.TagObjects.Count());
+            tagObjects = activity.TagObjects.ToArray();
+            Assert.Equal(5, tagObjects[4].Value);
+
+            activity.AddTag(null, null); // we allow that and we keeping the behavior for the compatability reason
+            Assert.Equal(5, activity.Tags.Count());
+            Assert.Equal(6, activity.TagObjects.Count());
+
+            activity.SetTag("s6", "s6");
+            Assert.Equal(6, activity.Tags.Count());
+            Assert.Equal(7, activity.TagObjects.Count());
+
+            activity.SetTag("s5", "s6");
+            Assert.Equal(7, activity.Tags.Count());
+            Assert.Equal(7, activity.TagObjects.Count());
+
+            activity.SetTag("s3", null); // remove the tag
+            Assert.Equal(6, activity.Tags.Count());
+            Assert.Equal(6, activity.TagObjects.Count());
+
+            tags = activity.Tags.ToArray();
+            tagObjects = activity.TagObjects.ToArray();
+            for (int i = 0; i < tagObjects.Length; i++)
+            {
+                Assert.Equal(tags[i].Key, tagObjects[i].Key);
+                Assert.Equal(tags[i].Value, tagObjects[i].Value);
+            }
+        }
+
+        [Theory]
+        [InlineData("key1", null, true,  1)]
+        [InlineData("key2", null, false, 0)]
+        [InlineData("key3", "v1", true,  1)]
+        [InlineData("key4", "v2", false, 1)]
+        public void TestInsertingFirstTag(string key, object value, bool add, int resultCount)
+        {
+            Activity a = new Activity("SetFirstTag");
+            if (add)
+            {
+                a.AddTag(key, value);
+            }
+            else
+            {
+                a.SetTag(key, value);
+            }
+
+            Assert.Equal(resultCount, a.TagObjects.Count());
+        }
+
+        [Fact]
+        public void StructEnumerator_TagsLinkedList()
+        {
+            // Note: This test verifies the presence of the struct Enumerator on TagsLinkedList used by customers dynamically to avoid allocations.
+
+            Activity a = new Activity("TestActivity");
+            a.AddTag("Tag1", true);
+
+            IEnumerable<KeyValuePair<string, object>> enumerable = a.TagObjects;
+
+            MethodInfo method = enumerable.GetType().GetMethod("GetEnumerator", BindingFlags.Instance | BindingFlags.Public);
+
+            Assert.NotNull(method);
+            Assert.False(method.ReturnType.IsInterface);
+            Assert.True(method.ReturnType.IsValueType);
+        }
+
+        [Fact]
+        public void StructEnumerator_GenericLinkedList()
+        {
+            // Note: This test verifies the presence of the struct Enumerator on LinkedList<T> used by customers dynamically to avoid allocations.
+
+            Activity a = new Activity("TestActivity");
+            a.AddEvent(new ActivityEvent());
+
+            IEnumerable<ActivityEvent> enumerable = a.Events;
+
+            MethodInfo method = enumerable.GetType().GetMethod("GetEnumerator", BindingFlags.Instance | BindingFlags.Public);
+
+            Assert.NotNull(method);
+            Assert.False(method.ReturnType.IsInterface);
+            Assert.True(method.ReturnType.IsValueType);
         }
 
         public void Dispose()

@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Runtime.CompilerServices;
 using System.Threading;
@@ -235,7 +234,7 @@ namespace System.IO.Compression
 
         private static void ThrowStreamClosedException()
         {
-            throw new ObjectDisposedException(null, SR.ObjectDisposed_StreamClosed);
+            throw new ObjectDisposedException(nameof(GZipStream), SR.ObjectDisposed_StreamClosed);
         }
     }
 }

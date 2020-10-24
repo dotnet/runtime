@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System;
 using System.IO;
@@ -303,7 +302,7 @@ namespace System.Net.Tests
         {
             using (HttpClient client = new HttpClient())
             {
-                Task<string> clientTask = client.GetStringAsync(_factory.ListeningUrl);
+                _ = client.GetStringAsync(_factory.ListeningUrl);
 
                 HttpListenerContext serverContext = await _listener.GetContextAsync();
                 using (HttpListenerResponse response = serverContext.Response)
@@ -331,7 +330,7 @@ namespace System.Net.Tests
         {
             using (HttpClient client = new HttpClient())
             {
-                Task<string> clientTask = client.GetStringAsync(_factory.ListeningUrl);
+                _ = client.GetStringAsync(_factory.ListeningUrl);
 
                 HttpListenerContext serverContext = await _listener.GetContextAsync();
                 using (HttpListenerResponse response = serverContext.Response)
@@ -357,7 +356,7 @@ namespace System.Net.Tests
         {
             using (HttpClient client = new HttpClient())
             {
-                Task<string> clientTask = client.GetStringAsync(_factory.ListeningUrl);
+                _ = client.GetStringAsync(_factory.ListeningUrl);
 
                 HttpListenerContext serverContext = await _listener.GetContextAsync();
                 using (HttpListenerResponse response = serverContext.Response)

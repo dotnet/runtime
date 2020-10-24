@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Globalization;
 using System.Runtime.InteropServices;
@@ -24,7 +23,9 @@ namespace System
 
         public bool Contains(string value, StringComparison comparisonType)
         {
+#pragma warning disable CA2249 // Consider using 'string.Contains' instead of 'string.IndexOf'... this is the implementation of Contains!
             return IndexOf(value, comparisonType) >= 0;
+#pragma warning restore CA2249
         }
 
         public bool Contains(char value) => SpanHelpers.Contains(ref _firstChar, value, Length);
@@ -310,16 +311,6 @@ namespace System
 
         public int IndexOf(string value, int startIndex, int count)
         {
-            if (startIndex < 0 || startIndex > this.Length)
-            {
-                throw new ArgumentOutOfRangeException(nameof(startIndex), SR.ArgumentOutOfRange_Index);
-            }
-
-            if (count < 0 || count > this.Length - startIndex)
-            {
-                throw new ArgumentOutOfRangeException(nameof(count), SR.ArgumentOutOfRange_Count);
-            }
-
             return IndexOf(value, startIndex, count, StringComparison.CurrentCulture);
         }
 
@@ -335,26 +326,7 @@ namespace System
 
         public int IndexOf(string value, int startIndex, int count, StringComparison comparisonType)
         {
-            // Validate inputs
-            if (value == null)
-                throw new ArgumentNullException(nameof(value));
-
-            if (startIndex < 0 || startIndex > this.Length)
-                throw new ArgumentOutOfRangeException(nameof(startIndex), SR.ArgumentOutOfRange_Index);
-
-            if (count < 0 || startIndex > this.Length - count)
-                throw new ArgumentOutOfRangeException(nameof(count), SR.ArgumentOutOfRange_Count);
-
-            if (comparisonType == StringComparison.Ordinal)
-            {
-                int result = SpanHelpers.IndexOf(
-                    ref Unsafe.Add(ref this._firstChar, startIndex),
-                    count,
-                    ref value._firstChar,
-                    value.Length);
-
-                return (result >= 0 ? startIndex : 0) + result;
-            }
+            // Parameter checking will be done by CompareInfo.IndexOf.
 
             switch (comparisonType)
             {
@@ -366,11 +338,14 @@ namespace System
                 case StringComparison.InvariantCultureIgnoreCase:
                     return CompareInfo.Invariant.IndexOf(this, value, startIndex, count, GetCaseCompareOfComparisonCulture(comparisonType));
 
+                case StringComparison.Ordinal:
                 case StringComparison.OrdinalIgnoreCase:
-                    return CompareInfo.IndexOfOrdinal(this, value, startIndex, count, GetCaseCompareOfComparisonCulture(comparisonType) != CompareOptions.None);
+                    return Ordinal.IndexOf(this, value, startIndex, count, comparisonType == StringComparison.OrdinalIgnoreCase);
 
                 default:
-                    throw new ArgumentException(SR.NotSupported_StringComparison, nameof(comparisonType));
+                    throw (value is null)
+                        ? new ArgumentNullException(nameof(value))
+                        : new ArgumentException(SR.NotSupported_StringComparison, nameof(comparisonType));
             }
         }
 
@@ -498,11 +473,6 @@ namespace System
 
         public int LastIndexOf(string value, int startIndex, int count)
         {
-            if (count < 0)
-            {
-                throw new ArgumentOutOfRangeException(nameof(count), SR.ArgumentOutOfRange_Count);
-            }
-
             return LastIndexOf(value, startIndex, count, StringComparison.CurrentCulture);
         }
 

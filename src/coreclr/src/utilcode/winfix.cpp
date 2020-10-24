@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 //*****************************************************************************
 // WinWrap.cpp
 //
@@ -19,7 +18,6 @@
 #include "winwrap.h"                    // Header for macros and functions.
 #include "utilcode.h"
 #include "holder.h"
-#include "ndpversion.h"
 #include "pedecoder.h"
 
 

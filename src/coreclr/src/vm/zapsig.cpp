@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 // ===========================================================================
 // File: zapsig.cpp
 //
@@ -204,7 +203,9 @@ BOOL ZapSig::GetSignatureForTypeHandle(TypeHandle      handle,
         // During IBC profiling this calls
         //     code:Module.EncodeModuleHelper
         // During ngen this calls
-        //     code:ZapImportTable.EncodeModuleHelper)
+        //     code:ZapImportTable.EncodeModuleHelper
+        // During multicorejit this calls
+        //     code:MulticoreJitManager.EncodeModuleHelper
         //
         index = (*this->pfnEncodeModule)(this->context.pModuleContext, pTypeHandleModule);
 
@@ -213,6 +214,7 @@ BOOL ZapSig::GetSignatureForTypeHandle(TypeHandle      handle,
 
         // emit the ET_MODULE_ZAPSIG escape
         pSigBuilder->AppendElementType((CorElementType) ELEMENT_TYPE_MODULE_ZAPSIG);
+
         // emit the module index
         pSigBuilder->AppendData(index);
     }
@@ -245,7 +247,7 @@ BOOL ZapSig::GetSignatureForTypeHandle(TypeHandle      handle,
         (*this->pfnTokenDefinition)(this->context.pModuleContext, pTypeHandleModule, index, &token);
 
         // ibcExternalType tokens are actually encoded as mdtTypeDef tokens in the signature
-        _ASSERT(TypeFromToken(token) == ibcExternalType);
+        _ASSERTE(TypeFromToken(token) == ibcExternalType);
         token = TokenFromRid(RidFromToken(token), mdtTypeDef);
     }
 
@@ -417,6 +419,7 @@ BOOL ZapSig::GetSignatureForTypeHandle(TypeHandle      handle,
             _ASSERTE(sigType == ELEMENT_TYPE_VALUETYPE);
 
             if (!handle.IsNativeValueType()) RETURN(FALSE);
+            FALLTHROUGH;
         } // fall-through
 
         case ELEMENT_TYPE_VALUETYPE:
@@ -648,17 +651,17 @@ Module *ZapSig::DecodeModuleFromIndex(Module *fromModule,
 
         if(pAssembly == NULL)
         {
+            DomainAssembly *pParentAssembly = fromModule->GetDomainAssembly();
             if (nativeImage != NULL)
             {
-                pAssembly = nativeImage->LoadComponentAssembly(index);
+                pAssembly = nativeImage->LoadManifestAssembly(index, pParentAssembly);
             }
             else
             {
                 AssemblySpec spec;
                 spec.InitializeSpec(TokenFromRid(index, mdtAssemblyRef),
                                 fromModule->GetNativeAssemblyImport(),
-                                NULL);
-                spec.SetParentAssembly(fromModule->GetDomainAssembly());
+                                pParentAssembly);
                 pAssembly = spec.LoadAssembly(FILE_LOADED);
             }
             fromModule->SetNativeMetadataAssemblyRefInCache(index, pAssembly);
@@ -704,10 +707,6 @@ Module *ZapSig::DecodeModuleFromIndexIfLoaded(Module *fromModule,
             ? nativeImage->GetManifestMetadata() : fromModule->GetNativeAssemblyImport(FALSE));
         if (pMDImportOverride != NULL)
         {
-            CHAR   szFullName[MAX_CLASS_NAME + 1];
-            LPCSTR szWinRtNamespace = NULL;
-            LPCSTR szWinRtClassName = NULL;
-
             BOOL fValidAssemblyRef = TRUE;
             LPCSTR pAssemblyName;
             DWORD  dwFlags;
@@ -723,49 +722,10 @@ Module *ZapSig::DecodeModuleFromIndexIfLoaded(Module *fromModule,
                 fValidAssemblyRef = FALSE;
             }
 
-            if (fValidAssemblyRef && IsAfContentType_WindowsRuntime(dwFlags))
-            {
-                // Find the encoded type name
-                LPCSTR pTypeName = NULL;
-                if (pAssemblyName != NULL)
-                    pTypeName = strchr(pAssemblyName, '!');
-
-                if (pTypeName != NULL)
-                {
-                    pTypeName++;
-                    // pTypeName now contains the full type name (namespace + name)
-
-                    strcpy_s(szFullName, _countof(szFullName), pTypeName);
-                    LPSTR pszName = strrchr(szFullName, '.');
-
-                    // WinRT types must have a namespace
-                    if (pszName != NULL)
-                    {
-                        // Replace . between namespace and name with null terminator.
-                        // This breaks the string into a namespace and name pair.
-                        *pszName = '\0';
-                        pszName++;
-
-                        szWinRtNamespace = szFullName;
-                        szWinRtClassName = pszName;
-                    }
-                    else
-                    {   // Namespace '.' separator not found - invalid type name (namespace has to be always present)
-                        fValidAssemblyRef = FALSE;
-                    }
-                }
-                else
-                {   // Type name separator in assembly name '!' not found
-                    fValidAssemblyRef = FALSE;
-                }
-            }
-
             if (fValidAssemblyRef)
             {
                 pAssembly = fromModule->GetAssemblyIfLoaded(
                         tkAssemblyRef,
-                        szWinRtNamespace,
-                        szWinRtClassName,
                         pMDImportOverride);
             }
         }
@@ -817,14 +777,14 @@ MethodDesc *ZapSig::DecodeMethod(Module *pReferencingModule,
     STANDARD_VM_CONTRACT;
 
     SigTypeContext typeContext;    // empty context is OK: encoding should not contain type variables.
-
-    return DecodeMethod(pReferencingModule, pInfoModule, pBuffer, &typeContext, ppTH);
+    ZapSig::Context zapSigContext(pInfoModule, (void *)pReferencingModule, ZapSig::NormalTokens);
+    return DecodeMethod(pInfoModule, pBuffer, &typeContext, &zapSigContext, ppTH);
 }
 
-MethodDesc *ZapSig::DecodeMethod(Module *pReferencingModule,
-                                 Module *pInfoModule,
+MethodDesc *ZapSig::DecodeMethod(Module *pInfoModule,
                                  PCCOR_SIGNATURE pBuffer,
                                  SigTypeContext *pContext,
+                                 ZapSig::Context *pZapSigContext,
                                  TypeHandle *ppTH, /*=NULL*/
                                  PCCOR_SIGNATURE *ppOwnerTypeSpecWithVars, /*=NULL*/
                                  PCCOR_SIGNATURE *ppMethodSpecWithVars /*=NULL*/)
@@ -834,9 +794,6 @@ MethodDesc *ZapSig::DecodeMethod(Module *pReferencingModule,
     MethodDesc *pMethod = NULL;
 
     SigPointer sig(pBuffer);
-
-    ZapSig::Context    zapSigContext(pInfoModule, (void *)pReferencingModule, ZapSig::NormalTokens);
-    ZapSig::Context *  pZapSigContext = &zapSigContext;
 
     // decode flags
     DWORD methodFlags;
@@ -904,7 +861,12 @@ MethodDesc *ZapSig::DecodeMethod(Module *pReferencingModule,
     }
 
     if (thOwner.IsNull())
+    {
+        if (pZapSigContext->externalTokens == ZapSig::MulticoreJitTokens)
+            return NULL;
+
         thOwner = pMethod->GetMethodTable();
+    }
 
     if (ppTH != NULL)
         *ppTH = thOwner;
@@ -1271,7 +1233,12 @@ BOOL ZapSig::EncodeMethod(
     }
 
     ZapSig::ExternalTokens externalTokens = ZapSig::NormalTokens;
-    if (pfnDefineToken != NULL)
+    if (pInfoModule == NULL)
+    {
+        externalTokens = ZapSig::MulticoreJitTokens;
+        pInfoModule = pMethod->GetModule_NoLogging();
+    }
+    else if (pfnDefineToken != NULL)
     {
         externalTokens = ZapSig::IbcTokens;
     }
@@ -1476,7 +1443,7 @@ BOOL ZapSig::EncodeMethod(
             _ASSERTE(pInfoModule == pMethod->GetModule());
         }
 
-        if (!ownerType.HasInstantiation())
+        if (!ownerType.HasInstantiation() && externalTokens != ZapSig::MulticoreJitTokens)
             methodFlags &= ~ENCODE_METHOD_SIG_OwnerType;
     }
 

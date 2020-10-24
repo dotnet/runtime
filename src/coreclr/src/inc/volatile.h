@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 //
 // Volatile.h
 //
@@ -284,6 +283,27 @@ void VolatileStoreWithoutBarrier(T* pt, T val)
 #else
     *pt = val;
 #endif
+}
+
+//
+// Memory ordering barrier that waits for loads in progress to complete.
+// Any effects of loads or stores that appear after, in program order, will "happen after" relative to this.
+// Other operations such as computation or instruction prefetch are not affected.
+//
+// Architectural mapping:
+//   arm64  : dmb ishld
+//   arm    : dmb ish
+//   x86/64 : compiler fence
+inline
+void VolatileLoadBarrier()
+{
+#if defined(HOST_ARM64) && defined(__GNUC__)
+    asm volatile ("dmb ishld" : : : "memory");
+#elif defined(HOST_ARM64) && defined(_MSC_VER)
+    __dmb(_ARM64_BARRIER_ISHLD);
+#else
+    VOLATILE_MEMORY_BARRIER();
+#endif   
 }
 
 //

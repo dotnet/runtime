@@ -32,7 +32,7 @@ if /i [%1] == [wasm]        ( set __BuildArch=wasm&&set __VCBuildArch=x86_amd64&
 
 if /i [%1] == [outconfig] ( set __outConfig=%2&&shift&&shift&goto Arg_Loop)
 
-if /i [%1] == [WebAssembly] ( set __TargetOS=WebAssembly&&shift&goto Arg_Loop)
+if /i [%1] == [Browser] ( set __TargetOS=Browser&&shift&goto Arg_Loop)
 
 if /i [%1] == [rebuild] ( set __BuildTarget=rebuild&&shift&goto Arg_Loop)
 
@@ -67,8 +67,8 @@ if "%VisualStudioVersion%"=="16.0" (
 )
 
 :MissingVersion
-:: Can't find VS 2017, 2019
-echo Error: Visual Studio 2017 or 2019 required
+:: Can't find appropriate VS install
+echo Error: Visual Studio 2019 required
 echo        Please see https://github.com/dotnet/runtime/tree/master/docs/workflow/building/libraries for build instructions.
 exit /b 1
 
@@ -128,7 +128,7 @@ exit /b 1
 :GenVSSolution
 :: generate version file
 powershell -NoProfile -ExecutionPolicy ByPass -NoLogo -File "%__repoRoot%\eng\common\msbuild.ps1" /clp:nosummary %__ArcadeScriptArgs%^
-    %__repoRoot%\eng\empty.csproj /p:NativeVersionFile="%__artifactsDir%\obj\_version.h"^
+    "%__repoRoot%\eng\empty.csproj" /p:NativeVersionFile="%__artifactsDir%\obj\_version.h"^
     /t:GenerateNativeVersionFile /restore
 
 :: Regenerate the VS solution

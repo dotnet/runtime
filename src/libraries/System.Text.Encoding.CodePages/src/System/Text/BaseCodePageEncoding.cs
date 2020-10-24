@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Reflection;
 using System.IO;
@@ -41,14 +40,14 @@ namespace System.Text
     //       WORD        byteReplace;    // 2 bytes = 48     // default replacement byte(s)
     //       BYTE[]      data;           // data section
     //   }
-    internal abstract class BaseCodePageEncoding : EncodingNLS, ISerializable
+    internal abstract partial class BaseCodePageEncoding : EncodingNLS, ISerializable
     {
         internal const string CODE_PAGE_DATA_FILE_NAME = "codepages.nlp";
 
         protected int dataTableCodePage;
 
         // Variables to help us allocate/mark our memory section correctly
-        protected int iExtraBytes = 0;
+        protected int iExtraBytes;
 
         // Our private unicode-to-bytes best-fit-array, and vice versa.
         protected char[]? arrayUnicodeBestFit;
@@ -184,6 +183,7 @@ namespace System.Text
             // We had it, so load it
             LoadManagedCodePage();
         }
+
 
         // Look up the code page pointer
         private unsafe bool FindCodePage(int codePage)

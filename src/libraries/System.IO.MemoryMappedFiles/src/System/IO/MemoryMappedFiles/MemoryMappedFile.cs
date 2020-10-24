@@ -1,9 +1,9 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using Microsoft.Win32.SafeHandles;
 using System.Diagnostics;
+using System.Runtime.Versioning;
 
 namespace System.IO.MemoryMappedFiles
 {
@@ -44,16 +44,19 @@ namespace System.IO.MemoryMappedFiles
         // the first override of this method.  Note: having ReadWrite access to the object does not mean that we
         // have ReadWrite access to the pages mapping the file.  The OS will check against the access on the pages
         // when a view is created.
+        [SupportedOSPlatform("windows")]
         public static MemoryMappedFile OpenExisting(string mapName)
         {
             return OpenExisting(mapName, MemoryMappedFileRights.ReadWrite, HandleInheritability.None);
         }
 
+        [SupportedOSPlatform("windows")]
         public static MemoryMappedFile OpenExisting(string mapName, MemoryMappedFileRights desiredAccessRights)
         {
             return OpenExisting(mapName, desiredAccessRights, HandleInheritability.None);
         }
 
+        [SupportedOSPlatform("windows")]
         public static MemoryMappedFile OpenExisting(string mapName, MemoryMappedFileRights desiredAccessRights,
                                                                     HandleInheritability inheritability)
         {
@@ -154,22 +157,9 @@ namespace System.IO.MemoryMappedFiles
                 throw new ArgumentException(SR.Argument_EmptyFile);
             }
 
-            if (access == MemoryMappedFileAccess.Read && capacity > fileStream.Length)
-            {
-                CleanupFile(fileStream, existed, path);
-                throw new ArgumentException(SR.Argument_ReadAccessWithLargeCapacity);
-            }
-
             if (capacity == DefaultSize)
             {
                 capacity = fileStream.Length;
-            }
-
-            // one can always create a small view if they do not want to map an entire file
-            if (fileStream.Length > capacity)
-            {
-                CleanupFile(fileStream, existed, path);
-                throw new ArgumentOutOfRangeException(nameof(capacity), SR.ArgumentOutOfRange_CapacityGEFileSizeRequired);
             }
 
             SafeMemoryMappedFileHandle? handle = null;
@@ -224,11 +214,6 @@ namespace System.IO.MemoryMappedFiles
                 throw new ArgumentException(SR.Argument_NewMMFWriteAccessNotAllowed, nameof(access));
             }
 
-            if (access == MemoryMappedFileAccess.Read && capacity > fileStream.Length)
-            {
-                throw new ArgumentException(SR.Argument_ReadAccessWithLargeCapacity);
-            }
-
             if (inheritability < HandleInheritability.None || inheritability > HandleInheritability.Inheritable)
             {
                 throw new ArgumentOutOfRangeException(nameof(inheritability));
@@ -240,12 +225,6 @@ namespace System.IO.MemoryMappedFiles
             if (capacity == DefaultSize)
             {
                 capacity = fileStream.Length;
-            }
-
-            // one can always create a small view if they do not want to map an entire file
-            if (fileStream.Length > capacity)
-            {
-                throw new ArgumentOutOfRangeException(nameof(capacity), SR.ArgumentOutOfRange_CapacityGEFileSizeRequired);
             }
 
             SafeMemoryMappedFileHandle handle = CreateCore(fileStream, mapName, inheritability,
@@ -316,18 +295,21 @@ namespace System.IO.MemoryMappedFiles
         // memory mapped file if one exists with the same name.  The capacity, options, and
         // memoryMappedFileSecurity arguments will be ignored in the case of the later.
         // This is ideal for P2P style IPC.
+        [SupportedOSPlatform("windows")]
         public static MemoryMappedFile CreateOrOpen(string mapName, long capacity)
         {
             return CreateOrOpen(mapName, capacity, MemoryMappedFileAccess.ReadWrite,
                 MemoryMappedFileOptions.None, HandleInheritability.None);
         }
 
+        [SupportedOSPlatform("windows")]
         public static MemoryMappedFile CreateOrOpen(string mapName, long capacity,
                                                     MemoryMappedFileAccess access)
         {
             return CreateOrOpen(mapName, capacity, access, MemoryMappedFileOptions.None, HandleInheritability.None);
         }
 
+        [SupportedOSPlatform("windows")]
         public static MemoryMappedFile CreateOrOpen(string mapName, long capacity,
                                                     MemoryMappedFileAccess access, MemoryMappedFileOptions options,
                                                     HandleInheritability inheritability)

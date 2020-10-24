@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 /*============================================================
 **
@@ -12,6 +11,7 @@
 ===========================================================*/
 
 using System;
+using System.Diagnostics;
 
 namespace Microsoft.Win32.SafeHandles
 {
@@ -24,11 +24,11 @@ namespace Microsoft.Win32.SafeHandles
         // Process.{Safe}Handle to initalize and use a WaitHandle to successfully use it on
         // Unix as well to wait for the process to complete.
 
-        private readonly SafeWaitHandle _handle = null!;
+        private readonly SafeWaitHandle? _handle;
         private readonly bool _releaseRef;
 
         internal SafeProcessHandle(int processId, SafeWaitHandle handle) :
-            this(handle.DangerousGetHandle(), ownsHandle: false)
+            this(handle.DangerousGetHandle(), ownsHandle: true)
         {
             ProcessId = processId;
             _handle = handle;
@@ -41,6 +41,7 @@ namespace Microsoft.Win32.SafeHandles
         {
             if (_releaseRef)
             {
+                Debug.Assert(_handle != null);
                 _handle.DangerousRelease();
             }
             return true;

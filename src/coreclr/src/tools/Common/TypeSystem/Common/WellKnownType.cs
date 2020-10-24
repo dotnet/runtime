@@ -1,13 +1,12 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System;
 
 namespace Internal.TypeSystem
 {
     // The following enum is required for interop with the VS Debugger
-    // Prior to making any changes to this enum, please reach out to the VS Debugger 
+    // Prior to making any changes to this enum, please reach out to the VS Debugger
     // team to make sure that your changes are not going to prevent the debugger
     // from working.
     public enum WellKnownType

@@ -1,5 +1,8 @@
-ARG SDK_BASE_IMAGE=mcr.microsoft.com/dotnet/core/sdk:3.0.100-buster
+ARG SDK_BASE_IMAGE=mcr.microsoft.com/dotnet/nightly/sdk:5.0-buster-slim
 FROM $SDK_BASE_IMAGE
+
+RUN echo "DOTNET_SDK_VERSION="$DOTNET_SDK_VERSION
+RUN echo "DOTNET_VERSION="$DOTNET_VERSION
 
 WORKDIR /app
 COPY . .

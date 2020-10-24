@@ -1,11 +1,11 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 namespace System.Xml.Schema
 {
     using System.Diagnostics;
     using System.Collections.Generic;
+    using System.Diagnostics.CodeAnalysis;
 
     /*
      * This class describes an attribute type and potential values.
@@ -21,7 +21,7 @@ namespace System.Xml.Schema
             XmlLang
         };
 
-        private string _defExpanded;  // default value in its expanded form
+        private string? _defExpanded;  // default value in its expanded form
 
         private int _lineNum;
         private int _linePos;
@@ -30,15 +30,14 @@ namespace System.Xml.Schema
 
         private Reserve _reserved = Reserve.None; // indicate the attribute type, such as xml:lang or xml:space
 
-        private readonly bool _defaultValueChecked;
-        private XmlSchemaAttribute _schemaAttribute;
+        private XmlSchemaAttribute? _schemaAttribute;
 
         public static readonly SchemaAttDef Empty = new SchemaAttDef();
 
         //
         // Constructors
         //
-        public SchemaAttDef(XmlQualifiedName name, string prefix)
+        public SchemaAttDef(XmlQualifiedName name, string? prefix)
             : base(name, prefix)
         {
         }
@@ -46,6 +45,7 @@ namespace System.Xml.Schema
         public SchemaAttDef(XmlQualifiedName name) : base(name, null)
         {
         }
+
         private SchemaAttDef() { }
 
         //
@@ -98,7 +98,7 @@ namespace System.Xml.Schema
             get { return ((SchemaAttDef)this).DefaultValueExpanded; }
         }
 
-        object IDtdDefaultAttributeInfo.DefaultValueTyped
+        object? IDtdDefaultAttributeInfo.DefaultValueTyped
         {
             get { return ((SchemaAttDef)this).DefaultValueTyped; }
         }
@@ -141,6 +141,7 @@ namespace System.Xml.Schema
             set { _valueLineNum = value; }
         }
 
+        [AllowNull]
         internal string DefaultValueExpanded
         {
             get { return (_defExpanded != null) ? _defExpanded : string.Empty; }
@@ -155,7 +156,7 @@ namespace System.Xml.Schema
             }
             set
             {
-                this.Datatype = XmlSchemaDatatype.FromXmlTokenizedType(value);
+                this.Datatype = XmlSchemaDatatype.FromXmlTokenizedType(value)!;
             }
         }
 
@@ -165,15 +166,7 @@ namespace System.Xml.Schema
             set { _reserved = value; }
         }
 
-        internal bool DefaultValueChecked
-        {
-            get
-            {
-                return _defaultValueChecked;
-            }
-        }
-
-        internal XmlSchemaAttribute SchemaAttribute
+        internal XmlSchemaAttribute? SchemaAttribute
         {
             get { return _schemaAttribute; }
             set { _schemaAttribute = value; }

@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Runtime.InteropServices;
 
@@ -12,7 +11,7 @@ namespace Microsoft.Extensions.DependencyModel.Resolution
 
         internal static string Resolve(IEnvironment environment, IFileSystem fileSystem)
         {
-            var path = environment.GetEnvironmentVariable(DotNetReferenceAssembliesPathEnv);
+            string path = environment.GetEnvironmentVariable(DotNetReferenceAssembliesPathEnv);
             if (!string.IsNullOrEmpty(path))
             {
                 return path;

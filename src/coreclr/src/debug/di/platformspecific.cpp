@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 
 #include "stdafx.h"
@@ -17,10 +16,10 @@
 #include "shimremotedatatarget.cpp"
 #include "remoteeventchannel.cpp"
 #elif WIN32
-#include "WindowsPipeline.cpp"
-#include "EventRedirectionPipeline.cpp"
-#include "ShimLocalDataTarget.cpp"
-#include "LocalEventChannel.cpp"
+#include "windowspipeline.cpp"
+#include "eventredirectionpipeline.cpp"
+#include "shimlocaldatatarget.cpp"
+#include "localeventchannel.cpp"
 #endif
 
 #if TARGET_X86

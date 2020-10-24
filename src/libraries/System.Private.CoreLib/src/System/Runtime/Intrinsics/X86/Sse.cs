@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Runtime.CompilerServices;
 
@@ -11,18 +10,18 @@ namespace System.Runtime.Intrinsics.X86
     /// </summary>
     [Intrinsic]
     [CLSCompliant(false)]
-    public abstract class Sse
+    public abstract class Sse : X86Base
     {
         internal Sse() { }
 
-        public static bool IsSupported { get => IsSupported; }
+        public static new bool IsSupported { get => IsSupported; }
 
         [Intrinsic]
-        public abstract class X64
+        public new abstract class X64 : X86Base.X64
         {
             internal X64() { }
 
-            public static bool IsSupported { get => IsSupported; }
+            public static new bool IsSupported { get => IsSupported; }
 
             /// <summary>
             /// __int64 _mm_cvtss_si64 (__m128 a)

@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections.Immutable;
 using Xunit;
@@ -42,6 +41,17 @@ namespace System.Reflection.Metadata.Decoding.Tests
             Assert.Equal(0xff, new SignatureHeader((SignatureKind)0xff, 0, 0).RawValue);
             Assert.Equal(0xff, new SignatureHeader(0, (SignatureCallingConvention)0xff, 0).RawValue);
             Assert.Equal(0xff, new SignatureHeader(0, 0, (SignatureAttributes)0xff).RawValue);
+        }
+
+        [Fact]
+        public void VerifyConstructor3()
+        {
+            var header = new SignatureHeader(SignatureKind.Method, SignatureCallingConvention.Unmanaged, SignatureAttributes.Instance);
+            Assert.Equal(0x29, header.RawValue);
+
+            Assert.Equal(SignatureKind.Method, header.Kind);
+            Assert.Equal(SignatureCallingConvention.Unmanaged, header.CallingConvention);
+            Assert.Equal(SignatureAttributes.Instance, header.Attributes);
         }
     }
 }

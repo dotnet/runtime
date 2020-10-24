@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 //
 // Allow multiple inclusion.
 
@@ -220,11 +219,15 @@
 
     JITHELPER(CORINFO_HELP_PINVOKE_CALLI,       GenericPInvokeCalliHelper, CORINFO_HELP_SIG_NO_ALIGN_STUB)
 
+#if defined(TARGET_X86) && !defined(UNIX_X86_ABI)
     JITHELPER(CORINFO_HELP_TAILCALL,            JIT_TailCall,             CORINFO_HELP_SIG_CANNOT_USE_ALIGN_STUB)
+#else
+    JITHELPER(CORINFO_HELP_TAILCALL,            NULL,                     CORINFO_HELP_SIG_CANNOT_USE_ALIGN_STUB)
+#endif
 
     JITHELPER(CORINFO_HELP_GETCURRENTMANAGEDTHREADID,  JIT_GetCurrentManagedThreadId, CORINFO_HELP_SIG_REG_ONLY)
 
-#ifdef HOST_64BIT
+#ifdef TARGET_64BIT
     JITHELPER(CORINFO_HELP_INIT_PINVOKE_FRAME,  JIT_InitPInvokeFrame,  CORINFO_HELP_SIG_REG_ONLY)
 #else
     DYNAMICJITHELPER(CORINFO_HELP_INIT_PINVOKE_FRAME,  NULL,        CORINFO_HELP_SIG_REG_ONLY)

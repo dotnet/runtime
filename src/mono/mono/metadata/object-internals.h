@@ -801,6 +801,11 @@ typedef struct {
 	guint32 intType;
 } MonoInterfaceTypeAttribute;
 
+typedef struct {
+	MonoObject object;
+	guint32 intType;
+} MonoClassInterfaceAttribute;
+
 /* Safely access System.Delegate from native code */
 TYPED_HANDLE_DECL (MonoDelegate);
 
@@ -820,10 +825,9 @@ typedef struct {
 	void     (*set_cast_details) (MonoClass *from, MonoClass *to);
 	void     (*debug_log) (int level, MonoString *category, MonoString *message);
 	gboolean (*debug_log_is_enabled) (void);
-	void     (*init_delegate) (MonoDelegateHandle delegate, MonoError *error);
+	void     (*init_delegate) (MonoDelegateHandle delegate, MonoObjectHandle target, gpointer addr, MonoMethod *method, MonoError *error);
 	MonoObject* (*runtime_invoke) (MonoMethod *method, void *obj, void **params, MonoObject **exc, MonoError *error);
 	void*    (*compile_method) (MonoMethod *method, MonoError *error);
-	gpointer (*create_jump_trampoline) (MonoDomain *domain, MonoMethod *method, gboolean add_sync_wrapper, MonoError *error);
 	gpointer (*create_jit_trampoline) (MonoDomain *domain, MonoMethod *method, MonoError *error);
 	/* used to free a dynamic method */
 	void     (*free_method) (MonoDomain *domain, MonoMethod *method);
@@ -881,11 +885,8 @@ mono_method_call_message_new (MonoMethod *method, gpointer *params, MonoMethod *
 void
 mono_method_return_message_restore (MonoMethod *method, gpointer *params, MonoArray *out_args, MonoError *error);
 
-gboolean
-mono_delegate_ctor_with_method (MonoObjectHandle this_obj, MonoObjectHandle target, gpointer addr, MonoMethod *method, MonoError *error);
-
-gboolean
-mono_delegate_ctor	    (MonoObjectHandle this_obj, MonoObjectHandle target, gpointer addr, MonoError *error);
+void
+mono_delegate_ctor	    (MonoObjectHandle this_obj, MonoObjectHandle target, gpointer addr, MonoMethod *method, MonoError *error);
 
 MonoMethod *
 mono_get_delegate_invoke_checked (MonoClass *klass, MonoError *error);
@@ -1647,6 +1648,30 @@ typedef struct {
 	MonoProperty *prop;
 } CattrNamedArg;
 
+#ifdef ENABLE_NETCORE
+// Keep in sync with System.Runtime.Loader.AssemblyLoadContext.InternalState
+typedef enum {
+	ALIVE = 0,
+	UNLOADING = 1
+} MonoManagedAssemblyLoadContextInternalState;
+
+// Keep in sync with System.Runtime.Loader.AssemblyLoadContext
+typedef struct {
+	MonoObject object;
+	MonoObject *unload_lock;
+	MonoEvent *resolving_unmaned_dll;
+	MonoEvent *resolving;
+	MonoEvent *unloading;
+	MonoString *name;
+	MonoAssemblyLoadContext *native_assembly_load_context;
+	gint64 id;
+	gint32 internal_state;
+	MonoBoolean is_collectible;
+} MonoManagedAssemblyLoadContext;
+
+TYPED_HANDLE_DECL (MonoManagedAssemblyLoadContext);
+#endif
+
 /* All MonoInternalThread instances should be pinned, so it's safe to use the raw ptr.  However
  * for uniformity, icall wrapping will make handles anyway.  So this is the method for getting the payload.
  */
@@ -1883,9 +1908,9 @@ mono_method_add_generic_virtual_invocation (MonoDomain *domain, MonoVTable *vtab
 											MonoMethod *method, gpointer code);
 
 gpointer
-mono_method_alloc_generic_virtual_trampoline (MonoDomain *domain, int size);
+mono_method_alloc_generic_virtual_trampoline (MonoMemoryManager *mem_manager, int size);
 
-#define mono_method_alloc_generic_virtual_trampoline(domain, size) (g_cast (mono_method_alloc_generic_virtual_trampoline ((domain), (size))))
+#define mono_method_alloc_generic_virtual_trampoline(mem_manager, size) (g_cast (mono_method_alloc_generic_virtual_trampoline ((mem_manager), (size))))
 
 typedef enum {
 	MONO_UNHANDLED_POLICY_LEGACY,
@@ -1899,6 +1924,14 @@ mono_runtime_unhandled_exception_policy_set (MonoRuntimeUnhandledExceptionPolicy
 
 void
 mono_unhandled_exception_checked (MonoObjectHandle exc, MonoError *error);
+
+#ifdef ENABLE_NETCORE
+void
+mono_first_chance_exception_checked (MonoObjectHandle exc, MonoError *error);
+
+void
+mono_first_chance_exception_internal (MonoObject *exc_raw);
+#endif
 
 MonoVTable *
 mono_class_try_get_vtable (MonoDomain *domain, MonoClass *klass);
@@ -2017,6 +2050,9 @@ mono_exception_handle_get_native_backtrace (MonoExceptionHandle exc);
 
 char *
 mono_exception_get_managed_backtrace (MonoException *exc);
+
+gboolean
+mono_exception_try_get_managed_backtrace (MonoException *exc, const char *prefix, char **result);
 
 void
 mono_copy_value (MonoType *type, void *dest, void *value, int deref_pointer);
@@ -2384,5 +2420,11 @@ mono_gc_wbarrier_value_copy_internal (void* dest, const void* src, int count, Mo
 
 void
 mono_gc_wbarrier_object_copy_internal (MonoObject* obj, MonoObject *src);
+
+char *
+mono_runtime_get_managed_cmd_line (void);
+
+char *
+mono_runtime_get_cmd_line (int argc, char **argv);
 
 #endif /* __MONO_OBJECT_INTERNALS_H__ */

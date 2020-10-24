@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 /***
 *makepath.c - create path name from components
 *
@@ -101,16 +100,12 @@ void MakePath (
                         _ASSERTE(count < maxCount);
                 }
 
-#ifdef _MBCS
-                if (*(p=_mbsdec(dir,p)) != _T('/') && *p != _T('\\')) {
-#else  /* _MBCS */
                 // suppress warning for the following line; this is safe but would require significant code
                 // delta for prefast to understand.
 #ifdef _PREFAST_
                 #pragma warning( suppress: 26001 )
 #endif
                 if (*(p-1) != _T('/') && *(p-1) != _T('\\')) {
-#endif  /* _MBCS */
                         *path++ = _T('\\');
                         count++;
 

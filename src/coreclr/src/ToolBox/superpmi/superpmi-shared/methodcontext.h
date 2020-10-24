@@ -63,7 +63,6 @@ public:
         DWORDLONG field;
         DWORDLONG method;
         DWORDLONG context;
-        DWORD     speculative;
     };
     struct DLDL
     {
@@ -423,6 +422,12 @@ public:
         DWORDLONG method;
         DWORDLONG delegateCls;
     };
+    struct Agnostic_AllocMethodBlockCounts
+    {
+        DWORDLONG address;
+        DWORD count;
+        DWORD result;
+    };
     struct Agnostic_GetMethodBlockCounts
     {
         DWORD count;
@@ -436,10 +441,19 @@ public:
         DWORDLONG ProfilerHandle;
         DWORD     bIndirectedHandles;
     };
-    struct Agnostic_GetTailCallCopyArgsThunk
+    struct Agnostic_GetTailCallHelpers
     {
-        Agnostic_CORINFO_SIG_INFO Sig;
-        DWORD                     flags;
+        Agnostic_CORINFO_RESOLVED_TOKEN callToken;
+        Agnostic_CORINFO_SIG_INFO sig;
+        DWORD flags;
+    };
+    struct Agnostic_CORINFO_TAILCALL_HELPERS
+    {
+        bool result;
+        DWORD flags;
+        DWORDLONG hStoreArgs;
+        DWORDLONG hCallTarget;
+        DWORDLONG hDispatcher;
     };
     struct Agnostic_GetArgClass_Value
     {
@@ -622,13 +636,11 @@ public:
     void recInitClass(CORINFO_FIELD_HANDLE   field,
                       CORINFO_METHOD_HANDLE  method,
                       CORINFO_CONTEXT_HANDLE context,
-                      BOOL                   speculative,
                       CorInfoInitClassResult result);
     void dmpInitClass(const Agnostic_InitClass& key, DWORD value);
     CorInfoInitClassResult repInitClass(CORINFO_FIELD_HANDLE   field,
                                         CORINFO_METHOD_HANDLE  method,
-                                        CORINFO_CONTEXT_HANDLE context,
-                                        BOOL                   speculative);
+                                        CORINFO_CONTEXT_HANDLE context);
 
     void recGetMethodName(CORINFO_METHOD_HANDLE ftn, char* methodname, const char** moduleName);
     void dmpGetMethodName(DLD key, DD value);
@@ -858,9 +870,9 @@ public:
     void dmpGetArgClass(const GetArgClassValue& key, const Agnostic_GetArgClass_Value& value);
     CORINFO_CLASS_HANDLE repGetArgClass(CORINFO_SIG_INFO* sig, CORINFO_ARG_LIST_HANDLE args, DWORD* exceptionCode);
 
-    void recGetHFAType(CORINFO_CLASS_HANDLE clsHnd, CorInfoType result);
+    void recGetHFAType(CORINFO_CLASS_HANDLE clsHnd, CorInfoHFAElemType result);
     void dmpGetHFAType(DWORDLONG key, DWORD value);
-    CorInfoType repGetHFAType(CORINFO_CLASS_HANDLE clsHnd);
+    CorInfoHFAElemType repGetHFAType(CORINFO_CLASS_HANDLE clsHnd);
 
     void recGetMethodInfo(CORINFO_METHOD_HANDLE ftn, CORINFO_METHOD_INFO* info, bool result, DWORD exceptionCode);
     void dmpGetMethodInfo(DWORDLONG key, const Agnostic_GetMethodInfo& value);
@@ -1162,6 +1174,10 @@ public:
     void dmpGetFieldThreadLocalStoreID(DWORDLONG key, DLD value);
     DWORD repGetFieldThreadLocalStoreID(CORINFO_FIELD_HANDLE field, void** ppIndirection);
 
+    void recAllocMethodBlockCounts(ULONG count, ICorJitInfo::BlockCounts** pBlockCounts, HRESULT result);
+    void dmpAllocMethodBlockCounts(DWORD key, const Agnostic_AllocMethodBlockCounts& value);
+    HRESULT repAllocMethodBlockCounts(ULONG count, ICorJitInfo::BlockCounts** pBlockCounts);
+
     void recGetMethodBlockCounts(CORINFO_METHOD_HANDLE        ftnHnd,
                                  UINT32 *                     pCount,
                                  ICorJitInfo::BlockCounts**   pBlockCounts,
@@ -1255,9 +1271,17 @@ public:
     void dmpAppendClassName(const Agnostic_AppendClassName& key, DWORD value);
     const WCHAR* repAppendClassName(CORINFO_CLASS_HANDLE cls, BOOL fNamespace, BOOL fFullInst, BOOL fAssembly);
 
-    void recGetTailCallCopyArgsThunk(CORINFO_SIG_INFO* pSig, CorInfoHelperTailCallSpecialHandling flags, void* result);
-    void dmpGetTailCallCopyArgsThunk(const Agnostic_GetTailCallCopyArgsThunk& key, DWORDLONG value);
-    void* repGetTailCallCopyArgsThunk(CORINFO_SIG_INFO* pSig, CorInfoHelperTailCallSpecialHandling flags);
+    void recGetTailCallHelpers(
+        CORINFO_RESOLVED_TOKEN* callToken,
+        CORINFO_SIG_INFO* sig,
+        CORINFO_GET_TAILCALL_HELPERS_FLAGS flags,
+        CORINFO_TAILCALL_HELPERS* pResult);
+    void dmpGetTailCallHelpers(const Agnostic_GetTailCallHelpers& key, const Agnostic_CORINFO_TAILCALL_HELPERS& value);
+    bool repGetTailCallHelpers(
+        CORINFO_RESOLVED_TOKEN* callToken,
+        CORINFO_SIG_INFO* sig,
+        CORINFO_GET_TAILCALL_HELPERS_FLAGS flags,
+        CORINFO_TAILCALL_HELPERS* pResult);
 
     void recGetMethodDefFromMethod(CORINFO_METHOD_HANDLE hMethod, mdMethodDef result);
     void dmpGetMethodDefFromMethod(DWORDLONG key, DWORD value);
@@ -1305,6 +1329,17 @@ private:
     bool IsEnvironmentHeaderEqual(const Environment& prevEnv);
     bool IsEnvironmentContentEqual(const Environment& prevEnv);
 
+    enum class ReadyToRunCompilation
+    {
+        Uninitialized,
+        ReadyToRun,
+        NotReadyToRun
+    };
+
+    ReadyToRunCompilation isReadyToRunCompilation;
+
+    void InitReadyToRunFlag(const CORJIT_FLAGS* jitFlags);
+
     template <typename key, typename value>
     static bool AreLWMHeadersEqual(LightWeightMap<key, value>* prev, LightWeightMap<key, value>* curr);
     static bool IsIntConfigContentEqual(LightWeightMap<Agnostic_ConfigIntInfo, DWORD>* prev,
@@ -1320,10 +1355,11 @@ private:
 };
 
 // ********************* Please keep this up-to-date to ease adding more ***************
-// Highest packet number: 177
+// Highest packet number: 178
 // *************************************************************************************
 enum mcPackets
 {
+    Packet_AllocMethodBlockCounts     = 131,
     Packet_AppendClassName            = 149, // Added 8/6/2014 - needed for SIMD
     Packet_AreTypesEquivalent         = 1,
     Packet_AsCorInfoType              = 2,
@@ -1438,7 +1474,8 @@ enum mcPackets
     Packet_GetRelocTypeHint                              = 84,
     Packet_GetSecurityPrologHelper                       = 85, // Retired 2/18/2020
     Packet_GetSharedCCtorHelper                          = 86,
-    Packet_GetTailCallCopyArgsThunk                      = 87,
+    Packet_GetTailCallCopyArgsThunk                      = 87, // Retired 4/27/2020
+    Packet_GetTailCallHelpers                            = 178, // Added 3/18/2020
     Packet_GetThreadTLSIndex                             = 88,
     Packet_GetTokenTypeAsHandle                          = 89,
     Packet_GetTypeForBox                                 = 90,
@@ -1478,7 +1515,6 @@ enum mcPackets
     Packet_ShouldEnforceCallvirtRestriction              = 112, // Retired 2/18/2020
 
     PacketCR_AddressMap                        = 113,
-    PacketCR_AllocMethodBlockCounts            = 131,
     PacketCR_AllocGCInfo                       = 114,
     PacketCR_AllocMem                          = 115,
     PacketCR_AllocUnwindInfo                   = 132,
@@ -1500,7 +1536,9 @@ enum mcPackets
     PacketCR_SetMethodAttribs                  = 129,
     PacketCR_SetVars                           = 130,
     PacketCR_SetPatchpointInfo                 = 176, // added 8/5/2019
-    PacketCR_RecordCallSite                    = 146, // Added 10/28/2013 - to support indirect calls
+    PacketCR_RecordCallSite                    = 146, // Retired 9/13/2020
+    PacketCR_RecordCallSiteWithSignature       = 179, // Added 9/13/2020
+    PacketCR_RecordCallSiteWithoutSignature    = 180, // Added 9/13/2020
 };
 
 #endif

@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Runtime.InteropServices;
 using System.Net.NetworkInformation;
@@ -27,13 +26,13 @@ internal static partial class Interop
         }
 
         [DllImport(Libraries.SystemNative, EntryPoint = "SystemNative_GetEstimatedTcpConnectionCount")]
-        public static extern unsafe int GetEstimatedTcpConnectionCount();
+        public static extern int GetEstimatedTcpConnectionCount();
 
         [DllImport(Libraries.SystemNative, EntryPoint = "SystemNative_GetActiveTcpConnectionInfos")]
         public static extern unsafe int GetActiveTcpConnectionInfos(NativeTcpConnectionInformation* infos, int* infoCount);
 
         [DllImport(Libraries.SystemNative, EntryPoint = "SystemNative_GetEstimatedUdpListenerCount")]
-        public static extern unsafe int GetEstimatedUdpListenerCount();
+        public static extern int GetEstimatedUdpListenerCount();
 
         [DllImport(Libraries.SystemNative, EntryPoint = "SystemNative_GetActiveUdpListeners")]
         public static extern unsafe int GetActiveUdpListeners(IPEndPointInfo* infos, int* infoCount);

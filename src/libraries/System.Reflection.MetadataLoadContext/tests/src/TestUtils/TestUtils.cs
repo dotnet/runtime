@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using SampleMetadata;
 using System.Collections.Generic;
@@ -254,7 +253,12 @@ namespace System.Reflection.Tests
 
         private static readonly Lazy<bool> s_useRuntimeTypesForTests = new Lazy<bool>(() =>
         {
-            if (File.Exists(Path.Combine(Path.GetDirectoryName(typeof(TestUtils).Assembly.Location), "UseRuntimeTypes.txt")))
+            if (PlatformDetection.IsBrowser)
+                return false;
+
+            var loc = AssemblyPathHelper.GetAssemblyLocation(typeof(TestUtils).Assembly);
+
+            if (File.Exists(Path.Combine(loc, "UseRuntimeTypes.txt")))
             {
                 // Disable projection so that are Reflection tests run against the runtime types. This is used primarily to verify
                 // the *test* code for correctness.

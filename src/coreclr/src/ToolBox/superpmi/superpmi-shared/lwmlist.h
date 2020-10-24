@@ -18,6 +18,7 @@
 #define DENSELWM(map, value) LWM(map, this_is_an_error, value)
 #endif
 
+LWM(AllocMethodBlockCounts, DWORD, Agnostic_AllocMethodBlockCounts)
 LWM(AppendClassName, Agnostic_AppendClassName, DWORD)
 LWM(AreTypesEquivalent, DLDL, DWORD)
 LWM(AsCorInfoType, DWORDLONG, DWORD)
@@ -121,7 +122,7 @@ LWM(GetRelocTypeHint, DWORDLONG, DWORD)
 LWM(GetSharedCCtorHelper, DWORDLONG, DWORD)
 LWM(GetStringConfigValue, DWORD, DWORD)
 LWM(GetSystemVAmd64PassStructInRegisterDescriptor, DWORDLONG, Agnostic_GetSystemVAmd64PassStructInRegisterDescriptor)
-LWM(GetTailCallCopyArgsThunk, Agnostic_GetTailCallCopyArgsThunk, DWORDLONG)
+LWM(GetTailCallHelpers, Agnostic_GetTailCallHelpers, Agnostic_CORINFO_TAILCALL_HELPERS)
 LWM(GetThreadTLSIndex, DWORD, DLD)
 LWM(GetTokenTypeAsHandle, GetTokenTypeAsHandleValue, DWORDLONG)
 LWM(GetTypeForBox, DWORDLONG, DWORDLONG)

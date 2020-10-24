@@ -1,6 +1,5 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.s
 
 using System.Collections;
 using System.Diagnostics;
@@ -10,7 +9,7 @@ namespace System.Security
 {
     public sealed class SecurityElement
     {
-        internal string _tag = null!;
+        internal string _tag;
         internal string? _text;
         private ArrayList? _children;
         internal ArrayList? _attributes;
@@ -34,10 +33,6 @@ namespace System.Security
 
         //-------------------------- Constructors ---------------------------
 
-        internal SecurityElement()
-        {
-        }
-
         public SecurityElement(string tag)
         {
             if (tag == null)
@@ -47,7 +42,6 @@ namespace System.Security
                 throw new ArgumentException(SR.Format(SR.Argument_InvalidElementTag, tag));
 
             _tag = tag;
-            _text = null;
         }
 
         public SecurityElement(string tag, string? text)

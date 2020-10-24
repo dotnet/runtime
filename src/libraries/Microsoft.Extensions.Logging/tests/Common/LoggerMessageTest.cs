@@ -1,6 +1,5 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System;
 using System.Collections.Generic;
@@ -277,6 +276,9 @@ namespace Microsoft.Extensions.Logging.Test
         [InlineData(1)]
         [InlineData(2)]
         [InlineData(3)]
+        [InlineData(4)]
+        [InlineData(5)]
+        [InlineData(6)]
         public void DefineScope_ThrowsException_WhenExpectedFormatStringParameterCount_NotFound(
             int expectedNamedParameterCount)
         {
@@ -301,12 +303,44 @@ namespace Microsoft.Extensions.Logging.Test
                     exception = Assert.Throws<ArgumentException>(
                         () => LoggerMessage.DefineScope<string, string, string>(formatString));
                     break;
+                case 4:
+                    exception = Assert.Throws<ArgumentException>(
+                        () => LoggerMessage.DefineScope<string, string, string, string>(formatString));
+                    break;
+                case 5:
+                    exception = Assert.Throws<ArgumentException>(
+                        () => LoggerMessage.DefineScope<string, string, string, string, string>(formatString));
+                    break;
+                case 6:
+                    exception = Assert.Throws<ArgumentException>(
+                        () => LoggerMessage.DefineScope<string, string, string, string, string, string>(formatString));
+                    break;
                 default:
                     throw new ArgumentException($"Invalid value for '{nameof(expectedNamedParameterCount)}'");
             }
 
             Assert.Equal(expectedMessage, exception.Message);
         }
+
+        [Theory]
+        [MemberData(nameof(DefineMethodsData))]
+        public void DefineMessage_ThrowsException_WhenFormatString_IsNull(Func<LogLevel, EventId, string, Delegate> define)
+        {
+            // Act
+            var exception = Assert.Throws<ArgumentNullException>(
+                () => define.Invoke(LogLevel.Error, 0, null));
+        }
+
+        public static IEnumerable<object[]> DefineMethodsData => new[]
+        {
+            new object[] { (Func<LogLevel, EventId, string, Delegate>)LoggerMessage.Define },
+            new object[] { (Func<LogLevel, EventId, string, Delegate>)LoggerMessage.Define<string> },
+            new object[] { (Func<LogLevel, EventId, string, Delegate>)LoggerMessage.Define<string, string> },
+            new object[] { (Func<LogLevel, EventId, string, Delegate>)LoggerMessage.Define<string, string, string> },
+            new object[] { (Func<LogLevel, EventId, string, Delegate>)LoggerMessage.Define<string, string, string, string> },
+            new object[] { (Func<LogLevel, EventId, string, Delegate>)LoggerMessage.Define<string, string, string, string, string> },
+            new object[] { (Func<LogLevel, EventId, string, Delegate>)LoggerMessage.Define<string, string, string, string, string, string> }
+        };
 
         public static IEnumerable<object[]> LogMessagesData => new[]
         {

@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 #if !defined(_ILDASMPCH_H)
 #define _ILDASMPCH_H
@@ -21,5 +20,9 @@
 #include <shellapi.h>
 #include <htmlhelp.h>
 #include <conio.h>
+
+#ifndef Debug_ReportError
+#define Debug_ReportError(strMessage)
+#endif
 
 #endif

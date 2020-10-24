@@ -1,9 +1,9 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 
 namespace R2RTest
@@ -15,6 +15,9 @@ namespace R2RTest
         public DirectoryInfo CoreRootDirectory { get; set; }
         public bool Crossgen { get; set; }
         public FileInfo CrossgenPath { get; set; }
+        public FileInfo Crossgen2Path { get; set; }
+        public bool VerifyTypeAndFieldLayout { get; set; }
+        public string TargetArch { get; set; }
         public bool Exe { get; set; }
         public bool NoJit { get; set; }
         public bool NoCrossgen2 { get; set; }
@@ -31,6 +34,7 @@ namespace R2RTest
         public bool LargeBubble { get; set; }
         public bool Composite { get; set; }
         public int Crossgen2Parallelism { get; set; }
+        public FileInfo Crossgen2JitPath { get; set; }
         public int CompilationTimeoutMinutes { get; set; }
         public int ExecutionTimeoutMinutes { get; set; }
         public DirectoryInfo[] ReferencePath { get; set; }
@@ -39,10 +43,37 @@ namespace R2RTest
         public FileInfo CrossgenResponseFile { get; set; }
         public DirectoryInfo[] RewriteOldPath { get; set; }
         public DirectoryInfo[] RewriteNewPath { get; set; }
+        public DirectoryInfo AspNetPath { get; set; }
+        public SerpCompositeScenario CompositeScenario { get; set; }
         public bool MeasurePerf { get; set; }
         public string InputFileSearchString { get; set; }
         public string ConfigurationSuffix => (Release ? "-ret.out" : "-chk.out");
         public string GCStress { get; set; }
+        public string DotNetCli
+        {
+            get
+            {
+                if (_dotnetCli == null)
+                {
+                    _dotnetCli = Process.GetCurrentProcess().MainModule.FileName;
+                    Console.WriteLine($"Using dotnet: {_dotnetCli}");
+
+                    if (Path.GetFileNameWithoutExtension(_dotnetCli).Equals("r2rtest", StringComparison.OrdinalIgnoreCase))
+                    {
+                        throw new ArgumentException("Error: --dotnet-cli argument is required to run crossgen2. Cannot use the host running r2rtest itself when launched by its native app host.");
+                    }
+                }
+
+                return _dotnetCli;
+            } 
+            set
+            {
+                _dotnetCli = value;
+                Console.WriteLine($"Using dotnet: {_dotnetCli}");
+            }
+        }
+        private string _dotnetCli;
+
 
         public IEnumerable<string> ReferencePaths()
         {
@@ -80,7 +111,7 @@ namespace R2RTest
         /// </summary>
         /// <param name="isFramework">True if compiling the CoreFX framework assemblies</param>
         /// <param name="referencePaths">Optional set of reference paths to use instead of BuildOptions.ReferencePaths()</param>
-        public IEnumerable<CompilerRunner> CompilerRunners(bool isFramework, IEnumerable<string> overrideReferencePaths = null)
+        public IEnumerable<CompilerRunner> CompilerRunners(bool isFramework, IEnumerable<string> overrideReferencePaths = null, string overrideOutputPath = null)
         {
             List<CompilerRunner> runners = new List<CompilerRunner>();
 
@@ -89,7 +120,7 @@ namespace R2RTest
                 List<string> cpaotReferencePaths = new List<string>();
                 cpaotReferencePaths.Add(CoreRootOutputPath(CompilerIndex.CPAOT, isFramework));
                 cpaotReferencePaths.AddRange(overrideReferencePaths != null ? overrideReferencePaths : ReferencePaths());
-                runners.Add(new CpaotRunner(this, cpaotReferencePaths));
+                runners.Add(new Crossgen2Runner(this, new Crossgen2RunnerOptions() { Composite = this.Composite }, cpaotReferencePaths, overrideOutputPath));
             }
 
             if (Crossgen)
@@ -97,7 +128,7 @@ namespace R2RTest
                 List<string> crossgenReferencePaths = new List<string>();
                 crossgenReferencePaths.Add(CoreRootOutputPath(CompilerIndex.Crossgen, isFramework));
                 crossgenReferencePaths.AddRange(overrideReferencePaths != null ? overrideReferencePaths : ReferencePaths());
-                runners.Add(new CrossgenRunner(this, crossgenReferencePaths));
+                runners.Add(new CrossgenRunner(this, crossgenReferencePaths, overrideOutputPath));
             }
 
             if (!NoJit)

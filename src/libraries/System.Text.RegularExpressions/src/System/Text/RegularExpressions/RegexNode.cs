@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 // This RegexNode class is internal to the Regex package.
 // It is built into a parsed tree for a regular expression.
@@ -80,6 +79,7 @@ namespace System.Text.RegularExpressions
         public const int Oneloopatomic = RegexCode.Oneloopatomic;        // c,n      (?> a*)
         public const int Notoneloopatomic = RegexCode.Notoneloopatomic;  // c,n      (?> .*)
         public const int Setloopatomic = RegexCode.Setloopatomic;        // set,n    (?> \d*)
+        public const int UpdateBumpalong = RegexCode.UpdateBumpalong;
 
         // Interior nodes do not correspond to primitive operations, but
         // control structures compositing other operations
@@ -235,6 +235,7 @@ namespace System.Text.RegularExpressions
                     case Setloop:
                     case Setloopatomic:
                     case Start:
+                    case UpdateBumpalong:
                         Debug.Assert(childCount == 0, $"Expected zero children for {node.TypeName}, got {childCount}.");
                         break;
 
@@ -308,50 +309,39 @@ namespace System.Text.RegularExpressions
                 // to implementations that don't support backtracking.
                 EliminateEndingBacktracking(rootNode.Child(0), DefaultMaxRecursionDepth);
 
-                // Optimization: implicit anchoring.
-                // If the expression begins with a .* loop, add an anchor to the beginning:
-                // - If Singleline is set such that '.' eats anything, the .* will zip to the end of the string and then backtrack through
-                //   the whole thing looking for a match; since it will have examined everything, there's no benefit to examining it all
-                //   again, and we can anchor to beginning.
-                // - If Singleline is not set, then '.' eats anything up until a '\n' and backtracks from there, so we can similarly avoid
-                //   re-examining that content and anchor to the beginning of lines.
-                // We are currently very conservative here, only examining concat nodes.  This could be loosened in the future, e.g. to
-                // explore captures (but think through any implications of there being a back ref to that capture), to explore loops and
-                // lazy loops a positive minimum (but the anchor shouldn't be part of the loop), to explore alternations and support adding
-                // an anchor if all of them begin with appropriate star loops (though this could also be accomplished by factoring out the
-                // loops to be before the alternation), etc.
+                // Optimization: unnecessary re-processing of starting loops.
+                // If an expression is guaranteed to begin with a single-character unbounded loop that isn't part of an alternation (in which case it
+                // wouldn't be guaranteed to be at the beginning) or a capture (in which case a back reference could be influenced by its length), then we
+                // can update the tree with a temporary node to indicate that the implementation should use that node's ending position in the input text
+                // as the next starting position at which to start the next match. This avoids redoing matches we've already performed, e.g. matching
+                // "\w+@dot.net" against "is this a valid address@dot.net", the \w+ will initially match the "is" and then will fail to match the "@".
+                // Rather than bumping the scan loop by 1 and trying again to match at the "s", we can instead start at the " ".  For functional correctness
+                // we can only consider unbounded loops, as to be able to start at the end of the loop we need the loop to have consumed all possible matches;
+                // otherwise, you could end up with a pattern like "a{1,3}b" matching against "aaaabc", which should match, but if we pre-emptively stop consuming
+                // after the first three a's and re-start from that position, we'll end up failing the match even though it should have succeeded.  We can also
+                // apply this optimization to non-atomic loops. Even though backtracking could be necessary, such backtracking would be handled within the processing
+                // of a single starting position.
                 {
                     RegexNode node = rootNode.Child(0); // skip implicit root capture node
                     while (true)
                     {
-                        bool singleline = (node.Options & RegexOptions.Singleline) != 0;
                         switch (node.Type)
                         {
+                            case Atomic:
                             case Concatenate:
                                 node = node.Child(0);
                                 continue;
 
-                            case Setloop when singleline && node.N == int.MaxValue && node.Str == RegexCharClass.AnyClass:
-                            case Setloopatomic when singleline && node.N == int.MaxValue && node.Str == RegexCharClass.AnyClass:
-                            case Notoneloop when !singleline && node.N == int.MaxValue && node.Ch == '\n':
-                            case Notoneloopatomic when !singleline && node.N == int.MaxValue && node.Ch == '\n':
+                            case Oneloop when node.N == int.MaxValue:
+                            case Oneloopatomic when node.N == int.MaxValue:
+                            case Notoneloop when node.N == int.MaxValue:
+                            case Notoneloopatomic when node.N == int.MaxValue:
+                            case Setloop when node.N == int.MaxValue:
+                            case Setloopatomic when node.N == int.MaxValue:
                                 RegexNode? parent = node.Next;
-                                var anchor = new RegexNode(singleline ? Beginning : Bol, node.Options);
-                                Debug.Assert(parent != null);
-                                if (parent.Type == Concatenate)
+                                if (parent != null && parent.Type == Concatenate)
                                 {
-                                    Debug.Assert(parent.ChildCount() >= 2);
-                                    Debug.Assert(parent.Children is List<RegexNode>);
-                                    anchor.Next = parent;
-                                    ((List<RegexNode>)parent.Children).Insert(0, anchor);
-                                }
-                                else
-                                {
-                                    Debug.Assert(parent.Type == Capture && parent.Next is null, "Only valid capture is the implicit root capture");
-                                    var concat = new RegexNode(Concatenate, parent.Options);
-                                    concat.AddChild(anchor);
-                                    concat.AddChild(node);
-                                    parent.ReplaceChild(0, concat);
+                                    parent.InsertChild(1, new RegexNode(UpdateBumpalong, node.Options));
                                 }
                                 break;
                         }
@@ -1603,7 +1593,7 @@ namespace System.Text.RegularExpressions
                     case Lazyloop:
                     case Loop:
                         // A node graph repeated at least M times.
-                        return node.M * ComputeMinLength(node.Child(0), maxDepth - 1);
+                        return (int)Math.Min(int.MaxValue, (long)node.M * ComputeMinLength(node.Child(0), maxDepth - 1));
 
                     case Alternate:
                         // The minimum required length for any of the alternation's branches.
@@ -1621,13 +1611,13 @@ namespace System.Text.RegularExpressions
                     case Concatenate:
                         // The sum of all of the concatenation's children.
                         {
-                            int sum = 0;
+                            long sum = 0;
                             int childCount = node.ChildCount();
                             for (int i = 0; i < childCount; i++)
                             {
                                 sum += ComputeMinLength(node.Child(i), maxDepth - 1);
                             }
-                            return sum;
+                            return (int)Math.Min(int.MaxValue, sum);
                         }
 
                     case Atomic:
@@ -1639,8 +1629,9 @@ namespace System.Text.RegularExpressions
 
                     case Empty:
                     case Nothing:
+                    case UpdateBumpalong:
                     // Nothing to match. In the future, we could potentially use Nothing to say that the min length
-                    // is infinite, but that would require a different structure, as that would only applies if the
+                    // is infinite, but that would require a different structure, as that would only apply if the
                     // Nothing match is required in all cases (rather than, say, as one branch of an alternation).
                     case Beginning:
                     case Bol:
@@ -1668,7 +1659,7 @@ namespace System.Text.RegularExpressions
 #if DEBUG
                         Debug.Fail($"Unknown node: {node.TypeName}");
 #endif
-                        return 0;
+                        goto case Empty;
                 }
             }
         }
@@ -1714,6 +1705,17 @@ namespace System.Text.RegularExpressions
             {
                 ((List<RegexNode>)Children).Add(newChild);
             }
+        }
+
+        public void InsertChild(int index, RegexNode newChild)
+        {
+            Debug.Assert(Children is List<RegexNode>);
+
+            newChild.Next = this; // so that the child can see its parent while being reduced
+            newChild = newChild.Reduce();
+            newChild.Next = this; // in case Reduce returns a different node that needs to be reparented
+
+            ((List<RegexNode>)Children).Insert(index, newChild);
         }
 
         public void ReplaceChild(int index, RegexNode newChild)
@@ -1799,10 +1801,11 @@ namespace System.Text.RegularExpressions
                 Atomic => nameof(Atomic),
                 Testref => nameof(Testref),
                 Testgroup => nameof(Testgroup),
+                UpdateBumpalong => nameof(UpdateBumpalong),
                 _ => $"(unknown {Type})"
             };
 
-        [ExcludeFromCodeCoverage]
+        [ExcludeFromCodeCoverage(Justification = "Debug only")]
         public string Description()
         {
             var sb = new StringBuilder(TypeName);
@@ -1874,10 +1877,10 @@ namespace System.Text.RegularExpressions
             return sb.ToString();
         }
 
-        [ExcludeFromCodeCoverage]
+        [ExcludeFromCodeCoverage(Justification = "Debug only")]
         public void Dump() => Debug.WriteLine(ToString());
 
-        [ExcludeFromCodeCoverage]
+        [ExcludeFromCodeCoverage(Justification = "Debug only")]
         public override string ToString()
         {
             RegexNode? curNode = this;

@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 // ===========================================================================
 // File: palclr.h
 //
@@ -140,5 +139,9 @@
 // In Windows, NATIVE_LIBRARY_HANDLE is the same as HMODULE.
 typedef HMODULE NATIVE_LIBRARY_HANDLE;
 #endif // HOST_WINDOWS
+
+#ifndef FALLTHROUGH
+#define FALLTHROUGH __fallthrough
+#endif // FALLTHROUGH
 
 #endif	// __PALCLR_WIN_H__

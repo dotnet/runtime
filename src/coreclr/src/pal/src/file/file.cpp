@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 /*++
 
@@ -675,6 +674,14 @@ CorUnix::InternalCreateFile(
         if (-1 == fcntl(filed, F_NOCACHE, 1))
         {
             ASSERT("Can't set F_NOCACHE; fcntl() failed. errno is %d (%s)\n",
+               errno, strerror(errno));
+            palError = ERROR_INTERNAL_ERROR;
+            goto done;
+        }
+#elif HAVE_DIRECTIO
+        if (-1 == directio(filed, DIRECTIO_ON))
+        {
+            ASSERT("Can't set DIRECTIO_ON; directio() failed. errno is %d (%s)\n",
                errno, strerror(errno));
             palError = ERROR_INTERNAL_ERROR;
             goto done;

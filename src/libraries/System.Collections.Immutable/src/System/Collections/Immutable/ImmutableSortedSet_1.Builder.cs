@@ -1,11 +1,9 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
-using System.Diagnostics.Contracts;
 
 namespace System.Collections.Immutable
 {
@@ -125,8 +123,7 @@ namespace System.Collections.Immutable
             /// Gets the maximum value in the collection, as defined by the comparer.
             /// </summary>
             /// <value>The maximum value in the set.</value>
-            [MaybeNull]
-            public T Max
+            public T? Max
             {
                 get { return _root.Max; }
             }
@@ -135,8 +132,7 @@ namespace System.Collections.Immutable
             /// Gets the minimum value in the collection, as defined by the comparer.
             /// </summary>
             /// <value>The minimum value in the set.</value>
-            [MaybeNull]
-            public T Min
+            public T? Min
             {
                 get { return _root.Min; }
             }
@@ -431,7 +427,6 @@ namespace System.Collections.Immutable
             /// An enumerator that iterates over the <see cref="ImmutableSortedSet{T}.Builder"/>
             /// in reverse order.
             /// </returns>
-            [Pure]
             public IEnumerable<T> Reverse()
             {
                 return new ReverseEnumerable(_root);

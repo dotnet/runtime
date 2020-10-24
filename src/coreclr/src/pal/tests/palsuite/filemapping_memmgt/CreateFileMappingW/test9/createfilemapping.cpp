@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 /*=============================================================
 **
@@ -15,7 +14,7 @@
 
 const int MAPPINGSIZE = 2048;
 
-int __cdecl main(int argc, char *argv[])
+PALTEST(filemapping_memmgt_CreateFileMappingW_test9_paltest_createfilemappingw_test9, "filemapping_memmgt/CreateFileMappingW/test9/paltest_createfilemappingw_test9")
 {
 
     HANDLE  hFile;

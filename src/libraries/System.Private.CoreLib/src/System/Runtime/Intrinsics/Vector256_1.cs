@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Diagnostics;
 using System.Globalization;
@@ -60,6 +59,20 @@ namespace System.Runtime.Intrinsics
                 return default;
             }
         }
+
+
+        /// <summary>Gets a new <see cref="Vector256{T}" /> with all bits set to 1.</summary>
+        /// <exception cref="NotSupportedException">The type of the current instance (<typeparamref name="T" />) is not supported.</exception>
+        public static Vector256<T> AllBitsSet
+        {
+            [Intrinsic]
+            get
+            {
+                ThrowHelper.ThrowForUnsupportedVectorBaseType<T>();
+                return Vector256.Create(0xFFFFFFFF).As<uint, T>();
+            }
+        }
+
 
         internal unsafe string DisplayString
         {

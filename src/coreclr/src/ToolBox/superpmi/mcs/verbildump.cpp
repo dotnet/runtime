@@ -893,6 +893,7 @@ void DumpILToConsoleBare(unsigned char* ilCode, int len)
                         LogError("unknown ilCode 0xfe%2x at offset %d in MethodGen::PrettyPrint", ilCode[i], i);
                         break;
                 }
+                break;
             default:
                 LogError("unknown ilCode 0x%02x at offset %d in MethodGen::PrettyPrint", ilCode[i], i);
                 break;
@@ -915,12 +916,9 @@ char* DumpAttributeToConsoleBare(DWORD attribute)
 
     if (0)
         ;
-    ifPrint(CORINFO_FLG_STATIC, s_static) ifPrint(CORINFO_FLG_DONT_INLINE, s_dontInline)
-        ifPrint(CORINFO_FLG_CONSTRUCTOR, s_constructor) else
-    {
-        LogError("unknown attribute %x", attribute);
-        __debugbreak();
-    }
+    ifPrint(CORINFO_FLG_STATIC, s_static)
+    ifPrint(CORINFO_FLG_DONT_INLINE, s_dontInline)
+    ifPrint(CORINFO_FLG_CONSTRUCTOR, s_constructor)
     return nullptr;
 
 #undef ifPrint

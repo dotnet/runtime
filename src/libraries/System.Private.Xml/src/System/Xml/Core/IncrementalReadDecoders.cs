@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Diagnostics;
 
@@ -38,7 +37,7 @@ namespace System.Xml
     //
     internal class IncrementalReadCharsDecoder : IncrementalReadDecoder
     {
-        private char[] _buffer;
+        private char[]? _buffer;
         private int _startIndex;
         private int _curIndex;
         private int _endIndex;
@@ -61,6 +60,7 @@ namespace System.Xml
 
         internal override int Decode(char[] chars, int startPos, int len)
         {
+            Debug.Assert(_buffer != null);
             Debug.Assert(chars != null);
             Debug.Assert(len >= 0);
             Debug.Assert(startPos >= 0);
@@ -73,6 +73,7 @@ namespace System.Xml
             {
                 copyCount = len;
             }
+
             Buffer.BlockCopy(chars, startPos * 2, _buffer, _curIndex * 2, copyCount * 2);
             _curIndex += copyCount;
 
@@ -81,6 +82,7 @@ namespace System.Xml
 
         internal override int Decode(string str, int startPos, int len)
         {
+            Debug.Assert(_buffer != null);
             Debug.Assert(str != null);
             Debug.Assert(len >= 0);
             Debug.Assert(startPos >= 0);
@@ -93,6 +95,7 @@ namespace System.Xml
             {
                 copyCount = len;
             }
+
             str.CopyTo(startPos, _buffer, _curIndex, copyCount);
             _curIndex += copyCount;
 

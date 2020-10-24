@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 /*XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
@@ -46,7 +45,8 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 //                          if caller knows for certain the constant will fit.
 //
 // Return Value:
-//    returns true if the immediate was too large and tmpReg was used and modified.
+//    returns true if the immediate was small enough to be encoded inside instruction. If not,
+//    returns false meaning the immediate was too large and tmpReg was used and modified.
 //
 bool CodeGen::genInstrWithConstant(
     instruction ins, emitAttr attr, regNumber reg1, regNumber reg2, ssize_t imm, insFlags flags, regNumber tmpReg)
@@ -61,7 +61,7 @@ bool CodeGen::genInstrWithConstant(
     {
         case INS_add:
         case INS_sub:
-            immFitsInIns = validImmForInstr(ins, imm, flags);
+            immFitsInIns = validImmForInstr(ins, (target_ssize_t)imm, flags);
             break;
 
         default:
@@ -72,7 +72,7 @@ bool CodeGen::genInstrWithConstant(
     if (immFitsInIns)
     {
         // generate a single instruction that encodes the immediate directly
-        GetEmitter()->emitIns_R_R_I(ins, attr, reg1, reg2, imm);
+        GetEmitter()->emitIns_R_R_I(ins, attr, reg1, reg2, (target_ssize_t)imm);
     }
     else
     {
@@ -101,7 +101,8 @@ bool CodeGen::genInstrWithConstant(
 //    tmpReg                  - an available temporary register
 //
 // Return Value:
-//    true if `tmpReg` was used.
+//    returns true if the immediate was small enough to be encoded inside instruction. If not,
+//    returns false meaning the immediate was too large and tmpReg was used and modified.
 //
 bool CodeGen::genStackPointerAdjustment(ssize_t spDelta, regNumber tmpReg)
 {
@@ -156,7 +157,10 @@ void CodeGen::genEHCatchRet(BasicBlock* block)
 //------------------------------------------------------------------------
 // instGen_Set_Reg_To_Imm: Move an immediate value into an integer register.
 //
-void CodeGen::instGen_Set_Reg_To_Imm(emitAttr size, regNumber reg, ssize_t imm, insFlags flags)
+void CodeGen::instGen_Set_Reg_To_Imm(emitAttr  size,
+                                     regNumber reg,
+                                     ssize_t   imm,
+                                     insFlags flags DEBUGARG(size_t targetHandle) DEBUGARG(unsigned gtFlags))
 {
     // reg cannot be a FP register
     assert(!genIsValidFloatReg(reg));
@@ -961,7 +965,7 @@ void CodeGen::genCodeForLclVar(GenTreeLclVar* tree)
     // If this is a register candidate that has been spilled, genConsumeReg() will
     // reload it at the point of use.  Otherwise, if it's not in a register, we load it here.
 
-    if (!isRegCandidate && !(tree->gtFlags & GTF_SPILLED))
+    if (!isRegCandidate && !tree->IsMultiReg() && !(tree->gtFlags & GTF_SPILLED))
     {
         const LclVarDsc* varDsc = compiler->lvaGetDesc(tree);
         var_types        type   = varDsc->GetRegisterType(tree);
@@ -998,13 +1002,38 @@ void CodeGen::genCodeForStoreLclFld(GenTreeLclFld* tree)
     // Ensure that lclVar nodes are typed correctly.
     assert(!varDsc->lvNormalizeOnStore() || targetType == genActualType(varDsc->TypeGet()));
 
-    GenTree*    data = tree->gtOp1;
-    instruction ins  = ins_Store(targetType);
-    emitAttr    attr = emitTypeSize(targetType);
+    GenTree* data = tree->gtOp1;
 
     assert(!data->isContained());
     genConsumeReg(data);
-    emit->emitIns_S_R(ins, attr, data->GetRegNum(), varNum, offset);
+    regNumber dataReg = data->GetRegNum();
+    if (tree->IsOffsetMisaligned())
+    {
+        // Arm supports unaligned access only for integer types,
+        // convert the storing floating data into 1 or 2 integer registers and write them as int.
+        regNumber addr = tree->ExtractTempReg();
+        emit->emitIns_R_S(INS_lea, EA_PTRSIZE, addr, varNum, offset);
+        if (targetType == TYP_FLOAT)
+        {
+            regNumber floatAsInt = tree->GetSingleTempReg();
+            emit->emitIns_R_R(INS_vmov_f2i, EA_4BYTE, floatAsInt, dataReg);
+            emit->emitIns_R_R(INS_str, EA_4BYTE, floatAsInt, addr);
+        }
+        else
+        {
+            regNumber halfdoubleAsInt1 = tree->ExtractTempReg();
+            regNumber halfdoubleAsInt2 = tree->GetSingleTempReg();
+            emit->emitIns_R_R_R(INS_vmov_d2i, EA_8BYTE, halfdoubleAsInt1, halfdoubleAsInt2, dataReg);
+            emit->emitIns_R_R_I(INS_str, EA_4BYTE, halfdoubleAsInt1, addr, 0);
+            emit->emitIns_R_R_I(INS_str, EA_4BYTE, halfdoubleAsInt1, addr, 4);
+        }
+    }
+    else
+    {
+        emitAttr    attr = emitTypeSize(targetType);
+        instruction ins  = ins_Store(targetType);
+        emit->emitIns_S_R(ins, attr, dataReg, varNum, offset);
+    }
 
     // Updating variable liveness after instruction was emitted
     genUpdateLife(tree);
@@ -1023,9 +1052,9 @@ void CodeGen::genCodeForStoreLclVar(GenTreeLclVar* tree)
 
     // var = call, where call returns a multi-reg return value
     // case is handled separately.
-    if (data->gtSkipReloadOrCopy()->IsMultiRegCall())
+    if (data->gtSkipReloadOrCopy()->IsMultiRegNode())
     {
-        genMultiRegCallStoreToLocal(tree);
+        genMultiRegStoreToLocal(tree);
     }
     else
     {

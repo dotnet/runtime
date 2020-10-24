@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Runtime.InteropServices;
 using Xunit;
@@ -98,7 +97,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
             CryptographicException ex = Assert.ThrowsAny<CryptographicException>(
                 () => coll.Import(pfxBytes, bestPassword, s_importFlags));
 
-            if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+            if (OperatingSystem.IsWindows())
             {
                 if (altWin32Error != 0 && ex.HResult != altWin32Error)
                 {

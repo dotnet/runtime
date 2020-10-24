@@ -1,11 +1,8 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
-using Xunit;
-using System;
-using System.IO;
 using System.Text;
+using Xunit;
 
 namespace System.IO.Tests
 {
@@ -75,6 +72,17 @@ namespace System.IO.Tests
         }
 
         [Fact]
+        public void BinaryWriter_WriteHalfTest()
+        {
+            Half[] hlfArr = new Half[] {
+                Half.NegativeInfinity, Half.PositiveInfinity, Half.Epsilon, Half.MinValue, Half.MaxValue,
+                (Half)0.45, (Half)5.55
+            };
+
+            WriteTest(hlfArr, (bw, s) => bw.Write(s), (br) => br.ReadHalf());
+        }
+
+        [Fact]
         public void BinaryWriter_WriteInt16Test()
         {
             short[] i16Arr = new short[] { short.MinValue, short.MaxValue, 0, -10000, 10000, -50, 50 };
@@ -91,11 +99,35 @@ namespace System.IO.Tests
         }
 
         [Fact]
+        public void BinaryWriter_Write7BitEncodedIntTest()
+        {
+            int[] i32arr = new int[]
+            {
+                int.MinValue, int.MaxValue, 0, -10000, 10000, -50, 50,
+                unchecked((int)uint.MinValue), unchecked((int)uint.MaxValue), unchecked((int)(uint.MaxValue - 100))
+            };
+
+            WriteTest(i32arr, (bw, s) => bw.Write7BitEncodedInt(s), (br) => br.Read7BitEncodedInt());
+        }
+
+        [Fact]
         public void BinaryWriter_WriteInt64Test()
         {
             long[] i64arr = new long[] { long.MinValue, long.MaxValue, 0, -10000, 10000, -50, 50 };
 
             WriteTest(i64arr, (bw, s) => bw.Write(s), (br) => br.ReadInt64());
+        }
+
+        [Fact]
+        public void BinaryWriter_Write7BitEncodedInt64Test()
+        {
+            long[] i64arr = new long[]
+            {
+                long.MinValue, long.MaxValue, 0, -10000, 10000, -50, 50,
+                unchecked((long)ulong.MinValue), unchecked((long)ulong.MaxValue), unchecked((long)(ulong.MaxValue - 100))
+            };
+
+            WriteTest(i64arr, (bw, s) => bw.Write7BitEncodedInt64(s), (br) => br.Read7BitEncodedInt64());
         }
 
         [Fact]

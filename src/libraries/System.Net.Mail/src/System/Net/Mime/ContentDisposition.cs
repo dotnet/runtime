@@ -1,9 +1,9 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
 using System.Collections.Specialized;
+using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Net.Mail;
 using System.Text;
@@ -20,7 +20,7 @@ namespace System.Net.Mime
 
         private TrackingValidationObjectDictionary? _parameters;
         private string _disposition;
-        private string _dispositionType = null!; // set by ctor or by helper called from ctor
+        private string _dispositionType;
         private bool _isChanged;
         private bool _isPersisted;
 
@@ -83,7 +83,7 @@ namespace System.Net.Mime
                 {
                     throw new ArgumentNullException(nameof(value));
                 }
-                if (value == string.Empty)
+                if (value.Length == 0)
                 {
                     throw new ArgumentException(SR.net_emptystringset, nameof(value));
                 }
@@ -218,13 +218,13 @@ namespace System.Net.Mime
             builder.Append(_dispositionType); // Must not have unicode, already validated
 
             // Validate and encode unicode where required
-            foreach (string? key in Parameters.Keys) // TODO-NULLABLE: https://github.com/dotnet/csharplang/issues/3214
+            foreach (string key in Parameters.Keys)
             {
                 builder.Append("; ");
-                EncodeToBuffer(key!, builder, allowUnicode);
+                EncodeToBuffer(key, builder, allowUnicode);
 
                 builder.Append('=');
-                EncodeToBuffer(_parameters![key!]!, builder, allowUnicode);
+                EncodeToBuffer(_parameters![key]!, builder, allowUnicode);
             }
 
             return builder.ToString();
@@ -259,6 +259,7 @@ namespace System.Net.Mime
 
         public override int GetHashCode() => ToString().ToLowerInvariant().GetHashCode();
 
+        [MemberNotNull(nameof(_dispositionType))]
         private void ParseValue()
         {
             int offset = 0;

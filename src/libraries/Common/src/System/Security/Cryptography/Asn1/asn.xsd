@@ -30,7 +30,7 @@
         <xs:element name="BitString" type="FieldBase" />
         <xs:element name="NamedBitList" type="EnumerationType" />
         <xs:element name="OctetString" type="FieldBase" />
-        <xs:element name="ObjectIdentifier" type="ObjectIdentifierType" />
+        <xs:element name="ObjectIdentifier" type="FieldBase" />
         <xs:element name="Enumerated" type="EnumerationType" />
         <xs:element name="UTF8String" type="FieldBase" />
         <xs:element name="SequenceOf" type="CollectionType" />
@@ -97,36 +97,9 @@
     <xs:attribute name="backingType" default="BigInteger">
       <xs:simpleType>
         <xs:restriction base="xs:string">
-          <xs:enumeration value="byte" />
           <xs:enumeration value="int" />
           <xs:enumeration value="BigInteger" />
           <xs:enumeration value="ReadOnlyMemory" />
-        </xs:restriction>
-      </xs:simpleType>
-    </xs:attribute>
-  </xs:complexType>
-
-  <xs:complexType name="ObjectIdentifierType">
-    <xs:complexContent>
-      <xs:extension base="FieldBase">
-        <xs:attribute name="backingType" default="Oid">
-          <xs:simpleType>
-            <xs:restriction base="xs:string">
-              <xs:enumeration value="Oid" />
-              <xs:enumeration value="string" />
-            </xs:restriction>
-          </xs:simpleType>
-        </xs:attribute>
-      </xs:extension>
-    </xs:complexContent>
-  </xs:complexType>
-
-  <xs:complexType name="ObjectIdentifierCollectionType">
-    <xs:attribute name="backingType" default="Oid">
-      <xs:simpleType>
-        <xs:restriction base="xs:string">
-          <xs:enumeration value="Oid" />
-          <xs:enumeration value="string" />
         </xs:restriction>
       </xs:simpleType>
     </xs:attribute>
@@ -156,7 +129,7 @@
             <xs:element name="BitString"/>
             <xs:element name="NamedBitList" type="EnumerationCollectionType" />
             <xs:element name="OctetString"/>
-            <xs:element name="ObjectIdentifier" type="ObjectIdentifierCollectionType" />
+            <xs:element name="ObjectIdentifier"/>
             <xs:element name="Enumerated"/>
             <xs:element name="UTF8String"/>
             <xs:element name="PrintableString"/>

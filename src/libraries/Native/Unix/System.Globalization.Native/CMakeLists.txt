@@ -23,12 +23,7 @@ if(CLR_CMAKE_TARGET_UNIX)
         endif()
 
         if(CLR_CMAKE_TARGET_OSX)
-            find_library(ICUCORE icucore)
-            if(ICUCORE STREQUAL ICUCORE-NOTFOUND)
-                message(FATAL_ERROR "Cannot find libicucore, skipping build for System.Globalization.Native. .NET globalization is not expected to function.")
-                return()
-            endif()
-            add_definitions(-DOSX_ICU_LIBRARY_PATH=\"${ICUCORE}\")
+            add_definitions(-DOSX_ICU_LIBRARY_PATH="/usr/lib/libicucore.dylib")
             add_definitions(-DU_DISABLE_RENAMING)
         else()
             find_library(ICUUC icuuc)
@@ -48,6 +43,10 @@ if(CLR_CMAKE_TARGET_UNIX)
     endif()
 endif()
 
+if ((CMAKE_CXX_COMPILER_ID STREQUAL "GNU") AND (CMAKE_CXX_COMPILER_VERSION VERSION_GREATER 10.0))
+    add_compile_options(-Wno-error=stringop-truncation)
+endif()
+
 include(configure.cmake)
 
 set(NATIVEGLOBALIZATION_SOURCES
@@ -61,7 +60,12 @@ set(NATIVEGLOBALIZATION_SOURCES
     pal_normalization.c
     pal_timeZoneInfo.c
     pal_icushim.c
+    entrypoints.c
 )
+
+if (MSVC)
+    set_source_files_properties(${NATIVEGLOBALIZATION_SOURCES} PROPERTIES LANGUAGE CXX)
+endif()
 
 include_directories("../Common")
 
@@ -78,6 +82,7 @@ if (GEN_SHARED_LIB)
 
     install_with_stripped_symbols (System.Globalization.Native PROGRAMS .)
 endif()
+
 
 add_library(System.Globalization.Native-Static
     STATIC

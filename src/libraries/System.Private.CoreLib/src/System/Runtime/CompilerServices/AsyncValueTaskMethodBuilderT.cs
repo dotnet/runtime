@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
@@ -150,7 +149,7 @@ namespace System.Runtime.CompilerServices
         }
 
         internal static void AwaitOnCompleted<TAwaiter, TStateMachine>(
-            ref TAwaiter awaiter, ref TStateMachine stateMachine, [NotNull] ref StateMachineBox? box)
+            ref TAwaiter awaiter, ref TStateMachine stateMachine, ref StateMachineBox? box)
             where TAwaiter : INotifyCompletion
             where TStateMachine : IAsyncStateMachine
         {
@@ -365,8 +364,7 @@ namespace System.Runtime.CompilerServices
             /// <summary>If this box is stored in the cache, the next box in the cache.</summary>
             private StateMachineBox<TStateMachine>? _next;
             /// <summary>The state machine itself.</summary>
-            [AllowNull, MaybeNull]
-            public TStateMachine StateMachine = default;
+            public TStateMachine? StateMachine;
 
             /// <summary>Gets a box object to use for an operation.  This may be a reused, pooled object, or it may be new.</summary>
             [MethodImpl(MethodImplOptions.AggressiveInlining)] // only one caller
@@ -407,8 +405,7 @@ namespace System.Runtime.CompilerServices
                 // Clear out the state machine and associated context to avoid keeping arbitrary state referenced by
                 // lifted locals.  We want to do this regardless of whether we end up caching the box or not, in case
                 // the caller keeps the box alive for an arbitrary period of time.
-                StateMachine = default;
-                Context = default;
+                ClearStateUponCompletion();
 
                 // Reset the MRVTSC.  We can either do this here, in which case we may be paying the (small) overhead
                 // to reset the box even if we're going to drop it, or we could do it while holding the lock, in which
@@ -443,6 +440,16 @@ namespace System.Runtime.CompilerServices
                     // Release the lock.
                     Volatile.Write(ref s_cacheLock, 0);
                 }
+            }
+
+            /// <summary>
+            /// Clear out the state machine and associated context to avoid keeping arbitrary state referenced by lifted locals.
+            /// </summary>
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            public void ClearStateUponCompletion()
+            {
+                StateMachine = default;
+                Context = default;
             }
 
             /// <summary>

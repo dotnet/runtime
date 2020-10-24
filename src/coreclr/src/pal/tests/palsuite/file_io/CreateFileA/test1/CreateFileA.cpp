@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 /*=====================================================================
 **
@@ -13,7 +12,7 @@
 
 #include <palsuite.h>
 
-BOOL Cleanup(void)
+BOOL Cleanup_CreateFileA_test1(void)
 {
     char FileName[20];
     int i;
@@ -32,7 +31,7 @@ BOOL Cleanup(void)
 }
 
 
-int __cdecl main(int argc, char *argv[])
+PALTEST(file_io_CreateFileA_test1_paltest_createfilea_test1, "file_io/CreateFileA/test1/paltest_createfilea_test1")
 {
     BOOL bSuccess = TRUE;
     int nCounter = 0;
@@ -71,7 +70,7 @@ int __cdecl main(int argc, char *argv[])
         return FAIL;
     }
 
-    if (!Cleanup()) {
+    if (!Cleanup_CreateFileA_test1()) {
 	Trace("Pre-test Cleanup() failed.  LastError=%d\n", GetLastError());
 	return FAIL;
     }
@@ -133,7 +132,7 @@ int __cdecl main(int argc, char *argv[])
         }
     }
 
-    if (!Cleanup())
+    if (!Cleanup_CreateFileA_test1())
     {
         Trace("Post-test Cleanup() failed.  LastError=%d\n", GetLastError());
         return FAIL;

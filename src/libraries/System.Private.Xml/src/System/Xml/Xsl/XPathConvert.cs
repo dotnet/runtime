@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 /*
 * Routines used to manipulate IEEE 754 double-precision numbers, taken from JScript codebase.
@@ -10,6 +9,7 @@
 */
 
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 
 namespace System.Xml.Xsl
@@ -2017,8 +2017,9 @@ namespace System.Xml.Xsl
                 AssertValid();
             }
 
-            public int CompareTo(object obj)
+            public int CompareTo(object? obj)
             {
+                Debug.Assert(obj != null);
                 BigInteger bi = (BigInteger)obj;
                 AssertValid();
                 bi.AssertValid();

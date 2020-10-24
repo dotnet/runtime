@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 /*++
 
@@ -729,5 +728,11 @@ inline T* InterlockedCompareExchangePointerT(
 const char StackOverflowMessage[] = "Stack overflow.\n";
 
 #endif // __cplusplus
+
+#if __has_cpp_attribute(fallthrough)
+#define FALLTHROUGH [[fallthrough]]
+#else
+#define FALLTHROUGH
+#endif
 
 #endif /* _PAL_INTERNAL_H_ */

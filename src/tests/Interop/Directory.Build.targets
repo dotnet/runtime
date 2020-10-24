@@ -1,0 +1,30 @@
+<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <!-- SDK Style projects auto-magically include this file. -->
+  <Import Project="..\Directory.Build.targets" />
+
+  <!-- Add the CoreCLRTestLibrary dependency -->
+  <ItemGroup Condition="('$(IgnoreCoreCLRTestLibraryDependency)' != 'true') And ('$(ReferenceSystemPrivateCoreLib)' != 'true')">
+    <ProjectReference
+      Include="$(MSBuildThisFileDirectory)\..\Common\CoreCLRTestLibrary\CoreCLRTestLibrary.csproj" />
+  </ItemGroup>
+
+  <!-- Add the CoreCLRTestLibrary dependency
+       If a target project references System.Private.Corelib, we are unable to reference CoreCLRTestLibrary.
+       Compile in relevant files used for testing interop. -->
+  <ItemGroup Condition="('$(IgnoreCoreCLRTestLibraryDependency)' != 'true') And ('$(ReferenceSystemPrivateCoreLib)' == 'true')">
+    <Compile Include="$(MSBuildThisFileDirectory)\..\Common\CoreCLRTestLibrary\Assertion.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)\..\Common\CoreCLRTestLibrary\HostPolicyMock.cs" Condition="'$(RequiresMockHostPolicy)' == 'true'"/>
+  </ItemGroup>
+
+  <Target Name="CopyInteropNativeRuntimeDependencies"
+    BeforeTargets="CopyAllNativeProjectReferenceBinaries"
+    Condition="'$(TargetsWindows)' == 'true' And ('$(Configuration)' == 'Debug' Or '$(Configuration)' == 'Checked') And '$(CopyDebugCRTDllsToOutputDirectory)' == 'true'" >
+    <!-- Required debug vcruntime and UCRT dlls -->
+    <ItemGroup>
+      <InteropNativeRuntimeDependencies Include="$(VCToolsRedistDir)onecore/debug_nonredist/$(TargetArchitecture)/Microsoft.VC*.DebugCRT/vcruntime*d.dll" />
+      <InteropNativeRuntimeDependencies Include="$(VCToolsRedistDir)onecore/debug_nonredist/$(TargetArchitecture)/Microsoft.VC*.DebugCRT/msvcp*d.dll" />
+      <InteropNativeRuntimeDependencies Include="$(ExtensionSdkDir)/Microsoft.UniversalCRT.Debug/$(UCRTVersion)/Redist/Debug/$(TargetArchitecture)/ucrtbased.dll" />
+    </ItemGroup>
+    <Copy SourceFiles="@(InteropNativeRuntimeDependencies)" DestinationFolder="$(OutputPath)" />
+  </Target>
+</Project>

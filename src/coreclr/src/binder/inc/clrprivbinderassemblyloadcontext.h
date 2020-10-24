@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 
 #ifndef __CLRPRIVBINDERASSEMBLYLOADCONTEXT_H__
@@ -59,11 +58,6 @@ public:
         return &m_appContext;
     }
 
-    inline INT_PTR GetManagedAssemblyLoadContext()
-    {
-        return m_ptrManagedAssemblyLoadContext;
-    }
-
     HRESULT BindUsingPEImage( /* in */ PEImage *pPEImage,
                               /* in */ BOOL fIsNativeImage,
                               /* [retval][out] */ ICLRPrivAssembly **ppAssembly);
@@ -78,8 +72,6 @@ private:
 
     CLRPrivBinderCoreCLR *m_pTPABinder;
 
-    // A long weak GC handle to the managed AssemblyLoadContext
-    INT_PTR m_ptrManagedAssemblyLoadContext;
     // A strong GC handle to the managed AssemblyLoadContext. This handle is set when the unload of the AssemblyLoadContext is initiated
     // to keep the managed AssemblyLoadContext alive until the unload is finished.
     // We still keep the weak handle pointing to the same managed AssemblyLoadContext so that native code can use the handle above 

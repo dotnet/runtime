@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 //
 // Code that is used by both the Unix corerun and coreconsole.
@@ -34,6 +33,13 @@
 #ifndef SUCCEEDED
 #define SUCCEEDED(Status) ((Status) >= 0)
 #endif // !SUCCEEDED
+
+#if !HAVE_DIRENT_D_TYPE
+#define DT_UNKNOWN 0
+#define DT_DIR 4
+#define DT_REG 8
+#define DT_LNK 10
+#endif
 
 // Name of the environment variable controlling server GC.
 // If set to 1, server GC is enabled on startup. If 0, server GC is
@@ -108,6 +114,34 @@ bool GetEntrypointExecutableAbsolutePath(std::string& entrypointExecutable)
     else
     {
         result = false;
+    }
+#elif defined(__sun)
+    const char *path;
+    if ((path = getexecname()) == NULL)
+    {
+        result = false;
+    }
+    else if (*path != '/')
+    {
+        char *cwd;
+        if ((cwd = getcwd(NULL, PATH_MAX)) == NULL)
+        {
+            result = false;
+        }
+        else
+        {
+            entrypointExecutable
+                .assign(cwd)
+                .append("/")
+                .append(path);
+            result = true;
+            free(cwd);
+        }
+    }
+    else
+    {
+        entrypointExecutable.assign(path);
+        result = true;
     }
 #else
 
@@ -216,8 +250,14 @@ void AddFilesFromDirectoryToTpaList(const char* directory, std::string& tpaList)
         // For all entries in the directory
         while ((entry = readdir(dir)) != nullptr)
         {
+#if HAVE_DIRENT_D_TYPE
+            int dirEntryType = entry->d_type;
+#else
+            int dirEntryType = DT_UNKNOWN;
+#endif
+
             // We are interested in files only
-            switch (entry->d_type)
+            switch (dirEntryType)
             {
             case DT_REG:
                 break;
@@ -325,7 +365,7 @@ int ExecuteManagedAssembly(
     // libunwind library is used to unwind stack frame, but libunwind for ARM
     // does not support ARM vfpv3/NEON registers in DWARF format correctly.
     // Therefore let's disable stack unwinding using DWARF information
-    // See https://github.com/dotnet/coreclr/issues/6698
+    // See https://github.com/dotnet/runtime/issues/6479
     //
     // libunwind use following methods to unwind stack frame.
     // UNW_ARM_METHOD_ALL          0xFF

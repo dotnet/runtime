@@ -2,6 +2,5 @@
   <Import Project="..\Directory.Build.props" />
   <PropertyGroup>
     <StrongNameKeyId>ECMA</StrongNameKeyId>
-    <IsNETCoreApp>true</IsNETCoreApp>
   </PropertyGroup>
 </Project>

@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Diagnostics;
 using System.Linq;
@@ -96,7 +95,7 @@ namespace System.Numerics.Tensors
 
                 foreach (T item in fromArray)
                 {
-                    if (!item.Equals(Zero))
+                    if (!item!.Equals(Zero))
                     {
                         var destIndex = ArrayUtilities.TransformIndexByStrides(index, sourceStrides, false, strides);
                         var compressedIndex = destIndex / strides[compressedDimension];
@@ -112,7 +111,7 @@ namespace System.Numerics.Tensors
             {
                 foreach (T item in fromArray)
                 {
-                    if (!item.Equals(Zero))
+                    if (!item!.Equals(Zero))
                     {
                         var compressedIndex = index / strides[compressedDimension];
                         var nonCompressedIndex = index % strides[compressedDimension];
@@ -329,7 +328,7 @@ namespace System.Numerics.Tensors
 
         private void SetAt(T value, int compressedIndex, int nonCompressedIndex)
         {
-            bool isZero = value.Equals(Zero);
+            bool isZero = value!.Equals(Zero);
 
             if (TryFindIndex(compressedIndex, nonCompressedIndex, out int valueIndex))
             {

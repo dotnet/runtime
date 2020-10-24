@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 #include "pal_types.h"
 #include "pal_utilities.h"
@@ -417,7 +416,6 @@ uint32_t NetSecurityNative_Wrap(uint32_t* minorStatus,
                                 GssCtxId* contextHandle,
                                 int32_t isEncrypt,
                                 uint8_t* inputBytes,
-                                int32_t offset,
                                 int32_t count,
                                 PAL_GssBuffer* outBuffer)
 {
@@ -425,14 +423,13 @@ uint32_t NetSecurityNative_Wrap(uint32_t* minorStatus,
     assert(contextHandle != NULL);
     assert(isEncrypt == 1 || isEncrypt == 0);
     assert(inputBytes != NULL);
-    assert(offset >= 0);
     assert(count >= 0);
     assert(outBuffer != NULL);
     // count refers to the length of the input message. That is, number of bytes of inputBytes
-    // starting at offset that need to be wrapped.
+    // that need to be wrapped.
 
     int confState;
-    GssBuffer inputMessageBuffer = {.length = (size_t)count, .value = inputBytes + offset};
+    GssBuffer inputMessageBuffer = {.length = (size_t)count, .value = inputBytes};
     GssBuffer gssBuffer;
     uint32_t majorStatus =
         gss_wrap(minorStatus, contextHandle, isEncrypt, GSS_C_QOP_DEFAULT, &inputMessageBuffer, &confState, &gssBuffer);

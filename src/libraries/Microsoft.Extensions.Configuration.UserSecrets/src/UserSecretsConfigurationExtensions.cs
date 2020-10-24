@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System;
 using System.IO;
@@ -129,7 +128,7 @@ namespace Microsoft.Extensions.Configuration
                 throw new ArgumentNullException(nameof(assembly));
             }
 
-            var attribute = assembly.GetCustomAttribute<UserSecretsIdAttribute>();
+            UserSecretsIdAttribute attribute = assembly.GetCustomAttribute<UserSecretsIdAttribute>();
             if (attribute != null)
             {
                 return AddUserSecrets(configuration, attribute.UserSecretsId, reloadOnChange);
@@ -186,8 +185,8 @@ namespace Microsoft.Extensions.Configuration
 
         private static IConfigurationBuilder AddSecretsFile(IConfigurationBuilder configuration, string secretPath, bool reloadOnChange)
         {
-            var directoryPath = Path.GetDirectoryName(secretPath);
-            var fileProvider = Directory.Exists(directoryPath)
+            string directoryPath = Path.GetDirectoryName(secretPath);
+            PhysicalFileProvider fileProvider = Directory.Exists(directoryPath)
                 ? new PhysicalFileProvider(directoryPath)
                 : null;
             return configuration.AddJsonFile(fileProvider, PathHelper.SecretsFileName, optional: true, reloadOnChange);

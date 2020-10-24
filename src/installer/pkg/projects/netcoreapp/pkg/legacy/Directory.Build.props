@@ -3,7 +3,7 @@
 
   <PropertyGroup>
     <PreventImplementationReference Condition="'$(PackageTargetRuntime)' != ''">true</PreventImplementationReference>
-    <BuildTargetPath>build/$(NETCoreAppFramework)/</BuildTargetPath>
+    <BuildTargetPath>build/$(NetCoreAppCurrent)/</BuildTargetPath>
 
     <IsShipping>false</IsShipping>
   </PropertyGroup>
@@ -17,7 +17,7 @@
     <Dependency
       Include="Microsoft.NETCore.DotNetHostPolicy"
       VersionFromProject="$(InstallerProjectRoot)pkg\projects\Microsoft.NETCore.DotNetHostPolicy\Microsoft.NETCore.DotNetHostPolicy.pkgproj"
-      TargetFramework="$(NETCoreAppFramework)" />
+      TargetFramework="$(NetCoreAppCurrent)" />
   </ItemGroup>
 
 </Project>

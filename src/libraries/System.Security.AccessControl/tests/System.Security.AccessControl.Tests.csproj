@@ -1,7 +1,6 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <UnsupportedPlatforms>Linux;NetBSD;OSX</UnsupportedPlatforms>
-    <TargetFrameworks>$(NetCoreAppCurrent)-Windows_NT;$(NetFrameworkCurrent)-Windows_NT</TargetFrameworks>
+    <TargetFrameworks>$(NetCoreAppCurrent)-Windows_NT;net461-Windows_NT</TargetFrameworks>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="Ace\Ace.Common.Tests.cs" />
@@ -67,5 +66,8 @@
     <Compile Include="SystemAcl\SystemAcl_RemoveInheritedAces.cs" />
     <Compile Include="SystemAcl\SystemAcl_SetAudit.cs" />
     <Compile Include="Utils.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="$(LibrariesProjectRoot)System.IO.FileSystem.AccessControl\src\System.IO.FileSystem.AccessControl.csproj" />
   </ItemGroup>
 </Project>

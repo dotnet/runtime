@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 #include "pal_config.h"
 #include "pal_runtimeinformation.h"
@@ -42,7 +41,8 @@ int32_t SystemNative_GetUnixVersion(char* version, int* capacity)
  0 - x86
  1 - x64
  2 - ARM
- 3 - ARM64 */
+ 3 - ARM64
+ 4 - WASM */
 int32_t SystemNative_GetOSArchitecture()
 {
 #if defined(TARGET_ARM)
@@ -51,8 +51,10 @@ int32_t SystemNative_GetOSArchitecture()
     return ARCH_ARM64;
 #elif defined(TARGET_AMD64)
     return ARCH_X64;
-#elif defined(TARGET_X86) || defined(TARGET_WASM) // TODO: add arch for WASM
+#elif defined(TARGET_X86)
     return ARCH_X86;
+#elif defined(TARGET_WASM)
+    return ARCH_WASM;
 #else
 #error Unidentified Architecture
 #endif
@@ -62,7 +64,8 @@ int32_t SystemNative_GetOSArchitecture()
 0 - x86
 1 - x64
 2 - ARM
-3 - ARM64 */
+3 - ARM64
+4 - WASM */
 int32_t SystemNative_GetProcessArchitecture()
 {
 #if defined(TARGET_ARM)
@@ -71,8 +74,10 @@ int32_t SystemNative_GetProcessArchitecture()
     return ARCH_ARM64;
 #elif defined(TARGET_AMD64)
     return ARCH_X64;
-#elif defined(TARGET_X86) || defined(TARGET_WASM) // TODO: add arch for WASM
+#elif defined(TARGET_X86)
     return ARCH_X86;
+#elif defined(TARGET_WASM)
+    return ARCH_WASM;
 #else
 #error Unidentified Architecture
 #endif

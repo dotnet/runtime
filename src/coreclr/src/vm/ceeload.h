@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 // ===========================================================================
 // File: CEELOAD.H
 //
@@ -41,10 +40,6 @@
 #ifdef FEATURE_PREJIT
 #include "dataimage.h"
 #endif // FEATURE_PREJIT
-
-#ifdef FEATURE_COMINTEROP
-#include "winrttypenameconverter.h"
-#endif // FEATURE_COMINTEROP
 
 #ifdef FEATURE_READYTORUN
 #include "readytoruninfo.h"
@@ -162,7 +157,7 @@ typedef DPTR(struct LookupMapBase) PTR_LookupMapBase;
 //
 // This still leaves the problem of runtime lookup performance. Touches to the cold section of a LookupMap
 // aren't all that critical (after all the data is meant to be cold), but looking up the last entry of a map
-// with 22 thousand entries (roughly what the MethodDefToDesc map in mscorlib is sized at at the time of
+// with 22 thousand entries (roughly what the MethodDefToDesc map in CoreLib is sized at at the time of
 // writing) is still likely to so inefficient as to be noticeable. Remember that the issue is that we have to
 // decode all predecessor entries in order to compute the value of a given entry in the table.
 //
@@ -175,7 +170,7 @@ typedef DPTR(struct LookupMapBase) PTR_LookupMapBase;
 //
 // The main areas in which this algorithm can be tuned are the number of bits used as an index into the
 // encoding lengths table (kLookupMapLengthBits) and the frequency with which entries are bookmarked in the
-// index (kLookupMapIndexStride). The current values have been set based on looking at models of mscorlib,
+// index (kLookupMapIndexStride). The current values have been set based on looking at models of CoreLib,
 // PresentationCore and PresentationFramework built from the actual ridmap data in their ngen images and
 // methodically trying different values in order to maximize compression or balance size versus likely runtime
 // performance. An alternative strategy was considered using direct (non-length prefix) encoding of the
@@ -1602,8 +1597,8 @@ private:
     PTR_EEClassHashTable    m_pAvailableClassesCaseIns;
 
     // Pointer to binder, if we have one
-    friend class MscorlibBinder;
-    PTR_MscorlibBinder      m_pBinder;
+    friend class CoreLibBinder;
+    PTR_CoreLibBinder      m_pBinder;
 
 public:
     BOOL IsCollectible()
@@ -1615,6 +1610,7 @@ public:
 #ifdef FEATURE_READYTORUN
 private:
     PTR_ReadyToRunInfo      m_pReadyToRunInfo;
+    PTR_NativeImage         m_pNativeImage;
 #endif
 
 private:
@@ -1633,23 +1629,6 @@ private:
 
 #ifdef FEATURE_PREJIT
     PTR_NGenLayoutInfo      m_pNGenLayoutInfo;
-
-#if defined(FEATURE_COMINTEROP)
-        public:
-
-        #ifndef DACCESS_COMPILE
-            BOOL CanCacheWinRTTypeByGuid(MethodTable *pMT);
-            void CacheWinRTTypeByGuid(PTR_MethodTable pMT, PTR_GuidInfo pgi = NULL);
-        #endif // !DACCESS_COMPILE
-
-            PTR_MethodTable LookupTypeByGuid(const GUID & guid);
-            void GetCachedWinRTTypes(SArray<PTR_MethodTable> * pTypes, SArray<GUID> * pGuids);
-
-        private:
-            PTR_GuidToMethodTableHashTable m_pGuidToTypeHash;   // A map from GUID to Type, for the "WinRT-interesting" types
-
-#endif // defined(FEATURE_COMINTEROP)
-
     // Module wide static fields information
     ModuleCtorInfo          m_ModuleCtorInfo;
 
@@ -1948,8 +1927,6 @@ protected:
     HRESULT GetReadablePublicMetaDataInterface(DWORD dwOpenFlags, REFIID riid, LPVOID * ppvInterface);
 #endif // !DACCESS_COMPILE
 
-    BOOL IsWindowsRuntimeModule();
-
     BOOL IsInCurrentVersionBubble();
 
 #if defined(FEATURE_READYTORUN) && !defined(FEATURE_READYTORUN_COMPILER)
@@ -2170,8 +2147,6 @@ protected:
     // Module/Assembly traversal
     Assembly * GetAssemblyIfLoaded(
             mdAssemblyRef       kAssemblyRef,
-            LPCSTR              szWinRtNamespace = NULL,
-            LPCSTR              szWinRtClassName = NULL,
             IMDInternalImport * pMDImportOverride = NULL,
             BOOL                fDoNotUtilizeExtraChecks = FALSE,
             ICLRPrivBinder      *pBindingContextForLoadedAssembly = NULL
@@ -2182,20 +2157,11 @@ private:
     Assembly *GetAssemblyIfLoadedFromNativeAssemblyRefWithRefDefMismatch(mdAssemblyRef kAssemblyRef, BOOL *pfDiscoveredAssemblyRefMatchesTargetDefExactly);
 public:
 
-    DomainAssembly * LoadAssembly(
-            mdAssemblyRef kAssemblyRef,
-            LPCUTF8       szWinRtTypeNamespace = NULL,
-            LPCUTF8       szWinRtTypeClassName = NULL);
+    DomainAssembly * LoadAssembly(mdAssemblyRef kAssemblyRef);
     Module *GetModuleIfLoaded(mdFile kFile, BOOL onlyLoadedInAppDomain, BOOL loadAllowed);
     DomainFile *LoadModule(AppDomain *pDomain, mdFile kFile, BOOL loadResources = TRUE, BOOL bindOnly = FALSE);
     PTR_Module LookupModule(mdToken kFile, BOOL loadResources = TRUE); //wrapper over GetModuleIfLoaded, takes modulerefs as well
     DWORD GetAssemblyRefFlags(mdAssemblyRef tkAssemblyRef);
-
-    bool HasBindableIdentity(mdAssemblyRef tkAssemblyRef)
-    {
-        WRAPPER_NO_CONTRACT;
-        return !IsAfContentType_WindowsRuntime(GetAssemblyRefFlags(tkAssemblyRef));
-    }
 
     // RID maps
     TypeHandle LookupTypeDef(mdTypeDef token, ClassLoadLevel *pLoadLevel = NULL)
@@ -2924,17 +2890,17 @@ public:
 #endif
     }
 
-    NativeImage *GetCompositeNativeImage() const
-    {
-        LIMITED_METHOD_DAC_CONTRACT;
-        return (m_pReadyToRunInfo != NULL ? m_pReadyToRunInfo->GetNativeImage() : NULL);
-    }
-
 #ifdef FEATURE_READYTORUN
     PTR_ReadyToRunInfo GetReadyToRunInfo() const
     {
         LIMITED_METHOD_DAC_CONTRACT;
         return m_pReadyToRunInfo;
+    }
+
+    PTR_NativeImage GetCompositeNativeImage() const
+    {
+        LIMITED_METHOD_DAC_CONTRACT;
+        return m_pNativeImage;
     }
 #endif
 
@@ -3453,9 +3419,9 @@ struct VASigCookieEx : public VASigCookie
     const BYTE *m_pArgs;        // pointer to first unfixed unmanaged arg
 };
 
-// Rerieve the full command line for the current process.
-LPCWSTR GetManagedCommandLine();
 // Save the command line for the current process.
 void SaveManagedCommandLine(LPCWSTR pwzAssemblyPath, int argc, LPCWSTR *argv);
+
+LPCWSTR GetCommandLineForDiagnostics();
 
 #endif // !CEELOAD_H_

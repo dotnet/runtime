@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections;
 using System.Diagnostics;
@@ -213,9 +212,10 @@ namespace System.Runtime.Serialization
         // is a subset of the context for which the serialization selector is provided (presentContext)
         // Note: This is done by overriding KeyEquals rather than overriding Equals() in the SurrogateKey
         // class because Equals() method must be commutative.
-#pragma warning disable CS8610
+        // n.b. 'key' and 'item' parameter positions swapped from base method!
+#pragma warning disable CS8765 // Nullability of parameter 'key' doesn't match overridden member
         protected override bool KeyEquals(object key, object item)
-#pragma warning restore CS8610
+#pragma warning restore CS8765
         {
             SurrogateKey givenValue = (SurrogateKey)item;
             SurrogateKey presentValue = (SurrogateKey)key;

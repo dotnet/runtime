@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Diagnostics;
 using System.Collections.Generic;
@@ -17,7 +16,7 @@ namespace System.Data
         internal ExpressionNode _left;
         internal ExpressionNode _right;
 
-        internal BinaryNode(DataTable table, int op, ExpressionNode left, ExpressionNode right) : base(table)
+        internal BinaryNode(DataTable? table, int op, ExpressionNode left, ExpressionNode right) : base(table)
         {
             _op = op;
             _left = left;
@@ -36,7 +35,7 @@ namespace System.Data
             return Eval(null, DataRowVersion.Default);
         }
 
-        internal override object Eval(DataRow row, DataRowVersion version)
+        internal override object Eval(DataRow? row, DataRowVersion version)
         {
             return EvalBinaryOp(_op, _left, _right, row, version, null);
         }
@@ -124,7 +123,7 @@ namespace System.Data
                     else
                         return new ZeroOpNode(Operators.False);
                 }
-                return new ConstNode(table, ValueType.Object, val, false);
+                return new ConstNode(table!, ValueType.Object, val, false);
             }
             else
                 return this;
@@ -135,7 +134,7 @@ namespace System.Data
             throw ExprException.TypeMismatchInBinop(op, left, right);
         }
 
-        private static object Eval(ExpressionNode expr, DataRow row, DataRowVersion version, int[] recordNos)
+        private static object Eval(ExpressionNode expr, DataRow? row, DataRowVersion version, int[]? recordNos)
         {
             if (recordNos == null)
             {
@@ -152,7 +151,7 @@ namespace System.Data
             return BinaryCompare(vLeft, vRight, resultType, op, null);
         }
 
-        internal int BinaryCompare(object vLeft, object vRight, StorageType resultType, int op, CompareInfo comparer)
+        internal int BinaryCompare(object vLeft, object vRight, StorageType resultType, int op, CompareInfo? comparer)
         {
             int result = 0;
             try
@@ -184,7 +183,7 @@ namespace System.Data
                             // DTO can only be compared to DTO, other cases: cast Exception
                             return DateTimeOffset.Compare((DateTimeOffset)vLeft, (DateTimeOffset)vRight);
                         case StorageType.String:
-                            return table.Compare(Convert.ToString(vLeft, FormatProvider), Convert.ToString(vRight, FormatProvider), comparer);
+                            return table!.Compare(Convert.ToString(vLeft, FormatProvider)!, Convert.ToString(vRight, FormatProvider)!, comparer);
                         case StorageType.Guid:
                             return ((Guid)vLeft).CompareTo((Guid)vRight);
                         case StorageType.Boolean:
@@ -221,7 +220,7 @@ namespace System.Data
                         case StorageType.SqlSingle:
                             return SqlConvert.ConvertToSqlSingle(vLeft).CompareTo(SqlConvert.ConvertToSqlSingle(vRight));
                         case StorageType.SqlString:
-                            return table.Compare(vLeft.ToString(), vRight.ToString());
+                            return table!.Compare(vLeft.ToString()!, vRight.ToString()!);
                         case StorageType.SqlGuid:
                             return ((SqlGuid)vLeft).CompareTo(vRight);
                         case StorageType.SqlBoolean:
@@ -268,7 +267,7 @@ namespace System.Data
             return result;
         }
 
-        private object EvalBinaryOp(int op, ExpressionNode left, ExpressionNode right, DataRow row, DataRowVersion version, int[] recordNos)
+        private object EvalBinaryOp(int op, ExpressionNode left, ExpressionNode right, DataRow? row, DataRowVersion version, int[]? recordNos)
         {
             object vLeft;
             object vRight;
@@ -1091,8 +1090,7 @@ namespace System.Data
 
                         for (int i = 0; i < into._argumentCount; i++)
                         {
-                            vRight = into._arguments[i].Eval();
-
+                            vRight = into._arguments![i].Eval();
 
                             if ((vRight == DBNull.Value) || (right.IsSqlColumn && DataStorage.IsObjectSqlNull(vRight)))
                                 continue;
@@ -1509,14 +1507,14 @@ namespace System.Data
         private static readonly char[] s_trimChars = new char[] { (char)0x20, (char)0x3000 };
 
         private int _kind;
-        private string _pattern = null;
+        private string? _pattern;
 
-        internal LikeNode(DataTable table, int op, ExpressionNode left, ExpressionNode right)
+        internal LikeNode(DataTable? table, int op, ExpressionNode left, ExpressionNode right)
         : base(table, op, left, right)
         {
         }
 
-        internal override object Eval(DataRow row, DataRowVersion version)
+        internal override object Eval(DataRow? row, DataRowVersion version)
         {
             object vLeft = _left.Eval(row, version);
             string substring;
@@ -1565,14 +1563,14 @@ namespace System.Data
                 case match_all:
                     return true;
                 case match_exact:
-                    return (0 == table.Compare(s1, substring));
+                    return (0 == table!.Compare(s1, substring));
                 case match_middle:
-                    return (0 <= table.IndexOf(s1, substring));
+                    return (0 <= table!.IndexOf(s1, substring));
                 case match_left:
-                    return (0 == table.IndexOf(s1, substring));
+                    return (0 == table!.IndexOf(s1, substring));
                 case match_right:
                     string s2 = substring.TrimEnd(s_trimChars);
-                    return table.IsSuffix(s1, s2);
+                    return table!.IsSuffix(s1, s2);
                 default:
                     Debug.Fail("Unexpected LIKE kind");
                     return DBNull.Value;
@@ -1585,7 +1583,7 @@ namespace System.Data
             char[] patchars = new char[length + 1];
             pat.CopyTo(0, patchars, 0, length);
             patchars[length] = (char)0;
-            string substring = null;
+            string? substring = null;
 
             char[] constchars = new char[length + 1];
             int newLength = 0;

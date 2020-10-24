@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
@@ -60,7 +59,7 @@ namespace System.Runtime.CompilerServices
             AwaitOnCompleted(ref awaiter, ref stateMachine, ref m_task);
 
         internal static void AwaitOnCompleted<TAwaiter, TStateMachine>(
-            ref TAwaiter awaiter, ref TStateMachine stateMachine, [NotNull] ref Task<TResult>? taskField)
+            ref TAwaiter awaiter, ref TStateMachine stateMachine, ref Task<TResult>? taskField)
             where TAwaiter : INotifyCompletion
             where TStateMachine : IAsyncStateMachine
         {
@@ -229,9 +228,9 @@ namespace System.Runtime.CompilerServices
             box.Context = currentContext;
 
             // Log the creation of the state machine box object / task for this async method.
-            if (AsyncCausalityTracer.LoggingOn)
+            if (TplEventSource.Log.IsEnabled())
             {
-                AsyncCausalityTracer.TraceOperationCreation(box, "Async: " + stateMachine.GetType().Name);
+                TplEventSource.Log.TraceOperationBegin(box.Id, "Async: " + stateMachine.GetType().Name, 0);
             }
 
             // And if async debugging is enabled, track the task.
@@ -293,8 +292,7 @@ namespace System.Runtime.CompilerServices
             /// <summary>A delegate to the <see cref="MoveNext()"/> method.</summary>
             private Action? _moveNextAction;
             /// <summary>The state machine itself.</summary>
-            [AllowNull, MaybeNull]
-            public TStateMachine StateMachine = default; // mutable struct; do not make this readonly. SOS DumpAsync command depends on this name.
+            public TStateMachine? StateMachine; // mutable struct; do not make this readonly. SOS DumpAsync command depends on this name.
             /// <summary>Captured ExecutionContext with which to invoke <see cref="MoveNextAction"/>; may be null.</summary>
             public ExecutionContext? Context;
 
@@ -310,10 +308,10 @@ namespace System.Runtime.CompilerServices
             {
                 Debug.Assert(!IsCompleted);
 
-                bool loggingOn = AsyncCausalityTracer.LoggingOn;
+                bool loggingOn = TplEventSource.Log.IsEnabled();
                 if (loggingOn)
                 {
-                    AsyncCausalityTracer.TraceSynchronousWorkStart(this, CausalitySynchronousWork.Execution);
+                    TplEventSource.Log.TraceSynchronousWorkBegin(this.Id, CausalitySynchronousWork.Execution);
                 }
 
                 ExecutionContext? context = Context;
@@ -334,35 +332,41 @@ namespace System.Runtime.CompilerServices
                     }
                 }
 
-                if (IsCompleted)
-                {
-                    // If async debugging is enabled, remove the task from tracking.
-                    if (System.Threading.Tasks.Task.s_asyncDebuggingEnabled)
-                    {
-                        System.Threading.Tasks.Task.RemoveFromActiveTasks(this);
-                    }
-
-                    // Clear out state now that the async method has completed.
-                    // This avoids keeping arbitrary state referenced by lifted locals
-                    // if this Task / state machine box is held onto.
-                    StateMachine = default;
-                    Context = default;
-
-#if !CORERT
-                    // In case this is a state machine box with a finalizer, suppress its finalization
-                    // as it's now complete.  We only need the finalizer to run if the box is collected
-                    // without having been completed.
-                    if (AsyncMethodBuilderCore.TrackAsyncMethodCompletion)
-                    {
-                        GC.SuppressFinalize(this);
-                    }
-#endif
-                }
-
                 if (loggingOn)
                 {
-                    AsyncCausalityTracer.TraceSynchronousWorkCompletion(CausalitySynchronousWork.Execution);
+                    TplEventSource.Log.TraceSynchronousWorkEnd(CausalitySynchronousWork.Execution);
                 }
+            }
+
+            /// <summary>Clears out all state associated with a completed box.</summary>
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            public void ClearStateUponCompletion()
+            {
+                Debug.Assert(IsCompleted);
+
+                // This logic may be invoked multiple times on the same instance and needs to be robust against that.
+
+                // If async debugging is enabled, remove the task from tracking.
+                if (s_asyncDebuggingEnabled)
+                {
+                    RemoveFromActiveTasks(this);
+                }
+
+                // Clear out state now that the async method has completed.
+                // This avoids keeping arbitrary state referenced by lifted locals
+                // if this Task / state machine box is held onto.
+                StateMachine = default;
+                Context = default;
+
+#if !CORERT
+                // In case this is a state machine box with a finalizer, suppress its finalization
+                // as it's now complete.  We only need the finalizer to run if the box is collected
+                // without having been completed.
+                if (AsyncMethodBuilderCore.TrackAsyncMethodCompletion)
+                {
+                    GC.SuppressFinalize(this);
+                }
+#endif
             }
 
             /// <summary>Gets the state machine as a boxed object.  This should only be used for debugging purposes.</summary>
@@ -429,13 +433,13 @@ namespace System.Runtime.CompilerServices
         /// <summary>Completes the already initialized task with the specified result.</summary>
         /// <param name="result">The result to use to complete the task.</param>
         /// <param name="task">The task to complete.</param>
-        internal static void SetExistingTaskResult(Task<TResult> task, [AllowNull] TResult result)
+        internal static void SetExistingTaskResult(Task<TResult> task, TResult? result)
         {
             Debug.Assert(task != null, "Expected non-null task");
 
-            if (AsyncCausalityTracer.LoggingOn)
+            if (TplEventSource.Log.IsEnabled())
             {
-                AsyncCausalityTracer.TraceOperationCompletion(task, AsyncCausalityStatus.Completed);
+                TplEventSource.Log.TraceOperationEnd(task.Id, AsyncCausalityStatus.Completed);
             }
 
             if (!task.TrySetResult(result))

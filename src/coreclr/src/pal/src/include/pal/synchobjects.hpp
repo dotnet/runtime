@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 /*++
 
@@ -118,7 +117,6 @@ namespace CorUnix
         Volatile<LONG>         m_lSharedSynchLockCount;
         LIST_ENTRY             m_leOwnedObjsList;
 
-        CRITICAL_SECTION       m_ownedNamedMutexListLock;
         NamedMutexProcessData *m_ownedNamedMutexListHead;
 
         ThreadNativeWaitData   m_tnwdNativeData;
@@ -178,6 +176,7 @@ namespace CorUnix
         void RemoveOwnedNamedMutex(NamedMutexProcessData *processData);
         NamedMutexProcessData *RemoveFirstOwnedNamedMutex();
         bool OwnsNamedMutex(NamedMutexProcessData *processData);
+        bool OwnsAnyNamedMutex() const;
 
         // The following methods provide access to the native wait lock for
         // those implementations that need a lock to protect the support for

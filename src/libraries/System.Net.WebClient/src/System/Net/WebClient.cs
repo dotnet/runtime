@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections.Specialized;
 using System.ComponentModel;
@@ -54,6 +53,7 @@ namespace System.Net
         private SendOrPostCallback? _reportDownloadProgressChanged;
         private SendOrPostCallback? _reportUploadProgressChanged;
 
+        [Obsolete(Obsoletions.WebRequestMessage, DiagnosticId = Obsoletions.WebRequestDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
         public WebClient()
         {
             // We don't know if derived types need finalizing, but WebClient doesn't.
@@ -144,7 +144,7 @@ namespace System.Net
             get { return _encoding; }
             set
             {
-                ThrowIfNull(value, nameof(Encoding));
+                ThrowIfNull(value, nameof(value));
                 _encoding = value;
             }
         }
@@ -213,11 +213,14 @@ namespace System.Net
 
         public RequestCachePolicy? CachePolicy { get; set; }
 
-        public bool IsBusy => _asyncOp != null;
+        public bool IsBusy => Volatile.Read(ref _callNesting) > 0;
 
         protected virtual WebRequest GetWebRequest(Uri address)
         {
+#pragma warning disable SYSLIB0014
             WebRequest request = WebRequest.Create(address);
+#pragma warning restore SYSLIB0014
+
             CopyHeadersTo(request);
 
             if (Credentials != null)
@@ -1949,11 +1952,11 @@ namespace System.Net
         #region Supporting Types
         private sealed class ProgressData
         {
-            internal long BytesSent = 0;
+            internal long BytesSent;
             internal long TotalBytesToSend = -1;
-            internal long BytesReceived = 0;
+            internal long BytesReceived;
             internal long TotalBytesToReceive = -1;
-            internal bool HasUploadPhase = false;
+            internal bool HasUploadPhase;
 
             internal void Reset()
             {
@@ -2006,7 +2009,7 @@ namespace System.Net
 
         [Obsolete("This API supports the .NET Framework infrastructure and is not intended to be used directly from your code.", true)]
         [EditorBrowsable(EditorBrowsableState.Never)]
-        public event WriteStreamClosedEventHandler WriteStreamClosed { add { } remove { } }
+        public event WriteStreamClosedEventHandler? WriteStreamClosed { add { } remove { } }
 
         [Obsolete("This API supports the .NET Framework infrastructure and is not intended to be used directly from your code.", true)]
         [EditorBrowsable(EditorBrowsableState.Never)]

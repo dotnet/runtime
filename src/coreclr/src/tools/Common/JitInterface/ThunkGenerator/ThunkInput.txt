@@ -1,6 +1,5 @@
 ; Licensed to the .NET Foundation under one or more agreements.
 ; The .NET Foundation licenses this file to you under the MIT license.
-; See the LICENSE file in the project root for more information.
 ;
 ; Thunk generator input file for generating the thunks from the C++ version of the 
 ; jit interface to COM, into managed, and from COM to C++. 
@@ -60,8 +59,8 @@ BYTE*,byte*,unsigned char*
 GSCookie*,IntPtr*,void*
 GSCookie**,IntPtr**,void**
 
-BOOL*,[MarshalAs(UnmanagedType.Bool)] ref bool,int*
-bool*,[MarshalAs(UnmanagedType.U1)] ref bool
+BOOL*,BOOL*,int*
+bool*,ref bool,bool*
 BoolStar,byte*,bool*
 UINT32*,ref uint,unsigned int*
 ULONG*,ref uint,unsigned long*
@@ -91,6 +90,7 @@ CORINFO_SIG_INFO*,,void*
 CORINFO_RESOLVED_TOKEN*,ref CORINFO_RESOLVED_TOKEN,void*
 CORINFO_RESOLVED_TOKEN_PTR,CORINFO_RESOLVED_TOKEN*,void*
 CORINFO_EE_INFO*,ref CORINFO_EE_INFO,void*
+CORINFO_TAILCALL_HELPERS*,ref CORINFO_TAILCALL_HELPERS,void*
 CORINFO_GENERICHANDLE_RESULT*,ref CORINFO_GENERICHANDLE_RESULT,void*
 CORINFO_METHOD_INFO*,CORINFO_METHOD_INFO*,void*
 CORINFO_FIELD_INFO*,CORINFO_FIELD_INFO*,void*
@@ -110,7 +110,6 @@ ICorJitInfo::BlockCounts**,ref BlockCounts*,void**
 
 ; Enums
 CorInfoClassId,,int
-CorInfoHelperTailCallSpecialHandling,,int
 CorInfoHelpFunc,,int
 CorInfoInitClassResult,,int
 CorInfoInlineTypeCheck,,int
@@ -121,12 +120,14 @@ CorInfoIsAccessAllowedResult,,int
 CorInfoMethodRuntimeFlags,,int
 CorInfoTailCall,,int
 CorInfoType,,int
+CorInfoHFAElemType,,int
 CorInfoTypeWithMod,,int
 CorInfoUnmanagedCallConv,,int
 InfoAccessType,,int
 CORINFO_LOOKUP_KIND
 CORINFO_ACCESS_FLAGS,,int
 CORINFO_CALLINFO_FLAGS,,int
+CORINFO_GET_TAILCALL_HELPERS_FLAGS,,int
 CorJitAllocMemFlag,,int
 CorJitFuncKind,,int
 CorJitResult,,int
@@ -153,12 +154,6 @@ ICorDebugInfo::NativeVarInfo*,NativeVarInfo*,void*
 ICorDebugInfo::BoundaryTypes*,BoundaryTypes*,void*
 
 struct _EXCEPTION_POINTERS*,_EXCEPTION_POINTERS*,void*
-
-RETURNTYPES
-BOOL,[return: MarshalAs(UnmanagedType.Bool)]bool,int
-bool,[return: MarshalAs(UnmanagedType.I1)]bool
-; NOTE in managed SIZE_T is an enum that is 64bits in size, and returning one of those causing mcg to do the wrong thing.
-size_t,byte*,size_t
 
 FUNCTIONS
     DWORD getMethodAttribs(        CORINFO_METHOD_HANDLE       ftn        );
@@ -229,7 +224,7 @@ FUNCTIONS
     bool getReadyToRunHelper(CORINFO_RESOLVED_TOKEN * pResolvedToken, CORINFO_LOOKUP_KIND * pGenericLookupKind, CorInfoHelpFunc id, CORINFO_CONST_LOOKUP *pLookup)
     void getReadyToRunDelegateCtorHelper(CORINFO_RESOLVED_TOKEN * pTargetMethod, CORINFO_CLASS_HANDLE delegateType, CORINFO_LOOKUP *pLookup)
     const char* getHelperName(CorInfoHelpFunc helpFunc)
-    CorInfoInitClassResult initClass(CORINFO_FIELD_HANDLE field, CORINFO_METHOD_HANDLE method, CORINFO_CONTEXT_HANDLE context, BOOL speculative)
+    CorInfoInitClassResult initClass(CORINFO_FIELD_HANDLE field, CORINFO_METHOD_HANDLE method, CORINFO_CONTEXT_HANDLE context)
     void classMustBeLoadedBeforeCodeIsRun(CORINFO_CLASS_HANDLE cls)
     CORINFO_CLASS_HANDLE getBuiltinClass(CorInfoClassId classId)
     CorInfoType getTypeForPrimitiveValueClass(CORINFO_CLASS_HANDLE cls)
@@ -262,7 +257,7 @@ FUNCTIONS
     CORINFO_ARG_LIST_HANDLE getArgNext(CORINFO_ARG_LIST_HANDLE args);
     CorInfoTypeWithMod getArgType(CORINFO_SIG_INFO* sig, CORINFO_ARG_LIST_HANDLE args, CORINFO_CLASS_HANDLE* vcTypeRet);
     CORINFO_CLASS_HANDLE getArgClass(CORINFO_SIG_INFO* sig, CORINFO_ARG_LIST_HANDLE args);
-    CorInfoType getHFAType(CORINFO_CLASS_HANDLE hClass);
+    CorInfoHFAElemType getHFAType(CORINFO_CLASS_HANDLE hClass);
     HRESULT GetErrorHRESULT(struct _EXCEPTION_POINTERS *pExceptionPointers);
     ULONG GetErrorMessage(LPWSTR buffer, ULONG bufferLength);
     [ManualNativeWrapper] int FilterException(struct _EXCEPTION_POINTERS* pExceptionPointers);
@@ -312,7 +307,7 @@ FUNCTIONS
     void addActiveDependency(CORINFO_MODULE_HANDLE       moduleFrom, CORINFO_MODULE_HANDLE       moduleTo);
     CORINFO_METHOD_HANDLE GetDelegateCtor(CORINFO_METHOD_HANDLE  methHnd, CORINFO_CLASS_HANDLE   clsHnd, CORINFO_METHOD_HANDLE  targetMethodHnd, DelegateCtorArgs *     pCtorData);
     void MethodCompileComplete(CORINFO_METHOD_HANDLE methHnd);
-    void* getTailCallCopyArgsThunk (CORINFO_SIG_INFO       *pSig, CorInfoHelperTailCallSpecialHandling flags);
+    bool getTailCallHelpers(CORINFO_RESOLVED_TOKEN* callToken, CORINFO_SIG_INFO* sig, CORINFO_GET_TAILCALL_HELPERS_FLAGS flags, CORINFO_TAILCALL_HELPERS* pResult);
     bool convertPInvokeCalliToCall(CORINFO_RESOLVED_TOKEN * pResolvedToken, bool mustConvert);
     void notifyInstructionSetUsage(CORINFO_InstructionSet instructionSet,bool supportEnabled);
     void allocMem(        ULONG               hotCodeSize,    ULONG               coldCodeSize,     ULONG               roDataSize,             ULONG               xcptnsCount,            CorJitAllocMemFlag  flag,        void**             hotCodeBlock,           void**             coldCodeBlock,          void**             roDataBlock             );

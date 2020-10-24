@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Buffers.Binary;
 using System.Collections.Generic;
@@ -345,9 +344,9 @@ namespace System.Net.Test.Common
 
     public class PingFrame : Frame
     {
-        public byte[] Data;
+        public long Data;
 
-        public PingFrame(byte[] data, FrameFlags flags, int streamId) :
+        public PingFrame(long data, FrameFlags flags, int streamId) :
             base(8, FrameType.Ping, flags, streamId)
         {
             Data = data;
@@ -355,7 +354,7 @@ namespace System.Net.Test.Common
 
         public static PingFrame ReadFrom(Frame header, ReadOnlySpan<byte> buffer)
         {
-            byte[] data = buffer.ToArray();
+            long data = BinaryPrimitives.ReadInt64BigEndian(buffer);
 
             return new PingFrame(data, header.Flags, header.StreamId);
         }
@@ -365,12 +364,12 @@ namespace System.Net.Test.Common
             base.WriteTo(buffer);
             buffer = buffer.Slice(Frame.FrameHeaderLength, 8);
 
-            Data.CopyTo(buffer);
+            BinaryPrimitives.WriteInt64BigEndian(buffer, Data);
         }
 
         public override string ToString()
         {
-            return base.ToString() + $"\nOpaque Data: {string.Join(", ", Data)}";
+            return base.ToString() + $"\nOpaque Data: {Data:X16}";
         }
     }
 

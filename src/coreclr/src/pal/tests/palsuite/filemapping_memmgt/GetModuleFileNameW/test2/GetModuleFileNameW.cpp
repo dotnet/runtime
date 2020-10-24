@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 /*=============================================================
 **
@@ -19,7 +18,7 @@
 #define MODULENAMEBUFFERSIZE 1024
 
 
-int __cdecl main(int argc, char *argv[])
+PALTEST(filemapping_memmgt_GetModuleFileNameW_test2_paltest_getmodulefilenamew_test2, "filemapping_memmgt/GetModuleFileNameW/test2/paltest_getmodulefilenamew_test2")
 {
 
     DWORD ModuleNameLength;

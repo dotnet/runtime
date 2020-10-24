@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 /*=============================================================
 **
@@ -17,7 +16,7 @@
 #include <palsuite.h>
 const int MY_EXCEPTION=999;
 
-int __cdecl main(int argc, char *argv[])
+PALTEST(debug_api_WriteProcessMemory_test4_paltest_writeprocessmemory_test4_helper, "debug_api/WriteProcessMemory/test4/paltest_writeprocessmemory_test4_helper")
 {
      
     char* Memory;

@@ -5,6 +5,7 @@ include_directories(BEFORE ${VM_DIR}/${ARCH_SOURCES_DIR})
 include_directories(BEFORE ${CMAKE_CURRENT_SOURCE_DIR})
 include_directories(${CLR_DIR}/src/debug/ee)
 include_directories(${CLR_DIR}/src/gcdump)
+include_directories(${CLR_DIR}/src/interop/inc)
 
 if(CLR_CMAKE_HOST_UNIX)
   include_directories(${GENERATED_INCLUDE_DIR})
@@ -41,14 +42,17 @@ target_precompile_header(TARGET daccess HEADER stdafx.h)
 
 add_dependencies(daccess eventing_headers)
 
-if(CLR_CMAKE_HOST_OSX OR CLR_CMAKE_HOST_FREEBSD OR CLR_CMAKE_HOST_NETBSD)
+if(CLR_CMAKE_HOST_OSX OR CLR_CMAKE_HOST_FREEBSD OR CLR_CMAKE_HOST_NETBSD OR CLR_CMAKE_HOST_SUNOS)
   add_definitions(-DUSE_DAC_TABLE_RVA)
+
+  set(args $<$<NOT:$<BOOL:${CLR_CMAKE_HOST_OSX}>>:--dynamic> $<TARGET_FILE:coreclr> ${GENERATED_INCLUDE_DIR}/dactablerva.h)
 
   add_custom_command(
     OUTPUT  ${GENERATED_INCLUDE_DIR}/dactablerva.h
     DEPENDS coreclr
     VERBATIM
-    COMMAND sh ${CLR_DIR}/src/pal/tools/gen-dactable-rva.sh $<TARGET_FILE:coreclr> ${GENERATED_INCLUDE_DIR}/dactablerva.h
+    COMMAND_EXPAND_LISTS
+    COMMAND sh ${CLR_DIR}/src/pal/tools/gen-dactable-rva.sh ${args}
     COMMENT Generating ${GENERATED_INCLUDE_DIR}/dactablerva.h
   )
 
@@ -63,4 +67,4 @@ if(CLR_CMAKE_HOST_OSX OR CLR_CMAKE_HOST_FREEBSD OR CLR_CMAKE_HOST_NETBSD)
   )
 
   add_dependencies(daccess dactablerva_header)
-endif(CLR_CMAKE_HOST_OSX OR CLR_CMAKE_HOST_FREEBSD OR CLR_CMAKE_HOST_NETBSD)
+endif(CLR_CMAKE_HOST_OSX OR CLR_CMAKE_HOST_FREEBSD OR CLR_CMAKE_HOST_NETBSD OR CLR_CMAKE_HOST_SUNOS)

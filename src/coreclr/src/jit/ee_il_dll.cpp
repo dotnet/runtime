@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 /*XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
@@ -37,9 +36,6 @@ FILE* jitstdout = nullptr;
 ICorJitHost*   g_jitHost        = nullptr;
 static CILJit* ILJitter         = nullptr; // The one and only JITTER I return
 bool           g_jitInitialized = false;
-#ifndef FEATURE_MERGE_JIT_AND_ENGINE
-HINSTANCE g_hInst = nullptr;
-#endif // FEATURE_MERGE_JIT_AND_ENGINE
 
 /*****************************************************************************/
 
@@ -153,33 +149,6 @@ void jitShutdown(bool processIsTerminating)
 
     g_jitInitialized = false;
 }
-
-#ifndef FEATURE_MERGE_JIT_AND_ENGINE
-
-extern "C" DLLEXPORT BOOL WINAPI DllMain(HANDLE hInstance, DWORD dwReason, LPVOID pvReserved)
-{
-    if (dwReason == DLL_PROCESS_ATTACH)
-    {
-        g_hInst = (HINSTANCE)hInstance;
-        DisableThreadLibraryCalls((HINSTANCE)hInstance);
-    }
-    else if (dwReason == DLL_PROCESS_DETACH)
-    {
-        // From MSDN: If fdwReason is DLL_PROCESS_DETACH, lpvReserved is NULL if FreeLibrary has
-        // been called or the DLL load failed and non-NULL if the process is terminating.
-        bool processIsTerminating = (pvReserved != nullptr);
-        jitShutdown(processIsTerminating);
-    }
-
-    return TRUE;
-}
-
-HINSTANCE GetModuleInst()
-{
-    return (g_hInst);
-}
-
-#endif // !FEATURE_MERGE_JIT_AND_ENGINE
 
 /*****************************************************************************/
 
@@ -347,7 +316,8 @@ unsigned CILJit::getMaxIntrinsicSIMDVectorLength(CORJIT_FLAGS cpuCompileFlags)
         // ensure that AVX2 is actually supported. Otherwise, we will end up getting asserts downstream.
         if ((JitConfig.EnableAVX2() != 0) && (JitConfig.EnableAVX() != 0) && (JitConfig.EnableSSE42() != 0) &&
             (JitConfig.EnableSSE41() != 0) && (JitConfig.EnableSSSE3() != 0) && (JitConfig.EnableSSE3_4() != 0) &&
-            (JitConfig.EnableSSE3() != 0) && (JitConfig.EnableSSE2() != 0) && (JitConfig.EnableSSE() != 0))
+            (JitConfig.EnableSSE3() != 0) && (JitConfig.EnableSSE2() != 0) && (JitConfig.EnableSSE() != 0) &&
+            (JitConfig.EnableHWIntrinsic() != 0))
         {
             if (GetJitTls() != nullptr && JitTls::GetCompiler() != nullptr)
             {
@@ -835,8 +805,18 @@ void Compiler::eeDispVar(ICorDebugInfo::NativeVarInfo* var)
 // Same parameters as ICorStaticInfo::setVars().
 void Compiler::eeDispVars(CORINFO_METHOD_HANDLE ftn, ULONG32 cVars, ICorDebugInfo::NativeVarInfo* vars)
 {
-    printf("*************** Variable debug info\n");
-    printf("%d live ranges\n", cVars);
+    ALLVARSET_TP uniqueVars(AllVarSetOps::MakeEmpty(this));
+    for (unsigned i = 0; i < cVars; i++)
+    {
+        // ignore "special vars" and out of bounds vars
+        if ((((int)vars[i].varNumber) >= 0) && (vars[i].varNumber < lclMAX_ALLSET_TRACKED))
+        {
+            AllVarSetOps::AddElemD(this, uniqueVars, vars[i].varNumber);
+        }
+    }
+    printf("; Variable debug info: %d live range(s), %d var(s) for method %s\n", cVars,
+           AllVarSetOps::Count(this, uniqueVars), info.compFullName);
+
     for (unsigned i = 0; i < cVars; i++)
     {
         eeDispVar(&vars[i]);
@@ -1347,7 +1327,7 @@ const char* Compiler::eeGetClassName(CORINFO_CLASS_HANDLE clsHnd)
 
 const WCHAR* Compiler::eeGetCPString(size_t strHandle)
 {
-#ifdef TARGET_UNIX
+#ifdef HOST_UNIX
     return nullptr;
 #else
     char buff[512 + sizeof(CORINFO_String)];
@@ -1371,7 +1351,7 @@ const WCHAR* Compiler::eeGetCPString(size_t strHandle)
     }
 
     return (asString->chars);
-#endif // TARGET_UNIX
+#endif // HOST_UNIX
 }
 
 #endif // DEBUG

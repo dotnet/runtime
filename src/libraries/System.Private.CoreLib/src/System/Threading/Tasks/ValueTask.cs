@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -60,9 +59,6 @@ namespace System.Threading.Tasks
         /// <summary>A task canceled using `new CancellationToken(true)`.</summary>
         private static readonly Task s_canceledTask = Task.FromCanceled(new CancellationToken(canceled: true));
 
-        /// <summary>A successfully completed task.</summary>
-        internal static Task CompletedTask => Task.CompletedTask;
-
         /// <summary>null if representing a successful synchronous completion, otherwise a <see cref="Task"/> or a <see cref="IValueTaskSource"/>.</summary>
         internal readonly object? _obj;
         /// <summary>Opaque value passed through to the <see cref="IValueTaskSource"/>.</summary>
@@ -114,6 +110,40 @@ namespace System.Threading.Tasks
             _continueOnCapturedContext = continueOnCapturedContext;
         }
 
+        /// <summary>Gets a task that has already completed successfully.</summary>
+        public static ValueTask CompletedTask => default;
+
+        /// <summary>Creates a <see cref="ValueTask{TResult}"/> that's completed successfully with the specified result.</summary>
+        /// <typeparam name="TResult">The type of the result returned by the task.</typeparam>
+        /// <param name="result">The result to store into the completed task.</param>
+        /// <returns>The successfully completed task.</returns>
+        public static ValueTask<TResult> FromResult<TResult>(TResult result) =>
+            new ValueTask<TResult>(result);
+
+        /// <summary>Creates a <see cref="ValueTask"/> that has completed due to cancellation with the specified cancellation token.</summary>
+        /// <param name="cancellationToken">The cancellation token with which to complete the task.</param>
+        /// <returns>The canceled task.</returns>
+        public static ValueTask FromCanceled(CancellationToken cancellationToken) =>
+            new ValueTask(Task.FromCanceled(cancellationToken));
+
+        /// <summary>Creates a <see cref="ValueTask{TResult}"/> that has completed due to cancellation with the specified cancellation token.</summary>
+        /// <param name="cancellationToken">The cancellation token with which to complete the task.</param>
+        /// <returns>The canceled task.</returns>
+        public static ValueTask<TResult> FromCanceled<TResult>(CancellationToken cancellationToken) =>
+            new ValueTask<TResult>(Task.FromCanceled<TResult>(cancellationToken));
+
+        /// <summary>Creates a <see cref="ValueTask"/> that has completed with the specified exception.</summary>
+        /// <param name="exception">The exception with which to complete the task.</param>
+        /// <returns>The faulted task.</returns>
+        public static ValueTask FromException(Exception exception) =>
+            new ValueTask(Task.FromException(exception));
+
+        /// <summary>Creates a <see cref="ValueTask{TResult}"/> that has completed with the specified exception.</summary>
+        /// <param name="exception">The exception with which to complete the task.</param>
+        /// <returns>The faulted task.</returns>
+        public static ValueTask<TResult> FromException<TResult>(Exception exception) =>
+            new ValueTask<TResult>(Task.FromException<TResult>(exception));
+
         /// <summary>Returns the hash code for this instance.</summary>
         public override int GetHashCode() => _obj?.GetHashCode() ?? 0;
 
@@ -145,7 +175,7 @@ namespace System.Threading.Tasks
             object? obj = _obj;
             Debug.Assert(obj == null || obj is Task || obj is IValueTaskSource);
             return
-                obj == null ? CompletedTask :
+                obj == null ? Task.CompletedTask :
                 obj as Task ??
                 GetTaskForValueTaskSource(Unsafe.As<IValueTaskSource>(obj));
         }
@@ -168,7 +198,7 @@ namespace System.Threading.Tasks
                     // Propagate any exceptions that may have occurred, then return
                     // an already successfully completed task.
                     t.GetResult(_token);
-                    return CompletedTask;
+                    return Task.CompletedTask;
 
                     // If status is Faulted or Canceled, GetResult should throw.  But
                     // we can't guarantee every implementation will do the "right thing".
@@ -201,7 +231,7 @@ namespace System.Threading.Tasks
         /// <summary>Type used to create a <see cref="Task"/> to represent a <see cref="IValueTaskSource"/>.</summary>
         private sealed class ValueTaskSourceAsTask : Task
         {
-            private static readonly Action<object?> s_completionAction = state =>
+            private static readonly Action<object?> s_completionAction = static state =>
             {
                 if (!(state is ValueTaskSourceAsTask vtst) ||
                     !(vtst._source is IValueTaskSource source))
@@ -415,7 +445,7 @@ namespace System.Threading.Tasks
         /// <summary>null if <see cref="_result"/> has the result, otherwise a <see cref="Task{TResult}"/> or a <see cref="IValueTaskSource{TResult}"/>.</summary>
         internal readonly object? _obj;
         /// <summary>The result to be used if the operation completed successfully synchronously.</summary>
-        [AllowNull] internal readonly TResult _result;
+        internal readonly TResult? _result;
         /// <summary>Opaque value passed through to the <see cref="IValueTaskSource{TResult}"/>.</summary>
         internal readonly short _token;
         /// <summary>true to continue on the captured context; otherwise, false.</summary>
@@ -478,7 +508,7 @@ namespace System.Threading.Tasks
         /// <param name="token">The token.</param>
         /// <param name="continueOnCapturedContext">true to continue on captured context; otherwise, false.</param>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private ValueTask(object? obj, TResult result, short token, bool continueOnCapturedContext)
+        private ValueTask(object? obj, TResult? result, short token, bool continueOnCapturedContext)
         {
             _obj = obj;
             _result = result;
@@ -526,7 +556,7 @@ namespace System.Threading.Tasks
 
             if (obj == null)
             {
-                return AsyncTaskMethodBuilder<TResult>.GetTaskForResult(_result);
+                return AsyncTaskMethodBuilder<TResult>.GetTaskForResult(_result!);
             }
 
             if (obj is Task<TResult> t)
@@ -593,7 +623,7 @@ namespace System.Threading.Tasks
         /// <summary>Type used to create a <see cref="Task{TResult}"/> to represent a <see cref="IValueTaskSource{TResult}"/>.</summary>
         private sealed class ValueTaskSourceAsTask : Task<TResult>
         {
-            private static readonly Action<object?> s_completionAction = state =>
+            private static readonly Action<object?> s_completionAction = static state =>
             {
                 if (!(state is ValueTaskSourceAsTask vtst) ||
                     !(vtst._source is IValueTaskSource<TResult> source))
@@ -751,7 +781,7 @@ namespace System.Threading.Tasks
 
                 if (obj == null)
                 {
-                    return _result;
+                    return _result!;
                 }
 
                 if (obj is Task<TResult> t)

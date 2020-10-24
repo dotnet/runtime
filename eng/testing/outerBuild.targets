@@ -1,8 +1,12 @@
 <Project>
   <Target Name="Test" DependsOnTargets="GetProjectWithBestTargetFrameworks">    
     <MSBuild Projects="@(InnerBuildProjectsWithBestTargetFramework)"
-             Targets="Test"
-             BuildInParallel="$(BuildInParallel)">
+             Targets="Test">
+    </MSBuild>
+  </Target>
+  <Target Name="VSTest" DependsOnTargets="GetProjectWithBestTargetFrameworks">    
+    <MSBuild Projects="@(InnerBuildProjectsWithBestTargetFramework)"
+             Targets="VSTest">
     </MSBuild>
   </Target>
 </Project>

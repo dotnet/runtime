@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 /*++
 
@@ -121,8 +120,12 @@ private:
         // modes because both of those involve cgroup v1 controllers managing
         // resources.
 
+#if !HAVE_NON_LEGACY_STATFS
+        return 0;
+#else
         struct statfs stats;
         int result = statfs("/sys/fs/cgroup", &stats);
+
         if (result != 0)
             return 0;
 
@@ -134,6 +137,7 @@ private:
                 _ASSERTE(!"Unexpected file system type for /sys/fs/cgroup");
                 return 0;
         }
+#endif
     }
 
     static bool IsCGroup1MemorySubsystem(const char *strTok){

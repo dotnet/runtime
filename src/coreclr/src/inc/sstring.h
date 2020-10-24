@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 // ---------------------------------------------------------------------------
 // SString.h  (Safe String)
 //
@@ -45,6 +44,7 @@
 
 #include "utilcode.h"
 #include "sbuffer.h"
+#include "debugmacros.h"
 
 // ==========================================================================================
 // Documentational typedefs: use these to indicate specific representations of 8 bit strings:
@@ -257,7 +257,7 @@ private:
     // Start searching for a match of the given string, starting at
     // the given iterator point.
     // If a match exists, move the iterator to point to the nearest
-    // occurence of s in the string and return TRUE.
+    // occurrence of s in the string and return TRUE.
     // If no match exists, return FALSE and leave the iterator unchanged.
     BOOL Find(CIterator &i, const SString &s) const;
     BOOL Find(CIterator &i, const WCHAR *s) const;
@@ -808,6 +808,7 @@ template <COUNT_T MEMSIZE>
 class EMPTY_BASES_DECL InlineSString : public SString
 {
 private:
+    DAC_ALIGNAS(SString)
     BYTE m_inline[SBUFFER_PADDED_SIZE(MEMSIZE)];
 
 public:
@@ -990,6 +991,7 @@ template <COUNT_T MEMSIZE>
 class EMPTY_BASES_DECL ScratchBuffer : public SString::AbstractScratchBuffer
 {
   private:
+    DAC_ALIGNAS(::SString::AbstractScratchBuffer)
     BYTE m_inline[MEMSIZE];
 
   public:

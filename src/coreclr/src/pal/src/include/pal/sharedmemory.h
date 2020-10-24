@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 #ifndef _PAL_SHARED_MEMORY_H_
 #define _PAL_SHARED_MEMORY_H_
@@ -188,9 +187,10 @@ public:
 class SharedMemoryProcessDataBase
 {
 public:
-    virtual void Close(bool isAbruptShutdown, bool releaseSharedData)
-    {
-    }
+    virtual bool CanClose() const = 0;
+    virtual bool HasImplicitRef() const = 0;
+    virtual void SetHasImplicitRef(bool value) = 0;
+    virtual void Close(bool isAbruptShutdown, bool releaseSharedData) = 0;
 
     virtual ~SharedMemoryProcessDataBase()
     {

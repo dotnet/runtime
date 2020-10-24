@@ -156,7 +156,25 @@
             <param name="elementOffset">The offset to add.</param>
             <returns>A new reference that reflects the addition of offset to pointer.</returns>
         </member>
+        <member name="M:System.Runtime.CompilerServices.Unsafe.Add``1(``0@,System.UIntPtr)">
+            <summary>
+            Adds an element offset to the given reference.
+            </summary>
+            <typeparam name="T">The type of reference.</typeparam>
+            <param name="source">The reference to add the offset to.</param>
+            <param name="elementOffset">The offset to add.</param>
+            <returns>A new reference that reflects the addition of offset to pointer.</returns>
+        </member>
         <member name="M:System.Runtime.CompilerServices.Unsafe.AddByteOffset``1(``0@,System.IntPtr)">
+            <summary>
+            Adds a byte offset to the given reference.
+            </summary>
+            <typeparam name="T">The type of reference.</typeparam>
+            <param name="source">The reference to add the offset to.</param>
+            <param name="byteOffset">The offset to add.</param>
+            <returns>A new reference that reflects the addition of byte offset to pointer.</returns>
+        </member>
+        <member name="M:System.Runtime.CompilerServices.Unsafe.AddByteOffset``1(``0@,System.UIntPtr)">
             <summary>
             Adds a byte offset to the given reference.
             </summary>
@@ -183,7 +201,25 @@
             <param name="elementOffset">The offset to subtract.</param>
             <returns>A new reference that reflects the subraction of offset from pointer.</returns>
         </member>
+        <member name="M:System.Runtime.CompilerServices.Unsafe.Subtract``1(``0@,System.UIntPtr)">
+            <summary>
+            Subtracts an element offset from the given reference.
+            </summary>
+            <typeparam name="T">The type of reference.</typeparam>
+            <param name="source">The reference to subtract the offset from.</param>
+            <param name="elementOffset">The offset to subtract.</param>
+            <returns>A new reference that reflects the subraction of offset from pointer.</returns>
+        </member>
         <member name="M:System.Runtime.CompilerServices.Unsafe.SubtractByteOffset``1(``0@,System.IntPtr)">
+            <summary>
+            Subtracts a byte offset from the given reference.
+            </summary>
+            <typeparam name="T">The type of reference.</typeparam>
+            <param name="source">The reference to subtract the offset from.</param>
+            <param name="byteOffset">The offset to subtract.</param>
+            <returns>A new reference that reflects the subraction of byte offset from pointer.</returns>
+        </member>
+        <member name="M:System.Runtime.CompilerServices.Unsafe.SubtractByteOffset``1(``0@,System.UIntPtr)">
             <summary>
             Subtracts a byte offset from the given reference.
             </summary>
@@ -232,6 +268,18 @@
             This check is conceptually similar to "(void*)(&amp;left) &lt; (void*)(&amp;right)". Both parameters must reference the same object, array, or span;
             or the objects being referenced must both be pinned; or both references must represent unmanaged pointers; otherwise the result is undefined.
             </remarks>
+        </member>
+        <member name="M:System.Runtime.CompilerServices.Unsafe.IsNullRef``1(``0@)">
+          <summary>
+            Returns if a given reference to a value of type <typeparamref name="T"/> is a null reference.
+          </summary>
+          <param name="source">The reference to check.</param>
+          <remarks>This check is conceptually similar to "(void*)(&amp;source) == nullptr".</remarks>
+        </member>
+        <member name="M:System.Runtime.CompilerServices.Unsafe.NullRef``1">
+          <summary>
+            Returns a reference to a value of type <typeparamref name="T"/> that is a null reference.
+          </summary>
         </member>
         <member name="M:System.Runtime.CompilerServices.Unsafe.CopyBlock(System.Void*,System.Void*,System.UInt32)">
             <summary>

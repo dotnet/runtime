@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Globalization;
 using System.Runtime.InteropServices;
@@ -217,6 +216,23 @@ namespace System.Numerics.Tests
 
             Matrix4x4 i = mtx * actual;
             Assert.True(MathHelper.Equal(i, Matrix4x4.Identity));
+        }
+
+        // A test for Invert (Matrix4x4)
+        [Fact]
+        public void Matrix4x4InvertRank3()
+        {
+            // A 4x4 Matrix having a rank of 3
+            Matrix4x4 mtx = new Matrix4x4(1.0f, 2.0f, 3.0f, 0.0f,
+                                          5.0f, 1.0f, 6.0f, 0.0f,
+                                          8.0f, 9.0f, 1.0f, 0.0f,
+                                          4.0f, 7.0f, 3.0f, 0.0f);
+
+            Matrix4x4 actual;
+            Assert.False(Matrix4x4.Invert(mtx, out actual));
+
+            Matrix4x4 i = mtx * actual;
+            Assert.False(MathHelper.Equal(i, Matrix4x4.Identity));
         }
 
         void DecomposeTest(float yaw, float pitch, float roll, Vector3 expectedTranslation, Vector3 expectedScales)
@@ -1593,14 +1609,32 @@ namespace System.Numerics.Tests
         public void Matrix4x4GetHashCodeTest()
         {
             Matrix4x4 target = GenerateIncrementalMatrixNumber();
-            int expected = unchecked(
-                target.M11.GetHashCode() + target.M12.GetHashCode() + target.M13.GetHashCode() + target.M14.GetHashCode() +
-                target.M21.GetHashCode() + target.M22.GetHashCode() + target.M23.GetHashCode() + target.M24.GetHashCode() +
-                target.M31.GetHashCode() + target.M32.GetHashCode() + target.M33.GetHashCode() + target.M34.GetHashCode() +
-                target.M41.GetHashCode() + target.M42.GetHashCode() + target.M43.GetHashCode() + target.M44.GetHashCode());
-            int actual;
 
-            actual = target.GetHashCode();
+            HashCode hash = default;
+
+            hash.Add(target.M11);
+            hash.Add(target.M12);
+            hash.Add(target.M13);
+            hash.Add(target.M14);
+
+            hash.Add(target.M21);
+            hash.Add(target.M22);
+            hash.Add(target.M23);
+            hash.Add(target.M24);
+
+            hash.Add(target.M31);
+            hash.Add(target.M32);
+            hash.Add(target.M33);
+            hash.Add(target.M34);
+
+            hash.Add(target.M41);
+            hash.Add(target.M42);
+            hash.Add(target.M43);
+            hash.Add(target.M44);
+
+            int expected = hash.ToHashCode();
+            int actual = target.GetHashCode();
+
             Assert.Equal(expected, actual);
         }
 

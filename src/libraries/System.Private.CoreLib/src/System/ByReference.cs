@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Runtime.CompilerServices;
 using System.Runtime.Versioning;
@@ -26,6 +25,7 @@ namespace System
             throw new PlatformNotSupportedException();
         }
 
+#pragma warning disable CA1822 // Mark members as static
         public ref T Value
         {
             // Implemented as a JIT intrinsic - This default implementation is for
@@ -34,5 +34,6 @@ namespace System
             [Intrinsic]
             get => throw new PlatformNotSupportedException();
         }
+#pragma warning restore CA1822
     }
 }

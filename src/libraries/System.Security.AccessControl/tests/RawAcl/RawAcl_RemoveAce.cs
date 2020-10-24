@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System;
 using System.Collections.Generic;
@@ -36,11 +35,22 @@ namespace System.Security.AccessControl.Tests
             count = rawAcl.Count;
 
             //test remove at -1
-            Assert.Throws<ArgumentOutOfRangeException>(() =>
-            {
-                index = -1;
-                rawAcl.RemoveAce(index);
-            });
+            AssertExtensions.Throws<ArgumentOutOfRangeException>(
+                "index",
+                () =>
+                {
+                    index = -1;
+                    rawAcl.RemoveAce(index);
+                });
+
+            //test remove at value too large
+            AssertExtensions.Throws<ArgumentOutOfRangeException>(
+                "index",
+                () =>
+                {
+                    index = int.MaxValue;
+                    rawAcl.RemoveAce(index);
+                });
 
             //test remove at 0, only need to catch ArgumentOutOfRangeException if Count = 0
             index = 0;

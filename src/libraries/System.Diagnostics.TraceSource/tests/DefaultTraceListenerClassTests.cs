@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.IO;
 using System.Reflection;
@@ -143,7 +142,7 @@ namespace System.Diagnostics.TraceSourceTests
             Assert.Equal(expectedLogFileName, listener.LogFileName);
         }
 
-        [Fact]
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         public void EntryAssemblyName_Default_IncludedInTrace()
         {
             RemoteExecutor.Invoke(() =>
@@ -155,7 +154,7 @@ namespace System.Diagnostics.TraceSourceTests
             }).Dispose();
         }
 
-        [Fact]
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         public void EntryAssemblyName_Null_NotIncludedInTrace()
         {
             RemoteExecutor.Invoke(() =>

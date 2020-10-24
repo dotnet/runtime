@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 // ============================================================
 //
 // bindertracing.cpp
@@ -115,11 +114,7 @@ namespace
     void GetAssemblyLoadContextNameFromBinderID(UINT_PTR binderID, AppDomain *domain, /*out*/ SString &alcName)
     {
         ICLRPrivBinder *binder = reinterpret_cast<ICLRPrivBinder *>(binderID);
-#ifdef FEATURE_COMINTEROP
-        if (AreSameBinderInstance(binder, domain->GetTPABinderContext()) || AreSameBinderInstance(binder, domain->GetWinRtBinder()))
-#else
         if (AreSameBinderInstance(binder, domain->GetTPABinderContext()))
-#endif // FEATURE_COMINTEROP
         {
             alcName.Set(W("Default"));
         }
@@ -221,14 +216,14 @@ namespace BinderTracing
 
     AssemblyBindOperation::~AssemblyBindOperation()
     {
-        if (!BinderTracing::IsEnabled() || ShouldIgnoreBind())
-            return;
+        if (BinderTracing::IsEnabled() && !ShouldIgnoreBind())
+        {
+            // Make sure the bind request is populated. Tracing may have been enabled mid-bind.
+            if (!m_populatedBindRequest)
+                PopulateBindRequest(m_bindRequest);
 
-        // Make sure the bind request is populated. Tracing may have been enabled mid-bind.
-        if (!m_populatedBindRequest)
-            PopulateBindRequest(m_bindRequest);
-
-        FireAssemblyLoadStop(m_bindRequest, m_resultAssembly, m_cached);
+            FireAssemblyLoadStop(m_bindRequest, m_resultAssembly, m_cached);
+        }
 
         if (m_resultAssembly != nullptr)
             m_resultAssembly->Release();
@@ -251,7 +246,7 @@ namespace BinderTracing
 
         // ActivityTracker or EventSource may have triggered the system satellite load.
         // Don't track system satellite binding to avoid potential infinite recursion.
-        m_ignoreBind = m_bindRequest.AssemblySpec->IsMscorlibSatellite();
+        m_ignoreBind = m_bindRequest.AssemblySpec->IsCoreLibSatellite();
         m_checkedIgnoreBind = true;
         return m_ignoreBind;
     }

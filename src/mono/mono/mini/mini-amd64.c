@@ -2242,8 +2242,7 @@ mono_arch_emit_call (MonoCompile *cfg, MonoCallInst *call)
 
 		t = mini_get_underlying_type (t);
 		//XXX what about ArgGSharedVtOnStack here?
-		// FIXME tailcall is not always yet initialized.
-		if (ainfo->storage == ArgOnStack && !MONO_TYPE_ISSTRUCT (t) && !call->tailcall) {
+		if (ainfo->storage == ArgOnStack && !MONO_TYPE_ISSTRUCT (t)) {
 			if (!t->byref) {
 				if (t->type == MONO_TYPE_R4)
 					MONO_EMIT_NEW_STORE_MEMBASE (cfg, OP_STORER4_MEMBASE_REG, AMD64_RSP, ainfo->offset, in->dreg);
@@ -2302,18 +2301,9 @@ mono_arch_emit_call (MonoCompile *cfg, MonoCallInst *call)
 		case ArgValuetypeAddrOnStack:
 		case ArgGSharedVtInReg:
 		case ArgGSharedVtOnStack: {
-			// FIXME tailcall is not always yet initialized.
-			if (ainfo->storage == ArgOnStack && !MONO_TYPE_ISSTRUCT (t) && !call->tailcall)
+			if (ainfo->storage == ArgOnStack && !MONO_TYPE_ISSTRUCT (t))
 				/* Already emitted above */
 				break;
-			//FIXME what about ArgGSharedVtOnStack ?
-			// FIXME tailcall is not always yet initialized.
-			if (ainfo->storage == ArgOnStack && call->tailcall) {
-				MonoInst *call_inst = (MonoInst*)call;
-				cfg->args [i]->flags |= MONO_INST_VOLATILE;
-				EMIT_NEW_ARGSTORE (cfg, call_inst, i, in);
-				break;
-			}
 
 			guint32 align;
 			guint32 size;
@@ -8670,10 +8660,12 @@ mono_arch_build_imt_trampoline (MonoVTable *vtable, MonoDomain *domain, MonoIMTC
 		}
 		size += item->chunk_size;
 	}
-	if (fail_tramp)
-		code = (guint8 *)mono_method_alloc_generic_virtual_trampoline (domain, size + MONO_TRAMPOLINE_UNWINDINFO_SIZE(0));
-	else
-		code = (guint8 *)mono_domain_code_reserve (domain, size + MONO_TRAMPOLINE_UNWINDINFO_SIZE(0));
+	if (fail_tramp) {
+		code = (guint8 *)mono_method_alloc_generic_virtual_trampoline (mono_domain_ambient_memory_manager (domain), size + MONO_TRAMPOLINE_UNWINDINFO_SIZE(0));
+	} else {
+		MonoMemoryManager *mem_manager = m_class_get_mem_manager (domain, vtable->klass);
+		code = (guint8 *)mono_mem_manager_code_reserve (mem_manager, size + MONO_TRAMPOLINE_UNWINDINFO_SIZE(0));
+	}
 	start = code;
 
 	unwind_ops = mono_arch_get_cie_program ();

@@ -310,6 +310,7 @@ mono_print_unwind_info (guint8 *unwind_info, int unwind_info_len)
 		switch (op) {
 		case DW_CFA_advance_loc:
 			pos += *p & 0x3f;
+			printf ("CFA: [%x] advance loc\n",pos);
 			p ++;
 			break;
 		case DW_CFA_offset:
@@ -419,14 +420,14 @@ mono_unwind_ops_encode_full (GSList *unwind_ops, guint32 *out_len, gboolean enab
 				*p ++ = DW_CFA_advance_loc4;
 				guint32 v = (guint32)(op->when - loc);
 				memcpy (p, &v, 4);
-				g_assert (read32 (p) == (guint32)(op->when - loc));
+				g_assert (read32 (p) == GUINT32_TO_LE((guint32)(op->when - loc)));
 				p += 4;
 				loc = op->when;
 			} else if (op->when - loc >= 256) {
 				*p ++ = DW_CFA_advance_loc2;
 				guint16 v = (guint16)(op->when - loc);
 				memcpy (p, &v, 2);
-				g_assert (read16 (p) == (guint32)(op->when - loc));
+				g_assert (read16 (p) == GUINT16_TO_LE((guint32)(op->when - loc)));
 				p += 2;
 				loc = op->when;
 			} else if (op->when - loc >= 32) {

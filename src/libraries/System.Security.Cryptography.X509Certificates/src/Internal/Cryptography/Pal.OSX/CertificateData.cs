@@ -1,10 +1,10 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Formats.Asn1;
 using System.Security.Cryptography;
 using System.Security.Cryptography.Asn1;
 using System.Security.Cryptography.X509Certificates;
@@ -35,7 +35,7 @@ namespace Internal.Cryptography.Pal
         {
             public AlgorithmIdentifier(AlgorithmIdentifierAsn algorithmIdentifier)
             {
-                AlgorithmId = algorithmIdentifier.Algorithm.Value;
+                AlgorithmId = algorithmIdentifier.Algorithm;
                 Parameters = algorithmIdentifier.Parameters?.ToArray() ?? Array.Empty<byte>();
             }
 
@@ -49,6 +49,8 @@ namespace Internal.Cryptography.Pal
         internal X500DistinguishedName Issuer;
         internal X500DistinguishedName Subject;
         internal List<X509Extension> Extensions;
+        internal string IssuerName;
+        internal string SubjectName;
 
         internal int Version => certificate.TbsCertificate.Version;
 
@@ -81,12 +83,12 @@ namespace Internal.Cryptography.Pal
             certificate.TbsCertificate.ValidateVersion();
             Issuer = new X500DistinguishedName(certificate.TbsCertificate.Issuer.ToArray());
             Subject = new X500DistinguishedName(certificate.TbsCertificate.Subject.ToArray());
+            IssuerName = Issuer.Name;
+            SubjectName = Subject.Name;
 
-            using (AsnWriter writer = new AsnWriter(AsnEncodingRules.DER))
-            {
-                certificate.TbsCertificate.SubjectPublicKeyInfo.Encode(writer);
-                SubjectPublicKeyInfo = writer.Encode();
-            }
+            AsnWriter writer = new AsnWriter(AsnEncodingRules.DER);
+            certificate.TbsCertificate.SubjectPublicKeyInfo.Encode(writer);
+            SubjectPublicKeyInfo = writer.Encode();
 
             Extensions = new List<X509Extension>();
             if (certificate.TbsCertificate.Extensions != null)
@@ -275,50 +277,61 @@ namespace Internal.Cryptography.Pal
                 otherOid == null || otherOid == Oids.UserPrincipalName,
                 $"otherOid ({otherOid}) is not supported");
 
-            AsnValueReader reader = new AsnValueReader(extensionBytes, AsnEncodingRules.DER);
-            AsnValueReader sequenceReader = reader.ReadSequence();
-            reader.ThrowIfNotEmpty();
-
-            while (sequenceReader.HasData)
+            try
             {
-                GeneralNameAsn.Decode(ref sequenceReader, extensionBytes, out GeneralNameAsn generalName);
+                AsnValueReader reader = new AsnValueReader(extensionBytes, AsnEncodingRules.DER);
+                AsnValueReader sequenceReader = reader.ReadSequence();
+                reader.ThrowIfNotEmpty();
 
-                switch (matchType)
+                while (sequenceReader.HasData)
                 {
-                    case GeneralNameType.OtherName:
-                        // If the OtherName OID didn't match, move to the next entry.
-                        if (generalName.OtherName.HasValue && generalName.OtherName.Value.TypeId == otherOid)
-                        {
-                            // Currently only UPN is supported, which is a UTF8 string per
-                            // https://msdn.microsoft.com/en-us/library/ff842518.aspx
-                            AsnReader nameReader = new AsnReader(generalName.OtherName.Value.Value, AsnEncodingRules.DER);
-                            string udnName = nameReader.ReadCharacterString(UniversalTagNumber.UTF8String);
-                            nameReader.ThrowIfNotEmpty();
-                            return udnName;
-                        }
-                        break;
+                    GeneralNameAsn.Decode(ref sequenceReader, extensionBytes, out GeneralNameAsn generalName);
 
-                    case GeneralNameType.Rfc822Name:
-                        if (generalName.Rfc822Name != null)
-                        {
-                            return generalName.Rfc822Name;
-                        }
-                        break;
+                    switch (matchType)
+                    {
+                        case GeneralNameType.OtherName:
+                            // If the OtherName OID didn't match, move to the next entry.
+                            if (generalName.OtherName.HasValue && generalName.OtherName.Value.TypeId == otherOid)
+                            {
+                                // Currently only UPN is supported, which is a UTF8 string per
+                                // https://msdn.microsoft.com/en-us/library/ff842518.aspx
+                                AsnValueReader nameReader = new AsnValueReader(
+                                    generalName.OtherName.Value.Value.Span,
+                                    AsnEncodingRules.DER);
 
-                    case GeneralNameType.DnsName:
-                        if (generalName.DnsName != null)
-                        {
-                            return generalName.DnsName;
-                        }
-                        break;
+                                string udnName = nameReader.ReadCharacterString(UniversalTagNumber.UTF8String);
+                                nameReader.ThrowIfNotEmpty();
+                                return udnName;
+                            }
 
-                    case GeneralNameType.UniformResourceIdentifier:
-                        if (generalName.Uri != null)
-                        {
-                            return generalName.Uri;
-                        }
-                        break;
+                            break;
+                        case GeneralNameType.Rfc822Name:
+                            if (generalName.Rfc822Name != null)
+                            {
+                                return generalName.Rfc822Name;
+                            }
+
+                            break;
+                        case GeneralNameType.DnsName:
+                            if (generalName.DnsName != null)
+                            {
+                                return generalName.DnsName;
+                            }
+
+                            break;
+                        case GeneralNameType.UniformResourceIdentifier:
+                            if (generalName.Uri != null)
+                            {
+                                return generalName.Uri;
+                            }
+
+                            break;
+                    }
                 }
+            }
+            catch (AsnContentException e)
+            {
+                throw new CryptographicException(SR.Cryptography_Der_Invalid_Encoding, e);
             }
 
             return null;
@@ -326,14 +339,23 @@ namespace Internal.Cryptography.Pal
 
         private static IEnumerable<KeyValuePair<string, string>> ReadReverseRdns(X500DistinguishedName name)
         {
-            AsnReader x500NameReader = new AsnReader(name.RawData, AsnEncodingRules.DER);
-            AsnReader sequenceReader = x500NameReader.ReadSequence();
-            var rdnReaders = new Stack<AsnReader>();
-            x500NameReader.ThrowIfNotEmpty();
+            Stack<AsnReader> rdnReaders;
 
-            while (sequenceReader.HasData)
+            try
             {
-                rdnReaders.Push(sequenceReader.ReadSetOf());
+                AsnReader x500NameReader = new AsnReader(name.RawData, AsnEncodingRules.DER);
+                AsnReader sequenceReader = x500NameReader.ReadSequence();
+                x500NameReader.ThrowIfNotEmpty();
+                rdnReaders = new Stack<AsnReader>();
+
+                while (sequenceReader.HasData)
+                {
+                    rdnReaders.Push(sequenceReader.ReadSetOf());
+                }
+            }
+            catch (AsnContentException e)
+            {
+                throw new CryptographicException(SR.Cryptography_Der_Invalid_Encoding, e);
             }
 
             while (rdnReaders.Count > 0)
@@ -341,10 +363,21 @@ namespace Internal.Cryptography.Pal
                 AsnReader rdnReader = rdnReaders.Pop();
                 while (rdnReader.HasData)
                 {
-                    AsnReader tavReader = rdnReader.ReadSequence();
-                    string oid = tavReader.ReadObjectIdentifierAsString();
-                    string value = tavReader.ReadAnyAsnString();
-                    tavReader.ThrowIfNotEmpty();
+                    string oid;
+                    string value;
+
+                    try
+                    {
+                        AsnReader tavReader = rdnReader.ReadSequence();
+                        oid = tavReader.ReadObjectIdentifier();
+                        value = tavReader.ReadAnyAsnString();
+                        tavReader.ThrowIfNotEmpty();
+                    }
+                    catch (AsnContentException e)
+                    {
+                        throw new CryptographicException(SR.Cryptography_Der_Invalid_Encoding, e);
+                    }
+
                     yield return new KeyValuePair<string, string>(oid, value);
                 }
             }

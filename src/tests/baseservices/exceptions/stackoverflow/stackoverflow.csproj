@@ -1,0 +1,12 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <Optimize>false</Optimize>
+    <CLRTestKind>BuildOnly</CLRTestKind>
+    <CLRTestPriority>0</CLRTestPriority>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="stackoverflow.cs" />
+  </ItemGroup>
+</Project>
+

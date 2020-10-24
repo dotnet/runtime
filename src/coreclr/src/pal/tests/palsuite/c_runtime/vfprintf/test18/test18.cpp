@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 /*============================================================================
 **
@@ -18,7 +17,7 @@
 
 
 
-int __cdecl main(int argc, char *argv[])
+PALTEST(c_runtime_vfprintf_test18_paltest_vfprintf_test18, "c_runtime/vfprintf/test18/paltest_vfprintf_test18")
 {
     double val = 2560.001;
     double neg = -2560.001;

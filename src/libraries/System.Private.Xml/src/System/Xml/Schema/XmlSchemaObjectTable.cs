@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 namespace System.Xml.Schema
 {
@@ -26,7 +25,7 @@ namespace System.Xml.Schema
 
         internal void Insert(XmlQualifiedName name, XmlSchemaObject value)
         {
-            XmlSchemaObject oldValue = null;
+            XmlSchemaObject? oldValue = null;
             if (_table.TryGetValue(name, out oldValue))
             {
                 _table[name] = value; //set new value
@@ -45,7 +44,7 @@ namespace System.Xml.Schema
 
         internal void Replace(XmlQualifiedName name, XmlSchemaObject value)
         {
-            XmlSchemaObject oldValue;
+            XmlSchemaObject? oldValue;
             if (_table.TryGetValue(name, out oldValue))
             {
                 _table[name] = value; //set new value
@@ -64,7 +63,7 @@ namespace System.Xml.Schema
 
         internal void Remove(XmlQualifiedName name)
         {
-            XmlSchemaObject value;
+            XmlSchemaObject? value;
             if (_table.TryGetValue(name, out value))
             {
                 _table.Remove(name);
@@ -102,11 +101,11 @@ namespace System.Xml.Schema
             return _table.ContainsKey(name);
         }
 
-        public XmlSchemaObject this[XmlQualifiedName name]
+        public XmlSchemaObject? this[XmlQualifiedName name]
         {
             get
             {
-                XmlSchemaObject value;
+                XmlSchemaObject? value;
                 if (_table.TryGetValue(name, out value))
                 {
                     return value;
@@ -271,8 +270,8 @@ namespace System.Xml.Schema
 
             protected int currentIndex;
             protected int size;
-            protected XmlQualifiedName currentKey;
-            protected XmlSchemaObject currentValue;
+            protected XmlQualifiedName? currentKey;
+            protected XmlSchemaObject? currentValue;
 
 
             internal XSOEnumerator(List<XmlSchemaObjectEntry> entries, int size, EnumeratorType enumType)
@@ -283,7 +282,7 @@ namespace System.Xml.Schema
                 currentIndex = -1;
             }
 
-            public object Current
+            public object? Current
             {
                 get
                 {
@@ -304,7 +303,7 @@ namespace System.Xml.Schema
                             return currentValue;
 
                         case EnumeratorType.DictionaryEntry:
-                            return new DictionaryEntry(currentKey, currentValue);
+                            return new DictionaryEntry(currentKey!, currentValue);
 
                         default:
                             break;
@@ -354,7 +353,7 @@ namespace System.Xml.Schema
                     {
                         throw new InvalidOperationException(SR.Format(SR.Sch_EnumFinished, string.Empty));
                     }
-                    return new DictionaryEntry(currentKey, currentValue);
+                    return new DictionaryEntry(currentKey!, currentValue);
                 }
             }
 
@@ -370,11 +369,11 @@ namespace System.Xml.Schema
                     {
                         throw new InvalidOperationException(SR.Format(SR.Sch_EnumFinished, string.Empty));
                     }
-                    return currentKey;
+                    return currentKey!;
                 }
             }
 
-            public object Value
+            public object? Value
             {
                 get
                 {

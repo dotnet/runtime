@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 /*=====================================================================
 **
@@ -17,15 +16,15 @@
 
 #include <palsuite.h>
 
-DWORD PALAPI CreateTestThread(LPVOID lpParam);
+DWORD PALAPI CreateTestThread_DuplicateHandle_test8(LPVOID lpParam);
 
-int __cdecl main(int argc, char* argv[])
+PALTEST(threading_DuplicateHandle_test8_paltest_duplicatehandle_test8, "threading/DuplicateHandle/test8/paltest_duplicatehandle_test8")
 {
     HANDLE  hThread;
     HANDLE  hCurrentThread;
     HANDLE  hDupThread;
     DWORD   dwThreadId = 0;
-    LPTHREAD_START_ROUTINE lpStartAddress =  &CreateTestThread;
+    LPTHREAD_START_ROUTINE lpStartAddress =  &CreateTestThread_DuplicateHandle_test8;
 
     int threadPriority;
     int duplicatePriority;
@@ -158,7 +157,7 @@ int __cdecl main(int argc, char* argv[])
 }
 
 /*Thread testing function, only return '0'*/
-DWORD PALAPI CreateTestThread(LPVOID lpParam)
+DWORD PALAPI CreateTestThread_DuplicateHandle_test8(LPVOID lpParam)
 {
     return (DWORD)0;
 }

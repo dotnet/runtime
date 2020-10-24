@@ -2627,6 +2627,34 @@ mono_test_marshal_date_time (double d, double *d2)
 
 #ifndef WIN32
 
+typedef struct
+{
+	guint32 a;
+	guint16 b;
+	guint16 c;
+	guint8 d[8];
+} GUID;
+
+typedef const GUID *REFIID;
+
+typedef struct IDispatch IDispatch;
+
+typedef struct
+{
+	int (STDCALL *QueryInterface)(IDispatch *iface, REFIID iid, gpointer *out);
+	int (STDCALL *AddRef)(IDispatch *iface);
+	int (STDCALL *Release)(IDispatch *iface);
+	int (STDCALL *GetTypeInfoCount)(IDispatch *iface, unsigned int *count);
+	int (STDCALL *GetTypeInfo)(IDispatch *iface, unsigned int index, unsigned int lcid, gpointer *out);
+	int (STDCALL *GetIDsOfNames)(IDispatch *iface, REFIID iid, gpointer names, unsigned int count, unsigned int lcid, gpointer ids);
+	int (STDCALL *Invoke)(IDispatch *iface, unsigned int dispid, REFIID iid, unsigned int lcid, unsigned short flags, gpointer params, gpointer result, gpointer excepinfo, gpointer err_arg);
+} IDispatchVtbl;
+
+struct IDispatch
+{
+	const IDispatchVtbl *lpVtbl;
+};
+
 typedef struct {
 	guint16 vt;
 	guint16 wReserved1;
@@ -2709,14 +2737,6 @@ void VariantInit(VARIANT* vt)
 {
 	vt->vt = VT_EMPTY;
 }
-
-typedef struct
-{
-	guint32 a;
-	guint16 b;
-	guint16 c;
-	guint8 d[8];
-} GUID;
 
 #define S_OK 0
 
@@ -7769,6 +7789,13 @@ mono_test_native_to_managed_exception_rethrow (NativeToManagedExceptionRethrowFu
 typedef void (*VoidVoidCallback) (void);
 typedef void (*MonoFtnPtrEHCallback) (guint32 gchandle);
 
+typedef void *MonoDomain;
+typedef void *MonoAssembly;
+typedef void *MonoImage;
+typedef void *MonoClass;
+typedef void *MonoMethod;
+typedef void *MonoThread;
+
 typedef long long MonoObject;
 typedef MonoObject MonoException;
 typedef int32_t mono_bool;
@@ -7783,25 +7810,60 @@ static void (*sym_mono_domain_unload) (gpointer);
 static void (*sym_mono_threads_exit_gc_safe_region_unbalanced) (gpointer, gpointer *);
 static void (*null_function_ptr) (void);
 
+static MonoDomain *(*sym_mono_get_root_domain) (void);
+
+static MonoDomain *(*sym_mono_domain_get)(void);
+
+static mono_bool (*sym_mono_domain_set)(MonoDomain *, mono_bool /*force */);
+
+static MonoAssembly *(*sym_mono_domain_assembly_open) (MonoDomain *, const char*);
+
+static MonoImage *(*sym_mono_assembly_get_image) (MonoAssembly *);
+
+static MonoClass *(*sym_mono_class_from_name)(MonoImage *, const char *, const char *);
+
+static MonoMethod *(*sym_mono_class_get_method_from_name)(MonoClass *, const char *, int /* arg_count */);
+
+static MonoThread *(*sym_mono_thread_attach)(MonoDomain *);
+
+static void (*sym_mono_thread_detach)(MonoThread *);
+
+static MonoObject *(*sym_mono_runtime_invoke) (MonoMethod *, void*, void**, MonoObject**);
+
+
+// SYM_LOOKUP(mono_runtime_invoke)
+// expands to
+//  sym_mono_runtime_invoke = g_cast (lookup_mono_symbol ("mono_runtime_invoke"));
+//
+// (the g_cast is necessary for C++ builds)
+#define SYM_LOOKUP(name) do {			\
+	sym_##name = g_cast (lookup_mono_symbol (#name));	\
+	} while (0)
+
 static void
 mono_test_init_symbols (void)
 {
 	if (sym_inited)
 		return;
 
-	sym_mono_install_ftnptr_eh_callback = (void (*) (MonoFtnPtrEHCallback)) (lookup_mono_symbol ("mono_install_ftnptr_eh_callback"));
+	SYM_LOOKUP (mono_install_ftnptr_eh_callback);
+	SYM_LOOKUP (mono_gchandle_get_target);
+	SYM_LOOKUP (mono_gchandle_new);
+	SYM_LOOKUP (mono_gchandle_free);
+	SYM_LOOKUP (mono_raise_exception);
+	SYM_LOOKUP (mono_domain_unload);
+	SYM_LOOKUP (mono_threads_exit_gc_safe_region_unbalanced);
 
-	sym_mono_gchandle_get_target = (MonoObject* (*) (guint32 gchandle)) (lookup_mono_symbol ("mono_gchandle_get_target"));
-
-	sym_mono_gchandle_new = (guint32 (*) (MonoObject *, mono_bool)) (lookup_mono_symbol ("mono_gchandle_new"));
-
-	sym_mono_gchandle_free = (void (*) (guint32 gchandle)) (lookup_mono_symbol ("mono_gchandle_free"));
-
-	sym_mono_raise_exception = (void (*) (MonoException *)) (lookup_mono_symbol ("mono_raise_exception"));
-
-	sym_mono_domain_unload = (void (*) (gpointer)) (lookup_mono_symbol ("mono_domain_unload"));
-
-	sym_mono_threads_exit_gc_safe_region_unbalanced = (void (*) (gpointer, gpointer *)) (lookup_mono_symbol ("mono_threads_exit_gc_safe_region_unbalanced"));
+	SYM_LOOKUP (mono_get_root_domain);
+	SYM_LOOKUP (mono_domain_get);
+	SYM_LOOKUP (mono_domain_set);
+	SYM_LOOKUP (mono_domain_assembly_open);
+	SYM_LOOKUP (mono_assembly_get_image);
+	SYM_LOOKUP (mono_class_from_name);
+	SYM_LOOKUP (mono_class_get_method_from_name);
+	SYM_LOOKUP (mono_thread_attach);
+	SYM_LOOKUP (mono_thread_detach);
+	SYM_LOOKUP (mono_runtime_invoke);
 
 	sym_inited = 1;
 }
@@ -8071,6 +8133,351 @@ mono_test_MerpCrashSignalIll (void)
 	raise (SIGILL);
 #else
 	raise (SIGTERM);
+#endif
+}
+
+typedef struct _TestAutoDual _TestAutoDual;
+
+typedef struct
+{
+	int (STDCALL *QueryInterface)(_TestAutoDual *iface, REFIID iid, gpointer *out);
+	int (STDCALL *AddRef)(_TestAutoDual *iface);
+	int (STDCALL *Release)(_TestAutoDual *iface);
+	int (STDCALL *GetTypeInfoCount)(_TestAutoDual *iface, unsigned int *count);
+	int (STDCALL *GetTypeInfo)(_TestAutoDual *iface, unsigned int index, unsigned int lcid, gpointer *out);
+	int (STDCALL *GetIDsOfNames)(_TestAutoDual *iface, REFIID iid, gpointer names, unsigned int count, unsigned int lcid, gpointer ids);
+	int (STDCALL *Invoke)(_TestAutoDual *iface, unsigned int dispid, REFIID iid, unsigned int lcid, unsigned short flags, gpointer params, gpointer result, gpointer excepinfo, gpointer err_arg);
+	int (STDCALL *ToString)(_TestAutoDual *iface, gpointer string);
+	int (STDCALL *Equals)(_TestAutoDual *iface, VARIANT other, short *retval);
+	int (STDCALL *GetHashCode)(_TestAutoDual *iface, int *retval);
+	int (STDCALL *GetType)(_TestAutoDual *iface, gpointer retval);
+	int (STDCALL *parent_method_virtual)(_TestAutoDual *iface, int *retval);
+	int (STDCALL *get_parent_property)(_TestAutoDual *iface, int *retval);
+	int (STDCALL *parent_method_override)(_TestAutoDual *iface, int *retval);
+	int (STDCALL *parent_iface_method)(_TestAutoDual *iface, int *retval);
+	int (STDCALL *parent_method)(_TestAutoDual *iface, int *retval);
+	int (STDCALL *child_method_virtual)(_TestAutoDual *iface, int *retval);
+	int (STDCALL *iface1_method)(_TestAutoDual *iface, int *retval);
+	int (STDCALL *iface1_parent_method)(_TestAutoDual *iface, int *retval);
+	int (STDCALL *iface2_method)(_TestAutoDual *iface, int *retval);
+	int (STDCALL *child_method)(_TestAutoDual *iface, int *retval);
+} _TestAutoDualVtbl;
+
+struct _TestAutoDual
+{
+	const _TestAutoDualVtbl *lpVtbl;
+};
+
+LIBTEST_API int STDCALL
+mono_test_ccw_class_type_auto_dual (_TestAutoDual *iface)
+{
+	int hr, retval;
+
+	hr = iface->lpVtbl->parent_method_virtual(iface, &retval);
+	if (hr != 0)
+		return 1;
+	if (retval != 101)
+		return 2;
+
+	hr = iface->lpVtbl->get_parent_property(iface, &retval);
+	if (hr != 0)
+		return 3;
+	if (retval != 102)
+		return 4;
+
+	hr = iface->lpVtbl->parent_method_override(iface, &retval);
+	if (hr != 0)
+		return 5;
+	if (retval != 203)
+		return 6;
+
+	hr = iface->lpVtbl->parent_method(iface, &retval);
+	if (hr != 0)
+		return 7;
+	if (retval != 104)
+		return 8;
+
+	hr = iface->lpVtbl->child_method_virtual(iface, &retval);
+	if (hr != 0)
+		return 11;
+	if (retval != 106)
+		return 12;
+
+	hr = iface->lpVtbl->iface1_method(iface, &retval);
+	if (hr != 0)
+		return 13;
+	if (retval != 107)
+		return 14;
+
+	hr = iface->lpVtbl->iface1_parent_method(iface, &retval);
+	if (hr != 0)
+		return 15;
+	if (retval != 108)
+		return 16;
+
+	hr = iface->lpVtbl->iface2_method(iface, &retval);
+	if (hr != 0)
+		return 17;
+	if (retval != 109)
+		return 18;
+
+	hr = iface->lpVtbl->child_method(iface, &retval);
+	if (hr != 0)
+		return 19;
+	if (retval != 110)
+		return 20;
+
+	hr = iface->lpVtbl->parent_iface_method(iface, &retval);
+	if (hr != 0)
+		return 23;
+	if (retval != 112)
+		return 24;
+
+	return 0;
+}
+
+static const GUID IID_IBanana = {0x12345678, 0, 0, {0, 0, 0, 0, 0, 0, 0, 2}};
+
+typedef struct IBanana IBanana;
+
+typedef struct
+{
+	int (STDCALL *QueryInterface)(IBanana *iface, REFIID iid, gpointer *out);
+	int (STDCALL *AddRef)(IBanana *iface);
+	int (STDCALL *Release)(IBanana *iface);
+	int (STDCALL *GetTypeInfoCount)(IBanana *iface, unsigned int *count);
+	int (STDCALL *GetTypeInfo)(IBanana *iface, unsigned int index, unsigned int lcid, gpointer *out);
+	int (STDCALL *GetIDsOfNames)(IBanana *iface, REFIID iid, gpointer names, unsigned int count, unsigned int lcid, gpointer ids);
+	int (STDCALL *Invoke)(IBanana *iface, unsigned int dispid, REFIID iid, unsigned int lcid, unsigned short flags, gpointer params, gpointer result, gpointer excepinfo, gpointer err_arg);
+	int (STDCALL *iface1_method)(IBanana *iface, int *retval);
+} IBananaVtbl;
+
+struct IBanana
+{
+	const IBananaVtbl *lpVtbl;
+};
+
+LIBTEST_API int STDCALL
+mono_test_ccw_class_type_none (IBanana *iface)
+{
+	int hr, retval;
+
+	hr = iface->lpVtbl->iface1_method(iface, &retval);
+	if (hr != 0)
+		return 1;
+	if (retval != 3)
+		return 2;
+	return 0;
+}
+
+LIBTEST_API int STDCALL
+mono_test_ccw_class_type_auto_dispatch (IDispatch *disp)
+{
+	IBanana *banana;
+	int hr, retval;
+
+#ifdef __cplusplus
+	hr = disp->QueryInterface (IID_IBanana, (void **)&banana);
+#else
+	hr = disp->lpVtbl->QueryInterface (disp, &IID_IBanana, (void **)&banana);
+#endif
+	if (hr != 0)
+		return 1;
+	hr = banana->lpVtbl->iface1_method(banana, &retval);
+	if (hr != 0)
+		return 2;
+	if (retval != 3)
+		return 3;
+	banana->lpVtbl->Release(banana);
+
+	return 0;
+}
+
+static guint8 static_arr[] = { 1, 2, 3, 4 };
+
+LIBTEST_API guint8*
+mono_test_marshal_return_array (void)
+{
+	return static_arr;
+}
+
+struct invoke_names {
+	char *assm_name;
+	char *name_space;
+	char *name;
+	char *meth_name;
+};
+
+static struct invoke_names *
+make_invoke_names (const char *assm_name, const char *name_space, const char *name, const char *meth_name)
+{
+	struct invoke_names *names = (struct invoke_names*) malloc (sizeof (struct invoke_names));
+	names->assm_name = strdup (assm_name);
+	names->name_space = strdup (name_space);
+	names->name = strdup (name);
+	names->meth_name = strdup (meth_name);
+	return names;
+}
+
+static void
+destroy_invoke_names (struct invoke_names *n)
+{
+	free (n->assm_name);
+	free (n->name_space);
+	free (n->name);
+	free (n->meth_name);
+	free (n);
+}
+
+static void
+test_invoke_by_name (struct invoke_names *names)
+{
+	mono_test_init_symbols ();
+
+	MonoDomain *domain = sym_mono_domain_get ();
+	MonoThread *thread = NULL;
+	if (!domain) {
+		thread = sym_mono_thread_attach (sym_mono_get_root_domain ());
+	}
+	domain = sym_mono_domain_get ();
+	g_assert (domain);
+	MonoAssembly *assm = sym_mono_domain_assembly_open (domain, names->assm_name);
+	g_assert (assm);
+	MonoImage *image = sym_mono_assembly_get_image (assm);
+	MonoClass *klass = sym_mono_class_from_name (image, names->name_space, names->name);
+	g_assert (klass);
+	/* meth_name should be a static method that takes no arguments */
+	MonoMethod *method = sym_mono_class_get_method_from_name (klass, names->meth_name, -1);
+	g_assert (method);
+
+	MonoObject *args[] = {NULL, };
+
+	sym_mono_runtime_invoke (method, NULL, (void**)args, NULL);
+
+	if (thread)
+		sym_mono_thread_detach (thread);
+}
+
+#ifndef HOST_WIN32
+static void*
+invoke_foreign_thread (void* user_data)
+{
+	struct invoke_names *names = (struct invoke_names*)user_data;
+        /*
+         * Run a couple of times to check that attach/detach multiple
+         * times from the same thread leaves it in a reasonable coop
+         * thread state.
+         */
+        for (int i = 0; i < 5; ++i) {
+                test_invoke_by_name (names);
+                sleep (2);
+        }
+	destroy_invoke_names (names);
+	return NULL;
+}
+
+static void*
+invoke_foreign_delegate (void *user_data)
+{
+	VoidVoidCallback del = (VoidVoidCallback)user_data;
+	for (int i = 0; i < 5; ++i) {
+		del ();
+		sleep (2);
+	}
+	return NULL;
+}
+
+#endif
+
+
+LIBTEST_API mono_bool STDCALL
+mono_test_attach_invoke_foreign_thread (const char *assm_name, const char *name_space, const char *name, const char *meth_name, VoidVoidCallback del)
+{
+#ifndef HOST_WIN32
+	if (!del) {
+		struct invoke_names *names = make_invoke_names (assm_name, name_space, name, meth_name);
+		pthread_t t;
+		int res = pthread_create (&t, NULL, invoke_foreign_thread, (void*)names);
+		g_assert (res == 0);
+		pthread_join (t, NULL);
+		return 0;
+	} else {
+		pthread_t t;
+		int res = pthread_create (&t, NULL, invoke_foreign_delegate, del);
+		g_assert (res == 0);
+		pthread_join (t, NULL);
+		return 0;
+	}
+#else
+	// TODO: Win32 version of this test
+	return 1;
+#endif
+}
+
+#ifndef HOST_WIN32
+struct names_and_mutex {
+	/* if del is NULL, use names, otherwise just call del */
+	VoidVoidCallback del;
+	struct invoke_names *names;
+        /* mutex to coordinate test and foreign thread */
+        pthread_mutex_t coord_mutex;
+        pthread_cond_t coord_cond;
+        /* mutex to block the foreign thread */
+	pthread_mutex_t deadlock_mutex;
+};
+
+static void*
+invoke_block_foreign_thread (void *user_data)
+{
+	// This thread calls into the runtime and then blocks. It should not
+	// prevent the runtime from shutting down.
+	struct names_and_mutex *nm = (struct names_and_mutex *)user_data;
+	if (!nm->del) {
+		test_invoke_by_name (nm->names);
+	} else {
+		nm->del ();
+	}
+        pthread_mutex_lock (&nm->coord_mutex);
+        /* signal the test thread that we called the runtime */
+        pthread_cond_signal (&nm->coord_cond);
+        pthread_mutex_unlock (&nm->coord_mutex);
+
+	pthread_mutex_lock (&nm->deadlock_mutex); // blocks forever
+	g_assert_not_reached ();
+}
+#endif
+
+LIBTEST_API mono_bool STDCALL
+mono_test_attach_invoke_block_foreign_thread (const char *assm_name, const char *name_space, const char *name, const char *meth_name, VoidVoidCallback del)
+{
+#ifndef HOST_WIN32
+	struct names_and_mutex *nm = malloc (sizeof (struct names_and_mutex));
+	nm->del = del;
+	if (!del) {
+		struct invoke_names *names = make_invoke_names (assm_name, name_space, name, meth_name);
+		nm->names = names;
+	} else {
+		nm->names = NULL;
+	}
+	pthread_mutex_init (&nm->coord_mutex, NULL);
+	pthread_cond_init (&nm->coord_cond, NULL);
+	pthread_mutex_init (&nm->deadlock_mutex, NULL);
+
+	pthread_mutex_lock (&nm->deadlock_mutex); // lock the mutex and never unlock it.
+	pthread_t t;
+	int res = pthread_create (&t, NULL, invoke_block_foreign_thread, (void*)nm);
+	g_assert (res == 0);
+	/* wait for the foreign thread to finish calling the runtime before
+	 * detaching it and returning
+	 */
+	pthread_mutex_lock (&nm->coord_mutex);
+	pthread_cond_wait (&nm->coord_cond, &nm->coord_mutex);
+	pthread_mutex_unlock (&nm->coord_mutex);
+	pthread_detach (t);
+	return 0;
+#else
+	// TODO: Win32 version of this test
+	return 1;
 #endif
 }
 

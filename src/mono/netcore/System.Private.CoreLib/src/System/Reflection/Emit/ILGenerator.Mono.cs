@@ -1,3 +1,6 @@
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+
 //
 // Copyright (C) 2004 Novell, Inc (http://www.novell.com)
 //
@@ -32,6 +35,7 @@
 
 #if MONO_FEATURE_SRE
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using System.Diagnostics.SymbolStore;
 using System.Runtime.InteropServices;
 
@@ -46,33 +50,23 @@ namespace System.Reflection.Emit
         public const int FAULT = 4;
         public const int FILTER_START = -1;
 
+#region Sync with MonoILExceptionBlock in object-internals.h
         internal Type? extype;
         internal int type;
         internal int start;
         internal int len;
         internal int filter_offset;
-
-        internal void Debug()
-        {
-#if FALSE
-			System.Console.Write ("\ttype="+type.ToString()+" start="+start.ToString()+" len="+len.ToString());
-			if (extype != null)
-				System.Console.WriteLine (" extype="+extype.ToString());
-			else
-				System.Console.WriteLine (String.Empty);
-#endif
-        }
+#endregion
     }
+
     internal struct ILExceptionInfo
     {
-#pragma warning disable 169
-#pragma warning disable 414
+#region Sync with MonoILExceptionInfo in object-internals.h
         internal ILExceptionBlock[] handlers;
         internal int start;
         internal int len;
         internal Label end;
-#pragma warning restore 169
-#pragma warning restore 414
+#endregion
 
         internal int NumHandlers()
         {
@@ -149,15 +143,6 @@ namespace System.Reflection.Emit
             }
         }
 
-        internal void Debug(int b)
-        {
-#if FALSE
-			System.Console.WriteLine ("Handler {0} at {1}, len: {2}", b, start, len);
-			for (int i = 0; i < handlers.Length; ++i)
-				handlers [i].Debug ();
-#endif
-        }
-
         private void add_block(int offset)
         {
             if (handlers != null)
@@ -216,7 +201,7 @@ namespace System.Reflection.Emit
             public int maxStack;
         }
 
-        #region Sync with reflection.h
+#region Sync with MonoReflectionILGen in object-internals.h
         private byte[] code;
         private int code_len;
         private int max_stack;
@@ -225,7 +210,7 @@ namespace System.Reflection.Emit
         private ILExceptionInfo[]? ex_handlers;
         private int num_token_fixups;
         private object? token_fixups;
-        #endregion
+#endregion
 
         private LabelData[]? labels;
         private int num_labels;
@@ -243,6 +228,7 @@ namespace System.Reflection.Emit
         private List<SequencePointList>? sequencePointLists;
         private SequencePointList? currentSequence;
 
+        [DynamicDependency(nameof(token_fixups))]  // Automatically keeps all previous fields too due to StructLayout
         internal ILGenerator(Module m, ITokenGenerator token_gen, int size)
         {
             if (size < 0)
@@ -887,10 +873,7 @@ namespace System.Reflection.Emit
             Emit(opcode, helper);
         }
 
-        private static Type GetConsoleType()
-        {
-            return Type.GetType("System.Console, System.Console", throwOnError: true)!;
-        }
+        private const string ConsoleTypeFullName = "System.Console, System.Console";
 
         public virtual void EmitWriteLine(FieldInfo fld)
         {
@@ -907,7 +890,8 @@ namespace System.Reflection.Emit
                 Emit(OpCodes.Ldarg_0);
                 Emit(OpCodes.Ldfld, fld);
             }
-            Emit(OpCodes.Call, GetConsoleType().GetMethod("WriteLine", new Type[1] { fld.FieldType })!);
+            Type consoleType = Type.GetType(ConsoleTypeFullName, throwOnError: true)!;
+            Emit(OpCodes.Call, consoleType.GetMethod("WriteLine", new Type[1] { fld.FieldType })!);
         }
 
         public virtual void EmitWriteLine(LocalBuilder localBuilder)
@@ -919,13 +903,15 @@ namespace System.Reflection.Emit
             // The MS implementation does not check for valuetypes here but it
             // should.
             Emit(OpCodes.Ldloc, localBuilder);
-            Emit(OpCodes.Call, GetConsoleType().GetMethod("WriteLine", new Type[1] { localBuilder.LocalType })!);
+            Type consoleType = Type.GetType(ConsoleTypeFullName, throwOnError: true)!;
+            Emit(OpCodes.Call, consoleType.GetMethod("WriteLine", new Type[1] { localBuilder.LocalType })!);
         }
 
         public virtual void EmitWriteLine(string value)
         {
             Emit(OpCodes.Ldstr, value);
-            Emit(OpCodes.Call, GetConsoleType().GetMethod("WriteLine", new Type[1] { typeof(string) })!);
+            Type consoleType = Type.GetType(ConsoleTypeFullName, throwOnError: true)!;
+            Emit(OpCodes.Call, consoleType.GetMethod("WriteLine", new Type[1] { typeof(string) })!);
         }
 
         public virtual void EndExceptionBlock()
@@ -942,13 +928,9 @@ namespace System.Reflection.Emit
             InternalEndClause();
             MarkLabel(ex_handlers[cur_block].end);
             ex_handlers[cur_block].End(code_len);
-            ex_handlers[cur_block].Debug(cur_block);
-            //System.Console.WriteLine ("End Block {0} (handlers: {1})", cur_block, ex_handlers [cur_block].NumHandlers ());
             open_blocks.Pop();
             if (open_blocks.Count > 0)
                 cur_block = (int)open_blocks.Peek()!;
-            //Console.WriteLine ("curblock restored to {0}", cur_block);
-            //throw new NotImplementedException ();
         }
 
         public virtual void EndScope()
@@ -1010,7 +992,7 @@ namespace System.Reflection.Emit
             get { return sequencePointLists != null; }
         }
 
-        public virtual void ThrowException(Type excType)
+        public virtual void ThrowException([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)] Type excType)
         {
             if (excType == null)
                 throw new ArgumentNullException(nameof(excType));

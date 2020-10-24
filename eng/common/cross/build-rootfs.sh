@@ -1,13 +1,17 @@
 #!/usr/bin/env bash
 
+set -e
+
 usage()
 {
     echo "Usage: $0 [BuildArch] [CodeName] [lldbx.y] [--skipunmount] --rootfsdir <directory>]"
     echo "BuildArch can be: arm(default), armel, arm64, x86"
     echo "CodeName - optional, Code name for Linux, can be: trusty, xenial(default), zesty, bionic, alpine. If BuildArch is armel, LinuxCodeName is jessie(default) or tizen."
     echo "                              for FreeBSD can be: freebsd11 or freebsd12."
+    echo "                              for illumos can be: illumos."
     echo "lldbx.y - optional, LLDB version, can be: lldb3.9(default), lldb4.0, lldb5.0, lldb6.0 no-lldb. Ignored for alpine and FReeBSD"
     echo "--skipunmount - optional, will skip the unmount of rootfs folder."
+    echo "--use-mirror - optional, use mirror URL to fetch resources, when available."
     exit 1
 }
 
@@ -15,6 +19,8 @@ __CodeName=xenial
 __CrossDir=$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )
 __InitialDir=$PWD
 __BuildArch=arm
+__AlpineArch=armv7
+__QEMUArch=arm
 __UbuntuArch=armhf
 __UbuntuRepo="http://ports.ubuntu.com/"
 __LLDB_Package="liblldb-3.9-dev"
@@ -26,9 +32,10 @@ __UbuntuPackages="build-essential"
 __AlpinePackages="alpine-base"
 __AlpinePackages+=" build-base"
 __AlpinePackages+=" linux-headers"
-__AlpinePackagesEdgeTesting=" lldb-dev"
-__AlpinePackagesEdgeMain=" llvm9-libs"
+__AlpinePackagesEdgeCommunity=" lldb-dev"
+__AlpinePackagesEdgeMain=" llvm10-libs"
 __AlpinePackagesEdgeMain+=" python3"
+__AlpinePackagesEdgeMain+=" libedit"
 
 # symlinks fixer
 __UbuntuPackages+=" symlinks"
@@ -55,13 +62,19 @@ __AlpinePackages+=" openssl-dev"
 __AlpinePackages+=" zlib-dev"
 
 __FreeBSDBase="12.1-RELEASE"
-__FreeBSDPkg="1.10.5"
+__FreeBSDPkg="1.12.0"
 __FreeBSDPackages="libunwind"
 __FreeBSDPackages+=" icu"
 __FreeBSDPackages+=" libinotify"
 __FreeBSDPackages+=" lttng-ust"
-__FreeBSDPackages+=" llvm-90"
 __FreeBSDPackages+=" krb5"
+
+__IllumosPackages="icu-64.2nb2"
+__IllumosPackages+=" mit-krb5-1.16.2nb4"
+__IllumosPackages+=" openssl-1.1.1e"
+__IllumosPackages+=" zlib-1.2.11"
+
+__UseMirror=0
 
 __UnprocessedBuildArgs=
 while :; do
@@ -78,7 +91,7 @@ while :; do
         arm)
             __BuildArch=arm
             __UbuntuArch=armhf
-            __AlpineArch=armhf
+            __AlpineArch=armv7
             __QEMUArch=arm
             ;;
         arm64)
@@ -154,8 +167,8 @@ while :; do
             __LLDB_Package="liblldb-6.0-dev"
             ;;
         tizen)
-            if [ "$__BuildArch" != "armel" ]; then
-                echo "Tizen is available only for armel."
+            if [ "$__BuildArch" != "armel" ] && [ "$__BuildArch" != "arm64" ]; then
+                echo "Tizen is available only for armel and arm64."
                 usage;
                 exit 1;
             fi
@@ -175,12 +188,20 @@ while :; do
             __BuildArch=x64
             __SkipUnmount=1
             ;;
+        illumos)
+            __CodeName=illumos
+            __BuildArch=x64
+            __SkipUnmount=1
+            ;;
         --skipunmount)
             __SkipUnmount=1
             ;;
         --rootfsdir|-rootfsdir)
             shift
             __RootfsDir=$1
+            ;;
+        --use-mirror)
+            __UseMirror=1
             ;;
         *)
             __UnprocessedBuildArgs="$__UnprocessedBuildArgs $1"
@@ -205,10 +226,13 @@ fi
 
 if [ -d "$__RootfsDir" ]; then
     if [ $__SkipUnmount == 0 ]; then
-        umount $__RootfsDir/*
+        umount $__RootfsDir/* || true
     fi
     rm -rf $__RootfsDir
 fi
+
+mkdir -p $__RootfsDir
+__RootfsDir="$( cd "$__RootfsDir" && pwd )"
 
 if [[ "$__CodeName" == "alpine" ]]; then
     __ApkToolsVersion=2.9.1
@@ -231,9 +255,9 @@ if [[ "$__CodeName" == "alpine" ]]; then
       add $__AlpinePackagesEdgeMain
 
     $__ApkToolsDir/apk-tools-$__ApkToolsVersion/apk \
-      -X http://dl-cdn.alpinelinux.org/alpine/edge/testing \
+      -X http://dl-cdn.alpinelinux.org/alpine/edge/community \
       -U --allow-untrusted --root $__RootfsDir --arch $__AlpineArch --initdb \
-      add $__AlpinePackagesEdgeTesting
+      add $__AlpinePackagesEdgeCommunity
 
     rm -r $__ApkToolsDir
 elif [[ "$__CodeName" == "freebsd" ]]; then
@@ -246,11 +270,58 @@ elif [[ "$__CodeName" == "freebsd" ]]; then
     # get and build package manager
     wget -O -  https://github.com/freebsd/pkg/archive/${__FreeBSDPkg}.tar.gz  |  tar -C $__RootfsDir/tmp -zxf -
     cd $__RootfsDir/tmp/pkg-${__FreeBSDPkg}
-    ./autogen.sh && ./configure --prefix=$__RootfsDir/host && make install
+    # needed for install to succeed
+    mkdir -p $__RootfsDir/host/etc
+    ./autogen.sh && ./configure --prefix=$__RootfsDir/host && make && make install
     rm -rf $__RootfsDir/tmp/pkg-${__FreeBSDPkg}
     # install packages we need.
-    $__RootfsDir/host/sbin/pkg -r $__RootfsDir -C $__RootfsDir/usr/local/etc/pkg.conf update
-    $__RootfsDir/host/sbin/pkg -r $__RootfsDir -C $__RootfsDir/usr/local/etc/pkg.conf install --yes $__FreeBSDPackages
+    INSTALL_AS_USER=$(whoami) $__RootfsDir/host/sbin/pkg -r $__RootfsDir -C $__RootfsDir/usr/local/etc/pkg.conf update
+    INSTALL_AS_USER=$(whoami) $__RootfsDir/host/sbin/pkg -r $__RootfsDir -C $__RootfsDir/usr/local/etc/pkg.conf install --yes $__FreeBSDPackages
+elif [[ "$__CodeName" == "illumos" ]]; then
+    mkdir "$__RootfsDir/tmp"
+    pushd "$__RootfsDir/tmp"
+    JOBS="$(getconf _NPROCESSORS_ONLN)"
+    echo "Downloading sysroot."
+    wget -O - https://github.com/illumos/sysroot/releases/download/20181213-de6af22ae73b-v1/illumos-sysroot-i386-20181213-de6af22ae73b-v1.tar.gz | tar -C "$__RootfsDir" -xzf -
+    echo "Building binutils. Please wait.."
+    wget -O - https://ftp.gnu.org/gnu/binutils/binutils-2.33.1.tar.bz2 | tar -xjf -
+    mkdir build-binutils && cd build-binutils
+    ../binutils-2.33.1/configure --prefix="$__RootfsDir" --target="x86_64-sun-solaris2.10" --program-prefix="x86_64-illumos-" --with-sysroot="$__RootfsDir"
+    make -j "$JOBS" && make install && cd ..
+    echo "Building gcc. Please wait.."
+    wget -O - https://ftp.gnu.org/gnu/gcc/gcc-8.4.0/gcc-8.4.0.tar.xz | tar -xJf -
+    CFLAGS="-fPIC"
+    CXXFLAGS="-fPIC"
+    CXXFLAGS_FOR_TARGET="-fPIC"
+    CFLAGS_FOR_TARGET="-fPIC"
+    export CFLAGS CXXFLAGS CXXFLAGS_FOR_TARGET CFLAGS_FOR_TARGET
+    mkdir build-gcc && cd build-gcc
+    ../gcc-8.4.0/configure --prefix="$__RootfsDir" --target="x86_64-sun-solaris2.10" --program-prefix="x86_64-illumos-" --with-sysroot="$__RootfsDir" --with-gnu-as       \
+        --with-gnu-ld --disable-nls --disable-libgomp --disable-libquadmath --disable-libssp --disable-libvtv --disable-libcilkrts --disable-libada --disable-libsanitizer \
+        --disable-libquadmath-support --disable-shared --enable-tls
+    make -j "$JOBS" && make install && cd ..
+    BaseUrl=https://pkgsrc.joyent.com
+    if [[ "$__UseMirror" == 1 ]]; then
+        BaseUrl=http://pkgsrc.smartos.skylime.net
+    fi
+    BaseUrl="$BaseUrl"/packages/SmartOS/2020Q1/x86_64/All
+    echo "Downloading dependencies."
+    read -ra array <<<"$__IllumosPackages"
+    for package in "${array[@]}"; do
+       echo "Installing $package..."
+        wget "$BaseUrl"/"$package".tgz
+        ar -x "$package".tgz
+        tar --skip-old-files -xzf "$package".tmp.tgz -C "$__RootfsDir" 2>/dev/null
+    done
+    echo "Cleaning up temporary files."
+    popd
+    rm -rf "$__RootfsDir"/{tmp,+*}
+    mkdir -p "$__RootfsDir"/usr/include/net
+    mkdir -p "$__RootfsDir"/usr/include/netpacket
+    wget -P "$__RootfsDir"/usr/include/net https://raw.githubusercontent.com/illumos/illumos-gate/master/usr/src/uts/common/io/bpf/net/bpf.h
+    wget -P "$__RootfsDir"/usr/include/net https://raw.githubusercontent.com/illumos/illumos-gate/master/usr/src/uts/common/io/bpf/net/dlt.h
+    wget -P "$__RootfsDir"/usr/include/netpacket https://raw.githubusercontent.com/illumos/illumos-gate/master/usr/src/uts/common/inet/sockmods/netpacket/packet.h
+    wget -P "$__RootfsDir"/usr/include/sys https://raw.githubusercontent.com/illumos/illumos-gate/master/usr/src/uts/common/sys/sdt.h
 elif [[ -n $__CodeName ]]; then
     qemu-debootstrap --arch $__UbuntuArch $__CodeName $__RootfsDir $__UbuntuRepo
     cp $__CrossDir/$__BuildArch/sources.list.$__CodeName $__RootfsDir/etc/apt/sources.list
@@ -260,7 +331,7 @@ elif [[ -n $__CodeName ]]; then
     chroot $__RootfsDir symlinks -cr /usr
 
     if [ $__SkipUnmount == 0 ]; then
-        umount $__RootfsDir/*
+        umount $__RootfsDir/* || true
     fi
 
     if [[ "$__BuildArch" == "arm" && "$__CodeName" == "trusty" ]]; then
@@ -269,7 +340,7 @@ elif [[ -n $__CodeName ]]; then
         patch -p1 < $__CrossDir/$__BuildArch/trusty-lttng-2.4.patch
         popd
     fi
-elif [ "$__Tizen" == "tizen" ]; then
+elif [[ "$__Tizen" == "tizen" ]]; then
     ROOTFS_DIR=$__RootfsDir $__CrossDir/$__BuildArch/tizen-build-rootfs.sh
 else
     echo "Unsupported target platform."

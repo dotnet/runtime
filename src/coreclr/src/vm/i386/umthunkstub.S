@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 .intel_syntax noprefix
 #include "unixasmmacros.inc"
@@ -61,7 +60,7 @@ LOCAL_LABEL(HaveThread):
 
     mov     dword ptr [ebp - UMThunkStub_THREAD_OFFSET], eax
 
-    // FailFast if a native callable method is invoked via ldftn and calli.
+    // FailFast if a method marked UnmanagedCallersOnlyAttribute is invoked via ldftn and calli.
     cmp     dword ptr [eax + Thread_m_fPreemptiveGCDisabled], 1
     jz      LOCAL_LABEL(InvalidTransition)
 

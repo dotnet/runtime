@@ -12,9 +12,8 @@
     <Compile Include="ThreadTests.cs" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="$(CommonTestPath)System\Threading\ThreadTestHelpers.cs">
-      <Link>CommonTest\System\Threading\ThreadTestHelpers.cs</Link>
-    </Compile>
+    <Compile Include="$(CommonTestPath)System\Threading\ThreadTestHelpers.cs"
+             Link="CommonTest\System\Threading\ThreadTestHelpers.cs" />
     <ProjectReference Include="STAMain\STAMain.csproj" />
     <ProjectReference Include="MTAMain\MTAMain.csproj" />
     <ProjectReference Include="DefaultApartmentStateMain\DefaultApartmentStateMain.csproj" />

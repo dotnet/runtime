@@ -1,6 +1,5 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Xml;
 
@@ -11,7 +10,7 @@ namespace System.Security.Cryptography.Xml
         private string _target;
         private string _id;
         private XmlElement _elemProp;
-        private XmlElement _cachedXml = null;
+        private XmlElement _cachedXml;
 
         // We are being lax here as per the spec
         public EncryptionProperty() { }

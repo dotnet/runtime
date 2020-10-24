@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Diagnostics;
 using System.IO;
@@ -310,6 +309,12 @@ namespace System.Net.Mime
                 }
             }
             return cur - offset;
+        }
+
+        public int EncodeString(string value, Encoding encoding)
+        {
+            byte[] buffer = encoding.GetBytes(value);
+            return EncodeBytes(buffer, 0, buffer.Length);
         }
 
         public string GetEncodedString() => Encoding.ASCII.GetString(WriteState.Buffer, 0, WriteState.Length);

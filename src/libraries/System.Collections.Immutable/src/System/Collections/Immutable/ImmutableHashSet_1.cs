@@ -1,11 +1,9 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
-using System.Diagnostics.Contracts;
 using System.Linq;
 
 namespace System.Collections.Immutable
@@ -16,7 +14,7 @@ namespace System.Collections.Immutable
     /// <typeparam name="T">The type of elements in the set.</typeparam>
     [DebuggerDisplay("Count = {Count}")]
     [DebuggerTypeProxy(typeof(ImmutableEnumerableDebuggerProxy<>))]
-    #if !NETSTANDARD1_0 && !NETSTANDARD1_3 && !NETSTANDARD2_0
+    #if !NETSTANDARD1_0 && !NETSTANDARD1_3 && !NETSTANDARD2_0 && !NETFRAMEWORK
     public sealed partial class ImmutableHashSet<T> : IImmutableSet<T>, IHashKeyCollection<T>, IReadOnlyCollection<T>, ICollection<T>, ISet<T>, IReadOnlySet<T>, ICollection, IStrongEnumerable<T, ImmutableHashSet<T>.Enumerator>
     #else
     public sealed partial class ImmutableHashSet<T> : IImmutableSet<T>, IHashKeyCollection<T>, IReadOnlyCollection<T>, ICollection<T>, ISet<T>, ICollection, IStrongEnumerable<T, ImmutableHashSet<T>.Enumerator>
@@ -120,7 +118,6 @@ namespace System.Collections.Immutable
         /// <summary>
         /// See the <see cref="IImmutableSet{T}"/> interface.
         /// </summary>
-        [ExcludeFromCodeCoverage]
         IImmutableSet<T> IImmutableSet<T>.Clear()
         {
             return this.Clear();
@@ -181,7 +178,6 @@ namespace System.Collections.Immutable
         /// This is an O(1) operation and results in only a single (small) memory allocation.
         /// The mutable collection that is returned is *not* thread-safe.
         /// </remarks>
-        [Pure]
         public Builder ToBuilder()
         {
             // We must not cache the instance created here and return it to various callers.
@@ -193,7 +189,6 @@ namespace System.Collections.Immutable
         /// <summary>
         /// See the <see cref="IImmutableSet{T}"/> interface.
         /// </summary>
-        [Pure]
         public ImmutableHashSet<T> Add(T item)
         {
             var result = Add(item, this.Origin);
@@ -221,7 +216,6 @@ namespace System.Collections.Immutable
         /// a value that has more complete data than the value you currently have, although their
         /// comparer functions indicate they are equal.
         /// </remarks>
-        [Pure]
         public bool TryGetValue(T equalValue, out T actualValue)
         {
             int hashCode = equalValue != null ? _equalityComparer.GetHashCode(equalValue) : 0;
@@ -238,7 +232,6 @@ namespace System.Collections.Immutable
         /// <summary>
         /// See the <see cref="IImmutableSet{T}"/> interface.
         /// </summary>
-        [Pure]
         public ImmutableHashSet<T> Union(IEnumerable<T> other)
         {
             Requires.NotNull(other, nameof(other));
@@ -249,7 +242,6 @@ namespace System.Collections.Immutable
         /// <summary>
         /// See the <see cref="IImmutableSet{T}"/> interface.
         /// </summary>
-        [Pure]
         public ImmutableHashSet<T> Intersect(IEnumerable<T> other)
         {
             Requires.NotNull(other, nameof(other));
@@ -274,7 +266,6 @@ namespace System.Collections.Immutable
         /// </summary>
         /// <param name="other">The other sequence of items.</param>
         /// <returns>The new set.</returns>
-        [Pure]
         public ImmutableHashSet<T> SymmetricExcept(IEnumerable<T> other)
         {
             Requires.NotNull(other, nameof(other));
@@ -288,7 +279,6 @@ namespace System.Collections.Immutable
         /// </summary>
         /// <param name="other">The sequence of items to check against this set.</param>
         /// <returns>A value indicating whether the sets are equal.</returns>
-        [Pure]
         public bool SetEquals(IEnumerable<T> other)
         {
             Requires.NotNull(other, nameof(other));
@@ -306,7 +296,6 @@ namespace System.Collections.Immutable
         /// </summary>
         /// <param name="other">The collection to compare to the current set.</param>
         /// <returns>true if the current set is a correct subset of <paramref name="other"/>; otherwise, false.</returns>
-        [Pure]
         public bool IsProperSubsetOf(IEnumerable<T> other)
         {
             Requires.NotNull(other, nameof(other));
@@ -319,7 +308,6 @@ namespace System.Collections.Immutable
         /// </summary>
         /// <param name="other">The collection to compare to the current set.</param>
         /// <returns>true if the current set is a correct superset of <paramref name="other"/>; otherwise, false.</returns>
-        [Pure]
         public bool IsProperSupersetOf(IEnumerable<T> other)
         {
             Requires.NotNull(other, nameof(other));
@@ -332,7 +320,6 @@ namespace System.Collections.Immutable
         /// </summary>
         /// <param name="other">The collection to compare to the current set.</param>
         /// <returns>true if the current set is a subset of <paramref name="other"/>; otherwise, false.</returns>
-        [Pure]
         public bool IsSubsetOf(IEnumerable<T> other)
         {
             Requires.NotNull(other, nameof(other));
@@ -345,7 +332,6 @@ namespace System.Collections.Immutable
         /// </summary>
         /// <param name="other">The collection to compare to the current set.</param>
         /// <returns>true if the current set is a superset of <paramref name="other"/>; otherwise, false.</returns>
-        [Pure]
         public bool IsSupersetOf(IEnumerable<T> other)
         {
             Requires.NotNull(other, nameof(other));
@@ -358,7 +344,6 @@ namespace System.Collections.Immutable
         /// </summary>
         /// <param name="other">The collection to compare to the current set.</param>
         /// <returns>true if the current set and <paramref name="other"/> share at least one common element; otherwise, false.</returns>
-        [Pure]
         public bool Overlaps(IEnumerable<T> other)
         {
             Requires.NotNull(other, nameof(other));
@@ -373,7 +358,6 @@ namespace System.Collections.Immutable
         /// <summary>
         /// See the <see cref="IImmutableSet{T}"/> interface.
         /// </summary>
-        [ExcludeFromCodeCoverage]
         IImmutableSet<T> IImmutableSet<T>.Add(T item)
         {
             return this.Add(item);
@@ -382,7 +366,6 @@ namespace System.Collections.Immutable
         /// <summary>
         /// See the <see cref="IImmutableSet{T}"/> interface.
         /// </summary>
-        [ExcludeFromCodeCoverage]
         IImmutableSet<T> IImmutableSet<T>.Remove(T item)
         {
             return this.Remove(item);
@@ -391,7 +374,6 @@ namespace System.Collections.Immutable
         /// <summary>
         /// See the <see cref="IImmutableSet{T}"/> interface.
         /// </summary>
-        [ExcludeFromCodeCoverage]
         IImmutableSet<T> IImmutableSet<T>.Union(IEnumerable<T> other)
         {
             return this.Union(other);
@@ -400,7 +382,6 @@ namespace System.Collections.Immutable
         /// <summary>
         /// See the <see cref="IImmutableSet{T}"/> interface.
         /// </summary>
-        [ExcludeFromCodeCoverage]
         IImmutableSet<T> IImmutableSet<T>.Intersect(IEnumerable<T> other)
         {
             return this.Intersect(other);
@@ -409,7 +390,6 @@ namespace System.Collections.Immutable
         /// <summary>
         /// See the <see cref="IImmutableSet{T}"/> interface.
         /// </summary>
-        [ExcludeFromCodeCoverage]
         IImmutableSet<T> IImmutableSet<T>.Except(IEnumerable<T> other)
         {
             return this.Except(other);
@@ -420,7 +400,6 @@ namespace System.Collections.Immutable
         /// </summary>
         /// <param name="other">The other sequence of items.</param>
         /// <returns>The new set.</returns>
-        [ExcludeFromCodeCoverage]
         IImmutableSet<T> IImmutableSet<T>.SymmetricExcept(IEnumerable<T> other)
         {
             return this.SymmetricExcept(other);
@@ -437,7 +416,6 @@ namespace System.Collections.Immutable
         /// <summary>
         /// See the <see cref="IImmutableSet{T}"/> interface.
         /// </summary>
-        [Pure]
         public ImmutableHashSet<T> WithComparer(IEqualityComparer<T>? equalityComparer)
         {
             if (equalityComparer == null)
@@ -835,7 +813,6 @@ namespace System.Collections.Immutable
         /// <summary>
         /// Performs the set operation on a given data structure.
         /// </summary>
-        [Pure]
         private static MutationResult SymmetricExcept(IEnumerable<T> other, MutationInput origin)
         {
             Requires.NotNull(other, nameof(other));
@@ -1027,7 +1004,6 @@ namespace System.Collections.Immutable
         /// </summary>
         /// <param name="items">The entries to add.</param>
         /// <param name="avoidWithComparer"><c>true</c> when being called from <see cref="WithComparer"/> to avoid a stack overflow.</param>
-        [Pure]
         private ImmutableHashSet<T> Union(IEnumerable<T> items, bool avoidWithComparer)
         {
             Requires.NotNull(items, nameof(items));

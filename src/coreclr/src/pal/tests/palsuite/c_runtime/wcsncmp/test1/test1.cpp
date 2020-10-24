@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 /*============================================================================
 **
@@ -21,7 +20,7 @@
  * Notes: uses wcslen.
  */
 
-int __cdecl main(int argc, char *argv[])
+PALTEST(c_runtime_wcsncmp_test1_paltest_wcsncmp_test1, "c_runtime/wcsncmp/test1/paltest_wcsncmp_test1")
 {
     WCHAR str1[] = {'f','o','o',0};
     WCHAR str2[] = {'f','o','o','x',0};

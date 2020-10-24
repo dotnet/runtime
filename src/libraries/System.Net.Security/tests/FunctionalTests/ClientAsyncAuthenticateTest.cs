@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
 using System.IO;
@@ -19,19 +18,9 @@ namespace System.Net.Security.Tests
     {
         private readonly ITestOutputHelper _log;
 
-        public ClientAsyncAuthenticateTest()
+        public ClientAsyncAuthenticateTest(ITestOutputHelper output)
         {
-            _log = TestLogging.GetInstance();
-        }
-
-        [Fact]
-        public async Task ClientAsyncAuthenticate_SslStreamClientServerNone_UseStrongCryptoSet()
-        {
-            SslProtocols protocol = SslProtocols.None;
-            await ClientAsyncSslHelper(protocol, protocol);
-
-            // Additional manual verification.
-            // Step into the code and verify that the 'SCH_USE_STRONG_CRYPTO' flag is being set.
+            _log = output;
         }
 
         [Fact]
@@ -41,17 +30,19 @@ namespace System.Net.Security.Tests
         }
 
         [Fact]
+        public async Task ClientAsyncAuthenticate_ConnectionInfoInCallback_DoesNotThrow()
+        {
+            await ClientAsyncSslHelper(EncryptionPolicy.RequireEncryption, SslProtocols.Tls12, SslProtocolSupport.DefaultSslProtocols, AllowAnyServerCertificateAndVerifyConnectionInfo);
+        }
+
+        [Fact]
         public async Task ClientAsyncAuthenticate_ServerNoEncryption_NoConnect()
         {
             // Don't use Tls13 since we are trying to use NullEncryption
-            Type expectedExceptionType = TestConfiguration.SupportsHandshakeAlerts && TestConfiguration.SupportsNullEncryption ?
-                typeof(AuthenticationException) :
-                typeof(IOException);
-
-            await Assert.ThrowsAsync(expectedExceptionType,
+            await Assert.ThrowsAsync<AuthenticationException>(
                 () => ClientAsyncSslHelper(
                     EncryptionPolicy.NoEncryption,
-                    SslProtocolSupport.DefaultSslProtocols,  SslProtocols.Tls | SslProtocols.Tls11 |  SslProtocols.Tls12 ));
+                    SslProtocolSupport.DefaultSslProtocols, SslProtocols.Tls | SslProtocols.Tls11 |  SslProtocols.Tls12));
         }
 
         [Theory]
@@ -65,9 +56,9 @@ namespace System.Net.Security.Tests
         [PlatformSpecific(TestPlatforms.Windows)]
         public async Task ClientAsyncAuthenticate_Ssl2WithSelf_Success()
         {
-            // Test Ssl2 against itself.  This is a standalone test as even on versions where Windows supports Ssl2,
+            // Test Ssl2 against itself. This is a standalone test as even on versions where Windows supports Ssl2,
             // it appears to have rules around not using it when other protocols are mentioned.
-            if (!PlatformDetection.IsWindows10Version1607OrGreater)
+            if (PlatformDetection.SupportsSsl2)
             {
 #pragma warning disable 0618
                 await ClientAsyncSslHelper(SslProtocols.Ssl2, SslProtocols.Ssl2);
@@ -120,12 +111,12 @@ namespace System.Net.Security.Tests
             yield return new object[] { SslProtocols.Ssl2, SslProtocols.Tls12, typeof(Exception) };
             yield return new object[] { SslProtocols.Ssl3, SslProtocols.Tls12, typeof(Exception) };
 #pragma warning restore 0618
-            yield return new object[] { SslProtocols.Tls, SslProtocols.Tls11, TestConfiguration.SupportsVersionAlerts ? typeof(AuthenticationException) : typeof(IOException) };
-            yield return new object[] { SslProtocols.Tls, SslProtocols.Tls12, TestConfiguration.SupportsVersionAlerts ? typeof(AuthenticationException) : typeof(IOException) };
+            yield return new object[] { SslProtocols.Tls, SslProtocols.Tls11, typeof(AuthenticationException) };
+            yield return new object[] { SslProtocols.Tls, SslProtocols.Tls12, typeof(AuthenticationException) };
             yield return new object[] { SslProtocols.Tls11, SslProtocols.Tls, typeof(AuthenticationException) };
             yield return new object[] { SslProtocols.Tls12, SslProtocols.Tls, typeof(AuthenticationException) };
             yield return new object[] { SslProtocols.Tls12, SslProtocols.Tls11, typeof(AuthenticationException) };
-            yield return new object[] { SslProtocols.Tls11, SslProtocols.Tls12, TestConfiguration.SupportsVersionAlerts ? typeof(AuthenticationException) : typeof(IOException) };
+            yield return new object[] { SslProtocols.Tls11, SslProtocols.Tls12, typeof(AuthenticationException) };
         }
 
         #region Helpers
@@ -143,7 +134,8 @@ namespace System.Net.Security.Tests
         private async Task ClientAsyncSslHelper(
             EncryptionPolicy encryptionPolicy,
             SslProtocols clientSslProtocols,
-            SslProtocols serverSslProtocols)
+            SslProtocols serverSslProtocols,
+            RemoteCertificateValidationCallback certificateCallback = null)
         {
             _log.WriteLine("Server: " + serverSslProtocols + "; Client: " + clientSslProtocols);
 
@@ -154,7 +146,7 @@ namespace System.Net.Security.Tests
             {
                 server.SslProtocols = serverSslProtocols;
                 await client.ConnectAsync(server.RemoteEndPoint.Address, server.RemoteEndPoint.Port);
-                using (SslStream sslStream = new SslStream(client.GetStream(), false, AllowAnyServerCertificate, null))
+                using (SslStream sslStream = new SslStream(client.GetStream(), false, certificateCallback != null ? certificateCallback : AllowAnyServerCertificate, null))
                 {
                     Task clientAuthTask = sslStream.AuthenticateAsClientAsync("localhost", null, clientSslProtocols, false);
                     await clientAuthTask.TimeoutAfter(TestConfiguration.PassingTestTimeoutMilliseconds);
@@ -174,6 +166,20 @@ namespace System.Net.Security.Tests
               X509Chain chain,
               SslPolicyErrors sslPolicyErrors)
         {
+            return true;  // allow everything
+        }
+
+        private bool AllowAnyServerCertificateAndVerifyConnectionInfo(
+              object sender,
+              X509Certificate certificate,
+              X509Chain chain,
+              SslPolicyErrors sslPolicyErrors)
+        {
+            SslStream stream = (SslStream)sender;
+
+            Assert.NotEqual(SslProtocols.None, stream.SslProtocol);
+            Assert.NotEqual(CipherAlgorithmType.None, stream.CipherAlgorithm);
+
             return true;  // allow everything
         }
 

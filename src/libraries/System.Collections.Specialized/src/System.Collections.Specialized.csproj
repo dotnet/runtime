@@ -1,7 +1,5 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <RootNamespace>System.Collections.Specialized</RootNamespace>
-    <AssemblyName>System.Collections.Specialized</AssemblyName>
     <TargetFrameworks>$(NetCoreAppCurrent)</TargetFrameworks>
     <Nullable>enable</Nullable>
   </PropertyGroup>
@@ -15,12 +13,12 @@
     <Compile Include="System\Collections\Specialized\OrderedDictionary.cs" />
     <Compile Include="System\Collections\Specialized\StringCollection.cs" />
     <Compile Include="System\Collections\Specialized\StringDictionary.cs" />
-    <Compile Include="$(CoreLibSharedDir)System\Collections\CompatibleComparer.cs">
-      <Link>Common\System\Collections\CompatibleComparer.cs</Link>
-    </Compile>
+    <Compile Include="$(CoreLibSharedDir)System\Collections\CompatibleComparer.cs"
+             Link="Common\System\Collections\CompatibleComparer.cs" />
   </ItemGroup>
   <ItemGroup>
     <Reference Include="System.Collections.NonGeneric" />
+    <Reference Include="System.ComponentModel.Primitives" />
     <Reference Include="System.Runtime" />
     <Reference Include="System.Runtime.Extensions" />
     <Reference Include="System.Threading" />

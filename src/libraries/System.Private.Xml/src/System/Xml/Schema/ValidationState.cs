@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 namespace System.Xml.Schema
 {
@@ -31,11 +30,11 @@ namespace System.Xml.Schema
         public bool ValidationSkipped;
         public XmlSchemaContentProcessing ProcessContents;
         public XmlSchemaValidity Validity;
-        public SchemaElementDecl ElementDecl;            // ElementDecl
-        public SchemaElementDecl ElementDeclBeforeXsi; //elementDecl before its changed by that of xsi:type's
-        public string LocalName;
-        public string Namespace;
-        public ConstraintStruct[] Constr;
+        public SchemaElementDecl? ElementDecl;            // ElementDecl
+        public SchemaElementDecl? ElementDeclBeforeXsi; //elementDecl before its changed by that of xsi:type's
+        public string? LocalName;
+        public string? Namespace;
+        public ConstraintStruct[]? Constr;
 
         public StateUnion CurrentState;
 
@@ -46,10 +45,10 @@ namespace System.Xml.Schema
         public BitSet[] CurPos = new BitSet[2];
 
         //For all
-        public BitSet AllElementsSet;
+        public BitSet? AllElementsSet;
 
         //For MinMaxNFA
-        public List<RangePositionInfo> RunningPositions;
+        public List<RangePositionInfo>? RunningPositions;
         public bool TooComplex;
     };
 }

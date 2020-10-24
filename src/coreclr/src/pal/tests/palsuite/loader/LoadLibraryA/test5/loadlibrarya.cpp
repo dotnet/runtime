@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 /*=============================================================
 **
@@ -14,7 +13,7 @@
 **============================================================*/
 #include <palsuite.h>
 
-int __cdecl main(int argc, char *argv[])
+PALTEST(loader_LoadLibraryA_test5_paltest_loadlibrarya_test5, "loader/LoadLibraryA/test5/paltest_loadlibrarya_test5")
 {
     HMODULE ModuleHandle;
     char ModuleName[_MAX_FNAME];

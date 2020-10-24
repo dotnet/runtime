@@ -213,7 +213,7 @@ static void prof_save (MonoProfiler *prof, FILE* file);
 static void *
 helper_thread (void *arg)
 {
-	mono_thread_attach (mono_get_root_domain ());
+	mono_thread_internal_attach (mono_get_root_domain ());
 
 	mono_thread_set_name_constant_ignore_error (mono_thread_internal_current (), "AOT Profiler Helper", MonoSetThreadNameFlag_None);
 
@@ -312,7 +312,7 @@ helper_thread (void *arg)
 	prof_shutdown (&aot_profiler);
 
 	mono_thread_info_set_flags (MONO_THREAD_INFO_FLAGS_NONE);
-	mono_thread_detach (mono_thread_current ());
+	mono_thread_internal_detach (mono_thread_current ());
 
 	return NULL;
 }

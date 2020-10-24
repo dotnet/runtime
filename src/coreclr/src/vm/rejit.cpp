@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 //
 // ReJit.cpp
 //
@@ -644,7 +643,7 @@ HRESULT ReJitManager::UpdateActiveILVersions(
     SHash<CodeActivationBatchTraits>::Iterator endIter = mgrToCodeActivationBatch.End();
 
     {
-        MethodDescBackpatchInfoTracker::ConditionalLockHolder slotBackpatchLockHolder;
+        MethodDescBackpatchInfoTracker::ConditionalLockHolderForGCCoop slotBackpatchLockHolder;
 
         for (SHash<CodeActivationBatchTraits>::Iterator iter = beginIter; iter != endIter; iter++)
         {
@@ -1283,7 +1282,7 @@ HRESULT ReJitManager::GetReJITIDs(PTR_MethodDesc pMD, ULONG cReJitIds, ULONG * p
         GC_NOTRIGGER;
         PRECONDITION(CheckPointer(pMD));
         PRECONDITION(pcReJitIds != NULL);
-        PRECONDITION(reJitIds != NULL);
+        PRECONDITION((cReJitIds == 0) == (reJitIds == NULL));
     }
     CONTRACTL_END;
 

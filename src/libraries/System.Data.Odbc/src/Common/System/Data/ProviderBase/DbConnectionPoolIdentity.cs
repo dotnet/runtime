@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 namespace System.Data.ProviderBase
 {
@@ -31,7 +30,7 @@ namespace System.Data.ProviderBase
             throw new PlatformNotSupportedException();
         }
 
-        public override bool Equals(object value)
+        public override bool Equals(object? value)
         {
             bool result = ((this == NoIdentity) || (this == value));
             if (!result && (null != value))

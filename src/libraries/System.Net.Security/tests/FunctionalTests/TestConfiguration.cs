@@ -1,10 +1,8 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Diagnostics;
 using System.IO;
-using System.Runtime.InteropServices;
 using System.Security.Authentication;
 using System.Security.Cryptography.X509Certificates;
 using System.Threading.Tasks;
@@ -16,7 +14,6 @@ namespace System.Net.Security.Tests
     internal static class TestConfiguration
     {
         public const int PassingTestTimeoutMilliseconds = 4 * 60 * 1000;
-        public const int FailingTestTimeoutMiliseconds = 250;
 
         public const string Realm = "TEST.COREFX.NET";
         public const string KerberosUser = "krb_user";
@@ -30,11 +27,9 @@ namespace System.Net.Security.Tests
 
         public static bool SupportsNullEncryption { get { return s_supportsNullEncryption.Value; } }
 
-        public static bool SupportsHandshakeAlerts { get { return RuntimeInformation.IsOSPlatform(OSPlatform.Linux) || RuntimeInformation.IsOSPlatform(OSPlatform.Windows); } }
+        public static bool SupportsHandshakeAlerts { get { return OperatingSystem.IsLinux() || OperatingSystem.IsWindows(); } }
 
-        public static bool SupportsAlpnAlerts { get { return RuntimeInformation.IsOSPlatform(OSPlatform.Windows) || (RuntimeInformation.IsOSPlatform(OSPlatform.Linux)  && PlatformDetection.OpenSslVersion.CompareTo(new Version(1,1,0)) >= 0); } }
-
-        public static bool SupportsVersionAlerts { get { return RuntimeInformation.IsOSPlatform(OSPlatform.Linux)  && PlatformDetection.OpenSslVersion.CompareTo(new Version(1,1,0)) >= 0; } }
+        public static bool SupportsAlpnAlerts { get { return OperatingSystem.IsWindows() || (OperatingSystem.IsLinux() && PlatformDetection.OpenSslVersion.CompareTo(new Version(1,0,2)) >= 0); } }
 
         public static Task WhenAllOrAnyFailedWithTimeout(params Task[] tasks)
             => tasks.WhenAllOrAnyFailed(PassingTestTimeoutMilliseconds);
@@ -42,13 +37,13 @@ namespace System.Net.Security.Tests
         private static Lazy<bool> s_supportsNullEncryption = new Lazy<bool>(() =>
         {
             // On Windows, null ciphers (no encryption) are supported.
-            if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+            if (OperatingSystem.IsWindows())
             {
                 return true;
             }
 
             // On macOS, the null cipher (no encryption) is not supported.
-            if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
+            if (OperatingSystem.IsMacOS())
             {
                 return false;
             }

@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 // ===========================================================================
 // File: JITinterface.H
 //
@@ -221,15 +220,13 @@ EXTERN_C FCDECL_MONHELPER(JITutil_MonSignal, AwareLock* lock);
 EXTERN_C FCDECL_MONHELPER(JITutil_MonContention, AwareLock* awarelock);
 EXTERN_C FCDECL2(void, JITutil_MonReliableContention, AwareLock* awarelock, BYTE* pbLockTaken);
 
-// Slow versions to tail call if the fast version fails
 EXTERN_C FCDECL2(void*, JIT_GetSharedNonGCStaticBase_Helper, DomainLocalModule *pLocalModule, DWORD dwClassDomainID);
 EXTERN_C FCDECL2(void*, JIT_GetSharedGCStaticBase_Helper, DomainLocalModule *pLocalModule, DWORD dwClassDomainID);
 
 EXTERN_C void DoJITFailFast ();
 EXTERN_C FCDECL0(void, JIT_FailFast);
-extern FCDECL3(void, JIT_ThrowAccessException, RuntimeExceptionKind, CORINFO_METHOD_HANDLE caller, void * callee);
 
-FCDECL1(void*, JIT_SafeReturnableByref, void* byref);
+FCDECL0(int, JIT_GetCurrentManagedThreadId);
 
 #if !defined(FEATURE_USE_ASM_GC_WRITE_BARRIERS) && defined(FEATURE_COUNT_GC_WRITE_BARRIERS)
 // Extra argument for the classification of the checked barriers.
@@ -421,17 +418,11 @@ class CEEInfo : public ICorJitInfo
 {
     friend class CEEDynamicCodeInfo;
 
-    const char * __stdcall ICorMethodInfo_Hack_getMethodName(CORINFO_METHOD_HANDLE ftnHnd, const char** scopeName)
-    {
-        WRAPPER_NO_CONTRACT;
-        return getMethodName(ftnHnd, scopeName);
-    }
-
-    mdMethodDef __stdcall ICorClassInfo_Hack_getMethodDefFromMethod(CORINFO_METHOD_HANDLE hMethod)
-    {
-        WRAPPER_NO_CONTRACT;
-        return getMethodDefFromMethod(hMethod);
-    }
+    void GetTypeContext(const CORINFO_SIG_INST* info, SigTypeContext* pTypeContext);
+    MethodDesc* GetMethodFromContext(CORINFO_CONTEXT_HANDLE context);
+    TypeHandle GetTypeFromContext(CORINFO_CONTEXT_HANDLE context);
+    void GetTypeContext(CORINFO_CONTEXT_HANDLE context, SigTypeContext* pTypeContext);
+    BOOL ContextIsInstantiated(CORINFO_CONTEXT_HANDLE context);
 
 public:
     // ICorClassInfo stuff
@@ -483,6 +474,7 @@ public:
     BOOL checkMethodModifier(CORINFO_METHOD_HANDLE hMethod, LPCSTR modifier, BOOL fOptional);
 
     unsigned getClassGClayout (CORINFO_CLASS_HANDLE cls, BYTE* gcPtrs); /* really GCType* gcPtrs */
+    static unsigned getClassGClayoutStatic(TypeHandle th, BYTE* gcPtrs);
     unsigned getClassNumInstanceFields(CORINFO_CLASS_HANDLE cls);
 
     // returns the enregister info for a struct based on type of fields, alignment, etc.
@@ -525,8 +517,7 @@ public:
     CorInfoInitClassResult initClass(
             CORINFO_FIELD_HANDLE    field,
             CORINFO_METHOD_HANDLE   method,
-            CORINFO_CONTEXT_HANDLE  context,
-            BOOL                    speculative = FALSE);
+            CORINFO_CONTEXT_HANDLE  context);
 
     void classMustBeLoadedBeforeCodeIsRun (CORINFO_CLASS_HANDLE cls);
     void methodMustBeLoadedBeforeCodeIsRun (CORINFO_METHOD_HANDLE meth);
@@ -848,7 +839,7 @@ public:
             CORINFO_ARG_LIST_HANDLE    args
             );
 
-    CorInfoType getHFAType (
+    CorInfoHFAElemType getHFAType (
             CORINFO_CLASS_HANDLE hClass
             );
 
@@ -924,8 +915,17 @@ public:
     void* getHelperFtn(CorInfoHelpFunc    ftnNum,                 /* IN  */
                        void **            ppIndirection);         /* OUT */
 
-    void* getTailCallCopyArgsThunk(CORINFO_SIG_INFO       *pSig,
-                                   CorInfoHelperTailCallSpecialHandling flags);
+    bool getTailCallHelpersInternal(
+        CORINFO_RESOLVED_TOKEN* callToken,
+        CORINFO_SIG_INFO* sig,
+        CORINFO_GET_TAILCALL_HELPERS_FLAGS flags,
+        CORINFO_TAILCALL_HELPERS* pResult);
+
+    bool getTailCallHelpers(
+        CORINFO_RESOLVED_TOKEN* callToken,
+        CORINFO_SIG_INFO* sig,
+        CORINFO_GET_TAILCALL_HELPERS_FLAGS flags,
+        CORINFO_TAILCALL_HELPERS* pResult);
 
     bool convertPInvokeCalliToCall(CORINFO_RESOLVED_TOKEN * pResolvedToken,
                                    bool fMustConvert);
@@ -1602,22 +1602,6 @@ GARY_DECL(VMHELPDEF, hlpDynamicFuncTable, DYNAMIC_CORINFO_HELP_COUNT);
 #define SetJitHelperFunction(ftnNum, pFunc) _SetJitHelperFunction(DYNAMIC_##ftnNum, (void*)(pFunc))
 void    _SetJitHelperFunction(DynamicCorInfoHelpFunc ftnNum, void * pFunc);
 
-// Helper for RtlVirtualUnwind-based tail calls
-#if defined(TARGET_AMD64) || defined(TARGET_ARM)
-
-// The Stub-linker generated assembly routine to copy arguments from the va_list
-// into the CONTEXT and the stack.
-//
-typedef size_t (*pfnCopyArgs)(va_list, _CONTEXT *, DWORD_PTR *, size_t);
-
-// Forward declaration from Frames.h
-class TailCallFrame;
-
-// The shared stub return location
-EXTERN_C void JIT_TailCallHelperStub_ReturnAddress();
-
-#endif // TARGET_AMD64 || TARGET_ARM
-
 void *GenFastGetSharedStaticBase(bool bCheckCCtor);
 
 #ifdef HAVE_GCCOVER
@@ -1690,6 +1674,9 @@ void ClearJitGenericHandleCache(AppDomain *pDomain);
 CORJIT_FLAGS GetDebuggerCompileFlags(Module* pModule, CORJIT_FLAGS flags);
 
 bool __stdcall TrackAllocationsEnabled();
+
+FCDECL0(INT64, GetJittedBytes);
+FCDECL0(INT32, GetJittedMethodsCount);
 
 #endif // JITINTERFACE_H
 

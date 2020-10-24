@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections;
 using System.Collections.Concurrent;
@@ -22,7 +21,7 @@ namespace System.Net.Http
         private readonly MultiProxy _secureProxy;      // URI of the https system proxy if set
         private readonly FailedProxyCache _failedProxies = new FailedProxyCache();
         private readonly List<string>? _bypass;         // list of domains not to proxy
-        private readonly bool _bypassLocal = false;    // we should bypass domain considered local
+        private readonly bool _bypassLocal;    // we should bypass domain considered local
         private readonly List<IPAddress>? _localIp;
         private ICredentials? _credentials;
         private readonly WinInetProxyHelper _proxyHelper;
@@ -44,7 +43,7 @@ namespace System.Net.Http
 
             if (proxyHelper.AutoSettingsUsed)
             {
-                if (NetEventSource.IsEnabled) NetEventSource.Info(proxyHelper, $"AutoSettingsUsed, calling {nameof(Interop.WinHttp.WinHttpOpen)}");
+                if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(proxyHelper, $"AutoSettingsUsed, calling {nameof(Interop.WinHttp.WinHttpOpen)}");
                 sessionHandle = Interop.WinHttp.WinHttpOpen(
                     IntPtr.Zero,
                     Interop.WinHttp.WINHTTP_ACCESS_TYPE_NO_PROXY,
@@ -55,7 +54,7 @@ namespace System.Net.Http
                 if (sessionHandle.IsInvalid)
                 {
                     // Proxy failures are currently ignored by managed handler.
-                    if (NetEventSource.IsEnabled) NetEventSource.Error(proxyHelper, $"{nameof(Interop.WinHttp.WinHttpOpen)} returned invalid handle");
+                    if (NetEventSource.Log.IsEnabled()) NetEventSource.Error(proxyHelper, $"{nameof(Interop.WinHttp.WinHttpOpen)} returned invalid handle");
                     return false;
                 }
             }
@@ -71,7 +70,7 @@ namespace System.Net.Http
 
             if (proxyHelper.ManualSettingsUsed)
             {
-                if (NetEventSource.IsEnabled) NetEventSource.Info(proxyHelper, $"ManualSettingsUsed, {proxyHelper.Proxy}");
+                if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(proxyHelper, $"ManualSettingsUsed, {proxyHelper.Proxy}");
 
                 _secureProxy = MultiProxy.Parse(_failedProxies, proxyHelper.Proxy, true);
                 _insecureProxy = MultiProxy.Parse(_failedProxies, proxyHelper.Proxy, false);

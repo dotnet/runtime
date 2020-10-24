@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System;
 using System.Buffers;
@@ -26,15 +25,14 @@ namespace System.Diagnostics
                 processName = string.Empty;
             }
 
-            var reusableReader = new ReusableTextReader();
             var processes = new List<Process>();
             foreach (int pid in ProcessManager.EnumerateProcessIds())
             {
-                if (Interop.procfs.TryReadStatFile(pid, out Interop.procfs.ParsedStat parsedStat, reusableReader) &&
+                if (Interop.procfs.TryReadStatFile(pid, out Interop.procfs.ParsedStat parsedStat) &&
                     string.Equals(processName, Process.GetUntruncatedProcessName(ref parsedStat), StringComparison.OrdinalIgnoreCase) &&
-                    Interop.procfs.TryReadStatusFile(pid, out Interop.procfs.ParsedStatus parsedStatus, reusableReader))
+                    Interop.procfs.TryReadStatusFile(pid, out Interop.procfs.ParsedStatus parsedStatus))
                 {
-                    ProcessInfo processInfo = ProcessManager.CreateProcessInfo(ref parsedStat, ref parsedStatus, reusableReader, processName);
+                    ProcessInfo processInfo = ProcessManager.CreateProcessInfo(ref parsedStat, ref parsedStatus, processName);
                     processes.Add(new Process(machineName, false, processInfo.ProcessId, processInfo));
                 }
             }
@@ -172,7 +170,7 @@ namespace System.Diagnostics
         /// <summary>
         /// Gets or sets which processors the threads in this process can be scheduled to run on.
         /// </summary>
-        private unsafe IntPtr ProcessorAffinityCore
+        private IntPtr ProcessorAffinityCore
         {
             get
             {
@@ -241,10 +239,6 @@ namespace System.Diagnostics
             // RLIMIT_RSS with setrlimit not supported on Linux > 2.4.30.
             throw new PlatformNotSupportedException(SR.MinimumWorkingSetNotSupported);
         }
-
-        // -----------------------------
-        // ---- PAL layer ends here ----
-        // -----------------------------
 
         /// <summary>Gets the path to the executable for the process, or null if it could not be retrieved.</summary>
         /// <param name="processId">The pid for the target process, or -1 for the current process.</param>
@@ -336,7 +330,7 @@ namespace System.Diagnostics
                 }
             }
 
-            string? GetUntruncatedNameFromArg(Span<byte> arg, string prefix)
+            static string? GetUntruncatedNameFromArg(Span<byte> arg, string prefix)
             {
                 // Strip directory names from arg.
                 int nameStart = arg.LastIndexOf((byte)'/') + 1;
@@ -362,7 +356,7 @@ namespace System.Diagnostics
         {
             EnsureState(State.HaveNonExitedId);
             Interop.procfs.ParsedStat stat;
-            if (!Interop.procfs.TryReadStatFile(_processId, out stat, new ReusableTextReader()))
+            if (!Interop.procfs.TryReadStatFile(_processId, out stat))
             {
                 throw new Win32Exception(SR.ProcessInformationUnavailable);
             }

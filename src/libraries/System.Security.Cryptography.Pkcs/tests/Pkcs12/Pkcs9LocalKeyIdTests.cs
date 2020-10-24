@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using Test.Cryptography;
 using Xunit;
@@ -13,13 +12,13 @@ namespace System.Security.Cryptography.Pkcs.Tests.Pkcs12
         public static void DefaultCtor()
         {
             Pkcs9LocalKeyId localKeyId = new Pkcs9LocalKeyId();
-            Assert.Equal(0, localKeyId.KeyId.Length);
+            Assert.Throws<CryptographicException>(() => localKeyId.KeyId);
 
             Oid oid = localKeyId.Oid;
             Assert.NotNull(oid);
             Assert.Equal(Oids.LocalKeyId, oid.Value);
 
-            Assert.Null(localKeyId.RawData);
+            Assert.Empty(localKeyId.RawData);
         }
 
         [Fact]

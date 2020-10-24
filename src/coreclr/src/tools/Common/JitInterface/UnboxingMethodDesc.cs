@@ -1,9 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System;
-using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Diagnostics;
 using Internal.TypeSystem;
@@ -78,25 +76,6 @@ namespace Internal.JitInterface
             throw new NotImplementedException();
         }
 #endif
-    }
-
-    internal class UnboxingMethodDescFactory : ConcurrentDictionary<MethodDesc, UnboxingMethodDesc>
-    {
-        private Func<MethodDesc, UnboxingMethodDesc> _factoryDelegate;
-        private UnboxingMethodDesc CreateUnboxingMethod(MethodDesc method)
-        {
-            return new UnboxingMethodDesc(method, this);
-        }
-
-        public UnboxingMethodDescFactory()
-        {
-            _factoryDelegate = CreateUnboxingMethod;
-        }
-
-        public UnboxingMethodDesc GetUnboxingMethod(MethodDesc method)
-        {
-            return GetOrAdd(method, _factoryDelegate);
-        }
     }
 
     internal static class UnboxingMethodDescExtensions

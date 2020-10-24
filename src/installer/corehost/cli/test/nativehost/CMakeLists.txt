@@ -1,6 +1,5 @@
 # Licensed to the .NET Foundation under one or more agreements.
 # The .NET Foundation licenses this file to you under the MIT license.
-# See the LICENSE file in the project root for more information.
 
 project(nativehost)
 
@@ -44,6 +43,8 @@ if(CLR_CMAKE_TARGET_WIN32)
 
     set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} /DELAYLOAD:nethost.dll")
 endif()
+
+include(../../hostmisc/hostmisc.cmake)
 
 include(../testexe.cmake)
 

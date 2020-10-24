@@ -1,9 +1,9 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System;
 using System.Diagnostics;
+using System.Formats.Asn1;
 using System.Security.Cryptography;
 using System.Security.Cryptography.Apple;
 using System.Security.Cryptography.Asn1;
@@ -14,7 +14,7 @@ namespace Internal.Cryptography.Pal
 {
     internal sealed class ApplePkcs12Reader : UnixPkcs12Reader
     {
-        internal ApplePkcs12Reader(byte[] data)
+        internal ApplePkcs12Reader(ReadOnlySpan<byte> data)
         {
             ParsePkcs12(data);
         }
@@ -22,7 +22,7 @@ namespace Internal.Cryptography.Pal
         protected override ICertificatePalCore ReadX509Der(ReadOnlyMemory<byte> data)
         {
             SafeSecCertificateHandle certHandle = Interop.AppleCrypto.X509ImportCertificate(
-                data.ToArray(),
+                data.Span,
                 X509ContentType.Cert,
                 SafePasswordHandle.InvalidHandle,
                 SafeTemporaryKeychainHandle.InvalidHandle,
@@ -47,7 +47,7 @@ namespace Internal.Cryptography.Pal
             PrivateKeyInfoAsn privateKeyInfo = PrivateKeyInfoAsn.Decode(pkcs8, AsnEncodingRules.BER);
             AsymmetricAlgorithm key;
 
-            switch (privateKeyInfo.PrivateKeyAlgorithm.Algorithm.Value)
+            switch (privateKeyInfo.PrivateKeyAlgorithm.Algorithm)
             {
                 case Oids.Rsa:
                     key = new RSAImplementation.RSASecurityTransforms();
@@ -62,7 +62,7 @@ namespace Internal.Cryptography.Pal
                 default:
                     throw new CryptographicException(
                         SR.Cryptography_UnknownAlgorithmIdentifier,
-                        privateKeyInfo.PrivateKeyAlgorithm.Algorithm.Value);
+                        privateKeyInfo.PrivateKeyAlgorithm.Algorithm);
             }
 
             key.ImportPkcs8PrivateKey(pkcs8.Span, out int bytesRead);

@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
 using System.Linq;
@@ -294,6 +293,34 @@ namespace System.Reflection.Emit.Tests
             {
                 Assert.Equal(expected, assembly.GetHashCode().Equals(obj.GetHashCode()));
             }
+        }
+
+        public class CustomAttribute : Attribute
+        {
+            public CustomAttribute()
+            {
+            }
+        }
+
+        [Fact]
+        public void GetReferencedAssemblies()
+        {
+            // Create an assembly tagged with a custom attribute
+            var cattr_asm = AssemblyBuilder.DefineDynamicAssembly(new AssemblyName("custom_attr_assembly"), AssemblyBuilderAccess.Run);
+
+            ConstructorInfo classCtorInfo = typeof(CustomAttribute).GetConstructor(new Type[] { });
+            CustomAttributeBuilder cattr = new CustomAttributeBuilder(
+                        classCtorInfo,
+                        new object[] { });
+
+            Assert.Equal(0, cattr_asm.GetReferencedAssemblies().Length);
+
+            cattr_asm.SetCustomAttribute(cattr);
+
+            // Should now have a single reference, to this assembly
+            Assert.Equal(1, cattr_asm.GetReferencedAssemblies().Length);
+            Assert.Equal(typeof(CustomAttribute).Assembly.GetName().Name, cattr_asm.GetReferencedAssemblies()[0].Name);
+            Assert.Equal(typeof(CustomAttribute).Assembly.GetName().GetPublicKeyToken(), cattr_asm.GetReferencedAssemblies()[0].GetPublicKeyToken());
         }
 
         private static void VerifyAssemblyBuilder(AssemblyBuilder assembly, AssemblyName name, IEnumerable<CustomAttributeBuilder> attributes)

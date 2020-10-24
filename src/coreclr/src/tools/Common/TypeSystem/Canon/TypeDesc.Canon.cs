@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using Debug = System.Diagnostics.Debug;
 
@@ -13,8 +12,8 @@ namespace Internal.TypeSystem
         /// Stores a cached version of the canonicalized form of this type since
         /// calculating it is a recursive operation
         /// </summary>
-        TypeDesc _specificCanonCache = null;
-        TypeDesc _universalCanonCache = null;
+        TypeDesc _specificCanonCache;
+        TypeDesc _universalCanonCache;
         TypeDesc GetCachedCanonValue(CanonicalFormKind kind)
         {
             switch (kind)

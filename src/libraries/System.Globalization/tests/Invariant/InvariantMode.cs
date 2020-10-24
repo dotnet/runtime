@@ -1,10 +1,11 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Buffers;
+using System.Buffers.Binary;
 using System.Collections.Generic;
-using System.Collections;
+using System.IO;
+using System.Runtime.InteropServices;
 using System.Text;
 using Xunit;
 
@@ -62,6 +63,10 @@ namespace System.Globalization.Tests
             yield return new object[] { "Exhibit \u00C0", "a\u0300", 0, 9, CompareOptions.OrdinalIgnoreCase, -1 };
             yield return new object[] { "FooBar", "Foo\u0400Bar", 0, 6, CompareOptions.Ordinal, -1 };
             yield return new object[] { "TestFooBA\u0300R", "FooB\u00C0R", 0, 11, CompareOptions.IgnoreNonSpace, -1 };
+
+            // Weightless characters
+            yield return new object[] { "", "\u200d", 0, 0, CompareOptions.None, -1 };
+            yield return new object[] { "hello", "\u200d", 0, 5, CompareOptions.IgnoreCase, -1 };
 
             // Ignore symbols
             yield return new object[] { "More Test's", "Tests", 0, 11, CompareOptions.IgnoreSymbols, -1 };
@@ -167,6 +172,11 @@ namespace System.Globalization.Tests
             yield return new object[] { "FooBar", "Foo\u0400Bar", 5, 6, CompareOptions.Ordinal, -1 };
             yield return new object[] { "TestFooBA\u0300R", "FooB\u00C0R", 10, 11, CompareOptions.IgnoreNonSpace, -1 };
 
+            // Weightless characters
+            yield return new object[] { "", "\u200d", 0, 0, CompareOptions.None, -1 };
+            yield return new object[] { "", "\u200d", -1, 0, CompareOptions.None, -1 };
+            yield return new object[] { "hello", "\u200d", 4, 5, CompareOptions.IgnoreCase, -1 };
+
             // Ignore symbols
             yield return new object[] { "More Test's", "Tests", 10, 11, CompareOptions.IgnoreSymbols, -1 };
             yield return new object[] { "More Test's", "Tests", 10, 11, CompareOptions.None, -1 };
@@ -248,6 +258,10 @@ namespace System.Globalization.Tests
             yield return new object[] { "Exhibit \u00C0", "a\u0300", CompareOptions.OrdinalIgnoreCase, false };
             yield return new object[] { "FooBar", "Foo\u0400Bar", CompareOptions.Ordinal, false };
             yield return new object[] { "FooBA\u0300R", "FooB\u00C0R", CompareOptions.IgnoreNonSpace, false };
+
+            // Weightless characters
+            yield return new object[] { "", "\u200d", CompareOptions.None, false };
+            yield return new object[] { "", "\u200d", CompareOptions.IgnoreCase, false };
 
             // Ignore symbols
             yield return new object[] { "More Test's", "Tests", CompareOptions.IgnoreSymbols, false };
@@ -622,6 +636,22 @@ namespace System.Globalization.Tests
             Assert.True(cultureName.Equals(ci.CompareInfo.Name, StringComparison.OrdinalIgnoreCase));
         }
 
+        [Theory]
+        [MemberData(nameof(Cultures_TestData))]
+        public void SetCultureData(string cultureName)
+        {
+            CultureInfo ci = new CultureInfo(cultureName);
+
+            //
+            // DateTimeInfo
+            //
+            var calendar = new GregorianCalendar();
+            ci.DateTimeFormat.Calendar = calendar;
+            Assert.Equal(calendar, ci.DateTimeFormat.Calendar);
+
+            Assert.Throws<ArgumentOutOfRangeException>(() => ci.DateTimeFormat.Calendar = new TaiwanCalendar());
+        }
+
         [Fact]
         public void TestEnum()
         {
@@ -638,6 +668,77 @@ namespace System.Globalization.Tests
                                                             (byte)((0x7F & 0x0000FF00) >> 8),
                                                             (byte)(0x7F & 0xFF)));
             Assert.Equal(version, new CultureInfo(cultureName).CompareInfo.Version);
+        }
+
+        [Theory]
+        [InlineData(0, 0)]
+        [InlineData(1, 2)]
+        [InlineData(100_000, 200_000)]
+        [InlineData(0x3FFF_FFFF, 0x7FFF_FFFE)]
+        public void TestGetSortKeyLength_Valid(int inputLength, int expectedSortKeyLength)
+        {
+            using BoundedMemory<char> boundedMemory = BoundedMemory.Allocate<char>(0); // AV if dereferenced
+            boundedMemory.MakeReadonly();
+            ReadOnlySpan<char> dummySpan = MemoryMarshal.CreateReadOnlySpan(ref MemoryMarshal.GetReference(boundedMemory.Span), inputLength);
+            Assert.Equal(expectedSortKeyLength, CultureInfo.InvariantCulture.CompareInfo.GetSortKeyLength(dummySpan));
+        }
+
+        [Theory]
+        [InlineData(0x4000_0000)]
+        [InlineData(int.MaxValue)]
+        public unsafe void TestGetSortKeyLength_OverlongArgument(int inputLength)
+        {
+            using BoundedMemory<char> boundedMemory = BoundedMemory.Allocate<char>(0); // AV if dereferenced
+            boundedMemory.MakeReadonly();
+
+            Assert.Throws<ArgumentException>("source", () =>
+            {
+                ReadOnlySpan<char> dummySpan = MemoryMarshal.CreateReadOnlySpan(ref MemoryMarshal.GetReference(boundedMemory.Span), inputLength);
+                CultureInfo.InvariantCulture.CompareInfo.GetSortKeyLength(dummySpan);
+            });
+        }
+
+        [Theory]
+        [InlineData("Hello", CompareOptions.None, "Hello")]
+        [InlineData("Hello", CompareOptions.IgnoreWidth, "Hello")]
+        [InlineData("Hello", CompareOptions.IgnoreCase, "HELLO")]
+        [InlineData("Hello", CompareOptions.IgnoreCase | CompareOptions.IgnoreWidth, "HELLO")]
+        [InlineData("Hell\u00F6", CompareOptions.None, "Hell\u00F6")] // U+00F6 = LATIN SMALL LETTER O WITH DIAERESIS
+        [InlineData("Hell\u00F6", CompareOptions.IgnoreCase, "HELL\u00F6")] // note the final "o with diaeresis" isn't capitalized
+        public unsafe void TestSortKey_FromSpan(string input, CompareOptions options, string expected)
+        {
+            byte[] expectedOutputBytes = GetExpectedInvariantOrdinalSortKey(expected);
+
+            CompareInfo compareInfo = CultureInfo.InvariantCulture.CompareInfo;
+
+            // First, validate that too short a buffer throws
+
+            Assert.Throws<ArgumentException>("destination", () => compareInfo.GetSortKey(input, new byte[expectedOutputBytes.Length - 1], options));
+
+            // Next, validate that using a properly-sized buffer succeeds
+            // We'll use BoundedMemory to check for buffer overruns
+
+            using BoundedMemory<char> boundedInputMemory = BoundedMemory.AllocateFromExistingData<char>(input);
+            boundedInputMemory.MakeReadonly();
+            ReadOnlySpan<char> boundedInputSpan = boundedInputMemory.Span;
+
+            using BoundedMemory<byte> boundedOutputMemory = BoundedMemory.Allocate<byte>(expectedOutputBytes.Length);
+            Span<byte> boundedOutputSpan = boundedOutputMemory.Span;
+
+            Assert.Equal(expectedOutputBytes.Length, compareInfo.GetSortKey(boundedInputSpan, boundedOutputSpan, options));
+            Assert.Equal(expectedOutputBytes, boundedOutputSpan[0..expectedOutputBytes.Length].ToArray());
+
+            // Now try it once more, passing a larger span where the last byte points to unallocated memory.
+            // If GetSortKey attempts to write beyond the number of bytes we expect, the unit test will AV.
+
+            boundedOutputSpan.Clear();
+
+            fixed (byte* pBoundedOutputSpan = boundedOutputSpan)
+            {
+                boundedOutputSpan = new Span<byte>(pBoundedOutputSpan, boundedOutputSpan.Length + 1); // last byte is unallocated memory
+                Assert.Equal(expectedOutputBytes.Length, compareInfo.GetSortKey(boundedInputSpan, boundedOutputSpan, options));
+                Assert.Equal(expectedOutputBytes, boundedOutputSpan[0..expectedOutputBytes.Length].ToArray());
+            }
         }
 
         [Fact]
@@ -699,9 +800,44 @@ namespace System.Globalization.Tests
         {
             foreach (string cul in s_cultureNames)
             {
-                Assert.Equal(result, CultureInfo.GetCultureInfo(cul).CompareInfo.IndexOf(source, value, startIndex, count, options));
+                CompareInfo compareInfo = CultureInfo.GetCultureInfo(cul).CompareInfo;
+                TestCore(compareInfo, source, value, startIndex, count, options, result);
+            }
+
+            // static test helper method to avoid mutating input args when called in a loop
+            static void TestCore(CompareInfo compareInfo, string source, string value, int startIndex, int count, CompareOptions options, int result)
+            {
+                Assert.Equal(result, compareInfo.IndexOf(source, value, startIndex, count, options));
                 Assert.Equal(result, source.IndexOf(value, startIndex, count, GetStringComparison(options)));
-                Assert.Equal((result == -1) ? -1 : (result - startIndex), source.AsSpan(startIndex, count).IndexOf(value.AsSpan(), GetStringComparison(options)));
+
+                // Span versions - using BoundedMemory to check for buffer overruns
+
+                using BoundedMemory<char> sourceBoundedMemory = BoundedMemory.AllocateFromExistingData<char>(source.AsSpan(startIndex, count));
+                sourceBoundedMemory.MakeReadonly();
+                ReadOnlySpan<char> sourceBoundedSpan = sourceBoundedMemory.Span;
+
+                using BoundedMemory<char> valueBoundedMemory = BoundedMemory.AllocateFromExistingData<char>(value);
+                valueBoundedMemory.MakeReadonly();
+                ReadOnlySpan<char> valueBoundedSpan = valueBoundedMemory.Span;
+
+                int offsetResult = result;
+                if (offsetResult >= 0)
+                {
+                    offsetResult -= startIndex; // account for span slicing
+                    Assert.True(offsetResult >= 0, "Shouldn't have made an affirmative result go negative.");
+                }
+
+                Assert.Equal(offsetResult, sourceBoundedSpan.IndexOf(valueBoundedSpan, GetStringComparison(options)));
+                Assert.Equal(offsetResult, compareInfo.IndexOf(sourceBoundedSpan, valueBoundedSpan, options));
+                Assert.Equal(offsetResult, compareInfo.IndexOf(sourceBoundedSpan, valueBoundedSpan, options, out int matchLength));
+                if (offsetResult >= 0)
+                {
+                    Assert.Equal(valueBoundedSpan.Length, matchLength); // Invariant mode should perform non-linguistic comparisons
+                }
+                else
+                {
+                    Assert.Equal(0, matchLength); // not found
+                }
             }
         }
 
@@ -711,14 +847,21 @@ namespace System.Globalization.Tests
         {
             foreach (string cul in s_cultureNames)
             {
-                Assert.Equal(result, CultureInfo.GetCultureInfo(cul).CompareInfo.LastIndexOf(source, value, startIndex, count, options));
+                CompareInfo compareInfo = CultureInfo.GetCultureInfo(cul).CompareInfo;
+                TestCore(compareInfo, source, value, startIndex, count, options, result);
+            }
+
+            // static test helper method to avoid mutating input args when called in a loop
+            static void TestCore(CompareInfo compareInfo, string source, string value, int startIndex, int count, CompareOptions options, int result)
+            {
+                Assert.Equal(result, compareInfo.LastIndexOf(source, value, startIndex, count, options));
                 Assert.Equal(result, source.LastIndexOf(value, startIndex, count, GetStringComparison(options)));
 
                 // Filter differences betweeen string-based and Span-based LastIndexOf
                 // - Empty value handling - https://github.com/dotnet/runtime/issues/13382
                 // - Negative count
                 if (value.Length == 0 || count < 0)
-                    continue;
+                    return;
 
                 if (startIndex == source.Length)
                 {
@@ -727,7 +870,34 @@ namespace System.Globalization.Tests
                         count--;
                 }
                 int leftStartIndex = (startIndex - count + 1);
-                Assert.Equal((result == -1) ? -1 : (result - leftStartIndex), source.AsSpan(leftStartIndex, count).LastIndexOf(value.AsSpan(), GetStringComparison(options)));
+
+                // Span versions - using BoundedMemory to check for buffer overruns
+
+                using BoundedMemory<char> sourceBoundedMemory = BoundedMemory.AllocateFromExistingData<char>(source.AsSpan(leftStartIndex, count));
+                sourceBoundedMemory.MakeReadonly();
+                ReadOnlySpan<char> sourceBoundedSpan = sourceBoundedMemory.Span;
+
+                using BoundedMemory<char> valueBoundedMemory = BoundedMemory.AllocateFromExistingData<char>(value);
+                valueBoundedMemory.MakeReadonly();
+                ReadOnlySpan<char> valueBoundedSpan = valueBoundedMemory.Span;
+
+                if (result >= 0)
+                {
+                    result -= leftStartIndex; // account for span slicing
+                    Assert.True(result >= 0, "Shouldn't have made an affirmative result go negative.");
+                }
+
+                Assert.Equal(result, sourceBoundedSpan.LastIndexOf(valueBoundedSpan, GetStringComparison(options)));
+                Assert.Equal(result, compareInfo.LastIndexOf(sourceBoundedSpan, valueBoundedSpan, options));
+                Assert.Equal(result, compareInfo.LastIndexOf(sourceBoundedSpan, valueBoundedSpan, options, out int matchLength));
+                if (result >= 0)
+                {
+                    Assert.Equal(valueBoundedSpan.Length, matchLength); // Invariant mode should perform non-linguistic comparisons
+                }
+                else
+                {
+                    Assert.Equal(0, matchLength); // not found
+                }
             }
         }
 
@@ -737,7 +907,9 @@ namespace System.Globalization.Tests
         {
             foreach (string cul in s_cultureNames)
             {
-                Assert.Equal(result, CultureInfo.GetCultureInfo(cul).CompareInfo.IsPrefix(source, value, options));
+                CompareInfo compareInfo = CultureInfo.GetCultureInfo(cul).CompareInfo;
+
+                Assert.Equal(result, compareInfo.IsPrefix(source, value, options));
                 Assert.Equal(result, source.StartsWith(value, GetStringComparison(options)));
 
                 // Span versions - using BoundedMemory to check for buffer overruns
@@ -751,6 +923,16 @@ namespace System.Globalization.Tests
                 ReadOnlySpan<char> valueBoundedSpan = valueBoundedMemory.Span;
 
                 Assert.Equal(result, sourceBoundedSpan.StartsWith(valueBoundedSpan, GetStringComparison(options)));
+                Assert.Equal(result, compareInfo.IsPrefix(sourceBoundedSpan, valueBoundedSpan, options));
+                Assert.Equal(result, compareInfo.IsPrefix(sourceBoundedSpan, valueBoundedSpan, options, out int matchLength));
+                if (result)
+                {
+                    Assert.Equal(valueBoundedSpan.Length, matchLength); // Invariant mode should perform non-linguistic comparisons
+                }
+                else
+                {
+                    Assert.Equal(0, matchLength); // not found
+                }
             }
         }
 
@@ -760,7 +942,9 @@ namespace System.Globalization.Tests
         {
             foreach (string cul in s_cultureNames)
             {
-                Assert.Equal(result, CultureInfo.GetCultureInfo(cul).CompareInfo.IsSuffix(source, value, options));
+                CompareInfo compareInfo = CultureInfo.GetCultureInfo(cul).CompareInfo;
+
+                Assert.Equal(result, compareInfo.IsSuffix(source, value, options));
                 Assert.Equal(result, source.EndsWith(value, GetStringComparison(options)));
 
                 // Span versions - using BoundedMemory to check for buffer overruns
@@ -774,6 +958,16 @@ namespace System.Globalization.Tests
                 ReadOnlySpan<char> valueBoundedSpan = valueBoundedMemory.Span;
 
                 Assert.Equal(result, sourceBoundedSpan.EndsWith(valueBoundedSpan, GetStringComparison(options)));
+                Assert.Equal(result, compareInfo.IsSuffix(sourceBoundedSpan, valueBoundedSpan, options));
+                Assert.Equal(result, compareInfo.IsSuffix(sourceBoundedSpan, valueBoundedSpan, options, out int matchLength));
+                if (result)
+                {
+                    Assert.Equal(valueBoundedSpan.Length, matchLength); // Invariant mode should perform non-linguistic comparisons
+                }
+                else
+                {
+                    Assert.Equal(0, matchLength); // not found
+                }
             }
         }
 
@@ -815,6 +1009,9 @@ namespace System.Globalization.Tests
                 using BoundedMemory<char> valueBoundedMemory = BoundedMemory.AllocateFromExistingData<char>(value);
                 valueBoundedMemory.MakeReadonly();
                 ReadOnlySpan<char> valueBoundedSpan = valueBoundedMemory.Span;
+
+                res = CultureInfo.GetCultureInfo(cul).CompareInfo.Compare(sourceBoundedSpan, valueBoundedSpan, options);
+                Assert.Equal(result, Math.Sign(res));
 
                 res = sourceBoundedSpan.CompareTo(valueBoundedSpan, GetStringComparison(options));
                 Assert.Equal(result, Math.Sign(res));
@@ -922,6 +1119,26 @@ namespace System.Globalization.Tests
 
             Assert.Equal(expectedToLower, Rune.ToLowerInvariant(originalRune).Value);
             Assert.Equal(expectedToLower, Rune.ToLower(originalRune, CultureInfo.GetCultureInfo("tr-TR")).Value);
+        }
+
+        [Fact]
+        public void TestGetCultureInfo_PredefinedOnly_ReturnsSame()
+        {
+            Assert.Equal(CultureInfo.GetCultureInfo("en-US"), CultureInfo.GetCultureInfo("en-US", predefinedOnly: true));
+        }
+
+        private static byte[] GetExpectedInvariantOrdinalSortKey(ReadOnlySpan<char> input)
+        {
+            MemoryStream memoryStream = new MemoryStream();
+            Span<byte> tempBuffer = stackalloc byte[sizeof(char)];
+
+            foreach (char ch in input)
+            {
+                BinaryPrimitives.WriteUInt16BigEndian(tempBuffer, (ushort)ch);
+                memoryStream.Write(tempBuffer);
+            }
+
+            return memoryStream.ToArray();
         }
     }
 }

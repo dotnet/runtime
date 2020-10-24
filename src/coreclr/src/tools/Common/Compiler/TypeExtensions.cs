@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System;
 using Internal.IL;
@@ -96,6 +95,19 @@ namespace ILCompiler
         {
             var arrayMethod = method as ArrayMethod;
             return arrayMethod != null && arrayMethod.Kind == ArrayMethodKind.Address;
+        }
+
+
+        /// <summary>
+        /// Returns true if '<paramref name="method"/>' is one of the special methods on multidimensional array types (set, get, address).
+        /// </summary>
+        public static bool IsArrayMethod(this MethodDesc method)
+        {
+            var arrayMethod = method as ArrayMethod;
+            return arrayMethod != null && (arrayMethod.Kind == ArrayMethodKind.Address || 
+                                           arrayMethod.Kind == ArrayMethodKind.Get || 
+                                           arrayMethod.Kind == ArrayMethodKind.Set || 
+                                           arrayMethod.Kind == ArrayMethodKind.Ctor);
         }
 
         /// <summary>
@@ -199,33 +211,6 @@ namespace ILCompiler
             var arrayType = (ArrayType)type;
             TypeDesc elementType = arrayType.ElementType;
             return type.IsMdArray || elementType.IsPointer || elementType.IsFunctionPointer;
-        }
-
-        /// <summary>
-        /// Determines whether an object of type '<paramref name="type"/>' requires 8-byte alignment on 
-        /// 32bit ARM architectures.
-        /// </summary>
-        public static bool RequiresAlign8(this TypeDesc type)
-        {
-            if (type.Context.Target.Architecture != TargetArchitecture.ARM)
-            {
-                return false;
-            }
-
-            if (type.IsArray)
-            {
-                var elementType = ((ArrayType)type).ElementType;
-                if ((elementType.IsValueType) && ((DefType)elementType).InstanceByteAlignment.AsInt > 4)
-                {
-                    return true;
-                }
-            }
-            else if (type.IsDefType && ((DefType)type).InstanceByteAlignment.AsInt > 4)
-            {
-                return true;
-            }
-
-            return false;
         }
 
         public static TypeDesc MergeTypesToCommonParent(TypeDesc ta, TypeDesc tb)

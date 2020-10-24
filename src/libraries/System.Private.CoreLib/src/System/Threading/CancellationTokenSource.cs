@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -152,7 +151,7 @@ namespace System.Threading
         /// </summary>
         /// <param name="delay">The time span to wait before canceling this <see cref="CancellationTokenSource"/></param>
         /// <exception cref="ArgumentOutOfRangeException">
-        /// The exception that is thrown when <paramref name="delay"/> is less than -1 or greater than int.MaxValue.
+        /// The <paramref name="delay"/> is less than -1 or greater than the maximum allowed timer duration.
         /// </exception>
         /// <remarks>
         /// <para>
@@ -169,12 +168,12 @@ namespace System.Threading
         public CancellationTokenSource(TimeSpan delay)
         {
             long totalMilliseconds = (long)delay.TotalMilliseconds;
-            if (totalMilliseconds < -1 || totalMilliseconds > int.MaxValue)
+            if (totalMilliseconds < -1 || totalMilliseconds > Timer.MaxSupportedTimeout)
             {
                 throw new ArgumentOutOfRangeException(nameof(delay));
             }
 
-            InitializeWithTimer((int)totalMilliseconds);
+            InitializeWithTimer((uint)totalMilliseconds);
         }
 
         /// <summary>
@@ -203,14 +202,14 @@ namespace System.Threading
                 throw new ArgumentOutOfRangeException(nameof(millisecondsDelay));
             }
 
-            InitializeWithTimer(millisecondsDelay);
+            InitializeWithTimer((uint)millisecondsDelay);
         }
 
         /// <summary>
         /// Common initialization logic when constructing a CTS with a delay parameter.
         /// A zero delay will result in immediate cancellation.
         /// </summary>
-        private void InitializeWithTimer(int millisecondsDelay)
+        private void InitializeWithTimer(uint millisecondsDelay)
         {
             if (millisecondsDelay == 0)
             {
@@ -219,7 +218,7 @@ namespace System.Threading
             else
             {
                 _state = NotCanceledState;
-                _timer = new TimerQueueTimer(s_timerCallback, this, (uint)millisecondsDelay, Timeout.UnsignedInfinite, flowExecutionContext: false);
+                _timer = new TimerQueueTimer(s_timerCallback, this, millisecondsDelay, Timeout.UnsignedInfinite, flowExecutionContext: false);
 
                 // The timer roots this CTS instance while it's scheduled.  That is by design, so
                 // that code like:
@@ -287,8 +286,7 @@ namespace System.Threading
         /// cref="CancellationTokenSource"/> has been disposed.
         /// </exception>
         /// <exception cref="ArgumentOutOfRangeException">
-        /// The exception thrown when <paramref name="delay"/> is less than -1 or
-        /// greater than int.MaxValue.
+        /// The <paramref name="delay"/> is less than -1 or greater than maximum allowed timer duration.
         /// </exception>
         /// <remarks>
         /// <para>
@@ -304,12 +302,12 @@ namespace System.Threading
         public void CancelAfter(TimeSpan delay)
         {
             long totalMilliseconds = (long)delay.TotalMilliseconds;
-            if (totalMilliseconds < -1 || totalMilliseconds > int.MaxValue)
+            if (totalMilliseconds < -1 || totalMilliseconds > Timer.MaxSupportedTimeout)
             {
-                throw new ArgumentOutOfRangeException(nameof(delay));
+                ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.delay);
             }
 
-            CancelAfter((int)totalMilliseconds);
+            CancelAfter((uint)totalMilliseconds);
         }
 
         /// <summary>
@@ -338,12 +336,17 @@ namespace System.Threading
         /// </remarks>
         public void CancelAfter(int millisecondsDelay)
         {
-            ThrowIfDisposed();
-
             if (millisecondsDelay < -1)
             {
-                throw new ArgumentOutOfRangeException(nameof(millisecondsDelay));
+                ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.millisecondsDelay);
             }
+
+            CancelAfter((uint)millisecondsDelay);
+        }
+
+        private void CancelAfter(uint millisecondsDelay)
+        {
+            ThrowIfDisposed();
 
             if (IsCancellationRequested)
             {
@@ -380,7 +383,7 @@ namespace System.Threading
             // the following in a try/catch block.
             try
             {
-                timer.Change((uint)millisecondsDelay, Timeout.UnsignedInfinite);
+                timer.Change(millisecondsDelay, Timeout.UnsignedInfinite);
             }
             catch (ObjectDisposedException)
             {
@@ -476,9 +479,10 @@ namespace System.Threading
         /// callback will have been run by the time this method returns.
         /// </summary>
         internal CancellationTokenRegistration InternalRegister(
-            Action<object?> callback, object? stateForCallback, SynchronizationContext? syncContext, ExecutionContext? executionContext)
+            Delegate callback, object? stateForCallback, SynchronizationContext? syncContext, ExecutionContext? executionContext)
         {
             Debug.Assert(this != s_neverCanceledSource, "This source should never be exposed via a CancellationToken.");
+            Debug.Assert(callback is Action<object?> || callback is Action<object?, CancellationToken>);
 
             // If not canceled, register the handler; if canceled already, run the callback synchronously.
             // This also ensures that during ExecuteCallbackHandlers() there will be no mutation of the _callbackPartitions.
@@ -572,7 +576,7 @@ namespace System.Threading
             }
 
             // Cancellation already occurred.  Run the callback on this thread and return an empty registration.
-            callback(stateForCallback);
+            Invoke(callback, stateForCallback, this);
             return default;
         }
 
@@ -682,7 +686,7 @@ namespace System.Threading
                             if (node.SynchronizationContext != null)
                             {
                                 // Transition to the target syncContext and continue there.
-                                node.SynchronizationContext.Send(s =>
+                                node.SynchronizationContext.Send(static s =>
                                 {
                                     var n = (CallbackNode)s!;
                                     n.Partition.Source.ThreadIDExecutingCallbacks = Environment.CurrentManagedThreadId;
@@ -820,7 +824,7 @@ namespace System.Threading
             // unfortunate thing to do.  However, we expect this to be a rare case (disposing while the associated
             // callback is running), and brief when it happens (so the polling will be minimal), and making
             // this work with a callback mechanism will add additional cost to other more common cases.
-            return new ValueTask(Task.Factory.StartNew(s =>
+            return new ValueTask(Task.Factory.StartNew(static s =>
             {
                 Debug.Assert(s is Tuple<CancellationTokenSource, long>);
                 var state = (Tuple<CancellationTokenSource, long>)s;
@@ -875,7 +879,7 @@ namespace System.Threading
 
         private sealed class LinkedNCancellationTokenSource : CancellationTokenSource
         {
-            internal static readonly Action<object?> s_linkedTokenCancelDelegate = s =>
+            internal static readonly Action<object?> s_linkedTokenCancelDelegate = static s =>
             {
                 Debug.Assert(s is CancellationTokenSource, $"Expected {typeof(CancellationTokenSource)}, got {s}");
                 ((CancellationTokenSource)s).NotifyCancellation(throwOnFirstException: false); // skip ThrowIfDisposed() check in Cancel()
@@ -1013,7 +1017,7 @@ namespace System.Threading
             public CallbackNode? Next;
 
             public long Id;
-            public Action<object?>? Callback;
+            public Delegate? Callback; // Action<object> or Action<object,CancellationToken>
             public object? CallbackState;
             public ExecutionContext? ExecutionContext;
             public SynchronizationContext? SynchronizationContext;
@@ -1027,22 +1031,35 @@ namespace System.Threading
             public void ExecuteCallback()
             {
                 ExecutionContext? context = ExecutionContext;
-                if (context != null)
+                if (context is null)
                 {
-                    ExecutionContext.RunInternal(context, s =>
-                    {
-                        Debug.Assert(s is CallbackNode, $"Expected {typeof(CallbackNode)}, got {s}");
-                        CallbackNode n = (CallbackNode)s;
-
-                        Debug.Assert(n.Callback != null);
-                        n.Callback(n.CallbackState);
-                    }, this);
+                    Debug.Assert(Callback != null);
+                    Invoke(Callback, CallbackState, Partition.Source);
                 }
                 else
                 {
-                    Debug.Assert(Callback != null);
-                    Callback(CallbackState);
+                    ExecutionContext.RunInternal(context, static s =>
+                    {
+                        var node = (CallbackNode)s!;
+                        Debug.Assert(node.Callback != null);
+                        Invoke(node.Callback, node.CallbackState, node.Partition.Source);
+                    }, this);
+
                 }
+            }
+        }
+
+        private static void Invoke(Delegate d, object? state, CancellationTokenSource source)
+        {
+            Debug.Assert(d is Action<object?> || d is Action<object?, CancellationToken>);
+
+            if (d is Action<object?> actionWithState)
+            {
+                actionWithState(state);
+            }
+            else
+            {
+                ((Action<object?, CancellationToken>)d)(state, new CancellationToken(source));
             }
         }
     }

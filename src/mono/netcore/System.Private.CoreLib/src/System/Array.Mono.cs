@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using Internal.Runtime.CompilerServices;
 using System.Collections.Generic;
@@ -8,13 +7,6 @@ using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
-
-#pragma warning disable SA1121 // explicitly using type aliases instead of built-in types
-#if TARGET_64BIT
-using nuint = System.UInt64;
-#else
-using nuint = System.UInt32;
-#endif
 
 namespace System
 {
@@ -61,7 +53,7 @@ namespace System
 
             int lowerBound = array.GetLowerBound(0);
             int elementSize = array.GetElementSize();
-            nuint numComponents = (nuint)Unsafe.As<RawData>(array).Count;
+            nuint numComponents = (nuint)(nint)Unsafe.As<RawData>(array).Count;
 
             int offset = index - lowerBound;
 
@@ -542,6 +534,7 @@ namespace System
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         private extern void SetValueRelaxedImpl(object? value, int pos);
 
+#pragma warning disable CA1822
         /*
          * These methods are used to implement the implicit generic interfaces
          * implemented by arrays in NET 2.0.
@@ -645,5 +638,6 @@ namespace System
             // Do not change this to call SetGenericValue_icall directly, due to special casing in the runtime.
             SetGenericValueImpl(index, ref item);
         }
+#pragma warning restore CA1822
     }
 }

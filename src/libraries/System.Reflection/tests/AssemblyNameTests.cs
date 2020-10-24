@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
 using System.Globalization;
@@ -241,7 +240,7 @@ namespace System.Reflection.Tests
             }
 
             Assembly a = typeof(AssemblyNameTests).Assembly;
-            Assert.Equal(new AssemblyName(a.FullName).ToString(), AssemblyName.GetAssemblyName(a.Location).ToString());
+            Assert.Equal(new AssemblyName(a.FullName).ToString(), AssemblyName.GetAssemblyName(AssemblyPathHelper.GetAssemblyLocation(a)).ToString());
         }
 
         [Fact]
@@ -390,6 +389,14 @@ namespace System.Reflection.Tests
             AssemblyName assemblyName = new AssemblyName("MyAssemblyName, Version=1.0.0.0");
             assemblyName.SetPublicKey(TheKey);
             Assert.Equal("MyAssemblyName, Version=1.0.0.0, PublicKeyToken=b03f5f7f11d50a3a", assemblyName.FullName);
+        }
+
+        [Fact]
+        public static void Name_WithNullPublicKey()
+        {
+            AssemblyName assemblyName = new AssemblyName("noname,PublicKeyToken=null");
+            Assert.Equal(0, assemblyName.GetPublicKeyToken().Length);
+            Assert.Equal("noname, PublicKeyToken=null", assemblyName.FullName);
         }
 
         public static IEnumerable<object[]> Version_TestData()

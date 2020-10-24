@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -68,7 +67,7 @@ namespace System.Linq.Parallel
             int last = -1;
             for (int i = _buckets[bucket] - 1; i >= 0; last = i, i = _slots[i].next)
             {
-                if (_slots[i].hashCode == hashCode && _comparer.Equals(_slots[i].value!, value)) // TODO-NULLABLE: https://github.com/dotnet/csharplang/issues/2872
+                if (_slots[i].hashCode == hashCode && _comparer.Equals(_slots[i].value, value))
                 {
                     if (last < 0)
                     {
@@ -92,7 +91,7 @@ namespace System.Linq.Parallel
             int hashCode = InternalGetHashCode(value);
             for (int i = _buckets[hashCode % _buckets.Length] - 1; i >= 0; i = _slots[i].next)
             {
-                if (_slots[i].hashCode == hashCode && _comparer.Equals(_slots[i].value!, value)) return true; // TODO-NULLABLE: https://github.com/dotnet/csharplang/issues/2872
+                if (_slots[i].hashCode == hashCode && _comparer.Equals(_slots[i].value, value)) return true;
             }
             if (add)
             {
@@ -134,7 +133,7 @@ namespace System.Linq.Parallel
         {
             internal int hashCode;
             internal int next;
-            [MaybeNull, AllowNull] internal TElement value;
+            internal TElement? value;
         }
     }
 }

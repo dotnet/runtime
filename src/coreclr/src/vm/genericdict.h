@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 //
 // File: genericdict.h
 //
@@ -147,9 +146,11 @@ public:
     // Create an initial dictionary layout containing numSlots slots
     static DictionaryLayout* Allocate(WORD numSlots, LoaderAllocator *pAllocator, AllocMemTracker *pamTracker);
 
-    // Bytes used for this dictionary, which might be stored inline in
-    // another structure (e.g. MethodTable)
-    static DWORD GetDictionarySizeFromLayout(DWORD numGenericArgs, PTR_DictionaryLayout pDictLayout);
+    // Total number of bytes used for this dictionary, which might be stored inline in
+    // another structure (e.g. MethodTable). This may include the final back-pointer
+    // to previous dictionaries after dictionary expansion; pSlotSize is used to return
+    // the size to be stored in the "size slot" of the dictionary.
+    static DWORD GetDictionarySizeFromLayout(DWORD numGenericArgs, PTR_DictionaryLayout pDictLayout, DWORD *pSlotSize);
 
     static BOOL FindToken(MethodTable*                      pMT,
                           LoaderAllocator*                  pAllocator,
@@ -172,7 +173,7 @@ public:
     DWORD GetMaxSlots();
     DWORD GetNumInitialSlots();
     DWORD GetNumUsedSlots();
-
+    
     PTR_DictionaryEntryLayout GetEntryLayout(DWORD i)
     {
         LIMITED_METHOD_CONTRACT;
@@ -300,6 +301,12 @@ private:
     {
         LIMITED_METHOD_CONTRACT;
         return VolatileLoadWithoutBarrier((DWORD*)GetSlotAddr(numGenericArgs, 0));
+    }
+    
+    inline Dictionary **GetBackPointerSlot(DWORD numGenericArgs)
+    {
+        LIMITED_METHOD_CONTRACT;
+        return (Dictionary **)((uint8_t *)m_pEntries + GetDictionarySlotsSize(numGenericArgs));
     }
 #endif // #ifndef DACCESS_COMPILE
 

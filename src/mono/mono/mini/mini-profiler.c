@@ -1,7 +1,6 @@
 /*
  * Licensed to the .NET Foundation under one or more agreements.
  * The .NET Foundation licenses this file to you under the MIT license.
- * See the LICENSE file in the project root for more information.
  */
 
 #include <config.h>
@@ -150,13 +149,13 @@ mini_profiler_emit_tail_call (MonoCompile *cfg, MonoMethod *target)
 	EMIT_NEW_PCONST (cfg, iargs [1], NULL);
 
 	if (target)
-		EMIT_NEW_METHODCONST (cfg, iargs [2], target);
+		EMIT_NEW_METHODCONST (cfg, iargs [2], target); 
 	else
 		EMIT_NEW_PCONST (cfg, iargs [2], NULL);
 
 	/* void mono_profiler_raise_method_tail_call (MonoMethod *method, MonoMethod *target) */
 	if (trace)
-		mono_emit_jit_icall (cfg, mono_trace_leave_method, iargs);
+		mono_emit_jit_icall (cfg, mono_trace_tail_method, iargs);
 	else
 		mono_emit_jit_icall (cfg, mono_profiler_raise_method_tail_call, iargs);
 }

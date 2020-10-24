@@ -1,7 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
-// See the LICENSE file in the project root for more information.
+// The .NET Foundation licenses this file to you under the MIT license.
 //
-// MailMessageTest.cs - NUnit Test Cases for System.Net.MailAddress.MailMessage
+// MailMessageTest.cs - Unit Test Cases for System.Net.MailAddress.MailMessage
 //
 // Authors:
 //   John Luke (john.luke@gmail.com)
@@ -146,6 +146,7 @@ namespace System.Net.Mail.Tests
         }
 
         [Fact]
+        [PlatformSpecific(~TestPlatforms.Browser)] // Not passing as internal System.Net.Mail.MailWriter stripped from build
         public void SentSpecialLengthMailAttachment_Base64Decode_Success()
         {
             // The special length follows pattern: (3N - 1) * 0x4400 + 1

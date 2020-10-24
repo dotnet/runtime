@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System;
 using System.Collections.Generic;
@@ -14,8 +13,8 @@ namespace System.Net.Http
     public abstract class DelegatingHandler : HttpMessageHandler
     {
         private HttpMessageHandler? _innerHandler;
-        private volatile bool _operationStarted = false;
-        private volatile bool _disposed = false;
+        private volatile bool _operationStarted;
+        private volatile bool _disposed;
 
         [DisallowNull]
         public HttpMessageHandler? InnerHandler
@@ -32,7 +31,7 @@ namespace System.Net.Http
                 }
                 CheckDisposedOrStarted();
 
-                if (NetEventSource.IsEnabled) NetEventSource.Associate(this, value);
+                if (NetEventSource.Log.IsEnabled()) NetEventSource.Associate(this, value);
                 _innerHandler = value;
             }
         }
@@ -44,6 +43,16 @@ namespace System.Net.Http
         protected DelegatingHandler(HttpMessageHandler innerHandler)
         {
             InnerHandler = innerHandler;
+        }
+
+        protected internal override HttpResponseMessage Send(HttpRequestMessage request, CancellationToken cancellationToken)
+        {
+            if (request == null)
+            {
+                throw new ArgumentNullException(nameof(request), SR.net_http_handler_norequest);
+            }
+            SetOperationStarted();
+            return _innerHandler!.Send(request, cancellationToken);
         }
 
         protected internal override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)

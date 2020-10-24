@@ -3967,7 +3967,7 @@ mono_verifier_verify_pe_data (MonoImage *image, MonoError *error)
 
 	error_init (error);
 
-	if (!mono_verifier_is_enabled_for_image (image))
+	if (!mono_verifier_is_enabled_for_image (image) && !mono_verifier_is_enabled_for_pe_only())
 		return TRUE;
 
 	init_verify_context (&ctx, image);

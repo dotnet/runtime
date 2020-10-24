@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
 using System.Linq;
@@ -43,7 +42,7 @@ namespace System.IO.Tests
 
             if (!HasNonZeroNanoseconds(fileinfo.LastWriteTime))
             {
-                if (PlatformDetection.IsOSX)
+                if (PlatformDetection.IsOSXLike)
                     return null;
 
                 DateTime dt = fileinfo.LastWriteTime;
@@ -104,7 +103,7 @@ namespace System.IO.Tests
                 DateTimeKind.Utc);
         }
 
-        [ConditionalFact(nameof(isNotHFS))]
+        [ConditionalFact(nameof(HighTemporalResolution))]
         public void CopyToMillisecondPresent()
         {
             FileInfo input = GetNonZeroMilliseconds();
@@ -118,7 +117,7 @@ namespace System.IO.Tests
             Assert.NotEqual(0, output.LastWriteTime.Millisecond);
         }
 
-        [ConditionalFact(nameof(isNotHFS))]
+        [ConditionalFact(nameof(HighTemporalResolution))]
         public void CopyToNanosecondsPresent()
         {
             FileInfo input = GetNonZeroNanoseconds();
@@ -134,8 +133,8 @@ namespace System.IO.Tests
             Assert.True(HasNonZeroNanoseconds(output.LastWriteTime));
         }
 
-        [ConditionalFact(nameof(isHFS))]
-        public void CopyToNanosecondsPresent_HFS()
+        [ConditionalFact(nameof(LowTemporalResolution))]
+        public void CopyToNanosecondsPresent_LowTempRes()
         {
             FileInfo input = new FileInfo(GetTestFilePath());
             input.Create().Dispose();
@@ -148,8 +147,8 @@ namespace System.IO.Tests
             Assert.False(HasNonZeroNanoseconds(output.LastWriteTime));
         }
 
-        [ConditionalFact(nameof(isHFS))]
-        public void MoveToMillisecondPresent_HFS()
+        [ConditionalFact(nameof(LowTemporalResolution))]
+        public void MoveToMillisecondPresent_LowTempRes()
         {
             FileInfo input = new FileInfo(GetTestFilePath());
             input.Create().Dispose();
@@ -160,7 +159,7 @@ namespace System.IO.Tests
             Assert.Equal(0, output.LastWriteTime.Millisecond);
         }
 
-        [ConditionalFact(nameof(isNotHFS))]
+        [ConditionalFact(nameof(HighTemporalResolution))]
         public void MoveToMillisecondPresent()
         {
             FileInfo input = GetNonZeroMilliseconds();
@@ -171,8 +170,8 @@ namespace System.IO.Tests
             Assert.NotEqual(0, output.LastWriteTime.Millisecond);
         }
 
-        [ConditionalFact(nameof(isHFS))]
-        public void CopyToMillisecondPresent_HFS()
+        [ConditionalFact(nameof(LowTemporalResolution))]
+        public void CopyToMillisecondPresent_LowTempRes()
         {
             FileInfo input = new FileInfo(GetTestFilePath());
             input.Create().Dispose();
@@ -187,12 +186,9 @@ namespace System.IO.Tests
         public void DeleteAfterEnumerate_TimesStillSet()
         {
             // When enumerating we populate the state as we already have it.
-            DateTime beforeTime = DateTime.UtcNow.AddSeconds(-1);
             string filePath = GetTestFilePath();
             File.Create(filePath).Dispose();
             FileInfo info = new DirectoryInfo(TestDirectory).EnumerateFiles().First();
-
-            DateTime afterTime = DateTime.UtcNow.AddSeconds(1);
 
             info.Delete();
             Assert.Equal(DateTime.FromFileTimeUtc(0), info.LastAccessTimeUtc);

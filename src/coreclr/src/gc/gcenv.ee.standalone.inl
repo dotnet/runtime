@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 #ifndef __GCTOENV_EE_STANDALONE_INL__
 #define __GCTOENV_EE_STANDALONE_INL__
@@ -203,22 +202,22 @@ inline MethodTable* GCToEEInterface::GetFreeObjectMethodTable()
     return g_theGCToCLR->GetFreeObjectMethodTable();
 }
 
-inline bool GCToEEInterface::GetBooleanConfigValue(const char* key, bool* value)
+inline bool GCToEEInterface::GetBooleanConfigValue(const char* privateKey, const char* publicKey, bool* value)
 {
     assert(g_theGCToCLR != nullptr);
-    return g_theGCToCLR->GetBooleanConfigValue(key, value);
+    return g_theGCToCLR->GetBooleanConfigValue(privateKey, publicKey, value);
 }
 
-inline bool GCToEEInterface::GetIntConfigValue(const char* key, int64_t* value)
+inline bool GCToEEInterface::GetIntConfigValue(const char* privateKey, const char* publicKey, int64_t* value)
 {
     assert(g_theGCToCLR != nullptr);
-    return g_theGCToCLR->GetIntConfigValue(key, value);
+    return g_theGCToCLR->GetIntConfigValue(privateKey, publicKey, value);
 }
 
-inline bool GCToEEInterface::GetStringConfigValue(const char* key, const char** value)
+inline bool GCToEEInterface::GetStringConfigValue(const char* privateKey, const char* publicKey, const char** value)
 {
     assert(g_theGCToCLR != nullptr);
-    return g_theGCToCLR->GetStringConfigValue(key, value);
+    return g_theGCToCLR->GetStringConfigValue(privateKey, publicKey, value);
 }
 
 inline void GCToEEInterface::FreeStringConfigValue(const char* value)
@@ -275,10 +274,10 @@ inline bool GCToEEInterface::AnalyzeSurvivorsRequested(int condemnedGeneration)
     return g_theGCToCLR->AnalyzeSurvivorsRequested(condemnedGeneration);
 }
 
-inline void GCToEEInterface::AnalyzeSurvivorsFinished(int condemnedGeneration)
+inline void GCToEEInterface::AnalyzeSurvivorsFinished(size_t gcIndex, int condemnedGeneration, uint64_t promoted_bytes, void (*reportGenerationBounds)())
 {
     assert(g_theGCToCLR != nullptr);
-    g_theGCToCLR->AnalyzeSurvivorsFinished(condemnedGeneration);
+    g_theGCToCLR->AnalyzeSurvivorsFinished(gcIndex, condemnedGeneration, promoted_bytes, reportGenerationBounds);
 }
 
 inline void GCToEEInterface::VerifySyncTableEntry()

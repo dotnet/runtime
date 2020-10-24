@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Runtime.InteropServices;
 
@@ -15,7 +14,7 @@ namespace System.Security.Cryptography
     {
         private static readonly byte[] s_nonEmpty = new byte[1];
 
-        public static byte[] Protect(byte[] userData, byte[] optionalEntropy, DataProtectionScope scope)
+        public static byte[] Protect(byte[] userData, byte[]? optionalEntropy, DataProtectionScope scope)
         {
             if (userData == null)
                 throw new ArgumentNullException(nameof(userData));
@@ -23,7 +22,7 @@ namespace System.Security.Cryptography
             return ProtectOrUnprotect(userData, optionalEntropy, scope, protect: true);
         }
 
-        public static byte[] Unprotect(byte[] encryptedData, byte[] optionalEntropy, DataProtectionScope scope)
+        public static byte[] Unprotect(byte[] encryptedData, byte[]? optionalEntropy, DataProtectionScope scope)
         {
             if (encryptedData == null)
                 throw new ArgumentNullException(nameof(encryptedData));
@@ -31,7 +30,7 @@ namespace System.Security.Cryptography
             return ProtectOrUnprotect(encryptedData, optionalEntropy, scope, protect: false);
         }
 
-        private static byte[] ProtectOrUnprotect(byte[] inputData, byte[] optionalEntropy, DataProtectionScope scope, bool protect)
+        private static byte[] ProtectOrUnprotect(byte[] inputData, byte[]? optionalEntropy, DataProtectionScope scope, bool protect)
         {
             unsafe
             {

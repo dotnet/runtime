@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 DEF_CLR_API(getMethodAttribs)
 DEF_CLR_API(setMethodAttribs)
@@ -151,7 +150,7 @@ DEF_CLR_API(setOverride)
 DEF_CLR_API(addActiveDependency)
 DEF_CLR_API(GetDelegateCtor)
 DEF_CLR_API(MethodCompileComplete)
-DEF_CLR_API(getTailCallCopyArgsThunk)
+DEF_CLR_API(getTailCallHelpers)
 DEF_CLR_API(convertPInvokeCalliToCall)
 DEF_CLR_API(notifyInstructionSetUsage)
 DEF_CLR_API(getMemoryManager)

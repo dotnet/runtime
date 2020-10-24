@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
 using System.Globalization;
@@ -63,7 +62,7 @@ namespace System.Runtime.InteropServices.Tests
         public void OffsetOf_ValidField_ReturnsExpected()
         {
             Type t = typeof(FieldAlignmentTest);
-            if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows) || (RuntimeInformation.ProcessArchitecture != Architecture.X86))
+            if (OperatingSystem.IsWindows() || (RuntimeInformation.ProcessArchitecture != Architecture.X86))
             {
                 Assert.Equal(80, Marshal.SizeOf(t));
             }
@@ -79,7 +78,7 @@ namespace System.Runtime.InteropServices.Tests
             Assert.Equal(new IntPtr(12), Marshal.OffsetOf(t, nameof(FieldAlignmentTest.m_byte2)));
             Assert.Equal(new IntPtr(16), Marshal.OffsetOf(t, nameof(FieldAlignmentTest.m_int2)));
 
-            if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows) || (RuntimeInformation.ProcessArchitecture != Architecture.X86))
+            if (OperatingSystem.IsWindows() || (RuntimeInformation.ProcessArchitecture != Architecture.X86))
             {
                 Assert.Equal(new IntPtr(24), Marshal.OffsetOf(t, nameof(FieldAlignmentTest.m_double1)));
                 Assert.Equal(new IntPtr(32), Marshal.OffsetOf(t, nameof(FieldAlignmentTest.m_char1)));
@@ -110,7 +109,7 @@ namespace System.Runtime.InteropServices.Tests
         {
             Type t = typeof(FieldAlignmentTest_Decimal);
 
-            if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows) || (RuntimeInformation.ProcessArchitecture != Architecture.X86))
+            if (OperatingSystem.IsWindows() || (RuntimeInformation.ProcessArchitecture != Architecture.X86 && RuntimeInformation.ProcessArchitecture != Architecture.Wasm))
             {
                 Assert.Equal(96, Marshal.SizeOf(t));
             }
@@ -122,7 +121,7 @@ namespace System.Runtime.InteropServices.Tests
             Assert.Equal(new IntPtr(0), Marshal.OffsetOf(t, nameof(FieldAlignmentTest_Decimal.b)));
             Assert.Equal(new IntPtr(8), Marshal.OffsetOf(t, nameof(FieldAlignmentTest_Decimal.p)));
 
-            if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows) || (RuntimeInformation.ProcessArchitecture != Architecture.X86))
+            if (OperatingSystem.IsWindows() || (RuntimeInformation.ProcessArchitecture != Architecture.X86 && RuntimeInformation.ProcessArchitecture != Architecture.Wasm))
             {
                 Assert.Equal(new IntPtr(88), Marshal.OffsetOf(t, nameof(FieldAlignmentTest_Decimal.s)));
             }

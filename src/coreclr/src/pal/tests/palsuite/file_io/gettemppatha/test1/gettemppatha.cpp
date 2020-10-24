@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 /*=====================================================================
 **
@@ -63,7 +62,7 @@ static void SetAndCheckLength(CHAR tmpDirPath[], int bufferLength, int expectedR
     }
 }
 
-int __cdecl main(int argc, char *argv[])
+PALTEST(file_io_gettemppatha_test1_paltest_gettemppatha_test1, "file_io/gettemppatha/test1/paltest_gettemppatha_test1")
 {
     if (0 != PAL_Initialize(argc,argv))
     {

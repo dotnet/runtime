@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections.Specialized;
 using System.Collections.Generic;
@@ -22,7 +21,7 @@ namespace System.Net
         // even though validators may exist, we should not initialize this initially since by default it is empty
         // and it may never be populated with values if the user does not set them
         private readonly Dictionary<string, ValidateAndParseValue> _validators;
-        private Dictionary<string, object>? _internalObjects = null;
+        private Dictionary<string, object>? _internalObjects;
 
         #endregion
 

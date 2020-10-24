@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 // Interface between the GC and EE
 //
 
@@ -73,9 +72,9 @@ public:
     static void HandleFatalError(unsigned int exitCode);
     static bool EagerFinalized(Object* obj);
     static MethodTable* GetFreeObjectMethodTable();
-    static bool GetBooleanConfigValue(const char* key, bool* value);
-    static bool GetIntConfigValue(const char* key, int64_t* value);
-    static bool GetStringConfigValue(const char* key, const char** value);
+    static bool GetBooleanConfigValue(const char* privateKey, const char* publicKey, bool* value);
+    static bool GetIntConfigValue(const char* privateKey, const char* publicKey, int64_t* value);
+    static bool GetStringConfigValue(const char* privateKey, const char* publicKey, const char** value);
     static void FreeStringConfigValue(const char* key);
     static bool IsGCThread();
     static bool WasCurrentThreadCreatedByGC();
@@ -87,7 +86,7 @@ public:
     static uint32_t GetTotalNumSizedRefHandles();
 
     static bool AnalyzeSurvivorsRequested(int condemnedGeneration);
-    static void AnalyzeSurvivorsFinished(int condemnedGeneration);
+    static void AnalyzeSurvivorsFinished(size_t gcIndex, int condemnedGeneration, uint64_t promoted_bytes, void (*reportGenerationBounds)());
 
     static void VerifySyncTableEntry();
     static void UpdateGCEventStatus(int publicLevel, int publicKeywords, int privateLevel, int privateKeywords);

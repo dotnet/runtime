@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 /*=====================================================================
 **
@@ -15,7 +14,7 @@
 
 #include <palsuite.h>
 
-int __cdecl main(int argc, char *argv[])
+PALTEST(file_io_SetEndOfFile_test5_paltest_setendoffile_test5, "file_io/SetEndOfFile/test5/paltest_setendoffile_test5")
 {
     HANDLE  hFile = NULL;
     DWORD   dwBytesWritten;

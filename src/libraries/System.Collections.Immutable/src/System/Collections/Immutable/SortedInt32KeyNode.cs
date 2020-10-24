@@ -1,11 +1,9 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
-using System.Diagnostics.Contracts;
 using System.Globalization;
 
 namespace System.Collections.Immutable
@@ -36,8 +34,7 @@ namespace System.Collections.Immutable
         /// <summary>
         /// The value associated with this node.
         /// </summary>
-        [MaybeNull]
-        private readonly TValue _value = default!;
+        private readonly TValue? _value;
 
         /// <summary>
         /// A value indicating whether this node has been frozen (made immutable).
@@ -199,16 +196,14 @@ namespace System.Collections.Immutable
         /// </summary>
         /// <param name="key">The key.</param>
         /// <returns>The value.</returns>
-        [Pure]
-        [return: MaybeNull]
-        internal TValue GetValueOrDefault(int key)
+        internal TValue? GetValueOrDefault(int key)
         {
             SortedInt32KeyNode<TValue> node = this;
             while (true)
             {
                 if (node.IsEmpty)
                 {
-                    return default(TValue)!;
+                    return default;
                 }
 
                 if (key == node._key)
@@ -233,7 +228,6 @@ namespace System.Collections.Immutable
         /// <param name="key">The key.</param>
         /// <param name="value">The value.</param>
         /// <returns>True if the key was found.</returns>
-        [Pure]
         internal bool TryGetValue(int key, [MaybeNullWhen(false)] out TValue value)
         {
             SortedInt32KeyNode<TValue> node = this;
@@ -241,7 +235,7 @@ namespace System.Collections.Immutable
             {
                 if (node.IsEmpty)
                 {
-                    value = default(TValue)!;
+                    value = default;
                     return false;
                 }
 
@@ -359,7 +353,6 @@ namespace System.Collections.Immutable
         /// </summary>
         /// <param name="tree">The tree.</param>
         /// <returns>0 if the tree is in balance, a positive integer if the right side is heavy, or a negative integer if the left side is heavy.</returns>
-        [Pure]
         private static int Balance(SortedInt32KeyNode<TValue> tree)
         {
             Requires.NotNull(tree, nameof(tree));
@@ -375,7 +368,6 @@ namespace System.Collections.Immutable
         /// <returns>
         /// <c>true</c> if [is right heavy] [the specified tree]; otherwise, <c>false</c>.
         /// </returns>
-        [Pure]
         private static bool IsRightHeavy(SortedInt32KeyNode<TValue> tree)
         {
             Requires.NotNull(tree, nameof(tree));
@@ -386,7 +378,6 @@ namespace System.Collections.Immutable
         /// <summary>
         /// Determines whether the specified tree is left heavy.
         /// </summary>
-        [Pure]
         private static bool IsLeftHeavy(SortedInt32KeyNode<TValue> tree)
         {
             Requires.NotNull(tree, nameof(tree));
@@ -399,7 +390,6 @@ namespace System.Collections.Immutable
         /// </summary>
         /// <param name="tree">The tree.</param>
         /// <returns>A balanced tree.</returns>
-        [Pure]
         private static SortedInt32KeyNode<TValue> MakeBalanced(SortedInt32KeyNode<TValue> tree)
         {
             Requires.NotNull(tree, nameof(tree));

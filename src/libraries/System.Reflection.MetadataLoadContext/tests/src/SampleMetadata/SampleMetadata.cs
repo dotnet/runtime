@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 #pragma warning disable 0169 // Field never used
 #pragma warning disable 0649 // Field never assigned
@@ -451,6 +450,8 @@ namespace SampleMetadata
         public MarkAttribute(int mark) { }
     }
 
+    public class MyGenericClass<T> { }
+
     public class MethodHolderBase<T>
     {
         [Mark(10)]
@@ -468,6 +469,17 @@ namespace SampleMetadata
         [Mark(30)]
         private void Poo(int x, int y) { }
 
+        [Mark(40)]
+        public virtual void Foo<K>(MyGenericClass<K> x, int y) { }
+
+        [Mark(50)]
+        public virtual void Foo<K>(MyGenericClass<T> x, int y) { }
+
+        [Mark(60)]
+        public virtual void Foo(MyGenericClass<T> x, string y) { }
+
+        [Mark(70)]
+        public virtual void Foo(int x, int y) { }
     }
 
     public class MethodHolderDerived<T> : MethodHolderBase<T>
@@ -477,6 +489,18 @@ namespace SampleMetadata
 
         [Mark(10020)]
         public override void Voo(int x, int y) { }
+
+        [Mark(10040)]
+        public override void Foo<K>(MyGenericClass<K> x, int y) { }
+
+        [Mark(10050)]
+        public virtual void Foo<K>(MyGenericClass<int> x, int y) { }
+
+        [Mark(10060)]
+        public override void Foo(MyGenericClass<T> x, string y) { }
+
+        [Mark(10070)]
+        public override void Foo(int x, int y) { }
     }
 
     public class PropertyHolder1<T>

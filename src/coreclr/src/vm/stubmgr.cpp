@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 
 #include "common.h"
@@ -1087,7 +1086,7 @@ BOOL PrecodeStubManager::DoTraceStub(PCODE stubStartAddress,
     // MethodDesc. If, however, this is an IL method, then we are at risk to have another thread backpatch the call
     // here, so we'd miss if we patched the prestub. Therefore, we go right to the IL method and patch IL offset 0
     // by using TRACE_UNJITTED_METHOD.
-    if (!pMD->IsIL())
+    if (!pMD->IsIL() && !pMD->IsILStub())
     {
         trace->InitForStub(GetPreStubEntryPoint());
     }
@@ -1479,7 +1478,7 @@ BOOL RangeSectionStubManager::DoTraceStub(PCODE stubStartAddress, TraceDestinati
             }
         }
 
-        __fallthrough;
+        FALLTHROUGH;
 #endif
 
     case STUB_CODE_BLOCK_METHOD_CALL_THUNK:
@@ -1687,50 +1686,6 @@ PCODE ILStubManager::GetCOMTarget(Object *pThis, ComPlusCallInfo *pComPlusCallIn
     PCODE target = (PCODE)lpVtbl[pComPlusCallInfo->m_cachedComSlot];
     return target;
 }
-
-// This function should return the same result as StubHelpers::GetWinRTFactoryObject followed by
-// ILStubManager::GetCOMTarget. The difference is that it does not allocate managed memory, so it
-// does not trigger GC.
-//
-// The reason why GC (and potentially a stack walk for other purposes, such as exception handling)
-// would be problematic is that we are stopped at the first instruction of an IL stub which is
-// not a GC-safe point. Technically, the function still has the GC_TRIGGERS contract but we should
-// not see GC in practice here without allocating.
-//
-// Note that the GC suspension logic detects the debugger-is-attached-at-GC-unsafe-point case and
-// will back off and retry. This means that it suffices to ensure that this thread does not trigger
-// GC, allocations on other threads will wait and not cause major trouble.
-PCODE ILStubManager::GetWinRTFactoryTarget(ComPlusCallMethodDesc *pCMD)
-{
-    CONTRACTL
-    {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_COOPERATIVE;
-    }
-    CONTRACTL_END;
-
-    MethodTable *pMT = pCMD->GetMethodTable();
-
-    // GetComClassFactory could load types and trigger GC, get class name manually
-    InlineSString<DEFAULT_NONSTACK_CLASSNAME_SIZE> ssClassName;
-    pMT->_GetFullyQualifiedNameForClass(ssClassName);
-
-    IID iid;
-    pCMD->m_pComPlusCallInfo->m_pInterfaceMT->GetGuid(&iid, FALSE, FALSE);
-
-    SafeComHolder<IInspectable> pFactory;
-    {
-        GCX_PREEMP();
-        if (SUCCEEDED(RoGetActivationFactory(WinRtStringRef(ssClassName.GetUnicode(), ssClassName.GetCount()), iid, &pFactory)))
-        {
-            LPVOID *lpVtbl = *(LPVOID **)(IUnknown *)pFactory;
-            return (PCODE)lpVtbl[pCMD->m_pComPlusCallInfo->m_cachedComSlot];
-        }
-    }
-
-    return NULL;
-}
 #endif // FEATURE_COMINTEROP
 
 #ifndef CROSSGEN_COMPILE
@@ -1831,19 +1786,12 @@ BOOL ILStubManager::TraceManager(Thread *thread,
         LOG((LF_CORDB, LL_INFO10000, "ILSM::TraceManager: Unmanaged CALLI case 0x%x\n", target));
         trace->InitForUnmanaged(target);
     }
-#ifdef FEATURE_COMINTEROP
-    else if (pStubMD->IsDelegateCOMStub())
+    else if (pStubMD->IsStructMarshalStub())
     {
-        // This is a delegate, but the target is COM.
-        DelegateObject *pDel = (DelegateObject *)pThis;
-        DelegateEEClass *pClass = (DelegateEEClass *)pDel->GetMethodTable()->GetClass();
-
-        target = GetCOMTarget(pThis, pClass->m_pComPlusCallInfo);
-
-        LOG((LF_CORDB, LL_INFO10000, "ILSM::TraceManager: CLR-to-COM via delegate case 0x%x\n", target));
-        trace->InitForUnmanaged(target);
+        // There's no "target" for struct marshalling stubs
+        // so we have nowhere to tell the debugger to move the breakpoint.
+        return FALSE;
     }
-#endif // FEATURE_COMINTEROP
     else
     {
         // This is either direct forward P/Invoke or a CLR-to-COM call, the argument is MD
@@ -1860,27 +1808,7 @@ BOOL ILStubManager::TraceManager(Thread *thread,
         {
             _ASSERTE(pMD->IsComPlusCall());
             ComPlusCallMethodDesc *pCMD = (ComPlusCallMethodDesc *)pMD;
-
-            if (pCMD->IsStatic() || pCMD->IsCtor())
-            {
-                // pThis is not the object we'll be calling, we need to get the factory object instead
-                MethodTable *pMTOfTypeToCreate = pCMD->GetMethodTable();
-                pThis = OBJECTREFToObject(GetAppDomain()->LookupWinRTFactoryObject(pMTOfTypeToCreate, GetCurrentCtxCookie()));
-
-                if (pThis == NULL)
-                {
-                    // If we don't have an RCW of the factory object yet, don't create it. We would
-                    // risk triggering GC which is not safe here because the IL stub is not at a GC
-                    // safe point. Instead, query WinRT directly and release the factory immediately.
-                    target = GetWinRTFactoryTarget(pCMD);
-
-                    if (target != NULL)
-                    {
-                        LOG((LF_CORDB, LL_INFO10000, "ILSM::TraceManager: CLR-to-COM WinRT factory RCW-does-not-exist-yet case 0x%x\n", target));
-                        trace->InitForUnmanaged(target);
-                    }
-                }
-            }
+            _ASSERTE(!pCMD->IsStatic() && !pCMD->IsCtor() && "Static methods and constructors are not supported for built-in classic COM");
 
             if (pThis != NULL)
             {
@@ -2349,6 +2277,8 @@ BOOL DelegateInvokeStubManager::TraceDelegateObject(BYTE* pbDel, TraceDestinatio
 #endif // DACCESS_COMPILE
 
 
+#if defined(TARGET_X86) && !defined(UNIX_X86_ABI)
+
 #if !defined(DACCESS_COMPILE)
 
 // static
@@ -2365,7 +2295,7 @@ void TailCallStubManager::Init()
     StubManager::AddStubManager(new TailCallStubManager());
 }
 
-bool TailCallStubManager::IsTailCallStubHelper(PCODE code)
+bool TailCallStubManager::IsTailCallJitHelper(PCODE code)
 {
     LIMITED_METHOD_CONTRACT;
 
@@ -2381,7 +2311,7 @@ BOOL TailCallStubManager::CheckIsStub_Internal(PCODE stubStartAddress)
     bool fIsStub = false;
 
 #if !defined(DACCESS_COMPILE)
-    fIsStub = IsTailCallStubHelper(stubStartAddress);
+    fIsStub = IsTailCallJitHelper(stubStartAddress);
 #endif // !DACCESS_COMPILE
 
     return fIsStub;
@@ -2389,10 +2319,8 @@ BOOL TailCallStubManager::CheckIsStub_Internal(PCODE stubStartAddress)
 
 #if !defined(DACCESS_COMPILE)
 
-#if defined(TARGET_X86)
 EXTERN_C void STDCALL JIT_TailCallLeave();
 EXTERN_C void STDCALL JIT_TailCallVSDLeave();
-#endif // TARGET_X86
 
 BOOL TailCallStubManager::TraceManager(Thread * pThread,
                                        TraceDestination * pTrace,
@@ -2400,7 +2328,6 @@ BOOL TailCallStubManager::TraceManager(Thread * pThread,
                                        BYTE ** ppRetAddr)
 {
     WRAPPER_NO_CONTRACT;
-#if defined(TARGET_X86)
     TADDR esp = GetSP(pContext);
     TADDR ebp = GetFP(pContext);
 
@@ -2449,27 +2376,6 @@ BOOL TailCallStubManager::TraceManager(Thread * pThread,
         pTrace->InitForStub((PCODE)*reinterpret_cast<SIZE_T *>(esp));
         return TRUE;
     }
-
-#elif defined(TARGET_AMD64) || defined(TARGET_ARM)
-
-    _ASSERTE(GetIP(pContext) == GetEEFuncEntryPoint(JIT_TailCall));
-
-    // The target address is the second argument
-#ifdef TARGET_AMD64
-    PCODE target = (PCODE)pContext->Rdx;
-#else
-    PCODE target = (PCODE)pContext->R1;
-#endif
-    *ppRetAddr = reinterpret_cast<BYTE *>(target);
-    pTrace->InitForStub(target);
-    return TRUE;
-
-#else  // !TARGET_X86 && !TARGET_AMD64 && !TARGET_ARM
-
-    _ASSERTE(!"TCSM::TM - TailCallStubManager should not be necessary on this platform");
-    return FALSE;
-
-#endif // TARGET_X86 || TARGET_AMD64
 }
 
 #endif // !DACCESS_COMPILE
@@ -2490,6 +2396,8 @@ BOOL TailCallStubManager::DoTraceStub(PCODE stubStartAddress, TraceDestination *
     LOG_TRACE_DESTINATION(trace, stubStartAddress, "TailCallStubManager::DoTraceStub");
     return fResult;
 }
+
+#endif // TARGET_X86 && !UNIX_X86_ABI
 
 
 #ifdef DACCESS_COMPILE
@@ -2582,6 +2490,7 @@ VirtualCallStubManager::DoEnumMemoryRegions(CLRDataEnumMemoryFlags flags)
     GetCacheEntryRangeList()->EnumMemoryRegions(flags);
 }
 
+#if defined(TARGET_X86) && !defined(UNIX_X86_ABI)
 void TailCallStubManager::DoEnumMemoryRegions(CLRDataEnumMemoryFlags flags)
 {
     SUPPORTS_DAC;
@@ -2589,6 +2498,7 @@ void TailCallStubManager::DoEnumMemoryRegions(CLRDataEnumMemoryFlags flags)
     DAC_ENUM_VTHIS();
     EMEM_OUT(("MEM: %p TailCallStubManager\n", dac_cast<TADDR>(this)));
 }
+#endif
 
 #endif // #ifdef DACCESS_COMPILE
 

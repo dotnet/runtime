@@ -289,7 +289,7 @@ This document will refer to half precision floating point as `Half`.
 + CoreCLR and `CIL` in general do not have general support for a `Half` type
 + There is an open request to expose `Half` intrinsics
 + There is an outstanding proposal to add `System.Half` to support this request
-https://github.com/dotnet/corefx/issues/25702
+https://github.com/dotnet/runtime/issues/936
 + Implementation of `Half` features will be adjusted based on
   + Implementation of the `System.Half` proposal
   + Availability of supporting hardware (extensions)

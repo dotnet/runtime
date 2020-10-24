@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 //*****************************************************************************
 // Debug.cpp
 //
@@ -22,6 +21,10 @@
 #include "log.h"
 
 extern "C" _CRTIMP int __cdecl _flushall(void);
+
+#ifdef HOST_WINDOWS
+void CreateCrashDumpIfEnabled(bool stackoverflow = false);
+#endif
 
 // Global state counter to implement SUPPRESS_ALLOCATION_ASSERTS_IN_THIS_SCOPE.
 Volatile<LONG> g_DbgSuppressAllocationAsserts = 0;
@@ -180,6 +183,9 @@ VOID TerminateOnAssert()
     STATIC_CONTRACT_DEBUG_ONLY;
 
     ShutdownLogging();
+#ifdef HOST_WINDOWS
+    CreateCrashDumpIfEnabled();
+#endif
     RaiseFailFastException(NULL, NULL, 0);
 }
 
@@ -456,10 +462,13 @@ bool _DbgBreakCheck(
 #endif
     // For abort, just quit the app.
     case IDABORT:
+#ifdef HOST_WINDOWS
+        CreateCrashDumpIfEnabled();
+#endif
         TerminateProcess(GetCurrentProcess(), 1);
         break;
 
-    // Tell caller to break at the correct loction.
+    // Tell caller to break at the correct location.
     case IDRETRY:
         if (IsDebuggerPresent())
         {
@@ -823,6 +832,9 @@ void DECLSPEC_NORETURN __FreeBuildAssertFail(const char *szFile, int iLine, cons
 
     ShutdownLogging();
 
+#ifdef HOST_WINDOWS
+    CreateCrashDumpIfEnabled();
+#endif
     RaiseFailFastException(NULL, NULL, 0);
 
     UNREACHABLE();

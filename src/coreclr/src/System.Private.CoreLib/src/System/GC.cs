@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 /*============================================================
 **
@@ -29,7 +28,7 @@ namespace System
     }
 
     // !!!!!!!!!!!!!!!!!!!!!!!
-    // make sure you change the def in vm\gc.h
+    // make sure you change the def in gc\gcinterface.h
     // if you change this!
     internal enum InternalGCCollectionMode
     {
@@ -40,7 +39,7 @@ namespace System
     }
 
     // !!!!!!!!!!!!!!!!!!!!!!!
-    // make sure you change the def in vm\gc.h
+    // make sure you change the def in gc\gcinterface.h
     // if you change this!
     public enum GCNotificationStatus
     {
@@ -54,28 +53,29 @@ namespace System
     public static class GC
     {
         [MethodImpl(MethodImplOptions.InternalCall)]
-        internal static extern void GetMemoryInfo(out ulong highMemLoadThresholdBytes,
-                                                  out ulong totalAvailableMemoryBytes,
-                                                  out ulong lastRecordedMemLoadBytes,
-                                                  out uint lastRecordedMemLoadPct,
-                                                  // The next two are size_t
-                                                  out UIntPtr lastRecordedHeapSizeBytes,
-                                                  out UIntPtr lastRecordedFragmentationBytes);
+        private static extern void GetMemoryInfo(GCMemoryInfoData data, int kind);
 
-        public static GCMemoryInfo GetGCMemoryInfo()
+        /// <summary>Gets garbage collection memory information.</summary>
+        /// <returns>An object that contains information about the garbage collector's memory usage.</returns>
+        public static GCMemoryInfo GetGCMemoryInfo() => GetGCMemoryInfo(GCKind.Any);
+
+        /// <summary>Gets garbage collection memory information.</summary>
+        /// <param name="kind">The kind of collection for which to retrieve memory information.</param>
+        /// <returns>An object that contains information about the garbage collector's memory usage.</returns>
+        public static GCMemoryInfo GetGCMemoryInfo(GCKind kind)
         {
-            GetMemoryInfo(out ulong highMemLoadThresholdBytes,
-                          out ulong totalAvailableMemoryBytes,
-                          out ulong lastRecordedMemLoadBytes,
-                          out uint _,
-                          out UIntPtr lastRecordedHeapSizeBytes,
-                          out UIntPtr lastRecordedFragmentationBytes);
+            if ((kind < GCKind.Any) || (kind > GCKind.Background))
+            {
+                throw new ArgumentOutOfRangeException(nameof(kind),
+                                      SR.Format(
+                                          SR.ArgumentOutOfRange_Bounds_Lower_Upper,
+                                          GCKind.Any,
+                                          GCKind.Background));
+            }
 
-            return new GCMemoryInfo(highMemoryLoadThresholdBytes: (long)highMemLoadThresholdBytes,
-                                    memoryLoadBytes: (long)lastRecordedMemLoadBytes,
-                                    totalAvailableMemoryBytes: (long)totalAvailableMemoryBytes,
-                                    heapSizeBytes: (long)(ulong)lastRecordedHeapSizeBytes,
-                                    fragmentedBytes: (long)(ulong)lastRecordedFragmentationBytes);
+            var data = new GCMemoryInfoData();
+            GetMemoryInfo(data, (int)kind);
+            return new GCMemoryInfo(data);
         }
 
         [DllImport(RuntimeHelpers.QCall, CharSet = CharSet.Unicode)]
@@ -135,7 +135,7 @@ namespace System
 
             if ((4 == IntPtr.Size) && (bytesAllocated > int.MaxValue))
             {
-                throw new ArgumentOutOfRangeException("pressure",
+                throw new ArgumentOutOfRangeException(nameof(bytesAllocated),
                     SR.ArgumentOutOfRange_MustBeNonNegInt32);
             }
 
@@ -294,7 +294,7 @@ namespace System
 
         public static void WaitForPendingFinalizers()
         {
-            // QCalls can not be exposed from mscorlib directly, need to wrap it.
+            // QCalls can not be exposed directly, need to wrap it.
             _WaitForPendingFinalizers();
         }
 
@@ -353,7 +353,7 @@ namespace System
         }
 
         [DllImport(RuntimeHelpers.QCall, CharSet = CharSet.Unicode)]
-        private static extern IntPtr _RegisterFrozenSegment(IntPtr sectionAddress, IntPtr sectionSize);
+        private static extern IntPtr _RegisterFrozenSegment(IntPtr sectionAddress, nint sectionSize);
 
         [DllImport(RuntimeHelpers.QCall, CharSet = CharSet.Unicode)]
         private static extern void _UnregisterFrozenSegment(IntPtr segmentHandle);
@@ -540,21 +540,12 @@ namespace System
         private static readonly List<MemoryLoadChangeNotification> s_notifications = new List<MemoryLoadChangeNotification>();
         private static float s_previousMemoryLoad = float.MaxValue;
 
-        private static float GetMemoryLoad()
-        {
-            GetMemoryInfo(out ulong _,
-                          out ulong _,
-                          out ulong _,
-                          out uint lastRecordedMemLoadPct,
-                          out UIntPtr _,
-                          out UIntPtr _);
-
-            return (float)lastRecordedMemLoadPct;
-        }
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        internal static extern uint GetMemoryLoad();
 
         private static bool InvokeMemoryLoadChangeNotifications()
         {
-            float currentMemoryLoad = GetMemoryLoad();
+            float currentMemoryLoad = (float)GetMemoryLoad();
 
             lock (s_notifications)
             {
@@ -668,7 +659,7 @@ namespace System
         /// If pinned is set to true, <typeparamref name="T"/> must not be a reference type or a type that contains object references.
         /// </remarks>
         [MethodImpl(MethodImplOptions.AggressiveInlining)] // forced to ensure no perf drop for small memory buffers (hot path)
-        public static T[] AllocateUninitializedArray<T>(int length, bool pinned = false)
+        public static T[] AllocateUninitializedArray<T>(int length, bool pinned = false) // T[] rather than T?[] to match `new T[length]` behavior
         {
             if (!pinned)
             {
@@ -694,7 +685,7 @@ namespace System
             // kept outside of the small arrays hot path to have inlining without big size growth
             return AllocateNewUninitializedArray(length, pinned);
 
-            // remove the local function when https://github.com/dotnet/coreclr/issues/5329 is implemented
+            // remove the local function when https://github.com/dotnet/runtime/issues/5973 is implemented
             static T[] AllocateNewUninitializedArray(int length, bool pinned)
             {
                 GC_ALLOC_FLAGS flags = GC_ALLOC_FLAGS.GC_ALLOC_ZEROING_OPTIONAL;
@@ -714,7 +705,7 @@ namespace System
         /// <remarks>
         /// If pinned is set to true, <typeparamref name="T"/> must not be a reference type or a type that contains object references.
         /// </remarks>
-        public static T[] AllocateArray<T>(int length, bool pinned = false)
+        public static T[] AllocateArray<T>(int length, bool pinned = false) // T[] rather than T?[] to match `new T[length]` behavior
         {
             GC_ALLOC_FLAGS flags = GC_ALLOC_FLAGS.GC_ALLOC_NO_FLAGS;
 

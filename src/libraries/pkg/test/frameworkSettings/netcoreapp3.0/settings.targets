@@ -1,8 +1,5 @@
 <Project>
   <ItemGroup>
-    <!-- We can remove this workaround until we retarget corefx to 5.0 -->
-    <IgnoredReference Include="System.Private.CoreLib" />
-
     <!-- Temporary till SDK supports transitive framework references. -->
     <KnownFrameworkReference Remove="Microsoft.AspNetCore.App" />
     <KnownFrameworkReference Remove="Microsoft.WindowsDesktop.App" />

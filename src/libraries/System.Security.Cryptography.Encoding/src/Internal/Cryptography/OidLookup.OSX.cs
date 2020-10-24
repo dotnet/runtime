@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System;
 using System.Collections.Generic;
@@ -36,10 +35,6 @@ namespace Internal.Cryptography
             return null;
         }
 
-        // -----------------------------
-        // ---- PAL layer ends here ----
-        // -----------------------------
-
         /// <summary>Expected size of <see cref="s_extraFriendlyNameToOid"/>.</summary>
         private const int ExtraFriendlyNameToOidCount = 8;
 
@@ -66,6 +61,16 @@ namespace Internal.Cryptography
 
         private static readonly Dictionary<string, string> s_extraOidToFriendlyName =
             InvertWithDefaultComparer(s_extraFriendlyNameToOid);
+
+        private static Dictionary<string, string> InvertWithDefaultComparer(Dictionary<string, string> source)
+        {
+            var result = new Dictionary<string, string>(source.Count);
+            foreach (KeyValuePair<string, string> item in source)
+            {
+                result.Add(item.Value, item.Key);
+            }
+            return result;
+        }
 
 #if DEBUG
         static partial void ExtraStaticDebugValidation()

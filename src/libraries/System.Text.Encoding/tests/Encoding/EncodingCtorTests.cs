@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
 using Xunit;
@@ -58,25 +57,16 @@ namespace System.Text.Tests
 
         private static void VerifyEncoding(Encoding encoding, int codePage, EncoderFallback encoderFallback, DecoderFallback decoderFallback)
         {
-            if (encoderFallback == null)
+            if (encoderFallback is null && encoding.IsLatin1())
             {
-                Assert.NotNull(encoding.EncoderFallback);
-                Assert.Equal(codePage, encoding.EncoderFallback.GetHashCode());
+                Assert.True(encoding.EncoderFallback.IsLatin1BestFitFallback());
             }
             else
             {
-                Assert.Same(encoderFallback, encoding.EncoderFallback);
+                Assert.Same(encoderFallback ?? EncoderFallback.ReplacementFallback, encoding.EncoderFallback);
             }
 
-            if (decoderFallback == null)
-            {
-                Assert.NotNull(encoding.DecoderFallback);
-                Assert.Equal(codePage, encoding.DecoderFallback.GetHashCode());
-            }
-            else
-            {
-                Assert.Same(decoderFallback, encoding.DecoderFallback);
-            }
+            Assert.Same(decoderFallback ?? DecoderFallback.ReplacementFallback, encoding.DecoderFallback);
 
             Assert.Empty(encoding.GetPreamble());
             Assert.False(encoding.IsSingleByte);

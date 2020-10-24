@@ -1,6 +1,5 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System;
 using System.Collections.Generic;
@@ -664,6 +663,46 @@ namespace Microsoft.Extensions.DependencyModel.Tests
                 .Which.AssetPaths.Should().BeEmpty();
             package.NativeLibraryGroups.Should().Contain(g => g.Runtime == "linux-x64")
                 .Which.AssetPaths.Should().BeEmpty();
+        }
+
+        [Fact]
+        public void ReadsRuntimePackLibrary()
+        {
+            var context = Read(
+@"{
+    ""runtimeTarget"": {
+        ""name"": "".NETCoreApp,Version=v5.0/win-x86"",
+        ""signature"": """"
+    },
+    ""targets"": {
+        "".NETCoreApp,Version=v5.0/win-x86"": {
+            ""runtimepack.Microsoft.NETCore.App.Runtime.win-x86/5.0.0-preview.5.20251.1"": {
+                ""runtime"": {
+                    ""System.Private.CoreLib.dll"": {
+                        ""assemblyVersion"": ""5.0.0.0"",
+                        ""fileVersion"": ""5.0.20.25101""
+                    }
+                },
+                ""native"": {
+                    ""coreclr.dll"": {
+                        ""fileVersion"": ""5.0.20.25101""
+                    }
+                }
+            }
+        }
+    },
+    ""libraries"": {
+        ""runtimepack.Microsoft.NETCore.App.Runtime.win-x86/5.0.0-preview.5.20251.1"": {
+            ""type"": ""runtimepack"",
+            ""serviceable"": false,
+            ""sha512"": """"
+        }
+    }
+}");
+
+            var runtimeLibrary = context.RuntimeLibraries.Should().ContainSingle().Subject;
+            runtimeLibrary.Type.Should().Be("runtimepack");
+            runtimeLibrary.Serviceable.Should().Be(false);
         }
 
         [Fact]

@@ -10,8 +10,7 @@
     <Compile Include="TimerFiringTests.cs" />
     <Compile Include="TimerDisposeTests.cs" />
     <Compile Include="TimerMetricsTests.cs" />
-    <Compile Include="$(CommonTestPath)System\Threading\ThreadTestHelpers.cs">
-      <Link>CommonTest\System\Threading\ThreadTestHelpers.cs</Link>
-    </Compile>
+    <Compile Include="$(CommonTestPath)System\Threading\ThreadTestHelpers.cs"
+             Link="CommonTest\System\Threading\ThreadTestHelpers.cs" />
   </ItemGroup>
 </Project>

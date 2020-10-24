@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 //*****************************************************************************
 // CLRConfig.cpp
 //
@@ -83,64 +82,6 @@
 #undef CONFIG_STRING_INFO_DIRECT_ACCESS
 
 
-
-
-// Return if a quirk is a enabled.
-// This will also return enabled as true when the quirk has a value set.
-BOOL CLRConfig::IsConfigEnabled(const ConfigDWORDInfo & info)
-{
-    CONTRACTL
-    {
-        NOTHROW;
-        GC_NOTRIGGER;
-        FORBID_FAULT;
-    }
-    CONTRACTL_END;
-
-    DWORD result = info.defaultValue;
-
-    //
-    // Set up REGUTIL options.
-    //
-    REGUTIL::CORConfigLevel level = GetConfigLevel(info.options);
-    BOOL prependCOMPlus = !CheckLookupOption(info, DontPrependCOMPlus_);
-
-    //
-    // If we aren't favoring config files, we check REGUTIL here.
-    //
-    if(CheckLookupOption(info, FavorConfigFile) == FALSE)
-    {
-        REGUTIL::GetConfigDWORD_DontUse_(info.name, info.defaultValue, &result, level, prependCOMPlus);
-        if(result>0)
-            return TRUE;
-        LPWSTR result = REGUTIL::GetConfigString_DontUse_(info.name, prependCOMPlus, level);
-        if(result != NULL && result[0] != 0)
-        {
-            return TRUE;
-        }
-    }
-
-    //
-    // If we are favoring config files and we don't have a result from EEConfig, we check REGUTIL here.
-    //
-    if(CheckLookupOption(info, FavorConfigFile) == TRUE)
-    {
-        REGUTIL::GetConfigDWORD_DontUse_(info.name, info.defaultValue, &result, level, prependCOMPlus);
-        if(result>0)
-            return TRUE;
-        LPWSTR result = REGUTIL::GetConfigString_DontUse_(info.name, prependCOMPlus, level);
-        if(result != NULL && result[0] != 0)
-        {
-            return TRUE;
-        }
-    }
-
-    if(info.defaultValue>0)
-        return TRUE;
-    else
-        return FALSE;
-}
-
 //
 // Look up a DWORD config value.
 //
@@ -178,63 +119,27 @@ DWORD CLRConfig::GetConfigValue(const ConfigDWORDInfo & info, bool acceptExplici
     REGUTIL::CORConfigLevel level = GetConfigLevel(info.options);
     BOOL prependCOMPlus = !CheckLookupOption(info, DontPrependCOMPlus_);
 
-    //
-    // If we aren't favoring config files, we check REGUTIL here.
-    //
-    if (CheckLookupOption(info, FavorConfigFile) == FALSE)
-    {
-        DWORD resultMaybe;
-        HRESULT hr = REGUTIL::GetConfigDWORD_DontUse_(info.name, info.defaultValue, &resultMaybe, level, prependCOMPlus);
+    DWORD resultMaybe;
+    HRESULT hr = REGUTIL::GetConfigDWORD_DontUse_(info.name, info.defaultValue, &resultMaybe, level, prependCOMPlus);
 
-        if (!acceptExplicitDefaultFromRegutil)
+    if (!acceptExplicitDefaultFromRegutil)
+    {
+        // Ignore the default value even if it's set explicitly.
+        if (resultMaybe != info.defaultValue)
         {
-            // Ignore the default value even if it's set explicitly.
-            if (resultMaybe != info.defaultValue)
-            {
-                *isDefault = false;
-                return resultMaybe;
-            }
-        }
-        else
-        {
-            // If we are willing to accept the default value when it's set explicitly,
-            // checking the HRESULT here is sufficient. E_FAIL is returned when the
-            // default is used.
-            if (SUCCEEDED(hr))
-            {
-                *isDefault = false;
-                return resultMaybe;
-            }
+            *isDefault = false;
+            return resultMaybe;
         }
     }
-
-    //
-    // If we are favoring config files and we don't have a result from EEConfig, we check REGUTIL here.
-    //
-    if (CheckLookupOption(info, FavorConfigFile) == TRUE)
+    else
     {
-        DWORD resultMaybe;
-        HRESULT hr = REGUTIL::GetConfigDWORD_DontUse_(info.name, info.defaultValue, &resultMaybe, level, prependCOMPlus);
-
-        if (!acceptExplicitDefaultFromRegutil)
+        // If we are willing to accept the default value when it's set explicitly,
+        // checking the HRESULT here is sufficient. E_FAIL is returned when the
+        // default is used.
+        if (SUCCEEDED(hr))
         {
-            // Ignore the default value even if it's set explicitly.
-            if (resultMaybe != info.defaultValue)
-            {
-                *isDefault = false;
-                return resultMaybe;
-            }
-        }
-        else
-        {
-            // If we are willing to accept the default value when it's set explicitly,
-            // checking the HRESULT here is sufficient. E_FAIL is returned when the
-            // default is used.
-            if (SUCCEEDED(hr))
-            {
-                *isDefault = false;
-                return resultMaybe;
-            }
+            *isDefault = false;
+            return resultMaybe;
         }
     }
 
@@ -319,22 +224,7 @@ HRESULT CLRConfig::GetConfigValue(const ConfigStringInfo & info, __deref_out_z L
     REGUTIL::CORConfigLevel level = GetConfigLevel(info.options);
     BOOL prependCOMPlus = !CheckLookupOption(info, DontPrependCOMPlus_);
 
-    //
-    // If we aren't favoring config files, we check REGUTIL here.
-    //
-    if(result == NULL && CheckLookupOption(info, FavorConfigFile) == FALSE)
-    {
-        result = REGUTIL::GetConfigString_DontUse_(info.name, prependCOMPlus, level);
-    }
-
-    //
-    // If we are favoring config files and we don't have a result from EEConfig, we check REGUTIL here.
-    //
-    if(result==NULL &&
-        CheckLookupOption(info, FavorConfigFile) == TRUE)
-    {
-        result = REGUTIL::GetConfigString_DontUse_(info.name, prependCOMPlus, level);
-    }
+    result = REGUTIL::GetConfigString_DontUse_(info.name, prependCOMPlus, level);
 
     if ((result != NULL) && CheckLookupOption(info, TrimWhiteSpaceFromStringValue))
     {
@@ -491,11 +381,5 @@ REGUTIL::CORConfigLevel CLRConfig::GetConfigLevel(LookupOptions options)
     if(CheckLookupOption(options, IgnoreEnv) == FALSE)
         level = static_cast<REGUTIL::CORConfigLevel>(level | REGUTIL::COR_CONFIG_ENV);
 
-    if(CheckLookupOption(options, IgnoreHKCU) == FALSE)
-        level = static_cast<REGUTIL::CORConfigLevel>(level | REGUTIL::COR_CONFIG_USER);
-
-    if(CheckLookupOption(options, IgnoreHKLM) == FALSE)
-        level = static_cast<REGUTIL::CORConfigLevel>(level | REGUTIL::COR_CONFIG_MACHINE);
-
-    return level;
+    return static_cast<REGUTIL::CORConfigLevel>(level | REGUTIL::COR_CONFIG_USER | REGUTIL::COR_CONFIG_MACHINE);
 }

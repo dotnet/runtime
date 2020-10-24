@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 // EEConfig.H
 //
 
@@ -132,14 +131,6 @@ public:
             default          : return TRUE;
         }
     }
-
-    bool LegacyNullReferenceExceptionPolicy(void)   const {LIMITED_METHOD_CONTRACT;  return fLegacyNullReferenceExceptionPolicy; }
-    bool LegacyUnhandledExceptionPolicy(void)       const {LIMITED_METHOD_CONTRACT;  return fLegacyUnhandledExceptionPolicy; }
-
-#ifdef FEATURE_CORRUPTING_EXCEPTIONS
-    // Returns a bool to indicate if the legacy CSE (pre-v4) behaviour is enabled or not
-    bool LegacyCorruptedStateExceptionsPolicy(void) const {LIMITED_METHOD_CONTRACT;  return fLegacyCorruptedStateExceptionsPolicy; }
-#endif // FEATURE_CORRUPTING_EXCEPTIONS
 
     bool InteropValidatePinnedObjects()             const { LIMITED_METHOD_CONTRACT;  return m_fInteropValidatePinnedObjects; }
     bool InteropLogArguments()                      const { LIMITED_METHOD_CONTRACT;  return m_fInteropLogArguments; }
@@ -399,33 +390,12 @@ public:
     GCStressFlags GetGCStressLevel()        const { WRAPPER_NO_CONTRACT; SUPPORTS_DAC; return GCStressFlags(iGCStress); }
 #endif
 
-    bool    IsGCBreakOnOOMEnabled()         const {LIMITED_METHOD_CONTRACT;  return fGCBreakOnOOM; }
+    bool    IsGCBreakOnOOMEnabled()         const {LIMITED_METHOD_CONTRACT; return fGCBreakOnOOM; }
 
-    size_t  GetGCgen0size  ()               const {LIMITED_METHOD_CONTRACT;  return iGCgen0size;   }
-    void    SetGCgen0size  (size_t iSize)   {LIMITED_METHOD_CONTRACT; iGCgen0size = iSize;   }
-    size_t  GetSegmentSize ()               const {LIMITED_METHOD_CONTRACT;  return iGCSegmentSize; }
-    void    SetSegmentSize (size_t iSize)   {LIMITED_METHOD_CONTRACT;  iGCSegmentSize = iSize; }
-
-    int     GetGCconcurrent()               const {LIMITED_METHOD_CONTRACT;  return iGCconcurrent; }
-    void    SetGCconcurrent(int val)              {LIMITED_METHOD_CONTRACT;  iGCconcurrent = val;  }
-#ifdef _DEBUG
-    int     GetGCLatencyMode()              const {LIMITED_METHOD_CONTRACT;  return iGCLatencyMode; }
-#endif //_DEBUG
-    int     GetGCForceCompact()             const {LIMITED_METHOD_CONTRACT; return iGCForceCompact; }
+    int     GetGCconcurrent()               const {LIMITED_METHOD_CONTRACT; return iGCconcurrent; }
+    void    SetGCconcurrent(int val)              {LIMITED_METHOD_CONTRACT; iGCconcurrent = val;  }
     int     GetGCRetainVM ()                const {LIMITED_METHOD_CONTRACT; return iGCHoardVM;}
     DWORD   GetGCLOHThreshold()             const {LIMITED_METHOD_CONTRACT; return iGCLOHThreshold;}
-    int     GetGCLOHCompactionMode()        const {LIMITED_METHOD_CONTRACT; return iGCLOHCompactionMode;}
-    int     GetGCHeapCount()                const {LIMITED_METHOD_CONTRACT; return iGCHeapCount;}
-    int     GetGCNoAffinitize ()            const {LIMITED_METHOD_CONTRACT; return iGCNoAffinitize;}
-    size_t  GetGCAffinityMask()             const {LIMITED_METHOD_CONTRACT; return iGCAffinityMask;}
-    size_t  GetGCHeapHardLimit()            const {LIMITED_METHOD_CONTRACT; return iGCHeapHardLimit;}
-    int     GetGCHeapHardLimitPercent()     const {LIMITED_METHOD_CONTRACT; return iGCHeapHardLimitPercent;}
-
-#ifdef GCTRIMCOMMIT
-
-    int     GetGCTrimCommit()               const {LIMITED_METHOD_CONTRACT; return iGCTrimCommit;}
-
-#endif
 
 #ifdef FEATURE_CONSERVATIVE_GC
     bool    GetGCConservative()             const {LIMITED_METHOD_CONTRACT; return iGCConservative;}
@@ -541,15 +511,6 @@ public:
     DWORD  NgenForceFailureCount()    { LIMITED_METHOD_CONTRACT; return dwNgenForceFailureCount; }
     DWORD  NgenForceFailureKind()     { LIMITED_METHOD_CONTRACT; return dwNgenForceFailureKind;  }
 #endif
-    enum GCPollType
-    {
-        GCPOLL_TYPE_DEFAULT,    // Use the default gc poll for the platform
-        GCPOLL_TYPE_HIJACK,     // Depend on thread hijacking for gc suspension
-        GCPOLL_TYPE_POLL,       // Emit function calls to a helper for GC Poll
-        GCPOLL_TYPE_INLINE,     // Emit inlined tests to the helper for GC Poll
-        GCPOLL_TYPE_COUNT
-    };
-    GCPollType GetGCPollType() { LIMITED_METHOD_CONTRACT; return iGCPollType; }
 
 #ifdef _DEBUG
 
@@ -582,13 +543,6 @@ private: //----------------------------------------------------------------
     unsigned iJitOptimizeType; // 0=Blended,1=SmallCode,2=FastCode,              default is 0=Blended
 
     unsigned fPInvokeRestoreEsp;  // -1=Default, 0=Never, Else=Always
-
-    bool fLegacyNullReferenceExceptionPolicy; // Old AV's as NullRef behavior
-    bool fLegacyUnhandledExceptionPolicy;     // Old unhandled exception policy (many are swallowed)
-
-#ifdef FEATURE_CORRUPTING_EXCEPTIONS
-    bool fLegacyCorruptedStateExceptionsPolicy;
-#endif // FEATURE_CORRUPTING_EXCEPTIONS
 
     LPUTF8 pszBreakOnClassLoad;         // Halt just before loading this class
 
@@ -687,28 +641,9 @@ private: //----------------------------------------------------------------
     int  iGCStress;
 #endif
 
-#define DEFAULT_GC_PRN_LVL 3
-    size_t iGCgen0size;
-    size_t iGCSegmentSize;
     int  iGCconcurrent;
-#ifdef _DEBUG
-    int  iGCLatencyMode;
-#endif //_DEBUG
-    int  iGCForceCompact;
     int  iGCHoardVM;
-    int  iGCLOHCompactionMode;
     DWORD iGCLOHThreshold;
-    int  iGCHeapCount;
-    int  iGCNoAffinitize;
-    size_t  iGCAffinityMask;
-    size_t iGCHeapHardLimit;
-    int iGCHeapHardLimitPercent;
-
-#ifdef GCTRIMCOMMIT
-
-    int  iGCTrimCommit;
-
-#endif
 
 #ifdef FEATURE_CONSERVATIVE_GC
     bool iGCConservative;
@@ -787,8 +722,6 @@ private: //----------------------------------------------------------------
     DWORD dwNgenForceFailureCount;
     DWORD dwNgenForceFailureKind;
 #endif
-
-    GCPollType iGCPollType;
 
 #ifdef _DEBUG
     DWORD fShouldInjectFault;

@@ -4,33 +4,26 @@
     <TestDisableAppDomain>true</TestDisableAppDomain>
     <TestDisableParallelization>true</TestDisableParallelization>
     <IncludeRemoteExecutor>true</IncludeRemoteExecutor>
-    <TargetFrameworks>$(NetCoreAppCurrent);$(NetFrameworkCurrent)</TargetFrameworks>
+    <TargetFrameworks>$(NetCoreAppCurrent)-Windows_NT;net461</TargetFrameworks>
   </PropertyGroup>
   <ItemGroup>
-    <Compile Include="$(CommonTestPath)System\IO\TempDirectory.cs">
-      <Link>Common\System\IO\TempDirectory.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonTestPath)System\IO\TempFile.cs">
-      <Link>Common\System\IO\TempFile.cs</Link>
-    </Compile>
-    <Compile Include="..\src\System\Configuration\ConfigPathUtility.cs">
-      <Link>Source\ConfigPathUtility.cs</Link>
-    </Compile>
-    <Compile Include="..\src\System\Configuration\ExceptionUtil.cs">
-      <Link>Source\ExceptionUtil.cs</Link>
-    </Compile>
-    <Compile Include="..\src\System\Configuration\StringUtil.cs">
-      <Link>Source\StringUtil.cs</Link>
-    </Compile>
-    <Compile Include="..\src\System\Configuration\TypeUtil.cs">
-      <Link>Source\TypeUtil.cs</Link>
-    </Compile>
-    <Compile Include="..\src\System\Configuration\UrlPath.cs">
-      <Link>Source\UrlPath.cs</Link>
-    </Compile>
-    <Compile Include="..\src\System\Configuration\ValidatorUtils.cs">
-      <Link>Source\ValidatorUtils.cs</Link>
-    </Compile>
+    <Compile Include="$(CommonTestPath)System\IO\TempDirectory.cs"
+             Link="Common\System\IO\TempDirectory.cs" />
+    <Compile Include="$(CommonTestPath)System\IO\TempFile.cs"
+             Link="Common\System\IO\TempFile.cs" />
+    <Compile Include="..\src\System\Configuration\ConfigPathUtility.cs"
+             Link="Source\ConfigPathUtility.cs" />
+    <Compile Include="..\src\System\Configuration\ExceptionUtil.cs"
+             Link="Source\ExceptionUtil.cs" />
+    <Compile Include="..\src\System\Configuration\StringUtil.cs"
+             Link="Source\StringUtil.cs" />
+    <Compile Include="..\src\System\Configuration\TypeUtil.cs"
+             Link="Source\TypeUtil.cs" />
+    <Compile Include="..\src\System\Configuration\UrlPath.cs"
+             Link="Source\UrlPath.cs" />
+    <Compile Include="..\src\System\Configuration\ValidatorUtils.cs"
+             Link="Source\ValidatorUtils.cs" />
+    <Compile Include="AssemblyInfo.cs" />
     <Compile Include="Mono\CallbackValidatorTest.cs" />
     <Compile Include="Mono\CommaDelimitedStringCollectionConverterTest.cs" />
     <Compile Include="Mono\CommaDelimitedStringCollectionTest.cs" />
@@ -111,5 +104,11 @@
     <Compile Include="System\Configuration\UrlPathTests.cs" />
     <Compile Include="System\Configuration\ValidatiorUtilsTests.cs" />
     <Compile Include="System\Drawing\Configuration\SystemDrawingSectionTests.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\src\System.Configuration.ConfigurationManager.csproj" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(TargetFramework)' == 'net461'">
+    <Reference Include="System.Configuration" />
   </ItemGroup>
 </Project>

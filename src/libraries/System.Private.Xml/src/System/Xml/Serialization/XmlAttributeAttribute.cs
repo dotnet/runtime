@@ -1,10 +1,9 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System;
+using System.Diagnostics.CodeAnalysis;
 using System.Xml.Schema;
-
 
 namespace System.Xml.Serialization
 {
@@ -14,10 +13,10 @@ namespace System.Xml.Serialization
     [AttributeUsage(AttributeTargets.Field | AttributeTargets.Property | AttributeTargets.Parameter | AttributeTargets.ReturnValue)]
     public class XmlAttributeAttribute : System.Attribute
     {
-        private string _attributeName;
-        private Type _type;
-        private string _ns;
-        private string _dataType;
+        private string? _attributeName;
+        private Type? _type;
+        private string? _ns;
+        private string? _dataType;
         private XmlSchemaForm _form = XmlSchemaForm.None;
 
         /// <devdoc>
@@ -30,7 +29,7 @@ namespace System.Xml.Serialization
         /// <devdoc>
         ///    <para>[To be supplied.]</para>
         /// </devdoc>
-        public XmlAttributeAttribute(string attributeName)
+        public XmlAttributeAttribute(string? attributeName)
         {
             _attributeName = attributeName;
         }
@@ -38,7 +37,7 @@ namespace System.Xml.Serialization
         /// <devdoc>
         ///    <para>[To be supplied.]</para>
         /// </devdoc>
-        public XmlAttributeAttribute(Type type)
+        public XmlAttributeAttribute(Type? type)
         {
             _type = type;
         }
@@ -46,7 +45,7 @@ namespace System.Xml.Serialization
         /// <devdoc>
         ///    <para>[To be supplied.]</para>
         /// </devdoc>
-        public XmlAttributeAttribute(string attributeName, Type type)
+        public XmlAttributeAttribute(string? attributeName, Type? type)
         {
             _attributeName = attributeName;
             _type = type;
@@ -55,7 +54,7 @@ namespace System.Xml.Serialization
         /// <devdoc>
         ///    <para>[To be supplied.]</para>
         /// </devdoc>
-        public Type Type
+        public Type? Type
         {
             get { return _type; }
             set { _type = value; }
@@ -64,6 +63,7 @@ namespace System.Xml.Serialization
         /// <devdoc>
         ///    <para>[To be supplied.]</para>
         /// </devdoc>
+        [AllowNull]
         public string AttributeName
         {
             get { return _attributeName == null ? string.Empty : _attributeName; }
@@ -73,7 +73,7 @@ namespace System.Xml.Serialization
         /// <devdoc>
         ///    <para>[To be supplied.]</para>
         /// </devdoc>
-        public string Namespace
+        public string? Namespace
         {
             get { return _ns; }
             set { _ns = value; }
@@ -82,6 +82,7 @@ namespace System.Xml.Serialization
         /// <devdoc>
         ///    <para>[To be supplied.]</para>
         /// </devdoc>
+        [AllowNull]
         public string DataType
         {
             get { return _dataType == null ? string.Empty : _dataType; }

@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 /*============================================================================
 **
@@ -20,7 +19,7 @@
 
 
 
-int __cdecl main(int argc, char *argv[])
+PALTEST(c_runtime_vprintf_test4_paltest_vprintf_test4, "c_runtime/vprintf/test4/paltest_vprintf_test4")
 {
     void *ptr = (void*) 0x123456;
     INT64 lptr = I64(0x1234567887654321);

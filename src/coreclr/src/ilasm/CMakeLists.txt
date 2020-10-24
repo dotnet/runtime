@@ -4,6 +4,7 @@ add_definitions(-DUNICODE)
 add_definitions(-D_UNICODE)
 add_definitions(-D_FEATURE_NO_HOST)
 add_definitions(-D__ILASM__)
+add_definitions(-DFEATURE_METADATA_EMIT_PORTABLE_PDB)
 
 add_definitions(-DFEATURE_CORECLR)
 
@@ -18,6 +19,7 @@ set(ILASM_SOURCES
   main.cpp
   assembler.cpp
   prebuilt/asmparse.cpp
+  portable_pdb.cpp
 )
 
 set(ILASM_HEADERS
@@ -32,6 +34,7 @@ set(ILASM_HEADERS
   method.hpp
   nvpair.h
   typar.hpp
+  portable_pdb.h
 )
 
 if(CLR_CMAKE_TARGET_WIN32)
@@ -45,14 +48,14 @@ endif(CLR_CMAKE_TARGET_WIN32)
 if(CLR_CMAKE_HOST_UNIX)
   # Need generate a right form of asmparse.cpp to avoid the following options.
   # Clang also produces a bad-codegen on this prebuilt file with optimization.
-  # https://github.com/dotnet/coreclr/issues/2305
+  # https://github.com/dotnet/runtime/issues/4776
   add_compile_options("$<$<COMPILE_LANGUAGE:CXX>:-Wno-register>")
   add_compile_options(-Wno-array-bounds)
   add_compile_options(-Wno-unused-label)
   set_source_files_properties( prebuilt/asmparse.cpp PROPERTIES COMPILE_FLAGS "-O0" )
 endif(CLR_CMAKE_HOST_UNIX)
 
-if(CLR_CMAKE_HOST_LINUX OR CLR_CMAKE_HOST_FREEBSD OR CLR_CMAKE_HOST_NETBSD)
+if(CLR_CMAKE_HOST_LINUX OR CLR_CMAKE_HOST_FREEBSD OR CLR_CMAKE_HOST_NETBSD OR CLR_CMAKE_HOST_SUNOS)
     # This option is necessary to ensure that the overloaded delete operator defined inside
     # of the utilcode will be used instead of the standard library delete operator.
     set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -Xlinker -Bsymbolic")
@@ -61,8 +64,7 @@ if(CLR_CMAKE_HOST_LINUX OR CLR_CMAKE_HOST_FREEBSD OR CLR_CMAKE_HOST_NETBSD)
     # ensure proper resolving of circular references between a subset of the libraries.
     set(START_LIBRARY_GROUP -Wl,--start-group)
     set(END_LIBRARY_GROUP -Wl,--end-group)
-endif(CLR_CMAKE_HOST_LINUX OR CLR_CMAKE_HOST_FREEBSD OR CLR_CMAKE_HOST_NETBSD)
-
+endif(CLR_CMAKE_HOST_LINUX OR CLR_CMAKE_HOST_FREEBSD OR CLR_CMAKE_HOST_NETBSD OR CLR_CMAKE_HOST_SUNOS)
 
 _add_executable(ilasm
   ${ILASM_SOURCES}
@@ -73,11 +75,11 @@ set(ILASM_LINK_LIBRARIES
   utilcodestaticnohost
   mscorpe
   ${START_LIBRARY_GROUP} # Start group of libraries that have circular references
-  mdhotdata_full
-  mdcompiler_wks
-  mdruntime_wks
-  mdruntimerw_wks
-  mdstaticapi
+  mdhotdata_ppdb
+  mdcompiler_ppdb
+  mdruntime_ppdb
+  mdruntimerw_ppdb
+  mdstaticapi_ppdb
   ${END_LIBRARY_GROUP} # End group of libraries that have circular references
   ceefgen
   corguids
@@ -87,7 +89,6 @@ if(CLR_CMAKE_TARGET_WIN32)
     list(APPEND ILASM_LINK_LIBRARIES
         ${STATIC_MT_CRT_LIB}
         ${STATIC_MT_VCRT_LIB}
-        mdwinmd_wks
         kernel32.lib
         advapi32.lib
         ole32.lib
@@ -115,14 +116,8 @@ if(CLR_CMAKE_HOST_UNIX)
     mscorrc
     coreclrpal
     palrt
+    ${CMAKE_DL_LIBS}
   )
-
-  # FreeBSD and NetBSD implement dlopen(3) in libc
-  if(NOT CLR_CMAKE_TARGET_FREEBSD AND NOT CLR_CMAKE_TARGET_NETBSD)
-    target_link_libraries(ilasm
-      dl
-    )
-  endif(NOT CLR_CMAKE_TARGET_FREEBSD AND NOT CLR_CMAKE_TARGET_NETBSD)
 else()
   target_link_libraries(ilasm
     ${ILASM_LINK_LIBRARIES}

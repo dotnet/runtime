@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
 using System.Threading;
@@ -10,6 +9,7 @@ using Debug = System.Diagnostics.Debug;
 using IEnumerable = System.Collections.IEnumerable;
 using StringBuilder = System.Text.StringBuilder;
 using Interlocked = System.Threading.Interlocked;
+using System.Diagnostics.CodeAnalysis;
 
 namespace System.Xml.Linq
 {
@@ -22,7 +22,7 @@ namespace System.Xml.Linq
     /// </remarks>
     public abstract class XContainer : XNode
     {
-        internal object content;
+        internal object? content;
 
         internal XContainer() { }
 
@@ -35,12 +35,12 @@ namespace System.Xml.Linq
             }
             else
             {
-                XNode n = (XNode)other.content;
+                XNode? n = (XNode?)other.content;
                 if (n != null)
                 {
                     do
                     {
-                        n = n.next;
+                        n = n.next!;
                         AppendNodeSkipNotify(n.CloneNode());
                     } while (n != other.content);
                 }
@@ -50,11 +50,11 @@ namespace System.Xml.Linq
         /// <summary>
         /// Get the first child node of this node.
         /// </summary>
-        public XNode FirstNode
+        public XNode? FirstNode
         {
             get
             {
-                XNode last = LastNode;
+                XNode? last = LastNode;
                 return last != null ? last.next : null;
             }
         }
@@ -62,14 +62,14 @@ namespace System.Xml.Linq
         /// <summary>
         /// Get the last child node of this node.
         /// </summary>
-        public XNode LastNode
+        public XNode? LastNode
         {
             get
             {
                 if (content == null) return null;
-                XNode n = content as XNode;
+                XNode? n = content as XNode;
                 if (n != null) return n;
-                string s = content as string;
+                string? s = content as string;
                 if (s != null)
                 {
                     if (s.Length == 0) return null;
@@ -133,7 +133,7 @@ namespace System.Xml.Linq
         /// An added attribute must have a unique name within the element to
         /// which it is being added.
         /// </remarks>
-        public void Add(object content)
+        public void Add(object? content)
         {
             if (SkipNotify())
             {
@@ -141,37 +141,37 @@ namespace System.Xml.Linq
                 return;
             }
             if (content == null) return;
-            XNode n = content as XNode;
+            XNode? n = content as XNode;
             if (n != null)
             {
                 AddNode(n);
                 return;
             }
-            string s = content as string;
+            string? s = content as string;
             if (s != null)
             {
                 AddString(s);
                 return;
             }
-            XAttribute a = content as XAttribute;
+            XAttribute? a = content as XAttribute;
             if (a != null)
             {
                 AddAttribute(a);
                 return;
             }
-            XStreamingElement x = content as XStreamingElement;
+            XStreamingElement? x = content as XStreamingElement;
             if (x != null)
             {
                 AddNode(new XElement(x));
                 return;
             }
-            object[] o = content as object[];
+            object[]? o = content as object[];
             if (o != null)
             {
                 foreach (object obj in o) Add(obj);
                 return;
             }
-            IEnumerable e = content as IEnumerable;
+            IEnumerable? e = content as IEnumerable;
             if (e != null)
             {
                 foreach (object obj in e) Add(obj);
@@ -211,7 +211,7 @@ namespace System.Xml.Linq
         /// See <see cref="XContainer.Add(object)"/> for details about the content that can be added
         /// using this method.
         /// </remarks>
-        public void AddFirst(object content)
+        public void AddFirst(object? content)
         {
             new Inserter(this, null).Add(content);
         }
@@ -276,7 +276,7 @@ namespace System.Xml.Linq
         /// </summary>
         /// <param name="name">The <see cref="XName"/> to match against descendant <see cref="XElement"/>s.</param>
         /// <returns>An <see cref="IEnumerable"/> of <see cref="XElement"/></returns>
-        public IEnumerable<XElement> Descendants(XName name)
+        public IEnumerable<XElement> Descendants(XName? name)
         {
             return name != null ? GetDescendants(name, false) : XElement.EmptySequence;
         }
@@ -292,15 +292,15 @@ namespace System.Xml.Linq
         /// <returns>
         /// An <see cref="XElement"/> child that matches the <see cref="XName"/> passed in, or null.
         /// </returns>
-        public XElement Element(XName name)
+        public XElement? Element(XName name)
         {
-            XNode n = content as XNode;
+            XNode? n = content as XNode;
             if (n != null)
             {
                 do
                 {
-                    n = n.next;
-                    XElement e = n as XElement;
+                    n = n.next!;
+                    XElement? e = n as XElement;
                     if (e != null && e.name == name) return e;
                 } while (n != content);
             }
@@ -331,7 +331,7 @@ namespace System.Xml.Linq
         /// An <see cref="IEnumerable"/> of <see cref="XElement"/> children of this <see cref="XContainer"/> that have
         /// a matching <see cref="XName"/>.
         /// </returns>
-        public IEnumerable<XElement> Elements(XName name)
+        public IEnumerable<XElement> Elements(XName? name)
         {
             return name != null ? GetElements(name) : XElement.EmptySequence;
         }
@@ -349,12 +349,12 @@ namespace System.Xml.Linq
         /// <returns>The contents of this <see cref="XContainer"/></returns>
         public IEnumerable<XNode> Nodes()
         {
-            XNode n = LastNode;
+            XNode? n = LastNode;
             if (n != null)
             {
                 do
                 {
-                    n = n.next;
+                    n = n.next!;
                     yield return n;
                 } while (n.parent == this && n != content);
             }
@@ -374,7 +374,7 @@ namespace System.Xml.Linq
             }
             while (content != null)
             {
-                string s = content as string;
+                string? s = content as string;
                 if (s != null)
                 {
                     if (s.Length > 0)
@@ -398,10 +398,10 @@ namespace System.Xml.Linq
                         }
                     }
                 }
-                XNode last = content as XNode;
+                XNode? last = content as XNode;
                 if (last != null)
                 {
-                    XNode n = last.next;
+                    XNode n = last.next!;
                     NotifyChanging(n, XObjectChangeEventArgs.Remove);
                     if (last != content || n != last.next) throw new InvalidOperationException(SR.InvalidOperation_ExternalCode);
                     if (n != last)
@@ -435,7 +435,7 @@ namespace System.Xml.Linq
         /// See XContainer.Add(object content) for details about the content that can be added
         /// using this method.
         /// </remarks>
-        public void ReplaceNodes(object content)
+        public void ReplaceNodes(object? content)
         {
             content = GetContentSnapshot(content);
             RemoveNodes();
@@ -465,40 +465,40 @@ namespace System.Xml.Linq
         {
         }
 
-        internal void AddContentSkipNotify(object content)
+        internal void AddContentSkipNotify(object? content)
         {
             if (content == null) return;
-            XNode n = content as XNode;
+            XNode? n = content as XNode;
             if (n != null)
             {
                 AddNodeSkipNotify(n);
                 return;
             }
-            string s = content as string;
+            string? s = content as string;
             if (s != null)
             {
                 AddStringSkipNotify(s);
                 return;
             }
-            XAttribute a = content as XAttribute;
+            XAttribute? a = content as XAttribute;
             if (a != null)
             {
                 AddAttributeSkipNotify(a);
                 return;
             }
-            XStreamingElement x = content as XStreamingElement;
+            XStreamingElement? x = content as XStreamingElement;
             if (x != null)
             {
                 AddNodeSkipNotify(new XElement(x));
                 return;
             }
-            object[] o = content as object[];
+            object[]? o = content as object[];
             if (o != null)
             {
                 foreach (object obj in o) AddContentSkipNotify(obj);
                 return;
             }
-            IEnumerable e = content as IEnumerable;
+            IEnumerable? e = content as IEnumerable;
             if (e != null)
             {
                 foreach (object obj in e) AddContentSkipNotify(obj);
@@ -570,7 +570,7 @@ namespace System.Xml.Linq
             else if (s.Length > 0)
             {
                 ConvertTextToNode();
-                XText tn = content as XText;
+                XText? tn = content as XText;
                 if (tn != null && !(tn is XCData))
                 {
                     tn.Value += s;
@@ -591,14 +591,14 @@ namespace System.Xml.Linq
             }
             else if (s.Length > 0)
             {
-                string stringContent = content as string;
+                string? stringContent = content as string;
                 if (stringContent != null)
                 {
                     content = stringContent + s;
                 }
                 else
                 {
-                    XText tn = content as XText;
+                    XText? tn = content as XText;
                     if (tn != null && !(tn is XCData))
                     {
                         tn.text += s;
@@ -637,35 +637,35 @@ namespace System.Xml.Linq
 
         internal override void AppendText(StringBuilder sb)
         {
-            string s = content as string;
+            string? s = content as string;
             if (s != null)
             {
                 sb.Append(s);
             }
             else
             {
-                XNode n = (XNode)content;
+                XNode? n = (XNode?)content;
                 if (n != null)
                 {
                     do
                     {
-                        n = n.next;
+                        n = n.next!;
                         n.AppendText(sb);
                     } while (n != content);
                 }
             }
         }
 
-        private string GetTextOnly()
+        private string? GetTextOnly()
         {
             if (content == null) return null;
-            string s = content as string;
+            string? s = content as string;
             if (s == null)
             {
                 XNode n = (XNode)content;
                 do
                 {
-                    n = n.next;
+                    n = n.next!;
                     if (n.NodeType != XmlNodeType.Text) return null;
                     s += ((XText)n).Value;
                 } while (n != content);
@@ -673,7 +673,7 @@ namespace System.Xml.Linq
             return s;
         }
 
-        private string CollectText(ref XNode n)
+        private string CollectText(ref XNode? n)
         {
             string s = "";
             while (n != null && n.NodeType == XmlNodeType.Text)
@@ -687,10 +687,10 @@ namespace System.Xml.Linq
         internal bool ContentsEqual(XContainer e)
         {
             if (content == e.content) return true;
-            string s = GetTextOnly();
+            string? s = GetTextOnly();
             if (s != null) return s == e.GetTextOnly();
-            XNode n1 = content as XNode;
-            XNode n2 = e.content as XNode;
+            XNode? n1 = content as XNode;
+            XNode? n2 = e.content as XNode;
             if (n1 != null && n2 != null)
             {
                 n1 = n1.next;
@@ -709,10 +709,10 @@ namespace System.Xml.Linq
 
         internal int ContentsHashCode()
         {
-            string s = GetTextOnly();
+            string? s = GetTextOnly();
             if (s != null) return s.GetHashCode();
             int h = 0;
-            XNode n = content as XNode;
+            XNode? n = content as XNode;
             if (n != null)
             {
                 do
@@ -732,7 +732,7 @@ namespace System.Xml.Linq
 
         internal void ConvertTextToNode()
         {
-            string s = content as string;
+            string? s = content as string;
             if (!string.IsNullOrEmpty(s))
             {
                 XText t = new XText(s);
@@ -748,23 +748,23 @@ namespace System.Xml.Linq
             XNode n = this;
             while (true)
             {
-                XContainer c = n as XContainer;
-                XNode first;
+                XContainer? c = n as XContainer;
+                XNode? first;
                 if (c != null && (first = c.FirstNode) != null)
                 {
                     n = first;
                 }
                 else
                 {
-                    while (n != null && n != this && n == n.parent.content) n = n.parent;
+                    while (n != null && n != this && n == n.parent!.content) n = n.parent;
                     if (n == null || n == this) break;
-                    n = n.next;
+                    n = n.next!;
                 }
                 yield return n;
             }
         }
 
-        internal IEnumerable<XElement> GetDescendants(XName name, bool self)
+        internal IEnumerable<XElement> GetDescendants(XName? name, bool self)
         {
             if (self)
             {
@@ -772,34 +772,34 @@ namespace System.Xml.Linq
                 if (name == null || e.name == name) yield return e;
             }
             XNode n = this;
-            XContainer c = this;
+            XContainer? c = this;
             while (true)
             {
                 if (c != null && c.content is XNode)
                 {
-                    n = ((XNode)c.content).next;
+                    n = ((XNode)c.content).next!;
                 }
                 else
                 {
-                    while (n != this && n == n.parent.content) n = n.parent;
+                    while (n != this && n == n.parent!.content) n = n.parent;
                     if (n == this) break;
-                    n = n.next;
+                    n = n.next!;
                 }
-                XElement e = n as XElement;
+                XElement? e = n as XElement;
                 if (e != null && (name == null || e.name == name)) yield return e;
                 c = e;
             }
         }
 
-        private IEnumerable<XElement> GetElements(XName name)
+        private IEnumerable<XElement> GetElements(XName? name)
         {
-            XNode n = content as XNode;
+            XNode? n = content as XNode;
             if (n != null)
             {
                 do
                 {
-                    n = n.next;
-                    XElement e = n as XElement;
+                    n = n.next!;
+                    XElement? e = n as XElement;
                     if (e != null && (name == null || e.name == name)) yield return e;
                 } while (n.parent == this && n != content);
             }
@@ -807,7 +807,7 @@ namespace System.Xml.Linq
 
         internal static string GetStringValue(object value)
         {
-            string s = value as string;
+            string? s = value as string;
             if (s != null)
             {
                 return s;
@@ -882,7 +882,7 @@ namespace System.Xml.Linq
             {
                 cancellationToken.ThrowIfCancellationRequested();
             }
-            while (cr.ReadContentFrom(this, r) && await r.ReadAsync().ConfigureAwait(false));
+            while (await cr.ReadContentFromAsync(this, r).ConfigureAwait(false) && await r.ReadAsync().ConfigureAwait(false));
         }
 
         internal async Task ReadContentFromAsync(XmlReader r, LoadOptions o, CancellationToken cancellationToken)
@@ -899,16 +899,16 @@ namespace System.Xml.Linq
             {
                 cancellationToken.ThrowIfCancellationRequested();
             }
-            while (cr.ReadContentFrom(this, r, o) && await r.ReadAsync().ConfigureAwait(false));
+            while (await cr.ReadContentFromAsync(this, r, o).ConfigureAwait(false) && await r.ReadAsync().ConfigureAwait(false));
         }
 
         private sealed class ContentReader
         {
             private readonly NamespaceCache _eCache;
             private readonly NamespaceCache _aCache;
-            private readonly IXmlLineInfo _lineInfo;
+            private readonly IXmlLineInfo? _lineInfo;
             private XContainer _currentContainer;
-            private string _baseUri;
+            private string? _baseUri;
 
             public ContentReader(XContainer rootContainer)
             {
@@ -948,7 +948,7 @@ namespace System.Xml.Linq
                             _currentContainer.content = string.Empty;
                         }
                         if (_currentContainer == rootContainer) return false;
-                        _currentContainer = _currentContainer.parent;
+                        _currentContainer = _currentContainer.parent!;
                         break;
                     case XmlNodeType.Text:
                     case XmlNodeType.SignificantWhitespace:
@@ -979,10 +979,70 @@ namespace System.Xml.Linq
                 return true;
             }
 
+            public async ValueTask<bool> ReadContentFromAsync(XContainer rootContainer, XmlReader r)
+            {
+                switch (r.NodeType)
+                {
+                    case XmlNodeType.Element:
+                        XElement e = new XElement(_eCache.Get(r.NamespaceURI).GetName(r.LocalName));
+                        if (r.MoveToFirstAttribute())
+                        {
+                            do
+                            {
+                                e.AppendAttributeSkipNotify(new XAttribute(
+                                    _aCache.Get(r.Prefix.Length == 0 ? string.Empty : r.NamespaceURI).GetName(r.LocalName),
+                                    await r.GetValueAsync().ConfigureAwait(false)));
+                            } while (r.MoveToNextAttribute());
+                            r.MoveToElement();
+                        }
+                        _currentContainer.AddNodeSkipNotify(e);
+                        if (!r.IsEmptyElement)
+                        {
+                            _currentContainer = e;
+                        }
+                        break;
+                    case XmlNodeType.EndElement:
+                        if (_currentContainer.content == null)
+                        {
+                            _currentContainer.content = string.Empty;
+                        }
+                        if (_currentContainer == rootContainer) return false;
+                        _currentContainer = _currentContainer.parent!;
+                        break;
+                    case XmlNodeType.Text:
+                    case XmlNodeType.SignificantWhitespace:
+                    case XmlNodeType.Whitespace:
+                        _currentContainer.AddStringSkipNotify(await r.GetValueAsync().ConfigureAwait(false));
+                        break;
+                    case XmlNodeType.CDATA:
+                        _currentContainer.AddNodeSkipNotify(new XCData(await r.GetValueAsync().ConfigureAwait(false)));
+                        break;
+                    case XmlNodeType.Comment:
+                        _currentContainer.AddNodeSkipNotify(new XComment(await r.GetValueAsync().ConfigureAwait(false)));
+                        break;
+                    case XmlNodeType.ProcessingInstruction:
+                        _currentContainer.AddNodeSkipNotify(new XProcessingInstruction(r.Name, await r.GetValueAsync().ConfigureAwait(false)));
+                        break;
+                    case XmlNodeType.DocumentType:
+                        _currentContainer.AddNodeSkipNotify(new XDocumentType(r.LocalName, r.GetAttribute("PUBLIC"), r.GetAttribute("SYSTEM"), await r.GetValueAsync().ConfigureAwait(false)));
+                        break;
+                    case XmlNodeType.EntityReference:
+                        if (!r.CanResolveEntity) throw new InvalidOperationException(SR.InvalidOperation_UnresolvedEntityReference);
+                        r.ResolveEntity();
+                        break;
+                    case XmlNodeType.EndEntity:
+                        break;
+                    default:
+                        throw new InvalidOperationException(SR.Format(SR.InvalidOperation_UnexpectedNodeType, r.NodeType));
+                }
+                return true;
+            }
+
             public bool ReadContentFrom(XContainer rootContainer, XmlReader r, LoadOptions o)
             {
-                XNode newNode = null;
-                string baseUri = r.BaseURI;
+                XNode? newNode = null;
+                // TODO-NULLABLE: Consider changing XmlReader.BaseURI to non-nullable.
+                string baseUri = r.BaseURI!;
 
                 switch (r.NodeType)
                 {
@@ -1029,7 +1089,7 @@ namespace System.Xml.Linq
                         }
                         // Store the line info of the end element tag.
                         // Note that since we've got EndElement the current container must be an XElement
-                        XElement e = _currentContainer as XElement;
+                        XElement? e = _currentContainer as XElement;
                         Debug.Assert(e != null, "EndElement received but the current container is not an element.");
                         if (e != null && _lineInfo != null && _lineInfo.HasLineInfo())
                         {
@@ -1038,9 +1098,9 @@ namespace System.Xml.Linq
                         if (_currentContainer == rootContainer) return false;
                         if (_baseUri != null && _currentContainer.HasBaseUri)
                         {
-                                _baseUri = _currentContainer.parent.BaseUri;
+                                _baseUri = _currentContainer.parent!.BaseUri;
                         }
-                        _currentContainer = _currentContainer.parent;
+                        _currentContainer = _currentContainer.parent!;
                         break;
                     }
                     case XmlNodeType.Text:
@@ -1096,14 +1156,136 @@ namespace System.Xml.Linq
 
                 return true;
             }
+
+            public async ValueTask<bool> ReadContentFromAsync(XContainer rootContainer, XmlReader r, LoadOptions o)
+            {
+                XNode? newNode = null;
+                string baseUri = r.BaseURI!;
+
+                switch (r.NodeType)
+                {
+                    case XmlNodeType.Element:
+                        {
+                            XElement e = new XElement(_eCache.Get(r.NamespaceURI).GetName(r.LocalName));
+                            if (_baseUri != null && _baseUri != baseUri)
+                            {
+                                e.SetBaseUri(baseUri);
+                            }
+                            if (_lineInfo != null && _lineInfo.HasLineInfo())
+                            {
+                                e.SetLineInfo(_lineInfo.LineNumber, _lineInfo.LinePosition);
+                            }
+                            if (r.MoveToFirstAttribute())
+                            {
+                                do
+                                {
+                                    XAttribute a = new XAttribute(
+                                        _aCache.Get(r.Prefix.Length == 0 ? string.Empty : r.NamespaceURI).GetName(r.LocalName),
+                                        await r.GetValueAsync().ConfigureAwait(false));
+                                    if (_lineInfo != null && _lineInfo.HasLineInfo())
+                                    {
+                                        a.SetLineInfo(_lineInfo.LineNumber, _lineInfo.LinePosition);
+                                    }
+                                    e.AppendAttributeSkipNotify(a);
+                                } while (r.MoveToNextAttribute());
+                                r.MoveToElement();
+                            }
+                            _currentContainer.AddNodeSkipNotify(e);
+                            if (!r.IsEmptyElement)
+                            {
+                                _currentContainer = e;
+                                if (_baseUri != null)
+                                {
+                                    _baseUri = baseUri;
+                                }
+                            }
+                            break;
+                        }
+                    case XmlNodeType.EndElement:
+                        {
+                            if (_currentContainer.content == null)
+                            {
+                                _currentContainer.content = string.Empty;
+                            }
+                            // Store the line info of the end element tag.
+                            // Note that since we've got EndElement the current container must be an XElement
+                            XElement? e = _currentContainer as XElement;
+                            Debug.Assert(e != null, "EndElement received but the current container is not an element.");
+                            if (e != null && _lineInfo != null && _lineInfo.HasLineInfo())
+                            {
+                                e.SetEndElementLineInfo(_lineInfo.LineNumber, _lineInfo.LinePosition);
+                            }
+                            if (_currentContainer == rootContainer) return false;
+                            if (_baseUri != null && _currentContainer.HasBaseUri)
+                            {
+                                _baseUri = _currentContainer.parent!.BaseUri;
+                            }
+                            _currentContainer = _currentContainer.parent!;
+                            break;
+                        }
+                    case XmlNodeType.Text:
+                    case XmlNodeType.SignificantWhitespace:
+                    case XmlNodeType.Whitespace:
+                        if ((_baseUri != null && _baseUri != baseUri) ||
+                            (_lineInfo != null && _lineInfo.HasLineInfo()))
+                        {
+                            newNode = new XText(await r.GetValueAsync().ConfigureAwait(false));
+                        }
+                        else
+                        {
+                            _currentContainer.AddStringSkipNotify(await r.GetValueAsync().ConfigureAwait(false));
+                        }
+                        break;
+                    case XmlNodeType.CDATA:
+                        newNode = new XCData(await r.GetValueAsync().ConfigureAwait(false));
+                        break;
+                    case XmlNodeType.Comment:
+                        newNode = new XComment(await r.GetValueAsync().ConfigureAwait(false));
+                        break;
+                    case XmlNodeType.ProcessingInstruction:
+                        newNode = new XProcessingInstruction(r.Name, await r.GetValueAsync().ConfigureAwait(false));
+                        break;
+                    case XmlNodeType.DocumentType:
+                        newNode = new XDocumentType(r.LocalName, r.GetAttribute("PUBLIC"), r.GetAttribute("SYSTEM"), await r.GetValueAsync().ConfigureAwait(false));
+                        break;
+                    case XmlNodeType.EntityReference:
+                        if (!r.CanResolveEntity) throw new InvalidOperationException(SR.InvalidOperation_UnresolvedEntityReference);
+                        r.ResolveEntity();
+                        break;
+                    case XmlNodeType.EndEntity:
+                        break;
+                    default:
+                        throw new InvalidOperationException(SR.Format(SR.InvalidOperation_UnexpectedNodeType, r.NodeType));
+                }
+
+                if (newNode != null)
+                {
+                    if (_baseUri != null && _baseUri != baseUri)
+                    {
+                        newNode.SetBaseUri(baseUri);
+                    }
+
+                    if (_lineInfo != null && _lineInfo.HasLineInfo())
+                    {
+                        newNode.SetLineInfo(_lineInfo.LineNumber, _lineInfo.LinePosition);
+                    }
+
+                    _currentContainer.AddNodeSkipNotify(newNode);
+                    newNode = null;
+                }
+
+                return true;
+            }
         }
 
         internal void RemoveNode(XNode n)
         {
             bool notify = NotifyChanging(n, XObjectChangeEventArgs.Remove);
             if (n.parent != this) throw new InvalidOperationException(SR.InvalidOperation_ExternalCode);
+
+            Debug.Assert(content != null);
             XNode p = (XNode)content;
-            while (p.next != n) p = p.next;
+            while (p.next != n) p = p.next!;
             if (p == n)
             {
                 content = null;
@@ -1120,12 +1302,12 @@ namespace System.Xml.Linq
 
         private void RemoveNodesSkipNotify()
         {
-            XNode n = content as XNode;
+            XNode? n = content as XNode;
             if (n != null)
             {
                 do
                 {
-                    XNode next = n.next;
+                    XNode next = n.next!;
                     n.parent = null;
                     n.next = null;
                     n = next;
@@ -1136,7 +1318,7 @@ namespace System.Xml.Linq
 
         // Validate insertion of the given node. previous is the node after which insertion
         // will occur. previous == null means at beginning, previous == this means at end.
-        internal virtual void ValidateNode(XNode node, XNode previous)
+        internal virtual void ValidateNode(XNode node, XNode? previous)
         {
         }
 
@@ -1148,7 +1330,7 @@ namespace System.Xml.Linq
         {
             if (content != null)
             {
-                string stringContent = content as string;
+                string? stringContent = content as string;
                 if (stringContent != null)
                 {
                     if (this is XDocument)
@@ -1165,7 +1347,7 @@ namespace System.Xml.Linq
                     XNode n = (XNode)content;
                     do
                     {
-                        n = n.next;
+                        n = n.next!;
                         n.WriteTo(writer);
                     } while (n != content);
                 }
@@ -1176,7 +1358,7 @@ namespace System.Xml.Linq
         {
             if (content != null)
             {
-                string stringContent = content as string;
+                string? stringContent = content as string;
 
                 if (stringContent != null)
                 {
@@ -1200,7 +1382,7 @@ namespace System.Xml.Linq
                     XNode n = (XNode)content;
                     do
                     {
-                        n = n.next;
+                        n = n.next!;
                         await n.WriteToAsync(writer, cancellationToken).ConfigureAwait(false);
                     } while (n != content);
                 }
@@ -1209,7 +1391,7 @@ namespace System.Xml.Linq
 
         private static void AddContentToList(List<object> list, object content)
         {
-            IEnumerable e = content is string ? null : content as IEnumerable;
+            IEnumerable? e = content is string ? null : content as IEnumerable;
             if (e == null)
             {
                 list.Add(content);
@@ -1223,7 +1405,8 @@ namespace System.Xml.Linq
             }
         }
 
-        internal static object GetContentSnapshot(object content)
+        [return: NotNullIfNotNull("content")]
+        internal static object? GetContentSnapshot(object? content)
         {
             if (content is string || !(content is IEnumerable)) return content;
             List<object> list = new List<object>();

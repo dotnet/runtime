@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -36,7 +35,7 @@ namespace System.Reflection.Tests
                 Type.GetType(simpleTypeName, shouldThrowIfNotFound, isCaseSensitive) :
                 asm.GetType(simpleTypeName, shouldThrowIfNotFound, isCaseSensitive);
 
-        [Fact]
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         public void Assembly_IsCollectibleFalse_WhenUsingAssemblyLoad()
         {
             RemoteExecutor.Invoke(() => {
@@ -57,7 +56,7 @@ namespace System.Reflection.Tests
             }).Dispose();
         }
 
-        [Fact]
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         public void Assembly_IsCollectibleFalse_WhenUsingAssemblyLoadContext()
         {
             RemoteExecutor.Invoke(() => {
@@ -78,7 +77,7 @@ namespace System.Reflection.Tests
             }).Dispose();
         }
 
-        [Fact]
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         public void Assembly_IsCollectibleTrue_WhenUsingTestAssemblyLoadContext()
         {
             RemoteExecutor.Invoke(() => {
@@ -99,7 +98,7 @@ namespace System.Reflection.Tests
             }).Dispose();
         }
 
-        [Theory]
+        [ConditionalTheory(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         [InlineData("MyField")]
         [InlineData("MyProperty")]
         [InlineData("MyMethod")]
@@ -128,7 +127,7 @@ namespace System.Reflection.Tests
             }, memberName).Dispose();
         }
 
-        [Theory]
+        [ConditionalTheory(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         [InlineData("MyStaticGenericField")]
         [InlineData("MyStaticField")]
         [InlineData("MyStaticGenericMethod")]
@@ -157,7 +156,7 @@ namespace System.Reflection.Tests
             }, memberName).Dispose();
         }
 
-        [Theory]
+        [ConditionalTheory(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         [InlineData("MyField")]
         [InlineData("MyProperty")]
         [InlineData("MyMethod")]
@@ -188,7 +187,7 @@ namespace System.Reflection.Tests
             }, memberName).Dispose();
         }
 
-        [Theory]
+        [ConditionalTheory(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         [InlineData("MyStaticGenericField")]
         [InlineData("MyStaticField")]
         [InlineData("MyStaticGenericMethod")]
@@ -219,7 +218,7 @@ namespace System.Reflection.Tests
             }, memberName).Dispose();
         }
 
-        [Fact]
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         public void GenericWithCollectibleTypeParameter_IsCollectibleTrue_WhenUsingAssemblyLoadContext()
         {
             RemoteExecutor.Invoke(() =>

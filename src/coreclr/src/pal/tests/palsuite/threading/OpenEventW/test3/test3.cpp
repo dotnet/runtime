@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 /*=============================================================================
 **
@@ -34,7 +33,7 @@
 
 #define TIMEOUT 60000
 
-int __cdecl main( int argc, char **argv )
+PALTEST(threading_OpenEventW_test3_paltest_openeventw_test3, "threading/OpenEventW/test3/paltest_openeventw_test3")
 {
     BOOL ret = FAIL;
     LPSECURITY_ATTRIBUTES   lpEventAttributes = NULL;
@@ -80,9 +79,10 @@ int __cdecl main( int argc, char **argv )
         Fail ("Error: Insufficient lpCommandline for\n");
     }
 
+    LPWSTR lpCommandLineW = convert(lpCommandLine);
     /* launch the child process */
     if( !CreateProcess(     NULL,               /* module name to execute */
-                            lpCommandLine,    /* command line */
+                            lpCommandLineW,     /* command line */
                             NULL,               /* process handle not */
                                                 /* inheritable */
                             NULL,               /* thread handle not */
@@ -96,9 +96,13 @@ int __cdecl main( int argc, char **argv )
                             &pi )               /* process info struct */
         )
     {
+        DWORD dwError = GetLastError();
+        free(lpCommandLineW);
         Fail( "ERROR:%lu:CreateProcess call failed\n",
-              GetLastError() );
+              dwError);
     }
+
+    free(lpCommandLineW);
 
     /* verify that the event is signalled by the child process */
     dwRet = WaitForSingleObject( hEvent, TIMEOUT );

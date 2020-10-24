@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections;
 using System.Diagnostics;
@@ -55,73 +54,6 @@ namespace System
 
         [MethodImpl(MethodImplOptions.InternalCall)]
         private static extern bool IsImmutableAgileException(Exception e);
-
-#if FEATURE_COMINTEROP
-        //
-        // Exception requires anything to be added into Data dictionary is serializable
-        // This wrapper is made serializable to satisfy this requirement but does NOT serialize
-        // the object and simply ignores it during serialization, because we only need
-        // the exception instance in the app to hold the error object alive.
-        // Once the exception is serialized to debugger, debugger only needs the error reference string
-        //
-        [Serializable]
-        internal class __RestrictedErrorObject
-        {
-            // Hold the error object instance but don't serialize/deserialize it
-            [NonSerialized]
-            private readonly object _realErrorObject;
-
-            internal __RestrictedErrorObject(object errorObject)
-            {
-                _realErrorObject = errorObject;
-            }
-
-            public object RealErrorObject
-            {
-                get
-                {
-                    return _realErrorObject;
-                }
-            }
-        }
-
-        internal void AddExceptionDataForRestrictedErrorInfo(
-            string restrictedError,
-            string restrictedErrorReference,
-            string restrictedCapabilitySid,
-            object? restrictedErrorObject,
-            bool hasrestrictedLanguageErrorObject = false)
-        {
-            IDictionary dict = Data;
-            if (dict != null)
-            {
-                dict.Add("RestrictedDescription", restrictedError);
-                dict.Add("RestrictedErrorReference", restrictedErrorReference);
-                dict.Add("RestrictedCapabilitySid", restrictedCapabilitySid);
-
-                // Keep the error object alive so that user could retrieve error information
-                // using Data["RestrictedErrorReference"]
-                dict.Add("__RestrictedErrorObject", restrictedErrorObject == null ? null : new __RestrictedErrorObject(restrictedErrorObject));
-                dict.Add("__HasRestrictedLanguageErrorObject", hasrestrictedLanguageErrorObject);
-            }
-        }
-
-        internal bool TryGetRestrictedLanguageErrorObject(out object? restrictedErrorObject)
-        {
-            restrictedErrorObject = null;
-            if (Data != null && Data.Contains("__HasRestrictedLanguageErrorObject"))
-            {
-                if (Data.Contains("__RestrictedErrorObject"))
-                {
-                    if (Data["__RestrictedErrorObject"] is __RestrictedErrorObject restrictedObject)
-                        restrictedErrorObject = restrictedObject.RealErrorObject;
-                }
-                return (bool)Data["__HasRestrictedLanguageErrorObject"]!;
-            }
-
-            return false;
-        }
-#endif // FEATURE_COMINTEROP
 
         [MethodImpl(MethodImplOptions.InternalCall)]
         private static extern IRuntimeMethodInfo GetMethodFromStackTrace(object stackTrace);
@@ -334,8 +266,8 @@ namespace System
         }
 
         // This piece of infrastructure exists to help avoid deadlocks
-        // between parts of mscorlib that might throw an exception while
-        // holding a lock that are also used by mscorlib's ResourceManager
+        // between parts of CoreLib that might throw an exception while
+        // holding a lock that are also used by CoreLib's ResourceManager
         // instance.  As a special case of code that may throw while holding
         // a lock, we also need to fix our asynchronous exceptions to use
         // Win32 resources as well (assuming we ever call a managed

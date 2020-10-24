@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 // --------------------------------------------------------------------------------
 // PEDecoder.cpp
 //
@@ -289,9 +288,9 @@ CHECK PEDecoder::CheckNTHeaders() const
     if (IsMapped())
     {
         // Ideally we would require the layout address to honor the section alignment constraints.
-        // However, we do have 8K aligned IL only images which we load on 32 bit platforms. In this
-        // case, we can only guarantee OS page alignment (which after all, is good enough.)
-        CHECK(CheckAligned(m_base, GetOsPageSize()));
+        // However, we do have 8K aligned IL only images which we load on 32 bit platforms.
+        // Also in the case of files embedded within a single-file app, the default alignment for assemblies is 16 bytes.
+        CHECK(CheckAligned(m_base, 16));
     }
 
     // @todo: check NumberOfSections for overflow of SizeOfHeaders
@@ -317,9 +316,9 @@ CHECK PEDecoder::CheckNTHeaders() const
         // NOTE: the if condition is becuase of a design issue in the CLR and OS loader's remapping
         // of PE32 headers to PE32+. Because IMAGE_NT_HEADERS64 is bigger than IMAGE_NT_HEADERS32,
         // the remapping will expand this part of the header and push out the following
-        // IMAGE_SECTION_HEADER entries. When IMAGE_DOS_HEADER::e_lfanew is large enough (size is
-        // proportional to the number of tools used to produce the inputs to the C++ linker, and
-        // has become larger when producing some WinMD files) this can push the last section header
+        // IMAGE_SECTION_HEADER entries. When IMAGE_DOS_HEADER::e_lfanew is large enough
+        // (size is proportional to the number of tools used to produce the inputs to the C++ linker)
+        // this can push the last section header
         // beyond the boundary set by IMAGE_NT_HEADERS::OptionalHeader.SizeOfHeaders (e.g., this
         // was recently seen where the unaligned size of the headers was 0x1f8 and SizeOfHeaders was
         // 0x200, and the header remapping resulted in new headers size of 0x208). To compensate
@@ -1771,20 +1770,29 @@ void PEDecoder::LayoutILOnly(void *base, BOOL allowFullPE) const
                            PAGE_READONLY, &oldProtection))
         ThrowLastError();
 
-    // Finally, apply proper protection to copied sections
-    section = sectionStart;
-    while (section < sectionEnd)
+    // Finally, apply proper protection to copied sections    
+    for (section = sectionStart; section < sectionEnd; section++)
     {
         // Add appropriate page protection.
-        if ((section->Characteristics & VAL32(IMAGE_SCN_MEM_WRITE)) == 0)
-        {
-            if (!ClrVirtualProtect((void *) ((BYTE *)base + VAL32(section->VirtualAddress)),
-                                   VAL32(section->Misc.VirtualSize),
-                                   PAGE_READONLY, &oldProtection))
-                ThrowLastError();
-        }
+#if defined(CROSSGEN_COMPILE) || defined(TARGET_UNIX)
+        if (section->Characteristics & IMAGE_SCN_MEM_WRITE)
+            continue;
 
-        section++;
+        DWORD newProtection = PAGE_READONLY;
+#else
+        DWORD newProtection = section->Characteristics & IMAGE_SCN_MEM_EXECUTE ?
+            PAGE_EXECUTE_READ :
+            section->Characteristics & IMAGE_SCN_MEM_WRITE ?
+                PAGE_READWRITE :
+                PAGE_READONLY;
+#endif
+
+        if (!ClrVirtualProtect((void*)((BYTE*)base + VAL32(section->VirtualAddress)),
+            VAL32(section->Misc.VirtualSize),
+            newProtection, &oldProtection))
+        {
+            ThrowLastError();
+        }
     }
 
     RETURN;
@@ -2344,10 +2352,10 @@ void *PEDecoder::GetExport(LPCSTR exportName) const
     {
         return NULL;
     }
-    
+
     uint8_t *imageBase = (uint8_t *)GetBase();
     const IMAGE_EXPORT_DIRECTORY *pExportDir = (const IMAGE_EXPORT_DIRECTORY *)GetDirectoryData(pExportDirectoryEntry);
-    
+
     uint32_t namePointerCount = VAL32(pExportDir->NumberOfNames);
     uint32_t addressTableRVA = VAL32(pExportDir->AddressOfFunctions);
     uint32_t namePointersRVA = VAL32(pExportDir->AddressOfNames);

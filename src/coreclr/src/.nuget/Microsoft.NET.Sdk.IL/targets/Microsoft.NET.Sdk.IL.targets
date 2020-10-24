@@ -7,7 +7,7 @@ WARNING:  DO NOT MODIFY this file unless you are knowledgeable about MSBuild and
           created a backup copy.  Incorrect changes to this file will make it
           impossible to load or build your projects from the command-line or the IDE.
 
-Copyright (c) .NET Foundation. All rights reserved. 
+Copyright (c) .NET Foundation. All rights reserved.
 ***********************************************************************************************
 -->
 <Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
@@ -24,13 +24,16 @@ Copyright (c) .NET Foundation. All rights reserved.
     <_OSPlatform Condition="$([MSBuild]::IsOSPlatform('linux'))">linux</_OSPlatform>
     <_OSPlatform Condition="$([MSBuild]::IsOSPlatform('osx'))">osx</_OSPlatform>
     <_OSPlatform Condition="$([MSBuild]::IsOSPlatform('freebsd'))">freebsd</_OSPlatform>
+    <_OSPlatform Condition="$([MSBuild]::IsOSPlatform('netbsd'))">netbsd</_OSPlatform>
+    <_OSPlatform Condition="$([MSBuild]::IsOSPlatform('illumos'))">illumos</_OSPlatform>
+    <_OSPlatform Condition="$([MSBuild]::IsOSPlatform('solaris'))">solaris</_OSPlatform>
     <_OSArchitecture>$([System.Runtime.InteropServices.RuntimeInformation]::OSArchitecture)</_OSArchitecture>
 
     <MicrosoftNetCoreIlasmPackageRuntimeId Condition="'$(MicrosoftNetCoreIlasmPackageRuntimeId)' == ''">$(_OSPlatform)-$(_OSArchitecture.ToLower())</MicrosoftNetCoreIlasmPackageRuntimeId>
-    <MicrosoftNETCoreILAsmVersion Condition="'$(MicrosoftNETCoreILAsmVersion)' == ''">5.0.0</MicrosoftNETCoreILAsmVersion>
+    <MicrosoftNETCoreILAsmVersion Condition="'$(MicrosoftNETCoreILAsmVersion)' == ''">6.0.0</MicrosoftNETCoreILAsmVersion>
     <MicrosoftNetCoreIlasmPackageName>runtime.$(MicrosoftNetCoreIlasmPackageRuntimeId).microsoft.netcore.ilasm</MicrosoftNetCoreIlasmPackageName>
     <MicrosoftNetCoreIldasmPackageName>runtime.$(MicrosoftNetCoreIlasmPackageRuntimeId).microsoft.netcore.ildasm</MicrosoftNetCoreIldasmPackageName>
-    
+
     <!-- If ILAsmToolPath is specified, it will be used and no packages will be restored
          Otherwise packages will be restored and ilasm and ildasm will be referenced from their packages.  -->
     <_IlasmDir Condition="'$(ILAsmToolPath)' != ''">$([MSBuild]::NormalizeDirectory($(ILAsmToolPath)))</_IlasmDir>
@@ -68,15 +71,15 @@ Copyright (c) .NET Foundation. All rights reserved.
   </Target>
 
   <!-- projects can define an ILResourceReference and we'll decompile it to get native resources -->
-  <Target Name="DisassembleIlasmResourceFile" 
-          BeforeTargets="CoreCompile" 
+  <Target Name="DisassembleIlasmResourceFile"
+          BeforeTargets="CoreCompile"
           Condition="'$(OS)'=='Windows_NT'"
           Inputs="@(ILResourceReference)"
           Outputs="$(IntermediateOutputPath)$(MSBuildProjectName).ref.res.obj">
     <Error Condition="'@(ILResourceReference->Count())' != '1'" Text="Only one ILResourceReference can be specified" />
     <PropertyGroup>
       <_ilResourceReference>%(ILResourceReference.FullPath)</_ilResourceReference>
-      <_IldasmCommand>$(_IldasmDir)ildasm</_IldasmCommand>
+      <_IldasmCommand>&quot;$(_IldasmDir)ildasm&quot;</_IldasmCommand>
       <_IldasmCommand>$(_IldasmCommand) "$(_ilResourceReference)"</_IldasmCommand>
       <_IldasmCommand>$(_IldasmCommand) /OUT="$(IntermediateOutputPath)/$(MSBuildProjectName).ref.il"</_IldasmCommand>
 
@@ -122,17 +125,17 @@ Copyright (c) .NET Foundation. All rights reserved.
 
       <_KeyFileArgument Condition="'$(KeyOriginatorFile)' != ''">-KEY="$(KeyOriginatorFile)"</_KeyFileArgument>
 
-      <_IlasmSwitches>-QUIET -NOLOGO</_IlasmSwitches> 
+      <_IlasmSwitches>-QUIET -NOLOGO</_IlasmSwitches>
       <_IlasmSwitches Condition="'$(FoldIdenticalMethods)' == 'True'">$(_IlasmSwitches) -FOLD</_IlasmSwitches>
       <_IlasmSwitches Condition="'$(SizeOfStackReserve)' != ''">$(_IlasmSwitches) -STACK=$(SizeOfStackReserve)</_IlasmSwitches>
       <_IlasmSwitches Condition="'$(DebugType)' == 'Full'">$(_IlasmSwitches) -DEBUG</_IlasmSwitches>
       <_IlasmSwitches Condition="'$(DebugType)' == 'Impl'">$(_IlasmSwitches) -DEBUG=IMPL</_IlasmSwitches>
       <_IlasmSwitches Condition="'$(DebugType)' == 'PdbOnly'">$(_IlasmSwitches) -DEBUG=OPT</_IlasmSwitches>
       <_IlasmSwitches Condition="'$(Optimize)' == 'True'">$(_IlasmSwitches) -OPTIMIZE</_IlasmSwitches>
-      <_IlasmSwitches Condition="'$(IlasmResourceFile)' != ''">$(_IlasmSwitches) -RESOURCES=$(IlasmResourceFile)</_IlasmSwitches>
+      <_IlasmSwitches Condition="'$(IlasmResourceFile)' != ''">$(_IlasmSwitches) -RESOURCES="$(IlasmResourceFile)"</_IlasmSwitches>
     </PropertyGroup>
 
-    <Exec Command="$(_IlasmDir)ilasm $(_IlasmSwitches) $(_OutputTypeArgument) $(IlasmFlags) -OUTPUT=&quot;@(IntermediateAssembly)&quot; $(_KeyFileArgument) @(Compile, ' ')">
+    <Exec Command="&quot;$(_IlasmDir)ilasm&quot; $(_IlasmSwitches) $(_OutputTypeArgument) $(IlasmFlags) -OUTPUT=&quot;@(IntermediateAssembly)&quot; $(_KeyFileArgument) @(Compile, ' ')">
       <Output TaskParameter="ExitCode" PropertyName="_ILAsmExitCode" />
     </Exec>
 
@@ -140,6 +143,9 @@ Copyright (c) .NET Foundation. All rights reserved.
 
     <CallTarget Targets="$(TargetsTriggeredByCompilation)" Condition="'$(TargetsTriggeredByCompilation)' != ''"/>
   </Target>
+  
+  <!-- Target is called by the language server. No-op for ILProj as there is no language service support. -->
+  <Target Name="CompileDesignTime" />
 
   <!-- Import design time targets for Roslyn Project System. These are only available if Visual Studio is installed. -->
   <!-- Required for project to load in Visual Studio. -->

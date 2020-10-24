@@ -1,10 +1,10 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using Xunit;
 using Xunit.Abstractions;
 
+using System.Threading;
 using System.Threading.Tasks;
 using System.Text;
 using System.Diagnostics;
@@ -120,6 +120,9 @@ namespace System.Net.Sockets.Tests
         [InlineData(3)]
         [InlineData(4)]
         [InlineData(5)]
+        [InlineData(6)]
+        [InlineData(7)]
+        [InlineData(8)]
         public async Task ConnectAsync_DnsEndPoint_Success(int mode)
         {
             using (var client = new DerivedTcpClient())
@@ -155,6 +158,18 @@ namespace System.Net.Sockets.Tests
                     case 5:
                         addresses = await Dns.GetHostAddressesAsync(host);
                         await Task.Factory.FromAsync(client.BeginConnect, client.EndConnect, addresses, port, null);
+                        break;
+
+                    case 6:
+                        await client.ConnectAsync(host, port, CancellationToken.None);
+                        break;
+                    case 7:
+                        addresses = await Dns.GetHostAddressesAsync(host);
+                        await client.ConnectAsync(addresses[0], port, CancellationToken.None);
+                        break;
+                    case 8:
+                        addresses = await Dns.GetHostAddressesAsync(host);
+                        await client.ConnectAsync(addresses, port, CancellationToken.None);
                         break;
                 }
 
@@ -429,12 +444,12 @@ namespace System.Net.Sockets.Tests
 
                 // There is a race condition here.  If the connection succeeds before the
                 // disposal, then the task will complete successfully.  Otherwise, it should
-                // fail with an ObjectDisposedException.
+                // fail with an exception.
                 try
                 {
                     await connectTask;
                 }
-                catch (ObjectDisposedException) { }
+                catch (SocketException e) when (e.SocketErrorCode == SocketError.OperationAborted) { }
                 sw.Stop();
 
                 Assert.Null(client.Client); // should be nulled out after Dispose

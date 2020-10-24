@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 //*****************************************************************************
 
 //
@@ -2255,7 +2254,7 @@ HRESULT CordbThread::HasUnhandledException()
 //    ppStackWalk - out parameter; return the new stackwalker
 //
 // Return Value:
-//    Return S_OK on succcess.
+//    Return S_OK on success.
 //    Return E_FAIL on error.
 //
 // Notes:
@@ -2779,6 +2778,8 @@ bool CordbThread::CreateEventWasQueued()
 
 CordbUnmanagedThread::CordbUnmanagedThread(CordbProcess *pProcess, DWORD dwThreadId, HANDLE hThread, void *lpThreadLocalBase)
   : CordbBase(pProcess, dwThreadId, enumCordbUnmanagedThread),
+    m_stackBase(0),
+    m_stackLimit(0),
     m_handle(hThread),
     m_threadLocalBase(lpThreadLocalBase),
     m_pTLSArray(NULL),
@@ -2788,8 +2789,6 @@ CordbUnmanagedThread::CordbUnmanagedThread(CordbProcess *pProcess, DWORD dwThrea
 #ifdef TARGET_X86
     m_pSavedLeafSeh(NULL),
 #endif
-    m_stackBase(0),
-    m_stackLimit(0),
     m_continueCountCached(0)
 {
     m_pLeftSideContext.Set(NULL);

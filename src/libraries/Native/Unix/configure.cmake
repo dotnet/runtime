@@ -9,8 +9,8 @@ include(CheckTypeSize)
 
 if (CLR_CMAKE_TARGET_ANDROID)
     set(PAL_UNIX_NAME \"ANDROID\")
-elseif (CLR_CMAKE_TARGET_ARCH_WASM)
-    set(PAL_UNIX_NAME \"WEBASSEMBLY\")
+elseif (CLR_CMAKE_TARGET_BROWSER)
+    set(PAL_UNIX_NAME \"BROWSER\")
 elseif (CLR_CMAKE_TARGET_LINUX)
     set(PAL_UNIX_NAME \"LINUX\")
 elseif (CLR_CMAKE_TARGET_OSX)
@@ -30,13 +30,23 @@ elseif (CLR_CMAKE_TARGET_FREEBSD)
 elseif (CLR_CMAKE_TARGET_NETBSD)
     set(PAL_UNIX_NAME \"NETBSD\")
 elseif (CLR_CMAKE_TARGET_SUNOS)
-    set(PAL_UNIX_NAME \"SUNOS\")
-    set(CMAKE_INCLUDE_PATH ${CMAKE_INCLUDE_PATH} /opt/local/include)
-    set(CMAKE_LIBRARY_PATH ${CMAKE_LIBRARY_PATH} /opt/local/lib)
-    include_directories(SYSTEM /opt/local/include)
+    if (CLR_CMAKE_TARGET_ILLUMOS)
+        set(PAL_UNIX_NAME \"ILLUMOS\")
+    else ()
+        set(PAL_UNIX_NAME \"SOLARIS\")
+    endif ()
+    # requires /opt/tools when building in Global Zone (GZ)
+    include_directories(SYSTEM /opt/local/include /opt/tools/include)
+    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -fstack-protector")
 else ()
     message(FATAL_ERROR "Unknown platform. Cannot define PAL_UNIX_NAME, used by RuntimeInformation.")
 endif ()
+
+if(CLR_CMAKE_USE_SYSTEM_LIBUNWIND)
+    # This variable can be set and used by the coreclr and installer builds.
+    # Libraries doesn't need it, but not using it makes the build fail.  So
+    # just check and igore the variable.
+endif()
 
 # We compile with -Werror, so we need to make sure these code fragments compile without warnings.
 # Older CMake versions (3.8) do not assign the result of their tests, causing unused-value errors
@@ -402,9 +412,9 @@ check_c_source_compiles(
     HAVE_SENDFILE_7)
 
 check_symbol_exists(
-    clonefile
-    "sys/clonefile.h"
-    HAVE_CLONEFILE)
+    fcopyfile
+    copyfile.h
+    HAVE_FCOPYFILE)
 
 check_include_files(
      "sys/sockio.h"
@@ -417,6 +427,10 @@ check_include_files(
 check_include_files(
      "sys/poll.h"
      HAVE_SYS_POLL_H)
+
+check_include_files(
+     "sys/proc_info.h"
+     HAVE_SYS_PROCINFO_H)
 
 check_symbol_exists(
     epoll_create1
@@ -549,9 +563,9 @@ else()
 endif()
 
 check_symbol_exists(
-    mach_absolute_time
-    mach/mach_time.h
-    HAVE_MACH_ABSOLUTE_TIME)
+    clock_gettime_nsec_np
+    time.h
+    HAVE_CLOCK_GETTIME_NSEC_NP)
 
 check_symbol_exists(
     futimes
@@ -670,7 +684,7 @@ check_c_source_compiles(
     HAVE_MKSTEMP)
 
 if (NOT HAVE_MKSTEMPS AND NOT HAVE_MKSTEMP)
-    message(FATAL_ERROR "Cannot find mkstemp nor mkstemp on this platform.")
+    message(FATAL_ERROR "Cannot find mkstemps nor mkstemp on this platform.")
 endif()
 
 check_c_source_compiles(
@@ -875,7 +889,7 @@ set (CMAKE_REQUIRED_LIBRARIES ${PREVIOUS_CMAKE_REQUIRED_LIBRARIES})
 set (HAVE_INOTIFY 0)
 if (HAVE_INOTIFY_INIT AND HAVE_INOTIFY_ADD_WATCH AND HAVE_INOTIFY_RM_WATCH)
     set (HAVE_INOTIFY 1)
-elseif (CLR_CMAKE_TARGET_LINUX AND NOT CLR_CMAKE_TARGET_ARCH_WASM)
+elseif (CLR_CMAKE_TARGET_LINUX AND NOT CLR_CMAKE_TARGET_BROWSER)
     message(FATAL_ERROR "Cannot find inotify functions on a Linux platform.")
 endif()
 

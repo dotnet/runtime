@@ -25,7 +25,9 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "src", "src", "{E107E9C1-E89
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "ref", "ref", "{2E666815-2EDB-464B-9DF6-380BF4789AD4}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TestUtilities", "..\Common\tests\TestUtilities\TestUtilities.csproj", "{093A2EED-031E-47A2-91C6-5B21D6B587F5}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "TestUtilities", "..\Common\tests\TestUtilities\TestUtilities.csproj", "{093A2EED-031E-47A2-91C6-5B21D6B587F5}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.Private.DataContractSerialization", "..\System.Private.DataContractSerialization\src\System.Private.DataContractSerialization.csproj", "{7A5FC511-537D-4B4D-A138-34F3D81C68C9}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -53,6 +55,10 @@ Global
 		{093A2EED-031E-47A2-91C6-5B21D6B587F5}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{093A2EED-031E-47A2-91C6-5B21D6B587F5}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{093A2EED-031E-47A2-91C6-5B21D6B587F5}.Release|Any CPU.Build.0 = Release|Any CPU
+		{7A5FC511-537D-4B4D-A138-34F3D81C68C9}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{7A5FC511-537D-4B4D-A138-34F3D81C68C9}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{7A5FC511-537D-4B4D-A138-34F3D81C68C9}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{7A5FC511-537D-4B4D-A138-34F3D81C68C9}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -63,6 +69,7 @@ Global
 		{AAFFA8F4-BDA9-4107-A650-9014F64EDAE9} = {E107E9C1-E893-4E87-987E-04EF0DCEAEFD}
 		{5119E88F-FA73-4FC6-A327-DD7C77E746BC} = {2E666815-2EDB-464B-9DF6-380BF4789AD4}
 		{093A2EED-031E-47A2-91C6-5B21D6B587F5} = {1A2F9F4A-A032-433E-B914-ADD5992BB178}
+		{7A5FC511-537D-4B4D-A138-34F3D81C68C9} = {E107E9C1-E893-4E87-987E-04EF0DCEAEFD}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {6BB5B700-6575-4C04-ADF5-1680E2177DB2}

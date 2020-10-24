@@ -1,3 +1,6 @@
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+
 //
 // Copyright (C) 2004 Novell, Inc (http://www.novell.com)
 //
@@ -33,15 +36,14 @@
 #if MONO_FEATURE_SRE
 using System.Globalization;
 using System.Runtime.InteropServices;
+using System.Diagnostics.CodeAnalysis;
 
 namespace System.Reflection.Emit
 {
     [StructLayout(LayoutKind.Sequential)]
     public sealed partial class PropertyBuilder : PropertyInfo
     {
-
-        // Managed version of MonoReflectionPropertyBuilder
-#pragma warning disable 169, 414
+#region Sync with MonoReflectionPropertyBuilder in object-internals.h
         private PropertyAttributes attrs;
         private string name;
         private Type type;
@@ -50,14 +52,14 @@ namespace System.Reflection.Emit
         private object? def_value;
         private MethodBuilder? set_method;
         private MethodBuilder? get_method;
-        private int table_idx = 0;
+        private int table_idx;
         internal TypeBuilder typeb;
         private Type[]? returnModReq;
         private Type[]? returnModOpt;
         private Type[][]? paramModReq;
         private Type[][]? paramModOpt;
         private CallingConventions callingConvention;
-#pragma warning restore 169, 414
+#endregion
 
         internal PropertyBuilder(TypeBuilder tb, string name, PropertyAttributes attributes, CallingConventions callingConvention, Type returnType, Type[]? returnModReq, Type[]? returnModOpt, Type[]? parameterTypes, Type[][]? paramModReq, Type[][]? paramModOpt)
         {
@@ -97,10 +99,6 @@ namespace System.Reflection.Emit
         public override string Name
         {
             get { return name; }
-        }
-        public PropertyToken PropertyToken
-        {
-            get { return default; }
         }
         public override Type PropertyType
         {
@@ -227,7 +225,7 @@ namespace System.Reflection.Emit
             }
         }
 
-        private Exception not_supported()
+        private static Exception not_supported()
         {
             return new NotSupportedException("The invoked member is not supported in a dynamic module.");
         }

@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 //
 // FILE: dwreport.cpp
 //
@@ -189,8 +188,8 @@ HRESULT DwGetFileVersionInfo(
     CONTRACTL
     {
         NOTHROW;
-        GC_NOTRIGGER;
-        MODE_ANY;
+        GC_TRIGGERS;
+        MODE_PREEMPTIVE;
     }
     CONTRACTL_END;
 
@@ -602,7 +601,7 @@ HRESULT GetManagedBucketParametersForIp(
     CONTRACTL
     {
         NOTHROW;
-        GC_NOTRIGGER;
+        GC_TRIGGERS;
         MODE_ANY;
     }
     CONTRACTL_END;
@@ -677,7 +676,7 @@ void* GetBucketParametersForManagedException(UINT_PTR ip, TypeOfReportedError to
     CONTRACTL
     {
         NOTHROW;
-        GC_NOTRIGGER;
+        GC_TRIGGERS;
         MODE_ANY;
     }
     CONTRACTL_END;
@@ -1097,7 +1096,7 @@ ContractFailureKind GetContractFailureKind(OBJECTREF obj)
 
     PTR_MethodTable pMT = obj->GetMethodTable();
 
-    if (MscorlibBinder::IsException(pMT, kContractException))
+    if (CoreLibBinder::IsException(pMT, kContractException))
         return CONTRACTEXCEPTIONREF(obj)->GetContractFailureKind();
 
     // there are cases where the code contracts rewriter will use a ContractException
@@ -1112,7 +1111,7 @@ ContractFailureKind GetContractFailureKind(OBJECTREF obj)
     ContractFailureKind result = CONTRACT_FAILURE_INVARIANT;
 
     // first compare the exception name.
-    PTR_MethodTable pContractExceptionMT = MscorlibBinder::GetClassIfExist(CLASS__CONTRACTEXCEPTION);
+    PTR_MethodTable pContractExceptionMT = CoreLibBinder::GetClassIfExist(CLASS__CONTRACTEXCEPTION);
     _ASSERTE(pContractExceptionMT);
 
     if (pContractExceptionMT)
