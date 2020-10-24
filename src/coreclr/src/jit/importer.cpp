@@ -4396,29 +4396,6 @@ GenTree* Compiler::impMathIntrinsic(CORINFO_METHOD_HANDLE method,
 
     op1 = nullptr;
 
-    if ((intrinsicName == NI_System_Math_Pow) && impStackTop().val->IsCnsFltOrDbl())
-    {
-        double power = impStackTop().val->AsDblCon()->gtDconVal;
-        if (power == 1.0)
-        {
-            // Math.Pow(x, 1) -> x
-            impPopStack();
-            return impPopStack().val;
-        }
-        else if (power == 2.0)
-        {
-            // Math.Pow(x, 2) -> x*x
-            impPopStack();
-            GenTree* arg0      = impPopStack().val;
-            GenTree* arg0Clone = arg0;
-            if (!arg0->OperIsLeaf())
-            {
-                arg0Clone = fgMakeMultiUse(&arg0);
-            }
-            return gtNewOperNode(GT_MUL, callType, arg0, gtCloneExpr(arg0Clone));
-        }
-    }
-
 #if !defined(TARGET_X86)
     // Intrinsics that are not implemented directly by target instructions will
     // be re-materialized as users calls in rationalizer. For prefixed tail calls,

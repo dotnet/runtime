@@ -12255,8 +12255,8 @@ GenTree* Compiler::fgMorphSmpOp(GenTree* tree, MorphAddrContext* mac)
         case GT_RUNTIMELOOKUP:
             return fgMorphTree(op1);
 
-#ifdef TARGET_ARM
         case GT_INTRINSIC:
+#ifdef TARGET_ARM
             if (tree->AsIntrinsic()->gtIntrinsicName == NI_System_Math_Round)
             {
                 switch (tree->TypeGet())
@@ -12268,9 +12268,37 @@ GenTree* Compiler::fgMorphSmpOp(GenTree* tree, MorphAddrContext* mac)
                     default:
                         unreached();
                 }
+                break;
+            }
+#endif
+            if ((tree->AsIntrinsic()->gtIntrinsicName == NI_System_Math_Pow) && op2->IsCnsFltOrDbl())
+            {
+                double power = op2->AsDblCon()->gtDconVal;
+                if (power == 1.0)
+                {
+                    // Math.Pow(x, 1) -> x
+                    return op1;
+                }
+                if (power == 2.0)
+                {
+                    // Math.Pow(x, 2) -> x*x
+                    GenTree* arg0Clone = op1;
+                    if (op1->OperIsLeaf())
+                    {
+                        return gtNewOperNode(GT_MUL, tree->TypeGet(), op1, gtCloneExpr(arg0Clone));
+                    }
+                    if (optValnumCSE_phase )
+                    {
+                        // if op1 is not a leaf op we need to introduce a variable
+                        // and it should be done after LoopHoisting phase
+                        arg0Clone = fgMakeMultiUse(&op1);
+                        return gtNewOperNode(GT_MUL, tree->TypeGet(), op1, gtCloneExpr(arg0Clone));
+                    }
+                }
             }
             break;
-#endif
+
+
         case GT_LIST:
             // Special handling for the arg list.
             return fgMorphArgList(tree->AsArgList(), mac);
