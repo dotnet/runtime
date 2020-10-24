@@ -12299,7 +12299,6 @@ GenTree* Compiler::fgMorphSmpOp(GenTree* tree, MorphAddrContext* mac)
             }
             break;
 
-
         case GT_LIST:
             // Special handling for the arg list.
             return fgMorphArgList(tree->AsArgList(), mac);
