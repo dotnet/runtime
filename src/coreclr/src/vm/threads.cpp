@@ -388,7 +388,7 @@ BOOL Thread::Alert ()
     BOOL fRetVal = FALSE;
     {
         HANDLE handle = GetThreadHandle();
-        if (handle != INVALID_HANDLE_VALUE && handle != SWITCHOUT_HANDLE_VALUE)
+        if (handle != INVALID_HANDLE_VALUE)
         {
             fRetVal = ::QueueUserAPC(UserInterruptAPC, handle, APC_Code);
         }
@@ -422,7 +422,7 @@ DWORD Thread::JoinEx(DWORD timeout, WaitMode mode)
         mode = (WaitMode)(mode & ~WaitMode_InDeadlock);
 
         HANDLE handle = GetThreadHandle();
-        if (handle == INVALID_HANDLE_VALUE || handle == SWITCHOUT_HANDLE_VALUE) {
+        if (handle == INVALID_HANDLE_VALUE) {
             return WAIT_FAILED;
         }
         if (pCurThread) {
@@ -572,8 +572,7 @@ DWORD Thread::StartThread()
     m_Creater.Clear();
 #endif
 
-    _ASSERTE (GetThreadHandle() != INVALID_HANDLE_VALUE &&
-                GetThreadHandle() != SWITCHOUT_HANDLE_VALUE);
+    _ASSERTE (GetThreadHandle() != INVALID_HANDLE_VALUE);
     dwRetVal = ::ResumeThread(GetThreadHandle());
 
 
@@ -1000,7 +999,7 @@ HRESULT Thread::DetachThread(BOOL fDLLThreadDetach)
     }
 
     HANDLE hThread = GetThreadHandle();
-    SetThreadHandle (SWITCHOUT_HANDLE_VALUE);
+    SetThreadHandle (INVALID_HANDLE_VALUE);
     while (m_dwThreadHandleBeingUsed > 0)
     {
         // Another thread is using the handle now.

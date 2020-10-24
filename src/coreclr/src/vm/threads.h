@@ -3514,7 +3514,6 @@ private:
             CounterHolder handleHolder(&m_dwThreadHandleBeingUsed);
             HANDLE handle = m_ThreadHandle;
             _ASSERTE ( handle == INVALID_HANDLE_VALUE
-                || handle == SWITCHOUT_HANDLE_VALUE
                 || m_OSThreadId == 0
                 || m_OSThreadId == 0xbaadf00d
                 || ::MatchThreadHandleToOsId(handle, (DWORD)m_OSThreadId) );
@@ -3530,7 +3529,6 @@ private:
         LIMITED_METHOD_CONTRACT;
 #if defined(_DEBUG)
         _ASSERTE ( h == INVALID_HANDLE_VALUE
-            || h == SWITCHOUT_HANDLE_VALUE
             || m_OSThreadId == 0
             || m_OSThreadId == 0xbaadf00d
             || ::MatchThreadHandleToOsId(h, (DWORD)m_OSThreadId) );

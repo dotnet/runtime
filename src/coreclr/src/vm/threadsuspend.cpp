@@ -437,7 +437,6 @@ DWORD Thread::ResumeThread()
     CONTRACTL_END;
 
     _ASSERTE (m_ThreadHandleForResume != INVALID_HANDLE_VALUE);
-    _ASSERTE (GetThreadHandle() != SWITCHOUT_HANDLE_VALUE);
 
     //DWORD res = ::ResumeThread(GetThreadHandle());
     DWORD res = ::ResumeThread(m_ThreadHandleForResume);
