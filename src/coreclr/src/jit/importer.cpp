@@ -4396,8 +4396,7 @@ GenTree* Compiler::impMathIntrinsic(CORINFO_METHOD_HANDLE method,
 
     op1 = nullptr;
 
-    if (opts.OptimizationEnabled() && (intrinsicID == CORINFO_INTRINSIC_Pow) &&
-        impStackTop().val->IsCnsFltOrDbl())
+    if ((intrinsicName == NI_System_Math_Pow) && impStackTop().val->IsCnsFltOrDbl())
     {
         double power = impStackTop().val->AsDblCon()->gtDconVal;
         if (power == 1.0)
@@ -4416,7 +4415,7 @@ GenTree* Compiler::impMathIntrinsic(CORINFO_METHOD_HANDLE method,
             {
                 arg0Clone = fgMakeMultiUse(&arg0);
             }
-            return gtNewOperNode(GT_MUL, impStackTop().val->TypeGet(), arg0, gtCloneExpr(arg0Clone));
+            return gtNewOperNode(GT_MUL, callType, arg0, gtCloneExpr(arg0Clone));
         }
     }
 
