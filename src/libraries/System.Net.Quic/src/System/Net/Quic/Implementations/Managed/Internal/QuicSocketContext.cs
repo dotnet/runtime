@@ -100,7 +100,7 @@ namespace System.Net.Quic.Implementations.Managed.Internal
 
         internal void Start()
         {
-            if (_backgroundWorkerTask != null)
+            if (_started)
             {
                 return;
             }
@@ -113,7 +113,7 @@ namespace System.Net.Quic.Implementations.Managed.Internal
         {
             _socketTaskCts.Cancel();
 
-            // if never started also cleanup the socket, since the background worker will not do that
+            // if never started, then also cleanup the socket, since the background worker will not do that
             if (!_started)
             {
                 Dispose();

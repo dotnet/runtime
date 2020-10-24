@@ -45,7 +45,8 @@ namespace System.Net.Quic.Implementations.Managed.Internal.Crypto
             Encoding.ASCII.GetBytes(tls13Prefix, hkdfLabel.Slice(3));
             Encoding.ASCII.GetBytes(label, hkdfLabel.Slice(3 + tls13Prefix.Length));
 
-            // no need to write zero for context length, it is zero by default
+            // write context empty string
+            hkdfLabel[hkdfLabelSize - 1] = 0;
 
             var result = new byte[length];
             HKDF.Expand(hashAlgorithm, prk, result, hkdfLabel);

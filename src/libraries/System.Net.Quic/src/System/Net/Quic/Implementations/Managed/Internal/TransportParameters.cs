@@ -171,6 +171,7 @@ namespace System.Net.Quic.Implementations.Managed.Internal
 
             // maintain field of present transport parameters
             Span<bool> presentParameters = stackalloc bool[(int)TransportParameterName.NParams];
+            presentParameters.Clear();
 
             while (buffer.Length > 0)
             {

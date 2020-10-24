@@ -56,6 +56,8 @@ namespace System.Net.Quic.Implementations.Managed.Internal.Crypto
         internal override bool Unprotect(ReadOnlySpan<byte> nonce, Span<byte> buffer, ReadOnlySpan<byte> tag, ReadOnlySpan<byte> aad)
         {
             Span<byte> expectedTag = stackalloc byte[tag.Length];
+            expectedTag.Clear();
+
             AddDigest(nonce, expectedTag);
             AddDigest(buffer, expectedTag);
             AddDigest(aad, expectedTag);
