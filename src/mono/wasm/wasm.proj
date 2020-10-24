@@ -102,6 +102,7 @@
                        $(MonoProjectRoot)wasm\runtime\dotnet_support.js;
                        $(MonoProjectRoot)wasm\runtime\library_mono.js;
                        $(LibrariesProjectRoot)Native\Unix\System.Native\pal_random.js;
+                       $(ArtifactsObjDir)wasm\pinvoke-table.h;
                        $(_IcuLibdir)\libicudata.a;
                        $(_IcuLibdir)\libicui18n.a;
                        $(_IcuLibdir)\libicutest.a;
