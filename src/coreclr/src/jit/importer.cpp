@@ -4399,9 +4399,14 @@ GenTree* Compiler::impMathIntrinsic(CORINFO_METHOD_HANDLE method,
     if (opts.OptimizationEnabled() && (intrinsicID == CORINFO_INTRINSIC_Pow) &&
         impStackTop().val->IsCnsFltOrDbl())
     {
-        double    power = impStackTop().val->AsDblCon()->gtDconVal;
-        var_types type  = impStackTop().val->TypeGet();
-        if (power == 2.0)
+        double power = impStackTop().val->AsDblCon()->gtDconVal;
+        if (power == 1.0)
+        {
+            // Math.Pow(x, 1) -> x
+            impPopStack();
+            return impPopStack().val;
+        }
+        else if (power == 2.0)
         {
             // Math.Pow(x, 2) -> x*x
             impPopStack();
@@ -4411,31 +4416,7 @@ GenTree* Compiler::impMathIntrinsic(CORINFO_METHOD_HANDLE method,
             {
                 arg0Clone = fgMakeMultiUse(&arg0);
             }
-            return gtNewOperNode(GT_MUL, type, arg0, gtCloneExpr(arg0Clone));
-        }
-        else if (power == 1.0)
-        {
-            // Math.Pow(x, 1) -> x
-            impPopStack();
-            return impPopStack().val;
-        }
-        else if (power == -1.0)
-        {
-            // Math.Pow(x, -1) -> 1/x
-            impPopStack();
-            return gtNewOperNode(GT_DIV, type, gtNewDconNode(1, type), impPopStack().val);
-        }
-        else if (power == 0.0)
-        {
-            // Math.Pow(x, 0) -> 1
-            impPopStack();
-            GenTree* arg0 = impPopStack().val;
-            if (!arg0->OperIsLeaf())
-            {
-                // keep arg0 around to preserve possible side-effects
-                return gtNewOperNode(GT_COMMA, type, arg0, gtNewDconNode(1, type));
-            }
-            return gtNewDconNode(1, type);
+            return gtNewOperNode(GT_MUL, impStackTop().val->TypeGet(), arg0, gtCloneExpr(arg0Clone));
         }
     }
 
