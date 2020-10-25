@@ -2015,7 +2015,7 @@ void ThreadSuspend::LockThreadStore(ThreadSuspend::SUSPEND_REASON reason)
         if (pCurThread)
             IncCantStopCount();
 
-        // This is used to avoid thread starvation if non-GC threads are competing for
+        // This is used to avoid GC starvation if non-GC threads are competing for
         // the thread store lock when there is a real GC-thread waiting to get in.
         // This is initialized lazily when the first non-GC thread backs out because of
         // a waiting GC thread.
@@ -3453,6 +3453,26 @@ HRESULT ThreadSuspend::SuspendRuntime(ThreadSuspend::SUSPEND_REASON reason)
     }
 #endif // PROFILING_SUPPORTED
 
+    // If m_pThreadAttemptingSuspendForGC is set, it means:
+    // 1) someone is trying to suspend for GC and
+    // 2) it is not us.
+    // In such case, before doing much work, we back off with ERROR_TIMEOUT and will try again later
+    // This should be rare, but if too many non-GC suspensions are trying to happen, GC could starve.
+    if (m_pThreadAttemptingSuspendForGC != NULL)
+    {
+#ifdef PROFILING_SUPPORTED
+        // Must let the profiler know that this thread is aborting its attempt at suspending
+        {
+            BEGIN_PIN_PROFILER(CORProfilerTrackSuspends());
+            g_profControlBlock.pProfInterface->RuntimeSuspendAborted();
+            END_PIN_PROFILER();
+        }
+#endif // PROFILING_SUPPORTED
+
+        STRESS_LOG0(LF_SYNC, LL_ALWAYS, "Thread::SuspendRuntime() - Yielding to GC.\n");
+        return (ERROR_TIMEOUT);
+    }
+
     //
     // If this thread is running at low priority, boost its priority.  We remember the old
     // priority so that we can restore it in ResumeRuntime.
@@ -3475,12 +3495,10 @@ HRESULT ThreadSuspend::SuspendRuntime(ThreadSuspend::SUSPEND_REASON reason)
     // in such a case.
     SuspendRuntimeInProgressHolder hldSuspendRuntimeInProgress;
 
-
     // Flush the store buffers on all CPUs, to ensure two things:
     // - we get a reliable reading of the threads' m_fPreemptiveGCDisabled state
     // - other threads see that g_TrapReturningThreads is set
     // See VSW 475315 and 488918 for details.
-
     ::FlushProcessWriteBuffers();
 
     //
@@ -4623,7 +4641,7 @@ RetrySuspension:
 
                 // The hijack will toggle our GC mode, and thus we could wait for the next sweep,
                 // and the GC-mode check above would catch and sync us. But there's no reason to wait,
-                // if the thread is hijacked, it's as good as synced, so mark it now.
+                // if the thread is redirected, it's as good as synced, so mark it now.
                 thread->ResumeThread();
                 goto Label_MarkThreadAsSynced;
             }
@@ -5922,26 +5940,20 @@ retry_for_debugger:
         if (hr == ERROR_TIMEOUT)
             STRESS_LOG0(LF_SYNC, LL_INFO1000, "SysSuspension colission");
 
+        // debugger holds TS lock when synchronizing. We cannot be suspending for GC.
+        _ASSERTE(!g_pDebugInterface->IsSynchronizing() ||
+                 !(reason == ThreadSuspend::SUSPEND_FOR_GC || reason == ThreadSuspend::SUSPEND_FOR_GC_PREP));
+
         // If the debugging services are attached, then its possible
         // that there is a thread which appears to be stopped at a gc
         // safe point, but which really is not. If that is the case,
         // back off and try again.
 
         // If this is not the GC thread and another thread has triggered
-        // a GC, then we may have bailed out of SuspendRuntime, so we
-        // must resume all of the threads and tell the GC that we are
-        // at a safepoint - since this is the exact same behaviour
-        // that the debugger needs, just use it's code.
+        // a GC, then we yield by resuming all the threads and trying again.
         if ((hr == ERROR_TIMEOUT)
 #ifdef DEBUGGING_SUPPORTED
-             || (CORDebuggerAttached() &&
-            // When the debugger is synchronizing, trying to perform a GC could deadlock. The GC has the
-            // threadstore lock and synchronization cannot complete until the debugger can get the
-            // threadstore lock. However the GC can not complete until it sends the BeforeGarbageCollection
-            // event, and the event can not be sent until the debugger is synchronized. In order to break
-            // this deadlock cycle the GC must give up the threadstore lock, allow the debugger to synchronize,
-            // then try again.
-                 (g_pDebugInterface->ThreadsAtUnsafePlaces() || g_pDebugInterface->IsSynchronizing()))
+            || (CORDebuggerAttached() && (g_pDebugInterface->ThreadsAtUnsafePlaces()))
 #endif // DEBUGGING_SUPPORTED
             )
         {
@@ -5972,7 +5984,7 @@ retry_for_debugger:
             LOG((LF_GCROOTS | LF_GC | LF_CORDB,
                  LL_INFO10,
                  "***** Giving up on current GC suspension due "
-                 "to debugger or timeout *****\n"));
+                 "to debugger or yielding to a GC suspension *****\n"));
 
             if (s_hAbortEvtCache == NULL)
             {
