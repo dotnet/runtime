@@ -8,6 +8,7 @@
  */
 
 #include <stdint.h>
+#include <stable_sort.h>
 
 #include "gcinfoencoder.h"
 
@@ -1284,7 +1285,7 @@ void GcInfoEncoder::Build()
     //-----------------------------------------------------------------
 
     // Don't use the CQuickSort algorithm, it's prone to stack overflows
-    qsort(
+    stable_sort(
         pTransitions,
         numTransitions,
         sizeof(LifetimeTransition),
@@ -1322,7 +1323,7 @@ void GcInfoEncoder::Build()
             sortedSlots[i].m_SlotId = i;
         }
 
-        qsort(sortedSlots, m_NumSlots, sizeof(GcSlotDescAndId), CompareSlotDescAndIdBySlotDesc);
+        stable_sort(sortedSlots, m_NumSlots, sizeof(GcSlotDescAndId), CompareSlotDescAndIdBySlotDesc);
 
         for(UINT32 i = 0; i < m_NumSlots; i++)
         {
@@ -2089,7 +2090,7 @@ void GcInfoEncoder::Build()
             _ASSERTE(numTransitionsInCurrentChunk > 0);
 
             // Sort the transitions in this chunk by slot
-            qsort(
+            stable_sort(
                 pCurrent - numTransitionsInCurrentChunk,
                 numTransitionsInCurrentChunk,
                 sizeof(LifetimeTransition),

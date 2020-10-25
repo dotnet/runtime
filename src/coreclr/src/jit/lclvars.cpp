@@ -21,6 +21,7 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 #include "register_arg_convention.h"
 #include "jitstd/algorithm.h"
 #include "patchpointinfo.h"
+#include "stable_sort.h"
 
 /*****************************************************************************/
 
@@ -1504,7 +1505,7 @@ CORINFO_CLASS_HANDLE Compiler::lvaGetStruct(unsigned varNum)
 }
 
 //--------------------------------------------------------------------------------------------
-// lvaFieldOffsetCmp - a static compare function passed to qsort() by Compiler::StructPromotionHelper;
+// lvaFieldOffsetCmp - a static compare function passed to stable_sort() by Compiler::StructPromotionHelper;
 //   compares fields' offsets.
 //
 // Arguments:
@@ -2029,7 +2030,7 @@ void Compiler::StructPromotionHelper::SortStructFields()
 {
     if (!structPromotionInfo.fieldsSorted)
     {
-        qsort(structPromotionInfo.fields, structPromotionInfo.fieldCnt, sizeof(*structPromotionInfo.fields),
+        stable_sort(structPromotionInfo.fields, structPromotionInfo.fieldCnt, sizeof(*structPromotionInfo.fields),
               lvaFieldOffsetCmp);
         structPromotionInfo.fieldsSorted = true;
     }

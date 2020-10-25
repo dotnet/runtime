@@ -11,6 +11,8 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 */
 
 #include "jitpch.h"
+#include "stable_sort.h"
+
 #ifdef _MSC_VER
 #pragma hdrstop
 #endif
@@ -267,7 +269,7 @@ bool Compiler::optCSE_canSwap(GenTree* tree)
 
 /*****************************************************************************
  *
- *  Compare function passed to qsort() by CSE_Heuristic::SortCandidates
+ *  Compare function passed to stable_sort() by CSE_Heuristic::SortCandidates
  *  when (CodeOptKind() != Compiler::SMALL_CODE)
  */
 
@@ -311,7 +313,7 @@ int __cdecl Compiler::optCSEcostCmpEx(const void* op1, const void* op2)
 
 /*****************************************************************************
  *
- *  Compare function passed to qsort() by CSE_Heuristic::SortCandidates
+ *  Compare function passed to stable_sort() by CSE_Heuristic::SortCandidates
  *  when (CodeOptKind() == Compiler::SMALL_CODE)
  */
 
@@ -1999,11 +2001,11 @@ public:
 
         if (CodeOptKind() == Compiler::SMALL_CODE)
         {
-            qsort(sortTab, m_pCompiler->optCSECandidateCount, sizeof(*sortTab), m_pCompiler->optCSEcostCmpSz);
+            stable_sort(sortTab, m_pCompiler->optCSECandidateCount, sizeof(*sortTab), m_pCompiler->optCSEcostCmpSz);
         }
         else
         {
-            qsort(sortTab, m_pCompiler->optCSECandidateCount, sizeof(*sortTab), m_pCompiler->optCSEcostCmpEx);
+            stable_sort(sortTab, m_pCompiler->optCSECandidateCount, sizeof(*sortTab), m_pCompiler->optCSEcostCmpEx);
         }
 
 #ifdef DEBUG

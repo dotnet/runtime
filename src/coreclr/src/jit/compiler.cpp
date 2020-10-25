@@ -22,6 +22,7 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 #include "stacklevelsetter.h"
 #include "jittelemetry.h"
 #include "patchpointinfo.h"
+#include "stable_sort.h"
 
 #if defined(DEBUG)
 // Column settings for COMPlus_JitDumpIR.  We could(should) make these programmable.
@@ -1249,7 +1250,7 @@ void DisplayNowayAssertMap()
             ++i;
         }
 
-        qsort(nacp, count, sizeof(nacp[0]), NowayAssertCountMap::compare);
+        stable_sort(nacp, count, sizeof(nacp[0]), NowayAssertCountMap::compare);
 
         if (fout == jitstdout)
         {
@@ -6367,8 +6368,8 @@ inline void Compiler::compInitScopeLists()
         compEnterScopeList[i] = compExitScopeList[i] = &info.compVarScopes[i];
     }
 
-    qsort(compEnterScopeList, info.compVarScopesCount, sizeof(*compEnterScopeList), genCmpLocalVarLifeBeg);
-    qsort(compExitScopeList, info.compVarScopesCount, sizeof(*compExitScopeList), genCmpLocalVarLifeEnd);
+    stable_sort(compEnterScopeList, info.compVarScopesCount, sizeof(*compEnterScopeList), genCmpLocalVarLifeBeg);
+    stable_sort(compExitScopeList, info.compVarScopesCount, sizeof(*compExitScopeList), genCmpLocalVarLifeEnd);
 }
 
 void Compiler::compResetScopeLists()
