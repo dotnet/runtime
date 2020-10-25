@@ -11,7 +11,8 @@
       <IntermediatesDir>$(RootBinDir)\obj\coreclr\$(OSPlatformConfig)</IntermediatesDir>
       <CrossComponentBinDir>$(BinDir)</CrossComponentBinDir>
       <CrossGenCoreLibLog>$(LogsDir)\CrossgenCoreLib_$(TargetOS)__$(TargetArchitecture)__$(Configuration).log</CrossGenCoreLibLog>
-      <CrossGenExe>$(CrossComponentBinDir)\crossgen.exe</CrossGenExe>
+      <ExeExtension Condition="'$(OS)' == 'Windows_NT'">.exe</ExeExtension>
+      <CrossGenExe>$(CrossComponentBinDir)\crossgen$(ExeExtension)</CrossGenExe>
 
       <CoreLibAssemblyName>System.Private.CoreLib</CoreLibAssemblyName>
       <CoreLibOutputPath>$(BinDir)\$(CoreLibAssemblyName).dll</CoreLibOutputPath>
@@ -33,9 +34,9 @@
       <CrossGenDllCmd>$(CrossGenDllCmd) "$(BinDir)\IL\$(CoreLibAssemblyName).dll"</CrossGenDllCmd>
     </PropertyGroup>
     
-    <PropertyGroup Condition="'$(TargetOS) == 'Linux'">
-      <CrossGenPerfMapCmd>$(CrossGenCmd) /CreatePerfMap "$(BinDir)"</CrossGenPdbCmd>
-      <CrossGenPerfMapCmd>$(CrossGenPerMapCmd) "$(CoreLibOutputPath)"</CrossGenPdbCmd>
+    <PropertyGroup Condition="'$(TargetOS)' == 'Linux'">
+      <CrossGenPerfMapCmd>$(CrossGenCmd) /CreatePerfMap "$(BinDir)"</CrossGenPerfMapCmd>
+      <CrossGenPerfMapCmd>$(CrossGenPerfMapCmd) "$(CoreLibOutputPath)"</CrossGenPerfMapCmd>
     </PropertyGroup>
     
     <PropertyGroup Condition="'$(OS)' == 'Windows_NT'">
