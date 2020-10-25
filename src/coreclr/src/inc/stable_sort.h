@@ -90,13 +90,6 @@ namespace templatized_sort
             firstPart += size.Value();
             ptr += size.Value();
         }
-
-        while (secondPart < secondPartEnd)
-        {
-            memcpy(ptr, secondPart, size.Value());
-            secondPart += size.Value();
-            ptr += size.Value();
-        }
     }
 
     template <class SizeOf_t, class Pr>
