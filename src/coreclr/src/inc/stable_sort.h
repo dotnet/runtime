@@ -57,7 +57,7 @@ namespace templatized_sort
     template <class SizeOf_t, class Pr>
     void merge_sort_worker(char*ptr, size_t count, SizeOf_t size, Pr Pred, char* working)
     {
-        if (count == 1)
+        if (count <= 1)
             return;
 
         size_t half = count - count / 2;
@@ -102,7 +102,7 @@ namespace templatized_sort
     template <class SizeOf_t, class Pr>
     void stable_sort(void* ptr, size_t count, SizeOf_t size, Pr Pred) {
         size_t half = count - count / 2;
-        void* tempBufferLocal[256];
+        double tempBufferLocal[256];
         size_t tempBufferSize = half * size.Value();
         char* tempBuffer;
         if (tempBufferSize <= sizeof(tempBufferLocal))
@@ -118,7 +118,7 @@ namespace templatized_sort
                 return;
             }
         }
-         
+
         merge_sort_worker((char*)ptr, count, size, Pred, tempBuffer);
         if (tempBuffer != (char*)&tempBufferLocal[0])
         {
