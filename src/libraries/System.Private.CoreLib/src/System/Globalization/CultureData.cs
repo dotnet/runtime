@@ -2286,7 +2286,8 @@ namespace System.Globalization
             if (GlobalizationMode.Invariant)
                 return null!;
 
-            return ShouldUseUserOverrideNlsData ? NlsGetLocaleInfo(type) : IcuGetLocaleInfo(type);
+            // For ListSeparator on Windows, we don't call ICU as we fallback there to the thousands separator and getting the value from NLS would better here.
+            return ShouldUseUserOverrideNlsData || (type == LocaleStringData.ListSeparator && IsWin32Installed) ? NlsGetLocaleInfo(type) : IcuGetLocaleInfo(type);
         }
 
         private string GetLocaleInfoCore(LocaleStringData type)

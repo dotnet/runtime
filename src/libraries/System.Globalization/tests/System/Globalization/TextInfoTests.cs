@@ -126,6 +126,14 @@ namespace System.Globalization.Tests
             Assert.NotEqual(string.Empty, new CultureInfo("en-US").TextInfo.ListSeparator);
         }
 
+        // On Linux when using ICU, we fallback to use Thousands Separator which can return empty string for cultures like fr-FR
+        // We should return more better values on Windows even if we are using ICU as we fallback to NLS for the list separator.
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsWindows))]
+        public void ListSeparator_FrFr()
+        {
+            Assert.NotEqual(string.Empty, new CultureInfo("fr-FR").TextInfo.ListSeparator);
+        }
+
         [Theory]
         [InlineData("")]
         [InlineData(" ")]
