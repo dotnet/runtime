@@ -3,21 +3,60 @@
   <Import Project="Directory.Build.targets" />
 
   <Target Name="Build">
-    <ItemGroup>
-      <_CoreClrBuildArg Condition="'$(TargetArchitecture)' != ''" Include="-$(TargetArchitecture)" />
-      <_CoreClrBuildArg Include="-$(Configuration.ToLower())" />
-      <_CoreClrBuildArg Condition="!$([MSBuild]::IsOsPlatform(Windows))" Include="-os $(TargetOS)" />
-      <_CoreClrBuildArg Condition="'$(CrossBuild)' == 'true'" Include="-cross" />
-      <_CoreClrBuildArg Condition="'$(PortableBuild)' != 'true'" Include="-portablebuild=false" />
-    </ItemGroup>
-
     <PropertyGroup>
-      <_CoreClrBuildScript Condition="$([MSBuild]::IsOsPlatform(Windows))">crossgen-corelib.cmd</_CoreClrBuildScript>
-      <_CoreClrBuildScript Condition="!$([MSBuild]::IsOsPlatform(Windows))">crossgen-corelib.sh</_CoreClrBuildScript>
+      <OSPlatformConfig>$(TargetOS).$(TargetArchitecture).$(Configuration)</OSPlatformConfig>
+      <RootBinDir>$(RepoRoot)\artifacts</RootBinDir>
+      <LogsDir>$(RootBinDir)\log</LogsDir>
+      <BinDir>$(RootBinDir)\bin\coreclr\$(OSPlatformConfig)</BinDir>
+      <IntermediatesDir>$(RootBinDir)\obj\coreclr\$(OSPlatformConfig)</IntermediatesDir>
+      <CrossComponentBinDir>$(BinDir)</CrossComponentBinDir>
+      <CrossGenCoreLibLog>$(LogsDir)\CrossgenCoreLib_$(TargetOS)__$(TargetArchitecture)__$(Configuration).log</CrossGenCoreLibLog>
+      <CrossGenExe>$(CrossComponentBinDir)\crossgen.exe</CrossGenExe>
+
+      <CoreLibAssemblyName>System.Private.CoreLib</CoreLibAssemblyName>
+      <CoreLibOutputPath>$(BinDir)\$(CoreLibAssemblyName).dll</CoreLibOutputPath>
     </PropertyGroup>
 
-    <!-- Use IgnoreStandardErrorWarningFormat because Arcade sets WarnAsError and there's an existing warning in the native build. -->
-    <Exec Command="&quot;$(MSBuildThisFileDirectory)$(_CoreClrBuildScript)&quot; @(_CoreClrBuildArg->'%(Identity)',' ')" />
+    <MakeDir
+      Directories="$(BinDir);$(IntermediatesDir);$(LogsDir)" />
+
+    <Message Importance="High"
+      Text="Generating native image of System.Private.CoreLib for $(OSPlatformConfig). Logging to $(CrossGenCoreLibLog)" />
+
+    <PropertyGroup>
+      <CrossGenCmd>$(CrossGenExe)</CrossGenCmd>
+      <CrossGenCmd>$(CrossGenCmd) /nologo</CrossGenCmd>
+      <CrossGenCmd>$(CrossGenCmd) <!-- IbcTuning --></CrossGenCmd>
+      <CrossGenCmd>$(CrossGenCmd) /Platform_Assemblies_Paths "$(BinDir)\IL"</CrossGenCmd>
+
+      <CrossGenDllCmd>$(CrossGenCmd) /out "$(CoreLibOutputPath)"</CrossGenDllCmd> 
+      <CrossGenDllCmd>$(CrossGenDllCmd) "$(BinDir)\IL\$(CoreLibAssemblyName).dll"</CrossGenDllCmd>
+    </PropertyGroup>
+    
+    <PropertyGroup Condition="'$(TargetOS) == 'Linux'">
+      <CrossGenPerfMapCmd>$(CrossGenCmd) /CreatePerfMap "$(BinDir)"</CrossGenPdbCmd>
+      <CrossGenPerfMapCmd>$(CrossGenPerMapCmd) "$(CoreLibOutputPath)"</CrossGenPdbCmd>
+    </PropertyGroup>
+    
+    <PropertyGroup Condition="'$(OS)' == 'Windows_NT'">
+      <CrossGenPdbCmd>$(CrossGenCmd) /CreatePdb "$(BinDir)\PDB"</CrossGenPdbCmd>
+      <CrossGenPdbCmd>$(CrossGenPdbCmd) "$(CoreLibOutputPath)"</CrossGenPdbCmd>
+    </PropertyGroup>
+    
+    <Message Importance="High" Text="$(CrossGenDllCmd)" />
+    
+    <Exec Command="$(CrossGenDllCmd)" />
+
+    <Message Condition="'$(OS)' == 'Windows_NT'" Importance="High" Text="$(CrossGenPdbCmd)" />
+
+    <Exec Condition="'$(OS)' == 'Windows_NT'" Command="$(CrossGenPdbCmd)" />
+
+    <Message Condition="'$(TargetOS)' == 'Linux'" Importance="High" Text="$(CrossGenPerfMapCmd)" />
+
+    <Exec Condition="'$(TargetOS)' == 'Linux'" Command="$(CrossGenPerfMapCmd)" />
+
+    <Message Importance="High" Text="Crossgenning of System.Private.CoreLib succeeded.  Finished at $(TIME)" />
+    <Message Importance="High" Text="Product binaries are available at $(BinDir)" />
   </Target>
 
   <Target Name="Restore" />
