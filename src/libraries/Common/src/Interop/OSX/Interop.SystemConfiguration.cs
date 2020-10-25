@@ -24,11 +24,6 @@ internal static partial class Interop
             public CFStringRef CopyDescriptionFunc;
         }
 
-        internal delegate void SCDynamicStoreCallBack(
-            SCDynamicStoreRef store,
-            CFArrayRef changedKeys,
-            IntPtr info);
-
         /// <summary>
         /// Creates a new session used to interact with the dynamic store maintained by the System Configuration server.
         /// Follows the "Create Rule" where if you create it, you delete it.
@@ -43,7 +38,7 @@ internal static partial class Interop
         private static extern unsafe SafeCreateHandle SCDynamicStoreCreate(
             IntPtr allocator,
             CFStringRef name,
-            SCDynamicStoreCallBack callout,
+            delegate* unmanaged<SCDynamicStoreRef, CFArrayRef, IntPtr, void> callout,
             SCDynamicStoreContext* context);
 
         /// <summary>
@@ -55,7 +50,10 @@ internal static partial class Interop
         /// Pass null if no callouts are desired.</param>
         /// <param name="context">The context associated with the callout.</param>
         /// <returns>A reference to the new dynamic store session.</returns>
-        internal static unsafe SafeCreateHandle SCDynamicStoreCreate(CFStringRef name, SCDynamicStoreCallBack callout, SCDynamicStoreContext* context)
+        internal static unsafe SafeCreateHandle SCDynamicStoreCreate(
+            CFStringRef name,
+            delegate* unmanaged<SCDynamicStoreRef, CFArrayRef, IntPtr, void> callout,
+            SCDynamicStoreContext* context)
         {
             return SCDynamicStoreCreate(IntPtr.Zero, name, callout, context);
         }
