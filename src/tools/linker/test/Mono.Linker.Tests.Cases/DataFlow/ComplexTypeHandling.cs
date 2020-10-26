@@ -12,7 +12,6 @@ using Mono.Linker.Tests.Cases.Expectations.Assertions;
 
 namespace Mono.Linker.Tests.Cases.DataFlow
 {
-	[IgnoreTestCase ("Active issue https://github.com/mono/linker/issues/1559")]
 	public class ComplexTypeHandling
 	{
 		public static void Main ()
@@ -33,7 +32,6 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 		{
 			public ArrayElementType () { }
 
-			[Kept]
 			public void PublicMethod () { }
 
 			private int _privateField;
@@ -62,7 +60,6 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 		{
 			public ArrayElementInGenericType () { }
 
-			[Kept]
 			public void PublicMethod () { }
 
 			private int _privateField;
@@ -89,6 +86,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			RequirePublicMethodsOnArrayOfGenericParameter<ArrayElementInGenericType> ();
 		}
 
+		[Kept]
 		static void RequirePublicMethodsOnArrayOfGenericParameter<T> ()
 		{
 			_ = new RequirePublicMethodsGeneric<T[]> ();
@@ -97,7 +95,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 		[Kept]
 		sealed class ArrayGetTypeFromMethodParamElement
 		{
-			[Kept] // This is a bug - the method should not be marked, instead Array.* should be marked
+			// This method should not be marked, instead Array.* should be marked
 			public void PublicMethod () { }
 		}
 
@@ -116,7 +114,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 		[Kept]
 		sealed class ArrayGetTypeFromFieldElement
 		{
-			[Kept] // This is a bug - the method should not be marked, instead Array.* should be marked
+			// This method should not be marked, instead Array.* should be marked
 			public void PublicMethod () { }
 		}
 
@@ -132,7 +130,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 		[Kept]
 		sealed class ArrayTypeGetTypeElement
 		{
-			[Kept] // This is a bug - the method should not be marked, instead Array.* should be marked
+			// This method should not be marked, instead Array.* should be marked
 			public void PublicMethod () { }
 		}
 
@@ -142,10 +140,9 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			RequirePublicMethods (Type.GetType ("Mono.Linker.Tests.Cases.DataFlow.ComplexTypeHandling+ArrayTypeGetTypeElement[]"));
 		}
 
-		[Kept]
+		// Nothing should be marked as CreateInstance doesn't work on arrays
 		class ArrayCreateInstanceByNameElement
 		{
-			[Kept] // This is a bug - the .ctor should not be marked - in fact in this case nothing should be marked as CreateInstance doesn't work on arrays
 			public ArrayCreateInstanceByNameElement ()
 			{
 			}
@@ -160,7 +157,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 		[Kept]
 		class ArrayInAttributeParamElement
 		{
-			[Kept] // This is a bug - the method should not be marked, instead Array.* should be marked
+			// This method should not be marked, instead Array.* should be marked
 			public void PublicMethod () { }
 		}
 

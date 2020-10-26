@@ -140,15 +140,15 @@ namespace System.Reflection.Runtime.TypeParsing
 		public MultiDimArrayTypeName(TypeName elementTypeName, int rank)
 			: base(elementTypeName)
 		{
-			_rank = rank;
+			Rank = rank;
 		}
 
 		public sealed override string ToString()
 		{
-			return ElementTypeName + "[" + (_rank == 1 ? "*" : new string(',', _rank - 1)) + "]";
+			return ElementTypeName + "[" + (Rank == 1 ? "*" : new string(',', Rank - 1)) + "]";
 		}
 
-		private int _rank;
+		public int Rank { get; }
 	}
 
 	//
