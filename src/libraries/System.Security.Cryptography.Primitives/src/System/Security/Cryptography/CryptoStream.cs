@@ -167,7 +167,10 @@ namespace System.Security.Cryptography
 
         public override void Flush()
         {
-            return;
+            if (_canWrite)
+            {
+                _stream.Flush();
+            }
         }
 
         public override Task FlushAsync(CancellationToken cancellationToken)
@@ -181,7 +184,8 @@ namespace System.Security.Cryptography
 
             return cancellationToken.IsCancellationRequested ?
                 Task.FromCanceled(cancellationToken) :
-                Task.CompletedTask;
+                !_canWrite ? Task.CompletedTask :
+                _stream.FlushAsync(cancellationToken);
         }
 
         public override long Seek(long offset, SeekOrigin origin)
@@ -269,14 +273,16 @@ namespace System.Security.Cryptography
 
         private void CheckReadArguments(byte[] buffer, int offset, int count)
         {
-            if (!CanRead)
-                throw new NotSupportedException(SR.NotSupported_UnreadableStream);
+            if (buffer is null)
+                throw new ArgumentNullException(nameof(buffer));
             if (offset < 0)
                 throw new ArgumentOutOfRangeException(nameof(offset), SR.ArgumentOutOfRange_NeedNonNegNum);
             if (count < 0)
                 throw new ArgumentOutOfRangeException(nameof(count), SR.ArgumentOutOfRange_NeedNonNegNum);
             if (buffer.Length - offset < count)
                 throw new ArgumentException(SR.Argument_InvalidOffLen);
+            if (!CanRead)
+                throw new NotSupportedException(SR.NotSupported_UnreadableStream);
         }
 
         private async Task<int> ReadAsyncCore(byte[] buffer, int offset, int count, CancellationToken cancellationToken, bool useAsync)
@@ -516,14 +522,16 @@ namespace System.Security.Cryptography
 
         private void CheckWriteArguments(byte[] buffer, int offset, int count)
         {
-            if (!CanWrite)
-                throw new NotSupportedException(SR.NotSupported_UnwritableStream);
+            if (buffer is null)
+                throw new ArgumentNullException(nameof(buffer));
             if (offset < 0)
                 throw new ArgumentOutOfRangeException(nameof(offset), SR.ArgumentOutOfRange_NeedNonNegNum);
             if (count < 0)
                 throw new ArgumentOutOfRangeException(nameof(count), SR.ArgumentOutOfRange_NeedNonNegNum);
             if (buffer.Length - offset < count)
                 throw new ArgumentException(SR.Argument_InvalidOffLen);
+            if (!CanWrite)
+                throw new NotSupportedException(SR.NotSupported_UnwritableStream);
         }
 
         private async ValueTask WriteAsyncCore(byte[] buffer, int offset, int count, CancellationToken cancellationToken, bool useAsync)
