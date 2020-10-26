@@ -376,7 +376,10 @@ namespace System.Text.RegularExpressions.Tests
                 yield return new object[] { "\u05D0(?:\u05D1|\u05D2|\u05D3)", "\u05D0\u05D2", options, 0, 2, true, "\u05D0\u05D2" };
                 yield return new object[] { "\u05D0(?:\u05D1|\u05D2|\u05D3)", "\u05D0\u05D4", options, 0, 0, false, "" };
             }
+        }
 
+        public static IEnumerable<object[]> Match_Basic_TestData_NetCore()
+        {
             // Unicode symbols in character ranges. These are chars whose lowercase values cannot be found by using the offsets specified in s_lcTable.
             yield return new object[] { @"^(?i:[\u00D7-\u00D8])$", '\u00F7'.ToString(), RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, 0, 1, false, "" };
             yield return new object[] { @"^(?i:[\u00C0-\u00DE])$", '\u00F7'.ToString(), RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, 0, 1, false, "" };
@@ -391,6 +394,14 @@ namespace System.Text.RegularExpressions.Tests
             yield return new object[] { @"^(?i:[\u10A0-\u10C5])$", ((char)('\u1F1F' + 48)).ToString(), RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, 0, 1, false, "" };
             yield return new object[] { @"^(?i:[\u24B6-\u24D0])$", ((char)('\u24D0' + 26)).ToString(), RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, 0, 1, false, "" };
             yield return new object[] { @"^(?i:[\u24B6-\u24D0])$", ((char)('\u24CF' + 26)).ToString(), RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, 0, 1, true, ((char)('\u24CF' + 26)).ToString() };
+        }
+
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework)]
+        [Theory]
+        [MemberData(nameof(Match_Basic_TestData_NetCore))]
+        public void Match_NetCore(string pattern, string input, RegexOptions options, int beginning, int length, bool expectedSuccess, string expectedValue)
+        {
+            Match(pattern, input, options, beginning, length, expectedSuccess, expectedValue);
         }
 
         [Theory]
