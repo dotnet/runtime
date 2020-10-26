@@ -80,6 +80,10 @@ namespace Internal.CommandLine
                         name = nameAndValue;
                         value = null;
                     }
+                    else
+                    {
+                        value = value.Trim('"');
+                    }
                 }
 
                 var token = new ArgumentToken(modifier, name, value);

@@ -17,8 +17,8 @@ namespace System.Net.Http
                 if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this);
             }
 
-            public sealed override bool CanRead => true;
-            public sealed override bool CanWrite => true;
+            public sealed override bool CanRead => _connection != null;
+            public sealed override bool CanWrite => _connection != null;
 
             public override int Read(Span<byte> buffer)
             {
