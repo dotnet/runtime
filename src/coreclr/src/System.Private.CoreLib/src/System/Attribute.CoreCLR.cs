@@ -430,27 +430,27 @@ namespace System
         #region Public Statics
 
         #region MemberInfo
-        public static Attribute[] GetCustomAttributes(MemberInfo element, Type type)
+        public static Attribute[] GetCustomAttributes(MemberInfo element, Type attributeType)
         {
-            return GetCustomAttributes(element, type, true);
+            return GetCustomAttributes(element, attributeType, true);
         }
 
-        public static Attribute[] GetCustomAttributes(MemberInfo element, Type type, bool inherit)
+        public static Attribute[] GetCustomAttributes(MemberInfo element, Type attributeType, bool inherit)
         {
             if (element == null)
                 throw new ArgumentNullException(nameof(element));
 
-            if (type == null)
-                throw new ArgumentNullException(nameof(type));
+            if (attributeType == null)
+                throw new ArgumentNullException(nameof(attributeType));
 
-            if (!type.IsSubclassOf(typeof(Attribute)) && type != typeof(Attribute))
+            if (!attributeType.IsSubclassOf(typeof(Attribute)) && attributeType != typeof(Attribute))
                 throw new ArgumentException(SR.Argument_MustHaveAttributeBaseClass);
 
             return element.MemberType switch
             {
-                MemberTypes.Property => InternalGetCustomAttributes((PropertyInfo)element, type, inherit),
-                MemberTypes.Event => InternalGetCustomAttributes((EventInfo)element, type, inherit),
-                _ => (element.GetCustomAttributes(type, inherit) as Attribute[])!,
+                MemberTypes.Property => InternalGetCustomAttributes((PropertyInfo)element, attributeType, inherit),
+                MemberTypes.Event => InternalGetCustomAttributes((EventInfo)element, attributeType, inherit),
+                _ => (element.GetCustomAttributes(attributeType, inherit) as Attribute[])!,
             };
         }
 
