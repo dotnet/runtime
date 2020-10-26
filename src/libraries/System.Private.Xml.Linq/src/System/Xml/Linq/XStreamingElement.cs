@@ -32,10 +32,10 @@ namespace System.Xml.Linq
         /// </summary>
         /// <param name="name">The name to assign to the new <see cref="XStreamingElement"/> node</param>
         /// <param name="content">The content to assign to the new <see cref="XStreamingElement"/> node</param>
-        public XStreamingElement(XName name, object content)
+        public XStreamingElement(XName name, object? content)
             : this(name)
         {
-            this.content = content is List<object> ? new object[] { content } : content;
+            this.content = content is List<object?> ? new object?[] { content } : content;
         }
 
         /// <summary>

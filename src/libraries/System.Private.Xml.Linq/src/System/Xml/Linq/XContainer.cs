@@ -1389,7 +1389,7 @@ namespace System.Xml.Linq
             }
         }
 
-        private static void AddContentToList(List<object> list, object content)
+        private static void AddContentToList(List<object?> list, object? content)
         {
             IEnumerable? e = content is string ? null : content as IEnumerable;
             if (e == null)
@@ -1409,7 +1409,7 @@ namespace System.Xml.Linq
         internal static object? GetContentSnapshot(object? content)
         {
             if (content is string || !(content is IEnumerable)) return content;
-            List<object> list = new List<object>();
+            List<object?> list = new List<object?>();
             AddContentToList(list, content);
             return list;
         }

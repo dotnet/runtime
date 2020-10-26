@@ -488,7 +488,7 @@ namespace System.Xml.Linq
     public partial class XStreamingElement
     {
         public XStreamingElement(System.Xml.Linq.XName name) { }
-        public XStreamingElement(System.Xml.Linq.XName name, object content) { }
+        public XStreamingElement(System.Xml.Linq.XName name, object? content) { }
         public XStreamingElement(System.Xml.Linq.XName name, params object?[] content) { }
         public System.Xml.Linq.XName Name { get { throw null; } set { } }
         public void Add(object? content) { }
