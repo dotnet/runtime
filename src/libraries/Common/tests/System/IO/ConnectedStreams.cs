@@ -165,7 +165,7 @@ namespace System.IO
             public override int EndRead(IAsyncResult asyncResult)
             {
                 ThrowIfDisposed();
-                ThrowIfWritingNotSupported();
+                ThrowIfReadingNotSupported();
 
                 return TaskToApm.End<int>(asyncResult);
             }
@@ -207,6 +207,7 @@ namespace System.IO
             public override void Write(ReadOnlySpan<byte> buffer)
             {
                 ThrowIfDisposed();
+                ThrowIfWritingNotSupported();
 
                 _buffer.Write(buffer);
             }
