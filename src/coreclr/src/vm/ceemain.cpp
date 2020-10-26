@@ -637,6 +637,18 @@ void EEStartupHelper()
     {
         g_fEEInit = true;
 
+#if CORECLR_EMBEDDED
+
+#ifdef TARGET_WINDOWS
+        HINSTANCE curModule = WszGetModuleHandle(NULL);
+#else
+        HINSTANCE curModule = PAL_GetPalHostModule();
+#endif
+
+        g_hmodCoreCLR = curModule;
+        g_hThisInst = curModule;
+#endif
+
 #ifndef CROSSGEN_COMPILE
 
         // We cache the SystemInfo for anyone to use throughout the life of the EE.
@@ -1798,6 +1810,8 @@ LONG DllMainFilter(PEXCEPTION_POINTERS p, PVOID pv)
     return EXCEPTION_EXECUTE_HANDLER;
 }
 
+#if !defined(CORECLR_EMBEDDED)
+
 //*****************************************************************************
 // This is the part of the old-style DllMain that initializes the
 // stuff that the EE team works on. It's called from the real DllMain
@@ -1877,6 +1891,8 @@ BOOL STDMETHODCALLTYPE EEDllMain( // TRUE on success, FALSE on error.
 
     return TRUE;
 }
+
+#endif // !defined(CORECLR_EMBEDDED)
 
 struct TlsDestructionMonitor
 {
