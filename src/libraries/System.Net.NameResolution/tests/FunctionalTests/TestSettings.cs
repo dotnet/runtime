@@ -16,9 +16,11 @@ namespace System.Net.NameResolution.Tests
         // A hostname that will not exist in any DNS caches, forcing some I/O to lookup.
         public static string UncachedHost => $"nonexistent-{Guid.NewGuid():N}.contoso.com";
 
-        public const string IPv4Host = "ipv4.google.com";
+        public const string IPv4Host = LocalHost;
 
-        public const string IPv6Host = "ipv6.google.com";
+        // Linux CI servers not configured with IPv6 localhost.
+        // Windows CI servers not configured with IPv6 name resolution.
+        public static readonly string IPv6Host = PlatformDetection.IsWindows ? LocalHost : "ipv6.google.com";
 
         public const string LocalHost = "localhost";
 
