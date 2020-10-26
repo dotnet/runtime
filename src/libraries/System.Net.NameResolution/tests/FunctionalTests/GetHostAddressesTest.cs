@@ -141,10 +141,7 @@ namespace System.Net.NameResolution.Tests
 
         [OuterLoop]
         [Theory]
-        [InlineData(false, TestSettings.IPv4Host, AddressFamily.InterNetwork)]
-        [InlineData(false, TestSettings.IPv6Host, AddressFamily.InterNetworkV6)]
-        [InlineData(true, TestSettings.IPv4Host, AddressFamily.InterNetwork)]
-        [InlineData(true, TestSettings.IPv6Host, AddressFamily.InterNetworkV6)]
+        [MemberData(nameof(AddressFamilySpecificTestData))]
         public async Task DnsGetHostAddresses_LocalHost_AddressFamilySpecific(bool useAsync, string host, AddressFamily addressFamily)
         {
             IPAddress[] addresses =
@@ -153,6 +150,16 @@ namespace System.Net.NameResolution.Tests
 
             Assert.All(addresses, address => Assert.Equal(addressFamily, address.AddressFamily));
         }
+
+        public static TheoryData<bool, string, AddressFamily> AddressFamilySpecificTestData =>
+            new TheoryData<bool, string, AddressFamily>()
+            {
+                // async, hostname, af
+                { false, TestSettings.IPv4Host, AddressFamily.InterNetwork },
+                { false, TestSettings.IPv6Host, AddressFamily.InterNetworkV6 },
+                { true, TestSettings.IPv4Host, AddressFamily.InterNetwork },
+                { true, TestSettings.IPv6Host, AddressFamily.InterNetworkV6 }
+            };
 
         [Fact]
         public async Task DnsGetHostAddresses_PreCancelledToken_Throws()
