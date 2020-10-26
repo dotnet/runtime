@@ -35,7 +35,7 @@ namespace System.Text.Json
         ///   </para>
         /// </remarks>
         /// <exception cref="ArgumentException">
-        ///   <paramref name="reader"/> is using unsupported options.
+        ///   <paramref name="reader"/> contains unsupported options.
         /// </exception>
         /// <exception cref="ArgumentException">
         ///   The current <paramref name="reader"/> token does not start or represent a value.
@@ -58,7 +58,7 @@ namespace System.Text.Json
         /// <param name="reader">The reader to read.</param>
         /// <param name="element">Receives the parsed element.</param>
         /// <returns>
-        ///   <see langword="true"/> if a value was read and parsed into a JsonElement,
+        ///   <see langword="true"/> if a value was read and parsed into a JsonElement;
         ///   <see langword="false"/> if the reader ran out of data while parsing.
         ///   All other situations result in an exception being thrown.
         /// </returns>
@@ -82,7 +82,7 @@ namespace System.Text.Json
         ///   </para>
         /// </remarks>
         /// <exception cref="ArgumentException">
-        ///   <paramref name="reader"/> is using unsupported options.
+        ///   <paramref name="reader"/> contains unsupported options.
         /// </exception>
         /// <exception cref="ArgumentException">
         ///   The current <paramref name="reader"/> token does not start or represent a value.
