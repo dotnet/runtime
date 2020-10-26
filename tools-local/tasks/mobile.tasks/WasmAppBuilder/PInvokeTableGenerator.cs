@@ -157,7 +157,7 @@ public class PInvokeTableGenerator : Task
             // FIXME: System.Reflection.MetadataLoadContext can't decode function pointer types
             // https://github.com/dotnet/runtime/issues/43791
             sb.Append($"int {pinvoke.EntryPoint} (int, int, int, int, int);");
-            return sb.ToString ();
+            return sb.ToString();
         }
         sb.Append(MapType(method.ReturnType));
         sb.Append($" {pinvoke.EntryPoint} (");
