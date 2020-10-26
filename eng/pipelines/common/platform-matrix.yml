@@ -64,7 +64,7 @@ jobs:
       targetRid: linux-arm64
       platform: Linux_arm64
       container:
-        image: ubuntu-16.04-cross-arm64-20200413125008-cfdd435
+        image: ubuntu-16.04-cross-arm64-20201022204150-b2c2436
         registry: mcr
       jobParameters:
         runtimeFlavor: ${{ parameters.runtimeFlavor }}

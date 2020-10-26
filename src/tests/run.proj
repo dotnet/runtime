@@ -357,19 +357,30 @@ namespace $([System.String]::Copy($(Category)).Replace(".","_").Replace("\","").
       <TestDllPaths Include="$([System.IO.Path]::ChangeExtension('%(TestScripts.Identity)', 'dll'))" />
       <TestDlls Include="%(TestDllPaths.Identity)" Condition="Exists(%(TestDllPaths.Identity))" />
     </ItemGroup>
-    <PropertyGroup>
-      <CorerunExecutable Condition="'$(RunningOnUnix)' == 'true'">$(CORE_ROOT)\corerun</CorerunExecutable>
-      <CorerunExecutable Condition="'$(RunningOnUnix)' != 'true'">$(CORE_ROOT)\corerun.exe</CorerunExecutable>
+
+    <PropertyGroup Condition="'$(CROSSCOMPILE)' == ''">
+      <AotCompiler Condition="'$(RunningOnUnix)' == 'true'">$(CORE_ROOT)/corerun</AotCompiler>
+      <AotCompiler Condition="'$(RunningOnUnix)' != 'true'">$(CORE_ROOT)\corerun.exe</AotCompiler>
+      <MonoLlvmPath>$(MonoBinDir)</MonoLlvmPath>
     </PropertyGroup>
+    <PropertyGroup Condition="'$(CROSSCOMPILE)' != ''">
+      <AotCompiler>$(MonoBinDir)/cross/mono-aot-cross</AotCompiler>
+      <MonoLlvmPath>$(MonoBinDir)/cross</MonoLlvmPath>
+    </PropertyGroup>
+
     <ItemGroup>
-      <AotEnvVar Include="MONO_ENV_OPTIONS=--aot=llvm,llvm-path='$(MonoLlvmPath)'" />
+      <MonoAotOption Include="llvm" />
+      <MonoAotOption Include="llvm-path=$(MonoLlvmPath)" />
+      <MonoAotOption Condition="'$(__MonoToolPrefix)' != ''" Include="tool-prefix=$(__MonoToolPrefix)" />
     </ItemGroup>
     <PropertyGroup>
-      <AotEnvVars>@(AotEnvVar)</AotEnvVars>
+      <MonoAotOptions>@(MonoAotOption->'%(Identity)', ',')</MonoAotOptions>
+      <MonoPath Condition="'$(CROSSCOMPILE)' != ''">$(CORE_ROOT)</MonoPath>
     </PropertyGroup>
+
     <ItemGroup>
       <AotProject Include="../mono/msbuild/aot-compile.proj">
-        <Properties>_CorerunExecutable=$(CorerunExecutable);_TestDll=%(TestDlls.Identity);AotEnvVars=@(AotEnvVar)</Properties>
+        <Properties>_AotCompiler=$(AotCompiler);_TestDll=%(TestDlls.Identity);_MonoPath=$(MonoPath);_MonoAotOptions=$(MonoAotOptions)</Properties>
       </AotProject>
     </ItemGroup>
     <MSBuild
@@ -388,7 +399,7 @@ namespace $([System.String]::Copy($(Category)).Replace(".","_").Replace("\","").
     <ItemGroup>
       <AllRunnableTestPaths Include="$(XunitTestBinBase)\**\*.cmd" Condition="'$(TargetOS)' == 'Windows_NT'" />
       <AllRunnableTestPaths Include="$(XunitTestBinBase)\**\*.sh" Condition="'$(TargetOS)' != 'Windows_NT'" />
-      <AllRunnableTestPaths Remove="$(XunitTestBinBase)\**\run-v8.sh" Condition="'$(TargetArchitecture)' == 'wasm'" /> 
+      <AllRunnableTestPaths Remove="$(XunitTestBinBase)\**\run-v8.sh" Condition="'$(TargetArchitecture)' == 'wasm'" />
     </ItemGroup>
   </Target>
 
@@ -406,11 +417,6 @@ namespace $([System.String]::Copy($(Category)).Replace(".","_").Replace("\","").
     <!-- generate project.lock.json file corresponding to above json file -->
     <MSBuild Projects="$(RepoRoot)/src/tests/Common/test_dependencies/test_dependencies.csproj"
              Condition=" '$(BuildWrappers)'=='true' " />
-
-    <MSBuild Projects="$(MSBuildProjectFile)"
-             Targets="MonoAotCompileTests"
-             Properties=""
-             Condition=" '$(MonoAotCompile)'=='true' " />
 
     <!-- Default for building -->
     <MSBuild Projects="$(MSBuildProjectFile)"
