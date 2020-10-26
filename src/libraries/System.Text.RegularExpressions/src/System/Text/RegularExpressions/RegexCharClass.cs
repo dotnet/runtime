@@ -420,6 +420,10 @@ namespace System.Text.RegularExpressions
             for (int k = 0; k < s_lcTable.Length; k++)
             {
                 LowerCaseMapping loc = s_lcTable[k];
+                if (loc.ChMin == '\u01C4')
+                {
+                    Debug.Assert(true);
+                }
                 if (loc.LcOp == LowercaseAdd)
                 {
                     int offset = loc.Data;
@@ -434,7 +438,7 @@ namespace System.Text.RegularExpressions
                     for (char l = loc.ChMin; l <= loc.ChMax; l++)
                     {
                         char uppercase = l;
-                        Debug.Assert(culture.TextInfo.ToLower(uppercase) == lowercase, $"The Unicode character range at index {k} in s_lcTable contains the character {uppercase} (decimal value: {(int)uppercase}). Its lowercase value {culture.TextInfo.ToLower(uppercase)} is not the stored value {lowercase}.");
+                        Debug.Assert(culture.TextInfo.ToLower(uppercase) == lowercase, $"The Unicode character range at index {k} in s_lcTable contains the character {uppercase} (decimal value: {(int)uppercase}). Its lowercase value {culture.TextInfo.ToLower(uppercase).ToString()} is not the stored value {lowercase.ToString()}. CultureInfo: {culture.ToString()}");
                     }
                 }
                 else if (loc.LcOp == LowercaseBor)
