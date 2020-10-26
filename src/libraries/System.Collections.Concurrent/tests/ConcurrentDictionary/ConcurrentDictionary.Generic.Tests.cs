@@ -85,7 +85,7 @@ namespace System.Collections.Concurrent.Tests
     {
         #region IDictionary<TKey, TValue Helper Methods
 
-        protected override IDictionary<TKey, TValue> GenericIDictionaryFactory() =>new ConcurrentDictionary<TKey, TValue>();
+        protected override IDictionary<TKey, TValue> GenericIDictionaryFactory() => new ConcurrentDictionary<TKey, TValue>();
 
         protected override IDictionary<TKey, TValue> GenericIDictionaryFactory(IEqualityComparer<TKey> comparer) => new Dictionary<TKey, TValue>(comparer);
 
