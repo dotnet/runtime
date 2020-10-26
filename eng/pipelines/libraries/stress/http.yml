@@ -28,7 +28,7 @@ jobs:
   timeoutInMinutes: 150
   pool:
     name: NetCorePublic-Pool
-    queue: BuildPool.Ubuntu.1604.Amd64.Open
+    queue: pr-buildpool.ubuntu.1604.amd64.open-almend-MoveBuildpoolsT
 
   steps:
   - checkout: self
