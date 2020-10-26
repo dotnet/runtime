@@ -2322,10 +2322,7 @@ namespace System.Tests
         }
 
         [Theory]
-<<<<<<< HEAD
-        [PlatformSpecific(TestPlatforms.AnyUnix)]
-=======
->>>>>>> d12955cfce8... add tests to check for backwards compatibility
+        [PlatformSpecific(TestPlatforms.Browser)]
         [InlineData("America/Buenos_Aires", "America/Argentina/Buenos_Aires")]
         [InlineData("America/Catamarca", "America/Argentina/Catamarca")]
         [InlineData("America/Cordoba", "America/Argentina/Cordoba")]
@@ -2342,7 +2339,7 @@ namespace System.Tests
         }
 
         [Theory]
-        [PlatformSpecific(TestPlatforms.AnyUnix)]
+        [PlatformSpecific(TestPlatforms.Browser)]
         [InlineData("America/Buenos_Aires")]
         [InlineData("America/Catamarca")]
         [InlineData("America/Cordoba")]
@@ -2351,16 +2348,20 @@ namespace System.Tests
         [InlineData("America/Indianapolis")]
         public static void ChangeLocalTimeZone(string id) 
         {
-            TimeZoneInfo.ClearCachedData();
-            Environment.SetEnvironmentVariable("TZ", id);
-            TimeZoneInfo localtz = TimeZoneInfo.Local;
-            TimeZoneInfo tz = TimeZoneInfo.FindSystemTimeZoneById(id);
+            try {
+                TimeZoneInfo.ClearCachedData();
+                Environment.SetEnvironmentVariable("TZ", id);
 
-            Assert.Equal(tz.StandardName, localtz.StandardName);
-            Assert.Equal(tz.DisplayName, localtz.DisplayName); 
+                TimeZoneInfo localtz = TimeZoneInfo.Local;
+                TimeZoneInfo tz = TimeZoneInfo.FindSystemTimeZoneById(id);
 
-            TimeZoneInfo.ClearCachedData();
-            Environment.SetEnvironmentVariable("TZ", "");
+                Assert.Equal(tz.StandardName, localtz.StandardName);
+                Assert.Equal(tz.DisplayName, localtz.DisplayName); 
+            }
+            finally {
+                TimeZoneInfo.ClearCachedData();
+                Environment.SetEnvironmentVariable("TZ", "");
+            }
         }
 
         private static bool IsEnglishUILanguageAndRemoteExecutorSupported => (CultureInfo.CurrentUICulture.Name == "en" || CultureInfo.CurrentUICulture.Name.StartsWith("en-", StringComparison.Ordinal)) && RemoteExecutor.IsSupported;
