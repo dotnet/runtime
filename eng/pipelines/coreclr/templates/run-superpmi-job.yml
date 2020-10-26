@@ -119,7 +119,7 @@ jobs:
       displayName: Publish SuperPMI collection
       inputs:
         targetPath: $(Build.SourcesDirectory)/artifacts/helixresults
-        artifactName: 'SuperPMI_Result_$(osGroup)$(osSubgroup)_$(archType)_$(buildConfig)_${{ parameters.runtimeType }}_${{ parameters.codeGenType }}'
+        artifactName: 'SuperPMI_Result_$(CollectionName)_$(osGroup)$(osSubgroup)_$(archType)_$(buildConfig)_${{ parameters.runtimeType }}_${{ parameters.codeGenType }}'
       continueOnError: true
       condition: always()
 
@@ -137,6 +137,6 @@ jobs:
       displayName: Publish Logs
       inputs:
         targetPath: $(Build.SourcesDirectory)/artifacts/log
-        artifactName: 'SuperPMI_Logs_$(osGroup)$(osSubgroup)_$(archType)_$(buildConfig)_${{ parameters.runtimeType }}_${{ parameters.codeGenType }}_${{ parameters.runKind }}'
+        artifactName: 'SuperPMI_Logs_$(CollectionName)_$(osGroup)$(osSubgroup)_$(archType)_$(buildConfig)_${{ parameters.runtimeType }}_${{ parameters.codeGenType }}_${{ parameters.runKind }}'
       continueOnError: true
       condition: always()

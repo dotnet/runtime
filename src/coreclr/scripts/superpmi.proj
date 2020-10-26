@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.DotNet.Helix.Sdk" DefaultTargets="printItems">
+<Project Sdk="Microsoft.DotNet.Helix.Sdk" DefaultTargets="Test">
 
   <PropertyGroup Condition="'$(AGENT_OS)' == 'Windows_NT'">
     <FileSeparatorChar>\</FileSeparatorChar>
@@ -45,6 +45,11 @@
     <EnableAzurePipelinesReporter>false</EnableAzurePipelinesReporter>
     <EnableXUnitReporter>false</EnableXUnitReporter>
     <WorkItemTimeout>5:00</WorkItemTimeout>
+  </PropertyGroup>
+
+  <!-- tests take longer to complete -->
+  <PropertyGroup Condition="'$(CollectionName)' == 'tests'">
+    <WorkItemTimeout>8:00</WorkItemTimeout>
   </PropertyGroup>
 
   <ItemGroup>
