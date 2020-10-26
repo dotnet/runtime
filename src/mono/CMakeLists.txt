@@ -46,7 +46,7 @@ if(ENABLE_MINIMAL)
 endif()
 
 execute_process(
-  COMMAND grep ^MONO_CORLIB_VERSION= ${CMAKE_SOURCE_DIR}/configure.ac
+  COMMAND grep ^MONO_CORLIB_VERSION= ${CMAKE_CURRENT_SOURCE_DIR}/configure.ac
   COMMAND cut -d = -f  2
   OUTPUT_VARIABLE CORLIB_VERSION_OUT
 )
@@ -56,7 +56,7 @@ endif()
 string(STRIP "${CORLIB_VERSION_OUT}" MONO_CORLIB_VERSION_BASE)
 set(MONO_CORLIB_VERSION "\"${MONO_CORLIB_VERSION_BASE}\"")
 
-if(EXISTS "${CMAKE_SOURCE_DIR}/mono.proj")
+if(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/mono.proj")
   set(ENABLE_NETCORE 1)
 endif()
 
@@ -148,6 +148,9 @@ if(NOT AOT_TARGET_TRIPLE STREQUAL "")
   elseif(AOT_TARGET_TRIPLE STREQUAL "wasm32-unknown-none")
     set(TARGET_SYSTEM_NAME "Emscripten")
     set(TARGET_ARCH "wasm")
+  elseif(AOT_TARGET_TRIPLE STREQUAL "aarch64-linux-gnu")
+    set(TARGET_SYSTEM_NAME "Linux")
+    set(TARGET_ARCH "arm64")
   else()
     message(FATAL_ERROR "AOT target '${AOT_TARGET_TRIPLE}' not supported.")
   endif()
@@ -260,6 +263,8 @@ elseif(CMAKE_SYSTEM_NAME STREQUAL "Emscripten")
   set(DISABLE_EXECUTABLES 1)
   # FIXME: Is there a cmake option for this ?
   set(DISABLE_SHARED_LIBS 1)
+  # sys/random.h exists, but its not found
+  set(HAVE_SYS_RANDOM_H 1)
 else()
   message(FATAL_ERROR "Host '${CMAKE_SYSTEM_NAME}' not supported.")
 endif()

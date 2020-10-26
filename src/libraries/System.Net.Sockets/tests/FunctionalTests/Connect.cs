@@ -5,6 +5,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using Xunit;
 using Xunit.Abstractions;
+using Xunit.Sdk;
 
 namespace System.Net.Sockets.Tests
 {
@@ -120,29 +121,34 @@ namespace System.Net.Sockets.Tests
             }
         }
 
-        [Fact]
+        public static readonly TheoryData<IPAddress> ConnectGetsCanceledByDispose_Data = new TheoryData<IPAddress>
+        {
+            { IPAddress.Parse("1.1.1.1") },
+            { IPAddress.Parse("1.1.1.1").MapToIPv6() },
+        };
+
+        [OuterLoop("Connects to external server")]
+        [Theory]
+        [MemberData(nameof(ConnectGetsCanceledByDispose_Data))]
         [PlatformSpecific(~(TestPlatforms.OSX | TestPlatforms.FreeBSD))] // Not supported on BSD like OSes.
-        public async Task ConnectGetsCanceledByDispose()
+        public async Task ConnectGetsCanceledByDispose(IPAddress address)
         {
             // We try this a couple of times to deal with a timing race: if the Dispose happens
             // before the operation is started, we won't see a SocketException.
             int msDelay = 100;
             await RetryHelper.ExecuteAsync(async () =>
             {
-                var client = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
+                var client = new Socket(address.AddressFamily, SocketType.Stream, ProtocolType.Tcp);
+                if (address.IsIPv4MappedToIPv6) client.DualMode = true;
 
-                Task connectTask = ConnectAsync(client, new IPEndPoint(IPAddress.Parse("1.1.1.1"), 23));
+                Task connectTask = ConnectAsync(client, new IPEndPoint(address, 23));
 
                 // Wait a little so the operation is started.
                 await Task.Delay(msDelay);
                 msDelay *= 2;
                 Task disposeTask = Task.Run(() => client.Dispose());
 
-                var cts = new CancellationTokenSource();
-                Task timeoutTask = Task.Delay(30000, cts.Token);
-                Assert.NotSame(timeoutTask, await Task.WhenAny(disposeTask, connectTask, timeoutTask));
-                cts.Cancel();
-
+                await Task.WhenAny(disposeTask, connectTask).TimeoutAfter(30000);
                 await disposeTask;
 
                 SocketError? localSocketError = null;
@@ -176,7 +182,7 @@ namespace System.Net.Sockets.Tests
                 {
                     Assert.Equal(SocketError.OperationAborted, localSocketError);
                 }
-            }, maxAttempts: 10);
+            }, maxAttempts: 10, retryWhen: e => e is XunitException);
         }
     }
 

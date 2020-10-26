@@ -10,20 +10,6 @@ namespace System.Threading
     // Portable implementation of ThreadPool
     //
 
-    public sealed partial class RegisteredWaitHandle : MarshalByRefObject
-    {
-        /// <summary>
-        /// Unregisters this wait handle registration from the wait threads.
-        /// </summary>
-        /// <param name="waitObject">The event to signal when the handle is unregistered.</param>
-        /// <returns>If the handle was successfully marked to be removed and the provided wait handle was set as the user provided event.</returns>
-        /// <remarks>
-        /// This method will only return true on the first call.
-        /// Passing in a wait handle with a value of -1 will result in a blocking wait, where Unregister will not return until the full unregistration is completed.
-        /// </remarks>
-        public bool Unregister(WaitHandle waitObject) => UnregisterPortable(waitObject);
-    }
-
     internal sealed partial class CompleteWaitThreadPoolWorkItem : IThreadPoolWorkItem
     {
         void IThreadPoolWorkItem.Execute() => PortableThreadPool.CompleteWait(_registeredWaitHandle, _timedOut);
@@ -38,8 +24,15 @@ namespace System.Threading
         // does not yield the thread and instead processes time-sensitive work items queued by specific APIs periodically.
         internal const bool SupportsTimeSensitiveWorkItems = true;
 
+#if CORERT
+        internal const bool EnableWorkerTracking = false;
+#else
         internal static readonly bool EnableWorkerTracking =
             AppContextConfigHelper.GetBooleanConfig("System.Threading.ThreadPool.EnableWorkerTracking", false);
+#endif
+
+        // Threadpool specific initialization of a new thread. Used by OS-provided threadpools. No-op for portable threadpool.
+        internal static void InitializeForThreadPoolThread() { }
 
         internal static bool CanSetMinIOCompletionThreads(int ioCompletionThreads) => true;
         internal static void SetMinIOCompletionThreads(int ioCompletionThreads) { }
@@ -110,8 +103,28 @@ namespace System.Threading
         internal static object GetOrCreateThreadLocalCompletionCountObject() =>
             PortableThreadPool.ThreadPoolInstance.GetOrCreateThreadLocalCompletionCountObject();
 
-        private static void RegisterWaitForSingleObjectCore(WaitHandle? waitObject, RegisteredWaitHandle registeredWaitHandle) =>
-            PortableThreadPool.ThreadPoolInstance.RegisterWaitHandle(registeredWaitHandle);
+        private static RegisteredWaitHandle RegisterWaitForSingleObject(
+             WaitHandle? waitObject,
+             WaitOrTimerCallback? callBack,
+             object? state,
+             uint millisecondsTimeOutInterval,
+             bool executeOnlyOnce,
+             bool flowExecutionContext)
+        {
+            if (waitObject == null)
+                throw new ArgumentNullException(nameof(waitObject));
+
+            if (callBack == null)
+                throw new ArgumentNullException(nameof(callBack));
+
+            RegisteredWaitHandle registeredHandle = new RegisteredWaitHandle(
+                waitObject,
+                new _ThreadPoolWaitOrTimerCallback(callBack, state, flowExecutionContext),
+                (int)millisecondsTimeOutInterval,
+                !executeOnlyOnce);
+            PortableThreadPool.ThreadPoolInstance.RegisterWaitHandle(registeredHandle);
+            return registeredHandle;
+        }
 
         internal static void UnsafeQueueWaitCompletion(CompleteWaitThreadPoolWorkItem completeWaitWorkItem) =>
             UnsafeQueueUserWorkItemInternal(completeWaitWorkItem, preferLocal: false);
