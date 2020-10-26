@@ -593,21 +593,21 @@ jobs:
           eq(variables['isFullMatrix'], true))
 
 #
-# Build Mono release with LLVM AOT
-# Only when mono, or the runtime tests changed
-#
+# Build Mono release
+# Only when libraries, mono, or the runtime tests changed
+# Currently only these architectures are needed for the runtime tests.
 - template: /eng/pipelines/common/platform-matrix.yml
   parameters:
     jobTemplate: /eng/pipelines/mono/templates/build-job.yml
     runtimeFlavor: mono
     buildConfig: release
     platforms:
-    - Linux_x64
+    - OSX_x64
     - Linux_arm64
     jobParameters:
-      runtimeVariant: llvmaot
       condition: >-
         or(
+          eq(dependencies.checkout.outputs['SetPathVars_libraries.containsChange'], true),
           eq(dependencies.checkout.outputs['SetPathVars_runtimetests.containsChange'], true),
           eq(dependencies.checkout.outputs['SetPathVars_mono.containsChange'], true),
           eq(variables['isFullMatrix'], true))
@@ -623,6 +623,7 @@ jobs:
     buildConfig: release
     platforms:
     - Linux_x64
+    - Linux_arm64
     jobParameters:
       runtimeVariant: llvmaot
       condition: >-
@@ -839,47 +840,19 @@ jobs:
           eq(variables['isFullMatrix'], true))
 
 #
-# Mono CoreCLR runtime Test executions using live libraries
+# Mono Test builds with CoreCLR runtime tests using live libraries debug build
 # Only when Mono is changed
 - template: /eng/pipelines/common/platform-matrix.yml
   parameters:
-    jobTemplate: /eng/pipelines/common/templates/runtimes/run-test-job.yml
+    jobTemplate: /eng/pipelines/common/templates/runtimes/build-test-job.yml
     buildConfig: release
     runtimeFlavor: mono
     platforms:
-    - OSX_x64
-    - Linux_arm64
-    helixQueueGroup: pr
-    helixQueuesTemplate: /eng/pipelines/coreclr/templates/helix-queues-setup.yml
+    - CoreClrTestBuildHost # Either OSX_x64 or Linux_x64
     jobParameters:
       testGroup: innerloop
       liveLibrariesBuildConfig: ${{ variables.debugOnPrReleaseOnRolling }}
       liveRuntimeBuildConfig: release
-      condition: >-
-        or(
-          eq(dependencies.checkout.outputs['SetPathVars_mono.containsChange'], true),
-          eq(dependencies.checkout.outputs['SetPathVars_runtimetests.containsChange'], true),
-          eq(variables['isFullMatrix'], true))
-
-#
-# Mono CoreCLR runtime Test executions using live libraries and LLVM AOT
-# Only when Mono is changed
-#
-- template: /eng/pipelines/common/platform-matrix.yml
-  parameters:
-    jobTemplate: /eng/pipelines/common/templates/runtimes/run-test-job.yml
-    buildConfig: release
-    runtimeFlavor: mono
-    platforms:
-    - Linux_x64
-    - Linux_arm64
-    helixQueueGroup: pr
-    helixQueuesTemplate: /eng/pipelines/coreclr/templates/helix-queues-setup.yml
-    jobParameters:
-      testGroup: innerloop
-      liveLibrariesBuildConfig: ${{ variables.debugOnPrReleaseOnRolling }}
-      liveRuntimeBuildConfig: release
-      runtimeVariant: llvmaot
       condition: >-
         or(
           eq(dependencies.checkout.outputs['SetPathVars_mono.containsChange'], true),
@@ -919,6 +892,7 @@ jobs:
     runtimeFlavor: mono
     platforms:
     - Linux_x64
+    - Linux_arm64
     helixQueueGroup: pr
     helixQueuesTemplate: /eng/pipelines/coreclr/templates/helix-queues-setup.yml
     jobParameters:
