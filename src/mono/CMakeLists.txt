@@ -263,6 +263,8 @@ elseif(CMAKE_SYSTEM_NAME STREQUAL "Emscripten")
   set(DISABLE_EXECUTABLES 1)
   # FIXME: Is there a cmake option for this ?
   set(DISABLE_SHARED_LIBS 1)
+  # sys/random.h exists, but its not found
+  set(HAVE_SYS_RANDOM_H 1)
 else()
   message(FATAL_ERROR "Host '${CMAKE_SYSTEM_NAME}' not supported.")
 endif()
