@@ -1139,5 +1139,56 @@ namespace System.Text.Json.Serialization.Tests
             AgePoco obj = JsonSerializer.Deserialize<AgePoco>(@"{""age"":1}");
             Assert.Equal(1, obj.age);
         }
+
+        [Theory]
+        [InlineData(typeof(ClassWithGuid))]
+        [InlineData(typeof(ClassWithNullableGuid))]
+        public void DefaultForValueTypeCtorParam(Type type)
+        {
+            string json = @"{""MyGuid"":""edc421bf-782a-4a95-ad67-3d73b5d7db6f""}";
+            object obj = JsonSerializer.Deserialize(json, type);
+            Assert.Equal(json, JsonSerializer.Serialize(obj));
+
+            json = @"{}";
+            obj = JsonSerializer.Deserialize(json, type);
+
+            var options = new JsonSerializerOptions { DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingDefault };
+            Assert.Equal(json, JsonSerializer.Serialize(obj, options));
+        }
+
+        private class ClassWithGuid
+        {
+            public Guid MyGuid { get; }
+
+            public ClassWithGuid(Guid myGuid = default) => MyGuid = myGuid;
+        }
+
+        private class ClassWithNullableGuid
+        {
+            public Guid? MyGuid { get; }
+
+            public ClassWithNullableGuid(Guid? myGuid = default) => MyGuid = myGuid;
+        }
+
+        [Fact]
+        public void DefaultForReferenceTypeCtorParam()
+        {
+            string json = @"{""MyUri"":""http://hello""}";
+            object obj = JsonSerializer.Deserialize(json, typeof(ClassWithUri));
+            Assert.Equal(json, JsonSerializer.Serialize(obj));
+
+            json = @"{}";
+            obj = JsonSerializer.Deserialize(json, typeof(ClassWithUri));
+
+            var options = new JsonSerializerOptions { DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingDefault };
+            Assert.Equal(json, JsonSerializer.Serialize(obj, options));
+        }
+
+        private class ClassWithUri
+        {
+            public Uri MyUri { get; }
+
+            public ClassWithUri(Uri myUri = default) => MyUri = myUri;
+        }
     }
 }
