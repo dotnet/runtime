@@ -1,6 +1,6 @@
 project(mono)
 
-set(subdirs mini profiler)
+set(subdirs mini profiler coregc)
 
 if(ENABLE_PERFTRACING)
   list(APPEND subdirs
