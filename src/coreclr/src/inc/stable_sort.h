@@ -23,18 +23,18 @@ namespace templatized_sort
     }
 
     template <class SizeOf_t>
-    void swap(SizeOf_t sizeOfValueType, char* first, char* second) 
+    void swap(SizeOf_t size, char* first, char* second)
     {
         char tempSpace[256];
-        if (sizeOfValueType.Value() <= sizeof(tempSpace))
+        if ((size_t)size <= sizeof(tempSpace))
         {
-            memcpy(tempSpace, first, sizeOfValueType.Value());
-            memcpy(first, second, sizeOfValueType.Value());
-            memcpy(second, tempSpace, sizeOfValueType.Value());
+            memcpy(tempSpace, first, (size_t)size);
+            memcpy(first, second, (size_t)size);
+            memcpy(second, tempSpace, (size_t)size);
         }
         else
         {
-            swap(sizeOfValueType.Value(), first, second);
+            swap((size_t)size, first, second);
         }
     }
 
@@ -45,9 +45,9 @@ namespace templatized_sort
         while (i < count)
         {
             size_t j = i;
-            while ((j > 0) && (Pred(ptr + size.Value() * j, ptr + size.Value() * (j - 1))))
+            while ((j > 0) && (Pred(ptr + (size_t)size * j, ptr + (size_t)size * (j - 1))))
             {
-                swap(size, ptr + size.Value() * j, ptr + size.Value() * (j - 1));
+                swap(size, ptr + (size_t)size * j, ptr + (size_t)size * (j - 1));
                 j = j - 1;
             }
             i = i + 1;
@@ -60,35 +60,41 @@ namespace templatized_sort
         if (count <= 1)
             return;
 
+        if (count < 8)
+        {
+            insertion_sort((char*)ptr, count, size, Pred);
+            return;
+        }
+
         size_t half = count - count / 2;
         merge_sort_worker(ptr, half, size, Pred, working);
-        merge_sort_worker(ptr + size.Value() * half, count - half, size, Pred, working);
-        memcpy(working, ptr, size.Value() * half);
+        merge_sort_worker(ptr + (size_t)size * half, count - half, size, Pred, working);
+        memcpy(working, ptr, (size_t)size * half);
 
         char* firstPart = working;
-        char* firstPartEnd = working + size.Value() * half;
-        char* secondPart = ptr + size.Value() * half;
-        char* secondPartEnd = ptr + size.Value() * count;
+        char* firstPartEnd = working + (size_t)size * half;
+        char* secondPart = ptr + (size_t)size * half;
+        char* secondPartEnd = ptr + (size_t)size * count;
         while (firstPart < firstPartEnd && secondPart < secondPartEnd)
         {
             if (Pred(secondPart, firstPart))
             {
-                memcpy(ptr, secondPart, size.Value());
-                secondPart += size.Value();
+                memcpy(ptr, secondPart, (size_t)size);
+                secondPart += (size_t)size;
             }
             else
             {
-                memcpy(ptr, firstPart, size.Value());
-                firstPart += size.Value();
+                memcpy(ptr, firstPart, (size_t)size);
+                firstPart += (size_t)size;
             }
-            ptr += size.Value();
+            ptr += (size_t)size;
         }
 
         while (firstPart < firstPartEnd)
         {
-            memcpy(ptr, firstPart, size.Value());
-            firstPart += size.Value();
-            ptr += size.Value();
+            memcpy(ptr, firstPart, (size_t)size);
+            firstPart += (size_t)size;
+            ptr += (size_t)size;
         }
     }
 
@@ -96,7 +102,7 @@ namespace templatized_sort
     void stable_sort(void* ptr, size_t count, SizeOf_t size, Pr Pred) {
         size_t half = count - count / 2;
         double tempBufferLocal[256];
-        size_t tempBufferSize = half * size.Value();
+        size_t tempBufferSize = half * (size_t)size;
         char* tempBuffer;
         if (tempBufferSize <= sizeof(tempBufferLocal))
         {
@@ -128,10 +134,14 @@ namespace templatized_sort
             this->typeSize = typeSize;
         }
 
-        size_t Value()
-        {
-            return typeSize;
-        }
+        operator size_t() const { return typeSize; }
+    };
+
+    template<unsigned Size>
+    class ConstSizeOf
+    {
+    public:
+        operator size_t() const { return Size; }
     };
 
 }
