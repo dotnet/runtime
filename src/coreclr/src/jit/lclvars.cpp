@@ -2030,7 +2030,7 @@ void Compiler::StructPromotionHelper::SortStructFields()
 {
     if (!structPromotionInfo.fieldsSorted)
     {
-        stable_sort(structPromotionInfo.fields, structPromotionInfo.fieldCnt, sizeof(*structPromotionInfo.fields),
+        stable_sort_clr(structPromotionInfo.fields, structPromotionInfo.fieldCnt, sizeof(*structPromotionInfo.fields),
               lvaFieldOffsetCmp);
         structPromotionInfo.fieldsSorted = true;
     }

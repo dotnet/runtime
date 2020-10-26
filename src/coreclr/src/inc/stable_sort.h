@@ -61,7 +61,7 @@ namespace templatized_sort
             while (i < count)
             {
                 size_t j = i;
-                while ((j > 0) && (Pred(ptr + (size_t)size * j, ptr + (size_t)size * (j - 1))))
+                while ((j > 0) && (Pred(ptr + (size_t)size * j, ptr + (size_t)size * (j - 1)) < 0))
                 {
                     swap(size, ptr + (size_t)size * j, ptr + (size_t)size * (j - 1));
                     j = j - 1;
@@ -93,7 +93,7 @@ namespace templatized_sort
             char* secondPartEnd = ptr + (size_t)size * count;
             while (firstPart < firstPartEnd && secondPart < secondPartEnd)
             {
-                if (Pred(secondPart, firstPart))
+                if (Pred(secondPart, firstPart) < 0)
                 {
                     memcpy(ptr, secondPart, (size_t)size);
                     secondPart += (size_t)size;
@@ -106,12 +106,7 @@ namespace templatized_sort
                 ptr += (size_t)size;
             }
 
-            while (firstPart < firstPartEnd)
-            {
-                memcpy(ptr, firstPart, (size_t)size);
-                firstPart += (size_t)size;
-                ptr += (size_t)size;
-            }
+            memcpy(ptr, firstPart, firstPartEnd - firstPart);
         }
 
         template <class SizeOf_t, class Pr>
@@ -136,17 +131,34 @@ namespace templatized_sort
 
             merge_sort_worker((char*)ptr, count, size, Pred, tempBuffer);
             if (tempBuffer != (char*)&tempBufferLocal[0])
-            {
+            { 
                 free(tempBuffer);
             }
         }
     }
 }
 
-inline void stable_sort(void* ptr, size_t count, size_t size, int (comp)(const void*, const void*))
+#ifdef NON_TEMPLATIZED_STABLE_SORT
+inline void stable_sort_clr(void* ptr, size_t count, size_t size, int (comp)(const void*, const void*))
 {
-    auto comparator = [comp](const void* a, const void* b) { return comp(a, b) < 0; };
+    auto comparator = [comp](const void* a, const void* b) { return comp(a, b); };
     templatized_sort::stable_sort((char*)ptr, count, templatized_sort::SizeOf(size), comparator);
 }
+#else // NON_TEMPLATIZED_STABLE_SORT
+template <class T, class Pred>
+inline void stable_sort_clr_template(T* ptr, size_t count, size_t size, Pred comp)
+{
+    if (size == sizeof(T))
+    {
+        templatized_sort::stable_sort((char*)ptr, count, templatized_sort::ConstSizeOf<sizeof(T)>(), comp);
+    }
+    else
+    {
+        templatized_sort::stable_sort((char*)ptr, count, templatized_sort::SizeOf(size), comp);
+    }
+}
+
+#define stable_sort_clr(ptr, count, size, comp) stable_sort_clr_template(ptr, count, size, [&](const void* left, const void* right) { return comp(left, right); } )
+#endif // NON_TEMPLATIZED_STABLE_SORT
 
 #endif // STABLE_SORT_H

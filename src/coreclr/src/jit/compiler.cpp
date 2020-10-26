@@ -1250,7 +1250,7 @@ void DisplayNowayAssertMap()
             ++i;
         }
 
-        stable_sort(nacp, count, sizeof(nacp[0]), NowayAssertCountMap::compare);
+        stable_sort_clr(nacp, count, sizeof(nacp[0]), NowayAssertCountMap::compare);
 
         if (fout == jitstdout)
         {
@@ -6368,8 +6368,8 @@ inline void Compiler::compInitScopeLists()
         compEnterScopeList[i] = compExitScopeList[i] = &info.compVarScopes[i];
     }
 
-    stable_sort(compEnterScopeList, info.compVarScopesCount, sizeof(*compEnterScopeList), genCmpLocalVarLifeBeg);
-    stable_sort(compExitScopeList, info.compVarScopesCount, sizeof(*compExitScopeList), genCmpLocalVarLifeEnd);
+    stable_sort_clr(compEnterScopeList, info.compVarScopesCount, sizeof(*compEnterScopeList), genCmpLocalVarLifeBeg);
+    stable_sort_clr(compExitScopeList, info.compVarScopesCount, sizeof(*compExitScopeList), genCmpLocalVarLifeEnd);
 }
 
 void Compiler::compResetScopeLists()

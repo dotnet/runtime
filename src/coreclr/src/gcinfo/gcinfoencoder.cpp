@@ -1285,7 +1285,7 @@ void GcInfoEncoder::Build()
     //-----------------------------------------------------------------
 
     // Don't use the CQuickSort algorithm, it's prone to stack overflows
-    stable_sort(
+    stable_sort_clr(
         pTransitions,
         numTransitions,
         sizeof(LifetimeTransition),
@@ -1323,7 +1323,7 @@ void GcInfoEncoder::Build()
             sortedSlots[i].m_SlotId = i;
         }
 
-        stable_sort(sortedSlots, m_NumSlots, sizeof(GcSlotDescAndId), CompareSlotDescAndIdBySlotDesc);
+        stable_sort_clr(sortedSlots, m_NumSlots, sizeof(GcSlotDescAndId), CompareSlotDescAndIdBySlotDesc);
 
         for(UINT32 i = 0; i < m_NumSlots; i++)
         {
@@ -2090,7 +2090,7 @@ void GcInfoEncoder::Build()
             _ASSERTE(numTransitionsInCurrentChunk > 0);
 
             // Sort the transitions in this chunk by slot
-            stable_sort(
+            stable_sort_clr(
                 pCurrent - numTransitionsInCurrentChunk,
                 numTransitionsInCurrentChunk,
                 sizeof(LifetimeTransition),

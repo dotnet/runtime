@@ -2001,11 +2001,11 @@ public:
 
         if (CodeOptKind() == Compiler::SMALL_CODE)
         {
-            stable_sort(sortTab, m_pCompiler->optCSECandidateCount, sizeof(*sortTab), m_pCompiler->optCSEcostCmpSz);
+            stable_sort_clr(sortTab, m_pCompiler->optCSECandidateCount, sizeof(*sortTab), m_pCompiler->optCSEcostCmpSz);
         }
         else
         {
-            stable_sort(sortTab, m_pCompiler->optCSECandidateCount, sizeof(*sortTab), m_pCompiler->optCSEcostCmpEx);
+            stable_sort_clr(sortTab, m_pCompiler->optCSECandidateCount, sizeof(*sortTab), m_pCompiler->optCSEcostCmpEx);
         }
 
 #ifdef DEBUG
