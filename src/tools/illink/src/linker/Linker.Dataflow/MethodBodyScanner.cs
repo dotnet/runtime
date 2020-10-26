@@ -709,7 +709,7 @@ namespace Mono.Linker.Dataflow
 			}
 
 			if (operation.Operand is TypeReference typeReference) {
-				var resolvedReference = typeReference.Resolve ();
+				var resolvedReference = typeReference.ResolveToMainTypeDefinition ();
 				if (resolvedReference != null) {
 					StackSlot slot = new StackSlot (new RuntimeTypeHandleValue (resolvedReference));
 					currentStack.Push (slot);

@@ -128,9 +128,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 		{
 		}
 
-		// Issue: https://github.com/mono/linker/issues/1537
-		//[Kept]
-		//[KeptMember (".ctor()")]
+		[Kept]
 		class FromStringConstantWithGenericInner
 		{
 		}
@@ -144,9 +142,56 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 		}
 
 		[Kept]
+		class FromStringConstantWithGenericInnerInner
+		{
+			[Kept]
+			public void Method ()
+			{
+			}
+
+			int unusedField;
+		}
+
+		[Kept]
+		class FromStringConstantWithGenericInnerOne<
+		[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicMethods)]
+		[KeptAttributeAttribute (typeof (DynamicallyAccessedMembersAttribute))]
+		T>
+		{
+		}
+
+		[Kept]
+		class FromStringConstantWithGenericInnerTwo
+		{
+			void UnusedMethod ()
+			{
+			}
+		}
+
+		[Kept]
+		class FromStringConstantWitGenericInnerMultiDimArray
+		{
+		}
+
+		[Kept]
+		class FromStringConstantWithMultiDimArray
+		{
+			public void UnusedMethod () { }
+		}
+
+		[Kept]
+		[KeptMember (".ctor()")]
+		class FromStringConstantWithGenericTwoParameters<T, S>
+		{
+		}
+
+		[Kept]
 		static void TestFromStringConstantWithGeneric ()
 		{
 			RequireCombinationOnString ("Mono.Linker.Tests.Cases.DataFlow.ApplyTypeAnnotations+FromStringConstantWithGeneric`1[[Mono.Linker.Tests.Cases.DataFlow.ApplyTypeAnnotations+FromStringConstantWithGenericInner]]");
+			RequireCombinationOnString ("Mono.Linker.Tests.Cases.DataFlow.ApplyTypeAnnotations+FromStringConstantWithGenericTwoParameters`2[Mono.Linker.Tests.Cases.DataFlow.ApplyTypeAnnotations+FromStringConstantWithGenericInnerOne`1[Mono.Linker.Tests.Cases.DataFlow.ApplyTypeAnnotations+FromStringConstantWithGenericInnerInner],Mono.Linker.Tests.Cases.DataFlow.ApplyTypeAnnotations+FromStringConstantWithGenericInnerTwo]");
+			RequireCombinationOnString ("Mono.Linker.Tests.Cases.DataFlow.ApplyTypeAnnotations+FromStringConstantWithGeneric`1[[Mono.Linker.Tests.Cases.DataFlow.ApplyTypeAnnotations+FromStringConstantWitGenericInnerMultiDimArray[,]]]");
+			RequireCombinationOnString ("Mono.Linker.Tests.Cases.DataFlow.ApplyTypeAnnotations+FromStringConstantWithMultiDimArray[,]");
 		}
 
 		[Kept]

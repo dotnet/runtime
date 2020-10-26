@@ -375,5 +375,17 @@ namespace Mono.Linker
 
 			return false;
 		}
+
+		// Array types that are dynamically accessed should resolve to System.Array instead of its element type - which is what Cecil resolves to.
+		// Any data flow annotations placed on a type parameter which receives an array type apply to the array itself. None of the members in its
+		// element type should be marked.
+		public static TypeDefinition ResolveToMainTypeDefinition (this TypeReference type)
+		{
+			return type switch
+			{
+				ArrayType _ => type.Module.ImportReference (typeof (Array))?.Resolve (),
+				_ => type?.Resolve ()
+			};
+		}
 	}
 }
