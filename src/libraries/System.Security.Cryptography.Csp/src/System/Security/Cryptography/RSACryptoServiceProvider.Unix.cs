@@ -157,12 +157,12 @@ namespace System.Security.Cryptography
                 // handled by _impl.
                 int halfModulusLength = (parameters.Modulus.Length + 1) / 2;
 
-                if (parameters.P?.Length != halfModulusLength ||
-                    parameters.DP?.Length != halfModulusLength ||
-                    parameters.Q?.Length != halfModulusLength ||
-                    parameters.DQ?.Length != halfModulusLength ||
-                    parameters.InverseQ?.Length != halfModulusLength ||
-                    parameters.D?.Length != parameters.Modulus.Length)
+                if (parameters.P?.Length > halfModulusLength ||
+                    parameters.DP?.Length > halfModulusLength ||
+                    parameters.Q?.Length > halfModulusLength ||
+                    parameters.DQ?.Length > halfModulusLength ||
+                    parameters.InverseQ?.Length > halfModulusLength ||
+                    parameters.D?.Length > parameters.Modulus.Length)
                 {
                     throw new CryptographicException(SR.Argument_InvalidValue);
                 }
