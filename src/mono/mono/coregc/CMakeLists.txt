@@ -33,6 +33,6 @@ set(mono_coregc_sources_base
 	gcscan.cpp
 	$(coreclr_srcdir)/src/gc/gcscan.h)
 
-addprefix(coregc_sources m ../coregc/ "${ono_coregc_sources_base}")
+addprefix(coregc_sources ../coregc/ "${mono_coregc_sources_base}")
 # addprefix(coregc_sources coregc_sources_base $(top_srcdir)/../coreclr/src/gc)
 set_source_files_properties(${coregc_sources} PROPERTIES COMPILE_DEFINITIONS "HAVE_CORE_GC")
