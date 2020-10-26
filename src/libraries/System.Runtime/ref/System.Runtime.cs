@@ -7357,7 +7357,7 @@ namespace System.IO
         public override System.Threading.Tasks.Task WriteAsync(char[] buffer, int index, int count) { throw null; }
         public override System.Threading.Tasks.Task WriteAsync(System.ReadOnlyMemory<char> buffer, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
         public override System.Threading.Tasks.Task WriteAsync(string? value) { throw null; }
-        public override void WriteLine(System.ReadOnlySpan<char> value) { }
+        public override void WriteLine(System.ReadOnlySpan<char> buffer) { }
         public override void WriteLine(string? value) { }
         public override void WriteLine(string format, object? arg0) { }
         public override void WriteLine(string format, object? arg0, object? arg1) { }
