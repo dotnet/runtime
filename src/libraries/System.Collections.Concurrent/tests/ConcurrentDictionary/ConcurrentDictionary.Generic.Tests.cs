@@ -87,7 +87,7 @@ namespace System.Collections.Concurrent.Tests
 
         protected override IDictionary<TKey, TValue> GenericIDictionaryFactory() => new ConcurrentDictionary<TKey, TValue>();
 
-        protected override IDictionary<TKey, TValue> GenericIDictionaryFactory(IEqualityComparer<TKey> comparer) => new Dictionary<TKey, TValue>(comparer);
+        protected override IDictionary<TKey, TValue> GenericIDictionaryFactory(IEqualityComparer<TKey> comparer) => new ConcurrentDictionary<TKey, TValue>(comparer);
 
         protected override IEnumerable<ModifyEnumerable> GetModifyEnumerables(ModifyOperation operations) => new List<ModifyEnumerable>();
 
