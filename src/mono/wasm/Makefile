@@ -58,8 +58,7 @@ MONO_LIBS = \
 	${NATIVE_BIN_DIR}/libSystem.Native.a \
 	${NATIVE_BIN_DIR}/libSystem.IO.Compression.Native.a \
 	$(ICU_LIBDIR)/libicuuc.a \
-	$(ICU_LIBDIR)/libicui18n.a \
-	$(ICU_LIBDIR)/libicudata.a
+	$(ICU_LIBDIR)/libicui18n.a
 
 EMCC_FLAGS=--profiling-funcs -s WASM=1 -s ALLOW_MEMORY_GROWTH=1 -s BINARYEN=1 -s ALIASING_FUNCTION_POINTERS=0 -s NO_EXIT_RUNTIME=1 -s "EXTRA_EXPORTED_RUNTIME_METHODS=['ccall', 'FS_createPath', 'FS_createDataFile', 'cwrap', 'setValue', 'getValue', 'UTF8ToString', 'UTF8ArrayToString', 'addFunction']" -s "EXPORTED_FUNCTIONS=['_putchar']" --source-map-base http://example.com  -emit-llvm -s FORCE_FILESYSTEM=1 -s USE_ZLIB=1
 ifneq ($(ENABLE_ES6),false)
