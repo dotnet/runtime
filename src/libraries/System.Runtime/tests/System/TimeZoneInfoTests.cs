@@ -2349,6 +2349,7 @@ namespace System.Tests
         public static void ChangeLocalTimeZone(string id) 
         {
             try {
+                string originalTZ = Environment.GetEnvironmentVariable("TZ");
                 TimeZoneInfo.ClearCachedData();
                 Environment.SetEnvironmentVariable("TZ", id);
 
@@ -2360,7 +2361,7 @@ namespace System.Tests
             }
             finally {
                 TimeZoneInfo.ClearCachedData();
-                Environment.SetEnvironmentVariable("TZ", "");
+                Environment.SetEnvironmentVariable("TZ", originalTZ);
             }
         }
 
