@@ -8856,8 +8856,8 @@ void CEEInfo::getMethodVTableOffset (CORINFO_METHOD_HANDLE methodHnd,
 /*********************************************************************/
 CORINFO_METHOD_HANDLE CEEInfo::resolveVirtualMethodHelper(CORINFO_METHOD_HANDLE baseMethod,
                                                           CORINFO_CLASS_HANDLE derivedClass,
-                                                          CORINFO_CONTEXT_HANDLE ownerType,
-                                                          bool* requiresInstMethodTableArg)
+                                                          bool* requiresInstMethodTableArg,
+                                                          CORINFO_CONTEXT_HANDLE ownerType)
 {
     CONTRACTL {
         THROWS;
@@ -8948,26 +8948,16 @@ CORINFO_METHOD_HANDLE CEEInfo::resolveVirtualMethodHelper(CORINFO_METHOD_HANDLE 
         }
 
         // default interface method
-        // we need to return *correct* instantiating stub
         // generics over value types do not share code, so we should do nothing on caller site
         // when `requiresInstMethodTableArg == false`
         if (pDevirtMD->GetMethodTable()->IsInterface() && pDevirtMD->HasClassInstantiation())
         {
             // since we are in DIM branch, that means
-            // call MethodTable::GetMethodDescForInterfaceMethod above returned to us
+            // call MethodTable::GetMethodDescForInterfaceMethod above has returned
             // either instantiating stub ie `pDevirtMD->IsWrapperStub() == true`
             // or non shared generic instantiation ie <T> is <Int32>
             _ASSERTE(pDevirtMD->IsWrapperStub() || !(pDevirtMD->GetMethodTable()->IsSharedByGenericInstantiations() || pDevirtMD->IsSharedByGenericMethodInstantiations()));
-            _ASSERTE(requiresInstMethodTableArg != nullptr);
-            if (pDevirtMD->IsWrapperStub())
-            {
-                *requiresInstMethodTableArg = true;
-                pDevirtMD = pDevirtMD->GetExistingWrappedMethodDesc();
-            }
-            else
-            {
-                *requiresInstMethodTableArg = false;
-            }
+            *requiresInstMethodTableArg = pDevirtMD->IsWrapperStub();
         }
     }
     else
@@ -9067,8 +9057,8 @@ CORINFO_METHOD_HANDLE CEEInfo::resolveVirtualMethodHelper(CORINFO_METHOD_HANDLE 
 
 CORINFO_METHOD_HANDLE CEEInfo::resolveVirtualMethod(CORINFO_METHOD_HANDLE methodHnd,
                                                     CORINFO_CLASS_HANDLE derivedClass,
-                                                    CORINFO_CONTEXT_HANDLE ownerType,
-                                                    bool* requiresInstMethodTableArg)
+                                                    bool* requiresInstMethodTableArg,
+                                                    CORINFO_CONTEXT_HANDLE ownerType)
 {
     CONTRACTL {
         THROWS;
@@ -9080,7 +9070,7 @@ CORINFO_METHOD_HANDLE CEEInfo::resolveVirtualMethod(CORINFO_METHOD_HANDLE method
 
     JIT_TO_EE_TRANSITION();
 
-    result = resolveVirtualMethodHelper(methodHnd, derivedClass, ownerType, requiresInstMethodTableArg);
+    result = resolveVirtualMethodHelper(methodHnd, derivedClass, requiresInstMethodTableArg, ownerType);
 
     EE_TO_JIT_TRANSITION();
 

@@ -944,7 +944,8 @@ namespace Internal.JitInterface
             return (CORINFO_MODULE_STRUCT_*)ObjectToHandle(methodIL);
         }
 
-        private bool resolveVirtualMethod(CORINFO_DEVIRTUALIZATION_INFO* info)
+        // TODO: deal with requiresInstMethodTableArg
+        private CORINFO_METHOD_STRUCT_* resolveVirtualMethod(CORINFO_METHOD_STRUCT_* baseMethod, CORINFO_CLASS_STRUCT_* derivedClass, bool* requiresInstMethodTableArg, CORINFO_CONTEXT_STRUCT* ownerType)
         {
             // Initialize OUT fields
             info->devirtualizedMethod = null;

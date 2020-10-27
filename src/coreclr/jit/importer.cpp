@@ -20921,10 +20921,11 @@ void Compiler::impDevirtualizeCall(GenTreeCall*            call,
         }
 
         // Ask the runtime to determine the method that would be called based on the guessed-for type.
-        CORINFO_CONTEXT_HANDLE ownerType = *contextHandle;
-        bool requiresInstMethodTableArg = false;
+        CORINFO_CONTEXT_HANDLE ownerType                  = *contextHandle;
+        bool                   requiresInstMethodTableArg = false;
         CORINFO_METHOD_HANDLE  uniqueImplementingMethod =
-            info.compCompHnd->resolveVirtualMethod(baseMethod, uniqueImplementingClass, ownerType, &requiresInstMethodTableArg);
+            info.compCompHnd->resolveVirtualMethod(baseMethod, uniqueImplementingClass,
+                                                   &requiresInstMethodTableArg, ownerType);
 
         if (!canResolve)
         {
@@ -20956,9 +20957,10 @@ void Compiler::impDevirtualizeCall(GenTreeCall*            call,
     }
 
     // Fetch the method that would be called based on the declared type of 'this'
-    CORINFO_CONTEXT_HANDLE ownerType = *contextHandle;
-    bool requiresInstMethodTableArg = false;
-    CORINFO_METHOD_HANDLE  derivedMethod = info.compCompHnd->resolveVirtualMethod(baseMethod, objClass, ownerType, &requiresInstMethodTableArg);
+    CORINFO_CONTEXT_HANDLE ownerType                  = *contextHandle;
+    bool                   requiresInstMethodTableArg = false;
+    CORINFO_METHOD_HANDLE  derivedMethod =
+        info.compCompHnd->resolveVirtualMethod(baseMethod, objClass, &requiresInstMethodTableArg, ownerType);
 
     // If we failed to get a handle, we can't devirtualize.  This can
     // happen when prejitting, if the devirtualization crosses
@@ -21194,7 +21196,7 @@ void Compiler::impDevirtualizeCall(GenTreeCall*            call,
         }
 
         // Note for some shared methods the unboxed entry point requires an extra parameter.
-        bool requiresInstMethodTableArgForUnboxedEntry = false;
+        bool                  requiresInstMethodTableArgForUnboxedEntry = false;
         CORINFO_METHOD_HANDLE unboxedEntryMethod =
             info.compCompHnd->getUnboxedEntry(derivedMethod, &requiresInstMethodTableArgForUnboxedEntry);
 
@@ -21299,8 +21301,8 @@ void Compiler::impDevirtualizeCall(GenTreeCall*            call,
         {
             assert(((SIZE_T)ownerType & CORINFO_CONTEXTFLAGS_MASK) == CORINFO_CONTEXTFLAGS_CLASS);
             CORINFO_CLASS_HANDLE exactClassHandle = eeGetClassFromContext(ownerType);
-            GenTree* instParam = gtNewIconEmbClsHndNode(exactClassHandle);
-            call->gtCallMethHnd = derivedMethod;
+            GenTree*             instParam        = gtNewIconEmbClsHndNode(exactClassHandle);
+            call->gtCallMethHnd                   = derivedMethod;
             if ((Target::g_tgtArgOrder == Target::ARG_ORDER_R2L) || (call->gtCallArgs == nullptr))
             {
                 call->gtCallArgs = gtPrependNewCallArg(instParam, call->gtCallArgs);
@@ -21321,7 +21323,6 @@ void Compiler::impDevirtualizeCall(GenTreeCall*            call,
             {
                 call->gtFlags |= use.GetNode()->gtFlags & GTF_GLOB_EFFECT;
             }
-
         }
         else
         {
@@ -21333,15 +21334,15 @@ void Compiler::impDevirtualizeCall(GenTreeCall*            call,
             JITDUMP("Sorry, failed to find unboxed entry point\n");
         }
     }
-    // check wheter we have returned an instantiating stub for generic DIM 
+    // check wheter we have returned an instantiating stub for generic DIM
     else if (isInterface)
     {
         if (requiresInstMethodTableArg)
         {
             assert(((SIZE_T)ownerType & CORINFO_CONTEXTFLAGS_MASK) == CORINFO_CONTEXTFLAGS_CLASS);
             CORINFO_CLASS_HANDLE exactClassHandle = eeGetClassFromContext(ownerType);
-            GenTree* instParam = gtNewIconEmbClsHndNode(exactClassHandle);
-            call->gtCallMethHnd = derivedMethod;
+            GenTree*             instParam        = gtNewIconEmbClsHndNode(exactClassHandle);
+            call->gtCallMethHnd                   = derivedMethod;
             if ((Target::g_tgtArgOrder == Target::ARG_ORDER_R2L) || (call->gtCallArgs == nullptr))
             {
                 call->gtCallArgs = gtPrependNewCallArg(instParam, call->gtCallArgs);

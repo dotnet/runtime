@@ -511,8 +511,8 @@ public:
     {
         DWORDLONG virtualMethod;
         DWORDLONG implementingClass;
-        DWORDLONG ownerType;
         DWORD     requiresInstMethodTableArg;
+        DWORDLONG ownerType;
     };
 
     struct ResolveTokenValue
@@ -930,14 +930,14 @@ public:
 
     void recResolveVirtualMethod(CORINFO_METHOD_HANDLE  virtMethod,
                                  CORINFO_CLASS_HANDLE   implClass,
-                                 CORINFO_CONTEXT_HANDLE ownerType,
                                  bool*                  requiresInstMethodTableArg,
+                                 CORINFO_CONTEXT_HANDLE ownerType,
                                  CORINFO_METHOD_HANDLE  result);
     void dmpResolveVirtualMethod(const Agnostic_ResolveVirtualMethod& key, DWORDLONG value);
     CORINFO_METHOD_HANDLE repResolveVirtualMethod(CORINFO_METHOD_HANDLE  virtMethod,
                                                   CORINFO_CLASS_HANDLE   implClass,
-                                                  CORINFO_CONTEXT_HANDLE ownerType,
-                                                  bool*                  requiresInstMethodTableArg);
+                                                  bool*                  requiresInstMethodTableArg,
+                                                  CORINFO_CONTEXT_HANDLE ownerType);
 
     void recGetUnboxedEntry(CORINFO_METHOD_HANDLE ftn, bool* requiresInstMethodTableArg, CORINFO_METHOD_HANDLE result);
     void dmpGetUnboxedEntry(DWORDLONG key, DLD value);

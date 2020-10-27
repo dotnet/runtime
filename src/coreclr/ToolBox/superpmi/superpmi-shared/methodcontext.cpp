@@ -3075,8 +3075,8 @@ void MethodContext::repGetMethodVTableOffset(CORINFO_METHOD_HANDLE method,
 
 void MethodContext::recResolveVirtualMethod(CORINFO_METHOD_HANDLE  virtMethod,
                                             CORINFO_CLASS_HANDLE   implClass,
+                                            bool*                  requiresInstMethodTableArg,
                                             CORINFO_CONTEXT_HANDLE ownerType,
-                                            bool* requiresInstMethodTableArg,
                                             CORINFO_METHOD_HANDLE  result)
 {
     if (ResolveVirtualMethod == nullptr)
@@ -3102,8 +3102,8 @@ void MethodContext::dmpResolveVirtualMethod(const Agnostic_ResolveVirtualMethodK
 
 CORINFO_METHOD_HANDLE MethodContext::repResolveVirtualMethod(CORINFO_METHOD_HANDLE  virtMethod,
                                                              CORINFO_CLASS_HANDLE   implClass,
-                                                             CORINFO_CONTEXT_HANDLE ownerType,
-                                                             bool* requiresInstMethodTableArg)
+                                                             bool*                  requiresInstMethodTableArg,
+                                                             CORINFO_CONTEXT_HANDLE ownerType)
 {
     Agnostic_ResolveVirtualMethod key;
     key.virtualMethod               = (DWORDLONG)virtMethod;
