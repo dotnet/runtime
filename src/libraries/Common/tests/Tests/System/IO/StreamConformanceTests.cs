@@ -42,8 +42,6 @@ namespace System.IO.Tests
         /// is thrown (either because it's fully supported or not supported and non-deterministic).
         /// </summary>
         protected virtual Type UnsupportedConcurrentExceptionType => typeof(InvalidOperationException);
-        /// <summary>Exception type thrown from operations when the instance is disposed.</summary>
-        protected virtual Type DisposedExceptionType => typeof(ObjectDisposedException);
 
         /// <summary>Gets whether the stream is expected to be seekable.</summary>
         protected virtual bool CanSeek => false;
@@ -151,8 +149,8 @@ namespace System.IO.Tests
                 // Disposed destination stream
                 var disposedDestination = new MemoryStream(new byte[1]);
                 disposedDestination.Dispose();
-                Assert.Throws(DisposedExceptionType, () => { stream.CopyTo(disposedDestination); });
-                Assert.Throws(DisposedExceptionType, () => { stream.CopyToAsync(disposedDestination); });
+                Assert.Throws<ObjectDisposedException>(() => { stream.CopyTo(disposedDestination); });
+                Assert.Throws<ObjectDisposedException>(() => { stream.CopyToAsync(disposedDestination); });
             }
             else
             {
@@ -262,51 +260,57 @@ namespace System.IO.Tests
 
         protected async Task ValidateDisposedExceptionsAsync(Stream stream)
         {
-            // NOTE: Some streams may start returning false from the CanXx props after disposal, in which case this test ends up being a nop.
-
-            if (stream.CanRead)
-            {
-                Assert.Throws(DisposedExceptionType, () => { stream.ReadByte(); });
-                Assert.Throws(DisposedExceptionType, () => { stream.Read(new Span<byte>(new byte[1])); });
-                Assert.Throws(DisposedExceptionType, () => { stream.Read(new byte[1], 0, 1); });
-                await Assert.ThrowsAsync<ObjectDisposedException>(async () => await stream.ReadAsync(new byte[1], 0, 1));
-                await Assert.ThrowsAsync<ObjectDisposedException>(async () => await stream.ReadAsync(new Memory<byte>(new byte[1])));
-                Assert.Throws(DisposedExceptionType, () => { stream.EndRead(stream.BeginRead(new byte[1], 0, 1, null, null)); });
-                Assert.Throws(DisposedExceptionType, () => { stream.CopyTo(new MemoryStream()); });
-                await Assert.ThrowsAsync<ObjectDisposedException>(async () => await stream.CopyToAsync(new MemoryStream()));
-            }
-
-            if (stream.CanWrite)
-            {
-                Assert.Throws(DisposedExceptionType, () => { stream.WriteByte(1); });
-                Assert.Throws(DisposedExceptionType, () => { stream.Write(new Span<byte>(new byte[1])); });
-                Assert.Throws(DisposedExceptionType, () => { stream.Write(new byte[1], 0, 1); });
-                await Assert.ThrowsAsync<ObjectDisposedException>(async () => await stream.WriteAsync(new byte[1], 0, 1));
-                await Assert.ThrowsAsync<ObjectDisposedException>(async () => await stream.WriteAsync(new Memory<byte>(new byte[1])));
-                Assert.Throws(DisposedExceptionType, () => { stream.EndWrite(stream.BeginWrite(new byte[1], 0, 1, null, null)); });
-            }
-
-            if (stream.CanSeek)
-            {
-                Assert.Throws(DisposedExceptionType, () => stream.Length);
-                Assert.Throws(DisposedExceptionType, () => stream.Position);
-                Assert.Throws(DisposedExceptionType, () => stream.Position = 0);
-                Assert.Throws(DisposedExceptionType, () => stream.Seek(0, SeekOrigin.Begin));
-                Assert.Throws(DisposedExceptionType, () => stream.SetLength(1));
-            }
-
-            if (stream.CanTimeout)
-            {
-                Assert.Throws(DisposedExceptionType, () => stream.ReadTimeout);
-                Assert.Throws(DisposedExceptionType, () => stream.ReadTimeout = 1);
-                Assert.Throws(DisposedExceptionType, () => stream.WriteTimeout);
-                Assert.Throws(DisposedExceptionType, () => stream.WriteTimeout = 1);
-            }
-
             // Disposal should be idempotent and not throw
             stream.Dispose();
             stream.DisposeAsync().AsTask().GetAwaiter().GetResult();
             stream.Close();
+
+            AssertDisposed(() => { stream.ReadByte(); });
+            AssertDisposed(() => { stream.Read(new Span<byte>(new byte[1])); });
+            AssertDisposed(() => { stream.Read(new byte[1], 0, 1); });
+            await AssertDisposedAsync(async () => await stream.ReadAsync(new byte[1], 0, 1));
+            await AssertDisposedAsync(async() => await stream.ReadAsync(new Memory<byte>(new byte[1])));
+            AssertDisposed(() => { stream.EndRead(stream.BeginRead(new byte[1], 0, 1, null, null)); });
+
+            AssertDisposed(() => { stream.WriteByte(1); });
+            AssertDisposed(() => { stream.Write(new Span<byte>(new byte[1])); });
+            AssertDisposed(() => { stream.Write(new byte[1], 0, 1); });
+            await AssertDisposedAsync(async () => await stream.WriteAsync(new byte[1], 0, 1));
+            await AssertDisposedAsync(async() => await stream.WriteAsync(new Memory<byte>(new byte[1])));
+            AssertDisposed(() => { stream.EndWrite(stream.BeginWrite(new byte[1], 0, 1, null, null)); });
+
+            AssertDisposed(() => stream.Flush(), successAllowed: true);
+            await AssertDisposedAsync(() => stream.FlushAsync(), successAllowed: true);
+
+            AssertDisposed(() => { stream.CopyTo(new MemoryStream()); });
+            await AssertDisposedAsync(async () => await stream.CopyToAsync(new MemoryStream()));
+
+            AssertDisposed(() => _ = stream.Length);
+            AssertDisposed(() => _ = stream.Position);
+            AssertDisposed(() => stream.Position = 0);
+            AssertDisposed(() => stream.Seek(0, SeekOrigin.Begin));
+            AssertDisposed(() => stream.SetLength(1));
+
+            AssertDisposed(() => _ = stream.ReadTimeout);
+            AssertDisposed(() => stream.ReadTimeout = 1);
+            AssertDisposed(() => _ = stream.WriteTimeout);
+            AssertDisposed(() => stream.WriteTimeout = 1);
+
+            void AssertDisposed(Action action, bool successAllowed = false) => ValidateDisposedException(Record.Exception(action), successAllowed);
+
+            async Task AssertDisposedAsync(Func<Task> func, bool successAllowed = false) => ValidateDisposedException(await Record.ExceptionAsync(func).ConfigureAwait(false), successAllowed);
+
+            void ValidateDisposedException(Exception e, bool successAllowed = false)
+            {
+                // Behavior when disposed is inconsistent, and isn't specified by the Stream contract: types aren't supposed to be used
+                // after they're disposed.  So, at least until we decide to be more strict, these tests are very liberal in what they except.
+                Assert.True(
+                    (e is null && successAllowed) ||
+                    e is ObjectDisposedException ||
+                    e is NotSupportedException ||
+                    e is InvalidOperationException,
+                    $"Unexpected: {e?.GetType().ToString() ?? "(null)"}");
+            }
         }
 
         protected async Task ValidatePrecanceledOperations_ThrowsCancellationException(Stream stream)
@@ -793,7 +797,7 @@ namespace System.IO.Tests
 
             await write;
 
-            if (mode == 0)
+            if (mode == ReadWriteMode.SyncByte)
             {
                 Assert.Equal(-1, readable.ReadByte());
             }
@@ -838,6 +842,8 @@ namespace System.IO.Tests
                 ReadWriteMode.AsyncAPM => await Task.Factory.FromAsync(readable.BeginRead, readable.EndRead, buffer, offset, buffer.Length - offset, null),
                 _ => throw new Exception($"Unknown mode: {mode}"),
             });
+
+            await write;
 
             for (int i = 0; i < buffer.Length; i++)
             {
@@ -1356,13 +1362,20 @@ namespace System.IO.Tests
         }
 
         public static IEnumerable<object[]> CopyToAsync_AllDataCopied_MemberData() =>
-            from byteCount in new int[] { 0, 1, 1024, 4096, 4095, 1024 * 1024 }
-            from asyncWrite in new bool[] { true, false }
-            select new object[] { byteCount, asyncWrite };
+            from byteCount in new int[] { 0, 1, 1024, 4095, 4096 }
+            from useAsync in new bool[] { true, false }
+            select new object[] { byteCount, useAsync };
+
+        [OuterLoop]
+        [Theory]
+        [InlineData(false)]
+        [InlineData(true)]
+        public virtual async Task CopyToAsync_AllDataCopied_Large(bool useAsync) =>
+            await CopyToAsync_AllDataCopied(1024 * 1024, useAsync);
 
         [Theory]
         [MemberData(nameof(CopyToAsync_AllDataCopied_MemberData))]
-        public virtual async Task CopyToAsync_AllDataCopied(int byteCount, bool asyncWrite)
+        public virtual async Task CopyToAsync_AllDataCopied(int byteCount, bool useAsync)
         {
             using StreamPair streams = await CreateConnectedStreamsAsync();
             (Stream writeable, Stream readable) = GetReadWritePair(streams);
@@ -1371,7 +1384,7 @@ namespace System.IO.Tests
             byte[] dataToCopy = RandomNumberGenerator.GetBytes(byteCount);
 
             Task copyTask;
-            if (asyncWrite)
+            if (useAsync)
             {
                 copyTask = readable.CopyToAsync(results);
                 await writeable.WriteAsync(dataToCopy);
@@ -1394,7 +1407,7 @@ namespace System.IO.Tests
         {
             await Task.WhenAll(Enumerable.Range(0, 20).Select(_ => Task.Run(async () =>
             {
-                await CopyToAsync_AllDataCopied(byteCount: 10 * 1024, asyncWrite: true);
+                await CopyToAsync_AllDataCopied(byteCount: 10 * 1024, useAsync: true);
             })));
         }
 
@@ -1585,7 +1598,7 @@ namespace System.IO.Tests
             using StreamPair streams = await CreateConnectedStreamsAsync();
             foreach (Stream stream in streams)
             {
-                if (stream.CanRead && !stream.CanWrite)
+                if (stream.CanRead)
                 {
                     stream.Flush();
                     await stream.FlushAsync();
@@ -1628,7 +1641,6 @@ namespace System.IO.Tests
         protected virtual bool WrappedUsableAfterClose => true;
         protected virtual bool SupportsLeaveOpen => true;
 
-        // TODO: Add tests for sync calling sync and async calling async
         [Theory]
         [InlineData(false)]
         [InlineData(true)]
@@ -1645,7 +1657,7 @@ namespace System.IO.Tests
             var tracker = new CallTrackingStream(writeable);
             using StreamPair wrapper = await CreateWrappedConnectedStreamsAsync((tracker, readable));
 
-            Assert.Equal(0, tracker.TimesCalled(nameof(tracker.Flush)) + tracker.TimesCalled(nameof(tracker.FlushAsync)));
+            int orig = tracker.TimesCalled(nameof(tracker.Flush)) + tracker.TimesCalled(nameof(tracker.FlushAsync));
 
             tracker.WriteByte(1);
 
@@ -1658,7 +1670,7 @@ namespace System.IO.Tests
                 wrapper.Stream1.Flush();
             }
 
-            Assert.NotEqual(0, tracker.TimesCalled(nameof(tracker.Flush)) + tracker.TimesCalled(nameof(tracker.FlushAsync)));
+            Assert.InRange(tracker.TimesCalled(nameof(tracker.Flush)) + tracker.TimesCalled(nameof(tracker.FlushAsync)), orig + 1, int.MaxValue);
         }
 
         [Theory]
@@ -1725,7 +1737,7 @@ namespace System.IO.Tests
             }
             else
             {
-                Assert.Throws(DisposedExceptionType, () => writeable.WriteByte(42));
+                Assert.Throws<ObjectDisposedException>(() => writeable.WriteByte(42));
             }
         }
 

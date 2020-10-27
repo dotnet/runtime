@@ -8,19 +8,17 @@ using System.Threading.Tasks;
 
 namespace System.Net.Security.Tests
 {
-    public sealed class SslStreamMemoryConformanceTests : ConnectedStreamConformanceTests
+    public abstract class SslStreamConformanceTests : WrappingConnectedStreamConformanceTests
     {
         protected override bool UsableAfterCanceledReads => false;
         protected override bool BlocksOnZeroByteReads => true;
         protected override Type UnsupportedConcurrentExceptionType => typeof(NotSupportedException);
 
-        protected override async Task<StreamPair> CreateConnectedStreamsAsync()
+        protected override async Task<StreamPair> CreateWrappedConnectedStreamsAsync(StreamPair wrapped, bool leaveOpen = false)
         {
-            (Stream stream1, Stream stream2) = ConnectedStreams.CreateBidirectional();
-
             X509Certificate2? cert = Test.Common.Configuration.Certificates.GetServerCertificate();
-            var ssl1 = new SslStream(stream1, false, delegate { return true; });
-            var ssl2 = new SslStream(stream2, false, delegate { return true; });
+            var ssl1 = new SslStream(wrapped.Stream1, leaveOpen, delegate { return true; });
+            var ssl2 = new SslStream(wrapped.Stream2, leaveOpen, delegate { return true; });
 
             await new[]
             {
@@ -30,5 +28,19 @@ namespace System.Net.Security.Tests
 
             return new StreamPair(ssl1, ssl2);
         }
+    }
+
+    public sealed class SslStreamMemoryConformanceTests : SslStreamConformanceTests
+    {
+        protected override Task<StreamPair> CreateConnectedStreamsAsync() =>
+            CreateWrappedConnectedStreamsAsync(ConnectedStreams.CreateBidirectional());
+    }
+
+    public sealed class SslStreamNetworkConformanceTests : SslStreamConformanceTests
+    {
+        protected override bool CanTimeout => true;
+
+        protected override Task<StreamPair> CreateConnectedStreamsAsync() =>
+            CreateWrappedConnectedStreamsAsync(TestHelper.GetConnectedTcpStreams());
     }
 }

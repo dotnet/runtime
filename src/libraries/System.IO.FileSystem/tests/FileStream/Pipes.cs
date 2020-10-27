@@ -36,13 +36,13 @@ namespace System.IO.Tests
         {
             string name = FileSystemTest.GetNamedPipeServerStreamName();
 
-            var server = new NamedPipeServerStream(name, PipeDirection.InOut);
-            var client = new NamedPipeClientStream(".", name, PipeDirection.InOut);
+            var server = new NamedPipeServerStream(name, PipeDirection.In);
+            var client = new NamedPipeClientStream(".", name, PipeDirection.Out);
 
             await WhenAllOrAnyFailed(server.WaitForConnectionAsync(), client.ConnectAsync());
 
-            var fs1 = new FileStream(new SafeFileHandle(server.SafePipeHandle.DangerousGetHandle(), true), FileAccess.ReadWrite);
-            var fs2 = new FileStream(new SafeFileHandle(client.SafePipeHandle.DangerousGetHandle(), true), FileAccess.ReadWrite);
+            var fs1 = new FileStream(new SafeFileHandle(server.SafePipeHandle.DangerousGetHandle(), true), FileAccess.Read);
+            var fs2 = new FileStream(new SafeFileHandle(client.SafePipeHandle.DangerousGetHandle(), true), FileAccess.Write);
 
             server.SafePipeHandle.SetHandleAsInvalid();
             client.SafePipeHandle.SetHandleAsInvalid();

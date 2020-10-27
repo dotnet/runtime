@@ -291,6 +291,23 @@ namespace System.Net.Sockets.Tests
             });
         }
 
+        [Theory]	
+        [InlineData(false)]	
+        [InlineData(true)]	
+        public async Task DisposedClosed_MembersThrowObjectDisposedException(bool close)	
+        {	
+            await RunWithConnectedNetworkStreamsAsync((server, _) =>	
+            {
+                if (close) server.Close();
+                else server.Dispose();	
+
+                // Unique members to NetworkStream; others covered by stream conformance tests
+                Assert.Throws<ObjectDisposedException>(() => server.DataAvailable);
+
+                return Task.CompletedTask;	
+            });	
+        }
+
         [Fact]
         public async Task DisposeSocketDirectly_ReadWriteThrowNetworkException()
         {

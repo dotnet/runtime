@@ -11,7 +11,18 @@ using Xunit;
 
 namespace System.Net.Quic.Tests
 {
-    public class QuicStreamConformanceTests : ConnectedStreamConformanceTests
+    public sealed class MockQuicStreamConformanceTests : QuicStreamConformanceTests
+    {
+        protected override QuicImplementationProvider Provider => QuicImplementationProviders.Mock;
+    }
+
+    [ConditionalClass(typeof(QuicTestBase<MsQuicProviderFactory>), nameof(QuicTestBase<MsQuicProviderFactory>.IsSupported))]
+    public sealed class MsQuicQuicStreamConformanceTests : QuicStreamConformanceTests
+    {
+        protected override QuicImplementationProvider Provider => QuicImplementationProviders.MsQuic;
+    }
+
+    public abstract class QuicStreamConformanceTests : ConnectedStreamConformanceTests
     {
         // TODO: These are all hanging, likely due to Stream close behavior.
         [ActiveIssue("https://github.com/dotnet/runtime/issues/756")]
@@ -23,9 +34,11 @@ namespace System.Net.Quic.Tests
         [ActiveIssue("https://github.com/dotnet/runtime/issues/756")]
         public override Task Write_DataReadFromDesiredOffset(ReadWriteMode mode) => base.Write_DataReadFromDesiredOffset(mode);
 
+        protected abstract QuicImplementationProvider Provider { get; }
+
         protected override async Task<StreamPair> CreateConnectedStreamsAsync()
         {
-            QuicImplementationProvider provider = QuicImplementationProviders.Mock;
+            QuicImplementationProvider provider = Provider;
             var protocol = new SslApplicationProtocol("quictest");
 
             var listener = new QuicListener(
