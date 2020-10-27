@@ -6,6 +6,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Runtime.InteropServices;
+using Microsoft.DotNet.RemoteExecutor;
 using Xunit;
 
 namespace System.Reflection.Tests
@@ -1567,6 +1568,49 @@ namespace System.Reflection.Tests
         public void IsSZArray(Type type, bool expected)
         {
             Assert.Equal(expected, type.GetTypeInfo().IsSZArray);
+        }
+
+        public static IEnumerable<object[]> TypeNamesToVerifyData()
+        {
+            yield return new object[] { "Some.Assembly.FakeType, Some.Assembly, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089", "Some.Assembly, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089" }; // full
+            yield return new object[] { "Some.Assembly.FakeType, Some.Assembly", "Some.Assembly" }; // simple
+            yield return new object[] { "Some.Assembly.FakeType, Some.Assembly ", "Some.Assembly" }; // simple w/ whitespace
+            yield return new object[] { "Some.Assembly.FakeType, Some.Assembly2, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089", "Some.Assembly2, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089" }; // full
+            yield return new object[] { "Some.Assembly.FakeType  , Some.Assembly2   , Version=4.0.0.0    , Culture=neutral     , PublicKeyToken=b77a5c561934e089      ", "Some.Assembly2, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089" }; // full w/ whitespace
+            yield return new object[] { "Some.Assembly.FakeType, Some.Assembly2, PublicKeyToken=b77a5c561934e089, Version=4.0.0.0, Culture=neutral", "Some.Assembly2, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089" }; // full reordered
+            yield return new object[] { "Some.Assembly.FakeType, Some.Assembly2, Version=4.0.0.0", "Some.Assembly2, Version=4.0.0.0" }; // version
+            yield return new object[] { "Some.Assembly.FakeType, Some.Assembly2, Version=4.0.0.0 ", "Some.Assembly2, Version=4.0.0.0" }; // version w/ whitespace
+            yield return new object[] { "Some.Assembly.FakeType, Some.Assembly2, Culture=neutral", "Some.Assembly2, Culture=neutral" }; // culture
+            yield return new object[] { "Some.Assembly.FakeType, Some.Assembly2, Culture=neutral ", "Some.Assembly2, Culture=neutral" }; // culture w/ whitespace
+            yield return new object[] { "Some.Assembly.FakeType, Some.Assembly2, Culture=neutral2", "Some.Assembly2, Culture=neutral2" }; // non-neutral culture
+            yield return new object[] { "Some.Assembly.FakeType, Some.Assembly2, Version=4.0.0.0, Culture=neutral", "Some.Assembly2, Version=4.0.0.0, Culture=neutral" }; // version + culture
+            yield return new object[] { "Some.Assembly.FakeType, Some.Assembly2, Version=4.0.0.0, Culture=neutral ", "Some.Assembly2, Version=4.0.0.0, Culture=neutral" }; // version + culture w/ whitespace
+            yield return new object[] { "Some.Assembly.FakeType, Some.Assembly2, Version=4.0.0.0, PublicKeyToken=b77a5c561934e089", "Some.Assembly2, Version=4.0.0.0, PublicKeyToken=b77a5c561934e089" }; // version + pubkey
+            yield return new object[] { "Some.Assembly.FakeType, Some.Assembly2, Version=4.0.0.0, PublicKeyToken=b77a5c561934e089 ", "Some.Assembly2, Version=4.0.0.0, PublicKeyToken=b77a5c561934e089" }; // version + pubkey w/ whitespace
+            yield return new object[] { "Some.Assembly.FakeType, Some.Assembly2, Version=4.0.0.0, PublicKeyToken=null", "Some.Assembly2, Version=4.0.0.0, PublicKeyToken=null" }; // version + pubkey w/ null pubkey
+            yield return new object[] { "Some.Assembly.FakeType, Some.Assembly2, Version=4.0.0.0, PublicKeyToke2n=b77a5c561934e089", "Some.Assembly2, Version=4.0.0.0" }; // version + pubkey w/ typo
+            yield return new object[] { "Some.Assembly.FakeType, Some.Assembly2, Vedrsion=4.0.0.0, PublicKeyToke2n=b77a5c561934e089", "Some.Assembly2" }; // version + pubkey w/ typos
+        }
+
+        [ConditionalTheory(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        [MemberData(nameof(TypeNamesToVerifyData))]
+        [ActiveIssue("https://github.com/mono/mono/issues/19803", TestRuntimes.Mono)]
+        public void TypeGetTypeStringifyAssemblyName(string request, string expected)
+        {
+            RemoteExecutor.Invoke((string request, string expected) => {
+                ResolveEventHandler handler = (sender, args) =>
+                {
+                    Assert.NotNull(args);
+                    Assert.NotNull(args.Name);
+                    Assert.Equal(expected, args.Name);
+                    return null;
+                };
+
+                AppDomain.CurrentDomain.AssemblyResolve += handler;
+
+                var t = Type.GetType(request);
+                Assert.Null(t);
+            }, request, expected).Dispose();
         }
 
 #pragma warning disable 0067, 0169
