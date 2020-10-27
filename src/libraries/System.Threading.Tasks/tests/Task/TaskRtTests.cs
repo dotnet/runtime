@@ -482,40 +482,40 @@ namespace System.Threading.Tasks.Tests
                 Assert.Equal(i, Task.FromResult(i).Result);
             }
 
-            Assert.Equal(Task.FromResult('\0'), Task.FromResult('\0'));
+            Assert.Same(Task.FromResult('\0'), Task.FromResult('\0'));
             Assert.Equal('\0', Task.FromResult('\0').Result);
 
-            Assert.Equal(Task.FromResult((byte)0), Task.FromResult((byte)0));
+            Assert.Same(Task.FromResult((byte)0), Task.FromResult((byte)0));
             Assert.Equal(0, Task.FromResult((byte)0).Result);
 
-            Assert.Equal(Task.FromResult((ushort)0), Task.FromResult((ushort)0));
+            Assert.Same(Task.FromResult((ushort)0), Task.FromResult((ushort)0));
             Assert.Equal(0, Task.FromResult((ushort)0).Result);
 
-            Assert.Equal(Task.FromResult((uint)0), Task.FromResult((uint)0));
+            Assert.Same(Task.FromResult((uint)0), Task.FromResult((uint)0));
             Assert.Equal(0u, Task.FromResult((uint)0).Result);
 
-            Assert.Equal(Task.FromResult((ulong)0), Task.FromResult((ulong)0));
+            Assert.Same(Task.FromResult((ulong)0), Task.FromResult((ulong)0));
             Assert.Equal(0ul, Task.FromResult((ulong)0).Result);
 
-            Assert.Equal(Task.FromResult((sbyte)0), Task.FromResult((sbyte)0));
+            Assert.Same(Task.FromResult((sbyte)0), Task.FromResult((sbyte)0));
             Assert.Equal(0, Task.FromResult((sbyte)0).Result);
 
-            Assert.Equal(Task.FromResult((short)0), Task.FromResult((short)0));
+            Assert.Same(Task.FromResult((short)0), Task.FromResult((short)0));
             Assert.Equal(0, Task.FromResult((short)0).Result);
 
-            Assert.Equal(Task.FromResult((long)0), Task.FromResult((long)0));
+            Assert.Same(Task.FromResult((long)0), Task.FromResult((long)0));
             Assert.Equal(0, Task.FromResult((long)0).Result);
 
-            Assert.Equal(Task.FromResult(IntPtr.Zero), Task.FromResult(IntPtr.Zero));
+            Assert.Same(Task.FromResult(IntPtr.Zero), Task.FromResult(IntPtr.Zero));
             Assert.Equal(IntPtr.Zero, Task.FromResult(IntPtr.Zero).Result);
 
-            Assert.Equal(Task.FromResult(UIntPtr.Zero), Task.FromResult(UIntPtr.Zero));
+            Assert.Same(Task.FromResult(UIntPtr.Zero), Task.FromResult(UIntPtr.Zero));
             Assert.Equal(UIntPtr.Zero, Task.FromResult(UIntPtr.Zero).Result);
 
-            Assert.Equal(Task.FromResult((object)null), Task.FromResult((object)null));
+            Assert.Same(Task.FromResult((object)null), Task.FromResult((object)null));
             Assert.Null(Task.FromResult((object)null).Result);
 
-            Assert.Equal(Task.FromResult((string)null), Task.FromResult((string)null));
+            Assert.Same(Task.FromResult((string)null), Task.FromResult((string)null));
             Assert.Null(Task.FromResult((string)null).Result);
 
             // Not cached

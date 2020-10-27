@@ -5038,7 +5038,12 @@ namespace System.Threading.Tasks
             // method and Task.FromResult. Most tasks won't be cached, and thus we need the checks for those that are to be as
             // close to free as possible. This requires some trickiness given the lack of generic specialization in .NET.
 
-            if (null != (object?)default(TResult)) // help the JIT avoid the value type branches for ref types
+            if (result is null)
+            {
+                // null reference types and default(Nullable<T>)
+                return Task<TResult>.s_defaultResultTask;
+            }
+            else if (typeof(TResult).IsValueType) // help the JIT avoid the value type branches for ref types
             {
                 // For Boolean, we cache all possible values.
                 if (typeof(TResult) == typeof(bool)) // only the relevant branches are kept for each value-type generic instantiation
@@ -5072,12 +5077,8 @@ namespace System.Threading.Tasks
                     (typeof(TResult) == typeof(IntPtr) && default == (IntPtr)(object)result!) ||
                     (typeof(TResult) == typeof(UIntPtr) && default == (UIntPtr)(object)result!))
                 {
-                    return TaskCache<TResult>.s_defaultResultTask;
+                    return Task<TResult>.s_defaultResultTask;
                 }
-            }
-            else if (result is null) // optimized away for value types
-            {
-                return TaskCache<TResult>.s_defaultResultTask;
             }
 
             // No cached task is available.  Manufacture a new one for this result.

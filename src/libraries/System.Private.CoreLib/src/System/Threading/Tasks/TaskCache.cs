@@ -41,11 +41,4 @@ namespace System.Threading.Tasks
             return tasks;
         }
     }
-
-    /// <summary>Provides a cache of tasks for async methods.</summary>
-    internal static class TaskCache<TResult>
-    {
-        /// <summary>A cached task for default(TResult).</summary>
-        internal static readonly Task<TResult> s_defaultResultTask = TaskCache.CreateCacheableTask<TResult>(default);
-    }
 }
