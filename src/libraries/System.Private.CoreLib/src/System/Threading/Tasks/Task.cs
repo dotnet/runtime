@@ -120,7 +120,7 @@ namespace System.Threading.Tasks
 
         internal static int s_taskIdCounter; // static counter used to generate unique task IDs
 
-        private volatile int m_taskId; // this task's unique ID. initialized only if it is ever requested
+        private int m_taskId; // this task's unique ID. initialized only if it is ever requested
 
         internal Delegate? m_action;    // The body of the task.  Might be Action<object>, Action<TState> or Action.  Or possibly a Func.
         // If m_action is set to null it will indicate that we operate in the
@@ -1179,7 +1179,7 @@ namespace System.Threading.Tasks
         {
             get
             {
-                if (m_taskId == 0)
+                if (Volatile.Read(ref m_taskId) == 0)
                 {
                     int newId = NewId();
                     Interlocked.CompareExchange(ref m_taskId, newId, 0);
