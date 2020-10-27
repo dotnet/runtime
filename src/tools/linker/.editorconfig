@@ -123,6 +123,9 @@ dotnet_analyzer_diagnostic.category-reliability.severity = warning
 # CA1834: Use 'StringBuilder.Append(char)'
 dotnet_diagnostic.CA1834.severity = none
 
+# RS2008 Ignore analyzer release tracking
+dotnet_diagnostic.RS2008.severity = none
+
 [external**]
 dotnet_analyzer_diagnostic.severity = none
 generated_code = true
