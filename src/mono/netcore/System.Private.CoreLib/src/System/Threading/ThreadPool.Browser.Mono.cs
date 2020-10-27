@@ -4,30 +4,28 @@
 using System.Diagnostics;
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
+using System.Runtime.Versioning;
 using System.Diagnostics.CodeAnalysis;
 using Microsoft.Win32.SafeHandles;
 
 namespace System.Threading
 {
-    public sealed partial class RegisteredWaitHandle : MarshalByRefObject
+    [UnsupportedOSPlatform("browser")]
+    public sealed class RegisteredWaitHandle : MarshalByRefObject
     {
+        internal RegisteredWaitHandle()
+        {
+        }
+
         public bool Unregister(WaitHandle? waitObject)
         {
             throw new PlatformNotSupportedException();
         }
     }
 
-    internal sealed partial class CompleteWaitThreadPoolWorkItem : IThreadPoolWorkItem
-    {
-        void IThreadPoolWorkItem.Execute()
-        {
-            Debug.Fail("Registered wait handles are currently not supported");
-        }
-    }
-
     public static partial class ThreadPool
     {
-        // Time-senstiive work items are those that may need to run ahead of normal work items at least periodically. For a
+        // Time-sensitive work items are those that may need to run ahead of normal work items at least periodically. For a
         // runtime that does not support time-sensitive work items on the managed side, the thread pool yields the thread to the
         // runtime periodically (by exiting the dispatch loop) so that the runtime may use that thread for processing
         // any time-sensitive work. For a runtime that supports time-sensitive work items on the managed side, the thread pool
@@ -94,8 +92,16 @@ namespace System.Threading
 
         internal static object? GetOrCreateThreadLocalCompletionCountObject() => null;
 
-        private static void RegisterWaitForSingleObjectCore(WaitHandle? waitObject, RegisteredWaitHandle registeredWaitHandle) =>
+        private static RegisteredWaitHandle RegisterWaitForSingleObject(
+             WaitHandle? waitObject,
+             WaitOrTimerCallback? callBack,
+             object? state,
+             uint millisecondsTimeOutInterval,
+             bool executeOnlyOnce,
+             bool flowExecutionContext)
+        {
             throw new PlatformNotSupportedException();
+        }
 
         [DynamicDependency("Callback")]
         [DynamicDependency("PumpThreadPool")]

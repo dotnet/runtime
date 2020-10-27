@@ -250,6 +250,7 @@ namespace System.Threading
 
         internal static void UninterruptibleSleep0() => SleepInternal(0, false);
 
+#if !TARGET_BROWSER
         [UnsupportedOSPlatform("browser")]
         public void Start()
         {
@@ -287,6 +288,11 @@ namespace System.Threading
                 pdel(arg);
             }
         }
+
+        [DynamicDependency(nameof(StartCallback))]
+        [MethodImplAttribute(MethodImplOptions.InternalCall)]
+        private static extern void StartInternal(Thread runtime_thread);
+#endif
 
         partial void ThreadNameChanged(string? value)
         {
@@ -363,10 +369,6 @@ namespace System.Threading
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         private static extern Thread CreateInternal();
-
-        [DynamicDependency(nameof(StartCallback))]
-        [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        private static extern void StartInternal(Thread runtime_thread);
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         private static extern bool JoinInternal(Thread thread, int millisecondsTimeout);

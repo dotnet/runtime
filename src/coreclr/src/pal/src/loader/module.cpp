@@ -655,6 +655,22 @@ PAL_FreeLibraryDirect(
     return retValue;
 }
 
+/*++
+Function:
+  PAL_GetPalHostModule
+
+  Returns the module that hosts the PAL.
+  That is typically:
+      - coreclr.dll when coreclr is dynamically linked
+      - containing executable in the statically linked case
+--*/
+HMODULE
+PALAPI
+PAL_GetPalHostModule()
+{
+    return (HMODULE)LOADGetPalLibrary();
+}
+
 /*
 Function:
   PAL_GetProcAddressDirect

@@ -3,6 +3,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Diagnostics.Tracing;
 using System.Linq;
 using System.Threading;
@@ -1223,7 +1224,7 @@ namespace Microsoft.Extensions.Hosting.Internal
         /// (after an await), the exception gets logged correctly.
         /// </summary>
         [Fact]
-        public void BackgroundServiceAsyncExceptionGetsLogged()
+        public async Task BackgroundServiceAsyncExceptionGetsLogged()
         {
             using TestEventListener listener = new TestEventListener();
 
@@ -1238,8 +1239,9 @@ namespace Microsoft.Extensions.Hosting.Internal
                 })
                 .Start();
 
-            // give the background service 5 seconds to log the failure
-            Task timeout = Task.Delay(new TimeSpan(0, 0, 5));
+            // give the background service 1 minute to log the failure
+            TimeSpan timeout = TimeSpan.FromMinutes(1);
+            Stopwatch sw = Stopwatch.StartNew();
 
             while (true)
             {
@@ -1251,10 +1253,8 @@ namespace Microsoft.Extensions.Hosting.Internal
                     break;
                 }
 
-                if (timeout.IsCompleted)
-                {
-                    Assert.True(false, "'BackgroundService failed' did not get logged");
-                }
+                Assert.InRange(sw.Elapsed, TimeSpan.Zero, timeout);
+                await Task.Delay(TimeSpan.FromMilliseconds(30));
             }
         }
 

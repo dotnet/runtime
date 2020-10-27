@@ -223,7 +223,6 @@ jobs:
           artifactName: '$(coreClrProductArtifactName)'
           displayName: 'CoreCLR product download for Mono'
 
-
     # Download and unzip the Microsoft.NET.Sdk.IL package needed for traversing
     # ilproj test projects during copynativeonly.
     - template: /eng/pipelines/common/download-artifact-step.yml
@@ -263,6 +262,20 @@ jobs:
     - script: $(Build.SourcesDirectory)/src/tests/build$(scriptExt) generatelayoutonly $(runtimeFlavorArgs) $(crossgenArg) $(buildConfig) $(archType) $(crossArg) $(priorityArg) $(librariesOverrideArg)
       displayName: Generate CORE_ROOT
 
+    # Build a Mono LLVM AOT cross-compiler for non-amd64 targets (in this case, just arm64)
+    - ${{ if and(eq(parameters.runtimeFlavor, 'mono'), eq(parameters.runtimeVariant, 'llvmaot')) }}:
+      - ${{ if eq(parameters.archType, 'arm64') }}:
+        - script: ./build.sh
+                  -subset mono
+                  -c $(buildConfigUpper)
+                  -arch $(archType)
+                  /p:BuildMonoAotCrossCompiler=true
+                  /p:BuildMonoAotCrossCompilerOnly=true
+                  /p:MonoLibClang="/usr/lib/llvm-9/lib/libclang-9.so.1"
+                  /p:MonoAOTEnableLLVM=true
+                  /p:MonoAOTLLVMUseCxx11Abi=true
+          displayName: "Build Mono LLVM AOT cross compiler"
+
 
     # Overwrite coreclr runtime binaries with mono ones
     - ${{ if eq(parameters.runtimeFlavor, 'mono') }}:
@@ -274,8 +287,14 @@ jobs:
         displayName: "Patch dotnet with mono"
 
     - ${{ if and(eq(parameters.runtimeFlavor, 'mono'), eq(parameters.runtimeVariant, 'llvmaot')) }}:
-      - script: $(Build.SourcesDirectory)/src/tests/build$(scriptExt) mono_aot $(buildConfig)
-        displayName: "LLVM AOT compile CoreCLR tests"
+      - ${{ if eq(parameters.archType, 'x64') }}:
+        - script: $(Build.SourcesDirectory)/src/tests/build$(scriptExt) mono_aot $(buildConfig) $(archType)
+          displayName: "LLVM AOT compile CoreCLR tests"
+      - ${{ if eq(parameters.archType, 'arm64') }}:
+        - script: $(Build.SourcesDirectory)/src/tests/build$(scriptExt) mono_aot $(buildConfig) $(archType) cross
+          displayName: "LLVM AOT cross-compile CoreCLR tests"
+          env:
+            __MonoToolPrefix: aarch64-linux-gnu-
 
     # Send tests to Helix
     - template: /eng/pipelines/common/templates/runtimes/send-to-helix-step.yml

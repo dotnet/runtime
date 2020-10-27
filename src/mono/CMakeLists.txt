@@ -46,7 +46,7 @@ if(ENABLE_MINIMAL)
 endif()
 
 execute_process(
-  COMMAND grep ^MONO_CORLIB_VERSION= ${CMAKE_SOURCE_DIR}/configure.ac
+  COMMAND grep ^MONO_CORLIB_VERSION= ${CMAKE_CURRENT_SOURCE_DIR}/configure.ac
   COMMAND cut -d = -f  2
   OUTPUT_VARIABLE CORLIB_VERSION_OUT
 )
@@ -56,7 +56,7 @@ endif()
 string(STRIP "${CORLIB_VERSION_OUT}" MONO_CORLIB_VERSION_BASE)
 set(MONO_CORLIB_VERSION "\"${MONO_CORLIB_VERSION_BASE}\"")
 
-if(EXISTS "${CMAKE_SOURCE_DIR}/mono.proj")
+if(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/mono.proj")
   set(ENABLE_NETCORE 1)
 endif()
 
@@ -148,6 +148,9 @@ if(NOT AOT_TARGET_TRIPLE STREQUAL "")
   elseif(AOT_TARGET_TRIPLE STREQUAL "wasm32-unknown-none")
     set(TARGET_SYSTEM_NAME "Emscripten")
     set(TARGET_ARCH "wasm")
+  elseif(AOT_TARGET_TRIPLE STREQUAL "aarch64-linux-gnu")
+    set(TARGET_SYSTEM_NAME "Linux")
+    set(TARGET_ARCH "arm64")
   else()
     message(FATAL_ERROR "AOT target '${AOT_TARGET_TRIPLE}' not supported.")
   endif()
@@ -260,6 +263,8 @@ elseif(CMAKE_SYSTEM_NAME STREQUAL "Emscripten")
   set(DISABLE_EXECUTABLES 1)
   # FIXME: Is there a cmake option for this ?
   set(DISABLE_SHARED_LIBS 1)
+  # sys/random.h exists, but its not found
+  set(HAVE_SYS_RANDOM_H 1)
 else()
   message(FATAL_ERROR "Host '${CMAKE_SYSTEM_NAME}' not supported.")
 endif()
@@ -347,19 +352,29 @@ message("TARGET_ARCH=${TARGET_ARCH}")
 if(TARGET_ARCH STREQUAL "x86_64")
   set(TARGET_AMD64 1)
   set(MONO_ARCHITECTURE "\"amd64\"")
+  set(TARGET_SIZEOF_VOID_P 8)
+  set(SIZEOF_REGISTER 8)
 elseif(TARGET_ARCH STREQUAL "x86")
   set(TARGET_X86 1)
   set(MONO_ARCHITECTURE "\"x86\"")
+  set(TARGET_SIZEOF_VOID_P 4)
+  set(SIZEOF_REGISTER 4)
 elseif(TARGET_ARCH STREQUAL "arm64")
   set(TARGET_ARM64 1)
   set(MONO_ARCHITECTURE "\"arm64\"")
+  set(TARGET_SIZEOF_VOID_P 8)
+  set(SIZEOF_REGISTER 8)
 elseif(TARGET_ARCH MATCHES "arm")
   set(TARGET_ARM 1)
   set(MONO_ARCHITECTURE "\"arm\"")
   # FIXME:
   add_definitions("-DARM_FPU_VFP=1")
+  set(TARGET_SIZEOF_VOID_P 4)
+  set(SIZEOF_REGISTER 4)
 elseif(TARGET_ARCH STREQUAL "wasm")
   set(MONO_ARCHITECTURE "\"wasm\"")
+  set(TARGET_SIZEOF_VOID_P 4)
+  set(SIZEOF_REGISTER 4)
 else()
   message(FATAL_ERROR "TARGET_ARCH='${TARGET_ARCH}' not supported.")
 endif()
@@ -529,10 +544,6 @@ set(GSSIZE "ptrdiff_t")
 #
 
 TEST_BIG_ENDIAN(IS_BIG_ENDIAN)
-
-# FIXME:
-set(TARGET_SIZEOF_VOID_P "${SIZEOF_VOID_P}")
-set(SIZEOF_REGISTER "${SIZEOF_VOID_P}")
 
 if(IS_BIG_ENDIAN)
   set(TARGET_BYTE_ORDER G_BIG_ENDIAN)

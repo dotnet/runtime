@@ -1299,9 +1299,6 @@ var MonoSupportLib = {
 
 		mono_wasm_runtime_ready: function () {
 			this.mono_wasm_runtime_is_ready = true;
-			// DO NOT REMOVE - magic debugger init function
-			console.debug ("mono_wasm_runtime_ready", "fe00e07a-5519-4dfe-b35a-f867dbaf2e28");
-
 			this._clear_per_step_state ();
 
 			// FIXME: where should this go?
@@ -1315,6 +1312,11 @@ var MonoSupportLib = {
 			this._register_c_var_fn ('mono_wasm_invoke_getter_on_value',  'bool', [ 'number', 'number', 'string' ]);
 			this._register_c_var_fn ('mono_wasm_get_local_vars',          'bool', [ 'number', 'number', 'number']);
 			this._register_c_var_fn ('mono_wasm_get_deref_ptr_value',     'bool', [ 'number', 'number']);
+			// DO NOT REMOVE - magic debugger init function
+			if (globalThis.dotnetDebugger)
+				debugger;
+			else
+				console.debug ("mono_wasm_runtime_ready", "fe00e07a-5519-4dfe-b35a-f867dbaf2e28");
 		},
 
 		mono_wasm_set_breakpoint: function (assembly, method_token, il_offset) {
@@ -2362,9 +2364,6 @@ var MonoSupportLib = {
 		// Only trigger this codepath for assemblies loaded after app is ready
 		if (MONO.mono_wasm_runtime_is_ready !== true)
 			return;
-
-		if (!this.mono_wasm_assembly_already_added)
-			this.mono_wasm_assembly_already_added = Module.cwrap ("mono_wasm_assembly_already_added", 'number', ['string']);
 
 		const assembly_name_str = assembly_name !== 0 ? Module.UTF8ToString(assembly_name).concat('.dll') : '';
 

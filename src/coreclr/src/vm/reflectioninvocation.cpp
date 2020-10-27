@@ -332,7 +332,7 @@ FCIMPL7(void, RuntimeFieldHandle::SetValue, ReflectFieldObject *pFieldUNSAFE, Ob
 
     HELPER_METHOD_FRAME_BEGIN_PROTECT(gc);
 
-    InvokeUtil::SetValidField(fieldType.GetSignatureCorElementType(), fieldType, pFieldDesc, &gc.target, &gc.value, declaringType, pDomainInitialized);
+    InvokeUtil::SetValidField(fieldType.GetVerifierCorElementType(), fieldType, pFieldDesc, &gc.target, &gc.value, declaringType, pDomainInitialized);
 
     HELPER_METHOD_FRAME_END();
 }
