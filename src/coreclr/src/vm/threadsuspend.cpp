@@ -3511,7 +3511,7 @@ HRESULT ThreadSuspend::SuspendRuntime(ThreadSuspend::SUSPEND_REASON reason)
     // we do not on uniprocessor though (spin-checking is pointless on uniprocessor)
     bool observeOnly = false;
 
-    _ASSERTE(!pCurThread->HasThreadState(Thread::TS_GCSuspendFlags));
+    _ASSERTE(!pCurThread || !pCurThread->HasThreadState(Thread::TS_GCSuspendFlags));
 #ifdef _DEBUG
     DWORD dbgStartTimeout = GetTickCount();
 #endif
