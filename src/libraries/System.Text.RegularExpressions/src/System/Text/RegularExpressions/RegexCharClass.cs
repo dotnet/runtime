@@ -438,7 +438,7 @@ namespace System.Text.RegularExpressions
                     for (char l = loc.ChMin; l <= loc.ChMax; l++)
                     {
                         char uppercase = l;
-                        Debug.Assert(culture.TextInfo.ToLower(uppercase) == lowercase, $"The Unicode character range at index {k} in s_lcTable contains the character {uppercase} (decimal value: {(int)uppercase}). Its lowercase value {culture.TextInfo.ToLower(uppercase).ToString()} is not the stored value {lowercase.ToString()}. CultureInfo: {culture.ToString()}");
+                        Debug.Assert(culture.TextInfo.ToLower(uppercase) == lowercase, $"The Unicode character range at index {k} in s_lcTable contains the character {uppercase} (decimal value: {(int)uppercase}, hex: {(int)uppercase:X}. Its lowercase value {culture.TextInfo.ToLower(uppercase).ToString()} (decimal value: {(int)culture.TextInfo.ToLower(uppercase)}, hex: {(int)culture.TextInfo.ToLower(uppercase):X} is not the stored value {lowercase} (decimal value: {(int)lowercase}, hex: {(int)lowercase:X}. CultureInfo: {culture.EnglishName}");
                     }
                 }
                 else if (loc.LcOp == LowercaseBor)
