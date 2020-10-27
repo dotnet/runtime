@@ -6390,7 +6390,7 @@ call:
 			mono_memory_barrier ();
 			MINT_IN_BREAK;
 		}
-		MINT_IN_CASE(MINT_MONO_EXCHANGE_LONG)
+		MINT_IN_CASE(MINT_MONO_EXCHANGE_I8)
 			sp--;
 			gboolean flag = FALSE;
 #if SIZEOF_VOID_P == 4
