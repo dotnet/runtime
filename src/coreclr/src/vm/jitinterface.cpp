@@ -12009,6 +12009,27 @@ void CEEJitInfo::allocMem (
         COMPlusThrowHR(CORJIT_OUTOFMEM);
     }
 
+    if (EventEnabledMethodJitMemoryAllocatedForCode())
+    {
+        SString methodBeingCompiledNames[3];
+        MethodDesc* methodBeingCompiled = m_pMethodBeingCompiled;
+        if (methodBeingCompiled)
+        {
+            (methodBeingCompiled)->GetMethodInfo((methodBeingCompiledNames)[0], (methodBeingCompiledNames)[1], (methodBeingCompiledNames)[2]);
+        }
+        else
+        {
+            (methodBeingCompiledNames)[0].Set(W("<null>"));
+            (methodBeingCompiledNames)[1].Set(W("<null>"));
+            (methodBeingCompiledNames)[2].Set(W("<null>"));
+        }
+
+        FireEtwMethodJitMemoryAllocatedForCode(methodBeingCompiledNames[0].GetUnicode(),
+            methodBeingCompiledNames[1].GetUnicode(),
+            methodBeingCompiledNames[2].GetUnicode(),
+            hotCodeSize, roDataSize, totalSize.Value(), flag, GetClrInstanceId());
+    }
+
     m_CodeHeader = m_jitManager->allocCode(m_pMethodBeingCompiled, totalSize.Value(), GetReserveForJumpStubs(), flag
 #ifdef FEATURE_EH_FUNCLETS
                                            , m_totalUnwindInfos
