@@ -5709,13 +5709,12 @@ void emitter::emitDataGenEnd()
 
 UNATIVE_OFFSET emitter::emitDataGenFind(const void* cnsAddr, unsigned cnsSize, unsigned alignment, var_types dataType)
 {
-    UNATIVE_OFFSET cnum = INVALID_UNATIVE_OFFSET;
-
-    dataSection* secDesc = emitConsDsc.dsdList;
+    UNATIVE_OFFSET cnum    = INVALID_UNATIVE_OFFSET;
+    unsigned       curOffs = 0;
+    dataSection*   secDesc = emitConsDsc.dsdList;
     while (secDesc != nullptr)
     {
         // Search the existing secDesc entries
-        unsigned curOffs = 0;
 
         if ((secDesc->dsSize == cnsSize) && (secDesc->dsDataType == dataType) && ((curOffs % alignment) == 0))
         {
