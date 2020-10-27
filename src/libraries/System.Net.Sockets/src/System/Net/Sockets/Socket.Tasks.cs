@@ -128,36 +128,67 @@ namespace System.Net.Sockets
 
         internal ValueTask ConnectAsync(IPAddress[] addresses, int port, CancellationToken cancellationToken)
         {
+            ThrowIfDisposed();
+
             if (addresses == null)
             {
                 throw new ArgumentNullException(nameof(addresses));
             }
+
             if (addresses.Length == 0)
             {
                 throw new ArgumentException(SR.net_invalidAddressList, nameof(addresses));
             }
 
-            return DoConnectAsync(addresses, port, cancellationToken);
-        }
-
-        private async ValueTask DoConnectAsync(IPAddress[] addresses, int port, CancellationToken cancellationToken)
-        {
-            Exception? lastException = null;
-            foreach (IPAddress address in addresses)
+            if (!TcpValidationHelpers.ValidatePortNumber(port))
             {
-                try
-                {
-                    await ConnectAsync(address, port, cancellationToken).ConfigureAwait(false);
-                    return;
-                }
-                catch (Exception ex) when (ex is not OperationCanceledException)
-                {
-                    lastException = ex;
-                }
+                throw new ArgumentOutOfRangeException(nameof(port));
             }
 
-            Debug.Assert(lastException != null);
-            ExceptionDispatchInfo.Throw(lastException);
+            if (_isListening)
+            {
+                throw new InvalidOperationException(SR.net_sockets_mustnotlisten);
+            }
+
+            if (_isConnected)
+            {
+                throw new SocketException((int)SocketError.IsConnected);
+            }
+
+            ValidateForMultiConnect(isMultiEndpoint: false);
+
+            return Core(addresses, port, cancellationToken);
+
+            async ValueTask Core(IPAddress[] addresses, int port, CancellationToken cancellationToken)
+            {
+                Exception? lastException = null;
+                IPEndPoint? endPoint = null;
+                foreach (IPAddress address in addresses)
+                {
+                    try
+                    {
+                        if (endPoint is null)
+                        {
+                            endPoint = new IPEndPoint(address, port);
+                        }
+                        else
+                        {
+                            endPoint.Address = address;
+                            Debug.Assert(endPoint.Port == port);
+                        }
+
+                        await ConnectAsync(endPoint, cancellationToken).ConfigureAwait(false);
+                        return;
+                    }
+                    catch (Exception ex) when (ex is not OperationCanceledException)
+                    {
+                        lastException = ex;
+                    }
+                }
+
+                Debug.Assert(lastException != null);
+                ExceptionDispatchInfo.Throw(lastException);
+            }
         }
 
         internal Task ConnectAsync(string host, int port) => ConnectAsync(host, port, default).AsTask();
@@ -735,7 +766,7 @@ namespace System.Net.Sockets
 
                 try
                 {
-                    if (socket.ConnectAsync(this))
+                    if (socket.ConnectAsync(this, userSocket: true, saeaCancelable: false))
                     {
                         return new ValueTask(this, _token);
                     }

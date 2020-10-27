@@ -17,16 +17,13 @@
 
 #include <dbgenginemetrics.h>
 
-// Globals
-extern HINSTANCE g_hThisInst;
+#if !defined(CROSSGEN_COMPILE) && !defined(CORECLR_EMBEDDED)
 
-// Locals.
 BOOL STDMETHODCALLTYPE EEDllMain( // TRUE on success, FALSE on error.
                        HINSTANCE    hInst,                  // Instance handle of the loaded module.
                        DWORD        dwReason,               // Reason for loading.
-                       LPVOID       lpReserved);                // Unused.
+                       LPVOID       lpReserved);            // Unused.
 
-#ifndef CROSSGEN_COMPILE
 //*****************************************************************************
 // Handle lifetime of loaded library.
 //*****************************************************************************
@@ -48,7 +45,10 @@ BOOL WINAPI DllMain(HANDLE hInstance, DWORD dwReason, LPVOID lpReserved)
     return EEDllMain((HINSTANCE)hInstance, dwReason, lpReserved);
 }
 
-#endif // CROSSGEN_COMPILE
+#endif // !defined(CROSSGEN_COMPILE) && !defined(CORECLR_EMBEDDED)
+
+// Globals
+extern HINSTANCE g_hThisInst;
 
 HINSTANCE GetModuleInst()
 {

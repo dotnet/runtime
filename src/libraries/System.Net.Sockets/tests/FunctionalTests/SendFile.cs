@@ -8,6 +8,7 @@ using System.Threading;
 using System.Threading.Tasks;
 
 using Xunit;
+using Xunit.Sdk;
 
 namespace System.Net.Sockets.Tests
 {
@@ -310,11 +311,7 @@ namespace System.Net.Sockets.Tests
                     msDelay *= 2;
                     Task disposeTask = Task.Run(() => socket1.Dispose());
 
-                    var cts = new CancellationTokenSource();
-                    Task timeoutTask = Task.Delay(30000, cts.Token);
-                    Assert.NotSame(timeoutTask, await Task.WhenAny(disposeTask, socketOperation, timeoutTask));
-                    cts.Cancel();
-
+                    await Task.WhenAny(disposeTask, socketOperation).TimeoutAfter(30000);
                     await disposeTask;
 
                     SocketError? localSocketError = null;
@@ -355,7 +352,7 @@ namespace System.Net.Sockets.Tests
                         Assert.Equal(SocketError.ConnectionReset, peerSocketError);
                     }
                 }
-            }, maxAttempts: 10);
+            }, maxAttempts: 10, retryWhen: e => e is XunitException);
         }
 
         [OuterLoop]
