@@ -1978,6 +1978,7 @@ void ThreadSuspend::LockThreadStore(ThreadSuspend::SUSPEND_REASON reason)
 {
     CONTRACTL {
         NOTHROW;
+    // any thread entering with `PreemptiveGCDisabled` should be prepared to switch mode, thus GC_TRIGGERS
         if ((GetThread() != NULL) && GetThread()->PreemptiveGCDisabled()) {GC_TRIGGERS;} else {DISABLED(GC_NOTRIGGER);}
     }
     CONTRACTL_END;
@@ -1995,15 +1996,12 @@ void ThreadSuspend::LockThreadStore(ThreadSuspend::SUSPEND_REASON reason)
 
         gcOnTransitions = GC_ON_TRANSITIONS(FALSE);                // dont do GC for GCStress 3
 
-        BOOL toggleGC = (   pCurThread != NULL
-                         && pCurThread->PreemptiveGCDisabled()
-                         && reason != ThreadSuspend::SUSPEND_FOR_GC);
-
-        // Note: there is logic in gc.cpp surrounding suspending all
-        // runtime threads for a GC that depends on the fact that we
-        // do an EnablePreemptiveGC and a DisablePreemptiveGC around
-        // taking this lock.
-        // besides, if the suspension is in progress, the lock is taken, we better be in preemptive mode while blocked on this lock.
+        // There are two ways to get blocked here:
+        //      1) we may be blocked on s_pThreadStore
+        //      2) threads with reasons other than GC, GC_PREP, and DEBUGGER_SWEEP may also be blocked on s_hAbortEvt
+        // In either case we should be in preemptive mode when blocked or we could cause suspension in progress
+        // to loop forever because it needs to see all threads in preemptive mode.
+        BOOL toggleGC = (pCurThread != NULL && pCurThread->PreemptiveGCDisabled());
         if (toggleGC)
             pCurThread->EnablePreemptiveGC();
 
@@ -2040,7 +2038,6 @@ void ThreadSuspend::LockThreadStore(ThreadSuspend::SUSPEND_REASON reason)
         // then this will not take the lock and just block forever.
         ThreadStore::s_pThreadStore->Enter();
 
-
         _ASSERTE(ThreadStore::s_pThreadStore->m_holderthreadid.IsUnknown());
         ThreadStore::s_pThreadStore->m_holderthreadid.SetToCurrentThread();
 
@@ -2050,10 +2047,8 @@ void ThreadSuspend::LockThreadStore(ThreadSuspend::SUSPEND_REASON reason)
         // A thread attempting to suspend us asynchronously already holds this lock.
         ThreadStore::s_pThreadStore->m_HoldingThread = pCurThread;
 
-#ifndef _PREFAST_
         if (toggleGC)
             pCurThread->DisablePreemptiveGC();
-#endif
 
         GC_ON_TRANSITIONS(gcOnTransitions);
     }
@@ -5940,20 +5935,24 @@ retry_for_debugger:
         if (hr == ERROR_TIMEOUT)
             STRESS_LOG0(LF_SYNC, LL_INFO1000, "SysSuspension colission");
 
-        // debugger holds TS lock when synchronizing. We cannot be suspending for GC.
-        _ASSERTE(!g_pDebugInterface->IsSynchronizing() ||
-                 !(reason == ThreadSuspend::SUSPEND_FOR_GC || reason == ThreadSuspend::SUSPEND_FOR_GC_PREP));
-
-        // If the debugging services are attached, then its possible
-        // that there is a thread which appears to be stopped at a gc
-        // safe point, but which really is not. If that is the case,
-        // back off and try again.
-
         // If this is not the GC thread and another thread has triggered
         // a GC, then we yield by resuming all the threads and trying again.
         if ((hr == ERROR_TIMEOUT)
 #ifdef DEBUGGING_SUPPORTED
-            || (CORDebuggerAttached() && (g_pDebugInterface->ThreadsAtUnsafePlaces()))
+            // If the debugging services are attached, then its possible
+            // that there is a thread which appears to be stopped at a gc
+            // safe point, but which really is not. If that is the case,
+            // back off and try again.
+            //
+            // When the debugger is synchronizing, trying to perform a GC could deadlock. The GC has the
+            // threadstore lock and synchronization cannot complete until the debugger can get the
+            // threadstore lock. However the GC can not complete until it sends the BeforeGarbageCollection
+            // event, and the event can not be sent until the debugger is synchronized. In order to break
+            // this deadlock cycle the GC must give up the threadstore lock, allow the debugger to synchronize,
+            // then try again.
+            // 
+            || (CORDebuggerAttached() &&
+                (g_pDebugInterface->ThreadsAtUnsafePlaces() || g_pDebugInterface->IsSynchronizing()))
 #endif // DEBUGGING_SUPPORTED
             )
         {
