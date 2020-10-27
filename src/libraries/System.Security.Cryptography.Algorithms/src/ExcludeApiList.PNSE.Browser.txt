@@ -9,3 +9,6 @@ T:System.Security.Cryptography.SHA256Managed
 T:System.Security.Cryptography.SHA384Managed
 T:System.Security.Cryptography.SHA512Managed
 T:System.Security.Cryptography.HMACSHA1
+T:System.Security.Cryptography.HMACSHA256
+T:System.Security.Cryptography.HMACSHA384
+T:System.Security.Cryptography.HMACSHA512

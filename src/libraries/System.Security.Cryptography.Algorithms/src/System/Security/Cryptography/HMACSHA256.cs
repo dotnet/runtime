@@ -16,7 +16,6 @@ namespace System.Security.Cryptography
     // preexisting contract from the .NET Framework locks all of these into deriving directly from HMAC, it can't be helped.
     //
 
-    [UnsupportedOSPlatform("browser")]
     public class HMACSHA256 : HMAC
     {
         public HMACSHA256()
@@ -64,12 +63,14 @@ namespace System.Security.Cryptography
         protected override void HashCore(ReadOnlySpan<byte> source) =>
             _hMacCommon.AppendHashData(source);
 
-        protected override Task HashCoreAsync(byte[] array, int ibStart, int cbSize, CancellationToken cancellationToken) => throw new PlatformNotSupportedException();
+        protected override Task HashCoreAsync(byte[] array, int ibStart, int cbSize, CancellationToken cancellationToken) =>
+            _hMacCommon.AppendHashDataAsync(array, ibStart, cbSize, cancellationToken);
 
         protected override byte[] HashFinal() =>
             _hMacCommon.FinalizeHashAndReset();
 
-        protected override Task<byte[]> HashFinalAsync(CancellationToken cancellationToken) => throw new PlatformNotSupportedException();
+        protected override System.Threading.Tasks.Task<byte[]> HashFinalAsync(System.Threading.CancellationToken cancellationToken) =>
+            _hMacCommon.FinalizeHashAndResetAsync(cancellationToken);
 
         protected override bool TryHashFinal(Span<byte> destination, out int bytesWritten) =>
             _hMacCommon.TryFinalizeHashAndReset(destination, out bytesWritten);

@@ -592,7 +592,6 @@
     <Compile Include="Internal\Cryptography\HMACCommon.cs" />
     <Compile Include="Internal\Cryptography\RandomNumberGeneratorImplementation.cs" />
     <Compile Include="Internal\Cryptography\RandomNumberGeneratorImplementation.Browser.cs" />
-    <!-- <Compile Include="Internal\Cryptography\SHAHashProvider.Browser.cs" /> -->
     <Compile Include="System\Security\Cryptography\RandomNumberGenerator.cs" />
     <Compile Include="System\Security\Cryptography\IncrementalHash.cs" />
     <Compile Include="System\Security\Cryptography\SHA1.cs" />
@@ -604,9 +603,9 @@
     <Compile Include="System\Security\Cryptography\SHA512.cs" />
     <Compile Include="System\Security\Cryptography\SHA512Managed.cs" />
     <Compile Include="System\Security\Cryptography\HMACSHA1.cs" />
-    <!-- <Compile Include="System\Security\Cryptography\HMACSHA256.cs" />
+    <Compile Include="System\Security\Cryptography\HMACSHA256.cs" />
     <Compile Include="System\Security\Cryptography\HMACSHA384.cs" />
-    <Compile Include="System\Security\Cryptography\HMACSHA512.cs" /> -->
+    <Compile Include="System\Security\Cryptography\HMACSHA512.cs" />
     <Reference Include="System.Private.Runtime.InteropServices.JavaScript">
        <HintPath>$(ArtifactsDir)bin/System.Private.Runtime.InteropServices.JavaScript/$(BuildTargetFramework)-$(TargetOS)-$(Configuration)/System.Private.Runtime.InteropServices.JavaScript.dll</HintPath>
     </Reference>

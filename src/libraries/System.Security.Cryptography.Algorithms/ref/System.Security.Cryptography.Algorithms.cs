@@ -449,7 +449,6 @@ namespace System.Security.Cryptography
         public override void Initialize() { }
         protected override bool TryHashFinal(System.Span<byte> destination, out int bytesWritten) { throw null; }
     }
-    [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
     public partial class HMACSHA256 : System.Security.Cryptography.HMAC
     {
         public HMACSHA256() { }
@@ -464,7 +463,6 @@ namespace System.Security.Cryptography
         public override void Initialize() { }
         protected override bool TryHashFinal(System.Span<byte> destination, out int bytesWritten) { throw null; }
     }
-    [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
     public partial class HMACSHA384 : System.Security.Cryptography.HMAC
     {
         public HMACSHA384() { }
@@ -480,7 +478,6 @@ namespace System.Security.Cryptography
         public override void Initialize() { }
         protected override bool TryHashFinal(System.Span<byte> destination, out int bytesWritten) { throw null; }
     }
-    [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
     public partial class HMACSHA512 : System.Security.Cryptography.HMAC
     {
         public HMACSHA512() { }

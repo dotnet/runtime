@@ -212,7 +212,6 @@ namespace Internal.Cryptography
 
             public override Task AppendHashDataAsync(byte[] array, int ibStart, int cbSize, CancellationToken cancellationToken)
             {
-                System.Diagnostics.Debug.WriteLine($"BrowserAsyncHmacProvider:AppendHashDataAsync data length: {array.Length} / {ibStart} / {cbSize}");
                 if (_dataToHash == null)
                 {
                     _dataToHash = Uint8Array.From(array.AsSpan<byte>(ibStart, cbSize));
@@ -234,7 +233,6 @@ namespace Internal.Cryptography
 
             public override async Task<int> FinalizeHashAndResetAsync(byte[] destination, CancellationToken cancellationToken)
             {
-                System.Diagnostics.Debug.WriteLine($"BrowserAsyncHmacProvider:FinalizeHashAndResetAsync data length: {destination.Length}");
                 int written = 0;
                 if (s_subtle?.GetObjectProperty("sign") is Function sign)
                 {
