@@ -74,10 +74,10 @@ python f:\gh\runtime\src\coreclr\scripts\superpmi.py replay -filter tests
 ## ASM diffs
 
 To generate ASM diffs, use the `asmdiffs` command. In this case, you must specify
-the path to a baseline JIT compiler using the `-base_jit_path` argument, e.g.:
+the path to a baseline JIT compiler using the positional base jit path argument, e.g.:
 
 ```
-python f:\gh\runtime\src\coreclr\scripts\superpmi.py asmdiffs -base_jit_path f:\jits\baseline_clrjit.dll
+python f:\gh\runtime\src\coreclr\scripts\superpmi.py asmdiffs f:\jits\baseline_clrjit.dll
 ```
 
 ASM diffs requires the coredistools library. The script attempts to find
