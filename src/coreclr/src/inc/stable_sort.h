@@ -31,7 +31,7 @@ namespace templatized_sort
         };
 
         template <unsigned Size>
-        void swap(typename ConstSizeOf<Size> size, char* first, char* second)
+        void swap(ConstSizeOf<Size> size, char* first, char* second)
         {
             char tempSpace[Size];
             memcpy(tempSpace, first, Size);
