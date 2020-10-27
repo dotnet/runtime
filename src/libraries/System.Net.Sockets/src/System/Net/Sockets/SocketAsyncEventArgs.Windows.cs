@@ -159,7 +159,7 @@ namespace System.Net.Sockets
                     FreeNativeOverlapped(overlapped);
                     FinishOperationSyncSuccess(bytesTransferred, SocketFlags.None);
 
-                    if (SocketsTelemetry.Log.IsEnabled()) AfterConnectAcceptTelemetry();
+                    if (SocketsTelemetry.Log.IsEnabled() && !_disableTelemetry) AfterConnectAcceptTelemetry();
 
                     return SocketError.Success;
                 }
@@ -177,7 +177,7 @@ namespace System.Net.Sockets
                     FreeNativeOverlapped(overlapped);
                     FinishOperationSyncFailure(socketError, bytesTransferred, SocketFlags.None);
 
-                    if (SocketsTelemetry.Log.IsEnabled()) AfterConnectAcceptTelemetry();
+                    if (SocketsTelemetry.Log.IsEnabled() && !_disableTelemetry) AfterConnectAcceptTelemetry();
 
                     return socketError;
                 }
@@ -212,7 +212,7 @@ namespace System.Net.Sockets
                     FreeNativeOverlapped(overlapped);
                     FinishOperationSyncSuccess(bytesTransferred, SocketFlags.None);
 
-                    if (SocketsTelemetry.Log.IsEnabled()) AfterConnectAcceptTelemetry();
+                    if (SocketsTelemetry.Log.IsEnabled() && !_disableTelemetry) AfterConnectAcceptTelemetry();
 
                     return SocketError.Success;
                 }
@@ -231,7 +231,7 @@ namespace System.Net.Sockets
                     FreeNativeOverlapped(overlapped);
                     FinishOperationSyncFailure(socketError, bytesTransferred, SocketFlags.None);
 
-                    if (SocketsTelemetry.Log.IsEnabled()) AfterConnectAcceptTelemetry();
+                    if (SocketsTelemetry.Log.IsEnabled() && !_disableTelemetry) AfterConnectAcceptTelemetry();
 
                     return socketError;
                 }

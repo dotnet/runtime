@@ -1026,31 +1026,6 @@ namespace System.Net.Sockets
             return err;
         }
 
-        public static unsafe SocketError ConnectAsync(Socket socket, SafeSocketHandle handle, byte[] socketAddress, int socketAddressLen, ConnectOverlappedAsyncResult asyncResult)
-        {
-            // This will pin the socketAddress buffer.
-            asyncResult.SetUnmanagedStructures(socketAddress);
-            try
-            {
-                int ignoreBytesSent;
-                bool success = socket.ConnectEx(
-                    handle,
-                    Marshal.UnsafeAddrOfPinnedArrayElement(socketAddress, 0),
-                    socketAddressLen,
-                    IntPtr.Zero,
-                    0,
-                    out ignoreBytesSent,
-                    asyncResult.DangerousOverlappedPointer); // SafeHandle was just created in SetUnmanagedStructures
-
-                return asyncResult.ProcessOverlappedResult(success, 0);
-            }
-            catch
-            {
-                asyncResult.ReleaseUnmanagedStructures();
-                throw;
-            }
-        }
-
         public static unsafe SocketError SendAsync(SafeSocketHandle handle, byte[] buffer, int offset, int count, SocketFlags socketFlags, OverlappedAsyncResult asyncResult)
         {
             // Set up unmanaged structures for overlapped WSASend.
