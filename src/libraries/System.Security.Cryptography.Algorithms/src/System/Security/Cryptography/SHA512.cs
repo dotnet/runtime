@@ -171,13 +171,13 @@ namespace System.Security.Cryptography
         {
             if (destination.Length < HashSizeBytes)
             {
-                return (false, (int)0);
+                return (false, 0);
             }
 
             int bytesWritten = await HashProviderDispenser.OneShotHashProvider.HashDataAsync(HashAlgorithmNames.SHA512, source, destination, cancellationToken).ConfigureAwait(false);
             Debug.Assert(bytesWritten == HashSizeBytes);
 
-            return (true, (int)bytesWritten);
+            return (true, bytesWritten);
         }
 
         private sealed class Implementation : SHA512
