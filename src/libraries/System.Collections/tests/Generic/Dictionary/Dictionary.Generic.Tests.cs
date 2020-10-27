@@ -21,10 +21,9 @@ namespace System.Collections.Tests
 
         #region IDictionary<TKey, TValue Helper Methods
 
-        protected override IDictionary<TKey, TValue> GenericIDictionaryFactory()
-        {
-            return new Dictionary<TKey, TValue>();
-        }
+        protected override IDictionary<TKey, TValue> GenericIDictionaryFactory() => new Dictionary<TKey, TValue>();
+
+        protected override IDictionary<TKey, TValue> GenericIDictionaryFactory(IEqualityComparer<TKey> comparer) => new Dictionary<TKey, TValue>(comparer);
 
         protected override Type ICollection_Generic_CopyTo_IndexLargerThanArrayCount_ThrowType => typeof(ArgumentOutOfRangeException);
 
