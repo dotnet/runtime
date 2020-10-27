@@ -210,6 +210,22 @@
       <SeleniumUrl>https://storage.googleapis.com/chromium-browser-snapshots/Linux_x64/$(ChromiumRevision)/chromedriver_linux64.zip</SeleniumUrl>
     </PropertyGroup>
 
+    <PropertyGroup Condition="'$(RuntimeFlavor)' == 'CoreCLR' and '$(BUILD_BUILDID)' != ''">
+      <HelixPostCommands Condition="'$(TargetsWindows)' == 'true'">
+        $(HelixPostCommands);
+        %HELIX_PYTHONPATH% %HELIX_CORRELATION_PAYLOAD%\gen-debug-dump-docs.py -buildid $(BUILD_ID) -workitem %HELIX_WORKITEM_ID% -jobid %HELIX_CORRELATION_ID% -outdir %HELIX_WORKITEM_UPLOAD_ROOT%
+      </HelixPostCommands>
+      <HelixPostCommands Condition="'$(TargetsWindows)' != 'true'">
+        $(HelixPostCommands);
+        $HELIX_PYTHONPATH $HELIX_CORRELATION_PAYLOAD/gen-debug-dump-docs.py -buildid $(BUILD_ID) -workitem $HELIX_WORKITEM_ID -jobid $HELIX_CORRELATION_ID -outdir $HELIX_WORKITEM_UPLOAD_ROOT
+      </HelixPostCommands>
+    </PropertyGroup>
+
+    <ItemGroup Condition="'$(RuntimeFlavor)' == 'CoreCLR'">
+      <HelixCorrelationPayload Include="$(RepositoryEngineeringDir)testing\debug-dump-template.md" />
+      <HelixCorrelationPayload Include="$(RepositoryEngineeringDir)testing\gen-debug-dump-docs.py" />
+    </ItemGroup>
+
     <ItemGroup Condition="'$(TargetOS)' != 'Android' and '$(TargetOS)' != 'iOS' and '$(TargetOS)' != 'tvOS'">
       <HelixCorrelationPayload Include="$(HelixCorrelationPayload)"
                                Condition="'$(IncludeHelixCorrelationPayload)' == 'true' and '$(TargetOS)' != 'Browser'" />
