@@ -585,6 +585,7 @@ jobs:
     buildConfig: release
     platforms:
     - Linux_x64
+    - Linux_arm64
     jobParameters:
       runtimeVariant: llvmaot
       condition: >-
@@ -853,6 +854,7 @@ jobs:
     runtimeFlavor: mono
     platforms:
     - Linux_x64
+    - Linux_arm64
     helixQueueGroup: pr
     helixQueuesTemplate: /eng/pipelines/coreclr/templates/helix-queues-setup.yml
     jobParameters:

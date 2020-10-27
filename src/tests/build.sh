@@ -49,13 +49,12 @@ build_test_wrappers()
 build_mono_aot()
 {
     __RuntimeFlavor="mono"
-    __MonoBinDir="$__RootBinDir/bin/mono/$__TargetOS.$__BuildArch.$__BuildType"
     __Exclude="$__RepoRootDir/src/tests/issues.targets"
     __TestBinDir="$__TestWorkingDir"
     CORE_ROOT="$__TestBinDir"/Tests/Core_Root
     export __Exclude
     export CORE_ROOT
-    build_MSBuild_projects "Tests_MonoAot" "$__RepoRootDir/src/tests/run.proj" "Mono AOT compile tests" "/t:MonoAotCompileTests" "/p:RuntimeFlavor=$__RuntimeFlavor" "/p:MonoLlvmPath=$__MonoBinDir"
+    build_MSBuild_projects "Tests_MonoAot" "$__RepoRootDir/src/tests/run.proj" "Mono AOT compile tests" "/t:MonoAotCompileTests" "/p:RuntimeFlavor=$__RuntimeFlavor" "/p:MonoBinDir=$__MonoBinDir"
 }
 
 generate_layout()
@@ -628,6 +627,7 @@ __IntermediatesDir="$__RootBinDir/obj/coreclr/$__OSPlatformConfig"
 __TestIntermediatesDir="$__RootBinDir/tests/coreclr/obj/$__OSPlatformConfig"
 __CrossComponentBinDir="$__BinDir"
 __CrossCompIntermediatesDir="$__IntermediatesDir/crossgen"
+__MonoBinDir="$__RootBinDir/bin/mono/$__OSPlatformConfig"
 
 __CrossArch="$__HostArch"
 if [[ "$__CrossBuild" == 1 ]]; then
