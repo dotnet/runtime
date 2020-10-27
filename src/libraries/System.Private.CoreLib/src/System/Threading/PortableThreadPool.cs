@@ -15,10 +15,12 @@ namespace System.Threading
         private const int ThreadPoolThreadTimeoutMs = 20 * 1000; // If you change this make sure to change the timeout times in the tests.
         private const int SmallStackSizeBytes = 256 * 1024;
 
-#if TARGET_64BIT
         private const short MaxPossibleThreadCount = short.MaxValue;
+
+#if TARGET_64BIT
+        private const short DefaultMaxWorkerThreadCount = MaxPossibleThreadCount;
 #elif TARGET_32BIT
-        private const short MaxPossibleThreadCount = 1023;
+        private const short DefaultMaxWorkerThreadCount = 1023;
 #else
         #error Unknown platform
 #endif
@@ -77,8 +79,12 @@ namespace System.Threading
                 _minThreads = MaxPossibleThreadCount;
             }
 
-            _maxThreads = s_forcedMaxWorkerThreads > 0 ? s_forcedMaxWorkerThreads : MaxPossibleThreadCount;
-            if (_maxThreads < _minThreads)
+            _maxThreads = s_forcedMaxWorkerThreads > 0 ? s_forcedMaxWorkerThreads : DefaultMaxWorkerThreadCount;
+            if (_maxThreads > MaxPossibleThreadCount)
+            {
+                _maxThreads = MaxPossibleThreadCount;
+            }
+            else if (_maxThreads < _minThreads)
             {
                 _maxThreads = _minThreads;
             }
