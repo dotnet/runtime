@@ -15,9 +15,6 @@ namespace System.Net.Sockets
 {
     public partial class Socket
     {
-        /// <summary>Cached task with a 0 value.</summary>
-        private static readonly Task<int> s_zeroTask = Task.FromResult(0);
-
         /// <summary>Cached instance for accept operations.</summary>
         private TaskSocketAsyncEventArgs<Socket>? _acceptEventArgs;
 
@@ -436,21 +433,10 @@ namespace System.Net.Sockets
                 // The operation completed synchronously.  Get a task for it.
                 if (saea.SocketError == SocketError.Success)
                 {
-                    // Get the number of bytes successfully received/sent.
-                    int bytesTransferred = saea.BytesTransferred;
-
-                    // For zero bytes transferred, we can return our cached 0 task.
-                    // We can also do so if the request came from network stream and is a send,
-                    // as for that we can return any value because it returns a non-generic Task.
-                    if (bytesTransferred == 0 || (fromNetworkStream & !isReceive))
-                    {
-                        t = s_zeroTask;
-                    }
-                    else
-                    {
-                        // Otherwise, create a new task for this result value.
-                        t = Task.FromResult(bytesTransferred);
-                    }
+                    // Get the number of bytes successfully received/sent.  If the request came from
+                    // NetworkStream and this is a send, we can always use 0 (and thus get a cached
+                    // task from FromResult), because the caller receives a non-generic Task.
+                    t = Task.FromResult(fromNetworkStream & !isReceive ? 0 : saea.BytesTransferred);
                 }
                 else
                 {

@@ -13,7 +13,6 @@ namespace System.IO.Pipes
     public abstract partial class PipeStream : Stream
     {
         internal const string AnonymousPipeName = "anonymous";
-        private static readonly Task<int> s_zeroTask = Task.FromResult(0);
 
         private SafePipeHandle? _handle;
         private bool _canRead;
@@ -164,7 +163,7 @@ namespace System.IO.Pipes
             if (count == 0)
             {
                 UpdateMessageCompletion(false);
-                return s_zeroTask;
+                return Task.FromResult(0);
             }
 
             return ReadAsyncCore(new Memory<byte>(buffer, offset, count), cancellationToken).AsTask();
