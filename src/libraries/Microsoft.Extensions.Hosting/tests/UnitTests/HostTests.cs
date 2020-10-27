@@ -206,6 +206,7 @@ namespace Microsoft.Extensions.Hosting.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/34580", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
         public async Task CreateDefaultBuilder_SecretsDoesReload()
         {
             var secretId = Assembly.GetExecutingAssembly().GetName().Name;
