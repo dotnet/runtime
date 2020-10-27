@@ -389,6 +389,7 @@ namespace System.IO
                 SeekCore(_fileHandle, value, SeekOrigin.Begin);
             if (!Interop.Kernel32.SetEndOfFile(_fileHandle))
             {
+                SeekCore(_fileHandle, origPos, SeekOrigin.Begin);
                 int errorCode = Marshal.GetLastWin32Error();
                 if (errorCode == Interop.Errors.ERROR_INVALID_PARAMETER)
                     throw new ArgumentOutOfRangeException(nameof(value), SR.ArgumentOutOfRange_FileLengthTooBig);
