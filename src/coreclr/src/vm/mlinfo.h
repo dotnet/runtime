@@ -188,13 +188,6 @@ BOOL ParseNativeTypeInfo(mdToken                    token,
                          IMDInternalImport*         pScope,
                          NativeTypeParamInfo*       pParamInfo);
 
-void VerifyAndAdjustNormalizedType(
-                         Module *                   pModule,
-                         SigPointer                 sigPtr,
-                         const SigTypeContext *     pTypeContext,
-                         CorElementType *           pManagedElemType,
-                         CorNativeType *            pNativeType);
-
 #ifdef _DEBUG
 BOOL IsFixedBuffer(mdFieldDef field, IMDInternalImport* pInternalImport);
 #endif
