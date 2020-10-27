@@ -2794,8 +2794,13 @@ ves_icall_System_AppDomain_LoadAssemblyRaw (MonoAppDomainHandle ad,
 
 	guint8 *raw_assembly_ptr = (guint8 *)mono_array_handle_addr (raw_assembly, sizeof (guint8), 0);
 	guint32 raw_assembly_len = mono_array_handle_length (raw_assembly);
-	guint8 *raw_symbols_ptr = (guint8 *)mono_array_handle_addr (raw_symbol_store, sizeof (guint8), 0);
-	guint32 raw_symbols_len = mono_array_handle_length (raw_symbol_store);
+
+	guint8 *raw_symbols_ptr = NULL;
+	guint32 raw_symbols_len = 0;
+	if (!MONO_HANDLE_IS_NULL (raw_symbol_store)) {
+		raw_symbols_ptr = (guint8 *)mono_array_handle_addr (raw_symbol_store, sizeof (guint8), 0);
+		raw_symbols_len = mono_array_handle_length (raw_symbol_store);
+	}
 
 	ass = mono_alc_load_raw_bytes (alc, raw_assembly_ptr, raw_assembly_len, raw_symbols_ptr, raw_symbols_len, refonly, error);
 	goto_if_nok (error, leave);
