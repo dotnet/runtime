@@ -11612,7 +11612,7 @@ GenTree* Compiler::fgMorphFieldAssignToSIMDIntrinsicSet(GenTree* tree)
 #endif // FEATURE_SIMD
 
 //------------------------------------------------------------------------------
-// fgMorphCommutative : Try to simplify "(X op C1) op C2" to "X op (C1 op C2)"
+// fgMorphCommutative : Try to simplify "(X op C1) op C2" to "X op C3"
 //                      for commutative operators.
 //
 // Arguments:
@@ -11628,7 +11628,7 @@ GenTree* Compiler::fgMorphCommutative(GenTreeOp* tree)
     assert(tree->OperIs(GT_ADD, GT_MUL, GT_OR, GT_AND, GT_XOR));
 
     // op1 can be GT_COMMA, in this case we're going to fold
-    // "COMMA(..., (X op C1)) op C2" to "COMMA(..., X op (C1 op C2))"
+    // "(op (COMMA(... (op X C1))) C2)" to "(COMMA(... (op X C3)))"
     GenTree*   op1  = tree->gtGetOp1()->gtEffectiveVal(true);
     genTreeOps oper = tree->OperGet();
 
