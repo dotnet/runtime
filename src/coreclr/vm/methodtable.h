@@ -2094,6 +2094,7 @@ public:
 
     MethodDesc *GetMethodDescForInterfaceMethod(TypeHandle ownerType, MethodDesc *pInterfaceMD, BOOL throwOnConflict);
     MethodDesc *GetMethodDescForInterfaceMethod(MethodDesc *pInterfaceMD, BOOL throwOnConflict); // You can only use this one for non-generic interfaces
+    // ^-- I don't believe this is correct statement, we have PRECONDITION(!pInterfaceMD->HasClassOrMethodInstantiation()); whic implies it can be used with generic interfaces
 
     //-------------------------------------------------------------------
     // INTERFACE MAP.

@@ -8592,13 +8592,18 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
     // (b) To shared-code instance methods in generic structs; the extra parameter
     //     is the struct's type handle (a vtable ptr)
     // (c) To shared-code per-instantiation non-generic static methods in generic
-    //     classes and structs; the extra parameter is the type handle
+    //     classes, structs and default interface methods; the extra parameter is the type handle
     // (d) To shared-code generic methods; the extra parameter is an
     //     exact-instantiation MethodDesc
     //
     // We also set the exact type context associated with the call so we can
     // inline the call correctly later on.
 
+    // after devirtulization it may appear that devirtualized method
+    // would require extra type handle arg
+    // it's tempting to reorder this branch two "ifs" below
+    // and generalize its logic for devirtualized method case
+    // but I'm afraid to break stuff
     if (sig->callConv & CORINFO_CALLCONV_PARAMTYPE)
     {
         assert(call->AsCall()->gtCallType == CT_USER_FUNC);
@@ -20915,14 +20920,11 @@ void Compiler::impDevirtualizeCall(GenTreeCall*            call,
             return;
         }
 
-        // Ask the runtime to determine the method that would be called based on the likely type.
-        //
-        CORINFO_DEVIRTUALIZATION_INFO dvInfo;
-        dvInfo.virtualMethod = baseMethod;
-        dvInfo.objClass      = likelyClass;
-        dvInfo.context       = *pContextHandle;
-
-        bool canResolve = info.compCompHnd->resolveVirtualMethod(&dvInfo);
+        // Ask the runtime to determine the method that would be called based on the guessed-for type.
+        CORINFO_CONTEXT_HANDLE ownerType = *contextHandle;
+        bool requiresInstMethodTableArg = false;
+        CORINFO_METHOD_HANDLE  uniqueImplementingMethod =
+            info.compCompHnd->resolveVirtualMethod(baseMethod, uniqueImplementingClass, ownerType, &requiresInstMethodTableArg);
 
         if (!canResolve)
         {
@@ -20953,8 +20955,14 @@ void Compiler::impDevirtualizeCall(GenTreeCall*            call,
         JITDUMP("--- base class is interface\n");
     }
 
-    // Fetch the method that would be called based on the declared type of 'this',
-    // and prepare to fetch the method attributes.
+    // Fetch the method that would be called based on the declared type of 'this'
+    CORINFO_CONTEXT_HANDLE ownerType = *contextHandle;
+    bool requiresInstMethodTableArg = false;
+    CORINFO_METHOD_HANDLE  derivedMethod = info.compCompHnd->resolveVirtualMethod(baseMethod, objClass, ownerType, &requiresInstMethodTableArg);
+
+    // If we failed to get a handle, we can't devirtualize.  This can
+    // happen when prejitting, if the devirtualization crosses
+    // servicing bubble boundaries.
     //
     CORINFO_DEVIRTUALIZATION_INFO dvInfo;
     dvInfo.virtualMethod = baseMethod;
@@ -21186,9 +21194,9 @@ void Compiler::impDevirtualizeCall(GenTreeCall*            call,
         }
 
         // Note for some shared methods the unboxed entry point requires an extra parameter.
-        bool                  requiresInstMethodTableArg = false;
+        bool requiresInstMethodTableArgForUnboxedEntry = false;
         CORINFO_METHOD_HANDLE unboxedEntryMethod =
-            info.compCompHnd->getUnboxedEntry(derivedMethod, &requiresInstMethodTableArg);
+            info.compCompHnd->getUnboxedEntry(derivedMethod, &requiresInstMethodTableArgForUnboxedEntry);
 
         if (unboxedEntryMethod != nullptr)
         {
@@ -21200,7 +21208,7 @@ void Compiler::impDevirtualizeCall(GenTreeCall*            call,
             //
             // Ideally, we then inline the boxed method and and if it turns out not to modify
             // the copy, we can undo the copy too.
-            if (requiresInstMethodTableArg)
+            if (requiresInstMethodTableArgForUnboxedEntry)
             {
                 // Perform a trial box removal and ask for the type handle tree.
                 JITDUMP("Unboxed entry needs method table arg...\n");
@@ -21286,6 +21294,35 @@ void Compiler::impDevirtualizeCall(GenTreeCall*            call,
                 }
             }
         }
+        // there is no unboxed entry when we got devirtualized to DIM
+        else if (requiresInstMethodTableArg)
+        {
+            assert(((SIZE_T)ownerType & CORINFO_CONTEXTFLAGS_MASK) == CORINFO_CONTEXTFLAGS_CLASS);
+            CORINFO_CLASS_HANDLE exactClassHandle = eeGetClassFromContext(ownerType);
+            GenTree* instParam = gtNewIconEmbClsHndNode(exactClassHandle);
+            call->gtCallMethHnd = derivedMethod;
+            if ((Target::g_tgtArgOrder == Target::ARG_ORDER_R2L) || (call->gtCallArgs == nullptr))
+            {
+                call->gtCallArgs = gtPrependNewCallArg(instParam, call->gtCallArgs);
+            }
+            // Append for non-empty L2R
+            else
+            {
+                GenTreeCall::Use* beforeArg = call->gtCallArgs;
+                while (beforeArg->GetNext() != nullptr)
+                {
+                    beforeArg = beforeArg->GetNext();
+                }
+
+                beforeArg->SetNext(gtNewCallArgs(instParam));
+            }
+            // do we need this?
+            for (GenTreeCall::Use& use : call->AsCall()->Args())
+            {
+                call->gtFlags |= use.GetNode()->gtFlags & GTF_GLOB_EFFECT;
+            }
+
+        }
         else
         {
             // Many of the low-level methods on value classes won't have unboxed entries,
@@ -21295,6 +21332,39 @@ void Compiler::impDevirtualizeCall(GenTreeCall*            call,
             // we probably know that these objects don't escape.
             JITDUMP("Sorry, failed to find unboxed entry point\n");
         }
+    }
+    // check wheter we have returned an instantiating stub for generic DIM 
+    else if (isInterface)
+    {
+        if (requiresInstMethodTableArg)
+        {
+            assert(((SIZE_T)ownerType & CORINFO_CONTEXTFLAGS_MASK) == CORINFO_CONTEXTFLAGS_CLASS);
+            CORINFO_CLASS_HANDLE exactClassHandle = eeGetClassFromContext(ownerType);
+            GenTree* instParam = gtNewIconEmbClsHndNode(exactClassHandle);
+            call->gtCallMethHnd = derivedMethod;
+            if ((Target::g_tgtArgOrder == Target::ARG_ORDER_R2L) || (call->gtCallArgs == nullptr))
+            {
+                call->gtCallArgs = gtPrependNewCallArg(instParam, call->gtCallArgs);
+            }
+            // Append for non-empty L2R
+            else
+            {
+                GenTreeCall::Use* beforeArg = call->gtCallArgs;
+                while (beforeArg->GetNext() != nullptr)
+                {
+                    beforeArg = beforeArg->GetNext();
+                }
+
+                beforeArg->SetNext(gtNewCallArgs(instParam));
+            }
+            // do we need this?
+            for (GenTreeCall::Use& use : call->AsCall()->Args())
+            {
+                call->gtFlags |= use.GetNode()->gtFlags & GTF_GLOB_EFFECT;
+            }
+        }
+
+        // should we patch call->gtCallMoreFlags ?
     }
 
     // Need to update call info too.

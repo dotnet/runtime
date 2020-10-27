@@ -7762,7 +7762,7 @@ getMethodInfoHelper(
         ftn,
         false);
 
-    // Shared generic or static per-inst methods and shared methods on generic structs
+    // Shared generic or static per-inst methods, shared methods on generic structs and default interface methods
     // take an extra argument representing their instantiation
     if (ftn->RequiresInstArg())
         methInfo->args.callConv = (CorInfoCallConv)(methInfo->args.callConv | CORINFO_CALLCONV_PARAMTYPE);
@@ -8854,7 +8854,10 @@ void CEEInfo::getMethodVTableOffset (CORINFO_METHOD_HANDLE methodHnd,
 }
 
 /*********************************************************************/
-bool CEEInfo::resolveVirtualMethodHelper(CORINFO_DEVIRTUALIZATION_INFO * info)
+CORINFO_METHOD_HANDLE CEEInfo::resolveVirtualMethodHelper(CORINFO_METHOD_HANDLE baseMethod,
+                                                          CORINFO_CLASS_HANDLE derivedClass,
+                                                          CORINFO_CONTEXT_HANDLE ownerType,
+                                                          bool* requiresInstMethodTableArg)
 {
     CONTRACTL {
         THROWS;
@@ -8906,17 +8909,20 @@ bool CEEInfo::resolveVirtualMethodHelper(CORINFO_DEVIRTUALIZATION_INFO * info)
         //
         // We must ensure that pObjMT actually implements the
         // interface corresponding to pBaseMD.
-        if (!pObjMT->CanCastToInterface(pBaseMT))
-        {
-            return false;
-        }
+        BOOL canCastStraightForward = pDerivedMT->CanCastToInterface(pBaseMT);
 
         // For generic interface methods we must have context to 
         // safely devirtualize.
-        if (info->context != nullptr)
+        MethodTable* pOwnerMT = nullptr;
+        if (ownerType != nullptr)
         {
-            TypeHandle OwnerClsHnd = GetTypeFromContext(info->context);
-            MethodTable* pOwnerMT = OwnerClsHnd.GetMethodTable();
+            TypeHandle OwnerClsHnd = GetTypeFromContext(ownerType);
+            pOwnerMT = OwnerClsHnd.GetMethodTable();
+
+            if (!canCastStraightForward && !pOwnerMT->IsInterface() && !pDerivedMT->CanCastToInterface(pOwnerMT))
+            {
+                return nullptr;
+            }
 
             // If the derived class is a shared class, make sure the
             // owner class is too.
@@ -8926,6 +8932,10 @@ bool CEEInfo::resolveVirtualMethodHelper(CORINFO_DEVIRTUALIZATION_INFO * info)
             }
 
             pDevirtMD = pObjMT->GetMethodDescForInterfaceMethod(TypeHandle(pOwnerMT), pBaseMD, FALSE /* throwOnConflict */);
+        }
+        else if (!canCastStraightForward)
+        {
+            return nullptr;
         }
         else if (!pBaseMD->HasClassOrMethodInstantiation())
         {
@@ -8937,26 +8947,26 @@ bool CEEInfo::resolveVirtualMethodHelper(CORINFO_DEVIRTUALIZATION_INFO * info)
             return false;
         }
 
+        // default interface method
+        // we need to return *correct* instantiating stub
+        // generics over value types do not share code, so we should do nothing on caller site
+        // when `requiresInstMethodTableArg == false`
         if (pDevirtMD->GetMethodTable()->IsInterface() && pDevirtMD->HasClassInstantiation())
         {
-            if (!pDevirtMD->IsInstantiatingStub())
+            // since we are in DIM branch, that means
+            // call MethodTable::GetMethodDescForInterfaceMethod above returned to us
+            // either instantiating stub ie `pDevirtMD->IsWrapperStub() == true`
+            // or non shared generic instantiation ie <T> is <Int32>
+            _ASSERTE(pDevirtMD->IsWrapperStub() || !(pDevirtMD->GetMethodTable()->IsSharedByGenericInstantiations() || pDevirtMD->IsSharedByGenericMethodInstantiations()));
+            _ASSERTE(requiresInstMethodTableArg != nullptr);
+            if (pDevirtMD->IsWrapperStub())
             {
-                if (pDerivedMT->IsValueType())
-                {
-                    return nullptr;
-                }
-                else
-                {
-                    pDevirtMD = MethodDesc::FindOrCreateAssociatedMethodDesc(
-                        pDevirtMD,
-                        pDerivedMT,
-                        FALSE,                                  // forceBoxedEntryPoint
-                        pDevirtMD->GetMethodInstantiation(),    // for method themselves that are generic
-                        FALSE,                                  // don't want MD that requires inst. arguments
-                        TRUE                                    // ensure that methods on generic interfaces are returned as instantiated method descs
-                    );
-                    _ASSERTE(pDevirtMD->IsInstantiatingStub());
-                }
+                *requiresInstMethodTableArg = true;
+                pDevirtMD = pDevirtMD->GetExistingWrappedMethodDesc();
+            }
+            else
+            {
+                *requiresInstMethodTableArg = false;
             }
         }
     }
@@ -9055,7 +9065,10 @@ bool CEEInfo::resolveVirtualMethodHelper(CORINFO_DEVIRTUALIZATION_INFO * info)
     return true;
 }
 
-bool CEEInfo::resolveVirtualMethod(CORINFO_DEVIRTUALIZATION_INFO * info)
+CORINFO_METHOD_HANDLE CEEInfo::resolveVirtualMethod(CORINFO_METHOD_HANDLE methodHnd,
+                                                    CORINFO_CLASS_HANDLE derivedClass,
+                                                    CORINFO_CONTEXT_HANDLE ownerType,
+                                                    bool* requiresInstMethodTableArg)
 {
     CONTRACTL {
         THROWS;
@@ -9067,7 +9080,7 @@ bool CEEInfo::resolveVirtualMethod(CORINFO_DEVIRTUALIZATION_INFO * info)
 
     JIT_TO_EE_TRANSITION();
 
-    result = resolveVirtualMethodHelper(info);
+    result = resolveVirtualMethodHelper(methodHnd, derivedClass, ownerType, requiresInstMethodTableArg);
 
     EE_TO_JIT_TRANSITION();
 

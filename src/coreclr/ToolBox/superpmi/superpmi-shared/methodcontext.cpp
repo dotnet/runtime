@@ -3073,24 +3073,25 @@ void MethodContext::repGetMethodVTableOffset(CORINFO_METHOD_HANDLE method,
     DEBUG_REP(dmpGetMethodVTableOffset((DWORDLONG)method, value));
 }
 
-void MethodContext::recResolveVirtualMethod(CORINFO_DEVIRTUALIZATION_INFO * info, bool returnValue)
+void MethodContext::recResolveVirtualMethod(CORINFO_METHOD_HANDLE  virtMethod,
+                                            CORINFO_CLASS_HANDLE   implClass,
+                                            CORINFO_CONTEXT_HANDLE ownerType,
+                                            bool* requiresInstMethodTableArg,
+                                            CORINFO_METHOD_HANDLE  result)
 {
     if (ResolveVirtualMethod == nullptr)
     {
         ResolveVirtualMethod = new LightWeightMap<Agnostic_ResolveVirtualMethodKey, Agnostic_ResolveVirtualMethodResult>();
     }
 
-    Agnostic_ResolveVirtualMethodKey key;
-    key.virtualMethod  = (DWORDLONG)info->virtualMethod;
-    key.objClass       = (DWORDLONG)info->objClass;
-    key.context        = (DWORDLONG)info->context;
-    Agnostic_ResolveVirtualMethodResult result;
-    result.returnValue = returnValue;
-    result.devirtualizedMethod = (DWORDLONG)info->devirtualizedMethod;    
-    result.requiresInstMethodTableArg = info->requiresInstMethodTableArg;
-    result.exactContext = (DWORDLONG)info->exactContext;
-    ResolveVirtualMethod->Add(key, result);
-    DEBUG_REC(dmpResolveVirtualMethod(key, result));
+    Agnostic_ResolveVirtualMethod key;
+    key.virtualMethod               = (DWORDLONG)virtMethod;
+    key.implementingClass           = (DWORDLONG)implClass;
+    key.ownerType                   = (DWORDLONG)ownerType;
+    key.requiresInstMethodTableArg  = *requiresInstMethodTableArg ? 1 : 0; // it's out param, do we need this stuff idk
+    
+    ResolveVirtualMethod->Add(key, (DWORDLONG)result);
+    DEBUG_REC(dmpResolveVirtualMethod(key, (DWORDLONG)result));
 }
 
 void MethodContext::dmpResolveVirtualMethod(const Agnostic_ResolveVirtualMethodKey& key, const Agnostic_ResolveVirtualMethodResult& result)
@@ -3099,12 +3100,16 @@ void MethodContext::dmpResolveVirtualMethod(const Agnostic_ResolveVirtualMethodK
         key.virtualMethod, key.objClass, key.context, result.returnValue, result.devirtualizedMethod, result.requiresInstMethodTableArg, result.exactContext);
 }
 
-bool MethodContext::repResolveVirtualMethod(CORINFO_DEVIRTUALIZATION_INFO * info)
+CORINFO_METHOD_HANDLE MethodContext::repResolveVirtualMethod(CORINFO_METHOD_HANDLE  virtMethod,
+                                                             CORINFO_CLASS_HANDLE   implClass,
+                                                             CORINFO_CONTEXT_HANDLE ownerType,
+                                                             bool* requiresInstMethodTableArg)
 {
-    Agnostic_ResolveVirtualMethodKey key;
-    key.virtualMethod  = (DWORDLONG)info->virtualMethod;
-    key.objClass       = (DWORDLONG)info->objClass;
-    key.context        = (DWORDLONG)info->context;
+    Agnostic_ResolveVirtualMethod key;
+    key.virtualMethod               = (DWORDLONG)virtMethod;
+    key.implementingClass           = (DWORDLONG)implClass;
+    key.ownerType                   = (DWORDLONG)ownerType;
+    key.requiresInstMethodTableArg  = *requiresInstMethodTableArg ? 1 : 0;
 
     AssertCodeMsg(ResolveVirtualMethod != nullptr, EXCEPTIONCODE_MC,
         "No ResolveVirtualMap map for %016llX-%016llX-%016llX", key.virtualMethod, key.objClass, key.context);
@@ -3117,7 +3122,8 @@ bool MethodContext::repResolveVirtualMethod(CORINFO_DEVIRTUALIZATION_INFO * info
     info->requiresInstMethodTableArg = result.requiresInstMethodTableArg;
     info->exactContext = (CORINFO_CONTEXT_HANDLE) result.exactContext;
 
-    return result.returnValue;
+    *requiresInstMethodTableArg = (key.requiresInstMethodTableArg != 0);
+    return (CORINFO_METHOD_HANDLE)result;
 }
 
 void MethodContext::recGetUnboxedEntry(CORINFO_METHOD_HANDLE ftn,

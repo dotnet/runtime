@@ -581,7 +581,7 @@ public:
     //
     // RequiresInstMethodDescArg()
     //    The method is itself generic and is shared between generic
-    // instantiations but is not itself generic.  Furthermore
+    // instantiations but is not itself generic. WTF LOL. Furthermore
     // no "this" pointer is given (e.g. a value type method), so we pass in the
     // exact-instantiation method table as an extra argument.
     //   i.e. shared-code instantiated generic methods

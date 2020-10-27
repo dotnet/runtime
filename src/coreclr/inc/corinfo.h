@@ -2042,8 +2042,14 @@ public:
     // or the method in info->objClass that implements the interface method
     // represented by info->virtualMethod.
     //
-    // Returns false if devirtualization is not possible.
-    virtual bool resolveVirtualMethod(CORINFO_DEVIRTUALIZATION_INFO * info) = 0;
+    // Return null if devirtualization is not possible. Owner type is optional
+    // and provides additional context for shared interface devirtualization.
+    virtual CORINFO_METHOD_HANDLE resolveVirtualMethod(
+            CORINFO_METHOD_HANDLE       virtualMethod,                  /* IN */
+            CORINFO_CLASS_HANDLE        implementingClass,              /* IN */
+            CORINFO_CONTEXT_HANDLE      ownerType = NULL,               /* IN */
+            bool*                       requiresInstMethodTableArg = NULL     /* OUT */
+            ) = 0;
 
     // Get the unboxed entry point for a method, if possible.
     virtual CORINFO_METHOD_HANDLE getUnboxedEntry(

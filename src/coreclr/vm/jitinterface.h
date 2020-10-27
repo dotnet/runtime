@@ -732,8 +732,19 @@ public:
             unsigned * pOffsetAfterIndirection,
             bool * isRelative);
 
-    bool resolveVirtualMethod(CORINFO_DEVIRTUALIZATION_INFO * info);
-    bool resolveVirtualMethodHelper(CORINFO_DEVIRTUALIZATION_INFO * info);
+    CORINFO_METHOD_HANDLE resolveVirtualMethod(
+        CORINFO_METHOD_HANDLE virtualMethod,
+        CORINFO_CLASS_HANDLE implementingClass,
+        CORINFO_CONTEXT_HANDLE ownerType,
+        bool* requiresInstMethodTableArg
+        );
+
+    CORINFO_METHOD_HANDLE resolveVirtualMethodHelper(
+        CORINFO_METHOD_HANDLE virtualMethod,
+        CORINFO_CLASS_HANDLE implementingClass,
+        CORINFO_CONTEXT_HANDLE ownerType,
+        bool* requiresInstMethodTableArg
+        );
 
     CORINFO_METHOD_HANDLE getUnboxedEntry(
         CORINFO_METHOD_HANDLE ftn,
