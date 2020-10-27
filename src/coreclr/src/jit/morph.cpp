@@ -4631,7 +4631,8 @@ GenTree* Compiler::fgMorphMultiregStructArg(GenTree* arg, fgArgTabEntry* fgEntry
                 var_types loType = loVarDsc->lvType;
                 var_types hiType = hiVarDsc->lvType;
 
-                if (varTypeIsFloating(loType) || varTypeIsFloating(hiType))
+                if ((varTypeIsFloating(loType) != genIsValidFloatReg(fgEntryPtr->GetRegNum(0))) ||
+                    (varTypeIsFloating(hiType) != genIsValidFloatReg(fgEntryPtr->GetRegNum(1))))
                 {
                     // TODO-LSRA - It currently doesn't support the passing of floating point LCL_VARS in the integer
                     // registers. So for now we will use GT_LCLFLD's to pass this struct (it won't be enregistered)
