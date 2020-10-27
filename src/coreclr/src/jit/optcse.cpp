@@ -11,6 +11,7 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 */
 
 #include "jitpch.h"
+#include "jitstd/algorithm.h"
 #ifdef _MSC_VER
 #pragma hdrstop
 #endif
@@ -267,90 +268,74 @@ bool Compiler::optCSE_canSwap(GenTree* tree)
 
 /*****************************************************************************
  *
- *  Compare function passed to qsort() by CSE_Heuristic::SortCandidates
+ *  Compare function passed to jitstd::sort() by CSE_Heuristic::SortCandidates
  *  when (CodeOptKind() != Compiler::SMALL_CODE)
  */
 
 /* static */
-int __cdecl Compiler::optCSEcostCmpEx(const void* op1, const void* op2)
+bool Compiler::optCSEcostCmpEx::operator()(const CSEdsc* dsc1, const CSEdsc* dsc2)
 {
-    CSEdsc* dsc1 = *(CSEdsc**)op1;
-    CSEdsc* dsc2 = *(CSEdsc**)op2;
-
     GenTree* exp1 = dsc1->csdTree;
     GenTree* exp2 = dsc2->csdTree;
 
-    int diff;
+    auto expCost1 = exp1->GetCostEx();
+    auto expCost2 = exp2->GetCostEx();
 
-    diff = (int)(exp2->GetCostEx() - exp1->GetCostEx());
-
-    if (diff != 0)
+    if (expCost2 != expCost1)
     {
-        return diff;
+        return expCost2 < expCost1;
     }
 
     // Sort the higher Use Counts toward the top
-    diff = (int)(dsc2->csdUseWtCnt - dsc1->csdUseWtCnt);
-
-    if (diff != 0)
+    if (dsc2->csdUseWtCnt != dsc1->csdUseWtCnt)
     {
-        return diff;
+        return dsc2->csdUseWtCnt < dsc1->csdUseWtCnt;
     }
 
     // With the same use count, Sort the lower Def Counts toward the top
-    diff = (int)(dsc1->csdDefWtCnt - dsc2->csdDefWtCnt);
-
-    if (diff != 0)
+    if (dsc1->csdDefWtCnt != dsc2->csdDefWtCnt)
     {
-        return diff;
+        return dsc1->csdDefWtCnt < dsc2->csdDefWtCnt;
     }
 
     // In order to ensure that we have a stable sort, we break ties using the csdIndex
-    return (int)(dsc1->csdIndex - dsc2->csdIndex);
+    return dsc1->csdIndex < dsc2->csdIndex;
 }
 
 /*****************************************************************************
  *
- *  Compare function passed to qsort() by CSE_Heuristic::SortCandidates
+ *  Compare function passed to jitstd::sort() by CSE_Heuristic::SortCandidates
  *  when (CodeOptKind() == Compiler::SMALL_CODE)
  */
 
 /* static */
-int __cdecl Compiler::optCSEcostCmpSz(const void* op1, const void* op2)
+bool Compiler::optCSEcostCmpSz::operator()(const CSEdsc* dsc1, const CSEdsc* dsc2)
 {
-    CSEdsc* dsc1 = *(CSEdsc**)op1;
-    CSEdsc* dsc2 = *(CSEdsc**)op2;
-
     GenTree* exp1 = dsc1->csdTree;
     GenTree* exp2 = dsc2->csdTree;
 
-    int diff;
+    auto expCost1 = exp1->GetCostSz();
+    auto expCost2 = exp2->GetCostSz();
 
-    diff = (int)(exp2->GetCostSz() - exp1->GetCostSz());
-
-    if (diff != 0)
+    if (expCost2 != expCost1)
     {
-        return diff;
+        return expCost2 < expCost1;
     }
 
     // Sort the higher Use Counts toward the top
-    diff = (int)(dsc2->csdUseCount - dsc1->csdUseCount);
-
-    if (diff != 0)
+    if (dsc2->csdUseCount != dsc1->csdUseCount)
     {
-        return diff;
+        return dsc2->csdUseCount < dsc1->csdUseCount;
     }
 
     // With the same use count, Sort the lower Def Counts toward the top
-    diff = (int)(dsc1->csdDefCount - dsc2->csdDefCount);
-
-    if (diff != 0)
+    if (dsc1->csdDefCount != dsc2->csdDefCount)
     {
-        return diff;
+        return dsc1->csdDefCount < dsc2->csdDefCount;
     }
 
     // In order to ensure that we have a stable sort, we break ties using the csdIndex
-    return (int)(dsc1->csdIndex - dsc2->csdIndex);
+    return dsc1->csdIndex < dsc2->csdIndex;
 }
 
 /*****************************************************************************/
@@ -1999,11 +1984,11 @@ public:
 
         if (CodeOptKind() == Compiler::SMALL_CODE)
         {
-            qsort(sortTab, m_pCompiler->optCSECandidateCount, sizeof(*sortTab), m_pCompiler->optCSEcostCmpSz);
+            jitstd::sort(sortTab, sortTab + m_pCompiler->optCSECandidateCount, Compiler::optCSEcostCmpSz());
         }
         else
         {
-            qsort(sortTab, m_pCompiler->optCSECandidateCount, sizeof(*sortTab), m_pCompiler->optCSEcostCmpEx);
+            jitstd::sort(sortTab, sortTab + m_pCompiler->optCSECandidateCount, Compiler::optCSEcostCmpEx());
         }
 
 #ifdef DEBUG
