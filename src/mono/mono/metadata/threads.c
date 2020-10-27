@@ -234,13 +234,6 @@ mono_thread_execute_interruption (MonoExceptionHandle *pexc);
 
 static void ref_stack_destroy (gpointer rs);
 
-#if SIZEOF_VOID_P == 4
-/* Spin lock for unaligned InterlockedXXX 64 bit functions on 32bit platforms. */
-#define mono_interlocked_lock() mono_os_mutex_lock (&interlocked_mutex)
-#define mono_interlocked_unlock() mono_os_mutex_unlock (&interlocked_mutex)
-static mono_mutex_t interlocked_mutex;
-#endif
-
 /* global count of thread interruptions requested */
 gint32 mono_thread_interruption_request_flag;
 

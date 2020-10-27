@@ -8,7 +8,7 @@ endif
 
 CONFIG?=Release
 
-all: build run
+all: build
 
 build:
 	$(TOP)/.dotnet/dotnet publish $(DOTNET_Q_ARGS) /p:TargetArchitecture=wasm /p:TargetOS=Browser /p:Configuration=$(CONFIG) WasmSample.csproj

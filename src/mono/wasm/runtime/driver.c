@@ -457,8 +457,8 @@ mono_wasm_load_runtime (const char *unused, int debug_level)
     // Setting this env var allows Diagnostic.Debug to write to stderr.  In a browser environment this
     // output will be sent to the console.  Right now this is the only way to emit debug logging from
     // corlib assemblies.
-#endif
 	monoeg_g_setenv ("COMPlus_DebugWriteToStdErr", "1", 0);
+#endif
 
 	const char *appctx_keys[2];
 	appctx_keys [0] = "APP_CONTEXT_BASE_DIRECTORY";
