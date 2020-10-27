@@ -359,6 +359,22 @@ namespace System.Net.Sockets
             return tcs.Task;
         }
 
+        private static void ValidateBufferArguments(byte[] buffer, int offset, int size)
+        {
+            if (buffer == null)
+            {
+                throw new ArgumentNullException(nameof(buffer));
+            }
+            if ((uint)offset > (uint)buffer.Length)
+            {
+                throw new ArgumentOutOfRangeException(nameof(offset));
+            }
+            if ((uint)size > (uint)(buffer.Length - offset))
+            {
+                throw new ArgumentOutOfRangeException(nameof(size));
+            }
+        }
+
         /// <summary>Validates the supplied array segment, throwing if its array or indices are null or out-of-bounds, respectively.</summary>
         private static void ValidateBuffer(ArraySegment<byte> buffer)
         {
@@ -366,11 +382,11 @@ namespace System.Net.Sockets
             {
                 throw new ArgumentNullException(nameof(buffer.Array));
             }
-            if ((uint)buffer.Offset > buffer.Array.Length)
+            if ((uint)buffer.Offset > (uint)buffer.Array.Length)
             {
                 throw new ArgumentOutOfRangeException(nameof(buffer.Offset));
             }
-            if ((uint)buffer.Count > buffer.Array.Length - buffer.Offset)
+            if ((uint)buffer.Count > (uint)(buffer.Array.Length - buffer.Offset))
             {
                 throw new ArgumentOutOfRangeException(nameof(buffer.Count));
             }
