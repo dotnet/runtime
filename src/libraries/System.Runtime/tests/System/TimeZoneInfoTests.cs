@@ -2348,8 +2348,8 @@ namespace System.Tests
         [InlineData("America/Indianapolis")]
         public static void ChangeLocalTimeZone(string id) 
         {
+            string originalTZ = Environment.GetEnvironmentVariable("TZ");
             try {
-                string originalTZ = Environment.GetEnvironmentVariable("TZ");
                 TimeZoneInfo.ClearCachedData();
                 Environment.SetEnvironmentVariable("TZ", id);
 
