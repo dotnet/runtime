@@ -113,6 +113,7 @@ namespace System.Security.Cryptography
         public byte[] ComputeHash(byte[] buffer) { throw null; }
         public byte[] ComputeHash(byte[] buffer, int offset, int count) { throw null; }
         public System.Threading.Tasks.Task<byte[]> ComputeHashAsync(byte[] buffer, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
+        public System.Threading.Tasks.Task<byte[]> ComputeHashAsync(byte[] buffer, int offset, int count, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
         public byte[] ComputeHash(System.IO.Stream inputStream) { throw null; }
         public System.Threading.Tasks.Task<byte[]> ComputeHashAsync(System.IO.Stream inputStream, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
         [System.ObsoleteAttribute("The default implementation of this cryptography algorithm is not supported", DiagnosticId = "SYSLIB0007", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]

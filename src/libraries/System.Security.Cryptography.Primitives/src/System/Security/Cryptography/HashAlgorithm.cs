@@ -112,6 +112,25 @@ namespace System.Security.Cryptography
             return CaptureHashCodeAndReinitialize();
         }
 
+        public async Task<byte[]> ComputeHashAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken = default)
+        {
+            if (buffer == null)
+                throw new ArgumentNullException(nameof(buffer));
+            if (offset < 0)
+                throw new ArgumentOutOfRangeException(nameof(offset), SR.ArgumentOutOfRange_NeedNonNegNum);
+            if (count < 0 || (count > buffer.Length))
+                throw new ArgumentException(SR.Argument_InvalidValue);
+            if ((buffer.Length - count) < offset)
+                throw new ArgumentException(SR.Argument_InvalidOffLen);
+
+            if (_disposed)
+                throw new ObjectDisposedException(null);
+
+            await HashCoreAsync(buffer, offset, count, cancellationToken).ConfigureAwait(false);
+            return await CaptureHashCodeAndReinitializeAsync(cancellationToken).ConfigureAwait(false);
+        }
+
+
         public byte[] ComputeHash(Stream inputStream)
         {
             if (_disposed)
