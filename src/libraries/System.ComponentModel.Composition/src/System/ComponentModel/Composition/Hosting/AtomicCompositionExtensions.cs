@@ -18,7 +18,7 @@ namespace System.ComponentModel.Composition.Hosting
 
         internal static T GetValueAllowNull<T>(this AtomicComposition? atomicComposition, object key, T defaultResult)
         {
-            T result;
+            T? result;
             if (atomicComposition != null && atomicComposition.TryGetValue(key, out result))
             {
                 return result;

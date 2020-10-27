@@ -1022,7 +1022,7 @@ namespace System.Collections.Concurrent
         {
             get
             {
-                if (!TryGetValue(key, out TValue value))
+                if (!TryGetValue(key, out TValue? value))
                 {
                     ThrowKeyNotFoundException(key);
                 }
@@ -1132,7 +1132,7 @@ namespace System.Collections.Concurrent
             IEqualityComparer<TKey>? comparer = _comparer;
             int hashcode = comparer is null ? key.GetHashCode() : comparer.GetHashCode(key);
 
-            if (!TryGetValueInternal(key, hashcode, out TValue resultingValue))
+            if (!TryGetValueInternal(key, hashcode, out TValue? resultingValue))
             {
                 TryAddInternal(key, hashcode, valueFactory(key), updateIfExists: false, acquireLock: true, out resultingValue);
             }
@@ -1171,7 +1171,7 @@ namespace System.Collections.Concurrent
             IEqualityComparer<TKey>? comparer = _comparer;
             int hashcode = comparer is null ? key.GetHashCode() : comparer.GetHashCode(key);
 
-            if (!TryGetValueInternal(key, hashcode, out TValue resultingValue))
+            if (!TryGetValueInternal(key, hashcode, out TValue? resultingValue))
             {
                 TryAddInternal(key, hashcode, valueFactory(key, factoryArgument), updateIfExists: false, acquireLock: true, out resultingValue);
             }
@@ -1201,7 +1201,7 @@ namespace System.Collections.Concurrent
             IEqualityComparer<TKey>? comparer = _comparer;
             int hashcode = comparer is null ? key.GetHashCode() : comparer.GetHashCode(key);
 
-            if (!TryGetValueInternal(key, hashcode, out TValue resultingValue))
+            if (!TryGetValueInternal(key, hashcode, out TValue? resultingValue))
             {
                 TryAddInternal(key, hashcode, value, updateIfExists: false, acquireLock: true, out resultingValue);
             }
@@ -1252,7 +1252,7 @@ namespace System.Collections.Concurrent
 
             while (true)
             {
-                if (TryGetValueInternal(key, hashcode, out TValue oldValue))
+                if (TryGetValueInternal(key, hashcode, out TValue? oldValue))
                 {
                     // key exists, try to update
                     TValue newValue = updateValueFactory(key, oldValue, factoryArgument);
@@ -1313,7 +1313,7 @@ namespace System.Collections.Concurrent
 
             while (true)
             {
-                if (TryGetValueInternal(key, hashcode, out TValue oldValue))
+                if (TryGetValueInternal(key, hashcode, out TValue? oldValue))
                 {
                     // key exists, try to update
                     TValue newValue = updateValueFactory(key, oldValue);
@@ -1367,7 +1367,7 @@ namespace System.Collections.Concurrent
 
             while (true)
             {
-                if (TryGetValueInternal(key, hashcode, out TValue oldValue))
+                if (TryGetValueInternal(key, hashcode, out TValue? oldValue))
                 {
                     // key exists, try to update
                     TValue newValue = updateValueFactory(key, oldValue);
@@ -1538,7 +1538,7 @@ namespace System.Collections.Concurrent
         /// cref="ICollection{T}"/>; otherwise, false.</returns>
         bool ICollection<KeyValuePair<TKey, TValue>>.Contains(KeyValuePair<TKey, TValue> keyValuePair)
         {
-            if (!TryGetValue(keyValuePair.Key, out TValue value))
+            if (!TryGetValue(keyValuePair.Key, out TValue? value))
             {
                 return false;
             }
@@ -1730,7 +1730,7 @@ namespace System.Collections.Concurrent
                     ThrowHelper.ThrowKeyNullException();
                 }
 
-                if (key is TKey tkey && TryGetValue(tkey, out TValue value))
+                if (key is TKey tkey && TryGetValue(tkey, out TValue? value))
                 {
                     return value;
                 }

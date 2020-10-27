@@ -560,7 +560,7 @@ namespace System.Linq
             public TResult? TryGetElementAt(int index, out bool found)
             {
                 bool sourceFound;
-                TSource input = _source.TryGetElementAt(index, out sourceFound);
+                TSource? input = _source.TryGetElementAt(index, out sourceFound);
                 found = sourceFound;
                 return sourceFound ? _selector(input!) : default!;
             }
@@ -568,7 +568,7 @@ namespace System.Linq
             public TResult? TryGetFirst(out bool found)
             {
                 bool sourceFound;
-                TSource input = _source.TryGetFirst(out sourceFound);
+                TSource? input = _source.TryGetFirst(out sourceFound);
                 found = sourceFound;
                 return sourceFound ? _selector(input!) : default!;
             }
@@ -576,7 +576,7 @@ namespace System.Linq
             public TResult? TryGetLast(out bool found)
             {
                 bool sourceFound;
-                TSource input = _source.TryGetLast(out sourceFound);
+                TSource? input = _source.TryGetLast(out sourceFound);
                 found = sourceFound;
                 return sourceFound ? _selector(input!) : default!;
             }
