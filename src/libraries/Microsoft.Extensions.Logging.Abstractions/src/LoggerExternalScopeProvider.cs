@@ -20,7 +20,7 @@ namespace Microsoft.Extensions.Logging
         { }
 
         /// <inheritdoc />
-        public void ForEachScope<TState>(Action<object, TState> callback, TState state)
+        public void ForEachScope<TState>(Action<object?, TState> callback, TState state)
         {
             void Report(Scope? current)
             {
@@ -35,7 +35,7 @@ namespace Microsoft.Extensions.Logging
         }
 
         /// <inheritdoc />
-        public IDisposable Push(object state)
+        public IDisposable Push(object? state)
         {
             Scope? parent = _currentScope.Value;
             var newScope = new Scope(this, state, parent);
@@ -49,7 +49,7 @@ namespace Microsoft.Extensions.Logging
             private readonly LoggerExternalScopeProvider _provider;
             private bool _isDisposed;
 
-            internal Scope(LoggerExternalScopeProvider provider, object state, Scope? parent)
+            internal Scope(LoggerExternalScopeProvider provider, object? state, Scope? parent)
             {
                 _provider = provider;
                 State = state;
@@ -58,7 +58,7 @@ namespace Microsoft.Extensions.Logging
 
             public Scope? Parent { get; }
 
-            public object State { get; }
+            public object? State { get; }
 
             public override string? ToString()
             {

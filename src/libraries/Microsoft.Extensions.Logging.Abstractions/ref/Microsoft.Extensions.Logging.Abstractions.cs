@@ -23,8 +23,8 @@ namespace Microsoft.Extensions.Logging
     }
     public partial interface IExternalScopeProvider
     {
-        void ForEachScope<TState>(System.Action<object, TState> callback, TState state);
-        System.IDisposable Push(object state);
+        void ForEachScope<TState>(System.Action<object?, TState> callback, TState state);
+        System.IDisposable Push(object? state);
     }
     public partial interface ILogger
     {
@@ -83,8 +83,8 @@ namespace Microsoft.Extensions.Logging
     public partial class LoggerExternalScopeProvider : Microsoft.Extensions.Logging.IExternalScopeProvider
     {
         public LoggerExternalScopeProvider() { }
-        public void ForEachScope<TState>(System.Action<object, TState> callback, TState state) { }
-        public System.IDisposable Push(object state) { throw null; }
+        public void ForEachScope<TState>(System.Action<object?, TState> callback, TState state) { }
+        public System.IDisposable Push(object? state) { throw null; }
     }
     public static partial class LoggerFactoryExtensions
     {
@@ -133,7 +133,7 @@ namespace Microsoft.Extensions.Logging.Abstractions
         private readonly TState _State_k__BackingField;
         private readonly object _dummy;
         private readonly int _dummyPrimitive;
-        public LogEntry(Microsoft.Extensions.Logging.LogLevel logLevel, string category, Microsoft.Extensions.Logging.EventId eventId, TState state, System.Exception? exception, System.Func<TState, System.Exception?, string> formatter) { throw null; }
+        public LogEntry(Microsoft.Extensions.Logging.LogLevel logLevel, string category, Microsoft.Extensions.Logging.EventId eventId, TState state, System.Exception? exception, System.Func<TState, System.Exception?, string>? formatter) { throw null; }
         public string Category { get { throw null; } }
         public Microsoft.Extensions.Logging.EventId EventId { get { throw null; } }
         public System.Exception? Exception { get { throw null; } }
