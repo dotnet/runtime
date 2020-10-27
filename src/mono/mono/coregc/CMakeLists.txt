@@ -1,3 +1,9 @@
+set(coreclr_root "../../../coreclr")
+
+include_directories(
+  ${coreclr_root}/src/gc
+  ${coreclr_root}/src/gc/env
+  ${coreclr_root}/src/gc/unix) 
 
 set(mono_coregc_sources_base
     coregc-mono.cpp
@@ -31,8 +37,12 @@ set(mono_coregc_sources_base
 	unix/cgroup.cpp
 	unix/cgroup.h
 	gcscan.cpp
-	$(coreclr_srcdir)/src/gc/gcscan.h)
+	gcscan.h)
 
-addprefix(coregc_sources ../coregc/ "${mono_coregc_sources_base}")
-# addprefix(coregc_sources coregc_sources_base $(top_srcdir)/../coreclr/src/gc)
+addprefix(mono_coregc_sources ../coregc/ "${mono_coregc_sources_base}")
+addprefix(coreclr_coregc_sources ${coreclr_root}/src/gc "${coregc_sources_base}")
+set(coregc_sources ${mono_coregc_sources} ${coreclr_coregc_sources})
+
+# message(FATAL_ERROR "!!! ${coregc_sources} !!!\n")
+
 set_source_files_properties(${coregc_sources} PROPERTIES COMPILE_DEFINITIONS "HAVE_CORE_GC")
