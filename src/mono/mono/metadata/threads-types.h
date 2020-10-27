@@ -584,7 +584,6 @@ mono_threads_summarize_one (MonoThreadSummary *out, MonoContext *ctx);
 /* Spin lock for unaligned InterlockedXXX 64 bit functions on 32bit platforms. */
 #define mono_interlocked_lock() mono_os_mutex_lock (&interlocked_mutex)
 #define mono_interlocked_unlock() mono_os_mutex_unlock (&interlocked_mutex)
-static mono_mutex_t interlocked_mutex;
 #endif
 
 #endif /* _MONO_METADATA_THREADS_TYPES_H_ */

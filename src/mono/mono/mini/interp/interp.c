@@ -6394,6 +6394,7 @@ call:
 			sp--;
 			gboolean flag = FALSE;
 #if SIZEOF_VOID_P == 4
+			extern mono_mutex_t interlocked_mutex;
 			if (G_UNLIKELY ((size_t) ((gint64*) sp [-1].data.p) & 0x7)) {
 				gint64 result;
 				mono_interlocked_lock ();
