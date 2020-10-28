@@ -213,7 +213,7 @@ namespace Microsoft.Extensions.Hosting.Tests
             var reloadFlagConfig = new Dictionary<string, string>() { { "hostbuilder:reloadConfigOnChange", "true" } };
             var secretPath = PathHelper.GetSecretsPathFromSecretsId(secretId);
 
-            FileInfo secretFileInfo = new FileInfo(secretPath);
+            var secretFileInfo = new FileInfo(secretPath);
             Directory.CreateDirectory(secretFileInfo.Directory.FullName);
 
             string SaveRandomSecret()
@@ -223,7 +223,7 @@ namespace Microsoft.Extensions.Hosting.Tests
                 return newMessage;
             }
 
-            var dynamicSecretMessage1 = SaveRandomSecret();
+            string dynamicSecretMessage1 = SaveRandomSecret();
 
             var host = Host.CreateDefaultBuilder(new[] { "environment=Development", $"applicationName={secretId}" })
                 .ConfigureHostConfiguration(builder =>
@@ -236,7 +236,7 @@ namespace Microsoft.Extensions.Hosting.Tests
 
             Assert.Equal(dynamicSecretMessage1, config["Hello"]);
 
-            var dynamicSecretMessage2 = SaveRandomSecret();
+            string dynamicSecretMessage2 = SaveRandomSecret();
 
             var configReloadedCancelTokenSource = new CancellationTokenSource();
             var configReloadedCancelToken = configReloadedCancelTokenSource.Token;
