@@ -25,7 +25,7 @@ public class DownloadTimeZoneData : Task
 
     private void DownloadTimeZoneDataSource() 
     {
-        List<string> files = new List<string>() {"africa", "antarctica", "asia", "australasia", "etcetera", "europe", "northamerica", "southamerica", "zone1970.tab"};
+        List<string> files = new List<string>() {"africa", "antarctica", "asia", "australasia", "etcetera", "europe", "northamerica", "southamerica", "zone1970.tab", "backward"};
         using (var client = new WebClient())
         {
             Console.WriteLine("Downloading TimeZone data files");
