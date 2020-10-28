@@ -204,8 +204,8 @@ int main(const int argc, const pal::char_t *argv[])
             --remaining_argc;
             remaining_argv = remaining_argc > 0 ? &argv[min_argc + 1] : nullptr;
 
-            bool as_dotnet = pal::strcmp(scenario, _X("non_context_mixed_dotnet")) == 0;
-            success = host_context_test::non_context_mixed(check_properties, hostfxr_path, app_or_config_path, config_path, remaining_argc, remaining_argv, as_dotnet, test_output);
+            bool launch_as_if_dotnet = pal::strcmp(scenario, _X("non_context_mixed_dotnet")) == 0;
+            success = host_context_test::non_context_mixed(check_properties, hostfxr_path, app_or_config_path, config_path, remaining_argc, remaining_argv, launch_as_if_dotnet, test_output);
         }
         else
         {
