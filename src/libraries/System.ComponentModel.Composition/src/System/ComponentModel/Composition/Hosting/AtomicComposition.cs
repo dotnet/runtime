@@ -70,12 +70,12 @@ namespace System.ComponentModel.Composition.Hosting
             SetValueInternal(key, value);
         }
 
-        public bool TryGetValue<T>(object key, [NotNullWhen(true)] out T? value)
+        public bool TryGetValue<T>(object key, [MaybeNullWhen(false)] out T value)
         {
             return TryGetValue(key, false, out value);
         }
 
-        public bool TryGetValue<T>(object key, bool localAtomicCompositionOnly, [NotNullWhen(true)] out T? value)
+        public bool TryGetValue<T>(object key, bool localAtomicCompositionOnly, [MaybeNullWhen(false)] out T value)
         {
             ThrowIfDisposed();
             ThrowIfCompleted();
@@ -277,7 +277,7 @@ namespace System.ComponentModel.Composition.Hosting
             }
         }
 
-        private bool TryGetValueInternal<T>(object key, bool localAtomicCompositionOnly, [NotNullWhen(true)] out T? value)
+        private bool TryGetValueInternal<T>(object key, bool localAtomicCompositionOnly, [MaybeNullWhen(false)] out T value)
         {
             for (var index = 0; index < _valueCount; index++)
             {
