@@ -2221,6 +2221,8 @@ internal class Program
         RunTest("FunctionPointerFromAnotherModuleTest", FunctionPointerFromAnotherModuleTest());
         RunTest("ExplicitlySizedStructTest", ExplicitlySizedStructTest());
         RunTest("ExplicitlySizedClassTest", ExplicitlySizedClassTest());
+        RunTest("ConstrainedCallTest612", TypeGeneratorTest612.ConstrainedCallsTest());
+        RunTest("ConstrainedCallTest1358", TypeGeneratorTest1358.ConstrainedCallsTest());
         RunTest("GenericLdtokenTest", GenericLdtokenTest());
         RunTest("ArrayLdtokenTests", ArrayLdtokenTests());
         RunTest("TestGenericMDArrayBehavior", TestGenericMDArrayBehavior());
