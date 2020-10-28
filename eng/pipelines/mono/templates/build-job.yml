@@ -74,12 +74,15 @@ jobs:
         value: wasm
       - name: osOverride
         value: '-os Browser'
+    - ${{ if and(eq(parameters.osGroup, 'Linux'), not(eq(parameters.archType, 'x64'))) }}:
+        name: llvmCxxAbi
+        value: /p:MonoLLVMUseCxx11Abi=true
     - ${{ if eq(parameters.runtimeVariant, 'llvmjit') }}:
       - name: llvmParameter
-        value: /p:MonoEnableLLVM=true /p:MonoBundleLLVMOptimizer=false
+        value: /p:MonoEnableLLVM=true /p:MonoBundleLLVMOptimizer=false $(llvmCxxAbi)
     - ${{ if eq(parameters.runtimeVariant, 'llvmaot') }}:
       - name: llvmParameter
-        value: /p:MonoEnableLLVM=true /p:MonoBundleLLVMOptimizer=true
+        value: /p:MonoEnableLLVM=true /p:MonoBundleLLVMOptimizer=true $(llvmCxxAbi)
     - ${{ parameters.variables }}
 
     steps:
@@ -96,7 +99,7 @@ jobs:
       - script: $(Build.SourcesDirectory)\eng\common\init-tools-native.cmd -InstallDirectory $(Build.SourcesDirectory)\native-tools -Force
         displayName: Install native dependencies
 
-    - ${{ if in(parameters.osGroup, 'OSX', 'iOS','tvOS') }}: 
+    - ${{ if in(parameters.osGroup, 'OSX', 'iOS','tvOS') }}:
       - script: |
           du -sh $(Build.SourcesDirectory)/*
           df -h
@@ -110,7 +113,7 @@ jobs:
       - script: build$(scriptExt) -subset mono -c $(buildConfig) -arch $(archType) $(osOverride) -ci $(officialBuildIdArg) $(llvmParameter)
         displayName: Build product
 
-    - ${{ if in(parameters.osGroup, 'OSX', 'iOS','tvOS') }}: 
+    - ${{ if in(parameters.osGroup, 'OSX', 'iOS','tvOS') }}:
       - script: |
           du -sh $(Build.SourcesDirectory)/*
           df -h

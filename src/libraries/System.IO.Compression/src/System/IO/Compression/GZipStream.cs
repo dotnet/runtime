@@ -71,16 +71,16 @@ namespace System.IO.Compression
             return _deflateStream.ReadByte();
         }
 
-        public override IAsyncResult BeginRead(byte[] array, int offset, int count, AsyncCallback? asyncCallback, object? asyncState) =>
-            TaskToApm.Begin(ReadAsync(array, offset, count, CancellationToken.None), asyncCallback, asyncState);
+        public override IAsyncResult BeginRead(byte[] buffer, int offset, int count, AsyncCallback? asyncCallback, object? asyncState) =>
+            TaskToApm.Begin(ReadAsync(buffer, offset, count, CancellationToken.None), asyncCallback, asyncState);
 
         public override int EndRead(IAsyncResult asyncResult) =>
-            TaskToApm.End<int>(asyncResult);
+            _deflateStream.EndRead(asyncResult);
 
-        public override int Read(byte[] array, int offset, int count)
+        public override int Read(byte[] buffer, int offset, int count)
         {
             CheckDeflateStream();
-            return _deflateStream.Read(array, offset, count);
+            return _deflateStream.Read(buffer, offset, count);
         }
 
         public override int Read(Span<byte> buffer)
@@ -99,16 +99,16 @@ namespace System.IO.Compression
             }
         }
 
-        public override IAsyncResult BeginWrite(byte[] array, int offset, int count, AsyncCallback? asyncCallback, object? asyncState) =>
-            TaskToApm.Begin(WriteAsync(array, offset, count, CancellationToken.None), asyncCallback, asyncState);
+        public override IAsyncResult BeginWrite(byte[] buffer, int offset, int count, AsyncCallback? asyncCallback, object? asyncState) =>
+            TaskToApm.Begin(WriteAsync(buffer, offset, count, CancellationToken.None), asyncCallback, asyncState);
 
         public override void EndWrite(IAsyncResult asyncResult) =>
-            TaskToApm.End(asyncResult);
+            _deflateStream.EndWrite(asyncResult);
 
-        public override void Write(byte[] array, int offset, int count)
+        public override void Write(byte[] buffer, int offset, int count)
         {
             CheckDeflateStream();
-            _deflateStream.Write(array, offset, count);
+            _deflateStream.Write(buffer, offset, count);
         }
 
         public override void Write(ReadOnlySpan<byte> buffer)
@@ -168,10 +168,10 @@ namespace System.IO.Compression
 
         public Stream BaseStream => _deflateStream?.BaseStream!;
 
-        public override Task<int> ReadAsync(byte[] array, int offset, int count, CancellationToken cancellationToken)
+        public override Task<int> ReadAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
         {
             CheckDeflateStream();
-            return _deflateStream.ReadAsync(array, offset, count, cancellationToken);
+            return _deflateStream.ReadAsync(buffer, offset, count, cancellationToken);
         }
 
         public override ValueTask<int> ReadAsync(Memory<byte> buffer, CancellationToken cancellationToken = default(CancellationToken))
@@ -190,10 +190,10 @@ namespace System.IO.Compression
             }
         }
 
-        public override Task WriteAsync(byte[] array, int offset, int count, CancellationToken cancellationToken)
+        public override Task WriteAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
         {
             CheckDeflateStream();
-            return _deflateStream.WriteAsync(array, offset, count, cancellationToken);
+            return _deflateStream.WriteAsync(buffer, offset, count, cancellationToken);
         }
 
         public override ValueTask WriteAsync(ReadOnlyMemory<byte> buffer, CancellationToken cancellationToken = default(CancellationToken))

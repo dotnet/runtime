@@ -94,9 +94,9 @@ namespace System.IO.Compression
             throw new NotSupportedException(SR.NotSupported);
         }
 
-        public override int Read(byte[] array, int offset, int count)
+        public override int Read(byte[] buffer, int offset, int count)
         {
-            ValidateParameters(array, offset, count);
+            ValidateParameters(buffer, offset, count);
             EnsureNotDisposed();
 
             int bytesRead;
@@ -105,7 +105,7 @@ namespace System.IO.Compression
 
             while (true)
             {
-                bytesRead = _inflater.Inflate(array, currentOffset, remainingCount);
+                bytesRead = _inflater.Inflate(buffer, currentOffset, remainingCount);
                 currentOffset += bytesRead;
                 remainingCount -= bytesRead;
 
@@ -139,10 +139,10 @@ namespace System.IO.Compression
             return count - remainingCount;
         }
 
-        private void ValidateParameters(byte[] array, int offset, int count)
+        private void ValidateParameters(byte[] buffer, int offset, int count)
         {
-            if (array == null)
-                throw new ArgumentNullException(nameof(array));
+            if (buffer == null)
+                throw new ArgumentNullException(nameof(buffer));
 
             if (offset < 0)
                 throw new ArgumentOutOfRangeException(nameof(offset));
@@ -150,7 +150,7 @@ namespace System.IO.Compression
             if (count < 0)
                 throw new ArgumentOutOfRangeException(nameof(count));
 
-            if (array.Length - offset < count)
+            if (buffer.Length - offset < count)
                 throw new ArgumentException(SR.InvalidArgumentOffsetCount);
         }
 
@@ -171,13 +171,13 @@ namespace System.IO.Compression
         public override int EndRead(IAsyncResult asyncResult) =>
             TaskToApm.End<int>(asyncResult);
 
-        public override Task<int> ReadAsync(byte[] array, int offset, int count, CancellationToken cancellationToken)
+        public override Task<int> ReadAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
         {
             // We use this checking order for compat to earlier versions:
             if (_asyncOperations != 0)
                 throw new InvalidOperationException(SR.InvalidBeginCall);
 
-            ValidateParameters(array, offset, count);
+            ValidateParameters(buffer, offset, count);
             EnsureNotDisposed();
 
             if (cancellationToken.IsCancellationRequested)
@@ -191,7 +191,7 @@ namespace System.IO.Compression
             try
             {
                 // Try to read decompressed data in output buffer
-                int bytesRead = _inflater.Inflate(array, offset, count);
+                int bytesRead = _inflater.Inflate(buffer, offset, count);
                 if (bytesRead != 0)
                 {
                     // If decompression output buffer is not empty, return immediately.
@@ -212,7 +212,7 @@ namespace System.IO.Compression
                     throw new InvalidOperationException(SR.NotSupported_UnreadableStream);
                 }
 
-                return ReadAsyncCore(readTask, array, offset, count, cancellationToken);
+                return ReadAsyncCore(readTask, buffer, offset, count, cancellationToken);
             }
             finally
             {
@@ -224,7 +224,7 @@ namespace System.IO.Compression
             }
         }
 
-        private async Task<int> ReadAsyncCore(Task<int> readTask, byte[] array, int offset, int count, CancellationToken cancellationToken)
+        private async Task<int> ReadAsyncCore(Task<int> readTask, byte[] buffer, int offset, int count, CancellationToken cancellationToken)
         {
             try
             {
@@ -249,7 +249,7 @@ namespace System.IO.Compression
 
                     // Feed the data from base stream into decompression engine
                     _inflater.SetInput(_buffer, 0, bytesRead);
-                    bytesRead = _inflater.Inflate(array, offset, count);
+                    bytesRead = _inflater.Inflate(buffer, offset, count);
 
                     if (bytesRead == 0 && !_inflater.Finished())
                     {
@@ -273,7 +273,7 @@ namespace System.IO.Compression
             }
         }
 
-        public override void Write(byte[] array, int offset, int count)
+        public override void Write(byte[] buffer, int offset, int count)
         {
             throw new InvalidOperationException(SR.CannotWriteToDeflateStream);
         }

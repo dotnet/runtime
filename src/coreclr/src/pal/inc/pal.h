@@ -2491,6 +2491,11 @@ PAL_FreeLibraryDirect(
         IN NATIVE_LIBRARY_HANDLE dl_handle);
 
 PALIMPORT
+HMODULE
+PALAPI
+PAL_GetPalHostModule();
+
+PALIMPORT
 FARPROC
 PALAPI
 PAL_GetProcAddressDirect(
@@ -3980,7 +3985,7 @@ PALIMPORT int __cdecl PAL_swscanf(const WCHAR *, const WCHAR *, ...);
 PALIMPORT DLLEXPORT ULONG __cdecl PAL_wcstoul(const WCHAR *, WCHAR **, int);
 PALIMPORT double __cdecl PAL_wcstod(const WCHAR *, WCHAR **);
 
-PALIMPORT WCHAR * __cdecl _wcslwr(WCHAR *);
+PALIMPORT errno_t __cdecl _wcslwr_s(WCHAR *, size_t sz);
 PALIMPORT DLLEXPORT ULONGLONG _wcstoui64(const WCHAR *, WCHAR **, int);
 PALIMPORT DLLEXPORT errno_t __cdecl _i64tow_s(long long, WCHAR *, size_t, int);
 PALIMPORT int __cdecl _wtoi(const WCHAR *);

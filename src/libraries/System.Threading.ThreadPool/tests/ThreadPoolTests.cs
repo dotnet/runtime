@@ -14,7 +14,8 @@ namespace System.Threading.ThreadPools.Tests
     {
         private const int UnexpectedTimeoutMilliseconds = ThreadTestHelpers.UnexpectedTimeoutMilliseconds;
         private const int ExpectedTimeoutMilliseconds = ThreadTestHelpers.ExpectedTimeoutMilliseconds;
-        private const int MaxPossibleThreadCount = 0x7fff;
+
+        private static readonly int MaxPossibleThreadCount = short.MaxValue;
 
         static ThreadPoolTests()
         {
@@ -576,6 +577,7 @@ namespace System.Threading.ThreadPools.Tests
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/43754", TestPlatforms.Android)]
         public static void ThreadPoolCanPickUpOneOrMoreWorkItemsWhenThreadIsAvailable()
         {
             int processorCount = Environment.ProcessorCount;

@@ -26,6 +26,7 @@
 #define PROFILING_FLAG 0x2
 
 #define MINT_VT_ALIGNMENT 8
+#define MINT_STACK_SLOT_SIZE (sizeof (stackval))
 
 #define INTERP_STACK_SIZE (1024*1024)
 
@@ -116,6 +117,7 @@ struct InterpMethod {
 	MonoExceptionClause *clauses; // num_clauses
 	void **data_items;
 	guint32 *local_offsets;
+	guint32 *arg_offsets;
 	guint32 *clause_data_offsets;
 	gpointer jit_call_info;
 	gpointer jit_entry;
@@ -127,7 +129,6 @@ struct InterpMethod {
 
 	guint32 total_locals_size;
 	guint32 stack_size;
-	guint32 vt_stack_size;
 	guint32 alloca_size;
 	int num_clauses; // clauses
 	int transformed; // boolean

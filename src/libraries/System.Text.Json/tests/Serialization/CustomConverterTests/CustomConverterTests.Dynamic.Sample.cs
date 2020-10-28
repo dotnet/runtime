@@ -491,7 +491,13 @@ namespace System.Text.Json.Serialization.Samples
                     case JsonTokenType.True:
                         return new JsonDynamicBoolean(true, options);
                     case JsonTokenType.Number:
-                        JsonElement jsonElement = JsonElement.ParseValue(ref reader);
+                        JsonElement jsonElement;
+                        using (JsonDocument document = JsonDocument.ParseValue(ref reader))
+                        {
+                            jsonElement = document.RootElement.Clone();
+                        }
+                        // In 6.0, this can be used instead for increased performance:
+                        //JsonElement jsonElement = JsonElement.ParseValue(ref reader);
                         return new JsonDynamicNumber(jsonElement, options);
                     case JsonTokenType.Null:
                         return null;

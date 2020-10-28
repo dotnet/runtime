@@ -64,7 +64,7 @@ jobs:
       targetRid: linux-arm64
       platform: Linux_arm64
       container:
-        image: ubuntu-16.04-cross-arm64-20200413125008-cfdd435
+        image: ubuntu-16.04-cross-arm64-20201022204150-b2c2436
         registry: mcr
       jobParameters:
         runtimeFlavor: ${{ parameters.runtimeFlavor }}
@@ -193,7 +193,7 @@ jobs:
       targetRid: browser-wasm
       platform: Browser_wasm
       container:
-        image: ubuntu-18.04-webassembly-20200827125937-9740252
+        image: ubuntu-18.04-webassembly-20201024150726-a0359ae
         registry: mcr
       jobParameters:
         runtimeFlavor: ${{ parameters.runtimeFlavor }}

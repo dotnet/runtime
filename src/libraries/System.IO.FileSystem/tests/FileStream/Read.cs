@@ -15,7 +15,7 @@ namespace System.IO.Tests
         {
             using (FileStream fs = new FileStream(GetTestFilePath(), FileMode.Create))
             {
-                AssertExtensions.Throws<ArgumentNullException>("array", () => fs.Read(null, 0, 1));
+                AssertExtensions.Throws<ArgumentNullException>("buffer", () => fs.Read(null, 0, 1));
             }
         }
 
@@ -34,7 +34,7 @@ namespace System.IO.Tests
                 AssertExtensions.Throws<ArgumentOutOfRangeException>("offset", () => fs.Read(new byte[1], -1, 1));
 
                 // array is checked first
-                AssertExtensions.Throws<ArgumentNullException>("array", () => fs.Read(null, -1, 1));
+                AssertExtensions.Throws<ArgumentNullException>("buffer", () => fs.Read(null, -1, 1));
             }
         }
 
@@ -49,7 +49,7 @@ namespace System.IO.Tests
                 AssertExtensions.Throws<ArgumentOutOfRangeException>("offset", () => fs.Read(new byte[1], -1, -1));
 
                 // array is checked first
-                AssertExtensions.Throws<ArgumentNullException>("array", () => fs.Read(null, -1, -1));
+                AssertExtensions.Throws<ArgumentNullException>("buffer", () => fs.Read(null, -1, -1));
             }
         }
 
@@ -96,7 +96,7 @@ namespace System.IO.Tests
                 AssertExtensions.Throws<ArgumentOutOfRangeException>("offset", () => fs.Read(new byte[1], -1, -1));
 
                 // array is checked first
-                AssertExtensions.Throws<ArgumentNullException>("array", () => fs.Read(null, -1, -1));
+                AssertExtensions.Throws<ArgumentNullException>("buffer", () => fs.Read(null, -1, -1));
             }
         }
 
@@ -121,7 +121,7 @@ namespace System.IO.Tests
                 AssertExtensions.Throws<ArgumentOutOfRangeException>("offset", () => fs.Read(new byte[1], -1, -1));
 
                 // array is checked first
-                AssertExtensions.Throws<ArgumentNullException>("array", () => fs.Read(null, -1, -1));
+                AssertExtensions.Throws<ArgumentNullException>("buffer", () => fs.Read(null, -1, -1));
             }
         }
 
