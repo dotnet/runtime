@@ -91,38 +91,14 @@ int RFS_HashStack ()
 
 #endif // FAILPOINTS_ENABLED
 
-
-#ifdef HOST_WINDOWS
-//-----------------------------------------------------------------------------------
-// This is the approved way to get a module handle to mscorwks.dll (or coreclr.dll).
-// Never call GetModuleHandle(mscorwks) yourself as this will break side-by-side inproc.
-//
-// This function is safe to call before or during CRT initialization. It can not
-// legally return NULL (it only does so in the case of a broken build invariant.)
-//
-// TODO puCLR SxS utilcode work: Since this is never supposed to return NULL, it should
-// not be present in SELF_NO_HOST builds of utilcode where there isn't necessarily a
-// CLR in the process.  We should also ASSERT that GetModuleHandleA isn't returning
-// NULL below - we've probably been getting away with this in SELF_NO_HOST cases like
-// mscordbi.dll.
-//-----------------------------------------------------------------------------------
-HMODULE GetCLRModule ()
+DWORD GetClrModulePathName(SString& buffer)
 {
-    //! WARNING: At the time this function is invoked, the C Runtime has NOT been fully initialized, let alone the CLR.
-    //! So don't put in a runtime contract and don't invoke other functions in the CLR (not even _ASSERTE!)
-
-    STATIC_CONTRACT_NOTHROW;
-    STATIC_CONTRACT_SUPPORTS_DAC; // DAC can call in here since we initialize the SxS callbacks in ClrDataAccess::Initialize.
-
-    // You got here because the dll that included this copy of utilcode.lib.
-    // did not set g_hmodCoreCLR. The most likely cause is that you're running
-    // a dll (other than coreclr.dll) that links to utilcode.lib.
-    _ASSERTE(g_hmodCoreCLR != NULL);
-
-    return g_hmodCoreCLR;
-}
+#ifdef HOST_WINDOWS
+    return WszGetModuleFileName(g_hmodCoreCLR, buffer);
+#else
+    return WszGetModuleFileName(PAL_GetPalHostModule(), buffer);
 #endif
-
+}
 
 #if defined(SELF_NO_HOST)
 

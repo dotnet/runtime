@@ -4041,7 +4041,7 @@ BuildCreateDumpCommandLine(
     const char* DumpGeneratorName = "createdump.exe";
 
     PathString coreclrPath;
-    if (WszGetModuleFileName(GetCLRModule(), coreclrPath))
+    if (GetClrModulePathName(coreclrPath))
     {
         SString::CIterator lastBackslash = coreclrPath.End();
         if (coreclrPath.FindBack(lastBackslash, W('\\')))

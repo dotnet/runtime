@@ -22,6 +22,7 @@
 #include "corexcep.h"
 
 #define MAX_EXCEPTION_MSG   200
+#define THROWN_BY_US_MARKER ULONG_PTR(-1) // just a non-0 value
 
 // Set if fatal error (like stack overflow or out of memory) occurred in this process.
 GVAL_IMPL_INIT(HRESULT, g_hrFatalError, S_OK);
@@ -1269,7 +1270,7 @@ static DWORD MarkAsThrownByUsWorker(UINT numArgs, /*out*/ ULONG_PTR exceptionArg
     exceptionArgs[0] = arg0;
 
 #if !defined(FEATURE_UTILCODE_NO_DEPENDENCIES)
-    exceptionArgs[INSTANCE_TAGGED_SEH_PARAM_ARRAY_SIZE - 1] = (ULONG_PTR) (42);
+    exceptionArgs[INSTANCE_TAGGED_SEH_PARAM_ARRAY_SIZE - 1] = THROWN_BY_US_MARKER;
 #endif // !defined(FEATURE_UTILCODE_NO_DEPENDENCIES)
 
     return INSTANCE_TAGGED_SEH_PARAM_ARRAY_SIZE;
@@ -1317,7 +1318,7 @@ BOOL WasThrownByUs(const EXCEPTION_RECORD *pcER, DWORD dwExceptionCode)
         return FALSE;
     }
 #if!defined(FEATURE_UTILCODE_NO_DEPENDENCIES)
-    if ( ((ULONG_PTR)(42)) != pcER->ExceptionInformation[INSTANCE_TAGGED_SEH_PARAM_ARRAY_SIZE - 1] )
+    if (THROWN_BY_US_MARKER != pcER->ExceptionInformation[INSTANCE_TAGGED_SEH_PARAM_ARRAY_SIZE - 1] )
     {
         return FALSE;
     }
