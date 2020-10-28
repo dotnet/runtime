@@ -9353,7 +9353,7 @@ GenTree* Compiler::impFixupStructReturnType(GenTree*                 op,
 
         if (op->gtOper == GT_LCL_VAR)
         {
-            // Make sure that this struct stays in memory and doesn't get promoted.
+            // Note that this is a multi-reg return.
             unsigned lclNum                  = op->AsLclVarCommon()->GetLclNum();
             lvaTable[lclNum].lvIsMultiRegRet = true;
 

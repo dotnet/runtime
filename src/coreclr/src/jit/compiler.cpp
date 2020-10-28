@@ -930,6 +930,8 @@ var_types Compiler::getArgTypeForStruct(CORINFO_CLASS_HANDLE clsHnd,
 //
 // Arguments:
 //    clsHnd         - the handle for the struct type
+//    callConv       - the calling convention of the function
+//                     that returns this struct.
 //    wbReturnStruct - An "out" argument with information about how
 //                     the struct is to be returned
 //    structSize     - the size of the struct type,
@@ -1140,10 +1142,8 @@ var_types Compiler::getReturnTypeForStruct(CORINFO_CLASS_HANDLE     clsHnd,
 #elif defined(TARGET_X86)
 
                 // Only 8-byte structs are return in multiple registers.
-                // We also only support multireg struct returns
-                // on x86 to match the native calling convention.
-                // So only do it for native calling conventions that aren't
-                // instance methods
+                // We also only support multireg struct returns on x86 to match the native calling convention.
+                // So return 8-byte structs only when the calling convention is a native calling convention.
                 if (structSize == MAX_RET_MULTIREG_BYTES && callConv != CORINFO_UNMANAGED_CALLCONV_UNKNOWN)
                 {
                     // setup wbPassType and useType indicate that this is return by value in multiple registers

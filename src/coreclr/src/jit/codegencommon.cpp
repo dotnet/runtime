@@ -11529,9 +11529,11 @@ void CodeGen::genReturn(GenTree* treeNode)
             }
             else // we must have a struct return type
             {
+                CorInfoUnmanagedCallConv callConv = compiler->compMethodInfoGetUnmanagedCallConv(
+                                                           compiler->info.compMethodInfo);
+                
                 retTypeDesc.InitializeStructReturnType(compiler, compiler->info.compMethodInfo->args.retTypeClass,
-                                                       compiler->compMethodInfoGetUnmanagedCallConv(
-                                                           compiler->info.compMethodInfo));
+                                                       callConv);
             }
             regCount = retTypeDesc.GetReturnRegCount();
         }
@@ -11838,6 +11840,7 @@ void CodeGen::genMultiRegStoreToLocal(GenTreeLclVar* lclNode)
                 hasRegs = true;
                 if (varReg != reg)
                 {
+                    // We may need a cross register-file copy here.
                     inst_RV_RV(ins_Copy(reg, type), varReg, reg, type);
                 }
                 fieldVarDsc->SetRegNum(varReg);

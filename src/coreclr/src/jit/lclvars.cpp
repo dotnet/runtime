@@ -576,7 +576,19 @@ void Compiler::lvaInitRetBuffArg(InitVarDscInfo* varDscInfo, bool useFixedRetBuf
     }
 }
 
-/*****************************************************************************/
+
+//-----------------------------------------------------------------------------
+// getReturnTypeForStruct:
+//     Get the type that is used to return values of the given struct type.
+//     If you have already retrieved the struct size then it should be
+//     passed as the optional third argument, as this allows us to avoid
+//     an extra call to getClassSize(clsHnd)
+//
+// Arguments:
+//    varDscInfo     - the local var descriptions
+//    skipArgs       - the number of user args to skip processing.
+//    takeArgs       - the number of user args to process (after skipping skipArgs number of args)
+//
 void Compiler::lvaInitUserArgs(InitVarDscInfo* varDscInfo, unsigned skipArgs, unsigned takeArgs)
 {
 //-------------------------------------------------------------------------
@@ -595,8 +607,10 @@ void Compiler::lvaInitUserArgs(InitVarDscInfo* varDscInfo, unsigned skipArgs, un
 
     const unsigned argSigLen = info.compMethodInfo->args.numArgs;
 
+    // We will process at most takeArgs arguments from the signature after skipping skipArgs arguments
     const int64_t numUserArgs = min(takeArgs, (argSigLen - (int64_t)skipArgs));
 
+    // If there are no user args or less than skipArgs args, return here since there's no work to do.
     if (numUserArgs <= 0)
     {
         return;
@@ -606,6 +620,7 @@ void Compiler::lvaInitUserArgs(InitVarDscInfo* varDscInfo, unsigned skipArgs, un
     regMaskTP doubleAlignMask = RBM_NONE;
 #endif // TARGET_ARM
 
+    // Skip skipArgs arguments from the signature.
     for (unsigned i = 0; i < skipArgs; i++, argLst = info.compCompHnd->getArgNext(argLst))
     {
         ;
@@ -5332,6 +5347,10 @@ void Compiler::lvaAssignVirtualFrameOffsetsToArgs()
 
     unsigned userArgsToSkip = 0;
 #if defined(TARGET_WINDOWS) && !defined(TARGET_ARM)
+    // In the native instance method calling convention on Windows,
+    // the this parameter comes before the hidden return buffer parameter.
+    // So, we want to process the native "this" parameter before we process
+    // the native return buffer parameter.
     if (compMethodIsNativeInstanceMethod(info.compMethodInfo))
     {
         noway_assert(lvaTable[lclNum].lvIsRegArg);
@@ -5376,6 +5395,7 @@ void Compiler::lvaAssignVirtualFrameOffsetsToArgs()
 
     CORINFO_ARG_LIST_HANDLE argLst    = info.compMethodInfo->args.args;
     unsigned                argSigLen = info.compMethodInfo->args.numArgs;
+    // Skip any user args that we've already processed.
     assert(userArgsToSkip <= argSigLen);
     argSigLen -= userArgsToSkip;
     for (unsigned i = 0; i < userArgsToSkip; i++, argLst = info.compCompHnd->getArgNext(argLst))
