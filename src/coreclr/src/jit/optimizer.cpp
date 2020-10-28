@@ -3546,8 +3546,7 @@ void Compiler::optUnrollLoops()
         // Check for required flags:
         // LPFLG_DO_WHILE - required because this transform only handles loops of this form
         // LPFLG_CONST - required because this transform only handles full unrolls
-        // LPFLG_SIMD_LIMIT - included here as a heuristic, not for correctness/structural reasons
-        requiredFlags = LPFLG_DO_WHILE | LPFLG_CONST | LPFLG_SIMD_LIMIT;
+        requiredFlags = LPFLG_DO_WHILE | LPFLG_CONST;
 
 #ifdef DEBUG
         if (compStressCompile(STRESS_UNROLL_LOOPS, 50))
@@ -3556,7 +3555,6 @@ void Compiler::optUnrollLoops()
             // the restriction that loop limit must be vector element count.
 
             unrollLimitSz *= 4;
-            requiredFlags &= ~LPFLG_SIMD_LIMIT;
         }
 #endif
 
@@ -3643,6 +3641,12 @@ void Compiler::optUnrollLoops()
         /* Forget it if there are too many repetitions or not a constant loop */
 
         if (totalIter > iterLimit)
+        {
+            continue;
+        }
+
+        // Unroll only if limit is 0, 1, or Vector_.Length (as a heuristic, not for correctness/structural reasons)
+        if ((totalIter > 1) && !(loopFlags & LPFLG_SIMD_LIMIT) && !compStressCompile(STRESS_UNROLL_LOOPS, 50))
         {
             continue;
         }
