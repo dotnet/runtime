@@ -223,6 +223,7 @@
     <!-- iOS device specific options -->
     <ItemGroup Condition="'$(TargetsiOS)' == 'true' and '$(TargetsiOSSimulator)' != 'true'">
       <_MonoCMakeArgs Include="-DENABLE_MINIMAL=ssa,com,interpreter,jit,portability,assembly_remapping,attach,verifier,full_messages,appdomains,security,sgen_remset,sgen_marksweep_par,sgen_marksweep_fixed,sgen_marksweep_fixed_par,sgen_copying,logging,remoting,shared_perfcounters,gac,eventpipe" />
+      <_MonoCMakeArgs Include="-DENABLE_INTERP_LIB=1"/>
       <_MonoCMakeArgs Include="-DDISABLE_ICALL_TABLES=1"/>
       <_MonoCMakeArgs Include="-DENABLE_ICALL_EXPORT=0"/>
       <_MonoCMakeArgs Include="-DENABLE_VISIBILITY_HIDDEN=1"/>
@@ -410,6 +411,7 @@
       <_MonoRuntimeFilePath Condition="'$(TargetsBrowser)' == 'true'">$(MonoObjDir)out\lib\libmonosgen-2.0.a</_MonoRuntimeFilePath>
       <_MonoRuntimeFilePath Condition="'$(_MonoRuntimeFilePath)' == ''">$(MonoObjDir)mono\mini\.libs\libmonosgen-2.0.so</_MonoRuntimeFilePath>
       <_MonoRuntimeStaticFilePath Condition="'$(TargetsiOS)' == 'true' or '$(TargetstvOS)' == 'true' or '$(TargetsAndroid)' == 'true'">$(MonoObjDir)out\lib\libmonosgen-2.0.a</_MonoRuntimeStaticFilePath>
+      <_MonoIncludeInterpStaticFiles Condition="'$(TargetsBrowser)' == 'true' or ('$(TargetsiOS)' == 'true' and '$(TargetsiOSSimulator)' != 'true')">true</_MonoIncludeInterpStaticFiles>
     </PropertyGroup>
     <PropertyGroup Condition="'$(BuildMonoAOTCrossCompiler)' == 'true'">
       <_MonoAotCrossFilePath >$(MonoObjDir)cross\out\bin\mono-sgen</_MonoAotCrossFilePath>
@@ -439,13 +441,13 @@
         <Destination>$(RuntimeBinDir)cross\opt</Destination>
       </_MonoRuntimeArtifacts>
       <_MonoIncludeArtifacts Include="$(MonoObjDir)out\include\**" />
-      <_MonoRuntimeArtifacts Condition="'$(TargetsBrowser)' == 'true'" Include="$(MonoObjDir)out\lib\libmono-ee-interp.a">
+      <_MonoRuntimeArtifacts Condition="'$(_MonoIncludeInterpStaticFiles)' == 'true'" Include="$(MonoObjDir)out\lib\libmono-ee-interp.a">
         <Destination>$(RuntimeBinDir)libmono-ee-interp.a</Destination>
       </_MonoRuntimeArtifacts>
-      <_MonoRuntimeArtifacts Condition="'$(TargetsBrowser)' == 'true'" Include="$(MonoObjDir)out\lib\libmono-icall-table.a">
+      <_MonoRuntimeArtifacts Condition="'$(_MonoIncludeInterpStaticFiles)' == 'true'" Include="$(MonoObjDir)out\lib\libmono-icall-table.a">
         <Destination>$(RuntimeBinDir)libmono-icall-table.a</Destination>
       </_MonoRuntimeArtifacts>
-      <_MonoRuntimeArtifacts Condition="'$(TargetsBrowser)' == 'true'" Include="$(MonoObjDir)out\lib\libmono-ilgen.a">
+      <_MonoRuntimeArtifacts Condition="'$(_MonoIncludeInterpStaticFiles)' == 'true'" Include="$(MonoObjDir)out\lib\libmono-ilgen.a">
         <Destination>$(RuntimeBinDir)libmono-ilgen.a</Destination>
       </_MonoRuntimeArtifacts>
       <_MonoRuntimeArtifacts Condition="'$(TargetsBrowser)' == 'true'" Include="$(MonoObjDir)out\lib\libmono-profiler-aot.a">
