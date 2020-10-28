@@ -17,7 +17,6 @@
 using System.Buffers;
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
-using System.Runtime.ExceptionServices;
 using System.Runtime.InteropServices;
 using System.Threading;
 using System.Threading.Tasks;
@@ -27,11 +26,6 @@ namespace System.IO
     public abstract partial class Stream : MarshalByRefObject, IDisposable, IAsyncDisposable
     {
         public static readonly Stream Null = new NullStream();
-
-        // We pick a value that is the largest multiple of 4096 that is still smaller than the large object heap threshold (85K).
-        // The CopyTo/CopyToAsync buffer is short-lived and is likely to be collected at Gen0, and it offers a significant
-        // improvement in Copy performance.
-        private const int DefaultCopyBufferSize = 81920;
 
         // To implement Async IO operations on streams that don't support async IO
 
@@ -172,6 +166,14 @@ namespace System.IO
 
         private int GetCopyBufferSize()
         {
+            // This value was originally picked to be the largest multiple of 4096 that is still smaller than the large object heap threshold (85K).
+            // The CopyTo{Async} buffer is short-lived and is likely to be collected at Gen0, and it offers a significant improvement in Copy
+            // performance.  Since then, the base implementations of CopyTo{Async} have been updated to use ArrayPool, which will end up rounding
+            // this size up to the next power of two (131,072), which will by default be on the large object heap.  However, most of the time
+            // the buffer should be pooled, the LOH threshold is now configurable and thus may be different than 85K, and there are measurable
+            // benefits to using the larger buffer size.  So, for now, this value remains.
+            const int DefaultCopyBufferSize = 81920;
+
             int bufferSize = DefaultCopyBufferSize;
 
             if (CanSeek)
@@ -418,8 +420,6 @@ namespace System.IO
             internal int Offset;
             internal int Count;
         }
-
-
 
         public virtual IAsyncResult BeginWrite(byte[] buffer, int offset, int count, AsyncCallback? callback, object? state)
         {
@@ -800,64 +800,6 @@ namespace System.IO
         {
         }
 
-        internal IAsyncResult BlockingBeginRead(byte[] buffer, int offset, int count, AsyncCallback? callback, object? state)
-        {
-            // To avoid a race with a stream's position pointer & generating conditions
-            // with internal buffer indexes in our own streams that
-            // don't natively support async IO operations when there are multiple
-            // async requests outstanding, we will block the application's main
-            // thread and do the IO synchronously.
-            // This can't perform well - use a different approach.
-            SynchronousAsyncResult asyncResult;
-            try
-            {
-                int numRead = Read(buffer, offset, count);
-                asyncResult = new SynchronousAsyncResult(numRead, state);
-            }
-            catch (IOException ex)
-            {
-                asyncResult = new SynchronousAsyncResult(ex, state, isWrite: false);
-            }
-
-            callback?.Invoke(asyncResult);
-
-            return asyncResult;
-        }
-
-        internal static int BlockingEndRead(IAsyncResult asyncResult)
-        {
-            return SynchronousAsyncResult.EndRead(asyncResult);
-        }
-
-        internal IAsyncResult BlockingBeginWrite(byte[] buffer, int offset, int count, AsyncCallback? callback, object? state)
-        {
-            // To avoid a race condition with a stream's position pointer & generating conditions
-            // with internal buffer indexes in our own streams that
-            // don't natively support async IO operations when there are multiple
-            // async requests outstanding, we will block the application's main
-            // thread and do the IO synchronously.
-            // This can't perform well - use a different approach.
-            SynchronousAsyncResult asyncResult;
-            try
-            {
-                Write(buffer, offset, count);
-                asyncResult = new SynchronousAsyncResult(state);
-            }
-            catch (IOException ex)
-            {
-                asyncResult = new SynchronousAsyncResult(ex, state, isWrite: true);
-            }
-
-            callback?.Invoke(asyncResult);
-
-            return asyncResult;
-        }
-
-        internal static void BlockingEndWrite(IAsyncResult asyncResult)
-        {
-            SynchronousAsyncResult.EndWrite(asyncResult);
-        }
-
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         protected static void ValidateBufferArguments(byte[] buffer, int offset, int count)
         {
@@ -919,12 +861,10 @@ namespace System.IO
             {
             }
 
-            public override Task CopyToAsync(Stream destination, int bufferSize, CancellationToken cancellationToken)
-            {
-                return cancellationToken.IsCancellationRequested ?
+            public override Task CopyToAsync(Stream destination, int bufferSize, CancellationToken cancellationToken) =>
+                cancellationToken.IsCancellationRequested ?
                     Task.FromCanceled(cancellationToken) :
                     Task.CompletedTask;
-            }
 
             protected override void Dispose(bool disposing)
             {
@@ -935,67 +875,38 @@ namespace System.IO
             {
             }
 
-            public override Task FlushAsync(CancellationToken cancellationToken)
-            {
-                return cancellationToken.IsCancellationRequested ?
+            public override Task FlushAsync(CancellationToken cancellationToken) =>
+                cancellationToken.IsCancellationRequested ?
                     Task.FromCanceled(cancellationToken) :
                     Task.CompletedTask;
-            }
 
-            public override IAsyncResult BeginRead(byte[] buffer, int offset, int count, AsyncCallback? callback, object? state)
-            {
-                if (!CanRead) throw Error.GetReadNotSupported();
+            public override IAsyncResult BeginRead(byte[] buffer, int offset, int count, AsyncCallback? callback, object? state) =>
+                TaskToApm.Begin(Task<int>.s_defaultResultTask, callback, state);
 
-                return BlockingBeginRead(buffer, offset, count, callback, state);
-            }
+            public override int EndRead(IAsyncResult asyncResult) =>
+                TaskToApm.End<int>(asyncResult);
 
-            public override int EndRead(IAsyncResult asyncResult)
-            {
-                if (asyncResult == null)
-                    throw new ArgumentNullException(nameof(asyncResult));
+            public override IAsyncResult BeginWrite(byte[] buffer, int offset, int count, AsyncCallback? callback, object? state) =>
+                TaskToApm.Begin(Task.CompletedTask, callback, state);
 
-                return BlockingEndRead(asyncResult);
-            }
+            public override void EndWrite(IAsyncResult asyncResult) =>
+                TaskToApm.End(asyncResult);
 
-            public override IAsyncResult BeginWrite(byte[] buffer, int offset, int count, AsyncCallback? callback, object? state)
-            {
-                if (!CanWrite) throw Error.GetWriteNotSupported();
+            public override int Read(byte[] buffer, int offset, int count) => 0;
 
-                return BlockingBeginWrite(buffer, offset, count, callback, state);
-            }
+            public override int Read(Span<byte> buffer) => 0;
 
-            public override void EndWrite(IAsyncResult asyncResult)
-            {
-                if (asyncResult == null)
-                    throw new ArgumentNullException(nameof(asyncResult));
+            public override Task<int> ReadAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken) =>
+                cancellationToken.IsCancellationRequested ?
+                    Task.FromCanceled<int>(cancellationToken) :
+                    Task.FromResult(0);
 
-                BlockingEndWrite(asyncResult);
-            }
+            public override ValueTask<int> ReadAsync(Memory<byte> buffer, CancellationToken cancellationToken) =>
+                cancellationToken.IsCancellationRequested ?
+                    ValueTask.FromCanceled<int>(cancellationToken) :
+                    default;
 
-            public override int Read(byte[] buffer, int offset, int count)
-            {
-                return 0;
-            }
-
-            public override int Read(Span<byte> buffer)
-            {
-                return 0;
-            }
-
-            public override Task<int> ReadAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
-            {
-                return Task.FromResult(0);
-            }
-
-            public override ValueTask<int> ReadAsync(Memory<byte> buffer, CancellationToken cancellationToken = default)
-            {
-                return new ValueTask<int>(0);
-            }
-
-            public override int ReadByte()
-            {
-                return -1;
-            }
+            public override int ReadByte() => -1;
 
             public override void Write(byte[] buffer, int offset, int count)
             {
@@ -1005,108 +916,26 @@ namespace System.IO
             {
             }
 
-            public override Task WriteAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
-            {
-                return cancellationToken.IsCancellationRequested ?
+            public override Task WriteAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken) =>
+                cancellationToken.IsCancellationRequested ?
                     Task.FromCanceled(cancellationToken) :
                     Task.CompletedTask;
-            }
 
-            public override ValueTask WriteAsync(ReadOnlyMemory<byte> buffer, CancellationToken cancellationToken = default)
-            {
-                return cancellationToken.IsCancellationRequested ?
+            public override ValueTask WriteAsync(ReadOnlyMemory<byte> buffer, CancellationToken cancellationToken = default) =>
+                cancellationToken.IsCancellationRequested ?
                     ValueTask.FromCanceled(cancellationToken) :
                     default;
-            }
 
             public override void WriteByte(byte value)
             {
             }
 
-            public override long Seek(long offset, SeekOrigin origin)
-            {
-                return 0;
-            }
+            public override long Seek(long offset, SeekOrigin origin) => 0;
 
             public override void SetLength(long length)
             {
             }
         }
-
-
-        /// <summary>Used as the IAsyncResult object when using asynchronous IO methods on the base Stream class.</summary>
-        private sealed class SynchronousAsyncResult : IAsyncResult
-        {
-            private readonly object? _stateObject;
-            private readonly bool _isWrite;
-            private ManualResetEvent? _waitHandle;
-            private readonly ExceptionDispatchInfo? _exceptionInfo;
-
-            private bool _endXxxCalled;
-            private readonly int _bytesRead;
-
-            internal SynchronousAsyncResult(int bytesRead, object? asyncStateObject)
-            {
-                _bytesRead = bytesRead;
-                _stateObject = asyncStateObject;
-            }
-
-            internal SynchronousAsyncResult(object? asyncStateObject)
-            {
-                _stateObject = asyncStateObject;
-                _isWrite = true;
-            }
-
-            internal SynchronousAsyncResult(Exception ex, object? asyncStateObject, bool isWrite)
-            {
-                _exceptionInfo = ExceptionDispatchInfo.Capture(ex);
-                _stateObject = asyncStateObject;
-                _isWrite = isWrite;
-            }
-
-            public bool IsCompleted => true;
-
-            public WaitHandle AsyncWaitHandle =>
-                LazyInitializer.EnsureInitialized(ref _waitHandle, () => new ManualResetEvent(true));
-
-            public object? AsyncState => _stateObject;
-
-            public bool CompletedSynchronously => true;
-
-            internal void ThrowIfError()
-            {
-                if (_exceptionInfo != null)
-                    _exceptionInfo.Throw();
-            }
-
-            internal static int EndRead(IAsyncResult asyncResult)
-            {
-                if (!(asyncResult is SynchronousAsyncResult ar) || ar._isWrite)
-                    throw new ArgumentException(SR.Arg_WrongAsyncResult);
-
-                if (ar._endXxxCalled)
-                    throw new ArgumentException(SR.InvalidOperation_EndReadCalledMultiple);
-
-                ar._endXxxCalled = true;
-
-                ar.ThrowIfError();
-                return ar._bytesRead;
-            }
-
-            internal static void EndWrite(IAsyncResult asyncResult)
-            {
-                if (!(asyncResult is SynchronousAsyncResult ar) || !ar._isWrite)
-                    throw new ArgumentException(SR.Arg_WrongAsyncResult);
-
-                if (ar._endXxxCalled)
-                    throw new ArgumentException(SR.InvalidOperation_EndWriteCalledMultiple);
-
-                ar._endXxxCalled = true;
-
-                ar.ThrowIfError();
-            }
-        }   // class SynchronousAsyncResult
-
 
         // SyncStream is a wrapper around a stream that takes
         // a lock for every operation making it thread safe.
