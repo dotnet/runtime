@@ -11814,6 +11814,9 @@ void gc_heap::adjust_limit (uint8_t* start, size_t limit_size, generation* gen)
                         size_t offset = old_loc - saved_plug_and_gap;
                         if (offset < sizeof(gap_reloc_pair))
                         {
+                            // the object at old_loc must be at least min_obj_size
+                            assert (offset <= sizeof(plug_and_gap) - min_obj_size);
+
                             // if so, set the bit in the saved info instead
                             set_free_obj_in_compact_bit ((uint8_t*)(&pinned_plug_of (saved_pinned_plug_index)->saved_pre_plug_reloc) + offset);
                         }
