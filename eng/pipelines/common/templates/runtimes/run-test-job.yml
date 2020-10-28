@@ -448,6 +448,7 @@ jobs:
           - jitehwritethru
           - jitobjectstackallocation
           - jitpgo
+          - jitpgo_inline
         ${{ if in(parameters.testGroup, 'ilasm') }}:
           scenarios:
           - ilasmroundtrip
