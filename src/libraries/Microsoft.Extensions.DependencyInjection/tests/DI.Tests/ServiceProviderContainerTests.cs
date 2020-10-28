@@ -464,6 +464,20 @@ namespace Microsoft.Extensions.DependencyInjection.Tests
             Assert.False(service.IsDisposed);
         }
 
+        [Fact]
+        public async Task ProviderDisposeAsyncCallsDisposeAsyncOnceOnServices()
+        {
+            var serviceCollection = new ServiceCollection();
+            serviceCollection.AddTransient<DelayedAsyncDisposableService>();
+
+            var serviceProvider = CreateServiceProvider(serviceCollection);
+            var disposable = serviceProvider.GetService<DelayedAsyncDisposableService>();
+
+            await (serviceProvider as IAsyncDisposable).DisposeAsync();
+
+            Assert.Equal(1, disposable.DisposeCount);
+        }
+
         private class FakeDisposable : IDisposable
         {
             public bool IsDisposed { get; private set; }
@@ -521,6 +535,17 @@ namespace Microsoft.Extensions.DependencyInjection.Tests
             {
                 DisposeAsyncCalled = true;
                 return new ValueTask(Task.CompletedTask);
+            }
+        }
+
+        private class DelayedAsyncDisposableService : IAsyncDisposable
+        {
+            public int DisposeCount { get; private set; }
+            public async ValueTask DisposeAsync()
+            {
+                //forces ValueTask to be asynchronous and not be immediately completed
+                await Task.Yield();
+                DisposeCount++;
             }
         }
     }
