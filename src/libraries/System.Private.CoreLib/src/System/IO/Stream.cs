@@ -707,7 +707,7 @@ namespace System.IO
                 ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.offset, ExceptionResource.ArgumentOutOfRange_NeedNonNegNum);
             }
 
-            if ((uint)count > (uint)(buffer.Length - offset))
+            if ((uint)count > buffer.Length - offset)
             {
                 ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.count, ExceptionResource.Argument_InvalidOffLen);
             }

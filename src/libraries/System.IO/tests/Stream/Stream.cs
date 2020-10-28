@@ -82,8 +82,8 @@ namespace System.IO.Tests
             public static new void ValidateBufferArguments(byte[] buffer, int offset, int count) =>
                 Stream.ValidateBufferArguments(buffer, offset, count);
 
-            public static new void ValidateCopyToArguments(Stream source, Stream destination, int bufferSize) =>
-                Stream.ValidateCopyToArguments(source, destination, bufferSize);
+            public static new void ValidateCopyToArguments(Stream destination, int bufferSize) =>
+                Stream.ValidateCopyToArguments(destination, bufferSize);
         }
     }
 }

@@ -58,17 +58,6 @@ namespace System.Security.Cryptography.Encryption.Tests.Asymmetric
                 Assert.False(encryptStream.CanRead);
                 Assert.False(encryptStream.CanSeek);
                 Assert.False(encryptStream.HasFlushedFinalBlock);
-                Assert.Throws<NotSupportedException>(() => encryptStream.SetLength(1));
-                Assert.Throws<NotSupportedException>(() => encryptStream.Length);
-                Assert.Throws<NotSupportedException>(() => encryptStream.Position);
-                Assert.Throws<NotSupportedException>(() => encryptStream.Position = 0);
-                Assert.Throws<NotSupportedException>(() => encryptStream.Seek(0, SeekOrigin.Begin));
-                Assert.Throws<NotSupportedException>(() => encryptStream.Read(new byte[0], 0, 0));
-                Assert.Throws<ArgumentNullException>(() => encryptStream.Write(null, 0, 0));
-                Assert.Throws<ArgumentOutOfRangeException>(() => encryptStream.Write(new byte[0], -1, 0));
-                Assert.Throws<ArgumentOutOfRangeException>(() => encryptStream.Write(new byte[0], 0, -1));
-                Assert.Throws<ArgumentOutOfRangeException>(() => encryptStream.Write(new byte[0], 0, -1));
-                AssertExtensions.Throws<ArgumentException>(null, () => encryptStream.Write(new byte[3], 1, 4));
 
                 byte[] toWrite = Encoding.UTF8.GetBytes(LoremText);
 
@@ -111,17 +100,6 @@ namespace System.Security.Cryptography.Encryption.Tests.Asymmetric
                 Assert.True(decryptStream.CanRead);
                 Assert.False(decryptStream.CanSeek);
                 Assert.False(decryptStream.HasFlushedFinalBlock);
-                Assert.Throws<NotSupportedException>(() => decryptStream.SetLength(1));
-                Assert.Throws<NotSupportedException>(() => decryptStream.Length);
-                Assert.Throws<NotSupportedException>(() => decryptStream.Position);
-                Assert.Throws<NotSupportedException>(() => decryptStream.Position = 0);
-                Assert.Throws<NotSupportedException>(() => decryptStream.Seek(0, SeekOrigin.Begin));
-                Assert.Throws<NotSupportedException>(() => decryptStream.Write(new byte[0], 0, 0));
-                Assert.Throws<ArgumentNullException>(() => decryptStream.Read(null, 0, 0));
-                Assert.Throws<ArgumentOutOfRangeException>(() => decryptStream.Read(new byte[0], -1, 0));
-                Assert.Throws<ArgumentOutOfRangeException>(() => decryptStream.Read(new byte[0], 0, -1));
-                Assert.Throws<ArgumentOutOfRangeException>(() => decryptStream.Read(new byte[0], 0, -1));
-                AssertExtensions.Throws<ArgumentException>(null, () => decryptStream.Read(new byte[3], 1, 4));
 
                 using (StreamReader reader = new StreamReader(decryptStream))
                 {

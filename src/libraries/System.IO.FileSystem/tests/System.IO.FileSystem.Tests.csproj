@@ -20,8 +20,6 @@
     <Compile Include="FileInfo\Replace.cs" />
     <Compile Include="FileStream\Handle.cs" />
     <Compile Include="Directory\GetLogicalDrives.cs" />
-    <Compile Include="FileStream\EndRead.cs" />
-    <Compile Include="FileStream\EndWrite.cs" />
     <Compile Include="FileStream\LockUnlock.cs" />
     <Compile Include="FileSystemTest.cs" />
     <Compile Include="File\EncryptDecrypt.cs" />
@@ -166,17 +164,12 @@
     <Compile Include="FileInfo\AppendText.cs" />
     <Compile Include="FileInfo\CopyTo.cs" />
     <!-- Helpers -->
-    <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.GenericOperations.cs"
-             Link="Interop\Windows\Interop.GenericOperations.cs" />
-    <Compile Include="$(CommonTestPath)System\Buffers\NativeMemoryManager.cs"
-             Link="Common\System\Buffers\NativeMemoryManager.cs" />
-    <Compile Include="$(CommonTestPath)System\IO\TempFile.cs"
-             Link="Common\System\IO\TempFile.cs" />
-    <Compile Include="$(CommonTestPath)System\IO\PathFeatures.cs"
-             Link="Common\System\IO\PathFeatures.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.GenericOperations.cs" Link="Interop\Windows\Interop.GenericOperations.cs" />
+    <Compile Include="$(CommonTestPath)System\Buffers\NativeMemoryManager.cs" Link="Common\System\Buffers\NativeMemoryManager.cs" />
+    <Compile Include="$(CommonTestPath)System\IO\TempFile.cs" Link="Common\System\IO\TempFile.cs" />
+    <Compile Include="$(CommonTestPath)System\IO\PathFeatures.cs" Link="Common\System\IO\PathFeatures.cs" />
 
-    <Content Include="DirectoryInfo\test-dir\dummy.txt"
-             Link="test-dir\dummy.txt" />
+    <Content Include="DirectoryInfo\test-dir\dummy.txt" Link="test-dir\dummy.txt" />
 
     <Compile Include="$(CommonTestPath)Tests\System\IO\StreamConformanceTests.cs" Link="Common\System\IO\StreamConformanceTests.cs" />
     <Compile Include="$(CommonTestPath)System\IO\ConnectedStreams.cs" Link="Common\System\IO\ConnectedStreams.cs" />
