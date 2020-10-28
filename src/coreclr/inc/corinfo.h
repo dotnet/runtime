@@ -2047,8 +2047,8 @@ public:
     virtual CORINFO_METHOD_HANDLE resolveVirtualMethod(
             CORINFO_METHOD_HANDLE       virtualMethod,                  /* IN */
             CORINFO_CLASS_HANDLE        implementingClass,              /* IN */
-            bool*                       requiresInstMethodTableArg,      /* OUT */
-            CORINFO_CONTEXT_HANDLE      ownerType = NULL               /* IN */
+            bool*                       requiresInstMethodTableArg,     /* OUT */
+            CORINFO_CONTEXT_HANDLE*     ownerType = NULL                /* IN, OUT */
             ) = 0;
 
     // Get the unboxed entry point for a method, if possible.

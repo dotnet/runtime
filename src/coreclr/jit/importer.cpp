@@ -20924,8 +20924,8 @@ void Compiler::impDevirtualizeCall(GenTreeCall*            call,
         CORINFO_CONTEXT_HANDLE ownerType                  = *contextHandle;
         bool                   requiresInstMethodTableArg = false;
         CORINFO_METHOD_HANDLE  uniqueImplementingMethod =
-            info.compCompHnd->resolveVirtualMethod(baseMethod, uniqueImplementingClass,
-                                                   &requiresInstMethodTableArg, ownerType);
+            info.compCompHnd->resolveVirtualMethod(baseMethod, uniqueImplementingClass, &requiresInstMethodTableArg,
+                                                   &ownerType);
 
         if (!canResolve)
         {
@@ -20960,7 +20960,7 @@ void Compiler::impDevirtualizeCall(GenTreeCall*            call,
     CORINFO_CONTEXT_HANDLE ownerType                  = *contextHandle;
     bool                   requiresInstMethodTableArg = false;
     CORINFO_METHOD_HANDLE  derivedMethod =
-        info.compCompHnd->resolveVirtualMethod(baseMethod, objClass, &requiresInstMethodTableArg, ownerType);
+        info.compCompHnd->resolveVirtualMethod(baseMethod, objClass, &requiresInstMethodTableArg, &ownerType);
 
     // If we failed to get a handle, we can't devirtualize.  This can
     // happen when prejitting, if the devirtualization crosses
@@ -21170,20 +21170,6 @@ void Compiler::impDevirtualizeCall(GenTreeCall*            call,
     // stubs)
     call->gtInlineCandidateInfo = nullptr;
 
-#if defined(DEBUG)
-    if (verbose)
-    {
-        printf("... after devirt...\n");
-        gtDispTree(call);
-    }
-
-    if (doPrint)
-    {
-        printf("Devirtualized %s call to %s:%s; now direct call to %s:%s [%s]\n", callKind, baseClassName,
-               baseMethodName, derivedClassName, derivedMethodName, note);
-    }
-#endif // defined(DEBUG)
-
     // If the 'this' object is a box, see if we can find the unboxed entry point for the call.
     if (thisObj->IsBoxedValue())
     {
@@ -21368,7 +21354,21 @@ void Compiler::impDevirtualizeCall(GenTreeCall*            call,
         // should we patch call->gtCallMoreFlags ?
     }
 
-    // Need to update call info too.
+#if defined(DEBUG)
+    if (verbose)
+    {
+        printf("... after devirt...\n");
+        gtDispTree(call);
+    }
+
+    if (doPrint)
+    {
+        printf("Devirtualized %s call to %s:%s; now direct call to %s:%s [%s]\n", callKind, baseClassName,
+               baseMethodName, derivedClassName, derivedMethodName, note);
+    }
+#endif // defined(DEBUG)
+
+    // Fetch the class that introduced the derived method.
     //
     *method      = derivedMethod;
     *methodFlags = derivedMethodAttribs;

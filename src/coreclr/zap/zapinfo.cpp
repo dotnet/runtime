@@ -4000,7 +4000,7 @@ CORINFO_METHOD_HANDLE ZapInfo::resolveVirtualMethod(
         CORINFO_METHOD_HANDLE virtualMethod,
         CORINFO_CLASS_HANDLE implementingClass,
         bool* requiresInstMethodTableArg,
-        CORINFO_CONTEXT_HANDLE ownerType)
+        CORINFO_CONTEXT_HANDLE* ownerType)
 {
     return m_pEEJitInfo->resolveVirtualMethod(virtualMethod, implementingClass, requiresInstMethodTableArg, ownerType);
 }

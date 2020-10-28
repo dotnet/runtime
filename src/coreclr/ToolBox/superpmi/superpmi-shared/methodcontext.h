@@ -928,16 +928,16 @@ public:
                                   unsigned*             offsetAfterIndirection,
                                   bool*                 isRelative);
 
-    void recResolveVirtualMethod(CORINFO_METHOD_HANDLE  virtMethod,
-                                 CORINFO_CLASS_HANDLE   implClass,
-                                 bool*                  requiresInstMethodTableArg,
-                                 CORINFO_CONTEXT_HANDLE ownerType,
-                                 CORINFO_METHOD_HANDLE  result);
+    void recResolveVirtualMethod(CORINFO_METHOD_HANDLE   virtMethod,
+                                 CORINFO_CLASS_HANDLE    implClass,
+                                 bool*                   requiresInstMethodTableArg,
+                                 CORINFO_CONTEXT_HANDLE* ownerType,
+                                 CORINFO_METHOD_HANDLE   result);
     void dmpResolveVirtualMethod(const Agnostic_ResolveVirtualMethod& key, DWORDLONG value);
-    CORINFO_METHOD_HANDLE repResolveVirtualMethod(CORINFO_METHOD_HANDLE  virtMethod,
-                                                  CORINFO_CLASS_HANDLE   implClass,
-                                                  bool*                  requiresInstMethodTableArg,
-                                                  CORINFO_CONTEXT_HANDLE ownerType);
+    CORINFO_METHOD_HANDLE repResolveVirtualMethod(CORINFO_METHOD_HANDLE   virtMethod,
+                                                  CORINFO_CLASS_HANDLE    implClass,
+                                                  bool*                   requiresInstMethodTableArg,
+                                                  CORINFO_CONTEXT_HANDLE* ownerType);
 
     void recGetUnboxedEntry(CORINFO_METHOD_HANDLE ftn, bool* requiresInstMethodTableArg, CORINFO_METHOD_HANDLE result);
     void dmpGetUnboxedEntry(DWORDLONG key, DLD value);

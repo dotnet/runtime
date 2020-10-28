@@ -3073,11 +3073,11 @@ void MethodContext::repGetMethodVTableOffset(CORINFO_METHOD_HANDLE method,
     DEBUG_REP(dmpGetMethodVTableOffset((DWORDLONG)method, value));
 }
 
-void MethodContext::recResolveVirtualMethod(CORINFO_METHOD_HANDLE  virtMethod,
-                                            CORINFO_CLASS_HANDLE   implClass,
-                                            bool*                  requiresInstMethodTableArg,
-                                            CORINFO_CONTEXT_HANDLE ownerType,
-                                            CORINFO_METHOD_HANDLE  result)
+void MethodContext::recResolveVirtualMethod(CORINFO_METHOD_HANDLE   virtMethod,
+                                            CORINFO_CLASS_HANDLE    implClass,
+                                            bool*                   requiresInstMethodTableArg,
+                                            CORINFO_CONTEXT_HANDLE* ownerType,
+                                            CORINFO_METHOD_HANDLE   result)
 {
     if (ResolveVirtualMethod == nullptr)
     {
@@ -3087,7 +3087,7 @@ void MethodContext::recResolveVirtualMethod(CORINFO_METHOD_HANDLE  virtMethod,
     Agnostic_ResolveVirtualMethod key;
     key.virtualMethod               = (DWORDLONG)virtMethod;
     key.implementingClass           = (DWORDLONG)implClass;
-    key.ownerType                   = (DWORDLONG)ownerType;
+    key.ownerType                   = (DWORDLONG)(*ownerType);
     key.requiresInstMethodTableArg  = *requiresInstMethodTableArg ? 1 : 0; // it's out param, do we need this stuff idk
     
     ResolveVirtualMethod->Add(key, (DWORDLONG)result);
@@ -3096,25 +3096,27 @@ void MethodContext::recResolveVirtualMethod(CORINFO_METHOD_HANDLE  virtMethod,
 
 void MethodContext::dmpResolveVirtualMethod(const Agnostic_ResolveVirtualMethodKey& key, const Agnostic_ResolveVirtualMethodResult& result)
 {
-    printf("ResolveVirtualMethod virtMethod-%016llX, objClass-%016llX, context-%016llX :: returnValue-%d, devirtMethod-%016llX, requiresInstArg-%d, exactContext-%016llX",
-        key.virtualMethod, key.objClass, key.context, result.returnValue, result.devirtualizedMethod, result.requiresInstMethodTableArg, result.exactContext);
+    printf("ResolveVirtualMethod virtMethod-%016llX, implClass-%016llX, requiresInstMethodTableArg-%016lX, ownerType-%016llX, result-%016llX",
+           key.virtualMethod, key.implementingClass, key.requiresInstMethodTableArg, key.ownerType, value);
 }
 
-CORINFO_METHOD_HANDLE MethodContext::repResolveVirtualMethod(CORINFO_METHOD_HANDLE  virtMethod,
-                                                             CORINFO_CLASS_HANDLE   implClass,
-                                                             bool*                  requiresInstMethodTableArg,
-                                                             CORINFO_CONTEXT_HANDLE ownerType)
+CORINFO_METHOD_HANDLE MethodContext::repResolveVirtualMethod(CORINFO_METHOD_HANDLE   virtMethod,
+                                                             CORINFO_CLASS_HANDLE    implClass,
+                                                             bool*                   requiresInstMethodTableArg,
+                                                             CORINFO_CONTEXT_HANDLE* ownerType)
 {
     Agnostic_ResolveVirtualMethod key;
     key.virtualMethod               = (DWORDLONG)virtMethod;
     key.implementingClass           = (DWORDLONG)implClass;
-    key.ownerType                   = (DWORDLONG)ownerType;
+    key.ownerType                   = (DWORDLONG)(*ownerType);
     key.requiresInstMethodTableArg  = *requiresInstMethodTableArg ? 1 : 0;
 
     AssertCodeMsg(ResolveVirtualMethod != nullptr, EXCEPTIONCODE_MC,
-        "No ResolveVirtualMap map for %016llX-%016llX-%016llX", key.virtualMethod, key.objClass, key.context);
-    AssertCodeMsg(ResolveVirtualMethod->GetIndex(key) != -1, EXCEPTIONCODE_MC, "Didn't find %016llX-%016llx-%016llX",
-        key.virtualMethod, key.objClass, key.context);
+                  "No ResolveVirtualMap map for %016llX-%016llX-%016llX-%016llX", key.virtualMethod,
+                  key.implementingClass, key.requiresInstMethodTableArg, key.ownerType);
+    AssertCodeMsg(ResolveVirtualMethod->GetIndex(key) != -1, EXCEPTIONCODE_MC, "Didn't find %016llX-%016llx-%016lX-%016llX",
+                  key.virtualMethod, key.implementingClass, key.requiresInstMethodTableArg, key.ownerType);
+    DWORDLONG result = ResolveVirtualMethod->Get(key);
 
     Agnostic_ResolveVirtualMethodResult result = ResolveVirtualMethod->Get(key);
     DEBUG_REP(dmpResolveVirtualMethod(key, result));

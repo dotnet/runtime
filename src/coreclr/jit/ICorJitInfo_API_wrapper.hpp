@@ -139,7 +139,7 @@ CORINFO_METHOD_HANDLE WrapICorJitInfo::resolveVirtualMethod(
             CORINFO_METHOD_HANDLE       virtualMethod,                  /* IN */
             CORINFO_CLASS_HANDLE        implementingClass,              /* IN */
             bool*                       requiresInstMethodTableArg,     /* OUT */
-            CORINFO_CONTEXT_HANDLE      ownerType = NULL                /* IN */
+            CORINFO_CONTEXT_HANDLE*     ownerType = NULL                /* IN, OUT */
             )
 {
     API_ENTER(resolveVirtualMethod);

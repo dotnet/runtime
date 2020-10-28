@@ -8857,7 +8857,7 @@ void CEEInfo::getMethodVTableOffset (CORINFO_METHOD_HANDLE methodHnd,
 CORINFO_METHOD_HANDLE CEEInfo::resolveVirtualMethodHelper(CORINFO_METHOD_HANDLE baseMethod,
                                                           CORINFO_CLASS_HANDLE derivedClass,
                                                           bool* requiresInstMethodTableArg,
-                                                          CORINFO_CONTEXT_HANDLE ownerType)
+                                                          CORINFO_CONTEXT_HANDLE* ownerType)
 {
     CONTRACTL {
         THROWS;
@@ -8914,9 +8914,9 @@ CORINFO_METHOD_HANDLE CEEInfo::resolveVirtualMethodHelper(CORINFO_METHOD_HANDLE 
         // For generic interface methods we must have context to 
         // safely devirtualize.
         MethodTable* pOwnerMT = nullptr;
-        if (ownerType != nullptr)
+        if (*ownerType != nullptr)
         {
-            TypeHandle OwnerClsHnd = GetTypeFromContext(ownerType);
+            TypeHandle OwnerClsHnd = GetTypeFromContext(*ownerType);
             pOwnerMT = OwnerClsHnd.GetMethodTable();
 
             if (!canCastStraightForward && !pOwnerMT->IsInterface() && !pDerivedMT->CanCastToInterface(pOwnerMT))
@@ -8958,6 +8958,7 @@ CORINFO_METHOD_HANDLE CEEInfo::resolveVirtualMethodHelper(CORINFO_METHOD_HANDLE 
             // or non shared generic instantiation ie <T> is <Int32>
             _ASSERTE(pDevirtMD->IsWrapperStub() || !(pDevirtMD->GetMethodTable()->IsSharedByGenericInstantiations() || pDevirtMD->IsSharedByGenericMethodInstantiations()));
             *requiresInstMethodTableArg = pDevirtMD->IsWrapperStub();
+            *ownerType = MAKE_CLASSCONTEXT(pDevirtMD->GetMethodTable());
         }
     }
     else
@@ -9058,7 +9059,7 @@ CORINFO_METHOD_HANDLE CEEInfo::resolveVirtualMethodHelper(CORINFO_METHOD_HANDLE 
 CORINFO_METHOD_HANDLE CEEInfo::resolveVirtualMethod(CORINFO_METHOD_HANDLE methodHnd,
                                                     CORINFO_CLASS_HANDLE derivedClass,
                                                     bool* requiresInstMethodTableArg,
-                                                    CORINFO_CONTEXT_HANDLE ownerType)
+                                                    CORINFO_CONTEXT_HANDLE* ownerType)
 {
     CONTRACTL {
         THROWS;

@@ -736,14 +736,14 @@ public:
         CORINFO_METHOD_HANDLE virtualMethod,
         CORINFO_CLASS_HANDLE implementingClass,
         bool* requiresInstMethodTableArg,
-        CORINFO_CONTEXT_HANDLE ownerType
+        CORINFO_CONTEXT_HANDLE* ownerType
         );
 
     CORINFO_METHOD_HANDLE resolveVirtualMethodHelper(
         CORINFO_METHOD_HANDLE virtualMethod,
         CORINFO_CLASS_HANDLE implementingClass,
         bool* requiresInstMethodTableArg,
-        CORINFO_CONTEXT_HANDLE ownerType
+        CORINFO_CONTEXT_HANDLE* ownerType
         );
 
     CORINFO_METHOD_HANDLE getUnboxedEntry(
