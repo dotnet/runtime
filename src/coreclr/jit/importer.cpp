@@ -21170,6 +21170,7 @@ void Compiler::impDevirtualizeCall(GenTreeCall*            call,
     // stubs)
     call->gtInlineCandidateInfo = nullptr;
 
+    bool passExtraArgForValueType = false;
     // If the 'this' object is a box, see if we can find the unboxed entry point for the call.
     if (thisObj->IsBoxedValue())
     {
@@ -21285,30 +21286,7 @@ void Compiler::impDevirtualizeCall(GenTreeCall*            call,
         // there is no unboxed entry when we got devirtualized to DIM
         else if (requiresInstMethodTableArg)
         {
-            assert(((SIZE_T)ownerType & CORINFO_CONTEXTFLAGS_MASK) == CORINFO_CONTEXTFLAGS_CLASS);
-            CORINFO_CLASS_HANDLE exactClassHandle = eeGetClassFromContext(ownerType);
-            GenTree*             instParam        = gtNewIconEmbClsHndNode(exactClassHandle);
-            call->gtCallMethHnd                   = derivedMethod;
-            if ((Target::g_tgtArgOrder == Target::ARG_ORDER_R2L) || (call->gtCallArgs == nullptr))
-            {
-                call->gtCallArgs = gtPrependNewCallArg(instParam, call->gtCallArgs);
-            }
-            // Append for non-empty L2R
-            else
-            {
-                GenTreeCall::Use* beforeArg = call->gtCallArgs;
-                while (beforeArg->GetNext() != nullptr)
-                {
-                    beforeArg = beforeArg->GetNext();
-                }
-
-                beforeArg->SetNext(gtNewCallArgs(instParam));
-            }
-            // do we need this?
-            for (GenTreeCall::Use& use : call->AsCall()->Args())
-            {
-                call->gtFlags |= use.GetNode()->gtFlags & GTF_GLOB_EFFECT;
-            }
+            passExtraArgForValueType = true;
         }
         else
         {
@@ -21321,34 +21299,31 @@ void Compiler::impDevirtualizeCall(GenTreeCall*            call,
         }
     }
     // check wheter we have returned an instantiating stub for generic DIM
-    else if (isInterface)
+    if ((isInterface && requiresInstMethodTableArg) || passExtraArgForValueType)
     {
-        if (requiresInstMethodTableArg)
+        assert(((SIZE_T)ownerType & CORINFO_CONTEXTFLAGS_MASK) == CORINFO_CONTEXTFLAGS_CLASS);
+        CORINFO_CLASS_HANDLE exactClassHandle = eeGetClassFromContext(ownerType);
+        GenTree*             instParam        = gtNewIconEmbClsHndNode(exactClassHandle);
+        call->gtCallMethHnd                   = derivedMethod;
+        if ((Target::g_tgtArgOrder == Target::ARG_ORDER_R2L) || (call->gtCallArgs == nullptr))
         {
-            assert(((SIZE_T)ownerType & CORINFO_CONTEXTFLAGS_MASK) == CORINFO_CONTEXTFLAGS_CLASS);
-            CORINFO_CLASS_HANDLE exactClassHandle = eeGetClassFromContext(ownerType);
-            GenTree*             instParam        = gtNewIconEmbClsHndNode(exactClassHandle);
-            call->gtCallMethHnd                   = derivedMethod;
-            if ((Target::g_tgtArgOrder == Target::ARG_ORDER_R2L) || (call->gtCallArgs == nullptr))
+            call->gtCallArgs = gtPrependNewCallArg(instParam, call->gtCallArgs);
+        }
+        // Append for non-empty L2R
+        else
+        {
+            GenTreeCall::Use* beforeArg = call->gtCallArgs;
+            while (beforeArg->GetNext() != nullptr)
             {
-                call->gtCallArgs = gtPrependNewCallArg(instParam, call->gtCallArgs);
+                beforeArg = beforeArg->GetNext();
             }
-            // Append for non-empty L2R
-            else
-            {
-                GenTreeCall::Use* beforeArg = call->gtCallArgs;
-                while (beforeArg->GetNext() != nullptr)
-                {
-                    beforeArg = beforeArg->GetNext();
-                }
 
-                beforeArg->SetNext(gtNewCallArgs(instParam));
-            }
-            // do we need this?
-            for (GenTreeCall::Use& use : call->AsCall()->Args())
-            {
-                call->gtFlags |= use.GetNode()->gtFlags & GTF_GLOB_EFFECT;
-            }
+            beforeArg->SetNext(gtNewCallArgs(instParam));
+        }
+        // do we need this?
+        for (GenTreeCall::Use& use : call->AsCall()->Args())
+        {
+            call->gtFlags |= use.GetNode()->gtFlags & GTF_GLOB_EFFECT;
         }
 
         // should we patch call->gtCallMoreFlags ?
