@@ -38,6 +38,7 @@ nativeStringResourceTable_mscorrc
 #PAL_GetCurrentThread
 #PAL_GetCpuLimit
 #PAL_GetNativeExceptionHolderHead
+#PAL_GetPalHostModule
 #PAL_GetSymbolModuleBase
 #PAL_GetTransportPipeName
 #PAL_InitializeDLL
