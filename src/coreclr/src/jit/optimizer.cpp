@@ -3645,8 +3645,8 @@ void Compiler::optUnrollLoops()
         }
         else
 #endif
-        // Unroll only if limit is 0, 1, or Vector_.Length (as a heuristic, not for correctness/structural reasons)
-        if (!(loopFlags & LPFLG_SIMD_LIMIT))
+            // Unroll only if limit is 0, 1, or Vector_.Length (as a heuristic, not for correctness/structural reasons)
+            if (!(loopFlags & LPFLG_SIMD_LIMIT))
         {
             if (totalIter <= 1)
             {
