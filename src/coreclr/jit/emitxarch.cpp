@@ -12652,7 +12652,7 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
                 {
                     if (nextId->idIns() == INS_align)
                     {
-                        id->idCodeSize(0);
+                        nextId->idCodeSize(0);
                     }
                     break;
                 }
@@ -12669,36 +12669,63 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
                     }
                 }
 
+                bool ignoreNextAlignIns = false;
+                unsigned alignmentBoundary  = emitComp->compJitAlignLoopWith32BPadding ? 32 : 16;
                 // Only align if it matches the heuristics
                 if (totalCodeSize <= emitComp->compJitAlignLoopMaxCodeSize)
                 {
-                    // printf("Aligning loop in %s.\n", emitComp->info.compMethodName);
-                    // TODO: OK if it is close enough to 32B boundary like what if dst is 0xXXXXX21?
-                    // TODO: If the dst + totalCodeSize is within 32B, then no alignment needed.
-                    // TODO: Should we do the alignment only in hotCode and not in coldCodeBlock?
-                    size_t nBytes = (-(int)(size_t)dst) & 0x0f;
-                    dst           = emitOutputNOP(dst, nBytes);
+                    int    minimumBlocksNeeded = (totalCodeSize + alignmentBoundary - 1) / alignmentBoundary;
+                    int    extraBytesNotInLoop = (alignmentBoundary * minimumBlocksNeeded) - totalCodeSize;
+                    size_t currentOffset       = (size_t)dst % alignmentBoundary;
 
-                    if (nextId->idIns() == INS_align)
+                    // If current offset is less than extra bytes that are not in loop,
+                    // then no need of alignment as the entire loop body will fit in
+                    // minimumBlocksNeeded.
+                    if (currentOffset < extraBytesNotInLoop)
                     {
-                        // If next instruction is also alignment, this better be 32B padding.
-                        assert(emitComp->compJitAlignLoopWith32BPadding);
-
-                        // Align further to 32B boundary, if it is not yet.
-                        if (((size_t)dst & 0x1f) != 0)
+                        if (emitComp->opts.disAsm)
                         {
-                            dst = emitOutputNOP(dst, 15);
-                            dst = emitOutputNOP(dst, 1);
+                            printf("; ~~~~~~~~~~~~~~~~~~~~~~ Skipping because (currentOffset < extraBytesNotInLoop) ~~~~~~~~~~~~~~~~~~~~~~\n");
                         }
-                        assert(((size_t)dst & 0x1f) == 0);
+
+                        if (nextId->idIns() == INS_align)
+                        {
+                            nextId->idCodeSize(0);
+                        }
                     }
                     else
                     {
-                        assert(((size_t)dst & 0x0f) == 0);
+                        // printf("Aligning loop in %s.\n", emitComp->info.compMethodName);
+                        // TODO: OK if it is close enough to 32B boundary like what if dst is 0xXXXXX21?
+                        // TODO: If the dst + totalCodeSize is within 32B, then no alignment needed.
+                        // TODO: Should we do the alignment only in hotCode and not in coldCodeBlock?
+                        size_t nBytes = (-(int)(size_t)dst) & 0x0f;
+                        dst           = emitOutputNOP(dst, nBytes);
+
+                        if (nextId->idIns() == INS_align)
+                        {
+                            // If next instruction is also alignment, this better be 32B padding.
+                            assert(emitComp->compJitAlignLoopWith32BPadding);
+
+                            // Align further to 32B boundary, if it is not yet.
+                            if (((size_t)dst & 0x1f) != 0)
+                            {
+                                dst = emitOutputNOP(dst, 15);
+                                dst = emitOutputNOP(dst, 1);
+                            }
+                        }
+
+                        // In the end dst should be at alignment boundary
+                        assert(((size_t)dst & (alignmentBoundary - 1)) == 0);
                     }
                 }
                 else
                 {
+                    if (emitComp->opts.disAsm)
+                    {
+                        printf("; ~~~~~~~~~~~~~~~~~~~~~~ Skipping because (totalCodeSize <= "
+                               "emitComp->compJitAlignLoopMaxCodeSize) ~~~~~~~~~~~~~~~~~~~~~~\n");
+                    }
                     // If next instruction is align, skip it so
                     // we do not check the heuristics again.
                     if (nextId->idIns() == INS_align)

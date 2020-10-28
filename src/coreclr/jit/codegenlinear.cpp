@@ -775,7 +775,10 @@ void CodeGen::genCodeForBBlist()
             }
             if (compiler->compJitAlignLoopWith32BPadding)
             {
+#if defined(TARGET_XARCH)
+                //TODO: Only do this if we are confident that the loop size doesn't exceed the heuristics threshold
                 GetEmitter()->emitLoopAlign32Bytes();
+#endif
             }
             else
             {
