@@ -576,7 +576,6 @@ void Compiler::lvaInitRetBuffArg(InitVarDscInfo* varDscInfo, bool useFixedRetBuf
     }
 }
 
-
 //-----------------------------------------------------------------------------
 // getReturnTypeForStruct:
 //     Get the type that is used to return values of the given struct type.

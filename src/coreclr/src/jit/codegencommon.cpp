@@ -11529,9 +11529,9 @@ void CodeGen::genReturn(GenTree* treeNode)
             }
             else // we must have a struct return type
             {
-                CorInfoUnmanagedCallConv callConv = compiler->compMethodInfoGetUnmanagedCallConv(
-                                                           compiler->info.compMethodInfo);
-                
+                CorInfoUnmanagedCallConv callConv =
+                    compiler->compMethodInfoGetUnmanagedCallConv(compiler->info.compMethodInfo);
+
                 retTypeDesc.InitializeStructReturnType(compiler, compiler->info.compMethodInfo->args.retTypeClass,
                                                        callConv);
             }
