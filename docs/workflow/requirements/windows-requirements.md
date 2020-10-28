@@ -47,7 +47,7 @@ The dotnet/runtime repository recommends using CMake 3.16.0 or newer, but works 
 ## Ninja (optional)
 
 - Install Ninja in one of the two following ways
-  - [Download the executable](https://github.com/ninja-build/ninja/releases) and add it's location to [the Default PATH variable](#adding-to-the-default-path-variable).
+  - [Download the executable](https://github.com/ninja-build/ninja/releases) and add its location to [the Default PATH variable](#adding-to-the-default-path-variable).
   - [Install via a package manager](https://github.com/ninja-build/ninja/wiki/Pre-built-Ninja-packages), which should automatically add it to the PATH environment variable.
 
 ## Python
