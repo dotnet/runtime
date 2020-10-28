@@ -57,10 +57,10 @@ namespace System.IO
             byte[] buffer = ArrayPool<byte>.Shared.Rent(bufferSize);
             try
             {
-                int read;
-                while ((read = Read(buffer, 0, buffer.Length)) != 0)
+                int bytesRead;
+                while ((bytesRead = Read(buffer, 0, buffer.Length)) != 0)
                 {
-                    destination.Write(buffer, 0, read);
+                    destination.Write(buffer, 0, bytesRead);
                 }
             }
             finally
@@ -92,10 +92,10 @@ namespace System.IO
                 byte[] buffer = ArrayPool<byte>.Shared.Rent(bufferSize);
                 try
                 {
-                    int read;
-                    while ((read = await source.ReadAsync(new Memory<byte>(buffer), cancellationToken).ConfigureAwait(false)) != 0)
+                    int bytesRead;
+                    while ((bytesRead = await source.ReadAsync(new Memory<byte>(buffer), cancellationToken).ConfigureAwait(false)) != 0)
                     {
-                        await destination.WriteAsync(new ReadOnlyMemory<byte>(buffer, 0, read), cancellationToken).ConfigureAwait(false);
+                        await destination.WriteAsync(new ReadOnlyMemory<byte>(buffer, 0, bytesRead), cancellationToken).ConfigureAwait(false);
                     }
                 }
                 finally
@@ -694,6 +694,16 @@ namespace System.IO
         [Obsolete("Do not call or override this method.")]
         protected virtual void ObjectInvariant() { }
 
+        /// <summary>Validates arguments provided to reading and writing methods on <see cref="Stream"/>.</summary>
+        /// <param name="buffer">The array "buffer" argument passed to the reading or writing method.</param>
+        /// <param name="offset">The integer "offset" argument passed to the reading or writing method.</param>
+        /// <param name="count">The integer "count" argument passed to the reading or writing method.</param>
+        /// <exception cref="ArgumentNullException"><paramref name="buffer"/> was null.</exception>
+        /// <exception cref="ArgumentOutOfRangeException">
+        /// <paramref name="offset"/> was outside the bounds of <paramref name="buffer"/>, or
+        /// <paramref name="count"/> was negative, or the range specified by the combination of
+        /// <paramref name="offset"/> and <paramref name="count"/> exceed the length of <paramref name="buffer"/>.
+        /// </exception>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         protected static void ValidateBufferArguments(byte[] buffer, int offset, int count)
         {
@@ -713,6 +723,13 @@ namespace System.IO
             }
         }
 
+        /// <summary>Validates arguments provided to the <see cref="CopyTo(Stream, int)"/> or <see cref="CopyToAsync(Stream, int, CancellationToken)"/> methods.</summary>
+        /// <param name="destination">The <see cref="Stream"/> "destination" argument passed to the copy method.</param>
+        /// <param name="bufferSize">The integer "bufferSize" argument passed to the copy method.</param>
+        /// <exception cref="ArgumentNullException"><paramref name="destination"/> was null.</exception>
+        /// <exception cref="ArgumentOutOfRangeException"><paramref name="bufferSize"/> was not a positive value.</exception>
+        /// <exception cref="NotSupportedException"><paramref name="destination"/> does not support writing.</exception>
+        /// <exception cref="ObjectDisposedException"><paramref name="destination"/> does not support writing or reading.</exception>
         protected static void ValidateCopyToArguments(Stream destination, int bufferSize)
         {
             if (destination is null)

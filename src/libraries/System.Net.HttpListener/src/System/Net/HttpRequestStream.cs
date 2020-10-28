@@ -15,18 +15,23 @@ namespace System.Net
 
         public override int Read(byte[] buffer, int offset, int count)
         {
+            if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, "buffer.Length:" + buffer.Length + " count:" + count + " offset:" + offset);
+
             ValidateBufferArguments(buffer, offset, count);
 
-            if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, "buffer.Length:" + buffer.Length + " count:" + count + " offset:" + offset);
+            if (count == 0 || _closed)
+            {
+                return 0;
+            }
 
             return ReadCore(buffer, offset, count);
         }
 
         public override IAsyncResult BeginRead(byte[] buffer, int offset, int count, AsyncCallback? callback, object? state)
         {
-            ValidateBufferArguments(buffer, offset, count);
-
             if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, "buffer.Length:" + buffer.Length + " count:" + count + " offset:" + offset);
+
+            ValidateBufferArguments(buffer, offset, count);
 
             return BeginReadCore(buffer, offset, count, callback, state)!;
         }
