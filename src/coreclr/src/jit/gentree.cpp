@@ -6252,7 +6252,7 @@ GenTreeCall* Compiler::gtNewCallNode(
     node->gtRetClsHnd     = nullptr;
     node->gtControlExpr   = nullptr;
     node->gtCallMoreFlags = 0;
-    node->unmgdCallConv   = CORINFO_UNMANAGED_CALLCONV_UNKNOWN;
+    node->unmgdCallConv   = CORINFO_UNMANAGED_CALLCONV_MANAGED;
 
     if (callType == CT_INDIRECT)
     {

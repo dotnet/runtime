@@ -693,7 +693,7 @@ inline bool isRegParamType(var_types type)
 //              - if so on arm64 windows getArgTypeForStruct will ignore HFA
 //              - types
 //    callConv  - the unmanaged calling convention of the call,
-//              - or CORINFO_UNMANAGED_CALLCONV_UNKNOWN for the
+//              - or CORINFO_UNMANAGED_CALLCONV_MANAGED for the
 //              - managed calling convention.
 //
 inline bool Compiler::VarTypeIsMultiByteAndCanEnreg(var_types                type,

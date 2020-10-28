@@ -15786,7 +15786,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
 #if FEATURE_MULTIREG_RET
 
                     if (varTypeIsStruct(op1) &&
-                        IsMultiRegReturnedType(resolvedToken.hClass, CORINFO_UNMANAGED_CALLCONV_UNKNOWN))
+                        IsMultiRegReturnedType(resolvedToken.hClass, CORINFO_UNMANAGED_CALLCONV_MANAGED))
                     {
                         // Unbox nullable helper returns a TYP_STRUCT.
                         // For the multi-reg case we need to spill it to a temp so that

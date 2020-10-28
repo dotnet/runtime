@@ -9542,7 +9542,7 @@ public:
     bool compMethodIsNativeInstanceMethod(CORINFO_METHOD_INFO* mthInfo);
 
     // Gets the unmanaged calling convention the method's entry point should have.
-    // Returns CorInfoUnmanagedCallConv::CORINFO_UNMANAGED_CALLCONV_UNKNOWN for the managed
+    // Returns CorInfoUnmanagedCallConv::CORINFO_UNMANAGED_CALLCONV_MANAGED for the managed
     // calling convention.
     CorInfoUnmanagedCallConv compMethodInfoGetUnmanagedCallConv(CORINFO_METHOD_INFO* mthInfo);
 

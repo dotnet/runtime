@@ -1018,7 +1018,7 @@ var_types Compiler::getReturnTypeForStruct(CORINFO_CLASS_HANDLE     clsHnd,
 #endif // UNIX_AMD64_ABI
 
 #ifdef UNIX_X86_ABI
-    if (callConv != CORINFO_UNMANAGED_CALLCONV_UNKNOWN)
+    if (callConv != CORINFO_UNMANAGED_CALLCONV_MANAGED)
     {
         canReturnInRegister = false;
         howToReturnStruct   = SPK_ByReference;
@@ -1144,7 +1144,7 @@ var_types Compiler::getReturnTypeForStruct(CORINFO_CLASS_HANDLE     clsHnd,
                 // Only 8-byte structs are return in multiple registers.
                 // We also only support multireg struct returns on x86 to match the native calling convention.
                 // So return 8-byte structs only when the calling convention is a native calling convention.
-                if (structSize == MAX_RET_MULTIREG_BYTES && callConv != CORINFO_UNMANAGED_CALLCONV_UNKNOWN)
+                if (structSize == MAX_RET_MULTIREG_BYTES && callConv != CORINFO_UNMANAGED_CALLCONV_MANAGED)
                 {
                     // setup wbPassType and useType indicate that this is return by value in multiple registers
                     howToReturnStruct = SPK_ByValue;
@@ -2071,7 +2071,8 @@ CorInfoUnmanagedCallConv Compiler::compMethodInfoGetUnmanagedCallConv(CORINFO_ME
     CorInfoCallConv callConv = mthInfo->args.getCallConv();
     if (callConv == CORINFO_CALLCONV_DEFAULT || callConv == CORINFO_CALLCONV_VARARG)
     {
-        return CORINFO_UNMANAGED_CALLCONV_UNKNOWN;
+        // Both the default and the varargs calling conventions represent a managed callconv.
+        return CORINFO_UNMANAGED_CALLCONV_MANAGED;
     }
     return (CorInfoUnmanagedCallConv)callConv;
 }
