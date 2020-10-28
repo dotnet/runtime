@@ -12,7 +12,7 @@
     <ContractAssemblyPath Condition="'$(ContractAssemblyPath)' == '' and
                                      '$(TargetFrameworkIdentifier)' == '.NETCoreApp' and
                                      $([MSBuild]::VersionGreaterThanOrEquals($(TargetFrameworkVersion), '$(NETCoreAppCurrentVersion)'))">$(NetCoreAppCurrentRefPath)$(TargetFileName)</ContractAssemblyPath>
-    <ContractAssemblyPath Condition="'$(ContractAssemblyPath)' == ''">$([MSBuild]::NormalizePath('$(BaseOutputPath)', 'ref', '$(TargetFramework)-$(Configuration)', '$(TargetFileName)'))</ContractAssemblyPath>
+    <ContractAssemblyPath Condition="'$(ContractAssemblyPath)' == '' and !$(TargetFramework.Contains('-'))">$([MSBuild]::NormalizePath('$(BaseOutputPath)', 'ref', '$(TargetFramework)-$(Configuration)', '$(TargetFileName)'))</ContractAssemblyPath>
 
     <!-- Disable API compat if the project doesn't have reference assembly -->
     <RunApiCompat Condition="'$(HasMatchingContract)' != 'true'">false</RunApiCompat>
