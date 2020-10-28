@@ -734,9 +734,8 @@ SHARED_API int HOSTPOLICY_CALLTYPE corehost_initialize(const corehost_initialize
         }
     }
 
-    // Trace entry point information and initialize args using previously set init information.
+    // Trace entry point information using previously set init information.
     // This function does not modify any global state.
-    arguments_t args;
     int rc = corehost_libhost_init(g_init, _X("corehost_initialize"));
     if (rc != StatusCode::Success)
         return rc;
