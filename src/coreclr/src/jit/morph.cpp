@@ -2677,7 +2677,7 @@ void Compiler::fgInitArgInfo(GenTreeCall* call)
     CLANG_FORMAT_COMMENT_ANCHOR;
 
 #if defined(TARGET_WINDOWS) && !defined(TARGET_ARM)
-    if (hasFixedRetBuffReg() && call->HasRetBufArg() && (call->gtCallMoreFlags & GTF_CALL_M_UNMGD_INST_CALL) == 0)
+    if (hasFixedRetBuffReg() && call->HasRetBufArg() && ((call->gtCallMoreFlags & GTF_CALL_M_UNMGD_INST_CALL) == 0))
 #else
     if (hasFixedRetBuffReg() && call->HasRetBufArg())
 #endif

@@ -1178,7 +1178,8 @@ GenTree* Compiler::impAssignStructPtr(GenTree*             destAddr,
         GenTreeCall* srcCall = src->AsCall();
         if (srcCall->TreatAsHasRetBufArg(this))
         {
-// Case of call returning a struct via hidden retbuf arg
+            // Case of call returning a struct via hidden retbuf arg
+            CLANG_FORMAT_COMMENT_ANCHOR;
 
 #if defined(TARGET_WINDOWS) && !defined(TARGET_ARM)
             // Unmanaged instance methods on Windows need the retbuf arg after the first (this) parameter

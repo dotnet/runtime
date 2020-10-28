@@ -9353,7 +9353,7 @@ public:
     {
 #if FEATURE_MULTIREG_RET
 #if defined(TARGET_X86)
-        // On x86, 64-bit longs are returned in multiple registers
+        // On x86, 64-bit longs and some structs are returned in multiple registers
         return varTypeIsLong(info.compRetNativeType) ||
                (varTypeIsStruct(info.compRetNativeType) && (info.compRetBuffArg == BAD_VAR_NUM));
 #else  // targets: X64-UNIX, ARM64 or ARM32
@@ -9536,7 +9536,7 @@ public:
     // size of the type these describe.
     unsigned compGetTypeSize(CorInfoType cit, CORINFO_CLASS_HANDLE clsHnd);
 
-    // Calculates if this method's entry point should have the same calling
+    // Determines whether this method's entry point should have the same calling
     // convention as an unmanaged instance method variant of the standard calling convention.
     // (only used on applicable platforms)
     bool compMethodIsNativeInstanceMethod(CORINFO_METHOD_INFO* mthInfo);
