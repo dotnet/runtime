@@ -790,6 +790,7 @@ jobs:
     - OSX_x64
     - windows_x64
     - FreeBSD_x64
+    - iOS_x64
     jobParameters:
       testScope: innerloop
       testBuildPlatforms:
