@@ -19,26 +19,5 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
 
             Assert.Single(serviceProviderEngineScope.ResolvedServices);
         }
-
-        public class CountAsyncDisposableService : IAsyncDisposable
-        {
-            public int DisposeCount { get; private set; }
-            public async ValueTask DisposeAsync()
-            {
-                await Task.Delay(1);
-                DisposeCount++;
-            }
-        }
-
-        [Fact]
-        public async Task DisposeAsync_IsCalledOnce()
-        {
-            var asyncDisposableService = new CountAsyncDisposableService();
-            var serviceProviderEngineScope = new ServiceProviderEngineScope(null);
-            serviceProviderEngineScope.CaptureDisposable(asyncDisposableService);
-            await serviceProviderEngineScope.DisposeAsync();
-
-            Assert.Equal(1, asyncDisposableService.DisposeCount);
-        }
     }
 }
