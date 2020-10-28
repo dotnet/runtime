@@ -1,9 +1,15 @@
 set(coreclr_root "../../../coreclr")
 
 include_directories(
+  ../../../mono
+  ../../../mono/mono
+  ../../../mono/mono/coregc
   ${coreclr_root}/src/gc
   ${coreclr_root}/src/gc/env
-  ${coreclr_root}/src/gc/unix) 
+  ${coreclr_root}/src/gc/unix)
+
+
+  add_definitions(-D_AMD64_ -DBIT64 -DFEATURE_REDHAWK -DPLATFORM_UNIX -DHOST_64BIT -DHOST_AMD64 -DTARGET_UNIX) 
 
 set(mono_coregc_sources_base
     coregc-mono.cpp
