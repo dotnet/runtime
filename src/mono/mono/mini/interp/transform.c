@@ -1629,8 +1629,18 @@ interp_handle_intrinsics (TransformData *td, MonoMethod *target_method, MonoClas
 		if (tm [0] == 'g') {
 			if (strcmp (tm, "get_Chars") == 0)
 				*op = MINT_GETCHR;
-			else if (strcmp (tm, "get_Length") == 0)
+			else if (strcmp(tm, "get_Length") == 0) {
+				// try to fold "ldstr".get_Length into a constant
+				if (td->last_ins && td->last_ins->opcode == MINT_LDSTR && interp_ip_in_cbb(td, td->ip - td->il_code)) {
+					MonoString* str = (MonoString*)td->data_items[td->last_ins->data[0]];
+					g_assert(str && str->length >= 0);
+					interp_clear_ins(td->last_ins);
+					interp_get_ldc_i4_from_const(td, NULL, str->length);
+					td->ip += 5;
+					return TRUE;
+				}
 				*op = MINT_STRLEN;
+			}
 		}
 	} else if (type_index >= 0) {
 		return interp_handle_magic_type_intrinsics (td, target_method, csignature, type_index);
