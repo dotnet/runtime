@@ -6390,7 +6390,7 @@ call:
 			mono_memory_barrier ();
 			MINT_IN_BREAK;
 		}
-		MINT_IN_CASE(MINT_MONO_EXCHANGE_I8)
+		MINT_IN_CASE(MINT_MONO_EXCHANGE_I8) {
 			sp--;
 			gboolean flag = FALSE;
 #if SIZEOF_VOID_P == 4
@@ -6408,6 +6408,7 @@ call:
 				sp [-1].data.l = mono_atomic_xchg_i64 ((gint64*) sp [-1].data.p, sp [0].data.l);
 			++ip;
 			MINT_IN_BREAK;
+		}
 		MINT_IN_CASE(MINT_MONO_LDDOMAIN)
 			sp->data.p = mono_domain_get ();
 			++sp;
