@@ -277,8 +277,8 @@ namespace System.ComponentModel.Composition.Hosting
         public void Dispose() { }
         protected virtual void Dispose(bool disposing) { }
         public void SetValue(object key, object? value) { }
-        public bool TryGetValue<T>(object key, bool localAtomicCompositionOnly, [System.Diagnostics.CodeAnalysis.MaybeNullWhenAttribute(false)] out T value) { throw null; }
-        public bool TryGetValue<T>(object key, [System.Diagnostics.CodeAnalysis.MaybeNullWhenAttribute(false)] out T value) { throw null; }
+        public bool TryGetValue<T>(object key, bool localAtomicCompositionOnly, [System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] out T value) { throw null; }
+        public bool TryGetValue<T>(object key, [System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] out T value) { throw null; }
     }
     public partial class CatalogExportProvider : System.ComponentModel.Composition.Hosting.ExportProvider, System.IDisposable
     {
