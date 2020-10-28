@@ -6376,7 +6376,7 @@ inline void Compiler::compInitScopeLists()
     }
 
     jitstd::sort(compEnterScopeList, compEnterScopeList + info.compVarScopesCount, genCmpLocalVarLifeBeg());
-    jitstd::sort(compExitScopeList, compEnterScopeList + info.compVarScopesCount, genCmpLocalVarLifeEnd());
+    jitstd::sort(compExitScopeList, compExitScopeList + info.compVarScopesCount, genCmpLocalVarLifeEnd());
 }
 
 void Compiler::compResetScopeLists()

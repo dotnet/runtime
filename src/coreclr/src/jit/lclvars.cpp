@@ -2020,7 +2020,7 @@ void Compiler::StructPromotionHelper::SortStructFields()
     if (!structPromotionInfo.fieldsSorted)
     {
         jitstd::sort(structPromotionInfo.fields, structPromotionInfo.fields + structPromotionInfo.fieldCnt,
-              lvaFieldOffsetCmp());
+                     lvaFieldOffsetCmp());
         structPromotionInfo.fieldsSorted = true;
     }
 }
