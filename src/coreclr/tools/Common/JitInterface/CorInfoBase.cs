@@ -187,7 +187,7 @@ namespace Internal.JitInterface
         }
 
         [UnmanagedCallersOnly]
-        static CORINFO_METHOD_STRUCT_* _resolveVirtualMethod(IntPtr thisHandle, IntPtr* ppException, CORINFO_METHOD_STRUCT_* virtualMethod, CORINFO_CLASS_STRUCT_* implementingClass, bool* requiresInstMethodTableArg, CORINFO_CONTEXT_STRUCT* ownerType)
+        static CORINFO_METHOD_STRUCT_* _resolveVirtualMethod(IntPtr thisHandle, IntPtr* ppException, CORINFO_METHOD_STRUCT_* virtualMethod, CORINFO_CLASS_STRUCT_* implementingClass, bool* requiresInstMethodTableArg, CORINFO_CONTEXT_STRUCT** ownerType)
         {
             var _this = GetThis(thisHandle);
             try
@@ -2550,7 +2550,7 @@ namespace Internal.JitInterface
             callbacks[9] = (delegate* unmanaged<IntPtr, IntPtr*, CORINFO_METHOD_STRUCT_*, CORINFO_CLASS_STRUCT_*>)&_getMethodClass;
             callbacks[10] = (delegate* unmanaged<IntPtr, IntPtr*, CORINFO_METHOD_STRUCT_*, CORINFO_MODULE_STRUCT_*>)&_getMethodModule;
             callbacks[11] = (delegate* unmanaged<IntPtr, IntPtr*, CORINFO_METHOD_STRUCT_*, uint*, uint*, bool*, void>)&_getMethodVTableOffset;
-            callbacks[12] = (delegate* unmanaged<IntPtr, IntPtr*, CORINFO_METHOD_STRUCT_*, CORINFO_CLASS_STRUCT_*, bool*, CORINFO_CONTEXT_STRUCT*, CORINFO_METHOD_STRUCT_ *>)&_resolveVirtualMethod;
+            callbacks[12] = (delegate* unmanaged<IntPtr, IntPtr*, CORINFO_METHOD_STRUCT_*, CORINFO_CLASS_STRUCT_*, bool*, CORINFO_CONTEXT_STRUCT**, CORINFO_METHOD_STRUCT_ *>)&_resolveVirtualMethod;
             callbacks[13] = (delegate* unmanaged<IntPtr, IntPtr*, CORINFO_METHOD_STRUCT_*, byte*, CORINFO_METHOD_STRUCT_*>)&_getUnboxedEntry;
             callbacks[14] = (delegate* unmanaged<IntPtr, IntPtr*, CORINFO_CLASS_STRUCT_*, CORINFO_CLASS_STRUCT_*>)&_getDefaultEqualityComparerClass;
             callbacks[15] = (delegate* unmanaged<IntPtr, IntPtr*, CORINFO_RESOLVED_TOKEN*, CORINFO_GENERICHANDLE_RESULT*, void>)&_expandRawHandleIntrinsic;

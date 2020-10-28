@@ -944,15 +944,11 @@ namespace Internal.JitInterface
             return (CORINFO_MODULE_STRUCT_*)ObjectToHandle(methodIL);
         }
 
-        // TODO: deal with requiresInstMethodTableArg
-        private CORINFO_METHOD_STRUCT_* resolveVirtualMethod(CORINFO_METHOD_STRUCT_* baseMethod, CORINFO_CLASS_STRUCT_* derivedClass, bool* requiresInstMethodTableArg, CORINFO_CONTEXT_STRUCT* ownerType)
+        // crossgen2smoke is passing now but I'm still not sure in this code
+        private CORINFO_METHOD_STRUCT_* resolveVirtualMethod(CORINFO_METHOD_STRUCT_* baseMethod, CORINFO_CLASS_STRUCT_* derivedClass, bool* requiresInstMethodTableArg, CORINFO_CONTEXT_STRUCT** ownerType)
         {
-            // Initialize OUT fields
-            info->devirtualizedMethod = null;
-            info->requiresInstMethodTableArg = false;
-            info->exactContext = null;
-
-            TypeDesc objType = HandleToObject(info->objClass);
+            TypeDesc implType = HandleToObject(derivedClass);
+            *requiresInstMethodTableArg = false;
 
             // __Canon cannot be devirtualized
             if (objType.IsCanonicalDefinitionType(CanonicalFormKind.Any))
@@ -963,13 +959,15 @@ namespace Internal.JitInterface
             MethodDesc decl = HandleToObject(info->virtualMethod);
             Debug.Assert(!decl.HasInstantiation);
 
-            if (info->context != null)
+            if (*ownerType != null)
             {
-                TypeDesc ownerTypeDesc = typeFromContext(info->context);
+                TypeDesc ownerTypeDesc = typeFromContext(*ownerType);
                 if (decl.OwningType != ownerTypeDesc)
                 {
                     Debug.Assert(ownerTypeDesc is InstantiatedType);
                     decl = _compilation.TypeSystemContext.GetMethodForInstantiatedType(decl.GetTypicalMethodDefinition(), (InstantiatedType)ownerTypeDesc);
+                    *ownerType = contextFromType(decl.OwningType);
+                    *requiresInstMethodTableArg = true;
                 }
             }
 
