@@ -11611,6 +11611,68 @@ GenTree* Compiler::fgMorphFieldAssignToSIMDIntrinsicSet(GenTree* tree)
 
 #endif // FEATURE_SIMD
 
+//------------------------------------------------------------------------------
+// fgMorphCommutative : Try to simplify "(X op C1) op C2" to "X op C3"
+//                      for commutative operators.
+//
+// Arguments:
+//       tree - node to fold
+//
+// return value:
+//       A folded GenTree* instance or nullptr if something prevents folding.
+//
+
+GenTree* Compiler::fgMorphCommutative(GenTreeOp* tree)
+{
+    assert(varTypeIsIntegralOrI(tree->TypeGet()));
+    assert(tree->OperIs(GT_ADD, GT_MUL, GT_OR, GT_AND, GT_XOR));
+
+    // op1 can be GT_COMMA, in this case we're going to fold
+    // "(op (COMMA(... (op X C1))) C2)" to "(COMMA(... (op X C3)))"
+    GenTree*   op1  = tree->gtGetOp1()->gtEffectiveVal(true);
+    genTreeOps oper = tree->OperGet();
+
+    if (!op1->OperIs(oper) || !tree->gtGetOp2()->IsCnsIntOrI() || !op1->gtGetOp2()->IsCnsIntOrI() ||
+        op1->gtGetOp1()->IsCnsIntOrI() || gtIsActiveCSE_Candidate(op1))
+    {
+        return nullptr;
+    }
+
+    if (tree->OperMayOverflow() && (tree->gtOverflow() || op1->gtOverflow()))
+    {
+        return nullptr;
+    }
+
+    GenTreeIntCon* cns1 = op1->gtGetOp2()->AsIntCon();
+    GenTreeIntCon* cns2 = tree->gtGetOp2()->AsIntCon();
+
+    if (!varTypeIsIntegralOrI(tree->TypeGet()) || cns1->TypeIs(TYP_REF) || !cns1->TypeIs(cns2->TypeGet()))
+    {
+        return nullptr;
+    }
+
+    GenTree* foldedCns = gtFoldExprConst(gtNewOperNode(oper, cns1->TypeGet(), cns1, cns2));
+    if (!foldedCns->IsCnsIntOrI())
+    {
+        // Give up if we can't fold "C1 op C2"
+        return nullptr;
+    }
+
+    cns1->gtIconVal = foldedCns->AsIntCon()->IconValue();
+    if ((oper == GT_ADD) && foldedCns->IsCnsIntOrI())
+    {
+        cns1->AsIntCon()->gtFieldSeq =
+            GetFieldSeqStore()->Append(cns1->AsIntCon()->gtFieldSeq, cns2->AsIntCon()->gtFieldSeq);
+    }
+
+    GenTreeOp* newTree = tree->gtGetOp1()->AsOp();
+    DEBUG_DESTROY_NODE(tree);
+    DEBUG_DESTROY_NODE(cns2);
+    DEBUG_DESTROY_NODE(foldedCns);
+    INDEBUG(newTree->gtOp2->gtDebugFlags |= GTF_DEBUG_NODE_MORPHED);
+    return newTree;
+}
+
 /*****************************************************************************
  *
  *  Transform the given GTK_SMPOP tree for code generation.
@@ -13451,48 +13513,7 @@ DONE_MORPHING_CHILDREN:
 
                 if (op2->IsCnsIntOrI() && varTypeIsIntegralOrI(typ))
                 {
-                    // Fold "((x+icon1)+icon2) to (x+(icon1+icon2))"
-                    // Fold "((comma(y, x+icon1)+icon2) to comma(y, x+(icon1+icon2))"
                     CLANG_FORMAT_COMMENT_ANCHOR;
-
-                    const bool commasOnly        = true;
-                    GenTree*   op1EffectiveValue = op1->gtEffectiveVal(commasOnly);
-
-                    if (op1EffectiveValue->gtOper == GT_ADD && !gtIsActiveCSE_Candidate(op1EffectiveValue) &&
-                        !op1EffectiveValue->gtOverflow() && op1EffectiveValue->AsOp()->gtOp2->IsCnsIntOrI() &&
-                        (op1EffectiveValue->AsOp()->gtOp2->OperGet() == op2->OperGet()) &&
-                        (op1EffectiveValue->AsOp()->gtOp2->TypeGet() != TYP_REF) && (op2->TypeGet() != TYP_REF))
-                    {
-                        cns1 = op1EffectiveValue->AsOp()->gtOp2;
-
-                        cns1->AsIntConCommon()->SetIconValue(cns1->AsIntConCommon()->IconValue() +
-                                                             op2->AsIntConCommon()->IconValue());
-#ifdef TARGET_64BIT
-                        if (cns1->TypeGet() == TYP_INT)
-                        {
-                            // we need to properly re-sign-extend or truncate after adding two int constants above
-                            cns1->AsIntCon()->TruncateOrSignExtend32();
-                        }
-#endif // TARGET_64BIT
-
-                        if (cns1->OperGet() == GT_CNS_INT)
-                        {
-                            cns1->AsIntCon()->gtFieldSeq =
-                                GetFieldSeqStore()->Append(cns1->AsIntCon()->gtFieldSeq, op2->AsIntCon()->gtFieldSeq);
-                        }
-                        DEBUG_DESTROY_NODE(op2);
-
-                        GenTree* oldTree = tree;
-                        tree             = tree->AsOp()->gtOp1;
-                        op1              = tree->AsOp()->gtOp1;
-                        op2              = tree->AsOp()->gtOp2;
-                        DEBUG_DESTROY_NODE(oldTree);
-
-                        if (tree->OperGet() != GT_ADD)
-                        {
-                            return tree;
-                        }
-                    }
 
                     // Fold (x + 0).
 
@@ -13667,6 +13688,21 @@ DONE_MORPHING_CHILDREN:
                 typ  = tree->TypeGet();
                 op1  = tree->AsOp()->gtOp1;
                 op2  = tree->AsOp()->gtOp2;
+            }
+
+            if (varTypeIsIntegralOrI(tree->TypeGet()) && tree->OperIs(GT_ADD, GT_MUL, GT_AND, GT_OR, GT_XOR))
+            {
+                GenTree* foldedTree = fgMorphCommutative(tree->AsOp());
+                if (foldedTree != nullptr)
+                {
+                    tree = foldedTree;
+                    op1  = tree->gtGetOp1();
+                    op2  = tree->gtGetOp2();
+                    if (!tree->OperIs(oper))
+                    {
+                        return tree;
+                    }
+                }
             }
 
             break;

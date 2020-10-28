@@ -1,24 +1,18 @@
 parameters:
   buildConfig: ''
-  archType: 'wasm'
-  osGroup: 'Browser'
+  archType: 'x64'
+  osGroup: 'Android'
   osSubgroup: ''
   container: ''
   testGroup: ''
-  crossBuild: false
   crossrootfsDir: ''
-  readyToRun: false
   liveLibrariesBuildConfig: ''
-  crossgen2: false
-  compositeBuildMode: false
   helixQueues: ''
   stagedBuild: false
   displayNameArgs: ''
-  runInUnloadableContext: false
   runtimeVariant: ''
   variables: {}
   pool: ''
-  runtimeFlavor: 'mono'
   runtimeFlavorDisplayName: 'Mono'
   dependsOn: []
   #arcade-specific parameters
@@ -28,10 +22,10 @@ parameters:
   timeoutInMinutes: ''
   enableMicrobuild: ''
   gatherAssetManifests: false
-
-
+  
+  
 steps:
-  - script: $(Build.SourcesDirectory)/src/tests/build$(scriptExt) /p:LibrariesConfiguration=${{ parameters.buildConfig }} -ci -skipstressdependencies -excludemonofailures os Browser wasm $(buildConfigUpper)
+  - script: $(Build.SourcesDirectory)/src/tests/build$(scriptExt) /p:LibrariesConfiguration=${{ parameters.buildConfig }} -ci -skipstressdependencies -excludemonofailures os Android x64 $(buildConfigUpper)
     displayName: Build Tests
 
   #  Send tests to Helix
@@ -51,8 +45,7 @@ steps:
         helixBuild: $(Build.BuildNumber)
         helixSource: $(_HelixSource)
 
-        ${{ if ne(parameters.readyToRun, true) }}:
-          helixType: 'test/functional/cli/'
+        helixType: 'test/functional/cli/'
 
         helixQueues: ${{ parameters.helixQueues }}
 
@@ -65,11 +58,6 @@ steps:
         timeoutPerTestInMinutes: $(timeoutPerTestInMinutes)
         timeoutPerTestCollectionInMinutes: $(timeoutPerTestCollectionInMinutes)
 
-        runCrossGen: ${{ and(eq(parameters.readyToRun, true), ne(parameters.crossgen2, true)) }}
-        runCrossGen2: ${{ and(eq(parameters.readyToRun, true), eq(parameters.crossgen2, true)) }}
-        compositeBuildMode: ${{ parameters.compositeBuildMode }}
-        runInUnloadableContext: ${{ parameters.runInUnloadableContext }}
-
         ${{ if eq(variables['System.TeamProject'], 'internal') }}:
           # Access token variable for internal project from the
           # DotNet-HelixApi-Access variable group
@@ -77,4 +65,4 @@ steps:
 
         helixProjectArguments: '$(Build.SourcesDirectory)/src/tests/Common/helixpublishwitharcade.proj'
 
-        scenarios: normal
+        scenarios: normal 

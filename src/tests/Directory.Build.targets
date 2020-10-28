@@ -157,9 +157,9 @@
 
      </ItemGroup>
 
-     <!-- There are currently no native project binaries on wasm -->
+     <!-- There are currently no native project binaries on wasm or Android -->
      <Error  Text="The native project files are missing in $(NativeProjectOutputFolder) please run build from the root of the repo at least once"
-             Condition="'@(NativeProjectBinaries)' == '' And '$(TargetArchitecture)' != 'wasm'" />
+             Condition="'@(NativeProjectBinaries)' == '' And '$(TargetOS)' != 'Browser' And '$(TargetOS)' != 'Android'"/>
 
      <Copy
         SourceFiles="@(NativeProjectBinaries)"

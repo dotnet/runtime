@@ -9159,7 +9159,7 @@ HRESULT ProfToEEInterfaceImpl::RequestReJIT(ULONG       cFunctions,   // in
         // Yay!
         NOTHROW;
 
-        // When we suspend the runtime we drop into premptive mode
+        // When we suspend the runtime we drop into preemptive mode
         GC_TRIGGERS;
 
         // Yay!

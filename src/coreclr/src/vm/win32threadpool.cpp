@@ -739,14 +739,21 @@ BOOL ThreadpoolMgr::GetAvailableThreads(DWORD* AvailableWorkerThreads,
 
     EnsureInitialized();
 
-    ThreadCounter::Counts counts = WorkerCounter.GetCleanCounts();
-
-    if (UsePortableThreadPool() || MaxLimitTotalWorkerThreads < counts.NumActive)
+    if (UsePortableThreadPool())
+    {
         *AvailableWorkerThreads = 0;
+    }
     else
-        *AvailableWorkerThreads = MaxLimitTotalWorkerThreads - counts.NumWorking;
+    {
+        ThreadCounter::Counts counts = WorkerCounter.GetCleanCounts();
 
-    counts = CPThreadCounter.GetCleanCounts();
+        if (MaxLimitTotalWorkerThreads < counts.NumActive)
+            *AvailableWorkerThreads = 0;
+        else
+            *AvailableWorkerThreads = MaxLimitTotalWorkerThreads - counts.NumWorking;
+    }
+
+    ThreadCounter::Counts counts = CPThreadCounter.GetCleanCounts();
     if (MaxLimitTotalCPThreads < counts.NumActive)
         *AvailableIOCompletionThreads = counts.NumActive - counts.NumWorking;
     else
