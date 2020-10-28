@@ -848,8 +848,6 @@ namespace System.IO
 
         private sealed class NullStream : Stream
         {
-            private static readonly Task<int> s_zeroTask = Task.FromResult(0);
-
             internal NullStream() { }
 
             public override bool CanRead => true;
@@ -942,7 +940,7 @@ namespace System.IO
 
             public override Task<int> ReadAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
             {
-                return s_zeroTask;
+                return Task.FromResult(0);
             }
 
             public override ValueTask<int> ReadAsync(Memory<byte> buffer, CancellationToken cancellationToken = default)
