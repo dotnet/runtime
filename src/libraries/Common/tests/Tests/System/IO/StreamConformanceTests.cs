@@ -14,6 +14,7 @@ using Xunit;
 namespace System.IO.Tests
 {
     /// <summary>Base class providing tests for any Stream-derived type.</summary>
+    [PlatformSpecific(~TestPlatforms.Browser)] // lots of operations aren't supported on browser
     public abstract class StreamConformanceTests
     {
         /// <summary>Gets the name of the byte[] argument to Read/Write methods.</summary>
@@ -1511,9 +1512,6 @@ namespace System.IO.Tests
             using StreamPair streams = await CreateConnectedStreamsAsync();
             foreach ((Stream writeable, Stream readable) in GetReadWritePairs(streams))
             {
-                await Assert.ThrowsAnyAsync<OperationCanceledException>(() => writeable.WriteAsync(new byte[1], 0, 1, new CancellationToken(true)));
-                await Assert.ThrowsAnyAsync<OperationCanceledException>(async () => { await writeable.WriteAsync(new Memory<byte>(new byte[1]), new CancellationToken(true)); });
-
                 var buffer = new byte[BufferedSize + 1];
                 Exception e;
 

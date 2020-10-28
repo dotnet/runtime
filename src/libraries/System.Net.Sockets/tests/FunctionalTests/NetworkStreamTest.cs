@@ -18,7 +18,6 @@ namespace System.Net.Sockets.Tests
         protected override bool CanTimeout => true;
         protected override Type InvalidIAsyncResultExceptionType => typeof(IOException);
         protected override bool FlushRequiredToWriteData => false;
-        protected override int BufferedSize => 99_999_999; // something sufficiently large to exhaust kernel buffer
         protected override Type UnsupportedConcurrentExceptionType => null;
         protected override bool ReadWriteValueTasksProtectSingleConsumption => true;
         protected override Task<StreamPair> CreateConnectedStreamsAsync()
