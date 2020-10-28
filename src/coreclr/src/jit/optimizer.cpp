@@ -3548,16 +3548,6 @@ void Compiler::optUnrollLoops()
         // LPFLG_CONST - required because this transform only handles full unrolls
         requiredFlags = LPFLG_DO_WHILE | LPFLG_CONST;
 
-#ifdef DEBUG
-        if (compStressCompile(STRESS_UNROLL_LOOPS, 50))
-        {
-            // In stress mode, quadruple the size limit, and drop
-            // the restriction that loop limit must be vector element count.
-
-            unrollLimitSz *= 4;
-        }
-#endif
-
         /* Ignore the loop if we don't have a do-while
         that has a constant number of iterations */
 
@@ -3645,10 +3635,27 @@ void Compiler::optUnrollLoops()
             continue;
         }
 
-        // Unroll only if limit is 0, 1, or Vector_.Length (as a heuristic, not for correctness/structural reasons)
-        if ((totalIter > 1) && !(loopFlags & LPFLG_SIMD_LIMIT) && !compStressCompile(STRESS_UNROLL_LOOPS, 50))
+#ifdef DEBUG
+        if (compStressCompile(STRESS_UNROLL_LOOPS, 50))
         {
-            continue;
+            // In stress mode, quadruple the size limit, and drop
+            // the restriction that loop limit must be vector element count.
+
+            unrollLimitSz *= 4;
+        }
+        else
+#endif
+        // Unroll only if limit is 0, 1, or Vector_.Length (as a heuristic, not for correctness/structural reasons)
+        if (!(loopFlags & LPFLG_SIMD_LIMIT))
+        {
+            if (totalIter <= 1)
+            {
+                unrollLimitSz *= 4;
+            }
+            else
+            {
+                continue;
+            }
         }
 
         GenTree* incr = incrStmt->GetRootNode();
