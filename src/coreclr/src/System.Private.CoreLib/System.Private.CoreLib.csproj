@@ -308,9 +308,6 @@
     </Compile>
   </ItemGroup>
   <Import Project="$(LibrariesProjectRoot)\System.Private.CoreLib\src\System.Private.CoreLib.Shared.projitems" Label="Shared" />
-  <PropertyGroup Condition="'$(TargetOS)' == 'windows'">
-    <TargetOS>windows</TargetOS>
-  </PropertyGroup>
 
   <ItemGroup>
     <!-- This is the T4 template service and is added by VS anytime you modify a T4 template. Required for .tt files. -->
