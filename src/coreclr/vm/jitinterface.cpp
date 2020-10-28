@@ -8919,7 +8919,7 @@ CORINFO_METHOD_HANDLE CEEInfo::resolveVirtualMethodHelper(CORINFO_METHOD_HANDLE 
             TypeHandle OwnerClsHnd = GetTypeFromContext(*ownerType);
             pOwnerMT = OwnerClsHnd.GetMethodTable();
 
-            if (!canCastStraightForward && !pOwnerMT->IsInterface() && !pDerivedMT->CanCastToInterface(pOwnerMT))
+            if (!canCastStraightForward && !(pOwnerMT->IsInterface() && pDerivedMT->CanCastToInterface(pOwnerMT)))
             {
                 return nullptr;
             }
