@@ -27,12 +27,12 @@ namespace System.Security.Cryptography
                     clearLimit = bytesRead;
                 }
 
-                await HashCoreAsync(rented, 0, bytesRead, cancellationToken).ConfigureAwait(false);
+                HashCore(rented, 0, bytesRead);
             }
 
             CryptographicOperations.ZeroMemory(rented.AsSpan(0, clearLimit));
             ArrayPool<byte>.Shared.Return(rented, clearArray: false);
-            return await CaptureHashCodeAndReinitializeAsync(cancellationToken).ConfigureAwait(false);
+            return CaptureHashCodeAndReinitialize();
         }
     }
 }
