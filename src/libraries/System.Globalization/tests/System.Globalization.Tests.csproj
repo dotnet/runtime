@@ -8,7 +8,7 @@
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="AssemblyInfo.cs" />
-    <Compile Include="IcuTests.cs" />
+    <Compile Include="NlsSwitchTests.cs" />
     <Compile Include="CompareInfo\CompareInfoTests.cs" />
     <Compile Include="CompareInfo\CompareInfoTests.IndexOf.cs" />
     <Compile Include="CompareInfo\CompareInfoTests.IsPrefix.cs" />

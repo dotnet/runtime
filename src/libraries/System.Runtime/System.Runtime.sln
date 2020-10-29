@@ -7,7 +7,7 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.Runtime.Tests", "tes
 		{56B9D0A9-44D3-488E-8B42-C14A6E30CAB2} = {56B9D0A9-44D3-488E-8B42-C14A6E30CAB2}
 	EndProjectSection
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.Runtime.Nls.Tests", "tests\NlsTests\System.Runtime.Nls.Tests.csproj", "{F6ED1D9D-DBF6-420A-9710-672BF78A00E4}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.Runtime.Icu.Tests", "tests\IcuTests\System.Runtime.Icu.Tests.csproj", "{F6ED1D9D-DBF6-420A-9710-672BF78A00E4}"
 	ProjectSection(ProjectDependencies) = postProject
 		{56B9D0A9-44D3-488E-8B42-C14A6E30CAB2} = {56B9D0A9-44D3-488E-8B42-C14A6E30CAB2}
 	EndProjectSection

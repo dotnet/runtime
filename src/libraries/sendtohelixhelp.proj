@@ -91,6 +91,10 @@
     <HelixCommand>$(HelixCommand) /p:LocalPackagesPath="%HELIX_CORRELATION_PAYLOAD%\packages\"</HelixCommand>
   </PropertyGroup>
 
+  <ItemGroup Condition="'$(TargetsWindows)' == 'true' and '$(TestPackages)' != 'true'">
+    <HelixPreCommand Include="if exist &quot;%HELIX_WORKITEM_PAYLOAD%\SetIcuMode.cmd&quot; call %HELIX_WORKITEM_PAYLOAD%\SetIcuMode.cmd" />
+  </ItemGroup>
+
   <ItemGroup Condition="'$(MonoEnvOptions)' != ''">
     <HelixPreCommand Condition="'$(TargetsWindows)' == 'true'" Include="set MONO_ENV_OPTIONS='$(MonoEnvOptions)'" />
     <HelixPreCommand Condition="'$(TargetsWindows)' != 'true'" Include="export MONO_ENV_OPTIONS='$(MonoEnvOptions)'" />

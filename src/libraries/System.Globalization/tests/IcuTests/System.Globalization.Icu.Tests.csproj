@@ -9,7 +9,7 @@
   </PropertyGroup>
   <ItemGroup>
     <!-- Include tests from System.Globalization.Tests -->
-    <Compile Include="NlsSwitchTests.cs" />
+    <Compile Include="IcuTests.cs" />
     <Compile Include="..\CompareInfo\CompareInfoTests.cs"
              Link="CompareInfo\CompareInfoTests.cs" />
     <Compile Include="..\CompareInfo\CompareInfoTests.IndexOf.cs"
@@ -232,6 +232,7 @@
       <Link>CharUnicodeInfo\GraphemeBreakTest-$(UnicodeUcdVersion).0.txt</Link>
       <LogicalName>GraphemeBreakTest.txt</LogicalName>
     </EmbeddedResource>
+    <None Include="$(RepositoryEngineeringDir)testing\SetIcuMode.cmd" CopyToOutputDirectory="PreserveNewest" />
     <None Include="runtimeconfig.template.json" />
   </ItemGroup>
   <ItemGroup>
