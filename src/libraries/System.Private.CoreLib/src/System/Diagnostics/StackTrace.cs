@@ -19,6 +19,7 @@ namespace System.Diagnostics
     {
         public const int METHODS_TO_SKIP = 0;
 
+        private static readonly bool s_ilOffsetToStackTrace = Environment.GetEnvironmentVariable("COMPlus_ILOffsetToStackTrace") == "1";
         private int _numOfFrames;
         private int _methodsToSkip;
 
@@ -206,6 +207,7 @@ namespace System.Diagnostics
             string word_At = SR.GetResourceString(nameof(SR.Word_At), defaultString: "at");
             // We also want to pass in a default for inFileLineNumber.
             string inFileLineNum = SR.GetResourceString(nameof(SR.StackTrace_InFileLineNumber), defaultString: "in {0}:line {1}");
+            string inFileILOffset = SR.GetResourceString(nameof(SR.StackTrace_InFileILOffset), defaultString: "in {0}:token 0x{1}+0x{2}");
             bool fFirstFrame = true;
             for (int iFrameIndex = 0; iFrameIndex < _numOfFrames; iFrameIndex++)
             {
@@ -322,6 +324,21 @@ namespace System.Diagnostics
                             // tack on " in c:\tmp\MyFile.cs:line 5"
                             sb.Append(' ');
                             sb.AppendFormat(CultureInfo.InvariantCulture, inFileLineNum, fileName, sf.GetFileLineNumber());
+                        }
+                        else if (s_ilOffsetToStackTrace)
+                        {
+                            try
+                            {
+                                string methodToken = Convert.ToString(mb.MetadataToken, 16);
+                                string ilOffset = Convert.ToString(sf.GetILOffset(), 16);
+                                string? assemblyName = System.IO.Path.GetFileName(mb.ReflectedType?.Assembly.Location);
+                                if (assemblyName != null)
+                                {
+                                    sb.Append(' ');
+                                    sb.AppendFormat(CultureInfo.InvariantCulture, inFileILOffset, assemblyName, methodToken, ilOffset);
+                                }
+                            }
+                            catch (Exception) {}
                         }
                     }
 
