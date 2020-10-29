@@ -394,17 +394,13 @@ namespace System.Net.Sockets.Tests
     [Trait("IPv6", "true")]
     public class DualModeBeginConnectToIPEndPoint : DualModeBase
     {
-        [Fact] // Base case
-        // "The system detected an invalid pointer address in attempting to use a pointer argument in a call"
+        [Fact]
         public void Socket_BeginConnectV4IPEndPointToV4Host_Throws()
         {
             using (Socket socket = new Socket(SocketType.Stream, ProtocolType.Tcp))
             {
                 socket.DualMode = false;
-                Assert.Throws<SocketException>(() =>
-                {
-                    socket.BeginConnect(new IPEndPoint(IPAddress.Loopback, UnusedPort), null, null);
-                });
+                Assert.Throws<NotSupportedException>(() => socket.BeginConnect(new IPEndPoint(IPAddress.Loopback, UnusedPort), null, null));
             }
         }
 
@@ -438,7 +434,7 @@ namespace System.Net.Sockets.Tests
         [Theory]
         [MemberData(nameof(DualMode_IPAddresses_ListenOn_DualMode_Data))]
         [PlatformSpecific(TestPlatforms.Windows)]  // Connecting sockets to DNS endpoints via the instance Connect and ConnectAsync methods not supported on Unix
-        private async Task DualModeBeginConnect_IPAddressListToHost_Helper(IPAddress[] connectTo, IPAddress listenOn, bool dualModeServer)
+        public async Task DualModeBeginConnect_IPAddressListToHost_Helper(IPAddress[] connectTo, IPAddress listenOn, bool dualModeServer)
         {
             using (Socket socket = new Socket(SocketType.Stream, ProtocolType.Tcp))
             using (SocketServer server = new SocketServer(_log, listenOn, dualModeServer, out int port))

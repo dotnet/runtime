@@ -47,6 +47,11 @@ namespace System.IO.Pipelines
 
         public override int Read(byte[] buffer, int offset, int count)
         {
+            if (buffer is null)
+            {
+                throw new ArgumentNullException(nameof(buffer));
+            }
+
             return ReadAsync(buffer, offset, count).GetAwaiter().GetResult();
         }
 
@@ -64,6 +69,11 @@ namespace System.IO.Pipelines
 
         public override Task<int> ReadAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
         {
+            if (buffer is null)
+            {
+                throw new ArgumentNullException(nameof(buffer));
+            }
+
             return ReadAsyncInternal(new Memory<byte>(buffer, offset, count), cancellationToken).AsTask();
         }
 
@@ -118,6 +128,8 @@ namespace System.IO.Pipelines
 
         public override Task CopyToAsync(Stream destination, int bufferSize, CancellationToken cancellationToken)
         {
+            StreamHelpers.ValidateCopyToArgs(this, destination, bufferSize);
+
             // Delegate to CopyToAsync on the PipeReader
             return _pipeReader.CopyToAsync(destination, cancellationToken);
         }

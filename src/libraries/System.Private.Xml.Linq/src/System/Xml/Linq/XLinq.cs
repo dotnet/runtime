@@ -95,16 +95,16 @@ namespace System.Xml.Linq
                 AddNode(new XElement(x));
                 return;
             }
-            object[]? o = content as object[];
+            object?[]? o = content as object?[];
             if (o != null)
             {
-                foreach (object obj in o) AddContent(obj);
+                foreach (object? obj in o) AddContent(obj);
                 return;
             }
             IEnumerable? e = content as IEnumerable;
             if (e != null)
             {
-                foreach (object obj in e) AddContent(obj);
+                foreach (object? obj in e) AddContent(obj);
                 return;
             }
             if (content is XAttribute) throw new ArgumentException(SR.Argument_AddAttribute);

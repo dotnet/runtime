@@ -2789,33 +2789,20 @@ ves_icall_System_AppDomain_LoadAssemblyRaw (MonoAppDomainHandle ad,
 {
 	MonoAssembly *ass;
 	MonoReflectionAssemblyHandle refass = MONO_HANDLE_CAST (MonoReflectionAssembly, NULL_HANDLE);
-	MonoDomain *domain = MONO_HANDLE_GETVAL(ad, data);
-	guint32 raw_assembly_len = mono_array_handle_length (raw_assembly);
-
-	/* Copy the data ourselves to unpin the raw assembly byte array as soon as possible */
-	guint8 *assembly_data = (guint8*) g_try_malloc (raw_assembly_len);
-	if (!assembly_data) {
-		mono_error_set_out_of_memory (error, "Could not allocate %ud bytes to copy raw assembly data", raw_assembly_len);
-		return refass;
-	}
-	MonoGCHandle gchandle;
-	mono_byte *raw_data = (mono_byte*) MONO_ARRAY_HANDLE_PIN (raw_assembly, gchar, 0, &gchandle);
-	memcpy (assembly_data, raw_data, raw_assembly_len);
-	mono_gchandle_free_internal (gchandle); /* unpin */
-	MONO_HANDLE_ASSIGN (raw_assembly, NULL_HANDLE); /* don't reference the data anymore */
-	
+	MonoDomain *domain = MONO_HANDLE_GETVAL (ad, data);
 	MonoAssemblyLoadContext *alc = mono_domain_default_alc (domain);
 
-	mono_byte *raw_symbol_data = NULL;
-	guint32 symbol_len = 0;
-	MonoGCHandle symbol_gchandle = 0;
+	guint8 *raw_assembly_ptr = (guint8 *)mono_array_handle_addr (raw_assembly, sizeof (guint8), 0);
+	guint32 raw_assembly_len = mono_array_handle_length (raw_assembly);
+
+	guint8 *raw_symbols_ptr = NULL;
+	guint32 raw_symbols_len = 0;
 	if (!MONO_HANDLE_IS_NULL (raw_symbol_store)) {
-		symbol_len = mono_array_handle_length (raw_symbol_store);
-		raw_symbol_data = (mono_byte*) MONO_ARRAY_HANDLE_PIN (raw_symbol_store, mono_byte, 0, &symbol_gchandle);
+		raw_symbols_ptr = (guint8 *)mono_array_handle_addr (raw_symbol_store, sizeof (guint8), 0);
+		raw_symbols_len = mono_array_handle_length (raw_symbol_store);
 	}
 
-	ass = mono_alc_load_raw_bytes (alc, assembly_data, raw_assembly_len, raw_symbol_data, symbol_len, refonly, error);
-	mono_gchandle_free_internal (symbol_gchandle);
+	ass = mono_alc_load_raw_bytes (alc, raw_assembly_ptr, raw_assembly_len, raw_symbols_ptr, raw_symbols_len, refonly, error);
 	goto_if_nok (error, leave);
 
 	refass = mono_assembly_get_object_handle (domain, ass, error);

@@ -127,6 +127,8 @@ namespace System.IO.Compression
                         _stream.Write(output.Slice(0, bytesWritten));
                     }
                 }
+
+                _stream.Flush();
             }
         }
 
@@ -160,6 +162,8 @@ namespace System.IO.Compression
                     if (bytesWritten > 0)
                         await _stream.WriteAsync(output.Slice(0, bytesWritten), cancellationToken).ConfigureAwait(false);
                 }
+
+                await _stream.FlushAsync(cancellationToken).ConfigureAwait(false);
             }
             finally
             {

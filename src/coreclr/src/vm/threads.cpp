@@ -388,7 +388,7 @@ BOOL Thread::Alert ()
     BOOL fRetVal = FALSE;
     {
         HANDLE handle = GetThreadHandle();
-        if (handle != INVALID_HANDLE_VALUE && handle != SWITCHOUT_HANDLE_VALUE)
+        if (handle != INVALID_HANDLE_VALUE)
         {
             fRetVal = ::QueueUserAPC(UserInterruptAPC, handle, APC_Code);
         }
@@ -422,7 +422,7 @@ DWORD Thread::JoinEx(DWORD timeout, WaitMode mode)
         mode = (WaitMode)(mode & ~WaitMode_InDeadlock);
 
         HANDLE handle = GetThreadHandle();
-        if (handle == INVALID_HANDLE_VALUE || handle == SWITCHOUT_HANDLE_VALUE) {
+        if (handle == INVALID_HANDLE_VALUE) {
             return WAIT_FAILED;
         }
         if (pCurThread) {
@@ -572,8 +572,7 @@ DWORD Thread::StartThread()
     m_Creater.Clear();
 #endif
 
-    _ASSERTE (GetThreadHandle() != INVALID_HANDLE_VALUE &&
-                GetThreadHandle() != SWITCHOUT_HANDLE_VALUE);
+    _ASSERTE (GetThreadHandle() != INVALID_HANDLE_VALUE);
     dwRetVal = ::ResumeThread(GetThreadHandle());
 
 
@@ -1000,7 +999,7 @@ HRESULT Thread::DetachThread(BOOL fDLLThreadDetach)
     }
 
     HANDLE hThread = GetThreadHandle();
-    SetThreadHandle (SWITCHOUT_HANDLE_VALUE);
+    SetThreadHandle (INVALID_HANDLE_VALUE);
     while (m_dwThreadHandleBeingUsed > 0)
     {
         // Another thread is using the handle now.
@@ -1137,6 +1136,7 @@ void InitThreadManager()
 
     // All patched helpers should fit into one page.
     // If you hit this assert on retail build, there is most likely problem with BBT script.
+    _ASSERTE_ALL_BUILDS("clr/src/VM/threads.cpp", (BYTE*)JIT_PatchedCodeLast - (BYTE*)JIT_PatchedCodeStart > (ptrdiff_t)0);
     _ASSERTE_ALL_BUILDS("clr/src/VM/threads.cpp", (BYTE*)JIT_PatchedCodeLast - (BYTE*)JIT_PatchedCodeStart < (ptrdiff_t)GetOsPageSize());
 
 #ifdef FEATURE_WRITEBARRIER_COPY
@@ -5181,7 +5181,16 @@ void ThreadStore::InitThreadStore()
 // additional semantics well beyond a normal lock.
 DEBUG_NOINLINE void ThreadStore::Enter()
 {
-    WRAPPER_NO_CONTRACT;
+    CONTRACTL
+    {
+        NOTHROW;
+        GC_NOTRIGGER;
+        // we must be in preemptive mode while taking this lock
+        // if suspension is in progress, the lock is taken, and there is no way to suspend us once we block
+        MODE_PREEMPTIVE;
+    }
+    CONTRACTL_END;
+
     ANNOTATION_SPECIAL_HOLDER_CALLER_NEEDS_DYNAMIC_CONTRACT;
     CHECK_ONE_STORE();
     m_Crst.Enter();
@@ -5189,7 +5198,12 @@ DEBUG_NOINLINE void ThreadStore::Enter()
 
 DEBUG_NOINLINE void ThreadStore::Leave()
 {
-    WRAPPER_NO_CONTRACT;
+    CONTRACTL {
+        NOTHROW;
+        GC_NOTRIGGER;
+    }
+    CONTRACTL_END;
+
     ANNOTATION_SPECIAL_HOLDER_CALLER_NEEDS_DYNAMIC_CONTRACT;
     CHECK_ONE_STORE();
     m_Crst.Leave();

@@ -170,6 +170,7 @@ target_sources(coreclr PUBLIC $<TARGET_OBJECTS:cee_wks_core>)
 target_link_libraries(coreclr PUBLIC ${CORECLR_LIBRARIES} ${CLRJIT_STATIC} cee_wks)
 target_sources(coreclr_static PUBLIC $<TARGET_OBJECTS:cee_wks_core>)
 target_link_libraries(coreclr_static PUBLIC ${CORECLR_LIBRARIES} clrjit_static cee_wks_mergeable)
+target_compile_definitions(coreclr_static PUBLIC CORECLR_EMBEDDED)
 
 # Create the runtime module index header file containing the coreclr build id
 # for xplat and the timestamp/size on Windows.

@@ -288,7 +288,7 @@ build_Tests()
         fi
     fi
 
-    if [[ "$__SkipNative" != 1 && "$__BuildArch" != "wasm" ]]; then
+    if [[ "$__SkipNative" != 1 && "$__TargetOS" != "Browser" && "$__TargetOS" != "Android" ]]; then
         build_native "$__TargetOS" "$__BuildArch" "$__TestDir" "$__TryRunDir" "$__NativeTestIntermediatesDir" "CoreCLR test component"
 
         if [[ "$?" -ne 0 ]]; then
@@ -394,6 +394,7 @@ build_MSBuild_projects()
             buildArgs+=("${__UnprocessedBuildArgs[@]}")
             buildArgs+=("\"/p:CopyNativeProjectBinaries=${__CopyNativeProjectsAfterCombinedTestBuild}\"");
             buildArgs+=("/p:__SkipPackageRestore=true");
+            buildArgs+=("/bl:${__RepoRootDir}/artifacts/log/${__BuildType}/build_managed_tests_${testGroupToBuild}.binlog");
 
             # Disable warnAsError - coreclr issue 19922
             nextCommand="\"$__RepoRootDir/eng/common/msbuild.sh\" $__ArcadeScriptArgs --warnAsError false ${buildArgs[@]}"
@@ -667,6 +668,10 @@ fi
 echo "${__MsgPrefix}Test build successful."
 echo "${__MsgPrefix}Test binaries are available at ${__TestBinDir}"
 
+if [ "$__TargetOS" == "Android" ]; then
+    build_MSBuild_projects "Create_Android_App" "$__RepoRootDir/src/tests/run.proj" "Create Android Apps" "/t:BuildAllAndroidApp" "/p:RunWithAndroid=true"
+fi
+
 __testNativeBinDir="$__IntermediatesDir"/tests
 
 if [[ "$__RunTests" -ne 0 ]]; then
@@ -679,7 +684,7 @@ if [[ "$__RunTests" -ne 0 ]]; then
 
     echo "Tests run successful."
 else
-    echo "To run all tests use 'tests/runtests.sh' where:"
+    echo "To run all tests use 'run.sh' where:"
     echo "    testRootDir      = $__TestBinDir"
     echo "    coreClrBinDir    = $__BinDir"
     echo "    coreFxBinDir     = $CORE_ROOT"

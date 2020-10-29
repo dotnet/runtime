@@ -547,6 +547,7 @@ namespace System.Net.Tests
             }
         }
 
+        [PlatformSpecific(TestPlatforms.Windows)] // Unix implementation uses Socket.Begin/EndSend, which doesn't fail in this case
         [Fact]
         public async Task EndWrite_InvalidAsyncResult_ThrowsArgumentException()
         {
@@ -562,6 +563,7 @@ namespace System.Net.Tests
             }
         }
 
+        [PlatformSpecific(TestPlatforms.Windows)] // Unix implementation uses Socket.Begin/EndSend, which doesn't fail in this case
         [Fact]
         public async Task EndWrite_CalledTwice_ThrowsInvalidOperationException()
         {
