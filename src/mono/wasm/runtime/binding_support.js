@@ -124,8 +124,6 @@ var BindingSupportLib = {
 			this.safehandle_get_handle = get_method ("SafeHandleGetHandle");
 			this.safehandle_release_by_handle = get_method ("SafeHandleReleaseByHandle");
 
-			this.find_underlying_entry_point = get_method ("FindUnderlyingEntrypoint");
-
 			this.init = true;
 		},
 
@@ -883,15 +881,6 @@ var BindingSupportLib = {
 			if (!method)
 				throw new Error ("Could not find entry point for assembly: " + assembly);
 
-			// For async entry methods we need to drill down to the async method.
-			var underlying_entry_point = this.call_method(this.find_underlying_entry_point, null, "is", [ method ]);
-			if (underlying_entry_point)
-			{
-				method = this.resolve_method_fqn(underlying_entry_point);
-				if (!method)
-					throw new Error ("Could not find entry point for assembly: " + assembly);
-			}
-
 			if (typeof signature === "undefined")
 				signature = Module.mono_method_get_call_signature (method);
 
@@ -909,15 +898,6 @@ var BindingSupportLib = {
 			var method = this.assembly_get_entry_point(asm);
 			if (!method)
 				throw new Error ("Could not find entry point for assembly: " + assembly);
-
-			// For async entry methods we need to drill down to the async method.
-			var underlying_entry_point = this.call_method(this.find_underlying_entry_point, null, "is", [ method ]);
-			if (underlying_entry_point)
-			{
-				method = this.resolve_method_fqn(underlying_entry_point);
-				if (!method)
-					throw new Error ("Could not find entry point for assembly: " + assembly);
-			}
 
 			if (typeof signature === "undefined")
 				signature = Module.mono_method_get_call_signature (method);

@@ -624,8 +624,31 @@ mono_wasm_assembly_get_entry_point (MonoAssembly *assembly)
 		return NULL;
 	
 	mono_domain_ensure_entry_assembly (root_domain, assembly);
+	method = mono_get_method (image, entry, NULL);
 
-	return mono_get_method (image, entry, NULL);
+	/*
+	 * If the entry point looks like a compliler generated wrapper around
+	 * an async method in the form "<Name>" then try to look up the async method
+	 * "Name" it is wrapping.
+	 */
+	if (mono_method_get_flags (method, NULL) & 0x0800 /* METHOD_ATTRIBUTE_SPECIAL_NAME */) {
+		const char *name = mono_method_get_name (method);
+		int name_length = strlen (name);
+
+		if ((*name != '<') || (name[name_length-1] != '>'))
+			return method;
+
+		MonoClass *klass = mono_method_get_class (method);
+		char *async_name = strdup (name);
+
+		async_name[name_length -1] = '\0';
+
+		MonoMethod *async_method = mono_class_get_method_from_name (klass, async_name + 1, -1 /* any number of parameters */);
+		free (async_name);
+		if (async_method != NULL)
+			return async_method;
+	}
+	return method;
 }
 
 EMSCRIPTEN_KEEPALIVE char *

@@ -479,39 +479,5 @@ namespace System.Runtime.InteropServices.JavaScript
             return safeHandle.DangerousGetHandle();
         }
 
-        public static string? FindUnderlyingEntrypoint(IntPtr entryPoint)
-        {
-            IntPtrAndHandle tmp = default(IntPtrAndHandle);
-            tmp.ptr = entryPoint;
-
-            // This is the entrypoint declared in .NET metadata. In the case of async main, it's the
-            // compiler-generated wrapper method. Otherwise it's the developer-defined method.
-            MethodBase? metadataEntrypointMethodBase = MethodBase.GetMethodFromHandle(tmp.handle);;
-            // For "async Task Main", the C# compiler generates a method called "<Main>"
-            // that is marked as the assembly entrypoint. Detect this case, and instead of
-            // calling "<Whatever>", call the sibling "Whatever".
-            if (metadataEntrypointMethodBase?.IsSpecialName ?? false)
-            {
-                string origName = metadataEntrypointMethodBase.Name;
-                int origNameLength = origName.Length;
-                if (origNameLength > 2)
-                {
-                    string candidateMethodName = origName.Substring(1, origNameLength - 2);
-                    MethodInfo? candidateMethod = metadataEntrypointMethodBase?.DeclaringType?.GetMethod(
-                        candidateMethodName,
-                        BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic);
-
-                    if (candidateMethod != null)
-                    {
-                        return $"[{candidateMethod?.DeclaringType?.Assembly.FullName}]{candidateMethod?.DeclaringType}:{candidateMethod?.Name}";
-                    }
-                }
-            }
-
-            // Either it's not async main, or for some reason we couldn't locate the underlying entrypoint,
-            // so use the one from assembly metadata.
-            return null;
-        }
-
     }
 }

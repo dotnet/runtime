@@ -338,17 +338,8 @@ var App = {
 				fail_exec ("Error: Missing main executable argument.");
 				return;
 			}
-			main_assembly = assembly_load (args[1]);
-			if (main_assembly == 0) {
-				fail_exec ("Error: Unable to load main executable '" + args[1] + "'");
-				return;
-			}
-			main_method = assembly_get_entry_point (main_assembly);
-			if (main_method == 0) {
-				fail_exec ("Error: Main (string[]) method not found.");
-				return;
-			}
 
+			main_assembly_name = args[1];
 			var app_args = string_array_new (args.length - 2);
 			for (var i = 2; i < args.length; ++i) {
 				obj_array_set (app_args, i - 2, string_from_js (args [i]));
@@ -373,39 +364,30 @@ var App = {
 			}
 
 			try {
-				let exit_code = Module.mono_call_assembly_entry_point("WasmSample", [app_args]);
+				// Automatic signature isn't working correctly
+				let exit_code = Module.mono_call_assembly_entry_point(main_assembly_name, [app_args], "mi");
 
 				if (isThenable(exit_code))
 				{
 					exit_code.then(
 						(result) => {
 							test_exit (result);
+						},
+						reason => {
+							console.error (reason);
+							test_exit (1);
 						}
 					)
+				} else {
+					test_exit (exit_code);
+					return;
 				}
-				test_exit (exit_code);
 			} catch (ex) {
 				print ("JS exception: " + ex);
 				print (ex.stack);
 				test_exit (1);
 				return;
 			}
-
-/*
-			// For testing tp/timers etc.
-			while (true) {
-				// Sleep by busy waiting
-				var start = performance.now ();
-				useconds = 1e6 / 10;
-				while (performance.now() - start < useconds / 1000) {
-					// Do nothing.
-				}
-
-				Module.pump_message ();
-			}
-*/
-
-			return;
 		} else {
 			fail_exec ("Unhandled argument: " + args [0]);
 		}
