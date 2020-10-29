@@ -667,7 +667,19 @@ namespace System
 
         // Joins an array of strings together as one string with a separator between each original string.
         //
-        public static unsafe string Join(string? separator, IList<string?> value, int startIndex, int count)
+        public static unsafe string Join(string? separator, string?[] value, int startIndex, int count)
+        {
+            separator ??= Empty;
+            fixed (char* pSeparator = &separator._firstChar)
+            {
+                // Defer argument validation to the internal function
+                return JoinCore(pSeparator, separator.Length, value, startIndex, count);
+            }
+        }
+
+        // Joins an array of strings together as one string with a separator between each original string.
+        //
+        private static unsafe string Join(string? separator, IList<string?> value, int startIndex, int count)
         {
             separator ??= Empty;
             fixed (char* pSeparator = &separator._firstChar)
