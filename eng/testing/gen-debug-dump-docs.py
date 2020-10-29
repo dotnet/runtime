@@ -13,7 +13,7 @@ while idx < args_len:
     arg = sys.argv[idx]
     idx += 1
     if arg == '-buildid':
-        if idx >= args_len:
+        if idx >= args_len or sys.argv[idx].startswith('-'):
             print("Must specify a value for -buildid")
             exit(1)
         
@@ -21,7 +21,7 @@ while idx < args_len:
         idx += 1
     
     if arg == '-jobid':
-        if idx >= args_len:
+        if idx >= args_len or sys.argv[idx].startswith('-'):
             print("Must specify a value for -jobid")
             exit(1)
         
@@ -29,7 +29,7 @@ while idx < args_len:
         idx += 1
     
     if arg == '-workitem':
-        if idx >= args_len:
+        if idx >= args_len or sys.argv[idx].startswith('-'):
             print("Must specify a value for -workitem")
             exit(1)
         
@@ -37,7 +37,7 @@ while idx < args_len:
         idx += 1
 
     if arg == '-template-dir':
-        if idx >= args_len:
+        if idx >= args_len or sys.argv[idx].startswith('-'):
             print("Must specify a value for -template-dir")
             exit(1)
         
@@ -45,7 +45,7 @@ while idx < args_len:
         idx += 1
 
     if arg == '-outdir':
-        if idx >= args_len:
+        if idx >= args_len or sys.argv[idx].startswith('-'):
             print("Must specify a value for -outdir")
             exit(1)
         
