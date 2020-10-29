@@ -174,13 +174,7 @@ namespace System.Resources
 
         internal static unsafe int ReadUnalignedI4(int* p)
         {
-            // Unaligned, little endian format
-            int value = Unsafe.ReadUnaligned<int>(p);
-            if (!BitConverter.IsLittleEndian)
-            {
-                value = BinaryPrimitives.ReverseEndianness(value);
-            }
-            return value;
+            return BinaryPrimitives.ReadInt32LittleEndian(new Span<int>(p, sizeof(int)));
         }
 
         private void SkipString()
