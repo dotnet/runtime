@@ -9,12 +9,12 @@ namespace System.Net.Http
     public sealed class SocketsHttpConnectionContext
     {
         private readonly DnsEndPoint _dnsEndPoint;
-        private readonly HttpRequestMessage _requestMessage;
+        private readonly HttpRequestMessage _initialRequestMessage;
 
-        internal SocketsHttpConnectionContext(DnsEndPoint dnsEndPoint, HttpRequestMessage requestMessage)
+        internal SocketsHttpConnectionContext(DnsEndPoint dnsEndPoint, HttpRequestMessage initialRequestMessage)
         {
             _dnsEndPoint = dnsEndPoint;
-            _requestMessage = requestMessage;
+            _initialRequestMessage = initialRequestMessage;
         }
 
         /// <summary>
@@ -25,6 +25,6 @@ namespace System.Net.Http
         /// <summary>
         /// The initial HttpRequestMessage that is causing the connection to be created.
         /// </summary>
-        public HttpRequestMessage RequestMessage => _requestMessage;
+        public HttpRequestMessage InitialRequestMessage => _initialRequestMessage;
     }
 }

@@ -17,7 +17,7 @@
 **===================================================================*/
 #include <palsuite.h>
 
-int __cdecl main(int argc, char **argv)
+PALTEST(c_runtime__rotl_test1_paltest_rotl_test1, "c_runtime/_rotl/test1/paltest_rotl_test1")
 {
     unsigned results = 0;
     int i,j;

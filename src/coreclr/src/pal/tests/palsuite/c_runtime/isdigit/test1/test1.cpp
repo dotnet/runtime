@@ -13,7 +13,7 @@
 
 #include <palsuite.h>
 
-int __cdecl main(int argc, char *argv[])
+PALTEST(c_runtime_isdigit_test1_paltest_isdigit_test1, "c_runtime/isdigit/test1/paltest_isdigit_test1")
 {
     int i;
 

@@ -10,7 +10,7 @@ namespace System.Text.Json.Serialization.Converters
     {
         public override bool CanConvert(Type typeToConvert)
         {
-            return Nullable.GetUnderlyingType(typeToConvert) != null;
+            return typeToConvert.IsNullableOfT();
         }
 
         public override JsonConverter CreateConverter(Type typeToConvert, JsonSerializerOptions options)

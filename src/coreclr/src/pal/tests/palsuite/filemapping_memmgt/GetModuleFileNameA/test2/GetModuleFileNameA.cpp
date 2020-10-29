@@ -16,7 +16,7 @@
 
 #define MODULENAMEBUFFERSIZE 1024
 
-int __cdecl main(int argc, char *argv[])
+PALTEST(filemapping_memmgt_GetModuleFileNameA_test2_paltest_getmodulefilenamea_test2, "filemapping_memmgt/GetModuleFileNameA/test2/paltest_getmodulefilenamea_test2")
 {
 
     DWORD ModuleNameLength;

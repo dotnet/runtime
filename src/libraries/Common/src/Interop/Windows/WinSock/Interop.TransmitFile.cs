@@ -14,7 +14,7 @@ internal static partial class Interop
         [DllImport(Interop.Libraries.Mswsock, SetLastError = true)]
         internal static extern unsafe bool TransmitFile(
             SafeHandle socket,
-            SafeHandle? fileHandle,
+            IntPtr fileHandle,
             int numberOfBytesToWrite,
             int numberOfBytesPerSend,
             NativeOverlapped* overlapped,

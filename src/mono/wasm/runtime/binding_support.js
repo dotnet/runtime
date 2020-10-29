@@ -52,7 +52,7 @@ var BindingSupportLib = {
 			this.find_method = Module.cwrap ('mono_wasm_assembly_find_method', 'number', ['number', 'string', 'number']);
 			this.invoke_method = Module.cwrap ('mono_wasm_invoke_method', 'number', ['number', 'number', 'number', 'number']);
 			this.mono_string_get_utf8 = Module.cwrap ('mono_wasm_string_get_utf8', 'number', ['number']);
-			this.js_string_to_mono_string = Module.cwrap ('mono_wasm_string_from_js', 'number', ['string']);
+			this.mono_wasm_string_from_utf16 = Module.cwrap ('mono_wasm_string_from_utf16', 'number', ['number', 'number']);
 			this.mono_get_obj_type = Module.cwrap ('mono_wasm_get_obj_type', 'number', ['number']);
 			this.mono_unbox_int = Module.cwrap ('mono_unbox_int', 'number', ['number']);
 			this.mono_unbox_float = Module.cwrap ('mono_wasm_unbox_float', 'number', ['number']);
@@ -141,6 +141,20 @@ var BindingSupportLib = {
 			return this.call_method (this.is_simple_array, null, "mi", [ ele ]);
 		},
 
+		js_string_to_mono_string: function (string) {
+			if (string === null || typeof string === "undefined")
+				return 0;
+
+			var buffer = Module._malloc ((string.length + 1) * 2);
+			var buffer16 = (buffer / 2) | 0;
+			for (var i = 0; i < string.length; i++)
+				Module.HEAP16[buffer16 + i] = string.charCodeAt (i);
+			Module.HEAP16[buffer16 + string.length] = 0;
+			var result = this.mono_wasm_string_from_utf16 (buffer, string.length);
+			Module._free (buffer);
+			return result;
+		},
+		
 		mono_array_to_js_array: function (mono_array) {
 			if (mono_array === 0)
 				return null;
@@ -923,7 +937,7 @@ var BindingSupportLib = {
 			if (typeof obj  !== "undefined" && obj !== null) {
 				// if this is the global object then do not
 				// unregister it.
-				if (typeof ___mono_wasm_global___ !== "undefined" && ___mono_wasm_global___ === obj)
+				if (globalThis === obj)
 					return obj;
 
 				var gc_handle = obj.__mono_gchandle__;
@@ -952,7 +966,7 @@ var BindingSupportLib = {
 			if (typeof obj  !== "undefined" && obj !== null) {
 				// if this is the global object then do not
 				// unregister it.
-				if (typeof ___mono_wasm_global___ !== "undefined" && ___mono_wasm_global___ === obj)
+				if (globalThis === obj)
 					return obj;
 
 				var gc_handle = obj.__mono_gchandle__;
@@ -966,32 +980,6 @@ var BindingSupportLib = {
 				}
 			}
 			return obj;
-		},
-		mono_wasm_get_global: function() {
-			function testGlobal(obj) {
-				obj['___mono_wasm_global___'] = obj;
-				var success = typeof ___mono_wasm_global___ === 'object' && obj['___mono_wasm_global___'] === obj;
-				if (!success) {
-					delete obj['___mono_wasm_global___'];
-				}
-				return success;
-			}
-			if (typeof ___mono_wasm_global___ === 'object') {
-				return ___mono_wasm_global___;
-			}
-			if (typeof global === 'object' && testGlobal(global)) {
-				___mono_wasm_global___ = global;
-			} else if (typeof window === 'object' && testGlobal(window)) {
-				___mono_wasm_global___ = window;
-			} else if (testGlobal((function(){return Function;})()('return this')())) {
-
-				___mono_wasm_global___ = (function(){return Function;})()('return this')();
-
-			}
-			if (typeof ___mono_wasm_global___ === 'object') {
-				return ___mono_wasm_global___;
-			}
-			throw Error('Unable to get mono wasm global object.');
 		},
 		mono_wasm_parse_args : function (args) {
 			var js_args = this.mono_array_to_js_array(args);
@@ -1188,10 +1176,10 @@ var BindingSupportLib = {
 		var globalObj = undefined;
 
 		if (!js_name) {
-			globalObj = BINDING.mono_wasm_get_global();
+			globalObj = globalThis;
 		}
 		else {
-			globalObj = BINDING.mono_wasm_get_global()[js_name];
+			globalObj = globalThis[js_name];
 		}
 
 		if (globalObj === null || typeof globalObj === undefined) {
@@ -1248,7 +1236,7 @@ var BindingSupportLib = {
 			return BINDING.js_string_to_mono_string ("Core object '" + js_name + "' not found.");
 		}
 
-		var coreObj = BINDING.mono_wasm_get_global()[js_name];
+		var coreObj = globalThis[js_name];
 
 		if (coreObj === null || typeof coreObj === "undefined") {
 			setValue (is_exception, 1, "i32");

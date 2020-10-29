@@ -33,7 +33,6 @@
     <Reference Include="$(CoreCLRCrossgen2Dir)crossgen2.dll" />
     <Reference Include="$(CoreCLRCrossgen2Dir)ILCompiler*.dll" />
     <Reference Include="$(CoreCLRCrossgen2Dir)Microsoft.DiaSymReader.dll" />
-    <Reference Include="$(CoreCLRCrossgen2Dir)System.CommandLine.dll" />
     <NativeRuntimeAsset Include="$(CoreCLRCrossgen2Dir)$(LibraryFilePrefix)jitinterface_$(TargetArchitecture)$(LibraryFileExtension)" TargetPath="tools/" />
     <NativeRuntimeAsset Include="$(CoreCLRCrossgen2Dir)$(LibraryFilePrefix)clrjit_win_x86_$(TargetArchitecture)$(LibraryFileExtension)" TargetPath="tools/"  />
     <NativeRuntimeAsset Include="$(CoreCLRCrossgen2Dir)$(LibraryFilePrefix)clrjit_win_arm_$(TargetArchitecture)$(LibraryFileExtension)" TargetPath="tools/"  />

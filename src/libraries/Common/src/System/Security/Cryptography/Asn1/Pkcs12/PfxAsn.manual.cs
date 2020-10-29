@@ -52,8 +52,13 @@ namespace System.Security.Cryptography.Asn1.Pkcs12
                 throw new CryptographicException(SR.Cryptography_Der_Invalid_Encoding);
             }
 
-            // Cannot use the ArrayPool or stackalloc here because CreateHMAC needs a properly bounded array.
+#if NETFRAMEWORK || NETCOREAPP3_0 || NETSTANDARD
             byte[] derived = new byte[expectedOutputSize];
+#else
+            Debug.Assert(expectedOutputSize <= 64); // SHA512 is the largest digest size we know about
+            Span<byte> derived = stackalloc byte[expectedOutputSize];
+#endif
+
 
             int iterationCount =
                 PasswordBasedEncryption.NormalizeIterationCount(MacData.Value.IterationCount);

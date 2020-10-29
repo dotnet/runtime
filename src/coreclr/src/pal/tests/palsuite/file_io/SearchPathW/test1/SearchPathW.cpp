@@ -57,19 +57,19 @@
 
 
 #include <palsuite.h>
-const char* szDir                   =          ".";
+#define szDir                             "."
 
-const char* szNoFileName            =          "333asdf";
-const char* szNoFileNameExt         =          ".x77t";
+#define szNoFileName                      "333asdf"
+#define szNoFileNameExt                   ".x77t"
 
-const char* szFileNameExists        =          "searchpathw";
-const char* szFileNameExtExists     =          ".c";
+#define szFileNameExists                  "searchpathw"
+#define szFileNameExtExists               ".c"
 
-const char* szFileNameExistsWithExt =          "searchpathw.c";
+#define szFileNameExistsWithExt           "searchpathw.c"
 
-char  fileloc[_MAX_PATH];
+char  fileloc_SearchPathW_test1[_MAX_PATH];
 
-void removeFileHelper(LPSTR pfile, int location)
+void removeFileHelper_SearchPathW_test1(LPSTR pfile, int location)
 {
     FILE *fp;
     fp = fopen( pfile, "r");
@@ -93,12 +93,13 @@ void removeFileHelper(LPSTR pfile, int location)
 
 }
 
-void RemoveAll()
+void RemoveAll_SearchPathW_test1()
 {
-    removeFileHelper(fileloc, 1);
+    removeFileHelper_SearchPathW_test1(fileloc_SearchPathW_test1, 1);
 }
 
-int __cdecl main(int argc, char *argv[]) {
+PALTEST(file_io_SearchPathW_test1_paltest_searchpathw_test1, "file_io/SearchPathW/test1/paltest_searchpathw_test1")
+{
 
     WCHAR* lpPath        = NULL;
     WCHAR* lpFileName    = NULL;
@@ -131,17 +132,17 @@ int __cdecl main(int argc, char *argv[]) {
         Fail("ERROR: GetTempPathA failed to get a path\n");
     }
 
-    memset(fileloc, 0, _MAX_PATH);
-    sprintf_s(fileloc, _countof(fileloc), "%s%s", fullPath, szFileNameExistsWithExt);
+    memset(fileloc_SearchPathW_test1, 0, _MAX_PATH);
+    sprintf_s(fileloc_SearchPathW_test1, _countof(fileloc_SearchPathW_test1), "%s%s", fullPath, szFileNameExistsWithExt);
 
-    RemoveAll();
+    RemoveAll_SearchPathW_test1();
 
-    hsearchfile = CreateFileA(fileloc, GENERIC_WRITE, 0, 0, CREATE_ALWAYS,
+    hsearchfile = CreateFileA(fileloc_SearchPathW_test1, GENERIC_WRITE, 0, 0, CREATE_ALWAYS,
                             FILE_ATTRIBUTE_NORMAL, 0);
 
     if (hsearchfile == NULL)
     {
-        Trace("ERROR[%ul]: couldn't create %s\n", GetLastError(), fileloc);
+        Trace("ERROR[%ul]: couldn't create %s\n", GetLastError(), fileloc_SearchPathW_test1);
         return FAIL;
     }
 
@@ -185,7 +186,7 @@ int __cdecl main(int argc, char *argv[]) {
     free(lpPath);
     free(lpFileName);
 
-    RemoveAll();
+    RemoveAll_SearchPathW_test1();
 
     PAL_Terminate();
     return PASS;

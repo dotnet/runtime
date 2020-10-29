@@ -47,7 +47,7 @@ void DoTest(void *Buffer, int Size, int Expected)
 
 }
 
-int __cdecl main(int argc,char *argv[]) 
+PALTEST(miscellaneous_FlushInstructionCache_test1_paltest_flushinstructioncache_test1, "miscellaneous/FlushInstructionCache/test1/paltest_flushinstructioncache_test1")
 {
     char ValidPtr[256];
 

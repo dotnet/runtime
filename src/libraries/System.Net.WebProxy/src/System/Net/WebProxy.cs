@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections;
+using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Net.NetworkInformation;
 using System.Runtime.Serialization;
@@ -63,12 +64,13 @@ namespace System.Net
 
         public bool BypassProxyOnLocal { get; set; }
 
+        [AllowNull]
         public string[] BypassList
         {
             get { return _bypassList != null ? (string[])_bypassList.ToArray(typeof(string)) : Array.Empty<string>(); }
             set
             {
-                _bypassList = new ArrayList(value);
+                _bypassList = value != null ? new ArrayList(value) : null;
                 UpdateRegexList(true);
             }
         }

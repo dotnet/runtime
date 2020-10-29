@@ -5,7 +5,7 @@
 //
 // Example usage, wrapping a Task<int>-returning FooAsync method with Begin/EndFoo methods:
 //
-//     public IAsyncResult BeginFoo(..., AsyncCallback callback, object state) =>
+//     public IAsyncResult BeginFoo(..., AsyncCallback? callback, object? state) =>
 //         TaskToApm.Begin(FooAsync(...), callback, state);
 //
 //     public int EndFoo(IAsyncResult asyncResult) =>
@@ -37,9 +37,9 @@ namespace System.Threading.Tasks
         /// <param name="asyncResult">The IAsyncResult to unwrap.</param>
         public static void End(IAsyncResult asyncResult)
         {
-            if (asyncResult is TaskAsyncResult twar)
+            if (GetTask(asyncResult) is Task t)
             {
-                twar._task.GetAwaiter().GetResult();
+                t.GetAwaiter().GetResult();
                 return;
             }
 
@@ -50,7 +50,7 @@ namespace System.Threading.Tasks
         /// <param name="asyncResult">The IAsyncResult to unwrap.</param>
         public static TResult End<TResult>(IAsyncResult asyncResult)
         {
-            if (asyncResult is TaskAsyncResult twar && twar._task is Task<TResult> task)
+            if (GetTask(asyncResult) is Task<TResult> task)
             {
                 return task.GetAwaiter().GetResult();
             }
@@ -58,6 +58,9 @@ namespace System.Threading.Tasks
             ThrowArgumentException(asyncResult);
             return default!; // unreachable
         }
+
+        /// <summary>Gets the task represented by the IAsyncResult.</summary>
+        public static Task? GetTask(IAsyncResult asyncResult) => (asyncResult as TaskAsyncResult)?._task;
 
         /// <summary>Throws an argument exception for the invalid <paramref name="asyncResult"/>.</summary>
         [DoesNotReturn]

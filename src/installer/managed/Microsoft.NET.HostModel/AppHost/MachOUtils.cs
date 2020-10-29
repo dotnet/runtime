@@ -11,13 +11,13 @@ namespace Microsoft.NET.HostModel.AppHost
 {
     internal static class MachOUtils
     {
-        // The MachO Headers are copied from 
+        // The MachO Headers are copied from
         // https://opensource.apple.com/source/cctools/cctools-870/include/mach-o/loader.h
         //
         // The data fields and enumerations match the structure definitions in the above file,
         // and hence do not conform to C# CoreFx naming style.
 
-        enum Magic : uint
+        private enum Magic : uint
         {
             MH_MAGIC = 0xfeedface,
             MH_CIGAM = 0xcefaedfe,
@@ -25,13 +25,13 @@ namespace Microsoft.NET.HostModel.AppHost
             MH_CIGAM_64 = 0xcffaedfe
         }
 
-        enum FileType : uint
+        private enum FileType : uint
         {
             MH_EXECUTE = 0x2
         }
 
 #pragma warning disable 0649
-        struct MachHeader
+        private struct MachHeader
         {
             public Magic magic;
             public int cputype;
@@ -63,22 +63,22 @@ namespace Microsoft.NET.HostModel.AppHost
             }
         }
 
-        enum Command : uint
+        private enum Command : uint
         {
             LC_SYMTAB = 0x2,
             LC_SEGMENT_64 = 0x19,
             LC_CODE_SIGNATURE = 0x1d,
         }
 
-        struct LoadCommand
+        private struct LoadCommand
         {
             public Command cmd;
             public uint cmdsize;
         }
 
         // The linkedit_data_command contains the offsets and sizes of a blob
-        // of data in the __LINKEDIT segment (including LC_CODE_SIGNATURE).  
-        struct LinkEditDataCommand
+        // of data in the __LINKEDIT segment (including LC_CODE_SIGNATURE).
+        private struct LinkEditDataCommand
         {
             public Command cmd;
             public uint cmdsize;
@@ -86,7 +86,7 @@ namespace Microsoft.NET.HostModel.AppHost
             public uint datasize;
         }
 
-        struct SymtabCommand
+        private struct SymtabCommand
         {
             public uint cmd;
             public uint cmdsize;
@@ -96,7 +96,7 @@ namespace Microsoft.NET.HostModel.AppHost
             public uint strsize;
         };
 
-        unsafe struct SegmentCommand64
+        private unsafe struct SegmentCommand64
         {
             public Command cmd;
             public uint cmdsize;
@@ -159,9 +159,9 @@ namespace Microsoft.NET.HostModel.AppHost
         /// <summary>
         /// This Method is a utility to remove the code-signature (if any)
         /// from a MachO AppHost binary.
-        /// 
+        ///
         /// The tool assumes the following layout of the executable:
-        /// 
+        ///
         /// * MachoHeader (64-bit, executable, not swapped integers)
         /// * LoadCommands
         ///     LC_SEGMENT_64 (__PAGEZERO)
@@ -169,37 +169,37 @@ namespace Microsoft.NET.HostModel.AppHost
         ///     LC_SEGMENT_64 (__DATA)
         ///     LC_SEGMENT_64 (__LINKEDIT)
         ///     ...
-        ///     LC_SYMTAB 
+        ///     LC_SYMTAB
         ///     ...
         ///     LC_CODE_SIGNATURE (last)
-        ///     
+        ///
         ///  * ... Different Segments ...
-        ///  
+        ///
         ///  * The __LINKEDIT Segment (last)
-        ///      * ... Different sections ... 
-        ///      * SYMTAB 
+        ///      * ... Different sections ...
+        ///      * SYMTAB
         ///      * (Some alignment bytes)
         ///      * The Code-signature
-        ///      
+        ///
         /// In order to remove the signature, the method:
         /// - Removes (zeros out) the LC_CODE_SIGNATURE command
         /// - Adjusts the size and count of the load commands in the header
         /// - Truncates the size of the __LINKEDIT segment to the end of SYMTAB
         /// - Truncates the apphost file to the end of the __LINKEDIT segment
-        /// 
+        ///
         /// </summary>
         /// <param name="filePath">Path to the AppHost</param>
         /// <returns>
-        ///  True if 
-        ///    - The input is a MachO binary, and 
-        ///    - It is a signed binary, and 
+        ///  True if
+        ///    - The input is a MachO binary, and
+        ///    - It is a signed binary, and
         ///    - The signature was successfully removed
-        ///   False otherwise 
+        ///   False otherwise
         /// </returns>
         /// <exception cref="AppHostMachOFormatException">
         /// The input is a MachO file, but doesn't match the expect format of the AppHost.
         /// </exception>
-        unsafe public static bool RemoveSignature(string filePath)
+        public static unsafe bool RemoveSignature(string filePath)
         {
             using (var stream = new FileStream(filePath, FileMode.Open, FileAccess.ReadWrite))
             {
@@ -278,7 +278,7 @@ namespace Microsoft.NET.HostModel.AppHost
                                 Verify(symtab->symoff > linkEdit->fileoff, MachOFormatError.SymtabNotInLinkEdit);
                                 Verify(signature->dataoff > linkEdit->fileoff, MachOFormatError.SignNotInLinkEdit);
 
-                                // The signature blob immediately follows the symtab blob, 
+                                // The signature blob immediately follows the symtab blob,
                                 // except for a few bytes of padding.
                                 Verify(signature->dataoff >= symtabEnd && signature->dataoff - symtabEnd < 32, MachOFormatError.SignBlobNotLast);
 
@@ -294,7 +294,7 @@ namespace Microsoft.NET.HostModel.AppHost
                                 linkEdit->filesize -= signatureSize;
 
                                 // codesign --remove-signature doesn't reset the vmsize.
-                                // Setting the vmsize here makes the output bin-equal with the original 
+                                // Setting the vmsize here makes the output bin-equal with the original
                                 // unsigned apphost (and not bin-equal with a signed-unsigned-apphost).
                                 linkEdit->vmsize = linkEdit->filesize;
                             }
@@ -321,4 +321,3 @@ namespace Microsoft.NET.HostModel.AppHost
         }
     }
 }
-

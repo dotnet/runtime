@@ -23,7 +23,7 @@ struct OutputCheck
     char *ExpectedStr;
 };
 
-int __cdecl main(int argc, char *argv[])
+PALTEST(debug_api_OutputDebugStringA_test1_paltest_outputdebugstringa_test1, "debug_api/OutputDebugStringA/test1/paltest_outputdebugstringa_test1")
 {
 
     PROCESS_INFORMATION pi;

@@ -3,6 +3,7 @@
 
 using System.Collections.Generic;
 using System.Net.Sockets;
+using System.Threading;
 using System.Threading.Tasks;
 
 using Xunit;
@@ -109,6 +110,26 @@ namespace System.Net.NameResolution.Tests
             Assert.Equal(IPAddress.IPv6Loopback, addresses[0]);
         }
 
+        [Theory]
+        [MemberData(nameof(IPAndIncorrectFamily_Data))]
+        public async Task DnsGetHostAddresses_IPStringAndIncorrectFamily_ReturnsNoIPs(bool useAsync, IPAddress address, AddressFamily family)
+        {
+            IPAddress[] addresses =
+                useAsync ? await Dns.GetHostAddressesAsync(address.ToString(), family) :
+                Dns.GetHostAddresses(address.ToString(), family);
+
+            Assert.Empty(addresses);
+        }
+
+        public static TheoryData<bool, IPAddress, AddressFamily> IPAndIncorrectFamily_Data => new TheoryData<bool, IPAddress, AddressFamily>
+        {
+            // useAsync, IP, family
+            { false, IPAddress.Loopback, AddressFamily.InterNetworkV6 },
+            { false, IPAddress.IPv6Loopback, AddressFamily.InterNetwork },
+            { true, IPAddress.Loopback, AddressFamily.InterNetworkV6 },
+            { true, IPAddress.IPv6Loopback, AddressFamily.InterNetwork }
+        };
+
         [Fact]
         public void DnsGetHostAddresses_LocalHost_ReturnsSameAsGetHostEntry()
         {
@@ -116,6 +137,56 @@ namespace System.Net.NameResolution.Tests
             IPHostEntry ipEntry = Dns.GetHostEntry(TestSettings.LocalHost);
 
             Assert.Equal(ipEntry.AddressList, addresses);
+        }
+
+        [OuterLoop]
+        [Theory]
+        [MemberData(nameof(AddressFamilySpecificTestData))]
+        public async Task DnsGetHostAddresses_LocalHost_AddressFamilySpecific(bool useAsync, string host, AddressFamily addressFamily)
+        {
+            IPAddress[] addresses =
+                useAsync ? await Dns.GetHostAddressesAsync(host, addressFamily) :
+                Dns.GetHostAddresses(host, addressFamily);
+
+            Assert.All(addresses, address => Assert.Equal(addressFamily, address.AddressFamily));
+        }
+
+        public static TheoryData<bool, string, AddressFamily> AddressFamilySpecificTestData =>
+            new TheoryData<bool, string, AddressFamily>()
+            {
+                // async, hostname, af
+                { false, TestSettings.IPv4Host, AddressFamily.InterNetwork },
+                { false, TestSettings.IPv6Host, AddressFamily.InterNetworkV6 },
+                { true, TestSettings.IPv4Host, AddressFamily.InterNetwork },
+                { true, TestSettings.IPv6Host, AddressFamily.InterNetworkV6 }
+            };
+
+        [Fact]
+        public async Task DnsGetHostAddresses_PreCancelledToken_Throws()
+        {
+            using var cts = new CancellationTokenSource();
+            cts.Cancel();
+
+            OperationCanceledException oce = await Assert.ThrowsAnyAsync<OperationCanceledException>(() => Dns.GetHostAddressesAsync(TestSettings.LocalHost, cts.Token));
+            Assert.Equal(cts.Token, oce.CancellationToken);
+        }
+
+        [OuterLoop]
+        [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/43816")] // Race condition outlined below.
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/33378", TestPlatforms.AnyUnix)] // Cancellation of an outstanding getaddrinfo is not supported on *nix.
+        public async Task DnsGetHostAddresses_PostCancelledToken_Throws()
+        {
+            using var cts = new CancellationTokenSource();
+
+            Task task = Dns.GetHostAddressesAsync(TestSettings.UncachedHost, cts.Token);
+
+            // This test might flake if the cancellation token takes too long to trigger:
+            // It's a race between the DNS server getting back to us and the cancellation processing.
+            cts.Cancel();
+
+            OperationCanceledException oce = await Assert.ThrowsAnyAsync<OperationCanceledException>(() => task);
+            Assert.Equal(cts.Token, oce.CancellationToken);
         }
     }
 }

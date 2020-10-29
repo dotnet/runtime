@@ -153,7 +153,7 @@ namespace System
             return true;
         }
 
-        private bool TrySetSlot(object?[] a, int index, object o)
+        private static bool TrySetSlot(object?[] a, int index, object o)
         {
             if (a[index] == null && System.Threading.Interlocked.CompareExchange<object?>(ref a[index], o, null) == null)
                 return true;
@@ -221,7 +221,7 @@ namespace System
         //    to form a new delegate.
         protected sealed override Delegate CombineImpl(Delegate? follow)
         {
-            if ((object?)follow == null) // cast to object for a more efficient test
+            if (follow is null)
                 return this;
 
             // Verify that the types are the same...
@@ -322,7 +322,7 @@ namespace System
             return newInvocationList;
         }
 
-        private bool EqualInvocationLists(object[] a, object[] b, int start, int count)
+        private static bool EqualInvocationLists(object[] a, object[] b, int start, int count)
         {
             for (int i = 0; i < count; i++)
             {

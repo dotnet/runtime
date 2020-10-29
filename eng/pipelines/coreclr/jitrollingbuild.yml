@@ -1,0 +1,32 @@
+trigger:
+  batch: false
+  branches:
+    include:
+    - master
+  paths:
+    include:
+    - src/coreclr/src/jit/*
+
+pr: none
+
+jobs:
+#
+# Checkout repository
+#
+- template: /eng/pipelines/common/checkout-job.yml
+
+- template: /eng/pipelines/common/platform-matrix.yml
+  parameters:
+    jobTemplate: /eng/pipelines/coreclr/templates/build-jit-job.yml
+    buildConfig: checked
+    platforms:
+    - OSX_x64
+    # Currently, Linux arm/arm64 machines don't have the Python 'pip3' tool, nor the azure-storage-blob package that
+    # is required to do the JIT upload to Azure Storage. Thus, these platforms are disabled. If we can figure out how
+    # to get Python properly configured, then re-enable them.
+    # - Linux_arm
+    # - Linux_arm64
+    - Linux_x64
+    - Windows_NT_x64
+    - Windows_NT_x86
+    - Windows_NT_arm64

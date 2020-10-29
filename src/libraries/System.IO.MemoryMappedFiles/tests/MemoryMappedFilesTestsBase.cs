@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using Microsoft.Win32.SafeHandles;
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 using Xunit;
@@ -66,6 +67,19 @@ namespace System.IO.MemoryMappedFiles.Tests
             {
                 yield return MemoryMappedFile.CreateNew(CreateUniqueMapName(), capacity, access);
                 yield return MemoryMappedFile.CreateFromFile(GetTestFilePath(null, fileName, lineNumber), FileMode.CreateNew, CreateUniqueMapName(), capacity, access);
+            }
+        }
+
+        protected static void PopulateWithRandomData(MemoryMappedFile mmf)
+        {
+            var rand = new Random(42);
+            using (MemoryMappedViewAccessor acc = mmf.CreateViewAccessor())
+            {
+                int length = (int)acc.SafeMemoryMappedViewHandle.ByteLength;
+                for (int i = 0; i < length; i++)
+                {
+                    acc.Write(i, (byte)rand.Next());
+                }
             }
         }
 

@@ -35,7 +35,7 @@
     <ItemGroup>
       <FilesToPublish Include="$(DotNetHostBinDir)\dotnet$(ApplicationFileExtension)"
             Destination="$(OutputPath)dotnet$(ApplicationFileExtension)" />
-      <FilesToPublish Include="$(RepoRoot)THIRD-PARTY-NOTICES.TXT"
+      <FilesToPublish Include="$(InstallerProjectRoot)THIRD-PARTY-NOTICES.TXT"
             Destination="$(OutputPath)ThirdPartyNotices.txt" />
       <FilesToPublish Include="$(RepoRoot)LICENSE.TXT"
             Destination="$(OutputPath)LICENSE.txt"

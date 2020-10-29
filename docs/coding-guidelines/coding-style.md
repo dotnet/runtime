@@ -26,11 +26,12 @@ The general rule we follow is "use Visual Studio defaults".
 10. We only use `var` when it's obvious what the variable type is (e.g. `var stream = new FileStream(...)` not `var stream = OpenStandardInput()`).
 11. We use language keywords instead of BCL types (e.g. `int, string, float` instead of `Int32, String, Single`, etc) for both type references as well as method calls (e.g. `int.Parse` instead of `Int32.Parse`). See issue [#13976](https://github.com/dotnet/runtime/issues/13976) for examples.
 12. We use PascalCasing to name all our constant local variables and fields. The only exception is for interop code where the constant value should exactly match the name and value of the code you are calling via interop.
-13. We use ```nameof(...)``` instead of ```"..."``` whenever possible and relevant.
-14. Fields should be specified at the top within type declarations.
-15. When including non-ASCII characters in the source code use Unicode escape sequences (\uXXXX) instead of literal characters. Literal non-ASCII characters occasionally get garbled by a tool or editor.
-16. When using labels (for goto), indent the label one less than the current indentation.
-17. When using a single-statement if, we follow these conventions:
+13. We use PascalCasing for all method names, including local functions.
+14. We use ```nameof(...)``` instead of ```"..."``` whenever possible and relevant.
+15. Fields should be specified at the top within type declarations.
+16. When including non-ASCII characters in the source code use Unicode escape sequences (\uXXXX) instead of literal characters. Literal non-ASCII characters occasionally get garbled by a tool or editor.
+17. When using labels (for goto), indent the label one less than the current indentation.
+18. When using a single-statement if, we follow these conventions:
     - Never use single-line form (for example: `if (source == null) throw new ArgumentNullException("source");`)
     - Using braces is always accepted, and required if any block of an `if`/`else if`/.../`else` compound statement uses braces or if a single statement body spans multiple lines.
     - Braces may be omitted only if the body of *every* block associated with an `if`/`else if`/.../`else` compound statement is placed on a single line.

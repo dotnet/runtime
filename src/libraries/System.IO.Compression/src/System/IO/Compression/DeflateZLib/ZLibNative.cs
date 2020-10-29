@@ -115,6 +115,14 @@ namespace System.IO.Compression
                                                           // negative val causes deflate to produce raw deflate data (no zlib header).
 
         /// <summary>
+        /// <p><strong>From the ZLib manual:</strong></p>
+        /// <p>ZLib's <code>windowBits</code> parameter is the base two logarithm of the window size (the size of the history buffer).
+        /// It should be in the range 8..15 for this version of the library. Larger values of this parameter result in better compression
+        /// at the expense of memory usage. The default value is 15 if deflateInit is used instead.<br /></p>
+        /// </summary>
+        public const int ZLib_DefaultWindowBits = 15;
+
+        /// <summary>
         /// <p>Zlib's <code>windowBits</code> parameter is the base two logarithm of the window size (the size of the history buffer).
         /// For GZip header encoding, <code>windowBits</code> should be equal to a value between 8..15 (to specify Window Size) added to
         /// 16. The range of values for GZip encoding is therefore 24..31.

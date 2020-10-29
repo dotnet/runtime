@@ -38,41 +38,41 @@ typedef struct
     int isFile;    /* is file (1) or dir (0) */
 }TestCaseDir;
 
-DWORD desiredAccessFile = GENERIC_READ | GENERIC_WRITE;
-DWORD shareModeFile  =  FILE_SHARE_READ|FILE_SHARE_WRITE|FILE_SHARE_DELETE;
-LPSECURITY_ATTRIBUTES lpAttrFile = NULL;
-DWORD dwCreationDispFile  = CREATE_NEW;
-DWORD dwFlagsAttribFile = FILE_ATTRIBUTE_NORMAL;
-HANDLE hTemplateFile  = NULL;
+DWORD desiredAccessFile_GetFileAttributesW_test1 = GENERIC_READ | GENERIC_WRITE;
+DWORD shareModeFile_GetFileAttributesW_test1  =  FILE_SHARE_READ|FILE_SHARE_WRITE|FILE_SHARE_DELETE;
+LPSECURITY_ATTRIBUTES lpAttrFile_GetFileAttributesW_test1 = NULL;
+DWORD dwCreationDispFile_GetFileAttributesW_test1  = CREATE_NEW;
+DWORD dwFlagsAttribFile_GetFileAttributesW_test1 = FILE_ATTRIBUTE_NORMAL;
+HANDLE hTemplateFile_GetFileAttributesW_test1  = NULL;
 
-int numFileTests = 6;
-TestCaseFile gfaTestsFile[6]; /* GetFileAttributes tests list */
+int numFileTests_GetFileAttributesW_test1 = 6;
+TestCaseFile gfaTestsFile_GetFileAttributesW_test1[6]; /* GetFileAttributes tests list */
 
-int numDirTests = 6;
-TestCaseDir gfaTestsDir[6]; /* GetFileAttributes tests list */
+int numDirTests_GetFileAttributesW_test1 = 6;
+TestCaseDir gfaTestsDir_GetFileAttributesW_test1[6]; /* GetFileAttributes tests list */
 
-BOOL CleanUpFiles()
+BOOL CleanUpFiles_GetFileAttributesW_test1()
 {
     DWORD dwAtt;
     int i;
     BOOL result = TRUE;
-    for (i = 0; i < numFileTests - 1 ; i++ )
+    for (i = 0; i < numFileTests_GetFileAttributesW_test1 - 1 ; i++ )
     {
-        dwAtt = GetFileAttributesA(gfaTestsFile[i].name);
+        dwAtt = GetFileAttributesA(gfaTestsFile_GetFileAttributesW_test1[i].name);
 
         if( dwAtt != INVALID_FILE_ATTRIBUTES )
         {
             //Trace("Files iteration %d\n", i);
-            if(!SetFileAttributesA (gfaTestsFile[i].name, FILE_ATTRIBUTE_NORMAL))
+            if(!SetFileAttributesA (gfaTestsFile_GetFileAttributesW_test1[i].name, FILE_ATTRIBUTE_NORMAL))
             {
                 result = FALSE;
-                Trace("ERROR:%d: Error setting attributes [%s][%d]\n", GetLastError(), gfaTestsFile[i].name, FILE_ATTRIBUTE_NORMAL);
+                Trace("ERROR:%d: Error setting attributes [%s][%d]\n", GetLastError(), gfaTestsFile_GetFileAttributesW_test1[i].name, FILE_ATTRIBUTE_NORMAL);
             }
 
-            if(!DeleteFileA (gfaTestsFile[i].name))
+            if(!DeleteFileA (gfaTestsFile_GetFileAttributesW_test1[i].name))
             {
                 result = FALSE;
-                Trace("ERROR:%d: Error deleting file [%s][%d]\n", GetLastError(), gfaTestsFile[i].name, dwAtt);
+                Trace("ERROR:%d: Error deleting file [%s][%d]\n", GetLastError(), gfaTestsFile_GetFileAttributesW_test1[i].name, dwAtt);
             }
 
         }
@@ -80,58 +80,58 @@ BOOL CleanUpFiles()
 //    Trace("Value of result is %d\n", result);
     return result;
 }
-BOOL SetUpFiles()
+BOOL SetUpFiles_GetFileAttributesW_test1()
 {
     int i = 0;
     BOOL result = TRUE;
-    for (i = 0; i < numFileTests - 1 ; i++ )
+    for (i = 0; i < numFileTests_GetFileAttributesW_test1 - 1 ; i++ )
     {
-        gfaTestsFile[i].hFile = CreateFile(gfaTestsFile[i].name,
-                        desiredAccessFile,
-                        shareModeFile,
-                        lpAttrFile,
-                        dwCreationDispFile,
-                        dwFlagsAttribFile,
-                        hTemplateFile);
+        gfaTestsFile_GetFileAttributesW_test1[i].hFile = CreateFile(gfaTestsFile_GetFileAttributesW_test1[i].name,
+                        desiredAccessFile_GetFileAttributesW_test1,
+                        shareModeFile_GetFileAttributesW_test1,
+                        lpAttrFile_GetFileAttributesW_test1,
+                        dwCreationDispFile_GetFileAttributesW_test1,
+                        dwFlagsAttribFile_GetFileAttributesW_test1,
+                        hTemplateFile_GetFileAttributesW_test1);
 
-        if( gfaTestsFile[i].hFile == NULL )
+        if( gfaTestsFile_GetFileAttributesW_test1[i].hFile == NULL )
         {
             Fail("Error while creating files for iteration %d\n", i);
         }
 
-        if(!SetFileAttributesA (gfaTestsFile[i].name, gfaTestsFile[i].expectedAttribs))
+        if(!SetFileAttributesA (gfaTestsFile_GetFileAttributesW_test1[i].name, gfaTestsFile_GetFileAttributesW_test1[i].expectedAttribs))
         {
             result = FALSE;
-            Trace("ERROR:%d: Error setting attributes [%s][%d]\n", GetLastError(), gfaTestsFile[i].name, gfaTestsFile[i].expectedAttribs);
+            Trace("ERROR:%d: Error setting attributes [%s][%d]\n", GetLastError(), gfaTestsFile_GetFileAttributesW_test1[i].name, gfaTestsFile_GetFileAttributesW_test1[i].expectedAttribs);
         }
     }
 
     return result;
 }
 
-BOOL CleanUpDirs()
+BOOL CleanUpDirs_GetFileAttributesW_test1()
 {
     DWORD dwAtt;
     int i;
     BOOL result = TRUE;
-    for (i = 0; i < numDirTests - 1; i++ )
+    for (i = 0; i < numDirTests_GetFileAttributesW_test1 - 1; i++ )
     {
-        dwAtt = GetFileAttributesA(gfaTestsDir[i].name);
+        dwAtt = GetFileAttributesA(gfaTestsDir_GetFileAttributesW_test1[i].name);
 
         if( dwAtt != INVALID_FILE_ATTRIBUTES )
         {
 
-            if(!SetFileAttributesA (gfaTestsDir[i].name, FILE_ATTRIBUTE_DIRECTORY))
+            if(!SetFileAttributesA (gfaTestsDir_GetFileAttributesW_test1[i].name, FILE_ATTRIBUTE_DIRECTORY))
             {
                 result = FALSE;
-                Trace("ERROR:%d: Error setting attributes [%s][%d]\n", GetLastError(), gfaTestsDir[i].name, (FILE_ATTRIBUTE_NORMAL | FILE_ATTRIBUTE_DIRECTORY));
+                Trace("ERROR:%d: Error setting attributes [%s][%d]\n", GetLastError(), gfaTestsDir_GetFileAttributesW_test1[i].name, (FILE_ATTRIBUTE_NORMAL | FILE_ATTRIBUTE_DIRECTORY));
             }
 
-            LPWSTR nameW = convert(gfaTestsDir[i].name);
+            LPWSTR nameW = convert(gfaTestsDir_GetFileAttributesW_test1[i].name);
             if(!RemoveDirectoryW (nameW))
             {
                 result = FALSE;
-                Trace("ERROR:%d: Error deleting file [%s][%d]\n", GetLastError(), gfaTestsDir[i].name, dwAtt);
+                Trace("ERROR:%d: Error deleting file [%s][%d]\n", GetLastError(), gfaTestsDir_GetFileAttributesW_test1[i].name, dwAtt);
             }
 
             free(nameW);
@@ -141,14 +141,14 @@ BOOL CleanUpDirs()
     return result;
 }
 
-BOOL SetUpDirs()
+BOOL SetUpDirs_GetFileAttributesW_test1()
 {
     int i = 0;
     BOOL result = TRUE;
     DWORD ret = 0;
-    for (i = 0; i < numDirTests - 1; i++ )
+    for (i = 0; i < numDirTests_GetFileAttributesW_test1 - 1; i++ )
     {
-        result = CreateDirectoryA(gfaTestsDir[i].name,
+        result = CreateDirectoryA(gfaTestsDir_GetFileAttributesW_test1[i].name,
                          NULL);
 
         if(!result )
@@ -157,25 +157,25 @@ BOOL SetUpDirs()
             Fail("Error while creating directory for iteration %d\n", i);
         }
 
-        if(!SetFileAttributesA (gfaTestsDir[i].name, gfaTestsDir[i].expectedAttribs))
+        if(!SetFileAttributesA (gfaTestsDir_GetFileAttributesW_test1[i].name, gfaTestsDir_GetFileAttributesW_test1[i].expectedAttribs))
         {
             result = FALSE;
-            Trace("ERROR:%d: Error setting attributes [%s][%d]\n", GetLastError(), gfaTestsDir[i].name, gfaTestsDir[i].expectedAttribs);
+            Trace("ERROR:%d: Error setting attributes [%s][%d]\n", GetLastError(), gfaTestsDir_GetFileAttributesW_test1[i].name, gfaTestsDir_GetFileAttributesW_test1[i].expectedAttribs);
         }
 
-        ret = GetFileAttributesA (gfaTestsDir[i].name);
-        if(ret != gfaTestsDir[i].expectedAttribs)
+        ret = GetFileAttributesA (gfaTestsDir_GetFileAttributesW_test1[i].name);
+        if(ret != gfaTestsDir_GetFileAttributesW_test1[i].expectedAttribs)
         {
             result = FALSE;
-            Trace("ERROR: Error setting attributes [%s][%d]\n", gfaTestsDir[i].name, gfaTestsDir[i].expectedAttribs);
+            Trace("ERROR: Error setting attributes [%s][%d]\n", gfaTestsDir_GetFileAttributesW_test1[i].name, gfaTestsDir_GetFileAttributesW_test1[i].expectedAttribs);
         }
-        // Trace("Setup Dir setting attr [%d], returned [%d]\n", gfaTestsDir[i].expectedAttribs, ret);
+        // Trace("Setup Dir setting attr [%d], returned [%d]\n", gfaTestsDir_GetFileAttributesW_test1[i].expectedAttribs, ret);
 
     }
 //    Trace("Setup dirs returning %d\n", result);
     return result;
 }
-int __cdecl main(int argc, char **argv)
+PALTEST(file_io_GetFileAttributesW_test1_paltest_getfileattributesw_test1, "file_io/GetFileAttributesW/test1/paltest_getfileattributesw_test1")
 {
     int i;
     BOOL  bFailed = FALSE;
@@ -197,61 +197,61 @@ int __cdecl main(int argc, char **argv)
 
     WCHAR *WStr;
     /* Tests on directory */
-    gfaTestsDir[0].name    = NormalDirectoryName;
-    gfaTestsDir[0].expectedAttribs = FILE_ATTRIBUTE_DIRECTORY;
-    gfaTestsDir[0].isFile  = TYPE_DIR;
+    gfaTestsDir_GetFileAttributesW_test1[0].name    = NormalDirectoryName;
+    gfaTestsDir_GetFileAttributesW_test1[0].expectedAttribs = FILE_ATTRIBUTE_DIRECTORY;
+    gfaTestsDir_GetFileAttributesW_test1[0].isFile  = TYPE_DIR;
 
-    gfaTestsDir[1].name    = ReadOnlyDirectoryName;
-    gfaTestsDir[1].expectedAttribs = FILE_ATTRIBUTE_DIRECTORY |
+    gfaTestsDir_GetFileAttributesW_test1[1].name    = ReadOnlyDirectoryName;
+    gfaTestsDir_GetFileAttributesW_test1[1].expectedAttribs = FILE_ATTRIBUTE_DIRECTORY |
                           FILE_ATTRIBUTE_READONLY;
-    gfaTestsDir[1].isFile  = TYPE_DIR;
+    gfaTestsDir_GetFileAttributesW_test1[1].isFile  = TYPE_DIR;
 
-    gfaTestsDir[2].name    = ReadWriteDirectoryName;
-    gfaTestsDir[2].expectedAttribs = FILE_ATTRIBUTE_DIRECTORY;
-    gfaTestsDir[2].isFile  = TYPE_DIR;
+    gfaTestsDir_GetFileAttributesW_test1[2].name    = ReadWriteDirectoryName;
+    gfaTestsDir_GetFileAttributesW_test1[2].expectedAttribs = FILE_ATTRIBUTE_DIRECTORY;
+    gfaTestsDir_GetFileAttributesW_test1[2].isFile  = TYPE_DIR;
 
-    gfaTestsDir[3].name    = HiddenDirectoryName;
-    gfaTestsDir[3].expectedAttribs = FILE_ATTRIBUTE_DIRECTORY; //|
+    gfaTestsDir_GetFileAttributesW_test1[3].name    = HiddenDirectoryName;
+    gfaTestsDir_GetFileAttributesW_test1[3].expectedAttribs = FILE_ATTRIBUTE_DIRECTORY; //|
                           //FILE_ATTRIBUTE_HIDDEN;
-    gfaTestsDir[3].isFile  = TYPE_DIR;
+    gfaTestsDir_GetFileAttributesW_test1[3].isFile  = TYPE_DIR;
 
-    gfaTestsDir[4].name    = HiddenReadOnlyDirectoryName;
-    gfaTestsDir[4].expectedAttribs = FILE_ATTRIBUTE_DIRECTORY |
+    gfaTestsDir_GetFileAttributesW_test1[4].name    = HiddenReadOnlyDirectoryName;
+    gfaTestsDir_GetFileAttributesW_test1[4].expectedAttribs = FILE_ATTRIBUTE_DIRECTORY |
                           FILE_ATTRIBUTE_READONLY; //|
                           //FILE_ATTRIBUTE_HIDDEN;
-    gfaTestsDir[4].isFile  = TYPE_DIR;
+    gfaTestsDir_GetFileAttributesW_test1[4].isFile  = TYPE_DIR;
 
-    gfaTestsDir[5].name    = NoDirectoryName;
-    gfaTestsDir[5].expectedAttribs = INVALID_FILE_ATTRIBUTES;
-    gfaTestsDir[5].isFile  = TYPE_DIR;
+    gfaTestsDir_GetFileAttributesW_test1[5].name    = NoDirectoryName;
+    gfaTestsDir_GetFileAttributesW_test1[5].expectedAttribs = INVALID_FILE_ATTRIBUTES;
+    gfaTestsDir_GetFileAttributesW_test1[5].isFile  = TYPE_DIR;
 
     /* Tests on file */
-    gfaTestsFile[0].name    = NormalFileName;
-    gfaTestsFile[0].expectedAttribs = FILE_ATTRIBUTE_NORMAL;
-    gfaTestsFile[0].isFile  = TYPE_FILE;
+    gfaTestsFile_GetFileAttributesW_test1[0].name    = NormalFileName;
+    gfaTestsFile_GetFileAttributesW_test1[0].expectedAttribs = FILE_ATTRIBUTE_NORMAL;
+    gfaTestsFile_GetFileAttributesW_test1[0].isFile  = TYPE_FILE;
 
 
-    gfaTestsFile[1].name    = ReadOnlyFileName;
-    gfaTestsFile[1].expectedAttribs = FILE_ATTRIBUTE_READONLY;
-    gfaTestsFile[1].isFile  = TYPE_FILE;
+    gfaTestsFile_GetFileAttributesW_test1[1].name    = ReadOnlyFileName;
+    gfaTestsFile_GetFileAttributesW_test1[1].expectedAttribs = FILE_ATTRIBUTE_READONLY;
+    gfaTestsFile_GetFileAttributesW_test1[1].isFile  = TYPE_FILE;
 
-    gfaTestsFile[2].name    = ReadWriteFileName;
-    gfaTestsFile[2].expectedAttribs = FILE_ATTRIBUTE_NORMAL;
-    gfaTestsFile[2].isFile  = TYPE_FILE;
+    gfaTestsFile_GetFileAttributesW_test1[2].name    = ReadWriteFileName;
+    gfaTestsFile_GetFileAttributesW_test1[2].expectedAttribs = FILE_ATTRIBUTE_NORMAL;
+    gfaTestsFile_GetFileAttributesW_test1[2].isFile  = TYPE_FILE;
 
-    gfaTestsFile[3].name    = HiddenFileName;
-    gfaTestsFile[3].expectedAttribs = FILE_ATTRIBUTE_NORMAL; //FILE_ATTRIBUTE_HIDDEN;
-    gfaTestsFile[3].isFile  = TYPE_FILE;
+    gfaTestsFile_GetFileAttributesW_test1[3].name    = HiddenFileName;
+    gfaTestsFile_GetFileAttributesW_test1[3].expectedAttribs = FILE_ATTRIBUTE_NORMAL; //FILE_ATTRIBUTE_HIDDEN;
+    gfaTestsFile_GetFileAttributesW_test1[3].isFile  = TYPE_FILE;
 
-    gfaTestsFile[4].name    = HiddenReadOnlyFileName;
-    gfaTestsFile[4].expectedAttribs = FILE_ATTRIBUTE_READONLY; //|
+    gfaTestsFile_GetFileAttributesW_test1[4].name    = HiddenReadOnlyFileName;
+    gfaTestsFile_GetFileAttributesW_test1[4].expectedAttribs = FILE_ATTRIBUTE_READONLY; //|
                            //FILE_ATTRIBUTE_HIDDEN;
-    gfaTestsFile[4].isFile  = TYPE_FILE;
+    gfaTestsFile_GetFileAttributesW_test1[4].isFile  = TYPE_FILE;
 
 
-    gfaTestsFile[5].name    = NotReallyAFileName;
-    gfaTestsFile[5].expectedAttribs =  INVALID_FILE_ATTRIBUTES;
-    gfaTestsFile[5].isFile  = TYPE_FILE;
+    gfaTestsFile_GetFileAttributesW_test1[5].name    = NotReallyAFileName;
+    gfaTestsFile_GetFileAttributesW_test1[5].expectedAttribs =  INVALID_FILE_ATTRIBUTES;
+    gfaTestsFile_GetFileAttributesW_test1[5].isFile  = TYPE_FILE;
 
     /* Initialize PAL environment */
     if (0 != PAL_Initialize(argc,argv))
@@ -259,22 +259,22 @@ int __cdecl main(int argc, char **argv)
         return FAIL;
     }
 
-    if(!CleanUpFiles())
+    if(!CleanUpFiles_GetFileAttributesW_test1())
     {
         Fail("GetFileAttributesW: Pre-Clean Up Files Failed\n");
     }
 
-    if(0 == SetUpFiles())
+    if(0 == SetUpFiles_GetFileAttributesW_test1())
     {
         Fail("GetFileAttributesW: SetUp Files Failed\n");
     }
 
-    if(!CleanUpDirs())
+    if(!CleanUpDirs_GetFileAttributesW_test1())
     {
         Fail("GetFileAttributesW: Pre-Clean Up Directories Failed\n");
     }
 
-    if(!SetUpDirs())
+    if(!SetUpDirs_GetFileAttributesW_test1())
     {
         Fail("GetFileAttributesW: SetUp Directories Failed\n");
     }
@@ -284,53 +284,53 @@ int __cdecl main(int argc, char **argv)
      * call GetFileAttributesW on the name and
      * make sure the return value is the one expected
      */
-    for( i = 0; i < numFileTests; i++ )
+    for( i = 0; i < numFileTests_GetFileAttributesW_test1; i++ )
     {
-        WStr = convert(gfaTestsFile[i].name);
+        WStr = convert(gfaTestsFile_GetFileAttributesW_test1[i].name);
         result = GetFileAttributesW(WStr);
 
-        if( result != gfaTestsFile[i].expectedAttribs )
+        if( result != gfaTestsFile_GetFileAttributesW_test1[i].expectedAttribs )
         {
             bFailed = TRUE;
 
             Trace("ERROR: GetFileAttributesW Test#%u on %s "
                   "returned %u instead of %u. \n",
                   i,
-                  gfaTestsFile[i].name,
+                  gfaTestsFile_GetFileAttributesW_test1[i].name,
                   result,
-                  gfaTestsFile[i].expectedAttribs);
+                  gfaTestsFile_GetFileAttributesW_test1[i].expectedAttribs);
 
         }
         free(WStr);
     }
 
 
-    for( i = 0; i < numDirTests; i++ )
+    for( i = 0; i < numDirTests_GetFileAttributesW_test1; i++ )
     {
-        WStr = convert(gfaTestsDir[i].name);
+        WStr = convert(gfaTestsDir_GetFileAttributesW_test1[i].name);
         result = GetFileAttributesW(WStr);
 
-        if( result != gfaTestsDir[i].expectedAttribs )
+        if( result != gfaTestsDir_GetFileAttributesW_test1[i].expectedAttribs )
         {
             bFailed = TRUE;
 
             Trace("ERROR: GetFileAttributesW on Directories Test#%u on %s "
                   "returned %u instead of %u. \n",
                   i,
-                  gfaTestsDir[i].name,
+                  gfaTestsDir_GetFileAttributesW_test1[i].name,
                   result,
-                  gfaTestsDir[i].expectedAttribs);
+                  gfaTestsDir_GetFileAttributesW_test1[i].expectedAttribs);
 
         }
         free(WStr);
     }
 
-    if(!CleanUpFiles())
+    if(!CleanUpFiles_GetFileAttributesW_test1())
     {
         Fail("GetFileAttributesW: Post-Clean Up Files Failed\n");
     }
 
-    if(!CleanUpDirs())
+    if(!CleanUpDirs_GetFileAttributesW_test1())
     {
         Fail("GetFileAttributesW: Post-Clean Up Directories Failed\n");
     }

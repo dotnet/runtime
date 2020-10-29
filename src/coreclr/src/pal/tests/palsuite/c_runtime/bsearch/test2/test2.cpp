@@ -13,12 +13,12 @@
 
 #include <palsuite.h>
 
-int __cdecl charcmp(const void *pa, const void *pb)
+int __cdecl charcmp_bsearch_test2(const void *pa, const void *pb)
 {
     return *(const char *)pa - *(const char *)pb;
 }
 
-int __cdecl main(int argc, char **argv)
+PALTEST(c_runtime_bsearch_test2_paltest_bsearch_test2, "c_runtime/bsearch/test2/paltest_bsearch_test2")
 {
 
     const char array[] = "abcefghij";
@@ -36,7 +36,7 @@ int __cdecl main(int argc, char **argv)
 
     while (*candidate) {
         found = (char *)bsearch(candidate, array, sizeof(array) - 1,
-                                (sizeof(char)), charcmp);
+                                (sizeof(char)), charcmp_bsearch_test2);
         if (found != NULL)
         {
             Fail ("ERROR: bsearch was able to find a specified character '%c' "

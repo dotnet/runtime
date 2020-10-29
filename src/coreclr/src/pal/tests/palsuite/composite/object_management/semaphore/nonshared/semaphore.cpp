@@ -59,7 +59,7 @@ int testStatus;
 
 const char sTmpEventName[MAX_PATH] = "StartTestEvent";
 
-void PALAPI Run_Thread(LPVOID lpParam);
+void PALAPI Run_Thread_semaphore_nonshared(LPVOID lpParam);
 
 int GetParameters( int argc, char **argv)
 {
@@ -74,8 +74,6 @@ int GetParameters( int argc, char **argv)
 		printf("\t[RELATION_ID  [greater than 1]\n");
         return -1;
     }
-
- //   Trace("Args 1 is [%s], Arg 2 is [%s], Arg 3 is [%s]\n", argv[1], argv[2], argv[3]);
 
     USE_PROCESS_COUNT = atoi(argv[1]);
     if( USE_PROCESS_COUNT < 0)
@@ -108,7 +106,7 @@ int GetParameters( int argc, char **argv)
     return 0;
 }
 
- int __cdecl main(INT argc, CHAR **argv)
+PALTEST(composite_object_management_semaphore_nonshared_paltest_semaphore_nonshared, "composite/object_management/semaphore/nonshared/paltest_semaphore_nonshared")
 {
     unsigned int i = 0;
     HANDLE hThread[MAXIMUM_WAIT_OBJECTS];
@@ -143,7 +141,6 @@ int GetParameters( int argc, char **argv)
     {
         Fail("Error in obtaining the parameters\n");
     }
- //   Trace("Process created, value of process count is [%d]\n", USE_PROCESS_COUNT);
 
      /* Register the start time */
     dwStartTime = GetTickCount();
@@ -204,7 +201,7 @@ int GetParameters( int argc, char **argv)
         hThread[i] = CreateThread(
                                     NULL,                   /* no security attributes */
                                     0,                      /* use default stack size */
-                                    (LPTHREAD_START_ROUTINE)Run_Thread,/* thread function */
+                                    (LPTHREAD_START_ROUTINE)Run_Thread_semaphore_nonshared,/* thread function */
                                     (LPVOID)dwParam,  /* argument to thread function */
                                     0,                      /* use default creation flags  */
                                     &threadId[i]     /* returns the thread identifier*/
@@ -241,14 +238,10 @@ int GetParameters( int argc, char **argv)
         {
             buffer = (struct statistics *)resultBuffer->getResultBuffer(i);
             returnCode = fprintf(pFile, "%d,%d,%d,%d,%lu,%d\n", buffer->processId, buffer->operationsFailed, buffer->operationsPassed, buffer->operationsTotal, buffer->operationTime, buffer->relationId );
-            //Trace("Iteration %d over\n", i);
-
         }
     }
     fclose(pFile);
     /* Logging for the test case over, clean up the handles */
-
-//    Trace("Test Thread %d done\n", USE_PROCESS_COUNT);
 
     for( i = 0; i < THREAD_COUNT; i++ )
     {
@@ -275,7 +268,7 @@ int GetParameters( int argc, char **argv)
     return PASS;
 }
 
-void  PALAPI Run_Thread (LPVOID lpParam)
+void  PALAPI Run_Thread_semaphore_nonshared (LPVOID lpParam)
 {
     unsigned int i = 0;
     DWORD dwWaitResult;
@@ -311,7 +304,6 @@ void  PALAPI Run_Thread (LPVOID lpParam)
 
         if(dwWaitResult != WAIT_OBJECT_0)
         {
-//            Trace("Error while waiting for onject @ thread %d, # iter %d, RC is %d, Error is %d\n", Id, i, dwWaitResult, GetLastError());
             stats.operationsFailed += 1;
             stats.operationsTotal  += 1;
             testStatus = FAIL;
@@ -320,7 +312,6 @@ void  PALAPI Run_Thread (LPVOID lpParam)
         if (! ReleaseSemaphore(hSemaphoreHandle, 1, NULL))
         {
             // Deal with error.
-  //          Trace("Error while releasing Semaphore @ thread %d # iter %d\n", Id, i);
             stats.operationsFailed += 1;
             stats.operationsTotal  += 1;
             // Probably need to have while true loop to attempt to release semaphore...
@@ -330,8 +321,6 @@ void  PALAPI Run_Thread (LPVOID lpParam)
 
         stats.operationsTotal  += 1;
         stats.operationsPassed += 1;
-//        Trace("Successs while releasing Semaphore @ iteration %d -> thread %d -> Process %d\n", i, Id, USE_PROCESS_COUNT);
-
     }
 
     stats.operationTime = GetTimeDiff(dwStartTime);
@@ -339,5 +328,4 @@ void  PALAPI Run_Thread (LPVOID lpParam)
     {
         Fail("Error:%d: while writing to shared memory, Thread Id is[%d] and Process id is [%d]\n", GetLastError(), Id, USE_PROCESS_COUNT);
     }
-    //  Trace("Thread %d over for process %d\n", Id, USE_PROCESS_COUNT);
 }

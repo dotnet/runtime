@@ -26,7 +26,7 @@
 #include <sys/stat.h>
 
 
-int __cdecl main(int argc, char *argv[])
+PALTEST(file_io_DeleteFileA_test1_paltest_deletefilea_test1, "file_io/DeleteFileA/test1/paltest_deletefilea_test1")
 {
     FILE *tempFile = NULL;
     BOOL bRc = FALSE;

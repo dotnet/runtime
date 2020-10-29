@@ -3326,7 +3326,7 @@ NoSpecialCase:
         _ASSERTE(pTemplateMD != NULL);
         sigBuilder.AppendElementType(ELEMENT_TYPE_INTERNAL);
         sigBuilder.AppendPointer(pTemplateMD->GetMethodTable());
-        // fall through
+        FALLTHROUGH;
 
     case TypeHandleSlot:
         {
@@ -3362,7 +3362,7 @@ NoSpecialCase:
             sigBuilder.AppendElementType(ELEMENT_TYPE_INTERNAL);
             sigBuilder.AppendPointer(pConstrainedResolvedToken->hClass);
         }
-        // fall through
+        FALLTHROUGH;
 
     case MethodDescSlot:
     case MethodEntrySlot:
@@ -11900,31 +11900,22 @@ HRESULT CEEJitInfo::getMethodBlockCounts (
 
 #ifdef FEATURE_PGO
 
-    // For now, only return the info for the method being jitted.
-    // Will need to fix this to gain access to pgo data for inlinees.
     MethodDesc* pMD = (MethodDesc*)ftnHnd;
-
-    if (pMD == m_pMethodBeingCompiled)
+    unsigned codeSize = 0;
+    if (pMD->IsDynamicMethod())
     {
-        unsigned codeSize = 0;
-        if (pMD->IsDynamicMethod())
-        {
-            unsigned stackSize, ehSize;
-            CorInfoOptions options;
-            DynamicResolver * pResolver = m_pMethodBeingCompiled->AsDynamicMethodDesc()->GetResolver();
-            pResolver->GetCodeInfo(&codeSize, &stackSize, &options, &ehSize);
-        }
-        else
-        {
-            codeSize = m_ILHeader->GetCodeSize();
-        }
-
-        hr = PgoManager::getMethodBlockCounts(pMD, codeSize, pCount, pBlockCounts, pNumRuns);
+        unsigned stackSize, ehSize;
+        CorInfoOptions options;
+        DynamicResolver * pResolver = m_pMethodBeingCompiled->AsDynamicMethodDesc()->GetResolver();
+        pResolver->GetCodeInfo(&codeSize, &stackSize, &options, &ehSize);
     }
-    else
+    else if (pMD->HasILHeader())
     {
-        hr = E_NOTIMPL;
+        COR_ILMETHOD_DECODER decoder(pMD->GetILHeader());
+        codeSize = decoder.GetCodeSize();
     }
+
+    hr = PgoManager::getMethodBlockCounts(pMD, codeSize, pCount, pBlockCounts, pNumRuns);
 
 #else
     _ASSERTE(!"getMethodBlockCounts not implemented on CEEJitInfo!");
@@ -12505,16 +12496,6 @@ CorJitResult CallCompileMethodWithSEHWrapper(EEJitManager *jitMgr,
         flags.Set(CORJIT_FLAGS::CORJIT_FLAG_PINVOKE_RESTORE_ESP);
 #endif // TARGET_X86
 
-    //See if we should instruct the JIT to emit calls to JIT_PollGC for thread suspension.  If we have a
-    //non-default value in the EE Config, then use that.  Otherwise select the platform specific default.
-#ifdef FEATURE_ENABLE_GCPOLL
-    EEConfig::GCPollType pollType = g_pConfig->GetGCPollType();
-    if (EEConfig::GCPOLL_TYPE_POLL == pollType)
-        flags.Set(CORJIT_FLAGS::CORJIT_FLAG_GCPOLL_CALLS);
-    else if (EEConfig::GCPOLL_TYPE_INLINE == pollType)
-        flags.Set(CORJIT_FLAGS::CORJIT_FLAG_GCPOLL_INLINE);
-#endif //FEATURE_ENABLE_GCPOLL
-
     // Set flags based on method's ImplFlags.
     if (!ftn->IsNoMetadata())
     {
@@ -12713,6 +12694,7 @@ void ThrowExceptionForJit(HRESULT res)
             break;
 
         case CORJIT_BADCODE:
+        case CORJIT_IMPLLIMITATION:
         default:
             COMPlusThrow(kInvalidProgramException);
             break;
@@ -13808,6 +13790,15 @@ BOOL LoadDynamicInfoEntry(Module *currentModule,
                     fatalErrorString.Printf(W("Verify_TypeLayout '%s' failed to verify type layout"), 
                         GetFullyQualifiedNameForClassW(pMT));
 
+#ifdef _DEBUG
+                    {
+                        StackScratchBuffer buf;
+                        _ASSERTE_MSG(false, fatalErrorString.GetUTF8(buf));
+                        // Run through the type layout logic again, after the assert, makes debugging easy
+                        TypeLayoutCheck(pMT, pBlob);
+                    }
+#endif
+
                     EEPOLICY_HANDLE_FATAL_ERROR_WITH_MESSAGE(-1, fatalErrorString.GetUnicode());
                     return FALSE;
                 }
@@ -13863,13 +13854,20 @@ BOOL LoadDynamicInfoEntry(Module *currentModule,
                 SString ssFieldName(SString::Utf8, pField->GetName());
 
                 SString fatalErrorString;
-                fatalErrorString.Printf(W("Verify_FieldOffset '%s.%s' %d!=%d || %d!=%d"), 
+                fatalErrorString.Printf(W("Verify_FieldOffset '%s.%s' Field offset %d!=%d(actual) || baseOffset %d!=%d(actual)"), 
                     GetFullyQualifiedNameForClassW(pEnclosingMT),
                     ssFieldName.GetUnicode(),
                     fieldOffset,
                     actualFieldOffset,
                     baseOffset,
                     actualBaseOffset);
+
+#ifdef _DEBUG
+                {
+                    StackScratchBuffer buf;
+                    _ASSERTE_MSG(false, fatalErrorString.GetUTF8(buf));
+                }
+#endif
 
                 EEPOLICY_HANDLE_FATAL_ERROR_WITH_MESSAGE(-1, fatalErrorString.GetUnicode());
                 return FALSE;

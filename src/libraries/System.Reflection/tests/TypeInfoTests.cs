@@ -1407,6 +1407,9 @@ namespace System.Reflection.Tests
         [InlineData(typeof(PublicEnum), "System.Reflection.Tests")]
         [InlineData(typeof(TI_BaseClass.PublicNestedClass1), "System.Reflection.Tests")]
         [InlineData(typeof(int), "System")]
+        [InlineData(typeof(TI_BaseClass[]), "System.Reflection.Tests")]
+        [InlineData(typeof(TI_BaseClass.PublicNestedClass1[]), "System.Reflection.Tests")]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/42633", TestRuntimes.Mono)]
         public void Namespace(Type type, string expected)
         {
             Assert.Equal(expected, type.GetTypeInfo().Namespace);

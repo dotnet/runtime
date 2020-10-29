@@ -5,9 +5,34 @@
 
 //glue code to deal with the differences between chrome, ch, d8, jsc and sm.
 var is_browser = typeof window != "undefined";
+var consoleWebSocket;
+var print;
 
 if (is_browser) {
 	// We expect to be run by tests/runtime/run.js which passes in the arguments using http parameters
+	window.real_print = console.log;
+	print = function(_msg) { window.real_print(_msg); };
+	console.log = print;
+	console.debug = print;
+	console.error = print;
+	console.trace = print;
+	console.warn = print;
+	console.info = print;
+
+	const consoleUrl = `${window.location.origin}/console`.replace('http://', 'ws://');
+
+	consoleWebSocket = new WebSocket(consoleUrl);
+	consoleWebSocket.onopen = function(event) {
+		consoleWebSocket.send("browser: Console websocket connected.");
+
+		window.real_print = function(msg) {
+			consoleWebSocket.send(msg);
+		};
+	};
+	consoleWebSocket.onerror = function(event) {
+		console.log(`websocket error: ${event}`);
+	};
+
 	var url = new URL (decodeURI (window.location));
 	arguments = [];
 	for (var v of url.searchParams) {
@@ -18,13 +43,11 @@ if (is_browser) {
 	}
 }
 
-if (is_browser || typeof print === "undefined")
-	print = console.log;
-
 // JavaScript core does not have a console defined
 if (typeof console === "undefined") {
 	var Console = function () {
 		this.log = function(msg){ print(msg) };
+		this.clear = function() { };
 	};
 	console = new Console();
 }
@@ -40,12 +63,14 @@ if (typeof console !== "undefined") {
 		console.error = console.log;
 }
 
-if (typeof crypto == 'undefined') {
+if (typeof crypto === 'undefined') {
+	// **NOTE** this is a simple insecure polyfill for testing purposes only
 	// /dev/random doesn't work on js shells, so define our own
 	// See library_fs.js:createDefaultDevices ()
 	var crypto = {
 		getRandomValues: function (buffer) {
-			buffer[0] = (Math.random()*256)|0;
+			for (var i = 0; i < buffer.length; i++)
+				buffer [i] = (Math.random () * 256) | 0;
 		}
 	}
 }
@@ -119,6 +144,7 @@ setenv = {};
 runtime_args = [];
 enable_gc = true;
 enable_zoneinfo = false;
+working_dir='/';
 while (args !== undefined && args.length > 0) {
 	if (args [0].startsWith ("--profile=")) {
 		var arg = args [0].substring ("--profile=".length);
@@ -140,11 +166,18 @@ while (args !== undefined && args.length > 0) {
 	} else if (args [0] == "--disable-on-demand-gc") {
 		enable_gc = false;
 		args = args.slice (1);
+	} else if (args [0].startsWith ("--working-dir=")) {
+		var arg = args [0].substring ("--working-dir=".length);
+		working_dir = arg;
+		args = args.slice (1);
 	} else {
 		break;
 	}
 }
 testArguments = args;
+
+// cheap way to let the testing infrastructure know we're running in a browser context (or not)
+setenv["IsBrowserDomSupported"] = is_browser.toString().toLowerCase();
 
 function writeContentToFile(content, path)
 {
@@ -191,6 +224,13 @@ var Module = {
 		}
 
 		config.loaded_cb = function () {
+			let wds = FS.stat (working_dir);
+			if (wds === undefined || !FS.isDir (wds.mode)) {
+				fail_exec (`Could not find working directory ${working_dir}`);
+				return;
+			}
+
+			FS.chdir (working_dir);
 			App.init ();
 		};
 		config.fetch_file_cb = function (asset) {

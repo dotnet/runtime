@@ -14,18 +14,18 @@
 #include <palsuite.h>
 
 
-const char* szNoFileName =          "333asdf.x77t";
-const char* szFindName =            "test01.txt";
-const char* szFindNameWldCard_01 =  "test0?.txt";
-const char* szFindNameWldCard_02 =  "*.txt";
-const char* szDirName =             "test_dir";
-const char* szDirNameSlash =        "test_dir\\";
-const char* szDirNameWldCard_01 =   "?est_dir";
-const char* szDirNameWldCard_02 =   "test_*";
+#define szNoFileName           "333asdf.x77t"
+#define szFindName             "test01.txt"
+#define szFindNameWldCard_01   "test0?.txt"
+#define szFindNameWldCard_02   "*.txt"
+#define szDirName              "test_dir"
+#define szDirNameSlash         "test_dir\\"
+#define szDirNameWldCard_01    "?est_dir"
+#define szDirNameWldCard_02    "test_*"
 /* Longer than MAX_LONGPATH characters */
 char szLongFindName[MAX_LONGPATH+1];
 
-BOOL CleanUp()
+BOOL CleanUp_FindFirstFileA_test1()
 {
     DWORD dwAtt;
     BOOL result = TRUE;
@@ -60,7 +60,7 @@ BOOL CleanUp()
     return result;
 }
 
-int __cdecl main(int argc, char *argv[])
+PALTEST(file_io_FindFirstFileA_test1_paltest_findfirstfilea_test1, "file_io/FindFirstFileA/test1/paltest_findfirstfilea_test1")
 {
     WIN32_FIND_DATA findFileData;
     HANDLE hFind = NULL;
@@ -75,7 +75,7 @@ int __cdecl main(int argc, char *argv[])
     }
 
 
-    if(!CleanUp())
+    if(!CleanUp_FindFirstFileA_test1())
     {
         Fail("FindFirstFileW: ERROR : Initial Clean Up failed\n");
     }
@@ -196,7 +196,7 @@ int __cdecl main(int argc, char *argv[])
         Fail ("FindFirstFileA: ERROR -> Unable to find \"%s\"\n", szDirNameWldCard_02);
     }
 
-    if(!CleanUp())
+    if(!CleanUp_FindFirstFileA_test1())
     {
         Fail("FindFirstFileW: ERROR : Final Clean Up failed\n");
     }

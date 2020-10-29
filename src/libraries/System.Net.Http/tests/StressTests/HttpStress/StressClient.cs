@@ -19,8 +19,6 @@ namespace HttpStress
 {
     public class StressClient : IDisposable
     {
-        private const string UNENCRYPTED_HTTP2_ENV_VAR = "DOTNET_SYSTEM_NET_HTTP_SOCKETSHTTPHANDLER_HTTP2UNENCRYPTEDSUPPORT";
-
         private readonly (string name, Func<RequestContext, Task> operation)[] _clientOperations;
         private readonly Uri _baseAddress;
         private readonly Configuration _config;
@@ -40,67 +38,11 @@ namespace HttpStress
             _aggregator = new StressResultAggregator(clientOperations);
 
             // Handle command-line arguments.
-            _eventListener =
-                configuration.LogPath == null ?
-                null :
-                (configuration.LogPath == "console" ? 
-                    (EventListener)new ConsoleHttpEventListener() :
-                    (EventListener)new LogHttpEventListener(configuration.LogPath));
+            _eventListener = configuration.Trace ? new LogHttpEventListener() : null;
         }
 
-        public void Start()
+        private HttpClient CreateHttpClient()
         {
-            lock (_cts)
-            {
-                if (_cts.IsCancellationRequested)
-                {
-                    throw new ObjectDisposedException(nameof(StressClient));
-                }
-                if (_clientTask != null)
-                {
-                    throw new InvalidOperationException("Stress client already running");
-                }
-
-                _stopwatch.Start();
-                _clientTask = StartCore();
-            }
-        }
-
-        public void Stop()
-        {
-            _cts.Cancel();
-            _clientTask?.Wait();
-            _stopwatch.Stop();
-            _cts.Dispose();
-        }
-
-        public void PrintFinalReport()
-        {
-            lock(Console.Out)
-            {
-                Console.ForegroundColor = ConsoleColor.Magenta;
-                Console.WriteLine("HttpStress Run Final Report");
-                Console.WriteLine();
-
-                _aggregator.PrintCurrentResults(_stopwatch.Elapsed);
-                _aggregator.PrintLatencies();
-                _aggregator.PrintFailureTypes();
-            }
-        }
-
-        public void Dispose()
-        {
-            Stop();
-            _eventListener?.Dispose();
-        }
-
-        private async Task StartCore()
-        {
-            if (_baseAddress.Scheme == "http")
-            {
-                Environment.SetEnvironmentVariable(UNENCRYPTED_HTTP2_ENV_VAR, "1");
-            }
-
             HttpMessageHandler CreateHttpHandler()
             {
                 if (_config.UseWinHttpHandler)
@@ -123,23 +65,107 @@ namespace HttpStress
                 }
             }
 
-            HttpClient CreateHttpClient() => 
-                new HttpClient(CreateHttpHandler()) 
-                { 
-                    BaseAddress = _baseAddress,
-                    Timeout = _config.DefaultTimeout,
-                    DefaultRequestVersion = _config.HttpVersion,
-                };
+            return new HttpClient(CreateHttpHandler()) 
+            { 
+                BaseAddress = _baseAddress,
+                Timeout = _config.DefaultTimeout,
+                DefaultRequestVersion = _config.HttpVersion,
+                DefaultVersionPolicy = HttpVersionPolicy.RequestVersionExact
+            };
+        }
 
-            using HttpClient client = CreateHttpClient();
+        public void Start()
+        {
+            lock (_cts)
+            {
+                if (_cts.IsCancellationRequested)
+                {
+                    throw new ObjectDisposedException(nameof(StressClient));
+                }
+                if (_clientTask != null)
+                {
+                    throw new InvalidOperationException("Stress client already running");
+                }
 
+                InitializeClient().Wait();
+                _stopwatch.Start();
+                _clientTask = StartCore();
+            }
+        }
+
+        public void Stop()
+        {
+            _cts.Cancel();
+            for (int i = 0; i < 60; ++i)
+            {
+                if (_clientTask == null || _clientTask.Wait(TimeSpan.FromSeconds(1)))
+                {
+                    break;
+                }
+                Console.WriteLine("Client is stopping ...");
+            }
+            _stopwatch.Stop();
+            _cts.Dispose();
+        }
+
+        public void PrintFinalReport()
+        {
+            lock (Console.Out)
+            {
+                Console.ForegroundColor = ConsoleColor.Magenta;
+                Console.WriteLine("HttpStress Run Final Report");
+                Console.WriteLine();
+
+                _aggregator.PrintCurrentResults(_stopwatch.Elapsed);
+                _aggregator.PrintLatencies();
+                _aggregator.PrintFailureTypes();
+            }
+        }
+
+        public void Dispose()
+        {
+            Stop();
+            _eventListener?.Dispose();
+        }
+
+        private async Task InitializeClient()
+        {
             Console.WriteLine($"Trying connect to the server {_baseAddress}.");
 
             // Before starting the full-blown test, make sure can communicate with the server
             // Needed for scenaria where we're deploying server & client in separate containers, simultaneously.
             await SendTestRequestToServer(maxRetries: 10);
 
-            Console.WriteLine($"Connected succesfully.");
+            Console.WriteLine($"Connected successfully.");
+
+            async Task SendTestRequestToServer(int maxRetries)
+            {
+                using HttpClient client = CreateHttpClient();
+                client.Timeout = TimeSpan.FromSeconds(5);
+                for (int remainingRetries = maxRetries; ; remainingRetries--)
+                {
+                    var sw = Stopwatch.StartNew();
+                    try
+                    {
+                        await client.GetAsync("/");
+                        break;
+                    }
+                    catch (HttpRequestException) when (remainingRetries > 0)
+                    {
+                        Console.WriteLine($"Stress client could not connect to host {_baseAddress}, {remainingRetries} attempts remaining");
+                        var delay = TimeSpan.FromSeconds(1) - sw.Elapsed;
+                        if (delay > TimeSpan.Zero)
+                        {
+                            await Task.Delay(delay);
+                        }
+                    }
+                }
+            }
+        }
+
+        private async Task StartCore()
+        {
+            using HttpClient client = CreateHttpClient();
 
             // Spin up a thread dedicated to outputting stats for each defined interval
             new Thread(() =>
@@ -194,24 +220,6 @@ namespace HttpStress
                 {
                     uint rol5 = ((uint)h1 << 5) | ((uint)h1 >> 27);
                     return ((int)rol5 + h1) ^ h2;
-                }
-            }
-            
-            async Task SendTestRequestToServer(int maxRetries)
-            {
-                using HttpClient client = CreateHttpClient();
-                for (int remainingRetries = maxRetries; ; remainingRetries--)
-                {
-                    try
-                    {
-                        await client.GetAsync("/");
-                        break;
-                    }
-                    catch (HttpRequestException) when (remainingRetries > 0)
-                    {
-                        Console.WriteLine($"Stress client could not connect to host {_baseAddress}, {remainingRetries} attempts remaining");
-                        await Task.Delay(millisecondsDelay: 1000);
-                    }
                 }
             }
         }

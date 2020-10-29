@@ -96,6 +96,9 @@ void CommandLine::DumpHelp(const char* program)
     printf("     e.g. -merge a.mch *.mc -recursive\n");
     printf("     e.g. -merge a.mch *.mc -recursive -dedup -thin\n");
     printf("\n");
+    printf(" -printJITEEVersion\n");
+    printf("     Print the JITEEVersion GUID with which this was built, in the form: a5eec3a4-4176-43a7-8c2b-a05b551d4f49\n");
+    printf("\n");
     printf(" -removeDup inputfile outputfile\n");
     printf("     Copy methodContexts from inputfile to outputfile, skipping duplicates.\n");
     printf("     e.g. -removeDup a.mc b.mc\n");
@@ -244,6 +247,12 @@ bool CommandLine::Parse(int argc, char* argv[], /* OUT */ Options* o)
                 tempLen        = strlen(argv[i]);
                 foundVerb      = true;
                 o->actionMerge = true;
+            }
+            else if ((_strnicmp(&argv[i][1], "printjiteeversion", argLen) == 0))
+            {
+                tempLen        = strlen(argv[i]);
+                foundVerb      = true;
+                o->actionPrintJITEEVersion = true;
             }
             else if ((_strnicmp(&argv[i][1], "recursive", argLen) == 0))
             {
@@ -591,6 +600,11 @@ bool CommandLine::Parse(int argc, char* argv[], /* OUT */ Options* o)
             DumpHelp(argv[0]);
             return false;
         }
+        return true;
+    }
+    if (o->actionPrintJITEEVersion)
+    {
+        // No arguments to check
         return true;
     }
 

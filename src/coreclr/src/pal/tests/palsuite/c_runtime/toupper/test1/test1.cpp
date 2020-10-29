@@ -22,7 +22,7 @@ struct testCase
     int start;
 };
 
-int __cdecl main(int argc, char **argv)
+PALTEST(c_runtime_toupper_test1_paltest_toupper_test1, "c_runtime/toupper/test1/paltest_toupper_test1")
 {
   
     int result;  

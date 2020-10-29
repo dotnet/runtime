@@ -5,6 +5,7 @@ parameters:
   osSubgroup: ''
   container: ''
   testGroup: ''
+  crossBuild: false
   crossrootfsDir: ''
   readyToRun: false
   liveLibrariesBuildConfig: ''
@@ -50,10 +51,6 @@ steps:
         helixBuild: $(Build.BuildNumber)
         helixSource: $(_HelixSource)
 
-        # REVIEW: not sure why "cli" is part of the names here. Leave it for the ones that already had it,
-        # but don't add it to new ones.
-        ${{ if eq(parameters.readyToRun, true) }}:
-          helixType: 'test/functional/r2r/cli/'
         ${{ if ne(parameters.readyToRun, true) }}:
           helixType: 'test/functional/cli/'
 
@@ -78,6 +75,6 @@ steps:
           # DotNet-HelixApi-Access variable group
           helixAccessToken: $(HelixApiAccessToken)
 
-        helixProjectArguments: '$(Build.SourcesDirectory)/src/coreclr/tests/helixpublishwitharcade.proj'
+        helixProjectArguments: '$(Build.SourcesDirectory)/src/tests/Common/helixpublishwitharcade.proj'
 
-        scenarios: normal 
+        scenarios: normal

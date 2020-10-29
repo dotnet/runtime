@@ -43,7 +43,7 @@
   </ItemGroup>
 
   <!-- Mobile uses a different hosting model, so we don't include the .NET host components. -->
-  <ItemGroup Condition="'$(RuntimeFlavor)' != 'Mono'">
+  <ItemGroup Condition="'$(TargetsMobile)' != 'true'">
     <NativeRuntimeAsset Include="$(DotNetHostBinDir)/$(LibraryFilePrefix)hostpolicy$(LibraryFileExtension)" />
     <NativeRuntimeAsset Include="$(DotNetHostBinDir)/$(LibraryFilePrefix)hostfxr$(LibraryFileExtension)" PackOnly="true" />
   </ItemGroup>
@@ -86,7 +86,8 @@
 
   <Target Name="AddFrameworkFilesToPackage" DependsOnTargets="ResolveLibrariesFromLocalBuild">
     <ItemGroup>
-      <ReferenceCopyLocalPaths Include="@(LibrariesRuntimeFiles)" />
+      <ReferenceCopyLocalPaths Include="@(LibrariesRuntimeFiles)"
+        Condition="'%(LibrariesRuntimeFiles.Extension)' != '.a' or '$(TargetsMobile)' == 'true'" />
     </ItemGroup>
   </Target>
 

@@ -18,7 +18,7 @@
  * with CP_ACP, and that dwFlags will be 0.
  */
 
-int __cdecl main(int argc, char *argv[])
+PALTEST(locale_info_MultiByteToWideChar_test2_paltest_multibytetowidechar_test2, "locale_info/MultiByteToWideChar/test2/paltest_multibytetowidechar_test2")
 {    
     char mbStr[128];
     WCHAR wideStr[128];

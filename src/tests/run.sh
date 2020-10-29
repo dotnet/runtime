@@ -6,7 +6,7 @@ function print_usage {
     echo ''
     echo 'Typical command line:'
     echo ''
-    echo 'coreclr/tests/runtest.sh <arch> <configurations>'
+    echo 'src/tests/run.sh <arch> <configurations>'
     echo ''
     echo 'Optional arguments:'
     echo '  --testRootDir=<path>             : Root directory of the test build (e.g. runtime/artifacts/tests/Windows_NT.x64.Debug).'
@@ -87,7 +87,7 @@ function check_cpu_architecture {
         armv7l)
             __arch=arm
             ;;
-        aarch64)
+        aarch64|arm64)
             __arch=arm64
             ;;
         *)
@@ -113,6 +113,7 @@ readonly EXIT_CODE_TEST_FAILURE=2  # Script completed successfully, but one or m
 
 # Argument variables
 buildArch=$ARCH
+buildOS=
 buildConfiguration="Debug"
 testRootDir=
 testNativeBinDir=
@@ -165,6 +166,9 @@ do
             ;;
         wasm)
             buildArch="wasm"
+            ;;
+        Android)
+            buildOS="Android"
             ;;
         debug|Debug)
             buildConfiguration="Debug"
@@ -309,7 +313,7 @@ fi
 export COMPlus_gcServer="$serverGC"
 
 ################################################################################
-# Runtest.py
+# Run.py
 ################################################################################
 
 runtestPyArguments=("-arch" "${buildArch}" "-build_type" "${buildConfiguration}")
@@ -332,6 +336,9 @@ if [ $buildArch = "wasm" ]; then
     runtestPyArguments+=("-os" "Browser")
 fi
 
+if [ $buildOS = "Android" ]; then
+    runtestPyArguments+=("-os" "Android")
+fi
     
 if [ ! -z "$testRootDir" ]; then
     runtestPyArguments+=("-test_location" "$testRootDir")
@@ -415,7 +422,7 @@ __Python=python
     __Python=python3
 fi
 
-# Run the tests using cross platform runtest.py
-echo "python $repoRootDir/src/coreclr/tests/runtest.py ${runtestPyArguments[@]}"
-$__Python "$repoRootDir/src/coreclr/tests/runtest.py" "${runtestPyArguments[@]}"
+# Run the tests using cross platform run.py
+echo "python $repoRootDir/src/tests/run.py ${runtestPyArguments[@]}"
+$__Python "$repoRootDir/src/tests/run.py" "${runtestPyArguments[@]}"
 exit "$?"

@@ -382,7 +382,7 @@ void Run()
     }
 }
 
-int _cdecl main(int argc, char **argv)
+PALTEST(threading_SignalObjectAndWait_paltest_signalobjectandwaittest, "threading/SignalObjectAndWait/paltest_signalobjectandwaittest")
 {
     if (PAL_Initialize(argc, argv) != 0)
     {

@@ -556,8 +556,9 @@ namespace System.Diagnostics.Tests
                 Assert.NotNull(activity);
                 Assert.NotEqual(default, ctx);
                 Assert.Equal(ctx.TraceId, activity.TraceId);
-                Assert.Equal(ctx.SpanId.ToHexString(), activity.ParentSpanId.ToHexString());
-                Assert.Equal(default(ActivitySpanId).ToHexString(), ctx.SpanId.ToHexString());
+                Assert.Equal(ctx.SpanId, activity.ParentSpanId);
+                Assert.Equal(default(ActivitySpanId), activity.ParentSpanId);
+                Assert.Equal(default(ActivitySpanId), ctx.SpanId);
             }).Dispose();
         }
 

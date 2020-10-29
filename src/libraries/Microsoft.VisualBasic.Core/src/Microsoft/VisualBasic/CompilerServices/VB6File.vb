@@ -2632,7 +2632,7 @@ SkipWhiteSpaceExit:
             If CheckEOF(lChar) Then
                 m_eof = True
             Else
-                Do While (sTermChars.IndexOf(ChrW(lChar)) = -1)
+                Do While (Not sTermChars.Contains(ChrW(lChar)))
                     lChar = m_sr.Read()
                     m_position += 1
 

@@ -274,8 +274,8 @@ namespace System.Xml.Xsl.Xslt
                     bool undefined = false;
                     for (int prev = record + 1; prev < exAll; prev++)
                     {
-                        string? prevPrefix, prevNsUri;
-                        ScopeFlags prevFlags = GetName(ref _records[prev], out prevPrefix, out prevNsUri);
+                        string? prevPrefix;
+                        GetName(ref _records[prev], out prevPrefix, out _);
                         if (
                             (flags & ScopeFlags.NsDecl) != 0 &&
                             prevPrefix == recPrefix

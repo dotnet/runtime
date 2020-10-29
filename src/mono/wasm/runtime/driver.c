@@ -205,6 +205,23 @@ mono_wasm_add_assembly (const char *name, const unsigned char *data, unsigned in
 	return mono_has_pdb_checksum (data, size);
 }
 
+int
+mono_wasm_assembly_already_added (const char *assembly_name)
+{
+	if (assembly_count == 0)
+		return 0;
+
+	WasmAssembly *entry = assemblies;
+	while (entry != NULL) {
+		int entry_name_minus_extn_len = strlen(entry->assembly.name) - 4;
+		if (entry_name_minus_extn_len == strlen(assembly_name) && strncmp (entry->assembly.name, assembly_name, entry_name_minus_extn_len) == 0)
+			return 1;
+		entry = entry->next;
+	}
+
+	return 0;
+}
+
 typedef struct WasmSatelliteAssembly_ WasmSatelliteAssembly;
 
 struct WasmSatelliteAssembly_ {
@@ -624,6 +641,17 @@ mono_wasm_string_from_js (const char *str)
 {
 	if (str)
 		return mono_string_new (root_domain, str);
+	else
+		return NULL;
+}
+
+EMSCRIPTEN_KEEPALIVE MonoString *
+mono_wasm_string_from_utf16 (const mono_unichar2 * chars, int length)
+{
+	assert (length >= 0);
+
+	if (chars)
+		return mono_string_new_utf16 (root_domain, chars, length);
 	else
 		return NULL;
 }

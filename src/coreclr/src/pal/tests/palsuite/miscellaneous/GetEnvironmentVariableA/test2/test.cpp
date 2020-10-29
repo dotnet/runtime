@@ -16,7 +16,8 @@
 
 #define SMALL_BUFFER_SIZE 1
 
-int __cdecl main(int argc, char *argv[]) {
+PALTEST(miscellaneous_GetEnvironmentVariableA_test2_paltest_getenvironmentvariablea_test2, "miscellaneous/GetEnvironmentVariableA/test2/paltest_getenvironmentvariablea_test2")
+{
 
     /* A place to stash the returned values */
     int  ReturnValueForSmallBuffer = 0;

@@ -1,6 +1,13 @@
 trigger: none
 
-pr: none
+pr:
+  branches:
+    include:
+    - master
+  paths:
+    include:
+    - src/coreclr/src/ilasm/*
+    - src/coreclr/src/ildasm/*
 
 schedules:
 - cron: "0 19 * * 6"
@@ -20,8 +27,15 @@ jobs:
   parameters:
     jobTemplate: /eng/pipelines/common/build-coreclr-and-libraries-job.yml
     buildConfig: checked
-    platformGroup: all
     platforms:
+    # Linux tests are built on the OSX machines.
+    - OSX_x64
+    - Linux_arm
+    - Linux_arm64
+    - Linux_x64
+    - Windows_NT_x64
+    - Windows_NT_x86
+    - Windows_NT_arm64
     - CoreClrTestBuildHost # Either OSX_x64 or Linux_x64
     jobParameters:
       testGroup: ilasm
@@ -40,7 +54,15 @@ jobs:
   parameters:
     jobTemplate: /eng/pipelines/common/templates/runtimes/run-test-job.yml
     buildConfig: checked
-    platformGroup: all
+    platforms:
+    # Linux tests are built on the OSX machines.
+    - OSX_x64
+    - Linux_arm
+    - Linux_arm64
+    - Linux_x64
+    - Windows_NT_x64
+    - Windows_NT_x86
+    - Windows_NT_arm64
     helixQueueGroup: ci
     helixQueuesTemplate: /eng/pipelines/coreclr/templates/helix-queues-setup.yml
     jobParameters:

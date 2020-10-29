@@ -15,10 +15,10 @@
 #include <palsuite.h>
 
 /* Execution flags */
-BOOL bTry             = FALSE;
-BOOL bExcept          = FALSE;
-BOOL bTry_function    = FALSE;
-BOOL bExcept_function = FALSE;
+BOOL bTry_pal_except_test3             = FALSE;
+BOOL bExcept_pal_except_test3          = FALSE;
+BOOL bTry_function_pal_except_test3    = FALSE;
+BOOL bExcept_function_pal_except_test3 = FALSE;
 
 /* 
  * Helper function that contains a PAL_TRY-PAL_EXCEPT block
@@ -30,7 +30,7 @@ void Helper()
     {
         int *lp = 0x00000000;
 
-        bTry_function = TRUE;
+        bTry_function_pal_except_test3 = TRUE;
 
         *lp = 13;    /* causes an access violation exception */
 
@@ -39,17 +39,17 @@ void Helper()
     }
     PAL_EXCEPT(EXCEPTION_EXECUTE_HANDLER)
     {
-        if (!bTry)
+        if (!bTry_pal_except_test3)
         {
             Fail("ERROR: Nested PAL_EXCEPT was hit without "
                     "the function's PAL_TRY being hit.\n");
         }
-        bExcept_function = TRUE;
+        bExcept_function_pal_except_test3 = TRUE;
     }
     PAL_ENDTRY;
 }
 
-int __cdecl main(int argc, char *argv[])
+PALTEST(exception_handling_pal_except_test3_paltest_pal_except_test3, "exception_handling/pal_except/test3/paltest_pal_except_test3")
 {
     if (0 != PAL_Initialize(argc, argv))
     {
@@ -60,7 +60,7 @@ int __cdecl main(int argc, char *argv[])
     {
         int* p = 0x00000000;   /* NULL pointer */
 
-        bTry = TRUE;    /* indicate we hit the PAL_TRY block */
+        bTry_pal_except_test3 = TRUE;    /* indicate we hit the PAL_TRY block */
 
         Helper();
 
@@ -70,45 +70,45 @@ int __cdecl main(int argc, char *argv[])
     }
     PAL_EXCEPT(EXCEPTION_EXECUTE_HANDLER)
     {
-        if (!bTry)
+        if (!bTry_pal_except_test3)
         {
             Fail("ERROR: PAL_EXCEPT was hit without PAL_TRY being hit.\n");
         }
-        if (!bExcept_function)
+        if (!bExcept_function_pal_except_test3)
         {
             Fail("ERROR: PAL_EXCEPT was hit without "
                  "function's PAL_EXCEPT being hit.\n");
         }
 
-        bExcept = TRUE; /* indicate we hit the PAL_EXCEPT block */
+        bExcept_pal_except_test3 = TRUE; /* indicate we hit the PAL_EXCEPT block */
     }
     PAL_ENDTRY;
 
-    if (!bTry)
+    if (!bTry_pal_except_test3)
     {
         Trace("ERROR: the code in the PAL_TRY block was not executed.\n");
     }
 
-    if (!bExcept)
+    if (!bExcept_pal_except_test3)
     {
         Trace("ERROR: the code in the PAL_EXCEPT block was not executed.\n");
     }
 
-    if (!bTry_function)
+    if (!bTry_function_pal_except_test3)
     {
         Trace("ERROR: the code in the "
               "function's PAL_TRY block was not executed.\n");
     }
 
-    if (!bExcept_function)
+    if (!bExcept_function_pal_except_test3)
     {
         Trace("ERROR: the code in the "
               "function's PAL_EXCEPT block was not executed.\n");
     }
 
     /* did we hit all the code blocks? */
-    if(!bTry || !bExcept ||
-       !bTry_function || !bExcept_function)
+    if(!bTry_pal_except_test3 || !bExcept_pal_except_test3 ||
+       !bTry_function_pal_except_test3 || !bExcept_function_pal_except_test3)
     {
         Fail("");
     }

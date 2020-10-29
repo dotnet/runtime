@@ -468,8 +468,8 @@ public:
 
 private:
 
-    friend int __cdecl CompareLifetimeTransitionsByOffsetThenSlot(const void*, const void*);
-    friend int CompareLifetimeTransitionsByChunk(const void*, const void*);
+    friend struct CompareLifetimeTransitionsByOffsetThenSlot;
+    friend struct CompareLifetimeTransitionsByChunk;
 
 
     struct InterruptibleRange

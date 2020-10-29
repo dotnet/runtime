@@ -20,7 +20,7 @@ namespace Microsoft.WebAssembly.Diagnostics
         private PerScopeCache scopeCache;
         private VarInfo[] varIds;
         private ILogger logger;
-        private bool locals_fetched = false;
+        private bool locals_fetched;
 
         public MemberReferenceResolver(MonoProxy proxy, ExecutionContext ctx, MessageId msg_id, int scope_id, ILogger logger)
         {
@@ -37,27 +37,27 @@ namespace Microsoft.WebAssembly.Diagnostics
         {
             if (scopeCache.Locals.Count == 0 && !locals_fetched)
             {
-                var scope_res = await proxy.GetScopeProperties(messageId, scopeId, token);
+                Result scope_res = await proxy.GetScopeProperties(messageId, scopeId, token);
                 if (scope_res.IsErr)
                     throw new Exception($"BUG: Unable to get properties for scope: {scopeId}. {scope_res}");
                 locals_fetched = true;
             }
 
-            if (scopeCache.Locals.TryGetValue(var_name, out var obj))
+            if (scopeCache.Locals.TryGetValue(var_name, out JObject obj))
             {
                 return obj["value"]?.Value<JObject>();
             }
 
-            if (scopeCache.MemberReferences.TryGetValue(var_name, out var ret))
+            if (scopeCache.MemberReferences.TryGetValue(var_name, out JObject ret))
                 return ret;
 
             if (varIds == null)
             {
-                var scope = ctx.CallStack.FirstOrDefault(s => s.Id == scopeId);
+                Frame scope = ctx.CallStack.FirstOrDefault(s => s.Id == scopeId);
                 varIds = scope.Method.GetLiveVarsAt(scope.Location.CliLocation.Offset);
             }
 
-            var res = await proxy.SendMonoCommand(messageId, MonoCommands.EvaluateMemberAccess(scopeId, var_name, varIds), token);
+            Result res = await proxy.SendMonoCommand(messageId, MonoCommands.EvaluateMemberAccess(scopeId, var_name, varIds), token);
             if (res.IsOk)
             {
                 ret = res.Value?["result"]?["value"]?["value"]?.Value<JObject>();

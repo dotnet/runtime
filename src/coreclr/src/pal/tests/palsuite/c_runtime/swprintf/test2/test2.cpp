@@ -20,7 +20,7 @@
  */
 
 
-int __cdecl main(int argc, char *argv[])
+PALTEST(c_runtime_swprintf_test2_paltest_swprintf_test2, "c_runtime/swprintf/test2/paltest_swprintf_test2")
 {
 
     if (PAL_Initialize(argc, argv) != 0)

@@ -16,7 +16,7 @@ namespace Internal.TypeSystem
     public abstract class RuntimeInterfacesAlgorithm
     {
         /// <summary>
-        /// Compute the RuntimeInterfaces for a TypeDesc, is permitted to depend on 
+        /// Compute the RuntimeInterfaces for a TypeDesc, is permitted to depend on
         /// RuntimeInterfaces of base type, but must not depend on any other
         /// details of the base type.
         /// </summary>

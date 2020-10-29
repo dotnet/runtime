@@ -19,7 +19,7 @@
  * Uses memcmp & wcslen
  */
 
-int __cdecl main(int argc, char *argv[])
+PALTEST(c_runtime_swprintf_test6_paltest_swprintf_test6, "c_runtime/swprintf/test6/paltest_swprintf_test6")
 {
     WCHAR wb = (WCHAR) 'b';
     
