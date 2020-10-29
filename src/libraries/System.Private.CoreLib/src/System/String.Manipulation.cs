@@ -629,6 +629,10 @@ namespace System
             {
                 throw new ArgumentNullException(nameof(values));
             }
+            if (values is IList<string?> valuesIList)
+            {
+                return Join(separator, valuesIList, 0, valuesIList.Count);
+            }
 
             using (IEnumerator<string?> en = values.GetEnumerator())
             {
@@ -663,7 +667,7 @@ namespace System
 
         // Joins an array of strings together as one string with a separator between each original string.
         //
-        public static unsafe string Join(string? separator, string?[] value, int startIndex, int count)
+        public static unsafe string Join(string? separator, IList<string?> value, int startIndex, int count)
         {
             separator ??= Empty;
             fixed (char* pSeparator = &separator._firstChar)
@@ -761,7 +765,7 @@ namespace System
             }
         }
 
-        private static unsafe string JoinCore(char* separator, int separatorLength, string?[] value, int startIndex, int count)
+        private static unsafe string JoinCore(char* separator, int separatorLength, IList<string?> value, int startIndex, int count)
         {
             // If the separator is null, it is converted to an empty string before entering this function.
             // Even for empty strings, fixed should never return null (it should return a pointer to a null char).
@@ -780,7 +784,7 @@ namespace System
             {
                 throw new ArgumentOutOfRangeException(nameof(count), SR.ArgumentOutOfRange_NegativeCount);
             }
-            if (startIndex > value.Length - count)
+            if (startIndex > value.Count - count)
             {
                 throw new ArgumentOutOfRangeException(nameof(startIndex), SR.ArgumentOutOfRange_IndexCountBuffer);
             }
@@ -867,7 +871,7 @@ namespace System
             // fall back should be extremely rare.
             return copiedLength == totalLength ?
                 result :
-                JoinCore(separator, separatorLength, (string?[])value.Clone(), startIndex, count);
+                JoinCore(separator, separatorLength, new List<string?>(value), startIndex, count);
         }
 
         public string PadLeft(int totalWidth) => PadLeft(totalWidth, ' ');
