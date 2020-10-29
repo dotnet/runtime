@@ -12027,7 +12027,7 @@ void CEEJitInfo::allocMem (
         FireEtwMethodJitMemoryAllocatedForCode(methodBeingCompiledNames[0].GetUnicode(),
             methodBeingCompiledNames[1].GetUnicode(),
             methodBeingCompiledNames[2].GetUnicode(),
-            hotCodeSize, roDataSize, totalSize.Value(), flag, GetClrInstanceId());
+            hotCodeSize + coldCodeSize, roDataSize, totalSize.Value(), flag, GetClrInstanceId());
     }
 
     m_CodeHeader = m_jitManager->allocCode(m_pMethodBeingCompiled, totalSize.Value(), GetReserveForJumpStubs(), flag
