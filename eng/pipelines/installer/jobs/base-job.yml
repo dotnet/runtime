@@ -111,7 +111,7 @@ jobs:
 
     - name: BaseJobBuildCommand
       value: >-
-        build.cmd -subset installer -ci
+        build.cmd -subset host+packs -ci
         $(BuildAction)
         -configuration $(_BuildConfig)
         $(LiveOverridePathArgs)
@@ -149,7 +149,7 @@ jobs:
 
     - name: BaseJobBuildCommand
       value: >-
-        $(Build.SourcesDirectory)/build.sh -subset installer -ci
+        $(Build.SourcesDirectory)/build.sh -subset packs -ci
         $(BuildAction)
         -configuration $(_BuildConfig)
         -os ${{ parameters.osGroup }}
@@ -235,7 +235,7 @@ jobs:
         $(PreserveNuGetAuthDockerArgs)
 
     - name: installersSubsetArg
-      value: --subset installers
+      value: --subset packs.installers
 
     - name: BaseJobBuildCommand
       value: |
@@ -380,7 +380,7 @@ jobs:
 
   # Build corehost, sign and add entitlements to MacOS binaries
   - ${{ if eq(parameters.osGroup, 'OSX') }}:
-    - script: $(BaseJobBuildCommand) -subset corehost
+    - script: $(BaseJobBuildCommand) -subset host.native
       displayName: Build CoreHost
 
     - ${{ if and(ne(variables['System.TeamProject'], 'public'), notin(variables['Build.Reason'], 'PullRequest')) }}:
@@ -394,7 +394,7 @@ jobs:
             path: $(Build.SourcesDirectory)/artifacts/bin/osx-${{ parameters.archType }}.$(_BuildConfig)/corehost
             entitlementsFile: $(Build.SourcesDirectory)/eng/pipelines/common/entitlements.plist
 
-    - script: $(BaseJobBuildCommand) -subset installer.nocorehost
+    - script: $(BaseJobBuildCommand) -subset host.pkg+host.tools+packs
       displayName: Build and Package
 
   - ${{ if in(parameters.osGroup, 'OSX', 'iOS','tvOS') }}: 
