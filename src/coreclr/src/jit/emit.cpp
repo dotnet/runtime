@@ -5508,13 +5508,19 @@ UNATIVE_OFFSET emitter::emitFindOffset(insGroup* ig, unsigned insNum)
     return of;
 }
 
-/*****************************************************************************
- *
- *  Start generating a constant data section for the current
- *  function. Returns the offset of the section in the appropriate data
- *  block.
- */
-
+//---------------------------------------------------------------------------
+// emitDataGenBeg:
+//   - Allocate space for a constant or block of the size and alignment requested
+//     Returns the offset in the data section to use
+//
+// Arguments:
+//    size       - The size in bytes of the constant or block
+//    alignment  - The requested alignment for the data
+//    dataType   - The type of the constant int/float/etc
+//
+// Note: This method only allocate the space for the constant or block.  It doesn't
+//       initialize the value. You call emitDataGenData to initialize the value.
+//
 UNATIVE_OFFSET emitter::emitDataGenBeg(unsigned size, unsigned alignment, var_types dataType)
 {
     unsigned     secOffs;
@@ -5527,15 +5533,10 @@ UNATIVE_OFFSET emitter::emitDataGenBeg(unsigned size, unsigned alignment, var_ty
     // actually be used. That is, if the user requests an alignment
     // less than MIN_DATA_ALIGN, they will get  something that is at least
     // MIN_DATA_ALIGN. We allow smaller alignment to be specified since it is
-    // simpler to allow it than to check and block itr.
+    // simpler to allow it than to check and block it.
     //
     assert((size != 0) && ((size % dataSection::MIN_DATA_ALIGN) == 0));
-
-    // This restricts the alignment to MAX_DATA_ALIGN
-    // Alignments greater than 32 also require VM support in ICorJitInfo::allocMem
-
-    const size_t MaxAlignment = dataSection::MAX_DATA_ALIGN;
-    assert(isPow2(alignment) && (alignment <= MaxAlignment));
+    assert(isPow2(alignment) && (alignment <= dataSection::MAX_DATA_ALIGN));
 
     /* Get hold of the current offset */
     secOffs = emitConsDsc.dsdOffs;
@@ -5551,7 +5552,7 @@ UNATIVE_OFFSET emitter::emitDataGenBeg(unsigned size, unsigned alignment, var_ty
         // alignment.  So if the requested alignment is greater than MIN_DATA_ALIGN,
         // we need to pad the space out so the offset is a multiple of the requested.
         //
-        uint8_t zeros[MaxAlignment] = {};
+        uint8_t zeros[dataSection::MAX_DATA_ALIGN] = {};  // auto initialize to all zeros
 
         unsigned  zeroSize  = alignment - (secOffs % alignment);
         unsigned  zeroAlign = dataSection::MIN_DATA_ALIGN;
@@ -5718,11 +5719,27 @@ UNATIVE_OFFSET emitter::emitDataGenFind(const void* cnsAddr, unsigned cnsSize, u
     {
         // Search the existing secDesc entries
 
-        if ((secDesc->dsSize == cnsSize) && (secDesc->dsDataType == dataType) && ((curOffs % alignment) == 0))
+        // We can match as smaller 'cnsSize' value at the start of a larger 'secDesc->dsSize' block
+        // We match the bit pattern, so the dataType can be different
+        // Only match constants when the dsType is 'data'
+        //
+        if ((secDesc->dsType = dataSection::data) && (secDesc->dsSize >= cnsSize) && ((curOffs % alignment) == 0))
         {
             if (memcmp(cnsAddr, secDesc->dsCont, cnsSize) == 0)
             {
                 cnum = curOffs;
+
+                // We also might want to update the dsDataType
+                //
+                if ((secDesc->dsDataType != dataType) && (secDesc->dsSize == cnsSize))
+                {
+                    // If the subsequent dataType is floating point then change the original dsDataType
+                    // 
+                    if (varTypeIsFloating(dataType))
+                    {
+                        secDesc->dsDataType = dataType;
+                    }
+                }
                 break;
             }
         }
@@ -6112,12 +6129,12 @@ void emitter::emitDispDataSec(dataSecDsc* section)
                         switch (elemSize)
                         {
                             case 1:
-                                printf("\tdb\t%02Xh", *reinterpret_cast<uint16_t*>(&data->dsCont[i]));
+                                printf("\tdb\t%02Xh", *reinterpret_cast<uint8_t*>(&data->dsCont[i]));
                                 for (j = 1; j < 16; j++)
                                 {
                                     if (i + j >= data->dsSize)
                                         break;
-                                    printf(", %02Xh", *reinterpret_cast<uint16_t*>(&data->dsCont[i + j]));
+                                    printf(", %02Xh", *reinterpret_cast<uint8_t*>(&data->dsCont[i + j]));
                                 }
                                 i += j;
                                 break;
