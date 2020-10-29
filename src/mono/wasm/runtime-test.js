@@ -365,19 +365,24 @@ var App = {
 			}
 			wasm_set_main_args (main_argc, main_argv);
 
+			function isThenable(js_obj) {
+				// When using an external Promise library the Promise.resolve may not be sufficient
+				// to identify the object as a Promise.
+				return Promise.resolve(js_obj) === js_obj ||
+						((typeof js_obj === "object" || typeof js_obj === "function") && typeof js_obj.then === "function")
+			}
+
 			try {
-				var invoke_args = Module._malloc (4);
-				Module.setValue (invoke_args, app_args, "i32");
-				var eh_exc = Module._malloc (4);
-				Module.setValue (eh_exc, 0, "i32");
-				var res = runtime_invoke (main_method, 0, invoke_args, eh_exc);
-				var eh_res = Module.getValue (eh_exc, "i32");
-				if (eh_res != 0) {
-					print ("Exception:" + string_get_utf8 (res));
-					test_exit (1);
-					return;
+				let exit_code = Module.mono_call_assembly_entry_point("WasmSample", [app_args]);
+
+				if (isThenable(exit_code))
+				{
+					exit_code.then(
+						(result) => {
+							test_exit (result);
+						}
+					)
 				}
-				var exit_code = unbox_int (res);
 				test_exit (exit_code);
 			} catch (ex) {
 				print ("JS exception: " + ex);
