@@ -164,7 +164,7 @@
 
     <!-- ARM Linux cross build options on CI -->
     <ItemGroup Condition="'$(TargetsAndroid)' != 'true' and '$(MonoCrossDir)' != '' and ('$(TargetArchitecture)' == 'arm' or '$(TargetArchitecture)' == 'arm64')">
-	  <_MonoCMakeArgs Include="-DCMAKE_TOOLCHAIN_FILE=$(RepositoryEngineeringDir)/common/cross/toolchain.cmake" />
+      <_MonoCMakeArgs Include="-DCMAKE_TOOLCHAIN_FILE=$(RepositoryEngineeringDir)/common/cross/toolchain.cmake" />
       <_MonoBuildEnv Condition="'$(Platform)' == 'arm64'" Include="TARGET_BUILD_ARCH=arm64" />
       <_MonoBuildEnv Condition="'$(Platform)' == 'arm'" Include="TARGET_BUILD_ARCH=arm" />
       <_MonoBuildEnv Condition="'$(Platform)' == 'arm64'" Include="PKG_CONFIG_PATH=$(MonoCrossDir)/usr/lib/aarch64-linux-gnu/pkgconfig" />
@@ -287,6 +287,11 @@
       <_MonoLDFLAGS Include="-llog" />
       <_MonoLDFLAGS Include="-lc" />
       <_MonoLDFLAGS Include="-lgcc" />
+    </ItemGroup>
+    <!-- Linux options -->
+    <ItemGroup Condition="'$(TargetsLinux)' == true">
+      <_MonoCFLAGS Include="-Wl,--build-id=sha1" />
+      <_MonoCXXFLAGS Include="-Wl,--build-id=sha1" />
     </ItemGroup>
 
     <PropertyGroup>
