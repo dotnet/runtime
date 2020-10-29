@@ -7482,13 +7482,17 @@ public:
     // Returns the frame size at which we will generate a loop to probe the stack.
     target_size_t getVeryLargeFrameSize()
     {
+        const target_size_t pageSize = eeGetPageSize();
 #ifdef TARGET_ARM
         // The looping probe code is 40 bytes, whereas the straight-line probing for
         // the (0x2000..0x3000) case is 44, so use looping for anything 0x2000 bytes
         // or greater, to generate smaller code.
-        return 2 * eeGetPageSize();
+        return 2 * pageSize;
+#elif defined(TARGET_ARM64)
+        constexpr target_size_t ldrLargestPositiveImmByteOffset = 0x8000;
+        return max(ldrLargestPositiveImmByteOffset + pageSize - STACK_PROBE_BOUNDARY_THRESHOLD_BYTES, 3 * pageSize);
 #else
-        return 3 * eeGetPageSize();
+        return 3 * pageSize;
 #endif
     }
 
