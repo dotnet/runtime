@@ -5,6 +5,7 @@ import platform
 build_id = ''
 job_id = ''
 workitem = ''
+dump_dir = ''
 template_dir = os.getcwd()
 out_dir = template_dir
 idx = 0
@@ -51,6 +52,25 @@ while idx < args_len:
         
         out_dir = sys.argv[idx]
         idx += 1
+
+    if arg == '-dumpdir':
+        if idx >= args_len or sys.argv[idx].startswith('-'):
+            print("Must specify a value for -dumpdir")
+            exit(1)
+        
+        dump_dir = sys.argv[idx]
+        idx += 1
+
+found_dumps = False
+if dump_dir != '':
+    for filename in os.listdir(dump_dir):
+        if filename.endswith('.dmp') or 'core.' in filename:
+            found_dumps = True
+            break
+
+if not found_dumps:
+    print("Did not find dumps, skipping dump docs generation.")
+    exit(0)
 
 if build_id == '':
     print("ERROR: unespecified required argument -buildid")
