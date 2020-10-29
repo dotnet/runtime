@@ -216,6 +216,7 @@
     <PlatformManifestFileEntry Include="System.Net.NameResolution.dll" />
     <PlatformManifestFileEntry Include="System.Net.NetworkInformation.dll" />
     <PlatformManifestFileEntry Include="System.Net.Ping.dll" />
+    <PlatformManifestFileEntry Include="System.Net.Quic.dll" />
     <PlatformManifestFileEntry Include="System.Net.Primitives.dll" />
     <PlatformManifestFileEntry Include="System.Net.Requests.dll" />
     <PlatformManifestFileEntry Include="System.Net.Security.dll" />
