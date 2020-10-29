@@ -2164,6 +2164,11 @@ internal class Program
 
         TextFileName = EmitTextFileForTesting();
 
+        RunTest("CallMethodUsingMemberRefToDerivedWhereMethodIsActuallyOnBase_NonGenericCaller", HelperILDllTests.CallMethodUsingMemberRefToDerivedWhereMethodIsActuallyOnBase_NonGenericCaller());
+        RunTest("CallMethodUsingMemberRefToDerivedWhereMethodIsActuallyOnBase_GenericCaller", HelperILDllTests.CallMethodUsingMemberRefToDerivedWhereMethodIsActuallyOnBase_GenericCaller());
+        RunTest("CallMethodUsingMemberRefToDerivedWhereMethodIsActuallyOnBase_GenericCreateDelegate", HelperILDllTests.CallMethodUsingMemberRefToDerivedWhereMethodIsActuallyOnBase_GenericCreateDelegate());
+        RunTest("CallGenMethodUsingMemberRefToDerivedWhereMethodIsActuallyOnBase_NonGenericCaller", HelperILDllTests.CallGenMethodUsingMemberRefToDerivedWhereMethodIsActuallyOnBase_NonGenericCaller());
+        RunTest("CallGenMethodUsingMemberRefToDerivedWhereMethodIsActuallyOnBase_GenericCaller", HelperILDllTests.CallGenMethodUsingMemberRefToDerivedWhereMethodIsActuallyOnBase_GenericCaller());
         RunTest("NewString", NewString());
         RunTest("WriteLine", WriteLine());
         RunTest("IsInstanceOf", IsInstanceOf());
@@ -2221,15 +2226,12 @@ internal class Program
         RunTest("FunctionPointerFromAnotherModuleTest", FunctionPointerFromAnotherModuleTest());
         RunTest("ExplicitlySizedStructTest", ExplicitlySizedStructTest());
         RunTest("ExplicitlySizedClassTest", ExplicitlySizedClassTest());
-        RunTest("ConstrainedCallTest612", TypeGeneratorTest612.ConstrainedCallsTest());
-        RunTest("ConstrainedCallTest1358", TypeGeneratorTest1358.ConstrainedCallsTest());
         RunTest("GenericLdtokenTest", GenericLdtokenTest());
         RunTest("ArrayLdtokenTests", ArrayLdtokenTests());
         RunTest("TestGenericMDArrayBehavior", TestGenericMDArrayBehavior());
         RunTest("TestWithStructureNonBlittableFieldDueToGenerics", TestWithStructureNonBlittableFieldDueToGenerics());
         RunTest("TestSingleElementStructABI", TestSingleElementStructABI());
         RunTest("TestEnumLayoutAlignments", TestEnumLayoutAlignments());
-
         File.Delete(TextFileName);
 
         Console.WriteLine($@"{_passedTests.Count} tests pass:");

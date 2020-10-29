@@ -412,7 +412,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             {
                 flags |= (uint)ReadyToRunMethodSigFlags.READYTORUN_METHOD_SIG_Constrained;
             }
-            if (enforceOwningType)
+            if (enforceOwningType || method.OwningType != method.Method.OwningType || method.OwningTypeRequiresSignatureVariableResolution)
             {
                 flags |= (uint)ReadyToRunMethodSigFlags.READYTORUN_METHOD_SIG_OwnerType;
             }
@@ -430,7 +430,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                             EmitUInt(flags);
                             if ((flags & (uint)ReadyToRunMethodSigFlags.READYTORUN_METHOD_SIG_OwnerType) != 0)
                             {
-                                EmitTypeSignature(method.Method.OwningType, context);
+                                EmitTypeSignature(method.OwningType, context);
                             }
                             EmitMethodDefToken(method.Token);
                         }
@@ -439,10 +439,11 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                     case CorTokenType.mdtMemberRef:
                         {
                             flags |= (uint)ReadyToRunMethodSigFlags.READYTORUN_METHOD_SIG_MemberRefToken;
+                            bool emitTargetMethodOwningType = false;
 
                             // Owner type is needed for type specs to instantiating stubs or generics with signature variables still present
-                            if (!method.Method.OwningType.IsDefType &&
-                                ((flags & (uint)ReadyToRunMethodSigFlags.READYTORUN_METHOD_SIG_InstantiatingStub) != 0 || method.Method.OwningType.ContainsSignatureVariables()))
+                            if (!method.OwningType.IsDefType &&
+                                ((flags & (uint)ReadyToRunMethodSigFlags.READYTORUN_METHOD_SIG_InstantiatingStub) != 0 || method.OwningType.ContainsSignatureVariables()))
                             {
                                 flags |= (uint)ReadyToRunMethodSigFlags.READYTORUN_METHOD_SIG_OwnerType;
                             }
@@ -451,6 +452,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                                 var memberRefMethod = method.Token.Module.GetMethod(MetadataTokens.EntityHandle((int)method.Token.Token));
                                 if (memberRefMethod.OwningType != method.Method.OwningType)
                                 {
+                                    emitTargetMethodOwningType = true;
                                     flags |= (uint)ReadyToRunMethodSigFlags.READYTORUN_METHOD_SIG_OwnerType;
                                 }
                             }
@@ -458,7 +460,15 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                             EmitUInt(flags);
                             if ((flags & (uint)ReadyToRunMethodSigFlags.READYTORUN_METHOD_SIG_OwnerType) != 0)
                             {
-                                EmitTypeSignature(method.Method.OwningType, context);
+                                // The type here should be the type referred to by the memberref (if this is one, not the type where the method was eventually found!
+                                if (emitTargetMethodOwningType)
+                                {
+                                    EmitTypeSignature(method.Method.OwningType, context);
+                                }
+                                else
+                                {
+                                    EmitTypeSignature(method.OwningType, context);
+                                }
                             }
                             EmitMethodRefToken(method.Token);
                         }
@@ -538,6 +548,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             EmitUInt(flags);
             if ((flags & (uint)ReadyToRunMethodSigFlags.READYTORUN_METHOD_SIG_OwnerType) != 0)
             {
+                // The type here should be the type referred to by the memberref (if this is one, not the type where the method was eventually found!
                 EmitTypeSignature(method.Method.OwningType, context);
             }
             EmitTokenRid(methodToken.Token);

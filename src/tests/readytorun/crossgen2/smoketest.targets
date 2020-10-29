@@ -9,8 +9,6 @@
   <ItemGroup>
     <ProjectReference Include=".\helperdll.csproj" />
     <ProjectReference Include=".\helperildll.ilproj" />
-    <ProjectReference Include=".\Generated612.ilproj" />
-    <ProjectReference Include=".\Generated1358.ilproj" />
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Program.cs" />

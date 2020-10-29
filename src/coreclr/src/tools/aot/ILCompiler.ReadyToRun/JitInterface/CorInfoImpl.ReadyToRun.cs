@@ -40,14 +40,82 @@ namespace Internal.JitInterface
         public readonly ModuleToken Token;
         public readonly TypeDesc ConstrainedType;
         public readonly bool Unboxing;
+        public readonly bool OwningTypeRequiresSignatureVariableResolution;
+        public readonly TypeDesc OwningType;
 
-        public MethodWithToken(MethodDesc method, ModuleToken token, TypeDesc constrainedType, bool unboxing)
+
+        public MethodWithToken(MethodDesc method, ModuleToken token, TypeDesc constrainedType, bool unboxing, object context)
         {
             Debug.Assert(!method.IsUnboxingThunk());
             Method = method;
             Token = token;
             ConstrainedType = constrainedType;
             Unboxing = unboxing;
+            OwningType = GetMethodTokenOwningType(this, context, out OwningTypeRequiresSignatureVariableResolution);
+        }
+
+        private static TypeDesc GetMethodTokenOwningType(MethodWithToken methodToken, object context, out bool owningTypeRequiresSignatureVariableResolution)
+        {
+            ModuleToken moduleToken = methodToken.Token;
+            owningTypeRequiresSignatureVariableResolution = false;
+
+            if (moduleToken.TokenType == CorTokenType.mdtMethodDef)
+            {
+                return methodToken.Method.OwningType;
+            }
+
+            if (moduleToken.TokenType == CorTokenType.mdtMethodSpec)
+            {
+                var methodSpecification = moduleToken.MetadataReader.GetMethodSpecification((MethodSpecificationHandle)moduleToken.Handle);
+                moduleToken = new ModuleToken(moduleToken.Module, methodSpecification.Method);
+
+                if (moduleToken.TokenType == CorTokenType.mdtMethodDef)
+                {
+                    return methodToken.Method.OwningType;
+                }
+            }
+
+            // At this point moduleToken must point at a MemberRef.
+            Debug.Assert(moduleToken.TokenType == CorTokenType.mdtMemberRef);
+            var memberRef = moduleToken.MetadataReader.GetMemberReference((MemberReferenceHandle)moduleToken.Handle);
+            switch (memberRef.Parent.Kind)
+            {
+                case HandleKind.TypeDefinition:
+                case HandleKind.TypeReference:
+                    return moduleToken.Module.GetType(memberRef.Parent);
+
+                case HandleKind.TypeSpecification:
+                    {
+                        var owningTypeNonSignatureResolved = moduleToken.Module.GetType(memberRef.Parent);
+                        TypeDesc result = owningTypeNonSignatureResolved;
+                        if (context != null)
+                        {
+                            Instantiation typeInstantiation;
+                            Instantiation methodInstantiation = new Instantiation();
+
+                            if (context is MethodDesc methodContext)
+                            {
+                                typeInstantiation = methodContext.OwningType.Instantiation;
+                                methodInstantiation = methodContext.Instantiation;
+                            }
+                            else
+                            {
+                                TypeDesc typeContext = (TypeDesc)context;
+                                typeInstantiation = typeContext.Instantiation;
+                            }
+
+                            result = owningTypeNonSignatureResolved.InstantiateSignature(typeInstantiation, methodInstantiation);
+                            if (result != owningTypeNonSignatureResolved)
+                            {
+                                owningTypeRequiresSignatureVariableResolution = true;
+                            }
+                        }
+                        return result;
+                    }
+
+                default:
+                    return methodToken.Method.OwningType;
+            }
         }
 
         public override bool Equals(object obj)
@@ -326,7 +394,9 @@ namespace Internal.JitInterface
                         object helperArg = GetRuntimeDeterminedObjectForToken(ref pResolvedToken);
                         if (helperArg is MethodDesc methodDesc)
                         {
-                            helperArg = new MethodWithToken(methodDesc, HandleToModuleToken(ref pResolvedToken), constrainedType, unboxing: false);
+                            var methodIL = (MethodIL)HandleToObject((IntPtr)pResolvedToken.tokenScope);
+                            MethodDesc sharedMethod = methodIL.OwningMethod.GetSharedRuntimeFormMethodTarget();
+                            helperArg = new MethodWithToken(methodDesc, HandleToModuleToken(ref pResolvedToken), constrainedType, unboxing: false, context: sharedMethod);
                         }
 
                         GenericContext methodContext = new GenericContext(entityFromContext(pResolvedToken.tokenContext));
@@ -356,7 +426,7 @@ namespace Internal.JitInterface
             TypeDesc delegateTypeDesc = HandleToObject(delegateType);
             MethodDesc targetMethodDesc = HandleToObject(pTargetMethod.hMethod);
             Debug.Assert(!targetMethodDesc.IsUnboxingThunk());
-            MethodWithToken targetMethod = new MethodWithToken(targetMethodDesc, HandleToModuleToken(ref pTargetMethod), constrainedType: null, unboxing: false);
+            MethodWithToken targetMethod = new MethodWithToken(targetMethodDesc, HandleToModuleToken(ref pTargetMethod), constrainedType: null, unboxing: false, context: entityFromContext(pTargetMethod.tokenContext));
 
             pLookup.lookupKind.needsRuntimeLookup = false;
             pLookup.constLookup = CreateConstLookupToSymbol(_compilation.SymbolNodeFactory.DelegateCtor(delegateTypeDesc, targetMethod));
@@ -1613,7 +1683,7 @@ namespace Internal.JitInterface
 
                         pResult->codePointerOrStubLookup.constLookup = CreateConstLookupToSymbol(
                             _compilation.SymbolNodeFactory.InterfaceDispatchCell(
-                                new MethodWithToken(targetMethod, HandleToModuleToken(ref pResolvedToken, targetMethod), constrainedType: null, unboxing: false),
+                                new MethodWithToken(targetMethod, HandleToModuleToken(ref pResolvedToken, targetMethod), constrainedType: null, unboxing: false, context: entityFromContext(pResolvedToken.tokenContext)),
                                 MethodBeingCompiled));
 
                         // If the abi of the method isn't stable, this will cause a usage of the RequiresRuntimeJitSymbol, which will trigger a RequiresRuntimeJitException
@@ -1652,7 +1722,7 @@ namespace Internal.JitInterface
                         // READYTORUN: FUTURE: Direct calls if possible
                         pResult->codePointerOrStubLookup.constLookup = CreateConstLookupToSymbol(
                             _compilation.NodeFactory.MethodEntrypoint(
-                                new MethodWithToken(nonUnboxingMethod, HandleToModuleToken(ref pResolvedToken, nonUnboxingMethod), constrainedType, unboxing: isUnboxingStub),
+                                new MethodWithToken(nonUnboxingMethod, HandleToModuleToken(ref pResolvedToken, nonUnboxingMethod), constrainedType, unboxing: isUnboxingStub, context: entityFromContext(pResolvedToken.tokenContext)),
                                 isInstantiatingStub: useInstantiatingStub,
                                 isPrecodeImportRequired: (flags & CORINFO_CALLINFO_FLAGS.CORINFO_CALLINFO_LDFTN) != 0));
 
@@ -1675,7 +1745,7 @@ namespace Internal.JitInterface
                         bool atypicalCallsite = (flags & CORINFO_CALLINFO_FLAGS.CORINFO_CALLINFO_ATYPICAL_CALLSITE) != 0;
                         pResult->codePointerOrStubLookup.constLookup = CreateConstLookupToSymbol(
                             _compilation.NodeFactory.DynamicHelperCell(
-                                new MethodWithToken(targetMethod, HandleToModuleToken(ref pResolvedToken, targetMethod), constrainedType: null, unboxing: false),
+                                new MethodWithToken(targetMethod, HandleToModuleToken(ref pResolvedToken, targetMethod), constrainedType: null, unboxing: false, context: entityFromContext(pResolvedToken.tokenContext)),
                                 useInstantiatingStub));
 
                         Debug.Assert(!pResult->sig.hasTypeArg());
@@ -1702,7 +1772,7 @@ namespace Internal.JitInterface
                     {
                         pResult->instParamLookup = CreateConstLookupToSymbol(_compilation.SymbolNodeFactory.CreateReadyToRunHelper(
                             ReadyToRunHelperId.MethodDictionary,
-                            new MethodWithToken(targetMethod, HandleToModuleToken(ref pResolvedToken, targetMethod), constrainedType, unboxing: false)));
+                            new MethodWithToken(targetMethod, HandleToModuleToken(ref pResolvedToken, targetMethod), constrainedType, unboxing: false, context: entityFromContext(pResolvedToken.tokenContext))));
                     }
                     else
                     {
@@ -1941,7 +2011,7 @@ namespace Internal.JitInterface
 
                             symbolNode = _compilation.SymbolNodeFactory.CreateReadyToRunHelper(
                                 ReadyToRunHelperId.MethodHandle,
-                                new MethodWithToken(md, HandleToModuleToken(ref pResolvedToken), constrainedType: null, unboxing: unboxingStub));
+                                new MethodWithToken(md, HandleToModuleToken(ref pResolvedToken), constrainedType: null, unboxing: unboxingStub, context: entityFromContext(pResolvedToken.tokenContext)));
                         }
                         break;
 
@@ -2179,7 +2249,7 @@ namespace Internal.JitInterface
                 methodDesc = rawPInvoke.Target;
             EcmaMethod ecmaMethod = (EcmaMethod)methodDesc;
             ModuleToken moduleToken = new ModuleToken(ecmaMethod.Module, ecmaMethod.Handle);
-            MethodWithToken methodWithToken = new MethodWithToken(ecmaMethod, moduleToken, constrainedType: null, unboxing: false);
+            MethodWithToken methodWithToken = new MethodWithToken(ecmaMethod, moduleToken, constrainedType: null, unboxing: false, context: null);
 
             if (ecmaMethod.IsSuppressGCTransition())
             {
