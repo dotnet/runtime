@@ -5723,7 +5723,7 @@ UNATIVE_OFFSET emitter::emitDataGenFind(const void* cnsAddr, unsigned cnsSize, u
         // We match the bit pattern, so the dataType can be different
         // Only match constants when the dsType is 'data'
         //
-        if ((secDesc->dsType = dataSection::data) && (secDesc->dsSize >= cnsSize) && ((curOffs % alignment) == 0))
+        if ((secDesc->dsType == dataSection::data) && (secDesc->dsSize >= cnsSize) && ((curOffs % alignment) == 0))
         {
             if (memcmp(cnsAddr, secDesc->dsCont, cnsSize) == 0)
             {
