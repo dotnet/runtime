@@ -47,11 +47,6 @@
     <WorkItemTimeout>5:00</WorkItemTimeout>
   </PropertyGroup>
 
-  <!-- tests take longer to complete -->
-  <PropertyGroup Condition="'$(CollectionName)' == 'tests'">
-    <WorkItemTimeout>8:00</WorkItemTimeout>
-  </PropertyGroup>
-
   <ItemGroup>
     <HelixCorrelationPayload Include="$(CorrelationPayloadDirectory)">
       <PayloadDirectory>%(Identity)</PayloadDirectory>

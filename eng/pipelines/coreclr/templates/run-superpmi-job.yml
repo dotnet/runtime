@@ -35,13 +35,17 @@ jobs:
     enablePublishBuildArtifacts: true
     continueOnError: ${{ parameters.continueOnError }}
     collectionName: ${{ parameters.collectionName }}
-    
+
     ${{ if ne(parameters.displayName, '') }}:
       displayName: '${{ parameters.displayName }}'
     ${{ if eq(parameters.displayName, '') }}:
       displayName: '${{ parameters.jobName }}'
 
-    timeoutInMinutes: ${{ parameters.timeoutInMinutes }}
+    # tests collection takes longer so increase timeout to 8 hours
+    ${{ if eq(parameters.collectionName, 'tests') }}:
+      timeoutInMinutes: 480
+    ${{ if ne(parameters.collectionName, 'tests') }}:
+      timeoutInminutes: ${{ parameters.timeoutInMinutes }}
 
     variables:
 
