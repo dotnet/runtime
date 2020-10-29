@@ -1636,6 +1636,7 @@ interp_handle_intrinsics (TransformData *td, MonoMethod *target_method, MonoClas
 					g_assert(str && str->length >= 0);
 					interp_clear_ins(td->last_ins);
 					interp_get_ldc_i4_from_const(td, NULL, str->length);
+					SET_SIMPLE_TYPE(td->sp - 1, STACK_TYPE_I4);
 					td->ip += 5;
 					return TRUE;
 				}
