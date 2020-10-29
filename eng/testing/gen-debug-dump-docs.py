@@ -37,9 +37,9 @@ while idx < args_len:
         workitem = sys.argv[idx]
         idx += 1
 
-    if arg == '-template-dir':
+    if arg == '-templatedir':
         if idx >= args_len or sys.argv[idx].startswith('-'):
-            print("Must specify a value for -template-dir")
+            print("Must specify a value for -templatedir")
             exit(1)
         
         template_dir = sys.argv[idx]
