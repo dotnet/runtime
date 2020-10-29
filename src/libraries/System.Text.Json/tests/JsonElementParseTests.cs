@@ -75,6 +75,9 @@ namespace System.Text.Json.Tests
                 ex = e;
             }
 
+            Assert.NotNull(ex);
+            Assert.IsAssignableFrom<JsonException>(ex);
+
             Assert.Equal(0, reader.BytesConsumed);
         }
 

@@ -35,7 +35,7 @@ namespace System.Text.Json
         ///   </para>
         /// </remarks>
         /// <exception cref="ArgumentException">
-        ///   <paramref name="reader"/> contains unsupported options.
+        ///   <paramref name="reader"/> is using unsupported options.
         /// </exception>
         /// <exception cref="ArgumentException">
         ///   The current <paramref name="reader"/> token does not start or represent a value.
@@ -82,7 +82,7 @@ namespace System.Text.Json
         ///   </para>
         /// </remarks>
         /// <exception cref="ArgumentException">
-        ///   <paramref name="reader"/> contains unsupported options.
+        ///   <paramref name="reader"/> is using unsupported options.
         /// </exception>
         /// <exception cref="ArgumentException">
         ///   The current <paramref name="reader"/> token does not start or represent a value.
