@@ -5552,7 +5552,7 @@ UNATIVE_OFFSET emitter::emitDataGenBeg(unsigned size, unsigned alignment, var_ty
         // alignment.  So if the requested alignment is greater than MIN_DATA_ALIGN,
         // we need to pad the space out so the offset is a multiple of the requested.
         //
-        uint8_t zeros[dataSection::MAX_DATA_ALIGN] = {};  // auto initialize to all zeros
+        uint8_t zeros[dataSection::MAX_DATA_ALIGN] = {}; // auto initialize to all zeros
 
         unsigned  zeroSize  = alignment - (secOffs % alignment);
         unsigned  zeroAlign = dataSection::MIN_DATA_ALIGN;
@@ -5734,7 +5734,7 @@ UNATIVE_OFFSET emitter::emitDataGenFind(const void* cnsAddr, unsigned cnsSize, u
                 if ((secDesc->dsDataType != dataType) && (secDesc->dsSize == cnsSize))
                 {
                     // If the subsequent dataType is floating point then change the original dsDataType
-                    // 
+                    //
                     if (varTypeIsFloating(dataType))
                     {
                         secDesc->dsDataType = dataType;
