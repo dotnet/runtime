@@ -22,7 +22,7 @@
  * feed), even if it says it only wants spaces tabs and newlines. 
  */
 
-int __cdecl main(int argc, char *argv[])
+PALTEST(c_runtime_sscanf_s_test2_paltest_sscanf_test2, "c_runtime/sscanf_s/test2/paltest_sscanf_test2")
 {
 
     if (PAL_Initialize(argc, argv))

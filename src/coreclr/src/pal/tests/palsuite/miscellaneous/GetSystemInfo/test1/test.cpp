@@ -12,7 +12,8 @@
 
 #include <palsuite.h>
 
-int __cdecl main(int argc, char *argv[]) {
+PALTEST(miscellaneous_GetSystemInfo_test1_paltest_getsysteminfo_test1, "miscellaneous/GetSystemInfo/test1/paltest_getsysteminfo_test1")
+{
   
     SYSTEM_INFO TheSystemInfo;
     SYSTEM_INFO* pSystemInfo = &TheSystemInfo;

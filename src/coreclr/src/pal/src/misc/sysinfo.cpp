@@ -588,7 +588,7 @@ PAL_GetLogicalProcessorCacheSizeFromOS()
     }
 #endif
 
-#if defined(HOST_ARM64)
+#if defined(HOST_ARM64) && !defined(TARGET_OSX)
     if (cacheSize == 0)
     {
         // It is currently expected to be missing cache size info

@@ -78,7 +78,7 @@ namespace System.Xml.Serialization
             {
                 TypeForwardedFromAttribute? originalAssemblyInfo = typeForwardedFromAttribute[0] as TypeForwardedFromAttribute;
                 Debug.Assert(originalAssemblyInfo != null);
-                Assembly originalAssembly = Assembly.Load(new AssemblyName(originalAssemblyInfo.AssemblyFullName));
+                Assembly.Load(new AssemblyName(originalAssemblyInfo.AssemblyFullName));
             }
         }
 

@@ -216,9 +216,8 @@ consumer( LPVOID lpParam )
     return 0;
 }
 
-int __cdecl main (int argc, char **argv)
+PALTEST(threading_CreateSemaphoreW_ReleaseSemaphore_test1_paltest_createsemaphorew_releasesemaphore_test1, "threading/CreateSemaphoreW_ReleaseSemaphore/test1/paltest_createsemaphorew_releasesemaphore_test1")
 {
-
     BufferStructure Buffer, *pBuffer;
 
     pBuffer = &Buffer;

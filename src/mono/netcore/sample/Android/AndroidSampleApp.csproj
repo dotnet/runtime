@@ -1,0 +1,67 @@
+<Project Sdk="Microsoft.NET.Sdk" DefaultTargets="BuildApp">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
+    <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
+    <TargetArchitecture Condition="'$(TargetArchitecture)'==''">x64</TargetArchitecture>
+    <EnableTargetingPackDownload>false</EnableTargetingPackDownload>
+    <RuntimeIdentifier>android-$(TargetArchitecture)</RuntimeIdentifier>
+    <PublishTrimmed Condition="'$(Configuration)' == 'Release'">true</PublishTrimmed>
+    <_TrimmerDefaultAction Condition="'$(Configuration)' == 'Release'">link</_TrimmerDefaultAction>
+    <Optimized Condition="'$(Configuration)' == 'Release'">True</Optimized>
+    <MicrosoftNetCoreAppRuntimePackDir>$(ArtifactsBinDir)microsoft.netcore.app.runtime.$(RuntimeIdentifier)\$(Configuration)\runtimes\android-$(TargetArchitecture)\</MicrosoftNetCoreAppRuntimePackDir>
+    <NoWarn>$(NoWarn),CA1050</NoWarn>
+  </PropertyGroup>
+
+  <!-- Redirect 'dotnet publish' to in-tree runtime pack -->
+  <Target Name="TrickRuntimePackLocation" AfterTargets="ProcessFrameworkReferences">
+    <ItemGroup>
+      <RuntimePack>
+        <PackageDirectory>$(ArtifactsBinDir)microsoft.netcore.app.runtime.$(RuntimeIdentifier)\$(Configuration)</PackageDirectory>
+      </RuntimePack>
+    </ItemGroup>
+    <Message Text="Packaged ID: %(RuntimePack.PackageDirectory)" Importance="high" />
+  </Target>
+
+  <UsingTask TaskName="AndroidAppBuilderTask" AssemblyFile="$(AndroidAppBuilderTasksAssemblyPath)"/>
+
+  <Target Name="BuildApp" AfterTargets="CopyFilesToPublishDirectory">
+    <PropertyGroup>
+      <StripDebugSymbols>False</StripDebugSymbols>
+      <StripDebugSymbols Condition="'$(Configuration)' == 'Release'">True</StripDebugSymbols>
+      <AdbTool>$(ANDROID_SDK_ROOT)\platform-tools\adb</AdbTool>
+      <ApkDir>$(OutputPath)apk\</ApkDir>
+    </PropertyGroup>
+
+    <RemoveDir Directories="$(ApkDir)" />
+
+    <AndroidAppBuilderTask
+        RuntimeIdentifier="$(RuntimeIdentifier)"
+        SourceDir="$(OutputPath)"
+        ProjectName="HelloAndroid"
+        MonoRuntimeHeaders="$(MicrosoftNetCoreAppRuntimePackDir)\native\include\mono-2.0"
+        MainLibraryFileName="$(AssemblyName).dll"
+        StripDebugSymbols="$(StripDebugSymbols)"
+        OutputDir="$(ApkDir)">
+        <Output TaskParameter="ApkBundlePath" PropertyName="ApkBundlePath" />
+        <Output TaskParameter="ApkPackageId" PropertyName="ApkPackageId" />
+    </AndroidAppBuilderTask>
+
+    <Message Importance="High" Text="Apk:       $(ApkBundlePath)"/>
+    <Message Importance="High" Text="PackageId: $(ApkPackageId)"/>
+
+    <Exec Condition="'$(DeployAndRun)' == 'true'" Command="$(AdbTool) kill-server"/>
+    <Exec Condition="'$(DeployAndRun)' == 'true'" Command="$(AdbTool) start-server"/>
+    <Exec Condition="'$(DeployAndRun)' == 'true'" Command="$(AdbTool) logcat -c" ContinueOnError="WarnAndContinue" />
+    <Message Condition="'$(DeployAndRun)' == 'true'" Importance="High" Text="Uninstalling apk (ignore errors if any):"/>
+    <Exec Condition="'$(DeployAndRun)' == 'true'" Command="$(AdbTool) uninstall net.dot.HelloAndroid" ContinueOnError="WarnAndContinue" />
+    <Exec Condition="'$(DeployAndRun)' == 'true'" Command="$(AdbTool) install $(ApkDir)/bin/HelloAndroid.apk" />
+    <Exec Condition="'$(DeployAndRun)' == 'true' and '$(RunActivity)' != 'true'" Command="$(AdbTool) shell am instrument -w net.dot.HelloAndroid/net.dot.MonoRunner" />
+    <Exec Condition="'$(DeployAndRun)' == 'true' and '$(RunActivity)' == 'true'" Command="$(AdbTool) shell am start -n net.dot.HelloAndroid/net.dot.MainActivity" />
+    <Exec Condition="'$(DeployAndRun)' == 'true'" Command="$(AdbTool) logcat -d -s DOTNET" />
+  </Target>
+
+  <ItemGroup>
+    <Compile Include="Program.cs" />
+  </ItemGroup>
+</Project>

@@ -19,7 +19,7 @@
 /* ditto with wcslen */
 
 
-int __cdecl main(int argc, char *argv[])
+PALTEST(c_runtime__snwprintf_s_test1_paltest_snwprintf_test1, "c_runtime/_snwprintf_s/test1/paltest_snwprintf_test1")
 {
     WCHAR *checkstr;
     WCHAR buf[256] = { 0 };

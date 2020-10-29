@@ -1730,7 +1730,6 @@ namespace System.Xml.Serialization
                 }
 
                 Member[] allMembers = allMembersList.ToArray();
-                MemberMapping[] allMemberMappings = allMemberMappingList.ToArray();
 
                 UnknownNodeAction unknownNodeAction = (_) => UnknownNode(o);
                 WriteAttributes(allMembers, anyAttribute, unknownNodeAction, ref o);

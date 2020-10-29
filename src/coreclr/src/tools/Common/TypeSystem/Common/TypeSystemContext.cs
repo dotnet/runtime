@@ -740,7 +740,7 @@ namespace Internal.TypeSystem
             throw new NotSupportedException();
         }
 
-        // Abstraction to allow different runtimes to have different policy about which fields are 
+        // Abstraction to allow different runtimes to have different policy about which fields are
         // in the GC static region, and which are not
         protected internal virtual bool ComputeHasGCStaticBase(FieldDesc field)
         {
@@ -758,7 +758,7 @@ namespace Internal.TypeSystem
             if ((mask & TypeFlags.HasStaticConstructorComputed) == TypeFlags.HasStaticConstructorComputed)
             {
                 TypeDesc typeDefinition = type.GetTypeDefinition();
-                
+
                 if (typeDefinition != type)
                 {
                     // If the type definition is different, the code was working with an instantiated generic or some such.

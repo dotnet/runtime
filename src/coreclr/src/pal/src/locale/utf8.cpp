@@ -1836,7 +1836,7 @@ public:
                 pSrc--;
 
                 // Throw that we don't have enough room (pSrc could be < chars if we had started to process
-                // a 4 byte sequence alredy)
+                // a 4 byte sequence already)
                 Contract::Assert(pSrc >= bytes || pTarget == chars,
                     "[UTF8Encoding.GetChars]Expected pSrc to be within input buffer or throw due to no output]");
                 ThrowCharsOverflow(pTarget == chars);

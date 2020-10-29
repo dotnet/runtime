@@ -57,14 +57,10 @@ set-strictmode -version 2.0
 $ErrorActionPreference = 'Stop'
 [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
 
-# If specified, provides an alternate path for getting .NET Core SDKs and Runtimes. This script will still try public sources first.
+# If specifies, provides an alternate path for getting .NET Core SDKs and Runtimes. This script will still try public sources first.
 [string]$runtimeSourceFeed = if (Test-Path variable:runtimeSourceFeed) { $runtimeSourceFeed } else { $null }
 # Base-64 encoded SAS token that has permission to storage container described by $runtimeSourceFeed
 [string]$runtimeSourceFeedKey = if (Test-Path variable:runtimeSourceFeedKey) { $runtimeSourceFeedKey } else { $null }
-
-# If false, use copy of dotnet-install from /eng/common/dotnet-install-scripts (for custom behaviors).
-# otherwise will fetch from public location.
-[bool]$useDefaultDotnetInstall = if (Test-Path variable:useDefaultDotnetInstall) { $useDefaultDotnetInstall } else { $false }
 
 function Create-Directory ([string[]] $path) {
     New-Item -Path $path -Force -ItemType 'Directory' | Out-Null
@@ -197,46 +193,37 @@ function InitializeDotNetCli([bool]$install, [bool]$createSdkLocationFile) {
 function GetDotNetInstallScript([string] $dotnetRoot) {
   $installScript = Join-Path $dotnetRoot 'dotnet-install.ps1'
   if (!(Test-Path $installScript)) {
-    create-directory $dotnetroot
+    Create-Directory $dotnetRoot
+    $ProgressPreference = 'SilentlyContinue' # Don't display the console progress UI - it's a huge perf hit
 
-    if ($useDefaultDotnetInstall)
-    {
-      $progresspreference = 'silentlycontinue' # don't display the console progress ui - it's a huge perf hit
+    $maxRetries = 5
+    $retries = 1
 
-      $maxretries = 5
-      $retries = 1
+    $uri = "https://dot.net/$dotnetInstallScriptVersion/dotnet-install.ps1"
 
-      $uri = "https://dot.net/$dotnetinstallscriptversion/dotnet-install.ps1"
-
-      while($true) {
-        try {
-          write-host "get $uri"
-          invoke-webrequest $uri -outfile $installscript
-          break
-        }
-        catch {
-          write-host "failed to download '$uri'"
-          write-error $_.exception.message -erroraction continue
-        }
-
-        if (++$retries -le $maxretries) {
-          $delayinseconds = [math]::pow(2, $retries) - 1 # exponential backoff
-          write-host "retrying. waiting for $delayinseconds seconds before next attempt ($retries of $maxretries)."
-          start-sleep -seconds $delayinseconds
-        }
-        else {
-          throw "unable to download file in $maxretries attempts."
-        }
+    while($true) {
+      try {
+        Write-Host "GET $uri"
+        Invoke-WebRequest $uri -OutFile $installScript
+        break
       }
-    }
-    else
-    {
-      # Use a special version of the script from eng/common that understands the existence of a "productVersion.txt" in a dotnet path.
-      # See https://github.com/dotnet/arcade/issues/6047 for details
-      $engCommonCopy = Resolve-Path (Join-Path $PSScriptRoot 'dotnet-install-scripts\dotnet-install.ps1')
-      Copy-Item $engCommonCopy -Destination $installScript -Force
+      catch {
+        Write-Host "Failed to download '$uri'"
+        Write-Error $_.Exception.Message -ErrorAction Continue
+      }
+
+      if (++$retries -le $maxRetries) {
+        $delayInSeconds = [math]::Pow(2, $retries) - 1 # Exponential backoff
+        Write-Host "Retrying. Waiting for $delayInSeconds seconds before next attempt ($retries of $maxRetries)."
+        Start-Sleep -Seconds $delayInSeconds
+      }
+      else {
+        throw "Unable to download file in $maxRetries attempts."
+      }
+
     }
   }
+
   return $installScript
 }
 
@@ -312,8 +299,14 @@ function InitializeVisualStudioMSBuild([bool]$install, [object]$vsRequirements =
     return $global:_MSBuildExe
   }
 
-  $vsMinVersionReqdStr = '16.5'
+  # Minimum VS version to require.
+  $vsMinVersionReqdStr = '16.8'
   $vsMinVersionReqd = [Version]::new($vsMinVersionReqdStr)
+
+  # If the version of msbuild is going to be xcopied,
+  # use this version. Version matches a package here:
+  # https://dev.azure.com/dnceng/public/_packaging?_a=package&feed=dotnet-eng&package=RoslynTools.MSBuild&protocolType=NuGet&version=16.8.0-preview3&view=overview
+  $defaultXCopyMSBuildVersion = '16.8.0-preview3'
 
   if (!$vsRequirements) { $vsRequirements = $GlobalJson.tools.vs }
   $vsMinVersionStr = if ($vsRequirements.version) { $vsRequirements.version } else { $vsMinVersionReqdStr }
@@ -349,23 +342,28 @@ function InitializeVisualStudioMSBuild([bool]$install, [object]$vsRequirements =
       $xcopyMSBuildVersion = $GlobalJson.tools.'xcopy-msbuild'
       $vsMajorVersion = $xcopyMSBuildVersion.Split('.')[0]
     } else {
-      #if vs version provided in global.json is incompatible then use the default version for xcopy msbuild download
+      #if vs version provided in global.json is incompatible (too low) then use the default version for xcopy msbuild download
       if($vsMinVersion -lt $vsMinVersionReqd){
-        Write-Host "Using xcopy-msbuild version of $vsMinVersionReqdStr.0-alpha since VS version $vsMinVersionStr provided in global.json is not compatible"
-        $vsMajorVersion = $vsMinVersionReqd.Major
-        $vsMinorVersion = $vsMinVersionReqd.Minor
+        Write-Host "Using xcopy-msbuild version of $defaultXCopyMSBuildVersion since VS version $vsMinVersionStr provided in global.json is not compatible"
+        $xcopyMSBuildVersion = $defaultXCopyMSBuildVersion
       }
       else{
+        # If the VS version IS compatible, look for an xcopy msbuild package
+        # with a version matching VS.
+        # Note: If this version does not exist, then an explicit version of xcopy msbuild
+        # can be specified in global.json. This will be required for pre-release versions of msbuild.
         $vsMajorVersion = $vsMinVersion.Major
         $vsMinorVersion = $vsMinVersion.Minor
+        $xcopyMSBuildVersion = "$vsMajorVersion.$vsMinorVersion.0"
       }
-
-      $xcopyMSBuildVersion = "$vsMajorVersion.$vsMinorVersion.0-alpha"
     }
 
     $vsInstallDir = $null
     if ($xcopyMSBuildVersion.Trim() -ine "none") {
         $vsInstallDir = InitializeXCopyMSBuild $xcopyMSBuildVersion $install
+        if ($vsInstallDir -eq $null) {
+            throw "Could not xcopy msbuild. Please check that package 'RoslynTools.MSBuild @ $xcopyMSBuildVersion' exists on feed 'dotnet-eng'."
+        }
     }
     if ($vsInstallDir -eq $null) {
       throw 'Unable to find Visual Studio that has required version and components installed'
@@ -529,13 +527,15 @@ function GetDefaultMSBuildEngine() {
 
 function GetNuGetPackageCachePath() {
   if ($env:NUGET_PACKAGES -eq $null) {
-    # Use local cache on CI to ensure deterministic build,
+    # Use local cache on CI to ensure deterministic build. 
+    # Avoid using the http cache as workaround for https://github.com/NuGet/Home/issues/3116
     # use global cache in dev builds to avoid cost of downloading packages.
     # For directory normalization, see also: https://github.com/NuGet/Home/issues/7968
     if ($useGlobalNuGetCache) {
       $env:NUGET_PACKAGES = Join-Path $env:UserProfile '.nuget\packages\'
     } else {
       $env:NUGET_PACKAGES = Join-Path $RepoRoot '.packages\'
+      $env:RESTORENOCACHE = $true
     }
   }
 

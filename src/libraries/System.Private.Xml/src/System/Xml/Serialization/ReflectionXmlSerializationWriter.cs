@@ -201,7 +201,6 @@ namespace System.Xml.Serialization
                 int anyCount = 0;
                 var namedAnys = new List<ElementAccessor>();
                 ElementAccessor? unnamedAny = null; // can only have one
-                string? enumTypeName = (choice != null) ? choice.Mapping!.TypeDesc!.FullName : null;
 
                 for (int i = 0; i < elements.Length; i++)
                 {
@@ -357,7 +356,6 @@ namespace System.Xml.Serialization
                 }
                 else if (element.IsUnbounded)
                 {
-                    TypeDesc arrayTypeDesc = mapping.TypeDesc!.CreateArrayTypeDesc();
                     var enumerable = (IEnumerable)o!;
                     foreach (var e in enumerable)
                     {
@@ -1217,7 +1215,6 @@ namespace System.Xml.Serialization
                 int xmlnsMember = FindXmlnsIndex(mapping.Members!);
                 if (xmlnsMember >= 0)
                 {
-                    MemberMapping member = mapping.Members![xmlnsMember];
                     var source = (XmlSerializerNamespaces)p[xmlnsMember];
 
                     if (pLength > xmlnsMember)

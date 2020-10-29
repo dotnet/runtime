@@ -51,7 +51,6 @@ set(utils_common_sources
     mono-mmap-windows.c
     mono-mmap.h
     mono-mmap-internals.h
-    mono-mmap-windows-internals.h
     mono-os-mutex.h
     mono-os-mutex.c
     mono-flight-recorder.h
@@ -183,7 +182,10 @@ set(utils_common_sources
     refcount.h
     w32api.h
     unlocked.h
-    ward.h)
+    ward.h
+    options.h
+    options-def.h
+    options.c)
 
 if(MONO_CROSS_COMPILE)
 set(utils_arch_sources mach-support-unknown.c)

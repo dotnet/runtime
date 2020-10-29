@@ -38,7 +38,7 @@ namespace System.Runtime.Serialization
             {
                 if (s_objectEquals == null)
                 {
-                    s_objectEquals = Globals.TypeOfObject.GetMethod("Equals", BindingFlags.Public | BindingFlags.Static);
+                    s_objectEquals = typeof(object).GetMethod("Equals", BindingFlags.Public | BindingFlags.Static);
                     Debug.Assert(s_objectEquals != null);
                 }
                 return s_objectEquals;

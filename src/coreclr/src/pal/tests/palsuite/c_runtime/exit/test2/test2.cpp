@@ -13,7 +13,7 @@
 
 #include <palsuite.h>
 
-int __cdecl main(int argc, char **argv)
+PALTEST(c_runtime_exit_test2_paltest_exit_test2, "c_runtime/exit/test2/paltest_exit_test2")
 {
     /*
      *  Initialize the PAL and return FAIL if this fails

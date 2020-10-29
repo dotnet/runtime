@@ -13,7 +13,6 @@ namespace System.IO.Pipes
     public abstract partial class PipeStream : Stream
     {
         internal const string AnonymousPipeName = "anonymous";
-        private static readonly Task<int> s_zeroTask = Task.FromResult(0);
 
         private SafePipeHandle? _handle;
         private bool _canRead;
@@ -164,7 +163,7 @@ namespace System.IO.Pipes
             if (count == 0)
             {
                 UpdateMessageCompletion(false);
-                return s_zeroTask;
+                return Task.FromResult(0);
             }
 
             return ReadAsyncCore(new Memory<byte>(buffer, offset, count), cancellationToken).AsTask();
@@ -352,15 +351,12 @@ namespace System.IO.Pipes
             Write(new ReadOnlySpan<byte>(&value, 1));
         }
 
-        // Does nothing on PipeStreams.  We cannot call Interop.FlushFileBuffers here because we can deadlock
-        // if the other end of the pipe is no longer interested in reading from the pipe.
         public override void Flush()
         {
             CheckWriteOperations();
-            if (!CanWrite)
-            {
-                throw Error.GetWriteNotSupported();
-            }
+
+            // Does nothing on PipeStreams.  We cannot call Interop.FlushFileBuffers here because we can deadlock
+            // if the other end of the pipe is no longer interested in reading from the pipe.
         }
 
         public override Task FlushAsync(CancellationToken cancellationToken)

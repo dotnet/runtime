@@ -600,9 +600,9 @@ test_check_buffer_perf (void)
 	bool done = false;
 
 	while (!done) {
-		int64_t start = ep_perf_counter_query ();
+		int64_t start = ep_perf_timestamp_get ();
 		load_result = load_buffer (buffer, session, ep_event, 10 * 1000 * 1000, true, &events_written);
-		int64_t stop = ep_perf_counter_query ();
+		int64_t stop = ep_perf_timestamp_get ();
 
 		accumulted_time_ticks += stop - start;
 		total_events_written += events_written;
@@ -622,7 +622,7 @@ test_check_buffer_perf (void)
 
 	// Measured number of events/second for one thread.
 	// Only measure loading data into pre-allocated buffer.
-	//TODO: Setup acceptable pass/failure metrics.
+	// TODO: Setup acceptable pass/failure metrics.
 	printf ("\n\tPerformance stats:\n");
 	printf ("\t\tTotal number of events: %i\n", total_events_written);
 	printf ("\t\tTotal time in sec: %.2f\n", accumulted_time_sec);

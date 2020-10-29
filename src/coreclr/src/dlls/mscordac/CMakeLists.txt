@@ -179,11 +179,11 @@ if(CLR_CMAKE_HOST_WIN32 AND CLR_CMAKE_TARGET_UNIX)
     )
 endif(CLR_CMAKE_HOST_WIN32 AND CLR_CMAKE_TARGET_UNIX)
 
-if(CLR_CMAKE_HOST_OSX)
+if(CLR_CMAKE_HOST_UNIX)
     list(APPEND COREDAC_LIBRARIES
         coreclrpal_dac
     )
-endif(CLR_CMAKE_HOST_OSX)
+endif(CLR_CMAKE_HOST_UNIX)
 
 target_link_libraries(mscordaccore PRIVATE ${COREDAC_LIBRARIES})
 
@@ -194,7 +194,7 @@ if(FEATURE_SINGLE_FILE_DIAGNOSTICS)
 endif(FEATURE_SINGLE_FILE_DIAGNOSTICS)
 
 # add the install targets
-install_clr(TARGETS mscordaccore ADDITIONAL_DESTINATION sharedFramework)
+install_clr(TARGETS mscordaccore ADDITIONAL_DESTINATIONS sharedFramework)
 
 if(CLR_CMAKE_HOST_WIN32)
     set(LONG_NAME_HOST_ARCH ${CLR_CMAKE_HOST_ARCH})

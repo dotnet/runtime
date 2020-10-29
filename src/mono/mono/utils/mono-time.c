@@ -298,13 +298,17 @@ mono_clock_cleanup (mono_clock_id_t clk_id)
 
 guint64
 mono_clock_get_time_ns (mono_clock_id_t clk_id)
-{	
+{
+#ifdef HAVE_CLOCK_GETTIME
 	struct timespec ts;
 
 	if (clock_gettime (clk_id, &ts) == -1)
 		g_error ("%s: clock_gettime () returned -1, errno = %d", __func__, errno);
 
 	return ((guint64) ts.tv_sec * 1000000000) + (guint64) ts.tv_nsec;
+#else
+	return 0;
+#endif
 }
 
 #else

@@ -18,7 +18,7 @@ const char *_putenvString1 = "AnUnusualVariable=";
 const char *variable = "AnUnusualVariable";
 const char *value = "AnUnusualValue";
 
-int __cdecl main(int argc, char **argv)
+PALTEST(c_runtime__putenv_test2_paltest_putenv_test2, "c_runtime/_putenv/test2/paltest_putenv_test2")
 {
    
     char *variableValue;

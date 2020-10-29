@@ -164,7 +164,11 @@ public:
 
     MethodTable * GetGCSafeMethodTable() const
     {
+#ifdef HOST_64BIT
+        return (MethodTable *)((uintptr_t)m_pMethTab & ~7);
+#else
         return (MethodTable *)((uintptr_t)m_pMethTab & ~3);
+#endif //HOST_64BIT
     }
 
     void RawSetMethodTable(MethodTable * pMT)

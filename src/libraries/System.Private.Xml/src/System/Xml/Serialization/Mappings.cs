@@ -998,18 +998,6 @@ namespace System.Xml.Serialization
             set { _sequenceId = value; }
         }
 
-        private string GetNullableType(TypeDesc td)
-        {
-            // SOAP encoded arrays not mapped to Nullable<T> since they always derive from soapenc:Array
-            if (td.IsMappedType || (!td.IsValueType && (Elements![0].IsSoap || td.ArrayElementTypeDesc == null)))
-                return td.FullName;
-            if (td.ArrayElementTypeDesc != null)
-            {
-                return GetNullableType(td.ArrayElementTypeDesc) + "[]";
-            }
-            return "System.Nullable`1[" + td.FullName + "]";
-        }
-
         internal MemberMapping Clone()
         {
             return new MemberMapping(this);
@@ -1236,7 +1224,7 @@ namespace System.Xml.Serialization
         {
             // CONSIDER: need the real type name
             if (args.Severity == XmlSeverityType.Error)
-                throw new InvalidOperationException(SR.Format(SR.XmlSerializableSchemaError, typeof(IXmlSerializable).Name, args.Message));
+                throw new InvalidOperationException(SR.Format(SR.XmlSerializableSchemaError, nameof(IXmlSerializable), args.Message));
         }
 
         internal void CheckDuplicateElement(XmlSchemaElement? element, string? elementNs)
@@ -1328,7 +1316,7 @@ namespace System.Xml.Serialization
                         }
                         else
                         {
-                            throw new InvalidOperationException(SR.Format(SR.XmlGetSchemaMethodReturnType, _type!.Name, _getSchemaMethod.Name, typeof(XmlSchemaProviderAttribute).Name, typeof(XmlQualifiedName).FullName));
+                            throw new InvalidOperationException(SR.Format(SR.XmlGetSchemaMethodReturnType, _type!.Name, _getSchemaMethod.Name, nameof(XmlSchemaProviderAttribute), typeof(XmlQualifiedName).FullName));
                         }
                     }
                     else

@@ -4173,7 +4173,7 @@ void emitter::emitIns_R_R(
                 }
                 break;
             }
-            __fallthrough;
+            FALLTHROUGH;
 
         case INS_negs:
             assert(insOptsNone(opt));
@@ -4184,7 +4184,7 @@ void emitter::emitIns_R_R(
 
         case INS_sxtw:
             assert(size == EA_8BYTE);
-            __fallthrough;
+            FALLTHROUGH;
 
         case INS_sxtb:
         case INS_sxth:
@@ -4236,7 +4236,7 @@ void emitter::emitIns_R_R(
                 break;
             }
 
-            __fallthrough;
+            FALLTHROUGH;
 
         case INS_rev:
             assert(insOptsNone(opt));
@@ -4291,7 +4291,7 @@ void emitter::emitIns_R_R(
                 fmt = IF_DV_2L;
                 break;
             }
-            __fallthrough;
+            FALLTHROUGH;
 
         case INS_xtn:
             // Vector operation
@@ -4321,7 +4321,7 @@ void emitter::emitIns_R_R(
         case INS_stlr:
             assert(isValidGeneralDatasize(size));
 
-            __fallthrough;
+            FALLTHROUGH;
 
         case INS_ldarb:
         case INS_ldaxrb:
@@ -4716,7 +4716,7 @@ void emitter::emitIns_R_R(
         case INS_st3:
         case INS_st4:
             assert(opt != INS_OPTS_1D); // .1D format only permitted with LD1 & ST1
-            __fallthrough;
+            FALLTHROUGH;
 
         case INS_ld1:
         case INS_ld1_2regs:
@@ -4835,7 +4835,7 @@ void emitter::emitIns_R_I_I(
 
         case INS_mov:
             ins = INS_movz; // INS_mov with LSL is an alias for INS_movz LSL
-            __fallthrough;
+            FALLTHROUGH;
 
         case INS_movk:
         case INS_movn:
@@ -5086,7 +5086,7 @@ void emitter::emitIns_R_R_I(
         case INS_sxtl:
         case INS_uxtl:
             assert(imm == 0);
-            __fallthrough;
+            FALLTHROUGH;
 
         case INS_rshrn:
         case INS_shrn:
@@ -5108,7 +5108,7 @@ void emitter::emitIns_R_R_I(
         case INS_sxtl2:
         case INS_uxtl2:
             assert(imm == 0);
-            __fallthrough;
+            FALLTHROUGH;
 
         case INS_rshrn2:
         case INS_shrn2:
@@ -5265,7 +5265,7 @@ void emitter::emitIns_R_R_I(
                     break;
                 }
             }
-            __fallthrough;
+            FALLTHROUGH;
 
         case INS_ins: // (MOV from general)
             assert(insOptsNone(opt));
@@ -5412,7 +5412,7 @@ void emitter::emitIns_R_R_I(
         case INS_st3:
         case INS_st4:
             assert(opt != INS_OPTS_1D); // .1D format only permitted with LD1 & ST1
-            __fallthrough;
+            FALLTHROUGH;
 
         case INS_ld1:
         case INS_ld1_2regs:
@@ -5704,7 +5704,7 @@ void emitter::emitIns_R_R_R(
                 break;
             }
             // Base instruction
-            __fallthrough;
+            FALLTHROUGH;
 
         case INS_lsl:
         case INS_lsr:
@@ -5767,7 +5767,7 @@ void emitter::emitIns_R_R_R(
                 break;
             }
             // Base instruction
-            __fallthrough;
+            FALLTHROUGH;
 
         case INS_adds:
         case INS_subs:
@@ -5945,7 +5945,7 @@ void emitter::emitIns_R_R_R(
                 fmt = IF_DV_3C;
                 break;
             }
-            __fallthrough;
+            FALLTHROUGH;
 
         case INS_ands:
         case INS_bics:
@@ -6136,7 +6136,7 @@ void emitter::emitIns_R_R_R(
         case INS_st3:
         case INS_st4:
             assert(opt != INS_OPTS_1D); // .1D format only permitted with LD1 & ST1
-            __fallthrough;
+            FALLTHROUGH;
 
         case INS_ld1:
         case INS_ld1_2regs:
@@ -6484,7 +6484,7 @@ void emitter::emitIns_R_R_R_I(instruction ins,
         case INS_ldnp:
         case INS_stnp:
             assert(insOptsNone(opt)); // Can't use Pre/Post index on these two instructions
-            __fallthrough;
+            FALLTHROUGH;
 
         case INS_ldp:
         case INS_stp:
@@ -11410,7 +11410,7 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
         int      adr = emitComp->lvaFrameAddress(varNum, &FPbased);
         if (id->idGCref() != GCT_NONE)
         {
-            emitGCvarLiveUpd(adr + ofs, varNum, id->idGCref(), dst);
+            emitGCvarLiveUpd(adr + ofs, varNum, id->idGCref(), dst DEBUG_ARG(varNum));
         }
         else
         {
@@ -11427,14 +11427,14 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
                 vt              = tmpDsc->tdTempType();
             }
             if (vt == TYP_REF || vt == TYP_BYREF)
-                emitGCvarDeadUpd(adr + ofs, dst);
+                emitGCvarDeadUpd(adr + ofs, dst DEBUG_ARG(varNum));
         }
         if (emitInsWritesToLclVarStackLocPair(id))
         {
             unsigned ofs2 = ofs + TARGET_POINTER_SIZE;
             if (id->idGCrefReg2() != GCT_NONE)
             {
-                emitGCvarLiveUpd(adr + ofs2, varNum, id->idGCrefReg2(), dst);
+                emitGCvarLiveUpd(adr + ofs2, varNum, id->idGCrefReg2(), dst DEBUG_ARG(varNum));
             }
             else
             {
@@ -11451,7 +11451,7 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
                     vt              = tmpDsc->tdTempType();
                 }
                 if (vt == TYP_REF || vt == TYP_BYREF)
-                    emitGCvarDeadUpd(adr + ofs2, dst);
+                    emitGCvarDeadUpd(adr + ofs2, dst DEBUG_ARG(varNum));
             }
         }
     }
@@ -11462,7 +11462,7 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
     size_t expected = emitSizeOfInsDsc(id);
     assert(sz == expected);
 
-    if (emitComp->opts.disAsm || emitComp->opts.dspEmit || emitComp->verbose)
+    if (emitComp->opts.disAsm || emitComp->verbose)
     {
         emitDispIns(id, false, dspOffs, true, emitCurCodeOffs(odst), *dp, (dst - *dp), ig);
     }
@@ -11475,6 +11475,12 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
         {
             assert(!"JitBreakEmitOutputInstr reached");
         }
+    }
+
+    // Output any delta in GC info.
+    if (EMIT_GC_VERBOSE || emitComp->opts.disasmWithGC)
+    {
+        emitDispGCInfoDelta();
     }
 #endif
 
@@ -12101,8 +12107,14 @@ void emitter::emitDispIns(
     if (pCode == NULL)
         sz = 0;
 
-    if (!emitComp->opts.dspEmit && !isNew && !asmfm && sz)
+    if (!isNew && !asmfm && sz)
+    {
         doffs = true;
+    }
+
+    /* Display the instruction address */
+
+    emitDispInsAddr(pCode);
 
     /* Display the instruction offset */
 
@@ -12309,7 +12321,15 @@ void emitter::emitDispIns(
                     {
                         targetName = "SetGlobalSecurityCookie";
                     }
-                    else if ((idFlags == GTF_ICON_STR_HDL) || (idFlags == GTF_ICON_PSTR_HDL))
+                    else if (idFlags == GTF_ICON_CONST_PTR)
+                    {
+                        targetName = "const ptr";
+                    }
+                    else if (idFlags == GTF_ICON_GLOBAL_PTR)
+                    {
+                        targetName = "global ptr";
+                    }
+                    else if (idFlags == GTF_ICON_STR_HDL)
                     {
                         stringLiteral = emitComp->eeGetCPString(targetHandle);
                         // Note that eGetCPString isn't currently implemented on Linux/ARM
@@ -13784,7 +13804,7 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
             }
             // otherwise we should have a br_tail instruction
             assert(ins == INS_br_tail);
-            __fallthrough;
+            FALLTHROUGH;
         case IF_BR_1A: // ret, br
             result.insThroughput = PERFSCORE_THROUGHPUT_1C;
             result.insLatency    = PERFSCORE_LATENCY_1C;
@@ -13900,6 +13920,7 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
                     perfScoreUnhandledInstruction(id, &result);
                     break;
             }
+            break;
 
         // ALU, basic immediate
         case IF_DI_1A: // cmp, cmn

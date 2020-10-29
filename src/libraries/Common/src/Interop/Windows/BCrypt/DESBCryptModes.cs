@@ -11,7 +11,7 @@ namespace Internal.Cryptography
     {
         private static readonly Lazy<SafeAlgorithmHandle> s_hAlgCbc = OpenDesAlgorithm(Cng.BCRYPT_CHAIN_MODE_CBC);
         private static readonly Lazy<SafeAlgorithmHandle> s_hAlgEcb = OpenDesAlgorithm(Cng.BCRYPT_CHAIN_MODE_ECB);
-        private static readonly Lazy<SafeAlgorithmHandle> s_hAlgCfb8 = OpenDesAlgorithm(Cng.BCRYPT_CHAIN_MODE_CFB, 1);
+        private static readonly Lazy<SafeAlgorithmHandle> s_hAlgCfb8 = OpenDesAlgorithm(Cng.BCRYPT_CHAIN_MODE_CFB);
 
         internal static SafeAlgorithmHandle GetSharedHandle(CipherMode cipherMode, int feedback) =>
             // Windows 8 added support to set the CipherMode value on a key,
@@ -24,19 +24,15 @@ namespace Internal.Cryptography
                 _ => throw new NotSupportedException(),
             };
 
-        private static Lazy<SafeAlgorithmHandle> OpenDesAlgorithm(string cipherMode, int feedback = 0)
+        private static Lazy<SafeAlgorithmHandle> OpenDesAlgorithm(string cipherMode)
         {
             return new Lazy<SafeAlgorithmHandle>(() =>
             {
-                SafeAlgorithmHandle hAlg = Cng.BCryptOpenAlgorithmProvider(Cng.BCRYPT_DES_ALGORITHM,
+                SafeAlgorithmHandle hAlg = Cng.BCryptOpenAlgorithmProvider(
+                    Cng.BCRYPT_DES_ALGORITHM,
                     null,
                     Cng.OpenAlgorithmProviderFlags.NONE);
                 hAlg.SetCipherMode(cipherMode);
-
-                if (feedback > 0)
-                {
-                    hAlg.SetFeedbackSize(feedback);
-                }
 
                 return hAlg;
             });

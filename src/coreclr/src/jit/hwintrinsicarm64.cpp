@@ -396,11 +396,10 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
 
                 for (unsigned i = 0; i < sig->numArgs; i++)
                 {
-                    tmp        = gtNewArgList(impPopStack().val);
-                    tmp->gtOp2 = op1;
-                    op1        = tmp;
+                    tmp = gtNewListNode(impPopStack().val, tmp);
                 }
 
+                op1     = tmp;
                 retNode = gtNewSimdHWIntrinsicNode(retType, op1, intrinsic, baseType, simdSize);
             }
             break;

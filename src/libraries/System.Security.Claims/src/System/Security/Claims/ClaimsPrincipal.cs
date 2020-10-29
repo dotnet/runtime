@@ -27,9 +27,21 @@ namespace System.Security.Claims
         private static Func<IEnumerable<ClaimsIdentity>, ClaimsIdentity?> s_identitySelector = SelectPrimaryIdentity;
         private static Func<ClaimsPrincipal> s_principalSelector = ClaimsPrincipalSelector;
 
-        private static ClaimsPrincipal SelectClaimsPrincipal()
+        private static ClaimsPrincipal? SelectClaimsPrincipal()
         {
-            return (Thread.CurrentPrincipal is ClaimsPrincipal claimsPrincipal) ? claimsPrincipal : new ClaimsPrincipal(Thread.CurrentPrincipal!);
+            // Diverging behavior from .NET Framework: In Framework, the default PrincipalPolicy is
+            // UnauthenticatedPrincipal. In .NET Core, the default is NoPrincipal. .NET Framework
+            // would throw an ArgumentNullException when constructing the ClaimsPrincipal with a
+            // null principal from the thread if it were set to use NoPrincipal. In .NET Core, since
+            // NoPrincipal is the default, we return null instead of throw.
+
+            IPrincipal? threadPrincipal = Thread.CurrentPrincipal;
+
+            return threadPrincipal switch {
+                ClaimsPrincipal claimsPrincipal => claimsPrincipal,
+                not null => new ClaimsPrincipal(threadPrincipal),
+                null => null
+            };
         }
 
         protected ClaimsPrincipal(SerializationInfo info, StreamingContext context)

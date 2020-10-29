@@ -667,7 +667,6 @@ namespace System.ServiceModel.Syndication.Tests
         {
             if (elem.FirstChild != null)
             {
-                XmlDiffNode _first = elem.FirstChild;
                 XmlDiffNode _current = elem.FirstChild;
                 XmlDiffNode _last = elem.LastChild;
                 elem._firstChild = null;

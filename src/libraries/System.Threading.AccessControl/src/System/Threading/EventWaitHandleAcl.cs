@@ -1,6 +1,8 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Runtime.InteropServices;
 using System.Security.AccessControl;
@@ -56,32 +58,115 @@ namespace System.Threading
                     eventFlags,
                     (uint)EventWaitHandleRights.FullControl);
 
-                ValidateHandle(handle, name, out createdNew);
+                int errorCode = Marshal.GetLastWin32Error();
 
-                EventWaitHandle ewh = new EventWaitHandle(initialState, mode);
-                SafeWaitHandle old = ewh.SafeWaitHandle;
-                ewh.SafeWaitHandle = handle;
-                old.Dispose();
+                if (handle.IsInvalid)
+                {
+                    handle.SetHandleAsInvalid();
 
-                return ewh;
+                    if (!string.IsNullOrEmpty(name) && errorCode == Interop.Errors.ERROR_INVALID_HANDLE)
+                    {
+                        throw new WaitHandleCannotBeOpenedException(SR.Format(SR.WaitHandleCannotBeOpenedException_InvalidHandle, name));
+                    }
+
+                    throw Win32Marshal.GetExceptionForWin32Error(errorCode, name);
+                }
+
+                createdNew = (errorCode != Interop.Errors.ERROR_ALREADY_EXISTS);
+
+                return CreateAndReplaceHandle(handle);
             }
         }
 
-        private static void ValidateHandle(SafeWaitHandle handle, string? name, out bool createdNew)
+        /// <summary>
+        /// Opens a specified named event wait handle, if it already exists, applying the desired access rights.
+        /// </summary>
+        /// <param name="name">The name of the event wait handle to be opened. If it's prefixed by "Global", it refers to a machine-wide event wait handle. If it's prefixed by "Local", or doesn't have a prefix, it refers to a session-wide event wait handle. Both prefix and name are case-sensitive.</param>
+        /// <param name="rights">The desired access rights to apply to the returned event wait handle.</param>
+        /// <returns>An existing named event wait handle.</returns>
+        /// <exception cref="ArgumentNullException"><paramref name="name"/> is <see langword="null" />.</exception>
+        /// <exception cref="ArgumentException"><paramref name="name"/> is an empty string.</exception>
+        /// <exception cref="WaitHandleCannotBeOpenedException">The named event wait handle does not exist or is invalid.</exception>
+        /// <exception cref="DirectoryNotFoundException">The path was not found.</exception>
+        /// <exception cref="IOException">A Win32 error occurred.</exception>
+        /// <exception cref="UnauthorizedAccessException">The named event wait handle exists, but the user does not have the security access required to use it.</exception>
+        public static EventWaitHandle OpenExisting(string name, EventWaitHandleRights rights)
         {
-            int errorCode = Marshal.GetLastWin32Error();
-
-            if (handle.IsInvalid)
+            switch (OpenExistingWorker(name, rights, out EventWaitHandle? result))
             {
-                handle.SetHandleAsInvalid();
+                case OpenExistingResult.NameNotFound:
+                    throw new WaitHandleCannotBeOpenedException();
 
-                if (!string.IsNullOrEmpty(name) && errorCode == Interop.Errors.ERROR_INVALID_HANDLE)
-                    throw new WaitHandleCannotBeOpenedException(SR.Format(SR.WaitHandleCannotBeOpenedException_InvalidHandle, name));
+                case OpenExistingResult.NameInvalid:
+                    throw new WaitHandleCannotBeOpenedException(SR.Format(SR.Threading_WaitHandleCannotBeOpenedException_InvalidHandle, name));
 
-                throw Win32Marshal.GetExceptionForWin32Error(errorCode, name);
+                case OpenExistingResult.PathNotFound:
+                    throw new DirectoryNotFoundException(SR.Format(SR.IO_PathNotFound_Path, name));
+
+                case OpenExistingResult.Success:
+                default:
+                    Debug.Assert(result != null, "result should be non-null on success");
+                    return result;
+            }
+        }
+
+        /// <summary>
+        /// Tries to open a specified named event wait handle, if it already exists, applying the desired access rights, and returns a value that indicates whether the operation succeeded.
+        /// </summary>
+        /// <param name="name">The name of the event wait handle to be opened. If it's prefixed by "Global", it refers to a machine-wide event wait handle. If it's prefixed by "Local", or doesn't have a prefix, it refers to a session-wide event wait handle. Both prefix and name are case-sensitive.</param>
+        /// <param name="rights">The desired access rights to apply to the returned event wait handle.</param>
+        /// <param name="result">When this method returns <see langword="true" />, contains an object that represents the named event wait handle if the call succeeded, or <see langword="null" /> otherwise. This parameter is treated as uninitialized.</param>
+        /// <returns><see langword="true" /> if the named event wait handle was opened successfully; otherwise, <see langword="false" />.</returns>
+        /// <exception cref="ArgumentNullException"><paramref name="name"/> is <see langword="null" /></exception>
+        /// <exception cref="ArgumentException"><paramref name="name"/> is an empty string.</exception>
+        /// <exception cref="IOException">A Win32 error occurred.</exception>
+        /// <exception cref="UnauthorizedAccessException">The named event wait handle exists, but the user does not have the security access required to use it.</exception>
+        public static bool TryOpenExisting(string name, EventWaitHandleRights rights, [NotNullWhen(returnValue: true)] out EventWaitHandle? result) =>
+            OpenExistingWorker(name, rights, out result) == OpenExistingResult.Success;
+
+        private static OpenExistingResult OpenExistingWorker(string name, EventWaitHandleRights rights, out EventWaitHandle? result)
+        {
+            if (name == null)
+            {
+                throw new ArgumentNullException(nameof(name));
+            }
+            if (name.Length == 0)
+            {
+                throw new ArgumentException(SR.Argument_EmptyName, nameof(name));
             }
 
-            createdNew = (errorCode != Interop.Errors.ERROR_ALREADY_EXISTS);
+            result = null;
+            SafeWaitHandle existingHandle = Interop.Kernel32.OpenEvent((uint)rights, false, name);
+
+            int errorCode = Marshal.GetLastWin32Error();
+            if (existingHandle.IsInvalid)
+            {
+                return errorCode switch
+                {
+                    Interop.Errors.ERROR_FILE_NOT_FOUND or Interop.Errors.ERROR_INVALID_NAME => OpenExistingResult.NameNotFound,
+                    Interop.Errors.ERROR_PATH_NOT_FOUND => OpenExistingResult.PathNotFound,
+                    Interop.Errors.ERROR_INVALID_HANDLE => OpenExistingResult.NameInvalid,
+                    _ => throw Win32Marshal.GetExceptionForWin32Error(errorCode, name)
+                };
+            }
+
+            result = CreateAndReplaceHandle(existingHandle);
+
+            return OpenExistingResult.Success;
+        }
+
+        private static EventWaitHandle CreateAndReplaceHandle(SafeWaitHandle replacementHandle)
+        {
+            // The values of initialState and mode should not matter since we are replacing the
+            // handle with one from an existing EventWaitHandle, and disposing the old one
+            // We should only make sure that they are valid values
+            EventWaitHandle eventWaitHandle = new EventWaitHandle(initialState: default, mode: default);
+
+            SafeWaitHandle old = eventWaitHandle.SafeWaitHandle;
+            eventWaitHandle.SafeWaitHandle = replacementHandle;
+            old.Dispose();
+
+            return eventWaitHandle;
         }
     }
 }

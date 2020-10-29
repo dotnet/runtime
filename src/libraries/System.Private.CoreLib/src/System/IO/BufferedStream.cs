@@ -443,7 +443,7 @@ namespace System.IO
             await _stream.FlushAsync(cancellationToken).ConfigureAwait(false);
         }
 
-        private int ReadFromBuffer(byte[] array, int offset, int count)
+        private int ReadFromBuffer(byte[] buffer, int offset, int count)
         {
             int readbytes = _readLen - _readPos;
             Debug.Assert(readbytes >= 0);
@@ -453,7 +453,7 @@ namespace System.IO
 
             if (readbytes > count)
                 readbytes = count;
-            Buffer.BlockCopy(_buffer!, _readPos, array, offset, readbytes);
+            Buffer.BlockCopy(_buffer!, _readPos, buffer, offset, readbytes);
             _readPos += readbytes;
 
             return readbytes;
@@ -471,12 +471,12 @@ namespace System.IO
             return readbytes;
         }
 
-        private int ReadFromBuffer(byte[] array, int offset, int count, out Exception? error)
+        private int ReadFromBuffer(byte[] buffer, int offset, int count, out Exception? error)
         {
             try
             {
                 error = null;
-                return ReadFromBuffer(array, offset, count);
+                return ReadFromBuffer(buffer, offset, count);
             }
             catch (Exception ex)
             {
@@ -485,22 +485,22 @@ namespace System.IO
             }
         }
 
-        public override int Read(byte[] array, int offset, int count)
+        public override int Read(byte[] buffer, int offset, int count)
         {
-            if (array == null)
-                throw new ArgumentNullException(nameof(array), SR.ArgumentNull_Buffer);
+            if (buffer == null)
+                throw new ArgumentNullException(nameof(buffer), SR.ArgumentNull_Buffer);
             if (offset < 0)
                 throw new ArgumentOutOfRangeException(nameof(offset), SR.ArgumentOutOfRange_NeedNonNegNum);
             if (count < 0)
                 throw new ArgumentOutOfRangeException(nameof(count), SR.ArgumentOutOfRange_NeedNonNegNum);
-            if (array.Length - offset < count)
+            if (buffer.Length - offset < count)
                 throw new ArgumentException(SR.Argument_InvalidOffLen);
 
             EnsureNotClosed();
             EnsureCanRead();
             Debug.Assert(_stream != null);
 
-            int bytesFromBuffer = ReadFromBuffer(array, offset, count);
+            int bytesFromBuffer = ReadFromBuffer(buffer, offset, count);
 
             // We may have read less than the number of bytes the user asked for, but that is part of the Stream Debug.
 
@@ -531,14 +531,14 @@ namespace System.IO
             // If the requested read is larger than buffer size, avoid the buffer and still use a single read:
             if (count >= _bufferSize)
             {
-                return _stream.Read(array, offset, count) + alreadySatisfied;
+                return _stream.Read(buffer, offset, count) + alreadySatisfied;
             }
 
             // Ok. We can fill the buffer:
             EnsureBufferAllocated();
             _readLen = _stream.Read(_buffer!, 0, _bufferSize);
 
-            bytesFromBuffer = ReadFromBuffer(array, offset, count);
+            bytesFromBuffer = ReadFromBuffer(buffer, offset, count);
 
             // We may have read less than the number of bytes the user asked for, but that is part of the Stream Debug.
             // Reading again for more data may cause us to block if we're using a device with no clear end of stream,
@@ -809,7 +809,7 @@ namespace System.IO
             return _buffer![_readPos++];
         }
 
-        private void WriteToBuffer(byte[] array, ref int offset, ref int count)
+        private void WriteToBuffer(byte[] buffer, ref int offset, ref int count)
         {
             int bytesToWrite = Math.Min(_bufferSize - _writePos, count);
 
@@ -817,7 +817,7 @@ namespace System.IO
                 return;
 
             EnsureBufferAllocated();
-            Buffer.BlockCopy(array, offset, _buffer!, _writePos, bytesToWrite);
+            Buffer.BlockCopy(buffer, offset, _buffer!, _writePos, bytesToWrite);
 
             _writePos += bytesToWrite;
             count -= bytesToWrite;
@@ -836,15 +836,15 @@ namespace System.IO
             return bytesToWrite;
         }
 
-        public override void Write(byte[] array, int offset, int count)
+        public override void Write(byte[] buffer, int offset, int count)
         {
-            if (array == null)
-                throw new ArgumentNullException(nameof(array), SR.ArgumentNull_Buffer);
+            if (buffer == null)
+                throw new ArgumentNullException(nameof(buffer), SR.ArgumentNull_Buffer);
             if (offset < 0)
                 throw new ArgumentOutOfRangeException(nameof(offset), SR.ArgumentOutOfRange_NeedNonNegNum);
             if (count < 0)
                 throw new ArgumentOutOfRangeException(nameof(count), SR.ArgumentOutOfRange_NeedNonNegNum);
-            if (array.Length - offset < count)
+            if (buffer.Length - offset < count)
                 throw new ArgumentException(SR.Argument_InvalidOffLen);
 
             EnsureNotClosed();
@@ -926,7 +926,7 @@ namespace System.IO
 
             if (useBuffer)
             {
-                WriteToBuffer(array, ref offset, ref count);
+                WriteToBuffer(buffer, ref offset, ref count);
 
                 if (_writePos < _bufferSize)
                 {
@@ -941,7 +941,7 @@ namespace System.IO
                 _stream.Write(_buffer, 0, _writePos);
                 _writePos = 0;
 
-                WriteToBuffer(array, ref offset, ref count);
+                WriteToBuffer(buffer, ref offset, ref count);
 
                 Debug.Assert(count == 0);
                 Debug.Assert(_writePos < _bufferSize);
@@ -958,7 +958,7 @@ namespace System.IO
                     if (totalUserbytes <= (_bufferSize + _bufferSize) && totalUserbytes <= MaxShadowBufferSize)
                     {
                         EnsureShadowBufferAllocated();
-                        Buffer.BlockCopy(array, offset, _buffer, _writePos, count);
+                        Buffer.BlockCopy(buffer, offset, _buffer, _writePos, count);
                         _stream.Write(_buffer, 0, totalUserbytes);
                         _writePos = 0;
                         return;
@@ -969,7 +969,7 @@ namespace System.IO
                 }
 
                 // Write out user data.
-                _stream.Write(array, offset, count);
+                _stream.Write(buffer, offset, count);
             }
         }
 

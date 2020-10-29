@@ -1,6 +1,8 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Collections;
+using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
 using Xunit;
@@ -16,34 +18,27 @@ namespace System.IO.Compression
         public override Stream BaseStream(Stream stream) => ((DeflateStream)stream).BaseStream;
         protected override string CompressedTestFile(string uncompressedPath) => Path.Combine("DeflateTestData", Path.GetFileName(uncompressedPath));
 
-        /// <summary>
-        /// Test to pass gzipstream data to a deflatestream
-        /// </summary>
-        [Theory]
-        [MemberData(nameof(UncompressedTestFiles))]
-        public async Task DecompressFailsWithRealGzStream(string uncompressedPath)
+        public static IEnumerable<object[]> DecompressFailsWithWrapperStream_MemberData()
         {
-            string fileName = Path.Combine("GZipTestData", Path.GetFileName(uncompressedPath) + ".gz");
-            var baseStream = await LocalMemoryStream.readAppFileAsync(fileName);
-            var zip = CreateStream(baseStream, CompressionMode.Decompress);
-            int _bufferSize = 2048;
-            var bytes = new byte[_bufferSize];
-            Assert.Throws<InvalidDataException>(() => { zip.Read(bytes, 0, _bufferSize); });
-            zip.Dispose();
+            foreach (object[] testFile in UncompressedTestFiles())
+            {
+                yield return new object[] { testFile[0], "GZipTestData", ".gz" };
+                yield return new object[] { testFile[0], "ZLibTestData", ".z" };
+            }
         }
 
-        [Fact]
-        public void Precancellation()
+        /// <summary>Test to pass GZipStream data and ZLibStream data to a DeflateStream</summary>
+        [Theory]
+        [MemberData(nameof(DecompressFailsWithWrapperStream_MemberData))]
+        public async Task DecompressFailsWithWrapperStream(string uncompressedPath, string newDirectory, string newSuffix)
         {
-            var ms = new MemoryStream();
-            using (Stream compressor = new DeflateStream(ms, CompressionMode.Compress, leaveOpen: true))
+            string fileName = Path.Combine(newDirectory, Path.GetFileName(uncompressedPath) + newSuffix);
+            using (LocalMemoryStream baseStream = await LocalMemoryStream.readAppFileAsync(fileName))
+            using (Stream cs = CreateStream(baseStream, CompressionMode.Decompress))
             {
-                Assert.True(compressor.WriteAsync(new byte[1], 0, 1, new CancellationToken(true)).IsCanceled);
-                Assert.True(compressor.FlushAsync(new CancellationToken(true)).IsCanceled);
-            }
-            using (Stream decompressor = CreateStream(ms, CompressionMode.Decompress, leaveOpen: true))
-            {
-                Assert.True(decompressor.ReadAsync(new byte[1], 0, 1, new CancellationToken(true)).IsCanceled);
+                int _bufferSize = 2048;
+                var bytes = new byte[_bufferSize];
+                Assert.Throws<InvalidDataException>(() => { cs.Read(bytes, 0, _bufferSize); });
             }
         }
 
@@ -76,75 +71,33 @@ namespace System.IO.Compression
             }
         }
 
-        [Theory]
-        [InlineData(false, false)]
-        [InlineData(false, true)]
-        [InlineData(true, false)]
-        [InlineData(true, true)]
-        public async Task DisposeAsync_Flushes(bool derived, bool leaveOpen)
-        {
-            var ms = new MemoryStream();
-            var ds = derived ?
-                new DerivedDeflateStream(ms, CompressionMode.Compress, leaveOpen) :
-                new DeflateStream(ms, CompressionMode.Compress, leaveOpen);
-            ds.WriteByte(1);
-            Assert.Equal(0, ms.Position);
-            await ds.DisposeAsync();
-            Assert.InRange(ms.ToArray().Length, 1, int.MaxValue);
-            if (leaveOpen)
-            {
-                Assert.InRange(ms.Position, 1, int.MaxValue);
-            }
-            else
-            {
-                Assert.Throws<ObjectDisposedException>(() => ms.Position);
-            }
-        }
-
-        [Theory]
-        [InlineData(false, false)]
-        [InlineData(false, true)]
-        [InlineData(true, false)]
-        [InlineData(true, true)]
-        public async Task DisposeAsync_MultipleCallsAllowed(bool derived, bool leaveOpen)
-        {
-            using (var ds = derived ?
-                new DerivedDeflateStream(new MemoryStream(), CompressionMode.Compress, leaveOpen) :
-                new DeflateStream(new MemoryStream(), CompressionMode.Compress, leaveOpen))
-            {
-                await ds.DisposeAsync();
-                await ds.DisposeAsync();
-            }
-        }
-
         private sealed class DerivedDeflateStream : DeflateStream
         {
             public bool ReadArrayInvoked = false, WriteArrayInvoked = false;
-            internal DerivedDeflateStream(Stream stream, CompressionMode mode) : base(stream, mode) { }
             internal DerivedDeflateStream(Stream stream, CompressionMode mode, bool leaveOpen) : base(stream, mode, leaveOpen) { }
 
-            public override int Read(byte[] array, int offset, int count)
+            public override int Read(byte[] buffer, int offset, int count)
             {
                 ReadArrayInvoked = true;
-                return base.Read(array, offset, count);
+                return base.Read(buffer, offset, count);
             }
 
-            public override Task<int> ReadAsync(byte[] array, int offset, int count, CancellationToken cancellationToken)
+            public override Task<int> ReadAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
             {
                 ReadArrayInvoked = true;
-                return base.ReadAsync(array, offset, count, cancellationToken);
+                return base.ReadAsync(buffer, offset, count, cancellationToken);
             }
 
-            public override void Write(byte[] array, int offset, int count)
+            public override void Write(byte[] buffer, int offset, int count)
             {
                 WriteArrayInvoked = true;
-                base.Write(array, offset, count);
+                base.Write(buffer, offset, count);
             }
 
-            public override Task WriteAsync(byte[] array, int offset, int count, CancellationToken cancellationToken)
+            public override Task WriteAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
             {
                 WriteArrayInvoked = true;
-                return base.WriteAsync(array, offset, count, cancellationToken);
+                return base.WriteAsync(buffer, offset, count, cancellationToken);
             }
         }
     }

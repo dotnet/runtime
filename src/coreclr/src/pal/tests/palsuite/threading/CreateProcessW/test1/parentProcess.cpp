@@ -30,52 +30,11 @@
 const WCHAR szCommonFileW[] = 
             {'c','h','i','l','d','d','a','t','a','.','t','m','p','\0'};
 
-const WCHAR szChildFileW[] = u"paltest_createprocessw_test1_child";
+const WCHAR szChildFileW[] = u"threading/CreateProcessW/test1/paltest_createprocessw_test1_child";
 
-const WCHAR szPathDelimW[] = {'\\','\0'};
+#define szCommonStringA "058d2d057111a313aa82401c2e856002\0"
 
-const char *szCommonStringA = "058d2d057111a313aa82401c2e856002\0";
-
-/*
- * Take two wide strings representing file and directory names
- * (dirName, fileName), join the strings with the appropriate path
- * delimiter and populate a wide character buffer (absPathName) with
- * the resulting string.
- *
- * Returns: The number of wide characters in the resulting string.
- * 0 is returned on Error.
- */
-int 
-mkAbsoluteFilenameW ( 
-    LPWSTR dirName,  
-    DWORD dwDirLength, 
-    LPCWSTR fileName, 
-    DWORD dwFileLength,
-    LPWSTR absPathName )
-{
-    extern const WCHAR szPathDelimW[];
-
-    DWORD sizeDN, sizeFN, sizeAPN;
-    
-    sizeDN = wcslen( dirName );
-    sizeFN = wcslen( fileName );
-    sizeAPN = (sizeDN + 1 + sizeFN + 1);
-    
-    /* insure ((dirName + DELIM + fileName + \0) =< _MAX_PATH ) */
-    if ( sizeAPN > _MAX_PATH )
-    {
-	return ( 0 );
-    }
-    
-    wcsncpy(absPathName, dirName, dwDirLength +1);
-    wcsncpy(absPathName, szPathDelimW, 2);
-    wcsncpy(absPathName, fileName, dwFileLength +1);
-    
-    return (sizeAPN);
-  
-} 
-
-int __cdecl main( int argc, char **argv ) 
+PALTEST(threading_CreateProcessW_test1_paltest_createprocessw_test1, "threading/CreateProcessW/test1/paltest_createprocessw_test1")
 
 {
 
@@ -108,7 +67,6 @@ int __cdecl main( int argc, char **argv )
     ZeroMemory ( &pi, sizeof(pi) );
     
     szAbsPathNameW=&absPathBuf[0];
-    dwFileLength = wcslen( szChildFileW );
 
     dwDirLength = GetCurrentDirectory(_MAX_PATH, szDirNameW);
 
@@ -118,14 +76,15 @@ int __cdecl main( int argc, char **argv )
 		"current working directory\n.  Exiting.\n");
     }
 
-    dwSize = mkAbsoluteFilenameW( szDirNameW, dwDirLength, szChildFileW, 
-				  dwFileLength, szAbsPathNameW );
+    int mbwcResult = MultiByteToWideChar(CP_ACP, 0, argv[0], -1, szAbsPathNameW, sizeof(absPathBuf));
 
-    if (0 == dwSize)
+    if (0 == mbwcResult)
     {
-	Fail ("Palsuite Code: mkAbsoluteFilename() call failed.  Could "
-		"not build absolute path name to file\n.  Exiting.\n");
+        Fail ("Palsuite Code: MultiByteToWideChar() call failed. Exiting.\n");
     }
+
+    wcscat(szAbsPathNameW, u" ");
+    wcscat(szAbsPathNameW, szChildFileW);
     
     if ( !CreateProcessW ( NULL,  
 			   szAbsPathNameW,

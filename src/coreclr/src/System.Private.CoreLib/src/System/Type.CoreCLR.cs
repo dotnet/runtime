@@ -81,34 +81,6 @@ namespace System
             return TypeNameParser.GetType(typeName, assemblyResolver, typeResolver, throwOnError, ignoreCase, ref stackMark);
         }
 
-        ////////////////////////////////////////////////////////////////////////////////
-        // This will return a class based upon the progID.  This is provided for
-        // COM classic support.  Program ID's are not used in COM+ because they
-        // have been superceded by namespace.  (This routine is called this instead
-        // of getClass() because of the name conflict with the first method above.)
-        //
-        //   param progID:     the progID of the class to retrieve
-        //   returns:          the class object associated to the progID
-        ////
-        [SupportedOSPlatform("windows")]
-        public static Type? GetTypeFromProgID(string progID, string? server, bool throwOnError)
-        {
-            return RuntimeType.GetTypeFromProgIDImpl(progID, server, throwOnError);
-        }
-
-        ////////////////////////////////////////////////////////////////////////////////
-        // This will return a class based upon the CLSID.  This is provided for
-        // COM classic support.
-        //
-        //   param CLSID:      the CLSID of the class to retrieve
-        //   returns:          the class object associated to the CLSID
-        ////
-        [SupportedOSPlatform("windows")]
-        public static Type? GetTypeFromCLSID(Guid clsid, string? server, bool throwOnError)
-        {
-            return RuntimeType.GetTypeFromCLSIDImpl(clsid, server, throwOnError);
-        }
-
         internal virtual RuntimeTypeHandle GetTypeHandleInternal()
         {
             return TypeHandle;

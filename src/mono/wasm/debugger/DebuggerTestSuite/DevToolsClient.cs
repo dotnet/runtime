@@ -19,7 +19,7 @@ namespace Microsoft.WebAssembly.Diagnostics
         TaskCompletionSource<bool> side_exit = new TaskCompletionSource<bool>();
         List<byte[]> pending_writes = new List<byte[]>();
         Task current_write;
-        readonly ILogger logger;
+        protected readonly ILogger logger;
 
         public DevToolsClient(ILogger logger)
         {
@@ -157,11 +157,6 @@ namespace Microsoft.WebAssembly.Diagnostics
             }
 
             return false;
-        }
-
-        protected virtual void Log(string priority, string msg)
-        {
-            //
         }
     }
 }

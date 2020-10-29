@@ -61,6 +61,11 @@ namespace System.Net.Tests
             p.BypassList = strings;
             Assert.Equal(strings, p.BypassList);
             Assert.Equal(strings, (string[])p.BypassArrayList.ToArray(typeof(string)));
+
+            strings = null;
+            p.BypassList = strings;
+            Assert.Empty(p.BypassList);
+            Assert.Empty(p.BypassArrayList);
         }
 
         [Fact]
@@ -111,7 +116,6 @@ namespace System.Net.Tests
             var p = new WebProxy();
             AssertExtensions.Throws<ArgumentNullException>("destination", () => p.GetProxy(null));
             AssertExtensions.Throws<ArgumentNullException>("host", () => p.IsBypassed(null));
-            AssertExtensions.Throws<ArgumentNullException>("c", () => p.BypassList = null);
             Assert.ThrowsAny<ArgumentException>(() => p.BypassList = new string[] { "*.com" });
         }
 

@@ -10,8 +10,6 @@ if (CLR_CMAKE_HOST_WIN32)
 
     list(APPEND CLR_SOURCES ${CMAKE_CURRENT_BINARY_DIR}/coreclr.def)
 
-    add_linker_flag("/ENTRY:CoreDllMain")
-
     # Incremental linking results in the linker inserting extra padding and routing function calls via thunks that can break the
     # invariants (e.g. size of region between Jit_PatchedCodeLast-Jit_PatchCodeStart needs to fit in a page).
     add_linker_flag("/INCREMENTAL:NO")
@@ -109,7 +107,7 @@ set(CORECLR_LIBRARIES
     ildbsymlib
     utilcode
     v3binder
-    System.Globalization.Native-static
+    System.Globalization.Native-Static
     interop
 )
 
@@ -172,6 +170,7 @@ target_sources(coreclr PUBLIC $<TARGET_OBJECTS:cee_wks_core>)
 target_link_libraries(coreclr PUBLIC ${CORECLR_LIBRARIES} ${CLRJIT_STATIC} cee_wks)
 target_sources(coreclr_static PUBLIC $<TARGET_OBJECTS:cee_wks_core>)
 target_link_libraries(coreclr_static PUBLIC ${CORECLR_LIBRARIES} clrjit_static cee_wks_mergeable)
+target_compile_definitions(coreclr_static PUBLIC CORECLR_EMBEDDED)
 
 # Create the runtime module index header file containing the coreclr build id
 # for xplat and the timestamp/size on Windows.
@@ -228,7 +227,7 @@ if(CLR_CMAKE_TARGET_WIN32)
 endif(CLR_CMAKE_TARGET_WIN32)
 
 # add the install targets
-install_clr(TARGETS coreclr ADDITIONAL_DESTINATION sharedFramework)
+install_clr(TARGETS coreclr ADDITIONAL_DESTINATIONS sharedFramework)
 
 # publish coreclr_static lib
 _install(TARGETS coreclr_static DESTINATION lib)

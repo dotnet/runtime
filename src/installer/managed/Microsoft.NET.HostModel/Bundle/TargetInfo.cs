@@ -11,7 +11,7 @@ namespace Microsoft.NET.HostModel.Bundle
 {
     /// <summary>
     /// TargetInfo: Information about the target for which the single-file bundle is built.
-    /// 
+    ///
     /// Currently the TargetInfo only tracks:
     ///   - the target operating system
     ///   - the target architecture
@@ -37,12 +37,12 @@ namespace Microsoft.NET.HostModel.Bundle
 
             Debug.Assert(IsLinux || IsOSX || IsWindows);
 
-            if(FrameworkVersion.CompareTo(net50) >= 0)
+            if (FrameworkVersion.CompareTo(net50) >= 0)
             {
                 BundleVersion = 2u;
                 DefaultOptions = BundleOptions.None;
             }
-            else if(FrameworkVersion.Major == 3 && (FrameworkVersion.Minor == 0 || FrameworkVersion.Minor == 1))
+            else if (FrameworkVersion.Major == 3 && (FrameworkVersion.Minor == 0 || FrameworkVersion.Minor == 1))
             {
                 BundleVersion = 1u;
                 DefaultOptions = BundleOptions.BundleAllContent;
@@ -85,7 +85,7 @@ namespace Microsoft.NET.HostModel.Bundle
             return $"OS: {os} Arch: {arch} FrameworkVersion: {FrameworkVersion}";
         }
 
-        static OSPlatform HostOS => RuntimeInformation.IsOSPlatform(OSPlatform.Linux) ? OSPlatform.Linux :
+        private static OSPlatform HostOS => RuntimeInformation.IsOSPlatform(OSPlatform.Linux) ? OSPlatform.Linux :
                                     RuntimeInformation.IsOSPlatform(OSPlatform.OSX) ? OSPlatform.OSX : OSPlatform.Windows;
 
         public bool IsLinux => OS.Equals(OSPlatform.Linux);
@@ -105,11 +105,10 @@ namespace Microsoft.NET.HostModel.Bundle
         public bool ShouldExclude(string relativePath) =>
             (FrameworkVersion.Major != 3) && (relativePath.Equals(HostFxr) || relativePath.Equals(HostPolicy));
 
-        readonly Version net50 = new Version(5, 0);
-        string HostFxr => IsWindows ? "hostfxr.dll" : IsLinux ? "libhostfxr.so" : "libhostfxr.dylib";
-        string HostPolicy => IsWindows ? "hostpolicy.dll" : IsLinux ? "libhostpolicy.so" : "libhostpolicy.dylib";
+        private readonly Version net50 = new Version(5, 0);
+        private string HostFxr => IsWindows ? "hostfxr.dll" : IsLinux ? "libhostfxr.so" : "libhostfxr.dylib";
+        private string HostPolicy => IsWindows ? "hostpolicy.dll" : IsLinux ? "libhostpolicy.so" : "libhostpolicy.dylib";
 
 
     }
 }
-

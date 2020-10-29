@@ -34,10 +34,12 @@
 gpointer
 mono_arch_get_unbox_trampoline (MonoMethod *m, gpointer addr)
 {
+	MonoDomain *domain = mono_domain_get ();
+	MonoMemoryManager *mem_manager = m_method_get_mem_manager (domain, m);
 	guint8 *code, *start;
 	int reg;
 
-	start = code = mono_domain_code_reserve (mono_domain_get (), 36);
+	start = code = mono_mem_manager_code_reserve (mem_manager, 36);
 
 	/* This executes in the context of the caller, hence o0 */
 	sparc_add_imm (code, 0, sparc_o0, MONO_ABI_SIZEOF (MonoObject), sparc_o0);
@@ -225,13 +227,13 @@ mono_arch_create_generic_trampoline (MonoTrampolineType tramp_type, MonoTrampInf
 #define TRAMPOLINE_SIZE (SPARC_SET_MAX_SIZE + 3)
 
 gpointer
-mono_arch_create_specific_trampoline (gpointer arg1, MonoTrampolineType tramp_type, MonoDomain *domain, guint32 *code_len)
+mono_arch_create_specific_trampoline (gpointer arg1, MonoTrampolineType tramp_type, MonoMemoryManager *mem_manager, guint32 *code_len)
 {
 	guint32 *code, *buf, *tramp;
 
 	tramp = mono_get_trampoline_code (tramp_type);
 
-	code = buf = mono_domain_code_reserve (domain, TRAMPOLINE_SIZE * 4);
+	code = buf = mono_mem_manager_code_reserve (mem_manager, TRAMPOLINE_SIZE * 4);
 
 	/* We have to use g5 here because there is no other free register */
 	sparc_set (code, tramp, sparc_g5);

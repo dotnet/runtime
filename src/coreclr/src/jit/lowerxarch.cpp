@@ -593,7 +593,7 @@ void Lowering::LowerPutArgStk(GenTreePutArgStk* putArgStk)
  * TODO-XArch-CQ: (Low-pri): Jit64 generates in-line code of 8 instructions for (i) above.
  * There are hardly any occurrences of this conversion operation in platform
  * assemblies or in CQ perf benchmarks (1 occurrence in corelib, microsoft.jscript,
- * 1 occurence in Roslyn and no occurrences in system, system.core, system.numerics
+ * 1 occurrence in Roslyn and no occurrences in system, system.core, system.numerics
  * system.windows.forms, scimark, fractals, bio mums). If we ever find evidence that
  * doing this optimization is a win, should consider generating in-lined code.
  */
@@ -1008,7 +1008,7 @@ void Lowering::LowerHWIntrinsic(GenTreeHWIntrinsic* node)
                 break;
             }
 
-            __fallthrough;
+            FALLTHROUGH;
         }
 
         case NI_SSE_CompareGreaterThan:
@@ -1728,7 +1728,7 @@ void Lowering::LowerHWIntrinsicCreate(GenTreeHWIntrinsic* node)
                 BlockRange().InsertAfter(tmp2, tmp1);
                 LowerNode(tmp1);
 
-                __fallthrough;
+                FALLTHROUGH;
             }
 
             case TYP_SHORT:
@@ -1765,7 +1765,7 @@ void Lowering::LowerHWIntrinsicCreate(GenTreeHWIntrinsic* node)
                 BlockRange().InsertAfter(tmp2, tmp1);
                 LowerNode(tmp1);
 
-                __fallthrough;
+                FALLTHROUGH;
             }
 
             case TYP_INT:
@@ -5594,6 +5594,7 @@ void Lowering::ContainCheckHWIntrinsic(GenTreeHWIntrinsic* node)
                             }
                         }
                     }
+                    break;
                 }
 
                 case HW_Category_IMM:

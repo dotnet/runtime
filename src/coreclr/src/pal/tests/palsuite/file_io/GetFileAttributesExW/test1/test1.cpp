@@ -93,7 +93,7 @@ void VerifyInfo(WIN32_FILE_ATTRIBUTE_DATA InfoStruct,
    results are correct.
 */
 
-void RunTest(char* Name, DWORD Attribs, ItemType TheType )
+void RunTest_GetFileAttributesExW_test1(char* Name, DWORD Attribs, ItemType TheType )
 {
     WCHAR* TheName;
     WIN32_FILE_ATTRIBUTE_DATA InfoStruct;
@@ -115,7 +115,7 @@ void RunTest(char* Name, DWORD Attribs, ItemType TheType )
     
 }
 
-int __cdecl main(int argc, char **argv)
+PALTEST(file_io_GetFileAttributesExW_test1_paltest_getfileattributesexw_test1, "file_io/GetFileAttributesExW/test1/paltest_getfileattributesexw_test1")
 {
     DWORD TheResult;
     WCHAR* FileName;
@@ -127,29 +127,29 @@ int __cdecl main(int argc, char **argv)
     }
 
     /* Test a Directroy */
-    RunTest("normal_test_directory", FILE_ATTRIBUTE_DIRECTORY, IS_DIR);
+    RunTest_GetFileAttributesExW_test1("normal_test_directory", FILE_ATTRIBUTE_DIRECTORY, IS_DIR);
 
     
     /* Test a Normal File */
 
-    RunTest("normal_test_file", FILE_ATTRIBUTE_NORMAL, IS_FILE);
+    RunTest_GetFileAttributesExW_test1("normal_test_file", FILE_ATTRIBUTE_NORMAL, IS_FILE);
   
     /* Test a Read-Only Directroy */
 
-    RunTest("ro_test_directory", 
+    RunTest_GetFileAttributesExW_test1("ro_test_directory", 
             FILE_ATTRIBUTE_READONLY|FILE_ATTRIBUTE_DIRECTORY, IS_DIR);
 
     /* Test a Read-Only File */
 
-    RunTest("ro_test_file", FILE_ATTRIBUTE_READONLY, IS_FILE);
+    RunTest_GetFileAttributesExW_test1("ro_test_file", FILE_ATTRIBUTE_READONLY, IS_FILE);
 
     /* Test a Hidden File */
     
-    RunTest(".hidden_file", FILE_ATTRIBUTE_HIDDEN, IS_FILE);
+    RunTest_GetFileAttributesExW_test1(".hidden_file", FILE_ATTRIBUTE_HIDDEN, IS_FILE);
 
     /* Test a Hidden Directroy */
 
-    RunTest(".hidden_directory", 
+    RunTest_GetFileAttributesExW_test1(".hidden_directory", 
             FILE_ATTRIBUTE_HIDDEN|FILE_ATTRIBUTE_DIRECTORY, IS_DIR);
 
     /* Test a Non-Existant File */

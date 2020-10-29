@@ -7,6 +7,7 @@
     <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
     <BuildDir>$(MSBuildThisFileDirectory)\obj\$(Configuration)\wasm</BuildDir>
     <AppDir>$(TestBinDir)/WasmApp/</AppDir>
+    <NETCoreAppMaximumVersion>99.0</NETCoreAppMaximumVersion>
   </PropertyGroup>
 
   <UsingTask TaskName="WasmAppBuilder" 

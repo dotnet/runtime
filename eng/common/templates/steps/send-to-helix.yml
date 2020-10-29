@@ -18,7 +18,7 @@ parameters:
   XUnitRuntimeTargetFramework: ''        # optional -- framework to use for the xUnit console runner
   XUnitRunnerVersion: ''                 # optional -- version of the xUnit nuget package you wish to use on Helix; required for XUnitProjects
   IncludeDotNetCli: false                # optional -- true will download a version of the .NET CLI onto the Helix machine as a correlation payload; requires DotNetCliPackageType and DotNetCliVersion
-  DotNetCliPackageType: ''               # optional -- either 'sdk' or 'runtime'; determines whether the sdk or runtime will be sent to Helix; see https://raw.githubusercontent.com/dotnet/core/master/release-notes/releases-index.json
+  DotNetCliPackageType: ''               # optional -- either 'sdk', 'runtime' or 'aspnetcore-runtime'; determines whether the sdk or runtime will be sent to Helix; see https://raw.githubusercontent.com/dotnet/core/master/release-notes/releases-index.json
   DotNetCliVersion: ''                   # optional -- version of the CLI to send to Helix; based on this: https://raw.githubusercontent.com/dotnet/core/master/release-notes/releases-index.json
   EnableXUnitReporter: false             # optional -- true enables XUnit result reporting to Mission Control
   WaitForWorkItemCompletion: true        # optional -- true will make the task wait until work items have been completed and fail the build if work items fail. False is "fire and forget."
@@ -30,14 +30,9 @@ parameters:
   continueOnError: false                 # optional -- determines whether to continue the build if the step errors; defaults to false
 
 steps:
-- template: /eng/pipelines/common/templates/runtimes/send-to-helix-inner-step.yml
-  parameters:
-    osGroup: ${{ variables['Agent.Os'] }}
-    sendParams: $(Build.SourcesDirectory)/eng/common/helixpublish.proj /restore /t:Test /bl:$(Build.SourcesDirectory)/artifacts/log/$(_BuildConfig)/SendToHelix.binlog
+  - powershell: 'powershell "$env:BUILD_SOURCESDIRECTORY\eng\common\msbuild.ps1 $env:BUILD_SOURCESDIRECTORY\eng\common\helixpublish.proj /restore /t:Test /bl:$env:BUILD_SOURCESDIRECTORY\artifacts\log\$env:BuildConfig\SendToHelix.binlog"'
     displayName: ${{ parameters.DisplayNamePrefix }} (Windows)
-    condition: ${{ parameters.condition }}
-    continueOnError: ${{ parameters.continueOnError }}
-    environment:
+    env:
       BuildConfig: $(_BuildConfig)
       HelixSource: ${{ parameters.HelixSource }}
       HelixType: ${{ parameters.HelixType }}
@@ -64,3 +59,36 @@ steps:
       HelixBaseUri: ${{ parameters.HelixBaseUri }}
       Creator: ${{ parameters.Creator }}
       SYSTEM_ACCESSTOKEN: $(System.AccessToken)
+    condition: and(${{ parameters.condition }}, eq(variables['Agent.Os'], 'Windows_NT'))
+    continueOnError: ${{ parameters.continueOnError }}
+  - script: $BUILD_SOURCESDIRECTORY/eng/common/msbuild.sh $BUILD_SOURCESDIRECTORY/eng/common/helixpublish.proj /restore /t:Test /bl:$BUILD_SOURCESDIRECTORY/artifacts/log/$BuildConfig/SendToHelix.binlog
+    displayName: ${{ parameters.DisplayNamePrefix }} (Unix)
+    env:
+      BuildConfig: $(_BuildConfig)
+      HelixSource: ${{ parameters.HelixSource }}
+      HelixType: ${{ parameters.HelixType }}
+      HelixBuild: ${{ parameters.HelixBuild }}
+      HelixConfiguration:  ${{ parameters.HelixConfiguration }}
+      HelixTargetQueues: ${{ parameters.HelixTargetQueues }}
+      HelixAccessToken: ${{ parameters.HelixAccessToken }}
+      HelixPreCommands: ${{ parameters.HelixPreCommands }}
+      HelixPostCommands: ${{ parameters.HelixPostCommands }}
+      WorkItemDirectory: ${{ parameters.WorkItemDirectory }}
+      WorkItemCommand: ${{ parameters.WorkItemCommand }}
+      WorkItemTimeout: ${{ parameters.WorkItemTimeout }}
+      CorrelationPayloadDirectory: ${{ parameters.CorrelationPayloadDirectory }}
+      XUnitProjects: ${{ parameters.XUnitProjects }}
+      XUnitWorkItemTimeout: ${{ parameters.XUnitWorkItemTimeout }}
+      XUnitPublishTargetFramework: ${{ parameters.XUnitPublishTargetFramework }}
+      XUnitRuntimeTargetFramework: ${{ parameters.XUnitRuntimeTargetFramework }}
+      XUnitRunnerVersion: ${{ parameters.XUnitRunnerVersion }}
+      IncludeDotNetCli: ${{ parameters.IncludeDotNetCli }}
+      DotNetCliPackageType: ${{ parameters.DotNetCliPackageType }}
+      DotNetCliVersion: ${{ parameters.DotNetCliVersion }}
+      EnableXUnitReporter: ${{ parameters.EnableXUnitReporter }}
+      WaitForWorkItemCompletion: ${{ parameters.WaitForWorkItemCompletion }}
+      HelixBaseUri: ${{ parameters.HelixBaseUri }}
+      Creator: ${{ parameters.Creator }}
+      SYSTEM_ACCESSTOKEN: $(System.AccessToken)
+    condition: and(${{ parameters.condition }}, ne(variables['Agent.Os'], 'Windows_NT'))
+    continueOnError: ${{ parameters.continueOnError }}

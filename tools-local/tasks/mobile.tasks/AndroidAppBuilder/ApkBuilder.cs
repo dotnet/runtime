@@ -1,3 +1,6 @@
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -25,14 +28,21 @@ public class ApkBuilder
         if (string.IsNullOrEmpty(abi))
             throw new ArgumentException("abi shoudln't be empty (e.g. x86, x86_64, armeabi-v7a or arm64-v8a");
 
-        if (string.IsNullOrEmpty(entryPointLib))
-            throw new ArgumentException("entryPointLib shouldn't be empty");
-
-        if (!File.Exists(Path.Combine(sourceDir, entryPointLib)))
-            throw new ArgumentException($"{entryPointLib} was not found in sourceDir='{sourceDir}'");
+        string entryPointLibPath = "";
+        if (!string.IsNullOrEmpty(entryPointLib))
+        {
+            entryPointLibPath = Path.Combine(sourceDir, entryPointLib);
+            if (!File.Exists(entryPointLibPath))
+                throw new ArgumentException($"{entryPointLib} was not found in sourceDir='{sourceDir}'");
+        }
 
         if (string.IsNullOrEmpty(ProjectName))
-            ProjectName = Path.GetFileNameWithoutExtension(entryPointLib);
+        {
+            if (string.IsNullOrEmpty(entryPointLib))
+                throw new ArgumentException("ProjectName needs to be set if entryPointLib is empty.");
+            else
+                ProjectName = Path.GetFileNameWithoutExtension(entryPointLib);
+        }
 
         if (string.IsNullOrEmpty(OutputDir))
             OutputDir = Path.Combine(sourceDir, "bin-" + abi);
@@ -65,8 +75,8 @@ public class ApkBuilder
 
         // make sure BuildApiLevel >= MinApiLevel
         // only if these api levels are not "preview" (not integers)
-        if (int.TryParse(BuildApiLevel, out int intApi) && 
-            int.TryParse(MinApiLevel, out int intMinApi) && 
+        if (int.TryParse(BuildApiLevel, out int intApi) &&
+            int.TryParse(MinApiLevel, out int intMinApi) &&
             intApi < intMinApi)
         {
             throw new ArgumentException($"BuildApiLevel={BuildApiLevel} <= MinApiLevel={MinApiLevel}. " +
@@ -82,7 +92,7 @@ public class ApkBuilder
         Directory.CreateDirectory(Path.Combine(OutputDir, "obj"));
         Directory.CreateDirectory(Path.Combine(OutputDir, "assets-tozip"));
         Directory.CreateDirectory(Path.Combine(OutputDir, "assets"));
-        
+
         var extensionsToIgnore = new List<string> { ".so", ".a", ".gz" };
         if (StripDebugSymbols)
         {
@@ -90,7 +100,7 @@ public class ApkBuilder
             extensionsToIgnore.Add(".dbg");
         }
 
-        // Copy AppDir to OutputDir/assets-tozip (ignore native files)
+        // Copy sourceDir to OutputDir/assets-tozip (ignore native files)
         // these files then will be zipped and copied to apk/assets/assets.zip
         Utils.DirectoryCopy(sourceDir, Path.Combine(OutputDir, "assets-tozip"), file =>
         {
@@ -125,7 +135,7 @@ public class ApkBuilder
 
         Utils.RunProcess(zip, workingDir: Path.Combine(OutputDir, "assets-tozip"), args: "-q -r ../assets/assets.zip .");
         Directory.Delete(Path.Combine(OutputDir, "assets-tozip"), true);
-        
+
         if (!File.Exists(androidJar))
             throw new ArgumentException($"API level={BuildApiLevel} is not downloaded in Android SDK");
 
@@ -140,16 +150,13 @@ public class ApkBuilder
             .Replace("%NativeLibrariesToLink%", monoRuntimeLib);
         File.WriteAllText(Path.Combine(OutputDir, "CMakeLists.txt"), cmakeLists);
 
-        string monodroidSrc = Utils.GetEmbeddedResource("monodroid.c")
-            .Replace("%EntryPointLibName%", Path.GetFileName(entryPointLib)
-            .Replace("%RID%", GetRid(abi)));
-        File.WriteAllText(Path.Combine(OutputDir, "monodroid.c"), monodroidSrc);
-        
-        string cmakeGenArgs = $"-DCMAKE_TOOLCHAIN_FILE={androidToolchain} -DANDROID_ABI=\"{abi}\" -DANDROID_STL=none " + 
+        File.WriteAllText(Path.Combine(OutputDir, "monodroid.c"), Utils.GetEmbeddedResource("monodroid.c"));
+
+        string cmakeGenArgs = $"-DCMAKE_TOOLCHAIN_FILE={androidToolchain} -DANDROID_ABI=\"{abi}\" -DANDROID_STL=none " +
             $"-DANDROID_NATIVE_API_LEVEL={MinApiLevel} -B monodroid";
 
         string cmakeBuildArgs = "--build monodroid";
-        
+
         if (StripDebugSymbols)
         {
             // Use "-s" to strip debug symbols, it complains it's unused but it works
@@ -172,11 +179,15 @@ public class ApkBuilder
 
         string packageId = $"net.dot.{ProjectName}";
 
-        File.WriteAllText(Path.Combine(javaSrcFolder, "MainActivity.java"), 
-            Utils.GetEmbeddedResource("MainActivity.java"));
-        File.WriteAllText(Path.Combine(javaSrcFolder, "MonoRunner.java"), 
-            Utils.GetEmbeddedResource("MonoRunner.java"));
-        File.WriteAllText(Path.Combine(OutputDir, "AndroidManifest.xml"), 
+        File.WriteAllText(Path.Combine(javaSrcFolder, "MainActivity.java"),
+            Utils.GetEmbeddedResource("MainActivity.java")
+                .Replace("%EntryPointLibName%", Path.GetFileName(entryPointLib)));
+
+        string monoRunner = Utils.GetEmbeddedResource("MonoRunner.java")
+            .Replace("%EntryPointLibName%", Path.GetFileName(entryPointLib));
+        File.WriteAllText(Path.Combine(javaSrcFolder, "MonoRunner.java"), monoRunner);
+
+        File.WriteAllText(Path.Combine(OutputDir, "AndroidManifest.xml"),
             Utils.GetEmbeddedResource("AndroidManifest.xml")
                 .Replace("%PackageName%", packageId)
                 .Replace("%MinSdkLevel%", MinApiLevel));
@@ -190,10 +201,10 @@ public class ApkBuilder
 
         string apkFile = Path.Combine(OutputDir, "bin", $"{ProjectName}.unaligned.apk");
         Utils.RunProcess(aapt, $"package -f -m -F {apkFile} -A assets -M AndroidManifest.xml -I {androidJar}", workingDir: OutputDir);
-        
+
         var dynamicLibs = new List<string>();
         dynamicLibs.Add(Path.Combine(OutputDir, "monodroid", "libmonodroid.so"));
-        dynamicLibs.AddRange(Directory.GetFiles(sourceDir, "*.so"));
+        dynamicLibs.AddRange(Directory.GetFiles(sourceDir, "*.so").Where(file => Path.GetFileName(file) != "libmonodroid.so"));
 
         // add all *.so files to lib/%abi%/
         Directory.CreateDirectory(Path.Combine(OutputDir, "lib", abi));
@@ -222,7 +233,7 @@ public class ApkBuilder
         File.Delete(apkFile);
 
         // 5. Generate key
-        
+
         string signingKey = Path.Combine(OutputDir, "debug.keystore");
         if (!File.Exists(signingKey))
         {
@@ -233,7 +244,7 @@ public class ApkBuilder
 
         // 6. Sign APK
 
-        Utils.RunProcess(apksigner, $"sign --min-sdk-version {MinApiLevel} --ks debug.keystore " + 
+        Utils.RunProcess(apksigner, $"sign --min-sdk-version {MinApiLevel} --ks debug.keystore " +
             $"--ks-pass pass:android --key-pass pass:android {alignedApk}", workingDir: OutputDir);
 
         Utils.LogInfo($"\nAPK size: {(new FileInfo(alignedApk).Length / 1000_000.0):0.#} Mb.\n");
@@ -241,14 +252,6 @@ public class ApkBuilder
         return (alignedApk, packageId);
     }
 
-    private static string GetRid(string abi) => abi switch 
-        {
-            "arm64-v8a" => "android-arm64",
-            "armeabi-v7a" => "android-arm",
-            "x86_64" => "android-x64",
-            _ => "android-" + abi
-        };
-    
     /// <summary>
     /// Scan android SDK for build tools (ignore preview versions)
     /// </summary>
@@ -266,7 +269,7 @@ public class ApkBuilder
 
         return buildTools;
     }
-    
+
     /// <summary>
     /// Scan android SDK for api levels (ignore preview versions)
     /// </summary>

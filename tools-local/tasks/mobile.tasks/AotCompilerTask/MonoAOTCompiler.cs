@@ -20,7 +20,7 @@ public class MonoAOTCompiler : Microsoft.Build.Utilities.Task
 
     /// <summary>
     /// Assemblies to be AOTd. They need to be in a self-contained directory.
-    /// 
+    ///
     ///  Metadata:
     ///   - AotArguments: semicolon-separated list of options that will be passed to --aot=
     ///   - ProcessArguments: semicolon-separated list of options that will be passed to the AOT compiler itself
@@ -75,9 +75,9 @@ public class MonoAOTCompiler : Microsoft.Build.Utilities.Task
     /// </summary>
     public string? MsymPath { get; set; }
 
-    ConcurrentBag<ITaskItem> compiledAssemblies = new ConcurrentBag<ITaskItem>();
-    MonoAotMode parsedAotMode;
-    MonoAotOutputType parsedOutputType;
+    private ConcurrentBag<ITaskItem> compiledAssemblies = new ConcurrentBag<ITaskItem>();
+    private MonoAotMode parsedAotMode;
+    private MonoAotOutputType parsedOutputType;
 
     public override bool Execute()
     {
@@ -224,18 +224,18 @@ public class MonoAOTCompiler : Microsoft.Build.Utilities.Task
         // we need to quote the entire --aot arguments here to make sure it is parsed
         // on Windows as one argument. Otherwise it will be split up into multiple
         // values, which wont work.
-        processArgs.Add($"\"--aot={String.Join(",", aotArgs)}\"");
+        processArgs.Add($"\"--aot={string.Join(",", aotArgs)}\"");
 
         processArgs.Add(assembly);
 
         var envVariables = new Dictionary<string, string>
         {
             {"MONO_PATH", directory},
-            {"MONO_ENV_OPTIONS", String.Empty} // we do not want options to be provided out of band to the cross compilers
+            {"MONO_ENV_OPTIONS", string.Empty} // we do not want options to be provided out of band to the cross compilers
         };
 
         // run the AOT compiler
-        Utils.RunProcess(CompilerBinaryPath, String.Join(" ", processArgs), envVariables, directory);
+        Utils.RunProcess(CompilerBinaryPath, string.Join(" ", processArgs), envVariables, directory);
 
         compiledAssemblies.Add(aotAssembly);
     }
