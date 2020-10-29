@@ -500,6 +500,7 @@ sgen_memgov_init (size_t max_heap, size_t soft_limit, gboolean debug_allowance, 
 
 	if (max_heap == 0) {
 		sgen_gc_info.total_available_memory_bytes = mono_determine_physical_ram_size ();
+		sgen_gc_info.memory_load_bytes = mono_determine_physical_ram_available_size ();
 
 		// This threshold is commonly used by software caches to detect when they are approaching the limit of available memory.
 		// In sgen it is not adjusted dynamically, since sgen does not adjust compaction strategies based on a threshold.
@@ -525,6 +526,7 @@ sgen_memgov_init (size_t max_heap, size_t soft_limit, gboolean debug_allowance, 
 
 	sgen_gc_info.total_available_memory_bytes = max_heap;
 	sgen_gc_info.high_memory_load_threshold_bytes = .9 * sgen_gc_info.total_available_memory_bytes;
+	sgen_gc_info.memory_load_bytes = mono_determine_physical_ram_available_size ();
 
 	if (allowance_ratio)
 		default_allowance_nursery_size_ratio = allowance_ratio;
