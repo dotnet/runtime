@@ -551,6 +551,30 @@ else()
   set(TARGET_BYTE_ORDER G_LITTLE_ENDIAN)
 endif()
 
+######################################
+# DEBUG BUILD CHECKS
+######################################
+function(process_checked_build)
+  string(REPLACE "," ";" tmp1 "${CHECKED_BUILD}")
+  foreach(arg ${tmp1})
+    string(TOUPPER "${arg}" var1)
+    set(ENABLE_CHECKED_BUILD_${var1} 1 PARENT_SCOPE)
+  endforeach(arg)
+endfunction()
+
+if (CMAKE_BUILD_TYPE STREQUAL "Debug")
+  # if no explicit -DCHECKED_BUILD=args option, just do ENABLE_CHECKED_BUILD_PRIVATE_TYPES
+  if (CHECKED_BUILD)
+    set(ENABLE_CHECKED_BUILD 1)
+    process_checked_build()
+  else()
+    set(ENABLE_CHECKED_BUILD 1)
+    set(ENABLE_CHECKED_BUILD_PRIVATE_TYPES 1)
+  endif()
+endif()
+### End of debug build checks
+
+
 add_subdirectory(mono)
 
 configure_file(cmake/config.h.in config.h)

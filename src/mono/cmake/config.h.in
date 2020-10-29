@@ -1688,3 +1688,18 @@
 
 /* Enable lazy gc thread creation by the embedding host */
 #cmakedefine LAZY_GC_THREAD_CREATION 1
+
+/* Enable additional checks */
+#cmakedefine ENABLE_CHECKED_BUILD 1
+
+/* Enable compile time checking that getter functions are used */
+#cmakedefine ENABLE_CHECKED_BUILD_PRIVATE_TYPES 1
+
+/* Enable runtime GC Safe / Unsafe mode assertion checks (must set env var MONO_CHECK_MODE=gc) */
+#cmakedefine ENABLE_CHECKED_BUILD_GC 1
+
+/* Enable runtime history of per-thread coop state transitions (must set env var MONO_CHECK_MODE=thread) */
+#cmakedefine ENABLE_CHECKED_BUILD_THREAD 1
+
+/* Enable runtime checks of mempool references between metadata images (must set env var MONO_CHECK_MODE=metadata) */
+#cmakedefine ENABLE_CHECKED_BUILD_METADATA 1
