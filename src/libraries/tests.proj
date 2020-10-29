@@ -151,6 +151,10 @@
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Private.Xml.Linq\tests\xNodeReader\System.Xml.Linq.xNodeReader.Tests.csproj" />
   </ItemGroup>
 
+  <ItemGroup Condition="'$(TargetOS)' != 'iOS' and '$(TargetOS)' != 'tvOS'">
+    <ProjectExclusions Include="$(MSBuildThisFileDirectory)Mono.Samples\tests\Functional\iOS\Mono.Samples.iOS.Functional.Tests.csproj" />
+  </ItemGroup>
+
   <ItemGroup Condition="'$(TargetOS)' == 'Browser' and '$(RunDisabledWasmTests)' != 'true'">
     <!-- Mono-Browser ignores runtimeconfig.template.json (e.g. for this it has "System.Globalization.EnforceJapaneseEraYearRanges": true) -->
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Globalization.Calendars\tests\CalendarTestWithConfigSwitch\System.Globalization.CalendarsWithConfigSwitch.Tests.csproj" />
