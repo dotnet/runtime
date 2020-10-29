@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+#nullable enable
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
@@ -86,12 +87,12 @@ namespace System.IO.Tests
                 // Null arguments
                 foreach ((int offset, int count) in new[] { (0, 0), (1, 2) }) // validate 0, 0 isn't special-cased to be allowed with a null buffer
                 {
-                    AssertExtensions.Throws<ArgumentNullException>(ReadWriteBufferName, () => { stream.Read(null, offset, count); });
-                    AssertExtensions.Throws<ArgumentNullException>(ReadWriteBufferName, () => { stream.Read(null, offset, count); });
-                    AssertExtensions.Throws<ArgumentNullException>(ReadWriteBufferName, () => { stream.ReadAsync(null, offset, count); });
-                    AssertExtensions.Throws<ArgumentNullException>(ReadWriteBufferName, () => { stream.ReadAsync(null, offset, count, default); });
-                    AssertExtensions.Throws<ArgumentNullException>(ReadWriteBufferName, () => { stream.EndRead(stream.BeginRead(null, offset, count, iar => { }, new object())); });
-                    AssertExtensions.Throws<ArgumentNullException>(ReadWriteAsyncResultName, () => { stream.EndRead(null); });
+                    AssertExtensions.Throws<ArgumentNullException>(ReadWriteBufferName, () => { stream.Read(null!, offset, count); });
+                    AssertExtensions.Throws<ArgumentNullException>(ReadWriteBufferName, () => { stream.Read(null!, offset, count); });
+                    AssertExtensions.Throws<ArgumentNullException>(ReadWriteBufferName, () => { stream.ReadAsync(null!, offset, count); });
+                    AssertExtensions.Throws<ArgumentNullException>(ReadWriteBufferName, () => { stream.ReadAsync(null!, offset, count, default); });
+                    AssertExtensions.Throws<ArgumentNullException>(ReadWriteBufferName, () => { stream.EndRead(stream.BeginRead(null!, offset, count, iar => { }, new object())); });
+                    AssertExtensions.Throws<ArgumentNullException>(ReadWriteAsyncResultName, () => { stream.EndRead(null!); });
                 }
 
                 // Invalid offset
@@ -127,11 +128,11 @@ namespace System.IO.Tests
                 Assert.Throws(InvalidIAsyncResultExceptionType, () => stream.EndRead(new NotImplementedIAsyncResult()));
 
                 // Invalid destination stream
-                AssertExtensions.Throws<ArgumentNullException>(CopyToStreamName, () => { stream.CopyTo(null); });
-                AssertExtensions.Throws<ArgumentNullException>(CopyToStreamName, () => { stream.CopyTo(null, 1); });
-                AssertExtensions.Throws<ArgumentNullException>(CopyToStreamName, () => { stream.CopyToAsync(null, default(CancellationToken)); });
-                AssertExtensions.Throws<ArgumentNullException>(CopyToStreamName, () => { stream.CopyToAsync(null, 1); });
-                AssertExtensions.Throws<ArgumentNullException>(CopyToStreamName, () => { stream.CopyToAsync(null, 1, default(CancellationToken)); });
+                AssertExtensions.Throws<ArgumentNullException>(CopyToStreamName, () => { stream.CopyTo(null!); });
+                AssertExtensions.Throws<ArgumentNullException>(CopyToStreamName, () => { stream.CopyTo(null!, 1); });
+                AssertExtensions.Throws<ArgumentNullException>(CopyToStreamName, () => { stream.CopyToAsync(null!, default(CancellationToken)); });
+                AssertExtensions.Throws<ArgumentNullException>(CopyToStreamName, () => { stream.CopyToAsync(null!, 1); });
+                AssertExtensions.Throws<ArgumentNullException>(CopyToStreamName, () => { stream.CopyToAsync(null!, 1, default(CancellationToken)); });
 
                 // Invalid buffer size
                 var validDestinationStream = new MemoryStream();
@@ -171,11 +172,11 @@ namespace System.IO.Tests
                 // Null arguments
                 foreach ((int offset, int count) in new[] { (0, 0), (1, 2) }) // validate 0, 0 isn't special-cased to be allowed with a null buffer
                 {
-                    AssertExtensions.Throws<ArgumentNullException>(ReadWriteBufferName, () => { stream.Write(null, offset, count); });
-                    AssertExtensions.Throws<ArgumentNullException>(ReadWriteBufferName, () => { stream.WriteAsync(null, offset, count); });
-                    AssertExtensions.Throws<ArgumentNullException>(ReadWriteBufferName, () => { stream.WriteAsync(null, offset, count, default); });
-                    AssertExtensions.Throws<ArgumentNullException>(ReadWriteBufferName, () => { stream.EndWrite(stream.BeginWrite(null, offset, count, iar => { }, new object())); });
-                    AssertExtensions.Throws<ArgumentNullException>(ReadWriteAsyncResultName, () => { stream.EndWrite(null); });
+                    AssertExtensions.Throws<ArgumentNullException>(ReadWriteBufferName, () => { stream.Write(null!, offset, count); });
+                    AssertExtensions.Throws<ArgumentNullException>(ReadWriteBufferName, () => { stream.WriteAsync(null!, offset, count); });
+                    AssertExtensions.Throws<ArgumentNullException>(ReadWriteBufferName, () => { stream.WriteAsync(null!, offset, count, default); });
+                    AssertExtensions.Throws<ArgumentNullException>(ReadWriteBufferName, () => { stream.EndWrite(stream.BeginWrite(null!, offset, count, iar => { }, new object())); });
+                    AssertExtensions.Throws<ArgumentNullException>(ReadWriteAsyncResultName, () => { stream.EndWrite(null!); });
                 }
 
                 // Invalid offset
@@ -392,7 +393,7 @@ namespace System.IO.Tests
 
         protected sealed class CustomSynchronizationContext : SynchronizationContext
         {
-            public override void Post(SendOrPostCallback d, object state)
+            public override void Post(SendOrPostCallback d, object? state)
             {
                 ThreadPool.QueueUserWorkItem(delegate
                 {
@@ -413,7 +414,7 @@ namespace System.IO.Tests
         {
             protected override void QueueTask(Task task) => ThreadPool.QueueUserWorkItem(_ => TryExecuteTask(task));
             protected override bool TryExecuteTaskInline(Task task, bool taskWasPreviouslyQueued) => false;
-            protected override IEnumerable<Task> GetScheduledTasks() => null;
+            protected override IEnumerable<Task> GetScheduledTasks() => new Task[0];
         }
 
         protected readonly struct JumpToThreadPoolAwaiter : ICriticalNotifyCompletion
@@ -423,64 +424,6 @@ namespace System.IO.Tests
             public void OnCompleted(Action continuation) => ThreadPool.QueueUserWorkItem(_ => continuation());
             public void UnsafeOnCompleted(Action continuation) => ThreadPool.UnsafeQueueUserWorkItem(_ => continuation(), null);
             public void GetResult() { }
-        }
-
-        protected sealed class MisbehavingDelegatingStream : Stream
-        {
-            public enum Mode
-            {
-                Default,
-                ReturnNullTasks,
-                ReturnTooSmallCounts,
-                ReturnTooLargeCounts,
-                ReadSlowly
-            }
-
-            private readonly Stream _stream;
-            private readonly Mode _mode;
-
-            public MisbehavingDelegatingStream(Stream innerStream, Mode mode)
-            {
-                _stream = innerStream;
-                _mode = mode;
-            }
-
-            public override int Read(byte[] buffer, int offset, int count)
-            {
-                switch (_mode)
-                {
-                    case Mode.ReturnTooSmallCounts:
-                        return -1;
-                    case Mode.ReturnTooLargeCounts:
-                        return buffer.Length + 1;
-                    case Mode.ReadSlowly:
-                        return _stream.Read(buffer, offset, 1);
-                    default:
-                        return 0;
-                }
-            }
-
-            public override void Write(byte[] buffer, int offset, int count) =>
-                _stream.Write(buffer, offset, count);
-
-            public override Task<int> ReadAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken) =>
-                _mode == Mode.ReturnNullTasks ?
-                   null :
-                   base.ReadAsync(buffer, offset, count, cancellationToken);
-
-            public override Task WriteAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken) =>
-                _mode == Mode.ReturnNullTasks ?
-                   null :
-                   base.WriteAsync(buffer, offset, count, cancellationToken);
-
-            public override void Flush() => _stream.Flush();
-            public override bool CanRead => _stream.CanRead;
-            public override bool CanSeek => _stream.CanSeek;
-            public override bool CanWrite => _stream.CanWrite;
-            public override long Length => _stream.Length;
-            public override long Position { get => _stream.Position; set => _stream.Position = value; }
-            public override long Seek(long offset, SeekOrigin origin) => _stream.Seek(offset, origin);
-            public override void SetLength(long value) => _stream.SetLength(value);
         }
     }
 
