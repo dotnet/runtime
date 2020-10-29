@@ -101,7 +101,7 @@ to_string_as_descr_names[] = {
 
 #define THREAD_TO_INTERNAL(thread) (thread)->internal_thread
 
-void wasm_debugger_log(int level, const gchar *format, ...)
+void wasm_debugger_log (int level, const gchar *format, ...)
 {
 	va_list args;
 	char *mesg;
