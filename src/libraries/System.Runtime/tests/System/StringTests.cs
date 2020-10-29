@@ -546,6 +546,7 @@ namespace System.Tests
             {
                 Assert.Equal(expected, string.Join(separator, values));
                 Assert.Equal(expected, string.Join(separator, (IEnumerable<string>)values));
+                // We are using concat to force the value to be an IEnumerable and execise non-IReadOnlyList<T> paths
                 Assert.Equal(expected, string.Join(separator, values.Concat(new string[0])));
                 Assert.Equal(expected, string.Join(separator, (object[])values));
                 Assert.Equal(expected, string.Join(separator, (IEnumerable<object>)values));
