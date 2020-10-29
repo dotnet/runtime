@@ -174,7 +174,7 @@ namespace System.Resources
 
         internal static unsafe int ReadUnalignedI4(int* p)
         {
-            return BinaryPrimitives.ReadInt32LittleEndian(new Span<int>(p, sizeof(int)));
+            return BinaryPrimitives.ReadInt32LittleEndian(new ReadOnlySpan<byte>(p, sizeof(int)));
         }
 
         private void SkipString()
