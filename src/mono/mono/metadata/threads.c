@@ -212,7 +212,7 @@ static void mono_free_static_data (gpointer* static_data);
 static void mono_init_static_data_info (StaticDataInfo *static_data);
 static guint32 mono_alloc_static_data_slot (StaticDataInfo *static_data, guint32 size, guint32 align);
 static gboolean mono_thread_resume (MonoInternalThread* thread);
-static void async_abort_internal (MonoInternalThread *thread, gboolean install_async_abort);
+static gboolean async_abort_internal (MonoInternalThread *thread, gboolean install_async_abort);
 static void self_abort_internal (MonoError *error);
 static void async_suspend_internal (MonoInternalThread *thread, gboolean interrupt);
 static void self_suspend_internal (void);
@@ -1866,7 +1866,7 @@ ves_icall_System_Threading_Thread_Thread_internal (MonoThreadObjectHandle thread
 
 	internal->state &= ~ThreadState_Unstarted;
 
-	THREAD_DEBUG (g_message ("%s: Started thread ID %" G_GSIZE_FORMAT " (handle %p)", __func__, tid, thread));
+	THREAD_DEBUG (g_message ("%s: Started thread ID %" G_GSIZE_FORMAT " (handle %p)", __func__, (gsize)internal->tid, internal));
 
 	UNLOCK_THREAD (internal);
 	return TRUE;
@@ -2134,8 +2134,19 @@ ves_icall_System_Threading_Thread_SetName_icall (MonoInternalThreadHandle thread
 
 	char* name8 = name16 ? g_utf16_to_utf8 (name16, name16_length, NULL, &name8_length, NULL) : NULL;
 
+#ifdef ENABLE_NETCORE
+	// The managed thread implementation prevents the Name property from being set multiple times on normal threads. On thread
+	// pool threads, for compatibility the thread's name should be changeable and this function may be called to force-reset the
+	// thread's name if user code had changed it. So for the flags, MonoSetThreadNameFlag_Reset is passed instead of
+	// MonoSetThreadNameFlag_Permanent for all threads, relying on the managed side to prevent multiple changes where
+	// appropriate.
+	MonoSetThreadNameFlags flags = MonoSetThreadNameFlag_Reset;
+#else
+	MonoSetThreadNameFlags flags = MonoSetThreadNameFlag_Permanent;
+#endif
+
 	mono_thread_set_name (mono_internal_thread_handle_ptr (thread_handle),
-		name8, (gint32)name8_length, name16, MonoSetThreadNameFlag_Permanent, error);
+		name8, (gint32)name8_length, name16, flags, error);
 }
 
 #ifndef ENABLE_NETCORE
@@ -2898,15 +2909,16 @@ ves_icall_System_Threading_Thread_Abort (MonoInternalThreadHandle thread_handle,
  * mono_thread_internal_abort:
  * Request thread \p thread to be aborted.
  * \p thread MUST NOT be the current thread.
+ * \returns true if the request was successful
  */
-void
+gboolean
 mono_thread_internal_abort (MonoInternalThread *thread, gboolean appdomain_unload)
 {
 	g_assert (thread != mono_thread_internal_current ());
 
 	if (!request_thread_abort (thread, NULL, appdomain_unload))
-		return;
-	async_abort_internal (thread, TRUE);
+		return FALSE;
+	return async_abort_internal (thread, TRUE);
 }
 
 #ifndef ENABLE_NETCORE
@@ -3776,12 +3788,20 @@ abort_threads (gpointer key, gpointer value, gpointer user)
 	if ((thread->flags & MONO_THREAD_FLAG_DONT_MANAGE))
 		return;
 
-	wait->handles[wait->num] = mono_threads_open_thread_handle (thread->handle);
-	wait->threads[wait->num] = thread;
-	wait->num++;
-
+	MonoThreadHandle *handle = mono_threads_open_thread_handle (thread->handle);
 	THREAD_DEBUG (g_print ("%s: Aborting id: %" G_GSIZE_FORMAT "\n", __func__, (gsize)thread->tid));
-	mono_thread_internal_abort (thread, FALSE);
+	if (!mono_thread_internal_abort (thread, FALSE)) {
+		g_warning ("%s: Failed aborting id: %p, mono_thread_manage will ignore it\n", __func__, (void*)(intptr_t)(gsize)thread->tid);
+		/* close the handle, we're not going to wait for the thread to be aborted */
+		mono_threads_close_thread_handle (handle);
+	} else {
+		/* commit to waiting for the thread to be aborted */
+		wait->handles[wait->num] = handle;
+		wait->threads[wait->num] = thread;
+		wait->num++;
+	}
+
+
 }
 
 /** 
@@ -5615,8 +5635,11 @@ mono_thread_info_get_last_managed (MonoThreadInfo *info)
 }
 
 typedef struct {
+	/* inputs */
 	MonoInternalThread *thread;
 	gboolean install_async_abort;
+	/* outputs */
+	gboolean thread_will_abort;
 	MonoThreadInfoInterruptToken *interrupt_token;
 } AbortThreadData;
 
@@ -5628,6 +5651,8 @@ async_abort_critical (MonoThreadInfo *info, gpointer ud)
 	MonoJitInfo *ji = NULL;
 	gboolean protected_wrapper;
 	gboolean running_managed;
+
+	data->thread_will_abort = TRUE;
 
 	if (mono_get_eh_callbacks ()->mono_install_handler_block_guard (mono_thread_info_get_suspend_state (info)))
 		return MonoResumeThread;
@@ -5656,11 +5681,20 @@ async_abort_critical (MonoThreadInfo *info, gpointer ud)
 		 */
 		data->interrupt_token = mono_thread_info_prepare_interrupt (info);
 
+		if (!ji && !info->runtime_thread) {
+			/* Under full cooperative suspend, if a thread is in GC Safe mode (blocking
+			 * state), mono_thread_info_safe_suspend_and_run will treat the thread as
+			 * suspended and run async_abort_critical.  If the thread has no managed
+			 * frames, it is some native thread that may not call Mono again anymore, so
+			 * don't wait for it to abort.
+			 */
+			data->thread_will_abort = FALSE;
+		}
 		return MonoResumeThread;
 	}
 }
 
-static void
+static gboolean
 async_abort_internal (MonoInternalThread *thread, gboolean install_async_abort)
 {
 	AbortThreadData data;
@@ -5668,6 +5702,7 @@ async_abort_internal (MonoInternalThread *thread, gboolean install_async_abort)
 	g_assert (thread != mono_thread_internal_current ());
 
 	data.thread = thread;
+	data.thread_will_abort = FALSE;
 	data.install_async_abort = install_async_abort;
 	data.interrupt_token = NULL;
 
@@ -5675,6 +5710,12 @@ async_abort_internal (MonoInternalThread *thread, gboolean install_async_abort)
 	if (data.interrupt_token)
 		mono_thread_info_finish_interrupt (data.interrupt_token);
 	/*FIXME we need to wait for interruption to complete -- figure out how much into interruption we should wait for here*/
+
+	/* If the thread was not suspended (async_abort_critical did not run), or the thread is
+	 * "suspended" (BLOCKING) under full coop, and the thread was running native code without
+	 * any managed callers, we can't be sure that it will aknowledge the abort request and
+	 * actually abort. */
+	return data.thread_will_abort;
 }
 
 static void

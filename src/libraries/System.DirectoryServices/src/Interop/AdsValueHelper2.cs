@@ -250,7 +250,7 @@ namespace System.DirectoryServices.Interop
             };
         }
 
-        private unsafe void SetValue(object managedValue, AdsType adsType)
+        private void SetValue(object managedValue, AdsType adsType)
         {
             adsvalue = new AdsValue()
             {

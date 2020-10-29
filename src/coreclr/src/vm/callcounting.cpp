@@ -148,7 +148,7 @@ FORCEINLINE void CallCountingManager::CallCountingInfo::SetStage(Stage stage)
 
         case Stage::StubMayBeActive:
             _ASSERTE(m_callCountingStub != nullptr);
-            // fall through
+            FALLTHROUGH;
 
         case Stage::PendingCompletion:
             _ASSERTE(m_stage == Stage::StubIsNotActive || m_stage == Stage::StubMayBeActive);

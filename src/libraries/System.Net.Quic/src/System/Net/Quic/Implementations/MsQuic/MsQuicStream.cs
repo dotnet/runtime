@@ -951,7 +951,7 @@ namespace System.Net.Quic.Implementations.MsQuic
         }
 
         // This can fail if the stream isn't started.
-        private unsafe long GetStreamId()
+        private long GetStreamId()
         {
             return (long)MsQuicParameterHelpers.GetULongParam(MsQuicApi.Api, _ptr, (uint)QUIC_PARAM_LEVEL.STREAM, (uint)QUIC_PARAM_STREAM.ID);
         }

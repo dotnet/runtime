@@ -199,6 +199,7 @@ set(SOURCES
   safecrt/wcscat_s.cpp
   safecrt/wcscpy_s.cpp
   safecrt/wcslen_s.cpp
+  safecrt/wcslwr_s.cpp
   safecrt/wcsncat_s.cpp
   safecrt/wcsncpy_s.cpp
   safecrt/wcstok_s.cpp

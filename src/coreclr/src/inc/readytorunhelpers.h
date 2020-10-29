@@ -119,7 +119,7 @@ HELPER(READYTORUN_HELPER_ReversePInvokeExit,        CORINFO_HELP_JIT_REVERSE_PIN
 HELPER(READYTORUN_HELPER_MonitorEnter,              CORINFO_HELP_MON_ENTER,                         )
 HELPER(READYTORUN_HELPER_MonitorExit,               CORINFO_HELP_MON_EXIT,                          )
 
-#if defined(TARGET_X86) || defined(TARGET_AMD64)
+#ifndef TARGET_ARM64
 HELPER(READYTORUN_HELPER_StackProbe,                CORINFO_HELP_STACK_PROBE,                       )
 #endif
 

@@ -89,6 +89,12 @@ namespace System
         }
 
         [DoesNotReturn]
+        internal static void ThrowArgumentException_TupleIncorrectType(object obj)
+        {
+            throw new ArgumentException(SR.Format(SR.ArgumentException_ValueTupleIncorrectType, obj.GetType()), "other");
+        }
+
+        [DoesNotReturn]
         internal static void ThrowArgumentOutOfRange_IndexException()
         {
             throw GetArgumentOutOfRangeException(ExceptionArgument.index,

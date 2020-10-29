@@ -112,10 +112,10 @@ namespace System.IO.Compression
             }
         }
 
-        private static void ValidateParameters(byte[] array, int offset, int count)
+        private static void ValidateParameters(byte[] buffer, int offset, int count)
         {
-            if (array == null)
-                throw new ArgumentNullException(nameof(array));
+            if (buffer == null)
+                throw new ArgumentNullException(nameof(buffer));
 
             if (offset < 0)
                 throw new ArgumentOutOfRangeException(nameof(offset), SR.ArgumentOutOfRange_NeedPosNum);
@@ -123,7 +123,7 @@ namespace System.IO.Compression
             if (count < 0)
                 throw new ArgumentOutOfRangeException(nameof(count), SR.ArgumentOutOfRange_NeedPosNum);
 
-            if (array.Length - offset < count)
+            if (buffer.Length - offset < count)
                 throw new ArgumentException(SR.InvalidArgumentOffsetCount);
         }
 

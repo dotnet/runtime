@@ -776,6 +776,13 @@ ves_icall_System_Diagnostics_Process_GetProcess_internal (guint32 pid, MonoError
 	return NULL;
 }
 
+HANDLE
+ves_icall_System_Diagnostics_Process_MainWindowHandle_internal (guint32 pid, MonoError *error)
+{
+	/*TODO: Implement for unix*/
+	return NULL;
+}
+
 static gboolean
 match_procname_to_modulename (char *procname, char *modulename)
 {

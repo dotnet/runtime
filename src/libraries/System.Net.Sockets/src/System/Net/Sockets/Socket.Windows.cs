@@ -13,9 +13,24 @@ namespace System.Net.Sockets
 {
     public partial class Socket
     {
+        private static CachedSerializedEndPoint? s_cachedAnyEndPoint;
+        private static CachedSerializedEndPoint? s_cachedAnyV6EndPoint;
+        private static CachedSerializedEndPoint? s_cachedMappedAnyV6EndPoint;
         private DynamicWinsockMethods? _dynamicWinsockMethods;
 
         internal void ReplaceHandleIfNecessaryAfterFailedConnect() { /* nop on Windows */ }
+
+        private sealed class CachedSerializedEndPoint
+        {
+            public readonly IPEndPoint IPEndPoint;
+            public readonly Internals.SocketAddress SocketAddress;
+
+            public CachedSerializedEndPoint(IPAddress address)
+            {
+                IPEndPoint = new IPEndPoint(address, 0);
+                SocketAddress = IPEndPointExtensions.Serialize(IPEndPoint);
+            }
+        }
 
         [SupportedOSPlatform("windows")]
         public Socket(SocketInformation socketInformation)
@@ -223,25 +238,26 @@ namespace System.Net.Sockets
 
             // The socket must be bound before using ConnectEx.
 
-            IPAddress address;
+            CachedSerializedEndPoint csep;
             switch (addressFamily)
             {
                 case AddressFamily.InterNetwork:
-                    address = IsDualMode ? s_IPAddressAnyMapToIPv6 : IPAddress.Any;
+                    csep = IsDualMode ?
+                        s_cachedMappedAnyV6EndPoint ??= new CachedSerializedEndPoint(s_IPAddressAnyMapToIPv6) :
+                        s_cachedAnyEndPoint ??= new CachedSerializedEndPoint(IPAddress.Any);
                     break;
 
                 case AddressFamily.InterNetworkV6:
-                    address = IPAddress.IPv6Any;
+                    csep = s_cachedAnyV6EndPoint ??= new CachedSerializedEndPoint(IPAddress.IPv6Any);
                     break;
 
                 default:
                     return;
             }
 
-            if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, address);
+            if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, csep.IPEndPoint);
 
-            var endPoint = new IPEndPoint(address, 0);
-            DoBind(endPoint, IPEndPointExtensions.Serialize(endPoint));
+            DoBind(csep.IPEndPoint, csep.SocketAddress);
         }
 
         internal unsafe bool ConnectEx(SafeSocketHandle socketHandle,

@@ -20,6 +20,10 @@ typedef struct
 	MonoClass *klass;
 	unsigned char type;
 	unsigned char flags;
+	/* The offset from the execution stack start where this is stored */
+	int offset;
+	/* Saves how much stack this is using. It is a multiple of MINT_VT_ALIGNMENT */
+	int size;
 } StackInfo;
 
 #define STACK_VALUE_NONE 0
@@ -91,7 +95,6 @@ struct _InterpBasicBlock {
 	 */
 	int stack_height;
 	StackInfo *stack_state;
-	int vt_stack_size;
 
 	int index;
 
@@ -123,6 +126,7 @@ typedef struct {
 	int flags;
 	int indirects;
 	int offset;
+	int size;
 } InterpLocal;
 
 typedef struct
@@ -145,8 +149,7 @@ typedef struct
 	StackInfo *sp;
 	unsigned int max_stack_height;
 	unsigned int stack_capacity;
-	unsigned int vt_sp;
-	unsigned int max_vt_sp;
+	unsigned int max_stack_size;
 	unsigned int total_locals_size;
 	InterpLocal *locals;
 	unsigned int il_locals_offset;

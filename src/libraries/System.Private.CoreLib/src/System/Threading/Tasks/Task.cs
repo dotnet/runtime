@@ -120,7 +120,7 @@ namespace System.Threading.Tasks
 
         internal static int s_taskIdCounter; // static counter used to generate unique task IDs
 
-        private volatile int m_taskId; // this task's unique ID. initialized only if it is ever requested
+        private int m_taskId; // this task's unique ID. initialized only if it is ever requested
 
         internal Delegate? m_action;    // The body of the task.  Might be Action<object>, Action<TState> or Action.  Or possibly a Func.
         // If m_action is set to null it will indicate that we operate in the
@@ -1179,7 +1179,7 @@ namespace System.Threading.Tasks
         {
             get
             {
-                if (m_taskId == 0)
+                if (Volatile.Read(ref m_taskId) == 0)
                 {
                     int newId = NewId();
                     Interlocked.CompareExchange(ref m_taskId, newId, 0);
@@ -5025,12 +5025,63 @@ namespace System.Threading.Tasks
 
         #region FromResult / FromException / FromCanceled
 
-        /// <summary>Creates a <see cref="Task{TResult}"/> that's completed successfully with the specified result.</summary>
+        /// <summary>Gets a <see cref="Task{TResult}"/> that's completed successfully with the specified result.</summary>
         /// <typeparam name="TResult">The type of the result returned by the task.</typeparam>
         /// <param name="result">The result to store into the completed task.</param>
         /// <returns>The successfully completed task.</returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)] // method looks long, but for a given TResult it results in a relatively small amount of asm
         public static Task<TResult> FromResult<TResult>(TResult result)
         {
+            // The goal of this function is to be give back a cached task if possible, or to otherwise give back a new task.
+            // To give back a cached task, we need to be able to evaluate the incoming result value, and we need to avoid as
+            // much overhead as possible when doing so, as this function is invoked as part of the return path from every async
+            // method and Task.FromResult. Most tasks won't be cached, and thus we need the checks for those that are to be as
+            // close to free as possible. This requires some trickiness given the lack of generic specialization in .NET.
+
+            if (result is null)
+            {
+                // null reference types and default(Nullable<T>)
+                return Task<TResult>.s_defaultResultTask;
+            }
+            else if (typeof(TResult).IsValueType) // help the JIT avoid the value type branches for ref types
+            {
+                // For Boolean, we cache all possible values.
+                if (typeof(TResult) == typeof(bool)) // only the relevant branches are kept for each value-type generic instantiation
+                {
+                    bool value = (bool)(object)result!;
+                    Task<bool> task = value ? TaskCache.s_trueTask : TaskCache.s_falseTask;
+                    return Unsafe.As<Task<TResult>>(task); // UnsafeCast avoids type check we know will succeed
+                }
+                // For Int32, we cache a range of common values, [-1,9).
+                else if (typeof(TResult) == typeof(int))
+                {
+                    // Compare to constants to avoid static field access if outside of cached range.
+                    int value = (int)(object)result!;
+                    if ((uint)(value - TaskCache.InclusiveInt32Min) < (TaskCache.ExclusiveInt32Max - TaskCache.InclusiveInt32Min))
+                    {
+                        Task<int> task = TaskCache.s_int32Tasks[value - TaskCache.InclusiveInt32Min];
+                        return Unsafe.As<Task<TResult>>(task); // Unsafe.As avoids a type check we know will succeed
+                    }
+                }
+                // For other known value types, we only special-case 0 / default(TResult).  We don't include
+                // floating point types as == may return true for different bit representations of the same value.
+                else if (
+                    (typeof(TResult) == typeof(uint) && default == (uint)(object)result!) ||
+                    (typeof(TResult) == typeof(byte) && default(byte) == (byte)(object)result!) ||
+                    (typeof(TResult) == typeof(sbyte) && default(sbyte) == (sbyte)(object)result!) ||
+                    (typeof(TResult) == typeof(char) && default(char) == (char)(object)result!) ||
+                    (typeof(TResult) == typeof(long) && default == (long)(object)result!) ||
+                    (typeof(TResult) == typeof(ulong) && default == (ulong)(object)result!) ||
+                    (typeof(TResult) == typeof(short) && default(short) == (short)(object)result!) ||
+                    (typeof(TResult) == typeof(ushort) && default(ushort) == (ushort)(object)result!) ||
+                    (typeof(TResult) == typeof(IntPtr) && default == (IntPtr)(object)result!) ||
+                    (typeof(TResult) == typeof(UIntPtr) && default == (UIntPtr)(object)result!))
+                {
+                    return Task<TResult>.s_defaultResultTask;
+                }
+            }
+
+            // No cached task is available.  Manufacture a new one for this result.
             return new Task<TResult>(result);
         }
 
@@ -5278,15 +5329,12 @@ namespace System.Threading.Tasks
         /// <param name="delay">The time span to wait before completing the returned Task</param>
         /// <returns>A Task that represents the time delay</returns>
         /// <exception cref="System.ArgumentOutOfRangeException">
-        /// The <paramref name="delay"/> is less than -1 or greater than int.MaxValue.
+        /// The <paramref name="delay"/> is less than -1 or greater than the maximum allowed timer duration.
         /// </exception>
         /// <remarks>
         /// After the specified time delay, the Task is completed in RanToCompletion state.
         /// </remarks>
-        public static Task Delay(TimeSpan delay)
-        {
-            return Delay(delay, default);
-        }
+        public static Task Delay(TimeSpan delay) => Delay(delay, default);
 
         /// <summary>
         /// Creates a Task that will complete after a time delay.
@@ -5295,7 +5343,7 @@ namespace System.Threading.Tasks
         /// <param name="cancellationToken">The cancellation token that will be checked prior to completing the returned Task</param>
         /// <returns>A Task that represents the time delay</returns>
         /// <exception cref="System.ArgumentOutOfRangeException">
-        /// The <paramref name="delay"/> is less than -1 or greater than int.MaxValue.
+        /// The <paramref name="delay"/> is less than -1 or greater than the maximum allowed timer duration.
         /// </exception>
         /// <exception cref="System.ObjectDisposedException">
         /// The provided <paramref name="cancellationToken"/> has already been disposed.
@@ -5308,12 +5356,12 @@ namespace System.Threading.Tasks
         public static Task Delay(TimeSpan delay, CancellationToken cancellationToken)
         {
             long totalMilliseconds = (long)delay.TotalMilliseconds;
-            if (totalMilliseconds < -1 || totalMilliseconds > int.MaxValue)
+            if (totalMilliseconds < -1 || totalMilliseconds > Timer.MaxSupportedTimeout)
             {
                 ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.delay, ExceptionResource.Task_Delay_InvalidDelay);
             }
 
-            return Delay((int)totalMilliseconds, cancellationToken);
+            return Delay((uint)totalMilliseconds, cancellationToken);
         }
 
         /// <summary>
@@ -5327,10 +5375,7 @@ namespace System.Threading.Tasks
         /// <remarks>
         /// After the specified time delay, the Task is completed in RanToCompletion state.
         /// </remarks>
-        public static Task Delay(int millisecondsDelay)
-        {
-            return Delay(millisecondsDelay, default);
-        }
+        public static Task Delay(int millisecondsDelay) => Delay(millisecondsDelay, default);
 
         /// <summary>
         /// Creates a Task that will complete after a time delay.
@@ -5357,19 +5402,21 @@ namespace System.Threading.Tasks
                 ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.millisecondsDelay, ExceptionResource.Task_Delay_InvalidMillisecondsDelay);
             }
 
-            return
-                cancellationToken.IsCancellationRequested ? FromCanceled(cancellationToken) :
-                millisecondsDelay == 0 ? CompletedTask :
-                cancellationToken.CanBeCanceled ? new DelayPromiseWithCancellation(millisecondsDelay, cancellationToken) :
-                new DelayPromise(millisecondsDelay);
+            return Delay((uint)millisecondsDelay, cancellationToken);
         }
+
+        private static Task Delay(uint millisecondsDelay, CancellationToken cancellationToken) =>
+            cancellationToken.IsCancellationRequested ? FromCanceled(cancellationToken) :
+            millisecondsDelay == 0 ? CompletedTask :
+            cancellationToken.CanBeCanceled ? new DelayPromiseWithCancellation(millisecondsDelay, cancellationToken) :
+            new DelayPromise(millisecondsDelay);
 
         /// <summary>Task that also stores the completion closure and logic for Task.Delay implementation.</summary>
         private class DelayPromise : Task
         {
             private readonly TimerQueueTimer? _timer;
 
-            internal DelayPromise(int millisecondsDelay)
+            internal DelayPromise(uint millisecondsDelay)
             {
                 Debug.Assert(millisecondsDelay != 0);
 
@@ -5379,9 +5426,9 @@ namespace System.Threading.Tasks
                 if (s_asyncDebuggingEnabled)
                     AddToActiveTasks(this);
 
-                if (millisecondsDelay != Timeout.Infinite) // no need to create the timer if it's an infinite timeout
+                if (millisecondsDelay != Timeout.UnsignedInfinite) // no need to create the timer if it's an infinite timeout
                 {
-                    _timer = new TimerQueueTimer(state => ((DelayPromise)state!).CompleteTimedOut(), this, (uint)millisecondsDelay, Timeout.UnsignedInfinite, flowExecutionContext: false);
+                    _timer = new TimerQueueTimer(state => ((DelayPromise)state!).CompleteTimedOut(), this, millisecondsDelay, Timeout.UnsignedInfinite, flowExecutionContext: false);
                     if (IsCompleted)
                     {
                         // Handle rare race condition where completion occurs prior to our having created and stored the timer, in which case
@@ -5414,7 +5461,7 @@ namespace System.Threading.Tasks
         {
             private readonly CancellationTokenRegistration _registration;
 
-            internal DelayPromiseWithCancellation(int millisecondsDelay, CancellationToken token) : base(millisecondsDelay)
+            internal DelayPromiseWithCancellation(uint millisecondsDelay, CancellationToken token) : base(millisecondsDelay)
             {
                 Debug.Assert(token.CanBeCanceled);
 

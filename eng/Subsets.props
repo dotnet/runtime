@@ -57,6 +57,7 @@
     <DefaultCoreClrSubsets>clr.runtime+clr.jit+clr.alljits+linuxdac+clr.corelib+clr.nativecorelib+clr.tools+clr.packages</DefaultCoreClrSubsets>
 
     <DefaultMonoSubsets Condition="'$(MonoEnableLLVM)' == 'true' and '$(MonoLLVMDir)' == ''">mono.llvm+</DefaultMonoSubsets>
+    <DefaultMonoSubsets Condition="'$(MonoAOTEnableLLVM)' == 'true' and '$(MonoAOTLLVMDir)' == ''">mono.llvm+</DefaultMonoSubsets>
     <DefaultMonoSubsets Condition="'$(TargetOS)' == 'Browser'">$(DefaultMonoSubsets)mono.wasmruntime+</DefaultMonoSubsets>
     <DefaultMonoSubsets>$(DefaultMonoSubsets)mono.runtime+mono.corelib+mono.packages</DefaultMonoSubsets>
 
@@ -126,6 +127,10 @@
     <SubsetName Include="Installers" Description="Generates additional installers. This produces the shared frameworks and their installers." />
     <SubsetName Include="Installer.Tests" Description="The test projects. Note that building this doesn't execute tests: you must also pass the '-test' argument." />
     <SubsetName Include="Installer.Publish" OnDemand="true" Description="Builds the installer publish infrastructure." />
+
+    <!-- Utility -->
+    <SubsetName Include="RegenerateDownloadTable" OnDemand="true" Description="Regenerates the nightly build download table" />
+
   </ItemGroup>
 
   <!-- Default targets, parallelization and configurations. -->
@@ -288,6 +293,11 @@
 
   <ItemGroup Condition="$(_subset.Contains('+installer.publish+'))">
     <ProjectToBuild Include="$(InstallerProjectRoot)publish\prepare-artifacts.proj" Pack="true" BuildInParallel="false" Category="installer" />
+  </ItemGroup>
+
+  <!-- Utility -->
+  <ItemGroup Condition="$(_subset.Contains('+regeneratedownloadtable+'))">
+    <ProjectToBuild Include="$(RepoToolsLocalDir)regenerate-download-table.proj" Pack="true" BuildInParallel="false" Category="installer" />
   </ItemGroup>
 
   <!-- Set default configurations. -->

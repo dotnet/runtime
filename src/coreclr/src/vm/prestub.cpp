@@ -2223,7 +2223,22 @@ PCODE MethodDesc::DoPrestub(MethodTable *pDispatchingMT, CallerGCMode callerGCMo
         }
 
         if (pCode == NULL)
+        {
             pCode = GetStubForInteropMethod(this);
+#ifdef FEATURE_MULTICOREJIT
+            if (pCode)
+            {
+                MulticoreJitManager & mcJitManager = GetAppDomain()->GetMulticoreJitManager();
+                if (mcJitManager.IsRecorderActive())
+                {
+                    if (MulticoreJitManager::IsMethodSupported(this))
+                    {
+                        mcJitManager.RecordMethodJit(this); // Tell multi-core JIT manager to record method on successful JITting
+                    }
+                }
+            }
+#endif // FEATURE_MULTICOREJIT
+        }
 
         GetOrCreatePrecode();
     }
@@ -3202,6 +3217,7 @@ PCODE DynamicHelperFixup(TransitionBlock * pTransitionBlock, TADDR * pCell, DWOR
     case ENCODE_ISINSTANCEOF_HELPER:
     case ENCODE_CHKCAST_HELPER:
         fReliable = true;
+        FALLTHROUGH;
     case ENCODE_NEW_ARRAY_HELPER:
         th = ZapSig::DecodeType(pModule, pInfoModule, pBlob);
         break;
@@ -3228,6 +3244,7 @@ PCODE DynamicHelperFixup(TransitionBlock * pTransitionBlock, TADDR * pCell, DWOR
     // case ENCODE_VIRTUAL_ENTRY_REF_TOKEN:
     // case ENCODE_VIRTUAL_ENTRY_SLOT:
         fReliable = true;
+        FALLTHROUGH;
     case ENCODE_DELEGATE_CTOR:
         {
             pMD = ZapSig::DecodeMethod(pModule, pInfoModule, pBlob, &th);

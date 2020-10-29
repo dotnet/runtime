@@ -225,16 +225,22 @@ namespace System
         * ========================================================
         *
         * Given a search string 'searchString', a target string 'value' to locate within the search string, and a comparer
-        * 'comparer', the comparer will return a set S of tuples '(startPos, endPos)' for which the below expression
+        * 'comparer', we ask the comparer to generate a set S of tuples '(startPos, endPos)' for which the below expression
         * returns true:
         *
         * >> bool result = searchString.Substring(startPos, endPos - startPos).Equals(value, comparer);
         *
-        * If the set S is empty (i.e., there is no combination of values 'startPos' and 'endPos' which makes the
+        * If the generated set S is empty (i.e., there is no combination of values 'startPos' and 'endPos' which makes the
         * above expression evaluate to true), then we say "'searchString' does not contain 'value'", and the expression
         * "searchString.Contains(value, comparer)" should evaluate to false. If the set S is non-empty, then we say
         * "'searchString' contains 'value'", and the expression "searchString.Contains(value, comparer)" should
         * evaluate to true.
+        *
+        * n.b. There may be other tuples '(startPos, endPos)' *not* present in the generated set S for which the above
+        * expression evaluates to true. We discount the existence of these values. Allowing any such values to factor
+        * into the logic below could result in splitting the search string in a manner inappropriate for the culture
+        * rules of the specified comparer. For the remainder of this discussion, when we refer to 'startPos' and
+        * 'endPos', we consider only tuples '(startPos, endPos)' as they may be present in the generated set S.
         *
         * Given a 'searchString', 'value', and 'comparer', the behavior of the IndexOf method is that it finds the
         * smallest possible 'endPos' for which there exists any corresponding 'startPos' which makes the above

@@ -1596,6 +1596,9 @@
 /* Icall tables disabled */
 #cmakedefine DISABLE_ICALL_TABLES 1
 
+/* QCalls disabled */
+#cmakedefine DISABLE_QCALLS 1
+
 /* Have __thread keyword */
 #cmakedefine MONO_KEYWORD_THREAD 1
 

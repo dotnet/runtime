@@ -32,8 +32,8 @@
 # standard please pass the -test_native_bin_location flag to the script.
 #
 # Use the instructions here:
-#    https://github.com/dotnet/runtime/blob/master/docs/workflow/testing/windows-test-instructions.md
-#    https://github.com/dotnet/runtime/blob/master/docs/workflow/testing/unix-test-instructions.md
+#    https://github.com/dotnet/runtime/blob/master/docs/workflow/testing/coreclr/windows-test-instructions.md
+#    https://github.com/dotnet/runtime/blob/master/docs/workflow/testing/coreclr/unix-test-instructions.md
 #
 ################################################################################
 ################################################################################
@@ -1002,7 +1002,7 @@ def setup_args(args):
         location using the build type and the arch.
     """
 
-    requires_coreroot = args.arch.lower() != "wasm"
+    requires_coreroot = args.host_os != "Browser" and args.host_os != "Android"
     coreclr_setup_args = CoreclrArguments(args, 
                                           require_built_test_dir=True,
                                           require_built_core_root=requires_coreroot, 
