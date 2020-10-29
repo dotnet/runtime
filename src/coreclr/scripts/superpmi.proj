@@ -60,7 +60,7 @@
 
   <ItemGroup>
     <HelixWorkItem Include="@(Partition)">
-      <OutputFileName>$(CollectionName).%(HelixWorkItem.PartitionId).$(MchFileTag)</OutputFileName>
+      <OutputFileName>$(CollectionName).pmi.%(HelixWorkItem.PartitionId).$(MchFileTag)</OutputFileName>
       <PayloadDirectory>$(PmiAssembliesPayload)$(FileSeparatorChar)$(CollectionName)$(FileSeparatorChar)%(HelixWorkItem.PmiAssemblies)</PayloadDirectory>
       <Command>$(WorkItemCommand) -output_mch_path $(OutputMchPath)$(FileSeparatorChar)%(OutputFileName).mch -log_file $(OutputMchPath)$(FileSeparatorChar)%(OutputFileName).log</Command>
       <Timeout>$(WorkItemTimeout)</Timeout>
