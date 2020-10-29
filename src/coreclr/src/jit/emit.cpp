@@ -5696,22 +5696,23 @@ void emitter::emitDataGenEnd()
 #endif
 }
 
-/*****************************************************************************
- * Generates a data section constant
- *
- * Parameters:
- *     cnsAddr  - memory location containing constant value
- *     cnsSize  - size of constant in bytes
- *     cnsAlign - alignment of constant in bytes
- *
- * Returns constant number as offset into data section.
- */
-
+//---------------------------------------------------------------------------
+// emitDataGenFind:
+//   - Returns the offset of an existing constant in the data section
+//     or INVALID_UNATIVE_OFFSET if there was no matching constant
+//
+// Arguments:
+//    cnsAddr    - A pointer to the value of the constant that we need
+//    cnsSize    - The size in bytes of the constant
+//    alignment  - The requested alignment for the data
+//    dataType   - The type of the constant int/float/etc
+//
 UNATIVE_OFFSET emitter::emitDataGenFind(const void* cnsAddr, unsigned cnsSize, unsigned alignment, var_types dataType)
 {
-    UNATIVE_OFFSET cnum    = INVALID_UNATIVE_OFFSET;
-    unsigned       curOffs = 0;
-    dataSection*   secDesc = emitConsDsc.dsdList;
+    UNATIVE_OFFSET cnum     = INVALID_UNATIVE_OFFSET;
+    unsigned       cmpCount = 0;
+    unsigned       curOffs  = 0;
+    dataSection*   secDesc  = emitConsDsc.dsdList;
     while (secDesc != nullptr)
     {
         // Search the existing secDesc entries
@@ -5727,21 +5728,33 @@ UNATIVE_OFFSET emitter::emitDataGenFind(const void* cnsAddr, unsigned cnsSize, u
 
         curOffs += secDesc->dsSize;
         secDesc = secDesc->dsNext;
+
+        if (++cmpCount > 64)
+        {
+            // If we don't find a match in the first 64, then we just add the new constant
+            // This prevents an O(n^2) search cost
+            break;
+        }
     }
 
     return cnum;
 }
 
-/********************************************************************************
- * Generates a data section constant
- *
- * Parameters:
- *     cnsAddr  - memory location containing constant value
- *     cnsSize  - size of constant in bytes
- *     cnsAlign - alignment of constant in bytes
- *
- * Returns constant number as offset into data section.
- */
+//---------------------------------------------------------------------------
+// emitDataConst:
+//   - Returns the valid offset in the data section to use for the constant
+//     described by the arguments to this method
+//
+// Arguments:
+//    cnsAddr    - A pointer to the value of the constant that we need
+//    cnsSize    - The size in bytes of the constant
+//    alignment  - The requested alignment for the data
+//    dataType   - The type of the constant int/float/etc
+//
+//
+// Notes:  we call the method emitDataGenFind() to see if we already have
+//   a matching constant that can be reused.
+//
 UNATIVE_OFFSET emitter::emitDataConst(const void* cnsAddr, unsigned cnsSize, unsigned cnsAlign, var_types dataType)
 {
     UNATIVE_OFFSET cnum = emitDataGenFind(cnsAddr, cnsSize, cnsAlign, dataType);
@@ -5759,9 +5772,10 @@ UNATIVE_OFFSET emitter::emitDataConst(const void* cnsAddr, unsigned cnsSize, uns
 // emitBlkConst: Create a data section constant of arbitrary size.
 //
 // Arguments:
-//    cnsAddr   - pointer to the data to be placed in the data section
-//    cnsSize   - size of the data in bytes
+//    cnsAddr   - pointer to the block of data to be placed in the data section
+//    cnsSize   - total size of the block of data in bytes
 //    cnsAlign  - alignment of the data in bytes
+//    elemType  - The type of the elements in the constant
 //
 // Return Value:
 //    A field handle representing the data offset to access the constant.
@@ -5814,7 +5828,7 @@ CORINFO_FIELD_HANDLE emitter::emitFltOrDblConst(double constValue, emitAttr attr
     // to constant data, not a real static field.
 
     unsigned cnsSize  = (attr == EA_4BYTE) ? sizeof(float) : sizeof(double);
-    unsigned cnsAlign = (unsigned)cnsSize;
+    unsigned cnsAlign = cnsSize;
 
 #ifdef TARGET_XARCH
     if (emitComp->compCodeOpt() == Compiler::SMALL_CODE)
@@ -5985,9 +5999,6 @@ void emitter::emitDispDataSec(dataSecDsc* section)
         printf(labelFormat, label);
         offset += data->dsSize;
 
-        // printf(" (DEBUG) data->dsType = %d,dsDataType = %d, data->dsSize = %d\n", data->dsType, data->dsDataType,
-        // data->dsSize);
-
         if ((data->dsType == dataSection::blockRelative32) || (data->dsType == dataSection::blockAbsoluteAddr))
         {
             insGroup* igFirst    = static_cast<insGroup*>(emitCodeGetCookie(emitComp->fgFirstBB));
@@ -6084,15 +6095,15 @@ void emitter::emitDispDataSec(dataSecDsc* section)
                 {
                     case TYP_FLOAT:
                         assert(data->dsSize >= 4);
-                        printf("\tdd\t%08llXh", *reinterpret_cast<uint32_t*>(&data->dsCont[i]));
-                        printf("\t\t; %9.6g", *reinterpret_cast<float*>(&data->dsCont[i]));
+                        printf("\tdd\t%08llXh\t", *reinterpret_cast<uint32_t*>(&data->dsCont[i]));
+                        printf("\t; %9.6g", *reinterpret_cast<float*>(&data->dsCont[i]));
                         i += 4;
                         break;
 
                     case TYP_DOUBLE:
                         assert(data->dsSize >= 8);
                         printf("\tdq\t%016llXh", *reinterpret_cast<uint64_t*>(&data->dsCont[i]));
-                        printf("\t\t; %12.9g", *reinterpret_cast<double*>(&data->dsCont[i]));
+                        printf("\t; %12.9g", *reinterpret_cast<double*>(&data->dsCont[i]));
                         i += 8;
                         break;
 
