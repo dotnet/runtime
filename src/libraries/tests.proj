@@ -152,7 +152,7 @@
   </ItemGroup>
 
   <ItemGroup Condition="'$(TargetOS)' != 'iOS' and '$(TargetOS)' != 'tvOS'">
-    <ProjectExclusions Include="$(MSBuildThisFileDirectory)Mono.Samples\tests\Functional\iOS\Mono.Samples.iOS.Functional.Tests.csproj" />
+    <ProjectExclusions Include="$(MSBuildThisFileDirectory)IntegrationTests\tests\iOS\iOS.Integration.Tests.csproj" />
   </ItemGroup>
 
   <ItemGroup Condition="'$(TargetOS)' == 'Browser' and '$(RunDisabledWasmTests)' != 'true'">
