@@ -22,6 +22,7 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 #include "stacklevelsetter.h"
 #include "jittelemetry.h"
 #include "patchpointinfo.h"
+#include "jitstd/algorithm.h"
 
 #if defined(DEBUG)
 // Column settings for COMPlus_JitDumpIR.  We could(should) make these programmable.
@@ -1207,12 +1208,13 @@ struct NowayAssertCountMap
     {
     }
 
-    static int __cdecl compare(const void* elem1, const void* elem2)
+    struct compare
     {
-        NowayAssertCountMap* e1 = (NowayAssertCountMap*)elem1;
-        NowayAssertCountMap* e2 = (NowayAssertCountMap*)elem2;
-        return (int)((ssize_t)e2->count - (ssize_t)e1->count); // sort in descending order
-    }
+        bool operator()(const NowayAssertCountMap& elem1, const NowayAssertCountMap& elem2)
+        {
+            return (ssize_t)elem2.count < (ssize_t)elem1.count; // sort in descending order
+        }
+    };
 };
 
 void DisplayNowayAssertMap()
@@ -1249,7 +1251,7 @@ void DisplayNowayAssertMap()
             ++i;
         }
 
-        qsort(nacp, count, sizeof(nacp[0]), NowayAssertCountMap::compare);
+        jitstd::sort(nacp, nacp + count, NowayAssertCountMap::compare());
 
         if (fout == jitstdout)
         {
@@ -6339,15 +6341,21 @@ void Compiler::compInitVarScopeMap()
     }
 }
 
-int __cdecl genCmpLocalVarLifeBeg(const void* elem1, const void* elem2)
+struct genCmpLocalVarLifeBeg
 {
-    return (*((VarScopeDsc**)elem1))->vsdLifeBeg - (*((VarScopeDsc**)elem2))->vsdLifeBeg;
-}
+    bool operator()(const VarScopeDsc* elem1, const VarScopeDsc* elem2)
+    {
+        return elem1->vsdLifeBeg < elem2->vsdLifeBeg;
+    }
+};
 
-int __cdecl genCmpLocalVarLifeEnd(const void* elem1, const void* elem2)
+struct genCmpLocalVarLifeEnd
 {
-    return (*((VarScopeDsc**)elem1))->vsdLifeEnd - (*((VarScopeDsc**)elem2))->vsdLifeEnd;
-}
+    bool operator()(const VarScopeDsc* elem1, const VarScopeDsc* elem2)
+    {
+        return elem1->vsdLifeEnd < elem2->vsdLifeEnd;
+    }
+};
 
 inline void Compiler::compInitScopeLists()
 {
@@ -6367,8 +6375,8 @@ inline void Compiler::compInitScopeLists()
         compEnterScopeList[i] = compExitScopeList[i] = &info.compVarScopes[i];
     }
 
-    qsort(compEnterScopeList, info.compVarScopesCount, sizeof(*compEnterScopeList), genCmpLocalVarLifeBeg);
-    qsort(compExitScopeList, info.compVarScopesCount, sizeof(*compExitScopeList), genCmpLocalVarLifeEnd);
+    jitstd::sort(compEnterScopeList, compEnterScopeList + info.compVarScopesCount, genCmpLocalVarLifeBeg());
+    jitstd::sort(compExitScopeList, compExitScopeList + info.compVarScopesCount, genCmpLocalVarLifeEnd());
 }
 
 void Compiler::compResetScopeLists()

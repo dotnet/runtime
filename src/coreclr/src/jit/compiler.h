@@ -3591,7 +3591,10 @@ public:
         }
     };
 
-    static int __cdecl lvaFieldOffsetCmp(const void* field1, const void* field2);
+    struct lvaFieldOffsetCmp
+    {
+        bool operator()(const lvaStructFieldInfo& field1, const lvaStructFieldInfo& field2);
+    };
 
     // This class is responsible for checking validity and profitability of struct promotion.
     // If it is both legal and profitable, then TryPromoteStructVar promotes the struct and initializes
@@ -6542,8 +6545,14 @@ protected:
     bool optCSE_canSwap(GenTree* firstNode, GenTree* secondNode);
     bool optCSE_canSwap(GenTree* tree);
 
-    static int __cdecl optCSEcostCmpEx(const void* op1, const void* op2);
-    static int __cdecl optCSEcostCmpSz(const void* op1, const void* op2);
+    struct optCSEcostCmpEx
+    {
+        bool operator()(const CSEdsc* op1, const CSEdsc* op2);
+    };
+    struct optCSEcostCmpSz
+    {
+        bool operator()(const CSEdsc* op1, const CSEdsc* op2);
+    };
 
     void optCleanupCSEs();
 
