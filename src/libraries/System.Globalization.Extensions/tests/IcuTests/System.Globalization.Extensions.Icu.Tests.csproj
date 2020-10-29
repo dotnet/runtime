@@ -51,6 +51,7 @@
     <EmbeddedResource Include="..\Normalization\Data\win7.txt">
       <LogicalName>NormalizationDataWin7</LogicalName>
     </EmbeddedResource>
+    <None Include="$(RepositoryEngineeringDir)testing\SetIcuMode.cmd" CopyToOutputDirectory="PreserveNewest" />
     <None Include="runtimeconfig.template.json" />
   </ItemGroup>
 </Project>

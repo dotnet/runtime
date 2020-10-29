@@ -40,6 +40,9 @@
              Link="Common\System\StringTests.cs" />
   </ItemGroup>
   <ItemGroup>
+    <None Include="$(RepositoryEngineeringDir)testing\SetIcuMode.cmd" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+  <ItemGroup>
     <ProjectReference Include="$(CommonTestPath)TestUtilities.Unicode\TestUtilities.Unicode.csproj" />
   </ItemGroup>
 </Project>
