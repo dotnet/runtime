@@ -5525,13 +5525,14 @@ UNATIVE_OFFSET emitter::emitDataGenBeg(unsigned size, unsigned alignment, var_ty
     // The size must not be zero and must be a multiple of MIN_DATA_ALIGN
     // Additionally, MIN_DATA_ALIGN is the minimum alignment that will
     // actually be used. That is, if the user requests an alignment
-    // of 1 or 2, they will get  something that is at least 4-byte
-    // aligned. We allow the others since 4 is at least 1/2 and its
-    // simpler to allow it than to check and block.
+    // less than MIN_DATA_ALIGN, they will get  something that is at least
+    // MIN_DATA_ALIGN. We allow smaller alignment to be specified since it is
+    // simpler to allow it than to check and block itr.
+    //
     assert((size != 0) && ((size % dataSection::MIN_DATA_ALIGN) == 0));
 
-    // This restricts the alignment to: 1, 2, 4, 8, 16, or 32 bytes
-    // Alignments greater than 32 would require VM support in ICorJitInfo::allocMem
+    // This restricts the alignment to MAX_DATA_ALIGN
+    // Alignments greater than 32 also require VM support in ICorJitInfo::allocMem
 
     const size_t MaxAlignment = dataSection::MAX_DATA_ALIGN;
     assert(isPow2(alignment) && (alignment <= MaxAlignment));
@@ -5541,15 +5542,15 @@ UNATIVE_OFFSET emitter::emitDataGenBeg(unsigned size, unsigned alignment, var_ty
 
     if (((secOffs % alignment) != 0) && (alignment > dataSection::MIN_DATA_ALIGN))
     {
-        // As per the above comment, the minimum alignment is actually 4 (MIN_DATA_ALIGN)
+        // As per the above comment, the minimum alignment is actually (MIN_DATA_ALIGN)
         // bytes so we don't need to make any adjustments if the requested
-        // alignment is 1, 2, or 4.
+        // alignment is less than MIN_DATA_ALIGN.
         //
         // The maximum requested alignment is tracked and the memory allocator
         // will end up ensuring offset 0 is at an address matching that
-        // alignment. So if the requested alignment is greater than 4, we need
-        // to pad the space out so the offset is a multiple of the requested.
-
+        // alignment.  So if the requested alignment is greater than MIN_DATA_ALIGN,
+        // we need to pad the space out so the offset is a multiple of the requested.
+        //
         uint8_t zeros[MaxAlignment] = {};
 
         unsigned  zeroSize  = alignment - (secOffs % alignment);
