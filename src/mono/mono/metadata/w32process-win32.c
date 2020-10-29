@@ -53,6 +53,39 @@ mono_w32process_get_pid (gpointer handle)
 	return GetProcessId (handle);
 }
 
+#if HAVE_API_SUPPORT_WIN32_ENUM_WINDOWS
+typedef struct {
+	DWORD pid;
+	HWND hwnd;
+} EnumWindowsArgs;
+
+static BOOL CALLBACK
+mono_enum_windows_callback(HWND hwnd, LPARAM lparam)
+{
+	EnumWindowsArgs *args = (EnumWindowsArgs *)lparam;
+	DWORD pid = 0;
+	GetWindowThreadProcessId(hwnd, &pid);
+	if (pid != args->pid || GetWindow(hwnd, GW_OWNER) != NULL || !IsWindowVisible(hwnd)) return TRUE;
+	args->hwnd = hwnd;
+	return FALSE;
+}
+
+HANDLE
+ves_icall_System_Diagnostics_Process_MainWindowHandle_internal (guint32 pid, MonoError *error)
+{
+	EnumWindowsArgs args = {pid, NULL};
+	EnumWindows(mono_enum_windows_callback, (LPARAM)&args);
+	return args.hwnd;
+}
+#elif !HAVE_EXTERN_DEFINED_WIN32_ENUM_WINDOWS
+HANDLE
+ves_icall_System_Diagnostics_Process_MainWindowHandle_internal (guint32 pid, MonoError *error)
+{
+	/*TODO: Implement for uwp*/
+	return NULL;
+}
+#endif /* HAVE_API_SUPPORT_WIN32_ENUM_WINDOWS */
+
 #if HAVE_API_SUPPORT_WIN32_ENUM_PROCESS_MODULES
 gboolean
 mono_w32process_try_get_modules (gpointer process, gpointer *modules, guint32 size, guint32 *needed)

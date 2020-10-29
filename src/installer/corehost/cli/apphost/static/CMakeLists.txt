@@ -23,6 +23,7 @@ set(SOURCES
     ../bundle_marker.cpp
     ./hostfxr_resolver.cpp
     ./hostpolicy_resolver.cpp
+    ../../hostpolicy/static/coreclr_resolver.cpp
 )
 
 set(HEADERS
@@ -30,7 +31,15 @@ set(HEADERS
     ../../../hostfxr_resolver.h
 )
 
-list(APPEND SOURCES $<TARGET_OBJECTS:libhostfxr_static> $<TARGET_OBJECTS:libhostpolicy_static>)
+add_definitions(-D_NO_ASYNCRTIMP)
+add_definitions(-D_NO_PPLXIMP)
+add_definitions(-DEXPORT_SHARED_API=1)
+add_definitions(-DHOSTPOLICY_EMBEDDED)
+
+
+include(../../fxr/files.cmake)
+include(../../hostpolicy/files.cmake)
+include(../../hostcommon/files.cmake)
 
 if(CLR_CMAKE_TARGET_WIN32)
     list(APPEND SOURCES
@@ -46,11 +55,50 @@ include(configure.cmake)
 add_definitions(-DFEATURE_APPHOST=1)
 add_definitions(-DFEATURE_STATIC_HOST=1)
 
-# Disable manifest generation into the file .exe on Windows
 if(CLR_CMAKE_TARGET_WIN32)
-    set_property(TARGET ${PROJECT_NAME} PROPERTY
-            LINK_FLAGS "/MANIFEST:NO"
+    # Disable manifest generation into the file .exe on Windows
+    add_linker_flag("/MANIFEST:NO")
+       
+    get_property(ALL_COMPILE_OPTIONS TARGET ${PROJECT_NAME} PROPERTY COMPILE_OPTIONS)
+    string(TOUPPER ${RUNTIME_CONFIG} UPPERCASE_RUNTIME_CONFIG)
+
+    # make sure that certain compiler and linker settings match the runtime config
+    # we need to ensure that to be able to link with coreclr in mixed builds (ex: Debug with Release runtime)
+    if(UPPERCASE_RUNTIME_CONFIG STREQUAL DEBUG OR UPPERCASE_RUNTIME_CONFIG STREQUAL CHECKED)
+        # add_compile_options(/MTd)
+        # per-config options will win, so we have to use this syntax to override
+        set_property(TARGET ${PROJECT_NAME} PROPERTY
+            COMPILE_OPTIONS "${ALL_COMPILE_OPTIONS};$<$<CONFIG:DEBUG>:/MTd>"
         )
+
+        remove_definitions(-DNDEBUG)
+        add_definitions(-DDEBUG -D_DEBUG -D_DBG)
+
+        # ignore runtime libraries that could have been added so far based on the config
+        add_linker_flag("/NODEFAULTLIB:ucrt.lib")
+        add_linker_flag("/NODEFAULTLIB:libucrt.lib")
+        add_linker_flag("/NODEFAULTLIB:libcmt.lib")
+
+        # make sure we use statically linked crt
+        add_linker_flag("/DEFAULTLIB:libucrtd.lib")
+    else()
+        # add_compile_options(/MT)
+        # per-config options will win, so we have to use this syntax to override
+        set_property(TARGET ${PROJECT_NAME} PROPERTY
+            COMPILE_OPTIONS "${ALL_COMPILE_OPTIONS};$<$<CONFIG:DEBUG>:/MT>"
+        )
+
+        remove_definitions(-DDEBUG -D_DEBUG -D_DBG)
+        add_definitions(-DNDEBUG)
+
+        # Force uCRT to be dynamically linked for Release build
+        add_linker_flag("/NODEFAULTLIB:libucrt.lib")
+        add_linker_flag("/DEFAULTLIB:ucrt.lib")
+    endif()
+
+    # Incremental linking results in the linker inserting extra padding and routing function calls via thunks that can break the
+    # invariants (e.g. size of region between Jit_PatchedCodeLast-Jit_PatchCodeStart needs to fit in a page).
+    add_linker_flag("/INCREMENTAL:NO")
 endif()
 
 # Specify non-default Windows libs to be used for Arm/Arm64 builds
@@ -66,10 +114,8 @@ message ("Looking for coreclr_static lib at location: '${CORECLR_STATIC_LIB_LOCA
 
 if(CLR_CMAKE_TARGET_WIN32)
     set(CORECLR_LIBRARIES
-        # Disable superhost on Win32 for now.
-        # ${CORECLR_STATIC_LIB_LOCATION}/coreclr_static.lib
-        ${STATIC_MT_CRT_LIB}
-        ${STATIC_MT_VCRT_LIB}
+        ${CORECLR_STATIC_LIB_LOCATION}/coreclr_static.lib
+        ${CORECLR_STATIC_LIB_LOCATION}/System.Globalization.Native.lib
         kernel32.lib
         advapi32.lib
         ole32.lib
@@ -81,46 +127,44 @@ if(CLR_CMAKE_TARGET_WIN32)
         bcrypt.lib
         RuntimeObject.lib
     )
-elseif(CLR_CMAKE_TARGET_LINUX)
+else()
     set(CORECLR_LIBRARIES
         ${CORECLR_STATIC_LIB_LOCATION}/libcoreclr_static.a
+        ${CORECLR_STATIC_LIB_LOCATION}/libSystem.Globalization.Native.a
         ${CORECLR_STATIC_LIB_LOCATION}/libcoreclrpal.a
         ${CORECLR_STATIC_LIB_LOCATION}/libpalrt.a
         ${CORECLR_STATIC_LIB_LOCATION}/libeventprovider.a
         ${CORECLR_STATIC_LIB_LOCATION}/libnativeresourcestring.a
     )
+endif()
 
-    # currently linking coreclr into the singlefilehost is only supported on linux
-    # the following code here would be needed if/when BSD and OSX are supported too
-    #
-    # if(CLR_CMAKE_TARGET_OSX)
-    #   find_library(COREFOUNDATION CoreFoundation)
-    #   find_library(CORESERVICES CoreServices)
-    #   find_library(SECURITY Security)
-    #   find_library(SYSTEM System)
-    # 
-    #   LIST(APPEND CORECLR_LIBRARIES
-    #     ${COREFOUNDATION}
-    #     ${CORESERVICES}
-    #     ${SECURITY}
-    #     ${SYSTEM}
-    #   )
-    # endif(CLR_CMAKE_TARGET_OSX)
-    # 
-    # if(CLR_CMAKE_TARGET_NETBSD)
-    #     find_library(KVM kvm)
-    # 
-    #     LIST(APPEND CORECLR_LIBRARIES
-    #       ${KVM}
-    #     )
-    # endif(CLR_CMAKE_TARGET_NETBSD)
-endif(CLR_CMAKE_TARGET_WIN32)
+if(CLR_CMAKE_TARGET_OSX)
+   find_library(COREFOUNDATION CoreFoundation)
+   find_library(CORESERVICES CoreServices)
+   find_library(SECURITY Security)
+   find_library(SYSTEM System)
+ 
+   LIST(APPEND CORECLR_LIBRARIES
+     ${COREFOUNDATION}
+     ${CORESERVICES}
+     ${SECURITY}
+     ${SYSTEM}
+   )
+endif(CLR_CMAKE_TARGET_OSX)
+ 
+if(CLR_CMAKE_TARGET_NETBSD)
+     find_library(KVM kvm)
+ 
+     LIST(APPEND CORECLR_LIBRARIES
+       ${KVM}
+     )
+endif(CLR_CMAKE_TARGET_NETBSD)
 
-# Path like: artifacts/bin/native/net5.0-Linux-Release-arm/
-set(NATIVE_LIBS_LOCATION "${NATIVE_LIBS_ARTIFACTS}")
-message ("Looking for native libs at location: '${NATIVE_LIBS_LOCATION}'.")
+# On *BSD, we always use the libunwind that's part of the OS
+if(CLR_CMAKE_TARGET_FREEBSD)
+  set(CLR_CMAKE_USE_SYSTEM_LIBUNWIND 1)
+endif()
 
-# If/when OSX and *BSD are supported, they should also use the libunwind that's part of the OS
 if(CLR_CMAKE_USE_SYSTEM_LIBUNWIND)
     find_unwind_libs(UNWIND_LIBS)
 
@@ -129,6 +173,10 @@ if(CLR_CMAKE_USE_SYSTEM_LIBUNWIND)
     )
 endif()
 
+# Path like: artifacts/bin/native/net5.0-Linux-Release-arm/
+set(NATIVE_LIBS_LOCATION "${NATIVE_LIBS_ARTIFACTS}")
+message ("Looking for native libs at location: '${NATIVE_LIBS_LOCATION}'.")
+
 if(NOT CLR_CMAKE_TARGET_LINUX)
     set(NATIVE_LIBS
         # Native libs linked into singlefilehost is supported only on Linux for now.
@@ -136,7 +184,6 @@ if(NOT CLR_CMAKE_TARGET_LINUX)
     )
 else()
     set(NATIVE_LIBS
-      ${NATIVE_LIBS_LOCATION}/libSystem.Globalization.Native.a
       ${NATIVE_LIBS_LOCATION}/libSystem.IO.Compression.Native.a
       ${NATIVE_LIBS_LOCATION}/libSystem.Native.a
       ${NATIVE_LIBS_LOCATION}/libSystem.Net.Security.Native.a
@@ -207,7 +254,6 @@ endif(NOT CLR_CMAKE_TARGET_LINUX)
 set_property(TARGET singlefilehost PROPERTY ENABLE_EXPORTS 1)
 
 target_link_libraries(singlefilehost
-    libhostcommon
     ${CORECLR_LIBRARIES}
 
     ${START_WHOLE_ARCHIVE}

@@ -1481,7 +1481,7 @@ void CodeGen::genCodeForTreeNode(GenTree* treeNode)
 #ifdef TARGET_X86
             assert(!treeNode->IsIconHandle(GTF_ICON_TLS_HDL));
 #endif // TARGET_X86
-            __fallthrough;
+            FALLTHROUGH;
 
         case GT_CNS_DBL:
             genSetRegToConst(targetReg, targetType, treeNode);
@@ -1504,7 +1504,7 @@ void CodeGen::genCodeForTreeNode(GenTree* treeNode)
                 genCodeForBinary(treeNode->AsOp());
                 break;
             }
-            __fallthrough;
+            FALLTHROUGH;
         case GT_MOD:
         case GT_UMOD:
         case GT_UDIV:
@@ -1516,7 +1516,7 @@ void CodeGen::genCodeForTreeNode(GenTree* treeNode)
         case GT_AND:
             assert(varTypeIsIntegralOrI(treeNode));
 
-            __fallthrough;
+            FALLTHROUGH;
 
 #if !defined(TARGET_64BIT)
         case GT_ADD_LO:

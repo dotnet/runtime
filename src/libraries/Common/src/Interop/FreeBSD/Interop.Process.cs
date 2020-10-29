@@ -50,7 +50,7 @@ internal static partial class Interop
                     if (list[i].ki_ppid == 0)
                     {
                         // skip kernel threads
-                        numProcesses-=1;
+                        numProcesses -= 1;
                     }
                     else
                     {
@@ -76,22 +76,19 @@ internal static partial class Interop
         /// <param name="pid">The PID of the process</param>
         public static unsafe string? GetProcPath(int pid)
         {
-            Span<int> sysctlName = stackalloc int[4];
+            Span<int> sysctlName = stackalloc int[] { CTL_KERN, KERN_PROC, KERN_PROC_PATHNAME, pid };
             byte* pBuffer = null;
             int bytesLength = 0;
 
-            sysctlName[0] = CTL_KERN;
-            sysctlName[1] = KERN_PROC;
-            sysctlName[2] = KERN_PROC_PATHNAME;
-            sysctlName[3] = pid;
-
-            if (Interop.Sys.Sysctl(sysctlName, ref pBuffer, ref bytesLength) != 0)
+            try
             {
-                return null;
+                Interop.Sys.Sysctl(sysctlName, ref pBuffer, ref bytesLength);
+                return System.Text.Encoding.UTF8.GetString(pBuffer, (int)bytesLength - 1);
             }
-
-            // TODO Fix freeing of pBuffer: https://github.com/dotnet/runtime/issues/43418
-            return System.Text.Encoding.UTF8.GetString(pBuffer, (int)bytesLength-1);
+            finally
+            {
+                Marshal.FreeHGlobal((IntPtr)pBuffer);
+            }
         }
 
         /// <summary>

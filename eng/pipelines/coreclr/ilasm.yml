@@ -1,5 +1,14 @@
 trigger: none
 
+pr:
+  branches:
+    include:
+    - master
+  paths:
+    include:
+    - src/coreclr/src/ilasm/*
+    - src/coreclr/src/ildasm/*
+
 schedules:
 - cron: "0 19 * * 6"
   displayName: Sat at 11:00 AM (UTC-8:00)

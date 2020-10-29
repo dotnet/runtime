@@ -280,13 +280,13 @@ namespace System.IO
                 // As we're currently inside of it, we can get the current task
                 // and grab the parameters from it.
                 var thisTask = Task.InternalCurrent as ReadWriteTask;
-                Debug.Assert(thisTask != null && thisTask._stream != null && thisTask._buffer != null,
-                    "Inside ReadWriteTask, InternalCurrent should be the ReadWriteTask, and stream and buffer should be set");
+                Debug.Assert(thisTask != null && thisTask._stream != null,
+                    "Inside ReadWriteTask, InternalCurrent should be the ReadWriteTask, and stream should be set");
 
                 try
                 {
                     // Do the Read and return the number of bytes read
-                    return thisTask._stream.Read(thisTask._buffer, thisTask._offset, thisTask._count);
+                    return thisTask._stream.Read(thisTask._buffer!, thisTask._offset, thisTask._count);
                 }
                 finally
                 {
@@ -443,13 +443,13 @@ namespace System.IO
                 // As we're currently inside of it, we can get the current task
                 // and grab the parameters from it.
                 var thisTask = Task.InternalCurrent as ReadWriteTask;
-                Debug.Assert(thisTask != null && thisTask._stream != null && thisTask._buffer != null,
-                    "Inside ReadWriteTask, InternalCurrent should be the ReadWriteTask, and stream and buffer should be set");
+                Debug.Assert(thisTask != null && thisTask._stream != null,
+                    "Inside ReadWriteTask, InternalCurrent should be the ReadWriteTask, and stream should be set");
 
                 try
                 {
                     // Do the Write
-                    thisTask._stream.Write(thisTask._buffer, thisTask._offset, thisTask._count);
+                    thisTask._stream.Write(thisTask._buffer!, thisTask._offset, thisTask._count);
                     return 0; // not used, but signature requires a value be returned
                 }
                 finally
@@ -590,7 +590,6 @@ namespace System.IO
             {
                 Debug.Assert(function != null);
                 Debug.Assert(stream != null);
-                Debug.Assert(buffer != null);
 
                 // Store the arguments
                 _isRead = isRead;
@@ -848,8 +847,6 @@ namespace System.IO
 
         private sealed class NullStream : Stream
         {
-            private static readonly Task<int> s_zeroTask = Task.FromResult(0);
-
             internal NullStream() { }
 
             public override bool CanRead => true;
@@ -942,7 +939,7 @@ namespace System.IO
 
             public override Task<int> ReadAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
             {
-                return s_zeroTask;
+                return Task.FromResult(0);
             }
 
             public override ValueTask<int> ReadAsync(Memory<byte> buffer, CancellationToken cancellationToken = default)

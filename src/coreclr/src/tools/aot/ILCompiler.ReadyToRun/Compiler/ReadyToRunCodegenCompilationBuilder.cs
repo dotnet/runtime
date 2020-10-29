@@ -29,7 +29,7 @@ namespace ILCompiler
         private ProfileDataManager _profileData;
         private ReadyToRunMethodLayoutAlgorithm _r2rMethodLayoutAlgorithm;
         private ReadyToRunFileLayoutAlgorithm _r2rFileLayoutAlgorithm;
-        private int? _customPESectionAlignment;
+        private int _customPESectionAlignment;
         private bool _verifyTypeAndFieldLayout;
 
         private string _jitPath;
@@ -93,9 +93,9 @@ namespace ILCompiler
             return _ilProvider;
         }
 
-        public ReadyToRunCodegenCompilationBuilder UseJitPath(FileInfo jitPath)
+        public ReadyToRunCodegenCompilationBuilder UseJitPath(string jitPath)
         {
-            _jitPath = jitPath == null ? null : jitPath.FullName;
+            _jitPath = jitPath;
             return this;
         }
 
@@ -154,7 +154,7 @@ namespace ILCompiler
             return this;
         }
 
-        public ReadyToRunCodegenCompilationBuilder UseCustomPESectionAlignment(int? customPESectionAlignment)
+        public ReadyToRunCodegenCompilationBuilder UseCustomPESectionAlignment(int customPESectionAlignment)
         {
             _customPESectionAlignment = customPESectionAlignment;
             return this;

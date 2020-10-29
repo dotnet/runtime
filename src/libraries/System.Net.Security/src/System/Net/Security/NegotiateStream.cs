@@ -362,7 +362,7 @@ namespace System.Net.Security
 
                 while (true)
                 {
-                    int readBytes = await ReadAllAsync(adapter, _readHeader).ConfigureAwait(false);
+                    int readBytes = await ReadAllAsync(adapter, _readHeader, allowZeroRead: true).ConfigureAwait(false);
                     if (readBytes == 0)
                     {
                         return 0;
@@ -386,12 +386,8 @@ namespace System.Net.Security
                     {
                         _readBuffer = new byte[readBytes];
                     }
-                    readBytes = await ReadAllAsync(adapter, new Memory<byte>(_readBuffer, 0, readBytes)).ConfigureAwait(false);
-                    if (readBytes == 0)
-                    {
-                        // We already checked that the frame body is bigger than 0 bytes. Hence, this is an EOF.
-                        throw new IOException(SR.net_io_eof);
-                    }
+
+                    readBytes = await ReadAllAsync(adapter, new Memory<byte>(_readBuffer, 0, readBytes), allowZeroRead: false).ConfigureAwait(false);
 
                     // Decrypt into internal buffer, change "readBytes" to count now _Decrypted Bytes_
                     // Decrypted data start from zero offset, the size can be shrunk after decryption.
@@ -423,16 +419,16 @@ namespace System.Net.Security
                 _readInProgress = 0;
             }
 
-            static async ValueTask<int> ReadAllAsync(TAdapter adapter, Memory<byte> buffer)
+            static async ValueTask<int> ReadAllAsync(TAdapter adapter, Memory<byte> buffer, bool allowZeroRead)
             {
-                int length = buffer.Length;
+                int read = 0;
 
                 do
                 {
                     int bytes = await adapter.ReadAsync(buffer).ConfigureAwait(false);
                     if (bytes == 0)
                     {
-                        if (!buffer.IsEmpty)
+                        if (read != 0 || !allowZeroRead)
                         {
                             throw new IOException(SR.net_io_eof);
                         }
@@ -440,10 +436,11 @@ namespace System.Net.Security
                     }
 
                     buffer = buffer.Slice(bytes);
+                    read += bytes;
                 }
                 while (!buffer.IsEmpty);
 
-                return length;
+                return read;
             }
         }
 

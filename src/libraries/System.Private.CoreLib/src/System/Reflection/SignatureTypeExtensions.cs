@@ -110,7 +110,7 @@ namespace System.Reflection
             return signatureType.TryResolve(genericMethod.GetGenericArguments());
         }
 
-        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2055:UnrecognizedReflectionPattern",
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
             Justification = "Used to find matching method overloads. Only used for assignability checks.")]
         private static Type? TryResolve(this SignatureType signatureType, Type[] genericMethodParameters)
         {
@@ -212,6 +212,7 @@ namespace System.Reflection
             }
         }
 
+        [RequiresUnreferencedCode("Wrapper around MakeGenericType which itself has RequiresUnreferencedCode")]
         private static Type? TryMakeGenericType(this Type type, Type[] instantiation)
         {
             try

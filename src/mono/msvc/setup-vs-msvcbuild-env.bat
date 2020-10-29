@@ -83,7 +83,7 @@ set VS_2019_DEV_CMD=%VS_2019_VCINSTALL_DIR%Auxiliary\Build\%VS_2019_VCVARS_ARCH%
 
 :: Setup VS2019 VC development environment using VS installation.
 call :setup_build_env "%VS_2019_DEV_CMD%" "" "%CALLER_WD%" && (
-    set "VS_CLANG_TOOLS_BIN_PATH=%VS_2017_CLANG_TOOLS_BIN_PATH%"
+    set "VS_CLANG_TOOLS_BIN_PATH=%VS_2019_CLANG_TOOLS_BIN_PATH%"
     set VS_DEFAULT_PLATFORM_TOOL_SET=v142
     goto ON_EXIT
 )

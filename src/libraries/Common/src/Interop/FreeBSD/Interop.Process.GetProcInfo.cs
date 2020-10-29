@@ -28,7 +28,7 @@ internal static partial class Interop
         private const int CTL_KERN = 1;
         private const int KERN_PROC = 14;
         private const int KERN_PROC_PROC = 8;
-        private const int KERN_PROC_PID  = 1;
+        private const int KERN_PROC_PID = 1;
         private const int KERN_PROC_INC_THREAD = 16;
 
         // From sys/_sigset.h
@@ -144,13 +144,13 @@ internal static partial class Interop
             private byte ki_rqindex;                    /* Run queue index */
             private byte ki_oncpu_old;                  /* Which cpu we are on (legacy) */
             private byte ki_lastcpu_old;                /* Last cpu we were on (legacy) */
-            public fixed byte ki_tdname[TDNAMLEN+1];    /* thread name */
-            private fixed byte ki_wmesg[WMESGLEN+1];    /* wchan message */
-            private fixed byte ki_login[LOGNAMELEN+1];  /* setlogin name */
-            private fixed byte ki_lockname[LOCKNAMELEN+1]; /* lock name */
-            public fixed byte ki_comm[COMMLEN+1];       /* command name */
-            private fixed byte ki_emul[KI_EMULNAMELEN+1]; /* emulation name */
-            private fixed byte ki_loginclass[LOGINCLASSLEN+1]; /* login class */
+            public fixed byte ki_tdname[TDNAMLEN + 1];    /* thread name */
+            private fixed byte ki_wmesg[WMESGLEN + 1];    /* wchan message */
+            private fixed byte ki_login[LOGNAMELEN + 1];  /* setlogin name */
+            private fixed byte ki_lockname[LOCKNAMELEN + 1]; /* lock name */
+            public fixed byte ki_comm[COMMLEN + 1];       /* command name */
+            private fixed byte ki_emul[KI_EMULNAMELEN + 1]; /* emulation name */
+            private fixed byte ki_loginclass[LOGINCLASSLEN + 1]; /* login class */
             private fixed byte ki_sparestrings[50];     /* spare string space */
             private fixed int ki_spareints[KI_NSPARE_INT]; /* spare room for growth */
             private int ki_oncpu;                       /* Which cpu we are on */
@@ -189,7 +189,6 @@ internal static partial class Interop
             int bytesLength = 0;
             byte* pBuffer = null;
             kinfo_proc* kinfo = null;
-            int ret;
 
             count = -1;
 
@@ -210,11 +209,7 @@ internal static partial class Interop
 
             try
             {
-                ret = Interop.Sys.Sysctl(sysctlName, ref pBuffer, ref bytesLength);
-                if (ret != 0 ) {
-                    throw new ArgumentOutOfRangeException(nameof(pid));
-                }
-
+                Interop.Sys.Sysctl(sysctlName, ref pBuffer, ref bytesLength);
                 kinfo = (kinfo_proc*)pBuffer;
                 if (kinfo->ki_structsize != sizeof(kinfo_proc))
                 {
@@ -224,10 +219,9 @@ internal static partial class Interop
 
                 count = (int)bytesLength / sizeof(kinfo_proc);
             }
-            catch
+            finally
             {
                 Marshal.FreeHGlobal((IntPtr)pBuffer);
-                throw;
             }
 
             return kinfo;

@@ -250,16 +250,7 @@ namespace System.Net.Security
         public static unsafe SecurityStatusPal EncryptMessage(SafeDeleteSslContext securityContext, ReadOnlyMemory<byte> input, int headerSize, int trailerSize, ref byte[] output, out int resultSize)
         {
             // Ensure that there is sufficient space for the message output.
-            int bufferSizeNeeded;
-            try
-            {
-                bufferSizeNeeded = checked(input.Length + headerSize + trailerSize);
-            }
-            catch
-            {
-                NetEventSource.Fail(securityContext, "Arguments out of range");
-                throw;
-            }
+            int bufferSizeNeeded = checked(input.Length + headerSize + trailerSize);
             if (output == null || output.Length < bufferSizeNeeded)
             {
                 output = new byte[bufferSizeNeeded];
