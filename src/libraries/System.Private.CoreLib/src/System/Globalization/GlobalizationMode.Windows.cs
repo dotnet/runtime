@@ -21,7 +21,7 @@ namespace System.Globalization
                 if (Interop.Globalization.LoadICU() == 0)
                 {
                     string message = "The configuration System.Globalization.UseNls was set to false and a valid ICU package was not found in the system. " +
-                                "For more information you can go to: https://docs.microsoft.com/en-us/dotnet/standard/globalization-localization/globalization-icu#using-nls-instead-of-icu";
+                                "For more information you can go to: https://go.microsoft.com/fwlink/?linkid=2147400";
 
                     Environment.FailFast(message);
                 }
