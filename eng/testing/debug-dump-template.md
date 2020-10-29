@@ -41,12 +41,11 @@ Once you have those assets, you will need to extract the testhost or core root. 
 ### Debug with WinDbg
 
 1. Install [dotnet-sos global tool](https://docs.microsoft.com/en-us/dotnet/core/diagnostics/dotnet-sos).
-2. Load the dump with a recent WinDbg.
+2. Load the dump with a recent WinDbg version for it to load sos automatically (if not you can run `.update sos`).
 3. Then run the following commands:
 
 ```script
 !setclrpath <path to core root or testhost where coreclr is>
-!sethostruntime '<path to your local dotnet runtime or testhost>'
 .sympath+ <directory with symbols (for library tests these are in testhost dir)>
 ```
 ### Analyze with dotnet-dump
@@ -73,13 +72,11 @@ Once you've downloaded that artifact, make sure to extract it in the same locati
 ### Debug with WinDbg
 
 1. Install [dotnet-sos global tool](https://docs.microsoft.com/en-us/dotnet/core/diagnostics/dotnet-sos).
-2. Load the dump with a recent WinDbg.
+2. Load the dump with a recent WinDbg version for it to load sos automatically (if not you can run `.update sos`).
 3. Then run the following commands:
 
 ```script
-.load '<path to sos (can get it by running `dotnet-sos install`)>'
 !setclrpath <path to core root or testhost where coreclr is>
-!sethostruntime '<path to your local dotnet runtime>'
 .sympath+ <directory with symbols (for library tests these are in testhost dir)>
 ```
 ### Analyze with dotnet-dump
@@ -106,7 +103,7 @@ setsymbolserver -directory <directory with symbols (for library tests these are 
 setclrpath <path to core root or testhost where coreclr is>
 sethostruntime '<path to your local dotnet runtime or testhost where coreclr is>'
 setsymbolserver -directory <directory with symbols (for library tests these are in testhost dir)>
-# On linux (native symbols are loaded separately on lldb using `target symbols add <symbol file>`)
+loadsymbols (if you want to resolve native symbols)
 ```
 
 ### Analyze with dotnet-dump
@@ -120,3 +117,10 @@ setclrpath <you should see `Load path for DAC/DBI: '<none>'`>
 setclrpath <path to core root or testhost where coreclr is>
 setsymbolserver -directory <directory with symbols (for library tests these are in testhost dir)>
 ```
+
+## MacOS dumps
+
+MacOS instructions are the same as [Linux](#linux-dumps-on-linux); however MacOS has some caveats.
+
+1. It's only supported to debug them in `dotnet-dump` if it's a `createdump` dump.
+2. If it's a system dump, then only `lldb` works.

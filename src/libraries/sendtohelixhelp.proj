@@ -221,11 +221,6 @@
       </HelixPostCommands>
     </PropertyGroup>
 
-    <ItemGroup Condition="'$(RuntimeFlavor)' == 'CoreCLR'">
-      <HelixCorrelationPayload Include="$(RepositoryEngineeringDir)testing\debug-dump-template.md" />
-      <HelixCorrelationPayload Include="$(RepositoryEngineeringDir)testing\gen-debug-dump-docs.py" />
-    </ItemGroup>
-
     <ItemGroup Condition="'$(TargetOS)' != 'Android' and '$(TargetOS)' != 'iOS' and '$(TargetOS)' != 'tvOS'">
       <HelixCorrelationPayload Include="$(HelixCorrelationPayload)"
                                Condition="'$(IncludeHelixCorrelationPayload)' == 'true' and '$(TargetOS)' != 'Browser'" />
