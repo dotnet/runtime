@@ -554,7 +554,8 @@ type_to_llvm_type (EmitContext *ctx, MonoType *t)
 		return LLVMVoidType ();
 	case MONO_TYPE_OBJECT:
 		return ObjRefType ();
-	case MONO_TYPE_PTR: {
+	case MONO_TYPE_PTR:
+	case MONO_TYPE_FNPTR: {
 		MonoClass *klass = mono_class_from_mono_type_internal (t);
 		MonoClass *ptr_klass = m_class_get_element_class (klass);
 		MonoType *ptr_type = m_class_get_byval_arg (ptr_klass);
@@ -4803,6 +4804,14 @@ call_intrins (EmitContext *ctx, int id, LLVMValueRef *args, const char *name)
 {
 	LLVMValueRef intrins = get_intrins (ctx, id);
 	int nargs = LLVMCountParamTypes (LLVMGetElementType (LLVMTypeOf (intrins)));
+
+	for (int i = 0; i < nargs; ++i) {
+		LLVMTypeRef t1 = LLVMTypeOf (args [i]);
+		LLVMTypeRef t2 = LLVMTypeOf (LLVMGetParam (intrins, i));
+		if (t1 != t2)
+			args [i] = convert (ctx, args [i], t2);
+	}
+
 	return LLVMBuildCall (ctx->builder, intrins, args, nargs, name);
 }
 
@@ -8029,7 +8038,6 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 		}
 		case OP_XOP_X_I:
 		case OP_XOP_X_X: {
-			gboolean to_i1_t = FALSE;
 			IntrinsicId id = (IntrinsicId)0;
 			switch (ins->inst_c0) {
 			case SIMD_OP_SSE_SQRTPS: id = INTRINS_SSE_SQRT_PS; break;
@@ -8037,13 +8045,11 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 			case SIMD_OP_SSE_RSQRTPS: id = INTRINS_SSE_RSQRT_PS; break;
 			case SIMD_OP_SSE_SQRTPD: id = INTRINS_SSE_SQRT_PD; break;
 			case SIMD_OP_SSE_LDDQU: id = INTRINS_SSE_LDU_DQ; break;
-			case SIMD_OP_SSE_PHMINPOSUW: id = INTRINS_SSE_PHMINPOSUW; to_i1_t = TRUE; break;
+			case SIMD_OP_SSE_PHMINPOSUW: id = INTRINS_SSE_PHMINPOSUW; break;
 			case SIMD_OP_AES_IMC: id = INTRINS_AESNI_AESIMC; break;
 			default: g_assert_not_reached (); break;
 			}
 			LLVMValueRef arg0 = lhs;
-			if (to_i1_t)
-				arg0 = convert (ctx, arg0, sse_i1_t);
 			values [ins->dreg] = call_intrins (ctx, id, &arg0, "");
 			break;
 		}
@@ -8151,6 +8157,7 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 			case SIMD_OP_AES_ENCLAST: id = INTRINS_AESNI_AESENCLAST; break;
 			default: g_assert_not_reached (); break;
 			}
+
 			values [ins->dreg] = call_intrins (ctx, id, args, "");
 			break;
 		}
@@ -8486,7 +8493,7 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 		case OP_SSE41_ROUNDS: {
 			LLVMValueRef args [3];
 			args [0] = lhs;
-			args [1] = ins->sreg2 != -1 ? values [ins->sreg2] : lhs;
+			args [1] = rhs;
 			args [2] = LLVMConstInt (LLVMInt32Type (), ins->inst_c0, FALSE);
 			values [ins->dreg] = call_intrins (ctx, ins->inst_c1 == MONO_TYPE_R4 ? INTRINS_SSE_ROUNDSS : INTRINS_SSE_ROUNDSD, args, dname);
 			break;
@@ -9445,7 +9452,7 @@ emit_method_inner (EmitContext *ctx)
 		return;
 	}
 
-#if 1
+#if 0
 	{
 		static int count = 0;
 		count ++;
@@ -11327,11 +11334,6 @@ mono_llvm_emit_aot_module (const char *filename, const char *cu_name)
 		g_hash_table_destroy (specializable);
 	}
 
-	/* Note: You can still dump an invalid bitcode file by running `llvm-dis`
-	 * in a debugger, set a breakpoint on `LLVMVerifyModule` and fake its
-	 * result to 0 (indicating success). */
-	LLVMWriteBitcodeToFile (module->lmodule, filename);
-
 #if 0
 	{
 		char *verifier_err;
@@ -11342,6 +11344,11 @@ mono_llvm_emit_aot_module (const char *filename, const char *cu_name)
 		}
 	}
 #endif
+
+	/* Note: You can still dump an invalid bitcode file by running `llvm-dis`
+	 * in a debugger, set a breakpoint on `LLVMVerifyModule` and fake its
+	 * result to 0 (indicating success). */
+	LLVMWriteBitcodeToFile (module->lmodule, filename);
 }
 
 

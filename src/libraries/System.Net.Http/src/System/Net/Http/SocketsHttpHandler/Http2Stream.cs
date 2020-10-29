@@ -1415,7 +1415,7 @@ namespace System.Net.Http
                     base.Dispose(disposing);
                 }
 
-                public override bool CanRead => true;
+                public override bool CanRead => _http2Stream != null;
                 public override bool CanWrite => false;
 
                 public override int Read(Span<byte> destination)
@@ -1488,7 +1488,7 @@ namespace System.Net.Http
                 }
 
                 public override bool CanRead => false;
-                public override bool CanWrite => true;
+                public override bool CanWrite => _http2Stream != null;
 
                 public override int Read(Span<byte> buffer) => throw new NotSupportedException();
 

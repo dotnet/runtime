@@ -65,7 +65,7 @@ class CoreclrArguments:
 
         self.valid_arches = ["x64", "x86", "arm", "arm64", "wasm"]
         self.valid_build_types = ["Debug", "Checked", "Release"]
-        self.valid_host_os = ["Windows_NT", "OSX", "Linux", "illumos", "Solaris", "Browser"]
+        self.valid_host_os = ["Windows_NT", "OSX", "Linux", "illumos", "Solaris", "Browser", "Android"]
 
         self.__initialize__(args)
 

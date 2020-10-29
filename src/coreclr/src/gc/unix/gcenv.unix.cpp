@@ -28,6 +28,12 @@
 #undef min
 #undef max
 
+#if __has_cpp_attribute(fallthrough)
+#define FALLTHROUGH [[fallthrough]]
+#else
+#define FALLTHROUGH
+#endif
+
 #include <algorithm>
 
 #if HAVE_SYS_TIME_H
@@ -792,8 +798,10 @@ bool ReadMemoryValueFromFile(const char* filename, uint64_t* val)
     {
     case 'g':
     case 'G': multiplier = 1024;
+              FALLTHROUGH;
     case 'm':
     case 'M': multiplier = multiplier * 1024;
+              FALLTHROUGH;
     case 'k':
     case 'K': multiplier = multiplier * 1024;
     }

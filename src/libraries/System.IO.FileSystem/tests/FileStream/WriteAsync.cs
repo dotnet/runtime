@@ -470,7 +470,7 @@ namespace System.IO.Tests
                 iar => stream.EndWrite(iar),
                 null);
 
-        protected override string BufferParamName => "array";
-        protected override string CountParamName => "numBytes";
+        protected override string BufferParamName => "buffer";
+        protected override string CountParamName => "count";
     }
 }

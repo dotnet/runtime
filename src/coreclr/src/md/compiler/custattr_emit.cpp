@@ -1315,6 +1315,7 @@ HRESULT RegMeta::_HandleKnownCustomAttribute(    // S_OK or error.
         // Force to wider value.
         qArgs[0].val.u4 = (unsigned)qArgs[0].val.i2;
         // Fall through to validation.
+        FALLTHROUGH;
     case CA_MethodImplAttribute3:
         // Validate bits.
         if (qArgs[0].val.u4 & ~(miUserMask))
@@ -1323,6 +1324,7 @@ HRESULT RegMeta::_HandleKnownCustomAttribute(    // S_OK or error.
         if (!qNamedArgs[MI_CodeType].val.type.tag)
             break;
         // fall through to set the code type.
+        FALLTHROUGH;
     case CA_MethodImplAttribute1:
         {
         USHORT usFlags = reinterpret_cast<MethodRec*>(pRow)->GetImplFlags();
@@ -1338,6 +1340,7 @@ HRESULT RegMeta::_HandleKnownCustomAttribute(    // S_OK or error.
         // Force the U2 to a wider U4 value explicitly.
         qArgs[0].val.u4 = qArgs[0].val.u2;
         // Fall through to handle the CA.
+        FALLTHROUGH;
     case CA_MarshalAsAttribute2:
         IfFailGo(_HandleNativeTypeCustomAttribute(tkObj, qArgs.Ptr(), qNamedArgs.Ptr(), qNativeType));
         break;
@@ -1351,6 +1354,7 @@ HRESULT RegMeta::_HandleKnownCustomAttribute(    // S_OK or error.
         // Convert the I2 to a U2, then wide to an I4, then fall through.
         qArgs[0].val.i4 = static_cast<int>(static_cast<USHORT>(qArgs[0].val.i2));
         }
+        FALLTHROUGH;
     case CA_StructLayoutAttribute2:
         {
         // Get a copy of the flags to work with.

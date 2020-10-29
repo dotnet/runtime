@@ -2134,8 +2134,19 @@ ves_icall_System_Threading_Thread_SetName_icall (MonoInternalThreadHandle thread
 
 	char* name8 = name16 ? g_utf16_to_utf8 (name16, name16_length, NULL, &name8_length, NULL) : NULL;
 
+#ifdef ENABLE_NETCORE
+	// The managed thread implementation prevents the Name property from being set multiple times on normal threads. On thread
+	// pool threads, for compatibility the thread's name should be changeable and this function may be called to force-reset the
+	// thread's name if user code had changed it. So for the flags, MonoSetThreadNameFlag_Reset is passed instead of
+	// MonoSetThreadNameFlag_Permanent for all threads, relying on the managed side to prevent multiple changes where
+	// appropriate.
+	MonoSetThreadNameFlags flags = MonoSetThreadNameFlag_Reset;
+#else
+	MonoSetThreadNameFlags flags = MonoSetThreadNameFlag_Permanent;
+#endif
+
 	mono_thread_set_name (mono_internal_thread_handle_ptr (thread_handle),
-		name8, (gint32)name8_length, name16, MonoSetThreadNameFlag_Permanent, error);
+		name8, (gint32)name8_length, name16, flags, error);
 }
 
 #ifndef ENABLE_NETCORE

@@ -28,7 +28,10 @@
         ArtifactsBinDir=$(ArtifactsBinDir);
         ArtifactsPackagesDir=$(ArtifactsPackagesDir);
         TargetOS=$(TargetOS);
+        TargetsLinux=$(TargetsLinux);
+        TargetsWindows=$(TargetsWindows);
         TargetArchitecture=$(TargetArchitecture);
+        BuildArchitecture=$(BuildArchitecture);
         NetCoreAppCurrent=$(NetCoreAppCurrent)" />
 
     <PropertyGroup>

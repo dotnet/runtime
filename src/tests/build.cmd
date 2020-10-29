@@ -206,7 +206,7 @@ if defined __SkipStressDependencies goto skipstressdependencies
 call "%__RepoRootDir%\src\tests\Common\setup-stress-dependencies.cmd" /arch %__BuildArch% /outputdir %__BinDir%
 if errorlevel 1 (
     echo %__ErrMsgPrefix%%__MsgPrefix%Error: setup-stress-dependencies failed.
-    goto     :Exit_Failure
+    exit /b 1
 )
 
 :skipstressdependencies
@@ -674,3 +674,10 @@ if %__exitCode% neq 0 (
 move "%__CrossgenOutputDir%\*.dll" %CORE_ROOT% > nul
 
 exit /b 0
+
+REM Exit_Failure:
+REM This is necessary because of a(n apparent) bug in the FOR /L command.  Under certain circumstances,
+REM such as when this script is invoke with CMD /C "build.cmd", a non-zero exit directly from
+REM within the loop body will not propagate to the caller.  For some reason, goto works around it.
+:Exit_Failure
+exit /b 1

@@ -135,8 +135,17 @@
   <data name="GenericArgCountMismatch" xml:space="preserve">
     <value>Expected {0} generic arguments for method '{1}' on type '{2}'</value>
   </data>
+  <data name="HelpOption" xml:space="preserve">
+    <value>Display this usage message</value>
+  </data>
   <data name="InputBubbleOption" xml:space="preserve">
     <value>True when the entire input forms a version bubble (default = per-assembly bubble)</value>
+  </data>
+  <data name="InvalidFileLayout" xml:space="preserve">
+    <value>Method layout must be either DefaultSort or MethodOrder.</value>
+  </data>
+  <data name="InvalidMethodLayout" xml:space="preserve">
+    <value>Method layout must be either DefaultSort, ExclusiveWeight, HotCold, or HotWarmCold.</value>
   </data>
   <data name="CompileNoMethodsOption" xml:space="preserve">
     <value>True to skip compiling methods into the R2R image (default = false)</value>
@@ -160,7 +169,7 @@
     <value>Instruction set '{0}' implies support for instruction set '{1}'</value>
   </data>
   <data name="UnrootedInputFilesToCompile" xml:space="preserve">
-    <value>"Input files without automatic rooting of all methods</value>
+    <value>Input files without automatic rooting of all methods</value>
   </data>
   <data name="JitPathOption" xml:space="preserve">
     <value>Path to JIT compiler library</value>
@@ -175,7 +184,7 @@
     <value>Mibc file(s) for profile guided optimization</value>
   </data>
   <data name="MissingOutputFile" xml:space="preserve">
-    <value>Output filename must be specified (/out &lt;file&gt;)</value>
+    <value>Output filename must be specified (--out &lt;file&gt;)</value>
   </data>
   <data name="InputWasNotLoadable" xml:space="preserve">
     <value>No input files are loadable</value>
@@ -265,16 +274,16 @@
     <value>Use custom alignment for PE sections in generated PE file</value>
   </data>
   <data name="InvalidCustomPESectionAlignment" xml:space="preserve">
-    <value>Custom PE Section Alignment must be a power of two greater than 4096.</value>
+    <value>Custom PE Section Alignment must be a power of two greater or equal to 4096.</value>
   </data>
   <data name="ErrorMultipleInputFilesCompositeModeOnly" xml:space="preserve">
     <value>Error: multiple input files are only supported in composite build mode: {0}</value>
   </data>
   <data name="MethodLayoutOption" xml:space="preserve">
-    <value>Layout methods in file using profile driven optimization assuming the layout algorithm specified. The default value is DefaultSort, which indicates that complex layout is disabled</value>
+    <value>Layout algorithm used by profile-driven optimization for arranging methods in a file: DefaultSort, ExclusiveWeight, HotCold, or HotWarmCold). The default value is DefaultSort, which indicates that complex layout is disabled.</value>
   </data>
   <data name="FileLayoutOption" xml:space="preserve">
-    <value>Layout non-method contents of file using profile driven optimization assuming the layout algorithm specified. The default value is DefaultSort, which indicates that complex layout is disabled</value>
+    <value>Layout algorithm used by profile-driven optimization for arranging non-method contents in a file: DefaultSort or MethodOrder. The default value is DefaultSort, which indicates that complex layout is disabled.</value>
   </data>
   <data name="CompositeRootPath" xml:space="preserve">
     <value>Logical root folder for composite builds; defaults to directory of 1st input file.</value>
