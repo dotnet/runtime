@@ -364,7 +364,7 @@ namespace System.Net.Sockets
                     SocketFlags flags = _socketFlags;
                     SocketError socketError = Interop.Winsock.WSARecv(
                         handle,
-                        ref wsaBuffer,
+                        &wsaBuffer,
                         1,
                         out int bytesTransferred,
                         ref flags,
@@ -598,7 +598,7 @@ namespace System.Net.Sockets
 
                     SocketError socketError = Interop.Winsock.WSASend(
                         handle,
-                        ref wsaBuffer,
+                        &wsaBuffer,
                         1,
                         out int bytesTransferred,
                         _socketFlags,

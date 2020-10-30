@@ -3,12 +3,11 @@
 
 using System.Diagnostics;
 using System.Threading.Tasks;
-using System.Diagnostics.CodeAnalysis;
 
-namespace System.Runtime.CompilerServices
+namespace System.Threading.Tasks
 {
-    /// <summary>Provides a cache of closed generic tasks for async methods.</summary>
-    internal static class AsyncTaskCache
+    /// <summary>Provides a cache of tasks for async methods.</summary>
+    internal static class TaskCache
     {
         /// <summary>A cached Task{Boolean}.Result == true.</summary>
         internal static readonly Task<bool> s_trueTask = CreateCacheableTask(result: true);
@@ -20,26 +19,6 @@ namespace System.Runtime.CompilerServices
         internal const int InclusiveInt32Min = -1;
         /// <summary>The maximum value, exclusive, for which we want a cached task.</summary>
         internal const int ExclusiveInt32Max = 9;
-
-        /// <summary>true if we should use reusable boxes for async completions of ValueTask methods; false if we should use tasks.</summary>
-        /// <remarks>
-        /// We rely on tiered compilation turning this into a const and doing dead code elimination to make checks on this efficient.
-        /// It's also required for safety that this value never changes once observed, as Unsafe.As casts are employed based on its value.
-        /// </remarks>
-        internal static readonly bool s_valueTaskPoolingEnabled = GetPoolAsyncValueTasksSwitch();
-        /// <summary>Maximum number of boxes that are allowed to be cached per state machine type.</summary>
-        internal static readonly int s_valueTaskPoolingCacheSize = GetPoolAsyncValueTasksLimitValue();
-
-        private static bool GetPoolAsyncValueTasksSwitch()
-        {
-            string? value = Environment.GetEnvironmentVariable("DOTNET_SYSTEM_THREADING_POOLASYNCVALUETASKS");
-            return value != null && (bool.IsTrueStringIgnoreCase(value) || value.Equals("1"));
-        }
-
-        private static int GetPoolAsyncValueTasksLimitValue() =>
-            int.TryParse(Environment.GetEnvironmentVariable("DOTNET_SYSTEM_THREADING_POOLASYNCVALUETASKSLIMIT"), out int result) && result > 0 ?
-                result :
-                Environment.ProcessorCount * 4; // arbitrary default value
 
         /// <summary>Creates a non-disposable task.</summary>
         /// <typeparam name="TResult">Specifies the result type.</typeparam>

@@ -302,7 +302,7 @@ namespace System.Net.Security
 
         public override int Read(byte[] buffer, int offset, int count)
         {
-            ValidateParameters(buffer, offset, count);
+            ValidateBufferArguments(buffer, offset, count);
 
             ThrowIfFailed(authSuccessCheck: true);
             if (!CanGetSecureStream)
@@ -317,7 +317,7 @@ namespace System.Net.Security
 
         public override Task<int> ReadAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
         {
-            ValidateParameters(buffer, offset, count);
+            ValidateBufferArguments(buffer, offset, count);
 
             ThrowIfFailed(authSuccessCheck: true);
             if (!CanGetSecureStream)
@@ -446,7 +446,7 @@ namespace System.Net.Security
 
         public override void Write(byte[] buffer, int offset, int count)
         {
-            ValidateParameters(buffer, offset, count);
+            ValidateBufferArguments(buffer, offset, count);
 
             ThrowIfFailed(authSuccessCheck: true);
             if (!CanGetSecureStream)
@@ -460,7 +460,7 @@ namespace System.Net.Security
 
         public override Task WriteAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
         {
-            ValidateParameters(buffer, offset, count);
+            ValidateBufferArguments(buffer, offset, count);
 
             ThrowIfFailed(authSuccessCheck: true);
             if (!CanGetSecureStream)
@@ -550,30 +550,6 @@ namespace System.Net.Security
 
                 // Throw the stored exception.
                 e.Throw();
-            }
-        }
-
-        /// <summary>Validates user parameters for all Read/Write methods.</summary>
-        private static void ValidateParameters(byte[] buffer, int offset, int count)
-        {
-            if (buffer == null)
-            {
-                throw new ArgumentNullException(nameof(buffer));
-            }
-
-            if (offset < 0)
-            {
-                throw new ArgumentOutOfRangeException(nameof(offset));
-            }
-
-            if (count < 0)
-            {
-                throw new ArgumentOutOfRangeException(nameof(count));
-            }
-
-            if (count > buffer.Length - offset)
-            {
-                throw new ArgumentOutOfRangeException(nameof(count), SR.net_offset_plus_count);
             }
         }
 

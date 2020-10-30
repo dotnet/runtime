@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Buffers.Binary;
 using System.Collections;
 using System.Collections.Generic;
 using System.IO;
@@ -4421,45 +4422,17 @@ namespace System.Xml
             return value;
         }
 
-        private short GetInt16(int pos)
-        {
-            byte[] data = _data;
-            return (short)(data[pos] | data[pos + 1] << 8);
-        }
+        private short GetInt16(int pos) => BinaryPrimitives.ReadInt16LittleEndian(_data.AsSpan(pos));
 
-        private ushort GetUInt16(int pos)
-        {
-            byte[] data = _data;
-            return (ushort)(data[pos] | data[pos + 1] << 8);
-        }
+        private ushort GetUInt16(int pos) => BinaryPrimitives.ReadUInt16LittleEndian(_data.AsSpan(pos));
 
-        private int GetInt32(int pos)
-        {
-            byte[] data = _data;
-            return (int)(data[pos] | data[pos + 1] << 8 | data[pos + 2] << 16 | data[pos + 3] << 24);
-        }
+        private int GetInt32(int pos) => BinaryPrimitives.ReadInt32LittleEndian(_data.AsSpan(pos));
 
-        private uint GetUInt32(int pos)
-        {
-            byte[] data = _data;
-            return (uint)(data[pos] | data[pos + 1] << 8 | data[pos + 2] << 16 | data[pos + 3] << 24);
-        }
+        private uint GetUInt32(int pos) => BinaryPrimitives.ReadUInt32LittleEndian(_data.AsSpan(pos));
 
-        private long GetInt64(int pos)
-        {
-            byte[] data = _data;
-            uint lo = (uint)(data[pos] | data[pos + 1] << 8 | data[pos + 2] << 16 | data[pos + 3] << 24);
-            uint hi = (uint)(data[pos + 4] | data[pos + 5] << 8 | data[pos + 6] << 16 | data[pos + 7] << 24);
-            return (long)((ulong)hi) << 32 | lo;
-        }
+        private long GetInt64(int pos) => BinaryPrimitives.ReadInt64LittleEndian(_data.AsSpan(pos));
 
-        private ulong GetUInt64(int pos)
-        {
-            byte[] data = _data;
-            uint lo = (uint)(data[pos] | data[pos + 1] << 8 | data[pos + 2] << 16 | data[pos + 3] << 24);
-            uint hi = (uint)(data[pos + 4] | data[pos + 5] << 8 | data[pos + 6] << 16 | data[pos + 7] << 24);
-            return (ulong)((ulong)hi) << 32 | lo;
-        }
+        private ulong GetUInt64(int pos) => BinaryPrimitives.ReadUInt64LittleEndian(_data.AsSpan(pos));
 
         private float GetSingle(int offset)
         {
