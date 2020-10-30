@@ -1124,48 +1124,71 @@ namespace System
 
         public string Replace(string oldValue, string? newValue)
         {
-            if (oldValue == null)
+            if (oldValue is null)
+            {
                 throw new ArgumentNullException(nameof(oldValue));
+            }
             if (oldValue.Length == 0)
+            {
                 throw new ArgumentException(SR.Argument_StringZeroLength, nameof(oldValue));
+            }
 
-            // Api behavior: if newValue is null, instances of oldValue are to be removed.
-            newValue ??= string.Empty;
+            // If newValue is null, treat it as an empty string.  Callers use this to remove the oldValue.
+            newValue ??= Empty;
 
+            // Track the locations of oldValue to be replaced.
             var replacementIndices = new ValueListBuilder<int>(stackalloc int[StackallocIntBufferSizeLimit]);
 
-            unsafe
+            if (oldValue.Length == 1)
             {
-                fixed (char* pThis = &_firstChar)
-                {
-                    int matchIdx = 0;
-                    int lastPossibleMatchIdx = this.Length - oldValue.Length;
-                    while (matchIdx <= lastPossibleMatchIdx)
-                    {
-                        char* pMatch = pThis + matchIdx;
-                        for (int probeIdx = 0; probeIdx < oldValue.Length; probeIdx++)
-                        {
-                            if (pMatch[probeIdx] != oldValue[probeIdx])
-                            {
-                                goto Next;
-                            }
-                        }
-                        // Found a match for the string. Record the location of the match and skip over the "oldValue."
-                        replacementIndices.Append(matchIdx);
-                        matchIdx += oldValue.Length;
-                        continue;
+                // Special-case oldValues that are a single character.  Even though there's an overload that takes
+                // a single character, its newValue is also a single character, so this overload ends up being used
+                // often to remove characters by having an empty newValue.
 
-                    Next:
-                        matchIdx++;
+                if (newValue.Length == 1)
+                {
+                    // With both the oldValue and newValue being a single character, it's cheaper to just use the other overload.
+                    return Replace(oldValue[0], newValue[0]);
+                }
+
+                // Find all occurrences of the oldValue character.
+                char c = oldValue[0];
+                int i = 0;
+                while (true)
+                {
+                    int pos = SpanHelpers.IndexOf(ref Unsafe.Add(ref _firstChar, i), c, Length - i);
+                    if (pos == -1)
+                    {
+                        break;
                     }
+                    replacementIndices.Append(i + pos);
+                    i += pos + 1;
+                }
+            }
+            else
+            {
+                // Find all occurrences of the oldValue string.
+                int i = 0;
+                while (true)
+                {
+                    int pos = SpanHelpers.IndexOf(ref Unsafe.Add(ref _firstChar, i), Length - i, ref oldValue._firstChar, oldValue.Length);
+                    if (pos == -1)
+                    {
+                        break;
+                    }
+                    replacementIndices.Append(i + pos);
+                    i += pos + oldValue.Length;
                 }
             }
 
+            // If the oldValue wasn't found, just return the original string.
             if (replacementIndices.Length == 0)
+            {
                 return this;
+            }
 
-            // String allocation and copying is in separate method to make this method faster for the case where
-            // nothing needs replacing.
+            // Perform the replacement. String allocation and copying is in separate method to make this method faster
+            // for the case where nothing needs replacing.
             string dst = ReplaceHelper(oldValue.Length, newValue, replacementIndices.AsSpan());
 
             replacementIndices.Dispose();
