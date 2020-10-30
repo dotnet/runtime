@@ -183,7 +183,7 @@ namespace System.IO.Compression
                     nuint availableOutput = (nuint)destination.Length;
                     bool success = Interop.Brotli.BrotliEncoderCompress(quality, window, /*BrotliEncoderMode*/ 0, (nuint)source.Length, inBytes, ref availableOutput, outBytes);
 
-                    Debug.Assert((success) ? availableOutput <= (nuint)destination.Length : availableOutput == 0);
+                    Debug.Assert(success ? availableOutput <= (nuint)destination.Length : availableOutput == 0);
 
                     bytesWritten = (int)availableOutput;
                     return success;

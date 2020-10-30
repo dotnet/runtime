@@ -100,7 +100,7 @@ namespace System.IO.Compression
                 nuint availableOutput = (nuint)destination.Length;
                 bool success = Interop.Brotli.BrotliDecoderDecompress((nuint)source.Length, inBytes, ref availableOutput, outBytes);
 
-                Debug.Assert((success) ? availableOutput <= (nuint)destination.Length : availableOutput == 0);
+                Debug.Assert(success ? availableOutput <= (nuint)destination.Length : availableOutput == 0);
 
                 bytesWritten = (int)availableOutput;
                 return success;
