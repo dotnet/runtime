@@ -1249,18 +1249,22 @@ namespace System.IO
                 return base.CopyToAsync(destination, bufferSize, cancellationToken);
             }
 
-            StreamHelpers.ValidateCopyToArgs(this, destination, bufferSize);
-
-            // Bail early for cancellation if cancellation has been requested
-            if (cancellationToken.IsCancellationRequested)
-            {
-                return Task.FromCanceled<int>(cancellationToken);
-            }
+            ValidateCopyToArguments(destination, bufferSize);
 
             // Fail if the file was closed
             if (_fileHandle.IsClosed)
             {
                 throw Error.GetFileNotOpen();
+            }
+            if (!CanRead)
+            {
+                throw Error.GetReadNotSupported();
+            }
+
+            // Bail early for cancellation if cancellation has been requested
+            if (cancellationToken.IsCancellationRequested)
+            {
+                return Task.FromCanceled<int>(cancellationToken);
             }
 
             // Do the async copy, with differing implementations based on whether the FileStream was opened as async or sync
