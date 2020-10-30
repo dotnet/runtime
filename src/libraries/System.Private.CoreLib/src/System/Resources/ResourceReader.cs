@@ -9,7 +9,6 @@ using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Text;
-using Internal.Runtime.CompilerServices;
 
 namespace System.Resources
 #if RESOURCES_EXTENSIONS
