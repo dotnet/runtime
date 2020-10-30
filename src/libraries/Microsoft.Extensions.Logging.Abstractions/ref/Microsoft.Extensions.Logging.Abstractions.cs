@@ -50,35 +50,35 @@ namespace Microsoft.Extensions.Logging
     }
     public static partial class LoggerExtensions
     {
-        public static System.IDisposable BeginScope(this Microsoft.Extensions.Logging.ILogger logger, string messageFormat, params object?[]? args) { throw null; }
-        public static void Log(this Microsoft.Extensions.Logging.ILogger logger, Microsoft.Extensions.Logging.LogLevel logLevel, Microsoft.Extensions.Logging.EventId eventId, System.Exception? exception, string? message, params object?[]? args) { }
-        public static void Log(this Microsoft.Extensions.Logging.ILogger logger, Microsoft.Extensions.Logging.LogLevel logLevel, Microsoft.Extensions.Logging.EventId eventId, string? message, params object?[]? args) { }
-        public static void Log(this Microsoft.Extensions.Logging.ILogger logger, Microsoft.Extensions.Logging.LogLevel logLevel, System.Exception? exception, string? message, params object?[]? args) { }
-        public static void Log(this Microsoft.Extensions.Logging.ILogger logger, Microsoft.Extensions.Logging.LogLevel logLevel, string? message, params object?[]? args) { }
-        public static void LogCritical(this Microsoft.Extensions.Logging.ILogger logger, Microsoft.Extensions.Logging.EventId eventId, System.Exception? exception, string? message, params object?[]? args) { }
-        public static void LogCritical(this Microsoft.Extensions.Logging.ILogger logger, Microsoft.Extensions.Logging.EventId eventId, string? message, params object?[]? args) { }
-        public static void LogCritical(this Microsoft.Extensions.Logging.ILogger logger, System.Exception? exception, string? message, params object?[]? args) { }
-        public static void LogCritical(this Microsoft.Extensions.Logging.ILogger logger, string? message, params object?[]? args) { }
-        public static void LogDebug(this Microsoft.Extensions.Logging.ILogger logger, Microsoft.Extensions.Logging.EventId eventId, System.Exception? exception, string? message, params object?[]? args) { }
-        public static void LogDebug(this Microsoft.Extensions.Logging.ILogger logger, Microsoft.Extensions.Logging.EventId eventId, string? message, params object?[]? args) { }
-        public static void LogDebug(this Microsoft.Extensions.Logging.ILogger logger, System.Exception? exception, string? message, params object?[]? args) { }
-        public static void LogDebug(this Microsoft.Extensions.Logging.ILogger logger, string? message, params object?[]? args) { }
-        public static void LogError(this Microsoft.Extensions.Logging.ILogger logger, Microsoft.Extensions.Logging.EventId eventId, System.Exception? exception, string? message, params object?[]? args) { }
-        public static void LogError(this Microsoft.Extensions.Logging.ILogger logger, Microsoft.Extensions.Logging.EventId eventId, string? message, params object?[]? args) { }
-        public static void LogError(this Microsoft.Extensions.Logging.ILogger logger, System.Exception? exception, string? message, params object?[]? args) { }
-        public static void LogError(this Microsoft.Extensions.Logging.ILogger logger, string? message, params object?[]? args) { }
-        public static void LogInformation(this Microsoft.Extensions.Logging.ILogger logger, Microsoft.Extensions.Logging.EventId eventId, System.Exception? exception, string? message, params object?[]? args) { }
-        public static void LogInformation(this Microsoft.Extensions.Logging.ILogger logger, Microsoft.Extensions.Logging.EventId eventId, string? message, params object?[]? args) { }
-        public static void LogInformation(this Microsoft.Extensions.Logging.ILogger logger, System.Exception? exception, string? message, params object?[]? args) { }
-        public static void LogInformation(this Microsoft.Extensions.Logging.ILogger logger, string? message, params object?[]? args) { }
-        public static void LogTrace(this Microsoft.Extensions.Logging.ILogger logger, Microsoft.Extensions.Logging.EventId eventId, System.Exception? exception, string? message, params object?[]? args) { }
-        public static void LogTrace(this Microsoft.Extensions.Logging.ILogger logger, Microsoft.Extensions.Logging.EventId eventId, string? message, params object?[]? args) { }
-        public static void LogTrace(this Microsoft.Extensions.Logging.ILogger logger, System.Exception? exception, string? message, params object?[]? args) { }
-        public static void LogTrace(this Microsoft.Extensions.Logging.ILogger logger, string? message, params object?[]? args) { }
-        public static void LogWarning(this Microsoft.Extensions.Logging.ILogger logger, Microsoft.Extensions.Logging.EventId eventId, System.Exception? exception, string? message, params object?[]? args) { }
-        public static void LogWarning(this Microsoft.Extensions.Logging.ILogger logger, Microsoft.Extensions.Logging.EventId eventId, string? message, params object?[]? args) { }
-        public static void LogWarning(this Microsoft.Extensions.Logging.ILogger logger, System.Exception? exception, string? message, params object?[]? args) { }
-        public static void LogWarning(this Microsoft.Extensions.Logging.ILogger logger, string? message, params object?[]? args) { }
+        public static System.IDisposable BeginScope(this Microsoft.Extensions.Logging.ILogger logger, string messageFormat, params object?[] args) { throw null; }
+        public static void Log(this Microsoft.Extensions.Logging.ILogger logger, Microsoft.Extensions.Logging.LogLevel logLevel, Microsoft.Extensions.Logging.EventId eventId, System.Exception? exception, string? message, params object?[] args) { }
+        public static void Log(this Microsoft.Extensions.Logging.ILogger logger, Microsoft.Extensions.Logging.LogLevel logLevel, Microsoft.Extensions.Logging.EventId eventId, string? message, params object?[] args) { }
+        public static void Log(this Microsoft.Extensions.Logging.ILogger logger, Microsoft.Extensions.Logging.LogLevel logLevel, System.Exception? exception, string? message, params object?[] args) { }
+        public static void Log(this Microsoft.Extensions.Logging.ILogger logger, Microsoft.Extensions.Logging.LogLevel logLevel, string? message, params object?[] args) { }
+        public static void LogCritical(this Microsoft.Extensions.Logging.ILogger logger, Microsoft.Extensions.Logging.EventId eventId, System.Exception? exception, string? message, params object?[] args) { }
+        public static void LogCritical(this Microsoft.Extensions.Logging.ILogger logger, Microsoft.Extensions.Logging.EventId eventId, string? message, params object?[] args) { }
+        public static void LogCritical(this Microsoft.Extensions.Logging.ILogger logger, System.Exception? exception, string? message, params object?[] args) { }
+        public static void LogCritical(this Microsoft.Extensions.Logging.ILogger logger, string? message, params object?[] args) { }
+        public static void LogDebug(this Microsoft.Extensions.Logging.ILogger logger, Microsoft.Extensions.Logging.EventId eventId, System.Exception? exception, string? message, params object?[] args) { }
+        public static void LogDebug(this Microsoft.Extensions.Logging.ILogger logger, Microsoft.Extensions.Logging.EventId eventId, string? message, params object?[] args) { }
+        public static void LogDebug(this Microsoft.Extensions.Logging.ILogger logger, System.Exception? exception, string? message, params object?[] args) { }
+        public static void LogDebug(this Microsoft.Extensions.Logging.ILogger logger, string? message, params object?[] args) { }
+        public static void LogError(this Microsoft.Extensions.Logging.ILogger logger, Microsoft.Extensions.Logging.EventId eventId, System.Exception? exception, string? message, params object?[] args) { }
+        public static void LogError(this Microsoft.Extensions.Logging.ILogger logger, Microsoft.Extensions.Logging.EventId eventId, string? message, params object?[] args) { }
+        public static void LogError(this Microsoft.Extensions.Logging.ILogger logger, System.Exception? exception, string? message, params object?[] args) { }
+        public static void LogError(this Microsoft.Extensions.Logging.ILogger logger, string? message, params object?[] args) { }
+        public static void LogInformation(this Microsoft.Extensions.Logging.ILogger logger, Microsoft.Extensions.Logging.EventId eventId, System.Exception? exception, string? message, params object?[] args) { }
+        public static void LogInformation(this Microsoft.Extensions.Logging.ILogger logger, Microsoft.Extensions.Logging.EventId eventId, string? message, params object?[] args) { }
+        public static void LogInformation(this Microsoft.Extensions.Logging.ILogger logger, System.Exception? exception, string? message, params object?[] args) { }
+        public static void LogInformation(this Microsoft.Extensions.Logging.ILogger logger, string? message, params object?[] args) { }
+        public static void LogTrace(this Microsoft.Extensions.Logging.ILogger logger, Microsoft.Extensions.Logging.EventId eventId, System.Exception? exception, string? message, params object?[] args) { }
+        public static void LogTrace(this Microsoft.Extensions.Logging.ILogger logger, Microsoft.Extensions.Logging.EventId eventId, string? message, params object?[] args) { }
+        public static void LogTrace(this Microsoft.Extensions.Logging.ILogger logger, System.Exception? exception, string? message, params object?[] args) { }
+        public static void LogTrace(this Microsoft.Extensions.Logging.ILogger logger, string? message, params object?[] args) { }
+        public static void LogWarning(this Microsoft.Extensions.Logging.ILogger logger, Microsoft.Extensions.Logging.EventId eventId, System.Exception? exception, string? message, params object?[] args) { }
+        public static void LogWarning(this Microsoft.Extensions.Logging.ILogger logger, Microsoft.Extensions.Logging.EventId eventId, string? message, params object?[] args) { }
+        public static void LogWarning(this Microsoft.Extensions.Logging.ILogger logger, System.Exception? exception, string? message, params object?[] args) { }
+        public static void LogWarning(this Microsoft.Extensions.Logging.ILogger logger, string? message, params object?[] args) { }
     }
     public partial class LoggerExternalScopeProvider : Microsoft.Extensions.Logging.IExternalScopeProvider
     {
