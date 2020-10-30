@@ -289,7 +289,7 @@ namespace System.IO
         {
             int i = PathInternal.GetExtensionStart(path);
             // Found and not last char
-            return (i > 0 && i < path.Length - 1);
+            return (i >= 0 && i < path.Length - 1);
         }
 
         public static string Combine(string path1, string path2)
