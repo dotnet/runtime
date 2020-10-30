@@ -132,5 +132,14 @@ namespace System.Runtime.CompilerServices
         internal static bool IsPrimitiveType(this CorElementType et)
             // COR_ELEMENT_TYPE_I1,I2,I4,I8,U1,U2,U4,U8,R4,R8,I,U,CHAR,BOOLEAN
             => ((1 << (int)et) & 0b_0011_0000_0000_0011_1111_1111_1100) != 0;
+
+        internal static ref byte GetRawData(this object obj) =>
+            ref Unsafe.As<RawData>(obj).Data;
+    }
+    // Helper class to assist with unsafe pinning of arbitrary objects.
+    // It's used by VM code.
+    internal class RawData
+    {
+        public byte Data;
     }
 }

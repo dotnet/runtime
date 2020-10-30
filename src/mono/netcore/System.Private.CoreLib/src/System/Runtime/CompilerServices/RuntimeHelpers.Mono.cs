@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-using Internal.Runtime.CompilerServices;
 
 namespace System.Runtime.CompilerServices
 {
@@ -53,16 +52,6 @@ namespace System.Runtime.CompilerServices
                 throw new ArgumentException("Handle is not initialized.", nameof(type));
 
             RunClassConstructor(type.Value);
-        }
-
-        internal static ref byte GetRawData(this object obj) =>
-            ref Unsafe.As<RawData>(obj).Data;
-
-        // Helper class to assist with unsafe pinning of arbitrary objects.
-        // It's used by VM code.
-        internal class RawData
-        {
-            public byte Data;
         }
 
         public static void EnsureSufficientExecutionStack()
