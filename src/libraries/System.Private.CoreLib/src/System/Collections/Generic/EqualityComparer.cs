@@ -33,6 +33,7 @@ namespace System.Collections.Generic
             return false;
         }
 
+#if !CORERT
         internal virtual int IndexOf(T[] array, T value, int startIndex, int count)
         {
             int endIndex = startIndex + count;
@@ -58,6 +59,7 @@ namespace System.Collections.Generic
             }
             return -1;
         }
+#endif
     }
 
     // The methods in this class look identical to the inherited methods, but the calls
