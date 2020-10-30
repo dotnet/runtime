@@ -281,8 +281,8 @@ namespace System.IO.Tests
             AssertExtensions.Throws<ArgumentOutOfRangeException>("count", () => { stream.ReadAsync(new byte[1], 0, -1); });
             AssertExtensions.Throws<ArgumentOutOfRangeException>("count", () => { stream.WriteAsync(new byte[1], 0, -1); });
 
-            AssertExtensions.Throws<ArgumentException>(null, () => { stream.ReadAsync(new byte[1], 0, 2); });
-            AssertExtensions.Throws<ArgumentException>(null, () => { stream.WriteAsync(new byte[1], 0, 2); });
+            Assert.Throws<ArgumentOutOfRangeException>(() => { stream.ReadAsync(new byte[1], 0, 2); });
+            Assert.Throws<ArgumentOutOfRangeException>(() => { stream.WriteAsync(new byte[1], 0, 2); });
         }
     }
 }
