@@ -216,25 +216,11 @@ namespace System.Net.Sockets
         //     Number of bytes we read, or 0 if the socket is closed.
         public override int Read(byte[] buffer, int offset, int count)
         {
-            bool canRead = CanRead;  // Prevent race with Dispose.
+            ValidateBufferArguments(buffer, offset, count);
             ThrowIfDisposed();
-            if (!canRead)
+            if (!CanRead)
             {
                 throw new InvalidOperationException(SR.net_writeonlystream);
-            }
-
-            // Validate input parameters.
-            if (buffer == null)
-            {
-                throw new ArgumentNullException(nameof(buffer));
-            }
-            if ((uint)offset > buffer.Length)
-            {
-                throw new ArgumentOutOfRangeException(nameof(offset));
-            }
-            if ((uint)count > buffer.Length - offset)
-            {
-                throw new ArgumentOutOfRangeException(nameof(count));
             }
 
             try
@@ -297,25 +283,11 @@ namespace System.Net.Sockets
         //     way to indicate an error.
         public override void Write(byte[] buffer, int offset, int count)
         {
-            bool canWrite = CanWrite; // Prevent race with Dispose.
+            ValidateBufferArguments(buffer, offset, count);
             ThrowIfDisposed();
-            if (!canWrite)
+            if (!CanWrite)
             {
                 throw new InvalidOperationException(SR.net_readonlystream);
-            }
-
-            // Validate input parameters.
-            if (buffer == null)
-            {
-                throw new ArgumentNullException(nameof(buffer));
-            }
-            if ((uint)offset > buffer.Length)
-            {
-                throw new ArgumentOutOfRangeException(nameof(offset));
-            }
-            if ((uint)count > buffer.Length - offset)
-            {
-                throw new ArgumentOutOfRangeException(nameof(count));
             }
 
             try
@@ -416,25 +388,11 @@ namespace System.Net.Sockets
         //     An IASyncResult, representing the read.
         public override IAsyncResult BeginRead(byte[] buffer, int offset, int count, AsyncCallback? callback, object? state)
         {
-            bool canRead = CanRead; // Prevent race with Dispose.
+            ValidateBufferArguments(buffer, offset, count);
             ThrowIfDisposed();
-            if (!canRead)
+            if (!CanRead)
             {
                 throw new InvalidOperationException(SR.net_writeonlystream);
-            }
-
-            // Validate input parameters.
-            if (buffer == null)
-            {
-                throw new ArgumentNullException(nameof(buffer));
-            }
-            if ((uint)offset > buffer.Length)
-            {
-                throw new ArgumentOutOfRangeException(nameof(offset));
-            }
-            if ((uint)count > buffer.Length - offset)
-            {
-                throw new ArgumentOutOfRangeException(nameof(count));
             }
 
             try
@@ -505,25 +463,11 @@ namespace System.Net.Sockets
         //     An IASyncResult, representing the write.
         public override IAsyncResult BeginWrite(byte[] buffer, int offset, int count, AsyncCallback? callback, object? state)
         {
-            bool canWrite = CanWrite; // Prevent race with Dispose.
+            ValidateBufferArguments(buffer, offset, count);
             ThrowIfDisposed();
-            if (!canWrite)
+            if (!CanWrite)
             {
                 throw new InvalidOperationException(SR.net_readonlystream);
-            }
-
-            // Validate input parameters.
-            if (buffer == null)
-            {
-                throw new ArgumentNullException(nameof(buffer));
-            }
-            if ((uint)offset > buffer.Length)
-            {
-                throw new ArgumentOutOfRangeException(nameof(offset));
-            }
-            if ((uint)count > buffer.Length - offset)
-            {
-                throw new ArgumentOutOfRangeException(nameof(count));
             }
 
             try
@@ -592,25 +536,11 @@ namespace System.Net.Sockets
         //     A Task<int> representing the read.
         public override Task<int> ReadAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
         {
-            bool canRead = CanRead; // Prevent race with Dispose.
+            ValidateBufferArguments(buffer, offset, count);
             ThrowIfDisposed();
-            if (!canRead)
+            if (!CanRead)
             {
                 throw new InvalidOperationException(SR.net_writeonlystream);
-            }
-
-            // Validate input parameters.
-            if (buffer == null)
-            {
-                throw new ArgumentNullException(nameof(buffer));
-            }
-            if ((uint)offset > buffer.Length)
-            {
-                throw new ArgumentOutOfRangeException(nameof(offset));
-            }
-            if ((uint)count > buffer.Length - offset)
-            {
-                throw new ArgumentOutOfRangeException(nameof(count));
             }
 
             try
@@ -675,25 +605,11 @@ namespace System.Net.Sockets
         //     A Task representing the write.
         public override Task WriteAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
         {
-            bool canWrite = CanWrite; // Prevent race with Dispose.
+            ValidateBufferArguments(buffer, offset, count);
             ThrowIfDisposed();
-            if (!canWrite)
+            if (!CanWrite)
             {
                 throw new InvalidOperationException(SR.net_readonlystream);
-            }
-
-            // Validate input parameters.
-            if (buffer == null)
-            {
-                throw new ArgumentNullException(nameof(buffer));
-            }
-            if ((uint)offset > buffer.Length)
-            {
-                throw new ArgumentOutOfRangeException(nameof(offset));
-            }
-            if ((uint)count > buffer.Length - offset)
-            {
-                throw new ArgumentOutOfRangeException(nameof(count));
             }
 
             try
