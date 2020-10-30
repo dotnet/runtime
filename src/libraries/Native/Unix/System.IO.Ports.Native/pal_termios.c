@@ -11,7 +11,7 @@
 #if HAVE_SYS_FILIO_H
 #include <sys/filio.h>
 #endif
-#ifdef HAVE_IOSS_H
+#if HAVE_IOSS_H
 #include <IOKit/serial/ioss.h>
 #endif
 
