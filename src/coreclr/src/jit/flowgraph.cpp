@@ -23773,7 +23773,7 @@ Statement* Compiler::fgInlinePrependStatements(InlineInfo* inlineInfo)
         GenTree* thisOp = impInlineFetchArg(0, inlArgInfo, lclVarInfo);
         if (fgAddrCouldBeNull(thisOp))
         {
-            nullcheck = gtNewNullCheck(impInlineFetchArg(0, inlArgInfo, lclVarInfo), block);
+            nullcheck = gtNewNullCheck(thisOp, block);
             // The NULL-check statement will be inserted to the statement list after those statements
             // that assign arguments to temps and before the actual body of the inlinee method.
         }
