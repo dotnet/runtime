@@ -185,7 +185,7 @@ jobs:
 
     - ${{ if eq(parameters.isOfficialBuild, true) }}:
       - name: BuildScript
-        value: ./eng/install-nuget-credprovider-then-build.sh --subset installer
+        value: ./eng/install-nuget-credprovider-then-build.sh --subset host+packs
       - name: MSBuildScript
         value: /root/runtime/eng/install-nuget-credprovider-then-msbuild.sh
 
@@ -211,7 +211,7 @@ jobs:
 
     - name: BuildArguments
       value: >-
-        -subset installer -ci
+        -subset host+packs -ci
         $(BuildAction)
         /p:CrossBuild=${{ parameters.crossBuild }}
         /p:PortableBuild=$(_PortableBuild)
