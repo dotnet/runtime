@@ -632,7 +632,7 @@ namespace System
             }
             if (values is List<string?> valuesIList)
             {
-                return Join(separator, valuesIList, 0, valuesIList.Count);
+                return Join(separator, CollectionsMarshal.AsSpan(valuesIList), 0, valuesIList.Count);
             }
             if (values is string?[] valuesArray)
             {
@@ -684,13 +684,13 @@ namespace System
 
         // Joins an array of strings together as one string with a separator between each original string.
         //
-        private static unsafe string Join(string? separator, List<string?> value, int startIndex, int count)
+        private static unsafe string Join(string? separator, ReadOnlySpan<string?> value, int startIndex, int count)
         {
             separator ??= Empty;
             fixed (char* pSeparator = &separator._firstChar)
             {
                 // Defer argument validation to the internal function
-                return JoinCore(pSeparator, separator.Length, CollectionsMarshal.AsSpan(value), startIndex, count);
+                return JoinCore(pSeparator, separator.Length, value, startIndex, count);
             }
         }
 
