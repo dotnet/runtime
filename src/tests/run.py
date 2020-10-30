@@ -1359,7 +1359,8 @@ def find_test_from_name(host_os, test_location, test_name):
 
     location = starting_path
     if not os.path.isfile(location):
-        pass
+        print("Warning: couldn't find test: %s" % test_name)
+        return None
 
     assert(os.path.isfile(location))
 
@@ -1426,19 +1427,19 @@ def parse_test_results(args):
                     test_output = failure_info.text
 
                 test_location_on_filesystem = find_test_from_name(args.host_os, args.test_location, test_name)
+                if test_location_on_filesystem is not None:
+                    assert os.path.isfile(test_location_on_filesystem)
 
-                assert os.path.isfile(test_location_on_filesystem)
-
-                assert tests[test_name] == None
-                tests[test_name] = defaultdict(lambda: None, {
-                    "name": test_name,
-                    "test_path": test_location_on_filesystem,
-                    "failed": failed,
-                    "skipped": skipped,
-                    "passed": passed,
-                    "time": time,
-                    "test_output": test_output
-                })
+                    assert tests[test_name] == None
+                    tests[test_name] = defaultdict(lambda: None, {
+                        "name": test_name,
+                        "test_path": test_location_on_filesystem,
+                        "failed": failed,
+                        "skipped": skipped,
+                        "passed": passed,
+                        "time": time,
+                        "test_output": test_output
+                    })
 
     return tests
 
