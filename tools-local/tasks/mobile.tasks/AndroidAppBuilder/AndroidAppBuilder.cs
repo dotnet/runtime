@@ -45,6 +45,8 @@ public class AndroidAppBuilderTask : Task
     /// </summary>
     public string? NativeMainSource { get; set; }
 
+    public string? KeyStorePath { get; set; }
+
     [Output]
     public string ApkBundlePath { get; set; } = ""!;
 
@@ -67,6 +69,7 @@ public class AndroidAppBuilderTask : Task
         apkBuilder.BuildToolsVersion = BuildToolsVersion;
         apkBuilder.StripDebugSymbols = StripDebugSymbols;
         apkBuilder.NativeMainSource = NativeMainSource;
+        apkBuilder.KeyStorePath = KeyStorePath;
         (ApkBundlePath, ApkPackageId) = apkBuilder.BuildApk(SourceDir, abi, MainLibraryFileName, MonoRuntimeHeaders);
 
         return true;

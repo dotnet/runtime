@@ -19,6 +19,7 @@ public class ApkBuilder
     public string? OutputDir { get; set; }
     public bool StripDebugSymbols { get; set; }
     public string? NativeMainSource { get; set; }
+    public string? KeyStorePath { get; set; }
 
     public (string apk, string packageId) BuildApk(
         string sourceDir,
@@ -244,11 +245,17 @@ public class ApkBuilder
         // 5. Generate key
 
         string signingKey = Path.Combine(OutputDir, "debug.keystore");
+        if (!string.IsNullOrEmpty(KeyStorePath))
+            signingKey = Path.Combine(KeyStorePath, "debug.keystore");
         if (!File.Exists(signingKey))
         {
             Utils.RunProcess(keytool, "-genkey -v -keystore debug.keystore -storepass android -alias " +
                 "androiddebugkey -keypass android -keyalg RSA -keysize 2048 -noprompt " +
                 "-dname \"CN=Android Debug,O=Android,C=US\"", workingDir: OutputDir, silent: true);
+        }
+        else
+        {
+            File.Copy(signingKey, Path.Combine(OutputDir, "debug.keystore"));
         }
 
         // 6. Sign APK
