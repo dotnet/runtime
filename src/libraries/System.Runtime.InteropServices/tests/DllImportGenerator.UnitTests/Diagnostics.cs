@@ -6,7 +6,6 @@ using System.Threading.Tasks;
 
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.Testing;
-using Microsoft.CodeAnalysis.Text;
 using Microsoft.Interop;
 using Xunit;
 
@@ -14,6 +13,75 @@ namespace DllImportGenerator.UnitTests
 {
     public class Diagnostics
     {
+        public enum TargetFramework
+        {
+            Framework,
+            Core,
+            Standard,
+            Net
+        }
+
+        [Theory]
+        [InlineData(TargetFramework.Framework)]
+        [InlineData(TargetFramework.Core)]
+        [InlineData(TargetFramework.Standard)]
+        public async Task TargetFrameworkNotSupported_ReportsDiagnostic(TargetFramework targetFramework)
+        {
+            string source = @"
+using System.Runtime.InteropServices;
+namespace System.Runtime.InteropServices
+{
+    // Define attribute for pre-.NET 5.0
+    sealed class GeneratedDllImportAttribute : System.Attribute
+    {
+        public GeneratedDllImportAttribute(string a) { }
+    }
+}
+partial class Test
+{
+    [GeneratedDllImport(""DoesNotExist"")]
+    public static partial void Method();
+}
+";
+            Compilation comp = await TestUtils.CreateCompilationWithReferenceAssemblies(source, GetReferenceAssemblies(targetFramework));
+            TestUtils.AssertPreSourceGeneratorCompilation(comp);
+
+            var newComp = TestUtils.RunGenerators(comp, out var generatorDiags, new Microsoft.Interop.DllImportGenerator());
+            DiagnosticResult[] expectedDiags = new DiagnosticResult[]
+            {
+                new DiagnosticResult(GeneratorDiagnostics.TargetFrameworkNotSupported)
+                    .WithArguments("5.0")
+            };
+            VerifyDiagnostics(expectedDiags, GetSortedDiagnostics(generatorDiags));
+
+            var newCompDiags = newComp.GetDiagnostics();
+            Assert.Empty(newCompDiags);
+        }
+
+        [Theory]
+        [InlineData(TargetFramework.Framework)]
+        [InlineData(TargetFramework.Core)]
+        [InlineData(TargetFramework.Standard)]
+        public async Task TargetFrameworkNotSupported_NoGeneratedDllImport_NoDiagnostic(TargetFramework targetFramework)
+        {
+            string source = @"
+using System.Runtime.InteropServices;
+partial class Test
+{
+    [DllImport(""DoesNotExist"")]
+    public static extern void Method();
+}
+";
+            Compilation comp = await TestUtils.CreateCompilationWithReferenceAssemblies(source, GetReferenceAssemblies(targetFramework));
+            TestUtils.AssertPreSourceGeneratorCompilation(comp);
+
+            var newComp = TestUtils.RunGenerators(comp, out var generatorDiags, new Microsoft.Interop.DllImportGenerator());
+            Assert.Empty(generatorDiags);
+
+            var newCompDiags = newComp.GetDiagnostics();
+            Assert.Empty(newCompDiags);
+        }
+
         [Fact]
         public async Task ParameterTypeNotSupported_ReportsDiagnostic()
         {
@@ -326,6 +394,18 @@ partial class Test
                 .ThenBy(d => d.Location.SourceSpan.End)
                 .ThenBy(d => d.Id)
                 .ToArray();
+        }
+
+        private static ReferenceAssemblies GetReferenceAssemblies(TargetFramework targetFramework)
+        {
+            return targetFramework switch
+            {
+                TargetFramework.Framework => ReferenceAssemblies.NetFramework.Net48.Default,
+                TargetFramework.Standard => ReferenceAssemblies.NetStandard.NetStandard21,
+                TargetFramework.Core => ReferenceAssemblies.NetCore.NetCoreApp31,
+                TargetFramework.Net => ReferenceAssemblies.NetCore.NetCoreApp50,
+                _ => ReferenceAssemblies.Default
+            };
         }
     }
 }

@@ -4,7 +4,7 @@ For all [Roslyn diagnostics](https://docs.microsoft.com/dotnet/api/microsoft.cod
 
 | Setting  | Value              |
 | -------- | ------------------ |
-| Category | DllImportGenerator |
+| Category | SourceGeneration   |
 | Severity | Error              |
 | Enabled  | True               |
 
@@ -37,3 +37,11 @@ public static partial void Method([MarshalAs(UnmanagedType.SafeArray, SafeArrayS
 [GeneratedDllImport("NativeLib")]
 public static partial void Method([MarshalAs(UnmanagedType.LPStr)] bool b);
 ```
+
+## `DLLIMPORTGEN003`: Current target framework is not supported by source-generated P/Invokes
+
+The `GeneratedDllImport` is being used when targeting a framework that is not supported by source-generated P/Invokes. The generated code is currently only compatible with .NET 5.0 or above.
+
+# Analyzer Diagnostics
+
+The P/Invoke source generator library also contains analyzers that emit diagnostics. These diagnostics flag issues around usage (i.e. of P/Invoke and marshalling attributes) rather than the source generation scenario support issues flagged by the generator itself.

@@ -1,10 +1,9 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 
 using Microsoft.CodeAnalysis;
-
-#nullable enable
 
 namespace Microsoft.Interop
 {
@@ -53,6 +52,7 @@ namespace Microsoft.Interop
             public const string Prefix = "DLLIMPORTGEN";
             public const string TypeNotSupported = Prefix + "001";
             public const string ConfigurationNotSupported = Prefix + "002";
+            public const string TargetFrameworkNotSupported = Prefix + "003";
         }
 
         private const string Category = "SourceGeneration";
@@ -136,6 +136,16 @@ namespace Microsoft.Interop
                 DiagnosticSeverity.Error,
                 isEnabledByDefault: true,
                 description: GetResourceString(nameof(Resources.ConfigurationNotSupportedDescription)));
+
+        public readonly static DiagnosticDescriptor TargetFrameworkNotSupported =
+            new DiagnosticDescriptor(
+                Ids.TargetFrameworkNotSupported,
+                GetResourceString(nameof(Resources.TargetFrameworkNotSupportedTitle)),
+                GetResourceString(nameof(Resources.TargetFrameworkNotSupportedMessage)),
+                Category,
+                DiagnosticSeverity.Error,
+                isEnabledByDefault: true,
+                description: GetResourceString(nameof(Resources.TargetFrameworkNotSupportedDescription)));
 
         private readonly GeneratorExecutionContext context;
 
@@ -251,6 +261,19 @@ namespace Microsoft.Interop
                             paramSymbol.Name));
                 }
             }
+        }
+
+        /// <summary>
+        /// Report diagnostic for targeting a framework that is not supported
+        /// </summary>
+        /// <param name="minimumSupportedVersion">Minimum supported version of .NET</param>
+        public void ReportTargetFrameworkNotSupported(Version minimumSupportedVersion)
+        {
+            this.context.ReportDiagnostic(
+                Diagnostic.Create(
+                    TargetFrameworkNotSupported,
+                    Location.None,
+                    minimumSupportedVersion.ToString(2)));
         }
 
         private static LocalizableResourceString GetResourceString(string resourceName)

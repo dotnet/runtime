@@ -20,10 +20,12 @@ namespace Microsoft.Interop
         private const string GeneratedDllImport = nameof(GeneratedDllImport);
         private const string GeneratedDllImportAttribute = nameof(GeneratedDllImportAttribute);
 
+        private static readonly Version MinimumSupportedFrameworkVersion = new Version(5, 0);
+
         public void Execute(GeneratorExecutionContext context)
         {
             var synRec = context.SyntaxReceiver as SyntaxReceiver;
-            if (synRec is null)
+            if (synRec is null || !synRec.Methods.Any())
             {
                 return;
             }
@@ -38,6 +40,13 @@ namespace Microsoft.Interop
             var syntaxToModel = new Dictionary<SyntaxTree, SemanticModel>();
 
             var generatorDiagnostics = new GeneratorDiagnostics(context);
+            if (!IsSupportedTargetFramework(context.Compilation))
+            {
+                // We don't return early here, letting the source generation continue.
+                // This allows a user to copy generated source and use it as a starting point
+                // for manual marshalling if desired.
+                generatorDiagnostics.ReportTargetFrameworkNotSupported(MinimumSupportedFrameworkVersion);
+            }
 
             var generatedDllImports = new StringBuilder();
             foreach (SyntaxReference synRef in synRec.Methods)
@@ -116,6 +125,21 @@ namespace Microsoft.Interop
             }
 
             builder.AppendLine(toPrint.NormalizeWhitespace().ToString());
+        }
+
+        private static bool IsSupportedTargetFramework(Compilation compilation)
+        {
+            IAssemblySymbol systemAssembly = compilation.GetSpecialType(SpecialType.System_Object).ContainingAssembly;
+            return systemAssembly.Identity.Name switch
+            {
+                // .NET Framework
+                "mscorlib" => false,
+                // .NET Standard
+                "netstandard" => false,
+                // .NET Core (when version < 5.0) or .NET
+                "System.Runtime" => systemAssembly.Identity.Version >= MinimumSupportedFrameworkVersion,
+                _ => false,
+            };
         }
 
         private static bool IsGeneratedDllImportAttribute(AttributeSyntax attrSyntaxMaybe)
