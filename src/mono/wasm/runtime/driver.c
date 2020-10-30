@@ -635,15 +635,15 @@ mono_wasm_assembly_get_entry_point (MonoAssembly *assembly)
 		const char *name = mono_method_get_name (method);
 		int name_length = strlen (name);
 
-		if ((*name != '<') || (name[name_length-1] != '>'))
+		if ((*name != '<') || (name [name_length - 1] != '>'))
 			return method;
 
 		MonoClass *klass = mono_method_get_class (method);
 		char *async_name = strdup (name);
 
-		async_name[name_length -1] = '\0';
+		async_name [name_length - 1] = '\0';
 
-		MonoMethod *async_method = mono_class_get_method_from_name (klass, async_name + 1, -1 /* any number of parameters */);
+		MonoMethod *async_method = mono_class_get_method_from_name (klass, async_name + 1, -1 /* MonoMethodSignature.param_count is hard to access here */);
 		free (async_name);
 		if (async_method != NULL)
 			return async_method;
