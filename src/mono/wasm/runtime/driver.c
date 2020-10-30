@@ -627,7 +627,7 @@ mono_wasm_assembly_get_entry_point (MonoAssembly *assembly)
 	method = mono_get_method (image, entry, NULL);
 
 	/*
-	 * If the entry point looks like a compliler generated wrapper around
+	 * If the entry point looks like a compiler generated wrapper around
 	 * an async method in the form "<Name>" then try to look up the async method
 	 * "Name" it is wrapping.
 	 */

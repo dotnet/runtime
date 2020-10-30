@@ -356,28 +356,27 @@ var App = {
 			}
 			wasm_set_main_args (main_argc, main_argv);
 
-			function isThenable(js_obj) {
+			function isThenable (js_obj) {
 				// When using an external Promise library the Promise.resolve may not be sufficient
 				// to identify the object as a Promise.
-				return Promise.resolve(js_obj) === js_obj ||
+				return Promise.resolve (js_obj) === js_obj ||
 						((typeof js_obj === "object" || typeof js_obj === "function") && typeof js_obj.then === "function")
 			}
 
 			try {
 				// Automatic signature isn't working correctly
-				let exit_code = Module.mono_call_assembly_entry_point(main_assembly_name, [app_args], "mi");
+				let exit_code = Module.mono_call_assembly_entry_point (main_assembly_name, [app_args], "mi");
 
-				if (isThenable(exit_code))
+				if (isThenable (exit_code))
 				{
-					exit_code.then(
+					exit_code.then (
 						(result) => {
 							test_exit (result);
 						},
-						reason => {
+						(reason) => {
 							console.error (reason);
 							test_exit (1);
-						}
-					)
+						});
 				} else {
 					test_exit (exit_code);
 					return;
