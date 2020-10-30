@@ -365,7 +365,7 @@ var App = {
 
 			try {
 				// Automatic signature isn't working correctly
-				let exit_code = Module.mono_call_assembly_entry_point (main_assembly_name, [app_args], "mi");
+				let exit_code = Module.mono_call_assembly_entry_point (main_assembly_name, [app_args], "m");
 
 				if (isThenable (exit_code))
 				{
