@@ -821,8 +821,8 @@ class SuperPMICollect:
                             os.remove(stderr_filepath)
                     except OSError as ose:
                         if "[WinError 32] The process cannot access the file because it is being used by another " \
-                           "process:" in format(e):
-                            logging.warning("Skipping file %s. Got error: %s".format(root_output_filename, format(e)))
+                           "process:" in format(ose):
+                            logging.warning("Skipping file %s. Got error: %s".format(root_output_filename, format(ose)))
                         else:
                             raise ose
 
