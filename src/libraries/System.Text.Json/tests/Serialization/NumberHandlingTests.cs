@@ -1621,27 +1621,39 @@ namespace System.Text.Json.Serialization.Tests
             Assert.Throws<ArgumentOutOfRangeException>(
                 () => new JsonNumberHandlingAttribute((JsonNumberHandling)(8)));
         }
+    }
 
+    public class NumberHandlingTests_StreamOverload : NumberHandlingTests_OverloadSpecific
+    {
+        public NumberHandlingTests_StreamOverload() : base(DeserializationWrapper.StreamDeserializer) { }
+    }
 
+    public class NumberHandlingTests_SyncOverload : NumberHandlingTests_OverloadSpecific
+    {
+        public NumberHandlingTests_SyncOverload() : base(DeserializationWrapper.StringDeserializer) { }
+    }
+
+    public abstract class NumberHandlingTests_OverloadSpecific
+    {
+        private DeserializationWrapper Deserializer { get; }
+
+        public NumberHandlingTests_OverloadSpecific(DeserializationWrapper deserializer)
+        {
+            Deserializer = deserializer;
+        }
 
         [Theory]
         [MemberData(nameof(NumberHandling_ForPropsReadAfter_DeserializingCtorParams_TestData))]
-        public static async Task NumberHandling_ForPropsReadAfter_DeserializingCtorParams(string json)
+        public async Task NumberHandling_ForPropsReadAfter_DeserializingCtorParams(string json)
         {
             JsonSerializerOptions options = new JsonSerializerOptions
             {
-                NumberHandling = JsonNumberHandling.AllowReadingFromString |JsonNumberHandling.WriteAsString,
+                NumberHandling = JsonNumberHandling.AllowReadingFromString | JsonNumberHandling.WriteAsString,
                 PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
             };
 
-            Result result = JsonSerializer.Deserialize<Result>(json, options);
+            Result result = await Deserializer.DeserializeWrapper<Result>(json, options);
             JsonTestHelper.AssertJsonEqual(json, JsonSerializer.Serialize(result, options));
-
-            using (var stream = new MemoryStream(Encoding.UTF8.GetBytes(json)))
-            {
-                result = await JsonSerializer.DeserializeAsync<Result>(stream, options);
-                JsonTestHelper.AssertJsonEqual(json, JsonSerializer.Serialize(result, options));
-            }
         }
 
         private static IEnumerable<object[]> NumberHandling_ForPropsReadAfter_DeserializingCtorParams_TestData()
