@@ -1141,8 +1141,8 @@ namespace System.Text.Json.Serialization.Tests
         }
 
         [Theory]
-        [InlineData(typeof(ClassWithGuid))]
-        [InlineData(typeof(ClassWithNullableGuid))]
+        [InlineData(typeof(TypeWithGuid))]
+        [InlineData(typeof(TypeWithNullableGuid))]
         public void DefaultForValueTypeCtorParam(Type type)
         {
             string json = @"{""MyGuid"":""edc421bf-782a-4a95-ad67-3d73b5d7db6f""}";
@@ -1156,39 +1156,40 @@ namespace System.Text.Json.Serialization.Tests
             Assert.Equal(json, JsonSerializer.Serialize(obj, options));
         }
 
-        private class ClassWithGuid
+        private class TypeWithGuid
         {
             public Guid MyGuid { get; }
 
-            public ClassWithGuid(Guid myGuid = default) => MyGuid = myGuid;
+            public TypeWithGuid(Guid myGuid = default) => MyGuid = myGuid;
         }
 
-        private class ClassWithNullableGuid
+        private struct TypeWithNullableGuid
         {
             public Guid? MyGuid { get; }
 
-            public ClassWithNullableGuid(Guid? myGuid = default) => MyGuid = myGuid;
+            [JsonConstructor]
+            public TypeWithNullableGuid(Guid? myGuid = default) => MyGuid = myGuid;
         }
 
         [Fact]
         public void DefaultForReferenceTypeCtorParam()
         {
             string json = @"{""MyUri"":""http://hello""}";
-            object obj = JsonSerializer.Deserialize(json, typeof(ClassWithUri));
+            object obj = JsonSerializer.Deserialize(json, typeof(TypeWithUri));
             Assert.Equal(json, JsonSerializer.Serialize(obj));
 
             json = @"{}";
-            obj = JsonSerializer.Deserialize(json, typeof(ClassWithUri));
+            obj = JsonSerializer.Deserialize(json, typeof(TypeWithUri));
 
             var options = new JsonSerializerOptions { DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingDefault };
             Assert.Equal(json, JsonSerializer.Serialize(obj, options));
         }
 
-        private class ClassWithUri
+        private class TypeWithUri
         {
             public Uri MyUri { get; }
 
-            public ClassWithUri(Uri myUri = default) => MyUri = myUri;
+            public TypeWithUri(Uri myUri = default) => MyUri = myUri;
         }
     }
 }
