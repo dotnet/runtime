@@ -9,7 +9,7 @@
     <EnableTargetingPackDownload>false</EnableTargetingPackDownload>
     <RuntimeIdentifier>ios-$(TargetArchitecture)</RuntimeIdentifier>
     <PublishTrimmed>true</PublishTrimmed>
-    <_TrimmerDefaultAction>link</_TrimmerDefaultAction>
+    <TrimMode>link</TrimMode>
     <Optimized Condition="'$(Configuration)' == 'Release'">True</Optimized>
     <InvariantGlobalization>true</InvariantGlobalization> <!-- workaround for https://github.com/dotnet/runtime/issues/41866 -->
     <RunAnalyzers>false</RunAnalyzers>
