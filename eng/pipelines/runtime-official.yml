@@ -32,6 +32,8 @@ variables:
   value: .NETCore
 - name: _DotNetValidationArtifactsCategory
   value: .NETCoreValidation
+- name: PostBuildSign
+  value: false
 
 stages:
 - stage: Build
