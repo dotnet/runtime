@@ -1432,15 +1432,20 @@ namespace System
                 zoneAbbreviations.Substring(index);
         }
 
+        // Converts an array of bytes into an int - always using standard byte order (Big Endian)
+        // per TZif file standard
+        private static int TZif_ToInt32(byte[] value, int startIndex)
+            => BinaryPrimitives.ReadInt32BigEndian(value.AsSpan(startIndex));
+
         // Converts an array of bytes into a long - always using standard byte order (Big Endian)
         // per TZif file standard
-        private static long TZif_ToUnixTime(byte[] value, int startIndex, TZVersion version)
-        {
-            ReadOnlySpan<byte> span = value.AsSpan(startIndex);
-            return (version != TZVersion.V1)
-                ? BinaryPrimitives.ReadInt64BigEndian(span)
-                : BinaryPrimitives.ReadInt32BigEndian(span);
-        }
+        private static long TZif_ToInt64(byte[] value, int startIndex)
+            => BinaryPrimitives.ReadInt64BigEndian(value.AsSpan(startIndex));
+
+        private static long TZif_ToUnixTime(byte[] value, int startIndex, TZVersion version) =>
+            version != TZVersion.V1 ?
+                TZif_ToInt64(value, startIndex) :
+                TZif_ToInt32(value, startIndex);
 
         private static DateTime TZif_UnixTimeToDateTime(long unixTime) =>
             unixTime < DateTimeOffset.UnixMinSeconds ? DateTime.MinValue :
