@@ -5,6 +5,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Globalization;
 using System.Numerics;
+using System.Runtime.InteropServices;
 using System.Text;
 using Internal.Runtime.CompilerServices;
 
@@ -629,9 +630,13 @@ namespace System
             {
                 throw new ArgumentNullException(nameof(values));
             }
-            if (values is IReadOnlyList<string?> valuesIList)
+            if (values is List<string?> valuesIList)
             {
                 return Join(separator, valuesIList, 0, valuesIList.Count);
+            }
+            if (values is string?[] valuesArray)
+            {
+                return Join(separator, valuesArray, 0, valuesArray.Length);
             }
 
             using (IEnumerator<string?> en = values.GetEnumerator())
@@ -679,13 +684,13 @@ namespace System
 
         // Joins an array of strings together as one string with a separator between each original string.
         //
-        private static unsafe string Join(string? separator, IReadOnlyList<string?> value, int startIndex, int count)
+        private static unsafe string Join(string? separator, List<string?> value, int startIndex, int count)
         {
             separator ??= Empty;
             fixed (char* pSeparator = &separator._firstChar)
             {
                 // Defer argument validation to the internal function
-                return JoinCore(pSeparator, separator.Length, value, startIndex, count);
+                return JoinCore(pSeparator, separator.Length, CollectionsMarshal.AsSpan(value), startIndex, count);
             }
         }
 
@@ -777,7 +782,7 @@ namespace System
             }
         }
 
-        private static unsafe string JoinCore(char* separator, int separatorLength, IReadOnlyList<string?> value, int startIndex, int count)
+        private static unsafe string JoinCore(char* separator, int separatorLength, ReadOnlySpan<string?> value, int startIndex, int count)
         {
             // If the separator is null, it is converted to an empty string before entering this function.
             // Even for empty strings, fixed should never return null (it should return a pointer to a null char).
@@ -796,7 +801,7 @@ namespace System
             {
                 throw new ArgumentOutOfRangeException(nameof(count), SR.ArgumentOutOfRange_NegativeCount);
             }
-            if (startIndex > value.Count - count)
+            if (startIndex > value.Length - count)
             {
                 throw new ArgumentOutOfRangeException(nameof(startIndex), SR.ArgumentOutOfRange_IndexCountBuffer);
             }
@@ -883,7 +888,7 @@ namespace System
             // fall back should be extremely rare.
             return copiedLength == totalLength ?
                 result :
-                JoinCore(separator, separatorLength, new List<string?>(value), startIndex, count);
+                JoinCore(separator, separatorLength, value.ToArray().AsSpan(), startIndex, count);
         }
 
         public string PadLeft(int totalWidth) => PadLeft(totalWidth, ' ');
