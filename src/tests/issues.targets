@@ -3338,5 +3338,8 @@
         <ExcludeList Include = "$(XunitTestBinBase)/GC/Scenarios/ServerModel/servermodel/*">
             <Issue>Use more memory than the emulator on helix machine allows</Issue>
         </ExcludeList>
+        <ExcludeList Include = "$(XunitTestBinBase)/r2rdump/*">
+            <Issue>These tests are not supposed to be run with mono.</Issue>
+        </ExcludeList>
     </ItemGroup>
 </Project>

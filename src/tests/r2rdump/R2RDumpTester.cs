@@ -12,33 +12,64 @@ namespace R2RDumpTests
         private const string R2RDumpRelativePath = "R2RDump";
         private const string R2RDumpFile = "R2RDump.dll";
         private const string CoreRunFileName = "corerun";
+        
+        public static string FindExePath(string exe)
+        {
+            if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+            {
+                exe = exe + ".exe";
+            }
+            exe = Environment.ExpandEnvironmentVariables(exe);
+            if (!File.Exists(exe))
+            {
+                if (Path.GetDirectoryName(exe) == String.Empty)
+                {
+                    foreach (string test in (Environment.GetEnvironmentVariable("PATH") ?? "").Split(Path.PathSeparator))
+                    {
+                        string path = test.Trim();
+                        if (!String.IsNullOrEmpty(path) && File.Exists(path = Path.Combine(path, exe)))
+                            return Path.GetFullPath(path);
+                    }
+                }
+                throw new FileNotFoundException(new FileNotFoundException().Message, exe);
+            }
+            return Path.GetFullPath(exe);
+        }
 
         [Fact]
         public void DumpCoreLib()
         {
             string CoreRootVar = Environment.GetEnvironmentVariable(CoreRoot);
             bool IsUnix = !RuntimeInformation.IsOSPlatform(OSPlatform.Windows);
-            string CoreRunFile = CoreRunFileName + (IsUnix ? string.Empty : ".exe");
-            string CoreRunAbsolutePath = Path.Combine(CoreRootVar, CoreRunFile);
-            string R2RDumpAbsolutePath = Path.Combine(Path.Combine(CoreRootVar, R2RDumpRelativePath), R2RDumpFile);
+            string R2RDumpAbsolutePath = Path.Combine(CoreRootVar, R2RDumpRelativePath, R2RDumpFile);
             string CoreLibFile = "System.Private.CoreLib.dll";
             string CoreLibAbsolutePath = Path.Combine(CoreRootVar, CoreLibFile);
             string OutputFile = Path.GetTempFileName();
+            string TestDotNetCmdVar = Environment.GetEnvironmentVariable("__TestDotNetCmd");
+            string DotNetAbsolutePath = string.IsNullOrEmpty(TestDotNetCmdVar) ? FindExePath("dotnet") : TestDotNetCmdVar;
 
             ProcessStartInfo processStartInfo = new ProcessStartInfo
             {
                 UseShellExecute = false,
-                FileName = CoreRunAbsolutePath,
+                FileName = DotNetAbsolutePath,
                 // TODO, what flags do we like to test?
-                Arguments = string.Join(" ", new string[]{R2RDumpAbsolutePath, "--in", CoreLibAbsolutePath, "--out", OutputFile})
+                Arguments = string.Join(" ", new string[]{"exec", R2RDumpAbsolutePath, "--in", CoreLibAbsolutePath, "--out", OutputFile})
             };
 
             Process process = Process.Start(processStartInfo);
             process.WaitForExit();
-            string outputFileContent = File.ReadAllText(OutputFile);
-            // TODO, validate content more carefully
-            Assert.True(outputFileContent.Contains("ToString"));
+            int exitCode = process.ExitCode;
+            string outputContent = File.ReadAllText(OutputFile);
             File.Delete(OutputFile);
+            // TODO, here is a point where we can add more validation to outputs
+            // An uncaught exception (such as signature decoding error, would be caught by the error code)
+            bool failed = exitCode != 0;
+            if (failed)
+            {
+                Console.WriteLine("The process terminated with exit code {0}", exitCode);
+                Console.WriteLine(outputContent);
+                Assert.True(!failed);
+            }
         }
 
         public static int Main(string[] args)
