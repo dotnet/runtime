@@ -66,7 +66,8 @@ public class AndroidAppBuilderTask : Task
         apkBuilder.BuildApiLevel = BuildApiLevel;
         apkBuilder.BuildToolsVersion = BuildToolsVersion;
         apkBuilder.StripDebugSymbols = StripDebugSymbols;
-        (ApkBundlePath, ApkPackageId) = apkBuilder.BuildApk(SourceDir, abi, MainLibraryFileName, MonoRuntimeHeaders, NativeMainSource);
+        apkBuilder.NativeMainSource = NativeMainSource;
+        (ApkBundlePath, ApkPackageId) = apkBuilder.BuildApk(SourceDir, abi, MainLibraryFileName, MonoRuntimeHeaders);
 
         return true;
     }

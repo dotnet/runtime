@@ -18,13 +18,13 @@ public class ApkBuilder
     public string? BuildToolsVersion { get; set; }
     public string? OutputDir { get; set; }
     public bool StripDebugSymbols { get; set; }
+    public string? NativeMainSource { get; set; }
 
     public (string apk, string packageId) BuildApk(
         string sourceDir,
         string abi,
         string entryPointLib,
-        string monoRuntimeHeaders,
-        string? nativeMainSource = null)
+        string monoRuntimeHeaders)
     {
         if (!Directory.Exists(sourceDir))
             throw new ArgumentException($"sourceDir='{sourceDir}' is empty or doesn't exist");
@@ -189,8 +189,8 @@ public class ApkBuilder
         File.WriteAllText(javaActivityPath,
             Utils.GetEmbeddedResource("MainActivity.java")
                 .Replace("%EntryPointLibName%", Path.GetFileName(entryPointLib)));
-        if (!string.IsNullOrEmpty(nativeMainSource))
-            File.Copy(nativeMainSource, javaActivityPath, true);
+        if (!string.IsNullOrEmpty(NativeMainSource))
+            File.Copy(NativeMainSource, javaActivityPath, true);
 
         string monoRunner = Utils.GetEmbeddedResource("MonoRunner.java")
             .Replace("%EntryPointLibName%", Path.GetFileName(entryPointLib));
