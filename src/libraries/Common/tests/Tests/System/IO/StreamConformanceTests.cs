@@ -2,10 +2,13 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 #nullable enable
+using System.Buffers;
 using System.Collections;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 using System.Security.Cryptography;
 using System.Text;
 using System.Threading;
@@ -16,7 +19,7 @@ namespace System.IO.Tests
 {
     /// <summary>Base class providing tests for any Stream-derived type.</summary>
     [PlatformSpecific(~TestPlatforms.Browser)] // lots of operations aren't supported on browser
-    public abstract class StreamConformanceTests
+    public abstract class StreamConformanceTests : FileCleanupTestBase
     {
         /// <summary>Gets the name of the byte[] argument to Read/Write methods.</summary>
         protected virtual string ReadWriteBufferName => "buffer";
@@ -53,11 +56,15 @@ namespace System.IO.Tests
         protected virtual bool CanGetPositionWhenCanSeekIsFalse => false;
         /// <summary>Gets whether read/write operations fully support cancellation.</summary>
         protected virtual bool FullyCancelableOperations => true;
+        /// <summary>Gets whether a read operation will always try to fill the full buffer provided.</summary>
+        protected virtual bool ReadsReadUntilSizeOrEof => true;
 
         /// <summary>Gets whether the stream's CanRead/Write/etc properties are expected to return false once the stream is disposed.</summary>
         protected virtual bool CansReturnFalseAfterDispose => true;
         /// <summary>Gets whether the Stream may be used for additional operations after a read is canceled.</summary>
         protected virtual bool UsableAfterCanceledReads => true;
+        protected virtual bool CanSetLength => CanSeek;
+        protected virtual bool CanSetLengthGreaterThanCapacity => CanSetLength;
 
         /// <summary>Specifies the form of the read/write operation to use.</summary>
         public enum ReadWriteMode
@@ -76,6 +83,180 @@ namespace System.IO.Tests
             SyncAPM,
             /// <summary>Task.Factory.FromAsync(s.BeginRead, s.EndRead, ...) / Task.Factory.FromAsync(s.BeginWrite, s.EndWrite, ...)</summary>
             AsyncAPM
+        }
+
+        public static IEnumerable<object[]> AllReadWriteModes() =>
+            from mode in Enum.GetValues<ReadWriteMode>()
+            select new object[] { mode };
+
+        public static IEnumerable<object[]> AllReadWriteModesAndValue(object value) =>
+            from mode in Enum.GetValues<ReadWriteMode>()
+            select new object[] { mode, value };
+
+        /// <summary>Specifies the form of the seek operation to use.</summary>
+        public enum SeekMode
+        {
+            /// <summary>Stream.Position = pos;</summary>
+            Position,
+            /// <summary>Stream.Seek(pos, SeekOrigin.Begin)</summary>
+            SeekFromBeginning,
+            /// <summary>Stream.Seek(pos - stream.Position, SeekOrigin.Current)</summary>
+            SeekFromCurrent,
+            /// <summary>Stream.Seek(pos - stream.Length, SeekOrigin.End)</summary>
+            SeekFromEnd,
+        }
+
+        public static IEnumerable<object[]> AllSeekModes() =>
+            from mode in Enum.GetValues<SeekMode>()
+            select new object[] { mode };
+
+        public static IEnumerable<object[]> AllSeekModesAndValue(object value) =>
+            from mode in Enum.GetValues<SeekMode>()
+            select new object[] { mode, value };
+
+        protected async Task<int> ReadAsync(ReadWriteMode mode, Stream stream, byte[] buffer, int offset, int count, CancellationToken cancellationToken = default)
+        {
+            if (mode == ReadWriteMode.SyncByte)
+            {
+                if (count > 0)
+                {
+                    int b = stream.ReadByte();
+                    if (b != -1)
+                    {
+                        buffer[offset] = (byte)b;
+                        return 1;
+                    }
+                }
+
+                return 0;
+            }
+
+            return mode switch
+            {
+                ReadWriteMode.SyncArray => stream.Read(buffer, offset, count),
+                ReadWriteMode.SyncSpan => stream.Read(buffer.AsSpan(offset, count)),
+                ReadWriteMode.AsyncArray => await stream.ReadAsync(buffer, offset, count, cancellationToken),
+                ReadWriteMode.AsyncMemory => await stream.ReadAsync(buffer.AsMemory(offset, count), cancellationToken),
+                ReadWriteMode.SyncAPM => stream.EndRead(stream.BeginRead(buffer, offset, count, null, null)),
+                ReadWriteMode.AsyncAPM => await Task.Factory.FromAsync(stream.BeginRead, stream.EndRead, buffer, offset, count, null),
+                _ => throw new Exception($"Unknown mode: {mode}"),
+            };
+        }
+
+        protected async Task<int> ReadAllAsync(ReadWriteMode mode, Stream stream, byte[] buffer, int offset, int count, CancellationToken cancellationToken = default)
+        {
+            int bytesRead = 0;
+            if (ReadsReadUntilSizeOrEof && mode != ReadWriteMode.SyncByte)
+            {
+                bytesRead = await ReadAsync(mode, stream, buffer, offset, count);
+            }
+            else
+            {
+                while (bytesRead < buffer.Length)
+                {
+                    int n = await ReadAsync(mode, stream, buffer, offset + bytesRead, count - bytesRead);
+                    if (n == 0)
+                    {
+                        break;
+                    }
+                    Assert.InRange(n, 1, count - bytesRead);
+                    bytesRead += n;
+                }
+            }
+
+            return bytesRead;
+        }
+
+        protected async Task WriteAsync(ReadWriteMode mode, Stream stream, byte[] buffer, int offset, int count, CancellationToken cancellationToken = default)
+        {
+            switch (mode)
+            {
+                case ReadWriteMode.SyncByte:
+                    for (int i = offset; i < offset + count; i++)
+                    {
+                        stream.WriteByte(buffer[i]);
+                    }
+                    break;
+
+                case ReadWriteMode.SyncArray:
+                    stream.Write(buffer, offset, count);
+                    break;
+
+                case ReadWriteMode.SyncSpan:
+                    stream.Write(buffer.AsSpan(offset, count));
+                    break;
+
+                case ReadWriteMode.AsyncArray:
+                    await stream.WriteAsync(buffer, offset, count, cancellationToken);
+                    break;
+
+                case ReadWriteMode.AsyncMemory:
+                    await stream.WriteAsync(buffer.AsMemory(offset, count), cancellationToken);
+                    break;
+
+                case ReadWriteMode.SyncAPM:
+                    stream.EndWrite(stream.BeginWrite(buffer, offset, count, null, null));
+                    break;
+
+                case ReadWriteMode.AsyncAPM:
+                    await Task.Factory.FromAsync(stream.BeginWrite, stream.EndWrite, buffer, offset, count, null);
+                    break;
+
+                default:
+                    throw new Exception($"Unknown mode: {mode}");
+            }
+        }
+
+        protected async Task FlushAsync(ReadWriteMode mode, Stream stream, CancellationToken cancellationToken = default)
+        {
+            switch (mode)
+            {
+                case ReadWriteMode.SyncByte:
+                case ReadWriteMode.SyncArray:
+                case ReadWriteMode.SyncSpan:
+                case ReadWriteMode.SyncAPM:
+                    stream.Flush();
+                    break;
+
+                case ReadWriteMode.AsyncArray:
+                case ReadWriteMode.AsyncMemory:
+                case ReadWriteMode.AsyncAPM:
+                    await stream.FlushAsync(cancellationToken);
+                    break;
+
+                default:
+                    throw new Exception($"Unknown mode: {mode}");
+            }
+        }
+
+        protected long Seek(SeekMode mode, Stream stream, long position)
+        {
+            long p;
+            switch (mode)
+            {
+                case SeekMode.Position:
+                    stream.Position = position;
+                    p = stream.Position;
+                    break;
+
+                case SeekMode.SeekFromBeginning:
+                    p = stream.Seek(position, SeekOrigin.Begin);
+                    break;
+
+                case SeekMode.SeekFromCurrent:
+                    p = stream.Seek(position - stream.Position, SeekOrigin.Current);
+                    break;
+
+                case SeekMode.SeekFromEnd:
+                    p = stream.Seek(position - stream.Length, SeekOrigin.End);
+                    break;
+
+                default:
+                    throw new Exception($"Unknown mode: {mode}");
+            }
+
+            Assert.Equal(stream.Position, p);
+            return p;
         }
 
         protected async Task ValidateMisuseExceptionsAsync(Stream stream)
@@ -159,8 +340,8 @@ namespace System.IO.Tests
                 Assert.Throws(UnsupportedReadWriteExceptionType, () => { stream.ReadByte(); });
                 Assert.Throws(UnsupportedReadWriteExceptionType, () => { stream.Read(new Span<byte>(new byte[1])); });
                 Assert.Throws(UnsupportedReadWriteExceptionType, () => { stream.Read(new byte[1], 0, 1); });
-                Assert.Throws(UnsupportedReadWriteExceptionType, () => { stream.ReadAsync(new byte[1], 0, 1); });
-                Assert.Throws(UnsupportedReadWriteExceptionType, () => { stream.ReadAsync(new Memory<byte>(new byte[1])); });
+                await Assert.ThrowsAsync(UnsupportedReadWriteExceptionType, () => stream.ReadAsync(new byte[1], 0, 1));
+                await Assert.ThrowsAsync(UnsupportedReadWriteExceptionType, async () => await stream.ReadAsync(new Memory<byte>(new byte[1])));
                 await Assert.ThrowsAsync(UnsupportedReadWriteExceptionType, () => Task.Factory.FromAsync(stream.BeginRead, stream.EndRead, new byte[1], 0, 1, null));
                 Assert.True(Record.Exception(() => stream.EndRead(new NotImplementedIAsyncResult())) is Exception e && (e.GetType() == UnsupportedReadWriteExceptionType || e.GetType() == InvalidIAsyncResultExceptionType));
                 Assert.Throws(UnsupportedCopyExceptionType, () => { stream.CopyTo(new MemoryStream()); });
@@ -216,8 +397,8 @@ namespace System.IO.Tests
                 Assert.Throws(UnsupportedReadWriteExceptionType, () => { stream.WriteByte(1); });
                 Assert.Throws(UnsupportedReadWriteExceptionType, () => { stream.Write(new Span<byte>(new byte[1])); });
                 Assert.Throws(UnsupportedReadWriteExceptionType, () => { stream.Write(new byte[1], 0, 1); });
-                Assert.Throws(UnsupportedReadWriteExceptionType, () => { stream.WriteAsync(new byte[1], 0, 1); });
-                Assert.Throws(UnsupportedReadWriteExceptionType, () => { stream.WriteAsync(new Memory<byte>(new byte[1])); });
+                await Assert.ThrowsAsync(UnsupportedReadWriteExceptionType, () => stream.WriteAsync(new byte[1], 0, 1));
+                await Assert.ThrowsAsync(UnsupportedReadWriteExceptionType, async () => await stream.WriteAsync(new Memory<byte>(new byte[1])));
                 await Assert.ThrowsAsync(UnsupportedReadWriteExceptionType, () => Task.Factory.FromAsync(stream.BeginWrite, stream.EndWrite, new byte[1], 0, 1, null));
                 Assert.True(Record.Exception(() => stream.EndWrite(new NotImplementedIAsyncResult())) is Exception e && (e.GetType() == UnsupportedReadWriteExceptionType || e.GetType() == InvalidIAsyncResultExceptionType));
             }
@@ -226,9 +407,12 @@ namespace System.IO.Tests
             if (stream.CanSeek)
             {
                 Assert.Throws<ArgumentOutOfRangeException>(() => { stream.Position = -1; });
-                Assert.Throws<ArgumentOutOfRangeException>(() => { stream.Seek(-1, SeekOrigin.Begin); });
-                Assert.Throws<ArgumentOutOfRangeException>(() => { stream.Seek(0, (SeekOrigin)(-1)); });
-                Assert.Throws<ArgumentOutOfRangeException>(() => { stream.Seek(0, (SeekOrigin)3); });
+                Assert.Throws<IOException>(() => { stream.Seek(-1, SeekOrigin.Begin); });
+                Assert.Throws<IOException>(() => { stream.Seek(-stream.Position - 1, SeekOrigin.Current); });
+                Assert.Throws<IOException>(() => { stream.Seek(-stream.Length - 1, SeekOrigin.End); });
+                Assert.Throws<ArgumentException>(() => { stream.Seek(0, (SeekOrigin)(-1)); });
+                Assert.Throws<ArgumentException>(() => { stream.Seek(0, (SeekOrigin)3); });
+                Assert.Throws<ArgumentException>(() => { stream.Seek(0, ~SeekOrigin.Begin); });
                 Assert.Throws<ArgumentOutOfRangeException>(() => { stream.SetLength(-1); });
             }
             else
@@ -271,14 +455,14 @@ namespace System.IO.Tests
             AssertDisposed(() => { stream.Read(new Span<byte>(new byte[1])); });
             AssertDisposed(() => { stream.Read(new byte[1], 0, 1); });
             await AssertDisposedAsync(async () => await stream.ReadAsync(new byte[1], 0, 1));
-            await AssertDisposedAsync(async() => await stream.ReadAsync(new Memory<byte>(new byte[1])));
+            await AssertDisposedAsync(async () => await stream.ReadAsync(new Memory<byte>(new byte[1])));
             AssertDisposed(() => { stream.EndRead(stream.BeginRead(new byte[1], 0, 1, null, null)); });
 
             AssertDisposed(() => { stream.WriteByte(1); });
             AssertDisposed(() => { stream.Write(new Span<byte>(new byte[1])); });
             AssertDisposed(() => { stream.Write(new byte[1], 0, 1); });
             await AssertDisposedAsync(async () => await stream.WriteAsync(new byte[1], 0, 1));
-            await AssertDisposedAsync(async() => await stream.WriteAsync(new Memory<byte>(new byte[1])));
+            await AssertDisposedAsync(async () => await stream.WriteAsync(new Memory<byte>(new byte[1])));
             AssertDisposed(() => { stream.EndWrite(stream.BeginWrite(new byte[1], 0, 1, null, null)); });
 
             AssertDisposed(() => stream.Flush(), successAllowed: true);
@@ -343,7 +527,8 @@ namespace System.IO.Tests
             Exception e = await Record.ExceptionAsync(() => stream.FlushAsync(cts.Token));
             if (e != null)
             {
-                Assert.IsAssignableFrom<OperationCanceledException>(e);
+                oce = Assert.IsAssignableFrom<OperationCanceledException>(e);
+                Assert.Equal(cts.Token, oce.CancellationToken);
             }
         }
 
@@ -424,6 +609,906 @@ namespace System.IO.Tests
             public void OnCompleted(Action continuation) => ThreadPool.QueueUserWorkItem(_ => continuation());
             public void UnsafeOnCompleted(Action continuation) => ThreadPool.UnsafeQueueUserWorkItem(_ => continuation(), null);
             public void GetResult() { }
+        }
+
+        protected sealed unsafe class NativeMemoryManager : MemoryManager<byte>
+        {
+            private readonly int _length;
+            private IntPtr _ptr;
+            public int PinRefCount;
+
+            public NativeMemoryManager(int length) => _ptr = Marshal.AllocHGlobal(_length = length);
+
+            ~NativeMemoryManager() => Assert.False(true, $"{nameof(NativeMemoryManager)} being finalized");
+
+            public override Memory<byte> Memory => CreateMemory(_length);
+
+            public override Span<byte> GetSpan() => new Span<byte>((void*)_ptr, _length);
+
+            public override MemoryHandle Pin(int elementIndex = 0)
+            {
+                Interlocked.Increment(ref PinRefCount);
+                Assert.InRange(elementIndex, 0, _length); // allows elementIndex == _length for zero-length instances
+                return new MemoryHandle((byte*)_ptr + elementIndex, default, this);
+            }
+
+            public override void Unpin() => Interlocked.Decrement(ref PinRefCount);
+
+            protected override void Dispose(bool disposing)
+            {
+                Marshal.FreeHGlobal(_ptr);
+                _ptr = IntPtr.Zero;
+            }
+        }
+    }
+
+    public abstract class StandaloneStreamConformanceTests : StreamConformanceTests
+    {
+        protected override bool CanSeek => true;
+        protected virtual bool NopFlushCompletesSynchronously => true;
+
+        protected abstract Stream? CreateReadOnlyStreamCore(byte[]? initialData);
+        protected Stream? CreateReadOnlyStream(byte[]? initialData = null)
+        {
+            Stream? stream = CreateReadOnlyStreamCore(initialData);
+            if (stream is not null)
+            {
+                Assert.True(stream.CanRead);
+                Assert.False(stream.CanWrite);
+                if (CanSeek)
+                {
+                    Assert.Equal(0, stream.Position);
+                    Assert.Equal(initialData?.Length ?? 0, stream.Length);
+                }
+            }
+            return stream;
+        }
+
+        protected abstract Stream? CreateWriteOnlyStreamCore(byte[]? initialData);
+        protected Stream? CreateWriteOnlyStream(byte[]? initialData = null)
+        {
+            Stream? stream = CreateWriteOnlyStreamCore(initialData);
+            if (stream is not null)
+            {
+                Assert.False(stream.CanRead);
+                Assert.True(stream.CanWrite);
+                if (CanSeek)
+                {
+                    Assert.Equal(0, stream.Position);
+                    Assert.Equal(initialData?.Length ?? 0, stream.Length);
+                }
+            }
+            return stream;
+        }
+
+        protected abstract Stream? CreateReadWriteStreamCore(byte[]? initialData);
+        protected Stream? CreateReadWriteStream(byte[]? initialData = null)
+        {
+            Stream? stream = CreateReadWriteStreamCore(initialData);
+            if (stream is not null)
+            {
+                Assert.True(stream.CanRead);
+                Assert.True(stream.CanWrite);
+                if (CanSeek)
+                {
+                    Assert.Equal(0, stream.Position);
+                    Assert.Equal(initialData?.Length ?? 0, stream.Length);
+                }
+            }
+            return stream;
+        }
+
+        protected IEnumerable<Stream?> GetStreamsForValidation()
+        {
+            yield return CreateReadOnlyStream();
+            yield return CreateReadOnlyStream(new byte[4]);
+
+            yield return CreateWriteOnlyStream();
+            yield return CreateWriteOnlyStream(new byte[4]);
+
+            yield return CreateReadWriteStream();
+            yield return CreateReadWriteStream(new byte[4]);
+        }
+
+        [Fact]
+        public virtual async Task ArgumentValidation_ThrowsExpectedException()
+        {
+            foreach (Stream? stream in GetStreamsForValidation())
+            {
+                if (stream != null)
+                {
+                    using var _ = stream;
+                    await ValidateMisuseExceptionsAsync(stream);
+                }
+            }
+        }
+
+        [Fact]
+        public virtual async Task Disposed_ThrowsObjectDisposedException()
+        {
+            foreach (Stream? stream in GetStreamsForValidation())
+            {
+                if (stream != null)
+                {
+                    using var _ = stream;
+                    await ValidateDisposedExceptionsAsync(stream);
+                }
+            }
+        }
+
+        [Fact]
+        public virtual async Task ReadWriteAsync_Precanceled_ThrowsOperationCanceledException()
+        {
+            foreach (Stream? stream in GetStreamsForValidation())
+            {
+                if (stream != null)
+                {
+                    using var _ = stream;
+                    await ValidatePrecanceledOperations_ThrowsCancellationException(stream);
+                }
+            }
+        }
+
+        [Theory]
+        [MemberData(nameof(AllReadWriteModes))]
+        public virtual async Task Read_NonEmptyStream_Nop_Success(ReadWriteMode mode)
+        {
+            using Stream? stream = CreateReadOnlyStream(new byte[10]);
+            if (stream is null)
+            {
+                return;
+            }
+
+            Assert.Equal(0, await ReadAsync(mode, stream, Array.Empty<byte>(), 0, 0));
+            Assert.Equal(0, await ReadAsync(mode, stream, new byte[0], 0, 0));
+            Assert.Equal(0, await ReadAsync(mode, stream, new byte[1], 0, 0));
+            Assert.Equal(0, await ReadAsync(mode, stream, new byte[1], 1, 0));
+        }
+
+        [Theory]
+        [MemberData(nameof(AllReadWriteModes))]
+        public virtual async Task Write_Nop_Success(ReadWriteMode mode)
+        {
+            using Stream? stream = CreateReadWriteStream();
+            if (stream is null)
+            {
+                return;
+            }
+
+            await WriteAsync(mode, stream, Array.Empty<byte>(), 0, 0);
+            await WriteAsync(mode, stream, new byte[0], 0, 0);
+            await WriteAsync(mode, stream, new byte[1], 0, 0);
+            await WriteAsync(mode, stream, new byte[1], 1, 0);
+
+            Assert.Equal(0, stream.Position);
+            Assert.Equal(0, stream.Length);
+        }
+
+        [Theory]
+        [InlineData(ReadWriteMode.SyncArray)]
+        [InlineData(ReadWriteMode.AsyncArray)]
+        [InlineData(ReadWriteMode.AsyncAPM)]
+        public virtual async Task Read_DataStoredAtDesiredOffset(ReadWriteMode mode)
+        {
+            const byte Expected = 42;
+
+            using Stream? stream = CreateReadWriteStream(new byte[] { Expected });
+            if (stream is null)
+            {
+                return;
+            }
+
+            byte[] buffer = new byte[10];
+            int offset = 2;
+
+            Assert.Equal(1, await ReadAsync(mode, stream, buffer, offset, buffer.Length - offset));
+
+            for (int i = 0; i < buffer.Length; i++)
+            {
+                Assert.Equal(i == offset ? Expected : 0, buffer[i]);
+            }
+        }
+
+        [Theory]
+        [InlineData(ReadWriteMode.SyncArray)]
+        [InlineData(ReadWriteMode.AsyncArray)]
+        [InlineData(ReadWriteMode.AsyncAPM)]
+        public virtual async Task Write_DataReadFromDesiredOffset(ReadWriteMode mode)
+        {
+            using Stream? stream = CreateReadWriteStream();
+            if (stream is null)
+            {
+                return;
+            }
+
+            await WriteAsync(mode, stream, new[] { (byte)'a', (byte)'b', (byte)'h', (byte)'e', (byte)'l', (byte)'l', (byte)'o', (byte)'c', (byte)'d' }, 2, 5);
+            stream.Position = 0;
+
+            using StreamReader reader = new StreamReader(stream);
+            Assert.Equal("hello", reader.ReadToEnd());
+        }
+
+        [Theory]
+        [MemberData(nameof(AllReadWriteModes))]
+        public virtual async Task Read_EmptyStream_Nop_Success(ReadWriteMode mode)
+        {
+            using Stream? stream = CreateReadOnlyStream();
+            if (stream is null)
+            {
+                return;
+            }
+
+            Assert.Equal(0, await ReadAsync(mode, stream, Array.Empty<byte>(), 0, 0));
+            Assert.Equal(0, await ReadAsync(mode, stream, new byte[0], 0, 0));
+            Assert.Equal(0, await ReadAsync(mode, stream, new byte[1], 0, 0));
+            Assert.Equal(0, await ReadAsync(mode, stream, new byte[1], 1, 0));
+
+            Assert.Equal(0, await ReadAsync(mode, stream, new byte[4], 0, 4));
+            Assert.Equal(0, await ReadAsync(mode, stream, new byte[4], 1, 3));
+        }
+
+        [Theory]
+        [MemberData(nameof(AllReadWriteModesAndValue), 1)]
+        [MemberData(nameof(AllReadWriteModesAndValue), 256)]
+        public virtual async Task Read_PopulatedWithInitialData_KnownSize_Success(ReadWriteMode mode, int size)
+        {
+            byte[] expected = RandomNumberGenerator.GetBytes(size);
+
+            using Stream? stream = CreateReadOnlyStream(expected);
+            if (stream is null)
+            {
+                return;
+            }
+
+            byte[] actual = new byte[expected.Length];
+            int bytesRead = 0;
+            while (bytesRead < actual.Length)
+            {
+                int n = await ReadAsync(mode, stream, actual, bytesRead, actual.Length - bytesRead);
+                Assert.InRange(n, 1, actual.Length - bytesRead);
+                bytesRead += n;
+            }
+
+            if (CanSeek)
+            {
+                Assert.Equal(size, stream.Position);
+                Assert.Equal(size, stream.Seek(0, SeekOrigin.Current));
+            }
+
+            Assert.Equal(expected, actual);
+        }
+
+        [Theory]
+        [MemberData(nameof(AllReadWriteModesAndValue), 1)]
+        [MemberData(nameof(AllReadWriteModesAndValue), 4097)]
+        public virtual async Task Read_PopulatedWithInitialData_ToEof_Success(ReadWriteMode mode, int size)
+        {
+            byte[] expected = RandomNumberGenerator.GetBytes(size);
+
+            using Stream? stream = CreateReadOnlyStream(expected);
+            if (stream is null)
+            {
+                return;
+            }
+
+            var actual = new MemoryStream();
+
+            byte[] buffer = new byte[8];
+            int bytesRead = 0;
+            while ((bytesRead = await ReadAsync(mode, stream, buffer, 0, buffer.Length)) != 0)
+            {
+                Assert.InRange(bytesRead, 1, buffer.Length);
+                actual.Write(buffer, 0, bytesRead);
+            }
+            Assert.Equal(0, bytesRead);
+
+            if (CanSeek)
+            {
+                Assert.Equal(size, stream.Position);
+                Assert.Equal(size, stream.Seek(0, SeekOrigin.Current));
+            }
+
+            Assert.Equal(expected, actual.ToArray());
+        }
+
+        [Theory]
+        [MemberData(nameof(AllReadWriteModes))]
+        public virtual async Task Read_PartiallySatisfied_RemainderOfBufferUntouched(ReadWriteMode mode)
+        {
+            byte[] expected = RandomNumberGenerator.GetBytes(20);
+
+            using Stream? stream = CreateReadOnlyStream(expected);
+            if (stream is null)
+            {
+                return;
+            }
+
+            byte[] buffer = new byte[expected.Length + 10];
+            const int Offset = 3;
+            int bytesRead = await ReadAsync(mode, stream, buffer, Offset, buffer.Length - Offset);
+
+            for (int i = 0; i < Offset; i++)
+            {
+                Assert.Equal(0, buffer[i]);
+            }
+            for (int i = Offset; i < Offset + bytesRead; i++)
+            {
+                Assert.Equal(expected[i - Offset], buffer[i]);
+            }
+            for (int i = Offset + bytesRead; i < buffer.Length; i++)
+            {
+                Assert.Equal(0, buffer[i]);
+            }
+        }
+
+        [Theory]
+        [InlineData(false)]
+        [InlineData(true)]
+        public virtual async Task Read_CustomMemoryManager_Success(bool useAsync)
+        {
+            byte[] expected = RandomNumberGenerator.GetBytes(20);
+
+            using Stream? stream = CreateReadOnlyStream(expected);
+            if (stream is null)
+            {
+                return;
+            }
+
+            using MemoryManager<byte> memoryManager = new NativeMemoryManager(1024);
+            Assert.Equal(1024, memoryManager.Memory.Length);
+
+            int bytesRead = useAsync ?
+                await stream.ReadAsync(memoryManager.Memory) :
+                stream.Read(memoryManager.Memory.Span);
+            Assert.InRange(bytesRead, 1, memoryManager.Memory.Length);
+
+            Assert.True(expected.AsSpan(0, bytesRead).SequenceEqual(memoryManager.Memory.Span.Slice(0, bytesRead)));
+        }
+
+        [Theory]
+        [InlineData(false)]
+        [InlineData(true)]
+        public virtual async Task Write_CustomMemoryManager_Success(bool useAsync)
+        {
+            using Stream? stream = CreateReadWriteStream();
+            if (stream is null)
+            {
+                return;
+            }
+
+            using MemoryManager<byte> memoryManager = new NativeMemoryManager(256);
+            Assert.Equal(256, memoryManager.Memory.Length);
+            byte[] expected = RandomNumberGenerator.GetBytes(memoryManager.Memory.Length);
+            expected.AsSpan().CopyTo(memoryManager.Memory.Span);
+
+            if (useAsync)
+            {
+                await stream.WriteAsync(memoryManager.Memory);
+            }
+            else
+            {
+                stream.Write(memoryManager.Memory.Span);
+            }
+
+            stream.Position = 0;
+            byte[] actual = (byte[])expected.Clone();
+            Assert.Equal(actual.Length, await ReadAllAsync(ReadWriteMode.AsyncMemory, stream, actual, 0, actual.Length));
+            Assert.Equal(expected, actual);
+        }
+
+        [Theory]
+        [MemberData(nameof(CopyTo_CopiesAllDataFromRightPosition_Success_MemberData))]
+        public virtual async Task CopyTo_CopiesAllDataFromRightPosition_Success(
+            bool useAsync, byte[] expected, int position)
+        {
+            using Stream? stream = CreateReadOnlyStream(expected);
+            if (stream is null)
+            {
+                return;
+            }
+
+            stream.Position = position;
+
+            var destination = new MemoryStream();
+            if (useAsync)
+            {
+                await stream.CopyToAsync(destination);
+            }
+            else
+            {
+                stream.CopyTo(destination);
+            }
+
+            Assert.Equal(expected.Length, stream.Length);
+            Assert.Equal(expected.Length, stream.Position);
+            Assert.Equal(expected.AsSpan(position).ToArray(), destination.ToArray());
+        }
+
+        public static IEnumerable<object[]> CopyTo_CopiesAllDataFromRightPosition_Success_MemberData()
+        {
+            byte[] expected = RandomNumberGenerator.GetBytes(16 * 1024);
+            foreach (bool useAsync in new[] { false, true })
+            {
+                yield return new object[] { useAsync, expected, 0 }; // beginning
+                yield return new object[] { useAsync, expected, 1 }; // just past beginning
+                yield return new object[] { useAsync, expected, expected.Length / 2 }; // middle
+                yield return new object[] { useAsync, expected, expected.Length }; // end
+            }
+        }
+
+        [Theory]
+        [MemberData(nameof(AllReadWriteModes))]
+        public virtual async Task Write_Read_Success(ReadWriteMode mode)
+        {
+            const int Length = 1024;
+
+            using Stream? stream = CreateReadWriteStream();
+            if (stream is null)
+            {
+                return;
+            }
+
+            byte[] expected = RandomNumberGenerator.GetBytes(Length);
+
+            const int Copies = 3;
+            for (int i = 0; i < Copies; i++)
+            {
+                await WriteAsync(mode, stream, expected, 0, expected.Length);
+            }
+
+            stream.Position = 0;
+
+            byte[] actual = new byte[expected.Length];
+            for (int i = 0; i < Copies; i++)
+            {
+                int bytesRead = await ReadAllAsync(mode, stream, actual, 0, actual.Length);
+                Assert.Equal(expected, actual);
+                Array.Clear(actual, 0, actual.Length);
+            }
+        }
+
+        [Theory]
+        [MemberData(nameof(AllReadWriteModes))]
+        public virtual async Task Flush_ReadOnly_DoesntImpactReading(ReadWriteMode mode)
+        {
+            using Stream? stream = CreateReadOnlyStream(new byte[] { 0, 1, 2, 3, 4, 5 });
+            if (stream is null)
+            {
+                return;
+            }
+
+            var buffer = new byte[1];
+            for (int i = 0; i <= 5; i++)
+            {
+                await FlushAsync(mode, stream);
+                Assert.Equal(1, await ReadAsync(mode, stream, buffer, 0, buffer.Length));
+                Assert.Equal(i, buffer[0]);
+            }
+        }
+
+        [Theory]
+        [InlineData(ReadWriteMode.SyncArray)]
+        [InlineData(ReadWriteMode.AsyncArray)]
+        public virtual async Task Flush_MultipleTimes_Idempotent(ReadWriteMode mode)
+        {
+            using Stream? stream = CreateReadWriteStream();
+            if (stream is null)
+            {
+                return;
+            }
+
+            await FlushAsync(mode, stream);
+            await FlushAsync(mode, stream);
+
+            stream.WriteByte(42);
+
+            await FlushAsync(mode, stream);
+            await FlushAsync(mode, stream);
+
+            stream.Position = 0;
+
+            await FlushAsync(mode, stream);
+            await FlushAsync(mode, stream);
+
+            Assert.Equal(42, stream.ReadByte());
+
+            await FlushAsync(mode, stream);
+            await FlushAsync(mode, stream);
+        }
+
+        [Fact]
+        public virtual void Flush_SetLengthAtEndOfBuffer_OperatesOnValidData()
+        {
+            if (!CanSeek || !CanSetLengthGreaterThanCapacity)
+            {
+                return;
+            }
+
+            using Stream? stream = CreateReadWriteStream();
+            if (stream is null)
+            {
+                return;
+            }
+
+            stream.SetLength(200);
+            stream.Flush();
+
+            // write 119 bytes starting from Pos = 28
+            stream.Seek(28, SeekOrigin.Begin);
+            byte[] buffer = new byte[119];
+            for (int i = 0; i < buffer.Length; i++)
+            {
+                buffer[i] = byte.MaxValue;
+            }
+            stream.Write(buffer, 0, buffer.Length);
+            stream.Flush();
+
+            // read 317 bytes starting from Pos = 84;
+            stream.Seek(84, SeekOrigin.Begin);
+            stream.Read(new byte[1024], 0, 317);
+
+            stream.SetLength(135);
+            stream.Flush();
+
+            // read one byte at Pos = 97
+            stream.Seek(97, SeekOrigin.Begin);
+            Assert.Equal(stream.ReadByte(), (int)byte.MaxValue);
+        }
+
+        [Fact]
+        public virtual void Flush_NothingToFlush_CompletesSynchronously()
+        {
+            if (!NopFlushCompletesSynchronously)
+            {
+                return;
+            }
+
+            using Stream? stream = CreateReadWriteStream();
+            if (stream is null)
+            {
+                return;
+            }
+
+            Assert.True(stream.FlushAsync().IsCompletedSuccessfully);
+            Assert.True(stream.FlushAsync(CancellationToken.None).IsCompletedSuccessfully);
+            Assert.True(stream.FlushAsync(new CancellationTokenSource().Token).IsCompletedSuccessfully);
+        }
+
+        [Fact]
+        public virtual void DisposeAsync_NothingToFlush_CompletesSynchronously()
+        {
+            using Stream? stream = CreateReadWriteStream();
+            if (stream is null)
+            {
+                return;
+            }
+
+            Assert.True(stream.DisposeAsync().IsCompletedSuccessfully);
+        }
+
+        [Fact]
+        public virtual void Seek_Offset0FromMark_Success()
+        {
+            if (!CanSeek)
+            {
+                return;
+            }
+
+            using Stream? stream = CreateReadOnlyStream(new byte[10]);
+            if (stream is null)
+            {
+                return;
+            }
+
+            Assert.Equal(0, stream.Seek(0, SeekOrigin.Begin));
+            Assert.Equal(stream.Length, stream.Seek(0, SeekOrigin.End));
+            Assert.Equal(4, stream.Seek(4, SeekOrigin.Begin));
+            Assert.Equal(1, stream.Seek(-3, SeekOrigin.Current));
+            Assert.Equal(0, stream.Seek(0, SeekOrigin.Begin));
+        }
+
+        [Fact]
+        public virtual void Seek_RandomWalk_ReadConsistency()
+        {
+            using Stream? stream = CreateReadWriteStream();
+            if (stream is null)
+            {
+                return;
+            }
+
+            var rand = new Random(42); // fixed seed to enable repeatable runs
+            const int Trials = 1000;
+            const int FileLength = 0x4000;
+            const int MaxBytesToRead = 21;
+
+            // Write data to the file
+            byte[] buffer = RandomNumberGenerator.GetBytes(FileLength);
+            stream.Write(buffer, 0, buffer.Length);
+            Assert.Equal(buffer.Length, stream.Position);
+            Assert.Equal(buffer.Length, stream.Length);
+            stream.Position = 0;
+
+            // Repeatedly jump around, reading, and making sure we get the right data back
+            for (int trial = 0; trial < Trials; trial++)
+            {
+                // Pick some number of bytes to read
+                int bytesToRead = rand.Next(1, MaxBytesToRead);
+
+                // Jump to a random position, seeking either from one of the possible origins
+                SeekOrigin origin = (SeekOrigin)rand.Next(3);
+                long pos = stream.Seek(origin switch
+                {
+                    SeekOrigin.Begin => rand.Next(0, (int)stream.Length - bytesToRead),
+                    SeekOrigin.Current => rand.Next(-(int)stream.Position + bytesToRead, (int)stream.Length - (int)stream.Position - bytesToRead),
+                    _ => -rand.Next(bytesToRead, (int)stream.Length),
+                }, origin);
+                Assert.InRange(pos, 0, stream.Length - bytesToRead);
+
+                // Read the requested number of bytes, and verify each is correct
+                for (int i = 0; i < bytesToRead; i++)
+                {
+                    int byteRead = stream.ReadByte();
+                    Assert.Equal(buffer[pos + i], byteRead);
+                }
+            }
+        }
+
+        [Theory]
+        [MemberData(nameof(AllSeekModes))]
+        public virtual void Seek_Read_RoundtripsExpectedData(SeekMode mode)
+        {
+            if (!CanSeek)
+            {
+                return;
+            }
+
+            const int Length = 512;
+
+            byte[] expected = RandomNumberGenerator.GetBytes(Length);
+            using Stream? stream = CreateReadOnlyStream(expected);
+            if (stream is null)
+            {
+                return;
+            }
+
+            Assert.Equal(Length, stream.Length);
+            foreach (long pos in new[] { Length - 1, 0, Length / 2, 1 })
+            {
+                Assert.Equal(pos, Seek(mode, stream, pos));
+                Assert.Equal(expected[pos], (byte)stream.ReadByte());
+            }
+        }
+
+        [Theory]
+        [MemberData(nameof(AllSeekModes))]
+        public virtual void Seek_ReadWrite_RoundtripsExpectedData(SeekMode mode)
+        {
+            if (!CanSeek)
+            {
+                return;
+            }
+
+            const int Length = 512;
+
+            byte[] expected = RandomNumberGenerator.GetBytes(Length);
+            using Stream? stream = CreateReadWriteStream(expected);
+            if (stream is null)
+            {
+                return;
+            }
+
+            Assert.Equal(Length, stream.Length);
+
+            var rand = new Random(42);
+            foreach (long pos in new[] { Length - 1, 0, Length / 2, 1 })
+            {
+                Assert.Equal(pos, Seek(mode, stream, pos));
+                Assert.Equal(expected[pos], (byte)stream.ReadByte());
+
+                Seek(mode, stream, pos);
+                byte b = (byte)rand.Next(0, 256);
+                stream.WriteByte(b);
+                Assert.Equal(pos + 1, stream.Position);
+
+                Seek(mode, stream, pos);
+                Assert.Equal(b, stream.ReadByte());
+                Assert.Equal(pos + 1, stream.Position);
+            }
+        }
+
+        [Fact]
+        public virtual void SetLength_FailsForReadOnly_Throws()
+        {
+            using Stream? stream = CreateReadOnlyStream(new byte[4]);
+            if (stream is null)
+            {
+                return;
+            }
+
+            Assert.Equal(0, stream.Position);
+            Assert.Throws<NotSupportedException>(() => stream.SetLength(3));
+            Assert.Throws<NotSupportedException>(() => stream.SetLength(4));
+            if (CanSetLengthGreaterThanCapacity)
+            {
+                Assert.Throws<NotSupportedException>(() => stream.SetLength(5));
+            }
+            Assert.Equal(0, stream.Position);
+        }
+
+        [Fact]
+        public virtual void SetLength_FailsForWritableIfApplicable_Throws()
+        {
+            if (CanSetLength)
+            {
+                return;
+            }
+
+            using Stream? stream = CreateReadWriteStream(new byte[4]);
+            if (stream is null)
+            {
+                return;
+            }
+
+            Assert.Equal(0, stream.Position);
+            Assert.Throws<NotSupportedException>(() => stream.SetLength(3));
+            Assert.Throws<NotSupportedException>(() => stream.SetLength(4));
+            Assert.Throws<NotSupportedException>(() => stream.SetLength(5));
+            Assert.Equal(0, stream.Position);
+        }
+
+        [Fact]
+        public virtual void SetLength_ChangesLengthAccordingly_Success()
+        {
+            if (!CanSetLength)
+            {
+                return;
+            }
+
+            using Stream? stream = CreateReadWriteStream();
+            if (stream is null)
+            {
+                return;
+            }
+
+            Assert.Equal(0, stream.Length);
+            Assert.Equal(0, stream.Position);
+
+            stream.SetLength(4);
+
+            Assert.Equal(4, stream.Length);
+            Assert.Equal(0, stream.Position);
+
+            stream.Write(new byte[] { 1, 2, 3, 4, 5, 6 }, 0, 6);
+            Assert.Equal(6, stream.Length);
+            Assert.Equal(6, stream.Position);
+
+            stream.SetLength(3);
+            Assert.Equal(3, stream.Length);
+            Assert.Equal(3, stream.Position);
+
+            Assert.Equal(-1, stream.ReadByte());
+            Assert.Equal(3, stream.Position);
+
+            stream.WriteByte(42);
+            Assert.Equal(4, stream.Length);
+            Assert.Equal(4, stream.Position);
+        }
+
+        [Theory]
+        [MemberData(nameof(AllReadWriteModes))]
+        public virtual async Task SetLength_DataFromShrinkNotPreserved_Success(ReadWriteMode mode)
+        {
+            if (!CanSeek || !CanSetLength)
+            {
+                return;
+            }
+
+            byte[] expected = new byte[] { 0, 1, 2, 3 };
+            byte[] actual = new byte[expected.Length];
+
+            using Stream? stream = CreateReadWriteStream(expected);
+            if (stream is null)
+            {
+                return;
+            }
+
+            Assert.Equal(4, stream.Length);
+            stream.SetLength(4);
+            Assert.Equal(4, stream.Length);
+            Assert.Equal(0, stream.Position);
+            Assert.Equal(4, await ReadAllAsync(mode, stream, actual, 0, actual.Length));
+            Assert.Equal(expected, actual);
+
+            Array.Clear(actual, 0, actual.Length);
+
+            stream.SetLength(3);
+            Assert.Equal(3, stream.Position);
+            stream.Position = 0;
+            Assert.Equal(3, await ReadAllAsync(mode, stream, actual, 0, actual.Length));
+            Assert.Equal(new byte[] { 0, 1, 2 }, actual.AsSpan(0, 3).ToArray());
+
+            Array.Clear(actual, 0, actual.Length);
+
+            stream.SetLength(4);
+            stream.Position = 0;
+            Assert.Equal(4, await ReadAllAsync(mode, stream, actual, 0, actual.Length));
+            Assert.Equal(new byte[] { 0, 1, 2, 0 }, actual);
+        }
+
+        [Fact]
+        public void SetLength_MaxValue_ThrowsExpectedException()
+        {
+            if (!CanSetLengthGreaterThanCapacity)
+            {
+                return;
+            }
+
+            using Stream? stream = CreateReadWriteStream();
+            if (stream is null)
+            {
+                return;
+            }
+
+            // Depending on the stream (or file system involved), this can:
+            // - Throw IOException : No space left on device
+            // - Throw ArgumentOutOfRangeException : Specified file length was too large for the file system.
+            // - Succeed.
+            try
+            {
+                stream.SetLength(long.MaxValue);
+            }
+            catch (Exception e)
+            {
+                Assert.True(e is IOException || e is ArgumentOutOfRangeException, $"Unexpected exception {e}");
+                return;
+            }
+
+            Assert.Equal(long.MaxValue, stream.Length);
+        }
+
+        [Theory]
+        [MemberData(nameof(AllReadWriteModes))]
+        public virtual async Task SeekPastEnd_Write_BeyondCapacity(ReadWriteMode mode)
+        {
+            if (!CanSeek)
+            {
+                return;
+            }
+
+            using Stream? stream = CreateReadWriteStream();
+            if (stream is null)
+            {
+                return;
+            }
+
+            long origLength = stream.Length;
+
+            byte[] expected = RandomNumberGenerator.GetBytes(10);
+
+            // Move past end; doesn't change stream length.
+            int pastEnd = 5;
+            stream.Seek(pastEnd, SeekOrigin.End);
+            Assert.Equal(stream.Length + pastEnd, stream.Position);
+            stream.Position = stream.Position; // nop change
+            Assert.Equal(stream.Length + pastEnd, stream.Position);
+
+            // Write bytes
+            await WriteAsync(mode, stream, expected, 0, expected.Length);
+            Assert.Equal(origLength + pastEnd + expected.Length, stream.Position);
+            Assert.Equal(origLength + pastEnd + expected.Length, stream.Length);
+
+            // Read them back and validate
+            stream.Position = origLength;
+            byte[] actual = new byte[expected.Length + pastEnd];
+            Assert.Equal(actual.Length, await ReadAllAsync(mode, stream, actual, 0, actual.Length));
+            for (int i = 0; i < pastEnd; i++)
+            {
+                Assert.Equal(0, actual[i]);
+            }
+            for (int i = 0; i < expected.Length; i++)
+            {
+                Assert.Equal(expected[i], actual[i + pastEnd]);
+            }
         }
     }
 
@@ -569,13 +1654,13 @@ namespace System.IO.Tests
         }
 
         public static IEnumerable<object[]> ReadWrite_Success_MemberData() =>
-            from mode in new[] { ReadWriteMode.SyncSpan, ReadWriteMode.SyncArray, ReadWriteMode.SyncAPM, ReadWriteMode.AsyncArray, ReadWriteMode.AsyncMemory, ReadWriteMode.AsyncAPM }
+            from mode in Enum.GetValues<ReadWriteMode>()
             from writeSize in new[] { 1, 42, 10 * 1024 }
             from startWithFlush in new[] { false, true }
             select new object[] { mode, writeSize, startWithFlush };
 
         public static IEnumerable<object[]> ReadWrite_Success_Large_MemberData() =>
-            from mode in new[] { ReadWriteMode.SyncSpan, ReadWriteMode.SyncArray, ReadWriteMode.SyncAPM, ReadWriteMode.AsyncArray, ReadWriteMode.AsyncMemory, ReadWriteMode.AsyncAPM }
+            from mode in Enum.GetValues<ReadWriteMode>()
             from writeSize in new[] { 10 * 1024 * 1024 }
             from startWithFlush in new[] { false, true }
             select new object[] { mode, writeSize, startWithFlush };
@@ -598,23 +1683,7 @@ namespace System.IO.Tests
                 {
                     if (startWithFlush)
                     {
-                        switch (mode)
-                        {
-                            case ReadWriteMode.SyncArray:
-                            case ReadWriteMode.SyncSpan:
-                            case ReadWriteMode.SyncAPM:
-                                writeable.Flush();
-                                break;
-
-                            case ReadWriteMode.AsyncArray:
-                            case ReadWriteMode.AsyncMemory:
-                            case ReadWriteMode.AsyncAPM:
-                                await writeable.FlushAsync(nonCanceledToken);
-                                break;
-
-                            default:
-                                throw new Exception($"Unknown mode: {mode}");
-                        }
+                        await FlushAsync(mode, writeable, nonCanceledToken);
                     }
 
                     byte[] writerBytes = RandomNumberGenerator.GetBytes(writeSize);
@@ -622,35 +1691,7 @@ namespace System.IO.Tests
 
                     Task writes = Task.Run(async () =>
                     {
-                        switch (mode)
-                        {
-                            case ReadWriteMode.SyncArray:
-                                writeable.Write(writerBytes, 0, writerBytes.Length);
-                                break;
-
-                            case ReadWriteMode.SyncSpan:
-                                writeable.Write(writerBytes);
-                                break;
-
-                            case ReadWriteMode.AsyncArray:
-                                await writeable.WriteAsync(writerBytes, 0, writerBytes.Length, nonCanceledToken);
-                                break;
-
-                            case ReadWriteMode.AsyncMemory:
-                                await writeable.WriteAsync(writerBytes, nonCanceledToken);
-                                break;
-
-                            case ReadWriteMode.SyncAPM:
-                                writeable.EndWrite(writeable.BeginWrite(writerBytes, 0, writerBytes.Length, null, null));
-                                break;
-
-                            case ReadWriteMode.AsyncAPM:
-                                await Task.Factory.FromAsync(writeable.BeginWrite, writeable.EndWrite, writerBytes, 0, writerBytes.Length, null);
-                                break;
-
-                            default:
-                                throw new Exception($"Unknown mode: {mode}");
-                        }
+                        await WriteAsync(mode, writeable, writerBytes, 0, writerBytes.Length, nonCanceledToken);
 
                         if (FlushRequiredToWriteData)
                         {
@@ -668,16 +1709,7 @@ namespace System.IO.Tests
                     int n = 0;
                     while (n < readerBytes.Length)
                     {
-                        int r = mode switch
-                        {
-                            ReadWriteMode.SyncArray => readable.Read(readerBytes, n, readerBytes.Length - n),
-                            ReadWriteMode.SyncSpan => readable.Read(readerBytes.AsSpan(n)),
-                            ReadWriteMode.AsyncArray => await readable.ReadAsync(readerBytes, n, readerBytes.Length - n, nonCanceledToken),
-                            ReadWriteMode.AsyncMemory => await readable.ReadAsync(readerBytes.AsMemory(n), nonCanceledToken),
-                            ReadWriteMode.SyncAPM => readable.EndRead(readable.BeginRead(readerBytes, n, readerBytes.Length - n, null, null)),
-                            ReadWriteMode.AsyncAPM => await Task.Factory.FromAsync(readable.BeginRead, readable.EndRead, readerBytes, n, readerBytes.Length - n, null),
-                            _ => throw new Exception($"Unknown mode: {mode}"),
-                        };
+                        int r = await ReadAsync(mode, readable, readerBytes, n, readerBytes.Length - n);
                         Assert.InRange(r, 1, readerBytes.Length - n);
                         n += r;
                     }
@@ -696,20 +1728,8 @@ namespace System.IO.Tests
         }
 
         [Theory]
-        [InlineData(ReadWriteMode.SyncByte, false)]
-        [InlineData(ReadWriteMode.SyncArray, false)]
-        [InlineData(ReadWriteMode.SyncSpan, false)]
-        [InlineData(ReadWriteMode.AsyncArray, false)]
-        [InlineData(ReadWriteMode.AsyncMemory, false)]
-        [InlineData(ReadWriteMode.SyncAPM, false)]
-        [InlineData(ReadWriteMode.AsyncAPM, false)]
-        [InlineData(ReadWriteMode.SyncByte, true)]
-        [InlineData(ReadWriteMode.SyncArray, true)]
-        [InlineData(ReadWriteMode.SyncSpan, true)]
-        [InlineData(ReadWriteMode.AsyncArray, true)]
-        [InlineData(ReadWriteMode.AsyncMemory, true)]
-        [InlineData(ReadWriteMode.SyncAPM, true)]
-        [InlineData(ReadWriteMode.AsyncAPM, true)]
+        [MemberData(nameof(AllReadWriteModesAndValue), false)]
+        [MemberData(nameof(AllReadWriteModesAndValue), true)]
         public virtual async Task Read_Eof_Returns0(ReadWriteMode mode, bool dataAvailableFirst)
         {
             using StreamPair streams = await CreateConnectedStreamsAsync();
@@ -741,23 +1761,7 @@ namespace System.IO.Tests
 
             await write;
 
-            if (mode == ReadWriteMode.SyncByte)
-            {
-                Assert.Equal(-1, readable.ReadByte());
-            }
-            else
-            {
-                Assert.Equal(0, mode switch
-                {
-                    ReadWriteMode.SyncArray => readable.Read(new byte[1], 0, 1),
-                    ReadWriteMode.SyncSpan => readable.Read(new byte[1]),
-                    ReadWriteMode.AsyncArray => await readable.ReadAsync(new byte[1], 0, 1),
-                    ReadWriteMode.AsyncMemory => await readable.ReadAsync(new byte[1]),
-                    ReadWriteMode.SyncAPM => readable.EndRead(readable.BeginRead(new byte[1], 0, 1, null, null)),
-                    ReadWriteMode.AsyncAPM => await Task.Factory.FromAsync(readable.BeginRead, readable.EndRead, new byte[1], 0, 1, null),
-                    _ => throw new Exception($"Unknown mode: {mode}"),
-                });
-            }
+            Assert.Equal(0, await ReadAsync(mode, readable, new byte[1], 0, 1));
         }
 
         [Theory]
@@ -779,13 +1783,7 @@ namespace System.IO.Tests
                 writeable.Dispose();
             });
 
-            Assert.Equal(1, mode switch
-            {
-                ReadWriteMode.SyncArray => readable.Read(buffer, offset, buffer.Length - offset),
-                ReadWriteMode.AsyncArray => await readable.ReadAsync(buffer, offset, buffer.Length - offset),
-                ReadWriteMode.AsyncAPM => await Task.Factory.FromAsync(readable.BeginRead, readable.EndRead, buffer, offset, buffer.Length - offset, null),
-                _ => throw new Exception($"Unknown mode: {mode}"),
-            });
+            Assert.Equal(1, await ReadAsync(mode, readable, buffer, offset, buffer.Length - offset));
 
             await write;
 
@@ -809,28 +1807,12 @@ namespace System.IO.Tests
 
             Task write = Task.Run(async () =>
             {
-                switch (mode)
-                {
-                    case ReadWriteMode.SyncArray:
-                        writeable.Write(buffer, Offset, Count);
-                        break;
-
-                    case ReadWriteMode.AsyncArray:
-                        await writeable.WriteAsync(buffer, Offset, Count);
-                        break;
-
-                    case ReadWriteMode.AsyncAPM:
-                        await Task.Factory.FromAsync(writeable.BeginWrite, writeable.EndWrite, buffer, Offset, Count, null);
-                        break;
-
-                    default:
-                        throw new Exception($"Unknown mode: {mode}");
-                }
-
+                await WriteAsync(mode, writeable, buffer, Offset, Count);
                 writeable.Dispose();
             });
 
-            Assert.Equal("hello", new StreamReader(readable).ReadToEnd());
+            using StreamReader reader = new StreamReader(readable);
+            Assert.Equal("hello", reader.ReadToEnd());
         }
 
         [Fact]
@@ -1089,16 +2071,7 @@ namespace System.IO.Tests
             {
                 for (int iter = 0; iter < 2; iter++)
                 {
-                    Task<int> zeroByteRead = mode switch
-                    {
-                        ReadWriteMode.SyncSpan => Task.Run(() => readable.Read(Span<byte>.Empty)),
-                        ReadWriteMode.SyncArray => Task.Run(() => readable.Read(new byte[0], 0, 0)),
-                        ReadWriteMode.AsyncArray => readable.ReadAsync(new byte[0], 0, 0),
-                        ReadWriteMode.AsyncMemory => readable.ReadAsync(Memory<byte>.Empty).AsTask(),
-                        ReadWriteMode.SyncAPM => Task.Run(() => readable.EndRead(readable.BeginRead(Array.Empty<byte>(), 0, 0, null, null))),
-                        ReadWriteMode.AsyncAPM => Task.Factory.FromAsync(readable.BeginRead, readable.EndRead, Array.Empty<byte>(), 0, 0, null),
-                        _ => throw new Exception($"Unknown mode: {mode}"),
-                    };
+                    Task<int> zeroByteRead = Task.Run(() => ReadAsync(mode, readable, Array.Empty<byte>(), 0, 0));
 
                     if (BlocksOnZeroByteReads)
                     {
@@ -1160,72 +2133,13 @@ namespace System.IO.Tests
             using StreamPair streams = await CreateConnectedStreamsAsync();
             foreach ((Stream writeable, Stream readable) in GetReadWritePairs(streams))
             {
-                Task writes;
-                switch (mode)
+                Task writes = Task.Run(async () =>
                 {
-                    case ReadWriteMode.SyncSpan:
-                        writes = Task.Run(() =>
-                        {
-                            foreach (byte[] buffer in buffers)
-                            {
-                                writeable.Write(buffer.AsSpan());
-                            }
-                        });
-                        break;
-
-                    case ReadWriteMode.SyncArray:
-                        writes = Task.Run(() =>
-                        {
-                            foreach (byte[] buffer in buffers)
-                            {
-                                writeable.Write(buffer, 0, buffer.Length);
-                            }
-                        });
-                        break;
-
-                    case ReadWriteMode.AsyncArray:
-                        writes = Task.Run(async () =>
-                        {
-                            foreach (byte[] buffer in buffers)
-                            {
-                                await writeable.WriteAsync(buffer, 0, buffer.Length);
-                            }
-                        });
-                        break;
-
-                    case ReadWriteMode.AsyncMemory:
-                        writes = Task.Run(async () =>
-                        {
-                            foreach (byte[] buffer in buffers)
-                            {
-                                await writeable.WriteAsync(buffer);
-                            }
-                        });
-                        break;
-
-                    case ReadWriteMode.SyncAPM:
-                        writes = Task.Run(() =>
-                        {
-                            foreach (byte[] buffer in buffers)
-                            {
-                                writeable.EndWrite(writeable.BeginWrite(buffer, 0, buffer.Length, null, null));
-                            }
-                        });
-                        break;
-
-                    case ReadWriteMode.AsyncAPM:
-                        writes = Task.Run(async () =>
-                        {
-                            foreach (byte[] buffer in buffers)
-                            {
-                                await Task.Factory.FromAsync(writeable.BeginWrite, writeable.EndWrite, buffer, 0, buffer.Length, null);
-                            }
-                        });
-                        break;
-
-                    default:
-                        throw new Exception($"Unknown mode: {mode}");
-                }
+                    foreach (byte[] buffer in buffers)
+                    {
+                        await WriteAsync(mode, writeable, buffer, 0, buffer.Length);
+                    }
+                });
 
                 if (FlushRequiredToWriteData)
                 {
@@ -1254,6 +2168,72 @@ namespace System.IO.Tests
 
                 Assert.Equal("helloworld", Encoding.UTF8.GetString(readBytes));
                 await writes;
+
+                if (!FlushGuaranteesAllDataWritten)
+                {
+                    break;
+                }
+            }
+        }
+
+        [Theory]
+        [InlineData(false)]
+        [InlineData(true)]
+        public virtual async Task ReadWrite_CustomMemoryManager_Success(bool useAsync)
+        {
+            using StreamPair streams = await CreateConnectedStreamsAsync();
+            foreach ((Stream writeable, Stream readable) in GetReadWritePairs(streams))
+            {
+                using MemoryManager<byte> writeBuffer = new NativeMemoryManager(1024);
+                using MemoryManager<byte> readBuffer = new NativeMemoryManager(writeBuffer.Memory.Length);
+
+                Assert.Equal(1024, writeBuffer.Memory.Length);
+                Assert.Equal(writeBuffer.Memory.Length, readBuffer.Memory.Length);
+
+                new Random().NextBytes(writeBuffer.Memory.Span);
+                readBuffer.Memory.Span.Clear();
+
+                Task write = useAsync ?
+                    writeable.WriteAsync(writeBuffer.Memory).AsTask() :
+                    Task.Run(() => writeable.Write(writeBuffer.Memory.Span));
+                if (FlushRequiredToWriteData)
+                {
+                    write = write.ContinueWith(t =>
+                    {
+                        t.GetAwaiter().GetResult();
+                        if (FlushGuaranteesAllDataWritten)
+                        {
+                            writeable.Flush();
+                        }
+                        else
+                        {
+                            writeable.Dispose();
+                        }
+                    }, CancellationToken.None, TaskContinuationOptions.None, TaskScheduler.Default);
+                }
+
+                try
+                {
+                    int bytesRead = 0;
+                    while (bytesRead < readBuffer.Memory.Length)
+                    {
+                        int n = useAsync ?
+                            await readable.ReadAsync(readBuffer.Memory.Slice(bytesRead)) :
+                            readable.Read(readBuffer.Memory.Span.Slice(bytesRead));
+                        if (n == 0)
+                        {
+                            break;
+                        }
+                        Assert.InRange(n, 1, readBuffer.Memory.Length - bytesRead);
+                        bytesRead += n;
+                    }
+
+                    Assert.True(writeBuffer.Memory.Span.SequenceEqual(readBuffer.Memory.Span));
+                }
+                finally
+                {
+                    await write;
+                }
 
                 if (!FlushGuaranteesAllDataWritten)
                 {

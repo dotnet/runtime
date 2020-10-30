@@ -193,7 +193,11 @@ namespace System.IO
             byte[] buffer, int offset, int count, AsyncCallback? callback, object? state,
             bool serializeAsynchronously, bool apm)
         {
-            if (!CanRead) throw Error.GetReadNotSupported();
+            ValidateBufferArguments(buffer, offset, count);
+            if (!CanRead)
+            {
+                throw Error.GetReadNotSupported();
+            }
 
             // To avoid a race with a stream's position pointer & generating race conditions
             // with internal buffer indexes in our own streams that
@@ -344,6 +348,7 @@ namespace System.IO
             byte[] buffer, int offset, int count, AsyncCallback? callback, object? state,
             bool serializeAsynchronously, bool apm)
         {
+            ValidateBufferArguments(buffer, offset, count);
             if (!CanWrite)
             {
                 throw Error.GetWriteNotSupported();
