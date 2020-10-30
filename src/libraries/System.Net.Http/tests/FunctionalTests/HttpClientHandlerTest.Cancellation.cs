@@ -63,7 +63,7 @@ namespace System.Net.Http.Functional.Tests
                     long start = Environment.TickCount64;
                     (await invoker.SendAsync(TestAsync, request, default)).Dispose();
                     long elapsed = content.Ticks - start;
-                    Assert.True(elapsed > delay.Milliseconds);
+                    Assert.True(elapsed >= delay.TotalMilliseconds);
                 }
             }, async server =>
             {
@@ -88,8 +88,8 @@ namespace System.Net.Http.Functional.Tests
 
             protected override Task SerializeToStreamAsync(Stream stream, TransportContext context)
             {
-                _tcs.SetResult(true);
                 Ticks = Environment.TickCount64;
+                _tcs.SetResult(true);
                 return base.SerializeToStreamAsync(stream, context);
             }
         }
