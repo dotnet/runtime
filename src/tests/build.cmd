@@ -637,7 +637,7 @@ set __CrossgenCmd="%__RepoRootDir%\dotnet.cmd" "%CORE_ROOT%\R2RTest\R2RTest.dll"
 if defined __CompositeBuildMode (
     set __CrossgenCmd=%__CrossgenCmd% --composite
 ) else (
-    set __CrossgenCmd=%__CrossgenCmd% --large-bubble
+    set __CrossgenCmd=%__CrossgenCmd% --large-bubble --crossgen2-parallelism 1
 )
 
 set __CrossgenDir=%__BinDir%
@@ -659,7 +659,7 @@ if defined __DoCrossgen (
     if /i "%__BuildArch%" == "x86" (
         set __CrossgenDir=!__CrossgenDir!\x64
     )
-    set __CrossgenCmd=%__CrossgenCmd% --verify-type-and-field-layout --crossgen2-parallelism 1 --crossgen2-path "!__CrossgenDir!\crossgen2\crossgen2.dll"
+    set __CrossgenCmd=%__CrossgenCmd% --verify-type-and-field-layout --crossgen2-path "!__CrossgenDir!\crossgen2\crossgen2.dll"
 )
 
 echo Running %__CrossgenCmd%
