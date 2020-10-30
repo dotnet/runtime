@@ -713,10 +713,11 @@ void Lowering::LowerSIMD(GenTreeSIMD* simdNode)
 
             assert(sizeof(constArgValues) == 16);
 
-            UNATIVE_OFFSET cnsSize  = sizeof(constArgValues);
-            UNATIVE_OFFSET cnsAlign = (comp->compCodeOpt() != Compiler::SMALL_CODE) ? cnsSize : 1;
+            unsigned cnsSize  = sizeof(constArgValues);
+            unsigned cnsAlign = (comp->compCodeOpt() != Compiler::SMALL_CODE) ? cnsSize : 1;
 
-            CORINFO_FIELD_HANDLE hnd = comp->GetEmitter()->emitAnyConst(constArgValues, cnsSize, cnsAlign);
+            CORINFO_FIELD_HANDLE hnd =
+                comp->GetEmitter()->emitBlkConst(constArgValues, cnsSize, cnsAlign, simdNode->gtSIMDBaseType);
             GenTree* clsVarAddr = new (comp, GT_CLS_VAR_ADDR) GenTreeClsVar(GT_CLS_VAR_ADDR, TYP_I_IMPL, hnd, nullptr);
             BlockRange().InsertBefore(simdNode, clsVarAddr);
             simdNode->ChangeOper(GT_IND);
@@ -1540,11 +1541,14 @@ void Lowering::LowerHWIntrinsicCreate(GenTreeHWIntrinsic* node)
             }
         }
 
-        UNATIVE_OFFSET cnsSize  = (simdSize != 12) ? simdSize : 16;
-        UNATIVE_OFFSET cnsAlign = (comp->compCodeOpt() != Compiler::SMALL_CODE) ? cnsSize : 1;
+        unsigned cnsSize = (simdSize != 12) ? simdSize : 16;
+        unsigned cnsAlign =
+            (comp->compCodeOpt() != Compiler::SMALL_CODE) ? cnsSize : emitter::dataSection::MIN_DATA_ALIGN;
+        var_types dataType = Compiler::getSIMDTypeForSize(simdSize);
 
-        CORINFO_FIELD_HANDLE hnd = comp->GetEmitter()->emitAnyConst(&vecCns, cnsSize, cnsAlign);
-        GenTree* clsVarAddr      = new (comp, GT_CLS_VAR_ADDR) GenTreeClsVar(GT_CLS_VAR_ADDR, TYP_I_IMPL, hnd, nullptr);
+        UNATIVE_OFFSET       cnum = comp->GetEmitter()->emitDataConst(&vecCns, cnsSize, cnsAlign, dataType);
+        CORINFO_FIELD_HANDLE hnd  = comp->eeFindJitDataOffs(cnum);
+        GenTree* clsVarAddr = new (comp, GT_CLS_VAR_ADDR) GenTreeClsVar(GT_CLS_VAR_ADDR, TYP_I_IMPL, hnd, nullptr);
         BlockRange().InsertBefore(node, clsVarAddr);
 
         node->ChangeOper(GT_IND);
