@@ -5236,6 +5236,17 @@ generate_code (TransformData *td, MonoMethod *method, MonoMethodHeader *header, 
 			MonoType *ftype = mono_field_get_type_internal (field);
 			mt = mint_type (ftype);
 			klass = mono_class_from_mono_type_internal (ftype);
+			gboolean in_corlib = m_class_get_image (field->parent) == mono_defaults.corlib;
+
+			if (in_corlib && !strcmp (field->name, "IsLittleEndian") &&
+				!strcmp (field->parent->name, "BitConverter") &&
+				!strcmp (field->parent->name_space, "System"))
+			{
+				interp_add_ins (td, (TARGET_BYTE_ORDER == G_LITTLE_ENDIAN) ? MINT_LDC_I4_1 : MINT_LDC_I4_0);
+				push_simple_type (td, STACK_TYPE_I4);
+				td->ip += 5;
+				break;
+			}
 
 			interp_emit_sfld_access (td, field, klass, mt, TRUE, error);
 			goto_if_nok (error, exit);

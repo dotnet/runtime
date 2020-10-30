@@ -19,8 +19,8 @@ parameters:
   condition: succeeded()                 # optional -- condition for step to execute; defaults to succeeded()
   continueOnError: false                 # optional -- determines whether to continue the build if the step errors; defaults to false
   BuildConfig: 'checked'                 # optional -- Mostly, superpmi will be run on checked builds
-  LibrariesArtifacts: ''
-  TestsArtifacts: ''
+  InputArtifacts: ''
+  CollectionName: ''
 
 steps:
 - template: /eng/pipelines/common/templates/runtimes/send-to-helix-inner-step.yml
@@ -33,8 +33,8 @@ steps:
     environment:
       MchFileTag: $(MchFileTag)
       BuildConfig:  ${{ parameters.BuildConfig }}
-      LibrariesArtifacts: ${{ parameters.LibrariesArtifacts }}
-      TestsArtifacts: ${{ parameters.TestsArtifacts }}
+      InputArtifacts: ${{ parameters.InputArtifacts }}
+      CollectionName: ${{ parameters.CollectionName }}
       HelixSource: ${{ parameters.HelixSource }}
       HelixType: ${{ parameters.HelixType }}
       HelixBuild: ${{ parameters.HelixBuild }}

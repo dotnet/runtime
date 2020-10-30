@@ -2277,8 +2277,8 @@ namespace System.Diagnostics.Tracing
             EventWrittenEventArgs eventCallbackArgs = new EventWrittenEventArgs(this);
             eventCallbackArgs.EventId = 0;
             eventCallbackArgs.Message = msg;
-            eventCallbackArgs.Payload = new ReadOnlyCollection<object?>(new List<object?>() { msg });
-            eventCallbackArgs.PayloadNames = new ReadOnlyCollection<string>(new List<string> { "message" });
+            eventCallbackArgs.Payload = new ReadOnlyCollection<object?>(new object[] { msg });
+            eventCallbackArgs.PayloadNames = new ReadOnlyCollection<string>(new string[] { "message" });
             eventCallbackArgs.EventName = eventName;
 
             for (EventDispatcher? dispatcher = m_Dispatchers; dispatcher != null; dispatcher = dispatcher.m_Next)
@@ -4589,11 +4589,13 @@ namespace System.Diagnostics.Tracing
                 // do the lazy init if you know it is contract based (EventID >= 0)
                 if (EventId >= 0 && m_payloadNames == null)
                 {
-                    var names = new List<string>();
                     Debug.Assert(m_eventSource.m_eventData != null);
-                    foreach (ParameterInfo parameter in m_eventSource.m_eventData[EventId].Parameters)
+                    ParameterInfo[] parameters = m_eventSource.m_eventData[EventId].Parameters;
+
+                    string[] names = new string[parameters.Length];
+                    for (int i = 0; i < parameters.Length; i++)
                     {
-                        names.Add(parameter.Name!);
+                        names[i] = parameters[i].Name!;
                     }
 
                     m_payloadNames = new ReadOnlyCollection<string>(names);
@@ -5686,27 +5688,21 @@ namespace System.Diagnostics.Tracing
             // Output the localization information.
             sb.AppendLine("<localization>");
 
-            List<CultureInfo> cultures = (resources != null && (flags & EventManifestOptions.AllCultures) != 0) ?
-                GetSupportedCultures() :
-                new List<CultureInfo>() { CultureInfo.CurrentUICulture };
-
             var sortedStrings = new string[stringTab.Keys.Count];
             stringTab.Keys.CopyTo(sortedStrings, 0);
             Array.Sort<string>(sortedStrings, 0, sortedStrings.Length);
 
-            foreach (CultureInfo ci in cultures)
+            CultureInfo ci = CultureInfo.CurrentUICulture;
+            sb.Append(" <resources culture=\"").Append(ci.Name).AppendLine("\">");
+            sb.AppendLine("  <stringTable>");
+            foreach (string stringKey in sortedStrings)
             {
-                sb.Append(" <resources culture=\"").Append(ci.Name).AppendLine("\">");
-                sb.AppendLine("  <stringTable>");
-
-                foreach (string stringKey in sortedStrings)
-                {
-                    string? val = GetLocalizedMessage(stringKey, ci, etwFormat: true);
-                    sb.Append("   <string id=\"").Append(stringKey).Append("\" value=\"").Append(val).AppendLine("\"/>");
-                }
-                sb.AppendLine("  </stringTable>");
-                sb.AppendLine(" </resources>");
+                string? val = GetLocalizedMessage(stringKey, ci, etwFormat: true);
+                sb.Append("   <string id=\"").Append(stringKey).Append("\" value=\"").Append(val).AppendLine("\"/>");
             }
+            sb.AppendLine("  </stringTable>");
+            sb.AppendLine(" </resources>");
+
             sb.AppendLine("</localization>");
             sb.AppendLine("</instrumentationManifest>");
             return sb.ToString();
@@ -5762,21 +5758,6 @@ namespace System.Diagnostics.Tracing
                 stringTab.TryGetValue(key, out value);
 
             return value;
-        }
-
-        /// <summary>
-        /// There's no API to enumerate all languages an assembly is localized into, so instead
-        /// we enumerate through all the "known" cultures and attempt to load a corresponding satellite
-        /// assembly
-        /// </summary>
-        /// <returns></returns>
-        private static List<CultureInfo> GetSupportedCultures()
-        {
-            var cultures = new List<CultureInfo>();
-
-            if (!cultures.Contains(CultureInfo.CurrentUICulture))
-                cultures.Insert(0, CultureInfo.CurrentUICulture);
-            return cultures;
         }
 
         private static string GetLevelName(EventLevel level)

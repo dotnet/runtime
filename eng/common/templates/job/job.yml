@@ -203,7 +203,7 @@ jobs:
       continueOnError: true
       condition: always()
 
-  - ${{ if or(eq(parameters.enablePublishTestResults, 'true'), eq(parameters.testResultsFormat, 'xunit')) }}:
+  - ${{ if or(and(eq(parameters.enablePublishTestResults, 'true'), eq(parameters.testResultsFormat, '')), eq(parameters.testResultsFormat, 'xunit')) }}:
     - task: PublishTestResults@2
       displayName: Publish XUnit Test Results
       inputs:
@@ -214,7 +214,7 @@ jobs:
         mergeTestResults: ${{ parameters.mergeTestResults }}
       continueOnError: true
       condition: always()
-  - ${{ if or(eq(parameters.enablePublishTestResults, 'true'), eq(parameters.testResultsFormat, 'vstest')) }}:
+  - ${{ if or(and(eq(parameters.enablePublishTestResults, 'true'), eq(parameters.testResultsFormat, '')), eq(parameters.testResultsFormat, 'vstest')) }}:
     - task: PublishTestResults@2
       displayName: Publish TRX Test Results
       inputs:
