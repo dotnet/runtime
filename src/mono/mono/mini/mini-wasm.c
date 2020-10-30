@@ -395,7 +395,6 @@ extern void mono_set_timeout (int t, int d);
 extern void mono_wasm_queue_tp_cb (void);
 G_END_DECLS
 
-extern void mono_wasm_pump_threadpool (void);
 void mono_background_exec (void);
 
 #endif // HOST_WASM
@@ -624,20 +623,11 @@ mono_wasm_queue_tp_cb (void)
 }
 
 void
-mono_wasm_pump_threadpool (void)
-{
-#ifdef HOST_WASM
-	mono_background_exec ();
-#endif
-}
-
-void
 mono_arch_register_icall (void)
 {
 #ifdef ENABLE_NETCORE
 	mono_add_internal_call_internal ("System.Threading.TimerQueue::SetTimeout", mono_wasm_set_timeout);
 	mono_add_internal_call_internal ("System.Threading.ThreadPool::QueueCallback", mono_wasm_queue_tp_cb);
-	mono_add_internal_call_internal ("System.Threading.ThreadPool::PumpThreadPool", mono_wasm_pump_threadpool);
 #else
 	mono_add_internal_call_internal ("System.Threading.WasmRuntime::SetTimeout", mono_wasm_set_timeout);
 #endif
