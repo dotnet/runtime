@@ -9353,7 +9353,7 @@ public:
     {
 #if FEATURE_MULTIREG_RET
 #if defined(TARGET_X86)
-        // On x86, 64-bit longs and some structs are returned in multiple registers
+        // On x86, 64-bit longs and structs are returned in multiple registers
         return varTypeIsLong(info.compRetNativeType) ||
                (varTypeIsStruct(info.compRetNativeType) && (info.compRetBuffArg == BAD_VAR_NUM));
 #else  // targets: X64-UNIX, ARM64 or ARM32
@@ -9379,7 +9379,7 @@ public:
     {
 #if FEATURE_MULTIREG_RET
 #if defined(TARGET_X86)
-        // On x86, 64-bit longs are returned in multiple registers
+        // On x86, 64-bit longs and structs are returned in multiple registers
         return varTypeIsLong(info.compRetNativeType) ||
                (varTypeIsStruct(info.compRetNativeType) && (info.compRetBuffArg == BAD_VAR_NUM));
 #else // targets: X64-UNIX, ARM64 or ARM32

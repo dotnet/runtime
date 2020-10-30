@@ -518,13 +518,12 @@ bool Compiler::isSingleFloat32Struct(CORINFO_CLASS_HANDLE clsHnd)
 //    Check if the given struct type contains only one pointer-sized integer value type
 //
 // Arguments:
-//    clsHnd     - the handle for the struct type
+//    clsHnd - the handle for the struct type.
 //
 // Return Value:
 //    true if the given struct type contains only one pointer-sized integer value type,
 //    false otherwise.
 //
-
 bool Compiler::isTrivialPointerSizedStruct(CORINFO_CLASS_HANDLE clsHnd)
 {
     assert(info.compCompHnd->isValueClass(clsHnd));
