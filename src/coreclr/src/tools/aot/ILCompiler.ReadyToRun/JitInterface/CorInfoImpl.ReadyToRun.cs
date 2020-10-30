@@ -59,20 +59,17 @@ namespace Internal.JitInterface
             ModuleToken moduleToken = methodToken.Token;
             owningTypeRequiresSignatureVariableResolution = false;
 
-            if (moduleToken.TokenType == CorTokenType.mdtMethodDef)
-            {
-                return methodToken.Method.OwningType;
-            }
-
+            // Strip off method spec details. The owning type is only associated with a MethodDef or a MemberRef
             if (moduleToken.TokenType == CorTokenType.mdtMethodSpec)
             {
                 var methodSpecification = moduleToken.MetadataReader.GetMethodSpecification((MethodSpecificationHandle)moduleToken.Handle);
                 moduleToken = new ModuleToken(moduleToken.Module, methodSpecification.Method);
+            }
 
-                if (moduleToken.TokenType == CorTokenType.mdtMethodDef)
-                {
-                    return methodToken.Method.OwningType;
-                }
+            if (moduleToken.TokenType == CorTokenType.mdtMethodDef)
+            {
+                var methodDefinition = moduleToken.MetadataReader.GetMethodDefinition((MethodDefinitionHandle)moduleToken.Handle);
+                return HandleContext(moduleToken.Module, methodDefinition.GetDeclaringType(), methodToken.Method.OwningType, context, ref owningTypeRequiresSignatureVariableResolution);
             }
 
             // At this point moduleToken must point at a MemberRef.
@@ -82,39 +79,45 @@ namespace Internal.JitInterface
             {
                 case HandleKind.TypeDefinition:
                 case HandleKind.TypeReference:
-                    return moduleToken.Module.GetType(memberRef.Parent);
-
                 case HandleKind.TypeSpecification:
                     {
-                        var owningTypeNonSignatureResolved = moduleToken.Module.GetType(memberRef.Parent);
-                        TypeDesc result = owningTypeNonSignatureResolved;
-                        if (context != null)
-                        {
-                            Instantiation typeInstantiation;
-                            Instantiation methodInstantiation = new Instantiation();
-
-                            if (context is MethodDesc methodContext)
-                            {
-                                typeInstantiation = methodContext.OwningType.Instantiation;
-                                methodInstantiation = methodContext.Instantiation;
-                            }
-                            else
-                            {
-                                TypeDesc typeContext = (TypeDesc)context;
-                                typeInstantiation = typeContext.Instantiation;
-                            }
-
-                            result = owningTypeNonSignatureResolved.InstantiateSignature(typeInstantiation, methodInstantiation);
-                            if (result != owningTypeNonSignatureResolved)
-                            {
-                                owningTypeRequiresSignatureVariableResolution = true;
-                            }
-                        }
-                        return result;
+                        return HandleContext(moduleToken.Module, memberRef.Parent, methodToken.Method.OwningType, context, ref owningTypeRequiresSignatureVariableResolution);
                     }
 
                 default:
                     return methodToken.Method.OwningType;
+            }
+
+            TypeDesc HandleContext(EcmaModule module, EntityHandle handle, TypeDesc methodTargetOwner, object context, ref bool owningTypeRequiresSignatureVariableResolution)
+            {
+                if (context == null)
+                {
+                    return methodTargetOwner;
+                }
+
+                var owningTypeNonSignatureResolved = module.GetType(handle);
+                TypeDesc result = owningTypeNonSignatureResolved;
+
+                Instantiation typeInstantiation;
+                Instantiation methodInstantiation = new Instantiation();
+
+                if (context is MethodDesc methodContext)
+                {
+                    typeInstantiation = methodContext.OwningType.Instantiation;
+                    methodInstantiation = methodContext.Instantiation;
+                }
+                else
+                {
+                    TypeDesc typeContext = (TypeDesc)context;
+                    typeInstantiation = typeContext.Instantiation;
+                }
+
+                result = owningTypeNonSignatureResolved.InstantiateSignature(typeInstantiation, methodInstantiation);
+                if (result != owningTypeNonSignatureResolved)
+                {
+                    owningTypeRequiresSignatureVariableResolution = true;
+                }
+                return result;
             }
         }
 
@@ -750,7 +753,13 @@ namespace Internal.JitInterface
             return false;
         }
 
-        private ModuleToken HandleToModuleToken(ref CORINFO_RESOLVED_TOKEN pResolvedToken, MethodDesc methodDesc)
+        private MethodWithToken ComputeMethodWithToken(MethodDesc method, ref CORINFO_RESOLVED_TOKEN pResolvedToken, TypeDesc constrainedType, bool unboxing)
+        {
+            ModuleToken token = HandleToModuleToken(ref pResolvedToken, method, out object context, ref constrainedType);
+            return new MethodWithToken(method, token, constrainedType: constrainedType, unboxing: unboxing, context: context);
+        }
+
+        private ModuleToken HandleToModuleToken(ref CORINFO_RESOLVED_TOKEN pResolvedToken, MethodDesc methodDesc, out object context, ref TypeDesc constrainedType)
         {
             if (methodDesc != null && (_compilation.NodeFactory.CompilationModuleGroup.VersionsWithMethodBody(methodDesc) || methodDesc.IsPInvoke))
             {
@@ -758,12 +767,20 @@ namespace Internal.JitInterface
                     methodDesc?.GetTypicalMethodDefinition() is EcmaMethod ecmaMethod)
                 {
                     mdToken token = (mdToken)MetadataTokens.GetToken(ecmaMethod.Handle);
+
+                    // This is used for de-virtualization of non-generic virtual methods, and should be treated
+                    // as a the methodDesc parameter defining the exact OwningType, not doing resolution through the token.
+                    context = null;
+                    constrainedType = null;
+
                     return new ModuleToken(ecmaMethod.Module, token);
                 }
             }
 
+            context = entityFromContext(pResolvedToken.tokenContext);
             return HandleToModuleToken(ref pResolvedToken);
         }
+
         private ModuleToken HandleToModuleToken(ref CORINFO_RESOLVED_TOKEN pResolvedToken)
         {
             mdToken token = pResolvedToken.token;
@@ -1683,7 +1700,7 @@ namespace Internal.JitInterface
 
                         pResult->codePointerOrStubLookup.constLookup = CreateConstLookupToSymbol(
                             _compilation.SymbolNodeFactory.InterfaceDispatchCell(
-                                new MethodWithToken(targetMethod, HandleToModuleToken(ref pResolvedToken, targetMethod), constrainedType: null, unboxing: false, context: entityFromContext(pResolvedToken.tokenContext)),
+                                ComputeMethodWithToken(targetMethod, ref pResolvedToken, constrainedType: null, unboxing: false),
                                 MethodBeingCompiled));
 
                         // If the abi of the method isn't stable, this will cause a usage of the RequiresRuntimeJitSymbol, which will trigger a RequiresRuntimeJitException
@@ -1722,7 +1739,7 @@ namespace Internal.JitInterface
                         // READYTORUN: FUTURE: Direct calls if possible
                         pResult->codePointerOrStubLookup.constLookup = CreateConstLookupToSymbol(
                             _compilation.NodeFactory.MethodEntrypoint(
-                                new MethodWithToken(nonUnboxingMethod, HandleToModuleToken(ref pResolvedToken, nonUnboxingMethod), constrainedType, unboxing: isUnboxingStub, context: entityFromContext(pResolvedToken.tokenContext)),
+                                ComputeMethodWithToken(nonUnboxingMethod, ref pResolvedToken, constrainedType, unboxing: isUnboxingStub),
                                 isInstantiatingStub: useInstantiatingStub,
                                 isPrecodeImportRequired: (flags & CORINFO_CALLINFO_FLAGS.CORINFO_CALLINFO_LDFTN) != 0));
 
@@ -1745,7 +1762,7 @@ namespace Internal.JitInterface
                         bool atypicalCallsite = (flags & CORINFO_CALLINFO_FLAGS.CORINFO_CALLINFO_ATYPICAL_CALLSITE) != 0;
                         pResult->codePointerOrStubLookup.constLookup = CreateConstLookupToSymbol(
                             _compilation.NodeFactory.DynamicHelperCell(
-                                new MethodWithToken(targetMethod, HandleToModuleToken(ref pResolvedToken, targetMethod), constrainedType: null, unboxing: false, context: entityFromContext(pResolvedToken.tokenContext)),
+                                ComputeMethodWithToken(targetMethod, ref pResolvedToken, constrainedType: null, unboxing: false),
                                 useInstantiatingStub));
 
                         Debug.Assert(!pResult->sig.hasTypeArg());
@@ -1772,7 +1789,7 @@ namespace Internal.JitInterface
                     {
                         pResult->instParamLookup = CreateConstLookupToSymbol(_compilation.SymbolNodeFactory.CreateReadyToRunHelper(
                             ReadyToRunHelperId.MethodDictionary,
-                            new MethodWithToken(targetMethod, HandleToModuleToken(ref pResolvedToken, targetMethod), constrainedType, unboxing: false, context: entityFromContext(pResolvedToken.tokenContext))));
+                            ComputeMethodWithToken(targetMethod, ref pResolvedToken, constrainedType: constrainedType, unboxing: false)));
                     }
                     else
                     {
@@ -2011,7 +2028,7 @@ namespace Internal.JitInterface
 
                             symbolNode = _compilation.SymbolNodeFactory.CreateReadyToRunHelper(
                                 ReadyToRunHelperId.MethodHandle,
-                                new MethodWithToken(md, HandleToModuleToken(ref pResolvedToken), constrainedType: null, unboxing: unboxingStub, context: entityFromContext(pResolvedToken.tokenContext)));
+                                ComputeMethodWithToken(md, ref pResolvedToken, constrainedType: null, unboxing: unboxingStub));
                         }
                         break;
 

@@ -549,7 +549,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             if ((flags & (uint)ReadyToRunMethodSigFlags.READYTORUN_METHOD_SIG_OwnerType) != 0)
             {
                 // The type here should be the type referred to by the memberref (if this is one, not the type where the method was eventually found!
-                EmitTypeSignature(method.Method.OwningType, context);
+                EmitTypeSignature(method.OwningType, context);
             }
             EmitTokenRid(methodToken.Token);
             if ((flags & (uint)ReadyToRunMethodSigFlags.READYTORUN_METHOD_SIG_MethodInstantiation) != 0)
