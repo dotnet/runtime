@@ -3,13 +3,12 @@
 
 using System;
 using System.Collections.Generic;
-using System.Threading.Tasks;
 
 using Microsoft.DotNet.XHarness.TestRunners.Xunit;
 
 public class SimpleWasmTestRunner : WasmApplicationEntryPoint
 {
-    public static async Task<int> Main(string[] args)
+    public static int Main(string[] args)
     {
         var testAssembly = args[0];
         var excludedTraits = new List<string>();
@@ -58,6 +57,6 @@ public class SimpleWasmTestRunner : WasmApplicationEntryPoint
             IncludedMethods = includedMethods
         };
 
-        return await runner.Run();
+        return runner.Run();
     }
 }
