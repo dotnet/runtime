@@ -120,7 +120,9 @@ namespace System.IO
         {
             int rootLength = PathInternal.GetRootLength(path);
             if (path.Length <= rootLength)
+            {
                 return -1;
+            }
 
             int end = PathInternal.GetLastDirectorySeparator(path);
             if (end <= rootLength)
