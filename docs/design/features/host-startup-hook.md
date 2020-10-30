@@ -253,3 +253,7 @@ be defined either in the app or within the first hook that uses it:
 The type should be made `internal` to prevent exposing it as API
 surface to any managed code that happens to have access to the startup
 hook dll. However, the feature will also work if the type is `public`.
+
+### Linker unfriendly
+
+The usage of startup hooks on a trimmed app is potentially dangerous since these could make use of assemblies, types or members that were removed by the linker, causing the app to crash.
