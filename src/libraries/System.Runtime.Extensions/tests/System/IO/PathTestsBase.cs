@@ -147,7 +147,8 @@ namespace System.IO.Tests
             { "file.e xe", ".e xe"},
             { "file. ", ". "},
             { " file. ", ". "},
-            { " file.extension", ".extension"}
+            { " file.extension", ".extension"},
+            { ".bashrc", ".bashrc"}
         };
 
         public static TheoryData<string, string> TestData_GetFileName => new TheoryData<string, string>
@@ -163,7 +164,8 @@ namespace System.IO.Tests
             { Path.Combine("baz", "file.exe"), "file.exe" },
             { Path.Combine("baz", "file.exe") + Path.AltDirectorySeparatorChar, "" },
             { Path.Combine("bar", "baz", "file.exe"), "file.exe" },
-            { Path.Combine("bar", "baz", "file.exe") + Path.DirectorySeparatorChar, "" }
+            { Path.Combine("bar", "baz", "file.exe") + Path.DirectorySeparatorChar, "" },
+            { ".bashrc", ".bashrc"}
         };
 
         public static TheoryData<string, string> TestData_GetFileNameWithoutExtension => new TheoryData<string, string>
@@ -172,7 +174,8 @@ namespace System.IO.Tests
             { "file", "file" },
             { "file.exe", "file" },
             { Path.Combine("bar", "baz", "file.exe"), "file" },
-            { Path.Combine("bar", "baz") + Path.DirectorySeparatorChar, "" }
+            { Path.Combine("bar", "baz") + Path.DirectorySeparatorChar, "" },
+            { ".bashrc", ""}
         };
 
         public static TheoryData<string, string> TestData_GetPathRoot_Unc => new TheoryData<string, string>
