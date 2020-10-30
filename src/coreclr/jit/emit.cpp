@@ -5219,17 +5219,46 @@ unsigned emitter::emitEndCodeGen(Compiler* comp,
         for (unsigned cnt = ig->igInsCnt; cnt; cnt--)
         {
 #ifdef DEBUG
-            int oldCp = ((size_t)cp & 0xf0) >> 4;
+            size_t lastCp = (size_t) cp;
+            instrDesc* lastId = id;
 #endif
             castto(id, BYTE*) += emitIssue1Instr(ig, id, &cp);
 #ifdef DEBUG
             
             if ((emitComp->opts.disAsm || emitComp->verbose) && emitComp->opts.disAddr)
             {
-                int newCp = ((size_t)cp & 0xf0) >> 4;
-                if ((oldCp != newCp) && ((newCp % 2) == 0))
+                size_t lastBoundaryAddr = (size_t)cp & ~((size_t)emitComp->compJitAlignLoopBoundary - 1);
+
+                // draw boundary if lastCp was before the lastBoundary.
+                if (lastCp < lastBoundaryAddr)
                 {
-                    printf("; =========================== 32B boundary ===========================\n");
+                    printf("; ");
+                    instruction lastIns = lastId->idIns();
+
+                    // https://www.intel.com/content/dam/support/us/en/documents/processors/mitigations-jump-conditional-code-erratum.pdf
+                    bool isJccAffectedIns = ((lastIns >= INS_i_jmp && lastIns < INS_align) || (lastIns == INS_call) ||
+                                            (lastIns == INS_ret));
+                    if (cnt)
+                    {
+                        instruction currIns = id->idIns();
+                        if ((lastIns == INS_cmp) || (lastIns == INS_test) || (lastIns == INS_add) || (lastIns == INS_sub) ||
+                            (lastIns == INS_and) || (lastIns == INS_inc) || (lastIns == INS_dec))
+                        {
+                            isJccAffectedIns |= (currIns >= INS_i_jmp && currIns < INS_align);
+                        }
+                    }
+
+                    // Indicate if instruction is at or split at 32B boundary
+                    unsigned bytesCrossedBoundary = ((size_t)cp & 0x1f);
+                    if ((bytesCrossedBoundary != 0) || (isJccAffectedIns && bytesCrossedBoundary == 0))
+                    {
+                        printf("^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ (%s: %d)", codeGen->genInsName(lastId->idIns()), bytesCrossedBoundary);
+                    }
+                    else
+                    {
+                        printf("...............................");
+                    }
+                    printf(" %dB boundary ...............................\n", (emitComp->compJitAlignLoopBoundary));
                 }
             }
 #endif

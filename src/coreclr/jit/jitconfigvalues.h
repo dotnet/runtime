@@ -45,9 +45,12 @@ CONFIG_INTEGER(JitAlignLoopMinBlockWeight, W("JitAlignLoopMinBlockWeight"), 0xff
 CONFIG_INTEGER(JitAlignLoopMaxCodeSize,
                W("JitAlignLoopMaxCodeSize"),
                0)  // Maximum code size (in bytes) of the loop after which the the code alignment for that loop will be disabled.
-CONFIG_INTEGER(JitAlignLoopWith32BPadding,
-               W("JitAlignLoopWith32BPadding"),
-               1) // Perform maximum 32B padding for loop alignment. If set false, pads with 16B.
+CONFIG_INTEGER(JitAlignLoopBoundary,
+               W("JitAlignLoopBoundary"),
+               0x32) // Boundary (multiples of 2) at which inner loops should be aliged. By default, it is set to 32B.
+CONFIG_INTEGER(JitAlignLoopForJcc,
+               W("JitAlignLoopForJcc"),
+               0) // If set, while doing loop alignment, ensure loop jmps don't cross alignment boundary.
 
 CONFIG_INTEGER(JitDirectAlloc, W("JitDirectAlloc"), 0)
 CONFIG_INTEGER(JitDoubleAlign, W("JitDoubleAlign"), 1)

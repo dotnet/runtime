@@ -2617,7 +2617,8 @@ void Compiler::compInitOptions(JitFlags* jitFlags)
 
     compJitAlignLoopMinBlockWeight = JitConfig.JitAlignLoopMinBlockWeight();
     compJitAlignLoopMaxCodeSize    = JitConfig.JitAlignLoopMaxCodeSize();
-    compJitAlignLoopWith32BPadding = JitConfig.JitAlignLoopWith32BPadding() == 1;
+    compJitAlignLoopBoundary       = ReinterpretHexAsDecimal(JitConfig.JitAlignLoopBoundary());
+    compJitAlignLoopForJcc         = JitConfig.JitAlignLoopForJcc() == 1;
 
 #if REGEN_SHORTCUTS || REGEN_CALLPAT
     // We never want to have debugging enabled when regenerating GC encoding patterns

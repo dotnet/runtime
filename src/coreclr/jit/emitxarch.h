@@ -289,7 +289,7 @@ inline emitAttr emitDecodeScale(unsigned ensz)
 public:
 void emitLoopAlign();
 
-void emitLoopAlign32Bytes();
+void emitVariableLoopAlign();
 
 void emitIns(instruction ins);
 
