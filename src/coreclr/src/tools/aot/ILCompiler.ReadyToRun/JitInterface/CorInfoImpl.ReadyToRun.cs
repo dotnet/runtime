@@ -40,7 +40,7 @@ namespace Internal.JitInterface
         public readonly ModuleToken Token;
         public readonly TypeDesc ConstrainedType;
         public readonly bool Unboxing;
-        public readonly bool OwningTypeRequiresSignatureVariableResolution;
+        public readonly bool OwningTypeNotDerivedFromToken;
         public readonly TypeDesc OwningType;
 
 
@@ -51,13 +51,13 @@ namespace Internal.JitInterface
             Token = token;
             ConstrainedType = constrainedType;
             Unboxing = unboxing;
-            OwningType = GetMethodTokenOwningType(this, context, out OwningTypeRequiresSignatureVariableResolution);
+            OwningType = GetMethodTokenOwningType(this, context, out OwningTypeNotDerivedFromToken);
         }
 
-        private static TypeDesc GetMethodTokenOwningType(MethodWithToken methodToken, object context, out bool owningTypeRequiresSignatureVariableResolution)
+        private static TypeDesc GetMethodTokenOwningType(MethodWithToken methodToken, object context, out bool owningTypeNotDerivedFromToken)
         {
             ModuleToken moduleToken = methodToken.Token;
-            owningTypeRequiresSignatureVariableResolution = false;
+            owningTypeNotDerivedFromToken = false;
 
             // Strip off method spec details. The owning type is only associated with a MethodDef or a MemberRef
             if (moduleToken.TokenType == CorTokenType.mdtMethodSpec)
@@ -69,7 +69,7 @@ namespace Internal.JitInterface
             if (moduleToken.TokenType == CorTokenType.mdtMethodDef)
             {
                 var methodDefinition = moduleToken.MetadataReader.GetMethodDefinition((MethodDefinitionHandle)moduleToken.Handle);
-                return HandleContext(moduleToken.Module, methodDefinition.GetDeclaringType(), methodToken.Method.OwningType, context, ref owningTypeRequiresSignatureVariableResolution);
+                return HandleContext(moduleToken.Module, methodDefinition.GetDeclaringType(), methodToken.Method.OwningType, context, ref owningTypeNotDerivedFromToken);
             }
 
             // At this point moduleToken must point at a MemberRef.
@@ -81,43 +81,46 @@ namespace Internal.JitInterface
                 case HandleKind.TypeReference:
                 case HandleKind.TypeSpecification:
                     {
-                        return HandleContext(moduleToken.Module, memberRef.Parent, methodToken.Method.OwningType, context, ref owningTypeRequiresSignatureVariableResolution);
+                        return HandleContext(moduleToken.Module, memberRef.Parent, methodToken.Method.OwningType, context, ref owningTypeNotDerivedFromToken);
                     }
 
                 default:
                     return methodToken.Method.OwningType;
             }
 
-            TypeDesc HandleContext(EcmaModule module, EntityHandle handle, TypeDesc methodTargetOwner, object context, ref bool owningTypeRequiresSignatureVariableResolution)
+            TypeDesc HandleContext(EcmaModule module, EntityHandle handle, TypeDesc methodTargetOwner, object context, ref bool owningTypeNotDerivedFromToken)
             {
+                var tokenOnlyOwningType = module.GetType(handle);
+                TypeDesc actualOwningType;
+
                 if (context == null)
                 {
-                    return methodTargetOwner;
-                }
-
-                var owningTypeNonSignatureResolved = module.GetType(handle);
-                TypeDesc result = owningTypeNonSignatureResolved;
-
-                Instantiation typeInstantiation;
-                Instantiation methodInstantiation = new Instantiation();
-
-                if (context is MethodDesc methodContext)
-                {
-                    typeInstantiation = methodContext.OwningType.Instantiation;
-                    methodInstantiation = methodContext.Instantiation;
+                    actualOwningType = methodTargetOwner;
                 }
                 else
                 {
-                    TypeDesc typeContext = (TypeDesc)context;
-                    typeInstantiation = typeContext.Instantiation;
+                    Instantiation typeInstantiation;
+                    Instantiation methodInstantiation = new Instantiation();
+
+                    if (context is MethodDesc methodContext)
+                    {
+                        typeInstantiation = methodContext.OwningType.Instantiation;
+                        methodInstantiation = methodContext.Instantiation;
+                    }
+                    else
+                    {
+                        TypeDesc typeContext = (TypeDesc)context;
+                        typeInstantiation = typeContext.Instantiation;
+                    }
+
+                    actualOwningType = tokenOnlyOwningType.InstantiateSignature(typeInstantiation, methodInstantiation);
                 }
 
-                result = owningTypeNonSignatureResolved.InstantiateSignature(typeInstantiation, methodInstantiation);
-                if (result != owningTypeNonSignatureResolved)
+                if (actualOwningType != tokenOnlyOwningType)
                 {
-                    owningTypeRequiresSignatureVariableResolution = true;
+                    owningTypeNotDerivedFromToken = true;
                 }
-                return result;
+                return actualOwningType;
             }
         }
 

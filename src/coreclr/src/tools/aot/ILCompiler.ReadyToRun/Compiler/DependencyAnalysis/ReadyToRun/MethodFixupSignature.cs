@@ -73,7 +73,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                     }
                     else if (_method.Token.TokenType == CorTokenType.mdtMemberRef)
                     {
-                        if ((_method.OwningType == _method.Method.OwningType) && !_method.OwningTypeRequiresSignatureVariableResolution)
+                        if (!_method.OwningTypeNotDerivedFromToken)
                         {
                             fixupKind = ReadyToRunFixupKind.MethodEntry_RefToken;
                             optimized = true;
