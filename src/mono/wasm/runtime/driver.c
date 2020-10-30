@@ -629,7 +629,9 @@ mono_wasm_assembly_get_entry_point (MonoAssembly *assembly)
 	/*
 	 * If the entry point looks like a compiler generated wrapper around
 	 * an async method in the form "<Name>" then try to look up the async method
-	 * "Name" it is wrapping.
+	 * "Name" it is wrapping.  We do this because the generated sync wrapper will
+	 * call task.GetAwaiter().GetResult() when we actually want to yield
+	 * to the host runtime.
 	 */
 	if (mono_method_get_flags (method, NULL) & 0x0800 /* METHOD_ATTRIBUTE_SPECIAL_NAME */) {
 		const char *name = mono_method_get_name (method);
@@ -643,7 +645,7 @@ mono_wasm_assembly_get_entry_point (MonoAssembly *assembly)
 
 		async_name [name_length - 1] = '\0';
 
-		MonoMethod *async_method = mono_class_get_method_from_name (klass, async_name + 1, -1 /* MonoMethodSignature.param_count is hard to access here */);
+		MonoMethod *async_method = mono_class_get_method_from_name (klass, async_name + 1, -1);
 		free (async_name);
 		if (async_method != NULL)
 			return async_method;
