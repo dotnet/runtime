@@ -14,13 +14,12 @@ namespace System.Globalization
         private static bool TryGetAppLocalIcuSwitchValue([NotNullWhen(true)] out string? value) =>
             TryGetStringValue("System.Globalization.AppLocalIcu", "DOTNET_SYSTEM_GLOBALIZATION_APPLOCALICU", out value);
 
-        private static bool GetSwitchValue(string switchName, string envVariable, bool defaultValue = false)
+        private static bool GetSwitchValue(string switchName, string envVariable)
         {
             if (!AppContext.TryGetSwitch(switchName, out bool ret))
             {
-                ret = defaultValue;
                 string? switchValue = Environment.GetEnvironmentVariable(envVariable);
-                if (!string.IsNullOrEmpty(switchValue))
+                if (switchValue != null)
                 {
                     ret = bool.IsTrueStringIgnoreCase(switchValue) || switchValue.Equals("1");
                 }
