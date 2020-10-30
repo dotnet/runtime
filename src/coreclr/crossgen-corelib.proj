@@ -40,7 +40,8 @@
     </PropertyGroup>
     
     <PropertyGroup Condition="'$(OS)' == 'Windows_NT'">
-      <CrossGenPdbCmd>$(CrossGenCmd) /CreatePdb "$(BinDir)\PDB"</CrossGenPdbCmd>
+      <VsSetupCmd>call $(RepoRoot)\src\coreclr\setup_vs_tools.cmd</VsSetupCmd>
+      <CrossGenPdbCmd>$(VsSetupCmd) &amp;&amp; $(CrossGenCmd) /CreatePdb "$(BinDir)\PDB"</CrossGenPdbCmd>
       <CrossGenPdbCmd>$(CrossGenPdbCmd) "$(CoreLibOutputPath)"</CrossGenPdbCmd>
     </PropertyGroup>
     
