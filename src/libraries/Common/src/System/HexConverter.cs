@@ -88,7 +88,29 @@ namespace System
         {
             Debug.Assert(chars.Length >= bytes.Length * 2);
 
-            for (int pos = 0; pos < bytes.Length; ++pos)
+            int pos = 0;
+#if NETCOREAPP
+            if (Ssse3.IsSupported && bytes.Length >= 4)
+            {
+                Vector128<byte> nibblesMask = Vector128.Create(
+                    0xFF, 0xFF, 0, 0xFF, 0xFF, 0xFF, 1, 0xFF,
+                    0xFF, 0xFF, 2, 0xFF, 0xFF, 0xFF, 3, 0xFF);
+                Vector128<byte> asciiTable = casing == Casing.Upper ?
+                    Vector128.Create((byte)48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 97, 98, 99, 100, 101, 102) :
+                    Vector128.Create((byte)48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 65, 66, 67, 68, 69, 70);
+
+                for (; pos < bytes.Length - 3; pos += 4)
+                {
+                    uint block = Unsafe.ReadUnaligned<uint>(ref Unsafe.Add(ref MemoryMarshal.GetReference(bytes), pos));
+                    Vector128<byte> lowNibbles = Ssse3.Shuffle(Vector128.CreateScalarUnsafe(block).AsByte(), nibblesMask);
+                    Vector128<byte> highNibbles = Sse2.ShiftRightLogical(Sse2.ShiftRightLogical128BitLane(lowNibbles, 2).AsInt32(), 4).AsByte();
+                    Vector128<byte> indices = Sse2.And(Sse2.Or(lowNibbles, highNibbles), Vector128.Create((byte)0xF));
+                    Vector128<byte> hex = Sse2.And(Ssse3.Shuffle(asciiTable, indices), Vector128.Create((ushort)0xFF).AsByte());
+                    Unsafe.WriteUnaligned(ref Unsafe.As<char, byte>(ref Unsafe.Add(ref MemoryMarshal.GetReference(chars), pos * 2)), hex);
+                }
+            }
+#endif
+            for (; pos < bytes.Length; ++pos)
             {
                 ToCharsBuffer(bytes[pos], chars, pos * 2, casing);
             }
