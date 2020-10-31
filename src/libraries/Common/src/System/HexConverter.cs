@@ -5,7 +5,7 @@
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
-#if !NETFRAMEWORK && !NETSTANDARD1_0 && !NETSTANDARD1_3 && !NETSTANDARD2_0
+#if !NETFRAMEWORK && !NETSTANDARD1_0 && !NETSTANDARD1_3 && !NETSTANDARD2_0 && NETCOREAPP
 using System.Runtime.Intrinsics;
 using System.Runtime.Intrinsics.X86;
 #if SYSTEM_PRIVATE_CORELIB
@@ -92,7 +92,7 @@ namespace System
             buffer[startingIndex] = (char)(packedResult >> 8);
         }
 
-#if !NETFRAMEWORK && !NETSTANDARD1_0 && !NETSTANDARD1_3 && !NETSTANDARD2_0
+#if !NETFRAMEWORK && !NETSTANDARD1_0 && !NETSTANDARD1_3 && !NETSTANDARD2_0 && NETCOREAPP
     public static void EncodeToUtf16_Ssse3(ReadOnlySpan<byte> bytes, Span<char> chars, Casing casing = Casing.Upper)
     {
         int pos = 0;
@@ -151,7 +151,7 @@ namespace System
         {
             Debug.Assert(chars.Length >= bytes.Length * 2);
 
-#if !NETFRAMEWORK && !NETSTANDARD1_0 && !NETSTANDARD1_3 && !NETSTANDARD2_0
+#if !NETFRAMEWORK && !NETSTANDARD1_0 && !NETSTANDARD1_3 && !NETSTANDARD2_0 && NETCOREAPP
             if (!Ssse3.IsSupported || bytes.Length < 4)
             {
                 for (int pos = 0; pos < bytes.Length; pos++)
