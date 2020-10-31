@@ -589,8 +589,24 @@ namespace System
 
         public static unsafe string Join(char separator, string?[] value, int startIndex, int count)
         {
-            // Defer argument validation to the internal function
-            return JoinCore(&separator, 1, value, startIndex, count);
+            if (value == null)
+            {
+                throw new ArgumentNullException(nameof(value));
+            }
+            if (startIndex < 0)
+            {
+                throw new ArgumentOutOfRangeException(nameof(startIndex), SR.ArgumentOutOfRange_StartIndex);
+            }
+            if (count < 0)
+            {
+                throw new ArgumentOutOfRangeException(nameof(count), SR.ArgumentOutOfRange_NegativeCount);
+            }
+            if (startIndex > value.Length - count)
+            {
+                throw new ArgumentOutOfRangeException(nameof(startIndex), SR.ArgumentOutOfRange_IndexCountBuffer);
+            }
+
+            return JoinCore(&separator, 1, value.AsSpan(startIndex, count));
         }
 
         // Joins an array of strings together as one string with a separator between each original string.
@@ -633,7 +649,7 @@ namespace System
 
             if (values is string?[] valuesArray)
             {
-                return Join(separator, valuesArray, 0, valuesArray.Length);
+                return Join(separator, (ReadOnlySpan<string?>)valuesArray);
             }
 
             if (values == null)
@@ -676,11 +692,27 @@ namespace System
         //
         public static unsafe string Join(string? separator, string?[] value, int startIndex, int count)
         {
+            if (value == null)
+            {
+                throw new ArgumentNullException(nameof(value));
+            }
+            if (startIndex < 0)
+            {
+                throw new ArgumentOutOfRangeException(nameof(startIndex), SR.ArgumentOutOfRange_StartIndex);
+            }
+            if (count < 0)
+            {
+                throw new ArgumentOutOfRangeException(nameof(count), SR.ArgumentOutOfRange_NegativeCount);
+            }
+            if (startIndex > value.Length - count)
+            {
+                throw new ArgumentOutOfRangeException(nameof(startIndex), SR.ArgumentOutOfRange_IndexCountBuffer);
+            }
+
             separator ??= Empty;
             fixed (char* pSeparator = &separator._firstChar)
             {
-                // Defer argument validation to the internal function
-                return JoinCore(pSeparator, separator.Length, value, startIndex, count);
+                return JoinCore(pSeparator, separator.Length, value.AsSpan(startIndex, count));
             }
         }
 
@@ -691,8 +723,7 @@ namespace System
             separator ??= Empty;
             fixed (char* pSeparator = &separator._firstChar)
             {
-                // Defer argument validation to the internal function
-                return JoinCore(pSeparator, separator.Length, value, 0, value.Length);
+                return JoinCore(pSeparator, separator.Length, value);
             }
         }
 
@@ -784,35 +815,19 @@ namespace System
             }
         }
 
-        private static unsafe string JoinCore(char* separator, int separatorLength, ReadOnlySpan<string?> value, int startIndex, int count)
+        private static unsafe string JoinCore(char* separator, int separatorLength, ReadOnlySpan<string?> value)
         {
             // If the separator is null, it is converted to an empty string before entering this function.
             // Even for empty strings, fixed should never return null (it should return a pointer to a null char).
             Debug.Assert(separator != null);
             Debug.Assert(separatorLength >= 0);
 
-            if (value == null)
-            {
-                throw new ArgumentNullException(nameof(value));
-            }
-            if (startIndex < 0)
-            {
-                throw new ArgumentOutOfRangeException(nameof(startIndex), SR.ArgumentOutOfRange_StartIndex);
-            }
-            if (count < 0)
-            {
-                throw new ArgumentOutOfRangeException(nameof(count), SR.ArgumentOutOfRange_NegativeCount);
-            }
-            if (startIndex > value.Length - count)
-            {
-                throw new ArgumentOutOfRangeException(nameof(startIndex), SR.ArgumentOutOfRange_IndexCountBuffer);
-            }
-
+            var count = value.Length;
             if (count <= 1)
             {
                 return count == 0 ?
                     string.Empty :
-                    value[startIndex] ?? string.Empty;
+                    value[0] ?? string.Empty;
             }
 
             long totalSeparatorsLength = (long)(count - 1) * separatorLength;
@@ -823,7 +838,7 @@ namespace System
             int totalLength = (int)totalSeparatorsLength;
 
             // Calculate the length of the resultant string so we know how much space to allocate.
-            for (int i = startIndex, end = startIndex + count; i < end; i++)
+            for (int i = 0; i < count; i++)
             {
                 string? currentValue = value[i];
                 if (currentValue != null)
@@ -840,7 +855,7 @@ namespace System
             string result = FastAllocateString(totalLength);
             int copiedLength = 0;
 
-            for (int i = startIndex, end = startIndex + count; i < end; i++)
+            for (int i = 0; i < count; i++)
             {
                 // It's possible that another thread may have mutated the input array
                 // such that our second read of an index will not be the same string
@@ -863,7 +878,7 @@ namespace System
                     copiedLength += valueLen;
                 }
 
-                if (i < end - 1)
+                if (i < count - 1)
                 {
                     // Fill in the separator.
                     fixed (char* pResult = &result._firstChar)
@@ -890,7 +905,7 @@ namespace System
             // fall back should be extremely rare.
             return copiedLength == totalLength ?
                 result :
-                JoinCore(separator, separatorLength, value.ToArray().AsSpan(), startIndex, count);
+                JoinCore(separator, separatorLength, value.ToArray().AsSpan());
         }
 
         public string PadLeft(int totalWidth) => PadLeft(totalWidth, ' ');
