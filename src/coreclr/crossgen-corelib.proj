@@ -13,21 +13,28 @@
       <ExeExtension Condition="'$(OS)' == 'Windows_NT'">.exe</ExeExtension>
 
       <CoreLibAssemblyName>System.Private.CoreLib</CoreLibAssemblyName>
+      <CoreLibInputPath>$(BinDir)\IL\$(CoreLibAssemblyName).dll</CoreLibInputPath>
       <CoreLibOutputPath>$(BinDir)\$(CoreLibAssemblyName).dll</CoreLibOutputPath>
 
-      <BuildPdb>false</BuildPdb>
-      <BuildPdb Condition="'$(OS)' == 'Windows_NT' and '$(TargetOS)' == 'Windows_NT'">true</BuildPdb>
+      <BuildDll>true</BuildDll>
+    </PropertyGroup>
 
-      <BuildPerfMap>false</BuildPerfMap>
-      <BuildPerfMap Condition="'$(TargetOS)' == 'Linux'">true</BuildPerfMap>
+    <PropertyGroup Condition="'$(CrossBuild)' == 'true'">
+      <BuildDll>false</BuildDll>
+      <BuildDll Condition="'$(BuildArchitecture)' == 'x86' && '$(TargetArchitecture)' == 'arm'">true</BuildDll>
+      <BuildDll Condition="'$(BuildArchitecture)' == 'x64' && '$(TargetArchitecture)' == 'arm'">true</BuildDll>
+      <BuildDll Condition="'$(BuildArchitecture)' == 'x64' && '$(TargetArchitecture)' == 'arm64'">true</BuildDll>
+
+      <CrossDir Condition="$(BuildDll)">$(BuildArchitecture)</CrossDir>
     </PropertyGroup>
 
     <PropertyGroup>
-      <CrossDir></CrossDir>
-      <CrossDir Condition="'$(TargetArchitecture)' == 'arm64'">x64</CrossDir>
-      <CrossDir Condition="'$(TargetArchitecture)' == 'arm'">x86</CrossDir>
-      <CrossDir Condition="'$(TargetArchitecture)' == 'arm' and '$(OS)' != 'Windows_NT'">x64</CrossDir>
-      <CrossDir Condition="'$(TargetArchitecture)' == 'x86' and '$(BuildArchitecture)' != 'x86' and '$(OS)' != 'Windows_NT'">$(BuildArchitecture)</CrossDir>
+      <BuildPdb>false</BuildPdb>
+      <BuildPdb Condition="$(BuildDll) and '$(OS)' == 'Windows_NT' and '$(TargetOS)' == 'Windows_NT'">true</BuildPdb>
+
+      <BuildPerfMap>false</BuildPerfMap>
+      <BuildPerfMap Condition="$(BuildDll) and '$(TargetOS)' == 'Linux'">true</BuildPerfMap>
+
       <CrossGenExe>$(BinDir)\$(CrossDir)\crossgen$(ExeExtension)</CrossGenExe>
     </PropertyGroup>
 
@@ -44,7 +51,7 @@
       <CrossGenCmd>$(CrossGenCmd) /Platform_Assemblies_Paths "$(BinDir)\IL"</CrossGenCmd>
 
       <CrossGenDllCmd>$(CrossGenCmd) /out "$(CoreLibOutputPath)"</CrossGenDllCmd> 
-      <CrossGenDllCmd>$(CrossGenDllCmd) "$(BinDir)\IL\$(CoreLibAssemblyName).dll"</CrossGenDllCmd>
+      <CrossGenDllCmd>$(CrossGenDllCmd) "$(CoreLibInputPath)"</CrossGenDllCmd>
     </PropertyGroup>
     
     <PropertyGroup Condition="$(BuildPerfMap)">
@@ -58,9 +65,9 @@
       <CrossGenPdbCmd>$(CrossGenPdbCmd) "$(CoreLibOutputPath)"</CrossGenPdbCmd>
     </PropertyGroup>
     
-    <Message Importance="High" Text="$(CrossGenDllCmd)" />
+    <Message Condition="$(BuildDll)" Importance="High" Text="$(CrossGenDllCmd)" />
     
-    <Exec Command="$(CrossGenDllCmd)" />
+    <Exec Condition="$(BuildDll)" Command="$(CrossGenDllCmd)" />
 
     <Message Condition="$(BuildPdb)" Importance="High" Text="$(CrossGenPdbCmd)" />
 
@@ -69,6 +76,8 @@
     <Message Condition="$(BuildPerfMap)" Importance="High" Text="$(CrossGenPerfMapCmd)" />
 
     <Exec Condition="$(BuildPerfMap)" Command="$(CrossGenPerfMapCmd)" />
+
+    <Copy Condition="!$(BuildDll)" SourceFiles="$(CoreLibInputPath)" DestinationFiles="$(CoreLibOutputPath)" UseHardlinksIfPossible="true" />
 
     <Message Importance="High" Text="Crossgenning of System.Private.CoreLib succeeded.  Finished at $(TIME)" />
     <Message Importance="High" Text="Product binaries are available at $(BinDir)" />
