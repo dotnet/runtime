@@ -93,7 +93,7 @@ namespace System
         }
 
 #if NETSTANDARD2_1 || NETCOREAPP3_0
-    private static void EncodeToUtf16_Ssse3(ReadOnlySpan<byte> bytes, Span<char> chars, Casing casing = Casing.Upper)
+    private static void EncodeToUtf16_Ssse3(ReadOnlySpan<byte> bytes, Span<char> chars, Casing casing)
     {
         int pos = 0;
 
