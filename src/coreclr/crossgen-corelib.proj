@@ -16,15 +16,12 @@
       <CoreLibInputPath>$(BinDir)\IL\$(CoreLibAssemblyName).dll</CoreLibInputPath>
       <CoreLibOutputPath>$(BinDir)\$(CoreLibAssemblyName).dll</CoreLibOutputPath>
 
-      <DoCrossBuild>false</DoCrossBuild>
-      <DoCrossBuild Condition="'$(BuildArchitecture)' == 'x86' and '$(TargetArchitecture)' == 'arm'">true</DoCrossBuild>
-      <DoCrossBuild Condition="'$(BuildArchitecture)' == 'x64' and '$(TargetArchitecture)' == 'arm'">true</DoCrossBuild>
-      <DoCrossBuild Condition="'$(BuildArchitecture)' == 'x64' and '$(TargetArchitecture)' == 'arm64'">true</DoCrossBuild>
-
-      <CrossDir Condition="$(DoCrossBuild)">$(BuildArchitecture)</CrossDir>
+      <CrossDir></CrossDir>
+      <CrossDir Condition="'$(TargetArchitecture)' == 'arm' or '$(TargetArchitecture)' == 'arm64'">x64</CrossDir>
+      <CrossDir Condition="'$(TargetArchitecture)' == 'arm' and '$(OS)' == 'Windows_NT'">x86</CrossDir>
 
       <BuildDll>true</BuildDll>
-      <BuildDll Condition="'$(CrossBuild)' == 'true' and !$(DoCrossBuild)">false</BuildDll>
+      <BuildDll Condition="'$(CrossBuild)' == 'true' and '$(CrossDir)' == ''">false</BuildDll>
 
       <BuildPdb>false</BuildPdb>
       <BuildPdb Condition="$(BuildDll) and '$(OS)' == 'Windows_NT' and '$(TargetOS)' == 'Windows_NT'">true</BuildPdb>
