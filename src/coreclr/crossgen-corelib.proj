@@ -9,13 +9,25 @@
       <LogsDir>$(RootBinDir)\log</LogsDir>
       <BinDir>$(RootBinDir)\bin\coreclr\$(OSPlatformConfig)</BinDir>
       <IntermediatesDir>$(RootBinDir)\obj\coreclr\$(OSPlatformConfig)</IntermediatesDir>
-      <CrossComponentBinDir>$(BinDir)</CrossComponentBinDir>
       <CrossGenCoreLibLog>$(LogsDir)\CrossgenCoreLib_$(TargetOS)__$(TargetArchitecture)__$(Configuration).log</CrossGenCoreLibLog>
       <ExeExtension Condition="'$(OS)' == 'Windows_NT'">.exe</ExeExtension>
-      <CrossGenExe>$(CrossComponentBinDir)\crossgen$(ExeExtension)</CrossGenExe>
 
       <CoreLibAssemblyName>System.Private.CoreLib</CoreLibAssemblyName>
       <CoreLibOutputPath>$(BinDir)\$(CoreLibAssemblyName).dll</CoreLibOutputPath>
+
+      <BuildPdb>false</BuildPdb>
+      <BuildPdb Condition="'$(OS)' == 'Windows_NT' and '$(TargetOS)' == 'Windows_NT'">true</BuildPdb>
+
+      <BuildPerfMap>false</BuildPerfMap>
+      <BuildPerfMap Condition="'$(TargetOS)' == 'Linux'">true</BuildPerfMap>
+    </PropertyGroup>
+
+    <PropertyGroup>
+      <CrossComponentBinDir>$(BinDir)</CrossComponentBinDir>
+      <CrossComponentBinDir Condition="'$(TargetArchitecture)' == 'arm'">$(CrossComponentBinDir)\x86</CrossComponentBinDir>
+      <CrossComponentBinDir Condition="'$(TargetArchitecture)' == 'arm64'">$(CrossComponentBinDir)\x64</CrossComponentBinDir>
+
+      <CrossGenExe>$(CrossComponentBinDir)\crossgen$(ExeExtension)</CrossGenExe>
     </PropertyGroup>
 
     <MakeDir
@@ -34,12 +46,12 @@
       <CrossGenDllCmd>$(CrossGenDllCmd) "$(BinDir)\IL\$(CoreLibAssemblyName).dll"</CrossGenDllCmd>
     </PropertyGroup>
     
-    <PropertyGroup Condition="'$(TargetOS)' == 'Linux'">
+    <PropertyGroup Condition="$(BuildPerfMap)">
       <CrossGenPerfMapCmd>$(CrossGenCmd) /CreatePerfMap "$(BinDir)"</CrossGenPerfMapCmd>
       <CrossGenPerfMapCmd>$(CrossGenPerfMapCmd) "$(CoreLibOutputPath)"</CrossGenPerfMapCmd>
     </PropertyGroup>
     
-    <PropertyGroup Condition="'$(OS)' == 'Windows_NT'">
+    <PropertyGroup Condition="$(BuildPdb)">
       <VsSetupCmd>call $(RepoRoot)\src\coreclr\setup_vs_tools.cmd</VsSetupCmd>
       <CrossGenPdbCmd>$(VsSetupCmd) &amp;&amp; $(CrossGenCmd) /CreatePdb "$(BinDir)\PDB"</CrossGenPdbCmd>
       <CrossGenPdbCmd>$(CrossGenPdbCmd) "$(CoreLibOutputPath)"</CrossGenPdbCmd>
@@ -49,13 +61,13 @@
     
     <Exec Command="$(CrossGenDllCmd)" />
 
-    <Message Condition="'$(OS)' == 'Windows_NT'" Importance="High" Text="$(CrossGenPdbCmd)" />
+    <Message Condition="$(BuildPdb)" Importance="High" Text="$(CrossGenPdbCmd)" />
 
-    <Exec Condition="'$(OS)' == 'Windows_NT'" Command="$(CrossGenPdbCmd)" />
+    <Exec Condition="$(BuildPdb)" Command="$(CrossGenPdbCmd)" />
 
-    <Message Condition="'$(TargetOS)' == 'Linux'" Importance="High" Text="$(CrossGenPerfMapCmd)" />
+    <Message Condition="$(BuildPerfMap)" Importance="High" Text="$(CrossGenPerfMapCmd)" />
 
-    <Exec Condition="'$(TargetOS)' == 'Linux'" Command="$(CrossGenPerfMapCmd)" />
+    <Exec Condition="$(BuildPerfMap)" Command="$(CrossGenPerfMapCmd)" />
 
     <Message Importance="High" Text="Crossgenning of System.Private.CoreLib succeeded.  Finished at $(TIME)" />
     <Message Importance="High" Text="Product binaries are available at $(BinDir)" />
