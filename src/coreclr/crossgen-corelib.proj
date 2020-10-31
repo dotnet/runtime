@@ -27,7 +27,7 @@
       <CrossDir Condition="'$(TargetArchitecture)' == 'arm64'">x64</CrossDir>
       <CrossDir Condition="'$(TargetArchitecture)' == 'arm'">x86</CrossDir>
       <CrossDir Condition="'$(TargetArchitecture)' == 'arm' and '$(OS)' != 'Windows_NT'">x64</CrossDir>
-      <CrossDir Condition="'$(TargetArchitecture)' == 'x86' and '$(BuildArchitecture)' != 'x86' && '$(OS)' != 'Windows_NT'">$(BuildArchitecture)</CrossDir>
+      <CrossDir Condition="'$(TargetArchitecture)' == 'x86' and '$(BuildArchitecture)' != 'x86' and '$(OS)' != 'Windows_NT'">$(BuildArchitecture)</CrossDir>
       <CrossGenExe>$(BinDir)\$(CrossDir)\crossgen$(ExeExtension)</CrossGenExe>
     </PropertyGroup>
 
