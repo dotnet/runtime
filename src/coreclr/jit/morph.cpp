@@ -353,7 +353,27 @@ GenTree* Compiler::fgMorphCast(GenTree* tree)
     }
     else if (((tree->gtFlags & GTF_UNSIGNED) == 0) && (srcType == TYP_LONG) && varTypeIsFloating(dstType))
     {
-        return fgMorphCastIntoHelper(tree, CORINFO_HELP_LNG2DBL, oper);
+        oper = fgMorphCastIntoHelper(tree, CORINFO_HELP_LNG2DBL, oper);
+
+        if ((dstType == TYP_FLOAT) && (oper->OperGet() == GT_CALL))
+        {
+            // oper is a helper call to CORINFO_HELP_LNG2DBL
+            // but fgMorphCastIntoHelper sets the return type wrong
+            // leading to problems if we try to CSE this call
+            //
+            oper->gtType = TYP_DOUBLE; // CORINFO_HELP_LNG2DBL actually returns a TYP_DOUBLE
+
+            // Add a Cast to TYP_FLOAT, nop on x86 using FPU stack
+            //
+            tree = gtNewCastNode(TYP_FLOAT, oper, false, TYP_FLOAT);
+            INDEBUG(tree->gtDebugFlags |= GTF_DEBUG_NODE_MORPHED);
+
+            return tree;
+        }
+        else
+        {
+            return oper;
+        }
     }
 #endif // TARGET_X86
     else if (varTypeIsGC(srcType) != varTypeIsGC(dstType))
