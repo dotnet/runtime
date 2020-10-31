@@ -5,8 +5,7 @@
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
-#if NETCOREAPP
-using Internal.Runtime.CompilerServices;
+#if !NETFRAMEWORK && !NETSTANDARD1_0 && !NETSTANDARD1_3 && !NETSTANDARD2_0
 using System.Runtime.Intrinsics;
 using System.Runtime.Intrinsics.X86;
 #endif
@@ -148,7 +147,12 @@ namespace System
         {
             Debug.Assert(chars.Length >= bytes.Length * 2);
 
-#if NETCOREAPP
+#if NETFRAMEWORK || NETSTANDARD1_0 || NETSTANDARD1_3 || NETSTANDARD2_0
+            for (int pos = 0; pos < bytes.Length; pos++)
+            {
+                ToCharsBuffer(bytes[pos], chars, pos * 2, casing);
+            }
+#else
             if (!Ssse3.IsSupported || bytes.Length < 4)
             {
                 for (int pos = 0; pos < bytes.Length; pos++)
@@ -159,11 +163,6 @@ namespace System
             else
             {
                 EncodeToUtf16_Ssse3(bytes, chars, casing);
-            }
-#else
-            for (int pos = 0; pos < bytes.Length; pos++)
-            {
-                ToCharsBuffer(bytes[pos], chars, pos * 2, casing);
             }
 #endif
     }
