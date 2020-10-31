@@ -8,6 +8,9 @@ using System.Runtime.InteropServices;
 #if !NETFRAMEWORK && !NETSTANDARD1_0 && !NETSTANDARD1_3 && !NETSTANDARD2_0
 using System.Runtime.Intrinsics;
 using System.Runtime.Intrinsics.X86;
+#if SYSTEM_PRIVATE_CORELIB
+using Internal.Runtime.CompilerServices;
+#endif
 #endif
 
 namespace System
@@ -89,7 +92,7 @@ namespace System
             buffer[startingIndex] = (char)(packedResult >> 8);
         }
 
-#if NETCOREAPP
+#if !NETFRAMEWORK && !NETSTANDARD1_0 && !NETSTANDARD1_3 && !NETSTANDARD2_0
     public static void EncodeToUtf16_Ssse3(ReadOnlySpan<byte> bytes, Span<char> chars, Casing casing = Casing.Upper)
     {
         int pos = 0;
@@ -128,7 +131,8 @@ namespace System
             // Lookup the hex values at the positions of the indices
             Vector128<byte> hex = Ssse3.Shuffle(asciiTable, indices);
 
-            // The high bytes (0x00) of the chars have also been convertedto ascii hex '0', so clear them out.
+            // The high bytes (0x00) of the chars have also been converted
+            // to ascii hex '0', so clear them out.
             hex = Sse2.And(hex, Vector128.Create((ushort)0xFF).AsByte());
 
             // Save to "chars" at pos*2 offset
@@ -136,10 +140,10 @@ namespace System
                 ref Unsafe.As<char, byte>(
                     ref Unsafe.Add(ref MemoryMarshal.GetReference(chars), pos * 2)), hex);
         }
+
+        // Process trailing elements (bytes.Length % 4)
         for (; pos < bytes.Length; pos++)
-        {
             ToCharsBuffer(bytes[pos], chars, pos * 2, casing);
-        }
     }
 #endif
 
@@ -147,12 +151,7 @@ namespace System
         {
             Debug.Assert(chars.Length >= bytes.Length * 2);
 
-#if NETFRAMEWORK || NETSTANDARD1_0 || NETSTANDARD1_3 || NETSTANDARD2_0
-            for (int pos = 0; pos < bytes.Length; pos++)
-            {
-                ToCharsBuffer(bytes[pos], chars, pos * 2, casing);
-            }
-#else
+#if !NETFRAMEWORK && !NETSTANDARD1_0 && !NETSTANDARD1_3 && !NETSTANDARD2_0
             if (!Ssse3.IsSupported || bytes.Length < 4)
             {
                 for (int pos = 0; pos < bytes.Length; pos++)
@@ -163,6 +162,11 @@ namespace System
             else
             {
                 EncodeToUtf16_Ssse3(bytes, chars, casing);
+            }
+#else
+            for (int pos = 0; pos < bytes.Length; pos++)
+            {
+                ToCharsBuffer(bytes[pos], chars, pos * 2, casing);
             }
 #endif
     }
