@@ -5466,7 +5466,7 @@ void Lowering::ContainCheckHWIntrinsic(GenTreeHWIntrinsic* node)
 
                         default:
                         {
-                            assert("Unhandled containment for binary hardware intrinsic with immediate operand");
+                            assert(!"Unhandled containment for binary hardware intrinsic with immediate operand");
                             break;
                         }
                     }
@@ -5643,7 +5643,7 @@ void Lowering::ContainCheckHWIntrinsic(GenTreeHWIntrinsic* node)
 
                         default:
                         {
-                            assert("Unhandled containment for ternary hardware intrinsic with immediate operand");
+                            assert(!"Unhandled containment for ternary hardware intrinsic with immediate operand");
                             break;
                         }
                     }
