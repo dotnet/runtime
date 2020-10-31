@@ -6,6 +6,7 @@ using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 #if NETCOREAPP
+using Internal.Runtime.CompilerServices;
 using System.Runtime.Intrinsics;
 using System.Runtime.Intrinsics.X86;
 #endif
@@ -89,64 +90,83 @@ namespace System
             buffer[startingIndex] = (char)(packedResult >> 8);
         }
 
+#if NETCOREAPP
+    public static void EncodeToUtf16_Ssse3(ReadOnlySpan<byte> bytes, Span<char> chars, Casing casing = Casing.Upper)
+    {
+        int pos = 0;
+
+        Vector128<byte> shuffleMask = Vector128.Create(
+            0xFF, 0xFF, 0, 0xFF, 0xFF, 0xFF, 1, 0xFF,
+            0xFF, 0xFF, 2, 0xFF, 0xFF, 0xFF, 3, 0xFF);
+
+        Vector128<byte> asciiTable = (casing == Casing.Upper) ?
+            Vector128.Create((byte)'0', (byte)'1', (byte)'2', (byte)'3',
+                             (byte)'4', (byte)'5', (byte)'6', (byte)'7',
+                             (byte)'8', (byte)'9', (byte)'A', (byte)'B',
+                             (byte)'C', (byte)'D', (byte)'E', (byte)'F') :
+            Vector128.Create((byte)'0', (byte)'1', (byte)'2', (byte)'3',
+                             (byte)'4', (byte)'5', (byte)'6', (byte)'7',
+                             (byte)'8', (byte)'9', (byte)'a', (byte)'b',
+                             (byte)'c', (byte)'d', (byte)'e', (byte)'f');
+
+        for (; pos < bytes.Length - 3; pos += 4)
+        {
+            // Read 32bits from "bytes" span at "pos" offset
+            uint block = Unsafe.ReadUnaligned<uint>(
+                ref Unsafe.Add(ref MemoryMarshal.GetReference(bytes), pos));
+
+            // Calculate nibbles
+            Vector128<byte> lowNibbles = Ssse3.Shuffle(
+                Vector128.CreateScalarUnsafe(block).AsByte(),
+                shuffleMask);
+            Vector128<byte> highNibbles = Sse2.ShiftRightLogical(
+                Sse2.ShiftRightLogical128BitLane(lowNibbles, 2).AsInt32(), 4).AsByte();
+
+            Vector128<byte> indices = Sse2.And(
+                Sse2.Or(lowNibbles, highNibbles),
+                Vector128.Create((byte)0xF));
+
+            // Lookup the hex values at the positions of the indices
+            Vector128<byte> hex = Ssse3.Shuffle(asciiTable, indices);
+
+            // The high bytes (0x00) of the chars have also been convertedto ascii hex '0', so clear them out.
+            hex = Sse2.And(hex, Vector128.Create((ushort)0xFF).AsByte());
+
+            // Save to "chars" at pos*2 offset
+            Unsafe.WriteUnaligned(
+                ref Unsafe.As<char, byte>(
+                    ref Unsafe.Add(ref MemoryMarshal.GetReference(chars), pos * 2)), hex);
+        }
+        for (; pos < bytes.Length; pos++)
+        {
+            ToCharsBuffer(bytes[pos], chars, pos * 2, casing);
+        }
+    }
+#endif
+
         public static void EncodeToUtf16(ReadOnlySpan<byte> bytes, Span<char> chars, Casing casing = Casing.Upper)
         {
             Debug.Assert(chars.Length >= bytes.Length * 2);
 
-            int pos = 0;
 #if NETCOREAPP
-            if (Ssse3.IsSupported && bytes.Length >= 4)
+            if (!Ssse3.IsSupported || bytes.Length < 4)
             {
-                Vector128<byte> expandMask = Vector128.Create(
-                    0xFF, 0xFF, 0, 0xFF, 0xFF, 0xFF, 1, 0xFF,
-                    0xFF, 0xFF, 2, 0xFF, 0xFF, 0xFF, 3, 0xFF);
-
-                Vector128<byte> asciiTable = (casing == Casing.Upper) ?
-                    Vector128.Create((byte)'0', (byte)'1', (byte)'2', (byte)'3',
-                                     (byte)'4', (byte)'5', (byte)'6', (byte)'7',
-                                     (byte)'8', (byte)'9', (byte)'A', (byte)'B',
-                                     (byte)'C', (byte)'D', (byte)'E', (byte)'F') :
-                    Vector128.Create((byte)'0', (byte)'1', (byte)'2', (byte)'3',
-                                     (byte)'4', (byte)'5', (byte)'6', (byte)'7',
-                                     (byte)'8', (byte)'9', (byte)'a', (byte)'b',
-                                     (byte)'c', (byte)'d', (byte)'e', (byte)'f');
-
-                for (; pos < bytes.Length - 3; pos += 4)
+                for (int pos = 0; pos < bytes.Length; pos++)
                 {
-                    // Read 32bits from "bytes" span at "pos" offset
-                    uint block = Unsafe.ReadUnaligned<uint>(
-                        ref Unsafe.Add(ref MemoryMarshal.GetReference(bytes), pos));
-
-                    // Calculate nibbles
-                    Vector128<byte> lowNibbles = Ssse3.Shuffle(
-                        Vector128.CreateScalarUnsafe(block).AsByte(), 
-                        expandMask);
-                    Vector128<byte> highNibbles = Sse2.ShiftRightLogical(
-                        Sse2.ShiftRightLogical128BitLane(lowNibbles, 2).AsInt32(), 4).AsByte();
-
-                    Vector128<byte> indices = Sse2.And(
-                        Sse2.Or(lowNibbles, highNibbles), 
-                        Vector128.Create((byte)0xF));
-
-                     // Lookup the hex values at the positions of the indices
-                    Vector128<byte> hex = Ssse3.Shuffle(asciiTable, indices);
-
-                    // The high bytes (0x00) of the chars have also been converted 
-                    // to ascii hex '0', so clear them out.
-                    hex = Sse2.And(hex, Vector128.Create((ushort)0xFF).AsByte());
-
-                    // Save to "chars" at "pos*2" offset
-                    Unsafe.WriteUnaligned(
-                        ref Unsafe.As<char, byte>(
-                            ref Unsafe.Add(ref MemoryMarshal.GetReference(chars), pos * 2)), hex);
+                    ToCharsBuffer(bytes[pos], chars, pos * 2, casing);
                 }
             }
-#endif
-            for (; pos < bytes.Length; ++pos)
+            else
+            {
+                EncodeToUtf16_Ssse3(bytes, chars, casing);
+            }
+#else
+            for (int pos = 0; pos < bytes.Length; pos++)
             {
                 ToCharsBuffer(bytes[pos], chars, pos * 2, casing);
             }
-        }
+#endif
+    }
 
 #if ALLOW_PARTIALLY_TRUSTED_CALLERS
         [System.Security.SecuritySafeCriticalAttribute]
