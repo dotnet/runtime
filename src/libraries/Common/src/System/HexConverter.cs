@@ -97,14 +97,14 @@ namespace System
                     0xFF, 0xFF, 2, 0xFF, 0xFF, 0xFF, 3, 0xFF);
 
                 Vector128<byte> asciiTable = (casing == Casing.Upper) ?
-                    Vector128.Create((byte)'0', (byte)'1', (byte)'2', (byte)'3', 
-                                     (byte)'4', (byte)'5', (byte)'6', (byte)'7',
-                                     (byte)'8', (byte)'9', (byte)'A', (byte)'B',
-                                     (byte)'C', (byte)'D', (byte)'E', (byte)'F' :
-                    Vector128.Create((byte)'0', (byte)'1', (byte)'2', (byte)'3', 
-                                     (byte)'4', (byte)'5', (byte)'6', (byte)'7',
-                                     (byte)'8', (byte)'9', (byte)'a', (byte)'b', 
-                                     (byte)'c', (byte)'d', (byte)'e', (byte)'f'
+                    Vector128.Create((byte)'0', (byte)'1', (byte)'2', (byte)'3',
+                                    (byte)'4', (byte)'5', (byte)'6', (byte)'7',
+                                    (byte)'8', (byte)'9', (byte)'A', (byte)'B',
+                                    (byte)'C', (byte)'D', (byte)'E', (byte)'F') :
+                    Vector128.Create((byte)'0', (byte)'1', (byte)'2', (byte)'3',
+                                    (byte)'4', (byte)'5', (byte)'6', (byte)'7',
+                                    (byte)'8', (byte)'9', (byte)'a', (byte)'b',
+                                    (byte)'c', (byte)'d', (byte)'e', (byte)'f');
 
                 for (; pos < bytes.Length - 3; pos += 4)
                 {
