@@ -332,11 +332,11 @@ echo "Build Architecture            : ${buildArch}"
 echo "Build Configuration           : ${buildConfiguration}"
 
 
-if [ $buildArch = "wasm" ]; then
+if [ "$buildArch" = "wasm" ]; then
     runtestPyArguments+=("-os" "Browser")
 fi
 
-if [ $buildOS = "Android" ]; then
+if [ "$buildOS" = "Android" ]; then
     runtestPyArguments+=("-os" "Android")
 fi
     
