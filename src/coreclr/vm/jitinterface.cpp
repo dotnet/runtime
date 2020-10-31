@@ -8958,7 +8958,6 @@ CORINFO_METHOD_HANDLE CEEInfo::resolveVirtualMethodHelper(CORINFO_METHOD_HANDLE 
             // or non shared generic instantiation ie <T> is <Int32>
             _ASSERTE(pDevirtMD->IsWrapperStub() || !(pDevirtMD->GetMethodTable()->IsSharedByGenericInstantiations() || pDevirtMD->IsSharedByGenericMethodInstantiations()));
             *ownerType = MAKE_CLASSCONTEXT(pDevirtMD->GetMethodTable());
-            _ASSERTE(pDevirtMD->IsRestored() && pDevirtMD->GetMethodTable()->IsFullyLoaded());
             if (pDevirtMD->IsWrapperStub())
             {
                 *requiresInstMethodTableArg = true;
