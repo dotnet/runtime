@@ -92,19 +92,19 @@ namespace System
 #if NETCOREAPP
             if (Ssse3.IsSupported && bytes.Length >= 4)
             {
-                Vector128<byte> shuffleMask = Vector128.Create(
+                Vector128<byte> expandMask = Vector128.Create(
                     0xFF, 0xFF, 0, 0xFF, 0xFF, 0xFF, 1, 0xFF,
                     0xFF, 0xFF, 2, 0xFF, 0xFF, 0xFF, 3, 0xFF);
 
                 Vector128<byte> asciiTable = (casing == Casing.Upper) ?
                     Vector128.Create((byte)'0', (byte)'1', (byte)'2', (byte)'3',
-                                    (byte)'4', (byte)'5', (byte)'6', (byte)'7',
-                                    (byte)'8', (byte)'9', (byte)'A', (byte)'B',
-                                    (byte)'C', (byte)'D', (byte)'E', (byte)'F') :
+                                     (byte)'4', (byte)'5', (byte)'6', (byte)'7',
+                                     (byte)'8', (byte)'9', (byte)'A', (byte)'B',
+                                     (byte)'C', (byte)'D', (byte)'E', (byte)'F') :
                     Vector128.Create((byte)'0', (byte)'1', (byte)'2', (byte)'3',
-                                    (byte)'4', (byte)'5', (byte)'6', (byte)'7',
-                                    (byte)'8', (byte)'9', (byte)'a', (byte)'b',
-                                    (byte)'c', (byte)'d', (byte)'e', (byte)'f');
+                                     (byte)'4', (byte)'5', (byte)'6', (byte)'7',
+                                     (byte)'8', (byte)'9', (byte)'a', (byte)'b',
+                                     (byte)'c', (byte)'d', (byte)'e', (byte)'f');
 
                 for (; pos < bytes.Length - 3; pos += 4)
                 {
@@ -115,7 +115,7 @@ namespace System
                     // Calculate nibbles
                     Vector128<byte> lowNibbles = Ssse3.Shuffle(
                         Vector128.CreateScalarUnsafe(block).AsByte(), 
-                        shuffleMask);
+                        expandMask);
                     Vector128<byte> highNibbles = Sse2.ShiftRightLogical(
                         Sse2.ShiftRightLogical128BitLane(lowNibbles, 2).AsInt32(), 4).AsByte();
 
@@ -126,10 +126,11 @@ namespace System
                      // Lookup the hex values at the positions of the indices
                     Vector128<byte> hex = Ssse3.Shuffle(asciiTable, indices);
 
-                    // The high bytes (0x00) of the chars have also been convertedto ascii hex '0', so clear them out.
+                    // The high bytes (0x00) of the chars have also been converted 
+                    // to ascii hex '0', so clear them out.
                     hex = Sse2.And(hex, Vector128.Create((ushort)0xFF).AsByte());
 
-                    // Save to "chars" at pos*2 offset
+                    // Save to "chars" at "pos*2" offset
                     Unsafe.WriteUnaligned(
                         ref Unsafe.As<char, byte>(
                             ref Unsafe.Add(ref MemoryMarshal.GetReference(chars), pos * 2)), hex);
