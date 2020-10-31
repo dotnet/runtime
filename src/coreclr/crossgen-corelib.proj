@@ -24,9 +24,7 @@
 
     <PropertyGroup>
       <CrossComponentBinDir>$(BinDir)</CrossComponentBinDir>
-      <CrossComponentBinDir Condition="'$(TargetArchitecture)' == 'arm'">$(CrossComponentBinDir)\x86</CrossComponentBinDir>
-      <CrossComponentBinDir Condition="'$(TargetArchitecture)' == 'arm64'">$(CrossComponentBinDir)\x64</CrossComponentBinDir>
-
+      <CrossComponentBinDir Condition="'$(TargetArchitecture)' != '$(BuildArchitecture)'">$(CrossComponentBinDir)\$(BuildArchitecture)</CrossComponentBinDir>
       <CrossGenExe>$(CrossComponentBinDir)\crossgen$(ExeExtension)</CrossGenExe>
     </PropertyGroup>
 
