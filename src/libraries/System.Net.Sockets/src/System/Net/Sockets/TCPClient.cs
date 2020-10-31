@@ -268,6 +268,9 @@ namespace System.Net.Sockets
         public Task ConnectAsync(IPAddress[] addresses, int port) =>
             CompleteConnectAsync(Client.ConnectAsync(addresses, port));
 
+        public Task ConnectAsync(EndPoint remoteEP) =>
+            CompleteConnectAsync(Client.ConnectAsync(remoteEP));
+
         private async Task CompleteConnectAsync(Task task)
         {
             await task.ConfigureAwait(false);
@@ -282,6 +285,9 @@ namespace System.Net.Sockets
 
         public ValueTask ConnectAsync(IPAddress[] addresses, int port, CancellationToken cancellationToken) =>
             CompleteConnectAsync(Client.ConnectAsync(addresses, port, cancellationToken));
+
+        public ValueTask ConnectAsync(EndPoint remoteEP, CancellationToken cancellationToken) =>
+            CompleteConnectAsync(Client.ConnectAsync(remoteEP, cancellationToken));
 
         private async ValueTask CompleteConnectAsync(ValueTask task)
         {
