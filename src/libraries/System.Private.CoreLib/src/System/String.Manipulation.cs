@@ -626,17 +626,19 @@ namespace System
 
         public static string Join(string? separator, IEnumerable<string?> values)
         {
-            if (values == null)
-            {
-                throw new ArgumentNullException(nameof(values));
-            }
             if (values is List<string?> valuesIList)
             {
-                return Join(separator, CollectionsMarshal.AsSpan(valuesIList), 0, valuesIList.Count);
+                return Join(separator, CollectionsMarshal.AsSpan(valuesIList));
             }
+
             if (values is string?[] valuesArray)
             {
                 return Join(separator, valuesArray, 0, valuesArray.Length);
+            }
+
+            if (values == null)
+            {
+                throw new ArgumentNullException(nameof(values));
             }
 
             using (IEnumerator<string?> en = values.GetEnumerator())
@@ -682,15 +684,15 @@ namespace System
             }
         }
 
-        // Joins an array of strings together as one string with a separator between each original string.
+        // Joins a span of strings together as one string with a separator between each original string.
         //
-        private static unsafe string Join(string? separator, ReadOnlySpan<string?> value, int startIndex, int count)
+        private static unsafe string Join(string? separator, ReadOnlySpan<string?> value)
         {
             separator ??= Empty;
             fixed (char* pSeparator = &separator._firstChar)
             {
                 // Defer argument validation to the internal function
-                return JoinCore(pSeparator, separator.Length, value, startIndex, count);
+                return JoinCore(pSeparator, separator.Length, value, 0, value.Length);
             }
         }
 
