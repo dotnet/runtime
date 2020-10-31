@@ -1,0 +1,18 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFrameworks>$(NetCoreAppCurrent)</TargetFrameworks>
+    <!-- NuGet restore issue with TargetFrameworks in f# projects: https://github.com/NuGet/Home/issues/10005 -->
+    <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Include="CborDocument.fs" />
+    <Compile Include="CborPropertyTestContext.fs" />
+    <Compile Include="CborDocumentSerializer.fs" />
+  </ItemGroup>
+
+  <ItemGroup>
+      <ProjectReference Include="..\..\src\System.Formats.Cbor.csproj" />
+  </ItemGroup>
+</Project>

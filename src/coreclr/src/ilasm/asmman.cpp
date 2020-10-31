@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 //
 // asmman.cpp - manifest info handling (implementation of class AsmMan, see asmman.hpp)
 //
@@ -965,8 +964,10 @@ HRESULT AsmMan::EmitManifest()
                 for(j=0; (hFile == INVALID_HANDLE_VALUE)&&(pwzInputFiles[j] != NULL); j++)
                 {
                     wcscpy_s(wzFileName,2048,pwzInputFiles[j]);
-                    pwz = wcsrchr(wzFileName,'\\');
+                    pwz = wcsrchr(wzFileName,DIRECTORY_SEPARATOR_CHAR_A);
+#ifdef TARGET_WINDOWS
                     if(pwz == NULL) pwz = wcsrchr(wzFileName,':');
+#endif
                     if(pwz == NULL) pwz = &wzFileName[0];
                     else pwz++;
                     wcscpy_s(pwz,2048-(pwz-wzFileName),wzUniBuf);

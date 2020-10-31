@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Runtime.CompilerServices;
 using Internal.Runtime.CompilerServices;
@@ -113,7 +112,7 @@ namespace System
         {
             object? obj = wo.Target;
             if (obj == null)
-                throw new ArgumentException();
+                throw new ArgumentException(null, nameof(wo));
             return GetGeneration(obj);
         }
 
@@ -248,13 +247,20 @@ namespace System
 
         public static GCMemoryInfo GetGCMemoryInfo()
         {
-            _GetGCMemoryInfo(out long highMemoryLoadThresholdBytes,
-                             out long memoryLoadBytes,
-                             out long totalAvailableMemoryBytes,
-                             out long heapSizeBytes,
-                             out long fragmentedBytes);
+            var data = new GCMemoryInfoData();
 
-            return new GCMemoryInfo(highMemoryLoadThresholdBytes, memoryLoadBytes, totalAvailableMemoryBytes, heapSizeBytes, fragmentedBytes);
+            _GetGCMemoryInfo(out data._highMemoryLoadThresholdBytes,
+                             out data._memoryLoadBytes,
+                             out data._totalAvailableMemoryBytes,
+                             out data._heapSizeBytes,
+                             out data._fragmentedBytes);
+
+            return new GCMemoryInfo(data);
+        }
+
+        public static GCMemoryInfo GetGCMemoryInfo(GCKind kind)
+        {
+            throw new PlatformNotSupportedException();
         }
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
@@ -262,8 +268,8 @@ namespace System
 
         public static T[] AllocateUninitializedArray<T>(int length, bool pinned = false)
         {
-            // Mono only does explicit zeroning if the array is to big for the nursery, but less than 1 Mb - 4 kb.
-            // If it is bigger than that, we grab memoroy directly from the OS which comes pre-zeroed.
+            // Mono only does explicit zeroing if the array is too big for the nursery, but less than 1 Mb - 4 kb.
+            // If it is bigger than that, we grab memory directly from the OS which comes pre-zeroed.
             // Experimentation shows that if we just skip the zeroing in this case, we do not save a measurable
             // amount of time. So we just allocate the normal way here.
             // Revist if we change LOS implementation.

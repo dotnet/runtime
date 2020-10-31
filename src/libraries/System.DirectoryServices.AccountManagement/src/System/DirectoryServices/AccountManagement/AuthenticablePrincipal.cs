@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System;
 using System.Diagnostics;
@@ -17,7 +16,7 @@ namespace System.DirectoryServices.AccountManagement
         //
 
         // Enabled property
-        private bool _enabled = false;          // the actual property value
+        private bool _enabled;          // the actual property value
         private LoadState _enabledChanged = LoadState.NotSet;   // change-tracking
 
         public Nullable<bool> Enabled
@@ -67,7 +66,7 @@ namespace System.DirectoryServices.AccountManagement
         // AccountInfo-related properties/methods
         //
 
-        private AccountInfo _accountInfo = null;
+        private AccountInfo _accountInfo;
 
         private AccountInfo AccountInfo
         {
@@ -162,7 +161,7 @@ namespace System.DirectoryServices.AccountManagement
         // PasswordInfo-related properties/methods
         //
 
-        private PasswordInfo _passwordInfo = null;
+        private PasswordInfo _passwordInfo;
 
         private PasswordInfo PasswordInfo
         {

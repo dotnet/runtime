@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 //
 // TO DO: we currently use raw printf() for output. Maybe we need to pick up something like ngen's Output() handling
@@ -33,12 +32,12 @@ enum ReturnValues
 
 #define NumItems(s) (sizeof(s) / sizeof(s[0]))
 
-STDAPI CreatePDBWorker(LPCWSTR pwzAssemblyPath, LPCWSTR pwzPlatformAssembliesPaths, LPCWSTR pwzTrustedPlatformAssemblies, LPCWSTR pwzPlatformResourceRoots, LPCWSTR pwzAppPaths, LPCWSTR pwzAppNiPaths, LPCWSTR pwzPdbPath, BOOL fGeneratePDBLinesInfo, LPCWSTR pwzManagedPdbSearchPath, LPCWSTR pwzPlatformWinmdPaths, LPCWSTR pwzDiasymreaderPath);
-STDAPI NGenWorker(LPCWSTR pwzFilename, DWORD dwFlags, LPCWSTR pwzPlatformAssembliesPaths, LPCWSTR pwzTrustedPlatformAssemblies, LPCWSTR pwzPlatformResourceRoots, LPCWSTR pwzAppPaths, LPCWSTR pwzOutputFilename=NULL, SIZE_T customBaseAddress=0, LPCWSTR pwzPlatformWinmdPaths=NULL, ICorSvcLogger *pLogger = NULL, LPCWSTR pwszCLRJITPath = nullptr);
+STDAPI CreatePDBWorker(LPCWSTR pwzAssemblyPath, LPCWSTR pwzPlatformAssembliesPaths, LPCWSTR pwzTrustedPlatformAssemblies, LPCWSTR pwzPlatformResourceRoots, LPCWSTR pwzAppPaths, LPCWSTR pwzAppNiPaths, LPCWSTR pwzPdbPath, BOOL fGeneratePDBLinesInfo, LPCWSTR pwzManagedPdbSearchPath, LPCWSTR pwzDiasymreaderPath);
+STDAPI NGenWorker(LPCWSTR pwzFilename, DWORD dwFlags, LPCWSTR pwzPlatformAssembliesPaths, LPCWSTR pwzTrustedPlatformAssemblies, LPCWSTR pwzPlatformResourceRoots, LPCWSTR pwzAppPaths, LPCWSTR pwzOutputFilename=NULL, SIZE_T customBaseAddress=0, ICorSvcLogger *pLogger = NULL, LPCWSTR pwszCLRJITPath = nullptr);
 void SetSvcLogger(ICorSvcLogger *pCorSvcLogger);
-void SetMscorlibPath(LPCWSTR wzSystemDirectory);
+void SetCoreLibPath(LPCWSTR wzSystemDirectory);
 
-/* --------------------------------------------------------------------------- *    
+/* --------------------------------------------------------------------------- *
  * Console stuff
  * --------------------------------------------------------------------------- */
 
@@ -131,12 +130,6 @@ void PrintUsageHelper()
        W("                         - List of paths containing user-application native images\n")
        W("                         - Must be used with /CreatePDB switch\n")
 #endif // NO_NGENPDB
-       
-#ifdef FEATURE_COMINTEROP
-       W("    /Platform_Winmd_Paths <path[") PATH_SEPARATOR_STR_W W("path]>\n")
-       W("                         - List of paths containing target platform WinMDs used\n")
-       W("                           for emulating RoResolveNamespace\n")
-#endif
        W("    /MissingDependenciesOK\n")
        W("                         - Specifies that crossgen should attempt not to fail\n")
        W("                           if a dependency is missing.\n")
@@ -158,12 +151,6 @@ void PrintUsageHelper()
 #ifdef FEATURE_ENABLE_NO_ADDRESS_SPACE_RANDOMIZATION
        W("    /BaseAddress <value> - Specifies base address to use for compilation.\n")
 #endif
-#ifdef FEATURE_WINMD_RESILIENT
-       W(" WinMD Parameters\n")
-       W("    /WinMDResilient - Generate images resilient to WinMD dependency changes.\n")
-#endif
-       W(" Size on Disk Parameters\n")
-       W("    /NoMetaData     - Do not copy metadata and IL into native image.\n")
 #ifndef NO_NGENPDB
        W(" Debugging Parameters\n")
        W("    /CreatePDB <Dir to store PDB> [/lines [<search path for managed PDB>] ]\n")
@@ -187,11 +174,11 @@ public:
     STDMETHODIMP_(ULONG)    Release() {return E_NOTIMPL;}
     STDMETHODIMP            QueryInterface(REFIID riid,void ** ppv)
     {
-        if (ppv==0) 
+        if (ppv==0)
             return E_POINTER;
-        
+
         *ppv = NULL;
-        
+
         if (IsEqualIID(riid, IID_ICorSvcLogger) || IsEqualIID(riid, IID_IUnknown))
         {
             *ppv = this;
@@ -203,7 +190,7 @@ public:
         }
     }
 
-    HRESULT STDMETHODCALLTYPE Log(        
+    HRESULT STDMETHODCALLTYPE Log(
             /*[in] */CorSvcLogLevel logLevel,
             /*[in] */BSTR message
         )
@@ -270,13 +257,13 @@ bool StringEndsWith(LPCWSTR pwzString, LPCWSTR pwzCandidate)
 // When using the Phone binding model (TrustedPlatformAssemblies), automatically
 // detect which path CoreLib.[ni.]dll lies in.
 //
-bool ComputeMscorlibPathFromTrustedPlatformAssemblies(SString& pwzMscorlibPath, LPCWSTR pwzTrustedPlatformAssemblies)
+bool ComputeCoreLibPathFromTrustedPlatformAssemblies(SString& pwzCoreLibPath, LPCWSTR pwzTrustedPlatformAssemblies)
 {
     LPWSTR wszTrustedPathCopy = new WCHAR[wcslen(pwzTrustedPlatformAssemblies) + 1];
     wcscpy_s(wszTrustedPathCopy, wcslen(pwzTrustedPlatformAssemblies) + 1, pwzTrustedPlatformAssemblies);
     WCHAR *context;
     LPWSTR wszSingleTrustedPath = wcstok_s(wszTrustedPathCopy, PATH_SEPARATOR_STR_W, &context);
-    
+
     while (wszSingleTrustedPath != NULL)
     {
         size_t pathLength = wcslen(wszSingleTrustedPath);
@@ -290,11 +277,11 @@ bool ComputeMscorlibPathFromTrustedPlatformAssemblies(SString& pwzMscorlibPath, 
         if (StringEndsWith(wszSingleTrustedPath, DIRECTORY_SEPARATOR_STR_W CoreLibName_IL_W) ||
             StringEndsWith(wszSingleTrustedPath, DIRECTORY_SEPARATOR_STR_W CoreLibName_NI_W))
         {
-            pwzMscorlibPath.Set(wszSingleTrustedPath);
-            SString::Iterator pwzSeparator = pwzMscorlibPath.End();
+            pwzCoreLibPath.Set(wszSingleTrustedPath);
+            SString::Iterator pwzSeparator = pwzCoreLibPath.End();
             bool retval = true;
-            
-            if (!SUCCEEDED(CopySystemDirectory(pwzMscorlibPath, pwzMscorlibPath)))
+
+            if (!SUCCEEDED(CopySystemDirectory(pwzCoreLibPath, pwzCoreLibPath)))
             {
                 retval = false;
             }
@@ -302,7 +289,7 @@ bool ComputeMscorlibPathFromTrustedPlatformAssemblies(SString& pwzMscorlibPath, 
             delete [] wszTrustedPathCopy;
             return retval;
         }
-        
+
         wszSingleTrustedPath = wcstok_s(NULL, PATH_SEPARATOR_STR_W, &context);
     }
     delete [] wszTrustedPathCopy;
@@ -317,7 +304,7 @@ void PopulateTPAList(SString path, LPCWSTR pwszMask, SString &refTPAList, bool f
 {
     _ASSERTE(path.GetCount() > 0);
     ClrDirectoryEnumerator folderEnumerator(path.GetUnicode(), pwszMask);
-    
+
     while (folderEnumerator.Next())
     {
         // Got a valid enumeration handle and the data about the first file.
@@ -327,17 +314,17 @@ void PopulateTPAList(SString path, LPCWSTR pwszMask, SString &refTPAList, bool f
             bool fAddDelimiter = (refTPAList.GetCount() > 0)?true:false;
             bool fAddFileToTPAList = true;
             LPCWSTR pwszFilename = folderEnumerator.GetFileName();
-            
+
             // No NIs are supported when creating NI images (other than NI of System.Private.CoreLib.dll).
             if (!fCreatePDB)
             {
-                // Only CoreLib's ni.dll should be in the TPAList for the compilation of non-mscorlib assemblies.
+                // Only CoreLib's ni.dll should be in the TPAList for the compilation of non-CoreLib assemblies.
                 if (StringEndsWith((LPWSTR)pwszFilename, W(".ni.dll")))
                 {
                     fAddFileToTPAList = false;
                 }
             }
-            
+
             if (fAddFileToTPAList)
             {
                 if (fAddDelimiter)
@@ -348,7 +335,7 @@ void PopulateTPAList(SString path, LPCWSTR pwszMask, SString &refTPAList, bool f
                 // Add the path to the TPAList
                 refTPAList.Append(path);
                 refTPAList.Append(pwszFilename);
-            } 
+            }
         }
     }
  }
@@ -359,9 +346,9 @@ void ComputeTPAListFromPlatformAssembliesPath(LPCWSTR pwzPlatformAssembliesPaths
 {
     // We should have a valid pointer to the paths
     _ASSERTE(pwzPlatformAssembliesPaths != NULL);
-    
+
     SString ssPlatformAssembliesPath(pwzPlatformAssembliesPaths);
-    
+
     // Platform Assemblies Path List is semi-colon delimited
     if(ssPlatformAssembliesPath.GetCount() > 0)
     {
@@ -431,7 +418,6 @@ int _cdecl wmain(int argc, __in_ecount(argc) WCHAR **argv)
     LPCWSTR pwzAppPaths = nullptr;
     LPCWSTR pwzAppNiPaths = nullptr;
     LPCWSTR pwzPlatformAssembliesPaths = nullptr;
-    LPCWSTR pwzPlatformWinmdPaths = nullptr;
     StackSString wzDirectoryToStorePDB;
     bool fCreatePDB = false;
     bool fGeneratePDBLinesInfo = false;
@@ -469,7 +455,7 @@ int _cdecl wmain(int argc, __in_ecount(argc) WCHAR **argv)
         PrintUsageHelper();
         exit(INVALID_ARGUMENTS);
     }
-    
+
     if (!consoleArgs.ExpandResponseFiles(argc, argv, &argc2, &argv2))
     {
         if (consoleArgs.ErrorMessage() != nullptr)
@@ -478,7 +464,7 @@ int _cdecl wmain(int argc, __in_ecount(argc) WCHAR **argv)
             exit(FAILURE_RESULT);
         }
     }
-    
+
     argc = argc2;
     argv = argv2;
 
@@ -521,18 +507,12 @@ int _cdecl wmain(int argc, __in_ecount(argc) WCHAR **argv)
         else if (MatchParameter(*argv, W("JITPath")) && (argc > 1))
         {
             pwszCLRJITPath = argv[1];
-            
+
             // skip JIT Path
             argv++;
             argc--;
         }
 #endif // !defined(FEATURE_MERGE_JIT_AND_ENGINE)
-#ifdef FEATURE_WINMD_RESILIENT
-        else if (MatchParameter(*argv, W("WinMDResilient")))
-        {
-            dwFlags |= NGENWORKER_FLAGS_WINMD_RESILIENT;
-        }
-#endif
 #ifdef FEATURE_READYTORUN_COMPILER
         else if (MatchParameter(*argv, W("ReadyToRun")))
         {
@@ -561,10 +541,6 @@ int _cdecl wmain(int argc, __in_ecount(argc) WCHAR **argv)
             argc--;
         }
 #endif
-        else if (MatchParameter(*argv, W("NoMetaData")))
-        {
-            dwFlags |= NGENWORKER_FLAGS_NO_METADATA;
-        }
         else if (MatchParameter(*argv, W("out")))
         {
             if (pwzOutputFilename != NULL)
@@ -630,26 +606,16 @@ int _cdecl wmain(int argc, __in_ecount(argc) WCHAR **argv)
         else if ((MatchParameter(*argv, W("Platform_Assemblies_Paths")) || MatchParameter(*argv, W("p"))) && (argc > 1))
         {
             pwzPlatformAssembliesPaths = argv[1];
-            
+
             // skip path list
             argv++;
             argc--;
         }
-#ifdef FEATURE_COMINTEROP
-        else if (MatchParameter(*argv, W("Platform_Winmd_Paths")) && (argc > 1))
-        {
-            pwzPlatformWinmdPaths = argv[1];
-
-            // skip User app path
-            argv++;
-            argc--;
-        }
-#endif // FEATURE_COMINTEROP
 #ifndef NO_NGENPDB
         else if (MatchParameter(*argv, W("CreatePDB")) && (argc > 1))
         {
             // syntax: /CreatePDB <directory to store PDB> [/lines  [<search path for managed PDB>] ]
-            
+
             // Parse: /CreatePDB
             fCreatePDB = true;
             argv++;
@@ -773,7 +739,7 @@ int _cdecl wmain(int argc, __in_ecount(argc) WCHAR **argv)
                     OutputErr(W("Cannot use /In and specify an input file as the last argument.\n"));
                     exit(INVALID_ARGUMENTS);
                 }
-                
+
                 pwzFilename = *argv;
                 break;
             }
@@ -833,31 +799,6 @@ int _cdecl wmain(int argc, __in_ecount(argc) WCHAR **argv)
         exit(FAILURE_RESULT);
     }
 
-    if ((dwFlags & NGENWORKER_FLAGS_NO_METADATA) != 0)
-    {
-        const size_t windowsDotWinmdLength = 13;    // Length of string "Windows.winmd"
-        size_t filenameLength = wcslen(pwzFilename);
-        bool isWindowsDotWinmd = true;
-        if (filenameLength < windowsDotWinmdLength ||
-            _wcsicmp(pwzFilename + filenameLength - windowsDotWinmdLength, W("windows.winmd")) != 0)
-        {
-            isWindowsDotWinmd = false;
-        }
-        else if (filenameLength > windowsDotWinmdLength)
-        {
-            WCHAR pathSeparator = pwzFilename[filenameLength - windowsDotWinmdLength - 1];
-            if (pathSeparator != W('\\') && pathSeparator != W('/') && pathSeparator != W(':'))
-            {
-                isWindowsDotWinmd = false;
-            }
-        }
-        if (!isWindowsDotWinmd)
-        {
-            OutputErr(W("The /NoMetaData switch can only be used with Windows.winmd.\n"));
-            exit(FAILURE_RESULT);
-        }
-    }
-    
     // All argument processing has happened by now. The only messages that should appear before here are errors
     // related to argument parsing, such as the Usage message. Afterwards, other messages can appear.
 
@@ -873,7 +814,7 @@ int _cdecl wmain(int argc, __in_ecount(argc) WCHAR **argv)
 
     PathString wzTrustedPathRoot;
 
-    SString ssTPAList;  
+    SString ssTPAList;
 
     if (fCreatePDB)
     {
@@ -887,7 +828,7 @@ int _cdecl wmain(int argc, __in_ecount(argc) WCHAR **argv)
     {
         // /p command line switch has been specified.
         _ASSERTE(pwzTrustedPlatformAssemblies == nullptr);
-        
+
         // Formulate the TPAList from /p
         ComputeTPAListFromPlatformAssembliesPath(pwzPlatformAssembliesPaths, ssTPAList, fCreatePDB);
         pwzTrustedPlatformAssemblies = (WCHAR *)ssTPAList.GetUnicode();
@@ -896,10 +837,10 @@ int _cdecl wmain(int argc, __in_ecount(argc) WCHAR **argv)
 
     if (pwzTrustedPlatformAssemblies != nullptr)
     {
-        if (ComputeMscorlibPathFromTrustedPlatformAssemblies(wzTrustedPathRoot, pwzTrustedPlatformAssemblies))
+        if (ComputeCoreLibPathFromTrustedPlatformAssemblies(wzTrustedPathRoot, pwzTrustedPlatformAssemblies))
         {
             pwzPlatformAssembliesPaths = wzTrustedPathRoot.GetUnicode();
-            SetMscorlibPath(pwzPlatformAssembliesPaths);
+            SetCoreLibPath(pwzPlatformAssembliesPaths);
         }
     }
 
@@ -910,7 +851,7 @@ int _cdecl wmain(int argc, __in_ecount(argc) WCHAR **argv)
             ERROR_WIN32(W("Error: GetModuleFileName failed (%d)\n"), GetLastError());
             exit(CLR_INIT_ERROR);
         }
-        
+
         if (SUCCEEDED(CopySystemDirectory(wzTrustedPathRoot, wzTrustedPathRoot)))
         {
             pwzPlatformAssembliesPaths = wzTrustedPathRoot.GetUnicode();
@@ -920,8 +861,8 @@ int _cdecl wmain(int argc, __in_ecount(argc) WCHAR **argv)
             ERROR_HR(W("Error: wcsrchr returned NULL; GetModuleFileName must have given us something bad\n"), E_UNEXPECTED);
             exit(CLR_INIT_ERROR);
         }
-        
-        
+
+
     }
 
     // Verbose mode will always print warnings
@@ -938,18 +879,17 @@ int _cdecl wmain(int argc, __in_ecount(argc) WCHAR **argv)
     if (fCreatePDB)
     {
         hr = CreatePDBWorker(
-            pwzFilename, 
-            pwzPlatformAssembliesPaths, 
-            pwzTrustedPlatformAssemblies, 
-            pwzPlatformResourceRoots, 
-            pwzAppPaths, 
+            pwzFilename,
+            pwzPlatformAssembliesPaths,
+            pwzTrustedPlatformAssemblies,
+            pwzPlatformResourceRoots,
+            pwzAppPaths,
             pwzAppNiPaths,
-            wzDirectoryToStorePDB, 
-            fGeneratePDBLinesInfo, 
+            wzDirectoryToStorePDB,
+            fGeneratePDBLinesInfo,
             pwzSearchPathForManagedPDB,
-            pwzPlatformWinmdPaths,
             pwzDiasymreaderPath);
-        
+
     }
     else
     {
@@ -959,16 +899,15 @@ int _cdecl wmain(int argc, __in_ecount(argc) WCHAR **argv)
          pwzPlatformResourceRoots,
          pwzAppPaths,
          pwzOutputFilename,
-         baseAddress,
-         pwzPlatformWinmdPaths
+         baseAddress
 #if !defined(FEATURE_MERGE_JIT_AND_ENGINE)
         ,
         NULL, // ICorSvcLogger
-        pwszCLRJITPath   
+        pwszCLRJITPath
 #endif // !defined(FEATURE_MERGE_JIT_AND_ENGINE)
          );
     }
-    
+
 
     if (FAILED(hr))
     {

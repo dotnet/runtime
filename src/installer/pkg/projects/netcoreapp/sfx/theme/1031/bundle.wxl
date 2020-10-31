@@ -8,21 +8,21 @@ Bereit? Los geht's!</String>
   <String Id="ConfirmCancelMessage">Möchten Sie den Vorgang wirklich abbrechen?</String>
   <String Id="ExecuteUpgradeRelatedBundleMessage">Vorherige Version</String>
   <String Id="HelpHeader">Hilfe zum Setup</String>
-  <String Id="HelpText">/install | /repair | /uninstall | /layout [Verzeichnis] - installiert, repariert, deinstalliert oder
-   erstellt eine vollständige lokale Kopie des Bundles im Verzeichnis. Installieren ist die Standardeinstellung.
+  <String Id="HelpText">/install | /repair | /uninstall | /layout [Verzeichnis]: Installiert, repariert, deinstalliert oder
+   erstellt eine vollständige lokale Kopie des Bundles im Verzeichnis. "Installieren" ist die Standardeinstellung.
 
-/passive | /quiet -  zeigt eine minimale Benutzeroberfläche ohne Eingabeaufforderungen oder keine
+/passive | /quiet: Zeigt eine minimale Benutzeroberfläche ohne Eingabeaufforderungen oder keine
    Benutzeroberfläche und keine Eingabeaufforderungen an. Standardmäßig werden die Benutzeroberfläche und alle Eingabeaufforderungen angezeigt.
 
-/norestart   - Unterdrückt alle Neustartversuche. Standardmäßig fordert die Benutzeroberfläche zum Bestätigen eines Neustarts auf.
-/log log.txt - Erstellt das Protokoll in einer bestimmten Datei. Standardmäßig wird die Protokolldatei in %TEMP% erstellt.</String>
+/norestart: Unterdrückt alle Neustartversuche. Standardmäßig fordert die Benutzeroberfläche zum Bestätigen eines Neustarts auf.
+/log log.txt: Erstellt das Protokoll in einer bestimmten Datei. Standardmäßig wird die Protokolldatei in %TEMP% erstellt.</String>
   <String Id="HelpCloseButton">S&amp;chließen</String>
   <String Id="InstallAcceptCheckbox">Ich &amp;stimme den Lizenzbedingungen zu.</String>
   <String Id="InstallOptionsButton">&amp;Optionen</String>
   <String Id="InstallInstallButton">&amp;Installieren</String>
   <String Id="InstallCloseButton">S&amp;chließen</String>
   <String Id="OptionsHeader">Setupoptionen</String>
-  <String Id="OptionsLocationLabel">Installationspfad:</String>
+  <String Id="OptionsLocationLabel">Installationsspeicherort:</String>
   <String Id="OptionsBrowseButton">&amp;Durchsuchen</String>
   <String Id="OptionsOkButton">&amp;OK</String>
   <String Id="OptionsCancelButton">&amp;Abbrechen</String>
@@ -47,7 +47,7 @@ Bereit? Los geht's!</String>
   <String Id="FailureUninstallHeader">Deinstallationsfehler</String>
   <String Id="FailureRepairHeader">Reparaturfehler</String>
   <String Id="FailureHyperlinkLogText">Setup ist aufgrund eines oder mehrerer Probleme fehlgeschlagen. Beheben Sie die Probleme, und führen Sie das Setup erneut aus. Weitere Informationen finden Sie in der &lt;a href="#"&gt;Protokolldatei&lt;/a&gt;.</String>
-  <String Id="FailureRestartText">Sie müssen den Computer neu starten, um das Zurücksetzen der Software abzuschließen.</String>
+  <String Id="FailureRestartText">Sie müssen Ihren Computer neu starten, um den Rollback der Software abzuschließen.</String>
   <String Id="FailureRestartButton">&amp;Neu starten</String>
   <String Id="FailureCloseButton">&amp;Schließen</String>
   <String Id="FailureNotSupportedCurrentOperatingSystem">[PRODUCT_NAME] wird auf diesem Betriebssystem nicht unterstützt. Weitere Informationen finden Sie unter [LINK_PREREQ_PAGE].</String>
@@ -59,7 +59,7 @@ Bereit? Los geht's!</String>
   <String Id="FilesInUseOkButton">&amp;OK</String>
   <String Id="FilesInUseCancelButton">&amp;Abbrechen</String>
   <String Id="WelcomeHeaderMessage">.NET-Runtime</String>
-  <String Id="WelcomeDescription">.NET ist eine Entwicklungsplattform, die Sie zum Erstellen von Befehlszeilenanwendungen, Microservices und modernen Websites verwenden können. Sie ist Open Source und plattformübergreifend und wird von Microsoft unterstützt. Wir wünschen Ihnen viel Spaß!</String>
+  <String Id="WelcomeDescription">Die .NET-Runtime wird zum Ausführen von .NET-Anwendungen auf Ihrem Windows-Computer verwendet. .NET ist ein plattformübergreifendes Open-Source-Framework, das von Microsoft unterstützt wird. Wir wünschen Ihnen viel Spaß damit!</String>
   <String Id="LearnMoreTitle">Weitere Informationen zu .NET</String>
   <String Id="SuccessInstallLocation">Folgendes wurde unter [DOTNETHOME] installiert.</String>
   <String Id="SuccessInstallProductName"> - [BUNDLEMONIKER] </String>
@@ -69,6 +69,6 @@ Bereit? Los geht's!</String>
   <String Id="TutorialLink">&lt;A HREF="https://aka.ms/dotnet-tutorials"&gt;Tutorials&lt;/A&gt;</String>
   <String Id="TelemetryLink">&lt;A HREF="https://aka.ms/dotnet-cli-telemetry"&gt;.NET-Telemetrie&lt;/A&gt;</String>
   <String Id="PrivacyStatementLink">&lt;A HREF="https://aka.ms/dev-privacy"&gt;Datenschutzerklärung&lt;/A&gt;</String>
-  <String Id="EulaLink">&lt;A HREF="https://go.microsoft.com/fwlink/?LinkId=329770"&gt;Lizenzbedingungen für die .NET-Bibliothek&lt;/A&gt;</String>
-  
+  <String Id="EulaLink">&lt;A HREF="https://aka.ms/dotnet-license-windows"&gt;Lizenzierungsinformationen für .NET&lt;/A&gt;</String>
+  <String Id="LicenseAssent">Durch Klicken auf "Installieren" stimmen Sie den nachstehenden Bedingungen zu.</String>
 </WixLocalization>

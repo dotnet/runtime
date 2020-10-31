@@ -1,0 +1,26 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <CLRTestPriority>0</CLRTestPriority>
+  </PropertyGroup>
+  <PropertyGroup>
+    <DebugType>None</DebugType>
+    <Optimize>True</Optimize>
+  </PropertyGroup>
+  <PropertyGroup>
+    <!-- This test requires GCStress to trigger the regression. Set COMPlus_GCStress here. However,
+         not all CI platforms support GCStress. In particular, macOS and Alpine do not (currently).
+         All Windows support GCStress. We don't have any way (currently) to determine if we're
+         running on a platform that supports GCStress. So, don't set GCStress for non-Windows (Bash).
+         The test will run under GCStress in normal, scheduled GCStress runs, when only the supported
+         platforms are run with GCStress.
+    -->
+    <CLRTestBatchPreCommands><![CDATA[
+$(CLRTestBatchPreCommands)
+set COMPlus_GCStress=0xc
+]]></CLRTestBatchPreCommands>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="$(MSBuildProjectName).cs" />
+  </ItemGroup>
+</Project>

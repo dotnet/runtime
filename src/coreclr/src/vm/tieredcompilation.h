@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 // ===========================================================================
 // File: TieredCompilation.h
 //
@@ -58,6 +57,7 @@ public:
     void ScheduleBackgroundWork();
 private:
     void RequestBackgroundWork();
+    static void WINAPI DoBackgroundWorkTimerCallback(PVOID parameter, BOOLEAN timerFired);
     static DWORD StaticBackgroundWorkCallback(void* args);
     void DoBackgroundWork();
 
@@ -110,12 +110,11 @@ private:
     UINT32 m_countOfNewMethodsCalledDuringDelay;
     SArray<MethodDesc*>* m_methodsPendingCountingForTier1;
     HANDLE m_tieringDelayTimerHandle;
+    HANDLE m_doBackgroundWorkTimerHandle;
     bool m_isBackgroundWorkScheduled;
     bool m_tier1CallCountingCandidateMethodRecentlyRecorded;
     bool m_isPendingCallCountingCompletion;
     bool m_recentlyRequestedCallCountingCompletionAgain;
-
-    CLREvent m_asyncWorkDoneEvent;
 
 #endif // FEATURE_TIERED_COMPILATION
 };

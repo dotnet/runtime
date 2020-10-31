@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
 using System.Runtime.InteropServices;
@@ -27,7 +26,7 @@ namespace System
             Assert.Contains(expectedMessageContent, Assert.Throws<T>(action).Message);
         }
 
-        public static void Throws<T>(string netCoreParamName, string netFxParamName, Action action)
+        public static T Throws<T>(string netCoreParamName, string netFxParamName, Action action)
             where T : ArgumentException
         {
             T exception = Assert.Throws<T>(action);
@@ -35,7 +34,7 @@ namespace System
             if (netFxParamName == null && IsNetFramework)
             {
                 // Param name varies between .NET Framework versions -- skip checking it
-                return;
+                return exception;
             }
 
             string expectedParamName =
@@ -43,6 +42,7 @@ namespace System
                 netFxParamName : netCoreParamName;
 
             Assert.Equal(expectedParamName, exception.ParamName);
+            return exception;
         }
 
         public static void Throws<T>(string netCoreParamName, string netFxParamName, Func<object> testCode)
@@ -209,7 +209,7 @@ namespace System
                 if (exceptionTypes.Any(t => t.Equals(exceptionType)))
                     return;
 
-                throw new XunitException($"Expected one of: ({string.Join<Type>(", ", exceptionTypes)}) -> Actual: ({e.GetType()})");
+                throw new XunitException($"Expected one of: ({string.Join<Type>(", ", exceptionTypes)}) -> Actual: ({exceptionType})");
             }
 
             throw new XunitException($"Expected one of: ({string.Join<Type>(", ", exceptionTypes)}) -> Actual: No exception thrown");

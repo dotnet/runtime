@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 /*++
 
@@ -42,17 +41,6 @@ Function :
     PAL_time
 --*/
 PAL_time_t __cdecl PAL_time(PAL_time_t*);
-
-/*++
-Function:
-TIMEInitialize
-
-Return value:
-TRUE if initialize succeeded
-FALSE otherwise
-
---*/
-BOOL TIMEInitialize( void );
 
 /*++
 Function :

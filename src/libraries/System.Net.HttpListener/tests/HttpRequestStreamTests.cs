@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.IO;
 using System.Linq;
@@ -532,8 +531,8 @@ namespace System.Net.Tests
 
                 using (Stream inputStream = request.InputStream)
                 {
-                    AssertExtensions.Throws<ArgumentOutOfRangeException>("offset", () => inputStream.Read(new byte[2], offset, 0));
-                    await AssertExtensions.ThrowsAsync<ArgumentOutOfRangeException>("offset", () => inputStream.ReadAsync(new byte[2], offset, 0));
+                    Assert.Throws<ArgumentOutOfRangeException>(() => inputStream.Read(new byte[2], offset, 0));
+                    await Assert.ThrowsAsync<ArgumentOutOfRangeException>(() => inputStream.ReadAsync(new byte[2], offset, 0));
                 }
 
                 context.Response.Close();
@@ -561,8 +560,8 @@ namespace System.Net.Tests
 
                 using (Stream inputStream = request.InputStream)
                 {
-                    AssertExtensions.Throws<ArgumentOutOfRangeException>("size", () => inputStream.Read(new byte[2], offset, size));
-                    await AssertExtensions.ThrowsAsync<ArgumentOutOfRangeException>("size", () => inputStream.ReadAsync(new byte[2], offset, size));
+                    Assert.Throws<ArgumentOutOfRangeException>(() => inputStream.Read(new byte[2], offset, size));
+                    await Assert.ThrowsAsync<ArgumentOutOfRangeException>(() => inputStream.ReadAsync(new byte[2], offset, size));
                 }
 
                 context.Response.Close();

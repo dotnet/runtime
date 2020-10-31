@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Buffers;
 using System.Collections.Concurrent;
@@ -45,7 +44,7 @@ namespace System.IO.Pipelines.Tests
             }
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public async Task UseSynchronizationContextFalseIgnoresSyncContextForReaderScheduler()
         {
             SynchronizationContext previous = SynchronizationContext.Current;
@@ -89,7 +88,7 @@ namespace System.IO.Pipelines.Tests
             }
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public async Task DefaultReaderSchedulerRunsOnSynchronizationContext()
         {
             SynchronizationContext previous = SynchronizationContext.Current;
@@ -133,7 +132,7 @@ namespace System.IO.Pipelines.Tests
             }
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public async Task DefaultReaderSchedulerIgnoresSyncContextIfConfigureAwaitFalse()
         {
             // Get off the xunit sync context
@@ -181,7 +180,7 @@ namespace System.IO.Pipelines.Tests
 
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public async Task DefaultReaderSchedulerRunsOnThreadPool()
         {
             var pipe = new Pipe(new PipeOptions(useSynchronizationContext: false));
@@ -210,7 +209,7 @@ namespace System.IO.Pipelines.Tests
             await reading;
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public async Task DefaultWriterSchedulerRunsOnThreadPool()
         {
             using (var pool = new TestMemoryPool())
@@ -251,7 +250,7 @@ namespace System.IO.Pipelines.Tests
             }
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public async Task UseSynchronizationContextFalseIgnoresSyncContextForWriterScheduler()
         {
             SynchronizationContext previous = SynchronizationContext.Current;
@@ -358,7 +357,7 @@ namespace System.IO.Pipelines.Tests
             }
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public async Task DefaultWriterSchedulerIgnoresSynchronizationContext()
         {
             SynchronizationContext previous = SynchronizationContext.Current;
@@ -411,7 +410,7 @@ namespace System.IO.Pipelines.Tests
             }
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public async Task FlushCallbackRunsOnWriterScheduler()
         {
             using (var pool = new TestMemoryPool())
@@ -440,7 +439,7 @@ namespace System.IO.Pipelines.Tests
 
                         pipe.Writer.Complete();
 
-                        Assert.Equal(Thread.CurrentThread.ManagedThreadId, scheduler.Thread.ManagedThreadId);
+                        Assert.Equal(Environment.CurrentManagedThreadId, scheduler.Thread.ManagedThreadId);
                     };
 
                     Task writing = ExecuteOnNonThreadPoolThread(doWrite);
@@ -456,7 +455,7 @@ namespace System.IO.Pipelines.Tests
             }
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public async Task ReadAsyncCallbackRunsOnReaderScheduler()
         {
             using (var pool = new TestMemoryPool())
@@ -471,7 +470,7 @@ namespace System.IO.Pipelines.Tests
 
                         ReadResult result = await pipe.Reader.ReadAsync();
 
-                        Assert.Equal(Thread.CurrentThread.ManagedThreadId, scheduler.Thread.ManagedThreadId);
+                        Assert.Equal(Environment.CurrentManagedThreadId, scheduler.Thread.ManagedThreadId);
 
                         pipe.Reader.AdvanceTo(result.Buffer.End, result.Buffer.End);
 
@@ -489,7 +488,7 @@ namespace System.IO.Pipelines.Tests
             }
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public async Task ThreadPoolScheduler_SchedulesOnThreadPool()
         {
             var pipe = new Pipe(new PipeOptions(readerScheduler: PipeScheduler.ThreadPool, writerScheduler: PipeScheduler.Inline, useSynchronizationContext: false));

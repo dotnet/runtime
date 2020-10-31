@@ -572,15 +572,6 @@
   <data name="Argument_LCIDNotSupported1" xml:space="preserve">
     <value>Locale id '{0}' is not supported on this system.</value>
   </data>
-  <data name="ProcessNotFound" xml:space="preserve">
-    <value>Process '{0}' was not found.</value>
-  </data>
-  <data name="Array_RankMismatch" xml:space="preserve">
-    <value>'ReDim' cannot change the number of dimensions.</value>
-  </data>
-  <data name="Array_TypeMismatch" xml:space="preserve">
-    <value>'ReDim' can only change the rightmost dimension.</value>
-  </data>
   <data name="InvalidCast_FromTo" xml:space="preserve">
     <value>Conversion from type '{0}' to type '{1}' is not valid.</value>
   </data>
@@ -725,18 +716,6 @@
   <data name="Security_LateBoundCallsNotPermitted" xml:space="preserve">
     <value>Late bound calls to file system methods in the Visual Basic runtime are not permitted.</value>
   </data>
-  <data name="Serialization_MissingCultureInfo" xml:space="preserve">
-    <value>Deserialization data is corrupt.  The CultureInfo for this Collection is missing.</value>
-  </data>
-  <data name="Serialization_MissingKeys" xml:space="preserve">
-    <value>Deserialization data is corrupt.  The keys for this Collection are missing.</value>
-  </data>
-  <data name="Serialization_MissingValues" xml:space="preserve">
-    <value>Deserialization data is corrupt.  The values for this Collection are missing.</value>
-  </data>
-  <data name="Serialization_KeyValueDifferentSizes" xml:space="preserve">
-    <value>Deserialization data is corrupt.  The keys and values arrays have different sizes.</value>
-  </data>
   <data name="MatchArgumentFailure2" xml:space="preserve">
     <value>Method invocation failed because '{0}' cannot be called with these arguments:{1}</value>
   </data>
@@ -839,12 +818,6 @@
   <data name="EmptyPlaceHolderMessage" xml:space="preserve">
     <value>Empty placeholder to adjust for 1-based array.</value>
   </data>
-  <data name="Mouse_NoMouseIsPresent" xml:space="preserve">
-    <value>No mouse is present.</value>
-  </data>
-  <data name="Mouse_NoWheelIsPresent" xml:space="preserve">
-    <value>No mouse wheel is present.</value>
-  </data>
   <data name="IO_SpecialDirectoryNotExist" xml:space="preserve">
     <value>Could not find special directory '{0}'.</value>
   </data>
@@ -920,75 +893,6 @@
   <data name="General_ArgumentEmptyOrNothing_Name" xml:space="preserve">
     <value>Argument '{0}' cannot be an empty string or Nothing.</value>
   </data>
-  <data name="General_PropertyNothing" xml:space="preserve">
-    <value>Property {0} cannot be set to Nothing.</value>
-  </data>
-  <data name="ApplicationLog_FreeSpaceError" xml:space="preserve">
-    <value>Cannot determine the amount of available disk space.</value>
-  </data>
-  <data name="ApplicationLog_FileExceedsMaximumSize" xml:space="preserve">
-    <value>Unable to write to log file because writing to it would cause it to exceed the MaxFileSize value.</value>
-  </data>
-  <data name="ApplicationLog_ReservedSpaceEncroached" xml:space="preserve">
-    <value>Unable to write to log file because writing to it would reduce free disk space below ReservedSpace value.</value>
-  </data>
-  <data name="ApplicationLog_NegativeNumber" xml:space="preserve">
-    <value>The value of {0} must be a positive number.</value>
-  </data>
-  <data name="ApplicationLogBaseNameNull" xml:space="preserve">
-    <value>BaseFileName cannot be Nothing or an empty String.</value>
-  </data>
-  <data name="ApplicationLogNumberTooSmall" xml:space="preserve">
-    <value>The value of {0} must be greater than or equal to 1000.</value>
-  </data>
-  <data name="ApplicationLog_ExhaustedPossibleStreamNames" xml:space="preserve">
-    <value>Unable to obtain a stream for the log.  Potential file names based on {0} are already in use.</value>
-  </data>
-  <data name="Network_InvalidUriString" xml:space="preserve">
-    <value>'{0}' is not a valid remote file address. A valid address should include a protocol, a path and a file name.</value>
-  </data>
-  <data name="Network_BadConnectionTimeout" xml:space="preserve">
-    <value>The ConnectionTimeout must be greater than 0.</value>
-  </data>
-  <data name="Network_NetworkNotAvailable" xml:space="preserve">
-    <value>Unable to ping because a network connection is not available.</value>
-  </data>
-  <data name="Network_UploadAddressNeedsFilename" xml:space="preserve">
-    <value>The address for UploadFile needs to include a file name.</value>
-  </data>
-  <data name="Network_DownloadNeedsFilename" xml:space="preserve">
-    <value>destinationFileName needs to include a file name.</value>
-  </data>
-  <data name="ProgressDialogDownloadingTitle" xml:space="preserve">
-    <value>Downloading {0}</value>
-  </data>
-  <data name="ProgressDialogUploadingTitle" xml:space="preserve">
-    <value>Uploading {0}</value>
-  </data>
-  <data name="ProgressDialogDownloadingLabel" xml:space="preserve">
-    <value>Downloading {0} to {1}</value>
-  </data>
-  <data name="ProgressDialogUploadingLabel" xml:space="preserve">
-    <value>Uploading {0} to {1}</value>
-  </data>
-  <data name="DiagnosticInfo_Memory" xml:space="preserve">
-    <value>Could not obtain memory information due to internal error.</value>
-  </data>
-  <data name="DiagnosticInfo_FullOSName" xml:space="preserve">
-    <value>Could not obtain full operation system name due to internal error. This might be caused by WMI not existing on the current machine.</value>
-  </data>
-  <data name="AppModel_CantGetMemoryMappedFile" xml:space="preserve">
-    <value>An unexpected error has occurred because an operating system resource required for single instance startup cannot be acquired.</value>
-  </data>
-  <data name="AppModel_NoStartupForm" xml:space="preserve">
-    <value>A startup form has not been specified.</value>
-  </data>
-  <data name="AppModel_SingleInstanceCantConnect" xml:space="preserve">
-    <value>This single-instance application could not connect to the original instance.</value>
-  </data>
-  <data name="AppModel_SplashAndMainFormTheSame" xml:space="preserve">
-    <value>Splash screen and main form cannot be the same form.</value>
-  </data>
   <data name="TextFieldParser_NumberOfCharsMustBePositive" xml:space="preserve">
     <value>NumberOfChars must be greater than zero.</value>
   </data>
@@ -1034,23 +938,8 @@
   <data name="TextFieldParser_EndCharsInDelimiter" xml:space="preserve">
     <value>TextFieldParser does not support delimiters that contain end-of-line characters.</value>
   </data>
-  <data name="EnvVarNotFound_Name" xml:space="preserve">
-    <value>Environment variable is not defined: '{0}'.</value>
-  </data>
-  <data name="WinForms_RecursiveFormCreate" xml:space="preserve">
-    <value>The form referred to itself during construction from a default instance, which led to infinite recursion.  Within the Form's constructor refer to the form using 'Me.'</value>
-  </data>
-  <data name="WinForms_SeeInnerException" xml:space="preserve">
-    <value>An error occurred creating the form. See Exception.InnerException for details.  The error is: {0}</value>
-  </data>
-  <data name="WebNotSupportedOnThisSKU" xml:space="preserve">
-    <value>Current target framework does not support web operations.</value>
-  </data>
   <data name="NoShellCopyOrMove" xml:space="preserve">
     <value>UI not available for copy or move</value>
-  </data>
-  <data name="NoShellDelete" xml:space="preserve">
-    <value>UI not available for delete</value>
   </data>
   <data name="MethodRequiresSystemWindowsForms" xml:space="preserve">
     <value>Method requires System.Windows.Forms.</value>

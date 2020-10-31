@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
 using System.Globalization;
@@ -27,11 +26,10 @@ namespace System.Diagnostics
             int[] procIds = GetProcessIds(machineName);
 
             // Iterate through all process IDs to load information about each process
-            var reusableReader = new ReusableTextReader();
             var processes = new List<ProcessInfo>(procIds.Length);
             foreach (int pid in procIds)
             {
-                ProcessInfo? pi = CreateProcessInfo(pid, reusableReader);
+                ProcessInfo? pi = CreateProcessInfo(pid);
                 if (pi != null)
                 {
                     processes.Add(pi);
@@ -101,20 +99,15 @@ namespace System.Diagnostics
             return modules;
         }
 
-        // -----------------------------
-        // ---- PAL layer ends here ----
-        // -----------------------------
-
         /// <summary>
         /// Creates a ProcessInfo from the specified process ID.
         /// </summary>
-        internal static ProcessInfo? CreateProcessInfo(int pid, ReusableTextReader? reusableReader = null)
+        internal static ProcessInfo? CreateProcessInfo(int pid)
         {
-            reusableReader ??= new ReusableTextReader();
-            if (Interop.procfs.TryReadStatFile(pid, out Interop.procfs.ParsedStat stat, reusableReader))
+            if (Interop.procfs.TryReadStatFile(pid, out Interop.procfs.ParsedStat stat))
             {
-                Interop.procfs.TryReadStatusFile(pid, out Interop.procfs.ParsedStatus status, reusableReader);
-                return CreateProcessInfo(ref stat, ref status, reusableReader);
+                Interop.procfs.TryReadStatusFile(pid, out Interop.procfs.ParsedStatus status);
+                return CreateProcessInfo(ref stat, ref status);
             }
             return null;
         }
@@ -122,7 +115,7 @@ namespace System.Diagnostics
         /// <summary>
         /// Creates a ProcessInfo from the data parsed from a /proc/pid/stat file and the associated tasks directory.
         /// </summary>
-        internal static ProcessInfo CreateProcessInfo(ref Interop.procfs.ParsedStat procFsStat, ref Interop.procfs.ParsedStatus procFsStatus, ReusableTextReader reusableReader, string? processName = null)
+        internal static ProcessInfo CreateProcessInfo(ref Interop.procfs.ParsedStat procFsStat, ref Interop.procfs.ParsedStatus procFsStatus, string? processName = null)
         {
             int pid = procFsStat.pid;
 
@@ -156,21 +149,18 @@ namespace System.Diagnostics
                     int tid;
                     Interop.procfs.ParsedStat stat;
                     if (int.TryParse(dirName, NumberStyles.Integer, CultureInfo.InvariantCulture, out tid) &&
-                        Interop.procfs.TryReadStatFile(pid, tid, out stat, reusableReader))
+                        Interop.procfs.TryReadStatFile(pid, tid, out stat))
                     {
-                        unsafe
+                        pi._threadInfoList.Add(new ThreadInfo()
                         {
-                            pi._threadInfoList.Add(new ThreadInfo()
-                            {
-                                _processId = pid,
-                                _threadId = (ulong)tid,
-                                _basePriority = pi.BasePriority,
-                                _currentPriority = (int)stat.nice,
-                                _startAddress = IntPtr.Zero,
-                                _threadState = ProcFsStateToThreadState(stat.state),
-                                _threadWaitReason = ThreadWaitReason.Unknown
-                            });
-                        }
+                            _processId = pid,
+                            _threadId = (ulong)tid,
+                            _basePriority = pi.BasePriority,
+                            _currentPriority = (int)stat.nice,
+                            _startAddress = IntPtr.Zero,
+                            _threadState = ProcFsStateToThreadState(stat.state),
+                            _threadWaitReason = ThreadWaitReason.Unknown
+                        });
                     }
                 }
             }

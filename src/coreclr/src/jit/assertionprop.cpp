@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 /*XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
@@ -854,7 +853,7 @@ AssertionIndex Compiler::optCreateAssertion(GenTree*         op1,
     if (op2 == nullptr)
     {
         //
-        // Must an OAK_NOT_EQUAL assertion
+        // Must be an OAK_NOT_EQUAL assertion
         //
         noway_assert(assertionKind == OAK_NOT_EQUAL);
 
@@ -1626,7 +1625,6 @@ void Compiler::optDebugCheckAssertion(AssertionDsc* assertion)
                     assert(assertion->op2.u1.iconFlags != 0);
                     break;
                 case O1K_LCLVAR:
-                case O1K_ARR_BND:
                     assert((lvaTable[assertion->op1.lcl.lclNum].lvType != TYP_REF) || (assertion->op2.u1.iconVal == 0));
                     break;
                 case O1K_VALUE_NUMBER:
@@ -1796,6 +1794,23 @@ AssertionInfo Compiler::optCreateJTrueBoundsAssertion(GenTree* tree)
         optCreateComplementaryAssertion(index, nullptr, nullptr);
         return index;
     }
+    // Cases where op1 holds the lhs of the condition and op2 holds the bound arithmetic.
+    // Loop condition like: "i < bnd +/-k"
+    // Assertion: "i < bnd +/- k != 0"
+    else if (vnStore->IsVNCompareCheckedBoundArith(relopVN))
+    {
+        AssertionDsc dsc;
+        dsc.assertionKind    = OAK_NOT_EQUAL;
+        dsc.op1.kind         = O1K_BOUND_OPER_BND;
+        dsc.op1.vn           = relopVN;
+        dsc.op2.kind         = O2K_CONST_INT;
+        dsc.op2.vn           = vnStore->VNZeroForType(op2->TypeGet());
+        dsc.op2.u1.iconVal   = 0;
+        dsc.op2.u1.iconFlags = 0;
+        AssertionIndex index = optAddAssertion(&dsc);
+        optCreateComplementaryAssertion(index, nullptr, nullptr);
+        return index;
+    }
     // Cases where op1 holds the upper bound and op2 is 0.
     // Loop condition like: "i < bnd == 0"
     // Assertion: "i < bnd == false"
@@ -1943,11 +1958,57 @@ AssertionInfo Compiler::optAssertionGenJtrue(GenTree* tree)
     {
         std::swap(op1, op2);
     }
+
+    ValueNum op1VN = vnStore->VNConservativeNormalValue(op1->gtVNPair);
+    ValueNum op2VN = vnStore->VNConservativeNormalValue(op2->gtVNPair);
     // If op1 is lcl and op2 is const or lcl, create assertion.
     if ((op1->gtOper == GT_LCL_VAR) &&
         ((op2->OperKind() & GTK_CONST) || (op2->gtOper == GT_LCL_VAR))) // Fix for Dev10 851483
     {
         return optCreateJtrueAssertions(op1, op2, assertionKind);
+    }
+    else if (vnStore->IsVNCheckedBound(op1VN) && vnStore->IsVNInt32Constant(op2VN))
+    {
+        assert(relop->OperIs(GT_EQ, GT_NE));
+
+        int con = vnStore->ConstantValue<int>(op2VN);
+        if (con >= 0)
+        {
+            AssertionDsc dsc;
+
+            // For arr.Length != 0, we know that 0 is a valid index
+            // For arr.Length == con, we know that con - 1 is the greatest valid index
+            if (con == 0)
+            {
+                dsc.assertionKind = OAK_NOT_EQUAL;
+                dsc.op1.bnd.vnIdx = vnStore->VNForIntCon(0);
+            }
+            else
+            {
+                dsc.assertionKind = OAK_EQUAL;
+                dsc.op1.bnd.vnIdx = vnStore->VNForIntCon(con - 1);
+            }
+
+            dsc.op1.vn           = op1VN;
+            dsc.op1.kind         = O1K_ARR_BND;
+            dsc.op1.bnd.vnLen    = op1VN;
+            dsc.op2.vn           = vnStore->VNConservativeNormalValue(op2->gtVNPair);
+            dsc.op2.kind         = O2K_CONST_INT;
+            dsc.op2.u1.iconFlags = 0;
+            dsc.op2.u1.iconVal   = 0;
+
+            // when con is not zero, create an assertion on the arr.Length == con edge
+            // when con is zero, create an assertion on the arr.Length != 0 edge
+            AssertionIndex index = optAddAssertion(&dsc);
+            if (relop->OperIs(GT_NE) != (con == 0))
+            {
+                return AssertionInfo::ForNextEdge(index);
+            }
+            else
+            {
+                return index;
+            }
+        }
     }
 
     // Check op1 and op2 for an indirection of a GT_LCL_VAR and keep it in op1.
@@ -2108,7 +2169,6 @@ void Compiler::optAssertionGen(GenTree* tree)
             {
                 //  Retrieve the 'this' arg
                 GenTree* thisArg = gtGetThisArg(tree->AsCall());
-#if defined(TARGET_X86) || defined(TARGET_AMD64) || defined(TARGET_ARM)
                 if (thisArg == nullptr)
                 {
                     // For tail calls we lose the this pointer in the argument list but that's OK because a null check
@@ -2116,8 +2176,6 @@ void Compiler::optAssertionGen(GenTree* tree)
                     noway_assert(tree->AsCall()->IsTailCall());
                     break;
                 }
-#endif // TARGET_X86 || TARGET_AMD64 || TARGET_ARM
-                noway_assert(thisArg != nullptr);
                 assertionInfo = optCreateAssertion(thisArg, nullptr, OAK_NOT_EQUAL);
             }
             break;
@@ -2670,7 +2728,7 @@ GenTree* Compiler::optConstantAssertionProp(AssertionDsc*        curAssertion,
                     var_types  simdType = tree->TypeGet();
                     assert(varDsc->TypeGet() == simdType);
                     var_types baseType = varDsc->lvBaseType;
-                    newTree            = gtGetSIMDZero(simdType, baseType, varDsc->lvVerTypeInfo.GetClassHandle());
+                    newTree            = gtGetSIMDZero(simdType, baseType, varDsc->GetStructHnd());
                     if (newTree == nullptr)
                     {
                         return nullptr;
@@ -2682,6 +2740,11 @@ GenTree* Compiler::optConstantAssertionProp(AssertionDsc*        curAssertion,
                     newTree->ChangeOperConst(GT_CNS_INT);
                     newTree->AsIntCon()->gtIconVal = curAssertion->op2.u1.iconVal;
                     newTree->ClearIconHandleMask();
+                    if (newTree->TypeIs(TYP_STRUCT))
+                    {
+                        // LCL_VAR can be init with a GT_CNS_INT, keep its type INT, not STRUCT.
+                        newTree->ChangeType(TYP_INT);
+                    }
                 }
                 // If we're doing an array index address, assume any constant propagated contributes to the index.
                 if (isArrIndex)
@@ -3218,7 +3281,8 @@ GenTree* Compiler::optAssertionPropGlobal_RelOp(ASSERT_VALARG_TP assertions, Gen
         return nullptr;
     }
 
-    AssertionDsc* curAssertion = optGetAssertion(index);
+    AssertionDsc* curAssertion         = optGetAssertion(index);
+    bool          assertionKindIsEqual = (curAssertion->assertionKind == OAK_EQUAL);
 
     // Allow or not to reverse condition for OAK_NOT_EQUAL assertions.
     bool allowReverse = true;
@@ -3233,7 +3297,7 @@ GenTree* Compiler::optAssertionPropGlobal_RelOp(ASSERT_VALARG_TP assertions, Gen
             printf("\nVN relop based constant assertion prop in " FMT_BB ":\n", compCurBB->bbNum);
             printf("Assertion index=#%02u: ", index);
             printTreeID(op1);
-            printf(" %s ", (curAssertion->assertionKind == OAK_EQUAL) ? "==" : "!=");
+            printf(" %s ", assertionKindIsEqual ? "==" : "!=");
             if (genActualType(op1->TypeGet()) == TYP_INT)
             {
                 printf("%d\n", vnStore->ConstantValue<int>(vnCns));
@@ -3318,8 +3382,15 @@ GenTree* Compiler::optAssertionPropGlobal_RelOp(ASSERT_VALARG_TP assertions, Gen
 
         op1->gtVNPair.SetBoth(vnCns); // Preserve the ValueNumPair, as ChangeOperConst/SetOper will clear it.
 
-        // Also set the value number on the relop.
-        if (curAssertion->assertionKind == OAK_EQUAL)
+        // set foldResult to either 0 or 1
+        bool foldResult = assertionKindIsEqual;
+        if (tree->gtOper == GT_NE)
+        {
+            foldResult = !foldResult;
+        }
+
+        // Set the value number on the relop to 1 (true) or 0 (false)
+        if (foldResult)
         {
             tree->gtVNPair.SetBoth(vnStore->VNOneForType(TYP_INT));
         }
@@ -4475,7 +4546,7 @@ void Compiler::optImpliedByCopyAssertion(AssertionDsc* copyAssertion, AssertionD
                 // This is the ngen case where we have an indirection of an address.
                 noway_assert((impAssertion->op1.kind == O1K_EXACT_TYPE) || (impAssertion->op1.kind == O1K_SUBTYPE));
 
-                __fallthrough;
+                FALLTHROUGH;
 
             case O2K_CONST_INT:
                 usable = op1MatchesCopy && (impAssertion->op2.u1.iconVal == depAssertion->op2.u1.iconVal);
@@ -4929,6 +5000,12 @@ GenTree* Compiler::optVNConstantPropOnJTrue(BasicBlock* block, GenTree* test)
 //
 Compiler::fgWalkResult Compiler::optVNConstantPropCurStmt(BasicBlock* block, Statement* stmt, GenTree* tree)
 {
+    // Don't perform const prop on expressions marked with GTF_DONT_CSE
+    if (!tree->CanCSE())
+    {
+        return WALK_CONTINUE;
+    }
+
     // Don't propagate floating-point constants into a TYP_STRUCT LclVar
     // This can occur for HFA return values (see hfa_sf3E_r.exe)
     if (tree->TypeGet() == TYP_STRUCT)

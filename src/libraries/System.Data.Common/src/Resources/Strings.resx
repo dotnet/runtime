@@ -165,6 +165,7 @@
   <data name="Data_ArgumentOutOfRange" xml:space="preserve"><value>'{0}' argument is out of range.</value></data>
   <data name="Data_ArgumentNull" xml:space="preserve"><value>'{0}' argument cannot be null.</value></data>
   <data name="Data_ArgumentContainsNull" xml:space="preserve"><value>'{0}' argument contains null value.</value></data>
+  <data name="Data_TypeNotAllowed" xml:space="preserve"><value>Type '{0}' is not allowed here. See https://go.microsoft.com/fwlink/?linkid=2132227 for more details.</value></data>
   <data name="DataColumns_OutOfRange" xml:space="preserve"><value>Cannot find column {0}.</value></data>
   <data name="DataColumns_Add1" xml:space="preserve"><value>Column '{0}' already belongs to this DataTable.</value></data>
   <data name="DataColumns_Add2" xml:space="preserve"><value>Column '{0}' already belongs to another DataTable.</value></data>

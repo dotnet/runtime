@@ -23,7 +23,7 @@
   <String Id="InstallInstallButton">インストール(&amp;I)</String>
   <String Id="InstallCloseButton">閉じる(&amp;C)</String>
   <String Id="OptionsHeader">セットアップ オプション</String>
-  <String Id="OptionsLocationLabel">インストール場所:</String>
+  <String Id="OptionsLocationLabel">インストールの場所:</String>
   <String Id="OptionsBrowseButton">参照(&amp;B)</String>
   <String Id="OptionsOkButton">OK(&amp;O)</String>
   <String Id="OptionsCancelButton">キャンセル(&amp;C)</String>
@@ -60,8 +60,8 @@
   <String Id="FilesInUseOkButton">OK(&amp;O)</String>
   <String Id="FilesInUseCancelButton">キャンセル(&amp;C)</String>
   <String Id="WelcomeHeaderMessage">.NET Runtime</String>
-  <String Id="WelcomeDescription">.NET は、コマンドライン アプリケーション、マイクロサービス、および最新の Web サイトをビルドするために使用できる開発プラットフォームです。オープンソースのクロス プラットフォームで、Microsoft によってサポートされています。お楽しみいただければ幸いです。</String>
-  <String Id="LearnMoreTitle">.NET の詳細</String>
+  <String Id="WelcomeDescription">.NET Runtime は、Windows コンピューターで .NET アプリケーションを実行するために使用されます。.NET はオープン ソースのクロス プラットフォームで、Microsoft によってサポートされています。ぜひご利用ください。</String>
+  <String Id="LearnMoreTitle">.Net の詳細情報</String>
   <String Id="SuccessInstallLocation">[DOTNETHOME] に以下がインストールされました</String>
   <String Id="SuccessInstallProductName"> - [BUNDLEMONIKER] </String>
   <String Id="ResourcesHeader">リソース</String>
@@ -70,6 +70,6 @@
   <String Id="TutorialLink">&lt;A HREF="https://aka.ms/dotnet-tutorials"&gt;チュートリアル&lt;/A&gt;</String>
   <String Id="TelemetryLink">&lt;A HREF="https://aka.ms/dotnet-cli-telemetry"&gt;.NET テレメトリ&lt;/A&gt;</String>
   <String Id="PrivacyStatementLink">&lt;A HREF="https://aka.ms/dev-privacy"&gt;プライバシーに関する声明&lt;/A&gt;</String>
-  <String Id="EulaLink">&lt;A HREF="https://go.microsoft.com/fwlink/?LinkId=329770"&gt;.NET ライブラリのライセンス条項&lt;/A&gt;</String>
-  
+  <String Id="EulaLink">&lt;A HREF="https://aka.ms/dotnet-license-windows"&gt;.NET のライセンス情報&lt;/A&gt;</String>
+  <String Id="LicenseAssent">[インストール] をクリックすると、次の条項に同意したものと見なされます。</String>
 </WixLocalization>

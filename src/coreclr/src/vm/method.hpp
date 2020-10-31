@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 //
 // method.hpp
 //
@@ -140,11 +139,18 @@ enum MethodDescClassification
     // where the function explicitly implements IInterface.foo() instead of foo().
     mdcMethodImpl                       = 0x0010,
 
-    // Method is static
-    mdcStatic                           = 0x0020,
+    // Has slot for native code
+    mdcHasNativeCodeSlot                = 0x0020,
 
+#ifdef FEATURE_COMINTEROP
+    mdcHasComPlusCallInfo               = 0x0040,
+#else
     // unused                           = 0x0040,
-    // unused                           = 0x0080,
+#endif
+
+    // Method is static
+    mdcStatic                           = 0x0080,
+
     // unused                           = 0x0100,
     // unused                           = 0x0200,
 
@@ -207,7 +213,7 @@ class MethodDesc
 
 public:
 
-#ifdef HOST_64BIT
+#ifdef TARGET_64BIT
     static const int ALIGNMENT_SHIFT = 3;
 #else
     static const int ALIGNMENT_SHIFT = 2;
@@ -662,7 +668,7 @@ public:
         return GetMethodTable()->IsInterface();
     }
 
-    BOOL HasNativeCallableAttribute();
+    BOOL HasUnmanagedCallersOnlyAttribute();
     BOOL ShouldSuppressGCTransition();
 
 #ifdef FEATURE_COMINTEROP
@@ -1829,17 +1835,18 @@ protected:
 
     enum {
         // enum_flag2_HasPrecode implies that enum_flag2_HasStableEntryPoint is set.
-        enum_flag2_HasStableEntryPoint      = 0x01,   // The method entrypoint is stable (either precode or actual code)
-        enum_flag2_HasPrecode               = 0x02,   // Precode has been allocated for this method
+        enum_flag2_HasStableEntryPoint                  = 0x01,   // The method entrypoint is stable (either precode or actual code)
+        enum_flag2_HasPrecode                           = 0x02,   // Precode has been allocated for this method
 
-        enum_flag2_IsUnboxingStub           = 0x04,
-        enum_flag2_HasNativeCodeSlot        = 0x08,   // Has slot for native code
+        enum_flag2_IsUnboxingStub                       = 0x04,
+        // unused                                       = 0x08,
 
-        enum_flag2_IsJitIntrinsic           = 0x10,   // Jit may expand method as an intrinsic
+        enum_flag2_IsJitIntrinsic                       = 0x10,   // Jit may expand method as an intrinsic
 
-        enum_flag2_IsEligibleForTieredCompilation = 0x20,
+        enum_flag2_IsEligibleForTieredCompilation       = 0x20,
 
-        // unused                           = 0x40,
+        enum_flag2_RequiresCovariantReturnTypeChecking  = 0x40
+
         // unused                           = 0x80,
     };
     BYTE        m_bFlags2;
@@ -1881,13 +1888,13 @@ public:
     inline BOOL HasNativeCodeSlot()
     {
         LIMITED_METHOD_DAC_CONTRACT;
-        return (m_bFlags2 & enum_flag2_HasNativeCodeSlot) != 0;
+        return (m_wFlags & mdcHasNativeCodeSlot) != 0;
     }
 
     inline void SetHasNativeCodeSlot()
     {
         LIMITED_METHOD_CONTRACT;
-        m_bFlags2 |= enum_flag2_HasNativeCodeSlot;
+        m_wFlags |= mdcHasNativeCodeSlot;
     }
 
     inline BOOL IsJitIntrinsic()
@@ -1902,7 +1909,20 @@ public:
         m_bFlags2 |= enum_flag2_IsJitIntrinsic;
     }
 
-    static const SIZE_T s_ClassificationSizeTable[];
+    BOOL RequiresCovariantReturnTypeChecking()
+    {
+        LIMITED_METHOD_DAC_CONTRACT;
+
+        return (m_bFlags2 & enum_flag2_RequiresCovariantReturnTypeChecking) != 0;
+    }
+
+    void SetRequiresCovariantReturnTypeChecking()
+    {
+        LIMITED_METHOD_CONTRACT;
+        m_bFlags2 |= enum_flag2_RequiresCovariantReturnTypeChecking;
+    }
+
+    static const BYTE s_ClassificationSizeTable[];
 
     static SIZE_T GetBaseSize(DWORD classification)
     {
@@ -2006,7 +2026,7 @@ private:
     PCODE GetPrecompiledCode(PrepareCodeConfig* pConfig);
     PCODE GetPrecompiledNgenCode(PrepareCodeConfig* pConfig);
     PCODE GetPrecompiledR2RCode(PrepareCodeConfig* pConfig);
-    PCODE GetMulticoreJitCode();
+    PCODE GetMulticoreJitCode(PrepareCodeConfig* pConfig, bool* pWasTier0Jit);
     COR_ILMETHOD_DECODER* GetAndVerifyILHeader(PrepareCodeConfig* pConfig, COR_ILMETHOD_DECODER* pIlDecoderMemory);
     COR_ILMETHOD_DECODER* GetAndVerifyMetadataILHeader(PrepareCodeConfig* pConfig, COR_ILMETHOD_DECODER* pIlDecoderMemory);
     COR_ILMETHOD_DECODER* GetAndVerifyNoMetadataILHeader();
@@ -2030,8 +2050,19 @@ class PrepareCodeConfig
 public:
     PrepareCodeConfig();
     PrepareCodeConfig(NativeCodeVersion nativeCodeVersion, BOOL needsMulticoreJitNotification, BOOL mayUsePrecompiledCode);
-    MethodDesc* GetMethodDesc();
-    NativeCodeVersion GetCodeVersion();
+
+    MethodDesc* GetMethodDesc() const
+    {
+        LIMITED_METHOD_CONTRACT;
+        return m_pMethodDesc;
+    }
+
+    NativeCodeVersion GetCodeVersion() const
+    {
+        LIMITED_METHOD_CONTRACT;
+        return m_nativeCodeVersion;
+    }
+
     BOOL NeedsMulticoreJitNotification();
     BOOL MayUsePrecompiledCode();
     virtual PCODE IsJitCancellationRequested();
@@ -2047,6 +2078,27 @@ public:
     void SetReadyToRunRejectedPrecompiledCode();
     CallerGCMode GetCallerGCMode();
     void SetCallerGCMode(CallerGCMode mode);
+
+public:
+    bool IsForMulticoreJit() const
+    {
+        WRAPPER_NO_CONTRACT;
+
+    #ifdef FEATURE_MULTICOREJIT
+        return m_isForMulticoreJit;
+    #else
+        return false;
+    #endif
+    }
+
+#ifdef FEATURE_MULTICOREJIT
+protected:
+    void SetIsForMulticoreJit()
+    {
+        WRAPPER_NO_CONTRACT;
+        m_isForMulticoreJit = true;
+    }
+#endif
 
 #ifdef FEATURE_CODE_VERSIONING
 public:
@@ -2144,6 +2196,8 @@ public:
             m_jitSwitchedToOptimized = true;
         }
     }
+
+    bool FinalizeOptimizationTierForTier0Jit();
 #endif
 
 public:
@@ -2170,6 +2224,11 @@ protected:
     BOOL m_ProfilerRejectedPrecompiledCode;
     BOOL m_ReadyToRunRejectedPrecompiledCode;
     CallerGCMode m_callerGCMode;
+
+#ifdef FEATURE_MULTICOREJIT
+private:
+    bool m_isForMulticoreJit;
+#endif
 
 #ifdef FEATURE_CODE_VERSIONING
 private:
@@ -2225,6 +2284,29 @@ public:
     PrepareCodeConfigBuffer &operator =(const PrepareCodeConfigBuffer &) = delete;
 };
 #endif // FEATURE_CODE_VERSIONING
+
+class MulticoreJitPrepareCodeConfig : public PrepareCodeConfig
+{
+private:
+    bool m_wasTier0Jit;
+
+public:
+    MulticoreJitPrepareCodeConfig(MethodDesc* pMethod);
+
+    bool WasTier0Jit() const
+    {
+        LIMITED_METHOD_CONTRACT;
+        return m_wasTier0Jit;
+    }
+
+    void SetWasTier0Jit()
+    {
+        LIMITED_METHOD_CONTRACT;
+        m_wasTier0Jit = true;
+    }
+
+    virtual BOOL SetNativeCode(PCODE pCode, PCODE * ppAlternateCodeToUse) override;
+};
 #endif // DACCESS_COMPILE
 
 /******************************************************************/
@@ -2491,11 +2573,11 @@ class StoredSigMethodDesc : public MethodDesc
 {
   public:
     // Put the sig RVA in here - this allows us to avoid
-    // touching the method desc table when mscorlib is prejitted.
+    // touching the method desc table when CoreLib is prejitted.
 
     RelativePointer<TADDR>           m_pSig;
     DWORD           m_cSig;
-#ifdef HOST_64BIT
+#ifdef TARGET_64BIT
     // m_dwExtendedFlags is not used by StoredSigMethodDesc itself.
     // It is used by child classes. We allocate the space here to get
     // optimal layout.
@@ -2554,7 +2636,7 @@ class FCallMethodDesc : public MethodDesc
 #endif
 
     DWORD   m_dwECallID;
-#ifdef HOST_64BIT
+#ifdef TARGET_64BIT
     DWORD   m_padding;
 #endif
 
@@ -2594,7 +2676,7 @@ protected:
     RelativePointer<PTR_CUTF8>           m_pszMethodName;
     PTR_DynamicResolver m_pResolver;
 
-#ifndef HOST_64BIT
+#ifndef TARGET_64BIT
     // We use m_dwExtendedFlags from StoredSigMethodDesc on WIN64
     DWORD               m_dwExtendedFlags;   // see DynamicMethodDesc::ExtendedFlags enum
 #endif
@@ -2605,20 +2687,20 @@ protected:
         nomdILStubAttrs     = mdMemberAccessMask | mdStatic, //  method attributes (IL stubs)
 
         // attributes (except mdStatic and mdMemberAccessMask) have different meaning for IL stubs
-        // mdMemberAccessMask     = 0x0007,
-        nomdReverseStub           = 0x0008,
-        // mdStatic               = 0x0010,
-        nomdCALLIStub             = 0x0020,
-        nomdDelegateStub          = 0x0040,
-        nomdStructMarshalStub     = 0x0080,
-        nomdUnbreakable           = 0x0100,
-        nomdDelegateCOMStub       = 0x0200,  // CLR->COM or COM->CLR call via a delegate (WinRT specific)
-        nomdSignatureNeedsRestore = 0x0400,
-        nomdStubNeedsCOMStarted   = 0x0800,  // EnsureComStarted must be called before executing the method
-        nomdMulticastStub         = 0x1000,
-        nomdUnboxingILStub        = 0x2000,
-        nomdWrapperDelegateStub   = 0x4000,
-        nomdNativeCallableStub    = 0x8000,
+        // mdMemberAccessMask        = 0x0007,
+        nomdReverseStub              = 0x0008,
+        // mdStatic                  = 0x0010,
+        nomdCALLIStub                = 0x0020,
+        nomdDelegateStub             = 0x0040,
+        nomdStructMarshalStub        = 0x0080,
+        nomdUnbreakable              = 0x0100,
+        //unused                     = 0x0200,
+        nomdSignatureNeedsRestore    = 0x0400,
+        nomdStubNeedsCOMStarted      = 0x0800,  // EnsureComStarted must be called before executing the method
+        nomdMulticastStub            = 0x1000,
+        nomdUnboxingILStub           = 0x2000,
+        nomdWrapperDelegateStub      = 0x4000,
+        nomdUnmanagedCallersOnlyStub = 0x8000,
 
         nomdILStub          = 0x00010000,
         nomdLCGMethod       = 0x00020000,
@@ -2661,7 +2743,7 @@ public:
     void SetNativeStackArgSize(WORD cbArgSize)
     {
         LIMITED_METHOD_CONTRACT;
-        _ASSERTE(IsILStub() && (cbArgSize % sizeof(SLOT)) == 0);
+        _ASSERTE(IsILStub() && (cbArgSize % TARGET_POINTER_SIZE) == 0);
         m_dwExtendedFlags = (m_dwExtendedFlags & ~nomdStackArgSize) | ((DWORD)cbArgSize << 16);
     }
 
@@ -2711,14 +2793,13 @@ public:
     }
 
     bool IsReverseStub()     { LIMITED_METHOD_DAC_CONTRACT; _ASSERTE(IsILStub()); return (0 != (m_dwExtendedFlags & nomdReverseStub));  }
-    bool IsNativeCallableStub() { LIMITED_METHOD_DAC_CONTRACT; _ASSERTE(IsILStub()); return (0 != (m_dwExtendedFlags & nomdNativeCallableStub)); }
+    bool IsUnmanagedCallersOnlyStub() { LIMITED_METHOD_DAC_CONTRACT; _ASSERTE(IsILStub()); return (0 != (m_dwExtendedFlags & nomdUnmanagedCallersOnlyStub)); }
     bool IsCALLIStub()       { LIMITED_METHOD_DAC_CONTRACT; _ASSERTE(IsILStub()); return (0 != (m_dwExtendedFlags & nomdCALLIStub));    }
     bool IsDelegateStub()    { LIMITED_METHOD_DAC_CONTRACT; _ASSERTE(IsILStub()); return (0 != (m_dwExtendedFlags & nomdDelegateStub)); }
     bool IsCLRToCOMStub()    { LIMITED_METHOD_CONTRACT; _ASSERTE(IsILStub()); return ((0 == (m_dwExtendedFlags & mdStatic)) && !IsReverseStub() && !IsDelegateStub() && !IsStructMarshalStub()); }
     bool IsCOMToCLRStub()    { LIMITED_METHOD_CONTRACT; _ASSERTE(IsILStub()); return ((0 == (m_dwExtendedFlags & mdStatic)) &&  IsReverseStub()); }
     bool IsPInvokeStub()     { LIMITED_METHOD_CONTRACT; _ASSERTE(IsILStub()); return ((0 != (m_dwExtendedFlags & mdStatic)) && !IsReverseStub() && !IsCALLIStub() && !IsStructMarshalStub()); }
     bool IsUnbreakable()     { LIMITED_METHOD_CONTRACT; _ASSERTE(IsILStub()); return (0 != (m_dwExtendedFlags & nomdUnbreakable));  }
-    bool IsDelegateCOMStub() { LIMITED_METHOD_CONTRACT; _ASSERTE(IsILStub()); return (0 != (m_dwExtendedFlags & nomdDelegateCOMStub));  }
     bool IsSignatureNeedsRestore() { LIMITED_METHOD_CONTRACT; _ASSERTE(IsILStub()); return (0 != (m_dwExtendedFlags & nomdSignatureNeedsRestore)); }
     bool IsStubNeedsCOMStarted()   { LIMITED_METHOD_CONTRACT; _ASSERTE(IsILStub()); return (0 != (m_dwExtendedFlags & nomdStubNeedsCOMStarted)); }
     bool IsStructMarshalStub()   { LIMITED_METHOD_CONTRACT; _ASSERTE(IsILStub()); return (0 != (m_dwExtendedFlags & nomdStructMarshalStub)); }
@@ -2746,7 +2827,7 @@ public:
     bool HasMDContextArg()
     {
         LIMITED_METHOD_CONTRACT;
-        return ((IsCLRToCOMStub() && !IsDelegateCOMStub()) || IsPInvokeStub());
+        return IsCLRToCOMStub() || IsPInvokeStub();
     }
 
     void Restore();
@@ -3052,7 +3133,7 @@ public:
         return (ndirect.m_wFlags & kThisCall) != 0;
     }
 
-    // Returns TRUE if this MethodDesc is internal call from mscorlib to mscorwks
+    // Returns TRUE if this MethodDesc is internal call from CoreLib to VM
     BOOL IsQCall() const
     {
         LIMITED_METHOD_DAC_CONTRACT;
@@ -3150,6 +3231,7 @@ public:
 #ifdef TARGET_WINDOWS
 private:
     FARPROC FindEntryPointWithMangling(NATIVE_LIBRARY_HANDLE mod, PTR_CUTF8 entryPointName) const;
+    FARPROC FindEntryPointWithSuffix(NATIVE_LIBRARY_HANDLE mod, PTR_CUTF8 entryPointName, char suffix) const;
 #endif
 public:
 
@@ -3524,17 +3606,9 @@ public:
     }
 
 #ifdef FEATURE_COMINTEROP
-    BOOL IMD_HasComPlusCallInfo()
-    {
-        LIMITED_METHOD_CONTRACT;
-        return ((m_wFlags2 & HasComPlusCallInfo) != 0);
-    }
-
     void IMD_SetupGenericComPlusCall()
     {
         LIMITED_METHOD_CONTRACT;
-
-        m_wFlags2 |= InstantiatedMethodDesc::HasComPlusCallInfo;
 
         IMD_GetComPlusCallInfo()->InitStackArgumentSize();
     }
@@ -3543,14 +3617,16 @@ public:
     {
         LIMITED_METHOD_CONTRACT;
 
-        _ASSERTE(IMD_HasComPlusCallInfo());
-        SIZE_T size = s_ClassificationSizeTable[m_wFlags & (mdcClassification | mdcHasNonVtableSlot | mdcMethodImpl)];
+        _ASSERTE(IsGenericComPlusCall());
+        SIZE_T size = s_ClassificationSizeTable[m_wFlags & (mdcClassification | mdcHasNonVtableSlot | mdcMethodImpl | mdcHasNativeCodeSlot)];
 
+#ifdef FEATURE_PREJIT
         if (HasNativeCodeSlot())
         {
-            size += (*dac_cast<PTR_TADDR>(dac_cast<TADDR>(this) + size) & FIXUP_LIST_MASK) ?
-                (sizeof(NativeCodeSlot) + sizeof(FixupListSlot)) : sizeof(NativeCodeSlot);
+            size += (*dac_cast<PTR_TADDR>(GetAddrOfNativeCodeSlot()) & FIXUP_LIST_MASK) ? 
+                sizeof(FixupListSlot) : 0;
         }
+#endif
 
         return dac_cast<PTR_ComPlusCallInfo>(dac_cast<TADDR>(this) + size);
     }

@@ -1,6 +1,5 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Buffers;
 using System.Collections.Generic;
@@ -230,6 +229,7 @@ namespace System.IO.Pipelines.Tests
         }
 
         [Fact]
+        [PlatformSpecific(~TestPlatforms.Browser)] // allocates too much memory
         public async Task CompleteWithLargeWriteThrows()
         {
             var pipe = new Pipe();
@@ -255,6 +255,41 @@ namespace System.IO.Pipelines.Tests
             }
 
             await task;
+        }
+
+        [Fact]
+        public async Task WriteAsyncWithACompletedReaderNoops()
+        {
+            var pool = new DisposeTrackingBufferPool();
+            var pipe = new Pipe(new PipeOptions(pool));
+            pipe.Reader.Complete();
+
+            byte[] writeBuffer = new byte[100];
+            for (var i = 0; i < 10000; i++)
+            {
+                await pipe.Writer.WriteAsync(writeBuffer);
+            }
+
+            Assert.Equal(0, pool.CurrentlyRentedBlocks);
+        }
+
+        [Fact]
+        public async Task GetMemoryFlushWithACompletedReaderNoops()
+        {
+            var pool = new DisposeTrackingBufferPool();
+            var pipe = new Pipe(new PipeOptions(pool));
+            pipe.Reader.Complete();
+
+            for (var i = 0; i < 10000; i++)
+            {
+                var mem = pipe.Writer.GetMemory();
+                pipe.Writer.Advance(mem.Length);
+                await pipe.Writer.FlushAsync(default);
+            }
+
+            Assert.Equal(1, pool.CurrentlyRentedBlocks);
+            pipe.Writer.Complete();
+            Assert.Equal(0, pool.CurrentlyRentedBlocks);
         }
     }
 }

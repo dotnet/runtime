@@ -1,4 +1,5 @@
-﻿<root>
+﻿<?xml version="1.0" encoding="utf-8"?>
+<root>
   <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
     <xsd:import namespace="http://www.w3.org/XML/1998/namespace" />
     <xsd:element name="root" msdata:IsDataSet="true">
@@ -76,16 +77,16 @@
     <value>The value '{0}' is not a valid value for the enum '{1}'.</value>
   </data>
   <data name="ErrorInvalidEventHandler" xml:space="preserve">
-   <value>Invalid event handler for the {0} event.</value> 
+    <value>Invalid event handler for the {0} event.</value>
   </data>
   <data name="ErrorInvalidEventType" xml:space="preserve">
-   <value>Invalid type for the {0} event.</value> 
+    <value>Invalid type for the {0} event.</value>
   </data>
   <data name="ErrorInvalidPropertyType" xml:space="preserve">
     <value>Invalid type for the {0} property</value>
   </data>
   <data name="ErrorMissingEventAccessors" xml:space="preserve">
-   <value>Accessor methods for the {0} event are missing.</value> 
+    <value>Accessor methods for the {0} event are missing.</value>
   </data>
   <data name="ErrorMissingPropertyAccessors" xml:space="preserve">
     <value>Accessor methods for the {0} property are missing.</value>
@@ -170,7 +171,7 @@
   </data>
   <data name="CultureInfoConverterInvalidCulture" xml:space="preserve">
     <value>The {0} culture cannot be converted to a CultureInfo object on this computer.</value>
-  </data> 
+  </data>
   <data name="ErrorInvalidServiceInstance" xml:space="preserve">
     <value>The service instance must derive from or implement {0}.</value>
   </data>
@@ -178,7 +179,7 @@
     <value>The service {0} already exists in the service container.</value>
   </data>
   <data name="InvalidArgumentValue" xml:space="preserve">
-    <value>Value of '{1}' is not valid for '{0}'.</value>
+    <value>Value of '{0}' cannot be empty.</value>
   </data>
   <data name="InvalidNullArgument" xml:space="preserve">
     <value>Null is not a valid value for {0}.</value>
@@ -242,11 +243,11 @@
   </data>
   <data name="CHECKOUTCanceled" xml:space="preserve">
     <value>The checkout was canceled by the user.</value>
-  </data> 
-   <data name="toStringNone" xml:space="preserve">
+  </data>
+  <data name="toStringNone" xml:space="preserve">
     <value>(none)</value>
   </data>
-   <data name="MemberRelationshipService_RelationshipNotSupported" xml:space="preserve">
+  <data name="MemberRelationshipService_RelationshipNotSupported" xml:space="preserve">
     <value>Relationships between {0}.{1} and {2}.{3} are not supported.</value>
   </data>
 </root>

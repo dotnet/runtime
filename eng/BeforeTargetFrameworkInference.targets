@@ -1,0 +1,19 @@
+<Project>
+
+  <PropertyGroup Condition="$(TargetFramework.Contains('-'))">
+    <_OriginalTargetFramework>$(TargetFramework)</_OriginalTargetFramework>
+    <TargetFrameworkSuffix>$(TargetFramework.SubString($([MSBuild]::Add($(TargetFramework.IndexOf('-')), 1))))</TargetFrameworkSuffix>
+    <TargetFramework>$(TargetFramework.SubString(0, $(TargetFramework.IndexOf('-'))))</TargetFramework>
+  </PropertyGroup>
+
+  <Import Project="$(MSBuildThisDirectory)targetframeworksuffix.props" Condition="'$(DesignTimeBuild)' == 'true'" />
+
+  <PropertyGroup>
+    <IntermediateOutputPath>$([MSBuild]::NormalizeDirectory('$(BaseIntermediateOutputPath)', '$(TargetFramework)-$(TargetFrameworkSuffix)-$(Configuration)'))</IntermediateOutputPath>
+    <IntermediateOutputPath Condition="'$(TargetFrameworkSuffix)' == ''">$([MSBuild]::NormalizeDirectory('$(BaseIntermediateOutputPath)', '$(TargetFramework)-$(Configuration)'))</IntermediateOutputPath>
+    <!-- setting the output paths -->
+    <OutputPath>$([MSBuild]::NormalizeDirectory('$(BaseOutputPath)', '$(TargetFramework)-$(TargetFrameworkSuffix)-$(Configuration)'))</OutputPath>
+    <OutputPath Condition="'$(TargetFrameworkSuffix)' == ''">$([MSBuild]::NormalizeDirectory('$(BaseOutputPath)', '$(TargetFramework)-$(Configuration)'))</OutputPath>
+  </PropertyGroup>
+
+</Project>

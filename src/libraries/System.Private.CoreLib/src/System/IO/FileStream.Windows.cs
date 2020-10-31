@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Buffers;
 using System.Diagnostics;
@@ -1250,18 +1249,22 @@ namespace System.IO
                 return base.CopyToAsync(destination, bufferSize, cancellationToken);
             }
 
-            StreamHelpers.ValidateCopyToArgs(this, destination, bufferSize);
-
-            // Bail early for cancellation if cancellation has been requested
-            if (cancellationToken.IsCancellationRequested)
-            {
-                return Task.FromCanceled<int>(cancellationToken);
-            }
+            ValidateCopyToArguments(destination, bufferSize);
 
             // Fail if the file was closed
             if (_fileHandle.IsClosed)
             {
                 throw Error.GetFileNotOpen();
+            }
+            if (!CanRead)
+            {
+                throw Error.GetReadNotSupported();
+            }
+
+            // Bail early for cancellation if cancellation has been requested
+            if (cancellationToken.IsCancellationRequested)
+            {
+                return Task.FromCanceled<int>(cancellationToken);
             }
 
             // Do the async copy, with differing implementations based on whether the FileStream was opened as async or sync
@@ -1326,7 +1329,7 @@ namespace System.IO
                 // in the read/write copy loop.
                 if (cancellationToken.CanBeCanceled)
                 {
-                    cancellationReg = cancellationToken.UnsafeRegister(s =>
+                    cancellationReg = cancellationToken.UnsafeRegister(static s =>
                     {
                         Debug.Assert(s is AsyncCopyToAwaitable);
                         var innerAwaitable = (AsyncCopyToAwaitable)s;

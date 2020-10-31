@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections;
 using System.Globalization;
@@ -37,7 +36,7 @@ namespace System.Text.RegularExpressions.Tests
             AssertExtensions.Throws<ArgumentOutOfRangeException>("value", () => Regex.CacheSize = -1);
         }
 
-        [Fact]
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         public void Ctor_Cache_Second_drops_first()
         {
             RemoteExecutor.Invoke(() =>
@@ -49,7 +48,7 @@ namespace System.Text.RegularExpressions.Tests
             }).Dispose();
         }
 
-        [Fact]
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         public void Ctor_Cache_Shrink_cache()
         {
             RemoteExecutor.Invoke(() =>
@@ -65,7 +64,7 @@ namespace System.Text.RegularExpressions.Tests
             }).Dispose();
         }
 
-        [Fact]
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         public void Ctor_Cache_Promote_entries()
         {
             RemoteExecutor.Invoke(() =>
@@ -82,7 +81,7 @@ namespace System.Text.RegularExpressions.Tests
             }).Dispose();
         }
 
-        [Fact]
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         public void Ctor_Cache_Uses_culture_and_options()
         {
             RemoteExecutor.Invoke(() =>
@@ -99,7 +98,7 @@ namespace System.Text.RegularExpressions.Tests
             }).Dispose();
         }
 
-        [Fact]
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         public void Ctor_Cache_Uses_dictionary_linked_list_switch_does_not_throw()
         {
             // assume the limit is less than the cache size so we cross it two times:

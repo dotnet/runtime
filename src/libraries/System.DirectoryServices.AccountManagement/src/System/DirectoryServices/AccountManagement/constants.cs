@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System;
 using System.Collections;
@@ -96,6 +95,7 @@ namespace System.DirectoryServices.AccountManagement
 
         // these two are not publicly exposed properties, but are used internally to track ResetPassword/ExpirePasswordNow
         // operations against unpersisted principals, so that they can be performed once the principal has been Saved
+        // [SuppressMessage("Microsoft.Security", "CS002:SecretInNextLine", Justification="Not a password.")]
         internal const string PwdInfoPassword = "AuthenticablePrincipal.PasswordInfo.Password";
         internal const string PwdInfoExpireImmediately = "AuthenticablePrincipal.PasswordInfo.ExpireImmediately";
     }
@@ -131,29 +131,13 @@ namespace System.DirectoryServices.AccountManagement
     //
     //  Group.Members
     //
-    internal class ReferentialProperties
+    internal static class ReferentialProperties
     {
-        private ReferentialProperties() { }
-
         // Maps from Type of the Principal object --> ArrayList of the object's referential property names
         // (expressed as strings from the PropertyNames class)
-        internal static readonly Hashtable Properties;
-
-        static ReferentialProperties()
+        internal static readonly Hashtable Properties = new Hashtable()
         {
-            Properties = new Hashtable();
-
-            // Referential properties for groups
-            ArrayList groupList = new ArrayList(1);
-            groupList.Add(PropertyNames.GroupMembers);
-
-            Properties[typeof(GroupPrincipal)] = groupList;
-
-            // Referential properties for users
-            // None at this time.
-
-            // Referential properties for computers
-            // None at this time.
-        }
+            { typeof(GroupPrincipal), new ArrayList(1) { PropertyNames.GroupMembers } }
+        };
     }
 }

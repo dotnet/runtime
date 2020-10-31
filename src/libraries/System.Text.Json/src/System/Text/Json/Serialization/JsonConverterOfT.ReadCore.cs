@@ -1,6 +1,7 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
+
+using System.Diagnostics.CodeAnalysis;
 
 namespace System.Text.Json.Serialization
 {
@@ -14,7 +15,7 @@ namespace System.Text.Json.Serialization
             return ReadCore(ref reader, options, ref state);
         }
 
-        internal T ReadCore(
+        internal T? ReadCore(
             ref Utf8JsonReader reader,
             JsonSerializerOptions options,
             ref ReadStack state)
@@ -33,7 +34,7 @@ namespace System.Text.Json.Serialization
                             if (state.Current.ReturnValue == null)
                             {
                                 // Avoid returning null for value types.
-                                return default!;
+                                return default;
                             }
 
                             return (T)state.Current.ReturnValue!;
@@ -42,7 +43,7 @@ namespace System.Text.Json.Serialization
                         {
                             // Read more data until we have the full element.
                             state.BytesConsumed += reader.BytesConsumed;
-                            return default!;
+                            return default;
                         }
                     }
                 }
@@ -53,7 +54,7 @@ namespace System.Text.Json.Serialization
                     if (!SingleValueReadWithReadAhead(ClassType.Value, ref reader, ref state))
                     {
                         state.BytesConsumed += reader.BytesConsumed;
-                        return default!;
+                        return default;
                     }
                 }
 

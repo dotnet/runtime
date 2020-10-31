@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 // --------------------------------------------------------------------------------
 // PEImage.inl
 //
@@ -31,6 +30,33 @@ inline const SString &PEImage::GetPath()
     LIMITED_METHOD_DAC_CONTRACT;
 
     return m_path;
+}
+
+inline const SString& PEImage::GetPathToLoad()
+{
+    LIMITED_METHOD_DAC_CONTRACT;
+
+    return IsInBundle() ? m_bundleFileLocation.Path() : m_path;
+}
+
+inline INT64 PEImage::GetOffset() const
+{
+    LIMITED_METHOD_CONTRACT;
+
+    return m_bundleFileLocation.Offset;
+}
+
+inline BOOL PEImage::IsInBundle() const
+{
+    LIMITED_METHOD_CONTRACT;
+
+    return m_bundleFileLocation.IsValid();
+}
+
+inline INT64 PEImage::GetSize() const
+{
+    LIMITED_METHOD_CONTRACT;
+    return m_bundleFileLocation.Size;
 }
 
 inline void PEImage::SetModuleFileNameHintForDAC()
@@ -71,7 +97,7 @@ inline BOOL PEImage::IsFile()
 {
     WRAPPER_NO_CONTRACT;
 
-    return !m_path.IsEmpty();
+    return !GetPathToLoad().IsEmpty();
 }
 
 #ifndef DACCESS_COMPILE
@@ -433,7 +459,7 @@ inline CHECK PEImage::CheckFormat()
     CHECK_OK;
 }
 
-inline void  PEImage::Init(LPCWSTR pPath)
+inline void  PEImage::Init(LPCWSTR pPath, BundleFileLocation bundleFileLocation)
 {
     CONTRACTL
     {
@@ -442,15 +468,17 @@ inline void  PEImage::Init(LPCWSTR pPath)
         MODE_ANY;
     }
     CONTRACTL_END;
+
     m_path = pPath;
     m_path.Normalize();
+    m_bundleFileLocation = bundleFileLocation;
     SetModuleFileNameHintForDAC();
 }
 #ifndef DACCESS_COMPILE
 
 
 /*static*/
-inline PTR_PEImage PEImage::FindByPath(LPCWSTR pPath)
+inline PTR_PEImage PEImage::FindByPath(LPCWSTR pPath, BOOL isInBundle /* = TRUE */)
 {
     CONTRACTL
     {
@@ -464,31 +492,31 @@ inline PTR_PEImage PEImage::FindByPath(LPCWSTR pPath)
 
     int CaseHashHelper(const WCHAR *buffer, COUNT_T count);
 
-    PEImageLocator locator(pPath);
+    PEImageLocator locator(pPath, isInBundle);
 #ifdef FEATURE_CASE_SENSITIVE_FILESYSTEM
     DWORD dwHash=path.Hash();
 #else
     DWORD dwHash = CaseHashHelper(pPath, (COUNT_T) wcslen(pPath));
 #endif
-   return (PEImage *) s_Images->LookupValue(dwHash, &locator);
+    return (PEImage *) s_Images->LookupValue(dwHash, &locator);
 
 }
 
 /* static */
-inline PTR_PEImage PEImage::OpenImage(LPCWSTR pPath, MDInternalImportFlags flags /* = MDInternalImport_Default */)
+inline PTR_PEImage PEImage::OpenImage(LPCWSTR pPath, MDInternalImportFlags flags /* = MDInternalImport_Default */, BundleFileLocation bundleFileLocation)
 {
     BOOL fUseCache = !((flags & MDInternalImport_NoCache) == MDInternalImport_NoCache);
 
     if (!fUseCache)
     {
         PEImageHolder pImage(new PEImage);
-        pImage->Init(pPath);
+        pImage->Init(pPath, bundleFileLocation);
         return dac_cast<PTR_PEImage>(pImage.Extract());
     }
 
     CrstHolder holder(&s_hashLock);
 
-    PEImage* found = FindByPath(pPath);
+    PEImage* found = FindByPath(pPath, bundleFileLocation.IsValid());
 
 
     if (found == (PEImage*) INVALIDENTRY)
@@ -504,7 +532,7 @@ inline PTR_PEImage PEImage::OpenImage(LPCWSTR pPath, MDInternalImportFlags flags
         if (flags &  MDInternalImport_TrustedNativeImage)
             pImage->SetIsTrustedNativeImage();
 #endif
-        pImage->Init(pPath);
+        pImage->Init(pPath, bundleFileLocation);
 
         pImage->AddToHashMap();
         return dac_cast<PTR_PEImage>(pImage.Extract());
@@ -575,7 +603,6 @@ inline ULONG PEImage::GetIDHash()
         THROWS;
     }
     CONTRACT_END;
-
 
 #ifdef FEATURE_CASE_SENSITIVE_FILESYSTEM
     RETURN m_path.Hash();

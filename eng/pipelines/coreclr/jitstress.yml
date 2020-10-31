@@ -3,11 +3,17 @@ trigger: none
 pr: none
 
 schedules:
-- cron: "0 4 * * *"
-  displayName: Mon through Sun at 8:00 PM (UTC-8:00)
+- cron: "0 4 * * 1,3,5"
+  displayName: Mon, Wed, Fri at 8:00 PM (UTC-8:00)
   branches:
     include:
     - master
+  always: true
+- cron: "0 4 * * 0,2,4,6"
+  displayName: Sun, Tue, Thu, Sat at 8:00 PM (UTC-8:00)
+  branches:
+    include:
+    - release/*.*
   always: true
 
 jobs:
@@ -28,14 +34,24 @@ jobs:
     - Linux_x64
     - Windows_NT_x64
     - Windows_NT_x86
-    - Windows_NT_arm
     - Windows_NT_arm64
+    - CoreClrTestBuildHost # Either OSX_x64 or Linux_x64
     jobParameters:
       testGroup: jitstress
 
 - template: /eng/pipelines/common/platform-matrix.yml
   parameters:
-    jobTemplate: /eng/pipelines/coreclr/templates/test-job.yml
+    jobTemplate: /eng/pipelines/common/templates/runtimes/build-test-job.yml
+    buildConfig: checked
+    platforms:
+    - CoreClrTestBuildHost # Either OSX_x64 or Linux_x64
+    jobParameters:
+      testGroup: jitstress
+      liveLibrariesBuildConfig: Release
+
+- template: /eng/pipelines/common/platform-matrix.yml
+  parameters:
+    jobTemplate: /eng/pipelines/common/templates/runtimes/run-test-job.yml
     buildConfig: checked
     platforms:
     # Linux tests are built on the OSX machines.
@@ -45,7 +61,6 @@ jobs:
     - Linux_x64
     - Windows_NT_x64
     - Windows_NT_x86
-    - Windows_NT_arm
     - Windows_NT_arm64
     helixQueueGroup: ci
     helixQueuesTemplate: /eng/pipelines/coreclr/templates/helix-queues-setup.yml

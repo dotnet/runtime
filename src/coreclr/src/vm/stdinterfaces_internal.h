@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 
 #ifndef _H_INTERNAL_STDINTERFACES
@@ -241,46 +240,6 @@ HRESULT __stdcall   DispatchEx_InvokeEx (
                                     IServiceProvider *pspCaller);
 
 //------------------------------------------------------------------------------------------
-//      IInspectable methods for managed objects
-
-// IInspectable::GetIIDs
-HRESULT __stdcall Inspectable_GetIIDs (
-                                    IInspectable *pInsp,
-                                    ULONG *iidCount,
-                                    IID **iids);
-
-HRESULT __stdcall Inspectable_GetRuntimeClassName (
-                                    IInspectable *pInsp,
-                                    HSTRING *className);
-
-//------------------------------------------------------------------------------------------
-//      IWeakReferenceSource methods for managed objects
-
-// IWeakReferenceSource::GetWeakReference
-HRESULT __stdcall WeakReferenceSource_GetWeakReference (
-                                    IWeakReferenceSource *pRefSrc,
-                                    IWeakReference **weakReference);
-
-//------------------------------------------------------------------------------------------
-//      ICustomPropertyProvider methods for Jupiter data binding
-HRESULT __stdcall ICustomPropertyProvider_GetProperty(IUnknown *pPropertyProvider,
-                                                      HSTRING hstrName,
-                                                      /* [out, retval] */ IUnknown **ppProperty);
-
-HRESULT __stdcall ICustomPropertyProvider_GetIndexedProperty(IUnknown *pPropertyProvider,
-                                                             HSTRING hstrName,
-                                                             TypeNameNative indexedParamType,
-                                                             /* [out, retval] */ IUnknown **ppProperty);
-
-HRESULT __stdcall ICustomPropertyProvider_GetStringRepresentation(IUnknown *pPropertyProvider,
-                                                                  /* [out, retval] */ HSTRING *phstrStringRepresentation);
-HRESULT __stdcall ICustomPropertyProvider_GetType(IUnknown *pPropertyProvider,
-                                                  /* [out, retval] */ TypeNameNative *pTypeIdentifier);
-
-HRESULT __stdcall IStringable_ToString(IUnknown* pStringable,
-                                               /* [out, retval] */ HSTRING* pResult);
-
-//------------------------------------------------------------------------------------------
 //      IMarshal methods for COM+ objects
 
 HRESULT __stdcall Marshal_GetUnmarshalClass (
@@ -342,15 +301,5 @@ HRESULT __stdcall ObjectSafety_SetInterfaceSafetyOptions(IUnknown* pUnk,
 HRESULT __stdcall ClassInfo_GetClassInfo(IUnknown* pUnk,
                          ITypeInfo** ppTI  //Address of output variable that receives the type info.
                         );
-//-------------------------------------------------------------------------
-// ICCW methods
-ULONG __stdcall ICCW_AddRefFromJupiter(IUnknown* pUnk);
-
-ULONG __stdcall ICCW_ReleaseFromJupiter(IUnknown* pUnk);
-
-HRESULT __stdcall ICCW_Peg(IUnknown* pUnk);
-
-HRESULT __stdcall ICCW_Unpeg(IUnknown* pUnk);
-
 
 #endif

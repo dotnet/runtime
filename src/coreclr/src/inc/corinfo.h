@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 //
 
@@ -209,19 +208,11 @@ TODO: Talk about initializing strutures before use
 //
 //////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-#if !defined(SELECTANY)
-#if defined(__GNUC__)
-    #define SELECTANY extern __attribute__((weak))
-#else
-    #define SELECTANY extern __declspec(selectany)
-#endif
-#endif
-
-SELECTANY const GUID JITEEVersionIdentifier = { /* 6ae798bf-44bd-4e8a-b8fc-dbe1d1f4029e */
-    0x6ae798bf,
-    0x44bd,
-    0x4e8a,
-    {0xb8, 0xfc, 0xdb, 0xe1, 0xd1, 0xf4, 0x02, 0x9e}
+constexpr GUID JITEEVersionIdentifier = { /* 062114d0-bd20-483f-8a3e-c4ee39706ae8 */
+    0x062114d0,
+    0xbd20,
+    0x483f,
+    {0x8a, 0x3e, 0xc4, 0xee, 0x39, 0x70, 0x6a, 0xe8}
 };
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -722,6 +713,7 @@ enum CorInfoCallConv
     CORINFO_CALLCONV_FIELD      = 0x6,
     CORINFO_CALLCONV_LOCAL_SIG  = 0x7,
     CORINFO_CALLCONV_PROPERTY   = 0x8,
+    CORINFO_CALLCONV_UNMANAGED  = 0x9,
     CORINFO_CALLCONV_NATIVEVARARG = 0xb,    // used ONLY for IL stub PInvoke vararg calls
 
     CORINFO_CALLCONV_MASK       = 0x0f,     // Calling convention is bottom 4 bits
@@ -822,7 +814,7 @@ enum CorInfoFlag
     CORINFO_FLG_ARRAY                 = 0x00080000, // class is an array class (initialized differently)
     CORINFO_FLG_OVERLAPPING_FIELDS    = 0x00100000, // struct or class has fields that overlap (aka union)
     CORINFO_FLG_INTERFACE             = 0x00200000, // it is an interface
-    // unused                         = 0x00400000,
+    CORINFO_FLG_DONT_PROMOTE          = 0x00400000, // don't try to promote fields (used for types outside of AOT compilation version bubble)
     CORINFO_FLG_CUSTOMLAYOUT          = 0x00800000, // does this struct have custom layout?
     CORINFO_FLG_CONTAINS_GC_PTR       = 0x01000000, // does the class contain a gc ptr ?
     CORINFO_FLG_DELEGATE              = 0x02000000, // is this a subclass of delegate or multicast delegate ?
@@ -899,28 +891,6 @@ enum CorInfoException
 
 enum CorInfoIntrinsics
 {
-    CORINFO_INTRINSIC_Sin,
-    CORINFO_INTRINSIC_Cos,
-    CORINFO_INTRINSIC_Cbrt,
-    CORINFO_INTRINSIC_Sqrt,
-    CORINFO_INTRINSIC_Abs,
-    CORINFO_INTRINSIC_Round,
-    CORINFO_INTRINSIC_Cosh,
-    CORINFO_INTRINSIC_Sinh,
-    CORINFO_INTRINSIC_Tan,
-    CORINFO_INTRINSIC_Tanh,
-    CORINFO_INTRINSIC_Asin,
-    CORINFO_INTRINSIC_Asinh,
-    CORINFO_INTRINSIC_Acos,
-    CORINFO_INTRINSIC_Acosh,
-    CORINFO_INTRINSIC_Atan,
-    CORINFO_INTRINSIC_Atan2,
-    CORINFO_INTRINSIC_Atanh,
-    CORINFO_INTRINSIC_Log10,
-    CORINFO_INTRINSIC_Pow,
-    CORINFO_INTRINSIC_Exp,
-    CORINFO_INTRINSIC_Ceiling,
-    CORINFO_INTRINSIC_Floor,
     CORINFO_INTRINSIC_GetChar,              // fetch character out of string
     CORINFO_INTRINSIC_Array_GetDimLength,   // Get number of elements in a given dimension of an array
     CORINFO_INTRINSIC_Array_Get,            // Get the value of an element in an array
@@ -937,6 +907,7 @@ enum CorInfoIntrinsics
     CORINFO_INTRINSIC_StubHelpers_GetStubContext,
     CORINFO_INTRINSIC_StubHelpers_GetStubContextAddr,
     CORINFO_INTRINSIC_StubHelpers_GetNDirectTarget,
+    CORINFO_INTRINSIC_StubHelpers_NextCallReturnAddress,
     CORINFO_INTRINSIC_InterlockedAdd32,
     CORINFO_INTRINSIC_InterlockedAdd64,
     CORINFO_INTRINSIC_InterlockedXAdd32,
@@ -946,6 +917,7 @@ enum CorInfoIntrinsics
     CORINFO_INTRINSIC_InterlockedCmpXchg32,
     CORINFO_INTRINSIC_InterlockedCmpXchg64,
     CORINFO_INTRINSIC_MemoryBarrier,
+    CORINFO_INTRINSIC_MemoryBarrierLoad,
     CORINFO_INTRINSIC_GetCurrentManagedThread,
     CORINFO_INTRINSIC_GetManagedThreadId,
     CORINFO_INTRINSIC_ByReference_Ctor,
@@ -1036,9 +1008,8 @@ enum CorInfoInitClassResult
     CORINFO_INITCLASS_NOT_REQUIRED  = 0x00, // No class initialization required, but the class is not actually initialized yet
                                             // (e.g. we are guaranteed to run the static constructor in method prolog)
     CORINFO_INITCLASS_INITIALIZED   = 0x01, // Class initialized
-    CORINFO_INITCLASS_SPECULATIVE   = 0x02, // Class may be initialized speculatively
-    CORINFO_INITCLASS_USE_HELPER    = 0x04, // The JIT must insert class initialization helper call.
-    CORINFO_INITCLASS_DONT_INLINE   = 0x08, // The JIT should not inline the method requesting the class initialization. The class
+    CORINFO_INITCLASS_USE_HELPER    = 0x02, // The JIT must insert class initialization helper call.
+    CORINFO_INITCLASS_DONT_INLINE   = 0x04, // The JIT should not inline the method requesting the class initialization. The class
                                             // initialization requires helper class now, but will not require initialization
                                             // if the method is compiled standalone. Or the method cannot be inlined due to some
                                             // requirement around class initialization such as shared generics.
@@ -1074,15 +1045,6 @@ enum CorInfoIndirectCallReason
     CORINFO_INDIRECT_CALL_COUNT
 };
 
-// When using CORINFO_HELPER_TAILCALL, the JIT needs to pass certain special
-// calling convention/argument passing/handling details to the helper
-enum CorInfoHelperTailCallSpecialHandling
-{
-    CORINFO_TAILCALL_NORMAL =               0x00000000,
-    CORINFO_TAILCALL_STUB_DISPATCH_ARG =    0x00000001,
-};
-
-
 inline bool dontInline(CorInfoInline val) {
     return(val < 0);
 }
@@ -1112,9 +1074,7 @@ typedef struct CORINFO_VarArgInfo *         CORINFO_VARARGS_HANDLE;
 // Generic tokens are resolved with respect to a context, which is usually the method
 // being compiled. The CORINFO_CONTEXT_HANDLE indicates which exact instantiation
 // (or the open instantiation) is being referred to.
-// CORINFO_CONTEXT_HANDLE is more tightly scoped than CORINFO_MODULE_HANDLE. For cases
-// where the exact instantiation does not matter, CORINFO_MODULE_HANDLE is used.
-typedef CORINFO_METHOD_HANDLE               CORINFO_CONTEXT_HANDLE;
+typedef struct CORINFO_CONTEXT_STRUCT_*     CORINFO_CONTEXT_HANDLE;
 
 typedef struct CORINFO_DEPENDENCY_STRUCT_
 {
@@ -1131,6 +1091,7 @@ enum CorInfoContextFlags
     CORINFO_CONTEXTFLAGS_MASK   = 0x01
 };
 
+#define METHOD_BEING_COMPILED_CONTEXT() ((CORINFO_CONTEXT_HANDLE)1)
 #define MAKE_CLASSCONTEXT(c)  (CORINFO_CONTEXT_HANDLE((size_t) (c) | CORINFO_CONTEXTFLAGS_CLASS))
 #define MAKE_METHODCONTEXT(m) (CORINFO_CONTEXT_HANDLE((size_t) (m) | CORINFO_CONTEXTFLAGS_METHOD))
 
@@ -1261,6 +1222,7 @@ enum CORINFO_RUNTIME_LOOKUP_KIND
     CORINFO_LOOKUP_THISOBJ,
     CORINFO_LOOKUP_METHODPARAM,
     CORINFO_LOOKUP_CLASSPARAM,
+    CORINFO_LOOKUP_NOT_SUPPORTED, // Returned for attempts to inline dictionary lookups
 };
 
 struct CORINFO_LOOKUP_KIND
@@ -1612,7 +1574,7 @@ struct CORINFO_CALL_INFO
 
     unsigned                classFlags;         //flags for CORINFO_RESOLVED_TOKEN::hClass
 
-    CORINFO_SIG_INFO       sig;
+    CORINFO_SIG_INFO        sig;
 
     //Verification information
     unsigned                verMethodFlags;     // flags for CORINFO_RESOLVED_TOKEN::hMethod
@@ -1794,6 +1756,30 @@ struct CORINFO_EE_INFO
     CORINFO_RUNTIME_ABI targetAbi;
 
     CORINFO_OS  osType;
+};
+
+// Flags passed from JIT to runtime.
+enum CORINFO_GET_TAILCALL_HELPERS_FLAGS
+{
+    // The callsite is a callvirt instruction.
+    CORINFO_TAILCALL_IS_CALLVIRT       = 0x00000001,
+    CORINFO_TAILCALL_THIS_ARG_IS_BYREF = 0x00000002,
+};
+
+// Flags passed from runtime to JIT.
+enum CORINFO_TAILCALL_HELPERS_FLAGS
+{
+    // The StoreArgs stub needs to be passed the target function pointer as the
+    // first argument.
+    CORINFO_TAILCALL_STORE_TARGET = 0x00000001,
+};
+
+struct CORINFO_TAILCALL_HELPERS
+{
+    CORINFO_TAILCALL_HELPERS_FLAGS flags;
+    CORINFO_METHOD_HANDLE          hStoreArgs;
+    CORINFO_METHOD_HANDLE          hCallTarget;
+    CORINFO_METHOD_HANDLE          hDispatcher;
 };
 
 // This is used to indicate that a finally has been called
@@ -2445,8 +2431,8 @@ public:
             CORINFO_FIELD_HANDLE    field,          // Non-NULL - inquire about cctor trigger before static field access
                                                     // NULL - inquire about cctor trigger in method prolog
             CORINFO_METHOD_HANDLE   method,         // Method referencing the field or prolog
-            CORINFO_CONTEXT_HANDLE  context,        // Exact context of method
-            BOOL                    speculative = FALSE     // TRUE means don't actually run it
+                                                    // NULL - method being compiled
+            CORINFO_CONTEXT_HANDLE  context         // Exact context of method
             ) = 0;
 
     // This used to be called "loadClass".  This records the fact
@@ -2726,7 +2712,7 @@ public:
             ) = 0;
 
     // Returns type of HFA for valuetype
-    virtual CorInfoType getHFAType (
+    virtual CorInfoHFAElemType getHFAType (
             CORINFO_CLASS_HANDLE hClass
             ) = 0;
 
@@ -3115,11 +3101,20 @@ public:
                 CORINFO_METHOD_HANDLE methHnd
                 ) = 0;
 
-    // return a thunk that will copy the arguments for the given signature.
-    virtual void* getTailCallCopyArgsThunk (
-                    CORINFO_SIG_INFO       *pSig,
-                    CorInfoHelperTailCallSpecialHandling flags
-                    ) = 0;
+    // Obtain tailcall help for the specified call site.
+    virtual bool getTailCallHelpers(
+
+        // The resolved token for the call. Can be null for calli.
+        CORINFO_RESOLVED_TOKEN* callToken,
+
+        // The signature at the callsite.
+        CORINFO_SIG_INFO* sig,
+
+        // Flags for the tailcall site.
+        CORINFO_GET_TAILCALL_HELPERS_FLAGS flags,
+
+        // The resulting help.
+        CORINFO_TAILCALL_HELPERS* pResult) = 0;
 
     // Optionally, convert calli to regular method call. This is for PInvoke argument marshalling.
     virtual bool convertPInvokeCalliToCall(

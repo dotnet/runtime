@@ -1,16 +1,16 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Data.ProviderBase;
+using System.Diagnostics;
 
 namespace System.Data.Odbc
 {
     internal sealed class OdbcConnectionPoolGroupProviderInfo : DbConnectionPoolGroupProviderInfo
     {
-        private string _driverName;
-        private string _driverVersion;
-        private string _quoteChar;
+        private string? _driverName;
+        private string? _driverVersion;
+        private string? _quoteChar;
 
         private char _escapeChar;
         private bool _hasQuoteChar;
@@ -36,7 +36,7 @@ namespace System.Data.Odbc
         // flags for unsupported Functions
         private bool _noSqlPrimaryKeys;
 
-        internal string DriverName
+        internal string? DriverName
         {
             get
             {
@@ -48,7 +48,7 @@ namespace System.Data.Odbc
             }
         }
 
-        internal string DriverVersion
+        internal string? DriverVersion
         {
             get
             {
@@ -83,6 +83,7 @@ namespace System.Data.Odbc
         {
             get
             {
+                Debug.Assert(_quoteChar != null, "QuoteChar getter called but no quote char was set");
                 return _quoteChar;
             }
             set

@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 /*=====================================================================
 **
@@ -17,7 +16,7 @@
 
 #include <palsuite.h>
 
-int __cdecl main(int argc, char **argv)
+PALTEST(c_runtime_fclose_test1_paltest_fclose_test1, "c_runtime/fclose/test1/paltest_fclose_test1")
 {
     HANDLE  hReadPipe   = NULL;
     HANDLE  hWritePipe  = NULL;

@@ -1,0 +1,15 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Library</OutputType>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="Impls.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="../contracts/TypeContracts.csproj">
+      <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
+      <EmbedTypes>true</EmbedTypes>
+    </ProjectReference>
+  </ItemGroup>
+  <Import Project="$([MSBuild]::GetPathOfFileAbove(TypeEquivalence.targets))" />
+</Project>

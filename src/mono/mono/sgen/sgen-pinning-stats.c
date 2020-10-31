@@ -10,6 +10,8 @@
 #include "config.h"
 #ifdef HAVE_SGEN_GC
 
+#ifndef DISABLE_SGEN_DEBUG_HELPERS
+
 #include <string.h>
 
 #include "mono/sgen/sgen-gc.h"
@@ -246,5 +248,7 @@ sgen_pin_stats_get_object_list (void)
 {
 	return &pinned_objects;
 }
+
+#endif
 
 #endif /* HAVE_SGEN_GC */

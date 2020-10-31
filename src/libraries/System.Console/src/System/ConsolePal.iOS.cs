@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.IO;
 using System.Text;
@@ -52,9 +51,9 @@ namespace System
 
         internal static TextReader GetOrCreateReader() => throw new PlatformNotSupportedException();
 
-        public static bool NumberLock => false;
+        public static bool NumberLock => throw new PlatformNotSupportedException();
 
-        public static bool CapsLock => false;
+        public static bool CapsLock => throw new PlatformNotSupportedException();
 
         public static bool KeyAvailable => false;
 
@@ -92,9 +91,7 @@ namespace System
             set => throw new PlatformNotSupportedException();
         }
 
-        public static int CursorLeft => throw new PlatformNotSupportedException();
-
-        public static int CursorTop => throw new PlatformNotSupportedException();
+        public static (int Left, int Top) GetCursorPosition() => throw new PlatformNotSupportedException();
 
         public static string Title
         {
@@ -135,13 +132,13 @@ namespace System
 
         public static int WindowLeft
         {
-            get => throw new PlatformNotSupportedException();
+            get => 0;
             set => throw new PlatformNotSupportedException();
         }
 
         public static int WindowTop
         {
-            get => throw new PlatformNotSupportedException();
+            get => 0;
             set => throw new PlatformNotSupportedException();
         }
 

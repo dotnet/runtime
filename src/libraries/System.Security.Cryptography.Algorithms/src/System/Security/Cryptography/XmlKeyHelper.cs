@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Buffers.Binary;
 using System.Collections;
@@ -267,12 +266,12 @@ namespace System.Security.Cryptography
             {
                 private static readonly Type s_xDocument = Type.GetType("System.Xml.Linq.XDocument, System.Private.Xml.Linq, Version=4.0.0.0, Culture=neutral, PublicKeyToken=cc7b13ffcd2ddd51")!;
                 private static readonly Func<string, object> s_xDocumentCreate =
-                    (Func<string, object>)s_xDocument.GetMethod(
+                    s_xDocument.GetMethod(
                         "Parse",
                         BindingFlags.Static | BindingFlags.Public,
                         null,
                         new[] { typeof(string) },
-                        null)!.CreateDelegate(typeof(Func<string, object>));
+                        null)!.CreateDelegate<Func<string, object>>();
                 private static readonly PropertyInfo s_docRootProperty = s_xDocument.GetProperty("Root")!;
                 private static readonly MethodInfo s_getElementsMethod = s_docRootProperty.PropertyType.GetMethod(
                         "Elements",

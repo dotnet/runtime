@@ -516,6 +516,12 @@ TYPED_HANDLE_DECL (MonoObject);
 TYPED_HANDLE_DECL (MonoException);
 TYPED_HANDLE_DECL (MonoAppContext);
 
+/* Simpler version of MONO_HANDLE_NEW if the handle is not used */
+#define MONO_HANDLE_PIN(object) do { \
+		if ((object) != NULL) \
+			MONO_HANDLE_NEW (MonoObject, (MonoObject*)(object)); \
+	} while (0)
+
 // Structs cannot be cast to structs.
 // As well, a function is needed because an anonymous struct cannot be initialized in C.
 static inline MonoObjectHandle
@@ -644,6 +650,10 @@ mono_array_handle_memcpy_refs (MonoArrayHandle dest, uintptr_t dest_idx, MonoArr
  */
 gpointer
 mono_array_handle_pin_with_size (MonoArrayHandle handle, int size, uintptr_t index, MonoGCHandle *gchandle);
+
+// Returns a pointer to the element with the given index, but does not pin
+gpointer
+mono_array_handle_addr (MonoArrayHandle handle, int size, uintptr_t index);
 
 #define MONO_ARRAY_HANDLE_PIN(handle,type,index,gchandle_out) ((type*)mono_array_handle_pin_with_size (MONO_HANDLE_CAST(MonoArray,(handle)), sizeof (type), (index), (gchandle_out)))
 

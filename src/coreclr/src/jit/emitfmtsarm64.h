@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 //////////////////////////////////////////////////////////////////////////////
 
 // clang-format off
@@ -61,6 +60,8 @@ IF_DEF(EN4F, IS_NONE, NONE) // Instruction has 4 possible encoding types, type F
 IF_DEF(EN4G, IS_NONE, NONE) // Instruction has 4 possible encoding types, type G
 IF_DEF(EN4H, IS_NONE, NONE) // Instruction has 4 possible encoding types, type H
 IF_DEF(EN4I, IS_NONE, NONE) // Instruction has 4 possible encoding types, type I
+IF_DEF(EN4J, IS_NONE, NONE) // Instruction has 4 possible encoding types, type J
+IF_DEF(EN4K, IS_NONE, NONE) // Instruction has 4 possible encoding types, type K
 IF_DEF(EN3A, IS_NONE, NONE) // Instruction has 3 possible encoding types, type A
 IF_DEF(EN3B, IS_NONE, NONE) // Instruction has 3 possible encoding types, type B
 IF_DEF(EN3C, IS_NONE, NONE) // Instruction has 3 possible encoding types, type C
@@ -118,7 +119,7 @@ IF_DEF(EN2Q, IS_NONE, NONE) // Instruction has 2 possible encoding types, type Q
 //   #   :: number of registers in the encoding
 //   ?   :: A unique letter A,B,C,...
 //       -- optional third character
-//   I   :: by elem immediate
+//   I   :: by element immediate
 //
 /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -207,18 +208,19 @@ IF_DEF(DV_2S, IS_NONE, NONE) // DV_2S   ........XX...... ......nnnnnddddd      S
 IF_DEF(DV_2T, IS_NONE, NONE) // DV_2T   .Q......XX...... ......nnnnnddddd      Sd Vn      (addv, saddlv, smaxv, sminv, uaddlv, umaxv, uminv)
 IF_DEF(DV_2U, IS_NONE, NONE) // DV_2U   ................ ......nnnnnddddd      Sd Sn      (sha1h)
 
-IF_DEF(DV_3A, IS_NONE, NONE)  // DV_3A   .Q......XX.mmmmm ......nnnnnddddd      Vd Vn Vm   (vector)
-IF_DEF(DV_3AI, IS_NONE, NONE) // DV_3AI  .Q......XXLMmmmm ....H.nnnnnddddd      Vd Vn Vm[] (vector by elem)
-IF_DEF(DV_3B, IS_NONE, NONE)  // DV_3B   .Q.......X.mmmmm ......nnnnnddddd      Vd Vn Vm   (vector)
-IF_DEF(DV_3BI, IS_NONE, NONE) // DV_3BI  .Q.......XLmmmmm ....H.nnnnnddddd      Vd Vn Vm[] (vector by elem)
-IF_DEF(DV_3C, IS_NONE, NONE)  // DV_3C   .Q.........mmmmm ......nnnnnddddd      Vd Vn Vm   (vector)
-IF_DEF(DV_3D, IS_NONE, NONE)  // DV_3D   .........X.mmmmm ......nnnnnddddd      Vd Vn Vm   (scalar)
-IF_DEF(DV_3DI, IS_NONE, NONE) // DV_3DI  .........XLmmmmm ....H.nnnnnddddd      Vd Vn Vm[] (scalar by elem)
-IF_DEF(DV_3E, IS_NONE, NONE)  // DV_3E   ...........mmmmm ......nnnnnddddd      Vd Vn Vm   (scalar)
-IF_DEF(DV_3F, IS_NONE, NONE)  // DV_3F   ...........mmmmm ......nnnnnddddd      Qd Sn Vm   (Qd used as both source and destination)
-IF_DEF(DV_3G, IS_NONE, NONE)  // DV_3G   .Q.........mmmmm .iiii.nnnnnddddd      Vd Vn Vm imm (vector)
+IF_DEF(DV_3A,  IS_NONE, NONE) // DV_3A  .Q......XX.mmmmm ......nnnnnddddd      Vd Vn Vm   (vector)
+IF_DEF(DV_3AI, IS_NONE, NONE) // DV_3AI .Q......XXLMmmmm ....H.nnnnnddddd      Vd Vn Vm[] (vector by element)
+IF_DEF(DV_3B,  IS_NONE, NONE) // DV_3B  .Q.......X.mmmmm ......nnnnnddddd      Vd Vn Vm   (vector)
+IF_DEF(DV_3BI, IS_NONE, NONE) // DV_3BI .Q.......XLmmmmm ....H.nnnnnddddd      Vd Vn Vm[] (vector by element)
+IF_DEF(DV_3C,  IS_NONE, NONE) // DV_3C  .Q.........mmmmm ......nnnnnddddd      Vd Vn Vm   (vector)
+IF_DEF(DV_3D,  IS_NONE, NONE) // DV_3D  .........X.mmmmm ......nnnnnddddd      Vd Vn Vm   (scalar)
+IF_DEF(DV_3DI, IS_NONE, NONE) // DV_3DI .........XLmmmmm ....H.nnnnnddddd      Vd Vn Vm[] (scalar by element)
+IF_DEF(DV_3E,  IS_NONE, NONE) // DV_3E  ........XX.mmmmm ......nnnnnddddd      Vd Vn Vm   (scalar)
+IF_DEF(DV_3EI, IS_NONE, NONE) // DV_3EI ........XXLMmmmm ....H.nnnnnddddd      Vd Vn Vm[] (scalar by element)
+IF_DEF(DV_3F,  IS_NONE, NONE) // DV_3F  ...........mmmmm ......nnnnnddddd      Qd Sn Vm   (Qd used as both source and destination)
+IF_DEF(DV_3G,  IS_NONE, NONE) // DV_3G   .Q.........mmmmm .iiii.nnnnnddddd     Vd Vn Vm imm (vector)
 
-IF_DEF(DV_4A, IS_NONE, NONE) // DV_4A   .........X.mmmmm .aaaaannnnnddddd      Vd Vn Vm Va (scalar)
+IF_DEF(DV_4A,  IS_NONE, NONE) // DV_4A  .........X.mmmmm .aaaaannnnnddddd      Vd Vn Vm Va (scalar)
 
 IF_DEF(SN_0A, IS_NONE, NONE) // SN_0A   ................ ................
 IF_DEF(SI_0A, IS_NONE, NONE) // SI_0A   ...........iiiii iiiiiiiiiii.....               imm16

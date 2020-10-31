@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
 using System.Globalization;
@@ -390,15 +389,17 @@ namespace System.Tests
         public void EqualsTest(Uri uri1, object obj, bool expected)
         {
             Uri uri2 = obj as Uri;
+
             if (uri1 != null)
             {
                 Assert.Equal(expected, uri1.Equals(obj));
-                if (uri2 != null)
+
+                if (uri2 != null && expected)
                 {
-                    bool onlyCaseDifference = string.Equals(uri1.OriginalString, uri2.OriginalString, StringComparison.OrdinalIgnoreCase);
-                    Assert.Equal(expected || onlyCaseDifference, uri1.GetHashCode().Equals(uri2.GetHashCode()));
+                    Assert.Equal(uri1.GetHashCode(), uri2.GetHashCode());
                 }
             }
+
             if (!(obj is string))
             {
                 Assert.Equal(expected, uri1 == uri2);

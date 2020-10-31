@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 #pragma once
 
@@ -29,11 +28,6 @@ typedef struct ProcessCpuInformation
 PALEXPORT int32_t SystemNative_UTimensat(const char* path, TimeSpec* times);
 
 /**
- * Gets the resolution of the timestamp, in counts per second.
- */
-PALEXPORT uint64_t SystemNative_GetTimestampResolution(void);
-
-/**
  * Gets a high-resolution timestamp that can be used for time-interval measurements.
  */
 PALEXPORT uint64_t SystemNative_GetTimestamp(void);
@@ -44,7 +38,7 @@ PALEXPORT uint64_t SystemNative_GetTimestamp(void);
  * Since there is no consistent API on Unix to get the CPU utilization
  * from a user process, getrusage and gettimeofday are used to
  * compute the current process's CPU utilization instead. The CPU utilization
- * returned is sum of utilization accross all processors, e.g. this function will
+ * returned is sum of utilization across all processors, e.g. this function will
  * return 200 when two cores are running at 100%.
  */
 PALEXPORT int32_t SystemNative_GetCpuUtilization(ProcessCpuInformation* previousCpuInfo);

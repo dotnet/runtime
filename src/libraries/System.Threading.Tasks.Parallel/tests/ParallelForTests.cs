@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System;
 using System.Collections.Concurrent;
@@ -206,7 +205,7 @@ namespace System.Threading.Tasks.Tests
         }
 
         // Cover converting P.ForEaches of arrays, lists to P.Fors
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public static void TestParallelForEachConversions()
         {
             ParallelOptions options = new ParallelOptions();
@@ -259,7 +258,7 @@ namespace System.Threading.Tasks.Tests
             Assert.Equal(sum, targetSum);
         }
 
-        [Theory]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         [InlineData(0)]
         [InlineData(1)]
         [InlineData(1024)]
@@ -283,7 +282,7 @@ namespace System.Threading.Tasks.Tests
             Assert.Equal(increms, counter);
         }
 
-        [Theory]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         [InlineData(-1)]
         [InlineData(0)]
         [InlineData(1)]
@@ -319,7 +318,7 @@ namespace System.Threading.Tasks.Tests
             Assert.Equal(expectedValue, counter);
         }
 
-        [Theory]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         [InlineData(-1)]
         [InlineData(0)]
         [InlineData(1)]
@@ -342,7 +341,7 @@ namespace System.Threading.Tasks.Tests
             Assert.Equal(expected, counter);
         }
 
-        [Theory]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         [InlineData(0)]
         [InlineData(1)]
         [InlineData(1024)]
@@ -369,7 +368,7 @@ namespace System.Threading.Tasks.Tests
             Assert.Equal(expectCounter, counter);
         }
 
-        [Theory]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         [InlineData(0)]
         [InlineData(1)]
         [InlineData(1024)]
@@ -395,7 +394,7 @@ namespace System.Threading.Tasks.Tests
             Assert.Equal(expectCounter, counter);
         }
 
-        [Theory]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         [InlineData(0, 100)]
         [InlineData(-100, 100)]
         [InlineData(int.MaxValue - 1, int.MaxValue)]
@@ -421,7 +420,7 @@ namespace System.Threading.Tasks.Tests
             Assert.Equal(seqForIndices, parForIndices);
         }
 
-        [Theory]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         [InlineData(0, 100)]
         [InlineData(-100, 100)]
         [InlineData((long)int.MaxValue - 100, (long)int.MaxValue + 100)]
@@ -452,7 +451,7 @@ namespace System.Threading.Tasks.Tests
             Assert.Equal(seqForIndices, parForIndices);
         }
 
-        [Theory]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         [InlineData(0)]
         [InlineData(1)]
         [InlineData(1024)]
@@ -481,7 +480,7 @@ namespace System.Threading.Tasks.Tests
             Assert.Equal(expectCounter, counter);
         }
 
-        [Theory]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         [InlineData(0)]
         [InlineData(1)]
         [InlineData(1024)]
@@ -511,7 +510,7 @@ namespace System.Threading.Tasks.Tests
             Assert.Equal(expectCounter, counter);
         }
 
-        [Theory]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         [InlineData(0)]
         [InlineData(1)]
         [InlineData(1024)]
@@ -541,7 +540,7 @@ namespace System.Threading.Tasks.Tests
             Assert.Equal(expectCounter, counter);
         }
 
-        [Theory]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         [InlineData(0)]
         [InlineData(1)]
         [InlineData(1024)]
@@ -572,7 +571,7 @@ namespace System.Threading.Tasks.Tests
             Assert.Equal(expectedTotal, sum);
         }
 
-        [Theory]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         [InlineData(0)]
         [InlineData(1)]
         [InlineData(1024)]
@@ -711,7 +710,7 @@ namespace System.Threading.Tasks.Tests
             Assert.False(exceededDOP, string.Format("TestParallelForDOP:  FAILED!  ForEach-loop w/ OrderablePartitioner exceeded desired DOP ({0} > {1}).", maxDOP, desiredDOP));
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public static void TestParallelForPaths()
         {
             int loopsize = 1000;
@@ -885,7 +884,7 @@ namespace System.Threading.Tasks.Tests
             Assert.Throws<InvalidOperationException>(() => Parallel.ForEach(mop, delegate (int item, ParallelLoopState state, long index) { }));
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public static void TestParallelScheduler()
         {
             ParallelOptions parallelOptions = new ParallelOptions();
@@ -969,7 +968,7 @@ namespace System.Threading.Tasks.Tests
                     Assert.True(usedScheduler == myTaskScheduler, "TestParallelScheduler:    > FAILED.  PInvoke: Failed to run with TS.Current when null was specified.");
 
                     // Some tests for wonky behavior seen before fixes
-                    TaskCompletionSource<object> tcs = new TaskCompletionSource<object>();
+                    TaskCompletionSource tcs = new TaskCompletionSource();
                     bool timeExpired = false;
                     Task continuation = tcs.Task.ContinueWith(delegate
                     {
@@ -980,7 +979,7 @@ namespace System.Threading.Tasks.Tests
                     Task delayedOperation = Task.Factory.StartNew(delegate
                     {
                         timeExpired = true;
-                        tcs.SetResult(null);
+                        tcs.SetResult();
                     });
 
                     Task.WaitAll(tcs.Task, continuation);
@@ -992,7 +991,7 @@ namespace System.Threading.Tasks.Tests
             t1.Wait();
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public static void TestInvokeDOPAndCancel()
         {
             ParallelOptions parallelOptions = null;
@@ -1062,7 +1061,7 @@ namespace System.Threading.Tasks.Tests
             {
                 int newVal = Interlocked.Increment(ref counter);
                 if (newVal == 1) throw new Exception("some non-cancellation-related exception");
-                if (newVal == 2) cts.Cancel();
+                if (newVal >= 2) cts.Cancel();
             };
             for (int i = 0; i < numActions; i++) actions[i] = a3;
 
@@ -1211,7 +1210,7 @@ namespace System.Threading.Tasks.Tests
         /// <summary>
         /// Test to ensure that the task ID can be accessed from inside the task
         /// </summary>
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public static void TaskIDFromExternalContextTest()
         {
             int? withinTaskId = int.MinValue;
@@ -1242,7 +1241,7 @@ namespace System.Threading.Tasks.Tests
             }
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public static void CancelForIntTest()
         {
             for (int i = 0; i < 100; ++i)
@@ -1279,7 +1278,7 @@ namespace System.Threading.Tasks.Tests
             }
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public static void CancelForLongTest()
         {
             for (int i = 0; i < 100; ++i)
@@ -1323,7 +1322,7 @@ namespace System.Threading.Tasks.Tests
             yield return new object[] { array.Select(i => i) };
         }
 
-        [Theory]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         [MemberData(nameof(CancelForEachTest_MemberData))]
         public static void CancelForEachTest(IEnumerable<int> enumerable)
         {

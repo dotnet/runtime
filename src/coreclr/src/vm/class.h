@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 // ==--==
 //
@@ -47,9 +46,6 @@
 #include "typectxt.h"
 #include "iterator_util.h"
 
-#ifdef FEATURE_COMINTEROP
-#include "..\md\winmd\inc\adapter.h"
-#endif
 #include "packedfields.inl"
 #include "array.h"
 #define IBCLOG(x) g_IBCLogger.##x
@@ -354,9 +350,6 @@ class EEClassLayoutInfo
        mdTypeDef cl,                // cl of the NStruct being loaded
        BYTE packingSize,            // packing size (from @dll.struct)
        BYTE nlType,                 // nltype (from @dll.struct)
-#ifdef FEATURE_COMINTEROP
-       BOOL isWinRT,                // Is the type a WinRT type
-#endif // FEATURE_COMINTEROP
        BOOL fExplicitOffsets,       // explicit offsets?
        MethodTable *pParentMT,       // the loaded superclass
        ULONG cTotalFields,              // total number of fields (instance and static)
@@ -538,12 +531,6 @@ typedef struct
 #define GetFullyQualifiedNameForClassW(pClass) \
     pClass->_GetFullyQualifiedNameForClass(_ssclsname_w_).GetUnicode()
 
-#define GetFullyQualifiedNameForClassW_WinRT(pClass) \
-    pClass->_GetFullyQualifiedNameForClass(_ssclsname_w_).GetUnicode()
-
-#define GetFullyQualifiedNameForClass_WinRT(pClass) \
-    pClass->_GetFullyQualifiedNameForClass(_ssclsname_).GetUTF8(_scratchbuffer_)
-
 // Structure containing EEClass fields used by a minority of EEClass instances. This separation allows us to
 // save memory and improve the density of accessed fields in the EEClasses themselves. This class is reached
 // via the m_rpOptionalFields field EEClass (use the GetOptionalFields() accessor rather than the field
@@ -581,11 +568,9 @@ class EEClassOptionalFields
     TypeHandle m_pCoClassForIntf;  // @TODO: Coclass for an interface
 
 #ifdef FEATURE_COMINTEROP_UNMANAGED_ACTIVATION
-    // Points to activation information if the type is an activatable COM/WinRT class.
+    // Points to activation information if the type is an activatable COM class.
     ClassFactoryBase *m_pClassFactory;
 #endif // FEATURE_COMINTEROP_UNMANAGED_ACTIVATION
-
-    WinMDAdapter::RedirectedTypeIndex m_WinRTRedirectedTypeIndex;
 
 #endif // FEATURE_COMINTEROP
 
@@ -1173,6 +1158,30 @@ public:
     }
 #endif // FEATURE_COMINTEROP
 
+    inline void SetHasVTableMethodImpl()
+    {
+        LIMITED_METHOD_CONTRACT;
+        m_VMFlags |= VMFLAG_VTABLEMETHODIMPL;
+    }
+
+    inline BOOL HasVTableMethodImpl()
+    {
+        LIMITED_METHOD_CONTRACT;
+        return (m_VMFlags & VMFLAG_VTABLEMETHODIMPL);
+    }
+
+    inline void SetHasCovariantOverride()
+    {
+        LIMITED_METHOD_CONTRACT;
+        m_VMFlags |= VMFLAG_COVARIANTOVERRIDE;
+    }
+
+    inline BOOL HasCovariantOverride()
+    {
+        LIMITED_METHOD_CONTRACT;
+        return (m_VMFlags & VMFLAG_COVARIANTOVERRIDE);
+    }
+
 #ifdef _DEBUG
     inline DWORD IsDestroyed()
     {
@@ -1240,16 +1249,6 @@ public:
     {
         LIMITED_METHOD_CONTRACT;
         m_VMFlags |= (DWORD) VMFLAG_SPARSE_FOR_COMINTEROP;
-    }
-    inline void SetProjectedFromWinRT()
-    {
-        LIMITED_METHOD_CONTRACT;
-        m_VMFlags |= (DWORD) VMFLAG_PROJECTED_FROM_WINRT;
-    }
-    inline void SetExportedToWinRT()
-    {
-        LIMITED_METHOD_CONTRACT;
-        m_VMFlags |= (DWORD) VMFLAG_EXPORTED_TO_WINRT;
     }
     inline void SetMarshalingType(UINT32 mType)
     {
@@ -1328,16 +1327,6 @@ public:
     {
         LIMITED_METHOD_CONTRACT;
         return m_VMFlags & VMFLAG_SPARSE_FOR_COMINTEROP;
-    }
-    BOOL IsProjectedFromWinRT()
-    {
-        LIMITED_METHOD_DAC_CONTRACT;
-        return m_VMFlags & VMFLAG_PROJECTED_FROM_WINRT;
-    }
-    BOOL IsExportedToWinRT()
-    {
-        LIMITED_METHOD_CONTRACT;
-        return m_VMFlags & VMFLAG_EXPORTED_TO_WINRT;
     }
     BOOL IsMarshalingTypeSet()
     {
@@ -1537,21 +1526,6 @@ public:
         GetOptionalFields()->m_pCoClassForIntf = th;
     }
 
-    inline WinMDAdapter::RedirectedTypeIndex GetWinRTRedirectedTypeIndex()
-    {
-        LIMITED_METHOD_CONTRACT;
-        return HasOptionalFields() ? GetOptionalFields()->m_WinRTRedirectedTypeIndex
-                                   : WinMDAdapter::RedirectedTypeIndex_Invalid;
-    }
-
-    inline void SetWinRTRedirectedTypeIndex(WinMDAdapter::RedirectedTypeIndex index)
-    {
-        LIMITED_METHOD_CONTRACT;
-        _ASSERTE(HasOptionalFields());
-        _ASSERTE(index != WinMDAdapter::RedirectedTypeIndex_Invalid);
-        GetOptionalFields()->m_WinRTRedirectedTypeIndex = index;
-    }
-
     OBJECTHANDLE GetOHDelegate()
     {
         LIMITED_METHOD_CONTRACT;
@@ -1740,9 +1714,9 @@ public:
         // interfaces may have a coclass attribute
         VMFLAG_HASCOCLASSATTRIB                = 0x01000000,
         VMFLAG_COMEVENTITFMASK                 = 0x02000000, // class is a special COM event interface
-        VMFLAG_PROJECTED_FROM_WINRT            = 0x04000000,
-        VMFLAG_EXPORTED_TO_WINRT               = 0x08000000,
 #endif // FEATURE_COMINTEROP
+        VMFLAG_VTABLEMETHODIMPL                = 0x04000000, // class uses MethodImpl to override virtual function defined on class
+        VMFLAG_COVARIANTOVERRIDE               = 0x08000000, // class has a covariant override
 
         // This one indicates that the fields of the valuetype are
         // not tightly packed and is used to check whether we can

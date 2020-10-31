@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections.Concurrent;
 using System.Collections.Generic;
@@ -25,20 +24,19 @@ namespace System.Net.Http.Functional.Tests
         private const string EnableActivityPropagationEnvironmentVariableSettingName = "DOTNET_SYSTEM_NET_HTTP_ENABLEACTIVITYPROPAGATION";
         private const string EnableActivityPropagationAppCtxSettingName = "System.Net.Http.EnableActivityPropagation";
 
-        private static bool EnableActivityPropagationEnvironmentVariableIsNotSet =>
-            string.IsNullOrEmpty(Environment.GetEnvironmentVariable(EnableActivityPropagationEnvironmentVariableSettingName));
+        private static bool EnableActivityPropagationEnvironmentVariableIsNotSetAndRemoteExecutorSupported =>
+            string.IsNullOrEmpty(Environment.GetEnvironmentVariable(EnableActivityPropagationEnvironmentVariableSettingName)) && RemoteExecutor.IsSupported;
 
         public DiagnosticsTest(ITestOutputHelper output) : base(output) { }
 
         [Fact]
-        public static void EventSource_ExistsWithCorrectId()
+        public void EventSource_ExistsWithCorrectId()
         {
-            Type esType = typeof(HttpClient).GetTypeInfo().Assembly
-                .GetType("System.Net.NetEventSource", throwOnError: true, ignoreCase: false);
+            Type esType = typeof(HttpClient).Assembly.GetType("System.Net.NetEventSource", throwOnError: true, ignoreCase: false);
             Assert.NotNull(esType);
 
-            Assert.Equal("Microsoft-System-Net-Http", EventSource.GetName(esType));
-            Assert.Equal(Guid.Parse("bdd9a83e-1929-5482-0d73-2fe5e1c0e16d"), EventSource.GetGuid(esType));
+            Assert.Equal("Private.InternalDiagnostics.System.Net.Http", EventSource.GetName(esType));
+            Assert.Equal(Guid.Parse("a60cec70-947b-5b80-efe2-7c5547b99b3d"), EventSource.GetGuid(esType));
 
             Assert.NotEmpty(EventSource.GenerateManifest(esType, "assemblyPathToIncludeInManifest"));
         }
@@ -53,7 +51,7 @@ namespace System.Net.Http.Functional.Tests
         /// DiagnosticSources, since the global logging mechanism makes them conflict inherently.
         /// </remarks>
         [OuterLoop("Uses external server")]
-        [Fact]
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         public void SendAsync_ExpectedDiagnosticSourceLogging()
         {
             RemoteExecutor.Invoke(useVersionString =>
@@ -121,7 +119,7 @@ namespace System.Net.Http.Functional.Tests
         /// DiagnosticSources, since the global logging mechanism makes them conflict inherently.
         /// </remarks>
         [OuterLoop("Uses external server")]
-        [Fact]
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         public void SendAsync_ExpectedDiagnosticSourceNoLogging()
         {
             RemoteExecutor.Invoke(useVersionString =>
@@ -177,14 +175,14 @@ namespace System.Net.Http.Functional.Tests
 
         [ActiveIssue("https://github.com/dotnet/runtime/issues/1477", TestPlatforms.AnyUnix)]
         [OuterLoop("Uses external server")]
-        [Theory]
+        [ConditionalTheory(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         [InlineData(false)]
         [InlineData(true)]
         public void SendAsync_HttpTracingEnabled_Succeeds(bool useSsl)
         {
             RemoteExecutor.Invoke(async (useVersionString, useSslString) =>
             {
-                using (var listener = new TestEventListener("Microsoft-System-Net-Http", EventLevel.Verbose))
+                using (var listener = new TestEventListener("Private.InternalDiagnostics.System.Net.Http", EventLevel.Verbose))
                 {
                     var events = new ConcurrentQueue<EventWrittenEventArgs>();
                     await listener.RunWithCallbackAsync(events.Enqueue, async () =>
@@ -225,7 +223,7 @@ namespace System.Net.Http.Functional.Tests
         }
 
         [OuterLoop("Uses external server")]
-        [Fact]
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         public void SendAsync_ExpectedDiagnosticExceptionLogging()
         {
             RemoteExecutor.Invoke(useVersionString =>
@@ -272,7 +270,7 @@ namespace System.Net.Http.Functional.Tests
 
         [ActiveIssue("https://github.com/dotnet/runtime/issues/23167")]
         [OuterLoop("Uses external server")]
-        [Fact]
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         public void SendAsync_ExpectedDiagnosticCancelledLogging()
         {
             RemoteExecutor.Invoke(useVersionString =>
@@ -317,7 +315,7 @@ namespace System.Net.Http.Functional.Tests
             }, UseVersion.ToString()).Dispose();
         }
 
-        [Fact]
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         public void SendAsync_ExpectedDiagnosticSourceActivityLoggingRequestId()
         {
             RemoteExecutor.Invoke(useVersionString =>
@@ -401,7 +399,7 @@ namespace System.Net.Http.Functional.Tests
             }, UseVersion.ToString()).Dispose();
         }
 
-        [Fact]
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         public void SendAsync_ExpectedDiagnosticSourceActivityLoggingW3C()
         {
             RemoteExecutor.Invoke(useVersionString =>
@@ -485,7 +483,7 @@ namespace System.Net.Http.Functional.Tests
         }
 
         [OuterLoop("Uses external server")]
-        [Fact]
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         public void SendAsync_ExpectedDiagnosticSourceActivityLogging_InvalidBaggage()
         {
             RemoteExecutor.Invoke(useVersionString =>
@@ -494,6 +492,7 @@ namespace System.Net.Http.Functional.Tests
                 bool exceptionLogged = false;
 
                 Activity parentActivity = new Activity("parent");
+                parentActivity.SetIdFormat(ActivityIdFormat.Hierarchical);
                 parentActivity.AddBaggage("bad/key", "value");
                 parentActivity.AddBaggage("goodkey", "bad/value");
                 parentActivity.AddBaggage("key", "value");
@@ -543,7 +542,7 @@ namespace System.Net.Http.Functional.Tests
         }
 
         [OuterLoop("Uses external server")]
-        [Fact]
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         public void SendAsync_ExpectedDiagnosticSourceActivityLoggingDoesNotOverwriteHeader()
         {
             RemoteExecutor.Invoke(useVersionString =>
@@ -552,6 +551,7 @@ namespace System.Net.Http.Functional.Tests
                 bool activityStopLogged = false;
 
                 Activity parentActivity = new Activity("parent");
+                parentActivity.SetIdFormat(ActivityIdFormat.Hierarchical);
                 parentActivity.AddBaggage("correlationId", Guid.NewGuid().ToString("N").ToString());
                 parentActivity.Start();
 
@@ -598,11 +598,11 @@ namespace System.Net.Http.Functional.Tests
         }
 
         [OuterLoop("Uses external server")]
-        [Fact]
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         public void SendAsync_ExpectedDiagnosticSourceActivityLoggingDoesNotOverwriteW3CTraceParentHeader()
         {
             Assert.True(UseVersion.Major < 2, "The test currently only supports HTTP/1.");
-            RemoteExecutor.Invoke(useVersionString =>
+            RemoteExecutor.Invoke((useVersionString, testAsyncString) =>
             {
                 bool activityStartLogged = false;
                 bool activityStopLogged = false;
@@ -640,7 +640,7 @@ namespace System.Net.Http.Functional.Tests
                     using (HttpClient client = CreateHttpClient(useVersionString))
                     {
                         request.Headers.Add("traceparent", customTraceParentHeader);
-                        client.SendAsync(request).Result.Dispose();
+                        client.SendAsync(bool.Parse(testAsyncString), request).Result.Dispose();
                     }
 
                     Assert.True(activityStartLogged, "HttpRequestOut.Start was not logged.");
@@ -650,11 +650,11 @@ namespace System.Net.Http.Functional.Tests
                         "HttpRequestOut.Stop was not logged within 1 second timeout.");
                     diagnosticListenerObserver.Disable();
                 }
-            }, UseVersion.ToString()).Dispose();
+            }, UseVersion.ToString(), TestAsync.ToString()).Dispose();
         }
 
         [OuterLoop("Uses external server")]
-        [Fact]
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         public void SendAsync_ExpectedDiagnosticSourceUrlFilteredActivityLogging()
         {
             RemoteExecutor.Invoke(useVersionString =>
@@ -701,7 +701,7 @@ namespace System.Net.Http.Functional.Tests
         }
 
         [OuterLoop("Uses external server")]
-        [Fact]
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         public void SendAsync_ExpectedDiagnosticExceptionActivityLogging()
         {
             RemoteExecutor.Invoke(useVersionString =>
@@ -748,10 +748,10 @@ namespace System.Net.Http.Functional.Tests
         }
 
         [OuterLoop("Uses external server")]
-        [Fact]
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         public void SendAsync_ExpectedDiagnosticSynchronousExceptionActivityLogging()
         {
-            RemoteExecutor.Invoke(useVersionString =>
+            RemoteExecutor.Invoke((useVersionString , testAsyncString)=>
             {
                 bool exceptionLogged = false;
                 bool activityStopLogged = false;
@@ -795,7 +795,14 @@ namespace System.Net.Http.Functional.Tests
                         // modifier, and returns Task. If the call is not awaited, the current test method will continue
                         // run before the call is completed, thus Assert.Throws() will not capture the exception.
                         // We need to wait for the Task to complete synchronously, to validate the exception.
-                        Task sendTask = client.SendAsync(request);
+                        bool testAsync = bool.Parse(testAsyncString);
+                        Task sendTask = client.SendAsync(testAsync, request);
+                        if (!testAsync)
+                        {
+                            // In sync test case we execute client.Send(...) in separate thread to prevent deadlocks,
+                            // so it will never finish immediately and we need to wait for it.
+                            ((IAsyncResult)sendTask).AsyncWaitHandle.WaitOne();
+                        }
                         Assert.True(sendTask.IsFaulted);
                         Assert.IsType<NotSupportedException>(sendTask.Exception.InnerException);
                     }
@@ -806,11 +813,11 @@ namespace System.Net.Http.Functional.Tests
                     Assert.True(exceptionLogged, "Exception was not logged");
                     diagnosticListenerObserver.Disable();
                 }
-            }, UseVersion.ToString()).Dispose();
+            }, UseVersion.ToString(), TestAsync.ToString()).Dispose();
         }
 
         [OuterLoop("Uses external server")]
-        [Fact]
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         public void SendAsync_ExpectedDiagnosticSourceNewAndDeprecatedEventsLogging()
         {
             RemoteExecutor.Invoke(useVersionString =>
@@ -860,7 +867,7 @@ namespace System.Net.Http.Functional.Tests
         }
 
         [OuterLoop("Uses external server")]
-        [Fact]
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         public void SendAsync_ExpectedDiagnosticExceptionOnlyActivityLogging()
         {
             RemoteExecutor.Invoke(useVersionString =>
@@ -901,7 +908,7 @@ namespace System.Net.Http.Functional.Tests
         }
 
         [OuterLoop("Uses external server")]
-        [Fact]
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         public void SendAsync_ExpectedDiagnosticStopOnlyActivityLogging()
         {
             RemoteExecutor.Invoke(useVersionString =>
@@ -941,7 +948,7 @@ namespace System.Net.Http.Functional.Tests
         }
 
         [OuterLoop("Uses external server")]
-        [Fact]
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         public void SendAsync_ExpectedActivityPropagationWithoutListener()
         {
             RemoteExecutor.Invoke(useVersionString =>
@@ -958,7 +965,7 @@ namespace System.Net.Http.Functional.Tests
         }
 
         [OuterLoop("Uses external server")]
-        [Fact]
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         public void SendAsync_ExpectedActivityPropagationWithoutListenerOrParentActivity()
         {
             RemoteExecutor.Invoke(useVersionString =>
@@ -976,7 +983,7 @@ namespace System.Net.Http.Functional.Tests
         }
 
         [OuterLoop("Uses external server")]
-        [ConditionalTheory(nameof(EnableActivityPropagationEnvironmentVariableIsNotSet))]
+        [ConditionalTheory(nameof(EnableActivityPropagationEnvironmentVariableIsNotSetAndRemoteExecutorSupported))]
         [InlineData("true", true)]
         [InlineData("1", true)]
         [InlineData("0", false)]
@@ -1026,7 +1033,7 @@ namespace System.Net.Http.Functional.Tests
         }
 
         [OuterLoop("Uses external server")]
-        [Theory]
+        [ConditionalTheory(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         [InlineData(true)]
         [InlineData(false)]
         public void SendAsync_SuppressedGlobalStaticPropagationNoListenerAppCtx(bool switchValue)
@@ -1048,7 +1055,7 @@ namespace System.Net.Http.Functional.Tests
 
         [ActiveIssue("https://github.com/dotnet/runtime/issues/23167")]
         [OuterLoop("Uses external server")]
-        [Fact]
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         public void SendAsync_ExpectedDiagnosticCancelledActivityLogging()
         {
             RemoteExecutor.Invoke(useVersionString =>
@@ -1094,7 +1101,7 @@ namespace System.Net.Http.Functional.Tests
             }, UseVersion.ToString()).Dispose();
         }
 
-        [Fact]
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         public void SendAsync_NullRequest_ThrowsArgumentNullException()
         {
             RemoteExecutor.Invoke(async () =>

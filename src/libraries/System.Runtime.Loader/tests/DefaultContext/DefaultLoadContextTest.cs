@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using Xunit;
 using System;
@@ -37,7 +36,8 @@ namespace System.Runtime.Loader.Tests
         protected override Assembly Load(AssemblyName assemblyName)
         {
             // Override the assembly that was loaded in DefaultContext.
-            string assemblyPath = Path.Combine(Path.GetDirectoryName(typeof(string).Assembly.Location), assemblyName.Name + ".dll");
+            string dirName = Path.GetDirectoryName(AssemblyPathHelper.GetAssemblyLocation(typeof(string).Assembly));
+            string assemblyPath = Path.Combine(dirName, assemblyName.Name + ".dll");
             Assembly assembly = LoadFromAssemblyPath(assemblyPath);
             LoadedFromContext = true;
             return assembly;
@@ -62,7 +62,7 @@ namespace System.Runtime.Loader.Tests
 
         private static string GetDefaultAssemblyLoadDirectory()
         {
-            return Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
+            return Path.GetDirectoryName(AssemblyPathHelper.GetAssemblyLocation(Assembly.GetExecutingAssembly()));
         }
 
         private Assembly ResolveAssembly(AssemblyLoadContext sender, AssemblyName assembly)

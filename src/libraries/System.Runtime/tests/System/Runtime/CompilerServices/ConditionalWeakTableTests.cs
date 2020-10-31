@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System;
 using System.Collections.Generic;
@@ -131,7 +130,7 @@ namespace System.Runtime.CompilerServices.Tests
             }
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public static void Concurrent_Add_Read_Remove_DifferentObjects()
         {
             var cwt = new ConditionalWeakTable<object, object>();
@@ -150,7 +149,7 @@ namespace System.Runtime.CompilerServices.Tests
             });
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public static void Concurrent_GetValue_Read_Remove_DifferentObjects()
         {
             var cwt = new ConditionalWeakTable<object, object>();
@@ -168,7 +167,7 @@ namespace System.Runtime.CompilerServices.Tests
             });
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public static void Concurrent_GetValue_Read_Remove_SameObject()
         {
             object key = new object();

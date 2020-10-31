@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using Xunit;
 using System.Collections.Generic;
@@ -127,8 +126,8 @@ namespace System.IO.Tests
             Assert.Throws<ArgumentNullException>(() => ms2.Read(null, 0, 0));
             Assert.Throws<ArgumentOutOfRangeException>(() => ms2.Read(new byte[] { 1 }, -1, 0));
             Assert.Throws<ArgumentOutOfRangeException>(() => ms2.Read(new byte[] { 1 }, 0, -1));
-            AssertExtensions.Throws<ArgumentException>(null, () => ms2.Read(new byte[] { 1 }, 2, 0));
-            AssertExtensions.Throws<ArgumentException>(null, () => ms2.Read(new byte[] { 1 }, 0, 2));
+            Assert.Throws<ArgumentOutOfRangeException>(() => ms2.Read(new byte[] { 1 }, 2, 0));
+            Assert.Throws<ArgumentOutOfRangeException>(() => ms2.Read(new byte[] { 1 }, 0, 2));
 
             ms2.Dispose();
 

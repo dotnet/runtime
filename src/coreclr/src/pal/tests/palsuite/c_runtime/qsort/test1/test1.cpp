@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 /*============================================================================
 **
@@ -14,12 +13,12 @@
 
 #include <palsuite.h>
 
-int __cdecl charcmp(const void *pa, const void *pb)
+int __cdecl charcmp_qsort_test1(const void *pa, const void *pb)
 {
     return memcmp(pa, pb, 1);
 }
 
-int __cdecl main(int argc, char **argv)
+PALTEST(c_runtime_qsort_test1_paltest_qsort_test1, "c_runtime/qsort/test1/paltest_qsort_test1")
 {
     char before[] = "cgaiehdbjf";
     const char after[] = "abcdefghij";
@@ -30,7 +29,7 @@ int __cdecl main(int argc, char **argv)
     }
 
 
-    qsort(before, sizeof(before) - 1, sizeof(char), charcmp);
+    qsort(before, sizeof(before) - 1, sizeof(char), charcmp_qsort_test1);
   
     if (memcmp(before, after, sizeof(before)) != 0)
     {

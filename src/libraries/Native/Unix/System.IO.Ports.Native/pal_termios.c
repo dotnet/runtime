@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 #include "pal_types.h"
 #include "pal_utilities.h"
@@ -496,7 +495,7 @@ int32_t SystemIoPortsNative_TermiosReset(intptr_t handle, int32_t speed, int32_t
             break;
         case HandshakeBoth: /* software & hardware flow control */
             term.c_cflag |= CRTSCTS;
-            // fall through
+            FALLTHROUGH;
         case HandshakeSoft: /* XOn/XOff */
             term.c_iflag |= IXOFF | IXON;
             break;

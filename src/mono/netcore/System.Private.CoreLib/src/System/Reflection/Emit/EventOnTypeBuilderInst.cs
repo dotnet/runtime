@@ -1,3 +1,6 @@
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+
 //
 // System.Reflection.Emit/EventOnTypeBuilderInst.cs
 //
@@ -28,7 +31,7 @@
 //
 
 #if MONO_FEATURE_SRE
-using System.Collections;
+using System.Collections.Generic;
 using System.Runtime.InteropServices;
 
 namespace System.Reflection.Emit
@@ -90,15 +93,13 @@ namespace System.Reflection.Emit
             if (other == null)
                 return Array.Empty<MethodInfo>();
 
-            ArrayList ar = new ArrayList();
+            List<MethodInfo> res = new List<MethodInfo>();
             foreach (MethodInfo method in other)
             {
                 if (nonPublic || method.IsPublic)
-                    ar.Add(TypeBuilder.GetMethod(instantiation, method));
+                    res.Add(TypeBuilder.GetMethod(instantiation, method));
             }
-            MethodInfo[] res = new MethodInfo[ar.Count];
-            ar.CopyTo(res, 0);
-            return res;
+            return res.ToArray();
         }
 
         public override Type DeclaringType

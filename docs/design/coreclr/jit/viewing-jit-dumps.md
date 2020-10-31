@@ -20,7 +20,7 @@ The first thing to do is setup the .NET Core app we want to dump. Here are the s
 
       <PropertyGroup>
         <OutputType>Exe</OutputType>
-        <TargetFramework>netcoreapp5.0</TargetFramework>
+        <TargetFramework>net5.0</TargetFramework>
         <RuntimeIdentifier>win-x64</RuntimeIdentifier>
       </PropertyGroup>
 
@@ -58,17 +58,17 @@ The first thing to do is setup the .NET Core app we want to dump. Here are the s
     }
     ```
 
-* After you've finished editing the code, run `dotnet restore` and `dotnet publish -c Release`. This should drop all of the binaries needed to run your app in `bin/Release/netcoreapp5.0/<rid>/publish`.
+* After you've finished editing the code, run `dotnet restore` and `dotnet publish -c Release`. This should drop all of the binaries needed to run your app in `bin/Release/net5.0/<rid>/publish`.
 * Overwrite the CLR dlls with the ones you've built locally. If you're a fan of the command line, here are some shell commands for doing this:
 
     ```shell
     # Windows
-    robocopy /e <runtime-repo path>\artifacts\bin\coreclr\Windows_NT.<arch>.Release <app root>\bin\Release\netcoreapp5.0\<rid>\publish > NUL
-    copy /y <runtime-repo path>\artifacts\bin\coreclr\Windows_NT.<arch>.Debug\clrjit.dll <app root>\bin\Release\netcoreapp5.0\<rid>\publish > NUL
+    robocopy /e <runtime-repo path>\artifacts\bin\coreclr\Windows_NT.<arch>.Release <app root>\bin\Release\net5.0\<rid>\publish > NUL
+    copy /y <runtime-repo path>\artifacts\bin\coreclr\Windows_NT.<arch>.Debug\clrjit.dll <app root>\bin\Release\net5.0\<rid>\publish > NUL
 
     # Unix
-    cp -rT <runtime-repo path>/artifacts/bin/coreclr/<OS>.<arch>.Release <app root>/bin/Release/netcoreapp5.0/<rid>/publish
-    cp <runtime-repo path>/artifacts/bin/coreclr/<OS>.<arch>.Debug/libclrjit.so <app root>/bin/Release/netcoreapp5.0/<rid>/publish
+    cp -rT <runtime-repo path>/artifacts/bin/coreclr/<OS>.<arch>.Release <app root>/bin/Release/net5.0/<rid>/publish
+    cp <runtime-repo path>/artifacts/bin/coreclr/<OS>.<arch>.Debug/libclrjit.so <app root>/bin/Release/net5.0/<rid>/publish
     ```
 
 * Set the configuration knobs you need (see below) and run your published app. The info you want should be dumped to stdout.
@@ -98,7 +98,7 @@ The first thing to do is setup the .NET Core app we want to dump. Here are the s
 
 ## Setting configuration variables
 
-The behavior of the JIT can be controlled via a number of configuration variables. These are declared in [inc/clrconfigvalues.h](/src/coreclr/src/inc/clrconfigvalues.h). When used as an environment variable, the string name generally has `COMPlus_` prepended. When used as a registry value name, the configuration name is used directly.
+The behavior of the JIT can be controlled via a number of configuration variables. These are declared in [inc/clrconfigvalues.h](/src/coreclr/src/inc/clrconfigvalues.h) and [jit/jitconfigvalues.h](/src/coreclr/src/jit/jitconfigvalues.h). When used as an environment variable, the string name generally has `COMPlus_` prepended. When used as a registry value name, the configuration name is used directly.
 
 These can be set in one of three ways:
 
@@ -149,6 +149,7 @@ The wildcard character `*` can be used for `<ClassName>` and `<MethodName>`. In 
 Below are some of the most useful `COMPlus` variables. Where {method-list} is specified in the list below, you can supply a space-separated list of either fully-qualified or simple method names (the former is useful when running something that has many methods of the same name), or you can specify `*` to mean all methods.
 
 * `COMPlus_JitDump`={method-list} – dump lots of useful information about what the JIT is doing. See [Reading a JitDump](ryujit-overview.md#reading-a-jitdump) for more on how to analyze this data.
+* `COMPlus_JitDumpASCII`={1 or 0} - Specifies whether the JIT dump should be ASCII only (Defaults to 1). Disabling this generates more readable expression trees.
 * `COMPlus_JitDisasm`={method-list} – dump a disassembly listing of each method.
 * `COMPlus_JitDiffableDasm` – set to 1 to tell the JIT to avoid printing things like pointer values that can change from one invocation to the next, so that the disassembly can be more easily compared.
 * `COMPlus_JitGCDump`={method-list} – dump the GC information.

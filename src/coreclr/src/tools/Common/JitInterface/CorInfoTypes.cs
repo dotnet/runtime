@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System;
 using System.Diagnostics;
@@ -9,6 +8,12 @@ using Internal.TypeSystem;
 
 namespace Internal.JitInterface
 {
+    public enum BOOL : int
+    {
+        FALSE = 0,
+        TRUE = 1,
+    }
+
     public static class CORINFO
     {
         // CORINFO_MAXINDIRECTIONS is the maximum number of
@@ -21,40 +26,14 @@ namespace Internal.JitInterface
 
     public struct CORINFO_METHOD_STRUCT_
     {
-        internal static unsafe CORINFO_METHOD_STRUCT_* Construct(int i)
-        {
-            return (CORINFO_METHOD_STRUCT_*)((i + 1) << 4);
-        }
-
-        internal static unsafe int GetValue(CORINFO_METHOD_STRUCT_* val)
-        {
-            return ((int)val - 1) >> 4;
-        }
     }
 
     public struct CORINFO_FIELD_STRUCT_
     {
-        internal static unsafe CORINFO_FIELD_STRUCT_* Construct(int i)
-        {
-            return (CORINFO_FIELD_STRUCT_*)((i + 1) << 4);
-        }
-        internal static unsafe int GetValue(CORINFO_FIELD_STRUCT_* val)
-        {
-            return ((int)val - 1) >> 4;
-        }
     }
 
     public struct CORINFO_CLASS_STRUCT_
     {
-        internal static unsafe CORINFO_CLASS_STRUCT_* Construct(int i)
-        {
-            return (CORINFO_CLASS_STRUCT_*)((i + 1) << 4);
-        }
-
-        internal static unsafe int GetValue(CORINFO_CLASS_STRUCT_* val)
-        {
-            return ((int)val - 1) >> 4;
-        }
     }
 
     public struct CORINFO_ARG_LIST_STRUCT_
@@ -63,14 +42,6 @@ namespace Internal.JitInterface
 
     public struct CORINFO_MODULE_STRUCT_
     {
-        internal static unsafe CORINFO_MODULE_STRUCT_* Construct(int i)
-        {
-            return (CORINFO_MODULE_STRUCT_*)((i + 1) << 4);
-        }
-        internal static unsafe int GetValue(CORINFO_MODULE_STRUCT_* val)
-        {
-            return ((int)val - 1) >> 4;
-        }
     }
 
     public struct CORINFO_ASSEMBLY_STRUCT_
@@ -213,6 +184,7 @@ namespace Internal.JitInterface
         CORINFO_LOOKUP_THISOBJ,
         CORINFO_LOOKUP_METHODPARAM,
         CORINFO_LOOKUP_CLASSPARAM,
+        CORINFO_LOOKUP_NOT_SUPPORTED, // Returned for attempts to inline dictionary lookups
     }
 
     public unsafe struct CORINFO_LOOKUP_KIND
@@ -350,6 +322,7 @@ namespace Internal.JitInterface
         CORINFO_CALLCONV_FIELD = 0x6,
         CORINFO_CALLCONV_LOCAL_SIG = 0x7,
         CORINFO_CALLCONV_PROPERTY = 0x8,
+        CORINFO_CALLCONV_UNMANAGED = 0x9,
         CORINFO_CALLCONV_NATIVEVARARG = 0xb,    // used ONLY for IL stub PInvoke vararg calls
 
         CORINFO_CALLCONV_MASK = 0x0f,     // Calling convention is bottom 4 bits
@@ -415,28 +388,6 @@ namespace Internal.JitInterface
 
     public enum CorInfoIntrinsics
     {
-        CORINFO_INTRINSIC_Sin,
-        CORINFO_INTRINSIC_Cos,
-        CORINFO_INTRINSIC_Cbrt,
-        CORINFO_INTRINSIC_Sqrt,
-        CORINFO_INTRINSIC_Abs,
-        CORINFO_INTRINSIC_Round,
-        CORINFO_INTRINSIC_Cosh,
-        CORINFO_INTRINSIC_Sinh,
-        CORINFO_INTRINSIC_Tan,
-        CORINFO_INTRINSIC_Tanh,
-        CORINFO_INTRINSIC_Asin,
-        CORINFO_INTRINSIC_Asinh,
-        CORINFO_INTRINSIC_Acos,
-        CORINFO_INTRINSIC_Acosh,
-        CORINFO_INTRINSIC_Atan,
-        CORINFO_INTRINSIC_Atan2,
-        CORINFO_INTRINSIC_Atanh,
-        CORINFO_INTRINSIC_Log10,
-        CORINFO_INTRINSIC_Pow,
-        CORINFO_INTRINSIC_Exp,
-        CORINFO_INTRINSIC_Ceiling,
-        CORINFO_INTRINSIC_Floor,
         CORINFO_INTRINSIC_GetChar,              // fetch character out of string
         CORINFO_INTRINSIC_Array_GetDimLength,   // Get number of elements in a given dimension of an array
         CORINFO_INTRINSIC_Array_Get,            // Get the value of an element in an array
@@ -453,6 +404,7 @@ namespace Internal.JitInterface
         CORINFO_INTRINSIC_StubHelpers_GetStubContext,
         CORINFO_INTRINSIC_StubHelpers_GetStubContextAddr,
         CORINFO_INTRINSIC_StubHelpers_GetNDirectTarget,
+        CORINFO_INTRINSIC_StubHelpers_NextCallReturnAddress,
         CORINFO_INTRINSIC_InterlockedAdd32,
         CORINFO_INTRINSIC_InterlockedAdd64,
         CORINFO_INTRINSIC_InterlockedXAdd32,
@@ -462,6 +414,7 @@ namespace Internal.JitInterface
         CORINFO_INTRINSIC_InterlockedCmpXchg32,
         CORINFO_INTRINSIC_InterlockedCmpXchg64,
         CORINFO_INTRINSIC_MemoryBarrier,
+        CORINFO_INTRINSIC_MemoryBarrierLoad,
         CORINFO_INTRINSIC_GetCurrentManagedThread,
         CORINFO_INTRINSIC_GetManagedThreadId,
         CORINFO_INTRINSIC_ByReference_Ctor,
@@ -562,9 +515,8 @@ namespace Internal.JitInterface
         CORINFO_INITCLASS_NOT_REQUIRED = 0x00, // No class initialization required, but the class is not actually initialized yet
         // (e.g. we are guaranteed to run the static constructor in method prolog)
         CORINFO_INITCLASS_INITIALIZED = 0x01, // Class initialized
-        CORINFO_INITCLASS_SPECULATIVE = 0x02, // Class may be initialized speculatively
-        CORINFO_INITCLASS_USE_HELPER = 0x04, // The JIT must insert class initialization helper call.
-        CORINFO_INITCLASS_DONT_INLINE = 0x08, // The JIT should not inline the method requesting the class initialization. The class
+        CORINFO_INITCLASS_USE_HELPER = 0x02, // The JIT must insert class initialization helper call.
+        CORINFO_INITCLASS_DONT_INLINE = 0x04, // The JIT should not inline the method requesting the class initialization. The class
         // initialization requires helper class now, but will not require initialization
         // if the method is compiled standalone. Or the method cannot be inlined due to some
         // requirement around class initialization such as shared generics.
@@ -632,7 +584,7 @@ namespace Internal.JitInterface
         CORINFO_FLG_ARRAY = 0x00080000, // class is an array class (initialized differently)
         CORINFO_FLG_OVERLAPPING_FIELDS = 0x00100000, // struct or class has fields that overlap (aka union)
         CORINFO_FLG_INTERFACE = 0x00200000, // it is an interface
-        // CORINFO_FLG_UNUSED = 0x00400000,
+        CORINFO_FLG_DONT_PROMOTE = 0x00400000, // don't try to promote fieds of types outside of AOT compilation version bubble
         CORINFO_FLG_CUSTOMLAYOUT = 0x00800000, // does this struct have custom layout?
         CORINFO_FLG_CONTAINS_GC_PTR = 0x01000000, // does the class contain a gc ptr ?
         CORINFO_FLG_DELEGATE = 0x02000000, // is this a subclass of delegate or multicast delegate ?
@@ -746,6 +698,17 @@ namespace Internal.JitInterface
         CORINFO_HANDLETYPE_FIELD
     }
 
+    // Enum used for HFA type recognition.
+    // Supported across architectures, so that it can be used in altjits and cross-compilation.
+    public enum CorInfoHFAElemType
+    {
+        CORINFO_HFA_ELEM_NONE,
+        CORINFO_HFA_ELEM_FLOAT,
+        CORINFO_HFA_ELEM_DOUBLE,
+        CORINFO_HFA_ELEM_VECTOR64,
+        CORINFO_HFA_ELEM_VECTOR128,
+    }
+
     /* data to optimize delegate construction */
     public unsafe struct DelegateCtorArgs
     {
@@ -753,14 +716,6 @@ namespace Internal.JitInterface
         public void* pArg3;
         public void* pArg4;
         public void* pArg5;
-    }
-
-    // When using CORINFO_HELPER_TAILCALL, the JIT needs to pass certain special
-    // calling convention/argument passing/handling details to the helper
-    public enum CorInfoHelperTailCallSpecialHandling
-    {
-        CORINFO_TAILCALL_NORMAL = 0x00000000,
-        CORINFO_TAILCALL_STUB_DISPATCH_ARG = 0x00000001,
     }
 
     /*****************************************************************************/
@@ -900,6 +855,30 @@ namespace Internal.JitInterface
 
         public CORINFO_OS osType;
     }
+
+    // Flags passed from JIT to runtime.
+    public enum CORINFO_GET_TAILCALL_HELPERS_FLAGS
+    {
+        // The callsite is a callvirt instruction.
+        CORINFO_TAILCALL_IS_CALLVIRT = 0x00000001,
+    }
+
+    // Flags passed from runtime to JIT.
+    public enum CORINFO_TAILCALL_HELPERS_FLAGS
+    {
+        // The StoreArgs stub needs to be passed the target function pointer as the
+        // first argument.
+        CORINFO_TAILCALL_STORE_TARGET = 0x00000001,
+    }
+
+    [StructLayout(LayoutKind.Sequential)]
+    public unsafe struct CORINFO_TAILCALL_HELPERS
+    {
+        CORINFO_TAILCALL_HELPERS_FLAGS flags;
+        CORINFO_METHOD_STRUCT_*        hStoreArgs;
+        CORINFO_METHOD_STRUCT_*        hCallTarget;
+        CORINFO_METHOD_STRUCT_*        hDispatcher;
+    };
 
     public enum CORINFO_THIS_TRANSFORM
     {
@@ -1262,7 +1241,8 @@ namespace Internal.JitInterface
         CORJIT_OUTOFMEM = unchecked((int)0x80000002)/*MAKE_HRESULT(SEVERITY_ERROR, FACILITY_NULL, 2)*/,
         CORJIT_INTERNALERROR = unchecked((int)0x80000003)/*MAKE_HRESULT(SEVERITY_ERROR, FACILITY_NULL, 3)*/,
         CORJIT_SKIPPED = unchecked((int)0x80000004)/*MAKE_HRESULT(SEVERITY_ERROR, FACILITY_NULL, 4)*/,
-        CORJIT_RECOVERABLEERROR = unchecked((int)0x80000005)/*MAKE_HRESULT(SEVERITY_ERROR, FACILITY_NULL, 5)*/
+        CORJIT_RECOVERABLEERROR = unchecked((int)0x80000005)/*MAKE_HRESULT(SEVERITY_ERROR, FACILITY_NULL, 5)*/,
+        CORJIT_IMPLLIMITATION = unchecked((int)0x80000006)/*MAKE_HRESULT(SEVERITY_ERROR,FACILITY_NULL, 6)*/,
     };
 
     public enum TypeCompareState
@@ -1282,14 +1262,14 @@ namespace Internal.JitInterface
         CORJIT_FLAG_DEBUG_EnC = 3, // We are in Edit-n-Continue mode
         CORJIT_FLAG_DEBUG_INFO = 4, // generate line and local-var info
         CORJIT_FLAG_MIN_OPT = 5, // disable all jit optimizations (not necesarily debuggable code)
-        CORJIT_FLAG_GCPOLL_CALLS = 6, // Emit calls to JIT_POLLGC for thread suspension.
+        CORJIT_FLAG_UNUSED1 = 6,
         CORJIT_FLAG_MCJIT_BACKGROUND = 7, // Calling from multicore JIT background thread, do not call JitComplete
-        CORJIT_FLAG_UNUSED1 = 8,
-        CORJIT_FLAG_UNUSED2 = 9,
-        CORJIT_FLAG_UNUSED3 = 10,
-        CORJIT_FLAG_UNUSED4 = 11,
-        CORJIT_FLAG_UNUSED5 = 12,
-        CORJIT_FLAG_UNUSED6 = 13,
+        CORJIT_FLAG_UNUSED2 = 8,
+        CORJIT_FLAG_UNUSED3 = 9,
+        CORJIT_FLAG_UNUSED4 = 10,
+        CORJIT_FLAG_UNUSED5 = 11,
+        CORJIT_FLAG_UNUSED6 = 12,
+        CORJIT_FLAG_UNUSED7 = 13,
         CORJIT_FLAG_FEATURE_SIMD = 17,
         CORJIT_FLAG_MAKEFINALCODE = 18, // Use the final code generator, i.e., not the interpreter.
         CORJIT_FLAG_READYTORUN = 19, // Use version-resilient code generation
@@ -1307,11 +1287,11 @@ namespace Internal.JitInterface
         CORJIT_FLAG_FRAMED = 31, // All methods have an EBP frame
         CORJIT_FLAG_ALIGN_LOOPS = 32, // add NOPs before loops to align them at 16 byte boundaries
         CORJIT_FLAG_PUBLISH_SECRET_PARAM = 33, // JIT must place stub secret param into local 0.  (used by IL stubs)
-        CORJIT_FLAG_GCPOLL_INLINE = 34, // JIT must inline calls to GCPoll when possible
+        CORJIT_FLAG_UNUSED8 = 34,
         CORJIT_FLAG_SAMPLING_JIT_BACKGROUND = 35, // JIT is being invoked as a result of stack sampling for hot methods in the background
         CORJIT_FLAG_USE_PINVOKE_HELPERS = 36, // The JIT should use the PINVOKE_{BEGIN,END} helpers instead of emitting inline transitions
         CORJIT_FLAG_REVERSE_PINVOKE = 37, // The JIT should insert REVERSE_PINVOKE_{ENTER,EXIT} helpers into method prolog/epilog
-        // CORJIT_FLAG_UNUSED = 38,
+        CORJIT_FLAG_UNUSED9 = 38,
         CORJIT_FLAG_TIER0 = 39, // This is the initial tier for tiered compilation which should generate code as quickly as possible
         CORJIT_FLAG_TIER1 = 40, // This is the final tier (for now) for tiered compilation which should generate high quality code
         CORJIT_FLAG_RELATIVE_CODE_RELOCS = 41, // JIT should generate PC-relative address computations instead of EE relocation records

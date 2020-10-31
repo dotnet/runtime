@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.ComponentModel;
 using System.Runtime.CompilerServices;
@@ -63,6 +62,8 @@ namespace System
         /// </remarks>
         [MethodImpl(MethodImplOptions.InternalCall)]
         public extern Utf8String(ReadOnlySpan<byte> value);
+
+#pragma warning disable CA1822 // Mark members as static
 
 #if !CORECLR
         static
@@ -262,6 +263,8 @@ namespace System
 
             return Ctor(value.AsSpan());
         }
+
+#pragma warning restore CA1822
 
         /*
          * METHODS

@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 /***
 *   mbusafecrt.h - public declarations for SafeCRT lib
@@ -101,6 +100,8 @@ extern int swscanf_s( const WCHAR *string, const WCHAR *format, ... );
 
 extern errno_t memcpy_s( void * dst, size_t sizeInBytes, const void * src, size_t count ) THROW_DECL;
 extern errno_t memmove_s( void * dst, size_t sizeInBytes, const void * src, size_t count );
+
+extern errno_t _wcslwr_s(char16_t *string, size_t sz);
 
 #ifdef __cplusplus
     }

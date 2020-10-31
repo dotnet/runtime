@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System;
 using System.Collections.Generic;
@@ -44,7 +43,7 @@ namespace Microsoft.Extensions.DependencyModel.Resolution
             {
                 return false;
             }
-            foreach (var assembly in library.Assemblies)
+            foreach (string assembly in library.Assemblies)
             {
                 string fullName;
                 if (!TryResolveReferenceAssembly(assembly, out fullName))
@@ -62,7 +61,7 @@ namespace Microsoft.Extensions.DependencyModel.Resolution
 
             if (_defaultReferenceAssembliesPath != null)
             {
-                var relativeToReferenceAssemblies = Path.Combine(_defaultReferenceAssembliesPath, path);
+                string relativeToReferenceAssemblies = Path.Combine(_defaultReferenceAssembliesPath, path);
                 if (_fileSystem.File.Exists(relativeToReferenceAssemblies))
                 {
                     fullPath = relativeToReferenceAssemblies;
@@ -70,10 +69,11 @@ namespace Microsoft.Extensions.DependencyModel.Resolution
                 }
             }
 
-            var name = Path.GetFileName(path);
-            foreach (var fallbackPath in _fallbackSearchPaths)
+            string name = Path.GetFileName(path);
+
+            foreach (string fallbackPath in _fallbackSearchPaths)
             {
-                var fallbackFile = Path.Combine(fallbackPath, name);
+                string fallbackFile = Path.Combine(fallbackPath, name);
                 if (_fileSystem.File.Exists(fallbackFile))
                 {
                     fullPath = fallbackFile;
@@ -88,14 +88,14 @@ namespace Microsoft.Extensions.DependencyModel.Resolution
         {
             if (!environment.IsWindows())
             {
-                return new string[0];
+                return Array.Empty<string>();
             }
 
-            var net20Dir = Path.Combine(environment.GetEnvironmentVariable("WINDIR"), "Microsoft.NET", "Framework", "v2.0.50727");
+            string net20Dir = Path.Combine(environment.GetEnvironmentVariable("WINDIR"), "Microsoft.NET", "Framework", "v2.0.50727");
 
             if (!fileSystem.Directory.Exists(net20Dir))
             {
-                return new string[0];
+                return Array.Empty<string>();
             }
             return new[] { net20Dir };
         }
@@ -103,7 +103,7 @@ namespace Microsoft.Extensions.DependencyModel.Resolution
         internal static string GetDefaultReferenceAssembliesPath(IFileSystem fileSystem, IEnvironment environment)
         {
             // Allow setting the reference assemblies path via an environment variable
-            var referenceAssembliesPath = DotNetReferenceAssembliesPathResolver.Resolve(environment, fileSystem); 
+            string referenceAssembliesPath = DotNetReferenceAssembliesPathResolver.Resolve(environment, fileSystem);
             if (!string.IsNullOrEmpty(referenceAssembliesPath))
             {
                 return referenceAssembliesPath;
@@ -118,7 +118,7 @@ namespace Microsoft.Extensions.DependencyModel.Resolution
 
             // References assemblies are in %ProgramFiles(x86)% on
             // 64 bit machines
-            var programFiles = environment.GetEnvironmentVariable("ProgramFiles(x86)");
+            string programFiles = environment.GetEnvironmentVariable("ProgramFiles(x86)");
 
             if (string.IsNullOrEmpty(programFiles))
             {

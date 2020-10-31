@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 /*++
 
@@ -1761,6 +1760,23 @@ ExitVirtualProtect:
     return bRetVal;
 }
 
+#if defined(HOST_OSX) && defined(HOST_ARM64)
+bool
+PAL_JITWriteEnableHolder::JITWriteEnable(bool writeEnable)
+{
+    // Use a thread local to track per thread JIT Write enable state
+    // Initialize threads to start with MAP_JIT pages readable and executable (R-X) by default.
+    thread_local bool enabled = (pthread_jit_write_protect_np(1), false);
+    bool result = enabled;
+    if (enabled != writeEnable)
+    {
+        pthread_jit_write_protect_np(writeEnable ? 0 : 1);
+        enabled = writeEnable;
+    }
+    return result;
+}
+#endif
+
 #if HAVE_VM_ALLOCATE
 //---------------------------------------------------------------------------------------
 //
@@ -2276,6 +2292,12 @@ Function:
     at which the allocator should start allocating memory from its reserved memory range.
 
 --*/
+#ifdef __sun
+// The upper limit of the random() function on SunOS derived operating systems is not RAND_MAX, but 2^31-1.
+#define OFFSET_RAND_MAX 0x7FFFFFFF
+#else
+#define OFFSET_RAND_MAX RAND_MAX
+#endif
 int32_t ExecutableMemoryAllocator::GenerateRandomStartOffset()
 {
     int32_t pageCount;
@@ -2284,7 +2306,7 @@ int32_t ExecutableMemoryAllocator::GenerateRandomStartOffset()
     // This code is similar to what coreclr runtime does on Windows.
     // It generates a random number of pages to skip between 0...MaxStartPageOffset.
     srandom(time(NULL));
-    pageCount = (int32_t)(MaxStartPageOffset * (int64_t)random() / RAND_MAX);
+    pageCount = (int32_t)(MaxStartPageOffset * (int64_t)random() / OFFSET_RAND_MAX);
 
     return pageCount * GetVirtualPageSize();
 }

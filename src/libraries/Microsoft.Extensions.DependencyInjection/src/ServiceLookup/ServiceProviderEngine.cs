@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System;
 using System.Collections.Concurrent;
@@ -11,16 +10,15 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
 {
     internal abstract class ServiceProviderEngine : IServiceProviderEngine, IServiceScopeFactory
     {
-        private readonly IServiceProviderEngineCallback _callback;
+        private IServiceProviderEngineCallback _callback;
 
         private readonly Func<Type, Func<ServiceProviderEngineScope, object>> _createServiceAccessor;
 
         private bool _disposed;
 
-        protected ServiceProviderEngine(IEnumerable<ServiceDescriptor> serviceDescriptors, IServiceProviderEngineCallback callback)
+        protected ServiceProviderEngine(IEnumerable<ServiceDescriptor> serviceDescriptors)
         {
             _createServiceAccessor = CreateServiceAccessor;
-            _callback = callback;
             Root = new ServiceProviderEngineScope(this);
             RuntimeResolver = new CallSiteRuntimeResolver();
             CallSiteFactory = new CallSiteFactory(serviceDescriptors);
@@ -39,6 +37,11 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
 
         public IServiceScope RootScope => Root;
 
+        void IServiceProviderEngine.InitializeCallback(IServiceProviderEngineCallback callback)
+        {
+            _callback = callback;
+        }
+
         public void ValidateService(ServiceDescriptor descriptor)
         {
             if (descriptor.ServiceType.IsGenericType && !descriptor.ServiceType.IsConstructedGenericType)
@@ -48,7 +51,7 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
 
             try
             {
-                var callSite = CallSiteFactory.GetCallSite(descriptor, new CallSiteChain());
+                ServiceCallSite callSite = CallSiteFactory.GetCallSite(descriptor, new CallSiteChain());
                 if (callSite != null)
                 {
                     _callback?.OnCreate(callSite);
@@ -83,7 +86,7 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
                 ThrowHelper.ThrowObjectDisposedException();
             }
 
-            var realizedService = RealizedServices.GetOrAdd(serviceType, _createServiceAccessor);
+            Func<ServiceProviderEngineScope, object> realizedService = RealizedServices.GetOrAdd(serviceType, _createServiceAccessor);
             _callback?.OnResolve(serviceType, serviceProviderEngineScope);
             DependencyInjectionEventSource.Log.ServiceResolved(serviceType);
             return realizedService.Invoke(serviceProviderEngineScope);
@@ -101,7 +104,7 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
 
         private Func<ServiceProviderEngineScope, object> CreateServiceAccessor(Type serviceType)
         {
-            var callSite = CallSiteFactory.GetCallSite(serviceType, new CallSiteChain());
+            ServiceCallSite callSite = CallSiteFactory.GetCallSite(serviceType, new CallSiteChain());
             if (callSite != null)
             {
                 DependencyInjectionEventSource.Log.CallSiteBuilt(serviceType, callSite);

@@ -18,9 +18,17 @@ fi
 # Build configuration. Common values include 'Debug' and 'Release', but the repository may use other names.
 configuration=${configuration:-'Debug'}
 
+# Set to true to opt out of outputting binary log while running in CI
+exclude_ci_binary_log=${exclude_ci_binary_log:-false}
+
+if [[ "$ci" == true && "$exclude_ci_binary_log" == false ]]; then
+  binary_log_default=true
+else
+  binary_log_default=false
+fi
+
 # Set to true to output binary log from msbuild. Note that emitting binary log slows down the build.
-# Binary log must be enabled on CI.
-binary_log=${binary_log:-$ci}
+binary_log=${binary_log:-$binary_log_default}
 
 # Turns on machine preparation/clean up code that changes the machine state (e.g. kills build processes).
 prepare_machine=${prepare_machine:-false}
@@ -55,6 +63,10 @@ if [[ "$ci" == true ]]; then
 else
   use_global_nuget_cache=${use_global_nuget_cache:-true}
 fi
+
+# Used when restoring .NET SDK from alternative feeds
+runtime_source_feed=${runtime_source_feed:-''}
+runtime_source_feed_key=${runtime_source_feed_key:-''}
 
 # Resolve any symlinks in the given path.
 function ResolvePath {
@@ -162,11 +174,11 @@ function InitializeDotNetCli {
 function InstallDotNetSdk {
   local root=$1
   local version=$2
-  local architecture=""
-  if [[ $# == 3 ]]; then
+  local architecture="unset"
+  if [[ $# -ge 3 ]]; then
     architecture=$3
   fi
-  InstallDotNet "$root" "$version" $architecture
+  InstallDotNet "$root" "$version" $architecture 'sdk' 'false' $runtime_source_feed $runtime_source_feed_key
 }
 
 function InstallDotNet {
@@ -177,50 +189,50 @@ function InstallDotNet {
   local install_script=$_GetDotNetInstallScript
 
   local archArg=''
-  if [[ -n "${3:-}" ]]; then
+  if [[ -n "${3:-}" ]] && [ "$3" != 'unset' ]; then
     archArg="--architecture $3"
   fi
   local runtimeArg=''
-  if [[ -n "${4:-}" ]]; then
+  if [[ -n "${4:-}" ]] && [ "$4" != 'sdk' ]; then
     runtimeArg="--runtime $4"
   fi
-
   local skipNonVersionedFilesArg=""
-  if [[ "$#" -ge "5" ]]; then
+  if [[ "$#" -ge "5" ]] && [[ "$5" != 'false' ]]; then
     skipNonVersionedFilesArg="--skip-non-versioned-files"
   fi
   bash "$install_script" --version $version --install-dir "$root" $archArg $runtimeArg $skipNonVersionedFilesArg || {
     local exit_code=$?
-    Write-PipelineTelemetryError -category 'InitializeToolset' "Failed to install dotnet SDK from public location (exit code '$exit_code')."
+    echo "Failed to install dotnet SDK from public location (exit code '$exit_code')."
 
-    if [[ -n "$runtimeArg" ]]; then
-      local runtimeSourceFeed=''
-      if [[ -n "${6:-}" ]]; then
-        runtimeSourceFeed="--azure-feed $6"
+    local runtimeSourceFeed=''
+    if [[ -n "${6:-}" ]]; then
+      runtimeSourceFeed="--azure-feed $6"
+    fi
+
+    local runtimeSourceFeedKey=''
+    if [[ -n "${7:-}" ]]; then
+      # The 'base64' binary on alpine uses '-d' and doesn't support '--decode'
+      # '-d'. To work around this, do a simple detection and switch the parameter
+      # accordingly.
+      decodeArg="--decode"
+      if base64 --help 2>&1 | grep -q "BusyBox"; then
+          decodeArg="-d"
       fi
+      decodedFeedKey=`echo $7 | base64 $decodeArg`
+      runtimeSourceFeedKey="--feed-credential $decodedFeedKey"
+    fi
 
-      local runtimeSourceFeedKey=''
-      if [[ -n "${7:-}" ]]; then
-        # The 'base64' binary on alpine uses '-d' and doesn't support '--decode'
-        # '-d'. To work around this, do a simple detection and switch the parameter
-        # accordingly.
-        decodeArg="--decode"
-        if base64 --help 2>&1 | grep -q "BusyBox"; then
-            decodeArg="-d"
-        fi
-        decodedFeedKey=`echo $7 | base64 $decodeArg`
-        runtimeSourceFeedKey="--feed-credential $decodedFeedKey"
-      fi
-
-      if [[ -n "$runtimeSourceFeed" || -n "$runtimeSourceFeedKey" ]]; then
-        bash "$install_script" --version $version --install-dir "$root" $archArg $runtimeArg $skipNonVersionedFilesArg $runtimeSourceFeed $runtimeSourceFeedKey || {
-          local exit_code=$?
-          Write-PipelineTelemetryError -category 'InitializeToolset' "Failed to install dotnet SDK from custom location '$runtimeSourceFeed' (exit code '$exit_code')."
-          ExitWithExitCode $exit_code
-        }
-      else
+    if [[ -n "$runtimeSourceFeed" || -n "$runtimeSourceFeedKey" ]]; then
+      bash "$install_script" --version $version --install-dir "$root" $archArg $runtimeArg $skipNonVersionedFilesArg $runtimeSourceFeed $runtimeSourceFeedKey || {
+        local exit_code=$?
+        Write-PipelineTelemetryError -category 'InitializeToolset' "Failed to install dotnet SDK from custom location '$runtimeSourceFeed' (exit code '$exit_code')."
         ExitWithExitCode $exit_code
+      }
+    else
+      if [[ $exit_code != 0 ]]; then
+        Write-PipelineTelemetryError -category 'InitializeToolset' "Failed to install dotnet SDK from public location (exit code '$exit_code')."
       fi
+      ExitWithExitCode $exit_code
     fi
   }
 }
@@ -289,12 +301,14 @@ function InitializeBuildTool {
   _InitializeBuildToolFramework="netcoreapp2.1"
 }
 
+# Set RestoreNoCache as a workaround for https://github.com/NuGet/Home/issues/3116
 function GetNuGetPackageCachePath {
   if [[ -z ${NUGET_PACKAGES:-} ]]; then
     if [[ "$use_global_nuget_cache" == true ]]; then
       export NUGET_PACKAGES="$HOME/.nuget/packages"
     else
       export NUGET_PACKAGES="$repo_root/.packages"
+      export RESTORENOCACHE=true
     fi
   fi
 
@@ -383,11 +397,7 @@ function MSBuild {
     InitializeBuildTool
     InitializeToolset
 
-    # Work around issues with Azure Artifacts credential provider
-    # https://github.com/dotnet/arcade/issues/3932
     if [[ "$ci" == true ]]; then
-      "$_InitializeBuildTool" nuget locals http-cache -c
-
       export NUGET_PLUGIN_HANDSHAKE_TIMEOUT_IN_SECONDS=20
       export NUGET_PLUGIN_REQUEST_TIMEOUT_IN_SECONDS=20
       Write-PipelineSetVariable -name "NUGET_PLUGIN_HANDSHAKE_TIMEOUT_IN_SECONDS" -value "20"
@@ -404,8 +414,8 @@ function MSBuild {
 
 function MSBuild-Core {
   if [[ "$ci" == true ]]; then
-    if [[ "$binary_log" != true ]]; then
-      Write-PipelineTelemetryError -category 'Build'  "Binary log must be enabled in CI build."
+    if [[ "$binary_log" != true && "$exclude_ci_binary_log" != true ]]; then
+      Write-PipelineTelemetryError -category 'Build'  "Binary log must be enabled in CI build, or explicitly opted-out from with the -noBinaryLog switch."
       ExitWithExitCode 1
     fi
 

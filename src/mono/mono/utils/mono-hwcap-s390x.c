@@ -148,7 +148,7 @@ mono_hwcap_arch_init (void)
 	int lFacs = sizeof (facs) / 8;
 
 	__asm__ __volatile__ (
-		"lgfr\t0,%1\n\t"
+		"lgfr\t%%r0,%1\n\t"
 		".insn\ts,0xb2b00000,%0\n\t"
 		: "=m" (facs)
 		: "r" (lFacs)
@@ -164,4 +164,5 @@ mono_hwcap_arch_init (void)
 	mono_hwcap_s390x_has_mie3 = facs.mie3;
 	mono_hwcap_s390x_has_gs   = facs.gs;
 	mono_hwcap_s390x_has_vef2 = facs.vef2;
+	mono_hwcap_s390x_has_eif  = facs.eif;
 }

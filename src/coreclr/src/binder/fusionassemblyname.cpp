@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 // ============================================================
 //
 // FusionAssemblyName.cpp
@@ -21,11 +20,6 @@
 
 #include "assemblyidentity.hpp"
 #include "textualidentityparser.hpp"
-
-#define DISPLAY_NAME_DELIMITER  W(',')
-#define DISPLAY_NAME_DELIMITER_STRING W(",")
-#define VERSION_STRING_SEGMENTS 4
-#define REMAINING_BUFFER_SIZE ((*pccDisplayName) - (pszBuf - szDisplayName))
 
 // ---------------------------------------------------------------------------
 // CPropertyArray ctor
@@ -276,25 +270,6 @@ CAssemblyName::GetProperty(DWORD PropertyId,
 }
 
 // ---------------------------------------------------------------------------
-// CAssemblyName::GetName
-// ---------------------------------------------------------------------------
-STDMETHODIMP
-CAssemblyName::GetName(
-        __inout LPDWORD lpcwBuffer,
-        __out_ecount_opt(*lpcwBuffer) LPOLESTR pwzBuffer)
-{
-    HRESULT hr = S_OK;
-    BEGIN_ENTRYPOINT_NOTHROW;
-
-    DWORD cbBuffer = *lpcwBuffer * sizeof(TCHAR);
-    hr = GetProperty(ASM_NAME_NAME, pwzBuffer, &cbBuffer);
-    *lpcwBuffer = cbBuffer / sizeof(TCHAR);
-    END_ENTRYPOINT_NOTHROW;
-
-    return hr;
-}
-
-// ---------------------------------------------------------------------------
 // CAssemblyName::SetPropertyInternal
 // ---------------------------------------------------------------------------
 HRESULT CAssemblyName::SetPropertyInternal(DWORD  PropertyId,
@@ -410,17 +385,6 @@ HRESULT CAssemblyName::SetPropertyInternal(DWORD  PropertyId,
     hr = _rProp.Set(PropertyId, pvProperty, cbProperty);
 
 exit:
-    if (SUCCEEDED(hr)) {
-        LPWSTR              pwzOld;
-
-        // Clear cache
-
-        pwzOld = InterlockedExchangeT(&_pwzTextualIdentity, NULL);
-        SAFEDELETEARRAY(pwzOld);
-        pwzOld = InterlockedExchangeT(&_pwzTextualIdentityILFull, NULL);
-        SAFEDELETEARRAY(pwzOld);
-    }
-
     // Free memory allocated by crypto wrapper.
     if (pbSN) {
         StrongNameFreeBuffer(pbSN);
@@ -437,8 +401,7 @@ exit:
 STDAPI
 CreateAssemblyNameObject(
     LPASSEMBLYNAME    *ppAssemblyName,
-    LPCOLESTR          szAssemblyName,
-    bool               parseDisplayName)
+    LPCOLESTR          szAssemblyName)
 {
 
     HRESULT hr = S_OK;
@@ -460,15 +423,7 @@ CreateAssemblyNameObject(
         goto exit;
     }
 
-    if (parseDisplayName)
-    {
-        hr = pName->Parse((LPWSTR)szAssemblyName);
-    }
-    else
-    {
-        hr = pName->SetName(szAssemblyName);
-    }
-
+    hr = pName->Parse((LPWSTR)szAssemblyName);
     if (FAILED(hr))
     {
         SAFERELEASE(pName);
@@ -491,31 +446,6 @@ CAssemblyName::CAssemblyName()
     _fPublicKeyToken    = FALSE;
     _fCustom            = TRUE;
     _cRef               = 1;
-    _pwzPathModifier    = NULL;
-    _pwzTextualIdentity = NULL;
-    _pwzTextualIdentityILFull = NULL;
-}
-
-// ---------------------------------------------------------------------------
-// CAssemblyName destructor
-// ---------------------------------------------------------------------------
-CAssemblyName::~CAssemblyName()
-{
-    SAFEDELETEARRAY(_pwzPathModifier);
-    SAFEDELETEARRAY(_pwzTextualIdentity);
-    SAFEDELETEARRAY(_pwzTextualIdentityILFull);
-}
-
-// ---------------------------------------------------------------------------
-// CAssemblyName::SetName
-// ---------------------------------------------------------------------------
-HRESULT CAssemblyName::SetName(LPCTSTR pszAssemblyName)
-{
-    if (pszAssemblyName == nullptr)
-        return E_INVALIDARG;
-
-    return SetProperty(ASM_NAME_NAME, (LPTSTR) pszAssemblyName,
-        (DWORD)((wcslen(pszAssemblyName)+1) * sizeof(TCHAR)));
 }
 
 // ---------------------------------------------------------------------------
@@ -681,35 +611,6 @@ namespace fusion
                        dwProperty == ASM_NAME_NULL_PUBLIC_KEY ||
                        dwProperty == ASM_NAME_NULL_CUSTOM;
             }
-
-            HRESULT ConvertToUtf8(PCWSTR wzStr, __deref_out UTF8** pszStr)
-            {
-                HRESULT hr = S_OK;
-
-                _ASSERTE(wzStr != nullptr && pszStr != nullptr);
-                if (wzStr == nullptr || pszStr == nullptr)
-                {
-                    return E_INVALIDARG;
-                }
-
-                DWORD cbSize = WszWideCharToMultiByte(CP_UTF8, 0, wzStr, -1, NULL, 0, NULL, NULL);
-                if(cbSize == 0)
-                {
-                    return SUCCEEDED(hr = HRESULT_FROM_GetLastError()) ? E_UNEXPECTED : hr;
-                }
-
-                NewArrayHolder<UTF8> szStr = new (nothrow) UTF8[cbSize];
-                IfNullRet(szStr);
-
-                cbSize = WszWideCharToMultiByte(CP_UTF8, 0, wzStr, -1, static_cast<LPSTR>(szStr), cbSize, NULL, NULL);
-                if(cbSize == 0)
-                {
-                    return SUCCEEDED(hr = HRESULT_FROM_GetLastError()) ? E_UNEXPECTED : hr;
-                }
-
-                *pszStr = szStr.Extract();
-                return S_OK;
-            }
         }
 
         // Non-allocating helper.
@@ -806,48 +707,6 @@ namespace fusion
                 IfFailRet(hr);
             }
 
-            return hr;
-        }
-
-        HRESULT GetProperty(IAssemblyName * pName, DWORD dwProperty, __deref_out WCHAR ** pwzVal)
-        {
-            LIMITED_METHOD_CONTRACT;
-            HRESULT hr = S_OK;
-
-            _ASSERTE(pName != nullptr && pwzVal != nullptr);
-            if (pName == nullptr || pwzVal == nullptr)
-            {
-                return E_INVALIDARG;
-            }
-
-            DWORD cbSize = 0;
-            hr = pName->GetProperty(dwProperty, NULL, &cbSize);
-
-            if (hr == HRESULT_FROM_WIN32(ERROR_INSUFFICIENT_BUFFER))
-            {
-                NewArrayHolder<WCHAR> wzVal = reinterpret_cast<PWSTR>(new (nothrow) BYTE[cbSize]);
-                IfNullRet(wzVal);
-                hr = pName->GetProperty(dwProperty, reinterpret_cast<PBYTE>(static_cast<PWSTR>(wzVal)), &cbSize);
-                IfFailRet(hr);
-                *pwzVal = wzVal.Extract();
-            }
-
-            return hr;
-        }
-
-        HRESULT GetProperty(IAssemblyName * pName, DWORD dwProperty, __deref_out UTF8 **pwzOut)
-        {
-            LIMITED_METHOD_CONTRACT;
-            HRESULT hr = S_OK;
-
-            if (pwzOut == nullptr)
-                return E_INVALIDARG;
-
-            SmallStackSString ssStr;
-            hr = GetProperty(pName, dwProperty, ssStr);
-            IfFailRet(hr);
-            hr = priv::ConvertToUtf8(ssStr, pwzOut);
-            IfFailRet(hr);
             return hr;
         }
     }

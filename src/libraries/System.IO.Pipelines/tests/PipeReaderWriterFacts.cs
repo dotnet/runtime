@@ -1,10 +1,10 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Buffers;
 using System.Collections.Generic;
 using System.Linq;
+using System.Runtime.CompilerServices;
 using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading;
@@ -200,34 +200,51 @@ namespace System.IO.Pipelines.Tests
             Assert.Equal(" World", Encoding.ASCII.GetString(worldBytes));
         }
 
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        void ThrowTestException(Exception ex, Action<Exception> catchAction)
+        {
+            try
+            {
+                throw ex;
+            }
+            catch (Exception e)
+            {
+                catchAction(e);
+            }
+        }
+
         [Fact]
         public async Task ReadAsync_ThrowsIfWriterCompletedWithException()
         {
-            void ThrowTestException()
-            {
-                try
-                {
-                    throw new InvalidOperationException("Writer exception");
-                }
-                catch (Exception e)
-                {
-                    _pipe.Writer.Complete(e);
-                }
-            }
-
-            ThrowTestException();
+            ThrowTestException(new InvalidOperationException("Writer exception"), e => _pipe.Writer.Complete(e));
 
             InvalidOperationException invalidOperationException =
                 await Assert.ThrowsAsync<InvalidOperationException>(async () => await _pipe.Reader.ReadAsync());
 
             Assert.Equal("Writer exception", invalidOperationException.Message);
-            Assert.Contains("ThrowTestException", invalidOperationException.StackTrace);
+            Assert.Contains(nameof(ThrowTestException), invalidOperationException.StackTrace);
 
             invalidOperationException = await Assert.ThrowsAsync<InvalidOperationException>(async () => await _pipe.Reader.ReadAsync());
             Assert.Equal("Writer exception", invalidOperationException.Message);
-            Assert.Contains("ThrowTestException", invalidOperationException.StackTrace);
+            Assert.Contains(nameof(ThrowTestException), invalidOperationException.StackTrace);
 
             Assert.Single(Regex.Matches(invalidOperationException.StackTrace, "Pipe.GetReadResult"));
+        }
+
+        [Fact]
+        public async Task WriteAsync_ThrowsIfReaderCompletedWithException()
+        {
+            ThrowTestException(new InvalidOperationException("Reader exception"), e => _pipe.Reader.Complete(e));
+
+            InvalidOperationException invalidOperationException =
+                await Assert.ThrowsAsync<InvalidOperationException>(async () => await _pipe.Writer.WriteAsync(new byte[1]));
+
+            Assert.Equal("Reader exception", invalidOperationException.Message);
+            Assert.Contains(nameof(ThrowTestException), invalidOperationException.StackTrace);
+
+            invalidOperationException = await Assert.ThrowsAsync<InvalidOperationException>(async () => await _pipe.Writer.WriteAsync(new byte[1]));
+            Assert.Equal("Reader exception", invalidOperationException.Message);
+            Assert.Contains(nameof(ThrowTestException), invalidOperationException.StackTrace);
         }
 
         [Fact]
@@ -368,7 +385,7 @@ namespace System.IO.Pipelines.Tests
             _pipe.Reader.AdvanceTo(reader.Start, reader.Start);
         }
 
-        [Theory]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         [InlineData(true)]
         [InlineData(false)]
         public async Task ReadAsyncOnCompletedCapturesTheExecutionContext(bool useSynchronizationContext)
@@ -421,7 +438,7 @@ namespace System.IO.Pipelines.Tests
             }
         }
 
-        [Theory]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         [InlineData(true)]
         [InlineData(false)]
         public async Task FlushAsyncOnCompletedCapturesTheExecutionContextAndSyncContext(bool useSynchronizationContext)
@@ -475,7 +492,7 @@ namespace System.IO.Pipelines.Tests
             }
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public async Task ReadingCanBeCanceled()
         {
             var cts = new CancellationTokenSource();

@@ -1,8 +1,8 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Diagnostics.Tracing;
 using System.Threading.Tasks;
 
@@ -535,7 +535,7 @@ namespace System.Threading
                         // simplify by just failing in that case.
                         var e = new InvalidOperationException(SR.InvalidOperation_TimerAlreadyClosed);
                         e.SetCurrentStackTrace();
-                        return new ValueTask(Task.FromException(e));
+                        return ValueTask.FromException(e);
                     }
                 }
                 else
@@ -639,7 +639,7 @@ namespace System.Threading
             }
         }
 
-        private static readonly ContextCallback s_callCallbackInContext = state =>
+        private static readonly ContextCallback s_callCallbackInContext = static state =>
         {
             Debug.Assert(state is TimerQueueTimer);
             var t = (TimerQueueTimer)state;
@@ -693,9 +693,9 @@ namespace System.Threading
 
     public sealed class Timer : MarshalByRefObject, IDisposable, IAsyncDisposable
     {
-        private const uint MAX_SUPPORTED_TIMEOUT = (uint)0xfffffffe;
+        internal const uint MaxSupportedTimeout = 0xfffffffe;
 
-        private TimerHolder _timer = null!; // initialized in helper called by ctors
+        private TimerHolder _timer;
 
         public Timer(TimerCallback callback,
                      object? state,
@@ -727,13 +727,13 @@ namespace System.Threading
             long dueTm = (long)dueTime.TotalMilliseconds;
             if (dueTm < -1)
                 throw new ArgumentOutOfRangeException(nameof(dueTime), SR.ArgumentOutOfRange_NeedNonNegOrNegative1);
-            if (dueTm > MAX_SUPPORTED_TIMEOUT)
+            if (dueTm > MaxSupportedTimeout)
                 throw new ArgumentOutOfRangeException(nameof(dueTime), SR.ArgumentOutOfRange_TimeoutTooLarge);
 
             long periodTm = (long)period.TotalMilliseconds;
             if (periodTm < -1)
                 throw new ArgumentOutOfRangeException(nameof(period), SR.ArgumentOutOfRange_NeedNonNegOrNegative1);
-            if (periodTm > MAX_SUPPORTED_TIMEOUT)
+            if (periodTm > MaxSupportedTimeout)
                 throw new ArgumentOutOfRangeException(nameof(period), SR.ArgumentOutOfRange_PeriodTooLarge);
 
             TimerSetup(callback, state, (uint)dueTm, (uint)periodTm);
@@ -757,9 +757,9 @@ namespace System.Threading
                 throw new ArgumentOutOfRangeException(nameof(dueTime), SR.ArgumentOutOfRange_NeedNonNegOrNegative1);
             if (period < -1)
                 throw new ArgumentOutOfRangeException(nameof(period), SR.ArgumentOutOfRange_NeedNonNegOrNegative1);
-            if (dueTime > MAX_SUPPORTED_TIMEOUT)
+            if (dueTime > MaxSupportedTimeout)
                 throw new ArgumentOutOfRangeException(nameof(dueTime), SR.ArgumentOutOfRange_TimeoutTooLarge);
-            if (period > MAX_SUPPORTED_TIMEOUT)
+            if (period > MaxSupportedTimeout)
                 throw new ArgumentOutOfRangeException(nameof(period), SR.ArgumentOutOfRange_PeriodTooLarge);
             TimerSetup(callback, state, (uint)dueTime, (uint)period);
         }
@@ -774,6 +774,7 @@ namespace System.Threading
             TimerSetup(callback, this, DueTime, Period);
         }
 
+        [MemberNotNull(nameof(_timer))]
         private void TimerSetup(TimerCallback callback,
                                 object? state,
                                 uint dueTime,
@@ -813,9 +814,9 @@ namespace System.Threading
                 throw new ArgumentOutOfRangeException(nameof(dueTime), SR.ArgumentOutOfRange_NeedNonNegOrNegative1);
             if (period < -1)
                 throw new ArgumentOutOfRangeException(nameof(period), SR.ArgumentOutOfRange_NeedNonNegOrNegative1);
-            if (dueTime > MAX_SUPPORTED_TIMEOUT)
+            if (dueTime > MaxSupportedTimeout)
                 throw new ArgumentOutOfRangeException(nameof(dueTime), SR.ArgumentOutOfRange_TimeoutTooLarge);
-            if (period > MAX_SUPPORTED_TIMEOUT)
+            if (period > MaxSupportedTimeout)
                 throw new ArgumentOutOfRangeException(nameof(period), SR.ArgumentOutOfRange_PeriodTooLarge);
 
             return _timer._timer.Change((uint)dueTime, (uint)period);

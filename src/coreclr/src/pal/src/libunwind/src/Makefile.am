@@ -68,7 +68,7 @@ libunwind_coredump_la_SOURCES = \
 	coredump/_UPT_resume.c
 libunwind_coredump_la_LDFLAGS = $(COMMON_SO_LDFLAGS) \
 				-version-info $(COREDUMP_SO_VERSION)
-libunwind_coredump_la_LIBADD = $(LIBLZMA)
+libunwind_coredump_la_LIBADD = $(LIBLZMA) $(LIBZ)
 noinst_HEADERS += coredump/_UCD_internal.h coredump/_UCD_lib.h
 
 ### libunwind-setjmp:
@@ -154,6 +154,8 @@ libunwind_la_SOURCES_os_freebsd = os-freebsd.c
 
 libunwind_la_SOURCES_os_qnx = os-qnx.c
 
+libunwind_la_SOURCES_os_solaris = os-solaris.c
+
 libunwind_dwarf_common_la_SOURCES = dwarf/global.c
 
 libunwind_dwarf_local_la_SOURCES = \
@@ -181,9 +183,9 @@ noinst_HEADERS += elf32.h elf64.h elfxx.h
 libunwind_elf32_la_SOURCES = elf32.c
 libunwind_elf64_la_SOURCES = elf64.c
 libunwind_elfxx_la_SOURCES = elfxx.c
-libunwind_elf32_la_LIBADD  = $(LIBLZMA)
-libunwind_elf64_la_LIBADD  = $(LIBLZMA)
-libunwind_elfxx_la_LIBADD  = $(LIBLZMA)
+libunwind_elf32_la_LIBADD  = $(LIBLZMA) $(LIBZ)
+libunwind_elf64_la_LIBADD  = $(LIBLZMA) $(LIBZ)
+libunwind_elfxx_la_LIBADD  = $(LIBLZMA) $(LIBZ)
 
 noinst_LTLIBRARIES += $(LIBUNWIND_ELF)
 libunwind_la_LIBADD += $(LIBUNWIND_ELF)
@@ -463,6 +465,30 @@ libunwind_sh_la_SOURCES_sh = $(libunwind_la_SOURCES_sh_common)		\
 	sh/Gglobal.c sh/Ginit.c sh/Ginit_local.c sh/Ginit_remote.c	\
 	sh/Gis_signal_frame.c sh/Gregs.c sh/Gresume.c sh/Gstep.c
 
+# The list of files that go both into libunwind and libunwind-s390x:
+noinst_HEADERS += s390x/init.h s390x/unwind_i.h
+libunwind_la_SOURCES_s390x_common = $(libunwind_la_SOURCES_common)	\
+	s390x/is_fpreg.c s390x/regname.c
+
+# The list of files that go into libunwind:
+libunwind_la_SOURCES_s390x = $(libunwind_la_SOURCES_s390x_common)	    \
+	$(libunwind_la_SOURCES_local)					    \
+	s390x/Lapply_reg_state.c s390x/Lreg_states_iterate.c		    \
+	s390x/Lcreate_addr_space.c s390x/Lget_save_loc.c s390x/Lglobal.c    \
+	s390x/Linit.c s390x/Linit_local.c s390x/Linit_remote.c	            \
+	s390x/Lget_proc_info.c s390x/Lregs.c s390x/Lresume.c		    \
+	s390x/Lis_signal_frame.c s390x/Lstep.c				    \
+	s390x/getcontext.S s390x/setcontext.S
+
+# The list of files that go into libunwind-s390x:
+libunwind_s390x_la_SOURCES_s390x = $(libunwind_la_SOURCES_s390x_common)     \
+	$(libunwind_la_SOURCES_generic)					    \
+	s390x/Gapply_reg_state.c s390x/Greg_states_iterate.c	            \
+	s390x/Gcreate_addr_space.c s390x/Gget_save_loc.c s390x/Gglobal.c    \
+	s390x/Ginit.c s390x/Ginit_local.c s390x/Ginit_remote.c	            \
+	s390x/Gget_proc_info.c s390x/Gregs.c s390x/Gresume.c		    \
+	s390x/Gis_signal_frame.c s390x/Gstep.c
+
 if REMOTE_ONLY
 install-exec-hook:
 #	Nothing to do here....
@@ -512,6 +538,12 @@ if OS_FREEBSD
  libunwind_la_SOURCES_arm_os          = arm/Gos-freebsd.c
  libunwind_la_SOURCES_arm_os_local    = arm/Los-freebsd.c
  libunwind_coredump_la_SOURCES += coredump/_UCD_access_reg_freebsd.c
+endif
+
+if OS_SOLARIS
+ libunwind_la_SOURCES_os              = $(libunwind_la_SOURCES_os_solaris)
+ libunwind_la_SOURCES_x86_64_os       = x86_64/Gos-solaris.c
+ libunwind_la_SOURCES_x86_64_os_local = x86_64/Los-solaris.c
 endif
 
 if OS_QNX
@@ -662,7 +694,19 @@ if !REMOTE_ONLY
  libunwind_sh_la_LIBADD += libunwind.la -lc
 endif
  libunwind_setjmp_la_SOURCES += sh/siglongjmp.S
+else
+if ARCH_S390X
+ lib_LTLIBRARIES += libunwind-s390x.la
+ libunwind_la_SOURCES = $(libunwind_la_SOURCES_s390x)
+ libunwind_s390x_la_SOURCES = $(libunwind_s390x_la_SOURCES_s390x)
+ libunwind_s390x_la_LDFLAGS = $(COMMON_SO_LDFLAGS) -version-info $(SOVERSION)
+ libunwind_s390x_la_LIBADD = libunwind-dwarf-generic.la
+ libunwind_s390x_la_LIBADD += libunwind-elf64.la
+if !REMOTE_ONLY
+ libunwind_s390x_la_LIBADD += libunwind.la -lc
+endif
 
+endif # ARCH_S390X
 endif # ARCH_SH
 endif # ARCH_PPC64
 endif # ARCH_PPC32
@@ -688,7 +732,7 @@ endif
 libunwind_la_LDFLAGS =	$(COMMON_SO_LDFLAGS) -XCClinker -nostdlib \
 			$(LDFLAGS_STATIC_LIBCXA) -version-info $(SOVERSION)
 libunwind_la_LIBADD  += -lc $(LIBCRTS)
-libunwind_la_LIBADD += $(LIBLZMA)
+libunwind_la_LIBADD += $(LIBLZMA) $(LIBZ)
 
 AM_CPPFLAGS = -I$(top_srcdir)/include -I$(top_srcdir)/include/tdep-$(arch) -I.
 AM_CCASFLAGS = $(AM_CPPFLAGS)
@@ -705,6 +749,7 @@ EXTRA_DIST =	$(libunwind_la_SOURCES_aarch64)			\
 		$(libunwind_la_SOURCES_os_linux)		\
 		$(libunwind_la_SOURCES_os_hpux)			\
 		$(libunwind_la_SOURCES_os_qnx)			\
+		$(libunwind_la_SOURCES_os_solaris)		\
 		$(libunwind_la_SOURCES_common)			\
 		$(libunwind_la_SOURCES_local)			\
 		$(libunwind_la_SOURCES_generic)			\

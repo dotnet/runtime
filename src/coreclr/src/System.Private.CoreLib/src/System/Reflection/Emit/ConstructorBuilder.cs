@@ -1,7 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
+using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 
 namespace System.Reflection.Emit
@@ -14,16 +14,16 @@ namespace System.Reflection.Emit
         #region Constructor
 
         internal ConstructorBuilder(string name, MethodAttributes attributes, CallingConventions callingConvention,
-            Type[]? parameterTypes, Type[][]? requiredCustomModifiers, Type[][]? optionalCustomModifiers, ModuleBuilder mod, TypeBuilder type)
+            Type[]? parameterTypes, Type[][]? requiredCustomModifiers, Type[][]? optionalCustomModifiers, ModuleBuilder mod, [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] TypeBuilder type)
         {
             m_methodBuilder = new MethodBuilder(name, attributes, callingConvention, null, null, null,
                 parameterTypes, requiredCustomModifiers, optionalCustomModifiers, mod, type);
 
-            type.m_listMethods.Add(m_methodBuilder);
+            type.m_listMethods!.Add(m_methodBuilder);
 
             m_methodBuilder.GetMethodSignature().InternalGetSignature(out _);
 
-            m_methodBuilder.GetToken();
+            int dummy = m_methodBuilder.MetadataToken;
         }
 
         internal ConstructorBuilder(string name, MethodAttributes attributes, CallingConventions callingConvention,
@@ -40,9 +40,14 @@ namespace System.Reflection.Emit
             return m_methodBuilder.GetParameterTypes();
         }
 
+        [return: DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)]
         private TypeBuilder GetTypeBuilder()
         {
             return m_methodBuilder.GetTypeBuilder();
+        }
+        internal SignatureHelper GetMethodSignature()
+        {
+            return m_methodBuilder.GetMethodSignature();
         }
         #endregion
 
@@ -55,7 +60,7 @@ namespace System.Reflection.Emit
         #endregion
 
         #region MemberInfo Overrides
-        internal int MetadataTokenInternal => m_methodBuilder.MetadataTokenInternal;
+        public override int MetadataToken => m_methodBuilder.MetadataToken;
 
         public override Module Module => m_methodBuilder.Module;
 
@@ -117,11 +122,6 @@ namespace System.Reflection.Emit
         #endregion
 
         #region Public Members
-        public MethodToken GetToken()
-        {
-            return m_methodBuilder.GetToken();
-        }
-
         public ParameterBuilder DefineParameter(int iSequence, ParameterAttributes attributes, string? strParamName)
         {
             // Theoretically we shouldn't allow iSequence to be 0 because in reflection ctors don't have

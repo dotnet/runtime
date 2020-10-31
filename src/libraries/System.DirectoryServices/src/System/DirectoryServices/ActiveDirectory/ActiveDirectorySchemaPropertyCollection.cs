@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections;
 using System.Runtime.InteropServices;
@@ -9,11 +8,11 @@ namespace System.DirectoryServices.ActiveDirectory
 {
     public class ActiveDirectorySchemaPropertyCollection : CollectionBase
     {
-        private DirectoryEntry _classEntry = null;
-        private readonly string _propertyName = null;
-        private readonly ActiveDirectorySchemaClass _schemaClass = null;
-        private readonly bool _isBound = false;
-        private readonly DirectoryContext _context = null;
+        private DirectoryEntry _classEntry;
+        private readonly string _propertyName;
+        private readonly ActiveDirectorySchemaClass _schemaClass;
+        private readonly bool _isBound;
+        private readonly DirectoryContext _context;
 
         internal ActiveDirectorySchemaPropertyCollection(DirectoryContext context,
                                                         ActiveDirectorySchemaClass schemaClass,
@@ -109,7 +108,7 @@ namespace System.DirectoryServices.ActiveDirectory
             {
                 if (property == null)
                 {
-                    throw new ArgumentException(nameof(properties));
+                    throw new ArgumentException(null, nameof(properties));
                 }
             }
 
@@ -130,7 +129,7 @@ namespace System.DirectoryServices.ActiveDirectory
             {
                 if (property == null)
                 {
-                    throw new ArgumentException(nameof(properties));
+                    throw new ArgumentException(null, nameof(properties));
                 }
             }
 
@@ -153,7 +152,7 @@ namespace System.DirectoryServices.ActiveDirectory
             {
                 if (property == null)
                 {
-                    throw new ArgumentException(nameof(properties));
+                    throw new ArgumentException(null, nameof(properties));
                 }
             }
 
@@ -369,7 +368,7 @@ namespace System.DirectoryServices.ActiveDirectory
             if (value == null) throw new ArgumentNullException(nameof(value));
 
             if (!(value is ActiveDirectorySchemaProperty))
-                throw new ArgumentException(nameof(value));
+                throw new ArgumentException(null, nameof(value));
 
             if (!((ActiveDirectorySchemaProperty)value).isBound)
                 throw new InvalidOperationException(SR.Format(SR.SchemaObjectNotCommitted, ((ActiveDirectorySchemaProperty)value).Name));

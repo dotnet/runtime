@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 #ifndef ARGS_H
 #define ARGS_H
@@ -142,6 +141,7 @@ bool init_arguments(
     const pal::string_t& additional_deps_serialized,
     const pal::string_t& deps_file,
     const std::vector<pal::string_t>& probe_paths,
+    bool init_from_file_system,
     arguments_t& args);
 
 #endif // ARGS_H

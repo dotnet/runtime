@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 //
 // This file declares the types that constitute the interface between the
@@ -129,6 +128,7 @@ public:
     // Liveness-related fields & methods
 public:
     void genUpdateRegLife(const LclVarDsc* varDsc, bool isBorn, bool isDying DEBUGARG(GenTree* tree));
+    void genUpdateVarReg(LclVarDsc* varDsc, GenTree* tree, int regIndex);
     void genUpdateVarReg(LclVarDsc* varDsc, GenTree* tree);
 
 protected:
@@ -490,7 +490,7 @@ public:
                 regNumber vlsrReg;
             } vlStkReg;
 
-            // VLT_STK2 -- Any 64 bit value which is on the stack, in 2 successsive DWords
+            // VLT_STK2 -- Any 64 bit value which is on the stack, in 2 successive DWords
             // eg 2 DWords at [ESP+0x10]
 
             struct

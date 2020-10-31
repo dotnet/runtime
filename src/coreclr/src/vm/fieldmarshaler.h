@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 //
 // File: FieldMarshaler.h
 //
@@ -45,8 +44,7 @@ struct RawFieldPlacementInfo
 enum class ParseNativeTypeFlags : int
 {
     None    = 0x00,
-    IsAnsi  = 0x01,
-    IsWinRT = 0x02,
+    IsAnsi  = 0x01
 };
 
 //=======================================================================
@@ -209,14 +207,7 @@ private:
     bool m_passInRegisters;
 #endif
 #ifdef FEATURE_HFA
-    enum class HFAType : uint8_t
-    {
-        Unset = ELEMENT_TYPE_END,
-        R4 = ELEMENT_TYPE_R4,
-        R8 = ELEMENT_TYPE_R8,
-        R16 = ELEMENT_TYPE_VALUETYPE
-    };
-    HFAType m_hfaType;
+    CorInfoHFAElemType m_hfaType;
 #endif
     bool m_isMarshalable;
     uint32_t m_size;
@@ -261,34 +252,34 @@ public:
         return &m_nativeFieldDescriptors[0];
     }
 
-    CorElementType GetNativeHFATypeRaw() const;
+    CorInfoHFAElemType GetNativeHFATypeRaw() const;
 
 #ifdef FEATURE_HFA
     bool IsNativeHFA() const
     {
         LIMITED_METHOD_CONTRACT;
-        return m_hfaType != HFAType::Unset;
+        return m_hfaType != CORINFO_HFA_ELEM_NONE;
     }
 
-    CorElementType GetNativeHFAType() const
+    CorInfoHFAElemType GetNativeHFAType() const
     {
         LIMITED_METHOD_CONTRACT;
-        return (CorElementType)m_hfaType;
+        return m_hfaType;
     }
 
-    void SetHFAType(CorElementType hfaType)
+    void SetHFAType(CorInfoHFAElemType hfaType)
     {
         LIMITED_METHOD_CONTRACT;
         // We should call this at most once.
-        _ASSERTE(m_hfaType == HFAType::Unset);
-        m_hfaType = (HFAType)hfaType;
+        _ASSERTE(m_hfaType == CORINFO_HFA_ELEM_NONE);
+        m_hfaType = hfaType;
     }
 #else
     bool IsNativeHFA() const
     {
-        return GetNativeHFATypeRaw() != ELEMENT_TYPE_END;
+        return GetNativeHFATypeRaw() != CORINFO_HFA_ELEM_NONE;
     }
-    CorElementType GetNativeHFAType() const
+    CorInfoHFAElemType GetNativeHFAType() const
     {
         return GetNativeHFATypeRaw();
     }

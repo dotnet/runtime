@@ -1,0 +1,20 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <AssemblyName>TestLibrary</AssemblyName>
+    <OutputType>Library</OutputType>
+    <CLRTestKind>BuildOnly</CLRTestKind>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <GenerateRunScript>false</GenerateRunScript>
+    <TargetFramework>$(NetCoreAppToolCurrent)</TargetFramework>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="Assertion.cs" />
+    <Compile Include="Generator.cs" />
+    <Compile Include="Logging.cs" />
+    <Compile Include="TestFramework.cs" />
+    <Compile Include="Utilities.cs" />
+    <Compile Include="HostPolicyMock.cs" />
+    <Compile Include="XPlatformUtils.cs" />
+  </ItemGroup>
+
+</Project>

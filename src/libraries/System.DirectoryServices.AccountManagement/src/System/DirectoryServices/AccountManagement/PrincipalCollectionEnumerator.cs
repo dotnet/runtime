@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System;
 using System.Diagnostics;
@@ -277,9 +276,9 @@ namespace System.DirectoryServices.AccountManagement
         private readonly List<Principal> _removedValuesPending;
         private readonly List<Principal> _removedValuesCompleted;
 
-        private bool _endReached = false;    // true if there are no results left to iterate over
+        private bool _endReached;    // true if there are no results left to iterate over
 
-        private IEnumerator<Principal> _enumerator = null;   // The insertedValues{Completed,Pending} enumerator, used by MoveNext
+        private IEnumerator<Principal> _enumerator;   // The insertedValues{Completed,Pending} enumerator, used by MoveNext
 
         private enum CurrentEnumeratorMode          // The set of values that MoveNext is currently iterating over
         {
@@ -292,7 +291,7 @@ namespace System.DirectoryServices.AccountManagement
         private CurrentEnumeratorMode _currentMode = CurrentEnumeratorMode.None;
 
         // To support IDisposable
-        private bool _disposed = false;
+        private bool _disposed;
 
         private void CheckDisposed()
         {
@@ -306,7 +305,7 @@ namespace System.DirectoryServices.AccountManagement
         // When this enumerator was constructed, to detect changes made to the PrincipalCollection after it was constructed
         private readonly DateTime _creationTime = DateTime.UtcNow;
 
-        private readonly PrincipalCollection _memberCollection = null;
+        private readonly PrincipalCollection _memberCollection;
 
         private void CheckChanged()
         {

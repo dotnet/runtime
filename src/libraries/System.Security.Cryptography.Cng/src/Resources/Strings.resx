@@ -190,7 +190,7 @@
     <value>The provider name '{0}' is invalid.</value>
   </data>
   <data name="Cryptography_InvalidRsaParameters" xml:space="preserve">
-    <value>The specified RSA parameters are not valid; both Exponent and Modulus are required fields.</value>
+    <value>The specified RSA parameters are not valid. Exponent and Modulus are required. If D is present, it must have the same length as Modulus. If D is present, P, Q, DP, DQ, and InverseQ are required and must have half the length of Modulus, rounded up, otherwise they must be omitted.</value>
   </data>
   <data name="Cryptography_KeyBlobParsingError" xml:space="preserve">
     <value>Key Blob not in expected format.</value>
@@ -266,5 +266,11 @@
   </data>
   <data name="Cryptography_InvalidECCharacteristic2Curve" xml:space="preserve">
     <value>The specified Characteristic2 curve parameters are not valid. Polynomial, A, B, G.X, G.Y, and Order are required. A, B, G.X, G.Y must be the same length, and the same length as Q.X, Q.Y and D if those are specified. Seed, Cofactor and Hash are optional. Other parameters are not allowed.</value>
+  </data>
+  <data name="Argument_DestinationTooShort" xml:space="preserve">
+    <value>Destination is too short.</value>
+  </data>
+  <data name="Cryptography_FeedbackSizeNotSupported" xml:space="preserve">
+    <value>The current platform does not support the specified feedback size.</value>
   </data>
 </root>

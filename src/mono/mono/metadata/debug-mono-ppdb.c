@@ -41,20 +41,8 @@ struct _MonoPPDBFile {
 	MonoImage *image;
 	GHashTable *doc_hash;
 	GHashTable *method_hash;
+	gboolean is_embedded;
 };
-
-/* IMAGE_DEBUG_DIRECTORY structure */
-typedef struct
-{
-	gint32 characteristics;
-	gint32 time_date_stamp;
-	gint16 major_version;
-	gint16 minor_version;
-	gint32 type;
-	gint32 size_of_data;
-	gint32 address;
-	gint32 pointer;
-}  ImageDebugDirectory;
 
 typedef struct {
 	gint32 signature;
@@ -67,11 +55,6 @@ typedef struct {
 	guint32 entry_point;
 	guint64 referenced_tables;
 } PdbStreamHeader;
-
-typedef enum {
-	DEBUG_DIR_ENTRY_CODEVIEW = 2,
-	DEBUG_DIR_ENTRY_PPDB = 17
-} DebugDirectoryEntryType;
 
 #define EMBEDDED_PPDB_MAGIC 0x4244504d
 
@@ -87,40 +70,52 @@ get_pe_debug_info (MonoImage *image, guint8 *out_guid, gint32 *out_age, gint32 *
 				   int *ppdb_uncompressed_size, int *ppdb_compressed_size)
 {
 	MonoPEDirEntry *debug_dir_entry;
-	ImageDebugDirectory *debug_dir;
+	ImageDebugDirectory debug_dir;
 	int idx;
 	gboolean guid_found = FALSE;
+	guint8 *data;
 
 	*ppdb_data = NULL;
 
-	debug_dir_entry = &image->image_info->cli_header.datadir.pe_debug;
+	debug_dir_entry = (MonoPEDirEntry *) &image->image_info->cli_header.datadir.pe_debug;
 	if (!debug_dir_entry->size)
 		return FALSE;
 
 	int offset = mono_cli_rva_image_map (image, debug_dir_entry->rva);
 	for (idx = 0; idx < debug_dir_entry->size / sizeof (ImageDebugDirectory); ++idx) {
-		debug_dir = (ImageDebugDirectory*)(image->raw_data + offset) + idx;
-		if (debug_dir->type == DEBUG_DIR_ENTRY_CODEVIEW && debug_dir->major_version == 0x100 && debug_dir->minor_version == 0x504d) {
+		data = (guint8 *) ((ImageDebugDirectory *) (image->raw_data + offset) + idx);
+		debug_dir.characteristics = read32(data);
+		debug_dir.time_date_stamp = read32(data + 4);
+		debug_dir.major_version   = read16(data + 8);
+		debug_dir.minor_version   = read16(data + 10);
+		debug_dir.type            = read32(data + 12);
+		debug_dir.size_of_data    = read32(data + 16);
+		debug_dir.address         = read32(data + 20);
+		debug_dir.pointer         = read32(data + 24);
+		
+		if (debug_dir.type == DEBUG_DIR_ENTRY_CODEVIEW && debug_dir.major_version == 0x100 && debug_dir.minor_version == 0x504d) {
 			/* This is a 'CODEVIEW' debug directory */
-			CodeviewDebugDirectory *dir = (CodeviewDebugDirectory*)(image->raw_data + debug_dir->pointer);
+			CodeviewDebugDirectory dir;
+			data  = (guint8 *) (image->raw_data + debug_dir.pointer);
+			dir.signature = read32(data);
 
-			if (dir->signature == 0x53445352) {
-				memcpy (out_guid, dir->guid, 16);
-				*out_age = dir->age;
-				*out_timestamp = debug_dir->time_date_stamp;
+			if (dir.signature == 0x53445352) {
+				memcpy (out_guid, data + 4, 16);
+				*out_age = read32(data + 20);
+				*out_timestamp = debug_dir.time_date_stamp;
 				guid_found = TRUE;
 			}
 		}
-		if (debug_dir->type == DEBUG_DIR_ENTRY_PPDB && debug_dir->major_version >= 0x100 && debug_dir->minor_version == 0x100) {
+		if (debug_dir.type == DEBUG_DIR_ENTRY_PPDB && debug_dir.major_version >= 0x100 && debug_dir.minor_version == 0x100) {
 			/* Embedded PPDB blob */
 			/* See src/System.Reflection.Metadata/src/System/Reflection/PortableExecutable/PEReader.EmbeddedPortablePdb.cs in corefx */
-			guint8 *data = (guint8*)(image->raw_data + debug_dir->pointer);
+			data = (guint8*)(image->raw_data + debug_dir.pointer);
 			guint32 magic = read32 (data);
 			g_assert (magic == EMBEDDED_PPDB_MAGIC);
 			guint32 size = read32 (data + 4);
 			*ppdb_data = data + 8;
 			*ppdb_uncompressed_size = size;
-			*ppdb_compressed_size = debug_dir->size_of_data - 8;
+			*ppdb_compressed_size = debug_dir.size_of_data - 8;
 		}
 	}
 	return guid_found;
@@ -136,7 +131,7 @@ doc_free (gpointer key)
 }
 
 static MonoPPDBFile*
-create_ppdb_file (MonoImage *ppdb_image)
+create_ppdb_file (MonoImage *ppdb_image, gboolean is_embedded_ppdb)
 {
 	MonoPPDBFile *ppdb;
 
@@ -144,6 +139,7 @@ create_ppdb_file (MonoImage *ppdb_image)
 	ppdb->image = ppdb_image;
 	ppdb->doc_hash = g_hash_table_new_full (NULL, NULL, NULL, (GDestroyNotify) doc_free);
 	ppdb->method_hash = g_hash_table_new_full (NULL, NULL, NULL, (GDestroyNotify) g_free);
+	ppdb->is_embedded = is_embedded_ppdb;
 	return ppdb;
 }
 
@@ -156,15 +152,16 @@ mono_ppdb_load_file (MonoImage *image, const guint8 *raw_contents, int size)
 	MonoImageOpenStatus status;
 	guint8 pe_guid [16];
 	gint32 pe_age;
-	gint32 pe_timestamp;
+	gint32 pe_timestamp, pdb_timestamp;
 	guint8 *ppdb_data = NULL;
 	guint8 *to_free = NULL;
 	int ppdb_size = 0, ppdb_compressed_size = 0;
+	gboolean is_embedded_ppdb = FALSE;
 
 	if (image->tables [MONO_TABLE_DOCUMENT].rows) {
 		/* Embedded ppdb */
 		mono_image_addref (image);
-		return create_ppdb_file (image);
+		return create_ppdb_file (image, TRUE);
 	}
 
 	if (!get_pe_debug_info (image, pe_guid, &pe_age, &pe_timestamp, &ppdb_data, &ppdb_size, &ppdb_compressed_size)) {
@@ -194,13 +191,14 @@ mono_ppdb_load_file (MonoImage *image, const guint8 *raw_contents, int size)
 		raw_contents = data;
 		size = ppdb_size;
 		to_free = data;
+		is_embedded_ppdb = TRUE;
 	}
 #endif
 
 	MonoAssemblyLoadContext *alc = mono_image_get_alc (image);
 	if (raw_contents) {
 		if (size > 4 && strncmp ((char*)raw_contents, "BSJB", 4) == 0)
-			ppdb_image = mono_image_open_from_data_internal (alc, (char*)raw_contents, size, TRUE, &status, FALSE, TRUE, NULL);
+			ppdb_image = mono_image_open_from_data_internal (alc, (char*)raw_contents, size, TRUE, &status, FALSE, TRUE, NULL, NULL);
 	} else {
 		/* ppdb files drop the .exe/.dll extension */
 		filename = mono_image_get_filename (image);
@@ -230,14 +228,15 @@ mono_ppdb_load_file (MonoImage *image, const guint8 *raw_contents, int size)
 	g_assert (pdb_stream);
 
 	/* The pdb id is a concentation of the pe guid and the timestamp */
-	if (memcmp (pe_guid, pdb_stream->guid, 16) != 0 || memcmp (&pe_timestamp, pdb_stream->guid + 16, 4) != 0) {
+	pdb_timestamp = read32(pdb_stream->guid + 16);
+	if (memcmp (pe_guid, pdb_stream->guid, 16) != 0 || pe_timestamp != pdb_timestamp) {
 		g_warning ("Symbol file %s doesn't match image %s", ppdb_image->name,
 				   image->name);
 		mono_image_close (ppdb_image);
 		return NULL;
 	}
 
-	return create_ppdb_file (ppdb_image);
+	return create_ppdb_file (ppdb_image, is_embedded_ppdb);
 }
 
 void
@@ -447,7 +446,14 @@ mono_ppdb_lookup_location (MonoDebugMethodInfo *minfo, uint32_t offset)
 MonoImage *
 mono_ppdb_get_image (MonoPPDBFile *ppdb)
 {
-    return  ppdb->image;
+	return ppdb->image;
+}
+
+
+gboolean
+mono_ppdb_is_embedded (MonoPPDBFile *ppdb)
+{
+	return ppdb->is_embedded;
 }
 
 void
@@ -484,7 +490,7 @@ mono_ppdb_get_seq_points (MonoDebugMethodInfo *minfo, char **source_file, GPtrAr
 	if (source_files)
 		sindexes = g_ptr_array_new ();
 
-	if (!method->token)
+	if (!method->token || tables [MONO_TABLE_METHODBODY].rows == 0)
 		return;
 
 	method_idx = mono_metadata_token_index (method->token);

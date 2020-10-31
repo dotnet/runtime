@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 namespace System.Xml.Schema
 {
@@ -40,7 +39,7 @@ namespace System.Xml.Schema
             Duration,
             YearMonthDuration,
             DayTimeDuration,
-        };
+        }
 
         /// <summary>
         /// Construct an XsdDuration from component parts.
@@ -143,11 +142,12 @@ namespace System.Xml.Schema
         public XsdDuration(string s, DurationType durationType)
         {
             XsdDuration result;
-            Exception exception = TryParse(s, durationType, out result);
+            Exception? exception = TryParse(s, durationType, out result);
             if (exception != null)
             {
                 throw exception;
             }
+
             _years = result.Years;
             _months = result.Months;
             _days = result.Days;
@@ -159,6 +159,7 @@ namespace System.Xml.Schema
             {
                 _nanoseconds |= NegativeBit;
             }
+
             return;
         }
 
@@ -242,22 +243,23 @@ namespace System.Xml.Schema
         public TimeSpan ToTimeSpan(DurationType durationType)
         {
             TimeSpan result;
-            Exception exception = TryToTimeSpan(durationType, out result);
+            Exception? exception = TryToTimeSpan(durationType, out result);
             if (exception != null)
             {
                 throw exception;
             }
+
             return result;
         }
 
-        internal Exception TryToTimeSpan(out TimeSpan result)
+        internal Exception? TryToTimeSpan(out TimeSpan result)
         {
             return TryToTimeSpan(DurationType.Duration, out result);
         }
 
-        internal Exception TryToTimeSpan(DurationType durationType, out TimeSpan result)
+        internal Exception? TryToTimeSpan(DurationType durationType, out TimeSpan result)
         {
-            Exception exception = null;
+            Exception? exception = null;
             ulong ticks = 0;
 
             // Throw error if result cannot fit into a long
@@ -426,14 +428,14 @@ namespace System.Xml.Schema
             return sb.ToString();
         }
 
-        internal static Exception TryParse(string s, out XsdDuration result)
+        internal static Exception? TryParse(string s, out XsdDuration result)
         {
             return TryParse(s, DurationType.Duration, out result);
         }
 
-        internal static Exception TryParse(string s, DurationType durationType, out XsdDuration result)
+        internal static Exception? TryParse(string s, DurationType durationType, out XsdDuration result)
         {
-            string errorCode;
+            string? errorCode;
             int length;
             int value, pos, numDigits;
             Parts parts = Parts.HasNone;
@@ -605,6 +607,7 @@ namespace System.Xml.Schema
                 if ((parts & ~(XsdDuration.Parts.HasYears | XsdDuration.Parts.HasMonths)) != 0)
                     goto InvalidFormat;
             }
+
             return null;
 
         InvalidFormat:
@@ -619,7 +622,7 @@ namespace System.Xml.Schema
         /// cntDigits.  The integer is returned (0 if no digits).  If the digits cannot fit into an Int32:
         ///   1. If eatDigits is true, then additional digits will be silently discarded (don't count towards numDigits)
         ///   2. If eatDigits is false, an overflow exception is thrown
-        private static string TryParseDigits(string s, ref int offset, bool eatDigits, out int result, out int numDigits)
+        private static string? TryParseDigits(string s, ref int offset, bool eatDigits, out int result, out int numDigits)
         {
             int offsetStart = offset;
             int offsetEnd = s.Length;

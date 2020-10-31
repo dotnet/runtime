@@ -1,6 +1,8 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
+
+// TODO: Enable after System.Private.Xml is annotated
+#nullable disable
 
 using System.Xml;
 using System.Collections;
@@ -16,7 +18,6 @@ namespace System.Data
         internal string _schemaUri;
         internal XmlElement _schemaRoot;
         internal DataSet _ds;
-        private static readonly char[] s_colonArray = new char[] { ':' };
 
         internal XDRSchema(DataSet ds, bool fInline)
         {
@@ -294,7 +295,7 @@ namespace System.Data
         private Type ParseDataType(string dt, string dtValues)
         {
             string strType = dt;
-            string[] parts = dt.Split(s_colonArray);  // ":"
+            string[] parts = dt.Split(':');
 
             if (parts.Length > 2)
             {

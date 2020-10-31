@@ -1,13 +1,14 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
+using System.Runtime.CompilerServices;
 using System.Runtime.ConstrainedExecution;
 using System.Security.Principal;
+using System.Runtime.Versioning;
 
 namespace System.Threading
 {
@@ -171,22 +172,81 @@ namespace System.Threading
                     }
 
                     _name = value;
-
                     ThreadNameChanged(value);
+                    if (value != null)
+                    {
+                        _mayNeedResetForThreadPool = true;
+                    }
                 }
             }
         }
 
+        internal void SetThreadPoolWorkerThreadName()
+        {
+            Debug.Assert(this == CurrentThread);
+            Debug.Assert(IsThreadPoolThread);
+
+            lock (this)
+            {
+                // Bypass the exception from setting the property
+                _name = ThreadPool.WorkerThreadName;
+                ThreadNameChanged(ThreadPool.WorkerThreadName);
+                _name = null;
+            }
+        }
+
+#if !CORECLR
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal void ResetThreadPoolThread()
+        {
+            Debug.Assert(this == CurrentThread);
+            Debug.Assert(!IsThreadStartSupported || IsThreadPoolThread); // there are no dedicated threadpool threads on runtimes where we can't start threads
+
+            if (_mayNeedResetForThreadPool)
+            {
+                ResetThreadPoolThreadSlow();
+            }
+        }
+#endif
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        private void ResetThreadPoolThreadSlow()
+        {
+            Debug.Assert(this == CurrentThread);
+            Debug.Assert(!IsThreadStartSupported || IsThreadPoolThread); // there are no dedicated threadpool threads on runtimes where we can't start threads
+            Debug.Assert(_mayNeedResetForThreadPool);
+
+            _mayNeedResetForThreadPool = false;
+
+            if (_name != null)
+            {
+                SetThreadPoolWorkerThreadName();
+            }
+
+            if (!IsBackground)
+            {
+                IsBackground = true;
+            }
+
+            if (Priority != ThreadPriority.Normal)
+            {
+                Priority = ThreadPriority.Normal;
+            }
+        }
+
+        [Obsolete(Obsoletions.ThreadAbortMessage, DiagnosticId = Obsoletions.ThreadAbortDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
         public void Abort()
         {
             throw new PlatformNotSupportedException(SR.PlatformNotSupported_ThreadAbort);
         }
 
+        [Obsolete(Obsoletions.ThreadAbortMessage, DiagnosticId = Obsoletions.ThreadAbortDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
         public void Abort(object? stateInfo)
         {
             throw new PlatformNotSupportedException(SR.PlatformNotSupported_ThreadAbort);
         }
 
+        [Obsolete(Obsoletions.ThreadAbortMessage, DiagnosticId = Obsoletions.ThreadAbortDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
         public static void ResetAbort()
         {
             throw new PlatformNotSupportedException(SR.PlatformNotSupported_ThreadAbort);
@@ -225,6 +285,7 @@ namespace System.Threading
             set => TrySetApartmentState(value);
         }
 
+        [SupportedOSPlatform("windows")]
         public void SetApartmentState(ApartmentState state)
         {
             if (!TrySetApartmentState(state))
@@ -243,7 +304,7 @@ namespace System.Threading
                     break;
 
                 default:
-                    throw new ArgumentOutOfRangeException(SR.ArgumentOutOfRange_Enum, nameof(state));
+                    throw new ArgumentOutOfRangeException(nameof(state), SR.ArgumentOutOfRange_Enum);
             }
 
             return TrySetApartmentStateUnchecked(state);

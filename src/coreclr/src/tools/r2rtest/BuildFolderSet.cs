@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System;
 using System.Collections;
@@ -16,6 +15,8 @@ namespace R2RTest
 {
     public class BuildFolderSet
     {
+        const string FrameworkOutputFileName = "framework-r2r.dll";
+
         private readonly IEnumerable<BuildFolder> _buildFolders;
 
         private readonly IEnumerable<CompilerRunner> _compilerRunners;
@@ -222,9 +223,12 @@ namespace R2RTest
             Stopwatch stopwatch = Stopwatch.StartNew();
 
             string coreRoot = _options.CoreRootDirectory.FullName;
+
+            File.Delete(Path.Combine(coreRoot, FrameworkOutputFileName));
+
             string[] frameworkFolderFiles = Directory.GetFiles(coreRoot);
 
-            IEnumerable<CompilerRunner> frameworkRunners = _options.CompilerRunners(isFramework: true);
+            IEnumerable<CompilerRunner> frameworkRunners = _options.CompilerRunners(isFramework: true, overrideOutputPath: _options.OutputDirectory.FullName);
 
             // Pre-populate the output folders with the input files so that we have backdrops
             // for failing compilations.
@@ -260,7 +264,7 @@ namespace R2RTest
 
                     if (inputFrameworkDlls.Count > 0)
                     {
-                        string outputFileName = runner.GetOutputFileName(_options.CoreRootDirectory.FullName, "framework-r2r.dll");
+                        string outputFileName = runner.GetOutputFileName(_options.CoreRootDirectory.FullName, FrameworkOutputFileName);
                         ProcessInfo compilationProcess = new ProcessInfo(new CompilationProcessConstructor(runner, outputFileName, inputFrameworkDlls));
                         compilationsToRun.Add(compilationProcess);
                         processes[(int)runner.Index] = compilationProcess;

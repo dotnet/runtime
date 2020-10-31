@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 /*****************************************************************************
  **                                                                         **
@@ -143,8 +142,6 @@ typedef UNALIGNED void const *UVCP_CONSTANT;
 
 #define TARGET_MAIN_CLR_DLL_NAME_W    MAKE_TARGET_DLLNAME_W(MAIN_CLR_MODULE_NAME_W)
 #define TARGET_MAIN_CLR_DLL_NAME_A    MAKE_TARGET_DLLNAME_A(MAIN_CLR_MODULE_NAME_A)
-
-#define SWITCHOUT_HANDLE_VALUE ((HANDLE)(LONG_PTR)-2)
 
 //*****************************************************************************
 //*****************************************************************************
@@ -1825,27 +1822,6 @@ DECLARE_INTERFACE_(IMetaDataInfo, IUnknown)
         DWORD *       pdwMappingType) PURE; // [out] Type of file mapping (code:CorFileMapping).
 };  // class IMetaDataInfo
 
-
-//-------------------------------------
-//--- IMetaDataWinMDImport
-//-------------------------------------
-// {969EA0C5-964E-411B-A807-B0F3C2DFCBD4}
-EXTERN_GUID(IID_IMetaDataWinMDImport, 0x969ea0c5, 0x964e, 0x411b, 0xa8, 0x7, 0xb0, 0xf3, 0xc2, 0xdf, 0xcb, 0xd4);
-
-//---
-#undef  INTERFACE
-#define INTERFACE IMetaDataWinMDImport
-DECLARE_INTERFACE_(IMetaDataWinMDImport, IUnknown)
-{
-       STDMETHOD(GetUntransformedTypeRefProps)( // S_OK or error.
-        mdTypeRef   tr,                         // [IN] TypeRef token.
-        mdToken     *ptkResolutionScope,        // [OUT] Resolution scope, ModuleRef or AssemblyRef.
-      _Out_writes_to_opt_(cchName, *pchName)
-        LPWSTR      szName,                     // [OUT] Name of the TypeRef.
-        ULONG       cchName,                    // [IN] Size of buffer.
-        ULONG       *pchName) PURE;             // [OUT] Size of Name.
-};  // class IMetaDataWinMDImport
-
 //**********************************************************************
 //
 // Predefined CustomAttribute and structures for these custom value
@@ -2115,15 +2091,11 @@ inline ULONG CorSigUncompressData(      // return number of bytes of that compre
 }
 
 
-#if !defined(SELECTANY)
-#if defined(__GNUC__)
-    #define SELECTANY extern __attribute__((weak))
-#else
-    #define SELECTANY extern __declspec(selectany)
-#endif
-#endif
-
-SELECTANY const mdToken g_tkCorEncodeToken[4] ={mdtTypeDef, mdtTypeRef, mdtTypeSpec, mdtBaseType};
+FORCEINLINE mdToken CorSigDecodeTokenType(int encoded)
+{
+    static const mdToken s_tableTokenTypes[] = {mdtTypeDef, mdtTypeRef, mdtTypeSpec, mdtBaseType};
+    return s_tableTokenTypes[encoded];
+}
 
 // uncompress a token
 inline mdToken CorSigUncompressToken(   // return the token.
@@ -2133,7 +2105,7 @@ inline mdToken CorSigUncompressToken(   // return the token.
     mdToken tkType;
 
     tk = CorSigUncompressData(pData);
-    tkType = g_tkCorEncodeToken[tk & 0x3];
+    tkType = CorSigDecodeTokenType(tk & 0x3);
     tk = TokenFromRid(tk >> 2, tkType);
     return tk;
 }
@@ -2148,7 +2120,7 @@ inline ULONG CorSigUncompressToken( // return number of bytes of that compressed
     mdToken tkType;
 
     cb = CorSigUncompressData(pData, (ULONG *)&tk);
-    tkType = g_tkCorEncodeToken[tk & 0x3];
+    tkType = CorSigDecodeTokenType(tk & 0x3);
     tk = TokenFromRid(tk >> 2, tkType);
     *pToken = tk;
     return cb;
@@ -2167,7 +2139,7 @@ inline HRESULT CorSigUncompressToken(
 
     if (SUCCEEDED(hr))
     {
-        tkType = g_tkCorEncodeToken[tk & 0x3];
+        tkType = CorSigDecodeTokenType(tk & 0x3);
         tk = TokenFromRid(tk >> 2, tkType);
         *pToken = tk;
     }
@@ -2320,17 +2292,17 @@ inline ULONG CorSigCompressToken(   // return number of bytes that compressed fo
     // TypeSpec is encoded with low bits 10
     // BaseType is encoded with low bit 11
     //
-    if (ulTyp == g_tkCorEncodeToken[1])
+    if (ulTyp == CorSigDecodeTokenType(1))
     {
         // make the last two bits 01
         rid |= 0x1;
     }
-    else if (ulTyp == g_tkCorEncodeToken[2])
+    else if (ulTyp == CorSigDecodeTokenType(2))
     {
         // make last two bits 0
         rid |= 0x2;
     }
-    else if (ulTyp == g_tkCorEncodeToken[3])
+    else if (ulTyp == CorSigDecodeTokenType(3))
     {
         rid |= 0x3;
     }

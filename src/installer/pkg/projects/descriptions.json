@@ -48,10 +48,5 @@
         "Name": "Microsoft.NETCore.App.Ref",
         "Description": "A set of .NET APIs that are included in the default .NET application model. Contains reference assemblies, documentation, and other design-time assets.",
         "CommonTypes": [ ]
-    },
-    {
-        "Name": "NETStandard.Library.Ref",
-        "Description": "A set of standard .NET APIs that are prescribed to be used and supported together. Contains reference assemblies, documentation, and other design-time assets.",
-        "CommonTypes": [ ]
     }
 ]

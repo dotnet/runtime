@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Globalization;
 using System.Runtime.InteropServices;
@@ -24,7 +23,9 @@ namespace System
 
         public bool Contains(string value, StringComparison comparisonType)
         {
+#pragma warning disable CA2249 // Consider using 'string.Contains' instead of 'string.IndexOf'... this is the implementation of Contains!
             return IndexOf(value, comparisonType) >= 0;
+#pragma warning restore CA2249
         }
 
         public bool Contains(char value) => SpanHelpers.Contains(ref _firstChar, value, Length);
@@ -224,16 +225,22 @@ namespace System
         * ========================================================
         *
         * Given a search string 'searchString', a target string 'value' to locate within the search string, and a comparer
-        * 'comparer', the comparer will return a set S of tuples '(startPos, endPos)' for which the below expression
+        * 'comparer', we ask the comparer to generate a set S of tuples '(startPos, endPos)' for which the below expression
         * returns true:
         *
         * >> bool result = searchString.Substring(startPos, endPos - startPos).Equals(value, comparer);
         *
-        * If the set S is empty (i.e., there is no combination of values 'startPos' and 'endPos' which makes the
+        * If the generated set S is empty (i.e., there is no combination of values 'startPos' and 'endPos' which makes the
         * above expression evaluate to true), then we say "'searchString' does not contain 'value'", and the expression
         * "searchString.Contains(value, comparer)" should evaluate to false. If the set S is non-empty, then we say
         * "'searchString' contains 'value'", and the expression "searchString.Contains(value, comparer)" should
         * evaluate to true.
+        *
+        * n.b. There may be other tuples '(startPos, endPos)' *not* present in the generated set S for which the above
+        * expression evaluates to true. We discount the existence of these values. Allowing any such values to factor
+        * into the logic below could result in splitting the search string in a manner inappropriate for the culture
+        * rules of the specified comparer. For the remainder of this discussion, when we refer to 'startPos' and
+        * 'endPos', we consider only tuples '(startPos, endPos)' as they may be present in the generated set S.
         *
         * Given a 'searchString', 'value', and 'comparer', the behavior of the IndexOf method is that it finds the
         * smallest possible 'endPos' for which there exists any corresponding 'startPos' which makes the above
@@ -339,7 +346,7 @@ namespace System
 
                 case StringComparison.Ordinal:
                 case StringComparison.OrdinalIgnoreCase:
-                    return CompareInfo.Invariant.IndexOf(this, value, startIndex, count, GetCompareOptionsFromOrdinalStringComparison(comparisonType));
+                    return Ordinal.IndexOf(this, value, startIndex, count, comparisonType == StringComparison.OrdinalIgnoreCase);
 
                 default:
                     throw (value is null)

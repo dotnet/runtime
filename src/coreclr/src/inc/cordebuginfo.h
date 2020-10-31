@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 //
 // Keep in sync with https://github.com/dotnet/corert/blob/master/src/Native/ObjWriter/cordebuginfo.h
@@ -252,7 +251,7 @@ public:
     };
 
     // VLT_STK2 -- Any 64 bit value which is on the stack,
-    // in 2 successsive DWords.
+    // in 2 successive DWords.
     // eg 2 DWords at [ESP+0x10]
 
     struct vlStk2

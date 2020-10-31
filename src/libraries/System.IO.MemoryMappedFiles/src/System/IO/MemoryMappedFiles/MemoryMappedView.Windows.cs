@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using Microsoft.Win32.SafeHandles;
 using System.Diagnostics;
@@ -15,7 +14,7 @@ namespace System.IO.MemoryMappedFiles
         private const int MaxFlushWaits = 15;  // must be <=30
         private const int MaxFlushRetriesPerWait = 20;
 
-        public static unsafe MemoryMappedView CreateView(SafeMemoryMappedFileHandle memMappedFileHandle,
+        public static MemoryMappedView CreateView(SafeMemoryMappedFileHandle memMappedFileHandle,
                                             MemoryMappedFileAccess access, long offset, long size)
         {
             // MapViewOfFile can only create views that start at a multiple of the system memory allocation
@@ -94,64 +93,57 @@ namespace System.IO.MemoryMappedFiles
         // flush to the disk.
         // NOTE: This will flush all bytes before and after the view up until an offset that is a multiple
         //       of SystemPageSize.
-        public void Flush(UIntPtr capacity)
+        public unsafe void Flush(UIntPtr capacity)
         {
-            unsafe
+            byte* firstPagePtr = null;
+            try
             {
-                byte* firstPagePtr = null;
-                try
-                {
-                    _viewHandle.AcquirePointer(ref firstPagePtr);
+                _viewHandle.AcquirePointer(ref firstPagePtr);
 
-                    if (Interop.Kernel32.FlushViewOfFile((IntPtr)firstPagePtr, capacity))
-                        return;
+                if (Interop.Kernel32.FlushViewOfFile((IntPtr)firstPagePtr, capacity))
+                    return;
 
-                    // It is a known issue within the NTFS transaction log system that
-                    // causes FlushViewOfFile to intermittently fail with ERROR_LOCK_VIOLATION
-                    // As a workaround, we catch this particular error and retry the flush operation
-                    // a few milliseconds later. If it does not work, we give it a few more tries with
-                    // increasing intervals. Eventually, however, we need to give up. In ad-hoc tests
-                    // this strategy successfully flushed the view after no more than 3 retries.
+                // It is a known issue within the NTFS transaction log system that
+                // causes FlushViewOfFile to intermittently fail with ERROR_LOCK_VIOLATION
+                // As a workaround, we catch this particular error and retry the flush operation
+                // a few milliseconds later. If it does not work, we give it a few more tries with
+                // increasing intervals. Eventually, however, we need to give up. In ad-hoc tests
+                // this strategy successfully flushed the view after no more than 3 retries.
 
-                    int error = Marshal.GetLastWin32Error();
-                    if (error != Interop.Errors.ERROR_LOCK_VIOLATION)
-                        throw Win32Marshal.GetExceptionForWin32Error(error);
-
-                    SpinWait spinWait = default;
-                    for (int w = 0; w < MaxFlushWaits; w++)
-                    {
-                        int pause = (1 << w);  // MaxFlushRetries should never be over 30
-                        Thread.Sleep(pause);
-
-                        for (int r = 0; r < MaxFlushRetriesPerWait; r++)
-                        {
-                            if (Interop.Kernel32.FlushViewOfFile((IntPtr)firstPagePtr, capacity))
-                                return;
-
-                            error = Marshal.GetLastWin32Error();
-                            if (error != Interop.Errors.ERROR_LOCK_VIOLATION)
-                                throw Win32Marshal.GetExceptionForWin32Error(error);
-
-                            spinWait.SpinOnce();
-                        }
-                    }
-
-                    // We got to here, so there was no success:
+                int error = Marshal.GetLastWin32Error();
+                if (error != Interop.Errors.ERROR_LOCK_VIOLATION)
                     throw Win32Marshal.GetExceptionForWin32Error(error);
-                }
-                finally
+
+                SpinWait spinWait = default;
+                for (int w = 0; w < MaxFlushWaits; w++)
                 {
-                    if (firstPagePtr != null)
+                    int pause = (1 << w);  // MaxFlushRetries should never be over 30
+                    Thread.Sleep(pause);
+
+                    for (int r = 0; r < MaxFlushRetriesPerWait; r++)
                     {
-                        _viewHandle.ReleasePointer();
+                        if (Interop.Kernel32.FlushViewOfFile((IntPtr)firstPagePtr, capacity))
+                            return;
+
+                        error = Marshal.GetLastWin32Error();
+                        if (error != Interop.Errors.ERROR_LOCK_VIOLATION)
+                            throw Win32Marshal.GetExceptionForWin32Error(error);
+
+                        spinWait.SpinOnce();
                     }
+                }
+
+                // We got to here, so there was no success:
+                throw Win32Marshal.GetExceptionForWin32Error(error);
+            }
+            finally
+            {
+                if (firstPagePtr != null)
+                {
+                    _viewHandle.ReleasePointer();
                 }
             }
         }
-
-        // -----------------------------
-        // ---- PAL layer ends here ----
-        // -----------------------------
 
         private static int GetSystemPageAllocationGranularity()
         {

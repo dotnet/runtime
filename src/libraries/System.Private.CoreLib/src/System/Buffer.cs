@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 #if TARGET_AMD64 || TARGET_ARM64 || (TARGET_32BIT && !TARGET_ARM)
 #define HAS_CUSTOM_BLOCKS
@@ -11,15 +10,6 @@ using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 
 using Internal.Runtime.CompilerServices;
-
-#pragma warning disable SA1121 // explicitly using type aliases instead of built-in types
-#if TARGET_64BIT
-using nint = System.Int64;
-using nuint = System.UInt64;
-#else
-using nint = System.Int32;
-using nuint = System.UInt32;
-#endif
 
 namespace System
 {
@@ -315,33 +305,10 @@ namespace System
         }
 
         // This method has different signature for x64 and other platforms and is done for performance reasons.
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal static void Memmove<T>(ref T destination, ref T source, nuint elementCount)
-        {
-            if (!RuntimeHelpers.IsReferenceOrContainsReferences<T>())
-            {
-                // Blittable memmove
-
-                Memmove(
-                    ref Unsafe.As<T, byte>(ref destination),
-                    ref Unsafe.As<T, byte>(ref source),
-                    elementCount * (nuint)Unsafe.SizeOf<T>());
-            }
-            else
-            {
-                // Non-blittable memmove
-                BulkMoveWithWriteBarrier(
-                    ref Unsafe.As<T, byte>(ref destination),
-                    ref Unsafe.As<T, byte>(ref source),
-                    elementCount * (nuint)Unsafe.SizeOf<T>());
-            }
-        }
-
-        // This method has different signature for x64 and other platforms and is done for performance reasons.
         private static void Memmove(ref byte dest, ref byte src, nuint len)
         {
             // P/Invoke into the native version when the buffers are overlapping.
-            if (((nuint)Unsafe.ByteOffset(ref src, ref dest) < len) || ((nuint)Unsafe.ByteOffset(ref dest, ref src) < len))
+            if (((nuint)(nint)Unsafe.ByteOffset(ref src, ref dest) < len) || ((nuint)(nint)Unsafe.ByteOffset(ref dest, ref src) < len))
             {
                 goto BuffersOverlap;
             }

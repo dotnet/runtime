@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using Microsoft.Win32.SafeHandles;
 
@@ -509,8 +508,6 @@ internal static partial class Interop
             internal ReadOnlySpan<byte> localAddrAsSpan => MemoryMarshal.CreateSpan(ref localAddr[0], 16);
         }
 
-        internal delegate void StableUnicastIpAddressTableDelegate(IntPtr context, IntPtr table);
-
         [DllImport(Interop.Libraries.IpHlpApi)]
         internal static extern uint GetAdaptersAddresses(
             AddressFamily family,
@@ -564,10 +561,10 @@ internal static partial class Interop
         internal static extern uint CancelMibChangeNotify2(IntPtr notificationHandle);
 
         [DllImport(Interop.Libraries.IpHlpApi)]
-        internal static extern uint NotifyStableUnicastIpAddressTable(
+        internal static extern unsafe uint NotifyStableUnicastIpAddressTable(
             AddressFamily addressFamily,
             out SafeFreeMibTable table,
-            StableUnicastIpAddressTableDelegate callback,
+            delegate* unmanaged<IntPtr, IntPtr, void> callback,
             IntPtr context,
             out SafeCancelMibChangeNotify notificationHandle);
     }

@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 //
 // File: ILStubCache.cpp
 //
@@ -105,6 +104,8 @@ MethodDesc* ILStubCache::CreateAndLinkNewILStubMethodDesc(LoaderAllocator* pAllo
 
     amTracker.SuppressRelease();
 
+    pStubLinker->SetStubMethodDesc(pStubMD);
+
     ILStubResolver *pResolver = pStubMD->AsDynamicMethodDesc()->GetILStubResolver();
 
     pResolver->SetStubMethodDesc(pStubMD);
@@ -112,18 +113,19 @@ MethodDesc* ILStubCache::CreateAndLinkNewILStubMethodDesc(LoaderAllocator* pAllo
 
     {
         UINT   maxStack;
-        size_t cbCode;
-        DWORD  cbSig;
-        BYTE * pbBuffer;
-        BYTE * pbLocalSig;
-
-        cbCode = pStubLinker->Link(&maxStack);
-        cbSig = pStubLinker->GetLocalSigSize();
+        size_t cbCode = pStubLinker->Link(&maxStack);
+        DWORD cbSig = pStubLinker->GetLocalSigSize();
 
         COR_ILMETHOD_DECODER * pILHeader = pResolver->AllocGeneratedIL(cbCode, cbSig, maxStack);
-        pbBuffer   = (BYTE *)pILHeader->Code;
-        pbLocalSig = (BYTE *)pILHeader->LocalVarSig;
+        BYTE * pbBuffer   = (BYTE *)pILHeader->Code;
+        BYTE * pbLocalSig = (BYTE *)pILHeader->LocalVarSig;
         _ASSERTE(cbSig == pILHeader->cbLocalVarSig);
+
+        size_t numEH = pStubLinker->GetNumEHClauses();
+        if (numEH > 0)
+        {
+            pStubLinker->WriteEHClauses(pResolver->AllocEHSect(numEH));
+        }
 
         pStubLinker->GenerateCode(pbBuffer, cbCode);
         pStubLinker->GetLocalSig(pbLocalSig, cbSig);
@@ -244,6 +246,16 @@ MethodDesc* ILStubCache::CreateNewMethodDesc(LoaderHeap* pCreationHeap, MethodTa
     }
     else
 #endif
+    if (SF_IsTailCallStoreArgsStub(dwStubFlags))
+    {
+        pMD->GetILStubResolver()->SetStubType(ILStubResolver::TailCallStoreArgsStub);
+    }
+    else
+    if (SF_IsTailCallCallTargetStub(dwStubFlags))
+    {
+        pMD->GetILStubResolver()->SetStubType(ILStubResolver::TailCallCallTargetStub);
+    }
+    else
 #ifdef FEATURE_COMINTEROP
     if (SF_IsCOMStub(dwStubFlags))
     {
@@ -252,18 +264,13 @@ MethodDesc* ILStubCache::CreateNewMethodDesc(LoaderHeap* pCreationHeap, MethodTa
         {
             pMD->m_dwExtendedFlags |= DynamicMethodDesc::nomdReverseStub;
 
-            ILStubResolver::ILStubType type = (SF_IsWinRTStub(dwStubFlags) ? ILStubResolver::WinRTToCLRInteropStub : ILStubResolver::COMToCLRInteropStub);
+            ILStubResolver::ILStubType type = ILStubResolver::COMToCLRInteropStub;
             pMD->GetILStubResolver()->SetStubType(type);
         }
         else
         {
-            ILStubResolver::ILStubType type = (SF_IsWinRTStub(dwStubFlags) ? ILStubResolver::CLRToWinRTInteropStub : ILStubResolver::CLRToCOMInteropStub);
+            ILStubResolver::ILStubType type =  ILStubResolver::CLRToCOMInteropStub;
             pMD->GetILStubResolver()->SetStubType(type);
-        }
-
-        if (SF_IsWinRTDelegateStub(dwStubFlags))
-        {
-            pMD->m_dwExtendedFlags |= DynamicMethodDesc::nomdDelegateCOMStub;
         }
     }
     else
@@ -280,7 +287,7 @@ MethodDesc* ILStubCache::CreateNewMethodDesc(LoaderHeap* pCreationHeap, MethodTa
         {
             pMD->m_dwExtendedFlags |= DynamicMethodDesc::nomdReverseStub;
 #if !defined(TARGET_X86)
-            pMD->m_dwExtendedFlags |= DynamicMethodDesc::nomdNativeCallableStub;
+            pMD->m_dwExtendedFlags |= DynamicMethodDesc::nomdUnmanagedCallersOnlyStub;
 #endif
             pMD->GetILStubResolver()->SetStubType(ILStubResolver::NativeToCLRInteropStub);
         }
@@ -414,7 +421,7 @@ MethodTable* ILStubCache::GetOrCreateStubMethodTable(Module* pModule)
 //
 // We're relying on the fact that a VASigCookie may only mention types within the
 // corresponding module used to qualify the signature and the fact that interop
-// stubs may only reference mscorlib code or code related to a type mentioned in
+// stubs may only reference CoreLib code or code related to a type mentioned in
 // the signature.  Both of these are true unless the sig is allowed to contain
 // ELEMENT_TYPE_INTERNAL, which may refer to any type.
 //
@@ -474,10 +481,6 @@ MethodDesc* ILStubCache::GetStubMethodDesc(
 
     if (!pMD)
     {
-        size_t cbSizeOfBlob = pParams->m_cbSizeOfBlob;
-        AllocMemHolder<ILStubHashBlob> pBlobHolder( m_heap->AllocMem(S_SIZE_T(cbSizeOfBlob)) );
-
-
         //
         // Couldn't find it, let's make a new one.
         //
@@ -501,6 +504,8 @@ MethodDesc* ILStubCache::GetStubMethodDesc(
 
         if (SF_IsSharedStub(dwStubFlags))
         {
+            size_t cbSizeOfBlob = pParams->m_cbSizeOfBlob;
+            AllocMemHolder<ILStubHashBlob> pBlobHolder( m_heap->AllocMem(S_SIZE_T(cbSizeOfBlob)) );
 
             CrstHolder ch(&m_crst);
 

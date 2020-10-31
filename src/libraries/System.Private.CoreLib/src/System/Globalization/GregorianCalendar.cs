@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 namespace System.Globalization
 {
@@ -36,7 +35,7 @@ namespace System.Globalization
         public override CalendarAlgorithmType AlgorithmType => CalendarAlgorithmType.SolarCalendar;
 
         /// <summary>
-        /// Internal method to provide a default intance of GregorianCalendar.
+        /// Internal method to provide a default instance of GregorianCalendar.
         /// Used by NLS+ implementation
         /// </summary>
         internal static Calendar GetDefaultInstance() => s_defaultInstance ??= new GregorianCalendar();

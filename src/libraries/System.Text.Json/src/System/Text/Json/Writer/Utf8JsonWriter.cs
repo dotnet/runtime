@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Buffers;
 using System.Diagnostics;
@@ -78,13 +77,7 @@ namespace System.Text.Json
         /// the <see cref="Utf8JsonWriter"/> which indicates whether to format the output
         /// while writing and whether to skip structural JSON validation or not.
         /// </summary>
-        public JsonWriterOptions Options
-        {
-            get
-            {
-                return _options;
-            }
-        }
+        public JsonWriterOptions Options => _options;
 
         private int Indentation => CurrentDepth * JsonConstants.SpacesPerIndent;
 
@@ -107,21 +100,7 @@ namespace System.Text.Json
         public Utf8JsonWriter(IBufferWriter<byte> bufferWriter, JsonWriterOptions options = default)
         {
             _output = bufferWriter ?? throw new ArgumentNullException(nameof(bufferWriter));
-            _stream = default;
-            _arrayBufferWriter = default;
-
-            BytesPending = default;
-            BytesCommitted = default;
-            _memory = default;
-
-            _inObject = default;
-            _tokenType = default;
-            _currentDepth = default;
             _options = options;
-
-            // Only allocate if the user writes a JSON payload beyond the depth that the _allocationFreeContainer can handle.
-            // This way we avoid allocations in the common, default cases, and allocate lazily.
-            _bitStack = default;
         }
 
         /// <summary>
@@ -142,21 +121,8 @@ namespace System.Text.Json
                 throw new ArgumentException(SR.StreamNotWritable);
 
             _stream = utf8Json;
-            _arrayBufferWriter = new ArrayBufferWriter<byte>();
-            _output = default;
-
-            BytesPending = default;
-            BytesCommitted = default;
-            _memory = default;
-
-            _inObject = default;
-            _tokenType = default;
-            _currentDepth = default;
             _options = options;
-
-            // Only allocate if the user writes a JSON payload beyond the depth that the _allocationFreeContainer can handle.
-            // This way we avoid allocations in the common, default cases, and allocate lazily.
-            _bitStack = default;
+            _arrayBufferWriter = new ArrayBufferWriter<byte>();
         }
 
         /// <summary>
@@ -249,8 +215,6 @@ namespace System.Text.Json
             _tokenType = default;
             _currentDepth = default;
 
-            // Only allocate if the user writes a JSON payload beyond the depth that the _allocationFreeContainer can handle.
-            // This way we avoid allocations in the common, default cases, and allocate lazily.
             _bitStack = default;
         }
 
@@ -1040,7 +1004,10 @@ namespace System.Text.Json
             {
                 Debug.Assert(_arrayBufferWriter != null);
 
-                _memory = _arrayBufferWriter.GetMemory(checked(BytesPending + sizeHint));
+                int needed = BytesPending + sizeHint;
+                JsonHelpers.ValidateInt32MaxArrayLength((uint)needed);
+
+                _memory = _arrayBufferWriter.GetMemory(needed);
 
                 Debug.Assert(_memory.Length >= sizeHint);
             }

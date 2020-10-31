@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Buffers;
 using System.Buffers.Text;
@@ -745,16 +744,17 @@ namespace System.Text.Json.Tests
                 }
                 Assert.Equal(150_097_503, writer.BytesPending);
 
-                for (int i = 0; i < 6; i++)
+                for (int i = 0; i < 13; i++)
                 {
                     writer.WriteStringValue(text3);
                 }
-                Assert.Equal(1_050_097_521, writer.BytesPending);
+                Assert.Equal(2_100_097_542, writer.BytesPending);
 
-                // Next write forces a grow beyond 2 GB
+                // Next write forces a grow beyond max array length
+
                 Assert.Throws<OutOfMemoryException>(() => writer.WriteStringValue(text3));
 
-                Assert.Equal(1_050_097_521, writer.BytesPending);
+                Assert.Equal(2_100_097_542, writer.BytesPending);
 
                 var text4 = JsonEncodedText.Encode(largeArray.AsSpan(0, 1));
                 for (int i = 0; i < 10_000_000; i++)
@@ -762,7 +762,7 @@ namespace System.Text.Json.Tests
                     writer.WriteStringValue(text4);
                 }
 
-                Assert.Equal(1_050_097_521 + (4 * 10_000_000), writer.BytesPending);
+                Assert.Equal(2_100_097_542 + (4 * 10_000_000), writer.BytesPending);
             }
         }
 
@@ -1380,6 +1380,31 @@ namespace System.Text.Json.Tests
             string actualString = Encoding.UTF8.GetString(stream.ToArray());
 
             Assert.Equal(expectedString, actualString);
+        }
+
+        [Theory]
+        [InlineData(true, true)]
+        [InlineData(true, false)]
+        [InlineData(false, true)]
+        [InlineData(false, false)]
+        public void GrowBeyondBufferSize(bool formatted, bool skipValidation)
+        {
+            const int InitialGrowthSize = 256;
+            var output = new FixedSizedBufferWriter(InitialGrowthSize);
+            var options = new JsonWriterOptions { Indented = formatted, SkipValidation = skipValidation };
+
+            byte[] utf8String = Encoding.UTF8.GetBytes("this is a string long enough to overflow the buffer and cause an exception to be thrown.");
+
+            using var jsonUtf8 = new Utf8JsonWriter(output, options);
+
+            jsonUtf8.WriteStartArray();
+
+            while (jsonUtf8.BytesPending < InitialGrowthSize - utf8String.Length)
+            {
+                jsonUtf8.WriteStringValue(utf8String);
+            }
+
+            Assert.Throws<InvalidOperationException>(() => jsonUtf8.WriteStringValue(utf8String));
         }
 
         private static async Task WriteLargeToStreamHelper(Stream stream, JsonWriterOptions options)
@@ -2980,6 +3005,16 @@ namespace System.Text.Json.Tests
             using (var jsonUtf8 = new Utf8JsonWriter(output, options))
             {
                 Assert.Throws<ArgumentException>(() => jsonUtf8.WriteBase64StringValue(value.AsSpan(0, 125_000_001)));
+            }
+
+            using (var jsonUtf8 = new Utf8JsonWriter(output, options))
+            {
+                Assert.Throws<ArgumentException>(() => jsonUtf8.WriteBase64String(value.AsSpan(0, 166_666_667), value.AsSpan(0, 1)));
+            }
+
+            using (var jsonUtf8 = new Utf8JsonWriter(output, options))
+            {
+                Assert.Throws<ArgumentException>(() => jsonUtf8.WriteBase64String(Encoding.UTF8.GetString(value).ToCharArray().AsSpan(0, 166_666_667), value.AsSpan(0, 1)));
             }
 
             using (var jsonUtf8 = new Utf8JsonWriter(output, options))

@@ -1,6 +1,5 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
 using Xunit;
@@ -88,7 +87,7 @@ namespace System.Text.Json.Serialization.Tests
             public int MyInt { get; private set; }
 
             [JsonInclude]
-            [JsonIgnore(Condition = JsonIgnoreCondition.WhenNull)]
+            [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingDefault)]
             public string MyString { get; internal set; } = "DefaultString";
 
             [JsonInclude]
@@ -296,6 +295,12 @@ namespace System.Text.Json.Serialization.Tests
         [InlineData(typeof(ClassWithPrivateProperty_WithJsonIncludeProperty))]
         [InlineData(typeof(ClassWithInternalProperty_WithJsonIncludeProperty))]
         [InlineData(typeof(ClassWithProtectedProperty_WithJsonIncludeProperty))]
+        [InlineData(typeof(ClassWithPrivateField_WithJsonIncludeProperty))]
+        [InlineData(typeof(ClassWithInternalField_WithJsonIncludeProperty))]
+        [InlineData(typeof(ClassWithProtectedField_WithJsonIncludeProperty))]
+        [InlineData(typeof(ClassWithPrivate_InitOnlyProperty_WithJsonIncludeProperty))]
+        [InlineData(typeof(ClassWithInternal_InitOnlyProperty_WithJsonIncludeProperty))]
+        [InlineData(typeof(ClassWithProtected_InitOnlyProperty_WithJsonIncludeProperty))]
         public static void NonPublicProperty_WithJsonInclude_Invalid(Type type)
         {
             InvalidOperationException ex = Assert.Throws<InvalidOperationException>(() => JsonSerializer.Deserialize("", type));
@@ -327,6 +332,44 @@ namespace System.Text.Json.Serialization.Tests
         {
             [JsonInclude]
             protected string MyString { get; private set; }
+        }
+
+        private class ClassWithPrivateField_WithJsonIncludeProperty
+        {
+            [JsonInclude]
+            private string MyString = null;
+
+            public override string ToString() => MyString;
+        }
+
+        private class ClassWithInternalField_WithJsonIncludeProperty
+        {
+            [JsonInclude]
+            internal string MyString = null;
+        }
+
+        private class ClassWithProtectedField_WithJsonIncludeProperty
+        {
+            [JsonInclude]
+            protected string MyString = null;
+        }
+
+        private class ClassWithPrivate_InitOnlyProperty_WithJsonIncludeProperty
+        {
+            [JsonInclude]
+            private string MyString { get; init; }
+        }
+
+        private class ClassWithInternal_InitOnlyProperty_WithJsonIncludeProperty
+        {
+            [JsonInclude]
+            internal string MyString { get; init; }
+        }
+
+        private class ClassWithProtected_InitOnlyProperty_WithJsonIncludeProperty
+        {
+            [JsonInclude]
+            protected string MyString { get; init; }
         }
     }
 }

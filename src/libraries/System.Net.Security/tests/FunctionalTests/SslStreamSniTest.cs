@@ -1,8 +1,8 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
+using System.IO;
 using System.Net.Test.Common;
 using System.Security.Authentication;
 using System.Security.Cryptography.X509Certificates;
@@ -70,11 +70,9 @@ namespace System.Net.Security.Tests
                 return true;
             });
 
-            VirtualNetwork vn = new VirtualNetwork();
-            using (VirtualNetworkStream serverStream = new VirtualNetworkStream(vn, isServer: true),
-                                        clientStream = new VirtualNetworkStream(vn, isServer: false))
-            using (SslStream server = new SslStream(serverStream, false, null, selectionCallback),
-                             client = new SslStream(clientStream, leaveInnerStreamOpen: false, validationCallback))
+            (Stream stream1, Stream stream2) = TestHelper.GetConnectedStreams();
+            using (SslStream server = new SslStream(stream1, false, null, selectionCallback),
+                             client = new SslStream(stream2, leaveInnerStreamOpen: false, validationCallback))
             {
                 Task clientJob = Task.Run(() => {
                     client.AuthenticateAsClient(hostName);
@@ -117,11 +115,9 @@ namespace System.Net.Security.Tests
                 return true;
             });
 
-            VirtualNetwork vn = new VirtualNetwork();
-            using (VirtualNetworkStream serverStream = new VirtualNetworkStream(vn, isServer: true),
-                                        clientStream = new VirtualNetworkStream(vn, isServer: false))
-            using (SslStream server = new SslStream(serverStream, false, null, selectionCallback),
-                             client = new SslStream(clientStream, leaveInnerStreamOpen: false, validationCallback))
+            (Stream stream1, Stream stream2) = TestHelper.GetConnectedStreams();
+            using (SslStream server = new SslStream(stream1, false, null, selectionCallback),
+                             client = new SslStream(stream2, leaveInnerStreamOpen: false, validationCallback))
             {
                 Task clientJob = Task.Run(() => {
                     client.AuthenticateAsClient(hostName);
@@ -144,7 +140,7 @@ namespace System.Net.Security.Tests
             await WithVirtualConnection(async (server, client) =>
             {
                 Task clientJob = Task.Run(() => {
-                    Assert.Throws<VirtualNetwork.VirtualNetworkConnectionBroken>(() =>
+                    Assert.Throws<IOException>(() =>
                         client.AuthenticateAsClient("test")
                     );
                 });
@@ -201,9 +197,7 @@ namespace System.Net.Security.Tests
 
         private async Task WithVirtualConnection(Func<SslStream, SslStream, Task> serverClientConnection, RemoteCertificateValidationCallback clientCertValidate)
         {
-            VirtualNetwork vn = new VirtualNetwork();
-            using (VirtualNetworkStream serverStream = new VirtualNetworkStream(vn, isServer: true),
-                                        clientStream = new VirtualNetworkStream(vn, isServer: false))
+            (Stream clientStream, Stream serverStream) = TestHelper.GetConnectedStreams();
             using (SslStream server = new SslStream(serverStream, leaveInnerStreamOpen: false),
                              client = new SslStream(clientStream, leaveInnerStreamOpen: false, clientCertValidate))
             {

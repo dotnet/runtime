@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 #ifndef STUBLINKERX86_H_
 #define STUBLINKERX86_H_
@@ -442,14 +441,6 @@ class StubLinkerCPU : public StubLinker
         virtual VOID EmitUnwindInfoCheckWorker (CodeLabel *pCheckLabel);
         virtual VOID EmitUnwindInfoCheckSubfunction();
 #endif
-
-#ifdef TARGET_AMD64
-
-        static Stub * CreateTailCallCopyArgsThunk(CORINFO_SIG_INFO * pSig,
-                                                  MethodDesc* pMD,
-                                                  CorInfoHelperTailCallSpecialHandling flags);
-
-#endif // TARGET_AMD64
 
     private:
         VOID X86EmitSubEspWorker(INT32 imm32);

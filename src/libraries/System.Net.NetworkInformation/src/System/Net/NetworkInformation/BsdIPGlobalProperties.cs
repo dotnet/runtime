@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 namespace System.Net.NetworkInformation
 {
@@ -10,10 +9,13 @@ namespace System.Net.NetworkInformation
         {
             int realCount = Interop.Sys.GetEstimatedTcpConnectionCount();
             int infoCount = realCount * 2;
-            Interop.Sys.NativeTcpConnectionInformation* infos = stackalloc Interop.Sys.NativeTcpConnectionInformation[infoCount];
-            if (Interop.Sys.GetActiveTcpConnectionInfos(infos, &infoCount) == -1)
+            Interop.Sys.NativeTcpConnectionInformation[] infos = new Interop.Sys.NativeTcpConnectionInformation[infoCount];
+            fixed (Interop.Sys.NativeTcpConnectionInformation* infosPtr = infos)
             {
-                throw new NetworkInformationException(SR.net_PInvokeError);
+                if (Interop.Sys.GetActiveTcpConnectionInfos(infosPtr, &infoCount) == -1)
+                {
+                    throw new NetworkInformationException(SR.net_PInvokeError);
+                }
             }
 
             TcpConnectionInformation[] connectionInformations = new TcpConnectionInformation[infoCount];
@@ -62,7 +64,8 @@ namespace System.Net.NetworkInformation
 
             return connectionInformations;
         }
-        public unsafe override TcpConnectionInformation[] GetActiveTcpConnections()
+
+        public override TcpConnectionInformation[] GetActiveTcpConnections()
         {
             return GetTcpConnections(listeners:false);
         }
@@ -82,10 +85,13 @@ namespace System.Net.NetworkInformation
         {
             int realCount = Interop.Sys.GetEstimatedUdpListenerCount();
             int infoCount = realCount * 2;
-            Interop.Sys.IPEndPointInfo* infos = stackalloc Interop.Sys.IPEndPointInfo[infoCount];
-            if (Interop.Sys.GetActiveUdpListeners(infos, &infoCount) == -1)
+            Interop.Sys.IPEndPointInfo[] infos = new Interop.Sys.IPEndPointInfo[infoCount];
+            fixed (Interop.Sys.IPEndPointInfo* infosPtr = infos)
             {
-                throw new NetworkInformationException(SR.net_PInvokeError);
+                if (Interop.Sys.GetActiveUdpListeners(infosPtr, &infoCount) == -1)
+                {
+                    throw new NetworkInformationException(SR.net_PInvokeError);
+                }
             }
 
             IPEndPoint[] endPoints = new IPEndPoint[infoCount];

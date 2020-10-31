@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 namespace System.Xml.Schema
 {
@@ -18,19 +17,19 @@ namespace System.Xml.Schema
             _node = node;
         }
 
-        public override string LookupNamespace(string prefix)
+        public override string? LookupNamespace(string prefix)
         {
             if (prefix == "xml")
             { //Special case for the XML namespace
                 return XmlReservedNs.NsXml;
             }
-            Dictionary<string, string> namespaces;
-            for (XmlSchemaObject current = _node; current != null; current = current.Parent)
+            Dictionary<string, string?> namespaces;
+            for (XmlSchemaObject? current = _node; current != null; current = current.Parent)
             {
                 namespaces = current.Namespaces.Namespaces;
                 if (namespaces != null && namespaces.Count > 0)
                 {
-                    string uri;
+                    string? uri;
                     if (namespaces.TryGetValue(prefix, out uri))
                         return uri;
                 }
@@ -38,21 +37,21 @@ namespace System.Xml.Schema
             return prefix.Length == 0 ? string.Empty : null;
         }
 
-        public override string LookupPrefix(string ns)
+        public override string? LookupPrefix(string ns)
         {
             if (ns == XmlReservedNs.NsXml)
             { //Special case for the XML namespace
                 return "xml";
             }
-            Dictionary<string, string> namespaces;
-            for (XmlSchemaObject current = _node; current != null; current = current.Parent)
+            Dictionary<string, string?> namespaces;
+            for (XmlSchemaObject? current = _node; current != null; current = current.Parent)
             {
                 namespaces = current.Namespaces.Namespaces;
                 if (namespaces != null && namespaces.Count > 0)
                 {
-                    foreach (KeyValuePair<string, string> entry in namespaces)
+                    foreach (KeyValuePair<string, string?> entry in namespaces)
                     {
-                        if (entry.Value.Equals(ns))
+                        if (entry.Value!.Equals(ns))
                         {
                             return entry.Key;
                         }

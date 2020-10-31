@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 #include "file_entry.h"
 #include "trace.h"
@@ -15,11 +14,11 @@ bool file_entry_t::is_valid() const
         static_cast<file_type_t>(m_type) < file_type_t::__last;
 }
 
-file_entry_t file_entry_t::read(reader_t &reader)
+file_entry_t file_entry_t::read(reader_t &reader, bool force_extraction)
 {
     // First read the fixed-sized portion of file-entry
     const file_entry_fixed_t* fixed_data = reinterpret_cast<const file_entry_fixed_t*>(reader.read_direct(sizeof(file_entry_fixed_t)));
-    file_entry_t entry(fixed_data);
+    file_entry_t entry(fixed_data, force_extraction);
 
     if (!entry.is_valid())
     {
@@ -36,12 +35,14 @@ file_entry_t file_entry_t::read(reader_t &reader)
 
 bool file_entry_t::needs_extraction() const
 {
+    if (m_force_extraction)
+        return true;
+
     switch (m_type)
     {
-    // Once the runtime can load assemblies from bundle,
-    // file_type_t::assembly should be in this category
     case file_type_t::deps_json:
     case file_type_t::runtime_config_json:
+    case file_type_t::assembly:
         return false;
 
     default:

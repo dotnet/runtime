@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 namespace System.ServiceProcess
 {
@@ -15,32 +14,18 @@ namespace System.ServiceProcess
             _id = id;
         }
 
-        public SessionChangeReason Reason
-        {
-            get
-            {
-                return _reason;
-            }
-        }
+        public SessionChangeReason Reason => _reason;
 
-        public int SessionId
-        {
-            get
-            {
-                return _id;
-            }
-        }
+        public int SessionId => _id;
 
-        public override bool Equals(object obj)
+        public override bool Equals(object? obj)
         {
-            if (obj == null || !(obj is SessionChangeDescription))
+            if (!(obj is SessionChangeDescription))
             {
                 return false;
             }
-            else
-            {
-                return Equals((SessionChangeDescription)obj);
-            }
+
+            return Equals((SessionChangeDescription)obj);
         }
 
         public override int GetHashCode()

@@ -53,7 +53,7 @@
 #cmakedefine01 HAVE_SENDFILE_4
 #cmakedefine01 HAVE_SENDFILE_6
 #cmakedefine01 HAVE_SENDFILE_7
-#cmakedefine01 HAVE_CLONEFILE
+#cmakedefine01 HAVE_FCOPYFILE
 #cmakedefine01 HAVE_GETNAMEINFO_SIGNED_FLAGS
 #cmakedefine01 HAVE_GETPEEREID
 #cmakedefine01 HAVE_SUPPORT_FOR_DUAL_MODE_IPV4_PACKET_INFO
@@ -85,7 +85,7 @@
 #cmakedefine01 HAVE_INOTIFY
 #cmakedefine01 HAVE_CLOCK_MONOTONIC
 #cmakedefine01 HAVE_CLOCK_REALTIME
-#cmakedefine01 HAVE_MACH_ABSOLUTE_TIME
+#cmakedefine01 HAVE_CLOCK_GETTIME_NSEC_NP
 #cmakedefine01 HAVE_TCP_H_TCPSTATE_ENUM
 #cmakedefine01 HAVE_TCP_FSM_H
 #cmakedefine01 HAVE_GSSFW_HEADERS
@@ -111,6 +111,7 @@
 #cmakedefine01 HAVE_CFSETSPEED
 #cmakedefine01 HAVE_CFMAKERAW
 #cmakedefine01 HAVE_GETGROUPLIST
+#cmakedefine01 HAVE_SYS_PROCINFO_H
 
 // Mac OS X has stat64, but it is deprecated since plain stat now
 // provides the same 64-bit aware struct when targeting OS X > 10.5

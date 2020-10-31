@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 
 #ifndef _SHASH_H_
@@ -1028,23 +1027,7 @@ public:
         PARENT::Add(KeyValuePair<KEY,VALUE>(key, value));
     }
 
-    BOOL Lookup(KEY key, VALUE* pValue) const
-    {
-        CONTRACTL
-        {
-            NOTHROW;
-            GC_NOTRIGGER;
-            PRECONDITION(key != (KEY)0);
-        }
-        CONTRACTL_END;
-
-        const KeyValuePair<KEY,VALUE> *pRet = PARENT::LookupPtr(key);
-        if (pRet == NULL)
-            return FALSE;
-
-        *pValue = pRet->Value();
-        return TRUE;
-    }
+    BOOL Lookup(KEY key, VALUE* pValue) const;
 };
 
 template <typename KEY, typename VALUE>

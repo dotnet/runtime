@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
 using Xunit;
@@ -33,6 +32,21 @@ namespace System.Globalization.Tests
             var format = new DateTimeFormatInfo();
             format.LongTimePattern = value;
             Assert.Equal(value, format.LongTimePattern);
+        }
+
+        [Fact]
+        public void LongTimePattern_Set_InvalidatesDerivedPatterns()
+        {
+            const string Pattern = "#$";
+            var format = new DateTimeFormatInfo();
+            var d = DateTimeOffset.Now;
+            d.ToString("F", format); // FullDateTimePattern
+            d.ToString("G", format); // GeneralLongTimePattern
+            d.ToString(format); // DateTimeOffsetPattern
+            format.LongTimePattern = Pattern;
+            Assert.Contains(Pattern, d.ToString("F", format));
+            Assert.Contains(Pattern, d.ToString("G", format));
+            Assert.Contains(Pattern, d.ToString(format));
         }
 
         [Fact]

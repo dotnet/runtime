@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 //*****************************************************************************
 // File: enummem.cpp
 //
@@ -21,9 +20,10 @@
 #include "binder.h"
 #include "win32threadpool.h"
 
-#ifdef FEATURE_APPX
-#include "appxutil.h"
-#endif // FEATURE_APPX
+#ifdef FEATURE_COMWRAPPERS
+#include <interoplibinterface.h>
+#include <interoplibabi.h>
+#endif // FEATURE_COMWRAPPERS
 
 extern HRESULT GetDacTableAddress(ICorDebugDataTarget* dataTarget, ULONG64 baseAddress, PULONG64 dacTableAddress);
 
@@ -281,7 +281,7 @@ HRESULT ClrDataAccess::EnumMemCLRStatic(IN CLRDataEnumMemoryFlags flags)
     }
     CATCH_ALL_EXCEPT_RETHROW_COR_E_OPERATIONCANCELLED( g_pEEDbgInterfaceImpl.EnumMem(); )
     CATCH_ALL_EXCEPT_RETHROW_COR_E_OPERATIONCANCELLED( g_CORDebuggerControlFlags.EnumMem(); )
-    CATCH_ALL_EXCEPT_RETHROW_COR_E_OPERATIONCANCELLED( g_Mscorlib.EnumMem(); )
+    CATCH_ALL_EXCEPT_RETHROW_COR_E_OPERATIONCANCELLED( g_CoreLib.EnumMem(); )
     CATCH_ALL_EXCEPT_RETHROW_COR_E_OPERATIONCANCELLED( g_pPredefinedArrayTypes[ELEMENT_TYPE_OBJECT].EnumMemoryRegions(flags); )
     CATCH_ALL_EXCEPT_RETHROW_COR_E_OPERATIONCANCELLED( StubManager::EnumMemoryRegions(flags); )
     CATCH_ALL_EXCEPT_RETHROW_COR_E_OPERATIONCANCELLED( g_pFinalizerThread.EnumMem(); )
@@ -487,13 +487,9 @@ HRESULT ClrDataAccess::DumpManagedExcepObject(CLRDataEnumMemoryFlags flags, OBJE
     // dump the exception's stack trace field
     DumpManagedStackTraceStringObject(flags, exceptRef->GetStackTraceString());
 
-    // dump the exception's remote stack trace field only if we are not generating a triage dump, or
-    // if we are generating a triage dump of an AppX process, or the exception type does not override
+    // dump the exception's remote stack trace field only if we are not generating a triage dump, or the exception type does not override
     // the StackTrace getter (see Exception.InternalPreserveStackTrace to understand why)
     if (flags != CLRDATA_ENUM_MEM_TRIAGE ||
-#ifdef FEATURE_APPX
-        AppX::DacIsAppXProcess() ||
-#endif // FEATURE_APPX
         !ExceptionTypeOverridesStackTraceGetter(exceptRef->GetGCSafeMethodTable()))
     {
         DumpManagedStackTraceStringObject(flags, exceptRef->GetRemoteStackTraceString());
@@ -1065,10 +1061,10 @@ HRESULT ClrDataAccess::EnumMemDumpAllThreadsStack(CLRDataEnumMemoryFlags flags)
 {
     SUPPORTS_DAC;
 
-#ifdef FEATURE_COMINTEROP
+#if defined(FEATURE_COMINTEROP) || defined(FEATURE_COMWRAPPERS)
     // Dump the exception object stored in the WinRT stowed exception
     EnumMemStowedException(flags);
-#endif
+#endif // defined(FEATURE_COMINTEROP) || defined(FEATURE_COMWRAPPERS)
 
     HRESULT     status = S_OK;
     TSIZE_T     cbMemoryReported = m_cbMemoryReported;
@@ -1298,7 +1294,7 @@ HRESULT ClrDataAccess::EnumMemDumpAllThreadsStack(CLRDataEnumMemoryFlags flags)
 }
 
 
-#ifdef FEATURE_COMINTEROP
+#if defined(FEATURE_COMINTEROP) || defined(FEATURE_COMWRAPPERS)
 //++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 //
 // WinRT stowed exception holds the (CCW)pointer to a managed exception object.
@@ -1386,6 +1382,10 @@ HRESULT ClrDataAccess::EnumMemStowedException(CLRDataEnumMemoryFlags flags)
         return S_OK;
     }
 
+    // Make sure we include the whole stowed exception array so we can debug a stowed exception
+    // in a minidump
+    ReportMem(remoteStowedExceptionArray, stowedExceptionCount * sizeof(TADDR));
+
     for (ULONG i = 0; i < stowedExceptionCount; ++i)
     {
         // Read the i-th stowed exception
@@ -1398,6 +1398,8 @@ HRESULT ClrDataAccess::EnumMemStowedException(CLRDataEnumMemoryFlags flags)
             continue;
         }
 
+        ReportMem(remoteStowedException, sizeof(STOWED_EXCEPTION_INFORMATION_HEADER));
+
         // check if this is a v2 stowed exception
         STOWED_EXCEPTION_INFORMATION_V2 stowedException = { 0 };
         if (FAILED(m_pTarget->ReadVirtual(TO_CDADDR(remoteStowedException),
@@ -1407,6 +1409,8 @@ HRESULT ClrDataAccess::EnumMemStowedException(CLRDataEnumMemoryFlags flags)
         {
             continue;
         }
+
+        ReportMem(remoteStowedException, sizeof(STOWED_EXCEPTION_INFORMATION_V2));
 
         // Read the full v2 stowed exception and get the CCW pointer out of it
         if (FAILED(m_pTarget->ReadVirtual(TO_CDADDR(remoteStowedException),
@@ -1431,11 +1435,41 @@ HRESULT ClrDataAccess::DumpStowedExceptionObject(CLRDataEnumMemoryFlags flags, C
     if (ccwPtr == NULL)
         return S_OK;
 
-    // dump the managed exception object wrapped in CCW
-    // memory of the CCW object itself is dumped later by DacInstanceManager::DumpAllInstances
-    DacpCCWData ccwData;
-    GetCCWData(ccwPtr, &ccwData);   // this call collects some memory implicitly
-    DumpManagedExcepObject(flags, OBJECTREF(TO_TADDR(ccwData.managedObject)));
+    OBJECTREF managedExceptionObject = NULL;
+
+#ifdef FEATURE_COMWRAPPERS
+    OBJECTREF wrappedObjAddress;
+    if (DACTryGetComWrappersObjectFromCCW(ccwPtr, &wrappedObjAddress) == S_OK)
+    {
+        managedExceptionObject = wrappedObjAddress;
+        // Now report the CCW itself
+        ReportMem(TO_TADDR(ccwPtr), sizeof(TADDR));
+        TADDR managedObjectWrapperPtrPtr = ccwPtr & InteropLib::ABI::DispatchThisPtrMask;
+        ReportMem(managedObjectWrapperPtrPtr, sizeof(TADDR));
+
+        // Plus its QI and VTable that we query to determine if it is a ComWrappers CCW
+        TADDR vTableAddress = NULL;
+        TADDR qiAddress = NULL;
+        DACGetComWrappersCCWVTableQIAddress(ccwPtr, &vTableAddress, &qiAddress);
+        ReportMem(vTableAddress, sizeof(TADDR));
+        ReportMem(qiAddress, sizeof(TADDR));
+
+        // And the MOW it points to
+        TADDR mow = DACGetManagedObjectWrapperFromCCW(ccwPtr);
+        ReportMem(mow, sizeof(ManagedObjectWrapperDACInterface));
+    }
+#endif
+#ifdef FEATURE_COMINTEROP
+    if (managedExceptionObject == NULL)
+    {
+        // dump the managed exception object wrapped in CCW
+        // memory of the CCW object itself is dumped later by DacInstanceManager::DumpAllInstances
+        DacpCCWData ccwData;
+        GetCCWData(ccwPtr, &ccwData);   // this call collects some memory implicitly
+        managedExceptionObject = OBJECTREF(CLRDATA_ADDRESS_TO_TADDR(ccwData.managedObject));
+    }
+#endif
+    DumpManagedExcepObject(flags, managedExceptionObject);
 
     // dump memory of the 2nd slot in the CCW's vtable
     // this is used in DACGetCCWFromAddress to identify if the passed in pointer is a valid CCW.
@@ -1450,7 +1484,8 @@ HRESULT ClrDataAccess::DumpStowedExceptionObject(CLRDataEnumMemoryFlags flags, C
 
     CATCH_ALL_EXCEPT_RETHROW_COR_E_OPERATIONCANCELLED
     (
-        ReportMem(vTableAddress + sizeof(PBYTE)* TEAR_OFF_SLOT, sizeof(TADDR));
+        ReportMem(vTableAddress, sizeof(TADDR)); // Report the QI slot on the vtable for ComWrappers
+        ReportMem(vTableAddress + sizeof(PBYTE) * TEAR_OFF_SLOT, sizeof(TADDR)); // Report the AddRef slot on the vtable for built-in CCWs
     );
 
     return S_OK;

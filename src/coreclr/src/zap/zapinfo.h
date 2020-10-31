@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 //
 // ZapInfo.h
 //
@@ -351,9 +350,11 @@ public:
     void * getHelperFtn (CorInfoHelpFunc   ftnNum,
                                   void**            ppIndirection);
 
-    void* getTailCallCopyArgsThunk (
-                      CORINFO_SIG_INFO       *pSig,
-                      CorInfoHelperTailCallSpecialHandling flags);
+    virtual bool getTailCallHelpers(
+        CORINFO_RESOLVED_TOKEN* callToken,
+        CORINFO_SIG_INFO* sig,
+        CORINFO_GET_TAILCALL_HELPERS_FLAGS flags,
+        CORINFO_TAILCALL_HELPERS* pResult);
 
     bool convertPInvokeCalliToCall(
                       CORINFO_RESOLVED_TOKEN * pResolvedToken,
@@ -465,7 +466,7 @@ public:
                                      CORINFO_CLASS_HANDLE *vcTypeRet);
     CORINFO_CLASS_HANDLE getArgClass(CORINFO_SIG_INFO* sig,
                                                CORINFO_ARG_LIST_HANDLE args);
-    CorInfoType getHFAType(CORINFO_CLASS_HANDLE hClass);
+    CorInfoHFAElemType getHFAType(CORINFO_CLASS_HANDLE hClass);
 
     // ICorDebugInfo
 
@@ -563,8 +564,7 @@ public:
     CorInfoInitClassResult initClass(
             CORINFO_FIELD_HANDLE    field,
             CORINFO_METHOD_HANDLE   method,
-            CORINFO_CONTEXT_HANDLE  context,
-            BOOL                    speculative = FALSE);
+            CORINFO_CONTEXT_HANDLE  context);
 
     void classMustBeLoadedBeforeCodeIsRun(CORINFO_CLASS_HANDLE cls);
     void methodMustBeLoadedBeforeCodeIsRun(CORINFO_METHOD_HANDLE meth);

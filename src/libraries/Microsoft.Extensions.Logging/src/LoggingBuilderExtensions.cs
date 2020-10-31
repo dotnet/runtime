@@ -1,7 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
+using System;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Options;
@@ -29,7 +29,7 @@ namespace Microsoft.Extensions.Logging
         /// <summary>
         /// Adds the given <see cref="ILoggerProvider"/> to the <see cref="ILoggingBuilder"/>
         /// </summary>
-        /// <param name="builder">The <see cref="ILoggingBuilder"/> to add to the <paramref name="provider"/>.</param>
+        /// <param name="builder">The <see cref="ILoggingBuilder"/> to add the <paramref name="provider"/> to.</param>
         /// <param name="provider">The <see cref="ILoggerProvider"/> to add to the <paramref name="builder"/>.</param>
         /// <returns>The <see cref="ILoggingBuilder"/> so that additional calls can be chained.</returns>
         public static ILoggingBuilder AddProvider(this ILoggingBuilder builder, ILoggerProvider provider)
@@ -46,6 +46,18 @@ namespace Microsoft.Extensions.Logging
         public static ILoggingBuilder ClearProviders(this ILoggingBuilder builder)
         {
             builder.Services.RemoveAll<ILoggerProvider>();
+            return builder;
+        }
+
+        /// <summary>
+        /// Configure the <paramref name="builder"/> with the <see cref="LoggerFactoryOptions"/>.
+        /// </summary>
+        /// <param name="builder">The <see cref="ILoggingBuilder"/> to be configured with <see cref="LoggerFactoryOptions"/></param>
+        /// <param name="action">The action used to configure the logger factory</param>
+        /// <returns>The <see cref="ILoggingBuilder"/> so that additional calls can be chained.</returns>
+        public static ILoggingBuilder Configure(this ILoggingBuilder builder, Action<LoggerFactoryOptions> action)
+        {
+            builder.Services.Configure(action);
             return builder;
         }
     }

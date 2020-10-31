@@ -1,5 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
-// See the LICENSE file in the project root for more information.
+// The .NET Foundation licenses this file to you under the MIT license.
 //
 // System.Configuration.KeyValueConfigurationElementTest.cs - Unit tests
 // for System.Configuration.KeyValueConfigurationElement.
@@ -57,7 +57,6 @@ namespace MonoTests.System.Configuration
         }
 
         [Fact]
-        // [NUnit.Framework.Category("NotWorking")]
         public void Properties()
         {
             Poker p = new Poker("name", "value");

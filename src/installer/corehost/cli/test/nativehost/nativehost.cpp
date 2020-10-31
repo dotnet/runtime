@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 #include <iostream>
 #include <pal.h>
@@ -191,7 +190,8 @@ int main(const int argc, const pal::char_t *argv[])
 
             success = host_context_test::mixed(check_properties, hostfxr_path, app_or_config_path, config_path, remaining_argc, remaining_argv, test_output);
         }
-        else if (pal::strcmp(scenario, _X("non_context_mixed")) == 0)
+        else if (pal::strcmp(scenario, _X("non_context_mixed_apphost")) == 0
+            || pal::strcmp(scenario, _X("non_context_mixed_dotnet")) == 0)
         {
             // args: ... <scenario> <check_properties> <hostfxr_path> <app_path> <config_path>
             if (argc < min_argc + 1)
@@ -204,7 +204,8 @@ int main(const int argc, const pal::char_t *argv[])
             --remaining_argc;
             remaining_argv = remaining_argc > 0 ? &argv[min_argc + 1] : nullptr;
 
-            success = host_context_test::non_context_mixed(check_properties, hostfxr_path, app_or_config_path, config_path, remaining_argc, remaining_argv, test_output);
+            bool launch_as_if_dotnet = pal::strcmp(scenario, _X("non_context_mixed_dotnet")) == 0;
+            success = host_context_test::non_context_mixed(check_properties, hostfxr_path, app_or_config_path, config_path, remaining_argc, remaining_argv, launch_as_if_dotnet, test_output);
         }
         else
         {
@@ -215,7 +216,7 @@ int main(const int argc, const pal::char_t *argv[])
         std::cout << tostr(test_output.str()).data() << std::endl;
         return success ? EXIT_SUCCESS : EXIT_FAILURE;
     }
-    else if (pal::strcmp(command, _X("load_assembly_and_get_function_pointer")) == 0)
+    else if (pal::strcmp(command, _X("component_load_assembly_and_get_function_pointer")) == 0)
     {
         // args: ... <hostfxr_path> <app_or_config_path> <assembly_path> <type_name> <method_name> [<assembly_path> <type_name> <method_name>...]
         const int min_argc = 4;
@@ -236,7 +237,83 @@ int main(const int argc, const pal::char_t *argv[])
         pal::stringstream_t test_output;
         bool success = false;
 
-        success = host_context_test::load_assembly_and_get_function_pointer(hostfxr_path, app_or_config_path, remaining_argc, remaining_argv, test_output);
+        success = host_context_test::component_load_assembly_and_get_function_pointer(hostfxr_path, app_or_config_path, remaining_argc, remaining_argv, test_output);
+
+        std::cout << tostr(test_output.str()).data() << std::endl;
+        return success ? EXIT_SUCCESS : EXIT_FAILURE;
+    }
+    else if (pal::strcmp(command, _X("app_load_assembly_and_get_function_pointer")) == 0)
+    {
+        // args: ... <hostfxr_path> <app_path> <assembly_path> <type_name> <method_name> [<assembly_path> <type_name> <method_name>...]
+        const int min_argc = 3;
+        if (argc < min_argc + 4)
+        {
+            std::cerr << "Invalid arguments" << std::endl;
+            return -1;
+        }
+
+        const pal::string_t hostfxr_path = argv[2];
+
+        int remaining_argc = argc - min_argc;
+        const pal::char_t **remaining_argv = nullptr;
+        if (argc > min_argc)
+            remaining_argv = &argv[min_argc];
+
+        pal::stringstream_t test_output;
+        bool success = false;
+
+        success = host_context_test::app_load_assembly_and_get_function_pointer(hostfxr_path, remaining_argc, remaining_argv, test_output);
+
+        std::cout << tostr(test_output.str()).data() << std::endl;
+        return success ? EXIT_SUCCESS : EXIT_FAILURE;
+    }
+    else if (pal::strcmp(command, _X("component_get_function_pointer")) == 0)
+    {
+        // args: ... <hostfxr_path> <app_or_config_path> <type_name> <method_name> [<type_name> <method_name>...]
+        const int min_argc = 4;
+        if (argc < min_argc + 2)
+        {
+            std::cerr << "Invalid arguments" << std::endl;
+            return -1;
+        }
+
+        const pal::string_t hostfxr_path = argv[2];
+        const pal::char_t *app_or_config_path = argv[3];
+
+        int remaining_argc = argc - min_argc;
+        const pal::char_t **remaining_argv = nullptr;
+        if (argc > min_argc)
+            remaining_argv = &argv[min_argc];
+
+        pal::stringstream_t test_output;
+        bool success = false;
+
+        success = host_context_test::component_get_function_pointer(hostfxr_path, app_or_config_path, remaining_argc, remaining_argv, test_output);
+
+        std::cout << tostr(test_output.str()).data() << std::endl;
+        return success ? EXIT_SUCCESS : EXIT_FAILURE;
+    }
+    else if (pal::strcmp(command, _X("app_get_function_pointer")) == 0)
+    {
+        // args: ... <hostfxr_path> <app_path> <type_name> <method_name> [<type_name> <method_name>...]
+        const int min_argc = 3;
+        if (argc < min_argc + 3)
+        {
+            std::cerr << "Invalid arguments" << std::endl;
+            return -1;
+        }
+
+        const pal::string_t hostfxr_path = argv[2];
+
+        int remaining_argc = argc - min_argc;
+        const pal::char_t **remaining_argv = nullptr;
+        if (argc > min_argc)
+            remaining_argv = &argv[min_argc];
+
+        pal::stringstream_t test_output;
+        bool success = false;
+
+        success = host_context_test::app_get_function_pointer(hostfxr_path, remaining_argc, remaining_argv, test_output);
 
         std::cout << tostr(test_output.str()).data() << std::endl;
         return success ? EXIT_SUCCESS : EXIT_FAILURE;

@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 #nullable enable
 using System;
@@ -35,7 +34,7 @@ namespace Internal.Cryptography
                 dwFlags |= BCryptOpenAlgorithmProviderFlags.BCRYPT_ALG_HANDLE_HMAC_FLAG;
             }
 
-            _hAlgorithm = Interop.BCrypt.BCryptAlgorithmCache.GetCachedBCryptAlgorithmHandle(hashAlgId, dwFlags);
+            _hAlgorithm = Interop.BCrypt.BCryptAlgorithmCache.GetCachedBCryptAlgorithmHandle(hashAlgId, dwFlags, out _hashSize);
 
             // Win7 won't set hHash, Win8+ will; and both will set _hHash.
             // So keep hHash trapped in this scope to prevent (mis-)use of it.
@@ -58,17 +57,6 @@ namespace Internal.Cryptography
                     _reusable = true;
                 }
             }
-
-            unsafe
-            {
-                int cbSizeOfHashSize;
-                int hashSize;
-                Debug.Assert(_hHash != null);
-                NTSTATUS ntStatus = Interop.BCrypt.BCryptGetProperty(_hHash, Interop.BCrypt.BCryptPropertyStrings.BCRYPT_HASH_LENGTH, &hashSize, sizeof(int), out cbSizeOfHashSize, 0);
-                if (ntStatus != NTSTATUS.STATUS_SUCCESS)
-                    throw Interop.BCrypt.CreateCryptographicException(ntStatus);
-                _hashSize = hashSize;
-            }
         }
 
         public sealed override unsafe void AppendHashData(ReadOnlySpan<byte> source)
@@ -81,22 +69,9 @@ namespace Internal.Cryptography
             }
         }
 
-        public sealed override byte[] FinalizeHashAndReset()
+        public override int FinalizeHashAndReset(Span<byte> destination)
         {
-            var hash = new byte[_hashSize];
-            bool success = TryFinalizeHashAndReset(hash, out int bytesWritten);
-            Debug.Assert(success);
-            Debug.Assert(hash.Length == bytesWritten);
-            return hash;
-        }
-
-        public override bool TryFinalizeHashAndReset(Span<byte> destination, out int bytesWritten)
-        {
-            if (destination.Length < _hashSize)
-            {
-                bytesWritten = 0;
-                return false;
-            }
+            Debug.Assert(destination.Length >= _hashSize);
 
             Debug.Assert(_hHash != null);
             NTSTATUS ntStatus = Interop.BCrypt.BCryptFinishHash(_hHash, destination, _hashSize, 0);
@@ -105,9 +80,27 @@ namespace Internal.Cryptography
                 throw Interop.BCrypt.CreateCryptographicException(ntStatus);
             }
 
-            bytesWritten = _hashSize;
             ResetHashObject();
-            return true;
+            return _hashSize;
+        }
+
+        public override int GetCurrentHash(Span<byte> destination)
+        {
+            Debug.Assert(destination.Length >= _hashSize);
+
+            Debug.Assert(_hHash != null);
+
+            using (SafeBCryptHashHandle tmpHash = Interop.BCrypt.BCryptDuplicateHash(_hHash))
+            {
+                NTSTATUS ntStatus = Interop.BCrypt.BCryptFinishHash(tmpHash, destination, _hashSize, 0);
+
+                if (ntStatus != NTSTATUS.STATUS_SUCCESS)
+                {
+                    throw Interop.BCrypt.CreateCryptographicException(ntStatus);
+                }
+
+                return _hashSize;
+            }
         }
 
         public sealed override void Dispose(bool disposing)

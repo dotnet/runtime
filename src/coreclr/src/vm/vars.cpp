@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 //
 // vars.cpp - Global Var definitions
 //
@@ -85,8 +84,9 @@ GPTR_IMPL(MethodTable,      g_TypedReferenceMT);
 
 #ifdef FEATURE_COMINTEROP
 GPTR_IMPL(MethodTable,      g_pBaseCOMObject);
-GPTR_IMPL(MethodTable,      g_pBaseRuntimeClass);
 #endif
+
+GPTR_IMPL(MethodTable,      g_pIDynamicInterfaceCastableInterface);
 
 #ifdef FEATURE_ICASTABLE
 GPTR_IMPL(MethodTable,      g_pICastableInterface);

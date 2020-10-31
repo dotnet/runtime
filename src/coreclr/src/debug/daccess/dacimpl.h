@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 //*****************************************************************************
 // File: dacimpl.h
 //
@@ -840,7 +839,10 @@ class ClrDataAccess
       public ISOSDacInterface4,
       public ISOSDacInterface5,
       public ISOSDacInterface6,
-      public ISOSDacInterface7
+      public ISOSDacInterface7,
+      public ISOSDacInterface8,
+      public ISOSDacInterface9,
+      public ISOSDacInterface10
 {
 public:
     ClrDataAccess(ICorDebugDataTarget * pTarget, ICLRDataTarget * pLegacyTarget=0);
@@ -1195,6 +1197,25 @@ public:
     virtual HRESULT STDMETHODCALLTYPE GetProfilerModifiedILInformation(CLRDATA_ADDRESS methodDesc, struct DacpProfilerILData *pILData);
     virtual HRESULT STDMETHODCALLTYPE GetMethodsWithProfilerModifiedIL(CLRDATA_ADDRESS mod, CLRDATA_ADDRESS *methodDescs, int cMethodDescs, int *pcMethodDescs);
 
+    // ISOSDacInterface8
+    virtual HRESULT STDMETHODCALLTYPE GetNumberGenerations(unsigned int *pGenerations);
+    virtual HRESULT STDMETHODCALLTYPE GetGenerationTable(unsigned int cGenerations, struct DacpGenerationData *pGenerationData, unsigned int *pNeeded);
+    virtual HRESULT STDMETHODCALLTYPE GetFinalizationFillPointers(unsigned int cFillPointers, CLRDATA_ADDRESS *pFinalizationFillPointers, unsigned int *pNeeded);
+
+    virtual HRESULT STDMETHODCALLTYPE GetGenerationTableSvr(CLRDATA_ADDRESS heapAddr, unsigned int cGenerations, struct DacpGenerationData *pGenerationData, unsigned int *pNeeded);
+    virtual HRESULT STDMETHODCALLTYPE GetFinalizationFillPointersSvr(CLRDATA_ADDRESS heapAddr, unsigned int cFillPointers, CLRDATA_ADDRESS *pFinalizationFillPointers, unsigned int *pNeeded);
+
+    virtual HRESULT STDMETHODCALLTYPE GetAssemblyLoadContext(CLRDATA_ADDRESS methodTable, CLRDATA_ADDRESS* assemblyLoadContext);
+
+    // ISOSDacInterface9
+    virtual HRESULT STDMETHODCALLTYPE GetBreakingChangeVersion(int* pVersion);
+
+    // ISOSDacInterface10
+    virtual HRESULT STDMETHODCALLTYPE GetObjectComWrappersData(CLRDATA_ADDRESS objAddr, CLRDATA_ADDRESS *rcw, unsigned int count, CLRDATA_ADDRESS *mowList, unsigned int *pNeeded);
+    virtual HRESULT STDMETHODCALLTYPE IsComWrappersCCW(CLRDATA_ADDRESS ccw, BOOL *isComWrappersCCW);
+    virtual HRESULT STDMETHODCALLTYPE GetComWrappersCCWData(CLRDATA_ADDRESS ccw, CLRDATA_ADDRESS *managedObject, int *refCount);
+    virtual HRESULT STDMETHODCALLTYPE IsComWrappersRCW(CLRDATA_ADDRESS rcw, BOOL *isComWrappersRCW);
+    virtual HRESULT STDMETHODCALLTYPE GetComWrappersRCWData(CLRDATA_ADDRESS rcw, CLRDATA_ADDRESS *identity);
     //
     // ClrDataAccess.
     //
@@ -1445,8 +1466,12 @@ protected:
 private:
 #endif
 
-#ifdef FEATURE_COMINTEROP
 protected:
+    // Populates a DacpJitCodeHeapInfo with proper information about the
+    // code heap type and the information needed to locate it.
+    DacpJitCodeHeapInfo DACGetHeapInfoForCodeHeap(CodeHeap *heapAddr);
+
+#ifdef FEATURE_COMINTEROP
     // Returns CCW pointer based on a target address.
     PTR_ComCallWrapper DACGetCCWFromAddress(CLRDATA_ADDRESS addr);
 
@@ -1454,6 +1479,13 @@ private:
     // Returns COM interface pointer corresponding to a given CCW and internal vtable
     // index. Returns NULL if the vtable is unused or not fully laid out.
     PTR_IUnknown DACGetCOMIPFromCCW(PTR_ComCallWrapper pCCW, int vtableIndex);
+#endif
+
+#ifdef FEATURE_COMWRAPPERS
+    BOOL DACGetComWrappersCCWVTableQIAddress(CLRDATA_ADDRESS ccwPtr, TADDR *vTableAddress, TADDR *qiAddress);
+    BOOL DACIsComWrappersCCW(CLRDATA_ADDRESS ccwPtr);
+    TADDR DACGetManagedObjectWrapperFromCCW(CLRDATA_ADDRESS ccwPtr);
+    HRESULT DACTryGetComWrappersObjectFromCCW(CLRDATA_ADDRESS ccwPtr, OBJECTREF* objRef);
 #endif
 
     static LONG s_procInit;
@@ -4004,5 +4036,37 @@ extern unsigned __int64 g_nStackWalk;
 extern unsigned __int64 g_nFindStackTotalTime;
 
 #endif // #if defined(DAC_MEASURE_PERF)
+
+#ifdef FEATURE_COMWRAPPERS
+
+// Public contract for ExternalObjectContext, keep in sync with definition in
+// interoplibinterface.cpp
+struct ExternalObjectContextDACnterface
+{
+    PTR_VOID identity;
+    INT_PTR _padding1;
+    DWORD SyncBlockIndex;
+    INT64 _padding3;
+};
+
+typedef DPTR(ExternalObjectContextDACnterface) PTR_ExternalObjectContext;
+
+// Public contract for ManagedObjectWrapper, keep in sync with definition in
+// comwrappers.hpp
+struct ManagedObjectWrapperDACInterface
+{
+    PTR_VOID managedObject;
+    INT32 _padding1;
+    INT32 _padding2;
+    INT_PTR _padding3;
+    INT_PTR _padding4;
+    INT_PTR _padding6;
+    LONGLONG _refCount;
+    INT32 _padding7;
+};
+
+typedef DPTR(ManagedObjectWrapperDACInterface) PTR_ManagedObjectWrapper;
+
+#endif // FEATURE_COMWRAPPERS
 
 #endif // #ifndef __DACIMPL_H__

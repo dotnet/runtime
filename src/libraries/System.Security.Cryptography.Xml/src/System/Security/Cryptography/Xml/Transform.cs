@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 // This file contains the classes necessary to represent the Transform processing model used in
 // XMLDSIG. The basic idea is as follows. A Reference object contains within it a TransformChain, which
@@ -23,13 +22,13 @@ namespace System.Security.Cryptography.Xml
     public abstract class Transform
     {
         private string _algorithm;
-        private string _baseUri = null;
-        internal XmlResolver _xmlResolver = null;
-        private bool _bResolverSet = false;
-        private SignedXml _signedXml = null;
-        private Reference _reference = null;
-        private Hashtable _propagatedNamespaces = null;
-        private XmlElement _context = null;
+        private string _baseUri;
+        internal XmlResolver _xmlResolver;
+        private bool _bResolverSet;
+        private SignedXml _signedXml;
+        private Reference _reference;
+        private Hashtable _propagatedNamespaces;
+        private XmlElement _context;
 
         internal string BaseURI
         {

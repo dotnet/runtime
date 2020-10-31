@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.ComponentModel;
 using System.Diagnostics;
@@ -19,8 +18,8 @@ namespace System.Net.NetworkInformation
         private const int IcmpHeaderLengthInBytes = 8;
         private const int MinIpHeaderLengthInBytes = 20;
         private const int MaxIpHeaderLengthInBytes = 60;
-        private static readonly bool _sendIpHeader = RuntimeInformation.IsOSPlatform(OSPlatform.OSX);
-        private static readonly bool _needsConnect = RuntimeInformation.IsOSPlatform(OSPlatform.Linux);
+        private static bool SendIpHeader => OperatingSystem.IsMacOS();
+        private static bool NeedsConnect => OperatingSystem.IsLinux();
         [ThreadStatic]
         private static Random? t_idGenerator;
 
@@ -57,7 +56,7 @@ namespace System.Net.NetworkInformation
             IpHeader iph = default;
 
             bool ipv4 = address.AddressFamily == AddressFamily.InterNetwork;
-            bool sendIpHeader = ipv4 && options != null && _sendIpHeader;
+            bool sendIpHeader = ipv4 && options != null && SendIpHeader;
 
              if (sendIpHeader)
              {
@@ -92,7 +91,7 @@ namespace System.Net.NetworkInformation
             Socket socket = new Socket(addrFamily, SocketType.Raw, socketConfig.ProtocolType);
             socket.ReceiveTimeout = socketConfig.Timeout;
             socket.SendTimeout = socketConfig.Timeout;
-            if (addrFamily == AddressFamily.InterNetworkV6 && RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
+            if (addrFamily == AddressFamily.InterNetworkV6 && OperatingSystem.IsMacOS())
             {
                 socket.DualMode = false;
             }
@@ -104,7 +103,7 @@ namespace System.Net.NetworkInformation
 
             if (socketConfig.Options != null && addrFamily == AddressFamily.InterNetwork)
             {
-                if (_sendIpHeader)
+                if (SendIpHeader)
                 {
                     // some platforms like OSX don't support DontFragment so we construct IP header instead.
                     socket.SetSocketOption(SocketOptionLevel.IP, SocketOptionName.HeaderIncluded, 1);
@@ -118,7 +117,7 @@ namespace System.Net.NetworkInformation
 #pragma warning disable 618
             // Disable warning about obsolete property. We could use GetAddressBytes but that allocates.
             // IPv4 multicast address starts with 1110 bits so mask rest and test if we get correct value e.g. 0xe0.
-            if (_needsConnect && !ep.Address.IsIPv6Multicast && !(addrFamily == AddressFamily.InterNetwork && (ep.Address.Address & 0xf0) == 0xe0))
+            if (NeedsConnect && !ep.Address.IsIPv6Multicast && !(addrFamily == AddressFamily.InterNetwork && (ep.Address.Address & 0xf0) == 0xe0))
             {
                 // If it is not multicast, use Connect to scope responses only to the target address.
                 socket.Connect(socketConfig.EndPoint);
@@ -278,7 +277,7 @@ namespace System.Net.NetworkInformation
             }
         }
 
-        private Process GetPingProcess(IPAddress address, byte[] buffer, PingOptions? options)
+        private Process GetPingProcess(IPAddress address, byte[] buffer, int timeout, PingOptions? options)
         {
             bool isIpv4 = address.AddressFamily == AddressFamily.InterNetwork;
             string? pingExecutable = isIpv4 ? UnixCommandLinePing.Ping4UtilityPath : UnixCommandLinePing.Ping6UtilityPath;
@@ -293,7 +292,7 @@ namespace System.Net.NetworkInformation
                 fragmentOption = options.DontFragment ? UnixCommandLinePing.PingFragmentOptions.Do : UnixCommandLinePing.PingFragmentOptions.Dont;
             }
 
-            string processArgs = UnixCommandLinePing.ConstructCommandLine(buffer.Length, address.ToString(), isIpv4, options?.Ttl ?? 0, fragmentOption);
+            string processArgs = UnixCommandLinePing.ConstructCommandLine(buffer.Length, timeout, address.ToString(), isIpv4, options?.Ttl ?? 0, fragmentOption);
 
             ProcessStartInfo psi = new ProcessStartInfo(pingExecutable, processArgs);
             psi.RedirectStandardOutput = true;
@@ -303,7 +302,7 @@ namespace System.Net.NetworkInformation
 
         private PingReply SendWithPingUtility(IPAddress address, byte[] buffer, int timeout, PingOptions? options)
         {
-            using (Process p = GetPingProcess(address, buffer, options))
+            using (Process p = GetPingProcess(address, buffer, timeout, options))
             {
                 p.Start();
                 if (!p.WaitForExit(timeout) || p.ExitCode == 1 || p.ExitCode == 2)
@@ -326,11 +325,11 @@ namespace System.Net.NetworkInformation
 
         private async Task<PingReply> SendWithPingUtilityAsync(IPAddress address, byte[] buffer, int timeout, PingOptions? options)
         {
-            using (Process p = GetPingProcess(address, buffer, options))
+            using (Process p = GetPingProcess(address, buffer, timeout, options))
             {
-                var processCompletion = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
+                var processCompletion = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
                 p.EnableRaisingEvents = true;
-                p.Exited += (s, e) => processCompletion.SetResult(true);
+                p.Exited += (s, e) => processCompletion.SetResult();
                 p.Start();
 
                 var cts = new CancellationTokenSource();

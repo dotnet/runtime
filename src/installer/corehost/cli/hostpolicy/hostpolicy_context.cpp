@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 #include "hostpolicy_context.h"
 
@@ -106,24 +105,41 @@ int hostpolicy_context_t::initialize(hostpolicy_init_t &hostpolicy_init, const a
     clr_path = probe_paths.coreclr;
     if (clr_path.empty() || !pal::realpath(&clr_path))
     {
-        trace::error(_X("Could not resolve CoreCLR path. For more details, enable tracing by setting COREHOST_TRACE environment variable to 1"));
-        return StatusCode::CoreClrResolveFailure;
+        // in a single-file case we may not need coreclr,
+        // otherwise fail early.
+        if (!bundle::info_t::is_single_file_bundle())
+        {
+            trace::error(_X("Could not resolve CoreCLR path. For more details, enable tracing by setting COREHOST_TRACE environment variable to 1"));
+            return StatusCode::CoreClrResolveFailure;
+        }
+
+        // save for tracing purposes.
+        clr_dir = clr_path;
     }
-
-    // Get path in which CoreCLR is present.
-    clr_dir = get_directory(clr_path);
-
-    // System.Private.CoreLib.dll is expected to be next to CoreCLR.dll - add its path to the TPA list.
-    pal::string_t corelib_path = clr_dir;
-    append_path(&corelib_path, CORELIB_NAME);
-
-    // Append CoreLib path
-    if (!probe_paths.tpa.empty() && probe_paths.tpa.back() != PATH_SEPARATOR)
+    else
     {
-        probe_paths.tpa.push_back(PATH_SEPARATOR);
+        // Get path in which CoreCLR is present.
+        clr_dir = get_directory(clr_path);
     }
 
-    probe_paths.tpa.append(corelib_path);
+    // If this is a self-contained single-file bundle,
+    // System.Private.CoreLib.dll is expected to be within the bundle, unless it is explicitly excluded from the bundle.
+    // In all other cases, 
+    // System.Private.CoreLib.dll is expected to be next to CoreCLR.dll - add its path to the TPA list.
+    if (!bundle::info_t::is_single_file_bundle() ||
+        bundle::runner_t::app()->probe(CORELIB_NAME) == nullptr)
+    {
+        pal::string_t corelib_path = clr_dir;
+        append_path(&corelib_path, CORELIB_NAME);
+
+        // Append CoreLib path
+        if (!probe_paths.tpa.empty() && probe_paths.tpa.back() != PATH_SEPARATOR)
+        {
+            probe_paths.tpa.push_back(PATH_SEPARATOR);
+        }
+
+        probe_paths.tpa.append(corelib_path);
+    }
 
     const fx_definition_vector_t &fx_definitions = resolver.get_fx_definitions();
 
@@ -136,7 +152,7 @@ int hostpolicy_context_t::initialize(hostpolicy_init_t &hostpolicy_init, const a
 
     fx_definition_vector_t::iterator fx_begin;
     fx_definition_vector_t::iterator fx_end;
-    resolver.get_app_fx_definition_range(&fx_begin, &fx_end);
+    resolver.get_app_context_deps_files_range(&fx_begin, &fx_end);
 
     pal::string_t app_context_deps_str;
     fx_definition_vector_t::iterator fx_curr = fx_begin;
@@ -145,12 +161,26 @@ int hostpolicy_context_t::initialize(hostpolicy_init_t &hostpolicy_init, const a
         if (fx_curr != fx_begin)
             app_context_deps_str += _X(';');
 
-        app_context_deps_str += (*fx_curr)->get_deps_file();
+        // For the application's .deps.json if this is single file, 3.1 backward compat
+        // then the path used internally is the bundle path, but externally we need to report
+        // the path to the extraction folder.
+        if (fx_curr == fx_begin && bundle::info_t::is_single_file_bundle() && bundle::runner_t::app()->is_netcoreapp3_compat_mode())
+        {
+            pal::string_t deps_path = bundle::runner_t::app()->extraction_path();
+            append_path(&deps_path, get_filename((*fx_curr)->get_deps_file()).c_str());
+            app_context_deps_str += deps_path;
+        }
+        else
+        {
+            app_context_deps_str += (*fx_curr)->get_deps_file();
+        }
+
         ++fx_curr;
     }
 
     // Build properties for CoreCLR instantiation
-    pal::string_t app_base = resolver.get_app_dir();
+    pal::string_t app_base;
+    resolver.get_app_dir(&app_base);
     coreclr_properties.add(common_property::TrustedPlatformAssemblies, probe_paths.tpa.c_str());
     coreclr_properties.add(common_property::NativeDllSearchDirectories, probe_paths.native.c_str());
     coreclr_properties.add(common_property::PlatformResourceRoots, probe_paths.resources.c_str());
@@ -215,8 +245,20 @@ int hostpolicy_context_t::initialize(hostpolicy_init_t &hostpolicy_init, const a
         pal::stringstream_t ptr_stream;
         ptr_stream << "0x" << std::hex << (size_t)(&bundle_probe);
 
-        coreclr_properties.add(common_property::BundleProbe, ptr_stream.str().c_str());
+        if (!coreclr_properties.add(common_property::BundleProbe, ptr_stream.str().c_str()))
+        {
+            log_duplicate_property_error(coreclr_property_bag_t::common_property_to_string(common_property::StartUpHooks));
+            return StatusCode::LibHostDuplicateProperty;
+        }
     }
+
+#if defined(HOSTPOLICY_EMBEDDED)
+    if (!coreclr_properties.add(common_property::HostPolicyEmbedded, _X("true")))
+    {
+        log_duplicate_property_error(coreclr_property_bag_t::common_property_to_string(common_property::StartUpHooks));
+        return StatusCode::LibHostDuplicateProperty;
+    }
+#endif
 
     return StatusCode::Success;
 }

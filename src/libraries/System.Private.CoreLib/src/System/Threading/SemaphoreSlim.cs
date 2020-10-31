@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
@@ -28,13 +27,13 @@ namespace System.Threading
     {
         #region Private Fields
 
-        // The semaphore count, initialized in the constructor to the initial value, every release call incremetns it
+        // The semaphore count, initialized in the constructor to the initial value, every release call increments it
         // and every wait call decrements it as long as its value is positive otherwise the wait will block.
         // Its value must be between the maximum semaphore value and zero
         private volatile int m_currentCount;
 
         // The maximum semaphore value, it is initialized to Int.MaxValue if the client didn't specify it. it is used
-        // to check if the count excceeded the maxi value or not.
+        // to check if the count exceeded the maximum value or not.
         private readonly int m_maxCount;
 
         // The number of synchronously waiting threads, it is set to zero in the constructor and increments before blocking the
@@ -61,13 +60,6 @@ namespace System.Threading
 
         // Tail of list representing asynchronous waits on the semaphore.
         private TaskNode? m_asyncTail;
-
-        // A pre-completed task with Result==true
-        private static readonly Task<bool> s_trueTask =
-            new Task<bool>(false, true, (TaskCreationOptions)InternalTaskOptions.DoNotDispose, default);
-        // A pre-completed task with Result==false
-        private static readonly Task<bool> s_falseTask =
-            new Task<bool>(false, false, (TaskCreationOptions)InternalTaskOptions.DoNotDispose, default);
 
         // No maximum constant
         private const int NO_MAXIMUM = int.MaxValue;
@@ -626,12 +618,12 @@ namespace System.Threading
                 {
                     --m_currentCount;
                     if (m_waitHandle != null && m_currentCount == 0) m_waitHandle.Reset();
-                    return s_trueTask;
+                    return Task.FromResult(true);
                 }
                 else if (millisecondsTimeout == 0)
                 {
                     // No counts, if timeout is zero fail fast
-                    return s_falseTask;
+                    return Task.FromResult(false);
                 }
                 // If there aren't, create and return a task to the caller.
                 // The task will be completed either when they've successfully acquired
@@ -729,7 +721,7 @@ namespace System.Threading
             {
                 // Wait until either the task is completed or cancellation is requested.
                 var cancellationTask = new Task(null, TaskCreationOptions.RunContinuationsAsynchronously, promiseStyle: true);
-                using (cancellationToken.UnsafeRegister(s => ((Task)s!).TrySetResult(), cancellationTask))
+                using (cancellationToken.UnsafeRegister(static s => ((Task)s!).TrySetResult(), cancellationTask))
                 {
                     if (asyncWaiter == await Task.WhenAny(asyncWaiter, cancellationTask).ConfigureAwait(false))
                     {

@@ -17,36 +17,11 @@ if(NOT CLR_CMAKE_USE_SYSTEM_LIBUNWIND)
 
   add_subdirectory(libunwind)
 elseif(NOT CLR_CMAKE_TARGET_OSX)
-    if(CLR_CMAKE_HOST_ARCH_ARM)
-      find_library(UNWIND_ARCH NAMES unwind-arm)
-    endif()
-
-    if(CLR_CMAKE_HOST_ARCH_ARM64)
-      find_library(UNWIND_ARCH NAMES unwind-aarch64)
-    endif()
-
-    if(CLR_CMAKE_HOST_ARCH_AMD64)
-      find_library(UNWIND_ARCH NAMES unwind-x86_64)
-    endif()
-
-    if(NOT UNWIND_ARCH STREQUAL UNWIND_ARCH-NOTFOUND)
-       set(UNWIND_LIBS ${UNWIND_ARCH})
-    endif()
-
-    find_library(UNWIND_GENERIC NAMES unwind-generic)
-
-    if(NOT UNWIND_GENERIC STREQUAL UNWIND_GENERIC-NOTFOUND)
-      set(UNWIND_LIBS ${UNWIND_LIBS} ${UNWIND_GENERIC})
-    endif()
-
-    find_library(UNWIND NAMES unwind)
-
-    if(UNWIND STREQUAL UNWIND-NOTFOUND)
-      message(FATAL_ERROR "Cannot find libunwind. Try installing libunwind8-dev or libunwind-devel.")
-    endif()
-
-    set(UNWIND_LIBS ${UNWIND_LIBS} ${UNWIND})
+  find_unwind_libs(UNWIND_LIBS)
+else()
+  add_subdirectory(libunwind)
 endif(NOT CLR_CMAKE_USE_SYSTEM_LIBUNWIND)
+
 include(configure.cmake)
 
 project(coreclrpal)
@@ -66,13 +41,29 @@ include_directories(include)
 
 # Compile options
 
+if(CLR_CMAKE_HOST_ARCH_AMD64)
+  set(PAL_ARCH_SOURCES_DIR amd64)
+elseif(CLR_CMAKE_HOST_ARCH_ARM)
+  set(PAL_ARCH_SOURCES_DIR arm)
+elseif(CLR_CMAKE_HOST_ARCH_ARM64)
+  set(PAL_ARCH_SOURCES_DIR arm64)
+elseif(CLR_CMAKE_HOST_ARCH_I386)
+  set(PAL_ARCH_SOURCES_DIR i386)
+endif()
+
+if(CLR_CMAKE_USE_SYSTEM_LIBUNWIND)
+  add_definitions(-DFEATURE_USE_SYSTEM_LIBUNWIND)
+endif(CLR_CMAKE_USE_SYSTEM_LIBUNWIND)
+
 if(CLR_CMAKE_TARGET_OSX)
   add_definitions(-DTARGET_OSX)
-  add_definitions(-DXSTATE_SUPPORTED)
+  if(CLR_CMAKE_TARGET_ARCH_AMD64)
+    add_definitions(-DXSTATE_SUPPORTED)
+  endif()
   set(PLATFORM_SOURCES
-    arch/amd64/activationhandlerwrapper.S
-    arch/amd64/context.S
-    arch/amd64/dispatchexceptionwrapper.S
+    arch/${PAL_ARCH_SOURCES_DIR}/activationhandlerwrapper.S
+    arch/${PAL_ARCH_SOURCES_DIR}/context.S
+    arch/${PAL_ARCH_SOURCES_DIR}/dispatchexceptionwrapper.S
     exception/machexception.cpp
     exception/machmessage.cpp
   )
@@ -85,15 +76,6 @@ add_definitions(-DLP64COMPATIBLE)
 add_definitions(-DCORECLR)
 add_definitions(-DPIC)
 add_definitions(-D_FILE_OFFSET_BITS=64)
-if(CLR_CMAKE_HOST_ARCH_AMD64)
-  set(PAL_ARCH_SOURCES_DIR amd64)
-elseif(CLR_CMAKE_HOST_ARCH_ARM)
-  set(PAL_ARCH_SOURCES_DIR arm)
-elseif(CLR_CMAKE_HOST_ARCH_ARM64)
-  set(PAL_ARCH_SOURCES_DIR arm64)
-elseif(CLR_CMAKE_HOST_ARCH_I386)
-  set(PAL_ARCH_SOURCES_DIR i386)
-endif()
 
 if(CLR_CMAKE_HOST_ARCH_AMD64 AND CLR_CMAKE_TARGET_LINUX AND NOT CLR_CMAKE_HOST_ALPINE_LINUX)
   # Currently the _xstate is not available on Alpine Linux
@@ -110,10 +92,6 @@ endif(CLR_CMAKE_HOST_ALPINE_LINUX)
 
 # turn off capability to remove unused functions (which was enabled in debug build with sanitizers)
 set(CMAKE_SHARED_LINKER_FLAGS_DEBUG "${CMAKE_SHARED_LINKER_FLAGS_DEBUG} -Wl,--no-gc-sections")
-
-if (CMAKE_CXX_COMPILER_ID MATCHES "GNU")
-  add_compile_options(-Wno-unused-result)
-endif(CMAKE_CXX_COMPILER_ID MATCHES "GNU")
 
 set(ARCH_SOURCES
   arch/${PAL_ARCH_SOURCES_DIR}/context2.S
@@ -144,7 +122,6 @@ set(SOURCES
   cruntime/filecrt.cpp
   cruntime/malloc.cpp
   cruntime/math.cpp
-  cruntime/mbstring.cpp
   cruntime/misc.cpp
   cruntime/path.cpp
   cruntime/printf.cpp
@@ -158,7 +135,6 @@ set(SOURCES
   debug/debug.cpp
   exception/seh.cpp
   exception/signal.cpp
-  exception/remote-unwind.cpp
   file/directory.cpp
   file/file.cpp
   file/filetime.cpp
@@ -219,6 +195,7 @@ set(SOURCES
   safecrt/wcscat_s.cpp
   safecrt/wcscpy_s.cpp
   safecrt/wcslen_s.cpp
+  safecrt/wcslwr_s.cpp
   safecrt/wcsncat_s.cpp
   safecrt/wcsncpy_s.cpp
   safecrt/wcstok_s.cpp
@@ -253,6 +230,37 @@ add_library(coreclrpal
   ${LIBUNWIND_OBJECTS}
 )
 
+# Build separate pal library for DAC (addition to regular pal library)
+if(CLR_CMAKE_TARGET_OSX)
+  set(LIBUNWIND_DAC_OBJECTS $<TARGET_OBJECTS:libunwind_dac>)
+
+  add_library(coreclrpal_dac STATIC
+    exception/remote-unwind.cpp
+    ${LIBUNWIND_DAC_OBJECTS}
+  )
+
+  target_compile_definitions(coreclrpal_dac PUBLIC
+    "-D_XOPEN_SOURCE"
+    "-DUNW_REMOTE_ONLY"
+  )
+else()
+  if(NOT FEATURE_CROSSBITNESS)
+    add_library(coreclrpal_dac STATIC
+      exception/remote-unwind.cpp
+    )
+  endif(NOT FEATURE_CROSSBITNESS)
+endif(CLR_CMAKE_TARGET_OSX)
+
+if(NOT FEATURE_CROSSBITNESS)
+  target_include_directories(coreclrpal_dac PUBLIC
+    ${CMAKE_CURRENT_SOURCE_DIR}/libunwind/include
+    ${CMAKE_CURRENT_SOURCE_DIR}/libunwind/include/tdep
+    ${CMAKE_CURRENT_BINARY_DIR}
+    ${CMAKE_CURRENT_BINARY_DIR}/libunwind/include
+    ${CMAKE_CURRENT_BINARY_DIR}/libunwind/include/tdep
+  )
+endif(NOT FEATURE_CROSSBITNESS)
+
 # There is only one function exported in 'tracepointprovider.cpp' namely 'PAL_InitializeTracing',
 # which is guarded with '#if defined(__linux__)'. On macOS, Xcode issues the following warning:
 #
@@ -260,10 +268,12 @@ add_library(coreclrpal
 # > warning for library: libtracepointprovider.a the table of contents is empty (no object file members in the library define global symbols)
 #
 if(CLR_CMAKE_TARGET_LINUX)
-  add_library(tracepointprovider
-    STATIC
+  add_library(tracepointprovider_obj
+    OBJECT
     misc/tracepointprovider.cpp
   )
+  add_library(tracepointprovider INTERFACE)
+  target_sources(tracepointprovider INTERFACE $<TARGET_OBJECTS:tracepointprovider_obj>)
 endif(CLR_CMAKE_TARGET_LINUX)
 
 if(CLR_CMAKE_TARGET_OSX)
@@ -335,7 +345,6 @@ endif(CLR_CMAKE_TARGET_SUNOS)
 if(FEATURE_EVENT_TRACE)
   add_subdirectory(eventprovider)
 endif(FEATURE_EVENT_TRACE)
-
 
 # Install the static PAL library for VS
 _install (TARGETS coreclrpal DESTINATION lib)

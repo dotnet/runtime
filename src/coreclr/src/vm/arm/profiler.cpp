@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 //
 // FILE: profiler.cpp
 //
@@ -137,7 +136,7 @@ Stack for the above call will look as follows (stack growing downwards):
         ctx.R11 = (UINT)pData->R11;
         ctx.Pc = (UINT)pData->Pc;
         // For some functions which do localloc, sp is saved in r9. In order to perform unwinding for functions r9 must be set in the context.
-        // r9 is stored at offset (sizeof(PROFILE_PLATFORM_SPECIFIC_DATA) (this also includes the padding done for 8-byte stack alignement) + size required for (r0,r3)) bytes from pData
+        // r9 is stored at offset (sizeof(PROFILE_PLATFORM_SPECIFIC_DATA) (this also includes the padding done for 8-byte stack alignment) + size required for (r0,r3)) bytes from pData
         ctx.R9 = *((UINT*)pData + (sizeof(PROFILE_PLATFORM_SPECIFIC_DATA) + 8)/4);
 
         // walk up a frame to the caller frame (called the managed method which
@@ -145,7 +144,7 @@ Stack for the above call will look as follows (stack growing downwards):
         Thread::VirtualUnwindCallFrame(&ctx);
 
         // add the prespill register(r0-r3) size to get the stack pointer of previous function
-        _ASSERTE(pData->profiledSp == (void*)(ctx.Sp - 4*4));
+        _ASSERTE(pData->profiledSp == (void*)(ctx.Sp - 4*4) || pData->profiledSp == (void*)(ctx.Sp - 6*4));
     }
 #endif // _DEBUG
 

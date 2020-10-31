@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 //
 // Provides basic interpreted regular expression matching. This is meant as a debugging tool,
 // and if regular expressions become necessary in a non-debug scenario great care should be
@@ -551,7 +550,7 @@ public:
 //     *?  matches zero or more occurrences of the previous item conservatively
 //     +   matches 1 or more occurrences of the previous item eagerly
 //     +?  matches 1 or more occurrences of the previous item conservatively
-//     ?   matches 0 or 1 occurences of the previous item
+//     ?   matches 0 or 1 occurrences of the previous item
 //     (   starts a grouping
 //     )   ends a grouping
 //

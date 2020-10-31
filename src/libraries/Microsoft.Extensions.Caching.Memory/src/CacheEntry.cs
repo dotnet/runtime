@@ -1,24 +1,25 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System;
 using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
+using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Primitives;
 
 namespace Microsoft.Extensions.Caching.Memory
 {
     internal class CacheEntry : ICacheEntry
     {
-        private bool _added = false;
+        private bool _disposed;
         private static readonly Action<object> ExpirationCallback = ExpirationTokensExpired;
         private readonly Action<CacheEntry> _notifyCacheOfExpiration;
-        private readonly Action<CacheEntry> _notifyCacheEntryDisposed;
+        private readonly Action<CacheEntry> _notifyCacheEntryCommit;
         private IList<IDisposable> _expirationTokenRegistrations;
         private IList<PostEvictionCallbackRegistration> _postEvictionCallbacks;
         private bool _isExpired;
+        private readonly ILogger _logger;
 
         internal IList<IChangeToken> _expirationTokens;
         internal DateTimeOffset? _absoluteExpiration;
@@ -26,22 +27,25 @@ namespace Microsoft.Extensions.Caching.Memory
         private TimeSpan? _slidingExpiration;
         private long? _size;
         private IDisposable _scope;
+        private object _value;
+        private bool _valueHasBeenSet;
 
         internal readonly object _lock = new object();
 
         internal CacheEntry(
             object key,
-            Action<CacheEntry> notifyCacheEntryDisposed,
-            Action<CacheEntry> notifyCacheOfExpiration)
+            Action<CacheEntry> notifyCacheEntryCommit,
+            Action<CacheEntry> notifyCacheOfExpiration,
+            ILogger logger)
         {
             if (key == null)
             {
                 throw new ArgumentNullException(nameof(key));
             }
 
-            if (notifyCacheEntryDisposed == null)
+            if (notifyCacheEntryCommit == null)
             {
-                throw new ArgumentNullException(nameof(notifyCacheEntryDisposed));
+                throw new ArgumentNullException(nameof(notifyCacheEntryCommit));
             }
 
             if (notifyCacheOfExpiration == null)
@@ -49,11 +53,17 @@ namespace Microsoft.Extensions.Caching.Memory
                 throw new ArgumentNullException(nameof(notifyCacheOfExpiration));
             }
 
+            if (logger == null)
+            {
+                throw new ArgumentNullException(nameof(logger));
+            }
+
             Key = key;
-            _notifyCacheEntryDisposed = notifyCacheEntryDisposed;
+            _notifyCacheEntryCommit = notifyCacheEntryCommit;
             _notifyCacheOfExpiration = notifyCacheOfExpiration;
 
             _scope = CacheEntryHelper.EnterScope(this);
+            _logger = logger;
         }
 
         /// <summary>
@@ -174,7 +184,15 @@ namespace Microsoft.Extensions.Caching.Memory
 
         public object Key { get; private set; }
 
-        public object Value { get; set; }
+        public object Value
+        {
+            get => _value;
+            set
+            {
+                _value = value;
+                _valueHasBeenSet = true;
+            }
+        }
 
         internal DateTimeOffset LastAccessed { get; set; }
 
@@ -182,12 +200,23 @@ namespace Microsoft.Extensions.Caching.Memory
 
         public void Dispose()
         {
-            if (!_added)
+            if (!_disposed)
             {
-                _added = true;
+                _disposed = true;
+
+                // Ensure the _scope reference is cleared because it can reference other CacheEntry instances.
+                // This CacheEntry is going to be put into a MemoryCache, and we don't want to root unnecessary objects.
                 _scope.Dispose();
-                _notifyCacheEntryDisposed(this);
-                PropagateOptions(CacheEntryHelper.Current);
+                _scope = null;
+
+                // Don't commit or propagate options if the CacheEntry Value was never set.
+                // We assume an exception occurred causing the caller to not set the Value successfully,
+                // so don't use this entry.
+                if (_valueHasBeenSet)
+                {
+                    _notifyCacheEntryCommit(this);
+                    PropagateOptions(CacheEntryHelper.Current);
+                }
             }
         }
 
@@ -230,7 +259,7 @@ namespace Microsoft.Extensions.Caching.Memory
             {
                 for (int i = 0; i < _expirationTokens.Count; i++)
                 {
-                    var expiredToken = _expirationTokens[i];
+                    IChangeToken expiredToken = _expirationTokens[i];
                     if (expiredToken.HasChanged)
                     {
                         SetExpired(EvictionReason.TokenExpired);
@@ -249,14 +278,14 @@ namespace Microsoft.Extensions.Caching.Memory
                 {
                     for (int i = 0; i < _expirationTokens.Count; i++)
                     {
-                        var expirationToken = _expirationTokens[i];
+                        IChangeToken expirationToken = _expirationTokens[i];
                         if (expirationToken.ActiveChangeCallbacks)
                         {
                             if (_expirationTokenRegistrations == null)
                             {
                                 _expirationTokenRegistrations = new List<IDisposable>(1);
                             }
-                            var registration = expirationToken.RegisterChangeCallback(ExpirationCallback, this);
+                            IDisposable registration = expirationToken.RegisterChangeCallback(ExpirationCallback, this);
                             _expirationTokenRegistrations.Add(registration);
                         }
                     }
@@ -277,15 +306,15 @@ namespace Microsoft.Extensions.Caching.Memory
 
         private void DetachTokens()
         {
-            lock(_lock)
+            lock (_lock)
             {
-                var registrations = _expirationTokenRegistrations;
+                IList<IDisposable> registrations = _expirationTokenRegistrations;
                 if (registrations != null)
                 {
                     _expirationTokenRegistrations = null;
                     for (int i = 0; i < registrations.Count; i++)
                     {
-                        var registration = registrations[i];
+                        IDisposable registration = registrations[i];
                         registration.Dispose();
                     }
                 }
@@ -303,7 +332,7 @@ namespace Microsoft.Extensions.Caching.Memory
 
         private static void InvokeCallbacks(CacheEntry entry)
         {
-            var callbackRegistrations = Interlocked.Exchange(ref entry._postEvictionCallbacks, null);
+            IList<PostEvictionCallbackRegistration> callbackRegistrations = Interlocked.Exchange(ref entry._postEvictionCallbacks, null);
 
             if (callbackRegistrations == null)
             {
@@ -312,16 +341,16 @@ namespace Microsoft.Extensions.Caching.Memory
 
             for (int i = 0; i < callbackRegistrations.Count; i++)
             {
-                var registration = callbackRegistrations[i];
+                PostEvictionCallbackRegistration registration = callbackRegistrations[i];
 
                 try
                 {
                     registration.EvictionCallback?.Invoke(entry.Key, entry.Value, entry.EvictionReason, registration.State);
                 }
-                catch (Exception)
+                catch (Exception e)
                 {
                     // This will be invoked on a background thread, don't let it throw.
-                    // TODO: LOG
+                    entry._logger.LogError(e, "EvictionCallback invoked failed");
                 }
             }
         }
@@ -341,7 +370,7 @@ namespace Microsoft.Extensions.Caching.Memory
                 {
                     lock (parent._lock)
                     {
-                        foreach (var expirationToken in _expirationTokens)
+                        foreach (IChangeToken expirationToken in _expirationTokens)
                         {
                             parent.AddExpirationToken(expirationToken);
                         }

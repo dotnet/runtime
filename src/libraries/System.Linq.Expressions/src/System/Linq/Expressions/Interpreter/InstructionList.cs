@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 // Enables instruction counting and displaying stats at process exit.
 // #define STATS
@@ -77,9 +76,10 @@ namespace System.Linq.Expressions.Interpreter
         private int _runtimeLabelCount;
         private List<BranchLabel>? _labels;
 
+#if DEBUG
         // list of (instruction index, cookie) sorted by instruction index:
-        private List<KeyValuePair<int, object?>>? _debugCookies = null;
-
+        private List<KeyValuePair<int, object?>>? _debugCookies;
+#endif
         #region Debug View
 
         internal sealed class DebugView
@@ -101,7 +101,10 @@ namespace System.Linq.Expressions.Interpreter
                         _list._instructions,
                         _list._objects,
                         (index) => _list._labels![index].TargetIndex,
-                        includeDebugCookies ? _list._debugCookies : null
+#if DEBUG
+                        includeDebugCookies ? _list._debugCookies :
+#endif
+                            null
                     );
             }
 
@@ -230,10 +233,7 @@ namespace System.Linq.Expressions.Interpreter
         public void SetDebugCookie(object? cookie)
         {
 #if DEBUG
-            if (_debugCookies == null)
-            {
-                _debugCookies = new List<KeyValuePair<int, object?>>();
-            }
+            _debugCookies ??= new List<KeyValuePair<int, object?>>();
 
             Debug.Assert(Count > 0);
             _debugCookies.Add(new KeyValuePair<int, object?>(Count - 1, cookie));
@@ -300,7 +300,11 @@ namespace System.Linq.Expressions.Interpreter
                 _instructions.ToArray(),
                 _objects?.ToArray(),
                 BuildRuntimeLabels(),
+#if DEBUG
                 _debugCookies
+#else
+                null
+#endif
             );
         }
 

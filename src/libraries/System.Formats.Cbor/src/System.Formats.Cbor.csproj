@@ -1,0 +1,44 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFrameworks>$(NetCoreAppCurrent)</TargetFrameworks>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <Nullable>enable</Nullable>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="$(CommonPath)System\Marvin.cs" Link="Common\System\Marvin.cs" />
+    <Compile Include="$(CommonPath)System\Memory\PointerMemoryManager.cs" Link="Common\System\Memory\PointerMemoryManager.cs" />
+    <Compile Include="System\Formats\Cbor\HalfHelpers.cs" />
+    <Compile Include="System\Formats\Cbor\Reader\CborReaderState.cs" />
+    <Compile Include="System\Formats\Cbor\Reader\CborReader.PeekState.cs" />
+    <Compile Include="System\Formats\Cbor\Reader\CborReader.SkipValue.cs" />
+    <Compile Include="System\Formats\Cbor\Reader\CborReader.Simple.cs" />
+    <Compile Include="System\Formats\Cbor\Reader\CborReader.Tag.cs" />
+    <Compile Include="System\Formats\Cbor\Reader\CborReader.Array.cs" />
+    <Compile Include="System\Formats\Cbor\Reader\CborReader.cs" />
+    <Compile Include="System\Formats\Cbor\Reader\CborReader.Integer.cs" />
+    <Compile Include="System\Formats\Cbor\Reader\CborReader.Map.cs" />
+    <Compile Include="System\Formats\Cbor\Reader\CborReader.String.cs" />
+    <Compile Include="System\Formats\Cbor\Writer\CborWriter.Array.cs" />
+    <Compile Include="System\Formats\Cbor\Writer\CborWriter.Map.cs" />
+    <Compile Include="System\Formats\Cbor\Writer\CborWriter.Simple.cs" />
+    <Compile Include="System\Formats\Cbor\Writer\CborWriter.String.cs" />
+    <Compile Include="System\Formats\Cbor\Writer\CborWriter.cs" />
+    <Compile Include="System\Formats\Cbor\Writer\CborWriter.Integer.cs" />
+    <Compile Include="System\Formats\Cbor\Writer\CborWriter.Tag.cs" />
+    <Compile Include="System\Formats\Cbor\CborConformanceLevel.cs" />
+    <Compile Include="System\Formats\Cbor\CborInitialByte.cs" />
+    <Compile Include="System\Formats\Cbor\CborTag.cs" />
+    <Compile Include="System\Formats\Cbor\CborContentException.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <Reference Include="System" />
+    <Reference Include="System.Collections" />
+    <Reference Include="System.Buffers" />
+    <Reference Include="System.Memory" />
+    <Reference Include="System.Runtime" />
+    <Reference Include="System.Runtime.Numerics" />
+    <Reference Include="System.Security.Cryptography.Algorithms" />
+    <Reference Include="System.Threading" />
+    <Reference Include="System.Text.Encoding.Extensions" />
+  </ItemGroup>
+</Project>

@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Buffers;
 using System.ComponentModel;
@@ -54,12 +53,12 @@ namespace System.Net.Security
         }
 
         public static SafeFreeCredentials AcquireCredentialsHandle(
-            X509Certificate certificate,
+            SslStreamCertificateContext? certificateContext,
             SslProtocols protocols,
             EncryptionPolicy policy,
             bool isServer)
         {
-            return new SafeFreeSslCredentials(certificate, protocols, policy);
+            return new SafeFreeSslCredentials(certificateContext, protocols, policy);
         }
 
         internal static byte[]? GetNegotiatedApplicationProtocol(SafeDeleteContext? context)
@@ -237,9 +236,8 @@ namespace System.Net.Security
                     sslContext = new SafeDeleteSslContext((credential as SafeFreeSslCredentials)!, sslAuthenticationOptions);
                     context = sslContext;
 
-                    if (!string.IsNullOrEmpty(sslAuthenticationOptions.TargetHost))
+                    if (!string.IsNullOrEmpty(sslAuthenticationOptions.TargetHost) && !sslAuthenticationOptions.IsServer)
                     {
-                        Debug.Assert(!sslAuthenticationOptions.IsServer, "targetName should not be set for server-side handshakes");
                         Interop.AppleCrypto.SslSetTargetName(sslContext.SslContext, sslAuthenticationOptions.TargetHost);
                     }
 

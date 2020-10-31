@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
 using System.Globalization;
@@ -391,7 +390,6 @@ namespace System.Text.RegularExpressions.Tests
             if (!PlatformDetection.IsNetFramework) // missing fix for https://github.com/dotnet/runtime/issues/24759
             {
                 yield return new object[] { null, @"(cat)(\c[*)(dog)", "asdlkcat\u001bdogiwod", RegexOptions.None, new string[] { "cat\u001bdog", "cat", "\u001b", "dog" } };
-                yield return new object[] { null, @"(cat)(\c[*)(dog)", "asdlkcat\u001Bdogiwod", RegexOptions.None, new string[] { "cat\u001Bdog", "cat", "\u001B", "dog" } };
             }
 
             // Atomic Zero-Width Assertions \A \G ^ \Z \z \b \B
@@ -858,8 +856,11 @@ namespace System.Text.RegularExpressions.Tests
 
         public static IEnumerable<object[]> Groups_CustomCulture_TestData_AzeriLatin()
         {
-            yield return new object[] { "az-Latn-AZ", "\u0131", "\u0049", RegexOptions.IgnoreCase, new string[] { "\u0049" } };
-            yield return new object[] { "az-Latn-AZ", "\u0130", "\u0069", RegexOptions.IgnoreCase, new string[] { "\u0069" } };
+            if (PlatformDetection.IsNotBrowser)
+            {
+                yield return new object[] { "az-Latn-AZ", "\u0131", "\u0049", RegexOptions.IgnoreCase, new string[] { "\u0049" } };
+                yield return new object[] { "az-Latn-AZ", "\u0130", "\u0069", RegexOptions.IgnoreCase, new string[] { "\u0069" } };
+            }
         }
 
         [Theory]

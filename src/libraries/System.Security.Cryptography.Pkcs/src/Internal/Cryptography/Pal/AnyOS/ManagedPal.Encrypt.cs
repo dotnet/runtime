@@ -1,9 +1,9 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System;
 using System.Collections.Generic;
+using System.Formats.Asn1;
 using System.IO;
 using System.Security.Cryptography;
 using System.Security.Cryptography.Asn1;
@@ -68,7 +68,7 @@ namespace Internal.Cryptography.Pal.AnyOS
 
                     ContentEncryptionAlgorithm =
                     {
-                        Algorithm = contentEncryptionAlgorithm.Oid,
+                        Algorithm = contentEncryptionAlgorithm.Oid.Value!,
                         Parameters = parameterBytes,
                     },
 
@@ -141,11 +141,9 @@ namespace Internal.Cryptography.Pal.AnyOS
                 envelopedData.Version = 2;
             }
 
-            using (AsnWriter writer = new AsnWriter(AsnEncodingRules.DER))
-            {
-                envelopedData.Encode(writer);
-                return PkcsHelpers.EncodeContentInfo(writer.Encode(), Oids.Pkcs7Enveloped);
-            }
+            AsnWriter writer = new AsnWriter(AsnEncodingRules.DER);
+            envelopedData.Encode(writer);
+            return PkcsHelpers.EncodeContentInfo(writer.Encode(), Oids.Pkcs7Enveloped);
         }
 
         private byte[] EncryptContent(
@@ -163,11 +161,9 @@ namespace Internal.Cryptography.Pal.AnyOS
                 {
                     Rc2CbcParameters rc2Params = new Rc2CbcParameters(alg.IV, alg.KeySize);
 
-                    using (AsnWriter writer = new AsnWriter(AsnEncodingRules.DER))
-                    {
-                        rc2Params.Encode(writer);
-                        parameterBytes = writer.Encode();
-                    }
+                    AsnWriter writer = new AsnWriter(AsnEncodingRules.DER);
+                    rc2Params.Encode(writer);
+                    parameterBytes = writer.Encode();
                 }
                 else
                 {
@@ -186,10 +182,24 @@ namespace Internal.Cryptography.Pal.AnyOS
                     {
                         return encryptor.OneShot(contentInfo.Content);
                     }
-                    else
+
+                    try
                     {
-                        AsnReader reader = new AsnReader(contentInfo.Content, AsnEncodingRules.BER);
-                        return encryptor.OneShot(reader.PeekContentBytes().ToArray());
+                        AsnDecoder.ReadEncodedValue(
+                            contentInfo.Content,
+                            AsnEncodingRules.BER,
+                            out int contentOffset,
+                            out int contentLength,
+                            out _);
+
+                        ReadOnlySpan<byte> content =
+                            contentInfo.Content.AsSpan(contentOffset, contentLength);
+
+                        return encryptor.OneShot(content.ToArray());
+                    }
+                    catch (AsnContentException e)
+                    {
+                        throw new CryptographicException(SR.Cryptography_Der_Invalid_Encoding, e);
                     }
                 }
             }

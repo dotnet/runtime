@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System;
 using System.Linq;
@@ -282,8 +281,8 @@ namespace System.IO.Tests
             AssertExtensions.Throws<ArgumentOutOfRangeException>("count", () => { stream.ReadAsync(new byte[1], 0, -1); });
             AssertExtensions.Throws<ArgumentOutOfRangeException>("count", () => { stream.WriteAsync(new byte[1], 0, -1); });
 
-            AssertExtensions.Throws<ArgumentException>(null, () => { stream.ReadAsync(new byte[1], 0, 2); });
-            AssertExtensions.Throws<ArgumentException>(null, () => { stream.WriteAsync(new byte[1], 0, 2); });
+            Assert.Throws<ArgumentOutOfRangeException>(() => { stream.ReadAsync(new byte[1], 0, 2); });
+            Assert.Throws<ArgumentOutOfRangeException>(() => { stream.WriteAsync(new byte[1], 0, 2); });
         }
     }
 }

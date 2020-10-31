@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 #nullable enable
 using System.Diagnostics;
@@ -60,6 +59,7 @@ namespace System.Net
         {
             _length = tokenStream.Length;
             _tokenStream = tokenStream;
+            _value = string.Empty;
         }
 
         internal bool EndOfCookie
@@ -525,7 +525,7 @@ namespace System.Net
             return cookie.InternalSetName(value);
         }
 #else
-        private static Func<Cookie, string?, bool>? s_internalSetNameMethod = null;
+        private static Func<Cookie, string?, bool>? s_internalSetNameMethod;
         private static Func<Cookie, string?, bool> InternalSetNameMethod
         {
             get
@@ -546,7 +546,7 @@ namespace System.Net
         }
 #endif
 
-        private static FieldInfo? s_isQuotedDomainField = null;
+        private static FieldInfo? s_isQuotedDomainField;
         private static FieldInfo IsQuotedDomainField
         {
             get

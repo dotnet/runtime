@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Threading;
 using System.Threading.Tasks;
@@ -66,7 +65,7 @@ namespace System.IO
 
         public override int Read(byte[] buffer, int offset, int count)
         {
-            ValidateReadArrayArguments(buffer, offset, count);
+            ValidateBufferArguments(buffer, offset, count);
             return Read(new Span<byte>(buffer, offset, count));
         }
 
@@ -94,7 +93,7 @@ namespace System.IO
 
         public override Task<int> ReadAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
         {
-            ValidateReadArrayArguments(buffer, offset, count);
+            ValidateBufferArguments(buffer, offset, count);
             return cancellationToken.IsCancellationRequested ?
                 Task.FromCanceled<int>(cancellationToken) :
                 Task.FromResult(Read(new Span<byte>(buffer, offset, count)));
@@ -102,7 +101,7 @@ namespace System.IO
 
         public override ValueTask<int> ReadAsync(Memory<byte> buffer, CancellationToken cancellationToken = default(CancellationToken)) =>
             cancellationToken.IsCancellationRequested ?
-                new ValueTask<int>(Task.FromCanceled<int>(cancellationToken)) :
+                ValueTask.FromCanceled<int>(cancellationToken) :
                 new ValueTask<int>(Read(buffer.Span));
 
         public override IAsyncResult BeginRead(byte[] buffer, int offset, int count, AsyncCallback? callback, object? state) =>
@@ -113,7 +112,7 @@ namespace System.IO
 
         public override void CopyTo(Stream destination, int bufferSize)
         {
-            StreamHelpers.ValidateCopyToArgs(this, destination, bufferSize);
+            ValidateCopyToArguments(destination, bufferSize);
             if (_content.Length > _position)
             {
                 destination.Write(_content.Span.Slice(_position));
@@ -122,7 +121,7 @@ namespace System.IO
 
         public override Task CopyToAsync(Stream destination, int bufferSize, CancellationToken cancellationToken)
         {
-            StreamHelpers.ValidateCopyToArgs(this, destination, bufferSize);
+            ValidateCopyToArguments(destination, bufferSize);
             return _content.Length > _position ?
                 destination.WriteAsync(_content.Slice(_position), cancellationToken).AsTask() :
                 Task.CompletedTask;
@@ -135,21 +134,5 @@ namespace System.IO
         public override void SetLength(long value) => throw new NotSupportedException();
 
         public override void Write(byte[] buffer, int offset, int count) => throw new NotSupportedException();
-
-        private static void ValidateReadArrayArguments(byte[] buffer, int offset, int count)
-        {
-            if (buffer == null)
-            {
-                throw new ArgumentNullException(nameof(buffer));
-            }
-            if (offset < 0)
-            {
-                throw new ArgumentOutOfRangeException(nameof(offset));
-            }
-            if (count < 0 || buffer.Length - offset < count)
-            {
-                throw new ArgumentOutOfRangeException(nameof(count));
-            }
-        }
     }
 }

@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 //
 // File: ILStubResolver.cpp
 //
@@ -73,10 +72,8 @@ LPCUTF8 ILStubResolver::GetStubMethodName()
     {
         case CLRToNativeInteropStub: return "IL_STUB_PInvoke";
         case CLRToCOMInteropStub:    return "IL_STUB_CLRtoCOM";
-        case CLRToWinRTInteropStub:  return "IL_STUB_CLRtoWinRT";
         case NativeToCLRInteropStub: return "IL_STUB_ReversePInvoke";
         case COMToCLRInteropStub:    return "IL_STUB_COMtoCLR";
-        case WinRTToCLRInteropStub:  return "IL_STUB_WinRTtoCLR";
         case StructMarshalInteropStub: return "IL_STUB_StructMarshal";
 #ifdef FEATURE_ARRAYSTUB_AS_IL
         case ArrayOpStub:            return "IL_STUB_Array";
@@ -88,7 +85,9 @@ LPCUTF8 ILStubResolver::GetStubMethodName()
         case UnboxingILStub:         return "IL_STUB_UnboxingStub";
         case InstantiatingStub:      return "IL_STUB_InstantiatingStub";
 #endif
-        case WrapperDelegateStub:     return "IL_STUB_WrapperDelegate_Invoke";
+        case WrapperDelegateStub:    return "IL_STUB_WrapperDelegate_Invoke";
+        case TailCallStoreArgsStub:  return "IL_STUB_StoreTailCallArgs";
+        case TailCallCallTargetStub: return "IL_STUB_CallTailCallTarget";
         default:
             UNREACHABLE_MSG("Unknown stub type");
     }
@@ -195,9 +194,11 @@ ILStubResolver::ResolveSignature(
     mdToken token)
 {
     STANDARD_VM_CONTRACT;
-    CONSISTENCY_CHECK_MSG(token == TOKEN_ILSTUB_TARGET_SIG, "IL stubs do not support any other signature tokens!");
 
-    return m_pCompileTimeState->m_StubTargetMethodSig;
+    if (token == TOKEN_ILSTUB_TARGET_SIG)
+        return m_pCompileTimeState->m_StubTargetMethodSig;
+
+    return m_pCompileTimeState->m_tokenLookupMap.LookupSig(token);
 }
 
 //---------------------------------------------------------------------------------------
@@ -236,14 +237,10 @@ void ILStubResolver::GetEHInfo(unsigned EHnumber, CORINFO_EH_CLAUSE* clause)
     clause->FilterOffset = ehInfo->GetFilterOffset();
 }
 
-bool ILStubResolver::IsNativeToCLRInteropStub()
+ILStubResolver::ILStubType ILStubResolver::GetStubType()
 {
-    return (m_type == NativeToCLRInteropStub);
-}
-
-bool ILStubResolver::IsCLRToNativeInteropStub()
-{
-    return (m_type == CLRToNativeInteropStub);
+    LIMITED_METHOD_CONTRACT;
+    return m_type;
 }
 
 void ILStubResolver::SetStubType(ILStubType stubType)

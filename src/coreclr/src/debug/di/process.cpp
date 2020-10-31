@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 //*****************************************************************************
 // File: process.cpp
 //
@@ -422,9 +421,6 @@ IMDInternalImport * CordbProcess::LookupMetaDataFromDebugger(
             const WCHAR *niexe = W(".ni.exe");
             const size_t dllLen = wcslen(nidll);  // used for ni.exe as well
 
-            const WCHAR *niwinmd = W(".ni.winmd");
-            const size_t winmdLen = wcslen(niwinmd);
-
             if (pathLen > dllLen && _wcsicmp(mutableFilePath+pathLen-dllLen, nidll) == 0)
             {
                 wcscpy_s(mutableFilePath+pathLen-dllLen, dllLen, W(".dll"));
@@ -432,10 +428,6 @@ IMDInternalImport * CordbProcess::LookupMetaDataFromDebugger(
             else if (pathLen > dllLen && _wcsicmp(mutableFilePath+pathLen-dllLen, niexe) == 0)
             {
                 wcscpy_s(mutableFilePath+pathLen-dllLen, dllLen, W(".exe"));
-            }
-            else if (pathLen > winmdLen && _wcsicmp(mutableFilePath+pathLen-winmdLen, niwinmd) == 0)
-            {
-                wcscpy_s(mutableFilePath+pathLen-winmdLen, winmdLen, W(".winmd"));
             }
 #endif//FEATURE_CORESYSTEM
 
@@ -2181,6 +2173,10 @@ HRESULT CordbProcess::QueryInterface(REFIID id, void **pInterface)
     {
         *pInterface = static_cast<ICorDebugProcess10*>(this);
     }
+    else if (id == IID_ICorDebugProcess11)
+    {
+        *pInterface = static_cast<ICorDebugProcess11*>(this);
+    }
     else if (id == IID_IUnknown)
     {
         *pInterface = static_cast<IUnknown*>(static_cast<ICorDebugProcess*>(this));
@@ -2534,6 +2530,35 @@ COM_METHOD CordbProcess::EnableGCNotificationEvents(BOOL fEnable)
     PUBLIC_API_BEGIN(this)
     {
         hr = this->m_pDacPrimitives->EnableGCNotificationEvents(fEnable);
+    }
+    PUBLIC_API_END(hr);
+    return hr;
+}
+
+//-----------------------------------------------------------
+// ICorDebugProcess11
+//-----------------------------------------------------------
+COM_METHOD CordbProcess::EnumerateLoaderHeapMemoryRegions(ICorDebugMemoryRangeEnum **ppRanges)
+{
+    VALIDATE_POINTER_TO_OBJECT(ppRanges, ICorDebugMemoryRangeEnum **);
+    FAIL_IF_NEUTERED(this);
+
+    HRESULT hr = S_OK;
+
+    PUBLIC_API_BEGIN(this);
+    {
+        DacDbiArrayList<COR_MEMORY_RANGE> heapRanges;
+
+        hr = GetDAC()->GetLoaderHeapMemoryRanges(&heapRanges);
+
+        if (SUCCEEDED(hr))
+        {
+            RSInitHolder<CordbMemoryRangeEnumerator> heapSegmentEnumerator(
+                new CordbMemoryRangeEnumerator(this, &heapRanges[0], (DWORD)heapRanges.Count()));
+
+            GetContinueNeuterList()->Add(this, heapSegmentEnumerator);
+            heapSegmentEnumerator.TransferOwnershipExternal(ppRanges);
+        }
     }
     PUBLIC_API_END(hr);
     return hr;
@@ -10990,8 +11015,7 @@ void CordbWin32EventThread::ThreadProc()
 }
 
 // Define a holder that calls code:DeleteIPCEventHelper
-NEW_WRAPPER_TEMPLATE1(DeleteIPCEventHolderHelper, DeleteIPCEventHelper);
-typedef DeleteIPCEventHolderHelper<DebuggerIPCEvent>  DeleteIPCEventHolder;
+using DeleteIPCEventHolder = SpecializedWrapper<DebuggerIPCEvent, DeleteIPCEventHelper>;
 
 //---------------------------------------------------------------------------------------
 //

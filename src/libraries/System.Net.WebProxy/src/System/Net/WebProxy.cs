@@ -1,8 +1,8 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections;
+using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Net.NetworkInformation;
 using System.Runtime.Serialization;
@@ -64,12 +64,13 @@ namespace System.Net
 
         public bool BypassProxyOnLocal { get; set; }
 
+        [AllowNull]
         public string[] BypassList
         {
             get { return _bypassList != null ? (string[])_bypassList.ToArray(typeof(string)) : Array.Empty<string>(); }
             set
             {
-                _bypassList = new ArrayList(value);
+                _bypassList = value != null ? new ArrayList(value) : null;
                 UpdateRegexList(true);
             }
         }
@@ -96,7 +97,7 @@ namespace System.Net
 
         private static Uri? CreateProxyUri(string? address) =>
             address == null ? null :
-            address.IndexOf("://", StringComparison.Ordinal) == -1 ? new Uri("http://" + address) :
+            !address.Contains("://") ? new Uri("http://" + address) :
             new Uri(address);
 
         private void UpdateRegexList(bool canThrow)

@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using Microsoft.Win32.SafeHandles;
 using System.Diagnostics;
@@ -14,8 +13,7 @@ namespace System.IO.MemoryMappedFiles
         private readonly long _size;
         private readonly MemoryMappedFileAccess _access;
 
-        private unsafe MemoryMappedView(SafeMemoryMappedViewHandle viewHandle, long pointerOffset,
-                                        long size, MemoryMappedFileAccess access)
+        private MemoryMappedView(SafeMemoryMappedViewHandle viewHandle, long pointerOffset, long size, MemoryMappedFileAccess access)
         {
             Debug.Assert(viewHandle != null);
 

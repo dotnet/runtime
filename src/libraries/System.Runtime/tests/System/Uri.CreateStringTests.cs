@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
 using System.Linq;
@@ -1235,9 +1234,12 @@ namespace System.Tests
             yield return new object[] { "uri://a:2147483648", UriKind.Absolute };
             yield return new object[] { "uri://a:80:80", UriKind.Absolute };
 
-            // Invalid unicode
-            yield return new object[] { "http://\uD800", UriKind.Absolute };
-            yield return new object[] { "http://\uDC00", UriKind.Absolute };
+            if (PlatformDetection.IsNotInvariantGlobalization)
+            {
+                // Invalid unicode
+                yield return new object[] { "http://\uD800", UriKind.Absolute };
+                yield return new object[] { "http://\uDC00", UriKind.Absolute };
+            }
         }
 
         [Theory]

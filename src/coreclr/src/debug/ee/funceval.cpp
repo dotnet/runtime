@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 // ****************************************************************************
 // File: funceval.cpp
 //
@@ -3887,7 +3886,7 @@ void * STDCALL FuncEvalHijackWorker(DebuggerEval *pDE)
         FrameWithCookie<FuncEvalFrame> FEFrame(pDE, GetIP(&pDE->m_context), false);
         FEFrame.Push();
 
-        pDE->m_thread->UserAbort(pDE->m_requester, EEPolicy::TA_Safe, INFINITE, Thread::UAC_Normal);
+        pDE->m_thread->UserAbort(pDE->m_requester, EEPolicy::TA_Safe, INFINITE);
         _ASSERTE(!"Should not return from UserAbort here!");
         return NULL;
     }

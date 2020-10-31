@@ -16,8 +16,9 @@ function(ac_check_headers)
 	string(TOUPPER "${arg}" var1)
 	string(REPLACE "/" "_" var2 ${var1})
 	string(REPLACE "." "_" var3 ${var2})
+	string(REPLACE "-" "_" var4 ${var3})
 	if (FOUND_${arg})
-	  set(HAVE_${var3} 1 PARENT_SCOPE)
+	  set(HAVE_${var4} 1 PARENT_SCOPE)
 	endif()
   endforeach(arg)
 endfunction()
@@ -62,8 +63,6 @@ ac_check_funcs (
   madvise getrusage getpriority setpriority dladdr sysconf getrlimit prctl nl_langinfo
   sched_getaffinity sched_setaffinity getpwnam_r getpwuid_r readlink chmod lstat getdtablesize ftruncate msync
   gethostname getpeername utime utimes openlog closelog atexit popen strerror_r inet_pton inet_aton
-  pthread_getname_np pthread_setname_np pthread_cond_timedwait_relative_np pthread_kill
-  pthread_attr_setstacksize pthread_get_stackaddr_np
   shm_open poll getfsstat mremap posix_fadvise vsnprintf sendfile statfs statvfs setpgid system
   fork execv execve waitpid localtime_r mkdtemp getrandom execvp strlcpy stpcpy strtok_r rewinddir
   vasprintf strndup getpwuid_r getprotobyname getprotobyname_r getaddrinfo mach_absolute_time
@@ -74,6 +73,15 @@ if (NOT DARWIN)
   ac_check_funcs (getentropy)
 endif()
 
+find_package(Threads)
+# Needed to find pthread_ symbols
+set(CMAKE_REQUIRED_LIBRARIES "${CMAKE_REQUIRED_LIBRARIES} ${CMAKE_THREAD_LIBS_INIT}")
+
+ac_check_funcs(
+  pthread_getname_np pthread_setname_np pthread_cond_timedwait_relative_np pthread_kill
+  pthread_attr_setstacksize pthread_get_stackaddr_np pthread_jit_write_protect_np
+)
+
 check_symbol_exists(pthread_mutexattr_setprotocol "pthread.h" HAVE_DECL_PTHREAD_MUTEXATTR_SETPROTOCOL)
 check_symbol_exists(CLOCK_MONOTONIC "time.h" HAVE_CLOCK_MONOTONIC)
 check_symbol_exists(CLOCK_MONOTONIC_COARSE "time.h" HAVE_CLOCK_MONOTONIC_COARSE)
@@ -81,12 +89,14 @@ check_symbol_exists(IP_PKTINFO "linux/in.h" HAVE_IP_PKTINFO)
 check_symbol_exists(IPV6_PKTINFO "netdb.h" HAVE_IPV6_PKTINFO)
 check_symbol_exists(IP_DONTFRAGMENT "Ws2ipdef.h" HAVE_IP_DONTFRAGMENT)
 check_symbol_exists(IP_MTU_DISCOVER "linux/in.h" HAVE_IP_MTU_DISCOVER)
+check_symbol_exists(sys_signame "signal.h" HAVE_SYSSIGNAME)
 
 ac_check_type("struct sockaddr_in6" sockaddr_in6 "netinet/in.h")
 ac_check_type("struct timeval" timeval "sys/time.h;sys/types.h;utime.h")
 ac_check_type("socklen_t" socklen_t "sys/types.h;sys/socket.h")
 ac_check_type("struct ip_mreqn" ip_mreqn "netinet/in.h")
 ac_check_type("struct ip_mreq" ip_mreq "netinet/in.h")
+ac_check_type("clockid_t" clockid_t "sys/types.h")
 
 check_struct_has_member("struct kinfo_proc" kp_proc "sys/types.h;sys/param.h;sys/sysctl.h;sys/proc.h" HAVE_STRUCT_KINFO_PROC_KP_PROC)
 check_struct_has_member("struct sockaddr_in" sin_len "netinet/in.h" HAVE_SOCKADDR_IN_SIN_LEN)
@@ -94,7 +104,22 @@ check_struct_has_member("struct sockaddr_in6" sin6_len "netinet/in.h" HAVE_SOCKA
 check_struct_has_member("struct stat" st_atim "sys/types.h;sys/stat.h;unistd.h" HAVE_STRUCT_STAT_ST_ATIM)
 check_struct_has_member("struct stat" st_atimespec "sys/types.h;sys/stat.h;unistd.h" HAVE_STRUCT_STAT_ST_ATIMESPEC)
 
+check_type_size("int" SIZEOF_INT)
 check_type_size("void*" SIZEOF_VOID_P)
 check_type_size("long" SIZEOF_LONG)
 check_type_size("long long" SIZEOF_LONG_LONG)
 check_type_size("size_t" SIZEOF_SIZE_T)
+
+# ICONV
+set(ICONV_LIB)
+find_library(LIBICONV_FOUND iconv)
+if(NOT LIBICONV_FOUND STREQUAL "LIBICONV_FOUND-NOTFOUND")
+  set(ICONV_LIB "iconv")
+endif()
+
+file(WRITE ${CMAKE_BINARY_DIR}${CMAKE_FILES_DIRECTORY}/CMakeTmp/test.c
+  "#include <sched.h>\n"
+  "void main () { CPU_COUNT((void *) 0); }\n"
+)
+try_compile(GLIBC_HAS_CPU_COUNT ${CMAKE_BINARY_DIR}/CMakeTmp SOURCES "${CMAKE_BINARY_DIR}${CMAKE_FILES_DIRECTORY}/CMakeTmp/test.c"
+    COMPILE_DEFINITIONS "-D_GNU_SOURCE")

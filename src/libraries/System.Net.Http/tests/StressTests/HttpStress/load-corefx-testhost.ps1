@@ -1,13 +1,12 @@
 # Licensed to the .NET Foundation under one or more agreements.
 # The .NET Foundation licenses this file to you under the MIT license.
-# See the LICENSE file in the project root for more information.
 
 # Helper script used for pointing the current powershell environment 
 # to the testhost sdk built by the corefx build script.
 
 [CmdletBinding(PositionalBinding=$false)]
 Param(
-  [string][Alias('f')]$framework = "netcoreapp",
+  [string][Alias('f')]$framework = "net",
   [string][Alias('c')]$configuration = "Release",
   [string][Alias('a')]$arch = "x64",
   [string][Alias('o')]$os = "",

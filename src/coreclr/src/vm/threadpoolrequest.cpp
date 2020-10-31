@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 //=========================================================================
 
@@ -39,7 +38,11 @@ ArrayListStatic PerAppDomainTPCountList::s_appDomainIndexList;
 void PerAppDomainTPCountList::InitAppDomainIndexList()
 {
     LIMITED_METHOD_CONTRACT;
-    s_appDomainIndexList.Init();
+
+    if (!ThreadpoolMgr::UsePortableThreadPool())
+    {
+        s_appDomainIndexList.Init();
+    }
 }
 
 
@@ -56,6 +59,11 @@ void PerAppDomainTPCountList::InitAppDomainIndexList()
 TPIndex PerAppDomainTPCountList::AddNewTPIndex()
 {
     STANDARD_VM_CONTRACT;
+
+    if (ThreadpoolMgr::UsePortableThreadPool())
+    {
+        return TPIndex();
+    }
 
     DWORD count = s_appDomainIndexList.GetCount();
     DWORD i = FindFirstFreeTpEntry();
@@ -89,13 +97,15 @@ TPIndex PerAppDomainTPCountList::AddNewTPIndex()
 
 DWORD PerAppDomainTPCountList::FindFirstFreeTpEntry()
 {
-   CONTRACTL
+    CONTRACTL
     {
         NOTHROW;
         MODE_ANY;
         GC_NOTRIGGER;
     }
     CONTRACTL_END;
+
+    _ASSERTE(!ThreadpoolMgr::UsePortableThreadPool());
 
     DWORD DwnumADs = s_appDomainIndexList.GetCount();
     DWORD Dwi;
@@ -143,6 +153,12 @@ void PerAppDomainTPCountList::ResetAppDomainIndex(TPIndex index)
     }
     CONTRACTL_END;
 
+    if (ThreadpoolMgr::UsePortableThreadPool())
+    {
+        _ASSERTE(index.m_dwIndex == TPIndex().m_dwIndex);
+        return;
+    }
+
     IPerAppDomainTPCount * pAdCount = dac_cast<PTR_IPerAppDomainTPCount>(s_appDomainIndexList.Get(index.m_dwIndex-1));
     _ASSERTE(pAdCount);
 
@@ -168,6 +184,8 @@ bool PerAppDomainTPCountList::AreRequestsPendingInAnyAppDomains()
         GC_NOTRIGGER;
     }
     CONTRACTL_END;
+
+    _ASSERTE(!ThreadpoolMgr::UsePortableThreadPool());
 
     DWORD DwnumADs = s_appDomainIndexList.GetCount();
     DWORD Dwi;
@@ -217,6 +235,8 @@ LONG PerAppDomainTPCountList::GetAppDomainIndexForThreadpoolDispatch()
         GC_NOTRIGGER;
     }
     CONTRACTL_END;
+
+    _ASSERTE(!ThreadpoolMgr::UsePortableThreadPool());
 
     LONG hint = s_ADHint;
     DWORD count = s_appDomainIndexList.GetCount();
@@ -299,6 +319,8 @@ HintDone:
 void UnManagedPerAppDomainTPCount::SetAppDomainRequestsActive()
 {
     WRAPPER_NO_CONTRACT;
+    _ASSERTE(!ThreadpoolMgr::UsePortableThreadPool());
+
 #ifndef DACCESS_COMPILE
     LONG count = VolatileLoad(&m_outstandingThreadRequestCount);
     while (count < (LONG)ThreadpoolMgr::NumberOfProcessors)
@@ -318,6 +340,8 @@ void UnManagedPerAppDomainTPCount::SetAppDomainRequestsActive()
 bool FORCEINLINE UnManagedPerAppDomainTPCount::TakeActiveRequest()
 {
     LIMITED_METHOD_CONTRACT;
+    _ASSERTE(!ThreadpoolMgr::UsePortableThreadPool());
+
     LONG count = VolatileLoad(&m_outstandingThreadRequestCount);
 
     while (count > 0)
@@ -344,6 +368,8 @@ void UnManagedPerAppDomainTPCount::QueueUnmanagedWorkRequest(LPTHREAD_START_ROUT
         MODE_ANY;
     }
     CONTRACTL_END;;
+
+    _ASSERTE(!ThreadpoolMgr::UsePortableThreadPool());
 
 #ifndef DACCESS_COMPILE
     WorkRequestHolder pWorkRequest;
@@ -385,7 +411,9 @@ PVOID UnManagedPerAppDomainTPCount::DeQueueUnManagedWorkRequest(bool* lastOne)
         GC_TRIGGERS;
         MODE_ANY;
     }
-    CONTRACTL_END;;
+    CONTRACTL_END;
+
+    _ASSERTE(!ThreadpoolMgr::UsePortableThreadPool());
 
     *lastOne = true;
 
@@ -409,6 +437,8 @@ PVOID UnManagedPerAppDomainTPCount::DeQueueUnManagedWorkRequest(bool* lastOne)
 //
 void UnManagedPerAppDomainTPCount::DispatchWorkItem(bool* foundWork, bool* wasNotRecalled)
 {
+    _ASSERTE(!ThreadpoolMgr::UsePortableThreadPool());
+
 #ifndef DACCESS_COMPILE
     *foundWork = false;
     *wasNotRecalled = true;
@@ -534,6 +564,7 @@ void ManagedPerAppDomainTPCount::SetAppDomainRequestsActive()
     // one.
     //
 
+    _ASSERTE(!ThreadpoolMgr::UsePortableThreadPool());
     _ASSERTE(m_index.m_dwIndex != UNUSED_THREADPOOL_INDEX);
 
 #ifndef DACCESS_COMPILE
@@ -555,6 +586,8 @@ void ManagedPerAppDomainTPCount::SetAppDomainRequestsActive()
 void ManagedPerAppDomainTPCount::ClearAppDomainRequestsActive()
 {
     LIMITED_METHOD_CONTRACT;
+    _ASSERTE(!ThreadpoolMgr::UsePortableThreadPool());
+
     //This function should either be called by managed code or during AD unload, but before
     //the TpIndex is set to unused.
 
@@ -573,6 +606,8 @@ void ManagedPerAppDomainTPCount::ClearAppDomainRequestsActive()
 bool ManagedPerAppDomainTPCount::TakeActiveRequest()
 {
     LIMITED_METHOD_CONTRACT;
+    _ASSERTE(!ThreadpoolMgr::UsePortableThreadPool());
+
     LONG count = VolatileLoad(&m_numRequestsPending);
     while (count > 0)
     {
@@ -593,6 +628,8 @@ bool ManagedPerAppDomainTPCount::TakeActiveRequest()
 //
 void ManagedPerAppDomainTPCount::DispatchWorkItem(bool* foundWork, bool* wasNotRecalled)
 {
+    _ASSERTE(!ThreadpoolMgr::UsePortableThreadPool());
+
     *foundWork = false;
     *wasNotRecalled = true;
 

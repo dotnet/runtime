@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 /*============================================================================
 **
@@ -18,7 +17,7 @@
  */
 
 
-int __cdecl main(int argc, char *argv[])
+PALTEST(c_runtime_wcstoul_test3_paltest_wcstoul_test3, "c_runtime/wcstoul/test3/paltest_wcstoul_test3")
 {
     WCHAR str[] = {'Z',0};
     WCHAR *end;

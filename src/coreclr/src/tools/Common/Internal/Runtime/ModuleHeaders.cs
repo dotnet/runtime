@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System;
 
@@ -8,7 +7,7 @@ namespace Internal.Runtime
 {
     //
     // Please keep the data structures in this file in sync with the native version at
-    //  src/Native/Runtime/inc/ModuleHeaders.h
+    //  src/coreclr/src/inc/readytorun.h
     //
 
     internal struct ReadyToRunHeaderConstants
@@ -16,7 +15,7 @@ namespace Internal.Runtime
         public const uint Signature = 0x00525452; // 'RTR'
 
         public const ushort CurrentMajorVersion = 4;
-        public const ushort CurrentMinorVersion = 1;
+        public const ushort CurrentMinorVersion = 2;
     }
 
 #pragma warning disable 0169

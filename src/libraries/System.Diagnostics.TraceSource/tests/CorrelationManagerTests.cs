@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using Xunit;
 using System;
@@ -53,7 +52,7 @@ namespace System.Diagnostics.TraceSourceTests
             Assert.Equal(id, Trace.CorrelationManager.ActivityId);
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public async Task CorrelationManager_MutateStackPush()
         {
             Guid id = Guid.NewGuid();
@@ -68,7 +67,7 @@ namespace System.Diagnostics.TraceSourceTests
             ValidateStack(Trace.CorrelationManager.LogicalOperationStack, 2, 1);
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public async Task CorrelationManager_MutateStackPop()
         {
             Guid id = Guid.NewGuid();
@@ -83,7 +82,7 @@ namespace System.Diagnostics.TraceSourceTests
             ValidateStack(Trace.CorrelationManager.LogicalOperationStack, Array.Empty<object>());
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public async Task CorrelationManager_ActivityIdAcrossAwait()
         {
             Guid g = Guid.NewGuid();
@@ -95,7 +94,7 @@ namespace System.Diagnostics.TraceSourceTests
             Assert.Equal(g, Trace.CorrelationManager.ActivityId);
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public async Task CorrelationManager_CorrelationAcrossAwait()
         {
             Guid g = Guid.NewGuid();

@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System;
 using System.IO;
@@ -12,6 +11,7 @@ using Xunit;
 public class SetIn
 {
     [Fact]
+    [PlatformSpecific(~TestPlatforms.Browser)]
     public static void SetInThrowsOnNull()
     {
         TextReader savedIn = Console.In;
@@ -26,6 +26,7 @@ public class SetIn
     }
 
     [Fact]
+    [PlatformSpecific(~TestPlatforms.Browser)]
     public static void SetInReadLine()
     {
         const string TextStringFormat = "Test {0}";

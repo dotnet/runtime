@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System;
 using System.Collections.Generic;
@@ -62,7 +61,7 @@ namespace Internal.TypeSystem
 
         public static TypeDesc GetParameterType(this TypeDesc type)
         {
-            ParameterizedType paramType = (ParameterizedType) type;
+            ParameterizedType paramType = (ParameterizedType)type;
             return paramType.ParameterType;
         }
 
@@ -212,7 +211,7 @@ namespace Internal.TypeSystem
             }
             else
             {
-                // The method will be null if calling a non-virtual instance 
+                // The method will be null if calling a non-virtual instance
                 // methods on System.Object, i.e. when these are used as a constraint.
                 method = null;
             }
@@ -224,7 +223,7 @@ namespace Internal.TypeSystem
             }
 
             //#TryResolveConstraintMethodApprox_DoNotReturnParentMethod
-            // Only return a method if the value type itself declares the method, 
+            // Only return a method if the value type itself declares the method,
             // otherwise we might get a method from Object or System.ValueType
             if (!method.OwningType.IsValueType)
             {
@@ -251,7 +250,7 @@ namespace Internal.TypeSystem
         public static string GetFullName(this DefType metadataType)
         {
             string ns = metadataType.Namespace;
-            return ns.Length > 0 ? String.Concat(ns, ".", metadataType.Name) : metadataType.Name;
+            return ns.Length > 0 ? string.Concat(ns, ".", metadataType.Name) : metadataType.Name;
         }
 
         /// <summary>
@@ -351,7 +350,7 @@ namespace Internal.TypeSystem
         }
 
         /// <summary>
-        /// Scan the type and its base types for an implementation of an interface method. Returns null if no 
+        /// Scan the type and its base types for an implementation of an interface method. Returns null if no
         /// implementation is found.
         /// </summary>
         public static MethodDesc ResolveInterfaceMethodTarget(this TypeDesc thisType, MethodDesc interfaceMethodToResolve)
@@ -381,17 +380,13 @@ namespace Internal.TypeSystem
                     return ((ParameterizedType)thisType).ParameterType.ContainsSignatureVariables();
 
                 case TypeFlags.FunctionPointer:
+                    MethodSignature pointerSignature = ((FunctionPointerType)thisType).Signature;
 
-                    var fptr = (FunctionPointerType)thisType;
-                    if (fptr.Signature.ReturnType.ContainsSignatureVariables())
-                        return true;
-
-                    for (int i = 0; i < fptr.Signature.Length; i++)
-                    {
-                        if (fptr.Signature[i].ContainsSignatureVariables())
+                    for (int i = 0; i < pointerSignature.Length; i++)
+                        if (pointerSignature[i].ContainsSignatureVariables())
                             return true;
-                    }
-                    return false;
+
+                    return pointerSignature.ReturnType.ContainsSignatureVariables();
 
                 case TypeFlags.SignatureMethodVariable:
                 case TypeFlags.SignatureTypeVariable:
@@ -410,6 +405,73 @@ namespace Internal.TypeSystem
 
                     return false;
             }
+        }
+
+        /// <summary>
+        /// Check if MethodImpl requires slot unification.
+        /// </summary>
+        /// <param name="method">Method to check</param>
+        /// <returns>True when the method is marked with the PreserveBaseOverrides custom attribute, false otherwise.</returns>
+        public static bool RequiresSlotUnification(this MethodDesc method)
+        {
+            if (method.HasCustomAttribute("System.Runtime.CompilerServices", "PreserveBaseOverridesAttribute"))
+            {
+#if DEBUG
+                // We shouldn't be calling this for non-MethodImpls, so verify that the method being checked is really a MethodImpl
+                MetadataType mdType = method.OwningType as MetadataType;
+                if (mdType != null)
+                {
+                    bool isMethodImpl = false;
+                    foreach (MethodImplRecord methodImplRecord in mdType.VirtualMethodImplsForType)
+                    {
+                        if (method == methodImplRecord.Body)
+                        {
+                            isMethodImpl = true;
+                            break;
+                        }
+                    }
+                    Debug.Assert(isMethodImpl);
+                }
+#endif
+                return true;
+            }
+
+            return false;
+        }
+
+        /// <summary>
+        /// Determines whether an object of type '<paramref name="type"/>' requires 8-byte alignment on
+        /// 32bit ARM or 32bit Wasm architectures.
+        /// </summary>
+        public static bool RequiresAlign8(this TypeDesc type)
+        {
+            if (type.Context.Target.Architecture != TargetArchitecture.ARM && type.Context.Target.Architecture != TargetArchitecture.Wasm32)
+            {
+                return false;
+            }
+
+            if (type.IsArray)
+            {
+                var elementType = ((ArrayType)type).ElementType;
+                if (elementType.IsValueType)
+                {
+                    var alignment = ((DefType)elementType).InstanceByteAlignment;
+                    if (!alignment.IsIndeterminate && alignment.AsInt > 4)
+                    {
+                        return true;
+                    }
+                }
+            }
+            else if (type.IsDefType)
+            {
+                var alignment = ((DefType)type).InstanceByteAlignment;
+                if (!alignment.IsIndeterminate && alignment.AsInt > 4)
+                {
+                    return true;
+                }
+            }
+
+            return false;
         }
     }
 }

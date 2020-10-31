@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.IO;
 using System.Net.Sockets;
@@ -17,8 +16,10 @@ namespace System.Net.Security.Tests
 {
     using Configuration = System.Net.Test.Common.Configuration;
 
-    public class SslStreamAllowRenegotiationTests
+    public abstract class SslStreamAllowRenegotiationTestsBase
     {
+        protected abstract bool TestAuthenticateAsync { get; }
+
         [Fact]
         [OuterLoop] // Test hits external azure server.
         public async Task SslStream_AllowRenegotiation_True_Succeeds()
@@ -49,19 +50,18 @@ namespace System.Net.Security.Tests
                 };
 
                 // Perform handshake to establish secure connection.
-                await ssl.AuthenticateAsClientAsync(options, CancellationToken.None);
+                await ssl.AuthenticateAsClientAsync(TestAuthenticateAsync, options);
                 Assert.True(ssl.IsAuthenticated);
                 Assert.True(ssl.IsEncrypted);
 
-                // Issue request that triggers regotiation from server.
+                // Issue request that triggers renegotiation from server.
                 byte[] message = Encoding.UTF8.GetBytes("GET /EchoClientCertificate.ashx HTTP/1.1\r\nHost: corefx-net-tls.azurewebsites.net\r\n\r\n");
                 await ssl.WriteAsync(message, 0, message.Length);
 
                 // Initiate Read operation, that results in starting renegotiation as per server response to the above request.
                 int bytesRead = await ssl.ReadAsync(message, 0, message.Length);
 
-                // Renegotiation will trigger another validation callback/
-                Assert.InRange(validationCount, 2, int.MaxValue);
+                Assert.Equal(1, validationCount);
                 Assert.InRange(bytesRead, 1, message.Length);
                 Assert.Contains("HTTP/1.1 200 OK", Encoding.UTF8.GetString(message));
             }
@@ -89,7 +89,7 @@ namespace System.Net.Security.Tests
                 };
 
                 // Perform handshake to establish secure connection.
-                await ssl.AuthenticateAsClientAsync(options, CancellationToken.None);
+                await ssl.AuthenticateAsClientAsync(TestAuthenticateAsync, options);
                 Assert.True(ssl.IsAuthenticated);
                 Assert.True(ssl.IsEncrypted);
 
@@ -102,5 +102,15 @@ namespace System.Net.Security.Tests
                 await Assert.ThrowsAsync<IOException>(() => ssl.ReadAsync(message, 0, message.Length));
             }
         }
+    }
+
+    public sealed class SslStreamAllowRenegotiationTests_Sync : SslStreamAllowRenegotiationTestsBase
+    {
+        protected override bool TestAuthenticateAsync => false;
+    }
+
+    public sealed class SslStreamAllowRenegotiationTests_Async : SslStreamAllowRenegotiationTestsBase
+    {
+        protected override bool TestAuthenticateAsync => true;
     }
 }

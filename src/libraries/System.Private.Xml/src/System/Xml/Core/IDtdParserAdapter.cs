@@ -1,8 +1,8 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System;
+using System.Diagnostics.CodeAnalysis;
 using System.Text;
 using System.Xml.Schema;
 
@@ -11,9 +11,9 @@ namespace System.Xml
     internal partial interface IDtdParserAdapter
     {
         XmlNameTable NameTable { get; }
-        IXmlNamespaceResolver NamespaceResolver { get; }
+        IXmlNamespaceResolver? NamespaceResolver { get; }
 
-        Uri BaseUri { get; }
+        Uri? BaseUri { get; }
 
         char[] ParsingBuffer { get; }
         int ParsingBufferLength { get; }
@@ -28,28 +28,29 @@ namespace System.Xml
 
         void OnNewLine(int pos);
 
-        int ParseNumericCharRef(StringBuilder internalSubsetBuilder);
-        int ParseNamedCharRef(bool expand, StringBuilder internalSubsetBuilder);
-        void ParsePI(StringBuilder sb);
-        void ParseComment(StringBuilder sb);
+        int ParseNumericCharRef(StringBuilder? internalSubsetBuilder);
+        int ParseNamedCharRef(bool expand, StringBuilder? internalSubsetBuilder);
+        void ParsePI(StringBuilder? sb);
+        void ParseComment(StringBuilder? sb);
 
         bool PushEntity(IDtdEntityInfo entity, out int entityId);
 
-        bool PopEntity(out IDtdEntityInfo oldEntity, out int newEntityId);
+        bool PopEntity(out IDtdEntityInfo? oldEntity, out int newEntityId);
 
-        bool PushExternalSubset(string systemId, string publicId);
+        bool PushExternalSubset(string? systemId, string? publicId);
 
         void PushInternalDtd(string baseUri, string internalDtd);
         void OnSystemId(string systemId, LineInfo keywordLineInfo, LineInfo systemLiteralLineInfo);
         void OnPublicId(string publicId, LineInfo keywordLineInfo, LineInfo publicLiteralLineInfo);
 
+        [DoesNotReturn]
         void Throw(Exception e);
     }
 
     internal interface IDtdParserAdapterWithValidation : IDtdParserAdapter
     {
         bool DtdValidation { get; }
-        IValidationEventHandling ValidationEventHandling { get; }
+        IValidationEventHandling? ValidationEventHandling { get; }
     }
 
     internal interface IDtdParserAdapterV1 : IDtdParserAdapterWithValidation

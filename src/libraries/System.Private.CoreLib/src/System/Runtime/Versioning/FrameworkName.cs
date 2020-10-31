@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Diagnostics;
 
@@ -18,8 +17,6 @@ namespace System.Runtime.Versioning
         private const char VersionValuePrefix = 'v';
         private const string VersionKey = "Version";
         private const string ProfileKey = "Profile";
-
-        private static readonly char[] s_componentSplitSeparator = { ComponentSeparator };
 
         public string Identifier
         {
@@ -146,7 +143,7 @@ namespace System.Runtime.Versioning
                 throw new ArgumentException(SR.Format(SR.net_emptystringcall, nameof(frameworkName)), nameof(frameworkName));
             }
 
-            string[] components = frameworkName.Split(s_componentSplitSeparator);
+            string[] components = frameworkName.Split(ComponentSeparator);
 
             // Identifier and Version are required, Profile is optional.
             if (components.Length < 2 || components.Length > 3)

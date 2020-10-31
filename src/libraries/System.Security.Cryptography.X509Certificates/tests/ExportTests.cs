@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using Xunit;
 
@@ -8,6 +7,17 @@ namespace System.Security.Cryptography.X509Certificates.Tests
 {
     public static class ExportTests
     {
+        [Fact]
+        public static void ExportAsCert_CreatesCopy()
+        {
+            using (X509Certificate2 cert = new X509Certificate2(TestData.MsCertificate))
+            {
+                byte[] first = cert.Export(X509ContentType.Cert);
+                byte[] second = cert.Export(X509ContentType.Cert);
+                Assert.NotSame(first, second);
+            }
+        }
+
         [Fact]
         public static void ExportAsCert()
         {
@@ -66,6 +76,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         [Fact]
         public static void ExportAsPfxWithPassword()
         {
+            // [SuppressMessage("Microsoft.Security", "CS002:SecretInNextLine", Justification="Password for testing purpose.")]
             const string password = "Cotton";
 
             using (X509Certificate2 c1 = new X509Certificate2(TestData.MsCertificate))
@@ -84,6 +95,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         [Fact]
         public static void ExportAsPfxVerifyPassword()
         {
+            // [SuppressMessage("Microsoft.Security", "CS002:SecretInNextLine", Justification="Password for testing purpose.")]
             const string password = "Cotton";
 
             using (X509Certificate2 c1 = new X509Certificate2(TestData.MsCertificate))
@@ -99,7 +111,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
             using (var cert = new X509Certificate2(TestData.PfxData, TestData.PfxDataPassword, X509KeyStorageFlags.Exportable))
             {
                 Assert.True(cert.HasPrivateKey, "cert.HasPrivateKey");
-
+                // [SuppressMessage("Microsoft.Security", "CS002:SecretInNextLine", Justification="Password for testing purpose.")]
                 const string password = "Cotton";
 
                 byte[] pfx = cert.Export(X509ContentType.Pkcs12, password);
@@ -154,6 +166,132 @@ namespace System.Security.Cryptography.X509Certificates.Tests
                             copyPub.VerifyData(pfxBytes, origSign, HashAlgorithmName.SHA256, RSASignaturePadding.Pkcs1),
                             "copyPub v oSig");
                     }
+                }
+            }
+        }
+
+        [Fact]
+        [PlatformSpecific(TestPlatforms.Windows)]
+        [OuterLoop("Modifies user-persisted state")]
+        public static void ExportDoesNotCorruptPrivateKeyMethods()
+        {
+            string keyName = $"clrtest.{Guid.NewGuid():D}";
+            X509Store cuMy = new X509Store(StoreName.My, StoreLocation.CurrentUser);
+            cuMy.Open(OpenFlags.ReadWrite);
+            X509Certificate2 createdCert = null;
+            X509Certificate2 foundCert = null;
+            X509Certificate2 foundCert2 = null;
+
+            try
+            {
+                string commonName = nameof(ExportDoesNotCorruptPrivateKeyMethods);
+                string subject = $"CN={commonName},OU=.NET";
+
+                using (ImportedCollection toClean = new ImportedCollection(cuMy.Certificates))
+                {
+                    X509Certificate2Collection coll = toClean.Collection;
+
+                    using (ImportedCollection matches =
+                        new ImportedCollection(coll.Find(X509FindType.FindBySubjectName, commonName, false)))
+                    {
+                        foreach (X509Certificate2 cert in matches.Collection)
+                        {
+                            cuMy.Remove(cert);
+                        }
+                    }
+                }
+
+                foreach (X509Certificate2 cert in cuMy.Certificates)
+                {
+                    if (subject.Equals(cert.Subject))
+                    {
+                        cuMy.Remove(cert);
+                    }
+
+                    cert.Dispose();
+                }
+
+                CngKeyCreationParameters options = new CngKeyCreationParameters
+                {
+                    ExportPolicy = CngExportPolicies.AllowExport | CngExportPolicies.AllowPlaintextExport,
+                };
+
+                using (CngKey key = CngKey.Create(CngAlgorithm.Rsa, keyName, options))
+                using (RSACng rsaCng = new RSACng(key))
+                {
+                    CertificateRequest certReq = new CertificateRequest(
+                        subject,
+                        rsaCng,
+                        HashAlgorithmName.SHA256,
+                        RSASignaturePadding.Pkcs1);
+
+                    DateTimeOffset now = DateTimeOffset.UtcNow.AddMinutes(-5);
+                    createdCert = certReq.CreateSelfSigned(now, now.AddDays(1));
+                }
+
+                cuMy.Add(createdCert);
+
+                using (ImportedCollection toClean = new ImportedCollection(cuMy.Certificates))
+                {
+                    X509Certificate2Collection matches = toClean.Collection.Find(
+                        X509FindType.FindBySubjectName,
+                        commonName,
+                        validOnly: false);
+
+                    Assert.Equal(1, matches.Count);
+                    foundCert = matches[0];
+                }
+
+                Assert.False(HasEphemeralKey(foundCert));
+                foundCert.Export(X509ContentType.Pfx, "");
+                Assert.False(HasEphemeralKey(foundCert));
+
+                using (ImportedCollection toClean = new ImportedCollection(cuMy.Certificates))
+                {
+                    X509Certificate2Collection matches = toClean.Collection.Find(
+                        X509FindType.FindBySubjectName,
+                        commonName,
+                        validOnly: false);
+
+                    Assert.Equal(1, matches.Count);
+                    foundCert2 = matches[0];
+                }
+
+                Assert.False(HasEphemeralKey(foundCert2));
+            }
+            finally
+            {
+                if (createdCert != null)
+                {
+                    cuMy.Remove(createdCert);
+                    createdCert.Dispose();
+                }
+
+                cuMy.Dispose();
+
+                foundCert?.Dispose();
+                foundCert2?.Dispose();
+
+                try
+                {
+                    CngKey key = CngKey.Open(keyName);
+                    key.Delete();
+                    key.Dispose();
+                }
+                catch (Exception)
+                {
+                }
+            }
+
+            bool HasEphemeralKey(X509Certificate2 c)
+            {
+                using (RSA key = c.GetRSAPrivateKey())
+                {
+                    // This code is not defensive against the type changing, because it
+                    // is in the source tree with the code that produces the value.
+                    // Don't blind-cast like this in library or application code.
+                    RSACng rsaCng = (RSACng)key;
+                    return rsaCng.Key.IsEphemeral;
                 }
             }
         }

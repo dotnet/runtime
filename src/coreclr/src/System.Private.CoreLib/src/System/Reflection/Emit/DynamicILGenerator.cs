@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Diagnostics.SymbolStore;
 using System.Runtime.InteropServices;
@@ -345,7 +344,7 @@ namespace System.Reflection.Emit
             if (CurrExcStackCount == 0)
                 throw new NotSupportedException(SR.Argument_NotInExceptionBlock);
 
-            __ExceptionInfo current = CurrExcStack[CurrExcStackCount - 1];
+            __ExceptionInfo current = CurrExcStack![CurrExcStackCount - 1];
 
             Label endLabel = current.GetEndLabel();
             Emit(OpCodes.Leave, endLabel);
@@ -359,7 +358,7 @@ namespace System.Reflection.Emit
             if (CurrExcStackCount == 0)
                 throw new NotSupportedException(SR.Argument_NotInExceptionBlock);
 
-            __ExceptionInfo current = CurrExcStack[CurrExcStackCount - 1];
+            __ExceptionInfo current = CurrExcStack![CurrExcStackCount - 1];
 
             RuntimeType? rtType = exceptionType as RuntimeType;
 
@@ -429,6 +428,8 @@ namespace System.Reflection.Emit
         private int GetMemberRefToken(MethodBase methodInfo, Type[]? optionalParameterTypes)
         {
             Type[]? parameterTypes;
+            Type[][]? requiredCustomModifiers;
+            Type[][]? optionalCustomModifiers;
 
             if (optionalParameterTypes != null && (methodInfo.CallingConvention & CallingConventions.VarArgs) == 0)
                 throw new InvalidOperationException(SR.InvalidOperation_NotAVarArgCallingConvention);
@@ -443,17 +444,28 @@ namespace System.Reflection.Emit
             if (paramInfo != null && paramInfo.Length != 0)
             {
                 parameterTypes = new Type[paramInfo.Length];
+                requiredCustomModifiers = new Type[parameterTypes.Length][];
+                optionalCustomModifiers = new Type[parameterTypes.Length][];
+
                 for (int i = 0; i < paramInfo.Length; i++)
+                {
                     parameterTypes[i] = paramInfo[i].ParameterType;
+                    requiredCustomModifiers[i] = paramInfo[i].GetRequiredCustomModifiers();
+                    optionalCustomModifiers[i] = paramInfo[i].GetOptionalCustomModifiers();
+                }
             }
             else
             {
                 parameterTypes = null;
+                requiredCustomModifiers = null;
+                optionalCustomModifiers = null;
             }
 
             SignatureHelper sig = GetMemberRefSignature(methodInfo.CallingConvention,
                                                      MethodBuilder.GetMethodBaseReturnType(methodInfo),
                                                      parameterTypes,
+                                                     requiredCustomModifiers,
+                                                     optionalCustomModifiers,
                                                      optionalParameterTypes);
 
             if (rtMeth != null)
@@ -466,13 +478,17 @@ namespace System.Reflection.Emit
                                                 CallingConventions call,
                                                 Type? returnType,
                                                 Type[]? parameterTypes,
+                                                Type[][]? requiredCustomModifiers,
+                                                Type[][]? optionalCustomModifiers,
                                                 Type[]? optionalParameterTypes)
         {
             SignatureHelper sig = SignatureHelper.GetMethodSigHelper(call, returnType);
             if (parameterTypes != null)
             {
-                foreach (Type t in parameterTypes)
-                    sig.AddArgument(t);
+                for (int i = 0; i < parameterTypes.Length; i++)
+                {
+                    sig.AddArgument(parameterTypes[i], requiredCustomModifiers![i], optionalCustomModifiers![i]);
+                }
             }
             if (optionalParameterTypes != null && optionalParameterTypes.Length != 0)
             {
@@ -558,7 +574,7 @@ namespace System.Reflection.Emit
     internal class DynamicResolver : Resolver
     {
         #region Private Data Members
-        private __ExceptionInfo[] m_exceptions = null!;
+        private __ExceptionInfo[]? m_exceptions;
         private byte[]? m_exceptionHeader;
         private DynamicMethod m_method;
         private byte[] m_code;
@@ -571,7 +587,7 @@ namespace System.Reflection.Emit
         internal DynamicResolver(DynamicILGenerator ilGenerator)
         {
             m_stackSize = ilGenerator.GetMaxStackSize();
-            m_exceptions = ilGenerator.GetExceptions()!;
+            m_exceptions = ilGenerator.GetExceptions();
             m_code = ilGenerator.BakeByteArray()!;
             m_localSignature = ilGenerator.m_localSignature.InternalGetSignatureArray();
             m_scope = ilGenerator.m_scope;
@@ -586,7 +602,6 @@ namespace System.Reflection.Emit
             m_code = dynamicILInfo.Code;
             m_localSignature = dynamicILInfo.LocalSignature;
             m_exceptionHeader = dynamicILInfo.Exceptions;
-            // m_exceptions = dynamicILInfo.Exceptions;
             m_scope = dynamicILInfo.DynamicScope;
 
             m_method = dynamicILInfo.DynamicMethod;
@@ -740,6 +755,8 @@ namespace System.Reflection.Emit
 
         internal override unsafe void GetEHInfo(int excNumber, void* exc)
         {
+            Debug.Assert(m_exceptions != null);
+
             CORINFO_EH_CLAUSE* exception = (CORINFO_EH_CLAUSE*)exc;
             for (int i = 0; i < m_exceptions.Length; i++)
             {
@@ -819,11 +836,13 @@ namespace System.Reflection.Emit
             {
                 if (vaMeth.m_dynamicMethod == null)
                 {
-                    methodHandle = vaMeth.m_method.MethodHandle.Value;
+                    methodHandle = vaMeth.m_method!.MethodHandle.Value;
                     typeHandle = vaMeth.m_method.GetDeclaringTypeInternal().GetTypeHandleInternal().Value;
                 }
                 else
+                {
                     methodHandle = vaMeth.m_dynamicMethod.GetMethodDescriptor().Value;
+                }
 
                 return;
             }
@@ -1098,8 +1117,8 @@ namespace System.Reflection.Emit
 
     internal sealed class VarArgMethod
     {
-        internal RuntimeMethodInfo m_method = null!;
-        internal DynamicMethod m_dynamicMethod = null!;
+        internal RuntimeMethodInfo? m_method;
+        internal DynamicMethod? m_dynamicMethod;
         internal SignatureHelper m_signature;
 
         internal VarArgMethod(DynamicMethod dm, SignatureHelper signature)

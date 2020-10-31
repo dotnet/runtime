@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 #if ES_BUILD_STANDALONE
 using System;
@@ -228,10 +227,8 @@ namespace System.Diagnostics.Tracing
                 }
                 catch (NotImplementedException)
                 {
-#if (!ES_BUILD_PCL && !ES_BUILD_PN)
                     // send message to debugger without delay
                     System.Diagnostics.Debugger.Log(0, null, "Activity Enabled() called but AsyncLocals Not Supported (pre V4.6).  Ignoring Enable");
-#endif
                 }
             }
         }
@@ -381,7 +378,7 @@ namespace System.Diagnostics.Tracing
                     {
                         // TODO FIXME - differentiate between AD inside PCL
                         int appDomainID = 0;
-#if (!ES_BUILD_STANDALONE && !ES_BUILD_PN)
+#if (!ES_BUILD_STANDALONE)
                         appDomainID = System.Threading.Thread.GetDomainID();
 #endif
                         // We start with the appdomain number to make this unique among appdomains.
@@ -512,7 +509,7 @@ namespace System.Diagnostics.Tracing
                 uint* sumPtr = (uint*)outPtr;
                 // We set the last DWORD the sum of the first 3 DWORDS in the GUID.   This
                 // This last number is a random number (it identifies us as us)  the process ID to make it unique per process.
-                sumPtr[3] = (sumPtr[0] + sumPtr[1] + sumPtr[2] + 0x599D99AD) ^ EventSource.s_currentPid;
+                sumPtr[3] = (sumPtr[0] + sumPtr[1] + sumPtr[2] + 0x599D99AD) ^ (uint)Environment.ProcessId;
 
                 return (int)(ptr - ((byte*)outPtr));
             }
@@ -604,7 +601,7 @@ namespace System.Diagnostics.Tracing
         private static readonly ActivityTracker s_activityTrackerInstance = new ActivityTracker();
 
         // Used to create unique IDs at the top level.  Not used for nested Ids (each activity has its own id generator)
-        private static long m_nextId = 0;
+        private static long m_nextId;
         private const ushort MAX_ACTIVITY_DEPTH = 100;            // Limit maximum depth of activities to be tracked at 100.
                                                                   // This will avoid leaking memory in case of activities that are never stopped.
 
@@ -637,27 +634,4 @@ namespace System.Diagnostics.Tracing
         public void SetActivityId(Guid Id) { WriteEvent(3, Id); }
     }
 #endif
-
-#if ES_BUILD_AGAINST_DOTNET_V35 || ES_BUILD_PCL || NO_ASYNC_LOCAL
-    // In these cases we don't have any Async local support.   Do nothing.
-    internal sealed class AsyncLocalValueChangedArgs<T>
-    {
-        public T PreviousValue { get { return default(T); } }
-        public T CurrentValue { get { return default(T); } }
-
-    }
-
-    internal sealed class AsyncLocal<T>
-    {
-        public AsyncLocal(Action<AsyncLocalValueChangedArgs<T>> valueChangedHandler) {
-            throw new NotImplementedException("AsyncLocal only available on V4.6 and above");
-        }
-        public T Value
-        {
-            get { return default(T); }
-            set { }
-        }
-    }
-#endif
-
 }

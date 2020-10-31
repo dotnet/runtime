@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 /*
  * GCENV.EE.CPP
@@ -10,6 +9,8 @@
 
  *
  */
+
+#include "gcrefmap.h"
 
 void GCToEEInterface::SuspendEE(SUSPEND_REASON reason)
 {
@@ -154,6 +155,63 @@ static void ScanStackRoots(Thread * pThread, promote_func* fn, ScanContext* sc)
     }
 }
 
+static void ScanTailCallArgBufferRoots(Thread* pThread, promote_func* fn, ScanContext* sc)
+{
+    TailCallArgBuffer* argBuffer = pThread->GetTailCallTls()->GetArgBuffer();
+    if (argBuffer == NULL || argBuffer->GCDesc == NULL)
+        return;
+
+    if (argBuffer->State == TAILCALLARGBUFFER_ABANDONED)
+        return;
+
+    bool instArgOnly = argBuffer->State == TAILCALLARGBUFFER_INSTARG_ONLY;
+
+    GCRefMapDecoder decoder(static_cast<PTR_BYTE>(argBuffer->GCDesc));
+    while (!decoder.AtEnd())
+    {
+        int pos = decoder.CurrentPos();
+        int token = decoder.ReadToken();
+
+        PTR_TADDR ppObj = dac_cast<PTR_TADDR>(((BYTE*)argBuffer->Args) + pos * sizeof(TADDR));
+        switch (token)
+        {
+        case GCREFMAP_SKIP:
+            break;
+        case GCREFMAP_REF:
+            if (!instArgOnly)
+                fn(dac_cast<PTR_PTR_Object>(ppObj), sc, CHECK_APP_DOMAIN);
+            break;
+        case GCREFMAP_INTERIOR:
+            if (!instArgOnly)
+                PromoteCarefully(fn, dac_cast<PTR_PTR_Object>(ppObj), sc, GC_CALL_INTERIOR);
+            break;
+        case GCREFMAP_METHOD_PARAM:
+            if (sc->promotion)
+            {
+#ifndef DACCESS_COMPILE
+                MethodDesc *pMDReal = dac_cast<PTR_MethodDesc>(*ppObj);
+                if (pMDReal != NULL)
+                    GcReportLoaderAllocator(fn, sc, pMDReal->GetLoaderAllocator());
+#endif
+            }
+            break;
+        case GCREFMAP_TYPE_PARAM:
+            if (sc->promotion)
+            {
+#ifndef DACCESS_COMPILE
+                MethodTable *pMTReal = dac_cast<PTR_MethodTable>(*ppObj);
+                if (pMTReal != NULL)
+                    GcReportLoaderAllocator(fn, sc, pMTReal->GetLoaderAllocator());
+#endif
+            }
+            break;
+        default:
+            _ASSERTE(!"Unhandled GCREFMAP token in arg buffer GC desc");
+            break;
+        }
+    }
+}
+
 void GCToEEInterface::GcScanRoots(promote_func* fn, int condemned, int max_gen, ScanContext* sc)
 {
     STRESS_LOG1(LF_GCROOTS, LL_INFO10, "GCScan: Promotion Phase = %d\n", sc->promotion);
@@ -171,6 +229,7 @@ void GCToEEInterface::GcScanRoots(promote_func* fn, int condemned, int max_gen, 
             sc->dwEtwRootKind = kEtwGCRootKindStack;
 #endif // FEATURE_EVENT_TRACE
             ScanStackRoots(pThread, fn, sc);
+            ScanTailCallArgBufferRoots(pThread, fn, sc);
 #ifdef FEATURE_EVENT_TRACE
             sc->dwEtwRootKind = kEtwGCRootKindOther;
 #endif // FEATURE_EVENT_TRACE
@@ -496,6 +555,7 @@ void GcScanRootsForProfilerAndETW(promote_func* fn, int condemned, int max_gen, 
         sc->dwEtwRootKind = kEtwGCRootKindStack;
 #endif // FEATURE_EVENT_TRACE
         ScanStackRoots(pThread, fn, sc);
+        ScanTailCallArgBufferRoots(pThread, fn, sc);
 #ifdef FEATURE_EVENT_TRACE
         sc->dwEtwRootKind = kEtwGCRootKindOther;
 #endif // FEATURE_EVENT_TRACE
@@ -631,7 +691,7 @@ void GCProfileWalkHeapWorker(BOOL fProfilerPinned, BOOL fShouldWalkHeapRootsForE
 }
 #endif // defined(GC_PROFILING) || defined(FEATURE_EVENT_TRACE)
 
-void GCProfileWalkHeap()
+void GCProfileWalkHeap(bool etwOnly)
 {
     BOOL fWalkedHeapForProfiler = FALSE;
 
@@ -648,7 +708,7 @@ void GCProfileWalkHeap()
 
 #if defined (GC_PROFILING)
     {
-        BEGIN_PIN_PROFILER(CORProfilerTrackGC());
+        BEGIN_PIN_PROFILER(!etwOnly && CORProfilerTrackGC());
         GCProfileWalkHeapWorker(TRUE /* fProfilerPinned */, fShouldWalkHeapRootsForEtw, fShouldWalkHeapObjectsForEtw);
         fWalkedHeapForProfiler = TRUE;
         END_PIN_PROFILER();
@@ -710,7 +770,7 @@ void GCToEEInterface::DiagGCEnd(size_t index, int gen, int reason, bool fConcurr
     // we will do these for all GCs.
     if (!fConcurrent)
     {
-        GCProfileWalkHeap();
+        GCProfileWalkHeap(false);
     }
 
     if (CORProfilerTrackBasicGC() || (!fConcurrent && CORProfilerTrackGC()))
@@ -1528,7 +1588,7 @@ bool GCToEEInterface::AnalyzeSurvivorsRequested(int condemnedGeneration)
     return false;
 }
 
-void GCToEEInterface::AnalyzeSurvivorsFinished(int condemnedGeneration)
+void GCToEEInterface::AnalyzeSurvivorsFinished(size_t gcIndex, int condemnedGeneration, uint64_t promoted_bytes, void (*reportGenerationBounds)())
 {
     LIMITED_METHOD_CONTRACT;
 
@@ -1540,6 +1600,25 @@ void GCToEEInterface::AnalyzeSurvivorsFinished(int condemnedGeneration)
         if (gn.GetNotification(gea) != 0)
         {
             DACNotify::DoGCNotification(gea);
+        }
+    }
+    
+    if (gcGenAnalysisState == GcGenAnalysisState::Enabled)
+    {
+#ifndef GEN_ANALYSIS_STRESS
+        if ((condemnedGeneration == gcGenAnalysisGen) && (promoted_bytes > (uint64_t)gcGenAnalysisBytes) && (gcIndex > (uint64_t)gcGenAnalysisIndex))
+#endif
+        {
+            gcGenAnalysisEventPipeSession->Resume();
+            FireEtwGenAwareBegin((int)gcIndex, GetClrInstanceId());
+            s_forcedGCInProgress = true;
+            GCProfileWalkHeap(true);
+            s_forcedGCInProgress = false;
+            reportGenerationBounds();
+            FireEtwGenAwareEnd((int)gcIndex, GetClrInstanceId());
+            gcGenAnalysisEventPipeSession->Pause();
+            gcGenAnalysisState = GcGenAnalysisState::Done;
+            EnableFinalization(true);
         }
     }
 }

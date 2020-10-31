@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
 using System.Linq;
@@ -8,8 +7,10 @@ using System.Runtime.InteropServices;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.DotNet.RemoteExecutor;
+using Microsoft.DotNet.XUnitExtensions;
 using Xunit;
 using Xunit.Abstractions;
+using Xunit.Sdk;
 
 namespace System.Net.Sockets.Tests
 {
@@ -938,17 +939,26 @@ namespace System.Net.Sockets.Tests
             }
         }
 
-        [Fact]
+        public static readonly TheoryData<IPAddress> UdpReceiveGetsCanceledByDispose_Data = new TheoryData<IPAddress>
+        {
+            { IPAddress.Loopback },
+            { IPAddress.IPv6Loopback },
+            { IPAddress.Loopback.MapToIPv6() }
+        };
+
+        [Theory]
+        [MemberData(nameof(UdpReceiveGetsCanceledByDispose_Data))]
         [PlatformSpecific(~TestPlatforms.OSX)] // Not supported on OSX.
-        public async Task UdpReceiveGetsCanceledByDispose()
+        public async Task UdpReceiveGetsCanceledByDispose(IPAddress address)
         {
             // We try this a couple of times to deal with a timing race: if the Dispose happens
             // before the operation is started, we won't see a SocketException.
             int msDelay = 100;
             await RetryHelper.ExecuteAsync(async () =>
             {
-                var socket = new Socket(AddressFamily.InterNetwork, SocketType.Dgram, ProtocolType.Udp);
-                socket.BindToAnonymousPort(IPAddress.Loopback);
+                var socket = new Socket(address.AddressFamily, SocketType.Dgram, ProtocolType.Udp);
+                if (address.IsIPv4MappedToIPv6) socket.DualMode = true;
+                socket.BindToAnonymousPort(address);
 
                 Task receiveTask = ReceiveAsync(socket, new ArraySegment<byte>(new byte[1]));
 
@@ -957,11 +967,7 @@ namespace System.Net.Sockets.Tests
                 msDelay *= 2;
                 Task disposeTask = Task.Run(() => socket.Dispose());
 
-                var cts = new CancellationTokenSource();
-                Task timeoutTask = Task.Delay(30000, cts.Token);
-                Assert.NotSame(timeoutTask, await Task.WhenAny(disposeTask, receiveTask, timeoutTask));
-                cts.Cancel();
-
+                await Task.WhenAny(disposeTask, receiveTask).TimeoutAfter(30000);
                 await disposeTask;
 
                 SocketError? localSocketError = null;
@@ -992,21 +998,35 @@ namespace System.Net.Sockets.Tests
                 {
                     Assert.Equal(SocketError.OperationAborted, localSocketError);
                 }
-            }, maxAttempts: 10);
+            }, maxAttempts: 10, retryWhen: e => e is XunitException);
         }
 
-        [Theory]
-        [InlineData(true)]
-        [InlineData(false)]
-        public async Task TcpReceiveSendGetsCanceledByDispose(bool receiveOrSend)
+        public static readonly TheoryData<bool, bool, bool> TcpReceiveSendGetsCanceledByDispose_Data = new TheoryData<bool, bool, bool>
         {
+            { true, false, false },
+            { true, false, true },
+            { true, true, false },
+            { false, false, false },
+            { false, false, true },
+            { false, true, false },
+        };
+
+        [Theory(Timeout = 40000)]
+        [MemberData(nameof(TcpReceiveSendGetsCanceledByDispose_Data))]
+        public async Task TcpReceiveSendGetsCanceledByDispose(bool receiveOrSend, bool ipv6Server, bool dualModeClient)
+        {
+            // RHEL7 kernel has a bug preventing close(AF_UNKNOWN) to succeed with IPv6 sockets.
+            // In this case Dispose will trigger a graceful shutdown, which means that receive will succeed on socket2.
+            // TODO: Remove this, once CI machines are updated to a newer kernel.
+            bool expectGracefulShutdown = UsesSync && PlatformDetection.IsRedHatFamily7 && receiveOrSend && (ipv6Server || dualModeClient);
+
             // We try this a couple of times to deal with a timing race: if the Dispose happens
             // before the operation is started, the peer won't see a ConnectionReset SocketException and we won't
             // see a SocketException either.
             int msDelay = 100;
             await RetryHelper.ExecuteAsync(async () =>
             {
-                (Socket socket1, Socket socket2) = SocketTestExtensions.CreateConnectedSocketPair();
+                (Socket socket1, Socket socket2) = SocketTestExtensions.CreateConnectedSocketPair(ipv6Server, dualModeClient);
                 using (socket2)
                 {
                     Task socketOperation;
@@ -1031,11 +1051,7 @@ namespace System.Net.Sockets.Tests
                     msDelay *= 2;
                     Task disposeTask = Task.Run(() => socket1.Dispose());
 
-                    var cts = new CancellationTokenSource();
-                    Task timeoutTask = Task.Delay(30000, cts.Token);
-                    Assert.NotSame(timeoutTask, await Task.WhenAny(disposeTask, socketOperation, timeoutTask));
-                    cts.Cancel();
-
+                    await Task.WhenAny(disposeTask, socketOperation).TimeoutAfter(30000);
                     await disposeTask;
 
                     SocketError? localSocketError = null;
@@ -1069,7 +1085,7 @@ namespace System.Net.Sockets.Tests
 
                     // On OSX, we're unable to unblock the on-going socket operations and
                     // perform an abortive close.
-                    if (!(UsesSync && PlatformDetection.IsOSX))
+                    if (!(UsesSync && PlatformDetection.IsOSXLike))
                     {
                         SocketError? peerSocketError = null;
                         var receiveBuffer = new ArraySegment<byte>(new byte[4096]);
@@ -1089,10 +1105,18 @@ namespace System.Net.Sockets.Tests
                                 break;
                             }
                         }
-                        Assert.Equal(SocketError.ConnectionReset, peerSocketError);
+
+                        if (!expectGracefulShutdown)
+                        {
+                            Assert.Equal(SocketError.ConnectionReset, peerSocketError);
+                        }
+                        else
+                        {
+                            Assert.Null(peerSocketError);
+                        }
                     }
                 }
-            }, maxAttempts: 10);
+            }, maxAttempts: 10, retryWhen: e => e is XunitException);
         }
 
         [Fact]
@@ -1360,14 +1384,14 @@ namespace System.Net.Sockets.Tests
                 data[0] = data[499] = 2;
                 Assert.Equal(500, sender.Send(data));
 
-                var tcs = new TaskCompletionSource<bool>();
+                var tcs = new TaskCompletionSource();
                 SocketAsyncEventArgs args = new SocketAsyncEventArgs();
 
                 var receiveBufer = new byte[600];
                 receiveBufer[0] = data[499] = 0;
 
                 args.SetBuffer(receiveBufer, 0, receiveBufer.Length);
-                args.Completed += delegate { tcs.SetResult(true); };
+                args.Completed += delegate { tcs.SetResult(); };
 
                 // First peek at the message.
                 args.SocketFlags = SocketFlags.Peek;
@@ -1381,7 +1405,7 @@ namespace System.Net.Sockets.Tests
                 receiveBufer[0] = receiveBufer[499] = 0;
 
                 // Now, we should be able to get same message again.
-                tcs = new TaskCompletionSource<bool>();
+                tcs = new TaskCompletionSource();
                 args.SocketFlags = SocketFlags.None;
                 if (receiver.ReceiveAsync(args))
                 {
@@ -1393,7 +1417,7 @@ namespace System.Net.Sockets.Tests
                 receiveBufer[0] = receiveBufer[499] = 0;
 
                 // Set buffer smaller than message.
-                tcs = new TaskCompletionSource<bool>();
+                tcs = new TaskCompletionSource();
                 args.SetBuffer(receiveBufer, 0, 100);
                 if (receiver.ReceiveAsync(args))
                 {
@@ -1567,7 +1591,7 @@ namespace System.Net.Sockets.Tests
         public SendReceiveSync(ITestOutputHelper output) : base(output) { }
 
         [OuterLoop]
-        [Fact]
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         public void BlockingRead_DoesntRequireAnotherThreadPoolThread()
         {
             RemoteExecutor.Invoke(() =>
@@ -1764,6 +1788,7 @@ namespace System.Net.Sockets.Tests
         public async Task BlockingAsyncContinuations_OperationsStillCompleteSuccessfully()
         {
             if (UsesSync) return;
+            if (Environment.GetEnvironmentVariable("DOTNET_SYSTEM_NET_SOCKETS_INLINE_COMPLETIONS") == "1") return;
 
             using (var listener = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp))
             using (var client = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp))

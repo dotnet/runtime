@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 /*XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
@@ -702,6 +701,7 @@ inline bool Compiler::VarTypeIsMultiByteAndCanEnreg(
 
     if (varTypeIsStruct(type))
     {
+        assert(typeClass != nullptr);
         size = info.compCompHnd->getClassSize(typeClass);
         if (forReturn)
         {
@@ -1130,6 +1130,28 @@ inline GenTreeCall* Compiler::gtNewHelperCallNode(unsigned helper, var_types typ
 #endif
 
     return result;
+}
+
+//------------------------------------------------------------------------------
+// gtNewRuntimeLookupHelperCallNode : Helper to create a runtime lookup call helper node.
+//
+//
+// Arguments:
+//    helper    - Call helper
+//    type      - Type of the node
+//    args      - Call args
+//
+// Return Value:
+//    New CT_HELPER node
+
+inline GenTreeCall* Compiler::gtNewRuntimeLookupHelperCallNode(CORINFO_RUNTIME_LOOKUP* pRuntimeLookup,
+                                                               GenTree*                ctxTree,
+                                                               void*                   compileTimeHandle)
+{
+    GenTree* argNode = gtNewIconEmbHndNode(pRuntimeLookup->signature, nullptr, GTF_ICON_GLOBAL_PTR, compileTimeHandle);
+    GenTreeCall::Use* helperArgs = gtNewCallArgs(ctxTree, argNode);
+
+    return gtNewHelperCallNode(pRuntimeLookup->helper, TYP_I_IMPL, helperArgs);
 }
 
 //------------------------------------------------------------------------
@@ -1785,8 +1807,11 @@ inline void LclVarDsc::incRefCnts(BasicBlock::weight_t weight, Compiler* comp, R
     //
     // Increment counts on the local itself.
     //
-    if (lvType != TYP_STRUCT || promotionType != Compiler::PROMOTION_TYPE_INDEPENDENT)
+    if ((lvType != TYP_STRUCT) || (promotionType != Compiler::PROMOTION_TYPE_INDEPENDENT))
     {
+        // We increment ref counts of this local for primitive types, including structs that have been retyped as their
+        // only field, as well as for structs whose fields are not independently promoted.
+
         //
         // Increment lvRefCnt
         //
@@ -2092,7 +2117,7 @@ inline
         }
 #endif // DEBUG
 
-        varOffset = varDsc->lvStkOffs;
+        varOffset = varDsc->GetStackOffset();
     }
     else // Its a spill-temp
     {
@@ -3144,6 +3169,7 @@ inline regMaskTP genIntAllRegArgMask(unsigned numRegs)
 
 inline regMaskTP genFltAllRegArgMask(unsigned numRegs)
 {
+#ifndef TARGET_X86
     assert(numRegs <= MAX_FLOAT_REG_ARG);
 
     regMaskTP result = RBM_NONE;
@@ -3152,6 +3178,10 @@ inline regMaskTP genFltAllRegArgMask(unsigned numRegs)
         result |= fltArgMasks[i];
     }
     return result;
+#else
+    assert(!"no x86 float arg regs\n");
+    return RBM_NONE;
+#endif
 }
 
 /*
@@ -4120,10 +4150,38 @@ inline void Compiler::CLR_API_Leave(API_ICorJitInfo_Names ename)
 #endif // MEASURE_CLRAPI_CALLS
 
 //------------------------------------------------------------------------------
+// fgVarIsNeverZeroInitializedInProlog : Check whether the variable is never zero initialized in the prolog.
+//
+// Arguments:
+//    varNum     -       local variable number
+//
+// Returns:
+//             true if this is a special variable that is never zero initialized in the prolog;
+//             false otherwise
+//
+
+bool Compiler::fgVarIsNeverZeroInitializedInProlog(unsigned varNum)
+{
+    LclVarDsc* varDsc = lvaGetDesc(varNum);
+    bool result = varDsc->lvIsParam || lvaIsOSRLocal(varNum) || (opts.IsOSR() && (varNum == lvaGSSecurityCookie)) ||
+                  (varNum == lvaInlinedPInvokeFrameVar) || (varNum == lvaStubArgumentVar) || (varNum == lvaRetAddrVar);
+
+#if FEATURE_FIXED_OUT_ARGS
+    result = result || (varNum == lvaPInvokeFrameRegSaveVar) || (varNum == lvaOutgoingArgSpaceVar);
+#endif
+
+#if defined(FEATURE_EH_FUNCLETS)
+    result = result || (varNum == lvaPSPSym);
+#endif
+
+    return result;
+}
+
+//------------------------------------------------------------------------------
 // fgVarNeedsExplicitZeroInit : Check whether the variable needs an explicit zero initialization.
 //
 // Arguments:
-//    varDsc     -       local var description
+//    varNum     -       local var number
 //    bbInALoop  -       true if the basic block may be in a loop
 //    bbIsReturn -       true if the basic block always returns
 //
@@ -4139,9 +4197,23 @@ inline void Compiler::CLR_API_Leave(API_ICorJitInfo_Names ename)
 //      - compInitMem is set and the variable has a long lifetime or has gc fields.
 //     In these cases we will insert zero-initialization in the prolog if necessary.
 
-bool Compiler::fgVarNeedsExplicitZeroInit(LclVarDsc* varDsc, bool bbInALoop, bool bbIsReturn)
+bool Compiler::fgVarNeedsExplicitZeroInit(unsigned varNum, bool bbInALoop, bool bbIsReturn)
 {
+    LclVarDsc* varDsc = lvaGetDesc(varNum);
+
+    if (lvaIsFieldOfDependentlyPromotedStruct(varDsc))
+    {
+        // Fields of dependently promoted structs may only be initialized in the prolog when the whole
+        // struct is initialized in the prolog.
+        return fgVarNeedsExplicitZeroInit(varDsc->lvParentLcl, bbInALoop, bbIsReturn);
+    }
+
     if (bbInALoop && !bbIsReturn)
+    {
+        return true;
+    }
+
+    if (fgVarIsNeverZeroInitializedInProlog(varNum))
     {
         return true;
     }
@@ -4275,7 +4347,7 @@ void GenTree::VisitOperands(TVisitor visitor)
             {
                 return;
             }
-            __fallthrough;
+            FALLTHROUGH;
 
         // Standard unary operators
         case GT_STORE_LCL_VAR:
@@ -4607,6 +4679,11 @@ inline static bool StructHasOverlappingFields(DWORD attribs)
 inline static bool StructHasCustomLayout(DWORD attribs)
 {
     return ((attribs & CORINFO_FLG_CUSTOMLAYOUT) != 0);
+}
+
+inline static bool StructHasNoPromotionFlagSet(DWORD attribs)
+{
+    return ((attribs & CORINFO_FLG_DONT_PROMOTE) != 0);
 }
 
 /*****************************************************************************

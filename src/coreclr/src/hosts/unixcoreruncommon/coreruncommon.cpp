@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 //
 // Code that is used by both the Unix corerun and coreconsole.
@@ -115,6 +114,34 @@ bool GetEntrypointExecutableAbsolutePath(std::string& entrypointExecutable)
     else
     {
         result = false;
+    }
+#elif defined(__sun)
+    const char *path;
+    if ((path = getexecname()) == NULL)
+    {
+        result = false;
+    }
+    else if (*path != '/')
+    {
+        char *cwd;
+        if ((cwd = getcwd(NULL, PATH_MAX)) == NULL)
+        {
+            result = false;
+        }
+        else
+        {
+            entrypointExecutable
+                .assign(cwd)
+                .append("/")
+                .append(path);
+            result = true;
+            free(cwd);
+        }
+    }
+    else
+    {
+        entrypointExecutable.assign(path);
+        result = true;
     }
 #else
 
@@ -338,7 +365,7 @@ int ExecuteManagedAssembly(
     // libunwind library is used to unwind stack frame, but libunwind for ARM
     // does not support ARM vfpv3/NEON registers in DWARF format correctly.
     // Therefore let's disable stack unwinding using DWARF information
-    // See https://github.com/dotnet/coreclr/issues/6698
+    // See https://github.com/dotnet/runtime/issues/6479
     //
     // libunwind use following methods to unwind stack frame.
     // UNW_ARM_METHOD_ALL          0xFF

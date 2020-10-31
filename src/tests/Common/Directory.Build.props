@@ -1,0 +1,4 @@
+<Project>
+  <!-- SDK Style projects auto-magically include this file. -->
+  <Import Project="..\Directory.Build.props" />
+</Project>

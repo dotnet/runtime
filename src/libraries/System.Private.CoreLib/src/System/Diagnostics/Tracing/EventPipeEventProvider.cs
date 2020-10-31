@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 namespace System.Diagnostics.Tracing
 {
@@ -50,7 +49,7 @@ namespace System.Diagnostics.Tracing
             int userDataCount,
             EventProvider.EventData* userData)
         {
-            if (eventDescriptor.EventId != 0 && eventHandle != IntPtr.Zero)
+            if (eventHandle != IntPtr.Zero)
             {
                 if (userDataCount == 0)
                 {
@@ -69,20 +68,28 @@ namespace System.Diagnostics.Tracing
                 }
                 EventPipeInternal.WriteEventData(eventHandle, userData, (uint)userDataCount, activityId, relatedActivityId);
             }
+
             return EventProvider.WriteEventErrorCode.NoError;
         }
 
         // Get or set the per-thread activity ID.
         int IEventProvider.EventActivityIdControl(Interop.Advapi32.ActivityControl ControlCode, ref Guid ActivityId)
         {
-            return EventPipeInternal.EventActivityIdControl((uint)ControlCode, ref ActivityId);
+            return EventActivityIdControl(ControlCode, ref ActivityId);
         }
 
         // Define an EventPipeEvent handle.
-        unsafe IntPtr IEventProvider.DefineEventHandle(uint eventID, string eventName, long keywords, uint eventVersion, uint level, byte* pMetadata, uint metadataLength)
+        unsafe IntPtr IEventProvider.DefineEventHandle(uint eventID, string eventName, long keywords, uint eventVersion, uint level,
+            byte *pMetadata, uint metadataLength)
         {
             IntPtr eventHandlePtr = EventPipeInternal.DefineEvent(m_provHandle, eventID, keywords, eventVersion, level, pMetadata, metadataLength);
             return eventHandlePtr;
+        }
+
+        // Get or set the per-thread activity ID.
+        internal static int EventActivityIdControl(Interop.Advapi32.ActivityControl ControlCode, ref Guid ActivityId)
+        {
+            return EventPipeInternal.EventActivityIdControl((uint)ControlCode, ref ActivityId);
         }
     }
 }

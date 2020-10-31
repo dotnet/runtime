@@ -1,40 +1,36 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Formats.Asn1;
 using System.Globalization;
 using System.Security.Cryptography;
-using System.Security.Cryptography.Asn1;
 
 namespace Internal.Cryptography
 {
     internal static partial class Helpers
     {
+        internal static ReadOnlySpan<byte> AsSpanParameter(this byte[] array, string paramName)
+        {
+            if (array == null)
+                throw new ArgumentNullException(paramName);
+
+            return new ReadOnlySpan<byte>(array);
+        }
+
         // Encode a byte array as an array of upper-case hex characters.
         public static char[] ToHexArrayUpper(this byte[] bytes)
         {
             char[] chars = new char[bytes.Length * 2];
-            ToHexArrayUpper(bytes, chars);
+            HexConverter.EncodeToUtf16(bytes, chars);
             return chars;
-        }
-
-        private static void ToHexArrayUpper(ReadOnlySpan<byte> bytes, Span<char> chars)
-        {
-            Debug.Assert(chars.Length >= bytes.Length * 2);
-            int i = 0;
-            foreach (byte b in bytes)
-            {
-                HexConverter.ToCharsBuffer(b, chars, i, HexConverter.Casing.Upper);
-                i += 2;
-            }
         }
 
         // Encode a byte array as an upper case hex string.
         public static string ToHexStringUpper(this byte[] bytes) =>
-            HexConverter.ToString(bytes.AsSpan(), HexConverter.Casing.Upper);
+            Convert.ToHexString(bytes);
 
         // Decode a hex string-encoded byte array passed to various X509 crypto api.
         // The parsing rules are overly forgiving but for compat reasons, they cannot be tightened.
@@ -71,7 +67,7 @@ namespace Internal.Cryptography
                 }
 
                 accum <<= 4;
-                accum |= HexToByte(c);
+                accum |= (byte)HexConverter.FromChar(c);
 
                 byteInProgress = !byteInProgress;
 
@@ -93,18 +89,6 @@ namespace Internal.Cryptography
             Debug.Assert(index == cbHex, "index == cbHex");
 
             return hex;
-        }
-
-        private static byte HexToByte(char val)
-        {
-            if (val <= '9' && val >= '0')
-                return (byte)(val - '0');
-            else if (val >= 'a' && val <= 'f')
-                return (byte)((val - 'a') + 10);
-            else if (val >= 'A' && val <= 'F')
-                return (byte)((val - 'A') + 10);
-            else
-                return 0xFF;
         }
 
         public static bool ContentsEqual(this byte[]? a1, byte[]? a2)
@@ -166,78 +150,148 @@ namespace Internal.Cryptography
 
         public static void ValidateDer(ReadOnlyMemory<byte> encodedValue)
         {
-            Asn1Tag tag;
-            AsnReader reader = new AsnReader(encodedValue, AsnEncodingRules.DER);
-
-            while (reader.HasData)
+            try
             {
-                tag = reader.PeekTag();
+                Asn1Tag tag;
+                AsnReader reader = new AsnReader(encodedValue, AsnEncodingRules.DER);
 
-                // If the tag is in the UNIVERSAL class
-                //
-                // DER limits the constructed encoding to SEQUENCE and SET, as well as anything which gets
-                // a defined encoding as being an IMPLICIT SEQUENCE.
-                if (tag.TagClass == TagClass.Universal)
+                while (reader.HasData)
                 {
-                    switch ((UniversalTagNumber)tag.TagValue)
+                    tag = reader.PeekTag();
+
+                    // If the tag is in the UNIVERSAL class
+                    //
+                    // DER limits the constructed encoding to SEQUENCE and SET, as well as anything which gets
+                    // a defined encoding as being an IMPLICIT SEQUENCE.
+                    if (tag.TagClass == TagClass.Universal)
                     {
-                        case UniversalTagNumber.External:
-                        case UniversalTagNumber.Embedded:
-                        case UniversalTagNumber.Sequence:
-                        case UniversalTagNumber.Set:
-                        case UniversalTagNumber.UnrestrictedCharacterString:
-                            if (!tag.IsConstructed)
-                            {
-                                throw new CryptographicException(SR.Cryptography_Der_Invalid_Encoding);
-                            }
-                            break;
+                        switch ((UniversalTagNumber)tag.TagValue)
+                        {
+                            case UniversalTagNumber.External:
+                            case UniversalTagNumber.Embedded:
+                            case UniversalTagNumber.Sequence:
+                            case UniversalTagNumber.Set:
+                            case UniversalTagNumber.UnrestrictedCharacterString:
+                                if (!tag.IsConstructed)
+                                {
+                                    throw new CryptographicException(SR.Cryptography_Der_Invalid_Encoding);
+                                }
 
-                        default:
-                            if (tag.IsConstructed)
-                            {
-                                throw new CryptographicException(SR.Cryptography_Der_Invalid_Encoding);
-                            }
-                            break;
+                                break;
+                            default:
+                                if (tag.IsConstructed)
+                                {
+                                    throw new CryptographicException(SR.Cryptography_Der_Invalid_Encoding);
+                                }
+
+                                break;
+                        }
                     }
-                }
 
-                if (tag.IsConstructed)
-                {
-                    ValidateDer(reader.PeekContentBytes());
-                }
+                    if (tag.IsConstructed)
+                    {
+                        ValidateDer(reader.PeekContentBytes());
+                    }
 
-                // Skip past the current value.
-                reader.ReadEncodedValue();
+                    // Skip past the current value.
+                    reader.ReadEncodedValue();
+                }
+            }
+            catch (AsnContentException e)
+            {
+                throw new CryptographicException(SR.Cryptography_Der_Invalid_Encoding, e);
             }
         }
 
         public static ReadOnlyMemory<byte> DecodeOctetStringAsMemory(ReadOnlyMemory<byte> encodedOctetString)
         {
-            AsnReader reader = new AsnReader(encodedOctetString, AsnEncodingRules.BER);
-
-            if (reader.PeekEncodedValue().Length != encodedOctetString.Length)
+            try
             {
-                throw new CryptographicException(SR.Cryptography_Der_Invalid_Encoding);
+                ReadOnlySpan<byte> input = encodedOctetString.Span;
+
+                if (AsnDecoder.TryReadPrimitiveOctetString(
+                    input,
+                    AsnEncodingRules.BER,
+                    out ReadOnlySpan<byte> primitive,
+                    out int consumed))
+                {
+                    if (consumed != input.Length)
+                    {
+                        throw new CryptographicException(SR.Cryptography_Der_Invalid_Encoding);
+                    }
+
+                    if (input.Overlaps(primitive, out int offset))
+                    {
+                        return encodedOctetString.Slice(offset, primitive.Length);
+                    }
+
+                    Debug.Fail("input.Overlaps(primitive) failed after TryReadPrimitiveOctetString succeeded");
+                }
+
+                byte[] ret = AsnDecoder.ReadOctetString(input, AsnEncodingRules.BER, out consumed);
+
+                if (consumed != input.Length)
+                {
+                    throw new CryptographicException(SR.Cryptography_Der_Invalid_Encoding);
+                }
+
+                return ret;
+            }
+            catch (AsnContentException e)
+            {
+                throw new CryptographicException(SR.Cryptography_Der_Invalid_Encoding, e);
+            }
+        }
+
+        public static bool AreSamePublicECParameters(ECParameters aParameters, ECParameters bParameters)
+        {
+            if (aParameters.Curve.CurveType != bParameters.Curve.CurveType)
+                return false;
+
+            if (!aParameters.Q.X!.ContentsEqual(bParameters.Q.X!) ||
+                !aParameters.Q.Y!.ContentsEqual(bParameters.Q.Y!))
+            {
+                return false;
             }
 
-            // Almost everything in X.509 is DER-encoded, which means Octet String values are
-            // encoded as a primitive (non-segmented)
-            //
-            // Even in BER Octet Strings are usually encoded as a primitive.
-            if (reader.TryReadPrimitiveOctetStringBytes(out ReadOnlyMemory<byte> primitiveContents))
+            ECCurve aCurve = aParameters.Curve;
+            ECCurve bCurve = bParameters.Curve;
+
+            if (aCurve.IsNamed)
             {
-                return primitiveContents;
+                // On Windows we care about FriendlyName, on Unix we care about Value
+                return (aCurve.Oid.Value == bCurve.Oid.Value && aCurve.Oid.FriendlyName == bCurve.Oid.FriendlyName);
             }
 
-            byte[] tooBig = new byte[encodedOctetString.Length];
-
-            if (reader.TryCopyOctetStringBytes(tooBig, out int bytesWritten))
+            if (!aCurve.IsExplicit)
             {
-                return tooBig.AsMemory(0, bytesWritten);
+                // Implicit curve, always fail.
+                return false;
             }
 
-            Debug.Fail("TryCopyOctetStringBytes failed with an over-allocated array");
-            throw new CryptographicException();
+            // Ignore Cofactor (which is derivable from the prime or polynomial and Order)
+            // Ignore Seed and Hash (which are entirely optional, and about how A and B were built)
+            if (!aCurve.G.X!.ContentsEqual(bCurve.G.X!) ||
+                !aCurve.G.Y!.ContentsEqual(bCurve.G.Y!) ||
+                !aCurve.Order.ContentsEqual(bCurve.Order) ||
+                !aCurve.A.ContentsEqual(bCurve.A) ||
+                !aCurve.B.ContentsEqual(bCurve.B))
+            {
+                return false;
+            }
+
+            if (aCurve.IsPrime)
+            {
+                return aCurve.Prime.ContentsEqual(bCurve.Prime);
+            }
+
+            if (aCurve.IsCharacteristic2)
+            {
+                return aCurve.Polynomial.ContentsEqual(bCurve.Polynomial);
+            }
+
+            Debug.Fail($"Missing match criteria for curve type {aCurve.CurveType}");
+            return false;
         }
     }
 

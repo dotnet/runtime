@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System;
 using System.Collections.Generic;
@@ -63,7 +62,7 @@ namespace Microsoft.Extensions.Configuration
             IEnumerable<string> earlierKeys,
             string parentPath)
         {
-            var prefix = parentPath == null ? string.Empty : parentPath + ConfigurationPath.KeyDelimiter;
+            string prefix = parentPath == null ? string.Empty : parentPath + ConfigurationPath.KeyDelimiter;
 
             return Data
                 .Where(kv => kv.Key.StartsWith(prefix, StringComparison.OrdinalIgnoreCase))
@@ -74,7 +73,7 @@ namespace Microsoft.Extensions.Configuration
 
         private static string Segment(string key, int prefixLength)
         {
-            var indexOf = key.IndexOf(ConfigurationPath.KeyDelimiter, prefixLength, StringComparison.OrdinalIgnoreCase);
+            int indexOf = key.IndexOf(ConfigurationPath.KeyDelimiter, prefixLength, StringComparison.OrdinalIgnoreCase);
             return indexOf < 0 ? key.Substring(prefixLength) : key.Substring(prefixLength, indexOf - prefixLength);
         }
 
@@ -92,7 +91,7 @@ namespace Microsoft.Extensions.Configuration
         /// </summary>
         protected void OnReload()
         {
-            var previousToken = Interlocked.Exchange(ref _reloadToken, new ConfigurationReloadToken());
+            ConfigurationReloadToken previousToken = Interlocked.Exchange(ref _reloadToken, new ConfigurationReloadToken());
             previousToken.OnReload();
         }
 

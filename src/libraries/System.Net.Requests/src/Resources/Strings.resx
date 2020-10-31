@@ -267,4 +267,7 @@
   <data name="net_invalid_host" xml:space="preserve">
     <value>The specified value is not a valid Host header string.</value>
   </data>
+  <data name="SystemNetRequests_PlatformNotSupported" xml:space="preserve">
+    <value>System.Net.Requests is not supported on this platform.</value>
+  </data>
 </root>

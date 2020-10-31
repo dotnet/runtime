@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 // ============================================================
 //
 // CoreAssemblySpec.cpp
@@ -19,7 +18,7 @@
 #include "domainfile.h"
 #include "holder.h"
 #include "../binder/inc/assemblybinder.hpp"
-
+#include "bundle.h"
 #include "strongnameinternal.h"
 #include "strongnameholders.h"
 
@@ -92,7 +91,7 @@ VOID  AssemblySpec::Bind(AppDomain      *pAppDomain,
         STANDARD_VM_CHECK;
         PRECONDITION(CheckPointer(pResult));
         PRECONDITION(CheckPointer(pAppDomain));
-        PRECONDITION(IsMscorlib() == FALSE); // This should never be called for MSCORLIB (explicit loading)
+        PRECONDITION(IsCoreLib() == FALSE); // This should never be called for CoreLib (explicit loading)
     }
     CONTRACTL_END;
 
@@ -117,7 +116,7 @@ VOID  AssemblySpec::Bind(AppDomain      *pAppDomain,
     ReleaseHolder<ICLRPrivAssembly> pPrivAsm;
     _ASSERTE(pBinder != NULL);
 
-    if (m_wszCodeBase == NULL && IsMscorlibSatellite())
+    if (m_wszCodeBase == NULL && IsCoreLibSatellite())
     {
         StackSString sSystemDirectory(SystemDomain::System()->SystemDirectory());
         StackSString tmpString;
@@ -141,7 +140,7 @@ VOID  AssemblySpec::Bind(AppDomain      *pAppDomain,
         // For name based binding these arguments shouldn't have been changed from default
         _ASSERTE(!fNgenExplicitBind && !fExplicitBindToNativeImage);
         SafeComHolder<IAssemblyName> pName;
-        hr = CreateAssemblyNameObject(&pName, assemblyDisplayName, true /*parseDisplayName*/);
+        hr = CreateAssemblyNameObject(&pName, assemblyDisplayName);
         if (SUCCEEDED(hr))
         {
             hr = pBinder->BindAssemblyByName(pName, &pPrivAsm);
@@ -174,10 +173,11 @@ VOID  AssemblySpec::Bind(AppDomain      *pAppDomain,
 }
 
 
-STDAPI BinderAcquirePEImage(LPCWSTR   wszAssemblyPath,
-                            PEImage **ppPEImage,
-                            PEImage **ppNativeImage,
-                            BOOL      fExplicitBindToNativeImage)
+STDAPI BinderAcquirePEImage(LPCWSTR             wszAssemblyPath,
+                            PEImage           **ppPEImage,
+                            PEImage           **ppNativeImage,
+                            BOOL                fExplicitBindToNativeImage,
+                            BundleFileLocation  bundleFileLocation)
 {
     HRESULT hr = S_OK;
 
@@ -187,12 +187,13 @@ STDAPI BinderAcquirePEImage(LPCWSTR   wszAssemblyPath,
     {
         PEImageHolder pImage = NULL;
         PEImageHolder pNativeImage = NULL;
+        AppDomain* pDomain = ::GetAppDomain(); // DEAD ? ? 
 
 #ifdef FEATURE_PREJIT
         // fExplicitBindToNativeImage is set on Phone when we bind to a list of native images and have no IL on device for an assembly
         if (fExplicitBindToNativeImage)
         {
-            pNativeImage = PEImage::OpenImage(wszAssemblyPath, MDInternalImport_TrustedNativeImage);
+            pNativeImage = PEImage::OpenImage(wszAssemblyPath, MDInternalImport_TrustedNativeImage, bundleFileLocation);
 
             // Make sure that the IL image can be opened if the native image is not available.
             hr=pNativeImage->TryOpenFile();
@@ -204,7 +205,7 @@ STDAPI BinderAcquirePEImage(LPCWSTR   wszAssemblyPath,
         else
 #endif
         {
-            pImage = PEImage::OpenImage(wszAssemblyPath, MDInternalImport_Default);
+            pImage = PEImage::OpenImage(wszAssemblyPath, MDInternalImport_Default, bundleFileLocation);
 
             // Make sure that the IL image can be opened if the native image is not available.
             hr=pImage->TryOpenFile();

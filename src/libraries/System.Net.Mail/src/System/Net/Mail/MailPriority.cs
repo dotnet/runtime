@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Diagnostics.CodeAnalysis;
 using System.Net.Mime;
@@ -51,10 +50,10 @@ namespace System.Net.Mail
             if (to == null)
                 throw new ArgumentNullException(nameof(to));
 
-            if (from == string.Empty)
+            if (from.Length == 0)
                 throw new ArgumentException(SR.Format(SR.net_emptystringcall, nameof(from)), nameof(from));
 
-            if (to == string.Empty)
+            if (to.Length == 0)
                 throw new ArgumentException(SR.Format(SR.net_emptystringcall, nameof(to)), nameof(to));
 
             _from = new MailAddress(from);
@@ -202,7 +201,7 @@ namespace System.Net.Mail
                 if (_headers == null)
                 {
                     _headers = new HeaderCollection();
-                    if (NetEventSource.IsEnabled) NetEventSource.Associate(this, _headers);
+                    if (NetEventSource.Log.IsEnabled()) NetEventSource.Associate(this, _headers);
                 }
 
                 return _headers;
@@ -228,7 +227,7 @@ namespace System.Net.Mail
                 if (_envelopeHeaders == null)
                 {
                     _envelopeHeaders = new HeaderCollection();
-                    if (NetEventSource.IsEnabled) NetEventSource.Associate(this, _envelopeHeaders);
+                    if (NetEventSource.Log.IsEnabled()) NetEventSource.Associate(this, _envelopeHeaders);
                 }
 
                 return _envelopeHeaders;

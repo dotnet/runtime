@@ -10,8 +10,13 @@
 #include <mono/metadata/abi-details.h>
 
 #define MONO_CLASS_GETTER(funcname, rettype, optref, argtype, fieldname) /*nothing*/
+/*
+ * In-tree profilers are allowed to use the offset functions.  So if we're
+ * compiling with --enable-checked-build=private_types, mark the symbols with
+ * MONO_PROFILER_API
+ */
 #ifdef MONO_CLASS_DEF_PRIVATE
-#define MONO_CLASS_OFFSET(funcname, argtype, fieldname) intptr_t funcname (void);
+#define MONO_CLASS_OFFSET(funcname, argtype, fieldname) MONO_PROFILER_API intptr_t funcname (void);
 #else
 #define MONO_CLASS_OFFSET(funcname, argtype, fieldname) static inline intptr_t funcname (void) { return MONO_STRUCT_OFFSET (argtype, fieldname); }
 #endif

@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Reflection;
 using System.Collections;
@@ -138,6 +137,11 @@ namespace System.ComponentModel
         {
             get
             {
+                if (attributeType == null)
+                {
+                    throw new ArgumentNullException(nameof(attributeType));
+                }
+
                 lock (s_internalSyncObject)
                 {
                     // 2 passes here for perf. Really!  first pass, we just
@@ -214,6 +218,11 @@ namespace System.ComponentModel
         /// </summary>
         public bool Contains(Attribute attribute)
         {
+            if (attribute == null)
+            {
+                return false;
+            }
+
             Attribute attr = this[attribute.GetType()];
             return attr != null && attr.Equals(attribute);
         }
@@ -246,6 +255,11 @@ namespace System.ComponentModel
         /// </summary>
         protected Attribute GetDefaultAttribute(Type attributeType)
         {
+            if (attributeType == null)
+            {
+                throw new ArgumentNullException(nameof(attributeType));
+            }
+
             lock (s_internalSyncObject)
             {
                 if (s_defaultAttributes == null)
@@ -317,6 +331,11 @@ namespace System.ComponentModel
         /// </summary>
         public bool Matches(Attribute[] attributes)
         {
+            if (attributes == null)
+            {
+                return true;
+            }
+
             for (int i = 0; i < attributes.Length; i++)
             {
                 if (!Matches(attributes[i]))
@@ -330,7 +349,7 @@ namespace System.ComponentModel
 
         bool ICollection.IsSynchronized => false;
 
-        object ICollection.SyncRoot => null;
+        object ICollection.SyncRoot => this;
 
         int ICollection.Count => Count;
 
