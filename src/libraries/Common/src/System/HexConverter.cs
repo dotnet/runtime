@@ -93,7 +93,7 @@ namespace System
         }
 
 #if NETSTANDARD2_1 || NETCOREAPP3_0
-    public static void EncodeToUtf16_Ssse3(ReadOnlySpan<byte> bytes, Span<char> chars, Casing casing = Casing.Upper)
+    private static void EncodeToUtf16_Ssse3(ReadOnlySpan<byte> bytes, Span<char> chars, Casing casing = Casing.Upper)
     {
         int pos = 0;
 
@@ -152,23 +152,15 @@ namespace System
             Debug.Assert(chars.Length >= bytes.Length * 2);
 
 #if NETSTANDARD2_1 || NETCOREAPP3_0
-            if (!Ssse3.IsSupported || bytes.Length < 4)
-            {
-                for (int pos = 0; pos < bytes.Length; pos++)
-                {
-                    ToCharsBuffer(bytes[pos], chars, pos * 2, casing);
-                }
-            }
-            else
+            if (Ssse3.IsSupported && bytes.Length >= 4)
             {
                 EncodeToUtf16_Ssse3(bytes, chars, casing);
             }
-#else
+#endif
             for (int pos = 0; pos < bytes.Length; pos++)
             {
                 ToCharsBuffer(bytes[pos], chars, pos * 2, casing);
             }
-#endif
     }
 
 #if ALLOW_PARTIALLY_TRUSTED_CALLERS
