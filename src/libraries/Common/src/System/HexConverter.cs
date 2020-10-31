@@ -124,10 +124,10 @@ namespace System
                         Vector128.Create((byte)0xF));
 
                      // Lookup the hex values at the positions of the indices
-                    Vector128<byte> hex = Ssse3.Shuffle(asciiTable, indices)
+                    Vector128<byte> hex = Ssse3.Shuffle(asciiTable, indices);
 
                     // The high bytes (0x00) of the chars have also been convertedto ascii hex '0', so clear them out.
-                    hex = Sse2.And(, Vector128.Create((ushort)0xFF).AsByte());
+                    hex = Sse2.And(hex, Vector128.Create((ushort)0xFF).AsByte());
 
                     // Save to "chars" at pos*2 offset
                     Unsafe.WriteUnaligned(
