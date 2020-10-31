@@ -4,6 +4,9 @@
 
   <Target Name="Build">
     <PropertyGroup>
+      <UseCrossgen2>true</UseCrossgen2>
+      <UseCrossgen2 Condition="'$(LegacyCrossgen)' == 'true'">false</UseCrossgen2>
+
       <OSPlatformConfig>$(TargetOS).$(TargetArchitecture).$(Configuration)</OSPlatformConfig>
       <RootBinDir>$(RepoRoot)\artifacts</RootBinDir>
       <LogsDir>$(RootBinDir)\log</LogsDir>
@@ -11,6 +14,8 @@
       <IntermediatesDir>$(RootBinDir)\obj\coreclr\$(OSPlatformConfig)</IntermediatesDir>
       <CrossGenCoreLibLog>$(LogsDir)\CrossgenCoreLib_$(TargetOS)__$(TargetArchitecture)__$(Configuration).log</CrossGenCoreLibLog>
       <ExeExtension Condition="'$(OS)' == 'Windows_NT'">.exe</ExeExtension>
+      <DotNetCli>$(RepoRoot)/dotnet.sh</DotNetCli>
+      <DotNetCli Condition="'$(OS)' == 'Windows_NT'">$(RepoRoot)\dotnet.cmd</DotNetCli>
 
       <CoreLibAssemblyName>System.Private.CoreLib</CoreLibAssemblyName>
       <CoreLibInputPath>$(BinDir)\IL\$(CoreLibAssemblyName).dll</CoreLibInputPath>
@@ -28,8 +33,6 @@
 
       <BuildPerfMap>false</BuildPerfMap>
       <BuildPerfMap Condition="$(BuildDll) and '$(TargetOS)' == 'Linux'">true</BuildPerfMap>
-
-      <CrossGenExe>$(BinDir)\$(CrossDir)\crossgen$(ExeExtension)</CrossGenExe>
     </PropertyGroup>
 
     <MakeDir
@@ -39,7 +42,16 @@
       Text="Generating native image of System.Private.CoreLib for $(OSPlatformConfig). Logging to $(CrossGenCoreLibLog)" />
 
     <PropertyGroup>
-      <CrossGenCmd>$(CrossGenExe)</CrossGenCmd>
+      <CrossGenDllCmd>$(DotNetCli) $(BinDir)\$(CrossDir)\crossgen2\crossgen2.dll</CrossGenDllCmd>
+      <CrossGenDllCmd>$(CrossGenDllCmd) -o:$(CoreLibOutputPath)</CrossGenDllCmd>
+      <CrossGenDllCmd>$(CrossGenDllCmd) -r:$(BinDir)\IL\*.dll</CrossGenDllCmd>
+      <CrossGenDllCmd>$(CrossGenDllCmd) --targetarch:$(TargetArchitecture)</CrossGenDllCmd>
+      <CrossGenDllCmd>$(CrossGenDllCmd) -O</CrossGenDllCmd>
+      <CrossGenDllCmd>$(CrossGenDllCmd) $(CoreLibInputPath)</CrossGenDllCmd>
+    </PropertyGroup>
+
+    <PropertyGroup Condition="'$(UseCrossgen2)' != 'true'">
+      <CrossGenCmd>$(BinDir)\$(CrossDir)\crossgen$(ExeExtension)</CrossGenCmd>
       <CrossGenCmd>$(CrossGenCmd) /nologo</CrossGenCmd>
       <CrossGenCmd>$(CrossGenCmd) <!-- IbcTuning --></CrossGenCmd>
       <CrossGenCmd>$(CrossGenCmd) /Platform_Assemblies_Paths "$(BinDir)\IL"</CrossGenCmd>
@@ -47,15 +59,27 @@
       <CrossGenDllCmd>$(CrossGenCmd) /out "$(CoreLibOutputPath)"</CrossGenDllCmd> 
       <CrossGenDllCmd>$(CrossGenDllCmd) "$(CoreLibInputPath)"</CrossGenDllCmd>
     </PropertyGroup>
-    
+
     <PropertyGroup Condition="$(BuildPerfMap)">
+      <CrossGenPerfMapCmd>echo TODO: PerfMap in Crossgen2</CrossGenPerfMapCmd>
+    </PropertyGroup>
+
+    <PropertyGroup Condition="$(BuildPerfMap) and '$(UseCrossgen2)' != 'true'">
       <CrossGenPerfMapCmd>$(CrossGenCmd) /CreatePerfMap "$(BinDir)"</CrossGenPerfMapCmd>
       <CrossGenPerfMapCmd>$(CrossGenPerfMapCmd) "$(CoreLibOutputPath)"</CrossGenPerfMapCmd>
     </PropertyGroup>
     
     <PropertyGroup Condition="$(BuildPdb)">
-      <VsSetupCmd>call $(RepoRoot)\src\coreclr\setup_vs_tools.cmd</VsSetupCmd>
-      <CrossGenPdbCmd>$(VsSetupCmd) &amp;&amp; $(CrossGenCmd) /CreatePdb "$(BinDir)\PDB"</CrossGenPdbCmd>
+      <CrossGenPdbCmd>$(DotNetCli) $(BinDir)\r2rdump\r2rdump.dll</CrossGenPdbCmd>
+      <CrossGenPdbCmd>$(CrossGenPdbCmd) --create-pdb</CrossGenPdbCmd>
+      <CrossGenPdbCmd>$(CrossGenPdbCmd) --pdb-path:$(BinDir)\PDB</CrossGenPdbCmd>
+      <CrossGenPdbCmd>$(CrossGenPdbCmd) --in:$(CoreLibOutputPath)</CrossGenPdbCmd>
+    </PropertyGroup>
+    
+    <PropertyGroup Condition="$(BuildPdb) and '$(UseCrossgen2)' != 'true'">
+      <VsSetupCmd>call $(RepoRoot)\src\coreclr\setup_vs_tools.cmd &amp;&amp;</VsSetupCmd>
+
+      <CrossGenPdbCmd>$(VsSetupCmd) $(CrossGenCmd) /CreatePdb "$(BinDir)\PDB"</CrossGenPdbCmd>
       <CrossGenPdbCmd>$(CrossGenPdbCmd) "$(CoreLibOutputPath)"</CrossGenPdbCmd>
     </PropertyGroup>
     
