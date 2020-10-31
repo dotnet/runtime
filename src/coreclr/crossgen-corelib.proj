@@ -21,9 +21,9 @@
 
     <PropertyGroup Condition="'$(CrossBuild)' == 'true'">
       <BuildDll>false</BuildDll>
-      <BuildDll Condition="'$(BuildArchitecture)' == 'x86' && '$(TargetArchitecture)' == 'arm'">true</BuildDll>
-      <BuildDll Condition="'$(BuildArchitecture)' == 'x64' && '$(TargetArchitecture)' == 'arm'">true</BuildDll>
-      <BuildDll Condition="'$(BuildArchitecture)' == 'x64' && '$(TargetArchitecture)' == 'arm64'">true</BuildDll>
+      <BuildDll Condition="'$(BuildArchitecture)' == 'x86' and '$(TargetArchitecture)' == 'arm'">true</BuildDll>
+      <BuildDll Condition="'$(BuildArchitecture)' == 'x64' and '$(TargetArchitecture)' == 'arm'">true</BuildDll>
+      <BuildDll Condition="'$(BuildArchitecture)' == 'x64' and '$(TargetArchitecture)' == 'arm64'">true</BuildDll>
 
       <CrossDir Condition="$(BuildDll)">$(BuildArchitecture)</CrossDir>
     </PropertyGroup>
