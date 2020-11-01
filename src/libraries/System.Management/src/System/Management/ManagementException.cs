@@ -720,6 +720,9 @@ namespace System.Management
         {
             base.GetObjectData(info, context);
             info.AddValue("errorCode", errorCode);
+
+            // For .NET Framework compat we need to set `errorObject` as null
+            info.AddValue("errorObject", null);
         }
 
         private static string GetMessage(Exception e)
