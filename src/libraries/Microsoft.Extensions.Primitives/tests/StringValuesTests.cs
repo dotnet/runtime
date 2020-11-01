@@ -610,5 +610,15 @@ namespace Microsoft.Extensions.Primitives
             Assert.True(StringValues.Equals(stringValues, new StringValues(expected)));
             Assert.Equal(stringValues.GetHashCode(), new StringValues(expected).GetHashCode());
         }
+
+        [Theory]
+        [MemberData(nameof(FilledStringValues))]
+        public void ToArray_CopiesValues(StringValues stringValues)
+        {
+            var array = stringValues.ToArray();
+            array[0] = "bcd";
+
+            Assert.Equal("abc", stringValues[0]);
+        }
     }
 }
