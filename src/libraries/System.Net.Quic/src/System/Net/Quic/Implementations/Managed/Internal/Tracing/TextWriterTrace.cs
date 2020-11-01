@@ -1,11 +1,14 @@
-﻿using System.IO;
+﻿// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+
+using System.IO;
 using System.Net.Quic.Implementations.Managed.Internal.Frames;
 using System.Net.Quic.Implementations.Managed.Internal.Recovery;
 using System.Text;
 
 namespace System.Net.Quic.Implementations.Managed.Internal.Tracing
 {
-    class TextWriterTrace : IQuicTrace
+    internal class TextWriterTrace : IQuicTrace
     {
         private readonly TextWriter _output;
         private readonly bool _isServer;
@@ -36,7 +39,7 @@ namespace System.Net.Quic.Implementations.Managed.Internal.Tracing
         {
             var sb = GetPacketContentBuilder();
             sb.Append(message);
-            sb.Append(" ");
+            sb.Append(' ');
         }
 
         private void Log(string message)
@@ -165,6 +168,7 @@ namespace System.Net.Quic.Implementations.Managed.Internal.Tracing
 
         public void OnStreamFrame(in StreamFrame frame)
         {
+            LogFrame($"Stream[{frame.StreamId}, {frame.Offset}, {frame.StreamData.Length}]");
         }
 
         public void OnMaxDataFrame(in MaxDataFrame frame)
@@ -205,6 +209,7 @@ namespace System.Net.Quic.Implementations.Managed.Internal.Tracing
 
         public void OnConnectionCloseFrame(in ConnectionCloseFrame frame)
         {
+            LogFrame($"ConnectionClose[{frame.ErrorCode}]");
         }
 
         public void OnHandshakeDoneFrame()

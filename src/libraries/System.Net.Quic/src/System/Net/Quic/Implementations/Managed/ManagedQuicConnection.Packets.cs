@@ -5,6 +5,7 @@ using System.Diagnostics;
 using System.Net.Quic.Implementations.Managed.Internal;
 using System.Net.Quic.Implementations.Managed.Internal.Crypto;
 using System.Net.Quic.Implementations.Managed.Internal.Headers;
+using System.Net.Quic.Implementations.Managed.Internal.Sockets;
 
 namespace System.Net.Quic.Implementations.Managed
 {
@@ -387,7 +388,7 @@ namespace System.Net.Quic.Implementations.Managed
             return result;
         }
 
-        internal void SendData(QuicWriter writer, out EndPoint? receiver, QuicSocketContext.SendContext ctx)
+        internal void SendData(QuicWriter writer, out EndPoint receiver, QuicSocketContext.SendContext ctx)
         {
             receiver = _remoteEndpoint;
 

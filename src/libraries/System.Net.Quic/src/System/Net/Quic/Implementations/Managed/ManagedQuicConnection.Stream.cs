@@ -161,7 +161,7 @@ namespace System.Net.Quic.Implementations.Managed
 
             if (doPing)
             {
-                _socketContext!.Ping();
+                _socketContext!.WakeUp();
             }
         }
 
@@ -177,7 +177,7 @@ namespace System.Net.Quic.Implementations.Managed
         internal void OnStreamStateUpdated(ManagedQuicStream stream)
         {
             _streams.MarkForUpdate(stream);
-            _socketContext!.Ping();
+            _socketContext!.WakeUp();
         }
     }
 }

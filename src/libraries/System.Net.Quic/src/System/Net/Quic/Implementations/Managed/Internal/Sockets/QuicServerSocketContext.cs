@@ -4,19 +4,16 @@
 using System.Collections.Immutable;
 using System.Diagnostics;
 using System.Net.Quic.Implementations.Managed.Internal.Headers;
-using System.Net.Sockets;
-using System.Threading;
 using System.Threading.Channels;
-using System.Threading.Tasks;
 
-namespace System.Net.Quic.Implementations.Managed.Internal
+namespace System.Net.Quic.Implementations.Managed.Internal.Sockets
 {
     internal sealed class QuicServerSocketContext : QuicSocketContext
     {
         private readonly ChannelWriter<ManagedQuicConnection> _newConnections;
-        private readonly QuicListenerOptions _listenerOptions;
+        internal QuicListenerOptions ListenerOptions { get; }
 
-        private ImmutableDictionary<EndPoint, ManagedQuicConnection> _connectionsByEndpoint;
+        private ImmutableDictionary<EndPoint, ConnectionContext> _connectionsByEndpoint;
 
         private bool _acceptNewConnections;
 
@@ -25,38 +22,45 @@ namespace System.Net.Quic.Implementations.Managed.Internal
             : base(localEndPoint, null, true)
         {
             _newConnections = newConnectionsWriter;
-            _listenerOptions = listenerOptions;
+            ListenerOptions = listenerOptions;
 
-            _connectionsByEndpoint = ImmutableDictionary<EndPoint, ManagedQuicConnection>.Empty;
+            _connectionsByEndpoint = ImmutableDictionary<EndPoint, ConnectionContext>.Empty;
 
             _acceptNewConnections = true;
         }
 
-        protected override ManagedQuicConnection? FindConnection(QuicReader reader, EndPoint remoteEp)
+        protected override void OnDatagramReceived(in DatagramInfo datagram)
         {
-            // TODO-RZ: dispatch needs more work, currently only one outbound connection per socket works
-            if (!_connectionsByEndpoint.TryGetValue(remoteEp, out ManagedQuicConnection? connection))
+            bool isNewConnection = false;
+            if (!_connectionsByEndpoint.TryGetValue(datagram.RemoteEndpoint, out ConnectionContext? connectionCtx))
             {
-                if (!_acceptNewConnections || HeaderHelpers.GetPacketType(reader.Peek()) != PacketType.Initial)
+                if (!_acceptNewConnections || HeaderHelpers.GetPacketType(datagram.Buffer[0]) != PacketType.Initial)
                 {
-                    // drop packet
-                    return null;
+                    // TODO-RZ: send CONNECTION_REFUSED for valid initial packets
+                    return;
                 }
 
                 // new connection attempt
-                if (!HeaderHelpers.TryFindDestinationConnectionId(reader.Buffer.Span, out var dcid))
+                if (!HeaderHelpers.TryFindDestinationConnectionId(datagram.Buffer.AsSpan(), out var dcid))
                 {
                     // drop packet
-                    return null;
+                    return;
                 }
 
                 // TODO-RZ: handle connection failures when the initial packet is discarded (e.g. because connection id is
                 // too long). This likely will need moving header parsing from Connection to socket context.
-                connection = new ManagedQuicConnection(_listenerOptions, this, remoteEp, dcid);
-                ImmutableInterlocked.TryAdd(ref _connectionsByEndpoint, remoteEp, connection);
+                connectionCtx = new ConnectionContext(this, datagram.RemoteEndpoint, dcid);
+                ImmutableInterlocked.TryAdd(ref _connectionsByEndpoint, datagram.RemoteEndpoint, connectionCtx);
+
+                isNewConnection = true;
             }
 
-            return connection;
+            connectionCtx.IncomingDatagramWriter.TryWrite(datagram);
+
+            // the start is deferred until we write the first datagram into the queue to prevent the thread going to
+            // sleep immediately after start
+            if (isNewConnection)
+                connectionCtx.Start();
         }
 
         /// <summary>
@@ -69,53 +73,7 @@ namespace System.Net.Quic.Implementations.Managed.Internal
             if (_connectionsByEndpoint.IsEmpty)
             {
                 SignalStop();
-
-                // awake the thread so that it exists
-                Ping();
-                WaitUntilStop();
             }
-        }
-
-        protected override void OnSignal()
-        {
-            // TODO-RZ: make connections signal which connection wishes to do something
-            long nextTimeout = long.MaxValue;
-
-            foreach (var (_, connection) in _connectionsByEndpoint)
-            {
-                Update(connection);
-                nextTimeout = Math.Min(nextTimeout, connection.GetNextTimerTimestamp());
-            }
-
-            UpdateTimeout(nextTimeout);
-        }
-
-        protected override void OnTimeout(long now)
-        {
-            long nextTimeout = long.MaxValue;
-
-            foreach (var (_, connection) in _connectionsByEndpoint)
-            {
-                long oldTimeout = connection.GetNextTimerTimestamp();
-                if (now < oldTimeout)
-                {
-                    // do not fire yet
-                    nextTimeout = Math.Min(nextTimeout, oldTimeout);
-                    continue;
-                }
-
-                var origState = connection.ConnectionState;
-                connection.OnTimeout(now);
-
-                // the connection may have data to send
-                Update(connection, origState);
-
-                long newTimeout = connection.GetNextTimerTimestamp();
-                Debug.Assert(newTimeout != oldTimeout);
-                nextTimeout = Math.Min(nextTimeout, newTimeout);
-            }
-
-            UpdateTimeout(nextTimeout);
         }
 
         private void OnConnectionHandshakeCompleted(ManagedQuicConnection connection)
@@ -124,7 +82,7 @@ namespace System.Net.Quic.Implementations.Managed.Internal
             _newConnections.TryWrite(connection);
         }
 
-        protected override bool OnConnectionStateChanged(ManagedQuicConnection connection, QuicConnectionState newState)
+        protected internal override bool OnConnectionStateChanged(ManagedQuicConnection connection, QuicConnectionState newState)
         {
             switch (newState)
             {
@@ -159,9 +117,9 @@ namespace System.Net.Quic.Implementations.Managed.Internal
 
         protected override void OnException(Exception e)
         {
-            foreach (var connection in _connectionsByEndpoint.Values)
+            foreach (var ctx in _connectionsByEndpoint.Values)
             {
-                connection.OnSocketContextException(e);
+                ctx.Connection.OnSocketContextException(e);
             }
         }
 
@@ -170,7 +128,6 @@ namespace System.Net.Quic.Implementations.Managed.Internal
             bool removed = ImmutableInterlocked.TryRemove(ref _connectionsByEndpoint, connection.RemoteEndPoint, out _);
             if (_connectionsByEndpoint.IsEmpty && !_acceptNewConnections)
             {
-                Ping();
                 SignalStop();
             }
 

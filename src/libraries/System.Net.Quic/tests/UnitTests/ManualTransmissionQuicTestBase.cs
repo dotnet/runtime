@@ -8,6 +8,7 @@ using System.Net.Quic.Implementations.Managed;
 using System.Net.Quic.Implementations.Managed.Internal;
 using System.Net.Quic.Implementations.Managed.Internal.Crypto;
 using System.Net.Quic.Implementations.Managed.Internal.Recovery;
+using System.Net.Quic.Implementations.Managed.Internal.Sockets;
 using System.Net.Quic.Tests.Harness;
 using System.Net.Security;
 using System.Threading.Channels;
@@ -49,7 +50,6 @@ namespace System.Net.Quic.Tests
         private const string CertificateFilePath = "Certs/cert.crt";
         private const string PrivateKeyFilePath = "Certs/cert.key";
 
-        private static readonly QuicServerSocketContext _dummySocketContext = new QuicServerSocketContext(new IPEndPoint(IPAddress.Any, 0), new QuicListenerOptions(), Channel.CreateUnbounded<ManagedQuicConnection>().Writer);
         private static readonly IPEndPoint _dummyServerEndpoint = new IPEndPoint(IPAddress.Loopback, 12345);
         private static readonly IPEndPoint _dummyListenEndpoint = new IPEndPoint(IPAddress.Any, 0);
 
@@ -127,8 +127,10 @@ namespace System.Net.Quic.Tests
 
         private static ManagedQuicConnection CreateServer(QuicListenerOptions options)
         {
+            var ctx = new QuicServerSocketContext(new IPEndPoint(IPAddress.Any, 0),
+                options, Channel.CreateUnbounded<ManagedQuicConnection>().Writer);
             Span<byte> odcid = stackalloc byte[20];
-            return new ManagedQuicConnection(options, _dummySocketContext, _dummyListenEndpoint, odcid);
+            return new ManagedQuicConnection(options, new ConnectionContext(ctx, _dummyListenEndpoint, odcid), _dummyListenEndpoint, odcid);
         }
 
         /// <summary>

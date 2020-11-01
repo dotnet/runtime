@@ -10,6 +10,7 @@ using System.Net.Quic.Implementations.Managed.Internal.Crypto;
 using System.Net.Quic.Implementations.Managed.Internal.Frames;
 using System.Net.Quic.Implementations.Managed.Internal.Headers;
 using System.Net.Quic.Implementations.Managed.Internal.Recovery;
+using System.Net.Quic.Implementations.Managed.Internal.Sockets;
 using System.Net.Quic.Implementations.Managed.Internal.Streams;
 using System.Net.Quic.Implementations.Managed.Internal.Tracing;
 using System.Net.Quic.Implementations.Managed.Internal.Tls;
@@ -226,7 +227,8 @@ namespace System.Net.Quic.Implementations.Managed
             IsServer = false;
             _remoteEndpoint = options.RemoteEndPoint!;
 
-            _socketContext = new SingleConnectionSocketContext(options.LocalEndPoint, _remoteEndpoint, this);
+            _socketContext = new SingleConnectionSocketContext(options.LocalEndPoint, _remoteEndpoint, this)
+                .ConnectionContext;
             _localTransportParameters = TransportParameters.FromClientConnectionOptions(options);
             Tls = TlsFactory.Instance.CreateClient(this, options, _localTransportParameters);
 
@@ -247,8 +249,8 @@ namespace System.Net.Quic.Implementations.Managed
         }
 
         // server constructor
-        public ManagedQuicConnection(QuicListenerOptions options, QuicServerSocketContext socketContext,
-            EndPoint remoteEndpoint, Span<byte> odcid)
+        public ManagedQuicConnection(QuicListenerOptions options, IQuicSocketContext socketContext,
+            EndPoint remoteEndpoint, ReadOnlySpan<byte> odcid)
         {
             IsServer = true;
             _socketContext = socketContext;
@@ -303,7 +305,7 @@ namespace System.Net.Quic.Implementations.Managed
         ///     Sets new socket context that will from now on service the connection.
         /// </summary>
         /// <param name="context">The new context.</param>
-        internal void SetSocketContext(QuicSocketContext context)
+        internal void SetSocketContext(IQuicSocketContext context)
         {
             _socketContext = context;
         }
@@ -453,7 +455,7 @@ namespace System.Net.Quic.Implementations.Managed
             return Recovery.GetSendingAllowance(timestamp);
         }
 
-        bool ShouldIgnorePacer(long timestamp)
+        private bool ShouldIgnorePacer(long timestamp)
         {
             return _nextAckTimer <= timestamp || _pingWanted || ShouldSendConnectionClose(timestamp);
         }
@@ -588,7 +590,7 @@ namespace System.Net.Quic.Implementations.Managed
         private ProcessPacketResult CloseConnection(TransportErrorCode errorCode, string? reason = null,
             FrameType frameType = FrameType.Padding)
         {
-            _outboundError = new QuicError(errorCode, reason, frameType);
+            _outboundError ??= new QuicError(errorCode, reason, frameType);
             return ProcessPacketResult.Error;
         }
 
@@ -697,7 +699,7 @@ namespace System.Net.Quic.Implementations.Managed
 
             if (NetEventSource.IsEnabled) NetEventSource.NewClientConnection(this, SourceConnectionId!.Data, DestinationConnectionId!.Data);
 
-            _socketContext.Ping();
+            _socketContext.WakeUp();
             _socketContext.Start();
 
             return _connectTcs.GetTask();
@@ -772,7 +774,7 @@ namespace System.Net.Quic.Implementations.Managed
 
             if (IsClosed) return default;
             _outboundError = new QuicError((TransportErrorCode)errorCode, null, FrameType.Padding, false);
-            _socketContext.Ping();
+            _socketContext.WakeUp();
 
             return _closeTcs.GetTask();
         }
@@ -910,6 +912,7 @@ namespace System.Net.Quic.Implementations.Managed
         internal void OnSocketContextException(Exception e)
         {
             _socketContextException = e;
+            CloseConnection(TransportErrorCode.InternalError);
 
             _connectTcs.TryCompleteException(e);
             _closeTcs.TryCompleteException(e);

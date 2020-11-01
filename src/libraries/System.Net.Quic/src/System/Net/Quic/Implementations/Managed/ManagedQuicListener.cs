@@ -3,6 +3,7 @@
 
 using System.IO;
 using System.Net.Quic.Implementations.Managed.Internal;
+using System.Net.Quic.Implementations.Managed.Internal.Sockets;
 using System.Threading;
 using System.Threading.Channels;
 using System.Threading.Tasks;

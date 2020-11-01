@@ -2,66 +2,28 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics;
-using System.Net.Quic.Implementations.MsQuic.Internal;
-using System.Net.Sockets;
-using System.Threading;
-using System.Threading.Tasks;
 
-namespace System.Net.Quic.Implementations.Managed.Internal
+namespace System.Net.Quic.Implementations.Managed.Internal.Sockets
 {
     internal sealed class SingleConnectionSocketContext : QuicSocketContext
     {
         private readonly EndPoint _remoteEndPoint;
-        private readonly ManagedQuicConnection _connection;
+        internal ConnectionContext ConnectionContext { get; }
 
         internal SingleConnectionSocketContext(EndPoint? localEndpoint, EndPoint remoteEndPoint,
             ManagedQuicConnection connection)
             : base(localEndpoint, remoteEndPoint, connection.IsServer)
         {
+            ConnectionContext = new ConnectionContext(this, connection);
             _remoteEndPoint = remoteEndPoint;
-            _connection = connection;
         }
 
-        protected override ManagedQuicConnection? FindConnection(QuicReader reader, EndPoint sender)
+        protected override void OnDatagramReceived(in DatagramInfo datagram)
         {
-            return _connection;
+            ConnectionContext.IncomingDatagramWriter.TryWrite(datagram);
         }
 
-        protected override void OnSignal()
-        {
-            Update(_connection);
-            UpdateTimeout(_connection.GetNextTimerTimestamp());
-        }
-
-        protected override void OnTimeout(long now)
-        {
-            long oldTimeout = _connection.GetNextTimerTimestamp();
-
-            // timout may have changed since have set it
-            if (oldTimeout <= now)
-            {
-                var origState = _connection.ConnectionState;
-                _connection.OnTimeout(now);
-
-                // the connection may have data to send
-                Update(_connection, origState);
-
-                long newTimeout = _connection.GetNextTimerTimestamp();
-                if (newTimeout == oldTimeout)
-                {
-                    Debug.Assert(newTimeout != oldTimeout);
-                }
-
-                UpdateTimeout(newTimeout);
-            }
-            else
-            {
-                // set timer to the current value
-                UpdateTimeout(oldTimeout);
-            }
-        }
-
-        protected override bool OnConnectionStateChanged(ManagedQuicConnection connection, QuicConnectionState newState)
+        protected internal override bool OnConnectionStateChanged(ManagedQuicConnection connection, QuicConnectionState newState)
         {
             switch (newState)
             {
@@ -93,13 +55,14 @@ namespace System.Net.Quic.Implementations.Managed.Internal
 
         protected override void OnException(Exception e)
         {
-            _connection.OnSocketContextException(e);
+            ConnectionContext.Connection.OnSocketContextException(e);
+            SignalStop();
         }
 
         protected internal override void DetachConnection(ManagedQuicConnection connection)
         {
             Debug.Assert(connection.IsClosed);
-            Debug.Assert(connection == _connection);
+            Debug.Assert(connection == ConnectionContext.Connection);
             // only one connection, so we can stop the background worker and free resources
             SignalStop();
             connection.DoCleanup();
