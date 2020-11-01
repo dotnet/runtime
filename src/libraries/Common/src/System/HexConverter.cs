@@ -4,8 +4,8 @@
 #nullable disable
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
-using System.Runtime.InteropServices;
 #if SYSTEM_PRIVATE_CORELIB
+using System.Runtime.InteropServices;
 using System.Runtime.Intrinsics;
 using System.Runtime.Intrinsics.X86;
 using Internal.Runtime.CompilerServices;
