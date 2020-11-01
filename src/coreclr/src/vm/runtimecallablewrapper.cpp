@@ -615,88 +615,6 @@ void ComClassFactory::Cleanup()
     delete this;
 }
 
-//-------------------------------------------------------------
-// Returns true if the first parameter of the CA's method ctor is a System.Type
-static BOOL AttributeFirstParamIsSystemType(mdCustomAttribute tkAttribute, IMDInternalImport *pImport)
-{
-    CONTRACTL
-    {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_ANY;
-        PRECONDITION(CheckPointer(pImport));
-    }
-    CONTRACTL_END;
-
-    mdToken ctorToken;
-    IfFailThrow(pImport->GetCustomAttributeProps(tkAttribute, &ctorToken));
-
-    LPCSTR ctorName;
-    PCCOR_SIGNATURE ctorSig;
-    ULONG cbCtorSig;
-
-    if (TypeFromToken(ctorToken) == mdtMemberRef)
-    {
-        IfFailThrow(pImport->GetNameAndSigOfMemberRef(ctorToken, &ctorSig, &cbCtorSig, &ctorName));
-    }
-    else if (TypeFromToken(ctorToken) == mdtMethodDef)
-    {
-        IfFailThrow(pImport->GetNameAndSigOfMethodDef(ctorToken, &ctorSig, &cbCtorSig, &ctorName));
-    }
-    else
-    {
-        ThrowHR(COR_E_BADIMAGEFORMAT);
-    }
-
-    SigParser sigParser(ctorSig, cbCtorSig);
-
-    ULONG callingConvention;
-    IfFailThrow(sigParser.GetCallingConvInfo(&callingConvention));
-    if (callingConvention != IMAGE_CEE_CS_CALLCONV_HASTHIS)
-    {
-        ThrowHR(COR_E_BADIMAGEFORMAT);
-    }
-
-    ULONG cParameters;
-    IfFailThrow(sigParser.GetData(&cParameters));
-    if (cParameters < 1)
-    {
-        return FALSE;
-    }
-
-    BYTE returnElmentType;
-    IfFailThrow(sigParser.GetByte(&returnElmentType));
-    if (returnElmentType != ELEMENT_TYPE_VOID)
-    {
-        ThrowHR(COR_E_BADIMAGEFORMAT);
-    }
-
-    BYTE paramElementType;
-    IfFailThrow(sigParser.GetByte(&paramElementType));
-    if (paramElementType != ELEMENT_TYPE_CLASS)
-    {
-        return FALSE;
-    }
-
-    mdToken paramTypeToken;
-    IfFailThrow(sigParser.GetToken(&paramTypeToken));
-
-    if (TypeFromToken(paramTypeToken) != mdtTypeRef)
-    {
-        return FALSE;
-    }
-
-    LPCSTR paramTypeNamespace;
-    LPCSTR paramTypeName;
-    IfFailThrow(pImport->GetNameOfTypeRef(paramTypeToken, &paramTypeNamespace, &paramTypeName));
-    if (strcmp("System", paramTypeNamespace) != 0 || strcmp("Type", paramTypeName) != 0)
-    {
-        return FALSE;
-    }
-
-    return TRUE;
-}
-
 #endif // FEATURE_COMINTEROP_UNMANAGED_ACTIVATION
 
 #ifndef CROSSGEN_COMPILE
@@ -2195,26 +2113,6 @@ HRESULT RCW::SafeQueryInterfaceRemoteAware(REFIID iid, IUnknown** ppResUnk)
 }
 
 #endif //#ifndef CROSSGEN_COMPILE
-
-// Helper method to allow us to compare a MethodTable against a known method table
-// from CoreLib.  If the CoreLib type isn't loaded, we don't load it because we
-// know that it can't be the MethodTable we're curious about.
-static bool MethodTableHasSameTypeDefAsCoreLibClass(MethodTable* pMT, BinderClassID classId)
-{
-    CONTRACTL
-    {
-        GC_NOTRIGGER;
-        NOTHROW;
-        MODE_ANY;
-    }
-    CONTRACTL_END;
-
-    MethodTable* pMT_CoreLibClass = CoreLibBinder::GetClassIfExist(classId);
-    if (pMT_CoreLibClass == NULL)
-        return false;
-
-    return (pMT->HasSameTypeDefAs(pMT_CoreLibClass) != FALSE);
-}
 
 #ifndef CROSSGEN_COMPILE
 // Performs QI for the given interface, optionally instantiating it with the given generic args.
