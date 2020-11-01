@@ -67,7 +67,13 @@ namespace System.Net.Quic.Implementations.Managed.Internal.Sockets
             {
                 if (Timestamp.Now >= _timer)
                 {
+                    var previousState = Connection.ConnectionState;
                     Connection.OnTimeout(Timestamp.Now);
+                    var newState = Connection.ConnectionState;
+                    if (newState != previousState)
+                    {
+                        _parent.OnConnectionStateChanged(Connection, newState);
+                    }
                 }
 
                 while (_recvQueue.Reader.TryRead(out var datagram))

@@ -130,12 +130,7 @@ namespace System.Net.Quic.Implementations.Managed.Internal.Sockets
         protected void SignalStop()
         {
             _socketTaskCts.Cancel();
-
-            // if never started, then also cleanup the socket, since the background worker will not do that
-            if (!_started)
-            {
-                Dispose();
-            }
+            Dispose();
         }
 
         protected abstract void OnDatagramReceived(in DatagramInfo datagram);
