@@ -79,17 +79,18 @@ namespace System.Net.Quic.Implementations.Managed
         /// </summary>
         internal ManagedQuicStream? GetFirstFlushableStream()
         {
-            lock (_flushable)
+            if (_flushable.First != null)
             {
-                var first = _flushable.First;
-                if (first == null)
+                lock (_flushable)
                 {
-                    return null;
-                }
+                    var first = _flushable.First;
 
-                _flushable.RemoveFirst();
-                return first.Value;
+                    _flushable.RemoveFirst();
+                    return first.Value;
+                }
             }
+
+            return null;
         }
 
         /// <summary>
