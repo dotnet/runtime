@@ -18,7 +18,7 @@ namespace System.Net.Quic.Implementations.Managed.Internal.Recovery
         internal const int MaxDatagramSize = 1452;
 
 
-        public RecoveryController(QuicTrace? trace = null)
+        public RecoveryController(IQuicTrace? trace = null)
         {
             Trace = trace;
             CongestionController = NewRenoCongestionController.Instance;
@@ -153,7 +153,7 @@ namespace System.Net.Quic.Implementations.Managed.Internal.Recovery
         /// <summary>
         ///     Object for logging traces for the connection events.
         /// </summary>
-        public QuicTrace? Trace { get; }
+        public IQuicTrace? Trace { get; }
 
         /// <summary>
         ///     The most recent RTT measurement in ticks made when receiving ack for a previously unacked packet.

@@ -31,7 +31,7 @@ namespace System.Net.Quic.Implementations.Managed
         /// <summary>
         ///     Object for creating a trace of this connection.
         /// </summary>
-        private readonly QuicTrace? _trace;
+        private readonly IQuicTrace? _trace;
 
         /// <summary>
         ///     Timestamp when last <see cref="ConnectionCloseFrame"/> was sent, or 0 if no such frame was sent yet.
@@ -118,7 +118,7 @@ namespace System.Net.Quic.Implementations.Managed
         /// <summary>
         ///     Context of the socket serving this connection.
         /// </summary>
-        private QuicSocketContext _socketContext;
+        private IQuicSocketContext _socketContext;
 
         /// <summary>
         ///     True if handshake has been confirmed by the peer. For server this means that TLS has reported handshake complete,
@@ -208,11 +208,6 @@ namespace System.Net.Quic.Implementations.Managed
         private Exception? _socketContextException;
 
         /// <summary>
-        ///     Timestamp of last moment this connection was updated.
-        /// </summary>
-        private long _lastUpdateTimestamp;
-
-        /// <summary>
         ///     Requests sending PING frame to the peer, requiring the peer to send acknowledgement back.
         /// </summary>
         internal void Ping()
@@ -261,18 +256,23 @@ namespace System.Net.Quic.Implementations.Managed
             _localTransportParameters = TransportParameters.FromListenerOptions(options);
 
             Tls = TlsFactory.Instance.CreateServer(this, options, _localTransportParameters);
-            _trace = InitTrace(IsServer, odcid.ToArray());
+            _trace = InitTrace(IsServer, odcid);
             Recovery = new RecoveryController(_trace);
 
             CoreInit();
         }
 
-        private static QuicTrace? InitTrace(bool isServer, byte[] odcid)
+        private static IQuicTrace? InitTrace(bool isServer, ReadOnlySpan<byte> odcid)
         {
-            if (Environment.GetEnvironmentVariable("DOTNETQUIC_TRACE") != null)
+            string? traceType = Environment.GetEnvironmentVariable("DOTNETQUIC_TRACE");
+            if (traceType == "console")
+            {
+                return new TextWriterTrace(Console.Out, isServer);
+            }
+            else if (traceType != null)
             {
                 string filename = $"{DateTime.Now:yyyy-MM-dd_HH-mm-ss.fff}-{(isServer ? "server" : "client")}.qlog";
-                return new QuicTrace(File.Open(filename, FileMode.Create), odcid, isServer);
+                return new QlogTrace(File.Open(filename, FileMode.Create), odcid.ToArray(), isServer);
             }
 
             return null;

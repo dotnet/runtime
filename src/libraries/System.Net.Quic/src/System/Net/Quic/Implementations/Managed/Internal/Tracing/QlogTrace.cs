@@ -15,7 +15,7 @@ namespace System.Net.Quic.Implementations.Managed.Internal.Tracing
     /// <summary>
     ///     Class for tracing QuicConnection events
     /// </summary>
-    internal class QuicTrace : IDisposable
+    internal class QlogTrace : IDisposable, IQuicTrace
     {
         private static readonly Dictionary<PacketType, byte[]> _packetTypeNames = new Dictionary<PacketType, byte[]>
         {
@@ -226,7 +226,7 @@ namespace System.Net.Quic.Implementations.Managed.Internal.Tracing
         private bool _inEvent;
         private bool _disposed;
 
-        internal QuicTrace(Stream stream, byte[] groupId, bool isServer)
+        internal QlogTrace(Stream stream, byte[] groupId, bool isServer)
         {
             _stream = stream;
             _groupId = groupId;
@@ -321,7 +321,7 @@ namespace System.Net.Quic.Implementations.Managed.Internal.Tracing
             _inEvent = false;
         }
 
-        internal void OnTransportParametersSet(TransportParameters parameters)
+        public void OnTransportParametersSet(TransportParameters parameters)
         {
             WriteEventProlog(Category.Transport, Event.parameters_set);
 
@@ -354,7 +354,7 @@ namespace System.Net.Quic.Implementations.Managed.Internal.Tracing
             WriteEventEpilog();
         }
 
-        internal void OnKeyUpdated(ReadOnlySpan<byte> secret, EncryptionLevel level, bool isServer,
+        public void OnKeyUpdated(ReadOnlySpan<byte> secret, EncryptionLevel level, bool isServer,
             KeyUpdateTrigger trigger, int? generation)
         {
             if (!_logSecurity)
@@ -380,7 +380,7 @@ namespace System.Net.Quic.Implementations.Managed.Internal.Tracing
             WriteEventEpilog();
         }
 
-        internal void OnDatagramReceived(int length)
+        public void OnDatagramReceived(int length)
         {
             if (!_logDatagrams)
                 return;
@@ -392,7 +392,7 @@ namespace System.Net.Quic.Implementations.Managed.Internal.Tracing
             WriteEventEpilog();
         }
 
-        internal void OnDatagramSent(int length)
+        public void OnDatagramSent(int length)
         {
             if (!_logDatagrams)
                 return;
@@ -404,7 +404,7 @@ namespace System.Net.Quic.Implementations.Managed.Internal.Tracing
             WriteEventEpilog();
         }
 
-        internal void OnDatagramDropped(int length)
+        public void OnDatagramDropped(int length)
         {
             if (!_logDatagrams)
                 return;
@@ -416,12 +416,12 @@ namespace System.Net.Quic.Implementations.Managed.Internal.Tracing
             WriteEventEpilog();
         }
 
-        internal void OnStreamStateUpdated(int length)
+        public void OnStreamStateUpdated(int length)
         {
             Debug.Assert(!_inEvent);
         }
 
-        internal void OnPacketReceiveStart(ReadOnlySpan<byte> scid, ReadOnlySpan<byte> dcid, PacketType packetType,
+        public void OnPacketReceiveStart(ReadOnlySpan<byte> scid, ReadOnlySpan<byte> dcid, PacketType packetType,
             long packetNumber, long payloadLength, long packetSize)
         {
             if (!_logTransport)
@@ -435,7 +435,7 @@ namespace System.Net.Quic.Implementations.Managed.Internal.Tracing
             _writer.WriteStartArray(Field.frames);
         }
 
-        internal void OnPacketReceiveEnd()
+        public void OnPacketReceiveEnd()
         {
             if (!_logTransport)
                 return;
@@ -446,7 +446,7 @@ namespace System.Net.Quic.Implementations.Managed.Internal.Tracing
             WriteEventEpilog();
         }
 
-        internal void OnPacketSendStart()
+        public void OnPacketSendStart()
         {
             if (!_logTransport)
                 return;
@@ -456,7 +456,7 @@ namespace System.Net.Quic.Implementations.Managed.Internal.Tracing
             _writer.WriteStartArray(Field.frames);
         }
 
-        internal void OnPacketSendEnd(ReadOnlySpan<byte> scid, ReadOnlySpan<byte> dcid,
+        public void OnPacketSendEnd(ReadOnlySpan<byte> scid, ReadOnlySpan<byte> dcid,
             PacketType packetType, long packetNumber, long payloadLength, long packetSize)
         {
             if (!_logTransport)
@@ -472,7 +472,7 @@ namespace System.Net.Quic.Implementations.Managed.Internal.Tracing
             WriteEventEpilog();
         }
 
-        private void WritePacketHeader(ReadOnlySpan<byte> scid, ReadOnlySpan<byte> dcid,
+        public void WritePacketHeader(ReadOnlySpan<byte> scid, ReadOnlySpan<byte> dcid,
             PacketType packetType, long packetNumber, long payloadLength, long packetSize)
         {
             _writer.WriteStartObject(Field.header);
@@ -490,7 +490,7 @@ namespace System.Net.Quic.Implementations.Managed.Internal.Tracing
             _writer.WriteEndObject();
         }
 
-        internal void OnPacketDropped(PacketType? type, int packetSize)
+        public void OnPacketDropped(PacketType? type, int packetSize)
         {
             if (!_logTransport)
                 return;
@@ -506,7 +506,7 @@ namespace System.Net.Quic.Implementations.Managed.Internal.Tracing
             WriteEventEpilog();
         }
 
-        internal void OnPaddingFrame(int length)
+        public void OnPaddingFrame(int length)
         {
             if (!_logTransport)
                 return;
@@ -515,7 +515,7 @@ namespace System.Net.Quic.Implementations.Managed.Internal.Tracing
             WriteFrameEpilog();
         }
 
-        internal void OnPingFrame()
+        public void OnPingFrame()
         {
             if (!_logTransport)
                 return;
@@ -524,7 +524,7 @@ namespace System.Net.Quic.Implementations.Managed.Internal.Tracing
             WriteFrameEpilog();
         }
 
-        internal void OnAckFrame(in AckFrame frame, long ackDelayMicroseconds)
+        public void OnAckFrame(in AckFrame frame, long ackDelayMicroseconds)
         {
             if (!_logTransport)
                 return;
@@ -562,7 +562,7 @@ namespace System.Net.Quic.Implementations.Managed.Internal.Tracing
             WriteFrameEpilog();
         }
 
-        internal void OnResetStreamFrame(in ResetStreamFrame frame)
+        public void OnResetStreamFrame(in ResetStreamFrame frame)
         {
             if (!_logTransport)
                 return;
@@ -571,7 +571,7 @@ namespace System.Net.Quic.Implementations.Managed.Internal.Tracing
             WriteFrameEpilog();
         }
 
-        internal void OnStopSendingFrame(in StopSendingFrame frame)
+        public void OnStopSendingFrame(in StopSendingFrame frame)
         {
             if (!_logTransport)
                 return;
@@ -580,7 +580,7 @@ namespace System.Net.Quic.Implementations.Managed.Internal.Tracing
             WriteFrameEpilog();
         }
 
-        internal void OnCryptoFrame(in CryptoFrame frame)
+        public void OnCryptoFrame(in CryptoFrame frame)
         {
             if (!_logTransport)
                 return;
@@ -593,7 +593,7 @@ namespace System.Net.Quic.Implementations.Managed.Internal.Tracing
             WriteFrameEpilog();
         }
 
-        internal void OnNewTokenFrame(in NewTokenFrame frame)
+        public void OnNewTokenFrame(in NewTokenFrame frame)
         {
             if (!_logTransport)
                 return;
@@ -602,7 +602,7 @@ namespace System.Net.Quic.Implementations.Managed.Internal.Tracing
             WriteFrameEpilog();
         }
 
-        internal void OnStreamFrame(in StreamFrame frame)
+        public void OnStreamFrame(in StreamFrame frame)
         {
             if (!_logTransport)
                 return;
@@ -619,7 +619,7 @@ namespace System.Net.Quic.Implementations.Managed.Internal.Tracing
             WriteFrameEpilog();
         }
 
-        internal void OnMaxDataFrame(in MaxDataFrame frame)
+        public void OnMaxDataFrame(in MaxDataFrame frame)
         {
             if (!_logTransport)
                 return;
@@ -629,7 +629,7 @@ namespace System.Net.Quic.Implementations.Managed.Internal.Tracing
             WriteFrameEpilog();
         }
 
-        internal void OnMaxStreamDataFrame(in MaxStreamDataFrame frame)
+        public void OnMaxStreamDataFrame(in MaxStreamDataFrame frame)
         {
             if (!_logTransport)
                 return;
@@ -640,7 +640,7 @@ namespace System.Net.Quic.Implementations.Managed.Internal.Tracing
             WriteFrameEpilog();
         }
 
-        internal void OnMaxStreamsFrame(in MaxStreamsFrame frame)
+        public void OnMaxStreamsFrame(in MaxStreamsFrame frame)
         {
             if (!_logTransport)
                 return;
@@ -649,7 +649,7 @@ namespace System.Net.Quic.Implementations.Managed.Internal.Tracing
             WriteFrameEpilog();
         }
 
-        internal void OnDataBlockedFrame(in DataBlockedFrame frame)
+        public void OnDataBlockedFrame(in DataBlockedFrame frame)
         {
             if (!_logTransport)
                 return;
@@ -658,7 +658,7 @@ namespace System.Net.Quic.Implementations.Managed.Internal.Tracing
             WriteFrameEpilog();
         }
 
-        internal void OnStreamDataBlockedFrame(in StreamDataBlockedFrame frame)
+        public void OnStreamDataBlockedFrame(in StreamDataBlockedFrame frame)
         {
             if (!_logTransport)
                 return;
@@ -667,7 +667,7 @@ namespace System.Net.Quic.Implementations.Managed.Internal.Tracing
             WriteFrameEpilog();
         }
 
-        internal void OnStreamsBlockedFrame(in StreamsBlockedFrame frame)
+        public void OnStreamsBlockedFrame(in StreamsBlockedFrame frame)
         {
             if (!_logTransport)
                 return;
@@ -676,7 +676,7 @@ namespace System.Net.Quic.Implementations.Managed.Internal.Tracing
             WriteFrameEpilog();
         }
 
-        internal void OnNewConnectionIdFrame(in NewConnectionIdFrame frame)
+        public void OnNewConnectionIdFrame(in NewConnectionIdFrame frame)
         {
             if (!_logTransport)
                 return;
@@ -685,7 +685,7 @@ namespace System.Net.Quic.Implementations.Managed.Internal.Tracing
             WriteFrameEpilog();
         }
 
-        internal void OnRetireConnectionIdFrame(in RetireConnectionIdFrame frame)
+        public void OnRetireConnectionIdFrame(in RetireConnectionIdFrame frame)
         {
             if (!_logTransport)
                 return;
@@ -694,7 +694,7 @@ namespace System.Net.Quic.Implementations.Managed.Internal.Tracing
             WriteFrameEpilog();
         }
 
-        internal void OnPathChallengeFrame(in PathChallengeFrame frame)
+        public void OnPathChallengeFrame(in PathChallengeFrame frame)
         {
             if (!_logTransport)
                 return;
@@ -703,7 +703,7 @@ namespace System.Net.Quic.Implementations.Managed.Internal.Tracing
             WriteFrameEpilog();
         }
 
-        internal void OnConnectionCloseFrame(in ConnectionCloseFrame frame)
+        public void OnConnectionCloseFrame(in ConnectionCloseFrame frame)
         {
             if (!_logTransport)
                 return;
@@ -712,7 +712,7 @@ namespace System.Net.Quic.Implementations.Managed.Internal.Tracing
             WriteFrameEpilog();
         }
 
-        internal void OnHandshakeDoneFrame()
+        public void OnHandshakeDoneFrame()
         {
             if (!_logTransport)
                 return;
@@ -721,7 +721,7 @@ namespace System.Net.Quic.Implementations.Managed.Internal.Tracing
             WriteFrameEpilog();
         }
 
-        internal void OnUnknownFrame(long frameType, int length)
+        public void OnUnknownFrame(long frameType, int length)
         {
             if (!_logTransport)
                 return;
@@ -734,18 +734,18 @@ namespace System.Net.Quic.Implementations.Managed.Internal.Tracing
             WriteFrameEpilog();
         }
 
-        private void WriteFrameProlog(ReadOnlySpan<byte> frameType)
+        public void WriteFrameProlog(ReadOnlySpan<byte> frameType)
         {
             _writer.WriteStartObject();
             _writer.WriteString(Field.frame_type, frameType);
         }
 
-        private void WriteFrameEpilog()
+        public void WriteFrameEpilog()
         {
             _writer.WriteEndObject();
         }
 
-        internal void OnPacketLost(PacketType packetType, long packetNumber, PacketLossTrigger trigger)
+        public void OnPacketLost(PacketType packetType, long packetNumber, PacketLossTrigger trigger)
         {
             if (!_logRecovery)
                 return;
@@ -769,7 +769,7 @@ namespace System.Net.Quic.Implementations.Managed.Internal.Tracing
         private long _bytesInFlight;
         private long _sstresh;
 
-        internal void OnRecoveryMetricsUpdated(RecoveryController recovery)
+        public void OnRecoveryMetricsUpdated(RecoveryController recovery)
         {
             if (!_logRecovery)
                 return;
@@ -816,7 +816,7 @@ namespace System.Net.Quic.Implementations.Managed.Internal.Tracing
 
         private CongestionState _previousCongestionState = CongestionState.Recovery;
 
-        internal void OnCongestionStateUpdated(CongestionState state)
+        public void OnCongestionStateUpdated(CongestionState state)
         {
             if (!_logRecovery)
                 return;
@@ -832,7 +832,7 @@ namespace System.Net.Quic.Implementations.Managed.Internal.Tracing
             WriteEventEpilog();
         }
 
-        internal void OnLossTimerUpdated()
+        public void OnLossTimerUpdated()
         {
             if (!_logRecovery)
                 return;
@@ -842,7 +842,7 @@ namespace System.Net.Quic.Implementations.Managed.Internal.Tracing
             // WriteEventEpilog();
         }
 
-        internal void OnRecoveryParametersSet(RecoveryController recovery)
+        public void OnRecoveryParametersSet(RecoveryController recovery)
         {
             if (!_logRecovery)
                 return;
@@ -866,7 +866,7 @@ namespace System.Net.Quic.Implementations.Managed.Internal.Tracing
             WriteEventEpilog();
         }
 
-        private void WriteFooter()
+        public void WriteFooter()
         {
             Debug.Assert(!_inEvent);
             // end 'events' array
