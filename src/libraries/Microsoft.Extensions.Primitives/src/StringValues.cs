@@ -286,8 +286,7 @@ namespace Microsoft.Extensions.Primitives
             object value = _values;
             if (value is string[] values)
             {
-                var valuesCopy = (string[])values.Clone();
-                return valuesCopy;
+                return (string[])values.Clone();
             }
             else if (value != null)
             {
