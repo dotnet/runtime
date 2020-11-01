@@ -286,7 +286,12 @@ namespace System.Net.Quic.Implementations.Managed.Internal.Recovery
         /// <summary>
         ///     Current state of the congestion control algorithm. This is largely only for tracing purposes.
         /// </summary>
-        public CongestionState CongestionState { get; set; }
+        internal CongestionState CongestionState { get; set; }
+
+        /// <summary>
+        ///     True if the connection is application limited (not enough application data to saturate the connection).
+        /// </summary>
+        internal bool IsApplicationLimited { get; set; }
 
         internal PacketNumberSpace GetPacketNumberSpace(PacketSpace space) => _pnSpaces[(int)space];
 

@@ -47,7 +47,9 @@ namespace System.Net.Quic.Implementations.Managed.Internal.Recovery
 
             // TODO-RZ: Do not increase congestion window if limited by flow control or application has not supplied
             // enough data to saturate the connection
-            // if (Is app or flow control limited) return;
+            if (recovery.IsApplicationLimited)
+                return;
+
             if (recovery.CongestionWindow < recovery.SlowStartThreshold)
             {
                 // slow start
