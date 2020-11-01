@@ -95,7 +95,7 @@ struct RCW
         // unused               = 0x04,
         CF_NeedUniqueObject     = 0x08, // always create a new RCW/object even if we have one cached already
         // unused               = 0x10,
-        CF_DetectDCOMProxy      = 0x20, // attempt to determine if the RCW is for a DCOM proxy
+        // unused               = 0x20,
     };
 
     static CreationFlags CreationFlagsFromObjForComIPFlags(ObjFromComIP::flags flags);
@@ -383,15 +383,6 @@ struct RCW
     }
 
     //
-    // Is this COM object a DCOM Proxy? (For WinRT the RCW must have been created with CF_DetectDCOMProxy)
-    //
-    bool IsDCOMProxy()
-    {
-        LIMITED_METHOD_DAC_CONTRACT;
-        return m_Flags.m_fIsDCOMProxy == 1;
-    }
-
-    //
     // This COM object implements INoMarshal?
     //
     bool IsMarshalingInhibited()
@@ -584,8 +575,6 @@ public:
             DWORD       m_MarshalingType:2;        // MarshalingBehavior of the COM object.
 
             DWORD       m_Detached:1;              // set if the RCW was found dead during GC
-
-            DWORD       m_fIsDCOMProxy:1;          // Is the object a proxy to a remote process
         };
     }
     m_Flags;

@@ -627,8 +627,6 @@ public :
         m_bIsFreeThreaded = false;
         m_pThread = pThread;
         m_pCtxCookie = pCtxCookie;
-
-        m_bIsDCOMProxy = false;
     }
 
     virtual void OnRCWCreated(RCW *pRCW)
@@ -639,9 +637,6 @@ public :
 
         if (pRCW->IsFreeThreaded())
             m_bIsFreeThreaded = true;
-
-        if (pRCW->IsDCOMProxy())
-            m_bIsDCOMProxy = true;
     }
 
     // Return true if ComInterfaceMarshaler should use this RCW
@@ -682,9 +677,6 @@ public :
 
         if (pRCW->IsFreeThreaded())
             m_bIsFreeThreaded = true;
-
-        if (pRCW->IsDCOMProxy())
-            m_bIsDCOMProxy = true;
     }
 
     bool IsFreeThreaded()
@@ -694,18 +686,10 @@ public :
         return m_bIsFreeThreaded;
     }
 
-    bool IsDCOMProxy()
-    {
-        LIMITED_METHOD_CONTRACT;
-
-        return m_bIsDCOMProxy;
-    }
-
 private :
     Thread *m_pThread;          // Current thread
     LPVOID m_pCtxCookie;        // Current context cookie
     bool   m_bIsFreeThreaded;   // Whether we got back the RCW from a different context
-    bool   m_bIsDCOMProxy;      // Is this a proxy to an object in a different process
 };
 
 #endif
