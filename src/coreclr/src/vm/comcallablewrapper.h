@@ -390,7 +390,6 @@ private:
     ComMethodTable* CreateComMethodTableForClass(MethodTable *pClassMT);
     ComMethodTable* CreateComMethodTableForInterface(MethodTable* pInterfaceMT);
     ComMethodTable* CreateComMethodTableForBasic(MethodTable* pClassMT);
-    ComMethodTable* CreateComMethodTableForDelegate(MethodTable *pDelegateMT);
 
     void DetermineComVisibility();
     ComCallWrapperTemplate* FindInvisibleParent();
@@ -807,9 +806,6 @@ struct ComMethodTable
     }
 
 private:
-    // Helper methods.
-    BOOL CheckSigTypesCanBeLoaded(MethodTable *pItfClass);
-
     SLOT             m_ptReserved; //= (SLOT) 0xDEADC0FF;  reserved
     PTR_MethodTable  m_pMT; // pointer to the VMs method table
     ULONG            m_cbSlots; // number of slots in the interface (excluding IUnk/IDisp)
@@ -1411,9 +1407,6 @@ public:
         FastInterlockOr((ULONG*)&m_flags, enum_IsComActivated);
     }
 
-    // Used for the creation and deletion of simple wrappers
-    static SimpleComCallWrapper* CreateSimpleWrapper();
-
     // Determines if the type associated with the ComCallWrapper supports exceptions.
     static BOOL SupportsExceptions(MethodTable *pMT);
 
@@ -1480,15 +1473,6 @@ public:
         LIMITED_METHOD_CONTRACT;
 
         return GET_COM_REF(READ_REF(m_llRefCount));
-    }
-
-    // Returns the unmarked raw ref count
-    // Make sure we always make a copy of the value instead of inlining
-    NOINLINE LONGLONG GetRealRefCount()
-    {
-        LIMITED_METHOD_CONTRACT;
-
-        return READ_REF(m_llRefCount);
     }
 
     inline BOOL IsNeutered()
@@ -1968,10 +1952,9 @@ inline BOOL ComCallWrapper::IsWrapperActive()
 
     // Since its called by GCPromote, we assume that this is the start wrapper
 
-    LONGLONG llRefCount = m_pSimpleWrapper->GetRealRefCount();
-    ULONG cbRef = GET_COM_REF(llRefCount);
+    ULONG cbRef = m_pSimpleWrapper->GetRefCount();
 
-    BOOL bHasStrongCOMRefCount = ((cbRef > 0));
+    BOOL bHasStrongCOMRefCount = cbRef > 0;
 
     BOOL bIsWrapperActive = (bHasStrongCOMRefCount && !m_pSimpleWrapper->IsHandleWeak());
 
