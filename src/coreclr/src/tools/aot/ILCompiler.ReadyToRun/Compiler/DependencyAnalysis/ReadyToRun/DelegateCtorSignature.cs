@@ -88,7 +88,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             if (result != 0)
                 return result;
 
-            return _methodToken.Token.CompareTo(otherNode._methodToken.Token);
+            return _methodToken.CompareTo(otherNode._methodToken, comparer);
         }
     }
 }

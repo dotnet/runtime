@@ -113,7 +113,57 @@ namespace Internal.JitInterface
                         typeInstantiation = typeContext.Instantiation;
                     }
 
-                    actualOwningType = tokenOnlyOwningType.InstantiateSignature(typeInstantiation, methodInstantiation);
+                    var instantiatedOwningType = tokenOnlyOwningType.InstantiateSignature(typeInstantiation, methodInstantiation);
+                    var canonicalizedOwningType = instantiatedOwningType.ConvertToCanonForm(CanonicalFormKind.Specific);
+                    if (instantiatedOwningType == canonicalizedOwningType)
+                    {
+                        actualOwningType = instantiatedOwningType;
+                    }
+                    else
+                    {
+                        actualOwningType = ComputeActualOwningType(methodTargetOwner, instantiatedOwningType, canonicalizedOwningType);
+
+                        // Implement via a helper function, so that managing the loop escape behavior is easier to read
+                        TypeDesc ComputeActualOwningType(TypeDesc methodTargetOwner, TypeDesc instantiatedOwningType, TypeDesc canonicalizedOwningType)
+                        {
+                            // Pick between Canonical and Exact OwningTypes.
+                            //
+                            // If the canonicalizedOwningType is the OwningType (or parent type) of the associated method
+                            //   Then return canonicalizedOwningType
+                            // Else If the Exact Owning type is the OwningType (or parent type) of the associated method
+                            //   Then return actualOwningType
+                            // Else If the canonicallized owningType (or canonicalized parent type) of the associated method
+                            //   Return the canonicalizedOwningType
+                            // Else
+                            //   Fail, unexpected behavior
+                            var currentType = canonicalizedOwningType;
+                            while (currentType != null)
+                            {
+                                if (currentType == methodTargetOwner)
+                                    return canonicalizedOwningType;
+                                currentType = currentType.BaseType;
+                            }
+
+                            currentType = instantiatedOwningType;
+                            while (currentType != null)
+                            {
+                                if (currentType == methodTargetOwner)
+                                    return instantiatedOwningType;
+                                currentType = currentType.BaseType;
+                            }
+
+                            currentType = canonicalizedOwningType;
+                            while (currentType != null)
+                            {
+                                if (currentType == methodTargetOwner)
+                                    return canonicalizedOwningType;
+                                currentType = currentType.BaseType.ConvertToCanonForm(CanonicalFormKind.Specific);
+                            }
+
+                            Debug.Assert(false);
+                            throw new Exception();
+                        }
+                    }
                 }
 
                 if (actualOwningType != tokenOnlyOwningType)
@@ -137,7 +187,15 @@ namespace Internal.JitInterface
 
         public bool Equals(MethodWithToken methodWithToken)
         {
-            return Method == methodWithToken.Method && Token.Equals(methodWithToken.Token) && ConstrainedType == methodWithToken.ConstrainedType && Unboxing == methodWithToken.Unboxing;
+            bool equals = Method == methodWithToken.Method && Token.Equals(methodWithToken.Token) && ConstrainedType == methodWithToken.ConstrainedType &&
+                   Unboxing == methodWithToken.Unboxing;
+            if (equals)
+            {
+                Debug.Assert(OwningTypeNotDerivedFromToken == methodWithToken.OwningTypeNotDerivedFromToken);
+                Debug.Assert(OwningType == methodWithToken.OwningType);
+            }
+            
+            return equals;
         }
 
         public void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb)
@@ -177,7 +235,23 @@ namespace Internal.JitInterface
             if (result != 0)
                 return result;
 
-            return Unboxing.CompareTo(other.Unboxing);
+            result = Unboxing.CompareTo(other.Unboxing);
+            if (result != 0)
+                return result;
+
+            // The OwningType/OwningTypeNotDerivedFromToken shoud be equivalent if the above conditions are equal.
+            Debug.Assert(OwningTypeNotDerivedFromToken == other.OwningTypeNotDerivedFromToken);
+            Debug.Assert(OwningType == other.OwningType);
+
+            if (OwningTypeNotDerivedFromToken != other.OwningTypeNotDerivedFromToken)
+            {
+                if (OwningTypeNotDerivedFromToken)
+                    return 1;
+                else
+                    return -1;
+            }
+
+            return comparer.Compare(OwningType, other.OwningType);
         }
     }
 
