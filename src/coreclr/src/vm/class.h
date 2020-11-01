@@ -583,7 +583,7 @@ class EEClassOptionalFields
 
 #if defined(UNIX_AMD64_ABI)
     // Number of eightBytes in the following arrays
-    int m_numberEightBytes;
+    unsigned int m_numberEightBytes;
     // Classification of the eightBytes
     SystemVClassificationType m_eightByteClassifications[CLR_SYSTEMV_MAX_EIGHTBYTES_COUNT_TO_PASS_IN_REGISTERS];
     // Size of data the eightBytes
@@ -1468,7 +1468,7 @@ public:
 
 #if defined(UNIX_AMD64_ABI)
     // Get number of eightbytes used by a struct passed in registers.
-    inline int GetNumberEightBytes()
+    inline unsigned int GetNumberEightBytes()
     {
         LIMITED_METHOD_CONTRACT;
         _ASSERTE(HasOptionalFields());
@@ -1476,7 +1476,7 @@ public:
     }
 
     // Get eightbyte classification for the eightbyte with the specified index.
-    inline SystemVClassificationType GetEightByteClassification(int index)
+    inline SystemVClassificationType GetEightByteClassification(unsigned int index)
     {
         LIMITED_METHOD_CONTRACT;
         _ASSERTE(HasOptionalFields());
@@ -1484,7 +1484,7 @@ public:
     }
 
     // Get size of the data in the eightbyte with the specified index.
-    inline unsigned int GetEightByteSize(int index)
+    inline unsigned int GetEightByteSize(unsigned int index)
     {
         LIMITED_METHOD_CONTRACT;
         _ASSERTE(HasOptionalFields());
@@ -1492,12 +1492,12 @@ public:
     }
 
     // Set the eightByte classification
-    inline void SetEightByteClassification(int eightByteCount, SystemVClassificationType *eightByteClassifications, unsigned int *eightByteSizes)
+    inline void SetEightByteClassification(unsigned int eightByteCount, SystemVClassificationType *eightByteClassifications, unsigned int *eightByteSizes)
     {
         LIMITED_METHOD_CONTRACT;
         _ASSERTE(HasOptionalFields());
         GetOptionalFields()->m_numberEightBytes = eightByteCount;
-        for (int i = 0; i < eightByteCount; i++)
+        for (unsigned int i = 0; i < eightByteCount; i++)
         {
             GetOptionalFields()->m_eightByteClassifications[i] = eightByteClassifications[i];
             GetOptionalFields()->m_eightByteSizes[i] = eightByteSizes[i];

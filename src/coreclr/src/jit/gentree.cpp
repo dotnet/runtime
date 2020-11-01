@@ -19306,7 +19306,7 @@ void ReturnTypeDesc::InitializeStructReturnType(Compiler* comp, CORINFO_CLASS_HA
             comp->eeGetSystemVAmd64PassStructInRegisterDescriptor(retClsHnd, &structDesc);
 
             assert(structDesc.passedInRegisters);
-            for (int i = 0; i < structDesc.eightByteCount; i++)
+            for (unsigned int i = 0; i < structDesc.eightByteCount; i++)
             {
                 assert(i < MAX_RET_REG_COUNT);
                 m_regType[i] = comp->GetEightByteType(structDesc, i);

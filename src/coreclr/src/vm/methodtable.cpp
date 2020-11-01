@@ -2962,11 +2962,11 @@ void  MethodTable::AssignClassifiedEightByteTypes(SystemVStructRegisterPassingHe
 
 #ifdef _DEBUG
         LOG((LF_JIT, LL_EVERYTHING, "     ----\n"));
-        LOG((LF_JIT, LL_EVERYTHING, "     **** Number EightBytes: %d\n", helperPtr->eightByteCount));
+        LOG((LF_JIT, LL_EVERYTHING, "     **** Number EightBytes: %u\n", helperPtr->eightByteCount));
         for (unsigned i = 0; i < helperPtr->eightByteCount; i++)
         {
             _ASSERTE(helperPtr->eightByteClassifications[i] != SystemVClassificationTypeNoClass);
-            LOG((LF_JIT, LL_EVERYTHING, "     **** eightByte %d -- classType: %s, eightByteOffset: %d, eightByteSize: %d\n",
+            LOG((LF_JIT, LL_EVERYTHING, "     **** eightByte %u -- classType: %s, eightByteOffset: %d, eightByteSize: %u\n",
                 i, GetSystemVClassificationTypeName(helperPtr->eightByteClassifications[i]), helperPtr->eightByteOffsets[i], helperPtr->eightByteSizes[i]));
         }
 #endif // _DEBUG

@@ -397,10 +397,14 @@ void ThreadLocalBlock::AllocateThreadStaticBoxes(MethodTable * pMT)
     FieldDesc *pField = pMT->HasGenericsStaticsInfo() ?
         pMT->GetGenericsStaticFieldDescs() : (pMT->GetApproxFieldDescListRaw() + pMT->GetNumIntroducedInstanceFields());
 
-    // Move pField to point to the list of thread statics
-    pField += pMT->GetNumStaticFields() - pMT->GetNumThreadStaticFields();
+    // Move pField to point to the end of the list of static fields
+    pField += pMT->GetNumStaticFields(); 
+    
 
-    FieldDesc *pFieldEnd = pField + pMT->GetNumThreadStaticFields();
+    FieldDesc *pFieldEnd = pField;
+
+    // Move pField to point to the beginning list of thread statics
+    pField -= pMT->GetNumThreadStaticFields();
 
     while (pField < pFieldEnd)
     {

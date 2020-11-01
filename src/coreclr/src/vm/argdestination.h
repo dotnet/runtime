@@ -114,7 +114,7 @@ public:
     // Zero struct argument stored in registers described by the current ArgDestination.
     // Arguments:
     //  fieldBytes - size of the structure
-    void ZeroStructInRegisters(int fieldBytes)
+    void ZeroStructInRegisters(unsigned int fieldBytes)
     {
         STATIC_CONTRACT_NOTHROW;
         STATIC_CONTRACT_GC_NOTRIGGER;
@@ -138,7 +138,7 @@ public:
     //  fieldBytes - size of the structure
     //  destOffset - nonzero when copying values into Nullable<T>, it is the offset
     //               of the T value inside of the Nullable<T>
-    void CopyStructToRegisters(void *src, int fieldBytes, int destOffset)
+    void CopyStructToRegisters(void *src, unsigned int fieldBytes, int destOffset)
     {
         STATIC_CONTRACT_NOTHROW;
         STATIC_CONTRACT_GC_NOTRIGGER;
@@ -149,15 +149,15 @@ public:
 
         BYTE* genRegDest = (BYTE*)GetStructGenRegDestinationAddress() + destOffset;
         BYTE* floatRegDest = (BYTE*)GetStructFloatRegDestinationAddress();
-        INDEBUG(int remainingBytes = fieldBytes;)
+        INDEBUG(unsigned int remainingBytes = fieldBytes;)
 
         EEClass* eeClass = m_argLocDescForStructInRegs->m_eeClass;
         _ASSERTE(eeClass != NULL);
 
         // We start at the first eightByte that the destOffset didn't skip completely.
-        for (int i = destOffset / 8; i < eeClass->GetNumberEightBytes(); i++)
+        for (unsigned int i = destOffset / 8; i < eeClass->GetNumberEightBytes(); i++)
         {
-            int eightByteSize = eeClass->GetEightByteSize(i);
+            unsigned int eightByteSize = eeClass->GetEightByteSize(i);
             SystemVClassificationType eightByteClassification = eeClass->GetEightByteClassification(i);
 
             // Adjust the size of the first eightByte by the destOffset
@@ -222,14 +222,14 @@ public:
        _ASSERTE(IsStructPassedInRegs());
 
         TADDR genRegDest = dac_cast<TADDR>(GetStructGenRegDestinationAddress());
-        INDEBUG(int remainingBytes = fieldBytes;)
+        INDEBUG(unsigned int remainingBytes = fieldBytes;)
 
         EEClass* eeClass = m_argLocDescForStructInRegs->m_eeClass;
         _ASSERTE(eeClass != NULL);
 
-        for (int i = 0; i < eeClass->GetNumberEightBytes(); i++)
+        for (unsigned int i = 0; i < eeClass->GetNumberEightBytes(); i++)
         {
-            int eightByteSize = eeClass->GetEightByteSize(i);
+            unsigned int eightByteSize = eeClass->GetEightByteSize(i);
             SystemVClassificationType eightByteClassification = eeClass->GetEightByteClassification(i);
 
             _ASSERTE(remainingBytes >= eightByteSize);

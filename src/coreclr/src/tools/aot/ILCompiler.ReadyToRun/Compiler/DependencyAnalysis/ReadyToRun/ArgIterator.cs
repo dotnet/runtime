@@ -328,9 +328,9 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             SYSTEMV_AMD64_CORINFO_STRUCT_REG_PASSING_DESCRIPTOR descriptor;
             SystemVStructClassificator.GetSystemVAmd64PassStructInRegisterDescriptor(type, out descriptor);
 
-            for (int i = 0; i < descriptor.eightByteCount; i++)
+            for (byte i = 0; i < descriptor.eightByteCount; i++)
             {
-                int eightByteSize = (i == 0) ? descriptor.eightByteSizes0 : descriptor.eightByteSizes1;
+                byte eightByteSize = (i == 0) ? descriptor.eightByteSizes0 : descriptor.eightByteSizes1;
                 SystemVClassificationType eightByteClassification = (i == 0) ? descriptor.eightByteClassifications0 : descriptor.eightByteClassifications1;
 
                 if (eightByteClassification != SystemVClassificationType.SystemVClassificationTypeSSE)
@@ -929,7 +929,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                                 if (descriptor.passedInRegisters)
                                 {
                                     cGenRegs = 0;
-                                    for (int i = 0; i < descriptor.eightByteCount; i++)
+                                    for (byte i = 0; i < descriptor.eightByteCount; i++)
                                     {
                                         switch ((i == 0) ? descriptor.eightByteClassifications0 : descriptor.eightByteClassifications1)
                                         {
