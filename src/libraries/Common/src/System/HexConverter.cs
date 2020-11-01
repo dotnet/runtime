@@ -5,10 +5,9 @@
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
-#if NETCOREAPP
+#if SYSTEM_PRIVATE_CORELIB
 using System.Runtime.Intrinsics;
 using System.Runtime.Intrinsics.X86;
-#if SYSTEM_PRIVATE_CORELIB
 using Internal.Runtime.CompilerServices;
 #endif
 #endif
@@ -92,7 +91,7 @@ namespace System
             buffer[startingIndex] = (char)(packedResult >> 8);
         }
 
-#if NETCOREAPP
+#if SYSTEM_PRIVATE_CORELIB
     private static void EncodeToUtf16_Ssse3(ReadOnlySpan<byte> bytes, Span<char> chars, Casing casing)
     {
         int pos = 0;
@@ -151,7 +150,7 @@ namespace System
         {
             Debug.Assert(chars.Length >= bytes.Length * 2);
 
-#if NETCOREAPP
+#if SYSTEM_PRIVATE_CORELIB
             if (Ssse3.IsSupported && bytes.Length >= 4)
             {
                 EncodeToUtf16_Ssse3(bytes, chars, casing);
