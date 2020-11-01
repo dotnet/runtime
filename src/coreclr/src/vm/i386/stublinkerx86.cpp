@@ -1920,7 +1920,7 @@ VOID StubLinkerCPU::X86EmitOffsetModRmSIB(BYTE opcode, X86Reg opcodeOrReg, X86Re
 
     BYTE    codeBuffer[8];
     BYTE*   code    = codeBuffer;
-    int     nBytes  = 0;
+    UINT     nBytes  = 0;
 
 #ifdef TARGET_AMD64
     _ASSERTE(!"NYI");
@@ -2233,7 +2233,7 @@ VOID StubLinkerCPU::X86EmitEspOffset(BYTE opcode,
 
     BYTE    codeBuffer[8];
     BYTE   *code = codeBuffer;
-    int     nBytes;
+    UINT     nBytes;
 
 #ifdef TARGET_AMD64
     BYTE rex = 0;
@@ -2434,10 +2434,10 @@ VOID StubLinkerCPU::X86EmitCurrentThreadFetch(X86Reg dstreg, unsigned preservedR
 
 #ifdef TARGET_AMD64
     BYTE code[] = { 0x65,0x48,0x8b,0x04,0x25 };    // mov dstreg, qword ptr gs:[IMM32]
-    static const int regByteIndex = 3;
+    static const unsigned regByteIndex = 3;
 #elif defined(TARGET_X86)
     BYTE code[] = { 0x64,0x8b,0x05 };              // mov dstreg, dword ptr fs:[IMM32]
-    static const int regByteIndex = 2;
+    static const unsigned regByteIndex = 2;
 #endif
     code[regByteIndex] |= (dstreg << 3);
 
@@ -3845,7 +3845,7 @@ VOID StubLinkerCPU::EmitShuffleThunk(ShuffleEntry *pShuffleEntryArray)
 
     UINT16 emptySpot = 0x4 | ShuffleEntry::REGMASK;
 
-    while (true)
+    for (;;)
     {
         for (pWalk = pShuffleEntryArray; pWalk->srcofs != ShuffleEntry::SENTINEL; pWalk++)
             if (pWalk->dstofs == emptySpot)
@@ -4206,7 +4206,7 @@ VOID StubLinkerCPU::EmitArrayOpStub(const ArrayOpScript* pArrayOpScript)
 
     // This is the offset to the parameters/what's already pushed on the stack:
     // return address.
-    const INT  locsize     = sizeof(void*);
+    const UINT  locsize     = sizeof(void*);
 
     // ArrayOpScript's stack offsets are built using ArgIterator, which
     // assumes a TransitionBlock has been pushed, which is not the case
@@ -4215,7 +4215,7 @@ VOID StubLinkerCPU::EmitArrayOpStub(const ArrayOpScript* pArrayOpScript)
     // baseofsadjust needs to be the stack adjustment at the entry point -
     // this is used further below to compute how much stack space was used.
 
-    INT ofsadjust = locsize - (INT)sizeof(TransitionBlock);
+    UINT ofsadjust = locsize - sizeof(TransitionBlock);
 
     // Register usage
     //
