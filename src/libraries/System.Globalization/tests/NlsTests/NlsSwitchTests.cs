@@ -10,7 +10,6 @@ namespace System.Globalization.Tests
     public class NlsSwitchTests
     {
         [Fact]
-        [PlatformSpecific(TestPlatforms.Windows)]
         public static void NlsRuntimeSwitchIsHonored()
         {
             Type globalizationMode = Type.GetType("System.Globalization.GlobalizationMode");
@@ -28,7 +27,6 @@ namespace System.Globalization.Tests
         }
 
         [Fact]
-        [PlatformSpecific(TestPlatforms.Windows)]
         public static void IcuShouldNotBeLoaded()
         {
             Assert.False(PlatformDetection.IsIcuGlobalization, $"Found ICU: {PlatformDetection.ICUVersion}");

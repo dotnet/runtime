@@ -1,8 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.Diagnostics;
-
 namespace System.Globalization
 {
     internal static partial class GlobalizationMode
@@ -12,21 +10,14 @@ namespace System.Globalization
         internal static bool Invariant { get; } = GetInvariantSwitchValue();
 
         internal static bool UseNls { get; } = !Invariant &&
-            (GetSwitchValue("System.Globalization.UseNls", "DOTNET_SYSTEM_GLOBALIZATION_USENLS", defaultValue: true) || !LoadIcu());
+            (GetSwitchValue("System.Globalization.UseNls", "DOTNET_SYSTEM_GLOBALIZATION_USENLS") ||
+                !LoadIcu());
 
         private static bool LoadIcu()
         {
             if (!TryGetAppLocalIcuSwitchValue(out string? icuSuffixAndVersion))
             {
-                if (Interop.Globalization.LoadICU() == 0)
-                {
-                    string message = "The configuration System.Globalization.UseNls was set to false and a valid ICU package was not found in the system. " +
-                                "For more information you can go to: https://go.microsoft.com/fwlink/?linkid=2147400";
-
-                    Environment.FailFast(message);
-                }
-
-                return true;
+                return Interop.Globalization.LoadICU() != 0;
             }
 
             LoadAppLocalIcu(icuSuffixAndVersion);
