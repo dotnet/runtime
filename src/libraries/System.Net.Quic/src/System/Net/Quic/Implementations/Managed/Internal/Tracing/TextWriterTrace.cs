@@ -25,7 +25,7 @@ namespace System.Net.Quic.Implementations.Managed.Internal.Tracing
         private void InitLine()
         {
             _lineBuilder.Append('[');
-            _lineBuilder.Append(Timestamp.Now);
+            _lineBuilder.Append(DateTime.Now.ToString("O"));
             _lineBuilder.Append("] ");
             _lineBuilder.Append(_isServer ? "Server: " : "Client: ");
         }
@@ -121,7 +121,6 @@ namespace System.Net.Quic.Implementations.Managed.Internal.Tracing
             long packetNumber, long payloadLength,
             long packetSize)
         {
-            InitLine();
             _lineBuilder.Append($"Sent {packetType}[{packetNumber}]: ");
             FlushLine(false);
             Flush(_packetContentBuilder, true);
