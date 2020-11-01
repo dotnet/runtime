@@ -153,6 +153,7 @@ namespace System
             if (Ssse3.IsSupported && bytes.Length >= 4)
             {
                 EncodeToUtf16_Ssse3(bytes, chars, casing);
+                return;
             }
 #endif
             for (int pos = 0; pos < bytes.Length; pos++)
