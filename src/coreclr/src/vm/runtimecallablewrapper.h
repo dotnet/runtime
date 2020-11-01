@@ -301,13 +301,6 @@ struct RCW
         return m_cbRefCount;
     }
 
-    void GetCachedInterfaceTypes(BOOL bIInspectableOnly,
-                        SArray<PTR_MethodTable> * rgItfTables)
-    {
-        LIMITED_METHOD_DAC_CONTRACT;
-
-    }
-
     void GetCachedInterfacePointers(BOOL bIInspectableOnly,
                         SArray<TADDR> * rgItfPtrs)
     {
