@@ -822,7 +822,7 @@ namespace System
             Debug.Assert(separator != null);
             Debug.Assert(separatorLength >= 0);
 
-            var count = value.Length;
+            int count = value.Length;
             if (count <= 1)
             {
                 return count == 0 ?
