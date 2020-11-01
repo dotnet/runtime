@@ -23,7 +23,6 @@
 
       <CrossDir></CrossDir>
       <CrossDir Condition="'$(TargetArchitecture)' == 'arm' or '$(TargetArchitecture)' == 'arm64'">x64</CrossDir>
-      <CrossDir Condition="'$(TargetArchitecture)' == 'arm' and '$(OS)' == 'Windows_NT'">x86</CrossDir>
       <CrossDir Condition="'$(TargetArchitecture)' == 'x86' and '$(BuildArchitecture)' != '$(TargetArchitecture)' and $(UseCrossgen2)">$(BuildArchitecture)</CrossDir>
 
       <BuildDll>true</BuildDll>
