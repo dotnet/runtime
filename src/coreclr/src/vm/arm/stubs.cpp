@@ -297,10 +297,10 @@ struct WriteBarrierMapping
     PBYTE from;  // Pointer to write-barrier from which it was copied
 };
 
-const int WriteBarrierIndex         = 0;
-const int CheckedWriteBarrierIndex  = 1;
-const int ByRefWriteBarrierIndex    = 2;
-const int MaxWriteBarrierIndex      = 3;
+const unsigned WriteBarrierIndex         = 0;
+const unsigned CheckedWriteBarrierIndex  = 1;
+const unsigned ByRefWriteBarrierIndex    = 2;
+const unsigned MaxWriteBarrierIndex      = 3;
 
 WriteBarrierMapping wbMapping[MaxWriteBarrierIndex] =
                                     {
@@ -311,7 +311,7 @@ WriteBarrierMapping wbMapping[MaxWriteBarrierIndex] =
 
 PBYTE FindWBMapping(PBYTE from)
 {
-    for(int i = 0; i < MaxWriteBarrierIndex; ++i)
+    for(unsigned i = 0; i < MaxWriteBarrierIndex; ++i)
     {
         if(wbMapping[i].from == from)
             return wbMapping[i].to;
@@ -716,7 +716,7 @@ void StubPrecode::Init(MethodDesc* pMD, LoaderAllocator *pLoaderAllocator)
 {
     WRAPPER_NO_CONTRACT;
 
-    int n = 0;
+    unsigned n = 0;
 
     m_rgCode[n++] = 0xf8df; // ldr r12, [pc, #8]
     m_rgCode[n++] = 0xc008;
@@ -750,7 +750,7 @@ void NDirectImportPrecode::Init(MethodDesc* pMD, LoaderAllocator *pLoaderAllocat
 {
     WRAPPER_NO_CONTRACT;
 
-    int n = 0;
+    unsigned n = 0;
 
     m_rgCode[n++] = 0xf8df; // ldr r12, [pc, #4]
     m_rgCode[n++] = 0xc004;
@@ -866,7 +866,7 @@ void ThisPtrRetBufPrecode::Init(MethodDesc* pMD, LoaderAllocator *pLoaderAllocat
 {
     WRAPPER_NO_CONTRACT;
 
-    int n = 0;
+    unsigned n = 0;
 
     m_rgCode[n++] = 0x4684; // mov r12, r0
     m_rgCode[n++] = 0x4608; // mov r0, r1
@@ -939,7 +939,7 @@ void  DispatchHolder::Initialize(PCODE implTarget, PCODE failTarget, size_t expe
     //     else (this._failTarget)(r0, r1, r2, r3, r4);
     // }
 
-    int n = 0;
+    unsigned n = 0;
     WORD offset;
 
     // We rely on the stub entry-point being DWORD aligned (so we can tell whether any subsequent WORD is
@@ -1021,7 +1021,7 @@ void ResolveHolder::Initialize(PCODE resolveWorkerTarget, PCODE patcherTarget,
     // }
     //
 
-    int n = 0;
+    unsigned n = 0;
     WORD offset;
 
     // We rely on the stub entry-point being DWORD aligned (so we can tell whether any subsequent WORD is
@@ -1076,7 +1076,7 @@ void ResolveHolder::Initialize(PCODE resolveWorkerTarget, PCODE patcherTarget,
     _stub._resolveEntryPoint[n++] = 0x59ae;
 
     // ;; do {
-    int loop = n;
+    unsigned loop = n;
 
     // ;; Check mt == e.pMT
     // ldr r5, [r6 + #ResolveCacheElem.pMT]

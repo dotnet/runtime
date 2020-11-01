@@ -236,9 +236,9 @@ struct ResolveStub
 
 private:
     friend struct ResolveHolder;
-    const static int resolveEntryPointLen = 32;
-    const static int slowEntryPointLen = 4;
-    const static int failEntryPointLen = 14;
+    const static unsigned int resolveEntryPointLen = 32;
+    const static unsigned int slowEntryPointLen = 4;
+    const static unsigned int failEntryPointLen = 14;
 
     WORD _resolveEntryPoint[resolveEntryPointLen];
     WORD _slowEntryPoint[slowEntryPointLen];
@@ -337,7 +337,7 @@ struct VTableCallHolder
         unsigned offsetOfIndirection = MethodTable::GetVtableOffset() + MethodTable::GetIndexOfVtableIndirection(slot) * TARGET_POINTER_SIZE;
         unsigned offsetAfterIndirection = MethodTable::GetIndexAfterVtableIndirection(slot) * TARGET_POINTER_SIZE;
 
-        int indirectionsSize = (offsetOfIndirection > 0xFFF ? 12 : 4) + (offsetAfterIndirection > 0xFFF ? 12 : 4);
+        unsigned indirectionsSize = (offsetOfIndirection > 0xFFF ? 12 : 4) + (offsetAfterIndirection > 0xFFF ? 12 : 4);
         if (offsetOfIndirection > 0xFFF || offsetAfterIndirection > 0xFFF)
             indirectionsSize += 8;    // Save/restore r0 using red zone
 

@@ -162,9 +162,9 @@ struct ResolveStub
 
 private:
     friend struct ResolveHolder;
-    const static int resolveEntryPointLen = 17;
-    const static int slowEntryPointLen = 4;
-    const static int failEntryPointLen = 8;
+    const static unsigned int resolveEntryPointLen = 17;
+    const static unsigned int slowEntryPointLen = 4;
+    const static unsigned int failEntryPointLen = 8;
 
     DWORD _resolveEntryPoint[resolveEntryPointLen];
     DWORD _slowEntryPoint[slowEntryPointLen];
@@ -184,9 +184,9 @@ struct ResolveHolder
                     size_t dispatchToken, UINT32 hashedToken,
                     void * cacheAddr, INT32 * counterAddr)
     {
-         int n=0;
+         unsigned n=0;
          DWORD offset;
-         int br_nextEntry[2];
+         unsigned br_nextEntry[2];
 /******** Rough Convention of used in this routine
          ;;x9  hash scratch / current ResolveCacheElem
          ;;x10 base address of the data region
@@ -421,11 +421,11 @@ struct VTableCallStub
 
         BYTE* pStubCode = (BYTE *)this;
 
-        int numDataSlots = 0;
+        unsigned int numDataSlots = 0;
 
         size_t cbSize = 4;              // First ldr instruction
 
-        for (int i = 0; i < 2; i++)
+        for (unsigned int i = 0; i < 2; i++)
         {
             if (((*(DWORD*)(&pStubCode[cbSize])) & 0xFFC003FF) == 0xF9400129)
             {
@@ -473,8 +473,8 @@ struct VTableCallHolder
         STATIC_CONTRACT_WRAPPER;
         unsigned offsetOfIndirection = MethodTable::GetVtableOffset() + MethodTable::GetIndexOfVtableIndirection(slot) * TARGET_POINTER_SIZE;
         unsigned offsetAfterIndirection = MethodTable::GetIndexAfterVtableIndirection(slot) * TARGET_POINTER_SIZE;
-        int indirectionsCodeSize = (offsetOfIndirection >= 0x8000 ? 8 : 4) + (offsetAfterIndirection >= 0x8000 ? 8 : 4);
-        int indirectionsDataSize = (offsetOfIndirection >= 0x8000 ? 4 : 0) + (offsetAfterIndirection >= 0x8000 ? 4 : 0);
+        unsigned indirectionsCodeSize = (offsetOfIndirection >= 0x8000 ? 8 : 4) + (offsetAfterIndirection >= 0x8000 ? 8 : 4);
+        unsigned indirectionsDataSize = (offsetOfIndirection >= 0x8000 ? 4 : 0) + (offsetAfterIndirection >= 0x8000 ? 4 : 0);
         return 8 + indirectionsCodeSize + indirectionsDataSize + 4;
     }
 
@@ -509,9 +509,9 @@ void VTableCallHolder::Initialize(unsigned slot)
     unsigned offsetAfterIndirection = MethodTable::GetIndexAfterVtableIndirection(slot) * TARGET_POINTER_SIZE;
     _ASSERTE(MethodTable::VTableIndir_t::isRelative == false /* TODO: NYI */);
 
-    int indirectionsCodeSize = (offsetOfIndirection >= 0x8000 ? 8 : 4) + (offsetAfterIndirection >= 0x8000 ? 8 : 4);
-    int indirectionsDataSize = (offsetOfIndirection >= 0x8000 ? 4 : 0) + (offsetAfterIndirection >= 0x8000 ? 4 : 0);
-    int codeSize = 8 + indirectionsCodeSize + indirectionsDataSize;
+    unsigned indirectionsCodeSize = (offsetOfIndirection >= 0x8000 ? 8 : 4) + (offsetAfterIndirection >= 0x8000 ? 8 : 4);
+    unsigned indirectionsDataSize = (offsetOfIndirection >= 0x8000 ? 4 : 0) + (offsetAfterIndirection >= 0x8000 ? 4 : 0);
+    unsigned codeSize = 8 + indirectionsCodeSize + indirectionsDataSize;
 
     VTableCallStub* pStub = stub();
     BYTE* p = (BYTE*)pStub->entryPoint();
