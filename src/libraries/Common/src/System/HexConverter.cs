@@ -160,7 +160,7 @@ namespace System
             {
                 ToCharsBuffer(bytes[pos], chars, pos * 2, casing);
             }
-    }
+        }
 
 #if ALLOW_PARTIALLY_TRUSTED_CALLERS
         [System.Security.SecuritySafeCriticalAttribute]
