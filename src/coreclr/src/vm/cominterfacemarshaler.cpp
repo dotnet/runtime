@@ -398,9 +398,14 @@ VOID COMInterfaceMarshaler::InitializeObjectClass(IUnknown *pIncomingIP)
     }
     CONTRACTL_END;
 
-    // We no longer support the mapping from IUnknown to Type via
-    // IProvideClassinfo in CoreCLR.
-    m_typeHandle = TypeHandle(g_pBaseCOMObject);
+    // If the marshaller's type handle is null, compute what it should be.
+    if (m_typeHandle.IsNull())
+    {
+        // We no longer support the mapping from IUnknown to Type via
+        // IProvideClassinfo in CoreCLR., so if the type handle isn't
+        // set then fallback to the __ComObject type.
+        m_typeHandle = TypeHandle(g_pBaseCOMObject);
+    }
 }
 
 // VOID EnsureCOMInterfacesSupported(OBJECTREF oref, MethodTable* pClassMT)
