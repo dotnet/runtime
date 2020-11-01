@@ -238,7 +238,7 @@ LPVOID ProfileArgIterator::CopyStructFromRegisters()
     EEClass* eeClass = argLocDesc->m_eeClass;
     _ASSERTE(eeClass != NULL);
 
-    for (int i = 0; i < eeClass->GetNumberEightBytes(); i++)
+    for (unsigned int i = 0; i < eeClass->GetNumberEightBytes(); i++)
     {
         int eightByteSize = eeClass->GetEightByteSize(i);
         SystemVClassificationType eightByteClassification = eeClass->GetEightByteClassification(i);

@@ -1087,7 +1087,7 @@ int ArgIteratorTemplate<ARGITERATOR_BASE>::GetNextOffset()
         {
             EEClass* eeClass = pMT->GetClass();
             cGenRegs = 0;
-            for (int i = 0; i < eeClass->GetNumberEightBytes(); i++)
+            for (unsigned int i = 0; i < eeClass->GetNumberEightBytes(); i++)
             {
                 switch (eeClass->GetEightByteClassification(i))
                 {
