@@ -77,6 +77,7 @@ usage()
   echo "  --gccx.y                   Optional argument to build using gcc version x.y."
   echo "  --portablebuild            Optional argument: set to false to force a non-portable build."
   echo "  --keepnativesymbols        Optional argument: set to true to keep native symbols/debuginfo in generated binaries."
+  echo "  --ninja                    Optional argument: set to true to use Ninja instead of Make to run the native build."
   echo ""
 
   echo "Command line arguments starting with '/p:' are passed through to MSBuild."
@@ -415,6 +416,26 @@ while [[ $# > 0 ]]; do
         arguments="$arguments /p:KeepNativeSymbols=true"
       fi
       shift 2
+      ;;
+
+
+      -ninja)
+      if [ -z ${2+x} ]; then
+        arguments="$arguments /p:Ninja=true"
+        shift 1
+      else
+        ninja="$(echo "$2" | awk '{print tolower($0)}')"
+        if [ "$ninja" = true ]; then
+          arguments="$arguments /p:Ninja=true"
+          shift 2
+        elif [ "$ninja" = false ]; then
+          arguments="$arguments /p:Ninja=false"
+          shift 2
+        else
+          arguments="$arguments /p:Ninja=true"
+          shift 1
+        fi
+      fi
       ;;
 
       *)

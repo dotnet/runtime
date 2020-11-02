@@ -6390,6 +6390,25 @@ call:
 			mono_memory_barrier ();
 			MINT_IN_BREAK;
 		}
+		MINT_IN_CASE(MINT_MONO_EXCHANGE_I8) {
+			sp--;
+			gboolean flag = FALSE;
+#if SIZEOF_VOID_P == 4
+			if (G_UNLIKELY ((size_t) ((gint64*) sp [-1].data.p) & 0x7)) {
+				gint64 result;
+				mono_interlocked_lock ();
+				result = *((gint64*) sp [-1].data.p);
+				*((gint64*) sp [-1].data.p) = sp [0].data.l;
+				mono_interlocked_unlock ();
+				sp [-1].data.l = result;
+				flag = TRUE;
+			}
+#endif
+			if (!flag)
+				sp [-1].data.l = mono_atomic_xchg_i64 ((gint64*) sp [-1].data.p, sp [0].data.l);
+			++ip;
+			MINT_IN_BREAK;
+		}
 		MINT_IN_CASE(MINT_MONO_LDDOMAIN)
 			sp->data.p = mono_domain_get ();
 			++sp;

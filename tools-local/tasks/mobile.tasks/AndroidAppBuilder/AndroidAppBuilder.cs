@@ -39,6 +39,12 @@ public class AndroidAppBuilderTask : Task
 
     public bool StripDebugSymbols { get; set; }
 
+    /// <summary>
+    /// Path to a custom MainActivity.java with custom UI
+    /// A default one is used if it's not set
+    /// </summary>
+    public string? NativeMainSource { get; set; }
+
     [Output]
     public string ApkBundlePath { get; set; } = ""!;
 
@@ -60,6 +66,7 @@ public class AndroidAppBuilderTask : Task
         apkBuilder.BuildApiLevel = BuildApiLevel;
         apkBuilder.BuildToolsVersion = BuildToolsVersion;
         apkBuilder.StripDebugSymbols = StripDebugSymbols;
+        apkBuilder.NativeMainSource = NativeMainSource;
         (ApkBundlePath, ApkPackageId) = apkBuilder.BuildApk(SourceDir, abi, MainLibraryFileName, MonoRuntimeHeaders);
 
         return true;

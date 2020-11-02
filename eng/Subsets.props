@@ -86,6 +86,7 @@
   <ItemGroup>
     <!-- CoreClr -->
     <SubsetName Include="Clr" Description="The CoreCLR runtime, LinuxDac, CoreLib (+ native), tools and packages." />
+    <SubsetName Include="Clr.DacTools" Description="Managed tools that support building a runtime that supports debugging (such as DacTableGen)." />
     <SubsetName Include="Clr.Runtime" Description="The CoreCLR .NET runtime." />
     <SubsetName Include="Clr.PalTests" Description="The CoreCLR PAL tests." />
     <SubsetName Include="Clr.PalTestList" Description="Generate the list of the CoreCLR PAL tests. When using the command line, use Clr.PalTests instead." />
@@ -146,6 +147,12 @@
   <!-- CoreClr sets -->
   <ItemGroup Condition="$(_subset.Contains('+clr.corelib+'))">
     <ProjectToBuild Include="$(CoreClrProjectRoot)src\System.Private.CoreLib\System.Private.CoreLib.csproj" Category="clr" />
+  </ItemGroup>
+
+  <ItemGroup Condition="'$(TargetOS)' == 'Windows_NT' and ($(_subset.Contains('+clr.dactools+')) or $(_subset.Contains('+clr.runtime+')))">
+    <ProjectToBuild Include="$(CoreClrProjectRoot)src\ToolBox\SOS\DacTableGen\DacTableGen.csproj;
+                             $(CoreClrProjectRoot)src\ToolBox\SOS\DIALib\DIALib.ilproj"
+                    Category="clr"/>
   </ItemGroup>
 
   <PropertyGroup Condition="$(_subset.Contains('+clr.runtime+'))">

@@ -1002,7 +1002,7 @@ def setup_args(args):
         location using the build type and the arch.
     """
 
-    requires_coreroot = args.host_os.lower() != "browser" and args.host_os.lower() != "android"
+    requires_coreroot = args.host_os != "Browser" and args.host_os != "Android"
     coreclr_setup_args = CoreclrArguments(args, 
                                           require_built_test_dir=True,
                                           require_built_core_root=requires_coreroot, 

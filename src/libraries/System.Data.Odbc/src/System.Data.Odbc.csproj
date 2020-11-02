@@ -10,7 +10,7 @@
   <PropertyGroup>
     <IsPartialFacadeAssembly Condition="$(TargetFramework.StartsWith('net4'))">true</IsPartialFacadeAssembly>
     <!-- https://github.com/dotnet/arcade/issues/5717 -->
-    <NoWarn Condition="'$(TargetFramework)' == '$(NetCoreAppCurrent)' and '$(TargetsAnyOS)' == 'true'">$(NoWarn);SA1121</NoWarn>
+    <NoWarn Condition="($([MSBuild]::IsTargetFrameworkCompatible('$(TargetFramework)', '$(NetCoreAppCurrent)'))) and '$(TargetsAnyOS)' == 'true'">$(NoWarn);SA1121</NoWarn>
     <GeneratePlatformNotSupportedAssemblyMessage Condition="'$(TargetFramework)' == 'netstandard2.0' or '$(TargetsAnyOS)' == 'true'">SR.Odbc_PlatformNotSupported</GeneratePlatformNotSupportedAssemblyMessage>
   </PropertyGroup>
   <ItemGroup Condition="$(TargetFramework.StartsWith('$(NetCoreAppCurrent)')) or $(TargetFramework.StartsWith('netcoreapp2.0'))" >

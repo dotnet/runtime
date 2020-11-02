@@ -14,6 +14,7 @@ jobs:
 #
 # Checkout repository
 #
+
 - template: /eng/pipelines/common/checkout-job.yml
 
 - template: /eng/pipelines/common/platform-matrix.yml
@@ -33,16 +34,35 @@ jobs:
     jobParameters:
       testGroup: outerloop
 
-# TODO: Enable SPMI for P1 tests
-# - template: /eng/pipelines/common/platform-matrix.yml
-#   parameters:
-#     jobTemplate: /eng/pipelines/common/templates/runtimes/build-test-job.yml
-#     buildConfig: checked
-#     platforms:
-#     - CoreClrTestBuildHost # Either OSX_x64 or Linux_x64
-#     jobParameters:
-#       testGroup: outerloop
-#       liveLibrariesBuildConfig: Release
+- template: /eng/pipelines/common/platform-matrix.yml
+  parameters:
+    jobTemplate: /eng/pipelines/common/templates/runtimes/build-test-job.yml
+    buildConfig: checked
+    platforms:
+    - CoreClrTestBuildHost # Either OSX_x64 or Linux_x64
+    jobParameters:
+      testGroup: outerloop
+      liveLibrariesBuildConfig: Release
+
+- template: /eng/pipelines/common/platform-matrix.yml
+  parameters:
+    jobTemplate: /eng/pipelines/coreclr/templates/superpmi-job.yml
+    buildConfig: checked
+    platforms:
+    # Linux tests are built on the OSX machines.
+    # - OSX_x64
+    - Linux_arm
+    - Linux_arm64
+    - Linux_x64
+    - Windows_NT_x64
+    - Windows_NT_x86
+    - Windows_NT_arm64
+    helixQueueGroup: ci
+    helixQueuesTemplate: /eng/pipelines/coreclr/templates/helix-queues-setup.yml
+    jobParameters:
+      testGroup: outerloop
+      liveLibrariesBuildConfig: Release
+      collectionName: libraries
 
 - template: /eng/pipelines/common/platform-matrix.yml
   parameters:
@@ -63,4 +83,5 @@ jobs:
     jobParameters:
       testGroup: outerloop
       liveLibrariesBuildConfig: Release
+      collectionName: tests
 

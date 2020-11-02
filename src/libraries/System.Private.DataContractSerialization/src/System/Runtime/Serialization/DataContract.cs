@@ -4,6 +4,7 @@
 namespace System.Runtime.Serialization
 {
     using System;
+    using System.Buffers.Binary;
     using System.Collections.Generic;
     using System.Globalization;
     using System.Reflection;
@@ -1842,7 +1843,7 @@ namespace System.Runtime.Serialization
                     d = c;
                     c = b;
 
-                    b = unchecked(a + f + sines[j] + (uint)(block[g] + (block[g + 1] << 8) + (block[g + 2] << 16) + (block[g + 3] << 24)));
+                    b = unchecked(a + f + sines[j] + BinaryPrimitives.ReadUInt32LittleEndian(block.AsSpan(g)));
                     b = b << shifts[j & 3 | j >> 2 & ~3] | b >> 32 - shifts[j & 3 | j >> 2 & ~3];
                     b = unchecked(b + c);
 

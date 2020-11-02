@@ -6827,7 +6827,7 @@ void CodeGen::genSSE2BitwiseOp(GenTree* treeNode)
     if (*maskFld == nullptr)
     {
         UINT64 maskPack[] = {mask, mask};
-        *maskFld          = GetEmitter()->emitAnyConst(&maskPack, 16, 16);
+        *maskFld          = GetEmitter()->emitBlkConst(&maskPack, 16, 16, treeNode->TypeGet());
     }
 
     GetEmitter()->emitIns_SIMD_R_R_C(ins, size, targetReg, operandReg, *maskFld, 0);

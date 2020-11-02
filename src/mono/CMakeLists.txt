@@ -200,9 +200,6 @@ if(CMAKE_SYSTEM_NAME STREQUAL "Darwin")
   set(HOST_DARWIN 1)
   set(PTHREAD_POINTER_ID 1)
   set(USE_MACH_SEMA 1)
-  if (GC_SUSPEND STREQUAL "default")
-    set(GC_SUSPEND "hybrid")
-  endif()
 elseif(CMAKE_SYSTEM_NAME STREQUAL "iOS" OR CMAKE_SYSTEM_NAME STREQUAL "tvOS")
   # See man cmake-toolchains(7) on which variables
   # control cross-compiling to ios
@@ -280,6 +277,9 @@ endif()
 if(TARGET_SYSTEM_NAME STREQUAL "Darwin")
   set(TARGET_MACH 1)
   set(TARGET_OSX 1)
+  if (GC_SUSPEND STREQUAL "default")
+    set(GC_SUSPEND "hybrid")
+  endif()
 elseif(TARGET_SYSTEM_NAME STREQUAL "iOS" OR TARGET_SYSTEM_NAME STREQUAL "tvOS")
   set(TARGET_MACH 1)
   set(TARGET_IOS 1)
@@ -550,6 +550,30 @@ if(IS_BIG_ENDIAN)
 else()
   set(TARGET_BYTE_ORDER G_LITTLE_ENDIAN)
 endif()
+
+######################################
+# DEBUG BUILD CHECKS
+######################################
+function(process_checked_build)
+  string(REPLACE "," ";" tmp1 "${CHECKED_BUILD}")
+  foreach(arg ${tmp1})
+    string(TOUPPER "${arg}" var1)
+    set(ENABLE_CHECKED_BUILD_${var1} 1 PARENT_SCOPE)
+  endforeach(arg)
+endfunction()
+
+if (CMAKE_BUILD_TYPE STREQUAL "Debug")
+  # if no explicit -DCHECKED_BUILD=args option, just do ENABLE_CHECKED_BUILD_PRIVATE_TYPES
+  if (CHECKED_BUILD)
+    set(ENABLE_CHECKED_BUILD 1)
+    process_checked_build()
+  else()
+    set(ENABLE_CHECKED_BUILD 1)
+    set(ENABLE_CHECKED_BUILD_PRIVATE_TYPES 1)
+  endif()
+endif()
+### End of debug build checks
+
 
 add_subdirectory(mono)
 

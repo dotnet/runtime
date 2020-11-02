@@ -54,26 +54,19 @@
   </ItemGroup>
 
   <ItemGroup>
-    <!-- libraries payload -->
-    <LibraryPartitions Include="$([System.IO.Directory]::GetDirectories($(LibrariesArtifacts)))"/>
-    <Partition Include="@(LibraryPartitions -> '%(Filename)')" PmiAssemblies="Core_Root$(FileSeparatorChar)%(Filename)" OutputMchName="libraries.pmi" PartitionId="%(Filename)" />
-
-    <!-- tests payload -->
-    <!-- TODO: Disable SPMI for P1 tests -->
-    <!-- <TestPartitions Include="$([System.IO.Directory]::GetDirectories($(TestsArtifacts)))"/>
-    <Partition Include="@(TestPartitions -> '%(Filename)')" PmiAssemblies="Tests$(FileSeparatorChar)%(Filename)" OutputMchName="tests.pmi" PartitionId="%(Filename)" /> -->
+    <PartitionDirectories Include="$([System.IO.Directory]::GetDirectories($(InputArtifacts)))"/>
+    <Partition Include="@(PartitionDirectories -> '%(Filename)')" PmiAssemblies="%(Filename)" PartitionId="%(Filename)" />
   </ItemGroup>
 
   <ItemGroup>
     <HelixWorkItem Include="@(Partition)">
-      <OutputFileName>%(HelixWorkItem.OutputMchName).$(MchFileTag).%(HelixWorkItem.PartitionId)</OutputFileName>
-      <PayloadDirectory>$(PmiAssembliesPayload)$(FileSeparatorChar)%(HelixWorkItem.PmiAssemblies)</PayloadDirectory>
+      <OutputFileName>$(CollectionName).pmi.%(HelixWorkItem.PartitionId).$(MchFileTag)</OutputFileName>
+      <PayloadDirectory>$(PmiAssembliesPayload)$(FileSeparatorChar)$(CollectionName)$(FileSeparatorChar)%(HelixWorkItem.PmiAssemblies)</PayloadDirectory>
       <Command>$(WorkItemCommand) -output_mch_path $(OutputMchPath)$(FileSeparatorChar)%(OutputFileName).mch -log_file $(OutputMchPath)$(FileSeparatorChar)%(OutputFileName).log</Command>
       <Timeout>$(WorkItemTimeout)</Timeout>
       <DownloadFilesFromResults>%(OutputFileName).mch;%(OutputFileName).mch.mct;%(OutputFileName).log</DownloadFilesFromResults>
     </HelixWorkItem>
   </ItemGroup>
-
     <!--
     This is useful for local testing to print the produced helix items
     To use this when you are changing how items are produced, uncomment the target
@@ -81,13 +74,14 @@
     <Project DefaultTargets="printItems">
 
     Once you've done that you can run this to see the results:
-    dotnet msbuild .\scenarios.proj /v:n
+    dotnet msbuild .\superpmi.proj /v:n
    -->
 <!--    
    <PropertyGroup>
      <HelixTargetQueues>Some_Queue</HelixTargetQueues>
-     <LibrariesArtifacts>E:\temp\power\test1</LibrariesArtifacts>
-     <TestsArtifacts>E:\temp\power\test1</TestsArtifacts>
+     <InputArtifacts>D:\git\runtime\workitem\pmiAssembliesDirectory\libraries</InputArtifacts>
+     <MchFileTag>x64.checked</MchFileTag>
+     <CollectionName>libraries</CollectionName>
    </PropertyGroup>
   <Target Name="printItems">
         <Message Text="@(HelixWorkItem -> 'name: %(HelixWorkItem.Identity)
@@ -96,7 +90,7 @@
      command: %(HelixWorkItem.Command)
      post: %(HelixWorkItem.PostCommands)
      timeout: %(HelixWorkItem.Timeout)  '"/>
-  </Target>
-   -->
+  </Target> -->
+  
 
 </Project>
