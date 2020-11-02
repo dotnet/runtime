@@ -6252,7 +6252,6 @@ GenTreeCall* Compiler::gtNewCallNode(
     node->gtRetClsHnd     = nullptr;
     node->gtControlExpr   = nullptr;
     node->gtCallMoreFlags = 0;
-    node->unmgdCallConv   = CORINFO_UNMANAGED_CALLCONV_MANAGED;
 
     if (callType == CT_INDIRECT)
     {
@@ -15747,7 +15746,7 @@ GenTree* Compiler::gtNewRefCOMfield(GenTree*                objPtr,
 #if FEATURE_MULTIREG_RET
     if (varTypeIsStruct(call))
     {
-        call->InitializeStructReturnType(this, structType, call->unmgdCallConv);
+        call->InitializeStructReturnType(this, structType, call->GetUnmanagedCallConv());
     }
 #endif // FEATURE_MULTIREG_RET
 

@@ -3951,7 +3951,12 @@ struct GenTreeCall final : public GenTree
     CORINFO_SIG_INFO* callSig;
 #endif
 
-    TailCallSiteInfo* tailCallInfo;
+    union
+    {
+        TailCallSiteInfo* tailCallInfo;
+        // Only used for unmanaged calls, which cannot be tail-called
+        CorInfoUnmanagedCallConv unmgdCallConv;
+    };
 
 #if FEATURE_MULTIREG_RET
 
@@ -4506,8 +4511,6 @@ struct GenTreeCall final : public GenTree
     unsigned char gtCallType : 3;   // value from the gtCallTypes enumeration
     unsigned char gtReturnType : 5; // exact return type
 
-    CorInfoUnmanagedCallConv unmgdCallConv;
-
     CORINFO_CLASS_HANDLE gtRetClsHnd; // The return type handle of the call if it is a struct; always available
 
     union {
@@ -4558,6 +4561,11 @@ struct GenTreeCall final : public GenTree
     void ReplaceCallOperand(GenTree** operandUseEdge, GenTree* replacement);
 
     bool AreArgsComplete() const;
+
+    CorInfoUnmanagedCallConv GetUnmanagedCallConv() const
+    {
+        return IsUnmanaged() ? unmgdCallConv : CORINFO_UNMANAGED_CALLCONV_MANAGED;
+    }
 
     static bool Equals(GenTreeCall* c1, GenTreeCall* c2);
 

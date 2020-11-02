@@ -1185,7 +1185,7 @@ GenTree* Compiler::impAssignStructPtr(GenTree*             destAddr,
             // Unmanaged instance methods on Windows need the retbuf arg after the first (this) parameter
             if (srcCall->IsUnmanaged())
             {
-                if (callConvIsInstanceMethodCallConv(srcCall->unmgdCallConv))
+                if (callConvIsInstanceMethodCallConv(srcCall->GetUnmanagedCallConv()))
                 {
                     GenTreeCall::Use* thisArg = gtInsertNewCallArgAfter(destAddr, srcCall->gtCallArgs);
                 }
@@ -8730,7 +8730,7 @@ DONE:
         if (canTailCall &&
             !impTailCallRetTypeCompatible(info.compRetType, info.compMethodInfo->args.retTypeClass,
                                           compMethodInfoGetUnmanagedCallConv(info.compMethodInfo), callRetTyp,
-                                          sig->retTypeClass, call->AsCall()->unmgdCallConv))
+                                          sig->retTypeClass, call->AsCall()->GetUnmanagedCallConv()))
         {
             canTailCall             = false;
             szCanTailCallFailReason = "Return types are not tail call compatible";
@@ -9174,7 +9174,7 @@ GenTree* Compiler::impFixupCallStructReturn(GenTreeCall* call, CORINFO_CLASS_HAN
     call->gtRetClsHnd = retClsHnd;
 
 #if FEATURE_MULTIREG_RET
-    call->InitializeStructReturnType(this, retClsHnd, call->unmgdCallConv);
+    call->InitializeStructReturnType(this, retClsHnd, call->GetUnmanagedCallConv());
 #endif // FEATURE_MULTIREG_RET
 
 #ifdef UNIX_AMD64_ABI
@@ -9231,7 +9231,7 @@ GenTree* Compiler::impFixupCallStructReturn(GenTreeCall* call, CORINFO_CLASS_HAN
             // No need to assign a multi-reg struct to a local var if:
             //  - It is a tail call or
             //  - The call is marked for in-lining later
-            return impAssignMultiRegTypeToVar(call, retClsHnd DEBUGARG(call->unmgdCallConv));
+            return impAssignMultiRegTypeToVar(call, retClsHnd DEBUGARG(call->GetUnmanagedCallConv()));
         }
     }
 
@@ -9244,7 +9244,7 @@ GenTree* Compiler::impFixupCallStructReturn(GenTreeCall* call, CORINFO_CLASS_HAN
     structPassingKind howToReturnStruct;
     var_types         returnType;
 
-    returnType = getReturnTypeForStruct(retClsHnd, call->unmgdCallConv, &howToReturnStruct);
+    returnType = getReturnTypeForStruct(retClsHnd, call->GetUnmanagedCallConv(), &howToReturnStruct);
 
     if (howToReturnStruct == SPK_ByReference)
     {
@@ -9310,7 +9310,7 @@ GenTree* Compiler::impFixupCallStructReturn(GenTreeCall* call, CORINFO_CLASS_HAN
                 // No need to assign a multi-reg struct to a local var if:
                 //  - It is a tail call or
                 //  - The call is marked for in-lining later
-                return impAssignMultiRegTypeToVar(call, retClsHnd DEBUGARG(call->unmgdCallConv));
+                return impAssignMultiRegTypeToVar(call, retClsHnd DEBUGARG(call->GetUnmanagedCallConv()));
             }
         }
 #endif // FEATURE_MULTIREG_RET
@@ -13390,7 +13390,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                         // Calls with large struct return value have to go through this.
                         // Helper calls with small struct return value also have to go
                         // through this since they do not follow Unix calling convention.
-                        if (op1->gtOper != GT_CALL || !IsMultiRegReturnedType(clsHnd, op1->AsCall()->unmgdCallConv) ||
+                        if (op1->gtOper != GT_CALL || !IsMultiRegReturnedType(clsHnd, op1->AsCall()->GetUnmanagedCallConv()) ||
                             op1->AsCall()->gtCallType == CT_HELPER)
 #endif // UNIX_AMD64_ABI
                         {
@@ -15483,7 +15483,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                     {
                         op1->AsCall()->gtRetClsHnd = classHandle;
 #if FEATURE_MULTIREG_RET
-                        op1->AsCall()->InitializeStructReturnType(this, classHandle, op1->AsCall()->unmgdCallConv);
+                        op1->AsCall()->InitializeStructReturnType(this, classHandle, op1->AsCall()->GetUnmanagedCallConv());
 #endif
                     }
 
@@ -15530,7 +15530,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                 if (!compDoOldStructRetyping())
                 {
 #if FEATURE_MULTIREG_RET
-                    op1->AsCall()->InitializeStructReturnType(this, tokenType, op1->AsCall()->unmgdCallConv);
+                    op1->AsCall()->InitializeStructReturnType(this, tokenType, op1->AsCall()->GetUnmanagedCallConv());
 #endif
                     op1->AsCall()->gtRetClsHnd = tokenType;
                 }

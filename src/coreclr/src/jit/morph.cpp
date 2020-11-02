@@ -2677,7 +2677,7 @@ void Compiler::fgInitArgInfo(GenTreeCall* call)
     CLANG_FORMAT_COMMENT_ANCHOR;
 
 #if defined(TARGET_WINDOWS) && !defined(TARGET_ARM)
-    if (hasFixedRetBuffReg() && call->HasRetBufArg() && !callConvIsInstanceMethodCallConv(call->unmgdCallConv))
+    if (hasFixedRetBuffReg() && call->HasRetBufArg() && !callConvIsInstanceMethodCallConv(call->GetUnmanagedCallConv()))
 #else
     if (hasFixedRetBuffReg() && call->HasRetBufArg())
 #endif
@@ -5105,7 +5105,7 @@ void Compiler::fgFixupStructReturn(GenTree* callNode)
     }
     else
     {
-        returnType = getReturnTypeForStruct(retClsHnd, call->unmgdCallConv, &howToReturnStruct);
+        returnType = getReturnTypeForStruct(retClsHnd, call->GetUnmanagedCallConv(), &howToReturnStruct);
     }
 
     if (howToReturnStruct == SPK_ByReference)
@@ -6771,7 +6771,7 @@ bool Compiler::fgCanFastTailCall(GenTreeCall* callee, const char** failReason)
         assert(impTailCallRetTypeCompatible(retType, info.compMethodInfo->args.retTypeClass,
                                             compMethodInfoGetUnmanagedCallConv(info.compMethodInfo),
                                             (var_types)callee->gtReturnType, callee->gtRetClsHnd,
-                                            callee->unmgdCallConv));
+                                            callee->GetUnmanagedCallConv()));
     }
 #endif
 
@@ -7694,7 +7694,7 @@ GenTree* Compiler::fgMorphPotentialTailCall(GenTreeCall* call)
             {
                 CORINFO_CLASS_HANDLE        retClsHnd = call->gtRetClsHnd;
                 Compiler::structPassingKind howToReturnStruct;
-                callType = getReturnTypeForStruct(retClsHnd, call->unmgdCallConv, &howToReturnStruct);
+                callType = getReturnTypeForStruct(retClsHnd, call->GetUnmanagedCallConv(), &howToReturnStruct);
                 assert((howToReturnStruct != SPK_Unknown) && (howToReturnStruct != SPK_ByReference));
                 if (howToReturnStruct == SPK_ByValue)
                 {
@@ -8057,7 +8057,7 @@ GenTree* Compiler::fgCreateCallDispatcherAndGetResult(GenTreeCall*          orig
 
         if (varTypeIsStruct(origCall->gtType))
         {
-            retVal = impFixupStructReturnType(retVal, origCall->gtRetClsHnd, origCall->unmgdCallConv);
+            retVal = impFixupStructReturnType(retVal, origCall->gtRetClsHnd, origCall->GetUnmanagedCallConv());
         }
     }
     else
