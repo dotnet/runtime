@@ -8,12 +8,13 @@ set(NATIVECRYPTO_SOURCES
 
 add_library(System.Security.Cryptography.Native.Android
     SHARED
-    $<TARGET_OBJECTS:objlib>
+    ${NATIVECRYPTO_SOURCES}
+    ${VERSION_FILE_PATH}
 )
 
 add_library(System.Security.Cryptography.Native.Android-Static
     STATIC
-    $<TARGET_OBJECTS:objlib>
+    ${NATIVECRYPTO_SOURCES}
 )
 
 set_target_properties(System.Security.Cryptography.Native.Android-Static PROPERTIES OUTPUT_NAME System.Security.Cryptography.Native.Android CLEAN_DIRECT_OUTPUT 1)

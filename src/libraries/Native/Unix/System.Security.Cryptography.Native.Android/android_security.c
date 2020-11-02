@@ -1,7 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-#include "pal_err.h"
 #include "pal_types.h"
 #include "pal_utilities.h"
 #include "pal_safecrt.h"
