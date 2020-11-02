@@ -890,6 +890,12 @@
         <ExcludeList Include="$(XunitTestBinBase)/baseservices/TieredCompilation/BasicTestWithMcj/*">
             <Issue>https://github.com/dotnet/runtime/issues/38291</Issue>
         </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/baseservices/threading/threadpool/unregister/unregister01/*">
+            <Issue>https://github.com/dotnet/runtime/issues/44054</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/baseservices/threading/threadpool/unregister/unregister03/*">
+            <Issue>https://github.com/dotnet/runtime/issues/44054</Issue>
+        </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/Interop/IJW/NativeVarargs/NativeVarargsTest/*">
             <Issue>https://github.com/dotnet/runtime/issues/38096</Issue>
         </ExcludeList>
