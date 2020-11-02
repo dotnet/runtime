@@ -15,6 +15,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 #endif
 	class IReflectDataflow
 	{
+		[ExpectBodyModified]
 		public static void Main ()
 		{
 			// The cast here fails at runtime, but that's okay, we just want something to flow here.
