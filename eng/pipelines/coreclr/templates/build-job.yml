@@ -118,6 +118,12 @@ jobs:
       - name: clrBuildPALTestsBuildArg
         value: '-paltests '
 
+    - name: ninjaArg
+      value: ''
+    - ${{ if eq(parameters.osGroup, 'Windows_NT') }}:
+      - name: ninjaArg
+        value: '-ninja'
+
     - ${{ parameters.variables }}
 
     steps:
@@ -147,12 +153,17 @@ jobs:
           df -h
         displayName: Disk Usage before Build
 
+    # Build DacTableGen (Windows-only)
+    - ${{ if eq(parameters.osGroup, 'Windows_NT') }}:
+      - script: $(Build.SourcesDirectory)$(dir)build$(scriptExt) -subset clr.dactools $(crossArg) -arch $(archType) $(osArg) -c $(buildConfig) $(officialBuildIdArg) -ci /bl:$(Build.SourcesDirectory)artifacts/logs/$(buildConfig)/DacTools.binlog
+        displayName: Build managed product components and packages
+
     # Build CoreCLR Runtime
     - ${{ if ne(parameters.osGroup, 'Windows_NT') }}:
-      - script: $(Build.SourcesDirectory)/src/coreclr/build-runtime$(scriptExt) $(buildConfig) $(archType) $(crossArg) $(osArg) -ci $(compilerArg) $(clrBuildPALTestsBuildArg) $(officialBuildIdArg) $(clrInterpreterBuildArg)
+      - script: $(Build.SourcesDirectory)/src/coreclr/build-runtime$(scriptExt) $(buildConfig) $(archType) $(crossArg) $(osArg) -ci $(compilerArg) $(clrBuildPALTestsBuildArg) $(ninjaArg) $(officialBuildIdArg) $(clrInterpreterBuildArg)
         displayName: Build CoreCLR Runtime
     - ${{ if eq(parameters.osGroup, 'Windows_NT') }}:
-      - script: set __TestIntermediateDir=int&&$(Build.SourcesDirectory)/src/coreclr/build-runtime$(scriptExt) $(buildConfig) $(archType) -ci $(enforcePgoArg) $(officialBuildIdArg) $(clrInterpreterBuildArg)
+      - script: set __TestIntermediateDir=int&&$(Build.SourcesDirectory)/src/coreclr/build-runtime$(scriptExt) $(buildConfig) $(archType) -ci $(ninjaArg) $(enforcePgoArg) $(officialBuildIdArg) $(clrInterpreterBuildArg)
         displayName: Build CoreCLR Runtime
 
     - ${{ if in(parameters.osGroup, 'OSX', 'iOS','tvOS') }}:
