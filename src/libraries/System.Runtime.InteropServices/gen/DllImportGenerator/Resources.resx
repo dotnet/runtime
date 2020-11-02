@@ -147,6 +147,15 @@
   <data name="ConfigurationNotSupportedTitle" xml:space="preserve">
     <value>Specified configuration is not supported by source-generated P/Invokes.</value>
   </data>
+  <data name="GeneratedDllImportMissingModifiersDescription" xml:space="preserve">
+    <value>Methods marked with 'GeneratedDllImportAttribute' should be 'static' and 'partial'. P/Invoke source generation will ignore methods that are not 'static' and 'partial'.</value>
+  </data>
+  <data name="GeneratedDllImportMissingModifiersMessage" xml:space="preserve">
+    <value>Method '{0}' should be 'static' and 'partial' when marked with 'GeneratedDllImportAttribute'. P/Invoke source generation will ignore methods that are not 'static' and 'partial'.</value>
+  </data>
+  <data name="GeneratedDllImportMissingModifiersTitle" xml:space="preserve">
+    <value>Method marked with 'GeneratedDllImportAttribute' should be 'static' and 'partial'</value>
+  </data>
   <data name="GetPinnableReferenceReturnTypeBlittableDescription" xml:space="preserve">
     <value>The return type of 'GetPinnableReference' (after accounting for 'ref') must be blittable.</value>
   </data>

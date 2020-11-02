@@ -1,9 +1,9 @@
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using Xunit;
-using static Microsoft.Interop.ManualTypeMarshallingAnalyzer;
+using static Microsoft.Interop.Analyzers.ManualTypeMarshallingAnalyzer;
 
-using VerifyCS = DllImportGenerator.UnitTests.Verifiers.CSharpAnalyzerVerifier<Microsoft.Interop.ManualTypeMarshallingAnalyzer>;
+using VerifyCS = DllImportGenerator.UnitTests.Verifiers.CSharpAnalyzerVerifier<Microsoft.Interop.Analyzers.ManualTypeMarshallingAnalyzer>;
 
 namespace DllImportGenerator.UnitTests
 {

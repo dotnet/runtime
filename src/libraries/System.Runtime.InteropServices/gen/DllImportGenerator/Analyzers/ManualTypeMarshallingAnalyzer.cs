@@ -5,133 +5,134 @@ using System.Linq;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.Diagnostics;
 
-namespace Microsoft.Interop
+using static Microsoft.Interop.Analyzers.AnalyzerDiagnostics;
+
+namespace Microsoft.Interop.Analyzers
 {
     [DiagnosticAnalyzer(LanguageNames.CSharp)]
     public class ManualTypeMarshallingAnalyzer : DiagnosticAnalyzer
     {
-        public const string Prefix = "DLLIMPORTGENANALYZER";
         private const string Category = "Usage";
+
         public readonly static DiagnosticDescriptor BlittableTypeMustBeBlittableRule =
             new DiagnosticDescriptor(
-                Prefix + "001",
+                Ids.BlittableTypeMustBeBlittable,
                 "BlittableTypeMustBeBlittable",
-                new LocalizableResourceString(nameof(Resources.BlittableTypeMustBeBlittableMessage), Resources.ResourceManager, typeof(Resources)),
+                GetResourceString(nameof(Resources.BlittableTypeMustBeBlittableMessage)),
                 Category,
                 DiagnosticSeverity.Error,
                 isEnabledByDefault: true,
-                description: new LocalizableResourceString(nameof(Resources.BlittableTypeMustBeBlittableDescription), Resources.ResourceManager, typeof(Resources)));
+                description: GetResourceString(nameof(Resources.BlittableTypeMustBeBlittableDescription)));
 
         public readonly static DiagnosticDescriptor CannotHaveMultipleMarshallingAttributesRule =
             new DiagnosticDescriptor(
-                Prefix + "002",
+                Ids.CannotHaveMultipleMarshallingAttributes,
                 "CannotHaveMultipleMarshallingAttributes",
-                new LocalizableResourceString(nameof(Resources.CannotHaveMultipleMarshallingAttributesMessage), Resources.ResourceManager, typeof(Resources)),
+                GetResourceString(nameof(Resources.CannotHaveMultipleMarshallingAttributesMessage)),
                 Category,
                 DiagnosticSeverity.Error,
                 isEnabledByDefault: true,
-                description: new LocalizableResourceString(nameof(Resources.CannotHaveMultipleMarshallingAttributesDescription), Resources.ResourceManager, typeof(Resources)));
+                description: GetResourceString(nameof(Resources.CannotHaveMultipleMarshallingAttributesDescription)));
 
-                
         public readonly static DiagnosticDescriptor NativeTypeMustBeNonNullRule =
             new DiagnosticDescriptor(
-                Prefix + "003",
+                Ids.NativeTypeMustBeNonNull,
                 "NativeTypeMustBeNonNull",
-                new LocalizableResourceString(nameof(Resources.NativeTypeMustBeNonNullMessage), Resources.ResourceManager, typeof(Resources)),
+                GetResourceString(nameof(Resources.NativeTypeMustBeNonNullMessage)),
                 Category,
                 DiagnosticSeverity.Error,
                 isEnabledByDefault: true,
-                description: new LocalizableResourceString(nameof(Resources.NativeTypeMustBeNonNullDescription), Resources.ResourceManager, typeof(Resources)));
+                description: GetResourceString(nameof(Resources.NativeTypeMustBeNonNullDescription)));
 
         public readonly static DiagnosticDescriptor NativeTypeMustBeBlittableRule =
             new DiagnosticDescriptor(
-                Prefix + "004",
+                Ids.NativeTypeMustBeBlittable,
                 "NativeTypeMustBeBlittable",
-                new LocalizableResourceString(nameof(Resources.NativeTypeMustBeBlittableMessage), Resources.ResourceManager, typeof(Resources)),
+                GetResourceString(nameof(Resources.NativeTypeMustBeBlittableMessage)),
                 Category,
                 DiagnosticSeverity.Error,
                 isEnabledByDefault: true,
-                description: new LocalizableResourceString(nameof(Resources.BlittableTypeMustBeBlittableDescription), Resources.ResourceManager, typeof(Resources)));
+                description: GetResourceString(nameof(Resources.BlittableTypeMustBeBlittableDescription)));
 
         public readonly static DiagnosticDescriptor GetPinnableReferenceReturnTypeBlittableRule =
             new DiagnosticDescriptor(
-                Prefix + "005",
+                Ids.GetPinnableReferenceReturnTypeBlittable,
                 "GetPinnableReferenceReturnTypeBlittable",
-                new LocalizableResourceString(nameof(Resources.GetPinnableReferenceReturnTypeBlittableMessage), Resources.ResourceManager, typeof(Resources)),
+                GetResourceString(nameof(Resources.GetPinnableReferenceReturnTypeBlittableMessage)),
                 Category,
                 DiagnosticSeverity.Error,
                 isEnabledByDefault: true,
-                description: new LocalizableResourceString(nameof(Resources.GetPinnableReferenceReturnTypeBlittableDescription), Resources.ResourceManager, typeof(Resources)));
+                description: GetResourceString(nameof(Resources.GetPinnableReferenceReturnTypeBlittableDescription)));
     
         public readonly static DiagnosticDescriptor NativeTypeMustBePointerSizedRule =
             new DiagnosticDescriptor(
-                Prefix + "006",
+                Ids.NativeTypeMustBePointerSized,
                 "NativeTypeMustBePointerSized",
-                new LocalizableResourceString(nameof(Resources.NativeTypeMustBePointerSizedMessage), Resources.ResourceManager, typeof(Resources)),
+                GetResourceString(nameof(Resources.NativeTypeMustBePointerSizedMessage)),
                 Category,
                 DiagnosticSeverity.Error,
                 isEnabledByDefault: true,
-                description: new LocalizableResourceString(nameof(Resources.NativeTypeMustBePointerSizedDescription), Resources.ResourceManager, typeof(Resources)));
+                description: GetResourceString(nameof(Resources.NativeTypeMustBePointerSizedDescription)));
 
         public readonly static DiagnosticDescriptor NativeTypeMustHaveRequiredShapeRule =
             new DiagnosticDescriptor(
-                Prefix + "007",
+                Ids.NativeTypeMustHaveRequiredShape,
                 "NativeTypeMustHaveRequiredShape",
-                new LocalizableResourceString(nameof(Resources.NativeTypeMustHaveRequiredShapeMessage), Resources.ResourceManager, typeof(Resources)),
+                GetResourceString(nameof(Resources.NativeTypeMustHaveRequiredShapeMessage)),
                 Category,
                 DiagnosticSeverity.Error,
                 isEnabledByDefault: true,
-                description: new LocalizableResourceString(nameof(Resources.NativeTypeMustHaveRequiredShapeDescription), Resources.ResourceManager, typeof(Resources)));
+                description: GetResourceString(nameof(Resources.NativeTypeMustHaveRequiredShapeDescription)));
 
         public readonly static DiagnosticDescriptor ValuePropertyMustHaveSetterRule =
             new DiagnosticDescriptor(
-                Prefix + "008",
+                Ids.ValuePropertyMustHaveSetter,
                 "ValuePropertyMustHaveSetter",
-                new LocalizableResourceString(nameof(Resources.ValuePropertyMustHaveSetterMessage), Resources.ResourceManager, typeof(Resources)),
+                GetResourceString(nameof(Resources.ValuePropertyMustHaveSetterMessage)),
                 Category,
                 DiagnosticSeverity.Error,
                 isEnabledByDefault: true,
-                description: new LocalizableResourceString(nameof(Resources.ValuePropertyMustHaveSetterDescription), Resources.ResourceManager, typeof(Resources)));
+                description: GetResourceString(nameof(Resources.ValuePropertyMustHaveSetterDescription)));
 
         public readonly static DiagnosticDescriptor ValuePropertyMustHaveGetterRule =
             new DiagnosticDescriptor(
-                Prefix + "009",
+                Ids.ValuePropertyMustHaveGetter,
                 "ValuePropertyMustHaveGetter",
-                new LocalizableResourceString(nameof(Resources.ValuePropertyMustHaveGetterMessage), Resources.ResourceManager, typeof(Resources)),
+                GetResourceString(nameof(Resources.ValuePropertyMustHaveGetterMessage)),
                 Category,
                 DiagnosticSeverity.Error,
                 isEnabledByDefault: true,
-                description: new LocalizableResourceString(nameof(Resources.ValuePropertyMustHaveGetterDescription), Resources.ResourceManager, typeof(Resources)));
+                description: GetResourceString(nameof(Resources.ValuePropertyMustHaveGetterDescription)));
 
         public readonly static DiagnosticDescriptor GetPinnableReferenceShouldSupportAllocatingMarshallingFallbackRule =
             new DiagnosticDescriptor(
-                Prefix + "010",
+                Ids.GetPinnableReferenceShouldSupportAllocatingMarshallingFallback,
                 "GetPinnableReferenceShouldSupportAllocatingMarshallingFallback",
-                new LocalizableResourceString(nameof(Resources.GetPinnableReferenceShouldSupportAllocatingMarshallingFallbackMessage), Resources.ResourceManager, typeof(Resources)),
+                GetResourceString(nameof(Resources.GetPinnableReferenceShouldSupportAllocatingMarshallingFallbackMessage)),
                 Category,
                 DiagnosticSeverity.Warning,
                 isEnabledByDefault: true,
-                description: new LocalizableResourceString(nameof(Resources.GetPinnableReferenceShouldSupportAllocatingMarshallingFallbackDescription), Resources.ResourceManager, typeof(Resources)));
+                description: GetResourceString(nameof(Resources.GetPinnableReferenceShouldSupportAllocatingMarshallingFallbackDescription)));
 
         public readonly static DiagnosticDescriptor StackallocMarshallingShouldSupportAllocatingMarshallingFallbackRule =
             new DiagnosticDescriptor(
-                Prefix + "011",
+                Ids.StackallocMarshallingShouldSupportAllocatingMarshallingFallback,
                 "StackallocMarshallingShouldSupportAllocatingMarshallingFallback",
-                new LocalizableResourceString(nameof(Resources.StackallocMarshallingShouldSupportAllocatingMarshallingFallbackMessage), Resources.ResourceManager, typeof(Resources)),
+                GetResourceString(nameof(Resources.StackallocMarshallingShouldSupportAllocatingMarshallingFallbackMessage)),
                 Category,
                 DiagnosticSeverity.Warning,
                 isEnabledByDefault: true,
-                description: new LocalizableResourceString(nameof(Resources.StackallocMarshallingShouldSupportAllocatingMarshallingFallbackDescription), Resources.ResourceManager, typeof(Resources)));
+                description: GetResourceString(nameof(Resources.StackallocMarshallingShouldSupportAllocatingMarshallingFallbackDescription)));
 
         public readonly static DiagnosticDescriptor StackallocConstructorMustHaveStackBufferSizeConstantRule =
             new DiagnosticDescriptor(
-                Prefix + "012",
+                Ids.StackallocConstructorMustHaveStackBufferSizeConstant,
                 "StackallocConstructorMustHaveStackBufferSizeConstant",
-                new LocalizableResourceString(nameof(Resources.StackallocConstructorMustHaveStackBufferSizeConstantMessage), Resources.ResourceManager, typeof(Resources)),
+                GetResourceString(nameof(Resources.StackallocConstructorMustHaveStackBufferSizeConstantMessage)),
                 Category,
                 DiagnosticSeverity.Error,
                 isEnabledByDefault: true,
-                description: new LocalizableResourceString(nameof(Resources.StackallocConstructorMustHaveStackBufferSizeConstantDescription), Resources.ResourceManager, typeof(Resources)));
+                description: GetResourceString(nameof(Resources.StackallocConstructorMustHaveStackBufferSizeConstantDescription)));
 
         public override ImmutableArray<DiagnosticDescriptor> SupportedDiagnostics => 
             ImmutableArray.Create(
@@ -150,6 +151,7 @@ namespace Microsoft.Interop
 
         public override void Initialize(AnalysisContext context)
         {
+            // Don't analyze generated code
             context.ConfigureGeneratedCodeAnalysis(GeneratedCodeAnalysisFlags.None);
             context.EnableConcurrentExecution();
             context.RegisterCompilationStartAction(PrepareForAnalysis);

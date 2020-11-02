@@ -6,6 +6,8 @@ namespace Microsoft.Interop
 {
     static class TypeNames
     {
+        public const string GeneratedDllImportAttribute = "System.Runtime.InteropServices.GeneratedDllImportAttribute";
+
         public const string GeneratedMarshallingAttribute = "System.Runtime.InteropServices.GeneratedMarshallingAttribute";
 
         public const string BlittableTypeAttribute = "System.Runtime.InteropServices.BlittableTypeAttribute";

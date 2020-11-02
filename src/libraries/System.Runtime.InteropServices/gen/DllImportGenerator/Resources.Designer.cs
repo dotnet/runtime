@@ -151,6 +151,33 @@ namespace Microsoft.Interop {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to Methods marked with &apos;GeneratedDllImportAttribute&apos; should be &apos;static&apos; and &apos;partial&apos;. P/Invoke source generation will ignore methods that are not &apos;static&apos; and &apos;partial&apos;..
+        /// </summary>
+        internal static string GeneratedDllImportMissingModifiersDescription {
+            get {
+                return ResourceManager.GetString("GeneratedDllImportMissingModifiersDescription", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Method &apos;{0}&apos; should be &apos;static&apos; and &apos;partial&apos; when marked with &apos;GeneratedDllImportAttribute&apos;. P/Invoke source generation will ignore methods that are not &apos;static&apos; and &apos;partial&apos;..
+        /// </summary>
+        internal static string GeneratedDllImportMissingModifiersMessage {
+            get {
+                return ResourceManager.GetString("GeneratedDllImportMissingModifiersMessage", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Method marked with &apos;GeneratedDllImportAttribute&apos; should be &apos;static&apos; and &apos;partial&apos;.
+        /// </summary>
+        internal static string GeneratedDllImportMissingModifiersTitle {
+            get {
+                return ResourceManager.GetString("GeneratedDllImportMissingModifiersTitle", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to The return type of &apos;GetPinnableReference&apos; (after accounting for &apos;ref&apos;) must be blittable..
         /// </summary>
         internal static string GetPinnableReferenceReturnTypeBlittableDescription {
