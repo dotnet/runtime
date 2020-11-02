@@ -149,7 +149,6 @@ namespace System.Drawing
             "Plum",
             "PowderBlue",
             "Purple",
-            "RebeccaPurple",
             "Red",
             "RosyBrown",
             "RoyalBlue",
@@ -183,7 +182,8 @@ namespace System.Drawing
             "GradientActiveCaption",
             "GradientInactiveCaption",
             "MenuBar",
-            "MenuHighlight"
+            "MenuHighlight",
+            "RebeccaPurple",
         };
 
         public static string KnownColorToName(KnownColor color)

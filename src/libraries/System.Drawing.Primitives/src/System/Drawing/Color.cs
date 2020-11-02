@@ -247,7 +247,7 @@ namespace System.Drawing
         public static Color PowderBlue => new Color(KnownColor.PowderBlue);
 
         public static Color Purple => new Color(KnownColor.Purple);
-
+        
         public static Color RebeccaPurple => new Color(KnownColor.RebeccaPurple);
 
         public static Color Red => new Color(KnownColor.Red);

@@ -124,7 +124,6 @@ namespace System.Drawing
             0xFFDDA0DD,     // Plum
             0xFFB0E0E6,     // PowderBlue
             0xFF800080,     // Purple
-            0xFF663399,     // RebeccaPurple
             0xFFFF0000,     // Red
             0xFFBC8F8F,     // RosyBrown
             0xFF4169E1,     // RoyalBlue
@@ -152,6 +151,7 @@ namespace System.Drawing
             0xFFF5F5F5,     // WhiteSmoke
             0xFFFFFF00,     // Yellow
             0xFF9ACD32,     // YellowGreen
+            0xFF663399,     // RebeccaPurple
         };
 
         internal static Color ArgbToKnownColor(uint argb)

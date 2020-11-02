@@ -191,9 +191,6 @@ namespace System.Drawing
         WhiteSmoke,
         Yellow,
         YellowGreen,
-
-        // New system color additions in Visual Studio 2005 (.NET Framework 2.0)
-
         ButtonFace,
         ButtonHighlight,
         ButtonShadow,
