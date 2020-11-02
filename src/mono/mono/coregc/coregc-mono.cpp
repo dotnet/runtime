@@ -17,8 +17,8 @@ typedef struct _CoreGCThreadInfo CoreGCThreadInfo;
 
 #include <glib.h>
 
+#include "../coreclr/src/inc/debugmacros.h"
 #include "sgen/sgen-archdep.h"
-
 #include <mono/metadata/mono-gc.h>
 #include <mono/metadata/gc-internals.h>
 #include <mono/metadata/class-init.h>
