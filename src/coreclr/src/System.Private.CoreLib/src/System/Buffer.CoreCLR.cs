@@ -80,10 +80,11 @@ namespace System
         [DllImport(RuntimeHelpers.QCall, CharSet = CharSet.Unicode)]
         private static extern unsafe void __Memmove(byte* dest, byte* src, nuint len);
 
+        // Used by ilmarshalers.cpp
         internal static unsafe void Memcpy(byte* dest, byte* src, int len)
         {
             Debug.Assert(len >= 0, "Negative length in memcpy!");
-            Memmove(dest, src, (nuint)len);
+            Memmove(ref *dest, ref *src, (nuint)len);
         }
 
         // Used by ilmarshalers.cpp
@@ -91,24 +92,16 @@ namespace System
         {
             Debug.Assert((srcIndex >= 0) && (destIndex >= 0) && (len >= 0), "Index and length must be non-negative!");
             Debug.Assert(src.Length - srcIndex >= len, "not enough bytes in src");
-            // If dest has 0 elements, the fixed statement will throw an
-            // IndexOutOfRangeException.  Special-case 0-byte copies.
-            if (len == 0)
-                return;
-            fixed (byte* pSrc = src)
-            {
-                Memcpy(pDest + destIndex, pSrc + srcIndex, len);
-            }
+
+            Memmove(ref *(pDest + destIndex), ref Unsafe.Add(ref MemoryMarshal.GetArrayDataReference(src), srcIndex), (nuint)len);
         }
 
-        // This method has different signature for x64 and other platforms and is done for performance reasons.
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal static void Memmove<T>(ref T destination, ref T source, nuint elementCount)
         {
             if (!RuntimeHelpers.IsReferenceOrContainsReferences<T>())
             {
                 // Blittable memmove
-
                 Memmove(
                     ref Unsafe.As<T, byte>(ref destination),
                     ref Unsafe.As<T, byte>(ref source),

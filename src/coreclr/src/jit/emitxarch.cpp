@@ -288,7 +288,7 @@ bool emitter::AreFlagsSetToZeroCmp(regNumber reg, emitAttr opSize, bool needsOCF
             {
                 return false;
             }
-            __fallthrough;
+            FALLTHROUGH;
         // these always set OC to 0
         case INS_and:
         case INS_or:
@@ -7117,7 +7117,7 @@ void emitter::emitIns_Call(EmitCallType          callType,
 
                 id->idSetIsCallRegPtr();
 
-                __fallthrough;
+                FALLTHROUGH;
 
             case EC_INDIR_ARD: // the address is an indirection
 
@@ -7352,7 +7352,7 @@ size_t emitter::emitSizeOfInsDsc(instrDesc* id)
                 return sizeof(instrDescCGCA);
             }
 
-            __fallthrough;
+            FALLTHROUGH;
 
         case ID_OP_SCNS:
         case ID_OP_CNS:
@@ -9192,46 +9192,46 @@ static BYTE* emitOutputNOP(BYTE* dst, size_t nBytes)
     {
         case 15:
             *dst++ = 0x90;
-            __fallthrough;
+            FALLTHROUGH;
         case 14:
             *dst++ = 0x90;
-            __fallthrough;
+            FALLTHROUGH;
         case 13:
             *dst++ = 0x90;
-            __fallthrough;
+            FALLTHROUGH;
         case 12:
             *dst++ = 0x90;
-            __fallthrough;
+            FALLTHROUGH;
         case 11:
             *dst++ = 0x90;
-            __fallthrough;
+            FALLTHROUGH;
         case 10:
             *dst++ = 0x90;
-            __fallthrough;
+            FALLTHROUGH;
         case 9:
             *dst++ = 0x90;
-            __fallthrough;
+            FALLTHROUGH;
         case 8:
             *dst++ = 0x90;
-            __fallthrough;
+            FALLTHROUGH;
         case 7:
             *dst++ = 0x90;
-            __fallthrough;
+            FALLTHROUGH;
         case 6:
             *dst++ = 0x90;
-            __fallthrough;
+            FALLTHROUGH;
         case 5:
             *dst++ = 0x90;
-            __fallthrough;
+            FALLTHROUGH;
         case 4:
             *dst++ = 0x90;
-            __fallthrough;
+            FALLTHROUGH;
         case 3:
             *dst++ = 0x90;
-            __fallthrough;
+            FALLTHROUGH;
         case 2:
             *dst++ = 0x90;
-            __fallthrough;
+            FALLTHROUGH;
         case 1:
             *dst++ = 0x90;
             break;
@@ -9243,7 +9243,7 @@ static BYTE* emitOutputNOP(BYTE* dst, size_t nBytes)
     {
         case 2:
             *dst++ = 0x66;
-            __fallthrough;
+            FALLTHROUGH;
         case 1:
             *dst++ = 0x90;
             break;
@@ -9262,7 +9262,7 @@ static BYTE* emitOutputNOP(BYTE* dst, size_t nBytes)
             break;
         case 6:
             *dst++ = 0x66;
-            __fallthrough;
+            FALLTHROUGH;
         case 5:
             *dst++ = 0x0F;
             *dst++ = 0x1F;
@@ -9297,13 +9297,13 @@ static BYTE* emitOutputNOP(BYTE* dst, size_t nBytes)
             break;
         case 11:
             *dst++ = 0x66;
-            __fallthrough;
+            FALLTHROUGH;
         case 10:
             *dst++ = 0x66;
-            __fallthrough;
+            FALLTHROUGH;
         case 9:
             *dst++ = 0x66;
-            __fallthrough;
+            FALLTHROUGH;
         case 8:
             *dst++ = 0x0F;
             *dst++ = 0x1F;
@@ -9577,7 +9577,7 @@ BYTE* emitter::emitOutputAM(BYTE* dst, instrDesc* id, code_t code, CnsVal* addc)
 
                 dst += emitOutputByte(dst, 0x66);
 
-                __fallthrough;
+                FALLTHROUGH;
 
             case EA_4BYTE:
 #ifdef TARGET_AMD64
@@ -10342,7 +10342,7 @@ BYTE* emitter::emitOutputSV(BYTE* dst, instrDesc* id, code_t code, CnsVal* addc)
             case EA_2BYTE:
                 // Output a size prefix for a 16-bit operand
                 dst += emitOutputByte(dst, 0x66);
-                __fallthrough;
+                FALLTHROUGH;
 
             case EA_4BYTE:
 #ifdef TARGET_AMD64
@@ -10808,7 +10808,7 @@ BYTE* emitter::emitOutputCV(BYTE* dst, instrDesc* id, code_t code, CnsVal* addc)
             case EA_2BYTE:
                 // Output a size prefix for a 16-bit operand
                 dst += emitOutputByte(dst, 0x66);
-                __fallthrough;
+                FALLTHROUGH;
 
             case EA_4BYTE:
 #ifdef TARGET_AMD64
@@ -11228,7 +11228,7 @@ BYTE* emitter::emitOutputR(BYTE* dst, instrDesc* id)
             emitGCregDeadUpd(REG_EAX, dst);
             emitGCregDeadUpd(REG_EDX, dst);
 
-            __fallthrough;
+            FALLTHROUGH;
 
         default:
 
@@ -11394,7 +11394,7 @@ BYTE* emitter::emitOutputRR(BYTE* dst, instrDesc* id)
             case EA_2BYTE:
                 // Output a size prefix for a 16-bit operand
                 dst += emitOutputByte(dst, 0x66);
-                __fallthrough;
+                FALLTHROUGH;
 
             case EA_4BYTE:
                 // Set the 'w' bit to get the large version
@@ -11945,7 +11945,7 @@ BYTE* emitter::emitOutputRI(BYTE* dst, instrDesc* id)
         case EA_2BYTE:
             // Output a size prefix for a 16-bit operand
             dst += emitOutputByte(dst, 0x66);
-            __fallthrough;
+            FALLTHROUGH;
 
         case EA_4BYTE:
             // Set the 'w' bit to get the large version

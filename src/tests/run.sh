@@ -113,6 +113,7 @@ readonly EXIT_CODE_TEST_FAILURE=2  # Script completed successfully, but one or m
 
 # Argument variables
 buildArch=$ARCH
+buildOS=
 buildConfiguration="Debug"
 testRootDir=
 testNativeBinDir=
@@ -165,6 +166,9 @@ do
             ;;
         wasm)
             buildArch="wasm"
+            ;;
+        Android)
+            buildOS="Android"
             ;;
         debug|Debug)
             buildConfiguration="Debug"
@@ -328,10 +332,13 @@ echo "Build Architecture            : ${buildArch}"
 echo "Build Configuration           : ${buildConfiguration}"
 
 
-if [ $buildArch = "wasm" ]; then
+if [ "$buildArch" = "wasm" ]; then
     runtestPyArguments+=("-os" "Browser")
 fi
 
+if [ "$buildOS" = "Android" ]; then
+    runtestPyArguments+=("-os" "Android")
+fi
     
 if [ ! -z "$testRootDir" ]; then
     runtestPyArguments+=("-test_location" "$testRootDir")

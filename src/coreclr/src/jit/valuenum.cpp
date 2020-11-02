@@ -3408,7 +3408,7 @@ ValueNum ValueNumStore::EvalUsingMathIdentity(var_types typ, VNFunc func, ValueN
                     break;
                 }
                 // (x == x) == true (integer only)
-                __fallthrough;
+                FALLTHROUGH;
             case GT_GE:
             case GT_LE:
                 // (x <= x) == true (integer only)
@@ -3456,7 +3456,7 @@ ValueNum ValueNumStore::EvalUsingMathIdentity(var_types typ, VNFunc func, ValueN
                 // (x < 0) == false
                 // (x < x) == false
                 std::swap(arg0VN, arg1VN);
-                __fallthrough;
+                FALLTHROUGH;
             case VNF_GT_UN:
                 // (0 > x) == false
                 // (x > x) == false
@@ -3474,7 +3474,7 @@ ValueNum ValueNumStore::EvalUsingMathIdentity(var_types typ, VNFunc func, ValueN
                 // (x >= 0) == true
                 // (x >= x) == true
                 std::swap(arg0VN, arg1VN);
-                __fallthrough;
+                FALLTHROUGH;
             case VNF_LE_UN:
                 // (0 <= x) == true
                 // (x <= x) == true
@@ -7378,7 +7378,7 @@ void Compiler::fgValueNumberTree(GenTree* tree)
                     break;
 
                 case GT_BLK:
-                    __fallthrough;
+                    FALLTHROUGH;
 
                 case GT_IND:
                 {
@@ -9902,7 +9902,7 @@ void Compiler::fgValueNumberAddExceptionSet(GenTree* tree)
                     // Don't add exception set on LHS of assignment
                     break;
                 }
-                __fallthrough;
+                FALLTHROUGH;
 
             case GT_BLK:
             case GT_OBJ:

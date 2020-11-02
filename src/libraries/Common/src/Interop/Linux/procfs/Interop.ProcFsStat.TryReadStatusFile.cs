@@ -3,6 +3,7 @@
 
 #nullable enable
 using System;
+using System.Buffers;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
@@ -35,18 +36,18 @@ internal static partial class Interop
             return RootPath + pid.ToString(CultureInfo.InvariantCulture) + StatusFileName;
         }
 
-        internal static bool TryReadStatusFile(int pid, out ParsedStatus result, ReusableTextReader reusableReader)
+        internal static bool TryReadStatusFile(int pid, out ParsedStatus result)
         {
-            bool b = TryParseStatusFile(GetStatusFilePathForProcess(pid), out result, reusableReader);
+            bool b = TryParseStatusFile(GetStatusFilePathForProcess(pid), out result);
 #if DEBUG
             Debug.Assert(!b || result.Pid == pid, "Expected process ID from status file to match supplied pid");
 #endif
             return b;
         }
 
-        internal static bool TryParseStatusFile(string statusFilePath, out ParsedStatus result, ReusableTextReader reusableReader)
+        internal static bool TryParseStatusFile(string statusFilePath, out ParsedStatus result)
         {
-            if (!TryReadFile(statusFilePath, reusableReader, out string? fileContents))
+            if (!TryReadFile(statusFilePath, out string? fileContents))
             {
                 // Between the time that we get an ID and the time that we try to read the associated stat
                 // file(s), the process could be gone.
@@ -149,20 +150,45 @@ internal static partial class Interop
             return true;
         }
 
-        private static bool TryReadFile(string filePath, ReusableTextReader reusableReader, [NotNullWhen(true)] out string? fileContents)
+        private static bool TryReadFile(string path, [NotNullWhen(true)] out string? contents)
         {
+            Debug.Assert(!string.IsNullOrEmpty(path));
+
+            byte[] bytes = ArrayPool<byte>.Shared.Rent(4096);
+            int count = 0;
+
             try
             {
-                using (var fileStream = new FileStream(filePath, FileMode.Open, FileAccess.Read, FileShare.Read, bufferSize: 1, useAsync: false))
+                using var fileStream = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.Read, bufferSize: 1, useAsync: false);
+
+                while (true)
                 {
-                    fileContents = reusableReader.ReadAllText(fileStream);
-                    return true;
+                    int read = fileStream.Read(bytes, count, bytes.Length - count);
+                    if (read == 0)
+                    {
+                        contents = Encoding.UTF8.GetString(bytes, 0, count);
+                        return true;
+                    }
+
+                    count += read;
+                    if (count >= bytes.Length)
+                    {
+                        byte[] temp = ArrayPool<byte>.Shared.Rent(bytes.Length * 2);
+                        Array.Copy(bytes, temp, bytes.Length);
+                        byte[] toReturn = bytes;
+                        bytes = temp;
+                        ArrayPool<byte>.Shared.Return(toReturn);
+                    }
                 }
             }
             catch (IOException)
             {
-                fileContents = null;
+                contents = null;
                 return false;
+            }
+            finally
+            {
+                ArrayPool<byte>.Shared.Return(bytes);
             }
         }
     }

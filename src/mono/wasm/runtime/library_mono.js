@@ -1255,6 +1255,12 @@ var MonoSupportLib = {
 			return this.mono_wasm_pause_on_exceptions (state_enum);
 		},
 
+		mono_wasm_detach_debugger: function () {
+			if (!this.mono_wasm_set_is_debugger_attached)
+				this.mono_wasm_set_is_debugger_attached = Module.cwrap ('mono_wasm_set_is_debugger_attached', 'void', ['bool']);
+			this.mono_wasm_set_is_debugger_attached(false);
+		},
+
 		_register_c_fn: function (name, ...args) {
 			Object.defineProperty (this._c_fn_table, name + '_wrapper', { value: Module.cwrap (name, ...args) });
 		},
@@ -1293,9 +1299,6 @@ var MonoSupportLib = {
 
 		mono_wasm_runtime_ready: function () {
 			this.mono_wasm_runtime_is_ready = true;
-			// DO NOT REMOVE - magic debugger init function
-			console.debug ("mono_wasm_runtime_ready", "fe00e07a-5519-4dfe-b35a-f867dbaf2e28");
-
 			this._clear_per_step_state ();
 
 			// FIXME: where should this go?
@@ -1309,6 +1312,11 @@ var MonoSupportLib = {
 			this._register_c_var_fn ('mono_wasm_invoke_getter_on_value',  'bool', [ 'number', 'number', 'string' ]);
 			this._register_c_var_fn ('mono_wasm_get_local_vars',          'bool', [ 'number', 'number', 'number']);
 			this._register_c_var_fn ('mono_wasm_get_deref_ptr_value',     'bool', [ 'number', 'number']);
+			// DO NOT REMOVE - magic debugger init function
+			if (globalThis.dotnetDebugger)
+				debugger;
+			else
+				console.debug ("mono_wasm_runtime_ready", "fe00e07a-5519-4dfe-b35a-f867dbaf2e28");
 		},
 
 		mono_wasm_set_breakpoint: function (assembly, method_token, il_offset) {
@@ -1817,6 +1825,9 @@ var MonoSupportLib = {
 
 		// Used by the debugger to enumerate loaded dlls and pdbs
 		mono_wasm_get_loaded_files: function() {
+			if (!this.mono_wasm_set_is_debugger_attached)
+				this.mono_wasm_set_is_debugger_attached = Module.cwrap ('mono_wasm_set_is_debugger_attached', 'void', ['bool']);
+			this.mono_wasm_set_is_debugger_attached (true);
 			return MONO.loaded_files;
 		},
 
@@ -2313,29 +2324,18 @@ var MonoSupportLib = {
 
 	schedule_background_exec: function () {
 		++MONO.pump_count;
-		if (ENVIRONMENT_IS_WEB) {
-			window.setTimeout (MONO.pump_message, 0);
-		} else if (ENVIRONMENT_IS_WORKER) {
-			self.setTimeout (MONO.pump_message, 0);
-		} else if (ENVIRONMENT_IS_NODE) {
-			global.setTimeout (MONO.pump_message, 0);
+		if (typeof globalThis.setTimeout === 'function') {
+			globalThis.setTimeout (MONO.pump_message, 0);
 		}
 	},
 
 	mono_set_timeout: function (timeout, id) {
 		if (!this.mono_set_timeout_exec)
 			this.mono_set_timeout_exec = Module.cwrap ("mono_set_timeout_exec", null, [ 'number' ]);
-		if (ENVIRONMENT_IS_WEB) {
-			window.setTimeout (function () {
+
+		if (typeof globalThis.setTimeout === 'function') {
+			globalThis.setTimeout (function () {
 				this.mono_set_timeout_exec (id);
-			}, timeout);
-		} else if (ENVIRONMENT_IS_WORKER) {
-			self.setTimeout (function () {
-				this.mono_set_timeout_exec (id);
-			}, timeout);
-		} else if (ENVIRONMENT_IS_NODE) {
-			global.setTimeout (function () {
-				global.mono_set_timeout_exec (id);
 			}, timeout);
 		} else {
 			++MONO.pump_count;
@@ -2365,13 +2365,7 @@ var MonoSupportLib = {
 		if (MONO.mono_wasm_runtime_is_ready !== true)
 			return;
 
-		if (!this.mono_wasm_assembly_already_added)
-			this.mono_wasm_assembly_already_added = Module.cwrap ("mono_wasm_assembly_already_added", 'number', ['string']);
-
-		// And for assemblies that have not already been loaded
 		const assembly_name_str = assembly_name !== 0 ? Module.UTF8ToString(assembly_name).concat('.dll') : '';
-		if (this.mono_wasm_assembly_already_added(assembly_name_str))
-			return;
 
 		const assembly_data = new Uint8Array(Module.HEAPU8.buffer, assembly_ptr, assembly_len);
 		const assembly_b64 = MONO._base64Converter.toBase64StringImpl(assembly_data);

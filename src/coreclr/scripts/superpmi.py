@@ -800,24 +800,31 @@ class SuperPMICollect:
                     # Use the name of the assembly as the basename of the file. mkstemp() will ensure the file
                     # is unique.
                     root_output_filename = make_safe_filename("pmi_" + assembly + "_")
-                    stdout_file_handle, stdout_filepath = tempfile.mkstemp(suffix=".stdout", prefix=root_output_filename, dir=self.temp_location)
-                    stderr_file_handle, stderr_filepath = tempfile.mkstemp(suffix=".stderr", prefix=root_output_filename, dir=self.temp_location)
+                    try:
+                        stdout_file_handle, stdout_filepath = tempfile.mkstemp(suffix=".stdout", prefix=root_output_filename, dir=self.temp_location)
+                        stderr_file_handle, stderr_filepath = tempfile.mkstemp(suffix=".stderr", prefix=root_output_filename, dir=self.temp_location)
 
-                    proc = await asyncio.create_subprocess_shell(
-                        command_string,
-                        stdout=stdout_file_handle,
-                        stderr=stderr_file_handle)
+                        proc = await asyncio.create_subprocess_shell(
+                            command_string,
+                            stdout=stdout_file_handle,
+                            stderr=stderr_file_handle)
 
-                    await proc.communicate()
+                        await proc.communicate()
 
-                    os.close(stdout_file_handle)
-                    os.close(stderr_file_handle)
+                        os.close(stdout_file_handle)
+                        os.close(stderr_file_handle)
 
                     # No need to keep zero-length files
-                    if is_zero_length_file(stdout_filepath):
-                        os.remove(stdout_filepath)
-                    if is_zero_length_file(stderr_filepath):
-                        os.remove(stderr_filepath)
+                        if is_zero_length_file(stdout_filepath):
+                            os.remove(stdout_filepath)
+                        if is_zero_length_file(stderr_filepath):
+                            os.remove(stderr_filepath)
+                    except OSError as ose:
+                        if "[WinError 32] The process cannot access the file because it is being used by another " \
+                           "process:" in format(ose):
+                            logging.warning("Skipping file %s. Got error: %s".format(root_output_filename, format(ose)))
+                        else:
+                            raise ose
 
                 assemblies = []
                 for item in self.pmi_assemblies:
@@ -1090,6 +1097,12 @@ class SuperPMIReplay:
             if self.coreclr_args.spmi_log_file is not None:
                 flags += [ "-w", self.coreclr_args.spmi_log_file ]
 
+            if self.coreclr_args.altjit:
+                if self.coreclr_args.arch == "arm":
+                    flags += [ "-target", "arm" ]
+                elif self.coreclr_args.arch == "arm64":
+                    flags += [ "-target", "arm64" ]
+
             # For each MCH file that we are going to replay, do the replay and replay post-processing.
             #
             # Consider: currently, we loop over all the steps for each MCH file, including (1) invoke
@@ -1290,6 +1303,12 @@ class SuperPMIReplayAsmDiffs:
 
                     if self.coreclr_args.spmi_log_file is not None:
                         flags += [ "-w", self.coreclr_args.spmi_log_file ]
+
+                    if self.coreclr_args.altjit:
+                        if self.coreclr_args.arch == "arm":
+                            flags += [ "-target", "arm" ]
+                        elif self.coreclr_args.arch == "arm64":
+                            flags += [ "-target", "arm64" ]
 
                     # Change the working directory to the Core_Root we will call SuperPMI from.
                     # This is done to allow libcoredistools to be loaded correctly on unix
@@ -3035,7 +3054,7 @@ def main(args):
         collection = SuperPMICollect(coreclr_args)
         success = collection.collect()
 
-        if coreclr_args.output_mch_path is not None:
+        if success and coreclr_args.output_mch_path is not None:
             logging.info("Generated MCH file: %s", coreclr_args.output_mch_path)
 
         end_time = datetime.datetime.now()

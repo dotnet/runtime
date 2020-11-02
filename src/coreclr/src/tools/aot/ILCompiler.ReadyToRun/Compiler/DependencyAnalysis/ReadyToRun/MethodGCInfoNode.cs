@@ -90,7 +90,13 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                 {
                     bool isFilterFunclet = (_methodNode.FrameInfos[frameInfoIndex].Flags & FrameInfoFlags.Filter) != 0;
                     ISymbolNode personalityRoutine = (isFilterFunclet ? factory.FilterFuncletPersonalityRoutine : factory.PersonalityRoutine);
-                    dataBuilder.EmitReloc(personalityRoutine, RelocType.IMAGE_REL_BASED_ADDR32NB);
+                    int codeDelta = 0;
+                    if (targetArch == TargetArchitecture.ARM)
+                    {
+                        // THUMB_CODE
+                        codeDelta = 1;
+                    }
+                    dataBuilder.EmitReloc(personalityRoutine, RelocType.IMAGE_REL_BASED_ADDR32NB, codeDelta);
                 }
 
                 if (frameInfoIndex == 0 && _methodNode.GCInfo != null)

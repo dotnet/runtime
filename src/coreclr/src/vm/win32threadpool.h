@@ -223,10 +223,27 @@ public:
         INT32 TimerId;
     } TimerInfoContext;
 
+#ifndef DACCESS_COMPILE
+    static void StaticInitialize()
+    {
+        WRAPPER_NO_CONTRACT;
+        s_usePortableThreadPool = CLRConfig::GetConfigValue(CLRConfig::INTERNAL_ThreadPool_UsePortableThreadPool) != 0;
+    }
+#endif
+
+    static bool UsePortableThreadPool()
+    {
+        LIMITED_METHOD_CONTRACT;
+        return s_usePortableThreadPool;
+    }
+
     static BOOL Initialize();
 
     static BOOL SetMaxThreadsHelper(DWORD MaxWorkerThreads,
                                         DWORD MaxIOCompletionThreads);
+
+    static bool CanSetMinIOCompletionThreads(DWORD ioCompletionThreads);
+    static bool CanSetMaxIOCompletionThreads(DWORD ioCompletionThreads);
 
     static BOOL SetMaxThreads(DWORD MaxWorkerThreads,
                               DWORD MaxIOCompletionThreads);
@@ -279,6 +296,12 @@ public:
     static void WINAPI WaitIOCompletionCallback(DWORD dwErrorCode,
                                             DWORD numBytesTransferred,
                                             LPOVERLAPPED lpOverlapped);
+
+#ifdef TARGET_WINDOWS // the IO completion thread pool is currently only available on Windows
+    static void WINAPI ManagedWaitIOCompletionCallback(DWORD dwErrorCode,
+                                                       DWORD dwNumberOfBytesTransfered,
+                                                       LPOVERLAPPED lpOverlapped);
+#endif
 
     static VOID WINAPI CallbackForInitiateDrainageOfCompletionPortQueue(
         DWORD dwErrorCode,
@@ -340,7 +363,11 @@ public:
         // We handle registered waits at a higher abstraction level
         return (Function == ThreadpoolMgr::CallbackForInitiateDrainageOfCompletionPortQueue
                 || Function == ThreadpoolMgr::CallbackForContinueDrainageOfCompletionPortQueue
-                || Function == ThreadpoolMgr::WaitIOCompletionCallback);
+                || Function == ThreadpoolMgr::WaitIOCompletionCallback
+#ifdef TARGET_WINDOWS // the IO completion thread pool is currently only available on Windows
+                || Function == ThreadpoolMgr::ManagedWaitIOCompletionCallback
+#endif
+            );
     }
 #endif
 
@@ -787,6 +814,8 @@ public:
         }
         CONTRACTL_END;
 
+        _ASSERTE(!UsePortableThreadPool());
+
         if (WorkRequestTail)
         {
             _ASSERTE(WorkRequestHead != NULL);
@@ -811,6 +840,8 @@ public:
             GC_NOTRIGGER;
         }
         CONTRACTL_END;
+
+        _ASSERTE(!UsePortableThreadPool());
 
         WorkRequest* entry = NULL;
         if (WorkRequestHead)
@@ -842,6 +873,8 @@ public:
     static void NotifyWorkItemCompleted()
     {
         WRAPPER_NO_CONTRACT;
+        _ASSERTE(!UsePortableThreadPool());
+
         Thread::IncrementWorkerThreadPoolCompletionCount(GetThread());
         UpdateLastDequeueTime();
     }
@@ -849,6 +882,7 @@ public:
     static bool ShouldAdjustMaxWorkersActive()
     {
         WRAPPER_NO_CONTRACT;
+        _ASSERTE(!UsePortableThreadPool());
 
         DWORD priorTime = PriorCompletedWorkRequestsTime;
         MemoryBarrier(); // read fresh value for NextCompletedWorkRequestsTime below
@@ -866,8 +900,6 @@ public:
 
     static void AdjustMaxWorkersActive();
     static bool ShouldWorkerKeepRunning();
-
-    static BOOL SuspendProcessing();
 
     static DWORD SafeWait(CLREvent * ev, DWORD sleepTime, BOOL alertable);
 
@@ -889,6 +921,10 @@ public:
     static void ProcessWaitCompletion( WaitInfo* waitInfo,
                                 unsigned index,      // array index
                                 BOOL waitTimedOut);
+
+#ifdef TARGET_WINDOWS // the IO completion thread pool is currently only available on Windows
+    static void ManagedWaitIOCompletionCallback_Worker(LPVOID state);
+#endif
 
     static DWORD WINAPI WaitThreadStart(LPVOID lpArgs);
 
@@ -953,8 +989,10 @@ private:
 
     static BOOL CreateGateThread();
     static void EnsureGateThreadRunning();
+    static bool NeedGateThreadForIOCompletions();
     static bool ShouldGateThreadKeepRunning();
     static DWORD WINAPI GateThreadStart(LPVOID lpArgs);
+    static void PerformGateActivities(int cpuUtilization);
     static BOOL SufficientDelaySinceLastSample(unsigned int LastThreadCreationTime,
                                                unsigned NumThreads, // total number of threads of that type (worker or CP)
                                                double   throttleRate=0.0 // the delay is increased by this percentage for each extra thread
@@ -985,6 +1023,8 @@ private:
         }
         CONTRACTL_END;
 
+        _ASSERTE(!UsePortableThreadPool());
+
         DWORD result = QueueUserAPC(reinterpret_cast<PAPCFUNC>(DeregisterWait), waitThread, reinterpret_cast<ULONG_PTR>(waitInfo));
         SetWaitThreadAPCPending();
         return result;
@@ -995,18 +1035,12 @@ private:
     inline static void ResetWaitThreadAPCPending() {IsApcPendingOnWaitThread = FALSE;}
     inline static BOOL IsWaitThreadAPCPending()  {return IsApcPendingOnWaitThread;}
 
-#ifdef _DEBUG
-    inline static DWORD GetTickCount()
-    {
-        LIMITED_METHOD_CONTRACT;
-        return ::GetTickCount() + TickCountAdjustment;
-    }
-#endif
-
 #endif // #ifndef DACCESS_COMPILE
     // Private variables
 
     static LONG Initialization;                         // indicator of whether the threadpool is initialized.
+
+    static bool s_usePortableThreadPool;
 
     SVAL_DECL(LONG,MinLimitTotalWorkerThreads);         // same as MinLimitTotalCPThreads
     SVAL_DECL(LONG,MaxLimitTotalWorkerThreads);         // same as MaxLimitTotalCPThreads
@@ -1089,13 +1123,8 @@ private:
     static Volatile<LONG> NumCPInfrastructureThreads;   // number of threads currently busy handling draining cycle
 
     SVAL_DECL(LONG,cpuUtilization);
-    static LONG cpuUtilizationAverage;
 
     DECLSPEC_ALIGN(MAX_CACHE_LINE_SIZE) static RecycledListsWrapper RecycledLists;
-
-#ifdef _DEBUG
-    static DWORD   TickCountAdjustment;                 // add this value to value returned by GetTickCount
-#endif
 };
 
 

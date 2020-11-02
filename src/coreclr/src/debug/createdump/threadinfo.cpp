@@ -43,8 +43,11 @@ void
 ThreadInfo::UnwindNativeFrames(CONTEXT* pContext)
 {
     uint64_t previousSp = 0;
+    uint64_t previousIp = 0;
+    int ipMatchCount = 0;
 
-    // For each native frame
+    // For each native frame, add a page around the IP and any unwind info not already
+    // added in VisitProgramHeader (Linux) and VisitSection (MacOS) to the dump.
     while (true)
     {
         uint64_t ip = 0, sp = 0;
@@ -53,6 +56,24 @@ ThreadInfo::UnwindNativeFrames(CONTEXT* pContext)
         TRACE("Unwind: sp %" PRIA PRIx64 " ip %" PRIA PRIx64 "\n", sp, ip);
         if (ip == 0 || sp <= previousSp) {
             break;
+        }
+        // Break out of the endless loop if the IP matches over a 1000 times. This is a fallback
+        // behavior of libunwind when the module the IP is in doesn't have unwind info and for
+        // simple stack overflows. The stack memory is added to the dump in GetThreadStack and
+        // it isn't necessary to add the same IP page over and over again. The only place this
+        // check won't catch is the stack overflow case that repeats a sequence of IPs over and
+        // over.
+        if (ip == previousIp)
+        {
+            if (ipMatchCount++ > 1000)
+            {
+                TRACE("Unwind: same ip %" PRIA PRIx64 " over 1000 times\n", ip);
+                break;
+            }
+        }
+        else
+        {
+            ipMatchCount = 0;
         }
 
         // Add two pages around the instruction pointer to the core dump
@@ -72,6 +93,7 @@ ThreadInfo::UnwindNativeFrames(CONTEXT* pContext)
             break;
         }
         previousSp = sp;
+        previousIp = ip;
     }
 }
 

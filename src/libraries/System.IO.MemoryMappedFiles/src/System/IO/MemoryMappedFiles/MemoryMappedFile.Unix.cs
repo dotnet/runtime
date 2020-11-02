@@ -52,7 +52,7 @@ namespace System.IO.MemoryMappedFiles
         /// memory mapped file should not be associated with an existing file on disk (i.e. start
         /// out empty).
         /// </summary>
-        private static unsafe SafeMemoryMappedFileHandle CreateCore(
+        private static SafeMemoryMappedFileHandle CreateCore(
             FileStream? fileStream, string? mapName,
             HandleInheritability inheritability, MemoryMappedFileAccess access,
             MemoryMappedFileOptions options, long capacity)

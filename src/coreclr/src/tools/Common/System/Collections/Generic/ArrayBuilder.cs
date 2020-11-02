@@ -104,5 +104,18 @@ namespace System.Collections.Generic
 
             return false;
         }
+
+        public bool Any(Func<T, bool> func)
+        {
+            for (int i = 0; i < _count; i++)
+            {
+                if (func(_items[i]))
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        }
     }
 }

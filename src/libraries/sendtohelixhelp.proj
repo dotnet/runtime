@@ -72,7 +72,7 @@
     <HelixType Condition="'$(TestPackages)' == 'true'">test/functional/packaging/</HelixType>
   </PropertyGroup>
 
-  <PropertyGroup Condition="'$(TargetOS)' == 'Browser' or '$(TargetOS)' == 'iOS' or '$(TargetOS)' == 'tvOS'">
+  <PropertyGroup Condition="'$(TargetOS)' == 'Browser' or '$(TargetOS)' == 'Android' or '$(TargetOS)' == 'iOS' or '$(TargetOS)' == 'tvOS'">
     <IncludeXHarnessCli>true</IncludeXHarnessCli>
   </PropertyGroup>
 
@@ -189,6 +189,19 @@
       </XHarnessAppBundleToTest>
     </ItemGroup>
 
+    <ItemGroup Condition="'$(TargetOS)' == 'Android'">
+      <!-- We have to define this temp item list because of a bug in MSBuild that would prevent access %(Filename) right away -->
+      <_apks Include="$(TestArchiveTestsRoot)**/*.apk" />
+      <XHarnessApkToTest Include="@(_apks)">
+        <Targets Condition="'$(TargetArchitecture)' == 'arm'">armeabi-v7a</Targets>
+        <Targets Condition="'$(TargetArchitecture)' == 'arm64'">arm64-v8a</Targets>
+        <Targets Condition="'$(TargetArchitecture)' == 'x64'">x86_64</Targets>
+        <Targets Condition="'$(TargetArchitecture)' == 'x86'">x86</Targets>
+        <AndroidPackageName>net.dot.%(Filename)</AndroidPackageName>
+        <AndroidInstrumentationName>net.dot.MonoRunner</AndroidInstrumentationName>
+      </XHarnessApkToTest>
+    </ItemGroup>
+
     <PropertyGroup Condition="'$(TargetOS)' == 'Browser'">
       <!-- Version number to revision number mapping from http://omahaproxy.appspot.com/ -->
       <!-- 84.0.4147.105 is 768962 for example -->
@@ -197,7 +210,7 @@
       <SeleniumUrl>https://storage.googleapis.com/chromium-browser-snapshots/Linux_x64/$(ChromiumRevision)/chromedriver_linux64.zip</SeleniumUrl>
     </PropertyGroup>
 
-    <ItemGroup Condition="'$(TargetOS)' != 'iOS' and '$(TargetOS)' != 'tvOS'">
+    <ItemGroup Condition="'$(TargetOS)' != 'Android' and '$(TargetOS)' != 'iOS' and '$(TargetOS)' != 'tvOS'">
       <HelixCorrelationPayload Include="$(HelixCorrelationPayload)"
                                Condition="'$(IncludeHelixCorrelationPayload)' == 'true' and '$(TargetOS)' != 'Browser'" />
       <HelixCorrelationPayload Include="chromium" Uri="$(ChromiumUrl)" Condition="'$(TargetOS)' == 'Browser'" />
@@ -213,8 +226,8 @@
     </ItemGroup>
 
     <Message Condition="'$(Scenario)' != ''" Importance="High" Text="Done building Helix work items for scenario $(Scenario). Work item count: @(_WorkItem->Count())" />
-    <Message Condition="'$(Scenario)' == '' and ('$(TargetOS)' == 'iOS' or '$(TargetOS)' == 'tvOS')" Importance="High" Text="Done building Helix work items. Work item count: @(XHarnessAppBundleToTest->Count())" />
-    <Message Condition="'$(Scenario)' == '' and '$(TargetOS)' != 'iOS' and '$(TargetOS)' != 'tvOS'" Importance="High" Text="Done building Helix work items. Work item count: @(_WorkItem->Count())" />
+    <Message Condition="'$(Scenario)' == '' and ('$(TargetOS)' == 'Android' or '$(TargetOS)' == 'iOS' or '$(TargetOS)' == 'tvOS')" Importance="High" Text="Done building Helix work items. Work item count: @(XHarnessAppBundleToTest->Count())" />
+    <Message Condition="'$(Scenario)' == '' and '$(TargetOS)' != 'Android' and '$(TargetOS)' != 'iOS' and '$(TargetOS)' != 'tvOS'" Importance="High" Text="Done building Helix work items. Work item count: @(_WorkItem->Count())" />
 
   </Target>
 

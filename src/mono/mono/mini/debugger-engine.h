@@ -324,4 +324,16 @@ gpointer get_async_method_builder (DbgEngineStackFrame *frame);
 MonoMethod* get_set_notification_method (MonoClass* async_builder_class);
 MonoMethod* get_notify_debugger_of_wait_completion_method (void);
 MonoMethod* get_object_id_for_debugger_method (MonoClass* async_builder_class);
+
+#ifdef HOST_ANDROID
+#define DEBUG_PRINTF(level, ...) do { if (G_UNLIKELY ((level) <= log_level)) { g_print (__VA_ARGS__); } } while (0)
+#define DEBUG(level,s) do { if (G_UNLIKELY ((level) <= log_level)) { s; } } while (0)
+#elif HOST_WASM
+void wasm_debugger_log(int level, const gchar *format, ...);
+#define DEBUG_PRINTF(level, ...) do { if (G_UNLIKELY ((level) <= log_level)) { wasm_debugger_log (level, __VA_ARGS__); } } while (0)
+#define DEBUG(level,s) do { if (G_UNLIKELY ((level) <= log_level)) { s; } } while (0)
+#else
+#define DEBUG(level,s) do { if (G_UNLIKELY ((level) <= log_level)) { s; fflush (log_file); } } while (0)
+#define DEBUG_PRINTF(level, ...) do { if (G_UNLIKELY ((level) <= log_level)) { fprintf (log_file, __VA_ARGS__); fflush (log_file); } } while (0)
+#endif
 #endif
