@@ -1,0 +1,6 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
+    <EnableTargetingPackDownload>false</EnableTargetingPackDownload>
+  </PropertyGroup>
+</Project>
