@@ -18,9 +18,13 @@ public class ApkBuilder
     public string? BuildToolsVersion { get; set; }
     public string? OutputDir { get; set; }
     public bool StripDebugSymbols { get; set; }
+    public string? NativeMainSource { get; set; }
 
     public (string apk, string packageId) BuildApk(
-        string sourceDir, string abi, string entryPointLib, string monoRuntimeHeaders)
+        string sourceDir,
+        string abi,
+        string entryPointLib,
+        string monoRuntimeHeaders)
     {
         if (!Directory.Exists(sourceDir))
             throw new ArgumentException($"sourceDir='{sourceDir}' is empty or doesn't exist");
@@ -177,15 +181,20 @@ public class ApkBuilder
         string javaSrcFolder = Path.Combine(OutputDir, "src", "net", "dot");
         Directory.CreateDirectory(javaSrcFolder);
 
+        string javaActivityPath = Path.Combine(javaSrcFolder, "MainActivity.java");
+        string monoRunnerPath = Path.Combine(javaSrcFolder, "MonoRunner.java");
+
         string packageId = $"net.dot.{ProjectName}";
 
-        File.WriteAllText(Path.Combine(javaSrcFolder, "MainActivity.java"),
+        File.WriteAllText(javaActivityPath,
             Utils.GetEmbeddedResource("MainActivity.java")
                 .Replace("%EntryPointLibName%", Path.GetFileName(entryPointLib)));
+        if (!string.IsNullOrEmpty(NativeMainSource))
+            File.Copy(NativeMainSource, javaActivityPath, true);
 
         string monoRunner = Utils.GetEmbeddedResource("MonoRunner.java")
             .Replace("%EntryPointLibName%", Path.GetFileName(entryPointLib));
-        File.WriteAllText(Path.Combine(javaSrcFolder, "MonoRunner.java"), monoRunner);
+        File.WriteAllText(monoRunnerPath, monoRunner);
 
         File.WriteAllText(Path.Combine(OutputDir, "AndroidManifest.xml"),
             Utils.GetEmbeddedResource("AndroidManifest.xml")
@@ -193,8 +202,8 @@ public class ApkBuilder
                 .Replace("%MinSdkLevel%", MinApiLevel));
 
         string javaCompilerArgs = $"-d obj -classpath src -bootclasspath {androidJar} -source 1.8 -target 1.8 ";
-        Utils.RunProcess(javac, javaCompilerArgs + Path.Combine(javaSrcFolder, "MainActivity.java"), workingDir: OutputDir);
-        Utils.RunProcess(javac, javaCompilerArgs + Path.Combine(javaSrcFolder, "MonoRunner.java"), workingDir: OutputDir);
+        Utils.RunProcess(javac, javaCompilerArgs + javaActivityPath, workingDir: OutputDir);
+        Utils.RunProcess(javac, javaCompilerArgs + monoRunnerPath, workingDir: OutputDir);
         Utils.RunProcess(dx, "--dex --output=classes.dex obj", workingDir: OutputDir);
 
         // 3. Generate APK
