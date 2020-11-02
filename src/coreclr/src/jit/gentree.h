@@ -4204,8 +4204,6 @@ struct GenTreeCall final : public GenTree
 #define GTF_CALL_M_SUPPRESS_GC_TRANSITION  0x00800000 // GT_CALL -- suppress the GC transition (i.e. during a pinvoke) but a separate GC safe point is required.
 #define GTF_CALL_M_EXP_RUNTIME_LOOKUP      0x01000000 // GT_CALL -- this call needs to be tranformed into CFG for the dynamic dictionary expansion feature.
 #define GTF_CALL_M_STRESS_TAILCALL         0x02000000 // GT_CALL -- the call is NOT "tail" prefixed but GTF_CALL_M_EXPLICIT_TAILCALL was added because of tail call stress mode
-#define GTF_CALL_M_UNMGD_INST_CALL         0x04000000 // GT_CALL -- this call is a call to an unmanaged instance method
-                                                      // (only for GTF_CALL_UNMANAGED)
 
     // clang-format on
 

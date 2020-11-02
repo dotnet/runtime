@@ -353,7 +353,7 @@ void Compiler::lvaInitArgs(InitVarDscInfo* varDscInfo)
     unsigned numUserArgsToSkip = 0;
     unsigned numUserArgs       = info.compMethodInfo->args.numArgs;
 #if defined(TARGET_WINDOWS) && !defined(TARGET_ARM)
-    if (compMethodIsNativeInstanceMethod(info.compMethodInfo))
+    if (callConvIsInstanceMethodCallConv(compMethodInfoGetUnmanagedCallConv(info.compMethodInfo)))
     {
         // If we are a native instance method, handle the first user arg
         // (the unmanaged this parameter) and then handle the hidden
@@ -5350,7 +5350,7 @@ void Compiler::lvaAssignVirtualFrameOffsetsToArgs()
     // the this parameter comes before the hidden return buffer parameter.
     // So, we want to process the native "this" parameter before we process
     // the native return buffer parameter.
-    if (compMethodIsNativeInstanceMethod(info.compMethodInfo))
+    if (callConvIsInstanceMethodCallConv(compMethodInfoGetUnmanagedCallConv(info.compMethodInfo)))
     {
         noway_assert(lvaTable[lclNum].lvIsRegArg);
 #ifndef TARGET_X86

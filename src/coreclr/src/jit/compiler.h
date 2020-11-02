@@ -2255,7 +2255,7 @@ public:
 #endif // ARM_SOFTFP
 
 #ifdef TARGET_X86
-    bool isTrivialPointerSizedStruct(CORINFO_CLASS_HANDLE clsHnd);
+    bool isTrivialPointerSizedStruct(CORINFO_CLASS_HANDLE clsHnd) const;
 #endif // TARGET_X86
 
     //-------------------------------------------------------------------------
@@ -9334,7 +9334,7 @@ public:
 #ifdef TARGET_AMD64
         return (info.compRetBuffArg != BAD_VAR_NUM);
 #elif defined(TARGET_WINDOWS) && defined(TARGET_ARM64)
-        return (compMethodIsNativeInstanceMethod(info.compMethodInfo) || compIsProfilerHookNeeded()) &&
+        return (callConvIsInstanceMethodCallConv(info.compMethodInfo->args.getCallConv()) || compIsProfilerHookNeeded()) &&
                (info.compRetBuffArg != BAD_VAR_NUM);
 #else  // !TARGET_AMD64
         return (compIsProfilerHookNeeded()) && (info.compRetBuffArg != BAD_VAR_NUM);
@@ -9536,10 +9536,8 @@ public:
     // size of the type these describe.
     unsigned compGetTypeSize(CorInfoType cit, CORINFO_CLASS_HANDLE clsHnd);
 
-    // Determines whether this method's entry point should have the same calling
-    // convention as an unmanaged instance method variant of the standard calling convention.
-    // (only used on applicable platforms)
-    bool compMethodIsNativeInstanceMethod(CORINFO_METHOD_INFO* mthInfo);
+    // Determines whether or not this calling convention is an instance method calling convention.
+    static bool callConvIsInstanceMethodCallConv(CorInfoUnmanagedCallConv callConv);
 
     // Gets the unmanaged calling convention the method's entry point should have.
     // Returns CorInfoUnmanagedCallConv::CORINFO_UNMANAGED_CALLCONV_MANAGED for the managed

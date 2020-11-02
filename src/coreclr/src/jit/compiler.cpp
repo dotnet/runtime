@@ -524,7 +524,7 @@ bool Compiler::isSingleFloat32Struct(CORINFO_CLASS_HANDLE clsHnd)
 //    true if the given struct type contains only one pointer-sized integer value type,
 //    false otherwise.
 //
-bool Compiler::isTrivialPointerSizedStruct(CORINFO_CLASS_HANDLE clsHnd)
+bool Compiler::isTrivialPointerSizedStruct(CORINFO_CLASS_HANDLE clsHnd) const
 {
     assert(info.compCompHnd->isValueClass(clsHnd));
     if (info.compCompHnd->getClassSize(clsHnd) != TARGET_POINTER_SIZE)
@@ -2060,9 +2060,9 @@ unsigned Compiler::compGetTypeSize(CorInfoType cit, CORINFO_CLASS_HANDLE clsHnd)
     return sigSize;
 }
 
-bool Compiler::compMethodIsNativeInstanceMethod(CORINFO_METHOD_INFO* mthInfo)
+bool Compiler::callConvIsInstanceMethodCallConv(CorInfoUnmanagedCallConv callConv)
 {
-    return mthInfo->args.getCallConv() == CORINFO_CALLCONV_THISCALL;
+    return callConv == CORINFO_CALLCONV_THISCALL;
 }
 
 CorInfoUnmanagedCallConv Compiler::compMethodInfoGetUnmanagedCallConv(CORINFO_METHOD_INFO* mthInfo)

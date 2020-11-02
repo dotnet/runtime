@@ -1185,7 +1185,7 @@ GenTree* Compiler::impAssignStructPtr(GenTree*             destAddr,
             // Unmanaged instance methods on Windows need the retbuf arg after the first (this) parameter
             if (srcCall->IsUnmanaged())
             {
-                if (srcCall->gtCallMoreFlags & GTF_CALL_M_UNMGD_INST_CALL)
+                if (callConvIsInstanceMethodCallConv(srcCall->unmgdCallConv))
                 {
                     GenTreeCall::Use* thisArg = gtInsertNewCallArgAfter(destAddr, srcCall->gtCallArgs);
                 }
@@ -6956,7 +6956,6 @@ void Compiler::impCheckForPInvokeCall(
     if (unmanagedCallConv == CORINFO_UNMANAGED_CALLCONV_THISCALL)
     {
         call->gtCallMoreFlags |= GTF_CALL_M_UNMGD_THISCALL;
-        call->gtCallMoreFlags |= GTF_CALL_M_UNMGD_INST_CALL;
     }
 }
 
@@ -17177,7 +17176,7 @@ bool Compiler::impReturnInstruction(int prefixFlags, OPCODE& opcode)
 #if defined(TARGET_WINDOWS) && defined(TARGET_ARM64)
         // On ARM64, the native instance calling convention variant
         // requires the implicit ByRef to be explicitly returned.
-        else if (compMethodIsNativeInstanceMethod(info.compMethodInfo))
+        else if (callConvIsInstanceMethodCallConv(compMethodInfoGetUnmanagedCallConv(info.compMethodInfo)))
         {
             op1 = gtNewOperNode(GT_RETURN, TYP_BYREF, gtNewLclvNode(info.compRetBuffArg, TYP_BYREF));
         }

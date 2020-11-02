@@ -5725,12 +5725,13 @@ void CodeGen::genJmpMethod(GenTree* jmp)
             var_types loadType = varDsc->lvaArgType();
 
 #ifdef TARGET_X86
-            if (varTypeIsStruct(varDsc->TypeGet()) && compiler->isTrivialPointerSizedStruct(varDsc->GetStructHnd()))
+            if (varTypeIsStruct(varDsc->TypeGet()))
             {
-                // Treat trivial pointer-sized structs as a pointer sized primitive
-                // for the purposes of registers.
-                loadType = TYP_I_IMPL;
+                assert(compiler->isTrivialPointerSizedStruct(varDsc->GetStructHnd()));
             }
+            // Treat trivial pointer-sized structs as a pointer sized primitive
+            // for the purposes of registers.
+            loadType = TYP_I_IMPL;
 #endif
 
             regNumber argReg = varDsc->GetArgReg(); // incoming arg register
