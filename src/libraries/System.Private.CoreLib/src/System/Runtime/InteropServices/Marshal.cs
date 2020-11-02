@@ -615,7 +615,7 @@ namespace System.Runtime.InteropServices
         {
             if (s is null)
             {
-                throw new ArgumentNullException(nameof(s));
+                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.s);
             }
 
             return s.MarshalToBSTR();
@@ -625,7 +625,7 @@ namespace System.Runtime.InteropServices
         {
             if (s is null)
             {
-                throw new ArgumentNullException(nameof(s));
+                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.s);
             }
 
             return s.MarshalToString(globalAlloc: false, unicode: false);
@@ -635,7 +635,7 @@ namespace System.Runtime.InteropServices
         {
             if (s is null)
             {
-                throw new ArgumentNullException(nameof(s));
+                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.s);
             }
 
             return s.MarshalToString(globalAlloc: false, unicode: true);
@@ -645,7 +645,7 @@ namespace System.Runtime.InteropServices
         {
             if (s is null)
             {
-                throw new ArgumentNullException(nameof(s));
+                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.s);
             }
 
             return s.MarshalToString(globalAlloc: true, unicode: false);
@@ -655,7 +655,7 @@ namespace System.Runtime.InteropServices
         {
             if (s is null)
             {
-                throw new ArgumentNullException(nameof(s));
+                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.s);
             }
 
             return s.MarshalToString(globalAlloc: true, unicode: true);
@@ -674,7 +674,7 @@ namespace System.Runtime.InteropServices
             // Overflow checking
             if (nb != lnb)
             {
-                throw new ArgumentOutOfRangeException(nameof(s));
+                ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.s);
             }
 
             IntPtr ptr = AllocHGlobal((IntPtr)nb);
@@ -790,7 +790,7 @@ namespace System.Runtime.InteropServices
             // Overflow checking
             if (nb != lnb)
             {
-                throw new ArgumentOutOfRangeException(nameof(s));
+                ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.s);
             }
 
             IntPtr ptr = AllocCoTaskMem(nb);

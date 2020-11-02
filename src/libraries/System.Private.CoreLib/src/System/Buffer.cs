@@ -90,7 +90,9 @@ namespace System
         {
             // array argument validation done via ByteLength
             if ((uint)index >= (uint)ByteLength(array))
-                throw new ArgumentOutOfRangeException(nameof(index));
+            {
+                ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.index);
+            }
 
             return Unsafe.Add<byte>(ref array.GetRawArrayData(), index);
         }
@@ -99,7 +101,9 @@ namespace System
         {
             // array argument validation done via ByteLength
             if ((uint)index >= (uint)ByteLength(array))
-                throw new ArgumentOutOfRangeException(nameof(index));
+            {
+                ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.index);
+            }
 
             Unsafe.Add<byte>(ref array.GetRawArrayData(), index) = value;
         }
