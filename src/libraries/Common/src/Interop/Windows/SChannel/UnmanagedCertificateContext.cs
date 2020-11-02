@@ -8,7 +8,7 @@ using System.Security.Cryptography.X509Certificates;
 
 namespace System.Net
 {
-    internal static unsafe partial class UnmanagedCertificateContext
+    internal static partial class UnmanagedCertificateContext
     {
         internal static X509Certificate2Collection GetRemoteCertificatesFromStoreContext(SafeFreeCertContext certContext)
         {

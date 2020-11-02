@@ -7,8 +7,10 @@ using System.Runtime.InteropServices;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.DotNet.RemoteExecutor;
+using Microsoft.DotNet.XUnitExtensions;
 using Xunit;
 using Xunit.Abstractions;
+using Xunit.Sdk;
 
 namespace System.Net.Sockets.Tests
 {
@@ -937,17 +939,26 @@ namespace System.Net.Sockets.Tests
             }
         }
 
-        [Fact]
+        public static readonly TheoryData<IPAddress> UdpReceiveGetsCanceledByDispose_Data = new TheoryData<IPAddress>
+        {
+            { IPAddress.Loopback },
+            { IPAddress.IPv6Loopback },
+            { IPAddress.Loopback.MapToIPv6() }
+        };
+
+        [Theory]
+        [MemberData(nameof(UdpReceiveGetsCanceledByDispose_Data))]
         [PlatformSpecific(~TestPlatforms.OSX)] // Not supported on OSX.
-        public async Task UdpReceiveGetsCanceledByDispose()
+        public async Task UdpReceiveGetsCanceledByDispose(IPAddress address)
         {
             // We try this a couple of times to deal with a timing race: if the Dispose happens
             // before the operation is started, we won't see a SocketException.
             int msDelay = 100;
             await RetryHelper.ExecuteAsync(async () =>
             {
-                var socket = new Socket(AddressFamily.InterNetwork, SocketType.Dgram, ProtocolType.Udp);
-                socket.BindToAnonymousPort(IPAddress.Loopback);
+                var socket = new Socket(address.AddressFamily, SocketType.Dgram, ProtocolType.Udp);
+                if (address.IsIPv4MappedToIPv6) socket.DualMode = true;
+                socket.BindToAnonymousPort(address);
 
                 Task receiveTask = ReceiveAsync(socket, new ArraySegment<byte>(new byte[1]));
 
@@ -956,11 +967,7 @@ namespace System.Net.Sockets.Tests
                 msDelay *= 2;
                 Task disposeTask = Task.Run(() => socket.Dispose());
 
-                var cts = new CancellationTokenSource();
-                Task timeoutTask = Task.Delay(30000, cts.Token);
-                Assert.NotSame(timeoutTask, await Task.WhenAny(disposeTask, receiveTask, timeoutTask));
-                cts.Cancel();
-
+                await Task.WhenAny(disposeTask, receiveTask).TimeoutAfter(30000);
                 await disposeTask;
 
                 SocketError? localSocketError = null;
@@ -991,21 +998,35 @@ namespace System.Net.Sockets.Tests
                 {
                     Assert.Equal(SocketError.OperationAborted, localSocketError);
                 }
-            }, maxAttempts: 10);
+            }, maxAttempts: 10, retryWhen: e => e is XunitException);
         }
 
-        [Theory]
-        [InlineData(true)]
-        [InlineData(false)]
-        public async Task TcpReceiveSendGetsCanceledByDispose(bool receiveOrSend)
+        public static readonly TheoryData<bool, bool, bool> TcpReceiveSendGetsCanceledByDispose_Data = new TheoryData<bool, bool, bool>
         {
+            { true, false, false },
+            { true, false, true },
+            { true, true, false },
+            { false, false, false },
+            { false, false, true },
+            { false, true, false },
+        };
+
+        [Theory(Timeout = 40000)]
+        [MemberData(nameof(TcpReceiveSendGetsCanceledByDispose_Data))]
+        public async Task TcpReceiveSendGetsCanceledByDispose(bool receiveOrSend, bool ipv6Server, bool dualModeClient)
+        {
+            // RHEL7 kernel has a bug preventing close(AF_UNKNOWN) to succeed with IPv6 sockets.
+            // In this case Dispose will trigger a graceful shutdown, which means that receive will succeed on socket2.
+            // TODO: Remove this, once CI machines are updated to a newer kernel.
+            bool expectGracefulShutdown = UsesSync && PlatformDetection.IsRedHatFamily7 && receiveOrSend && (ipv6Server || dualModeClient);
+
             // We try this a couple of times to deal with a timing race: if the Dispose happens
             // before the operation is started, the peer won't see a ConnectionReset SocketException and we won't
             // see a SocketException either.
             int msDelay = 100;
             await RetryHelper.ExecuteAsync(async () =>
             {
-                (Socket socket1, Socket socket2) = SocketTestExtensions.CreateConnectedSocketPair();
+                (Socket socket1, Socket socket2) = SocketTestExtensions.CreateConnectedSocketPair(ipv6Server, dualModeClient);
                 using (socket2)
                 {
                     Task socketOperation;
@@ -1030,11 +1051,7 @@ namespace System.Net.Sockets.Tests
                     msDelay *= 2;
                     Task disposeTask = Task.Run(() => socket1.Dispose());
 
-                    var cts = new CancellationTokenSource();
-                    Task timeoutTask = Task.Delay(30000, cts.Token);
-                    Assert.NotSame(timeoutTask, await Task.WhenAny(disposeTask, socketOperation, timeoutTask));
-                    cts.Cancel();
-
+                    await Task.WhenAny(disposeTask, socketOperation).TimeoutAfter(30000);
                     await disposeTask;
 
                     SocketError? localSocketError = null;
@@ -1088,10 +1105,18 @@ namespace System.Net.Sockets.Tests
                                 break;
                             }
                         }
-                        Assert.Equal(SocketError.ConnectionReset, peerSocketError);
+
+                        if (!expectGracefulShutdown)
+                        {
+                            Assert.Equal(SocketError.ConnectionReset, peerSocketError);
+                        }
+                        else
+                        {
+                            Assert.Null(peerSocketError);
+                        }
                     }
                 }
-            }, maxAttempts: 10);
+            }, maxAttempts: 10, retryWhen: e => e is XunitException);
         }
 
         [Fact]

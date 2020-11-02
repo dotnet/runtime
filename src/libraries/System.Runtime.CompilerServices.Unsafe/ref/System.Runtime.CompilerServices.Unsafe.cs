@@ -18,9 +18,7 @@ namespace System.Runtime.CompilerServices
         public unsafe static void* AsPointer<T>(ref T value) { throw null; }
         public unsafe static ref T AsRef<T>(void* source) { throw null; }
         public static ref T AsRef<T>(in T source) { throw null; }
-#if NETSTANDARD2_1
         [return: System.Diagnostics.CodeAnalysis.NotNullIfNotNull("o")]
-#endif
         public static T? As<T>(object? o) where T : class? { throw null; }
         public static ref TTo As<TFrom, TTo>(ref TFrom source) { throw null; }
         public static System.IntPtr ByteOffset<T>([System.Diagnostics.CodeAnalysis.AllowNull] ref T origin, [System.Diagnostics.CodeAnalysis.AllowNull] ref T target) { throw null; }

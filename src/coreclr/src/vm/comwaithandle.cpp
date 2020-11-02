@@ -35,6 +35,25 @@ FCIMPL2(INT32, WaitHandleNative::CorWaitOneNative, HANDLE handle, INT32 timeout)
 }
 FCIMPLEND
 
+#ifdef TARGET_UNIX
+INT32 QCALLTYPE WaitHandleNative::CorWaitOnePrioritizedNative(HANDLE handle, INT32 timeoutMs)
+{
+    QCALL_CONTRACT;
+
+    DWORD result = WAIT_FAILED;
+
+    BEGIN_QCALL;
+
+    _ASSERTE(handle != NULL);
+    _ASSERTE(handle != INVALID_HANDLE_VALUE);
+
+    result = PAL_WaitForSingleObjectPrioritized(handle, timeoutMs);
+
+    END_QCALL;
+    return (INT32)result;
+}
+#endif
+
 FCIMPL4(INT32, WaitHandleNative::CorWaitMultipleNative, HANDLE *handleArray, INT32 numHandles, CLR_BOOL waitForAll, INT32 timeout)
 {
     FCALL_CONTRACT;

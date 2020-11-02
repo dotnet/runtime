@@ -1,13 +1,14 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.Security;
+using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
 using System.Runtime.CompilerServices;
+using System.Runtime.Versioning;
+using System.Security;
 using System.Text;
 
 using Internal.Runtime.CompilerServices;
-using System.Diagnostics.CodeAnalysis;
 
 namespace System.Runtime.InteropServices
 {
@@ -614,7 +615,7 @@ namespace System.Runtime.InteropServices
         {
             if (s is null)
             {
-                throw new ArgumentNullException(nameof(s));
+                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.s);
             }
 
             return s.MarshalToBSTR();
@@ -624,7 +625,7 @@ namespace System.Runtime.InteropServices
         {
             if (s is null)
             {
-                throw new ArgumentNullException(nameof(s));
+                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.s);
             }
 
             return s.MarshalToString(globalAlloc: false, unicode: false);
@@ -634,7 +635,7 @@ namespace System.Runtime.InteropServices
         {
             if (s is null)
             {
-                throw new ArgumentNullException(nameof(s));
+                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.s);
             }
 
             return s.MarshalToString(globalAlloc: false, unicode: true);
@@ -644,7 +645,7 @@ namespace System.Runtime.InteropServices
         {
             if (s is null)
             {
-                throw new ArgumentNullException(nameof(s));
+                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.s);
             }
 
             return s.MarshalToString(globalAlloc: true, unicode: false);
@@ -654,7 +655,7 @@ namespace System.Runtime.InteropServices
         {
             if (s is null)
             {
-                throw new ArgumentNullException(nameof(s));
+                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.s);
             }
 
             return s.MarshalToString(globalAlloc: true, unicode: true);
@@ -673,13 +674,13 @@ namespace System.Runtime.InteropServices
             // Overflow checking
             if (nb != lnb)
             {
-                throw new ArgumentOutOfRangeException(nameof(s));
+                ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.s);
             }
 
-            IntPtr hglobal = AllocHGlobal((IntPtr)nb);
+            IntPtr ptr = AllocHGlobal((IntPtr)nb);
 
-            StringToAnsiString(s, (byte*)hglobal, nb);
-            return hglobal;
+            StringToAnsiString(s, (byte*)ptr, nb);
+            return ptr;
         }
 
         public static unsafe IntPtr StringToHGlobalUni(string? s)
@@ -694,16 +695,15 @@ namespace System.Runtime.InteropServices
             // Overflow checking
             if (nb < s.Length)
             {
-                throw new ArgumentOutOfRangeException(nameof(s));
+                ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.s);
             }
 
-            IntPtr hglobal = AllocHGlobal((IntPtr)nb);
+            IntPtr ptr = AllocHGlobal((IntPtr)nb);
 
-            fixed (char* firstChar = s)
-            {
-                string.wstrcpy((char*)hglobal, firstChar, s.Length + 1);
-            }
-            return hglobal;
+            s.AsSpan().CopyTo(new Span<char>((char*)ptr, s.Length));
+            ((char*)ptr)[s.Length] = '\0';
+
+            return ptr;
         }
 
         private static unsafe IntPtr StringToHGlobalUTF8(string? s)
@@ -715,10 +715,10 @@ namespace System.Runtime.InteropServices
 
             int nb = Encoding.UTF8.GetMaxByteCount(s.Length);
 
-            IntPtr pMem = AllocHGlobal(nb + 1);
+            IntPtr ptr = AllocHGlobal(nb + 1);
 
             int nbWritten;
-            byte* pbMem = (byte*)pMem;
+            byte* pbMem = (byte*)ptr;
 
             fixed (char* firstChar = s)
             {
@@ -727,7 +727,7 @@ namespace System.Runtime.InteropServices
 
             pbMem[nbWritten] = 0;
 
-            return pMem;
+            return ptr;
         }
 
         public static unsafe IntPtr StringToCoTaskMemUni(string? s)
@@ -742,16 +742,15 @@ namespace System.Runtime.InteropServices
             // Overflow checking
             if (nb < s.Length)
             {
-                throw new ArgumentOutOfRangeException(nameof(s));
+                ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.s);
             }
 
-            IntPtr hglobal = AllocCoTaskMem(nb);
+            IntPtr ptr = AllocCoTaskMem(nb);
 
-            fixed (char* firstChar = s)
-            {
-                string.wstrcpy((char*)hglobal, firstChar, s.Length + 1);
-            }
-            return hglobal;
+            s.AsSpan().CopyTo(new Span<char>((char*)ptr, s.Length));
+            ((char*)ptr)[s.Length] = '\0';
+
+            return ptr;
         }
 
         public static unsafe IntPtr StringToCoTaskMemUTF8(string? s)
@@ -763,10 +762,10 @@ namespace System.Runtime.InteropServices
 
             int nb = Encoding.UTF8.GetMaxByteCount(s.Length);
 
-            IntPtr pMem = AllocCoTaskMem(nb + 1);
+            IntPtr ptr = AllocCoTaskMem(nb + 1);
 
             int nbWritten;
-            byte* pbMem = (byte*)pMem;
+            byte* pbMem = (byte*)ptr;
 
             fixed (char* firstChar = s)
             {
@@ -775,7 +774,7 @@ namespace System.Runtime.InteropServices
 
             pbMem[nbWritten] = 0;
 
-            return pMem;
+            return ptr;
         }
 
         public static unsafe IntPtr StringToCoTaskMemAnsi(string? s)
@@ -791,13 +790,13 @@ namespace System.Runtime.InteropServices
             // Overflow checking
             if (nb != lnb)
             {
-                throw new ArgumentOutOfRangeException(nameof(s));
+                ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.s);
             }
 
-            IntPtr hglobal = AllocCoTaskMem(nb);
+            IntPtr ptr = AllocCoTaskMem(nb);
 
-            StringToAnsiString(s, (byte*)hglobal, nb);
-            return hglobal;
+            StringToAnsiString(s, (byte*)ptr, nb);
+            return ptr;
         }
 
         /// <summary>
@@ -975,10 +974,8 @@ namespace System.Runtime.InteropServices
 
             IntPtr bstr = AllocBSTR(s.Length);
 
-            fixed (char* firstChar = s)
-            {
-                string.wstrcpy((char*)bstr, firstChar, s.Length + 1);
-            }
+            s.AsSpan().CopyTo(new Span<char>((char*)bstr, s.Length)); // AllocBSTR already included the null terminator
+
             return bstr;
         }
 
@@ -996,5 +993,8 @@ namespace System.Runtime.InteropServices
         {
             return *(((uint*)s) - 1);
         }
+
+        [SupportedOSPlatform("windows")]
+        public static Type? GetTypeFromCLSID(Guid clsid) => GetTypeFromCLSID(clsid, null, throwOnError: false);
     }
 }

@@ -123,11 +123,21 @@ mono_wasm_invoke_js (MonoString *str, int *is_exception)
 }
 
 static void
-wasm_logger (const char *log_domain, const char *log_level, const char *message, mono_bool fatal, void *user_data)
+wasm_trace_logger (const char *log_domain, const char *log_level, const char *message, mono_bool fatal, void *user_data)
 {
 	EM_ASM({
-		var message = Module.UTF8ToString ($3) + ": " + Module.UTF8ToString ($1);
-		if ($2)
+		var log_level = $0;
+		var message = Module.UTF8ToString ($1);
+		var isFatal = $2;
+		var domain = Module.UTF8ToString ($3); // is this always Mono?
+		var dataPtr = $4;
+
+		if (MONO["logging"] && MONO.logging["trace"]) {
+			MONO.logging.trace(domain, log_level, message, isFatal, dataPtr);
+			return;
+		}
+
+		if (isFatal)
 			console.trace (message);
 
 		switch (Module.UTF8ToString ($0)) {
@@ -151,7 +161,7 @@ wasm_logger (const char *log_domain, const char *log_level, const char *message,
 				console.log (message);
 				break;
 		}
-	}, log_level, message, fatal, log_domain);
+	}, log_level, message, fatal, log_domain, user_data);
 }
 
 typedef uint32_t target_mword;
@@ -203,6 +213,23 @@ mono_wasm_add_assembly (const char *name, const unsigned char *data, unsigned in
 	assemblies = entry;
 	++assembly_count;
 	return mono_has_pdb_checksum (data, size);
+}
+
+int
+mono_wasm_assembly_already_added (const char *assembly_name)
+{
+	if (assembly_count == 0)
+		return 0;
+
+	WasmAssembly *entry = assemblies;
+	while (entry != NULL) {
+		int entry_name_minus_extn_len = strlen(entry->assembly.name) - 4;
+		if (entry_name_minus_extn_len == strlen(assembly_name) && strncmp (entry->assembly.name, assembly_name, entry_name_minus_extn_len) == 0)
+			return 1;
+		entry = entry->next;
+	}
+
+	return 0;
 }
 
 typedef struct WasmSatelliteAssembly_ WasmSatelliteAssembly;
@@ -518,7 +545,7 @@ mono_wasm_load_runtime (const char *unused, int debug_level)
 
 	mono_wasm_register_bundled_satellite_assemblies ();
 	mono_trace_init ();
-	mono_trace_set_log_handler (wasm_logger, NULL);
+	mono_trace_set_log_handler (wasm_trace_logger, NULL);
 	root_domain = mono_jit_init_version ("mono", "v4.0.30319");
 
 	mono_initialize_internals();
@@ -624,6 +651,17 @@ mono_wasm_string_from_js (const char *str)
 {
 	if (str)
 		return mono_string_new (root_domain, str);
+	else
+		return NULL;
+}
+
+EMSCRIPTEN_KEEPALIVE MonoString *
+mono_wasm_string_from_utf16 (const mono_unichar2 * chars, int length)
+{
+	assert (length >= 0);
+
+	if (chars)
+		return mono_string_new_utf16 (root_domain, chars, length);
 	else
 		return NULL;
 }

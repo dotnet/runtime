@@ -35,7 +35,7 @@ namespace System.Net
 
         private static readonly IOCompletionCallback s_IOCallback = new IOCompletionCallback(WaitCallback);
 
-        internal ListenerClientCertAsyncResult(ThreadPoolBoundHandle boundHandle, object asyncObject, object userState, AsyncCallback callback, uint size) : base(asyncObject, userState, callback)
+        internal ListenerClientCertAsyncResult(ThreadPoolBoundHandle boundHandle, object asyncObject, object? userState, AsyncCallback? callback, uint size) : base(asyncObject, userState, callback)
         {
             // we will use this overlapped structure to issue async IO to ul
             // the event handle will be put in by the BeginHttpApi2.ERROR_SUCCESS() method

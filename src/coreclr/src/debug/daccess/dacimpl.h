@@ -841,7 +841,8 @@ class ClrDataAccess
       public ISOSDacInterface6,
       public ISOSDacInterface7,
       public ISOSDacInterface8,
-      public ISOSDacInterface9
+      public ISOSDacInterface9,
+      public ISOSDacInterface10
 {
 public:
     ClrDataAccess(ICorDebugDataTarget * pTarget, ICLRDataTarget * pLegacyTarget=0);
@@ -1209,6 +1210,12 @@ public:
     // ISOSDacInterface9
     virtual HRESULT STDMETHODCALLTYPE GetBreakingChangeVersion(int* pVersion);
 
+    // ISOSDacInterface10
+    virtual HRESULT STDMETHODCALLTYPE GetObjectComWrappersData(CLRDATA_ADDRESS objAddr, CLRDATA_ADDRESS *rcw, unsigned int count, CLRDATA_ADDRESS *mowList, unsigned int *pNeeded);
+    virtual HRESULT STDMETHODCALLTYPE IsComWrappersCCW(CLRDATA_ADDRESS ccw, BOOL *isComWrappersCCW);
+    virtual HRESULT STDMETHODCALLTYPE GetComWrappersCCWData(CLRDATA_ADDRESS ccw, CLRDATA_ADDRESS *managedObject, int *refCount);
+    virtual HRESULT STDMETHODCALLTYPE IsComWrappersRCW(CLRDATA_ADDRESS rcw, BOOL *isComWrappersRCW);
+    virtual HRESULT STDMETHODCALLTYPE GetComWrappersRCWData(CLRDATA_ADDRESS rcw, CLRDATA_ADDRESS *identity);
     //
     // ClrDataAccess.
     //
@@ -1475,6 +1482,9 @@ private:
 #endif
 
 #ifdef FEATURE_COMWRAPPERS
+    BOOL DACGetComWrappersCCWVTableQIAddress(CLRDATA_ADDRESS ccwPtr, TADDR *vTableAddress, TADDR *qiAddress);
+    BOOL DACIsComWrappersCCW(CLRDATA_ADDRESS ccwPtr);
+    TADDR DACGetManagedObjectWrapperFromCCW(CLRDATA_ADDRESS ccwPtr);
     HRESULT DACTryGetComWrappersObjectFromCCW(CLRDATA_ADDRESS ccwPtr, OBJECTREF* objRef);
 #endif
 
@@ -4026,5 +4036,37 @@ extern unsigned __int64 g_nStackWalk;
 extern unsigned __int64 g_nFindStackTotalTime;
 
 #endif // #if defined(DAC_MEASURE_PERF)
+
+#ifdef FEATURE_COMWRAPPERS
+
+// Public contract for ExternalObjectContext, keep in sync with definition in
+// interoplibinterface.cpp
+struct ExternalObjectContextDACnterface
+{
+    PTR_VOID identity;
+    INT_PTR _padding1;
+    DWORD SyncBlockIndex;
+    INT64 _padding3;
+};
+
+typedef DPTR(ExternalObjectContextDACnterface) PTR_ExternalObjectContext;
+
+// Public contract for ManagedObjectWrapper, keep in sync with definition in
+// comwrappers.hpp
+struct ManagedObjectWrapperDACInterface
+{
+    PTR_VOID managedObject;
+    INT32 _padding1;
+    INT32 _padding2;
+    INT_PTR _padding3;
+    INT_PTR _padding4;
+    INT_PTR _padding6;
+    LONGLONG _refCount;
+    INT32 _padding7;
+};
+
+typedef DPTR(ManagedObjectWrapperDACInterface) PTR_ManagedObjectWrapper;
+
+#endif // FEATURE_COMWRAPPERS
 
 #endif // #ifndef __DACIMPL_H__

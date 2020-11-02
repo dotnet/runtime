@@ -52,7 +52,7 @@ namespace System.Diagnostics
         /// <summary>
         /// Gets or sets which processors the threads in this process can be scheduled to run on.
         /// </summary>
-        private unsafe IntPtr ProcessorAffinityCore
+        private IntPtr ProcessorAffinityCore
         {
             get { throw new PlatformNotSupportedException(); }
             set { throw new PlatformNotSupportedException(); }
@@ -72,11 +72,6 @@ namespace System.Diagnostics
         /// <param name="resultingMin">The resulting minimum working set limit after any changes applied.</param>
         /// <param name="resultingMax">The resulting maximum working set limit after any changes applied.</param>
         private void SetWorkingSetLimitsCore(IntPtr? newMin, IntPtr? newMax, out IntPtr resultingMin, out IntPtr resultingMax)
-        {
-            throw new PlatformNotSupportedException();
-        }
-
-        private static string GetExePath()
         {
             throw new PlatformNotSupportedException();
         }

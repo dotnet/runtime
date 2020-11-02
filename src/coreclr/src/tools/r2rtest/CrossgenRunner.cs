@@ -28,8 +28,8 @@ namespace R2RTest
             }
         }
 
-        public CrossgenRunner(BuildOptions options, IEnumerable<string> referencePaths)
-            : base(options, referencePaths) { }
+        public CrossgenRunner(BuildOptions options, IEnumerable<string> referencePaths, string overrideOutputPath = null)
+            : base(options, referencePaths, overrideOutputPath) { }
 
         protected override ProcessParameters ExecutionProcess(IEnumerable<string> modules, IEnumerable<string> folders, bool noEtw)
         {

@@ -30,7 +30,7 @@ namespace System.Reflection.Emit
             EventAttributes attr,                    // event attribute such as Public, Private, and Protected defined above
                                                      // int            eventType,                // event type
             TypeBuilder type,                    // containing type
-            EventToken evToken)
+            int evToken)
         {
             m_name = name;
             m_module = mod;
@@ -41,7 +41,7 @@ namespace System.Reflection.Emit
 
         // Return the Token for this event within the TypeBuilder that the
         // event is defined within.
-        public EventToken GetEventToken()
+        internal int GetEventToken()
         {
             return m_evToken;
         }
@@ -57,9 +57,9 @@ namespace System.Reflection.Emit
             ModuleBuilder module = m_module;
             TypeBuilder.DefineMethodSemantics(
                 new QCallModule(ref module),
-                m_evToken.Token,
+                m_evToken,
                 semantics,
-                mdBuilder.GetToken().Token);
+                mdBuilder.MetadataToken);
         }
 
         public void SetAddOnMethod(MethodBuilder mdBuilder)
@@ -94,8 +94,8 @@ namespace System.Reflection.Emit
 
             TypeBuilder.DefineCustomAttribute(
                 m_module,
-                m_evToken.Token,
-                m_module.GetConstructorToken(con).Token,
+                m_evToken,
+                m_module.GetConstructorToken(con),
                 binaryAttribute,
                 false, false);
         }
@@ -108,12 +108,12 @@ namespace System.Reflection.Emit
                 throw new ArgumentNullException(nameof(customBuilder));
             }
             m_type.ThrowIfCreated();
-            customBuilder.CreateCustomAttribute(m_module, m_evToken.Token);
+            customBuilder.CreateCustomAttribute(m_module, m_evToken);
         }
 
         // These are package private so that TypeBuilder can access them.
         private string m_name;         // The name of the event
-        private EventToken m_evToken;      // The token of this event
+        private int m_evToken;      // The token of this event
         private ModuleBuilder m_module;
         private EventAttributes m_attributes;
         private TypeBuilder m_type;

@@ -123,6 +123,7 @@ namespace System.Text.Json.Serialization.Tests
 
         [Theory]
         [MemberData(nameof(TestData), /* enumeratePayloadTweaks: */ false)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/42677", platforms: TestPlatforms.Windows, runtimes: TestRuntimes.Mono)]
         public static async Task ShouldWorkAtAnyPosition_Stream(
             string json,
             int bufferSize,
@@ -149,6 +150,7 @@ namespace System.Text.Json.Serialization.Tests
 
         [Theory]
         [MemberData(nameof(TestData), /* enumeratePayloadTweaks: */ true)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/42677", platforms: TestPlatforms.Windows, runtimes: TestRuntimes.Mono)]
         public static async Task InvalidJsonShouldFailAtAnyPosition_Stream(
             string json,
             int bufferSize,
@@ -178,6 +180,7 @@ namespace System.Text.Json.Serialization.Tests
 
         [Theory]
         [MemberData(nameof(TestData), /* enumeratePayloadTweaks: */ false)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/42677", platforms: TestPlatforms.Windows, runtimes: TestRuntimes.Mono)]
         public static void ShouldWorkAtAnyPosition_Sequence(
             string json,
             int bufferSize,
@@ -201,6 +204,7 @@ namespace System.Text.Json.Serialization.Tests
 
         [Theory]
         [MemberData(nameof(TestData), /* enumeratePayloadTweaks: */ true)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/42677", platforms: TestPlatforms.Windows, runtimes: TestRuntimes.Mono)]
         public static void InvalidJsonShouldFailAtAnyPosition_Sequence(
             string json,
             int bufferSize,

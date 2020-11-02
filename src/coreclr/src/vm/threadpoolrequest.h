@@ -156,23 +156,6 @@ public:
         ResetState();
     }
 
-    inline void InitResources()
-    {
-        CONTRACTL
-        {
-            THROWS;
-            MODE_ANY;
-            GC_NOTRIGGER;
-            INJECT_FAULT(COMPlusThrowOM());
-        }
-        CONTRACTL_END;
-
-    }
-
-    inline void CleanupResources()
-    {
-    }
-
     inline void ResetState()
     {
         LIMITED_METHOD_CONTRACT;

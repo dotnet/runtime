@@ -18,6 +18,11 @@ namespace System.Text.Json.Serialization.Tests
         public ConstructorTests_Stream() : base(DeserializationWrapper.StreamDeserializer) { }
     }
 
+    public class ConstructorTests_Span : ConstructorTests
+    {
+        public ConstructorTests_Span() : base(DeserializationWrapper.SpanDeserializer) { }
+    }
+
     public abstract partial class ConstructorTests
     {
         private DeserializationWrapper Serializer { get; }
@@ -1133,6 +1138,58 @@ namespace System.Text.Json.Serialization.Tests
         {
             AgePoco obj = JsonSerializer.Deserialize<AgePoco>(@"{""age"":1}");
             Assert.Equal(1, obj.age);
+        }
+
+        [Theory]
+        [InlineData(typeof(TypeWithGuid))]
+        [InlineData(typeof(TypeWithNullableGuid))]
+        public void DefaultForValueTypeCtorParam(Type type)
+        {
+            string json = @"{""MyGuid"":""edc421bf-782a-4a95-ad67-3d73b5d7db6f""}";
+            object obj = JsonSerializer.Deserialize(json, type);
+            Assert.Equal(json, JsonSerializer.Serialize(obj));
+
+            json = @"{}";
+            obj = JsonSerializer.Deserialize(json, type);
+
+            var options = new JsonSerializerOptions { DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingDefault };
+            Assert.Equal(json, JsonSerializer.Serialize(obj, options));
+        }
+
+        private class TypeWithGuid
+        {
+            public Guid MyGuid { get; }
+
+            public TypeWithGuid(Guid myGuid = default) => MyGuid = myGuid;
+        }
+
+        private struct TypeWithNullableGuid
+        {
+            public Guid? MyGuid { get; }
+
+            [JsonConstructor]
+            public TypeWithNullableGuid(Guid? myGuid = default) => MyGuid = myGuid;
+        }
+
+        [Fact]
+        public void DefaultForReferenceTypeCtorParam()
+        {
+            string json = @"{""MyUri"":""http://hello""}";
+            object obj = JsonSerializer.Deserialize(json, typeof(TypeWithUri));
+            Assert.Equal(json, JsonSerializer.Serialize(obj));
+
+            json = @"{}";
+            obj = JsonSerializer.Deserialize(json, typeof(TypeWithUri));
+
+            var options = new JsonSerializerOptions { DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingDefault };
+            Assert.Equal(json, JsonSerializer.Serialize(obj, options));
+        }
+
+        private class TypeWithUri
+        {
+            public Uri MyUri { get; }
+
+            public TypeWithUri(Uri myUri = default) => MyUri = myUri;
         }
     }
 }

@@ -1081,7 +1081,7 @@ namespace Internal.NativeCrypto
             else
             {
                 Type? hashAlgType = hashAlg as Type;
-                if ((object?)hashAlgType != null)
+                if (hashAlgType is not null)
                 {
                     if (typeof(MD5).IsAssignableFrom(hashAlgType))
                         return CapiHelper.CALG_MD5;

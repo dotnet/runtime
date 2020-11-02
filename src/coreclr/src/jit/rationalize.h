@@ -2,6 +2,9 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 //===============================================================================
+#ifndef JIT_RATIONALIZE_H
+#define JIT_RATIONALIZE_H
+
 #include "phase.h"
 
 class Rationalizer final : public Phase
@@ -64,3 +67,5 @@ inline Rationalizer::Rationalizer(Compiler* _comp) : Phase(_comp, PHASE_RATIONAL
     comp->compNumStatementLinksTraversed = 0;
 #endif
 }
+
+#endif

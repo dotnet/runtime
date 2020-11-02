@@ -6,6 +6,7 @@ parameters:
   name: ''
   helixType: '(unspecified)'
   container: ''
+  crossBuild: false
   crossrootfsDir: ''
   stagedBuild: false
   strategy: ''
@@ -91,12 +92,11 @@ jobs:
       - name: _HelixSource
         value: ci/dotnet/runtime/$(Build.SourceBranch)
 
-    - ${{ if ne(parameters.crossrootfsDir, '') }}:
+    - name: crossArg
+      value: ''
+    - ${{ if eq(parameters.crossBuild, true) }}:
       - name: crossArg
         value: '-cross'
-    - ${{ if eq(parameters.crossrootfsDir, '') }}:
-      - name: crossArg
-        value: ''
 
     - ${{ each variable in parameters.variables }}:
       - ${{insert}}: ${{ variable }}

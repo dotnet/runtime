@@ -12,7 +12,6 @@ namespace System.Text.Json
     internal abstract class JsonPropertyInfo
     {
         public static readonly JsonPropertyInfo s_missingProperty = GetPropertyPlaceholder();
-        public static readonly Type s_NullableType = typeof(Nullable<>);
 
         private JsonClassInfo? _runtimeClassInfo;
 
@@ -436,5 +435,8 @@ namespace System.Text.Json
         public bool IsIgnored { get; private set; }
 
         public JsonNumberHandling? NumberHandling { get; private set; }
+
+        //  Whether the property type can be null.
+        public bool PropertyTypeCanBeNull { get; protected set; }
     }
 }

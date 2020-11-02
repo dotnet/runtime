@@ -7,7 +7,7 @@
     <Noconfig>True</Noconfig>
     <Optimize>True</Optimize>
     <JitOptimizationSensitive>True</JitOptimizationSensitive>
-    <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
+    <TargetFramework>$(NetCoreAppToolCurrent)</TargetFramework>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="mutual_recursion.fs" />

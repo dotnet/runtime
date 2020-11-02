@@ -52,7 +52,7 @@ namespace Internal.JitInterface
 
         /*
            Changes to the following types may require revisiting the above layout.
-     
+
             In coreclr\src\inc\cordebuginfo.h
 
             enum VarLocType
@@ -140,7 +140,7 @@ namespace Internal.JitInterface
                     } vlStkReg;
 
                     // VLT_STK2 -- Any 64 bit value which is on the stack,
-                    // in 2 successsive DWords.
+                    // in 2 successive DWords.
                     // eg 2 DWords at [ESP+0x10]
 
                     struct

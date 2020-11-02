@@ -10,9 +10,7 @@ namespace System.Text.Json.Serialization.Tests
 {
     public static partial class ContinuationTests
     {
-        // This validates the original issue is fixed against the original
-        // test data (search for "CustomerCollectionResponse" to get
-        // the details - when github still exists you may have luck)
+        // From https://github.com/dotnet/runtime/issues/42070
         [Theory]
         [MemberData(nameof(ContinuationAtNullTokenTestData))]
         public static async Task ContinuationAtNullToken(string payload)

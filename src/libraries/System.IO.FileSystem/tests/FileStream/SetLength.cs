@@ -137,5 +137,28 @@ namespace System.IO.Tests
                 Assert.Equal(0, fs.Position);
             }
         }
+
+        [Fact]
+        public void SetLengthMaxValue()
+        {
+            using (FileStream fs = new FileStream(GetTestFilePath(), FileMode.Create))
+            {
+                // Depending on the file system, this can:
+                // - Throw IOException : No space left on device
+                // - Throw ArgumentOutOfRangeException : Specified file length was too large for the file system.
+                // - Succeed.
+                try
+                {
+                    fs.SetLength(long.MaxValue);
+                }
+                catch (Exception e)
+                {
+                    Assert.True(e is IOException || e is ArgumentOutOfRangeException, $"Unexpected exception {e}");
+                    return;
+                }
+
+                Assert.Equal(long.MaxValue, fs.Length);
+            }
+        }
     }
 }

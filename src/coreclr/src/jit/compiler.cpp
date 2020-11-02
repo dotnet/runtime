@@ -22,6 +22,7 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 #include "stacklevelsetter.h"
 #include "jittelemetry.h"
 #include "patchpointinfo.h"
+#include "jitstd/algorithm.h"
 
 #if defined(DEBUG)
 // Column settings for COMPlus_JitDumpIR.  We could(should) make these programmable.
@@ -1112,7 +1113,7 @@ var_types Compiler::getReturnTypeForStruct(CORINFO_CLASS_HANDLE clsHnd,
 
 ///////////////////////////////////////////////////////////////////////////////
 //
-// MEASURE_NOWAY: code to measure and rank dynamic occurences of noway_assert.
+// MEASURE_NOWAY: code to measure and rank dynamic occurrences of noway_assert.
 // (Just the appearances of noway_assert, whether the assert is true or false.)
 // This might help characterize the cost of noway_assert in non-DEBUG builds,
 // or determine which noway_assert should be simple DEBUG-only asserts.
@@ -1207,12 +1208,13 @@ struct NowayAssertCountMap
     {
     }
 
-    static int __cdecl compare(const void* elem1, const void* elem2)
+    struct compare
     {
-        NowayAssertCountMap* e1 = (NowayAssertCountMap*)elem1;
-        NowayAssertCountMap* e2 = (NowayAssertCountMap*)elem2;
-        return (int)((ssize_t)e2->count - (ssize_t)e1->count); // sort in descending order
-    }
+        bool operator()(const NowayAssertCountMap& elem1, const NowayAssertCountMap& elem2)
+        {
+            return (ssize_t)elem2.count < (ssize_t)elem1.count; // sort in descending order
+        }
+    };
 };
 
 void DisplayNowayAssertMap()
@@ -1249,7 +1251,7 @@ void DisplayNowayAssertMap()
             ++i;
         }
 
-        qsort(nacp, count, sizeof(nacp[0]), NowayAssertCountMap::compare);
+        jitstd::sort(nacp, nacp + count, NowayAssertCountMap::compare());
 
         if (fout == jitstdout)
         {
@@ -1689,6 +1691,7 @@ void Compiler::compShutdown()
     fprintf(fout, "---------------------------------------------------\n");
     fprintf(fout, "   badCode:             %u\n", fatal_badCode);
     fprintf(fout, "   noWay:               %u\n", fatal_noWay);
+    fprintf(fout, "   implLimitation:      %u\n", fatal_implLimitation);
     fprintf(fout, "   NOMEM:               %u\n", fatal_NOMEM);
     fprintf(fout, "   noWayAssertBody:     %u\n", fatal_noWayAssertBody);
 #ifdef DEBUG
@@ -1876,7 +1879,6 @@ void Compiler::compInit(ArenaAllocator*       pAlloc,
 
 #ifdef DEBUG
     compCodeGenDone        = false;
-    compRegSetCheckLevel   = 0;
     opts.compMinOptsIsUsed = false;
 #endif
     opts.compMinOptsIsSet = false;
@@ -2274,7 +2276,7 @@ void Compiler::compSetProcessor()
         instructionSetFlags.RemoveInstructionSet(InstructionSet_PCLMULQDQ);
     }
 
-    // We need to additionaly check that COMPlus_EnableSSE3_4 is set, as that
+    // We need to additionally check that COMPlus_EnableSSE3_4 is set, as that
     // is a prexisting config flag that controls the SSE3+ ISAs
     if (!JitConfig.EnableSSE3() || !JitConfig.EnableSSE3_4())
     {
@@ -2813,13 +2815,13 @@ void Compiler::compInitOptions(JitFlags* jitFlags)
 
 #ifdef DEBUG
     opts.dspInstrs       = false;
-    opts.dspEmit         = false;
     opts.dspLines        = false;
     opts.varNames        = false;
     opts.dmpHex          = false;
     opts.disAsm          = false;
     opts.disAsmSpilled   = false;
     opts.disDiffable     = false;
+    opts.disAddr         = false;
     opts.dspCode         = false;
     opts.dspEHTable      = false;
     opts.dspDebugInfo    = false;
@@ -2945,6 +2947,10 @@ void Compiler::compInitOptions(JitFlags* jitFlags)
                 }
             }
         }
+        if (opts.disAsm && JitConfig.JitDisasmWithGC())
+        {
+            opts.disasmWithGC = true;
+        }
 
 #ifdef LATE_DISASM
         if (JitConfig.JitLateDisasm().contains(info.compMethodName, info.compClassName, &info.compMethodInfo->args))
@@ -2956,6 +2962,12 @@ void Compiler::compInitOptions(JitFlags* jitFlags)
         {
             opts.disDiffable = true;
             opts.dspDiffable = true;
+        }
+
+        // This one applies to both Ngen/Jit Disasm output: COMPlus_JitDasmWithAddress=1
+        if (JitConfig.JitDasmWithAddress() != 0)
+        {
+            opts.disAddr = true;
         }
 
         if (JitConfig.JitLongAddress() != 0)
@@ -3257,18 +3269,6 @@ void Compiler::compInitOptions(JitFlags* jitFlags)
     }
 #endif
 
-    opts.compGCPollType = GCPOLL_NONE;
-    if (jitFlags->IsSet(JitFlags::JIT_FLAG_GCPOLL_CALLS))
-    {
-        opts.compGCPollType = GCPOLL_CALL;
-    }
-    else if (jitFlags->IsSet(JitFlags::JIT_FLAG_GCPOLL_INLINE))
-    {
-        // make sure that the EE didn't set both flags.
-        assert(opts.compGCPollType == GCPOLL_NONE);
-        opts.compGCPollType = GCPOLL_INLINE;
-    }
-
 #ifdef PROFILING_SUPPORTED
 #ifdef UNIX_AMD64_ABI
     if (compIsProfilerHookNeeded())
@@ -3327,7 +3327,7 @@ const LPCWSTR Compiler::s_compStressModeNames[STRESS_COUNT + 1] = {
 //------------------------------------------------------------------------
 // compStressCompile: determine if a stress mode should be enabled
 //
-// Argumemnts:
+// Arguments:
 //   stressArea - stress mode to possibly enable
 //   weight - percent of time this mode should be turned on
 //     (range 0 to 100); weight 0 effectively disables
@@ -3378,7 +3378,7 @@ bool Compiler::compStressCompile(compStressArea stressArea, unsigned weight)
 //------------------------------------------------------------------------
 // compStressCompileHelper: helper to determine if a stress mode should be enabled
 //
-// Argumemnts:
+// Arguments:
 //   stressArea - stress mode to possibly enable
 //   weight - percent of time this mode should be turned on
 //     (range 0 to 100); weight 0 effectively disables
@@ -4026,29 +4026,39 @@ bool Compiler::compRsvdRegCheck(FrameLayoutState curState)
 // compGetTieringName: get a string describing tiered compilation settings
 //   for this method
 //
+// Arguments:
+//   wantShortName - true if a short name is ok (say for using in file names)
+//
 // Returns:
 //   String describing tiering decisions for this method, including cases
 //   where the jit codegen will differ from what the runtime requested.
 //
-const char* Compiler::compGetTieringName() const
+const char* Compiler::compGetTieringName(bool wantShortName) const
 {
-    bool tier0 = opts.jitFlags->IsSet(JitFlags::JIT_FLAG_TIER0);
-    bool tier1 = opts.jitFlags->IsSet(JitFlags::JIT_FLAG_TIER1);
+    const bool tier0 = opts.jitFlags->IsSet(JitFlags::JIT_FLAG_TIER0);
+    const bool tier1 = opts.jitFlags->IsSet(JitFlags::JIT_FLAG_TIER1);
     assert(!tier0 || !tier1); // We don't expect multiple TIER flags to be set at one time.
 
     if (tier0)
     {
-        return "Tier-0";
+        return "Tier0";
     }
     else if (tier1)
     {
-        return "Tier-1";
+        if (opts.jitFlags->IsSet(JitFlags::JIT_FLAG_OSR))
+        {
+            return "Tier1-OSR";
+        }
+        else
+        {
+            return "Tier1";
+        }
     }
     else if (opts.OptimizationEnabled())
     {
         if (compSwitchedToOptimized)
         {
-            return "Tier-0 switched to FullOpts";
+            return wantShortName ? "Tier0-FullOpts" : "Tier-0 switched to FullOpts";
         }
         else
         {
@@ -4061,11 +4071,11 @@ const char* Compiler::compGetTieringName() const
         {
             if (compSwitchedToOptimized)
             {
-                return "Tier-0 switched to FullOpts, then to MinOpts";
+                return wantShortName ? "Tier0-FullOpts-MinOpts" : "Tier-0 switched to FullOpts, then to MinOpts";
             }
             else
             {
-                return "Tier-1/FullOpts switched to MinOpts";
+                return wantShortName ? "Tier0-MinOpts" : "Tier-0 switched MinOpts";
             }
         }
         else
@@ -4079,7 +4089,7 @@ const char* Compiler::compGetTieringName() const
     }
     else
     {
-        return "Unknown optimization level";
+        return wantShortName ? "Unknown" : "Unknown optimization level";
     }
 }
 
@@ -4207,9 +4217,7 @@ void Compiler::EndPhase(Phases phase)
         pCompJitTimer->EndPhase(this, phase);
     }
 #endif
-#if DUMP_FLOWGRAPHS
-    fgDumpFlowGraph(phase);
-#endif // DUMP_FLOWGRAPHS
+
     mostRecentlyActivePhase = phase;
 }
 
@@ -4537,7 +4545,11 @@ void Compiler::compCompile(void** methodCodePtr, ULONG* methodCodeSize, JitFlags
 
     // Compute bbNum, bbRefs and bbPreds
     //
-    // This is the first time full (not cheap) preds will be computed
+    // This is the first time full (not cheap) preds will be computed.
+    // And, if we have profile data, we can now check integrity.
+    //
+    // From this point on the flowgraph information such as bbNum,
+    // bbRefs or bbPreds has to be kept updated.
     //
     auto computePredsPhase = [this]() {
         JITDUMP("\nRenumbering the basic blocks for fgComputePred\n");
@@ -4564,9 +4576,6 @@ void Compiler::compCompile(void** methodCodePtr, ULONG* methodCodeSize, JitFlags
         DoPhase(this, PHASE_EARLY_UPDATE_FLOW_GRAPH, earlyUpdateFlowGraphPhase);
     }
 
-    // From this point on the flowgraph information such as bbNum,
-    // bbRefs or bbPreds has to be kept updated
-    //
     // Promote struct locals
     //
     auto promoteStructsPhase = [this]() {
@@ -4597,6 +4606,7 @@ void Compiler::compCompile(void** methodCodePtr, ULONG* methodCodeSize, JitFlags
     // Morph the trees in all the blocks of the method
     //
     auto morphGlobalPhase = [this]() {
+        unsigned prevBBCount = fgBBcount;
         fgMorphBlocks();
 
         // Fix any LclVar annotations on discarded struct promotion temps for implicit by-ref args
@@ -4621,6 +4631,12 @@ void Compiler::compCompile(void** methodCodePtr, ULONG* methodCodeSize, JitFlags
         compCurBB = nullptr;
 #endif // DEBUG
 
+        // If we needed to create any new BasicBlocks then renumber the blocks
+        if (fgBBcount > prevBBCount)
+        {
+            fgRenumberBlocks();
+        }
+
         // We can now enable all phase checking
         activePhaseChecks = PhaseChecks::CHECK_ALL;
     };
@@ -4629,6 +4645,7 @@ void Compiler::compCompile(void** methodCodePtr, ULONG* methodCodeSize, JitFlags
     // GS security checks for unsafe buffers
     //
     auto gsPhase = [this]() {
+        unsigned prevBBCount = fgBBcount;
         if (getNeedsGSSecurityCookie())
         {
             gsGSChecksInitCookie();
@@ -4637,6 +4654,12 @@ void Compiler::compCompile(void** methodCodePtr, ULONG* methodCodeSize, JitFlags
             {
                 gsCopyShadowParams();
             }
+
+            // If we needed to create any new BasicBlocks then renumber the blocks
+            if (fgBBcount > prevBBCount)
+            {
+                fgRenumberBlocks();
+            }
         }
         else
         {
@@ -4644,18 +4667,6 @@ void Compiler::compCompile(void** methodCodePtr, ULONG* methodCodeSize, JitFlags
         }
     };
     DoPhase(this, PHASE_GS_COOKIE, gsPhase);
-
-    // If we need to emit GC Poll calls, mark the blocks that need them now.
-    // This is conservative and can be optimized later.
-    //
-    // GC Poll marking assumes block bbnums match lexical block order,
-    // so make sure this is the case.
-    //
-    auto gcPollPhase = [this]() {
-        fgRenumberBlocks();
-        fgMarkGCPollBlocks();
-    };
-    DoPhase(this, PHASE_MARK_GC_POLL_BLOCKS, gcPollPhase);
 
     // Compute the block and edge weights
     //
@@ -4920,10 +4931,13 @@ void Compiler::compCompile(void** methodCodePtr, ULONG* methodCodeSize, JitFlags
     m_pLowering = new (this, CMK_LSRA) Lowering(this, m_pLinearScan); // PHASE_LOWERING
     m_pLowering->Run();
 
-    // Set stack levels
-    //
+#if !defined(OSX_ARM64_ABI)
+    // Set stack levels; this information is necessary for x86
+    // but on other platforms it is used only in asserts.
+    // TODO: do not run it in release on other platforms, see https://github.com/dotnet/runtime/issues/42673.
     StackLevelSetter stackLevelSetter(this);
     stackLevelSetter.Run();
+#endif // !OSX_ARM64_ABI
 
     // We can not add any new tracked variables after this point.
     lvaTrackedFixed = true;
@@ -5027,7 +5041,7 @@ void Compiler::generatePatchpointInfo()
         assert(varDsc->lvFramePointerBased);
 
         // Record FramePtr relative offset (no localloc yet)
-        patchpointInfo->SetOffset(lclNum, varDsc->lvStkOffs);
+        patchpointInfo->SetOffset(lclNum, varDsc->GetStackOffset());
 
         // Note if IL stream contained an address-of that potentially leads to exposure.
         // This bit of IL may be skipped by OSR partial importation.
@@ -5060,7 +5074,7 @@ void Compiler::generatePatchpointInfo()
     {
         assert(lvaGSSecurityCookie != BAD_VAR_NUM);
         LclVarDsc* const varDsc = lvaGetDesc(lvaGSSecurityCookie);
-        patchpointInfo->SetSecurityCookieOffset(varDsc->lvStkOffs);
+        patchpointInfo->SetSecurityCookieOffset(varDsc->GetStackOffset());
         JITDUMP("--OSR-- security cookie V%02u offset is FP %d\n", lvaGSSecurityCookie,
                 patchpointInfo->SecurityCookieOffset());
     }
@@ -6096,7 +6110,7 @@ int Compiler::compCompileHelper(CORINFO_MODULE_HANDLE classPtr,
 #ifdef DEBUG
     /* Give the function a unique number */
 
-    if (opts.disAsm || opts.dspEmit || verbose)
+    if (opts.disAsm || verbose)
     {
         compMethodID = ~info.compMethodHash() & 0xffff;
     }
@@ -6327,15 +6341,21 @@ void Compiler::compInitVarScopeMap()
     }
 }
 
-int __cdecl genCmpLocalVarLifeBeg(const void* elem1, const void* elem2)
+struct genCmpLocalVarLifeBeg
 {
-    return (*((VarScopeDsc**)elem1))->vsdLifeBeg - (*((VarScopeDsc**)elem2))->vsdLifeBeg;
-}
+    bool operator()(const VarScopeDsc* elem1, const VarScopeDsc* elem2)
+    {
+        return elem1->vsdLifeBeg < elem2->vsdLifeBeg;
+    }
+};
 
-int __cdecl genCmpLocalVarLifeEnd(const void* elem1, const void* elem2)
+struct genCmpLocalVarLifeEnd
 {
-    return (*((VarScopeDsc**)elem1))->vsdLifeEnd - (*((VarScopeDsc**)elem2))->vsdLifeEnd;
-}
+    bool operator()(const VarScopeDsc* elem1, const VarScopeDsc* elem2)
+    {
+        return elem1->vsdLifeEnd < elem2->vsdLifeEnd;
+    }
+};
 
 inline void Compiler::compInitScopeLists()
 {
@@ -6355,8 +6375,8 @@ inline void Compiler::compInitScopeLists()
         compEnterScopeList[i] = compExitScopeList[i] = &info.compVarScopes[i];
     }
 
-    qsort(compEnterScopeList, info.compVarScopesCount, sizeof(*compEnterScopeList), genCmpLocalVarLifeBeg);
-    qsort(compExitScopeList, info.compVarScopesCount, sizeof(*compExitScopeList), genCmpLocalVarLifeEnd);
+    jitstd::sort(compEnterScopeList, compEnterScopeList + info.compVarScopesCount, genCmpLocalVarLifeBeg());
+    jitstd::sort(compExitScopeList, compExitScopeList + info.compVarScopesCount, genCmpLocalVarLifeEnd());
 }
 
 void Compiler::compResetScopeLists()
@@ -6814,7 +6834,9 @@ START:
 
         result = param.result;
 
-    if (!inlineInfo && (result == CORJIT_INTERNALERROR || result == CORJIT_RECOVERABLEERROR) && !jitFallbackCompile)
+    if (!inlineInfo &&
+        (result == CORJIT_INTERNALERROR || result == CORJIT_RECOVERABLEERROR || result == CORJIT_IMPLLIMITATION) &&
+        !jitFallbackCompile)
     {
         // If we failed the JIT, reattempt with debuggable code.
         jitFallbackCompile = true;
@@ -8731,7 +8753,7 @@ void cTreeFlags(Compiler* comp, GenTree* tree)
                 {
                     chars += printf("[INX_STRING_LAYOUT]");
                 }
-                __fallthrough;
+                FALLTHROUGH;
             case GT_INDEX_ADDR:
                 if (tree->gtFlags & GTF_INX_RNGCHK)
                 {
@@ -8890,14 +8912,14 @@ void cTreeFlags(Compiler* comp, GenTree* tree)
                         chars += printf("[ICON_STR_HDL]");
                         break;
 
-                    case GTF_ICON_PSTR_HDL:
+                    case GTF_ICON_CONST_PTR:
 
-                        chars += printf("[ICON_PSTR_HDL]");
+                        chars += printf("[ICON_CONST_PTR]");
                         break;
 
-                    case GTF_ICON_PTR_HDL:
+                    case GTF_ICON_GLOBAL_PTR:
 
-                        chars += printf("[ICON_PTR_HDL]");
+                        chars += printf("[ICON_GLOBAL_PTR]");
                         break;
 
                     case GTF_ICON_VARG_HDL:
@@ -8949,7 +8971,7 @@ void cTreeFlags(Compiler* comp, GenTree* tree)
                 {
                     chars += printf("[BLK_HASGCPTR]");
                 }
-                __fallthrough;
+                FALLTHROUGH;
 
             case GT_BLK:
             case GT_DYN_BLK:

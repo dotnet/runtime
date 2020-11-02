@@ -34,7 +34,6 @@ set __BuildType=Debug
 set __TargetOS=Windows_NT
 
 set "__ProjectFilesDir=%__TestDir%"
-set "__SourceDir=%__RepoRootDir%\src\coreclr\src"
 set "__RootBinDir=%__RepoRootDir%\artifacts"
 set "__LogsDir=%__RootBinDir%\log"
 set "__MsbuildDebugLogsDir=%__LogsDir%\MsbuildDebugLogs"
@@ -104,10 +103,9 @@ if /i "%1" == "skipnative"            (set __SkipNative=1&set __CopyNativeProjec
 if /i "%1" == "skiptestwrappers"      (set __SkipTestWrappers=1&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
 if /i "%1" == "skipgeneratelayout"    (set __SkipGenerateLayout=1&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
 
-if /i "%1" == "copynativeonly"        (set __CopyNativeTestBinaries=1&set __SkipStressDependencies=1&set __SkipNative=1&set __CopyNativeProjectsAfterCombinedTestBuild=false&set __SkipGenerateLayout=1&set __SkipCrossgenFramework=1&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
+if /i "%1" == "copynativeonly"        (set __CopyNativeTestBinaries=1&set __SkipStressDependencies=1&set __SkipNative=1&set __CopyNativeProjectsAfterCombinedTestBuild=false&set __SkipGenerateLayout=1&set __SkipTestWrappers=1&set __SkipCrossgenFramework=1&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
 if /i "%1" == "generatelayoutonly"    (set __SkipManaged=1&set __SkipNative=1&set __CopyNativeProjectsAfterCombinedTestBuild=false&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
 if /i "%1" == "buildtestwrappersonly" (set __SkipNative=1&set __SkipManaged=1&set __BuildTestWrappersOnly=1&set __SkipGenerateLayout=1&set __SkipStressDependencies=1&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
-if /i "%1" == "crossgenframeworkonly" (set __SkipRestorePackages=1&set __SkipStressDependencies=1&set __SkipNative=1&set __SkipManaged=1&set __SkipGenerateLayout=1&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
 
 if /i "%1" == "buildagainstpackages"  (echo error: Remove /BuildAgainstPackages switch&&exit /b1)
 if /i "%1" == "crossgen"              (set __DoCrossgen=1&set __TestBuildMode=crossgen&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
@@ -154,9 +152,11 @@ set __msbuildArgs=/p:TargetOS=%__TargetOS% /p:Configuration=%__BuildType% /p:Tar
 
 echo %__MsgPrefix%Commencing CoreCLR test build
 
-set "__BinDir=%__RootBinDir%\bin\coreclr\%__TargetOS%.%__BuildArch%.%__BuildType%"
+set "__OSPlatformConfig=%__TargetOS%.%__BuildArch%.%__BuildType%"
+set "__BinDir=%__RootBinDir%\bin\coreclr\%__OSPlatformConfig%"
 set "__TestRootDir=%__RootBinDir%\tests\coreclr"
-set "__TestBinDir=%__TestRootDir%\%__TargetOS%.%__BuildArch%.%__BuildType%"
+set "__TestBinDir=%__TestRootDir%\%__OSPlatformConfig%"
+set "__TestIntermediatesDir=%__TestRootDir%\obj\%__OSPlatformConfig%"
 
 if not defined XunitTestBinBase set XunitTestBinBase=%__TestBinDir%\
 set "CORE_ROOT=%XunitTestBinBase%\Tests\Core_Root"
@@ -202,10 +202,10 @@ REM ============================================================================
 
 if defined __SkipStressDependencies goto skipstressdependencies
 
-call "%__RepoRootDir%\src\coreclr\tests\setup-stress-dependencies.cmd" /arch %__BuildArch% /outputdir %__BinDir%
+call "%__RepoRootDir%\src\tests\Common\setup-stress-dependencies.cmd" /arch %__BuildArch% /outputdir %__BinDir%
 if errorlevel 1 (
     echo %__ErrMsgPrefix%%__MsgPrefix%Error: setup-stress-dependencies failed.
-    goto     :Exit_Failure
+    exit /b 1
 )
 
 :skipstressdependencies
@@ -224,7 +224,7 @@ echo %__MsgPrefix%Commencing build of native test components for %__BuildArch%/%
 REM Set the environment for the native build
 
 REM Eval the output from set-cmake-path.ps1
-for /f "delims=" %%a in ('powershell -NoProfile -ExecutionPolicy ByPass "& ""%__SourceDir%\pal\tools\set-cmake-path.ps1"""') do %%a
+for /f "delims=" %%a in ('powershell -NoProfile -ExecutionPolicy ByPass "& ""%__RepoRootDir%\eng\native\set-cmake-path.ps1"""') do %%a
 echo %__MsgPrefix%Using CMake from !CMakePath!
 
 REM NumberOfCores is an WMI property providing number of physical cores on machine
@@ -255,7 +255,7 @@ if not defined VSINSTALLDIR (
 if not exist "%VSINSTALLDIR%DIA SDK" goto NoDIA
 
 set __ExtraCmakeArgs="-DCMAKE_SYSTEM_VERSION=10.0" "-DCLR_ENG_NATIVE_DIR=%__RepoRootDir%/eng/native"
-call "%__SourceDir%\pal\tools\gen-buildsys.cmd" "%__ProjectFilesDir%" "%__NativeTestIntermediatesDir%" %__VSVersion% %__BuildArch% !__ExtraCmakeArgs!
+call "%__RepoRootDir%\eng\native\gen-buildsys.cmd" "%__ProjectFilesDir%" "%__NativeTestIntermediatesDir%" %__VSVersion% %__BuildArch% !__ExtraCmakeArgs!
 
 if not !errorlevel! == 0 (
     echo %__ErrMsgPrefix%%__MsgPrefix%Error: failed to generate native component build project!
@@ -628,117 +628,55 @@ may help to copy its "DIA SDK" folder into "%VSINSTALLDIR%" manually, then try a
 exit /b 1
 
 :PrecompileFX
-set __TotalPrecompiled=0
-set __FailedToPrecompile=0
-set __FailedAssemblies=
-set __CompositeOutputDir=%CORE_ROOT%\composite.out
-set __CompositeResponseFile=%__CompositeOutputDir%\framework-r2r.dll.rsp
+
+set "__CrossgenOutputDir=%__TestIntermediatesDir%\crossgen.out"
+
+set __CrossgenCmd="%__RepoRootDir%\dotnet.cmd" "%CORE_ROOT%\R2RTest\R2RTest.dll" compile-framework -cr "%CORE_ROOT%" --output-directory "%__CrossgenOutputDir%" --release --nocleanup --target-arch %__BuildArch% -dop %NUMBER_OF_PROCESSORS%
+
+if defined __CompositeBuildMode (
+    set __CrossgenCmd=%__CrossgenCmd% --composite
+) else (
+    set __CrossgenCmd=%__CrossgenCmd% --large-bubble --crossgen2-parallelism 1
+)
 
 set __CrossgenDir=%__BinDir%
-if /i "%__BuildArch%" == "arm" (set __CrossgenDir=!__CrossgenDir!\x86)
-if /i "%__BuildArch%" == "arm64" (set __CrossgenDir=!__CrossgenDir!\x64)
-
-set __CrossgenExe="%__CrossgenDir%\crossgen.exe"
-set __Crossgen2Dll="%__RepoRootDir%\dotnet.cmd" "%__CrossgenDir%\crossgen2\crossgen2.dll"
-
-if defined __CompositeBuildMode (
-    mkdir !__CompositeOutputDir!
-    del /Q !__CompositeResponseFile!
-    echo --composite>>!__CompositeResponseFile!
-    echo -O>>!__CompositeResponseFile!
-    echo --targetarch:%__BuildArch%>>!__CompositeResponseFile!
-    echo --out^:%__CompositeOutputDir%\framework-r2r.dll>>!__CompositeResponseFile!
-)
-
-for %%F in ("%CORE_ROOT%\System.*.dll";"%CORE_ROOT%\Microsoft.*.dll";%CORE_ROOT%\netstandard.dll;%CORE_ROOT%\mscorlib.dll) do (
-    if not "%%~nxF"=="System.Runtime.WindowsRuntime.dll" (
-        if defined __CompositeBuildMode (
-            echo %%F>>!__CompositeResponseFile!
-        ) else (
-            call :PrecompileAssembly %%F %%~nxF __TotalPrecompiled __FailedToPrecompile __FailedAssemblies
-            echo Processed: !__TotalPrecompiled!, failed !__FailedToPrecompile!
-        )
-    ))
-)
-
-if defined __CompositeBuildMode (
-    echo Composite response line^: %__CompositeResponseFile%
-    type "%__CompositeResponseFile%"
-)
-
-if defined __CompositeBuildMode (
-    set __CompositeCommandLine=%__Crossgen2Dll%
-    set __CompositeCommandLine=!__CompositeCommandLine! "@%__CompositeResponseFile%"
-    echo Building composite R2R framework^: !__CompositeCommandLine!
-    call !__CompositeCommandLine!
-    set __FailedToPrecompile=!ERRORLEVEL!
-    copy /Y "!__CompositeOutputDir!\*.*" "!CORE_ROOT!\"
-)
-
-if !__FailedToPrecompile! NEQ 0 (
-    @echo Failed assemblies:
-    FOR %%G IN (!__FailedAssemblies!) do echo   %%G
-)
-
-exit /b !__FailedToPrecompile!
-
-REM Compile the managed assemblies in Core_ROOT before running the tests
-:PrecompileAssembly
-
-set AssemblyPath=%1
-set AssemblyName=%2
-
-REM Intentionally avoid using the .dll extension to prevent
-REM subsequent compilations from picking it up as a reference
-set __CrossgenOutputFile=%CORE_ROOT%\temp.ni._dll
-set __CrossgenResponseFile="%CORE_ROOT%\%AssemblyName%.rsp
-set __CrossgenCmd=
-
-del /Q %__CrossgenResponseFile%
-
 if defined __DoCrossgen (
-    set __CrossgenCmd=!__CrossgenExe! @!__CrossgenResponseFile!
-    echo /Platform_Assemblies_Paths "!CORE_ROOT!">>!__CrossgenResponseFile!
-    echo /in !AssemblyPath!>>!__CrossgenResponseFile!
-    echo /out !__CrossgenOutputFile!>>!__CrossgenResponseFile!
+    if /i "%__BuildArch%" == "arm" (
+        set __CrossgenDir=!__CrossgenDir!\x86
+    )
+    if /i "%__BuildArch%" == "arm64" (
+        set __CrossgenDir=!__CrossgenDir!\x64
+    )
+    set __CrossgenCmd=%__CrossgenCmd% --crossgen --nocrossgen2 --crossgen-path "!__CrossgenDir!\crossgen.exe"
 ) else (
-    set __CrossgenCmd=!__Crossgen2Dll! @!__CrossgenResponseFile!
-    echo -r:!CORE_ROOT!\System.*.dll>>!__CrossgenResponseFile!
-    echo -r:!CORE_ROOT!\Microsoft.*.dll>>!__CrossgenResponseFile!
-    echo -r:!CORE_ROOT!\mscorlib.dll>>!__CrossgenResponseFile!
-    echo -r:!CORE_ROOT!\netstandard.dll>>!__CrossgenResponseFile!
-    echo -O>>!__CrossgenResponseFile!
-    echo --inputbubble>>!__CrossgenResponseFile!
-    echo --out:!__CrossgenOutputFile!>>!__CrossgenResponseFile!
-    echo !AssemblyPath!>>!__CrossgenResponseFile!
-    echo --targetarch:!__BuildArch!>>!__CrossgenResponseFile!
+    if /i "%__BuildArch%" == "arm" (
+        set __CrossgenDir=!__CrossgenDir!\x64
+    )
+    if /i "%__BuildArch%" == "arm64" (
+        set __CrossgenDir=!__CrossgenDir!\x64
+    )
+    if /i "%__BuildArch%" == "x86" (
+        set __CrossgenDir=!__CrossgenDir!\x64
+    )
+    set __CrossgenCmd=%__CrossgenCmd% --verify-type-and-field-layout --crossgen2-path "!__CrossgenDir!\crossgen2\crossgen2.dll"
 )
 
-echo !__CrossgenCmd!
-call !__CrossgenCmd!
-
+echo Running %__CrossgenCmd%
+call %__CrossgenCmd%
 set /a __exitCode = !errorlevel!
 
-set /a "%~3+=1"
-
-if "%__exitCode%" == "-2146230517" (
-    echo %AssemblyPath% is not a managed assembly.
-    exit /b 0
-)
-
 if %__exitCode% neq 0 (
-    echo Unable to precompile %AssemblyPath%, exit code is %__exitCode%
-    set /a "%~4+=1"
-    set "%~5=!%~5!,!AssemblyName!"
-    exit /b 0
+    echo Failed to crossgen the framework
+    exit /b 1
 )
 
-REM Delete original .dll & replace it with the Crossgened .dll
-del %AssemblyPath%
-ren "%__CrossgenOutputFile%" %AssemblyName%
+move "%__CrossgenOutputDir%\*.dll" %CORE_ROOT% > nul
 
-echo Successfully precompiled %AssemblyPath%
 exit /b 0
 
+REM Exit_Failure:
+REM This is necessary because of a(n apparent) bug in the FOR /L command.  Under certain circumstances,
+REM such as when this script is invoke with CMD /C "build.cmd", a non-zero exit directly from
+REM within the loop body will not propagate to the caller.  For some reason, goto works around it.
 :Exit_Failure
 exit /b 1

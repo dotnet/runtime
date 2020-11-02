@@ -179,13 +179,6 @@ CORJIT_FLAGS ZapInfo::ComputeJitFlags(CORINFO_METHOD_HANDLE handle)
     if (m_zapper->m_pOpt->m_noProcedureSplitting)
         jitFlags.Clear(CORJIT_FLAGS::CORJIT_FLAG_PROCSPLIT);
 
-    //never emit inlined polls for NGen'd code.  The extra indirection is not optimal.
-    if (jitFlags.IsSet(CORJIT_FLAGS::CORJIT_FLAG_GCPOLL_INLINE))
-    {
-        jitFlags.Clear(CORJIT_FLAGS::CORJIT_FLAG_GCPOLL_INLINE);
-        jitFlags.Set(CORJIT_FLAGS::CORJIT_FLAG_GCPOLL_CALLS);
-    }
-
     // If the method is specified for min-opts then turn everything off
     if (jitFlags.IsSet(CORJIT_FLAGS::CORJIT_FLAG_MIN_OPT))
     {

@@ -95,6 +95,11 @@ namespace Microsoft.Extensions.Primitives
 
             private void RegisterChangeTokenCallback(IChangeToken token)
             {
+                if (token is null)
+                {
+                    return;
+                }
+
                 IDisposable registraton = token.RegisterChangeCallback(s => ((ChangeTokenRegistration<TState>)s).OnChangeTokenFired(), this);
 
                 SetDisposable(registraton);

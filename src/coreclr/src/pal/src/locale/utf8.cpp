@@ -1281,7 +1281,7 @@ public:
         int ch = 0;
         DecoderFallbackBuffer *fallback = nullptr;
 
-        for (;;)
+        while (true)
         {
             // SLOWLOOP: does all range checks, handles all special cases, but it is slow
             if (pSrc >= pEnd) {
@@ -1651,7 +1651,7 @@ public:
 
         DecoderFallbackBuffer *fallback = nullptr;
 
-        for (;;)
+        while (true)
         {
             // SLOWLOOP: does all range checks, handles all special cases, but it is slow
 
@@ -1836,7 +1836,7 @@ public:
                 pSrc--;
 
                 // Throw that we don't have enough room (pSrc could be < chars if we had started to process
-                // a 4 byte sequence alredy)
+                // a 4 byte sequence already)
                 Contract::Assert(pSrc >= bytes || pTarget == chars,
                     "[UTF8Encoding.GetChars]Expected pSrc to be within input buffer or throw due to no output]");
                 ThrowCharsOverflow(pTarget == chars);
@@ -2158,7 +2158,7 @@ public:
 
         // assume that JIT will enregister pSrc, pTarget and ch
 
-        for (;;) {
+        while (true) {
             // SLOWLOOP: does all range checks, handles all special cases, but it is slow
 
             if (pSrc >= pEnd) {
@@ -2541,7 +2541,7 @@ public:
 
         int ch = 0;
 
-        for (;;) {
+        while (true) {
             // SLOWLOOP: does all range checks, handles all special cases, but it is slow
             if (pSrc >= pEnd) {
 

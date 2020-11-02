@@ -169,9 +169,20 @@ mono_mem_manager_alloc0_nolock (MonoMemoryManager *memory_manager, guint size)
 	return mono_mempool_alloc0 (memory_manager->mp, size);
 }
 
+char*
+mono_mem_manager_strdup (MonoMemoryManager *memory_manager, const char *s)
+{
+	char *res;
+
+	mono_mem_manager_lock (memory_manager);
+	res = mono_mempool_strdup (memory_manager->mp, s);
+	mono_mem_manager_unlock (memory_manager);
+
+	return res;
+}
 
 void *
-mono_mem_manager_code_reserve (MonoMemoryManager *memory_manager, int size)
+(mono_mem_manager_code_reserve) (MonoMemoryManager *memory_manager, int size)
 {
 	void *res;
 
@@ -202,6 +213,14 @@ mono_mem_manager_code_commit (MonoMemoryManager *memory_manager, void *data, int
 	mono_mem_manager_unlock (memory_manager);
 }
 
+/*
+ * mono_mem_manager_code_foreach:
+ * Iterate over the code thunks of the code manager of @memory_manager.
+ *
+ * The @func callback MUST not take any locks. If it really needs to, it must respect
+ * the locking rules of the runtime: http://www.mono-project.com/Mono:Runtime:Documentation:ThreadSafety
+ * LOCKING: Acquires the memory manager lock.
+ */
 void
 mono_mem_manager_code_foreach (MonoMemoryManager *memory_manager, MonoCodeManagerFunc func, void *user_data)
 {
