@@ -271,9 +271,9 @@ namespace System.Net.Sockets
         /// <summary>
         /// Connects the client to a remote TCP host using the specified endpoint as an asynchronous operation.
         /// </summary>
-        /// <param name="remoteEP">The endpoint to which you intend to connect.</param>
+        /// <param name="remoteEP">The <see cref="IPEndPoint"/> to which you intend to connect.</param>
         /// <returns>A task representing the asynchronous operation.</returns>
-        public Task ConnectAsync(EndPoint remoteEP) =>
+        public Task ConnectAsync(IPEndPoint remoteEP) =>
             CompleteConnectAsync(Client.ConnectAsync(remoteEP));
 
         private async Task CompleteConnectAsync(Task task)
@@ -294,10 +294,10 @@ namespace System.Net.Sockets
         /// <summary>
         /// Connects the client to a remote TCP host using the specified endpoint as an asynchronous operation.
         /// </summary>
-        /// <param name="remoteEP">The endpoint to which you intend to connect.</param>
+        /// <param name="remoteEP">The <see cref="IPEndPoint"/> to which you intend to connect.</param>
         /// <param name="cancellationToken">A cancellation token used to propagate notification that this operation should be canceled.</param>
         /// <returns>A task representing the asynchronous operation.</returns>
-        public ValueTask ConnectAsync(EndPoint remoteEP, CancellationToken cancellationToken) =>
+        public ValueTask ConnectAsync(IPEndPoint remoteEP, CancellationToken cancellationToken) =>
             CompleteConnectAsync(Client.ConnectAsync(remoteEP, cancellationToken));
 
         private async ValueTask CompleteConnectAsync(ValueTask task)
