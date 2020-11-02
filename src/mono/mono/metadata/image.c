@@ -24,6 +24,7 @@
 #include "tabledefs.h"
 #include "tokentype.h"
 #include "metadata-internals.h"
+#include "metadata-update.h"
 #include "profiler-private.h"
 #include "loader.h"
 #include "marshal.h"
@@ -45,6 +46,7 @@
 #include <mono/metadata/verify.h>
 #include <mono/metadata/image-internals.h>
 #include <mono/metadata/loaded-images-internals.h>
+#include <mono/metadata/metadata-update.h>
 #include <mono/metadata/w32process-internals.h>
 #include <mono/metadata/debug-internals.h>
 #include <mono/metadata/mono-private-unstable.h>
@@ -598,7 +600,7 @@ load_metadata_ptrs (MonoImage *image, MonoCLIImageInfo *iinfo)
 }
 
 /*
- * Load representation of logical metadata tables, from the "#~" stream
+ * Load representation of logical metadata tables, from the "#~" or "#-" stream
  */
 static gboolean
 load_tables (MonoImage *image)
@@ -613,6 +615,13 @@ load_tables (MonoImage *image)
 	image->idx_string_wide = ((heap_sizes & 0x01) == 1);
 	image->idx_guid_wide   = ((heap_sizes & 0x02) == 2);
 	image->idx_blob_wide   = ((heap_sizes & 0x04) == 4);
+
+	if (image->minimal_delta) {
+		/* sanity check */
+		g_assert (image->idx_string_wide);
+		g_assert (image->idx_guid_wide);
+		g_assert (image->idx_blob_wide);
+	}
 	
 	valid_mask = read64 (heap_tables + 8);
 	rows = (const guint32 *) (heap_tables + 24);
@@ -628,6 +637,7 @@ load_tables (MonoImage *image)
 			g_warning("bits in valid must be zero above 0x37 (II - 23.1.6)");
 		} else {
 			image->tables [table].rows = read32 (rows);
+			mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_ASSEMBLY, "found %s in image %s with rows = %d", mono_meta_table_name (table), image->assembly_name, image->tables [table].rows);
 		}
 		rows++;
 		valid++;
@@ -1462,6 +1472,22 @@ mono_is_problematic_image (MonoImage *image)
 	return FALSE;
 }
 
+static void
+dump_encmap (MonoImage *image)
+{
+	MonoTableInfo *encmap = &image->tables [MONO_TABLE_ENCMAP];
+	if (!encmap || !encmap->rows)
+		return;
+
+	mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_METADATA_UPDATE, "ENCMAP for %s", image->filename);
+	for (int i = 0; i < encmap->rows; ++i) {
+		guint32 cols [MONO_ENCMAP_SIZE];
+		mono_metadata_decode_row (encmap, i, cols, MONO_ENCMAP_SIZE);
+		int token = cols [MONO_ENCMAP_TOKEN];
+		mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_METADATA_UPDATE, "\t0x%08x: 0x%08x table: %s", i+1, token, mono_meta_table_name (mono_metadata_token_table (token)));
+	}
+}
+
 static MonoImage *
 do_mono_image_load (MonoImage *image, MonoImageOpenStatus *status,
 		    gboolean care_about_cli, gboolean care_about_pecoff)
@@ -1525,6 +1551,8 @@ do_mono_image_load (MonoImage *image, MonoImageOpenStatus *status,
 
 	if (image->loader == &pe_loader && !image->metadata_only && !mono_verifier_verify_table_data (image, error))
 		goto invalid_image;
+
+	dump_encmap (image);
 
 	mono_image_load_names (image);
 
@@ -2513,6 +2541,18 @@ mono_image_close_except_pools_all (MonoImage**images, int image_count)
 	}
 }
 
+static void
+mono_image_close_except_pools_all_list (GSList *images)
+{
+	for (GSList *ptr = images; ptr; ptr = ptr->next) {
+		MonoImage *image = (MonoImage *)ptr->data;
+		if (image) {
+			if (!mono_image_close_except_pools (image))
+			    ptr->data = NULL;
+		}
+	}
+}
+
 /*
  * Returns whether mono_image_close_finish() must be called as well.
  * We must unload images in two steps because clearing the domain in
@@ -2551,6 +2591,8 @@ mono_image_close_except_pools (MonoImage *image)
 	mono_image_invoke_unload_hook (image);
 
 	mono_metadata_clean_for_image (image);
+
+	mono_metadata_update_cleanup_on_close (image);
 
 	/*
 	 * The caches inside a MonoImage might refer to metadata which is stored in referenced 
@@ -2679,6 +2721,9 @@ mono_image_close_except_pools (MonoImage *image)
 	mono_image_close_except_pools_all (image->modules, image->module_count);
 	g_free (image->modules_loaded);
 
+	if (image->delta_image)
+		mono_image_close_except_pools_all_list (image->delta_image);
+
 	mono_os_mutex_destroy (&image->szarray_cache_lock);
 	mono_os_mutex_destroy (&image->lock);
 
@@ -2705,6 +2750,18 @@ mono_image_close_all (MonoImage**images, int image_count)
 		g_free (images);
 }
 
+static void
+mono_image_close_all_list (GSList *images)
+{
+	for (GSList *ptr = images; ptr; ptr = ptr->next) {
+		MonoImage *image = (MonoImage *)ptr->data;
+		if (image)
+			mono_image_close_finish (image);
+	}
+
+	g_slist_free (images);
+}
+
 void
 mono_image_close_finish (MonoImage *image)
 {
@@ -2722,6 +2779,8 @@ mono_image_close_finish (MonoImage *image)
 
 	mono_image_close_all (image->files, image->file_count);
 	mono_image_close_all (image->modules, image->module_count);
+
+	mono_image_close_all_list (image->delta_image);
 
 #ifndef DISABLE_PERFCOUNTERS
 	/* FIXME: use an explicit subtraction method as soon as it's available */
@@ -3424,6 +3483,4 @@ mono_image_append_class_to_reflection_info_set (MonoClass *klass)
 	image->reflection_info_unregister_classes = g_slist_prepend_mempool (image->mempool, image->reflection_info_unregister_classes, klass);
 	mono_image_unlock (image);
 }
-
-
 

@@ -919,7 +919,8 @@ mono_cleanup (void)
 void
 mono_close_exe_image (void)
 {
-	if (exe_image)
+	/* EnC: shutdown hack. We mess something up and try to double-close/free it. */
+	if (exe_image && !exe_image->delta_image)
 		mono_image_close (exe_image);
 }
 

@@ -864,7 +864,7 @@ method_from_memberref (MonoImage *image, guint32 idx, MonoGenericContext *typesp
 
 	error_init (error);
 
-	mono_metadata_decode_row (&tables [MONO_TABLE_MEMBERREF], idx-1, cols, 3);
+	mono_metadata_decode_row (&tables [MONO_TABLE_MEMBERREF], idx-1, cols, MONO_MEMBERREF_SIZE);
 	nindex = cols [MONO_MEMBERREF_CLASS] >> MONO_MEMBERREF_PARENT_BITS;
 	class_index = cols [MONO_MEMBERREF_CLASS] & MONO_MEMBERREF_PARENT_MASK;
 	/*g_print ("methodref: 0x%x 0x%x %s\n", class, nindex,
@@ -1073,7 +1073,7 @@ mono_get_method_from_token (MonoImage *image, guint32 token, MonoClass *klass,
 
 	if (used_context) *used_context = FALSE;
 
-	if (idx > image->tables [MONO_TABLE_METHOD].rows) {
+	if (mono_metadata_table_bounds_check (image, MONO_TABLE_METHOD, idx)) {
 		mono_error_set_bad_image (error, image, "Bad method token 0x%08x (out of bounds).", token);
 		return NULL;
 	}
@@ -2024,8 +2024,9 @@ mono_method_get_header_internal (MonoMethod *method, MonoError *error)
 {
 	int idx;
 	guint32 rva;
+	gboolean from_dmeta_image = FALSE;
 	MonoImage* img;
-	gpointer loc;
+	gpointer loc = NULL;
 	MonoGenericContainer *container;
 
 	error_init (error);
@@ -2070,12 +2071,23 @@ mono_method_get_header_internal (MonoMethod *method, MonoError *error)
 	 */
 	g_assert (mono_metadata_token_table (method->token) == MONO_TABLE_METHOD);
 	idx = mono_metadata_token_index (method->token);
-	rva = mono_metadata_decode_row_col (&img->tables [MONO_TABLE_METHOD], idx - 1, MONO_METHOD_RVA);
 
-	if (!mono_verifier_verify_method_header (img, rva, error))
-		return NULL;
+	/* EnC case */
+	if (G_UNLIKELY (img->method_table_delta_index)) {
+		/* pre-computed rva pointer into delta IL image */
+		loc = g_hash_table_lookup (img->method_table_delta_index, GUINT_TO_POINTER (idx));
+		from_dmeta_image = !!loc;
+	}
 
-	loc = mono_image_rva_map (img, rva);
+	if (!loc) {
+		rva = mono_metadata_decode_row_col (&img->tables [MONO_TABLE_METHOD], idx - 1, MONO_METHOD_RVA);
+
+		if (!mono_verifier_verify_method_header (img, rva, error))
+			return NULL;
+
+		loc = mono_image_rva_map (img, rva);
+	}
+
 	if (!loc) {
 		mono_error_set_bad_image (error, img, "Method has zero rva");
 		return NULL;

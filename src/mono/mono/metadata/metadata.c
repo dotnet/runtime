@@ -24,6 +24,7 @@
 #include "class-internals.h"
 #include "metadata-internals.h"
 #include "reflection-internals.h"
+#include "metadata-update.h"
 #include "verify-internals.h"
 #include "class.h"
 #include "marshal.h"
@@ -989,6 +990,31 @@ mono_metadata_compute_size (MonoImage *meta, int tableindex, guint32 *result_bit
 	return size;
 }
 
+/* returns true if given index is not in bounds with provided table/index pair */
+gboolean
+mono_metadata_table_bounds_check (MonoImage *image, int table_index, int token_index)
+{
+	if (token_index <= image->tables [table_index].rows)
+		return FALSE;
+
+	GSList *list = image->delta_image;
+	MonoImage *dmeta;
+	MonoTableInfo *table;
+	int ridx;
+
+	/* FIXME: Only lookup upto the latest published image, not all images. */
+	do {
+		if (!list)
+			return TRUE;
+		dmeta = list->data;
+		list = list->next;
+		table = &dmeta->tables [table_index];
+		ridx = mono_image_relative_delta_index (dmeta, mono_metadata_make_token (table_index, token_index + 1)) - 1;
+	} while (ridx < 0 || ridx >= table->rows);
+
+	return FALSE;
+}
+
 /**
  * mono_metadata_compute_table_bases:
  * \param meta metadata context to compute table values
@@ -1202,6 +1228,17 @@ dword_align (const unsigned char *ptr)
 void
 mono_metadata_decode_row (const MonoTableInfo *t, int idx, guint32 *res, int res_size)
 {
+	mono_image_effective_table (&t, &idx);
+
+	mono_metadata_decode_row_raw (t, idx, res, res_size);
+}
+
+/**
+ * same as mono_metadata_decode_row, but ignores potential delta images
+ */
+void
+mono_metadata_decode_row_raw (const MonoTableInfo *t, int idx, guint32 *res, int res_size)
+{
 	guint32 bitfield = t->size_bitfield;
 	int i, count = mono_metadata_table_count (bitfield);
 	const char *data;
@@ -1246,10 +1283,12 @@ mono_metadata_decode_row (const MonoTableInfo *t, int idx, guint32 *res, int res
 gboolean
 mono_metadata_decode_row_checked (const MonoImage *image, const MonoTableInfo *t, int idx, guint32 *res, int res_size, MonoError *error)
 {
+	const char *image_name = image && image->name ? image->name : "unknown image";
+
+	mono_image_effective_table (&t, &idx);
+
 	guint32 bitfield = t->size_bitfield;
 	int i, count = mono_metadata_table_count (bitfield);
-
-	const char *image_name = image && image->name ? image->name : "unknown image";
 
 	if (G_UNLIKELY (! (idx < t->rows && idx >= 0))) {
 		mono_error_set_bad_image_by_name (error, image_name, "row index %d out of bounds: %d rows: %s", idx, t->rows, image_name);
@@ -1320,10 +1359,13 @@ mono_metadata_decode_row_dynamic_checked (const MonoDynamicImage *image, const M
 guint32
 mono_metadata_decode_row_col (const MonoTableInfo *t, int idx, guint col)
 {
-	guint32 bitfield = t->size_bitfield;
 	int i;
 	const char *data;
 	int n;
+
+	mono_image_effective_table (&t, &idx);
+
+	guint32 bitfield = t->size_bitfield;
 	
 	g_assert (idx < t->rows);
 	g_assert (col < mono_metadata_table_count (bitfield));
@@ -1836,6 +1878,8 @@ mono_metadata_init (void)
 	mono_counters_register ("ImgSet Cache Hit", MONO_COUNTER_METADATA | MONO_COUNTER_INT, &img_set_cache_hit);
 	mono_counters_register ("ImgSet Cache Miss", MONO_COUNTER_METADATA | MONO_COUNTER_INT, &img_set_cache_miss);
 	mono_counters_register ("ImgSet Count", MONO_COUNTER_METADATA | MONO_COUNTER_INT, &img_set_count);
+
+	mono_metadata_update_init ();
 }
 
 /**
@@ -4503,12 +4547,12 @@ mono_metadata_parse_mh_full (MonoImage *m, MonoGenericContainer *container, cons
 	}
 
 	if (local_var_sig_tok) {
-		int idx = (local_var_sig_tok & 0xffffff)-1;
-		if (idx >= t->rows || idx < 0) {
-			mono_error_set_bad_image (error, m, "Invalid method header local vars signature token 0x%8x", idx);
+		int idx = mono_metadata_token_index (local_var_sig_tok) - 1;
+		if (mono_metadata_table_bounds_check (m, MONO_TABLE_STANDALONESIG, idx)) {
+			mono_error_set_bad_image (error, m, "Invalid method header local vars signature token 0x%08x", idx);
 			goto fail;
 		}
-		mono_metadata_decode_row (t, idx, cols, 1);
+		mono_metadata_decode_row (t, idx, cols, MONO_STAND_ALONE_SIGNATURE_SIZE);
 
 		if (!mono_verifier_verify_standalone_signature (m, cols [MONO_STAND_ALONE_SIGNATURE], error))
 			goto fail;

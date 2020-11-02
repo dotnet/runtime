@@ -152,6 +152,7 @@ HANDLES(RUNTIME_2, "EnableMicrosoftTelemetry_internal", ves_icall_Mono_Runtime_E
 HANDLES(RUNTIME_3, "ExceptionToState_internal", ves_icall_Mono_Runtime_ExceptionToState, MonoString, 3, (MonoException, guint64_ref, guint64_ref))
 HANDLES(RUNTIME_4, "GetDisplayName", ves_icall_Mono_Runtime_GetDisplayName, MonoString, 0, ())
 HANDLES(RUNTIME_12, "GetNativeStackTrace", ves_icall_Mono_Runtime_GetNativeStackTrace, MonoString, 1, (MonoException))
+HANDLES(RUNTIME_22, "LoadMetadataUpdate_internal", ves_icall_Mono_Runtime_LoadMetadataUpdate, void, 5, (MonoReflectionAssembly, gconstpointer, gint32, gconstpointer, gint32))
 NOHANDLES(ICALL(RUNTIME_21, "RegisterReportingForAllNativeLibs_internal", ves_icall_Mono_Runtime_RegisterReportingForAllNativeLibs))
 NOHANDLES(ICALL(RUNTIME_17, "RegisterReportingForNativeLib_internal", ves_icall_Mono_Runtime_RegisterReportingForNativeLib))
 HANDLES(RUNTIME_13, "SendMicrosoftTelemetry_internal", ves_icall_Mono_Runtime_SendMicrosoftTelemetry, void, 3, (const_char_ptr, guint64, guint64))
