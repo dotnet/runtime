@@ -50,6 +50,7 @@ set(NATIVECRYPTO_SOURCES
     pal_ecc_import_export.c
     pal_eckey.c
     pal_err.c
+    pal_evp.c
     pal_evp_pkey.c
     pal_evp_pkey_dsa.c
     pal_evp_pkey_ecdh.c
@@ -67,31 +68,10 @@ set(NATIVECRYPTO_SOURCES
     pal_x509ext.c
 )
 
-# Mix Android SDK with OpenSSL
-set(USE_ANDROID_CRYPTO 1)
-
-# Rely only on Android SDK for crypto
-# set(USE_ANDROID_CRYPTO_ONLY 1)
-
-if (CLR_CMAKE_TARGET_ANDROID AND USE_ANDROID_CRYPTO)
-    list(APPEND NATIVECRYPTO_SOURCES
-        android_security.c
-    )
-    add_compile_options(-Wno-gnu-zero-variadic-macro-arguments)
-    add_definitions(-DUSE_ANDROID_CRYPTO)
-    if (USE_ANDROID_CRYPTO_ONLY)
-        add_definitions(-DUSE_ANDROID_CRYPTO_ONLY)
-    endif()
-else()
-    list(APPEND NATIVECRYPTO_SOURCES
-        pal_evp.c
-    )
-endif()
-
 # Always build portable on macOS because OpenSSL is not a system component
 # and our prebuilts should not assume a specific ABI version for the types
 # that use OpenSSL at runtime.
-if (CLR_CMAKE_TARGET_OSX OR USE_ANDROID_CRYPTO_ONLY)
+if (CLR_CMAKE_TARGET_OSX)
     set(FEATURE_DISTRO_AGNOSTIC_SSL True)
 endif()
 
@@ -140,12 +120,6 @@ else()
     target_link_libraries(System.Security.Cryptography.Native.OpenSsl
       ${OPENSSL_CRYPTO_LIBRARY}
       ${OPENSSL_SSL_LIBRARY}
-    )
-endif()
-
-if (CLR_CMAKE_TARGET_ANDROID AND USE_ANDROID_CRYPTO)
-    target_link_libraries(System.Security.Cryptography.Native.OpenSsl
-    -llog
     )
 endif()
 

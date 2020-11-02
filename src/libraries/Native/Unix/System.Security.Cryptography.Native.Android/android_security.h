@@ -8,6 +8,8 @@
 
 #define SUCCESS 1
 
+PALEXPORT int32_t CryptoNative_EnsureOpenSslInitialized(void);
+
 PALEXPORT int32_t CryptoNative_GetRandomBytes(uint8_t* buf, int32_t num);
 PALEXPORT int32_t CryptoNative_EvpMdSize(intptr_t md);
 PALEXPORT intptr_t CryptoNative_EvpMd5(void);

@@ -237,3 +237,7 @@ endif()
 if(CLR_CMAKE_TARGET_OSX OR CLR_CMAKE_TARGET_IOS OR CLR_CMAKE_TARGET_TVOS)
     add_subdirectory(System.Security.Cryptography.Native.Apple)
 endif()
+
+if(CLR_CMAKE_TARGET_ANDROID)
+    add_subdirectory(System.Security.Cryptography.Native.Android)
+endif()

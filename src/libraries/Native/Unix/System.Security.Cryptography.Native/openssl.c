@@ -1022,7 +1022,6 @@ int32_t CryptoNative_PushX509StackField(STACK_OF(X509) * stack, X509* x509)
     return sk_X509_push(stack, x509);
 }
 
-#ifndef USE_ANDROID_CRYPTO
 /*
 Function:
 GetRandomBytes
@@ -1040,7 +1039,6 @@ int32_t CryptoNative_GetRandomBytes(uint8_t* buf, int32_t num)
 
     return ret == 1;
 }
-#endif
 
 /*
 Function:
@@ -1309,9 +1307,6 @@ static int32_t EnsureOpenSsl11Initialized()
 
 int32_t CryptoNative_EnsureOpenSslInitialized()
 {
-#ifdef USE_ANDROID_CRYPTO_ONLY
-    return 0;
-#endif
     // If portable then decide which OpenSSL we are, and call the right one.
     // If 1.0, call the 1.0 one.
     // Otherwise call the 1.1 one.

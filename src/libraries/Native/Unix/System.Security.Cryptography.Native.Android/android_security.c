@@ -43,7 +43,7 @@ static jobject ToGRef(JNIEnv *env, jobject lref)
     return gref;
 }
 
-static jclass GetClassGref(JNIEnv *env, const char* name)
+static jclass GetClassGRef(JNIEnv *env, const char* name)
 {
     LOG_DEBUG("Finding %s class", name);
     jclass klass = ToGRef(env, (*env)->FindClass (env, name));
@@ -86,11 +86,11 @@ JNI_OnLoad(JavaVM *vm, void *reserved)
     JNIEnv* env = GetJniEnv();
 
     // cache some classes and methods while we're in the thread-safe JNI_OnLoad
-    g_randClass =               GetClassGref(env, "java/security/SecureRandom");
+    g_randClass =               GetClassGRef(env, "java/security/SecureRandom");
     g_randCtor =                GetMethod(env, false, g_randClass, "<init>", "()V");
     g_randNextBytesMethod =     GetMethod(env, false, g_randClass, "nextBytes", "([B)V");
 
-    g_mdClass =                 GetClassGref(env, "java/security/MessageDigest");
+    g_mdClass =                 GetClassGRef(env, "java/security/MessageDigest");
     g_mdGetInstanceMethod =     GetMethod(env, true,  g_mdClass, "getInstance", "(Ljava/lang/String;)Ljava/security/MessageDigest;");
     g_mdResetMethod =           GetMethod(env, false, g_mdClass, "reset", "()V");
     g_mdDigestMethod =          GetMethod(env, false, g_mdClass, "digest", "([B)[B");
@@ -98,6 +98,11 @@ JNI_OnLoad(JavaVM *vm, void *reserved)
     g_mdUpdateMethod =          GetMethod(env, false, g_mdClass, "update", "([B)V");
 
     return JNI_VERSION_1_6;
+}
+
+int32_t CryptoNative_EnsureOpenSslInitialized(void)
+{
+    return 0;
 }
 
 int32_t CryptoNative_GetRandomBytes(uint8_t* buff, int32_t len)
@@ -215,7 +220,6 @@ int32_t CryptoNative_EvpDigestUpdate(void* ctx, void* d, int32_t cnt)
     (*env)->SetByteArrayRegion(env, bytes, 0, cnt, (jbyte*) d);
     (*env)->CallVoidMethod(env, mdObj, g_mdUpdateMethod, bytes);
     (*env)->DeleteLocalRef(env, bytes);
-
     return SUCCESS;
 }
 
@@ -233,11 +237,11 @@ int32_t CryptoNative_EvpDigestCurrent(void* ctx, uint8_t* md, uint32_t* s)
     jobject mdObj = (jobject)ctx;
 
     jbyteArray bytes = (jbyteArray)(*env)->CallObjectMethod(env, mdObj, g_mdDigestCurrentMethodId);
+    assert(bytes && "digest() was not expected to return null");
     jsize bytesLen = (*env)->GetArrayLength(env, bytes);
     *s = (uint32_t)bytesLen;
     (*env)->GetByteArrayRegion(env, bytes, 0, bytesLen, (jbyte*) md);
     (*env)->DeleteLocalRef(env, bytes);
-
     return SUCCESS;
 }
 
