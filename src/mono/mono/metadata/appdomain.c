@@ -74,6 +74,11 @@
 #include <mono/metadata/w32handle.h>
 #include <mono/metadata/w32error.h>
 #include <mono/utils/w32api.h>
+
+#ifdef ENABLE_PERFTRACING
+#include <mono/eventpipe/ds-server.h>
+#endif
+
 #ifdef HOST_WIN32
 #include <direct.h>
 #endif
@@ -344,7 +349,12 @@ mono_runtime_init_checked (MonoDomain *domain, MonoThreadStartCB start_cb, MonoT
 		domain->setup = MONO_HANDLE_RAW (setup);
 	}
 
-	mono_thread_attach (domain);
+	mono_thread_internal_attach (domain);
+
+#if defined(ENABLE_PERFTRACING) && !defined(DISABLE_EVENTPIPE)
+	ds_server_init ();
+	ds_server_pause_for_diagnostics_monitor ();
+#endif
 
 	mono_type_initialization_init ();
 
@@ -2822,7 +2832,7 @@ mono_alc_load_raw_bytes (MonoAssemblyLoadContext *alc, guint8 *assembly_data, gu
 {
 	MonoAssembly *ass = NULL;
 	MonoImageOpenStatus status;
-	MonoImage *image = mono_image_open_from_data_internal (alc, (char*)assembly_data, raw_assembly_len, FALSE, NULL, refonly, FALSE, NULL, NULL);
+	MonoImage *image = mono_image_open_from_data_internal (alc, (char*)assembly_data, raw_assembly_len, TRUE, NULL, refonly, FALSE, NULL, NULL);
 
 	if (!image) {
 		mono_error_set_bad_image_by_name (error, "In memory assembly", "0x%p", assembly_data);

@@ -1452,15 +1452,16 @@ namespace System.Diagnostics
                 // exception up to the user
                 if (HasExited)
                 {
+                    await WaitUntilOutputEOF().ConfigureAwait(false);
                     return;
                 }
 
                 throw;
             }
 
-            var tcs = new TaskCompletionSourceWithCancellation<bool>();
+            var tcs = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
 
-            EventHandler handler = (s, e) => tcs.TrySetResult(true);
+            EventHandler handler = (_, _) => tcs.TrySetResult();
             Exited += handler;
 
             try
@@ -1468,15 +1469,35 @@ namespace System.Diagnostics
                 if (HasExited)
                 {
                     // CASE 1.2 & CASE 3.2: Handle race where the process exits before registering the handler
-                    return;
+                }
+                else
+                {
+                    // CASE 1.1 & CASE 3.1: Process exits or is canceled here
+                    using (cancellationToken.UnsafeRegister(static (s, cancellationToken) => ((TaskCompletionSource)s!).TrySetCanceled(cancellationToken), tcs))
+                    {
+                        await tcs.Task.ConfigureAwait(false);
+                    }
                 }
 
-                // CASE 1.1 & CASE 3.1: Process exits or is canceled here
-                await tcs.WaitWithCancellationAsync(cancellationToken).ConfigureAwait(false);
+                // Wait until output streams have been drained
+                await WaitUntilOutputEOF().ConfigureAwait(false);
             }
             finally
             {
                 Exited -= handler;
+            }
+
+            async ValueTask WaitUntilOutputEOF()
+            {
+                if (_output != null)
+                {
+                    await _output.WaitUntilEOFAsync(cancellationToken).ConfigureAwait(false);
+                }
+
+                if (_error != null)
+                {
+                    await _error.WaitUntilEOFAsync(cancellationToken).ConfigureAwait(false);
+                }
             }
         }
 

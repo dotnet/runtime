@@ -2,10 +2,8 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
-using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Diagnostics.Tracing;
 using System.IO;
 using System.Linq;
 using System.Threading;
@@ -15,7 +13,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Xunit;
 
-namespace Microsoft.Extensions.Hosting
+namespace Microsoft.Extensions.Hosting.Tests
 {
     public partial class HostTests
     {
@@ -199,8 +197,8 @@ namespace Microsoft.Extensions.Hosting
             {
                 configReloadedCancelTokenSource.Cancel();
             }, null);
-            // Wait for up to 10 seconds, if config reloads at any time, cancel the wait.
-            await Task.WhenAny(Task.Delay(10000, configReloadedCancelToken)); // Task.WhenAny ignores the task throwing on cancellation.
+            // Wait for up to 1 minute, if config reloads at any time, cancel the wait.
+            await Task.WhenAny(Task.Delay(TimeSpan.FromMinutes(1), configReloadedCancelToken)); // Task.WhenAny ignores the task throwing on cancellation.
             Assert.NotEqual(dynamicConfigMessage1, dynamicConfigMessage2); // Messages are different.
             Assert.Equal(dynamicConfigMessage2, config["Hello"]); // Config DID reload from disk
         }
@@ -273,37 +271,6 @@ namespace Microsoft.Extensions.Hosting
                 public void Dispose()
                 {
                 }
-            }
-        }
-
-        private class TestEventListener : EventListener
-        {
-            private volatile bool _disposed;
-
-            private ConcurrentQueue<EventWrittenEventArgs> _events = new ConcurrentQueue<EventWrittenEventArgs>();
-
-            public IEnumerable<EventWrittenEventArgs> EventData => _events;
-
-            protected override void OnEventSourceCreated(EventSource eventSource)
-            {
-                if (eventSource.Name == "Microsoft-Extensions-Logging")
-                {
-                    EnableEvents(eventSource, EventLevel.Informational);
-                }
-            }
-
-            protected override void OnEventWritten(EventWrittenEventArgs eventData)
-            {
-                if (!_disposed)
-                {
-                    _events.Enqueue(eventData);
-                }
-            }
-
-            public override void Dispose()
-            {
-                _disposed = true;
-                base.Dispose();
             }
         }
     }

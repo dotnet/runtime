@@ -14,6 +14,10 @@ else
 	HARNESS_RUNNER="dotnet xharness"
 fi
 
+if [ -z "$XHARNESS_COMMAND" ]; then
+	XHARNESS_COMMAND="test"
+fi
+
 # RunCommands defined in tests.mobile.targets
 [[RunCommands]]
 

@@ -1,6 +1,13 @@
 trigger: none
 
-pr: none
+pr:
+  branches:
+    include:
+    - master
+  paths:
+    include:
+    - src/coreclr/src/ilasm/*
+    - src/coreclr/src/ildasm/*
 
 schedules:
 - cron: "0 19 * * 6"

@@ -3,10 +3,10 @@
     <AssemblyName>R2RTest</AssemblyName>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <OutputType>Exe</OutputType>
-    <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
+    <TargetFramework>$(NetCoreAppToolCurrent)</TargetFramework>
     <NoWarn>8002,NU1701</NoWarn>
     <PlatformTarget>AnyCPU</PlatformTarget>
-    <OutputPath>$(BinDir)\R2RTest</OutputPath>
+    <OutputPath>$(RuntimeBinDir)\R2RTest</OutputPath>
   </PropertyGroup>
 
   <ItemGroup>

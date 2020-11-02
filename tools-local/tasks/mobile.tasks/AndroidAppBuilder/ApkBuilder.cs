@@ -28,14 +28,21 @@ public class ApkBuilder
         if (string.IsNullOrEmpty(abi))
             throw new ArgumentException("abi shoudln't be empty (e.g. x86, x86_64, armeabi-v7a or arm64-v8a");
 
-        if (string.IsNullOrEmpty(entryPointLib))
-            throw new ArgumentException("entryPointLib shouldn't be empty");
-
-        if (!File.Exists(Path.Combine(sourceDir, entryPointLib)))
-            throw new ArgumentException($"{entryPointLib} was not found in sourceDir='{sourceDir}'");
+        string entryPointLibPath = "";
+        if (!string.IsNullOrEmpty(entryPointLib))
+        {
+            entryPointLibPath = Path.Combine(sourceDir, entryPointLib);
+            if (!File.Exists(entryPointLibPath))
+                throw new ArgumentException($"{entryPointLib} was not found in sourceDir='{sourceDir}'");
+        }
 
         if (string.IsNullOrEmpty(ProjectName))
-            ProjectName = Path.GetFileNameWithoutExtension(entryPointLib);
+        {
+            if (string.IsNullOrEmpty(entryPointLib))
+                throw new ArgumentException("ProjectName needs to be set if entryPointLib is empty.");
+            else
+                ProjectName = Path.GetFileNameWithoutExtension(entryPointLib);
+        }
 
         if (string.IsNullOrEmpty(OutputDir))
             OutputDir = Path.Combine(sourceDir, "bin-" + abi);
@@ -93,7 +100,7 @@ public class ApkBuilder
             extensionsToIgnore.Add(".dbg");
         }
 
-        // Copy AppDir to OutputDir/assets-tozip (ignore native files)
+        // Copy sourceDir to OutputDir/assets-tozip (ignore native files)
         // these files then will be zipped and copied to apk/assets/assets.zip
         Utils.DirectoryCopy(sourceDir, Path.Combine(OutputDir, "assets-tozip"), file =>
         {
@@ -143,10 +150,7 @@ public class ApkBuilder
             .Replace("%NativeLibrariesToLink%", monoRuntimeLib);
         File.WriteAllText(Path.Combine(OutputDir, "CMakeLists.txt"), cmakeLists);
 
-        string monodroidSrc = Utils.GetEmbeddedResource("monodroid.c")
-            .Replace("%EntryPointLibName%", Path.GetFileName(entryPointLib)
-            .Replace("%RID%", GetRid(abi)));
-        File.WriteAllText(Path.Combine(OutputDir, "monodroid.c"), monodroidSrc);
+        File.WriteAllText(Path.Combine(OutputDir, "monodroid.c"), Utils.GetEmbeddedResource("monodroid.c"));
 
         string cmakeGenArgs = $"-DCMAKE_TOOLCHAIN_FILE={androidToolchain} -DANDROID_ABI=\"{abi}\" -DANDROID_STL=none " +
             $"-DANDROID_NATIVE_API_LEVEL={MinApiLevel} -B monodroid";
@@ -176,9 +180,13 @@ public class ApkBuilder
         string packageId = $"net.dot.{ProjectName}";
 
         File.WriteAllText(Path.Combine(javaSrcFolder, "MainActivity.java"),
-            Utils.GetEmbeddedResource("MainActivity.java"));
-        File.WriteAllText(Path.Combine(javaSrcFolder, "MonoRunner.java"),
-            Utils.GetEmbeddedResource("MonoRunner.java"));
+            Utils.GetEmbeddedResource("MainActivity.java")
+                .Replace("%EntryPointLibName%", Path.GetFileName(entryPointLib)));
+
+        string monoRunner = Utils.GetEmbeddedResource("MonoRunner.java")
+            .Replace("%EntryPointLibName%", Path.GetFileName(entryPointLib));
+        File.WriteAllText(Path.Combine(javaSrcFolder, "MonoRunner.java"), monoRunner);
+
         File.WriteAllText(Path.Combine(OutputDir, "AndroidManifest.xml"),
             Utils.GetEmbeddedResource("AndroidManifest.xml")
                 .Replace("%PackageName%", packageId)
@@ -196,7 +204,7 @@ public class ApkBuilder
 
         var dynamicLibs = new List<string>();
         dynamicLibs.Add(Path.Combine(OutputDir, "monodroid", "libmonodroid.so"));
-        dynamicLibs.AddRange(Directory.GetFiles(sourceDir, "*.so"));
+        dynamicLibs.AddRange(Directory.GetFiles(sourceDir, "*.so").Where(file => Path.GetFileName(file) != "libmonodroid.so"));
 
         // add all *.so files to lib/%abi%/
         Directory.CreateDirectory(Path.Combine(OutputDir, "lib", abi));
@@ -243,14 +251,6 @@ public class ApkBuilder
 
         return (alignedApk, packageId);
     }
-
-    private static string GetRid(string abi) => abi switch
-        {
-            "arm64-v8a" => "android-arm64",
-            "armeabi-v7a" => "android-arm",
-            "x86_64" => "android-x64",
-            _ => "android-" + abi
-        };
 
     /// <summary>
     /// Scan android SDK for build tools (ignore preview versions)

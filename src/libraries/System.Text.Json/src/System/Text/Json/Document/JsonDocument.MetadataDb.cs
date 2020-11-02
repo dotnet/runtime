@@ -86,29 +86,40 @@ namespace System.Text.Json
 
             internal int Length { get; private set; }
             private byte[] _data;
-#if DEBUG
-            private readonly bool _isLocked;
-#endif
+
+            private bool _convertToAlloc; // Convert the rented data to an alloc when complete.
+            private bool _isLocked; // Is the array the correct fixed size.
+            // _isLocked _convertToAlloc truth table:
+            // false     false  Standard flow. Size is not known and renting used throughout lifetime.
+            // true      false  Used by JsonElement.ParseValue() for primitives and JsonDocument.Clone(). Size is known and no renting.
+            // false     true   Used by JsonElement.ParseValue() for arrays and objects. Renting used until size is known.
+            // true      true   not valid
+
+            private MetadataDb(byte[] initialDb, bool isLocked, bool convertToAlloc)
+            {
+                _data = initialDb;
+                _isLocked = isLocked;
+                _convertToAlloc = convertToAlloc;
+                Length = 0;
+            }
 
             internal MetadataDb(byte[] completeDb)
             {
                 _data = completeDb;
-                Length = completeDb.Length;
-
-#if DEBUG
                 _isLocked = true;
-#endif
+                _convertToAlloc = false;
+                Length = completeDb.Length;
             }
 
-            internal MetadataDb(int payloadLength)
+            internal static MetadataDb CreateRented(int payloadLength, bool convertToAlloc)
             {
                 // Assume that a token happens approximately every 12 bytes.
                 // int estimatedTokens = payloadLength / 12
                 // now acknowledge that the number of bytes we need per token is 12.
                 // So that's just the payload length.
                 //
-                // Add one token's worth of data just because.
-                int initialSize = DbRow.Size + payloadLength;
+                // Add one row worth of data since we need at least one row for a primitive type.
+                int initialSize = payloadLength + DbRow.Size;
 
                 // Stick with ArrayPool's rent/return range if it looks feasible.
                 // If it's wrong, we'll just grow and copy as we would if the tokens
@@ -120,30 +131,17 @@ namespace System.Text.Json
                     initialSize = OneMegabyte;
                 }
 
-                _data = ArrayPool<byte>.Shared.Rent(initialSize);
-                Length = 0;
-#if DEBUG
-                _isLocked = false;
-#endif
+                byte[] data = ArrayPool<byte>.Shared.Rent(initialSize);
+                return new MetadataDb(data, isLocked: false, convertToAlloc);
             }
 
-            internal MetadataDb(MetadataDb source, bool useArrayPools)
+            internal static MetadataDb CreateLocked(int payloadLength)
             {
-                Length = source.Length;
+                // Add one row worth of data since we need at least one row for a primitive type.
+                int size = payloadLength + DbRow.Size;
 
-#if DEBUG
-                _isLocked = !useArrayPools;
-#endif
-
-                if (useArrayPools)
-                {
-                    _data = ArrayPool<byte>.Shared.Rent(Length);
-                    source._data.AsSpan(0, Length).CopyTo(_data);
-                }
-                else
-                {
-                    _data = source._data.AsSpan(0, Length).ToArray();
-                }
+                byte[] data = new byte[size];
+                return new MetadataDb(data, isLocked: true, convertToAlloc: false);
             }
 
             public void Dispose()
@@ -154,9 +152,7 @@ namespace System.Text.Json
                     return;
                 }
 
-#if DEBUG
                 Debug.Assert(!_isLocked, "Dispose called on a locked database");
-#endif
 
                 // The data in this rented buffer only conveys the positions and
                 // lengths of tokens in a document, but no content; so it does not
@@ -165,28 +161,51 @@ namespace System.Text.Json
                 Length = 0;
             }
 
-            internal void TrimExcess()
+            /// <summary>
+            /// If using array pools, trim excess if necessary.
+            /// If not using array pools, release the temporary array pool and alloc.
+            /// </summary>
+            internal void CompleteAllocations()
             {
-                // There's a chance that the size we have is the size we'd get for this
-                // amount of usage (particularly if Enlarge ever got called); and there's
-                // the small copy-cost associated with trimming anyways. "Is half-empty" is
-                // just a rough metric for "is trimming worth it?".
-                if (Length <= _data.Length / 2)
+                if (!_isLocked)
                 {
-                    byte[] newRent = ArrayPool<byte>.Shared.Rent(Length);
-                    byte[] returnBuf = newRent;
-
-                    if (newRent.Length < _data.Length)
+                    if (_convertToAlloc)
                     {
-                        Buffer.BlockCopy(_data, 0, newRent, 0, Length);
-                        returnBuf = _data;
-                        _data = newRent;
-                    }
+                        Debug.Assert(_data != null);
+                        byte[] returnBuf = _data;
+                        _data = _data.AsSpan(0, Length).ToArray();
+                        _isLocked = true;
+                        _convertToAlloc = false;
 
-                    // The data in this rented buffer only conveys the positions and
-                    // lengths of tokens in a document, but no content; so it does not
-                    // need to be cleared.
-                    ArrayPool<byte>.Shared.Return(returnBuf);
+                        // The data in this rented buffer only conveys the positions and
+                        // lengths of tokens in a document, but no content; so it does not
+                        // need to be cleared.
+                        ArrayPool<byte>.Shared.Return(returnBuf);
+                    }
+                    else
+                    {
+                        // There's a chance that the size we have is the size we'd get for this
+                        // amount of usage (particularly if Enlarge ever got called); and there's
+                        // the small copy-cost associated with trimming anyways. "Is half-empty" is
+                        // just a rough metric for "is trimming worth it?".
+                        if (Length <= _data.Length / 2)
+                        {
+                            byte[] newRent = ArrayPool<byte>.Shared.Rent(Length);
+                            byte[] returnBuf = newRent;
+
+                            if (newRent.Length < _data.Length)
+                            {
+                                Buffer.BlockCopy(_data, 0, newRent, 0, Length);
+                                returnBuf = _data;
+                                _data = newRent;
+                            }
+
+                            // The data in this rented buffer only conveys the positions and
+                            // lengths of tokens in a document, but no content; so it does not
+                            // need to be cleared.
+                            ArrayPool<byte>.Shared.Return(returnBuf);
+                        }
+                    }
                 }
             }
 
@@ -196,10 +215,6 @@ namespace System.Text.Json
                 Debug.Assert(
                     (tokenType == JsonTokenType.StartArray || tokenType == JsonTokenType.StartObject) ==
                     (length == DbRow.UnknownSize));
-
-#if DEBUG
-                Debug.Assert(!_isLocked, "Appending to a locked database");
-#endif
 
                 if (Length >= _data.Length - DbRow.Size)
                 {
@@ -213,6 +228,8 @@ namespace System.Text.Json
 
             private void Enlarge()
             {
+                Debug.Assert(!_isLocked, "Appending to a locked database");
+
                 byte[] toReturn = _data;
                 _data = ArrayPool<byte>.Shared.Rent(toReturn.Length * 2);
                 Buffer.BlockCopy(toReturn, 0, _data, 0, toReturn.Length);

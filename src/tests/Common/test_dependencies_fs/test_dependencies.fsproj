@@ -2,7 +2,7 @@
   <PropertyGroup>
     <CLRTestKind>BuildOnly</CLRTestKind>
     <IsTestProject>false</IsTestProject>
-    <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
+    <TargetFramework>$(NetCoreAppToolCurrent)</TargetFramework>
     <DisableRarCache>true</DisableRarCache>
     <DisablePackageAssetsCache>true</DisablePackageAssetsCache>
     <RuntimeIdentifiers>win-arm;win-arm64;win-x64;win-x86;$(TargetRid)</RuntimeIdentifiers>
@@ -11,10 +11,6 @@
   </PropertyGroup>
 
   <Target Name="Build" DependsOnTargets="$(TraversalBuildDependsOn)" />
-
-  <PropertyGroup>
-    <ProjectAssetsFile>$(RepoRoot)src\tests\Common\test_dependencies_fs\obj\project.assets.json</ProjectAssetsFile>
-  </PropertyGroup>
 
   <Target Name="AddLibrariesToCoreRootFS" BeforeTargets="AddLibrariesToCoreRoot" DependsOnTargets="ResolveLibrariesFromLocalBuild">
     <ItemGroup>

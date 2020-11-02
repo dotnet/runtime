@@ -43,6 +43,10 @@ if(CLR_CMAKE_TARGET_UNIX)
     endif()
 endif()
 
+if ((CMAKE_CXX_COMPILER_ID STREQUAL "GNU") AND (CMAKE_CXX_COMPILER_VERSION VERSION_GREATER 10.0))
+    add_compile_options(-Wno-error=stringop-truncation)
+endif()
+
 include(configure.cmake)
 
 set(NATIVEGLOBALIZATION_SOURCES
@@ -79,15 +83,15 @@ if (GEN_SHARED_LIB)
     install_with_stripped_symbols (System.Globalization.Native PROGRAMS .)
 endif()
 
-add_library(System.Globalization.Native_obj
-    OBJECT
+
+add_library(System.Globalization.Native-Static
+    STATIC
     ${NATIVEGLOBALIZATION_SOURCES}
 )
 
-set_target_properties(System.Globalization.Native_obj PROPERTIES OUTPUT_NAME System.Globalization.Native  CLEAN_DIRECT_OUTPUT 1)
+set_target_properties(System.Globalization.Native-Static PROPERTIES OUTPUT_NAME System.Globalization.Native  CLEAN_DIRECT_OUTPUT 1)
 
-add_library(System.Globalization.Native-static INTERFACE)
-target_sources(System.Globalization.Native-static INTERFACE $<TARGET_OBJECTS:System.Globalization.Native_obj>)
+install (TARGETS System.Globalization.Native-Static DESTINATION .)
 
 if(NOT CLR_CMAKE_TARGET_OSX AND NOT CLR_CMAKE_TARGET_IOS AND NOT CLR_CMAKE_TARGET_TVOS AND NOT CLR_CMAKE_TARGET_ANDROID)
     if (GEN_SHARED_LIB)

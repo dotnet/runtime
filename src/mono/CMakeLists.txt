@@ -46,7 +46,7 @@ if(ENABLE_MINIMAL)
 endif()
 
 execute_process(
-  COMMAND grep ^MONO_CORLIB_VERSION= ${CMAKE_SOURCE_DIR}/configure.ac
+  COMMAND grep ^MONO_CORLIB_VERSION= ${CMAKE_CURRENT_SOURCE_DIR}/configure.ac
   COMMAND cut -d = -f  2
   OUTPUT_VARIABLE CORLIB_VERSION_OUT
 )
@@ -56,7 +56,7 @@ endif()
 string(STRIP "${CORLIB_VERSION_OUT}" MONO_CORLIB_VERSION_BASE)
 set(MONO_CORLIB_VERSION "\"${MONO_CORLIB_VERSION_BASE}\"")
 
-if(EXISTS "${CMAKE_SOURCE_DIR}/mono.proj")
+if(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/mono.proj")
   set(ENABLE_NETCORE 1)
 endif()
 
@@ -87,7 +87,7 @@ endif()
 if(ENABLE_INTERP_LIB)
   set(DISABLE_INTERPRETER 1)
 endif()
-if(NOT DISABLE_INTERPRETER AND NOT DISABLE_JIT)
+if(NOT DISABLE_INTERPRETER OR NOT DISABLE_JIT)
   set(ENABLE_ILGEN 1)
 endif()
 if(NOT DISABLE_EVENTPIPE)
@@ -190,6 +190,8 @@ endif()
 # HOST OS CHECKS
 ######################################
 
+message ("CMAKE_SYSTEM_NAME=${CMAKE_SYSTEM_NAME}")
+
 if(CMAKE_SYSTEM_NAME STREQUAL "Darwin")
   add_definitions(-D_THREAD_SAFE)
   set(HOST_DARWIN 1)
@@ -212,7 +214,6 @@ elseif(CMAKE_SYSTEM_NAME STREQUAL "iOS" OR CMAKE_SYSTEM_NAME STREQUAL "tvOS")
   set(ENABLE_MONOTOUCH 1)
   add_definitions(-DMONOTOUCH=1)
   set(HAVE_SYSTEM 0)
-  set(MONO_DL_NEED_USCORE 1)
   if(CMAKE_SYSTEM_NAME STREQUAL "tvOS")
     set(HOST_TVOS 1)
   endif()
@@ -237,6 +238,20 @@ elseif(CMAKE_SYSTEM_NAME STREQUAL "iOS" OR CMAKE_SYSTEM_NAME STREQUAL "tvOS")
 elseif(CMAKE_SYSTEM_NAME STREQUAL "Linux")
   set(HOST_LINUX 1)
   add_definitions(-D_GNU_SOURCE -D_REENTRANT)
+elseif(CMAKE_SYSTEM_NAME STREQUAL "Android")
+  set(HOST_LINUX 1)
+  add_definitions(-D_GNU_SOURCE -D_REENTRANT)
+  # The normal check fails because it uses --isystem <ndk root>/sysroot/usr/include
+  set(HAVE_USR_INCLUDE_MALLOC_H 1)
+  set(HOST_ANDROID 1)
+  set(ANDROID_UNIFIED_HEADERS 1)
+  set(ENABLE_MONODROID 1)
+  set(DISABLE_EXECUTABLES 1)
+  set(GC_SUSPEND "hybrid")
+  # Force some defines
+  set(HAVE_SCHED_GETAFFINITY 0)
+  set(HAVE_SCHED_SETAFFINITY 0)
+  # FIXME: Rest of the flags from configure.ac
 elseif(CMAKE_SYSTEM_NAME STREQUAL "Emscripten")
   set(HOST_WASM 1)
   set(TARGET_ARCH "wasm")
@@ -264,6 +279,8 @@ elseif(TARGET_SYSTEM_NAME STREQUAL "iOS" OR TARGET_SYSTEM_NAME STREQUAL "tvOS")
   set(TARGET_MACH 1)
   set(TARGET_IOS 1)
 elseif(TARGET_SYSTEM_NAME STREQUAL "Linux")
+elseif(TARGET_SYSTEM_NAME STREQUAL "Android")
+  set(TARGET_ANDROID 1)
 elseif(TARGET_SYSTEM_NAME STREQUAL "Emscripten")
   set(TARGET_WASM 1)
   if (CMAKE_BUILD_TYPE STREQUAL "Release")
@@ -284,13 +301,24 @@ if(NOT "${CMAKE_OSX_ARCHITECTURES}" STREQUAL "")
   endif()
 endif()
 
+# Unify naming
+if(CMAKE_SYSTEM_PROCESSOR STREQUAL "armv7l")
+  set(CMAKE_SYSTEM_PROCESSOR "arm")
+elseif(CMAKE_SYSTEM_PROCESSOR STREQUAL "i686")
+  set(CMAKE_SYSTEM_PROCESSOR "x86")
+elseif(CMAKE_SYSTEM_PROCESSOR STREQUAL "aarch64")
+  set(CMAKE_SYSTEM_PROCESSOR "arm64")
+endif()
+
+message ("CMAKE_SYSTEM_PROCESSOR=${CMAKE_SYSTEM_PROCESSOR}")
+
 if(CMAKE_SYSTEM_PROCESSOR STREQUAL "x86_64")
   set(HOST_AMD64 1)
 elseif(CMAKE_SYSTEM_PROCESSOR STREQUAL "x86")
   set(HOST_X86 1)
 elseif(CMAKE_SYSTEM_PROCESSOR STREQUAL "arm64")
   set(HOST_ARM64 1)
-elseif(CMAKE_SYSTEM_PROCESSOR STREQUAL "arm" OR CMAKE_SYSTEM_PROCESSOR STREQUAL "armv7s")
+elseif(CMAKE_SYSTEM_PROCESSOR MATCHES "arm")
   set(HOST_ARM 1)
 elseif(CMAKE_SYSTEM_PROCESSOR STREQUAL "wasm")
 else()
@@ -305,6 +333,17 @@ if(NOT TARGET_ARCH)
   set(TARGET_ARCH "${CMAKE_SYSTEM_PROCESSOR}")
 endif()
 
+# Unify naming
+if(TARGET_ARCH STREQUAL "armv7l")
+  set(TARGET_ARCH "arm")
+elseif(TARGET_ARCH STREQUAL "i686")
+  set(TARGET_ARCH "x86")
+elseif(TARGET_ARCH STREQUAL "aarch64")
+  set(TARGET_ARCH "arm64")
+endif()
+
+message("TARGET_ARCH=${TARGET_ARCH}")
+
 if(TARGET_ARCH STREQUAL "x86_64")
   set(TARGET_AMD64 1)
   set(MONO_ARCHITECTURE "\"amd64\"")
@@ -314,12 +353,11 @@ elseif(TARGET_ARCH STREQUAL "x86")
 elseif(TARGET_ARCH STREQUAL "arm64")
   set(TARGET_ARM64 1)
   set(MONO_ARCHITECTURE "\"arm64\"")
-elseif(TARGET_ARCH STREQUAL "arm" OR TARGET_ARCH STREQUAL "armv7s")
+elseif(TARGET_ARCH MATCHES "arm")
   set(TARGET_ARM 1)
   set(MONO_ARCHITECTURE "\"arm\"")
-  if(TARGET_IOS)
-    add_definitions("-DARM_FPU_VFP=1")
-  endif()
+  # FIXME:
+  add_definitions("-DARM_FPU_VFP=1")
 elseif(TARGET_ARCH STREQUAL "wasm")
   set(MONO_ARCHITECTURE "\"wasm\"")
 else()
@@ -329,14 +367,8 @@ endif()
 ######################################
 # LLVM CHECKS
 ######################################
+set(LLVM_LIBS)
 if(LLVM_PREFIX)
-  # FIXME: windows
-
-  set(LLVM_CONFIG ${LLVM_PREFIX}/bin/llvm-config)
-  if (NOT EXISTS ${LLVM_CONFIG})
-    message(FATAL_ERROR "LLVM executable '${LLVM_CONFIG}' not found.")
-  endif()
-
   if(TARGET_ARCH STREQUAL "x86_64")
     set(llvm_codegen_libs "x86codegen")
   elseif(TARGET_ARCH STREQUAL "x86")
@@ -348,17 +380,57 @@ if(LLVM_PREFIX)
   elseif(TARGET_ARCH STREQUAL "wasm")
     set(llvm_codegen_libs "")
   else()
-    message(FATAL_ERROR "FIXME")
+    message(FATAL_ERROR "FIXME: ${TARGET_ARCH}")
   endif()
 
-  execute_process(COMMAND ${LLVM_CONFIG} --mono-api-version RESULT_VARIABLE llvm_config_res OUTPUT_VARIABLE llvm_api_version OUTPUT_STRIP_TRAILING_WHITESPACE)
-  if (NOT ${llvm_config_res} EQUAL 0)
-    message(FATAL_ERROR "'${LLVM_CONFIG} --mono-api-version' failed. Use the llvm fork at https://github.com/dotnet/llvm-project.")
-  endif()
-  execute_process(COMMAND ${LLVM_CONFIG} --cflags OUTPUT_VARIABLE llvm_cflags OUTPUT_STRIP_TRAILING_WHITESPACE)
-  execute_process(COMMAND ${LLVM_CONFIG} --cxxflags OUTPUT_VARIABLE llvm_cxxflags OUTPUT_STRIP_TRAILING_WHITESPACE)
-  execute_process(COMMAND ${LLVM_CONFIG} --system-libs OUTPUT_VARIABLE llvm_system_libs OUTPUT_STRIP_TRAILING_WHITESPACE)
-  execute_process(COMMAND ${LLVM_CONFIG} --libs analysis core bitwriter orcjit ${llvm_codegen_libs} OUTPUT_VARIABLE llvm_libs OUTPUT_STRIP_TRAILING_WHITESPACE)
+  if(CMAKE_CROSSCOMPILING)
+    # Can't run llvm-config, hardcode results
+    set(llvm_config_path "${LLVM_PREFIX}/include/llvm/Config/llvm-config.h")
+
+    # llvm-config --mono-api-version
+    find_program(AWK awk mawk gawk)
+    execute_process(COMMAND /bin/sh -c "\"${AWK}\" '/MONO_API_VERSION/ { print $3 }' ${llvm_config_path}" RESULT_VARIABLE awk_res OUTPUT_VARIABLE llvm_api_version OUTPUT_STRIP_TRAILING_WHITESPACE)
+
+    # llvm-config --cflags
+    set(llvm_cflags "-I${LLVM_PREFIX}/include")
+    set(llvm_cxxflags "-I${LLVM_PREFIX}/include")
+
+    # llvm-config --system-libs
+    set(llvm_system_libs "-lz -lrt -ldl -lpthread -lm")
+
+    # llvm-config --libs analysis core bitwriter mcjit orcjit
+    set(llvm_core_libs "-lLLVMOrcJIT -lLLVMJITLink -lLLVMMCJIT -lLLVMExecutionEngine -lLLVMRuntimeDyld -lLLVMAsmPrinter -lLLVMDebugInfoDWARF -lLLVMCodeGen -lLLVMTarget -lLLVMScalarOpts -lLLVMInstCombine -lLLVMAggressiveInstCombine -lLLVMTransformUtils -lLLVMBitWriter -lLLVMAnalysis -lLLVMProfileData -lLLVMObject -lLLVMMCParser -lLLVMMC -lLLVMDebugInfoCodeView -lLLVMDebugInfoMSF -lLLVMBitReader -lLLVMBitstreamReader -lLLVMCore -lLLVMRemarks -lLLVMBinaryFormat -lLLVMSupport -lLLVMDemangle")
+
+    # Check codegen libs and add needed libraries.
+    if("${llvm_codegen_libs}" STREQUAL "x86codegen")
+      # llvm-config --libs x86codegen
+      set(llvm_extra "-lLLVMX86CodeGen -lLLVMGlobalISel -lLLVMX86Desc -lLLVMX86Utils -lLLVMX86Info -lLLVMMCDisassembler -lLLVMSelectionDAG -lLLVMAsmPrinter -lLLVMDebugInfoDWARF -lLLVMCodeGen -lLLVMTarget -lLLVMScalarOpts -lLLVMInstCombine -lLLVMAggressiveInstCombine -lLLVMTransformUtils -lLLVMBitWriter -lLLVMAnalysis -lLLVMProfileData -lLLVMObject -lLLVMMCParser -lLLVMMC -lLLVMDebugInfoCodeView -lLLVMDebugInfoMSF -lLLVMBitReader -lLLVMBitstreamReader -lLLVMCore -lLLVMRemarks -lLLVMBinaryFormat -lLLVMSupport -lLLVMDemangle")
+    elseif("${llvm_codegen_libs}" STREQUAL "armcodegen")
+      # llvm-config --libs armcodegen
+      set(llvm_extra "-lLLVMARMCodeGen -lLLVMGlobalISel -lLLVMSelectionDAG -lLLVMAsmPrinter -lLLVMDebugInfoDWARF -lLLVMCodeGen -lLLVMTarget -lLLVMScalarOpts -lLLVMInstCombine -lLLVMAggressiveInstCombine -lLLVMTransformUtils -lLLVMBitWriter -lLLVMAnalysis -lLLVMProfileData -lLLVMObject -lLLVMMCParser -lLLVMBitReader -lLLVMBitstreamReader -lLLVMCore -lLLVMRemarks -lLLVMARMDesc -lLLVMMCDisassembler -lLLVMMC -lLLVMDebugInfoCodeView -lLLVMDebugInfoMSF -lLLVMBinaryFormat -lLLVMARMUtils -lLLVMARMInfo -lLLVMSupport -lLLVMDemangle")
+    elseif("${llvm_codegen_libs}" STREQUAL "aarch64codegen")
+      # llvm-config --libs aarch64codegen
+      set(llvm_extra "-lLLVMAArch64CodeGen -lLLVMGlobalISel -lLLVMSelectionDAG -lLLVMAsmPrinter -lLLVMDebugInfoDWARF -lLLVMCodeGen -lLLVMTarget -lLLVMScalarOpts -lLLVMInstCombine -lLLVMAggressiveInstCombine -lLLVMTransformUtils -lLLVMBitWriter -lLLVMAnalysis -lLLVMProfileData -lLLVMObject -lLLVMMCParser -lLLVMBitReader -lLLVMBitstreamReader -lLLVMCore -lLLVMRemarks -lLLVMAArch64Desc -lLLVMMC -lLLVMDebugInfoCodeView -lLLVMDebugInfoMSF -lLLVMBinaryFormat -lLLVMAArch64Utils -lLLVMAArch64Info -lLLVMSupport -lLLVMDemangle")
+    else()
+      message(FATAL_ERROR "FIXME: ${TARGET_ARCH}")
+    endif()
+
+    set(llvm_libs ${llvm_core_libs} ${llvm_extra})
+  else()
+    set(LLVM_CONFIG ${LLVM_PREFIX}/bin/llvm-config)
+    if (NOT EXISTS ${LLVM_CONFIG})
+      message(FATAL_ERROR "LLVM executable '${LLVM_CONFIG}' not found.")
+    endif()
+
+    execute_process(COMMAND ${LLVM_CONFIG} --mono-api-version RESULT_VARIABLE llvm_config_res OUTPUT_VARIABLE llvm_api_version OUTPUT_STRIP_TRAILING_WHITESPACE)
+    if (NOT ${llvm_config_res} EQUAL 0)
+      message(FATAL_ERROR "'${LLVM_CONFIG} --mono-api-version' failed. Use the llvm fork at https://github.com/dotnet/llvm-project.")
+    endif()
+    execute_process(COMMAND ${LLVM_CONFIG} --cflags OUTPUT_VARIABLE llvm_cflags OUTPUT_STRIP_TRAILING_WHITESPACE)
+    execute_process(COMMAND ${LLVM_CONFIG} --cxxflags OUTPUT_VARIABLE llvm_cxxflags OUTPUT_STRIP_TRAILING_WHITESPACE)
+    execute_process(COMMAND ${LLVM_CONFIG} --system-libs OUTPUT_VARIABLE llvm_system_libs OUTPUT_STRIP_TRAILING_WHITESPACE)
+    execute_process(COMMAND ${LLVM_CONFIG} --libs analysis core bitwriter mcjit orcjit ${llvm_codegen_libs} OUTPUT_VARIABLE llvm_libs OUTPUT_STRIP_TRAILING_WHITESPACE)
+endif()
 
   if (${llvm_api_version} LESS 900)
     message(FATAL_ERROR "LLVM version too old.")
@@ -371,8 +443,6 @@ if(LLVM_PREFIX)
   set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${llvm_cflags}")
   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${llvm_cxxflags} -fexceptions -fno-rtti")
   add_definitions(-DLLVM_API_VERSION=${llvm_api_version})
-else()
-  set(LLVM_LIBS)
 endif()
 
 ######################################
@@ -396,6 +466,9 @@ elseif(TARGET_WASM)
   set(ICU_LIBS "icucore")
 elseif(TARGET_IOS)
   # FIXME:
+elseif(TARGET_ANDROID)
+  set(ICU_FLAGS "-DPALEXPORT=\"\" -DHAVE_UDAT_STANDALONE_SHORTER_WEEKDAYS -DHAVE_SET_MAX_VARIABLE -DTARGET_UNIX -DTARGET_ANDROID -Wno-reserved-id-macro -Wno-documentation -Wno-documentation-unknown-command -Wno-switch-enum -Wno-covered-switch-default -Wno-covered-switch-default -Wno-extra-semi-stmt -Wno-unknown-warning-option")
+  set(HAVE_SYS_ICU 1)
 elseif(HOST_LINUX)
   pkg_check_modules(ICU icu-uc)
   set(ICU_FLAGS "-DTARGET_UNIX -DU_DISABLE_RENAMING -Wno-reserved-id-macro -Wno-documentation -Wno-documentation-unknown-command -Wno-switch-enum -Wno-covered-switch-default -Wno-extra-semi-stmt -Wno-unknown-warning-option -Wno-deprecated-declarations")

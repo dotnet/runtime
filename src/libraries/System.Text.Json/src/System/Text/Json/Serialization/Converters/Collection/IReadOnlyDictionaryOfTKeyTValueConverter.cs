@@ -22,7 +22,7 @@ namespace System.Text.Json.Serialization.Converters
                 ThrowHelper.ThrowNotSupportedException_CannotPopulateCollection(TypeToConvert, ref reader, ref state);
             }
 
-            state.Current.ReturnValue = new Dictionary<string, TValue>();
+            state.Current.ReturnValue = new Dictionary<TKey, TValue>();
         }
 
         protected internal override bool OnWriteResume(Utf8JsonWriter writer, TCollection value, JsonSerializerOptions options, ref WriteStack state)

@@ -2117,7 +2117,7 @@ inline
         }
 #endif // DEBUG
 
-        varOffset = varDsc->lvStkOffs;
+        varOffset = varDsc->GetStackOffset();
     }
     else // Its a spill-temp
     {
@@ -4347,7 +4347,7 @@ void GenTree::VisitOperands(TVisitor visitor)
             {
                 return;
             }
-            __fallthrough;
+            FALLTHROUGH;
 
         // Standard unary operators
         case GT_STORE_LCL_VAR:

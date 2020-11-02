@@ -26,13 +26,6 @@ namespace System.Net.Sockets
             socketTime.Microseconds = (int)(microseconds % microcnv);
         }
 
-        public static void Initialize()
-        {
-            // Ensure that WSAStartup has been called once per process.
-            // The System.Net.NameResolution contract is responsible for the initialization.
-            Dns.GetHostName();
-        }
-
         public static SocketError GetLastSocketError()
         {
             int win32Error = Marshal.GetLastWin32Error();
@@ -42,6 +35,8 @@ namespace System.Net.Sockets
 
         public static SocketError CreateSocket(AddressFamily addressFamily, SocketType socketType, ProtocolType protocolType, out SafeSocketHandle socket)
         {
+            Interop.Winsock.EnsureInitialized();
+
             IntPtr handle = Interop.Winsock.WSASocketW(addressFamily, socketType, protocolType, IntPtr.Zero, 0, Interop.Winsock.SocketConstructorFlags.WSA_FLAG_OVERLAPPED |
                                                                                                                 Interop.Winsock.SocketConstructorFlags.WSA_FLAG_NO_HANDLE_INHERIT);
 
@@ -69,6 +64,8 @@ namespace System.Net.Sockets
             {
                 throw new ArgumentException(SR.net_sockets_invalid_socketinformation, nameof(socketInformation));
             }
+
+            Interop.Winsock.EnsureInitialized();
 
             fixed (byte* protocolInfoBytes = socketInformation.ProtocolInformation)
             {
@@ -480,9 +477,7 @@ namespace System.Net.Sockets
                     if (socket.WSARecvMsgBlocking(
                         handle,
                         (IntPtr)(&wsaMsg),
-                        out bytesTransferred,
-                        IntPtr.Zero,
-                        IntPtr.Zero) == SocketError.SocketError)
+                        out bytesTransferred) == SocketError.SocketError)
                     {
                         return GetLastSocketError();
                     }
@@ -498,9 +493,7 @@ namespace System.Net.Sockets
                     if (socket.WSARecvMsgBlocking(
                         handle,
                         (IntPtr)(&wsaMsg),
-                        out bytesTransferred,
-                        IntPtr.Zero,
-                        IntPtr.Zero) == SocketError.SocketError)
+                        out bytesTransferred) == SocketError.SocketError)
                     {
                         return GetLastSocketError();
                     }
@@ -515,9 +508,7 @@ namespace System.Net.Sockets
                     if (socket.WSARecvMsgBlocking(
                         handle,
                         (IntPtr)(&wsaMsg),
-                        out bytesTransferred,
-                        IntPtr.Zero,
-                        IntPtr.Zero) == SocketError.SocketError)
+                        out bytesTransferred) == SocketError.SocketError)
                     {
                         return GetLastSocketError();
                     }
@@ -920,7 +911,7 @@ namespace System.Net.Sockets
         public static unsafe SocketError Select(IList? checkRead, IList? checkWrite, IList? checkError, int microseconds)
         {
             const int StackThreshold = 64; // arbitrary limit to avoid too much space on stack
-            bool ShouldStackAlloc(IList? list, ref IntPtr[]? lease, out Span<IntPtr> span)
+            static bool ShouldStackAlloc(IList? list, ref IntPtr[]? lease, out Span<IntPtr> span)
             {
                 int count;
                 if (list == null || (count = list.Count) == 0)
@@ -1372,7 +1363,7 @@ namespace System.Net.Sockets
             SocketError errorCode = SocketError.Success;
 
             // This can throw ObjectDisposedException (handle, and retrieving the delegate).
-            if (!socket.DisconnectExBlocking(handle, IntPtr.Zero, (int)(reuseSocket ? TransmitFileOptions.ReuseSocket : 0), 0))
+            if (!socket.DisconnectExBlocking(handle, (int)(reuseSocket ? TransmitFileOptions.ReuseSocket : 0), 0))
             {
                 errorCode = GetLastSocketError();
             }

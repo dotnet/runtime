@@ -1168,6 +1168,8 @@ void CEECompileInfo::EncodeMethod(
     STANDARD_VM_CONTRACT;
 
     COOPERATIVE_TRANSITION_BEGIN();
+
+    _ASSERTE(referencingModule);
     MethodDesc *pMethod = GetMethod(handle);
 
     BOOL fSuccess;
@@ -1453,7 +1455,7 @@ void CEECompileInfo::EncodeGenericSignature(
     case DeclaringTypeHandleSlot:
         EncodeTypeInDictionarySignature(pInfoModule, ptr, pSigBuilder, encodeContext, pfnEncodeModule);
         IfFailThrow(ptr.SkipExactlyOne());
-        // fall through
+        FALLTHROUGH;
 
     case TypeHandleSlot:
         EncodeTypeInDictionarySignature(pInfoModule, ptr, pSigBuilder, encodeContext, pfnEncodeModule);
@@ -1463,7 +1465,7 @@ void CEECompileInfo::EncodeGenericSignature(
     case ConstrainedMethodEntrySlot:
         EncodeTypeInDictionarySignature(pInfoModule, ptr, pSigBuilder, encodeContext, pfnEncodeModule);
         IfFailThrow(ptr.SkipExactlyOne());
-        // fall through
+        FALLTHROUGH;
 
     case MethodDescSlot:
     case MethodEntrySlot:

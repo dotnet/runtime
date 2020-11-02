@@ -14,58 +14,11 @@
 #include <string>
 #include <thread>
 #include <chrono>
-#include <condition_variable>
 #include <functional>
 #include "cor.h"
 #include "corprof.h"
 
 typedef HRESULT (*GetDispenserFunc) (const CLSID &pClsid, const IID &pIid, void **ppv);
-
-class ManualEvent
-{
-private:
-    std::mutex m_mtx;
-    std::condition_variable m_cv;
-    bool m_set = false;
-
-    static void DoNothing()
-    {
-
-    }
-
-public:
-    ManualEvent() = default;
-    ~ManualEvent() = default;
-    ManualEvent(ManualEvent& other) = delete;
-    ManualEvent(ManualEvent&& other) = delete;
-    ManualEvent& operator= (ManualEvent& other) = delete;
-    ManualEvent& operator= (ManualEvent&& other) = delete;
-
-    void Wait(std::function<void()> spuriousCallback = DoNothing)
-    {
-        std::unique_lock<std::mutex> lock(m_mtx);
-        while (!m_set)
-        {
-            m_cv.wait(lock, [&]() { return m_set; });
-            if (!m_set)
-            {
-                spuriousCallback();
-            }
-        }
-    }
-
-    void Signal()
-    {
-        std::unique_lock<std::mutex> lock(m_mtx);
-        m_set = true;
-    }
-
-    void Reset()
-    {
-        std::unique_lock<std::mutex> lock(m_mtx);
-        m_set = false;
-    }
-};
 
 class GetAppDomainStaticAddress : public Profiler
 {
@@ -93,7 +46,7 @@ private:
 
     std::atomic<int> jitEventCount;
     std::thread gcTriggerThread;
-    ManualEvent gcWaitEvent;
+    AutoEvent gcWaitEvent;
 
     typedef std::map<ClassID, AppDomainID>ClassAppDomainMap;
     ClassAppDomainMap classADMap;

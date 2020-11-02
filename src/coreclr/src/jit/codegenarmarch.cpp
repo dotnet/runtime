@@ -207,7 +207,7 @@ void CodeGen::genCodeForTreeNode(GenTree* treeNode)
         case GT_AND:
             assert(varTypeIsIntegralOrI(treeNode));
 
-            __fallthrough;
+            FALLTHROUGH;
 
 #if !defined(TARGET_64BIT)
         case GT_ADD_LO:
@@ -3281,7 +3281,7 @@ void CodeGen::genCreateAndStoreGCInfo(unsigned codeSize,
         unsigned reversePInvokeFrameVarNumber = compiler->lvaReversePInvokeFrameVar;
         assert(reversePInvokeFrameVarNumber != BAD_VAR_NUM && reversePInvokeFrameVarNumber < compiler->lvaRefCount);
         LclVarDsc& reversePInvokeFrameVar = compiler->lvaTable[reversePInvokeFrameVarNumber];
-        gcInfoEncoder->SetReversePInvokeFrameSlot(reversePInvokeFrameVar.lvStkOffs);
+        gcInfoEncoder->SetReversePInvokeFrameSlot(reversePInvokeFrameVar.GetStackOffset());
     }
 
     gcInfoEncoder->Build();

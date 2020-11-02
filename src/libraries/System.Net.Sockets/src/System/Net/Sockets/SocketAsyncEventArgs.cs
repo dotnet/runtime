@@ -589,20 +589,16 @@ namespace System.Net.Sockets
         {
             if (_operating == InProgress && _completedOperation == SocketAsyncOperation.Connect)
             {
-                if (_multipleConnect != null)
+                MultipleConnectAsync? multipleConnect = _multipleConnect;
+                if (multipleConnect != null)
                 {
                     // If a multiple connect is in progress, abort it.
-                    _multipleConnect.Cancel();
+                    multipleConnect.Cancel();
                 }
                 else
                 {
                     // Otherwise we're doing a normal ConnectAsync - cancel it by closing the socket.
-                    // _currentSocket will only be null if _multipleConnect was set, so we don't have to check.
-                    if (_currentSocket == null)
-                    {
-                        NetEventSource.Fail(this, "CurrentSocket and MultipleConnect both null!");
-                    }
-                    _currentSocket.Dispose();
+                    _currentSocket?.Dispose();
                 }
             }
         }
@@ -680,7 +676,7 @@ namespace System.Net.Sockets
             }
         }
 
-        internal void FinishWrapperConnectSuccess(Socket? connectSocket, int bytesTransferred, SocketFlags flags)
+        internal void FinishWrapperConnectSyncSuccess(Socket? connectSocket, int bytesTransferred, SocketFlags flags)
         {
             SetResults(SocketError.Success, bytesTransferred, flags);
             _currentSocket = connectSocket;
@@ -689,8 +685,15 @@ namespace System.Net.Sockets
             if (SocketsTelemetry.Log.IsEnabled()) LogBytesTransferEvents(connectSocket?.SocketType, SocketAsyncOperation.Connect, bytesTransferred);
 
             // Complete the operation and raise the event.
-            ExecutionContext? context = _context; // store context before it's cleared as part of completing the operation
             Complete();
+        }
+
+        internal void FinishWrapperConnectAsyncSuccess(Socket? connectSocket, int bytesTransferred, SocketFlags flags)
+        {
+            ExecutionContext? context = _context; // store context before it's cleared as part of completing the operation
+
+            FinishWrapperConnectSyncSuccess(connectSocket, bytesTransferred, flags);
+
             if (context == null)
             {
                 OnCompletedInternal();

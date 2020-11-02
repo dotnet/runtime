@@ -19,7 +19,7 @@
 /*.pdb
 /*.o
 /*.lo
-/*.so
+**.so
 **.dylib
 **.dylib.dSYM
 /*.netmodule

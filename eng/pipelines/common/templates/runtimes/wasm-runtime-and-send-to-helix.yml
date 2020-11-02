@@ -5,6 +5,7 @@ parameters:
   osSubgroup: ''
   container: ''
   testGroup: ''
+  crossBuild: false
   crossrootfsDir: ''
   readyToRun: false
   liveLibrariesBuildConfig: ''
@@ -78,6 +79,6 @@ steps:
           # DotNet-HelixApi-Access variable group
           helixAccessToken: $(HelixApiAccessToken)
 
-        helixProjectArguments: '$(Build.SourcesDirectory)/src/coreclr/tests/helixpublishwitharcade.proj'
+        helixProjectArguments: '$(Build.SourcesDirectory)/src/tests/Common/helixpublishwitharcade.proj'
 
-        scenarios: normal 
+        scenarios: normal

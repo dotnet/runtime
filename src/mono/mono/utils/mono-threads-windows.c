@@ -17,8 +17,8 @@
 #include <mono/utils/mono-threads-coop.h>
 #include <mono/utils/mono-threads-debug.h>
 #include <mono/utils/mono-os-wait.h>
-#include <mono/metadata/w32subset.h>
 #include <limits.h>
+#include <mono/utils/w32subset.h>
 
 enum Win32APCInfo {
 	WIN32_APC_INFO_CLEARED = 0,
@@ -76,6 +76,7 @@ abort_apc (ULONG_PTR param)
 {
 	THREADS_INTERRUPT_DEBUG ("%06d - abort_apc () called", GetCurrentThreadId ());
 
+#if HAVE_API_SUPPORT_WIN32_CANCEL_IO || HAVE_API_SUPPORT_WIN32_CANCEL_IO_EX
 	MonoThreadInfo *info = mono_thread_info_current_unchecked ();
 	if (info) {
 		// Check if pending interrupt is still relevant and current thread has not left alertable wait region.
@@ -88,12 +89,17 @@ abort_apc (ULONG_PTR param)
 			HANDLE io_handle = (HANDLE)info->win32_apc_info_io_handle;
 			if (io_handle != INVALID_HANDLE_VALUE) {
 				// In order to break IO waits, cancel all outstanding IO requests.
-				// Start to cancel IO requests for the registered IO handle issued by current thread.
 				// NOTE, this is NOT a blocking call.
+#if HAVE_API_SUPPORT_WIN32_CANCEL_IO
+				// Start to cancel IO requests for the registered IO handle issued by current thread.
 				CancelIo (io_handle);
+#elif HAVE_API_SUPPORT_WIN32_CANCEL_IO_EX
+				CancelIoEx (io_handle, NULL);
+#endif
 			}
 		}
 	}
+#endif /* HAVE_API_SUPPORT_WIN32_CANCEL_IO || HAVE_API_SUPPORT_WIN32_CANCEL_IO_EX */
 }
 
 // Attempt to cancel sync blocking IO on abort syscall requests.
@@ -443,10 +449,6 @@ mono_native_thread_join_handle (HANDLE thread_handle, gboolean close_handle)
 	return res != WAIT_FAILED;
 }
 
-/*
- * Can't OpenThread on UWP until SDK 15063 (our minspec today is 10240),
- * but this function doesn't seem to be used on Windows anyway
- */
 #if HAVE_API_SUPPORT_WIN32_OPEN_THREAD
 gboolean
 mono_native_thread_join (MonoNativeThreadId tid)
@@ -457,6 +459,14 @@ mono_native_thread_join (MonoNativeThreadId tid)
 		return FALSE;
 
 	return mono_native_thread_join_handle (handle, TRUE);
+}
+#elif !HAVE_EXTERN_DEFINED_WIN32_OPEN_THREAD
+gboolean
+mono_native_thread_join (MonoNativeThreadId tid)
+{
+	g_unsupported_api ("OpenThread");
+	SetLastError (ERROR_NOT_SUPPORTED);
+	return FALSE;
 }
 #endif
 
@@ -517,7 +527,7 @@ gboolean
 mono_threads_platform_in_critical_region (THREAD_INFO_TYPE *info)
 {
 	gboolean ret = FALSE;
-#if SIZEOF_VOID_P == 4 && HAVE_API_SUPPORT_WIN32_OPEN_THREAD
+#if SIZEOF_VOID_P == 4 && HAVE_API_SUPPORT_WIN32_IS_WOW64_PROCESS && HAVE_API_SUPPORT_WIN32_OPEN_THREAD
 /* FIXME On cygwin these are not defined */
 #if defined(CONTEXT_EXCEPTION_REQUEST) && defined(CONTEXT_EXCEPTION_REPORTING) && defined(CONTEXT_EXCEPTION_ACTIVE)
 	if (is_wow64 && thread_is_cooperative_suspend_aware (info)) {

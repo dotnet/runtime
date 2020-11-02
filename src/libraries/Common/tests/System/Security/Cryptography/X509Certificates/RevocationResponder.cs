@@ -366,6 +366,8 @@ namespace System.Security.Cryptography.X509Certificates.Tests.Common
             }
         }
 
+        internal void Stop() => _listener.Stop();
+
         private static void Trace(string trace)
         {
             if (s_traceEnabled)

@@ -1376,6 +1376,7 @@ CorElementType EEClass::ComputeInternalCorElementTypeForValueType(MethodTable * 
             // for creating a TI_STRUCT.
             case ELEMENT_TYPE_PTR:
                 type = ELEMENT_TYPE_U;
+                FALLTHROUGH;
 
             case ELEMENT_TYPE_I:
             case ELEMENT_TYPE_U:
@@ -1806,7 +1807,7 @@ EEClass::CheckForHFA()
 }
 
 #ifdef FEATURE_64BIT_ALIGNMENT
-// Returns true iff the native view of this type requires 64-bit aligment.
+// Returns true iff the native view of this type requires 64-bit alignment.
 bool MethodTable::NativeRequiresAlign8()
 {
     LIMITED_METHOD_CONTRACT;

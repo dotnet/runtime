@@ -154,7 +154,9 @@ static void* SignalHandlerLoop(void* arg)
         }
         else if (signalCode == SIGCONT)
         {
+#ifdef HAS_CONSOLE_SIGNALS
             ReinitializeTerminal();
+#endif
         }
         else if (signalCode != SIGWINCH)
         {
@@ -189,7 +191,9 @@ void SystemNative_UnregisterForCtrl()
 void SystemNative_RestoreAndHandleCtrl(CtrlCode ctrlCode)
 {
     int signalCode = ctrlCode == Break ? SIGQUIT : SIGINT;
+#ifdef HAS_CONSOLE_SIGNALS
     UninitializeTerminal();
+#endif
     sigaction(signalCode, OrigActionFor(signalCode), NULL);
     kill(getpid(), signalCode);
 }
@@ -315,3 +319,12 @@ int32_t InitializeSignalHandlingCore()
 
     return 1;
 }
+
+#ifndef HAS_CONSOLE_SIGNALS
+
+int32_t SystemNative_InitializeTerminalAndSignalHandling()
+{
+    return 0;
+}
+
+#endif
