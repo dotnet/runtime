@@ -238,6 +238,7 @@ if(CLR_CMAKE_TARGET_OSX OR CLR_CMAKE_TARGET_IOS OR CLR_CMAKE_TARGET_TVOS)
     add_subdirectory(System.Security.Cryptography.Native.Apple)
 endif()
 
-if(CLR_CMAKE_TARGET_ANDROID)
+# if ANDROID_OPENSSL_AAR is not set - use Android Native Crypto (it's going to replace openssl eventually)
+if(CLR_CMAKE_TARGET_ANDROID AND NOT DEFINED $ENV{ANDROID_OPENSSL_AAR})
     add_subdirectory(System.Security.Cryptography.Native.Android)
 endif()
