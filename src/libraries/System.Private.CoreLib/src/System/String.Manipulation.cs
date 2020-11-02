@@ -765,7 +765,7 @@ namespace System
         {
             if (values.Length <= 1)
             {
-                return values.Length == 0 ?
+                return values.IsEmpty ?
                     Empty :
                     values[0] ?? Empty;
             }
