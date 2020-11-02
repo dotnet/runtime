@@ -32,7 +32,7 @@
       <BuildPdb>false</BuildPdb>
       <BuildPdb Condition="$(BuildDll) and '$(OS)' == 'Windows_NT' and '$(TargetOS)' == 'Windows_NT'">true</BuildPdb>
 
-      <BuildPerfMap>true</BuildPerfMap>
+      <BuildPerfMap>false</BuildPerfMap>
       <BuildPerfMap Condition="$(BuildDll) and '$(TargetOS)' == 'Linux'">true</BuildPerfMap>
 
       <CrossGen1Cmd>$(BinDir)\$(CrossDir)\crossgen$(ExeExtension)</CrossGen1Cmd>
