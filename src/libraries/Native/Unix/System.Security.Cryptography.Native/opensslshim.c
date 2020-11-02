@@ -25,7 +25,6 @@ FOR_ALL_OPENSSL_FUNCTIONS
 #undef NEW_REQUIRED_FUNCTION
 #undef REQUIRED_FUNCTION
 
-#ifndef USE_ANDROID_CRYPTO_ONLY
 // x.x.x, considering the max number of decimal digits for each component
 #define MaxVersionStringLength 32
 
@@ -158,4 +157,3 @@ static void InitializeOpenSSLShim()
 #undef NEW_REQUIRED_FUNCTION
 #undef REQUIRED_FUNCTION
 }
-#endif
