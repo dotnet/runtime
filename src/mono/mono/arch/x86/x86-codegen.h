@@ -17,7 +17,7 @@
 #define X86_H
 #include <assert.h>
 
-#define x86_codegen_pre(inst_ptr_ptr, inst_len) do {} while (0)
+#define x86_codegen_pre(inst_ptr_ptr, inst_len)
 /* Two variants are needed to avoid warnings */
 #define x86_call_sequence_pre_val(inst) guint8* _code_start = (inst);
 #define x86_call_sequence_post_val(inst) _code_start
@@ -1254,8 +1254,8 @@ mono_x86_patch_inline (guchar* code, gpointer target)
 		x86_memindex_emit ((inst), (dreg), (basereg), (disp), (indexreg), (shift));	\
 	} while (0)
 
-#define x86_cdq(inst)  do { x86_byte (inst, 0x99); } while (0)
-#define x86_wait(inst) do { x86_byte (inst, 0x9b); } while (0)
+#define x86_cdq(inst) x86_byte (inst, 0x99)
+#define x86_wait(inst) x86_byte (inst, 0x9b)
 
 #define x86_fp_op_mem(inst,opc,mem,is_double)	\
 	do {	\
@@ -1628,10 +1628,10 @@ mono_x86_patch_inline (guchar* code, gpointer target)
 		x86_membase_emit ((inst), 0, (basereg), (disp));	\
 	} while (0)
 
-#define x86_pushad(inst) do { x86_byte (inst, 0x60); } while (0)
-#define x86_pushfd(inst) do { x86_byte (inst, 0x9c); } while (0)
-#define x86_popad(inst)  do { x86_byte (inst, 0x61); } while (0)
-#define x86_popfd(inst)  do { x86_byte (inst, 0x9d); } while (0)
+#define x86_pushad(inst) x86_byte (inst, 0x60)
+#define x86_pushfd(inst) x86_byte (inst, 0x9c)
+#define x86_popad(inst)  x86_byte (inst, 0x61)
+#define x86_popfd(inst)  x86_byte (inst, 0x9d)
 
 #define x86_loop(inst,imm)	\
 	do {	\
@@ -1899,7 +1899,7 @@ mono_x86_patch_inline (guchar* code, gpointer target)
 		x86_call_imm_body ((inst), _x86_offset);	\
 	} while (0)
 
-#define x86_ret(inst) do { x86_byte (inst, 0xc3); } while (0)
+#define x86_ret(inst) x86_byte (inst, 0xc3)
 
 #define x86_ret_imm(inst,imm)	\
 	do {	\
@@ -1953,8 +1953,8 @@ mono_x86_patch_inline (guchar* code, gpointer target)
 		x86_byte(inst, 0);	\
 	} while (0)
 	
-#define x86_leave(inst) do { x86_byte (inst, 0xc9); } while (0)
-#define x86_sahf(inst)  do { x86_byte (inst, 0x9e); } while (0)
+#define x86_leave(inst) x86_byte (inst, 0xc9)
+#define x86_sahf(inst) x86_byte (inst, 0x9e)
 
 #define x86_fsin(inst) do { x86_codegen_pre(&(inst), 2); x86_byte (inst, 0xd9); x86_byte (inst, 0xfe); } while (0)
 #define x86_fcos(inst) do { x86_codegen_pre(&(inst), 2); x86_byte (inst, 0xd9); x86_byte (inst, 0xff); } while (0)
@@ -1998,18 +1998,20 @@ mono_x86_patch_inline (guchar* code, gpointer target)
 	do {	\
 		unsigned i, m = 1;	\
 		x86_enter ((inst), (frame_size));	\
-		for (i = 0; i < X86_NREG; ++i, m <<= 1) {	\
+		for (i = 0; i < X86_NREG; ++i) {	\
 			if ((reg_mask) & m)	\
 				x86_push_reg ((inst), i);	\
+			m <<= 1;	\
 		}	\
 	} while (0)
 
 #define x86_epilog(inst,reg_mask)	\
 	do {	\
-		unsigned i, m = 1 << X86_EDI;	\
-		for (i = X86_EDI; m != 0; i--, m=m>>1) {	\
+		unsigned i = X86_EDI, m;	\
+		for (m = 1 << X86_EDI; m != 0; m >>= 1) {	\
 			if ((reg_mask) & m)	\
 				x86_pop_reg ((inst), i);	\
+			--i;	\
 		}	\
 		x86_leave ((inst));	\
 		x86_ret ((inst));	\
@@ -2403,9 +2405,6 @@ typedef enum {
 		x86_imm_emit8 ((inst), (imm));	\
 	} while (0)
 
-#define x86_sse_shift_reg_reg(inst,opc,dreg,sreg)	\
-	do {	\
-		x86_sse_alu_pd_reg_reg (inst, opc, dreg, sreg);	\
-	} while (0)
+#define x86_sse_shift_reg_reg(inst,opc,dreg,sreg) x86_sse_alu_pd_reg_reg (inst, opc, dreg, sreg)
 
 #endif // X86_H

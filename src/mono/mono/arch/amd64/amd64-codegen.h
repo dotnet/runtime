@@ -329,9 +329,7 @@ typedef union {
 	} while (0)
 
 #define amd64_mov_reg_mem(inst,reg,mem,size)	\
-	do {    \
-		amd64_mov_reg_mem_body((inst),(reg),(mem),(size)); \
-	} while (0)
+	amd64_mov_reg_mem_body((inst),(reg),(mem),(size))
 
 #define amd64_mov_reg_membase_body(inst,reg,basereg,disp,size)	\
 	do {	\
@@ -355,9 +353,7 @@ typedef union {
 #define amd64_mov_reg_memindex_size(inst,reg,basereg,disp,indexreg,shift,size) \
 	amd64_mov_reg_memindex_size_body((inst),(reg),(basereg),(disp),(indexreg),(shift),(size))
 #define amd64_mov_reg_membase(inst,reg,basereg,disp,size)	\
-	do {	\
-		amd64_mov_reg_membase_body((inst), (reg), (basereg), (disp), (size)); \
-	} while (0)
+	amd64_mov_reg_membase_body((inst), (reg), (basereg), (disp), (size))
 
 #define amd64_movzx_reg_membase(inst,reg,basereg,disp,size)	\
 	do {	\
@@ -1320,10 +1316,10 @@ typedef union {
 #define amd64_jump_reg_size(inst,reg,size) do { amd64_emit_rex ((inst),0,0,0,(reg)); x86_jump_reg((inst),((reg)&0x7)); } while (0)
 #define amd64_jump_mem_size(inst,mem,size) do { amd64_emit_rex ((inst),(size),0,0,0); x86_jump_mem((inst),(mem)); } while (0)
 #define amd64_jump_disp_size(inst,disp,size) do { amd64_codegen_pre(inst); amd64_emit_rex ((inst),0,0,0,0); x86_jump_disp((inst),(disp)); amd64_codegen_post(inst); } while (0)
-#define amd64_branch8_size(inst,cond,imm,is_signed,size) do { x86_branch8((inst),(cond),(imm),(is_signed)); } while (0)
-#define amd64_branch32_size(inst,cond,imm,is_signed,size) do { x86_branch32((inst),(cond),(imm),(is_signed)); } while (0)
+#define amd64_branch8_size(inst,cond,imm,is_signed,size) x86_branch8((inst),(cond),(imm),(is_signed))
+#define amd64_branch32_size(inst,cond,imm,is_signed,size) x86_branch32((inst),(cond),(imm),(is_signed))
 #define amd64_branch_size_body(inst,cond,target,is_signed,size) do { amd64_codegen_pre(inst); amd64_emit_rex ((inst),(size),0,0,0); x86_branch((inst),(cond),(target),(is_signed)); amd64_codegen_post(inst); } while (0)
-#define amd64_branch_size(inst,cond,target,is_signed,size) do { amd64_branch_size_body((inst),(cond),(target),(is_signed),(size)); } while (0)
+#define amd64_branch_size(inst,cond,target,is_signed,size) amd64_branch_size_body((inst),(cond),(target),(is_signed),(size))
 
 #define amd64_branch_disp_size(inst,cond,disp,is_signed,size) do { amd64_codegen_pre(inst); amd64_emit_rex ((inst),(size),0,0,0); x86_branch_disp((inst),(cond),(disp),(is_signed)); amd64_codegen_post(inst); } while (0)
 #define amd64_set_reg_size(inst,cond,reg,is_signed,size) do { amd64_codegen_pre(inst); amd64_emit_rex((inst),1,0,0,(reg)); x86_set_reg((inst),(cond),((reg)&0x7),(is_signed)); amd64_codegen_post(inst); } while (0)
@@ -1332,8 +1328,8 @@ typedef union {
 //#define amd64_call_reg_size(inst,reg,size) do { amd64_codegen_pre(inst); amd64_emit_rex ((inst),(size),0,0,(reg)); x86_call_reg((inst),((reg)&0x7)); amd64_codegen_post(inst); } while (0)
 #define amd64_call_mem_size(inst,mem,size) do { amd64_codegen_pre(inst); amd64_emit_rex ((inst),(size),0,0,0); x86_call_mem((inst),(mem)); amd64_codegen_post(inst); } while (0)
 
-#define amd64_call_imm_size(inst,disp,size) do { x86_call_imm((inst),(disp)); } while (0)
-#define amd64_call_code_size(inst,target,size) do { x86_call_code((inst),(target)); } while (0)
+#define amd64_call_imm_size(inst,disp,size) x86_call_imm((inst),(disp))
+#define amd64_call_code_size(inst,target,size) x86_call_code((inst),(target))
 
 //#define amd64_ret_size(inst,size) do { amd64_codegen_pre(inst); amd64_emit_rex ((inst),(size),0,0,0); x86_ret(inst); amd64_codegen_post(inst); } while (0)
 #define amd64_ret_imm_size(inst,imm,size) do { amd64_codegen_pre(inst); amd64_emit_rex ((inst),(size),0,0,0); x86_ret_imm((inst),(imm)); amd64_codegen_post(inst); } while (0)
