@@ -773,7 +773,7 @@ namespace System.Xml
     {
         protected XmlReader() { }
         public abstract int AttributeCount { get; }
-        public abstract string? BaseURI { get; }
+        public abstract string BaseURI { get; }
         public virtual bool CanReadBinaryContent { get { throw null; } }
         public virtual bool CanReadValueChunk { get { throw null; } }
         public virtual bool CanResolveEntity { get { throw null; } }
