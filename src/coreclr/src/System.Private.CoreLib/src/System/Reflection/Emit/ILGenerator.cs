@@ -1622,14 +1622,14 @@ namespace System.Reflection.Emit
         {
             int i = GetCurrentActiveScopeIndex();
             m_localSymInfos[i] ??= new LocalSymInfo();
-            m_localSymInfos[i]!.AddLocalSymInfo(strName, signature, slot, startOffset, endOffset); // TODO-NULLABLE: Indexer nullability tracked (https://github.com/dotnet/roslyn/issues/34644)
+            m_localSymInfos[i]!.AddLocalSymInfo(strName, signature, slot, startOffset, endOffset);
         }
 
         internal void AddUsingNamespaceToCurrentScope(string strNamespace)
         {
             int i = GetCurrentActiveScopeIndex();
             m_localSymInfos[i] ??= new LocalSymInfo();
-            m_localSymInfos[i]!.AddUsingNamespace(strNamespace); // TODO-NULLABLE: Indexer nullability tracked (https://github.com/dotnet/roslyn/issues/34644)
+            m_localSymInfos[i]!.AddUsingNamespace(strNamespace);
         }
 
         internal void AddScopeInfo(ScopeAction sa, int iOffset)
@@ -1693,9 +1693,9 @@ namespace System.Reflection.Emit
                 {
                     symWriter.CloseScope(m_iOffsets[i]);
                 }
-                if (m_localSymInfos[i] != null)
+                if (m_localSymInfos[i] is LocalSymInfo lsi)
                 {
-                    m_localSymInfos[i]!.EmitLocalSymInfo(symWriter); // TODO-NULLABLE: Indexer nullability tracked (https://github.com/dotnet/roslyn/issues/34644)
+                    lsi.EmitLocalSymInfo(symWriter);
                 }
             }
         }

@@ -170,7 +170,7 @@ namespace System.Xml
         private NodeData[]? _attrDuplSortingArray;
 
         // name table
-        private XmlNameTable _nameTable = null!; // TODO-NULLABLE: https://github.com/dotnet/roslyn/issues/43523
+        private XmlNameTable _nameTable;
         private bool _nameTableFromSettings;
 
         // resolver

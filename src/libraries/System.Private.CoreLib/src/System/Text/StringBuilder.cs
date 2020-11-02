@@ -1323,7 +1323,7 @@ namespace System.Text
 
             if (values[0] != null)
             {
-                Append(values[0]!.ToString()); // TODO-NULLABLE: Indexer nullability tracked (https://github.com/dotnet/roslyn/issues/34644)
+                Append(values[0]!.ToString());
             }
 
             for (int i = 1; i < values.Length; i++)
@@ -1331,7 +1331,7 @@ namespace System.Text
                 Append(separator, separatorLength);
                 if (values[i] != null)
                 {
-                    Append(values[i]!.ToString()); // TODO-NULLABLE: Indexer nullability tracked (https://github.com/dotnet/roslyn/issues/34644)
+                    Append(values[i]!.ToString());
                 }
             }
             return this;
