@@ -26,3 +26,10 @@ PALEXPORT int32_t CryptoNative_EvpDigestUpdate(void* ctx, void* d, int32_t cnt);
 PALEXPORT int32_t CryptoNative_EvpDigestFinalEx(void* ctx, uint8_t* md, uint32_t* s);
 PALEXPORT int32_t CryptoNative_EvpDigestCurrent(void* ctx, uint8_t* md, uint32_t* s);
 PALEXPORT void CryptoNative_EvpMdCtxDestroy(void* ctx);
+
+PALEXPORT void* CryptoNative_HmacCreate(uint8_t* key, int32_t keyLen, intptr_t md);
+PALEXPORT int32_t CryptoNative_HmacReset(void* ctx);
+PALEXPORT int32_t CryptoNative_HmacUpdate(void* ctx, uint8_t* data, int32_t len);
+PALEXPORT int32_t CryptoNative_HmacFinal(void* ctx, uint8_t* md, int32_t* len);
+PALEXPORT int32_t CryptoNative_HmacCurrent(void* ctx, uint8_t* md, int32_t* len);
+PALEXPORT void CryptoNative_HmacDestroy(void* ctx);
