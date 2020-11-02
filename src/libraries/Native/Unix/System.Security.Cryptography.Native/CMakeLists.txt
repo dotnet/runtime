@@ -67,14 +67,17 @@ set(NATIVECRYPTO_SOURCES
     pal_x509ext.c
 )
 
-# uncomment to use Android SDK instead of OpenSSL where possible
+# Mix Android SDK with OpenSSL
 set(USE_ANDROID_CRYPTO 1)
-set(USE_ANDROID_CRYPTO_ONLY 1)
+
+# Rely only on Android SDK for crypto
+# set(USE_ANDROID_CRYPTO_ONLY 1)
 
 if (CLR_CMAKE_TARGET_ANDROID AND USE_ANDROID_CRYPTO)
     list(APPEND NATIVECRYPTO_SOURCES
         android_security.c
     )
+    add_compile_options(-Wno-gnu-zero-variadic-macro-arguments)
     add_definitions(-DUSE_ANDROID_CRYPTO)
     if (USE_ANDROID_CRYPTO_ONLY)
         add_definitions(-DUSE_ANDROID_CRYPTO_ONLY)

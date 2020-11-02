@@ -17,27 +17,22 @@
 
 static JavaVM *gJvm;
 
+#define LOG_DEBUG(fmt, ...) ((void)__android_log_print(ANDROID_LOG_DEBUG, "DOTNET", "%s: " fmt, __FUNCTION__, ## __VA_ARGS__))
+#define LOG_INFO(fmt, ...) ((void)__android_log_print(ANDROID_LOG_INFO, "DOTNET", "%s: " fmt, __FUNCTION__, ## __VA_ARGS__))
+#define LOG_ERROR(fmt, ...) ((void)__android_log_print(ANDROID_LOG_ERROR, "DOTNET", "%s: " fmt, __FUNCTION__, ## __VA_ARGS__))
+
 // java/security/SecureRandom
 static jclass g_randClass = NULL;
 static jmethodID g_randCtor = NULL;
-static jmethodID g_randNextBytes = NULL;
+static jmethodID g_randNextBytesMethod = NULL;
 
 // java/security/MessageDigest
 static jclass g_mdClass = NULL;
-static jmethodID g_mdGetInstanceMethodId = NULL;
-static jmethodID g_mdDigestMethodId = NULL;
-static jmethodID g_mdResetMethodId = NULL;
-static jmethodID g_mdUpdateMethodId = NULL;
-
-
-PALEXPORT JNIEXPORT jint JNICALL
-JNI_OnLoad(JavaVM *vm, void *reserved)
-{
-    (void)reserved;
-    __android_log_write(ANDROID_LOG_INFO, "DOTNET", "JNI_OnLoad in android_security.c");
-    gJvm = vm;
-    return JNI_VERSION_1_6;
-}
+static jmethodID g_mdGetInstanceMethod = NULL;
+static jmethodID g_mdDigestMethod = NULL;
+static jmethodID g_mdDigestCurrentMethodId = NULL;
+static jmethodID g_mdResetMethod = NULL;
+static jmethodID g_mdUpdateMethod = NULL;
 
 static jobject ToGRef(JNIEnv *env, jobject lref)
 {
@@ -46,6 +41,28 @@ static jobject ToGRef(JNIEnv *env, jobject lref)
     jobject gref = (*env)->NewGlobalRef(env, lref);
     (*env)->DeleteLocalRef(env, lref);
     return gref;
+}
+
+static jclass GetClassGref(JNIEnv *env, const char* name)
+{
+    LOG_DEBUG("Finding %s class", name);
+    jclass klass = ToGRef(env, (*env)->FindClass (env, name));
+    if (!klass) {
+        LOG_ERROR("class %s was not found", name);
+        assert(klass);
+    }
+    return klass;
+}
+
+static jmethodID GetMethod(JNIEnv *env, bool isStatic, jclass klass, const char* name, const char* sig)
+{
+    LOG_DEBUG("Finding %s method", name);
+    jmethodID mid = isStatic ? (*env)->GetStaticMethodID(env, klass, name, sig) : (*env)->GetMethodID(env, klass, name, sig);
+    if (!mid) {
+        LOG_ERROR("method %s %s was not found", name, sig);
+        assert(mid);
+    }
+    return mid;
 }
 
 static JNIEnv* GetJniEnv()
@@ -59,27 +76,43 @@ static JNIEnv* GetJniEnv()
     return env;
 }
 
+PALEXPORT JNIEXPORT jint JNICALL
+JNI_OnLoad(JavaVM *vm, void *reserved)
+{
+    (void)reserved;
+    LOG_INFO("JNI_OnLoad in android_security.c");
+    gJvm = vm;
+
+    JNIEnv* env = GetJniEnv();
+
+    // cache some classes and methods while we're in the thread-safe JNI_OnLoad
+    g_randClass =               GetClassGref(env, "java/security/SecureRandom");
+    g_randCtor =                GetMethod(env, false, g_randClass, "<init>", "()V");
+    g_randNextBytesMethod =     GetMethod(env, false, g_randClass, "nextBytes", "([B)V");
+
+    g_mdClass =                 GetClassGref(env, "java/security/MessageDigest");
+    g_mdGetInstanceMethod =     GetMethod(env, true,  g_mdClass, "getInstance", "(Ljava/lang/String;)Ljava/security/MessageDigest;");
+    g_mdResetMethod =           GetMethod(env, false, g_mdClass, "reset", "()V");
+    g_mdDigestMethod =          GetMethod(env, false, g_mdClass, "digest", "([B)[B");
+    g_mdDigestCurrentMethodId = GetMethod(env, false, g_mdClass, "digest", "()[B");
+    g_mdUpdateMethod =          GetMethod(env, false, g_mdClass, "update", "([B)V");
+
+    return JNI_VERSION_1_6;
+}
+
 int32_t CryptoNative_GetRandomBytes(uint8_t* buff, int32_t len)
 {
-    JNIEnv* jniEnv = GetJniEnv();
-
-    if (!g_randClass) {
-        g_randClass = ToGRef(jniEnv, (*jniEnv)->FindClass (jniEnv, "java/security/SecureRandom"));
-        g_randCtor = (*jniEnv)->GetMethodID(jniEnv, g_randClass, "<init>", "()V");
-        g_randNextBytes = (*jniEnv)->GetMethodID(jniEnv, g_randClass, "nextBytes", "([B)V");
-    }
-
-    assert(g_randClass && "java/security/SecureRandom was not found");
-    jobject randObj = (*jniEnv)->NewObject(jniEnv, g_randClass, g_randCtor);
+    JNIEnv* env = GetJniEnv();
+    jobject randObj = (*env)->NewObject(env, g_randClass, g_randCtor);
     assert(randObj && "Unable to create an instance of java/security/SecureRandom");
 
-    jbyteArray buffArray = (*jniEnv)->NewByteArray(jniEnv, len);
-    (*jniEnv)->SetByteArrayRegion(jniEnv, buffArray, 0, len, (jbyte*)buff);
-    (*jniEnv)->CallVoidMethod(jniEnv, randObj, g_randNextBytes, buffArray);
-    (*jniEnv)->GetByteArrayRegion(jniEnv, buffArray, 0, len, (jbyte*)buff);
+    jbyteArray buffArray = (*env)->NewByteArray(env, len);
+    (*env)->SetByteArrayRegion(env, buffArray, 0, len, (jbyte*)buff);
+    (*env)->CallVoidMethod(env, randObj, g_randNextBytesMethod, buffArray);
+    (*env)->GetByteArrayRegion(env, buffArray, 0, len, (jbyte*)buff);
 
-    (*jniEnv)->DeleteLocalRef(jniEnv, buffArray);
-    (*jniEnv)->DeleteLocalRef(jniEnv, randObj);
+    (*env)->DeleteLocalRef(env, buffArray);
+    (*env)->DeleteLocalRef(env, randObj);
     return SUCCESS;
 }
 
@@ -98,41 +131,24 @@ int32_t CryptoNative_EvpMdSize(intptr_t md)
     return (int32_t)md;
 }
 
-static jclass GetMessageDigestClass(JNIEnv* jniEnv)
+static jobject GetMessageDigestInstance(JNIEnv* env, intptr_t type)
 {
-    if (!g_mdClass) {
-        g_mdClass = ToGRef(jniEnv, (*jniEnv)->FindClass (jniEnv, "java/security/MessageDigest"));
-    }
-    assert(g_mdClass && "java/security/MessageDigest was not found");
-    return g_mdClass;
-}
-
-static jobject GetMessageDigestInstance(JNIEnv* jniEnv, intptr_t type)
-{
-    jclass mdClass = GetMessageDigestClass(jniEnv);
-
-    if (!g_mdGetInstanceMethodId) {
-        g_mdGetInstanceMethodId = (*jniEnv)->GetStaticMethodID(
-            jniEnv, mdClass, "getInstance", "(Ljava/lang/String;)Ljava/security/MessageDigest;");
-    }
-    assert(g_mdGetInstanceMethodId && "MessageDigest.getInstance(...) was not found");
-
     jstring mdName = NULL;
-    if (type == CryptoNative_EvpMd5())
-        mdName = (jstring)(*jniEnv)->NewStringUTF(jniEnv, "MD5");
-    else if (type == CryptoNative_EvpSha1())
-        mdName = (jstring)(*jniEnv)->NewStringUTF(jniEnv, "SHA-1");
+    if (type == CryptoNative_EvpSha1())
+        mdName = (jstring)(*env)->NewStringUTF(env, "SHA-1");
     else if (type == CryptoNative_EvpSha256())
-        mdName = (jstring)(*jniEnv)->NewStringUTF(jniEnv, "SHA-256");
+        mdName = (jstring)(*env)->NewStringUTF(env, "SHA-256");
     else if (type == CryptoNative_EvpSha384())
-        mdName = (jstring)(*jniEnv)->NewStringUTF(jniEnv, "SHA-384");
+        mdName = (jstring)(*env)->NewStringUTF(env, "SHA-384");
     else if (type == CryptoNative_EvpSha512())
-        mdName = (jstring)(*jniEnv)->NewStringUTF(jniEnv, "SHA-512");
+        mdName = (jstring)(*env)->NewStringUTF(env, "SHA-512");
+    else if (type == CryptoNative_EvpMd5())
+        mdName = (jstring)(*env)->NewStringUTF(env, "MD5");
     else
         return NULL;
 
-    jobject mdObj = (*jniEnv)->CallStaticObjectMethod(jniEnv, mdClass, g_mdGetInstanceMethodId, mdName);
-    (*jniEnv)->DeleteLocalRef(jniEnv, mdName);
+    jobject mdObj = (*env)->CallStaticObjectMethod(env, g_mdClass, g_mdGetInstanceMethod, mdName);
+    (*env)->DeleteLocalRef(env, mdName);
     return mdObj;
 }
 
@@ -141,39 +157,34 @@ int32_t CryptoNative_EvpDigestOneShot(intptr_t type, void* source, int32_t sourc
     if (!type || !md || !mdSize || sourceSize < 0)
         return 0;
 
-    JNIEnv* jniEnv = GetJniEnv();
-    jclass mdClass = GetMessageDigestClass(jniEnv);
+    JNIEnv* env = GetJniEnv();
 
     // MessageDigest md = MessageDigest.getInstance("...");
     // hashed = md.digest(src);
 
-    if (!g_mdDigestMethodId)
-        g_mdDigestMethodId = (*jniEnv)->GetMethodID(jniEnv, mdClass, "digest", "([B)[B");
-    assert(g_mdDigestMethodId && "MessageDigest.digest(...) was not found");
-
-    jobject mdObj = GetMessageDigestInstance(jniEnv, type);
+    jobject mdObj = GetMessageDigestInstance(env, type);
     if (!mdObj)
         return 0;
 
-    jbyteArray bytes = (*jniEnv)->NewByteArray(jniEnv, sourceSize);
-    (*jniEnv)->SetByteArrayRegion(jniEnv, bytes, 0, sourceSize, (jbyte*) source);
-    jbyteArray hashedBytes = (jbyteArray)(*jniEnv)->CallObjectMethod(jniEnv, mdObj, g_mdDigestMethodId, bytes);
+    jbyteArray bytes = (*env)->NewByteArray(env, sourceSize);
+    (*env)->SetByteArrayRegion(env, bytes, 0, sourceSize, (jbyte*) source);
+    jbyteArray hashedBytes = (jbyteArray)(*env)->CallObjectMethod(env, mdObj, g_mdDigestMethod, bytes);
     assert(hashedBytes && "MessageDigest.digest(...) was not expected to return null");
 
-    jsize hashedBytesLen = (*jniEnv)->GetArrayLength(jniEnv, hashedBytes);
-    (*jniEnv)->GetByteArrayRegion(jniEnv, hashedBytes, 0, hashedBytesLen, (jbyte*) md);
+    jsize hashedBytesLen = (*env)->GetArrayLength(env, hashedBytes);
+    (*env)->GetByteArrayRegion(env, hashedBytes, 0, hashedBytesLen, (jbyte*) md);
     *mdSize = (uint32_t)hashedBytesLen;
 
-    (*jniEnv)->DeleteLocalRef(jniEnv, bytes);
-    (*jniEnv)->DeleteLocalRef(jniEnv, hashedBytes);
-    (*jniEnv)->DeleteLocalRef(jniEnv, mdObj);
+    (*env)->DeleteLocalRef(env, bytes);
+    (*env)->DeleteLocalRef(env, hashedBytes);
+    (*env)->DeleteLocalRef(env, mdObj);
     return SUCCESS;
 }
 
 void* CryptoNative_EvpMdCtxCreate(intptr_t type)
 {
-    JNIEnv* jniEnv = GetJniEnv();
-    jobject md = ToGRef(jniEnv, GetMessageDigestInstance(jniEnv, type));
+    JNIEnv* env = GetJniEnv();
+    jobject md = ToGRef(env, GetMessageDigestInstance(env, type));
     // md can be null (caller will handle it as an error)
     // global ref is released in CryptoNative_EvpMdCtxDestroy
     return (void*)md;
@@ -186,15 +197,9 @@ int32_t CryptoNative_EvpDigestReset(void* ctx, intptr_t type)
 
     (void)type; // not used
 
-    JNIEnv* jniEnv = GetJniEnv();
+    JNIEnv* env = GetJniEnv();
     jobject mdObj = (jobject)ctx;
-    jclass mdClass = GetMessageDigestClass(jniEnv);
-
-    if (!g_mdResetMethodId)
-        g_mdResetMethodId = (*jniEnv)->GetMethodID(jniEnv, mdClass, "reset", "()V");
-    assert(g_mdResetMethodId && "MessageDigest.reset() was not found");
-
-    (*jniEnv)->CallVoidMethod(jniEnv, mdObj, g_mdResetMethodId);
+    (*env)->CallVoidMethod(env, mdObj, g_mdResetMethod);
     return SUCCESS;
 }
 
@@ -203,18 +208,13 @@ int32_t CryptoNative_EvpDigestUpdate(void* ctx, void* d, int32_t cnt)
     if (!ctx)
         return 0;
 
-    JNIEnv* jniEnv = GetJniEnv();
+    JNIEnv* env = GetJniEnv();
     jobject mdObj = (jobject)ctx;
-    jclass mdClass = GetMessageDigestClass(jniEnv);
 
-    if (!g_mdUpdateMethodId)
-        g_mdUpdateMethodId = (*jniEnv)->GetMethodID(jniEnv, mdClass, "update", "([B)V");
-    assert(g_mdUpdateMethodId && "MessageDigest.update(...) was not found");
-
-    jbyteArray bytes = (*jniEnv)->NewByteArray(jniEnv, cnt);
-    (*jniEnv)->SetByteArrayRegion(jniEnv, bytes, 0, cnt, (jbyte*) d);
-    (*jniEnv)->CallVoidMethod(jniEnv, mdObj, g_mdUpdateMethodId, bytes);
-    (*jniEnv)->DeleteLocalRef(jniEnv, bytes);
+    jbyteArray bytes = (*env)->NewByteArray(env, cnt);
+    (*env)->SetByteArrayRegion(env, bytes, 0, cnt, (jbyte*) d);
+    (*env)->CallVoidMethod(env, mdObj, g_mdUpdateMethod, bytes);
+    (*env)->DeleteLocalRef(env, bytes);
 
     return SUCCESS;
 }
@@ -229,19 +229,14 @@ int32_t CryptoNative_EvpDigestCurrent(void* ctx, uint8_t* md, uint32_t* s)
     if (!ctx)
         return 0;
 
-    JNIEnv* jniEnv = GetJniEnv();
+    JNIEnv* env = GetJniEnv();
     jobject mdObj = (jobject)ctx;
-    jclass mdClass = GetMessageDigestClass(jniEnv);
 
-    if (!g_mdDigestMethodId)
-        g_mdDigestMethodId = (*jniEnv)->GetMethodID(jniEnv, mdClass, "digest", "()[B");
-    assert(g_mdDigestMethodId && "MessageDigest.digest() was not found");
-
-    jbyteArray bytes = (jbyteArray)(*jniEnv)->CallObjectMethod(jniEnv, mdObj, g_mdDigestMethodId);
-    jsize bytesLen = (*jniEnv)->GetArrayLength(jniEnv, bytes);
+    jbyteArray bytes = (jbyteArray)(*env)->CallObjectMethod(env, mdObj, g_mdDigestCurrentMethodId);
+    jsize bytesLen = (*env)->GetArrayLength(env, bytes);
     *s = (uint32_t)bytesLen;
-    (*jniEnv)->GetByteArrayRegion(jniEnv, bytes, 0, bytesLen, (jbyte*) md);
-    (*jniEnv)->DeleteLocalRef(jniEnv, bytes);
+    (*env)->GetByteArrayRegion(env, bytes, 0, bytesLen, (jbyte*) md);
+    (*env)->DeleteLocalRef(env, bytes);
 
     return SUCCESS;
 }
@@ -250,8 +245,8 @@ void CryptoNative_EvpMdCtxDestroy(void* ctx)
 {
     if (ctx)
     {
-        JNIEnv* jniEnv = GetJniEnv();
-        (*jniEnv)->DeleteGlobalRef(jniEnv, (jobject)ctx);
+        JNIEnv* env = GetJniEnv();
+        (*env)->DeleteGlobalRef(env, (jobject)ctx);
     }
 }
 
