@@ -748,5 +748,31 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
             );
             Assert.StartsWith("Error: int64 not available", exc.Message);
         }
+
+        [Fact]
+        public static void BareStringArgumentsAreNotInterned()
+        {
+            HelperMarshal._stringResource = HelperMarshal._stringResource2 = null;
+            Runtime.InvokeJS(@"
+                var jsLiteral = ""hello world"";
+                App.call_test_method (""InvokeString"", [ jsLiteral ]);
+                App.call_test_method (""InvokeString2"", [ jsLiteral ]);
+            ");
+            Assert.Equal(HelperMarshal._stringResource, HelperMarshal._stringResource2);
+            Assert.False(Object.ReferenceEquals(HelperMarshal._stringResource, HelperMarshal._stringResource2));
+        }
+
+        [Fact]
+        public static void SymbolArgumentsAreConvertedToInternedStrings()
+        {
+            HelperMarshal._stringResource = HelperMarshal._stringResource2 = null;
+            Runtime.InvokeJS(@"
+                var sym = Symbol.for(""interned string"");
+                App.call_test_method (""InvokeString"", [ sym ]);
+                App.call_test_method (""InvokeString2"", [ sym ]);
+            ");
+            Assert.Equal(HelperMarshal._stringResource, HelperMarshal._stringResource2);
+            Assert.True(Object.ReferenceEquals(HelperMarshal._stringResource, HelperMarshal._stringResource2));
+        }
     }
 }

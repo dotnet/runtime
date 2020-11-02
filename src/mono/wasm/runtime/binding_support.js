@@ -144,6 +144,18 @@ var BindingSupportLib = {
 			this.safehandle_release_by_handle = get_method ("SafeHandleReleaseByHandle");
 
 			this._are_promises_supported = ((typeof Promise === "object") || (typeof Promise === "function")) && (typeof Promise.resolve === "function");
+
+			this._interned_string_table = new Map ();
+		},
+
+		js_string_to_mono_string_interned: function (string) {
+			var resultRoot = this._interned_string_table.get (string);
+			if (resultRoot)
+				return resultRoot.value;
+
+			resultRoot = MONO.mono_wasm_new_root (this.js_string_to_mono_string (string));
+			this._interned_string_table.set (string, resultRoot);
+			return resultRoot.value;
 		},
 
 		js_string_to_mono_string: function (string) {
@@ -451,6 +463,8 @@ var BindingSupportLib = {
 					return result;
 				} case typeof js_obj === "string":
 					return this.js_string_to_mono_string (js_obj);
+				case typeof js_obj === "symbol":
+					return this.js_string_to_mono_string_interned (js_obj.description);
 				case typeof js_obj === "boolean":
 					return this._box_js_bool (js_obj);
 				case isThenable() === true:
@@ -482,6 +496,8 @@ var BindingSupportLib = {
 					return 0;
 				case typeof js_obj === "string":
 					return this.call_method(this.create_uri, null, "s!", [ js_obj ])
+				case typeof js_obj === "symbol":
+					return this.call_method(this.create_uri, null, "s!", [ js_obj.description ])
 				default:
 					return this.extract_mono_obj (js_obj);
 			}
@@ -807,6 +823,7 @@ var BindingSupportLib = {
 			var result = new Map ();
 			result.set ('m', { steps: [{ }], size: 0});
 			result.set ('s', { steps: [{ convert: this.js_string_to_mono_string.bind (this) }], size: 0, needs_root: true });
+			result.set ('S', { steps: [{ convert: this.js_string_to_mono_string_interned.bind (this) }], size: 0, needs_root: true });
 			result.set ('o', { steps: [{ convert: this.js_to_mono_obj.bind (this) }], size: 0, needs_root: true });
 			result.set ('u', { steps: [{ convert: this.js_to_mono_uri.bind (this) }], size: 0, needs_root: true });
 
