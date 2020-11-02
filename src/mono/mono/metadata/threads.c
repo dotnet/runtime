@@ -1335,6 +1335,7 @@ create_thread (MonoThread *thread, MonoInternalThread *internal, MonoObject *sta
 	MonoNativeThreadId tid;
 	gboolean ret;
 	gsize stack_set_size;
+	char *msg;
 
 	if (start_delegate)
 		g_assert (!start_func && !start_func_arg);
@@ -1403,7 +1404,15 @@ create_thread (MonoThread *thread, MonoInternalThread *internal, MonoObject *sta
 		mono_threads_lock ();
 		mono_g_hash_table_remove (threads_starting_up, thread);
 		mono_threads_unlock ();
+
+#ifdef ENABLE_NETCORE
+		msg = g_strdup_printf ("0x%x", mono_w32error_get_last());
+		mono_error_set_exception_handle (error, mono_get_exception_thread_start_handle (
+			mono_get_exception_execution_engine (msg), error));
+		g_free (msg);
+#else
 		mono_error_set_execution_engine (error, "Couldn't create thread. Error 0x%x", mono_w32error_get_last());
+#endif
 		/* ref is not going to be decremented in start_wrapper_internal */
 		mono_atomic_dec_i32 (&start_info->ref);
 		ret = FALSE;

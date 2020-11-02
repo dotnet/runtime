@@ -870,6 +870,49 @@ exit:
 	HANDLE_FUNCTION_RETURN_REF (MonoException, MONO_HANDLE_CAST (MonoException, exc));
 }
 
+MonoExceptionHandle
+mono_get_exception_thread_start_handle (MonoException* inner_raw, MonoError *error)
+{
+	HANDLE_FUNCTION_ENTER ();
+
+	MonoClass *klass;
+	MonoMethod *method;
+	gpointer iter;
+	MONO_HANDLE_DCL (MonoException, inner);
+
+	error_init (error);
+
+	klass = mono_class_load_from_name (mono_get_corlib (), "System.Threading", "ThreadStartException");
+
+	mono_class_init_internal (klass);
+
+	iter = NULL;
+	while ((method = mono_class_get_methods (klass, &iter))) {
+		if (!strcmp (".ctor", mono_method_get_name (method))) {
+			MonoMethodSignature *sig = mono_method_signature_internal (method);
+
+			if (sig->param_count == 1 && mono_class_from_mono_type_internal (sig->params [0]) == mono_defaults.exception_class)
+				break;
+		}
+		method = NULL;
+	}
+	g_assert (method);
+
+	MonoDomain * const domain = mono_domain_get ();
+	gpointer args [ ] = { MONO_HANDLE_RAW (inner) };
+
+	MonoObjectHandle exc = mono_object_new_handle (domain, klass, error);
+	mono_error_assert_ok (error);
+
+	mono_runtime_invoke_handle_void (method, exc, args, error);
+	goto_if_nok (error, return_null);
+	goto exit;
+return_null:
+	exc = mono_new_null ();
+exit:
+	HANDLE_FUNCTION_RETURN_REF (MonoException, MONO_HANDLE_CAST (MonoException, exc));
+}
+
 /**
  * mono_get_exception_synchronization_lock:
  * \param inner the inner exception.

@@ -290,6 +290,7 @@ namespace System.Threading
         }
 
         [DynamicDependency(nameof(StartCallback))]
+        [DynamicDependency("#ctor(System.Exception)", typeof(ThreadStartException))]
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         private static extern void StartInternal(Thread runtime_thread);
 #endif

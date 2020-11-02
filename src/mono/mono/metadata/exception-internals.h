@@ -30,6 +30,9 @@ mono_exception_from_token_two_strings_checked (MonoImage *image, uint32_t token,
 					       MonoStringHandle a1, MonoStringHandle a2,
 					       MonoError *error);
 
+MonoExceptionHandle
+mono_get_exception_thread_start_handle (MonoException* inner_raw, MonoError *error);
+
 typedef int (*MonoGetSeqPointFunc) (MonoDomain *domain, MonoMethod *method, gint32 native_offset);
 
 void
