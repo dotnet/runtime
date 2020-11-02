@@ -537,7 +537,7 @@ struct SystemVStructRegisterPassingHelper
         currentUniqueOffsetField(0),
         largestFieldOffset(-1)
     {
-        for (unsigned int i = 0; i < CLR_SYSTEMV_MAX_EIGHTBYTES_COUNT_TO_PASS_IN_REGISTERS; i++)
+        for (int i = 0; i < CLR_SYSTEMV_MAX_EIGHTBYTES_COUNT_TO_PASS_IN_REGISTERS; i++)
         {
             eightByteClassifications[i] = SystemVClassificationTypeNoClass;
             eightByteSizes[i] = 0;
@@ -545,7 +545,7 @@ struct SystemVStructRegisterPassingHelper
         }
 
         // Initialize the work arrays
-        for (unsigned int i = 0; i < SYSTEMV_MAX_NUM_FIELDS_IN_REGISTER_PASSED_STRUCT; i++)
+        for (int i = 0; i < SYSTEMV_MAX_NUM_FIELDS_IN_REGISTER_PASSED_STRUCT; i++)
         {
             fieldClassifications[i] = SystemVClassificationTypeNoClass;
             fieldSizes[i] = 0;

@@ -167,7 +167,7 @@ Stack for the above call will look as follows (stack growing downwards):
             else
             {
                 // The param type arg comes after the return buffer argument and the "this" pointer.
-                int     index = 0;
+                unsigned int     index = 0;
 
                 if (m_argIterator.HasThis())
                 {
