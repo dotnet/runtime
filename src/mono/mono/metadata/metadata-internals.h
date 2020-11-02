@@ -594,7 +594,7 @@ struct _MonoImage {
 	GSList *delta_image_last;
 
 	/* Metadata delta images only */
-	uint32_t generation;
+	uint32_t generation; /* global update ID that added this delta image */
 
 	/* Maps MethodDef token indices to something. In base images a boolean
 	 * flag that there's an update for the method; in delta images a
