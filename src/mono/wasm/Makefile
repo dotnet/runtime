@@ -68,12 +68,15 @@ endif
 EMCC_DEBUG_FLAGS =-g -Os -s ASSERTIONS=1 -DENABLE_NETCORE=1 -DDEBUG=1
 EMCC_RELEASE_FLAGS=-Oz --llvm-opts 2 -DENABLE_NETCORE=1
 
+STRIP_CMD=&& $(EMSDK_PATH)/upstream/bin/wasm-opt --strip-dwarf $(NATIVE_BIN_DIR)/dotnet.wasm -o $(NATIVE_BIN_DIR)/dotnet.wasm
+
 #
 # Interpreter builds
 #
 
 # $(1) - EMCC_FLAGS
 # $(2) - libs
+# $(3) - strip cmd
 define InterpBuildTemplate
 
 $(NATIVE_BIN_DIR):
@@ -83,7 +86,7 @@ $(BUILDS_OBJ_DIR):
 	mkdir -p $$@
 
 $(NATIVE_BIN_DIR)/dotnet.js: $(BUILDS_OBJ_DIR)/driver.o $(BUILDS_OBJ_DIR)/pinvoke.o $(BUILDS_OBJ_DIR)/corebindings.o runtime/library_mono.js runtime/binding_support.js runtime/dotnet_support.js $(SYSTEM_NATIVE_LIBDIR)/pal_random.js $(2) | $(NATIVE_BIN_DIR)
-	$(EMCC) $(EMCC_FLAGS) $(1) --js-library runtime/library_mono.js --js-library runtime/binding_support.js --js-library runtime/dotnet_support.js --js-library $(SYSTEM_NATIVE_LIBDIR)/pal_random.js $(BUILDS_OBJ_DIR)/driver.o $(BUILDS_OBJ_DIR)/pinvoke.o $(BUILDS_OBJ_DIR)/corebindings.o $(2) -o $(NATIVE_BIN_DIR)/dotnet.js
+	$(EMCC) $(EMCC_FLAGS) $(1) --js-library runtime/library_mono.js --js-library runtime/binding_support.js --js-library runtime/dotnet_support.js --js-library $(SYSTEM_NATIVE_LIBDIR)/pal_random.js $(BUILDS_OBJ_DIR)/driver.o $(BUILDS_OBJ_DIR)/pinvoke.o $(BUILDS_OBJ_DIR)/corebindings.o $(2) -o $(NATIVE_BIN_DIR)/dotnet.js $(3)
 
 $(BUILDS_OBJ_DIR)/pinvoke-table.h: $(PINVOKE_TABLE) | $(BUILDS_OBJ_DIR)
 	if cmp -s $(PINVOKE_TABLE) $$@ ; then : ; else cp $(PINVOKE_TABLE) $$@ ; fi
@@ -102,9 +105,9 @@ build-native: $(NATIVE_BIN_DIR)/dotnet.js
 endef
 
 ifeq ($(CONFIG),Debug)
-$(eval $(call InterpBuildTemplate,$(EMCC_DEBUG_FLAGS),$(MONO_LIBS)))
+$(eval $(call InterpBuildTemplate,$(EMCC_DEBUG_FLAGS),$(MONO_LIBS),))
 else
-$(eval $(call InterpBuildTemplate,$(EMCC_RELEASE_FLAGS),$(MONO_LIBS)))
+$(eval $(call InterpBuildTemplate,$(EMCC_RELEASE_FLAGS),$(MONO_LIBS),$(STRIP_CMD)))
 endif
 
 clean-emsdk:

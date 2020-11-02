@@ -171,12 +171,14 @@ MONO_API int   mono_gc_register_root (char *start, size_t size, MonoGCDescriptor
 void  mono_gc_deregister_root (char* addr);
 
 EMSCRIPTEN_KEEPALIVE int
-mono_wasm_register_root (char *start, size_t size, const char *name) {
-	return mono_gc_register_root (start, size, NULL, MONO_ROOT_SOURCE_EXTERNAL, NULL, name ? name : "mono_wasm_register_root");
+mono_wasm_register_root (char *start, size_t size, const char *name)
+{
+	return mono_gc_register_root (start, size, (MonoGCDescriptor)NULL, MONO_ROOT_SOURCE_EXTERNAL, NULL, name ? name : "mono_wasm_register_root");
 }
 
 EMSCRIPTEN_KEEPALIVE void 
-mono_wasm_deregister_root (char *addr) {
+mono_wasm_deregister_root (char *addr)
+{
 	mono_gc_deregister_root (addr);
 }
 
@@ -212,7 +214,7 @@ mono_wasm_add_assembly (const char *name, const unsigned char *data, unsigned in
 	entry->next = assemblies;
 	assemblies = entry;
 	++assembly_count;
-	return mono_has_pdb_checksum (data, size);
+	return mono_has_pdb_checksum ((char*)data, size);
 }
 
 int
