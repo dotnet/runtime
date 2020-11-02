@@ -9334,7 +9334,7 @@ public:
 #ifdef TARGET_AMD64
         return (info.compRetBuffArg != BAD_VAR_NUM);
 #elif defined(TARGET_WINDOWS) && defined(TARGET_ARM64)
-        return (callConvIsInstanceMethodCallConv(info.compMethodInfo->args.getCallConv()) || compIsProfilerHookNeeded()) &&
+        return (callConvIsInstanceMethodCallConv(compMethodInfoGetUnmanagedCallConv(info)) || compIsProfilerHookNeeded()) &&
                (info.compRetBuffArg != BAD_VAR_NUM);
 #else  // !TARGET_AMD64
         return (compIsProfilerHookNeeded()) && (info.compRetBuffArg != BAD_VAR_NUM);
