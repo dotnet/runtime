@@ -3828,8 +3828,8 @@ void CodeGen::genPushCalleeSavedRegisters()
 
     if (currentSpToFinalSp < compiler->getVeryLargeFrameSize())
     {
-        const regNumber tempReg = REG_SCRATCH;
-        assert(tempReg != initReg);
+        const regNumber tempReg            = REG_SCRATCH;
+        bool            tempRegWasModified = false;
 
         constexpr int ldrLargestPositiveImmByteOffset = 0x8000;
         const bool    useLdrUnsignedImmediate         = (pageSize < ldrLargestPositiveImmByteOffset / 2);
@@ -3851,6 +3851,7 @@ void CodeGen::genPushCalleeSavedRegisters()
                         // so it is worthwhile to advance tempReg and emit two or more ldr xzr, [tempReg, #imm].
                         currentSpToTempReg = currentSpToTempReg + ldrLargestPositiveImmByteOffset;
                         GetEmitter()->emitIns_R_R_I(INS_sub, EA_PTRSIZE, tempReg, REG_SPBASE, currentSpToTempReg);
+                        tempRegWasModified = true;
                     }
                     else
                     {
@@ -3870,11 +3871,21 @@ void CodeGen::genPushCalleeSavedRegisters()
 
             // Emit mov tempReg, #imm followed by ldr wzr, [sp, tempReg].
             genSetRegToIcon(tempReg, -currentSpToProbeLoc, TYP_I_IMPL);
+            tempRegWasModified = true;
             GetEmitter()->emitIns_R_R_R(INS_ldr, EA_4BYTE, REG_ZR, REG_SPBASE, tempReg);
             currentSpToLastProbedLoc = currentSpToProbeLoc;
         }
 
-        regSet.verifyRegUsed(tempReg);
+        if (tempRegWasModified)
+        {
+            regSet.verifyRegUsed(tempReg);
+
+            if (initReg == tempReg)
+            {
+                *pInitRegZeroed = false;
+            }
+        }
+
         compiler->unwindPadding();
     }
     else
