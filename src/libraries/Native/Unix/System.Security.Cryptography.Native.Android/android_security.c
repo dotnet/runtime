@@ -45,6 +45,17 @@ static jmethodID g_macResetMethod = NULL;
 static jclass g_sksClass = NULL;
 static jmethodID g_sksCtor = NULL;
 
+// javax/crypto/Cipher
+static jclass g_cipherClass = NULL;
+static jmethodID g_cipherGetInstanceMethod = NULL;
+static jmethodID g_cipherDoFinalMethod = NULL;
+static jmethodID g_cipherUpdateMethod = NULL;
+static jmethodID g_cipherInitMethod = NULL;
+
+// javax/crypto/spec/IvParameterSpec
+static jclass g_ivPsClass = NULL;
+static jmethodID g_ivPsCtor = NULL;
+
 static jobject ToGRef(JNIEnv *env, jobject lref)
 {
     if (lref == 0)
@@ -52,6 +63,12 @@ static jobject ToGRef(JNIEnv *env, jobject lref)
     jobject gref = (*env)->NewGlobalRef(env, lref);
     (*env)->DeleteLocalRef(env, lref);
     return gref;
+}
+
+static void ReleaseGRef(JNIEnv *env, jobject gref)
+{
+    if (gref)
+        (*env)->DeleteGlobalRef(env, gref);
 }
 
 static jclass GetClassGRef(JNIEnv *env, const char* name)
@@ -117,6 +134,15 @@ JNI_OnLoad(JavaVM *vm, void *reserved)
 
     g_sksClass =                GetClassGRef(env, "javax/crypto/spec/SecretKeySpec");
     g_sksCtor =                 GetMethod(env, false, g_sksClass, "<init>", "([BLjava/lang/String;)V");
+
+    g_cipherClass =             GetClassGRef(env, "javax/crypto/Cipher");
+    g_cipherGetInstanceMethod = GetMethod(env, true,  g_cipherClass, "getInstance", "(Ljava/lang/String;)Ljavax/crypto/Cipher;");
+    g_cipherDoFinalMethod =     GetMethod(env, false, g_cipherClass, "doFinal", "()[B");
+    g_cipherUpdateMethod =      GetMethod(env, false, g_cipherClass, "update", "([B)[B");
+    g_cipherInitMethod =        GetMethod(env, false, g_cipherClass, "init", "(ILjava/security/Key;Ljava/security/spec/AlgorithmParameterSpec)V");
+
+    g_ivPsClass =               GetClassGRef(env, "javax/crypto/spec/IvParameterSpec");
+    g_ivPsCtor =                GetMethod(env, false, g_ivPsClass, "<init>", "([B)V");
 
     return JNI_VERSION_1_6;
 }
@@ -268,11 +294,7 @@ int32_t CryptoNative_EvpDigestCurrent(void* ctx, uint8_t* md, uint32_t* s)
 
 void CryptoNative_EvpMdCtxDestroy(void* ctx)
 {
-    if (ctx)
-    {
-        JNIEnv* env = GetJniEnv();
-        (*env)->DeleteGlobalRef(env, (jobject)ctx);
-    }
+    ReleaseGRef(GetJniEnv(), (jobject)ctx);
 }
 
 void* CryptoNative_HmacCreate(uint8_t* key, int32_t keyLen, intptr_t type)
@@ -360,9 +382,65 @@ int32_t CryptoNative_HmacCurrent(void* ctx, uint8_t* data, int32_t* len)
 
 void CryptoNative_HmacDestroy(void* ctx)
 {
-    if (ctx)
-    {
-        JNIEnv* env = GetJniEnv();
-        (*env)->DeleteGlobalRef(env, (jobject)ctx);
-    }
+    ReleaseGRef(GetJniEnv(), (jobject)ctx);
+}
+
+// TODO: AES/DES
+
+intptr_t CryptoNative_EvpAes128Ecb()    { return 1001; } // just some unique numbers
+intptr_t CryptoNative_EvpAes128Cbc()    { return 1002; }
+intptr_t CryptoNative_EvpAes128Cfb8()   { return 1003; }
+intptr_t CryptoNative_EvpAes128Cfb128() { return 1004; }
+intptr_t CryptoNative_EvpAes128Gcm()    { return 1005; }
+intptr_t CryptoNative_EvpAes128Ccm()    { return 1006; }
+intptr_t CryptoNative_EvpAes192Ecb()    { return 1007; }
+intptr_t CryptoNative_EvpAes192Cbc()    { return 1008; }
+intptr_t CryptoNative_EvpAes192Cfb8()   { return 1009; }
+intptr_t CryptoNative_EvpAes192Cfb128() { return 1010; }
+intptr_t CryptoNative_EvpAes192Gcm()    { return 1011; }
+intptr_t CryptoNative_EvpAes192Ccm()    { return 1012; }
+intptr_t CryptoNative_EvpAes256Ecb()    { return 1013; }
+intptr_t CryptoNative_EvpAes256Cbc()    { return 1014; }
+intptr_t CryptoNative_EvpAes256Cfb8()   { return 1015; }
+intptr_t CryptoNative_EvpAes256Cfb128() { return 1016; }
+intptr_t CryptoNative_EvpAes256Gcm()    { return 1017; }
+intptr_t CryptoNative_EvpAes256Ccm()    { return 1018; }
+intptr_t CryptoNative_EvpDes3Ecb()      { return 1019; }
+intptr_t CryptoNative_EvpDes3Cbc()      { return 1020; }
+intptr_t CryptoNative_EvpDes3Cfb8()     { return 1021; }
+intptr_t CryptoNative_EvpDes3Cfb64()    { return 1022; }
+intptr_t CryptoNative_EvpDesEcb()       { return 1023; }
+intptr_t CryptoNative_EvpDesCfb8()      { return 1024; }
+intptr_t CryptoNative_EvpDesCbc()       { return 1025; }
+intptr_t CryptoNative_EvpRC2Ecb()       { return 1026; }
+intptr_t CryptoNative_EvpRC2Cbc()       { return 1027; }
+
+void* CryptoNative_EvpCipherCreate2(intptr_t type, uint8_t* key, int32_t keyLength, int32_t effectiveKeyLength, uint8_t* iv, int32_t enc)
+{
+    return NULL;
+}
+
+int32_t CryptoNative_EvpCipherCtxSetPadding(void* x, int32_t padding)
+{
+    return -1;
+}
+
+int32_t CryptoNative_EvpCipherUpdate(void* ctx, uint8_t* out, int32_t* outl, uint8_t* in, int32_t inl)
+{
+    return -1;
+}
+
+int32_t CryptoNative_EvpCipherFinalEx(void* ctx, uint8_t* outm, int32_t* outl)
+{
+    return -1;
+}
+
+int32_t CryptoNative_EvpCipherReset(void* ctx)
+{
+    return -1;
+}
+
+void CryptoNative_EvpCipherDestroy(void* ctx)
+{
+    ReleaseGRef(GetJniEnv(), (jobject)ctx);
 }

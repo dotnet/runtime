@@ -2,6 +2,7 @@ project(System.Security.Cryptography.Native.Android C)
 
 
 add_compile_options(-Wno-gnu-zero-variadic-macro-arguments)
+add_compile_options(-Wno-unused-parameter)
 
 set(NATIVECRYPTO_SOURCES
     android_security.c
