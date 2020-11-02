@@ -6,10 +6,12 @@ include_directories(
   ../../../mono/mono/coregc
   ${coreclr_root}/src/gc
   ${coreclr_root}/src/gc/env
-  ${coreclr_root}/src/gc/unix)
+  ${coreclr_root}/src/gc/unix
+  ${coreclr_root}/src/pal/inc/rt
+  ${coreclr_root}/src/pal/inc)
 
 
-add_definitions(-D_AMD64_ -DBIT64 -DFEATURE_REDHAWK -DPLATFORM_UNIX -DHOST_64BIT -DHOST_AMD64 -DTARGET_UNIX)
+add_definitions(-D_AMD64_ -DBIT64 -DFEATURE_REDHAWK -DPLATFORM_UNIX -DHOST_64BIT -DHOST_AMD64 -DTARGET_UNIX -DNDEBUG -DHAVE_CLOCK_GETTIME_NSEC_NP -DHAVE_SYSCTL)
 
 set(mono_coregc_sources_base
     coregc-mono.cpp
