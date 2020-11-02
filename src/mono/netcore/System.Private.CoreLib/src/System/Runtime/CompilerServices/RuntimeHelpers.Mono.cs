@@ -55,16 +55,6 @@ namespace System.Runtime.CompilerServices
             RunClassConstructor(type.Value);
         }
 
-        internal static ref byte GetRawData(this object obj) =>
-            ref Unsafe.As<RawData>(obj).Data;
-
-        // Helper class to assist with unsafe pinning of arbitrary objects.
-        // It's used by VM code.
-        internal class RawData
-        {
-            public byte Data;
-        }
-
         public static void EnsureSufficientExecutionStack()
         {
             if (SufficientExecutionStack())
@@ -119,6 +109,9 @@ namespace System.Runtime.CompilerServices
         {
             throw new PlatformNotSupportedException();
         }
+
+        [Intrinsic]
+        internal static ref byte GetRawData(this object obj) => ref obj.GetRawData();
 
         [Intrinsic]
         public static bool IsReferenceOrContainsReferences<T>() => IsReferenceOrContainsReferences<T>();
