@@ -1586,8 +1586,7 @@ namespace System.Xml
             {
                 get
                 {
-                    // TODO-NULLABLE - unnecessary namespaceUri! - https://github.com/dotnet/roslyn/issues/47221
-                    return _reader[name, namespaceUri!];
+                    return _reader[name, namespaceUri];
                 }
             }
 
