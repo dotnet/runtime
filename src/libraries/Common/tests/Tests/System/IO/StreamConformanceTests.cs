@@ -499,36 +499,36 @@ namespace System.IO.Tests
             }
         }
 
+        protected async Task AssertCanceledAsync(CancellationToken cancellationToken, Func<Task> testCode)
+        {
+            OperationCanceledException oce = await Assert.ThrowsAnyAsync<OperationCanceledException>(testCode);
+            if (cancellationToken.CanBeCanceled)
+            {
+                Assert.Equal(cancellationToken, oce.CancellationToken);
+            }
+        }
+
         protected async Task ValidatePrecanceledOperations_ThrowsCancellationException(Stream stream)
         {
             var cts = new CancellationTokenSource();
             cts.Cancel();
 
-            OperationCanceledException oce;
-
             if (stream.CanRead)
             {
-                oce = await Assert.ThrowsAnyAsync<OperationCanceledException>(() => stream.ReadAsync(new byte[1], 0, 1, cts.Token));
-                Assert.Equal(cts.Token, oce.CancellationToken);
-
-                oce = await Assert.ThrowsAnyAsync<OperationCanceledException>(async () => { await stream.ReadAsync(new Memory<byte>(new byte[1]), cts.Token); });
-                Assert.Equal(cts.Token, oce.CancellationToken);
+                await AssertCanceledAsync(cts.Token, () => stream.ReadAsync(new byte[1], 0, 1, cts.Token));
+                await AssertCanceledAsync(cts.Token, async () => { await stream.ReadAsync(new Memory<byte>(new byte[1]), cts.Token); });
             }
 
             if (stream.CanWrite)
             {
-                oce = await Assert.ThrowsAnyAsync<OperationCanceledException>(() => stream.WriteAsync(new byte[1], 0, 1, cts.Token));
-                Assert.Equal(cts.Token, oce.CancellationToken);
-
-                oce = await Assert.ThrowsAnyAsync<OperationCanceledException>(async () => { await stream.WriteAsync(new ReadOnlyMemory<byte>(new byte[1]), cts.Token); });
-                Assert.Equal(cts.Token, oce.CancellationToken);
+                await AssertCanceledAsync(cts.Token, () => stream.WriteAsync(new byte[1], 0, 1, cts.Token));
+                await AssertCanceledAsync(cts.Token, async () => { await stream.WriteAsync(new ReadOnlyMemory<byte>(new byte[1]), cts.Token); });
             }
 
             Exception e = await Record.ExceptionAsync(() => stream.FlushAsync(cts.Token));
             if (e != null)
             {
-                oce = Assert.IsAssignableFrom<OperationCanceledException>(e);
-                Assert.Equal(cts.Token, oce.CancellationToken);
+                Assert.Equal(cts.Token, Assert.IsAssignableFrom<OperationCanceledException>(e).CancellationToken);
             }
         }
 
@@ -540,15 +540,12 @@ namespace System.IO.Tests
             }
 
             CancellationTokenSource cts;
-            OperationCanceledException oce;
 
             cts = new CancellationTokenSource(1);
-            oce = await Assert.ThrowsAnyAsync<OperationCanceledException>(() => stream.ReadAsync(new byte[1], 0, 1, cts.Token));
-            Assert.Equal(cts.Token, oce.CancellationToken);
+            await AssertCanceledAsync(cts.Token, () => stream.ReadAsync(new byte[1], 0, 1, cts.Token));
 
             cts = new CancellationTokenSource(1);
-            oce = await Assert.ThrowsAnyAsync<OperationCanceledException>(async () => { await stream.ReadAsync(new Memory<byte>(new byte[1]), cts.Token); });
-            Assert.Equal(cts.Token, oce.CancellationToken);
+            await AssertCanceledAsync(cts.Token, async () => { await stream.ReadAsync(new Memory<byte>(new byte[1]), cts.Token); });
         }
 
         protected async Task WhenAllOrAnyFailed(Task task1, Task task2)
@@ -2398,18 +2395,22 @@ namespace System.IO.Tests
             using StreamPair streams = await CreateConnectedStreamsAsync();
             foreach ((Stream writeable, Stream readable) in GetReadWritePairs(streams))
             {
-                await Assert.ThrowsAnyAsync<OperationCanceledException>(() => readable.ReadAsync(new byte[1], 0, 1, new CancellationToken(true)));
-                await Assert.ThrowsAnyAsync<OperationCanceledException>(async () => { await readable.ReadAsync(new Memory<byte>(new byte[1]), new CancellationToken(true)); });
+                CancellationTokenSource cts;
 
-                var cts = new CancellationTokenSource();
+                cts = new CancellationTokenSource();
+                cts.Cancel();
+                await AssertCanceledAsync(cts.Token, () => readable.ReadAsync(new byte[1], 0, 1, cts.Token));
+                await AssertCanceledAsync(cts.Token, async () => { await readable.ReadAsync(new Memory<byte>(new byte[1]), cts.Token); });
+
+                cts = new CancellationTokenSource();
                 Task<int> t = readable.ReadAsync(new byte[1], 0, 1, cts.Token);
                 cts.Cancel();
-                await Assert.ThrowsAnyAsync<OperationCanceledException>(() => t);
+                await AssertCanceledAsync(cts.Token, () => t);
 
                 cts = new CancellationTokenSource();
                 ValueTask<int> vt = readable.ReadAsync(new Memory<byte>(new byte[1]), cts.Token);
                 cts.Cancel();
-                await Assert.ThrowsAnyAsync<OperationCanceledException>(async () => await vt);
+                await AssertCanceledAsync(cts.Token, async () => await vt);
 
                 byte[] buffer = new byte[1];
                 vt = readable.ReadAsync(new Memory<byte>(buffer));
