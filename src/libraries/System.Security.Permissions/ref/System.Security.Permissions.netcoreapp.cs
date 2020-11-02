@@ -14,6 +14,7 @@ namespace System.Xaml.Permissions
         public XamlLoadPermission(System.Collections.Generic.IEnumerable<System.Xaml.Permissions.XamlAccessLevel> allowedAccess) { }
         public XamlLoadPermission(System.Security.Permissions.PermissionState state) { }
         public XamlLoadPermission(System.Xaml.Permissions.XamlAccessLevel allowedAccess) { }
+        [System.Runtime.Versioning.SupportedOSPlatform("windows")]
         public System.Collections.Generic.IList<System.Xaml.Permissions.XamlAccessLevel> AllowedAccess { get { throw null; } }
         public override System.Security.IPermission Copy() { throw null; }
         public override bool Equals(object obj) { throw null; }
