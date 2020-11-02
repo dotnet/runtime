@@ -379,28 +379,31 @@ namespace System.IO
 
         // We absolutely need this method broken out so that WriteInternalCoreAsync can call
         // a method without having to go through buffering code that might call FlushWrite.
-        private void SetLengthCore(long value)
+        private unsafe void SetLengthCore(long value)
         {
             Debug.Assert(value >= 0, "value >= 0");
-            long origPos = _filePosition;
-
             VerifyOSHandlePosition();
-            if (_filePosition != value)
-                SeekCore(_fileHandle, value, SeekOrigin.Begin);
-            if (!Interop.Kernel32.SetEndOfFile(_fileHandle))
+
+            var eofInfo = new Interop.Kernel32.FILE_END_OF_FILE_INFO
+            {
+                EndOfFile = value
+            };
+
+            if (!Interop.Kernel32.SetFileInformationByHandle(
+                _fileHandle,
+                Interop.Kernel32.FileEndOfFileInfo,
+                &eofInfo,
+                (uint)sizeof(Interop.Kernel32.FILE_END_OF_FILE_INFO)))
             {
                 int errorCode = Marshal.GetLastWin32Error();
                 if (errorCode == Interop.Errors.ERROR_INVALID_PARAMETER)
                     throw new ArgumentOutOfRangeException(nameof(value), SR.ArgumentOutOfRange_FileLengthTooBig);
                 throw Win32Marshal.GetExceptionForWin32Error(errorCode, _path);
             }
-            // Return file pointer to where it was before setting length
-            if (origPos != value)
+
+            if (_filePosition > value)
             {
-                if (origPos < value)
-                    SeekCore(_fileHandle, origPos, SeekOrigin.Begin);
-                else
-                    SeekCore(_fileHandle, 0, SeekOrigin.End);
+                SeekCore(_fileHandle, 0, SeekOrigin.End);
             }
         }
 
