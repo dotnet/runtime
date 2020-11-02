@@ -185,6 +185,9 @@ namespace System.Runtime.CompilerServices
             return x.CompareTo(y);
         }
 
+        internal static ref byte GetRawData(this object obj) =>
+            ref Unsafe.As<RawData>(obj).Data;
+
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal static unsafe nuint GetRawObjectDataSize(object obj)
         {
@@ -331,6 +334,12 @@ namespace System.Runtime.CompilerServices
 
         [MethodImpl(MethodImplOptions.InternalCall)]
         internal static extern int GetMethodsJittedCount();
+    }
+    // Helper class to assist with unsafe pinning of arbitrary objects.
+    // It's used by VM code.
+    internal class RawData
+    {
+        public byte Data;
     }
 
     // CLR arrays are laid out in memory as follows (multidimensional array bounds are optional):
