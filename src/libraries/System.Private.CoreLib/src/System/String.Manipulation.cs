@@ -314,7 +314,7 @@ namespace System
             }
 
             string result = FastAllocateString(length);
-            Span<char> resultSpan = new Span<char>(ref result.GetRawStringData(), result.Length);
+            Span<char> resultSpan = new Span<char>(ref result._firstChar, result.Length);
 
             str0.CopyTo(resultSpan);
             str1.CopyTo(resultSpan.Slice(str0.Length));
@@ -331,7 +331,7 @@ namespace System
             }
 
             string result = FastAllocateString(length);
-            Span<char> resultSpan = new Span<char>(ref result.GetRawStringData(), result.Length);
+            Span<char> resultSpan = new Span<char>(ref result._firstChar, result.Length);
 
             str0.CopyTo(resultSpan);
             resultSpan = resultSpan.Slice(str0.Length);
@@ -353,7 +353,7 @@ namespace System
             }
 
             string result = FastAllocateString(length);
-            Span<char> resultSpan = new Span<char>(ref result.GetRawStringData(), result.Length);
+            Span<char> resultSpan = new Span<char>(ref result._firstChar, result.Length);
 
             str0.CopyTo(resultSpan);
             resultSpan = resultSpan.Slice(str0.Length);
@@ -506,7 +506,7 @@ namespace System
         {
             if (value == null)
                 throw new ArgumentNullException(nameof(value));
-            if (startIndex < 0 || startIndex > this.Length)
+            if ((uint)startIndex > Length)
                 throw new ArgumentOutOfRangeException(nameof(startIndex));
 
             int oldLength = Length;
@@ -520,21 +520,11 @@ namespace System
             // In case this computation overflows, newLength will be negative and FastAllocateString throws OutOfMemoryException
             int newLength = oldLength + insertLength;
             string result = FastAllocateString(newLength);
-            unsafe
-            {
-                fixed (char* srcThis = &_firstChar)
-                {
-                    fixed (char* srcInsert = &value._firstChar)
-                    {
-                        fixed (char* dst = &result._firstChar)
-                        {
-                            wstrcpy(dst, srcThis, startIndex);
-                            wstrcpy(dst + startIndex, srcInsert, insertLength);
-                            wstrcpy(dst + startIndex + insertLength, srcThis + startIndex, oldLength - startIndex);
-                        }
-                    }
-                }
-            }
+
+            Buffer.Memmove(ref result._firstChar, ref _firstChar, (nuint)startIndex);
+            Buffer.Memmove(ref Unsafe.Add(ref result._firstChar, startIndex), ref value._firstChar, (nuint)insertLength);
+            Buffer.Memmove(ref Unsafe.Add(ref result._firstChar, startIndex + insertLength), ref Unsafe.Add(ref _firstChar, startIndex), (nuint)(oldLength - startIndex));
+
             return result;
         }
 
@@ -829,19 +819,12 @@ namespace System
             int count = totalWidth - oldLength;
             if (count <= 0)
                 return this;
+
             string result = FastAllocateString(totalWidth);
-            unsafe
-            {
-                fixed (char* dst = &result._firstChar)
-                {
-                    for (int i = 0; i < count; i++)
-                        dst[i] = paddingChar;
-                    fixed (char* src = &_firstChar)
-                    {
-                        wstrcpy(dst + count, src, oldLength);
-                    }
-                }
-            }
+
+            new Span<char>(ref result._firstChar, count).Fill(paddingChar);
+            Buffer.Memmove(ref Unsafe.Add(ref result._firstChar, count), ref _firstChar, (nuint)oldLength);
+
             return result;
         }
 
@@ -855,19 +838,12 @@ namespace System
             int count = totalWidth - oldLength;
             if (count <= 0)
                 return this;
+
             string result = FastAllocateString(totalWidth);
-            unsafe
-            {
-                fixed (char* dst = &result._firstChar)
-                {
-                    fixed (char* src = &_firstChar)
-                    {
-                        wstrcpy(dst, src, oldLength);
-                    }
-                    for (int i = 0; i < count; i++)
-                        dst[oldLength + i] = paddingChar;
-                }
-            }
+
+            Buffer.Memmove(ref result._firstChar, ref _firstChar, (nuint)oldLength);
+            new Span<char>(ref Unsafe.Add(ref result._firstChar, oldLength), count).Fill(paddingChar);
+
             return result;
         }
 
@@ -885,20 +861,13 @@ namespace System
                 return this;
             int newLength = oldLength - count;
             if (newLength == 0)
-                return string.Empty;
+                return Empty;
 
             string result = FastAllocateString(newLength);
-            unsafe
-            {
-                fixed (char* src = &_firstChar)
-                {
-                    fixed (char* dst = &result._firstChar)
-                    {
-                        wstrcpy(dst, src, startIndex);
-                        wstrcpy(dst + startIndex, src + startIndex + count, newLength - startIndex);
-                    }
-                }
-            }
+
+            Buffer.Memmove(ref result._firstChar, ref _firstChar, (nuint)startIndex);
+            Buffer.Memmove(ref Unsafe.Add(ref result._firstChar, startIndex), ref Unsafe.Add(ref _firstChar, startIndex + count), (nuint)(newLength - startIndex));
+
             return result;
         }
 
@@ -1154,7 +1123,7 @@ namespace System
                 throw new OutOfMemoryException();
             string dst = FastAllocateString((int)dstLength);
 
-            Span<char> dstSpan = new Span<char>(ref dst.GetRawStringData(), dst.Length);
+            Span<char> dstSpan = new Span<char>(ref dst._firstChar, dst.Length);
 
             int thisIdx = 0;
             int dstIdx = 0;
