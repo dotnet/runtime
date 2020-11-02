@@ -232,15 +232,15 @@ LPVOID ProfileArgIterator::CopyStructFromRegisters()
 
     TypeHandle th;
     m_argIterator.GetArgType(&th);
-    int fieldBytes = th.AsMethodTable()->GetNumInstanceFieldBytes();
-    INDEBUG(int remainingBytes = fieldBytes;)
+    unsigned int fieldBytes = th.AsMethodTable()->GetNumInstanceFieldBytes();
+    INDEBUG(unsigned int remainingBytes = fieldBytes;)
 
     EEClass* eeClass = argLocDesc->m_eeClass;
     _ASSERTE(eeClass != NULL);
 
     for (unsigned int i = 0; i < eeClass->GetNumberEightBytes(); i++)
     {
-        int eightByteSize = eeClass->GetEightByteSize(i);
+        unsigned int eightByteSize = eeClass->GetEightByteSize(i);
         SystemVClassificationType eightByteClassification = eeClass->GetEightByteClassification(i);
 
         _ASSERTE(remainingBytes >= eightByteSize);

@@ -486,7 +486,7 @@ inline void ClearObjectReference(OBJECTREF* dst)
 // CopyValueClass sets a value class field
 
 void STDCALL CopyValueClassUnchecked(void* dest, void* src, MethodTable *pMT);
-void STDCALL CopyValueClassArgUnchecked(ArgDestination *argDest, void* src, MethodTable *pMT, int destOffset);
+void STDCALL CopyValueClassArgUnchecked(ArgDestination *argDest, void* src, MethodTable *pMT, unsigned int destOffset);
 
 inline void InitValueClass(void *dest, MethodTable *pMT)
 {

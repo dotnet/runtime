@@ -371,7 +371,7 @@ void STDCALL CopyValueClassUnchecked(void* dest, void* src, MethodTable *pMT)
 // Copy value class into the argument specified by the argDest.
 // The destOffset is nonzero when copying values into Nullable<T>, it is the offset
 // of the T value inside of the Nullable<T>
-void STDCALL CopyValueClassArgUnchecked(ArgDestination *argDest, void* src, MethodTable *pMT, int destOffset)
+void STDCALL CopyValueClassArgUnchecked(ArgDestination *argDest, void* src, MethodTable *pMT, unsigned int destOffset)
 {
     STATIC_CONTRACT_NOTHROW;
     STATIC_CONTRACT_GC_NOTRIGGER;
@@ -1758,7 +1758,9 @@ BOOL Nullable::UnBoxIntoArgNoGC(ArgDestination *argDest, OBJECTREF boxedVal, Met
 
             Nullable* dest = (Nullable*)argDest->GetStructGenRegDestinationAddress();
             *dest->HasValueAddr(destMT) = true;
-            int destOffset = (BYTE*)dest->ValueAddr(destMT) - (BYTE*)dest;
+
+            _ASSERTE((BYTE*)dest->ValueAddr(destMT) >= (BYTE*)dest);
+            unsigned int destOffset = (BYTE*)dest->ValueAddr(destMT) - (BYTE*)dest;
             CopyValueClassArg(argDest, boxedVal->UnBox(), boxedVal->GetMethodTable(), destOffset);
         }
         return TRUE;

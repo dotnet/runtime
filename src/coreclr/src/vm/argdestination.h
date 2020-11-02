@@ -138,7 +138,7 @@ public:
     //  fieldBytes - size of the structure
     //  destOffset - nonzero when copying values into Nullable<T>, it is the offset
     //               of the T value inside of the Nullable<T>
-    void CopyStructToRegisters(void *src, unsigned int fieldBytes, int destOffset)
+    void CopyStructToRegisters(void *src, unsigned int fieldBytes, unsigned int destOffset)
     {
         STATIC_CONTRACT_NOTHROW;
         STATIC_CONTRACT_GC_NOTRIGGER;
