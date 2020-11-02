@@ -522,9 +522,9 @@ namespace Internal.JitInterface
                     accumulatedSizeForEightBytes = Math.Max(accumulatedSizeForEightBytes, offset + fieldSize);
                 }
 
-                for (byte currentEightByte = 0; currentEightByte < usedEightBytes; currentEightByte++)
+                for (int currentEightByte = 0; currentEightByte < usedEightBytes; currentEightByte++)
                 {
-                    byte eightByteSize = accumulatedSizeForEightBytes < (SYSTEMV_EIGHT_BYTE_SIZE_IN_BYTES * (currentEightByte + 1))
+                    int eightByteSize = accumulatedSizeForEightBytes < (SYSTEMV_EIGHT_BYTE_SIZE_IN_BYTES * (currentEightByte + 1))
                         ? accumulatedSizeForEightBytes % SYSTEMV_EIGHT_BYTE_SIZE_IN_BYTES
                         :   SYSTEMV_EIGHT_BYTE_SIZE_IN_BYTES;
 
@@ -538,7 +538,7 @@ namespace Internal.JitInterface
                 Debug.Assert(helper.EightByteCount <= CLR_SYSTEMV_MAX_EIGHTBYTES_COUNT_TO_PASS_IN_REGISTERS);
 
 #if DEBUG
-                for (byte i = 0; i < helper.EightByteCount; i++)
+                for (int i = 0; i < helper.EightByteCount; i++)
                 {
                     Debug.Assert(helper.EightByteClassifications[i] != SystemVClassificationTypeNoClass);
                 }
