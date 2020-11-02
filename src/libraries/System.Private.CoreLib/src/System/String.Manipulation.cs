@@ -569,25 +569,29 @@ namespace System
         {
             if (value == null)
             {
-                throw new ArgumentNullException(nameof(value));
+                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.value);
             }
 
-            return Join(separator, value, 0, value.Length);
+            return JoinCore(MemoryMarshal.CreateReadOnlySpan(ref separator, 1), new ReadOnlySpan<string?>(value));
         }
 
-        public static unsafe string Join(char separator, params object?[] values)
+        public static string Join(string? separator, params string?[] value)
         {
-            // Defer argument validation to the internal function
-            return JoinCore(&separator, 1, values);
+            if (value == null)
+            {
+                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.value);
+            }
+
+            return JoinCore(separator.AsSpan(), new ReadOnlySpan<string?>(value));
         }
 
-        public static unsafe string Join<T>(char separator, IEnumerable<T> values)
-        {
-            // Defer argument validation to the internal function
-            return JoinCore(&separator, 1, values);
-        }
+        public static string Join(char separator, string?[] value, int startIndex, int count) =>
+            JoinCore(MemoryMarshal.CreateReadOnlySpan(ref separator, 1), value, startIndex, count);
 
-        public static unsafe string Join(char separator, string?[] value, int startIndex, int count)
+        public static string Join(string? separator, string?[] value, int startIndex, int count) =>
+            JoinCore(separator.AsSpan(), value, startIndex, count);
+
+        private static string JoinCore(ReadOnlySpan<char> separator, string?[] value, int startIndex, int count)
         {
             if (value == null)
             {
@@ -606,62 +610,31 @@ namespace System
                 throw new ArgumentOutOfRangeException(nameof(startIndex), SR.ArgumentOutOfRange_IndexCountBuffer);
             }
 
-            return JoinCore(&separator, 1, value.AsSpan(startIndex, count));
-        }
-
-        // Joins an array of strings together as one string with a separator between each original string.
-        //
-        public static string Join(string? separator, params string?[] value)
-        {
-            if (value == null)
-            {
-                throw new ArgumentNullException(nameof(value));
-            }
-            return Join(separator, value, 0, value.Length);
-        }
-
-        public static unsafe string Join(string? separator, params object?[] values)
-        {
-            separator ??= string.Empty;
-            fixed (char* pSeparator = &separator._firstChar)
-            {
-                // Defer argument validation to the internal function
-                return JoinCore(pSeparator, separator.Length, values);
-            }
-        }
-
-        public static unsafe string Join<T>(string? separator, IEnumerable<T> values)
-        {
-            separator ??= string.Empty;
-            fixed (char* pSeparator = &separator._firstChar)
-            {
-                // Defer argument validation to the internal function
-                return JoinCore(pSeparator, separator.Length, values);
-            }
+            return JoinCore(separator, new ReadOnlySpan<string?>(value, startIndex, count));
         }
 
         public static string Join(string? separator, IEnumerable<string?> values)
         {
             if (values is List<string?> valuesIList)
             {
-                return Join(separator, CollectionsMarshal.AsSpan(valuesIList));
+                return JoinCore(separator.AsSpan(), CollectionsMarshal.AsSpan(valuesIList));
             }
 
             if (values is string?[] valuesArray)
             {
-                return Join(separator, (ReadOnlySpan<string?>)valuesArray);
+                return JoinCore(separator.AsSpan(), new ReadOnlySpan<string?>(valuesArray));
             }
 
             if (values == null)
             {
-                throw new ArgumentNullException(nameof(values));
+                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.values);
             }
 
             using (IEnumerator<string?> en = values.GetEnumerator())
             {
                 if (!en.MoveNext())
                 {
-                    return string.Empty;
+                    return Empty;
                 }
 
                 string? firstValue = en.Current;
@@ -669,7 +642,7 @@ namespace System
                 if (!en.MoveNext())
                 {
                     // Only one value available
-                    return firstValue ?? string.Empty;
+                    return firstValue ?? Empty;
                 }
 
                 // Null separator and values are handled by the StringBuilder
@@ -688,62 +661,29 @@ namespace System
             }
         }
 
-        // Joins an array of strings together as one string with a separator between each original string.
-        //
-        public static unsafe string Join(string? separator, string?[] value, int startIndex, int count)
-        {
-            if (value == null)
-            {
-                throw new ArgumentNullException(nameof(value));
-            }
-            if (startIndex < 0)
-            {
-                throw new ArgumentOutOfRangeException(nameof(startIndex), SR.ArgumentOutOfRange_StartIndex);
-            }
-            if (count < 0)
-            {
-                throw new ArgumentOutOfRangeException(nameof(count), SR.ArgumentOutOfRange_NegativeCount);
-            }
-            if (startIndex > value.Length - count)
-            {
-                throw new ArgumentOutOfRangeException(nameof(startIndex), SR.ArgumentOutOfRange_IndexCountBuffer);
-            }
+        public static string Join(char separator, params object?[] values) =>
+            JoinCore(MemoryMarshal.CreateReadOnlySpan(ref separator, 1), values);
 
-            separator ??= Empty;
-            fixed (char* pSeparator = &separator._firstChar)
-            {
-                return JoinCore(pSeparator, separator.Length, value.AsSpan(startIndex, count));
-            }
-        }
+        public static string Join(string? separator, params object?[] values) =>
+            JoinCore(separator.AsSpan(), values);
 
-        // Joins a span of strings together as one string with a separator between each original string.
-        //
-        private static unsafe string Join(string? separator, ReadOnlySpan<string?> value)
-        {
-            separator ??= Empty;
-            fixed (char* pSeparator = &separator._firstChar)
-            {
-                return JoinCore(pSeparator, separator.Length, value);
-            }
-        }
-
-        private static unsafe string JoinCore(char* separator, int separatorLength, object?[] values)
+        private static string JoinCore(ReadOnlySpan<char> separator, object?[] values)
         {
             if (values == null)
             {
-                throw new ArgumentNullException(nameof(values));
+                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.values);
             }
 
             if (values.Length == 0)
             {
-                return string.Empty;
+                return Empty;
             }
 
             string? firstString = values[0]?.ToString();
 
             if (values.Length == 1)
             {
-                return firstString ?? string.Empty;
+                return firstString ?? Empty;
             }
 
             var result = new ValueStringBuilder(stackalloc char[256]);
@@ -752,7 +692,7 @@ namespace System
 
             for (int i = 1; i < values.Length; i++)
             {
-                result.Append(separator, separatorLength);
+                result.Append(separator);
                 object? value = values[i];
                 if (value != null)
                 {
@@ -763,18 +703,24 @@ namespace System
             return result.ToString();
         }
 
-        private static unsafe string JoinCore<T>(char* separator, int separatorLength, IEnumerable<T> values)
+        public static string Join<T>(char separator, IEnumerable<T> values) =>
+            JoinCore(MemoryMarshal.CreateReadOnlySpan(ref separator, 1), values);
+
+        public static string Join<T>(string? separator, IEnumerable<T> values) =>
+            JoinCore(separator.AsSpan(), values);
+
+        private static string JoinCore<T>(ReadOnlySpan<char> separator, IEnumerable<T> values)
         {
             if (values == null)
             {
-                throw new ArgumentNullException(nameof(values));
+                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.values);
             }
 
             using (IEnumerator<T> en = values.GetEnumerator())
             {
                 if (!en.MoveNext())
                 {
-                    return string.Empty;
+                    return Empty;
                 }
 
                 // We called MoveNext once, so this will be the first item
@@ -792,7 +738,7 @@ namespace System
                 {
                     // We have to handle the case of either currentValue
                     // or its ToString being null
-                    return firstString ?? string.Empty;
+                    return firstString ?? Empty;
                 }
 
                 var result = new ValueStringBuilder(stackalloc char[256]);
@@ -803,7 +749,7 @@ namespace System
                 {
                     currentValue = en.Current;
 
-                    result.Append(separator, separatorLength);
+                    result.Append(separator);
                     if (currentValue != null)
                     {
                         result.Append(currentValue.ToString());
@@ -815,47 +761,40 @@ namespace System
             }
         }
 
-        private static unsafe string JoinCore(char* separator, int separatorLength, ReadOnlySpan<string?> value)
+        private static string JoinCore(ReadOnlySpan<char> separator, ReadOnlySpan<string?> values)
         {
-            // If the separator is null, it is converted to an empty string before entering this function.
-            // Even for empty strings, fixed should never return null (it should return a pointer to a null char).
-            Debug.Assert(separator != null);
-            Debug.Assert(separatorLength >= 0);
-
-            int count = value.Length;
-            if (count <= 1)
+            if (values.Length <= 1)
             {
-                return count == 0 ?
-                    string.Empty :
-                    value[0] ?? string.Empty;
+                return values.IsEmpty ?
+                    Empty :
+                    values[0] ?? Empty;
             }
 
-            long totalSeparatorsLength = (long)(count - 1) * separatorLength;
+            long totalSeparatorsLength = (long)(values.Length - 1) * separator.Length;
             if (totalSeparatorsLength > int.MaxValue)
             {
-                throw new OutOfMemoryException();
+                ThrowHelper.ThrowOutOfMemoryException();
             }
             int totalLength = (int)totalSeparatorsLength;
 
             // Calculate the length of the resultant string so we know how much space to allocate.
-            for (int i = 0; i < count; i++)
+            foreach (string? value in values)
             {
-                string? currentValue = value[i];
-                if (currentValue != null)
+                if (value != null)
                 {
-                    totalLength += currentValue.Length;
+                    totalLength += value.Length;
                     if (totalLength < 0) // Check for overflow
                     {
-                        throw new OutOfMemoryException();
+                        ThrowHelper.ThrowOutOfMemoryException();
                     }
                 }
             }
 
-            // Copy each of the strings into the resultant buffer, interleaving with the separator.
+            // Copy each of the strings into the result buffer, interleaving with the separator.
             string result = FastAllocateString(totalLength);
             int copiedLength = 0;
 
-            for (int i = 0; i < count; i++)
+            for (int i = 0; i < values.Length; i++)
             {
                 // It's possible that another thread may have mutated the input array
                 // such that our second read of an index will not be the same string
@@ -863,10 +802,9 @@ namespace System
 
                 // We range check again to avoid buffer overflows if this happens.
 
-                string? currentValue = value[i];
-                if (currentValue != null)
+                if (values[i] is string value)
                 {
-                    int valueLen = currentValue.Length;
+                    int valueLen = value.Length;
                     if (valueLen > totalLength - copiedLength)
                     {
                         copiedLength = -1;
@@ -874,28 +812,28 @@ namespace System
                     }
 
                     // Fill in the value.
-                    FillStringChecked(result, copiedLength, currentValue);
+                    FillStringChecked(result, copiedLength, value);
                     copiedLength += valueLen;
                 }
 
-                if (i < count - 1)
+                if (i < values.Length - 1)
                 {
                     // Fill in the separator.
-                    fixed (char* pResult = &result._firstChar)
+                    // Special-case length 1 to avoid additional overheads of CopyTo.
+                    // This is common due to the char separator overload.
+
+                    ref char dest = ref Unsafe.Add(ref result._firstChar, copiedLength);
+
+                    if (separator.Length == 1)
                     {
-                        // If we are called from the char-based overload, we will not
-                        // want to call MemoryCopy each time we fill in the separator. So
-                        // specialize for 1-length separators.
-                        if (separatorLength == 1)
-                        {
-                            pResult[copiedLength] = *separator;
-                        }
-                        else
-                        {
-                            wstrcpy(pResult + copiedLength, separator, separatorLength);
-                        }
+                        dest = separator[0];
                     }
-                    copiedLength += separatorLength;
+                    else
+                    {
+                        separator.CopyTo(new Span<char>(ref dest, separator.Length));
+                    }
+
+                    copiedLength += separator.Length;
                 }
             }
 
@@ -905,7 +843,7 @@ namespace System
             // fall back should be extremely rare.
             return copiedLength == totalLength ?
                 result :
-                JoinCore(separator, separatorLength, value.ToArray().AsSpan());
+                JoinCore(separator, values.ToArray().AsSpan());
         }
 
         public string PadLeft(int totalWidth) => PadLeft(totalWidth, ' ');
