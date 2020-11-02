@@ -3,6 +3,7 @@
 
 using System.Security;
 using System.Threading;
+using System.Diagnostics;
 
 namespace System.Runtime.Serialization
 {
@@ -47,7 +48,7 @@ namespace System.Runtime.Serialization
 
         // Throws a SerializationException if dangerous deserialization is currently
         // in progress
-        public static void ThrowIfDeserializationInProgress()
+        internal static void ThrowIfDeserializationInProgress()
         {
             if (DeserializationInProgress)
             {
@@ -61,17 +62,10 @@ namespace System.Runtime.Serialization
         // 0: No value cached
         // 1: The switch is true
         // -1: The switch is false
-        public static void ThrowIfDeserializationInProgress(string switchSuffix, ref int cachedValue)
+        internal static void ThrowIfDeserializationInProgress(string switchSuffix, ref int cachedValue)
         {
             const string SwitchPrefix = "Switch.System.Runtime.Serialization.SerializationGuard.";
-            if (switchSuffix == null)
-            {
-                throw new ArgumentNullException(nameof(switchSuffix));
-            }
-            if (string.IsNullOrWhiteSpace(switchSuffix))
-            {
-                throw new ArgumentException(SR.Argument_EmptyName, nameof(switchSuffix));
-            }
+            Debug.Assert(!string.IsNullOrEmpty(switchSuffix));
 
             if (cachedValue == 0)
             {
