@@ -13,6 +13,5 @@ namespace System
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         protected extern object MemberwiseClone();
 
-        internal object CloneInternal() => MemberwiseClone();
     }
 }
