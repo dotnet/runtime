@@ -120,7 +120,7 @@ jobs:
 
     - name: ninjaArg
       value: ''
-    - ${{ if eq(parameters.osGroup, 'Windows_NT') }}:
+    - ${{ if eq(parameters.osGroup, 'windows') }}:
       - name: ninjaArg
         value: '-ninja'
 
@@ -154,7 +154,7 @@ jobs:
         displayName: Disk Usage before Build
 
     # Build DacTableGen (Windows-only)
-    - ${{ if eq(parameters.osGroup, 'Windows_NT') }}:
+    - ${{ if eq(parameters.osGroup, 'windows') }}:
       - script: $(Build.SourcesDirectory)$(dir)build$(scriptExt) -subset clr.dactools $(crossArg) -arch $(archType) $(osArg) -c $(buildConfig) $(officialBuildIdArg) -ci /bl:$(Build.SourcesDirectory)artifacts/logs/$(buildConfig)/DacTools.binlog
         displayName: Build managed product components and packages
 

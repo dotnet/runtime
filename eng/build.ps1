@@ -129,7 +129,7 @@ if ($vs) {
     if ($runtimeConfiguration) {
       $configToOpen = $runtimeConfiguration
     }
-    $vs = Split-Path $PSScriptRoot -Parent | Join-Path -ChildPath "artifacts\obj\coreclr" | Join-Path -ChildPath "Windows_NT.$archToOpen.$((Get-Culture).TextInfo.ToTitleCase($configToOpen))" | Join-Path -ChildPath "CoreCLR.sln"
+    $vs = Split-Path $PSScriptRoot -Parent | Join-Path -ChildPath "artifacts\obj\coreclr" | Join-Path -ChildPath "windows.$archToOpen.$((Get-Culture).TextInfo.ToTitleCase($configToOpen))" | Join-Path -ChildPath "CoreCLR.sln"
     if (-Not (Test-Path $vs)) {
       $repoRoot = Split-Path $PSScriptRoot -Parent
       Invoke-Expression "& `"$repoRoot/src/coreclr/build-runtime.cmd`" -configureonly -$archToOpen -$configToOpen"
