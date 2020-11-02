@@ -149,7 +149,7 @@
     <ProjectToBuild Include="$(CoreClrProjectRoot)src\System.Private.CoreLib\System.Private.CoreLib.csproj" Category="clr" />
   </ItemGroup>
 
-  <ItemGroup Condition="'$(TargetOS)' == 'Windows_NT' and ($(_subset.Contains('+clr.dactools+')) or $(_subset.Contains('+clr.runtime+')))">
+  <ItemGroup Condition="'$(TargetOS)' == 'windows' and ($(_subset.Contains('+clr.dactools+')) or $(_subset.Contains('+clr.runtime+')))">
     <ProjectToBuild Include="$(CoreClrProjectRoot)src\ToolBox\SOS\DacTableGen\DacTableGen.csproj;
                              $(CoreClrProjectRoot)src\ToolBox\SOS\DIALib\DIALib.ilproj"
                     Category="clr"/>

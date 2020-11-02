@@ -28,7 +28,7 @@ usage()
   echo "  --help (-h)                     Print help and exit."
   echo "  --librariesConfiguration (-lc)  Libraries build configuration: Debug or Release."
   echo "                                  [Default: Debug]"
-  echo "  --os                            Target operating system: Windows_NT, Linux, FreeBSD, OSX, tvOS, iOS, Android,"
+  echo "  --os                            Target operating system: windows, Linux, FreeBSD, OSX, tvOS, iOS, Android,"
   echo "                                  Browser, NetBSD, illumos or Solaris."
   echo "                                  [Default: Your machine's OS.]"
   echo "  --projects <value>              Project or solution file(s) to build."
@@ -254,8 +254,8 @@ while [[ $# > 0 ]]; do
       fi
       passedOS="$(echo "$2" | awk '{print tolower($0)}')"
       case "$passedOS" in
-        windows_nt)
-          os="Windows_NT" ;;
+        windows)
+          os="windows" ;;
         linux)
           os="Linux" ;;
         freebsd)
@@ -276,7 +276,7 @@ while [[ $# > 0 ]]; do
           os="Solaris" ;;
         *)
           echo "Unsupported target OS '$2'."
-          echo "The allowed values are Windows_NT, Linux, FreeBSD, OSX, tvOS, iOS, Android, Browser, illumos and Solaris."
+          echo "The allowed values are windows, Linux, FreeBSD, OSX, tvOS, iOS, Android, Browser, illumos and Solaris."
           exit 1
           ;;
       esac

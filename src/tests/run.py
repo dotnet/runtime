@@ -193,7 +193,7 @@ class DebugEnv:
 
         self.path = None
         
-        if self.args.host_os == "Windows_NT":
+        if self.args.host_os == "windows":
             self.path = self.unique_name + ".cmd"
         else:
             self.path = self.unique_name + ".sh"
@@ -248,7 +248,7 @@ class DebugEnv:
 
         configurations = launch_json["configurations"]
 
-        dbg_type = "cppvsdbg" if self.host_os == "Windows_NT" else ""
+        dbg_type = "cppvsdbg" if self.host_os == "windows" else ""
 
         env = {
             "COMPlus_AssertOnNYI": "1",
@@ -309,7 +309,7 @@ class DebugEnv:
         """ Create the repro wrapper
         """
 
-        if self.args.host_os == "Windows_NT":
+        if self.args.host_os == "windows":
             self.__create_batch_wrapper__()
         else:
             self.__create_bash_wrapper__()
@@ -464,12 +464,12 @@ def create_and_use_test_env(_os, env, func):
         #
         # errors.
 
-        tempfile_suffix = ".bat" if _os == "Windows_NT" else ""
+        tempfile_suffix = ".bat" if _os == "windows" else ""
         test_env = tempfile.NamedTemporaryFile(mode="w", suffix=tempfile_suffix, delete=False)
         try:
             file_header = None
 
-            if _os == "Windows_NT":
+            if _os == "windows":
                 file_header = \
 """@REM Temporary test env for test run.
 @echo on
@@ -485,7 +485,7 @@ def create_and_use_test_env(_os, env, func):
             for key in complus_vars:
                 value = complus_vars[key]
                 command = None
-                if _os == "Windows_NT":
+                if _os == "windows":
                     command = "set"
                 else:
                     command = "export"
@@ -503,7 +503,7 @@ def create_and_use_test_env(_os, env, func):
 
                 contents += line
 
-            if _os == "Windows_NT":
+            if _os == "windows":
                 file_suffix = \
 """@echo off
 """
@@ -1131,7 +1131,7 @@ def setup_args(args):
         is_same_arch = build_info["build_arch"] == coreclr_setup_args.arch
         is_same_build_type = build_info["build_type"] == coreclr_setup_args.build_type
 
-    if coreclr_setup_args.host_os != "Windows_NT" and not (is_same_os and is_same_arch and is_same_build_type):
+    if coreclr_setup_args.host_os != "windows" and not (is_same_os and is_same_arch and is_same_build_type):
         test_native_bin_location = None
         if args.test_native_bin_location is None:
             test_native_bin_location = os.path.join(os.path.join(coreclr_setup_args.artifacts_location, "tests", "coreclr", "obj", "%s.%s.%s" % (coreclr_setup_args.host_os, coreclr_setup_args.arch, coreclr_setup_args.build_type)))
@@ -1154,12 +1154,12 @@ def setup_args(args):
     print("test_location            : %s" % coreclr_setup_args.test_location)
     print("test_native_bin_location : %s" % coreclr_setup_args.test_native_bin_location)
 
-    coreclr_setup_args.crossgen_path = os.path.join(coreclr_setup_args.core_root, "crossgen%s" % (".exe" if coreclr_setup_args.host_os == "Windows_NT" else ""))
-    coreclr_setup_args.corerun_path = os.path.join(coreclr_setup_args.core_root, "corerun%s" % (".exe" if coreclr_setup_args.host_os == "Windows_NT" else ""))
-    coreclr_setup_args.dotnetcli_script_path = os.path.join(coreclr_setup_args.runtime_repo_location, "dotnet%s" % (".cmd" if coreclr_setup_args.host_os == "Windows_NT" else ".sh"))
+    coreclr_setup_args.crossgen_path = os.path.join(coreclr_setup_args.core_root, "crossgen%s" % (".exe" if coreclr_setup_args.host_os == "windows" else ""))
+    coreclr_setup_args.corerun_path = os.path.join(coreclr_setup_args.core_root, "corerun%s" % (".exe" if coreclr_setup_args.host_os == "windows" else ""))
+    coreclr_setup_args.dotnetcli_script_path = os.path.join(coreclr_setup_args.runtime_repo_location, "dotnet%s" % (".cmd" if coreclr_setup_args.host_os == "windows" else ".sh"))
     coreclr_setup_args.coreclr_tests_dir = os.path.join(coreclr_setup_args.coreclr_dir, "tests")
     coreclr_setup_args.coreclr_tests_src_dir = os.path.join(coreclr_setup_args.runtime_repo_location, "src", "tests")
-    coreclr_setup_args.runincontext_script_path = os.path.join(coreclr_setup_args.coreclr_tests_src_dir, "Common", "scripts", "runincontext%s" % (".cmd" if coreclr_setup_args.host_os == "Windows_NT" else ".sh"))
+    coreclr_setup_args.runincontext_script_path = os.path.join(coreclr_setup_args.coreclr_tests_src_dir, "Common", "scripts", "runincontext%s" % (".cmd" if coreclr_setup_args.host_os == "windows" else ".sh"))
     coreclr_setup_args.logs_dir = os.path.join(coreclr_setup_args.artifacts_location, "log")
 
     return coreclr_setup_args
@@ -1192,7 +1192,7 @@ def precompile_core_root(args):
         ".*System.Net.Primitives.*"
     ]
 
-    if args.host_os != "Windows_NT":
+    if args.host_os != "windows":
         skip_list += unix_skip_list
     
         if args.arch == "arm64":

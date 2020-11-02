@@ -1,7 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <IncludeRemoteExecutor>true</IncludeRemoteExecutor>
-    <TargetFrameworks>$(NetCoreAppCurrent);net461-Windows_NT</TargetFrameworks>
+    <TargetFrameworks>$(NetCoreAppCurrent);net461-windows</TargetFrameworks>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="EncoderFallbackBufferHelper.cs" />

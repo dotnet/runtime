@@ -187,7 +187,7 @@ function(compile_asm)
   foreach(ASM_FILE ${COMPILE_ASM_ASM_FILES})
     get_filename_component(name ${ASM_FILE} NAME_WE)
     # Produce object file where CMake would store .obj files for an OBJECT library.
-    # ex: artifacts\obj\coreclr\Windows_NT.arm64.Debug\src\vm\wks\cee_wks.dir\Debug\AsmHelpers.obj
+    # ex: artifacts\obj\coreclr\windows.arm64.Debug\src\vm\wks\cee_wks.dir\Debug\AsmHelpers.obj
     set (OBJ_FILE "${CMAKE_CURRENT_BINARY_DIR}/${COMPILE_ASM_TARGET}.dir/${CMAKE_CFG_INTDIR}/${name}.obj")
 
     # Need to compile asm file using custom command as include directories are not provided to asm compiler

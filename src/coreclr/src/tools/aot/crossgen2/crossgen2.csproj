@@ -59,7 +59,7 @@
     <CrossHostArch Condition="'$(TargetArchitecture)' == 'x86' and '$(BuildArchitecture)' == 'x64'">x64</CrossHostArch>
 
     <TargetOSComponent>unix</TargetOSComponent>
-    <TargetOSComponent Condition="'$(TargetOS)' == 'Windows_NT'">win</TargetOSComponent>
+    <TargetOSComponent Condition="'$(TargetOS)' == 'windows'">win</TargetOSComponent>
     <TargetSpec>$(TargetOSComponent)_$(TargetArchitecture)_$(TargetArchitecture)</TargetSpec>
     <CrossTargetSpec>$(TargetOSComponent)_$(TargetArchitecture)_$(CrossHostArch)</CrossTargetSpec>
 
@@ -88,7 +88,7 @@
 
   <!-- On windows we can re-use the clrjit.dll produced in the build for aot compilation. On Linux
        this works at runtime, but makes it difficult to debug the jit.-->
-  <ItemGroup Condition="'$(TargetOS)' == 'Windows_NT'">
+  <ItemGroup Condition="'$(TargetOS)' == 'windows'">
     <Content Include="$(RuntimeBinDir)\$(NativeArchFolder)$(LibraryNamePrefix)clrjit$(LibraryNameExtension)"
       CopyToOutputDirectory="PreserveNewest"
       CopyToPublishDirectory="PreserveNewest"
@@ -116,13 +116,13 @@
       />
 
     <Copy
-      Condition="'$(TargetOS)' != 'Windows_NT'"
+      Condition="'$(TargetOS)' != 'windows'"
       SourceFiles="$(RuntimeBinDir)$(CrossHostArch)\$(LibraryNamePrefix)clrjit_$(CrossTargetSpec)$(LibraryNameExtension)"
       DestinationFolder="$(CrossPackageFolder)"
       UseHardLinksIfPossible="true"
       />
     <Copy
-      Condition="'$(TargetOS)' == 'Windows_NT'"
+      Condition="'$(TargetOS)' == 'windows'"
       SourceFiles="$(RuntimeBinDir)$(CrossHostArch)\$(LibraryNamePrefix)clrjit$(LibraryNameExtension)"
       DestinationFiles="$(CrossPackageFolder)\$(LibraryNamePrefix)clrjit_$(CrossTargetSpec)$(LibraryNameExtension)"
       UseHardLinksIfPossible="true"
@@ -135,7 +135,7 @@
   <Target Name="RemoveUnusedFilesFromDepsJson" AfterTargets="ResolveRuntimePackAssets" BeforeTargets="GenerateBuildDependencyFile">
     <PropertyGroup>
       <StaticLibraryFileExtension>.a</StaticLibraryFileExtension>
-      <StaticLibraryFileExtension Condition="'$(TargetOS)' == 'Windows_NT'">.lib</StaticLibraryFileExtension>
+      <StaticLibraryFileExtension Condition="'$(TargetOS)' == 'windows'">.lib</StaticLibraryFileExtension>
     </PropertyGroup>
 
     <ItemGroup>
