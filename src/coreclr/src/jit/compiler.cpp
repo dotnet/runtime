@@ -2062,7 +2062,7 @@ unsigned Compiler::compGetTypeSize(CorInfoType cit, CORINFO_CLASS_HANDLE clsHnd)
 
 bool Compiler::callConvIsInstanceMethodCallConv(CorInfoUnmanagedCallConv callConv)
 {
-    return callConv == CORINFO_CALLCONV_THISCALL;
+    return callConv == CORINFO_UNMANAGED_CALLCONV_THISCALL;
 }
 
 CorInfoUnmanagedCallConv Compiler::compMethodInfoGetUnmanagedCallConv(CORINFO_METHOD_INFO* mthInfo)
