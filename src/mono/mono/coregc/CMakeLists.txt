@@ -9,7 +9,7 @@ include_directories(
   ${coreclr_root}/src/gc/unix)
 
 
-  add_definitions(-D_AMD64_ -DBIT64 -DFEATURE_REDHAWK -DPLATFORM_UNIX -DHOST_64BIT -DHOST_AMD64 -DTARGET_UNIX) 
+add_definitions(-D_AMD64_ -DBIT64 -DFEATURE_REDHAWK -DPLATFORM_UNIX -DHOST_64BIT -DHOST_AMD64 -DTARGET_UNIX)
 
 set(mono_coregc_sources_base
     coregc-mono.cpp
