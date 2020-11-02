@@ -30,41 +30,14 @@ namespace System
                 elementCount: (uint)src.Length);
         }
 
-        public static string Concat(object? arg0) => arg0?.ToString() ?? string.Empty;
+        public static string Concat(object? arg0) =>
+            arg0?.ToString() ?? Empty;
 
-        public static string Concat(object? arg0, object? arg1)
-        {
-            if (arg0 == null)
-            {
-                arg0 = string.Empty;
-            }
+        public static string Concat(object? arg0, object? arg1) =>
+            Concat(arg0?.ToString(), arg1?.ToString());
 
-            if (arg1 == null)
-            {
-                arg1 = string.Empty;
-            }
-            return Concat(arg0.ToString(), arg1.ToString());
-        }
-
-        public static string Concat(object? arg0, object? arg1, object? arg2)
-        {
-            if (arg0 == null)
-            {
-                arg0 = string.Empty;
-            }
-
-            if (arg1 == null)
-            {
-                arg1 = string.Empty;
-            }
-
-            if (arg2 == null)
-            {
-                arg2 = string.Empty;
-            }
-
-            return Concat(arg0.ToString(), arg1.ToString(), arg2.ToString());
-        }
+        public static string Concat(object? arg0, object? arg1, object? arg2) =>
+            Concat(arg0?.ToString(), arg1?.ToString(), arg2?.ToString());
 
         public static string Concat(params object?[] args)
         {
