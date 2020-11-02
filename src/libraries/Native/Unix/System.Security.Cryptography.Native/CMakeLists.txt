@@ -69,12 +69,16 @@ set(NATIVECRYPTO_SOURCES
 
 # uncomment to use Android SDK instead of OpenSSL where possible
 set(USE_ANDROID_CRYPTO 1)
+set(USE_ANDROID_CRYPTO_ONLY 1)
 
 if (CLR_CMAKE_TARGET_ANDROID AND USE_ANDROID_CRYPTO)
     list(APPEND NATIVECRYPTO_SOURCES
         android_security.c
     )
     add_definitions(-DUSE_ANDROID_CRYPTO)
+    if (USE_ANDROID_CRYPTO_ONLY)
+        add_definitions(-DUSE_ANDROID_CRYPTO_ONLY)
+    endif()
 else()
     list(APPEND NATIVECRYPTO_SOURCES
         pal_evp.c
@@ -84,7 +88,7 @@ endif()
 # Always build portable on macOS because OpenSSL is not a system component
 # and our prebuilts should not assume a specific ABI version for the types
 # that use OpenSSL at runtime.
-if (CLR_CMAKE_TARGET_OSX)
+if (CLR_CMAKE_TARGET_OSX OR USE_ANDROID_CRYPTO_ONLY)
     set(FEATURE_DISTRO_AGNOSTIC_SSL True)
 endif()
 
