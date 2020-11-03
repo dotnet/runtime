@@ -1900,14 +1900,9 @@ interp_handle_intrinsics (TransformData *td, MonoMethod *target_method, MonoClas
 			td->ip += 5;
 			return TRUE;
 		} else if (!strcmp (tm, "GetRawData")) {
-#if SIZEOF_VOID_P == 8
-			interp_add_ins (td, MINT_LDC_I8_S);
-#else
-			interp_add_ins (td, MINT_LDC_I4_S);
-#endif
+			interp_add_ins (td, MINT_LDFLDA_UNSAFE);
 			td->last_ins->data [0] = (gint16) MONO_ABI_SIZEOF (MonoObject);
 
-			interp_add_ins (td, MINT_ADD_P);
 			SET_SIMPLE_TYPE (td->sp - 1, STACK_TYPE_MP);
 
 			td->ip += 5;
