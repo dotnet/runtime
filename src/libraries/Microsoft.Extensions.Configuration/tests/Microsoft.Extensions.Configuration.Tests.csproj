@@ -7,6 +7,7 @@
   <ItemGroup>
     <Compile Include="Common/*.cs" />
     <Compile Include="*.cs" />
+    <Compile Include="$(CommonTestPath)Extensions\ConfigurationRootTest.cs" Link="Common\Extensions\ConfigurationRootTest.cs" />
   </ItemGroup>
 
   <ItemGroup>

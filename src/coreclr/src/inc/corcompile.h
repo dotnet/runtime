@@ -59,7 +59,14 @@ typedef DPTR(RUNTIME_FUNCTION) PTR_RUNTIME_FUNCTION;
 
 
 // Chained unwind info. Used for cold methods.
+#ifdef HOST_X86
 #define RUNTIME_FUNCTION_INDIRECT 0x80000000
+#else
+// If not hosted on X86, undefine RUNTIME_FUNCTION_INDIRECT as it likely isn't correct
+#ifdef RUNTIME_FUNCTION_INDIRECT
+#undef RUNTIME_FUNCTION_INDIRECT
+#endif // RUNTIME_FUNCTION_INDIRECT
+#endif // HOST_X86
 
 #endif // TARGET_X86
 

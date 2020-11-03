@@ -144,11 +144,30 @@ $ValidatePackage = {
 
   if ($FailedFiles -eq 0) {
     Write-Host 'Passed.'
-    return 0
+    return [pscustomobject]@{
+      result = 0
+      packagePath = $PackagePath
+    }
   }
   else {
     Write-PipelineTelemetryError -Category 'SourceLink' -Message "$PackagePath has broken SourceLink links."
-    return 1
+    return [pscustomobject]@{
+      result = 1
+      packagePath = $PackagePath
+    }
+  }
+}
+
+function CheckJobResult(
+    $result, 
+    $packagePath,
+    [ref]$ValidationFailures,
+    [switch]$logErrors) {
+  if ($result -ne '0') {
+    if ($logError) {
+      Write-PipelineTelemetryError -Category 'SourceLink' -Message "$packagePath has broken SourceLink links."
+    }
+    $ValidationFailures.Value++
   }
 }
 
@@ -211,19 +230,15 @@ function ValidateSourceLinkLinks {
       }
 
       foreach ($Job in @(Get-Job -State 'Completed')) {
-        $jobResult = Receive-Job -Id $Job.Id
-        if ($jobResult -ne '0') {
-          $ValidationFailures++
-        }
+        $jobResult = Wait-Job -Id $Job.Id | Receive-Job
+        CheckJobResult $jobResult.result $jobResult.packagePath ([ref]$ValidationFailures) -LogErrors
         Remove-Job -Id $Job.Id
       }
     }
 
   foreach ($Job in @(Get-Job)) {
     $jobResult = Wait-Job -Id $Job.Id | Receive-Job
-    if ($jobResult -ne '0') {
-      $ValidationFailures++
-    }
+    CheckJobResult $jobResult.result $jobResult.packagePath ([ref]$ValidationFailures)
     Remove-Job -Id $Job.Id
   }
   if ($ValidationFailures -gt 0) {

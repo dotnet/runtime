@@ -61,8 +61,8 @@ IpcStream::DiagnosticsIpc *IpcStream::DiagnosticsIpc::Create(const char *const p
             "socket");
     }
 
-    if (mode == ConnectionMode::CLIENT)
-        return new IpcStream::DiagnosticsIpc(-1, &serverAddress, ConnectionMode::CLIENT);
+    if (mode == ConnectionMode::CONNECT)
+        return new IpcStream::DiagnosticsIpc(-1, &serverAddress, ConnectionMode::CONNECT);
 
 #ifdef __APPLE__
     mode_t prev_mask = umask(~(S_IRUSR | S_IWUSR)); // This will set the default permission bit to 600
@@ -116,8 +116,8 @@ IpcStream::DiagnosticsIpc *IpcStream::DiagnosticsIpc::Create(const char *const p
 
 bool IpcStream::DiagnosticsIpc::Listen(ErrorCallback callback)
 {
-    _ASSERTE(mode == ConnectionMode::SERVER);
-    if (mode != ConnectionMode::SERVER)
+    _ASSERTE(mode == ConnectionMode::LISTEN);
+    if (mode != ConnectionMode::LISTEN)
     {
         if (callback != nullptr)
             callback("Cannot call Listen on a client connection", -1);
@@ -150,7 +150,7 @@ bool IpcStream::DiagnosticsIpc::Listen(ErrorCallback callback)
 
 IpcStream *IpcStream::DiagnosticsIpc::Accept(ErrorCallback callback)
 {
-    _ASSERTE(mode == ConnectionMode::SERVER);
+    _ASSERTE(mode == ConnectionMode::LISTEN);
     _ASSERTE(_isListening);
 
     sockaddr_un from;
@@ -168,7 +168,7 @@ IpcStream *IpcStream::DiagnosticsIpc::Accept(ErrorCallback callback)
 
 IpcStream *IpcStream::DiagnosticsIpc::Connect(ErrorCallback callback)
 {
-    _ASSERTE(mode == ConnectionMode::CLIENT);
+    _ASSERTE(mode == ConnectionMode::CONNECT);
 
     sockaddr_un clientAddress{};
     clientAddress.sun_family = AF_UNIX;
@@ -194,7 +194,7 @@ IpcStream *IpcStream::DiagnosticsIpc::Connect(ErrorCallback callback)
         return nullptr;
     }
 
-    return new IpcStream(clientSocket, ConnectionMode::CLIENT);
+    return new IpcStream(clientSocket, ConnectionMode::CONNECT);
 }
 
 int32_t IpcStream::DiagnosticsIpc::Poll(IpcPollHandle *rgIpcPollHandles, uint32_t nHandles, int32_t timeoutMs, ErrorCallback callback)
@@ -208,7 +208,7 @@ int32_t IpcStream::DiagnosticsIpc::Poll(IpcPollHandle *rgIpcPollHandles, uint32_
         if (rgIpcPollHandles[i].pIpc != nullptr)
         {
             // SERVER
-            _ASSERTE(rgIpcPollHandles[i].pIpc->mode == ConnectionMode::SERVER);
+            _ASSERTE(rgIpcPollHandles[i].pIpc->mode == ConnectionMode::LISTEN);
             fd = rgIpcPollHandles[i].pIpc->_serverSocket;
         }
         else

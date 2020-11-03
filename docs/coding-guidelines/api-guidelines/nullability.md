@@ -114,7 +114,7 @@ A code review for enabling nullability generally involves three passes:
     - Adding `!` to reference type usage.  These essentially suppress the null warning, telling the compiler to treat the expression as if it's non-null.  These evaporate at compile-time.
 
     - Adding `Debug.Assert(reference != null);` statements.  These inform the compiler that the mentioned reference is non-`null`, which will cause the compiler to factor that in and have the effect of suppressing subsequent warnings on that reference (until the flow analysis suggests that could change).  As with any `Debug.Assert`, these evaporate at compile-time in release builds (where `DEBUG` isn't defined).
-  
+
   - Most any other changes have the potential to change the IL, which should not be necessary for the feature.  In particular, it's common for `?`s on dereferences to sneak in, e.g. changing `someVar.SomeMethod()` to `someVar?.SomeMethod()`; that is a change to the IL, and should only be employed when there's an actual known bug that's important to fix, as otherwise we're incurring unnecessary cost.  Similarly, it's easy to accidentally add `?` to value types, which has a significant impact, changing the `T` to a `Nullable<T>` and should be avoided.
 
   - Any `!`s added that should have been unnecessary and are required due to either a compiler issue or due to lack of expressibility about annotations should have a `// TODO-NULLABLE: http://link/to/relevant/issue` comment added on the same line.

@@ -3835,7 +3835,7 @@ LONG WatsonLastChance(                  // EXCEPTION_CONTINUE_SEARCH, _CONTINUE_
 
                 STRESS_LOG0(LF_CORDB, LL_INFO10, "D::RFFE: About to call RaiseFailFastException\n");
 #ifdef HOST_WINDOWS
-                CreateCrashDumpIfEnabled();
+                CreateCrashDumpIfEnabled(fSOException);
 #endif
                 RaiseFailFastException(pExceptionInfo == NULL ? NULL : pExceptionInfo->ExceptionRecord,
                                        pExceptionInfo == NULL ? NULL : pExceptionInfo->ContextRecord,
@@ -4085,10 +4085,10 @@ BuildCreateDumpCommandLine(
     }
 }
 
-static bool
+static DWORD 
 LaunchCreateDump(LPCWSTR lpCommandLine)
 {
-    bool fSuccess = false;
+    DWORD fSuccess = false;
 
     EX_TRY
     {
@@ -4117,12 +4117,26 @@ LaunchCreateDump(LPCWSTR lpCommandLine)
 }
 
 void
-CreateCrashDumpIfEnabled()
+CreateCrashDumpIfEnabled(bool stackoverflow)
 {
-    // If enabled, launch the create minidump utility and wait until it completes
-    if (g_createDumpCommandLine != nullptr)
+    // If enabled, launch the create minidump utility and wait until it completes. Only launch createdump once for this process.
+    LPCWSTR createDumpCommandLine = InterlockedExchangeT<LPCWSTR>(&g_createDumpCommandLine, nullptr);
+    if (createDumpCommandLine != nullptr)
     {
-        LaunchCreateDump(g_createDumpCommandLine);
+        if (stackoverflow)
+        {
+            HandleHolder createDumpThreadHandle = Thread::CreateUtilityThread(Thread::StackSize_Small, (LPTHREAD_START_ROUTINE)LaunchCreateDump, (void*)createDumpCommandLine, W(".NET Stack overflow create dump"));
+            if (createDumpThreadHandle != INVALID_HANDLE_VALUE)
+            {
+                // Wait for the dump to be generated
+                DWORD res = WaitForSingleObject(createDumpThreadHandle, INFINITE);
+                _ASSERTE(res == WAIT_OBJECT_0);
+            }
+        }
+        else
+        {
+            LaunchCreateDump(createDumpCommandLine);
+        }
     }
 }
 
@@ -4171,7 +4185,7 @@ InitializeCrashDump()
 void CrashDumpAndTerminateProcess(UINT exitCode)
 {
 #ifdef HOST_WINDOWS
-    CreateCrashDumpIfEnabled();
+    CreateCrashDumpIfEnabled(exitCode == COR_E_STACKOVERFLOW);
 #endif
     TerminateProcess(GetCurrentProcess(), exitCode);
 }
@@ -5860,21 +5874,21 @@ const BYTE *UnparseType(const BYTE *pType, DWORD& csig, StubLinker *psl)
 
         case ELEMENT_TYPE_U1:
             psl->EmitUtf8("unsigned ");
-            //fallthru
+            FALLTHROUGH;
         case ELEMENT_TYPE_I1:
             psl->EmitUtf8("byte");
             break;
 
         case ELEMENT_TYPE_U2:
             psl->EmitUtf8("unsigned ");
-            //fallthru
+            FALLTHROUGH;
         case ELEMENT_TYPE_I2:
             psl->EmitUtf8("short");
             break;
 
         case ELEMENT_TYPE_U4:
             psl->EmitUtf8("unsigned ");
-            //fallthru
+            FALLTHROUGH;
         case ELEMENT_TYPE_I4:
             psl->EmitUtf8("int");
             break;
@@ -5888,7 +5902,7 @@ const BYTE *UnparseType(const BYTE *pType, DWORD& csig, StubLinker *psl)
 
         case ELEMENT_TYPE_U8:
             psl->EmitUtf8("unsigned ");
-            //fallthru
+            FALLTHROUGH;
         case ELEMENT_TYPE_I8:
             psl->EmitUtf8("long");
             break;

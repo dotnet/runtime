@@ -50,6 +50,31 @@ typedef HRESULT (STDAPICALLTYPE  *OpenVirtualProcess2FnPtr)(ULONG64 clrInstanceI
 
 typedef HMODULE (STDAPICALLTYPE  *LoadLibraryWFnPtr)(LPCWSTR lpLibFileName);
 
+static bool IsTargetWindows(ICorDebugDataTarget* pDataTarget)
+{
+    CorDebugPlatform targetPlatform;
+
+    HRESULT result = pDataTarget->GetPlatform(&targetPlatform);
+
+    if(FAILED(result))
+    {
+        _ASSERTE(!"Unexpected error");
+        return false;
+    }
+
+    switch (targetPlatform)
+    {
+        case CORDB_PLATFORM_WINDOWS_X86:
+        case CORDB_PLATFORM_WINDOWS_AMD64:
+        case CORDB_PLATFORM_WINDOWS_IA64:
+        case CORDB_PLATFORM_WINDOWS_ARM:
+        case CORDB_PLATFORM_WINDOWS_ARM64:
+            return true;
+        default:
+            return false;
+    }
+}
+
 // Implementation of ICLRDebugging::OpenVirtualProcess
 //
 // Arguments:
@@ -212,7 +237,7 @@ STDMETHODIMP CLRDebuggingImpl::OpenVirtualProcess(
                     _ASSERTE(pFlags == NULL || *pFlags == 0);
                 }
             }
-#ifdef TARGET_UNIX
+#ifdef HOST_UNIX
             else
             {
                 // On Linux/MacOS the DAC module handle needs to be re-created using the DAC PAL instance
@@ -232,7 +257,7 @@ STDMETHODIMP CLRDebuggingImpl::OpenVirtualProcess(
                     hr = E_HANDLE;
                 }
             }
-#endif // TARGET_UNIX
+#endif // HOST_UNIX
         }
 
         // If no errors so far and "OpenVirtualProcessImpl2" doesn't exist
@@ -277,7 +302,7 @@ STDMETHODIMP CLRDebuggingImpl::OpenVirtualProcess(
 
     if (pDacModulePath != NULL)
     {
-#ifdef TARGET_UNIX
+#ifdef HOST_UNIX
         free(pDacModulePath);
 #else
         CoTaskMemFree(pDacModulePath);
@@ -286,7 +311,7 @@ STDMETHODIMP CLRDebuggingImpl::OpenVirtualProcess(
 
     if (pDbiModulePath != NULL)
     {
-#ifdef TARGET_UNIX
+#ifdef HOST_UNIX
         free(pDbiModulePath);
 #else
         CoTaskMemFree(pDbiModulePath);
@@ -409,193 +434,198 @@ HRESULT CLRDebuggingImpl::GetCLRInfo(ICorDebugDataTarget* pDataTarget,
                                      __out_z __inout_ecount(dwDacNameCharCount) WCHAR* pDacName,
                                      DWORD  dwDacNameCharCount)
 {
-#ifndef TARGET_UNIX
-    WORD imageFileMachine = 0;
-    DWORD resourceSectionRVA = 0;
-    HRESULT hr = GetMachineAndResourceSectionRVA(pDataTarget, moduleBaseAddress, &imageFileMachine, &resourceSectionRVA);
-
-    // We want the version resource which has type = RT_VERSION = 16, name = 1, language = 0x409
-    DWORD versionResourceRVA = 0;
-    DWORD versionResourceSize = 0;
-    if(SUCCEEDED(hr))
+#ifdef HOST_WINDOWS
+    if(IsTargetWindows(pDataTarget))
     {
-        hr = GetResourceRvaFromResourceSectionRva(pDataTarget, moduleBaseAddress, resourceSectionRVA, 16, 1, 0x409,
-                 &versionResourceRVA, &versionResourceSize);
-    }
+        WORD imageFileMachine = 0;
+        DWORD resourceSectionRVA = 0;
+        HRESULT hr = GetMachineAndResourceSectionRVA(pDataTarget, moduleBaseAddress, &imageFileMachine, &resourceSectionRVA);
 
-    // At last we get our version info
-    VS_FIXEDFILEINFO fixedFileInfo = {0};
-    if(SUCCEEDED(hr))
-    {
-        // The version resource has 3 words, then the unicode string "VS_VERSION_INFO"
-        // (16 WCHARS including the null terminator)
-        // then padding to a 32-bit boundary, then the VS_FIXEDFILEINFO struct
-        DWORD fixedFileInfoRVA = ((versionResourceRVA + 3*2 + 16*2 + 3)/4)*4;
-        hr = ReadFromDataTarget(pDataTarget, moduleBaseAddress + fixedFileInfoRVA, (BYTE*)&fixedFileInfo, sizeof(fixedFileInfo));
-    }
-
-    //Verify the signature on the version resource
-    if(SUCCEEDED(hr) && fixedFileInfo.dwSignature != PE_FIXEDFILEINFO_SIGNATURE)
-    {
-        hr = CORDBG_E_NOT_CLR;
-    }
-
-    // Record the version information
-    if(SUCCEEDED(hr))
-    {
-        pVersion->wMajor = (WORD) (fixedFileInfo.dwProductVersionMS >> 16);
-        pVersion->wMinor = (WORD) (fixedFileInfo.dwProductVersionMS & 0xFFFF);
-        pVersion->wBuild = (WORD) (fixedFileInfo.dwProductVersionLS >> 16);
-        pVersion->wRevision = (WORD) (fixedFileInfo.dwProductVersionLS & 0xFFFF);
-    }
-
-    // Now grab the special clr debug info resource
-    // We may need to scan a few different names searching though...
-    // 1) CLRDEBUGINFO<host_os><host_arch> where host_os = 'WINDOWS' or 'CORESYS' and host_arch = 'X86' or 'ARM' or 'AMD64'
-    // 2) For back-compat if the host os is windows and the host architecture matches the target then CLRDEBUGINFO is used with no suffix.
-    DWORD debugResourceRVA = 0;
-    DWORD debugResourceSize = 0;
-    BOOL useCrossPlatformNaming = FALSE;
-    if(SUCCEEDED(hr))
-    {
-        // the initial state is that we haven't found a proper resource
-        HRESULT hrGetResource = E_FAIL;
-
-        // First check for the resource which has type = RC_DATA = 10, name = "CLRDEBUGINFO<host_os><host_arch>", language = 0
-#if defined (HOST_WINDOWS) && defined(HOST_X86)
-        const WCHAR * resourceName = W("CLRDEBUGINFOWINDOWSX86");
-#endif
-
-#if !defined (HOST_WINDOWS) && defined(HOST_X86)
-        const WCHAR * resourceName = W("CLRDEBUGINFOCORESYSX86");
-#endif
-
-#if defined (HOST_WINDOWS) && defined(HOST_AMD64)
-        const WCHAR * resourceName = W("CLRDEBUGINFOWINDOWSAMD64");
-#endif
-
-#if !defined (HOST_WINDOWS) && defined(HOST_AMD64)
-        const WCHAR * resourceName = W("CLRDEBUGINFOCORESYSAMD64");
-#endif
-
-#if defined (HOST_WINDOWS) && defined(HOST_ARM64)
-        const WCHAR * resourceName = W("CLRDEBUGINFOWINDOWSARM64");
-#endif
-
-#if !defined (HOST_WINDOWS) && defined(HOST_ARM64)
-        const WCHAR * resourceName = W("CLRDEBUGINFOCORESYSARM64");
-#endif
-
-#if defined (HOST_WINDOWS) && defined(HOST_ARM)
-        const WCHAR * resourceName = W("CLRDEBUGINFOWINDOWSARM");
-#endif
-
-#if !defined (HOST_WINDOWS) && defined(HOST_ARM)
-        const WCHAR * resourceName = W("CLRDEBUGINFOCORESYSARM");
-#endif
-
-        hrGetResource = GetResourceRvaFromResourceSectionRvaByName(pDataTarget, moduleBaseAddress, resourceSectionRVA, 10, resourceName, 0,
-                 &debugResourceRVA, &debugResourceSize);
-        useCrossPlatformNaming = SUCCEEDED(hrGetResource);
-
-
-#if defined(HOST_WINDOWS) && (defined(HOST_X86) || defined(HOST_AMD64) || defined(HOST_ARM))
-  #if defined(HOST_X86)
-    #define _HOST_MACHINE_TYPE IMAGE_FILE_MACHINE_I386
-  #elif defined(HOST_AMD64)
-    #define _HOST_MACHINE_TYPE IMAGE_FILE_MACHINE_AMD64
-  #elif defined(HOST_ARM)
-    #define _HOST_MACHINE_TYPE IMAGE_FILE_MACHINE_ARMNT
-  #endif
-
-        // if this is windows, and if host_arch matches target arch then we can fallback to searching for CLRDEBUGINFO on failure
-        if(FAILED(hrGetResource) && (imageFileMachine == _HOST_MACHINE_TYPE))
+        // We want the version resource which has type = RT_VERSION = 16, name = 1, language = 0x409
+        DWORD versionResourceRVA = 0;
+        DWORD versionResourceSize = 0;
+        if(SUCCEEDED(hr))
         {
-            hrGetResource = GetResourceRvaFromResourceSectionRvaByName(pDataTarget, moduleBaseAddress, resourceSectionRVA, 10, W("CLRDEBUGINFO"), 0,
-                 &debugResourceRVA, &debugResourceSize);
+            hr = GetResourceRvaFromResourceSectionRva(pDataTarget, moduleBaseAddress, resourceSectionRVA, 16, 1, 0x409,
+                     &versionResourceRVA, &versionResourceSize);
         }
 
-  #undef _HOST_MACHINE_TYPE
-#endif
-        // if the search failed, we don't recognize the CLR
-        if(FAILED(hrGetResource))
+        // At last we get our version info
+        VS_FIXEDFILEINFO fixedFileInfo = {0};
+        if(SUCCEEDED(hr))
+        {
+            // The version resource has 3 words, then the unicode string "VS_VERSION_INFO"
+            // (16 WCHARS including the null terminator)
+            // then padding to a 32-bit boundary, then the VS_FIXEDFILEINFO struct
+            DWORD fixedFileInfoRVA = ((versionResourceRVA + 3*2 + 16*2 + 3)/4)*4;
+            hr = ReadFromDataTarget(pDataTarget, moduleBaseAddress + fixedFileInfoRVA, (BYTE*)&fixedFileInfo, sizeof(fixedFileInfo));
+        }
+
+        //Verify the signature on the version resource
+        if(SUCCEEDED(hr) && fixedFileInfo.dwSignature != PE_FIXEDFILEINFO_SIGNATURE)
+        {
             hr = CORDBG_E_NOT_CLR;
-    }
+        }
 
-    CLR_DEBUG_RESOURCE debugResource;
-    if(SUCCEEDED(hr) && debugResourceSize != sizeof(debugResource))
-    {
-        hr = CORDBG_E_NOT_CLR;
-    }
+        // Record the version information
+        if(SUCCEEDED(hr))
+        {
+            pVersion->wMajor = (WORD) (fixedFileInfo.dwProductVersionMS >> 16);
+            pVersion->wMinor = (WORD) (fixedFileInfo.dwProductVersionMS & 0xFFFF);
+            pVersion->wBuild = (WORD) (fixedFileInfo.dwProductVersionLS >> 16);
+            pVersion->wRevision = (WORD) (fixedFileInfo.dwProductVersionLS & 0xFFFF);
+        }
 
-    // Get the special debug resource from the image and return the results
-    if(SUCCEEDED(hr))
-    {
-        hr = ReadFromDataTarget(pDataTarget, moduleBaseAddress + debugResourceRVA, (BYTE*)&debugResource, sizeof(debugResource));
-    }
-    if(SUCCEEDED(hr) && (debugResource.dwVersion != 0))
-    {
-        hr = CORDBG_E_NOT_CLR;
-    }
+        // Now grab the special clr debug info resource
+        // We may need to scan a few different names searching though...
+        // 1) CLRDEBUGINFO<host_os><host_arch> where host_os = 'WINDOWS' or 'CORESYS' and host_arch = 'X86' or 'ARM' or 'AMD64'
+        // 2) For back-compat if the host os is windows and the host architecture matches the target then CLRDEBUGINFO is used with no suffix.
+        DWORD debugResourceRVA = 0;
+        DWORD debugResourceSize = 0;
+        BOOL useCrossPlatformNaming = FALSE;
+        if(SUCCEEDED(hr))
+        {
+            // the initial state is that we haven't found a proper resource
+            HRESULT hrGetResource = E_FAIL;
 
-    // The signature needs to match m_skuId exactly, except for m_skuId=CLR_ID_ONECORE_CLR which is
-    // also compatible with the older CLR_ID_PHONE_CLR signature.
-    if(SUCCEEDED(hr) &&
-       (debugResource.signature != m_skuId) &&
-       !( (debugResource.signature == CLR_ID_PHONE_CLR) && (m_skuId == CLR_ID_ONECORE_CLR) ))
-    {
-        hr = CORDBG_E_NOT_CLR;
-    }
+            // First check for the resource which has type = RC_DATA = 10, name = "CLRDEBUGINFO<host_os><host_arch>", language = 0
+    #if defined (HOST_WINDOWS) && defined(HOST_X86)
+            const WCHAR * resourceName = W("CLRDEBUGINFOWINDOWSX86");
+    #endif
 
-    if(SUCCEEDED(hr) &&
-       (debugResource.signature != CLR_ID_ONECORE_CLR) &&
-       useCrossPlatformNaming)
-    {
-        FormatLongDacModuleName(pDacName, dwDacNameCharCount, imageFileMachine, &fixedFileInfo);
-        swprintf_s(pDbiName, dwDbiNameCharCount, W("%s_%s.dll"), MAIN_DBI_MODULE_NAME_W, W("x86"));
-    }
-    else
-    {
-        if(m_skuId == CLR_ID_V4_DESKTOP)
-            swprintf_s(pDacName, dwDacNameCharCount, W("%s.dll"), CLR_DAC_MODULE_NAME_W);
+    #if !defined (HOST_WINDOWS) && defined(HOST_X86)
+            const WCHAR * resourceName = W("CLRDEBUGINFOCORESYSX86");
+    #endif
+
+    #if defined (HOST_WINDOWS) && defined(HOST_AMD64)
+            const WCHAR * resourceName = W("CLRDEBUGINFOWINDOWSAMD64");
+    #endif
+
+    #if !defined (HOST_WINDOWS) && defined(HOST_AMD64)
+            const WCHAR * resourceName = W("CLRDEBUGINFOCORESYSAMD64");
+    #endif
+
+    #if defined (HOST_WINDOWS) && defined(HOST_ARM64)
+            const WCHAR * resourceName = W("CLRDEBUGINFOWINDOWSARM64");
+    #endif
+
+    #if !defined (HOST_WINDOWS) && defined(HOST_ARM64)
+            const WCHAR * resourceName = W("CLRDEBUGINFOCORESYSARM64");
+    #endif
+
+    #if defined (HOST_WINDOWS) && defined(HOST_ARM)
+            const WCHAR * resourceName = W("CLRDEBUGINFOWINDOWSARM");
+    #endif
+
+    #if !defined (HOST_WINDOWS) && defined(HOST_ARM)
+            const WCHAR * resourceName = W("CLRDEBUGINFOCORESYSARM");
+    #endif
+
+            hrGetResource = GetResourceRvaFromResourceSectionRvaByName(pDataTarget, moduleBaseAddress, resourceSectionRVA, 10, resourceName, 0,
+                     &debugResourceRVA, &debugResourceSize);
+            useCrossPlatformNaming = SUCCEEDED(hrGetResource);
+
+
+    #if defined(HOST_WINDOWS) && (defined(HOST_X86) || defined(HOST_AMD64) || defined(HOST_ARM))
+      #if defined(HOST_X86)
+        #define _HOST_MACHINE_TYPE IMAGE_FILE_MACHINE_I386
+      #elif defined(HOST_AMD64)
+        #define _HOST_MACHINE_TYPE IMAGE_FILE_MACHINE_AMD64
+      #elif defined(HOST_ARM)
+        #define _HOST_MACHINE_TYPE IMAGE_FILE_MACHINE_ARMNT
+      #endif
+
+            // if this is windows, and if host_arch matches target arch then we can fallback to searching for CLRDEBUGINFO on failure
+            if(FAILED(hrGetResource) && (imageFileMachine == _HOST_MACHINE_TYPE))
+            {
+                hrGetResource = GetResourceRvaFromResourceSectionRvaByName(pDataTarget, moduleBaseAddress, resourceSectionRVA, 10, W("CLRDEBUGINFO"), 0,
+                     &debugResourceRVA, &debugResourceSize);
+            }
+
+      #undef _HOST_MACHINE_TYPE
+    #endif
+            // if the search failed, we don't recognize the CLR
+            if(FAILED(hrGetResource))
+                hr = CORDBG_E_NOT_CLR;
+        }
+
+        CLR_DEBUG_RESOURCE debugResource;
+        if(SUCCEEDED(hr) && debugResourceSize != sizeof(debugResource))
+        {
+            hr = CORDBG_E_NOT_CLR;
+        }
+
+        // Get the special debug resource from the image and return the results
+        if(SUCCEEDED(hr))
+        {
+            hr = ReadFromDataTarget(pDataTarget, moduleBaseAddress + debugResourceRVA, (BYTE*)&debugResource, sizeof(debugResource));
+        }
+        if(SUCCEEDED(hr) && (debugResource.dwVersion != 0))
+        {
+            hr = CORDBG_E_NOT_CLR;
+        }
+
+        // The signature needs to match m_skuId exactly, except for m_skuId=CLR_ID_ONECORE_CLR which is
+        // also compatible with the older CLR_ID_PHONE_CLR signature.
+        if(SUCCEEDED(hr) &&
+           (debugResource.signature != m_skuId) &&
+           !( (debugResource.signature == CLR_ID_PHONE_CLR) && (m_skuId == CLR_ID_ONECORE_CLR) ))
+        {
+            hr = CORDBG_E_NOT_CLR;
+        }
+
+        if(SUCCEEDED(hr) &&
+           (debugResource.signature != CLR_ID_ONECORE_CLR) &&
+           useCrossPlatformNaming)
+        {
+            FormatLongDacModuleName(pDacName, dwDacNameCharCount, imageFileMachine, &fixedFileInfo);
+            swprintf_s(pDbiName, dwDbiNameCharCount, W("%s_%s.dll"), MAIN_DBI_MODULE_NAME_W, W("x86"));
+        }
         else
-            swprintf_s(pDacName, dwDacNameCharCount, W("%s.dll"), CORECLR_DAC_MODULE_NAME_W);
-        swprintf_s(pDbiName, dwDbiNameCharCount, W("%s.dll"), MAIN_DBI_MODULE_NAME_W);
-    }
+        {
+            if(m_skuId == CLR_ID_V4_DESKTOP)
+                swprintf_s(pDacName, dwDacNameCharCount, W("%s.dll"), CLR_DAC_MODULE_NAME_W);
+            else
+                swprintf_s(pDacName, dwDacNameCharCount, W("%s.dll"), CORECLR_DAC_MODULE_NAME_W);
+            swprintf_s(pDbiName, dwDbiNameCharCount, W("%s.dll"), MAIN_DBI_MODULE_NAME_W);
+        }
 
-    if(SUCCEEDED(hr))
-    {
-        *pdwDbiTimeStamp = debugResource.dwDbiTimeStamp;
-        *pdwDbiSizeOfImage = debugResource.dwDbiSizeOfImage;
-        *pdwDacTimeStamp = debugResource.dwDacTimeStamp;
-        *pdwDacSizeOfImage = debugResource.dwDacSizeOfImage;
-    }
+        if(SUCCEEDED(hr))
+        {
+            *pdwDbiTimeStamp = debugResource.dwDbiTimeStamp;
+            *pdwDbiSizeOfImage = debugResource.dwDbiSizeOfImage;
+            *pdwDacTimeStamp = debugResource.dwDacTimeStamp;
+            *pdwDacSizeOfImage = debugResource.dwDacSizeOfImage;
+        }
 
-    // any failure should be interpreted as this module not being a CLR
-    if(FAILED(hr))
-    {
-        return CORDBG_E_NOT_CLR;
+        // any failure should be interpreted as this module not being a CLR
+        if(FAILED(hr))
+        {
+            return CORDBG_E_NOT_CLR;
+        }
+        else
+        {
+            return S_OK;
+        }
     }
     else
+#endif // !HOST_WINDOWS
     {
+        swprintf_s(pDacName, dwDacNameCharCount, W("%s"), MAKEDLLNAME_W(CORECLR_DAC_MODULE_NAME_W));
+        swprintf_s(pDbiName, dwDbiNameCharCount, W("%s"), MAKEDLLNAME_W(MAIN_DBI_MODULE_NAME_W));
+
+        pVersion->wMajor = 0;
+        pVersion->wMinor = 0;
+        pVersion->wBuild = 0;
+        pVersion->wRevision = 0;
+
+        *pdwDbiTimeStamp = 0;
+        *pdwDbiSizeOfImage = 0;
+        *pdwDacTimeStamp = 0;
+        *pdwDacSizeOfImage = 0;
+
         return S_OK;
     }
-#else
-    swprintf_s(pDacName, dwDacNameCharCount, W("%s"), MAKEDLLNAME_W(CORECLR_DAC_MODULE_NAME_W));
-    swprintf_s(pDbiName, dwDbiNameCharCount, W("%s"), MAKEDLLNAME_W(MAIN_DBI_MODULE_NAME_W));
-
-    pVersion->wMajor = 0;
-    pVersion->wMinor = 0;
-    pVersion->wBuild = 0;
-    pVersion->wRevision = 0;
-
-    *pdwDbiTimeStamp = 0;
-    *pdwDbiSizeOfImage = 0;
-    *pdwDacTimeStamp = 0;
-    *pdwDacSizeOfImage = 0;
-
-    return S_OK;
-#endif // TARGET_UNIX
 }
 
 // Formats the long name for DAC

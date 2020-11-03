@@ -1,7 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-// Since https://github.com/dotnet/coreclr/issues/7508 was a performance issue,
+// Since https://github.com/dotnet/runtime/issues/6775 was a performance issue,
 // there's not really a correctness test for this.
 // However, this is a very simple test that can be used to compare the code generated
 // for a non-accelerated vector of 3 floats, a "raw" Vector3 and a Vector3

@@ -22,6 +22,7 @@ namespace System.Tests
             AssertExtensions.Throws<ArgumentNullException>("value", () => BitConverter.ToBoolean(null, 0));
             AssertExtensions.Throws<ArgumentNullException>("value", () => BitConverter.ToChar(null, 0));
             AssertExtensions.Throws<ArgumentNullException>("value", () => BitConverter.ToDouble(null, 0));
+            AssertExtensions.Throws<ArgumentNullException>("value", () => BitConverter.ToHalf(null, 0));
             AssertExtensions.Throws<ArgumentNullException>("value", () => BitConverter.ToInt16(null, 0));
             AssertExtensions.Throws<ArgumentNullException>("value", () => BitConverter.ToInt32(null, 0));
             AssertExtensions.Throws<ArgumentNullException>("value", () => BitConverter.ToInt64(null, 0));
@@ -48,6 +49,10 @@ namespace System.Tests
             AssertExtensions.Throws<ArgumentOutOfRangeException>("startIndex", () => BitConverter.ToDouble(new byte[8], -1));
             AssertExtensions.Throws<ArgumentOutOfRangeException>("startIndex", () => BitConverter.ToDouble(new byte[8], 8));
             AssertExtensions.Throws<ArgumentOutOfRangeException>("startIndex", () => BitConverter.ToDouble(new byte[8], 9));
+
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("startIndex", () => BitConverter.ToHalf(new byte[2], -1));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("startIndex", () => BitConverter.ToHalf(new byte[2], 2));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("startIndex", () => BitConverter.ToHalf(new byte[2], 3));
 
             AssertExtensions.Throws<ArgumentOutOfRangeException>("startIndex", () => BitConverter.ToInt16(new byte[2], -1));
             AssertExtensions.Throws<ArgumentOutOfRangeException>("startIndex", () => BitConverter.ToInt16(new byte[2], 2));
@@ -94,6 +99,7 @@ namespace System.Tests
             AssertExtensions.Throws<ArgumentOutOfRangeException>("startIndex", () => BitConverter.ToBoolean(new byte[0], 0));
             AssertExtensions.Throws<ArgumentException>("value", null, () => BitConverter.ToChar(new byte[2], 1));
             AssertExtensions.Throws<ArgumentException>("value", null, () => BitConverter.ToDouble(new byte[8], 1));
+            AssertExtensions.Throws<ArgumentException>("value", null, () => BitConverter.ToHalf(new byte[2], 1));
             AssertExtensions.Throws<ArgumentException>("value", null, () => BitConverter.ToInt16(new byte[2], 1));
             AssertExtensions.Throws<ArgumentException>("value", null, () => BitConverter.ToInt32(new byte[4], 1));
             AssertExtensions.Throws<ArgumentException>("value", null, () => BitConverter.ToInt64(new byte[8], 1));
@@ -150,6 +156,14 @@ namespace System.Tests
             float input = 8392.34f;
             byte[] expected = { 0x5c, 0x21, 0x03, 0x46 };
             VerifyRoundtrip(BitConverter.GetBytes, BitConverter.ToSingle, input, expected);
+        }
+
+        [Fact]
+        public static void RoundtripHalf()
+        {
+            Half input = (Half)123.44;
+            byte[] expected = { 0xb7, 0x57 };
+            VerifyRoundtrip(BitConverter.GetBytes, BitConverter.ToHalf, input, expected);
         }
 
         [Fact]
@@ -269,6 +283,16 @@ namespace System.Tests
             int result = BitConverter.SingleToInt32Bits(input);
             Assert.Equal(1178658437, result);
             float roundtripped = BitConverter.Int32BitsToSingle(result);
+            Assert.Equal(input, roundtripped);
+        }
+
+        [Fact]
+        public static void HalfToInt16Bits()
+        {
+            Half input = (Half)12.34;
+            short result = BitConverter.HalfToInt16Bits(input);
+            Assert.Equal((short)18988, result);
+            Half roundtripped = BitConverter.Int16BitsToHalf(result);
             Assert.Equal(input, roundtripped);
         }
     }

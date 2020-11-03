@@ -85,6 +85,7 @@
 #include <mono/utils/mono-io-portability.h>
 #include <mono/utils/w32api.h>
 #include <mono/utils/mono-errno.h>
+#include <mono/utils/mono-once.h>
 #include <mono/utils/mono-error-internals.h>
 #include <mono/utils/mono-threads-coop.h>
 #include "object-internals.h"
@@ -594,6 +595,8 @@ process_set_name (MonoW32HandleProcess *process_handle)
 	}
 }
 
+static mono_once_t init_state = MONO_ONCE_INIT;
+
 void
 mono_w32process_init (void)
 {
@@ -615,6 +618,7 @@ mono_w32process_init (void)
 	g_assert (current_process != INVALID_HANDLE_VALUE);
 
 	mono_coop_mutex_init (&processes_mutex);
+	mono_once (&init_state, &mono_w32process_platform_init_once);
 }
 
 void
@@ -769,6 +773,13 @@ ves_icall_System_Diagnostics_Process_GetProcess_internal (guint32 pid, MonoError
 	mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER_PROCESS, "%s: Can't find pid %d", __func__, pid);
 
 	mono_w32error_set_last (ERROR_PROC_NOT_FOUND);
+	return NULL;
+}
+
+HANDLE
+ves_icall_System_Diagnostics_Process_MainWindowHandle_internal (guint32 pid, MonoError *error)
+{
+	/*TODO: Implement for unix*/
 	return NULL;
 }
 
@@ -1053,7 +1064,7 @@ mono_w32process_module_get_name (gpointer handle, gpointer module, gunichar2 **s
 }
 
 gboolean
-mono_w32process_module_get_information (gpointer handle, gpointer module, MODULEINFO *modinfo, guint32 size)
+mono_w32process_module_get_information (gpointer handle, gpointer module, gpointer modinfo, guint32 size)
 {
 	MonoW32Handle *handle_data;
 	MonoW32HandleProcess *process_handle;
@@ -1103,9 +1114,9 @@ mono_w32process_module_get_information (gpointer handle, gpointer module, MODULE
 			if (ret == FALSE &&
 				((module == NULL && match_procname_to_modulename (pname, found_module->filename)) ||
 				 (module != NULL && found_module->address_start == module))) {
-				modinfo->lpBaseOfDll = found_module->address_start;
-				modinfo->SizeOfImage = (gsize)(found_module->address_end) - (gsize)(found_module->address_start);
-				modinfo->EntryPoint = found_module->address_offset;
+				((MODULEINFO *)modinfo)->lpBaseOfDll = found_module->address_start;
+				((MODULEINFO *)modinfo)->SizeOfImage = (gsize)(found_module->address_end) - (gsize)(found_module->address_start);
+				((MODULEINFO *)modinfo)->EntryPoint = found_module->address_offset;
 				ret = TRUE;
 			}
 
@@ -3521,7 +3532,7 @@ mono_w32process_get_fileversion_info (const gunichar2 *filename, gpointer *data)
 }
 
 gboolean
-mono_w32process_module_get_information (gpointer handle, gpointer module, MODULEINFO *modinfo, guint32 size)
+mono_w32process_module_get_information (gpointer handle, gpointer module, gpointer modinfo, guint32 size)
 {
 	return FALSE;
 }

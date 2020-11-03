@@ -33,7 +33,9 @@ namespace System.Xml.Serialization
             }
         }
         private XmlCustomFormatter() { }
-        internal static string FromDefaultValue(object value, string formatter)
+
+        [return: NotNullIfNotNull("value")]
+        internal static string? FromDefaultValue(object? value, string formatter)
         {
             if (value == null) return null;
             Type type = value.GetType();
@@ -109,22 +111,26 @@ namespace System.Xml.Serialization
             return XmlConvert.ToString((ushort)value);
         }
 
-        internal static string FromXmlName(string name)
+        [return: NotNullIfNotNull("name")]
+        internal static string? FromXmlName(string? name)
         {
             return XmlConvert.EncodeName(name);
         }
 
-        internal static string FromXmlNCName(string ncName)
+        [return: NotNullIfNotNull("ncName")]
+        internal static string? FromXmlNCName(string? ncName)
         {
             return XmlConvert.EncodeLocalName(ncName);
         }
 
-        internal static string FromXmlNmToken(string nmToken)
+        [return: NotNullIfNotNull("nmToken")]
+        internal static string? FromXmlNmToken(string? nmToken)
         {
             return XmlConvert.EncodeNmToken(nmToken);
         }
 
-        internal static string FromXmlNmTokens(string nmTokens)
+        [return: NotNullIfNotNull("nmTokens")]
+        internal static string? FromXmlNmTokens(string? nmTokens)
         {
             if (nmTokens == null)
                 return null;
@@ -152,7 +158,8 @@ namespace System.Xml.Serialization
             writer.WriteBase64(inData, start, count);
         }
 
-        internal static string FromByteArrayHex(byte[] value)
+        [return: NotNullIfNotNull("value")]
+        internal static string? FromByteArrayHex(byte[]? value)
         {
             if (value == null)
                 return null;
@@ -162,7 +169,7 @@ namespace System.Xml.Serialization
             return XmlConvert.ToBinHexString(value);
         }
 
-        internal static string FromEnum(long val, string[] vals, long[] ids, string typeName)
+        internal static string FromEnum(long val, string[] vals, long[] ids, string? typeName)
         {
 #if DEBUG
             // use exception in the place of Debug.Assert to avoid throwing asserts from a server process such as aspnet_ewp.exe
@@ -393,27 +400,32 @@ namespace System.Xml.Serialization
             return (char)XmlConvert.ToUInt16(value);
         }
 
-        internal static string ToXmlName(string value)
+        [return: NotNullIfNotNull("value")]
+        internal static string? ToXmlName(string? value)
         {
             return XmlConvert.DecodeName(CollapseWhitespace(value));
         }
 
-        internal static string ToXmlNCName(string value)
+        [return: NotNullIfNotNull("value")]
+        internal static string? ToXmlNCName(string? value)
         {
             return XmlConvert.DecodeName(CollapseWhitespace(value));
         }
 
-        internal static string ToXmlNmToken(string value)
+        [return: NotNullIfNotNull("value")]
+        internal static string? ToXmlNmToken(string? value)
         {
             return XmlConvert.DecodeName(CollapseWhitespace(value));
         }
 
-        internal static string ToXmlNmTokens(string value)
+        [return: NotNullIfNotNull("value")]
+        internal static string? ToXmlNmTokens(string? value)
         {
             return XmlConvert.DecodeName(CollapseWhitespace(value));
         }
 
-        internal static byte[] ToByteArrayBase64(string value)
+        [return: NotNullIfNotNull("value")]
+        internal static byte[]? ToByteArrayBase64(string? value)
         {
             if (value == null) return null;
             value = value.Trim();
@@ -421,20 +433,22 @@ namespace System.Xml.Serialization
                 return Array.Empty<byte>();
             return Convert.FromBase64String(value);
         }
-        internal static byte[] ToByteArrayHex(string value)
+
+        [return: NotNullIfNotNull("value")]
+        internal static byte[]? ToByteArrayHex(string? value)
         {
             if (value == null) return null;
             value = value.Trim();
             return XmlConvert.FromBinHexString(value);
         }
 
-        internal static long ToEnum(string val, Hashtable vals, string typeName, bool validate)
+        internal static long ToEnum(string val, Hashtable vals, string? typeName, bool validate)
         {
             long value = 0;
             string[] parts = val.Split(null);
             for (int i = 0; i < parts.Length; i++)
             {
-                object id = vals[parts[i]];
+                object? id = vals[parts[i]];
                 if (id != null)
                     value |= (long)id;
                 else if (validate && parts[i].Length > 0)
@@ -443,7 +457,8 @@ namespace System.Xml.Serialization
             return value;
         }
 
-        private static string CollapseWhitespace(string value)
+        [return: NotNullIfNotNull("value")]
+        private static string? CollapseWhitespace(string? value)
         {
             if (value == null)
                 return null;

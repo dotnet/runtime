@@ -1744,6 +1744,9 @@ namespace System
             return retval;
         }
 
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2070:UnrecognizedReflectionPattern",
+            Justification = "The code in this method looks up the method by name, but it always starts with a method handle." +
+                            "To get here something somwhere had to get the method handle and thus the method must exist.")]
         internal static MethodBase? GetMethodBase(RuntimeType? reflectedType, RuntimeMethodHandleInternal methodHandle)
         {
             Debug.Assert(!methodHandle.IsNullHandle());
@@ -2203,7 +2206,7 @@ namespace System
         private static bool FilterApplyType(
             Type type, BindingFlags bindingFlags, string name, bool prefixLookup, string? ns)
         {
-            Debug.Assert((object)type != null);
+            Debug.Assert(type is not null);
             Debug.Assert(type is RuntimeType);
 
             bool isPublic = type.IsNestedPublic || type.IsPublic;
@@ -2341,7 +2344,7 @@ namespace System
                             for (int i = 0; i < parameterInfos.Length; i++)
                             {
                                 // a null argument type implies a null arg which is always a perfect match
-                                if ((object)argumentTypes[i] != null && !argumentTypes[i].MatchesParameterTypeExactly(parameterInfos[i]))
+                                if (argumentTypes[i] is Type t && !t.MatchesParameterTypeExactly(parameterInfos[i]))
                                     return false;
                             }
                         }
@@ -2834,7 +2837,7 @@ namespace System
                 {
                     PropertyInfo firstCandidate = candidates[0];
 
-                    if ((object?)returnType != null && !returnType.IsEquivalentTo(firstCandidate.PropertyType))
+                    if (returnType is not null && !returnType.IsEquivalentTo(firstCandidate.PropertyType))
                         return null;
 
                     return firstCandidate;
@@ -3863,7 +3866,9 @@ namespace System
                 throw new NotSupportedException(SR.Acc_CreateVoid);
         }
 
-        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2006:UnrecognizedReflectionPattern",
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2082:UnrecognizedReflectionPattern",
+            Justification = "Implementation detail of Activator that linker intrinsically recognizes")]
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2085:UnrecognizedReflectionPattern",
             Justification = "Implementation detail of Activator that linker intrinsically recognizes")]
         internal object? CreateInstanceImpl(
             BindingFlags bindingAttr, Binder? binder, object?[]? args, CultureInfo? culture)
@@ -3895,9 +3900,9 @@ namespace System
                 Type[] argsType = new Type[args.Length];
                 for (int i = 0; i < args.Length; i++)
                 {
-                    if (args[i] != null)
+                    if (args[i] is object arg)
                     {
-                        argsType[i] = args[i]!.GetType(); // TODO-NULLABLE: Indexer nullability tracked (https://github.com/dotnet/roslyn/issues/34644)
+                        argsType[i] = arg.GetType();
                     }
                 }
 
@@ -4083,24 +4088,6 @@ namespace System
             bool[]? byrefModifiers, int culture, string[]? namedParameters);
 #endif // FEATURE_COMINTEROP
 
-#if FEATURE_COMINTEROP_UNMANAGED_ACTIVATION
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        internal static extern Type? GetTypeFromProgIDImpl(string progID, string? server, bool throwOnError);
-
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        internal static extern Type? GetTypeFromCLSIDImpl(Guid clsid, string? server, bool throwOnError);
-#else // FEATURE_COMINTEROP_UNMANAGED_ACTIVATION
-        internal static Type GetTypeFromProgIDImpl(string progID, string? server, bool throwOnError)
-        {
-            throw new NotImplementedException("CoreCLR_REMOVED -- Unmanaged activation removed");
-        }
-
-        internal static Type GetTypeFromCLSIDImpl(Guid clsid, string? server, bool throwOnError)
-        {
-            throw new NotImplementedException("CoreCLR_REMOVED -- Unmanaged activation removed");
-        }
-#endif // FEATURE_COMINTEROP_UNMANAGED_ACTIVATION
-
         #endregion
 
 #if FEATURE_COMINTEROP
@@ -4250,6 +4237,7 @@ namespace System
                             aArgs[i] = new UnknownWrapper(aArgs[i]);
                             break;
                         case DispatchWrapperType.Dispatch:
+                            Debug.Assert(OperatingSystem.IsWindows());
                             aArgs[i] = new DispatchWrapper(aArgs[i]);
                             break;
                         case DispatchWrapperType.Error:

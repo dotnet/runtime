@@ -473,7 +473,7 @@ namespace System.IO
 
                 this._context = ExecutionContext.Capture();
 
-                ParsedEvent ParseEvent(byte* nativeEventPath)
+                static ParsedEvent ParseEvent(byte* nativeEventPath)
                 {
                     int byteCount = 0;
                     Debug.Assert(nativeEventPath != null);
@@ -577,7 +577,7 @@ namespace System.IO
                 return _includeChildren || _fullDirectory.AsSpan().StartsWith(System.IO.Path.GetDirectoryName(eventPath), StringComparison.OrdinalIgnoreCase);
             }
 
-            private unsafe int? FindRenameChangePairedChange(
+            private int? FindRenameChangePairedChange(
                 int currentIndex,
                 Span<FSEventStreamEventFlags> flags, Span<FSEventStreamEventId> ids)
             {

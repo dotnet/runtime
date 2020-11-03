@@ -24,7 +24,7 @@ thread_local ThreadStressLog* StressLog::t_pCurrentThreadLog;
 #endif // !STRESS_LOG_READONLY
 
 /*********************************************************************************/
-#if defined(TARGET_X86)
+#if defined(HOST_X86)
 
 /* This is like QueryPerformanceCounter but a lot faster.  On machines with
    variable-speed CPUs (for power management), this is not accurate, but may
@@ -39,7 +39,7 @@ __forceinline __declspec(naked) unsigned __int64 getTimeStamp() {
     };
 }
 
-#else // TARGET_X86
+#else // HOST_X86
 unsigned __int64 getTimeStamp() {
     STATIC_CONTRACT_LEAF;
 
@@ -51,9 +51,9 @@ unsigned __int64 getTimeStamp() {
     return ret.QuadPart;
 }
 
-#endif // TARGET_X86
+#endif // HOST_X86
 
-#if defined(TARGET_X86) && !defined(HOST_UNIX)
+#if defined(HOST_X86) && !defined(HOST_UNIX)
 
 /*********************************************************************************/
 /* Get the the frequency cooresponding to 'getTimeStamp'.  For x86, this is the
@@ -100,7 +100,7 @@ unsigned __int64 getTickFrequency()
     return hz;
 }
 
-#else // TARGET_X86
+#else // HOST_X86
 
 
 /*********************************************************************************/
@@ -115,7 +115,7 @@ unsigned __int64 getTickFrequency()
     return ret.QuadPart;
 }
 
-#endif // TARGET_X86
+#endif // HOST_X86
 
 #ifdef STRESS_LOG
 

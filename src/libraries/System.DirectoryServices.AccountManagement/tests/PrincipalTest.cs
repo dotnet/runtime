@@ -15,7 +15,7 @@ namespace System.DirectoryServices.AccountManagement.Tests
 
         private void RefreshContext()
         {
-            // [SuppressMessage("Microsoft.Security", "CS002:SecretInNextLine", Justification="Unit test dummy credentials.")]
+            // [SuppressMessage("Microsoft.Security", "CS002:SecretInNextLine", Justification="Unit test password.")]
             string username = "Administrator", password = "Adrumble@6";
 
             string OU = "Tests";

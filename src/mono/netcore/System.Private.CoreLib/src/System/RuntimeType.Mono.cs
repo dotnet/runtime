@@ -403,7 +403,6 @@ namespace System
         private static bool FilterApplyType(
             Type type, BindingFlags bindingFlags, string? name, bool prefixLookup, string? ns)
         {
-            Debug.Assert((object)type != null);
             Debug.Assert(type is RuntimeType);
 
             bool isPublic = type.IsNestedPublic || type.IsPublic;
@@ -423,20 +422,20 @@ namespace System
             RuntimeMethodInfo method, BindingFlags bindingFlags, CallingConventions callConv, Type[]? argumentTypes)
         {
             // Optimization: Pre-Calculate the method binding flags to avoid casting.
-            return FilterApplyMethodBase(method, method.BindingFlags, bindingFlags, callConv, argumentTypes);
+            return FilterApplyMethodBase(method, bindingFlags, callConv, argumentTypes);
         }
 
         private static bool FilterApplyConstructorInfo(
             RuntimeConstructorInfo constructor, BindingFlags bindingFlags, CallingConventions callConv, Type[]? argumentTypes)
         {
             // Optimization: Pre-Calculate the method binding flags to avoid casting.
-            return FilterApplyMethodBase(constructor, constructor.BindingFlags, bindingFlags, callConv, argumentTypes);
+            return FilterApplyMethodBase(constructor, bindingFlags, callConv, argumentTypes);
         }
 
         // Used by GetMethodCandidates/GetConstructorCandidates, InvokeMember, and CreateInstanceImpl to perform the necessary filtering.
         // Should only be called by FilterApplyMethodInfo and FilterApplyConstructorInfo.
         private static bool FilterApplyMethodBase(
-            MethodBase methodBase, BindingFlags methodFlags, BindingFlags bindingFlags, CallingConventions callConv, Type[]? argumentTypes)
+            MethodBase methodBase, BindingFlags bindingFlags, CallingConventions callConv, Type[]? argumentTypes)
         {
             Debug.Assert(methodBase != null);
 
@@ -545,7 +544,7 @@ namespace System
                             for (int i = 0; i < parameterInfos.Length; i++)
                             {
                                 // a null argument type implies a null arg which is always a perfect match
-                                if ((object)argumentTypes[i] != null && !argumentTypes[i].MatchesParameterTypeExactly(parameterInfos[i]))
+                                if (argumentTypes[i] is not null && !argumentTypes[i].MatchesParameterTypeExactly(parameterInfos[i]))
                                     return false;
                             }
                         }
@@ -671,7 +670,7 @@ namespace System
             MemberListType listType;
             FilterHelper(bindingAttr, ref name, allowPrefixLookup, out prefixLookup, out ignoreCase, out listType);
 
-            RuntimeEventInfo[] cache = GetEvents_internal(name, bindingAttr, listType, this);
+            RuntimeEventInfo[] cache = GetEvents_internal(name, listType, this);
             bindingAttr ^= BindingFlags.DeclaredOnly;
 
             ListBuilder<EventInfo> candidates = new ListBuilder<EventInfo>(cache.Length);
@@ -701,8 +700,7 @@ namespace System
             for (int i = 0; i < cache.Length; i++)
             {
                 RuntimeFieldInfo fieldInfo = cache[i];
-                if ((bindingAttr & fieldInfo.BindingFlags) == fieldInfo.BindingFlags &&
-                    (!prefixLookup || FilterApplyPrefixLookup(fieldInfo, name, ignoreCase)))
+                if ((!prefixLookup || FilterApplyPrefixLookup(fieldInfo, name, ignoreCase)))
                 {
                     candidates.Add(fieldInfo);
                 }
@@ -898,7 +896,7 @@ namespace System
                 {
                     PropertyInfo firstCandidate = candidates[0];
 
-                    if ((object?)returnType != null && !returnType.IsEquivalentTo(firstCandidate.PropertyType))
+                    if (returnType is not null && !returnType.IsEquivalentTo(firstCandidate.PropertyType))
                         return null;
 
                     return firstCandidate;
@@ -929,7 +927,7 @@ namespace System
             MemberListType listType;
             FilterHelper(bindingAttr, ref name!, out ignoreCase, out listType);
 
-            RuntimeEventInfo[] cache = GetEvents_internal(name, bindingAttr, listType, this);
+            RuntimeEventInfo[] cache = GetEvents_internal(name, listType, this);
             EventInfo? match = null;
 
             bindingAttr ^= BindingFlags.DeclaredOnly;
@@ -967,7 +965,6 @@ namespace System
             for (int i = 0; i < cache.Length; i++)
             {
                 RuntimeFieldInfo fieldInfo = cache[i];
-                if ((bindingAttr & fieldInfo.BindingFlags) == fieldInfo.BindingFlags)
                 {
                     if (match != null)
                     {
@@ -1699,7 +1696,9 @@ namespace System
                 throw new NotSupportedException(Environment.GetResourceString("Acc_CreateVoid"));
         }
 
-        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2006:UnrecognizedReflectionPattern",
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2082:UnrecognizedReflectionPattern",
+            Justification = "Implementation detail of Activator that linker intrinsically recognizes")]
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2085:UnrecognizedReflectionPattern",
             Justification = "Implementation detail of Activator that linker intrinsically recognizes")]
         internal object? CreateInstanceImpl(
             BindingFlags bindingAttr, Binder? binder, object?[]? args, CultureInfo? culture)
@@ -1896,7 +1895,7 @@ namespace System
             return GetCorrespondingInflatedConstructor(fromNoninstanciated);
         }
 
-        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2006:UnrecognizedReflectionPattern",
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2085:UnrecognizedReflectionPattern",
             Justification = "We already have a FieldInfo so this will succeed")]
         internal override FieldInfo GetField(FieldInfo fromNoninstanciated)
         {
@@ -2439,7 +2438,7 @@ namespace System
             }
         }
 
-        private RuntimeEventInfo[] GetEvents_internal(string? name, BindingFlags bindingAttr, MemberListType listType, RuntimeType reflectedType)
+        private RuntimeEventInfo[] GetEvents_internal(string? name, MemberListType listType, RuntimeType reflectedType)
         {
             var refh = new RuntimeTypeHandle(reflectedType);
             using (var namePtr = new Mono.SafeStringMarshal(name))

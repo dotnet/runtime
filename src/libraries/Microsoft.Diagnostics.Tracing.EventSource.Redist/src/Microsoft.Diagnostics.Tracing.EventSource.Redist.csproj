@@ -5,10 +5,10 @@
     <TargetFrameworks>net461-Windows_NT</TargetFrameworks>
     <Nullable>enable</Nullable>
     <DocumentationFile>$(OutputPath)$(AssemblyName).xml</DocumentationFile>
+    <IncludePlatformAttributes>true</IncludePlatformAttributes>
   </PropertyGroup>
   <PropertyGroup>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <CheckForOverflowUnderflow>true</CheckForOverflowUnderflow>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="Microsoft\Diagnostics\Tracing\StubEnvironment.cs" />

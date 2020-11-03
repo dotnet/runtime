@@ -14,7 +14,7 @@
 #define UNICODE
 #include <palsuite.h>
 
-int __cdecl main(int argc, char *argv[])
+PALTEST(filemapping_memmgt_OpenFileMappingW_test2_paltest_openfilemappingw_test2, "filemapping_memmgt/OpenFileMappingW/test2/paltest_openfilemappingw_test2")
 {
     HANDLE  FileMappingHandle;
     HANDLE  OpenFileMappingHandle;

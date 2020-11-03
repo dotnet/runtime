@@ -11,8 +11,9 @@ public static class BasicTest
     {
         const int Pass = 100;
 
-        PromoteToTier1(Foo);
+        PromoteToTier1(Foo, () => FooWithLoop(2));
         Foo();
+        FooWithLoop(2);
 
         return Pass;
     }
@@ -28,21 +29,38 @@ public static class BasicTest
     }
 
     [MethodImpl(MethodImplOptions.NoInlining)]
-    private static void PromoteToTier1(Action action)
+    private static int FooWithLoop(int n)
     {
-        // Call the method once to register a call for call counting
-        action();
+        int sum = 0;
+        for (int i = 0; i < n; ++i)
+        {
+            sum += i;
+        }
+        return sum;
+    }
 
-        // Allow time for call counting to begin
-        Thread.Sleep(500);
-
-        // Call the method enough times to trigger tier 1 promotion
-        for (int i = 0; i < 100; i++)
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static void PromoteToTier1(params Action[] actions)
+    {
+        // Call the methods once to register a call each for call counting
+        foreach (Action action in actions)
         {
             action();
         }
 
-        // Allow time for the method to be jitted at tier 1
+        // Allow time for call counting to begin
+        Thread.Sleep(500);
+
+        // Call the methods enough times to trigger tier 1 promotion
+        for (int i = 0; i < 100; ++i)
+        {
+            foreach (Action action in actions)
+            {
+                action();
+            }
+        }
+
+        // Allow time for the methods to be jitted at tier 1
         Thread.Sleep(500);
     }
 }

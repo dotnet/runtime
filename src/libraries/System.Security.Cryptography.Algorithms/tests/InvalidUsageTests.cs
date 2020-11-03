@@ -9,6 +9,7 @@ namespace System.Security.Cryptography.Hashing.Algorithms.Tests
     public class InvalidUsageTests
     {
         [Fact]
+        [SkipOnMono("Not supported on Browser", TestPlatforms.Browser)]
         public void InvalidHashCoreArgumentsFromDerivedType()
         {
             using (var hmac = new DerivedHMACSHA1())

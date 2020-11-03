@@ -9,8 +9,14 @@ namespace System.Net.Http
 
         public bool IsEnabled() => false;
 
+        public void RequestStart(HttpRequestMessage request) { }
+
         public void RequestStop() { }
 
-        public void RequestAborted() { }
+        public void RequestFailed() { }
+
+        public void ResponseContentStart() { }
+
+        public void ResponseContentStop() { }
     }
 }

@@ -59,7 +59,7 @@ namespace System.Xml.Xsl.XsltOld
                         break;
                     }
 
-                    XPathNavigator nav = result as XPathNavigator;
+                    XPathNavigator? nav = result as XPathNavigator;
                     if (nav != null)
                     {
                         processor.PushActionFrame(CopyNodeSetAction.GetAction(), new XPathSingletonIterator(nav));
@@ -67,7 +67,7 @@ namespace System.Xml.Xsl.XsltOld
                         break;
                     }
 
-                    string value = XmlConvert.ToXPathString(result);
+                    string? value = XmlConvert.ToXPathString(result);
                     if (processor.TextEvent(value))
                     {
                         frame.Finished();

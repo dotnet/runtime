@@ -185,7 +185,7 @@ You can iterate on `System.Private.CoreLib` by running:
 build.cmd clr.corelib+clr.nativecorelib+libs.pretest -rc Release
 ```
 
-When this `System.Private.CoreLib` will be built in Release mode, then it will be crossgen'd and we will update the testhost to the latest version of corelib. 
+When this `System.Private.CoreLib` will be built in Release mode, then it will be crossgen'd and we will update the testhost to the latest version of corelib.
 
 You can use the same workflow for mono runtime by using `mono.corelib+libs.pretest` subsets.
 

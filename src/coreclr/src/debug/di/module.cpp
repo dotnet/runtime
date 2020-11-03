@@ -869,7 +869,7 @@ HRESULT CordbModule::InitPublicMetaDataFromFile(const WCHAR * pszFullPathName,
                                                 DWORD dwOpenFlags,
                                                 bool validateFileInfo)
 {
-#ifdef TARGET_UNIX
+#ifdef HOST_UNIX
     // UNIXTODO: Some intricate details of file mapping don't work on Linux as on Windows.
     // We have to revisit this and try to fix it for POSIX system.
     return E_FAIL;

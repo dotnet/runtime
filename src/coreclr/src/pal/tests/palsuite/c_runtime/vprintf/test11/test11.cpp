@@ -16,7 +16,7 @@
 #include <palsuite.h>
 #include "../vprintf.h"
 
-int __cdecl main(int argc, char *argv[])
+PALTEST(c_runtime_vprintf_test11_paltest_vprintf_test11, "c_runtime/vprintf/test11/paltest_vprintf_test11")
 {
     int neg = -42;
     int pos = 42;

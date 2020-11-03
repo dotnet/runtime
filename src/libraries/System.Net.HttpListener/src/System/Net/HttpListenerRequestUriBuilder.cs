@@ -25,7 +25,7 @@ namespace System.Net
         private readonly string _cookedUriQuery;
 
         // This field is used to build the final request Uri string from the Uri parts passed to the ctor.
-        private StringBuilder _requestUriString;
+        private StringBuilder? _requestUriString;
 
         // The raw path is parsed by looping through all characters from left to right. 'rawOctets'
         // is used to store consecutive percent encoded octets as actual byte values: e.g. for path /pa%C3%84th%2F/
@@ -37,11 +37,11 @@ namespace System.Net
         // we reach 't', the content of rawOctets { 0xC4 } will be fed into the ANSI encoding. The resulting
         // string '\u00C4' will be percent encoded into UTF-8 octets and appended to requestUriString. The final
         // path will be '/pa%C3%84th/', where '%C3%84' is the UTF-8 percent encoded character.
-        private List<byte> _rawOctets;
-        private string _rawPath;
+        private List<byte>? _rawOctets;
+        private string? _rawPath;
 
         // Holds the final request Uri.
-        private Uri _requestUri;
+        private Uri? _requestUri;
 
         private HttpListenerRequestUriBuilder(string rawUri, string cookedUriScheme, string cookedUriHost,
             string cookedUriPath, string cookedUriQuery)
@@ -76,7 +76,7 @@ namespace System.Net
                 BuildRequestUriUsingCookedPath();
             }
 
-            return _requestUri;
+            return _requestUri!;
         }
 
         private void BuildRequestUriUsingCookedPath()
@@ -174,6 +174,7 @@ namespace System.Net
 
             int index = 0;
             char current = '\0';
+            Debug.Assert(_rawPath != null);
             while (index < _rawPath.Length)
             {
                 current = _rawPath[index];
@@ -220,7 +221,8 @@ namespace System.Net
                         return ParsingResult.EncodingError;
                     }
                     // Append the current character to the result.
-                    _requestUriString.Append(current);
+                    Debug.Assert(_requestUriString != null);
+                    _requestUriString!.Append(current);
                     index++;
                 }
             }
@@ -247,11 +249,11 @@ namespace System.Net
                 return false;
             }
 
-            string unicodeString = null;
+            string? unicodeString = null;
             try
             {
                 unicodeString = char.ConvertFromUtf32(codePointValue);
-                AppendOctetsPercentEncoded(_requestUriString, s_utf8Encoding.GetBytes(unicodeString));
+                AppendOctetsPercentEncoded(_requestUriString!, s_utf8Encoding.GetBytes(unicodeString));
 
                 return true;
             }
@@ -278,19 +280,20 @@ namespace System.Net
                 return false;
             }
 
-            _rawOctets.Add(encodedValue);
+            Debug.Assert(_rawOctets != null);
+            _rawOctets!.Add(encodedValue);
 
             return true;
         }
 
         private bool EmptyDecodeAndAppendRawOctetsList(Encoding encoding)
         {
-            if (_rawOctets.Count == 0)
+            if (_rawOctets!.Count == 0)
             {
                 return true;
             }
 
-            string decodedString = null;
+            string? decodedString = null;
             try
             {
                 // If the encoding can get a string out of the byte array, this is a valid string in the
@@ -299,11 +302,11 @@ namespace System.Net
 
                 if (encoding == s_utf8Encoding)
                 {
-                    AppendOctetsPercentEncoded(_requestUriString, _rawOctets.ToArray());
+                    AppendOctetsPercentEncoded(_requestUriString!, _rawOctets.ToArray());
                 }
                 else
                 {
-                    AppendOctetsPercentEncoded(_requestUriString, s_utf8Encoding.GetBytes(decodedString));
+                    AppendOctetsPercentEncoded(_requestUriString!, s_utf8Encoding.GetBytes(decodedString));
                 }
 
                 _rawOctets.Clear();

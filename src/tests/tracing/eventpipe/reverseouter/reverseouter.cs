@@ -28,8 +28,7 @@ namespace Tracing.Tests.ReverseValidation
                 currentAssembly: Assembly.GetExecutingAssembly(),
                 environment: new Dictionary<string,string> 
                 {
-                    { Utils.DiagnosticsMonitorAddressEnvKey, serverName },
-                    { Utils.DiagnosticsMonitorPauseOnStartEnvKey, "0" }
+                    { Utils.DiagnosticPortsEnvKey, $"{serverName},nosuspend" }
                 },
                 duringExecution: async (int pid) =>
                 {

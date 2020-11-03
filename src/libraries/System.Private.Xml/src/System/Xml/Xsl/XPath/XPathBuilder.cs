@@ -1,7 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-#nullable enable
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
@@ -80,7 +79,7 @@ namespace System.Xml.Xsl.XPath
                 return result;
             }
             Debug.Assert(_inTheBuild, "StartBuild() wasn't called");
-            if (result.XmlType.MaybeMany && result.XmlType.IsNode && result.XmlType.IsNotRtf)
+            if (result.XmlType!.MaybeMany && result.XmlType.IsNode && result.XmlType.IsNotRtf)
             {
                 result = _f.DocOrderDistinct(result);
             }
@@ -147,7 +146,7 @@ namespace System.Xml.Xsl.XPath
         private QilNode CompareValues(XPathOperator op, QilNode left, QilNode right, XmlTypeCode compType)
         {
             Debug.Assert(compType == XmlTypeCode.Boolean || compType == XmlTypeCode.Double || compType == XmlTypeCode.String);
-            Debug.Assert(compType == XmlTypeCode.Boolean || left.XmlType.IsSingleton && right.XmlType.IsSingleton, "Both comparison operands must be singletons");
+            Debug.Assert(compType == XmlTypeCode.Boolean || left.XmlType!.IsSingleton && right.XmlType!.IsSingleton, "Both comparison operands must be singletons");
             left = _f.ConvertToType(compType, left);
             right = _f.ConvertToType(compType, right);
 
@@ -168,9 +167,9 @@ namespace System.Xml.Xsl.XPath
         private QilNode CompareNodeSetAndValue(XPathOperator op, QilNode nodeset, QilNode val, XmlTypeCode compType)
         {
             _f.CheckNodeSet(nodeset);
-            Debug.Assert(val.XmlType.IsSingleton);
+            Debug.Assert(val.XmlType!.IsSingleton);
             Debug.Assert(compType == XmlTypeCode.Boolean || compType == XmlTypeCode.Double || compType == XmlTypeCode.String, "I don't know what to do with RTF here");
-            if (compType == XmlTypeCode.Boolean || nodeset.XmlType.IsSingleton)
+            if (compType == XmlTypeCode.Boolean || nodeset.XmlType!.IsSingleton)
             {
                 return CompareValues(op, nodeset, val, compType);
             }
@@ -197,11 +196,11 @@ namespace System.Xml.Xsl.XPath
         {
             _f.CheckNodeSet(left);
             _f.CheckNodeSet(right);
-            if (right.XmlType.IsSingleton)
+            if (right.XmlType!.IsSingleton)
             {
                 return CompareNodeSetAndValue(op, /*nodeset:*/left, /*value:*/right, compType);
             }
-            if (left.XmlType.IsSingleton)
+            if (left.XmlType!.IsSingleton)
             {
                 op = InvertOp(op);
                 return CompareNodeSetAndValue(op, /*nodeset:*/right, /*value:*/left, compType);
@@ -214,8 +213,8 @@ namespace System.Xml.Xsl.XPath
         private QilNode EqualityOperator(XPathOperator op, QilNode left, QilNode right)
         {
             Debug.Assert(op == XPathOperator.Eq || op == XPathOperator.Ne);
-            XmlQueryType leftType = left.XmlType;
-            XmlQueryType rightType = right.XmlType;
+            XmlQueryType leftType = left.XmlType!;
+            XmlQueryType rightType = right.XmlType!;
 
             if (_f.IsAnyType(left) || _f.IsAnyType(right))
             {
@@ -247,8 +246,8 @@ namespace System.Xml.Xsl.XPath
         private QilNode RelationalOperator(XPathOperator op, QilNode left, QilNode right)
         {
             Debug.Assert(op == XPathOperator.Lt || op == XPathOperator.Le || op == XPathOperator.Gt || op == XPathOperator.Ge);
-            XmlQueryType leftType = left.XmlType;
-            XmlQueryType rightType = right.XmlType;
+            XmlQueryType leftType = left.XmlType!;
+            XmlQueryType rightType = right.XmlType!;
 
             if (_f.IsAnyType(left) || _f.IsAnyType(right))
             {
@@ -329,7 +328,7 @@ namespace System.Xml.Xsl.XPath
 
         private QilNode BuildAxisFilter(QilNode qilAxis, XPathAxis xpathAxis, XPathNodeType nodeType, string? name, string? nsUri)
         {
-            XmlNodeKindFlags original = qilAxis.XmlType.NodeKinds;
+            XmlNodeKindFlags original = qilAxis.XmlType!.NodeKinds;
             XmlNodeKindFlags required = AxisTypeMask(original, nodeType, xpathAxis);
 
             QilIterator itr;
@@ -344,7 +343,7 @@ namespace System.Xml.Xsl.XPath
             else
             {
                 qilAxis = _f.Filter(itr = _f.For(qilAxis), _f.IsType(itr, T.NodeChoice(required)));
-                qilAxis.XmlType = T.PrimeProduct(T.NodeChoice(required), qilAxis.XmlType.Cardinality);
+                qilAxis.XmlType = T.PrimeProduct(T.NodeChoice(required), qilAxis.XmlType!.Cardinality);
 
 
                 // Without code bellow IlGeneragion gives stack overflow exception for the following passage.
@@ -476,7 +475,7 @@ namespace System.Xml.Xsl.XPath
             // Prepocess predicate: if (predicate is number) then predicate := (position() == predicate)
             if (!f.IsAnyType(predicate))
             {
-                if (predicate.XmlType.TypeCode == XmlTypeCode.Double)
+                if (predicate.XmlType!.TypeCode == XmlTypeCode.Double)
                 {
                     predicate = f.Eq(env.GetPosition(), predicate);
                 }
@@ -613,7 +612,7 @@ namespace System.Xml.Xsl.XPath
         private QilNode LocalNameOfFirstNode(QilNode arg)
         {
             _f.CheckNodeSet(arg);
-            if (arg.XmlType.IsSingleton)
+            if (arg.XmlType!.IsSingleton)
             {
                 return _f.LocalNameOf(arg);
             }
@@ -627,7 +626,7 @@ namespace System.Xml.Xsl.XPath
         private QilNode NamespaceOfFirstNode(QilNode arg)
         {
             _f.CheckNodeSet(arg);
-            if (arg.XmlType.IsSingleton)
+            if (arg.XmlType!.IsSingleton)
             {
                 return _f.NamespaceUriOf(arg);
             }
@@ -659,7 +658,7 @@ namespace System.Xml.Xsl.XPath
         private QilNode NameOfFirstNode(QilNode arg)
         {
             _f.CheckNodeSet(arg);
-            if (arg.XmlType.IsSingleton)
+            if (arg.XmlType!.IsSingleton)
             {
                 return NameOf(arg);
             }
@@ -897,7 +896,7 @@ namespace System.Xml.Xsl.XPath
                     {
                         if (_environment != null)
                         {
-                            unknown = _environment.GetCurrent();
+                            unknown = _environment.GetCurrent()!;
                         }
                         else if (_current != null)
                         {

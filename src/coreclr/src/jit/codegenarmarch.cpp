@@ -39,7 +39,7 @@ void CodeGen::genStackPointerConstantAdjustment(ssize_t spDelta)
     // function that does a probe, which will in turn call this function.
     assert((target_size_t)(-spDelta) <= compiler->eeGetPageSize());
 
-    inst_RV_IV(INS_sub, REG_SPBASE, -spDelta, EA_PTRSIZE);
+    inst_RV_IV(INS_sub, REG_SPBASE, (target_ssize_t)-spDelta, EA_PTRSIZE);
 }
 
 //------------------------------------------------------------------------
@@ -207,7 +207,7 @@ void CodeGen::genCodeForTreeNode(GenTree* treeNode)
         case GT_AND:
             assert(varTypeIsIntegralOrI(treeNode));
 
-            __fallthrough;
+            FALLTHROUGH;
 
 #if !defined(TARGET_64BIT)
         case GT_ADD_LO:
@@ -3281,7 +3281,7 @@ void CodeGen::genCreateAndStoreGCInfo(unsigned codeSize,
         unsigned reversePInvokeFrameVarNumber = compiler->lvaReversePInvokeFrameVar;
         assert(reversePInvokeFrameVarNumber != BAD_VAR_NUM && reversePInvokeFrameVarNumber < compiler->lvaRefCount);
         LclVarDsc& reversePInvokeFrameVar = compiler->lvaTable[reversePInvokeFrameVarNumber];
-        gcInfoEncoder->SetReversePInvokeFrameSlot(reversePInvokeFrameVar.lvStkOffs);
+        gcInfoEncoder->SetReversePInvokeFrameSlot(reversePInvokeFrameVar.GetStackOffset());
     }
 
     gcInfoEncoder->Build();

@@ -31,12 +31,12 @@
 #include <palsuite.h>
 
 
-static HANDLE hEvent = NULL;
-static BOOL bAPCExecuted = FALSE;
+static HANDLE hEvent_QueueUserAPC_test5 = NULL;
+static BOOL bAPCExecuted_QueueUserAPC_test5 = FALSE;
 
-VOID PALAPI APCFunc( ULONG_PTR dwParam )
+VOID PALAPI APCFunc_QueueUserAPC_test5( ULONG_PTR dwParam )
 {
-    bAPCExecuted = TRUE;
+    bAPCExecuted_QueueUserAPC_test5 = TRUE;
 }
 
 /**
@@ -44,12 +44,12 @@ VOID PALAPI APCFunc( ULONG_PTR dwParam )
  *
  * Dummy thread function for APC queuing.
  */
-DWORD PALAPI ThreadFunc( LPVOID param )
+DWORD PALAPI ThreadFunc_QueueUserAPC_test5( LPVOID param )
 {
     DWORD ret = 0;
 
     /* alertable wait until the global event is signalled */
-    ret = WaitForSingleObject( hEvent, INFINITE );
+    ret = WaitForSingleObject( hEvent_QueueUserAPC_test5, INFINITE );
     if( ret != WAIT_OBJECT_0 )
     {
         Fail( "ERROR:WaitForSingleObject() returned %lu, "
@@ -61,7 +61,7 @@ DWORD PALAPI ThreadFunc( LPVOID param )
 }
 
 
-int __cdecl main( int argc, char **argv )
+PALTEST(threading_QueueUserAPC_test5_paltest_queueuserapc_test5, "threading/QueueUserAPC/test5/paltest_queueuserapc_test5")
 
 {
     /* local variables */
@@ -77,8 +77,8 @@ int __cdecl main( int argc, char **argv )
     }
 
     /* create an event for the other thread to wait on */
-    hEvent = CreateEvent( NULL, TRUE, FALSE, NULL );
-    if( hEvent == NULL )
+    hEvent_QueueUserAPC_test5 = CreateEvent( NULL, TRUE, FALSE, NULL );
+    if( hEvent_QueueUserAPC_test5 == NULL )
     {
         Fail( "ERROR:%lu:CreateEvent() call failed\n", GetLastError() );
     }
@@ -86,7 +86,7 @@ int __cdecl main( int argc, char **argv )
     /* run another dummy thread to cause notification of the library       */
     hThread = CreateThread(    NULL,             /* no security attributes */
                                0,                /* use default stack size */
-      (LPTHREAD_START_ROUTINE) ThreadFunc,       /* thread function        */
+      (LPTHREAD_START_ROUTINE) ThreadFunc_QueueUserAPC_test5,       /* thread function        */
                       (LPVOID) NULL,             /* pass thread index as   */
                                                  /* function argument      */
                                CREATE_SUSPENDED, /* create suspended       */
@@ -97,7 +97,7 @@ int __cdecl main( int argc, char **argv )
     {
         /* error creating thread */
         Trace( "ERROR:%lu:CreateThread call failed\n", GetLastError() );
-        if( ! CloseHandle( hEvent ) )
+        if( ! CloseHandle( hEvent_QueueUserAPC_test5 ) )
         {
             Trace( "ERROR:%lu:CloseHandle() call failed\n", GetLastError() );
         }
@@ -105,7 +105,7 @@ int __cdecl main( int argc, char **argv )
     }
 
     /* queue our APC on the suspended thread */
-    ret = QueueUserAPC( APCFunc, hThread, 0 );
+    ret = QueueUserAPC( APCFunc_QueueUserAPC_test5, hThread, 0 );
     if( ret == 0 )
     {
         Fail( "ERROR:%lu:QueueUserAPC call failed\n", GetLastError() );
@@ -122,7 +122,7 @@ int __cdecl main( int argc, char **argv )
     }
 
     /* verify that the APC function was not executed */
-    if( bAPCExecuted == TRUE )
+    if( bAPCExecuted_QueueUserAPC_test5 == TRUE )
     {
         Trace( "ERROR:APC function was executed for a suspended thread\n" );
         goto cleanup;
@@ -144,7 +144,7 @@ int __cdecl main( int argc, char **argv )
     }
 
     /* check that the APC function was actually executed */
-    if( bAPCExecuted == FALSE )
+    if( bAPCExecuted_QueueUserAPC_test5 == FALSE )
     {
         Trace( "ERROR:APC function was not executed\n" );
         goto cleanup;
@@ -155,14 +155,14 @@ int __cdecl main( int argc, char **argv )
 
 cleanup:
     /* signal the event so the other thread will exit */
-    if( ! SetEvent( hEvent ) )
+    if( ! SetEvent( hEvent_QueueUserAPC_test5 ) )
     {
         Trace( "ERROR:%lu:SetEvent() call failed\n", GetLastError() );
         bResult = FAIL;
     }
 
     /* close the global event handle */
-    if( ! CloseHandle( hEvent ) )
+    if( ! CloseHandle( hEvent_QueueUserAPC_test5 ) )
     {
         Trace( "ERROR:%lu:CloseHandle() call failed\n", GetLastError() );
         bResult = FAIL;

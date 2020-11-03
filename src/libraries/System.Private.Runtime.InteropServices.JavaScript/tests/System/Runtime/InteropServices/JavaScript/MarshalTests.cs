@@ -7,7 +7,6 @@ using Xunit;
 
 namespace System.Runtime.InteropServices.JavaScript.Tests
 {
-    [ActiveIssue("https://github.com/dotnet/runtime/issues/40112")]
     public static class MarshalTests
     {
         [Fact]
@@ -323,6 +322,7 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/40112")]
         public static void MarshalTypedArray()
         {
             Runtime.InvokeJS(@"
@@ -454,6 +454,7 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/40112")]
         public static void MarshalTypedArrayByte()
         {
             Runtime.InvokeJS(@"
@@ -557,6 +558,7 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/40112")]
         public static void TestFunctionApply()
         {
             HelperMarshal._minValue = 0;

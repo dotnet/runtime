@@ -148,7 +148,7 @@ namespace System
 
         [NonVersionable]
         public static unsafe IntPtr operator +(IntPtr pointer, int offset) =>
-            new IntPtr((nint)pointer._value + offset);
+            (nint)pointer._value + offset;
 
         [NonVersionable]
         public static IntPtr Subtract(IntPtr pointer, int offset) =>
@@ -156,7 +156,7 @@ namespace System
 
         [NonVersionable]
         public static unsafe IntPtr operator -(IntPtr pointer, int offset) =>
-            new IntPtr((nint)pointer._value - offset);
+            (nint)pointer._value - offset;
 
         public static int Size
         {

@@ -266,11 +266,16 @@ namespace System.Runtime.CompilerServices
             if (i > 1)
             {
                 T[] rules = Rules!;
-                T rule = rules[i];
+                // Synchronization of AddRule is omitted for performance. Concurrent invocations of AddRule
+                // may cause Rules to revert back to an older (smaller) version, making i out of bounds.
+                if (i < rules.Length)
+                {
+                    T rule = rules[i];
 
-                rules[i] = rules[i - 1];
-                rules[i - 1] = rules[i - 2];
-                rules[i - 2] = rule;
+                    rules[i] = rules[i - 1];
+                    rules[i - 1] = rules[i - 2];
+                    rules[i - 2] = rule;
+                }
             }
         }
 

@@ -1,4 +1,3 @@
-// -*- indent-tabs-mode: nil -*-
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
@@ -25,11 +24,12 @@ public class PInvokeTableGenerator : Task
 
     public override bool Execute()
     {
+        Log.LogMessage(MessageImportance.Normal, $"Generating pinvoke table to '{OutputPath}'.");
         GenPInvokeTable(Modules!.Select(item => item.ItemSpec).ToArray(), Assemblies!.Select(item => item.ItemSpec).ToArray());
         return true;
     }
 
-    private void GenPInvokeTable(string[] pinvokeModules, string[] assemblies)
+    public void GenPInvokeTable(string[] pinvokeModules, string[] assemblies)
     {
         var modules = new Dictionary<string, string>();
         foreach (var module in pinvokeModules)
@@ -46,8 +46,6 @@ public class PInvokeTableGenerator : Task
             foreach (var type in a.GetTypes())
                 CollectPInvokes(pinvokes, callbacks, type);
         }
-
-        Log.LogMessage(MessageImportance.Normal, $"Generating pinvoke table to '{OutputPath}'.");
 
         using (var w = File.CreateText(OutputPath!))
         {
@@ -155,21 +153,27 @@ public class PInvokeTableGenerator : Task
     {
         var sb = new StringBuilder();
         var method = pinvoke.Method;
+        if (method.Name == "EnumCalendarInfo") {
+            // FIXME: System.Reflection.MetadataLoadContext can't decode function pointer types
+            // https://github.com/dotnet/runtime/issues/43791
+            sb.Append($"int {pinvoke.EntryPoint} (int, int, int, int, int);");
+            return sb.ToString();
+        }
         sb.Append(MapType(method.ReturnType));
         sb.Append($" {pinvoke.EntryPoint} (");
         int pindex = 0;
         var pars = method.GetParameters();
         foreach (var p in pars) {
             if (pindex > 0)
-                sb.Append(",");
+                sb.Append(',');
             sb.Append(MapType(pars[pindex].ParameterType));
-            pindex ++;
+            pindex++;
         }
         sb.Append(");");
         return sb.ToString();
     }
 
-    void EmitNativeToInterp(StreamWriter w, List<PInvokeCallback> callbacks)
+    private void EmitNativeToInterp(StreamWriter w, List<PInvokeCallback> callbacks)
     {
         // Generate native->interp entry functions
         // These are called by native code, so they need to obtain
@@ -209,16 +213,16 @@ public class PInvokeTableGenerator : Task
             int pindex = 0;
             if (method.ReturnType.Name != "Void") {
                 sb.Append("int");
-                pindex ++;
+                pindex++;
             }
             foreach (var p in method.GetParameters()) {
                 if (pindex > 0)
-                    sb.Append(",");
+                    sb.Append(',');
                 sb.Append("int");
-                pindex ++;
+                pindex++;
             }
             if (pindex > 0)
-                sb.Append(",");
+                sb.Append(',');
             // Extra arg
             sb.Append("int");
             sb.Append(");\n");
@@ -241,10 +245,10 @@ public class PInvokeTableGenerator : Task
             pindex = 0;
             foreach (var p in method.GetParameters()) {
                 if (pindex > 0)
-                    sb.Append(",");
+                    sb.Append(',');
                 sb.Append(MapType(method.GetParameters()[pindex].ParameterType));
                 sb.Append(" arg" + pindex);
-                pindex ++;
+                pindex++;
             }
             sb.Append(") { \n");
             if (!is_void)
@@ -253,15 +257,15 @@ public class PInvokeTableGenerator : Task
             pindex = 0;
             if (!is_void) {
                 sb.Append("&res");
-                pindex ++;
+                pindex++;
             }
             int aindex = 0;
             foreach (var p in method.GetParameters()) {
                 if (pindex > 0)
                     sb.Append(", ");
                 sb.Append("&arg" + aindex);
-                pindex ++;
-                aindex ++;
+                pindex++;
+                aindex++;
             }
             if (pindex > 0)
                 sb.Append(", ");
@@ -269,9 +273,9 @@ public class PInvokeTableGenerator : Task
             sb.Append(");\n");
             if (!is_void)
                 sb.Append("return res;\n");
-            sb.Append("}");
+            sb.Append('}');
             w.WriteLine(sb);
-            cb_index ++;
+            cb_index++;
         }
 
         // Array of function pointers
@@ -295,7 +299,7 @@ public class PInvokeTableGenerator : Task
         w.WriteLine ("};");
     }
 
-    static bool IsBlittable (Type type)
+    private static bool IsBlittable (Type type)
     {
         if (type.IsPrimitive || type.IsByRef || type.IsPointer)
             return true;
@@ -303,14 +307,14 @@ public class PInvokeTableGenerator : Task
             return false;
     }
 
-    static void Error (string msg)
+    private static void Error (string msg)
     {
         // FIXME:
         throw new Exception(msg);
     }
 }
 
-class PInvoke
+internal class PInvoke
 {
     public PInvoke(string entryPoint, string module, MethodInfo method)
     {
@@ -324,7 +328,7 @@ class PInvoke
     public MethodInfo Method;
 }
 
-class PInvokeCallback
+internal class PInvokeCallback
 {
     public PInvokeCallback(MethodInfo method)
     {

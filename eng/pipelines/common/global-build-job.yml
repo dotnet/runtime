@@ -6,10 +6,13 @@ parameters:
   osGroup: ''
   osSubgroup: ''
   container: ''
+  crossBuild: false
   crossrootfsDir: ''
   variables: []
+  targetRid: ''
   timeoutInMinutes: ''
   pool: ''
+  platform: ''
   condition: true
   isOfficialBuild: false
   runtimeFlavor: 'coreclr'
@@ -26,15 +29,9 @@ jobs:
     pool: ${{ parameters.pool }}
     container: ${{ parameters.container }}
     condition: and(succeeded(), ${{ parameters.condition }})
+    timeoutInMinutes: ${{ parameters.timeoutInMinutes }}
     workspace:
       clean: all
-
-    # macOS hosted pool machines are slower so we need to give a greater timeout for global-build
-    # which builds multiple subsets.
-    ${{ if and(contains(parameters.pool.vmImage, 'macOS'), eq(parameters.timeoutInMinutes, '')) }}:
-      timeoutInMinutes: 120
-    ${{ if or(not(contains(parameters.pool.vmImage, 'macOS')), ne(parameters.timeoutInMinutes, '')) }}:
-      timeoutInMinutes: ${{ parameters.timeoutInMinutes }}
 
     variables:
       - name: _osParameter
@@ -46,7 +43,7 @@ jobs:
 
       # Do not rename as it clashes with MSBuild property in libraries/build-native.proj
       - name: _crossBuildPropertyArg
-        value: /p:CrossBuild=${{ ne(parameters.crossrootfsDir, '') }}
+        value: /p:CrossBuild=${{ parameters.crossBuild }}
 
       - name: _cxx11Parameter
         ${{ if and(eq(parameters.osGroup, 'Linux'), eq(parameters.archType, 'arm64')) }}:
@@ -60,6 +57,10 @@ jobs:
         ${{ if ne(parameters.isOfficialBuild, true) }}:
           value: ''
 
+      - ${{ if eq(parameters.osGroup, 'Android') }}:
+        - name: ANDROID_OPENSSL_AAR
+          value: /tmp/openssl-android
+
       - ${{ each variable in parameters.variables }}:
         - ${{ variable }}
 
@@ -69,8 +70,8 @@ jobs:
     - ${{ if eq(parameters.isOfficialBuild, true) }}:
       - template: /eng/pipelines/common/restore-internal-tools.yml
 
-    - ${{ if in(parameters.osGroup, 'OSX', 'iOS', 'tvOS') }}:
-      - script: $(Build.SourcesDirectory)/eng/install-native-dependencies.sh ${{ parameters.osGroup }}
+    - ${{ if in(parameters.osGroup, 'OSX', 'iOS', 'tvOS', 'Android') }}:
+      - script: $(Build.SourcesDirectory)/eng/install-native-dependencies.sh ${{ parameters.osGroup }} ${{ parameters.archType }} azDO
         displayName: Install Build Dependencies
 
       - script: |
@@ -82,7 +83,7 @@ jobs:
     - script: $(Build.SourcesDirectory)$(dir)build$(scriptExt) -ci -arch ${{ parameters.archType }} $(_osParameter) ${{ parameters.buildArgs }} $(_officialBuildParameter) $(_crossBuildPropertyArg) $(_cxx11Parameter)
       displayName: Build product
 
-    - ${{ if in(parameters.osGroup, 'OSX', 'iOS','tvOS') }}: 
+    - ${{ if in(parameters.osGroup, 'OSX', 'iOS', 'tvOS', 'Android') }}:
       - script: |
           du -sh $(Build.SourcesDirectory)/*
           df -h
@@ -98,6 +99,9 @@ jobs:
           buildConfig: ${{ parameters.buildConfig }}
           runtimeFlavor: ${{ parameters.runtimeFlavor }}
           helixQueues: ${{ parameters.helixQueues }}
+          targetRid: ${{ parameters.targetRid }}
+          nameSuffix: ${{ parameters.nameSuffix }}
+          platform: ${{ parameters.platform }}
           ${{ insert }}: ${{ parameters.extraStepsParameters }}
 
     - task: PublishBuildArtifacts@1

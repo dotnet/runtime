@@ -165,7 +165,7 @@ internal static partial class Interop
 
         // schannel.h
         [StructLayout(LayoutKind.Sequential)]
-        internal unsafe struct SecPkgContext_IssuerListInfoEx
+        internal struct SecPkgContext_IssuerListInfoEx
         {
             public IntPtr aIssuers;
             public uint cIssuers;
@@ -278,8 +278,8 @@ internal static partial class Interop
             public UNICODE_STRING* strCngAlgId;         // CNG algorithm identifier.
             public int cChainingModes;                  // Set to 0 if CNG algorithm does not have a chaining mode.
             public UNICODE_STRING* rgstrChainingModes;  // Set to NULL if CNG algorithm does not have a chaining mode.
-            public int dwMinBitLength;                  // Blacklist key sizes less than this. Set to 0 if not defined or CNG algorithm implies bit length.
-            public int dwMaxBitLength;                  // Blacklist key sizes greater than this. Set to 0 if not defined or CNG algorithm implies bit length.
+            public int dwMinBitLength;                  // Minimum bit length for the specified CNG algorithm. Set to 0 if not defined or CNG algorithm implies bit length.
+            public int dwMaxBitLength;                  // Maximum bit length for the specified CNG algorithm. Set to 0 if not defined or CNG algorithm implies bit length.
 
             public enum TlsAlgorithmUsage
             {
@@ -292,13 +292,13 @@ internal static partial class Interop
         }
 
         [StructLayout(LayoutKind.Sequential)]
-        internal unsafe struct SecBuffer
+        internal struct SecBuffer
         {
             public int cbBuffer;
             public SecurityBufferType BufferType;
             public IntPtr pvBuffer;
 
-            public static readonly int Size = sizeof(SecBuffer);
+            public static readonly unsafe int Size = sizeof(SecBuffer);
         }
 
         [StructLayout(LayoutKind.Sequential)]
@@ -371,7 +371,7 @@ internal static partial class Interop
             [In] void* buffer);
 
         [DllImport(Interop.Libraries.SspiCli, ExactSpelling = true, SetLastError = true)]
-        internal static extern unsafe int SetContextAttributesW(
+        internal static extern int SetContextAttributesW(
             ref CredHandle contextHandle,
             [In] ContextAttribute attribute,
             [In] byte[] buffer,
@@ -464,11 +464,11 @@ internal static partial class Interop
           );
 
         [DllImport(Interop.Libraries.SspiCli, ExactSpelling = true, SetLastError = true)]
-        internal static extern unsafe SECURITY_STATUS SspiFreeAuthIdentity(
+        internal static extern SECURITY_STATUS SspiFreeAuthIdentity(
             [In] IntPtr authData);
 
         [DllImport(Interop.Libraries.SspiCli, ExactSpelling = true, CharSet = CharSet.Unicode, SetLastError = true)]
-        internal static extern unsafe SECURITY_STATUS SspiEncodeStringsAsAuthIdentity(
+        internal static extern SECURITY_STATUS SspiEncodeStringsAsAuthIdentity(
             [In] string userName,
             [In] string domainName,
             [In] string password,

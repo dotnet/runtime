@@ -1,7 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-#nullable enable
 using System;
 using System.Diagnostics;
 using System.Xml;
@@ -59,7 +58,7 @@ namespace MS.Internal.Xml.XPath
         {
             if (_arg == null)
             {
-                Debug.Assert(nodeIterator.Current != null);
+                Debug.Assert(nodeIterator!.Current != null);
                 return XmlConvert.ToXPathDouble(nodeIterator.Current.Value);
             }
             object argVal = _arg.Evaluate(nodeIterator);

@@ -1,4 +1,212 @@
 <?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="12.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
-  <Import Project="../coreclr/tests/src/Directory.Build.props" />
+  <Import Project="$(MSBuildThisFileDirectory)\Common\dir.sdkbuild.props" Condition="'$(UsingMicrosoftNETSdk)' == 'true'"  />
+  <Import Project="$(MSBuildThisFileDirectory)\Common\dir.common.props" Condition="'$(UsingMicrosoftNETSdk)' != 'true'"  />
+
+  <PropertyGroup>
+    <RunningOnUnix Condition="('$(RunningOnUnix)' == '') And ('$(MSBuildRuntimeType)' == 'Core') And ('$(OS)'!='Windows_NT')">true</RunningOnUnix>
+  </PropertyGroup>
+
+  <!-- Common repo directories -->
+  <PropertyGroup>
+    <TestProjectDir>$(MSBuildThisFileDirectory)</TestProjectDir>
+    <TestSourceDir>$([MSBuild]::NormalizePath('$(RepoRoot)/src/tests/'))</TestSourceDir>
+  </PropertyGroup>
+
+  <PropertyGroup>
+    <AltJitArch>$(__AltJitArch)</AltJitArch>
+  </PropertyGroup>
+
+  <!-- Output paths -->
+  <PropertyGroup>
+    <!-- When not using the SDK, we want to set this property here so
+         that BuildVersionFile gets the correct value. -->
+    <BaseIntermediateOutputPath Condition="'$(BaseIntermediateOutputPath)' == '' Or '$(UsingMicrosoftNETSdk)' != 'true'">$(ArtifactsDir)obj\</BaseIntermediateOutputPath>
+    <IntermediateOutputPath Condition="'$(IntermediateOutputPath)' == ''">$(BaseIntermediateOutputPath)\$(TargetOS).$(TargetArchitecture).$(Configuration)</IntermediateOutputPath>
+    <OutputPath Condition="'$(OutputPath)' == ''">$(BaseIntermediateOutputPath)\coreclr\$(TargetOS).$(TargetArchitecture).$(Configuration)</OutputPath>
+  </PropertyGroup>
+
+    <!-- Targeting Package paths -->
+  <PropertyGroup>
+    <TargetingPackPath Condition="'$(BaseTargetingPackPath)' == ''">$(ArtifactsDir)TargetingPack\</TargetingPackPath>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(BuildAllProjects)'=='true'">
+    <!-- When we do a traversal build we get all packages up front, don't restore them again -->
+    <RestorePackages>false</RestorePackages>
+  </PropertyGroup>
+
+  <!-- Which tests shall we build? Default: Priority 0 tests.
+    At the command-line, the user can specify /p:CLRTestPriorityToBuild=666 (for example), and
+    all tests with CLRTestPriority 666,..., 1 AND 0 will build.
+
+    Consequently, specifying CLRTestPriorityToBuild=1 will build all tests with CLRTestPriority 1 and 0.
+
+    CLRTestPriority = 0 will build only priority 0 cases.
+
+    In other words, the CLRTestPriority cases of 0 are *essential* testcases. The higher the value,
+    the less priority we give them.
+   -->
+  <PropertyGroup>
+    <CLRTestPriorityToBuild>0</CLRTestPriorityToBuild>
+  </PropertyGroup>
+
+  <!-- Which tests can we build? Default: Build managed tests for this target.
+    At the command-line, the user can specify:
+    +  /p:CLRTestBuildAllTargets=allTargets    Build managed tests for all target platforms.
+   -->
+  <PropertyGroup>
+    <CLRTestBuildAllTargets></CLRTestBuildAllTargets>
+  </PropertyGroup>
+
+  <!-- Language settings -->
+  <PropertyGroup>
+    <RunAnalyzers>false</RunAnalyzers>
+  </PropertyGroup>
+
+  <!-- Setup Default symbol and optimization for Configuration -->
+  <PropertyGroup Condition="'$(Configuration)' == 'Debug'">
+    <DebugSymbols Condition="'$(DebugSymbols)' == ''">true</DebugSymbols>
+    <Optimize Condition="'$(Optimize)' == ''">false</Optimize>
+    <DebugType Condition="'$(DebugType)' == ''">full</DebugType>
+    <DefineConstants>$(DefineConstants);DEBUG;TRACE;XUNIT_PERF</DefineConstants>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)' == 'Release'">
+    <DebugSymbols Condition="'$(DebugSymbols)' == ''">true</DebugSymbols>
+    <Optimize Condition="'$(Optimize)' == ''">true</Optimize>
+    <DebugType Condition="'$(DebugType)' == ''">pdbonly</DebugType>
+    <DefineConstants>$(DefineConstants);TRACE;XUNIT_PERF</DefineConstants>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)' == 'Checked'">
+    <DebugSymbols Condition="'$(DebugSymbols)' == ''">true</DebugSymbols>
+    <Optimize Condition="'$(Optimize)' == ''">true</Optimize>
+    <DebugType Condition="'$(DebugType)' == ''">full</DebugType>
+    <DefineConstants>$(DefineConstants);DEBUG;TRACE;XUNIT_PERF</DefineConstants>
+  </PropertyGroup>
+
+  <!-- Setup the default output and intermediate paths -->
+  <PropertyGroup>
+    <SkipXunitDependencyCopying>true</SkipXunitDependencyCopying>
+  </PropertyGroup>
+
+  <!-- Disable some standard properties for building our projects -->
+  <PropertyGroup>
+    <NoExplicitReferenceToStdLib>true</NoExplicitReferenceToStdLib>
+    <AddAdditionalExplicitAssemblyReferences>false</AddAdditionalExplicitAssemblyReferences>
+    <GenerateTargetFrameworkAttribute>false</GenerateTargetFrameworkAttribute>
+    <!-- Disable some C# warnings for the tests. -->
+    <NoWarn>78,162,164,168,169,219,251,252,414,429,618,642,649,652,659,675,1691,1717,1718,3001,3002,3003,3005,3008,SYSLIB0004,SYSLIB0011,SYSLIB0012</NoWarn>
+    <RunAnalyzers>false</RunAnalyzers>
+    <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
+    <SkipSigning Condition="'$(CrossGen)' == 'true'">true</SkipSigning>
+    <AssemblyKey>Test</AssemblyKey>
+    <GenerateDependencyFile>false</GenerateDependencyFile>
+    <GenerateRuntimeConfigurationFiles>false</GenerateRuntimeConfigurationFiles>
+    <CopyLocalLockFileAssemblies>false</CopyLocalLockFileAssemblies>
+    <UseAppHost>false</UseAppHost>
+  </PropertyGroup>
+
+  <!-- Setup properties per TargetOS -->
+  <Choose>
+    <When Condition="'$(TargetOS)'=='AnyOS'">
+      <PropertyGroup>
+      </PropertyGroup>
+    </When>
+    <When Condition="'$(TargetOS)'=='Windows_NT'">
+      <PropertyGroup>
+        <!-- Since cross compilation of test builds on Windows is possible, the
+             TargetsWindows property may already be set. Only set the property if
+             it is not already defined -->
+        <TargetsWindows Condition="'$(TargetsWindows)' == ''" >true</TargetsWindows>
+        <TestNugetRuntimeId>win-$(TargetArchitecture)</TestNugetRuntimeId>
+      </PropertyGroup>
+    </When>
+    <When Condition="'$(TargetOS)'=='Linux'">
+      <PropertyGroup>
+        <TargetsUnix>true</TargetsUnix>
+        <TargetsLinux>true</TargetsLinux>
+        <TestNugetRuntimeId>ubuntu.14.04-$(TargetArchitecture)</TestNugetRuntimeId>
+      </PropertyGroup>
+    </When>
+    <When Condition="'$(TargetOS)'=='OSX'">
+      <PropertyGroup>
+        <TargetsUnix>true</TargetsUnix>
+        <TargetsOSX>true</TargetsOSX>
+        <TestNugetRuntimeId>osx.10.12-$(TargetArchitecture)</TestNugetRuntimeId>
+      </PropertyGroup>
+    </When>
+    <When Condition="'$(TargetOS)'=='FreeBSD'">
+      <PropertyGroup>
+        <TargetsUnix>true</TargetsUnix>
+        <TargetsFreeBSD>true</TargetsFreeBSD>
+        <TestNugetRuntimeId>ubuntu.14.04-$(TargetArchitecture)</TestNugetRuntimeId>
+      </PropertyGroup>
+    </When>
+    <When Condition="'$(TargetOS)'=='NetBSD'">
+      <PropertyGroup>
+        <TargetsUnix>true</TargetsUnix>
+        <TargetsNetBSD>true</TargetsNetBSD>
+        <TestNugetRuntimeId>ubuntu.14.04-$(TargetArchitecture)</TestNugetRuntimeId>
+      </PropertyGroup>
+    </When>
+    <When Condition="'$(TargetOS)'=='illumos'">
+      <PropertyGroup>
+        <TargetsUnix>true</TargetsUnix>
+        <TargetsIllumos>true</TargetsIllumos>
+        <TestNugetRuntimeId>ubuntu.14.04-$(TargetArchitecture)</TestNugetRuntimeId>
+      </PropertyGroup>
+    </When>
+    <When Condition="'$(TargetOS)'=='Solaris'">
+      <PropertyGroup>
+        <TargetsUnix>true</TargetsUnix>
+        <TargetsSolaris>true</TargetsSolaris>
+        <TestNugetRuntimeId>ubuntu.14.04-$(TargetArchitecture)</TestNugetRuntimeId>
+      </PropertyGroup>
+    </When>
+  </Choose>
+
+  <!-- Set arch specific properties -->
+  <PropertyGroup>
+    <TargetBits>32</TargetBits>
+    <TargetBits Condition="'$(TargetArchitecture)'=='x64'">64</TargetBits>
+    <TargetBits Condition="'$(TargetArchitecture)'=='arm64'">64</TargetBits>
+  </PropertyGroup>
+
+  <PropertyGroup>
+    <TargetRid>$(__RuntimeId)</TargetRid>
+    <TargetRid Condition="'$(TargetRid)' == ''">$(TestNugetRuntimeId)</TargetRid>
+  </PropertyGroup>
+
+  <!-- The IL SDK adds a packagereference to the native ilasm package,
+       but does not detect musl or rhel, so we set the RID
+       ourselves. If we passed in a proper host RID from the build
+       scripts, we could also use that instead of relying on the IL
+       SDK RID detection. -->
+  <PropertyGroup>
+    <MicrosoftNetCoreIlasmPackageRuntimeId Condition=" '$(TargetRid)' == 'linux-musl-x64' ">$(TargetRid)</MicrosoftNetCoreIlasmPackageRuntimeId>
+    <MicrosoftNetCoreIlasmPackageRuntimeId Condition=" '$(TargetRid)' == 'rhel.6-x64' ">$(TargetRid)</MicrosoftNetCoreIlasmPackageRuntimeId>
+  </PropertyGroup>
+
+  <PropertyGroup>
+    <TargetsUnknownUnix Condition="'$(TargetsUnix)' == 'true' AND '$(TargetOS)' != 'FreeBSD' AND '$(TargetOS)' != 'Linux' AND '$(TargetOS)' != 'NetBSD' AND '$(TargetOS)' != 'OSX' AND '$(TargetOS)' != 'illumos' AND '$(TargetOS)' != 'Solaris'">true</TargetsUnknownUnix>
+    <Language Condition="'$(Language)' == '' and  '$(MSBuildProjectExtension)' == '.csproj'">C#</Language>
+    <Language Condition="'$(Language)' == '' and  '$(MSBuildProjectExtension)' == '.fsproj'">F#</Language>
+    <Language Condition="'$(Language)' == '' and  '$(MSBuildProjectExtension)' == '.ilproj'">IL</Language>
+  </PropertyGroup>
+
+  <!-- Don't reference the mscorlib facade -->
+  <PropertyGroup>
+    <ExcludeMscorlibFacade>true</ExcludeMscorlibFacade>
+  </PropertyGroup>
+
+  <!-- Set default ZapRequire level (used only when CrossGen is enabled) -->
+  <PropertyGroup>
+    <ZapRequire Condition="'$(ZapRequire)' == ''">2</ZapRequire>
+  </PropertyGroup>
+
+  <PropertyGroup>
+    <!-- Specify the target framework of the common test dependency project.json. -->
+    <NuGetTargetMoniker>$(NetCoreAppCurrentToolTargetFrameworkMoniker)</NuGetTargetMoniker>
+    <NuGetTargetMonikerShort>$(NetCoreAppToolCurrent)</NuGetTargetMonikerShort>
+  </PropertyGroup>
 </Project>

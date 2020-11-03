@@ -176,7 +176,7 @@ namespace System.Security.Cryptography
     {
         public RNGCryptoServiceProvider() { }
         public RNGCryptoServiceProvider(byte[] rgb) { }
-        public RNGCryptoServiceProvider(System.Security.Cryptography.CspParameters cspParams) { }
+        public RNGCryptoServiceProvider(System.Security.Cryptography.CspParameters? cspParams) { }
         public RNGCryptoServiceProvider(string str) { }
         protected override void Dispose(bool disposing) { }
         public override void GetBytes(byte[] data) { }

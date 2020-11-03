@@ -16,9 +16,9 @@ namespace System.Xml.Linq
     /// </remarks>
     public class XDeclaration
     {
-        private string _version;
-        private string _encoding;
-        private string _standalone;
+        private string? _version;
+        private string? _encoding;
+        private string? _standalone;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="XDeclaration"/> class from the
@@ -34,7 +34,7 @@ namespace System.Xml.Linq
         /// Specifies whether the XML is standalone or requires external entities
         /// to be resolved.
         /// </param>
-        public XDeclaration(string version, string encoding, string standalone)
+        public XDeclaration(string? version, string? encoding, string? standalone)
         {
             _version = version;
             _encoding = encoding;
@@ -67,7 +67,7 @@ namespace System.Xml.Linq
         /// <summary>
         /// Gets or sets the encoding for this document.
         /// </summary>
-        public string Encoding
+        public string? Encoding
         {
             get { return _encoding; }
             set { _encoding = value; }
@@ -79,7 +79,7 @@ namespace System.Xml.Linq
         /// <remarks>
         /// The valid values for standalone are "yes" or "no".
         /// </remarks>
-        public string Standalone
+        public string? Standalone
         {
             get { return _standalone; }
             set { _standalone = value; }
@@ -91,7 +91,7 @@ namespace System.Xml.Linq
         /// <remarks>
         /// The value is usually "1.0".
         /// </remarks>
-        public string Version
+        public string? Version
         {
             get { return _version; }
             set { _version = value; }

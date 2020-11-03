@@ -1,6 +1,8 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Text;
 using System.Xml;
@@ -22,18 +24,18 @@ namespace System.Runtime.Serialization.Json
         private readonly byte[] _byteBuffer = new byte[1];
         private int _byteCount;
         private int _byteOffset;
-        private byte[] _bytes;
-        private char[] _chars;
-        private Decoder _dec;
-        private Encoder _enc;
-        private Encoding _encoding;
+        private byte[]? _bytes;
+        private char[]? _chars;
+        private Decoder? _dec;
+        private Encoder? _enc;
+        private Encoding? _encoding;
 
         private SupportedEncoding _encodingCode;
         private readonly bool _isReading;
 
-        private Stream _stream;
+        private Stream _stream = null!; // initialized in InitForXXX
 
-        public JsonEncodingStreamWrapper(Stream stream, Encoding encoding, bool isReader)
+        public JsonEncodingStreamWrapper(Stream stream, Encoding? encoding, bool isReader)
         {
             _isReading = isReader;
             if (isReader)
@@ -128,7 +130,7 @@ namespace System.Runtime.Serialization.Json
             set { _stream.WriteTimeout = value; }
         }
 
-        public static ArraySegment<byte> ProcessBuffer(byte[] buffer, int offset, int count, Encoding encoding)
+        public static ArraySegment<byte> ProcessBuffer(byte[] buffer, int offset, int count, Encoding? encoding)
         {
             try
             {
@@ -186,6 +188,8 @@ namespace System.Runtime.Serialization.Json
                         return _stream.Read(buffer, offset, count);
                     }
 
+                    Debug.Assert(_bytes != null);
+                    Debug.Assert(_chars != null);
                     // No more bytes than can be turned into characters
                     _byteOffset = 0;
                     _byteCount = _stream.Read(_bytes, _byteCount, (_chars.Length - 1) * 2);
@@ -200,7 +204,7 @@ namespace System.Runtime.Serialization.Json
                     CleanupCharBreak();
 
                     // Change encoding
-                    int charCount = _encoding.GetChars(_bytes, 0, _byteCount, _chars, 0);
+                    int charCount = _encoding!.GetChars(_bytes, 0, _byteCount, _chars, 0);
                     _byteCount = Encoding.UTF8.GetBytes(_chars, 0, charCount, _bytes, 0);
                 }
 
@@ -209,7 +213,7 @@ namespace System.Runtime.Serialization.Json
                 {
                     count = _byteCount;
                 }
-                Buffer.BlockCopy(_bytes, _byteOffset, buffer, offset, count);
+                Buffer.BlockCopy(_bytes!, _byteOffset, buffer, offset, count);
                 _byteOffset += count;
                 _byteCount -= count;
                 return count;
@@ -253,11 +257,13 @@ namespace System.Runtime.Serialization.Json
                 return;
             }
 
+            Debug.Assert(_bytes != null);
+            Debug.Assert(_chars != null);
             while (count > 0)
             {
                 int size = _chars.Length < count ? _chars.Length : count;
-                int charCount = _dec.GetChars(buffer, offset, size, _chars, 0, false);
-                _byteCount = _enc.GetBytes(_chars, 0, charCount, _bytes, 0, false);
+                int charCount = _dec!.GetChars(buffer, offset, size, _chars, 0, false);
+                _byteCount = _enc!.GetBytes(_chars, 0, charCount, _bytes, 0, false);
                 _stream.Write(_bytes, 0, _byteCount);
                 offset += size;
                 count -= size;
@@ -293,7 +299,7 @@ namespace System.Runtime.Serialization.Json
                 _ => throw new XmlException(SR.JsonEncodingNotSupported),
             };
 
-        private static SupportedEncoding GetSupportedEncoding(Encoding encoding)
+        private static SupportedEncoding GetSupportedEncoding(Encoding? encoding)
         {
             if (encoding == null)
             {
@@ -346,6 +352,8 @@ namespace System.Runtime.Serialization.Json
 
         private void CleanupCharBreak()
         {
+            Debug.Assert(_bytes != null);
+
             int max = _byteOffset + _byteCount;
 
             // Read on 2 byte boundaries
@@ -385,6 +393,8 @@ namespace System.Runtime.Serialization.Json
             }
         }
 
+        [MemberNotNull(nameof(_chars))]
+        [MemberNotNull(nameof(_bytes))]
         private void EnsureBuffers()
         {
             EnsureByteBuffer();
@@ -394,6 +404,7 @@ namespace System.Runtime.Serialization.Json
             }
         }
 
+        [MemberNotNull(nameof(_bytes))]
         private void EnsureByteBuffer()
         {
             if (_bytes != null)
@@ -408,6 +419,8 @@ namespace System.Runtime.Serialization.Json
 
         private void FillBuffer(int count)
         {
+            Debug.Assert(_bytes != null);
+
             count -= _byteCount;
             while (count > 0)
             {
@@ -422,7 +435,7 @@ namespace System.Runtime.Serialization.Json
             }
         }
 
-        private void InitForReading(Stream inputStream, Encoding expectedEncoding)
+        private void InitForReading(Stream inputStream, Encoding? expectedEncoding)
         {
             try
             {

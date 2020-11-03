@@ -11,7 +11,11 @@ namespace System
 {
     public static partial class Environment
     {
-        public static int CurrentManagedThreadId => Thread.CurrentThread.ManagedThreadId;
+        public static extern int CurrentManagedThreadId
+        {
+            [MethodImpl(MethodImplOptions.InternalCall)]
+            get;
+        }
 
         // Terminates this process with the given exit code.
         [DllImport(RuntimeHelpers.QCall, CharSet = CharSet.Unicode)]

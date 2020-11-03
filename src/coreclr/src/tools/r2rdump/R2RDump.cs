@@ -18,6 +18,7 @@ using ILCompiler.Reflection.ReadyToRun;
 using ILCompiler.PdbWriter;
 
 using Internal.Runtime;
+using System.Runtime.InteropServices;
 
 namespace R2RDump
 {
@@ -56,6 +57,8 @@ namespace R2RDump
         public bool SignatureBinary { get; set; }
         public bool InlineSignatureBinary { get; set; }
 
+        private SignatureFormattingOptions signatureFormattingOptions;
+
         /// <summary>
         /// Probing extensions to use when looking up assemblies under reference paths.
         /// </summary>
@@ -70,7 +73,7 @@ namespace R2RDump
         /// <param name="parentFile">Name of assembly from which we're performing the lookup</param>
         /// <returns></returns>
 
-        public MetadataReader FindAssembly(MetadataReader metadataReader, AssemblyReferenceHandle assemblyReferenceHandle, string parentFile)
+        public IAssemblyMetadata FindAssembly(MetadataReader metadataReader, AssemblyReferenceHandle assemblyReferenceHandle, string parentFile)
         {
             string simpleName = metadataReader.GetString(metadataReader.GetAssemblyReference(assemblyReferenceHandle).Name);
             return FindAssembly(simpleName, parentFile);
@@ -83,7 +86,7 @@ namespace R2RDump
         /// <param name="simpleName">Simple name of the assembly to look up</param>
         /// <param name="parentFile">Name of assembly from which we're performing the lookup</param>
         /// <returns></returns>
-        public MetadataReader FindAssembly(string simpleName, string parentFile)
+        public IAssemblyMetadata FindAssembly(string simpleName, string parentFile)
         {
             foreach (FileInfo refAsm in Reference ?? Enumerable.Empty<FileInfo>())
             {
@@ -117,7 +120,7 @@ namespace R2RDump
             return null;
         }
 
-        private static unsafe MetadataReader Open(string filename)
+        private static unsafe IAssemblyMetadata Open(string filename)
         {
             byte[] image = File.ReadAllBytes(filename);
 
@@ -128,7 +131,21 @@ namespace R2RDump
                 throw new BadImageFormatException($"ECMA metadata not found in file '{filename}'");
             }
 
-            return peReader.GetMetadataReader();
+            return new StandaloneAssemblyMetadata(peReader);
+        }
+        
+        public SignatureFormattingOptions GetSignatureFormattingOptions()
+        {
+            if (signatureFormattingOptions == null)
+            {
+                signatureFormattingOptions = new SignatureFormattingOptions
+                {
+                    Naked = this.Naked,
+                    SignatureBinary = this.SignatureBinary,
+                    InlineSignatureBinary = this.InlineSignatureBinary,
+                };
+            }
+            return signatureFormattingOptions;
         }
     }
 
@@ -395,7 +412,7 @@ namespace R2RDump
                     pdbWriter.WritePDBData(r2r.Filename, ProducePdbWriterMethods(r2r));
                 }
 
-                if (!_options.Header && standardDump)
+                if (standardDump)
                 {
                     _dumper.DumpAllMethods();
                 }
@@ -411,8 +428,8 @@ namespace R2RDump
                 MethodInfo mi = new MethodInfo();
                 mi.Name = method.SignatureString;
                 mi.HotRVA = (uint)method.RuntimeFunctions[0].StartAddress;
-                mi.MethodToken = (uint)MetadataTokens.GetToken(method.MetadataReader, method.MethodHandle);
-                mi.AssemblyName = method.MetadataReader.GetString(method.MetadataReader.GetAssemblyDefinition().Name);
+                mi.MethodToken = (uint)MetadataTokens.GetToken(method.ComponentReader.MetadataReader, method.MethodHandle);
+                mi.AssemblyName = method.ComponentReader.MetadataReader.GetString(method.ComponentReader.MetadataReader.GetAssemblyDefinition().Name);
                 mi.ColdRVA = 0;
                 
                 yield return mi;
@@ -428,7 +445,7 @@ namespace R2RDump
         {
             int id;
             bool isNum = ArgStringToInt(query, out id);
-            bool idMatch = isNum && (method.Rid == id || MetadataTokens.GetRowNumber(method.MetadataReader, method.MethodHandle) == id);
+            bool idMatch = isNum && (method.Rid == id || MetadataTokens.GetRowNumber(method.ComponentReader.MetadataReader, method.MethodHandle) == id);
 
             bool sigMatch = false;
             if (exact)
@@ -525,6 +542,14 @@ namespace R2RDump
             return null;
         }
 
+        // TODO: Fix R2RDump issue where an R2R image cannot be dissassembled with the x86 CoreDisTools
+        // For the short term, we want to error out with a decent message explaining the unexpected error
+        // Issue https://github.com/dotnet/runtime/issues/10928
+        private static bool DisassemblerArchitectureSupported()
+        {
+            return RuntimeInformation.ProcessArchitecture != Architecture.X86;
+        }
+
         private int Run()
         {
             Disassembler disassembler = null;
@@ -551,7 +576,7 @@ namespace R2RDump
 
                     if (_options.Disasm)
                     {
-                        if (r2r.InputArchitectureSupported() && r2r.DisassemblerArchitectureSupported())
+                        if (DisassemblerArchitectureSupported())
                         {
                             disassembler = new Disassembler(r2r, _options);
                         }

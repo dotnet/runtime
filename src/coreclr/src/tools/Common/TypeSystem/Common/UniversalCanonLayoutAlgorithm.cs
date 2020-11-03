@@ -29,7 +29,8 @@ namespace Internal.TypeSystem
                 FieldAlignment = LayoutInt.Indeterminate,
                 ByteCountUnaligned = LayoutInt.Indeterminate,
                 ByteCountAlignment = LayoutInt.Indeterminate,
-                Offsets = Array.Empty<FieldAndOffset>()
+                Offsets = Array.Empty<FieldAndOffset>(),
+                LayoutAbiStable = true
             };
         }
 

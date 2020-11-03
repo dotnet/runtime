@@ -58,10 +58,13 @@ namespace System.Threading.Tasks
     [DebuggerDisplay("Id = {Id}, Status = {Status}, Method = {DebuggerDisplayMethodDescription}, Result = {DebuggerDisplayResultDescription}")]
     public class Task<TResult> : Task
     {
-        // The value itself, if set.
-        internal TResult? m_result;
+        /// <summary>A cached task for default(TResult).</summary>
+        internal static readonly Task<TResult> s_defaultResultTask = TaskCache.CreateCacheableTask<TResult>(default);
 
         private static readonly TaskFactory<TResult> s_Factory = new TaskFactory<TResult>();
+
+        // The value itself, if set.
+        internal TResult? m_result;
 
         // Extract rarely used helper for a static method in a separate type so that the Func<Task<Task>, Task<TResult>>
         // generic instantiations don't contribute to all Task instantiations, but only those where WhenAny is used.

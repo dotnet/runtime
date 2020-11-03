@@ -13,4 +13,4 @@ clean:
 	rm -rf bin
 
 run:
-	cd bin/$(CONFIG)/publish && python server.py
+	cd bin/$(CONFIG)/publish && python3 server.py

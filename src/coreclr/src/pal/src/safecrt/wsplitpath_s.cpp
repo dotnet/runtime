@@ -24,6 +24,5 @@
 #define _CHAR char16_t
 #define _TCSNCPY_S wcsncpy_s
 #define _T(_Character) L##_Character
-#define _MBS_SUPPORT 0
 
 #include "tsplitpath_s.inl"

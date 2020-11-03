@@ -13,6 +13,7 @@
     <Compile Include="System\ComponentModel\DesignerSerializationVisibilityAttributeTests.cs" />
     <Compile Include="System\ComponentModel\DesignOnlyAttributeTests.cs" />
     <Compile Include="System\ComponentModel\DisplayNameAttributeTests.cs" />
+    <Compile Include="System\ComponentModel\EditorAttributeTests.cs" />
     <Compile Include="System\ComponentModel\EventHandlerListTests.cs" />
     <Compile Include="System\ComponentModel\ImmutableObjectAttributeTests.cs" />
     <Compile Include="System\ComponentModel\InitializationEventAttributeTests.cs" />

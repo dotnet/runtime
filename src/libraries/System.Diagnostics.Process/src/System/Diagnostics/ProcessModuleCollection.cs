@@ -37,5 +37,13 @@ namespace System.Diagnostics
         public bool Contains(ProcessModule module) => InnerList.Contains(module);
 
         public void CopyTo(ProcessModule[] array, int index) => InnerList.CopyTo(array, index);
+
+        internal void Dispose()
+        {
+            foreach (ProcessModule processModule in this)
+            {
+                processModule.Dispose();
+            }
+        }
     }
 }

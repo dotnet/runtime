@@ -10,50 +10,35 @@ namespace System.Runtime.Serialization
 {
     public sealed class ExtensionDataObject
     {
-        private IList<ExtensionDataMember> _members;
+        private IList<ExtensionDataMember>? _members;
 
-#if USE_REFEMIT
-        public ExtensionDataObject()
-#else
         internal ExtensionDataObject()
-#endif
         {
         }
 
-#if USE_REFEMIT
-        public IList<ExtensionDataMember> Members
-#else
-        internal IList<ExtensionDataMember> Members
-#endif
+        internal IList<ExtensionDataMember>? Members
         {
             get { return _members; }
             set { _members = value; }
         }
     }
 
-#if USE_REFEMIT
-    public class ExtensionDataMember
-#else
     internal class ExtensionDataMember
-#endif
     {
-        private string _name;
-        private string _ns;
-        private IDataNode _value;
+        private IDataNode? _value;
         private int _memberIndex;
-        public string Name
+
+        public ExtensionDataMember(string name, string ns)
         {
-            get { return _name; }
-            set { _name = value; }
+            Name = name;
+            Namespace = ns;
         }
 
-        public string Namespace
-        {
-            get { return _ns; }
-            set { _ns = value; }
-        }
+        public string Name { get; }
 
-        public IDataNode Value
+        public string? Namespace { get; }
+
+        public IDataNode? Value
         {
             get { return _value; }
             set { _value = value; }
@@ -66,18 +51,14 @@ namespace System.Runtime.Serialization
         }
     }
 
-#if USE_REFEMIT
-    public interface IDataNode
-#else
     internal interface IDataNode
-#endif
     {
         Type DataType { get; }
-        object Value { get; set; }  // boxes for primitives
-        string DataContractName { get; set; }
-        string DataContractNamespace { get; set; }
-        string ClrTypeName { get; set; }
-        string ClrAssemblyName { get; set; }
+        object? Value { get; set; }  // boxes for primitives
+        string? DataContractName { get; set; }
+        string? DataContractNamespace { get; set; }
+        string? ClrTypeName { get; set; }
+        string? ClrAssemblyName { get; set; }
         string Id { get; set; }
         bool PreservesReferences { get; }
 
@@ -90,11 +71,11 @@ namespace System.Runtime.Serialization
     internal class DataNode<T> : IDataNode
     {
         protected Type dataType;
-        private T _value;
-        private string _dataContractName;
-        private string _dataContractNamespace;
-        private string _clrTypeName;
-        private string _clrAssemblyName;
+        private T _value = default!;
+        private string? _dataContractName;
+        private string? _dataContractNamespace;
+        private string? _clrTypeName;
+        private string? _clrAssemblyName;
         private string _id = Globals.NewObjectId;
         private bool _isFinalValue;
 
@@ -115,10 +96,10 @@ namespace System.Runtime.Serialization
             get { return dataType; }
         }
 
-        public object Value
+        public object? Value
         {
             get { return _value; }
-            set { _value = (T)value; }
+            set { _value = (T)value!; }
         }
 
         bool IDataNode.IsFinalValue
@@ -132,32 +113,25 @@ namespace System.Runtime.Serialization
             return _value;
         }
 
-#if NotUsed
-        public void SetValue(T value)
-        {
-            this.value = value;
-        }
-#endif
-
-        public string DataContractName
+        public string? DataContractName
         {
             get { return _dataContractName; }
             set { _dataContractName = value; }
         }
 
-        public string DataContractNamespace
+        public string? DataContractNamespace
         {
             get { return _dataContractNamespace; }
             set { _dataContractNamespace = value; }
         }
 
-        public string ClrTypeName
+        public string? ClrTypeName
         {
             get { return _clrTypeName; }
             set { _clrTypeName = value; }
         }
 
-        public string ClrAssemblyName
+        public string? ClrAssemblyName
         {
             get { return _clrAssemblyName; }
             set { _clrAssemblyName = value; }
@@ -194,7 +168,7 @@ namespace System.Runtime.Serialization
             _clrTypeName = _clrAssemblyName = null;
         }
 
-        internal void AddQualifiedNameAttribute(ElementData element, string elementPrefix, string elementName, string elementNs, string valueName, string valueNs)
+        internal void AddQualifiedNameAttribute(ElementData element, string elementPrefix, string elementName, string elementNs, string valueName, string? valueNs)
         {
             string prefix = ExtensionDataReader.GetPrefix(valueNs);
             element.AddAttribute(elementPrefix, elementNs, elementName, prefix + ":" + valueName);
@@ -219,14 +193,14 @@ namespace System.Runtime.Serialization
 
     internal class ClassDataNode : DataNode<object>
     {
-        private IList<ExtensionDataMember> _members;
+        private IList<ExtensionDataMember>? _members;
 
         internal ClassDataNode()
         {
             dataType = Globals.TypeOfClassDataNode;
         }
 
-        internal IList<ExtensionDataMember> Members
+        internal IList<ExtensionDataMember>? Members
         {
             get { return _members; }
             set { _members = value; }
@@ -241,28 +215,28 @@ namespace System.Runtime.Serialization
 
     internal class XmlDataNode : DataNode<object>
     {
-        private IList<XmlAttribute> _xmlAttributes;
-        private IList<XmlNode> _xmlChildNodes;
-        private XmlDocument _ownerDocument;
+        private IList<XmlAttribute>? _xmlAttributes;
+        private IList<XmlNode>? _xmlChildNodes;
+        private XmlDocument? _ownerDocument;
 
         internal XmlDataNode()
         {
             dataType = Globals.TypeOfXmlDataNode;
         }
 
-        internal IList<XmlAttribute> XmlAttributes
+        internal IList<XmlAttribute>? XmlAttributes
         {
             get { return _xmlAttributes; }
             set { _xmlAttributes = value; }
         }
 
-        internal IList<XmlNode> XmlChildNodes
+        internal IList<XmlNode>? XmlChildNodes
         {
             get { return _xmlChildNodes; }
             set { _xmlChildNodes = value; }
         }
 
-        internal XmlDocument OwnerDocument
+        internal XmlDocument? OwnerDocument
         {
             get { return _ownerDocument; }
             set { _ownerDocument = value; }
@@ -279,9 +253,9 @@ namespace System.Runtime.Serialization
 
     internal class CollectionDataNode : DataNode<Array>
     {
-        private IList<IDataNode> _items;
-        private string _itemName;
-        private string _itemNamespace;
+        private IList<IDataNode?>? _items;
+        private string? _itemName;
+        private string? _itemNamespace;
         private int _size = -1;
 
         internal CollectionDataNode()
@@ -289,19 +263,19 @@ namespace System.Runtime.Serialization
             dataType = Globals.TypeOfCollectionDataNode;
         }
 
-        internal IList<IDataNode> Items
+        internal IList<IDataNode?>? Items
         {
             get { return _items; }
             set { _items = value; }
         }
 
-        internal string ItemName
+        internal string? ItemName
         {
             get { return _itemName; }
             set { _itemName = value; }
         }
 
-        internal string ItemNamespace
+        internal string? ItemNamespace
         {
             get { return _itemNamespace; }
             set { _itemNamespace = value; }
@@ -330,28 +304,28 @@ namespace System.Runtime.Serialization
 
     internal class ISerializableDataNode : DataNode<object>
     {
-        private string _factoryTypeName;
-        private string _factoryTypeNamespace;
-        private IList<ISerializableDataMember> _members;
+        private string? _factoryTypeName;
+        private string? _factoryTypeNamespace;
+        private IList<ISerializableDataMember>? _members;
 
         internal ISerializableDataNode()
         {
             dataType = Globals.TypeOfISerializableDataNode;
         }
 
-        internal string FactoryTypeName
+        internal string? FactoryTypeName
         {
             get { return _factoryTypeName; }
             set { _factoryTypeName = value; }
         }
 
-        internal string FactoryTypeNamespace
+        internal string? FactoryTypeNamespace
         {
             get { return _factoryTypeNamespace; }
             set { _factoryTypeNamespace = value; }
         }
 
-        internal IList<ISerializableDataMember> Members
+        internal IList<ISerializableDataMember>? Members
         {
             get { return _members; }
             set { _members = value; }
@@ -375,16 +349,16 @@ namespace System.Runtime.Serialization
 
     internal class ISerializableDataMember
     {
-        private string _name;
-        private IDataNode _value;
+        private IDataNode? _value;
 
-        internal string Name
+        public ISerializableDataMember(string name)
         {
-            get { return _name; }
-            set { _name = value; }
+            Name = name;
         }
 
-        internal IDataNode Value
+        internal string Name { get; }
+
+        internal IDataNode? Value
         {
             get { return _value; }
             set { _value = value; }

@@ -97,7 +97,7 @@ int GetParameters( int argc, char **argv)
     return 0;
 }
 
- int __cdecl main(INT argc, CHAR **argv)
+PALTEST(composite_wfmo_paltest_composite_wfmo, "composite/wfmo/paltest_composite_wfmo")
 {
     unsigned int i = 0;
     HANDLE hProcess[MAXIMUM_WAIT_OBJECTS];

@@ -1899,7 +1899,7 @@ void Debugger::CleanupTransportSocket(void)
 // Initialize Left-Side debugger object
 //
 // Return Value:
-//    S_OK on successs. May also throw.
+//    S_OK on success. May also throw.
 //
 // Assumptions:
 //    This is called in the startup path.
@@ -7953,7 +7953,7 @@ void Debugger::ProcessAnyPendingEvals(Thread *pThread)
         // Now clear the bit else we'll see it again when we process the Exception notification
         // from this upcoming UserAbort exception.
         pThread->ResetThreadStateNC(Thread::TSNC_DebuggerReAbort);
-        pThread->UserAbort(Thread::TAR_Thread, EEPolicy::TA_Safe, INFINITE, Thread::UAC_Normal);
+        pThread->UserAbort(Thread::TAR_Thread, EEPolicy::TA_Safe, INFINITE);
     }
 
 #endif
@@ -10722,6 +10722,7 @@ bool Debugger::HandleIPCEvent(DebuggerIPCEvent * pEvent)
         //
         // For regular (non-jit) attach, fall through to do an async break.
         //
+        FALLTHROUGH;
 
     case DB_IPCE_ASYNC_BREAK:
         {
@@ -12138,7 +12139,7 @@ void Debugger::TypeHandleToExpandedTypeInfo(AreValueTypesBoxed boxed,
     case ELEMENT_TYPE_VALUETYPE:
         if (boxed == OnlyPrimitivesUnboxed || boxed == AllBoxed)
             res->elementType = ELEMENT_TYPE_CLASS;
-        // drop through
+        FALLTHROUGH;
 
     case ELEMENT_TYPE_CLASS:
         {
@@ -12896,7 +12897,7 @@ private:
 //
 EnCSequencePointHelper::EnCSequencePointHelper(DebuggerJitInfo *pJitInfo)
     : m_pJitInfo(pJitInfo),
-    m_pOffsetToHandlerInfo(NULL)      
+    m_pOffsetToHandlerInfo(NULL)
 {
     CONTRACTL
     {
@@ -15475,7 +15476,7 @@ Debugger::FuncEvalAbort(
             //
             EX_TRY
             {
-                hr = pDE->m_thread->UserAbort(Thread::TAR_FuncEval, EEPolicy::TA_Safe, (DWORD)FUNC_EVAL_DEFAULT_TIMEOUT_VALUE, Thread::UAC_Normal);
+                hr = pDE->m_thread->UserAbort(Thread::TAR_FuncEval, EEPolicy::TA_Safe, (DWORD)FUNC_EVAL_DEFAULT_TIMEOUT_VALUE);
                 if (hr == HRESULT_FROM_WIN32(ERROR_TIMEOUT))
                 {
                     hr = S_OK;
@@ -15541,7 +15542,7 @@ Debugger::FuncEvalRudeAbort(
             //
             EX_TRY
             {
-                hr = pDE->m_thread->UserAbort(Thread::TAR_FuncEval, EEPolicy::TA_Rude, (DWORD)FUNC_EVAL_DEFAULT_TIMEOUT_VALUE, Thread::UAC_Normal);
+                hr = pDE->m_thread->UserAbort(Thread::TAR_FuncEval, EEPolicy::TA_Rude, (DWORD)FUNC_EVAL_DEFAULT_TIMEOUT_VALUE);
                 if (hr == HRESULT_FROM_WIN32(ERROR_TIMEOUT))
                 {
                     hr = S_OK;

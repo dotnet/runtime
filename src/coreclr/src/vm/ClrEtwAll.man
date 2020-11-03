@@ -133,6 +133,8 @@
                             <opcode name="GCJoin" message="$(string.RuntimePublisher.GCJoinOpcodeMessage)" symbol="CLR_GC_JOIN_OPCODE" value="203"> </opcode>
                             <opcode name="GCPerHeapHistory" message="$(string.RuntimePublisher.GCPerHeapHistoryOpcodeMessage)" symbol="CLR_GC_GCPERHEAPHISTORY_OPCODE" value="204"> </opcode>
                             <opcode name="GCGlobalHeapHistory" message="$(string.RuntimePublisher.GCGlobalHeapHistoryOpcodeMessage)" symbol="CLR_GC_GCGLOBALHEAPHISTORY_OPCODE" value="205"> </opcode>
+                            <opcode name="GenAwareBegin" message="$(string.RuntimePublisher.GenAwareBeginOpcodeMessage)" symbol="CLR_GC_GENAWAREBEGIN_OPCODE" value="206"> </opcode>
+                            <opcode name="GenAwareEnd" message="$(string.RuntimePublisher.GenAwareEndOpcodeMessage)" symbol="CLR_GC_GENAWAREEND_OPCODE" value="207"> </opcode>
                         </opcodes>
                     </task>
 
@@ -989,6 +991,17 @@
                             <GCNoUserData xmlns="myNs">
                                 <ClrInstanceID> %1 </ClrInstanceID>
                             </GCNoUserData>
+                        </UserData>
+                    </template>
+
+                    <template tid="GenAwareTemplate">
+                        <data name="Count" inType="win:UInt32" />
+                        <data name="ClrInstanceID" inType="win:UInt16" />
+                        <UserData>
+                            <GenAwareTemplate xmlns="myNs">
+                                <Count> %1 </Count>
+                                <ClrInstanceID> %2 </ClrInstanceID>
+                            </GenAwareTemplate>
                         </UserData>
                     </template>
 
@@ -3714,6 +3727,16 @@
                            task="GarbageCollection"
                            symbol="GCGlobalHeapHistory_V3" message="$(string.RuntimePublisher.GCGlobalHeap_V3EventMessage)"/>
 
+                    <event value="206" version="0" level="win:Informational"  template="GenAwareTemplate"
+                           keywords ="GCHeapDumpKeyword"  opcode="GenAwareBegin"
+                           task="GarbageCollection"
+                           symbol="GenAwareBegin" message="$(string.RuntimePublisher.GenAwareBeginEventMessage)"/>
+
+                    <event value="207" version="0" level="win:Informational"  template="GenAwareTemplate"
+                           keywords ="GCHeapDumpKeyword"  opcode="GenAwareEnd"
+                           task="GarbageCollection"
+                           symbol="GenAwareEnd" message="$(string.RuntimePublisher.GenAwareEndEventMessage)"/>
+
                     <!-- CLR Debugger events 240-249 -->
                     <event value="240" version="0" level="win:Informational"
                            keywords="DebuggerKeyword" opcode="win:Start"
@@ -3794,7 +3817,6 @@
                            keywords ="AssemblyLoaderKeyword" opcode="KnownPathProbed"
                            task="AssemblyLoader"
                            symbol="KnownPathProbed" message="$(string.RuntimePublisher.KnownPathProbedEventMessage)"/>
-
                 </events>
             </provider>
 
@@ -7548,6 +7570,8 @@
                 <string id="RuntimePublisher.CompilationDiagnosticKeywordMessage" value="CompilationDiagnostic" />
                 <string id="RuntimePublisher.MethodDiagnosticKeywordMessage" value="MethodDiagnostic" />
                 <string id="RuntimePublisher.TypeDiagnosticKeywordMessage" value="TypeDiagnostic" />
+                <string id="RuntimePublisher.GenAwareBeginEventMessage" value="NONE" />
+                <string id="RuntimePublisher.GenAwareEndEventMessage" value="NONE" />
                 <string id="RundownPublisher.LoaderKeywordMessage" value="Loader" />
                 <string id="RundownPublisher.JitKeywordMessage" value="Jit" />
                 <string id="RundownPublisher.JittedMethodILToNativeMapRundownKeywordMessage" value="JittedMethodILToNativeMapRundown" />
@@ -7610,6 +7634,8 @@
                 <string id="RuntimePublisher.GCJoinOpcodeMessage" value="GCJoin" />
                 <string id="RuntimePublisher.GCPerHeapHistoryOpcodeMessage" value="PerHeapHistory" />
                 <string id="RuntimePublisher.GCGlobalHeapHistoryOpcodeMessage" value="GlobalHeapHistory" />
+                <string id="RuntimePublisher.GenAwareBeginOpcodeMessage" value="GenAwareBegin" />
+                <string id="RuntimePublisher.GenAwareEndOpcodeMessage" value="GenAwareEnd" />
                 <string id="RuntimePublisher.FinalizeObjectOpcodeMessage" value="FinalizeObject" />
                 <string id="RuntimePublisher.BulkTypeOpcodeMessage" value="BulkType" />
                 <string id="RuntimePublisher.MethodDetailsOpcodeMessage" value="MethodDetails" />

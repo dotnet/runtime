@@ -104,7 +104,7 @@ void NestedFunc2 (void)
     NestedFunc1();
 }
 
-int __cdecl main(int argc, char *argv[])
+PALTEST(exception_handling_PAL_EXCEPT_FILTER_test3_paltest_pal_except_filter_test3, "exception_handling/PAL_EXCEPT_FILTER/test3/paltest_pal_except_filter_test3")
 {
     if (0 != PAL_Initialize(argc, argv))
     {

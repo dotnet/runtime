@@ -149,7 +149,7 @@ namespace System.Linq.Expressions.Interpreter
                     break;
             }
 
-            if ((object?)alternativeMethod == null)
+            if (alternativeMethod is null)
             {
                 return new MethodInfoCallInstruction(info, argumentCount);
             }
@@ -261,10 +261,10 @@ namespace System.Linq.Expressions.Interpreter
         protected static bool TryGetLightLambdaTarget(object? instance, [NotNullWhen(true)] out LightLambda? lightLambda)
         {
             var del = instance as Delegate;
-            if ((object?)del != null)
+            if (del is not null)
             {
                 var thunk = del.Target as Func<object[], object>;
-                if ((object?)thunk != null)
+                if (thunk is not null)
                 {
                     lightLambda = thunk.Target as LightLambda;
                     if (lightLambda != null)

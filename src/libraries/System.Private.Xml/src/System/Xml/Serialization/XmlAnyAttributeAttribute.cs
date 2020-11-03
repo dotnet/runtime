@@ -4,7 +4,6 @@
 using System;
 using System.Xml.Schema;
 
-
 namespace System.Xml.Serialization
 {
     /// <devdoc>

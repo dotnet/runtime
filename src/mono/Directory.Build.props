@@ -3,7 +3,7 @@
     <SkipImportArcadeSdkFromRoot>true</SkipImportArcadeSdkFromRoot>
   </PropertyGroup>
   <Import Project="..\..\Directory.Build.props" />
-  
+
   <!-- Set default Platform -->
   <PropertyGroup>
     <HostArch>$([System.Runtime.InteropServices.RuntimeInformation]::ProcessArchitecture.ToString().ToLowerInvariant)</HostArch>
@@ -17,14 +17,14 @@
   <PropertyGroup>
     <ProjectDir>$(MSBuildThisFileDirectory)</ProjectDir>
     <SourceDir>$(ProjectDir)src\</SourceDir>
-    <BinDir>$(ArtifactsBinDir)mono\$(PlatformConfigPathPart)\</BinDir>
+    <RuntimeBinDir>$(ArtifactsBinDir)mono\$(PlatformConfigPathPart)\</RuntimeBinDir>
 
     <BaseIntermediateOutputPath>$(ArtifactsObjDir)mono\$(MSBuildProjectName)\</BaseIntermediateOutputPath>
   </PropertyGroup>
 
   <PropertyGroup>
     <!-- Central place to set the versions of all nuget packages produced in the repo -->
-    <PackageVersion Condition="'$(PackageVersion)' == ''">5.0.0</PackageVersion>
+    <PackageVersion Condition="'$(PackageVersion)' == ''">6.0.0</PackageVersion>
 
     <!-- Set the boolean below to true to generate packages with stabilized versions -->
     <StabilizePackageVersion Condition="'$(StabilizePackageVersion)' == ''">false</StabilizePackageVersion>
@@ -51,12 +51,12 @@
 
   <PropertyGroup>
     <!-- Minimum target OS version, keep in sync with src/libraries/Native/build-native.sh -->
-    <iOSVersionMin Condition="'$(TargetsiOS)' == 'true' and '$(TargetsiOSSimulator)' != 'true'">7.0</iOSVersionMin>
-    <iOSVersionMin Condition="'$(TargetsiOS)' == 'true' and '$(TargetsiOSSimulator)' == 'true'">8.0</iOSVersionMin>
+    <iOSVersionMin>8.0</iOSVersionMin>
     <tvOSVersionMin>9.0</tvOSVersionMin>
     <watchOSVersionMin>2.0</watchOSVersionMin>
     <watchOS64_32VersionMin>5.1</watchOS64_32VersionMin>
     <macOSVersionMin>10.13</macOSVersionMin>
+    <macOSVersionMin Condition="'$(TargetOS)' == 'OSX' and '$(TargetArchitecture)' == 'arm64'">11.0</macOSVersionMin>
 
     <!-- Version of the OS SDK we target -->
     <iOSVersion></iOSVersion>
@@ -101,7 +101,8 @@
 
   <PropertyGroup>
     <MonoObjDir>$(ArtifactsObjDir)mono/$(PlatformConfigPathPart)/</MonoObjDir>
-    <MonoLLVMDir Condition="('$(MonoEnableLLVM)' == 'true' or '$(TargetOS)' == 'iOS' or '$(TargetOS)' == 'tvOS' or '$(TargetOS)' == 'Browser') and '$(MonoLLVMDir)' == ''">$(MonoObjDir)llvm</MonoLLVMDir>
+    <MonoLLVMDir Condition="'$(MonoLLVMDir)' == ''">$(MonoObjDir)llvm</MonoLLVMDir>
+    <MonoAOTLLVMDir Condition="'$(MonoAOTLLVMDir)' == ''">$(MonoObjDir)cross/llvm</MonoAOTLLVMDir>
   </PropertyGroup>
 
   <!-- Paths for Mobile App Projects  -->

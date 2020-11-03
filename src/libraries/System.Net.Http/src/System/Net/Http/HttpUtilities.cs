@@ -7,7 +7,7 @@ using System.Threading;
 
 namespace System.Net.Http
 {
-    internal static class HttpUtilities
+    internal static partial class HttpUtilities
     {
         internal static Version DefaultRequestVersion => HttpVersion.Version11;
 
@@ -24,9 +24,6 @@ namespace System.Net.Http
         internal static bool IsSupportedScheme(string scheme) =>
             IsSupportedNonSecureScheme(scheme) ||
             IsSupportedSecureScheme(scheme);
-
-        internal static bool IsSupportedNonSecureScheme(string scheme) =>
-            string.Equals(scheme, "http", StringComparison.OrdinalIgnoreCase) || IsNonSecureWebSocketScheme(scheme);
 
         internal static bool IsSupportedSecureScheme(string scheme) =>
             string.Equals(scheme, "https", StringComparison.OrdinalIgnoreCase) || IsSecureWebSocketScheme(scheme);

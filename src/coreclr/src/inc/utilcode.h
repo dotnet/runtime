@@ -746,6 +746,8 @@ public:
     }
 
 private:
+// String resouces packaged as PE files only exist on Windows
+#ifdef HOST_WINDOWS
     HRESULT GetLibrary(LocaleID langId, HRESOURCEDLL* phInst);
 #ifndef DACCESS_COMPILE
     HRESULT LoadLibraryHelper(HRESOURCEDLL *pHInst,
@@ -753,7 +755,8 @@ private:
     HRESULT LoadLibraryThrows(HRESOURCEDLL * pHInst);
     HRESULT LoadLibrary(HRESOURCEDLL * pHInst);
     HRESULT LoadResourceFile(HRESOURCEDLL * pHInst, LPCWSTR lpFileName);
-#endif
+#endif // DACCESS_COMPILE
+#endif // HOST_WINDOWS
 
     // We do not have global constructors any more
     static LONG     m_dwDefaultInitialized;

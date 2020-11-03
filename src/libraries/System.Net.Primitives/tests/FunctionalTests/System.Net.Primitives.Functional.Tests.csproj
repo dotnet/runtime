@@ -20,7 +20,6 @@
     <Compile Include="IPEndPointParsing.cs" />
     <Compile Include="IPEndPointTest.cs" />
     <Compile Include="NetworkCredentialTest.cs" />
-    <Compile Include="NetworkExceptionTest.cs" />
     <Compile Include="SocketAddressTest.cs" />
     <Compile Include="LoggingTest.cs" />
     <Compile Include="RequestCachePolicyTest.cs" />

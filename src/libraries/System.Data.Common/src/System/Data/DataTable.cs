@@ -26,6 +26,8 @@ namespace System.Data
     [DesignTimeVisible(false)]
     [DefaultProperty(nameof(TableName))]
     [DefaultEvent(nameof(RowChanging))]
+    [Editor("Microsoft.VSDesigner.Data.Design.DataTableEditor, Microsoft.VSDesigner, Version=10.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a",
+            "System.Drawing.Design.UITypeEditor, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a")]
     [XmlSchemaProvider(nameof(GetDataTableSchema))]
     [Serializable]
     [System.Runtime.CompilerServices.TypeForwardedFrom("System.Data, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")]
@@ -1586,6 +1588,8 @@ namespace System.Data
         /// <summary>
         /// Gets or sets an array of columns that function as primary keys for the data table.
         /// </summary>
+        [Editor("Microsoft.VSDesigner.Data.Design.PrimaryKeyEditor, Microsoft.VSDesigner, Version=10.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a",
+                "System.Drawing.Design.UITypeEditor, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a")]
         [TypeConverter(typeof(PrimaryKeyTypeConverter))]
         [AllowNull]
         public DataColumn[] PrimaryKey
@@ -5847,7 +5851,7 @@ namespace System.Data
 
                                 if (!fSchemaFound && Columns.Count == 0)
                                 {
-                                    XmlNode node = xdoc.ReadNode(reader);
+                                    XmlNode node = xdoc.ReadNode(reader)!;
                                     topNode.AppendChild(node);
                                 }
                                 else
@@ -5962,7 +5966,7 @@ namespace System.Data
                     if (mode == XmlReadMode.Fragment)
                     {
                         xdoc.AppendChild(xdoc.CreateElement("ds_sqlXmlWraPPeR"));
-                        topNode = xdoc.DocumentElement;
+                        topNode = xdoc.DocumentElement!;
                     }
                     else
                     {
@@ -6143,7 +6147,7 @@ namespace System.Data
                         if (mode == XmlReadMode.InferSchema)
                         {
                             //save the node in DOM until the end;
-                            XmlNode node = xdoc.ReadNode(reader);
+                            XmlNode node = xdoc.ReadNode(reader)!;
                             topNode.AppendChild(node);
                         }
                         else
@@ -6343,7 +6347,7 @@ namespace System.Data
             XmlSchemaSet sSet = new XmlSchemaSet();
             while (reader.LocalName == Keywords.XSD_SCHEMA && reader.NamespaceURI == Keywords.XSDNS)
             {
-                XmlSchema s = XmlSchema.Read(reader, null);
+                XmlSchema s = XmlSchema.Read(reader, null)!;
                 sSet.Add(s);
                 //read the end tag
                 ReadEndElement(reader);

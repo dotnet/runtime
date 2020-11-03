@@ -7,6 +7,7 @@ parameters:
   helixType: '(unspecified)'
   container: ''
   testGroup: ''
+  crossBuild: false
   crossrootfsDir: ''
   liveLibrariesBuildConfig: ''
   stagedBuild: false
@@ -34,6 +35,7 @@ jobs:
     name: ${{ parameters.name }}
     helixType: ${{ parameters.helixType }}
     container: ${{ parameters.container }}
+    crossBuild: ${{ parameters.crossBuild }}
     crossrootfsDir: ${{ parameters.crossrootfsDir }}
     stagedBuild: ${{ parameters.stagedBuild }}
     strategy: ${{ parameters.strategy }}
@@ -56,12 +58,6 @@ jobs:
     - ${{ if eq(parameters.testGroup, '') }}:
       - name: testArtifactRootName
         value: ${{ parameters.Group }}${{ parameters.Subgroup }}_${{ parameters.archType }}_${{ parameters.buildConfig }}
-
-    - name: coreClrRepoRoot
-      value: '$(Build.SourcesDirectory)/src/coreclr'
-
-    - name: coreClrRepoRootDir
-      value: '$(coreClrRepoRoot)$(dir)'
 
     - name: binTestsPath
       value: '$(Build.SourcesDirectory)/artifacts/tests/coreclr'

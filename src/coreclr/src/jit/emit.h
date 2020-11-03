@@ -870,7 +870,7 @@ protected:
                 // return value more than 15 that doesn't fit in 4 bits _idCodeSize.
                 // If somehow we generate instruction that needs more than 15 bytes we
                 // will fail on another assert in emit.cpp: noway_assert(id->idCodeSize() >= csz).
-                // Issue https://github.com/dotnet/coreclr/issues/25050.
+                // Issue https://github.com/dotnet/runtime/issues/12840.
                 sz = 15;
             }
             assert(sz <= 15); // Intel decoder limit.
@@ -1370,7 +1370,7 @@ protected:
 
     struct instrDescCns : instrDesc // large const
     {
-        target_ssize_t idcCnsVal;
+        cnsval_ssize_t idcCnsVal;
     };
 
     struct instrDescDsp : instrDesc // large displacement
@@ -1466,7 +1466,7 @@ protected:
 
 #endif // TARGET_XARCH
 
-    target_ssize_t emitGetInsSC(instrDesc* id);
+    cnsval_ssize_t emitGetInsSC(instrDesc* id);
     unsigned emitInsCount;
 
 /************************************************************************/
@@ -1489,12 +1489,26 @@ protected:
     const char* emitFldName(CORINFO_FIELD_HANDLE fieldVal);
     const char* emitFncName(CORINFO_METHOD_HANDLE callVal);
 
+    // GC Info changes are not readily available at each instruction.
+    // We use debug-only sets to track the per-instruction state, and to remember
+    // what the state was at the last time it was output (instruction or label).
+    VARSET_TP  debugPrevGCrefVars;
+    VARSET_TP  debugThisGCrefVars;
+    regPtrDsc* debugPrevRegPtrDsc;
+    regMaskTP  debugPrevGCrefRegs;
+    regMaskTP  debugPrevByrefRegs;
+    void emitDispGCDeltaTitle(const char* title);
+    void emitDispGCRegDelta(const char* title, regMaskTP prevRegs, regMaskTP curRegs);
+    void emitDispGCVarDelta();
+    void emitDispGCInfoDelta();
+
     void emitDispIGflags(unsigned flags);
     void emitDispIG(insGroup* ig, insGroup* igPrev = nullptr, bool verbose = false);
     void emitDispIGlist(bool verbose = false);
     void emitDispGCinfo();
     void emitDispClsVar(CORINFO_FIELD_HANDLE fldHnd, ssize_t offs, bool reloc = false);
     void emitDispFrameRef(int varx, int disp, int offs, bool asmfm);
+    void emitDispInsAddr(BYTE* code);
     void emitDispInsOffs(unsigned offs, bool doffs);
     void emitDispInsHex(instrDesc* id, BYTE* code, size_t sz);
 
@@ -1645,6 +1659,7 @@ public:
     unsigned char emitOutputLong(BYTE* dst, ssize_t val);
     unsigned char emitOutputSizeT(BYTE* dst, ssize_t val);
 
+#if !defined(HOST_64BIT)
 #if defined(TARGET_X86)
     unsigned char emitOutputByte(BYTE* dst, size_t val);
     unsigned char emitOutputWord(BYTE* dst, size_t val);
@@ -1656,6 +1671,7 @@ public:
     unsigned char emitOutputLong(BYTE* dst, unsigned __int64 val);
     unsigned char emitOutputSizeT(BYTE* dst, unsigned __int64 val);
 #endif // defined(TARGET_X86)
+#endif // !defined(HOST_64BIT)
 
     size_t emitIssue1Instr(insGroup* ig, instrDesc* id, BYTE** dp);
     size_t emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp);
@@ -1678,7 +1694,7 @@ public:
     void emitSetMediumJump(instrDescJmp* id);
 
 public:
-    CORINFO_FIELD_HANDLE emitAnyConst(const void* cnsAddr, UNATIVE_OFFSET cnsSize, UNATIVE_OFFSET cnsAlign);
+    CORINFO_FIELD_HANDLE emitBlkConst(const void* cnsAddr, unsigned cnsSize, unsigned cnsAlign, var_types elemType);
 
 private:
     CORINFO_FIELD_HANDLE emitFltOrDblConst(double constValue, emitAttr attr);
@@ -1909,7 +1925,7 @@ private:
         return (instrDescCns*)emitAllocAnyInstr(sizeof(instrDescCns), attr);
     }
 
-    instrDescCns* emitAllocInstrCns(emitAttr attr, target_size_t cns)
+    instrDescCns* emitAllocInstrCns(emitAttr attr, cnsval_size_t cns)
     {
         instrDescCns* result = emitAllocInstrCns(attr);
         result->idSetIsLargeCns();
@@ -1963,8 +1979,8 @@ private:
 
     instrDesc* emitNewInstrSmall(emitAttr attr);
     instrDesc* emitNewInstr(emitAttr attr = EA_4BYTE);
-    instrDesc* emitNewInstrSC(emitAttr attr, target_ssize_t cns);
-    instrDesc* emitNewInstrCns(emitAttr attr, target_ssize_t cns);
+    instrDesc* emitNewInstrSC(emitAttr attr, cnsval_ssize_t cns);
+    instrDesc* emitNewInstrCns(emitAttr attr, cnsval_ssize_t cns);
     instrDesc* emitNewInstrDsp(emitAttr attr, target_ssize_t dsp);
     instrDesc* emitNewInstrCnsDsp(emitAttr attr, target_ssize_t cns, int dsp);
 #ifdef TARGET_ARM
@@ -2127,9 +2143,9 @@ public:
     void emitGCregDeadUpd(regNumber reg, BYTE* addr);
     void emitGCregDeadSet(GCtype gcType, regMaskTP mask, BYTE* addr);
 
-    void emitGCvarLiveUpd(int offs, int varNum, GCtype gcType, BYTE* addr);
+    void emitGCvarLiveUpd(int offs, int varNum, GCtype gcType, BYTE* addr DEBUG_ARG(unsigned actualVarNum));
     void emitGCvarLiveSet(int offs, GCtype gcType, BYTE* addr, ssize_t disp = -1);
-    void emitGCvarDeadUpd(int offs, BYTE* addr);
+    void emitGCvarDeadUpd(int offs, BYTE* addr DEBUG_ARG(unsigned varNum));
     void emitGCvarDeadSet(int offs, BYTE* addr, ssize_t disp = -1);
 
     GCtype emitRegGCtype(regNumber reg);
@@ -2151,6 +2167,12 @@ public:
 
     struct dataSection
     {
+        // Note to use alignments greater than 32 requires modification in the VM
+        // to support larger alignments (see ICorJitInfo::allocMem)
+        //
+        const static unsigned MIN_DATA_ALIGN = 4;
+        const static unsigned MAX_DATA_ALIGN = 32;
+
         enum sectionType
         {
             data,
@@ -2161,6 +2183,8 @@ public:
         dataSection*   dsNext;
         UNATIVE_OFFSET dsSize;
         sectionType    dsType;
+        var_types      dsDataType;
+
         // variable-sized array used to store the constant data
         // or BasicBlock* array in the block cases.
         BYTE dsCont[0];
@@ -2293,6 +2317,13 @@ public:
         VarSetOps::AssignNoCopy(emitComp, emitPrevGCrefVars, VarSetOps::MakeEmpty(emitComp));
         VarSetOps::AssignNoCopy(emitComp, emitInitGCrefVars, VarSetOps::MakeEmpty(emitComp));
         VarSetOps::AssignNoCopy(emitComp, emitThisGCrefVars, VarSetOps::MakeEmpty(emitComp));
+#if defined(DEBUG)
+        VarSetOps::AssignNoCopy(emitComp, debugPrevGCrefVars, VarSetOps::MakeEmpty(emitComp));
+        VarSetOps::AssignNoCopy(emitComp, debugThisGCrefVars, VarSetOps::MakeEmpty(emitComp));
+        debugPrevRegPtrDsc = nullptr;
+        debugPrevGCrefRegs = RBM_NONE;
+        debugPrevByrefRegs = RBM_NONE;
+#endif
     }
 };
 
@@ -2511,7 +2542,7 @@ inline emitter::instrDesc* emitter::emitNewInstrDsp(emitAttr attr, target_ssize_
  *  Note that this very similar to emitter::emitNewInstrSC(), except it never
  *  allocates a small descriptor.
  */
-inline emitter::instrDesc* emitter::emitNewInstrCns(emitAttr attr, target_ssize_t cns)
+inline emitter::instrDesc* emitter::emitNewInstrCns(emitAttr attr, cnsval_ssize_t cns)
 {
     if (instrDesc::fitsInSmallCns(cns))
     {
@@ -2570,7 +2601,7 @@ inline size_t emitter::emitGetInstrDescSize(const instrDesc* id)
  *  emitNewInstrCns() always allocates at least sizeof(instrDesc)).
  */
 
-inline emitter::instrDesc* emitter::emitNewInstrSC(emitAttr attr, target_ssize_t cns)
+inline emitter::instrDesc* emitter::emitNewInstrSC(emitAttr attr, cnsval_ssize_t cns)
 {
     if (instrDesc::fitsInSmallCns(cns))
     {

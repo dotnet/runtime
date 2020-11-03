@@ -51,7 +51,7 @@ namespace System.Data.ProviderBase
             Debug.Assert(null != fieldName, "null GetName");
             return ((null != fieldName) ? fieldName : "");
         }
-        internal DataTable GetSchemaTable()
+        internal DataTable? GetSchemaTable()
         {
             return _dataReader.GetSchemaTable();
         }

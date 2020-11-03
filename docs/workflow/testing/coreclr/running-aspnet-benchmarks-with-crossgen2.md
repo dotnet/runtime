@@ -24,16 +24,14 @@ For Windows:
 
 ```powershell
 .\build.cmd -subset clr+libs -c release
-cd src\coreclr
-.\build-test.cmd Release generatelayoutonly
+.\src\tests\build.cmd Release generatelayoutonly
 ```
 
 For Linux:
 
 ```bash
 ./build.sh -subset clr+libs -c release
-cd src/coreclr
-./build-test.sh -release -generatelayoutonly
+./src/tests/build.sh -release -generatelayoutonly
 ```
 
 ### Generate a Configuration File for ASP&#46;NET Benchmarking Runs
@@ -84,10 +82,10 @@ profiles:
       cores: 12
     jobs:
       application:
-        endpoints: 
+        endpoints:
           - http://asp-perf-win:5001
       load:
-        endpoints: 
+        endpoints:
           - http://asp-perf-load:5001
 
   aspnet-physical-lin:
@@ -96,18 +94,18 @@ profiles:
       cores: 12
     jobs:
       application:
-        endpoints: 
+        endpoints:
           - http://asp-perf-lin:5001
       load:
-        endpoints: 
+        endpoints:
           - http://asp-perf-load:5001
 ```
 
 Now, what does this configuration mean and how is it applied? Let's go over
 the most important fields to understand its main functionality.
 
-* **Imports**: These are external tools hosted in the Benchmarks repo. 
-In this case, we only need `wrk`, which is a tool that loads and tests 
+* **Imports**: These are external tools hosted in the Benchmarks repo.
+In this case, we only need `wrk`, which is a tool that loads and tests
 performance in Web applications.
 
 * **Jobs**: Here go the job descriptions. A job in this context is the set of

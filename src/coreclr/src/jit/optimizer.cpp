@@ -489,7 +489,7 @@ void Compiler::optUpdateLoopsBeforeRemoveBlock(BasicBlock* block, bool skipUnmar
                     break;
                 }
 
-                __fallthrough;
+                FALLTHROUGH;
 
             case BBJ_ALWAYS:
                 noway_assert(block->bbJumpDest);
@@ -550,7 +550,7 @@ void Compiler::optUpdateLoopsBeforeRemoveBlock(BasicBlock* block, bool skipUnmar
                             break;
                         }
 
-                        __fallthrough;
+                        FALLTHROUGH;
 
                     case BBJ_ALWAYS:
                         noway_assert(auxBlock->bbJumpDest);
@@ -1392,7 +1392,7 @@ void Compiler::optCheckPreds()
                     {
                         break;
                     }
-                    __fallthrough;
+                    FALLTHROUGH;
                 case BBJ_NONE:
                     noway_assert(blockPred->bbNext == block);
                     break;
@@ -3207,7 +3207,7 @@ bool Compiler::optComputeLoopRep(int        constInit,
             {
                 case GT_SUB:
                     iterInc = -iterInc;
-                    __fallthrough;
+                    FALLTHROUGH;
 
                 case GT_ADD:
                     if (constInitX != constLimitX)
@@ -3254,7 +3254,7 @@ bool Compiler::optComputeLoopRep(int        constInit,
             {
                 case GT_SUB:
                     iterInc = -iterInc;
-                    __fallthrough;
+                    FALLTHROUGH;
 
                 case GT_ADD:
                     if (constInitX < constLimitX)
@@ -3301,7 +3301,7 @@ bool Compiler::optComputeLoopRep(int        constInit,
             {
                 case GT_SUB:
                     iterInc = -iterInc;
-                    __fallthrough;
+                    FALLTHROUGH;
 
                 case GT_ADD:
                     if (constInitX <= constLimitX)
@@ -3348,7 +3348,7 @@ bool Compiler::optComputeLoopRep(int        constInit,
             {
                 case GT_SUB:
                     iterInc = -iterInc;
-                    __fallthrough;
+                    FALLTHROUGH;
 
                 case GT_ADD:
                     if (constInitX > constLimitX)
@@ -3395,7 +3395,7 @@ bool Compiler::optComputeLoopRep(int        constInit,
             {
                 case GT_SUB:
                     iterInc = -iterInc;
-                    __fallthrough;
+                    FALLTHROUGH;
 
                 case GT_ADD:
                     if (constInitX >= constLimitX)
@@ -3798,8 +3798,6 @@ void Compiler::optUnrollLoops()
                             testCopyStmt->SetRootNode(sideEffList);
                         }
                         newBlock->bbJumpKind = BBJ_NONE;
-                        newBlock->bbFlags &=
-                            ~BBF_NEEDS_GCPOLL; // Clear any NEEDS_GCPOLL flag as this block no longer can be a back edge
 
                         // Exit this loop; we've walked all the blocks.
                         break;
@@ -3842,7 +3840,7 @@ void Compiler::optUnrollLoops()
             {
                 block->bbStmtList = nullptr;
                 block->bbJumpKind = BBJ_NONE;
-                block->bbFlags &= ~(BBF_NEEDS_GCPOLL | BBF_LOOP_HEAD);
+                block->bbFlags &= ~BBF_LOOP_HEAD;
                 if (block->bbJumpDest != nullptr)
                 {
                     block->bbJumpDest = nullptr;
@@ -3871,7 +3869,6 @@ void Compiler::optUnrollLoops()
                 initStmt->SetNextStmt(nullptr);
                 preHeaderStmt->SetPrevStmt(initStmt);
                 head->bbJumpKind = BBJ_NONE;
-                head->bbFlags &= ~BBF_NEEDS_GCPOLL;
             }
             else
             {
@@ -5783,7 +5780,7 @@ bool Compiler::optNarrowTree(GenTree* tree, var_types srct, var_types dstt, Valu
                     noway_assert(doit == false);
                     return false;
                 }
-                __fallthrough;
+                FALLTHROUGH;
 
             case GT_OR:
             case GT_XOR:
@@ -6549,6 +6546,7 @@ void Compiler::optHoistThisLoop(unsigned lnum, LoopHoistContext* hoistCtxt)
     {
         printf("optHoistLoopCode for loop L%02u <" FMT_BB ".." FMT_BB ">:\n", lnum, begn, endn);
         printf("  Loop body %s a call\n", pLoopDsc->lpContainsCall ? "contains" : "does not contain");
+        printf("  Loop has %s\n", (pLoopDsc->lpFlags & LPFLG_ONE_EXIT) ? "single exit" : "multiple exits");
     }
 #endif
 
@@ -7524,7 +7522,7 @@ void Compiler::fgCreateLoopPreHeader(unsigned lnum)
                     noway_assert(predBlock->bbJumpDest != top);
                     break;
                 }
-                __fallthrough;
+                FALLTHROUGH;
 
             case BBJ_ALWAYS:
             case BBJ_EHCATCHRET:
@@ -7563,6 +7561,7 @@ void Compiler::fgCreateLoopPreHeader(unsigned lnum)
                         preHead->bbFlags |= BBF_JMP_TARGET | BBF_HAS_LABEL;
                     }
                 } while (++jumpTab, --jumpCnt);
+                break;
 
             default:
                 noway_assert(!"Unexpected bbJumpKind");
@@ -7920,10 +7919,11 @@ bool Compiler::optComputeLoopSideEffectsOfBlock(BasicBlock* blk)
                         }
                         break;
 
-                    case GT_LOCKADD: // Binop
-                    case GT_XADD:    // Binop
-                    case GT_XCHG:    // Binop
-                    case GT_CMPXCHG: // Specialop
+                    case GT_LOCKADD:
+                    case GT_XADD:
+                    case GT_XCHG:
+                    case GT_CMPXCHG:
+                    case GT_MEMORYBARRIER:
                     {
                         assert(!tree->OperIs(GT_LOCKADD) && "LOCKADD should not appear before lowering");
                         memoryHavoc |= memoryKindSet(GcHeap, ByrefExposed);

@@ -5,6 +5,7 @@ parameters:
   osSubgroup: ''
   container: ''
   testGroup: ''
+  crossBuild: false
   crossrootfsDir: ''
   readyToRun: false
   liveLibrariesBuildConfig: ''
@@ -36,6 +37,7 @@ jobs:
     osSubgroup: ${{ parameters.osSubgroup }}
     container: ${{ parameters.container }}
     testGroup: ${{ parameters.testGroup }}
+    crossBuild: ${{ parameters.crossBuild }}
     crossrootfsDir: ${{ parameters.crossrootfsDir }}
     stagedBuild: ${{ parameters.stagedBuild }}
     liveLibrariesBuildConfig: ${{ parameters.liveLibrariesBuildConfig }}
@@ -97,6 +99,8 @@ jobs:
       - ${{ if eq(parameters.compositeBuildMode, true) }}:
         - name: crossgenArg
           value: 'composite'
+        - name: LogNamePrefix
+          value: TestRunLogs_R2R_CG2_Composite
 
     # Set job timeouts
     #
@@ -219,7 +223,6 @@ jobs:
           artifactName: '$(coreClrProductArtifactName)'
           displayName: 'CoreCLR product download for Mono'
 
-
     # Download and unzip the Microsoft.NET.Sdk.IL package needed for traversing
     # ilproj test projects during copynativeonly.
     - template: /eng/pipelines/common/download-artifact-step.yml
@@ -244,25 +247,35 @@ jobs:
     # and directly unzip them there after download). Unfortunately the logic to copy
     # the native artifacts to the final test folders is dependent on availability of the
     # managed test artifacts.
-    - script: $(coreClrRepoRootDir)build-test$(scriptExt) skipstressdependencies copynativeonly $(crossgenArg) $(buildConfig) $(archType) $(priorityArg) $(librariesOverrideArg)
+    - script: $(Build.SourcesDirectory)/src/tests/build$(scriptExt) skipstressdependencies copynativeonly $(crossgenArg) $(buildConfig) $(archType) $(priorityArg) $(librariesOverrideArg)
       displayName: Copy native test components to test output folder
 
 
     # Generate test wrappers. This is the step that examines issues.targets to exclude tests.
-    - script: $(coreClrRepoRootDir)build-test$(scriptExt) buildtestwrappersonly $(runtimeFlavorArgs) $(crossgenArg) $(buildConfig) $(archType) $(crossArg) $(priorityArg) $(librariesOverrideArg)
+    - script: $(Build.SourcesDirectory)/src/tests/build$(scriptExt) buildtestwrappersonly $(runtimeFlavorArgs) $(crossgenArg) $(buildConfig) $(archType) $(crossArg) $(priorityArg) $(librariesOverrideArg)
       displayName: Generate test wrappers
 
 
     # Compose the Core_Root folder containing all artifacts needed for running
-    # CoreCLR tests.
-    - script: $(coreClrRepoRootDir)build-test$(scriptExt) generatelayoutonly $(runtimeFlavorArgs) $(crossgenArg) $(buildConfig) $(archType) $(crossArg) $(priorityArg) $(librariesOverrideArg)
+    # CoreCLR tests. This step also compiles the framework using Crossgen / Crossgen2
+    # in ReadyToRun jobs.
+    - script: $(Build.SourcesDirectory)/src/tests/build$(scriptExt) generatelayoutonly $(runtimeFlavorArgs) $(crossgenArg) $(buildConfig) $(archType) $(crossArg) $(priorityArg) $(librariesOverrideArg)
       displayName: Generate CORE_ROOT
 
+    # Build a Mono LLVM AOT cross-compiler for non-amd64 targets (in this case, just arm64)
+    - ${{ if and(eq(parameters.runtimeFlavor, 'mono'), eq(parameters.runtimeVariant, 'llvmaot')) }}:
+      - ${{ if eq(parameters.archType, 'arm64') }}:
+        - script: ./build.sh
+                  -subset mono
+                  -c $(buildConfigUpper)
+                  -arch $(archType)
+                  /p:BuildMonoAotCrossCompiler=true
+                  /p:BuildMonoAotCrossCompilerOnly=true
+                  /p:MonoLibClang="/usr/lib/llvm-9/lib/libclang-9.so.1"
+                  /p:MonoAOTEnableLLVM=true
+                  /p:MonoAOTLLVMUseCxx11Abi=true
+          displayName: "Build Mono LLVM AOT cross compiler"
 
-    # Crossgen framework assemblies prior to triggering readyToRun execution runs.
-    - ${{ if eq(parameters.readyToRun, true) }}:
-      - script: $(coreClrRepoRootDir)build-test$(scriptExt) crossgenframeworkonly $(crossgenArg) $(buildConfig) $(archType) $(crossArg) $(priorityArg) $(librariesOverrideArg)
-        displayName: Crossgen framework assemblies
 
     # Overwrite coreclr runtime binaries with mono ones
     - ${{ if eq(parameters.runtimeFlavor, 'mono') }}:
@@ -274,8 +287,14 @@ jobs:
         displayName: "Patch dotnet with mono"
 
     - ${{ if and(eq(parameters.runtimeFlavor, 'mono'), eq(parameters.runtimeVariant, 'llvmaot')) }}:
-      - script: $(coreClrRepoRootDir)build-test$(scriptExt) mono_aot $(buildConfig)
-        displayName: "LLVM AOT compile CoreCLR tests"
+      - ${{ if eq(parameters.archType, 'x64') }}:
+        - script: $(Build.SourcesDirectory)/src/tests/build$(scriptExt) mono_aot $(buildConfig) $(archType)
+          displayName: "LLVM AOT compile CoreCLR tests"
+      - ${{ if eq(parameters.archType, 'arm64') }}:
+        - script: $(Build.SourcesDirectory)/src/tests/build$(scriptExt) mono_aot $(buildConfig) $(archType) cross
+          displayName: "LLVM AOT cross-compile CoreCLR tests"
+          env:
+            __MonoToolPrefix: aarch64-linux-gnu-
 
     # Send tests to Helix
     - template: /eng/pipelines/common/templates/runtimes/send-to-helix-step.yml
@@ -285,7 +304,6 @@ jobs:
         archType: ${{ parameters.archType }}
         osGroup: ${{ parameters.osGroup }}
         osSubgroup: ${{ parameters.osSubgroup}}
-        coreClrRepoRoot: $(coreClrRepoRoot)
         runtimeFlavorDisplayName: ${{ parameters.runtimeFlavorDisplayName }}
 
         ${{ if eq(variables['System.TeamProject'], 'public') }}:
@@ -314,6 +332,9 @@ jobs:
 
         runCrossGen: ${{ and(eq(parameters.readyToRun, true), ne(parameters.crossgen2, true)) }}
         runCrossGen2: ${{ and(eq(parameters.readyToRun, true), eq(parameters.crossgen2, true)) }}
+        ${{ if and(ne(parameters.testGroup, 'innerloop'), eq(parameters.runtimeFlavor, 'coreclr')) }}:
+          runPALTestsDir: '$(coreClrProductRootFolderPath)/paltests'
+
         compositeBuildMode: ${{ parameters.compositeBuildMode }}
         runInUnloadableContext: ${{ parameters.runInUnloadableContext }}
 
@@ -322,7 +343,7 @@ jobs:
           # DotNet-HelixApi-Access variable group
           helixAccessToken: $(HelixApiAccessToken)
 
-        helixProjectArguments: '$(coreClrRepoRoot)/tests/helixpublishwitharcade.proj'
+        helixProjectArguments: '$(Build.SourcesDirectory)/src/tests/Common/helixpublishwitharcade.proj'
 
         ${{ if in(parameters.testGroup, 'innerloop', 'outerloop') }}:
           scenarios:
@@ -411,6 +432,7 @@ jobs:
           - gcstress0xc_zapdisable_heapverify1
           - gcstress0xc_jitstress1
           - gcstress0xc_jitstress2
+          - gcstress0xc_tailcallstress
           - gcstress0xc_jitminopts_heapverify1
         ${{ if in(parameters.testGroup, 'r2r-extra') }}:
           scenarios:

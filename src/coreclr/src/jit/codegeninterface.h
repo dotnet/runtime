@@ -490,7 +490,7 @@ public:
                 regNumber vlsrReg;
             } vlStkReg;
 
-            // VLT_STK2 -- Any 64 bit value which is on the stack, in 2 successsive DWords
+            // VLT_STK2 -- Any 64 bit value which is on the stack, in 2 successive DWords
             // eg 2 DWords at [ESP+0x10]
 
             struct

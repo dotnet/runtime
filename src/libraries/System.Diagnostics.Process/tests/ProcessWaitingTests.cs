@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Threading;
@@ -110,7 +111,7 @@ namespace System.Diagnostics.Tests
             await Task.WhenAll(Enumerable.Range(0, Tasks).Select(_ => Task.Run(work)).ToArray());
         }
 
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [Theory]
         [InlineData(0)]  // poll
         [InlineData(10)] // real timeout
         public void CurrentProcess_WaitNeverCompletes(int milliseconds)
@@ -207,6 +208,7 @@ namespace System.Diagnostics.Tests
             Assert.Equal(TaskStatus.RanToCompletion, task.Status);
         }
 
+        [SkipOnMono("Hangs on Mono, https://github.com/dotnet/runtime/issues/38943")]
         [ConditionalTheory(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         [InlineData(false)]
         [InlineData(true)]
@@ -489,6 +491,54 @@ namespace System.Diagnostics.Tests
                 Assert.True(p.HasExited, "Process has not exited");
             }
             Assert.Equal(RemotelyInvokable.SuccessExitCode, p.ExitCode);
+        }
+
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        public void WaitForExit_AfterProcessExit_ShouldConsumeOutputDataReceived()
+        {
+            const string message = "test";
+            using Process p = CreateProcessPortable(RemotelyInvokable.Echo, message);
+
+            int linesReceived = 0;
+            p.OutputDataReceived += (_, e) => { if (e.Data is not null) linesReceived++; };
+            p.StartInfo.RedirectStandardOutput = true;
+
+            Assert.True(p.Start());
+
+            // Give time for the process (cmd) to terminate
+            while (!p.HasExited)
+            {
+                Thread.Sleep(20);
+            }
+
+            p.BeginOutputReadLine();
+            p.WaitForExit();
+
+            Assert.Equal(1, linesReceived);
+        }
+
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        public async Task WaitForExitAsync_AfterProcessExit_ShouldConsumeOutputDataReceived()
+        {
+            const string message = "test";
+            using Process p = CreateProcessPortable(RemotelyInvokable.Echo, message);
+
+            int linesReceived = 0;
+            p.OutputDataReceived += (_, e) => { if (e.Data is not null) linesReceived++; };
+            p.StartInfo.RedirectStandardOutput = true;
+
+            Assert.True(p.Start());
+
+            // Give time for the process (cmd) to terminate
+            while (!p.HasExited)
+            {
+                Thread.Sleep(20);
+            }
+
+            p.BeginOutputReadLine();
+            await p.WaitForExitAsync();
+
+            Assert.Equal(1, linesReceived);
         }
 
         [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]

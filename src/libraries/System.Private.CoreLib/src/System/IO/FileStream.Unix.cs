@@ -401,28 +401,14 @@ namespace System.IO
                 throw new IOException(SR.IO_SetLengthAppendTruncate);
             }
 
-            long origPos = _filePosition;
-
             VerifyOSHandlePosition();
-
-            if (_filePosition != value)
-            {
-                SeekCore(_fileHandle, value, SeekOrigin.Begin);
-            }
 
             CheckFileCall(Interop.Sys.FTruncate(_fileHandle, value));
 
-            // Return file pointer to where it was before setting length
-            if (origPos != value)
+            // Set file pointer to end of file
+            if (_filePosition > value)
             {
-                if (origPos < value)
-                {
-                    SeekCore(_fileHandle, origPos, SeekOrigin.Begin);
-                }
-                else
-                {
-                    SeekCore(_fileHandle, 0, SeekOrigin.End);
-                }
+                SeekCore(_fileHandle, 0, SeekOrigin.End);
             }
         }
 

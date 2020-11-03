@@ -170,7 +170,7 @@ namespace ILCompiler.PEWriter
             _fileSize = fileSize;
         }
 
-        public void Save(string mapFileName)
+        public void SaveMap(string mapFileName)
         {
             Console.WriteLine("Emitting map file: {0}", mapFileName);
 
@@ -187,6 +187,24 @@ namespace ILCompiler.PEWriter
             }
         }
 
+        public void SaveCsv(string nodeStatsCsvFileName, string mapCsvFileName)
+        {
+            Console.WriteLine("Emitting csv files: {0}, {1}", nodeStatsCsvFileName, mapCsvFileName);
+
+            _nodes.Sort(MapFileItem.Comparer.Instance);
+            _symbols.Sort(MapFileItem.Comparer.Instance);
+
+            using (StreamWriter nodeStatsWriter = new StreamWriter(nodeStatsCsvFileName))
+            {
+                WriteNodeTypeStatisticsCsv(nodeStatsWriter);
+            }
+
+            using (StreamWriter mapCsvWriter = new StreamWriter(mapCsvFileName))
+            {
+                WriteMapCsv(mapCsvWriter);
+            }
+        }
+
         private void WriteHeader(StreamWriter writer)
         {
             WriteTitle(writer, "Summary Info");
@@ -198,7 +216,7 @@ namespace ILCompiler.PEWriter
             writer.WriteLine($"Relocation count: {_relocCounts.Values.Sum(),10}");
         }
 
-        private void WriteNodeTypeStatistics(StreamWriter writer)
+        private IEnumerable<NodeTypeStatistics> GetNodeTypeStatistics()
         {
             List<NodeTypeStatistics> nodeTypeStats = new List<NodeTypeStatistics>();
             Dictionary<string, int> statsNameIndex = new Dictionary<string, int>();
@@ -214,6 +232,13 @@ namespace ILCompiler.PEWriter
             }
             nodeTypeStats.Sort((a, b) => b.Length.CompareTo(a.Length));
 
+            return nodeTypeStats;
+        }
+
+        private void WriteNodeTypeStatistics(StreamWriter writer)
+        {
+            IEnumerable<NodeTypeStatistics> nodeTypeStats = GetNodeTypeStatistics();
+
             WriteTitle(writer, "Node Type Statistics");
             WriteTitle(writer, "    LENGTH |   %FILE |    AVERAGE |  COUNT | NODETYPE");
             foreach (NodeTypeStatistics nodeStats in nodeTypeStats)
@@ -222,6 +247,21 @@ namespace ILCompiler.PEWriter
                 writer.Write($"{(nodeStats.Length * 100.0 / _fileSize),7:F3} | ");
                 writer.Write($"{(nodeStats.Length / (double)nodeStats.Count),10:F1} | ");
                 writer.Write($"{nodeStats.Count,6} | ");
+                writer.WriteLine(nodeStats.Name);
+            }
+        }
+
+        private void WriteNodeTypeStatisticsCsv(StreamWriter writer)
+        {
+            IEnumerable<NodeTypeStatistics> nodeTypeStats = GetNodeTypeStatistics();
+
+            writer.WriteLine("Length,% Of File,Average Size,Count,Node Type");
+            foreach (NodeTypeStatistics nodeStats in nodeTypeStats)
+            {
+                writer.Write($"{nodeStats.Length},");
+                writer.Write($"{(nodeStats.Length * 100.0 / _fileSize)},");
+                writer.Write($"{(nodeStats.Length / (double)nodeStats.Count)},");
+                writer.Write($"{nodeStats.Count},");
                 writer.WriteLine(nodeStats.Name);
             }
         }
@@ -309,6 +349,48 @@ namespace ILCompiler.PEWriter
                         writer.Write($"{symbol.Name}");
                     }
                     writer.WriteLine($"  ({node.Name})");
+                }
+            }
+        }
+
+        private void WriteMapCsv(StreamWriter writer)
+        {
+            writer.WriteLine("Rva,Length,Relocs,Section,Symbol,Node Type");
+
+            int nodeIndex = 0;
+            int symbolIndex = 0;
+
+            while (nodeIndex < _nodes.Count || symbolIndex < _symbols.Count)
+            {
+                if (nodeIndex >= _nodes.Count || symbolIndex < _symbols.Count && MapFileItem.Comparer.Instance.Compare(_symbols[symbolIndex], _nodes[nodeIndex]) < 0)
+                {
+                    // No more nodes or next symbol is below next node - emit symbol
+                    MapFileSymbol symbol = _symbols[symbolIndex++];
+                    Section section = _sections[symbol.SectionIndex];
+                    writer.Write($"0x{symbol.Offset + section.RVAWhenPlaced:X8},");
+                    writer.Write(",");
+                    writer.Write(",");
+                    writer.Write($"{section.Name},");
+                    writer.Write(",");
+                    writer.WriteLine(symbol.Name);
+                }
+                else
+                {
+                    // Emit node and optionally symbol
+                    MapFileNode node = _nodes[nodeIndex++];
+                    Section section = _sections[node.SectionIndex];
+
+                    writer.Write($"0x{node.Offset + section.RVAWhenPlaced:X8},");
+                    writer.Write($"{node.Length},");
+                    writer.Write($"{node.Relocations},");
+                    writer.Write($"{section.Name},");
+                    if (symbolIndex < _symbols.Count && MapFileItem.Comparer.Instance.Compare(node, _symbols[symbolIndex]) == 0)
+                    {
+                        MapFileSymbol symbol = _symbols[symbolIndex++];
+                        writer.Write($"{symbol.Name}");
+                    }
+                    writer.Write(",");
+                    writer.WriteLine($"{node.Name}");
                 }
             }
         }

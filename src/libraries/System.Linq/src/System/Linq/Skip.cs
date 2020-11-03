@@ -121,7 +121,7 @@ namespace System.Linq
 
             return count <= 0 ?
                 source.Skip(0) :
-                SkipLastEnumerableFactory(source, count);
+                SkipLastIterator(source, count);
         }
 
         private static IEnumerable<TSource> SkipLastIterator<TSource>(IEnumerable<TSource> source, int count)

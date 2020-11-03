@@ -553,7 +553,6 @@ pal::string_t pal::get_current_os_rid_platform()
     // We will, instead, use kern.osrelease and use its major version number
     // as a means to formulate the OSX 10.X RID.
     //
-    // Needless to say, this will need to be updated if OSX RID were to become 11.* ever.
     size_t size = sizeof(str);
     int ret = sysctlbyname("kern.osrelease", str, &size, nullptr, 0);
     if (ret == 0)
@@ -562,18 +561,31 @@ pal::string_t pal::get_current_os_rid_platform()
         size_t pos = release.find('.');
         if (pos != std::string::npos)
         {
-            // Extract the major version and subtract 4 from it
-            // to get the Minor version used in OSX versioning scheme.
-            // That is, given a version 10.X.Y, we will get X below.
-            int minorVersion = stoi(release.substr(0, pos)) - 4;
-            if (minorVersion < 10)
+            int majorVersion = stoi(release.substr(0, pos));
+            // compat path with 10.x
+            if (majorVersion < 20)
             {
-                // On OSX, our minimum supported RID is 10.12.
-                minorVersion = 12;
-            }
+                // Extract the major version and subtract 4 from it
+                // to get the Minor version used in OSX versioning scheme.
+                // That is, given a version 10.X.Y, we will get X below.
+                //
+                // macOS Cataline 10.15.5 has kernel 19.5.0
+                int minorVersion = majorVersion - 4;
+                if (minorVersion < 10)
+                {
+                    // On OSX, our minimum supported RID is 10.12.
+                    minorVersion = 12;
+                }
 
-            ridOS.append(_X("osx.10."));
-            ridOS.append(pal::to_string(minorVersion));
+                ridOS.append(_X("osx.10."));
+                ridOS.append(pal::to_string(minorVersion));
+            }
+            else
+            {
+                // 11.0 shipped with kernel 20.0
+                ridOS.append(_X("osx.11."));
+                ridOS.append(pal::to_string(majorVersion - 20));
+            }
         }
     }
 

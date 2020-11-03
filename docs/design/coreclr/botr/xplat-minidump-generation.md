@@ -46,7 +46,7 @@ As of .NET 5.0, createdump is supported on MacOS but instead of the MachO dump f
 
 ### Windows ###
 
-As of .NET 5.0, createdump and the below configuration environment variables are supported on Windows. It is implemented using the Windows MiniDumpWriteDump API. This allows consistent crash/unhandled exception dumps across all of our platforms. 
+As of .NET 5.0, createdump and the below configuration environment variables are supported on Windows. It is implemented using the Windows MiniDumpWriteDump API. This allows consistent crash/unhandled exception dumps across all of our platforms.
 
 # Configuration/Policy #
 

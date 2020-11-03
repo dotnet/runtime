@@ -1,7 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-
 #include "common.h"
 
 #include "gcinfodecoder.h"
@@ -158,7 +157,7 @@ GcInfoDecoder::GcInfoDecoder(
     if (hasGSCookie)
     {
         // Note that normalization as a code offset can be different than
-        //  normalization as code legnth
+        //  normalization as code length
         UINT32 normCodeLength = NORMALIZE_CODE_OFFSET(m_CodeLength);
 
         // Decode prolog/epilog information
@@ -275,7 +274,7 @@ GcInfoDecoder::GcInfoDecoder(
 
     if (hasReversePInvokeFrame)
     {
-        m_ReversePInvokeFrameStackSlot = (INT32)m_Reader.DecodeVarLengthSigned(REVERSE_PINVOKE_FRAME_ENCBASE);
+        m_ReversePInvokeFrameStackSlot = (INT32)DENORMALIZE_STACK_SLOT(m_Reader.DecodeVarLengthSigned(REVERSE_PINVOKE_FRAME_ENCBASE));
     }
     else
     {
@@ -322,7 +321,7 @@ GcInfoDecoder::GcInfoDecoder(
     else if(flags & DECODE_FOR_RANGES_CALLBACK)
     {
         // Note that normalization as a code offset can be different than
-        //  normalization as code legnth
+        //  normalization as code length
         UINT32 normCodeLength = NORMALIZE_CODE_OFFSET(m_CodeLength);
 
         UINT32 numBitsPerOffset = CeilOfLog2(normCodeLength);
@@ -445,7 +444,7 @@ void GcInfoDecoder::EnumerateInterruptibleRanges (
             EnumerateInterruptibleRangesCallback *pCallback,
             void *                                hCallback)
 {
-    // If no info is found for the call site, we default to fully-interruptbile
+    // If no info is found for the call site, we default to fully-interruptible
     LOG((LF_GCROOTS, LL_INFO1000000, "No GC info found for call site at offset %x. Defaulting to fully-interruptible information.\n", (int) m_InstructionOffset));
 
     UINT32 lastInterruptibleRangeStopOffsetNormalized = 0;
@@ -804,7 +803,7 @@ bool GcInfoDecoder::EnumerateLiveSlots(
         _ASSERTE(m_NumInterruptibleRanges);
         _ASSERTE(numInterruptibleLength);
 
-        // If no info is found for the call site, we default to fully-interruptbile
+        // If no info is found for the call site, we default to fully-interruptible
         LOG((LF_GCROOTS, LL_INFO1000000, "No GC info found for call site at offset %x. Defaulting to fully-interruptible information.\n", (int) m_InstructionOffset));
 
         UINT32 numChunks = (numInterruptibleLength + NUM_NORM_CODE_OFFSETS_PER_CHUNK - 1) / NUM_NORM_CODE_OFFSETS_PER_CHUNK;
@@ -1365,7 +1364,7 @@ OBJECTREF* GcInfoDecoder::GetRegisterSlot(
     return (OBJECTREF*)*(ppRax + regNum);
 }
 
-#ifdef TARGET_UNIX
+#if defined(TARGET_UNIX) && !defined(FEATURE_REDHAWK)
 OBJECTREF* GcInfoDecoder::GetCapturedRegister(
     int             regNum,
     PREGDISPLAY     pRD
@@ -1381,7 +1380,7 @@ OBJECTREF* GcInfoDecoder::GetCapturedRegister(
 
     return (OBJECTREF*)(pRax + regNum);
 }
-#endif // TARGET_UNIX
+#endif // TARGET_UNIX && !FEATURE_REDHAWK
 
 bool GcInfoDecoder::IsScratchRegister(int regNum,  PREGDISPLAY pRD)
 {
@@ -1435,7 +1434,7 @@ void GcInfoDecoder::ReportRegisterToGC(  // AMD64
     LOG((LF_GCROOTS, LL_INFO1000, "Reporting " FMT_REG, regNum ));
 
     OBJECTREF* pObjRef = GetRegisterSlot( regNum, pRD );
-#if defined(TARGET_UNIX) && !defined(SOS_TARGET_AMD64)
+#if defined(TARGET_UNIX) && !defined(FEATURE_REDHAWK) && !defined(SOS_TARGET_AMD64)
     // On PAL, we don't always have the context pointers available due to
     // a limitation of an unwinding library. In such case, the context
     // pointers for some nonvolatile registers are NULL.
@@ -1455,7 +1454,7 @@ void GcInfoDecoder::ReportRegisterToGC(  // AMD64
 
         gcFlags |= GC_CALL_PINNED;
     }
-#endif // TARGET_UNIX && !SOS_TARGET_AMD64
+#endif // TARGET_UNIX && !FEATURE_REDHAWK && !SOS_TARGET_AMD64
 
 #ifdef _DEBUG
     if(IsScratchRegister(regNum, pRD))
@@ -1659,6 +1658,27 @@ void GcInfoDecoder::ReportRegisterToGC( // ARM64
     LOG((LF_GCROOTS, LL_INFO1000, "Reporting " FMT_REG, regNum ));
 
     OBJECTREF* pObjRef = GetRegisterSlot( regNum, pRD );
+#if defined(TARGET_UNIX) && !defined(SOS_TARGET_ARM64)
+    // On PAL, we don't always have the context pointers available due to
+    // a limitation of an unwinding library. In such case, the context
+    // pointers for some nonvolatile registers are NULL.
+    // In such case, we let the pObjRef point to the captured register
+    // value in the context and pin the object itself.
+    if (pObjRef == NULL)
+    {
+        // Report a pinned object to GC only in the promotion phase when the
+        // GC is scanning roots.
+        GCCONTEXT* pGCCtx = (GCCONTEXT*)(hCallBack);
+        if (!pGCCtx->sc->promotion)
+        {
+            return;
+        }
+
+        pObjRef = GetCapturedRegister(regNum, pRD);
+
+        gcFlags |= GC_CALL_PINNED;
+    }
+#endif // TARGET_UNIX && !SOS_TARGET_ARM64
 
 #ifdef _DEBUG
     if(IsScratchRegister(regNum, pRD))
@@ -1686,7 +1706,17 @@ OBJECTREF* GcInfoDecoder::GetCapturedRegister(
     PREGDISPLAY     pRD
     )
 {
-    _ASSERTE(regNum >= 0 && regNum <= 28);
+    _ASSERTE(regNum >= 0 && regNum <= 30);
+    _ASSERTE(regNum != 18);
+
+    if (regNum == 29)
+    {
+        return (OBJECTREF*) &pRD->pCurrentContext->Fp;
+    }
+    else if (regNum == 30)
+    {
+        return (OBJECTREF*) &pRD->pCurrentContext->Lr;
+    }
 
     // The fields of CONTEXT are in the same order as
     // the processor encoding numbers.
@@ -1761,7 +1791,7 @@ OBJECTREF* GcInfoDecoder::GetStackSlot(
 
         SIZE_T * pFrameReg = (SIZE_T*) GetRegisterSlot(m_StackBaseRegister, pRD);
 
-#ifdef TARGET_UNIX
+#if defined(TARGET_UNIX) && !defined(FEATURE_REDHAWK)
         // On PAL, we don't always have the context pointers available due to
         // a limitation of an unwinding library. In such case, the context
         // pointers for some nonvolatile registers are NULL.
@@ -1769,7 +1799,7 @@ OBJECTREF* GcInfoDecoder::GetStackSlot(
         {
             pFrameReg = (SIZE_T*) GetCapturedRegister(m_StackBaseRegister, pRD);
         }
-#endif // TARGET_UNIX
+#endif // TARGET_UNIX && !FEATURE_REDHAWK
 
         pObjRef = (OBJECTREF*)(*pFrameReg + spOffset);
     }
@@ -1810,7 +1840,7 @@ void GcInfoDecoder::ReportStackSlotToGC(
     GCINFODECODER_CONTRACT;
 
     OBJECTREF* pObjRef = GetStackSlot(spOffset, spBase, pRD);
-    _ASSERTE( IS_ALIGNED( pObjRef, sizeof( Object* ) ) );
+    _ASSERTE(IS_ALIGNED(pObjRef, sizeof(OBJECTREF*)));
 
 #ifdef _DEBUG
     LOG((LF_GCROOTS, LL_INFO1000, /* Part One */

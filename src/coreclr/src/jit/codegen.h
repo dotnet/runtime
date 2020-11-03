@@ -1393,8 +1393,8 @@ public:
                        emitAttr    size,
                        insFlags    flags = INS_FLAGS_DONT_CARE);
 
-    void inst_IV(instruction ins, int val);
-    void inst_IV_handle(instruction ins, int val);
+    void inst_IV(instruction ins, cnsval_ssize_t val);
+    void inst_IV_handle(instruction ins, cnsval_ssize_t val);
 
     void inst_RV_IV(
         instruction ins, regNumber reg, target_ssize_t val, emitAttr size, insFlags flags = INS_FLAGS_DONT_CARE);

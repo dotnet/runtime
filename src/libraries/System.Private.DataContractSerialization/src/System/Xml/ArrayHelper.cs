@@ -10,8 +10,8 @@ namespace System.Xml
     {
         public TArray[] ReadArray(XmlDictionaryReader reader, TArgument localName, TArgument namespaceUri, int maxArrayLength)
         {
-            TArray[][] arrays = null;
-            TArray[] array = null;
+            TArray[][]? arrays = null;
+            TArray[]? array = null;
             int arrayCount = 0;
             int totalRead = 0;
             int count;
@@ -49,7 +49,7 @@ namespace System.Xml
                 int offset = 0;
                 for (int i = 0; i < arrayCount; i++)
                 {
-                    Array.Copy(arrays[i], 0, newArray, offset, arrays[i].Length);
+                    Array.Copy(arrays![i], 0, newArray, offset, arrays[i].Length);
                     offset += arrays[i].Length;
                 }
                 Array.Copy(array, 0, newArray, offset, totalRead - offset);

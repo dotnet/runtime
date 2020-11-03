@@ -516,7 +516,7 @@ namespace System.Data.Common.Tests
             var readerTable = new DataTable();
             readerTable.Columns.Add("text_col", typeof(string));
 
-            var table = await new SchemaDbDataReaderMock(readerTable).GetSchemaTableAsync();
+            var table = (await new SchemaDbDataReaderMock(readerTable).GetSchemaTableAsync())!;
 
             var textColRow = table.Rows.Cast<DataRow>().Single();
             Assert.Equal("text_col", textColRow["ColumnName"]);

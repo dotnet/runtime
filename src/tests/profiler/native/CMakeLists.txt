@@ -2,26 +2,24 @@ cmake_minimum_required(VERSION 3.14.5)
 
 project(Profiler)
 
-set(GCBASIC_SOURCES gcbasicprofiler/gcbasicprofiler.cpp)
-set(GC_SOURCES gcprofiler/gcprofiler.cpp)
-set(REJIT_SOURCES rejitprofiler/rejitprofiler.cpp rejitprofiler/ilrewriter.cpp rejitprofiler/sigparse.cpp)
-set(EVENTPIPE_SOURCES
+set(SOURCES
+    gcbasicprofiler/gcbasicprofiler.cpp
+    gcprofiler/gcprofiler.cpp
+    rejitprofiler/rejitprofiler.cpp
+    rejitprofiler/ilrewriter.cpp
+    rejitprofiler/sigparse.cpp
     eventpipeprofiler/eventpipereadingprofiler.cpp
     eventpipeprofiler/eventpipewritingprofiler.cpp
-    eventpipeprofiler/eventpipemetadatareader.cpp)
-set(METADATAGETDISPENSER_SOURCES metadatagetdispenser/metadatagetdispenser.cpp)
-set(GETAPPDOMAINSTATICADDRESS_SOURCES getappdomainstaticaddress/getappdomainstaticaddress.cpp)
-set(ELT_SOURCES eltprofiler/slowpatheltprofiler.cpp)
-
-set(SOURCES
-    ${GCBASIC_SOURCES}
-    ${GC_SOURCES}
-    ${REJIT_SOURCES}
-    ${EVENTPIPE_SOURCES}
-    ${METADATAGETDISPENSER_SOURCES}
-    ${GETAPPDOMAINSTATICADDRESS_SOURCES}
-    ${ELT_SOURCES}
-    profiler.def profiler.cpp classfactory.cpp dllmain.cpp guids.cpp)
+    eventpipeprofiler/eventpipemetadatareader.cpp
+    metadatagetdispenser/metadatagetdispenser.cpp
+    getappdomainstaticaddress/getappdomainstaticaddress.cpp
+    eltprofiler/slowpatheltprofiler.cpp
+    releaseondetach/releaseondetach.cpp
+    profiler.def
+    profiler.cpp
+    classfactory.cpp
+    dllmain.cpp
+    guids.cpp)
 
 include_directories(../../../coreclr/src/pal/prebuilt/inc)
 

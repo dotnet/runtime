@@ -9,29 +9,30 @@ using System.Globalization;
 using System.Runtime.Serialization;
 using System.Collections.Generic;
 using System.Threading.Tasks;
+using System.Diagnostics.CodeAnalysis;
 
 namespace System.Xml
 {
     internal abstract class XmlBaseWriter : XmlDictionaryWriter
     {
-        private XmlNodeWriter _writer;
+        private XmlNodeWriter _writer = null!; // initialized in SetOutput
         private readonly NamespaceManager _nsMgr;
-        private Element[] _elements;
+        private Element[]? _elements;
         private int _depth;
-        private string _attributeLocalName;
-        private string _attributeValue;
+        private string? _attributeLocalName;
+        private string? _attributeValue;
         private bool _isXmlAttribute;
         private bool _isXmlnsAttribute;
         private WriteState _writeState;
         private DocumentState _documentState;
-        private byte[] _trailBytes;
+        private byte[]? _trailBytes;
         private int _trailByteCount;
-        private XmlStreamNodeWriter _nodeWriter;
-        private XmlSigningNodeWriter _signingWriter;
+        private XmlStreamNodeWriter _nodeWriter = null!; // initialized in SetOutput
+        private XmlSigningNodeWriter? _signingWriter;
         private bool _inList;
         private const string xmlnsNamespace = "http://www.w3.org/2000/xmlns/";
         private const string xmlNamespace = "http://www.w3.org/XML/1998/namespace";
-        private static BinHexEncoding _binhexEncoding;
+        private static BinHexEncoding? _binhexEncoding;
         private static readonly string[] s_prefixes = { "a", "b", "c", "d", "e", "f", "g", "h", "i", "j", "k", "l", "m", "n", "o", "p", "q", "r", "s", "t", "u", "v", "w", "x", "y", "z" };
 
         protected XmlBaseWriter()
@@ -108,6 +109,7 @@ namespace System.Xml
             get { return _writeState == WriteState.Closed; }
         }
 
+        [DoesNotReturn]
         protected void ThrowClosed()
         {
             throw System.Runtime.Serialization.DiagnosticUtility.ExceptionUtility.ThrowHelperError(new InvalidOperationException(SR.XmlWriterClosed));
@@ -123,7 +125,7 @@ namespace System.Xml
             }
         }
 
-        public override string XmlLang
+        public override string? XmlLang
         {
             get
             {
@@ -147,7 +149,7 @@ namespace System.Xml
             }
         }
 
-        public override void WriteXmlnsAttribute(string prefix, string ns)
+        public override void WriteXmlnsAttribute(string? prefix, string ns)
         {
             if (IsClosed)
                 ThrowClosed();
@@ -172,7 +174,7 @@ namespace System.Xml
             }
         }
 
-        public override void WriteXmlnsAttribute(string prefix, XmlDictionaryString ns)
+        public override void WriteXmlnsAttribute(string? prefix, XmlDictionaryString ns)
         {
             if (IsClosed)
                 ThrowClosed();
@@ -197,7 +199,7 @@ namespace System.Xml
             }
         }
 
-        private void StartAttribute(ref string prefix, string localName, string ns, XmlDictionaryString xNs)
+        private void StartAttribute([AllowNull] ref string prefix, string localName, string? ns, XmlDictionaryString? xNs)
         {
             if (IsClosed)
                 ThrowClosed();
@@ -271,10 +273,10 @@ namespace System.Xml
             else if (prefix.Length == 0)
             {
                 // No prefix specified - try to find a prefix corresponding to the given namespace
-                prefix = _nsMgr.LookupAttributePrefix(ns);
+                string? tempPrefix = _nsMgr.LookupAttributePrefix(ns);
 
                 // If we didn't find anything with the right namespace, generate one.
-                if (prefix == null)
+                if (tempPrefix == null)
                 {
                     // Watch for special values
                     if (ns.Length == xmlnsNamespace.Length && ns == xmlnsNamespace)
@@ -282,8 +284,9 @@ namespace System.Xml
                     if (ns.Length == xmlNamespace.Length && ns == xmlNamespace)
                         throw System.Runtime.Serialization.DiagnosticUtility.ExceptionUtility.ThrowHelperError(new ArgumentException(SR.Format(SR.XmlSpecificBindingNamespace, "xml", ns)));
 
-                    prefix = GeneratePrefix(ns, xNs);
+                    tempPrefix = GeneratePrefix(ns, xNs);
                 }
+                prefix = tempPrefix;
             }
             else
             {
@@ -292,7 +295,7 @@ namespace System.Xml
             _writeState = WriteState.Attribute;
         }
 
-        public override void WriteStartAttribute(string prefix, string localName, string namespaceUri)
+        public override void WriteStartAttribute(string? prefix, string localName, string? namespaceUri)
         {
             StartAttribute(ref prefix, localName, namespaceUri, null);
             if (!_isXmlnsAttribute)
@@ -301,12 +304,12 @@ namespace System.Xml
             }
         }
 
-        public override void WriteStartAttribute(string prefix, XmlDictionaryString localName, XmlDictionaryString namespaceUri)
+        public override void WriteStartAttribute(string? prefix, XmlDictionaryString localName, XmlDictionaryString? namespaceUri)
         {
-            StartAttribute(ref prefix, (localName != null ? localName.Value : null), (namespaceUri != null ? namespaceUri.Value : null), namespaceUri);
+            StartAttribute(ref prefix, (localName != null ? localName.Value : null)!, (namespaceUri != null ? namespaceUri.Value : null), namespaceUri);
             if (!_isXmlnsAttribute)
             {
-                _writer.WriteStartAttribute(prefix, localName);
+                _writer.WriteStartAttribute(prefix, localName!);
             }
         }
 
@@ -325,7 +328,7 @@ namespace System.Xml
                 {
                     if (_attributeLocalName == "lang")
                     {
-                        _nsMgr.AddLangAttribute(_attributeValue);
+                        _nsMgr.AddLangAttribute(_attributeValue!);
                     }
                     else if (_attributeLocalName == "space")
                     {
@@ -353,7 +356,7 @@ namespace System.Xml
 
                 if (_isXmlnsAttribute)
                 {
-                    _nsMgr.AddNamespaceIfNotDeclared(_attributeLocalName, _attributeValue, null);
+                    _nsMgr.AddNamespaceIfNotDeclared(_attributeLocalName!, _attributeValue!, null);
                     _isXmlnsAttribute = false;
                     _attributeLocalName = null;
                     _attributeValue = null;
@@ -389,7 +392,7 @@ namespace System.Xml
                 {
                     if (_attributeLocalName == "lang")
                     {
-                        _nsMgr.AddLangAttribute(_attributeValue);
+                        _nsMgr.AddLangAttribute(_attributeValue!);
                     }
                     else if (_attributeLocalName == "space")
                     {
@@ -417,7 +420,7 @@ namespace System.Xml
 
                 if (_isXmlnsAttribute)
                 {
-                    _nsMgr.AddNamespaceIfNotDeclared(_attributeLocalName, _attributeValue, null);
+                    _nsMgr.AddNamespaceIfNotDeclared(_attributeLocalName!, _attributeValue!, null);
                     _isXmlnsAttribute = false;
                     _attributeLocalName = null;
                     _attributeValue = null;
@@ -433,7 +436,7 @@ namespace System.Xml
             }
         }
 
-        public override void WriteComment(string text)
+        public override void WriteComment(string? text)
         {
             if (IsClosed)
                 ThrowClosed();
@@ -471,7 +474,7 @@ namespace System.Xml
             WriteEndElement();
         }
 
-        public override void WriteCData(string text)
+        public override void WriteCData(string? text)
         {
             if (IsClosed)
                 ThrowClosed();
@@ -491,12 +494,12 @@ namespace System.Xml
             }
         }
 
-        public override void WriteDocType(string name, string pubid, string sysid, string subset)
+        public override void WriteDocType(string name, string? pubid, string? sysid, string? subset)
         {
             throw System.Runtime.Serialization.DiagnosticUtility.ExceptionUtility.ThrowHelperError(new NotSupportedException(SR.Format(SR.XmlMethodNotSupported, "WriteDocType")));
         }
 
-        private void StartElement(ref string prefix, string localName, string ns, XmlDictionaryString xNs)
+        private void StartElement(ref string? prefix, string localName, string? ns, XmlDictionaryString? xNs)
         {
             if (IsClosed)
                 ThrowClosed();
@@ -541,7 +544,7 @@ namespace System.Xml
             element.LocalName = localName;
         }
 
-        private void PreStartElementAsyncCheck(string prefix, string localName, string ns, XmlDictionaryString xNs)
+        private void PreStartElementAsyncCheck(string? prefix, string localName, string? ns, XmlDictionaryString? xNs)
         {
             if (IsClosed)
                 ThrowClosed();
@@ -556,13 +559,13 @@ namespace System.Xml
                 throw DiagnosticUtility.ExceptionUtility.ThrowHelperError(new InvalidOperationException(SR.Format(SR.XmlInvalidWriteState, "WriteStartElement", WriteState.ToString())));
         }
 
-        private async Task StartElementAndWriteStartElementAsync(string prefix, string localName, string namespaceUri)
+        private async Task StartElementAndWriteStartElementAsync(string? prefix, string localName, string? namespaceUri)
         {
             prefix = await StartElementAsync(prefix, localName, namespaceUri, null).ConfigureAwait(false);
             await _writer.WriteStartElementAsync(prefix, localName).ConfigureAwait(false);
         }
 
-        private async Task<string> StartElementAsync(string prefix, string localName, string ns, XmlDictionaryString xNs)
+        private async Task<string> StartElementAsync(string? prefix, string localName, string? ns, XmlDictionaryString? xNs)
         {
             await FlushBase64Async().ConfigureAwait(false);
             await AutoCompleteAsync(WriteState.Element).ConfigureAwait(false);
@@ -597,21 +600,21 @@ namespace System.Xml
             return prefix;
         }
 
-        public override void WriteStartElement(string prefix, string localName, string namespaceUri)
+        public override void WriteStartElement(string? prefix, string localName, string? namespaceUri)
         {
             StartElement(ref prefix, localName, namespaceUri, null);
             _writer.WriteStartElement(prefix, localName);
         }
 
-        public override Task WriteStartElementAsync(string prefix, string localName, string namespaceUri)
+        public override Task WriteStartElementAsync(string? prefix, string localName, string? namespaceUri)
         {
             PreStartElementAsyncCheck(prefix, localName, namespaceUri, null);
             return StartElementAndWriteStartElementAsync(prefix, localName, namespaceUri);
         }
 
-        public override void WriteStartElement(string prefix, XmlDictionaryString localName, XmlDictionaryString namespaceUri)
+        public override void WriteStartElement(string? prefix, XmlDictionaryString localName, XmlDictionaryString? namespaceUri)
         {
-            StartElement(ref prefix, (localName != null ? localName.Value : null), (namespaceUri != null ? namespaceUri.Value : null), namespaceUri);
+            StartElement(ref prefix, localName.Value, (namespaceUri != null ? namespaceUri.Value : null), namespaceUri);
             _writer.WriteStartElement(prefix, localName);
         }
 
@@ -634,8 +637,8 @@ namespace System.Xml
             }
             else
             {
-                Element element = _elements[_depth];
-                _writer.WriteEndElement(element.Prefix, element.LocalName);
+                Element element = _elements![_depth];
+                _writer.WriteEndElement(element.Prefix, element.LocalName!);
             }
 
             ExitScope();
@@ -666,8 +669,8 @@ namespace System.Xml
             }
             else
             {
-                Element element = _elements[_depth];
-                await _writer.WriteEndElementAsync(element.Prefix, element.LocalName).ConfigureAwait(false);
+                Element element = _elements![_depth];
+                await _writer.WriteEndElementAsync(element.Prefix, element.LocalName!).ConfigureAwait(false);
             }
 
             ExitScope();
@@ -699,7 +702,7 @@ namespace System.Xml
 
         private void ExitScope()
         {
-            _elements[_depth].Clear();
+            _elements![_depth].Clear();
             _depth--;
             if (_depth == 0 && _documentState == DocumentState.Document)
                 _documentState = DocumentState.Epilog;
@@ -822,7 +825,7 @@ namespace System.Xml
             return _writer.WriteEndStartElementAsync(false);
         }
 
-        public override string LookupPrefix(string ns)
+        public override string? LookupPrefix(string ns)
         {
             if (ns == null)
                 throw System.Runtime.Serialization.DiagnosticUtility.ExceptionUtility.ThrowHelperError(new ArgumentNullException(nameof(ns)));
@@ -833,9 +836,9 @@ namespace System.Xml
             return _nsMgr.LookupPrefix(ns);
         }
 
-        private string GetQualifiedNamePrefix(string namespaceUri, XmlDictionaryString xNs)
+        private string GetQualifiedNamePrefix(string namespaceUri, XmlDictionaryString? xNs)
         {
-            string prefix = _nsMgr.LookupPrefix(namespaceUri);
+            string? prefix = _nsMgr.LookupPrefix(namespaceUri);
             if (prefix == null)
             {
                 if (_writeState != WriteState.Attribute)
@@ -846,7 +849,7 @@ namespace System.Xml
             return prefix;
         }
 
-        public override void WriteQualifiedName(string localName, string namespaceUri)
+        public override void WriteQualifiedName(string localName, string? namespaceUri)
         {
             if (IsClosed)
                 ThrowClosed();
@@ -865,7 +868,7 @@ namespace System.Xml
             WriteString(localName);
         }
 
-        public override void WriteQualifiedName(XmlDictionaryString localName, XmlDictionaryString namespaceUri)
+        public override void WriteQualifiedName(XmlDictionaryString localName, XmlDictionaryString? namespaceUri)
         {
             if (IsClosed)
                 ThrowClosed();
@@ -911,7 +914,7 @@ namespace System.Xml
         }
 
 
-        public override void WriteProcessingInstruction(string name, string text)
+        public override void WriteProcessingInstruction(string name, string? text)
         {
             if (IsClosed)
                 ThrowClosed();
@@ -972,7 +975,7 @@ namespace System.Xml
             throw System.Runtime.Serialization.DiagnosticUtility.ExceptionUtility.ThrowHelperError(new NotSupportedException(SR.Format(SR.XmlMethodNotSupported, "WriteNmToken")));
         }
 
-        public override void WriteWhitespace(string whitespace)
+        public override void WriteWhitespace(string? whitespace)
         {
             if (IsClosed)
                 ThrowClosed();
@@ -993,7 +996,7 @@ namespace System.Xml
             WriteString(whitespace);
         }
 
-        public override void WriteString(string value)
+        public override void WriteString(string? value)
         {
             if (IsClosed)
                 ThrowClosed();
@@ -1017,7 +1020,7 @@ namespace System.Xml
             }
         }
 
-        public override void WriteString(XmlDictionaryString value)
+        public override void WriteString(XmlDictionaryString? value)
         {
             if (IsClosed)
                 ThrowClosed();
@@ -1265,7 +1268,7 @@ namespace System.Xml
             }
         }
 
-        public override void WriteValue(string value)
+        public override void WriteValue(string? value)
         {
             if (IsClosed)
                 ThrowClosed();
@@ -1392,7 +1395,7 @@ namespace System.Xml
             }
         }
 
-        public override void WriteValue(XmlDictionaryString value)
+        public override void WriteValue(XmlDictionaryString? value)
         {
             WriteString(value);
         }
@@ -1499,7 +1502,7 @@ namespace System.Xml
                 {
                     while (_trailByteCount < 3 && count > 0)
                     {
-                        _trailBytes[_trailByteCount++] = buffer[offset++];
+                        _trailBytes![_trailByteCount++] = buffer[offset++];
                         count--;
                     }
                 }
@@ -1569,7 +1572,7 @@ namespace System.Xml
                 {
                     while (_trailByteCount < 3 && count > 0)
                     {
-                        _trailBytes[_trailByteCount++] = buffer[offset++];
+                        _trailBytes![_trailByteCount++] = buffer[offset++];
                         count--;
                     }
                 }
@@ -1628,7 +1631,7 @@ namespace System.Xml
             }
         }
 
-        public override void StartCanonicalization(Stream stream, bool includeComments, string[] inclusivePrefixes)
+        public override void StartCanonicalization(Stream stream, bool includeComments, string[]? inclusivePrefixes)
         {
             if (IsClosed)
                 ThrowClosed();
@@ -1648,7 +1651,7 @@ namespace System.Xml
                 ThrowClosed();
             if (!Signing)
                 throw DiagnosticUtility.ExceptionUtility.ThrowHelperError(new InvalidOperationException(SR.XmlCanonicalizationNotStarted));
-            _signingWriter.Flush();
+            _signingWriter!.Flush();
             _writer = _signingWriter.NodeWriter;
         }
 
@@ -1669,6 +1672,8 @@ namespace System.Xml
 
         private void FlushTrailBytes()
         {
+            Debug.Assert(_trailBytes != null);
+
             if (_attributeValue != null)
                 WriteAttributeText(XmlConverter.Base64Encoding.GetString(_trailBytes, 0, _trailByteCount));
 
@@ -1683,6 +1688,8 @@ namespace System.Xml
 
         private async Task FlushTrailBytesAsync()
         {
+            Debug.Assert(_trailBytes != null);
+
             if (_attributeValue != null)
                 WriteAttributeText(XmlConverter.Base64Encoding.GetString(_trailBytes, 0, _trailByteCount));
 
@@ -1726,7 +1733,7 @@ namespace System.Xml
                 {
                     _writer.WriteListSeparator();
                 }
-                WritePrimitiveValue(array.GetValue(i));
+                WritePrimitiveValue(array.GetValue(i)!); // possible bug to log?
             }
             _inList = false;
             _writer.WriteEndListText();
@@ -1749,19 +1756,19 @@ namespace System.Xml
         {
         }
 
-        private string GeneratePrefix(string ns, XmlDictionaryString xNs)
+        private string GeneratePrefix(string ns, XmlDictionaryString? xNs)
         {
             if (_writeState != WriteState.Element && _writeState != WriteState.Attribute)
                 throw System.Runtime.Serialization.DiagnosticUtility.ExceptionUtility.ThrowHelperError(new InvalidOperationException(SR.Format(SR.XmlInvalidPrefixState, WriteState.ToString())));
 
-            string prefix = _nsMgr.AddNamespace(ns, xNs);
+            string? prefix = _nsMgr.AddNamespace(ns, xNs);
 
             if (prefix != null)
                 return prefix;
 
             while (true)
             {
-                int prefixId = _elements[_depth].PrefixId++;
+                int prefixId = _elements![_depth].PrefixId++;
                 prefix = string.Concat("d", _depth.ToString(CultureInfo.InvariantCulture), "p", prefixId.ToString(CultureInfo.InvariantCulture));
 
                 if (_nsMgr.LookupNamespace(prefix) == null)
@@ -1779,7 +1786,7 @@ namespace System.Xml
 
         private void WriteAttributeText(string value)
         {
-            if (_attributeValue.Length == 0)
+            if (_attributeValue!.Length == 0)
                 _attributeValue = value;
             else
                 _attributeValue += value;
@@ -1787,11 +1794,11 @@ namespace System.Xml
 
         private class Element
         {
-            private string _prefix;
-            private string _localName;
+            private string? _prefix;
+            private string? _localName;
             private int _prefixId;
 
-            public string Prefix
+            public string? Prefix
             {
                 get
                 {
@@ -1803,7 +1810,7 @@ namespace System.Xml
                 }
             }
 
-            public string LocalName
+            public string? LocalName
             {
                 get
                 {
@@ -1845,14 +1852,14 @@ namespace System.Xml
 
         private class NamespaceManager
         {
-            private Namespace[] _namespaces;
-            private Namespace _lastNameSpace;
+            private Namespace[]? _namespaces;
+            private Namespace? _lastNameSpace;
             private int _nsCount;
             private int _depth;
-            private XmlAttribute[] _attributes;
+            private XmlAttribute[]? _attributes;
             private int _attributeCount;
             private XmlSpace _space;
-            private string _lang;
+            private string? _lang;
             private int _nsTop;
             private readonly Namespace _defaultNamespace;
 
@@ -1865,7 +1872,7 @@ namespace System.Xml
                 _defaultNamespace.UriDictionaryString = null;
             }
 
-            public string XmlLang
+            public string? XmlLang
             {
                 get
                 {
@@ -1919,18 +1926,18 @@ namespace System.Xml
                 int i = _nsCount;
                 while (i > 0)
                 {
-                    Namespace nameSpace = _namespaces[i - 1];
+                    Namespace nameSpace = _namespaces![i - 1];
                     if (nameSpace.Depth != _depth)
                         break;
                     i--;
                 }
                 while (i < _nsCount)
                 {
-                    Namespace nameSpace = _namespaces[i];
+                    Namespace nameSpace = _namespaces![i];
                     if (nameSpace.UriDictionaryString != null)
                         writer.WriteXmlnsAttribute(nameSpace.Prefix, nameSpace.UriDictionaryString);
                     else
-                        writer.WriteXmlnsAttribute(nameSpace.Prefix, nameSpace.Uri);
+                        writer.WriteXmlnsAttribute(nameSpace.Prefix, nameSpace.Uri!);
                     i++;
                 }
             }
@@ -1944,7 +1951,7 @@ namespace System.Xml
             {
                 while (_nsCount > 0)
                 {
-                    Namespace nameSpace = _namespaces[_nsCount - 1];
+                    Namespace nameSpace = _namespaces![_nsCount - 1];
                     if (nameSpace.Depth != _depth)
                         break;
                     if (_lastNameSpace == nameSpace)
@@ -1954,7 +1961,7 @@ namespace System.Xml
                 }
                 while (_attributeCount > 0)
                 {
-                    XmlAttribute attribute = _attributes[_attributeCount - 1];
+                    XmlAttribute attribute = _attributes![_attributeCount - 1];
                     if (attribute.Depth != _depth)
                         break;
                     _space = attribute.XmlSpace;
@@ -2001,7 +2008,7 @@ namespace System.Xml
                 _attributeCount++;
             }
 
-            public string AddNamespace(string uri, XmlDictionaryString uriDictionaryString)
+            public string? AddNamespace(string uri, XmlDictionaryString? uriDictionaryString)
             {
                 if (uri.Length == 0)
                 {
@@ -2017,7 +2024,7 @@ namespace System.Xml
                         bool declared = false;
                         for (int j = _nsCount - 1; j >= _nsTop; j--)
                         {
-                            Namespace nameSpace = _namespaces[j];
+                            Namespace nameSpace = _namespaces![j];
                             if (nameSpace.Prefix == prefix)
                             {
                                 declared = true;
@@ -2034,7 +2041,7 @@ namespace System.Xml
                 return null;
             }
 
-            public void AddNamespaceIfNotDeclared(string prefix, string uri, XmlDictionaryString uriDictionaryString)
+            public void AddNamespaceIfNotDeclared(string prefix, string uri, XmlDictionaryString? uriDictionaryString)
             {
                 if (LookupNamespace(prefix) != uri)
                 {
@@ -2042,7 +2049,7 @@ namespace System.Xml
                 }
             }
 
-            public void AddNamespace(string prefix, string uri, XmlDictionaryString uriDictionaryString)
+            public void AddNamespace(string prefix, string uri, XmlDictionaryString? uriDictionaryString)
             {
                 if (prefix.Length >= 3)
                 {
@@ -2059,7 +2066,7 @@ namespace System.Xml
                 Namespace nameSpace;
                 for (int i = _nsCount - 1; i >= 0; i--)
                 {
-                    nameSpace = _namespaces[i];
+                    nameSpace = _namespaces![i];
                     if (nameSpace.Depth != _depth)
                         break;
                     if (nameSpace.Prefix == prefix)
@@ -2077,7 +2084,7 @@ namespace System.Xml
                 if (uri.Length == xmlNamespace.Length && uri[18] == 'X' && uri == xmlNamespace)
                     throw System.Runtime.Serialization.DiagnosticUtility.ExceptionUtility.ThrowHelperError(new ArgumentException(SR.Format(SR.XmlSpecificBindingNamespace, "xml", uri)));
 
-                if (_namespaces.Length == _nsCount)
+                if (_namespaces!.Length == _nsCount)
                 {
                     Namespace[] newNamespaces = new Namespace[_nsCount * 2];
                     Array.Copy(_namespaces, newNamespaces, _nsCount);
@@ -2097,17 +2104,17 @@ namespace System.Xml
                 _lastNameSpace = null;
             }
 
-            public string LookupPrefix(string ns)
+            public string? LookupPrefix(string ns)
             {
                 if (_lastNameSpace != null && _lastNameSpace.Uri == ns)
                     return _lastNameSpace.Prefix;
                 int nsCount = _nsCount;
                 for (int i = nsCount - 1; i >= _nsTop; i--)
                 {
-                    Namespace nameSpace = _namespaces[i];
+                    Namespace nameSpace = _namespaces![i];
                     if (object.ReferenceEquals(nameSpace.Uri, ns))
                     {
-                        string prefix = nameSpace.Prefix;
+                        string? prefix = nameSpace.Prefix;
                         // Make sure that the prefix refers to the namespace in scope
                         bool declared = false;
                         for (int j = i + 1; j < nsCount; j++)
@@ -2127,10 +2134,10 @@ namespace System.Xml
                 }
                 for (int i = nsCount - 1; i >= _nsTop; i--)
                 {
-                    Namespace nameSpace = _namespaces[i];
+                    Namespace nameSpace = _namespaces![i];
                     if (nameSpace.Uri == ns)
                     {
-                        string prefix = nameSpace.Prefix;
+                        string? prefix = nameSpace.Prefix;
                         // Make sure that the prefix refers to the namespace in scope
                         bool declared = false;
                         for (int j = i + 1; j < nsCount; j++)
@@ -2155,7 +2162,7 @@ namespace System.Xml
                     bool emptyPrefixUnassigned = true;
                     for (int i = nsCount - 1; i >= _nsTop; i--)
                     {
-                        if (_namespaces[i].Prefix.Length == 0)
+                        if (_namespaces![i].Prefix!.Length == 0)
                         {
                             emptyPrefixUnassigned = false;
                             break;
@@ -2172,19 +2179,19 @@ namespace System.Xml
                 return null;
             }
 
-            public string LookupAttributePrefix(string ns)
+            public string? LookupAttributePrefix(string ns)
             {
-                if (_lastNameSpace != null && _lastNameSpace.Uri == ns && _lastNameSpace.Prefix.Length != 0)
+                if (_lastNameSpace != null && _lastNameSpace.Uri == ns && _lastNameSpace.Prefix!.Length != 0)
                     return _lastNameSpace.Prefix;
 
                 int nsCount = _nsCount;
                 for (int i = nsCount - 1; i >= _nsTop; i--)
                 {
-                    Namespace nameSpace = _namespaces[i];
+                    Namespace nameSpace = _namespaces![i];
 
                     if (object.ReferenceEquals(nameSpace.Uri, ns))
                     {
-                        string prefix = nameSpace.Prefix;
+                        string prefix = nameSpace.Prefix!;
                         if (prefix.Length != 0)
                         {
                             // Make sure that the prefix refers to the namespace in scope
@@ -2207,10 +2214,10 @@ namespace System.Xml
                 }
                 for (int i = nsCount - 1; i >= _nsTop; i--)
                 {
-                    Namespace nameSpace = _namespaces[i];
+                    Namespace nameSpace = _namespaces![i];
                     if (nameSpace.Uri == ns)
                     {
-                        string prefix = nameSpace.Prefix;
+                        string prefix = nameSpace.Prefix!;
                         if (prefix.Length != 0)
                         {
                             // Make sure that the prefix refers to the namespace in scope
@@ -2236,15 +2243,15 @@ namespace System.Xml
                 return null;
             }
 
-            public string LookupNamespace(string prefix)
+            public string? LookupNamespace(string prefix)
             {
                 int nsCount = _nsCount;
                 if (prefix.Length == 0)
                 {
                     for (int i = nsCount - 1; i >= _nsTop; i--)
                     {
-                        Namespace nameSpace = _namespaces[i];
-                        if (nameSpace.Prefix.Length == 0)
+                        Namespace nameSpace = _namespaces![i];
+                        if (nameSpace.Prefix!.Length == 0)
                             return nameSpace.Uri;
                     }
                     return string.Empty;
@@ -2254,7 +2261,7 @@ namespace System.Xml
                     char prefixChar = prefix[0];
                     for (int i = nsCount - 1; i >= _nsTop; i--)
                     {
-                        Namespace nameSpace = _namespaces[i];
+                        Namespace nameSpace = _namespaces![i];
                         if (nameSpace.PrefixChar == prefixChar)
                             return nameSpace.Uri;
                     }
@@ -2262,7 +2269,7 @@ namespace System.Xml
                 }
                 for (int i = nsCount - 1; i >= _nsTop; i--)
                 {
-                    Namespace nameSpace = _namespaces[i];
+                    Namespace nameSpace = _namespaces![i];
                     if (nameSpace.Prefix == prefix)
                         return nameSpace.Uri;
                 }
@@ -2276,7 +2283,7 @@ namespace System.Xml
             public void Sign(XmlCanonicalWriter signingWriter)
             {
                 int nsCount = _nsCount;
-                Fx.Assert(nsCount >= 1 && _namespaces[0].Prefix.Length == 0 && _namespaces[0].Uri.Length == 0, "");
+                Fx.Assert(nsCount >= 1 && _namespaces![0].Prefix!.Length == 0 && _namespaces[0].Uri!.Length == 0, "");
                 for (int i = 1; i < nsCount; i++)
                 {
                     Namespace nameSpace = _namespaces[i];
@@ -2289,7 +2296,7 @@ namespace System.Xml
 
                     if (!found)
                     {
-                        signingWriter.WriteXmlnsAttribute(nameSpace.Prefix, nameSpace.Uri);
+                        signingWriter.WriteXmlnsAttribute(nameSpace.Prefix!, nameSpace.Uri!);
                     }
                 }
             }
@@ -2297,7 +2304,7 @@ namespace System.Xml
             private class XmlAttribute
             {
                 private XmlSpace _space;
-                private string _lang;
+                private string? _lang;
                 private int _depth;
 
                 public XmlAttribute()
@@ -2316,7 +2323,7 @@ namespace System.Xml
                     }
                 }
 
-                public string XmlLang
+                public string? XmlLang
                 {
                     get
                     {
@@ -2348,9 +2355,9 @@ namespace System.Xml
 
             private class Namespace
             {
-                private string _prefix;
-                private string _ns;
-                private XmlDictionaryString _xNs;
+                private string? _prefix;
+                private string? _ns;
+                private XmlDictionaryString? _xNs;
                 private int _depth;
                 private char _prefixChar;
 
@@ -2387,7 +2394,8 @@ namespace System.Xml
                     }
                 }
 
-                public string Prefix
+                [DisallowNull]
+                public string? Prefix
                 {
                     get
                     {
@@ -2403,7 +2411,7 @@ namespace System.Xml
                     }
                 }
 
-                public string Uri
+                public string? Uri
                 {
                     get
                     {
@@ -2415,7 +2423,7 @@ namespace System.Xml
                     }
                 }
 
-                public XmlDictionaryString UriDictionaryString
+                public XmlDictionaryString? UriDictionaryString
                 {
                     get
                     {

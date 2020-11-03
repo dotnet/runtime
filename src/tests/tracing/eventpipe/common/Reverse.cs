@@ -151,6 +151,7 @@ namespace Tracing.Tests.Common
 
         public void Shutdown()
         {
+            Logger.logger.Log($"Shutting down Reverse Server at {_serverAddress}");
             switch (_server)
             {
                 case NamedPipeServerStream serverStream:

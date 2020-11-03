@@ -8,6 +8,7 @@ using Xunit;
 
 namespace System.Security.Cryptography.Algorithms.Tests
 {
+    [SkipOnMono("Not supported on Browser", TestPlatforms.Browser)]
     public abstract class DsaFamilySignatureFormatTests
     {
         protected readonly struct KeyDescription

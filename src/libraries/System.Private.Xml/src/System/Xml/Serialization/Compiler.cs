@@ -26,7 +26,7 @@ namespace System.Xml.Serialization
 
         // SxS: This method does not take any resource name and does not expose any resources to the caller.
         // It's OK to suppress the SxS warning.
-        internal void AddImport(Type type, Hashtable types)
+        internal void AddImport(Type? type, Hashtable types)
         {
             if (type == null)
                 return;
@@ -35,11 +35,11 @@ namespace System.Xml.Serialization
             if (types[type] != null)
                 return;
             types[type] = type;
-            Type baseType = type.BaseType;
+            Type? baseType = type.BaseType;
             if (baseType != null)
                 AddImport(baseType, types);
 
-            Type declaringType = type.DeclaringType;
+            Type? declaringType = type.DeclaringType;
             if (declaringType != null)
                 AddImport(declaringType, types);
 
@@ -76,8 +76,9 @@ namespace System.Xml.Serialization
             object[] typeForwardedFromAttribute = type.GetCustomAttributes(typeof(TypeForwardedFromAttribute), false);
             if (typeForwardedFromAttribute.Length > 0)
             {
-                TypeForwardedFromAttribute originalAssemblyInfo = typeForwardedFromAttribute[0] as TypeForwardedFromAttribute;
-                Assembly originalAssembly = Assembly.Load(new AssemblyName(originalAssemblyInfo.AssemblyFullName));
+                TypeForwardedFromAttribute? originalAssemblyInfo = typeForwardedFromAttribute[0] as TypeForwardedFromAttribute;
+                Debug.Assert(originalAssemblyInfo != null);
+                Assembly.Load(new AssemblyName(originalAssemblyInfo.AssemblyFullName));
             }
         }
 
@@ -94,7 +95,7 @@ namespace System.Xml.Serialization
             get { return _writer; }
         }
 
-        internal static string GetTempAssemblyName(AssemblyName parent, string ns)
+        internal static string GetTempAssemblyName(AssemblyName parent, string? ns)
         {
             return parent.Name + ".XmlSerializers" + (ns == null || ns.Length == 0 ? "" : "." + ns.GetHashCode());
         }

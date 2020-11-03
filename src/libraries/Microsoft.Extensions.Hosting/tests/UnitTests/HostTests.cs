@@ -2,20 +2,20 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
-using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Diagnostics.Tracing;
 using System.IO;
 using System.Linq;
+using System.Reflection;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Configuration.UserSecrets;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Xunit;
 
-namespace Microsoft.Extensions.Hosting
+namespace Microsoft.Extensions.Hosting.Tests
 {
     public partial class HostTests
     {
@@ -199,10 +199,56 @@ namespace Microsoft.Extensions.Hosting
             {
                 configReloadedCancelTokenSource.Cancel();
             }, null);
-            // Wait for up to 10 seconds, if config reloads at any time, cancel the wait.
-            await Task.WhenAny(Task.Delay(10000, configReloadedCancelToken)); // Task.WhenAny ignores the task throwing on cancellation.
+            // Wait for up to 1 minute, if config reloads at any time, cancel the wait.
+            await Task.WhenAny(Task.Delay(TimeSpan.FromMinutes(1), configReloadedCancelToken)); // Task.WhenAny ignores the task throwing on cancellation.
             Assert.NotEqual(dynamicConfigMessage1, dynamicConfigMessage2); // Messages are different.
             Assert.Equal(dynamicConfigMessage2, config["Hello"]); // Config DID reload from disk
+        }
+
+        [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/34580", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
+        public async Task CreateDefaultBuilder_SecretsDoesReload()
+        {
+            var secretId = Assembly.GetExecutingAssembly().GetName().Name;
+            var reloadFlagConfig = new Dictionary<string, string>() { { "hostbuilder:reloadConfigOnChange", "true" } };
+            var secretPath = PathHelper.GetSecretsPathFromSecretsId(secretId);
+
+            var secretFileInfo = new FileInfo(secretPath);
+            Directory.CreateDirectory(secretFileInfo.Directory.FullName);
+
+            string SaveRandomSecret()
+            {
+                var newMessage = $"Hello ASP.NET Core: {Guid.NewGuid():N}";
+                File.WriteAllText(secretPath, $"{{ \"Hello\": \"{newMessage}\" }}");
+                return newMessage;
+            }
+
+            string dynamicSecretMessage1 = SaveRandomSecret();
+
+            var host = Host.CreateDefaultBuilder(new[] { "environment=Development", $"applicationName={secretId}" })
+                .ConfigureHostConfiguration(builder =>
+                {
+                    builder.AddInMemoryCollection(reloadFlagConfig);
+                })
+                .Build();
+
+            var config = host.Services.GetRequiredService<IConfiguration>();
+
+            Assert.Equal(dynamicSecretMessage1, config["Hello"]);
+
+            string dynamicSecretMessage2 = SaveRandomSecret();
+
+            var configReloadedCancelTokenSource = new CancellationTokenSource();
+            var configReloadedCancelToken = configReloadedCancelTokenSource.Token;
+
+            config.GetReloadToken().RegisterChangeCallback(o =>
+            {
+                configReloadedCancelTokenSource.Cancel();
+            }, null);
+            // Wait for up to 1 minute, if config reloads at any time, cancel the wait.
+            await Task.WhenAny(Task.Delay(TimeSpan.FromMinutes(1), configReloadedCancelToken)); // Task.WhenAny ignores the task throwing on cancellation.
+            Assert.NotEqual(dynamicSecretMessage1, dynamicSecretMessage2); // Messages are different.
+            Assert.Equal(dynamicSecretMessage2, config["Hello"]);
         }
 
         internal class ServiceA { }
@@ -273,37 +319,6 @@ namespace Microsoft.Extensions.Hosting
                 public void Dispose()
                 {
                 }
-            }
-        }
-
-        private class TestEventListener : EventListener
-        {
-            private volatile bool _disposed;
-
-            private ConcurrentQueue<EventWrittenEventArgs> _events = new ConcurrentQueue<EventWrittenEventArgs>();
-
-            public IEnumerable<EventWrittenEventArgs> EventData => _events;
-
-            protected override void OnEventSourceCreated(EventSource eventSource)
-            {
-                if (eventSource.Name == "Microsoft-Extensions-Logging")
-                {
-                    EnableEvents(eventSource, EventLevel.Informational);
-                }
-            }
-
-            protected override void OnEventWritten(EventWrittenEventArgs eventData)
-            {
-                if (!_disposed)
-                {
-                    _events.Enqueue(eventData);
-                }
-            }
-
-            public override void Dispose()
-            {
-                _disposed = true;
-                base.Dispose();
             }
         }
     }

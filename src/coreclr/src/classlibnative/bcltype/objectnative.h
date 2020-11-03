@@ -33,7 +33,7 @@ public:
     static FCDECL2(FC_BOOL_RET, Equals, Object *pThisRef, Object *pCompareRef);
     static FCDECL1(Object*, AllocateUninitializedClone, Object* pObjUNSAFE);
     static FCDECL1(Object*, GetClass, Object* pThis);
-    static FCDECL3(FC_BOOL_RET, WaitTimeout, CLR_BOOL exitContext, INT32 Timeout, Object* pThisUNSAFE);
+    static FCDECL2(FC_BOOL_RET, WaitTimeout, INT32 Timeout, Object* pThisUNSAFE);
     static FCDECL1(void, Pulse, Object* pThisUNSAFE);
     static FCDECL1(void, PulseAll, Object* pThisUNSAFE);
     static FCDECL1(FC_BOOL_RET, IsLockHeld, Object* pThisUNSAFE);

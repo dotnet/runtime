@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.IO;
@@ -62,9 +63,9 @@ namespace System.Runtime.Serialization.Json
             "\\u001f"
         };
 
-        private static BinHexEncoding s_binHexEncoding;
+        private static BinHexEncoding? s_binHexEncoding;
 
-        private string _attributeText;
+        private string? _attributeText;
         private JsonDataType _dataType;
         private int _depth;
         private bool _endElementBuffer;
@@ -74,21 +75,21 @@ namespace System.Runtime.Serialization.Json
         private bool _isWritingXmlnsAttributeDefaultNs;
         private NameState _nameState;
         private JsonNodeType _nodeType;
-        private JsonNodeWriter _nodeWriter;
-        private JsonNodeType[] _scopes;
-        private string _serverTypeValue;
+        private JsonNodeWriter _nodeWriter = null!; // initialized in SetOutput
+        private JsonNodeType[]? _scopes;
+        private string? _serverTypeValue;
         // Do not use this field's value anywhere other than the WriteState property.
         // It's OK to set this field's value anywhere and then change the WriteState property appropriately.
         // If it's necessary to check the WriteState outside WriteState, use the WriteState property.
         private WriteState _writeState;
         private bool _wroteServerTypeAttribute;
         private readonly bool _indent;
-        private readonly string _indentChars;
+        private readonly string? _indentChars;
         private int _indentLevel;
 
         public XmlJsonWriter() : this(false, null) { }
 
-        public XmlJsonWriter(bool indent, string indentChars)
+        public XmlJsonWriter(bool indent, string? indentChars)
         {
             _indent = indent;
             if (indent)
@@ -122,7 +123,7 @@ namespace System.Runtime.Serialization.Json
             WrittenNameWithMapping = 4,
         }
 
-        public override XmlWriterSettings Settings
+        public override XmlWriterSettings? Settings
         {
             // The XmlWriterSettings object used to create this writer instance.
             // If this writer was not created using the Create method, this property
@@ -158,7 +159,7 @@ namespace System.Runtime.Serialization.Json
             }
         }
 
-        public override string XmlLang
+        public override string? XmlLang
         {
             get { return null; }
         }
@@ -184,7 +185,7 @@ namespace System.Runtime.Serialization.Json
 
         private bool IsClosed => (WriteState == WriteState.Closed);
 
-        private bool IsWritingCollection => (_depth > 0) && (_scopes[_depth] == JsonNodeType.Collection);
+        private bool IsWritingCollection => (_depth > 0) && (_scopes![_depth] == JsonNodeType.Collection);
 
         private bool IsWritingNameAttribute => (_nameState & NameState.IsWritingNameAttribute) == NameState.IsWritingNameAttribute;
 
@@ -230,7 +231,7 @@ namespace System.Runtime.Serialization.Json
             _nodeWriter.Flush();
         }
 
-        public override string LookupPrefix(string ns)
+        public override string? LookupPrefix(string ns)
         {
             if (ns == null)
             {
@@ -261,119 +262,120 @@ namespace System.Runtime.Serialization.Json
             {
                 throw new ArgumentNullException(nameof(encoding));
             }
-            if (encoding.WebName != Encoding.UTF8.WebName)
+            Encoding? tempEncoding = encoding;
+            if (tempEncoding.WebName != Encoding.UTF8.WebName)
             {
-                stream = new JsonEncodingStreamWrapper(stream, encoding, false);
+                stream = new JsonEncodingStreamWrapper(stream, tempEncoding, false);
             }
             else
             {
-                encoding = null;
+                tempEncoding = null;
             }
             if (_nodeWriter == null)
             {
                 _nodeWriter = new JsonNodeWriter();
             }
 
-            _nodeWriter.SetOutput(stream, ownsStream, encoding);
+            _nodeWriter.SetOutput(stream, ownsStream, tempEncoding);
             InitializeWriter();
         }
 
-        public override void WriteArray(string prefix, string localName, string namespaceUri, bool[] array, int offset, int count)
+        public override void WriteArray(string? prefix, string localName, string? namespaceUri, bool[] array, int offset, int count)
         {
             throw new NotSupportedException(SR.JsonWriteArrayNotSupported);
         }
 
-        public override void WriteArray(string prefix, string localName, string namespaceUri, short[] array, int offset, int count)
+        public override void WriteArray(string? prefix, string localName, string? namespaceUri, short[] array, int offset, int count)
         {
             throw new NotSupportedException(SR.JsonWriteArrayNotSupported);
         }
 
-        public override void WriteArray(string prefix, string localName, string namespaceUri, int[] array, int offset, int count)
+        public override void WriteArray(string? prefix, string localName, string? namespaceUri, int[] array, int offset, int count)
         {
             throw new NotSupportedException(SR.JsonWriteArrayNotSupported);
         }
 
-        public override void WriteArray(string prefix, string localName, string namespaceUri, long[] array, int offset, int count)
+        public override void WriteArray(string? prefix, string localName, string? namespaceUri, long[] array, int offset, int count)
         {
             throw new NotSupportedException(SR.JsonWriteArrayNotSupported);
         }
 
-        public override void WriteArray(string prefix, string localName, string namespaceUri, float[] array, int offset, int count)
+        public override void WriteArray(string? prefix, string localName, string? namespaceUri, float[] array, int offset, int count)
         {
             throw new NotSupportedException(SR.JsonWriteArrayNotSupported);
         }
 
-        public override void WriteArray(string prefix, string localName, string namespaceUri, double[] array, int offset, int count)
+        public override void WriteArray(string? prefix, string localName, string? namespaceUri, double[] array, int offset, int count)
         {
             throw new NotSupportedException(SR.JsonWriteArrayNotSupported);
         }
 
-        public override void WriteArray(string prefix, string localName, string namespaceUri, decimal[] array, int offset, int count)
+        public override void WriteArray(string? prefix, string localName, string? namespaceUri, decimal[] array, int offset, int count)
         {
             throw new NotSupportedException(SR.JsonWriteArrayNotSupported);
         }
 
-        public override void WriteArray(string prefix, string localName, string namespaceUri, DateTime[] array, int offset, int count)
+        public override void WriteArray(string? prefix, string localName, string? namespaceUri, DateTime[] array, int offset, int count)
         {
             throw new NotSupportedException(SR.JsonWriteArrayNotSupported);
         }
 
-        public override void WriteArray(string prefix, string localName, string namespaceUri, Guid[] array, int offset, int count)
+        public override void WriteArray(string? prefix, string localName, string? namespaceUri, Guid[] array, int offset, int count)
         {
             throw new NotSupportedException(SR.JsonWriteArrayNotSupported);
         }
 
-        public override void WriteArray(string prefix, string localName, string namespaceUri, TimeSpan[] array, int offset, int count)
+        public override void WriteArray(string? prefix, string localName, string? namespaceUri, TimeSpan[] array, int offset, int count)
         {
             throw new NotSupportedException(SR.JsonWriteArrayNotSupported);
         }
 
-        public override void WriteArray(string prefix, XmlDictionaryString localName, XmlDictionaryString namespaceUri, bool[] array, int offset, int count)
+        public override void WriteArray(string? prefix, XmlDictionaryString localName, XmlDictionaryString? namespaceUri, bool[] array, int offset, int count)
         {
             throw new NotSupportedException(SR.JsonWriteArrayNotSupported);
         }
 
-        public override void WriteArray(string prefix, XmlDictionaryString localName, XmlDictionaryString namespaceUri, decimal[] array, int offset, int count)
+        public override void WriteArray(string? prefix, XmlDictionaryString localName, XmlDictionaryString? namespaceUri, decimal[] array, int offset, int count)
         {
             throw new NotSupportedException(SR.JsonWriteArrayNotSupported);
         }
 
-        public override void WriteArray(string prefix, XmlDictionaryString localName, XmlDictionaryString namespaceUri, double[] array, int offset, int count)
+        public override void WriteArray(string? prefix, XmlDictionaryString localName, XmlDictionaryString? namespaceUri, double[] array, int offset, int count)
         {
             throw new NotSupportedException(SR.JsonWriteArrayNotSupported);
         }
 
-        public override void WriteArray(string prefix, XmlDictionaryString localName, XmlDictionaryString namespaceUri, float[] array, int offset, int count)
+        public override void WriteArray(string? prefix, XmlDictionaryString localName, XmlDictionaryString? namespaceUri, float[] array, int offset, int count)
         {
             throw new NotSupportedException(SR.JsonWriteArrayNotSupported);
         }
 
-        public override void WriteArray(string prefix, XmlDictionaryString localName, XmlDictionaryString namespaceUri, int[] array, int offset, int count)
+        public override void WriteArray(string? prefix, XmlDictionaryString localName, XmlDictionaryString? namespaceUri, int[] array, int offset, int count)
         {
             throw new NotSupportedException(SR.JsonWriteArrayNotSupported);
         }
 
-        public override void WriteArray(string prefix, XmlDictionaryString localName, XmlDictionaryString namespaceUri, long[] array, int offset, int count)
+        public override void WriteArray(string? prefix, XmlDictionaryString localName, XmlDictionaryString? namespaceUri, long[] array, int offset, int count)
         {
             throw new NotSupportedException(SR.JsonWriteArrayNotSupported);
         }
 
-        public override void WriteArray(string prefix, XmlDictionaryString localName, XmlDictionaryString namespaceUri, short[] array, int offset, int count)
+        public override void WriteArray(string? prefix, XmlDictionaryString localName, XmlDictionaryString? namespaceUri, short[] array, int offset, int count)
         {
             throw new NotSupportedException(SR.JsonWriteArrayNotSupported);
         }
 
-        public override void WriteArray(string prefix, XmlDictionaryString localName, XmlDictionaryString namespaceUri, DateTime[] array, int offset, int count)
+        public override void WriteArray(string? prefix, XmlDictionaryString localName, XmlDictionaryString? namespaceUri, DateTime[] array, int offset, int count)
         {
             throw new NotSupportedException(SR.JsonWriteArrayNotSupported);
         }
 
-        public override void WriteArray(string prefix, XmlDictionaryString localName, XmlDictionaryString namespaceUri, Guid[] array, int offset, int count)
+        public override void WriteArray(string? prefix, XmlDictionaryString localName, XmlDictionaryString? namespaceUri, Guid[] array, int offset, int count)
         {
             throw new NotSupportedException(SR.JsonWriteArrayNotSupported);
         }
 
-        public override void WriteArray(string prefix, XmlDictionaryString localName, XmlDictionaryString namespaceUri, TimeSpan[] array, int offset, int count)
+        public override void WriteArray(string? prefix, XmlDictionaryString localName, XmlDictionaryString? namespaceUri, TimeSpan[] array, int offset, int count)
         {
             throw new NotSupportedException(SR.JsonWriteArrayNotSupported);
         }
@@ -430,7 +432,7 @@ namespace System.Runtime.Serialization.Json
             WriteEscapedJsonString(BinHexEncoding.GetString(buffer, index, count));
         }
 
-        public override void WriteCData(string text)
+        public override void WriteCData(string? text)
         {
             WriteString(text);
         }
@@ -465,12 +467,12 @@ namespace System.Runtime.Serialization.Json
             WriteString(new string(buffer, index, count));
         }
 
-        public override void WriteComment(string text)
+        public override void WriteComment(string? text)
         {
             throw new NotSupportedException(SR.Format(SR.JsonMethodNotSupported, "WriteComment"));
         }
 
-        public override void WriteDocType(string name, string pubid, string sysid, string subset)
+        public override void WriteDocType(string name, string? pubid, string? sysid, string? subset)
         {
             throw new NotSupportedException(SR.Format(SR.JsonMethodNotSupported, "WriteDocType"));
         }
@@ -554,7 +556,7 @@ namespace System.Runtime.Serialization.Json
             }
             else if (IsWritingNameAttribute)
             {
-                WriteJsonElementName(_attributeText);
+                WriteJsonElementName(_attributeText!);
                 _attributeText = null;
                 _nameState = NameState.IsWritingNameWithMapping | NameState.WrittenNameWithMapping;
                 WriteDataTypeServerType();
@@ -680,7 +682,7 @@ namespace System.Runtime.Serialization.Json
                         }
                     }
                     _nodeWriter.WriteText(JsonGlobals.EndObjectChar);
-                    if ((_depth > 0) && _scopes[_depth] == JsonNodeType.Element)
+                    if ((_depth > 0) && _scopes![_depth] == JsonNodeType.Element)
                     {
                         ExitScope();
                         _endElementBuffer = true;
@@ -704,7 +706,7 @@ namespace System.Runtime.Serialization.Json
             WriteEndElement();
         }
 
-        public override void WriteProcessingInstruction(string name, string text)
+        public override void WriteProcessingInstruction(string name, string? text)
         {
             if (IsClosed)
             {
@@ -722,7 +724,7 @@ namespace System.Runtime.Serialization.Json
             }
         }
 
-        public override void WriteQualifiedName(string localName, string ns)
+        public override void WriteQualifiedName(string localName, string? ns)
         {
             if (localName == null)
             {
@@ -770,7 +772,7 @@ namespace System.Runtime.Serialization.Json
             WriteString(new string(buffer, index, count));
         }
 
-        public override void WriteStartAttribute(string prefix, string localName, string ns)
+        public override void WriteStartAttribute(string? prefix, string localName, string? ns)
         {
             if (IsClosed)
             {
@@ -898,7 +900,7 @@ namespace System.Runtime.Serialization.Json
             }
         }
 
-        public override void WriteStartElement(string prefix, string localName, string ns)
+        public override void WriteStartElement(string? prefix, string localName, string? ns)
         {
             if (localName == null)
             {
@@ -1009,7 +1011,7 @@ namespace System.Runtime.Serialization.Json
             _nodeType = JsonNodeType.Element;
         }
 
-        public override void WriteString(string text)
+        public override void WriteString(string? text)
         {
             if (HasOpenAttribute && (text != null))
             {
@@ -1084,7 +1086,7 @@ namespace System.Runtime.Serialization.Json
             _nodeWriter.WriteDateTimeText(value);
         }
 
-        public override void WriteValue(string value)
+        public override void WriteValue(string? value)
         {
             WriteString(value);
         }
@@ -1132,7 +1134,7 @@ namespace System.Runtime.Serialization.Json
             }
         }
 
-        public override void WriteWhitespace(string ws)
+        public override void WriteWhitespace(string? ws)
         {
             if (IsClosed)
             {
@@ -1158,17 +1160,17 @@ namespace System.Runtime.Serialization.Json
             WriteString(ws);
         }
 
-        public override void WriteXmlAttribute(string localName, string value)
+        public override void WriteXmlAttribute(string localName, string? value)
         {
             throw new NotSupportedException(SR.Format(SR.JsonMethodNotSupported, "WriteXmlAttribute"));
         }
 
-        public override void WriteXmlAttribute(XmlDictionaryString localName, XmlDictionaryString value)
+        public override void WriteXmlAttribute(XmlDictionaryString localName, XmlDictionaryString? value)
         {
             throw new NotSupportedException(SR.Format(SR.JsonMethodNotSupported, "WriteXmlAttribute"));
         }
 
-        public override void WriteXmlnsAttribute(string prefix, string namespaceUri)
+        public override void WriteXmlnsAttribute(string? prefix, string namespaceUri)
         {
             if (!IsWritingNameWithMapping)
             {
@@ -1176,7 +1178,7 @@ namespace System.Runtime.Serialization.Json
             }
         }
 
-        public override void WriteXmlnsAttribute(string prefix, XmlDictionaryString namespaceUri)
+        public override void WriteXmlnsAttribute(string? prefix, XmlDictionaryString namespaceUri)
         {
             if (!IsWritingNameWithMapping)
             {
@@ -1232,7 +1234,7 @@ namespace System.Runtime.Serialization.Json
 
         private JsonNodeType ExitScope()
         {
-            JsonNodeType nodeTypeToReturn = _scopes[_depth];
+            JsonNodeType nodeTypeToReturn = _scopes![_depth];
             _scopes[_depth] = JsonNodeType.None;
             _depth--;
             return nodeTypeToReturn;
@@ -1433,7 +1435,7 @@ namespace System.Runtime.Serialization.Json
         {
             for (int i = 0; i < _indentLevel; i++)
             {
-                _nodeWriter.WriteText(_indentChars);
+                _nodeWriter.WriteText(_indentChars!);
             }
         }
 
@@ -1536,7 +1538,7 @@ namespace System.Runtime.Serialization.Json
 
         private void WriteServerTypeAttribute()
         {
-            string value = _serverTypeValue;
+            string? value = _serverTypeValue;
             JsonDataType oldDataType = _dataType;
             NameState oldNameState = _nameState;
             WriteStartElement(JsonGlobals.serverTypeString);
@@ -1569,7 +1571,7 @@ namespace System.Runtime.Serialization.Json
                 {
                     _nodeWriter.WriteText(JsonGlobals.WhitespaceChar);
                 }
-                WritePrimitiveValue(array.GetValue(i));
+                WritePrimitiveValue(array.GetValue(i)!);
             }
             _dataType = oldDataType;
         }

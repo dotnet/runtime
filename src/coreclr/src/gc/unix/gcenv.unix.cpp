@@ -28,6 +28,12 @@
 #undef min
 #undef max
 
+#if __has_cpp_attribute(fallthrough)
+#define FALLTHROUGH [[fallthrough]]
+#else
+#define FALLTHROUGH
+#endif
+
 #include <algorithm>
 
 #if HAVE_SYS_TIME_H
@@ -366,14 +372,6 @@ bool GCToOSInterface::Initialize()
         }
     }
 
-#if HAVE_MACH_ABSOLUTE_TIME
-    kern_return_t machRet;
-    if ((machRet = mach_timebase_info(&g_TimebaseInfo)) != KERN_SUCCESS)
-    {
-        return false;
-    }
-#endif // HAVE_MACH_ABSOLUTE_TIME
-
     InitializeCGroup();
 
 #if HAVE_SCHED_GETAFFINITY
@@ -646,7 +644,7 @@ bool GCToOSInterface::VirtualRelease(void* address, size_t size)
 //  size      - size of the virtual memory range
 // Return:
 //  Starting virtual address of the committed range
-void* GCToOSInterface::VirtualReserveAndCommitLargePages(size_t size)
+void* GCToOSInterface::VirtualReserveAndCommitLargePages(size_t size, uint16_t node)
 {
 #if HAVE_MAP_HUGETLB
     uint32_t largePagesFlag = MAP_HUGETLB;
@@ -657,7 +655,7 @@ void* GCToOSInterface::VirtualReserveAndCommitLargePages(size_t size)
 #endif
 
     void* pRetVal = VirtualReserveInner(size, OS_PAGE_SIZE, 0, largePagesFlag);
-    if (VirtualCommit(pRetVal, size, NUMA_NODE_UNDEFINED))
+    if (VirtualCommit(pRetVal, size, node))
     {
         return pRetVal;
     }
@@ -800,8 +798,10 @@ bool ReadMemoryValueFromFile(const char* filename, uint64_t* val)
     {
     case 'g':
     case 'G': multiplier = 1024;
+              FALLTHROUGH;
     case 'm':
     case 'M': multiplier = multiplier * 1024;
+              FALLTHROUGH;
     case 'k':
     case 'K': multiplier = multiplier * 1024;
     }
@@ -834,9 +834,14 @@ static size_t GetLogicalProcessorCacheSizeFromOS()
     cacheSize = std::max(cacheSize, ( size_t) sysconf(_SC_LEVEL4_CACHE_SIZE));
 #endif
 
-#if defined(HOST_ARM64)
+#if defined(TARGET_LINUX) && !defined(HOST_ARM)
     if (cacheSize == 0)
     {
+        //
+        // Fallback to retrieve cachesize via /sys/.. if sysconf was not available 
+        // for the platform. Currently musl and arm64 should be only cases to use  
+        // this method to determine cache size.
+        // 
         size_t size;
 
         if (ReadMemoryValueFromFile("/sys/devices/system/cpu/cpu0/cache/index0/size", &size))
@@ -850,7 +855,9 @@ static size_t GetLogicalProcessorCacheSizeFromOS()
         if (ReadMemoryValueFromFile("/sys/devices/system/cpu/cpu0/cache/index4/size", &size))
             cacheSize = std::max(cacheSize, size);
     }
+#endif
 
+#if defined(HOST_ARM64) && !defined(TARGET_OSX)
     if (cacheSize == 0)
     {
         // It is currently expected to be missing cache size info

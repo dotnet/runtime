@@ -69,6 +69,7 @@
 #include <mono/utils/mono-error-internals.h>
 #include <mono/utils/mono-state.h>
 #include <mono/utils/mono-threads-debug.h>
+#include <mono/utils/w32subset.h>
 
 #include "mini.h"
 #include "trace.h"
@@ -3216,7 +3217,7 @@ mono_free_altstack (MonoJitTlsData *tls)
 		mono_mprotect (tls->stack_ovf_guard_base, tls->stack_ovf_guard_size, MONO_MMAP_READ|MONO_MMAP_WRITE);
 }
 
-#elif G_HAVE_API_SUPPORT(HAVE_CLASSIC_WINAPI_SUPPORT) && defined(HOST_WIN32)
+#elif HAVE_API_SUPPORT_WIN32_SET_THREAD_STACK_GUARANTEE && defined(HOST_WIN32)
 void
 mono_setup_altstack (MonoJitTlsData *tls)
 {
@@ -3399,7 +3400,7 @@ print_stack_frame_to_string (StackFrameInfo *frame, MonoContext *ctx, gpointer d
  *   printing diagnostic information and aborting.
  */
 void
-mono_handle_native_crash (const char *signal, MonoContext *mctx, MONO_SIG_HANDLER_INFO_TYPE *info, void *context)
+mono_handle_native_crash (const char *signal, MonoContext *mctx, MONO_SIG_HANDLER_INFO_TYPE *info)
 {
 	MonoJitTlsData *jit_tls = mono_tls_get_jit_tls ();
 
@@ -3409,20 +3410,17 @@ mono_handle_native_crash (const char *signal, MonoContext *mctx, MONO_SIG_HANDLE
 	sigemptyset (&sa.sa_mask);
 	sa.sa_flags = 0;
 
-	/* Mono has crashed - remove our handlers except SIGTERM, which is used by crash reporting */
-	/*  TODO: Combine with mono_runtime_cleanup_handlers (but with an option to not de-allocate anything) */
-	if (mini_debug_options.handle_sigint) {
-		g_assert (sigaction (SIGINT, &sa, NULL) != -1);
-	}
-
+	/* Remove our SIGABRT handler */
 	g_assert (sigaction (SIGABRT, &sa, NULL) != -1);
-	g_assert (sigaction (SIGFPE, &sa, NULL) != -1);
-	g_assert (sigaction (SIGSYS, &sa, NULL) != -1);
-	g_assert (sigaction (SIGSEGV, &sa, NULL) != -1);
-	g_assert (sigaction (SIGQUIT, &sa, NULL) != -1);
-	g_assert (sigaction (SIGBUS, &sa, NULL) != -1);
+
+	/* On some systems we get a SIGILL when calling abort (), because it might
+	 * fail to raise SIGABRT */
 	g_assert (sigaction (SIGILL, &sa, NULL) != -1);
+
+	/* Remove SIGCHLD, it uses the finalizer thread */
 	g_assert (sigaction (SIGCHLD, &sa, NULL) != -1);
+
+	/* Remove SIGQUIT, we are already dumping threads */
 	g_assert (sigaction (SIGQUIT, &sa, NULL) != -1);
 
 #endif
@@ -3462,13 +3460,13 @@ mono_handle_native_crash (const char *signal, MonoContext *mctx, MONO_SIG_HANDLE
 		g_async_safe_printf ("=================================================================\n");
 	}
 
-	mono_post_native_crash_handler (signal, mctx, info, mono_do_crash_chaining, context);
+	mono_post_native_crash_handler (signal, mctx, info, mono_do_crash_chaining);
 }
 
 #else
 
 void
-mono_handle_native_crash (const char *signal, MonoContext *mctx, MONO_SIG_HANDLER_INFO_TYPE *info, void *context)
+mono_handle_native_crash (const char *signal, MonoContext *mctx, MONO_SIG_HANDLER_INFO_TYPE *info)
 {
 	g_assert_not_reached ();
 }

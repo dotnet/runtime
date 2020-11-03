@@ -3,9 +3,9 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Runtime.CompilerServices;
 using System.Reflection;
 using System.Reflection.Emit;
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Threading;
 using TestLibrary;
@@ -29,10 +29,26 @@ public class Program
         [DllImport(nameof(UnmanagedCallersOnlyDll))]
         // Returns -1 if exception was throw and caught.
         public static extern int CallManagedProcCatchException(IntPtr callbackProc, int n);
+    }
 
-        [UnmanagedCallersOnly]
-        [DllImport(nameof(UnmanagedCallersOnlyDll), EntryPoint = "DoesntExist")]
-        public static extern int PInvokeMarkedWithUnmanagedCallersOnly(int n);
+    private const string InvalidCSharpAssemblyName = "InvalidCSharp";
+
+    public static Type GetCallbacksType()
+    {
+        var asm = Assembly.Load(InvalidCSharpAssemblyName);
+        return asm.GetType("InvalidCSharp.Callbacks");
+    }
+
+    public static Type GetGenericClassOfIntType()
+    {
+        var asm = Assembly.Load(InvalidCSharpAssemblyName);
+        return asm.GetType("InvalidCSharp.GenericClass`1").MakeGenericType(typeof(int));
+    }
+
+    public static Type GetCallingUnmanagedCallersOnlyDirectlyType()
+    {
+        var asm = Assembly.Load(InvalidCSharpAssemblyName);
+        return asm.GetType("InvalidCSharp.CallingUnmanagedCallersOnlyDirectly");
     }
 
     private delegate int IntNativeMethodInvoker();
@@ -333,17 +349,11 @@ public class Program
         // Local function to delay exception thrown during JIT
         void CallAsDelegate()
         {
-            Func<int, int> invoker = ManagedDoubleCallback;
+            Func<int, int> invoker = (Func<int, int>)GetCallingUnmanagedCallersOnlyDirectlyType().GetMethod("GetDoubleDelegate").Invoke(null, BindingFlags.DoNotWrapExceptions, null, null, null);
             invoker(0);
         }
     }
 
-    [UnmanagedCallersOnly]
-    public int CallbackNonStatic(int val)
-    {
-        Assert.Fail($"Instance functions with attribute {nameof(UnmanagedCallersOnlyAttribute)} are invalid");
-        return -1;
-    }
 
     public static void NegativeTest_NonStaticMethod()
     {
@@ -354,7 +364,7 @@ public class Program
            {
                 .locals init ([0] native int ptr)
                 nop
-                ldftn      int CallbackNonStatic(int)
+                ldftn      int GetCallbacksType().CallbackNonStatic(int)
                 stloc.0
 
                 ldloc.0
@@ -371,7 +381,7 @@ public class Program
         il.Emit(OpCodes.Nop);
 
         // Get native function pointer of the callback
-        il.Emit(OpCodes.Ldftn, typeof(Program).GetMethod(nameof(CallbackNonStatic)));
+        il.Emit(OpCodes.Ldftn, GetCallbacksType().GetMethod("CallbackNonStatic"));
         il.Emit(OpCodes.Stloc_0);
         il.Emit(OpCodes.Ldloc_0);
 
@@ -436,13 +446,6 @@ public class Program
         Assert.Throws<InvalidProgramException>(() => { testNativeMethod(); });
     }
 
-    [UnmanagedCallersOnly]
-    public static int CallbackMethodGeneric<T>(T arg)
-    {
-        Assert.Fail($"Functions with attribute {nameof(UnmanagedCallersOnlyAttribute)} cannot have generic arguments");
-        return -1;
-    }
-
     public static void NegativeTest_NonInstantiatedGenericArguments()
     {
         Console.WriteLine($"Running {nameof(NegativeTest_NonInstantiatedGenericArguments)}...");
@@ -452,7 +455,7 @@ public class Program
            {
                 .locals init ([0] native int ptr)
                 IL_0000:  nop
-                IL_0001:  ldftn      void CallbackMethodGeneric(T)
+                IL_0001:  ldftn      void InvalidCSharp.Callbacks.CallbackMethodGeneric(T)
                 IL_0007:  stloc.0
                 IL_0008:  ret
              }
@@ -463,7 +466,7 @@ public class Program
         il.Emit(OpCodes.Nop);
 
         // Get native function pointer of the callback
-        il.Emit(OpCodes.Ldftn, typeof(Program).GetMethod(nameof(CallbackMethodGeneric)));
+        il.Emit(OpCodes.Ldftn, GetCallbacksType().GetMethod("CallbackMethodGeneric"));
         il.Emit(OpCodes.Stloc_0);
 
         il.Emit(OpCodes.Ret);
@@ -482,7 +485,7 @@ public class Program
            {
                 .locals init ([0] native int ptr)
                 nop
-                ldftn      void CallbackMethodGeneric(int)
+                ldftn      void InvalidCSharp.Callbacks.CallbackMethodGeneric(int)
                 stloc.0
 
                 ldloc.0
@@ -499,7 +502,7 @@ public class Program
         il.Emit(OpCodes.Nop);
 
         // Get native function pointer of the instantiated generic callback
-        il.Emit(OpCodes.Ldftn, typeof(Program).GetMethod(nameof(CallbackMethodGeneric)).MakeGenericMethod(new [] { typeof(int) }));
+        il.Emit(OpCodes.Ldftn, GetCallbacksType().GetMethod("CallbackMethodGeneric").MakeGenericMethod(new [] { typeof(int) }));
         il.Emit(OpCodes.Stloc_0);
         il.Emit(OpCodes.Ldloc_0);
 
@@ -515,15 +518,6 @@ public class Program
         Assert.Throws<InvalidProgramException>(() => { testNativeMethod(); });
     }
 
-    public class GenericClass<T>
-    {
-        [UnmanagedCallersOnly]
-        public static void CallbackMethod(int n)
-        {
-            Assert.Fail($"Functions with attribute {nameof(UnmanagedCallersOnlyAttribute)} within a generic type are invalid");
-        }
-    }
-
     public static void NegativeTest_FromInstantiatedGenericClass()
     {
         Console.WriteLine($"Running {nameof(NegativeTest_FromInstantiatedGenericClass)}...");
@@ -533,7 +527,7 @@ public class Program
            {
                 .locals init ([0] native int ptr)
                 nop
-                ldftn      int GenericClass<int>::CallbackMethod(int)
+                ldftn      int InvalidCSharp.GenericClass<int>::CallbackMethod(int)
                 stloc.0
 
                 ldloc.0
@@ -550,7 +544,7 @@ public class Program
         il.Emit(OpCodes.Nop);
 
         // Get native function pointer of the callback from the instantiated generic class.
-        il.Emit(OpCodes.Ldftn, typeof(GenericClass<int>).GetMethod(nameof(GenericClass<int>.CallbackMethod)));
+        il.Emit(OpCodes.Ldftn, GetGenericClassOfIntType().GetMethod("CallbackMethod"));
         il.Emit(OpCodes.Stloc_0);
         il.Emit(OpCodes.Ldloc_0);
 
@@ -724,10 +718,11 @@ public class Program
         Console.WriteLine($"Running {nameof(TestPInvokeMarkedWithUnmanagedCallersOnly)}...");
 
         // Call P/Invoke directly
-        Assert.Throws<NotSupportedException>(() => UnmanagedCallersOnlyDll.PInvokeMarkedWithUnmanagedCallersOnly(0));
+        var pInvokeWrapperMethod = GetCallingUnmanagedCallersOnlyDirectlyType().GetMethod("CallPInvokeMarkedWithUnmanagedCallersOnly");
+        Assert.Throws<NotSupportedException>(() => pInvokeWrapperMethod.Invoke(null, BindingFlags.DoNotWrapExceptions, null, new[] { (object)0 }, null));
 
         // Call P/Invoke via reflection
-        var method = typeof(UnmanagedCallersOnlyDll).GetMethod(nameof(UnmanagedCallersOnlyDll.PInvokeMarkedWithUnmanagedCallersOnly));
+        var method = GetCallingUnmanagedCallersOnlyDirectlyType().GetMethod("PInvokeMarkedWithUnmanagedCallersOnly");
         Assert.Throws<NotSupportedException>(() => method.Invoke(null, BindingFlags.DoNotWrapExceptions, null, new[] { (object)0 }, null));
 
         // Call P/Invoke as a function pointer
@@ -736,7 +731,7 @@ public class Program
            {
                 .locals init (native int V_0)
                 IL_0000:  nop
-                IL_0001:  ldftn      int UnmanagedCallersOnlyDll.PInvokeMarkedWithUnmanagedCallersOnly(int32)
+                IL_0001:  ldftn      int InvalidCSharp.CallingUnmanagedCallersOnlyDirectly::PInvokeMarkedWithUnmanagedCallersOnly(int32)
                 IL_0007:  stloc.0
 
                 IL_0008:  ldc.i4     1234

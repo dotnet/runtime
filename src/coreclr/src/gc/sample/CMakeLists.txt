@@ -27,7 +27,7 @@ set(SOURCES
 if (CLR_CMAKE_TARGET_ARCH_AMD64 AND CLR_CMAKE_TARGET_WIN32)
   set ( SOURCES
     ${SOURCES}
-    ../vxsort/isa_detection_dummy.cpp
+    ../vxsort/isa_detection.cpp
     ../vxsort/do_vxsort_avx2.cpp
     ../vxsort/do_vxsort_avx512.cpp
     ../vxsort/machine_traits.avx2.cpp

@@ -226,7 +226,7 @@ int LinearScan::BuildNode(GenTree* tree)
             {
                 return 0;
             }
-            __fallthrough;
+            FALLTHROUGH;
 
         case GT_LCL_FLD:
         {
@@ -251,7 +251,7 @@ int LinearScan::BuildNode(GenTree* tree)
             {
                 dstCount = compiler->lvaGetDesc(tree->AsLclVar()->GetLclNum())->lvFieldCnt;
             }
-            __fallthrough;
+            FALLTHROUGH;
 
         case GT_STORE_LCL_FLD:
             srcCount = BuildStoreLoc(tree->AsLclVarCommon());
@@ -365,7 +365,7 @@ int LinearScan::BuildNode(GenTree* tree)
                 break;
             }
 
-            __fallthrough;
+            FALLTHROUGH;
 
         case GT_AND:
         case GT_OR:
@@ -404,7 +404,7 @@ int LinearScan::BuildNode(GenTree* tree)
                 setInternalRegsDelayFree = true;
                 buildInternalIntRegisterDefForNode(tree);
             }
-            __fallthrough;
+            FALLTHROUGH;
 
         case GT_DIV:
         case GT_MULHI:
@@ -477,7 +477,7 @@ int LinearScan::BuildNode(GenTree* tree)
                 buildInternalIntRegisterDefForNode(tree);
                 buildInternalIntRegisterDefForNode(tree);
             }
-            __fallthrough;
+            FALLTHROUGH;
 
         case GT_CNS_INT:
         {
@@ -701,7 +701,8 @@ int LinearScan::BuildNode(GenTree* tree)
             // that overlaps with all the source registers.
             assert(!"Should never see GT_NULLCHECK on Arm/32");
 #endif
-        // For Arm64 we simply fall through to the GT_IND case, and will use REG_ZR as the target.
+            // For Arm64 we simply fall through to the GT_IND case, and will use REG_ZR as the target.
+            FALLTHROUGH;
         case GT_IND:
             assert(dstCount == (tree->OperIs(GT_NULLCHECK) ? 0 : 1));
             srcCount = BuildIndir(tree->AsIndir());

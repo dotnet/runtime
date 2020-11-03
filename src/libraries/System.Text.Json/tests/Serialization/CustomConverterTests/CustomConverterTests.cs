@@ -119,5 +119,46 @@ namespace System.Text.Json.Serialization.Tests
             Customer c = JsonSerializer.Deserialize<Customer>(utf8, options);
             Assert.Null(c);
         }
+
+        public class ObjectBoolConverter : JsonConverter<object>
+        {
+            public override object Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
+            {
+                if (reader.TokenType == JsonTokenType.True)
+                {
+                    return true;
+                }
+
+                if (reader.TokenType == JsonTokenType.False)
+                {
+                    return false;
+                }
+
+                throw new JsonException();
+            }
+
+            public override void Write(Utf8JsonWriter writer, object value, JsonSerializerOptions options)
+            {
+                throw new NotImplementedException();
+            }
+        }
+
+        [Fact]
+        public static void VerifyObjectConverterWithPreservedReferences()
+        {
+            var json = "true";
+            byte[] utf8 = Encoding.UTF8.GetBytes(json);
+
+            var options = new JsonSerializerOptions()
+            {
+                ReferenceHandler = ReferenceHandler.Preserve,
+            };
+            options.Converters.Add(new ObjectBoolConverter());
+
+            object obj = (JsonSerializer.Deserialize<object>(utf8, options));
+
+            Assert.IsType<bool>(obj);
+            Assert.Equal(true, obj);
+        }
     }
 }

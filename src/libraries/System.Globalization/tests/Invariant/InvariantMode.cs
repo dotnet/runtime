@@ -800,9 +800,44 @@ namespace System.Globalization.Tests
         {
             foreach (string cul in s_cultureNames)
             {
-                Assert.Equal(result, CultureInfo.GetCultureInfo(cul).CompareInfo.IndexOf(source, value, startIndex, count, options));
+                CompareInfo compareInfo = CultureInfo.GetCultureInfo(cul).CompareInfo;
+                TestCore(compareInfo, source, value, startIndex, count, options, result);
+            }
+
+            // static test helper method to avoid mutating input args when called in a loop
+            static void TestCore(CompareInfo compareInfo, string source, string value, int startIndex, int count, CompareOptions options, int result)
+            {
+                Assert.Equal(result, compareInfo.IndexOf(source, value, startIndex, count, options));
                 Assert.Equal(result, source.IndexOf(value, startIndex, count, GetStringComparison(options)));
-                Assert.Equal((result == -1) ? -1 : (result - startIndex), source.AsSpan(startIndex, count).IndexOf(value.AsSpan(), GetStringComparison(options)));
+
+                // Span versions - using BoundedMemory to check for buffer overruns
+
+                using BoundedMemory<char> sourceBoundedMemory = BoundedMemory.AllocateFromExistingData<char>(source.AsSpan(startIndex, count));
+                sourceBoundedMemory.MakeReadonly();
+                ReadOnlySpan<char> sourceBoundedSpan = sourceBoundedMemory.Span;
+
+                using BoundedMemory<char> valueBoundedMemory = BoundedMemory.AllocateFromExistingData<char>(value);
+                valueBoundedMemory.MakeReadonly();
+                ReadOnlySpan<char> valueBoundedSpan = valueBoundedMemory.Span;
+
+                int offsetResult = result;
+                if (offsetResult >= 0)
+                {
+                    offsetResult -= startIndex; // account for span slicing
+                    Assert.True(offsetResult >= 0, "Shouldn't have made an affirmative result go negative.");
+                }
+
+                Assert.Equal(offsetResult, sourceBoundedSpan.IndexOf(valueBoundedSpan, GetStringComparison(options)));
+                Assert.Equal(offsetResult, compareInfo.IndexOf(sourceBoundedSpan, valueBoundedSpan, options));
+                Assert.Equal(offsetResult, compareInfo.IndexOf(sourceBoundedSpan, valueBoundedSpan, options, out int matchLength));
+                if (offsetResult >= 0)
+                {
+                    Assert.Equal(valueBoundedSpan.Length, matchLength); // Invariant mode should perform non-linguistic comparisons
+                }
+                else
+                {
+                    Assert.Equal(0, matchLength); // not found
+                }
             }
         }
 
@@ -812,14 +847,21 @@ namespace System.Globalization.Tests
         {
             foreach (string cul in s_cultureNames)
             {
-                Assert.Equal(result, CultureInfo.GetCultureInfo(cul).CompareInfo.LastIndexOf(source, value, startIndex, count, options));
+                CompareInfo compareInfo = CultureInfo.GetCultureInfo(cul).CompareInfo;
+                TestCore(compareInfo, source, value, startIndex, count, options, result);
+            }
+
+            // static test helper method to avoid mutating input args when called in a loop
+            static void TestCore(CompareInfo compareInfo, string source, string value, int startIndex, int count, CompareOptions options, int result)
+            {
+                Assert.Equal(result, compareInfo.LastIndexOf(source, value, startIndex, count, options));
                 Assert.Equal(result, source.LastIndexOf(value, startIndex, count, GetStringComparison(options)));
 
                 // Filter differences betweeen string-based and Span-based LastIndexOf
                 // - Empty value handling - https://github.com/dotnet/runtime/issues/13382
                 // - Negative count
                 if (value.Length == 0 || count < 0)
-                    continue;
+                    return;
 
                 if (startIndex == source.Length)
                 {
@@ -828,7 +870,34 @@ namespace System.Globalization.Tests
                         count--;
                 }
                 int leftStartIndex = (startIndex - count + 1);
-                Assert.Equal((result == -1) ? -1 : (result - leftStartIndex), source.AsSpan(leftStartIndex, count).LastIndexOf(value.AsSpan(), GetStringComparison(options)));
+
+                // Span versions - using BoundedMemory to check for buffer overruns
+
+                using BoundedMemory<char> sourceBoundedMemory = BoundedMemory.AllocateFromExistingData<char>(source.AsSpan(leftStartIndex, count));
+                sourceBoundedMemory.MakeReadonly();
+                ReadOnlySpan<char> sourceBoundedSpan = sourceBoundedMemory.Span;
+
+                using BoundedMemory<char> valueBoundedMemory = BoundedMemory.AllocateFromExistingData<char>(value);
+                valueBoundedMemory.MakeReadonly();
+                ReadOnlySpan<char> valueBoundedSpan = valueBoundedMemory.Span;
+
+                if (result >= 0)
+                {
+                    result -= leftStartIndex; // account for span slicing
+                    Assert.True(result >= 0, "Shouldn't have made an affirmative result go negative.");
+                }
+
+                Assert.Equal(result, sourceBoundedSpan.LastIndexOf(valueBoundedSpan, GetStringComparison(options)));
+                Assert.Equal(result, compareInfo.LastIndexOf(sourceBoundedSpan, valueBoundedSpan, options));
+                Assert.Equal(result, compareInfo.LastIndexOf(sourceBoundedSpan, valueBoundedSpan, options, out int matchLength));
+                if (result >= 0)
+                {
+                    Assert.Equal(valueBoundedSpan.Length, matchLength); // Invariant mode should perform non-linguistic comparisons
+                }
+                else
+                {
+                    Assert.Equal(0, matchLength); // not found
+                }
             }
         }
 
@@ -838,7 +907,9 @@ namespace System.Globalization.Tests
         {
             foreach (string cul in s_cultureNames)
             {
-                Assert.Equal(result, CultureInfo.GetCultureInfo(cul).CompareInfo.IsPrefix(source, value, options));
+                CompareInfo compareInfo = CultureInfo.GetCultureInfo(cul).CompareInfo;
+
+                Assert.Equal(result, compareInfo.IsPrefix(source, value, options));
                 Assert.Equal(result, source.StartsWith(value, GetStringComparison(options)));
 
                 // Span versions - using BoundedMemory to check for buffer overruns
@@ -852,6 +923,16 @@ namespace System.Globalization.Tests
                 ReadOnlySpan<char> valueBoundedSpan = valueBoundedMemory.Span;
 
                 Assert.Equal(result, sourceBoundedSpan.StartsWith(valueBoundedSpan, GetStringComparison(options)));
+                Assert.Equal(result, compareInfo.IsPrefix(sourceBoundedSpan, valueBoundedSpan, options));
+                Assert.Equal(result, compareInfo.IsPrefix(sourceBoundedSpan, valueBoundedSpan, options, out int matchLength));
+                if (result)
+                {
+                    Assert.Equal(valueBoundedSpan.Length, matchLength); // Invariant mode should perform non-linguistic comparisons
+                }
+                else
+                {
+                    Assert.Equal(0, matchLength); // not found
+                }
             }
         }
 
@@ -861,7 +942,9 @@ namespace System.Globalization.Tests
         {
             foreach (string cul in s_cultureNames)
             {
-                Assert.Equal(result, CultureInfo.GetCultureInfo(cul).CompareInfo.IsSuffix(source, value, options));
+                CompareInfo compareInfo = CultureInfo.GetCultureInfo(cul).CompareInfo;
+
+                Assert.Equal(result, compareInfo.IsSuffix(source, value, options));
                 Assert.Equal(result, source.EndsWith(value, GetStringComparison(options)));
 
                 // Span versions - using BoundedMemory to check for buffer overruns
@@ -874,8 +957,17 @@ namespace System.Globalization.Tests
                 valueBoundedMemory.MakeReadonly();
                 ReadOnlySpan<char> valueBoundedSpan = valueBoundedMemory.Span;
 
-                Assert.Equal(result, CultureInfo.GetCultureInfo(cul).CompareInfo.IsSuffix(sourceBoundedSpan, valueBoundedSpan, options));
                 Assert.Equal(result, sourceBoundedSpan.EndsWith(valueBoundedSpan, GetStringComparison(options)));
+                Assert.Equal(result, compareInfo.IsSuffix(sourceBoundedSpan, valueBoundedSpan, options));
+                Assert.Equal(result, compareInfo.IsSuffix(sourceBoundedSpan, valueBoundedSpan, options, out int matchLength));
+                if (result)
+                {
+                    Assert.Equal(valueBoundedSpan.Length, matchLength); // Invariant mode should perform non-linguistic comparisons
+                }
+                else
+                {
+                    Assert.Equal(0, matchLength); // not found
+                }
             }
         }
 

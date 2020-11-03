@@ -593,7 +593,7 @@ void Lowering::LowerPutArgStk(GenTreePutArgStk* putArgStk)
  * TODO-XArch-CQ: (Low-pri): Jit64 generates in-line code of 8 instructions for (i) above.
  * There are hardly any occurrences of this conversion operation in platform
  * assemblies or in CQ perf benchmarks (1 occurrence in corelib, microsoft.jscript,
- * 1 occurence in Roslyn and no occurrences in system, system.core, system.numerics
+ * 1 occurrence in Roslyn and no occurrences in system, system.core, system.numerics
  * system.windows.forms, scimark, fractals, bio mums). If we ever find evidence that
  * doing this optimization is a win, should consider generating in-lined code.
  */
@@ -713,10 +713,11 @@ void Lowering::LowerSIMD(GenTreeSIMD* simdNode)
 
             assert(sizeof(constArgValues) == 16);
 
-            UNATIVE_OFFSET cnsSize  = sizeof(constArgValues);
-            UNATIVE_OFFSET cnsAlign = (comp->compCodeOpt() != Compiler::SMALL_CODE) ? cnsSize : 1;
+            unsigned cnsSize  = sizeof(constArgValues);
+            unsigned cnsAlign = (comp->compCodeOpt() != Compiler::SMALL_CODE) ? cnsSize : 1;
 
-            CORINFO_FIELD_HANDLE hnd = comp->GetEmitter()->emitAnyConst(constArgValues, cnsSize, cnsAlign);
+            CORINFO_FIELD_HANDLE hnd =
+                comp->GetEmitter()->emitBlkConst(constArgValues, cnsSize, cnsAlign, simdNode->gtSIMDBaseType);
             GenTree* clsVarAddr = new (comp, GT_CLS_VAR_ADDR) GenTreeClsVar(GT_CLS_VAR_ADDR, TYP_I_IMPL, hnd, nullptr);
             BlockRange().InsertBefore(simdNode, clsVarAddr);
             simdNode->ChangeOper(GT_IND);
@@ -1008,7 +1009,7 @@ void Lowering::LowerHWIntrinsic(GenTreeHWIntrinsic* node)
                 break;
             }
 
-            __fallthrough;
+            FALLTHROUGH;
         }
 
         case NI_SSE_CompareGreaterThan:
@@ -1540,11 +1541,14 @@ void Lowering::LowerHWIntrinsicCreate(GenTreeHWIntrinsic* node)
             }
         }
 
-        UNATIVE_OFFSET cnsSize  = (simdSize != 12) ? simdSize : 16;
-        UNATIVE_OFFSET cnsAlign = (comp->compCodeOpt() != Compiler::SMALL_CODE) ? cnsSize : 1;
+        unsigned cnsSize = (simdSize != 12) ? simdSize : 16;
+        unsigned cnsAlign =
+            (comp->compCodeOpt() != Compiler::SMALL_CODE) ? cnsSize : emitter::dataSection::MIN_DATA_ALIGN;
+        var_types dataType = Compiler::getSIMDTypeForSize(simdSize);
 
-        CORINFO_FIELD_HANDLE hnd = comp->GetEmitter()->emitAnyConst(&vecCns, cnsSize, cnsAlign);
-        GenTree* clsVarAddr      = new (comp, GT_CLS_VAR_ADDR) GenTreeClsVar(GT_CLS_VAR_ADDR, TYP_I_IMPL, hnd, nullptr);
+        UNATIVE_OFFSET       cnum = comp->GetEmitter()->emitDataConst(&vecCns, cnsSize, cnsAlign, dataType);
+        CORINFO_FIELD_HANDLE hnd  = comp->eeFindJitDataOffs(cnum);
+        GenTree* clsVarAddr = new (comp, GT_CLS_VAR_ADDR) GenTreeClsVar(GT_CLS_VAR_ADDR, TYP_I_IMPL, hnd, nullptr);
         BlockRange().InsertBefore(node, clsVarAddr);
 
         node->ChangeOper(GT_IND);
@@ -1728,7 +1732,7 @@ void Lowering::LowerHWIntrinsicCreate(GenTreeHWIntrinsic* node)
                 BlockRange().InsertAfter(tmp2, tmp1);
                 LowerNode(tmp1);
 
-                __fallthrough;
+                FALLTHROUGH;
             }
 
             case TYP_SHORT:
@@ -1765,7 +1769,7 @@ void Lowering::LowerHWIntrinsicCreate(GenTreeHWIntrinsic* node)
                 BlockRange().InsertAfter(tmp2, tmp1);
                 LowerNode(tmp1);
 
-                __fallthrough;
+                FALLTHROUGH;
             }
 
             case TYP_INT:
@@ -5352,7 +5356,7 @@ void Lowering::ContainCheckHWIntrinsic(GenTreeHWIntrinsic* node)
                         op2->SetRegOptional();
 
                         // TODO-XArch-CQ: For commutative nodes, either operand can be reg-optional.
-                        //                https://github.com/dotnet/coreclr/issues/6361
+                        //                https://github.com/dotnet/runtime/issues/6358
                     }
                     break;
                 }
@@ -5538,7 +5542,7 @@ void Lowering::ContainCheckHWIntrinsic(GenTreeHWIntrinsic* node)
                             // TODO-XArch-CQ: Technically any one of the three operands can
                             //                be reg-optional. With a limitation on op1 where
                             //                it can only be so if CopyUpperBits is off.
-                            //                https://github.com/dotnet/coreclr/issues/6361
+                            //                https://github.com/dotnet/runtime/issues/6358
 
                             // 213 form: op1 = (op2 * op1) + op3
                             op3->SetRegOptional();
@@ -5594,6 +5598,7 @@ void Lowering::ContainCheckHWIntrinsic(GenTreeHWIntrinsic* node)
                             }
                         }
                     }
+                    break;
                 }
 
                 case HW_Category_IMM:

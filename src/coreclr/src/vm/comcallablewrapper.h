@@ -1417,9 +1417,8 @@ public:
     // Determines if the type associated with the ComCallWrapper supports exceptions.
     static BOOL SupportsExceptions(MethodTable *pMT);
 
-    // Determines if the type supports IReflect / IExpando.
+    // Determines if the type supports IReflect.
     static BOOL SupportsIReflect(MethodTable *pMT);
-    static BOOL SupportsIExpando(MethodTable *pMT);
 
     NOINLINE BOOL ShouldUseManagedIProvideClassInfo();
 

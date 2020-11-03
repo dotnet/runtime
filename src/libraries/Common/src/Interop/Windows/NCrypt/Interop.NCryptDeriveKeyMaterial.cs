@@ -213,7 +213,7 @@ internal static partial class Interop
         /// <summary>
         ///     Derive key material from a secret agreement using the TLS KDF
         /// </summary>
-        internal static byte[] DeriveKeyMaterialTls(
+        internal static unsafe byte[] DeriveKeyMaterialTls(
             SafeNCryptSecretHandle secretAgreement,
             byte[] label,
             byte[] seed,
@@ -221,28 +221,25 @@ internal static partial class Interop
         {
             Span<NCryptBuffer> buffers = stackalloc NCryptBuffer[2];
 
-            unsafe
+            fixed (byte* pLabel = label, pSeed = seed)
             {
-                fixed (byte* pLabel = label, pSeed = seed)
-                {
-                    NCryptBuffer labelBuffer = default;
-                    labelBuffer.cbBuffer = label.Length;
-                    labelBuffer.BufferType = BufferType.KdfTlsLabel;
-                    labelBuffer.pvBuffer = new IntPtr(pLabel);
-                    buffers[0] = labelBuffer;
+                NCryptBuffer labelBuffer = default;
+                labelBuffer.cbBuffer = label.Length;
+                labelBuffer.BufferType = BufferType.KdfTlsLabel;
+                labelBuffer.pvBuffer = new IntPtr(pLabel);
+                buffers[0] = labelBuffer;
 
-                    NCryptBuffer seedBuffer = default;
-                    seedBuffer.cbBuffer = seed.Length;
-                    seedBuffer.BufferType = BufferType.KdfTlsSeed;
-                    seedBuffer.pvBuffer = new IntPtr(pSeed);
-                    buffers[1] = seedBuffer;
+                NCryptBuffer seedBuffer = default;
+                seedBuffer.cbBuffer = seed.Length;
+                seedBuffer.BufferType = BufferType.KdfTlsSeed;
+                seedBuffer.pvBuffer = new IntPtr(pSeed);
+                buffers[1] = seedBuffer;
 
-                    return DeriveKeyMaterial(
-                        secretAgreement,
-                        BCryptNative.KeyDerivationFunction.Tls,
-                        buffers,
-                        flags);
-                }
+                return DeriveKeyMaterial(
+                    secretAgreement,
+                    BCryptNative.KeyDerivationFunction.Tls,
+                    buffers,
+                    flags);
             }
         }
     }

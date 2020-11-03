@@ -1,7 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-#nullable enable
 using System;
 using System.Resources;
 using System.Runtime.Serialization;
@@ -17,7 +16,7 @@ namespace System.Xml.XPath
     {
         // we need to keep this members for V1 serialization compatibility
         private readonly string _res;
-        private readonly string[]? _args;
+        private readonly string?[]? _args;
 
         // message != null for V1 & V2 exceptions deserialized in Whidbey
         // message == null for created V2 exceptions; the exception message is stored in Exception._message
@@ -60,10 +59,10 @@ namespace System.Xml.XPath
 
         public XPathException() : this(string.Empty, (Exception?)null) { }
 
-        public XPathException(string message) : this(message, (Exception?)null) { }
+        public XPathException(string? message) : this(message, (Exception?)null) { }
 
-        public XPathException(string message, Exception? innerException) :
-            this(SR.Xml_UserException, new string[] { message }, innerException)
+        public XPathException(string? message, Exception? innerException) :
+            this(SR.Xml_UserException, new string?[] { message }, innerException)
         {
         }
 
@@ -92,7 +91,7 @@ namespace System.Xml.XPath
         {
         }
 
-        private XPathException(string res, string[]? args, Exception? inner) :
+        private XPathException(string res, string?[]? args, Exception? inner) :
             base(CreateMessage(res, args), inner)
         {
             HResult = HResults.XmlXPath;
@@ -100,7 +99,7 @@ namespace System.Xml.XPath
             _args = args;
         }
 
-        private static string CreateMessage(string res, string[]? args)
+        private static string CreateMessage(string res, string?[]? args)
         {
             try
             {

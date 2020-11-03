@@ -25,7 +25,7 @@ namespace System.Xml.Xsl.Xslt
     internal class Scripts
     {
         private readonly Compiler _compiler;
-        private readonly Dictionary<string, Type> _nsToType = new Dictionary<string, Type>();
+        private readonly Dictionary<string, Type?> _nsToType = new Dictionary<string, Type?>();
         private readonly XmlExtensionFunctionTable _extFuncs = new XmlExtensionFunctionTable();
 
         public Scripts(Compiler compiler)
@@ -33,14 +33,14 @@ namespace System.Xml.Xsl.Xslt
             _compiler = compiler;
         }
 
-        public Dictionary<string, Type> ScriptClasses
+        public Dictionary<string, Type?> ScriptClasses
         {
             get { return _nsToType; }
         }
 
-        public XmlExtensionFunction ResolveFunction(string name, string ns, int numArgs, IErrorHelper errorHelper)
+        public XmlExtensionFunction? ResolveFunction(string name, string ns, int numArgs, IErrorHelper errorHelper)
         {
-            Type type;
+            Type? type;
             if (_nsToType.TryGetValue(ns, out type))
             {
                 try

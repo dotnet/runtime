@@ -105,6 +105,13 @@ namespace System.Text.Json.Tests
 
         public static IEnumerable<object[]> InvalidISO8601Tests()
         {
+            // Too short
+            yield return new object[] { "\"1997-07\"" };
+            yield return new object[] { "\"1996\"" };
+            yield return new object[] { "\"997-07-16\"" };
+            yield return new object[] { "\"1997-07-6\"" };
+            yield return new object[] { "\"1997-7-06\"" };
+
             // Invalid YYYY-MM-DD
             yield return new object[] { "\"0997 07-16\"" };
             yield return new object[] { "\"0997-0a-16\"" };
@@ -115,12 +122,8 @@ namespace System.Text.Json.Tests
             yield return new object[] { "\"0997-07-16,0997-07-16\"" };
             yield return new object[] { "\"1997-07-16T19:20abc\"" };
             yield return new object[] { "\"1997-07-16T19:20, 123\"" };
-            yield return new object[] { "\"997-07-16\"" };
-            yield return new object[] { "\"1997-07\"" };
-            yield return new object[] { "\"1997-7-06\"" };
             yield return new object[] { "\"1997-07-16T\"" };
             yield return new object[] { "\"1997-07-16*\"" };
-            yield return new object[] { "\"1997-07-6\"" };
             yield return new object[] { "\"1997-07-6T01\"" };
             yield return new object[] { "\"1997-07-16Z\"" };
             yield return new object[] { "\"1997-07-16+01:00\"" };

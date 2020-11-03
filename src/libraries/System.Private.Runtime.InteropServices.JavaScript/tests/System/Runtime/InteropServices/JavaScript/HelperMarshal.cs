@@ -10,7 +10,7 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
 {
     public static class HelperMarshal
     {
-        internal const string INTEROP_CLASS = "[System.Runtime.InteropServices.JavaScript.Tests]System.Runtime.InteropServices.JavaScript.Tests.HelperMarshal:";
+        internal const string INTEROP_CLASS = "[System.Private.Runtime.InteropServices.JavaScript.Tests]System.Runtime.InteropServices.JavaScript.Tests.HelperMarshal:";
         internal static int _i32Value;
         private static void InvokeI32(int a, int b)
         {
@@ -332,5 +332,18 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
         {
             _minValue = (int)_mathMinFunction.Apply(null, new object[] { 5, 6, 2, 3, 7 });
         }
+
+        internal static Uri _blobURL;
+        public static void SetBlobUrl(string blobUrl)
+        {
+            _blobURL = new Uri(blobUrl);
+        }
+
+        internal static Uri _blobURI;
+        public static void SetBlobAsUri(Uri blobUri)
+        {
+            _blobURI = blobUri;
+        }
+
     }
 }

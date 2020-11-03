@@ -30,7 +30,8 @@ namespace Internal.TypeSystem
                 ByteCountAlignment = canonicalType.InstanceByteAlignment,
                 FieldAlignment = canonicalType.InstanceFieldAlignment,
                 FieldSize = canonicalType.InstanceFieldSize,
-                Offsets = Array.Empty<FieldAndOffset>()
+                Offsets = Array.Empty<FieldAndOffset>(),
+                LayoutAbiStable = canonicalType.LayoutAbiStable
             };
 
             return result;

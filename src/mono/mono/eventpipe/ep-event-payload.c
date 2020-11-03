@@ -140,11 +140,11 @@ ep_event_payload_copy_data (
 	if (event_payload->size > 0) {
 		if (ep_event_payload_is_flattened (event_payload)) {
 			memcpy (dst, event_payload->data, event_payload->size);
-		} else if (event_payload->data != NULL) {
+		} else if (event_payload->event_data != NULL) {
 			uint32_t offset = 0;
 			EventData *event_data = event_payload->event_data;
 			for (uint32_t i = 0; i < event_payload->event_data_len; ++i) {
-				EP_ASSERT ((offset + ep_event_data_get_size (&event_data[i])) < event_payload->size);
+				EP_ASSERT ((offset + ep_event_data_get_size (&event_data[i])) <= event_payload->size);
 				memcpy (dst + offset, (uint8_t *)ep_event_data_get_ptr (&event_data[i]), ep_event_data_get_size (&event_data[i]));
 				offset += ep_event_data_get_size (&event_data[i]);
 			}

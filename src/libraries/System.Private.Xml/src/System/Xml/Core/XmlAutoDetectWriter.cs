@@ -1,7 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-#nullable enable
 namespace System.Xml
 {
     using System;
@@ -397,7 +396,7 @@ namespace System.Xml
             if (_wrapped == null)
             {
                 // Whitespace-only text blocks aren't enough to determine Xml vs. Html
-                if (XmlCharType.Instance.IsOnlyWhitespace(textBlock))
+                if (XmlCharType.IsOnlyWhitespace(textBlock))
                 {
                     return false;
                 }

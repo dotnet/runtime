@@ -2,12 +2,14 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
+using System.IO;
 using System.Text;
 using Test.Cryptography;
 using Xunit;
 
 namespace System.Security.Cryptography.Encryption.Des.Tests
 {
+    [SkipOnMono("Not supported on Browser", TestPlatforms.Browser)]
     public static class DesCipherTests
     {
         // These are the expected output of many decryptions. Changing these values requires re-generating test input.
@@ -249,6 +251,299 @@ namespace System.Security.Cryptography.Encryption.Des.Tests
                 string outputAsHex = output.ByteArrayToHex();
                 Assert.NotEqual(new string('0', outputOffset * 2), outputAsHex.Substring(0, outputOffset * 2));
                 Assert.Equal(new string('0', (output.Length - outputOffset) * 2), outputAsHex.Substring(outputOffset * 2));
+            }
+        }
+
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindows7))]
+        public static void VerifyKnownTransform_CFB8_NoPadding_0()
+        {
+            // NIST CAVS TDESMMT.ZIP TCFB8MMT2.rsp, [DECRYPT] COUNT=0
+            // used only key1, cipherBytes computed using openssl
+            TestDESTransformDirectKey(
+                CipherMode.CFB,
+                PaddingMode.None,
+                key: "fb978a0b6dc2c467".HexToByteArray(),
+                iv: "8b97579ea5ac300f".HexToByteArray(),
+                plainBytes: "80".HexToByteArray(),
+                cipherBytes: "82".HexToByteArray(),
+                feedbackSize: 8
+            );
+        }
+
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindows7))]
+        public static void VerifyKnownTransform_CFB8_NoPadding_1()
+        {
+            // NIST CAVS TDESMMT.ZIP TCFB8MMT2.rsp, [DECRYPT] COUNT=1
+            // used only key1, cipherBytes computed using openssl
+            TestDESTransformDirectKey(
+                CipherMode.CFB,
+                PaddingMode.None,
+                key: "9b04c86dd31a8a58".HexToByteArray(),
+                iv: "52cd77d49fc72347".HexToByteArray(),
+                plainBytes: "2fef".HexToByteArray(),
+                cipherBytes: "0fe4".HexToByteArray(),
+                feedbackSize: 8
+            );
+        }
+
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindows7))]
+        public static void VerifyKnownTransform_CFB8_NoPadding_2()
+        {
+            // NIST CAVS TDESMMT.ZIP TCFB8MMT2.rsp, [DECRYPT] COUNT=2
+            // used only key1, cipherBytes computed using openssl
+            TestDESTransformDirectKey(
+                CipherMode.CFB,
+                PaddingMode.None,
+                key: "fbb667e340586b5b".HexToByteArray(),
+                iv: "459e8b8736715791".HexToByteArray(),
+                plainBytes: "061704".HexToByteArray(),
+                cipherBytes: "8e9071".HexToByteArray(),
+                feedbackSize: 8
+            );
+        }
+
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindows7))]
+        [InlineData(CipherMode.CBC, 0)]
+        [InlineData(CipherMode.CFB, 8)]
+        [InlineData(CipherMode.ECB, 0)]
+        public static void EncryptorReuse_LeadsToSameResults(CipherMode cipherMode, int feedbackSize)
+        {
+            // AppleCCCryptor does not allow calling Reset on CFB cipher.
+            // this test validates that the behavior is taken into consideration.
+            var input = "b72606c98d8e4fabf08839abf7a0ac61".HexToByteArray();
+
+            using (DES des = DESFactory.Create())
+            {
+                des.Mode = cipherMode;
+
+                if (feedbackSize > 0)
+                {
+                    des.FeedbackSize = feedbackSize;
+                }
+
+                using (ICryptoTransform transform = des.CreateEncryptor())
+                {
+                    byte[] output1 = transform.TransformFinalBlock(input, 0, input.Length);
+                    byte[] output2 = transform.TransformFinalBlock(input, 0, input.Length);
+
+                    Assert.Equal(output1, output2);
+                }
+            }
+        }
+
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindows7))]
+        [InlineData(CipherMode.CBC, 0)]
+        [InlineData(CipherMode.CFB, 8)]
+        [InlineData(CipherMode.ECB, 0)]
+        public static void DecryptorReuse_LeadsToSameResults(CipherMode cipherMode, int feedbackSize)
+        {
+            // AppleCCCryptor does not allow calling Reset on CFB cipher.
+            // this test validates that the behavior is taken into consideration.
+            var input = "4e6f77206973207468652074696d6520666f7220616c6c20".HexToByteArray();
+            var key = "4a575d02515d40b0".HexToByteArray();
+            var iv = "ab27e9f02affa532".HexToByteArray();
+
+            using (DES des = DESFactory.Create())
+            {
+                des.Mode = cipherMode;
+                des.Key = key;
+                des.IV = iv;
+                des.Padding = PaddingMode.None;
+
+                if (feedbackSize > 0)
+                {
+                    des.FeedbackSize = feedbackSize;
+                }
+
+                using (ICryptoTransform transform = des.CreateDecryptor())
+                {
+                    byte[] output1 = transform.TransformFinalBlock(input, 0, input.Length);
+                    byte[] output2 = transform.TransformFinalBlock(input, 0, input.Length);
+
+                    Assert.Equal(output1, output2);
+                }
+            }
+        }
+
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindows7))]
+        public static void VerifyKnownTransform_CFB8_NoPadding_3()
+        {
+            // NIST CAVS TDESMMT.ZIP TCFB8MMT2.rsp, [DECRYPT] COUNT=3
+            // used only key1, cipherBytes computed using openssl
+            TestDESTransformDirectKey(
+                CipherMode.CFB,
+                PaddingMode.None,
+                key: "4a575d02515d40b0".HexToByteArray(),
+                iv: "ab27e9f02affa532".HexToByteArray(),
+                plainBytes: "55f75b95".HexToByteArray(),
+                cipherBytes: "34aa8679".HexToByteArray(),
+                feedbackSize: 8
+            );
+        }
+
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindows7))]
+        public static void VerifyKnownTransform_CFB8_PKCS7_3()
+        {
+            // NIST CAVS TDESMMT.ZIP TCFB8MMT2.rsp, [DECRYPT] COUNT=3
+            // used only key1, cipherBytes computed using openssl
+            TestDESTransformDirectKey(
+                CipherMode.CFB,
+                PaddingMode.PKCS7,
+                key: "4a575d02515d40b0".HexToByteArray(),
+                iv: "ab27e9f02affa532".HexToByteArray(),
+                plainBytes: "55f75b95".HexToByteArray(),
+                cipherBytes: "34aa8679ca".HexToByteArray(),
+                feedbackSize: 8
+            );
+        }
+
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindows7))]
+        public static void VerifyKnownTransform_CFB8_NoPadding_4()
+        {
+            // NIST CAVS TDESMMT.ZIP TCFB8MMT2.rsp, [DECRYPT] COUNT=4
+            // used only key1, cipherBytes computed using openssl
+            TestDESTransformDirectKey(
+                CipherMode.CFB,
+                PaddingMode.None,
+                key: "91a834855e6bab31".HexToByteArray(),
+                iv: "7838aaad4e64640b".HexToByteArray(),
+                plainBytes: "c3851c0ab4".HexToByteArray(),
+                cipherBytes: "84844450f0".HexToByteArray(),
+                feedbackSize: 8
+            );
+        }
+
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindows7))]
+        public static void VerifyKnownTransform_CFB8_NoPadding_5()
+        {
+            // NIST CAVS TDESMMT.ZIP TCFB8MMT2.rsp, [DECRYPT] COUNT=5
+            // used only key1, cipherBytes computed using openssl
+            TestDESTransformDirectKey(
+                CipherMode.CFB,
+                PaddingMode.None,
+                key: "04d923abd9291c3e".HexToByteArray(),
+                iv: "191f8794944e601c".HexToByteArray(),
+                plainBytes: "6fe8f67d2af1".HexToByteArray(),
+                cipherBytes: "6012c9171bb8".HexToByteArray(),
+                feedbackSize: 8
+            );
+        }
+
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindows7))]
+        public static void VerifyKnownTransform_CFB8_NoPadding_6()
+        {
+            // NIST CAVS TDESMMT.ZIP TCFB8MMT2.rsp, [DECRYPT] COUNT=6
+            // used only key1, cipherBytes computed using openssl
+            TestDESTransformDirectKey(
+                CipherMode.CFB,
+                PaddingMode.None,
+                key: "a7799e7f5dfe54ce".HexToByteArray(),
+                iv: "370184c749d04a20".HexToByteArray(),
+                plainBytes: "2b4228b769795b".HexToByteArray(),
+                cipherBytes: "58d3de76687976".HexToByteArray(),
+                feedbackSize: 8
+            );
+        }
+
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindows7))]
+        public static void VerifyKnownTransform_CFB8_NoPadding_7()
+        {
+            // NIST CAVS TDESMMT.ZIP TCFB8MMT2.rsp, [DECRYPT] COUNT=7
+            // used only key1, cipherBytes computed using openssl
+            TestDESTransformDirectKey(
+                CipherMode.CFB,
+                PaddingMode.None,
+                key: "6bfe3d3df8c1e0d3".HexToByteArray(),
+                iv: "51e4c5c29e858da6".HexToByteArray(),
+                plainBytes: "4cb3554fd0b9ec82".HexToByteArray(),
+                cipherBytes: "16b3595259693776".HexToByteArray(),
+                feedbackSize: 8
+            );
+        }
+
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindows7))]
+        public static void VerifyKnownTransform_CFB8_NoPadding_8()
+        {
+            // NIST CAVS TDESMMT.ZIP TCFB8MMT2.rsp, [DECRYPT] COUNT=8
+            // used only key1, cipherBytes computed using openssl
+            TestDESTransformDirectKey(
+                CipherMode.CFB,
+                PaddingMode.None,
+                key: "e0264aec13e63db9".HexToByteArray(),
+                iv: "bd8795dba79930d6".HexToByteArray(),
+                plainBytes: "79068e2943f02914af".HexToByteArray(),
+                cipherBytes: "fe78cb95ce9e4cac2f".HexToByteArray(),
+                feedbackSize: 8
+            );
+        }
+
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindows7))]
+        public static void VerifyKnownTransform_CFB8_NoPadding_9()
+        {
+            // NIST CAVS TDESMMT.ZIP TCFB8MMT2.rsp, [DECRYPT] COUNT=9
+            // used only key1, cipherBytes computed using openssl
+            TestDESTransformDirectKey(
+                CipherMode.CFB,
+                PaddingMode.None,
+                key: "7ca28938ba6bec1f".HexToByteArray(),
+                iv: "953896586e49d38f".HexToByteArray(),
+                plainBytes: "2ea956d4a211db6859b7".HexToByteArray(),
+                cipherBytes: "81b850bf481db5df0437".HexToByteArray(),
+                feedbackSize: 8
+            );
+        }
+
+        private static void TestDESTransformDirectKey(
+            CipherMode cipherMode,
+            PaddingMode paddingMode,
+            byte[] key,
+            byte[] iv,
+            byte[] plainBytes,
+            byte[] cipherBytes,
+            int? feedbackSize = default)
+        {
+            byte[] liveEncryptBytes;
+            byte[] liveDecryptBytes;
+
+            using (DES des = DESFactory.Create())
+            {
+                des.Mode = cipherMode;
+                des.Padding = paddingMode;
+
+                if (feedbackSize.HasValue)
+                {
+                    des.FeedbackSize = feedbackSize.Value;
+                }
+
+                liveEncryptBytes = DESEncryptDirectKey(des, key, iv, plainBytes);
+                liveDecryptBytes = DESDecryptDirectKey(des, key, iv, cipherBytes);
+            }
+
+            Assert.Equal(cipherBytes, liveEncryptBytes);
+            Assert.Equal(plainBytes, liveDecryptBytes);
+        }
+
+        private static byte[] DESEncryptDirectKey(DES des, byte[] key, byte[] iv, byte[] plainBytes)
+        {
+            using (MemoryStream output = new MemoryStream())
+            using (CryptoStream cryptoStream = new CryptoStream(output, des.CreateEncryptor(key, iv), CryptoStreamMode.Write))
+            {
+                cryptoStream.Write(plainBytes, 0, plainBytes.Length);
+                cryptoStream.FlushFinalBlock();
+
+                return output.ToArray();
+            }
+        }
+
+        private static byte[] DESDecryptDirectKey(DES des, byte[] key, byte[] iv, byte[] cipherBytes)
+        {
+            using (MemoryStream output = new MemoryStream())
+            using (CryptoStream cryptoStream = new CryptoStream(output, des.CreateDecryptor(key, iv), CryptoStreamMode.Write))
+            {
+                cryptoStream.Write(cipherBytes, 0, cipherBytes.Length);
+                cryptoStream.FlushFinalBlock();
+
+                return output.ToArray();
             }
         }
 

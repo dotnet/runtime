@@ -13,7 +13,7 @@ namespace System.Runtime.Serialization
         internal GenericParameterDataContract(Type type)
             : base(new GenericParameterDataContractCriticalHelper(type))
         {
-            _helper = base.Helper as GenericParameterDataContractCriticalHelper;
+            _helper = (base.Helper as GenericParameterDataContractCriticalHelper)!;
         }
 
         internal int ParameterPosition

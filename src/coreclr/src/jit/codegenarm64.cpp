@@ -244,6 +244,13 @@ void CodeGen::genPrologSaveRegPair(regNumber reg1,
         assert(spOffset <= 504);
         GetEmitter()->emitIns_R_R_R_I(INS_stp, EA_PTRSIZE, reg1, reg2, REG_SPBASE, spOffset);
 
+#if defined(TARGET_UNIX)
+        if (compiler->generateCFIUnwindCodes())
+        {
+            useSaveNextPair = false;
+        }
+#endif // TARGET_UNIX
+
         if (useSaveNextPair)
         {
             // This works as long as we've only been saving pairs, in order, and we've saved the previous one just
@@ -371,6 +378,13 @@ void CodeGen::genEpilogRestoreRegPair(regNumber reg1,
     else
     {
         GetEmitter()->emitIns_R_R_R_I(INS_ldp, EA_PTRSIZE, reg1, reg2, REG_SPBASE, spOffset);
+
+#if defined(TARGET_UNIX)
+        if (compiler->generateCFIUnwindCodes())
+        {
+            useSaveNextPair = false;
+        }
+#endif // TARGET_UNIX
 
         if (useSaveNextPair)
         {
@@ -615,7 +629,7 @@ void CodeGen::genSaveCalleeSavedRegisterGroup(regMaskTP regsMask, int spDelta, i
 // The caller can tell us to fold in a stack pointer adjustment, which we will do with the first instruction.
 // Note that the stack pointer adjustment must be by a multiple of 16 to preserve the invariant that the
 // stack pointer is always 16 byte aligned. If we are saving an odd number of callee-saved
-// registers, though, we will have an empty aligment slot somewhere. It turns out we will put
+// registers, though, we will have an empty alignment slot somewhere. It turns out we will put
 // it below (at a lower address) the callee-saved registers, as that is currently how we
 // do frame layout. This means that the first stack offset will be 8 and the stack pointer
 // adjustment must be done by a SUB, and not folded in to a pre-indexed store.
@@ -1445,7 +1459,7 @@ void CodeGen::genCaptureFuncletPrologEpilogInfo()
     genFuncletInfo.fiSaveRegs                   = rsMaskSaveRegs;
     genFuncletInfo.fiSP_to_FPLR_save_delta      = SP_to_FPLR_save_delta;
     genFuncletInfo.fiSP_to_PSP_slot_delta       = SP_to_PSP_slot_delta;
-    genFuncletInfo.fiSP_to_CalleeSave_delta     = SP_to_PSP_slot_delta + REGSIZE_BYTES;
+    genFuncletInfo.fiSP_to_CalleeSave_delta     = SP_to_PSP_slot_delta + PSPSize;
     genFuncletInfo.fiCallerSP_to_PSP_slot_delta = CallerSP_to_PSP_slot_delta;
 
 #ifdef DEBUG
@@ -2976,7 +2990,7 @@ void CodeGen::genCodeForCmpXchg(GenTreeCmpXchg* treeNode)
         gcInfo.gcMarkRegPtrVal(addrReg, addr->TypeGet());
 
         // TODO-ARM64-CQ Use ARMv8.1 atomics if available
-        // https://github.com/dotnet/coreclr/issues/11881
+        // https://github.com/dotnet/runtime/issues/8225
 
         // Emit code like this:
         //   retry:

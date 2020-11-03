@@ -27,7 +27,7 @@
 //
 // Enums are used throughout to provide various descriptions.
 //
-// There are 4 sitations where inline candidacy is evaluated.  In each
+// There are 4 situations where inline candidacy is evaluated.  In each
 // case an InlineResult is allocated on the stack to collect
 // information about the inline candidate.  Each InlineResult refers
 // to an InlinePolicy.
@@ -614,6 +614,17 @@ struct InlineInfo
     GenTreeCall* iciCall;  // The GT_CALL node to be inlined.
     Statement*   iciStmt;  // The statement iciCall is in.
     BasicBlock*  iciBlock; // The basic block iciStmt is in.
+
+    // Profile support
+    enum class ProfileScaleState
+    {
+        UNDETERMINED,
+        KNOWN,
+        UNAVAILABLE
+    };
+
+    ProfileScaleState profileScaleState;
+    double            profileScaleFactor;
 };
 
 // InlineContext tracks the inline history in a method.
