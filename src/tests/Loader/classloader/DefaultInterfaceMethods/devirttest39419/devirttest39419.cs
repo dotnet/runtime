@@ -24,10 +24,12 @@ public static class Program
         if (((IM<int>)m).UseDefaultM)
         {
             IM<int>.DefaultM(42);
+            return 100;
         }
         else
         {
             ((IM<int>)m).M(42);
         }
+        return 200;
     }
 }
