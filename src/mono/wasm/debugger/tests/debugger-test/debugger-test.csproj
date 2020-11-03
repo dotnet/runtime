@@ -35,7 +35,7 @@
   <UsingTask TaskName="WasmAppBuilder"
              AssemblyFile="$(ArtifactsBinDir)WasmAppBuilder\$(Configuration)\$(NetCoreAppCurrent)\publish\WasmAppBuilder.dll"/>
 
-  <Target Name="BuildApp" DependsOnTargets="RebuildWasmAppBuilder;Build">
+  <Target Name="BuildApp" AfterTargets="CopyFilesToPublishDirectory" DependsOnTargets="RebuildWasmAppBuilder;Build">
     <PropertyGroup>
       <MicrosoftNetCoreAppRuntimePackDir>$(ArtifactsBinDir)microsoft.netcore.app.runtime.browser-wasm\Release\runtimes\browser-wasm\</MicrosoftNetCoreAppRuntimePackDir>
     </PropertyGroup>
@@ -45,6 +45,9 @@
 
       <ExtraFileForPublish Include="@(ReferenceCopyLocalPaths)" />
     </ItemGroup>
+    <ItemGroup>
+      <BundleAssemblies Include="$(MSBuildThisFileDirectory)$(PublishDir)\*.dll" />
+    </ItemGroup>
 
     <WasmAppBuilder
       AppDir="$(AppDir)"
@@ -53,7 +56,7 @@
       MainJS="$(MonoProjectRoot)wasm\runtime-test.js"
       DebugLevel="1"
       AssemblySearchPaths="@(AssemblySearchPaths)"
-      ExtraAssemblies="$(ArtifactsBinDir)\System.Private.Runtime.InteropServices.JavaScript\$(NetCoreAppCurrent)-Browser-$(RuntimeConfiguration)\System.Private.Runtime.InteropServices.JavaScript.dll"/>
+      Assemblies="@(BundleAssemblies)" />
 
     <Copy SourceFiles="@(ExtraFileForPublish)" DestinationFolder="$(AppDir)" />
   </Target>
