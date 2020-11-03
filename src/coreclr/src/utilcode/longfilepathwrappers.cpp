@@ -779,17 +779,8 @@ BOOL PAL_GetPALDirectoryWrapper(SString& pbuffer)
 
     PathString pPath;
     DWORD dwPath;
-    HINSTANCE hinst = NULL;
 
-#if ! defined(DACCESS_COMPILE) && !defined(SELF_NO_HOST)
-    hinst = g_hThisInst;
-#endif// ! defined(DACCESS_COMPILE) && !defined(SELF_NO_HOST)
-
-#ifndef CROSSGEN_COMPILE
-    _ASSERTE(hinst != NULL);
-#endif
-
-    dwPath = WszGetModuleFileName(hinst, pPath);
+    dwPath = GetClrModulePathName(pPath);
 
     if(dwPath == 0)
     {

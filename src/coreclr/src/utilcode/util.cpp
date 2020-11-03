@@ -2951,8 +2951,6 @@ LPWSTR *SegmentCommandLine(LPCWSTR lpCmdLine, DWORD *pNumArgs)
 //======================================================================
 // This function returns true, if it can determine that the instruction pointer
 // refers to a code address that belongs in the range of the given image.
-// <TODO>@TODO: Merge with IsIPInModule from vm\util.hpp</TODO>
-
 BOOL IsIPInModule(HMODULE_TGT hModule, PCODE ip)
 {
     STATIC_CONTRACT_LEAF;
