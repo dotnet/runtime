@@ -207,5 +207,56 @@ namespace System.IO.Tests
                 }, path, secondPosition.ToString(), secondLength.ToString()).Dispose();
             }
         }
+
+        [Fact]
+        [PlatformSpecific(TestPlatforms.Linux)]
+        public void OverlappingRegionsFromOtherProcess_With_ReadLock_AllowedOnLinux()
+        {
+            string path = GetTestFilePath();
+            File.WriteAllBytes(path, new byte[100]);
+
+            using FileStream fs1 = File.Open(path, FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
+            fs1.Lock(0, 100);
+
+            RemoteExecutor.Invoke((path) =>
+            {
+                using FileStream fs2 = File.Open(path, FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
+                fs2.Lock(0, 100);
+                fs2.Unlock(0, 100);
+
+            }, path).Dispose();
+
+            fs1.Unlock(0, 100);            
+        }
+
+        [Theory]
+        [InlineData(FileAccess.Read)]
+        [InlineData(FileAccess.Write)]
+        [InlineData(FileAccess.ReadWrite)]
+        public void OverlappingRegionsFromOtherProcess_With_WriteLock_ThrowsException(FileAccess fileAccess)
+        {
+            string path = GetTestFilePath();
+            File.WriteAllBytes(path, new byte[100]);
+
+            using FileStream fs1 = File.Open(path, FileMode.Open, fileAccess, FileShare.ReadWrite);
+            fs1.Lock(0, 100);
+
+            RemoteExecutor.Invoke((path) =>
+            {
+                using FileStream fs2 = File.Open(path, FileMode.Open, FileAccess.Write, FileShare.ReadWrite);
+                Assert.Throws<IOException>(() => fs2.Lock(0, 100));
+
+            }, path).Dispose();
+
+            fs1.Unlock(0, 100);
+
+            RemoteExecutor.Invoke((path) =>
+            {
+                using FileStream fs2 = File.Open(path, FileMode.Open, FileAccess.Write, FileShare.ReadWrite);
+                fs2.Lock(0, 100);
+                fs2.Unlock(0, 100);
+
+            }, path).Dispose();
+        }
     }
 }
