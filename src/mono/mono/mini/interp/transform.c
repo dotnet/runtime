@@ -1899,6 +1899,19 @@ interp_handle_intrinsics (TransformData *td, MonoMethod *target_method, MonoClas
 			push_simple_type (td, STACK_TYPE_I4);
 			td->ip += 5;
 			return TRUE;
+		} else if (!strcmp (tm, "GetRawData")) {
+#if SIZEOF_VOID_P == 8
+			interp_add_ins (td, MINT_LDC_I8_S);
+#else
+			interp_add_ins (td, MINT_LDC_I4_S);
+#endif
+			td->last_ins->data [0] = (gint16) MONO_ABI_SIZEOF (MonoObject);
+
+			interp_add_ins (td, MINT_ADD_P);
+			SET_SIMPLE_TYPE (td->sp - 1, STACK_TYPE_MP);
+
+			td->ip += 5;
+			return TRUE;
 		} else if (!strcmp (tm, "IsBitwiseEquatable")) {
 			g_assert (csignature->param_count == 0);
 			MonoGenericContext *ctx = mono_method_get_context (target_method);
@@ -1951,22 +1964,6 @@ interp_handle_intrinsics (TransformData *td, MonoMethod *target_method, MonoClas
 #endif
 				)
 			*op = MINT_INTRINS_GET_TYPE;
-#ifdef ENABLE_NETCORE
-		else if (!strcmp (tm, "GetRawData")) {
-#if SIZEOF_VOID_P == 8
-			interp_add_ins (td, MINT_LDC_I8_S);
-#else
-			interp_add_ins (td, MINT_LDC_I4_S);
-#endif
-			td->last_ins->data [0] = (gint16) MONO_ABI_SIZEOF (MonoObject);
-
-			interp_add_ins (td, MINT_ADD_P);
-			SET_SIMPLE_TYPE (td->sp - 1, STACK_TYPE_MP);
-
-			td->ip += 5;
-			return TRUE;
-		}
-#endif
 	} else if (in_corlib && target_method->klass == mono_defaults.enum_class && !strcmp (tm, "HasFlag")) {
 		gboolean intrinsify = FALSE;
 		MonoClass *base_klass = NULL;
