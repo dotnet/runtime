@@ -44,13 +44,34 @@ namespace System.Net.Http.Functional.Tests
         }
     }
 
-    public sealed class Http1ChunkedResponseStreamConformanceTests : ResponseStandaloneStreamConformanceTests
+    public sealed class Http1SingleChunkResponseStreamConformanceTests : ResponseStandaloneStreamConformanceTests
     {
         protected override async Task WriteResponseAsync(Stream responseStream, byte[] bodyData)
         {
-            await responseStream.WriteAsync(Encoding.ASCII.GetBytes($"HTTP/1.1 200 OK\r\nTransfer-Encoding: chunked\r\n\r\n{bodyData.Length:X}\r\n"));
-            await responseStream.WriteAsync(bodyData);
-            await responseStream.WriteAsync(Encoding.ASCII.GetBytes("\r\n"));
+            await responseStream.WriteAsync(Encoding.ASCII.GetBytes($"HTTP/1.1 200 OK\r\nTransfer-Encoding: chunked\r\n\r\n"));
+            if (bodyData.Length > 0)
+            {
+                // One chunk for the whole response body
+                await responseStream.WriteAsync(Encoding.ASCII.GetBytes($"{bodyData.Length:X}\r\n"));
+                await responseStream.WriteAsync(bodyData);
+                await responseStream.WriteAsync(Encoding.ASCII.GetBytes("\r\n"));
+            }
+            await responseStream.WriteAsync(Encoding.ASCII.GetBytes("0\r\n\r\n"));
+        }
+    }
+
+    public sealed class Http1MultiChunkResponseStreamConformanceTests : ResponseStandaloneStreamConformanceTests
+    {
+        protected override async Task WriteResponseAsync(Stream responseStream, byte[] bodyData)
+        {
+            await responseStream.WriteAsync(Encoding.ASCII.GetBytes($"HTTP/1.1 200 OK\r\nTransfer-Encoding: chunked\r\n\r\n"));
+            for (int i = 0; i < bodyData.Length; i++)
+            {
+                // One chunk per byte of the response body
+                await responseStream.WriteAsync(Encoding.ASCII.GetBytes($"1\r\n"));
+                await responseStream.WriteAsync(bodyData.AsMemory(i, 1));
+                await responseStream.WriteAsync(Encoding.ASCII.GetBytes("\r\n"));
+            }
             await responseStream.WriteAsync(Encoding.ASCII.GetBytes("0\r\n\r\n"));
         }
     }
