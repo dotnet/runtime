@@ -180,17 +180,27 @@ var BindingSupportLib = {
 			if (resultRoot) {
 				return resultRoot.value;
 			} else {
-				var ptr = this.js_string_to_mono_string (string);
+				var ptr = this.js_string_to_mono_string_new (string);
 				ptr = this._store_string_in_intern_table (string, ptr, true);
 				return ptr;
 			}
 		},
 
 		js_string_to_mono_string: function (string) {
-			var interned = this._interned_string_table.get (string);
-			if (interned)
-				return interned.value;
+			// Looking up large strings in the intern table will require the JS runtime to
+			//  potentially hash them and then do full byte-by-byte comparisons, which is
+			//  very expensive. Because we can not guarantee it won't happen, try to minimize
+			//  the cost of this and prevent performance issues for large strings
+			if (string.length <= 256) {
+				var interned = this._interned_string_table.get (string);
+				if (interned)
+					return interned.value;
+			}
+
+			return this.js_string_to_mono_string_new (string);
+		},
 				
+		js_string_to_mono_string_new: function (string) {
 			var buffer = Module._malloc ((string.length + 1) * 2);
 			var buffer16 = (buffer / 2) | 0;
 			for (var i = 0; i < string.length; i++)

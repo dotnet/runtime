@@ -775,5 +775,49 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
             Assert.Equal(HelperMarshal._stringResource, HelperMarshal._stringResource2);
             Assert.True(Object.ReferenceEquals(HelperMarshal._stringResource, HelperMarshal._stringResource2));
         }
+
+        [Fact]
+        public static void OnceAJSStringIsInternedItIsAlwaysUsedIfPossible()
+        {
+            HelperMarshal._stringResource = HelperMarshal._stringResource2 = null;
+            Runtime.InvokeJS(@"
+                var sym = ""interned string 2"";
+                App.call_test_method (""InvokeString"", [ sym ], ""S"");
+                App.call_test_method (""InvokeString2"", [ sym ], ""s"");
+            ");
+            Assert.Equal("interned string 2", HelperMarshal._stringResource);
+            Assert.Equal(HelperMarshal._stringResource, HelperMarshal._stringResource2);
+            Assert.True(Object.ReferenceEquals(HelperMarshal._stringResource, HelperMarshal._stringResource2));
+        }
+
+        [Fact]
+        public static void ManuallyInternString()
+        {
+            HelperMarshal._stringResource = HelperMarshal._stringResource2 = null;
+            Runtime.InvokeJS(@"
+                var sym = BINDING.intern_string(""interned string 3"");
+                App.call_test_method (""InvokeString"", [ sym ], ""s"");
+                App.call_test_method (""InvokeString2"", [ sym ], ""s"");
+            ");
+            Assert.Equal("interned string 3", HelperMarshal._stringResource);
+            Assert.Equal(HelperMarshal._stringResource, HelperMarshal._stringResource2);
+            Assert.True(Object.ReferenceEquals(HelperMarshal._stringResource, HelperMarshal._stringResource2));
+        }
+
+        [Fact]
+        public static void LargeStringsAreNotAutomaticallyLocatedInInternTable()
+        {
+            HelperMarshal._stringResource = HelperMarshal._stringResource2 = null;
+            Runtime.InvokeJS(@"
+                var s = ""long interned string"";
+                for (var i = 0; i < 1024; i++)
+                    s += String(i % 10);
+                var sym = BINDING.intern_string(s);
+                App.call_test_method (""InvokeString"", [ sym ], ""S"");
+                App.call_test_method (""InvokeString2"", [ sym ], ""s"");
+            ");
+            Assert.Equal(HelperMarshal._stringResource, HelperMarshal._stringResource2);
+            Assert.False(Object.ReferenceEquals(HelperMarshal._stringResource, HelperMarshal._stringResource2));
+        }
     }
 }
