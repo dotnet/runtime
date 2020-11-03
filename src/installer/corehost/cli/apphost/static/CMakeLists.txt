@@ -106,7 +106,7 @@ if (CLR_CMAKE_TARGET_WIN32 AND (CLR_CMAKE_TARGET_ARCH_ARM OR CLR_CMAKE_TARGET_AR
     target_link_libraries(singlefilehost Advapi32.lib shell32.lib)
 endif()
 
-# Path like: artifacts/bin/coreclr/Windows_NT.x64.Release/lib  or
+# Path like: artifacts/bin/coreclr/windows.x64.Release/lib  or
 #            /root/runtime/artifacts/transport/coreclr/lib
 set(CORECLR_STATIC_LIB_LOCATION "${CORECLR_ARTIFACTS}/lib")
 

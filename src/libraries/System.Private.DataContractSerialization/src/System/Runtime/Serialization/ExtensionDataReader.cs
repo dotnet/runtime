@@ -105,8 +105,7 @@ namespace System.Runtime.Serialization
         public override string XmlLang { get { return IsXmlDataNode ? _xmlNodeReader.XmlLang : base.XmlLang; } }
         public override string this[int i] { get { return IsXmlDataNode ? _xmlNodeReader[i] : GetAttribute(i); } }
         public override string? this[string name] { get { return IsXmlDataNode ? _xmlNodeReader[name] : GetAttribute(name); } }
-        // TODO-NULLABLE - unnecessary namespaceURI! - https://github.com/dotnet/roslyn/issues/47221
-        public override string? this[string name, string? namespaceURI] { get { return IsXmlDataNode ? _xmlNodeReader[name, namespaceURI!] : GetAttribute(name, namespaceURI); } }
+        public override string? this[string name, string? namespaceURI] { get { return IsXmlDataNode ? _xmlNodeReader[name, namespaceURI] : GetAttribute(name, namespaceURI); } }
 
         public override bool MoveToFirstAttribute()
         {

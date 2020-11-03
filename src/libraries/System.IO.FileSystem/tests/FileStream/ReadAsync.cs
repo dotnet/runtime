@@ -1,7 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using Xunit;
@@ -10,63 +9,7 @@ namespace System.IO.Tests
 {
     public abstract class FileStream_AsyncReads : FileSystemTest
     {
-        protected abstract Task<int> ReadAsync(FileStream stream, byte[] buffer, int offset, int count, CancellationToken cancellationToken);
-        private Task<int> ReadAsync(FileStream stream, byte[] buffer, int offset, int count) =>
-            ReadAsync(stream, buffer, offset, count, CancellationToken.None);
-
-        [Fact]
-        public void ReadAsyncDisposedThrows()
-        {
-            using (FileStream fs = new FileStream(GetTestFilePath(), FileMode.Create))
-            {
-                fs.Dispose();
-                Assert.Throws<ObjectDisposedException>(() =>
-                    FSAssert.CompletesSynchronously(ReadAsync(fs, new byte[1], 0, 1)));
-
-                // even for noop ReadAsync
-                Assert.Throws<ObjectDisposedException>(() =>
-                    FSAssert.CompletesSynchronously(ReadAsync(fs, new byte[1], 0, 0)));
-
-                // out of bounds checking happens first
-                Assert.Throws<ArgumentOutOfRangeException>(() =>
-                    FSAssert.CompletesSynchronously(ReadAsync(fs, new byte[2], 1, 2)));
-            }
-        }
-
-        [Fact]
-        public void WriteOnlyThrows()
-        {
-            using (FileStream fs = new FileStream(GetTestFilePath(), FileMode.Create, FileAccess.Write))
-            {
-                Assert.Throws<NotSupportedException>(() =>
-                    FSAssert.CompletesSynchronously(ReadAsync(fs, new byte[1], 0, 1)));
-
-                fs.Dispose();
-                // Disposed checking happens first
-                Assert.Throws<ObjectDisposedException>(() =>
-                    FSAssert.CompletesSynchronously(ReadAsync(fs, new byte[1], 0, 1)));
-
-                // out of bounds checking happens first
-                Assert.Throws<ArgumentOutOfRangeException>(() =>
-                    FSAssert.CompletesSynchronously(ReadAsync(fs, new byte[2], 1, 2)));
-            }
-        }
-
-        [Fact]
-        public async Task NoopReadAsyncsSucceed()
-        {
-            using (FileStream fs = new FileStream(GetTestFilePath(), FileMode.Create))
-            {
-                // note that these do not succeed synchronously even though they do nothing.
-
-                Assert.Equal(0, await ReadAsync(fs, new byte[0], 0, 0));
-                Assert.Equal(0, await ReadAsync(fs, new byte[1], 0, 0));
-                // even though offset is out of bounds of buffer, this is still allowed
-                // for the last element
-                Assert.Equal(0, await ReadAsync(fs, new byte[1], 1, 0));
-                Assert.Equal(0, await ReadAsync(fs, new byte[2], 1, 0));
-            }
-        }
+        protected abstract Task<int> ReadAsync(FileStream stream, byte[] buffer, int offset, int count, CancellationToken cancellationToken = default);
 
         [Fact]
         public async Task EmptyFileReadAsyncSucceedSynchronously()
@@ -120,40 +63,6 @@ namespace System.IO.Tests
             }
         }
 
-        [Fact]
-        public async Task ReadAsyncExistingFile()
-        {
-            string fileName = GetTestFilePath();
-            using (FileStream fs = new FileStream(fileName, FileMode.Create))
-            {
-                fs.Write(TestBuffer, 0, TestBuffer.Length);
-            }
-
-            using (FileStream fs = new FileStream(fileName, FileMode.Open))
-            {
-                byte[] buffer = new byte[TestBuffer.Length];
-                Assert.Equal(TestBuffer.Length, await ReadAsync(fs, buffer, 0, buffer.Length));
-                Assert.Equal(TestBuffer, buffer);
-
-                // ReadAsync with too large buffer at front of buffer
-                fs.Position = 0;
-                buffer = new byte[TestBuffer.Length * 2];
-                Assert.Equal(TestBuffer.Length, await ReadAsync(fs, buffer, 0, buffer.Length));
-                Assert.Equal(TestBuffer, buffer.Take(TestBuffer.Length));
-                // Remainder of buffer should be untouched.
-                Assert.Equal(new byte[buffer.Length - TestBuffer.Length], buffer.Skip(TestBuffer.Length));
-
-                // ReadAsync with too large buffer in middle of buffer
-                fs.Position = 0;
-                buffer = new byte[TestBuffer.Length * 2];
-                Assert.Equal(TestBuffer.Length, await ReadAsync(fs, buffer, 2, buffer.Length - 2));
-                Assert.Equal(TestBuffer, buffer.Skip(2).Take(TestBuffer.Length));
-                // Remainder of buffer should be untouched.
-                Assert.Equal(new byte[2], buffer.Take(2));
-                Assert.Equal(new byte[buffer.Length - TestBuffer.Length - 2], buffer.Skip(2 + TestBuffer.Length));
-            }
-        }
-
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public async Task ReadAsyncCanceledFile()
         {
@@ -183,81 +92,6 @@ namespace System.IO.Tests
                 }
             }
         }
-
-        [Fact, OuterLoop]
-        public async Task ReadAsyncMiniStress()
-        {
-            TimeSpan testRunTime = TimeSpan.FromSeconds(10);
-            const int MaximumReadSize = 16 * 1024;
-            const int NormalReadSize = 4 * 1024;
-
-            Random rand = new Random();
-            DateTime testStartTime = DateTime.UtcNow;
-
-            // Generate file data
-            byte[] readableFileContents = new byte[MaximumReadSize * 16];
-            rand.NextBytes(readableFileContents);
-
-            // Create and fill file
-            string readableFilePath = GetTestFilePath();
-            using (var stream = new FileStream(readableFilePath, FileMode.CreateNew, FileAccess.Write))
-            {
-                await stream.WriteAsync(readableFileContents, 0, readableFileContents.Length);
-            }
-
-            using (var stream = new FileStream(readableFilePath, FileMode.Open, FileAccess.Read))
-            {
-                // Create a new token that expires between 100-1000ms
-                CancellationTokenSource tokenSource = new CancellationTokenSource();
-                tokenSource.CancelAfter(rand.Next(100, 1000));
-
-                int currentPosition = 0;
-                byte[] buffer = new byte[MaximumReadSize];
-                do
-                {
-                    try
-                    {
-                        // 20%: random read size
-                        int bytesToRead = (rand.NextDouble() < 0.2 ? rand.Next(16, MaximumReadSize) : NormalReadSize);
-
-                        int bytesRead;
-                        if (rand.NextDouble() < 0.1)
-                        {
-                            // 10%: Sync read
-                            bytesRead = stream.Read(buffer, 0, bytesToRead);
-                        }
-                        else
-                        {
-                            // 90%: Async read
-                            bytesRead = await ReadAsync(stream, buffer, 0, bytesToRead, tokenSource.Token);
-                        }
-
-                        // 10%: Verify data (burns a lot of CPU time)
-                        if (rand.NextDouble() < 0.1)
-                        {
-                            // Validate data read
-                            Assert.True(bytesRead + currentPosition <= readableFileContents.Length, "Too many bytes read");
-                            Assert.Equal(readableFileContents.Skip(currentPosition).Take(bytesRead), buffer.Take(bytesRead));
-                        }
-
-                        // Advance position and reset if we are at the end
-                        currentPosition += bytesRead;
-                        if (currentPosition >= readableFileContents.Length)
-                        {
-                            currentPosition = 0;
-                            stream.Seek(0, SeekOrigin.Begin);
-                        }
-                    }
-                    catch (TaskCanceledException)
-                    {
-                        // Once the token has expired, generate a new one
-                        Assert.True(tokenSource.Token.IsCancellationRequested, "Received cancellation exception before token expired");
-                        tokenSource = new CancellationTokenSource();
-                        tokenSource.CancelAfter(rand.Next(100, 1000));
-                    }
-                } while (DateTime.UtcNow - testStartTime <= testRunTime);
-            }
-        }
     }
 
     [ActiveIssue("https://github.com/dotnet/runtime/issues/34583", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
@@ -265,34 +99,6 @@ namespace System.IO.Tests
     {
         protected override Task<int> ReadAsync(FileStream stream, byte[] buffer, int offset, int count, CancellationToken cancellationToken) =>
             stream.ReadAsync(buffer, offset, count, cancellationToken);
-
-        [Fact]
-        public void CancelledTokenFastPath()
-        {
-            var cts = new CancellationTokenSource();
-            cts.Cancel();
-            CancellationToken cancelledToken = cts.Token;
-
-            using (FileStream fs = new FileStream(GetTestFilePath(), FileMode.Create))
-            {
-                FSAssert.IsCancelled(ReadAsync(fs, new byte[1], 0, 1, cancelledToken), cancelledToken);
-            }
-
-            using (FileStream fs = new FileStream(GetTestFilePath(), FileMode.Create, FileAccess.Write))
-            {
-                // before write only check
-                FSAssert.IsCancelled(ReadAsync(fs, new byte[1], 0, 1, cancelledToken), cancelledToken);
-
-                fs.Dispose();
-
-                // before disposed check
-                FSAssert.IsCancelled(ReadAsync(fs, new byte[1], 0, 1, cancelledToken), cancelledToken);
-
-                // out of bounds checking happens first
-                Assert.Throws<ArgumentOutOfRangeException>(() =>
-                    FSAssert.CompletesSynchronously(ReadAsync(fs, new byte[2], 1, 2, cancelledToken)));
-            }
-        }
     }
 
     [ActiveIssue("https://github.com/dotnet/runtime/issues/34583", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]

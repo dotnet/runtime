@@ -8,14 +8,14 @@
     "dotnet": "5.0.100-rc.2.20479.15"
   },
   "native-tools": {
-    "cmake": "3.14.5",
+    "cmake": "3.16.4",
     "python3": "3.7.1"
   },
   "msbuild-sdks": {
-    "Microsoft.DotNet.Build.Tasks.TargetFramework.Sdk": "6.0.0-beta.20527.10",
-    "Microsoft.DotNet.Arcade.Sdk": "6.0.0-beta.20527.10",
-    "Microsoft.DotNet.Build.Tasks.SharedFramework.Sdk": "6.0.0-beta.20527.10",
-    "Microsoft.DotNet.Helix.Sdk": "6.0.0-beta.20527.10",
+    "Microsoft.DotNet.Build.Tasks.TargetFramework.Sdk": "6.0.0-beta.20529.1",
+    "Microsoft.DotNet.Arcade.Sdk": "6.0.0-beta.20529.1",
+    "Microsoft.DotNet.Build.Tasks.SharedFramework.Sdk": "6.0.0-beta.20529.1",
+    "Microsoft.DotNet.Helix.Sdk": "6.0.0-beta.20529.1",
     "Microsoft.FIX-85B6-MERGE-9C38-CONFLICT": "1.0.0",
     "Microsoft.NET.Sdk.IL": "5.0.0-preview.8.20359.4",
     "Microsoft.Build.NoTargets": "2.0.1",

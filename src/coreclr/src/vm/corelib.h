@@ -457,10 +457,6 @@ DEFINE_CLASS(ICOLLECTION,           Collections,            ICollection)
 DEFINE_CLASS(ILIST,                 Collections,            IList)
 DEFINE_CLASS(IDISPOSABLE,           System,                 IDisposable)
 
-DEFINE_CLASS(IEXPANDO,              Expando,                IExpando)
-DEFINE_METHOD(IEXPANDO,             ADD_FIELD,              AddField,                   IM_Str_RetFieldInfo)
-DEFINE_METHOD(IEXPANDO,             REMOVE_MEMBER,          RemoveMember,               IM_MemberInfo_RetVoid)
-
 DEFINE_CLASS(IREFLECT,              Reflection,             IReflect)
 DEFINE_METHOD(IREFLECT,             GET_PROPERTIES,         GetProperties,              IM_BindingFlags_RetArrPropertyInfo)
 DEFINE_METHOD(IREFLECT,             GET_FIELDS,             GetFields,                  IM_BindingFlags_RetArrFieldInfo)

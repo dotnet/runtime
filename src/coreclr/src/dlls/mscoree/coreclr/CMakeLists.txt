@@ -125,6 +125,7 @@ if(CLR_CMAKE_TARGET_WIN32)
         shlwapi.lib
         bcrypt.lib
         RuntimeObject.lib
+        delayimp.lib
     )
 else()
     list(APPEND CORECLR_LIBRARIES
@@ -179,51 +180,45 @@ if(FEATURE_SINGLE_FILE_DIAGNOSTICS)
 endif(FEATURE_SINGLE_FILE_DIAGNOSTICS)
 
 if(CLR_CMAKE_TARGET_WIN32)
-    if (NOT CMAKE_GENERATOR MATCHES "Visual Studio .*")
-      add_custom_target(inject_debug_resources ALL COMMAND UNABLE_TO_EMBED_DAC_ON_WINDOWS_NON_VS_GENERATOR)
-      add_dependencies(inject_debug_resources coreclr mscordaccore mscordbi)
+    # Add dac table & debug resource to coreclr
+    get_include_directories(INC_DIR)
+    get_compile_definitions(PREPROCESS_DEFINITIONS)
+    list(APPEND INC_DIR -I${CLR_DIR}/src/vm -I${CLR_DIR}/src/vm/${ARCH_SOURCES_DIR} -I${CLR_DIR}/src/debug/ee -I${CLR_DIR}/src/gc)
+    list(APPEND PREPROCESS_DEFINITIONS -DDACCESS_COMPILE -DTARGET_64BIT)
+
+    if (CLR_CMAKE_HOST_ARCH_AMD64)
+        list(APPEND PREPROCESS_DEFINITIONS -DTARGET_AMD64)
+    elseif (CLR_CMAKE_HOST_ARCH_ARM64)
+        list(APPEND PREPROCESS_DEFINITIONS -DTARGET_ARM64)
+    elseif (CLR_CMAKE_HOST_ARCH_ARM)
+        list(APPEND PREPROCESS_DEFINITIONS -DTARGET_ARM)
+    elseif (CLR_CMAKE_HOST_ARCH_I386)
+        list(APPEND PREPROCESS_DEFINITIONS -DTARGET_X86)
     else()
-      # Add dac table & debug resource to coreclr
-      get_include_directories(INC_DIR)
-      get_compile_definitions(PREPROCESS_DEFINITIONS)
-      list(APPEND INC_DIR -I${CLR_DIR}/src/vm -I${CLR_DIR}/src/vm/${ARCH_SOURCES_DIR} -I${CLR_DIR}/src/debug/ee -I${CLR_DIR}/src/gc)
-      list(APPEND PREPROCESS_DEFINITIONS -DDACCESS_COMPILE -DTARGET_64BIT)
-
-      if (CLR_CMAKE_HOST_ARCH_AMD64)
-          list(APPEND PREPROCESS_DEFINITIONS -DTARGET_AMD64)
-      elseif (CLR_CMAKE_HOST_ARCH_ARM64)
-          list(APPEND PREPROCESS_DEFINITIONS -DTARGET_ARM64)
-      elseif (CLR_CMAKE_HOST_ARCH_ARM)
-          list(APPEND PREPROCESS_DEFINITIONS -DTARGET_ARM)
-      elseif (CLR_CMAKE_HOST_ARCH_I386)
-          list(APPEND PREPROCESS_DEFINITIONS -DTARGET_X86)
-      else()
-          clr_unknown_arch()
-      endif()
-
-
-      if (CLR_CMAKE_CROSS_ARCH)
-        include(${CMAKE_INSTALL_PREFIX}/${CLR_CMAKE_CROSS_HOST_ARCH}/dactabletools/dactabletools.cmake)
-      endif()
-
-      add_custom_command(
-          DEPENDS coreclr mscordaccore mscordbi ${CLR_DIR}/src/debug/daccess/daccess.cpp
-          OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/${CMAKE_CFG_INTDIR}/inject_debug_resources.timestamp
-          COMMAND ${CMAKE_CXX_COMPILER} /P /EP /TP ${PREPROCESS_DEFINITIONS} ${INC_DIR} /Fi${CMAKE_CURRENT_BINARY_DIR}/daccess.i  ${CLR_DIR}/src/debug/daccess/daccess.cpp
-          COMMAND dactablegen /dac:${CMAKE_CURRENT_BINARY_DIR}/daccess.i /pdb:${CMAKE_CURRENT_BINARY_DIR}/$<CONFIG>/coreclr.pdb /dll:$<TARGET_FILE:coreclr> /bin:${CMAKE_CURRENT_BINARY_DIR}/wks.bin
-          COMMAND InjectResource /bin:${CMAKE_CURRENT_BINARY_DIR}/wks.bin /dll:$<TARGET_FILE:coreclr>
-          COMMAND GenClrDebugResource /dac:$<TARGET_FILE:mscordaccore> /dbi:$<TARGET_FILE:mscordbi> /sku:onecoreclr /out:${CMAKE_CURRENT_BINARY_DIR}/clrDebugResource.bin
-          COMMAND InjectResource /bin:${CMAKE_CURRENT_BINARY_DIR}/clrDebugResource.bin /dll:$<TARGET_FILE:coreclr> /name:CLRDEBUGINFO
-          COMMAND InjectResource /bin:${CMAKE_CURRENT_SOURCE_DIR}/dump_helper_resource.bin /dll:$<TARGET_FILE:coreclr> /name:MINIDUMP_AUXILIARY_PROVIDER
-          COMMAND ${CMAKE_COMMAND} -E touch ${CMAKE_CURRENT_BINARY_DIR}/${CMAKE_CFG_INTDIR}/inject_debug_resources.timestamp
-          COMMENT Add dactable, debug resources, and dump helper resources to coreclr
-      )
-
-      if(NOT DEFINED CLR_CROSS_COMPONENTS_BUILD)
-          add_custom_target(inject_debug_resources ALL DEPENDS ${CMAKE_CURRENT_BINARY_DIR}/${CMAKE_CFG_INTDIR}/inject_debug_resources.timestamp)
-      endif()
+        clr_unknown_arch()
     endif()
 
+
+    if (CLR_CMAKE_CROSS_ARCH)
+        include(${CMAKE_INSTALL_PREFIX}/${CLR_CMAKE_CROSS_HOST_ARCH}/dactabletools/dactabletools.cmake)
+    endif()
+
+    add_custom_command(
+        DEPENDS coreclr mscordaccore mscordbi ${CLR_DIR}/src/debug/daccess/daccess.cpp
+        OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/${CMAKE_CFG_INTDIR}/inject_debug_resources.timestamp
+        COMMAND ${CMAKE_CXX_COMPILER} /P /EP /TP ${PREPROCESS_DEFINITIONS} ${INC_DIR} /Fi${CMAKE_CURRENT_BINARY_DIR}/daccess.i  ${CLR_DIR}/src/debug/daccess/daccess.cpp
+        COMMAND ${CLR_REPO_ROOT_DIR}/dotnet.cmd exec ${CMAKE_INSTALL_PREFIX}/DacTableGen/DacTableGen.dll /dac:${CMAKE_CURRENT_BINARY_DIR}/daccess.i /pdb:$<TARGET_PDB_FILE:coreclr> /dll:$<TARGET_FILE:coreclr> /bin:${CMAKE_CURRENT_BINARY_DIR}/wks.bin
+        COMMAND InjectResource /bin:${CMAKE_CURRENT_BINARY_DIR}/wks.bin /dll:$<TARGET_FILE:coreclr>
+        COMMAND GenClrDebugResource /dac:$<TARGET_FILE:mscordaccore> /dbi:$<TARGET_FILE:mscordbi> /sku:onecoreclr /out:${CMAKE_CURRENT_BINARY_DIR}/clrDebugResource.bin
+        COMMAND InjectResource /bin:${CMAKE_CURRENT_BINARY_DIR}/clrDebugResource.bin /dll:$<TARGET_FILE:coreclr> /name:CLRDEBUGINFO
+        COMMAND InjectResource /bin:${CMAKE_CURRENT_SOURCE_DIR}/dump_helper_resource.bin /dll:$<TARGET_FILE:coreclr> /name:MINIDUMP_AUXILIARY_PROVIDER
+        COMMAND ${CMAKE_COMMAND} -E touch ${CMAKE_CURRENT_BINARY_DIR}/${CMAKE_CFG_INTDIR}/inject_debug_resources.timestamp
+        COMMENT Add dactable, debug resources, and dump helper resources to coreclr
+    )
+
+    if(NOT DEFINED CLR_CROSS_COMPONENTS_BUILD)
+        add_custom_target(inject_debug_resources ALL DEPENDS ${CMAKE_CURRENT_BINARY_DIR}/${CMAKE_CFG_INTDIR}/inject_debug_resources.timestamp)
+    endif()
 endif(CLR_CMAKE_TARGET_WIN32)
 
 # add the install targets

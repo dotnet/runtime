@@ -6,7 +6,7 @@
   -->
 
   <PropertyGroup>
-    <TargetsWindows Condition="'$(TargetOS)' == 'Windows_NT'">true</TargetsWindows>
+    <TargetsWindows Condition="'$(TargetOS)' == 'windows'">true</TargetsWindows>
 
     <!-- Set Helix build to build number if available -->
     <HelixBuild Condition="'$(HelixBuild)' == ''">$(BUILD_BUILDNUMBER)</HelixBuild>
