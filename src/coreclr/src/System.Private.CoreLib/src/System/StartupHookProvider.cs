@@ -15,10 +15,7 @@ namespace System
         private const string InitializeMethodName = "Initialize";
         private const string DisallowedSimpleAssemblyNameSuffix = ".dll";
 
-        private static bool IsSupported { get; } = StartupHookProviderIsSupported();
-
-        private static bool StartupHookProviderIsSupported() =>
-            AppContext.TryGetSwitch("System.StartupHookProvider.IsSupported", out bool isSupported) ? isSupported : true;
+        private static bool IsSupported => AppContext.TryGetSwitch("System.StartupHookProvider.IsSupported", out bool isSupported) ? isSupported : true;
 
         private struct StartupHookNameOrPath
         {
