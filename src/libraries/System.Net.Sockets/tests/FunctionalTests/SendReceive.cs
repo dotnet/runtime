@@ -1696,20 +1696,21 @@ namespace System.Net.Sockets.Tests
             }
         }
 
-        [OuterLoop]
         [Theory]
         [InlineData(false)]
         [InlineData(true)]
         public async Task SendAsync_CanceledDuringOperation_Throws(bool ipv6)
         {
             const int CancelAfter = 200; // ms
-            const int NumOfSends = 1000;
+            const int NumOfSends = 100;
+            const int SendBufferSize = 1024;
 
             (Socket client, Socket server) = SocketTestExtensions.CreateConnectedSocketPair(ipv6);
             byte[] buffer = new byte[1024 * 64];
             using (client)
             using (server)
             {
+                client.SendBufferSize = SendBufferSize;
                 CancellationTokenSource cts = new CancellationTokenSource();
 
                 List<Task> tasks = new List<Task>();
