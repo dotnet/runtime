@@ -1,10 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using Microsoft.Win32.SafeHandles;
 using System.Collections.Generic;
-using System.IO.Pipes;
-using System.Runtime.InteropServices;
 using System.Threading;
 using System.Threading.Tasks;
 using Xunit;
@@ -174,22 +171,5 @@ namespace System.IO.Tests
                 return base.ReadAsync(buffer, offset, count, cancellationToken);
             }
         }
-
-        #region Windows P/Invokes
-        // We need to P/Invoke to test the named pipe async behavior with FileStream
-        // because NamedPipeClientStream internally binds the created handle,
-        // and that then prevents FileStream's constructor from working with the handle
-        // when trying to set isAsync to true.
-
-        [DllImport("kernel32.dll", CharSet = CharSet.Unicode, SetLastError = true)]
-        [return: MarshalAs(UnmanagedType.Bool)]
-        public static extern bool WaitNamedPipeW(string name, int timeout);
-
-        [DllImport("kernel32.dll", CharSet = CharSet.Unicode, SetLastError = true)]
-        internal static extern SafeFileHandle CreateFileW(
-            string lpFileName, int dwDesiredAccess, FileShare dwShareMode,
-            IntPtr securityAttrs, FileMode dwCreationDisposition, int dwFlagsAndAttributes, IntPtr hTemplateFile);
-
-        #endregion
     }
 }

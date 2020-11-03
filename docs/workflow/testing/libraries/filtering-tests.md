@@ -148,7 +148,7 @@ _**A few common examples with the above attributes:**_
 
 - Run all tests acceptable on Windows that are not failing:
 ```cmd
-dotnet build <csproj_file> /t:Test /p:TargetOS=Windows_NT
+dotnet build <csproj_file> /t:Test /p:TargetOS=windows
 ```
 - Run all outer loop tests acceptable on OS X that are currently associated with active issues:
 ```sh

@@ -78,7 +78,7 @@
   </Target>
 
   <PropertyGroup>
-    <TargetsWindows Condition="'$(TargetOS)' == 'Windows_NT'">true</TargetsWindows>
+    <TargetsWindows Condition="'$(TargetOS)' == 'windows'">true</TargetsWindows>
     <BuildTargetFramework Condition="'$(TestPackages)' != 'true'">$([MSBuild]::ValueOrDefault('$(BuildTargetFramework)', '$(NetCoreAppCurrent)'))</BuildTargetFramework>
 
     <!-- The Helix correlation payload file -->

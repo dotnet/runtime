@@ -7,9 +7,11 @@ using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Collections.ObjectModel;
 using System.Globalization;
+using System.IO;
 using System.Linq;
 using System.Text.Encodings.Web;
 using System.Text.Json.Tests;
+using System.Threading.Tasks;
 using Xunit;
 
 namespace System.Text.Json.Serialization.Tests
@@ -1618,6 +1620,121 @@ namespace System.Text.Json.Serialization.Tests
             Assert.Contains("handling", ex.ToString());
             Assert.Throws<ArgumentOutOfRangeException>(
                 () => new JsonNumberHandlingAttribute((JsonNumberHandling)(8)));
+        }
+    }
+
+    public class NumberHandlingTests_StreamOverload : NumberHandlingTests_OverloadSpecific
+    {
+        public NumberHandlingTests_StreamOverload() : base(DeserializationWrapper.StreamDeserializer) { }
+    }
+
+    public class NumberHandlingTests_SyncOverload : NumberHandlingTests_OverloadSpecific
+    {
+        public NumberHandlingTests_SyncOverload() : base(DeserializationWrapper.StringDeserializer) { }
+    }
+
+    public abstract class NumberHandlingTests_OverloadSpecific
+    {
+        private DeserializationWrapper Deserializer { get; }
+
+        public NumberHandlingTests_OverloadSpecific(DeserializationWrapper deserializer)
+        {
+            Deserializer = deserializer;
+        }
+
+        [Theory]
+        [MemberData(nameof(NumberHandling_ForPropsReadAfter_DeserializingCtorParams_TestData))]
+        public async Task NumberHandling_ForPropsReadAfter_DeserializingCtorParams(string json)
+        {
+            JsonSerializerOptions options = new JsonSerializerOptions
+            {
+                NumberHandling = JsonNumberHandling.AllowReadingFromString | JsonNumberHandling.WriteAsString,
+                PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
+            };
+
+            Result result = await Deserializer.DeserializeWrapper<Result>(json, options);
+            JsonTestHelper.AssertJsonEqual(json, JsonSerializer.Serialize(result, options));
+        }
+
+        private static IEnumerable<object[]> NumberHandling_ForPropsReadAfter_DeserializingCtorParams_TestData()
+        {
+            yield return new object[]
+            {
+                @"{
+                    ""album"": {
+                        ""userPlayCount"": ""123"",
+                        ""name"": ""the name of the album"",
+                        ""artist"": ""the name of the artist"",
+                        ""wiki"": {
+                            ""summary"": ""a summary of the album""
+                        }
+                    }
+                }"
+            };
+
+            yield return new object[]
+            {
+                @"{
+                    ""album"": {
+                        ""name"": ""the name of the album"",
+                        ""userPlayCount"": ""123"",
+                        ""artist"": ""the name of the artist"",
+                        ""wiki"": {
+                            ""summary"": ""a summary of the album""
+                        }
+                    }
+                }"
+            };
+
+            yield return new object[]
+            {
+                @"{
+                    ""album"": {
+                        ""name"": ""the name of the album"",
+                        ""artist"": ""the name of the artist"",
+                        ""userPlayCount"": ""123"",
+                        ""wiki"": {
+                            ""summary"": ""a summary of the album""
+                        }
+                    }
+                }"
+            };
+
+            yield return new object[]
+            {
+                @"{
+                    ""album"": {
+                        ""name"": ""the name of the album"",
+                        ""artist"": ""the name of the artist"",
+                        ""wiki"": {
+                            ""summary"": ""a summary of the album""
+                        },
+                        ""userPlayCount"": ""123""
+                    }
+                }"
+            };
+        }
+
+        public class Result
+        {
+            public Album Album { get; init; }
+        }
+
+        public class Album
+        {
+            public Album(string name, string artist)
+            {
+                Name = name;
+                Artist = artist;
+            }
+
+            public string Name { get; init; }
+            public string Artist { get; init; }
+
+            public long? userPlayCount { get; init; }
+
+            [JsonExtensionData]
+            public Dictionary<string, JsonElement> ExtensionData { get; set; }
         }
     }
 }

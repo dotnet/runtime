@@ -9,18 +9,12 @@ add_definitions(-DUNICODE)
 add_definitions(-D_UNICODE)
 
 if(FEATURE_AUTO_TRACE)
-  add_definitions(-DFEATURE_AUTO_TRACE)
+    add_definitions(-DFEATURE_AUTO_TRACE)
 endif(FEATURE_AUTO_TRACE)
 
-if(CMAKE_CONFIGURATION_TYPES) # multi-configuration generator?
-  foreach (Config DEBUG CHECKED)
-    set_property(DIRECTORY APPEND PROPERTY COMPILE_DEFINITIONS $<$<CONFIG:${Config}>:WRITE_BARRIER_CHECK=1>)
-  endforeach (Config)
-else()
-  if(UPPERCASE_CMAKE_BUILD_TYPE STREQUAL DEBUG OR UPPERCASE_CMAKE_BUILD_TYPE STREQUAL CHECKED)
-    add_definitions(-DWRITE_BARRIER_CHECK)
-  endif(UPPERCASE_CMAKE_BUILD_TYPE STREQUAL DEBUG OR UPPERCASE_CMAKE_BUILD_TYPE STREQUAL CHECKED)
-endif(CMAKE_CONFIGURATION_TYPES)
+foreach (Config DEBUG CHECKED)
+    add_compile_definitions($<$<CONFIG:${Config}>:WRITE_BARRIER_CHECK>)
+endforeach (Config)
 
 if(FEATURE_GDBJIT)
     set(VM_SOURCES_GDBJIT
@@ -941,12 +935,12 @@ convert_to_absolute_path(VM_SOURCES_DAC ${VM_SOURCES_DAC})
 convert_to_absolute_path(VM_SOURCES_WKS_SPECIAL ${VM_SOURCES_WKS_SPECIAL})
 
 if (CLR_CMAKE_BUILD_SUBSET_RUNTIME)
-  add_library_clr(cee_dac ${VM_SOURCES_DAC})
-  add_dependencies(cee_dac eventing_headers)
-  set_target_properties(cee_dac PROPERTIES DAC_COMPONENT TRUE)
-  target_precompile_header(TARGET cee_dac HEADER common.h)
+    add_library_clr(cee_dac ${VM_SOURCES_DAC})
+    add_dependencies(cee_dac eventing_headers)
+    set_target_properties(cee_dac PROPERTIES DAC_COMPONENT TRUE)
+    target_precompile_headers(cee_dac PRIVATE [["common.h"]])
 
-  add_subdirectory(wks)
+    add_subdirectory(wks)
 endif(CLR_CMAKE_BUILD_SUBSET_RUNTIME)
 
 if(FEATURE_PERFTRACING)

@@ -76,7 +76,7 @@ namespace System.Runtime.Serialization
         public override bool HasValue { get { return InnerReader.HasValue; } }
         public override string Value { get { return InnerReader.Value; } }
         public override int Depth { get { return InnerReader.Depth; } }
-        public override string? BaseURI { get { return InnerReader.BaseURI; } }
+        public override string BaseURI { get { return InnerReader.BaseURI; } }
         public override bool IsEmptyElement { get { return InnerReader.IsEmptyElement; } }
         public override bool IsDefault { get { return InnerReader.IsDefault; } }
         public override XmlSpace XmlSpace { get { return InnerReader.XmlSpace; } }
@@ -85,8 +85,7 @@ namespace System.Runtime.Serialization
         public override int AttributeCount { get { return InnerReader.AttributeCount; } }
         public override string this[int i] { get { return InnerReader[i]; } }
         public override string? this[string name] { get { return InnerReader[name]; } }
-        // TODO-NULLABLE - unnecessary namespaceURI! - https://github.com/dotnet/roslyn/issues/47221
-        public override string? this[string name, string? namespaceURI] { get { return InnerReader[name, namespaceURI!]; } }
+        public override string? this[string name, string? namespaceURI] { get { return InnerReader[name, namespaceURI]; } }
         public override bool EOF { get { return InnerReader.EOF; } }
         public override ReadState ReadState { get { return InnerReader.ReadState; } }
         public override XmlNameTable NameTable { get { return InnerReader.NameTable; } }
