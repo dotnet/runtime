@@ -6175,8 +6175,12 @@ int Compiler::impBoxPatternMatch(CORINFO_RESOLVED_TOKEN* pResolvedToken, const B
                     if (((treeToBox->gtFlags & GTF_SIDE_EFFECT) == GTF_EXCEPT) &&
                         treeToBox->OperIs(GT_OBJ, GT_BLK, GT_IND))
                     {
-                        // Yes, we just need to perform a null check.
-                        treeToNullcheck = treeToBox->AsOp()->gtOp1;
+                        // Yes, we just need to perform a null check if needed.
+                        GenTree* const addr = treeToBox->AsOp()->gtGetOp1();
+                        if (fgAddrCouldBeNull(addr))
+                        {
+                            treeToNullcheck = addr;
+                        }
                     }
                     else
                     {
