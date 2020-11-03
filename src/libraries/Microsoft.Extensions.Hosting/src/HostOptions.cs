@@ -3,6 +3,7 @@
 
 using System;
 using System.Globalization;
+using Microsoft.Extensions.Configuration;
 
 namespace Microsoft.Extensions.Hosting
 {
@@ -11,19 +12,19 @@ namespace Microsoft.Extensions.Hosting
     /// </summary>
     public class HostOptions
     {
-        public HostOptions()
+        /// <summary>
+        /// The default timeout for <see cref="IHost.StopAsync(System.Threading.CancellationToken)"/>.
+        /// </summary>
+        public TimeSpan ShutdownTimeout { get; set; } = TimeSpan.FromSeconds(5);
+
+        internal void Initialize(IConfiguration configuration)
         {
-            var timeoutSeconds = Environment.GetEnvironmentVariable("DOTNET_SHUTDOWNTIMEOUTSECONDS");
-            if (!string.IsNullOrWhiteSpace(timeoutSeconds)
+            var timeoutSeconds = configuration["shutdownTimeoutSeconds"];
+            if (!string.IsNullOrEmpty(timeoutSeconds)
                 && int.TryParse(timeoutSeconds, NumberStyles.None, CultureInfo.InvariantCulture, out var seconds))
             {
                 ShutdownTimeout = TimeSpan.FromSeconds(seconds);
             }
         }
-
-        /// <summary>
-        /// The default timeout for <see cref="IHost.StopAsync(System.Threading.CancellationToken)"/>.
-        /// </summary>
-        public TimeSpan ShutdownTimeout { get; set; } = TimeSpan.FromSeconds(5);
     }
 }
