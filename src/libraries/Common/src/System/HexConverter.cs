@@ -93,7 +93,7 @@ namespace System
 #if SYSTEM_PRIVATE_CORELIB
     private static void EncodeToUtf16_Ssse3(ReadOnlySpan<byte> bytes, Span<char> chars, Casing casing)
     {
-        int pos = 0;
+        nint pos = 0;
 
         Vector128<byte> shuffleMask = Vector128.Create(
             0xFF, 0xFF, 0, 0xFF, 0xFF, 0xFF, 1, 0xFF,
@@ -136,7 +136,7 @@ namespace System
             // Save to "chars" at pos*2 offset
             Unsafe.WriteUnaligned(
                 ref Unsafe.As<char, byte>(
-                    ref Unsafe.Add(ref MemoryMarshal.GetReference(chars), pos * 2)), hex);
+                    ref Unsafe.Add(ref MemoryMarshal.GetReference(chars), (int)pos * 2)), hex);
             pos += 4;
         } while (pos < bytes.Length - 3);
 
