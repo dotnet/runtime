@@ -13327,7 +13327,7 @@ DONE_MORPHING_CHILDREN:
 
             // Skip optimization if non-NEG operand is constant.
             // Both op1 and op2 are not constant because it was already checked above.
-            if (opts.OptimizationEnabled() &&
+            if (opts.OptimizationEnabled() && fgGlobalMorph &&
                 (((op1->gtFlags & GTF_EXCEPT) == 0) || ((op2->gtFlags & GTF_EXCEPT) == 0)))
             {
                 // a - -b = > a + b
@@ -13342,7 +13342,7 @@ DONE_MORPHING_CHILDREN:
 
                     GenTree* op2Child = op2->AsOp()->gtOp1; // b
                     oper              = GT_ADD;
-                    tree->SetOper(oper);
+                    tree->SetOper(oper, GenTree::PRESERVE_VN);
                     tree->AsOp()->gtOp1 = op1; // no change
                     tree->AsOp()->gtOp2 = op2Child;
 
@@ -13365,8 +13365,8 @@ DONE_MORPHING_CHILDREN:
 
                     GenTree* op1Child = op1->AsOp()->gtOp1; // a
                     GenTree* op2Child = op2->AsOp()->gtOp1; // b
-                    oper              = GT_SUB;             // no change
-                    tree->SetOper(oper);                    // no change
+                    // oper              = GT_SUB;                // no change
+                    // tree->SetOper(oper, GenTree::PRESERVE_VN); // no change
                     tree->AsOp()->gtOp1 = op2Child;
                     tree->AsOp()->gtOp2 = op1Child;
 
@@ -13588,7 +13588,7 @@ DONE_MORPHING_CHILDREN:
                     }
                 }
 
-                if (opts.OptimizationEnabled() &&
+                if (opts.OptimizationEnabled() && fgGlobalMorph &&
                     (((op1->gtFlags & GTF_EXCEPT) == 0) || ((op2->gtFlags & GTF_EXCEPT) == 0)))
                 {
                     // - a + b = > b - a
@@ -13605,7 +13605,7 @@ DONE_MORPHING_CHILDREN:
 
                         GenTree* op1Child = op1->AsOp()->gtOp1; // a
                         oper              = GT_SUB;
-                        tree->SetOper(oper);
+                        tree->SetOper(oper, GenTree::PRESERVE_VN);
                         tree->AsOp()->gtOp1 = op2;
                         tree->AsOp()->gtOp2 = op1Child;
 
@@ -13630,7 +13630,7 @@ DONE_MORPHING_CHILDREN:
 
                         GenTree* op2Child = op2->AsOp()->gtOp1; // a
                         oper              = GT_SUB;
-                        tree->SetOper(oper);
+                        tree->SetOper(oper, GenTree::PRESERVE_VN);
                         // tree->AsOp()->gtOp1 = op1;   // no change
                         tree->AsOp()->gtOp2 = op2Child;
 
