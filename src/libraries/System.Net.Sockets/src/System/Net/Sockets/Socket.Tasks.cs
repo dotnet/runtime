@@ -277,7 +277,7 @@ namespace System.Net.Sockets
             saea.SetBuffer(buffer);
             saea.SocketFlags = socketFlags;
             saea.RemoteEndPoint = remoteEndPoint;
-            saea.WrapExceptionsInNetworkExceptions = false;
+            saea.WrapExceptionsForNetworkStream = false;
             return saea.ReceiveFromAsync(this, cancellationToken);
         }
 
@@ -315,7 +315,7 @@ namespace System.Net.Sockets
             saea.SetBuffer(buffer);
             saea.SocketFlags = socketFlags;
             saea.RemoteEndPoint = remoteEndPoint;
-            saea.WrapExceptionsInNetworkExceptions = false;
+            saea.WrapExceptionsForNetworkStream = false;
             return saea.ReceiveMessageFromAsync(this, cancellationToken);
         }
 
@@ -398,7 +398,7 @@ namespace System.Net.Sockets
             saea.SetBuffer(MemoryMarshal.AsMemory(buffer));
             saea.SocketFlags = socketFlags;
             saea.RemoteEndPoint = remoteEP;
-            saea.WrapExceptionsInNetworkExceptions = false;
+            saea.WrapExceptionsForNetworkStream = false;
             return saea.SendToAsync(this, cancellationToken);
         }
 
