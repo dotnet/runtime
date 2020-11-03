@@ -18,7 +18,7 @@ struct M : IM<int> { }
 public static class Program
 {
     [MethodImpl(MethodImplOptions.AggressiveOptimization)]
-    static void Main()
+    static int Main()
     {
         var m = new M();
         if (((IM<int>)m).UseDefaultM)
