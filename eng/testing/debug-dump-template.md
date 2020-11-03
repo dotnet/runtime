@@ -36,13 +36,14 @@ This will download the workitem contents under `<out-dir>\workitems\` and the co
 
 Once you have those assets, you will need to extract the testhost or core root. Then extract the workitem assets into the same location where coreclr binary is.
 
-## Windows dump on windows
+## Windows dump on Windows
 
 ### Debug with WinDbg
 
 1. Install [dotnet-sos global tool](https://docs.microsoft.com/en-us/dotnet/core/diagnostics/dotnet-sos).
-2. Load the dump with a recent WinDbg version for it to load sos automatically (if not you can run `.update sos`).
-3. Then run the following commands:
+2. Run `dotnet sos install` (This has an architecture flag to install diferent plugin versions for specific arch scenarios).
+3. Load the dump with a recent WinDbg version for it to load sos automatically (if not you can run `.update sos`). It is important that bitness of WinDbg matches the bitness of the dump.
+4. Then run the following commands:
 
 ```script
 !setclrpath <path to core root or testhost where coreclr is>
@@ -55,25 +56,24 @@ Once you have those assets, you will need to extract the testhost or core root. 
 3. Then run the following commands:
 
 ```script
-setclrpath <you should see `Load path for DAC/DBI: '<none>'`>
+setclrpath (To verify an incorrect DAC hasn't been loaded).
 setclrpath <path to core root or testhost where coreclr is>
 setsymbolserver -directory <directory with symbols (for library tests these are in testhost dir)>
 ```
 
-## Linux dumps on windows
+## Linux dumps on Windows
 
 In order to debug a Linux dump on Windows, you will have to first go to the PR/CI build
 that sent the test run and download the cross DAC.
 
-Go to your build by navigating to [your build](https://dnceng.visualstudio.com/public/_build/results?buildId=%BUILDID%&view=artifacts&type=publishedArtifacts) and download the `CoreCLRCrossDacArtifacts`, then choose the cross DAC you need depending on the flavor.
-
-Once you've downloaded that artifact, make sure to extract it in the same location where coreclr binary is.
+Download the [`CoreCLRCrossDacArtifacts`](https://dev.azure.com/dnceng/public/_apis/build/builds/%BUILDID%/artifacts?artifactName=CoreCLRCrossDacArtifacts&api-version=6.0&%24format=zip), then extract it, and copy the matching flavor of the DAC with your dump and extract it in the same location where coreclr binary is.
 
 ### Debug with WinDbg
 
 1. Install [dotnet-sos global tool](https://docs.microsoft.com/en-us/dotnet/core/diagnostics/dotnet-sos).
-2. Load the dump with a recent WinDbg version for it to load sos automatically (if not you can run `.update sos`).
-3. Then run the following commands:
+2. Run `dotnet sos install` (This has an architecture flag to install diferent plugin versions for specific arch scenarios).
+3. Load the dump with a recent WinDbg version for it to load sos automatically (if not you can run `.update sos`). It is important that bitness of WinDbg matches the bitness of the dump.
+4. Then run the following commands:
 
 ```script
 !setclrpath <path to core root or testhost where coreclr is>
@@ -86,7 +86,7 @@ Once you've downloaded that artifact, make sure to extract it in the same locati
 3. Then run the following commands:
 
 ```script
-setclrpath <you should see `Load path for DAC/DBI: '<none>'`>
+setclrpath (To verify an incorrect DAC hasn't been loaded).
 setclrpath <path to core root or testhost where coreclr is>
 setsymbolserver -directory <directory with symbols (for library tests these are in testhost dir)>
 ```
@@ -96,8 +96,9 @@ setsymbolserver -directory <directory with symbols (for library tests these are 
 ### Debug with LLDB
 
 1. Install [dotnet-sos global tool](https://docs.microsoft.com/en-us/dotnet/core/diagnostics/dotnet-sos).
-2. Load the dump by running `lldb -c <path-to-dmp> <host binary used (found in testhost)>`
-3. Run the following commands:
+2. Run `dotnet sos install` (This has an architecture flag to install diferent plugin versions for specific arch scenarios).
+3. Load the dump by running `lldb -c <path-to-dmp> <host binary used (found in testhost)>`
+4. Run the following commands:
 
 ```script
 setclrpath <path to core root or testhost where coreclr is>
@@ -113,14 +114,14 @@ loadsymbols (if you want to resolve native symbols)
 3. Then run the following commands:
 
 ```script
-setclrpath <you should see `Load path for DAC/DBI: '<none>'`>
+setclrpath (To verify an incorrect DAC hasn't been loaded).
 setclrpath <path to core root or testhost where coreclr is>
 setsymbolserver -directory <directory with symbols (for library tests these are in testhost dir)>
 ```
 
 ## MacOS dumps
 
-MacOS instructions are the same as [Linux](#linux-dumps-on-linux); however MacOS has some caveats.
+Instructions for debugging dumps on MacOS the same as [Linux](#linux-dumps-on-linux); however there are a couple of caveats.
 
-1. It's only supported to debug them in `dotnet-dump` if it's a `createdump` dump.
+1. It's only supported to debug them in `dotnet-dump` if it's a runtime generated dump. This includes hang dumps and dumps generated by `createdump`, `dotnet-dump` and the runtime itself. 
 2. If it's a system dump, then only `lldb` works.

@@ -96,7 +96,7 @@ with open(source_file, 'r+') as f:
     replace_string = replace_string.replace('%WORKITEM%', workitem)
     replace_string = replace_string.replace('%BUILDID%', build_id)
 
-output_file = out_dir + dir_separator + 'debug-dump.md'
+output_file = out_dir + dir_separator + 'how-to-debug-dump.md'
 with open(output_file, 'w+') as output:
     print('writing output file: ' + output_file)
     write_file = output.write(replace_string)
