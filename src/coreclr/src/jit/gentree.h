@@ -3951,8 +3951,7 @@ struct GenTreeCall final : public GenTree
     CORINFO_SIG_INFO* callSig;
 #endif
 
-    union
-    {
+    union {
         TailCallSiteInfo* tailCallInfo;
         // Only used for unmanaged calls, which cannot be tail-called
         CorInfoUnmanagedCallConv unmgdCallConv;

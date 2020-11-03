@@ -13390,7 +13390,8 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                         // Calls with large struct return value have to go through this.
                         // Helper calls with small struct return value also have to go
                         // through this since they do not follow Unix calling convention.
-                        if (op1->gtOper != GT_CALL || !IsMultiRegReturnedType(clsHnd, op1->AsCall()->GetUnmanagedCallConv()) ||
+                        if (op1->gtOper != GT_CALL ||
+                            !IsMultiRegReturnedType(clsHnd, op1->AsCall()->GetUnmanagedCallConv()) ||
                             op1->AsCall()->gtCallType == CT_HELPER)
 #endif // UNIX_AMD64_ABI
                         {
@@ -15483,7 +15484,8 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                     {
                         op1->AsCall()->gtRetClsHnd = classHandle;
 #if FEATURE_MULTIREG_RET
-                        op1->AsCall()->InitializeStructReturnType(this, classHandle, op1->AsCall()->GetUnmanagedCallConv());
+                        op1->AsCall()->InitializeStructReturnType(this, classHandle,
+                                                                  op1->AsCall()->GetUnmanagedCallConv());
 #endif
                     }
 
