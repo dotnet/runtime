@@ -1696,6 +1696,7 @@ namespace System.Net.Sockets.Tests
             }
         }
 
+        [OuterLoop]
         [Theory]
         [InlineData(false)]
         [InlineData(true)]
@@ -1705,14 +1706,16 @@ namespace System.Net.Sockets.Tests
             const int NumOfSends = 1000;
 
             (Socket client, Socket server) = SocketTestExtensions.CreateConnectedSocketPair(ipv6);
-            byte[] buffer = new byte[8192 * 8];
+            byte[] buffer = new byte[1024 * 64];
             using (client)
             using (server)
             {
                 CancellationTokenSource cts = new CancellationTokenSource();
 
-                List<Task<int>> tasks = new List<Task<int>>();
+                List<Task> tasks = new List<Task>();
 
+                // After flooding the socket with a high number of send tasks,
+                // we assume some of them won't complete before the "CancelAfter" period expires.
                 for (int i=0; i < NumOfSends; i++)
                 {
                     var task = client.SendAsync(buffer, SocketFlags.None, cts.Token).AsTask();
