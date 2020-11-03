@@ -8,13 +8,13 @@ namespace System.Net.Quic.Implementations.Managed.Internal.Sockets
     internal sealed class SingleConnectionSocketContext : QuicSocketContext
     {
         private readonly EndPoint _remoteEndPoint;
-        internal ConnectionContext ConnectionContext { get; }
+        internal QuicConnectionContext ConnectionContext { get; }
 
         internal SingleConnectionSocketContext(EndPoint? localEndpoint, EndPoint remoteEndPoint,
             ManagedQuicConnection connection)
             : base(localEndpoint, remoteEndPoint, connection.IsServer)
         {
-            ConnectionContext = new ConnectionContext(this, connection);
+            ConnectionContext = new QuicConnectionContext(this, connection);
             _remoteEndPoint = remoteEndPoint;
         }
 

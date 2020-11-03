@@ -13,18 +13,6 @@ using System.Threading.Tasks;
 
 namespace System.Net.Quic.Implementations.Managed.Internal.Sockets
 {
-    internal interface IQuicSocketContext
-    {
-        void Start();
-
-        /// <summary>
-        ///     Used to signal the thread that one of the connections has data to send.
-        /// </summary>
-        void WakeUp();
-
-        IPEndPoint LocalEndPoint { get; }
-    }
-
     /// <summary>
     ///     Class responsible for serving a socket for QUIC connections.
     /// </summary>

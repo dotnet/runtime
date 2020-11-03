@@ -130,7 +130,7 @@ namespace System.Net.Quic.Tests
             var ctx = new QuicServerSocketContext(new IPEndPoint(IPAddress.Any, 0),
                 options, Channel.CreateUnbounded<ManagedQuicConnection>().Writer);
             Span<byte> odcid = stackalloc byte[20];
-            return new ManagedQuicConnection(options, new ConnectionContext(ctx, _dummyListenEndpoint, odcid), _dummyListenEndpoint, odcid);
+            return new ManagedQuicConnection(options, new QuicConnectionContext(ctx, _dummyListenEndpoint, odcid), _dummyListenEndpoint, odcid);
         }
 
         /// <summary>

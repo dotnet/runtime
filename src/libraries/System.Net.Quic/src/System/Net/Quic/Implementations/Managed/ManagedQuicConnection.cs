@@ -119,7 +119,7 @@ namespace System.Net.Quic.Implementations.Managed
         /// <summary>
         ///     Context of the socket serving this connection.
         /// </summary>
-        private IQuicSocketContext _socketContext;
+        private QuicConnectionContext _socketContext;
 
         /// <summary>
         ///     True if handshake has been confirmed by the peer. For server this means that TLS has reported handshake complete,
@@ -249,7 +249,7 @@ namespace System.Net.Quic.Implementations.Managed
         }
 
         // server constructor
-        public ManagedQuicConnection(QuicListenerOptions options, IQuicSocketContext socketContext,
+        public ManagedQuicConnection(QuicListenerOptions options, QuicConnectionContext socketContext,
             EndPoint remoteEndpoint, ReadOnlySpan<byte> odcid)
         {
             IsServer = true;
@@ -305,7 +305,7 @@ namespace System.Net.Quic.Implementations.Managed
         ///     Sets new socket context that will from now on service the connection.
         /// </summary>
         /// <param name="context">The new context.</param>
-        internal void SetSocketContext(IQuicSocketContext context)
+        internal void SetSocketContext(QuicConnectionContext context)
         {
             _socketContext = context;
         }

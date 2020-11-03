@@ -13,7 +13,7 @@ namespace System.Net.Quic.Implementations.Managed.Internal.Sockets
         private readonly ChannelWriter<ManagedQuicConnection> _newConnections;
         internal QuicListenerOptions ListenerOptions { get; }
 
-        private ImmutableDictionary<EndPoint, ConnectionContext> _connectionsByEndpoint;
+        private ImmutableDictionary<EndPoint, QuicConnectionContext> _connectionsByEndpoint;
 
         private bool _acceptNewConnections;
 
@@ -24,7 +24,7 @@ namespace System.Net.Quic.Implementations.Managed.Internal.Sockets
             _newConnections = newConnectionsWriter;
             ListenerOptions = listenerOptions;
 
-            _connectionsByEndpoint = ImmutableDictionary<EndPoint, ConnectionContext>.Empty;
+            _connectionsByEndpoint = ImmutableDictionary<EndPoint, QuicConnectionContext>.Empty;
 
             _acceptNewConnections = true;
         }
@@ -32,7 +32,7 @@ namespace System.Net.Quic.Implementations.Managed.Internal.Sockets
         protected override void OnDatagramReceived(in DatagramInfo datagram)
         {
             bool isNewConnection = false;
-            if (!_connectionsByEndpoint.TryGetValue(datagram.RemoteEndpoint, out ConnectionContext? connectionCtx))
+            if (!_connectionsByEndpoint.TryGetValue(datagram.RemoteEndpoint, out QuicConnectionContext? connectionCtx))
             {
                 if (!_acceptNewConnections || HeaderHelpers.GetPacketType(datagram.Buffer[0]) != PacketType.Initial)
                 {
@@ -49,7 +49,7 @@ namespace System.Net.Quic.Implementations.Managed.Internal.Sockets
 
                 // TODO-RZ: handle connection failures when the initial packet is discarded (e.g. because connection id is
                 // too long). This likely will need moving header parsing from Connection to socket context.
-                connectionCtx = new ConnectionContext(this, datagram.RemoteEndpoint, dcid);
+                connectionCtx = new QuicConnectionContext(this, datagram.RemoteEndpoint, dcid);
                 ImmutableInterlocked.TryAdd(ref _connectionsByEndpoint, datagram.RemoteEndpoint, connectionCtx);
 
                 isNewConnection = true;
