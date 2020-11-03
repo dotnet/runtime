@@ -3203,12 +3203,22 @@ GenTree* Compiler::optAssertionProp_RelOp(ASSERT_VALARG_TP assertions, GenTree* 
     return optAssertionPropLocal_RelOp(assertions, tree, stmt);
 }
 
-/*************************************************************************************
- *
- *  Given the set of "assertions" to look up a relop assertion about the relop "tree",
- *  perform Value numbering based relop assertion propagation on the tree.
- *
- */
+//------------------------------------------------------------------------
+// optAssertionProp: try and optimize a relop via assertion propagation
+//    (and dominator based redundant branch elimination)
+//
+// Arguments:
+//   assertions  - set of live assertions
+//   tree        - tree to possibly optimize
+//   stmt        - statement containing the tree
+//
+// Returns:
+//   The modified tree, or nullptr if no assertion prop took place.
+//
+// Notes:
+//   Redundant branch elimination doesn't rely on assertions currently,
+//   it is done here out of convenience.
+//
 GenTree* Compiler::optAssertionPropGlobal_RelOp(ASSERT_VALARG_TP assertions, GenTree* tree, Statement* stmt)
 {
     GenTree* newTree = tree;
