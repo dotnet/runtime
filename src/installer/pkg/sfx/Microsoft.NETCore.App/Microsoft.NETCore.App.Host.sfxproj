@@ -27,7 +27,7 @@
     <NativeRuntimeAsset Include="$(DotNetHostBinDir)/hostfxr.h" />
     <NativeRuntimeAsset Include="$(DotNetHostBinDir)/coreclr_delegates.h" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetOS)' == 'Windows_NT'">
+  <ItemGroup Condition="'$(TargetOS)' == 'windows'">
     <NativeRuntimeAsset Include="$(DotNetHostBinDir)/comhost.dll" />
     <NativeRuntimeAsset Include="$(DotNetHostBinDir)/ijwhost.dll" />
     <NativeRuntimeAsset Include="$(DotNetHostBinDir)/ijwhost.lib" />
@@ -35,11 +35,11 @@
   </ItemGroup>
 
   <ItemGroup>
-    <_SymbolFiles Condition="'$(TargetOS)' == 'Windows_NT'"
+    <_SymbolFiles Condition="'$(TargetOS)' == 'windows'"
                     Include="@(NativeRuntimeAsset->'%(RootDir)%(Directory)PDB/%(Filename).pdb')"
                     IsSymbolFile="true"
                     IsNative="true" />
-    <_SymbolFiles Condition="'$(TargetOS)' != 'Windows_NT'"
+    <_SymbolFiles Condition="'$(TargetOS)' != 'windows'"
                     Include="@(NativeRuntimeAsset->'%(RootDir)%(Directory)PDB/%(Filename)%(Extension)%(SymbolFileExtension)')"
                     IsSymbolFile="true"
                     IsNative="true" />

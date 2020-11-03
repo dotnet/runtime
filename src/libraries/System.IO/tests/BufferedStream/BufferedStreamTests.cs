@@ -191,33 +191,6 @@ namespace System.IO.Tests
         }
     }
 
-    public class BufferedStream_StreamMethods : StreamMethods
-    {
-        protected override Stream CreateStream()
-        {
-            return new BufferedStream(new MemoryStream());
-        }
-
-        protected override Stream CreateStream(int bufferSize)
-        {
-            return new BufferedStream(new MemoryStream(), bufferSize);
-        }
-
-        [Fact]
-        public void ReadByte_ThenRead_EndOfStreamCorrectlyFound()
-        {
-            using (var s = new BufferedStream(new MemoryStream(new byte[] { 1, 2 }), 2))
-            {
-                Assert.Equal(1, s.ReadByte());
-                Assert.Equal(2, s.ReadByte());
-                Assert.Equal(-1, s.ReadByte());
-
-                Assert.Equal(0, s.Read(new byte[1], 0, 1));
-                Assert.Equal(0, s.Read(new byte[1], 0, 1));
-            }
-        }
-    }
-
     public class BufferedStream_TestLeaveOpen : TestLeaveOpen
     {
         protected override Stream CreateStream()

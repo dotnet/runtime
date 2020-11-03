@@ -956,7 +956,7 @@ namespace System.Resources
                 }
             }
             Debug.Assert(_typeTable[typeIndex] != null, "Should have found a type!");
-            return _typeTable[typeIndex]!; // TODO-NULLABLE: Indexer nullability tracked (https://github.com/dotnet/roslyn/issues/34644)
+            return _typeTable[typeIndex]!;
         }
 
         private string TypeNameFromTypeCode(ResourceTypeCode typeCode)

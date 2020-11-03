@@ -3191,10 +3191,9 @@ DISPID DispatchInfo::GenerateDispID()
 //--------------------------------------------------------------------------------
 // The DispatchExInfo class implementation.
 
-DispatchExInfo::DispatchExInfo(SimpleComCallWrapper *pSimpleWrapper, MethodTable *pMT, BOOL bSupportsExpando)
+DispatchExInfo::DispatchExInfo(SimpleComCallWrapper *pSimpleWrapper, MethodTable *pMT)
 : DispatchInfo(pMT)
 , m_pSimpleWrapperOwner(pSimpleWrapper)
-, m_bSupportsExpando(bSupportsExpando)
 {
     CONTRACTL
     {
@@ -3214,13 +3213,6 @@ DispatchExInfo::DispatchExInfo(SimpleComCallWrapper *pSimpleWrapper, MethodTable
 DispatchExInfo::~DispatchExInfo()
 {
     WRAPPER_NO_CONTRACT;
-}
-
-BOOL DispatchExInfo::SupportsExpando()
-{
-    LIMITED_METHOD_CONTRACT;
-
-    return m_bSupportsExpando;
 }
 
 // Methods to lookup members. These methods synch with the managed view if they fail to
@@ -3382,138 +3374,6 @@ DispatchMemberInfo* DispatchExInfo::GetNextMember(DISPID CurrMemberDispID)
     RETURN *ppNextMemberInfo;
 }
 
-DispatchMemberInfo* DispatchExInfo::AddMember(SString& strName, BOOL bCaseSensitive)
-{
-    CONTRACT (DispatchMemberInfo*)
-    {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_COOPERATIVE;
-        INJECT_FAULT(COMPlusThrowOM());
-        PRECONDITION(m_bSupportsExpando == TRUE);
-        POSTCONDITION(CheckPointer(RETVAL, NULL_OK));
-    }
-    CONTRACT_END;
-
-    DispatchMemberInfo *pDispMemberInfo = NULL;
-
-    // Attempt to find the member in the DispatchEx information.
-    pDispMemberInfo = SynchFindMember(strName, bCaseSensitive);
-
-    // If we haven't found the member, then we need to add it.
-    if (!pDispMemberInfo)
-    {
-        // Take a lock before we check again to see if the member has been added by another thread.
-        CrstHolder ch(&m_lock);
-
-            // Now that we are inside the lock, check without synching.
-            pDispMemberInfo = FindMember(strName, bCaseSensitive);
-            if (!pDispMemberInfo)
-            {
-                struct _gc {
-                    STRINGREF strObj;
-                    OBJECTREF TargetObj;
-                } gc;
-                ZeroMemory(&gc, sizeof(gc));
-
-                GCPROTECT_BEGIN(gc);
-
-                // Retrieve the MethodDesc for AddField()
-                MethodDesc *pMD = GetIExpandoMD(METHOD__IEXPANDO__ADD_FIELD);
-
-                // Allocate the string object that will be passed to the AddField method.
-                gc.strObj = StringObject::NewString(strName.GetUnicode());
-
-                // Retrieve the COM+ object that is being exposed to COM.
-                gc.TargetObj = GetReflectionObject();
-
-                MethodDescCallSite addField(pMD, &gc.TargetObj);
-
-                // Prepare the arguments that will be passed to AddField.
-                ARG_SLOT Args[] =
-                {
-                    ObjToArgSlot(gc.TargetObj),
-                    ObjToArgSlot(gc.strObj)
-                };
-
-                // Add the field to the target expando.
-                OBJECTREF pMemberInfo = addField.Call_RetOBJECTREF(Args);
-
-                // Generate the DISPID for this member.
-                DISPID DispID = GenerateDispID();
-
-                // Create a new DispatchMemberInfo that will represent this member.
-                pDispMemberInfo = CreateDispatchMemberInfoInstance(DispID, strName, pMemberInfo);
-
-                // Go through the list of member info's and find the end.
-                DispatchMemberInfo **ppNextMember = &m_pFirstMemberInfo;
-                while (*ppNextMember)
-                    ppNextMember = &((*ppNextMember)->m_pNext);
-
-                // Add the new member info to the end of the list.
-                *ppNextMember = pDispMemberInfo;
-
-                // Add the member to the hashtable. Note, the hash is unsynchronized, but we already have our lock so
-                // we're okay.
-                m_DispIDToMemberInfoMap.InsertValue(DispID2HashKey(DispID), pDispMemberInfo);
-
-                GCPROTECT_END();
-            }
-        }
-
-    RETURN pDispMemberInfo;
-}
-
-void DispatchExInfo::DeleteMember(DISPID DispID)
-{
-    CONTRACTL
-    {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_COOPERATIVE;
-        PRECONDITION(m_bSupportsExpando);
-    }
-    CONTRACTL_END
-
-    // Do a lookup in the hashtable to find the DispatchMemberInfo for the DISPID.
-    // This needs to be done outside of the lock because SyncFindMember will acquire
-    // the lock as well.
-    DispatchMemberInfo *pDispMemberInfo = SynchFindMember(DispID);
-
-    // Take a lock before we check that the member has not already been deleted.
-    {
-        CrstHolder ch(&m_lock);
-
-        // If the member does not exist, it is static or has been deleted then we have nothing more to do.
-        if (pDispMemberInfo && (pDispMemberInfo->GetMemberInfoObject() != NULL))
-        {
-            OBJECTREF TargetObj = GetReflectionObject();
-            GCPROTECT_BEGIN(TargetObj);
-
-            // Retrieve the DeleteMember MethodDesc.
-            MethodDesc *pMD = GetIExpandoMD(METHOD__IEXPANDO__REMOVE_MEMBER);
-            MethodDescCallSite removeMember(pMD, &TargetObj);
-
-            OBJECTREF MemberInfoObj = pDispMemberInfo->GetMemberInfoObject();
-
-            // Prepare the arguments that will be passed to RemoveMember.
-            ARG_SLOT Args[] =
-            {
-                ObjToArgSlot(TargetObj),
-                ObjToArgSlot(MemberInfoObj)
-            };
-
-            // Call the DeleteMember method.
-            removeMember.Call(Args);
-
-            // Set the handle to point to NULL to indicate the member has been removed.
-            pDispMemberInfo->ClearMemberInfoObject();
-
-            GCPROTECT_END();
-        }
-    }
-}
-
 MethodDesc* DispatchExInfo::GetIReflectMD(BinderMethodID Method)
 {
     CONTRACT (MethodDesc*)
@@ -3521,26 +3381,6 @@ MethodDesc* DispatchExInfo::GetIReflectMD(BinderMethodID Method)
         THROWS;
         GC_TRIGGERS;
         MODE_ANY;
-        POSTCONDITION(CheckPointer(RETVAL));
-    }
-    CONTRACT_END;
-
-    MethodTable *pMT = m_pSimpleWrapperOwner->GetMethodTable();
-    MethodDesc *pMD = pMT->GetMethodDescForInterfaceMethod(CoreLibBinder::GetMethod(Method), TRUE /* throwOnConflict */);
-
-    // Return the specified method desc.
-    RETURN pMD;
-}
-
-
-MethodDesc* DispatchExInfo::GetIExpandoMD(BinderMethodID Method)
-{
-    CONTRACT (MethodDesc*)
-    {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_ANY;
-        PRECONDITION(SupportsExpando());
         POSTCONDITION(CheckPointer(RETVAL));
     }
     CONTRACT_END;

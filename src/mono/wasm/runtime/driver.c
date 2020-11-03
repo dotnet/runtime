@@ -123,11 +123,21 @@ mono_wasm_invoke_js (MonoString *str, int *is_exception)
 }
 
 static void
-wasm_logger (const char *log_domain, const char *log_level, const char *message, mono_bool fatal, void *user_data)
+wasm_trace_logger (const char *log_domain, const char *log_level, const char *message, mono_bool fatal, void *user_data)
 {
 	EM_ASM({
-		var message = Module.UTF8ToString ($3) + ": " + Module.UTF8ToString ($1);
-		if ($2)
+		var log_level = $0;
+		var message = Module.UTF8ToString ($1);
+		var isFatal = $2;
+		var domain = Module.UTF8ToString ($3); // is this always Mono?
+		var dataPtr = $4;
+
+		if (MONO["logging"] && MONO.logging["trace"]) {
+			MONO.logging.trace(domain, log_level, message, isFatal, dataPtr);
+			return;
+		}
+
+		if (isFatal)
 			console.trace (message);
 
 		switch (Module.UTF8ToString ($0)) {
@@ -151,7 +161,7 @@ wasm_logger (const char *log_domain, const char *log_level, const char *message,
 				console.log (message);
 				break;
 		}
-	}, log_level, message, fatal, log_domain);
+	}, log_level, message, fatal, log_domain, user_data);
 }
 
 typedef uint32_t target_mword;
@@ -161,12 +171,14 @@ MONO_API int   mono_gc_register_root (char *start, size_t size, MonoGCDescriptor
 void  mono_gc_deregister_root (char* addr);
 
 EMSCRIPTEN_KEEPALIVE int
-mono_wasm_register_root (char *start, size_t size, const char *name) {
-	return mono_gc_register_root (start, size, NULL, MONO_ROOT_SOURCE_EXTERNAL, NULL, name ? name : "mono_wasm_register_root");
+mono_wasm_register_root (char *start, size_t size, const char *name)
+{
+	return mono_gc_register_root (start, size, (MonoGCDescriptor)NULL, MONO_ROOT_SOURCE_EXTERNAL, NULL, name ? name : "mono_wasm_register_root");
 }
 
 EMSCRIPTEN_KEEPALIVE void 
-mono_wasm_deregister_root (char *addr) {
+mono_wasm_deregister_root (char *addr)
+{
 	mono_gc_deregister_root (addr);
 }
 
@@ -202,7 +214,7 @@ mono_wasm_add_assembly (const char *name, const unsigned char *data, unsigned in
 	entry->next = assemblies;
 	assemblies = entry;
 	++assembly_count;
-	return mono_has_pdb_checksum (data, size);
+	return mono_has_pdb_checksum ((char*)data, size);
 }
 
 int
@@ -535,7 +547,7 @@ mono_wasm_load_runtime (const char *unused, int debug_level)
 
 	mono_wasm_register_bundled_satellite_assemblies ();
 	mono_trace_init ();
-	mono_trace_set_log_handler (wasm_logger, NULL);
+	mono_trace_set_log_handler (wasm_trace_logger, NULL);
 	root_domain = mono_jit_init_version ("mono", "v4.0.30319");
 
 	mono_initialize_internals();

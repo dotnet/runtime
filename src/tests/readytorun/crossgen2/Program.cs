@@ -2164,6 +2164,11 @@ internal class Program
 
         TextFileName = EmitTextFileForTesting();
 
+        RunTest("CallMethodUsingMemberRefToDerivedWhereMethodIsActuallyOnBase_NonGenericCaller", HelperILDllTests.CallMethodUsingMemberRefToDerivedWhereMethodIsActuallyOnBase_NonGenericCaller());
+        RunTest("CallMethodUsingMemberRefToDerivedWhereMethodIsActuallyOnBase_GenericCaller", HelperILDllTests.CallMethodUsingMemberRefToDerivedWhereMethodIsActuallyOnBase_GenericCaller());
+        RunTest("CallMethodUsingMemberRefToDerivedWhereMethodIsActuallyOnBase_GenericCreateDelegate", HelperILDllTests.CallMethodUsingMemberRefToDerivedWhereMethodIsActuallyOnBase_GenericCreateDelegate());
+        RunTest("CallGenMethodUsingMemberRefToDerivedWhereMethodIsActuallyOnBase_NonGenericCaller", HelperILDllTests.CallGenMethodUsingMemberRefToDerivedWhereMethodIsActuallyOnBase_NonGenericCaller());
+        RunTest("CallGenMethodUsingMemberRefToDerivedWhereMethodIsActuallyOnBase_GenericCaller", HelperILDllTests.CallGenMethodUsingMemberRefToDerivedWhereMethodIsActuallyOnBase_GenericCaller());
         RunTest("NewString", NewString());
         RunTest("WriteLine", WriteLine());
         RunTest("IsInstanceOf", IsInstanceOf());
@@ -2227,7 +2232,6 @@ internal class Program
         RunTest("TestWithStructureNonBlittableFieldDueToGenerics", TestWithStructureNonBlittableFieldDueToGenerics());
         RunTest("TestSingleElementStructABI", TestSingleElementStructABI());
         RunTest("TestEnumLayoutAlignments", TestEnumLayoutAlignments());
-
         File.Delete(TextFileName);
 
         Console.WriteLine($@"{_passedTests.Count} tests pass:");

@@ -20,7 +20,7 @@
                                    '$(NoPgoOptimize)' != 'true'"
                                    Include="-enforcepgo" />
       <_CoreClrBuildArg Condition="$([MSBuild]::IsOsPlatform(Windows)) and '$(CrossDac)' != ''" Include="-$(CrossDac)dac" />
-      <_CoreClrBuildArg Condition="'$(NoPgoOptimize)' == 'true'" Include="-nopgooptimize" />
+      <_CoreClrBuildArg Condition="'$(Ninja)' == 'true'" Include="-ninja" />
       <_CoreClrBuildArg Condition="'$(ClrRuntimeSubset)' != 'true'" Include="-skipruntime" />
       <_CoreClrBuildArg Condition="'$(ClrJitSubset)' != 'true'" Include="-skipjit" />
       <_CoreClrBuildArg Condition="'$(ClrPalTestsSubset)' == 'true'" Include="-paltests" />

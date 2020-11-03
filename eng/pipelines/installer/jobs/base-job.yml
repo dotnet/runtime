@@ -92,7 +92,7 @@ jobs:
   ### Platform-specific variable setup
   ###
 
-  - ${{ if eq(parameters.osGroup, 'Windows_NT') }}:
+  - ${{ if eq(parameters.osGroup, 'windows') }}:
 
     - name: CommonMSBuildArgs
       value: >-
@@ -330,7 +330,7 @@ jobs:
   - ${{ if and(ne(variables['System.TeamProject'], 'public'), notin(variables['Build.Reason'], 'PullRequest')) }}:
     - task: NuGetAuthenticate@0
 
-    - ${{ if eq(parameters.osGroup, 'Windows_NT') }}:
+    - ${{ if eq(parameters.osGroup, 'windows') }}:
       # NuGet's http cache lasts 30 minutes. If we're on a static machine, this may interfere with
       # auto-update PRs by preventing the CI build from fetching the new version. Delete the cache.
       - powershell: Remove-Item -Recurse -ErrorAction Ignore "$env:LocalAppData\NuGet\v3-cache"
@@ -432,7 +432,7 @@ jobs:
       continueOnError: true
       condition: succeededOrFailed()
 
-  - ${{ if and(eq(parameters.osGroup, 'Windows_NT'), eq(parameters.isOfficialBuild, true)) }}:
+  - ${{ if and(eq(parameters.osGroup, 'windows'), eq(parameters.isOfficialBuild, true)) }}:
     - task: NuGetCommand@2
       displayName: Push Visual Studio NuPkgs
       inputs:
@@ -453,7 +453,7 @@ jobs:
       skipTests: $(SkipTests)
       isOfficialBuild: ${{ eq(parameters.isOfficialBuild, true) }}
 
-  - ${{ if ne(parameters.osGroup, 'Windows_NT') }}:
+  - ${{ if ne(parameters.osGroup, 'windows') }}:
     - script: set -x && df -h
       displayName: Check remaining storage space
       condition: always()

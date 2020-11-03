@@ -1304,9 +1304,12 @@ static InterpMethodArguments* build_args_from_sig (MonoMethodSignature *sig, Int
 	}
 
 	for (int i = 0; i < sig->param_count; i++) {
-		guint32 ptype = sig->params [i]->byref ? MONO_TYPE_PTR : sig->params [i]->type;
 		guint32 offset = get_arg_offset (frame->imethod, sig, i);
 		stackval *sp_arg = STACK_ADD_BYTES (frame->stack, offset);
+		MonoType *type = sig->params [i];
+		guint32 ptype;
+retry:
+		ptype = type->byref ? MONO_TYPE_PTR : type->type;
 		switch (ptype) {
 		case MONO_TYPE_BOOLEAN:
 		case MONO_TYPE_CHAR:
@@ -1324,8 +1327,6 @@ static InterpMethodArguments* build_args_from_sig (MonoMethodSignature *sig, Int
 		case MONO_TYPE_CLASS:
 		case MONO_TYPE_OBJECT:
 		case MONO_TYPE_STRING:
-		case MONO_TYPE_VALUETYPE:
-		case MONO_TYPE_GENERICINST:
 #if SIZEOF_VOID_P == 8
 		case MONO_TYPE_I8:
 		case MONO_TYPE_U8:
@@ -1336,6 +1337,22 @@ static InterpMethodArguments* build_args_from_sig (MonoMethodSignature *sig, Int
 #endif
 			int_i++;
 			break;
+		case MONO_TYPE_VALUETYPE:
+			if (m_class_is_enumtype (type->data.klass)) {
+				type = mono_class_enum_basetype_internal (type->data.klass);
+				goto retry;
+			}
+			margs->iargs [int_i] = sp_arg;
+#if DEBUG_INTERP
+			g_print ("build_args_from_sig: margs->iargs [%d]: %p (vt) (frame @ %d)\n", int_i, margs->iargs [int_i], i);
+#endif
+			int_i++;
+			break;
+		case MONO_TYPE_GENERICINST: {
+			MonoClass *container_class = type->data.generic_class->container_class;
+			type = m_class_get_byval_arg (container_class);
+			goto retry;
+		}
 #if SIZEOF_VOID_P == 4
 		case MONO_TYPE_I8:
 		case MONO_TYPE_U8: {
@@ -1569,6 +1586,9 @@ ves_pinvoke_method (
 
 	g_free (ccontext.stack);
 #else
+	// Only the vt address has been returned, we need to copy the entire content on interp stack
+	if (!context->has_resume_state && MONO_TYPE_ISSTRUCT (sig->ret))
+		stackval_from_data (sig->ret, frame.stack, (char*)frame.stack->data.p, sig->pinvoke);
 
 	g_free (margs->iargs);
 	g_free (margs->fargs);
@@ -6388,6 +6408,25 @@ call:
 		MINT_IN_CASE(MINT_MONO_MEMORY_BARRIER) {
 			++ip;
 			mono_memory_barrier ();
+			MINT_IN_BREAK;
+		}
+		MINT_IN_CASE(MINT_MONO_EXCHANGE_I8) {
+			sp--;
+			gboolean flag = FALSE;
+#if SIZEOF_VOID_P == 4
+			if (G_UNLIKELY ((size_t) ((gint64*) sp [-1].data.p) & 0x7)) {
+				gint64 result;
+				mono_interlocked_lock ();
+				result = *((gint64*) sp [-1].data.p);
+				*((gint64*) sp [-1].data.p) = sp [0].data.l;
+				mono_interlocked_unlock ();
+				sp [-1].data.l = result;
+				flag = TRUE;
+			}
+#endif
+			if (!flag)
+				sp [-1].data.l = mono_atomic_xchg_i64 ((gint64*) sp [-1].data.p, sp [0].data.l);
+			++ip;
 			MINT_IN_BREAK;
 		}
 		MINT_IN_CASE(MINT_MONO_LDDOMAIN)

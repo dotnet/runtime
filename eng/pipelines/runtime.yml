@@ -144,10 +144,10 @@ jobs:
     - Linux_musl_arm64
     - Linux_musl_x64
     - OSX_arm64
-    - Windows_NT_x86
-    - Windows_NT_x64
-    - Windows_NT_arm
-    - Windows_NT_arm64
+    - windows_x86
+    - windows_x64
+    - windows_arm
+    - windows_arm64
     jobParameters:
       testGroup: innerloop
       condition: >-
@@ -210,10 +210,10 @@ jobs:
     - Linux_musl_x64
     - Linux_musl_arm
     - Linux_musl_arm64
-    - Windows_NT_x64
-    - Windows_NT_x86
-    - Windows_NT_arm
-    - Windows_NT_arm64
+    - windows_x64
+    - windows_x86
+    - windows_arm
+    - windows_arm64
     - FreeBSD_x64
     jobParameters:
       testGroup: innerloop
@@ -229,7 +229,7 @@ jobs:
     platforms:
     - Linux_x64
     # Issue: https://github.com/dotnet/runtime/issues/40034
-    #- Windows_NT_x64
+    #- windows_x64
     jobParameters:
       condition: >-
         and(
@@ -558,10 +558,10 @@ jobs:
     - Linux_x64
     - Linux_arm64
     # - Linux_musl_arm64
-    - Windows_NT_x64
-    # - Windows_NT_x86
-    # - Windows_NT_arm
-    # - Windows_NT_arm64
+    - windows_x64
+    # - windows_x86
+    # - windows_arm
+    # - windows_arm64
     jobParameters:
       condition: >-
         or(
@@ -581,10 +581,10 @@ jobs:
     platforms:
     - Linux_x64
     # - Linux_musl_arm64
-    - Windows_NT_x64
-    # - Windows_NT_x86
-    # - Windows_NT_arm
-    # - Windows_NT_arm64
+    - windows_x64
+    # - windows_x86
+    # - windows_arm
+    # - windows_arm64
     jobParameters:
       condition: >-
         or(
@@ -646,9 +646,9 @@ jobs:
     - Linux_arm
     - Linux_musl_arm
     - Linux_musl_arm64
-    - Windows_NT_arm
-    - Windows_NT_arm64
-    - Windows_NT_x86
+    - windows_arm
+    - windows_arm64
+    - windows_x86
     jobParameters:
       liveRuntimeBuildConfig: release
 
@@ -662,13 +662,13 @@ jobs:
     - Linux_x64
     - OSX_arm64
     - OSX_x64
-    - Windows_NT_x64
+    - windows_x64
     - FreeBSD_x64
     jobParameters:
       testScope: innerloop
       testBuildPlatforms:
       - Linux_x64
-      - Windows_NT_x64
+      - windows_x64
       - OSX_x64
       liveRuntimeBuildConfig: release
 
@@ -681,7 +681,7 @@ jobs:
     buildConfig: ${{ variables.debugOnPrReleaseOnRolling }}
     platforms:
     - ${{ if eq(variables['isFullMatrix'], false) }}:
-      - Windows_NT_x86
+      - windows_x86
     jobParameters:
       liveRuntimeBuildConfig: release
       condition: >-
@@ -694,9 +694,9 @@ jobs:
     jobTemplate: /eng/pipelines/libraries/build-job.yml
     buildConfig: Release
     platforms:
-    - Windows_NT_x86
+    - windows_x86
     - ${{ if eq(variables['isFullMatrix'], true) }}:
-      - Windows_NT_x64
+      - windows_x64
     helixQueuesTemplate: /eng/pipelines/libraries/helix-queues-setup.yml
     jobParameters:
       isFullMatrix: ${{ variables.isFullMatrix }}
@@ -713,7 +713,7 @@ jobs:
     jobTemplate: /eng/pipelines/libraries/build-job.yml
     buildConfig: ${{ variables.debugOnPrReleaseOnRolling }}
     platforms:
-    - Windows_NT_x64
+    - windows_x64
     helixQueuesTemplate: /eng/pipelines/libraries/helix-queues-setup.yml
     jobParameters:
       isFullMatrix: ${{ variables.isFullMatrix }}
@@ -736,9 +736,9 @@ jobs:
       - Linux_arm
       - Linux_musl_arm
       - Linux_musl_arm64
-      - Windows_NT_x86
-      - Windows_NT_arm
-      - Windows_NT_arm64
+      - windows_x86
+      - windows_arm
+      - windows_arm64
     jobParameters:
       liveRuntimeBuildConfig: release
       liveLibrariesBuildConfig: Release
@@ -752,7 +752,7 @@ jobs:
       - Linux_x64
       - Linux_arm64
       - Linux_musl_x64
-      - Windows_NT_x64
+      - windows_x64
       - FreeBSD_x64
     jobParameters:
       liveRuntimeBuildConfig: release
@@ -806,8 +806,8 @@ jobs:
     buildConfig: checked
     platforms:
     - Linux_arm
-    - Windows_NT_x86
-    - Windows_NT_arm64
+    - windows_x86
+    - windows_arm64
     helixQueueGroup: pr
     helixQueuesTemplate: /eng/pipelines/coreclr/templates/helix-queues-setup.yml
     jobParameters:
@@ -827,7 +827,7 @@ jobs:
     - OSX_x64
     - Linux_x64
     - Linux_arm64
-    - Windows_NT_x64
+    - windows_x64
     helixQueueGroup: pr
     helixQueuesTemplate: /eng/pipelines/coreclr/templates/helix-queues-setup.yml
     jobParameters:
@@ -916,7 +916,7 @@ jobs:
     runtimeFlavor: mono
     buildConfig: ${{ variables.debugOnPrReleaseOnRolling }}
     platforms:
-    - Windows_NT_x64
+    - windows_x64
     - OSX_x64
     - Linux_arm64
     - Linux_x64
@@ -945,7 +945,7 @@ jobs:
     runtimeFlavor: mono
     buildConfig: ${{ variables.debugOnPrReleaseOnRolling }}
     platforms:
-    # - Windows_NT_x64
+    # - windows_x64
     #- OSX_x64
     - Linux_x64
     helixQueuesTemplate: /eng/pipelines/libraries/helix-queues-setup.yml
@@ -973,9 +973,9 @@ jobs:
     jobTemplate: /eng/pipelines/libraries/run-test-job.yml
     buildConfig: Release
     platforms:
-    - Windows_NT_x86
+    - windows_x86
     - ${{ if eq(variables['isFullMatrix'], true) }}:
-      - Windows_NT_arm64
+      - windows_arm64
     helixQueuesTemplate: /eng/pipelines/libraries/helix-queues-setup.yml
     jobParameters:
       isOfficialBuild: false
@@ -998,14 +998,14 @@ jobs:
     jobTemplate: /eng/pipelines/libraries/run-test-job.yml
     buildConfig: ${{ variables.debugOnPrReleaseOnRolling }}
     platforms:
-    - Windows_NT_x64
+    - windows_x64
     - OSX_x64
     - Linux_x64
     - Linux_musl_x64
     - ${{ if eq(variables['isFullMatrix'], true) }}:
       - Linux_arm64
     - ${{ if eq(variables['isFullMatrix'], false) }}:
-      - Windows_NT_x86
+      - windows_x86
     helixQueuesTemplate: /eng/pipelines/libraries/helix-queues-setup.yml
     jobParameters:
       isOfficialBuild: false
@@ -1028,11 +1028,11 @@ jobs:
     jobTemplate: /eng/pipelines/libraries/run-test-job.yml
     buildConfig: Release
     platforms:
-    # - Windows_NT_arm return this when https://github.com/dotnet/runtime/issues/1097 is fixed.
+    # - windows_arm return this when https://github.com/dotnet/runtime/issues/1097 is fixed.
     - Linux_arm
     - Linux_musl_arm
     - Linux_musl_arm64
-    - Windows_NT_x86
+    - windows_x86
     helixQueuesTemplate: /eng/pipelines/coreclr/templates/helix-queues-setup.yml
     helixQueueGroup: libraries
     jobParameters:
@@ -1050,7 +1050,7 @@ jobs:
     jobTemplate: /eng/pipelines/libraries/run-test-job.yml
     buildConfig: ${{ variables.debugOnPrReleaseOnRolling }}
     platforms:
-    - Windows_NT_x64
+    - windows_x64
     - Linux_x64
     - Linux_musl_x64
     helixQueuesTemplate: /eng/pipelines/coreclr/templates/helix-queues-setup.yml

@@ -3900,9 +3900,9 @@ namespace System
                 Type[] argsType = new Type[args.Length];
                 for (int i = 0; i < args.Length; i++)
                 {
-                    if (args[i] != null)
+                    if (args[i] is object arg)
                     {
-                        argsType[i] = args[i]!.GetType(); // TODO-NULLABLE: Indexer nullability tracked (https://github.com/dotnet/roslyn/issues/34644)
+                        argsType[i] = arg.GetType();
                     }
                 }
 

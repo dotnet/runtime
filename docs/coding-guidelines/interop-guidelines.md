@@ -120,7 +120,7 @@ internal static partial class Interop // contents of Common\src\Interop\Windows\
 ```
 
 ### Build System
-When building dotnet/runtime, we use the "TargetOS" property to control what target platform we are building for. The valid values for this property are Windows_NT (which is the default value from MSBuild when running on Windows), Linux and OSX.
+When building dotnet/runtime, we use the "TargetOS" property to control what target platform we are building for. The valid values for this property are windows (which is the default value from MSBuild when running on Windows), Linux and OSX.
 
 #### Project Files
 Whenever possible, a single .csproj should be used per assembly, spanning all target platforms, e.g. System.Console.csproj includes conditional entries for when targeting Windows vs when targeting Linux. A property can be passed to dotnet build to control which flavor is built, e.g. `dotnet build /p:TargetOS=OSX System.Console.csproj`.
