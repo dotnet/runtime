@@ -763,14 +763,15 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
         }
 
         [Fact]
-        public static void SymbolArgumentsAreConvertedToInternedStrings()
+        public static void InternedStringSignaturesAreInternedOnJavascriptSide()
         {
             HelperMarshal._stringResource = HelperMarshal._stringResource2 = null;
             Runtime.InvokeJS(@"
-                var sym = Symbol.for(""interned string"");
-                App.call_test_method (""InvokeString"", [ sym ]);
-                App.call_test_method (""InvokeString2"", [ sym ]);
+                var sym = ""interned string"";
+                App.call_test_method (""InvokeString"", [ sym ], ""S"");
+                App.call_test_method (""InvokeString2"", [ sym ], ""S"");
             ");
+            Assert.Equal("interned string", HelperMarshal._stringResource);
             Assert.Equal(HelperMarshal._stringResource, HelperMarshal._stringResource2);
             Assert.True(Object.ReferenceEquals(HelperMarshal._stringResource, HelperMarshal._stringResource2));
         }

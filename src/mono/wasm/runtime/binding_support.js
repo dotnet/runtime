@@ -25,6 +25,7 @@ var BindingSupportLib = {
 			module ["mono_call_static_method"] = BINDING.call_static_method.bind(BINDING);
 			module ["mono_bind_assembly_entry_point"] = BINDING.bind_assembly_entry_point.bind(BINDING);
 			module ["mono_call_assembly_entry_point"] = BINDING.call_assembly_entry_point.bind(BINDING);
+			module ["mono_intern_string"] = BINDING.intern_string.bind(BINDING);
 		},
 
 		bindings_lazy_init: function () {
@@ -143,22 +144,53 @@ var BindingSupportLib = {
 			this.safehandle_get_handle = get_method ("SafeHandleGetHandle");
 			this.safehandle_release_by_handle = get_method ("SafeHandleReleaseByHandle");
 
+			this._intern_string = bind_runtime_method ("InternString", "m!");
+			this._find_interned_string = bind_runtime_method ("FindInternedString", "m!");
+
 			this._are_promises_supported = ((typeof Promise === "object") || (typeof Promise === "function")) && (typeof Promise.resolve === "function");
 
 			this._interned_string_table = new Map ();
+			this._managed_pointer_to_interned_string_table = new Map ();
+		},
+
+		// Ensures the string is already interned on both the managed and JavaScript sides,
+		//  then returns the interned string value (to provide fast reference comparisons like C#)
+		intern_string: function (string) {
+			var ptr = this.js_string_to_mono_string_interned (string);
+			var result = this._managed_pointer_to_interned_string_table.get (ptr);
+			return result;
+		},
+
+		_store_string_in_intern_table: function (string, ptr, internIt) {
+			var resultRoot = MONO.mono_wasm_new_root (ptr);
+
+			// Store the managed string into the managed intern table. This can theoretically
+			//  provide a different managed object than the one we passed in, so update our
+			//  pointer (stored in the root) with the result.
+			if (internIt)
+				resultRoot.value = this._intern_string (ptr);
+
+			this._interned_string_table.set (string, resultRoot);
+			this._managed_pointer_to_interned_string_table.set (resultRoot.value, string);
+			return resultRoot.value;
 		},
 
 		js_string_to_mono_string_interned: function (string) {
 			var resultRoot = this._interned_string_table.get (string);
-			if (resultRoot)
+			if (resultRoot) {
 				return resultRoot.value;
-
-			resultRoot = MONO.mono_wasm_new_root (this.js_string_to_mono_string (string));
-			this._interned_string_table.set (string, resultRoot);
-			return resultRoot.value;
+			} else {
+				var ptr = this.js_string_to_mono_string (string);
+				ptr = this._store_string_in_intern_table (string, ptr, true);
+				return ptr;
+			}
 		},
 
 		js_string_to_mono_string: function (string) {
+			var interned = this._interned_string_table.get (string);
+			if (interned)
+				return interned.value;
+				
 			var buffer = Module._malloc ((string.length + 1) * 2);
 			var buffer16 = (buffer / 2) | 0;
 			for (var i = 0; i < string.length; i++)
@@ -186,7 +218,18 @@ var BindingSupportLib = {
 		},
 
 		conv_string: function (mono_obj) {
-			return MONO.string_decoder.copy (mono_obj);
+			var interned_ptr = this._find_interned_string (mono_obj);
+			
+			var interned_instance = this._managed_pointer_to_interned_string_table.get (interned_ptr || mono_obj);
+			if (interned_instance)
+				return interned_instance;
+
+			var result = MONO.string_decoder.copy (mono_obj);
+			if (interned_ptr) {
+				// This string is interned on the managed side but we didn't have it in our cache.
+				this._store_string_in_intern_table (result, mono_obj, false);
+			}
+			return result;
 		},
 
 		is_nested_array: function (ele) {
