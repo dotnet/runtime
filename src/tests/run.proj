@@ -227,6 +227,7 @@ namespace $([System.String]::Copy($(Category)).Replace(".","_").Replace("\","").
     <ItemGroup>
       <AllCMDsPresent Include="$(_CMDDIR)\**\*.cmd" Condition="'$(RunningOnUnix)' != 'true'" />
       <AllCMDsPresent Include="$(_CMDDIR)\**\*.sh" Condition="'$(RunningOnUnix)' == 'true'" />
+      <AllCMDsPresent Remove="$(_CMDDIR)\**\run-v8.sh" Condition="'$(TargetArchitecture)' == 'wasm'" />
       <TestGroupingDistinctWithCase Include="@(TestGrouping->Metadata('FullPath')->DistinctWithCase())" />
       <TestGroupingNotRelevant Include="@(TestGroupingDistinctWithCase)" Exclude="@(AllCMDsPresent)" />
       <GroupedCMDs Include="@(TestGroupingDistinctWithCase)" Exclude="@(TestGroupingNotRelevant)" />
