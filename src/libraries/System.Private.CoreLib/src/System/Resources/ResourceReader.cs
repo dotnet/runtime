@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 #nullable enable
+using System.Buffers.Binary;
 using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -172,11 +173,8 @@ namespace System.Resources
 
         internal static unsafe int ReadUnalignedI4(int* p)
         {
-            byte* buffer = (byte*)p;
-            // Unaligned, little endian format
-            return buffer[0] | (buffer[1] << 8) | (buffer[2] << 16) | (buffer[3] << 24);
+            return BinaryPrimitives.ReadInt32LittleEndian(new ReadOnlySpan<byte>(p, sizeof(int)));
         }
-
 
         private void SkipString()
         {
@@ -958,7 +956,7 @@ namespace System.Resources
                 }
             }
             Debug.Assert(_typeTable[typeIndex] != null, "Should have found a type!");
-            return _typeTable[typeIndex]!; // TODO-NULLABLE: Indexer nullability tracked (https://github.com/dotnet/roslyn/issues/34644)
+            return _typeTable[typeIndex]!;
         }
 
         private string TypeNameFromTypeCode(ResourceTypeCode typeCode)

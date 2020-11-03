@@ -22,14 +22,13 @@ jobs:
       buildConfig: Release
       runtimeFlavor: mono
       platforms:
-      - Windows_NT_x86
+      - windows_x86
       - Browser_wasm
       - ${{ if eq(variables['isFullMatrix'], true) }}:
-        - Windows_NT_x64
+        - windows_x64
         - Linux_x64
         - Linux_arm
         - Linux_musl_x64
-        - Linux_musl_arm64
         - OSX_x64
       jobParameters:
         testScope: outerloop
@@ -52,7 +51,7 @@ jobs:
         buildConfig: Debug
         runtimeFlavor: mono
         platforms:
-        - Windows_NT_x64
+        - windows_x64
         - Linux_x64
         - Linux_musl_x64
         - OSX_x64

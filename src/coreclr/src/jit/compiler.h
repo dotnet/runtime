@@ -3058,6 +3058,9 @@ public:
     void gtDispConst(GenTree* tree);
     void gtDispLeaf(GenTree* tree, IndentStack* indentStack);
     void gtDispNodeName(GenTree* tree);
+#if FEATURE_MULTIREG_RET
+    unsigned gtDispRegCount(GenTree* tree);
+#endif
     void gtDispRegVal(GenTree* tree);
     void gtDispZeroFieldSeq(GenTree* tree);
     void gtDispVN(GenTree* tree);
@@ -3588,7 +3591,10 @@ public:
         }
     };
 
-    static int __cdecl lvaFieldOffsetCmp(const void* field1, const void* field2);
+    struct lvaFieldOffsetCmp
+    {
+        bool operator()(const lvaStructFieldInfo& field1, const lvaStructFieldInfo& field2);
+    };
 
     // This class is responsible for checking validity and profitability of struct promotion.
     // If it is both legal and profitable, then TryPromoteStructVar promotes the struct and initializes
@@ -4179,6 +4185,7 @@ private:
 
     BasicBlock* impPushCatchArgOnStack(BasicBlock* hndBlk, CORINFO_CLASS_HANDLE clsHnd, bool isSingleBlockFilter);
 
+    bool impBlockIsInALoop(BasicBlock* block);
     void impImportBlockCode(BasicBlock* block);
 
     void impReimportMarkBlock(BasicBlock* block);
@@ -5756,6 +5763,7 @@ private:
     GenTree* fgMorphConst(GenTree* tree);
 
     GenTreeLclVar* fgMorphTryFoldObjAsLclVar(GenTreeObj* obj);
+    GenTree* fgMorphCommutative(GenTreeOp* tree);
 
 public:
     GenTree* fgMorphTree(GenTree* tree, MorphAddrContext* mac = nullptr);
@@ -6154,12 +6162,12 @@ public:
         int lpHoistedExprCount; // The register count for the non-FP expressions from inside this loop that have been
                                 // hoisted
         int lpLoopVarCount;     // The register count for the non-FP LclVars that are read/written inside this loop
-        int lpVarInOutCount;    // The register count for the non-FP LclVars that are alive inside or accross this loop
+        int lpVarInOutCount;    // The register count for the non-FP LclVars that are alive inside or across this loop
 
         int lpHoistedFPExprCount; // The register count for the FP expressions from inside this loop that have been
                                   // hoisted
         int lpLoopVarFPCount;     // The register count for the FP LclVars that are read/written inside this loop
-        int lpVarInOutFPCount;    // The register count for the FP LclVars that are alive inside or accross this loop
+        int lpVarInOutFPCount;    // The register count for the FP LclVars that are alive inside or across this loop
 
         typedef JitHashTable<CORINFO_FIELD_HANDLE, JitPtrKeyFuncs<struct CORINFO_FIELD_STRUCT_>, bool> FieldHandleSet;
         FieldHandleSet* lpFieldsModified; // This has entries (mappings to "true") for all static field and object
@@ -6537,8 +6545,14 @@ protected:
     bool optCSE_canSwap(GenTree* firstNode, GenTree* secondNode);
     bool optCSE_canSwap(GenTree* tree);
 
-    static int __cdecl optCSEcostCmpEx(const void* op1, const void* op2);
-    static int __cdecl optCSEcostCmpSz(const void* op1, const void* op2);
+    struct optCSEcostCmpEx
+    {
+        bool operator()(const CSEdsc* op1, const CSEdsc* op2);
+    };
+    struct optCSEcostCmpSz
+    {
+        bool operator()(const CSEdsc* op1, const CSEdsc* op2);
+    };
 
     void optCleanupCSEs();
 
@@ -6910,6 +6924,11 @@ public:
         bool IsCopyAssertion()
         {
             return ((assertionKind == OAK_EQUAL) && (op1.kind == O1K_LCLVAR) && (op2.kind == O2K_LCLVAR_COPY));
+        }
+
+        bool IsConstantInt32Assertion()
+        {
+            return ((assertionKind == OAK_EQUAL) || (assertionKind == OAK_NOT_EQUAL)) && (op2.kind == O2K_CONST_INT);
         }
 
         static bool SameKind(AssertionDsc* a1, AssertionDsc* a2)
@@ -8932,7 +8951,6 @@ public:
         bool dspEHTable;               // Display the EH table reported to the VM
         bool dspDebugInfo;             // Display the Debug info reported to the VM
         bool dspInstrs;                // Display the IL instructions intermixed with the native code output
-        bool dspEmit;                  // Display emitter output
         bool dspLines;                 // Display source-code lines intermixed with native code output
         bool dmpHex;                   // Display raw bytes in hex of native code output
         bool varNames;                 // Display variables names in native code output
@@ -8940,6 +8958,7 @@ public:
         bool disAsmSpilled;            // Display native code when any register spilling occurs
         bool disasmWithGC;             // Display GC info interleaved with disassembly.
         bool disDiffable;              // Makes the Disassembly code 'diff-able'
+        bool disAddr;                  // Display process address next to each instruction in disassembly code
         bool disAsm2;                  // Display native code after it is generated using external disassembler
         bool dspOrder;                 // Display names of each of the methods that we ngen/jit
         bool dspUnwind;                // Display the unwind info output
@@ -9756,15 +9775,6 @@ public:
     // if this changes "*pDest".
     BOOL tiMergeToCommonParent(typeInfo* pDest, const typeInfo* pSrc, bool* changed) const;
 
-#ifdef DEBUG
-    // <BUGNUM> VSW 471305
-    // IJW allows assigning REF to BYREF. The following allows us to temporarily
-    // bypass the assert check in gcMarkRegSetGCref and gcMarkRegSetByref
-    // We use a "short" as we need to push/pop this scope.
-    // </BUGNUM>
-    short compRegSetCheckLevel;
-#endif
-
     /*
     XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
     XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
@@ -10349,7 +10359,7 @@ public:
                         return result;
                     }
                 }
-                __fallthrough;
+                FALLTHROUGH;
 
             // Leaf nodes
             case GT_CATCH_ARG:
@@ -10394,7 +10404,7 @@ public:
                         return result;
                     }
                 }
-                __fallthrough;
+                FALLTHROUGH;
 
             // Standard unary operators
             case GT_NOT:
@@ -10998,6 +11008,7 @@ extern Histogram     genTreeNsizHist;
 #if MEASURE_FATAL
 extern unsigned fatal_badCode;
 extern unsigned fatal_noWay;
+extern unsigned fatal_implLimitation;
 extern unsigned fatal_NOMEM;
 extern unsigned fatal_noWayAssertBody;
 #ifdef DEBUG

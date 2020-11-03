@@ -1459,17 +1459,11 @@ namespace System.Xml
         internal static bool IsNegativeZero(double value)
         {
             // Simple equals function will report that -0 is equal to +0, so compare bits instead
-            if (value == 0 && DoubleToInt64Bits(value) == DoubleToInt64Bits(-0e0))
+            if (value == 0 && BitConverter.DoubleToInt64Bits(value) == BitConverter.DoubleToInt64Bits(-0e0))
             {
                 return true;
             }
             return false;
-        }
-
-        private static unsafe long DoubleToInt64Bits(double value)
-        {
-            // NOTE: BitConverter.DoubleToInt64Bits is missing in Silverlight
-            return *((long*)&value);
         }
 
         internal static void VerifyCharData(string? data, ExceptionType exceptionType)

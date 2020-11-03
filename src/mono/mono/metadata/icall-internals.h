@@ -51,17 +51,6 @@ gint32
 mono_icall_wait_for_input_idle (gpointer handle, gint32 milliseconds);
 #endif  /* HOST_WIN32 */
 
-// On platforms not using classic WIN API support the  implementation of bellow methods are hosted in separate source file
-// icall-windows-*.c. On platforms using classic WIN API the implementation is still keept in icall.c and still declared
-// static and in some places even inlined.
-#if !G_HAVE_API_SUPPORT(HAVE_CLASSIC_WINAPI_SUPPORT)
-MonoArray *
-mono_icall_get_logical_drives (void);
-
-guint32
-mono_icall_drive_info_get_drive_type (MonoString *root_path_name);
-#endif  /* !G_HAVE_API_SUPPORT(HAVE_CLASSIC_WINAPI_SUPPORT) */
-
 gconstpointer
 mono_lookup_internal_call_full (MonoMethod *method, gboolean warn_on_missing, mono_bool *uses_handles, mono_bool *foreign);
 

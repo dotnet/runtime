@@ -65,7 +65,7 @@
       <RidAgnosticNupkgToPublishFile
         Include="
           $(DownloadDirectory)*\$(PublishRidAgnosticPackagesFromPlatform)\**\*.nupkg;
-          $(DownloadDirectory)*\Libraries_AllConfigurations\**\*.nupkg"
+          $(DownloadDirectory)*\*AllConfigurations\**\*.nupkg"
         Exclude="@(RuntimeNupkgFile);@(DownloadedSymbolNupkgFile)" />
 
       <TransportPackagesToPublishFile

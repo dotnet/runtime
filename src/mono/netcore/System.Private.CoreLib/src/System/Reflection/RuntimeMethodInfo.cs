@@ -149,14 +149,6 @@ namespace System.Reflection
 #endregion
         private string? toString;
 
-        internal BindingFlags BindingFlags
-        {
-            get
-            {
-                return 0;
-            }
-        }
-
         public override Module Module
         {
             get
@@ -241,6 +233,7 @@ namespace System.Reflection
         [DynamicDependency("#ctor(System.Reflection.ExceptionHandlingClause[],System.Reflection.LocalVariableInfo[],System.Byte[],System.Boolean,System.Int32,System.Int32)", typeof(RuntimeMethodBody))]
         internal static extern MethodBody GetMethodBodyInternal(IntPtr handle);
 
+        [RequiresUnreferencedCode("Trimming may change method bodies. For example it can change some instructions, remove branches or local variables.")]
         internal static MethodBody GetMethodBody(IntPtr handle)
         {
             return GetMethodBodyInternal(handle);
@@ -757,6 +750,7 @@ namespace System.Reflection
             }
         }
 
+        [RequiresUnreferencedCode("Trimming may change method bodies. For example it can change some instructions, remove branches or local variables.")]
         public override MethodBody GetMethodBody()
         {
             return GetMethodBody(mhandle);
@@ -792,14 +786,6 @@ namespace System.Reflection
         internal RuntimeModule GetRuntimeModule()
         {
             return RuntimeTypeHandle.GetModule((RuntimeType)DeclaringType);
-        }
-
-        internal BindingFlags BindingFlags
-        {
-            get
-            {
-                return 0;
-            }
         }
 
         private RuntimeType? ReflectedTypeInternal
@@ -988,6 +974,7 @@ namespace System.Reflection
             return CustomAttribute.GetCustomAttributes(this, attributeType, inherit);
         }
 
+        [RequiresUnreferencedCode("Trimming may change method bodies. For example it can change some instructions, remove branches or local variables.")]
         public override MethodBody GetMethodBody()
         {
             return RuntimeMethodInfo.GetMethodBody(mhandle);

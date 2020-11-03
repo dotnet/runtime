@@ -569,6 +569,7 @@ RETAIL_CONFIG_DWORD_INFO(EXTERNAL_Thread_AssignCpuGroups, W("Thread_AssignCpuGro
 ///
 /// Threadpool
 ///
+RETAIL_CONFIG_DWORD_INFO(INTERNAL_ThreadPool_UsePortableThreadPool, W("ThreadPool_UsePortableThreadPool"), 1, "Uses the managed portable thread pool implementation instead of the unmanaged one.")
 RETAIL_CONFIG_DWORD_INFO(INTERNAL_ThreadPool_ForceMinWorkerThreads, W("ThreadPool_ForceMinWorkerThreads"), 0, "Overrides the MinThreads setting for the ThreadPool worker pool")
 RETAIL_CONFIG_DWORD_INFO(INTERNAL_ThreadPool_ForceMaxWorkerThreads, W("ThreadPool_ForceMaxWorkerThreads"), 0, "Overrides the MaxThreads setting for the ThreadPool worker pool")
 RETAIL_CONFIG_DWORD_INFO(INTERNAL_ThreadPool_DisableStarvationDetection, W("ThreadPool_DisableStarvationDetection"), 0, "Disables the ThreadPool feature that forces new threads to be added when workitems run for too long")
@@ -580,8 +581,6 @@ RETAIL_CONFIG_DWORD_INFO(INTERNAL_ThreadPool_UnfairSemaphoreSpinLimit, W("Thread
 #else // !TARGET_ARM64
 RETAIL_CONFIG_DWORD_INFO(INTERNAL_ThreadPool_UnfairSemaphoreSpinLimit, W("ThreadPool_UnfairSemaphoreSpinLimit"), 0x46, "Maximum number of spins a thread pool worker thread performs before waiting for work")
 #endif // TARGET_ARM64
-
-CONFIG_DWORD_INFO(INTERNAL_ThreadpoolTickCountAdjustment, W("ThreadpoolTickCountAdjustment"), 0, "")
 
 RETAIL_CONFIG_DWORD_INFO(INTERNAL_HillClimbing_Disable,                             W("HillClimbing_Disable"),                            0, "Disables hill climbing for thread adjustments in the thread pool");
 RETAIL_CONFIG_DWORD_INFO(INTERNAL_HillClimbing_WavePeriod,                          W("HillClimbing_WavePeriod"),                         4, "");
@@ -780,7 +779,6 @@ CONFIG_DWORD_INFO_DIRECT_ACCESS(INTERNAL_GenerateLongJumpDispatchStubRatio, W("G
 CONFIG_DWORD_INFO_EX(INTERNAL_HashStack, W("HashStack"), 0, "", CLRConfig::EEConfig_default)
 CONFIG_DWORD_INFO(INTERNAL_HostManagerConfig, W("HostManagerConfig"), (DWORD)-1, "")
 CONFIG_DWORD_INFO(INTERNAL_HostTestThreadAbort, W("HostTestThreadAbort"), 0, "")
-RETAIL_CONFIG_DWORD_INFO_EX(UNSUPPORTED_IgnoreDllMainReturn, W("IgnoreDllMainReturn"), 0, "Don't check the return value of DllMain if this is set", CLRConfig::ConfigFile_ApplicationFirst)
 CONFIG_STRING_INFO(INTERNAL_InvokeHalt, W("InvokeHalt"), "Throws an assert when the given method is invoked through reflection.")
 CONFIG_DWORD_INFO_DIRECT_ACCESS(INTERNAL_MaxStackDepth, W("MaxStackDepth"), "")
 CONFIG_DWORD_INFO_DIRECT_ACCESS(INTERNAL_MaxStubUnwindInfoSegmentSize, W("MaxStubUnwindInfoSegmentSize"), "")

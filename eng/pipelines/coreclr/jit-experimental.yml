@@ -1,7 +1,5 @@
 trigger: none
 
-pr: none
-
 schedules:
 - cron: "0 22 * * 0,6"
   displayName: Sun at 2:00 PM (UTC-8:00)
@@ -22,7 +20,7 @@ jobs:
     buildConfig: checked
     platforms:
     - Linux_x64
-    - Windows_NT_x64
+    - windows_x64
     - CoreClrTestBuildHost # Either OSX_x64 or Linux_x64
     jobParameters:
       testGroup: jit-experimental
@@ -43,7 +41,7 @@ jobs:
     buildConfig: checked
     platforms:
     - Linux_x64
-    - Windows_NT_x64
+    - windows_x64
     helixQueueGroup: ci
     helixQueuesTemplate: /eng/pipelines/coreclr/templates/helix-queues-setup.yml
     jobParameters:

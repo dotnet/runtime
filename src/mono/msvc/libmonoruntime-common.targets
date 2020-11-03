@@ -38,6 +38,7 @@
     <ClCompile Include="$(MonoSourceLocation)\mono\metadata\debug-mono-ppdb.c" />
     <ClInclude Include="$(MonoSourceLocation)\mono\metadata\domain-internals.h" />
     <ClCompile Include="$(MonoSourceLocation)\mono\metadata\environment.c" />
+    <ClInclude Include="$(MonoSourceLocation)\mono\metadata\environment-internals.h" />
     <ClCompile Include="$(MonoSourceLocation)\mono\metadata\icall-eventpipe.c" />
     <ClCompile Include="$(MonoSourceLocation)\mono\metadata\exception.c" />
     <ClInclude Include="$(MonoSourceLocation)\mono\metadata\exception-internals.h" />

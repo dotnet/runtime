@@ -135,22 +135,6 @@ namespace System.IO.MemoryMappedFiles.Tests
         }
 
         /// <summary>
-        /// Test to verify that setting the length of the stream is unsupported.
-        /// </summary>
-        [Fact]
-        public void SettingLengthNotSupported()
-        {
-            foreach (MemoryMappedFile mmf in CreateSampleMaps())
-            {
-                using (mmf)
-                using (MemoryMappedViewStream s = mmf.CreateViewStream())
-                {
-                    Assert.Throws<NotSupportedException>(() => s.SetLength(4096));
-                }
-            }
-        }
-
-        /// <summary>
         /// Test to verify the accessor's PointerOffset.
         /// </summary>
         [Fact]
@@ -209,52 +193,25 @@ namespace System.IO.MemoryMappedFiles.Tests
                 using (mmf)
                 using (MemoryMappedViewStream s = mmf.CreateViewStream(offset, size))
                 {
-                    AssertWritesReads(s);
-                }
-            }
-        }
+                    // Write and read at the beginning
+                    s.Position = 0;
+                    s.WriteByte(42);
+                    s.Position = 0;
+                    Assert.Equal(42, s.ReadByte());
 
-        /// <summary>Performs many reads and writes of against the stream.</summary>
-        private static void AssertWritesReads(MemoryMappedViewStream s)
-        {
-            // Write and read at the beginning
-            s.Position = 0;
-            s.WriteByte(42);
-            s.Position = 0;
-            Assert.Equal(42, s.ReadByte());
+                    // Write and read at the end
+                    byte[] data = new byte[] { 1, 2, 3 };
+                    s.Position = s.Length - data.Length;
+                    s.Write(data, 0, data.Length);
+                    s.Position = s.Length - data.Length;
+                    Array.Clear(data, 0, data.Length);
+                    Assert.Equal(3, s.Read(data, 0, data.Length));
+                    Assert.Equal(new byte[] { 1, 2, 3 }, data);
 
-            // Write and read at the end
-            byte[] data = new byte[] { 1, 2, 3 };
-            s.Position = s.Length - data.Length;
-            s.Write(data, 0, data.Length);
-            s.Position = s.Length - data.Length;
-            Array.Clear(data, 0, data.Length);
-            Assert.Equal(3, s.Read(data, 0, data.Length));
-            Assert.Equal(new byte[] { 1, 2, 3 }, data);
-
-            // Fail reading/writing past the end
-            s.Position = s.Length;
-            Assert.Equal(-1, s.ReadByte());
-            Assert.Throws<NotSupportedException>(() => s.WriteByte(42));
-        }
-
-        /// <summary>
-        /// Test to verify that Flush is supported regardless of the accessor's access level
-        /// </summary>
-        [Theory]
-        [InlineData(MemoryMappedFileAccess.Read)]
-        [InlineData(MemoryMappedFileAccess.Write)]
-        [InlineData(MemoryMappedFileAccess.ReadWrite)]
-        [InlineData(MemoryMappedFileAccess.CopyOnWrite)]
-        public void FlushSupportedOnBothReadAndWriteAccessors(MemoryMappedFileAccess access)
-        {
-            const int Capacity = 256;
-            foreach (MemoryMappedFile mmf in CreateSampleMaps(Capacity))
-            {
-                using (mmf)
-                using (MemoryMappedViewStream s = mmf.CreateViewStream(0, Capacity, access))
-                {
-                    s.Flush();
+                    // Fail reading/writing past the end
+                    s.Position = s.Length;
+                    Assert.Equal(-1, s.ReadByte());
+                    Assert.Throws<NotSupportedException>(() => s.WriteByte(42));
                 }
             }
         }
@@ -351,27 +308,10 @@ namespace System.IO.MemoryMappedFiles.Tests
         }
 
         /// <summary>
-        /// Test to verify that we can dispose of an accessor multiple times.
-        /// </summary>
-        [Fact]
-        public void DisposeMultipleTimes()
-        {
-            foreach (MemoryMappedFile mmf in CreateSampleMaps())
-            {
-                using (mmf)
-                {
-                    MemoryMappedViewStream s = mmf.CreateViewStream();
-                    s.Dispose();
-                    s.Dispose();
-                }
-            }
-        }
-
-        /// <summary>
         /// Test to verify that a view becomes unusable after it's been disposed.
         /// </summary>
         [Fact]
-        public void InvalidAfterDisposal()
+        public void HandleClosedOnDisposal()
         {
             foreach (MemoryMappedFile mmf in CreateSampleMaps())
             {
@@ -383,29 +323,7 @@ namespace System.IO.MemoryMappedFiles.Tests
                     Assert.False(handle.IsClosed);
                     s.Dispose();
                     Assert.True(handle.IsClosed);
-
-                    Assert.Throws<ObjectDisposedException>(() => s.ReadByte());
-                    Assert.Throws<ObjectDisposedException>(() => s.Write(new byte[1], 0, 1));
-                    Assert.Throws<ObjectDisposedException>(() => s.Flush());
                 }
-            }
-        }
-
-        /// <summary>
-        /// Test to verify that we can still use a view after the associated map has been disposed.
-        /// </summary>
-        [Fact]
-        public void UseAfterMMFDisposal()
-        {
-            foreach (MemoryMappedFile mmf in CreateSampleMaps(8192))
-            {
-                // Create the view, then dispose of the map
-                MemoryMappedViewStream s;
-                using (mmf) s = mmf.CreateViewStream();
-
-                // Validate we can still use the view
-                ValidateMemoryMappedViewStream(s, 8192, MemoryMappedFileAccess.ReadWrite);
-                s.Dispose();
             }
         }
 

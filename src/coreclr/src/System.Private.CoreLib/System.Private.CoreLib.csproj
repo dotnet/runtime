@@ -20,6 +20,9 @@
     <ILLinkTrimAssembly>true</ILLinkTrimAssembly>
     <ILLinkTrimXml>$(IntermediateOutputPath)System.Private.CoreLib.xml</ILLinkTrimXml>
     <ILLinkDirectory>$(MSBuildThisFileDirectory)src\ILLink\</ILLinkDirectory>
+
+    <FeaturePortableThreadPool>true</FeaturePortableThreadPool>
+    <FeatureSharedLowLevelLock>true</FeatureSharedLowLevelLock>
   </PropertyGroup>
 
   <!-- Note that various places in SPCL depend on this resource name i.e. TplEventSource -->
@@ -104,7 +107,6 @@
 
   <!-- Sources -->
   <ItemGroup>
-    <Compile Include="$(BclSourcesRoot)\Internal\Console.cs" />
     <Compile Include="$(BclSourcesRoot)\Internal\Runtime\InteropServices\ComponentActivator.cs" />
     <Compile Include="$(BclSourcesRoot)\Internal\Runtime\InteropServices\IsolatedComponentLoadContext.cs" />
     <Compile Include="$(BclSourcesRoot)\System\__Canon.cs" />
@@ -208,7 +210,6 @@
     <Compile Include="$(BclSourcesRoot)\System\Runtime\InteropServices\ComTypes\IEnumerable.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Runtime\InteropServices\ComTypes\IEnumerator.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Runtime\InteropServices\DynamicInterfaceCastableHelpers.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\Runtime\InteropServices\Expando\IExpando.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Runtime\InteropServices\GCHandle.CoreCLR.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Runtime\InteropServices\Marshal.CoreCLR.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Runtime\InteropServices\MemoryMarshal.CoreCLR.cs" />
@@ -244,12 +245,6 @@
     <Compile Include="$(BclSourcesRoot)\System\ValueType.cs" />
     <Compile Include="$(BclSourcesRoot)\System\WeakReference.CoreCLR.cs" />
     <Compile Include="$(BclSourcesRoot)\System\WeakReference.T.CoreCLR.cs" />
-    <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.GetStdHandle.cs">
-      <Link>Common\Interop\Windows\Kernel32\Interop.GetStdHandle.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.HandleTypes.cs">
-      <Link>Common\Interop\Windows\Kernel32\Interop.HandleTypes.cs</Link>
-    </Compile>
   </ItemGroup>
   <!-- These classes are only used for FeatureCominterop, but they are referenced by tests
        in order to allow tests to be built on all platforms, these classes are included for all
@@ -296,6 +291,7 @@
     <Compile Include="$(BclSourcesRoot)\Interop\Unix\Interop.Libraries.cs" />
     <Compile Include="$(BclSourcesRoot)\System\DateTime.Unix.CoreCLR.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Threading\ClrThreadPoolBoundHandle.Unix.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Threading\LowLevelLifoSemaphore.Unix.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetsWindows)' == 'true'">
     <Compile Include="$(BclSourcesRoot)\System\DateTime.Windows.CoreCLR.cs" />
@@ -311,9 +307,6 @@
     </Compile>
   </ItemGroup>
   <Import Project="$(LibrariesProjectRoot)\System.Private.CoreLib\src\System.Private.CoreLib.Shared.projitems" Label="Shared" />
-  <PropertyGroup Condition="'$(TargetOS)' == 'Windows_NT'">
-    <TargetOS>Windows_NT</TargetOS>
-  </PropertyGroup>
 
   <ItemGroup>
     <!-- This is the T4 template service and is added by VS anytime you modify a T4 template. Required for .tt files. -->

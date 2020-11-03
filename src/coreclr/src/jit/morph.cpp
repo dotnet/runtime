@@ -4214,6 +4214,10 @@ void Compiler::fgMorphMultiregStructArgs(GenTreeCall* call)
                     {
                         structSize = argx->AsObj()->GetLayout()->GetSize();
                     }
+                    else if (varTypeIsSIMD(argx))
+                    {
+                        structSize = genTypeSize(argx);
+                    }
                     else
                     {
                         assert(argx->OperIs(GT_LCL_VAR));
@@ -6106,8 +6110,8 @@ GenTree* Compiler::fgMorphField(GenTree* tree, MorphAddrContext* mac)
 
         bool addExplicitNullCheck = false;
 
-        // Implicit byref locals are never null.
-        if (!((objRef->gtOper == GT_LCL_VAR) && lvaIsImplicitByRefLocal(objRef->AsLclVarCommon()->GetLclNum())))
+        // Implicit byref locals and string literals are never null.
+        if (fgAddrCouldBeNull(objRef))
         {
             // If the objRef is a GT_ADDR node, it, itself, never requires null checking.  The expression
             // whose address is being taken is either a local or static variable, whose address is necessarily
@@ -10030,7 +10034,7 @@ GenTree* Compiler::fgMorphPromoteLocalInitBlock(GenTreeLclVar* destLclNode, GenT
                 // Promoted fields are expected to be "normalize on load". If that changes then
                 // we may need to adjust this code to widen the constant correctly.
                 assert(fieldDesc->lvNormalizeOnLoad());
-                __fallthrough;
+                FALLTHROUGH;
             case TYP_INT:
             {
                 int64_t mask = (int64_t(1) << (genTypeSize(dest->TypeGet()) * 8)) - 1;
@@ -10488,6 +10492,10 @@ GenTree* Compiler::fgMorphCopyBlock(GenTree* tree)
         assert(dest->OperGet() == GT_LCL_VAR);
         JITDUMP(" not morphing a multireg call return\n");
         return tree;
+    }
+    else if (dest->IsMultiRegLclVar() && !src->IsMultiRegNode())
+    {
+        dest->AsLclVar()->ClearMultiReg();
     }
 #endif // FEATURE_MULTIREG_RET
 
@@ -11583,6 +11591,68 @@ GenTree* Compiler::fgMorphFieldAssignToSIMDIntrinsicSet(GenTree* tree)
 
 #endif // FEATURE_SIMD
 
+//------------------------------------------------------------------------------
+// fgMorphCommutative : Try to simplify "(X op C1) op C2" to "X op C3"
+//                      for commutative operators.
+//
+// Arguments:
+//       tree - node to fold
+//
+// return value:
+//       A folded GenTree* instance or nullptr if something prevents folding.
+//
+
+GenTree* Compiler::fgMorphCommutative(GenTreeOp* tree)
+{
+    assert(varTypeIsIntegralOrI(tree->TypeGet()));
+    assert(tree->OperIs(GT_ADD, GT_MUL, GT_OR, GT_AND, GT_XOR));
+
+    // op1 can be GT_COMMA, in this case we're going to fold
+    // "(op (COMMA(... (op X C1))) C2)" to "(COMMA(... (op X C3)))"
+    GenTree*   op1  = tree->gtGetOp1()->gtEffectiveVal(true);
+    genTreeOps oper = tree->OperGet();
+
+    if (!op1->OperIs(oper) || !tree->gtGetOp2()->IsCnsIntOrI() || !op1->gtGetOp2()->IsCnsIntOrI() ||
+        op1->gtGetOp1()->IsCnsIntOrI() || gtIsActiveCSE_Candidate(op1))
+    {
+        return nullptr;
+    }
+
+    if (tree->OperMayOverflow() && (tree->gtOverflow() || op1->gtOverflow()))
+    {
+        return nullptr;
+    }
+
+    GenTreeIntCon* cns1 = op1->gtGetOp2()->AsIntCon();
+    GenTreeIntCon* cns2 = tree->gtGetOp2()->AsIntCon();
+
+    if (!varTypeIsIntegralOrI(tree->TypeGet()) || cns1->TypeIs(TYP_REF) || !cns1->TypeIs(cns2->TypeGet()))
+    {
+        return nullptr;
+    }
+
+    GenTree* foldedCns = gtFoldExprConst(gtNewOperNode(oper, cns1->TypeGet(), cns1, cns2));
+    if (!foldedCns->IsCnsIntOrI())
+    {
+        // Give up if we can't fold "C1 op C2"
+        return nullptr;
+    }
+
+    cns1->gtIconVal = foldedCns->AsIntCon()->IconValue();
+    if ((oper == GT_ADD) && foldedCns->IsCnsIntOrI())
+    {
+        cns1->AsIntCon()->gtFieldSeq =
+            GetFieldSeqStore()->Append(cns1->AsIntCon()->gtFieldSeq, cns2->AsIntCon()->gtFieldSeq);
+    }
+
+    GenTreeOp* newTree = tree->gtGetOp1()->AsOp();
+    DEBUG_DESTROY_NODE(tree);
+    DEBUG_DESTROY_NODE(cns2);
+    DEBUG_DESTROY_NODE(foldedCns);
+    INDEBUG(newTree->gtOp2->gtDebugFlags |= GTF_DEBUG_NODE_MORPHED);
+    return newTree;
+}
+
 /*****************************************************************************
  *
  *  Transform the given GTK_SMPOP tree for code generation.
@@ -12202,7 +12272,7 @@ GenTree* Compiler::fgMorphSmpOp(GenTree* tree, MorphAddrContext* mac)
             }
         }
 
-            __fallthrough;
+            FALLTHROUGH;
 
         case GT_GT:
         {
@@ -13423,48 +13493,7 @@ DONE_MORPHING_CHILDREN:
 
                 if (op2->IsCnsIntOrI() && varTypeIsIntegralOrI(typ))
                 {
-                    // Fold "((x+icon1)+icon2) to (x+(icon1+icon2))"
-                    // Fold "((comma(y, x+icon1)+icon2) to comma(y, x+(icon1+icon2))"
                     CLANG_FORMAT_COMMENT_ANCHOR;
-
-                    const bool commasOnly        = true;
-                    GenTree*   op1EffectiveValue = op1->gtEffectiveVal(commasOnly);
-
-                    if (op1EffectiveValue->gtOper == GT_ADD && !gtIsActiveCSE_Candidate(op1EffectiveValue) &&
-                        !op1EffectiveValue->gtOverflow() && op1EffectiveValue->AsOp()->gtOp2->IsCnsIntOrI() &&
-                        (op1EffectiveValue->AsOp()->gtOp2->OperGet() == op2->OperGet()) &&
-                        (op1EffectiveValue->AsOp()->gtOp2->TypeGet() != TYP_REF) && (op2->TypeGet() != TYP_REF))
-                    {
-                        cns1 = op1EffectiveValue->AsOp()->gtOp2;
-
-                        cns1->AsIntConCommon()->SetIconValue(cns1->AsIntConCommon()->IconValue() +
-                                                             op2->AsIntConCommon()->IconValue());
-#ifdef TARGET_64BIT
-                        if (cns1->TypeGet() == TYP_INT)
-                        {
-                            // we need to properly re-sign-extend or truncate after adding two int constants above
-                            cns1->AsIntCon()->TruncateOrSignExtend32();
-                        }
-#endif // TARGET_64BIT
-
-                        if (cns1->OperGet() == GT_CNS_INT)
-                        {
-                            cns1->AsIntCon()->gtFieldSeq =
-                                GetFieldSeqStore()->Append(cns1->AsIntCon()->gtFieldSeq, op2->AsIntCon()->gtFieldSeq);
-                        }
-                        DEBUG_DESTROY_NODE(op2);
-
-                        GenTree* oldTree = tree;
-                        tree             = tree->AsOp()->gtOp1;
-                        op1              = tree->AsOp()->gtOp1;
-                        op2              = tree->AsOp()->gtOp2;
-                        DEBUG_DESTROY_NODE(oldTree);
-
-                        if (tree->OperGet() != GT_ADD)
-                        {
-                            return tree;
-                        }
-                    }
 
                     // Fold (x + 0).
 
@@ -13639,6 +13668,21 @@ DONE_MORPHING_CHILDREN:
                 typ  = tree->TypeGet();
                 op1  = tree->AsOp()->gtOp1;
                 op2  = tree->AsOp()->gtOp2;
+            }
+
+            if (varTypeIsIntegralOrI(tree->TypeGet()) && tree->OperIs(GT_ADD, GT_MUL, GT_AND, GT_OR, GT_XOR))
+            {
+                GenTree* foldedTree = fgMorphCommutative(tree->AsOp());
+                if (foldedTree != nullptr)
+                {
+                    tree = foldedTree;
+                    op1  = tree->gtGetOp1();
+                    op2  = tree->gtGetOp2();
+                    if (!tree->OperIs(oper))
+                    {
+                        return tree;
+                    }
+                }
             }
 
             break;
@@ -14263,6 +14307,7 @@ DONE_MORPHING_CHILDREN:
 
                 return tree;
             }
+            break;
 
         default:
             break;
@@ -15990,7 +16035,7 @@ bool Compiler::fgFoldConditional(BasicBlock* block)
                             newMaxWeight = bUpdated->bbWeight;
                             newMinWeight = min(edge->edgeWeightMin(), newMaxWeight);
                             edge->setEdgeWeights(newMinWeight, newMaxWeight);
-                            __fallthrough;
+                            FALLTHROUGH;
 
                         case BBJ_ALWAYS:
                             edge         = fgGetPredForBlock(bUpdated->bbJumpDest, bUpdated);
@@ -17562,6 +17607,11 @@ void Compiler::fgPromoteStructs()
     //
     lvaStructPromotionInfo structPromotionInfo;
     bool                   tooManyLocalsReported = false;
+
+    // Clear the structPromotionHelper, since it is used during inlining, at which point it
+    // may be conservative about looking up SIMD info.
+    // We don't want to preserve those conservative decisions for the actual struct promotion.
+    structPromotionHelper->Clear();
 
     for (unsigned lclNum = 0; lclNum < startLvaCount; lclNum++)
     {

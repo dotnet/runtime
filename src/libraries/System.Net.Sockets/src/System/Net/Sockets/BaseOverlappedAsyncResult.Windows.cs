@@ -63,10 +63,7 @@ namespace System.Net.Sockets
             Debug.Assert(OperatingSystem.IsWindows());
             BaseOverlappedAsyncResult asyncResult = (BaseOverlappedAsyncResult)ThreadPoolBoundHandle.GetNativeOverlappedState(nativeOverlapped)!;
 
-            if (asyncResult.InternalPeekCompleted)
-            {
-                NetEventSource.Fail(null, $"asyncResult.IsCompleted: {asyncResult}");
-            }
+            Debug.Assert(!asyncResult.InternalPeekCompleted, $"asyncResult.IsCompleted: {asyncResult}");
             if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(null, $"errorCode:{errorCode} numBytes:{numBytes} nativeOverlapped:{(IntPtr)nativeOverlapped}");
 
             // Complete the IO and invoke the user's callback.
@@ -102,13 +99,10 @@ namespace System.Net.Sockets
                             out numBytes,
                             false,
                             out ignore);
+                        Debug.Assert(!success, $"Unexpectedly succeeded. errorCode:{errorCode} numBytes:{numBytes}");
                         if (!success)
                         {
                             socketError = SocketPal.GetLastSocketError();
-                        }
-                        if (success)
-                        {
-                            NetEventSource.Fail(asyncResult, $"Unexpectedly succeeded. errorCode:{errorCode} numBytes:{numBytes}");
                         }
                     }
                     catch (ObjectDisposedException)

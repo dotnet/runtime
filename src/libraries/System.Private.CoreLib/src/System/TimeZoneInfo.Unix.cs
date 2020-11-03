@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Buffers;
+using System.Buffers.Binary;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
@@ -1433,25 +1434,13 @@ namespace System
 
         // Converts an array of bytes into an int - always using standard byte order (Big Endian)
         // per TZif file standard
-        private static unsafe int TZif_ToInt32(byte[] value, int startIndex)
-        {
-            fixed (byte* pbyte = &value[startIndex])
-            {
-                return (*pbyte << 24) | (*(pbyte + 1) << 16) | (*(pbyte + 2) << 8) | (*(pbyte + 3));
-            }
-        }
+        private static int TZif_ToInt32(byte[] value, int startIndex)
+            => BinaryPrimitives.ReadInt32BigEndian(value.AsSpan(startIndex));
 
         // Converts an array of bytes into a long - always using standard byte order (Big Endian)
         // per TZif file standard
-        private static unsafe long TZif_ToInt64(byte[] value, int startIndex)
-        {
-            fixed (byte* pbyte = &value[startIndex])
-            {
-                int i1 = (*pbyte << 24) | (*(pbyte + 1) << 16) | (*(pbyte + 2) << 8) | (*(pbyte + 3));
-                int i2 = (*(pbyte + 4) << 24) | (*(pbyte + 5) << 16) | (*(pbyte + 6) << 8) | (*(pbyte + 7));
-                return (uint)i2 | ((long)i1 << 32);
-            }
-        }
+        private static long TZif_ToInt64(byte[] value, int startIndex)
+            => BinaryPrimitives.ReadInt64BigEndian(value.AsSpan(startIndex));
 
         private static long TZif_ToUnixTime(byte[] value, int startIndex, TZVersion version) =>
             version != TZVersion.V1 ?

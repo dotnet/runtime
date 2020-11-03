@@ -179,7 +179,7 @@ which should make things work (but is fragile, confirm file timestamps that you 
 Get this by simply listing the name of the `runtime.win-x64.Microsoft.NETCore.Runtime.CoreCLR` you built.
 
 ```bat
-    dir artifacts\bin\coreclr\Product\Windows_NT.x64.Release\.nuget\pkg
+    dir artifacts\bin\coreclr\Product\windows.x64.Release\.nuget\pkg
 ```
 
 and you will get name of the which looks something like this

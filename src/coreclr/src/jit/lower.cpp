@@ -247,7 +247,7 @@ GenTree* Lowering::LowerNode(GenTree* node)
                 LowerStoreSingleRegCallStruct(node->AsBlk());
                 break;
             }
-            __fallthrough;
+            FALLTHROUGH;
         case GT_STORE_DYN_BLK:
             LowerBlockStoreCommon(node->AsBlk());
             break;
@@ -307,7 +307,7 @@ GenTree* Lowering::LowerNode(GenTree* node)
 
         case GT_STORE_LCL_VAR:
             WidenSIMD12IfNecessary(node->AsLclVarCommon());
-            __fallthrough;
+            FALLTHROUGH;
 
         case GT_STORE_LCL_FLD:
             LowerStoreLocCommon(node->AsLclVarCommon());
@@ -3300,7 +3300,7 @@ void Lowering::LowerRetStruct(GenTreeUnOp* ret)
 
         case GT_OBJ:
             retVal->ChangeOper(GT_IND);
-            __fallthrough;
+            FALLTHROUGH;
         case GT_IND:
             retVal->ChangeType(nativeReturnType);
             LowerIndir(retVal->AsIndir());
@@ -3507,7 +3507,7 @@ void Lowering::LowerCallStruct(GenTreeCall* call)
 #endif // FEATURE_SIMD
                 // importer has a separate mechanism to retype calls to helpers,
                 // keep it for now.
-                assert(user->TypeIs(TYP_REF));
+                assert(user->TypeIs(TYP_REF) || (user->TypeIs(TYP_I_IMPL) && comp->IsTargetAbi(CORINFO_CORERT_ABI)));
                 assert(call->IsHelperCall());
                 assert(returnType == user->TypeGet());
                 break;
@@ -6278,6 +6278,7 @@ void Lowering::ContainCheckNode(GenTree* node)
             break;
         case GT_STOREIND:
             ContainCheckStoreIndir(node->AsIndir());
+            break;
         case GT_IND:
             ContainCheckIndir(node->AsIndir());
             break;
@@ -6513,7 +6514,7 @@ void Lowering::TransformUnusedIndirection(GenTreeIndir* ind, Compiler* comp, Bas
 {
     // A nullcheck is essentially the same as an indirection with no use.
     // The difference lies in whether a target register must be allocated.
-    // On XARCH we can generate a compare with no target register as long as the addresss
+    // On XARCH we can generate a compare with no target register as long as the address
     // is not contained.
     // On ARM64 we can generate a load to REG_ZR in all cases.
     // However, on ARM we must always generate a load to a register.

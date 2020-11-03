@@ -159,6 +159,7 @@ csharp_space_between_square_brackets = false
 
 # Analyzers
 dotnet_code_quality.ca1802.api_surface = private, internal
+dotnet_code_quality.ca1822.api_surface = private, internal
 dotnet_code_quality.ca2208.api_surface = public
 
 # License header

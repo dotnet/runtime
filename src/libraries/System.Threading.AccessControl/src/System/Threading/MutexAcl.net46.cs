@@ -11,5 +11,15 @@ namespace System.Threading
         {
             return new Mutex(initiallyOwned, name, out createdNew, mutexSecurity);
         }
+
+        public static Mutex OpenExisting(string name, MutexRights rights)
+        {
+            return Mutex.OpenExisting(name, rights);
+        }
+
+        public static bool TryOpenExisting(string name, MutexRights rights, out Mutex result)
+        {
+            return Mutex.TryOpenExisting(name, rights, out result);
+        }
     }
 }

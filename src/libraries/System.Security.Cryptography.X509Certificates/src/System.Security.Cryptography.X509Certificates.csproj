@@ -2,7 +2,7 @@
   <PropertyGroup>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <NoWarn>$(NoWarn);CA5384</NoWarn>
-    <TargetFrameworks>$(NetCoreAppCurrent)-Windows_NT;$(NetCoreAppCurrent)-Unix;$(NetCoreAppCurrent)-OSX;$(NetCoreAppCurrent)-iOS;$(NetCoreAppCurrent)-tvOS;$(NetCoreAppCurrent);</TargetFrameworks>
+    <TargetFrameworks>$(NetCoreAppCurrent)-windows;$(NetCoreAppCurrent)-Unix;$(NetCoreAppCurrent)-OSX;$(NetCoreAppCurrent)-iOS;$(NetCoreAppCurrent)-tvOS;$(NetCoreAppCurrent);</TargetFrameworks>
     <Nullable>enable</Nullable>
   </PropertyGroup>
   <PropertyGroup Condition="'$(TargetsAnyOS)' == 'true'">
@@ -342,8 +342,6 @@
              Link="Common\Interop\Unix\System.Security.Cryptography.Native\Interop.Initialization.cs" />
     <Compile Include="$(CommonPath)Interop\Unix\System.Security.Cryptography.Native\Interop.OCSP.cs"
              Link="Common\Interop\Unix\System.Security.Cryptography.Native\Interop.OCSP.cs" />
-    <Compile Include="$(CommonPath)Interop\Unix\System.Security.Cryptography.Native\Interop.Pkcs12.cs"
-             Link="Common\Interop\Unix\System.Security.Cryptography.Native\Interop.Pkcs12.cs" />
     <Compile Include="$(CommonPath)Interop\Unix\System.Security.Cryptography.Native\Interop.Pkcs7.cs"
              Link="Common\Interop\Unix\System.Security.Cryptography.Native\Interop.Pkcs7.cs" />
     <Compile Include="$(CommonPath)Interop\Unix\System.Security.Cryptography.Native\Interop.Rsa.cs"
@@ -380,8 +378,6 @@
              Link="Common\Microsoft\Win32\SafeHandles\SafeBioHandle.Unix.cs" />
     <Compile Include="$(CommonPath)Microsoft\Win32\SafeHandles\SafeInteriorHandle.cs"
              Link="Common\Microsoft\Win32\SafeHandles\SafeInteriorHandle.cs" />
-    <Compile Include="$(CommonPath)Microsoft\Win32\SafeHandles\SafePkcs12Handle.Unix.cs"
-             Link="Common\Microsoft\Win32\SafeHandles\SafePkcs12Handle.Unix.cs" />
     <Compile Include="$(CommonPath)Microsoft\Win32\SafeHandles\SafePkcs7Handle.Unix.cs"
              Link="Common\Microsoft\Win32\SafeHandles\SafePkcs7Handle.Unix.cs" />
     <Compile Include="$(CommonPath)Microsoft\Win32\SafeHandles\SafeRsaHandle.Unix.cs"
