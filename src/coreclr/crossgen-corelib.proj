@@ -4,9 +4,14 @@
 
   <Target Name="Build">
     <PropertyGroup>
+      <!-- When the 'Crossgen1' or 'Crossgen2' environment variable it set to 'true', -->
+      <!-- it will force the script to use the specified compiler to build System.Private.CoreLib. -->
+      <!-- In absence of these variables, the script uses its own default. -->
+      <UseCrossgen2ByDefault>true</UseCrossgen2ByDefault>
+
       <UseCrossgen2 Condition="'$(Crossgen1)' == 'true'">false</UseCrossgen2>
       <UseCrossgen2 Condition="'$(Crossgen2)' == 'true'">true</UseCrossgen2>
-      <UseCrossgen2 Condition="'$(UseCrossgen2)' == ''">false</UseCrossgen2>
+      <UseCrossgen2 Condition="'$(UseCrossgen2)' == ''">$(UseCrossgen2ByDefault)</UseCrossgen2>
 
       <OSPlatformConfig>$(TargetOS).$(TargetArchitecture).$(Configuration)</OSPlatformConfig>
       <RootBinDir>$(RepoRoot)\artifacts</RootBinDir>
