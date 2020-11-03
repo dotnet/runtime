@@ -5,6 +5,6 @@
     <CLRTestPriority>0</CLRTestPriority>
   </PropertyGroup>
   <ItemGroup>
-    <Compile Include="devirttestsingle.cs" />
+    <Compile Include="devirttest39419.cs" />
   </ItemGroup>
 </Project>
