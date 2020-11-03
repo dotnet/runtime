@@ -5464,9 +5464,29 @@ void Lowering::ContainCheckHWIntrinsic(GenTreeHWIntrinsic* node)
                             break;
                         }
 
+                        case NI_SSE2_ShiftLeftLogical128BitLane:
+                        case NI_SSE2_ShiftRightLogical128BitLane:
+                        case NI_AVX2_ShiftLeftLogical128BitLane:
+                        case NI_AVX2_ShiftRightLogical128BitLane:
+                        {
+#if DEBUG
+                            // These intrinsics should have been marked contained by the general-purpose handling earlier in the method.
+
+                            GenTree* lastOp = HWIntrinsicInfo::lookupLastOp(node);
+                            assert(lastOp != nullptr);
+
+                            if (HWIntrinsicInfo::isImmOp(intrinsicId, lastOp) && lastOp->IsCnsIntOrI())
+                            {
+                                assert(lastOp->isContained());
+                            }
+#endif
+
+                            break;
+                        }
+
                         default:
                         {
-                            assert("Unhandled containment for binary hardware intrinsic with immediate operand");
+                            assert(!"Unhandled containment for binary hardware intrinsic with immediate operand");
                             break;
                         }
                     }
@@ -5643,7 +5663,7 @@ void Lowering::ContainCheckHWIntrinsic(GenTreeHWIntrinsic* node)
 
                         default:
                         {
-                            assert("Unhandled containment for ternary hardware intrinsic with immediate operand");
+                            assert(!"Unhandled containment for ternary hardware intrinsic with immediate operand");
                             break;
                         }
                     }
