@@ -143,7 +143,7 @@ namespace System
         // Process trailing elements (bytes.Length % 4)
         for (; pos < bytes.Length; pos++)
         {
-            ToCharsBuffer(Unsafe.Add(ref MemoryMarshal.GetReference(bytes), pos), chars, pos * 2, casing);
+            ToCharsBuffer(Unsafe.Add(ref MemoryMarshal.GetReference(bytes), pos), chars, (int)pos * 2, casing);
         }
     }
 #endif
