@@ -88,7 +88,7 @@ namespace NativeExports
             *s = ret;
         }
 
-        private static ushort* Reverse(ushort *s)
+        internal static ushort* Reverse(ushort *s)
         {
             if (s == null)
                 return null;
@@ -103,7 +103,7 @@ namespace NativeExports
             return ret;
         }
 
-        private static byte* Reverse(byte* s)
+        internal static byte* Reverse(byte* s)
         {
             if (s == null)
                 return null;

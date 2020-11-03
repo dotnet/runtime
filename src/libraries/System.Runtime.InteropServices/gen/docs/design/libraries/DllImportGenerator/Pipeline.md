@@ -48,6 +48,37 @@ Generation of the stub code happens in stages. The marshalling generator for eac
 1. `Cleanup`: free any allocated resources
     - Call `Generate` on the marshalling generator for every parameter
 
+### Stub conditional features
+
+Some marshalling optimizations are only available in specific scenarios. Generally, there are 4 basic marshalling contexts:
+
+- P/Invoke
+- Reverse P/Invoke
+- User-defined structure marshalling
+- Non-blittable array marshalling
+
+This experiment generally is currently only focusing on two of the concepts: P/Invoke and non-blittable array marshalling (in the context of a P/Invoke).
+
+There are three categories for specialized marshalling features that may only be available in some contexts:
+
+- Pinning to marshal data without copying (the `fixed` statement)
+- Stack allocation across the native context (using the `stackalloc` keyword or https://github.com/dotnet/runtime/issues/25423)
+- Storing additional temporary state in extra local variables
+
+Support for these features is indicated in code by various `bool` properties on the `StubCodeContext`-derived type.
+
+These various scenarios have different levels of support for these three features:
+
+
+| Scenarios |Pinning | Stack allocation across the native context | Storing additional temporary state in locals |
+|------|-----|-----|---------|
+| P/Invoke | supported | supported | supported |
+| Reverse P/Invoke | unsupported | unsupported | supported |
+| User-defined structures | unsupported | unsupported for individual members | unsupported |
+| non-blittable array marshalling in a P/Invoke | unsupported | unsupported (supportable with https://github.com/dotnet/runtime/issues/25423) | unuspported |
+| non-blittable array marshalling not in a P/Invoke | unsupported | unsupported | unuspported |
+
+
 ### P/Invoke
 
 The P/Invoke called by the stub is created based on the user's original declaration of the stub. The signature is generated using the syntax returned by `AsNativeType` and `AsParameter` of the marshalling generators for the return and parameters.

@@ -2,7 +2,9 @@
 using System.Collections.Generic;
 using System.Runtime.InteropServices;
 using Microsoft.CodeAnalysis;
+using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
+using static Microsoft.CodeAnalysis.CSharp.SyntaxFactory;
 
 namespace Microsoft.Interop
 {
@@ -127,27 +129,27 @@ namespace Microsoft.Interop
             switch (info)
             {
                 // Blittable primitives with no marshalling info or with a compatible [MarshalAs] attribute.
-                case { ManagedType: { SpecialType: SpecialType.System_SByte }, MarshallingAttributeInfo: NoMarshallingInfo or MarshalAsInfo { UnmanagedType: UnmanagedType.I1 } }
-                    or { ManagedType: { SpecialType: SpecialType.System_Byte }, MarshallingAttributeInfo: NoMarshallingInfo or MarshalAsInfo { UnmanagedType: UnmanagedType.U1 } }
-                    or { ManagedType: { SpecialType: SpecialType.System_Int16 }, MarshallingAttributeInfo: NoMarshallingInfo or MarshalAsInfo { UnmanagedType: UnmanagedType.I2 } }
-                    or { ManagedType: { SpecialType: SpecialType.System_UInt16 }, MarshallingAttributeInfo: NoMarshallingInfo or MarshalAsInfo { UnmanagedType: UnmanagedType.U2 } }
-                    or { ManagedType: { SpecialType: SpecialType.System_Int32 }, MarshallingAttributeInfo: NoMarshallingInfo or MarshalAsInfo { UnmanagedType: UnmanagedType.I4 } }
-                    or { ManagedType: { SpecialType: SpecialType.System_UInt32 }, MarshallingAttributeInfo: NoMarshallingInfo or MarshalAsInfo { UnmanagedType: UnmanagedType.U4 } }
-                    or { ManagedType: { SpecialType: SpecialType.System_Int64 }, MarshallingAttributeInfo: NoMarshallingInfo or MarshalAsInfo { UnmanagedType: UnmanagedType.I8 } }
-                    or { ManagedType: { SpecialType: SpecialType.System_UInt64 }, MarshallingAttributeInfo: NoMarshallingInfo or MarshalAsInfo { UnmanagedType: UnmanagedType.U8 } }
+                case { ManagedType: { SpecialType: SpecialType.System_SByte }, MarshallingAttributeInfo: NoMarshallingInfo or MarshalAsInfo(UnmanagedType.I1, _) }
+                    or { ManagedType: { SpecialType: SpecialType.System_Byte }, MarshallingAttributeInfo: NoMarshallingInfo or MarshalAsInfo(UnmanagedType.U1, _) }
+                    or { ManagedType: { SpecialType: SpecialType.System_Int16 }, MarshallingAttributeInfo: NoMarshallingInfo or MarshalAsInfo(UnmanagedType.I2, _) }
+                    or { ManagedType: { SpecialType: SpecialType.System_UInt16 }, MarshallingAttributeInfo: NoMarshallingInfo or MarshalAsInfo(UnmanagedType.U2, _) }
+                    or { ManagedType: { SpecialType: SpecialType.System_Int32 }, MarshallingAttributeInfo: NoMarshallingInfo or MarshalAsInfo(UnmanagedType.I4, _) }
+                    or { ManagedType: { SpecialType: SpecialType.System_UInt32 }, MarshallingAttributeInfo: NoMarshallingInfo or MarshalAsInfo(UnmanagedType.U4, _) }
+                    or { ManagedType: { SpecialType: SpecialType.System_Int64 }, MarshallingAttributeInfo: NoMarshallingInfo or MarshalAsInfo(UnmanagedType.I8, _) }
+                    or { ManagedType: { SpecialType: SpecialType.System_UInt64 }, MarshallingAttributeInfo: NoMarshallingInfo or MarshalAsInfo(UnmanagedType.U8, _) }
                     or { ManagedType: { SpecialType: SpecialType.System_IntPtr }, MarshallingAttributeInfo: NoMarshallingInfo }
-                    or { ManagedType: { SpecialType: SpecialType.System_UIntPtr }, MarshallingAttributeInfo: NoMarshallingInfo}
-                    or { ManagedType: { SpecialType: SpecialType.System_Single }, MarshallingAttributeInfo: NoMarshallingInfo or MarshalAsInfo { UnmanagedType: UnmanagedType.R4 } }
-                    or { ManagedType: { SpecialType: SpecialType.System_Double }, MarshallingAttributeInfo: NoMarshallingInfo or MarshalAsInfo { UnmanagedType: UnmanagedType.R8 } }:
+                    or { ManagedType: { SpecialType: SpecialType.System_UIntPtr }, MarshallingAttributeInfo: NoMarshallingInfo }
+                    or { ManagedType: { SpecialType: SpecialType.System_Single }, MarshallingAttributeInfo: NoMarshallingInfo or MarshalAsInfo(UnmanagedType.R4, _) }
+                    or { ManagedType: { SpecialType: SpecialType.System_Double }, MarshallingAttributeInfo: NoMarshallingInfo or MarshalAsInfo(UnmanagedType.R8, _) }:
                     return Blittable;
 
                 case { ManagedType: { SpecialType: SpecialType.System_Boolean }, MarshallingAttributeInfo: NoMarshallingInfo }:
                     return WinBool; // [Compat] Matching the default for the built-in runtime marshallers.
-                case { ManagedType: { SpecialType: SpecialType.System_Boolean }, MarshallingAttributeInfo: MarshalAsInfo { UnmanagedType: UnmanagedType.I1 or UnmanagedType.U1 } }:
+                case { ManagedType: { SpecialType: SpecialType.System_Boolean }, MarshallingAttributeInfo: MarshalAsInfo(UnmanagedType.I1 or UnmanagedType.U1, _) }:
                     return ByteBool;
-                case { ManagedType: { SpecialType: SpecialType.System_Boolean }, MarshallingAttributeInfo: MarshalAsInfo { UnmanagedType: UnmanagedType.I4 or UnmanagedType.U4 or UnmanagedType.Bool } }:
+                case { ManagedType: { SpecialType: SpecialType.System_Boolean }, MarshallingAttributeInfo: MarshalAsInfo(UnmanagedType.I4 or UnmanagedType.U4 or UnmanagedType.Bool, _) }:
                     return WinBool;
-                case { ManagedType: { SpecialType: SpecialType.System_Boolean }, MarshallingAttributeInfo: MarshalAsInfo { UnmanagedType: UnmanagedType.VariantBool } }:
+                case { ManagedType: { SpecialType: SpecialType.System_Boolean }, MarshallingAttributeInfo: MarshalAsInfo(UnmanagedType.VariantBool, _) }:
                     return VariantBool;
 
                 case { ManagedType: { SpecialType: SpecialType.System_Char } }:
@@ -156,10 +158,10 @@ namespace Microsoft.Interop
                 case { ManagedType: { SpecialType: SpecialType.System_String } }:
                     return CreateStringMarshaller(info, context);
 
-                case { ManagedType: { TypeKind: TypeKind.Delegate }, MarshallingAttributeInfo: NoMarshallingInfo or MarshalAsInfo { UnmanagedType: UnmanagedType.FunctionPtr } }:
+                case { ManagedType: { TypeKind: TypeKind.Delegate }, MarshallingAttributeInfo: NoMarshallingInfo or MarshalAsInfo(UnmanagedType.FunctionPtr, _) }:
                     return Delegate;
 
-                case { MarshallingAttributeInfo: BlittableTypeAttributeInfo _ }:
+                case { MarshallingAttributeInfo: BlittableTypeAttributeInfo }:
                     return Blittable;
 
                 // Marshalling in new model
@@ -167,11 +169,25 @@ namespace Microsoft.Interop
                     return Forwarder;
 
                 // Simple marshalling with new attribute model, only have type name.
-                case { MarshallingAttributeInfo: GeneratedNativeMarshallingAttributeInfo { NativeMarshallingFullyQualifiedTypeName: string name } }:
+                case { MarshallingAttributeInfo: GeneratedNativeMarshallingAttributeInfo(string nativeTypeName) }:
                     return Forwarder;
 
-                case { MarshallingAttributeInfo: SafeHandleMarshallingInfo _}:
+                case { MarshallingAttributeInfo: SafeHandleMarshallingInfo }:
+                    if (!context.CanUseAdditionalTemporaryState)
+                    {
+                        throw new MarshallingNotSupportedException(info, context);
+                    }
                     return SafeHandle;
+
+                case { ManagedType: IArrayTypeSymbol { IsSZArray: true, ElementType : ITypeSymbol elementType } , MarshallingAttributeInfo: NoMarshallingInfo}:
+                    return CreateArrayMarshaller(info, context, elementType, NoMarshallingInfo.Instance);
+
+                case { ManagedType: IArrayTypeSymbol { IsSZArray: true, ElementType : ITypeSymbol elementType } , MarshallingAttributeInfo: ArrayMarshalAsInfo marshalAsInfo }:
+                    if (marshalAsInfo.UnmanagedArrayType != UnmanagedArrayType.LPArray)
+                    {
+                        throw new MarshallingNotSupportedException(info, context);
+                    }
+                    return CreateArrayMarshaller(info, context, elementType, marshalAsInfo.CreateArraySubTypeMarshalAsInfo());
 
                 case { ManagedType: { SpecialType: SpecialType.System_Void } }:
                     return Forwarder;
@@ -262,6 +278,72 @@ namespace Microsoft.Interop
             }
 
             throw new MarshallingNotSupportedException(info, context);
+        }
+        
+        private static ExpressionSyntax GetNumElementsExpressionFromMarshallingInfo(TypePositionInfo info, StubCodeContext context)
+        {
+            ExpressionSyntax numElementsExpression;
+            if (info.MarshallingAttributeInfo is not ArrayMarshalAsInfo marshalAsInfo)
+            {
+                throw new MarshallingNotSupportedException(info, context);
+            }
+
+            LiteralExpressionSyntax? constSizeExpression = marshalAsInfo.ArraySizeConst != ArrayMarshalAsInfo.UnspecifiedData
+                ? LiteralExpression(SyntaxKind.NumericLiteralExpression, Literal(marshalAsInfo.ArraySizeConst))
+                : null;
+            ExpressionSyntax? sizeParamIndexExpression = null;
+            if (marshalAsInfo.ArraySizeParamIndex != ArrayMarshalAsInfo.UnspecifiedData)
+            {
+                TypePositionInfo? paramIndexInfo = context.GetTypePositionInfoForManagedIndex(marshalAsInfo.ArraySizeParamIndex);
+                if (paramIndexInfo is null)
+                {
+                    throw new MarshallingNotSupportedException(info, context)
+                    {
+                        NotSupportedDetails = Resources.ArraySizeParamIndexOutOfRange
+                    };
+                }
+                else if (!paramIndexInfo.ManagedType.IsIntegralType())
+                {
+                    throw new MarshallingNotSupportedException(info, context)
+                    {
+                        NotSupportedDetails = Resources.ArraySizeParamTypeMustBeIntegral
+                    };
+                }
+                else
+                {
+                    var (managed, native) = context.GetIdentifiers(paramIndexInfo);
+                    string identifier = Create(paramIndexInfo, context).UsesNativeIdentifier(paramIndexInfo, context) ? native : managed;
+                    sizeParamIndexExpression = CastExpression(
+                            PredefinedType(Token(SyntaxKind.IntKeyword)),
+                            IdentifierName(identifier));
+                }
+            }
+            numElementsExpression = (constSizeExpression, sizeParamIndexExpression) switch
+            {
+                (null, null) => throw new MarshallingNotSupportedException(info, context)
+                {
+                    NotSupportedDetails = Resources.ArraySizeMustBeSpecified
+                },
+                (not null, null) => constSizeExpression!,
+                (null, not null) => CheckedExpression(SyntaxKind.CheckedExpression, sizeParamIndexExpression!),
+                (not null, not null) => CheckedExpression(SyntaxKind.CheckedExpression, BinaryExpression(SyntaxKind.AddExpression, constSizeExpression!, sizeParamIndexExpression!))
+            };
+            return numElementsExpression;
+        }
+
+        private static IMarshallingGenerator CreateArrayMarshaller(TypePositionInfo info, StubCodeContext context, ITypeSymbol elementType, MarshallingInfo elementMarshallingInfo)
+        {
+            var elementMarshaller = Create(TypePositionInfo.CreateForType(elementType, elementMarshallingInfo), context);
+            ExpressionSyntax numElementsExpression = LiteralExpression(SyntaxKind.NumericLiteralExpression, Literal(0));
+            if (info.IsManagedReturnPosition || (info.IsByRef && info.RefKind != RefKind.In))
+            {
+                // In this case, we need a numElementsExpression supplied from metadata, so we'll calculate it here.
+                numElementsExpression = GetNumElementsExpressionFromMarshallingInfo(info, context);
+            }
+            
+            return elementMarshaller == Blittable
+                ? new BlittableArrayMarshaller(numElementsExpression)
+                : new NonBlittableArrayMarshaller(elementMarshaller, numElementsExpression);
         }
     }
 }

@@ -61,6 +61,33 @@ namespace Microsoft.Interop {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to {0} Marshalling the array parameter &apos;{1}&apos; from unmanaged to managed requires either the SizeParamIndex or SizeConst fields to be set on a MarshalAs attribute..
+        /// </summary>
+        internal static string ArraySizeMustBeSpecified {
+            get {
+                return ResourceManager.GetString("ArraySizeMustBeSpecified", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to {0} The SizeParamIndex value in the MarshalAs attribute on &apos;{1}&apos; is out of range..
+        /// </summary>
+        internal static string ArraySizeParamIndexOutOfRange {
+            get {
+                return ResourceManager.GetString("ArraySizeParamIndexOutOfRange", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to {0} The specified array size parameter for the array &apos;{1}&apos; must be an integer type..
+        /// </summary>
+        internal static string ArraySizeParamTypeMustBeIntegral {
+            get {
+                return ResourceManager.GetString("ArraySizeParamTypeMustBeIntegral", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to A type marked with &apos;BlittableTypeAttribute&apos; must be blittable..
         /// </summary>
         internal static string BlittableTypeMustBeBlittableDescription {

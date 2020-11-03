@@ -117,6 +117,15 @@
   <resheader name="writer">
     <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </resheader>
+  <data name="ArraySizeMustBeSpecified" xml:space="preserve">
+    <value>{0} Marshalling the array parameter '{1}' from unmanaged to managed requires either the 'SizeParamIndex' or 'SizeConst' fields to be set on a MarshalAs attribute.</value>
+  </data>
+  <data name="ArraySizeParamIndexOutOfRange" xml:space="preserve">
+    <value>{0} The 'SizeParamIndex' value in the 'MarshalAsAttribute' attribute on '{1}' is out of range.</value>
+  </data>
+  <data name="ArraySizeParamTypeMustBeIntegral" xml:space="preserve">
+    <value>{0} The specified array size parameter for the array '{1}' must be an integer type.</value>
+  </data>
   <data name="BlittableTypeMustBeBlittableDescription" xml:space="preserve">
     <value>A type marked with 'BlittableTypeAttribute' must be blittable.</value>
   </data>

@@ -41,14 +41,41 @@ namespace Microsoft.Interop
     ) : MarshallingInfo;
 
     /// <summary>
-    /// User-applied System.Runtime.InteropServices.MarshalAsAttribute
+    /// Simple User-application of System.Runtime.InteropServices.MarshalAsAttribute
     /// </summary>
-    internal sealed record MarshalAsInfo(
+    internal record MarshalAsInfo(
         UnmanagedType UnmanagedType,
+        CharEncoding CharEncoding) : MarshallingInfoStringSupport(CharEncoding)
+    {
+    }
+
+    enum UnmanagedArrayType
+    {
+        LPArray = UnmanagedType.LPArray,
+        ByValArray = UnmanagedType.ByValArray
+    }
+
+    /// <summary>
+    /// User-applied System.Runtime.InteropServices.MarshalAsAttribute with array marshalling info
+    /// </summary>
+    internal sealed record ArrayMarshalAsInfo(
+        UnmanagedArrayType UnmanagedArrayType,
         UnmanagedType UnmanagedArraySubType,
         int ArraySizeConst,
         short ArraySizeParamIndex,
-        CharEncoding CharEncoding) : MarshallingInfoStringSupport(CharEncoding);
+        CharEncoding CharEncoding) : MarshalAsInfo((UnmanagedType)UnmanagedArrayType, CharEncoding)
+    {
+        public MarshallingInfo CreateArraySubTypeMarshalAsInfo()
+        {
+            if (UnmanagedArraySubType == (UnmanagedType)UnspecifiedData)
+            {
+                return NoMarshallingInfo.Instance;
+            }
+            return new MarshalAsInfo(UnmanagedArraySubType, CharEncoding);
+        }
+        
+        public const short UnspecifiedData = -1;
+    }
 
     /// <summary>
     /// User-applied System.Runtime.InteropServices.BlittableTypeAttribute

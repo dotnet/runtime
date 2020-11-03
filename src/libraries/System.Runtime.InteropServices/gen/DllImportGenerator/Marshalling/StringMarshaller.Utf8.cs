@@ -6,7 +6,7 @@ using static Microsoft.CodeAnalysis.CSharp.SyntaxFactory;
 
 namespace Microsoft.Interop
 {
-    internal sealed class Utf8StringMarshaller : IMarshallingGenerator
+    internal sealed class Utf8StringMarshaller : ConditionalStackallocMarshallingGenerator
     {
         // [Compat] Equivalent of MAX_PATH on Windows to match built-in system
         // The assumption is file paths are the most common case for marshalling strings,
@@ -25,7 +25,7 @@ namespace Microsoft.Interop
         private static readonly TypeSyntax NativeType = PointerType(PredefinedType(Token(SyntaxKind.ByteKeyword)));
         private static readonly TypeSyntax UTF8EncodingType = ParseTypeName("System.Text.Encoding.UTF8");
 
-        public ArgumentSyntax AsArgument(TypePositionInfo info, StubCodeContext context)
+        public override ArgumentSyntax AsArgument(TypePositionInfo info, StubCodeContext context)
         {
             string identifier = context.GetIdentifiers(info).native;
             if (info.IsByRef)
@@ -39,9 +39,9 @@ namespace Microsoft.Interop
             return Argument(IdentifierName(identifier));
         }
 
-        public TypeSyntax AsNativeType(TypePositionInfo info) => NativeType;
+        public override TypeSyntax AsNativeType(TypePositionInfo info) => NativeType;
 
-        public ParameterSyntax AsParameter(TypePositionInfo info)
+        public override ParameterSyntax AsParameter(TypePositionInfo info)
         {
             var type = info.IsByRef
                 ? PointerType(AsNativeType(info))
@@ -50,10 +50,9 @@ namespace Microsoft.Interop
                 .WithType(type);
         }
 
-        public IEnumerable<StatementSyntax> Generate(TypePositionInfo info, StubCodeContext context)
+        public override IEnumerable<StatementSyntax> Generate(TypePositionInfo info, StubCodeContext context)
         {
             (string managedIdentifier, string nativeIdentifier) = context.GetIdentifiers(info);
-            string usedCoTaskMemIdentifier = $"{managedIdentifier}__usedCoTaskMem";
             switch (context.CurrentStage)
             {
                 case StubCodeContext.Stage.Setup:
@@ -65,167 +64,12 @@ namespace Microsoft.Interop
                 case StubCodeContext.Stage.Marshal:
                     if (info.RefKind != RefKind.Out)
                     {
-                        // <native> = (byte*)Marshal.StringToCoTaskMemUTF8(<managed>);
-                        var coTaskMemAlloc = ExpressionStatement(
-                            AssignmentExpression(
-                                SyntaxKind.SimpleAssignmentExpression,
-                                IdentifierName(nativeIdentifier),
-                                CastExpression(
-                                    NativeType,
-                                    InvocationExpression(
-                                        MemberAccessExpression(
-                                            SyntaxKind.SimpleMemberAccessExpression,
-                                            InteropServicesMarshalType,
-                                            IdentifierName("StringToCoTaskMemUTF8")),
-                                        ArgumentList(
-                                            SingletonSeparatedList<ArgumentSyntax>(
-                                                Argument(IdentifierName(managedIdentifier))))))));
-                        if (info.IsByRef && info.RefKind != RefKind.In)
+                        foreach (var statement in GenerateConditionalAllocationSyntax(
+                            info,
+                            context,
+                            StackAllocBytesThreshold))
                         {
-                            yield return coTaskMemAlloc;
-                        }
-                        else
-                        {
-                            // <usedCoTaskMemIdentifier> = false;
-                            yield return LocalDeclarationStatement(
-                                VariableDeclaration(
-                                    PredefinedType(Token(SyntaxKind.BoolKeyword)),
-                                    SingletonSeparatedList(
-                                        VariableDeclarator(usedCoTaskMemIdentifier)
-                                            .WithInitializer(EqualsValueClause(LiteralExpression(SyntaxKind.FalseLiteralExpression))))));
-
-                            string stackAllocPtrIdentifier = $"{managedIdentifier}__stackalloc";
-                            string byteLenIdentifier = $"{managedIdentifier}__byteLen";
-
-                            // Code block for stackalloc if string is below threshold size
-                            var marshalOnStack = Block(
-                                // byte* <stackAllocPtr> = stackalloc byte[<byteLen>];
-                                LocalDeclarationStatement(
-                                    VariableDeclaration(
-                                        PointerType(PredefinedType(Token(SyntaxKind.ByteKeyword))),
-                                        SingletonSeparatedList(
-                                            VariableDeclarator(stackAllocPtrIdentifier)
-                                                .WithInitializer(EqualsValueClause(
-                                                    StackAllocArrayCreationExpression(
-                                                        ArrayType(
-                                                            PredefinedType(Token(SyntaxKind.ByteKeyword)),
-                                                            SingletonList<ArrayRankSpecifierSyntax>(
-                                                                ArrayRankSpecifier(SingletonSeparatedList<ExpressionSyntax>(
-                                                                    IdentifierName(byteLenIdentifier))))))))))),
-                                        // <byteLen> = Encoding.UTF8.GetBytes(<managed>, new Span<byte>(<stackAllocPtr>, <byteLen>));
-                                        ExpressionStatement(
-                                            AssignmentExpression(
-                                                SyntaxKind.SimpleAssignmentExpression,
-                                                IdentifierName(byteLenIdentifier),
-                                                InvocationExpression(
-                                                    MemberAccessExpression(
-                                                        SyntaxKind.SimpleMemberAccessExpression,
-                                                        UTF8EncodingType,
-                                                        IdentifierName("GetBytes")),
-                                                    ArgumentList(
-                                                        SeparatedList(new ArgumentSyntax[] {
-                                                            Argument(IdentifierName(managedIdentifier)),
-                                                            Argument(
-                                                                ObjectCreationExpression(
-                                                                    GenericName(Identifier("System.Span"),
-                                                                        TypeArgumentList(SingletonSeparatedList<TypeSyntax>(
-                                                                            PredefinedType(Token(SyntaxKind.ByteKeyword))))),
-                                                                    ArgumentList(
-                                                                        SeparatedList(new ArgumentSyntax[]{
-                                                                            Argument(IdentifierName(stackAllocPtrIdentifier)),
-                                                                            Argument(IdentifierName(byteLenIdentifier))})),
-                                                                    initializer: null))}))))),
-                                // <stackAllocPtr>[<byteLen>] = 0;
-                                ExpressionStatement(
-                                    AssignmentExpression(
-                                        SyntaxKind.SimpleAssignmentExpression,
-                                        ElementAccessExpression(
-                                            IdentifierName(stackAllocPtrIdentifier),
-                                            BracketedArgumentList(
-                                                SingletonSeparatedList<ArgumentSyntax>(
-                                                    Argument(IdentifierName(byteLenIdentifier))))),
-                                        LiteralExpression(SyntaxKind.NumericLiteralExpression, Literal(0)))),
-                                // <nativeIdentifier> = <stackAllocPtr>;
-                                ExpressionStatement(
-                                    AssignmentExpression(
-                                        SyntaxKind.SimpleAssignmentExpression,
-                                        IdentifierName(nativeIdentifier),
-                                        CastExpression(
-                                            NativeType,
-                                            IdentifierName(stackAllocPtrIdentifier)))));
-
-                            // if (<managed> == null)
-                            // {
-                            //     <native> = null;
-                            // }
-                            // else
-                            // {
-                            //     // + 1 for number of characters in case left over high surrogate is ?
-                            //     // * <MaxByteCountPerChar> (3 for UTF-8)
-                            //     // +1 for null terminator
-                            //     int <byteLen> = (<managed>.Length + 1) * 3 + 1;
-                            //     if (<byteLen> > <StackAllocBytesThreshold>)
-                            //     {
-                            //         <native> = (byte*)Marshal.StringToCoTaskMemUTF8(<managed>);
-                            //     }
-                            //     else
-                            //     {
-                            //         byte* <stackAllocPtr> = stackalloc byte[<byteLen>];
-                            //         <byteLen> = Encoding.UTF8.GetBytes(<managed>, new Span<byte>(<stackAllocPtr>, <byteLen>));
-                            //         <stackAllocPtr>[<byteLen>] = 0;
-                            //         <native> = (byte*)<stackAllocPtr>;
-                            //     }
-                            // }
-                            yield return IfStatement(
-                                BinaryExpression(
-                                    SyntaxKind.EqualsExpression,
-                                    IdentifierName(managedIdentifier),
-                                    LiteralExpression(SyntaxKind.NullLiteralExpression)),
-                                Block(
-                                    ExpressionStatement(
-                                        AssignmentExpression(
-                                            SyntaxKind.SimpleAssignmentExpression,
-                                            IdentifierName(nativeIdentifier),
-                                            LiteralExpression(SyntaxKind.NullLiteralExpression)))),
-                                ElseClause(
-                                    Block(
-                                        // + 1 for number of characters in case left over high surrogate is ?
-                                        // * <MaxByteCountPerChar> (3 for UTF-8)
-                                        // +1 for null terminator
-                                        // int <byteLen> = (<managed>.Length + 1) * 3 + 1;
-                                       LocalDeclarationStatement(
-                                            VariableDeclaration(
-                                                PredefinedType(Token(SyntaxKind.IntKeyword)),
-                                                SingletonSeparatedList<VariableDeclaratorSyntax>(
-                                                    VariableDeclarator(Identifier(byteLenIdentifier))
-                                                        .WithInitializer(EqualsValueClause(
-                                                            BinaryExpression(
-                                                                SyntaxKind.AddExpression,
-                                                                BinaryExpression(
-                                                                    SyntaxKind.MultiplyExpression,
-                                                                    ParenthesizedExpression(
-                                                                        BinaryExpression(
-                                                                            SyntaxKind.AddExpression,
-                                                                            MemberAccessExpression(
-                                                                                SyntaxKind.SimpleMemberAccessExpression,
-                                                                                IdentifierName(managedIdentifier),
-                                                                                IdentifierName("Length")),
-                                                                            LiteralExpression(SyntaxKind.NumericLiteralExpression, Literal(1)))),
-                                                                    LiteralExpression(SyntaxKind.NumericLiteralExpression, Literal(MaxByteCountPerChar))),
-                                                                LiteralExpression(SyntaxKind.NumericLiteralExpression, Literal(1)))))))),
-                                        IfStatement(
-                                            BinaryExpression(
-                                                SyntaxKind.GreaterThanExpression,
-                                                IdentifierName(byteLenIdentifier),
-                                                LiteralExpression(SyntaxKind.NumericLiteralExpression, Literal(StackAllocBytesThreshold))),
-                                            Block(
-                                                coTaskMemAlloc,
-                                                ExpressionStatement(
-                                                    AssignmentExpression(
-                                                        SyntaxKind.SimpleAssignmentExpression,
-                                                        IdentifierName(usedCoTaskMemIdentifier),
-                                                        LiteralExpression(SyntaxKind.TrueLiteralExpression)))),
-                                            ElseClause(marshalOnStack)))));
+                            yield return statement;
                         }
                     }
                     break;
@@ -250,38 +94,112 @@ namespace Microsoft.Interop
                     }
                     break;
                 case StubCodeContext.Stage.Cleanup:
-                    // Marshal.FreeCoTaskMem((IntPtr)<nativeIdentifier>)
-                    var freeCoTaskMem = ExpressionStatement(
-                        InvocationExpression(
-                            MemberAccessExpression(
-                                SyntaxKind.SimpleMemberAccessExpression,
-                                InteropServicesMarshalType,
-                                IdentifierName("FreeCoTaskMem")),
-                            ArgumentList(SingletonSeparatedList<ArgumentSyntax>(
-                                Argument(
-                                    CastExpression(
-                                        ParseTypeName("System.IntPtr"),
-                                        IdentifierName(nativeIdentifier)))))));
-
-                    if (info.IsByRef && info.RefKind != RefKind.In)
-                    {
-                        yield return freeCoTaskMem;
-                    }
-                    else
-                    {
-                        // if (<usedCoTaskMemIdentifier>)
-                        // {
-                        //     Marshal.FreeCoTaskMem((IntPtr)<nativeIdentifier>)
-                        // }
-                        yield return IfStatement(
-                            IdentifierName(usedCoTaskMemIdentifier),
-                            Block(freeCoTaskMem));
-                    }
-
+                    yield return GenerateConditionalAllocationFreeSyntax(info, context);
                     break;
             }
         }
 
-        public bool UsesNativeIdentifier(TypePositionInfo info, StubCodeContext context) => true;
+        public override bool UsesNativeIdentifier(TypePositionInfo info, StubCodeContext context) => true;
+        
+        protected override ExpressionSyntax GenerateAllocationExpression(
+            TypePositionInfo info,
+            StubCodeContext context,
+            SyntaxToken byteLengthIdentifier,
+            out bool allocationRequiresByteLength)
+        {
+            allocationRequiresByteLength = false;
+            // (byte*)Marshal.StringToCoTaskMemUTF8(<managed>)
+            return CastExpression(
+                AsNativeType(info),
+                InvocationExpression(
+                    MemberAccessExpression(
+                        SyntaxKind.SimpleMemberAccessExpression,
+                        InteropServicesMarshalType,
+                        IdentifierName("StringToCoTaskMemUTF8")),
+                    ArgumentList(
+                        SingletonSeparatedList<ArgumentSyntax>(
+                            Argument(IdentifierName(context.GetIdentifiers(info).managed))))));
+        }
+
+        protected override ExpressionSyntax GenerateByteLengthCalculationExpression(TypePositionInfo info, StubCodeContext context)
+        {
+            // + 1 for number of characters in case left over high surrogate is ?
+            // * <MaxByteCountPerChar> (3 for UTF-8)
+            // +1 for null terminator
+            // int <byteLen> = (<managed>.Length + 1) * 3 + 1;
+            return BinaryExpression(
+                SyntaxKind.AddExpression,
+                BinaryExpression(
+                    SyntaxKind.MultiplyExpression,
+                    ParenthesizedExpression(
+                        BinaryExpression(
+                            SyntaxKind.AddExpression,
+                            MemberAccessExpression(
+                                SyntaxKind.SimpleMemberAccessExpression,
+                                IdentifierName(context.GetIdentifiers(info).managed),
+                                IdentifierName("Length")),
+                            LiteralExpression(SyntaxKind.NumericLiteralExpression, Literal(1)))),
+                    LiteralExpression(SyntaxKind.NumericLiteralExpression, Literal(MaxByteCountPerChar))),
+                LiteralExpression(SyntaxKind.NumericLiteralExpression, Literal(1)));
+        }
+
+        protected override StatementSyntax GenerateStackallocOnlyValueMarshalling(
+            TypePositionInfo info,
+            StubCodeContext context,
+            SyntaxToken byteLengthIdentifier,
+            SyntaxToken stackAllocPtrIdentifier)
+        {
+            return Block(
+                // <byteLen> = Encoding.UTF8.GetBytes(<managed>, new Span<byte>(<stackAllocPtr>, <byteLen>));
+                ExpressionStatement(
+                    AssignmentExpression(
+                        SyntaxKind.SimpleAssignmentExpression,
+                        IdentifierName(byteLengthIdentifier),
+                        InvocationExpression(
+                            MemberAccessExpression(
+                                SyntaxKind.SimpleMemberAccessExpression,
+                                UTF8EncodingType,
+                                IdentifierName("GetBytes")),
+                            ArgumentList(
+                                SeparatedList(new ArgumentSyntax[] {
+                                    Argument(IdentifierName(context.GetIdentifiers(info).managed)),
+                                    Argument(
+                                        ObjectCreationExpression(
+                                            GenericName(Identifier("System.Span"),
+                                                TypeArgumentList(SingletonSeparatedList<TypeSyntax>(
+                                                    PredefinedType(Token(SyntaxKind.ByteKeyword))))),
+                                            ArgumentList(
+                                                SeparatedList(new ArgumentSyntax[]{
+                                                    Argument(IdentifierName(stackAllocPtrIdentifier)),
+                                                    Argument(IdentifierName(byteLengthIdentifier))})),
+                                            initializer: null))}))))),
+                // <stackAllocPtr>[<byteLen>] = 0;
+                ExpressionStatement(
+                    AssignmentExpression(
+                        SyntaxKind.SimpleAssignmentExpression,
+                        ElementAccessExpression(
+                            IdentifierName(stackAllocPtrIdentifier),
+                            BracketedArgumentList(
+                                SingletonSeparatedList<ArgumentSyntax>(
+                                    Argument(IdentifierName(byteLengthIdentifier))))),
+                        LiteralExpression(SyntaxKind.NumericLiteralExpression, Literal(0)))));
+        }
+
+        protected override ExpressionSyntax GenerateFreeExpression(
+            TypePositionInfo info,
+            StubCodeContext context)
+        {
+            // Marshal.FreeCoTaskMem((IntPtr)<nativeIdentifier>)
+            return InvocationExpression(
+                MemberAccessExpression(
+                    SyntaxKind.SimpleMemberAccessExpression,
+                    InteropServicesMarshalType,
+                    IdentifierName("FreeCoTaskMem")),
+                ArgumentList(SingletonSeparatedList(
+                    Argument(
+                        CastExpression(
+                            ParseTypeName("System.IntPtr"),
+                            IdentifierName(context.GetIdentifiers(info).native))))));
+        }
     }
 }

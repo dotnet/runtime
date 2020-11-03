@@ -157,14 +157,20 @@ namespace Microsoft.Interop
             {
                 var param = method.Parameters[i];
                 var typeInfo = TypePositionInfo.CreateForParameter(param, defaultInfo, compilation, diagnostics);
-                typeInfo.ManagedIndex = i;
-                typeInfo.NativeIndex = paramsTypeInfo.Count;
+                typeInfo = typeInfo with 
+                {
+                    ManagedIndex = i,
+                    NativeIndex = paramsTypeInfo.Count
+                };
                 paramsTypeInfo.Add(typeInfo);
             }
 
             TypePositionInfo retTypeInfo = TypePositionInfo.CreateForType(method.ReturnType, method.GetReturnTypeAttributes(), defaultInfo, compilation, diagnostics);
-            retTypeInfo.ManagedIndex = TypePositionInfo.ReturnIndex;
-            retTypeInfo.NativeIndex = TypePositionInfo.ReturnIndex;
+            retTypeInfo = retTypeInfo with
+            {
+                ManagedIndex = TypePositionInfo.ReturnIndex,
+                NativeIndex = TypePositionInfo.ReturnIndex
+            };
             if (!dllImportData.PreserveSig)
             {
                 // [TODO] Create type info for native HRESULT return

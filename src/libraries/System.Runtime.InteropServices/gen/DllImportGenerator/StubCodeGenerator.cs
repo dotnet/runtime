@@ -16,6 +16,8 @@ namespace Microsoft.Interop
 
         public override bool StackSpaceUsable => true;
 
+        public override bool CanUseAdditionalTemporaryState => true;
+
         /// <summary>
         /// Identifier for managed return value
         /// </summary>
@@ -44,6 +46,7 @@ namespace Microsoft.Interop
         private readonly GeneratorDiagnostics diagnostics;
 
         private readonly IMethodSymbol stubMethod;
+        private readonly IEnumerable<TypePositionInfo> paramsTypeInfo;
         private readonly List<(TypePositionInfo TypeInfo, IMarshallingGenerator Generator)> paramMarshallers;
         private readonly (TypePositionInfo TypeInfo, IMarshallingGenerator Generator) retMarshaller;
 
@@ -56,6 +59,7 @@ namespace Microsoft.Interop
             Debug.Assert(retTypeInfo.IsNativeReturnPosition);
 
             this.stubMethod = stubMethod;
+            this.paramsTypeInfo = paramsTypeInfo.ToList();
             this.diagnostics = generatorDiagnostics;
 
             // Get marshallers for parameters
@@ -266,6 +270,18 @@ namespace Microsoft.Interop
             }
 
             return (codeBlock, dllImport);
+        }
+
+        public override TypePositionInfo? GetTypePositionInfoForManagedIndex(int index)
+        {
+            foreach (var info in paramsTypeInfo)
+            {
+                if (info.ManagedIndex == index)
+                {
+                    return info;
+                }
+            }
+            return null;
         }
     }
 }

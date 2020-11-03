@@ -402,5 +402,49 @@ struct MyStruct<T>
     private T t;
     private short s;
 }";
+
+        public static string ArrayParametersAndModifiers(string elementType) => $@"
+using System.Runtime.InteropServices;
+partial class Test
+{{
+    [GeneratedDllImport(""DoesNotExist"")]
+    [return:MarshalAs(UnmanagedType.LPArray, SizeConst=10)]
+    public static partial {elementType}[] Method(
+        {elementType}[] p,
+        in {elementType}[] pIn,
+        int pRefSize,
+        [MarshalAs(UnmanagedType.LPArray, SizeParamIndex=2)] ref {elementType}[] pRef,
+        [MarshalAs(UnmanagedType.LPArray, SizeParamIndex=5, SizeConst=4)] out {elementType}[] pOut,
+        out int pOutSize
+        );
+}}";
+
+        public static string ArrayParametersAndModifiers<T>() => ArrayParametersAndModifiers(typeof(T).ToString());
+
+        public static string ArrayParameterWithSizeParam(string sizeParamType, bool isByRef) => $@"
+using System.Runtime.InteropServices;
+partial class Test
+{{
+    [GeneratedDllImport(""DoesNotExist"")]
+    public static partial void Method(
+        {(isByRef ? "ref" : "")} {sizeParamType} pRefSize,
+        [MarshalAs(UnmanagedType.LPArray, SizeParamIndex=0)] ref int[] pRef
+        );
+}}";
+
+        public static string ArrayParameterWithSizeParam<T>(bool isByRef) => ArrayParameterWithSizeParam(typeof(T).ToString(), isByRef);
+
+
+        public static string ArrayParameterWithNestedMarshalInfo(string elementType, UnmanagedType nestedMarshalInfo) => $@"
+using System.Runtime.InteropServices;
+partial class Test
+{{
+    [GeneratedDllImport(""DoesNotExist"")]
+    public static partial void Method(
+        [MarshalAs(UnmanagedType.LPArray, ArraySubType=UnmanagedType.{nestedMarshalInfo})] {elementType}[] pRef
+        );
+}}";
+
+        public static string ArrayParameterWithNestedMarshalInfo<T>(UnmanagedType nestedMarshalType) => ArrayParameterWithNestedMarshalInfo(typeof(T).ToString(), nestedMarshalType);
     }
 }

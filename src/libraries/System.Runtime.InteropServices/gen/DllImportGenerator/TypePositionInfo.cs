@@ -19,7 +19,7 @@ namespace Microsoft.Interop
     /// <summary>
     /// Positional type information involved in unmanaged/managed scenarios.
     /// </summary>
-    internal sealed class TypePositionInfo
+    internal sealed record TypePositionInfo
     {
         public const int UnsetIndex = int.MinValue;
         public const int ReturnIndex = UnsetIndex + 1;
@@ -36,22 +36,22 @@ namespace Microsoft.Interop
         }
 #pragma warning restore
 
-        public string InstanceIdentifier { get; private set; }
-        public ITypeSymbol ManagedType { get; private set; }
+        public string InstanceIdentifier { get; init; }
+        public ITypeSymbol ManagedType { get; init; }
 
-        public RefKind RefKind { get; private set; }
-        public SyntaxKind RefKindSyntax { get; private set; }
+        public RefKind RefKind { get; init; }
+        public SyntaxKind RefKindSyntax { get; init; }
 
         public bool IsByRef => RefKind != RefKind.None;
 
         public bool IsManagedReturnPosition { get => this.ManagedIndex == ReturnIndex; }
         public bool IsNativeReturnPosition { get => this.NativeIndex == ReturnIndex; }
 
-        public int ManagedIndex { get; set; }
-        public int NativeIndex { get; set; }
-        public int UnmanagedLCIDConversionArgIndex { get; private set; }
+        public int ManagedIndex { get; init; }
+        public int NativeIndex { get; init; }
+        public int UnmanagedLCIDConversionArgIndex { get; init; }
 
-        public MarshallingInfo MarshallingAttributeInfo { get; private set; }
+        public MarshallingInfo MarshallingAttributeInfo { get; init; }
 
         public static TypePositionInfo CreateForParameter(IParameterSymbol paramSymbol, DefaultMarshallingInfo defaultInfo, Compilation compilation, GeneratorDiagnostics diagnostics)
         {
@@ -71,6 +71,20 @@ namespace Microsoft.Interop
         public static TypePositionInfo CreateForType(ITypeSymbol type, IEnumerable<AttributeData> attributes, DefaultMarshallingInfo defaultInfo, Compilation compilation, GeneratorDiagnostics diagnostics)
         {
             var marshallingInfo = GetMarshallingInfo(type, attributes, defaultInfo, compilation, diagnostics);
+            var typeInfo = new TypePositionInfo()
+            {
+                ManagedType = type,
+                InstanceIdentifier = string.Empty,
+                RefKind = RefKind.None,
+                RefKindSyntax = SyntaxKind.None,
+                MarshallingAttributeInfo = marshallingInfo
+            };
+
+            return typeInfo;
+        }
+
+        public static TypePositionInfo CreateForType(ITypeSymbol type, MarshallingInfo marshallingInfo)
+        {
             var typeInfo = new TypePositionInfo()
             {
                 ManagedType = type,
@@ -146,13 +160,15 @@ namespace Microsoft.Interop
                     ? (UnmanagedType)(short)unmanagedTypeObj
                     : (UnmanagedType)unmanagedTypeObj;
                 if (!Enum.IsDefined(typeof(UnmanagedType), unmanagedType)
-                    || unmanagedType == UnmanagedType.CustomMarshaler)
+                    || unmanagedType == UnmanagedType.CustomMarshaler
+                    || unmanagedType == UnmanagedType.SafeArray)
                 {
                     diagnostics.ReportConfigurationNotSupported(attrData, nameof(UnmanagedType), unmanagedType.ToString());
                 }
-                UnmanagedType unmanagedArraySubType = 0;
-                int arraySizeConst = 0;
-                short arraySizeParamIndex = 0;
+                bool isArrayType = unmanagedType == UnmanagedType.LPArray || unmanagedType == UnmanagedType.ByValArray;
+                UnmanagedType unmanagedArraySubType = (UnmanagedType)ArrayMarshalAsInfo.UnspecifiedData;
+                int arraySizeConst = ArrayMarshalAsInfo.UnspecifiedData;
+                short arraySizeParamIndex = ArrayMarshalAsInfo.UnspecifiedData;
 
                 // All other data on attribute is defined as NamedArguments.
                 foreach (var namedArg in attrData.NamedArguments)
@@ -171,29 +187,43 @@ namespace Microsoft.Interop
                             diagnostics.ReportConfigurationNotSupported(attrData, $"{attrData.AttributeClass!.Name}{Type.Delimiter}{namedArg.Key}");
                             break;
                         case nameof(MarshalAsAttribute.ArraySubType):
+                            if (!isArrayType)
+                            {
+                                diagnostics.ReportConfigurationNotSupported(attrData, $"{attrData.AttributeClass!.Name}{Type.Delimiter}{namedArg.Key}");
+                            }
                             unmanagedArraySubType = (UnmanagedType)namedArg.Value.Value!;
                             break;
                         case nameof(MarshalAsAttribute.SizeConst):
+                            if (!isArrayType)
+                            {
+                                diagnostics.ReportConfigurationNotSupported(attrData, $"{attrData.AttributeClass!.Name}{Type.Delimiter}{namedArg.Key}");
+                            }
                             arraySizeConst = (int)namedArg.Value.Value!;
                             break;
                         case nameof(MarshalAsAttribute.SizeParamIndex):
+                            if (!isArrayType)
+                            {
+                                diagnostics.ReportConfigurationNotSupported(attrData, $"{attrData.AttributeClass!.Name}{Type.Delimiter}{namedArg.Key}");
+                            }
                             arraySizeParamIndex = (short)namedArg.Value.Value!;
                             break;
                     }
                 }
 
-                return new MarshalAsInfo(
-                    UnmanagedType: unmanagedType,
-                    UnmanagedArraySubType: unmanagedArraySubType,
-                    ArraySizeConst: arraySizeConst,
-                    ArraySizeParamIndex: arraySizeParamIndex,
-                    CharEncoding: defaultInfo.CharEncoding
-                );
+                return isArrayType
+                    ? new ArrayMarshalAsInfo(
+                        UnmanagedArrayType: (UnmanagedArrayType)unmanagedType,
+                        UnmanagedArraySubType: unmanagedArraySubType,
+                        ArraySizeConst: arraySizeConst,
+                        ArraySizeParamIndex: arraySizeParamIndex,
+                        CharEncoding: defaultInfo.CharEncoding
+                    )
+                    : new MarshalAsInfo(unmanagedType, defaultInfo.CharEncoding);
             }
 
             static NativeMarshallingAttributeInfo CreateNativeMarshallingInfo(ITypeSymbol type, Compilation compilation, AttributeData attrData, bool allowGetPinnableReference)
             {
-                ITypeSymbol spanOfByte = compilation.GetTypeByMetadataName(TypeNames.System_Span)!.Construct(compilation.GetSpecialType(SpecialType.System_Byte));
+                ITypeSymbol spanOfByte = compilation.GetTypeByMetadataName(TypeNames.System_Span_Metadata)!.Construct(compilation.GetSpecialType(SpecialType.System_Byte));
                 INamedTypeSymbol nativeType = (INamedTypeSymbol)attrData.ConstructorArguments[0].Value!;
                 SupportedMarshallingMethods methods = 0;
                 IPropertySymbol? valueProperty = ManualTypeMarshallingHelper.FindValueProperty(nativeType);
