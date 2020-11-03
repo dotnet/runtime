@@ -5470,7 +5470,8 @@ void Lowering::ContainCheckHWIntrinsic(GenTreeHWIntrinsic* node)
                         case NI_AVX2_ShiftRightLogical128BitLane:
                         {
 #if DEBUG
-                            // These intrinsics should have been marked contained by the general-purpose handling earlier in the method.
+                            // These intrinsics should have been marked contained by the general-purpose handling
+                            // earlier in the method.
 
                             GenTree* lastOp = HWIntrinsicInfo::lookupLastOp(node);
                             assert(lastOp != nullptr);
