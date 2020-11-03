@@ -234,30 +234,6 @@ namespace System.Net.Quic.Tests
             Assert.Equal(data, frame.StreamData);
         }
 
-        [Fact(Skip = "Sending of MaxStreamData frames is currently broken")]
-        public void ReceiverSendsMaxDataAfterReadingFromStream()
-        {
-            byte[] data = {0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 0};
-            byte[] recvBuf = new byte[data.Length];
-
-            var senderStream = Client.OpenStream(true);
-            senderStream.Write(data);
-            senderStream.Flush();
-
-            Send1Rtt(Client, Server);
-
-            // read data
-            var receiverStream = Server.AcceptStream();
-            Assert.NotNull(receiverStream);
-            int read = receiverStream!.Read(recvBuf);
-            Assert.Equal(recvBuf.Length, read);
-
-            // next time, the receiver should send max data update
-            var frame = Get1RttToSend(Server).ShouldHaveFrame<MaxStreamDataFrame>();
-            Assert.Equal(senderStream.StreamId, frame.StreamId);
-            Assert.Equal(senderStream.SendStream!.MaxData + data.Length, frame.MaximumStreamData);
-        }
-
         [Fact]
         public void ClosesConnectionOnInvalidStreamId_StreamMaxDataFrame()
         {
