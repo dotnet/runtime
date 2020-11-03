@@ -1835,7 +1835,7 @@ HMODULE ShimProcess::GetDacModule()
     // Load the access DLL from the same directory as the the current CLR Debugging Services DLL.
     //
 
-    if (!WszGetModuleFileName(GetModuleInst(), wszAccessDllPath))
+    if (!GetClrModulePathName(wszAccessDllPath))
     {
         ThrowLastError();
     }

@@ -4908,9 +4908,9 @@ inline T* InterlockedCompareExchangeT(
 #undef InterlockedCompareExchangePointer
 #define InterlockedCompareExchangePointer Use_InterlockedCompareExchangeT
 
-// Returns the directory for HMODULE. So, if HMODULE was for "C:\Dir1\Dir2\Filename.DLL",
+// Returns the directory for clr module. So, if path was for "C:\Dir1\Dir2\Filename.DLL",
 // then this would return "C:\Dir1\Dir2\" (note the trailing backslash).
-HRESULT GetHModuleDirectory(HMODULE hMod, SString& wszPath);
+HRESULT GetClrModuleDirectory(SString& wszPath);
 HRESULT CopySystemDirectory(const SString& pPathString, SString& pbuffer);
 
 HMODULE LoadLocalizedResourceDLLForSDK(_In_z_ LPCWSTR wzResourceDllName, _In_opt_z_ LPCWSTR modulePath=NULL, bool trySelf=true);
