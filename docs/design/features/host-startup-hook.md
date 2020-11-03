@@ -256,4 +256,7 @@ hook dll. However, the feature will also work if the type is `public`.
 
 ### Linker unfriendly
 
-The usage of startup hooks on a trimmed app is potentially dangerous since these could make use of assemblies, types or members that were removed by the linker, causing the app to crash.
+Startup hooks are disabled by default on trimmed apps. The usage of
+startup hooks on a trimmed app is potentially dangerous since these
+could make use of assemblies, types or members that were removed by
+the linker, causing the app to crash.
