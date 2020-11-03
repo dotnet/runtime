@@ -328,7 +328,6 @@ IpcStream *IpcStreamFactory::GetNextAvailableStream(ErrorCallback callback)
                             if (pStream == nullptr)
                             {
                                 fSawError = true;
-                                break;
                             }
                             s_currentPort = (DiagnosticPort*)(rgIpcPollHandles[i].pUserData);
                         }
