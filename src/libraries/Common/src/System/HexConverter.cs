@@ -109,7 +109,7 @@ namespace System
                              (byte)'8', (byte)'9', (byte)'a', (byte)'b',
                              (byte)'c', (byte)'d', (byte)'e', (byte)'f');
 
-        for (; pos < bytes.Length - 3; pos += 4)
+        do
         {
             // Read 32bits from "bytes" span at "pos" offset
             uint block = Unsafe.ReadUnaligned<uint>(
@@ -137,11 +137,14 @@ namespace System
             Unsafe.WriteUnaligned(
                 ref Unsafe.As<char, byte>(
                     ref Unsafe.Add(ref MemoryMarshal.GetReference(chars), pos * 2)), hex);
-        }
+            pos += 4;
+        } while (pos < bytes.Length - 3);
 
         // Process trailing elements (bytes.Length % 4)
         for (; pos < bytes.Length; pos++)
-            ToCharsBuffer(bytes[pos], chars, pos * 2, casing);
+        {
+            ToCharsBuffer(Unsafe.Add(ref MemoryMarshal.GetReference(bytes), pos), chars, pos * 2, casing);
+        }
     }
 #endif
 
