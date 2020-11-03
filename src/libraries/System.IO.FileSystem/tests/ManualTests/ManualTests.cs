@@ -86,17 +86,17 @@ namespace System.IO.ManualTests
             /* This test verifies that Position is not altered when SetLength fails when a "disk out of space" error occurs.
              
                 Setup environment to have a drive with less than 1k available space:
-                - Create an 8mb fixed size VHD (I was having troubles whit smaller sizes).
+                - Create an 8mb fixed size VHD.
                     - Open Computer Management -> Storage -> Disk Management
                     - Follow these instructions:
                       https://docs.microsoft.com/en-us/windows-server/storage/disk-management/manage-virtual-hard-disks
 
                 - Restrict the space available in the VHD.
-                    - Create a quota for your user in the VHD created above from cmd:
+                    - Create a 512 bytes quota in the VHD created above using cmd:
                       fsutil quota modify E: 512 512 SYSTEM
                       fsutil quota modify E: 512 512 YourUser
 
-                - Run the test.
+                - Run the test. If configured correctly, the SetLength operation should fail at least once.
              */
 
             using FileStream fs = File.Open("E:/dummy_file.txt", FileMode.OpenOrCreate);
@@ -104,6 +104,7 @@ namespace System.IO.ManualTests
             // Position was less than new Length; should remain the same.
             fs.Seek(0, SeekOrigin.Begin);
             VerifySetLength(fs);
+            Assert.Equal(0, fs.Position);
             Assert.True(fs.Position < fs.Length);
 
             // Position was larger than new Length; should be adjusted to the Length.
@@ -131,9 +132,9 @@ namespace System.IO.ManualTests
                 {
                     Console.WriteLine("Failed.");
                     Assert.Equal(originalPosition, fs.Position);
-                    size = (int)(size * 0.9);
+                    size = (long)(size * 0.9);
                 }
-            }            
+            }
         }
     }
 }
