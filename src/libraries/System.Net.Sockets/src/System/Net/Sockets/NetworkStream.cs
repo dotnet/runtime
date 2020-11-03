@@ -258,7 +258,7 @@ namespace System.Net.Sockets
             }
             catch (Exception exception) when (!(exception is OutOfMemoryException))
             {
-                throw GetCustomNetworkException(SR.Format(SR.net_io_writefailure, exception.Message), exception);
+                throw GetCustomException(SR.Format(SR.net_io_readfailure, exception.Message), exception);
             }
 
             if (errorCode != SocketError.Success)
@@ -337,7 +337,7 @@ namespace System.Net.Sockets
             }
             catch (Exception exception) when (!(exception is OutOfMemoryException))
             {
-                throw GetCustomNetworkException(SR.Format(SR.net_io_writefailure, exception.Message), exception);
+                throw GetCustomException(SR.Format(SR.net_io_writefailure, exception.Message), exception);
             }
 
             if (errorCode != SocketError.Success)

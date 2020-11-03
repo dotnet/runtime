@@ -325,18 +325,17 @@ namespace System.Net.Sockets.Tests
                 
                 serverSocket.Dispose();
 
-                    Assert.Throws<IOException>(() => server.Read(new byte[1], 0, 1));
-                    Assert.Throws<IOException>(() => server.Write(new byte[1], 0, 1));
+                Assert.Throws<IOException>(() => server.Read(new byte[1], 0, 1));
+                Assert.Throws<IOException>(() => server.Write(new byte[1], 0, 1));
 
-                    Assert.Throws<IOException>(() => server.BeginRead(new byte[1], 0, 1, null, null));
-                    Assert.Throws<IOException>(() => server.BeginWrite(new byte[1], 0, 1, null, null));
+                Assert.Throws<IOException>(() => server.BeginRead(new byte[1], 0, 1, null, null));
+                Assert.Throws<IOException>(() => server.BeginWrite(new byte[1], 0, 1, null, null));
 
-                Assert.Throws<NetworkException>(() => server.BeginRead(new byte[1], 0, 1, null, null));
-                Assert.Throws<NetworkException>(() => server.BeginWrite(new byte[1], 0, 1, null, null));
+                Assert.Throws<IOException>(() => server.BeginRead(new byte[1], 0, 1, null, null));
+                Assert.Throws<IOException>(() => server.BeginWrite(new byte[1], 0, 1, null, null));
 
-                    Assert.Throws<IOException>(() => { server.ReadAsync(new byte[1], 0, 1); });
-                    Assert.Throws<IOException>(() => { server.WriteAsync(new byte[1], 0, 1); });
-                }
+                Assert.Throws<IOException>(() => { server.ReadAsync(new byte[1], 0, 1); });
+                Assert.Throws<IOException>(() => { server.WriteAsync(new byte[1], 0, 1); });
             }
         }
 
