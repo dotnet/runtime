@@ -35,6 +35,8 @@ namespace System.Net.Quic.Tests
         public override Task Dispose_ClosesStream(int disposeMode) => base.Dispose_ClosesStream(disposeMode);
         [ActiveIssue("https://github.com/dotnet/runtime/issues/756")]
         public override Task Write_DataReadFromDesiredOffset(ReadWriteMode mode) => base.Write_DataReadFromDesiredOffset(mode);
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/756")]
+        public override Task Parallel_ReadWriteMultipleStreamsConcurrently() => base.Parallel_ReadWriteMultipleStreamsConcurrently();
 
         protected abstract QuicImplementationProvider Provider { get; }
 
