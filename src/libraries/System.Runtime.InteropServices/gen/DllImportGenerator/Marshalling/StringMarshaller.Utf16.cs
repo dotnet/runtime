@@ -160,13 +160,14 @@ namespace Microsoft.Interop
             return 
                 BinaryExpression(
                     SyntaxKind.MultiplyExpression,
-                    BinaryExpression(
-                        SyntaxKind.AddExpression,
-                        MemberAccessExpression(
-                            SyntaxKind.SimpleMemberAccessExpression,
-                            IdentifierName(context.GetIdentifiers(info).managed),
-                            IdentifierName("Length")),
-                        LiteralExpression(SyntaxKind.NumericLiteralExpression, Literal(1))),
+                    ParenthesizedExpression(
+                        BinaryExpression(
+                            SyntaxKind.AddExpression,
+                            MemberAccessExpression(
+                                SyntaxKind.SimpleMemberAccessExpression,
+                                IdentifierName(context.GetIdentifiers(info).managed),
+                                IdentifierName("Length")),
+                            LiteralExpression(SyntaxKind.NumericLiteralExpression, Literal(1)))),
                     LiteralExpression(SyntaxKind.NumericLiteralExpression, Literal(2)));
         }
 
