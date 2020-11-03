@@ -145,7 +145,7 @@ IpcStream *IpcStream::DiagnosticsIpc::Accept(ErrorCallback callback)
     {
         if (callback != nullptr)
             callback("Failed to GetOverlappedResults for NamedPipe server", ::GetLastError());
-        // clean up the pipe
+        // close the pipe (cleaned up and reset below)
         ::CloseHandle(_hPipe);
     }
     else
