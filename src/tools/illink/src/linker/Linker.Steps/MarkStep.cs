@@ -53,7 +53,7 @@ namespace Mono.Linker.Steps
 		protected List<TypeDefinition> _typesWithInterfaces;
 		protected List<MethodBody> _unreachableBodies;
 
-		readonly List<(TypeDefinition Type, MethodBody Body, Instruction Instr)> pending_isinst_instr;
+		readonly List<(TypeDefinition Type, MethodBody Body, Instruction Instr)> _pending_isinst_instr;
 
 #if DEBUG
 		static readonly DependencyKind[] _entireTypeReasons = new DependencyKind[] {
@@ -176,7 +176,7 @@ namespace Mono.Linker.Steps
 			_lateMarkedAttributes = new Queue<(AttributeProviderPair, DependencyInfo, IMemberDefinition)> ();
 			_typesWithInterfaces = new List<TypeDefinition> ();
 			_unreachableBodies = new List<MethodBody> ();
-			pending_isinst_instr = new List<(TypeDefinition, MethodBody, Instruction)> ();
+			_pending_isinst_instr = new List<(TypeDefinition, MethodBody, Instruction)> ();
 		}
 
 		public AnnotationStore Annotations => _context.Annotations;
@@ -391,8 +391,8 @@ namespace Mono.Linker.Steps
 
 		void ProcessPendingTypeChecks ()
 		{
-			for (int i = 0; i < pending_isinst_instr.Count; ++i) {
-				var item = pending_isinst_instr[i];
+			for (int i = 0; i < _pending_isinst_instr.Count; ++i) {
+				var item = _pending_isinst_instr[i];
 				TypeDefinition type = item.Type;
 				if (Annotations.IsInstantiated (type))
 					continue;
@@ -402,6 +402,8 @@ namespace Mono.Linker.Steps
 
 				ilProcessor.InsertAfter (instr, Instruction.Create (OpCodes.Ldnull));
 				ilProcessor.Replace (instr, Instruction.Create (OpCodes.Pop));
+
+				_context.LogMessage ($"Removing typecheck of '{type.FullName}' inside {item.Body.Method.GetDisplayName ()} method");
 			}
 		}
 
@@ -2927,7 +2929,7 @@ namespace Mono.Linker.Steps
 						break;
 
 					if (!Annotations.IsInstantiated (type)) {
-						pending_isinst_instr.Add ((type, method.Body, instruction));
+						_pending_isinst_instr.Add ((type, method.Body, instruction));
 						return;
 					}
 
