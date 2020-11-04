@@ -116,10 +116,7 @@ namespace ILCompiler.Reflection.ReadyToRun
         {
             get
             {
-                if (_size < 0)
-                {
-                    _size = GetSize();
-                }
+                EnsureInitialized();
                 return _size;
             }
         }
@@ -200,6 +197,14 @@ namespace ILCompiler.Reflection.ReadyToRun
             UnwindInfo = unwindInfo;
             CodeOffset = codeOffset;
             method.GetGcInfo = gcInfo;
+        }
+
+        private void EnsureInitialized()
+        {
+            if (_size < 0)
+            {
+                _size = GetSize();
+            }
         }
 
         private int GetSize()
@@ -301,10 +306,7 @@ namespace ILCompiler.Reflection.ReadyToRun
         {
             get
             {
-                if (_gcInfo == null && GetGcInfo != null)
-                {
-                    _gcInfo = GetGcInfo();
-                }
+                EnsureInitialized();
                 return _gcInfo;
             }
         }
@@ -439,6 +441,14 @@ namespace ILCompiler.Reflection.ReadyToRun
             sb.Append(")");
 
             SignatureString = sb.ToString();
+        }
+
+        private void EnsureInitialized()
+        {
+            if (_gcInfo == null && GetGcInfo != null)
+            {
+                _gcInfo = GetGcInfo();
+            }
         }
 
         private void EnsureFixupCells()
