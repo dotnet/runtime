@@ -3,8 +3,8 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 //
 
-#ifndef __STANDARDPCH_H__
-#define __STANDARDPCH_H__
+#ifndef STANDARDPCH_H
+#define STANDARDPCH_H
 
 // The point of a PCH file is to never reparse files that never change.
 // Only include files here that will almost NEVER change. Headers for the project
@@ -120,4 +120,4 @@ static inline void __debugbreak()
 }
 #endif
 
-#endif // __STANDARDPCH_H__
+#endif // STANDARDPCH_H
