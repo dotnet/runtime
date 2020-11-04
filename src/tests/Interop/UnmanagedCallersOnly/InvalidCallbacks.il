@@ -4,12 +4,10 @@
 .assembly extern System.Runtime
 {
   .publickeytoken = (B0 3F 5F 7F 11 D5 0A 3A )
-  .ver 5:0:0:0
 }
 .assembly extern System.Runtime.InteropServices
 {
   .publickeytoken = (B0 3F 5F 7F 11 D5 0A 3A )
-  .ver 5:0:0:0
 }
 
 .assembly InvalidCSharp { }
