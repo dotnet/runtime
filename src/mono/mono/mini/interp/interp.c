@@ -426,7 +426,7 @@ interp_free_context (gpointer ctx)
 	g_free (context);
 }
 
-static void
+void
 mono_interp_error_cleanup (MonoError* error)
 {
 	mono_error_cleanup (error); /* FIXME: don't swallow the error */
@@ -605,7 +605,7 @@ get_virtual_method (InterpMethod *imethod, MonoVTable *vtable)
 		if (m->iflags & METHOD_IMPL_ATTRIBUTE_SYNCHRONIZED) {
 			ERROR_DECL (error);
 			ret = mono_interp_get_imethod (domain, mono_marshal_get_synchronized_wrapper (m), error);
-			mono_error_cleanup (error); /* FIXME: don't swallow the error */
+			mono_interp_error_cleanup (error); /* FIXME: don't swallow the error */
 		} else {
 			ret = imethod;
 		}
@@ -2956,8 +2956,7 @@ interp_create_method_pointer (MonoMethod *method, gboolean compile, MonoError *e
 				mono_method_get_name_full (wrapper, TRUE, TRUE, MONO_TYPE_NAME_FORMAT_IL),
 				mono_method_get_name_full (method,  TRUE, TRUE, MONO_TYPE_NAME_FORMAT_IL));
 #else
-		mono_error_cleanup (error);
-		error_init_reuse (error);
+		mono_interp_error_cleanup (error);
 		if (!mono_native_to_interp_trampoline) {
 			if (mono_aot_only) {
 				mono_native_to_interp_trampoline = (MonoFuncV)mono_aot_get_trampoline ("native_to_interp_trampoline");
@@ -5011,8 +5010,7 @@ call:
 			sp [0].data.o = o; // return value
 			sp [1].data.o = o; // first parameter
 
-			mono_error_cleanup (error); // FIXME: do not swallow the error
-			error_init_reuse (error);
+			mono_interp_error_cleanup (error); // FIXME: do not swallow the error
 			EXCEPTION_CHECKPOINT;
 #ifndef DISABLE_REMOTING
 			if (mono_object_is_transparent_proxy (o)) {
