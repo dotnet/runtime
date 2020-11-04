@@ -603,13 +603,16 @@ namespace System.Xml.Xsl.XsltOld
             private int _minargs;
             private int _maxargs;
             private XPathResultType _returnType;
-            private XPathResultType[] _argTypes = null!; // TODO-NULLABLE: public constructor doesn't initialize it but also seem to have no references, consider removing
+            private XPathResultType[] _argTypes = null!; // Used by derived classes which initialize it
 
             public XsltFunctionImpl() { }
+
             public XsltFunctionImpl(int minArgs, int maxArgs, XPathResultType returnType, XPathResultType[] argTypes)
             {
-                this.Init(minArgs, maxArgs, returnType, argTypes);
+                Init(minArgs, maxArgs, returnType, argTypes);
             }
+
+            [MemberNotNull(nameof(_argTypes))]
             protected void Init(int minArgs, int maxArgs, XPathResultType returnType, XPathResultType[] argTypes)
             {
                 _minargs = minArgs;

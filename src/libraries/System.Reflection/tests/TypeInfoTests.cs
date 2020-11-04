@@ -733,7 +733,6 @@ namespace System.Reflection.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/mono/mono/issues/15029", TestRuntimes.Mono)]
         public static void FindMembers()
         {
             MemberInfo[] members = typeof(MembersClass).GetTypeInfo().FindMembers(MemberTypes.All, BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance, (MemberInfo memberInfo, object c) => true, "notused");

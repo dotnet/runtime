@@ -1,6 +1,6 @@
 <Project>
   <Choose>
-    <When Condition="'$(TargetFrameworkSuffix)' == 'Windows_NT'">
+    <When Condition="'$(TargetFrameworkSuffix)' == 'windows'">
       <PropertyGroup>
         <TargetsWindows>true</TargetsWindows>
         <PackageTargetRuntime>win</PackageTargetRuntime>

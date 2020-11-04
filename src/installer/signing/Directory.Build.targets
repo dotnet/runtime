@@ -47,7 +47,7 @@
   <Target Name="Build"
           Condition="
             '$(SkipSigning)' != 'true' and
-            '$(TargetOS)' == 'Windows_NT'"
+            '$(TargetOS)' == 'windows'"
           DependsOnTargets="
             EnsureProjectsBuilt;
             RunArcadeSigning" />

@@ -344,7 +344,7 @@ namespace System.Xml
         }
 
         // Gets the base URI of the current node.
-        public override string? BaseURI
+        public override string BaseURI
         {
             get
             {

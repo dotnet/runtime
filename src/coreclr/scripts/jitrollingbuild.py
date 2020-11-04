@@ -57,7 +57,7 @@ list_description = """\
 List clrjit in SuperPMI Azure storage.
 """
 
-host_os_help = "OS (Windows_NT, OSX, Linux). Default: current OS."
+host_os_help = "OS (windows, OSX, Linux). Default: current OS."
 
 arch_help = "Architecture (x64, x86, arm, arm64). Default: current architecture."
 
@@ -166,7 +166,7 @@ def determine_jit_name(coreclr_args):
         return "lib" + jit_base_name + ".dylib"
     elif coreclr_args.host_os == "Linux":
         return "lib" + jit_base_name + ".so"
-    elif coreclr_args.host_os == "Windows_NT":
+    elif coreclr_args.host_os == "windows":
         return jit_base_name + ".dll"
     else:
         raise RuntimeError("Unknown OS.")
@@ -299,7 +299,7 @@ def upload_command(coreclr_args):
     elif coreclr_args.host_os == "Linux":
         allowed_extensions = [ ".so" ]
         # Add .dbg for debug info
-    elif coreclr_args.host_os == "Windows_NT":
+    elif coreclr_args.host_os == "windows":
         allowed_extensions = [ ".dll" ]
     else:
         raise RuntimeError("Unknown OS.")
@@ -310,7 +310,7 @@ def upload_command(coreclr_args):
     files += cross_jit_paths
 
     # On Windows, grab the PDB files from a sub-directory.
-    # if coreclr_args.host_os == "Windows_NT":
+    # if coreclr_args.host_os == "windows":
     #    pdb_dir = os.path.join(coreclr_args.product_location, "PDB")
     #    if os.path.isdir(pdb_dir):
     #        pdb_paths = [os.path.join(pdb_dir, item) for item in os.listdir(pdb_dir) if re.match(r'.*clrjit.*', item)]
