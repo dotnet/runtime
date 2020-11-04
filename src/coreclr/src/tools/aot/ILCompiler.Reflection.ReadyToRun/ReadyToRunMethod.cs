@@ -199,7 +199,7 @@ namespace ILCompiler.Reflection.ReadyToRun
             Method = method;
             UnwindInfo = unwindInfo;
             CodeOffset = codeOffset;
-            method.GcInfo = gcInfo;
+            method.GetGcInfo = gcInfo;
         }
 
         private int GetSize()
@@ -222,7 +222,7 @@ namespace ILCompiler.Reflection.ReadyToRun
             }
             else if (Method.GcInfo != null)
             {
-                return Method.GcInfo().CodeLength; 
+                return Method.GcInfo.CodeLength; 
             }
             else
             {
@@ -295,7 +295,22 @@ namespace ILCompiler.Reflection.ReadyToRun
         /// </summary>
         public int EntryPointRuntimeFunctionId { get; set; }
 
-        public Func<BaseGcInfo> GcInfo { get; set; }
+        public Func<BaseGcInfo> GetGcInfo { get; set; }
+
+        public BaseGcInfo GcInfo
+        {
+            get
+            {
+                if (_gcInfoCache == null && GetGcInfo != null)
+                {
+                    _gcInfoCache = GetGcInfo();
+                }
+                return _gcInfoCache;
+            }
+        }
+
+        private BaseGcInfo _gcInfoCache;
+
 
         private ReadyToRunReader _readyToRunReader;
         private List<FixupCell> _fixupCells;
