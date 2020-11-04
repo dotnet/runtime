@@ -9,7 +9,6 @@ using System.Runtime.CompilerServices;
 using System.Runtime.ConstrainedExecution;
 using System.Security.Principal;
 using System.Runtime.Versioning;
-using System.Runtime.CompilerServices;
 
 namespace System.Threading
 {
