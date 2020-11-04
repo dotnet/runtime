@@ -882,11 +882,12 @@ mono_get_exception_thread_start_handle (MonoException* inner_raw, MonoError *err
 
 	error_init (error);
 
-	klass = mono_class_load_from_name (mono_get_corlib (), "System.Threading", "ThreadStartException");
+	MONO_STATIC_POINTER_INIT (MonoMethod, method);
+	MonoClass *klass = mono_class_load_from_name (mono_get_corlib (), "System.Threading", "ThreadStartException");
 
 	mono_class_init_internal (klass);
 
-	iter = NULL;
+	gpointer iter = NULL;
 	while ((method = mono_class_get_methods (klass, &iter))) {
 		if (!strcmp (".ctor", mono_method_get_name (method))) {
 			MonoMethodSignature *sig = mono_method_signature_internal (method);
@@ -897,6 +898,7 @@ mono_get_exception_thread_start_handle (MonoException* inner_raw, MonoError *err
 		method = NULL;
 	}
 	g_assert (method);
+	MONO_STATIC_POINTER_INIT_END(MonMethod, method);
 
 	MonoDomain * const domain = mono_domain_get ();
 	gpointer args [ ] = { MONO_HANDLE_RAW (inner) };
