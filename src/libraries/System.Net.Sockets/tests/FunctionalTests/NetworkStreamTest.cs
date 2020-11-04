@@ -321,28 +321,31 @@ namespace System.Net.Sockets.Tests
                 Task<Socket> acceptTask = listener.AcceptAsync();
                 await Task.WhenAll(acceptTask, client.ConnectAsync(new IPEndPoint(IPAddress.Loopback, ((IPEndPoint)listener.LocalEndPoint).Port)));
                 using Socket serverSocket = await acceptTask;
+
                 using NetworkStream server = derivedNetworkStream ? (NetworkStream)new DerivedNetworkStream(serverSocket) : new NetworkStream(serverSocket);
-                
+
                 serverSocket.Dispose();
 
-                ExpectIOException(() => server.Read(new byte[1], 0, 1), write: false);
-                ExpectIOException(() => server.Write(new byte[1], 0, 1), write: true);
+                ExpectIOException(() => server.Read(new byte[1], 0, 1), isWriteOperation: false);
+                ExpectIOException(() => server.Write(new byte[1], 0, 1), isWriteOperation: true);
 
-                ExpectIOException(() => server.Read((Span<byte>)new byte[1]), write: false);
-                ExpectIOException(() => server.Write((ReadOnlySpan<byte>)new byte[1]), write: true);
+                ExpectIOException(() => server.Read((Span<byte>)new byte[1]), isWriteOperation: false);
+                ExpectIOException(() => server.Write((ReadOnlySpan<byte>)new byte[1]), isWriteOperation: true);
 
-                ExpectIOException(() => server.BeginRead(new byte[1], 0, 1, null, null), write: false);
-                ExpectIOException(() => server.BeginWrite(new byte[1], 0, 1, null, null), write: true);
+                ExpectIOException(() => server.BeginRead(new byte[1], 0, 1, null, null), isWriteOperation: false);
+                ExpectIOException(() => server.BeginWrite(new byte[1], 0, 1, null, null), isWriteOperation: true);
 
-                ExpectIOException(() => { server.ReadAsync(new byte[1], 0, 1); }, write: false);
-                ExpectIOException(() => { server.WriteAsync(new byte[1], 0, 1); }, write: true);
+                ExpectIOException(() => { _ = server.ReadAsync(new byte[1], 0, 1); }, isWriteOperation: false);
+                ExpectIOException(() => { _ = server.WriteAsync(new byte[1], 0, 1); }, isWriteOperation: true);
             }
 
-            static void ExpectIOException(Action action, bool write)
+            static void ExpectIOException(Action action, bool isWriteOperation)
             {
                 IOException ex = Assert.Throws<IOException>(action);
-                string expectedSubstring = write ? "write data" : "read data";
+                string expectedSubstring = isWriteOperation ? "write data" : "read data";
                 Assert.Contains(expectedSubstring, ex.Message);
+                Assert.NotNull(ex.InnerException);
+                Assert.IsType<ObjectDisposedException>(ex.InnerException);
             }
         }
 
