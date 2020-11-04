@@ -3,6 +3,7 @@
 
 using System.Collections.Generic;
 using System.Runtime.InteropServices;
+using System.Threading.Tasks;
 
 namespace System.IO.Tests
 {
@@ -19,7 +20,7 @@ namespace System.IO.Tests
             base.Dispose(disposing);
         }
 
-        private unsafe Stream CreateStream(byte[] initialData, FileAccess access)
+        private unsafe Task<Stream> CreateStream(byte[] initialData, FileAccess access)
         {
             Stream stream = null;
             if (initialData is not null)
@@ -29,14 +30,14 @@ namespace System.IO.Tests
                 Marshal.Copy(initialData, 0, ptr, initialData.Length);
                 stream =  new UnmanagedMemoryStream((byte*)ptr, initialData.Length, initialData.Length, access);
             }
-            return stream;
+            return Task.FromResult(stream);
         }
 
         protected override bool CanSetLengthGreaterThanCapacity => false;
 
-        protected override unsafe Stream CreateReadOnlyStreamCore(byte[] initialData) => CreateStream(initialData, FileAccess.Read);
-        protected override Stream CreateWriteOnlyStreamCore(byte[] initialData) => CreateStream(initialData, FileAccess.Write);
-        protected override Stream CreateReadWriteStreamCore(byte[] initialData) => CreateStream(initialData, FileAccess.ReadWrite);
+        protected override Task<Stream> CreateReadOnlyStreamCore(byte[] initialData) => CreateStream(initialData, FileAccess.Read);
+        protected override Task<Stream> CreateWriteOnlyStreamCore(byte[] initialData) => CreateStream(initialData, FileAccess.Write);
+        protected override Task<Stream> CreateReadWriteStreamCore(byte[] initialData) => CreateStream(initialData, FileAccess.ReadWrite);
     }
 
     public class DerivedUmsTests : StandaloneStreamConformanceTests, IDisposable
@@ -52,7 +53,7 @@ namespace System.IO.Tests
             base.Dispose(disposing);
         }
 
-        private unsafe Stream CreateStream(byte[] initialData, FileAccess access)
+        private unsafe Task<Stream> CreateStream(byte[] initialData, FileAccess access)
         {
             Stream stream = null;
             if (initialData is not null)
@@ -62,13 +63,13 @@ namespace System.IO.Tests
                 Marshal.Copy(initialData, 0, ptr, initialData.Length);
                 stream = new DerivedUnmanagedMemoryStream((byte*)ptr, initialData.Length, initialData.Length, access);
             }
-            return stream;
+            return Task.FromResult(stream);
         }
 
         protected override bool CanSetLengthGreaterThanCapacity => false;
 
-        protected override unsafe Stream CreateReadOnlyStreamCore(byte[] initialData) => CreateStream(initialData, FileAccess.Read);
-        protected override Stream CreateWriteOnlyStreamCore(byte[] initialData) => CreateStream(initialData, FileAccess.Write);
-        protected override Stream CreateReadWriteStreamCore(byte[] initialData) => CreateStream(initialData, FileAccess.ReadWrite);
+        protected override Task<Stream> CreateReadOnlyStreamCore(byte[] initialData) => CreateStream(initialData, FileAccess.Read);
+        protected override Task<Stream> CreateWriteOnlyStreamCore(byte[] initialData) => CreateStream(initialData, FileAccess.Write);
+        protected override Task<Stream> CreateReadWriteStreamCore(byte[] initialData) => CreateStream(initialData, FileAccess.ReadWrite);
     }
 }
