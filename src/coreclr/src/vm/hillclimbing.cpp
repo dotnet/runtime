@@ -43,6 +43,8 @@ void HillClimbing::Initialize()
     }
     CONTRACTL_END;
 
+    _ASSERTE(!ThreadpoolMgr::UsePortableThreadPool());
+
     m_wavePeriod = CLRConfig::GetConfigValue(CLRConfig::INTERNAL_HillClimbing_WavePeriod);
     m_maxThreadWaveMagnitude = CLRConfig::GetConfigValue(CLRConfig::INTERNAL_HillClimbing_MaxWaveMagnitude);
     m_threadMagnitudeMultiplier = (double)CLRConfig::GetConfigValue(CLRConfig::INTERNAL_HillClimbing_WaveMagnitudeMultiplier) / 100.0;
@@ -78,6 +80,7 @@ void HillClimbing::Initialize()
 int HillClimbing::Update(int currentThreadCount, double sampleDuration, int numCompletions, int* pNewSampleInterval)
 {
     LIMITED_METHOD_CONTRACT;
+    _ASSERTE(!ThreadpoolMgr::UsePortableThreadPool());
 
 #ifdef DACCESS_COMPILE
     return 1;
@@ -347,6 +350,7 @@ int HillClimbing::Update(int currentThreadCount, double sampleDuration, int numC
 void HillClimbing::ForceChange(int newThreadCount, HillClimbingStateTransition transition)
 {
     LIMITED_METHOD_CONTRACT;
+    _ASSERTE(!ThreadpoolMgr::UsePortableThreadPool());
 
     if (newThreadCount != m_lastThreadCount)
     {
@@ -410,6 +414,7 @@ void HillClimbing::LogTransition(int threadCount, double throughput, HillClimbin
 Complex HillClimbing::GetWaveComponent(double* samples, int sampleCount, double period)
 {
     LIMITED_METHOD_CONTRACT;
+    _ASSERTE(!ThreadpoolMgr::UsePortableThreadPool());
 
     _ASSERTE(sampleCount >= period); //can't measure a wave that doesn't fit
     _ASSERTE(period >= 2); //can't measure above the Nyquist frequency

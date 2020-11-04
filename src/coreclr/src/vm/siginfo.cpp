@@ -23,6 +23,7 @@
 #include "../md/compiler/custattr.h"
 #include <corhlprpriv.h>
 #include "argdestination.h"
+#include "multicorejit.h"
 
 /*******************************************************************/
 const CorTypeInfo::CorTypeInfoEntry CorTypeInfo::info[ELEMENT_TYPE_MAX] =
@@ -1113,7 +1114,8 @@ TypeHandle SigPointer::GetTypeHandleThrowing(
         //
         // pOrigModule is the original module that contained this ZapSig
         //
-        Module *                     pOrigModule   = (pZapSigContext != NULL) ? pZapSigContext->pInfoModule : pModule;
+        Module * pOrigModule = (pZapSigContext != NULL) ? pZapSigContext->pInfoModule : pModule;
+
         ClassLoader::NotFoundAction  notFoundAction;
         CorInternalStates            tdTypes;
 
@@ -1166,9 +1168,16 @@ TypeHandle SigPointer::GetTypeHandleThrowing(
 #ifndef DACCESS_COMPILE
             DWORD ix;
             IfFailThrowBF(psig.GetData(&ix), BFA_BAD_SIGNATURE, pModule);
-
-            PREFIX_ASSUME(pZapSigContext != NULL);
-            pModule = pZapSigContext->GetZapSigModule()->GetModuleFromIndex(ix);
+#ifdef FEATURE_MULTICOREJIT
+            if (pZapSigContext->externalTokens == ZapSig::MulticoreJitTokens)
+            {
+                pModule = MulticoreJitManager::DecodeModuleFromIndex(pZapSigContext->pModuleContext, ix);
+            }
+            else
+#endif
+            {
+                pModule = pZapSigContext->GetZapSigModule()->GetModuleFromIndex(ix);
+            }
 
             if ((pModule != NULL) && pModule->IsInCurrentVersionBubble())
             {
@@ -1702,7 +1711,7 @@ TypeHandle SigPointer::GetGenericInstType(Module *        pModule,
     }
     CONTRACTL_END
 
-    Module * pOrigModule = (pZapSigContext != NULL) ? pZapSigContext->pInfoModule : pModule;
+    Module * pOrigModule   = (pZapSigContext != NULL) ? pZapSigContext->pInfoModule : pModule;
 
     CorElementType typ = ELEMENT_TYPE_END;
     IfFailThrowBF(GetElemType(&typ), BFA_BAD_SIGNATURE, pOrigModule);
@@ -2428,7 +2437,8 @@ SigPointer::PeekElemTypeClosed(
                     return type;
             }
 
-            // intentionally fall through
+            FALLTHROUGH;
+
             case ELEMENT_TYPE_INTERNAL:
             {
                 TypeHandle th;
@@ -4059,6 +4069,7 @@ MetaSig::CompareElementType(
         }
     } // switch
     // Unreachable
+    UNREACHABLE();
 } // MetaSig::CompareElementType
 #ifdef _PREFAST_
 #pragma warning(pop)

@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Buffers;
-using System.Collections.Generic;
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using System.Threading;
@@ -112,7 +111,7 @@ namespace System.IO.Pipelines
             // If we're using the default pool then mark it as null since we're just going to use the
             // array pool under the covers
             _pool = options.Pool == MemoryPool<byte>.Shared ? null : options.Pool;
-            _maxPooledBufferSize = _pool?.MaxBufferSize ?? 0;
+            _maxPooledBufferSize = _pool?.MaxBufferSize ?? -1;
             _minimumSegmentSize = options.MinimumSegmentSize;
             _pauseWriterThreshold = options.PauseWriterThreshold;
             _resumeWriterThreshold = options.ResumeWriterThreshold;
@@ -223,13 +222,14 @@ namespace System.IO.Pipelines
 
         private BufferSegment AllocateSegment(int sizeHint)
         {
+            Debug.Assert(sizeHint >= 0);
             BufferSegment newSegment = CreateSegmentUnsynchronized();
 
             int maxSize = _maxPooledBufferSize;
-            if (_pool != null && sizeHint <= maxSize)
+            if (sizeHint <= maxSize)
             {
-                // Use the specified pool as it fits
-                newSegment.SetOwnedMemory(_pool.Rent(GetSegmentSize(sizeHint, maxSize)));
+                // Use the specified pool as it fits. Specified pool is not null as maxSize == -1 if _pool is null.
+                newSegment.SetOwnedMemory(_pool!.Rent(GetSegmentSize(sizeHint, maxSize)));
             }
             else
             {
@@ -960,7 +960,7 @@ namespace System.IO.Pipelines
                 ThrowHelper.ThrowInvalidOperationException_NoWritingAllowed();
             }
 
-            if (_readerCompletion.IsCompleted)
+            if (_readerCompletion.IsCompletedOrThrow())
             {
                 return new ValueTask<FlushResult>(new FlushResult(isCanceled: false, isCompleted: true));
             }

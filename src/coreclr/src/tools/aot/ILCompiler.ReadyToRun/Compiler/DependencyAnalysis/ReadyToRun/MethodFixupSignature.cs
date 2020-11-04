@@ -2,6 +2,9 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Diagnostics;
+using System.Reflection.Metadata;
+using System.Reflection.Metadata.Ecma335;
 
 using Internal.JitInterface;
 using Internal.Text;
@@ -32,6 +35,8 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             // Ensure types in signature are loadable and resolvable, otherwise we'll fail later while emitting the signature
             CompilerTypeSystemContext compilerContext = (CompilerTypeSystemContext)method.Method.Context;
             compilerContext.EnsureLoadableMethod(method.Method);
+            compilerContext.EnsureLoadableType(_method.OwningType);
+
             if (method.ConstrainedType != null)
                 compilerContext.EnsureLoadableType(method.ConstrainedType);
         }
@@ -59,7 +64,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             if (!_method.Unboxing && !_isInstantiatingStub && _method.ConstrainedType == null &&
                 fixupKind == ReadyToRunFixupKind.MethodEntry)
             {
-                if (!_method.Method.OwningType.HasInstantiation && !_method.Method.OwningType.IsArray)
+                if (!_method.Method.HasInstantiation && !_method.Method.OwningType.HasInstantiation && !_method.Method.OwningType.IsArray)
                 {
                     if (_method.Token.TokenType == CorTokenType.mdtMethodDef)
                     {
@@ -68,8 +73,11 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                     }
                     else if (_method.Token.TokenType == CorTokenType.mdtMemberRef)
                     {
-                        fixupKind = ReadyToRunFixupKind.MethodEntry_RefToken;
-                        optimized = true;
+                        if (!_method.OwningTypeNotDerivedFromToken)
+                        {
+                            fixupKind = ReadyToRunFixupKind.MethodEntry_RefToken;
+                            optimized = true;
+                        }
                     }
                 }
             }
@@ -80,13 +88,13 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             {
                 if (method.Token.TokenType == CorTokenType.mdtMethodSpec)
                 {
-                    method = new MethodWithToken(method.Method, factory.SignatureContext.GetModuleTokenForMethod(method.Method, throwIfNotFound: false), method.ConstrainedType, unboxing: _method.Unboxing);
+                    method = new MethodWithToken(method.Method, factory.SignatureContext.GetModuleTokenForMethod(method.Method, throwIfNotFound: false), method.ConstrainedType, unboxing: _method.Unboxing, null);
                 }
                 else if (!optimized && (method.Token.TokenType == CorTokenType.mdtMemberRef))
                 {
                     if (method.Method.OwningType.GetTypeDefinition() is EcmaType)
                     {
-                        method = new MethodWithToken(method.Method, factory.SignatureContext.GetModuleTokenForMethod(method.Method, throwIfNotFound: false), method.ConstrainedType, unboxing: _method.Unboxing);
+                        method = new MethodWithToken(method.Method, factory.SignatureContext.GetModuleTokenForMethod(method.Method, throwIfNotFound: false), method.ConstrainedType, unboxing: _method.Unboxing, null);
                     }
                 }
             }

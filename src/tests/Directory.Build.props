@@ -112,7 +112,7 @@
       <PropertyGroup>
       </PropertyGroup>
     </When>
-    <When Condition="'$(TargetOS)'=='Windows_NT'">
+    <When Condition="'$(TargetOS)'=='windows'">
       <PropertyGroup>
         <!-- Since cross compilation of test builds on Windows is possible, the
              TargetsWindows property may already be set. Only set the property if
@@ -206,7 +206,7 @@
 
   <PropertyGroup>
     <!-- Specify the target framework of the common test dependency project.json. -->
-    <NuGetTargetMoniker>$(NetCoreAppCurrentTargetFrameworkMoniker)</NuGetTargetMoniker>
-    <NuGetTargetMonikerShort>$(NetCoreAppCurrent)</NuGetTargetMonikerShort>
+    <NuGetTargetMoniker>$(NetCoreAppCurrentToolTargetFrameworkMoniker)</NuGetTargetMoniker>
+    <NuGetTargetMonikerShort>$(NetCoreAppToolCurrent)</NuGetTargetMonikerShort>
   </PropertyGroup>
 </Project>

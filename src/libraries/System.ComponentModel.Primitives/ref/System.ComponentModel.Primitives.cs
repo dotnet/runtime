@@ -231,7 +231,7 @@ namespace System.ComponentModel
     public partial interface ISite : System.IServiceProvider
     {
         System.ComponentModel.IComponent Component { get; }
-        System.ComponentModel.IContainer Container { get; }
+        System.ComponentModel.IContainer? Container { get; }
         bool DesignMode { get; }
         string? Name { get; set; }
     }

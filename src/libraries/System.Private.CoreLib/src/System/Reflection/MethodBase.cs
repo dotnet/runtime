@@ -3,6 +3,7 @@
 
 using System.Globalization;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
 using System.Text;
 
@@ -16,7 +17,10 @@ namespace System.Reflection
         public abstract MethodAttributes Attributes { get; }
         public virtual MethodImplAttributes MethodImplementationFlags => GetMethodImplementationFlags();
         public abstract MethodImplAttributes GetMethodImplementationFlags();
+
+        [RequiresUnreferencedCode("Trimming may change method bodies. For example it can change some instructions, remove branches or local variables.")]
         public virtual MethodBody? GetMethodBody() { throw new InvalidOperationException(); }
+
         public virtual CallingConventions CallingConvention => CallingConventions.Standard;
 
         public bool IsAbstract => (Attributes & MethodAttributes.Abstract) != 0;

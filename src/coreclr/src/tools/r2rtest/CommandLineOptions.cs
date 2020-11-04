@@ -61,6 +61,7 @@ namespace R2RTest
                         LargeBubble(),
                         Composite(),
                         Crossgen2Parallelism(),
+                        Crossgen2JitPath(),
                         ReferencePath(),
                         IssuesPath(),
                         CompilationTimeoutMinutes(),
@@ -97,6 +98,7 @@ namespace R2RTest
                         LargeBubble(),
                         Composite(),
                         Crossgen2Parallelism(),
+                        Crossgen2JitPath(),
                         ReferencePath(),
                         IssuesPath(),
                         CompilationTimeoutMinutes(),
@@ -118,6 +120,7 @@ namespace R2RTest
                         NoCrossgen2(),
                         NoCleanup(),
                         Crossgen2Parallelism(),
+                        Crossgen2JitPath(),
                         DegreeOfParallelism(),
                         Sequential(),
                         Release(),
@@ -238,6 +241,9 @@ namespace R2RTest
 
             Option Crossgen2Parallelism() =>
                 new Option<int>(new[] { "--crossgen2-parallelism" }, "Max number of threads to use in Crossgen2 (default = logical processor count)");
+            
+            Option Crossgen2JitPath() =>
+                new Option<FileInfo>(new[] { "--crossgen2-jitpath" }, "Jit path to use for crossgen2");
 
             Option IssuesPath() =>
                 new Option<FileInfo[]>(new[] { "--issues-path", "-ip" }, "Path to issues.targets")

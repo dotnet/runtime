@@ -22,6 +22,13 @@ CoreCLR also supports a 'checked' build type which has asserts enabled like 'deb
 ./build.sh -subset clr -configuration checked
 ```
 
+If you want to use Ninja to drive the native build instead of Visual Studio MSBuild (on Windows) or Make (on non-Windows), you can pass the `-ninja` flag to the build script as follows:
+```
+./build.cmd -subset clr -ninja
+```
+
+We recommend using Ninja for building the project on Windows since it more efficiently uses the build machine's resources for the native runtime build in comparison to Visual Studio's MSBuild.
+
 To pass extra compiler/linker flags to the coreclr build, set the environment variables `EXTRA_CFLAGS`, `EXTRA_CXXFLAGS` and `EXTRA_LDFLAGS` as needed. Don't set `CFLAGS`/`CXXFLAGS`/`LDFLAGS` directly as that might lead to configure-time tests failing.
 
 This will produce outputs as follows:

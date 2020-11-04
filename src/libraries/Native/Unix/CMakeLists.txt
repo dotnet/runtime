@@ -1,4 +1,6 @@
 cmake_minimum_required(VERSION 3.6.2)
+include(CheckCCompilerFlag)
+
 if(CLR_CMAKE_TARGET_IOS OR CLR_CMAKE_TARGET_TVOS) 
      # CMake 3.14.5 contains bug fixes for iOS 
      cmake_minimum_required(VERSION 3.14.5) 
@@ -10,6 +12,10 @@ project(CoreFX C)
 include(${CLR_ENG_NATIVE_DIR}/configuretools.cmake)
 
 set(CMAKE_MACOSX_RPATH ON)
+if(CLR_CMAKE_TARGET_IOS OR CLR_CMAKE_TARGET_TVOS) 
+    set(CMAKE_BUILD_WITH_INSTALL_NAME_DIR ON)
+    set(CMAKE_INSTALL_NAME_DIR "@rpath")
+endif()
 set(CMAKE_INSTALL_PREFIX $ENV{__CMakeBinDir})
 set(CMAKE_INCLUDE_CURRENT_DIR ON)
 set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -std=gnu99")
@@ -26,6 +32,12 @@ add_compile_options(-Wno-cast-align)
 add_compile_options(-Wno-typedef-redefinition)
 add_compile_options(-Wno-c11-extensions)
 add_compile_options(-Wno-unknown-pragmas)
+
+check_c_compiler_flag(-Wimplicit-fallthrough COMPILER_SUPPORTS_W_IMPLICIT_FALLTHROUGH)
+if (COMPILER_SUPPORTS_W_IMPLICIT_FALLTHROUGH)
+  add_compile_options(-Wimplicit-fallthrough)
+endif()
+
 add_compile_options(-I${CMAKE_CURRENT_SOURCE_DIR}/Common)
 add_compile_options(-I${CMAKE_CURRENT_BINARY_DIR}/Common)
 add_compile_options(-g)
@@ -156,10 +168,6 @@ if (CLR_CMAKE_TARGET_LINUX)
    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -D_GNU_SOURCE")
 endif ()
 
-if(CLR_CMAKE_TARGET_FREEBSD)
-    add_definitions(-D_BSD_SOURCE) # required for getline
-endif(CLR_CMAKE_TARGET_FREEBSD)
-
 # CLR_ADDITIONAL_LINKER_FLAGS - used for passing additional arguments to linker
 # CLR_ADDITIONAL_COMPILER_OPTIONS - used for passing additional arguments to compiler
 #
@@ -221,6 +229,7 @@ elseif(CLR_CMAKE_TARGET_ANDROID AND NOT CROSS_ROOTFS)
         add_subdirectory(System.Security.Cryptography.Native)
     endif()
 else()
+    add_subdirectory(System.Globalization.Native)
     add_subdirectory(System.Net.Security.Native)
     add_subdirectory(System.Security.Cryptography.Native)
 endif()

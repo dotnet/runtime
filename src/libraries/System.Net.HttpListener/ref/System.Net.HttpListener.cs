@@ -13,7 +13,7 @@ namespace System.Net
         public System.Net.AuthenticationSchemes AuthenticationSchemes { get { throw null; } set { } }
         public System.Net.AuthenticationSchemeSelector? AuthenticationSchemeSelectorDelegate { get { throw null; } set { } }
         public System.Security.Authentication.ExtendedProtection.ServiceNameCollection DefaultServiceNames { get { throw null; } }
-        public System.Security.Authentication.ExtendedProtection.ExtendedProtectionPolicy ExtendedProtectionPolicy { get { throw null; } [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")] set { } }
+        public System.Security.Authentication.ExtendedProtection.ExtendedProtectionPolicy ExtendedProtectionPolicy { get { throw null; } set { } }
         [System.Diagnostics.CodeAnalysis.DisallowNullAttribute]
         public System.Net.HttpListener.ExtendedProtectionSelector? ExtendedProtectionSelectorDelegate { get { throw null; } set { } }
         public bool IgnoreWriteExceptions { get { throw null; } set { } }
@@ -87,17 +87,14 @@ namespace System.Net
         public string HttpMethod { get { throw null; } }
         public System.IO.Stream InputStream { get { throw null; } }
         public bool IsAuthenticated { get { throw null; } }
-        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
         public bool IsLocal { get { throw null; } }
         public bool IsSecureConnection { get { throw null; } }
         public bool IsWebSocketRequest { get { throw null; } }
         public bool KeepAlive { get { throw null; } }
-        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
         public System.Net.IPEndPoint LocalEndPoint { get { throw null; } }
         public System.Version ProtocolVersion { get { throw null; } }
         public System.Collections.Specialized.NameValueCollection QueryString { get { throw null; } }
         public string? RawUrl { get { throw null; } }
-        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
         public System.Net.IPEndPoint RemoteEndPoint { get { throw null; } }
         public System.Guid RequestTraceIdentifier { get { throw null; } }
         public string? ServiceName { get { throw null; } }
@@ -105,7 +102,6 @@ namespace System.Net
         public System.Uri? Url { get { throw null; } }
         public System.Uri? UrlReferrer { get { throw null; } }
         public string UserAgent { get { throw null; } }
-        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
         public string UserHostAddress { get { throw null; } }
         public string UserHostName { get { throw null; } }
         public string[]? UserLanguages { get { throw null; } }
@@ -129,14 +125,11 @@ namespace System.Net
         public bool SendChunked { get { throw null; } set { } }
         public int StatusCode { get { throw null; } set { } }
         public string StatusDescription { get { throw null; } set { } }
-        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
         public void Abort() { }
         public void AddHeader(string name, string value) { }
         public void AppendCookie(System.Net.Cookie cookie) { }
         public void AppendHeader(string name, string value) { }
-        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
         public void Close() { }
-        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
         public void Close(byte[] responseEntity, bool willBlock) { }
         public void CopyFrom(System.Net.HttpListenerResponse templateResponse) { }
         public void Redirect(string url) { }

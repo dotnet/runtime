@@ -2,8 +2,9 @@
   <PropertyGroup>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <Nullable>enable</Nullable>
-    <TargetFrameworks>$(NetCoreAppCurrent);$(NetCoreAppCurrent)-Windows_NT;netstandard2.0;netcoreapp2.0-Windows_NT;netstandard2.0-Windows_NT;net461-Windows_NT</TargetFrameworks>
+    <TargetFrameworks>$(NetCoreAppCurrent);$(NetCoreAppCurrent)-windows;netstandard2.0;netcoreapp2.0-windows;netstandard2.0-windows;net461-windows</TargetFrameworks>
     <ExcludeCurrentNetCoreAppFromPackage>true</ExcludeCurrentNetCoreAppFromPackage>
+    <IncludePlatformAttributes>true</IncludePlatformAttributes>
   </PropertyGroup>
   <!-- Generator for code mapping table, target to invoke is GenerateEncodingSource -->
   <PropertyGroup>
@@ -54,10 +55,10 @@
   <ItemGroup Condition="$(TargetFramework.StartsWith('netstandard')) and '$(TargetsWindows)' != 'true' ">
     <Compile Include="System\Text\CodePagesEncodingProvider.Default.cs" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetFramework)' == '$(NetCoreAppCurrent)' and '$(TargetsWindows)' != 'true' ">
+  <ItemGroup Condition="$([MSBuild]::IsTargetFrameworkCompatible('$(TargetFramework)', '$(NetCoreAppCurrent)')) and '$(TargetsWindows)' != 'true' ">
     <Compile Include="System\Text\CodePagesEncodingProvider.Default.cs" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetFramework)' == '$(NetCoreAppCurrent)'">
+  <ItemGroup Condition="$([MSBuild]::IsTargetFrameworkCompatible('$(TargetFramework)', '$(NetCoreAppCurrent)'))">
     <Compile Include="System\Text\CodePagesEncodingProvider.netcoreapp.cs" />
     <Compile Include="System\Text\BaseCodePageEncoding.netcoreapp.cs" />
   </ItemGroup>

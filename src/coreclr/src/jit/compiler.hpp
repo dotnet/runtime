@@ -1301,6 +1301,7 @@ inline GenTree* Compiler::gtNewIndir(var_types typ, GenTree* addr)
 
 inline GenTree* Compiler::gtNewNullCheck(GenTree* addr, BasicBlock* basicBlock)
 {
+    assert(fgAddrCouldBeNull(addr));
     GenTree* nullCheck = gtNewOperNode(GT_NULLCHECK, TYP_BYTE, addr);
     nullCheck->gtFlags |= GTF_EXCEPT;
     basicBlock->bbFlags |= BBF_HAS_NULLCHECK;
@@ -2117,7 +2118,7 @@ inline
         }
 #endif // DEBUG
 
-        varOffset = varDsc->lvStkOffs;
+        varOffset = varDsc->GetStackOffset();
     }
     else // Its a spill-temp
     {
@@ -4347,7 +4348,7 @@ void GenTree::VisitOperands(TVisitor visitor)
             {
                 return;
             }
-            __fallthrough;
+            FALLTHROUGH;
 
         // Standard unary operators
         case GT_STORE_LCL_VAR:

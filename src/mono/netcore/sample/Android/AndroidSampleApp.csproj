@@ -4,53 +4,44 @@
     <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
     <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
     <TargetArchitecture Condition="'$(TargetArchitecture)'==''">x64</TargetArchitecture>
-    <TargetOS>Android</TargetOS>
-    <MicrosoftNetCoreAppRuntimePackDir>$(ArtifactsBinDir)microsoft.netcore.app.runtime.android-$(TargetArchitecture)\$(Configuration)\runtimes\android-$(TargetArchitecture)\</MicrosoftNetCoreAppRuntimePackDir>
+    <EnableTargetingPackDownload>false</EnableTargetingPackDownload>
+    <RuntimeIdentifier>android-$(TargetArchitecture)</RuntimeIdentifier>
+    <PublishTrimmed Condition="'$(Configuration)' == 'Release'">true</PublishTrimmed>
+    <_TrimmerDefaultAction Condition="'$(Configuration)' == 'Release'">link</_TrimmerDefaultAction>
+    <Optimized Condition="'$(Configuration)' == 'Release'">True</Optimized>
+    <MicrosoftNetCoreAppRuntimePackDir>$(ArtifactsBinDir)microsoft.netcore.app.runtime.$(RuntimeIdentifier)\$(Configuration)\runtimes\android-$(TargetArchitecture)\</MicrosoftNetCoreAppRuntimePackDir>
     <NoWarn>$(NoWarn),CA1050</NoWarn>
   </PropertyGroup>
 
-  <Target Name="RebuildAndroidAppBuilder">
+  <!-- Redirect 'dotnet publish' to in-tree runtime pack -->
+  <Target Name="TrickRuntimePackLocation" AfterTargets="ProcessFrameworkReferences">
     <ItemGroup>
-      <AndroidAppBuilderProject Include="$(RepoTasksDir)mobile.tasks\AndroidAppBuilder\AndroidAppBuilder.csproj" />
+      <RuntimePack>
+        <PackageDirectory>$(ArtifactsBinDir)microsoft.netcore.app.runtime.$(RuntimeIdentifier)\$(Configuration)</PackageDirectory>
+      </RuntimePack>
     </ItemGroup>
-    <MSBuild Projects="@(AndroidAppBuilderProject)"
-             Properties="Configuration=$(Configuration);MSBuildRestoreSessionId=$([System.Guid]::NewGuid())"
-             Targets="Restore"/>
-    <MSBuild Projects="@(AndroidAppBuilderProject)"
-             Properties="Configuration=$(Configuration)"
-             Targets="Build;Publish"/>
+    <Message Text="Packaged ID: %(RuntimePack.PackageDirectory)" Importance="high" />
   </Target>
 
   <UsingTask TaskName="AndroidAppBuilderTask" AssemblyFile="$(AndroidAppBuilderTasksAssemblyPath)"/>
 
-  <Target Name="BuildApp" DependsOnTargets="RebuildAndroidAppBuilder;Build">
+  <Target Name="BuildApp" AfterTargets="CopyFilesToPublishDirectory">
     <PropertyGroup>
-      <AndroidAbi Condition="'$(Platform)'=='arm64'">arm64-v8a</AndroidAbi>
-      <AndroidAbi Condition="'$(Platform)'=='arm'">armeabi-v7a</AndroidAbi>
-      <AndroidAbi Condition="'$(Platform)'=='x64'">x86_64</AndroidAbi>
-      <AndroidAbi Condition="'$(AndroidAbi)'==''">$(Platform)</AndroidAbi>
       <StripDebugSymbols>False</StripDebugSymbols>
       <StripDebugSymbols Condition="'$(Configuration)' == 'Release'">True</StripDebugSymbols>
       <AdbTool>$(ANDROID_SDK_ROOT)\platform-tools\adb</AdbTool>
-      <ApkDir>$(OutputPath)apk</ApkDir>
+      <ApkDir>$(OutputPath)apk\</ApkDir>
     </PropertyGroup>
-
-    <ItemGroup>
-      <AssemblySearchPaths Include="bin" />
-      <AssemblySearchPaths Include="$(MicrosoftNetCoreAppRuntimePackDir)native"/>
-      <AssemblySearchPaths Include="$(MicrosoftNetCoreAppRuntimePackDir)lib\$(NetCoreAppCurrent)"/>
-    </ItemGroup>
 
     <RemoveDir Directories="$(ApkDir)" />
 
     <AndroidAppBuilderTask
+        RuntimeIdentifier="$(RuntimeIdentifier)"
         SourceDir="$(OutputPath)"
-        Abi="$(AndroidAbi)"
         ProjectName="HelloAndroid"
         MonoRuntimeHeaders="$(MicrosoftNetCoreAppRuntimePackDir)\native\include\mono-2.0"
         MainLibraryFileName="$(AssemblyName).dll"
         StripDebugSymbols="$(StripDebugSymbols)"
-        AssemblySearchPaths="@(AssemblySearchPaths)"
         OutputDir="$(ApkDir)">
         <Output TaskParameter="ApkBundlePath" PropertyName="ApkBundlePath" />
         <Output TaskParameter="ApkPackageId" PropertyName="ApkPackageId" />
@@ -65,7 +56,8 @@
     <Message Condition="'$(DeployAndRun)' == 'true'" Importance="High" Text="Uninstalling apk (ignore errors if any):"/>
     <Exec Condition="'$(DeployAndRun)' == 'true'" Command="$(AdbTool) uninstall net.dot.HelloAndroid" ContinueOnError="WarnAndContinue" />
     <Exec Condition="'$(DeployAndRun)' == 'true'" Command="$(AdbTool) install $(ApkDir)/bin/HelloAndroid.apk" />
-    <Exec Condition="'$(DeployAndRun)' == 'true'" Command="$(AdbTool) shell am instrument -w net.dot.HelloAndroid/net.dot.MonoRunner" />
+    <Exec Condition="'$(DeployAndRun)' == 'true' and '$(RunActivity)' != 'true'" Command="$(AdbTool) shell am instrument -w net.dot.HelloAndroid/net.dot.MonoRunner" />
+    <Exec Condition="'$(DeployAndRun)' == 'true' and '$(RunActivity)' == 'true'" Command="$(AdbTool) shell am start -n net.dot.HelloAndroid/net.dot.MainActivity" />
     <Exec Condition="'$(DeployAndRun)' == 'true'" Command="$(AdbTool) logcat -d -s DOTNET" />
   </Target>
 

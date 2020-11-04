@@ -47,8 +47,7 @@ namespace Microsoft.Extensions.DependencyInjection
                 throw new ArgumentNullException(nameof(serviceType));
             }
 
-            var requiredServiceSupportingProvider = provider as ISupportRequiredService;
-            if (requiredServiceSupportingProvider != null)
+            if (provider is ISupportRequiredService requiredServiceSupportingProvider)
             {
                 return requiredServiceSupportingProvider.GetRequiredService(serviceType);
             }

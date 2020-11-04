@@ -8,7 +8,7 @@ internal partial class Interop
     internal partial class PerfCounter
     {
         [DllImport(Libraries.PerfCounter, CharSet = CharSet.Unicode)]
-        public static extern unsafe int FormatFromRawValue(
+        public static extern int FormatFromRawValue(
             uint dwCounterType,
             uint dwFormat,
             ref long pTimeBase,

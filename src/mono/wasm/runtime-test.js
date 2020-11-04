@@ -5,9 +5,34 @@
 
 //glue code to deal with the differences between chrome, ch, d8, jsc and sm.
 var is_browser = typeof window != "undefined";
+var consoleWebSocket;
+var print;
 
 if (is_browser) {
 	// We expect to be run by tests/runtime/run.js which passes in the arguments using http parameters
+	window.real_print = console.log;
+	print = function(_msg) { window.real_print(_msg); };
+	console.log = print;
+	console.debug = print;
+	console.error = print;
+	console.trace = print;
+	console.warn = print;
+	console.info = print;
+
+	const consoleUrl = `${window.location.origin}/console`.replace('http://', 'ws://');
+
+	consoleWebSocket = new WebSocket(consoleUrl);
+	consoleWebSocket.onopen = function(event) {
+		consoleWebSocket.send("browser: Console websocket connected.");
+
+		window.real_print = function(msg) {
+			consoleWebSocket.send(msg);
+		};
+	};
+	consoleWebSocket.onerror = function(event) {
+		console.log(`websocket error: ${event}`);
+	};
+
 	var url = new URL (decodeURI (window.location));
 	arguments = [];
 	for (var v of url.searchParams) {
@@ -18,13 +43,11 @@ if (is_browser) {
 	}
 }
 
-if (is_browser || typeof print === "undefined")
-	print = console.log;
-
 // JavaScript core does not have a console defined
 if (typeof console === "undefined") {
 	var Console = function () {
 		this.log = function(msg){ print(msg) };
+		this.clear = function() { };
 	};
 	console = new Console();
 }
@@ -40,12 +63,14 @@ if (typeof console !== "undefined") {
 		console.error = console.log;
 }
 
-if (typeof crypto == 'undefined') {
+if (typeof crypto === 'undefined') {
+	// **NOTE** this is a simple insecure polyfill for testing purposes only
 	// /dev/random doesn't work on js shells, so define our own
 	// See library_fs.js:createDefaultDevices ()
 	var crypto = {
 		getRandomValues: function (buffer) {
-			buffer[0] = (Math.random()*256)|0;
+			for (var i = 0; i < buffer.length; i++)
+				buffer [i] = (Math.random () * 256) | 0;
 		}
 	}
 }
@@ -150,6 +175,9 @@ while (args !== undefined && args.length > 0) {
 	}
 }
 testArguments = args;
+
+// cheap way to let the testing infrastructure know we're running in a browser context (or not)
+setenv["IsBrowserDomSupported"] = is_browser.toString().toLowerCase();
 
 function writeContentToFile(content, path)
 {
@@ -310,17 +338,8 @@ var App = {
 				fail_exec ("Error: Missing main executable argument.");
 				return;
 			}
-			main_assembly = assembly_load (args[1]);
-			if (main_assembly == 0) {
-				fail_exec ("Error: Unable to load main executable '" + args[1] + "'");
-				return;
-			}
-			main_method = assembly_get_entry_point (main_assembly);
-			if (main_method == 0) {
-				fail_exec ("Error: Main (string[]) method not found.");
-				return;
-			}
 
+			main_assembly_name = args[1];
 			var app_args = string_array_new (args.length - 2);
 			for (var i = 2; i < args.length; ++i) {
 				obj_array_set (app_args, i - 2, string_from_js (args [i]));
@@ -337,42 +356,37 @@ var App = {
 			}
 			wasm_set_main_args (main_argc, main_argv);
 
+			function isThenable (js_obj) {
+				// When using an external Promise library the Promise.resolve may not be sufficient
+				// to identify the object as a Promise.
+				return Promise.resolve (js_obj) === js_obj ||
+						((typeof js_obj === "object" || typeof js_obj === "function") && typeof js_obj.then === "function")
+			}
+
 			try {
-				var invoke_args = Module._malloc (4);
-				Module.setValue (invoke_args, app_args, "i32");
-				var eh_exc = Module._malloc (4);
-				Module.setValue (eh_exc, 0, "i32");
-				var res = runtime_invoke (main_method, 0, invoke_args, eh_exc);
-				var eh_res = Module.getValue (eh_exc, "i32");
-				if (eh_res != 0) {
-					print ("Exception:" + string_get_utf8 (res));
-					test_exit (1);
+				// Automatic signature isn't working correctly
+				let exit_code = Module.mono_call_assembly_entry_point (main_assembly_name, [app_args], "m");
+
+				if (isThenable (exit_code))
+				{
+					exit_code.then (
+						(result) => {
+							test_exit (result);
+						},
+						(reason) => {
+							console.error (reason);
+							test_exit (1);
+						});
+				} else {
+					test_exit (exit_code);
 					return;
 				}
-				var exit_code = unbox_int (res);
-				test_exit (exit_code);
 			} catch (ex) {
 				print ("JS exception: " + ex);
 				print (ex.stack);
 				test_exit (1);
 				return;
 			}
-
-/*
-			// For testing tp/timers etc.
-			while (true) {
-				// Sleep by busy waiting
-				var start = performance.now ();
-				useconds = 1e6 / 10;
-				while (performance.now() - start < useconds / 1000) {
-					// Do nothing.
-				}
-
-				Module.pump_message ();
-			}
-*/
-
-			return;
 		} else {
 			fail_exec ("Unhandled argument: " + args [0]);
 		}

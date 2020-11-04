@@ -664,11 +664,11 @@ namespace System.Drawing.Printing
 
                 NameValueCollection options = LoadPrinterOptions(cups_dests.options, cups_dests.num_options);
 
-                if (options["printer-state"] != null)
-                    state = int.Parse(options["printer-state"]!); // TODO-NULLABLE dotnet/roslyn#34644
+                if (options["printer-state"] is string printerState)
+                    state = int.Parse(printerState);
 
-                if (options["printer-comment"] != null)
-                    comment = options["printer-state"]!; // TODO-NULLABLE dotnet/roslyn#34644
+                if (options["printer-comment"] is string printerComment)
+                    comment = printerComment;
 
                 switch (state)
                 {

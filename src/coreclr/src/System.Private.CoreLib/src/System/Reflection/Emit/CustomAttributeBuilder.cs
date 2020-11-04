@@ -527,7 +527,7 @@ namespace System.Reflection.Emit
         // return the byte interpretation of the custom attribute
         internal void CreateCustomAttribute(ModuleBuilder mod, int tkOwner)
         {
-            CreateCustomAttribute(mod, tkOwner, mod.GetConstructorToken(m_con).Token, false);
+            CreateCustomAttribute(mod, tkOwner, mod.GetConstructorToken(m_con), false);
         }
 
         /// <summary>

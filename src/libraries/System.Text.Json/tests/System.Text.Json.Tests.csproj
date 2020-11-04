@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <TargetFrameworks>$(NetCoreAppCurrent);net461</TargetFrameworks>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
@@ -21,6 +21,7 @@
     <Compile Include="JsonDateTimeTestData.cs" />
     <Compile Include="JsonDocumentTests.cs" />
     <Compile Include="JsonElementCloneTests.cs" />
+    <Compile Include="JsonElementParseTests.cs" />
     <Compile Include="JsonElementWriteTests.cs" />
     <Compile Include="JsonEncodedTextTests.cs" />
     <Compile Include="JsonGuidTestData.cs" />
@@ -61,6 +62,7 @@
     <Compile Include="Serialization\ConstructorTests\ConstructorTests.ParameterMatching.cs" />
     <Compile Include="Serialization\ConstructorTests\ConstructorTests.Stream.cs" />
     <Compile Include="Serialization\ContinuationTests.cs" />
+    <Compile Include="Serialization\ContinuationTests.NullToken.cs" />
     <Compile Include="Serialization\CustomConverterTests\CustomConverterTests.Array.cs" />
     <Compile Include="Serialization\CustomConverterTests\CustomConverterTests.Attribute.cs" />
     <Compile Include="Serialization\CustomConverterTests\CustomConverterTests.BadConverters.cs" />
@@ -72,8 +74,10 @@
     <Compile Include="Serialization\CustomConverterTests\CustomConverterTests.DictionaryInt32StringConverter.cs" />
     <Compile Include="Serialization\CustomConverterTests\CustomConverterTests.DictionaryInt32StringKeyValueConverter.cs" />
     <Compile Include="Serialization\CustomConverterTests\CustomConverterTests.DictionaryKeyValueConverter.cs" />
+    <Compile Include="Serialization\CustomConverterTests\CustomConverterTests.Dynamic.Sample.Tests.cs" />
     <Compile Include="Serialization\CustomConverterTests\CustomConverterTests.Enum.cs" />
     <Compile Include="Serialization\CustomConverterTests\CustomConverterTests.Exceptions.cs" />
+    <Compile Include="Serialization\CustomConverterTests\CustomConverterTests.Dynamic.Sample.cs" />
     <Compile Include="Serialization\CustomConverterTests\CustomConverterTests.HandleNull.cs" />
     <Compile Include="Serialization\CustomConverterTests\CustomConverterTests.Int32.cs" />
     <Compile Include="Serialization\CustomConverterTests\CustomConverterTests.InvalidCast.cs" />
@@ -88,6 +92,7 @@
     <Compile Include="Serialization\CustomConverterTests\CustomConverterTests.cs" />
     <Compile Include="Serialization\CyclicTests.cs" />
     <Compile Include="Serialization\DeserializationWrapper.cs" />
+    <Compile Include="Serialization\DynamicTests.cs" />
     <Compile Include="Serialization\EnumConverterTests.cs" />
     <Compile Include="Serialization\EnumTests.cs" />
     <Compile Include="Serialization\ExceptionTests.cs" />
@@ -160,6 +165,7 @@
   <ItemGroup>
     <PackageReference Include="Newtonsoft.Json" Version="$(NewtonsoftJsonVersion)" />
     <ProjectReference Include="$(LibrariesProjectRoot)System.IO.Pipelines\src\System.IO.Pipelines.csproj" />
+    <Reference Include="Microsoft.CSharp" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetFramework)' == 'net461'">
     <ProjectReference Include="$(LibrariesProjectRoot)System.Collections.Immutable\src\System.Collections.Immutable.csproj" />

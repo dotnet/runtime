@@ -3360,7 +3360,7 @@ namespace System.Data
             get { return _xmlreader.Depth; }
         }
 
-        public override string? BaseURI
+        public override string BaseURI
         {
             get { return _xmlreader.BaseURI; }
         }

@@ -2,7 +2,7 @@
   <PropertyGroup>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <IncludeRemoteExecutor>true</IncludeRemoteExecutor>
-    <TargetFrameworks>$(NetCoreAppCurrent)-Windows_NT;$(NetCoreAppCurrent)-Unix;$(NetCoreAppCurrent)-Browser</TargetFrameworks>
+    <TargetFrameworks>$(NetCoreAppCurrent)-windows;$(NetCoreAppCurrent)-Unix;$(NetCoreAppCurrent)-Browser</TargetFrameworks>
 
     <RunTestsJSArguments>--working-dir=/test-dir</RunTestsJSArguments>
   </PropertyGroup>
@@ -20,8 +20,6 @@
     <Compile Include="FileInfo\Replace.cs" />
     <Compile Include="FileStream\Handle.cs" />
     <Compile Include="Directory\GetLogicalDrives.cs" />
-    <Compile Include="FileStream\EndRead.cs" />
-    <Compile Include="FileStream\EndWrite.cs" />
     <Compile Include="FileStream\LockUnlock.cs" />
     <Compile Include="FileSystemTest.cs" />
     <Compile Include="File\EncryptDecrypt.cs" />
@@ -72,27 +70,18 @@
     <Compile Include="FileInfo\Length.cs" />
     <Compile Include="FileInfo\Open.cs" />
     <Compile Include="FileStream\FlushAsync.cs" />
-    <Compile Include="FileStream\Pipes.cs" />
+    <Compile Include="FileStream\FileStreamConformanceTests.cs" />
     <Compile Include="FileStream\SafeFileHandle.cs" />
     <Compile Include="FileStream\IsAsync.cs" />
-    <Compile Include="FileStream\CanTimeout.cs" />
-    <Compile Include="FileStream\CanSeek.cs" />
     <Compile Include="FileStream\Name.cs" />
-    <Compile Include="FileStream\CanWrite.cs" />
-    <Compile Include="FileStream\CanRead.cs" />
     <Compile Include="FileStream\CopyToAsync.cs" />
-    <Compile Include="FileStream\Buffering_regression.cs" />
     <Compile Include="FileStream\Flush.cs" />
     <Compile Include="FileStream\Dispose.cs" />
     <Compile Include="FileStream\WriteAsync.cs" />
-    <Compile Include="FileStream\Write.cs" />
     <Compile Include="FileStream\ToString.cs" />
-    <Compile Include="FileStream\WriteByte.cs" />
     <Compile Include="FileStream\ReadAsync.cs" />
     <Compile Include="FileStream\Read.cs" />
-    <Compile Include="FileStream\ReadByte.cs" />
     <Compile Include="FileStream\SetLength.cs" />
-    <Compile Include="FileStream\Length.cs" />
     <Compile Include="FileStream\Position.cs" />
     <Compile Include="FileStream\Seek.cs" />
     <Compile Include="FileStream\ctor_sfh_fa_buffer_async.cs" />
@@ -166,16 +155,18 @@
     <Compile Include="FileInfo\AppendText.cs" />
     <Compile Include="FileInfo\CopyTo.cs" />
     <!-- Helpers -->
-    <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.GenericOperations.cs"
-             Link="Interop\Windows\Interop.GenericOperations.cs" />
-    <Compile Include="$(CommonTestPath)System\Buffers\NativeMemoryManager.cs"
-             Link="Common\System\Buffers\NativeMemoryManager.cs" />
-    <Compile Include="$(CommonTestPath)System\IO\TempFile.cs"
-             Link="Common\System\IO\TempFile.cs" />
-    <Compile Include="$(CommonTestPath)System\IO\PathFeatures.cs"
-             Link="Common\System\IO\PathFeatures.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.GenericOperations.cs" Link="Interop\Windows\Interop.GenericOperations.cs" />
+    <Compile Include="$(CommonTestPath)System\Buffers\NativeMemoryManager.cs" Link="Common\System\Buffers\NativeMemoryManager.cs" />
+    <Compile Include="$(CommonTestPath)System\IO\TempFile.cs" Link="Common\System\IO\TempFile.cs" />
+    <Compile Include="$(CommonTestPath)System\IO\PathFeatures.cs" Link="Common\System\IO\PathFeatures.cs" />
 
-    <Content Include="DirectoryInfo\test-dir\dummy.txt"
-             Link="test-dir\dummy.txt" />
+    <Content Include="DirectoryInfo\test-dir\dummy.txt" Link="test-dir\dummy.txt" />
+
+    <Compile Include="$(CommonTestPath)Tests\System\IO\StreamConformanceTests.cs" Link="Common\System\IO\StreamConformanceTests.cs" />
+    <Compile Include="$(CommonTestPath)System\IO\ConnectedStreams.cs" Link="Common\System\IO\ConnectedStreams.cs" />
+    <Compile Include="$(CommonTestPath)System\IO\CallTrackingStream.cs" Link="Common\System\IO\CallTrackingStream.cs" />
+    <Compile Include="$(CommonPath)System\Net\ArrayBuffer.cs" Link="ProductionCode\Common\System\Net\ArrayBuffer.cs" />
+    <Compile Include="$(CommonPath)System\Net\StreamBuffer.cs" Link="ProductionCode\Common\System\Net\StreamBuffer.cs" />
+    <Compile Include="$(CommonPath)System\Threading\Tasks\TaskToApm.cs" Link="Common\System\Threading\Tasks\TaskToApm.cs" />
   </ItemGroup>
 </Project>

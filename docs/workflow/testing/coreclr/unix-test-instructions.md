@@ -81,7 +81,8 @@ PAL tests
 
 Build CoreCLR with PAL tests on the Unix machine:
 
-```sh ./build.sh clr.paltests
+```sh
+./build.sh clr.paltests
 ```
 
 Run tests:

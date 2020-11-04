@@ -1,7 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.Threading;
 using System.Threading.Tasks;
 using Xunit;
 
@@ -9,43 +8,6 @@ namespace System.IO.Tests
 {
     public partial class FileStream_FlushAsync : FileSystemTest
     {
-        [Fact]
-        public async Task FlushAsyncThrowsForDisposedStream()
-        {
-            using (FileStream fs = new FileStream(GetTestFilePath(), FileMode.Create))
-            {
-                fs.Dispose();
-                await Assert.ThrowsAsync<ObjectDisposedException>(() => fs.FlushAsync());
-            }
-        }
-
-        [Fact]
-        public async Task BasicFlushAsyncFunctionality()
-        {
-            using (FileStream fs = new FileStream(GetTestFilePath(), FileMode.Create))
-            {
-                fs.WriteByte(0);
-                await fs.FlushAsync();
-
-                fs.WriteByte(0xFF);
-                await fs.FlushAsync();
-            }
-        }
-
-        [Fact]
-        public async Task FlushAsyncWhenNothingToFlush()
-        {
-            using (FileStream fs = new FileStream(GetTestFilePath(), FileMode.Create))
-            {
-                fs.WriteByte(0);
-                await fs.FlushAsync();
-
-                await fs.FlushAsync();
-                await fs.FlushAsync();
-                await fs.FlushAsync();
-            }
-        }
-
         [Fact]
         public async Task FlushAsyncOnReadOnlyFileDoesNotThrow()
         {
@@ -62,18 +24,6 @@ namespace System.IO.Tests
             finally
             {
                 File.SetAttributes(fileName, FileAttributes.Normal);
-            }
-        }
-
-        [Fact]
-        public async Task FlushAfterReading()
-        {
-            string fileName = GetTestFilePath();
-            File.WriteAllBytes(fileName, TestBuffer);
-            using (FileStream fs = new FileStream(fileName, FileMode.Open, FileAccess.ReadWrite, FileShare.ReadWrite, 2))
-            {
-                Assert.Equal(TestBuffer[0], fs.ReadByte());
-                await fs.FlushAsync();
             }
         }
 
@@ -101,15 +51,5 @@ namespace System.IO.Tests
                 Assert.Equal(TestBuffer, buffer);
             }
         }
-
-        [Fact]
-        public void FlushAsyncWithCanceledToken()
-        {
-            using (FileStream fs = File.OpenWrite(GetTestFilePath()))
-            {
-                Assert.True(fs.FlushAsync(new CancellationToken(true)).IsCanceled);
-            }
-        }
-
     }
 }
