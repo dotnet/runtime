@@ -44,6 +44,7 @@ namespace System.IO.Tests
     }
 
     [ActiveIssue("https://github.com/dotnet/runtime/issues/34583", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
+    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))] // sync-over-async not supported on browser
     public class UnbufferedAsyncFileStreamStandaloneConformanceTests : FileStreamStandaloneConformanceTests
     {
         protected override FileOptions Options => FileOptions.Asynchronous;
@@ -51,6 +52,7 @@ namespace System.IO.Tests
     }
 
     [ActiveIssue("https://github.com/dotnet/runtime/issues/34583", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
+    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))] // sync-over-async not supported on browser
     public class BufferedAsyncFileStreamStandaloneConformanceTests : FileStreamStandaloneConformanceTests
     {
         protected override FileOptions Options => FileOptions.Asynchronous;
