@@ -6,6 +6,7 @@
 using System;
 using System.Text;
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 
 namespace Microsoft.Extensions.Internal
 {
@@ -33,6 +34,7 @@ namespace Microsoft.Extensions.Internal
             { typeof(ushort), "ushort" }
         };
 
+        [return: NotNullIfNotNull("item")]
         public static string? GetTypeDisplayName(object? item, bool fullName = true)
         {
             return item == null ? null : GetTypeDisplayName(item.GetType(), fullName);
