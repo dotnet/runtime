@@ -370,6 +370,9 @@ namespace Loader
 HRESULT EnsureRtlFunctions();
 HINSTANCE GetModuleInst();
 
+// Helper function returns the base of this module.
+SIZE_T GetModuleBase();
+
 #if defined(TARGET_X86) || defined(TARGET_AMD64)
 //
 // Strong memory model. No memory barrier necessary before writing object references into GC heap.

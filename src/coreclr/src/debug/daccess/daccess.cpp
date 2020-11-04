@@ -72,11 +72,11 @@ BOOL WINAPI DllMain(HANDLE instance, DWORD reason, LPVOID reserved)
         {
             return FALSE;
         }
-#endif
-        InitializeCriticalSection(&g_dacCritSec);
-
+#else
         // Save the module handle.
         g_thisModule = (HINSTANCE)instance;
+#endif
+        InitializeCriticalSection(&g_dacCritSec);
 
         g_procInitialized = true;
         break;
