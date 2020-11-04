@@ -72,7 +72,6 @@ if(ENABLE_NETCORE)
   set(DISABLE_GAC 1)
   set(DISABLE_PERFCOUNTERS 1)
   set(DISABLE_ATTACH 1)
-  set(DISABLE_DLLMAP 1)
   set(DISABLE_CONFIG 1)
   set(DISABLE_CFGDIR_CONFIG 1)
   set(DISABLE_VERIFIER 1)
@@ -574,6 +573,19 @@ if (CMAKE_BUILD_TYPE STREQUAL "Debug")
 endif()
 ### End of debug build checks
 
+
+######################################
+# OS SPECIFIC CHECKS
+######################################
+if(ENABLE_NETCORE)
+  if(TARGET_IOS OR TARGET_ANDROID)
+    # FIXME: the mobile products use mono_dllmap_insert so allow this
+    unset(DISABLE_DLLMAP)
+  else()
+    set(DISABLE_DLLMAP 1)
+  endif()
+endif()
+### End of OS specific checks
 
 add_subdirectory(mono)
 
