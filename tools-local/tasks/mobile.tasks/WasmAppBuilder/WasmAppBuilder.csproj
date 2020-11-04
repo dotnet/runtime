@@ -21,4 +21,7 @@
   <Target Name="PublishBuilder"
           AfterTargets="Build"
           DependsOnTargets="Publish" />
+
+  <Target Name="GetFilesToPackage" />
+
 </Project>
