@@ -233,6 +233,7 @@ namespace System.IO.Tests
         [InlineData(FileAccess.Read)]
         [InlineData(FileAccess.Write)]
         [InlineData(FileAccess.ReadWrite)]
+        [PlatformSpecific(~TestPlatforms.OSX)]
         public void OverlappingRegionsFromOtherProcess_With_WriteLock_ThrowsException(FileAccess fileAccess)
         {
             string path = GetTestFilePath();
