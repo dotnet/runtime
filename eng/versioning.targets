@@ -155,4 +155,18 @@
       WriteOnlyWhenDifferent="true" />
 
   </Target>
+
+  <PropertyGroup>
+    <PrepareForBuildDependsOn>$(PrepareForBuildDependsOn);RemoveSupportedPlatformAssemblyLevelAttribute</PrepareForBuildDependsOn>
+  </PropertyGroup>
+
+  <!-- Removes specified assembly level attributes. https://github.com/dotnet/runtime/issues/44257-->
+  <Target Name="RemoveSupportedPlatformAssemblyLevelAttribute"
+          DependsOnTargets="GetAssemblyAttributes">
+    <ItemGroup>
+      <AssemblyAttribute Remove="System.Runtime.Versioning.SupportedOSPlatformAttribute" />
+      <AssemblyAttribute Remove="System.Runtime.Versioning.TargetPlatformAttribute" />
+    </ItemGroup>
+  </Target>
+
 </Project>
