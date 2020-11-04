@@ -18,7 +18,7 @@ using Xunit;
 namespace System.IO.Tests
 {
     /// <summary>Base class providing tests for any Stream-derived type.</summary>
-    [PlatformSpecific(~TestPlatforms.Browser)] // lots of operations aren't supported on browser
+    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))] // lots of operations aren't supported on browser
     public abstract class StreamConformanceTests : FileCleanupTestBase
     {
         /// <summary>Gets the name of the byte[] argument to Read/Write methods.</summary>
@@ -544,8 +544,11 @@ namespace System.IO.Tests
             cts = new CancellationTokenSource(1);
             await AssertCanceledAsync(cts.Token, () => stream.ReadAsync(new byte[1], 0, 1, cts.Token));
 
-            cts = new CancellationTokenSource(1);
-            await AssertCanceledAsync(cts.Token, async () => { await stream.ReadAsync(new Memory<byte>(new byte[1]), cts.Token); });
+            if (UsableAfterCanceledReads)
+            {
+                cts = new CancellationTokenSource(1);
+                await AssertCanceledAsync(cts.Token, async () => { await stream.ReadAsync(new Memory<byte>(new byte[1]), cts.Token); });
+            }
         }
 
         protected async Task WhenAllOrAnyFailed(Task task1, Task task2)
@@ -644,10 +647,10 @@ namespace System.IO.Tests
         protected override bool CanSeek => true;
         protected virtual bool NopFlushCompletesSynchronously => true;
 
-        protected abstract Stream? CreateReadOnlyStreamCore(byte[]? initialData);
-        protected Stream? CreateReadOnlyStream(byte[]? initialData = null)
+        protected abstract Task<Stream?> CreateReadOnlyStreamCore(byte[]? initialData);
+        protected async Task<Stream?> CreateReadOnlyStream(byte[]? initialData = null)
         {
-            Stream? stream = CreateReadOnlyStreamCore(initialData);
+            Stream? stream = await CreateReadOnlyStreamCore(initialData);
             if (stream is not null)
             {
                 Assert.True(stream.CanRead);
@@ -661,10 +664,10 @@ namespace System.IO.Tests
             return stream;
         }
 
-        protected abstract Stream? CreateWriteOnlyStreamCore(byte[]? initialData);
-        protected Stream? CreateWriteOnlyStream(byte[]? initialData = null)
+        protected abstract Task<Stream?> CreateWriteOnlyStreamCore(byte[]? initialData);
+        protected async Task<Stream?> CreateWriteOnlyStream(byte[]? initialData = null)
         {
-            Stream? stream = CreateWriteOnlyStreamCore(initialData);
+            Stream? stream = await CreateWriteOnlyStreamCore(initialData);
             if (stream is not null)
             {
                 Assert.False(stream.CanRead);
@@ -678,10 +681,10 @@ namespace System.IO.Tests
             return stream;
         }
 
-        protected abstract Stream? CreateReadWriteStreamCore(byte[]? initialData);
-        protected Stream? CreateReadWriteStream(byte[]? initialData = null)
+        protected abstract Task<Stream?> CreateReadWriteStreamCore(byte[]? initialData);
+        protected async Task<Stream?> CreateReadWriteStream(byte[]? initialData = null)
         {
-            Stream? stream = CreateReadWriteStreamCore(initialData);
+            Stream? stream = await CreateReadWriteStreamCore(initialData);
             if (stream is not null)
             {
                 Assert.True(stream.CanRead);
@@ -695,22 +698,22 @@ namespace System.IO.Tests
             return stream;
         }
 
-        protected IEnumerable<Stream?> GetStreamsForValidation()
+        protected async IAsyncEnumerable<Stream?> GetStreamsForValidation()
         {
-            yield return CreateReadOnlyStream();
-            yield return CreateReadOnlyStream(new byte[4]);
+            yield return await CreateReadOnlyStream();
+            yield return await CreateReadOnlyStream(new byte[4]);
 
-            yield return CreateWriteOnlyStream();
-            yield return CreateWriteOnlyStream(new byte[4]);
+            yield return await CreateWriteOnlyStream();
+            yield return await CreateWriteOnlyStream(new byte[4]);
 
-            yield return CreateReadWriteStream();
-            yield return CreateReadWriteStream(new byte[4]);
+            yield return await CreateReadWriteStream();
+            yield return await CreateReadWriteStream(new byte[4]);
         }
 
         [Fact]
         public virtual async Task ArgumentValidation_ThrowsExpectedException()
         {
-            foreach (Stream? stream in GetStreamsForValidation())
+            await foreach (Stream? stream in GetStreamsForValidation())
             {
                 if (stream != null)
                 {
@@ -723,7 +726,7 @@ namespace System.IO.Tests
         [Fact]
         public virtual async Task Disposed_ThrowsObjectDisposedException()
         {
-            foreach (Stream? stream in GetStreamsForValidation())
+            await foreach (Stream? stream in GetStreamsForValidation())
             {
                 if (stream != null)
                 {
@@ -736,7 +739,7 @@ namespace System.IO.Tests
         [Fact]
         public virtual async Task ReadWriteAsync_Precanceled_ThrowsOperationCanceledException()
         {
-            foreach (Stream? stream in GetStreamsForValidation())
+            await foreach (Stream? stream in GetStreamsForValidation())
             {
                 if (stream != null)
                 {
@@ -750,7 +753,7 @@ namespace System.IO.Tests
         [MemberData(nameof(AllReadWriteModes))]
         public virtual async Task Read_NonEmptyStream_Nop_Success(ReadWriteMode mode)
         {
-            using Stream? stream = CreateReadOnlyStream(new byte[10]);
+            using Stream? stream = await CreateReadOnlyStream(new byte[10]);
             if (stream is null)
             {
                 return;
@@ -766,7 +769,7 @@ namespace System.IO.Tests
         [MemberData(nameof(AllReadWriteModes))]
         public virtual async Task Write_Nop_Success(ReadWriteMode mode)
         {
-            using Stream? stream = CreateReadWriteStream();
+            using Stream? stream = await CreateReadWriteStream();
             if (stream is null)
             {
                 return;
@@ -789,7 +792,7 @@ namespace System.IO.Tests
         {
             const byte Expected = 42;
 
-            using Stream? stream = CreateReadWriteStream(new byte[] { Expected });
+            using Stream? stream = await CreateReadWriteStream(new byte[] { Expected });
             if (stream is null)
             {
                 return;
@@ -812,7 +815,7 @@ namespace System.IO.Tests
         [InlineData(ReadWriteMode.AsyncAPM)]
         public virtual async Task Write_DataReadFromDesiredOffset(ReadWriteMode mode)
         {
-            using Stream? stream = CreateReadWriteStream();
+            using Stream? stream = await CreateReadWriteStream();
             if (stream is null)
             {
                 return;
@@ -829,7 +832,7 @@ namespace System.IO.Tests
         [MemberData(nameof(AllReadWriteModes))]
         public virtual async Task Read_EmptyStream_Nop_Success(ReadWriteMode mode)
         {
-            using Stream? stream = CreateReadOnlyStream();
+            using Stream? stream = await CreateReadOnlyStream();
             if (stream is null)
             {
                 return;
@@ -851,7 +854,7 @@ namespace System.IO.Tests
         {
             byte[] expected = RandomNumberGenerator.GetBytes(size);
 
-            using Stream? stream = CreateReadOnlyStream(expected);
+            using Stream? stream = await CreateReadOnlyStream(expected);
             if (stream is null)
             {
                 return;
@@ -882,7 +885,7 @@ namespace System.IO.Tests
         {
             byte[] expected = RandomNumberGenerator.GetBytes(size);
 
-            using Stream? stream = CreateReadOnlyStream(expected);
+            using Stream? stream = await CreateReadOnlyStream(expected);
             if (stream is null)
             {
                 return;
@@ -914,7 +917,7 @@ namespace System.IO.Tests
         {
             byte[] expected = RandomNumberGenerator.GetBytes(20);
 
-            using Stream? stream = CreateReadOnlyStream(expected);
+            using Stream? stream = await CreateReadOnlyStream(expected);
             if (stream is null)
             {
                 return;
@@ -945,7 +948,7 @@ namespace System.IO.Tests
         {
             byte[] expected = RandomNumberGenerator.GetBytes(20);
 
-            using Stream? stream = CreateReadOnlyStream(expected);
+            using Stream? stream = await CreateReadOnlyStream(expected);
             if (stream is null)
             {
                 return;
@@ -967,7 +970,7 @@ namespace System.IO.Tests
         [InlineData(true)]
         public virtual async Task Write_CustomMemoryManager_Success(bool useAsync)
         {
-            using Stream? stream = CreateReadWriteStream();
+            using Stream? stream = await CreateReadWriteStream();
             if (stream is null)
             {
                 return;
@@ -998,13 +1001,23 @@ namespace System.IO.Tests
         public virtual async Task CopyTo_CopiesAllDataFromRightPosition_Success(
             bool useAsync, byte[] expected, int position)
         {
-            using Stream? stream = CreateReadOnlyStream(expected);
+            using Stream? stream = await CreateReadOnlyStream(expected);
             if (stream is null)
             {
                 return;
             }
 
-            stream.Position = position;
+            if (stream.CanSeek)
+            {
+                stream.Position = position;
+            }
+            else
+            {
+                for (int i = 0; i < position; i++)
+                {
+                    Assert.NotEqual(-1, stream.ReadByte());
+                }
+            }
 
             var destination = new MemoryStream();
             if (useAsync)
@@ -1016,8 +1029,12 @@ namespace System.IO.Tests
                 stream.CopyTo(destination);
             }
 
-            Assert.Equal(expected.Length, stream.Length);
-            Assert.Equal(expected.Length, stream.Position);
+            if (stream.CanSeek)
+            {
+                Assert.Equal(expected.Length, stream.Length);
+                Assert.Equal(expected.Length, stream.Position);
+            }
+
             Assert.Equal(expected.AsSpan(position).ToArray(), destination.ToArray());
         }
 
@@ -1039,7 +1056,7 @@ namespace System.IO.Tests
         {
             const int Length = 1024;
 
-            using Stream? stream = CreateReadWriteStream();
+            using Stream? stream = await CreateReadWriteStream();
             if (stream is null)
             {
                 return;
@@ -1068,7 +1085,7 @@ namespace System.IO.Tests
         [MemberData(nameof(AllReadWriteModes))]
         public virtual async Task Flush_ReadOnly_DoesntImpactReading(ReadWriteMode mode)
         {
-            using Stream? stream = CreateReadOnlyStream(new byte[] { 0, 1, 2, 3, 4, 5 });
+            using Stream? stream = await CreateReadOnlyStream(new byte[] { 0, 1, 2, 3, 4, 5 });
             if (stream is null)
             {
                 return;
@@ -1088,7 +1105,7 @@ namespace System.IO.Tests
         [InlineData(ReadWriteMode.AsyncArray)]
         public virtual async Task Flush_MultipleTimes_Idempotent(ReadWriteMode mode)
         {
-            using Stream? stream = CreateReadWriteStream();
+            using Stream? stream = await CreateReadWriteStream();
             if (stream is null)
             {
                 return;
@@ -1114,14 +1131,14 @@ namespace System.IO.Tests
         }
 
         [Fact]
-        public virtual void Flush_SetLengthAtEndOfBuffer_OperatesOnValidData()
+        public virtual async Task Flush_SetLengthAtEndOfBuffer_OperatesOnValidData()
         {
             if (!CanSeek || !CanSetLengthGreaterThanCapacity)
             {
                 return;
             }
 
-            using Stream? stream = CreateReadWriteStream();
+            using Stream? stream = await CreateReadWriteStream();
             if (stream is null)
             {
                 return;
@@ -1153,14 +1170,14 @@ namespace System.IO.Tests
         }
 
         [Fact]
-        public virtual void Flush_NothingToFlush_CompletesSynchronously()
+        public virtual async Task Flush_NothingToFlush_CompletesSynchronously()
         {
             if (!NopFlushCompletesSynchronously)
             {
                 return;
             }
 
-            using Stream? stream = CreateReadWriteStream();
+            using Stream? stream = await CreateReadWriteStream();
             if (stream is null)
             {
                 return;
@@ -1172,9 +1189,9 @@ namespace System.IO.Tests
         }
 
         [Fact]
-        public virtual void DisposeAsync_NothingToFlush_CompletesSynchronously()
+        public virtual async Task DisposeAsync_NothingToFlush_CompletesSynchronously()
         {
-            using Stream? stream = CreateReadWriteStream();
+            using Stream? stream = await CreateReadWriteStream();
             if (stream is null)
             {
                 return;
@@ -1184,14 +1201,14 @@ namespace System.IO.Tests
         }
 
         [Fact]
-        public virtual void Seek_Offset0FromMark_Success()
+        public virtual async Task Seek_Offset0FromMark_Success()
         {
             if (!CanSeek)
             {
                 return;
             }
 
-            using Stream? stream = CreateReadOnlyStream(new byte[10]);
+            using Stream? stream = await CreateReadOnlyStream(new byte[10]);
             if (stream is null)
             {
                 return;
@@ -1205,9 +1222,9 @@ namespace System.IO.Tests
         }
 
         [Fact]
-        public virtual void Seek_RandomWalk_ReadConsistency()
+        public virtual async Task Seek_RandomWalk_ReadConsistency()
         {
-            using Stream? stream = CreateReadWriteStream();
+            using Stream? stream = await CreateReadWriteStream();
             if (stream is null)
             {
                 return;
@@ -1252,7 +1269,7 @@ namespace System.IO.Tests
 
         [Theory]
         [MemberData(nameof(AllSeekModes))]
-        public virtual void Seek_Read_RoundtripsExpectedData(SeekMode mode)
+        public virtual async Task Seek_Read_RoundtripsExpectedData(SeekMode mode)
         {
             if (!CanSeek)
             {
@@ -1262,7 +1279,7 @@ namespace System.IO.Tests
             const int Length = 512;
 
             byte[] expected = RandomNumberGenerator.GetBytes(Length);
-            using Stream? stream = CreateReadOnlyStream(expected);
+            using Stream? stream = await CreateReadOnlyStream(expected);
             if (stream is null)
             {
                 return;
@@ -1278,7 +1295,7 @@ namespace System.IO.Tests
 
         [Theory]
         [MemberData(nameof(AllSeekModes))]
-        public virtual void Seek_ReadWrite_RoundtripsExpectedData(SeekMode mode)
+        public virtual async Task Seek_ReadWrite_RoundtripsExpectedData(SeekMode mode)
         {
             if (!CanSeek)
             {
@@ -1288,7 +1305,7 @@ namespace System.IO.Tests
             const int Length = 512;
 
             byte[] expected = RandomNumberGenerator.GetBytes(Length);
-            using Stream? stream = CreateReadWriteStream(expected);
+            using Stream? stream = await CreateReadWriteStream(expected);
             if (stream is null)
             {
                 return;
@@ -1314,54 +1331,70 @@ namespace System.IO.Tests
         }
 
         [Fact]
-        public virtual void SetLength_FailsForReadOnly_Throws()
+        public virtual async Task SetLength_FailsForReadOnly_Throws()
         {
-            using Stream? stream = CreateReadOnlyStream(new byte[4]);
+            using Stream? stream = await CreateReadOnlyStream(new byte[4]);
             if (stream is null)
             {
                 return;
             }
 
-            Assert.Equal(0, stream.Position);
+            if (stream.CanSeek)
+            {
+                Assert.Equal(0, stream.Position);
+            }
+
             Assert.Throws<NotSupportedException>(() => stream.SetLength(3));
             Assert.Throws<NotSupportedException>(() => stream.SetLength(4));
             if (CanSetLengthGreaterThanCapacity)
             {
                 Assert.Throws<NotSupportedException>(() => stream.SetLength(5));
             }
-            Assert.Equal(0, stream.Position);
+
+            if (stream.CanSeek)
+            {
+                Assert.Equal(0, stream.Position);
+            }
         }
 
         [Fact]
-        public virtual void SetLength_FailsForWritableIfApplicable_Throws()
+        public virtual async Task SetLength_FailsForWritableIfApplicable_Throws()
         {
             if (CanSetLength)
             {
                 return;
             }
 
-            using Stream? stream = CreateReadWriteStream(new byte[4]);
+            using Stream? stream = await CreateReadWriteStream(new byte[4]);
             if (stream is null)
             {
                 return;
             }
 
-            Assert.Equal(0, stream.Position);
+            if (stream.CanSeek)
+            {
+                Assert.Equal(0, stream.Position);
+            }
+
             Assert.Throws<NotSupportedException>(() => stream.SetLength(3));
             Assert.Throws<NotSupportedException>(() => stream.SetLength(4));
             Assert.Throws<NotSupportedException>(() => stream.SetLength(5));
-            Assert.Equal(0, stream.Position);
+
+            if (stream.CanSeek)
+            {
+                Assert.Equal(0, stream.Position);
+            }
         }
 
         [Fact]
-        public virtual void SetLength_ChangesLengthAccordingly_Success()
+        public virtual async Task SetLength_ChangesLengthAccordingly_Success()
         {
             if (!CanSetLength)
             {
                 return;
             }
 
-            using Stream? stream = CreateReadWriteStream();
+            using Stream? stream = await CreateReadWriteStream();
             if (stream is null)
             {
                 return;
@@ -1403,7 +1436,7 @@ namespace System.IO.Tests
             byte[] expected = new byte[] { 0, 1, 2, 3 };
             byte[] actual = new byte[expected.Length];
 
-            using Stream? stream = CreateReadWriteStream(expected);
+            using Stream? stream = await CreateReadWriteStream(expected);
             if (stream is null)
             {
                 return;
@@ -1433,14 +1466,14 @@ namespace System.IO.Tests
         }
 
         [Fact]
-        public void SetLength_MaxValue_ThrowsExpectedException()
+        public async Task SetLength_MaxValue_ThrowsExpectedException()
         {
             if (!CanSetLengthGreaterThanCapacity)
             {
                 return;
             }
 
-            using Stream? stream = CreateReadWriteStream();
+            using Stream? stream = await CreateReadWriteStream();
             if (stream is null)
             {
                 return;
@@ -1472,7 +1505,7 @@ namespace System.IO.Tests
                 return;
             }
 
-            using Stream? stream = CreateReadWriteStream();
+            using Stream? stream = await CreateReadWriteStream();
             if (stream is null)
             {
                 return;
@@ -1658,6 +1691,7 @@ namespace System.IO.Tests
 
         public static IEnumerable<object[]> ReadWrite_Success_Large_MemberData() =>
             from mode in Enum.GetValues<ReadWriteMode>()
+            where mode != ReadWriteMode.SyncByte // too slow, even for outer loop, and fully covered by inner loop ReadWrite_Success test
             from writeSize in new[] { 10 * 1024 * 1024 }
             from startWithFlush in new[] { false, true }
             select new object[] { mode, writeSize, startWithFlush };

@@ -250,7 +250,17 @@ namespace System.Net.Sockets
             ThrowIfDisposed();
             if (!CanRead) throw new InvalidOperationException(SR.net_writeonlystream);
 
-            int bytesRead = _streamSocket.Receive(buffer, SocketFlags.None, out SocketError errorCode);
+            int bytesRead;
+            SocketError errorCode;
+            try
+            {
+                bytesRead = _streamSocket.Receive(buffer, SocketFlags.None, out errorCode);
+            }
+            catch (Exception exception) when (!(exception is OutOfMemoryException))
+            {
+                throw GetCustomException(SR.Format(SR.net_io_readfailure, exception.Message), exception);
+            }
+
             if (errorCode != SocketError.Success)
             {
                 var socketException = new SocketException((int)errorCode);
@@ -320,7 +330,16 @@ namespace System.Net.Sockets
             ThrowIfDisposed();
             if (!CanWrite) throw new InvalidOperationException(SR.net_readonlystream);
 
-            _streamSocket.Send(buffer, SocketFlags.None, out SocketError errorCode);
+            SocketError errorCode;
+            try
+            {
+                _streamSocket.Send(buffer, SocketFlags.None, out errorCode);
+            }
+            catch (Exception exception) when (!(exception is OutOfMemoryException))
+            {
+                throw GetCustomException(SR.Format(SR.net_io_writefailure, exception.Message), exception);
+            }
+
             if (errorCode != SocketError.Success)
             {
                 var socketException = new SocketException((int)errorCode);

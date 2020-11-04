@@ -13,7 +13,7 @@ namespace System.IO.Tests
         protected abstract FileOptions Options { get; }
         protected abstract int BufferSize { get; }
 
-        private FileStream CreateStream(byte[] initialData, FileAccess access)
+        private Task<Stream> CreateStream(byte[] initialData, FileAccess access)
         {
             string path = GetTestFilePath();
             if (initialData != null)
@@ -21,12 +21,12 @@ namespace System.IO.Tests
                 File.WriteAllBytes(path, initialData);
             }
 
-            return new FileStream(path, FileMode.OpenOrCreate, access, FileShare.None, BufferSize, Options);
+            return Task.FromResult<Stream>(new FileStream(path, FileMode.OpenOrCreate, access, FileShare.None, BufferSize, Options));
         }
 
-        protected override Stream CreateReadOnlyStreamCore(byte[] initialData) => CreateStream(initialData, FileAccess.Read);
-        protected override Stream CreateReadWriteStreamCore(byte[] initialData) => CreateStream(initialData, FileAccess.ReadWrite);
-        protected override Stream CreateWriteOnlyStreamCore(byte[] initialData) => CreateStream(initialData, FileAccess.Write);
+        protected override Task<Stream> CreateReadOnlyStreamCore(byte[] initialData) => CreateStream(initialData, FileAccess.Read);
+        protected override Task<Stream> CreateReadWriteStreamCore(byte[] initialData) => CreateStream(initialData, FileAccess.ReadWrite);
+        protected override Task<Stream> CreateWriteOnlyStreamCore(byte[] initialData) => CreateStream(initialData, FileAccess.Write);
 
         protected override bool NopFlushCompletesSynchronously => OperatingSystem.IsWindows();
     }
