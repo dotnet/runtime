@@ -89,7 +89,7 @@ native_binaries_to_ignore = [
     "superpmi-shim-counter.dll",
     "superpmi-shim-simple.dll",
 ]
-MAX_FILES_COUNT = 2500
+MAX_FILES_COUNT = 1500
 
 def setup_args(args):
     """ Setup the args for SuperPMI to use.
