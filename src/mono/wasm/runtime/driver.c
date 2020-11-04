@@ -94,6 +94,8 @@ mono_wasm_invoke_js (MonoString *str, int *is_exception)
 
 	mono_unichar2 *native_val = mono_string_chars (str);
 	int native_len = mono_string_length (str) * 2;
+	int native_res_len;
+	int *p_native_res_len = &native_res_len;
 
 	mono_unichar2 *native_res = (mono_unichar2*)EM_ASM_INT ({
 		var str = MONO.string_decoder.decode ($0, $0 + $1);
@@ -111,13 +113,14 @@ mono_wasm_invoke_js (MonoString *str, int *is_exception)
 		}
 		var buff = Module._malloc((res.length + 1) * 2);
 		stringToUTF16 (res, buff, (res.length + 1) * 2);
+		setValue ($3, res.length, "i32");
 		return buff;
-	}, (int)native_val, native_len, is_exception);
+	}, (int)native_val, native_len, is_exception, p_native_res_len);
 
 	if (native_res == NULL)
 		return NULL;
 
-	MonoString *res = mono_string_from_utf16 (native_res);
+	MonoString *res = mono_string_new_utf16 (mono_domain_get (), native_res, native_res_len);
 	free (native_res);
 	return res;
 }
