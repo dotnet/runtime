@@ -5,21 +5,20 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using System.Runtime.InteropServices;
 
 internal static class IOInputs
 {
-    public static bool SupportsSettingCreationTime { get { return RuntimeInformation.IsOSPlatform(OSPlatform.Windows); } }
-    public static bool SupportsGettingCreationTime { get { return RuntimeInformation.IsOSPlatform(OSPlatform.Windows) | RuntimeInformation.IsOSPlatform(OSPlatform.OSX); } }
+    public static bool SupportsSettingCreationTime => OperatingSystem.IsWindows();
+    public static bool SupportsGettingCreationTime => OperatingSystem.IsWindows() || OperatingSystem.IsMacOS();
 
     // Max path length (minus trailing \0). Unix values vary system to system; just using really long values here likely to be more than on the average system.
-    public static readonly int MaxPath = RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? 259 : 10000;
+    public static readonly int MaxPath = OperatingSystem.IsWindows() ? 259 : 10000;
 
     // Windows specific, this is the maximum length that can be passed using extended syntax. Does not include the trailing \0.
     public static readonly int MaxExtendedPath = short.MaxValue - 1;
 
     // Same as MaxPath on Unix
-    public static readonly int MaxLongPath = RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? MaxExtendedPath : MaxPath;
+    public static readonly int MaxLongPath = OperatingSystem.IsWindows() ? MaxExtendedPath : MaxPath;
 
     // Windows specific, this is the maximum length that can be passed to APIs taking directory names, such as Directory.CreateDirectory & Directory.Move.
     // Does not include the trailing \0.

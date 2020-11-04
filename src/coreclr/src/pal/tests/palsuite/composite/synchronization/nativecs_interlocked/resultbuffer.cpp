@@ -3,11 +3,6 @@
 
 //#include "stdafx.h"
 #include "resultbuffer.h"
-//
-//#using <mscorlib.dll>
-//
-//using namespace System;
-
 
 ResultBuffer:: ResultBuffer(int ThreadCount, int ThreadLogSize)
 	{

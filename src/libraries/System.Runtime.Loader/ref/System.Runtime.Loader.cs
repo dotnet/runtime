@@ -9,7 +9,7 @@ namespace System.Reflection.Metadata
     public static partial class AssemblyExtensions
     {
         [System.CLSCompliantAttribute(false)]
-        public static unsafe bool TryGetRawMetadata(this System.Reflection.Assembly assembly, out byte* blob, out int length) { throw null; }
+        public unsafe static bool TryGetRawMetadata(this System.Reflection.Assembly assembly, out byte* blob, out int length) { throw null; }
     }
 }
 namespace System.Runtime.Loader
@@ -41,9 +41,13 @@ namespace System.Runtime.Loader
         public static System.Runtime.Loader.AssemblyLoadContext? GetLoadContext(System.Reflection.Assembly assembly) { throw null; }
         protected virtual System.Reflection.Assembly? Load(System.Reflection.AssemblyName assemblyName) { throw null; }
         public System.Reflection.Assembly LoadFromAssemblyName(System.Reflection.AssemblyName assemblyName) { throw null; }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Types and members the loaded assembly depends on might be removed")]
         public System.Reflection.Assembly LoadFromAssemblyPath(string assemblyPath) { throw null; }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Types and members the loaded assembly depends on might be removed")]
         public System.Reflection.Assembly LoadFromNativeImagePath(string nativeImagePath, string? assemblyPath) { throw null; }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Types and members the loaded assembly depends on might be removed")]
         public System.Reflection.Assembly LoadFromStream(System.IO.Stream assembly) { throw null; }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Types and members the loaded assembly depends on might be removed")]
         public System.Reflection.Assembly LoadFromStream(System.IO.Stream assembly, System.IO.Stream? assemblySymbols) { throw null; }
         protected virtual System.IntPtr LoadUnmanagedDll(string unmanagedDllName) { throw null; }
         protected System.IntPtr LoadUnmanagedDllFromPath(string unmanagedDllPath) { throw null; }

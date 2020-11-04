@@ -1536,6 +1536,7 @@ void DiscretionaryPolicy::ComputeOpcodeBin(OPCODE opcode)
 
         case CEE_RET:
             m_ReturnCount++;
+            break;
 
         default:
             break;
@@ -1700,7 +1701,7 @@ void DiscretionaryPolicy::MethodInfoObservations(CORINFO_METHOD_INFO* methodInfo
 //   0.100 * m_CalleeNativeSizeEstimate +
 //  -0.100 * m_CallsiteNativeSizeEstimate
 //
-// On the inlines in CoreCLR's mscorlib, release windows x64, this
+// On the inlines in CoreCLR's CoreLib, release windows x64, this
 // yields scores of R=0.42, MSE=228, and MAE=7.25.
 //
 // This estimate can be improved slighly by refitting, resulting in

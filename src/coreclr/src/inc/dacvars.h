@@ -144,7 +144,7 @@ DEFINE_DACVAR(ULONG, PTR_GcNotification, dac__g_pGcNotificationTable, ::g_pGcNot
 
 DEFINE_DACVAR(ULONG, PTR_EEConfig, dac__g_pConfig, ::g_pConfig)
 
-DEFINE_DACVAR(ULONG, MscorlibBinder, dac__g_Mscorlib, ::g_Mscorlib)
+DEFINE_DACVAR(ULONG, CoreLibBinder, dac__g_CoreLib, ::g_CoreLib)
 
 #if defined(PROFILING_SUPPORTED) || defined(PROFILING_SUPPORTED_DATA)
 DEFINE_DACVAR(ULONG, ProfControlBlock, dac__g_profControlBlock, ::g_profControlBlock)

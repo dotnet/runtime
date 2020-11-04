@@ -74,19 +74,19 @@ namespace System.Text.Json
         /// <typeparam name="TValue"></typeparam>
         /// <param name="writer"></param>
         /// <param name="value"></param>
-        /// <param name="jsonClassInfo"></param>
+        /// <param name="jsonTypeInfo"></param>
         /// <param name="state"></param>
         /// <param name="options"></param>
-        public static void Serialize<TValue>(Utf8JsonWriter writer, TValue value, JsonClassInfo jsonClassInfo, ref WriteStack state, JsonSerializerOptions? options = null)
+        public static void Serialize<TValue>(Utf8JsonWriter writer, TValue value, JsonClassInfo jsonTypeInfo, ref WriteStack state, JsonSerializerOptions? options = null)
         {
             if (writer == null)
             {
                 throw new ArgumentNullException(nameof(writer));
             }
 
-            if (jsonClassInfo == null)
+            if (jsonTypeInfo == null)
             {
-                throw new ArgumentNullException(nameof(jsonClassInfo));
+                throw new ArgumentNullException(nameof(jsonTypeInfo));
             }
 
             if (options == null)
@@ -96,7 +96,7 @@ namespace System.Text.Json
 
             using (var output = new PooledByteBufferWriter(options.DefaultBufferSize))
             {
-                JsonConverter jsonConverter = jsonClassInfo.PropertyInfoForClassInfo.ConverterBase;
+                JsonConverter jsonConverter = jsonTypeInfo.PropertyInfoForClassInfo.ConverterBase;
                 bool success = WriteCore<TValue>(jsonConverter, writer, value, ref state, options);
                 Debug.Assert(success);
             }

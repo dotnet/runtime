@@ -226,7 +226,7 @@ namespace System
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static double CopySign(double x, double y)
         {
-            if (Sse.IsSupported || AdvSimd.IsSupported)
+            if (Sse2.IsSupported || AdvSimd.IsSupported)
             {
                 return VectorMath.ConditionalSelectBitwise(Vector128.CreateScalarUnsafe(-0.0), Vector128.CreateScalarUnsafe(y), Vector128.CreateScalarUnsafe(x)).ToScalar();
             }

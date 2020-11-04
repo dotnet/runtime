@@ -1,4 +1,4 @@
-﻿Method Descriptor
+Method Descriptor
 =================
 
 Author: Jan Kotas ([@jkotas](https://github.com/jkotas)) - 2006

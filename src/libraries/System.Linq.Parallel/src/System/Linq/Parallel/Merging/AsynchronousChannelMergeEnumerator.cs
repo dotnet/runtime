@@ -32,7 +32,7 @@ namespace System.Linq.Parallel
         private IntValueEvent? _consumerEvent; // The consumer event.
         private readonly bool[] _done;       // Tracks which channels are done.
         private int _channelIndex;  // The next channel from which we'll dequeue.
-        [MaybeNull, AllowNull] private T _currentElement = default;  // The remembered element from the previous MoveNext.
+        private T? _currentElement;  // The remembered element from the previous MoveNext.
 
         //-----------------------------------------------------------------------------------
         // Allocates a new enumerator over a set of one-to-one channels.

@@ -162,16 +162,24 @@ namespace System.Reflection.Emit
             return ((ModuleBuilder)m_methodBuilder.Module).GetMethodTokenInternal(method, optionalParameterTypes, useMethodDef);
         }
 
-        internal virtual SignatureHelper GetMemberRefSignature(CallingConventions call, Type? returnType,
-            Type[]? parameterTypes, Type[]? optionalParameterTypes)
+        internal SignatureHelper GetMemberRefSignature(
+            CallingConventions call,
+            Type? returnType,
+            Type[]? parameterTypes,
+            Type[]? optionalParameterTypes)
         {
-            return GetMemberRefSignature(call, returnType, parameterTypes, optionalParameterTypes, 0);
+            return GetMemberRefSignature(call, returnType, parameterTypes, null, null, optionalParameterTypes);
+        }
+        internal virtual SignatureHelper GetMemberRefSignature(CallingConventions call, Type? returnType,
+            Type[]? parameterTypes, Type[][]? requiredCustomModifiers, Type[][]? optionalCustomModifiers, Type[]? optionalParameterTypes)
+        {
+            return GetMemberRefSignature(call, returnType, parameterTypes, requiredCustomModifiers, optionalCustomModifiers, optionalParameterTypes, 0);
         }
 
         private SignatureHelper GetMemberRefSignature(CallingConventions call, Type? returnType,
-            Type[]? parameterTypes, Type[]? optionalParameterTypes, int cGenericParameters)
+            Type[]? parameterTypes, Type[][]? requiredCustomModifiers, Type[][]? optionalCustomModifiers, Type[]? optionalParameterTypes, int cGenericParameters)
         {
-            return ((ModuleBuilder)m_methodBuilder.Module).GetMemberRefSignature(call, returnType, parameterTypes, optionalParameterTypes, cGenericParameters);
+            return ((ModuleBuilder)m_methodBuilder.Module).GetMemberRefSignature(call, returnType, parameterTypes, requiredCustomModifiers, optionalCustomModifiers, optionalParameterTypes, cGenericParameters);
         }
 
         internal byte[]? BakeByteArray()
@@ -534,7 +542,7 @@ namespace System.Reflection.Emit
             UpdateStackSize(OpCodes.Calli, stackchange);
 
             RecordTokenFixup();
-            PutInteger4(modBuilder.GetSignatureToken(sig).Token);
+            PutInteger4(modBuilder.GetSignatureToken(sig));
         }
 
         public virtual void EmitCalli(OpCode opcode, CallingConvention unmanagedCallConv, Type? returnType, Type[]? parameterTypes)
@@ -577,7 +585,7 @@ namespace System.Reflection.Emit
             EnsureCapacity(7);
             Emit(OpCodes.Calli);
             RecordTokenFixup();
-            PutInteger4(modBuilder.GetSignatureToken(sig).Token);
+            PutInteger4(modBuilder.GetSignatureToken(sig));
         }
 
         public virtual void EmitCall(OpCode opcode, MethodInfo methodInfo, Type[]? optionalParameterTypes)
@@ -622,9 +630,9 @@ namespace System.Reflection.Emit
 
             int stackchange = 0;
             ModuleBuilder modBuilder = (ModuleBuilder)m_methodBuilder.Module;
-            SignatureToken sig = modBuilder.GetSignatureToken(signature);
+            int sig = modBuilder.GetSignatureToken(signature);
 
-            int tempVal = sig.Token;
+            int tempVal = sig;
 
             EnsureCapacity(7);
             InternalEmit(opcode);
@@ -701,13 +709,13 @@ namespace System.Reflection.Emit
             if (opcode == OpCodes.Ldtoken && cls != null && cls.IsGenericTypeDefinition)
             {
                 // This gets the token for the generic type definition if cls is one.
-                tempVal = modBuilder.GetTypeToken(cls).Token;
+                tempVal = modBuilder.GetTypeToken(cls);
             }
             else
             {
                 // This gets the token for the generic type instantiated on the formal parameters
                 // if cls is a generic type definition.
-                tempVal = modBuilder.GetTypeTokenInternal(cls!).Token;
+                tempVal = modBuilder.GetTypeTokenInternal(cls!);
             }
 
             EnsureCapacity(7);
@@ -792,7 +800,7 @@ namespace System.Reflection.Emit
         public virtual void Emit(OpCode opcode, FieldInfo field)
         {
             ModuleBuilder modBuilder = (ModuleBuilder)m_methodBuilder.Module;
-            int tempVal = modBuilder.GetFieldToken(field).Token;
+            int tempVal = modBuilder.GetFieldToken(field);
             EnsureCapacity(7);
             InternalEmit(opcode);
             RecordTokenFixup();
@@ -806,7 +814,7 @@ namespace System.Reflection.Emit
             // fixups if the module is persisted to a PE.
 
             ModuleBuilder modBuilder = (ModuleBuilder)m_methodBuilder.Module;
-            int tempVal = modBuilder.GetStringConstant(str).Token;
+            int tempVal = modBuilder.GetStringConstant(str);
             EnsureCapacity(7);
             InternalEmit(opcode);
             PutInteger4(tempVal);

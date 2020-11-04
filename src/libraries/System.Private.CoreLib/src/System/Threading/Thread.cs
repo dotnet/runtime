@@ -5,6 +5,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
+using System.Runtime.CompilerServices;
 using System.Runtime.ConstrainedExecution;
 using System.Security.Principal;
 using System.Runtime.Versioning;
@@ -171,9 +172,65 @@ namespace System.Threading
                     }
 
                     _name = value;
-
                     ThreadNameChanged(value);
+                    if (value != null)
+                    {
+                        _mayNeedResetForThreadPool = true;
+                    }
                 }
+            }
+        }
+
+        internal void SetThreadPoolWorkerThreadName()
+        {
+            Debug.Assert(this == CurrentThread);
+            Debug.Assert(IsThreadPoolThread);
+
+            lock (this)
+            {
+                // Bypass the exception from setting the property
+                _name = ThreadPool.WorkerThreadName;
+                ThreadNameChanged(ThreadPool.WorkerThreadName);
+                _name = null;
+            }
+        }
+
+#if !CORECLR
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal void ResetThreadPoolThread()
+        {
+            Debug.Assert(this == CurrentThread);
+            Debug.Assert(!IsThreadStartSupported || IsThreadPoolThread); // there are no dedicated threadpool threads on runtimes where we can't start threads
+
+            if (_mayNeedResetForThreadPool)
+            {
+                ResetThreadPoolThreadSlow();
+            }
+        }
+#endif
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        private void ResetThreadPoolThreadSlow()
+        {
+            Debug.Assert(this == CurrentThread);
+            Debug.Assert(!IsThreadStartSupported || IsThreadPoolThread); // there are no dedicated threadpool threads on runtimes where we can't start threads
+            Debug.Assert(_mayNeedResetForThreadPool);
+
+            _mayNeedResetForThreadPool = false;
+
+            if (_name != null)
+            {
+                SetThreadPoolWorkerThreadName();
+            }
+
+            if (!IsBackground)
+            {
+                IsBackground = true;
+            }
+
+            if (Priority != ThreadPriority.Normal)
+            {
+                Priority = ThreadPriority.Normal;
             }
         }
 
@@ -189,6 +246,7 @@ namespace System.Threading
             throw new PlatformNotSupportedException(SR.PlatformNotSupported_ThreadAbort);
         }
 
+        [Obsolete(Obsoletions.ThreadAbortMessage, DiagnosticId = Obsoletions.ThreadAbortDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
         public static void ResetAbort()
         {
             throw new PlatformNotSupportedException(SR.PlatformNotSupported_ThreadAbort);
@@ -227,7 +285,7 @@ namespace System.Threading
             set => TrySetApartmentState(value);
         }
 
-        [MinimumOSPlatform("windows7.0")]
+        [SupportedOSPlatform("windows")]
         public void SetApartmentState(ApartmentState state)
         {
             if (!TrySetApartmentState(state))

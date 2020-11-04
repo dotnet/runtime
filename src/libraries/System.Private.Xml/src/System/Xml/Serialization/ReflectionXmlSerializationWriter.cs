@@ -21,7 +21,7 @@ namespace System.Xml.Serialization
         internal static TypeDesc StringTypeDesc { get; private set; } = (new TypeScope()).GetTypeDesc(typeof(string));
         internal static TypeDesc QnameTypeDesc { get; private set; } = (new TypeScope()).GetTypeDesc(typeof(XmlQualifiedName));
 
-        public ReflectionXmlSerializationWriter(XmlMapping xmlMapping, XmlWriter xmlWriter, XmlSerializerNamespaces namespaces, string encodingStyle, string id)
+        public ReflectionXmlSerializationWriter(XmlMapping xmlMapping, XmlWriter xmlWriter, XmlSerializerNamespaces namespaces, string? encodingStyle, string? id)
         {
             Init(xmlWriter, namespaces, encodingStyle, id, null);
 
@@ -42,24 +42,24 @@ namespace System.Xml.Serialization
 
         protected override void InitCallbacks()
         {
-            TypeScope scope = _mapping.Scope;
+            TypeScope scope = _mapping.Scope!;
             foreach (TypeMapping mapping in scope.TypeMappings)
             {
                 if (mapping.IsSoap &&
                     (mapping is StructMapping || mapping is EnumMapping) &&
-                    !mapping.TypeDesc.IsRoot)
+                    !mapping.TypeDesc!.IsRoot)
                 {
                     AddWriteCallback(
-                        mapping.TypeDesc.Type,
-                        mapping.TypeName,
+                        mapping.TypeDesc.Type!,
+                        mapping.TypeName!,
                         mapping.Namespace,
-                        CreateXmlSerializationWriteCallback(mapping, mapping.TypeName, mapping.Namespace, mapping.TypeDesc.IsNullable)
+                        CreateXmlSerializationWriteCallback(mapping, mapping.TypeName!, mapping.Namespace, mapping.TypeDesc.IsNullable)
                     );
                 }
             }
         }
 
-        public void WriteObject(object o)
+        public void WriteObject(object? o)
         {
             XmlMapping xmlMapping = _mapping;
             if (xmlMapping is XmlTypeMapping xmlTypeMapping)
@@ -68,24 +68,24 @@ namespace System.Xml.Serialization
             }
             else if (xmlMapping is XmlMembersMapping xmlMembersMapping)
             {
-                GenerateMembersElement(o, xmlMembersMapping);
+                GenerateMembersElement(o!, xmlMembersMapping);
             }
         }
 
-        private void WriteObjectOfTypeElement(object o, XmlTypeMapping mapping)
+        private void WriteObjectOfTypeElement(object? o, XmlTypeMapping mapping)
         {
             GenerateTypeElement(o, mapping);
         }
 
-        private void GenerateTypeElement(object o, XmlTypeMapping xmlMapping)
+        private void GenerateTypeElement(object? o, XmlTypeMapping xmlMapping)
         {
             ElementAccessor element = xmlMapping.Accessor;
-            TypeMapping mapping = element.Mapping;
+            TypeMapping mapping = element.Mapping!;
 
             WriteStartDocument();
             if (o == null)
             {
-                string ns = (element.Form == XmlSchemaForm.Qualified ? element.Namespace : string.Empty);
+                string? ns = (element.Form == XmlSchemaForm.Qualified ? element.Namespace : string.Empty);
                 if (element.IsNullable)
                 {
                     if (mapping.IsSoap)
@@ -105,7 +105,7 @@ namespace System.Xml.Serialization
                 return;
             }
 
-            if (!mapping.TypeDesc.IsValueType && !mapping.TypeDesc.Type.IsPrimitive)
+            if (!mapping.TypeDesc!.IsValueType && !mapping.TypeDesc.Type!.IsPrimitive)
             {
                 TopLevelElement();
             }
@@ -117,12 +117,12 @@ namespace System.Xml.Serialization
             }
         }
 
-        private void WriteMember(object o, object choiceSource, ElementAccessor[] elements, TextAccessor text, ChoiceIdentifierAccessor choice, TypeDesc memberTypeDesc, bool writeAccessors)
+        private void WriteMember(object? o, object? choiceSource, ElementAccessor[] elements, TextAccessor? text, ChoiceIdentifierAccessor? choice, TypeDesc memberTypeDesc, bool writeAccessors)
         {
             if (memberTypeDesc.IsArrayLike &&
                 !(elements.Length == 1 && elements[0].Mapping is ArrayMapping))
             {
-                WriteArray(o, choiceSource, elements, text, choice, memberTypeDesc);
+                WriteArray(o!, choiceSource, elements, text, choice, memberTypeDesc);
             }
             else
             {
@@ -130,7 +130,7 @@ namespace System.Xml.Serialization
             }
         }
 
-        private void WriteArray(object o, object choiceSource, ElementAccessor[] elements, TextAccessor text, ChoiceIdentifierAccessor choice, TypeDesc arrayTypeDesc)
+        private void WriteArray(object o, object? choiceSource, ElementAccessor[] elements, TextAccessor? text, ChoiceIdentifierAccessor? choice, TypeDesc arrayTypeDesc)
         {
             if (elements.Length == 0 && text == null)
             {
@@ -146,14 +146,14 @@ namespace System.Xml.Serialization
             {
                 if (choiceSource == null || ((Array)choiceSource).Length < ((Array)o).Length)
                 {
-                    throw CreateInvalidChoiceIdentifierValueException(choice.Mapping.TypeDesc.FullName, choice.MemberName);
+                    throw CreateInvalidChoiceIdentifierValueException(choice.Mapping!.TypeDesc!.FullName, choice.MemberName!);
                 }
             }
 
             WriteArrayItems(elements, text, choice, arrayTypeDesc, o);
         }
 
-        private void WriteArrayItems(ElementAccessor[] elements, TextAccessor text, ChoiceIdentifierAccessor choice, TypeDesc arrayTypeDesc, object o)
+        private void WriteArrayItems(ElementAccessor[] elements, TextAccessor? text, ChoiceIdentifierAccessor? choice, TypeDesc? arrayTypeDesc, object o)
         {
             var arr = o as IList;
 
@@ -161,7 +161,7 @@ namespace System.Xml.Serialization
             {
                 for (int i = 0; i < arr.Count; i++)
                 {
-                    object ai = arr[i];
+                    object? ai = arr[i];
                     WriteElements(ai, null/*choiceName + "i"*/, elements, text, choice, true, true);
                 }
             }
@@ -182,7 +182,7 @@ namespace System.Xml.Serialization
             }
         }
 
-        private void WriteElements(object o, object enumSource, ElementAccessor[] elements, TextAccessor text, ChoiceIdentifierAccessor choice, bool writeAccessors, bool isNullable)
+        private void WriteElements(object? o, object? enumSource, ElementAccessor[] elements, TextAccessor? text, ChoiceIdentifierAccessor? choice, bool writeAccessors, bool isNullable)
         {
             if (elements.Length == 0 && text == null)
                 return;
@@ -200,8 +200,7 @@ namespace System.Xml.Serialization
 
                 int anyCount = 0;
                 var namedAnys = new List<ElementAccessor>();
-                ElementAccessor unnamedAny = null; // can only have one
-                string enumTypeName = choice?.Mapping.TypeDesc.FullName;
+                ElementAccessor? unnamedAny = null; // can only have one
 
                 for (int i = 0; i < elements.Length; i++)
                 {
@@ -217,7 +216,7 @@ namespace System.Xml.Serialization
                     }
                     else if (choice != null)
                     {
-                        if (o != null && o.GetType() == element.Mapping.TypeDesc.Type)
+                        if (o != null && o.GetType() == element.Mapping!.TypeDesc!.Type)
                         {
                             WriteElement(o, element, writeAccessors);
                             return;
@@ -225,8 +224,8 @@ namespace System.Xml.Serialization
                     }
                     else
                     {
-                        TypeDesc td = element.IsUnbounded ? element.Mapping.TypeDesc.CreateArrayTypeDesc() : element.Mapping.TypeDesc;
-                        if (o.GetType() == td.Type)
+                        TypeDesc td = element.IsUnbounded ? element.Mapping!.TypeDesc!.CreateArrayTypeDesc() : element.Mapping!.TypeDesc!;
+                        if (o!.GetType() == td.Type)
                         {
                             WriteElement(o, element, writeAccessors);
                             return;
@@ -249,7 +248,7 @@ namespace System.Xml.Serialization
 
                         if (choice != null)
                         {
-                            throw CreateChoiceIdentifierValueException(choice.Mapping.TypeDesc.FullName, choice.MemberName, elem.Name, elem.NamespaceURI);
+                            throw CreateChoiceIdentifierValueException(choice.Mapping!.TypeDesc!.FullName, choice.MemberName!, elem.Name, elem.NamespaceURI);
                         }
 
                         if (unnamedAny != null)
@@ -264,7 +263,7 @@ namespace System.Xml.Serialization
 
                 if (text != null)
                 {
-                    WriteText(o, text);
+                    WriteText(o!, text);
                     return;
                 }
 
@@ -279,14 +278,14 @@ namespace System.Xml.Serialization
         {
             if (text.Mapping is PrimitiveMapping primitiveMapping)
             {
-                string stringValue;
+                string? stringValue;
                 if (text.Mapping is EnumMapping enumMapping)
                 {
                     stringValue = WriteEnumMethod(enumMapping, o);
                 }
                 else
                 {
-                    if (!WritePrimitiveValue(primitiveMapping.TypeDesc, o, false, out stringValue))
+                    if (!WritePrimitiveValue(primitiveMapping.TypeDesc!, o, false, out stringValue))
                     {
                         Debug.Assert(o is byte[]);
                     }
@@ -303,7 +302,7 @@ namespace System.Xml.Serialization
             }
             else if (text.Mapping is SpecialMapping specialMapping)
             {
-                switch (specialMapping.TypeDesc.Kind)
+                switch (specialMapping.TypeDesc!.Kind)
                 {
                     case TypeKind.Node:
                         ((XmlNode)o).WriteTo(Writer);
@@ -314,10 +313,10 @@ namespace System.Xml.Serialization
             }
         }
 
-        private void WriteElement(object o, ElementAccessor element, bool writeAccessor)
+        private void WriteElement(object? o, ElementAccessor element, bool writeAccessor)
         {
-            string name = writeAccessor ? element.Name : element.Mapping.TypeName;
-            string ns = element.Any && element.Name.Length == 0 ? null : (element.Form == XmlSchemaForm.Qualified ? (writeAccessor ? element.Namespace : element.Mapping.Namespace) : string.Empty);
+            string name = writeAccessor ? element.Name : element.Mapping!.TypeName!;
+            string? ns = element.Any && element.Name.Length == 0 ? null : (element.Form == XmlSchemaForm.Qualified ? (writeAccessor ? element.Namespace : element.Mapping!.Namespace) : string.Empty);
 
             if (element.Mapping is NullableMapping nullableMapping)
             {
@@ -339,7 +338,7 @@ namespace System.Xml.Serialization
                 {
                     WriteNullTagLiteral(element.Name, element.Form == XmlSchemaForm.Qualified ? element.Namespace : string.Empty);
                 }
-                else if (mapping.IsSoap)
+                else if (mapping!.IsSoap)
                 {
                     if (mapping.Elements == null || mapping.Elements.Length != 1)
                     {
@@ -348,7 +347,7 @@ namespace System.Xml.Serialization
 
                     if (!writeAccessor)
                     {
-                        WritePotentiallyReferencingElement(name, ns, o, mapping.TypeDesc.Type, true, element.IsNullable);
+                        WritePotentiallyReferencingElement(name, ns, o, mapping.TypeDesc!.Type, true, element.IsNullable);
                     }
                     else
                     {
@@ -357,8 +356,7 @@ namespace System.Xml.Serialization
                 }
                 else if (element.IsUnbounded)
                 {
-                    TypeDesc arrayTypeDesc = mapping.TypeDesc.CreateArrayTypeDesc();
-                    var enumerable = (IEnumerable)o;
+                    var enumerable = (IEnumerable)o!;
                     foreach (var e in enumerable)
                     {
                         element.IsUnbounded = false;
@@ -371,7 +369,7 @@ namespace System.Xml.Serialization
                     if (o != null)
                     {
                         WriteStartElement(name, ns, false);
-                        WriteArrayItems(mapping.ElementsSortedByDerivation, null, null, mapping.TypeDesc, o);
+                        WriteArrayItems(mapping.ElementsSortedByDerivation!, null, null, mapping.TypeDesc, o);
                         WriteEndElement();
                     }
                 }
@@ -381,37 +379,37 @@ namespace System.Xml.Serialization
                 if (element.Mapping.IsSoap)
                 {
                     Writer.WriteStartElement(name, ns);
-                    WriteEnumMethod((EnumMapping)element.Mapping, o);
+                    WriteEnumMethod((EnumMapping)element.Mapping, o!);
                     WriteEndElement();
                 }
                 else
                 {
-                    WritePrimitive(WritePrimitiveMethodRequirement.WriteElementString, name, ns, element.Default, o, element.Mapping, false, true, element.IsNullable);
+                    WritePrimitive(WritePrimitiveMethodRequirement.WriteElementString, name, ns!, element.Default, o!, element.Mapping, false, true, element.IsNullable);
                 }
             }
             else if (element.Mapping is PrimitiveMapping)
             {
                 var mapping = element.Mapping as PrimitiveMapping;
-                if (mapping.TypeDesc == QnameTypeDesc)
+                if (mapping!.TypeDesc == QnameTypeDesc)
                 {
-                    WriteQualifiedNameElement(name, ns, element.Default, (XmlQualifiedName)o, element.IsNullable, mapping.IsSoap, mapping);
+                    WriteQualifiedNameElement(name, ns!, element.Default, (XmlQualifiedName)o!, element.IsNullable, mapping.IsSoap, mapping);
                 }
                 else
                 {
                     WritePrimitiveMethodRequirement suffixNullable = mapping.IsSoap ? WritePrimitiveMethodRequirement.Encoded : WritePrimitiveMethodRequirement.None;
-                    WritePrimitiveMethodRequirement suffixRaw = mapping.TypeDesc.XmlEncodingNotRequired ? WritePrimitiveMethodRequirement.Raw : WritePrimitiveMethodRequirement.None;
+                    WritePrimitiveMethodRequirement suffixRaw = mapping.TypeDesc!.XmlEncodingNotRequired ? WritePrimitiveMethodRequirement.Raw : WritePrimitiveMethodRequirement.None;
                     WritePrimitive(element.IsNullable
                         ? WritePrimitiveMethodRequirement.WriteNullableStringLiteral | suffixNullable | suffixRaw
                         : WritePrimitiveMethodRequirement.WriteElementString | suffixRaw,
-                        name, ns, element.Default, o, mapping, mapping.IsSoap, true, element.IsNullable);
+                        name, ns!, element.Default, o!, mapping, mapping.IsSoap, true, element.IsNullable);
                 }
             }
             else if (element.Mapping is StructMapping)
             {
                 var mapping = element.Mapping as StructMapping;
-                if (mapping.IsSoap)
+                if (mapping!.IsSoap)
                 {
-                    WritePotentiallyReferencingElement(name, ns, o, !writeAccessor ? mapping.TypeDesc.Type : null, !writeAccessor, element.IsNullable);
+                    WritePotentiallyReferencingElement(name, ns, o, !writeAccessor ? mapping.TypeDesc!.Type : null, !writeAccessor, element.IsNullable);
                 }
                 else
                 {
@@ -422,7 +420,7 @@ namespace System.Xml.Serialization
             {
                 if (element.Mapping is SerializableMapping)
                 {
-                    WriteSerializable((IXmlSerializable)o, name, ns, element.IsNullable, !element.Any);
+                    WriteSerializable((IXmlSerializable)o!, name, ns, element.IsNullable, !element.Any);
                 }
                 else
                 {
@@ -433,7 +431,7 @@ namespace System.Xml.Serialization
                     }
                     else
                     {
-                        throw CreateInvalidAnyTypeException(o);
+                        throw CreateInvalidAnyTypeException(o!);
                     }
                 }
             }
@@ -443,7 +441,7 @@ namespace System.Xml.Serialization
             }
         }
 
-        private XmlSerializationWriteCallback CreateXmlSerializationWriteCallback(TypeMapping mapping, string name, string ns, bool isNullable)
+        private XmlSerializationWriteCallback CreateXmlSerializationWriteCallback(TypeMapping mapping, string name, string? ns, bool isNullable)
         {
             if (mapping is StructMapping structMapping)
             {
@@ -465,10 +463,10 @@ namespace System.Xml.Serialization
             }
         }
 
-        private void WriteQualifiedNameElement(string name, string ns, object defaultValue, XmlQualifiedName o, bool nullable, bool isSoap, PrimitiveMapping mapping)
+        private void WriteQualifiedNameElement(string name, string ns, object? defaultValue, XmlQualifiedName o, bool nullable, bool isSoap, PrimitiveMapping mapping)
         {
-            bool hasDefault = defaultValue != null && defaultValue != DBNull.Value && mapping.TypeDesc.HasDefaultSupport;
-            if (hasDefault && IsDefaultValue(mapping, o, defaultValue, nullable))
+            bool hasDefault = defaultValue != null && defaultValue != DBNull.Value && mapping.TypeDesc!.HasDefaultSupport;
+            if (hasDefault && IsDefaultValue(mapping, o, defaultValue!, nullable))
                 return;
 
             if (isSoap)
@@ -495,9 +493,9 @@ namespace System.Xml.Serialization
             }
         }
 
-        private void WriteStructMethod(StructMapping mapping, string n, string ns, object o, bool isNullable, bool needType)
+        private void WriteStructMethod(StructMapping mapping, string n, string? ns, object? o, bool isNullable, bool needType)
         {
-            if (mapping.IsSoap && mapping.TypeDesc.IsRoot) return;
+            if (mapping.IsSoap && mapping.TypeDesc!.IsRoot) return;
 
             if (!mapping.IsSoap)
             {
@@ -508,7 +506,7 @@ namespace System.Xml.Serialization
                 }
 
                 if (!needType
-                 && o.GetType() != mapping.TypeDesc.Type)
+                 && o.GetType() != mapping.TypeDesc!.Type)
                 {
                     if (WriteDerivedTypes(mapping, n, ns, o, isNullable))
                     {
@@ -517,7 +515,7 @@ namespace System.Xml.Serialization
 
                     if (mapping.TypeDesc.IsRoot)
                     {
-                        if (WriteEnumAndArrayTypes(mapping, o, n, ns))
+                        if (WriteEnumAndArrayTypes(mapping, o, n!, ns))
                         {
                             return;
                         }
@@ -530,20 +528,20 @@ namespace System.Xml.Serialization
                 }
             }
 
-            if (!mapping.TypeDesc.IsAbstract)
+            if (!mapping.TypeDesc!.IsAbstract)
             {
                 if (mapping.TypeDesc.Type != null && typeof(XmlSchemaObject).IsAssignableFrom(mapping.TypeDesc.Type))
                 {
                     EscapeName = false;
                 }
 
-                XmlSerializerNamespaces xmlnsSource = null;
+                XmlSerializerNamespaces? xmlnsSource = null;
                 MemberMapping[] members = TypeScope.GetAllMembers(mapping);
                 int xmlnsMember = FindXmlnsIndex(members);
                 if (xmlnsMember >= 0)
                 {
                     MemberMapping member = members[xmlnsMember];
-                    xmlnsSource = (XmlSerializerNamespaces)GetMemberValue(o, member.Name);
+                    xmlnsSource = (XmlSerializerNamespaces?)GetMemberValue(o!, member.Name);
                 }
 
                 if (!mapping.IsSoap)
@@ -554,7 +552,7 @@ namespace System.Xml.Serialization
                     {
                         if (needType)
                         {
-                            WriteXsiType(mapping.TypeName, mapping.Namespace);
+                            WriteXsiType(mapping.TypeName!, mapping.Namespace);
                         }
                     }
                 }
@@ -572,22 +570,22 @@ namespace System.Xml.Serialization
                     if (m.CheckSpecified != SpecifiedAccessor.None)
                     {
                         string specifiedMemberName = m.Name + "Specified";
-                        isSpecified = (bool)GetMemberValue(o, specifiedMemberName);
+                        isSpecified = (bool)GetMemberValue(o!, specifiedMemberName)!;
                     }
 
                     if (m.CheckShouldPersist)
                     {
                         string methodInvoke = "ShouldSerialize" + m.Name;
-                        MethodInfo method = o.GetType().GetTypeInfo().GetDeclaredMethod(methodInvoke);
-                        shouldPersist = (bool)method.Invoke(o, Array.Empty<object>());
+                        MethodInfo method = o!.GetType().GetTypeInfo().GetDeclaredMethod(methodInvoke)!;
+                        shouldPersist = (bool)method.Invoke(o, Array.Empty<object>())!;
                     }
 
                     if (m.Attribute != null)
                     {
                         if (isSpecified && shouldPersist)
                         {
-                            object memberValue = GetMemberValue(o, m.Name);
-                            WriteMember(memberValue, m.Attribute, m.TypeDesc, o);
+                            object? memberValue = GetMemberValue(o!, m.Name);
+                            WriteMember(memberValue, m.Attribute, m.TypeDesc!, o);
                         }
                     }
                 }
@@ -604,17 +602,17 @@ namespace System.Xml.Serialization
                     if (m.CheckSpecified != SpecifiedAccessor.None)
                     {
                         string specifiedMemberName = m.Name + "Specified";
-                        isSpecified = (bool)GetMemberValue(o, specifiedMemberName);
+                        isSpecified = (bool)GetMemberValue(o!, specifiedMemberName)!;
                     }
 
                     if (m.CheckShouldPersist)
                     {
                         string methodInvoke = "ShouldSerialize" + m.Name;
-                        MethodInfo method = o.GetType().GetTypeInfo().GetDeclaredMethod(methodInvoke);
-                        shouldPersist = (bool)method.Invoke(o, Array.Empty<object>());
+                        MethodInfo method = o!.GetType().GetTypeInfo().GetDeclaredMethod(methodInvoke)!;
+                        shouldPersist = (bool)method.Invoke(o, Array.Empty<object>())!;
                     }
 
-                    bool checkShouldPersist = m.CheckShouldPersist && (m.Elements.Length > 0 || m.Text != null);
+                    bool checkShouldPersist = m.CheckShouldPersist && (m.Elements!.Length > 0 || m.Text != null);
 
                     if (!checkShouldPersist)
                     {
@@ -623,14 +621,14 @@ namespace System.Xml.Serialization
 
                     if (isSpecified && shouldPersist)
                     {
-                        object choiceSource = null;
+                        object? choiceSource = null;
                         if (m.ChoiceIdentifier != null)
                         {
-                            choiceSource = GetMemberValue(o, m.ChoiceIdentifier.MemberName);
+                            choiceSource = GetMemberValue(o!, m.ChoiceIdentifier.MemberName!);
                         }
 
-                        object memberValue = GetMemberValue(o, m.Name);
-                        WriteMember(memberValue, choiceSource, m.ElementsSortedByDerivation, m.Text, m.ChoiceIdentifier, m.TypeDesc, true);
+                        object? memberValue = GetMemberValue(o!, m.Name);
+                        WriteMember(memberValue, choiceSource, m.ElementsSortedByDerivation!, m.Text, m.ChoiceIdentifier, m.TypeDesc!, true);
                     }
                 }
 
@@ -641,24 +639,24 @@ namespace System.Xml.Serialization
             }
         }
 
-        private object GetMemberValue(object o, string memberName)
+        private object? GetMemberValue(object o, string memberName)
         {
             MemberInfo memberInfo = ReflectionXmlSerializationHelper.GetMember(o.GetType(), memberName);
-            object memberValue = GetMemberValue(o, memberInfo);
+            object? memberValue = GetMemberValue(o, memberInfo);
             return memberValue;
         }
 
-        private bool WriteEnumAndArrayTypes(StructMapping structMapping, object o, string n, string ns)
+        private bool WriteEnumAndArrayTypes(StructMapping structMapping, object o, string n, string? ns)
         {
             if (o is Enum)
             {
                 Writer.WriteStartElement(n, ns);
 
-                EnumMapping enumMapping = null;
+                EnumMapping? enumMapping = null;
                 Type enumType = o.GetType();
-                foreach (var m in _mapping.Scope.TypeMappings)
+                foreach (var m in _mapping.Scope!.TypeMappings)
                 {
-                    if (m is EnumMapping em && em.TypeDesc.Type == enumType)
+                    if (m is EnumMapping em && em.TypeDesc!.Type == enumType)
                     {
                         enumMapping = em;
                         break;
@@ -668,7 +666,7 @@ namespace System.Xml.Serialization
                 if (enumMapping == null)
                     throw new InvalidOperationException(SR.XmlInternalError);
 
-                WriteXsiType(enumMapping.TypeName, ns);
+                WriteXsiType(enumMapping.TypeName!, ns);
                 Writer.WriteString(WriteEnumMethod(enumMapping, o));
                 Writer.WriteEndElement();
                 return true;
@@ -677,11 +675,11 @@ namespace System.Xml.Serialization
             if (o is Array)
             {
                 Writer.WriteStartElement(n, ns);
-                ArrayMapping arrayMapping = null;
+                ArrayMapping? arrayMapping = null;
                 Type arrayType = o.GetType();
-                foreach (var m in _mapping.Scope.TypeMappings)
+                foreach (var m in _mapping.Scope!.TypeMappings)
                 {
-                    if (m is ArrayMapping am && am.TypeDesc.Type == arrayType)
+                    if (m is ArrayMapping am && am.TypeDesc!.Type == arrayType)
                     {
                         arrayMapping = am;
                         break;
@@ -691,8 +689,8 @@ namespace System.Xml.Serialization
                 if (arrayMapping == null)
                     throw new InvalidOperationException(SR.XmlInternalError);
 
-                WriteXsiType(arrayMapping.TypeName, ns);
-                WriteMember(o, null, arrayMapping.ElementsSortedByDerivation, null, null, arrayMapping.TypeDesc, true);
+                WriteXsiType(arrayMapping.TypeName!, ns);
+                WriteMember(o, null, arrayMapping.ElementsSortedByDerivation!, null, null, arrayMapping.TypeDesc!, true);
                 Writer.WriteEndElement();
 
                 return true;
@@ -701,12 +699,12 @@ namespace System.Xml.Serialization
             return false;
         }
 
-        private string WriteEnumMethod(EnumMapping mapping, object v)
+        private string? WriteEnumMethod(EnumMapping mapping, object v)
         {
-            string returnString = null;
+            string? returnString = null;
             if (mapping != null)
             {
-                ConstantMapping[] constants = mapping.Constants;
+                ConstantMapping[] constants = mapping.Constants!;
                 if (constants.Length > 0)
                 {
                     bool foundValue = false;
@@ -739,7 +737,7 @@ namespace System.Xml.Serialization
                         }
                         else
                         {
-                            throw CreateInvalidEnumValueException(v, mapping.TypeDesc.FullName);
+                            throw CreateInvalidEnumValueException(v, mapping.TypeDesc!.FullName);
                         }
                     }
                 }
@@ -749,9 +747,9 @@ namespace System.Xml.Serialization
                 returnString = v.ToString();
             }
 
-            if (mapping.IsSoap)
+            if (mapping!.IsSoap)
             {
-                WriteXsiType(mapping.TypeName, mapping.Namespace);
+                WriteXsiType(mapping.TypeName!, mapping.Namespace);
                 Writer.WriteString(returnString);
                 return null;
             }
@@ -761,7 +759,7 @@ namespace System.Xml.Serialization
             }
         }
 
-        private object GetMemberValue(object o, MemberInfo memberInfo)
+        private object? GetMemberValue(object? o, MemberInfo memberInfo)
         {
             if (memberInfo is PropertyInfo memberProperty)
             {
@@ -775,13 +773,13 @@ namespace System.Xml.Serialization
             throw new InvalidOperationException(SR.XmlInternalError);
         }
 
-        private void WriteMember(object memberValue, AttributeAccessor attribute, TypeDesc memberTypeDesc, object container)
+        private void WriteMember(object? memberValue, AttributeAccessor attribute, TypeDesc memberTypeDesc, object? container)
         {
             if (memberTypeDesc.IsAbstract) return;
             if (memberTypeDesc.IsArrayLike)
             {
                 var sb = new StringBuilder();
-                TypeDesc arrayElementTypeDesc = memberTypeDesc.ArrayElementTypeDesc;
+                TypeDesc? arrayElementTypeDesc = memberTypeDesc.ArrayElementTypeDesc;
                 bool canOptimizeWriteListSequence = CanOptimizeWriteListSequence(arrayElementTypeDesc);
                 if (attribute.IsList)
                 {
@@ -804,14 +802,14 @@ namespace System.Xml.Serialization
 
                             if (attribute.IsList)
                             {
-                                string stringValue;
+                                string? stringValue;
                                 if (attribute.Mapping is EnumMapping enumMapping)
                                 {
                                     stringValue = WriteEnumMethod(enumMapping, ai);
                                 }
                                 else
                                 {
-                                    if (!WritePrimitiveValue(arrayElementTypeDesc, ai, true, out stringValue))
+                                    if (!WritePrimitiveValue(arrayElementTypeDesc!, ai, true, out stringValue))
                                     {
                                         Debug.Assert(ai is byte[]);
                                     }
@@ -863,7 +861,7 @@ namespace System.Xml.Serialization
                             {
                                 if (sb.Length != 0)
                                 {
-                                    string ns = attribute.Form == XmlSchemaForm.Qualified ? attribute.Namespace : string.Empty;
+                                    string? ns = attribute.Form == XmlSchemaForm.Qualified ? attribute.Namespace : string.Empty;
                                     WriteAttribute(attribute.Name, ns, sb.ToString());
                                 }
                             }
@@ -873,11 +871,11 @@ namespace System.Xml.Serialization
             }
             else
             {
-                WriteAttribute(memberValue, attribute, container);
+                WriteAttribute(memberValue!, attribute, container);
             }
         }
 
-        private bool CanOptimizeWriteListSequence(TypeDesc listElementTypeDesc)
+        private bool CanOptimizeWriteListSequence(TypeDesc? listElementTypeDesc)
         {
             // check to see if we can write values of the attribute sequentially
             // currently we have only one data type (XmlQualifiedName) that we can not write "inline",
@@ -885,12 +883,12 @@ namespace System.Xml.Serialization
             return (listElementTypeDesc != null && listElementTypeDesc != QnameTypeDesc);
         }
 
-        private void WriteAttribute(object memberValue, AttributeAccessor attribute, object container)
+        private void WriteAttribute(object memberValue, AttributeAccessor attribute, object? container)
         {
             // TODO: this block is never hit by our tests.
             if (attribute.Mapping is SpecialMapping special)
             {
-                if (special.TypeDesc.Kind == TypeKind.Attribute || special.TypeDesc.CanBeAttributeValue)
+                if (special.TypeDesc!.Kind == TypeKind.Attribute || special.TypeDesc.CanBeAttributeValue)
                 {
                     WriteXmlAttribute((XmlNode)memberValue, container);
                 }
@@ -901,8 +899,8 @@ namespace System.Xml.Serialization
             }
             else
             {
-                string ns = attribute.Form == XmlSchemaForm.Qualified ? attribute.Namespace : string.Empty;
-                WritePrimitive(WritePrimitiveMethodRequirement.WriteAttribute, attribute.Name, ns, attribute.Default, memberValue, attribute.Mapping, false, false, false);
+                string? ns = attribute.Form == XmlSchemaForm.Qualified ? attribute.Namespace : string.Empty;
+                WritePrimitive(WritePrimitiveMethodRequirement.WriteAttribute, attribute.Name, ns, attribute.Default, memberValue, attribute.Mapping!, false, false, false);
             }
         }
 
@@ -919,12 +917,12 @@ namespace System.Xml.Serialization
             return -1;
         }
 
-        private bool WriteDerivedTypes(StructMapping mapping, string n, string ns, object o, bool isNullable)
+        private bool WriteDerivedTypes(StructMapping mapping, string n, string? ns, object o, bool isNullable)
         {
             Type t = o.GetType();
-            for (StructMapping derived = mapping.DerivedMappings; derived != null; derived = derived.NextDerivedMapping)
+            for (StructMapping? derived = mapping.DerivedMappings; derived != null; derived = derived.NextDerivedMapping)
             {
-                if (t == derived.TypeDesc.Type)
+                if (t == derived.TypeDesc!.Type)
                 {
                     WriteStructMethod(derived, n, ns, o, isNullable, needType: true);
                     return true;
@@ -939,17 +937,17 @@ namespace System.Xml.Serialization
             return false;
         }
 
-        private void WritePrimitive(WritePrimitiveMethodRequirement method, string name, string ns, object defaultValue, object o, TypeMapping mapping, bool writeXsiType, bool isElement, bool isNullable)
+        private void WritePrimitive(WritePrimitiveMethodRequirement method, string name, string? ns, object? defaultValue, object o, TypeMapping mapping, bool writeXsiType, bool isElement, bool isNullable)
         {
-            TypeDesc typeDesc = mapping.TypeDesc;
-            bool hasDefault = defaultValue != null && defaultValue != DBNull.Value && mapping.TypeDesc.HasDefaultSupport;
+            TypeDesc typeDesc = mapping.TypeDesc!;
+            bool hasDefault = defaultValue != null && defaultValue != DBNull.Value && mapping.TypeDesc!.HasDefaultSupport;
             if (hasDefault)
             {
                 if (mapping is EnumMapping)
                 {
                     if (((EnumMapping)mapping).IsFlags)
                     {
-                        IEnumerable<string> defaultEnumFlagValues = defaultValue.ToString().Split((char[])null, StringSplitOptions.RemoveEmptyEntries);
+                        IEnumerable<string> defaultEnumFlagValues = defaultValue!.ToString()!.Split((char[]?)null, StringSplitOptions.RemoveEmptyEntries);
                         string defaultEnumFlagString = string.Join(", ", defaultEnumFlagValues);
 
                         if (o.ToString() == defaultEnumFlagString)
@@ -957,26 +955,26 @@ namespace System.Xml.Serialization
                     }
                     else
                     {
-                        if (o.ToString() == defaultValue.ToString())
+                        if (o.ToString() == defaultValue!.ToString())
                             return;
                     }
                 }
                 else
                 {
-                    if (IsDefaultValue(mapping, o, defaultValue, isNullable))
+                    if (IsDefaultValue(mapping, o, defaultValue!, isNullable))
                     {
                         return;
                     }
                 }
             }
 
-            XmlQualifiedName xmlQualifiedName = null;
+            XmlQualifiedName? xmlQualifiedName = null;
             if (writeXsiType)
             {
                 xmlQualifiedName = new XmlQualifiedName(mapping.TypeName, mapping.Namespace);
             }
 
-            string stringValue = null;
+            string? stringValue = null;
             bool hasValidStringValue = false;
             if (mapping is EnumMapping enumMapping)
             {
@@ -1048,7 +1046,7 @@ namespace System.Xml.Serialization
                 }
                 else if (hasRequirement(method, WritePrimitiveMethodRequirement.WriteAttribute))
                 {
-                    WriteAttribute(name, ns, a);
+                    WriteAttribute(name, ns!, a);
                 }
                 else
                 {
@@ -1079,18 +1077,18 @@ namespace System.Xml.Serialization
             }
         }
 
-        private bool WritePrimitiveValue(TypeDesc typeDesc, object o, bool isElement, out string stringValue)
+        private bool WritePrimitiveValue(TypeDesc typeDesc, object? o, bool isElement, out string? stringValue)
         {
             if (typeDesc == StringTypeDesc || typeDesc.FormatterName == "String")
             {
-                stringValue = (string)o;
+                stringValue = (string?)o;
                 return true;
             }
             else
             {
                 if (!typeDesc.HasCustomFormatter)
                 {
-                    stringValue = ConvertPrimitiveToString(o, typeDesc);
+                    stringValue = ConvertPrimitiveToString(o!, typeDesc);
                     return true;
                 }
                 else if (o is byte[] && typeDesc.FormatterName == "ByteArrayHex")
@@ -1122,7 +1120,7 @@ namespace System.Xml.Serialization
                 }
                 else if (typeDesc == QnameTypeDesc)
                 {
-                    stringValue = FromXmlQualifiedName((XmlQualifiedName)o);
+                    stringValue = FromXmlQualifiedName((XmlQualifiedName?)o);
                     return true;
                 }
                 else if (o is string)
@@ -1187,7 +1185,7 @@ namespace System.Xml.Serialization
                 "Guid" => XmlConvert.ToString((Guid)o),
                 "Char" => XmlConvert.ToString((char)o),
                 "TimeSpan" => XmlConvert.ToString((TimeSpan)o),
-                _ => o.ToString(),
+                _ => o.ToString()!,
             };
             return stringValue;
         }
@@ -1195,7 +1193,7 @@ namespace System.Xml.Serialization
         private void GenerateMembersElement(object o, XmlMembersMapping xmlMembersMapping)
         {
             ElementAccessor element = xmlMembersMapping.Accessor;
-            MembersMapping mapping = (MembersMapping)element.Mapping;
+            MembersMapping mapping = (MembersMapping)element.Mapping!;
             bool hasWrapperElement = mapping.HasWrapperElement;
             bool writeAccessors = mapping.WriteAccessors;
             bool isRpc = xmlMembersMapping.IsSoap && writeAccessors;
@@ -1214,10 +1212,9 @@ namespace System.Xml.Serialization
             {
                 WriteStartElement(element.Name, (element.Form == XmlSchemaForm.Qualified ? element.Namespace : string.Empty), mapping.IsSoap);
 
-                int xmlnsMember = FindXmlnsIndex(mapping.Members);
+                int xmlnsMember = FindXmlnsIndex(mapping.Members!);
                 if (xmlnsMember >= 0)
                 {
-                    MemberMapping member = mapping.Members[xmlnsMember];
                     var source = (XmlSerializerNamespaces)p[xmlnsMember];
 
                     if (pLength > xmlnsMember)
@@ -1226,7 +1223,7 @@ namespace System.Xml.Serialization
                     }
                 }
 
-                for (int i = 0; i < mapping.Members.Length; i++)
+                for (int i = 0; i < mapping.Members!.Length; i++)
                 {
                     MemberMapping member = mapping.Members[i];
                     if (member.Attribute != null && !member.Ignore)
@@ -1248,13 +1245,13 @@ namespace System.Xml.Serialization
 
                         if (pLength > i && (specifiedSource == null || specifiedSource.Value))
                         {
-                            WriteMember(source, member.Attribute, member.TypeDesc, null);
+                            WriteMember(source, member.Attribute, member.TypeDesc!, null);
                         }
                     }
                 }
             }
 
-            for (int i = 0; i < mapping.Members.Length; i++)
+            for (int i = 0; i < mapping.Members!.Length; i++)
             {
                 MemberMapping member = mapping.Members[i];
                 if (member.Xmlns != null)
@@ -1283,7 +1280,7 @@ namespace System.Xml.Serialization
                     {
 
                         object source = p[i];
-                        object enumSource = null;
+                        object? enumSource = null;
                         if (member.ChoiceIdentifier != null)
                         {
                             for (int j = 0; j < mapping.Members.Length; j++)
@@ -1296,13 +1293,13 @@ namespace System.Xml.Serialization
                             }
                         }
 
-                        if (isRpc && member.IsReturnValue && member.Elements.Length > 0)
+                        if (isRpc && member.IsReturnValue && member.Elements!.Length > 0)
                         {
                             WriteRpcResult(member.Elements[0].Name, string.Empty);
                         }
 
                         // override writeAccessors choice when we've written a wrapper element
-                        WriteMember(source, enumSource, member.ElementsSortedByDerivation, member.Text, member.ChoiceIdentifier, member.TypeDesc, writeAccessors || hasWrapperElement);
+                        WriteMember(source, enumSource, member.ElementsSortedByDerivation!, member.Text, member.ChoiceIdentifier, member.TypeDesc!, writeAccessors || hasWrapperElement);
                     }
                 }
             }
@@ -1353,7 +1350,7 @@ namespace System.Xml.Serialization
             if (memberInfos == null || memberInfos.Length == 0)
             {
                 bool foundMatchedMember = false;
-                Type currentType = declaringType.BaseType;
+                Type? currentType = declaringType.BaseType;
                 while (currentType != null)
                 {
                     memberInfos = currentType.GetMember(memberName);
@@ -1371,10 +1368,10 @@ namespace System.Xml.Serialization
                     throw new InvalidOperationException(SR.Format(SR.XmlInternalErrorDetails, $"Could not find member named {memberName} of type {declaringType}"));
                 }
 
-                declaringType = currentType;
+                declaringType = currentType!;
             }
 
-            MemberInfo memberInfo = memberInfos[0];
+            MemberInfo memberInfo = memberInfos![0];
             if (memberInfos.Length != 1)
             {
                 foreach (MemberInfo mi in memberInfos)

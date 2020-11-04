@@ -216,14 +216,14 @@ namespace BinderTracing
 
     AssemblyBindOperation::~AssemblyBindOperation()
     {
-        if (!BinderTracing::IsEnabled() || ShouldIgnoreBind())
-            return;
+        if (BinderTracing::IsEnabled() && !ShouldIgnoreBind())
+        {
+            // Make sure the bind request is populated. Tracing may have been enabled mid-bind.
+            if (!m_populatedBindRequest)
+                PopulateBindRequest(m_bindRequest);
 
-        // Make sure the bind request is populated. Tracing may have been enabled mid-bind.
-        if (!m_populatedBindRequest)
-            PopulateBindRequest(m_bindRequest);
-
-        FireAssemblyLoadStop(m_bindRequest, m_resultAssembly, m_cached);
+            FireAssemblyLoadStop(m_bindRequest, m_resultAssembly, m_cached);
+        }
 
         if (m_resultAssembly != nullptr)
             m_resultAssembly->Release();
@@ -246,7 +246,7 @@ namespace BinderTracing
 
         // ActivityTracker or EventSource may have triggered the system satellite load.
         // Don't track system satellite binding to avoid potential infinite recursion.
-        m_ignoreBind = m_bindRequest.AssemblySpec->IsMscorlibSatellite();
+        m_ignoreBind = m_bindRequest.AssemblySpec->IsCoreLibSatellite();
         m_checkedIgnoreBind = true;
         return m_ignoreBind;
     }

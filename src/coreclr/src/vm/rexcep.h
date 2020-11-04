@@ -279,14 +279,4 @@ DEFINE_EXCEPTION(g_SystemNS,           OutOfMemoryException,           false,  E
 
 DEFINE_EXCEPTION(g_SystemNS,           ArgumentNullException,          false,  E_POINTER)
 
-#define kLastExceptionInMscorlib kArgumentNullException
-
-//
-// All exceptions defined in other .NET Framework assemblies have to be at the end
-//
-
-
-
-// Please see comments on at the top of this list
-
 #undef DEFINE_EXCEPTION

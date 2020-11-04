@@ -380,72 +380,74 @@ struct BasicBlock : private LIR::Range
     unsigned bbRefs; // number of blocks that can reach here, either by fall-through or a branch. If this falls to zero,
                      // the block is unreachable.
 
+#define MAKE_BBFLAG(bit) (1ULL << (bit))
+
 // clang-format off
 
-#define BBF_VISITED             0x00000001 // BB visited during optimizations
-#define BBF_MARKED              0x00000002 // BB marked  during optimizations
-#define BBF_CHANGED             0x00000004 // input/output of this block has changed
-#define BBF_REMOVED             0x00000008 // BB has been removed from bb-list
+#define BBF_VISITED             MAKE_BBFLAG( 0) // BB visited during optimizations
+#define BBF_MARKED              MAKE_BBFLAG( 1) // BB marked  during optimizations
+#define BBF_CHANGED             MAKE_BBFLAG( 2) // input/output of this block has changed
+#define BBF_REMOVED             MAKE_BBFLAG( 3) // BB has been removed from bb-list
 
-#define BBF_DONT_REMOVE         0x00000010 // BB should not be removed during flow graph optimizations
-#define BBF_IMPORTED            0x00000020 // BB byte-code has been imported
-#define BBF_INTERNAL            0x00000040 // BB has been added by the compiler
-#define BBF_FAILED_VERIFICATION 0x00000080 // BB has verification exception
+#define BBF_DONT_REMOVE         MAKE_BBFLAG( 4) // BB should not be removed during flow graph optimizations
+#define BBF_IMPORTED            MAKE_BBFLAG( 5) // BB byte-code has been imported
+#define BBF_INTERNAL            MAKE_BBFLAG( 6) // BB has been added by the compiler
+#define BBF_FAILED_VERIFICATION MAKE_BBFLAG( 7) // BB has verification exception
 
-#define BBF_TRY_BEG             0x00000100 // BB starts a 'try' block
-#define BBF_FUNCLET_BEG         0x00000200 // BB is the beginning of a funclet
-#define BBF_HAS_NULLCHECK       0x00000400 // BB contains a null check
-#define BBF_NEEDS_GCPOLL        0x00000800 // This BB is the source of a back edge and needs a GC Poll
+#define BBF_TRY_BEG             MAKE_BBFLAG( 8) // BB starts a 'try' block
+#define BBF_FUNCLET_BEG         MAKE_BBFLAG( 9) // BB is the beginning of a funclet
+#define BBF_HAS_NULLCHECK       MAKE_BBFLAG(10) // BB contains a null check
+#define BBF_HAS_SUPPRESSGC_CALL MAKE_BBFLAG(11) // BB contains a call to a method with SuppressGCTransitionAttribute
 
-#define BBF_RUN_RARELY          0x00001000 // BB is rarely run (catch clauses, blocks with throws etc)
-#define BBF_LOOP_HEAD           0x00002000 // BB is the head of a loop
-#define BBF_LOOP_CALL0          0x00004000 // BB starts a loop that sometimes won't call
-#define BBF_LOOP_CALL1          0x00008000 // BB starts a loop that will always     call
+#define BBF_RUN_RARELY          MAKE_BBFLAG(12) // BB is rarely run (catch clauses, blocks with throws etc)
+#define BBF_LOOP_HEAD           MAKE_BBFLAG(13) // BB is the head of a loop
+#define BBF_LOOP_CALL0          MAKE_BBFLAG(14) // BB starts a loop that sometimes won't call
+#define BBF_LOOP_CALL1          MAKE_BBFLAG(15) // BB starts a loop that will always     call
 
-#define BBF_HAS_LABEL           0x00010000 // BB needs a label
-#define BBF_JMP_TARGET          0x00020000 // BB is a target of an implicit/explicit jump
-#define BBF_HAS_JMP             0x00040000 // BB executes a JMP instruction (instead of return)
-#define BBF_GC_SAFE_POINT       0x00080000 // BB has a GC safe point (a call).  More abstractly, BB does not require a
-                                           // (further) poll -- this may be because this BB has a call, or, in some
-                                           // cases, because the BB occurs in a loop, and we've determined that all
-                                           // paths in the loop body leading to BB include a call.
+#define BBF_HAS_LABEL           MAKE_BBFLAG(16) // BB needs a label
+#define BBF_JMP_TARGET          MAKE_BBFLAG(17) // BB is a target of an implicit/explicit jump
+#define BBF_HAS_JMP             MAKE_BBFLAG(18) // BB executes a JMP instruction (instead of return)
+#define BBF_GC_SAFE_POINT       MAKE_BBFLAG(19) // BB has a GC safe point (a call).  More abstractly, BB does not require a
+                                                // (further) poll -- this may be because this BB has a call, or, in some
+                                                // cases, because the BB occurs in a loop, and we've determined that all
+                                                // paths in the loop body leading to BB include a call.
 
-#define BBF_HAS_VTABREF         0x00100000 // BB contains reference of vtable
-#define BBF_HAS_IDX_LEN         0x00200000 // BB contains simple index or length expressions on an array local var.
-#define BBF_HAS_NEWARRAY        0x00400000 // BB contains 'new' of an array
-#define BBF_HAS_NEWOBJ          0x00800000 // BB contains 'new' of an object type.
+#define BBF_HAS_VTABREF         MAKE_BBFLAG(20) // BB contains reference of vtable
+#define BBF_HAS_IDX_LEN         MAKE_BBFLAG(21) // BB contains simple index or length expressions on an array local var.
+#define BBF_HAS_NEWARRAY        MAKE_BBFLAG(22) // BB contains 'new' of an array
+#define BBF_HAS_NEWOBJ          MAKE_BBFLAG(23) // BB contains 'new' of an object type.
 
 #if defined(FEATURE_EH_FUNCLETS) && defined(TARGET_ARM)
 
-#define BBF_FINALLY_TARGET      0x01000000 // BB is the target of a finally return: where a finally will return during
-                                           // non-exceptional flow. Because the ARM calling sequence for calling a
-                                           // finally explicitly sets the return address to the finally target and jumps
-                                           // to the finally, instead of using a call instruction, ARM needs this to
-                                           // generate correct code at the finally target, to allow for proper stack
-                                           // unwind from within a non-exceptional call to a finally.
+#define BBF_FINALLY_TARGET      MAKE_BBFLAG(24) // BB is the target of a finally return: where a finally will return during
+                                                // non-exceptional flow. Because the ARM calling sequence for calling a
+                                                // finally explicitly sets the return address to the finally target and jumps
+                                                // to the finally, instead of using a call instruction, ARM needs this to
+                                                // generate correct code at the finally target, to allow for proper stack
+                                                // unwind from within a non-exceptional call to a finally.
 
 #endif // defined(FEATURE_EH_FUNCLETS) && defined(TARGET_ARM)
 
-#define BBF_BACKWARD_JUMP       0x02000000 // BB is surrounded by a backward jump/switch arc
-#define BBF_RETLESS_CALL        0x04000000 // BBJ_CALLFINALLY that will never return (and therefore, won't need a paired
-                                           // BBJ_ALWAYS); see isBBCallAlwaysPair().
-#define BBF_LOOP_PREHEADER      0x08000000 // BB is a loop preheader block
+#define BBF_BACKWARD_JUMP       MAKE_BBFLAG(25) // BB is surrounded by a backward jump/switch arc
+#define BBF_RETLESS_CALL        MAKE_BBFLAG(26) // BBJ_CALLFINALLY that will never return (and therefore, won't need a paired
+                                                // BBJ_ALWAYS); see isBBCallAlwaysPair().
+#define BBF_LOOP_PREHEADER      MAKE_BBFLAG(27) // BB is a loop preheader block
 
-#define BBF_COLD                0x10000000 // BB is cold
-#define BBF_PROF_WEIGHT         0x20000000 // BB weight is computed from profile data
-#define BBF_IS_LIR              0x40000000 // Set if the basic block contains LIR (as opposed to HIR)
-#define BBF_KEEP_BBJ_ALWAYS     0x80000000 // A special BBJ_ALWAYS block, used by EH code generation. Keep the jump kind
-                                           // as BBJ_ALWAYS. Used for the paired BBJ_ALWAYS block following the
-                                           // BBJ_CALLFINALLY block, as well as, on x86, the final step block out of a
-                                           // finally.
+#define BBF_COLD                MAKE_BBFLAG(28) // BB is cold
+#define BBF_PROF_WEIGHT         MAKE_BBFLAG(29) // BB weight is computed from profile data
+#define BBF_IS_LIR              MAKE_BBFLAG(30) // Set if the basic block contains LIR (as opposed to HIR)
+#define BBF_KEEP_BBJ_ALWAYS     MAKE_BBFLAG(31) // A special BBJ_ALWAYS block, used by EH code generation. Keep the jump kind
+                                                // as BBJ_ALWAYS. Used for the paired BBJ_ALWAYS block following the
+                                                // BBJ_CALLFINALLY block, as well as, on x86, the final step block out of a
+                                                // finally.
 
-#define BBF_CLONED_FINALLY_BEGIN           0x100000000 // First block of a cloned finally region
-#define BBF_CLONED_FINALLY_END             0x200000000 // Last block of a cloned finally region
-#define BBF_HAS_CALL                       0x400000000 // BB contains a call
-#define BBF_DOMINATED_BY_EXCEPTIONAL_ENTRY 0x800000000 // Block is dominated by exceptional entry.
-#define BBF_BACKWARD_JUMP_TARGET          0x1000000000 // Block is a target of a backward jump
-#define BBF_PATCHPOINT                    0x2000000000 // Block is a patchpoint
-#define BBF_HAS_SUPPRESSGC_CALL           0x4000000000 // BB contains a call to a method with SuppressGCTransitionAttribute
+#define BBF_CLONED_FINALLY_BEGIN           MAKE_BBFLAG(32) // First block of a cloned finally region
+#define BBF_CLONED_FINALLY_END             MAKE_BBFLAG(33) // Last block of a cloned finally region
+#define BBF_HAS_CALL                       MAKE_BBFLAG(34) // BB contains a call
+#define BBF_DOMINATED_BY_EXCEPTIONAL_ENTRY MAKE_BBFLAG(35) // Block is dominated by exceptional entry.
+
+#define BBF_BACKWARD_JUMP_TARGET           MAKE_BBFLAG(36) // Block is a target of a backward jump
+#define BBF_PATCHPOINT                     MAKE_BBFLAG(37) // Block is a patchpoint
 
 // clang-format on
 
@@ -465,8 +467,8 @@ struct BasicBlock : private LIR::Range
 // Flags to update when two blocks are compacted
 
 #define BBF_COMPACT_UPD                                                                                                \
-    (BBF_CHANGED | BBF_GC_SAFE_POINT | BBF_HAS_JMP | BBF_NEEDS_GCPOLL | BBF_HAS_IDX_LEN | BBF_BACKWARD_JUMP |          \
-     BBF_HAS_NEWARRAY | BBF_HAS_NEWOBJ | BBF_HAS_NULLCHECK | BBF_HAS_VTABREF)
+    (BBF_CHANGED | BBF_GC_SAFE_POINT | BBF_HAS_JMP | BBF_HAS_IDX_LEN | BBF_BACKWARD_JUMP | BBF_HAS_NEWARRAY |          \
+     BBF_HAS_NEWOBJ | BBF_HAS_NULLCHECK | BBF_HAS_VTABREF)
 
 // Flags a block should not have had before it is split.
 
@@ -566,9 +568,28 @@ struct BasicBlock : private LIR::Range
     }
 
     // this block will inherit the same weight and relevant bbFlags as bSrc
+    //
     void inheritWeight(BasicBlock* bSrc)
     {
-        this->bbWeight = bSrc->bbWeight;
+        inheritWeightPercentage(bSrc, 100);
+    }
+
+    // Similar to inheritWeight(), but we're splitting a block (such as creating blocks for qmark removal).
+    // So, specify a percentage (0 to 100) of the weight the block should inherit.
+    //
+    void inheritWeightPercentage(BasicBlock* bSrc, unsigned percentage)
+    {
+        assert(0 <= percentage && percentage <= 100);
+
+        // Check for overflow
+        if ((bSrc->bbWeight * 100) <= bSrc->bbWeight)
+        {
+            this->bbWeight = bSrc->bbWeight;
+        }
+        else
+        {
+            this->bbWeight = (bSrc->bbWeight * percentage) / 100;
+        }
 
         if (bSrc->hasProfileWeight())
         {
@@ -578,35 +599,6 @@ struct BasicBlock : private LIR::Range
         {
             this->bbFlags &= ~BBF_PROF_WEIGHT;
         }
-
-        if (this->bbWeight == 0)
-        {
-            this->bbFlags |= BBF_RUN_RARELY;
-        }
-        else
-        {
-            this->bbFlags &= ~BBF_RUN_RARELY;
-        }
-    }
-
-    // Similar to inheritWeight(), but we're splitting a block (such as creating blocks for qmark removal).
-    // So, specify a percentage (0 to 99; if it's 100, just use inheritWeight()) of the weight that we're
-    // going to inherit. Since the number isn't exact, clear the BBF_PROF_WEIGHT flag.
-    void inheritWeightPercentage(BasicBlock* bSrc, unsigned percentage)
-    {
-        assert(0 <= percentage && percentage < 100);
-
-        // Check for overflow
-        if (bSrc->bbWeight * 100 <= bSrc->bbWeight)
-        {
-            this->bbWeight = bSrc->bbWeight;
-        }
-        else
-        {
-            this->bbWeight = bSrc->bbWeight * percentage / 100;
-        }
-
-        this->bbFlags &= ~BBF_PROF_WEIGHT;
 
         if (this->bbWeight == 0)
         {

@@ -21,25 +21,21 @@ namespace System.Net.Security
             try
             {
                 SafeCredentialReference? newRef = SafeCredentialReference.CreateReference(newHandle);
-
                 if (newRef == null)
                 {
                     return;
                 }
 
-                unchecked
-                {
-                    int index = Interlocked.Increment(ref s_current) & c_MaxCacheSize;
-                    newRef = Interlocked.Exchange<SafeCredentialReference>(ref s_cacheSlots[index], newRef);
-                }
+                int index = Interlocked.Increment(ref s_current) & c_MaxCacheSize;
+                newRef = Interlocked.Exchange<SafeCredentialReference>(ref s_cacheSlots[index], newRef);
 
                 newRef?.Dispose();
             }
             catch (Exception e)
             {
-                if (!ExceptionCheck.IsFatal(e))
+                if (NetEventSource.Log.IsEnabled() && !ExceptionCheck.IsFatal(e))
                 {
-                    if (NetEventSource.Log.IsEnabled()) NetEventSource.Fail(null, $"Attempted to throw: {e}");
+                    NetEventSource.Error(null, $"Attempted to throw: {e}");
                 }
             }
         }

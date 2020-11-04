@@ -48,6 +48,7 @@ typedef struct _EventPipeSequencePoint EventPipeSequencePoint;
 typedef struct _EventPipeSequencePointBlock EventPipeSequencePointBlock;
 typedef struct _EventPipeStackBlock EventPipeStackBlock;
 typedef struct _EventPipeStackContents EventPipeStackContents;
+typedef struct _EventPipeSystemTime EventPipeSystemTime;
 typedef struct _EventPipeThread EventPipeThread;
 typedef struct _EventPipeThreadHolder EventPipeThreadHolder;
 typedef struct _EventPipeThreadSessionState EventPipeThreadSessionState;
@@ -57,6 +58,7 @@ typedef struct _FastSerializer FastSerializer;
 typedef struct _FileStream FileStream;
 typedef struct _FileStreamWriter FileStreamWriter;
 typedef struct _IpcStream IpcStream;
+typedef struct _IpcStreamVtable IpcStreamVtable;
 typedef struct _IpcStreamWriter IpcStreamWriter;
 typedef struct _StackHashEntry StackHashEntry;
 typedef struct _StackHashKey StackHashKey;
@@ -145,7 +147,8 @@ typedef enum {
 typedef enum {
 	EP_SESSION_TYPE_FILE,
 	EP_SESSION_TYPE_LISTENER,
-	EP_SESSION_TYPE_IPCSTREAM
+	EP_SESSION_TYPE_IPCSTREAM,
+	EP_SESSION_TYPE_SYNCHRONOUS
 } EventPipeSessionType ;
 
 typedef enum {
@@ -163,7 +166,7 @@ typedef uint64_t EventPipeSessionID;
 typedef char ep_char8_t;
 typedef unsigned short ep_char16_t;
 typedef int64_t ep_timestamp_t;
-typedef int64_t ep_systemtime_t;
+typedef int64_t ep_system_timestamp_t;
 
 /*
  * EventPipe Callbacks.
@@ -182,6 +185,20 @@ typedef void (*EventPipeCallback)(
 typedef void (*EventPipeCallbackDataFree)(
 	EventPipeCallback callback,
 	void *callback_data);
+
+typedef void (*EventPipeSessionSynchronousCallback)(
+	EventPipeProvider *provider,
+	int32_t event_id,
+	int32_t event_version,
+	uint32_t metadata_blob_len,
+	const uint8_t *metadata_blob,
+	uint32_t event_data_len,
+	const uint8_t *event_data,
+	const uint8_t *activity_id,
+	const uint8_t *related_activity_id,
+	EventPipeThread *event_thread,
+	uint32_t stack_frames_len,
+	uintptr_t *stack_frames);
 
 /*
  * EventFilterDescriptor.
@@ -359,6 +376,52 @@ ep_provider_config_init (
 
 void
 ep_provider_config_fini (EventPipeProviderConfiguration *provider_config);
+
+/*
+ * EventPipeSystemTime.
+ */
+
+#if defined(EP_INLINE_GETTER_SETTER) || defined(EP_IMPL_EP_GETTER_SETTER)
+struct _EventPipeSystemTime {
+#else
+struct _EventPipeSystemTime_Internal {
+#endif
+	uint16_t year;
+	uint16_t month;
+	uint16_t day_of_week;
+	uint16_t day;
+	uint16_t hour;
+	uint16_t minute;
+	uint16_t second;
+	uint16_t milliseconds;
+};
+
+#if !defined(EP_INLINE_GETTER_SETTER) && !defined(EP_IMPL_EP_GETTER_SETTER)
+struct _EventPipeSystemTime {
+	uint8_t _internal [sizeof (struct _EventPipeSystemTime_Internal)];
+};
+#endif
+
+EP_DEFINE_GETTER(EventPipeSystemTime *, system_time, uint16_t, year);
+EP_DEFINE_GETTER(EventPipeSystemTime *, system_time, uint16_t, month);
+EP_DEFINE_GETTER(EventPipeSystemTime *, system_time, uint16_t, day_of_week);
+EP_DEFINE_GETTER(EventPipeSystemTime *, system_time, uint16_t, day);
+EP_DEFINE_GETTER(EventPipeSystemTime *, system_time, uint16_t, hour);
+EP_DEFINE_GETTER(EventPipeSystemTime *, system_time, uint16_t, minute);
+EP_DEFINE_GETTER(EventPipeSystemTime *, system_time, uint16_t, second);
+EP_DEFINE_GETTER(EventPipeSystemTime *, system_time, uint16_t, milliseconds);
+
+void
+ep_system_time_set (
+	EventPipeSystemTime *system_time,
+	uint16_t year,
+	uint16_t month,
+	uint16_t day_of_week,
+	uint16_t day,
+	uint16_t hour,
+	uint16_t minute,
+	uint16_t second,
+	uint16_t milliseconds);
 
 #endif /* ENABLE_PERFTRACING */
 #endif /* __EVENTPIPE_TYPES_H__ */

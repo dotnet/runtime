@@ -358,6 +358,18 @@ namespace R2RDump
             return instrSize;
         }
 
+        private bool TryGetImportCellName(int target, out string targetName)
+        {
+            targetName = null;
+            _reader.ImportSignatures.TryGetValue(target, out ReadyToRunSignature targetSignature);
+            if (targetSignature != null)
+            {
+                targetName = targetSignature.ToString(_options.GetSignatureFormattingOptions());
+                return true;
+            }
+            return false;
+        }
+
         const string RelIPTag = "[rip ";
 
         /// <summary>
@@ -379,7 +391,7 @@ namespace R2RDump
                 StringBuilder translated = new StringBuilder();
                 translated.Append(instruction, 0, leftBracket);
 
-                _reader.ImportCellNames.TryGetValue(target, out string targetName);
+                TryGetImportCellName(target, out string targetName);
 
                 if (_options.Naked)
                 {
@@ -424,14 +436,15 @@ namespace R2RDump
             int leftBracket;
             int rightBracketPlusOne;
             int absoluteAddress;
-            if (TryParseRipRelative(instruction, out leftBracket, out rightBracketPlusOne, out absoluteAddress))
+            if (TryParseRipRelative(instruction, out leftBracket, out rightBracketPlusOne, out absoluteAddress) ||
+                TryParseAbsoluteAddress(instruction, out leftBracket, out rightBracketPlusOne, out absoluteAddress))
             {
                 int target = absoluteAddress - (int)_reader.ImageBase;
 
                 StringBuilder translated = new StringBuilder();
                 translated.Append(instruction, 0, leftBracket);
 
-                _reader.ImportCellNames.TryGetValue(target, out string targetName);
+                TryGetImportCellName(target, out string targetName);
 
                 if (_options.Naked)
                 {
@@ -455,7 +468,6 @@ namespace R2RDump
                     }
                 }
 
-                translated.Append(instruction, rightBracketPlusOne, instruction.Length - rightBracketPlusOne);
                 instruction = translated.ToString();
             }
             else
@@ -495,7 +507,7 @@ namespace R2RDump
                 if (pointsOutsideRuntimeFunction && IsIntel2ByteIndirectJumpPCRelativeInstruction(targetImageOffset, out int instructionRelativeOffset))
                 {
                     int thunkTargetRVA = targetRVA + instructionRelativeOffset;
-                    bool haveImportCell = _reader.ImportCellNames.TryGetValue(thunkTargetRVA, out string importCellName);
+                    bool haveImportCell = TryGetImportCellName(thunkTargetRVA, out string importCellName); ;
 
                     if (_options.Naked && haveImportCell)
                     {
@@ -538,6 +550,38 @@ namespace R2RDump
                 int offset = BitConverter.ToInt32(_reader.Image, imageOffset + rtfOffset + 2);
                 ReplaceRelativeOffset(ref instruction, nextInstructionRVA + offset, rtf);
             }
+        }
+
+        /// <summary>
+        /// Try to parse the [absoluteAddress] section in a disassembled instruction string.
+        /// </summary>
+        /// <param name="instruction">Disassembled instruction string</param>
+        /// <param name="leftBracket">Index of the left bracket in the instruction</param>
+        /// <param name="rightBracketPlusOne">Index of the right bracket in the instruction plus one</param>
+        /// <param name="displacement">Value of the absolute address</param>
+        /// <returns></returns>
+        private bool TryParseAbsoluteAddress(string instruction, out int leftBracket, out int rightBracketPlusOne, out int absoluteAddress)
+        {
+            int start = instruction.IndexOf('[', StringComparison.Ordinal);
+            int current = start + 1;
+            absoluteAddress = 0;
+            while (current < instruction.Length && IsDigit(instruction[current]))
+            {
+                absoluteAddress = 10 * absoluteAddress + (int)(instruction[current] - '0');
+                current++;
+            }
+
+            if (current < instruction.Length && instruction[current] == ']')
+            {
+                leftBracket = start;
+                rightBracketPlusOne = current + 1;
+                return true;
+            }
+
+            leftBracket = 0;
+            rightBracketPlusOne = 0;
+            absoluteAddress = 0;
+            return false;
         }
 
         /// <summary>
@@ -688,6 +732,19 @@ namespace R2RDump
         }
 
         /// <summary>
+        /// Returns true when this is one of the x86 / amd64 conditional near jump
+        /// opcodes with signed 4-byte offset.
+        /// </summary>
+        /// <param name="imageOffset">Offset within the PE image byte array</param>
+        private bool IsIntelCallAbsoluteAddress(int imageOffset)
+        {
+            byte opCode1 = _reader.Image[imageOffset];
+            byte opCode2 = _reader.Image[imageOffset + 1];
+
+            return opCode1 == 0xFF && opCode2 == 0x15;
+        }
+
+        /// <summary>
         /// Returns true when this is the 2-byte instruction for indirect jump
         /// with RIP-relative offset.
         /// </summary>
@@ -754,7 +811,7 @@ namespace R2RDump
                     var translated = new StringBuilder();
                     translated.Append(instruction, 0, hashPos);
 
-                    _reader.ImportCellNames.TryGetValue(target, out string targetName);
+                    TryGetImportCellName(target, out string targetName);
 
                     if (_options.Naked && (targetName != null))
                     {
@@ -779,7 +836,7 @@ namespace R2RDump
                 var translated = new StringBuilder();
                 translated.Append(instruction, 0, hashPos);
 
-                _reader.ImportCellNames.TryGetValue(target, out string targetName);
+                TryGetImportCellName(target, out string targetName);
 
                 if (_options.Naked && (targetName != null))
                 {
@@ -841,7 +898,7 @@ namespace R2RDump
                     {
                         int labelOffset = ldr1ImageOffset + ldr1Offset;
                         int target = checked((int)(BitConverter.ToUInt64(_reader.Image, labelOffset) - _reader.ImageBase));
-                        _reader.ImportCellNames.TryGetValue(target, out string targetName);
+                        TryGetImportCellName(target, out string targetName);
                         var translated = new StringBuilder();
 
                         if (_options.Naked && (targetName != null))

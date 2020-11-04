@@ -5,6 +5,12 @@
         "linux-musl"
       ]
     },
+    "alpine-arm": {
+      "#import": [
+        "alpine",
+        "linux-musl-arm"
+      ]
+    },
     "alpine-arm64": {
       "#import": [
         "alpine",
@@ -20,6 +26,12 @@
     "alpine.3.10": {
       "#import": [
         "alpine.3.9"
+      ]
+    },
+    "alpine.3.10-arm": {
+      "#import": [
+        "alpine.3.10",
+        "alpine.3.9-arm"
       ]
     },
     "alpine.3.10-arm64": {
@@ -39,6 +51,12 @@
         "alpine.3.10"
       ]
     },
+    "alpine.3.11-arm": {
+      "#import": [
+        "alpine.3.11",
+        "alpine.3.10-arm"
+      ]
+    },
     "alpine.3.11-arm64": {
       "#import": [
         "alpine.3.11",
@@ -54,6 +72,12 @@
     "alpine.3.12": {
       "#import": [
         "alpine.3.11"
+      ]
+    },
+    "alpine.3.12-arm": {
+      "#import": [
+        "alpine.3.12",
+        "alpine.3.11-arm"
       ]
     },
     "alpine.3.12-arm64": {
@@ -73,6 +97,12 @@
         "alpine"
       ]
     },
+    "alpine.3.6-arm": {
+      "#import": [
+        "alpine.3.6",
+        "alpine-arm"
+      ]
+    },
     "alpine.3.6-arm64": {
       "#import": [
         "alpine.3.6",
@@ -88,6 +118,12 @@
     "alpine.3.7": {
       "#import": [
         "alpine.3.6"
+      ]
+    },
+    "alpine.3.7-arm": {
+      "#import": [
+        "alpine.3.7",
+        "alpine.3.6-arm"
       ]
     },
     "alpine.3.7-arm64": {
@@ -107,6 +143,12 @@
         "alpine.3.7"
       ]
     },
+    "alpine.3.8-arm": {
+      "#import": [
+        "alpine.3.8",
+        "alpine.3.7-arm"
+      ]
+    },
     "alpine.3.8-arm64": {
       "#import": [
         "alpine.3.8",
@@ -122,6 +164,12 @@
     "alpine.3.9": {
       "#import": [
         "alpine.3.8"
+      ]
+    },
+    "alpine.3.9-arm": {
+      "#import": [
+        "alpine.3.9",
+        "alpine.3.8-arm"
       ]
     },
     "alpine.3.9-arm64": {
@@ -1147,6 +1195,12 @@
         "unix-armel"
       ]
     },
+    "linux-mips64": {
+      "#import": [
+        "linux",
+        "unix-mips64"
+      ]
+    },
     "linux-musl": {
       "#import": [
         "linux"
@@ -1571,6 +1625,12 @@
         "unix"
       ]
     },
+    "osx-arm64": {
+      "#import": [
+        "osx",
+        "unix-arm64"
+      ]
+    },
     "osx-x64": {
       "#import": [
         "osx",
@@ -1580,6 +1640,12 @@
     "osx.10.10": {
       "#import": [
         "osx"
+      ]
+    },
+    "osx.10.10-arm64": {
+      "#import": [
+        "osx.10.10",
+        "osx-arm64"
       ]
     },
     "osx.10.10-x64": {
@@ -1593,6 +1659,12 @@
         "osx.10.10"
       ]
     },
+    "osx.10.11-arm64": {
+      "#import": [
+        "osx.10.11",
+        "osx.10.10-arm64"
+      ]
+    },
     "osx.10.11-x64": {
       "#import": [
         "osx.10.11",
@@ -1602,6 +1674,12 @@
     "osx.10.12": {
       "#import": [
         "osx.10.11"
+      ]
+    },
+    "osx.10.12-arm64": {
+      "#import": [
+        "osx.10.12",
+        "osx.10.11-arm64"
       ]
     },
     "osx.10.12-x64": {
@@ -1615,6 +1693,12 @@
         "osx.10.12"
       ]
     },
+    "osx.10.13-arm64": {
+      "#import": [
+        "osx.10.13",
+        "osx.10.12-arm64"
+      ]
+    },
     "osx.10.13-x64": {
       "#import": [
         "osx.10.13",
@@ -1624,6 +1708,12 @@
     "osx.10.14": {
       "#import": [
         "osx.10.13"
+      ]
+    },
+    "osx.10.14-arm64": {
+      "#import": [
+        "osx.10.14",
+        "osx.10.13-arm64"
       ]
     },
     "osx.10.14-x64": {
@@ -1637,10 +1727,50 @@
         "osx.10.14"
       ]
     },
+    "osx.10.15-arm64": {
+      "#import": [
+        "osx.10.15",
+        "osx.10.14-arm64"
+      ]
+    },
     "osx.10.15-x64": {
       "#import": [
         "osx.10.15",
         "osx.10.14-x64"
+      ]
+    },
+    "osx.10.16": {
+      "#import": [
+        "osx.10.15"
+      ]
+    },
+    "osx.10.16-arm64": {
+      "#import": [
+        "osx.10.16",
+        "osx.10.15-arm64"
+      ]
+    },
+    "osx.10.16-x64": {
+      "#import": [
+        "osx.10.16",
+        "osx.10.15-x64"
+      ]
+    },
+    "osx.11.0": {
+      "#import": [
+        "osx.10.16"
+      ]
+    },
+    "osx.11.0-arm64": {
+      "#import": [
+        "osx.11.0",
+        "osx.10.16-arm64"
+      ]
+    },
+    "osx.11.0-x64": {
+      "#import": [
+        "osx.11.0",
+        "osx.10.16-x64"
       ]
     },
     "rhel": {
@@ -2655,6 +2785,11 @@
       ]
     },
     "unix-armel": {
+      "#import": [
+        "unix"
+      ]
+    },
+    "unix-mips64": {
       "#import": [
         "unix"
       ]

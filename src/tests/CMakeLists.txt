@@ -1,6 +1,9 @@
-cmake_minimum_required(VERSION 3.14.5)
+cmake_minimum_required(VERSION 3.6.2)
 
 cmake_policy(SET CMP0042 NEW)
+if (CMAKE_VERSION VERSION_GREATER 3.15 OR CMAKE_VERSION VERSION_EQUAL 3.15)
+  cmake_policy(SET CMP0091 NEW)
+endif()
 project(Tests)
 
 include(${CLR_ENG_NATIVE_DIR}/configurecompiler.cmake)
@@ -30,6 +33,8 @@ if (CLR_CMAKE_HOST_WIN32)
     # 5027 - move assignment operator was implicitly defined as deleted
     # 5039 - pointer or reference to potentially throwing function passed to extern C function under -EHc. Undefined behavior may occur if this function throws an exception.
     add_compile_options(-wd4100 -wd4514 -wd4625 -wd4626 -wd4668 -wd4710 -wd4711 -wd4774 -wd4820 -wd5025 -wd5026 -wd5027 -wd5039)
+
+    string(REPLACE "/EHsc" "" CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}")
     add_compile_options(/EHa) # enable C++ EH (w/ SEH exceptions)
 endif()
 

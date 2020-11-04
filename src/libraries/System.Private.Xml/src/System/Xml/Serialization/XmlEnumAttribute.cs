@@ -3,7 +3,6 @@
 
 using System;
 
-
 namespace System.Xml.Serialization
 {
     /// <devdoc>
@@ -12,7 +11,7 @@ namespace System.Xml.Serialization
     [AttributeUsage(AttributeTargets.Field)]
     public class XmlEnumAttribute : System.Attribute
     {
-        private string _name;
+        private string? _name;
 
         /// <devdoc>
         ///    <para>[To be supplied.]</para>
@@ -24,7 +23,7 @@ namespace System.Xml.Serialization
         /// <devdoc>
         ///    <para>[To be supplied.]</para>
         /// </devdoc>
-        public XmlEnumAttribute(string name)
+        public XmlEnumAttribute(string? name)
         {
             _name = name;
         }
@@ -32,7 +31,7 @@ namespace System.Xml.Serialization
         /// <devdoc>
         ///    <para>[To be supplied.]</para>
         /// </devdoc>
-        public string Name
+        public string? Name
         {
             get { return _name; }
             set { _name = value; }

@@ -11,17 +11,17 @@ namespace System.Runtime.Intrinsics.X86
     /// This class provides access to Intel BMI2 hardware instructions via intrinsics
     /// </summary>
     [CLSCompliant(false)]
-    public abstract class Bmi2 // : X86Base
+    public abstract class Bmi2 : X86Base
     {
         internal Bmi2() { }
 
-        public static bool IsSupported { [Intrinsic] get { return false; } }
+        public static new bool IsSupported { [Intrinsic] get { return false; } }
 
-        public abstract class X64 // : X86Base.X64
+        public new abstract class X64 : X86Base.X64
         {
             internal X64() { }
 
-            public static bool IsSupported { [Intrinsic] get { return false; } }
+            public static new bool IsSupported { [Intrinsic] get { return false; } }
 
             /// <summary>
             /// unsigned __int64 _bzhi_u64 (unsigned __int64 a, unsigned int index)

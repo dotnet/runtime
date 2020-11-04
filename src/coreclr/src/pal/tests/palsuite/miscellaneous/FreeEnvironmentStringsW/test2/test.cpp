@@ -13,7 +13,7 @@
 #define UNICODE
 #include <palsuite.h>
 
-int __cdecl main(int argc, char *argv[]) 
+PALTEST(miscellaneous_FreeEnvironmentStringsW_test2_paltest_freeenvironmentstringsw_test2, "miscellaneous/FreeEnvironmentStringsW/test2/paltest_freeenvironmentstringsw_test2")
 {
 
     WCHAR CapturedEnvironment[] = {'T','E','S','T','\0'};

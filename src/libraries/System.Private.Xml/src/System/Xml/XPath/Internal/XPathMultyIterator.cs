@@ -22,7 +22,9 @@ namespace MS.Internal.Xml.XPath
             this.arr = new ResetableIterator[inputArray.Count];
             for (int i = 0; i < this.arr.Length; i++)
             {
-                this.arr[i] = new XPathArrayIterator((ArrayList)inputArray[i]);
+                var iterator = (ArrayList?)inputArray[i];
+                Debug.Assert(iterator != null);
+                this.arr[i] = new XPathArrayIterator(iterator);
             }
             Init();
         }
@@ -101,14 +103,16 @@ namespace MS.Internal.Xml.XPath
             ResetableIterator it = arr[item];
             while (item + 1 < arr.Length)
             {
-                XmlNodeOrder order = Query.CompareNodes(it.Current, arr[item + 1].Current);
+                ResetableIterator itNext = arr[item + 1];
+                Debug.Assert(it.Current != null && itNext.Current != null);
+                XmlNodeOrder order = Query.CompareNodes(it.Current, itNext.Current);
                 if (order == XmlNodeOrder.Before)
                 {
                     break;
                 }
                 if (order == XmlNodeOrder.After)
                 {
-                    arr[item] = arr[item + 1];
+                    arr[item] = itNext;
                     //arr[item + 1] = it;
                     item++;
                 }
@@ -149,7 +153,7 @@ namespace MS.Internal.Xml.XPath
             return new XPathMultyIterator(this);
         }
 
-        public override XPathNavigator Current
+        public override XPathNavigator? Current
         {
             get
             {

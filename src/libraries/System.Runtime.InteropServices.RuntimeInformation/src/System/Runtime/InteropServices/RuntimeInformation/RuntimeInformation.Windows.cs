@@ -11,8 +11,6 @@ namespace System.Runtime.InteropServices
         private static volatile int s_osArch = -1;
         private static volatile int s_processArch = -1;
 
-        internal static bool IsCurrentOSPlatform(string osPlatform) => osPlatform.Equals("WINDOWS", StringComparison.OrdinalIgnoreCase);
-
         public static string OSDescription
         {
             get

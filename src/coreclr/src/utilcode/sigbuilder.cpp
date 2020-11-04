@@ -82,22 +82,22 @@ void SigBuilder::AppendToken(mdToken tk)
     // TypeSpec is encoded with low bits 10
     // BaseType is encoded with low bit 11
     //
-    if (ulTyp == g_tkCorEncodeToken[0])
+    if (ulTyp == CorSigDecodeTokenType(0))
     {
         // make the last two bits 00
         // nothing to do
     }
-    else if (ulTyp == g_tkCorEncodeToken[1])
+    else if (ulTyp == CorSigDecodeTokenType(1))
     {
         // make the last two bits 01
         rid |= 0x1;
     }
-    else if (ulTyp == g_tkCorEncodeToken[2])
+    else if (ulTyp == CorSigDecodeTokenType(2))
     {
         // make last two bits 0
         rid |= 0x2;
     }
-    else if (ulTyp == g_tkCorEncodeToken[3])
+    else if (ulTyp == CorSigDecodeTokenType(3))
     {
         rid |= 0x3;
     }

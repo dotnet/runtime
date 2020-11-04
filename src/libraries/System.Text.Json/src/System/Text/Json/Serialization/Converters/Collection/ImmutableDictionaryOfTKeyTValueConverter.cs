@@ -20,21 +20,21 @@ namespace System.Text.Json.Serialization.Converters
 
         protected override void CreateCollection(ref Utf8JsonReader reader, ref ReadStack state)
         {
-            state.Current.ReturnValue = new Dictionary<string, TValue>();
+            state.Current.ReturnValue = new Dictionary<TKey, TValue>();
         }
 
         protected override void ConvertCollection(ref ReadStack state, JsonSerializerOptions options)
         {
             JsonClassInfo classInfo = state.Current.JsonClassInfo;
 
-            Func<IEnumerable<KeyValuePair<string, TValue>>, TCollection>? creator = (Func<IEnumerable<KeyValuePair<string, TValue>>, TCollection>?)classInfo.CreateObjectWithArgs;
+            Func<IEnumerable<KeyValuePair<TKey, TValue>>, TCollection>? creator = (Func<IEnumerable<KeyValuePair<TKey, TValue>>, TCollection>?)classInfo.CreateObjectWithArgs;
             if (creator == null)
             {
-                creator = options.MemberAccessorStrategy.CreateImmutableDictionaryCreateRangeDelegate<TValue, TCollection>();
+                creator = options.MemberAccessorStrategy.CreateImmutableDictionaryCreateRangeDelegate<TCollection, TKey, TValue>();
                 classInfo.CreateObjectWithArgs = creator;
             }
 
-            state.Current.ReturnValue = creator((Dictionary<string, TValue>)state.Current.ReturnValue!);
+            state.Current.ReturnValue = creator((Dictionary<TKey, TValue>)state.Current.ReturnValue!);
         }
 
         protected internal override bool OnWriteResume(Utf8JsonWriter writer, TCollection value, JsonSerializerOptions options, ref WriteStack state)

@@ -59,7 +59,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
             int pointerSize = type.Context.Target.PointerSize;
             int size = defType.InstanceFieldSize.AsInt;
-            int alignment = GetClassAlignmentRequirement(defType);
+            int alignment = Internal.JitInterface.CorInfoImpl.GetClassAlignmentRequirementStatic(defType);
             ReadyToRunTypeLayoutFlags flags = ReadyToRunTypeLayoutFlags.READYTORUN_LAYOUT_Alignment | ReadyToRunTypeLayoutFlags.READYTORUN_LAYOUT_GCLayout;
             if (alignment == pointerSize)
             {
@@ -81,16 +81,16 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
             if (defType.IsHomogeneousAggregate)
             {
-                CorElementType elementType = (defType.ValueTypeShapeCharacteristics & ValueTypeShapeCharacteristics.AggregateMask) switch
+                ReadyToRunHFAElemType hfaElementType = (defType.ValueTypeShapeCharacteristics & ValueTypeShapeCharacteristics.AggregateMask) switch
                 {
-                    ValueTypeShapeCharacteristics.Float32Aggregate => CorElementType.ELEMENT_TYPE_R4,
-                    ValueTypeShapeCharacteristics.Float64Aggregate => CorElementType.ELEMENT_TYPE_R8,
-                    ValueTypeShapeCharacteristics.Vector64Aggregate => CorElementType.ELEMENT_TYPE_R8,
+                    ValueTypeShapeCharacteristics.Float32Aggregate => ReadyToRunHFAElemType.Float32,
+                    ValueTypeShapeCharacteristics.Float64Aggregate => ReadyToRunHFAElemType.Float64,
+                    ValueTypeShapeCharacteristics.Vector64Aggregate => ReadyToRunHFAElemType.Vector64,
                     // See MethodTable::GetHFAType
-                    ValueTypeShapeCharacteristics.Vector128Aggregate => CorElementType.ELEMENT_TYPE_VALUETYPE,
-                    _ => CorElementType.Invalid
+                    ValueTypeShapeCharacteristics.Vector128Aggregate => ReadyToRunHFAElemType.Vector128,
+                    _ => throw new NotSupportedException()
                 };
-                dataBuilder.EmitUInt((uint)elementType);
+                dataBuilder.EmitUInt((uint)hfaElementType);
             }
             
             if (alignment != pointerSize)
@@ -117,37 +117,6 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
                 dataBuilder.EmitBytes(encodedGCRefMap);
             }
-        }
-
-        /// <summary>
-        /// Managed implementation of CEEInfo::getClassAlignmentRequirementStatic
-        /// </summary>
-        private static int GetClassAlignmentRequirement(MetadataType type)
-        {
-            int alignment = type.Context.Target.PointerSize;
-
-            if (type.HasLayout())
-            {
-                if (type.IsSequentialLayout || MarshalUtils.IsBlittableType(type))
-                {
-                    alignment = type.InstanceFieldAlignment.AsInt;
-                }
-            }
-
-            if (type.Context.Target.Architecture == TargetArchitecture.ARM &&
-                alignment < 8 && type.RequiresAlign8())
-            {
-                // If the structure contains 64-bit primitive fields and the platform requires 8-byte alignment for
-                // such fields then make sure we return at least 8-byte alignment. Note that it's technically possible
-                // to create unmanaged APIs that take unaligned structures containing such fields and this
-                // unconditional alignment bump would cause us to get the calling convention wrong on platforms such
-                // as ARM. If we see such cases in the future we'd need to add another control (such as an alignment
-                // property for the StructLayout attribute or a marshaling directive attribute for p/invoke arguments)
-                // that allows more precise control. For now we'll go with the likely scenario.
-                alignment = 8;
-            }
-
-            return alignment;
         }
 
         public override void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb)

@@ -58,10 +58,13 @@ namespace System.Threading.Tasks
     [DebuggerDisplay("Id = {Id}, Status = {Status}, Method = {DebuggerDisplayMethodDescription}, Result = {DebuggerDisplayResultDescription}")]
     public class Task<TResult> : Task
     {
-        // The value itself, if set.
-        [MaybeNull, AllowNull] internal TResult m_result = default!;
+        /// <summary>A cached task for default(TResult).</summary>
+        internal static readonly Task<TResult> s_defaultResultTask = TaskCache.CreateCacheableTask<TResult>(default);
 
         private static readonly TaskFactory<TResult> s_Factory = new TaskFactory<TResult>();
+
+        // The value itself, if set.
+        internal TResult? m_result;
 
         // Extract rarely used helper for a static method in a separate type so that the Func<Task<Task>, Task<TResult>>
         // generic instantiations don't contribute to all Task instantiations, but only those where WhenAny is used.
@@ -93,7 +96,7 @@ namespace System.Threading.Tasks
             m_result = result;
         }
 
-        internal Task(bool canceled, [AllowNull] TResult result, TaskCreationOptions creationOptions, CancellationToken ct)
+        internal Task(bool canceled, TResult? result, TaskCreationOptions creationOptions, CancellationToken ct)
             : base(canceled, creationOptions, ct)
         {
             if (!canceled)
@@ -364,7 +367,7 @@ namespace System.Threading.Tasks
 
 
         // internal helper function breaks out logic used by TaskCompletionSource
-        internal bool TrySetResult([AllowNull] TResult result)
+        internal bool TrySetResult(TResult? result)
         {
             Debug.Assert(m_action == null, "Task<T>.TrySetResult(): non-null m_action");
 
@@ -1357,7 +1360,7 @@ namespace System.Threading.Tasks
             m_task = task;
         }
 
-        [MaybeNull] public TResult Result => m_task.Status == TaskStatus.RanToCompletion ? m_task.Result : default!;
+        public TResult? Result => m_task.Status == TaskStatus.RanToCompletion ? m_task.Result : default;
         public object? AsyncState => m_task.AsyncState;
         public TaskCreationOptions CreationOptions => m_task.CreationOptions;
         public Exception? Exception => m_task.Exception;

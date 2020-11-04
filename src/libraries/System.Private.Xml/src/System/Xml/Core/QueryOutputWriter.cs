@@ -1,7 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-#nullable enable
 namespace System.Xml
 {
     using System;
@@ -31,7 +30,7 @@ namespace System.Xml
         private readonly bool _checkWellFormedDoc;
         private bool _hasDocElem;
         private bool _inAttr;
-        private readonly string _systemId, _publicId;
+        private readonly string? _systemId, _publicId;
         private int _depth;
 
         public QueryOutputWriter(XmlRawWriter writer, XmlWriterSettings settings)

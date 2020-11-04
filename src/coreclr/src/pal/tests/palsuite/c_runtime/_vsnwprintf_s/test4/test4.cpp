@@ -50,7 +50,7 @@ static void DoI64DoubleTest(WCHAR *formatstr, INT64 value, WCHAR *valuestr,
     }
 }
 
-int __cdecl main(int argc, char *argv[])
+PALTEST(c_runtime__vsnwprintf_s_test4_paltest_vsnwprintf_test4, "c_runtime/_vsnwprintf_s/test4/paltest_vsnwprintf_test4")
 {
     void *ptr = (void*) 0x123456;
     INT64 lptr = I64(0x1234567887654321);

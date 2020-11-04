@@ -12,73 +12,73 @@ namespace System.Runtime.Serialization
 {
     public static class JsonFormatGeneratorStatics
     {
-        private static PropertyInfo s_collectionItemNameProperty;
+        private static PropertyInfo? s_collectionItemNameProperty;
 
-        private static ConstructorInfo s_extensionDataObjectCtor;
+        private static ConstructorInfo? s_extensionDataObjectCtor;
 
-        private static PropertyInfo s_extensionDataProperty;
+        private static PropertyInfo? s_extensionDataProperty;
 
-        private static MethodInfo s_getItemContractMethod;
+        private static MethodInfo? s_getItemContractMethod;
 
-        private static MethodInfo s_getJsonDataContractMethod;
+        private static MethodInfo? s_getJsonDataContractMethod;
 
-        private static MethodInfo s_getJsonMemberIndexMethod;
+        private static MethodInfo? s_getJsonMemberIndexMethod;
 
-        private static MethodInfo s_getRevisedItemContractMethod;
+        private static MethodInfo? s_getRevisedItemContractMethod;
 
-        private static MethodInfo s_getUninitializedObjectMethod;
+        private static MethodInfo? s_getUninitializedObjectMethod;
 
-        private static MethodInfo s_ienumeratorGetCurrentMethod;
+        private static MethodInfo? s_ienumeratorGetCurrentMethod;
 
-        private static MethodInfo s_ienumeratorMoveNextMethod;
+        private static MethodInfo? s_ienumeratorMoveNextMethod;
 
-        private static MethodInfo s_isStartElementMethod0;
+        private static MethodInfo? s_isStartElementMethod0;
 
-        private static MethodInfo s_isStartElementMethod2;
+        private static MethodInfo? s_isStartElementMethod2;
 
-        private static PropertyInfo s_localNameProperty;
+        private static PropertyInfo? s_localNameProperty;
 
-        private static PropertyInfo s_namespaceProperty;
+        private static PropertyInfo? s_namespaceProperty;
 
-        private static MethodInfo s_moveToContentMethod;
+        private static MethodInfo? s_moveToContentMethod;
 
-        private static PropertyInfo s_nodeTypeProperty;
+        private static PropertyInfo? s_nodeTypeProperty;
 
-        private static MethodInfo s_onDeserializationMethod;
+        private static MethodInfo? s_onDeserializationMethod;
 
-        private static MethodInfo s_readJsonValueMethod;
+        private static MethodInfo? s_readJsonValueMethod;
 
-        private static ConstructorInfo s_serializationExceptionCtor;
+        private static ConstructorInfo? s_serializationExceptionCtor;
 
-        private static Type[] s_serInfoCtorArgs;
+        private static Type[]? s_serInfoCtorArgs;
 
-        private static MethodInfo s_throwDuplicateMemberExceptionMethod;
+        private static MethodInfo? s_throwDuplicateMemberExceptionMethod;
 
-        private static MethodInfo s_throwMissingRequiredMembersMethod;
+        private static MethodInfo? s_throwMissingRequiredMembersMethod;
 
-        private static PropertyInfo s_typeHandleProperty;
+        private static PropertyInfo? s_typeHandleProperty;
 
-        private static PropertyInfo s_useSimpleDictionaryFormatReadProperty;
+        private static PropertyInfo? s_useSimpleDictionaryFormatReadProperty;
 
-        private static PropertyInfo s_useSimpleDictionaryFormatWriteProperty;
+        private static PropertyInfo? s_useSimpleDictionaryFormatWriteProperty;
 
-        private static MethodInfo s_writeAttributeStringMethod;
+        private static MethodInfo? s_writeAttributeStringMethod;
 
-        private static MethodInfo s_writeEndElementMethod;
+        private static MethodInfo? s_writeEndElementMethod;
 
-        private static MethodInfo s_writeJsonISerializableMethod;
+        private static MethodInfo? s_writeJsonISerializableMethod;
 
-        private static MethodInfo s_writeJsonNameWithMappingMethod;
+        private static MethodInfo? s_writeJsonNameWithMappingMethod;
 
-        private static MethodInfo s_writeJsonValueMethod;
+        private static MethodInfo? s_writeJsonValueMethod;
 
-        private static MethodInfo s_writeStartElementMethod;
+        private static MethodInfo? s_writeStartElementMethod;
 
-        private static MethodInfo s_writeStartElementStringMethod;
+        private static MethodInfo? s_writeStartElementStringMethod;
 
-        private static MethodInfo s_parseEnumMethod;
+        private static MethodInfo? s_parseEnumMethod;
 
-        private static MethodInfo s_getJsonMemberNameMethod;
+        private static MethodInfo? s_getJsonMemberNameMethod;
 
         public static PropertyInfo CollectionItemNameProperty
         {
@@ -96,10 +96,10 @@ namespace System.Runtime.Serialization
 
         public static ConstructorInfo ExtensionDataObjectCtor => s_extensionDataObjectCtor ??
                                                                  (s_extensionDataObjectCtor =
-                                                                     typeof(ExtensionDataObject).GetConstructor(Globals.ScanAllMembers, null, Array.Empty<Type>(), null));
+                                                                     typeof(ExtensionDataObject).GetConstructor(Globals.ScanAllMembers, null, Array.Empty<Type>(), null))!;
 
         public static PropertyInfo ExtensionDataProperty => s_extensionDataProperty ??
-                                                            (s_extensionDataProperty = typeof(IExtensibleDataObject).GetProperty("ExtensionData"));
+                                                            (s_extensionDataProperty = typeof(IExtensibleDataObject).GetProperty("ExtensionData")!);
 
         public static MethodInfo GetCurrentMethod
         {
@@ -107,7 +107,7 @@ namespace System.Runtime.Serialization
             {
                 if (s_ienumeratorGetCurrentMethod == null)
                 {
-                    s_ienumeratorGetCurrentMethod = typeof(IEnumerator).GetProperty("Current").GetGetMethod();
+                    s_ienumeratorGetCurrentMethod = typeof(IEnumerator).GetProperty("Current")!.GetGetMethod();
                     Debug.Assert(s_ienumeratorGetCurrentMethod != null);
                 }
                 return s_ienumeratorGetCurrentMethod;
@@ -119,7 +119,7 @@ namespace System.Runtime.Serialization
             {
                 if (s_getItemContractMethod == null)
                 {
-                    s_getItemContractMethod = typeof(CollectionDataContract).GetProperty("ItemContract", Globals.ScanAllMembers).GetGetMethod(true); // nonPublic
+                    s_getItemContractMethod = typeof(CollectionDataContract).GetProperty("ItemContract", Globals.ScanAllMembers)!.GetGetMethod(nonPublic: true);
                     Debug.Assert(s_getItemContractMethod != null);
                 }
                 return s_getItemContractMethod;
@@ -167,7 +167,7 @@ namespace System.Runtime.Serialization
             {
                 if (s_getUninitializedObjectMethod == null)
                 {
-                    s_getUninitializedObjectMethod = typeof(XmlFormatReaderGenerator).GetMethod("UnsafeGetUninitializedObject", Globals.ScanAllMembers, new Type[] { typeof(Type) });
+                    s_getUninitializedObjectMethod = typeof(XmlFormatReaderGenerator).GetMethod("UnsafeGetUninitializedObject", Globals.ScanAllMembers, null, new Type[] { typeof(Type) }, null);
                     Debug.Assert(s_getUninitializedObjectMethod != null);
                 }
                 return s_getUninitializedObjectMethod;
@@ -180,7 +180,7 @@ namespace System.Runtime.Serialization
             {
                 if (s_isStartElementMethod0 == null)
                 {
-                    s_isStartElementMethod0 = typeof(XmlReaderDelegator).GetMethod("IsStartElement", Globals.ScanAllMembers, Array.Empty<Type>());
+                    s_isStartElementMethod0 = typeof(XmlReaderDelegator).GetMethod("IsStartElement", Globals.ScanAllMembers, null, Array.Empty<Type>(), null);
                     Debug.Assert(s_isStartElementMethod0 != null);
                 }
                 return s_isStartElementMethod0;
@@ -192,7 +192,7 @@ namespace System.Runtime.Serialization
             {
                 if (s_isStartElementMethod2 == null)
                 {
-                    s_isStartElementMethod2 = typeof(XmlReaderDelegator).GetMethod("IsStartElement", Globals.ScanAllMembers, new Type[] { typeof(XmlDictionaryString), typeof(XmlDictionaryString) });
+                    s_isStartElementMethod2 = typeof(XmlReaderDelegator).GetMethod("IsStartElement", Globals.ScanAllMembers, null, new Type[] { typeof(XmlDictionaryString), typeof(XmlDictionaryString) }, null);
                     Debug.Assert(s_isStartElementMethod2 != null);
                 }
                 return s_isStartElementMethod2;
@@ -265,6 +265,7 @@ namespace System.Runtime.Serialization
                 if (s_onDeserializationMethod == null)
                 {
                     s_onDeserializationMethod = typeof(IDeserializationCallback).GetMethod("OnDeserialization");
+                    Debug.Assert(s_onDeserializationMethod != null);
                 }
                 return s_onDeserializationMethod;
             }
@@ -288,6 +289,7 @@ namespace System.Runtime.Serialization
                 if (s_serializationExceptionCtor == null)
                 {
                     s_serializationExceptionCtor = typeof(SerializationException).GetConstructor(new Type[] { typeof(string) });
+                    Debug.Assert(s_serializationExceptionCtor != null);
                 }
                 return s_serializationExceptionCtor;
             }
@@ -369,7 +371,7 @@ namespace System.Runtime.Serialization
             {
                 if (s_writeAttributeStringMethod == null)
                 {
-                    s_writeAttributeStringMethod = typeof(XmlWriterDelegator).GetMethod("WriteAttributeString", Globals.ScanAllMembers, new Type[] { typeof(string), typeof(string), typeof(string), typeof(string) });
+                    s_writeAttributeStringMethod = typeof(XmlWriterDelegator).GetMethod("WriteAttributeString", Globals.ScanAllMembers, null, new Type[] { typeof(string), typeof(string), typeof(string), typeof(string) }, null);
                     Debug.Assert(s_writeAttributeStringMethod != null);
                 }
                 return s_writeAttributeStringMethod;
@@ -381,7 +383,7 @@ namespace System.Runtime.Serialization
             {
                 if (s_writeEndElementMethod == null)
                 {
-                    s_writeEndElementMethod = typeof(XmlWriterDelegator).GetMethod("WriteEndElement", Globals.ScanAllMembers, Array.Empty<Type>());
+                    s_writeEndElementMethod = typeof(XmlWriterDelegator).GetMethod("WriteEndElement", Globals.ScanAllMembers, null, Array.Empty<Type>(), null);
                     Debug.Assert(s_writeEndElementMethod != null);
                 }
                 return s_writeEndElementMethod;
@@ -394,6 +396,7 @@ namespace System.Runtime.Serialization
                 if (s_writeJsonISerializableMethod == null)
                 {
                     s_writeJsonISerializableMethod = typeof(XmlObjectSerializerWriteContextComplexJson).GetMethod("WriteJsonISerializable", Globals.ScanAllMembers);
+                    Debug.Assert(s_writeJsonISerializableMethod != null);
                 }
                 return s_writeJsonISerializableMethod;
             }
@@ -428,7 +431,7 @@ namespace System.Runtime.Serialization
             {
                 if (s_writeStartElementMethod == null)
                 {
-                    s_writeStartElementMethod = typeof(XmlWriterDelegator).GetMethod("WriteStartElement", Globals.ScanAllMembers, new Type[] { typeof(XmlDictionaryString), typeof(XmlDictionaryString) });
+                    s_writeStartElementMethod = typeof(XmlWriterDelegator).GetMethod("WriteStartElement", Globals.ScanAllMembers, null, new Type[] { typeof(XmlDictionaryString), typeof(XmlDictionaryString) }, null);
                     Debug.Assert(s_writeStartElementMethod != null);
                 }
                 return s_writeStartElementMethod;
@@ -441,7 +444,7 @@ namespace System.Runtime.Serialization
             {
                 if (s_writeStartElementStringMethod == null)
                 {
-                    s_writeStartElementStringMethod = typeof(XmlWriterDelegator).GetMethod("WriteStartElement", Globals.ScanAllMembers, new Type[] { typeof(string), typeof(string) });
+                    s_writeStartElementStringMethod = typeof(XmlWriterDelegator).GetMethod("WriteStartElement", Globals.ScanAllMembers, null, new Type[] { typeof(string), typeof(string) }, null);
                     Debug.Assert(s_writeStartElementStringMethod != null);
                 }
                 return s_writeStartElementStringMethod;
@@ -454,7 +457,8 @@ namespace System.Runtime.Serialization
             {
                 if (s_parseEnumMethod == null)
                 {
-                    s_parseEnumMethod = typeof(Enum).GetMethod("Parse", BindingFlags.Static | BindingFlags.Public, new Type[] { typeof(Type), typeof(string) });
+                    s_parseEnumMethod = typeof(Enum).GetMethod("Parse", BindingFlags.Static | BindingFlags.Public, null, new Type[] { typeof(Type), typeof(string) }, null);
+                    Debug.Assert(s_parseEnumMethod != null);
                 }
                 return s_parseEnumMethod;
             }
@@ -466,7 +470,7 @@ namespace System.Runtime.Serialization
             {
                 if (s_getJsonMemberNameMethod == null)
                 {
-                    s_getJsonMemberNameMethod = typeof(XmlObjectSerializerReadContextComplexJson).GetMethod("GetJsonMemberName", Globals.ScanAllMembers, new Type[] { typeof(XmlReaderDelegator) });
+                    s_getJsonMemberNameMethod = typeof(XmlObjectSerializerReadContextComplexJson).GetMethod("GetJsonMemberName", Globals.ScanAllMembers, null, new Type[] { typeof(XmlReaderDelegator) }, null);
                     Debug.Assert(s_getJsonMemberNameMethod != null);
                 }
                 return s_getJsonMemberNameMethod;

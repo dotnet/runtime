@@ -11,7 +11,7 @@ namespace System.Data.OleDb
 {
     public sealed partial class OleDbParameterCollection : DbParameterCollection
     {
-        private List<OleDbParameter> _items;
+        private List<OleDbParameter>? _items;
 
         public override int Count
         {
@@ -25,7 +25,7 @@ namespace System.Data.OleDb
         {
             get
             {
-                List<OleDbParameter> items = _items;
+                List<OleDbParameter>? items = _items;
 
                 if (null == items)
                 {
@@ -298,7 +298,7 @@ namespace System.Data.OleDb
                 throw ADP.ParameterNull(nameof(value), this, s_itemType);
             }
 
-            object parent = ((OleDbParameter)value).CompareExchangeParent(this, null);
+            object? parent = ((OleDbParameter)value).CompareExchangeParent(this, null);
             if (null != parent)
             {
                 if (this != parent)

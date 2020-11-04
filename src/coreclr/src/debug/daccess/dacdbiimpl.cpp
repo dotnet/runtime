@@ -468,7 +468,7 @@ BOOL DacDbiInterfaceImpl::IsLeftSideInitialized()
 }
 
 
-// Determines if a given adddress is a CLR stub.
+// Determines if a given address is a CLR stub.
 BOOL DacDbiInterfaceImpl::IsTransitionStub(CORDB_ADDRESS address)
 {
     DD_ENTER_MAY_THROW;
@@ -2399,7 +2399,7 @@ TypeHandle DacDbiInterfaceImpl::FindLoadedElementType(CorElementType elementType
     // Lookup operations run the class loader in non-load mode.
     ENABLE_FORBID_GC_LOADER_USE_IN_THIS_SCOPE();
 
-    MethodTable * pMethodTable = (&g_Mscorlib)->GetElementType(elementType);
+    MethodTable * pMethodTable = (&g_CoreLib)->GetElementType(elementType);
 
     return TypeHandle(pMethodTable);
 } // DacDbiInterfaceImpl::FindLoadedElementType
@@ -4272,6 +4272,30 @@ void DacDbiInterfaceImpl::GetModuleSimpleName(VMPTR_Module vmModule, IStringHold
     IfFailThrow(pStrFilename->AssignCopy(convert.GetUnicode()));
 }
 
+HRESULT DacDbiInterfaceImpl::IsModuleMapped(VMPTR_Module pModule, OUT BOOL *isModuleMapped)
+{
+    LOG((LF_CORDB, LL_INFO10000, "DDBII::IMM - TADDR 0x%x\n", pModule));
+    DD_ENTER_MAY_THROW;
+
+    HRESULT hr = S_FALSE;
+    PTR_Module pTargetModule = pModule.GetDacPtr();
+
+    EX_TRY
+    {
+        PTR_PEFile pPEFile = pTargetModule->GetFile();
+        _ASSERTE(pPEFile != NULL);
+
+        if (pPEFile->HasLoadedIL())
+        {
+            *isModuleMapped = pPEFile->GetLoadedIL()->IsMapped();
+            hr = S_OK;
+        }
+    }
+    EX_CATCH_HRESULT(hr);
+
+    return hr;
+}
+
 // Helper to intialize a TargetBuffer from a MemoryRange
 //
 // Arguments:
@@ -5743,7 +5767,7 @@ void DacDbiInterfaceImpl::GetContext(VMPTR_Thread vmThread, DT_CONTEXT * pContex
     if (pFilterContext == NULL)
     {
         // If the filter context is NULL, then we use the true context of the thread.
-        pContextBuffer->ContextFlags = CONTEXT_ALL;
+        pContextBuffer->ContextFlags = DT_CONTEXT_ALL;
         HRESULT hr = m_pTarget->GetThreadContext(pThread->GetOSThreadId(),
                                                 pContextBuffer->ContextFlags,
                                                 sizeof(*pContextBuffer),
@@ -7240,7 +7264,7 @@ HRESULT DacDbiInterfaceImpl::GetArrayLayout(COR_TYPEID id, COR_ARRAY_LAYOUT *pLa
     if (mt->IsString())
     {
         COR_TYPEID token;
-        token.token1 = MscorlibBinder::GetElementType(ELEMENT_TYPE_CHAR).GetAddr();
+        token.token1 = CoreLibBinder::GetElementType(ELEMENT_TYPE_CHAR).GetAddr();
         token.token2 = 0;
 
         pLayout->componentID = token;

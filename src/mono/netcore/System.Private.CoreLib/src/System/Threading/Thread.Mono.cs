@@ -5,6 +5,7 @@ using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using System.Runtime.Versioning;
 
 namespace System.Threading
 {
@@ -78,6 +79,11 @@ namespace System.Threading
         internal ExecutionContext? _executionContext;
         internal SynchronizationContext? _synchronizationContext;
 
+        // This is used for a quick check on thread pool threads after running a work item to determine if the name, background
+        // state, or priority were changed by the work item, and if so to reset it. Other threads may also change some of those,
+        // but those types of changes may race with the reset anyway, so this field doesn't need to be synchronized.
+        private bool _mayNeedResetForThreadPool;
+
         private Thread()
         {
             InitInternal(this);
@@ -122,6 +128,7 @@ namespace System.Threading
                 else
                 {
                     ClrState(this, ThreadState.Background);
+                    _mayNeedResetForThreadPool = true;
                 }
             }
         }
@@ -161,6 +168,10 @@ namespace System.Threading
             {
                 // TODO: arguments check
                 SetPriority(this, (int)value);
+                if (value != ThreadPriority.Normal)
+                {
+                    _mayNeedResetForThreadPool = true;
+                }
             }
         }
 
@@ -206,18 +217,6 @@ namespace System.Threading
             return JoinInternal(this, millisecondsTimeout);
         }
 
-        internal void ResetThreadPoolThread()
-        {
-            if (_name != null)
-                Name = null;
-
-            if ((state & ThreadState.Background) == 0)
-                IsBackground = true;
-
-            if ((ThreadPriority)priority != ThreadPriority.Normal)
-                Priority = ThreadPriority.Normal;
-        }
-
         private void SetCultureOnUnstartedThreadNoCheck(CultureInfo value, bool uiCulture)
         {
             if (uiCulture)
@@ -251,11 +250,14 @@ namespace System.Threading
 
         internal static void UninterruptibleSleep0() => SleepInternal(0, false);
 
+#if !TARGET_BROWSER
+        [UnsupportedOSPlatform("browser")]
         public void Start()
         {
             StartInternal(this);
         }
 
+        [UnsupportedOSPlatform("browser")]
         public void Start(object parameter)
         {
             if (m_start is ThreadStart)
@@ -287,6 +289,11 @@ namespace System.Threading
             }
         }
 
+        [DynamicDependency(nameof(StartCallback))]
+        [MethodImplAttribute(MethodImplOptions.InternalCall)]
+        private static extern void StartInternal(Thread runtime_thread);
+#endif
+
         partial void ThreadNameChanged(string? value)
         {
             // TODO: Should only raise the events
@@ -298,7 +305,7 @@ namespace System.Threading
             return YieldInternal();
         }
 
-        private bool TrySetApartmentStateUnchecked(ApartmentState state) => state == ApartmentState.Unknown;
+        private static bool TrySetApartmentStateUnchecked(ApartmentState state) => state == ApartmentState.Unknown;
 
         private ThreadState ValidateThreadState()
         {
@@ -321,9 +328,8 @@ namespace System.Threading
         [MethodImpl(MethodImplOptions.NoInlining)]
         private static Thread InitializeCurrentThread()
         {
-            Thread? thread = null;
-            InitializeCurrentThread_icall(ref thread);
-            return thread;
+            InitializeCurrentThread_icall(ref t_currentThread);
+            return t_currentThread;
         }
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
@@ -363,10 +369,6 @@ namespace System.Threading
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         private static extern Thread CreateInternal();
-
-        [DynamicDependency(nameof(StartCallback))]
-        [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        private static extern void StartInternal(Thread runtime_thread);
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         private static extern bool JoinInternal(Thread thread, int millisecondsTimeout);

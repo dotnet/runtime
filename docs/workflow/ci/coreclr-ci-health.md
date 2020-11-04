@@ -1,10 +1,10 @@
 # CI Health and Investigation
 
-`dotnet/runtime` runs testing accross many different architectures and operating systems. The breadth of testing that happens lends itself to a complex system which is susceptible to different points of failure.
+`dotnet/runtime` runs testing across many different architectures and operating systems. The breadth of testing that happens lends itself to a complex system which is susceptible to different points of failure.
 
 Note that this document focuses on coreclr testing in `dotnet/runtime`.
 
-https://github.com/dotnet/coreclr/issues/27231 was opened as a way to simply view in one place all issues that are affecting `dotnet/runtime`'s CI.
+https://github.com/dotnet/runtime/issues/702 was opened as a way to simply view in one place all issues that are affecting `dotnet/runtime`'s CI.
 
 ## TOC
 
@@ -15,7 +15,7 @@ https://github.com/dotnet/coreclr/issues/27231 was opened as a way to simply vie
 
 #### Terminology
 
-In order to follow some of the terminology used, there is an expected familiarity of Azure DevOps required. For an in depth guide with Azure DevOps pipeline definitions, please see: https://docs.microsoft.com/en-us/azure/devops/pipelines/yaml-schema?view=azure-devops&tabs=schema. 
+In order to follow some of the terminology used, there is an expected familiarity of Azure DevOps required. For an in depth guide with Azure DevOps pipeline definitions, please see: https://docs.microsoft.com/en-us/azure/devops/pipelines/yaml-schema?view=azure-devops&tabs=schema.
 
 The most common terminology and most important are the different containers work happens in.
 
@@ -25,7 +25,7 @@ The most common terminology and most important are the different containers work
 
 `Job`: Jobs are the smallest unit of work which happen on a unique machine. Jobs by default run in parallel, but may be set to depend on another job. **Every job executes its work on a unique machine**.
 
-`Steps`: Steps are the smallest unit of work, they generally correspond to one command that will happen in a job. Normally a job contains steps, which execute serially. 
+`Steps`: Steps are the smallest unit of work, they generally correspond to one command that will happen in a job. Normally a job contains steps, which execute serially.
 
 ## CI Overview
 
@@ -103,7 +103,7 @@ In order to view the analytics of the pipeline navigate to [runtime-coreclr](htt
 
 **Pipeline Pass Rate**
 
-This is tracking the pipeline pass rate generally over two weeks. This view is not very useful for [runtime-coreclr](https://dev.azure.com/dnceng/public/_build?definitionId=649) as the PR pipeline is expected to break during PR validation. Therefore, it is generally recommended to view [runtime-coreclr outerloop](https://dev.azure.com/dnceng/public/_build?definitionId=655) to get a better idea of what the overall success rate is for [runtime-coreclr](https://dev.azure.com/dnceng/public/_build?definitionId=228). Note that this is not exactly a fair comparison as we run signicantly more tests in [runtime-outerloop](https://dev.azure.com/dnceng/public/_build?definitionId=655) accross more platforms. It is however, a good proxy to see the overall CI health.
+This is tracking the pipeline pass rate generally over two weeks. This view is not very useful for [runtime-coreclr](https://dev.azure.com/dnceng/public/_build?definitionId=649) as the PR pipeline is expected to break during PR validation. Therefore, it is generally recommended to view [runtime-coreclr outerloop](https://dev.azure.com/dnceng/public/_build?definitionId=655) to get a better idea of what the overall success rate is for [runtime-coreclr](https://dev.azure.com/dnceng/public/_build?definitionId=228). Note that this is not exactly a fair comparison as we run signicantly more tests in [runtime-outerloop](https://dev.azure.com/dnceng/public/_build?definitionId=655) across more platforms. It is however, a good proxy to see the overall CI health.
 
 Opening the [runtime-outerloop Pipeline Pass Rate](https://dev.azure.com/dnceng/public/_pipeline/analytics/stageawareoutcome?definitionId=655&contextType=build) there is a presentation of a line graph of the end to end success rate for the pipeline over time.
 
@@ -157,7 +157,7 @@ This tracks the overall end to end run time of a pipeline. This graph is useful 
 Specifically the query is useful for finding out whether a specific Helix Queue (a group of machines) is overloaded or not. This is useful for diagnosing arm hardware issues, because we have a fixed amount that is easily overloaded.
 
 ```
-WorkItems 
+WorkItems
 | where QueueName == "ubuntu.1804.armarch.open"
 | extend DaysAgo = datetime_diff('Day', now(), Queued)
 | extend QueueTimeInSeconds = datetime_diff('Second', Started, Queued)

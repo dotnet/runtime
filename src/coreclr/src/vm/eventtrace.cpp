@@ -31,6 +31,7 @@
 #include "dbginterface.h"
 #include "finalizerthread.h"
 #include "clrversion.h"
+#include "typestring.h"
 
 #define Win32EventWrite EventWrite
 
@@ -1094,9 +1095,14 @@ void BulkComLogger::WriteRcw(RCW *pRcw, Object *obj)
     _ASSERTE(m_currRcw < kMaxRcwCount);
 
 #ifdef FEATURE_COMINTEROP
+    TypeHandle typeHandle = obj->GetGCSafeTypeHandleIfPossible();
+    if (typeHandle == NULL)
+    {
+        return;
+    }
     EventRCWEntry &rcw = m_etwRcwData[m_currRcw];
     rcw.ObjectID = (ULONGLONG)obj;
-    rcw.TypeID = (ULONGLONG)obj->GetTypeHandle().AsTAddr();
+    rcw.TypeID = (ULONGLONG)typeHandle.AsTAddr();
     rcw.IUnk = (ULONGLONG)pRcw->GetIUnknown_NoAddRef();
     rcw.VTable = (ULONGLONG)pRcw->GetVTablePtr();
     rcw.RefCount = pRcw->GetRefCount();
@@ -1178,10 +1184,16 @@ void BulkComLogger::WriteCcw(ComCallWrapper *pCcw, Object **handle, Object *obj)
             flags |= EventCCWEntry::Strong;
     }
 
+    TypeHandle typeHandle = obj->GetGCSafeTypeHandleIfPossible();
+    if (typeHandle == NULL)
+    {
+        return;
+    }
+
     EventCCWEntry &ccw = m_etwCcwData[m_currCcw++];
     ccw.RootID = (ULONGLONG)handle;
     ccw.ObjectID = (ULONGLONG)obj;
-    ccw.TypeID = (ULONGLONG)obj->GetTypeHandle().AsTAddr();
+    ccw.TypeID = (ULONGLONG)typeHandle.AsTAddr();
     ccw.IUnk = (ULONGLONG)iUnk;
     ccw.RefCount = refCount;
     ccw.JupiterRefCount = 0;
@@ -1462,7 +1474,12 @@ void BulkStaticsLogger::WriteEntry(AppDomain *domain, Object **address, Object *
         m_domain = domain;
     }
 
-    ULONGLONG th = (ULONGLONG)obj->GetTypeHandle().AsTAddr();
+    TypeHandle typeHandle = obj->GetGCSafeTypeHandleIfPossible();
+    if (typeHandle == NULL)
+    {
+        return;
+    }
+    ULONGLONG th = (ULONGLONG)typeHandle.AsTAddr();
     ETW::TypeSystemLog::LogTypeAndParametersIfNecessary(m_typeLogger, th, ETW::TypeSystemLog::kTypeLogBehaviorTakeLockAndLogIfFirstTime);
 
     // We should have at least 512 characters remaining in the buffer here.
@@ -3152,6 +3169,65 @@ CrstBase * ETW::TypeSystemLog::GetHashCrst()
     return &AllLoggedTypes::s_cs;
 }
 
+// The number of type load operations
+// NOTE: This isn't the count of types loaded, as some types may have multiple type loads
+//       occur to them as they transition up type loader levels
+LONG s_TypeLoadOps = 0;
+
+UINT32 ETW::TypeSystemLog::TypeLoadBegin()
+{
+    CONTRACTL{
+        NOTHROW;
+        GC_TRIGGERS;
+    } CONTRACTL_END;
+
+    UINT32 typeLoad = (UINT32)InterlockedIncrement(&s_TypeLoadOps);
+
+    if (ETW_EVENT_ENABLED(MICROSOFT_WINDOWS_DOTNETRUNTIME_PROVIDER_DOTNET_Context, TypeLoadStart))
+    {
+        FireEtwTypeLoadStart(
+            typeLoad,
+            GetClrInstanceId());
+    }
+
+    return typeLoad;
+}
+
+void ETW::TypeSystemLog::TypeLoadEnd(UINT32 typeLoad, TypeHandle th, UINT16 loadLevel)
+{
+    CONTRACTL{
+        NOTHROW;
+        THROWS;
+    } CONTRACTL_END;
+
+    if (ETW_EVENT_ENABLED(MICROSOFT_WINDOWS_DOTNETRUNTIME_PROVIDER_DOTNET_Context, TypeLoadStop))
+    {
+        EX_TRY
+        {
+            StackSString typeName;
+            const TypeString::FormatFlags formatFlags = static_cast<TypeString::FormatFlags>(
+                TypeString::FormatNamespace |
+                TypeString::FormatAngleBrackets);
+
+            TypeString::AppendType(typeName, th, formatFlags);
+
+            SCOUNT_T maxTypeNameLen = (cbMaxEtwEvent / 2) - 0x100;
+            if (typeName.GetCount() > (unsigned)maxTypeNameLen)
+            {
+                typeName.Truncate(typeName.Begin() + maxTypeNameLen);
+            }
+
+            FireEtwTypeLoadStop(
+                typeLoad,
+                GetClrInstanceId(),
+                loadLevel,
+                (UINT64)th.AsPtr(),
+                typeName
+                );
+        } EX_CATCH{ } EX_END_CATCH(SwallowAllExceptions);
+    }
+}
+
 //---------------------------------------------------------------------------------------
 //
 // Outermost level of ETW-type-logging.  Clients outside eventtrace.cpp call this to log
@@ -4669,7 +4745,7 @@ VOID ETW::ExceptionLog::ExceptionThrown(CrawlFrame  *pCf, BOOL bIsReThrownExcept
         _ASSERTE(pExInfo != NULL);
         bIsNestedException = (pExInfo->GetPreviousExceptionTracker() != NULL);
         bIsCLSCompliant = IsException((gc.exceptionObj)->GetMethodTable()) &&
-                          ((gc.exceptionObj)->GetMethodTable() != MscorlibBinder::GetException(kRuntimeWrappedException));
+                          ((gc.exceptionObj)->GetMethodTable() != CoreLibBinder::GetException(kRuntimeWrappedException));
 
         // A rethrown exception is also a nested exception
         // but since we have a separate flag for it, lets unset the nested flag
@@ -5304,6 +5380,22 @@ VOID ETW::MethodLog::GetR2RGetEntryPoint(MethodDesc *pMethodDesc, PCODE pEntryPo
         } EX_CATCH{ } EX_END_CATCH(SwallowAllExceptions);
     }
 }
+
+VOID ETW::MethodLog::GetR2RGetEntryPointStart(MethodDesc *pMethodDesc)
+{
+    CONTRACTL{
+        NOTHROW;
+        GC_TRIGGERS;
+    } CONTRACTL_END;
+
+    if (ETW_EVENT_ENABLED(MICROSOFT_WINDOWS_DOTNETRUNTIME_PROVIDER_DOTNET_Context, R2RGetEntryPointStart))
+    {
+        FireEtwR2RGetEntryPointStart(
+            (UINT64)pMethodDesc,
+            GetClrInstanceId());
+    }
+}
+
 
 /*******************************************************/
 /* This is called by the runtime when a method is jitted completely */

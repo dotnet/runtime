@@ -17,7 +17,7 @@
  */
 
 
-int __cdecl main(int argc, char *argv[])
+PALTEST(c_runtime_wcstoul_test3_paltest_wcstoul_test3, "c_runtime/wcstoul/test3/paltest_wcstoul_test3")
 {
     WCHAR str[] = {'Z',0};
     WCHAR *end;

@@ -163,8 +163,10 @@ bool emitter::IsDstSrcSrcAVXInstruction(instruction ins)
 
 bool emitter::AreUpper32BitsZero(regNumber reg)
 {
-    // Don't look back across IG boundaries (possible control flow)
-    if (emitCurIGinsCnt == 0)
+    // If there are no instructions in this IG, we can look back at
+    // the previous IG's instructions if this IG is an extension.
+    //
+    if ((emitCurIGinsCnt == 0) && ((emitCurIG->igFlags & IGF_EXTEND) == 0))
     {
         return false;
     }
@@ -286,7 +288,7 @@ bool emitter::AreFlagsSetToZeroCmp(regNumber reg, emitAttr opSize, bool needsOCF
             {
                 return false;
             }
-            __fallthrough;
+            FALLTHROUGH;
         // these always set OC to 0
         case INS_and:
         case INS_or:
@@ -522,6 +524,7 @@ bool TakesRexWPrefix(instruction ins, emitAttr attr)
             case INS_mulx:
             case INS_pdep:
             case INS_pext:
+            case INS_rorx:
                 return true;
             default:
                 return false;
@@ -756,6 +759,7 @@ unsigned emitter::emitOutputRexOrVexPrefixIfNeeded(instruction ins, BYTE* dst, c
                         {
                             switch (ins)
                             {
+                                case INS_rorx:
                                 case INS_pdep:
                                 case INS_mulx:
                                 {
@@ -1240,6 +1244,7 @@ bool emitter::emitInsCanOnlyWriteSSE2OrAVXReg(instrDesc* id)
         case INS_pextrq:
         case INS_pextrw:
         case INS_pextrw_sse41:
+        case INS_rorx:
         {
             // These SSE instructions write to a general purpose integer register.
             return false;
@@ -2956,24 +2961,27 @@ void emitter::emitHandleMemOp(GenTreeIndir* indir, instrDesc* id, insFormat fmt,
     }
     else
     {
+        regNumber amBaseReg = REG_NA;
         if (memBase != nullptr)
         {
-            id->idAddr()->iiaAddrMode.amBaseReg = memBase->GetRegNum();
-        }
-        else
-        {
-            id->idAddr()->iiaAddrMode.amBaseReg = REG_NA;
+            assert(!memBase->isContained());
+            amBaseReg = memBase->GetRegNum();
+            assert(amBaseReg != REG_NA);
         }
 
+        regNumber amIndxReg = REG_NA;
         if (indir->HasIndex())
         {
-            id->idAddr()->iiaAddrMode.amIndxReg = indir->Index()->GetRegNum();
+            GenTree* index = indir->Index();
+            assert(!index->isContained());
+            amIndxReg = index->GetRegNum();
+            assert(amIndxReg != REG_NA);
         }
-        else
-        {
-            id->idAddr()->iiaAddrMode.amIndxReg = REG_NA;
-        }
-        id->idAddr()->iiaAddrMode.amScale = emitEncodeScale(indir->Scale());
+
+        assert((amBaseReg != REG_NA) || (amIndxReg != REG_NA) || (indir->Offset() != 0)); // At least one should be set.
+        id->idAddr()->iiaAddrMode.amBaseReg = amBaseReg;
+        id->idAddr()->iiaAddrMode.amIndxReg = amIndxReg;
+        id->idAddr()->iiaAddrMode.amScale   = emitEncodeScale(indir->Scale());
 
         id->idInsFmt(emitMapFmtForIns(fmt, ins));
 
@@ -3043,11 +3051,7 @@ void emitter::emitInsLoadInd(instruction ins, emitAttr attr, regNumber dstReg, G
     if (addr->OperIs(GT_LCL_VAR_ADDR, GT_LCL_FLD_ADDR))
     {
         GenTreeLclVarCommon* varNode = addr->AsLclVarCommon();
-        unsigned             offset  = 0;
-        if (addr->OperIs(GT_LCL_FLD_ADDR))
-        {
-            offset = varNode->AsLclFld()->GetLclOffs();
-        }
+        unsigned             offset  = varNode->GetLclOffs();
         emitIns_R_S(ins, attr, dstReg, varNode->GetLclNum(), offset);
 
         // Updating variable liveness after instruction was emitted
@@ -3288,9 +3292,11 @@ regNumber emitter::emitInsBinary(instruction ins, emitAttr attr, GenTree* dst, G
             switch (memBase->OperGet())
             {
                 case GT_LCL_VAR_ADDR:
+                case GT_LCL_FLD_ADDR:
                 {
+                    assert(memBase->isContained());
                     varNum = memBase->AsLclVarCommon()->GetLclNum();
-                    offset = 0;
+                    offset = memBase->AsLclVarCommon()->GetLclOffs();
 
                     // Ensure that all the GenTreeIndir values are set to their defaults.
                     assert(!memIndir->HasIndex());
@@ -3601,8 +3607,7 @@ void emitter::emitInsRMW(instruction ins, emitAttr attr, GenTreeStoreInd* storeI
 {
     GenTree* addr = storeInd->Addr();
     addr          = addr->gtSkipReloadOrCopy();
-    assert(addr->OperGet() == GT_LCL_VAR || addr->OperGet() == GT_LCL_VAR_ADDR || addr->OperGet() == GT_LEA ||
-           addr->OperGet() == GT_CLS_VAR_ADDR || addr->OperGet() == GT_CNS_INT);
+    assert(addr->OperIs(GT_LCL_VAR, GT_LCL_VAR_ADDR, GT_LEA, GT_CLS_VAR_ADDR, GT_CNS_INT));
 
     instrDesc*     id = nullptr;
     UNATIVE_OFFSET sz;
@@ -3681,8 +3686,7 @@ void emitter::emitInsRMW(instruction ins, emitAttr attr, GenTreeStoreInd* storeI
 {
     GenTree* addr = storeInd->Addr();
     addr          = addr->gtSkipReloadOrCopy();
-    assert(addr->OperGet() == GT_LCL_VAR || addr->OperGet() == GT_LCL_VAR_ADDR || addr->OperGet() == GT_CLS_VAR_ADDR ||
-           addr->OperGet() == GT_LEA || addr->OperGet() == GT_CNS_INT);
+    assert(addr->OperIs(GT_LCL_VAR, GT_LCL_VAR_ADDR, GT_CLS_VAR_ADDR, GT_LEA, GT_CNS_INT));
 
     ssize_t offset = 0;
     if (addr->OperGet() != GT_CLS_VAR_ADDR)
@@ -3821,7 +3825,7 @@ void emitter::emitIns_R_I(instruction ins, emitAttr attr, regNumber reg, ssize_t
     UNATIVE_OFFSET sz;
     instrDesc*     id;
     insFormat      fmt       = emitInsModeFormat(ins, IF_RRD_CNS);
-    bool           valInByte = ((signed char)val == val) && (ins != INS_mov) && (ins != INS_test);
+    bool           valInByte = ((signed char)val == (target_ssize_t)val) && (ins != INS_mov) && (ins != INS_test);
 
     // BT reg,imm might be useful but it requires special handling of the immediate value
     // (it is always encoded in a byte). Let's not complicate things until this is needed.
@@ -3944,11 +3948,11 @@ void emitter::emitIns_R_I(instruction ins, emitAttr attr, regNumber reg, ssize_t
  *  Add an instruction referencing an integer constant.
  */
 
-void emitter::emitIns_I(instruction ins, emitAttr attr, int val)
+void emitter::emitIns_I(instruction ins, emitAttr attr, cnsval_ssize_t val)
 {
     UNATIVE_OFFSET sz;
     instrDesc*     id;
-    bool           valInByte = ((signed char)val == val);
+    bool           valInByte = ((signed char)val == (target_ssize_t)val);
 
 #ifdef TARGET_AMD64
     // mov reg, imm64 is the only opcode which takes a full 8 byte immediate
@@ -5348,7 +5352,7 @@ void emitter::emitIns_R_AI(instruction ins, emitAttr attr, regNumber ireg, ssize
     emitCurIGsize += sz;
 }
 
-void emitter::emitIns_AR_R(instruction ins, emitAttr attr, regNumber reg, regNumber base, int disp)
+void emitter::emitIns_AR_R(instruction ins, emitAttr attr, regNumber reg, regNumber base, cnsval_ssize_t disp)
 {
     emitIns_ARX_R(ins, attr, reg, base, REG_NA, 1, disp);
 }
@@ -5586,7 +5590,7 @@ void emitter::emitIns_R_ARX(
 }
 
 void emitter::emitIns_ARX_R(
-    instruction ins, emitAttr attr, regNumber reg, regNumber base, regNumber index, unsigned scale, int disp)
+    instruction ins, emitAttr attr, regNumber reg, regNumber base, regNumber index, unsigned scale, cnsval_ssize_t disp)
 {
     UNATIVE_OFFSET sz;
     instrDesc*     id = emitNewInstrAmd(attr, disp);
@@ -7113,7 +7117,7 @@ void emitter::emitIns_Call(EmitCallType          callType,
 
                 id->idSetIsCallRegPtr();
 
-                __fallthrough;
+                FALLTHROUGH;
 
             case EC_INDIR_ARD: // the address is an indirection
 
@@ -7348,7 +7352,7 @@ size_t emitter::emitSizeOfInsDsc(instrDesc* id)
                 return sizeof(instrDescCGCA);
             }
 
-            __fallthrough;
+            FALLTHROUGH;
 
         case ID_OP_SCNS:
         case ID_OP_CNS:
@@ -8234,10 +8238,14 @@ void emitter::emitDispIns(
     // printf("[A=%08X] " , emitSimpleByrefStkMask);
     // printf("[L=%02u] " , id->idCodeSize());
 
-    if (!emitComp->opts.dspEmit && !isNew && !asmfm)
+    if (!isNew && !asmfm)
     {
         doffs = true;
     }
+
+    /* Display the instruction address */
+
+    emitDispInsAddr(code);
 
     /* Display the instruction offset */
 
@@ -8262,11 +8270,11 @@ void emitter::emitDispIns(
     {
         printf(" %-9s", sstr);
     }
-#ifndef TARGET_UNIX
+#ifndef HOST_UNIX
     if (strnlen_s(sstr, 10) >= 8)
-#else  // TARGET_UNIX
+#else  // HOST_UNIX
     if (strnlen(sstr, 10) >= 8)
-#endif // TARGET_UNIX
+#endif // HOST_UNIX
     {
         printf(" ");
     }
@@ -9184,46 +9192,46 @@ static BYTE* emitOutputNOP(BYTE* dst, size_t nBytes)
     {
         case 15:
             *dst++ = 0x90;
-            __fallthrough;
+            FALLTHROUGH;
         case 14:
             *dst++ = 0x90;
-            __fallthrough;
+            FALLTHROUGH;
         case 13:
             *dst++ = 0x90;
-            __fallthrough;
+            FALLTHROUGH;
         case 12:
             *dst++ = 0x90;
-            __fallthrough;
+            FALLTHROUGH;
         case 11:
             *dst++ = 0x90;
-            __fallthrough;
+            FALLTHROUGH;
         case 10:
             *dst++ = 0x90;
-            __fallthrough;
+            FALLTHROUGH;
         case 9:
             *dst++ = 0x90;
-            __fallthrough;
+            FALLTHROUGH;
         case 8:
             *dst++ = 0x90;
-            __fallthrough;
+            FALLTHROUGH;
         case 7:
             *dst++ = 0x90;
-            __fallthrough;
+            FALLTHROUGH;
         case 6:
             *dst++ = 0x90;
-            __fallthrough;
+            FALLTHROUGH;
         case 5:
             *dst++ = 0x90;
-            __fallthrough;
+            FALLTHROUGH;
         case 4:
             *dst++ = 0x90;
-            __fallthrough;
+            FALLTHROUGH;
         case 3:
             *dst++ = 0x90;
-            __fallthrough;
+            FALLTHROUGH;
         case 2:
             *dst++ = 0x90;
-            __fallthrough;
+            FALLTHROUGH;
         case 1:
             *dst++ = 0x90;
             break;
@@ -9235,7 +9243,7 @@ static BYTE* emitOutputNOP(BYTE* dst, size_t nBytes)
     {
         case 2:
             *dst++ = 0x66;
-            __fallthrough;
+            FALLTHROUGH;
         case 1:
             *dst++ = 0x90;
             break;
@@ -9254,7 +9262,7 @@ static BYTE* emitOutputNOP(BYTE* dst, size_t nBytes)
             break;
         case 6:
             *dst++ = 0x66;
-            __fallthrough;
+            FALLTHROUGH;
         case 5:
             *dst++ = 0x0F;
             *dst++ = 0x1F;
@@ -9289,13 +9297,13 @@ static BYTE* emitOutputNOP(BYTE* dst, size_t nBytes)
             break;
         case 11:
             *dst++ = 0x66;
-            __fallthrough;
+            FALLTHROUGH;
         case 10:
             *dst++ = 0x66;
-            __fallthrough;
+            FALLTHROUGH;
         case 9:
             *dst++ = 0x66;
-            __fallthrough;
+            FALLTHROUGH;
         case 8:
             *dst++ = 0x0F;
             *dst++ = 0x1F;
@@ -9569,7 +9577,7 @@ BYTE* emitter::emitOutputAM(BYTE* dst, instrDesc* id, code_t code, CnsVal* addc)
 
                 dst += emitOutputByte(dst, 0x66);
 
-                __fallthrough;
+                FALLTHROUGH;
 
             case EA_4BYTE:
 #ifdef TARGET_AMD64
@@ -10334,7 +10342,7 @@ BYTE* emitter::emitOutputSV(BYTE* dst, instrDesc* id, code_t code, CnsVal* addc)
             case EA_2BYTE:
                 // Output a size prefix for a 16-bit operand
                 dst += emitOutputByte(dst, 0x66);
-                __fallthrough;
+                FALLTHROUGH;
 
             case EA_4BYTE:
 #ifdef TARGET_AMD64
@@ -10522,7 +10530,7 @@ BYTE* emitter::emitOutputSV(BYTE* dst, instrDesc* id, code_t code, CnsVal* addc)
 
             case IF_SWR: // Stack Write (So we need to update GC live for stack var)
                 // Write stack                    -- GC var may be born
-                emitGCvarLiveUpd(adr, varNum, id->idGCref(), dst);
+                emitGCvarLiveUpd(adr, varNum, id->idGCref(), dst DEBUG_ARG(varNum));
                 break;
 
             case IF_SRD_CNS:
@@ -10546,7 +10554,7 @@ BYTE* emitter::emitOutputSV(BYTE* dst, instrDesc* id, code_t code, CnsVal* addc)
 
             case IF_SWR_RRD: // Stack Write, Register Read (So we need to update GC live for stack var)
                 // Read  register, write stack    -- GC var may be born
-                emitGCvarLiveUpd(adr, varNum, id->idGCref(), dst);
+                emitGCvarLiveUpd(adr, varNum, id->idGCref(), dst DEBUG_ARG(varNum));
                 break;
 
             case IF_RRW_SRD: // Register Read/Write, Stack Read (So we need to update GC live for register)
@@ -10800,7 +10808,7 @@ BYTE* emitter::emitOutputCV(BYTE* dst, instrDesc* id, code_t code, CnsVal* addc)
             case EA_2BYTE:
                 // Output a size prefix for a 16-bit operand
                 dst += emitOutputByte(dst, 0x66);
-                __fallthrough;
+                FALLTHROUGH;
 
             case EA_4BYTE:
 #ifdef TARGET_AMD64
@@ -10927,7 +10935,7 @@ BYTE* emitter::emitOutputCV(BYTE* dst, instrDesc* id, code_t code, CnsVal* addc)
         noway_assert(id->idIsDspReloc());
         dst += emitOutputLong(dst, 0);
 #else  // TARGET_X86
-        dst += emitOutputLong(dst, (int)target);
+        dst += emitOutputLong(dst, (int)(ssize_t)target);
 #endif // TARGET_X86
 
         if (id->idIsDspReloc())
@@ -11220,7 +11228,7 @@ BYTE* emitter::emitOutputR(BYTE* dst, instrDesc* id)
             emitGCregDeadUpd(REG_EAX, dst);
             emitGCregDeadUpd(REG_EDX, dst);
 
-            __fallthrough;
+            FALLTHROUGH;
 
         default:
 
@@ -11386,7 +11394,7 @@ BYTE* emitter::emitOutputRR(BYTE* dst, instrDesc* id)
             case EA_2BYTE:
                 // Output a size prefix for a 16-bit operand
                 dst += emitOutputByte(dst, 0x66);
-                __fallthrough;
+                FALLTHROUGH;
 
             case EA_4BYTE:
                 // Set the 'w' bit to get the large version
@@ -11756,7 +11764,7 @@ BYTE* emitter::emitOutputRI(BYTE* dst, instrDesc* id)
     instruction ins       = id->idIns();
     regNumber   reg       = id->idReg1();
     ssize_t     val       = emitGetInsSC(id);
-    bool        valInByte = ((signed char)val == val) && (ins != INS_mov) && (ins != INS_test);
+    bool        valInByte = ((signed char)val == (target_ssize_t)val) && (ins != INS_mov) && (ins != INS_test);
 
     // BT reg,imm might be useful but it requires special handling of the immediate value
     // (it is always encoded in a byte). Let's not complicate things until this is needed.
@@ -11937,7 +11945,7 @@ BYTE* emitter::emitOutputRI(BYTE* dst, instrDesc* id)
         case EA_2BYTE:
             // Output a size prefix for a 16-bit operand
             dst += emitOutputByte(dst, 0x66);
-            __fallthrough;
+            FALLTHROUGH;
 
         case EA_4BYTE:
             // Set the 'w' bit to get the large version
@@ -12107,7 +12115,7 @@ BYTE* emitter::emitOutputIV(BYTE* dst, instrDesc* id)
     instruction ins       = id->idIns();
     emitAttr    size      = id->idOpSize();
     ssize_t     val       = emitGetInsSC(id);
-    bool        valInByte = ((signed char)val == val);
+    bool        valInByte = ((signed char)val == (target_ssize_t)val);
 
     // We would to update GC info correctly
     assert(!IsSSEInstruction(ins));
@@ -12719,7 +12727,7 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
 #ifdef TARGET_AMD64
                     dst += emitOutputLong(dst, 0);
 #else
-                    dst += emitOutputLong(dst, (int)addr);
+                    dst += emitOutputLong(dst, (int)(ssize_t)addr);
 #endif
                     emitRecordRelocation((void*)(dst - sizeof(int)), addr, IMAGE_REL_BASED_DISP32);
                 }
@@ -13676,7 +13684,7 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
     assert(*dp != dst || emitInstHasNoCode(ins));
 
 #ifdef DEBUG
-    if (emitComp->opts.disAsm || emitComp->opts.dspEmit || emitComp->verbose)
+    if (emitComp->opts.disAsm || emitComp->verbose)
     {
         emitDispIns(id, false, dspOffs, true, emitCurCodeOffs(*dp), *dp, (dst - *dp));
     }
@@ -13725,6 +13733,12 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
 
         regMaskTP regMask = genRegMask(inst3opImulReg(ins));
         assert((regMask & (emitThisGCrefRegs | emitThisByrefRegs)) == 0);
+    }
+
+    // Output any delta in GC info.
+    if (EMIT_GC_VERBOSE || emitComp->opts.disasmWithGC)
+    {
+        emitDispGCInfoDelta();
     }
 #endif
 
@@ -13975,6 +13989,7 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
 
     switch (ins)
     {
+        case INS_align:
         case INS_nop:
         case INS_int3:
             assert(memFmt == IF_NONE);
@@ -14937,6 +14952,7 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
         case INS_tzcnt:
         case INS_popcnt:
         case INS_crc32:
+        case INS_rorx:
         case INS_pdep:
         case INS_pext:
         case INS_addsubps:

@@ -15,7 +15,6 @@ namespace System.ServiceProcess.Tests
         private static readonly Lazy<bool> s_isElevated = new Lazy<bool>(() => AdminHelpers.IsProcessElevated());
         protected static bool IsProcessElevated => s_isElevated.Value;
 
-        private const int ExpectedDependentServiceCount = 3;
         private bool _disposed;
 
         public ServiceControllerTests()
@@ -58,7 +57,7 @@ namespace System.ServiceProcess.Tests
             var controller = new ServiceController(_testService.TestServiceName, _testService.TestMachineName);
             AssertExpectedProperties(controller);
 
-            AssertExtensions.Throws<ArgumentException>(null, () => { var c = new ServiceController(_testService.TestServiceName, ""); });
+            AssertExtensions.Throws<ArgumentException>(null, () => { new ServiceController(_testService.TestServiceName, ""); });
         }
 
         [ConditionalFact(nameof(IsProcessElevated))]
@@ -183,35 +182,6 @@ namespace System.ServiceProcess.Tests
                 _testService.DeleteTestServices();
                 _disposed = true;
             }
-        }
-
-        private static ServiceController AssertHasDependent(ServiceController controller, string serviceName, string displayName)
-        {
-            var dependent = FindService(controller.DependentServices, serviceName, displayName);
-            Assert.NotNull(dependent);
-
-            return dependent;
-        }
-
-        private static ServiceController AssertDependsOn(ServiceController controller, string serviceName, string displayName)
-        {
-            var dependency = FindService(controller.ServicesDependedOn, serviceName, displayName);
-            Assert.NotNull(dependency);
-
-            return dependency;
-        }
-
-        private static ServiceController FindService(ServiceController[] services, string serviceName, string displayName)
-        {
-            foreach (ServiceController service in services)
-            {
-                if (service.ServiceName == serviceName && service.DisplayName == displayName)
-                {
-                    return service;
-                }
-            }
-
-            return null;
         }
     }
 }

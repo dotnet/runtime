@@ -126,6 +126,7 @@ ProfileArgIterator::ProfileArgIterator(MetaSig * pSig, void * platformSpecificHa
     PROFILE_PLATFORM_SPECIFIC_DATA* pData = (PROFILE_PLATFORM_SPECIFIC_DATA*)m_handle;
 #ifdef UNIX_AMD64_ABI
     m_bufferPos = 0;
+    ZeroMemory(pData->buffer, PROFILE_PLATFORM_SPECIFIC_DATA_BUFFER_SIZE * sizeof(UINT64)); 
 #endif // UNIX_AMD64_ABI
 
     // unwind a frame and get the Rsp for the profiled method to make sure it matches
@@ -483,17 +484,46 @@ LPVOID ProfileArgIterator::GetReturnBufferAddr(void)
         // by our calling convention, but is required by our profiler spec.
         return (LPVOID)pData->rax;
     }
-
+    
     CorElementType t = m_argIterator.GetSig()->GetReturnType();
-    if (ELEMENT_TYPE_VOID != t)
+    if (ELEMENT_TYPE_VOID == t)
     {
-        if (ELEMENT_TYPE_R4 == t || ELEMENT_TYPE_R8 == t)
-            pData->rax = pData->flt0;
-
-        return &(pData->rax);
-    }
-    else
         return NULL;
+    }
+
+#ifdef UNIX_AMD64_ABI
+    if (m_argIterator.GetSig()->GetReturnTypeSize() == 16)
+    {
+        _ASSERTE(m_bufferPos == 0 && "Nothing else should be using the scratch space during a return");
+
+        // The unix x64 ABI has a special case where a 16 byte struct will be passed in registers
+        // and if there are integer and float args it will be passed in rax/etc and xmm/etc, respectively
+        // which means the values are noncontiguous. Just like the argument passing above
+        // we copy it in to the buffer to fake it being contiguous.
+        UINT flags = m_argIterator.GetFPReturnSize();
+
+        // The lower two bits are used to indicate whether struct args are floating point or integer
+        if (flags & 1)
+        {
+            pData->buffer[0] = pData->flt0;
+            pData->buffer[1] = (flags & 2) ? pData->flt1 : pData->rax;
+        }
+        else
+        {
+            pData->buffer[0] = pData->rax;
+            pData->buffer[1] = (flags & 2) ? pData->flt0 : pData->rdx;
+        }
+
+        return pData->buffer;
+    }
+#endif // UNIX_AMD64_ABI
+
+    if (ELEMENT_TYPE_R4 == t || ELEMENT_TYPE_R8 == t)
+    {
+        pData->rax = pData->flt0;
+    }
+    
+    return &(pData->rax);
 }
 
 #undef PROFILE_ENTER

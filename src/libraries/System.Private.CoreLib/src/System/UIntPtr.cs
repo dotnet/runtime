@@ -142,7 +142,7 @@ namespace System
 
         [NonVersionable]
         public static unsafe UIntPtr operator +(UIntPtr pointer, int offset) =>
-            new UIntPtr((nuint)pointer._value + (nuint)offset);
+            (nuint)pointer._value + (nuint)offset;
 
         [NonVersionable]
         public static UIntPtr Subtract(UIntPtr pointer, int offset) =>
@@ -150,7 +150,7 @@ namespace System
 
         [NonVersionable]
         public static unsafe UIntPtr operator -(UIntPtr pointer, int offset) =>
-            new UIntPtr((nuint)pointer._value - (nuint)offset);
+            (nuint)pointer._value - (nuint)offset;
 
         public static int Size
         {

@@ -1,5 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
+
 //
 // Copyright (C) 2015 Xamarin, Inc (http://www.xamarin.com)
 //
@@ -74,7 +75,7 @@ namespace System
 
             public abstract ITypeName NestedName(ITypeIdentifier innerName);
 
-            public bool Equals([AllowNull] ITypeName other)
+            public bool Equals(ITypeName? other)
             {
                 return other != null && DisplayName == other.DisplayName;
             }

@@ -47,7 +47,7 @@ namespace System.Diagnostics
         }
 
         [CLSCompliant(false)]
-        [MinimumOSPlatform("windows7.0")]
+        [SupportedOSPlatform("windows")]
         public static Process? Start(string fileName, string userName, SecureString password, string domain)
         {
             ProcessStartInfo startInfo = new ProcessStartInfo(fileName);
@@ -59,7 +59,7 @@ namespace System.Diagnostics
         }
 
         [CLSCompliant(false)]
-        [MinimumOSPlatform("windows7.0")]
+        [SupportedOSPlatform("windows")]
         public static Process? Start(string fileName, string arguments, string userName, SecureString password, string domain)
         {
             ProcessStartInfo startInfo = new ProcessStartInfo(fileName, arguments);
@@ -119,6 +119,8 @@ namespace System.Diagnostics
         {
             _signaled = false;
             _haveMainWindow = false;
+            _mainWindowTitle = null;
+            _haveResponding = false;
         }
 
         /// <summary>Additional logic invoked when the Process is closed.</summary>
@@ -178,10 +180,10 @@ namespace System.Diagnostics
             {
                 // If we have a hard timeout, we cannot wait for the streams
                 if (_output != null && milliseconds == Timeout.Infinite)
-                    _output.WaitUtilEOF();
+                    _output.WaitUntilEOF();
 
                 if (_error != null && milliseconds == Timeout.Infinite)
-                    _error.WaitUtilEOF();
+                    _error.WaitUntilEOF();
 
                 handle?.Dispose();
             }

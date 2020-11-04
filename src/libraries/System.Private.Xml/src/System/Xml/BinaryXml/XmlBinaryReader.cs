@@ -1,8 +1,8 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-#nullable enable
 using System;
+using System.Buffers.Binary;
 using System.Collections;
 using System.Collections.Generic;
 using System.IO;
@@ -334,7 +334,6 @@ namespace System.Xml
         private readonly bool _ignoreComments;
         private readonly DtdProcessing _dtdProcessing;
 
-        private XmlCharType _xmlCharType;
         private readonly Encoding _unicode;
 
         // current version of the protocol
@@ -343,7 +342,6 @@ namespace System.Xml
         public XmlSqlBinaryReader(Stream stream, byte[] data, int len, string baseUri, bool closeInput, XmlReaderSettings settings)
         {
             _unicode = System.Text.Encoding.Unicode;
-            _xmlCharType = XmlCharType.Instance;
 
             _xnt = settings.NameTable!;
             if (_xnt == null)
@@ -670,7 +668,7 @@ namespace System.Xml
             }
         }
 
-        public override string? GetAttribute(string name, string ns)
+        public override string? GetAttribute(string name, string? ns)
         {
             if (ScanState.XmlText == _state)
             {
@@ -721,7 +719,7 @@ namespace System.Xml
             }
         }
 
-        public override bool MoveToAttribute(string name, string ns)
+        public override bool MoveToAttribute(string name, string? ns)
         {
             if (ScanState.XmlText == _state)
             {
@@ -1784,7 +1782,7 @@ namespace System.Xml
             return base.ReadContentAsObject();
         }
 
-        public override object ReadContentAs(Type returnType, IXmlNamespaceResolver namespaceResolver)
+        public override object ReadContentAs(Type returnType, IXmlNamespaceResolver? namespaceResolver)
         {
             int origPos = _pos;
             try
@@ -3532,7 +3530,6 @@ namespace System.Xml
             // assert that size is an even number
             Debug.Assert(0 == ((_pos - _tokDataPos) & 1), "Data size should not be odd");
             // grab local copy (perf)
-            XmlCharType xmlCharType = _xmlCharType;
 
             fixed (byte* pb = _data)
             {
@@ -3547,7 +3544,7 @@ namespace System.Xml
                         int posNext = pos + 2;
                         if (posNext > end)
                             return _xmlspacePreserve ? XmlNodeType.SignificantWhitespace : XmlNodeType.Whitespace;
-                        if (pb[pos + 1] != 0 || !xmlCharType.IsWhiteSpace((char)pb[pos]))
+                        if (pb[pos + 1] != 0 || !XmlCharType.IsWhiteSpace((char)pb[pos]))
                             break;
                         pos = posNext;
                     }
@@ -3562,7 +3559,7 @@ namespace System.Xml
                         if (posNext > end)
                             return XmlNodeType.Text;
                         ch = (char)(pb[pos] | ((int)(pb[pos + 1]) << 8));
-                        if (!_xmlCharType.IsCharData(ch))
+                        if (!XmlCharType.IsCharData(ch))
                             break;
                         pos = posNext;
                     }
@@ -4229,7 +4226,7 @@ namespace System.Xml
             return xsst.ValueConverter;
         }
 
-        private object ValueAs(BinXmlToken token, Type returnType, IXmlNamespaceResolver namespaceResolver)
+        private object ValueAs(BinXmlToken token, Type returnType, IXmlNamespaceResolver? namespaceResolver)
         {
             object value;
             CheckValueTokenBounds();
@@ -4425,45 +4422,17 @@ namespace System.Xml
             return value;
         }
 
-        private short GetInt16(int pos)
-        {
-            byte[] data = _data;
-            return (short)(data[pos] | data[pos + 1] << 8);
-        }
+        private short GetInt16(int pos) => BinaryPrimitives.ReadInt16LittleEndian(_data.AsSpan(pos));
 
-        private ushort GetUInt16(int pos)
-        {
-            byte[] data = _data;
-            return (ushort)(data[pos] | data[pos + 1] << 8);
-        }
+        private ushort GetUInt16(int pos) => BinaryPrimitives.ReadUInt16LittleEndian(_data.AsSpan(pos));
 
-        private int GetInt32(int pos)
-        {
-            byte[] data = _data;
-            return (int)(data[pos] | data[pos + 1] << 8 | data[pos + 2] << 16 | data[pos + 3] << 24);
-        }
+        private int GetInt32(int pos) => BinaryPrimitives.ReadInt32LittleEndian(_data.AsSpan(pos));
 
-        private uint GetUInt32(int pos)
-        {
-            byte[] data = _data;
-            return (uint)(data[pos] | data[pos + 1] << 8 | data[pos + 2] << 16 | data[pos + 3] << 24);
-        }
+        private uint GetUInt32(int pos) => BinaryPrimitives.ReadUInt32LittleEndian(_data.AsSpan(pos));
 
-        private long GetInt64(int pos)
-        {
-            byte[] data = _data;
-            uint lo = (uint)(data[pos] | data[pos + 1] << 8 | data[pos + 2] << 16 | data[pos + 3] << 24);
-            uint hi = (uint)(data[pos + 4] | data[pos + 5] << 8 | data[pos + 6] << 16 | data[pos + 7] << 24);
-            return (long)((ulong)hi) << 32 | lo;
-        }
+        private long GetInt64(int pos) => BinaryPrimitives.ReadInt64LittleEndian(_data.AsSpan(pos));
 
-        private ulong GetUInt64(int pos)
-        {
-            byte[] data = _data;
-            uint lo = (uint)(data[pos] | data[pos + 1] << 8 | data[pos + 2] << 16 | data[pos + 3] << 24);
-            uint hi = (uint)(data[pos + 4] | data[pos + 5] << 8 | data[pos + 6] << 16 | data[pos + 7] << 24);
-            return (ulong)((ulong)hi) << 32 | lo;
-        }
+        private ulong GetUInt64(int pos) => BinaryPrimitives.ReadUInt64LittleEndian(_data.AsSpan(pos));
 
         private float GetSingle(int offset)
         {

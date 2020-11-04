@@ -573,7 +573,7 @@ altstack_handle_and_restore (MonoContext *ctx, MONO_SIG_HANDLER_INFO_TYPE *sigin
 
 	if (!ji || (!stack_ovf && !nullref)) {
 		if (mono_dump_start ())
-			mono_handle_native_crash (mono_get_signame (SIGSEGV), ctx, siginfo, ctx);
+			mono_handle_native_crash (mono_get_signame (SIGSEGV), ctx, siginfo);
 		/* if couldn't dump or if mono_handle_native_crash returns, abort */
 		abort ();
 	}

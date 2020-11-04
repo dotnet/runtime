@@ -66,7 +66,7 @@ void MakeProperSourceFileName(__in __nullterminated WCHAR* wzOrigName,
     {
         j--;
         if(wzProperName[j] == '.') break;
-        if((wzProperName[j] == '\\')||(j == 0))
+        if((wzProperName[j] == DIRECTORY_SEPARATOR_CHAR_A)||(j == 0))
         {
             wcscat_s(wzProperName,MAX_FILENAME_LENGTH,W(".il"));
             break;
@@ -639,7 +639,7 @@ extern "C" int _cdecl wmain(int argc, __in WCHAR **argv)
             if (bGeneratePdb && CLASSIC == pdbFormat)
             {
                 // Classic PDB format is not supported on CoreCLR
-                // https://github.com/dotnet/coreclr/issues/2982
+                // https://github.com/dotnet/runtime/issues/5051
 
                 printf("WARNING: Classic PDB format is not supported on CoreCLR.\n");
                 printf("Use '/PDBFMT=PORTABLE' option in order to generate portable PDB format. \n");

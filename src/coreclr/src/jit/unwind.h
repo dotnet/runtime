@@ -150,7 +150,7 @@ public:
 
 class UnwindPrologCodes : public UnwindBase, public UnwindCodesBase
 {
-    // UPC_LOCAL_COUNT is the amount of memory local to this class. For ARM mscorlib.dll, the maximum size is 34.
+    // UPC_LOCAL_COUNT is the amount of memory local to this class. For ARM CoreLib, the maximum size is 34.
     // Here is a histogram of other interesting sizes:
     //     <=16  79%
     //     <=24  96%
@@ -314,7 +314,7 @@ private:
 
 class UnwindEpilogCodes : public UnwindBase, public UnwindCodesBase
 {
-    // UEC_LOCAL_COUNT is the amount of memory local to this class. For ARM mscorlib.dll, the maximum size is 6,
+    // UEC_LOCAL_COUNT is the amount of memory local to this class. For ARM CoreLib, the maximum size is 6,
     // while 89% of epilogs fit in 4. So, set it to 4 to maintain array alignment and hit most cases.
     static const int UEC_LOCAL_COUNT = 4;
 

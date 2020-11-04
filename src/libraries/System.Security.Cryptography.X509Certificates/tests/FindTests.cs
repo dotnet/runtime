@@ -4,7 +4,6 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using System.Runtime.InteropServices;
 using System.Text;
 
 using Xunit;
@@ -94,7 +93,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
                     Assert.NotSame(expected, match);
 
                     // FriendlyName is Windows-only.
-                    if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+                    if (OperatingSystem.IsWindows())
                     {
                         // Verify that the find result and original are linked, not just equal.
                         match.FriendlyName = "HAHA";

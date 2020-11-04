@@ -105,9 +105,11 @@ namespace Activator
 
                 var factory = (IClassFactory)ComActivator.GetClassFactoryForType(cxt);
 
-                object svr;
-                factory.CreateInstance(null, ref iid, out svr);
-                typeCFromAssemblyA = (Type)((IGetTypeFromC)svr).GetTypeFromC();
+                IntPtr svrRaw;
+                factory.CreateInstance(null, ref iid, out svrRaw);
+                var svr = (IGetTypeFromC)Marshal.GetObjectForIUnknown(svrRaw);
+                Marshal.Release(svrRaw);
+                typeCFromAssemblyA = (Type)svr.GetTypeFromC();
             }
 
             using (HostPolicyMock.Mock_corehost_resolve_component_dependencies(
@@ -127,9 +129,11 @@ namespace Activator
 
                 var factory = (IClassFactory)ComActivator.GetClassFactoryForType(cxt);
 
-                object svr;
-                factory.CreateInstance(null, ref iid, out svr);
-                typeCFromAssemblyB = (Type)((IGetTypeFromC)svr).GetTypeFromC();
+                IntPtr svrRaw;
+                factory.CreateInstance(null, ref iid, out svrRaw);
+                var svr = (IGetTypeFromC)Marshal.GetObjectForIUnknown(svrRaw);
+                Marshal.Release(svrRaw);
+                typeCFromAssemblyB = (Type)svr.GetTypeFromC();
             }
 
             Assert.AreNotEqual(typeCFromAssemblyA, typeCFromAssemblyB, "Types should be from different AssemblyLoadContexts");
@@ -178,8 +182,10 @@ namespace Activator
 
                     var factory = (IClassFactory)ComActivator.GetClassFactoryForType(cxt);
 
-                    object svr;
-                    factory.CreateInstance(null, ref iid, out svr);
+                    IntPtr svrRaw;
+                    factory.CreateInstance(null, ref iid, out svrRaw);
+                    var svr = Marshal.GetObjectForIUnknown(svrRaw);
+                    Marshal.Release(svrRaw);
 
                     var inst = (IValidateRegistrationCallbacks)svr;
                     Assert.IsFalse(inst.DidRegister());
@@ -215,8 +221,10 @@ namespace Activator
 
                     var factory = (IClassFactory)ComActivator.GetClassFactoryForType(cxt);
 
-                    object svr;
-                    factory.CreateInstance(null, ref iid, out svr);
+                    IntPtr svrRaw;
+                    factory.CreateInstance(null, ref iid, out svrRaw);
+                    var svr = Marshal.GetObjectForIUnknown(svrRaw);
+                    Marshal.Release(svrRaw);
 
                     var inst = (IValidateRegistrationCallbacks)svr;
                     cxt.InterfaceId = Guid.Empty;

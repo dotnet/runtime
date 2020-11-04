@@ -126,7 +126,7 @@ namespace System.Collections.Generic
                 result = new ByteEqualityComparer();
             }
             // If T implements IEquatable<T> return a GenericEqualityComparer<T>
-            else if (typeof(IEquatable<>).MakeGenericType(type).IsAssignableFrom(type))
+            else if (type.IsAssignableTo(typeof(IEquatable<>).MakeGenericType(type)))
             {
                 result = CreateInstanceForAnotherGenericParameter((RuntimeType)typeof(GenericEqualityComparer<int>), runtimeType);
             }

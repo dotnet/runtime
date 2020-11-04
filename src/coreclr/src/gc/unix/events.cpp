@@ -16,10 +16,6 @@
 #include "gcenv.os.h"
 #include "globals.h"
 
-#if HAVE_MACH_ABSOLUTE_TIME
-mach_timebase_info_data_t g_TimebaseInfo;
-#endif // MACH_ABSOLUTE_TIME
-
 namespace
 {
 
@@ -37,7 +33,7 @@ void TimeSpecAdd(timespec* time, uint32_t milliseconds)
 }
 #endif // HAVE_PTHREAD_CONDATTR_SETCLOCK
 
-#if HAVE_MACH_ABSOLUTE_TIME
+#if HAVE_CLOCK_GETTIME_NSEC_NP
 // Convert nanoseconds to the timespec structure
 // Parameters:
 //  nanoseconds - time in nanoseconds to convert
@@ -47,7 +43,7 @@ void NanosecondsToTimeSpec(uint64_t nanoseconds, timespec* t)
     t->tv_sec = nanoseconds / tccSecondsToNanoSeconds;
     t->tv_nsec = nanoseconds % tccSecondsToNanoSeconds;
 }
-#endif // HAVE_PTHREAD_CONDATTR_SETCLOCK
+#endif // HAVE_CLOCK_GETTIME_NSEC_NP
 
 } // anonymous namespace
 
@@ -81,7 +77,7 @@ public:
         // TODO(segilles) implement this for CoreCLR
         //PthreadCondAttrHolder attrsHolder(&attrs);
 
-#if HAVE_PTHREAD_CONDATTR_SETCLOCK && !HAVE_MACH_ABSOLUTE_TIME
+#if HAVE_PTHREAD_CONDATTR_SETCLOCK && !HAVE_CLOCK_GETTIME_NSEC_NP
         // Ensure that the pthread_cond_timedwait will use CLOCK_MONOTONIC
         st = pthread_condattr_setclock(&attrs, CLOCK_MONOTONIC);
         if (st != 0)
@@ -89,7 +85,7 @@ public:
             assert(!"Failed to set UnixEvent condition variable wait clock");
             return false;
         }
-#endif // HAVE_PTHREAD_CONDATTR_SETCLOCK && !HAVE_MACH_ABSOLUTE_TIME
+#endif // HAVE_PTHREAD_CONDATTR_SETCLOCK && !HAVE_CLOCK_GETTIME_NSEC_NP
 
         st = pthread_mutex_init(&m_mutex, NULL);
         if (st != 0)
@@ -130,13 +126,12 @@ public:
         UNREFERENCED_PARAMETER(alertable);
 
         timespec endTime;
-#if HAVE_MACH_ABSOLUTE_TIME
+#if HAVE_CLOCK_GETTIME_NSEC_NP
         uint64_t endMachTime;
         if (milliseconds != INFINITE)
         {
             uint64_t nanoseconds = (uint64_t)milliseconds * tccMilliSecondsToNanoSeconds;
-            NanosecondsToTimeSpec(nanoseconds, &endTime);
-            endMachTime = mach_absolute_time() + nanoseconds * g_TimebaseInfo.denom / g_TimebaseInfo.numer;
+            endMachTime = clock_gettime_nsec_np(CLOCK_UPTIME_RAW) + nanoseconds;
         }
 #elif HAVE_PTHREAD_CONDATTR_SETCLOCK
         if (milliseconds != INFINITE)
@@ -159,17 +154,17 @@ public:
             }
             else
             {
-#if HAVE_MACH_ABSOLUTE_TIME
+#if HAVE_CLOCK_GETTIME_NSEC_NP
                 // Since OSX doesn't support CLOCK_MONOTONIC, we use relative variant of the
                 // timed wait and we need to handle spurious wakeups properly.
                 st = pthread_cond_timedwait_relative_np(&m_condition, &m_mutex, &endTime);
                 if ((st == 0) && !m_state)
                 {
-                    uint64_t machTime = mach_absolute_time();
+                    uint64_t machTime = clock_gettime_nsec_np(CLOCK_UPTIME_RAW);
                     if (machTime < endMachTime)
                     {
                         // The wake up was spurious, recalculate the relative endTime
-                        uint64_t remainingNanoseconds = (endMachTime - machTime) * g_TimebaseInfo.numer / g_TimebaseInfo.denom;
+                        uint64_t remainingNanoseconds = endMachTime - machTime;
                         NanosecondsToTimeSpec(remainingNanoseconds, &endTime);
                     }
                     else
@@ -180,9 +175,9 @@ public:
                         st = ETIMEDOUT;
                     }
                 }
-#else // HAVE_MACH_ABSOLUTE_TIME
+#else // HAVE_CLOCK_GETTIME_NSEC_NP
                 st = pthread_cond_timedwait(&m_condition, &m_mutex, &endTime);
-#endif // HAVE_MACH_ABSOLUTE_TIME
+#endif // HAVE_CLOCK_GETTIME_NSEC_NP
                 // Verify that if the wait timed out, the event was not set
                 assert((st != ETIMEDOUT) || !m_state);
             }

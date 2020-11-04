@@ -288,7 +288,7 @@ namespace System.Collections.Generic
             TreeSet<KeyValuePair<TKey, TValue>>.Node? node = _set.FindNode(new KeyValuePair<TKey, TValue>(key, default(TValue)!));
             if (node == null)
             {
-                value = default(TValue)!;
+                value = default;
                 return false;
             }
             value = node.Item.Value;

@@ -6,6 +6,7 @@ parameters:
   container: ''
   helixQueuesTemplate: ''
   platform: ''
+  targetRid: ''
   jobParameters: {}
   variables: []
 
@@ -92,6 +93,7 @@ jobs:
     osGroup: ${{ parameters.osGroup }}
     osSubgroup: ${{ parameters.osSubgroup }}
     archType: ${{ parameters.archType }}
+    targetRid: ${{ parameters.targetRid }}
     platform: ${{ parameters.platform }}
 
     ${{ if ne(parameters.container, '') }}:
@@ -103,26 +105,18 @@ jobs:
     ${{ if eq(parameters.jobParameters.pool, '') }}:
       pool:
         # Public Linux Build Pool
-        ${{ if and(in(parameters.osGroup, 'Linux', 'FreeBSD'), eq(variables['System.TeamProject'], 'public')) }}:
+        ${{ if and(in(parameters.osGroup, 'Linux', 'FreeBSD', 'Browser', 'Android'), eq(variables['System.TeamProject'], 'public')) }}:
           name:  NetCorePublic-Pool
           queue: BuildPool.Ubuntu.1604.Amd64.Open
 
         # Official Build Linux Pool
-        ${{ if and(in(parameters.osGroup, 'Linux', 'FreeBSD'), ne(variables['System.TeamProject'], 'public')) }}:
+        ${{ if and(in(parameters.osGroup, 'Linux', 'FreeBSD', 'Browser', 'Android'), ne(variables['System.TeamProject'], 'public')) }}:
           name: NetCoreInternal-Pool
           queue: BuildPool.Ubuntu.1604.Amd64
 
-        # Public OSX Build Pool
-        ${{ if eq(parameters.osGroup, 'OSX') }}:
-          vmImage: 'macOS-10.14'
-
-        # Public OSX Build Pool
-        ${{ if eq(parameters.osGroup, 'iOS') }}:
-          vmImage: 'macOS-10.14'
-
-        # Public OSX Build Pool
-        ${{ if eq(parameters.osGroup, 'tvOS') }}:
-          vmImage: 'macOS-10.14'
+        # OSX Build Pool (we don't have on-prem OSX BuildPool
+        ${{ if in(parameters.osGroup, 'OSX', 'iOS', 'tvOS') }}:
+          vmImage: 'macOS-10.15'
 
         # Official Build Windows Pool
         ${{ if and(eq(parameters.osGroup, 'Windows_NT'), ne(variables['System.TeamProject'], 'public')) }}:
@@ -136,6 +130,9 @@ jobs:
 
 
     ${{ if eq(parameters.helixQueuesTemplate, '') }}:
+      # macOS hosted pool machines are slower so we need to give a greater timeout than the 60 mins default.
+      ${{ if and(eq(parameters.jobParameters.timeoutInMinutes, ''), in(parameters.osGroup, 'OSX', 'iOS', 'tvOS')) }}:
+        timeoutInMinutes: 120
       ${{ insert }}: ${{ parameters.jobParameters }}
     ${{ if ne(parameters.helixQueuesTemplate, '') }}:
       jobTemplate: ${{ parameters.jobTemplate }}

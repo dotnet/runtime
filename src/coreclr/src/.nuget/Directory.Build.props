@@ -3,14 +3,19 @@
 
   <!-- Packaging projects (.pkgproj) are non-SDK-style, so they need to directly import Directory.Build.props -->
   <Import Project="../Directory.Build.props" />
+
+  <Import Project="$(NuGetPackageRoot)\microsoft.dotnet.build.tasks.packaging\$(MicrosoftDotNetBuildTasksPackagingVersion)\build\Microsoft.DotNet.Build.Tasks.Packaging.props" />
+
   <Import Project="packaging.props" />
 
   <PropertyGroup>
     <!-- defined in Packaging.targets, but we need this before targets are imported -->
     <PackagePlatform>AnyCPU</PackagePlatform>
 
-    <!-- build the transport package which includes product and symbols in addition to standard packages -->
-    <CreatePackedPackage Condition="'$(CreatePackedPackage)' == ''">true</CreatePackedPackage>
+    <!-- build the transport package which includes product and symbols in addition to standard packages
+    This is a legacy setting as we tend to use symbol packages for symbol indexing and we don't use
+    transport packages to flow dependencies anymore -->
+    <CreatePackedPackage Condition="'$(CreatePackedPackage)' == ''">false</CreatePackedPackage>
 
     <!-- indicates that lib prefix is not added to library names for Unix-like operating systems -->
     <SkipLibraryPrefixFromUnix>true</SkipLibraryPrefixFromUnix>
@@ -159,6 +164,9 @@
     <OfficialBuildRID Include="linux-musl-x64" />
     <OfficialBuildRID Include="rhel.6-x64" />
     <OfficialBuildRID Include="linux-arm">
+      <Platform>arm</Platform>
+    </OfficialBuildRID>
+    <OfficialBuildRID Include="linux-musl-arm">
       <Platform>arm</Platform>
     </OfficialBuildRID>
     <OfficialBuildRID Include="linux-arm64">

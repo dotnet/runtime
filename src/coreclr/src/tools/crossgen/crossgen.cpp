@@ -35,7 +35,7 @@ enum ReturnValues
 STDAPI CreatePDBWorker(LPCWSTR pwzAssemblyPath, LPCWSTR pwzPlatformAssembliesPaths, LPCWSTR pwzTrustedPlatformAssemblies, LPCWSTR pwzPlatformResourceRoots, LPCWSTR pwzAppPaths, LPCWSTR pwzAppNiPaths, LPCWSTR pwzPdbPath, BOOL fGeneratePDBLinesInfo, LPCWSTR pwzManagedPdbSearchPath, LPCWSTR pwzDiasymreaderPath);
 STDAPI NGenWorker(LPCWSTR pwzFilename, DWORD dwFlags, LPCWSTR pwzPlatformAssembliesPaths, LPCWSTR pwzTrustedPlatformAssemblies, LPCWSTR pwzPlatformResourceRoots, LPCWSTR pwzAppPaths, LPCWSTR pwzOutputFilename=NULL, SIZE_T customBaseAddress=0, ICorSvcLogger *pLogger = NULL, LPCWSTR pwszCLRJITPath = nullptr);
 void SetSvcLogger(ICorSvcLogger *pCorSvcLogger);
-void SetMscorlibPath(LPCWSTR wzSystemDirectory);
+void SetCoreLibPath(LPCWSTR wzSystemDirectory);
 
 /* --------------------------------------------------------------------------- *
  * Console stuff
@@ -257,7 +257,7 @@ bool StringEndsWith(LPCWSTR pwzString, LPCWSTR pwzCandidate)
 // When using the Phone binding model (TrustedPlatformAssemblies), automatically
 // detect which path CoreLib.[ni.]dll lies in.
 //
-bool ComputeMscorlibPathFromTrustedPlatformAssemblies(SString& pwzMscorlibPath, LPCWSTR pwzTrustedPlatformAssemblies)
+bool ComputeCoreLibPathFromTrustedPlatformAssemblies(SString& pwzCoreLibPath, LPCWSTR pwzTrustedPlatformAssemblies)
 {
     LPWSTR wszTrustedPathCopy = new WCHAR[wcslen(pwzTrustedPlatformAssemblies) + 1];
     wcscpy_s(wszTrustedPathCopy, wcslen(pwzTrustedPlatformAssemblies) + 1, pwzTrustedPlatformAssemblies);
@@ -277,11 +277,11 @@ bool ComputeMscorlibPathFromTrustedPlatformAssemblies(SString& pwzMscorlibPath, 
         if (StringEndsWith(wszSingleTrustedPath, DIRECTORY_SEPARATOR_STR_W CoreLibName_IL_W) ||
             StringEndsWith(wszSingleTrustedPath, DIRECTORY_SEPARATOR_STR_W CoreLibName_NI_W))
         {
-            pwzMscorlibPath.Set(wszSingleTrustedPath);
-            SString::Iterator pwzSeparator = pwzMscorlibPath.End();
+            pwzCoreLibPath.Set(wszSingleTrustedPath);
+            SString::Iterator pwzSeparator = pwzCoreLibPath.End();
             bool retval = true;
 
-            if (!SUCCEEDED(CopySystemDirectory(pwzMscorlibPath, pwzMscorlibPath)))
+            if (!SUCCEEDED(CopySystemDirectory(pwzCoreLibPath, pwzCoreLibPath)))
             {
                 retval = false;
             }
@@ -318,7 +318,7 @@ void PopulateTPAList(SString path, LPCWSTR pwszMask, SString &refTPAList, bool f
             // No NIs are supported when creating NI images (other than NI of System.Private.CoreLib.dll).
             if (!fCreatePDB)
             {
-                // Only CoreLib's ni.dll should be in the TPAList for the compilation of non-mscorlib assemblies.
+                // Only CoreLib's ni.dll should be in the TPAList for the compilation of non-CoreLib assemblies.
                 if (StringEndsWith((LPWSTR)pwszFilename, W(".ni.dll")))
                 {
                     fAddFileToTPAList = false;
@@ -837,10 +837,10 @@ int _cdecl wmain(int argc, __in_ecount(argc) WCHAR **argv)
 
     if (pwzTrustedPlatformAssemblies != nullptr)
     {
-        if (ComputeMscorlibPathFromTrustedPlatformAssemblies(wzTrustedPathRoot, pwzTrustedPlatformAssemblies))
+        if (ComputeCoreLibPathFromTrustedPlatformAssemblies(wzTrustedPathRoot, pwzTrustedPlatformAssemblies))
         {
             pwzPlatformAssembliesPaths = wzTrustedPathRoot.GetUnicode();
-            SetMscorlibPath(pwzPlatformAssembliesPaths);
+            SetCoreLibPath(pwzPlatformAssembliesPaths);
         }
     }
 

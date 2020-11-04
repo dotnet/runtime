@@ -18,7 +18,7 @@
  * Depends on memcmp, strlen, fopen, fseek and fgets.
  */
 
-int __cdecl main(int argc, char *argv[])
+PALTEST(c_runtime_fprintf_test7_paltest_fprintf_test7, "c_runtime/fprintf/test7/paltest_fprintf_test7")
 {
     WCHAR wb = (WCHAR) 'b';
     

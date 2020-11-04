@@ -18,7 +18,7 @@
 
 
 
-int __cdecl main(int argc, char *argv[])
+PALTEST(c_runtime_vfprintf_test19_paltest_vfprintf_test19, "c_runtime/vfprintf/test19/paltest_vfprintf_test19")
 {
     int n = -1;
 

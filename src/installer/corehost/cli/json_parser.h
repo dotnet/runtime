@@ -30,7 +30,7 @@ class json_parser_t {
 
         const document_t& document() const { return m_document; }
 
-        bool parse_stream(pal::istream_t& stream, const pal::string_t& context);
+        bool parse_raw_data(char* data, int64_t size, const pal::string_t& context);
         bool parse_file(const pal::string_t& path);
 
         json_parser_t()
@@ -52,7 +52,6 @@ class json_parser_t {
         const bundle::location_t* m_bundle_location; // Location of this json file within the bundle.
 
         void realloc_buffer(size_t size);
-        bool parse_json(char* data, int64_t size, const pal::string_t& context);
 };
 
 #endif // __JSON_PARSER_H__

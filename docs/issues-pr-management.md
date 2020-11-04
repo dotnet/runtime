@@ -12,7 +12,7 @@ dotnet/runtime issues and pull requests are a shared resource.  As such, it will
 
 Here are a few of the most salient components of working well together, and the FAQ has much more detail.
 ## Scenarios where we all have to work together:
-- All incoming issues and pull requests will be automatically labeled with an `area-*` label. The bot will also assign the `untriaged` label to only issues, once they get created. 
+- All incoming issues and pull requests will be automatically labeled with an `area-*` label. The bot will also assign the `untriaged` label to only issues, once they get created.
 - All issues and pull requests should have exactly 1 `area-*` label.
 - Issues are considered triaged when the `untriaged` label has been removed.
 - When issues have `area-*` labels switched, the `untriaged` label must be added. This prevents issues being lost in a `triaged` state when they have not actually been triaged by the area owner. In the future, a bot may automatically ensure this happens.

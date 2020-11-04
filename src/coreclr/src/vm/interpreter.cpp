@@ -3537,6 +3537,7 @@ bool Interpreter::MethodMayHaveLoop(BYTE* ilCode, unsigned codeSize)
             op = *(ilCode + 1) + 0x100;
             _ASSERTE(op < CEE_COUNT);  // Bounds check for below.
             // deliberate fall-through here.
+            __fallthrough;
         default:
             // For the rest of the 1-byte instructions, we'll use a table-driven approach.
             ilCode += opSizes1Byte[op];
@@ -4919,7 +4920,7 @@ void Interpreter::BinaryIntOpWork(T val1, T val2)
         {
             ThrowDivideByZero();
         }
-        else if (val2 == -1 && val1 == static_cast<T>(((UINT64)1) << (sizeof(T)*8 - 1))) // min int / -1 is not representable.
+        else if (val2 == static_cast<T>(-1) && val1 == static_cast<T>(((UINT64)1) << (sizeof(T)*8 - 1))) // min int / -1 is not representable.
         {
             ThrowSysArithException();
         }
@@ -9077,7 +9078,7 @@ void Interpreter::DoCallWork(bool virtualCall, void* thisArg, CORINFO_RESOLVED_T
         }
 
         // Plus some other calls that we're going to treat "like" intrinsics...
-        if (methToCall == MscorlibBinder::GetMethod(METHOD__STUBHELPERS__SET_LAST_ERROR))
+        if (methToCall == CoreLibBinder::GetMethod(METHOD__STUBHELPERS__SET_LAST_ERROR))
         {
             // If we're interpreting a method that calls "SetLastError", it's very likely that the call(i) whose
             // error we're trying to capture was performed with MethodDescCallSite machinery that itself trashes
@@ -10281,7 +10282,7 @@ void Interpreter::CallI()
             }
             else
             {
-                pMD = MscorlibBinder::GetMethod(METHOD__INTERLOCKED__COMPARE_EXCHANGE_OBJECT);  // A random static method.
+                pMD = CoreLibBinder::GetMethod(METHOD__INTERLOCKED__COMPARE_EXCHANGE_OBJECT);  // A random static method.
             }
             MethodDescCallSite mdcs(pMD, &mSig, ftnPtr);
 #if 0

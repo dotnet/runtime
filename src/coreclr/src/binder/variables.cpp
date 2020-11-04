@@ -40,7 +40,7 @@ namespace BINDER_SPACE
 
             // AssemblyName string constants
             cultureNeutral.SetLiteral(W("neutral"));
-            mscorlib.SetLiteral(CoreLibName_W);
+            corelib.SetLiteral(CoreLibName_W);
         }
         EX_CATCH_HRESULT(hr);
 

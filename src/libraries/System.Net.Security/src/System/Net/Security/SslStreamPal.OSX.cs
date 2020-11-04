@@ -53,12 +53,12 @@ namespace System.Net.Security
         }
 
         public static SafeFreeCredentials AcquireCredentialsHandle(
-            X509Certificate certificate,
+            SslStreamCertificateContext? certificateContext,
             SslProtocols protocols,
             EncryptionPolicy policy,
             bool isServer)
         {
-            return new SafeFreeSslCredentials(certificate, protocols, policy);
+            return new SafeFreeSslCredentials(certificateContext, protocols, policy);
         }
 
         internal static byte[]? GetNegotiatedApplicationProtocol(SafeDeleteContext? context)

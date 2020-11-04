@@ -1507,7 +1507,7 @@ BOOL StackFrameIterator::IsValid(void)
         // and RedirectedThreadFrame on Windows] concurrently with GC stackwalking.
         // In normal case (no GCStress), after p/invoke, IL_STUB will check if GC is in progress and synchronize.
         // NOTE: This condition needs to be evaluated after the previous one to prevent a subtle race condition
-        // (https://github.com/dotnet/coreclr/issues/21581)
+        // (https://github.com/dotnet/runtime/issues/11678)
         bIsRealStartFrameUnchanged = bIsRealStartFrameUnchanged ||
             ((GCStress<cfg_instr>::IsEnabled()) &&
             (m_pRealStartFrame != NULL) &&

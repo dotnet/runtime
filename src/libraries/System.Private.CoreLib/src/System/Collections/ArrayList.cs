@@ -2574,7 +2574,7 @@ namespace System.Collections
                 if (_baseSize == 0)
                     return Array.Empty<object?>();
                 object[] array = new object[_baseSize];
-                Array.Copy(_baseList._items, _baseIndex, array, 0, _baseSize);
+                _baseList.CopyTo(_baseIndex, array, 0, _baseSize);
                 return array;
             }
 

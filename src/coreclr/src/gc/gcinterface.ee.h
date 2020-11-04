@@ -414,7 +414,7 @@ public:
     bool AnalyzeSurvivorsRequested(int condemnedGeneration) = 0;
 
     virtual
-    void AnalyzeSurvivorsFinished(int condemnedGeneration) = 0;
+    void AnalyzeSurvivorsFinished(size_t gcIndex, int condemnedGeneration, uint64_t promoted_bytes, void (*reportGenerationBounds)()) = 0;
 
     virtual
     void VerifySyncTableEntry() = 0;

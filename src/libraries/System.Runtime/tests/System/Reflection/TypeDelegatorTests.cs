@@ -20,6 +20,17 @@ namespace System.Reflection.Tests
         }
 
         [Fact]
+        public void IsAssignableTo()
+        {
+            TypeDelegator td = new TypeDelegator(typeof(int));
+
+            Assert.True(td.IsAssignableTo(typeof(int)));
+            Assert.False(td.IsAssignableTo(typeof(string)));
+            Assert.True(typeof(int).IsAssignableTo(td));
+            Assert.False(typeof(string).IsAssignableTo(td));
+        }
+
+        [Fact]
         public void CreateInstance()
         {
             Assert.Equal(typeof(int[]), Array.CreateInstance(new TypeDelegator(typeof(int)), 100).GetType());

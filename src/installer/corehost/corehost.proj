@@ -7,6 +7,7 @@
   -->
   <PropertyGroup>
     <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
+    <IncrementalNativeBuild Condition="'$(IncrementalNativeBuild)' == ''">true</IncrementalNativeBuild>
   </PropertyGroup>
 
   <Import Project="Sdk.targets" Sdk="Microsoft.NET.Sdk" />
@@ -30,11 +31,14 @@
       <BuildArgs>$(Configuration) $(TargetArchitecture) -apphostver "$(AppHostVersion)" -hostver "$(HostVersion)" -fxrver "$(HostResolverVersion)" -policyver "$(HostPolicyVersion)" -commithash "$(LatestCommit)" -os $(TargetOS)</BuildArgs>
       <BuildArgs>$(BuildArgs) -cmakeargs "-DVERSION_FILE_PATH=$(NativeVersionFile)"</BuildArgs>
       <BuildArgs Condition="'$(PortableBuild)' != 'true'">$(BuildArgs) -portablebuild=false</BuildArgs>
+      <BuildArgs Condition="'$(KeepNativeSymbols)' != 'false'">$(BuildArgs) -keepnativesymbols</BuildArgs>
       <BuildArgs Condition="'$(CrossBuild)' == 'true'">$(BuildArgs) -cross</BuildArgs>
       <BuildArgs Condition="'$(Compiler)' != ''">$(BuildArgs) $(Compiler)</BuildArgs>
       <BuildArgs Condition="'$(CMakeArgs)' != ''">$(BuildArgs) $(CMakeArgs)</BuildArgs>
       <BuildArgs>$(BuildArgs) -coreclrartifacts $(CoreCLRArtifactsPath)</BuildArgs>
       <BuildArgs>$(BuildArgs) -nativelibsartifacts $(LibrariesArtifactsPath)/bin/native/$(NetCoreAppCurrent)-$(TargetOS)-$(LibrariesConfiguration)-$(TargetArchitecture)</BuildArgs>
+      <BuildArgs Condition="'$(Ninja)' == 'true'">$(BuildArgs) -ninja</BuildArgs>
+      <BuildArgs>$(BuildArgs) -runtimeflavor $(RuntimeFlavor)</BuildArgs>
     </PropertyGroup>
 
     <!--
@@ -89,6 +93,9 @@
       <BuildArgs>$(BuildArgs) rootdir $(RepoRoot)</BuildArgs>
       <BuildArgs>$(BuildArgs) coreclrartifacts $(CoreCLRArtifactsPath)</BuildArgs>
       <BuildArgs>$(BuildArgs) nativelibsartifacts $(LibrariesArtifactsPath)/bin/native/$(NetCoreAppCurrent)-$(TargetOS)-$(LibrariesConfiguration)-$(TargetArchitecture)</BuildArgs>
+      <BuildArgs Condition="'$(Ninja)' == 'true'">$(BuildArgs) ninja</BuildArgs>
+      <BuildArgs>$(BuildArgs) runtimeflavor $(RuntimeFlavor)</BuildArgs>
+      <BuildArgs>$(BuildArgs) runtimeconfiguration $(RuntimeConfiguration)</BuildArgs>
     </PropertyGroup>
 
     <!--

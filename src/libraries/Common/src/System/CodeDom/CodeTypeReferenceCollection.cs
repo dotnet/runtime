@@ -29,7 +29,7 @@ namespace System.Runtime.Serialization
 
         public CodeTypeReference this[int index]
         {
-            get { return ((CodeTypeReference)(List[index])); }
+            get { return ((CodeTypeReference)(List[index]!)); }
             set { List[index] = value; }
         }
 

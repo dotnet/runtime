@@ -31,7 +31,7 @@ what are in the repository. In particular
 Thus opening one of these two solution files (double clicking on them in Explorer) is typically all you need
 to do most editing.
 
-Notice that the CoreCLR solution is under the 'bin' directory.  This is because it is created as part of the build.
+Notice that the CoreCLR solution is under the `artifacts` directory.  This is because it is created as part of the build.
 Thus you can only launch this solution after you have built at least once.
 
 * See [Debugging CoreCLR](debugging/coreclr/debugging.md)

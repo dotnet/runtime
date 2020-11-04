@@ -69,6 +69,9 @@ namespace System.Tests
             Assert.False(default(ConsoleKeyInfo).Equals(new object()));
         }
 
+        [Fact]
+        public void ImplementsIEquatableInterface() => Assert.True(typeof(IEquatable<ConsoleKeyInfo>).IsAssignableFrom(typeof(ConsoleKeyInfo)));
+
         public static readonly object[][] NotEqualConsoleKeyInfos = {
             new object[] { new ConsoleKeyInfo('a', ConsoleKey.A, true, true, true), new ConsoleKeyInfo('b', ConsoleKey.A, true, true, true)  },
             new object[] { new ConsoleKeyInfo('a', ConsoleKey.A, true, true, true), new ConsoleKeyInfo('a', ConsoleKey.B, true, true, true)  },

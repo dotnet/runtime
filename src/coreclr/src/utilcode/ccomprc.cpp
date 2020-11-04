@@ -296,6 +296,8 @@ CCompRC* CCompRC::GetDefaultResourceDll()
 //*****************************************************************************
 //*****************************************************************************
 
+// String resouces packaged as PE files only exist on Windows
+#ifdef HOST_WINDOWS
 HRESULT CCompRC::GetLibrary(LocaleID langId, HRESOURCEDLL* phInst)
 {
     CONTRACTL
@@ -452,6 +454,7 @@ Exit:
     *phInst = hInst;
     return hr;
 }
+#endif // HOST_WINDOWS
 
 //*****************************************************************************
 // Load the string
@@ -536,21 +539,24 @@ HRESULT CCompRC::LoadString(ResourceCategory eCategory, LocaleID langId, UINT iR
 
 #ifndef DACCESS_COMPILE
 
+// String resouces packaged as PE files only exist on Windows
+#ifdef HOST_WINDOWS
 HRESULT CCompRC::LoadResourceFile(HRESOURCEDLL * pHInst, LPCWSTR lpFileName)
 {
-#ifdef HOST_WINDOWS
     DWORD dwLoadLibraryFlags;
     if(m_pResourceFile == m_pDefaultResource)
+    {
         dwLoadLibraryFlags = LOAD_LIBRARY_AS_DATAFILE;
+    }
     else
+    {
         dwLoadLibraryFlags = 0;
+    }
 
-    if ((*pHInst = WszLoadLibraryEx(lpFileName, NULL, dwLoadLibraryFlags)) == NULL) {
+    if((*pHInst = WszLoadLibraryEx(lpFileName, NULL, dwLoadLibraryFlags)) == NULL)
+    {
         return HRESULT_FROM_GetLastError();
     }
-#else // HOST_WINDOWS
-    PORTABILITY_ASSERT("UNIXTODO: Implement resource loading - use peimagedecoder?");
-#endif // HOST_WINDOWS
     return S_OK;
 }
 
@@ -635,14 +641,16 @@ HRESULT CCompRC::LoadLibraryHelper(HRESOURCEDLL *pHInst,
             // only strings.
             hr = LoadResourceFile(pHInst, rcPathName);
             if (SUCCEEDED(hr))
+            {
                 break;
-
+            }
         }
     }
     EX_CATCH_HRESULT(hr);
 
     // Last ditch search effort in current directory
-    if (FAILED(hr)) {
+    if (FAILED(hr))
+    {
         hr = LoadResourceFile(pHInst, m_pResourceFile);
     }
 
@@ -675,7 +683,7 @@ HRESULT CCompRC::LoadLibraryThrows(HRESOURCEDLL * pHInst)
 #ifdef SELF_NO_HOST
     _ASSERTE(!"CCompRC::LoadLibraryThrows not implemented for SELF_NO_HOST");
     hr = E_NOTIMPL;
-#else
+#else // SELF_NO_HOST
     PathString       rcPath;      // Path to resource DLL.
 
     // Try first in the same directory as this dll.
@@ -691,6 +699,7 @@ HRESULT CCompRC::LoadLibraryThrows(HRESOURCEDLL * pHInst)
 
     return hr;
 }
+
 HRESULT CCompRC::LoadLibrary(HRESOURCEDLL * pHInst)
 {
     CONTRACTL
@@ -713,3 +722,4 @@ HRESULT CCompRC::LoadLibrary(HRESOURCEDLL * pHInst)
     return hr;
 }
 #endif // DACCESS_COMPILE
+#endif //HOST_WINDOWS

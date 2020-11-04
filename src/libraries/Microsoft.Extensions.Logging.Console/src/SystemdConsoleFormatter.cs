@@ -57,8 +57,8 @@ namespace Microsoft.Extensions.Logging.Console
             string timestampFormat = FormatterOptions.TimestampFormat;
             if (timestampFormat != null)
             {
-                DateTime dateTime = GetCurrentDateTime();
-                textWriter.Write(dateTime.ToString(timestampFormat));
+                DateTimeOffset dateTimeOffset = GetCurrentDateTime();
+                textWriter.Write(dateTimeOffset.ToString(timestampFormat));
             }
 
             // category and event id
@@ -96,9 +96,9 @@ namespace Microsoft.Extensions.Logging.Console
             }
         }
 
-        private DateTime GetCurrentDateTime()
+        private DateTimeOffset GetCurrentDateTime()
         {
-            return FormatterOptions.UseUtcTimestamp ? DateTime.UtcNow : DateTime.Now;
+            return FormatterOptions.UseUtcTimestamp ? DateTimeOffset.UtcNow : DateTimeOffset.Now;
         }
 
         private static string GetSyslogSeverityString(LogLevel logLevel)

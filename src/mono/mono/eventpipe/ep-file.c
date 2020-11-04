@@ -74,6 +74,14 @@ file_save_metadata_id (
 	EventPipeEvent *ep_event,
 	uint32_t metadata_id);
 
+static
+int32_t
+file_get_file_version (EventPipeSerializationFormat format);
+
+static
+int32_t
+file_get_file_minimum_version (EventPipeSerializationFormat format);
+
 /*
  * EventPipeFile.
  */
@@ -290,6 +298,36 @@ file_save_metadata_id (
 	ep_rt_metadata_labels_add (&file->metadata_ids, ep_event, metadata_id);
 }
 
+static
+int32_t
+file_get_file_version (EventPipeSerializationFormat format)
+{
+	switch (format) {
+	case EP_SERIALIZATION_FORMAT_NETPERF_V3 :
+		return 3;
+	case EP_SERIALIZATION_FORMAT_NETTRACE_V4 :
+		return 4;
+	default :
+		EP_ASSERT (!"Unrecognized EventPipeSerializationFormat");
+		return 0;
+	}
+}
+
+static
+int32_t
+file_get_file_minimum_version (EventPipeSerializationFormat format)
+{
+	switch (format) {
+	case EP_SERIALIZATION_FORMAT_NETPERF_V3 :
+		return 0;
+	case EP_SERIALIZATION_FORMAT_NETTRACE_V4 :
+		return 4;
+	default :
+		EP_ASSERT (!"Unrecognized EventPipeSerializationFormat");
+		return 0;
+	}
+}
+
 EventPipeFile *
 ep_file_alloc (
 	StreamWriter *stream_writer,
@@ -301,8 +339,8 @@ ep_file_alloc (
 	ep_raise_error_if_nok (ep_fast_serializable_object_init (
 		&instance->fast_serializable_object,
 		&file_vtable,
-		ep_file_get_file_version (format),
-		ep_file_get_file_minimum_version (format),
+		file_get_file_version (format),
+		file_get_file_minimum_version (format),
 		format >= EP_SERIALIZATION_FORMAT_NETTRACE_V4) != NULL);
 
 	instance->stream_writer = stream_writer;
@@ -318,8 +356,8 @@ ep_file_alloc (
 	ep_raise_error_if_nok (instance->stack_block != NULL);
 
 	// File start time information.
-	instance->file_open_system_time = ep_rt_system_time_get ();
-	instance->file_open_timestamp = ep_perf_counter_query ();
+	ep_system_time_get (&instance->file_open_system_time);
+	instance->file_open_timestamp = ep_perf_timestamp_get ();
 	instance->timestamp_frequency = ep_perf_frequency_query ();
 
 	instance->pointer_size = SIZEOF_VOID_P;
@@ -340,8 +378,10 @@ ep_file_alloc (
 	// Start at 0 - The value is always incremented prior to use, so the first ID will be 1.
 	instance->stack_id_counter = 0;
 
+	ep_rt_volatile_store_uint32_t (&instance->initialized, 0);
+
 #ifdef EP_CHECKED_BUILD
-	instance->last_sorted_timestamp = ep_perf_counter_query ();
+	instance->last_sorted_timestamp = ep_perf_timestamp_get ();
 #endif
 
 ep_on_exit:
@@ -368,9 +408,9 @@ ep_file_free (EventPipeFile *file)
 	ep_rt_metadata_labels_free (&file->metadata_ids);
 	ep_rt_stack_hash_free (&file->stack_hash);
 
-	// If there's no fast_serializer, stream_writer ownership
+	// If file has not been initialized, stream_writer ownership
 	// have not been passed along and needs to be freed by file.
-	if (!file->fast_serializer)
+	if (ep_rt_volatile_load_uint32_t (&file->initialized) == 0)
 		ep_stream_writer_free_vcall (file->stream_writer);
 
 	ep_fast_serializable_object_fini (&file->fast_serializable_object);
@@ -393,6 +433,7 @@ ep_file_initialize_file (EventPipeFile *file)
 	}
 
 	if (success) {
+		ep_rt_volatile_store_uint32_t (&file->initialized, 1);
 		// Create the file stream and write the FastSerialization header.
 		file->fast_serializer = ep_fast_serializer_alloc (file->stream_writer);
 
@@ -512,34 +553,6 @@ ep_file_flush (
 	if ((ep_event_block_get_bytes_written (file->event_block) != 0) && ((flags & EP_FILE_FLUSH_FLAGS_EVENT_BLOCK) != 0)) {
 		ep_event_block_serialize (file->event_block, file->fast_serializer);
 		ep_event_block_clear (file->event_block);
-	}
-}
-
-int32_t
-ep_file_get_file_version (EventPipeSerializationFormat format)
-{
-	switch (format) {
-	case EP_SERIALIZATION_FORMAT_NETPERF_V3 :
-		return 3;
-	case EP_SERIALIZATION_FORMAT_NETTRACE_V4 :
-		return 4;
-	default :
-		EP_ASSERT (!"Unrecognized EventPipeSerializationFormat");
-		return 0;
-	}
-}
-
-int32_t
-ep_file_get_file_minimum_version (EventPipeSerializationFormat format)
-{
-	switch (format) {
-	case EP_SERIALIZATION_FORMAT_NETPERF_V3 :
-		return 0;
-	case EP_SERIALIZATION_FORMAT_NETTRACE_V4 :
-		return 4;
-	default :
-		EP_ASSERT (!"Unrecognized EventPipeSerializationFormat");
-		return 0;
 	}
 }
 

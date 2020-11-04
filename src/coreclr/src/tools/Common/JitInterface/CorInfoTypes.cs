@@ -8,6 +8,12 @@ using Internal.TypeSystem;
 
 namespace Internal.JitInterface
 {
+    public enum BOOL : int
+    {
+        FALSE = 0,
+        TRUE = 1,
+    }
+
     public static class CORINFO
     {
         // CORINFO_MAXINDIRECTIONS is the maximum number of
@@ -20,40 +26,14 @@ namespace Internal.JitInterface
 
     public struct CORINFO_METHOD_STRUCT_
     {
-        internal static unsafe CORINFO_METHOD_STRUCT_* Construct(int i)
-        {
-            return (CORINFO_METHOD_STRUCT_*)((i + 1) << 4);
-        }
-
-        internal static unsafe int GetValue(CORINFO_METHOD_STRUCT_* val)
-        {
-            return ((int)val - 1) >> 4;
-        }
     }
 
     public struct CORINFO_FIELD_STRUCT_
     {
-        internal static unsafe CORINFO_FIELD_STRUCT_* Construct(int i)
-        {
-            return (CORINFO_FIELD_STRUCT_*)((i + 1) << 4);
-        }
-        internal static unsafe int GetValue(CORINFO_FIELD_STRUCT_* val)
-        {
-            return ((int)val - 1) >> 4;
-        }
     }
 
     public struct CORINFO_CLASS_STRUCT_
     {
-        internal static unsafe CORINFO_CLASS_STRUCT_* Construct(int i)
-        {
-            return (CORINFO_CLASS_STRUCT_*)((i + 1) << 4);
-        }
-
-        internal static unsafe int GetValue(CORINFO_CLASS_STRUCT_* val)
-        {
-            return ((int)val - 1) >> 4;
-        }
     }
 
     public struct CORINFO_ARG_LIST_STRUCT_
@@ -62,14 +42,6 @@ namespace Internal.JitInterface
 
     public struct CORINFO_MODULE_STRUCT_
     {
-        internal static unsafe CORINFO_MODULE_STRUCT_* Construct(int i)
-        {
-            return (CORINFO_MODULE_STRUCT_*)((i + 1) << 4);
-        }
-        internal static unsafe int GetValue(CORINFO_MODULE_STRUCT_* val)
-        {
-            return ((int)val - 1) >> 4;
-        }
     }
 
     public struct CORINFO_ASSEMBLY_STRUCT_
@@ -416,28 +388,6 @@ namespace Internal.JitInterface
 
     public enum CorInfoIntrinsics
     {
-        CORINFO_INTRINSIC_Sin,
-        CORINFO_INTRINSIC_Cos,
-        CORINFO_INTRINSIC_Cbrt,
-        CORINFO_INTRINSIC_Sqrt,
-        CORINFO_INTRINSIC_Abs,
-        CORINFO_INTRINSIC_Round,
-        CORINFO_INTRINSIC_Cosh,
-        CORINFO_INTRINSIC_Sinh,
-        CORINFO_INTRINSIC_Tan,
-        CORINFO_INTRINSIC_Tanh,
-        CORINFO_INTRINSIC_Asin,
-        CORINFO_INTRINSIC_Asinh,
-        CORINFO_INTRINSIC_Acos,
-        CORINFO_INTRINSIC_Acosh,
-        CORINFO_INTRINSIC_Atan,
-        CORINFO_INTRINSIC_Atan2,
-        CORINFO_INTRINSIC_Atanh,
-        CORINFO_INTRINSIC_Log10,
-        CORINFO_INTRINSIC_Pow,
-        CORINFO_INTRINSIC_Exp,
-        CORINFO_INTRINSIC_Ceiling,
-        CORINFO_INTRINSIC_Floor,
         CORINFO_INTRINSIC_GetChar,              // fetch character out of string
         CORINFO_INTRINSIC_Array_GetDimLength,   // Get number of elements in a given dimension of an array
         CORINFO_INTRINSIC_Array_Get,            // Get the value of an element in an array
@@ -1291,7 +1241,8 @@ namespace Internal.JitInterface
         CORJIT_OUTOFMEM = unchecked((int)0x80000002)/*MAKE_HRESULT(SEVERITY_ERROR, FACILITY_NULL, 2)*/,
         CORJIT_INTERNALERROR = unchecked((int)0x80000003)/*MAKE_HRESULT(SEVERITY_ERROR, FACILITY_NULL, 3)*/,
         CORJIT_SKIPPED = unchecked((int)0x80000004)/*MAKE_HRESULT(SEVERITY_ERROR, FACILITY_NULL, 4)*/,
-        CORJIT_RECOVERABLEERROR = unchecked((int)0x80000005)/*MAKE_HRESULT(SEVERITY_ERROR, FACILITY_NULL, 5)*/
+        CORJIT_RECOVERABLEERROR = unchecked((int)0x80000005)/*MAKE_HRESULT(SEVERITY_ERROR, FACILITY_NULL, 5)*/,
+        CORJIT_IMPLLIMITATION = unchecked((int)0x80000006)/*MAKE_HRESULT(SEVERITY_ERROR,FACILITY_NULL, 6)*/,
     };
 
     public enum TypeCompareState
@@ -1311,14 +1262,14 @@ namespace Internal.JitInterface
         CORJIT_FLAG_DEBUG_EnC = 3, // We are in Edit-n-Continue mode
         CORJIT_FLAG_DEBUG_INFO = 4, // generate line and local-var info
         CORJIT_FLAG_MIN_OPT = 5, // disable all jit optimizations (not necesarily debuggable code)
-        CORJIT_FLAG_GCPOLL_CALLS = 6, // Emit calls to JIT_POLLGC for thread suspension.
+        CORJIT_FLAG_UNUSED1 = 6,
         CORJIT_FLAG_MCJIT_BACKGROUND = 7, // Calling from multicore JIT background thread, do not call JitComplete
-        CORJIT_FLAG_UNUSED1 = 8,
-        CORJIT_FLAG_UNUSED2 = 9,
-        CORJIT_FLAG_UNUSED3 = 10,
-        CORJIT_FLAG_UNUSED4 = 11,
-        CORJIT_FLAG_UNUSED5 = 12,
-        CORJIT_FLAG_UNUSED6 = 13,
+        CORJIT_FLAG_UNUSED2 = 8,
+        CORJIT_FLAG_UNUSED3 = 9,
+        CORJIT_FLAG_UNUSED4 = 10,
+        CORJIT_FLAG_UNUSED5 = 11,
+        CORJIT_FLAG_UNUSED6 = 12,
+        CORJIT_FLAG_UNUSED7 = 13,
         CORJIT_FLAG_FEATURE_SIMD = 17,
         CORJIT_FLAG_MAKEFINALCODE = 18, // Use the final code generator, i.e., not the interpreter.
         CORJIT_FLAG_READYTORUN = 19, // Use version-resilient code generation
@@ -1336,11 +1287,11 @@ namespace Internal.JitInterface
         CORJIT_FLAG_FRAMED = 31, // All methods have an EBP frame
         CORJIT_FLAG_ALIGN_LOOPS = 32, // add NOPs before loops to align them at 16 byte boundaries
         CORJIT_FLAG_PUBLISH_SECRET_PARAM = 33, // JIT must place stub secret param into local 0.  (used by IL stubs)
-        CORJIT_FLAG_GCPOLL_INLINE = 34, // JIT must inline calls to GCPoll when possible
+        CORJIT_FLAG_UNUSED8 = 34,
         CORJIT_FLAG_SAMPLING_JIT_BACKGROUND = 35, // JIT is being invoked as a result of stack sampling for hot methods in the background
         CORJIT_FLAG_USE_PINVOKE_HELPERS = 36, // The JIT should use the PINVOKE_{BEGIN,END} helpers instead of emitting inline transitions
         CORJIT_FLAG_REVERSE_PINVOKE = 37, // The JIT should insert REVERSE_PINVOKE_{ENTER,EXIT} helpers into method prolog/epilog
-        // CORJIT_FLAG_UNUSED = 38,
+        CORJIT_FLAG_UNUSED9 = 38,
         CORJIT_FLAG_TIER0 = 39, // This is the initial tier for tiered compilation which should generate code as quickly as possible
         CORJIT_FLAG_TIER1 = 40, // This is the final tier (for now) for tiered compilation which should generate high quality code
         CORJIT_FLAG_RELATIVE_CODE_RELOCS = 41, // JIT should generate PC-relative address computations instead of EE relocation records

@@ -47,7 +47,6 @@
     <ClCompile Include="$(MonoSourceLocation)\mono\utils\mono-mmap-windows.c" />
     <ClInclude Include="$(MonoSourceLocation)\mono\utils\mono-mmap.h" />
     <ClInclude Include="$(MonoSourceLocation)\mono\utils\mono-mmap-internals.h" />
-    <ClInclude Include="$(MonoSourceLocation)\mono\utils\mono-mmap-windows-internals.h" />
     <ClInclude Include="$(MonoSourceLocation)\mono\utils\mono-os-mutex.h" />
     <ClCompile Include="$(MonoSourceLocation)\mono\utils\mono-os-mutex.c">
       <ExcludedFromBuild>$(ExcludeFromWindowsBuild)</ExcludedFromBuild>
@@ -202,6 +201,9 @@
     <ClInclude Include="$(MonoSourceLocation)\mono\utils\unlocked.h" />
     <ClCompile Include="$(MonoSourceLocation)\mono\utils\mono-state.c" />
     <ClInclude Include="$(MonoSourceLocation)\mono\utils\mono-state.h" />
+    <ClInclude Include="$(MonoSourceLocation)\mono\utils\options.h" />
+    <ClCompile Include="$(MonoSourceLocation)\mono\utils\options.c" />
+    <ClInclude Include="$(MonoSourceLocation)\mono\utils\options-def.h" />
   </ItemGroup>
   <ItemGroup Label="libmonoutilsinclude_headers">
     <ClInclude Include="$(MonoSourceLocation)\mono\utils\mono-logger.h" />

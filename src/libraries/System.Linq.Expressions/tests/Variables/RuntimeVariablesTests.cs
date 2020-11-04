@@ -52,7 +52,6 @@ namespace System.Linq.Expressions.Tests
 
         [Theory]
         [ClassData(typeof(CompilationTypes))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/39771", TestPlatforms.Browser)]
         public void ReadAndWriteVars(bool useInterpreter)
         {
             ParameterExpression x = Expression.Variable(typeof(int));
@@ -83,7 +82,6 @@ namespace System.Linq.Expressions.Tests
 
         [Theory]
         [ClassData(typeof(CompilationTypes))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/39771", TestPlatforms.Browser)]
         public void AliasingAllowed(bool useInterpreter)
         {
             ParameterExpression x = Expression.Variable(typeof(int));

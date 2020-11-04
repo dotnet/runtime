@@ -10,8 +10,8 @@ namespace System.Xml.Xsl.XsltOld
 
     internal class NewInstructionAction : ContainerAction
     {
-        private string _name;
-        private string _parent;
+        private string? _name;
+        private string? _parent;
         private bool _fallback;
 
         internal override void Compile(Compiler compiler)

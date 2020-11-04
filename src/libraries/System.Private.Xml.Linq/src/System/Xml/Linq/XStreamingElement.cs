@@ -15,7 +15,7 @@ namespace System.Xml.Linq
     public class XStreamingElement
     {
         internal XName name;
-        internal object content;
+        internal object? content;
 
         /// <summary>
         ///  Creates a <see cref="XStreamingElement"/> node with a given name
@@ -32,10 +32,10 @@ namespace System.Xml.Linq
         /// </summary>
         /// <param name="name">The name to assign to the new <see cref="XStreamingElement"/> node</param>
         /// <param name="content">The content to assign to the new <see cref="XStreamingElement"/> node</param>
-        public XStreamingElement(XName name, object content)
+        public XStreamingElement(XName name, object? content)
             : this(name)
         {
-            this.content = content is List<object> ? new object[] { content } : content;
+            this.content = content is List<object?> ? new object?[] { content } : content;
         }
 
         /// <summary>
@@ -43,7 +43,7 @@ namespace System.Xml.Linq
         /// </summary>
         /// <param name="name">The name to assign to the new <see cref="XStreamingElement"/> node</param>
         /// <param name="content">An array containing content to assign to the new <see cref="XStreamingElement"/> node</param>
-        public XStreamingElement(XName name, params object[] content)
+        public XStreamingElement(XName name, params object?[] content)
             : this(name)
         {
             this.content = content;
@@ -69,11 +69,11 @@ namespace System.Xml.Linq
         /// Add content to an <see cref="XStreamingElement"/>
         /// </summary>
         /// <param name="content">Object containing content to add</param>
-        public void Add(object content)
+        public void Add(object? content)
         {
             if (content != null)
             {
-                List<object> list = this.content as List<object>;
+                List<object>? list = this.content as List<object>;
                 if (list == null)
                 {
                     list = new List<object>();
@@ -88,7 +88,7 @@ namespace System.Xml.Linq
         /// Add content to an <see cref="XStreamingElement"/>
         /// </summary>
         /// <param name="content">array of objects containing content to add</param>
-        public void Add(params object[] content)
+        public void Add(params object?[] content)
         {
             Add((object)content);
         }

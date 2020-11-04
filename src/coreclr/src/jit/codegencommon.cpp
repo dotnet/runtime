@@ -1421,7 +1421,7 @@ AGAIN:
                         return false; // Need overflow check
                     }
 
-                    __fallthrough;
+                    FALLTHROUGH;
 
                 case GT_LSH:
 
@@ -1486,7 +1486,7 @@ AGAIN:
                 break;
             }
 
-            __fallthrough;
+            FALLTHROUGH;
 
         case GT_LSH:
 
@@ -1568,7 +1568,7 @@ AGAIN:
                 break;
             }
 
-            __fallthrough;
+            FALLTHROUGH;
 
         case GT_LSH:
 
@@ -2271,6 +2271,7 @@ void CodeGen::genEmitMachineCode()
     GetEmitter()->emitComputeCodeSizes();
 
 #ifdef DEBUG
+    unsigned instrCount;
 
     // Code to test or stress our ability to run a fallback compile.
     // We trigger the fallback here, before asking the VM for any memory,
@@ -2319,7 +2320,7 @@ void CodeGen::genEmitMachineCode()
 
     codeSize = GetEmitter()->emitEndCodeGen(compiler, trackedStackPtrsContig, GetInterruptible(),
                                             IsFullPtrRegMapRequired(), compiler->compHndBBtabCount, &prologSize,
-                                            &epilogSize, codePtr, &coldCodePtr, &consPtr);
+                                            &epilogSize, codePtr, &coldCodePtr, &consPtr DEBUGARG(&instrCount));
 
 #ifdef DEBUG
     assert(compiler->compCodeGenDone == false);
@@ -2339,8 +2340,9 @@ void CodeGen::genEmitMachineCode()
 #ifdef DEBUG
     if (compiler->opts.disAsm || verbose)
     {
-        printf("\n; Total bytes of code %d, prolog size %d, PerfScore %.2f, (MethodHash=%08x) for method %s\n",
-               codeSize, prologSize, compiler->info.compPerfScore, compiler->info.compMethodHash(),
+        printf("\n; Total bytes of code %d, prolog size %d, PerfScore %.2f, instruction count %d (MethodHash=%08x) for "
+               "method %s\n",
+               codeSize, prologSize, compiler->info.compPerfScore, instrCount, compiler->info.compMethodHash(),
                compiler->info.compFullName);
         printf("; ============================================================\n\n");
         printf(""); // in our logic this causes a flush
@@ -2353,25 +2355,25 @@ void CodeGen::genEmitMachineCode()
     }
 #endif
 
-#if EMIT_TRACK_STACK_DEPTH
+#if EMIT_TRACK_STACK_DEPTH && defined(DEBUG) && !defined(OSX_ARM64_ABI)
     // Check our max stack level. Needed for fgAddCodeRef().
     // We need to relax the assert as our estimation won't include code-gen
     // stack changes (which we know don't affect fgAddCodeRef()).
     // NOTE: after emitEndCodeGen (including here), emitMaxStackDepth is a
     // count of DWORD-sized arguments, NOT argument size in bytes.
     {
-        unsigned maxAllowedStackDepth = compiler->fgPtrArgCntMax +    // Max number of pointer-sized stack arguments.
-                                        compiler->compHndBBtabCount + // Return address for locally-called finallys
-                                        genTypeStSz(TYP_LONG) +       // longs/doubles may be transferred via stack, etc
+        unsigned maxAllowedStackDepth = compiler->fgGetPtrArgCntMax() + // Max number of pointer-sized stack arguments.
+                                        compiler->compHndBBtabCount +   // Return address for locally-called finallys
+                                        genTypeStSz(TYP_LONG) + // longs/doubles may be transferred via stack, etc
                                         (compiler->compTailCallUsed ? 4 : 0); // CORINFO_HELP_TAILCALL args
 #if defined(UNIX_X86_ABI)
         // Convert maxNestedAlignment to DWORD count before adding to maxAllowedStackDepth.
         assert(maxNestedAlignment % sizeof(int) == 0);
         maxAllowedStackDepth += maxNestedAlignment / sizeof(int);
 #endif
-        noway_assert(GetEmitter()->emitMaxStackDepth <= maxAllowedStackDepth);
+        assert(GetEmitter()->emitMaxStackDepth <= maxAllowedStackDepth);
     }
-#endif // EMIT_TRACK_STACK_DEPTH
+#endif // EMIT_TRACK_STACK_DEPTH && DEBUG
 
     *nativeSizeOfCode                 = codeSize;
     compiler->info.compNativeCodeSize = (UNATIVE_OFFSET)codeSize;
@@ -3373,8 +3375,6 @@ void CodeGen::genFnPrologCalleeRegArgs(regNumber xtraReg, bool* pXtraRegClobbere
 
             if (promotionType == Compiler::PROMOTION_TYPE_INDEPENDENT)
             {
-                noway_assert(parentVarDsc->lvFieldCnt == 1); // We only handle one field here
-
                 // For register arguments that are independent promoted structs we put the promoted field varNum in the
                 // regArgTab[]
                 if (varDsc->lvPromoted)
@@ -3423,7 +3423,7 @@ void CodeGen::genFnPrologCalleeRegArgs(regNumber xtraReg, bool* pXtraRegClobbere
 #if defined(UNIX_AMD64_ABI)
         if (varTypeIsStruct(varDsc))
         {
-            CORINFO_CLASS_HANDLE typeHnd = varDsc->lvVerTypeInfo.GetClassHandle();
+            CORINFO_CLASS_HANDLE typeHnd = varDsc->GetStructHnd();
             assert(typeHnd != nullptr);
             SYSTEMV_AMD64_CORINFO_STRUCT_REG_PASSING_DESCRIPTOR structDesc;
             compiler->eeGetSystemVAmd64PassStructInRegisterDescriptor(typeHnd, &structDesc);
@@ -3728,11 +3728,33 @@ void CodeGen::genFnPrologCalleeRegArgs(regNumber xtraReg, bool* pXtraRegClobbere
                 regNumber regNum  = genMapRegArgNumToRegNum(argNum, regType);
 
                 regNumber destRegNum = REG_NA;
-                if (regArgTab[argNum].slot == 1)
+                if (varTypeIsStruct(varDsc) &&
+                    (compiler->lvaGetPromotionType(varDsc) == Compiler::PROMOTION_TYPE_INDEPENDENT))
+                {
+                    assert(regArgTab[argNum].slot <= varDsc->lvFieldCnt);
+                    LclVarDsc* fieldVarDsc = compiler->lvaGetDesc(varDsc->lvFieldLclStart + regArgTab[argNum].slot - 1);
+                    destRegNum             = fieldVarDsc->GetRegNum();
+                }
+                else if (regArgTab[argNum].slot == 1)
                 {
                     destRegNum = varDsc->GetRegNum();
                 }
-#if FEATURE_MULTIREG_ARGS && defined(FEATURE_SIMD) && defined(TARGET_64BIT)
+#if defined(TARGET_ARM64) && defined(FEATURE_SIMD)
+                else if (varDsc->lvIsHfa())
+                {
+                    // This must be a SIMD type that's fully enregistered, but is passed as an HFA.
+                    // Each field will be inserted into the same destination register.
+                    assert(varTypeIsSIMD(varDsc) &&
+                           !compiler->isOpaqueSIMDType(varDsc->lvVerTypeInfo.GetClassHandle()));
+                    assert(regArgTab[argNum].slot <= (int)varDsc->lvHfaSlots());
+                    assert(argNum > 0);
+                    assert(regArgTab[argNum - 1].varNum == varNum);
+                    regArgMaskLive &= ~genRegMask(regNum);
+                    regArgTab[argNum].circular = false;
+                    change                     = true;
+                    continue;
+                }
+#elif defined(UNIX_AMD64_ABI) && defined(FEATURE_SIMD)
                 else
                 {
                     assert(regArgTab[argNum].slot == 2);
@@ -3745,7 +3767,8 @@ void CodeGen::genFnPrologCalleeRegArgs(regNumber xtraReg, bool* pXtraRegClobbere
                     change                     = true;
                     continue;
                 }
-#elif !defined(TARGET_64BIT)
+#endif // defined(UNIX_AMD64_ABI) && defined(FEATURE_SIMD)
+#if !defined(TARGET_64BIT)
                 else if (regArgTab[argNum].slot == 2 && genActualType(varDsc->TypeGet()) == TYP_LONG)
                 {
                     destRegNum = varDsc->GetOtherReg();
@@ -4445,23 +4468,55 @@ void CodeGen::genFnPrologCalleeRegArgs(regNumber xtraReg, bool* pXtraRegClobbere
                 destRegNum = regNum;
             }
 #endif // defined(UNIX_AMD64_ABI) && defined(FEATURE_SIMD)
-#if defined(TARGET_ARM64) && defined(FEATURE_SIMD)
-            if (varTypeIsSIMD(varDsc) && argNum < (argMax - 1) && regArgTab[argNum + 1].slot == 2)
+#ifdef TARGET_ARMARCH
+            if (varDsc->lvIsHfa())
             {
-                // For a SIMD type that is passed in two integer registers,
-                // Code above copies the first integer argument register into the lower 8 bytes
-                // of the target register. Here we must handle the second 8 bytes of the slot pair by
-                // inserting the second integer register into the upper 8 bytes of the target
-                // SIMD floating point register.
-                argRegCount          = 2;
-                int       nextArgNum = argNum + 1;
-                regNumber nextRegNum = genMapRegArgNumToRegNum(nextArgNum, regArgTab[nextArgNum].getRegType(compiler));
-                noway_assert(regArgTab[nextArgNum].varNum == varNum);
-                noway_assert(genIsValidIntReg(nextRegNum));
-                noway_assert(genIsValidFloatReg(destRegNum));
-                GetEmitter()->emitIns_R_R_I(INS_mov, EA_8BYTE, destRegNum, nextRegNum, 1);
-            }
+                // This includes both fixed-size SIMD types that are independently promoted, as well
+                // as other HFA structs.
+                argRegCount = varDsc->lvHfaSlots();
+                if (argNum < (argMax - argRegCount + 1))
+                {
+                    if (compiler->lvaGetPromotionType(varDsc) == Compiler::PROMOTION_TYPE_INDEPENDENT)
+                    {
+                        // For an HFA type that is passed in multiple registers and promoted, we copy each field to its
+                        // destination register.
+                        for (int i = 0; i < argRegCount; i++)
+                        {
+                            int        nextArgNum  = argNum + i;
+                            LclVarDsc* fieldVarDsc = compiler->lvaGetDesc(varDsc->lvFieldLclStart + i);
+                            regNumber  nextRegNum =
+                                genMapRegArgNumToRegNum(nextArgNum, regArgTab[nextArgNum].getRegType(compiler));
+                            destRegNum = fieldVarDsc->GetRegNum();
+                            noway_assert(regArgTab[nextArgNum].varNum == varNum);
+                            noway_assert(genIsValidFloatReg(nextRegNum));
+                            noway_assert(genIsValidFloatReg(destRegNum));
+                            GetEmitter()->emitIns_R_R(INS_mov, EA_8BYTE, destRegNum, nextRegNum);
+                        }
+                    }
+#if defined(TARGET_ARM64) && defined(FEATURE_SIMD)
+                    else
+                    {
+                        // For a SIMD type that is passed in multiple registers but enregistered as a vector,
+                        // the code above copies the first argument register into the lower 4 or 8 bytes
+                        // of the target register. Here we must handle the subsequent fields by
+                        // inserting them into the upper bytes of the target SIMD floating point register.
+                        argRegCount = varDsc->lvHfaSlots();
+                        for (int i = 1; i < argRegCount; i++)
+                        {
+                            int         nextArgNum  = argNum + i;
+                            regArgElem* nextArgElem = &regArgTab[nextArgNum];
+                            var_types   nextArgType = nextArgElem->getRegType(compiler);
+                            regNumber   nextRegNum  = genMapRegArgNumToRegNum(nextArgNum, nextArgType);
+                            noway_assert(nextArgElem->varNum == varNum);
+                            noway_assert(genIsValidFloatReg(nextRegNum));
+                            noway_assert(genIsValidFloatReg(destRegNum));
+                            GetEmitter()->emitIns_R_R_I_I(INS_mov, EA_4BYTE, destRegNum, nextRegNum, i, 0);
+                        }
+                    }
 #endif // defined(TARGET_ARM64) && defined(FEATURE_SIMD)
+                }
+            }
+#endif // TARGET_ARMARCH
 
             // Mark the rest of the argument registers corresponding to this multi-reg type as
             // being processed and no longer live.
@@ -4582,10 +4637,8 @@ void CodeGen::genCheckUseBlockInit()
 {
     assert(!compiler->compGeneratingProlog);
 
-    unsigned initStkLclCnt = 0;  // The number of int-sized stack local variables that need to be initialized (variables
-                                 // larger than int count for more than 1).
-    unsigned largeGcStructs = 0; // The number of "large" structs with GC pointers. Used as part of the heuristic to
-                                 // determine whether to use block init.
+    unsigned initStkLclCnt = 0; // The number of int-sized stack local variables that need to be initialized (variables
+                                // larger than int count for more than 1).
 
     unsigned   varNum;
     LclVarDsc* varDsc;
@@ -4686,55 +4739,7 @@ void CodeGen::genCheckUseBlockInit()
                     counted = true;
                 }
             }
-
-            continue;
         }
-
-        /* Ignore if not a pointer variable or value class with a GC field */
-
-        if (!varDsc->HasGCPtr())
-        {
-            continue;
-        }
-
-// TODO-Review: The code below is currently unreachable. We are guaranteed to execute one of the
-// 'continue' statements above.
-#if 0
-        /* If we don't know lifetimes of variables, must be conservative */
-        if (!compiler->backendRequiresLocalVarLifetimes())
-        {
-            varDsc->lvMustInit = true;
-            noway_assert(!varDsc->lvRegister);
-        }
-        else
-        {
-            if (!varDsc->lvTracked)
-            {
-                varDsc->lvMustInit = true;
-            }
-        }
-
-        /* Is this a 'must-init' stack pointer local? */
-
-        if (varDsc->lvMustInit && varDsc->lvOnFrame && !counted)
-        {
-            if (varDsc->TypeGet() == TYP_STRUCT)
-            {
-                initStkLclCnt += varDsc->GetLayout()->GetGCPtrCount();
-            }
-            else
-            {
-                assert(varTypeIsGC(varDsc->TypeGet()));
-                initStkLclCnt += 1;
-            }
-            counted = true;
-        }
-
-        if ((compiler->lvaLclSize(varNum) > (3 * TARGET_POINTER_SIZE)) && (largeGcStructs <= 4))
-        {
-            largeGcStructs++;
-        }
-#endif
     }
 
     /* Don't forget about spill temps that hold pointers */
@@ -4760,10 +4765,9 @@ void CodeGen::genCheckUseBlockInit()
     // Current heuristic is to use block init when more than 4 stores
     // are required.
     //
-    // Secondary factor is the presence of large structs that
-    // potentially only need some fields set to zero. We likely don't
-    // model this very well, but have left the logic as is for now.
-
+    // TODO: Consider taking into account the presence of large structs that
+    // potentially only need some fields set to zero.
+    //
     // Compiler::fgVarNeedsExplicitZeroInit relies on this logic to
     // find structs that are guaranteed to be block initialized.
     // If this logic changes, Compiler::fgVarNeedsExplicitZeroInit needs
@@ -4775,15 +4779,15 @@ void CodeGen::genCheckUseBlockInit()
 
     // We can clear using aligned SIMD so the threshold is lower,
     // and clears in order which is better for auto-prefetching
-    genUseBlockInit = (genInitStkLclCnt > (largeGcStructs + 4));
+    genUseBlockInit = (genInitStkLclCnt > 4);
 
 #else // !defined(TARGET_AMD64)
 
-    genUseBlockInit = (genInitStkLclCnt > (largeGcStructs + 8));
+    genUseBlockInit = (genInitStkLclCnt > 8);
 #endif
 #else
 
-    genUseBlockInit = (genInitStkLclCnt > (largeGcStructs + 4));
+    genUseBlockInit = (genInitStkLclCnt > 4);
 
 #endif // TARGET_64BIT
 
@@ -4821,7 +4825,7 @@ void CodeGen::genCheckUseBlockInit()
  */
 
 #if defined(TARGET_ARM64)
-void CodeGen::genPushCalleeSavedRegisters(regNumber initReg, bool* pInitRegModified)
+void CodeGen::genPushCalleeSavedRegisters(regNumber initReg, bool* pInitRegZeroed)
 #else
 void          CodeGen::genPushCalleeSavedRegisters()
 #endif
@@ -4873,7 +4877,7 @@ void          CodeGen::genPushCalleeSavedRegisters()
     // - Generate fully interruptible code for loops that contains calls
     // - Generate fully interruptible code for leaf methods
     //
-    // Given the limited benefit from this optimization (<10k for mscorlib NGen image), the extra complexity
+    // Given the limited benefit from this optimization (<10k for CoreLib NGen image), the extra complexity
     // is not worth it.
     //
     rsPushRegs |= RBM_LR; // We must save the return address (in the LR register)
@@ -5310,8 +5314,7 @@ void          CodeGen::genPushCalleeSavedRegisters()
 
             JITDUMP("    spAdjustment2=%d\n", spAdjustment2);
 
-            genPrologSaveRegPair(REG_FP, REG_LR, alignmentAdjustment2, -spAdjustment2, false, initReg,
-                                 pInitRegModified);
+            genPrologSaveRegPair(REG_FP, REG_LR, alignmentAdjustment2, -spAdjustment2, false, initReg, pInitRegZeroed);
             offset += spAdjustment2;
 
             // Now subtract off the #outsz (or the rest of the #outsz if it was unaligned, and the above "sub"
@@ -5331,13 +5334,13 @@ void          CodeGen::genPushCalleeSavedRegisters()
 
             // We've already established the frame pointer, so no need to report the stack pointer change to unwind
             // info.
-            genStackPointerAdjustment(-spAdjustment3, initReg, pInitRegModified, /* reportUnwindData */ false);
+            genStackPointerAdjustment(-spAdjustment3, initReg, pInitRegZeroed, /* reportUnwindData */ false);
             offset += spAdjustment3;
         }
         else
         {
             genPrologSaveRegPair(REG_FP, REG_LR, compiler->lvaOutgoingArgSpaceSize, -remainingFrameSz, false, initReg,
-                                 pInitRegModified);
+                                 pInitRegZeroed);
             offset += remainingFrameSz;
 
             offsetSpToSavedFp = compiler->lvaOutgoingArgSpaceSize;
@@ -5369,7 +5372,7 @@ void          CodeGen::genPushCalleeSavedRegisters()
         JITDUMP("    remainingFrameSz=%d\n", remainingFrameSz);
 
         // We've already established the frame pointer, so no need to report the stack pointer change to unwind info.
-        genStackPointerAdjustment(-remainingFrameSz, initReg, pInitRegModified, /* reportUnwindData */ false);
+        genStackPointerAdjustment(-remainingFrameSz, initReg, pInitRegZeroed, /* reportUnwindData */ false);
         offset += remainingFrameSz;
     }
     else
@@ -6098,17 +6101,17 @@ void CodeGen::genPopCalleeSavedRegisters(bool jmpEpilog)
 
 #endif // TARGET*
 
-// We need a register with value zero. Zero the initReg, if necessary, and set *pInitRegModified if so.
+// We need a register with value zero. Zero the initReg, if necessary, and set *pInitRegZeroed if so.
 // Return the register to use. On ARM64, we never touch the initReg, and always just return REG_ZR.
-regNumber CodeGen::genGetZeroReg(regNumber initReg, bool* pInitRegModified)
+regNumber CodeGen::genGetZeroReg(regNumber initReg, bool* pInitRegZeroed)
 {
 #ifdef TARGET_ARM64
     return REG_ZR;
 #else  // !TARGET_ARM64
-    if (*pInitRegModified)
+    if (*pInitRegZeroed == false)
     {
         instGen_Set_Reg_To_Zero(EA_PTRSIZE, initReg);
-        *pInitRegModified = false;
+        *pInitRegZeroed = true;
     }
     return initReg;
 #endif // !TARGET_ARM64
@@ -6118,14 +6121,14 @@ regNumber CodeGen::genGetZeroReg(regNumber initReg, bool* pInitRegModified)
 // genZeroInitFrame: Zero any untracked pointer locals and/or initialize memory for locspace
 //
 // Arguments:
-//    untrLclHi        - (Untracked locals High-Offset)  The upper bound offset at which the zero init
-//                                                       code will end initializing memory (not inclusive).
-//    untrLclLo        - (Untracked locals Low-Offset)   The lower bound at which the zero init code will
-//                                                       start zero initializing memory.
-//    initReg          - A scratch register (that gets set to zero on some platforms).
-//    pInitRegModified - Sets a flag that tells the callee whether or not the initReg register got zeroed.
-//
-void CodeGen::genZeroInitFrame(int untrLclHi, int untrLclLo, regNumber initReg, bool* pInitRegModified)
+//    untrLclHi      - (Untracked locals High-Offset)  The upper bound offset at which the zero init
+//                                                     code will end initializing memory (not inclusive).
+//    untrLclLo      - (Untracked locals Low-Offset)   The lower bound at which the zero init code will
+//                                                     start zero initializing memory.
+//    initReg        - A scratch register (that gets set to zero on some platforms).
+//    pInitRegZeroed - OUT parameter. *pInitRegZeroed is set to 'true' if this method sets initReg register to zero,
+//                     'false' if initReg was set to a non-zero value, and left unchanged if initReg was not touched.
+void CodeGen::genZeroInitFrame(int untrLclHi, int untrLclLo, regNumber initReg, bool* pInitRegZeroed)
 {
     assert(compiler->compGeneratingProlog);
 
@@ -6200,8 +6203,8 @@ void CodeGen::genZeroInitFrame(int untrLclHi, int untrLclLo, regNumber initReg, 
 
 #else // !define(TARGET_ARM)
 
-        rAddr             = initReg;
-        *pInitRegModified = true;
+        rAddr           = initReg;
+        *pInitRegZeroed = false;
 
 #endif // !defined(TARGET_ARM)
 
@@ -6242,7 +6245,7 @@ void CodeGen::genZeroInitFrame(int untrLclHi, int untrLclLo, regNumber initReg, 
             // Load immediate into the InitReg register
             instGen_Set_Reg_To_Imm(EA_PTRSIZE, initReg, (ssize_t)untrLclLo);
             GetEmitter()->emitIns_R_R_R(INS_add, EA_PTRSIZE, rAddr, genFramePointerReg(), initReg);
-            *pInitRegModified = true;
+            *pInitRegZeroed = false;
         }
 
         if (useLoop)
@@ -6254,7 +6257,7 @@ void CodeGen::genZeroInitFrame(int untrLclHi, int untrLclLo, regNumber initReg, 
         }
 
 #if defined(TARGET_ARM)
-        rZero1 = genGetZeroReg(initReg, pInitRegModified);
+        rZero1 = genGetZeroReg(initReg, pInitRegZeroed);
         instGen_Set_Reg_To_Zero(EA_PTRSIZE, rZero2);
         target_ssize_t stmImm = (target_ssize_t)(genRegMask(rZero1) | genRegMask(rZero2));
 #endif // TARGET_ARM
@@ -6343,7 +6346,7 @@ void CodeGen::genZeroInitFrame(int untrLclHi, int untrLclLo, regNumber initReg, 
 #endif
         if (blkSize < minSimdSize)
         {
-            zeroReg = genGetZeroReg(initReg, pInitRegModified);
+            zeroReg = genGetZeroReg(initReg, pInitRegZeroed);
 
             int i = 0;
             for (; i + REGSIZE_BYTES <= blkSize; i += REGSIZE_BYTES)
@@ -6405,7 +6408,7 @@ void CodeGen::genZeroInitFrame(int untrLclHi, int untrLclLo, regNumber initReg, 
                 assert(alignmentLoBlkSize < XMM_REGSIZE_BYTES);
                 assert((alignedLclLo - alignmentLoBlkSize) == untrLclLo);
 
-                zeroReg = genGetZeroReg(initReg, pInitRegModified);
+                zeroReg = genGetZeroReg(initReg, pInitRegZeroed);
 
                 int i = 0;
                 for (; i + REGSIZE_BYTES <= alignmentLoBlkSize; i += REGSIZE_BYTES)
@@ -6513,7 +6516,7 @@ void CodeGen::genZeroInitFrame(int untrLclHi, int untrLclLo, regNumber initReg, 
                 emit->emitIns_J(INS_jne, nullptr, -5);
 
                 // initReg will be zero at end of the loop
-                *pInitRegModified = false;
+                *pInitRegZeroed = true;
             }
 
             if (untrLclHi != alignedLclHi)
@@ -6522,7 +6525,7 @@ void CodeGen::genZeroInitFrame(int untrLclHi, int untrLclLo, regNumber initReg, 
                 assert(alignmentHiBlkSize < XMM_REGSIZE_BYTES);
                 assert((alignedLclHi + alignmentHiBlkSize) == untrLclHi);
 
-                zeroReg = genGetZeroReg(initReg, pInitRegModified);
+                zeroReg = genGetZeroReg(initReg, pInitRegZeroed);
 
                 int i = 0;
                 for (; i + REGSIZE_BYTES <= alignmentHiBlkSize; i += REGSIZE_BYTES)
@@ -6589,13 +6592,13 @@ void CodeGen::genZeroInitFrame(int untrLclHi, int untrLclLo, regNumber initReg, 
                     if (layout->IsGCPtr(i))
                     {
                         GetEmitter()->emitIns_S_R(ins_Store(TYP_I_IMPL), EA_PTRSIZE,
-                                                  genGetZeroReg(initReg, pInitRegModified), varNum, i * REGSIZE_BYTES);
+                                                  genGetZeroReg(initReg, pInitRegZeroed), varNum, i * REGSIZE_BYTES);
                     }
                 }
             }
             else
             {
-                regNumber zeroReg = genGetZeroReg(initReg, pInitRegModified);
+                regNumber zeroReg = genGetZeroReg(initReg, pInitRegZeroed);
 
                 // zero out the whole thing rounded up to a single stack slot size
                 unsigned lclSize = roundUp(compiler->lvaLclSize(varNum), (unsigned)sizeof(int));
@@ -6627,7 +6630,7 @@ void CodeGen::genZeroInitFrame(int untrLclHi, int untrLclLo, regNumber initReg, 
 
             // printf("initialize untracked spillTmp [EBP-%04X]\n", stkOffs);
 
-            inst_ST_RV(ins_Store(TYP_I_IMPL), tempThis, 0, genGetZeroReg(initReg, pInitRegModified), TYP_I_IMPL);
+            inst_ST_RV(ins_Store(TYP_I_IMPL), tempThis, 0, genGetZeroReg(initReg, pInitRegZeroed), TYP_I_IMPL);
         }
     }
 
@@ -6762,7 +6765,7 @@ void CodeGen::genZeroInitFrame(int untrLclHi, int untrLclLo, regNumber initReg, 
  *  ICodeManager::GetParamTypeArg().
  */
 
-void CodeGen::genReportGenericContextArg(regNumber initReg, bool* pInitRegModified)
+void CodeGen::genReportGenericContextArg(regNumber initReg, bool* pInitRegZeroed)
 {
     // For OSR the original method has set this up for us.
     if (compiler->opts.IsOSR())
@@ -6813,25 +6816,26 @@ void CodeGen::genReportGenericContextArg(regNumber initReg, bool* pInitRegModifi
         if (isFramePointerUsed())
         {
 #if defined(TARGET_ARM)
-            // lvStkOffs is always valid for incoming stack-arguments, even if the argument
+            // GetStackOffset() is always valid for incoming stack-arguments, even if the argument
             // will become enregistered.
             // On Arm compiler->compArgSize doesn't include r11 and lr sizes and hence we need to add 2*REGSIZE_BYTES
-            noway_assert((2 * REGSIZE_BYTES <= varDsc->lvStkOffs) &&
-                         (size_t(varDsc->lvStkOffs) < compiler->compArgSize + 2 * REGSIZE_BYTES));
+            noway_assert((2 * REGSIZE_BYTES <= varDsc->GetStackOffset()) &&
+                         (size_t(varDsc->GetStackOffset()) < compiler->compArgSize + 2 * REGSIZE_BYTES));
 #else
-            // lvStkOffs is always valid for incoming stack-arguments, even if the argument
+            // GetStackOffset() is always valid for incoming stack-arguments, even if the argument
             // will become enregistered.
-            noway_assert((0 < varDsc->lvStkOffs) && (size_t(varDsc->lvStkOffs) < compiler->compArgSize));
+            noway_assert((0 < varDsc->GetStackOffset()) && (size_t(varDsc->GetStackOffset()) < compiler->compArgSize));
 #endif
         }
 
         // We will just use the initReg since it is an available register
         // and we are probably done using it anyway...
-        reg               = initReg;
-        *pInitRegModified = true;
+        reg             = initReg;
+        *pInitRegZeroed = false;
 
         // mov reg, [compiler->info.compTypeCtxtArg]
-        GetEmitter()->emitIns_R_AR(ins_Load(TYP_I_IMPL), EA_PTRSIZE, reg, genFramePointerReg(), varDsc->lvStkOffs);
+        GetEmitter()->emitIns_R_AR(ins_Load(TYP_I_IMPL), EA_PTRSIZE, reg, genFramePointerReg(),
+                                   varDsc->GetStackOffset());
         regSet.verifyRegUsed(reg);
     }
 
@@ -7509,8 +7513,8 @@ void CodeGen::genFnProlog()
             continue;
         }
 
-        signed int loOffs = varDsc->lvStkOffs;
-        signed int hiOffs = varDsc->lvStkOffs + compiler->lvaLclSize(varNum);
+        signed int loOffs = varDsc->GetStackOffset();
+        signed int hiOffs = varDsc->GetStackOffset() + compiler->lvaLclSize(varNum);
 
         /* We need to know the offset range of tracked stack GC refs */
         /* We assume that the GC reference can be anywhere in the TYP_STRUCT */
@@ -7672,9 +7676,13 @@ void CodeGen::genFnProlog()
 
     /* Choose the register to use for zero initialization */
 
-    regNumber initReg         = REG_SCRATCH; // Unless we find a better register below
-    bool      initRegModified = true;
-    regMaskTP excludeMask     = intRegState.rsCalleeRegArgMaskLiveIn;
+    regNumber initReg = REG_SCRATCH; // Unless we find a better register below
+
+    // Track if initReg holds non-zero value. Start conservative and assume it has non-zero value.
+    // If initReg is ever set to zero, this variable is set to true and zero initializing initReg
+    // will be skipped.
+    bool      initRegZeroed = false;
+    regMaskTP excludeMask   = intRegState.rsCalleeRegArgMaskLiveIn;
     regMaskTP tempMask;
 
     // We should not use the special PINVOKE registers as the initReg
@@ -7807,11 +7815,11 @@ void CodeGen::genFnProlog()
     // been calculated to be one of the callee-saved registers (say, if all the integer argument registers are
     // in use, and perhaps with other conditions being satisfied). This is ok in other cases, after the callee-saved
     // registers have been saved. So instead of letting genAllocLclFrame use initReg as a temporary register,
-    // always use REG_SCRATCH. We don't care if it trashes it, so ignore the initRegModified output argument.
-    bool ignoreInitRegModified = true;
-    genAllocLclFrame(compiler->compLclFrameSize, REG_SCRATCH, &ignoreInitRegModified,
+    // always use REG_SCRATCH. We don't care if it trashes it, so ignore the initRegZeroed output argument.
+    bool ignoreInitRegZeroed = false;
+    genAllocLclFrame(compiler->compLclFrameSize, REG_SCRATCH, &ignoreInitRegZeroed,
                      intRegState.rsCalleeRegArgMaskLiveIn);
-    genPushCalleeSavedRegisters(initReg, &initRegModified);
+    genPushCalleeSavedRegisters(initReg, &initRegZeroed);
 #else  // !TARGET_ARM64
     genPushCalleeSavedRegisters();
 #endif // !TARGET_ARM64
@@ -7855,7 +7863,7 @@ void CodeGen::genFnProlog()
 
     if (maskStackAlloc == RBM_NONE)
     {
-        genAllocLclFrame(compiler->compLclFrameSize, initReg, &initRegModified, intRegState.rsCalleeRegArgMaskLiveIn);
+        genAllocLclFrame(compiler->compLclFrameSize, initReg, &initRegZeroed, intRegState.rsCalleeRegArgMaskLiveIn);
     }
 #endif // !TARGET_ARM64
 
@@ -7906,7 +7914,7 @@ void CodeGen::genFnProlog()
 #else
         // mov [lvaStubArgumentVar], EAX
         GetEmitter()->emitIns_AR_R(ins_Store(TYP_I_IMPL), EA_PTRSIZE, REG_SECRET_STUB_PARAM, genFramePointerReg(),
-                                   compiler->lvaTable[compiler->lvaStubArgumentVar].lvStkOffs);
+                                   compiler->lvaTable[compiler->lvaStubArgumentVar].GetStackOffset());
 #endif
         assert(intRegState.rsCalleeRegArgMaskLiveIn & RBM_SECRET_STUB_PARAM);
 
@@ -7918,11 +7926,11 @@ void CodeGen::genFnProlog()
     // Zero out the frame as needed
     //
 
-    genZeroInitFrame(untrLclHi, untrLclLo, initReg, &initRegModified);
+    genZeroInitFrame(untrLclHi, untrLclLo, initReg, &initRegZeroed);
 
 #if defined(FEATURE_EH_FUNCLETS)
 
-    genSetPSPSym(initReg, &initRegModified);
+    genSetPSPSym(initReg, &initRegZeroed);
 
 #else // !FEATURE_EH_FUNCLETS
 
@@ -7935,10 +7943,10 @@ void CodeGen::genFnProlog()
         // Zero out the slot for nesting level 0
         unsigned firstSlotOffs = filterEndOffsetSlotOffs - TARGET_POINTER_SIZE;
 
-        if (initRegModified)
+        if (!initRegZeroed)
         {
             instGen_Set_Reg_To_Zero(EA_PTRSIZE, initReg);
-            initRegModified = false;
+            initRegZeroed = true;
         }
 
         GetEmitter()->emitIns_S_R(ins_Store(TYP_I_IMPL), EA_PTRSIZE, initReg, compiler->lvaShadowSPslotsVar,
@@ -7947,7 +7955,7 @@ void CodeGen::genFnProlog()
 
 #endif // !FEATURE_EH_FUNCLETS
 
-    genReportGenericContextArg(initReg, &initRegModified);
+    genReportGenericContextArg(initReg, &initRegZeroed);
 
 #ifdef JIT32_GCENCODER
     // Initialize the LocalAllocSP slot if there is localloc in the function.
@@ -7959,7 +7967,7 @@ void CodeGen::genFnProlog()
 
     // Set up the GS security cookie
 
-    genSetGSSecurityCookie(initReg, &initRegModified);
+    genSetGSSecurityCookie(initReg, &initRegZeroed);
 
 #ifdef PROFILING_SUPPORTED
 
@@ -7967,7 +7975,7 @@ void CodeGen::genFnProlog()
     // OSR methods aren't called, so don't have enter hooks.
     if (!compiler->opts.IsOSR())
     {
-        genProfilingEnterCallback(initReg, &initRegModified);
+        genProfilingEnterCallback(initReg, &initRegZeroed);
     }
 
 #endif // PROFILING_SUPPORTED
@@ -8029,15 +8037,15 @@ void CodeGen::genFnProlog()
                 }
                 else
                 {
-                    xtraReg         = REG_SCRATCH;
-                    initRegModified = true;
+                    xtraReg       = REG_SCRATCH;
+                    initRegZeroed = false;
                 }
 
                 genFnPrologCalleeRegArgs(xtraReg, &xtraRegClobbered, regState);
 
                 if (xtraRegClobbered)
                 {
-                    initRegModified = true;
+                    initRegZeroed = false;
                 }
             }
         }
@@ -8057,7 +8065,7 @@ void CodeGen::genFnProlog()
             if (regMask & initRegs)
             {
                 // Check if we have already zeroed this register
-                if ((reg == initReg) && !initRegModified)
+                if ((reg == initReg) && initRegZeroed)
                 {
                     continue;
                 }
@@ -8066,7 +8074,7 @@ void CodeGen::genFnProlog()
                     instGen_Set_Reg_To_Zero(EA_PTRSIZE, reg);
                     if (reg == initReg)
                     {
-                        initRegModified = false;
+                        initRegZeroed = true;
                     }
                 }
             }
@@ -8078,17 +8086,17 @@ void CodeGen::genFnProlog()
         // If initReg is not in initRegs then we will use REG_SCRATCH
         if ((genRegMask(initReg) & initRegs) == 0)
         {
-            initReg         = REG_SCRATCH;
-            initRegModified = true;
+            initReg       = REG_SCRATCH;
+            initRegZeroed = false;
         }
 
 #ifdef TARGET_ARM
         // This is needed only for Arm since it can use a zero initialized int register
         // to initialize vfp registers.
-        if (initRegModified)
+        if (!initRegZeroed)
         {
             instGen_Set_Reg_To_Zero(EA_PTRSIZE, initReg);
-            initRegModified = false;
+            initRegZeroed = true;
         }
 #endif // TARGET_ARM
 
@@ -8155,7 +8163,7 @@ void CodeGen::genFnProlog()
 
         LclVarDsc* lastArg = &compiler->lvaTable[compiler->info.compArgsCount - 1];
         noway_assert(!lastArg->lvRegister);
-        signed offset = lastArg->lvStkOffs;
+        signed offset = lastArg->GetStackOffset();
         assert(offset != BAD_STK_OFFS);
         noway_assert(lastArg->lvFramePointerBased);
 
@@ -8393,7 +8401,7 @@ void CodeGen::genFnEpilog(BasicBlock* block)
 
                     // otherwise the target address doesn't fit in an immediate
                     // so we have to burn a register...
-                    __fallthrough;
+                    FALLTHROUGH;
 
                 case IAT_PVALUE:
                     // Load the address into a register, load indirect and call  through a register
@@ -9095,12 +9103,12 @@ void CodeGen::genFuncletProlog(BasicBlock* block)
         maskArgRegsLiveIn = RBM_R0;
     }
 
-    regNumber initReg         = REG_R3; // R3 is never live on entry to a funclet, so it can be trashed
-    bool      initRegModified = true;
+    regNumber initReg       = REG_R3; // R3 is never live on entry to a funclet, so it can be trashed
+    bool      initRegZeroed = false;
 
     if (maskStackAlloc == RBM_NONE)
     {
-        genAllocLclFrame(genFuncletInfo.fiSpDelta, initReg, &initRegModified, maskArgRegsLiveIn);
+        genAllocLclFrame(genFuncletInfo.fiSpDelta, initReg, &initRegZeroed, maskArgRegsLiveIn);
     }
 
     // This is the end of the OS-reported prolog for purposes of unwinding
@@ -9397,10 +9405,10 @@ void CodeGen::genFuncletProlog(BasicBlock* block)
         maskArgRegsLiveIn = RBM_ARG_0 | RBM_ARG_2;
     }
 
-    regNumber initReg         = REG_EBP; // We already saved EBP, so it can be trashed
-    bool      initRegModified = true;
+    regNumber initReg       = REG_EBP; // We already saved EBP, so it can be trashed
+    bool      initRegZeroed = false;
 
-    genAllocLclFrame(genFuncletInfo.fiSpDelta, initReg, &initRegModified, maskArgRegsLiveIn);
+    genAllocLclFrame(genFuncletInfo.fiSpDelta, initReg, &initRegZeroed, maskArgRegsLiveIn);
 
     // Callee saved float registers are copied to stack in their assigned stack slots
     // after allocating space for them as part of funclet frame.
@@ -9739,7 +9747,7 @@ void CodeGen::genCaptureFuncletPrologEpilogInfo()
  *  correctly reported, the PSPSym could be omitted in some cases.)
  ***********************************
  */
-void CodeGen::genSetPSPSym(regNumber initReg, bool* pInitRegModified)
+void CodeGen::genSetPSPSym(regNumber initReg, bool* pInitRegZeroed)
 {
     assert(compiler->compGeneratingProlog);
 
@@ -9785,8 +9793,8 @@ void CodeGen::genSetPSPSym(regNumber initReg, bool* pInitRegModified)
 
     // We will just use the initReg since it is an available register
     // and we are probably done using it anyway...
-    regNumber regTmp  = initReg;
-    *pInitRegModified = true;
+    regNumber regTmp = initReg;
+    *pInitRegZeroed  = false;
 
     GetEmitter()->emitIns_R_R_I(INS_add, EA_PTRSIZE, regTmp, regBase, callerSPOffs);
     GetEmitter()->emitIns_S_R(INS_str, EA_PTRSIZE, regTmp, compiler->lvaPSPSym, 0);
@@ -9797,8 +9805,8 @@ void CodeGen::genSetPSPSym(regNumber initReg, bool* pInitRegModified)
 
     // We will just use the initReg since it is an available register
     // and we are probably done using it anyway...
-    regNumber regTmp  = initReg;
-    *pInitRegModified = true;
+    regNumber regTmp = initReg;
+    *pInitRegZeroed  = false;
 
     GetEmitter()->emitIns_R_R_Imm(INS_add, EA_PTRSIZE, regTmp, REG_SPBASE, SPtoCallerSPdelta);
     GetEmitter()->emitIns_S_R(INS_str, EA_PTRSIZE, regTmp, compiler->lvaPSPSym, 0);
@@ -10103,7 +10111,7 @@ var_types Compiler::GetHfaType(GenTree* tree)
 
 unsigned Compiler::GetHfaCount(GenTree* tree)
 {
-    return GetHfaCount(gtGetStructHandleIfPresent(tree));
+    return GetHfaCount(gtGetStructHandle(tree));
 }
 
 var_types Compiler::GetHfaType(CORINFO_CLASS_HANDLE hClass)
@@ -10663,8 +10671,8 @@ void CodeGen::genSetScopeInfo(unsigned       which,
         // Can't check compiler->lvaTable[varNum].lvOnFrame as we don't set it for
         // arguments of vararg functions to avoid reporting them to GC.
         noway_assert(!compiler->lvaTable[varNum].lvRegister);
-        unsigned cookieOffset = compiler->lvaTable[compiler->lvaVarargsHandleArg].lvStkOffs;
-        unsigned varOffset    = compiler->lvaTable[varNum].lvStkOffs;
+        unsigned cookieOffset = compiler->lvaTable[compiler->lvaVarargsHandleArg].GetStackOffset();
+        unsigned varOffset    = compiler->lvaTable[varNum].GetStackOffset();
 
         noway_assert(cookieOffset < varOffset);
         unsigned offset     = varOffset - cookieOffset;
@@ -11646,7 +11654,7 @@ void CodeGen::genStructReturn(GenTree* treeNode)
     if (actualOp1->OperIs(GT_LCL_VAR))
     {
         varDsc = compiler->lvaGetDesc(actualOp1->AsLclVar()->GetLclNum());
-        retTypeDesc.InitializeStructReturnType(compiler, varDsc->lvVerTypeInfo.GetClassHandle());
+        retTypeDesc.InitializeStructReturnType(compiler, varDsc->GetStructHnd());
         assert(varDsc->lvIsMultiRegRet);
     }
     else
@@ -11832,12 +11840,16 @@ void CodeGen::genMultiRegStoreToLocal(GenTreeLclVar* lclNode)
             }
             else
             {
+                varReg = REG_STK;
+            }
+            if ((varReg == REG_STK) || fieldVarDsc->lvLiveInOutOfHndlr)
+            {
                 if (!lclNode->AsLclVar()->IsLastUse(i))
                 {
                     GetEmitter()->emitIns_S_R(ins_Store(type), emitTypeSize(type), reg, fieldLclNum, 0);
                 }
-                fieldVarDsc->SetRegNum(REG_STK);
             }
+            fieldVarDsc->SetRegNum(varReg);
         }
         else
         {

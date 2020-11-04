@@ -286,7 +286,7 @@ namespace System.Linq.Expressions.Compiler
             Debug.Assert(_method is DynamicMethod);
 #endif
             {
-                return Expression.Field(Expression.Constant(new StrongBox<T>(default(T)!)), "Value");
+                return Expression.Field(Expression.Constant(new StrongBox<T>()), "Value");
             }
 #if FEATURE_COMPILE_TO_METHODBUILDER
             else

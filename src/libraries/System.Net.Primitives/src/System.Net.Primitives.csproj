@@ -1,7 +1,5 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <AssemblyName>System.Net.Primitives</AssemblyName>
-    <OutputType>Library</OutputType>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <ILLinkKeepDepAttributes>false</ILLinkKeepDepAttributes> <!-- See comments in Cookie.cs -->
     <TargetFrameworks>$(NetCoreAppCurrent)-Windows_NT;$(NetCoreAppCurrent)-Unix;$(NetCoreAppCurrent)-Browser</TargetFrameworks>
@@ -50,8 +48,6 @@
     <Compile Include="System\Security\Authentication\ExtendedProtection\ChannelBindingKind.cs" />
     <Compile Include="$(CommonPath)System\StringExtensions.cs"
              Link="Common\System\StringExtensions.cs" />
-    <Compile Include="$(CommonPath)System\Net\ByteOrder.cs"
-             Link="Common\System\Net\ByteOrder.cs" />
     <Compile Include="$(CommonPath)System\Net\CookieComparer.cs"
              Link="ProductionCode\System\Net\CookieComparer.cs" />
     <Compile Include="$(CommonPath)System\Net\CookieFields.cs"
@@ -117,14 +113,22 @@
     <Compile Include="System\Net\SocketException.Unix.cs" />
     <Compile Include="$(CommonPath)System\Net\SocketAddressPal.Unix.cs"
              Link="Common\System\Net\SocketAddressPal.Unix.cs" />
-    <Compile Include="$(CommonPath)System\Net\NetworkInformation\HostInformationPal.Unix.cs"
-             Link="Common\System\Net\NetworkInformation\HostInformationPal.Unix.cs" />
     <Compile Include="$(CommonPath)System\Net\Sockets\SocketErrorPal.Unix.cs"
              Link="Common\System\Net\Sockets\SocketErrorPal.Unix.cs" />
     <Compile Include="$(CommonPath)Interop\Unix\Interop.Errors.cs"
              Link="Common\Interop\Unix\Interop.Errors.cs" />
     <Compile Include="$(CommonPath)Interop\Unix\Interop.Libraries.cs"
              Link="Common\Interop\Unix\Interop.Libraries.cs" />
+    <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.IPAddress.cs"
+             Link="Common\Interop\Unix\System.Native\Interop.IPAddress.cs" />
+    <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.SocketAddress.cs"
+             Link="Common\Interop\Unix\System.Native\Interop.SocketAddress.cs" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(TargetsUnix)' == 'true'">
+    <Compile Include="$(CommonPath)System\Net\NetworkInformation\HostInformationPal.Unix.cs"
+             Link="Common\System\Net\NetworkInformation\HostInformationPal.Unix.cs" />
+    <Compile Include="$(CommonPath)System\Net\NetworkInformation\InterfaceInfoPal.Unix.cs"
+             Link="Common\System\Net\NetworkInformation\InterfaceInfoPal.Unix.cs" />
     <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.GetDomainName.cs"
              Link="Common\Interop\Unix\System.Native\Interop.GetDomainName.cs" />
     <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.GetHostName.cs"
@@ -133,14 +137,14 @@
              Link="Common\Interop\Unix\System.Native\Interop.GetNameInfo.cs" />
     <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.HostEntry.cs"
              Link="Common\Interop\Unix\System.Native\Interop.HostEntry.cs" />
-    <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.IPAddress.cs"
-             Link="Common\Interop\Unix\System.Native\Interop.IPAddress.cs" />
-    <Compile Include="$(CommonPath)System\Net\NetworkInformation\InterfaceInfoPal.Unix.cs"
-             Link="Common\System\Net\NetworkInformation\InterfaceInfoPal.Unix.cs" />
     <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.InterfaceNameToIndex.cs"
              Link="Common\Interop\Unix\System.Native\Interop.InterfaceNameToIndex.cs" />
-    <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.SocketAddress.cs"
-             Link="Common\Interop\Unix\System.Native\Interop.SocketAddress.cs" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(TargetsBrowser)' == 'true'">
+    <Compile Include="$(CommonPath)System\Net\NetworkInformation\HostInformationPal.Browser.cs"
+             Link="Common\System\Net\NetworkInformation\HostInformationPal.Browser.cs" />
+    <Compile Include="$(CommonPath)System\Net\NetworkInformation\InterfaceInfoPal.Browser.cs"
+             Link="Common\System\Net\NetworkInformation\InterfaceInfoPal.Browser.cs" />
   </ItemGroup>
   <ItemGroup>
     <Reference Include="Microsoft.Win32.Primitives" />

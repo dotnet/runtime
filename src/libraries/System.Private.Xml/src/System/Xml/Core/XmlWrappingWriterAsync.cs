@@ -1,7 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-#nullable enable
 using System;
 using System.IO;
 using System.Xml.Schema;
@@ -59,17 +58,17 @@ namespace System.Xml
             return writer.WriteEndAttributeAsync();
         }
 
-        public override Task WriteCDataAsync(string text)
+        public override Task WriteCDataAsync(string? text)
         {
             return writer.WriteCDataAsync(text);
         }
 
-        public override Task WriteCommentAsync(string text)
+        public override Task WriteCommentAsync(string? text)
         {
             return writer.WriteCommentAsync(text);
         }
 
-        public override Task WriteProcessingInstructionAsync(string name, string text)
+        public override Task WriteProcessingInstructionAsync(string name, string? text)
         {
             return writer.WriteProcessingInstructionAsync(name, text);
         }
@@ -84,12 +83,12 @@ namespace System.Xml
             return writer.WriteCharEntityAsync(ch);
         }
 
-        public override Task WriteWhitespaceAsync(string ws)
+        public override Task WriteWhitespaceAsync(string? ws)
         {
             return writer.WriteWhitespaceAsync(ws);
         }
 
-        public override Task WriteStringAsync(string text)
+        public override Task WriteStringAsync(string? text)
         {
             return writer.WriteStringAsync(text);
         }

@@ -21,17 +21,19 @@
       TODO: Update to $(MajorVersion).$(MinorVersion) when all sub-repos import
       Arcade at the beginning (SkipImportArcadeSdkFromRoot=false).
     -->
-    <NetCoreAppCurrentVersion>5.0</NetCoreAppCurrentVersion>
+    <NetCoreAppCurrentVersion>6.0</NetCoreAppCurrentVersion>
+    <AspNetCoreAppCurrentVersion>5.0</AspNetCoreAppCurrentVersion>
+    <NetCoreAppToolCurrentVersion>5.0</NetCoreAppToolCurrentVersion>
     <NetCoreAppCurrentIdentifier>.NETCoreApp</NetCoreAppCurrentIdentifier>
     <NetCoreAppCurrentTargetFrameworkMoniker>$(NetCoreAppCurrentIdentifier),Version=v$(NetCoreAppCurrentVersion)</NetCoreAppCurrentTargetFrameworkMoniker>
     <NetCoreAppCurrent>net$(NetCoreAppCurrentVersion)</NetCoreAppCurrent>
+    <AspNetCoreAppCurrent>net$(AspNetCoreAppCurrentVersion)</AspNetCoreAppCurrent>
+    <NetCoreAppToolCurrent>net$(NetCoreAppToolCurrentVersion)</NetCoreAppToolCurrent>
+    <NetCoreAppCurrentToolTargetFrameworkMoniker>$(NetCoreAppCurrentIdentifier),Version=v$(NetCoreAppToolCurrentVersion)</NetCoreAppCurrentToolTargetFrameworkMoniker>
     <!-- Used by Microsoft.DotNet.Build.Tasks.SharedFramework.Sdk. -->
     <NETCoreAppFramework>$(NetCoreAppCurrent)</NETCoreAppFramework>
     <SharedFrameworkName>Microsoft.NETCore.App</SharedFrameworkName>
     <NetCoreAppCurrentBrandName>.NET $(NetCoreAppCurrentVersion)</NetCoreAppCurrentBrandName>
-
-    <NetFrameworkCurrent>net472</NetFrameworkCurrent>
-    <MinimiumSupportedWindowsPlatform>WINDOWS7.0</MinimiumSupportedWindowsPlatform>
   </PropertyGroup>
 
   <!-- Honor the generic RuntimeConfiguration property. -->
@@ -71,5 +73,7 @@
     <EnableNgenOptimization Condition="'$(EnableNgenOptimization)' == '' and '$(Configuration)' == 'Release'">true</EnableNgenOptimization>
     <!-- Enable NuGet static graph evaluation to optimize incremental restore -->
     <RestoreUseStaticGraphEvaluation>true</RestoreUseStaticGraphEvaluation>
+    <!-- Turn off end of life target framework checks as we intentionally build older .NETCoreApp configurations. -->
+    <CheckEolTargetFramework>false</CheckEolTargetFramework>
   </PropertyGroup>
 </Project>

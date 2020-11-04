@@ -41,7 +41,6 @@ namespace System.Composition.UnitTests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/23972", TargetFrameworkMonikers.NetFramework)]
         public void GenericPartDiscoveryIgnoresAPartAndDoesntThrowAnExceptionWhenItsConstraintOnTypeParameterIsNotAssignableFromTheExportTarget()
         {
             var container = CreateContainer(typeof(ThingHandler<>), typeof(BookHandler<>));
@@ -53,7 +52,6 @@ namespace System.Composition.UnitTests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/23972", TargetFrameworkMonikers.NetFramework)]
         public void GenericPartDiscoveryIncludesAPartWhenItsConstraintOnTypeParameterIsAssignableFromTheExportTarget()
         {
             var container = CreateContainer(typeof(ThingHandler<>), typeof(BookHandler<>));
@@ -66,7 +64,6 @@ namespace System.Composition.UnitTests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/23972", TargetFrameworkMonikers.NetFramework)]
         public void GetExport_ComplexConstraint_ExportSuccessful()
         {
             CompositionContext container = CreateContainer(typeof(UnrelatedThings<,>));
@@ -79,7 +76,6 @@ namespace System.Composition.UnitTests
 
         [Fact]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/23356")]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/23972", TargetFrameworkMonikers.NetFramework)]
         public void GetExport_WhereClause_ExportSuccessful()
         {
             CompositionContext container = CreateContainer(typeof(InheritedThings<,>));

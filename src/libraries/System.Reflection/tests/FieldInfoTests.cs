@@ -86,23 +86,26 @@ namespace System.Reflection.Tests
 
         public static IEnumerable<object[]> SetValue_TestData()
         {
-            yield return new object[] { typeof(FieldInfoTests), nameof(FieldInfoTests.s_intField), new FieldInfoTests(), 1000 };
-            yield return new object[] { typeof(FieldInfoTests), nameof(FieldInfoTests.s_intField), null, 1000 };
-            yield return new object[] { typeof(FieldInfoTests), nameof(FieldInfoTests.intField), new FieldInfoTests(), 1000 };
-            yield return new object[] { typeof(FieldInfoTests), nameof(FieldInfoTests.s_stringField), new FieldInfoTests(), "new" };
-            yield return new object[] { typeof(FieldInfoTests), nameof(FieldInfoTests.stringField), new FieldInfoTests(), "new" };
+            yield return new object[] { typeof(FieldInfoTests), nameof(FieldInfoTests.s_intField), new FieldInfoTests(), 1000, 1000 };
+            yield return new object[] { typeof(FieldInfoTests), nameof(FieldInfoTests.s_intField), null, 1000, 1000 };
+            yield return new object[] { typeof(FieldInfoTests), nameof(FieldInfoTests.intField), new FieldInfoTests(), 1000, 1000 };
+            yield return new object[] { typeof(FieldInfoTests), nameof(FieldInfoTests.s_stringField), new FieldInfoTests(), "new", "new" };
+            yield return new object[] { typeof(FieldInfoTests), nameof(FieldInfoTests.stringField), new FieldInfoTests(), "new", "new" };
+            yield return new object[] { typeof(FieldInfoTests), nameof(FieldInfoTests.shortEnumField), new FieldInfoTests(), (byte)1, (ShortEnum)1 };
+            yield return new object[] { typeof(FieldInfoTests), nameof(FieldInfoTests.intEnumField), new FieldInfoTests(), (short)2, (IntEnum)2 };
+            yield return new object[] { typeof(FieldInfoTests), nameof(FieldInfoTests.longEnumField), new FieldInfoTests(), (int)3, (LongEnum)3 };
         }
 
         [Theory]
         [MemberData(nameof(SetValue_TestData))]
-        public void SetValue(Type type, string name, object obj, object value)
+        public void SetValue(Type type, string name, object obj, object value, object expected)
         {
             FieldInfo fieldInfo = GetField(type, name);
             object original = fieldInfo.GetValue(obj);
             try
             {
                 fieldInfo.SetValue(obj, value);
-                Assert.Equal(value, fieldInfo.GetValue(obj));
+                Assert.Equal(expected, fieldInfo.GetValue(obj));
             }
             finally
             {
@@ -452,6 +455,13 @@ namespace System.Reflection.Tests
 
         public int intField = 101;
         public string stringField = "non static";
+
+        public enum ShortEnum : short {}
+        public enum IntEnum {}
+        public enum LongEnum : long {}
+        public ShortEnum shortEnumField;
+        public IntEnum intEnumField;
+        public LongEnum longEnumField;
 
         private int privateIntField = 1;
         private string privateStringField = "privateStringField";

@@ -2006,6 +2006,8 @@ private:
         MethodImplTokenPair *rgMethodImplTokens;
         Substitution *pMethodDeclSubsts;    // Used to interpret generic variables in the interface of the declaring type
 
+        bool fHasCovariantOverride;
+
         //-----------------------------------------------------------------------------------------
         inline bmtMetaDataInfo() { LIMITED_METHOD_CONTRACT; memset((void *)this, NULL, sizeof(*this)); }
     };  // struct bmtMetaDataInfo
@@ -2282,10 +2284,11 @@ private:
     class DeclaredMethodIterator
     {
       private:
-        MethodTableBuilder &m_mtb;
-        int                 m_idx; // not SLOT_INDEX?
+        const int            m_numDeclaredMethods;
+        bmtMDMethod ** const m_declaredMethods;
+        int                  m_idx; // not SLOT_INDEX?
 #ifdef _DEBUG
-        bmtMDMethod *       m_debug_pMethod;
+        bmtMDMethod *        m_debug_pMethod;
 #endif
 
       public:
@@ -2528,7 +2531,7 @@ public:
     //
     // Arguments:
     //    rg/c DispatchMapTypeIDs - Array of TypeIDs and its count of elements.
-    //    pcIfaceDuplicates - Number of duplicate occurences of the interface in the interface map (ideally <=
+    //    pcIfaceDuplicates - Number of duplicate occurrences of the interface in the interface map (ideally <=
     //         count of elements TypeIDs).
     //
     void

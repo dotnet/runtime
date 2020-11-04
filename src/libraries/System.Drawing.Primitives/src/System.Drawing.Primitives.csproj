@@ -1,21 +1,10 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <OutputType>Library</OutputType>
     <RootNamespace>System.Drawing</RootNamespace>
-    <AssemblyName>System.Drawing.Primitives</AssemblyName>
     <DefineConstants Condition="'$(TargetsWindows)' == 'true'">$(DefineConstants);FEATURE_WINDOWS_SYSTEM_COLORS</DefineConstants>
     <TargetFrameworks>$(NetCoreAppCurrent)-Windows_NT;$(NetCoreAppCurrent)</TargetFrameworks>
     <Nullable>enable</Nullable>
   </PropertyGroup>
-  <ItemGroup>
-    <Reference Include="System.Collections" />
-    <Reference Include="System.ObjectModel" />
-    <Reference Include="System.Runtime" />
-    <Reference Include="System.Runtime.Extensions" />
-    <Reference Include="System.Runtime.InteropServices" />
-    <Reference Include="System.ComponentModel.Primitives" />
-    <Reference Include="Microsoft.Win32.SystemEvents" />
-  </ItemGroup>
   <ItemGroup>
     <Compile Include="System\Drawing\KnownColorNames.cs" />
     <Compile Include="System\Drawing\Point.cs" />
@@ -45,5 +34,14 @@
              Link="Common\Interop\Windows\User32\Interop.GetSysColor.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\User32\Interop.Win32SystemColors.cs"
              Link="Common\Interop\Windows\User32\Interop.Win32SystemColors.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="$(LibrariesProjectRoot)Microsoft.Win32.SystemEvents\src\Microsoft.Win32.SystemEvents.csproj" />
+    <Reference Include="System.Collections" />
+    <Reference Include="System.ComponentModel.Primitives" />
+    <Reference Include="System.ObjectModel" />
+    <Reference Include="System.Runtime" />
+    <Reference Include="System.Runtime.Extensions" />
+    <Reference Include="System.Runtime.InteropServices" />
   </ItemGroup>
 </Project>

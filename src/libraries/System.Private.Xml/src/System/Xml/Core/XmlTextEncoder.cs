@@ -1,7 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-#nullable enable
 using System;
 using System.IO;
 using System.Text;
@@ -32,9 +31,6 @@ namespace System.Xml
         private StringBuilder? _attrValue;
         private bool _cacheAttrValue;
 
-        // XmlCharType
-        private XmlCharType _xmlCharType;
-
         //
         // Constructor
         //
@@ -42,7 +38,6 @@ namespace System.Xml
         {
             _textWriter = textWriter;
             _quoteChar = '"';
-            _xmlCharType = XmlCharType.Instance;
         }
 
         //
@@ -147,7 +142,7 @@ namespace System.Xml
             while (true)
             {
                 int startPos = i;
-                while (i < endPos && _xmlCharType.IsAttributeValueChar(ch = array[i]))
+                while (i < endPos && XmlCharType.IsAttributeValueChar(ch = array[i]))
                 {
                     i++;
                 }
@@ -225,7 +220,7 @@ namespace System.Xml
                         }
                         else
                         {
-                            Debug.Assert((ch < 0x20 && !_xmlCharType.IsWhiteSpace(ch)) || (ch > 0xFFFD));
+                            Debug.Assert((ch < 0x20 && !XmlCharType.IsWhiteSpace(ch)) || (ch > 0xFFFD));
                             WriteCharEntityImpl(ch);
                         }
                         break;
@@ -275,7 +270,7 @@ namespace System.Xml
             char ch = (char)0;
             while (true)
             {
-                while (i < len && _xmlCharType.IsAttributeValueChar(ch = text[i]))
+                while (i < len && XmlCharType.IsAttributeValueChar(ch = text[i]))
                 {
                     i++;
                 }
@@ -381,14 +376,14 @@ namespace System.Xml
                         }
                         else
                         {
-                            Debug.Assert((ch < 0x20 && !_xmlCharType.IsWhiteSpace(ch)) || (ch > 0xFFFD));
+                            Debug.Assert((ch < 0x20 && !XmlCharType.IsWhiteSpace(ch)) || (ch > 0xFFFD));
                             WriteCharEntityImpl(ch);
                         }
                         break;
                 }
                 i++;
                 startPos = i;
-                while (i < len && _xmlCharType.IsAttributeValueChar(ch = text[i]))
+                while (i < len && XmlCharType.IsAttributeValueChar(ch = text[i]))
                 {
                     i++;
                 }
@@ -414,7 +409,7 @@ namespace System.Xml
 
             while (true)
             {
-                while (i < len && (_xmlCharType.IsCharData((ch = text[i])) || ch < 0x20))
+                while (i < len && (XmlCharType.IsCharData((ch = text[i])) || ch < 0x20))
                 {
                     i++;
                 }

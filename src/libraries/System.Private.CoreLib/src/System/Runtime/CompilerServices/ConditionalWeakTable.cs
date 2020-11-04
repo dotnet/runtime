@@ -552,7 +552,7 @@ namespace System.Runtime.CompilerServices
                 }
 
                 key = default;
-                value = default!;
+                value = default;
                 return false;
             }
 

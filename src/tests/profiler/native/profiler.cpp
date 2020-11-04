@@ -21,12 +21,13 @@ HRESULT STDMETHODCALLTYPE Profiler::Initialize(IUnknown *pICorProfilerInfoUnk)
     printf("Profiler.dll!Profiler::Initialize\n");
     fflush(stdout);
 
-    HRESULT queryInterfaceResult = pICorProfilerInfoUnk->QueryInterface(__uuidof(ICorProfilerInfo9), reinterpret_cast<void **>(&this->pCorProfilerInfo));
+    HRESULT queryInterfaceResult = pICorProfilerInfoUnk->QueryInterface(__uuidof(ICorProfilerInfo11), reinterpret_cast<void **>(&this->pCorProfilerInfo));
     if (FAILED(queryInterfaceResult))
     {
         printf("Profiler.dll!Profiler::Initialize failed to QI for ICorProfilerInfo.\n");
         pICorProfilerInfoUnk = NULL;
     }
+    
     return S_OK;
 }
 

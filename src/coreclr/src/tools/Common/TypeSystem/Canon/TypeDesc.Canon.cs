@@ -12,8 +12,8 @@ namespace Internal.TypeSystem
         /// Stores a cached version of the canonicalized form of this type since
         /// calculating it is a recursive operation
         /// </summary>
-        TypeDesc _specificCanonCache = null;
-        TypeDesc _universalCanonCache = null;
+        TypeDesc _specificCanonCache;
+        TypeDesc _universalCanonCache;
         TypeDesc GetCachedCanonValue(CanonicalFormKind kind)
         {
             switch (kind)

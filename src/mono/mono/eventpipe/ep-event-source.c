@@ -14,21 +14,21 @@
 #include "ep-rt.h"
 
 #if defined(HOST_WINDOWS) || defined(HOST_WIN32)
-const ep_char8_t* _ep_os_info = "windows";
-#elif defined(HOST_DARWIN)
-const ep_char8_t* _ep_os_info = "osx";
+const ep_char8_t* _ep_os_info = "Windows";
 #elif defined(HOST_IOS)
-const ep_char8_t* _ep_os_info = "ios";
+const ep_char8_t* _ep_os_info = "iOS";
 #elif defined(HOST_WATCHOS)
-const ep_char8_t* _ep_os_info = "watchos";
+const ep_char8_t* _ep_os_info = "WatchOS";
 #elif defined(HOST_TVOS)
-const ep_char8_t* _ep_os_info = "tvos";
+const ep_char8_t* _ep_os_info = "tvOS";
+#elif defined(__APPLE__)
+const ep_char8_t* _ep_os_info = "macOS";
 #elif defined(HOST_ANDROID)
-const ep_char8_t* _ep_os_info = "android";
+const ep_char8_t* _ep_os_info = "Android";
 #elif defined(__linux__)
-const ep_char8_t* _ep_os_info = "linux";
+const ep_char8_t* _ep_os_info = "Linux";
 #else
-const ep_char8_t* _ep_os_info = "unknown";
+const ep_char8_t* _ep_os_info = "Unknown";
 #endif
 
 #if defined(TARGET_X86)
@@ -40,7 +40,7 @@ const ep_char8_t* _ep_arch_info = "arm32";
 #elif defined(TARGET_ARM64)
 const ep_char8_t* _ep_arch_info = "arm64";
 #else
-const ep_char8_t* _ep_arch_info = "unknown";
+const ep_char8_t* _ep_arch_info = "Unknown";
 #endif
 
 EventPipeEventSource _ep_event_source_instance = { 0 };
@@ -190,6 +190,8 @@ ep_event_source_enable (
 	EP_ASSERT (event_source != NULL);
 	EP_ASSERT (session != NULL);
 
+	ep_requires_lock_held ();
+
 	EventPipeSessionProvider *session_provider = ep_session_provider_alloc (event_source->provider_name, (uint64_t)-1, EP_EVENT_LEVEL_LOG_ALWAYS, NULL);
 	if (session_provider != NULL)
 		ep_session_add_session_provider (session, session_provider);
@@ -207,10 +209,10 @@ ep_event_source_send_process_info (
 	ep_char16_t *arch_info_utf16 = NULL;
 
 	command_line_utf16 = ep_rt_utf8_to_utf16_string (command_line, -1);
-	os_info_utf16 = ep_rt_utf8_to_utf16_string (_ep_os_info, -1);
-	arch_info_utf16 = ep_rt_utf8_to_utf16_string (_ep_arch_info, -1);
+	os_info_utf16 = ep_rt_utf8_to_utf16_string (ep_event_source_get_os_info (), -1);
+	arch_info_utf16 = ep_rt_utf8_to_utf16_string (ep_event_source_get_arch_info (), -1);
 
-	EventData data [3] = { 0 };
+	EventData data [3] = { { 0 } };
 	if (command_line_utf16)
 		ep_event_data_init (&data[0], (uint64_t)command_line_utf16, (uint32_t)((ep_rt_utf16_string_len (command_line_utf16) + 1) * sizeof (ep_char16_t)), 0);
 	if (os_info_utf16)

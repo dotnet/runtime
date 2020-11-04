@@ -6,6 +6,7 @@ using System.Globalization;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Runtime.Serialization;
+using System.Runtime.Versioning;
 
 namespace System.Threading
 {
@@ -143,6 +144,11 @@ namespace System.Threading
         private int _managedThreadId; // INT32
 #pragma warning restore CA1823, 169
 
+        // This is used for a quick check on thread pool threads after running a work item to determine if the name, background
+        // state, or priority were changed by the work item, and if so to reset it. Other threads may also change some of those,
+        // but those types of changes may race with the reset anyway, so this field doesn't need to be synchronized.
+        private bool _mayNeedResetForThreadPool;
+
         private Thread() { }
 
         private void Create(ThreadStart start) =>
@@ -182,6 +188,7 @@ namespace System.Threading
         /// method on the IThreadable interface passed in the constructor. Once the
         /// thread is dead, it cannot be restarted with another call to Start.
         /// </summary>
+        [UnsupportedOSPlatform("browser")]
         public void Start(object? parameter)
         {
             // In the case of a null delegate (second call to start on same thread)
@@ -196,6 +203,7 @@ namespace System.Threading
             Start();
         }
 
+        [UnsupportedOSPlatform("browser")]
         public void Start()
         {
 #if FEATURE_COMINTEROP_APARTMENT_SUPPORT
@@ -255,6 +263,9 @@ namespace System.Threading
         private static extern void SleepInternal(int millisecondsTimeout);
 
         public static void Sleep(int millisecondsTimeout) => SleepInternal(millisecondsTimeout);
+
+        [DllImport(RuntimeHelpers.QCall)]
+        internal static extern void UninterruptibleSleep0();
 
         /// <summary>
         /// Wait for a length of time proportional to 'iterations'.  Each iteration is should
@@ -334,7 +345,14 @@ namespace System.Threading
         public bool IsBackground
         {
             get => IsBackgroundNative();
-            set => SetBackgroundNative(value);
+            set
+            {
+                SetBackgroundNative(value);
+                if (!value)
+                {
+                    _mayNeedResetForThreadPool = true;
+                }
+            }
         }
 
         [MethodImpl(MethodImplOptions.InternalCall)]
@@ -348,13 +366,22 @@ namespace System.Threading
         {
             [MethodImpl(MethodImplOptions.InternalCall)]
             get;
+            [MethodImpl(MethodImplOptions.InternalCall)]
+            internal set;
         }
 
         /// <summary>Returns the priority of the thread.</summary>
         public ThreadPriority Priority
         {
             get => (ThreadPriority)GetPriorityNative();
-            set => SetPriorityNative((int)value);
+            set
+            {
+                SetPriorityNative((int)value);
+                if (value != ThreadPriority.Normal)
+                {
+                    _mayNeedResetForThreadPool = true;
+                }
+            }
         }
 
         [MethodImpl(MethodImplOptions.InternalCall)]
@@ -417,7 +444,7 @@ namespace System.Threading
         [MethodImpl(MethodImplOptions.InternalCall)]
         internal extern int SetApartmentStateNative(int state);
 #else // FEATURE_COMINTEROP_APARTMENT_SUPPORT
-        private bool TrySetApartmentStateUnchecked(ApartmentState state)
+        private static bool TrySetApartmentStateUnchecked(ApartmentState state)
         {
             return state == ApartmentState.Unknown;
         }
@@ -500,10 +527,23 @@ namespace System.Threading
         // we will record that in a readonly static so that it could become a JIT constant and bypass caching entirely.
         private static readonly bool s_isProcessorNumberReallyFast = ProcessorIdCache.ProcessorNumberSpeedCheck();
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal void ResetThreadPoolThread()
         {
-            // Currently implemented in unmanaged method Thread::InternalReset and
-            // called internally from the ThreadPool in NotifyWorkItemComplete.
+            Debug.Assert(this == CurrentThread);
+            Debug.Assert(IsThreadPoolThread);
+
+            if (!ThreadPool.UsePortableThreadPool)
+            {
+                // Currently implemented in unmanaged method Thread::InternalReset and
+                // called internally from the ThreadPool in NotifyWorkItemComplete.
+                return;
+            }
+
+            if (_mayNeedResetForThreadPool)
+            {
+                ResetThreadPoolThreadSlow();
+            }
         }
     } // End of class Thread
 }

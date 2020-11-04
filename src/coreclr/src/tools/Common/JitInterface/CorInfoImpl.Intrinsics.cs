@@ -76,55 +76,6 @@ namespace Internal.JitInterface
         {
             IntrinsicHashtable table = new IntrinsicHashtable();
 
-            table.Add(CorInfoIntrinsics.CORINFO_INTRINSIC_Sin, "Sin", "System", "Math");
-            table.Add(CorInfoIntrinsics.CORINFO_INTRINSIC_Sin, "Sin", "System", "MathF");
-            table.Add(CorInfoIntrinsics.CORINFO_INTRINSIC_Cos, "Cos", "System", "Math");
-            table.Add(CorInfoIntrinsics.CORINFO_INTRINSIC_Cos, "Cos", "System", "MathF");
-            table.Add(CorInfoIntrinsics.CORINFO_INTRINSIC_Cbrt, "Cbrt", "System", "Math");
-            table.Add(CorInfoIntrinsics.CORINFO_INTRINSIC_Cbrt, "Cbrt", "System", "MathF");
-            table.Add(CorInfoIntrinsics.CORINFO_INTRINSIC_Sqrt, "Sqrt", "System", "Math");
-            table.Add(CorInfoIntrinsics.CORINFO_INTRINSIC_Sqrt, "Sqrt", "System", "MathF");
-            table.Add(CorInfoIntrinsics.CORINFO_INTRINSIC_Abs, "Abs", "System", "Math");
-            // No System.MathF entry for CORINFO_INTRTINSIC_Abs as System.Math exposes and handles both float and double
-            table.Add(CorInfoIntrinsics.CORINFO_INTRINSIC_Round, "Round", "System", "Math");
-            table.Add(CorInfoIntrinsics.CORINFO_INTRINSIC_Round, "Round", "System", "MathF");
-            table.Add(CorInfoIntrinsics.CORINFO_INTRINSIC_Cosh, "Cosh", "System", "Math");
-            table.Add(CorInfoIntrinsics.CORINFO_INTRINSIC_Cosh, "Cosh", "System", "MathF");
-            table.Add(CorInfoIntrinsics.CORINFO_INTRINSIC_Sinh, "Sinh", "System", "Math");
-            table.Add(CorInfoIntrinsics.CORINFO_INTRINSIC_Sinh, "Sinh", "System", "MathF");
-            table.Add(CorInfoIntrinsics.CORINFO_INTRINSIC_Tan, "Tan", "System", "Math");
-            table.Add(CorInfoIntrinsics.CORINFO_INTRINSIC_Tan, "Tan", "System", "MathF");
-            table.Add(CorInfoIntrinsics.CORINFO_INTRINSIC_Tanh, "Tanh", "System", "Math");
-            table.Add(CorInfoIntrinsics.CORINFO_INTRINSIC_Tanh, "Tanh", "System", "MathF");
-            table.Add(CorInfoIntrinsics.CORINFO_INTRINSIC_Asin, "Asin", "System", "Math");
-            table.Add(CorInfoIntrinsics.CORINFO_INTRINSIC_Asin, "Asin", "System", "MathF");
-            table.Add(CorInfoIntrinsics.CORINFO_INTRINSIC_Asinh, "Asinh", "System", "Math");
-            table.Add(CorInfoIntrinsics.CORINFO_INTRINSIC_Asinh, "Asinh", "System", "MathF");
-            table.Add(CorInfoIntrinsics.CORINFO_INTRINSIC_Acos, "Acos", "System", "Math");
-            table.Add(CorInfoIntrinsics.CORINFO_INTRINSIC_Acos, "Acos", "System", "MathF");
-            table.Add(CorInfoIntrinsics.CORINFO_INTRINSIC_Acosh, "Acosh", "System", "Math");
-            table.Add(CorInfoIntrinsics.CORINFO_INTRINSIC_Acosh, "Acosh", "System", "MathF");
-            table.Add(CorInfoIntrinsics.CORINFO_INTRINSIC_Atan, "Atan", "System", "Math");
-            table.Add(CorInfoIntrinsics.CORINFO_INTRINSIC_Atan, "Atan", "System", "MathF");
-            table.Add(CorInfoIntrinsics.CORINFO_INTRINSIC_Atan2, "Atan2", "System", "Math");
-            table.Add(CorInfoIntrinsics.CORINFO_INTRINSIC_Atan2, "Atan2", "System", "MathF");
-            table.Add(CorInfoIntrinsics.CORINFO_INTRINSIC_Atanh, "Atanh", "System", "Math");
-            table.Add(CorInfoIntrinsics.CORINFO_INTRINSIC_Atanh, "Atanh", "System", "MathF");
-            table.Add(CorInfoIntrinsics.CORINFO_INTRINSIC_Log10, "Log10", "System", "Math");
-            table.Add(CorInfoIntrinsics.CORINFO_INTRINSIC_Log10, "Log10", "System", "MathF");
-            table.Add(CorInfoIntrinsics.CORINFO_INTRINSIC_Pow, "Pow", "System", "Math");
-            table.Add(CorInfoIntrinsics.CORINFO_INTRINSIC_Pow, "Pow", "System", "MathF");
-            table.Add(CorInfoIntrinsics.CORINFO_INTRINSIC_Exp, "Exp", "System", "Math");
-            table.Add(CorInfoIntrinsics.CORINFO_INTRINSIC_Exp, "Exp", "System", "MathF");
-#if !READYTORUN
-            // These are normally handled via the SSE4.1 instructions ROUNDSS/ROUNDSD.
-            // However, we don't know the ISAs the target machine supports so we should
-            // fallback to the method call implementation instead.
-            table.Add(CorInfoIntrinsics.CORINFO_INTRINSIC_Ceiling, "Ceiling", "System", "Math");
-            table.Add(CorInfoIntrinsics.CORINFO_INTRINSIC_Ceiling, "Ceiling", "System", "MathF");
-            table.Add(CorInfoIntrinsics.CORINFO_INTRINSIC_Floor, "Floor", "System", "Math");
-            table.Add(CorInfoIntrinsics.CORINFO_INTRINSIC_Floor, "Floor", "System", "MathF");
-#endif
             // table.Add(CorInfoIntrinsics.CORINFO_INTRINSIC_GetChar, null, null, null); // unused
             // table.Add(CorInfoIntrinsics.CORINFO_INTRINSIC_Array_GetDimLength, "GetLength", "System", "Array"); // not handled
             table.Add(CorInfoIntrinsics.CORINFO_INTRINSIC_Array_Get, "Get", null, null);
@@ -163,7 +114,7 @@ namespace Internal.JitInterface
             table.Add(CorInfoIntrinsics.CORINFO_INTRINSIC_GetRawHandle, "AllocatorOf", "System", "Activator");
 
             // If this assert fails, make sure to add the new intrinsics to the table above and update the expected count below.
-            Debug.Assert((int)CorInfoIntrinsics.CORINFO_INTRINSIC_Count == 56, "Please update intrinsic hash table");
+            Debug.Assert((int)CorInfoIntrinsics.CORINFO_INTRINSIC_Count == 34, "Please update intrinsic hash table");
 
             return table;
         }
@@ -201,14 +152,6 @@ namespace Internal.JitInterface
             CorInfoIntrinsics id = entry.Id;
             switch (id)
             {
-                case CorInfoIntrinsics.CORINFO_INTRINSIC_Abs:
-                    {
-                        // RyuJIT handles floating point overloads only
-                        var returnTypeCategory = method.Signature.ReturnType.Category;
-                        if (returnTypeCategory != TypeFlags.Double && returnTypeCategory != TypeFlags.Single)
-                            return CorInfoIntrinsics.CORINFO_INTRINSIC_Illegal;
-                    }
-                    break;
                 case CorInfoIntrinsics.CORINFO_INTRINSIC_Array_Get:
                 case CorInfoIntrinsics.CORINFO_INTRINSIC_Array_Address:
                 case CorInfoIntrinsics.CORINFO_INTRINSIC_Array_Set:

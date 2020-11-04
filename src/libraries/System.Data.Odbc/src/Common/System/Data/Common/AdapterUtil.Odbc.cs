@@ -18,7 +18,7 @@ namespace System
             return value;
         }
 
-        internal static string GetString(string format, params object[] args)
+        internal static string GetString(string format, params object?[] args)
         {
             return SR.Format(format, args);
         }
@@ -59,7 +59,7 @@ namespace System.Data.Common
             TraceExceptionAsReturnValue(e);
             return e;
         }
-        internal static InvalidOperationException InvalidOperation(string error, Exception inner)
+        internal static InvalidOperationException InvalidOperation(string error, Exception? inner)
         {
             InvalidOperationException e = new InvalidOperationException(error, inner);
             TraceExceptionAsReturnValue(e);
@@ -193,7 +193,7 @@ namespace System.Data.Common
         {
             return ADP.InvalidOperation(SR.GetString(SR.ADP_InvalidDataDirectory));
         }
-        internal static ArgumentException InvalidKeyname(string parameterName)
+        internal static ArgumentException InvalidKeyname(string? parameterName)
         {
             return Argument(SR.GetString(SR.ADP_InvalidKey), parameterName);
         }
@@ -272,7 +272,7 @@ namespace System.Data.Common
             return OpenReaderExists(null);
         }
 
-        internal static Exception OpenReaderExists(Exception e)
+        internal static Exception OpenReaderExists(Exception? e)
         {
             return InvalidOperation(SR.GetString(SR.ADP_OpenReaderExists), e);
         }
@@ -313,7 +313,7 @@ namespace System.Data.Common
         //
         // : ConnectionUtil
         //
-        internal static Exception ConnectionIsDisabled(Exception InnerException)
+        internal static Exception ConnectionIsDisabled(Exception? InnerException)
         {
             return InvalidOperation(SR.GetString(SR.ADP_ConnectionIsDisabled), InnerException);
         }
@@ -367,7 +367,7 @@ namespace System.Data.Common
         }
         internal static ArgumentException UnknownDataType(Type dataType)
         {
-            return Argument(SR.GetString(SR.ADP_UnknownDataType, dataType.FullName));
+            return Argument(SR.GetString(SR.ADP_UnknownDataType, dataType.FullName!));
         }
         internal static ArgumentException DbTypeNotSupported(System.Data.DbType type, Type enumtype)
         {
@@ -375,7 +375,7 @@ namespace System.Data.Common
         }
         internal static ArgumentException UnknownDataTypeCode(Type dataType, TypeCode typeCode)
         {
-            return Argument(SR.GetString(SR.ADP_UnknownDataTypeCode, ((int)typeCode).ToString(CultureInfo.InvariantCulture), dataType.FullName));
+            return Argument(SR.GetString(SR.ADP_UnknownDataTypeCode, ((int)typeCode).ToString(CultureInfo.InvariantCulture), dataType.FullName!));
         }
         internal static ArgumentException InvalidOffsetValue(int value)
         {
@@ -477,7 +477,7 @@ namespace System.Data.Common
             return Argument(SR.GetString(SR.MDF_IncorrectNumberOfDataSourceInformationRows));
         }
 
-        internal static ArgumentException InvalidRestrictionValue(string collectionName, string restrictionName, string restrictionValue)
+        internal static ArgumentException InvalidRestrictionValue(string collectionName, string restrictionName, string? restrictionValue)
         {
             return ADP.Argument(SR.GetString(SR.MDF_InvalidRestrictionValue, collectionName, restrictionName, restrictionValue));
         }
@@ -572,7 +572,7 @@ namespace System.Data.Common
         internal static readonly IntPtr PtrZero = new IntPtr(0); // IntPtr.Zero
         internal static readonly int PtrSize = IntPtr.Size;
 
-        internal static Delegate FindBuilder(MulticastDelegate mcd)
+        internal static Delegate? FindBuilder(MulticastDelegate mcd)
         { // V1.2.3300
             if (null != mcd)
             {
@@ -651,7 +651,7 @@ namespace System.Data.Common
             return Path.GetFullPath(filename);
         }
 
-        internal static int StringLength(string inputString)
+        internal static int StringLength(string? inputString)
         {
             return ((null != inputString) ? inputString.Length : 0);
         }

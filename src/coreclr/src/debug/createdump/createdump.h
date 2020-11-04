@@ -95,4 +95,6 @@ typedef int T_CONTEXT;
 #define MAX_LONGPATH   1024
 #endif
 
-bool CreateDump(const char* dumpPathTemplate, int pid, MINIDUMP_TYPE minidumpType);
+bool FormatDumpName(std::string& name, const char* pattern, const char* exename, int pid);
+bool CreateDump(const char* dumpPathTemplate, int pid, const char* dumpType, MINIDUMP_TYPE minidumpType);
+

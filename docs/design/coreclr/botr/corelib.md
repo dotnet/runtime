@@ -201,7 +201,7 @@ Here's a real-world example from the `String` class:
 
 ```CSharp
 public partial sealed class String
-{        
+{
     [MethodImpl(MethodImplOptions.InternalCall)]
     private extern string? IsInterned();
 

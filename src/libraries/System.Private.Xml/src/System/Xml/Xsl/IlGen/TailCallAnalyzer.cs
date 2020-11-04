@@ -50,7 +50,7 @@ namespace System.Xml.Xsl.IlGen
                     {
                         // Recursively analyze Loop return value
                         QilLoop ndLoop = (QilLoop)nd;
-                        if (ndLoop.Variable.NodeType == QilNodeType.Let || !ndLoop.Variable.Binding.XmlType.MaybeMany)
+                        if (ndLoop.Variable.NodeType == QilNodeType.Let || !ndLoop.Variable.Binding!.XmlType!.MaybeMany)
                             AnalyzeDefinition(ndLoop.Body);
                         break;
                     }

@@ -36,7 +36,7 @@ namespace System.Text.Json
         /// There is no compatible <see cref="System.Text.Json.Serialization.JsonConverter"/>
         /// for <typeparamref name="TValue"/> or its serializable members.
         /// </exception>
-        public static ValueTask<TValue> DeserializeAsync<[DynamicallyAccessedMembers(MembersAccessedOnRead)] TValue>(
+        public static ValueTask<TValue?> DeserializeAsync<[DynamicallyAccessedMembers(MembersAccessedOnRead)] TValue>(
             Stream utf8Json,
             JsonSerializerOptions? options = null,
             CancellationToken cancellationToken = default)
@@ -71,7 +71,7 @@ namespace System.Text.Json
         /// <param name="jsonTypeInfo"></param>
         /// <param name="cancellationToken"></param>
         /// <returns></returns>
-        public static ValueTask<TValue> DeserializeAsync<TValue>(
+        public static ValueTask<TValue?> DeserializeAsync<TValue>(
             Stream utf8Json,
             JsonTypeInfo<TValue> jsonTypeInfo,
             CancellationToken cancellationToken = default)
@@ -133,10 +133,7 @@ namespace System.Text.Json
             if (returnType == null)
                 throw new ArgumentNullException(nameof(returnType));
 
-            if (options == null)
-            {
-                options = JsonSerializerOptions.s_defaultOptions;
-            }
+            options ??= JsonSerializerOptions.s_defaultOptions;
 
             ReadStack state = default;
             state.Initialize(returnType, options, supportContinuation: true);
@@ -150,7 +147,7 @@ namespace System.Text.Json
                 state);
         }
 
-        private static async ValueTask<TValue> ReadAsync<TValue>(
+        private static async ValueTask<TValue?> ReadAsync<TValue>(
             JsonConverter converter,
             Stream utf8Json,
             JsonSerializerOptions options,

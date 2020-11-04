@@ -643,7 +643,7 @@ HRESULT ReJitManager::UpdateActiveILVersions(
     SHash<CodeActivationBatchTraits>::Iterator endIter = mgrToCodeActivationBatch.End();
 
     {
-        MethodDescBackpatchInfoTracker::ConditionalLockHolder slotBackpatchLockHolder;
+        MethodDescBackpatchInfoTracker::ConditionalLockHolderForGCCoop slotBackpatchLockHolder;
 
         for (SHash<CodeActivationBatchTraits>::Iterator iter = beginIter; iter != endIter; iter++)
         {

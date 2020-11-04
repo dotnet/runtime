@@ -115,7 +115,7 @@ namespace System.Net.Security
         //
         internal static SafeFreeCredentials? TryCachedCredential(byte[]? thumbPrint, SslProtocols sslProtocols, bool isServer, EncryptionPolicy encryptionPolicy)
         {
-            if (s_cachedCreds.Count == 0)
+            if (s_cachedCreds.IsEmpty)
             {
                 if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(null, $"Not found, Current Cache Count = {s_cachedCreds.Count}");
                 return null;
@@ -142,12 +142,9 @@ namespace System.Net.Security
         //
         internal static void CacheCredential(SafeFreeCredentials creds, byte[]? thumbPrint, SslProtocols sslProtocols, bool isServer, EncryptionPolicy encryptionPolicy)
         {
-            if (creds == null)
-            {
-                NetEventSource.Fail(null, "creds == null");
-            }
+            Debug.Assert(creds != null, "creds == null");
 
-            if (creds!.IsInvalid)
+            if (creds.IsInvalid)
             {
                 if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(null, $"Refused to cache an Invalid Handle {creds}, Current Cache Count = {s_cachedCreds.Count}");
                 return;

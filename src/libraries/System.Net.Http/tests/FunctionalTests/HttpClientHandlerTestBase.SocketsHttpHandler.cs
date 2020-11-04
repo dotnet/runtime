@@ -2,7 +2,11 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.IO;
+using System.Net.Quic;
+using System.Net.Quic.Implementations;
+using System.Net.Test.Common;
 using System.Reflection;
+using System.Threading.Tasks;
 
 namespace System.Net.Http.Functional.Tests
 {
@@ -10,40 +14,101 @@ namespace System.Net.Http.Functional.Tests
     {
         protected static bool IsWinHttpHandler => false;
 
-        protected static HttpClientHandler CreateHttpClientHandler(Version useVersion = null)
+        protected virtual QuicImplementationProvider UseQuicImplementationProvider => null;
+
+        public static bool IsMsQuicSupported => QuicImplementationProviders.MsQuic.IsSupported;
+
+        protected static HttpClientHandler CreateHttpClientHandler(Version useVersion = null, QuicImplementationProvider quicImplementationProvider = null)
         {
             useVersion ??= HttpVersion.Version11;
 
-            HttpClientHandler handler = new HttpClientHandler();
+            HttpClientHandler handler = (PlatformDetection.SupportsAlpn && useVersion != HttpVersion30) ? new HttpClientHandler() : new VersionHttpClientHandler(useVersion);
 
             if (useVersion >= HttpVersion.Version20)
             {
-                TestHelper.EnableUnencryptedHttp2IfNecessary(handler);
                 handler.ServerCertificateCustomValidationCallback = TestHelper.AllowAllCertificates;
             }
 
-            if (useVersion == HttpVersion.Version30)
+            if (quicImplementationProvider != null)
             {
-                SetUsePrenegotiatedHttp3(handler, usePrenegotiatedHttp3: true);
+                SocketsHttpHandler socketsHttpHandler = (SocketsHttpHandler)GetUnderlyingSocketsHttpHandler(handler);
+                socketsHttpHandler.QuicImplementationProvider = quicImplementationProvider;
             }
 
             return handler;
         }
 
-        /// <summary>
-        /// Used to bypass Alt-Svc until https://github.com/dotnet/runtime/issues/987
-        /// </summary>
-        protected static void SetUsePrenegotiatedHttp3(HttpClientHandler handler, bool usePrenegotiatedHttp3)
-        {
-            object socketsHttpHandler = GetUnderlyingSocketsHttpHandler(handler);
-            object settings = socketsHttpHandler.GetType().GetField("_settings", BindingFlags.Instance | BindingFlags.NonPublic).GetValue(socketsHttpHandler);
-            settings.GetType().GetField("_assumePrenegotiatedHttp3ForTesting", BindingFlags.Instance | BindingFlags.NonPublic).SetValue(settings, usePrenegotiatedHttp3);
-        }
+        protected HttpClientHandler CreateHttpClientHandler() => CreateHttpClientHandler(UseVersion, UseQuicImplementationProvider);
+
+        protected static HttpClientHandler CreateHttpClientHandler(string useVersionString) =>
+            CreateHttpClientHandler(Version.Parse(useVersionString));
+
 
         protected static object GetUnderlyingSocketsHttpHandler(HttpClientHandler handler)
         {
             FieldInfo field = typeof(HttpClientHandler).GetField("_underlyingHandler", BindingFlags.Instance | BindingFlags.NonPublic);
             return field?.GetValue(handler);
         }
+
+        protected static HttpRequestMessage CreateRequest(HttpMethod method, Uri uri, Version version, bool exactVersion = false) =>
+            new HttpRequestMessage(method, uri)
+            {
+                Version = version,
+                VersionPolicy = exactVersion ? HttpVersionPolicy.RequestVersionExact : HttpVersionPolicy.RequestVersionOrLower
+            };
+
+        protected LoopbackServerFactory LoopbackServerFactory => GetFactoryForVersion(UseVersion, UseQuicImplementationProvider);
+
+        protected static LoopbackServerFactory GetFactoryForVersion(Version useVersion, QuicImplementationProvider quicImplementationProvider = null)
+        {
+            return useVersion.Major switch
+            {
+#if NETCOREAPP
+#if HTTP3
+                3 => new Http3LoopbackServerFactory(quicImplementationProvider),
+#endif
+                2 => Http2LoopbackServerFactory.Singleton,
+#endif
+                _ => Http11LoopbackServerFactory.Singleton
+            };
+        }
+
+    }
+
+    internal class VersionHttpClientHandler : HttpClientHandler
+    {
+        private readonly Version _useVersion;
+        
+        public VersionHttpClientHandler(Version useVersion)
+        {
+            _useVersion = useVersion;
+        }
+
+        protected override HttpResponseMessage Send(HttpRequestMessage request, Threading.CancellationToken cancellationToken)
+        {
+            if (request.Version == _useVersion)
+            {
+                request.VersionPolicy = HttpVersionPolicy.RequestVersionExact;
+            }
+
+            return base.Send(request, cancellationToken);
+        }
+
+        protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, Threading.CancellationToken cancellationToken)
+        {
+
+            if (request.Version == _useVersion)
+            {
+                request.VersionPolicy = HttpVersionPolicy.RequestVersionExact;
+            }
+            
+            return base.SendAsync(request, cancellationToken);
+        }
+
+        protected static HttpRequestMessage CreateRequest(HttpMethod method, Uri uri, Version version, bool exactVersion = false) =>
+            new HttpRequestMessage(method, uri)
+            {
+                Version = version,
+            };
     }
 }

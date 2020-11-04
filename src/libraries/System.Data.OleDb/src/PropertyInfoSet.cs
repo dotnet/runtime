@@ -13,15 +13,15 @@ namespace System.Data.OleDb
     {
         public Guid _propertySet;
         public int _propertyID;
-        public string _description;
-        public string _lowercase;
-        public Type _type;
+        public string? _description;
+        public string? _lowercase;
+        public Type? _type;
 
         public int _flags;
         public int _vtype;
-        public object _supportedValues;
+        public object? _supportedValues;
 
-        public object _defaultValue;
+        public object? _defaultValue;
     }
 
     internal sealed class PropertyInfoSet : SafeHandle
@@ -54,9 +54,9 @@ namespace System.Data.OleDb
             }
         }
 
-        internal Dictionary<string, OleDbPropertyInfo> GetValues()
+        internal Dictionary<string, OleDbPropertyInfo>? GetValues()
         {
-            Dictionary<string, OleDbPropertyInfo> propertyLookup = null;
+            Dictionary<string, OleDbPropertyInfo>? propertyLookup = null;
 
             bool mustRelease = false;
             RuntimeHelpers.PrepareConstrainedRegions();
@@ -88,7 +88,7 @@ namespace System.Data.OleDb
                             propertyInfo._vtype = propinfo.vtType;
                             propertyInfo._supportedValues = propinfo.vValue;
                             propertyInfo._description = propinfo.pwszDescription;
-                            propertyInfo._lowercase = propinfo.pwszDescription.ToLowerInvariant();
+                            propertyInfo._lowercase = propinfo.pwszDescription!.ToLowerInvariant();
                             propertyInfo._type = PropertyInfoSet.FromVtType(propinfo.vtType);
 
                             propertyLookup[propertyInfo._lowercase] = propertyInfo;
@@ -142,7 +142,7 @@ namespace System.Data.OleDb
             return true;
         }
 
-        internal static Type FromVtType(int vartype) =>
+        internal static Type? FromVtType(int vartype) =>
             (VarEnum)vartype switch
             {
                 VarEnum.VT_EMPTY => null,

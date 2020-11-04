@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Linq;
-using System.Runtime.InteropServices;
 using Xunit;
 
 namespace System.IO.Tests
@@ -34,7 +33,7 @@ namespace System.IO.Tests
             }
             targetDir.Delete(recursive: true);
 
-            if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+            if (OperatingSystem.IsWindows())
             {
                 Assert.Equal(1, GetEntries(containingFolder.FullName).Count());
                 Assert.Equal(0, Directory.GetFiles(containingFolder.FullName).Count());

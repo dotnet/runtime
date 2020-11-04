@@ -38,7 +38,15 @@ c_static_assert_msg(USEARCH_DONE == -1, "managed side requires -1 for not found"
 // change ICU's default behavior here isn't really justified unless someone has a strong reason
 // for !StringSort to behave differently.
 
+#define USED_STRING_SEARCH ((UStringSearch*) (-1))
+
 typedef struct { int32_t key; UCollator* UCollator; } TCollatorMap;
+
+typedef struct SearchIteratorNode
+{
+    UStringSearch* searchIterator;
+    struct SearchIteratorNode* next;
+} SearchIteratorNode;
 
 /*
  * For increased performance, we cache the UCollator objects for a locale and
@@ -48,6 +56,7 @@ typedef struct { int32_t key; UCollator* UCollator; } TCollatorMap;
 struct SortHandle
 {
     UCollator* collatorsPerOption[CompareOptionsMask + 1];
+    SearchIteratorNode searchIteratorList[CompareOptionsMask + 1];
 };
 
 typedef struct { UChar* items; size_t size; } UCharList;
@@ -376,6 +385,29 @@ void GlobalizationNative_CloseSortHandle(SortHandle* pSortHandle)
     {
         if (pSortHandle->collatorsPerOption[i] != NULL)
         {
+            UStringSearch* pSearch = pSortHandle->searchIteratorList[i].searchIterator;
+            if (pSearch != NULL)
+            {
+                if (pSearch != USED_STRING_SEARCH)
+                {
+                    usearch_close(pSearch);
+                }
+                pSortHandle->searchIteratorList[i].searchIterator = NULL;
+                SearchIteratorNode* pNext = pSortHandle->searchIteratorList[i].next;
+                pSortHandle->searchIteratorList[i].next = NULL;
+
+                while (pNext != NULL)
+                {
+                    if (pNext->searchIterator != NULL && pNext->searchIterator != USED_STRING_SEARCH)
+                    {
+                        usearch_close(pNext->searchIterator);
+                    }
+                    SearchIteratorNode* pCurrent = pNext;
+                    pNext = pCurrent->next;
+                    free(pCurrent);
+                }
+            }
+
             ucol_close(pSortHandle->collatorsPerOption[i]);
             pSortHandle->collatorsPerOption[i] = NULL;
         }
@@ -411,6 +443,176 @@ static const UCollator* GetCollatorFromSortHandle(SortHandle* pSortHandle, int32
 
         return pCollator;
     }
+}
+
+// CreateNewSearchNode will create a new node in the linked list and mark this node search handle as borrowed handle.
+static inline int32_t CreateNewSearchNode(SortHandle* pSortHandle, int32_t options)
+{
+    SearchIteratorNode* node = (SearchIteratorNode*) malloc(sizeof(SearchIteratorNode));
+    if (node == NULL)
+    {
+        return FALSE;
+    }
+
+    node->searchIterator = USED_STRING_SEARCH; // Mark the new node search handle as borrowed.
+    node->next = NULL;
+
+    SearchIteratorNode* pCurrent = &pSortHandle->searchIteratorList[options];
+    assert(pCurrent->searchIterator != NULL && "Search iterator not expected to be NULL at this stage.");
+
+    SearchIteratorNode* pNull = NULL;
+    do
+    {
+        if (pCurrent->next == NULL && pal_atomic_cas_ptr((void* volatile*)&(pCurrent->next), node, pNull))
+        {
+            break;
+        }
+
+        assert(pCurrent->next != NULL && "next pointer shouldn't be null.");
+
+        pCurrent = pCurrent->next;
+
+    } while (TRUE);
+
+    return TRUE;
+}
+
+// Restore previously borrowed search handle to the linked list.
+static inline int32_t RestoreSearchHandle(SortHandle* pSortHandle, UStringSearch* pSearchIterator, int32_t options)
+{
+    SearchIteratorNode* pCurrent = &pSortHandle->searchIteratorList[options];
+
+    while (pCurrent != NULL)
+    {
+        if (pCurrent->searchIterator == USED_STRING_SEARCH && pal_atomic_cas_ptr((void* volatile*)&(pCurrent->searchIterator), pSearchIterator, USED_STRING_SEARCH))
+        {
+            return TRUE;
+        }
+        pCurrent = pCurrent->next;
+    }
+
+    return FALSE;
+}
+
+// return -1 if couldn't borrow search handle from the SortHandle cache, otherwise, it return the slot number of the cache.
+static int32_t GetSearchIteratorUsingCollator(
+                        SortHandle* pSortHandle,
+                        const UCollator* pColl,
+                        const UChar* lpTarget,
+                        int32_t cwTargetLength,
+                        const UChar* lpSource,
+                        int32_t cwSourceLength,
+                        int32_t options,
+                        UStringSearch** pSearchIterator)
+{
+    options &= CompareOptionsMask;
+    *pSearchIterator = pSortHandle->searchIteratorList[options].searchIterator;
+    UErrorCode err = U_ZERO_ERROR;
+
+    if (*pSearchIterator == NULL)
+    {
+        *pSearchIterator = usearch_openFromCollator(lpTarget, cwTargetLength, lpSource, cwSourceLength, pColl, NULL, &err);
+        if (!U_SUCCESS(err))
+        {
+            assert(FALSE && "Couldn't open the search iterator.");
+            return -1;
+        }
+
+        UStringSearch* pNull = NULL;
+        if (!pal_atomic_cas_ptr((void* volatile*)&(pSortHandle->searchIteratorList[options].searchIterator), USED_STRING_SEARCH, pNull))
+        {
+            if (!CreateNewSearchNode(pSortHandle, options))
+            {
+                usearch_close(*pSearchIterator);
+                return -1;
+            }
+        }
+
+        return options;
+    }
+
+    assert(*pSearchIterator != NULL && "Should having a valid search handle at this stage.");
+
+    SearchIteratorNode* pCurrent = &pSortHandle->searchIteratorList[options];
+
+    while (*pSearchIterator == USED_STRING_SEARCH || !pal_atomic_cas_ptr((void* volatile*)&(pCurrent->searchIterator), USED_STRING_SEARCH, *pSearchIterator))
+    {
+        pCurrent = pCurrent->next;
+        if (pCurrent == NULL)
+        {
+            *pSearchIterator = NULL;
+            break;
+        }
+
+        *pSearchIterator = pCurrent->searchIterator;
+    }
+
+    if (*pSearchIterator == NULL) // Couldn't find any available handle to borrow then create a new one.
+    {
+        *pSearchIterator = usearch_openFromCollator(lpTarget, cwTargetLength, lpSource, cwSourceLength, pColl, NULL, &err);
+        if (!U_SUCCESS(err))
+        {
+            assert(FALSE && "Couldn't open a new search iterator.");
+            return -1;
+        }
+
+        if (!CreateNewSearchNode(pSortHandle, options))
+        {
+            usearch_close(*pSearchIterator);
+            return -1;
+        }
+
+        return options;
+    }
+
+    usearch_setText(*pSearchIterator, lpSource, cwSourceLength, &err);
+    if (!U_SUCCESS(err))
+    {
+        int32_t r;
+        r = RestoreSearchHandle(pSortHandle, *pSearchIterator, options);
+        assert(r && "restoring search handle shouldn't fail.");
+        return -1;
+    }
+
+    usearch_setPattern(*pSearchIterator, lpTarget, cwTargetLength, &err);
+    if (!U_SUCCESS(err))
+    {
+        int32_t r;
+        r = RestoreSearchHandle(pSortHandle, *pSearchIterator, options);
+        assert(r && "restoring search handle shouldn't fail.");
+        return -1;
+    }
+
+    return options;
+}
+
+// return -1 if couldn't borrow search handle from the SortHandle cache, otherwise, it return the slot number of the cache.
+static inline int32_t GetSearchIterator(
+                        SortHandle* pSortHandle,
+                        const UChar* lpTarget,
+                        int32_t cwTargetLength,
+                        const UChar* lpSource,
+                        int32_t cwSourceLength,
+                        int32_t options,
+                        UStringSearch** pSearchIterator)
+{
+    UErrorCode err = U_ZERO_ERROR;
+    const UCollator* pColl = GetCollatorFromSortHandle(pSortHandle, options, &err);
+    if (!U_SUCCESS(err))
+    {
+        assert(FALSE && "Couldn't get the collator.");
+        return -1;
+    }
+
+    return GetSearchIteratorUsingCollator(
+                        pSortHandle,
+                        pColl,
+                        lpTarget,
+                        cwTargetLength,
+                        lpSource,
+                        cwSourceLength,
+                        options,
+                        pSearchIterator);
 }
 
 int32_t GlobalizationNative_GetSortVersion(SortHandle* pSortHandle)
@@ -454,7 +656,7 @@ int32_t GlobalizationNative_CompareString(
         }
         if (lpStr2 == NULL)
         {
-            lpStr2 = &dummyChar; 
+            lpStr2 = &dummyChar;
         }
 
         result = ucol_strcoll(pColl, lpStr1, cwStr1Length, lpStr2, cwStr2Length);
@@ -492,32 +694,31 @@ int32_t GlobalizationNative_IndexOf(
         result = GlobalizationNative_CompareString(pSortHandle, lpTarget, cwTargetLength, lpSource, cwSourceLength, options);
         if (result == UCOL_EQUAL && pMatchedLength != NULL)
         {
-            *pMatchedLength = cwTargetLength;
+            *pMatchedLength = cwSourceLength;
         }
 
         return (result == UCOL_EQUAL) ? 0 : -1;
     }
-    
+
     UErrorCode err = U_ZERO_ERROR;
-    const UCollator* pColl = GetCollatorFromSortHandle(pSortHandle, options, &err);
 
-    if (U_SUCCESS(err))
+    UStringSearch* pSearch;
+    int32_t searchCacheSlot = GetSearchIterator(pSortHandle, lpTarget, cwTargetLength, lpSource, cwSourceLength, options, &pSearch);
+    if (searchCacheSlot < 0)
     {
-        UStringSearch* pSearch = usearch_openFromCollator(lpTarget, cwTargetLength, lpSource, cwSourceLength, pColl, NULL, &err);
-
-        if (U_SUCCESS(err))
-        {
-            result = usearch_first(pSearch, &err);
-
-            // if the search was successful,
-            // we'll try to get the matched string length.
-            if(result != USEARCH_DONE && pMatchedLength != NULL)
-            {
-                *pMatchedLength = usearch_getMatchedLength(pSearch);
-            }
-            usearch_close(pSearch);
-        }
+        return result;
     }
+
+    result = usearch_first(pSearch, &err);
+
+    // if the search was successful,
+    // we'll try to get the matched string length.
+    if (result != USEARCH_DONE && pMatchedLength != NULL)
+    {
+        *pMatchedLength = usearch_getMatchedLength(pSearch);
+    }
+
+    RestoreSearchHandle(pSortHandle, pSearch, searchCacheSlot);
 
     return result;
 }
@@ -551,111 +752,31 @@ int32_t GlobalizationNative_LastIndexOf(
         result = GlobalizationNative_CompareString(pSortHandle, lpTarget, cwTargetLength, lpSource, cwSourceLength, options);
         if (result == UCOL_EQUAL && pMatchedLength != NULL)
         {
-            *pMatchedLength = cwTargetLength;
+            *pMatchedLength = cwSourceLength;
         }
 
         return (result == UCOL_EQUAL) ? 0 : -1;
     }
 
     UErrorCode err = U_ZERO_ERROR;
-    const UCollator* pColl = GetCollatorFromSortHandle(pSortHandle, options, &err);
+    UStringSearch* pSearch;
 
-    if (U_SUCCESS(err))
+    int32_t searchCacheSlot = GetSearchIterator(pSortHandle, lpTarget, cwTargetLength, lpSource, cwSourceLength, options, &pSearch);
+    if (searchCacheSlot < 0)
     {
-        UStringSearch* pSearch = usearch_openFromCollator(lpTarget, cwTargetLength, lpSource, cwSourceLength, pColl, NULL, &err);
-
-        if (U_SUCCESS(err))
-        {
-            result = usearch_last(pSearch, &err);
-
-            // if the search was successful,
-            // we'll try to get the matched string length.
-            if (result != USEARCH_DONE && pMatchedLength != NULL)
-            {
-                *pMatchedLength = usearch_getMatchedLength(pSearch);
-            }
-            usearch_close(pSearch);
-        }
+        return result;
     }
 
-    return result;
-}
+    result = usearch_last(pSearch, &err);
 
-/*
-Static Function:
-AreEqualOrdinalIgnoreCase
-*/
-static int AreEqualOrdinalIgnoreCase(UChar32 one, UChar32 two)
-{
-    // Return whether the two characters are identical or would be identical if they were upper-cased.
-
-    if (one == two)
+    // if the search was successful,
+    // we'll try to get the matched string length.
+    if (result != USEARCH_DONE && pMatchedLength != NULL)
     {
-        return TRUE;
+        *pMatchedLength = usearch_getMatchedLength(pSearch);
     }
 
-    if (one == 0x0131 || two == 0x0131)
-    {
-        // On Windows with InvariantCulture, the LATIN SMALL LETTER DOTLESS I (U+0131)
-        // capitalizes to itself, whereas with ICU it capitalizes to LATIN CAPITAL LETTER I (U+0049).
-        // We special case it to match the Windows invariant behavior.
-        return FALSE;
-    }
-
-    return u_toupper(one) == u_toupper(two);
-}
-
-/*
-Function:
-IndexOfOrdinalIgnoreCase
-*/
-int32_t GlobalizationNative_IndexOfOrdinalIgnoreCase(
-    const UChar* lpTarget, int32_t cwTargetLength, const UChar* lpSource, int32_t cwSourceLength, int32_t findLast)
-{
-    int32_t result = -1;
-
-    int32_t endIndex = cwSourceLength - cwTargetLength;
-    assert(endIndex >= 0);
-
-    int32_t i = 0;
-    while (i <= endIndex)
-    {
-        int32_t srcIdx = i, trgIdx = 0;
-        const UChar *src = lpSource, *trg = lpTarget;
-
-        int32_t match = TRUE;
-        while (trgIdx < cwTargetLength)
-        {
-            UChar32 srcCodepoint, trgCodepoint;
-
-#ifdef __clang__
-#pragma clang diagnostic push
-#pragma clang diagnostic ignored "-Wsign-conversion"
-#endif
-            U16_NEXT(src, srcIdx, cwSourceLength, srcCodepoint);
-            U16_NEXT(trg, trgIdx, cwTargetLength, trgCodepoint);
-#ifdef __clang__
-#pragma clang diagnostic pop
-#endif
-
-            if (!AreEqualOrdinalIgnoreCase(srcCodepoint, trgCodepoint))
-            {
-                match = FALSE;
-                break;
-            }
-        }
-
-        if (match)
-        {
-            result = i;
-            if (!findLast)
-            {
-                break;
-            }
-        }
-
-        U16_FWD_1(lpSource, i, cwSourceLength);
-    }
+    RestoreSearchHandle(pSortHandle, pSearch, searchCacheSlot);
 
     return result;
 }
@@ -689,13 +810,14 @@ static int32_t GetCollationElementMask(UColAttributeValue strength)
     }
 }
 
-static int32_t inline SimpleAffix_Iterators(UCollationElements* pPatternIterator, UCollationElements* pSourceIterator, UColAttributeValue strength, int32_t forwardSearch)
+static int32_t inline SimpleAffix_Iterators(UCollationElements* pPatternIterator, UCollationElements* pSourceIterator, UColAttributeValue strength, int32_t forwardSearch, int32_t* pCapturedOffset)
 {
     assert(strength >= UCOL_SECONDARY);
 
     UErrorCode errorCode = U_ZERO_ERROR;
     int32_t movePattern = TRUE, moveSource = TRUE;
     int32_t patternElement = UCOL_IGNORABLE, sourceElement = UCOL_IGNORABLE;
+    int32_t capturedOffset = 0;
 
     int32_t collationElementMask = GetCollationElementMask(strength);
 
@@ -707,6 +829,10 @@ static int32_t inline SimpleAffix_Iterators(UCollationElements* pPatternIterator
         }
         if (moveSource)
         {
+            if (pCapturedOffset != NULL)
+            {
+                capturedOffset = ucol_getOffset(pSourceIterator); // need to capture offset before advancing iterator
+            }
             sourceElement = forwardSearch ? ucol_next(pSourceIterator, &errorCode) : ucol_previous(pSourceIterator, &errorCode);
         }
         movePattern = TRUE; moveSource = TRUE;
@@ -715,11 +841,11 @@ static int32_t inline SimpleAffix_Iterators(UCollationElements* pPatternIterator
         {
             if (sourceElement == UCOL_NULLORDER)
             {
-                return TRUE; // source is equal to pattern, we have reached both ends|beginnings at the same time
+                goto ReturnTrue; // source is equal to pattern, we have reached both ends|beginnings at the same time
             }
             else if (sourceElement == UCOL_IGNORABLE)
             {
-                return TRUE; // the next|previous character in source is an ignorable character, an example: "o\u0000".StartsWith("o")
+                goto ReturnTrue; // the next|previous character in source is an ignorable character, an example: "o\u0000".StartsWith("o")
             }
             else if (forwardSearch && ((sourceElement & UCOL_PRIMARYORDERMASK) == 0) && (sourceElement & UCOL_SECONDARYORDERMASK) != 0)
             {
@@ -727,7 +853,7 @@ static int32_t inline SimpleAffix_Iterators(UCollationElements* pPatternIterator
             }
             else
             {
-                return TRUE;
+                goto ReturnTrue;
             }
         }
         else if (patternElement == UCOL_IGNORABLE)
@@ -743,9 +869,16 @@ static int32_t inline SimpleAffix_Iterators(UCollationElements* pPatternIterator
             return FALSE;
         }
     }
+
+ReturnTrue:
+    if (pCapturedOffset != NULL)
+    {
+        *pCapturedOffset = capturedOffset;
+    }
+    return TRUE;
 }
 
-static int32_t SimpleAffix(const UCollator* pCollator, UErrorCode* pErrorCode, const UChar* pPattern, int32_t patternLength, const UChar* pText, int32_t textLength, int32_t forwardSearch)
+static int32_t SimpleAffix(const UCollator* pCollator, UErrorCode* pErrorCode, const UChar* pPattern, int32_t patternLength, const UChar* pText, int32_t textLength, int32_t forwardSearch, int32_t* pMatchedLength)
 {
     int32_t result = FALSE;
 
@@ -757,7 +890,15 @@ static int32_t SimpleAffix(const UCollator* pCollator, UErrorCode* pErrorCode, c
         {
             UColAttributeValue strength = ucol_getStrength(pCollator);
 
-            result = SimpleAffix_Iterators(pPatternIterator, pSourceIterator, strength, forwardSearch);
+            int32_t capturedOffset = 0;
+            result = SimpleAffix_Iterators(pPatternIterator, pSourceIterator, strength, forwardSearch, (pMatchedLength != NULL) ? &capturedOffset : NULL);
+
+            if (result && pMatchedLength != NULL)
+            {
+                // depending on whether we're searching forward or backward, the matching substring
+                // is [start of source string .. curIdx] or [curIdx .. end of source string]
+                *pMatchedLength = (forwardSearch) ? capturedOffset : (textLength - capturedOffset);
+            }
 
             ucol_closeElements(pSourceIterator);
         }
@@ -768,28 +909,44 @@ static int32_t SimpleAffix(const UCollator* pCollator, UErrorCode* pErrorCode, c
     return result;
 }
 
-static int32_t ComplexStartsWith(const UCollator* pCollator, UErrorCode* pErrorCode, const UChar* pPattern, int32_t patternLength, const UChar* pText, int32_t textLength)
+static int32_t ComplexStartsWith(SortHandle* pSortHandle, const UChar* pPattern, int32_t patternLength, const UChar* pText, int32_t textLength, int32_t options, int32_t* pMatchedLength)
 {
     int32_t result = FALSE;
+    UErrorCode err = U_ZERO_ERROR;
 
-    UStringSearch* pSearch = usearch_openFromCollator(pPattern, patternLength, pText, textLength, pCollator, NULL, pErrorCode);
-    if (U_SUCCESS(*pErrorCode))
+    const UCollator* pCollator = GetCollatorFromSortHandle(pSortHandle, options, &err);
+    if (!U_SUCCESS(err))
     {
-        int32_t idx = usearch_first(pSearch, pErrorCode);
-        if (idx != USEARCH_DONE)
+        return result;
+    }
+
+    UStringSearch* pSearch;
+    int32_t searchCacheSlot = GetSearchIteratorUsingCollator(pSortHandle, pCollator, pPattern, patternLength, pText, textLength, options, &pSearch);
+    if (searchCacheSlot < 0)
+    {
+        return result;
+    }
+
+    int32_t idx = usearch_first(pSearch, &err);
+    if (idx != USEARCH_DONE)
+    {
+        if (idx == 0)
         {
-            if (idx == 0)
-            {
-                result = TRUE;
-            }
-            else
-            {
-                result = CanIgnoreAllCollationElements(pCollator, pText, idx);
-            }
+            result = TRUE;
+        }
+        else
+        {
+            result = CanIgnoreAllCollationElements(pCollator, pText, idx);
         }
 
-        usearch_close(pSearch);
+        if (result && pMatchedLength != NULL)
+        {
+            // adjust matched length to account for all the elements we implicitly consumed at beginning of string
+            *pMatchedLength = idx + usearch_getMatchedLength(pSearch);
+        }
     }
+
+    RestoreSearchHandle(pSortHandle, pSearch, searchCacheSlot);
 
     return result;
 }
@@ -803,53 +960,67 @@ int32_t GlobalizationNative_StartsWith(
                         int32_t cwTargetLength,
                         const UChar* lpSource,
                         int32_t cwSourceLength,
-                        int32_t options)
+                        int32_t options,
+                        int32_t* pMatchedLength)
 {
+    if (options > CompareOptionsIgnoreCase)
+    {
+        return ComplexStartsWith(pSortHandle, lpTarget, cwTargetLength, lpSource, cwSourceLength, options, pMatchedLength);
+    }
 
     UErrorCode err = U_ZERO_ERROR;
     const UCollator* pCollator = GetCollatorFromSortHandle(pSortHandle, options, &err);
-
     if (!U_SUCCESS(err))
     {
         return FALSE;
     }
-    else if (options > CompareOptionsIgnoreCase)
-    {
-        return ComplexStartsWith(pCollator, &err, lpTarget, cwTargetLength, lpSource, cwSourceLength);
-    }
-    else
-    {
-        return SimpleAffix(pCollator, &err, lpTarget, cwTargetLength, lpSource, cwSourceLength, TRUE);
-    }
+
+    return SimpleAffix(pCollator, &err, lpTarget, cwTargetLength, lpSource, cwSourceLength, TRUE, pMatchedLength);
 }
 
-static int32_t ComplexEndsWith(const UCollator* pCollator, UErrorCode* pErrorCode, const UChar* pPattern, int32_t patternLength, const UChar* pText, int32_t textLength)
+static int32_t ComplexEndsWith(SortHandle* pSortHandle, const UChar* pPattern, int32_t patternLength, const UChar* pText, int32_t textLength, int32_t options, int32_t* pMatchedLength)
 {
     int32_t result = FALSE;
 
-    UStringSearch* pSearch = usearch_openFromCollator(pPattern, patternLength, pText, textLength, pCollator, NULL, pErrorCode);
-    if (U_SUCCESS(*pErrorCode))
+    UErrorCode err = U_ZERO_ERROR;
+    const UCollator* pCollator = GetCollatorFromSortHandle(pSortHandle, options, &err);
+    if (!U_SUCCESS(err))
     {
-        int32_t idx = usearch_last(pSearch, pErrorCode);
-        if (idx != USEARCH_DONE)
+        return result;
+    }
+
+    UStringSearch* pSearch;
+    int32_t searchCacheSlot = GetSearchIteratorUsingCollator(pSortHandle, pCollator, pPattern, patternLength, pText, textLength, options, &pSearch);
+    if (searchCacheSlot < 0)
+    {
+        return result;
+    }
+
+    int32_t idx = usearch_last(pSearch, &err);
+    if (idx != USEARCH_DONE)
+    {
+        int32_t matchEnd = idx + usearch_getMatchedLength(pSearch);
+        assert(matchEnd <= textLength);
+
+        if (matchEnd == textLength)
         {
-            int32_t matchEnd = idx + usearch_getMatchedLength(pSearch);
-            assert(matchEnd <= textLength);
+            result = TRUE;
+        }
+        else
+        {
+            int32_t remainingStringLength = textLength - matchEnd;
 
-            if (matchEnd == textLength)
-            {
-                result = TRUE;
-            }
-            else
-            {
-                int32_t remainingStringLength = textLength - matchEnd;
-
-                result = CanIgnoreAllCollationElements(pCollator, pText + matchEnd, remainingStringLength);
-            }
+            result = CanIgnoreAllCollationElements(pCollator, pText + matchEnd, remainingStringLength);
         }
 
-        usearch_close(pSearch);
+        if (result && pMatchedLength != NULL)
+        {
+            // adjust matched length to account for all the elements we implicitly consumed at end of string
+            *pMatchedLength = textLength - idx;
+        }
     }
+
+    RestoreSearchHandle(pSortHandle, pSearch, searchCacheSlot);
 
     return result;
 }
@@ -863,8 +1034,14 @@ int32_t GlobalizationNative_EndsWith(
                         int32_t cwTargetLength,
                         const UChar* lpSource,
                         int32_t cwSourceLength,
-                        int32_t options)
+                        int32_t options,
+                        int32_t* pMatchedLength)
 {
+    if (options > CompareOptionsIgnoreCase)
+    {
+        return ComplexEndsWith(pSortHandle, lpTarget, cwTargetLength, lpSource, cwSourceLength, options, pMatchedLength);
+    }
+
     UErrorCode err = U_ZERO_ERROR;
     const UCollator* pCollator = GetCollatorFromSortHandle(pSortHandle, options, &err);
 
@@ -872,14 +1049,7 @@ int32_t GlobalizationNative_EndsWith(
     {
         return FALSE;
     }
-    else if (options > CompareOptionsIgnoreCase)
-    {
-        return ComplexEndsWith(pCollator, &err, lpTarget, cwTargetLength, lpSource, cwSourceLength);
-    }
-    else
-    {
-        return SimpleAffix(pCollator, &err, lpTarget, cwTargetLength, lpSource, cwSourceLength, FALSE);
-    }
+    return SimpleAffix(pCollator, &err, lpTarget, cwTargetLength, lpSource, cwSourceLength, FALSE, pMatchedLength);
 }
 
 int32_t GlobalizationNative_GetSortKey(
@@ -900,48 +1070,4 @@ int32_t GlobalizationNative_GetSortKey(
     }
 
     return result;
-}
-
-int32_t GlobalizationNative_CompareStringOrdinalIgnoreCase(
-    const UChar* lpStr1, int32_t cwStr1Length, const UChar* lpStr2, int32_t cwStr2Length)
-{
-    assert(lpStr1 != NULL);
-    assert(cwStr1Length >= 0);
-    assert(lpStr2 != NULL);
-    assert(cwStr2Length >= 0);
-
-    int32_t str1Idx = 0;
-    int32_t str2Idx = 0;
-
-    while (str1Idx < cwStr1Length && str2Idx < cwStr2Length)
-    {
-        UChar32 str1Codepoint, str2Codepoint;
-
-#ifdef __clang__
-#pragma clang diagnostic push
-#pragma clang diagnostic ignored "-Wsign-conversion"
-#endif
-        U16_NEXT(lpStr1, str1Idx, cwStr1Length, str1Codepoint);
-        U16_NEXT(lpStr2, str2Idx, cwStr2Length, str2Codepoint);
-#ifdef __clang__
-#pragma clang diagnostic pop
-#endif
-
-        if (str1Codepoint != str2Codepoint && u_toupper(str1Codepoint) != u_toupper(str2Codepoint))
-        {
-            return str1Codepoint < str2Codepoint ? -1 : 1;
-        }
-    }
-
-    if (cwStr1Length < cwStr2Length)
-    {
-        return -1;
-    }
-
-    if (cwStr2Length < cwStr1Length)
-    {
-        return 1;
-    }
-
-    return 0;
 }

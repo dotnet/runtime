@@ -8,11 +8,11 @@ namespace System.Data.Common
     internal sealed class NameValuePair
     {
         private readonly string _name;
-        private readonly string _value;
+        private readonly string? _value;
         private readonly int _length;
-        private NameValuePair _next;
+        private NameValuePair? _next;
 
-        internal NameValuePair(string name, string value, int length)
+        internal NameValuePair(string name, string? value, int length)
         {
             Debug.Assert(!string.IsNullOrEmpty(name), "empty keyname");
             _name = name;
@@ -30,9 +30,9 @@ namespace System.Data.Common
         }
 
         internal string Name => _name;
-        internal string Value => _value;
+        internal string? Value => _value;
 
-        internal NameValuePair Next
+        internal NameValuePair? Next
         {
             get { return _next; }
             set

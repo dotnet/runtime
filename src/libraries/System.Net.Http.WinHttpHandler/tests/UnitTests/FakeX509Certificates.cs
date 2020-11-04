@@ -3,7 +3,26 @@
 
 using System.Diagnostics;
 using System.Net.Http.WinHttpHandlerUnitTests;
+using System.Net.Security;
 using System.Security.Cryptography.X509Certificates;
+
+namespace System.Net.Http
+{
+    internal static class WinHttpCertificateHelper
+    {
+        public static void BuildChain(
+            X509Certificate2 certificate,
+            X509Certificate2Collection remoteCertificateStore,
+            string hostName,
+            bool checkCertificateRevocationList,
+            out X509Chain chain,
+            out SslPolicyErrors sslPolicyErrors)
+        {
+            chain = null;
+            sslPolicyErrors = SslPolicyErrors.None;
+        }
+    }
+}
 
 namespace System.Security.Cryptography.X509Certificates
 {

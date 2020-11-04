@@ -83,7 +83,7 @@ int LinearScan::BuildNode(GenTree* tree)
             {
                 return 0;
             }
-            __fallthrough;
+            FALLTHROUGH;
 
         case GT_LCL_FLD:
         {
@@ -108,7 +108,7 @@ int LinearScan::BuildNode(GenTree* tree)
             {
                 dstCount = compiler->lvaGetDesc(tree->AsLclVar()->GetLclNum())->lvFieldCnt;
             }
-            __fallthrough;
+            FALLTHROUGH;
 
         case GT_STORE_LCL_FLD:
             srcCount = BuildStoreLoc(tree->AsLclVarCommon());
@@ -159,7 +159,7 @@ int LinearScan::BuildNode(GenTree* tree)
                 buildInternalRegisterUses();
             }
         }
-            __fallthrough;
+            FALLTHROUGH;
 
         case GT_CNS_INT:
         {
@@ -266,7 +266,7 @@ int LinearScan::BuildNode(GenTree* tree)
                 assert(tree->gtGetOp1()->TypeGet() == tree->gtGetOp2()->TypeGet());
             }
 
-            __fallthrough;
+            FALLTHROUGH;
 
         case GT_AND:
         case GT_OR:
@@ -304,7 +304,7 @@ int LinearScan::BuildNode(GenTree* tree)
                 buildInternalIntRegisterDefForNode(tree);
                 setInternalRegsDelayFree = true;
             }
-            __fallthrough;
+            FALLTHROUGH;
 
         case GT_DIV:
         case GT_MULHI:
@@ -319,11 +319,11 @@ int LinearScan::BuildNode(GenTree* tree)
 
         case GT_INTRINSIC:
         {
-            noway_assert((tree->AsIntrinsic()->gtIntrinsicId == CORINFO_INTRINSIC_Abs) ||
-                         (tree->AsIntrinsic()->gtIntrinsicId == CORINFO_INTRINSIC_Ceiling) ||
-                         (tree->AsIntrinsic()->gtIntrinsicId == CORINFO_INTRINSIC_Floor) ||
-                         (tree->AsIntrinsic()->gtIntrinsicId == CORINFO_INTRINSIC_Round) ||
-                         (tree->AsIntrinsic()->gtIntrinsicId == CORINFO_INTRINSIC_Sqrt));
+            noway_assert((tree->AsIntrinsic()->gtIntrinsicName == NI_System_Math_Abs) ||
+                         (tree->AsIntrinsic()->gtIntrinsicName == NI_System_Math_Ceiling) ||
+                         (tree->AsIntrinsic()->gtIntrinsicName == NI_System_Math_Floor) ||
+                         (tree->AsIntrinsic()->gtIntrinsicName == NI_System_Math_Round) ||
+                         (tree->AsIntrinsic()->gtIntrinsicName == NI_System_Math_Sqrt));
 
             // Both operand and its result must be of the same floating point type.
             GenTree* op1 = tree->gtGetOp1();
@@ -905,7 +905,7 @@ int LinearScan::BuildSIMD(GenTreeSIMD* simdTree)
         case SIMDIntrinsicWiden:
         case SIMDIntrinsicInvalid:
             assert(!"These intrinsics should not be seen during register allocation");
-            __fallthrough;
+            FALLTHROUGH;
 
         default:
             noway_assert(!"Unimplemented SIMD node type.");
@@ -1050,9 +1050,24 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree)
 
     if (intrin.op1 != nullptr)
     {
-        // If we have an RMW intrinsic, we want to preference op1Reg to the target if
-        // op1 is not contained.
-        if (isRMW)
+        bool simdRegToSimdRegMove = false;
+
+        if ((intrin.id == NI_Vector64_CreateScalarUnsafe) || (intrin.id == NI_Vector128_CreateScalarUnsafe))
+        {
+            simdRegToSimdRegMove = varTypeIsFloating(intrin.op1);
+        }
+        else if (intrin.id == NI_AdvSimd_Arm64_DuplicateToVector64)
+        {
+            simdRegToSimdRegMove = (intrin.op1->TypeGet() == TYP_DOUBLE);
+        }
+        else if ((intrin.id == NI_Vector64_ToScalar) || (intrin.id == NI_Vector128_ToScalar))
+        {
+            simdRegToSimdRegMove = varTypeIsFloating(intrinsicTree);
+        }
+
+        // If we have an RMW intrinsic or an intrinsic with simple move semantic between two SIMD registers,
+        // we want to preference op1Reg to the target if op1 is not contained.
+        if (isRMW || simdRegToSimdRegMove)
         {
             tgtPrefOp1 = !intrin.op1->isContained();
         }
@@ -1119,29 +1134,62 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree)
     {
         if (intrin.op2 != nullptr)
         {
-            if (isRMW)
+            // RMW intrinsic operands doesn't have to be delayFree when they can be assigned the same register as op1Reg
+            // (i.e. a register that corresponds to read-modify-write operand) and one of them is the last use.
+
+            bool op2DelayFree = isRMW;
+            bool op3DelayFree = isRMW;
+            bool op4DelayFree = isRMW;
+
+            assert(intrin.op1 != nullptr);
+
+            if (isRMW && intrin.op1->OperIs(GT_LCL_VAR))
             {
-                srcCount += BuildDelayFreeUses(intrin.op2);
+                unsigned int varNum1    = intrin.op1->AsLclVar()->GetLclNum();
+                bool         op1LastUse = false;
+
+                unsigned int varNum2 = BAD_VAR_NUM;
+                unsigned int varNum3 = BAD_VAR_NUM;
+                unsigned int varNum4 = BAD_VAR_NUM;
+
+                if (intrin.op2->OperIs(GT_LCL_VAR))
+                {
+                    varNum2 = intrin.op2->AsLclVar()->GetLclNum();
+                    op1LastUse |= ((varNum1 == varNum2) && intrin.op2->HasLastUse());
+                }
 
                 if (intrin.op3 != nullptr)
                 {
-                    srcCount += BuildDelayFreeUses(intrin.op3);
-
-                    if (intrin.op4 != nullptr)
+                    if (intrin.op3->OperIs(GT_LCL_VAR))
                     {
-                        srcCount += BuildDelayFreeUses(intrin.op4);
+                        varNum3 = intrin.op3->AsLclVar()->GetLclNum();
+                        op1LastUse |= ((varNum1 == varNum3) && intrin.op3->HasLastUse());
+                    }
+
+                    if ((intrin.op4 != nullptr) && intrin.op4->OperIs(GT_LCL_VAR))
+                    {
+                        varNum4 = intrin.op4->AsLclVar()->GetLclNum();
+                        op1LastUse |= ((varNum1 == varNum4) && intrin.op4->HasLastUse());
                     }
                 }
-            }
-            else
-            {
-                srcCount += BuildOperandUses(intrin.op2);
 
-                if (intrin.op3 != nullptr)
+                if (op1LastUse)
                 {
-                    assert(intrin.op4 == nullptr);
+                    op2DelayFree = (varNum1 != varNum2);
+                    op3DelayFree = (varNum1 != varNum3);
+                    op4DelayFree = (varNum1 != varNum4);
+                }
+            }
 
-                    srcCount += BuildOperandUses(intrin.op3);
+            srcCount += op2DelayFree ? BuildDelayFreeUses(intrin.op2) : BuildOperandUses(intrin.op2);
+
+            if (intrin.op3 != nullptr)
+            {
+                srcCount += op3DelayFree ? BuildDelayFreeUses(intrin.op3) : BuildOperandUses(intrin.op3);
+
+                if (intrin.op4 != nullptr)
+                {
+                    srcCount += op4DelayFree ? BuildDelayFreeUses(intrin.op4) : BuildOperandUses(intrin.op4);
                 }
             }
         }

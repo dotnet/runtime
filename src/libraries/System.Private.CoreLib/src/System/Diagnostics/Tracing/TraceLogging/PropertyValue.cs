@@ -205,7 +205,7 @@ namespace System.Diagnostics.Tracing
         {
             public abstract Func<PropertyValue, PropertyValue> GetPropertyGetter(PropertyInfo property);
 
-            protected Delegate GetGetMethod(PropertyInfo property, Type propertyType)
+            protected static Delegate GetGetMethod(PropertyInfo property, Type propertyType)
             {
                 return property.GetMethod!.CreateDelegate(typeof(Func<,>).MakeGenericType(property.DeclaringType!, propertyType));
             }
@@ -217,7 +217,7 @@ namespace System.Diagnostics.Tracing
             {
                 Type type = property.PropertyType;
 
-                if (!Statics.IsValueType(type))
+                if (!type.IsValueType)
                 {
                     var getter = (Func<TContainer, object?>)GetGetMethod(property, type);
                     return container => new PropertyValue(getter((TContainer)container.ReferenceValue!));

@@ -20,7 +20,7 @@
  * Notes: uses wcslen.
  */
 
-int __cdecl main(int argc, char *argv[])
+PALTEST(c_runtime_wcsncmp_test1_paltest_wcsncmp_test1, "c_runtime/wcsncmp/test1/paltest_wcsncmp_test1")
 {
     WCHAR str1[] = {'f','o','o',0};
     WCHAR str2[] = {'f','o','o','x',0};

@@ -63,7 +63,9 @@ done
 
 cmake_extra_defines=
 if [[ "$CROSSCOMPILE" == "1" ]]; then
-    if ! [[ -n "$ROOTFS_DIR" ]]; then
+    platform="$(uname)"
+    # OSX doesn't use rootfs
+    if ! [[ -n "$ROOTFS_DIR" || "$platform" == "Darwin" ]]; then
         echo "ROOTFS_DIR not set for crosscompile"
         exit 1
     fi
@@ -74,7 +76,12 @@ if [[ "$CROSSCOMPILE" == "1" ]]; then
     if [[ -n "$tryrun_dir" ]]; then
         cmake_extra_defines="$cmake_extra_defines -C $tryrun_dir/tryrun.cmake"
     fi
-    cmake_extra_defines="$cmake_extra_defines -DCMAKE_TOOLCHAIN_FILE=$scriptroot/../common/cross/toolchain.cmake"
+
+    if [[ "$platform" == "Darwin" ]]; then
+        cmake_extra_defines="$cmake_extra_defines -DCMAKE_SYSTEM_NAME=Darwin"
+    else
+        cmake_extra_defines="$cmake_extra_defines -DCMAKE_TOOLCHAIN_FILE=$scriptroot/../common/cross/toolchain.cmake"
+    fi
 fi
 
 if [[ "$build_arch" == "armel" ]]; then
@@ -91,12 +98,17 @@ if [[ "$build_arch" == "wasm" ]]; then
     cmake_command="emcmake $cmake_command"
 fi
 
+# We have to be able to build with CMake 3.6.2, so we can't use the -S or -B options
+pushd "$3"
+
 # Include CMAKE_USER_MAKE_RULES_OVERRIDE as uninitialized since it will hold its value in the CMake cache otherwise can cause issues when branch switching
 $cmake_command \
+  --no-warn-unused-cli \
   -G "$generator" \
   "-DCMAKE_BUILD_TYPE=$buildtype" \
   "-DCMAKE_INSTALL_PREFIX=$__CMakeBinDir" \
   $cmake_extra_defines \
   $__UnprocessedCMakeArgs \
-  -S "$1" \
-  -B "$3"
+  "$1"
+
+popd

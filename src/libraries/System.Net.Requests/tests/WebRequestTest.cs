@@ -82,7 +82,7 @@ namespace System.Net.Tests
         public void Create_ValidWebRequestUriScheme_Success(string scheme)
         {
             var uri = new Uri($"{scheme}://example.com/folder/resource.txt");
-            WebRequest request = WebRequest.Create(uri);
+            WebRequest.Create(uri);
         }
 
         [Theory]

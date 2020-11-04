@@ -148,7 +148,7 @@ FORCEINLINE void CallCountingManager::CallCountingInfo::SetStage(Stage stage)
 
         case Stage::StubMayBeActive:
             _ASSERTE(m_callCountingStub != nullptr);
-            // fall through
+            FALLTHROUGH;
 
         case Stage::PendingCompletion:
             _ASSERTE(m_stage == Stage::StubIsNotActive || m_stage == Stage::StubMayBeActive);
@@ -250,6 +250,10 @@ const CallCountingStub *CallCountingManager::CallCountingStubAllocator::Allocate
         MODE_ANY;
     }
     CONTRACTL_END;
+
+#if defined(HOST_OSX) && defined(HOST_ARM64)
+    auto jitWriteEnableHolder = PAL_JITWriteEnable(true);
+#endif // defined(HOST_OSX) && defined(HOST_ARM64)
 
     LoaderHeap *heap = m_heap;
     if (heap == nullptr)
@@ -824,8 +828,7 @@ void CallCountingManager::CompleteCallCounting()
     {
         CodeVersionManager *codeVersionManager = appDomain->GetCodeVersionManager();
 
-        MethodDescBackpatchInfoTracker::PollForDebuggerSuspension();
-        MethodDescBackpatchInfoTracker::ConditionalLockHolder slotBackpatchLockHolder;
+        MethodDescBackpatchInfoTracker::ConditionalLockHolderForGCCoop slotBackpatchLockHolder;
 
         // Backpatching entry point slots requires cooperative GC mode, see
         // MethodDescBackpatchInfoTracker::Backpatch_Locked(). The code version manager's table lock is an unsafe lock that
@@ -956,8 +959,7 @@ void CallCountingManager::StopAndDeleteAllCallCountingStubs()
     TieredCompilationManager *tieredCompilationManager = GetAppDomain()->GetTieredCompilationManager();
     bool scheduleTieringBackgroundWork = false;
     {
-        MethodDescBackpatchInfoTracker::PollForDebuggerSuspension();
-        MethodDescBackpatchInfoTracker::ConditionalLockHolder slotBackpatchLockHolder;
+        MethodDescBackpatchInfoTracker::ConditionalLockHolderForGCCoop slotBackpatchLockHolder;
 
         ThreadSuspend::SuspendEE(ThreadSuspend::SUSPEND_OTHER);
         struct AutoRestartEE

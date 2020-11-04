@@ -20,6 +20,10 @@ static _CrtMemState eventpipe_memory_diff_snapshot;
 static RESULT
 test_eventpipe_setup (void)
 {
+	// Lazy initialized, force now to not show up as leak.
+	ep_rt_os_command_line_get ();
+	ep_rt_managed_command_line_get ();
+
 #ifdef _CRTDBG_MAP_ALLOC
 	_CrtMemCheckpoint (&eventpipe_memory_start_snapshot);
 #endif
@@ -177,7 +181,7 @@ test_enable_disable (void)
 
 	EventPipeSessionID session_id = 0;
 	EventPipeProviderConfiguration provider_config;
-	EventPipeProviderConfiguration *current_provider_config =ep_provider_config_init (&provider_config, TEST_PROVIDER_NAME, 1, EP_EVENT_LEVEL_LOG_ALWAYS, "");
+	EventPipeProviderConfiguration *current_provider_config = ep_provider_config_init (&provider_config, TEST_PROVIDER_NAME, 1, EP_EVENT_LEVEL_LOG_ALWAYS, "");
 	ep_raise_error_if_nok (current_provider_config != NULL);
 
 	test_location = 1;
@@ -191,7 +195,7 @@ test_enable_disable (void)
 		EP_SERIALIZATION_FORMAT_NETTRACE_V4,
 		false,
 		NULL,
-		false);
+		NULL);
 
 	if (!session_id) {
 		result = FAILED ("Failed to enable session");
@@ -313,7 +317,7 @@ test_enable_disable_default_provider_config (void)
 		EP_SERIALIZATION_FORMAT_NETTRACE_V4,
 		false,
 		NULL,
-		false);
+		NULL);
 
 	if (!session_id) {
 		result = FAILED ("Failed to enable session");
@@ -361,7 +365,7 @@ test_enable_disable_provider_config (void)
 		EP_SERIALIZATION_FORMAT_NETTRACE_V4,
 		false,
 		NULL,
-		false);
+		NULL);
 
 	if (!session_id) {
 		result = FAILED ("Failed to enable session");
@@ -441,7 +445,7 @@ test_enable_disable_provider_parse_default_config (void)
 		EP_SERIALIZATION_FORMAT_NETTRACE_V4,
 		false,
 		NULL,
-		false);
+		NULL);
 
 	if (!session_id) {
 		result = FAILED ("Failed to enable session");
@@ -512,7 +516,7 @@ test_create_delete_provider_with_callback (void)
 		EP_SERIALIZATION_FORMAT_NETTRACE_V4,
 		false,
 		NULL,
-		false);
+		NULL);
 
 	if (!session_id) {
 		result = FAILED ("Failed to enable session");
@@ -613,7 +617,7 @@ test_session_start_streaming (void)
 		EP_SERIALIZATION_FORMAT_NETTRACE_V4,
 		false,
 		NULL,
-		false);
+		NULL);
 
 	if (!session_id) {
 		result = FAILED ("Failed to enable session");
@@ -662,7 +666,7 @@ test_session_write_event (void)
 
 	test_location = 3;
 
-	session_id = ep_enable (TEST_FILE, 1, current_provider_config, 1, EP_SESSION_TYPE_FILE, EP_SERIALIZATION_FORMAT_NETTRACE_V4,false, NULL, false);
+	session_id = ep_enable (TEST_FILE, 1, current_provider_config, 1, EP_SESSION_TYPE_FILE, EP_SERIALIZATION_FORMAT_NETTRACE_V4,false, NULL, NULL);
 	ep_raise_error_if_nok (session_id != 0);
 
 	test_location = 4;
@@ -671,7 +675,7 @@ test_session_write_event (void)
 
 	EventPipeEventPayload payload;;
 	ep_event_payload_init (&payload, NULL, 0);
-	write_result = ep_session_write_event_buffered ((EventPipeSession *)session_id, ep_thread_get (), ep_event, &payload, NULL, NULL, NULL, NULL);
+	write_result = ep_session_write_event ((EventPipeSession *)session_id, ep_thread_get (), ep_event, &payload, NULL, NULL, NULL, NULL);
 	ep_event_payload_fini (&payload);
 
 	ep_raise_error_if_nok (write_result == true);
@@ -715,7 +719,7 @@ test_session_write_event_seq_point (void)
 
 	test_location = 3;
 
-	session_id = ep_enable (TEST_FILE, 1, current_provider_config, 1, EP_SESSION_TYPE_FILE, EP_SERIALIZATION_FORMAT_NETTRACE_V4,false, NULL, false);
+	session_id = ep_enable (TEST_FILE, 1, current_provider_config, 1, EP_SESSION_TYPE_FILE, EP_SERIALIZATION_FORMAT_NETTRACE_V4,false, NULL, NULL);
 	ep_raise_error_if_nok (session_id != 0);
 
 	test_location = 4;
@@ -724,7 +728,7 @@ test_session_write_event_seq_point (void)
 
 	EventPipeEventPayload payload;;
 	ep_event_payload_init (&payload, NULL, 0);
-	write_result = ep_session_write_event_buffered ((EventPipeSession *)session_id, ep_thread_get (), ep_event, &payload, NULL, NULL, NULL, NULL);
+	write_result = ep_session_write_event ((EventPipeSession *)session_id, ep_thread_get (), ep_event, &payload, NULL, NULL, NULL, NULL);
 	ep_event_payload_fini (&payload);
 
 	ep_raise_error_if_nok (write_result == true);
@@ -772,7 +776,7 @@ test_session_write_wait_get_next_event (void)
 
 	test_location = 3;
 
-	session_id = ep_enable (TEST_FILE, 1, current_provider_config, 1, EP_SESSION_TYPE_FILE, EP_SERIALIZATION_FORMAT_NETTRACE_V4,false, NULL, false);
+	session_id = ep_enable (TEST_FILE, 1, current_provider_config, 1, EP_SESSION_TYPE_FILE, EP_SERIALIZATION_FORMAT_NETTRACE_V4,false, NULL, NULL);
 	ep_raise_error_if_nok (session_id != 0);
 
 	test_location = 4;
@@ -781,7 +785,7 @@ test_session_write_wait_get_next_event (void)
 
 	EventPipeEventPayload payload;;
 	ep_event_payload_init (&payload, NULL, 0);
-	write_result = ep_session_write_event_buffered ((EventPipeSession *)session_id, ep_thread_get (), ep_event, &payload, NULL, NULL, NULL, NULL);
+	write_result = ep_session_write_event ((EventPipeSession *)session_id, ep_thread_get (), ep_event, &payload, NULL, NULL, NULL, NULL);
 	ep_event_payload_fini (&payload);
 
 	ep_raise_error_if_nok (write_result == true);
@@ -844,8 +848,8 @@ test_session_write_get_next_event (void)
 
 	ep_start_streaming (session_id);
 
-	//Starts as signaled.
-	//TODO: Is this expected behavior, just a way to notify observer that we are up and running?
+	// Starts as signaled.
+	// TODO: Is this expected behavior, just a way to notify observer that we are up and running?
 	uint32_t test = ep_rt_wait_event_wait ((ep_rt_wait_event_handle_t *)ep_session_get_wait_event ((EventPipeSession *)session_id), 0, false);
 	ep_raise_error_if_nok (test == 0);
 
@@ -853,15 +857,15 @@ test_session_write_get_next_event (void)
 
 	EventPipeEventPayload payload;;
 	ep_event_payload_init (&payload, NULL, 0);
-	write_result = ep_session_write_event_buffered ((EventPipeSession *)session_id, ep_thread_get (), ep_event, &payload, NULL, NULL, NULL, NULL);
+	write_result = ep_session_write_event ((EventPipeSession *)session_id, ep_thread_get (), ep_event, &payload, NULL, NULL, NULL, NULL);
 	ep_event_payload_fini (&payload);
 
 	ep_raise_error_if_nok (write_result == true);
 
 	test_location = 6;
 
-	//TODO: Is this really the correct behavior, first write signals event, meaning that buffer will converted to read only
-	//with just one event in it.
+	// TODO: Is this really the correct behavior, first write signals event, meaning that buffer will converted to read only
+	// with just one event in it.
 	test = ep_rt_wait_event_wait ((ep_rt_wait_event_handle_t *)ep_session_get_wait_event ((EventPipeSession *)session_id), 0, false);
 	ep_raise_error_if_nok (test == 0);
 
@@ -923,16 +927,14 @@ test_session_write_suspend_event (void)
 
 	EventPipeEventPayload payload;;
 	ep_event_payload_init (&payload, NULL, 0);
-	write_result = ep_session_write_event_buffered ((EventPipeSession *)session_id, ep_thread_get (), ep_event, &payload, NULL, NULL, NULL, NULL);
+	write_result = ep_session_write_event ((EventPipeSession *)session_id, ep_thread_get (), ep_event, &payload, NULL, NULL, NULL, NULL);
 	ep_event_payload_fini (&payload);
 
 	ep_raise_error_if_nok (write_result == true);
 
 	test_location = 5;
 
-	EP_LOCK_ENTER (section1)
-		ep_session_suspend_write_event ((EventPipeSession *)session_id);
-	EP_LOCK_EXIT (section1)
+	// ep_session_suspend_write_event_happens in disable session.
 
 ep_on_exit:
 	ep_disable (session_id);
@@ -946,9 +948,9 @@ ep_on_error:
 	ep_exit_error_handler ();
 }
 
-//TODO: Add test setting rundown and write events.
+// TODO: Add test setting rundown and write events.
 
-//TODO: Suspend write and write events.
+// TODO: Suspend write and write events.
 
 static RESULT
 test_write_event (void)
@@ -1093,8 +1095,8 @@ test_write_wait_get_next_event (void)
 
 	ep_start_streaming (session_id);
 
-	//Starts as signaled.
-	//TODO: Is this expected behavior, just a way to notify observer that we are up and running?
+	// Starts as signaled.
+	// TODO: Is this expected behavior, just a way to notify observer that we are up and running?
 	uint32_t test = ep_rt_wait_event_wait ((ep_rt_wait_event_handle_t *)ep_get_wait_handle (session_id), 0, false);
 	ep_raise_error_if_nok (test == 0);
 
@@ -1175,10 +1177,10 @@ test_write_event_perf (void)
 
 	// Write in chunks of 1000 events, all should fit into buffer manager.
 	for (events_written = 0; events_written < 10 * 1000 * 1000; events_written += 1000) {
-		int64_t start = ep_perf_counter_query ();
+		int64_t start = ep_perf_timestamp_get ();
 		for (uint32_t i = 0; i < 1000; i++)
 			ep_write_event (ep_event, data, EP_ARRAY_SIZE (data), NULL, NULL);
-		int64_t stop = ep_perf_counter_query ();
+		int64_t stop = ep_perf_timestamp_get ();
 		accumulted_write_time_ticks += stop - start;
 
 		// Drain events to not end up in having buffer manager OOM.
@@ -1191,7 +1193,7 @@ test_write_event_perf (void)
 	float events_written_per_sec = (float)events_written / (accumulted_write_time_sec ? accumulted_write_time_sec : 1.0);
 
 	// Measured number of events/second for one thread.
-	//TODO: Setup acceptable pass/failure metrics.
+	// TODO: Setup acceptable pass/failure metrics.
 	printf ("\n\tPerformance stats:\n");
 	printf ("\t\tTotal number of events: %i\n", events_written);
 	printf ("\t\tTotal time in sec: %.2f\n\t\tTotal number of events written per sec/core: %.2f\n\t", accumulted_write_time_sec, events_written_per_sec);
@@ -1208,9 +1210,9 @@ ep_on_error:
 	ep_exit_error_handler ();
 }
 
-//TODO: Add multithreaded test writing into private/shared sessions.
+// TODO: Add multithreaded test writing into private/shared sessions.
 
-//TODO: Add consumer thread test, flushing file buffers/session, acting on signal.
+// TODO: Add consumer thread test, flushing file buffers/session, acting on signal.
 
 static RESULT
 test_eventpipe_teardown (void)

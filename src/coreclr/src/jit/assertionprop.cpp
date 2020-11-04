@@ -1625,7 +1625,6 @@ void Compiler::optDebugCheckAssertion(AssertionDsc* assertion)
                     assert(assertion->op2.u1.iconFlags != 0);
                     break;
                 case O1K_LCLVAR:
-                case O1K_ARR_BND:
                     assert((lvaTable[assertion->op1.lcl.lclNum].lvType != TYP_REF) || (assertion->op2.u1.iconVal == 0));
                     break;
                 case O1K_VALUE_NUMBER:
@@ -1959,11 +1958,57 @@ AssertionInfo Compiler::optAssertionGenJtrue(GenTree* tree)
     {
         std::swap(op1, op2);
     }
+
+    ValueNum op1VN = vnStore->VNConservativeNormalValue(op1->gtVNPair);
+    ValueNum op2VN = vnStore->VNConservativeNormalValue(op2->gtVNPair);
     // If op1 is lcl and op2 is const or lcl, create assertion.
     if ((op1->gtOper == GT_LCL_VAR) &&
         ((op2->OperKind() & GTK_CONST) || (op2->gtOper == GT_LCL_VAR))) // Fix for Dev10 851483
     {
         return optCreateJtrueAssertions(op1, op2, assertionKind);
+    }
+    else if (vnStore->IsVNCheckedBound(op1VN) && vnStore->IsVNInt32Constant(op2VN))
+    {
+        assert(relop->OperIs(GT_EQ, GT_NE));
+
+        int con = vnStore->ConstantValue<int>(op2VN);
+        if (con >= 0)
+        {
+            AssertionDsc dsc;
+
+            // For arr.Length != 0, we know that 0 is a valid index
+            // For arr.Length == con, we know that con - 1 is the greatest valid index
+            if (con == 0)
+            {
+                dsc.assertionKind = OAK_NOT_EQUAL;
+                dsc.op1.bnd.vnIdx = vnStore->VNForIntCon(0);
+            }
+            else
+            {
+                dsc.assertionKind = OAK_EQUAL;
+                dsc.op1.bnd.vnIdx = vnStore->VNForIntCon(con - 1);
+            }
+
+            dsc.op1.vn           = op1VN;
+            dsc.op1.kind         = O1K_ARR_BND;
+            dsc.op1.bnd.vnLen    = op1VN;
+            dsc.op2.vn           = vnStore->VNConservativeNormalValue(op2->gtVNPair);
+            dsc.op2.kind         = O2K_CONST_INT;
+            dsc.op2.u1.iconFlags = 0;
+            dsc.op2.u1.iconVal   = 0;
+
+            // when con is not zero, create an assertion on the arr.Length == con edge
+            // when con is zero, create an assertion on the arr.Length != 0 edge
+            AssertionIndex index = optAddAssertion(&dsc);
+            if (relop->OperIs(GT_NE) != (con == 0))
+            {
+                return AssertionInfo::ForNextEdge(index);
+            }
+            else
+            {
+                return index;
+            }
+        }
     }
 
     // Check op1 and op2 for an indirection of a GT_LCL_VAR and keep it in op1.
@@ -2683,7 +2728,7 @@ GenTree* Compiler::optConstantAssertionProp(AssertionDsc*        curAssertion,
                     var_types  simdType = tree->TypeGet();
                     assert(varDsc->TypeGet() == simdType);
                     var_types baseType = varDsc->lvBaseType;
-                    newTree            = gtGetSIMDZero(simdType, baseType, varDsc->lvVerTypeInfo.GetClassHandle());
+                    newTree            = gtGetSIMDZero(simdType, baseType, varDsc->GetStructHnd());
                     if (newTree == nullptr)
                     {
                         return nullptr;
@@ -4501,7 +4546,7 @@ void Compiler::optImpliedByCopyAssertion(AssertionDsc* copyAssertion, AssertionD
                 // This is the ngen case where we have an indirection of an address.
                 noway_assert((impAssertion->op1.kind == O1K_EXACT_TYPE) || (impAssertion->op1.kind == O1K_SUBTYPE));
 
-                __fallthrough;
+                FALLTHROUGH;
 
             case O2K_CONST_INT:
                 usable = op1MatchesCopy && (impAssertion->op2.u1.iconVal == depAssertion->op2.u1.iconVal);

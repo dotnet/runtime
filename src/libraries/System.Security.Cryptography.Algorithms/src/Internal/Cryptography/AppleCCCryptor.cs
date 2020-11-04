@@ -5,6 +5,7 @@ using System;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Security.Cryptography;
+using Internal.Cryptography;
 
 namespace Internal.Cryptography
 {
@@ -13,18 +14,36 @@ namespace Internal.Cryptography
         private readonly bool _encrypting;
         private SafeAppleCryptorHandle _cryptor;
 
+        // Reset operation is not supported on stream cipher
+        private readonly bool _supportsReset;
+
+        private Interop.AppleCrypto.PAL_SymmetricAlgorithm _algorithm;
+        private CipherMode _cipherMode;
+        private byte[] _key;
+        private int _feedbackSizeInBytes;
+
         public AppleCCCryptor(
             Interop.AppleCrypto.PAL_SymmetricAlgorithm algorithm,
             CipherMode cipherMode,
             int blockSizeInBytes,
             byte[] key,
             byte[]? iv,
-            bool encrypting)
-            : base(cipherMode.GetCipherIv(iv), blockSizeInBytes)
+            bool encrypting,
+            int feedbackSizeInBytes,
+            int paddingSizeInBytes)
+            : base(cipherMode.GetCipherIv(iv), blockSizeInBytes, paddingSizeInBytes)
         {
             _encrypting = encrypting;
 
-            OpenCryptor(algorithm, cipherMode, key);
+            // CFB is streaming cipher, calling CCCryptorReset is not implemented (and is effectively noop)
+            _supportsReset = cipherMode != CipherMode.CFB;
+
+            _algorithm = algorithm;
+            _cipherMode = cipherMode;
+            _key = key;
+            _feedbackSizeInBytes = feedbackSizeInBytes;
+
+            OpenCryptor();
         }
 
         protected override void Dispose(bool disposing)
@@ -41,14 +60,14 @@ namespace Internal.Cryptography
         public override int Transform(ReadOnlySpan<byte> input, Span<byte> output)
         {
             Debug.Assert(input.Length > 0);
-            Debug.Assert((input.Length % BlockSizeInBytes) == 0);
+            Debug.Assert((input.Length % PaddingSizeInBytes) == 0);
 
             return CipherUpdate(input, output);
         }
 
         public override int TransformFinal(ReadOnlySpan<byte> input, Span<byte> output)
         {
-            Debug.Assert((input.Length % BlockSizeInBytes) == 0);
+            Debug.Assert((input.Length % PaddingSizeInBytes) == 0);
             Debug.Assert(input.Length <= output.Length);
 
             int written = ProcessFinalBlock(input, output);
@@ -119,28 +138,25 @@ namespace Internal.Cryptography
         }
 
         [MemberNotNull(nameof(_cryptor))]
-        private unsafe void OpenCryptor(
-            Interop.AppleCrypto.PAL_SymmetricAlgorithm algorithm,
-            CipherMode cipherMode,
-            byte[] key)
+        private unsafe void OpenCryptor()
         {
             int ret;
             int ccStatus;
 
             byte[]? iv = IV;
 
-            fixed (byte* pbKey = key)
+            fixed (byte* pbKey = _key)
             fixed (byte* pbIv = iv)
             {
                 ret = Interop.AppleCrypto.CryptorCreate(
                     _encrypting
                         ? Interop.AppleCrypto.PAL_SymmetricOperation.Encrypt
                         : Interop.AppleCrypto.PAL_SymmetricOperation.Decrypt,
-                    algorithm,
-                    GetPalChainMode(cipherMode),
+                    _algorithm,
+                    GetPalChainMode(_algorithm, _cipherMode, _feedbackSizeInBytes),
                     Interop.AppleCrypto.PAL_PaddingMode.None,
                     pbKey,
-                    key.Length,
+                    _key.Length,
                     pbIv,
                     Interop.AppleCrypto.PAL_SymmetricOptions.None,
                     out _cryptor,
@@ -150,7 +166,7 @@ namespace Internal.Cryptography
             ProcessInteropError(ret, ccStatus);
         }
 
-        private Interop.AppleCrypto.PAL_ChainingMode GetPalChainMode(CipherMode cipherMode)
+        private Interop.AppleCrypto.PAL_ChainingMode GetPalChainMode(Interop.AppleCrypto.PAL_SymmetricAlgorithm algorithm, CipherMode cipherMode, int feedbackSizeInBytes)
         {
             switch (cipherMode)
             {
@@ -158,6 +174,17 @@ namespace Internal.Cryptography
                     return Interop.AppleCrypto.PAL_ChainingMode.CBC;
                 case CipherMode.ECB:
                     return Interop.AppleCrypto.PAL_ChainingMode.ECB;
+                case CipherMode.CFB:
+                    if (feedbackSizeInBytes == 1)
+                    {
+                        return Interop.AppleCrypto.PAL_ChainingMode.CFB8;
+                    }
+
+                    Debug.Assert(
+                        (algorithm == Interop.AppleCrypto.PAL_SymmetricAlgorithm.AES && feedbackSizeInBytes == 16) ||
+                        (algorithm == Interop.AppleCrypto.PAL_SymmetricAlgorithm.TripleDES && feedbackSizeInBytes == 8));
+
+                    return Interop.AppleCrypto.PAL_ChainingMode.CFB;
                 default:
                     throw new PlatformNotSupportedException(SR.Format(SR.Cryptography_CipherModeNotSupported, cipherMode));
             }
@@ -165,17 +192,27 @@ namespace Internal.Cryptography
 
         private unsafe void Reset()
         {
-            int ret;
-            int ccStatus;
-
-            byte[]? iv = IV;
-
-            fixed (byte* pbIv = iv)
+            if (!_supportsReset)
             {
-                ret = Interop.AppleCrypto.CryptorReset(_cryptor, pbIv, out ccStatus);
+                // when CryptorReset is not supported,
+                // dispose & reopen
+                _cryptor?.Dispose();
+                OpenCryptor();
             }
+            else
+            {
+                int ret;
+                int ccStatus;
 
-            ProcessInteropError(ret, ccStatus);
+                byte[]? iv = IV;
+
+                fixed (byte* pbIv = iv)
+                {
+                    ret = Interop.AppleCrypto.CryptorReset(_cryptor, pbIv, out ccStatus);
+                }
+
+                ProcessInteropError(ret, ccStatus);
+            }
         }
 
         private static void ProcessInteropError(int functionReturnCode, int ccStatus)

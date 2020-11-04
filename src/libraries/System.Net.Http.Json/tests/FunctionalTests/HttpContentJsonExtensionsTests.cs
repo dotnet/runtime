@@ -2,8 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
-using System.Diagnostics;
-using System.IO;
 using System.Net.Test.Common;
 using System.Text;
 using System.Text.Json;
@@ -24,8 +22,9 @@ namespace System.Net.Http.Json.Functional.Tests
             AssertExtensions.Throws<ArgumentNullException>("content", () => content.ReadFromJsonAsync(typeof(Person)));
         }
 
-        [Fact]
-        public async Task HttpContentGetThenReadFromJsonAsync()
+        [Theory]
+        [MemberData(nameof(ReadFromJsonTestData))]
+        public async Task HttpContentGetThenReadFromJsonAsync(string json)
         {
             await HttpMessageHandlerLoopbackServer.CreateClientAndServerAsync(
                 async (handler, uri) =>
@@ -44,7 +43,14 @@ namespace System.Net.Http.Json.Functional.Tests
                         per.Validate();
                     }
                 },
-                server => server.HandleRequestAsync(headers: _headers, content: Person.Create().Serialize()));
+                server => server.HandleRequestAsync(headers: _headers, content: json));
+        }
+
+        public static IEnumerable<object[]> ReadFromJsonTestData()
+        {
+            Person per = Person.Create();
+            yield return new object[] { per.Serialize() };
+            yield return new object[] { per.SerializeWithNumbersAsStrings() };
         }
 
         [Fact]
@@ -86,23 +92,6 @@ namespace System.Net.Http.Json.Functional.Tests
                     }
                 },
                 server => server.HandleRequestAsync(headers: _headers));
-        }
-
-        [Fact]
-        public async Task TestReadFromJsonNoContentTypeAsync()
-        {
-            await HttpMessageHandlerLoopbackServer.CreateClientAndServerAsync(
-                async (handler, uri) =>
-                {
-                    using (HttpClient client = new HttpClient(handler))
-                    {
-                        var request = new HttpRequestMessage(HttpMethod.Get, uri);
-                        HttpResponseMessage response = await client.SendAsync(request);
-
-                        await Assert.ThrowsAsync<NotSupportedException>(() => response.Content.ReadFromJsonAsync<Person>());
-                    }
-                },
-                server => server.HandleRequestAsync(content: "{}"));
         }
 
         [Fact]
@@ -201,7 +190,9 @@ namespace System.Net.Http.Json.Functional.Tests
         [InlineData("application/foo+json")] // Structured Syntax Json Suffix
         [InlineData("application/foo+Json")]
         [InlineData("appLiCaTiOn/a+JsOn")]
-        public async Task TestValidMediaTypes(string mediaType)
+        [InlineData("application/json-custom")]
+        [InlineData("asdf/ghjk")]
+        public async Task TestVariousMediaTypes(string mediaType)
         {
             List<HttpHeaderData> customHeaders = new List<HttpHeaderData>
             {
@@ -218,37 +209,6 @@ namespace System.Net.Http.Json.Functional.Tests
 
                         Person person = await response.Content.ReadFromJsonAsync<Person>();
                         person.Validate();
-                    }
-                },
-                server => server.HandleRequestAsync(headers: customHeaders, content: Person.Create().Serialize()));
-        }
-
-        [Theory]
-        [InlineData("text/plain")]
-        [InlineData("/")]
-        [InlineData("application/")]
-        [InlineData("application/+")]
-        [InlineData("application/+json")] // empty subtype before suffix is invalid.
-        [InlineData("application/problem+")] // no suffix after '+'.
-        [InlineData("application/problem+foo+json")] // more than one '+' not allowed.
-        public async Task TestInvalidMediaTypeAsync(string mediaType)
-        {
-            List<HttpHeaderData> customHeaders = new List<HttpHeaderData>
-            {
-                new HttpHeaderData("Content-Type", $"{mediaType}; charset=\"utf-8\"")
-            };
-
-            await HttpMessageHandlerLoopbackServer.CreateClientAndServerAsync(
-                async (handler, uri) =>
-                {
-                    using (HttpClient client = new HttpClient(handler))
-                    {
-                        var request = new HttpRequestMessage(HttpMethod.Get, uri);
-                        HttpResponseMessage response = await client.SendAsync(request);
-
-                        Exception ex = await Assert.ThrowsAsync<NotSupportedException>(() => response.Content.ReadFromJsonAsync<Person>());
-                        Assert.Contains("application/json", ex.Message);
-                        Assert.Contains("application/+json", ex.Message);
                     }
                 },
                 server => server.HandleRequestAsync(headers: customHeaders, content: Person.Create().Serialize()));

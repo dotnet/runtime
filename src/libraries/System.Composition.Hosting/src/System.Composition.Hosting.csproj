@@ -1,11 +1,6 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <AssemblyName>System.Composition.Hosting</AssemblyName>
-    <RootNamespace>
-    </RootNamespace>
-    <!-- CommonStrings needs RootNamespace to be empty -->
-    <TargetFrameworks>netstandard2.0;net461;$(NetFrameworkCurrent)</TargetFrameworks>
-    <ExcludeCurrentFullFrameworkFromPackage>true</ExcludeCurrentFullFrameworkFromPackage>
+    <TargetFrameworks>netstandard2.0;net461</TargetFrameworks>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="System\Composition\Hosting\CompositionHost.cs" />
@@ -36,12 +31,9 @@
     <Compile Include="System\Composition\Hosting\Util\SmallSparseInitonlyArray.cs" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\..\System.Composition.Runtime\src\System.Composition.Runtime.csproj" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Composition.Runtime\src\System.Composition.Runtime.csproj" />
   </ItemGroup>
   <ItemGroup Condition="$(TargetFramework.StartsWith('net4'))">
-    <Reference Include="mscorlib" />
-    <Reference Include="System.Core" />
-    <Reference Include="System" />
     <Reference Include="System.ComponentModel.Composition" />
   </ItemGroup>
 </Project>

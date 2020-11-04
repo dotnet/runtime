@@ -377,11 +377,11 @@ private:
     void gcFindPtrsInFrame(const void* infoBlock, const void* codeBlock, unsigned offs);
 
 #ifdef JIT32_GCENCODER
-    unsigned gcInfoBlockHdrDump(const BYTE* table,
-                                InfoHdr*    header,      /* OUT */
-                                unsigned*   methodSize); /* OUT */
+    size_t gcInfoBlockHdrDump(const BYTE* table,
+                              InfoHdr*    header,      /* OUT */
+                              unsigned*   methodSize); /* OUT */
 
-    unsigned gcDumpPtrTable(const BYTE* table, const InfoHdr& header, unsigned methodSize);
+    size_t gcDumpPtrTable(const BYTE* table, const InfoHdr& header, unsigned methodSize);
 
 #endif // JIT32_GCENCODER
 #endif // DUMP_GC_TABLES

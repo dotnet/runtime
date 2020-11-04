@@ -235,7 +235,7 @@ typedef enum CorElementTypeZapSig
     // where the encoding/decoding takes place.
     ELEMENT_TYPE_NATIVE_VALUETYPE_ZAPSIG = 0x3d,
 
-    ELEMENT_TYPE_CANON_ZAPSIG            = 0x3e,     // zapsig encoding for [mscorlib]System.__Canon
+    ELEMENT_TYPE_CANON_ZAPSIG            = 0x3e,     // zapsig encoding for System.__Canon
     ELEMENT_TYPE_MODULE_ZAPSIG           = 0x3f,     // zapsig encoding for external module id#
 
 } CorElementTypeZapSig;

@@ -21,7 +21,7 @@ namespace System.Data.OleDb
         }
 
         // IDBInfo.GetLiteralInfo
-        internal DualCoTaskMem(UnsafeNativeMethods.IDBInfo dbInfo, int[] literals, out int literalCount, out IntPtr literalInfo, out OleDbHResult hr) : this()
+        internal DualCoTaskMem(UnsafeNativeMethods.IDBInfo dbInfo, int[]? literals, out int literalCount, out IntPtr literalInfo, out OleDbHResult hr) : this()
         {
             int count = (null != literals) ? literals.Length : 0;
             hr = dbInfo.GetLiteralInfo(count, literals, out literalCount, out base.handle, out this.handle2);
@@ -93,7 +93,7 @@ namespace System.Data.OleDb
 
     internal sealed class StringMemHandle : DbBuffer
     {
-        internal StringMemHandle(string value) : base((null != value) ? checked(2 + 2 * value.Length) : 0)
+        internal StringMemHandle(string? value) : base((null != value) ? checked(2 + 2 * value.Length) : 0)
         {
             if (null != value)
             {
@@ -128,7 +128,7 @@ namespace System.Data.OleDb
         }
 
         // from ADODBRecordSetConstruction we do not want to release the initial chapter handle
-        private ChapterHandle(IntPtr chapter) : base((object)null)
+        private ChapterHandle(IntPtr chapter) : base((object?)null)
         {
             _chapterHandle = chapter;
         }
@@ -665,7 +665,7 @@ namespace System.Data.OleDb
         {
             OleDbHResult hr = OleDbHResult.E_UNEXPECTED;
             IntPtr hchapter = chapter;
-            System.Data.Common.UnsafeNativeMethods.IChapteredRowset chapteredRowset = null;
+            System.Data.Common.UnsafeNativeMethods.IChapteredRowset? chapteredRowset = null;
             RuntimeHelpers.PrepareConstrainedRegions();
             try
             { }
@@ -687,7 +687,7 @@ namespace System.Data.OleDb
         internal static unsafe OleDbHResult ITransactionAbort(System.IntPtr ptr)
         {
             OleDbHResult hr = OleDbHResult.E_UNEXPECTED;
-            ITransactionLocal transactionLocal = null;
+            ITransactionLocal? transactionLocal = null;
             RuntimeHelpers.PrepareConstrainedRegions();
             try
             { }
@@ -709,7 +709,7 @@ namespace System.Data.OleDb
         internal static unsafe OleDbHResult ITransactionCommit(System.IntPtr ptr)
         {
             OleDbHResult hr = OleDbHResult.E_UNEXPECTED;
-            ITransactionLocal transactionLocal = null;
+            ITransactionLocal? transactionLocal = null;
             RuntimeHelpers.PrepareConstrainedRegions();
             try
             { }

@@ -3,6 +3,7 @@
 
 using System.Xml;
 using System.Collections;
+using System.Diagnostics.CodeAnalysis;
 
 namespace System.Runtime.Serialization
 {
@@ -21,25 +22,25 @@ namespace System.Runtime.Serialization
             NullElement,
         }
 
-        private ElementData[] _elements;
-        private ElementData _element;
-        private ElementData _nextElement;
+        private ElementData?[]? _elements;
+        private ElementData? _element;
+        private ElementData? _nextElement;
 
         private ReadState _readState = ReadState.Initial;
         private readonly ExtensionDataNodeType _internalNodeType;
         private XmlNodeType _nodeType;
         private int _depth;
-        private string _localName;
-        private string _ns;
-        private string _prefix;
-        private string _value;
+        private string? _localName;
+        private string? _ns;
+        private string? _prefix;
+        private string? _value;
         private int _attributeCount;
         private int _attributeIndex;
 
         private static readonly object s_prefixLock = new object();
 
 #pragma warning disable 0649
-        private readonly XmlNodeReader _xmlNodeReader;
+        private readonly XmlNodeReader? _xmlNodeReader;
 #pragma warning restore 0649
 
         private readonly XmlObjectSerializerReadContext _context;
@@ -61,9 +62,9 @@ namespace System.Runtime.Serialization
             _context = context;
         }
 
-        internal IDataNode GetCurrentNode()
+        internal IDataNode? GetCurrentNode()
         {
-            IDataNode retVal = _element.dataNode;
+            IDataNode? retVal = _element!.dataNode;
             Skip();
             return retVal;
         }
@@ -82,13 +83,17 @@ namespace System.Runtime.Serialization
             _elements = null;
         }
 
+#pragma warning disable CS8775 // Member must have a non-null value when exiting in some condition.
+        [MemberNotNullWhen(true, nameof(_xmlNodeReader))]
+        [MemberNotNullWhen(false, nameof(_element))]
         private bool IsXmlDataNode { get { return (_internalNodeType == ExtensionDataNodeType.Xml); } }
+#pragma warning restore CS8775 // Member must have a non-null value when exiting in some condition.
 
         public override XmlNodeType NodeType { get { return IsXmlDataNode ? _xmlNodeReader.NodeType : _nodeType; } }
-        public override string LocalName { get { return IsXmlDataNode ? _xmlNodeReader.LocalName : _localName; } }
-        public override string NamespaceURI { get { return IsXmlDataNode ? _xmlNodeReader.NamespaceURI : _ns; } }
-        public override string Prefix { get { return IsXmlDataNode ? _xmlNodeReader.Prefix : _prefix; } }
-        public override string Value { get { return IsXmlDataNode ? _xmlNodeReader.Value : _value; } }
+        public override string LocalName { get { return IsXmlDataNode ? _xmlNodeReader.LocalName : _localName!; } }
+        public override string NamespaceURI { get { return IsXmlDataNode ? _xmlNodeReader.NamespaceURI : _ns!; } }
+        public override string Prefix { get { return IsXmlDataNode ? _xmlNodeReader.Prefix : _prefix!; } }
+        public override string Value { get { return IsXmlDataNode ? _xmlNodeReader.Value : _value!; } }
         public override int Depth { get { return IsXmlDataNode ? _xmlNodeReader.Depth : _depth; } }
         public override int AttributeCount { get { return IsXmlDataNode ? _xmlNodeReader.AttributeCount : _attributeCount; } }
         public override bool EOF { get { return IsXmlDataNode ? _xmlNodeReader.EOF : (_readState == ReadState.EndOfFile); } }
@@ -99,8 +104,9 @@ namespace System.Runtime.Serialization
         public override XmlSpace XmlSpace { get { return IsXmlDataNode ? _xmlNodeReader.XmlSpace : base.XmlSpace; } }
         public override string XmlLang { get { return IsXmlDataNode ? _xmlNodeReader.XmlLang : base.XmlLang; } }
         public override string this[int i] { get { return IsXmlDataNode ? _xmlNodeReader[i] : GetAttribute(i); } }
-        public override string this[string name] { get { return IsXmlDataNode ? _xmlNodeReader[name] : GetAttribute(name); } }
-        public override string this[string name, string namespaceURI] { get { return IsXmlDataNode ? _xmlNodeReader[name, namespaceURI] : GetAttribute(name, namespaceURI); } }
+        public override string? this[string name] { get { return IsXmlDataNode ? _xmlNodeReader[name] : GetAttribute(name); } }
+        // TODO-NULLABLE - unnecessary namespaceURI! - https://github.com/dotnet/roslyn/issues/47221
+        public override string? this[string name, string? namespaceURI] { get { return IsXmlDataNode ? _xmlNodeReader[name, namespaceURI!] : GetAttribute(name, namespaceURI); } }
 
         public override bool MoveToFirstAttribute()
         {
@@ -134,7 +140,7 @@ namespace System.Runtime.Serialization
                     throw new XmlException(SR.InvalidXmlDeserializingExtensionData);
 
                 _nodeType = XmlNodeType.Attribute;
-                AttributeData attribute = _element.attributes[index];
+                AttributeData attribute = _element.attributes![index];
                 _localName = attribute.localName;
                 _ns = attribute.ns;
                 _prefix = attribute.prefix;
@@ -143,14 +149,14 @@ namespace System.Runtime.Serialization
             }
         }
 
-        public override string GetAttribute(string name, string namespaceURI)
+        public override string? GetAttribute(string name, string? namespaceURI)
         {
             if (IsXmlDataNode)
                 return _xmlNodeReader.GetAttribute(name, namespaceURI);
 
             for (int i = 0; i < _element.attributeCount; i++)
             {
-                AttributeData attribute = _element.attributes[i];
+                AttributeData attribute = _element.attributes![i];
                 if (attribute.localName == name && attribute.ns == namespaceURI)
                     return attribute.value;
             }
@@ -158,14 +164,14 @@ namespace System.Runtime.Serialization
             return null;
         }
 
-        public override bool MoveToAttribute(string name, string namespaceURI)
+        public override bool MoveToAttribute(string name, string? namespaceURI)
         {
             if (IsXmlDataNode)
                 return _xmlNodeReader.MoveToAttribute(name, _ns);
 
             for (int i = 0; i < _element.attributeCount; i++)
             {
-                AttributeData attribute = _element.attributes[i];
+                AttributeData attribute = _element.attributes![i];
                 if (attribute.localName == name && attribute.ns == namespaceURI)
                 {
                     MoveToAttribute(i);
@@ -191,7 +197,7 @@ namespace System.Runtime.Serialization
         private void SetElement()
         {
             _nodeType = XmlNodeType.Element;
-            _localName = _element.localName;
+            _localName = _element!.localName;
             _ns = _element.ns;
             _prefix = _element.prefix;
             _value = string.Empty;
@@ -199,12 +205,12 @@ namespace System.Runtime.Serialization
             _attributeIndex = -1;
         }
 
-        public override string LookupNamespace(string prefix)
+        public override string? LookupNamespace(string prefix)
         {
             if (IsXmlDataNode)
                 return _xmlNodeReader.LookupNamespace(prefix);
 
-            return (string)s_prefixToNsTable[prefix];
+            return (string?)s_prefixToNsTable[prefix];
         }
 
         public override void Skip()
@@ -263,7 +269,7 @@ namespace System.Runtime.Serialization
             if (_nodeType == XmlNodeType.Attribute && MoveToNextAttribute())
                 return true;
 
-            MoveNext(_element.dataNode);
+            MoveNext(_element!.dataNode);
 
             switch (_internalNodeType)
             {
@@ -370,7 +376,7 @@ namespace System.Runtime.Serialization
             }
         }
 
-        public override string GetAttribute(string name)
+        public override string? GetAttribute(string name)
         {
             if (IsXmlDataNode)
             {
@@ -422,7 +428,7 @@ namespace System.Runtime.Serialization
             return false;
         }
 
-        private void MoveNext(IDataNode dataNode)
+        private void MoveNext(IDataNode? dataNode)
         {
             throw NotImplemented.ByDesign;
         }
@@ -442,7 +448,7 @@ namespace System.Runtime.Serialization
 
         private void PopElement()
         {
-            _prefix = _element.prefix;
+            _prefix = _element!.prefix;
             _localName = _element.localName;
             _ns = _element.ns;
 
@@ -457,6 +463,7 @@ namespace System.Runtime.Serialization
             }
         }
 
+        [MemberNotNull(nameof(_elements))]
         private void GrowElementsIfNeeded()
         {
             if (_elements == null)
@@ -469,25 +476,25 @@ namespace System.Runtime.Serialization
             }
         }
 
-        private ElementData GetNextElement()
+        private ElementData? GetNextElement()
         {
             int nextDepth = _depth + 1;
             return (_elements == null || _elements.Length <= nextDepth || _elements[nextDepth] == null)
                 ? new ElementData() : _elements[nextDepth];
         }
 
-        internal static string GetPrefix(string ns)
+        internal static string GetPrefix(string? ns)
         {
             ns = ns ?? string.Empty;
-            string prefix = (string)s_nsToPrefixTable[ns];
+            string? prefix = (string?)s_nsToPrefixTable[ns];
             if (prefix == null)
             {
                 lock (s_prefixLock)
                 {
-                    prefix = (string)s_nsToPrefixTable[ns];
+                    prefix = (string?)s_nsToPrefixTable[ns];
                     if (prefix == null)
                     {
-                        prefix = (ns == null || ns.Length == 0) ? string.Empty : "p" + s_nsToPrefixTable.Count;
+                        prefix = (ns.Length == 0) ? string.Empty : "p" + s_nsToPrefixTable.Count;
                         AddPrefix(prefix, ns);
                     }
                 }
@@ -502,33 +509,25 @@ namespace System.Runtime.Serialization
         }
     }
 
-#if USE_REFEMIT
-    public class AttributeData
-#else
     internal class AttributeData
-#endif
     {
-        public string prefix;
-        public string ns;
-        public string localName;
-        public string value;
+        public string? prefix;
+        public string? ns;
+        public string? localName;
+        public string? value;
     }
 
-#if USE_REFEMIT
-    public class ElementData
-#else
     internal class ElementData
-#endif
     {
-        public string localName;
-        public string ns;
-        public string prefix;
+        public string? localName;
+        public string? ns;
+        public string? prefix;
         public int attributeCount;
-        public AttributeData[] attributes;
-        public IDataNode dataNode;
+        public AttributeData[]? attributes;
+        public IDataNode? dataNode;
         public int childElementIndex;
 
-        public void AddAttribute(string prefix, string ns, string name, string value)
+        public void AddAttribute(string prefix, string ns, string name, string? value)
         {
             GrowAttributesIfNeeded();
             AttributeData attribute = attributes[attributeCount];
@@ -541,6 +540,7 @@ namespace System.Runtime.Serialization
             attributeCount++;
         }
 
+        [MemberNotNull(nameof(attributes))]
         private void GrowAttributesIfNeeded()
         {
             if (attributes == null)

@@ -17,7 +17,12 @@ namespace System.Text.Json.Serialization.Converters
     {
         protected override void Add(string key, in object? value, JsonSerializerOptions options, ref ReadStack state)
         {
-            ((IDictionary)state.Current.ReturnValue!)[key] = value;
+            TCollection collection = (TCollection)state.Current.ReturnValue!;
+            collection[key] = value;
+            if (IsValueType)
+            {
+                state.Current.ReturnValue = collection;
+            };
         }
 
         private JsonConverter<object>? _objectConverter;
@@ -36,6 +41,7 @@ namespace System.Text.Json.Serialization.Converters
                     ThrowHelper.ThrowNotSupportedException_CannotPopulateCollection(TypeToConvert, ref reader, ref state);
                 }
 
+                // Strings are intentionally used as keys when deserializing non-generic dictionaries.
                 state.Current.ReturnValue = new Dictionary<string, object>();
             }
             else

@@ -23,13 +23,13 @@
 
 #include <palsuite.h>
 
-const char* szStringTest = "The quick fox jumped over the lazy dog's back.\0";
-const char* szEmptyString = "";
-const char* szReadableFile = "Readable.txt";
-const char* szResultsFile = "Results.txt";
+#define szStringTest "The quick fox jumped over the lazy dog's back.\0"
+#define szEmptyString ""
+#define szReadableFile "Readable.txt"
+#define szResultsFile "Results.txt"
 
 
-BOOL validateResults(const char* szString,  // string read
+BOOL validateResults_ReadFile_test3(const char* szString,  // string read
                      DWORD dwByteCount,     // amount requested
                      DWORD dwBytesRead)  // amount read
 {
@@ -62,7 +62,7 @@ BOOL validateResults(const char* szString,  // string read
 
 
 
-BOOL readTest(DWORD dwByteCount, char cResult)
+BOOL readTest_ReadFile_test3(DWORD dwByteCount, char cResult)
 {
     HANDLE hFile = NULL;
     DWORD dwBytesRead = 0;
@@ -125,7 +125,7 @@ BOOL readTest(DWORD dwByteCount, char cResult)
         }
         else
         {
-            return (validateResults(szString, dwRequested, dwTotal));
+            return (validateResults_ReadFile_test3(szString, dwRequested, dwTotal));
         }
     }
 
@@ -135,7 +135,7 @@ BOOL readTest(DWORD dwByteCount, char cResult)
 
 
 
-int __cdecl main(int argc, char **argv)
+PALTEST(file_io_ReadFile_test3_paltest_readfile_test3, "file_io/ReadFile/test3/paltest_readfile_test3")
 {
     HANDLE hFile = NULL;
     DWORD dwByteCount[4] = {0, 1, 2, 3};
@@ -171,7 +171,7 @@ int __cdecl main(int argc, char **argv)
 
     for (i = 0; i < 4; i++)
     {
-        bRc = readTest(dwByteCount[i], szResults[i]);
+        bRc = readTest_ReadFile_test3(dwByteCount[i], szResults[i]);
         if (bRc != TRUE)
         {
             Fail("ReadFile: ERROR -> Failed on test[%d]\n", i);

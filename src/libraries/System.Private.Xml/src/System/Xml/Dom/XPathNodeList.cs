@@ -10,14 +10,14 @@ namespace System.Xml
 
     internal class XPathNodeList : XmlNodeList
     {
-        private readonly List<XmlNode> _list;
+        private readonly List<XmlNode?> _list;
         private readonly XPathNodeIterator _nodeIterator;
         private bool _done;
 
         public XPathNodeList(XPathNodeIterator nodeIterator)
         {
             _nodeIterator = nodeIterator;
-            _list = new List<XmlNode>();
+            _list = new List<XmlNode?>();
             _done = false;
         }
 
@@ -33,7 +33,7 @@ namespace System.Xml
             }
         }
 
-        private XmlNode GetNode(XPathNavigator n)
+        private XmlNode? GetNode(XPathNavigator n)
         {
             IHasXmlNode iHasNode = (IHasXmlNode)n;
             return iHasNode.GetNode();
@@ -46,7 +46,8 @@ namespace System.Xml
             {
                 if (_nodeIterator.MoveNext())
                 {
-                    XmlNode n = GetNode(_nodeIterator.Current);
+                    Debug.Assert(_nodeIterator.Current != null);
+                    XmlNode? n = GetNode(_nodeIterator.Current);
                     if (n != null)
                     {
                         _list.Add(n);
@@ -62,7 +63,7 @@ namespace System.Xml
             return count;
         }
 
-        public override XmlNode Item(int index)
+        public override XmlNode? Item(int index)
         {
             if (_list.Count <= index)
             {
@@ -72,6 +73,7 @@ namespace System.Xml
             {
                 return null;
             }
+
             return _list[index];
         }
 
@@ -111,7 +113,7 @@ namespace System.Xml
             return _valid;
         }
 
-        public object Current
+        public object? Current
         {
             get
             {
@@ -119,6 +121,7 @@ namespace System.Xml
                 {
                     return _list[_index];
                 }
+
                 return null;
             }
         }

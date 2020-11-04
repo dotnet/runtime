@@ -7,10 +7,6 @@
     <TargetFrameworks>$(NetCoreAppCurrent)</TargetFrameworks>
   </PropertyGroup>
   <ItemGroup>
-    <DefaultReferenceExclusions Include="System.Linq.Expressions" />
-    <ReferenceFromRuntime Include="System.Linq.Expressions" />
-  </ItemGroup>
-  <ItemGroup>
     <AssembliesBeingTested Include="Microsoft.CSharp" />
   </ItemGroup>
   <ItemGroup>
@@ -246,5 +242,6 @@
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="xunit.extensibility.execution" Version="$(XUnitVersion)" />
+    <ProjectReference Include="..\src\System.Linq.Expressions.csproj" SkipUseReferenceAssembly="true" />
   </ItemGroup>
 </Project>

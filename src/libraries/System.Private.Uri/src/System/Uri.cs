@@ -18,14 +18,18 @@ namespace System
     {
         public static readonly string UriSchemeFile = UriParser.FileUri.SchemeName;
         public static readonly string UriSchemeFtp = UriParser.FtpUri.SchemeName;
+        public static readonly string UriSchemeSftp = "sftp";
+        public static readonly string UriSchemeFtps = "ftps";
         public static readonly string UriSchemeGopher = UriParser.GopherUri.SchemeName;
         public static readonly string UriSchemeHttp = UriParser.HttpUri.SchemeName;
         public static readonly string UriSchemeHttps = UriParser.HttpsUri.SchemeName;
-        internal static readonly string UriSchemeWs = UriParser.WsUri.SchemeName;
-        internal static readonly string UriSchemeWss = UriParser.WssUri.SchemeName;
+        public static readonly string UriSchemeWs = UriParser.WsUri.SchemeName;
+        public static readonly string UriSchemeWss = UriParser.WssUri.SchemeName;
         public static readonly string UriSchemeMailto = UriParser.MailToUri.SchemeName;
         public static readonly string UriSchemeNews = UriParser.NewsUri.SchemeName;
         public static readonly string UriSchemeNntp = UriParser.NntpUri.SchemeName;
+        public static readonly string UriSchemeSsh = "ssh";
+        public static readonly string UriSchemeTelnet = UriParser.TelnetUri.SchemeName;
         public static readonly string UriSchemeNetTcp = UriParser.NetTcpUri.SchemeName;
         public static readonly string UriSchemeNetPipe = UriParser.NetPipeUri.SchemeName;
         public static readonly string SchemeDelimiter = "://";
@@ -248,7 +252,7 @@ namespace System
 
         private bool IsNotAbsoluteUri
         {
-            get { return (object)_syntax == null; }
+            get { return _syntax is null; }
         }
 
         //
@@ -351,7 +355,7 @@ namespace System
         //
         public Uri(string uriString)
         {
-            if ((object)uriString == null)
+            if (uriString is null)
                 throw new ArgumentNullException(nameof(uriString));
 
             CreateThis(uriString, false, UriKind.Absolute);
@@ -440,7 +444,7 @@ namespace System
             }
 
             uriString = serializationInfo.GetString("RelativeUri");  // Do not rename (binary serialization)
-            if ((object?)uriString == null)
+            if (uriString is null)
                 throw new ArgumentException(SR.Format(SR.InvalidNullArgument, "RelativeUri"), nameof(serializationInfo));
 
             CreateThis(uriString, false, UriKind.Relative);
@@ -504,6 +508,7 @@ namespace System
             _flags = Flags.Zero;
             _info = null!;
             _syntax = null!;
+            _originalUnicodeString = null!;
             // If not resolved, we reparse modified Uri string and populate Uri internal data.
             CreateThis(relativeUri, dontEscape, UriKind.Absolute);
         }
@@ -550,6 +555,7 @@ namespace System
             _flags = Flags.Zero;
             _info = null!;
             _syntax = null!;
+            _originalUnicodeString = null!;
             CreateThis(newUriString, dontEscape, UriKind.Absolute);
             DebugSetLeftCtor();
         }
@@ -1247,10 +1253,11 @@ namespace System
         //
         public static UriHostNameType CheckHostName(string? name)
         {
-            if ((object?)name == null || name.Length == 0 || name.Length > short.MaxValue)
+            if (string.IsNullOrEmpty(name) || name.Length > short.MaxValue)
             {
                 return UriHostNameType.Unknown;
             }
+
             int end = name.Length;
             unsafe
             {
@@ -1462,12 +1469,11 @@ namespace System
         //
         public static bool CheckSchemeName(string? schemeName)
         {
-            if (((object?)schemeName == null)
-                || (schemeName.Length == 0)
-                || !UriHelper.IsAsciiLetter(schemeName[0]))
+            if (string.IsNullOrEmpty(schemeName) || !UriHelper.IsAsciiLetter(schemeName[0]))
             {
                 return false;
             }
+
             for (int i = schemeName.Length - 1; i > 0; --i)
             {
                 if (!(UriHelper.IsAsciiLetterOrDigit(schemeName[i])
@@ -1478,6 +1484,7 @@ namespace System
                     return false;
                 }
             }
+
             return true;
         }
 
@@ -1740,7 +1747,7 @@ namespace System
 
         public Uri MakeRelativeUri(Uri uri)
         {
-            if ((object?)uri == null)
+            if (uri is null)
                 throw new ArgumentNullException(nameof(uri));
 
             if (IsNotAbsoluteUri || uri.IsNotAbsoluteUri)
@@ -2265,7 +2272,7 @@ namespace System
                                 }
                             }
                         }
-                        if (notEmpty && info.Offset.PortValue != port)
+                        if (notEmpty && _syntax.DefaultPort != port)
                         {
                             info.Offset.PortValue = (ushort)port;
                             cF |= Flags.NotDefaultPort;
@@ -2372,7 +2379,7 @@ namespace System
                 else if (NotAny(Flags.CanonicalDnsHost))
                 {
                     // Check to see if we can take the canonical host string out of _string
-                    if ((object?)_info.ScopeId != null)
+                    if (_info.ScopeId is not null)
                     {
                         // IPv6 ScopeId is included when serializing a Uri
                         flags |= (Flags.HostNotCanonical | Flags.E_HostNotCanonical);
@@ -2465,7 +2472,7 @@ namespace System
             string host = _syntax.InternalGetComponents(this, UriComponents.Host, UriFormat.UriEscaped);
 
             // ATTN: Check on whether recursion has not happened
-            if ((object?)_info.Host == null)
+            if (_info.Host is null)
             {
                 if (host.Length >= c_MaxUriBufferSize)
                     throw GetException(ParsingError.SizeLimit)!;
@@ -2509,7 +2516,7 @@ namespace System
             //
             string portStr = _syntax.InternalGetComponents(this, UriComponents.StrongPort, UriFormat.UriEscaped);
             int port = 0;
-            if ((object)portStr == null || portStr.Length == 0)
+            if (string.IsNullOrEmpty(portStr))
             {
                 // It's like no port
                 _flags &= ~Flags.NotDefaultPort;
@@ -2577,7 +2584,7 @@ namespace System
             if ((unchecked((ushort)uriParts) & nonCanonical) == 0)
             {
                 string? ret = GetUriPartsFromUserString(uriParts);
-                if ((object?)ret != null)
+                if (ret is not null)
                 {
                     return ret;
                 }
@@ -2612,7 +2619,7 @@ namespace System
             if ((unchecked((ushort)uriParts) & nonCanonical) == 0)
             {
                 string? ret = GetUriPartsFromUserString(uriParts);
-                if ((object?)ret != null)
+                if (ret is not null)
                 {
                     return ret;
                 }
@@ -2750,7 +2757,7 @@ namespace System
 
                 // A fix up only for SerializationInfo and IpV6 host with a scopeID
                 if ((parts & UriComponents.SerializationInfoString) != 0 && HostType == Flags.IPv6HostType &&
-                    (object?)_info.ScopeId != null)
+                    _info.ScopeId is not null)
                 {
                     _info.ScopeId.CopyTo(0, chars, count - 1, _info.ScopeId.Length);
                     count += _info.ScopeId.Length;
@@ -5188,7 +5195,7 @@ namespace System
             return new string(dest, 0, count);
         }
 
-        [Obsolete("The method has been deprecated. Please use GetComponents() or static EscapeUriString() to escape a Uri component or a string. https://go.microsoft.com/fwlink/?linkid=14202")]
+        [Obsolete("The method has been deprecated. Please use GetComponents() or static EscapeDataString() to escape a Uri component or a string. https://go.microsoft.com/fwlink/?linkid=14202")]
         protected static string EscapeString(string? str) =>
             str is null ? string.Empty :
             UriHelper.EscapeString(str, checkExistingEscaped: true, UriHelper.UnreservedReservedTable, '?', '#');

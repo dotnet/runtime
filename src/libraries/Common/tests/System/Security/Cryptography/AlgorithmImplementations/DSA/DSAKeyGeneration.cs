@@ -5,6 +5,7 @@ using Xunit;
 
 namespace System.Security.Cryptography.Dsa.Tests
 {
+    [SkipOnMono("Not supported on Browser", TestPlatforms.Browser)]
     public partial class DSAKeyGeneration
     {
         public static bool SupportsKeyGeneration => DSAFactory.SupportsKeyGeneration;

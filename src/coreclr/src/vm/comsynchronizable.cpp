@@ -227,7 +227,7 @@ void ThreadNative::KickOffThread_Worker(LPVOID ptr)
     _ASSERTE(pMeth);
     MethodDescCallSite invokeMethod(pMeth, &gc.orDelegate);
 
-    if (MscorlibBinder::IsClass(gc.orDelegate->GetMethodTable(), CLASS__PARAMETERIZEDTHREADSTART))
+    if (CoreLibBinder::IsClass(gc.orDelegate->GetMethodTable(), CLASS__PARAMETERIZEDTHREADSTART))
     {
         //Parameterized ThreadStart
         ARG_SLOT arg[2];
@@ -647,6 +647,17 @@ FCIMPL1(void, ThreadNative::Sleep, INT32 iTime)
 FCIMPLEND
 
 #define Sleep(dwMilliseconds) Dont_Use_Sleep(dwMilliseconds)
+
+void QCALLTYPE ThreadNative::UninterruptibleSleep0()
+{
+    QCALL_CONTRACT;
+
+    BEGIN_QCALL;
+
+    ClrSleepEx(0, false);
+
+    END_QCALL;
+}
 
 FCIMPL1(INT32, ThreadNative::GetManagedThreadId, ThreadBaseObject* th) {
     FCALL_CONTRACT;
@@ -1318,6 +1329,22 @@ FCIMPL1(FC_BOOL_RET, ThreadNative::IsThreadpoolThread, ThreadBaseObject* thread)
 }
 FCIMPLEND
 
+FCIMPL1(void, ThreadNative::SetIsThreadpoolThread, ThreadBaseObject* thread)
+{
+    FCALL_CONTRACT;
+
+    if (thread == NULL)
+        FCThrowResVoid(kNullReferenceException, W("NullReference_This"));
+
+    Thread *pThread = thread->GetInternal();
+
+    if (pThread == NULL)
+        FCThrowExVoid(kThreadStateException, IDS_EE_THREAD_DEAD_STATE, NULL, NULL, NULL);
+
+    pThread->SetIsThreadPoolThread();
+}
+FCIMPLEND
+
 INT32 QCALLTYPE ThreadNative::GetOptimalMaxSpinWaitsPerSpinIteration()
 {
     QCALL_CONTRACT;
@@ -1392,7 +1419,7 @@ FCIMPL1(Object*, ThreadNative::GetThreadDeserializationTracker, StackCrawlMark* 
     // To avoid reflection trying to bypass deserialization tracking, check the caller
     // and only allow SerializationInfo to call into this method.
     MethodTable* pCallerMT = SystemDomain::GetCallersType(stackMark);
-    if (pCallerMT != MscorlibBinder::GetClass(CLASS__SERIALIZATION_INFO))
+    if (pCallerMT != CoreLibBinder::GetClass(CLASS__SERIALIZATION_INFO))
     {
         COMPlusThrowArgumentException(W("stackMark"), NULL);
     }

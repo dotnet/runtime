@@ -31,7 +31,6 @@ namespace System.Composition.UnitTests
     public class ActivationEventOrderingTests : ContainerTests
     {
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/23972", TargetFrameworkMonikers.NetFramework)]
         public void OnImportsSatisfiedIsCalledAfterPropertyInjection()
         {
             var cc = CreateContainer(typeof(TracksImportSatisfaction), typeof(Imported));

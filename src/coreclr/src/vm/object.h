@@ -331,10 +331,10 @@ class Object
 
 #endif // #ifndef DACCESS_COMPILE
 
-    BOOL Wait(INT32 timeOut, BOOL exitContext)
+    BOOL Wait(INT32 timeOut)
     {
         WRAPPER_NO_CONTRACT;
-        return GetHeader()->Wait(timeOut, exitContext);
+        return GetHeader()->Wait(timeOut);
     }
 
     void Pulse()
@@ -441,8 +441,12 @@ class Object
         // A method table pointer should always be aligned.  During GC we set the least
         // significant bit for marked objects, and the second to least significant
         // bit is reserved.  So if we want the actual MT pointer during a GC
-        // we must zero out the lowest 2 bits.
+        // we must zero out the lowest 2 bits on 32-bit and 3 bits on 64-bit.
+#ifdef TARGET_64BIT
+        return dac_cast<PTR_MethodTable>((dac_cast<TADDR>(m_pMethTab)) & ~((UINT_PTR)7));
+#else 
         return dac_cast<PTR_MethodTable>((dac_cast<TADDR>(m_pMethTab)) & ~((UINT_PTR)3));
+#endif //TARGET_64BIT
     }
 
     // There are some cases where it is unsafe to get the type handle during a GC.
@@ -993,7 +997,7 @@ class BaseObjectWithCachedData : public Object
 //      this hasn't yet been defined.
 class ReflectClassBaseObject : public BaseObjectWithCachedData
 {
-    friend class MscorlibBinder;
+    friend class CoreLibBinder;
 
 protected:
     OBJECTREF           m_keepalive;
@@ -1123,7 +1127,7 @@ public:
 // type that does not sufficiently match this data structure.
 class ReflectMethodObject : public BaseObjectWithCachedData
 {
-    friend class MscorlibBinder;
+    friend class CoreLibBinder;
 
 protected:
     OBJECTREF           m_object;
@@ -1166,7 +1170,7 @@ public:
 // type that does not sufficiently match this data structure.
 class ReflectFieldObject : public BaseObjectWithCachedData
 {
-    friend class MscorlibBinder;
+    friend class CoreLibBinder;
 
 protected:
     OBJECTREF           m_object;
@@ -1204,7 +1208,7 @@ public:
 //
 class ReflectModuleBaseObject : public Object
 {
-    friend class MscorlibBinder;
+    friend class CoreLibBinder;
 
   protected:
     // READ ME:
@@ -1255,7 +1259,7 @@ typedef SafeHandle * SAFEHANDLEREF;
 class ThreadBaseObject;
 class SynchronizationContextObject: public Object
 {
-    friend class MscorlibBinder;
+    friend class CoreLibBinder;
 private:
     // These field are also defined in the managed representation.  (SecurityContext.cs)If you
     // add or change these field you must also change the managed code so that
@@ -1304,7 +1308,7 @@ __inline bool IsCultureEnglishOrInvariant(LPCWSTR localeName)
 
 class CultureInfoBaseObject : public Object
 {
-    friend class MscorlibBinder;
+    friend class CoreLibBinder;
 
 private:
     OBJECTREF _compareInfo;
@@ -1342,7 +1346,7 @@ class ThreadBaseObject : public Object
 {
     friend class ClrDataAccess;
     friend class ThreadNative;
-    friend class MscorlibBinder;
+    friend class CoreLibBinder;
     friend class Object;
 
 private:
@@ -1367,8 +1371,11 @@ private:
     Thread       *m_InternalThread;
     INT32         m_Priority;
 
-    //We need to cache the thread id in managed code for perf reasons.
+    // We need to cache the thread id in managed code for perf reasons.
     INT32         m_ManagedThreadId;
+
+    // Only used by managed code, see comment there
+    bool          m_MayNeedResetForThreadPool;
 
 protected:
     // the ctor and dtor can do no useful work.
@@ -1459,7 +1466,7 @@ class MarshalByRefObjectBaseObject : public Object
 class AssemblyBaseObject : public Object
 {
     friend class Assembly;
-    friend class MscorlibBinder;
+    friend class CoreLibBinder;
 
   protected:
     // READ ME:
@@ -1507,7 +1514,7 @@ NOINLINE AssemblyBaseObject* GetRuntimeAssemblyHelper(LPVOID __me, DomainAssembl
 #endif // defined(TARGET_X86) && !defined(TARGET_UNIX)
 class AssemblyLoadContextBaseObject : public Object
 {
-    friend class MscorlibBinder;
+    friend class CoreLibBinder;
 
   protected:
     // READ ME:
@@ -1553,7 +1560,7 @@ class AssemblyNameBaseObject : public Object
 {
     friend class AssemblyNative;
     friend class AppDomainNative;
-    friend class MscorlibBinder;
+    friend class CoreLibBinder;
 
   protected:
     // READ ME:
@@ -1592,7 +1599,7 @@ class AssemblyNameBaseObject : public Object
 //
 class VersionBaseObject : public Object
 {
-    friend class MscorlibBinder;
+    friend class CoreLibBinder;
 
   protected:
     // READ ME:
@@ -1720,7 +1727,7 @@ CHARARRAYREF AllocateCharArray(DWORD dwArrayLength);
 //-------------------------------------------------------------
 class ComObject : public MarshalByRefObjectBaseObject
 {
-    friend class MscorlibBinder;
+    friend class CoreLibBinder;
 
 protected:
 
@@ -1992,7 +1999,7 @@ typedef BStrWrapper*     BSTRWRAPPEROBJECTREF;
 
 class SafeHandle : public Object
 {
-    friend class MscorlibBinder;
+    friend class CoreLibBinder;
 
   private:
     // READ ME:
@@ -2042,7 +2049,7 @@ typedef Holder<SAFEHANDLEREF*, AcquireSafeHandle, ReleaseSafeHandle> SafeHandleH
 
 class CriticalHandle : public Object
 {
-    friend class MscorlibBinder;
+    friend class CoreLibBinder;
 
   private:
     // READ ME:
@@ -2072,7 +2079,7 @@ typedef CriticalHandle * CRITICALHANDLEREF;
 // Base class for WaitHandle
 class WaitHandleBase :public MarshalByRefObjectBaseObject
 {
-    friend class MscorlibBinder;
+    friend class CoreLibBinder;
 
 public:
     __inline LPVOID GetWaitHandle() {
@@ -2096,7 +2103,7 @@ typedef WaitHandleBase* WAITHANDLEREF;
 class DelegateObject : public Object
 {
     friend class CheckAsmOffsets;
-    friend class MscorlibBinder;
+    friend class CoreLibBinder;
 
 public:
     BOOL IsWrapperDelegate() { LIMITED_METHOD_CONTRACT; return _methodPtrAux == NULL; }
@@ -2316,7 +2323,7 @@ private:
 
 class LoaderAllocatorScoutObject : public Object
 {
-    friend class MscorlibBinder;
+    friend class CoreLibBinder;
     friend class LoaderAllocatorObject;
 
 protected:
@@ -2331,7 +2338,7 @@ typedef LoaderAllocatorScoutObject* LOADERALLOCATORSCOUTREF;
 
 class LoaderAllocatorObject : public Object
 {
-    friend class MscorlibBinder;
+    friend class CoreLibBinder;
 
 public:
     PTRARRAYREF GetHandleTable()
@@ -2393,7 +2400,7 @@ typedef DPTR(class ExceptionObject) PTR_ExceptionObject;
 #include "pshpack4.h"
 class ExceptionObject : public Object
 {
-    friend class MscorlibBinder;
+    friend class CoreLibBinder;
 
 public:
     void SetHResult(HRESULT hr)
@@ -2617,7 +2624,7 @@ enum ContractFailureKind
 typedef DPTR(class ContractExceptionObject) PTR_ContractExceptionObject;
 class ContractExceptionObject : public ExceptionObject
 {
-    friend class MscorlibBinder;
+    friend class CoreLibBinder;
 
 public:
     ContractFailureKind GetContractFailureKind()
@@ -2742,7 +2749,7 @@ class GCHeapHashObject : public Object
     friend class JIT_TrialAlloc;
     friend class CheckAsmOffsets;
     friend class COMString;
-    friend class MscorlibBinder;
+    friend class CoreLibBinder;
 
     private:
     BASEARRAYREF _data;
@@ -2799,7 +2806,7 @@ class LAHashDependentHashTrackerObject : public Object
     friend class ClrDataAccess;
 #endif
     friend class CheckAsmOffsets;
-    friend class MscorlibBinder;
+    friend class CoreLibBinder;
 
     private:
     OBJECTHANDLE _dependentHandle;
@@ -2837,7 +2844,7 @@ class LAHashKeyToTrackersObject : public Object
     friend class ClrDataAccess;
 #endif
     friend class CheckAsmOffsets;
-    friend class MscorlibBinder;
+    friend class CoreLibBinder;
 
     public:
     // _trackerOrTrackerSet is either a reference to a LAHashDependentHashTracker, or to a GCHeapHash of LAHashDependentHashTracker objects.

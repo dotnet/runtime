@@ -4,7 +4,6 @@
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Reflection;
-using System.Text.Json.Serialization;
 
 namespace System.Text.Json.Serialization.Metadata
 {
@@ -195,6 +194,8 @@ namespace System.Text.Json.Serialization.Metadata
 
         private void DetermineNumberHandling(JsonNumberHandling? parentTypeNumberHandling)
         {
+            bool numberHandlingIsApplicable = ConverterBase.IsInternalConverterForNumberType || TypeIsCollectionOfNumbersWithInternalConverter();
+
             if (IsForClassInfo)
             {
                 if (parentTypeNumberHandling != null && !ConverterBase.IsInternalConverter)
@@ -202,45 +203,80 @@ namespace System.Text.Json.Serialization.Metadata
                     ThrowHelper.ThrowInvalidOperationException_NumberHandlingOnPropertyInvalid(this);
                 }
 
-                // Priority 1: Get handling from the type (parent type in this case is the type itself).
-                NumberHandling = parentTypeNumberHandling;
-
-                // Priority 2: Get handling from JsonSerializerOptions instance.
-                if (!NumberHandling.HasValue && Options.NumberHandling != JsonNumberHandling.Strict)
+                if (numberHandlingIsApplicable)
                 {
-                    NumberHandling = Options.NumberHandling;
+                    // This logic is to honor JsonNumberHandlingAttribute placed on
+                    // custom collections e.g. public class MyNumberList : List<int>.
+
+                    // Priority 1: Get handling from the type (parent type in this case is the type itself).
+                    NumberHandling = parentTypeNumberHandling;
+
+                    // Priority 2: Get handling from JsonSerializerOptions instance.
+                    if (!NumberHandling.HasValue && Options.NumberHandling != JsonNumberHandling.Strict)
+                    {
+                        NumberHandling = Options.NumberHandling;
+                    }
                 }
             }
             else
             {
-                JsonNumberHandling? handling = null;
+                Debug.Assert(MemberInfo != null);
 
-                // Priority 1: Get handling from attribute on property or field.
-                if (MemberInfo != null)
+                JsonNumberHandlingAttribute? attribute = GetAttribute<JsonNumberHandlingAttribute>(MemberInfo);
+                if (attribute != null && !numberHandlingIsApplicable)
                 {
-                    JsonNumberHandlingAttribute? attribute = GetAttribute<JsonNumberHandlingAttribute>(MemberInfo);
+                    ThrowHelper.ThrowInvalidOperationException_NumberHandlingOnPropertyInvalid(this);
+                }
 
-                    if (attribute != null &&
-                        !ConverterBase.IsInternalConverterForNumberType &&
-                        ((ClassType.Enumerable | ClassType.Dictionary) & ClassType) == 0)
+                if (numberHandlingIsApplicable)
+                {
+                    // Priority 1: Get handling from attribute on property or field.
+                    JsonNumberHandling? handling = attribute?.Handling;
+
+                    // Priority 2: Get handling from attribute on parent class type.
+                    handling ??= parentTypeNumberHandling;
+
+                    // Priority 3: Get handling from JsonSerializerOptions instance.
+                    if (!handling.HasValue && Options.NumberHandling != JsonNumberHandling.Strict)
                     {
-                        ThrowHelper.ThrowInvalidOperationException_NumberHandlingOnPropertyInvalid(this);
+                        handling = Options.NumberHandling;
                     }
 
-                    handling = attribute?.Handling;
+                    NumberHandling = handling;
                 }
-
-                // Priority 2: Get handling from attribute on parent class type.
-                handling ??= parentTypeNumberHandling;
-
-                // Priority 3: Get handling from JsonSerializerOptions instance.
-                if (!handling.HasValue && Options.NumberHandling != JsonNumberHandling.Strict)
-                {
-                    handling = Options.NumberHandling;
-                }
-
-                NumberHandling = handling;
             }
+        }
+
+        private bool TypeIsCollectionOfNumbersWithInternalConverter()
+        {
+            if (!ConverterBase.IsInternalConverter ||
+                ((ClassType.Enumerable | ClassType.Dictionary) & ClassType) == 0)
+            {
+                return false;
+            }
+
+            Type? elementType = ConverterBase.ElementType;
+            Debug.Assert(elementType != null);
+
+            elementType = Nullable.GetUnderlyingType(elementType) ?? elementType;
+
+            if (elementType == typeof(byte) ||
+                elementType == typeof(decimal) ||
+                elementType == typeof(double) ||
+                elementType == typeof(short) ||
+                elementType == typeof(int) ||
+                elementType == typeof(long) ||
+                elementType == typeof(sbyte) ||
+                elementType == typeof(float) ||
+                elementType == typeof(ushort) ||
+                elementType == typeof(uint) ||
+                elementType == typeof(ulong) ||
+                elementType == JsonClassInfo.ObjectType)
+            {
+                return true;
+            }
+
+            return false;
         }
 
         internal static TAttribute? GetAttribute<TAttribute>(MemberInfo memberInfo) where TAttribute : Attribute
@@ -410,7 +446,6 @@ namespace System.Text.Json.Serialization.Metadata
 
         internal JsonNumberHandling? NumberHandling { get; private set; }
 
-
         internal abstract void SetExtensionDictionaryAsObject(object obj, object? extensionDict);
 
         /// <summary>
@@ -424,5 +459,8 @@ namespace System.Text.Json.Serialization.Metadata
         public bool ShouldDeserialize { get; internal set; }
 
         internal bool IsIgnored { get; private set; }
+
+        //  Whether the property type can be null.
+        internal bool PropertyTypeCanBeNull { get; set; }
     }
 }

@@ -126,7 +126,7 @@ function(preprocess_file inputFilename outputFilename)
   if (MSVC)
     add_custom_command(
         OUTPUT ${outputFilename}
-        COMMAND ${CMAKE_CXX_COMPILER} ${PREPROCESS_INCLUDE_DIRECTORIES} /P /EP /TC ${PREPROCESS_DEFINITIONS}  /Fi${outputFilename}  ${inputFilename}
+        COMMAND ${CMAKE_CXX_COMPILER} ${PREPROCESS_INCLUDE_DIRECTORIES} /P /EP /TC ${PREPROCESS_DEFINITIONS}  /Fi${outputFilename}  ${inputFilename} /nologo
         DEPENDS ${inputFilename}
         COMMENT "Preprocessing ${inputFilename}. Outputting to ${outputFilename}"
     )
@@ -143,41 +143,17 @@ function(preprocess_file inputFilename outputFilename)
                               PROPERTIES GENERATED TRUE)
 endfunction()
 
-# preprocess_compile_asm(TARGET target ASM_FILES file1 [file2 ...] OUTPUT_OBJECTS [variableName])
-function(preprocess_compile_asm)
-  set(options "")
-  set(oneValueArgs TARGET OUTPUT_OBJECTS)
-  set(multiValueArgs ASM_FILES)
-  cmake_parse_arguments(PARSE_ARGV 0 COMPILE_ASM "${options}" "${oneValueArgs}" "${multiValueArgs}")
-
-  get_include_directories_asm(ASM_INCLUDE_DIRECTORIES)
-
-  set (ASSEMBLED_OBJECTS "")
-
-  foreach(ASM_FILE ${COMPILE_ASM_ASM_FILES})
+# preprocess_files(PreprocessedFilesList [fileToPreprocess1 [fileToPreprocess2 ...]])
+function(preprocess_files PreprocessedFilesList)
+  set(FilesToPreprocess ${ARGN})
+  foreach(ASM_FILE IN LISTS FilesToPreprocess)
     # Inserts a custom command in CMake build to preprocess each asm source file
     get_filename_component(name ${ASM_FILE} NAME_WE)
     file(TO_CMAKE_PATH "${CMAKE_CURRENT_BINARY_DIR}/${name}.asm" ASM_PREPROCESSED_FILE)
     preprocess_file(${ASM_FILE} ${ASM_PREPROCESSED_FILE})
-
-    # Produce object file where CMake would store .obj files for an OBJECT library.
-    # ex: artifacts\obj\coreclr\Windows_NT.arm64.Debug\src\vm\wks\cee_wks.dir\Debug\AsmHelpers.obj
-    set (OBJ_FILE "${CMAKE_CURRENT_BINARY_DIR}/${COMPILE_ASM_TARGET}.dir/${CMAKE_CFG_INTDIR}/${name}.obj")
-
-    # Need to compile asm file using custom command as include directories are not provided to asm compiler
-    add_custom_command(OUTPUT ${OBJ_FILE}
-                        COMMAND "${CMAKE_ASM_MASM_COMPILER}" -g ${ASM_INCLUDE_DIRECTORIES} -o ${OBJ_FILE} ${ASM_PREPROCESSED_FILE}
-                        DEPENDS ${ASM_PREPROCESSED_FILE}
-                        COMMENT "Assembling ${ASM_PREPROCESSED_FILE} ---> \"${CMAKE_ASM_MASM_COMPILER}\" -g ${ASM_INCLUDE_DIRECTORIES} -o ${OBJ_FILE} ${ASM_PREPROCESSED_FILE}")
-
-    # mark obj as source that does not require compile
-    set_source_files_properties(${OBJ_FILE} PROPERTIES EXTERNAL_OBJECT TRUE)
-
-    # Add the generated OBJ in the dependency list so that it gets consumed during linkage
-    list(APPEND ASSEMBLED_OBJECTS ${OBJ_FILE})
+    list(APPEND PreprocessedFiles ${ASM_PREPROCESSED_FILE})
   endforeach()
-
-  set(${COMPILE_ASM_OUTPUT_OBJECTS} ${ASSEMBLED_OBJECTS} PARENT_SCOPE)
+  set(${PreprocessedFilesList} ${PreprocessedFiles} PARENT_SCOPE)
 endfunction()
 
 function(set_exports_linker_option exports_filename)
@@ -192,6 +168,42 @@ function(set_exports_linker_option exports_filename)
         # Add linker exports file option
         set(EXPORTS_LINKER_OPTION -Wl,-exported_symbols_list,${exports_filename} PARENT_SCOPE)
     endif()
+endfunction()
+
+# compile_asm(TARGET target ASM_FILES file1 [file2 ...] OUTPUT_OBJECTS [variableName])
+# CMake does not support the ARM or ARM64 assemblers on Windows when using the 
+# MSBuild generator. When the MSBuild generator is in use, we manually compile the assembly files
+# using this function.
+function(compile_asm)
+  set(options "")
+  set(oneValueArgs TARGET OUTPUT_OBJECTS)
+  set(multiValueArgs ASM_FILES)
+  cmake_parse_arguments(COMPILE_ASM "${options}" "${oneValueArgs}" "${multiValueArgs}" ${ARGV})
+
+  get_include_directories_asm(ASM_INCLUDE_DIRECTORIES)
+
+  set (ASSEMBLED_OBJECTS "")
+
+  foreach(ASM_FILE ${COMPILE_ASM_ASM_FILES})
+    get_filename_component(name ${ASM_FILE} NAME_WE)
+    # Produce object file where CMake would store .obj files for an OBJECT library.
+    # ex: artifacts\obj\coreclr\Windows_NT.arm64.Debug\src\vm\wks\cee_wks.dir\Debug\AsmHelpers.obj
+    set (OBJ_FILE "${CMAKE_CURRENT_BINARY_DIR}/${COMPILE_ASM_TARGET}.dir/${CMAKE_CFG_INTDIR}/${name}.obj")
+
+    # Need to compile asm file using custom command as include directories are not provided to asm compiler
+    add_custom_command(OUTPUT ${OBJ_FILE}
+                        COMMAND "${CMAKE_ASM_COMPILER}" -g ${ASM_INCLUDE_DIRECTORIES} -o ${OBJ_FILE} ${ASM_FILE}
+                        DEPENDS ${ASM_FILE}
+                        COMMENT "Assembling ${ASM_FILE} ---> \"${CMAKE_ASM_COMPILER}\" -g ${ASM_INCLUDE_DIRECTORIES} -o ${OBJ_FILE} ${ASM_FILE}")
+
+    # mark obj as source that does not require compile
+    set_source_files_properties(${OBJ_FILE} PROPERTIES EXTERNAL_OBJECT TRUE)
+
+    # Add the generated OBJ in the dependency list so that it gets consumed during linkage
+    list(APPEND ASSEMBLED_OBJECTS ${OBJ_FILE})
+  endforeach()
+
+  set(${COMPILE_ASM_OUTPUT_OBJECTS} ${ASSEMBLED_OBJECTS} PARENT_SCOPE)
 endfunction()
 
 function(generate_exports_file)
@@ -236,52 +248,6 @@ function(generate_exports_file_prefix inputFilename outputFilename prefix)
                               PROPERTIES GENERATED TRUE)
 endfunction()
 
-# target_precompile_header(TARGET targetName HEADER headerName [ADDITIONAL_INCLUDE_DIRECTORIES includeDirs])
-function(target_precompile_header)
-  set(options "")
-  set(oneValueArgs TARGET HEADER)
-  set(multiValueArgs ADDITIONAL_INCLUDE_DIRECTORIES)
-  cmake_parse_arguments(PARSE_ARGV 0 PRECOMPILE_HEADERS "${options}" "${oneValueArgs}" "${multiValueArgs}")
-
-  if ("${PRECOMPILE_HEADERS_TARGET}" STREQUAL "")
-  message(SEND_ERROR "No target supplied to target_precompile_header.")
-  endif()
-  if ("${PRECOMPILE_HEADERS_HEADER}" STREQUAL "")
-    message(SEND_ERROR "No header supplied to target_precompile_header.")
-  endif()
-
-  if(MSVC)
-    get_filename_component(PCH_NAME ${PRECOMPILE_HEADERS_HEADER} NAME_WE)
-    # We need to use the $<TARGET_PROPERTY:NAME> generator here instead of the ${targetName} variable since
-    # CMake evaluates source file properties once per directory. If we just use ${targetName}, we end up sharing
-    # the same PCH between targets, which doesn't work.
-    set(precompiledBinary "${CMAKE_CURRENT_BINARY_DIR}/${CMAKE_CFG_INTDIR}/${PCH_NAME}.$<TARGET_PROPERTY:NAME>.pch")
-    set(pchSourceFile "${CMAKE_CURRENT_BINARY_DIR}/${PCH_NAME}.${PRECOMPILE_HEADERS_TARGET}.cpp")
-
-    file(GENERATE OUTPUT ${pchSourceFile} CONTENT "#include \"${PRECOMPILE_HEADERS_HEADER}\"")
-
-    set(PCH_SOURCE_FILE_INCLUDE_DIRECTORIES ${CMAKE_CURRENT_SOURCE_DIR} ${PRECOMPILE_HEADERS_ADDITIONAL_INCLUDE_DIRECTORIES})
-
-    set_source_files_properties(${pchSourceFile}
-                                PROPERTIES COMPILE_FLAGS "/Yc\"${PRECOMPILE_HEADERS_HEADER}\" /Fp\"${precompiledBinary}\""
-                                            OBJECT_OUTPUTS "${precompiledBinary}"
-                                            INCLUDE_DIRECTORIES "${PCH_SOURCE_FILE_INCLUDE_DIRECTORIES}")
-    get_target_property(TARGET_SOURCES ${PRECOMPILE_HEADERS_TARGET} SOURCES)
-
-    foreach (SOURCE ${TARGET_SOURCES})
-      get_source_file_property(SOURCE_LANG ${SOURCE} LANGUAGE)
-      if (("${SOURCE_LANG}" STREQUAL "C") OR ("${SOURCE_LANG}" STREQUAL "CXX"))
-        set_source_files_properties(${SOURCE}
-          PROPERTIES COMPILE_FLAGS "/Yu\"${PRECOMPILE_HEADERS_HEADER}\" /Fp\"${precompiledBinary}\""
-                      OBJECT_DEPENDS "${precompiledBinary}")
-      endif()
-    endforeach()
-
-    # Add pchSourceFile to PRECOMPILE_HEADERS_TARGET target
-    target_sources(${PRECOMPILE_HEADERS_TARGET} PRIVATE ${pchSourceFile})
-  endif(MSVC)
-endfunction()
-
 function(strip_symbols targetName outputFilename)
   if (CLR_CMAKE_HOST_UNIX)
     set(strip_source_file $<TARGET_FILE:${targetName}>)
@@ -323,7 +289,7 @@ function(strip_symbols targetName outputFilename)
         POST_BUILD
         VERBATIM
         COMMAND ${CMAKE_OBJCOPY} --only-keep-debug ${strip_source_file} ${strip_destination_file}
-        COMMAND ${CMAKE_OBJCOPY} --strip-debug ${strip_source_file}
+        COMMAND ${CMAKE_OBJCOPY} --strip-unneeded ${strip_source_file}
         COMMAND ${CMAKE_OBJCOPY} --add-gnu-debuglink=${strip_destination_file} ${strip_source_file}
         COMMENT "Stripping symbols from ${strip_source_file} into file ${strip_destination_file}"
         )
@@ -331,13 +297,24 @@ function(strip_symbols targetName outputFilename)
 
     set(${outputFilename} ${strip_destination_file} PARENT_SCOPE)
   else(CLR_CMAKE_HOST_UNIX)
-    set(${outputFilename} ${CMAKE_CURRENT_BINARY_DIR}/$<CONFIG>/${targetName}.pdb PARENT_SCOPE)
+    get_property(is_multi_config GLOBAL PROPERTY GENERATOR_IS_MULTI_CONFIG)
+    if(is_multi_config)
+      # We can't use the $<TARGET_PDB_FILE> generator expression here since
+      # the generator expression isn't supported on resource DLLs.
+      set(${outputFilename} ${CMAKE_CURRENT_BINARY_DIR}/$<CONFIG>/${targetName}.pdb PARENT_SCOPE)
+    else()
+      # We can't use the $<TARGET_PDB_FILE> generator expression here since
+      # the generator expression isn't supported on resource DLLs.
+      set(${outputFilename} ${CMAKE_CURRENT_BINARY_DIR}/${targetName}.pdb PARENT_SCOPE)
+    endif()
   endif(CLR_CMAKE_HOST_UNIX)
 endfunction()
 
 function(install_with_stripped_symbols targetName kind destination)
-    strip_symbols(${targetName} symbol_file)
-    install_symbols(${symbol_file} ${destination})
+    if(NOT CLR_CMAKE_KEEP_NATIVE_SYMBOLS)
+      strip_symbols(${targetName} symbol_file)
+      install_symbols(${symbol_file} ${destination})
+    endif()
     if ("${kind}" STREQUAL "TARGETS")
       set(install_source ${targetName})
     elseif("${kind}" STREQUAL "PROGRAMS")
@@ -356,11 +333,10 @@ function(install_symbols symbol_file destination_path)
   endif()
 endfunction()
 
-# install_clr(TARGETS TARGETS targetName [targetName2 ...] [ADDITIONAL_DESTINATION destination])
+# install_clr(TARGETS TARGETS targetName [targetName2 ...] [ADDITIONAL_DESTINATIONS destination])
 function(install_clr)
-  set(oneValueArgs ADDITIONAL_DESTINATION)
-  set(multiValueArgs TARGETS)
-  cmake_parse_arguments(PARSE_ARGV 0 INSTALL_CLR "${options}" "${oneValueArgs}" "${multiValueArgs}")
+  set(multiValueArgs TARGETS ADDITIONAL_DESTINATIONS)
+  cmake_parse_arguments(INSTALL_CLR "" "" "${multiValueArgs}" ${ARGV})
 
   if ("${INSTALL_CLR_TARGETS}" STREQUAL "")
     message(FATAL_ERROR "At least one target must be passed to install_clr(TARGETS )")
@@ -368,25 +344,34 @@ function(install_clr)
 
   set(destinations ".")
 
-  if (NOT "${INSTALL_CLR_ADDITIONAL_DESTINATION}" STREQUAL "")
-    list(APPEND destinations ${INSTALL_CLR_ADDITIONAL_DESTINATION})
+  if (NOT "${INSTALL_CLR_ADDITIONAL_DESTINATIONS}" STREQUAL "")
+    list(APPEND destinations ${INSTALL_CLR_ADDITIONAL_DESTINATIONS})
   endif()
 
   foreach(targetName ${INSTALL_CLR_TARGETS})
     list(FIND CLR_CROSS_COMPONENTS_LIST ${targetName} INDEX)
     if (NOT DEFINED CLR_CROSS_COMPONENTS_LIST OR NOT ${INDEX} EQUAL -1)
-        strip_symbols(${targetName} symbol_file)
+        if (NOT CLR_CMAKE_KEEP_NATIVE_SYMBOLS)
+          strip_symbols(${targetName} symbol_file)
+        endif()
 
         foreach(destination ${destinations})
           # We don't need to install the export libraries for our DLLs
           # since they won't be directly linked against.
           install(PROGRAMS $<TARGET_FILE:${targetName}> DESTINATION ${destination})
-          install_symbols(${symbol_file} ${destination})
+          if (NOT CLR_CMAKE_KEEP_NATIVE_SYMBOLS)
+            install_symbols(${symbol_file} ${destination})
+          endif()
 
           if(CLR_CMAKE_PGO_INSTRUMENT)
-              if(WIN32)
+            if(WIN32)
+              get_property(is_multi_config GLOBAL PROPERTY GENERATOR_IS_MULTI_CONFIG)
+              if(is_multi_config)
                   install(FILES ${CMAKE_CURRENT_BINARY_DIR}/$<CONFIG>/${targetName}.pgd DESTINATION ${destination}/PGD OPTIONAL)
+              else()
+                  install(FILES ${CMAKE_CURRENT_BINARY_DIR}/${targetName}.pgd DESTINATION ${destination}/PGD OPTIONAL)
               endif()
+            endif()
           endif()
         endforeach()
     endif()
@@ -416,6 +401,21 @@ function(disable_pax_mprotect targetName)
   endif()
 endfunction()
 
+if (CMAKE_VERSION VERSION_LESS "3.12")
+  # Polyfill add_compile_definitions when it is unavailable
+  function(add_compile_definitions)
+    get_directory_property(DIR_COMPILE_DEFINITIONS COMPILE_DEFINITIONS)
+    list(APPEND DIR_COMPILE_DEFINITIONS ${ARGV})
+    set_directory_properties(PROPERTIES COMPILE_DEFINITIONS "${DIR_COMPILE_DEFINITIONS}")
+  endfunction()
+endif()
+
+if (CMAKE_VERSION VERSION_LESS "3.16")
+  # Provide a no-op polyfill for precompiled headers on old CMake versions
+  function(target_precompile_headers)
+  endfunction()
+endif()
+
 function(_add_executable)
     if(NOT WIN32)
       add_executable(${ARGV} ${VERSION_FILE_PATH})
@@ -430,11 +430,11 @@ function(_add_executable)
 endfunction()
 
 function(_add_library)
-    if(NOT WIN32)
+    if(NOT WIN32 AND "${ARGV1}" STREQUAL "SHARED")
       add_library(${ARGV} ${VERSION_FILE_PATH})
     else()
       add_library(${ARGV})
-    endif(NOT WIN32)
+    endif(NOT WIN32 AND "${ARGV1}" STREQUAL "SHARED")
     list(FIND CLR_CROSS_COMPONENTS_LIST ${ARGV0} INDEX)
     if (DEFINED CLR_CROSS_COMPONENTS_LIST AND ${INDEX} EQUAL -1)
      set_target_properties(${ARGV0} PROPERTIES EXCLUDE_FROM_ALL 1)
@@ -479,3 +479,16 @@ function(generate_module_index Target ModuleIndexFile)
         DEPENDS ${ModuleIndexFile}
     )
 endfunction(generate_module_index)
+
+# add_linker_flag(Flag [Config1 Config2 ...])
+function(add_linker_flag Flag)
+  if (ARGN STREQUAL "")
+    set("CMAKE_EXE_LINKER_FLAGS" "${CMAKE_EXE_LINKER_FLAGS} ${Flag}" PARENT_SCOPE)
+    set("CMAKE_SHARED_LINKER_FLAGS" "${CMAKE_SHARED_LINKER_FLAGS} ${Flag}" PARENT_SCOPE)
+  else()
+    foreach(Config ${ARGN})
+      set("CMAKE_EXE_LINKER_FLAGS_${Config}" "${CMAKE_EXE_LINKER_FLAGS_${Config}} ${Flag}" PARENT_SCOPE)
+      set("CMAKE_SHARED_LINKER_FLAGS_${Config}" "${CMAKE_SHARED_LINKER_FLAGS_${Config}} ${Flag}" PARENT_SCOPE)
+    endforeach()
+  endif()
+endfunction()

@@ -47,13 +47,9 @@ namespace System
         // - 0x40 bit if set means 'is uppercase letter'
         // - 0x20 bit if set means 'is lowercase letter'
         // - bottom 5 bits are the UnicodeCategory of the character
-        //
-        // n.b. This data is locked to an earlier version of the Unicode standard (2.0, perhaps?), so
-        // the UnicodeCategory data contained here doesn't necessarily reflect the UnicodeCategory data
-        // contained within the CharUnicodeInfo or Rune types, which generally follow the latest Unicode
-        // standard.
         private static ReadOnlySpan<byte> Latin1CharInfo => new byte[]
         {
+        //  0     1     2     3     4     5     6     7     8     9     A     B     C     D     E     F
             0x0E, 0x0E, 0x0E, 0x0E, 0x0E, 0x0E, 0x0E, 0x0E, 0x0E, 0x8E, 0x8E, 0x8E, 0x8E, 0x8E, 0x0E, 0x0E, // U+0000..U+000F
             0x0E, 0x0E, 0x0E, 0x0E, 0x0E, 0x0E, 0x0E, 0x0E, 0x0E, 0x0E, 0x0E, 0x0E, 0x0E, 0x0E, 0x0E, 0x0E, // U+0010..U+001F
             0x8B, 0x18, 0x18, 0x18, 0x1A, 0x18, 0x18, 0x18, 0x14, 0x15, 0x18, 0x19, 0x18, 0x13, 0x18, 0x18, // U+0020..U+002F
@@ -64,8 +60,8 @@ namespace System
             0x21, 0x21, 0x21, 0x21, 0x21, 0x21, 0x21, 0x21, 0x21, 0x21, 0x21, 0x14, 0x19, 0x15, 0x19, 0x0E, // U+0070..U+007F
             0x0E, 0x0E, 0x0E, 0x0E, 0x0E, 0x8E, 0x0E, 0x0E, 0x0E, 0x0E, 0x0E, 0x0E, 0x0E, 0x0E, 0x0E, 0x0E, // U+0080..U+008F
             0x0E, 0x0E, 0x0E, 0x0E, 0x0E, 0x0E, 0x0E, 0x0E, 0x0E, 0x0E, 0x0E, 0x0E, 0x0E, 0x0E, 0x0E, 0x0E, // U+0090..U+009F
-            0x8B, 0x18, 0x1A, 0x1A, 0x1A, 0x1A, 0x1C, 0x1C, 0x1B, 0x1C, 0x21, 0x16, 0x19, 0x13, 0x1C, 0x1B, // U+00A0..U+00AF
-            0x1C, 0x19, 0x0A, 0x0A, 0x1B, 0x21, 0x1C, 0x18, 0x1B, 0x0A, 0x21, 0x17, 0x0A, 0x0A, 0x0A, 0x18, // U+00B0..U+00BF
+            0x8B, 0x18, 0x1A, 0x1A, 0x1A, 0x1A, 0x1C, 0x18, 0x1B, 0x1C, 0x04, 0x16, 0x19, 0x0F, 0x1C, 0x1B, // U+00A0..U+00AF
+            0x1C, 0x19, 0x0A, 0x0A, 0x1B, 0x21, 0x18, 0x18, 0x1B, 0x0A, 0x04, 0x17, 0x0A, 0x0A, 0x0A, 0x18, // U+00B0..U+00BF
             0x40, 0x40, 0x40, 0x40, 0x40, 0x40, 0x40, 0x40, 0x40, 0x40, 0x40, 0x40, 0x40, 0x40, 0x40, 0x40, // U+00C0..U+00CF
             0x40, 0x40, 0x40, 0x40, 0x40, 0x40, 0x40, 0x19, 0x40, 0x40, 0x40, 0x40, 0x40, 0x40, 0x40, 0x21, // U+00D0..U+00DF
             0x21, 0x21, 0x21, 0x21, 0x21, 0x21, 0x21, 0x21, 0x21, 0x21, 0x21, 0x21, 0x21, 0x21, 0x21, 0x21, // U+00E0..U+00EF
@@ -73,22 +69,24 @@ namespace System
         };
 
         // Return true for all characters below or equal U+00ff, which is ASCII + Latin-1 Supplement.
-        private static bool IsLatin1(char ch)
-        {
-            return (uint)ch < (uint)Latin1CharInfo.Length;
-        }
+        private static bool IsLatin1(char c) => (uint)c < (uint)Latin1CharInfo.Length;
 
         // Return true for all characters below or equal U+007f, which is ASCII.
-        private static bool IsAscii(char ch)
-        {
-            return (uint)ch <= '\x007f';
-        }
+
+        /// <summary>
+        /// Returns <see langword="true"/> if <paramref name="c"/> is an ASCII
+        /// character ([ U+0000..U+007F ]).
+        /// </summary>
+        /// <remarks>
+        /// Per http://www.unicode.org/glossary/#ASCII, ASCII is only U+0000..U+007F.
+        /// </remarks>
+        public static bool IsAscii(char c) => (uint)c <= '\x007f';
 
         // Return the Unicode category for Unicode character <= 0x00ff.
-        private static UnicodeCategory GetLatin1UnicodeCategory(char ch)
+        private static UnicodeCategory GetLatin1UnicodeCategory(char c)
         {
-            Debug.Assert(IsLatin1(ch), "char.GetLatin1UnicodeCategory(): ch should be <= 00ff");
-            return (UnicodeCategory)(Latin1CharInfo[ch] & UnicodeCategoryMask);
+            Debug.Assert(IsLatin1(c), "char.GetLatin1UnicodeCategory(): c should be <= 00ff");
+            return (UnicodeCategory)(Latin1CharInfo[c] & UnicodeCategoryMask);
         }
 
         //
@@ -96,7 +94,7 @@ namespace System
         //
 
         //
-        // Overriden Instance Methods
+        // Overridden Instance Methods
         //
 
         // Calculate a hashcode for a 2 byte Unicode character.
@@ -172,7 +170,7 @@ namespace System
         {
             if (s == null)
             {
-                throw new ArgumentNullException(nameof(s));
+                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.s);
             }
 
             if (s.Length != 1)
@@ -200,7 +198,7 @@ namespace System
         //
         // Static Methods
         //
-        /*=================================ISDIGIT======================================
+        /*=================================IsDigit======================================
         **A wrapper for char.  Returns a boolean indicating whether    **
         **character c is considered to be a digit.                                    **
         ==============================================================================*/
@@ -226,17 +224,17 @@ namespace System
             return IsInRange(uc, UnicodeCategory.UppercaseLetter, UnicodeCategory.OtherLetter);
         }
 
-        /*=================================ISLETTER=====================================
+        /*=================================IsLetter=====================================
         **A wrapper for char.  Returns a boolean indicating whether    **
         **character c is considered to be a letter.                                   **
         ==============================================================================*/
         // Determines whether a character is a letter.
         public static bool IsLetter(char c)
         {
-            if (IsLatin1(c))
+            if (IsAscii(c))
             {
                 // For the version of the Unicode standard the Char type is locked to, the
-                // Latin-1 range doesn't include letters in categories other than "upper" and "lower".
+                // ASCII range doesn't include letters in categories other than "upper" and "lower".
                 return (Latin1CharInfo[c] & (IsUpperCaseLetterFlag | IsLowerCaseLetterFlag)) != 0;
             }
             return CheckLetter(CharUnicodeInfo.GetUnicodeCategory(c));
@@ -248,7 +246,7 @@ namespace System
             return (Latin1CharInfo[c] & IsWhiteSpaceFlag) != 0;
         }
 
-        /*===============================ISWHITESPACE===================================
+        /*===============================IsWhiteSpace===================================
         **A wrapper for char.  Returns a boolean indicating whether    **
         **character c is considered to be a whitespace character.                     **
         ==============================================================================*/
@@ -264,7 +262,7 @@ namespace System
         }
 
         /*===================================IsUpper====================================
-        **Arguments: c -- the characater to be checked.
+        **Arguments: c -- the character to be checked.
         **Returns:  True if c is an uppercase character.
         ==============================================================================*/
         // Determines whether a character is upper-case.
@@ -278,7 +276,7 @@ namespace System
         }
 
         /*===================================IsLower====================================
-        **Arguments: c -- the characater to be checked.
+        **Arguments: c -- the character to be checked.
         **Returns:  True if c is an lowercase character.
         ==============================================================================*/
         // Determines whether a character is lower-case.
@@ -297,7 +295,7 @@ namespace System
         }
 
         /*================================IsPunctuation=================================
-        **Arguments: c -- the characater to be checked.
+        **Arguments: c -- the character to be checked.
         **Returns:  True if c is an punctuation mark
         ==============================================================================*/
         // Determines whether a character is a punctuation mark.
@@ -336,11 +334,14 @@ namespace System
         public static char ToUpper(char c, CultureInfo culture)
         {
             if (culture == null)
-                throw new ArgumentNullException(nameof(culture));
+            {
+                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.culture);
+            }
+
             return culture.TextInfo.ToUpper(c);
         }
 
-        /*=================================TOUPPER======================================
+        /*=================================ToUpper======================================
         **A wrapper for char.ToUpperCase.  Converts character c to its **
         **uppercase equivalent.  If c is already an uppercase character or is not an  **
         **alphabetic, nothing happens.                                                **
@@ -363,11 +364,14 @@ namespace System
         public static char ToLower(char c, CultureInfo culture)
         {
             if (culture == null)
-                throw new ArgumentNullException(nameof(culture));
+            {
+                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.culture);
+            }
+
             return culture.TextInfo.ToLower(c);
         }
 
-        /*=================================TOLOWER======================================
+        /*=================================ToLower======================================
         **A wrapper for char.ToLowerCase.  Converts character c to its **
         **lowercase equivalent.  If c is already a lowercase character or is not an   **
         **alphabetic, nothing happens.                                                **
@@ -475,10 +479,12 @@ namespace System
         public static bool IsControl(string s, int index)
         {
             if (s == null)
-                throw new ArgumentNullException(nameof(s));
+            {
+                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.s);
+            }
             if (((uint)index) >= ((uint)s.Length))
             {
-                throw new ArgumentOutOfRangeException(nameof(index));
+                ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.index);
             }
 
             // Control chars are always in the BMP, so don't need to worry about surrogate handling.
@@ -488,67 +494,83 @@ namespace System
         public static bool IsDigit(string s, int index)
         {
             if (s == null)
-                throw new ArgumentNullException(nameof(s));
+            {
+                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.s);
+            }
             if (((uint)index) >= ((uint)s.Length))
             {
-                throw new ArgumentOutOfRangeException(nameof(index));
+                ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.index);
             }
+
             char c = s[index];
             if (IsLatin1(c))
             {
                 return IsInRange(c, '0', '9');
             }
-            return CharUnicodeInfo.GetUnicodeCategory(s, index) == UnicodeCategory.DecimalDigitNumber;
+
+            return CharUnicodeInfo.GetUnicodeCategoryInternal(s, index) == UnicodeCategory.DecimalDigitNumber;
         }
 
         public static bool IsLetter(string s, int index)
         {
             if (s == null)
-                throw new ArgumentNullException(nameof(s));
+            {
+                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.s);
+            }
             if (((uint)index) >= ((uint)s.Length))
             {
-                throw new ArgumentOutOfRangeException(nameof(index));
+                ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.index);
             }
+
             char c = s[index];
-            if (IsLatin1(c))
+            if (IsAscii(c))
             {
-                // The Latin-1 range doesn't include letters in categories other than "upper" and "lower"
+                // The ASCII range doesn't include letters in categories other than "upper" and "lower"
                 return (Latin1CharInfo[c] & (IsUpperCaseLetterFlag | IsLowerCaseLetterFlag)) != 0;
             }
-            return CheckLetter(CharUnicodeInfo.GetUnicodeCategory(s, index));
+
+            return CheckLetter(CharUnicodeInfo.GetUnicodeCategoryInternal(s, index));
         }
 
         public static bool IsLetterOrDigit(string s, int index)
         {
             if (s == null)
-                throw new ArgumentNullException(nameof(s));
+            {
+                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.s);
+            }
             if (((uint)index) >= ((uint)s.Length))
             {
-                throw new ArgumentOutOfRangeException(nameof(index));
+                ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.index);
             }
+
             char c = s[index];
             if (IsLatin1(c))
             {
                 return CheckLetterOrDigit(GetLatin1UnicodeCategory(c));
             }
-            return CheckLetterOrDigit(CharUnicodeInfo.GetUnicodeCategory(s, index));
+
+            return CheckLetterOrDigit(CharUnicodeInfo.GetUnicodeCategoryInternal(s, index));
         }
 
         public static bool IsLower(string s, int index)
         {
             if (s == null)
-                throw new ArgumentNullException(nameof(s));
+            {
+                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.s);
+            }
+
             if (((uint)index) >= ((uint)s.Length))
             {
-                throw new ArgumentOutOfRangeException(nameof(index));
+                ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.index);
             }
+
             char c = s[index];
             if (IsLatin1(c))
             {
                 return (Latin1CharInfo[c] & IsLowerCaseLetterFlag) != 0;
             }
 
-            return CharUnicodeInfo.GetUnicodeCategory(s, index) == UnicodeCategory.LowercaseLetter;
+            return CharUnicodeInfo.GetUnicodeCategoryInternal(s, index) == UnicodeCategory.LowercaseLetter;
         }
 
         /*=================================CheckNumber=====================================
@@ -576,11 +598,14 @@ namespace System
         public static bool IsNumber(string s, int index)
         {
             if (s == null)
-                throw new ArgumentNullException(nameof(s));
+            {
+                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.s);
+            }
             if (((uint)index) >= ((uint)s.Length))
             {
-                throw new ArgumentOutOfRangeException(nameof(index));
+                ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.index);
             }
+
             char c = s[index];
             if (IsLatin1(c))
             {
@@ -588,9 +613,11 @@ namespace System
                 {
                     return IsInRange(c, '0', '9');
                 }
+
                 return CheckNumber(GetLatin1UnicodeCategory(c));
             }
-            return CheckNumber(CharUnicodeInfo.GetUnicodeCategory(s, index));
+
+            return CheckNumber(CharUnicodeInfo.GetUnicodeCategoryInternal(s, index));
         }
 
         ////////////////////////////////////////////////////////////////////////
@@ -604,21 +631,25 @@ namespace System
         public static bool IsPunctuation(string s, int index)
         {
             if (s == null)
-                throw new ArgumentNullException(nameof(s));
+            {
+                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.s);
+            }
             if (((uint)index) >= ((uint)s.Length))
             {
-                throw new ArgumentOutOfRangeException(nameof(index));
+                ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.index);
             }
+
             char c = s[index];
             if (IsLatin1(c))
             {
                 return CheckPunctuation(GetLatin1UnicodeCategory(c));
             }
-            return CheckPunctuation(CharUnicodeInfo.GetUnicodeCategory(s, index));
+
+            return CheckPunctuation(CharUnicodeInfo.GetUnicodeCategoryInternal(s, index));
         }
 
         /*================================= CheckSeparator ============================
-        ** Check if the specified UnicodeCategory belongs to the seprator categories.
+        ** Check if the specified UnicodeCategory belongs to the separator categories.
         ==============================================================================*/
 
         internal static bool CheckSeparator(UnicodeCategory uc)
@@ -645,17 +676,21 @@ namespace System
         public static bool IsSeparator(string s, int index)
         {
             if (s == null)
-                throw new ArgumentNullException(nameof(s));
+            {
+                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.s);
+            }
             if (((uint)index) >= ((uint)s.Length))
             {
-                throw new ArgumentOutOfRangeException(nameof(index));
+                ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.index);
             }
+
             char c = s[index];
             if (IsLatin1(c))
             {
                 return IsSeparatorLatin1(c);
             }
-            return CheckSeparator(CharUnicodeInfo.GetUnicodeCategory(s, index));
+
+            return CheckSeparator(CharUnicodeInfo.GetUnicodeCategoryInternal(s, index));
         }
 
         public static bool IsSurrogate(char c)
@@ -667,12 +702,13 @@ namespace System
         {
             if (s == null)
             {
-                throw new ArgumentNullException(nameof(s));
+                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.s);
             }
             if (((uint)index) >= ((uint)s.Length))
             {
-                throw new ArgumentOutOfRangeException(nameof(index));
+                ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.index);
             }
+
             return IsSurrogate(s[index]);
         }
 
@@ -697,43 +733,52 @@ namespace System
         public static bool IsSymbol(string s, int index)
         {
             if (s == null)
-                throw new ArgumentNullException(nameof(s));
+            {
+                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.s);
+            }
             if (((uint)index) >= ((uint)s.Length))
             {
-                throw new ArgumentOutOfRangeException(nameof(index));
+                ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.index);
             }
+
             char c = s[index];
             if (IsLatin1(c))
             {
                 return CheckSymbol(GetLatin1UnicodeCategory(c));
             }
-            return CheckSymbol(CharUnicodeInfo.GetUnicodeCategory(s, index));
+
+            return CheckSymbol(CharUnicodeInfo.GetUnicodeCategoryInternal(s, index));
         }
 
         public static bool IsUpper(string s, int index)
         {
             if (s == null)
-                throw new ArgumentNullException(nameof(s));
+            {
+                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.s);
+            }
             if (((uint)index) >= ((uint)s.Length))
             {
-                throw new ArgumentOutOfRangeException(nameof(index));
+                ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.index);
             }
+
             char c = s[index];
             if (IsLatin1(c))
             {
                 return (Latin1CharInfo[c] & IsUpperCaseLetterFlag) != 0;
             }
 
-            return CharUnicodeInfo.GetUnicodeCategory(s, index) == UnicodeCategory.UppercaseLetter;
+            return CharUnicodeInfo.GetUnicodeCategoryInternal(s, index) == UnicodeCategory.UppercaseLetter;
         }
 
         public static bool IsWhiteSpace(string s, int index)
         {
             if (s == null)
-                throw new ArgumentNullException(nameof(s));
+            {
+                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.s);
+            }
             if (((uint)index) >= ((uint)s.Length))
             {
-                throw new ArgumentOutOfRangeException(nameof(index));
+                ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.index);
             }
 
             // All white space code points are within the BMP,
@@ -754,15 +799,19 @@ namespace System
         public static UnicodeCategory GetUnicodeCategory(string s, int index)
         {
             if (s == null)
-                throw new ArgumentNullException(nameof(s));
+            {
+                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.s);
+            }
             if (((uint)index) >= ((uint)s.Length))
             {
-                throw new ArgumentOutOfRangeException(nameof(index));
+                ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.index);
             }
+
             if (IsLatin1(s[index]))
             {
                 return GetLatin1UnicodeCategory(s[index]);
             }
+
             return CharUnicodeInfo.GetUnicodeCategoryInternal(s, index);
         }
 
@@ -774,12 +823,15 @@ namespace System
         public static double GetNumericValue(string s, int index)
         {
             if (s == null)
-                throw new ArgumentNullException(nameof(s));
+            {
+                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.s);
+            }
             if (((uint)index) >= ((uint)s.Length))
             {
-                throw new ArgumentOutOfRangeException(nameof(index));
+                ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.index);
             }
-            return CharUnicodeInfo.GetNumericValue(s, index);
+
+            return CharUnicodeInfo.GetNumericValueInternal(s, index);
         }
 
         /*================================= IsHighSurrogate ============================
@@ -794,12 +846,13 @@ namespace System
         {
             if (s == null)
             {
-                throw new ArgumentNullException(nameof(s));
+                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.s);
             }
-            if (index < 0 || index >= s.Length)
+            if (((uint)index) >= ((uint)s.Length))
             {
-                throw new ArgumentOutOfRangeException(nameof(index));
+                ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.index);
             }
+
             return IsHighSurrogate(s[index]);
         }
 
@@ -815,12 +868,13 @@ namespace System
         {
             if (s == null)
             {
-                throw new ArgumentNullException(nameof(s));
+                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.s);
             }
-            if (index < 0 || index >= s.Length)
+            if (((uint)index) >= ((uint)s.Length))
             {
-                throw new ArgumentOutOfRangeException(nameof(index));
+                ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.index);
             }
+
             return IsLowSurrogate(s[index]);
         }
 
@@ -831,16 +885,18 @@ namespace System
         {
             if (s == null)
             {
-                throw new ArgumentNullException(nameof(s));
+                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.s);
             }
-            if (index < 0 || index >= s.Length)
+            if (((uint)index) >= ((uint)s.Length))
             {
-                throw new ArgumentOutOfRangeException(nameof(index));
+                ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.index);
             }
+
             if (index + 1 < s.Length)
             {
                 return IsSurrogatePair(s[index], s[index + 1]);
             }
+
             return false;
         }
 
@@ -935,7 +991,7 @@ namespace System
         {
             if (s == null)
             {
-                throw new ArgumentNullException(nameof(s));
+                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.s);
             }
 
             if (index < 0 || index >= s.Length)

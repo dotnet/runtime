@@ -14,7 +14,7 @@ namespace MS.Internal.Xml.XPath
         {
             base.Evaluate(context);
 
-            XPathNavigator input;
+            XPathNavigator? input;
             while ((input = qyInput.Advance()) != null)
             {
                 input = input.Clone();

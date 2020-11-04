@@ -21,8 +21,8 @@ namespace Tracing.Tests.Common
 {
     public static class Utils
     {
-        public static readonly string DiagnosticsMonitorAddressEnvKey = "DOTNET_DiagnosticsMonitorAddress";
-        public static readonly string DiagnosticsMonitorPauseOnStartEnvKey = "DOTNET_DiagnosticsMonitorPauseOnStart";
+        public static readonly string DiagnosticPortsEnvKey = "DOTNET_DiagnosticPorts";
+        public static readonly string DiagnosticPortSuspend = "DOTNET_DefaultDiagnosticPortSuspend";
 
         public static async Task<T> WaitTillTimeout<T>(Task<T> task, TimeSpan timeout)
         {
@@ -70,7 +70,7 @@ namespace Tracing.Tests.Common
                 foreach ((string key, string value) in environment)
                     process.StartInfo.Environment.Add(key, value);
                 process.StartInfo.FileName = Process.GetCurrentProcess().MainModule.FileName;
-                process.StartInfo.Arguments = new Uri(currentAssembly.CodeBase).LocalPath + " 0";
+                process.StartInfo.Arguments = new Uri(currentAssembly.Location).LocalPath + " 0";
                 process.StartInfo.RedirectStandardOutput = true;
                 process.StartInfo.RedirectStandardInput = true;
                 process.StartInfo.RedirectStandardError = true;
@@ -97,14 +97,14 @@ namespace Tracing.Tests.Common
                 fSuccess &= process.Start();
                 if (!fSuccess)
                     throw new Exception("Failed to start subprocess");
-                StreamWriter subprocesssStdIn = process.StandardInput;
+                StreamWriter subprocessStdIn = process.StandardInput;
                 process.BeginOutputReadLine();
                 process.BeginErrorReadLine();
                 Logger.logger.Log($"subprocess started: {fSuccess}");
                 Logger.logger.Log($"subprocess PID: {process.Id}");
 
                 bool fGotToEnd = false;
-                process.Exited += (s, e) => 
+                process.Exited += (s, e) =>
                 {
                     Logger.logger.Log("================= Subprocess Exited =================");
                     if (!fGotToEnd)
@@ -127,8 +127,8 @@ namespace Tracing.Tests.Common
                         await duringExecution(process.Id);
                     fGotToEnd = true;
                     Logger.logger.Log($"Sending 'exit' to subprocess stdin");
-                    subprocesssStdIn.WriteLine("exit");
-                    subprocesssStdIn.Close();
+                    subprocessStdIn.WriteLine("exit");
+                    subprocessStdIn.Close();
                     while (!process.WaitForExit(5000))
                     {
                         Logger.logger.Log("Subprocess didn't exit in 5 seconds!");
@@ -144,8 +144,10 @@ namespace Tracing.Tests.Common
                 }
                 finally
                 {
+                    Logger.logger.Log($"----------------------------------------");
                     Logger.logger.Log($"Subprocess stdout: {stdoutSb.ToString()}");
                     Logger.logger.Log($"Subprocess stderr: {stderrSb.ToString()}");
+                    Logger.logger.Log($"----------------------------------------");
                 }
 
 
@@ -244,7 +246,7 @@ namespace Tracing.Tests.Common
         public IpcHeader Header { get; private set; } = default;
 
         public byte[] Serialize()
-        { 
+        {
             byte[] serializedData = null;
             // Verify things will fit in the size capacity
             Header.Size = checked((UInt16)(IpcHeader.HeaderSizeInBytes + (Payload?.Length ?? 0))); ;
@@ -291,6 +293,49 @@ namespace Tracing.Tests.Common
         }
     }
 
+    public class ProcessInfo
+    {
+        // uint64_t ProcessId;
+        // GUID RuntimeCookie;
+        // LPCWSTR CommandLine;
+        // LPCWSTR OS;
+        // LPCWSTR Arch;
+        public UInt64 ProcessId;
+        public Guid RuntimeCookie;
+        public string Commandline;
+        public string OS;
+        public string Arch;
+
+        public static ProcessInfo TryParse(byte[] buf)
+        {
+            var info = new ProcessInfo();
+            int start = 0;
+            int end = 8; /* sizeof(uint64_t) */
+            info.ProcessId = BitConverter.ToUInt64(buf[start..end]);
+
+            start = end;
+            end = start + 16; /* sizeof(guid) */
+            info.RuntimeCookie = new Guid(buf[start..end]);
+
+            string ParseString(ref int start, ref int end)
+            {
+                start = end;
+                end = start + 4; /* sizeof(uint32_t) */
+                uint nChars = BitConverter.ToUInt32(buf[start..end]);
+
+                start = end;
+                end = start + ((int)nChars * sizeof(char));
+                return System.Text.Encoding.Unicode.GetString(buf[start..end]).TrimEnd('\0');
+            }
+
+            info.Commandline = ParseString(ref start, ref end);
+            info.OS = ParseString(ref start, ref end);
+            info.Arch = ParseString(ref start, ref end);
+
+            return info;
+        }
+    }
+
     public class IpcClient
     {
         public static IpcMessage SendMessage(Stream stream, IpcMessage message)
@@ -330,7 +375,7 @@ namespace Tracing.Tests.Common
         private static string IpcRootPath { get; } = RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? @"\\.\pipe\" : Path.GetTempPath();
         public static Stream GetStandardTransport(int processId)
         {
-            try 
+            try
             {
                 var process = Process.GetProcessById(processId);
             }
@@ -342,7 +387,7 @@ namespace Tracing.Tests.Common
             {
                 throw new Exception($"Process {processId} seems to be elevated.");
             }
- 
+
             if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
             {
                 string pipeName = $"dotnet-diagnostic-{processId}";

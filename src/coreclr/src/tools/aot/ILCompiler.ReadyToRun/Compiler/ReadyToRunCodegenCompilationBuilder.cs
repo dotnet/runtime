@@ -23,12 +23,13 @@ namespace ILCompiler
         private bool _ibcTuning;
         private bool _resilient;
         private bool _generateMapFile;
+        private bool _generateMapCsvFile;
         private int _parallelism;
         private InstructionSetSupport _instructionSetSupport;
         private ProfileDataManager _profileData;
         private ReadyToRunMethodLayoutAlgorithm _r2rMethodLayoutAlgorithm;
         private ReadyToRunFileLayoutAlgorithm _r2rFileLayoutAlgorithm;
-        private int? _customPESectionAlignment;
+        private int _customPESectionAlignment;
         private bool _verifyTypeAndFieldLayout;
 
         private string _jitPath;
@@ -73,6 +74,9 @@ namespace ILCompiler
                 builder.Add(new KeyValuePair<string, string>(name, value));
             }
 
+            // As we always use an AltJit to compile, tell the jit to always generate code
+            builder.Add(new KeyValuePair<string, string>("AltJitNgen", "*"));
+
             _ryujitOptions = builder.ToArray();
 
             return this;
@@ -89,9 +93,9 @@ namespace ILCompiler
             return _ilProvider;
         }
 
-        public ReadyToRunCodegenCompilationBuilder UseJitPath(FileInfo jitPath)
+        public ReadyToRunCodegenCompilationBuilder UseJitPath(string jitPath)
         {
-            _jitPath = jitPath == null ? null : jitPath.FullName;
+            _jitPath = jitPath;
             return this;
         }
 
@@ -126,6 +130,12 @@ namespace ILCompiler
             return this;
         }
 
+        public ReadyToRunCodegenCompilationBuilder UseMapCsvFile(bool generateMapCsvFile)
+        {
+            _generateMapCsvFile = generateMapCsvFile;
+            return this;
+        }
+
         public ReadyToRunCodegenCompilationBuilder UseParallelism(int parallelism)
         {
             _parallelism = parallelism;
@@ -144,7 +154,7 @@ namespace ILCompiler
             return this;
         }
 
-        public ReadyToRunCodegenCompilationBuilder UseCustomPESectionAlignment(int? customPESectionAlignment)
+        public ReadyToRunCodegenCompilationBuilder UseCustomPESectionAlignment(int customPESectionAlignment)
         {
             _customPESectionAlignment = customPESectionAlignment;
             return this;
@@ -240,6 +250,7 @@ namespace ILCompiler
                 _instructionSetSupport,
                 _resilient,
                 _generateMapFile,
+                _generateMapCsvFile,
                 _parallelism,
                 _profileData,
                 _r2rMethodLayoutAlgorithm,

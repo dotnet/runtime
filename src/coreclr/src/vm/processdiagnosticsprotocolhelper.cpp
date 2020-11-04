@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 #include "common.h"
 #include "fastserializer.h"
@@ -11,7 +10,7 @@
 
 #ifdef FEATURE_PERFTRACING
 
-static inline uint32_t GetStringLength(const WCHAR *&value)
+static inline uint32_t GetStringLength(const WCHAR *value)
 {
     return static_cast<uint32_t>(wcslen(value) + 1);
 }
@@ -33,6 +32,28 @@ static bool TryWriteString(uint8_t * &bufferCursor, uint16_t &bufferLen, const W
 
     bufferLen -= totalStringSizeInBytes.Value();
     return true;
+}
+
+static bool TryWriteString(IpcStream *pStream, const WCHAR *value)
+{
+    uint32_t stringLen = GetStringLength(value);
+    uint32_t stringLenInBytes = stringLen * sizeof(WCHAR);
+    uint32_t totalStringSizeInBytes = stringLenInBytes + sizeof(uint32_t);
+
+    uint32_t totalBytesWritten = 0;
+    uint32_t nBytesWritten = 0;
+
+    bool fSuccess = pStream->Write(&stringLen, sizeof(stringLen), nBytesWritten);
+    totalBytesWritten += nBytesWritten;
+
+    if (fSuccess)
+    {
+        fSuccess &= pStream->Write(value, stringLenInBytes, nBytesWritten);
+        totalBytesWritten += nBytesWritten;
+    }
+
+    ASSERT(totalBytesWritten == totalStringSizeInBytes);
+    return fSuccess && totalBytesWritten == totalStringSizeInBytes;
 }
 
 uint16_t ProcessInfoPayload::GetSize()
@@ -114,6 +135,134 @@ bool ProcessInfoPayload::Flatten(BYTE * &lpBuffer, uint16_t &cbSize)
     return fSuccess;
 }
 
+void EnvironmentHelper::PopulateEnvironment()
+{
+    CONTRACTL
+    {
+        NOTHROW;
+        GC_TRIGGERS;
+        MODE_PREEMPTIVE;
+    }
+    CONTRACTL_END;
+
+    if (Environment != nullptr)
+        return;
+
+    // env block is an array of strings of the form "key=value" delimited by null and terminated by null
+    // e.g., "key=value\0key=value\0\0";
+    LPWSTR envBlock = GetEnvironmentStringsW();
+    LPWSTR envCursor = envBlock;
+    // first calculate the buffer size
+    uint32_t nWchars = 0;
+    uint32_t nEntries = 0;
+    while(*envCursor != 0) 
+    {
+        uint32_t len = static_cast<uint32_t>(wcslen(envCursor) + 1);
+        nEntries++;
+        nWchars += len;
+        envCursor += len;
+    }
+
+    // serialized size value can't be larger than uint32_t
+    S_UINT32 size(sizeof(uint32_t) + (nEntries * sizeof(uint32_t)) + (nWchars * sizeof(WCHAR)));
+    // if the envblock size value is larger than a uint32_t then we should bail
+    if (!size.IsOverflow())
+    {
+        // copy out the Environment block
+        LPWSTR tmpEnv = new (nothrow) WCHAR[nWchars + 1];
+        if (tmpEnv != nullptr)
+        {
+            memcpy(tmpEnv, envBlock, (nWchars + 1) * sizeof(WCHAR));
+            Environment = tmpEnv;
+        }
+        _nEnvEntries = nEntries;
+        _nWchars = nWchars;
+    }
+
+    FreeEnvironmentStringsW(envBlock);
+
+    return;
+}
+
+uint32_t EnvironmentHelper::GetEnvironmentBlockSize()
+{
+    LIMITED_METHOD_CONTRACT;
+
+    S_UINT32 size(sizeof(uint32_t) + (_nEnvEntries * sizeof(uint32_t)) + (_nWchars * sizeof(WCHAR)));
+    return size.IsOverflow() ? sizeof(uint32_t) : size.Value();
+}
+
+bool EnvironmentHelper::WriteToStream(IpcStream *pStream)
+{
+    CONTRACTL
+    {
+        NOTHROW;
+        GC_TRIGGERS;
+        MODE_PREEMPTIVE;
+        PRECONDITION(pStream != nullptr);
+        PRECONDITION(Environment != nullptr);
+    }
+    CONTRACTL_END;
+
+    // Array<Array<WCHAR>>
+    uint32_t nBytesWritten = 0;
+    bool fSuccess = pStream->Write(&_nEnvEntries, sizeof(_nEnvEntries), nBytesWritten);
+
+    LPCWSTR cursor = Environment;
+    for (uint32_t i = 0; i < _nEnvEntries; i++)
+    {
+        if (!fSuccess || cursor == nullptr)
+            break;
+
+        uint32_t len = static_cast<uint32_t>(wcslen(cursor) + 1);
+        fSuccess &= TryWriteString(pStream, cursor);
+        cursor += len;
+    }
+
+    return fSuccess;
+}
+
+void ProcessDiagnosticsProtocolHelper::GetProcessEnvironment(DiagnosticsIpc::IpcMessage& message, IpcStream *pStream)
+{
+    CONTRACTL
+    {
+        THROWS;
+        GC_TRIGGERS;
+        MODE_PREEMPTIVE;
+        PRECONDITION(pStream != nullptr);
+    }
+    CONTRACTL_END;
+
+    // GetProcessEnvironment responds with a Diagnostics IPC message
+    // who's payload is a uint32_t that specifies the number of bytes
+    // that will follow.  The optional continuation will contain
+    // the Environemnt streamed in the standard Diagnostics IPC format (length-prefixed arrays).
+
+    struct EnvironmentHelper helper = {};
+    helper.PopulateEnvironment();
+
+    struct EnvironmentHelper::InitialPayload payload = { helper.GetEnvironmentBlockSize(), 0 };
+
+    DiagnosticsIpc::IpcMessage ProcessEnvironmentResponse;
+    const bool fSuccess = ProcessEnvironmentResponse.Initialize(DiagnosticsIpc::GenericSuccessHeader, payload) ?
+        ProcessEnvironmentResponse.Send(pStream) :
+        DiagnosticsIpc::IpcMessage::SendErrorMessage(pStream, E_FAIL);
+
+    if (!fSuccess)
+    {
+        STRESS_LOG0(LF_DIAGNOSTICS_PORT, LL_ERROR, "Failed to send DiagnosticsIPC response");
+    }
+    else
+    {
+        // send the environment
+        const bool fSuccessWriteEnv = helper.WriteToStream(pStream);
+        if (!fSuccessWriteEnv)
+            STRESS_LOG0(LF_DIAGNOSTICS_PORT, LL_ERROR, "Failed to stream environment");
+    }
+
+    delete pStream;
+}
+
 void ProcessDiagnosticsProtocolHelper::GetProcessInfo(DiagnosticsIpc::IpcMessage& message, IpcStream *pStream)
 {
     CONTRACTL
@@ -128,14 +277,7 @@ void ProcessDiagnosticsProtocolHelper::GetProcessInfo(DiagnosticsIpc::IpcMessage
     struct ProcessInfoPayload payload = {};
 
     // Get cmdline
-    payload.CommandLine = GetManagedCommandLine();
-
-    // Checkout https://github.com/dotnet/coreclr/pull/24433 for more information about this fall back.
-    if (payload.CommandLine == nullptr)
-    {
-        // Use the result from GetCommandLineW() instead
-        payload.CommandLine = GetCommandLineW();
-    }
+    payload.CommandLine = GetCommandLineForDiagnostics();
 
     // get OS + Arch info
     payload.OS = EventPipeEventSource::s_pOSInformation;
@@ -201,6 +343,9 @@ void ProcessDiagnosticsProtocolHelper::HandleIpcMessage(DiagnosticsIpc::IpcMessa
         break;
     case ProcessCommandId::ResumeRuntime:
         ProcessDiagnosticsProtocolHelper::ResumeRuntimeStartup(message, pStream);
+        break;
+    case ProcessCommandId::GetProcessEnvironment:
+        ProcessDiagnosticsProtocolHelper::GetProcessEnvironment(message, pStream);
         break;
 
     default:

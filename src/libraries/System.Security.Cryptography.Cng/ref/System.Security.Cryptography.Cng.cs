@@ -169,7 +169,6 @@ namespace System.Security.Cryptography
         public System.Security.Cryptography.CngKeyUsages? KeyUsage { get { throw null; } set { } }
         public System.Security.Cryptography.CngPropertyCollection Parameters { get { throw null; } }
         public System.IntPtr ParentWindowHandle { get { throw null; } set { } }
-        [System.Diagnostics.CodeAnalysis.MaybeNullAttribute]
         public System.Security.Cryptography.CngProvider Provider { get { throw null; } set { } }
         public System.Security.Cryptography.CngUIPolicy? UIPolicy { get { throw null; } set { } }
     }

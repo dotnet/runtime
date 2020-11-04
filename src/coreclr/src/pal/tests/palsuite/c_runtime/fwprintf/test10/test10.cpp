@@ -18,7 +18,7 @@
  * Depends on memcmp, strlen, fopen, fseek and fgets.
  */
 
-int __cdecl main(int argc, char *argv[])
+PALTEST(c_runtime_fwprintf_test10_paltest_fwprintf_test10, "c_runtime/fwprintf/test10/paltest_fwprintf_test10")
 {
     int neg = -42;
     int pos = 42;

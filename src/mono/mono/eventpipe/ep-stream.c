@@ -214,7 +214,7 @@ ep_fast_serializer_write_buffer (
 	bool result = ep_stream_writer_write (fast_serializer->stream_writer, buffer, buffer_len, &bytes_written);
 
 	uint32_t required_padding = fast_serializer->required_padding;
-	required_padding = (FAST_SERIALIZER_ALIGNMENT_SIZE + required_padding - (bytes_written & FAST_SERIALIZER_ALIGNMENT_SIZE)) % FAST_SERIALIZER_ALIGNMENT_SIZE;
+	required_padding = (FAST_SERIALIZER_ALIGNMENT_SIZE + required_padding - (bytes_written % FAST_SERIALIZER_ALIGNMENT_SIZE)) % FAST_SERIALIZER_ALIGNMENT_SIZE;
 	fast_serializer->required_padding = required_padding;
 
 	// This will cause us to stop writing to the file.
@@ -374,10 +374,7 @@ ep_file_stream_writer_alloc (const ep_char8_t *output_file_path)
 	instance->file_stream = ep_file_stream_alloc ();
 	ep_raise_error_if_nok (instance->file_stream != NULL);
 
-	if (!ep_file_stream_open_write (instance->file_stream, output_file_path)) {
-		EP_ASSERT (!"Unable to open file for write.");
-		ep_raise_error ();
-	}
+	ep_raise_error_if_nok (ep_file_stream_open_write (instance->file_stream, output_file_path) == true);
 
 ep_on_exit:
 	return instance;
@@ -428,64 +425,94 @@ ep_on_error:
 */
 
 IpcStream *
-ep_ipc_stream_alloc (ep_rt_ipc_handle_t rt_ipc)
+ep_ipc_stream_init (
+	IpcStream *ipc_stream,
+	IpcStreamVtable *vtable)
 {
-	IpcStream *instance = ep_rt_object_alloc (IpcStream);
-	ep_raise_error_if_nok (instance != NULL);
+	EP_ASSERT (ipc_stream != NULL);
+	EP_ASSERT (vtable != NULL);
 
-	//Transfer ownership.
-	instance->rt_ipc = rt_ipc;
-
-ep_on_exit:
-	return instance;
-
-ep_on_error:
-	ep_ipc_stream_free (instance);
-	instance = NULL;
-	ep_exit_error_handler ();
+	ipc_stream->vtable = vtable;
+	return ipc_stream;
 }
 
 void
-ep_ipc_stream_free (IpcStream *ipc_stream)
+ep_ipc_stream_fini (IpcStream *ipc_stream)
+{
+	return;
+}
+
+void
+ep_ipc_stream_free_vcall (IpcStream *ipc_stream)
 {
 	ep_return_void_if_nok (ipc_stream != NULL);
 
-	ep_ipc_stream_flush (ipc_stream);
-	ep_ipc_stream_disconnect (ipc_stream);
-	ep_ipc_stream_close (ipc_stream);
-	ep_rt_object_free (ipc_stream);
+	EP_ASSERT (ipc_stream->vtable != NULL);
+	IpcStreamVtable *vtable = ipc_stream->vtable;
+
+	ep_ipc_stream_flush_vcall (ipc_stream);
+	ep_ipc_stream_close_vcall (ipc_stream);
+
+	EP_ASSERT (vtable->free_func != NULL);
+	vtable->free_func (ipc_stream);
 }
 
 bool
-ep_ipc_stream_flush (IpcStream *ipc_stream)
+ep_ipc_stream_read_vcall (
+	IpcStream *ipc_stream,
+	uint8_t *buffer,
+	uint32_t bytes_to_read,
+	uint32_t *bytes_read,
+	uint32_t timeout_ms)
 {
-	//TODO: Implement.
-	return false;
+	EP_ASSERT (ipc_stream != NULL);
+
+	EP_ASSERT (ipc_stream->vtable != NULL);
+	IpcStreamVtable *vtable = ipc_stream->vtable;
+
+	EP_ASSERT (vtable->read_func != NULL);
+	return vtable->read_func (ipc_stream, buffer, bytes_to_read, bytes_read, timeout_ms);
 }
 
 bool
-ep_ipc_stream_disconnect (IpcStream *ipc_stream)
-{
-	//TODO: Implement.
-	return false;
-}
-
-bool
-ep_ipc_stream_close (IpcStream *ipc_stream)
-{
-	//TODO: Implement.
-	return false;
-}
-
-bool
-ep_ipc_stream_write (
+ep_ipc_stream_write_vcall (
 	IpcStream *ipc_stream,
 	const uint8_t *buffer,
 	uint32_t bytes_to_write,
-	uint32_t *bytes_written)
+	uint32_t *bytes_written,
+	uint32_t timeout_ms)
 {
-	//TODO: Implement.
-	return false;
+	EP_ASSERT (ipc_stream != NULL);
+
+	EP_ASSERT (ipc_stream->vtable != NULL);
+	IpcStreamVtable *vtable = ipc_stream->vtable;
+
+	EP_ASSERT (vtable->write_func != NULL);
+	return vtable->write_func (ipc_stream, buffer, bytes_to_write, bytes_written, timeout_ms);
+}
+
+bool
+ep_ipc_stream_flush_vcall (IpcStream *ipc_stream)
+{
+	EP_ASSERT (ipc_stream != NULL);
+
+	EP_ASSERT (ipc_stream->vtable != NULL);
+	IpcStreamVtable *vtable = ipc_stream->vtable;
+
+	EP_ASSERT (vtable->flush_func != NULL);
+	return vtable->flush_func (ipc_stream);
+}
+
+bool
+ep_ipc_stream_close_vcall (IpcStream *ipc_stream)
+{
+	EP_ASSERT (ipc_stream != NULL);
+
+	EP_ASSERT (ipc_stream->vtable != NULL);
+	IpcStreamVtable *vtable = ipc_stream->vtable;
+
+	EP_ASSERT (vtable->close_func != NULL);
+	return vtable->close_func (ipc_stream);
 }
 
 /*
@@ -549,7 +576,7 @@ ep_ipc_stream_writer_free (IpcStreamWriter *ipc_stream_writer)
 {
 	ep_return_void_if_nok (ipc_stream_writer != NULL);
 
-	ep_ipc_stream_free (ipc_stream_writer->ipc_stream);
+	ep_ipc_stream_free_vcall (ipc_stream_writer->ipc_stream);
 	ep_stream_writer_fini (&ipc_stream_writer->stream_writer);
 	ep_rt_object_free (ipc_stream_writer);
 }
@@ -569,7 +596,7 @@ ep_ipc_stream_writer_write (
 	bool result = false;
 
 	ep_raise_error_if_nok (ep_ipc_stream_writer_get_ipc_stream (ipc_stream_writer) != NULL);
-	result = ep_ipc_stream_write (ep_ipc_stream_writer_get_ipc_stream (ipc_stream_writer), buffer, bytes_to_write, bytes_written);
+	result = ep_ipc_stream_write_vcall (ep_ipc_stream_writer_get_ipc_stream (ipc_stream_writer), buffer, bytes_to_write, bytes_written, EP_INFINITE_WAIT);
 
 ep_on_exit:
 	return result;

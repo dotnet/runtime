@@ -1,9 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <RootNamespace>System.Composition</RootNamespace>
-    <AssemblyName>System.Composition.Runtime</AssemblyName>
-    <TargetFrameworks>netstandard2.0;net461;$(NetFrameworkCurrent)</TargetFrameworks>
-    <ExcludeCurrentFullFrameworkFromPackage>true</ExcludeCurrentFullFrameworkFromPackage>
+    <TargetFrameworks>netstandard2.0;net461</TargetFrameworks>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="System\Composition\CompositionContext.cs" />
@@ -13,10 +11,5 @@
     <Compile Include="System\Composition\Hosting\CompositionFailedException.cs" />
     <Compile Include="System\Composition\Hosting\Core\CompositionContract.cs" />
     <Compile Include="System\Composition\Runtime\Util\Formatters.cs" />
-  </ItemGroup>
-  <ItemGroup Condition="$(TargetFramework.StartsWith('net4'))">
-    <Reference Include="mscorlib" />
-    <Reference Include="System.Core" />
-    <Reference Include="System" />
   </ItemGroup>
 </Project>

@@ -1,9 +1,9 @@
-include(FindPython)
+include(FindPythonInterp)
 
 set(CMAKE_INCLUDE_CURRENT_DIR ON)
 
 set(GENERATE_SCRIPT ${CLR_DIR}/src/scripts/genEventPipe.py)
-set(GENERATE_COMMAND ${Python_EXECUTABLE} ${GENERATE_SCRIPT} --man ${EVENT_MANIFEST} --exc ${EVENT_EXCLUSIONS} --intermediate ${CMAKE_CURRENT_BINARY_DIR} ${NONEXTERN_ARG})
+set(GENERATE_COMMAND ${PYTHON_EXECUTABLE} ${GENERATE_SCRIPT} --man ${EVENT_MANIFEST} --exc ${EVENT_EXCLUSIONS} --intermediate ${CMAKE_CURRENT_BINARY_DIR} ${NONEXTERN_ARG})
 
 execute_process(
   COMMAND ${GENERATE_COMMAND} --dry-run
@@ -28,10 +28,8 @@ add_custom_command(OUTPUT ${EVENTPIPE_SOURCES}
   COMMAND ${GENERATE_COMMAND}
   DEPENDS ${GENERATE_SCRIPT} ${EVENT_MANIFEST} ${EVENT_EXCLUSIONS})
 
-add_library_clr(eventpipe OBJECT ${EVENTPIPE_SOURCES})
-set_target_properties(eventpipe PROPERTIES LINKER_LANGUAGE CXX)
-add_dependencies(eventpipe eventing_headers)
-
-if (NOT CLR_CMAKE_TARGET_WIN32)
-  _install(TARGETS eventpipe DESTINATION lib)
-endif()
+add_library_clr(eventpipe_obj OBJECT ${EVENTPIPE_SOURCES})
+set_target_properties(eventpipe_obj PROPERTIES LINKER_LANGUAGE CXX)
+add_dependencies(eventpipe_obj eventing_headers)
+add_library(eventpipe INTERFACE)
+target_sources(eventpipe INTERFACE $<TARGET_OBJECTS:eventpipe_obj>)

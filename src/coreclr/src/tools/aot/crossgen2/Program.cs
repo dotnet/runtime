@@ -3,21 +3,14 @@
 
 using System;
 using System.Collections.Generic;
-using System.CommandLine;
-using System.CommandLine.Invocation;
-using System.Reflection;
+using System.IO;
 using System.Reflection.PortableExecutable;
 using System.Runtime.InteropServices;
-using System.Threading.Tasks;
 
+using Internal.CommandLine;
 using Internal.IL;
 using Internal.TypeSystem;
 using Internal.TypeSystem.Ecma;
-
-using Internal.CommandLine;
-using System.Linq;
-using System.IO;
-using System.Reflection.Metadata;
 
 namespace ILCompiler
 {
@@ -33,10 +26,11 @@ namespace ILCompiler
         private Dictionary<string, string> _unrootedInputFilePaths = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
         private Dictionary<string, string> _referenceFilePaths = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
         private CompilerTypeSystemContext _typeSystemContext;
+        private ReadyToRunMethodLayoutAlgorithm _methodLayout;
+        private ReadyToRunFileLayoutAlgorithm _fileLayout;
 
-        private Program(CommandLineOptions commandLineOptions)
+        private Program()
         {
-            _commandLineOptions = commandLineOptions;
         }
 
         private void InitializeDefaultOptions()
@@ -71,9 +65,16 @@ namespace ILCompiler
             }
         }
 
-        private void ProcessCommandLine()
+        private void ProcessCommandLine(string[] args)
         {
-            AssemblyName name = typeof(Program).GetTypeInfo().Assembly.GetName();
+            PerfEventSource.StartStopEvents.CommandLineProcessingStart();
+            _commandLineOptions = new CommandLineOptions(args);
+            PerfEventSource.StartStopEvents.CommandLineProcessingStop();
+
+            if (_commandLineOptions.Help)
+            {
+                return;
+            }
 
             if (_commandLineOptions.WaitForDebugger)
             {
@@ -102,14 +103,46 @@ namespace ILCompiler
             else if (_commandLineOptions.Optimize)
                 _optimizationMode = OptimizationMode.Blended;
 
-            foreach (var input in _commandLineOptions.InputFilePaths ?? Enumerable.Empty<FileInfo>())
-                Helpers.AppendExpandedPaths(_inputFilePaths, input.FullName, true);
+            foreach (var input in _commandLineOptions.InputFilePaths)
+                Helpers.AppendExpandedPaths(_inputFilePaths, input, true);
 
-            foreach (var input in _commandLineOptions.UnrootedInputFilePaths ?? Enumerable.Empty<FileInfo>())
-                Helpers.AppendExpandedPaths(_unrootedInputFilePaths, input.FullName, true);
+            foreach (var input in _commandLineOptions.UnrootedInputFilePaths)
+                Helpers.AppendExpandedPaths(_unrootedInputFilePaths, input, true);
 
-            foreach (var reference in _commandLineOptions.Reference ?? Enumerable.Empty<string>())
+            foreach (var reference in _commandLineOptions.ReferenceFilePaths)
                 Helpers.AppendExpandedPaths(_referenceFilePaths, reference, false);
+
+
+            int alignment = _commandLineOptions.CustomPESectionAlignment;
+            if (alignment != 0)
+            {
+                // Must be a power of two and >= 4096
+                if (alignment < 4096 || (alignment & (alignment - 1)) != 0)
+                    throw new CommandLineException(SR.InvalidCustomPESectionAlignment);
+            }
+
+            if (_commandLineOptions.MethodLayout != null)
+            {
+                _methodLayout = _commandLineOptions.MethodLayout.ToLowerInvariant() switch
+                {
+                    "defaultsort" => ReadyToRunMethodLayoutAlgorithm.DefaultSort,
+                    "exclusiveweight" => ReadyToRunMethodLayoutAlgorithm.ExclusiveWeight,
+                    "hotcold" => ReadyToRunMethodLayoutAlgorithm.HotCold,
+                    "hotwarmcold" => ReadyToRunMethodLayoutAlgorithm.HotWarmCold,
+                    _ => throw new CommandLineException(SR.InvalidMethodLayout)
+                };
+            }
+
+            if (_commandLineOptions.FileLayout != null)
+            {
+                _fileLayout = _commandLineOptions.FileLayout.ToLowerInvariant() switch
+                {
+                    "defaultsort" => ReadyToRunFileLayoutAlgorithm.DefaultSort,
+                    "methodorder" => ReadyToRunFileLayoutAlgorithm.MethodOrder,
+                    _ => throw new CommandLineException(SR.InvalidFileLayout)
+                };
+            }
+
         }
 
         private void ConfigureTarget()
@@ -223,7 +256,7 @@ namespace ILCompiler
                 // support AVX instructions. As the jit generates logic that depends on these features it will call
                 // notifyInstructionSetUsage, which will result in generation of a fixup to verify the behavior of
                 // code.
-                // 
+                //
                 optimisticInstructionSetSupportBuilder.AddSupportedInstructionSet("sse");
                 optimisticInstructionSetSupportBuilder.AddSupportedInstructionSet("sse2");
                 optimisticInstructionSetSupportBuilder.AddSupportedInstructionSet("sse4.1");
@@ -234,7 +267,7 @@ namespace ILCompiler
                 optimisticInstructionSetSupportBuilder.AddSupportedInstructionSet("lzcnt");
             }
 
-            optimisticInstructionSetSupportBuilder.ComputeInstructionSetFlags(out var optimisticInstructionSet, out _, 
+            optimisticInstructionSetSupportBuilder.ComputeInstructionSetFlags(out var optimisticInstructionSet, out _,
                 (string specifiedInstructionSet, string impliedInstructionSet) => throw new NotSupportedException());
             optimisticInstructionSet.Remove(unsupportedInstructionSet);
             optimisticInstructionSet.Add(supportedInstructionSet);
@@ -246,27 +279,7 @@ namespace ILCompiler
                                                                   _targetArchitecture);
         }
 
-        private void CheckCustomPESectionAlignment()
-        {
-            if (_commandLineOptions.CustomPESectionAlignment != null)
-            {
-                int alignment = _commandLineOptions.CustomPESectionAlignment.Value;
-                bool invalidArgument = false;
-                if (alignment < 4096)
-                {
-                    invalidArgument = true;
-                }
-                if ((alignment & (alignment - 1)) != 0)
-                {
-                    invalidArgument = true; // Alignment not power of two
-                }
-
-                if (invalidArgument)
-                    throw new CommandLineException(SR.InvalidCustomPESectionAlignment);
-            }
-        }
-
-        private int Run()
+        private int Run(string[] args)
         {
             using (PerfEventSource.StartStopEvents.CompilationEvents())
             {
@@ -275,12 +288,17 @@ namespace ILCompiler
                 {
                     InitializeDefaultOptions();
 
-                    ProcessCommandLine();
+                    ProcessCommandLine(args);
+
+                    if (_commandLineOptions.Help)
+                    {
+                        Console.WriteLine(_commandLineOptions.HelpText);
+                        return 1;
+                    }
 
                     if (_commandLineOptions.OutputFilePath == null)
                         throw new CommandLineException(SR.MissingOutputFile);
 
-                    CheckCustomPESectionAlignment();
                     ConfigureTarget();
                     InstructionSetSupport instructionSetSupport = ConfigureInstructionSetSupport();
 
@@ -291,9 +309,38 @@ namespace ILCompiler
                     SharedGenericsMode genericsMode = SharedGenericsMode.CanonicalReferenceTypes;
 
                     var targetDetails = new TargetDetails(_targetArchitecture, _targetOS, TargetAbi.CoreRT, instructionSetSupport.GetVectorTSimdVector());
-                    _typeSystemContext = new ReadyToRunCompilerContext(targetDetails, genericsMode);
 
-                    string compositeRootPath = _commandLineOptions.CompositeRootPath?.FullName;
+                    bool versionBubbleIncludesCoreLib = false;
+                    if (_commandLineOptions.InputBubble)
+                    {
+                        versionBubbleIncludesCoreLib = true;
+                    }
+                    else
+                    {
+                        foreach (var inputFile in _inputFilePaths)
+                        {
+                            if (String.Compare(inputFile.Key, "System.Private.CoreLib", StringComparison.OrdinalIgnoreCase) == 0)
+                            {
+                                versionBubbleIncludesCoreLib = true;
+                                break;
+                            }
+                        }
+                        if (!versionBubbleIncludesCoreLib)
+                        {
+                            foreach (var inputFile in _unrootedInputFilePaths)
+                            {
+                                if (String.Compare(inputFile.Key, "System.Private.CoreLib", StringComparison.OrdinalIgnoreCase) == 0)
+                                {
+                                    versionBubbleIncludesCoreLib = true;
+                                    break;
+                                }
+                            }
+                        }
+                    }
+
+                    _typeSystemContext = new ReadyToRunCompilerContext(targetDetails, genericsMode, versionBubbleIncludesCoreLib);
+
+                    string compositeRootPath = _commandLineOptions.CompositeRootPath;
 
                     //
                     // TODO: To support our pre-compiled test tree, allow input files that aren't managed assemblies since
@@ -383,7 +430,7 @@ namespace ILCompiler
 
                     if (_typeSystemContext.InputFilePaths.Count == 0)
                     {
-                        if (_commandLineOptions.InputFilePaths.Count() > 0)
+                        if (_commandLineOptions.InputFilePaths.Count > 0)
                         {
                             Console.WriteLine(SR.InputWasNotLoadable);
                             return 2;
@@ -401,12 +448,9 @@ namespace ILCompiler
                     var logger = new Logger(Console.Out, _commandLineOptions.Verbose);
 
                     List<string> mibcFiles = new List<string>();
-                    if (_commandLineOptions.Mibc != null)
+                    foreach (var file in _commandLineOptions.MibcFilePaths)
                     {
-                        foreach (var file in _commandLineOptions.Mibc)
-                        {
-                            mibcFiles.Add(file.FullName);
-                        }
+                        mibcFiles.Add(file);
                     }
 
                     foreach (var referenceFile in _referenceFilePaths.Values)
@@ -524,14 +568,15 @@ namespace ILCompiler
                         .UseIbcTuning(_commandLineOptions.Tuning)
                         .UseResilience(_commandLineOptions.Resilient)
                         .UseMapFile(_commandLineOptions.Map)
+                        .UseMapCsvFile(_commandLineOptions.MapCsv)
                         .UseParallelism(_commandLineOptions.Parallelism)
                         .UseProfileData(profileDataManager)
-                        .FileLayoutAlgorithms(_commandLineOptions.MethodLayout, _commandLineOptions.FileLayout)
+                        .FileLayoutAlgorithms(_methodLayout, _fileLayout)
                         .UseJitPath(_commandLineOptions.JitPath)
                         .UseInstructionSetSupport(instructionSetSupport)
                         .UseCustomPESectionAlignment(_commandLineOptions.CustomPESectionAlignment)
                         .UseVerifyTypeAndFieldLayout(_commandLineOptions.VerifyTypeAndFieldLayout)
-                        .GenerateOutputFile(_commandLineOptions.OutputFilePath.FullName)
+                        .GenerateOutputFile(_commandLineOptions.OutputFilePath)
                         .UseILProvider(ilProvider)
                         .UseBackendOptions(_commandLineOptions.CodegenOptions)
                         .UseLogger(logger)
@@ -542,10 +587,10 @@ namespace ILCompiler
                     compilation = builder.ToCompilation();
 
                 }
-                compilation.Compile(_commandLineOptions.OutputFilePath.FullName);
+                compilation.Compile(_commandLineOptions.OutputFilePath);
 
                 if (_commandLineOptions.DgmlLogFileName != null)
-                    compilation.WriteDependencyLog(_commandLineOptions.DgmlLogFileName.FullName);
+                    compilation.WriteDependencyLog(_commandLineOptions.DgmlLogFileName);
             }
 
             return 0;
@@ -594,7 +639,7 @@ namespace ILCompiler
                 throw new CommandLineException(string.Format(SR.MethodNotFoundOnType, _commandLineOptions.SingleMethodName, _commandLineOptions.SingleMethodTypeName));
 
             if (method.HasInstantiation != (_commandLineOptions.SingleMethodGenericArg != null) ||
-                (method.HasInstantiation && (method.Instantiation.Length != _commandLineOptions.SingleMethodGenericArg.Length)))
+                (method.HasInstantiation && (method.Instantiation.Length != _commandLineOptions.SingleMethodGenericArg.Count)))
             {
                 throw new CommandLineException(
                     string.Format(SR.GenericArgCountMismatch, method.Instantiation.Length, _commandLineOptions.SingleMethodName, _commandLineOptions.SingleMethodTypeName));
@@ -629,21 +674,12 @@ namespace ILCompiler
             return false;
         }
 
-        public static async Task<int> Main(string[] args)
+        private static int Main(string[] args)
         {
-            PerfEventSource.StartStopEvents.CommandLineProcessingStart();
-            var command = CommandLineOptions.RootCommand();
-            command.Handler = CommandHandler.Create<CommandLineOptions>((CommandLineOptions options) => InnerMain(options));
-            return await command.InvokeAsync(args);
-        }
-
-        private static int InnerMain(CommandLineOptions buildOptions)
-        {
-            PerfEventSource.StartStopEvents.CommandLineProcessingStop();
 #if DEBUG
             try
             {
-                return new Program(buildOptions).Run();
+                return new Program().Run(args);
             }
             catch (CodeGenerationFailedException ex) when (DumpReproArguments(ex))
             {
@@ -652,7 +688,7 @@ namespace ILCompiler
 #else
             try
             {
-                return new Program(buildOptions).Run();
+                return new Program().Run(args);
             }
             catch (Exception e)
             {

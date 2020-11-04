@@ -3463,6 +3463,12 @@ public:
 #define ASSUME_BYREF_FROM_JIT_STACK_END()
 #endif //defined (_DEBUG) && !defined (DACCESS_COMPILE)
 
+void ComputeCallRefMap(MethodDesc* pMD,
+                       GCRefMapBuilder * pBuilder,
+                       bool isDispatchCell);
+
+bool CheckGCRefMapEqual(PTR_BYTE pGCRefMap, MethodDesc* pMD, bool isDispatchCell);
+
 //------------------------------------------------------------------------
 
 #if defined(FRAMES_TURNED_FPO_ON)

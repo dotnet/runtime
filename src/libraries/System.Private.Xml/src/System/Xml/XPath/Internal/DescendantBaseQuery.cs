@@ -23,7 +23,7 @@ namespace MS.Internal.Xml.XPath
             this.abbrAxis = other.abbrAxis;
         }
 
-        public override XPathNavigator MatchNode(XPathNavigator context)
+        public override XPathNavigator? MatchNode(XPathNavigator? context)
         {
             if (context != null)
             {
@@ -31,7 +31,7 @@ namespace MS.Internal.Xml.XPath
                 {
                     throw XPathException.Create(SR.Xp_InvalidPattern);
                 }
-                XPathNavigator result = null;
+                XPathNavigator? result = null;
                 if (matches(context))
                 {
                     if (matchSelf)

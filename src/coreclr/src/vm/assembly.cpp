@@ -190,6 +190,19 @@ void Assembly::Init(AllocMemTracker *pamTracker, LoaderAllocator *pLoaderAllocat
     //  loading it entirely.
     //CacheFriendAssemblyInfo();
 
+#ifndef CROSSGEN_COMPILE
+    if (IsCollectible())
+    {
+        COUNT_T size;
+        BYTE *start = (BYTE*)m_pManifest->GetFile()->GetLoadedImageContents(&size);
+        if (start != NULL)
+        {
+            GCX_COOP();
+            LoaderAllocator::AssociateMemoryWithLoaderAllocator(start, start + size, m_pLoaderAllocator);
+        }
+    }
+#endif
+
     {
         CANNOTTHROWCOMPLUSEXCEPTION();
         FAULT_FORBID();
@@ -1952,7 +1965,7 @@ bool Assembly::TrySetTypeLib(_In_ ITypeLib *pNew)
         pNew->AddRef();
 
     return true;
-} // void Assembly::SetTypeLib()
+} // void Assembly::TrySetTypeLib()
 
 #endif // FEATURE_COMINTEROP
 

@@ -303,7 +303,6 @@ typedef union _ULARGE_INTEGER {
 /******************* OLE, BSTR, VARIANT *************************/
 
 STDAPI_VIS(DLLEXPORT, LPVOID) CoTaskMemAlloc(SIZE_T cb);
-STDAPI_VIS(DLLEXPORT, LPVOID) CoTaskMemRealloc(LPVOID pv, SIZE_T cb);
 STDAPI_VIS(DLLEXPORT, void) CoTaskMemFree(LPVOID pv);
 
 typedef SHORT VARIANT_BOOL;
@@ -708,10 +707,6 @@ STDAPI_(LPWSTR) StrCatBuffW(LPWSTR pszDest, LPCWSTR pszSrc, int cchDestBuffSize)
 #define _SAFECRT_SET_ERRNO 0
 #define _SAFECRT_DEFINE_MBS_FUNCTIONS 0
 #define _SAFECRT_DEFINE_TCS_MACROS 1
-/*
-#define _SAFECRT__ISMBBLEAD(_Character) 0
-#define _SAFECRT__MBSDEC(_String, _Current) (_Current - 1)
-*/
 #include "safecrt.h"
 #include "specstrings.h"
 
@@ -720,7 +715,6 @@ The wrappers below are simple implementations that may not be as robust as compl
 Remember to fix the errcode defintion in safecrt.h.
 */
 
-#define _wcslwr_s _wcslwr_unsafe
 #define swscanf_s swscanf
 
 #define _wfopen_s _wfopen_unsafe
@@ -732,33 +726,11 @@ extern "C++" {
 
 #include <safemath.h>
 
-inline errno_t __cdecl _wcslwr_unsafe(WCHAR *str, size_t sz)
-{
-    size_t fullSize;
-    if(!ClrSafeInt<size_t>::multiply(sz, sizeof(WCHAR), fullSize))
-        return 1;
-    WCHAR *copy = (WCHAR *)malloc(fullSize);
-    if(copy == nullptr)
-        return 1;
-
-    errno_t retCode = wcscpy_s(copy, sz, str);
-    if(retCode) {
-        free(copy);
-        return 1;
-    }
-
-    _wcslwr(copy);
-    wcscpy_s(str, sz, copy);
-    free(copy);
-
-    return 0;
-}
-
 inline int __cdecl _vscprintf_unsafe(const char *_Format, va_list _ArgList)
 {
     int guess = 10;
 
-    for (;;)
+    while (true)
     {
         char *buf = (char *)malloc(guess * sizeof(char));
         if(buf == nullptr)
@@ -801,7 +773,6 @@ inline errno_t __cdecl _fopen_unsafe(PAL_FILE * *ff, const char *fileName, const
 
 }
 #endif /* __cplusplus */
-
 
 STDAPI_(BOOL) PathAppendW(LPWSTR pszPath, LPCWSTR pszMore);
 STDAPI_(int) PathCommonPrefixW(LPCWSTR pszFile1, LPCWSTR pszFile2, LPWSTR  pszPath);
@@ -875,8 +846,6 @@ typedef HANDLE HWND;
 
 #define IS_TEXT_UNICODE_SIGNATURE             0x0008
 #define IS_TEXT_UNICODE_UNICODE_MASK          0x000F
-
-BOOL IsTextUnicode(CONST VOID* lpv, int iSize, LPINT lpiResult);
 
 typedef struct _LIST_ENTRY {
    struct _LIST_ENTRY *Flink;

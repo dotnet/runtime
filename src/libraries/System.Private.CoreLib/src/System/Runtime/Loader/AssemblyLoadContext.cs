@@ -727,7 +727,9 @@ namespace System.Runtime.Loader
 
             AssemblyLoadContext parentALC = GetLoadContext(parentAssembly)!;
 
-            string parentDirectory = Path.GetDirectoryName(parentAssembly.Location)!;
+            string? parentDirectory = Path.GetDirectoryName(parentAssembly.Location);
+            if (parentDirectory == null)
+                 return null;
 
             string assemblyPath = Path.Combine(parentDirectory, assemblyName.CultureName!, $"{assemblyName.Name}.dll");
 

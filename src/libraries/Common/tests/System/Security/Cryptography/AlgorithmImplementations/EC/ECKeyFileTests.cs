@@ -7,6 +7,7 @@ using Xunit;
 
 namespace System.Security.Cryptography.Tests
 {
+    [SkipOnMono("Not supported on Browser", TestPlatforms.Browser)]
     public abstract partial class ECKeyFileTests<T> where T : AsymmetricAlgorithm
     {
         protected abstract T CreateKey();
@@ -16,6 +17,8 @@ namespace System.Security.Cryptography.Tests
         protected abstract void ImportParameters(T key, ECParameters ecParameters);
         protected abstract ECParameters ExportParameters(T key, bool includePrivate);
         protected abstract void Exercise(T key);
+        protected virtual Func<T, byte[]> PublicKeyWriteArrayFunc { get; } = null;
+        protected virtual WriteKeyToSpanFunc PublicKeyWriteSpanFunc { get; } = null;
 
         public static bool SupportsBrainpool { get; } = IsCurveSupported(ECCurve.NamedCurves.brainpoolP160r1.Oid);
         public static bool SupportsSect163k1 { get; } = IsCurveSupported(EccTestData.Sect163k1Key1.Curve.Oid);
@@ -176,6 +179,7 @@ qtlbnispri1a/EghiaPQ0po=";
         public void ReadNistP521EncryptedPkcs8_Pbes2_Aes128_Sha384_PasswordBytes()
         {
             // PBES2, PBKDF2 (SHA384), AES128
+            // [SuppressMessage("Microsoft.Security", "CS002:SecretInNextLine", Justification="Unit test key.")]
             const string base64 = @"
 MIIBXTBXBgkqhkiG9w0BBQ0wSjApBgkqhkiG9w0BBQwwHAQI/JyXWyp/t3kCAggA
 MAwGCCqGSIb3DQIKBQAwHQYJYIZIAWUDBAECBBA3H8mbFK5afB5GzIemCCQkBIIB
@@ -1151,7 +1155,9 @@ xoMaz20Yx+2TSN5dSm2FcD+0YFI=",
                         key.ImportSubjectPublicKeyInfo(source, out read),
                     key => key.ExportSubjectPublicKeyInfo(),
                     (T key, Span<byte> destination, out int written) =>
-                        key.TryExportSubjectPublicKeyInfo(destination, out written));
+                        key.TryExportSubjectPublicKeyInfo(destination, out written),
+                    writePublicArrayFunc: PublicKeyWriteArrayFunc,
+                    writePublicSpanFunc: PublicKeyWriteSpanFunc);
             }
             else
             {
@@ -1173,7 +1179,9 @@ xoMaz20Yx+2TSN5dSm2FcD+0YFI=",
             ReadKeyAction readAction,
             Func<T, byte[]> writeArrayFunc,
             WriteKeyToSpanFunc writeSpanFunc,
-            bool isEncrypted = false)
+            bool isEncrypted = false,
+            Func<T, byte[]> writePublicArrayFunc = null,
+            WriteKeyToSpanFunc writePublicSpanFunc = null)
         {
             bool isPrivateKey = expected.D != null;
 
@@ -1189,6 +1197,16 @@ xoMaz20Yx+2TSN5dSm2FcD+0YFI=",
                 Assert.Equal(derBytes.Length, bytesRead);
 
                 arrayExport = writeArrayFunc(key);
+
+                if (writePublicArrayFunc is not null)
+                {
+                    byte[] publicArrayExport = writePublicArrayFunc(key);
+                    Assert.Equal(arrayExport, publicArrayExport);
+
+                    Assert.True(writePublicSpanFunc(key, publicArrayExport, out int publicExportWritten));
+                    Assert.Equal(publicExportWritten, publicArrayExport.Length);
+                    Assert.Equal(arrayExport, publicArrayExport);
+                }
 
                 ECParameters ecParameters = ExportParameters(key, isPrivateKey);
                 EccTestBase.AssertEqual(expected, ecParameters);
@@ -1284,7 +1302,7 @@ xoMaz20Yx+2TSN5dSm2FcD+0YFI=",
             }
         }
 
-        private delegate void ReadKeyAction(T key, ReadOnlySpan<byte> source, out int bytesRead);
-        private delegate bool WriteKeyToSpanFunc(T key, Span<byte> destination, out int bytesWritten);
+        protected delegate void ReadKeyAction(T key, ReadOnlySpan<byte> source, out int bytesRead);
+        protected delegate bool WriteKeyToSpanFunc(T key, Span<byte> destination, out int bytesWritten);
     }
 }

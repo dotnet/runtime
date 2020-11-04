@@ -3,7 +3,7 @@
 
 using System.Diagnostics;
 using System.IO;
-using System.Reflection;
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading;
@@ -21,25 +21,6 @@ namespace System
                 string hostName = Interop.Sys.GetHostName();
                 int dotPos = hostName.IndexOf('.');
                 return dotPos == -1 ? hostName : hostName.Substring(0, dotPos);
-            }
-        }
-
-        public static long WorkingSet
-        {
-            get
-            {
-                Type? processType = Type.GetType("System.Diagnostics.Process, System.Diagnostics.Process, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a", throwOnError: false);
-                if (processType?.GetMethod("GetCurrentProcess")?.Invoke(null, BindingFlags.DoNotWrapExceptions, null, null, null) is IDisposable currentProcess)
-                {
-                    using (currentProcess)
-                    {
-                        if (processType!.GetMethod("get_WorkingSet64")?.Invoke(currentProcess, BindingFlags.DoNotWrapExceptions, null, null, null) is long result)
-                            return result;
-                    }
-                }
-
-                // Could not get the current working set.
-                return 0;
             }
         }
 
@@ -110,5 +91,11 @@ namespace System
             // Otherwise, fail.
             throw new IOException(errorInfo.GetErrorMessage(), errorInfo.RawErrno);
         }
+
+        [MethodImplAttribute(MethodImplOptions.NoInlining)] // Avoid inlining PInvoke frame into the hot path
+        private static int GetProcessId() => Interop.Sys.GetPid();
+
+        [MethodImplAttribute(MethodImplOptions.NoInlining)] // Avoid inlining PInvoke frame into the hot path
+        private static string? GetProcessPath() => Interop.Sys.GetProcessPath();
     }
 }

@@ -45,7 +45,7 @@ FCIMPL1(Object*, AssemblyNameNative::GetFileInformation, StringObject* filenameU
     if (gc.filename->GetStringLength() == 0)
         COMPlusThrow(kArgumentException, W("Argument_EmptyFileName"));
 
-    gc.result = (ASSEMBLYNAMEREF) AllocateObject(MscorlibBinder::GetClass(CLASS__ASSEMBLY_NAME));
+    gc.result = (ASSEMBLYNAMEREF) AllocateObject(CoreLibBinder::GetClass(CLASS__ASSEMBLY_NAME));
 
 
     ///////////////////////////////////////////////

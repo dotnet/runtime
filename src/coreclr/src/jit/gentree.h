@@ -32,8 +32,7 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 // Debugging GenTree is much easier if we add a magic virtual function to make the debugger able to figure out what type
 // it's got. This is enabled by default in DEBUG. To enable it in RET builds (temporarily!), you need to change the
 // build to define DEBUGGABLE_GENTREE=1, as well as pass /OPT:NOICF to the linker (or else all the vtables get merged,
-// making the debugging value supplied by them useless). See protojit.nativeproj for a commented example of setting the
-// build flags correctly.
+// making the debugging value supplied by them useless).
 #ifndef DEBUGGABLE_GENTREE
 #ifdef DEBUG
 #define DEBUGGABLE_GENTREE 1
@@ -815,6 +814,9 @@ public:
 #define GTF_VAR_ITERATOR    0x00800000 // GT_LCL_VAR -- this is a iterator reference in the loop condition
 #define GTF_VAR_CLONED      0x00400000 // GT_LCL_VAR -- this node has been cloned or is a clone
 #define GTF_VAR_CONTEXT     0x00200000 // GT_LCL_VAR -- this node is part of a runtime lookup
+#define GTF_VAR_FOLDED_IND  0x00100000 // GT_LCL_VAR -- this node was folded from *(typ*)&lclVar expression tree in fgMorphSmpOp()
+// where 'typ' is a small type and 'lclVar' corresponds to a normalized-on-store local variable.
+// This flag identifies such nodes in order to make sure that fgDoNormalizeOnStore() is called on their parents in post-order morph.
 
                                        // Relevant for inlining optimizations (see fgInlinePrependStatements)
 
@@ -901,11 +903,11 @@ public:
 #define GTF_ICON_FIELD_HDL          0x40000000 // GT_CNS_INT -- constant is a field handle
 #define GTF_ICON_STATIC_HDL         0x50000000 // GT_CNS_INT -- constant is a handle to static data
 #define GTF_ICON_STR_HDL            0x60000000 // GT_CNS_INT -- constant is a string handle
-#define GTF_ICON_PSTR_HDL           0x70000000 // GT_CNS_INT -- constant is a ptr to a string handle
-#define GTF_ICON_PTR_HDL            0x80000000 // GT_CNS_INT -- constant is a ldptr handle
+#define GTF_ICON_CONST_PTR          0x70000000 // GT_CNS_INT -- constant is a pointer to immutable data, (e.g. IAT_PPVALUE)
+#define GTF_ICON_GLOBAL_PTR         0x80000000 // GT_CNS_INT -- constant is a pointer to mutable data (e.g. from the VM state)
 #define GTF_ICON_VARG_HDL           0x90000000 // GT_CNS_INT -- constant is a var arg cookie handle
 #define GTF_ICON_PINVKI_HDL         0xA0000000 // GT_CNS_INT -- constant is a pinvoke calli handle
-#define GTF_ICON_TOKEN_HDL          0xB0000000 // GT_CNS_INT -- constant is a token handle
+#define GTF_ICON_TOKEN_HDL          0xB0000000 // GT_CNS_INT -- constant is a token handle (other than class, method or field)
 #define GTF_ICON_TLS_HDL            0xC0000000 // GT_CNS_INT -- constant is a TLS ref with offset
 #define GTF_ICON_FTN_ADDR           0xD0000000 // GT_CNS_INT -- constant is a function address
 #define GTF_ICON_CIDMID_HDL         0xE0000000 // GT_CNS_INT -- constant is a class ID or a module ID
@@ -4201,6 +4203,7 @@ struct GenTreeCall final : public GenTree
 #define GTF_CALL_M_ALLOC_SIDE_EFFECTS      0x00400000 // GT_CALL -- this is a call to an allocator with side effects
 #define GTF_CALL_M_SUPPRESS_GC_TRANSITION  0x00800000 // GT_CALL -- suppress the GC transition (i.e. during a pinvoke) but a separate GC safe point is required.
 #define GTF_CALL_M_EXP_RUNTIME_LOOKUP      0x01000000 // GT_CALL -- this call needs to be tranformed into CFG for the dynamic dictionary expansion feature.
+#define GTF_CALL_M_STRESS_TAILCALL         0x02000000 // GT_CALL -- the call is NOT "tail" prefixed but GTF_CALL_M_EXPLICIT_TAILCALL was added because of tail call stress mode
 
     // clang-format on
 
@@ -4313,6 +4316,13 @@ struct GenTreeCall final : public GenTree
     bool IsTailPrefixedCall() const
     {
         return (gtCallMoreFlags & GTF_CALL_M_EXPLICIT_TAILCALL) != 0;
+    }
+
+    // Returns true if this call didn't have an explicit tail. prefix in the IL
+    // but was marked as an explicit tail call because of tail call stress mode.
+    bool IsStressTailCall() const
+    {
+        return (gtCallMoreFlags & GTF_CALL_M_STRESS_TAILCALL) != 0;
     }
 
     // This method returning "true" implies that tail call flowgraph morhphing has
@@ -4729,6 +4739,7 @@ struct GenTreeQmark : public GenTreeOp
 struct GenTreeIntrinsic : public GenTreeOp
 {
     CorInfoIntrinsics     gtIntrinsicId;
+    NamedIntrinsic        gtIntrinsicName;
     CORINFO_METHOD_HANDLE gtMethodHandle; // Method handle of the method which is treated as an intrinsic.
 
 #ifdef FEATURE_READYTORUN_COMPILER
@@ -4736,15 +4747,31 @@ struct GenTreeIntrinsic : public GenTreeOp
     CORINFO_CONST_LOOKUP gtEntryPoint;
 #endif
 
-    GenTreeIntrinsic(var_types type, GenTree* op1, CorInfoIntrinsics intrinsicId, CORINFO_METHOD_HANDLE methodHandle)
-        : GenTreeOp(GT_INTRINSIC, type, op1, nullptr), gtIntrinsicId(intrinsicId), gtMethodHandle(methodHandle)
+    GenTreeIntrinsic(var_types             type,
+                     GenTree*              op1,
+                     CorInfoIntrinsics     intrinsicId,
+                     NamedIntrinsic        intrinsicName,
+                     CORINFO_METHOD_HANDLE methodHandle)
+        : GenTreeOp(GT_INTRINSIC, type, op1, nullptr)
+        , gtIntrinsicId(intrinsicId)
+        , gtIntrinsicName(intrinsicName)
+        , gtMethodHandle(methodHandle)
     {
+        assert(intrinsicId != CORINFO_INTRINSIC_Illegal || intrinsicName != NI_Illegal);
     }
 
-    GenTreeIntrinsic(
-        var_types type, GenTree* op1, GenTree* op2, CorInfoIntrinsics intrinsicId, CORINFO_METHOD_HANDLE methodHandle)
-        : GenTreeOp(GT_INTRINSIC, type, op1, op2), gtIntrinsicId(intrinsicId), gtMethodHandle(methodHandle)
+    GenTreeIntrinsic(var_types             type,
+                     GenTree*              op1,
+                     GenTree*              op2,
+                     CorInfoIntrinsics     intrinsicId,
+                     NamedIntrinsic        intrinsicName,
+                     CORINFO_METHOD_HANDLE methodHandle)
+        : GenTreeOp(GT_INTRINSIC, type, op1, op2)
+        , gtIntrinsicId(intrinsicId)
+        , gtIntrinsicName(intrinsicName)
+        , gtMethodHandle(methodHandle)
     {
+        assert(intrinsicId != CORINFO_INTRINSIC_Illegal || intrinsicName != NI_Illegal);
     }
 
 #if DEBUGGABLE_GENTREE
@@ -4848,7 +4875,7 @@ struct GenTreeSIMD : public GenTreeJitIntrinsic
         gtSIMDIntrinsicID = simdIntrinsicID;
     }
 
-    bool OperIsMemoryLoad() const; // Returns true for the SIMD Instrinsic instructions that have MemoryLoad semantics,
+    bool OperIsMemoryLoad() const; // Returns true for the SIMD Intrinsic instructions that have MemoryLoad semantics,
                                    // false otherwise
 
 #if DEBUGGABLE_GENTREE
@@ -4889,15 +4916,15 @@ struct GenTreeHWIntrinsic : public GenTreeJitIntrinsic
         }
     }
 
-    // Note that HW Instrinsic instructions are a sub class of GenTreeOp which only supports two operands
-    // However there are HW Instrinsic instructions that have 3 or even 4 operands and this is
+    // Note that HW Intrinsic instructions are a sub class of GenTreeOp which only supports two operands
+    // However there are HW Intrinsic instructions that have 3 or even 4 operands and this is
     // supported using a single op1 and using an ArgList for it:  gtNewArgList(op1, op2, op3)
 
-    bool OperIsMemoryLoad() const;  // Returns true for the HW Instrinsic instructions that have MemoryLoad semantics,
+    bool OperIsMemoryLoad() const;  // Returns true for the HW Intrinsic instructions that have MemoryLoad semantics,
                                     // false otherwise
-    bool OperIsMemoryStore() const; // Returns true for the HW Instrinsic instructions that have MemoryStore semantics,
+    bool OperIsMemoryStore() const; // Returns true for the HW Intrinsic instructions that have MemoryStore semantics,
                                     // false otherwise
-    bool OperIsMemoryLoadOrStore() const; // Returns true for the HW Instrinsic instructions that have MemoryLoad or
+    bool OperIsMemoryLoadOrStore() const; // Returns true for the HW Intrinsic instructions that have MemoryLoad or
                                           // MemoryStore semantics, false otherwise
 
 #if DEBUGGABLE_GENTREE
@@ -6020,13 +6047,13 @@ struct GenTreePutArgStk : public GenTreeUnOp
 
 #endif // !FEATURE_FASTTAILCALL
 
-    unsigned getArgOffset()
+    unsigned getArgOffset() const
     {
         return gtSlotNum * TARGET_POINTER_SIZE;
     }
 
 #if defined(UNIX_X86_ABI)
-    unsigned getArgPadding()
+    unsigned getArgPadding() const
     {
         return gtPadAlign;
     }
@@ -6038,15 +6065,14 @@ struct GenTreePutArgStk : public GenTreeUnOp
 #endif
 
 #ifdef FEATURE_PUT_STRUCT_ARG_STK
-
-    unsigned getArgSize()
+    unsigned getArgSize() const
     {
         return gtNumSlots * TARGET_POINTER_SIZE;
     }
 
     // Return true if this is a PutArgStk of a SIMD12 struct.
     // This is needed because such values are re-typed to SIMD16, and the type of PutArgStk is VOID.
-    unsigned isSIMD12()
+    unsigned isSIMD12() const
     {
         return (varTypeIsSIMD(gtOp1) && (gtNumSlots == 3));
     }
@@ -6061,7 +6087,7 @@ struct GenTreePutArgStk : public GenTreeUnOp
     };
 
     Kind gtPutArgStkKind;
-    bool isPushKind()
+    bool isPushKind() const
     {
         return (gtPutArgStkKind == Kind::Push) || (gtPutArgStkKind == Kind::PushAllSlots);
     }
@@ -6199,7 +6225,7 @@ struct GenTreePutArgSplit : public GenTreePutArgStk
     // Return Value:
     //    var_type of the register specified by its index.
 
-    var_types GetRegType(unsigned index)
+    var_types GetRegType(unsigned index) const
     {
         assert(index < gtNumRegs);
         var_types result = m_regType[index];
@@ -6221,7 +6247,7 @@ struct GenTreePutArgSplit : public GenTreePutArgStk
     }
 
 #ifdef FEATURE_PUT_STRUCT_ARG_STK
-    unsigned getArgSize()
+    unsigned getArgSize() const
     {
         return (gtNumSlots + gtNumRegs) * TARGET_POINTER_SIZE;
     }

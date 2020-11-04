@@ -21,29 +21,9 @@ namespace System.IO
 
             // Copy the contents of the file from the source to the destination, creating the destination in the process
             using (var src = new FileStream(sourceFullPath, FileMode.Open, FileAccess.Read, FileShare.Read, DefaultBufferSize, FileOptions.None))
+            using (var dst = new FileStream(destFullPath, overwrite ? FileMode.Create : FileMode.CreateNew, FileAccess.ReadWrite, FileShare.None, DefaultBufferSize, FileOptions.None))
             {
-                int result = Interop.Sys.CopyFile(src.SafeFileHandle, sourceFullPath, destFullPath, overwrite ? 1 : 0);
-
-                if (result < 0)
-                {
-                    Interop.ErrorInfo error = Interop.Sys.GetLastErrorInfo();
-
-                    // If we fail to open the file due to a path not existing, we need to know whether to blame
-                    // the file itself or its directory.  If we're creating the file, then we blame the directory,
-                    // otherwise we blame the file.
-                    //
-                    // When opening, we need to align with Windows, which considers a missing path to be
-                    // FileNotFound only if the containing directory exists.
-
-                    bool isDirectory = (error.Error == Interop.Error.ENOENT) &&
-                        (overwrite || !DirectoryExists(Path.GetDirectoryName(Path.TrimEndingDirectorySeparator(destFullPath.AsSpan()))!));
-
-                    Interop.CheckIo(
-                        error.Error,
-                        destFullPath,
-                        isDirectory,
-                        errorRewriter: e => (e.Error == Interop.Error.EISDIR) ? Interop.Error.EACCES.Info() : e);
-                }
+                Interop.CheckIo(Interop.Sys.CopyFile(src.SafeFileHandle, dst.SafeFileHandle));
             }
         }
 
@@ -233,7 +213,7 @@ namespace System.IO
                     case Interop.Error.EROFS:
                         // EROFS means the file system is read-only
                         // Need to manually check file existence
-                        // github.com/dotnet/corefx/issues/21273
+                        // https://github.com/dotnet/runtime/issues/22382
                         Interop.ErrorInfo fileExistsError;
 
                         // Input allows trailing separators in order to match Windows behavior
@@ -380,6 +360,19 @@ namespace System.IO
                 // Throwing IOException to match Windows behavior.
                 throw new IOException(SR.Format(SR.IO_AlreadyExists_Name, destFullPath));
             }
+
+#if TARGET_BROWSER
+            // renaming a file doesn't return correct error code on emscripten if one of the parent paths does not exist,
+            // manually workaround it for now (https://github.com/dotnet/runtime/issues/40305)
+            if (!Directory.Exists(Path.GetDirectoryName(sourceFullPath)))
+            {
+                throw new DirectoryNotFoundException(SR.Format(SR.IO_PathNotFound_Path, sourceFullPath));
+            }
+            if (!Directory.Exists(Path.GetDirectoryName(destFullPath)))
+            {
+                throw new DirectoryNotFoundException(SR.Format(SR.IO_PathNotFound_Path, destFullPath));
+            }
+#endif
 
             if (Interop.Sys.Rename(sourceFullPath, destFullPath) < 0)
             {

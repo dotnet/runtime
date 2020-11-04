@@ -34,16 +34,16 @@ namespace System.ServiceModel.Syndication
         private object _dummy;
         private int _dummyPrimitive;
         public XmlDateTimeData(string dateTimeString, System.Xml.XmlQualifiedName elementQualifiedName) { throw null; }
-        public string DateTimeString { get { throw null; } }
-        public System.Xml.XmlQualifiedName ElementQualifiedName { get { throw null; } }
+        public readonly string DateTimeString { get { throw null; } }
+        public readonly System.Xml.XmlQualifiedName ElementQualifiedName { get { throw null; } }
     }
     public partial struct XmlUriData
     {
         private object _dummy;
         private int _dummyPrimitive;
         public XmlUriData(string uriString, System.UriKind uriKind, System.Xml.XmlQualifiedName elementQualifiedName) { throw null; }
-        public System.Xml.XmlQualifiedName ElementQualifiedName { get { throw null; } }
-        public System.UriKind UriKind { get { throw null; } }
-        public string UriString { get { throw null; } }
+        public readonly System.Xml.XmlQualifiedName ElementQualifiedName { get { throw null; } }
+        public readonly System.UriKind UriKind { get { throw null; } }
+        public readonly string UriString { get { throw null; } }
     }
 }

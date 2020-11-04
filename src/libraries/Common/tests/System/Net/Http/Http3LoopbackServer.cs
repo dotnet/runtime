@@ -3,8 +3,11 @@
 
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.IO;
 using System.Net.Quic;
+using System.Net.Quic.Implementations;
 using System.Net.Security;
+using System.Net.Sockets;
 using System.Security.Cryptography.X509Certificates;
 using System.Threading.Tasks;
 
@@ -17,7 +20,7 @@ namespace System.Net.Test.Common
 
         public override Uri Address => new Uri($"https://{_listener.ListenEndPoint}/");
 
-        public Http3LoopbackServer(GenericLoopbackOptions options = null)
+        public Http3LoopbackServer(QuicImplementationProvider quicImplementationProvider = null, GenericLoopbackOptions options = null)
         {
             options ??= new GenericLoopbackOptions();
 
@@ -26,12 +29,12 @@ namespace System.Net.Test.Common
             var sslOpts = new SslServerAuthenticationOptions
             {
                 EnabledSslProtocols = options.SslProtocols,
-                ApplicationProtocols = new List<SslApplicationProtocol> { SslApplicationProtocol.Http3 },
+                ApplicationProtocols = new List<SslApplicationProtocol> { new SslApplicationProtocol("h3-29") },
                 //ServerCertificate = _cert,
                 ClientCertificateRequired = false
             };
 
-            _listener = new QuicListener(new IPEndPoint(options.Address, 0), sslOpts);
+            _listener = new QuicListener(quicImplementationProvider ?? QuicImplementationProviders.Default, new IPEndPoint(options.Address, 0), sslOpts);
             _listener.Start();
         }
 
@@ -56,23 +59,26 @@ namespace System.Net.Test.Common
         public override async Task<HttpRequestData> HandleRequestAsync(HttpStatusCode statusCode = HttpStatusCode.OK, IList<HttpHeaderData> headers = null, string content = "")
         {
             using var con = (Http3LoopbackConnection)await EstablishGenericConnectionAsync().ConfigureAwait(false);
-
-            HttpRequestData request = await con.ReadRequestDataAsync().ConfigureAwait(false);
-            await con.SendResponseAsync(statusCode, headers, content).ConfigureAwait(false);
-            await con.CloseAsync(Http3LoopbackConnection.H3_NO_ERROR);
-            return request;
+            return await con.HandleRequestAsync(statusCode, headers, content).ConfigureAwait(false);
         }
     }
 
     public sealed class Http3LoopbackServerFactory : LoopbackServerFactory
     {
-        public static Http3LoopbackServerFactory Singleton { get; } = new Http3LoopbackServerFactory();
+        private QuicImplementationProvider _quicImplementationProvider;
 
-        public override Version Version => HttpVersion.Version30;
+        public Http3LoopbackServerFactory(QuicImplementationProvider quicImplementationProvider)
+        {
+            _quicImplementationProvider = quicImplementationProvider;
+        }
+
+        public static Http3LoopbackServerFactory Singleton { get; } = new Http3LoopbackServerFactory(null);
+
+        public override Version Version { get; } = new Version(3, 0);
 
         public override GenericLoopbackServer CreateServer(GenericLoopbackOptions options = null)
         {
-            return new Http3LoopbackServer(options);
+            return new Http3LoopbackServer(_quicImplementationProvider, options);
         }
 
         public override async Task CreateServerAsync(Func<GenericLoopbackServer, Uri, Task> funcAsync, int millisecondsTimeout = 60000, GenericLoopbackOptions options = null)
@@ -80,5 +86,17 @@ namespace System.Net.Test.Common
             using GenericLoopbackServer server = CreateServer(options);
             await funcAsync(server, server.Address).TimeoutAfter(millisecondsTimeout).ConfigureAwait(false);
         }
+
+        public override Task<GenericLoopbackConnection> CreateConnectionAsync(Socket socket, Stream stream, GenericLoopbackOptions options = null)
+        {
+            // TODO: make a new overload that takes a MultiplexedConnection.
+            // This method is always unacceptable to call for HTTP/3.
+            throw new NotImplementedException("HTTP/3 does not operate over a Socket.");
+        }
+    }
+
+    public static class HttpVersion30
+    {
+        public static readonly Version Value = new Version(3, 0);
     }
 }

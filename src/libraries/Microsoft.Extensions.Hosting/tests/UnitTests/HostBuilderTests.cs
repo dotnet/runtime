@@ -4,7 +4,6 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
-using System.Reflection;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.FileProviders;
@@ -13,7 +12,7 @@ using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Xunit;
 
-namespace Microsoft.Extensions.Hosting
+namespace Microsoft.Extensions.Hosting.Tests
 {
     public class HostBuilderTests
     {
@@ -143,7 +142,7 @@ namespace Microsoft.Extensions.Hosting
                     Assert.Equal(Environments.Production, env.EnvironmentName);
 #if NETCOREAPP
                     Assert.NotNull(env.ApplicationName);
-#elif NET472
+#elif NETFRAMEWORK
                     // Note GetEntryAssembly returns null for the net4x console test runner.
                     Assert.Null(env.ApplicationName);
 #else
@@ -159,7 +158,7 @@ namespace Microsoft.Extensions.Hosting
                 Assert.Equal(Environments.Production, env.EnvironmentName);
 #if NETCOREAPP
                 Assert.NotNull(env.ApplicationName);
-#elif NET472
+#elif NETFRAMEWORK
                 // Note GetEntryAssembly returns null for the net4x console test runner.
                 Assert.Null(env.ApplicationName);
 #else

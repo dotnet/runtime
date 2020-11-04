@@ -1,4 +1,3 @@
-// -*- indent-tabs-mode: nil -*-
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
@@ -17,8 +16,6 @@ using Microsoft.Build.Utilities;
 
 public class WasmAppBuilder : Task
 {
-    // FIXME: Document
-
     [Required]
     public string? AppDir { get; set; }
     [Required]
@@ -27,21 +24,34 @@ public class WasmAppBuilder : Task
     public string? MainAssembly { get; set; }
     [Required]
     public string? MainJS { get; set; }
-    [Required]
+
+    // If true, continue when a referenced assembly cannot be found.
+    // If false, throw an exception.
+    public bool SkipMissingAssemblies { get; set; }
+
+    // full list of ICU data files we produce can be found here:
+    // https://github.com/dotnet/icu/tree/maint/maint-67/icu-filters
+    public string? IcuDataFileName { get; set; } = "icudt.dat";
+
+    // Either one of these two need to be set
     public ITaskItem[]? AssemblySearchPaths { get; set; }
+    public ITaskItem[]? Assemblies { get; set; }
+    public int DebugLevel { get; set; }
     public ITaskItem[]? ExtraAssemblies { get; set; }
+    public ITaskItem[]? SatelliteAssemblies { get; set; }
     public ITaskItem[]? FilesToIncludeInFileSystem { get; set; }
     public ITaskItem[]? RemoteSources { get; set; }
+    public bool InvariantGlobalization { get; set; }
 
-    SortedDictionary<string, Assembly>? _assemblies;
-    Resolver? _resolver;
+    private SortedDictionary<string, Assembly>? _assemblies;
+    private Resolver? _resolver;
 
     private class WasmAppConfig
     {
         [JsonPropertyName("assembly_root")]
         public string AssemblyRoot { get; set; } = "managed";
-        [JsonPropertyName("enable_debugging")]
-        public int EnableDebugging { get; set; } = 0;
+        [JsonPropertyName("debug_level")]
+        public int DebugLevel { get; set; } = 0;
         [JsonPropertyName("assets")]
         public List<object> Assets { get; } = new List<object>();
         [JsonPropertyName("remote_sources")]
@@ -65,6 +75,17 @@ public class WasmAppBuilder : Task
         public AssemblyEntry(string name) : base(name, "assembly") {}
     }
 
+    private class SatelliteAssemblyEntry : AssetEntry
+    {
+        public SatelliteAssemblyEntry(string name, string culture) : base(name, "resource")
+        {
+            CultureName = culture;
+        }
+
+        [JsonPropertyName("culture")]
+        public string CultureName { get; set; }
+    }
+
     private class VfsEntry : AssetEntry {
         public VfsEntry(string name) : base(name, "vfs") {}
         [JsonPropertyName("virtual_path")]
@@ -72,7 +93,7 @@ public class WasmAppBuilder : Task
     }
 
     private class IcuData : AssetEntry {
-        public IcuData(string name = "icudt.dat") : base(name, "icu") {}
+        public IcuData(string name) : base(name, "icu") {}
         [JsonPropertyName("load_remote")]
         public bool LoadRemote { get; set; }
     }
@@ -83,30 +104,62 @@ public class WasmAppBuilder : Task
             throw new ArgumentException($"File MainAssembly='{MainAssembly}' doesn't exist.");
         if (!File.Exists(MainJS))
             throw new ArgumentException($"File MainJS='{MainJS}' doesn't exist.");
+        if (!InvariantGlobalization && string.IsNullOrEmpty(IcuDataFileName))
+            throw new ArgumentException("IcuDataFileName property shouldn't be empty if InvariantGlobalization=false");
+        if (AssemblySearchPaths == null && Assemblies == null)
+            throw new ArgumentException("Either the AssemblySearchPaths or the Assemblies property needs to be set.");
 
         var paths = new List<string>();
         _assemblies = new SortedDictionary<string, Assembly>();
 
-        // Collect and load assemblies used by the app
-        foreach (var v in AssemblySearchPaths!)
+        if (AssemblySearchPaths != null)
         {
-            var dir = v.ItemSpec;
-            if (!Directory.Exists(dir))
-                throw new ArgumentException($"Directory '{dir}' doesn't exist or not a directory.");
-            paths.Add(dir);
-        }
-        _resolver = new Resolver(paths);
-        var mlc = new MetadataLoadContext(_resolver, "System.Private.CoreLib");
-
-        var mainAssembly = mlc.LoadFromAssemblyPath(MainAssembly);
-        Add(mlc, mainAssembly);
-
-        if (ExtraAssemblies != null)
-        {
-            foreach (var item in ExtraAssemblies)
+            // Collect and load assemblies used by the app
+            foreach (var v in AssemblySearchPaths!)
             {
-                var refAssembly = mlc.LoadFromAssemblyPath(item.ItemSpec);
-                Add(mlc, refAssembly);
+                var dir = v.ItemSpec;
+                if (!Directory.Exists(dir))
+                    throw new ArgumentException($"Directory '{dir}' doesn't exist or not a directory.");
+                paths.Add(dir);
+            }
+            _resolver = new Resolver(paths);
+            var mlc = new MetadataLoadContext(_resolver, "System.Private.CoreLib");
+
+            var mainAssembly = mlc.LoadFromAssemblyPath(MainAssembly);
+            Add(mlc, mainAssembly);
+
+            if (ExtraAssemblies != null)
+            {
+                foreach (var item in ExtraAssemblies)
+                {
+                    try
+                    {
+                        var refAssembly = mlc.LoadFromAssemblyPath(item.ItemSpec);
+                        Add(mlc, refAssembly);
+                    }
+                    catch (System.IO.FileLoadException)
+                    {
+                        if (!SkipMissingAssemblies)
+                            throw;
+                    }
+                }
+            }
+        }
+        else
+        {
+            string corelibPath = string.Empty;
+            foreach (var v in Assemblies!)
+            {
+                if (v.ItemSpec.EndsWith ("System.Private.CoreLib.dll"))
+                    corelibPath = Path.GetDirectoryName (v.ItemSpec)!;
+            }
+            _resolver = new Resolver(new List<string>() { corelibPath });
+            var mlc = new MetadataLoadContext(_resolver, "System.Private.CoreLib");
+
+            foreach (var v in Assemblies!)
+            {
+                var assembly = mlc.LoadFromAssemblyPath(v.ItemSpec);
+                Add(mlc, assembly);
             }
         }
 
@@ -115,14 +168,53 @@ public class WasmAppBuilder : Task
         // Create app
         Directory.CreateDirectory(AppDir!);
         Directory.CreateDirectory(Path.Join(AppDir, config.AssemblyRoot));
-        foreach (var assembly in _assemblies!.Values)
+        foreach (var assembly in _assemblies!.Values) {
             File.Copy(assembly.Location, Path.Join(AppDir, config.AssemblyRoot, Path.GetFileName(assembly.Location)), true);
-        foreach (var f in new string[] { "dotnet.wasm", "dotnet.js", "dotnet.timezones.blat", "icudt.dat" })
+            if (DebugLevel > 0) {
+                var pdb = assembly.Location;
+                pdb = Path.ChangeExtension(pdb, ".pdb");
+                if (File.Exists(pdb))
+                    File.Copy(pdb, Path.Join(AppDir, config.AssemblyRoot, Path.GetFileName(pdb)), true);
+            }
+        }
+
+        List<string> nativeAssets = new List<string>() { "dotnet.wasm", "dotnet.js", "dotnet.timezones.blat" };
+
+        if (!InvariantGlobalization)
+            nativeAssets.Add(IcuDataFileName!);
+
+        foreach (var f in nativeAssets)
             File.Copy(Path.Join (MicrosoftNetCoreAppRuntimePackDir, "native", f), Path.Join(AppDir, f), true);
         File.Copy(MainJS!, Path.Join(AppDir, "runtime.js"),  true);
 
-        foreach (var assembly in _assemblies.Values)
-            config.Assets.Add(new AssemblyEntry (Path.GetFileName(assembly.Location)));
+        var html = @"<html><body><script type=""text/javascript"" src=""runtime.js""></script></body></html>";
+        File.WriteAllText(Path.Join(AppDir, "index.html"), html);
+
+        foreach (var assembly in _assemblies.Values) {
+            config.Assets.Add(new AssemblyEntry(Path.GetFileName(assembly.Location)));
+            if (DebugLevel > 0) {
+                var pdb = assembly.Location;
+                pdb = Path.ChangeExtension(pdb, ".pdb");
+                if (File.Exists(pdb))
+                    config.Assets.Add(new AssemblyEntry(Path.GetFileName(pdb)));
+            }
+        }
+
+        config.DebugLevel = DebugLevel;
+
+        if (SatelliteAssemblies != null)
+        {
+            foreach (var assembly in SatelliteAssemblies)
+            {
+                string culture = assembly.GetMetadata("CultureName") ?? string.Empty;
+                string fullPath = assembly.GetMetadata("Identity");
+                string name = Path.GetFileName(fullPath);
+                string directory = Path.Join(AppDir, config.AssemblyRoot, culture);
+                Directory.CreateDirectory(directory);
+                File.Copy(fullPath, Path.Join(directory, name), true);
+                config.Assets.Add(new SatelliteAssemblyEntry(name, culture));
+            }
+        }
 
         if (FilesToIncludeInFileSystem != null)
         {
@@ -152,7 +244,9 @@ public class WasmAppBuilder : Task
             }
         }
 
-        config.Assets.Add(new IcuData { LoadRemote = RemoteSources?.Length > 0 });
+        if (!InvariantGlobalization)
+            config.Assets.Add(new IcuData(IcuDataFileName!) { LoadRemote = RemoteSources?.Length > 0 });
+
         config.Assets.Add(new VfsEntry ("dotnet.timezones.blat") { VirtualPath = "/usr/share/zoneinfo/"});
 
         if (RemoteSources?.Length > 0) {
@@ -194,9 +288,9 @@ public class WasmAppBuilder : Task
     }
 }
 
-class Resolver : MetadataAssemblyResolver
+internal class Resolver : MetadataAssemblyResolver
 {
-    List<String> _searchPaths;
+    private List<string> _searchPaths;
 
     public Resolver(List<string> searchPaths)
     {

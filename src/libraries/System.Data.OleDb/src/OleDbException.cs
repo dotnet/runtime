@@ -15,19 +15,19 @@ namespace System.Data.OleDb
     {
         private readonly OleDbErrorCollection oledbErrors;
 
-        internal OleDbException(string message, OleDbHResult errorCode, Exception inner) : base(message, inner)
+        internal OleDbException(string? message, OleDbHResult errorCode, Exception? inner) : base(message, inner)
         {
             HResult = (int)errorCode;
             this.oledbErrors = new OleDbErrorCollection(null);
         }
 
-        internal OleDbException(OleDbException previous, Exception inner) : base(previous.Message, inner)
+        internal OleDbException(OleDbException previous, Exception? inner) : base(previous.Message, inner)
         {
             HResult = previous.ErrorCode;
             this.oledbErrors = previous.oledbErrors;
         }
 
-        private OleDbException(string message, Exception inner, string source, OleDbHResult errorCode, OleDbErrorCollection errors) : base(message, inner)
+        private OleDbException(string? message, Exception? inner, string? source, OleDbHResult errorCode, OleDbErrorCollection errors) : base(message, inner)
         {
             Debug.Assert(null != errors, "OleDbException without OleDbErrorCollection");
             Source = source;
@@ -64,11 +64,11 @@ namespace System.Data.OleDb
             }
         }
 
-        internal static OleDbException CreateException(UnsafeNativeMethods.IErrorInfo errorInfo, OleDbHResult errorCode, Exception inner)
+        internal static OleDbException CreateException(UnsafeNativeMethods.IErrorInfo errorInfo, OleDbHResult errorCode, Exception? inner)
         {
             OleDbErrorCollection errors = new OleDbErrorCollection(errorInfo);
-            string message = null;
-            string source = null;
+            string? message = null;
+            string? source = null;
             OleDbHResult hr = 0;
 
             if (null != errorInfo)

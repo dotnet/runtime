@@ -7,6 +7,19 @@ namespace System.Tests
 {
     public static class OperatingSystemTests
     {
+        private static readonly string[] AllKnownPlatformNames = new[]
+        {
+            "Android",
+            "macOS",
+            "iOS",
+            "tvOS",
+            "watchOS",
+            "Windows",
+            "Linux",
+            "FreeBSD",
+            "Browser"
+        };
+
         [Theory]
         [InlineData(PlatformID.Other, "1.0.0.0")]
         [InlineData(PlatformID.MacOSX, "1.2")]
@@ -46,6 +59,159 @@ namespace System.Tests
             Assert.Equal(os.ServicePack, os2.ServicePack);
             Assert.Equal(os.Version, os2.Version);
             Assert.Equal(os.VersionString, os2.VersionString);
+        }
+
+        [Fact]
+        public static void IsOSPlatform_InvalidArgs_Throws()
+        {
+            AssertExtensions.Throws<ArgumentNullException>("platform", () => OperatingSystem.IsOSPlatform(null));
+        }
+
+        [Fact]
+        public static void IsOSPlatformVersionAtLeast_InvalidArgs_Throws()
+        {
+            AssertExtensions.Throws<ArgumentNullException>("platform", () => OperatingSystem.IsOSPlatformVersionAtLeast(null, 1));
+        }
+
+        [Fact, PlatformSpecific(TestPlatforms.Browser)]
+        public static void TestIsOSPlatform_Browser() => TestIsOSPlatform("BROWSER", OperatingSystem.IsBrowser);
+
+        [Fact, PlatformSpecific(TestPlatforms.Browser)]
+        public static void TestIsOSVersionAtLeast_Browser() => TestIsOSVersionAtLeast("BROWSER");
+
+        [Fact, PlatformSpecific(TestPlatforms.Linux)]
+        public static void TestIsOSPlatform_Linux() => TestIsOSPlatform("Linux", OperatingSystem.IsLinux);
+
+        [Fact, PlatformSpecific(TestPlatforms.Linux)]
+        public static void TestIsOSVersionAtLeast_Linux() => TestIsOSVersionAtLeast("Linux");
+
+        [Fact, PlatformSpecific(TestPlatforms.FreeBSD)]
+        public static void TestIsOSPlatform_FreeBSD() => TestIsOSPlatform("FreeBSD", OperatingSystem.IsFreeBSD);
+
+        [Fact, PlatformSpecific(TestPlatforms.FreeBSD)]
+        public static void TestIsOSVersionAtLeast_FreeBSD() => TestIsOSVersionAtLeast("FreeBSD");
+
+        [Fact, PlatformSpecific(TestPlatforms.Android)]
+        public static void TestIsOSPlatform_Android() => TestIsOSPlatform("Android", OperatingSystem.IsAndroid);
+
+        [Fact, PlatformSpecific(TestPlatforms.Android)]
+        public static void TestIsOSVersionAtLeast_Android() => TestIsOSVersionAtLeast("Android");
+
+        [Fact, PlatformSpecific(TestPlatforms.iOS)]
+        public static void TestIsOSPlatform_IOS() => TestIsOSPlatform("iOS", OperatingSystem.IsIOS);
+
+        [Fact, PlatformSpecific(TestPlatforms.iOS)]
+        public static void TestIsOSVersionAtLeast_IOS() => TestIsOSVersionAtLeast("iOS");
+
+        [Fact, PlatformSpecific(TestPlatforms.OSX)]
+        public static void TestIsOSPlatform_MacOS() => TestIsOSPlatform("macOS", OperatingSystem.IsMacOS);
+
+        [Fact, PlatformSpecific(TestPlatforms.OSX)]
+        public static void TestIsOSVersionAtLeast_MacOS() => TestIsOSVersionAtLeast("macOS");
+
+        [Fact, PlatformSpecific(TestPlatforms.OSX)]
+        public static void OSX_Is_Treated_as_macOS()
+        {
+            // we prefer "macOS", but still accept "OSX"
+
+            Assert.True(OperatingSystem.IsOSPlatform("OSX"));
+
+            AssertVersionChecks(true, (major, minor, build, revision) => OperatingSystem.IsOSPlatformVersionAtLeast("OSX", major, minor, build, revision));
+            AssertVersionChecks(true, (major, minor, build, revision) => OperatingSystem.IsOSPlatformVersionAtLeast("osx", major, minor, build, revision));
+            AssertVersionChecks(true, (major, minor, build) => OperatingSystem.IsOSPlatformVersionAtLeast("OSX", major, minor, build));
+            AssertVersionChecks(true, (major, minor, build) => OperatingSystem.IsOSPlatformVersionAtLeast("osx", major, minor, build));
+        }
+
+        [Fact, PlatformSpecific(TestPlatforms.tvOS)]
+        public static void TestIsOSPlatform_TvOS() => TestIsOSPlatform("tvOS", OperatingSystem.IsTvOS);
+
+        [Fact, PlatformSpecific(TestPlatforms.tvOS)]
+        public static void TestIsOSVersionAtLeast_TvOS() => TestIsOSVersionAtLeast("tvOS");
+
+        [Fact, PlatformSpecific(TestPlatforms.Windows)]
+        public static void TestIsOSPlatform_Windows() => TestIsOSPlatform("Windows", OperatingSystem.IsWindows);
+
+        [Fact, PlatformSpecific(TestPlatforms.Windows)]
+        public static void TestIsOSVersionAtLeast_Windows() => TestIsOSVersionAtLeast("Windows");
+
+        private static void TestIsOSPlatform(string currentOSName, Func<bool> currentOSCheck)
+        {
+            foreach (string platfromName in AllKnownPlatformNames)
+            {
+                bool expected = currentOSName.Equals(platfromName, StringComparison.OrdinalIgnoreCase);
+
+                Assert.Equal(expected, OperatingSystem.IsOSPlatform(platfromName));
+                Assert.Equal(expected, OperatingSystem.IsOSPlatform(platfromName.ToUpper()));
+                Assert.Equal(expected, OperatingSystem.IsOSPlatform(platfromName.ToLower()));
+            }
+
+            Assert.True(currentOSCheck());
+
+            bool[] allResults = new bool[]
+            {
+                OperatingSystem.IsBrowser(),
+                OperatingSystem.IsLinux(),
+                OperatingSystem.IsFreeBSD(),
+                OperatingSystem.IsAndroid(),
+                OperatingSystem.IsIOS(),
+                OperatingSystem.IsMacOS(),
+                OperatingSystem.IsTvOS(),
+                OperatingSystem.IsWatchOS(),
+                OperatingSystem.IsWindows()
+            };
+
+            Assert.Single(allResults, true);
+        }
+
+        private static void TestIsOSVersionAtLeast(string currentOSName)
+        {
+            foreach (string platfromName in AllKnownPlatformNames)
+            {
+                bool isCurrentOS = currentOSName.Equals(platfromName, StringComparison.OrdinalIgnoreCase);
+
+                AssertVersionChecks(isCurrentOS, (major, minor, build, revision) => OperatingSystem.IsOSPlatformVersionAtLeast(platfromName, major, minor, build, revision));
+                AssertVersionChecks(isCurrentOS, (major, minor, build, revision) => OperatingSystem.IsOSPlatformVersionAtLeast(platfromName.ToLower(), major, minor, build, revision));
+                AssertVersionChecks(isCurrentOS, (major, minor, build, revision) => OperatingSystem.IsOSPlatformVersionAtLeast(platfromName.ToUpper(), major, minor, build, revision));
+            }
+            
+            AssertVersionChecks(currentOSName.Equals("Android", StringComparison.OrdinalIgnoreCase), OperatingSystem.IsAndroidVersionAtLeast);
+            AssertVersionChecks(currentOSName.Equals("iOS", StringComparison.OrdinalIgnoreCase), OperatingSystem.IsIOSVersionAtLeast);
+            AssertVersionChecks(currentOSName.Equals("macOS", StringComparison.OrdinalIgnoreCase), OperatingSystem.IsMacOSVersionAtLeast);
+            AssertVersionChecks(currentOSName.Equals("tvOS", StringComparison.OrdinalIgnoreCase), OperatingSystem.IsTvOSVersionAtLeast);
+            AssertVersionChecks(currentOSName.Equals("watchOS", StringComparison.OrdinalIgnoreCase), OperatingSystem.IsWatchOSVersionAtLeast);
+            AssertVersionChecks(currentOSName.Equals("Windows", StringComparison.OrdinalIgnoreCase), OperatingSystem.IsWindowsVersionAtLeast);
+        }
+
+        private static void AssertVersionChecks(bool isCurrentOS, Func<int, int, int, int, bool> isOSVersionAtLeast)
+        {
+            Version current = Environment.OSVersion.Version;
+
+            Assert.False(isOSVersionAtLeast(current.Major + 1, current.Minor, current.Build, current.Revision));
+            Assert.False(isOSVersionAtLeast(current.Major, current.Minor + 1, current.Build, current.Revision));
+            Assert.False(isOSVersionAtLeast(current.Major, current.Minor, current.Build + 1, current.Revision));
+            Assert.False(isOSVersionAtLeast(current.Major, current.Minor, current.Build, Math.Max(current.Revision + 1, 1))); // OSX Revision reports -1
+
+            Assert.Equal(isCurrentOS, isOSVersionAtLeast(current.Major, current.Minor, current.Build, current.Revision));
+
+            Assert.Equal(isCurrentOS, isOSVersionAtLeast(current.Major - 1, current.Minor, current.Build, current.Revision));
+            Assert.Equal(isCurrentOS, isOSVersionAtLeast(current.Major, current.Minor - 1, current.Build, current.Revision));
+            Assert.Equal(isCurrentOS, isOSVersionAtLeast(current.Major, current.Minor, current.Build - 1, current.Revision));
+            Assert.Equal(isCurrentOS, isOSVersionAtLeast(current.Major, current.Minor, current.Build, current.Revision - 1));
+        }
+
+        private static void AssertVersionChecks(bool isCurrentOS, Func<int, int, int, bool> isOSVersionAtLeast)
+        {
+            Version current = Environment.OSVersion.Version;
+
+            Assert.False(isOSVersionAtLeast(current.Major + 1, current.Minor, current.Build));
+            Assert.False(isOSVersionAtLeast(current.Major, current.Minor + 1, current.Build));
+            Assert.False(isOSVersionAtLeast(current.Major, current.Minor, current.Build + 1));
+
+            Assert.Equal(isCurrentOS, isOSVersionAtLeast(current.Major, current.Minor, current.Build));
+
+            Assert.Equal(isCurrentOS, isOSVersionAtLeast(current.Major - 1, current.Minor, current.Build));
+            Assert.Equal(isCurrentOS, isOSVersionAtLeast(current.Major, current.Minor - 1, current.Build));
+            Assert.Equal(isCurrentOS, isOSVersionAtLeast(current.Major, current.Minor, current.Build - 1));
         }
     }
 }

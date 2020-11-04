@@ -6,10 +6,6 @@
     <TargetFramework>$(TargetFramework.SubString(0, $(TargetFramework.IndexOf('-'))))</TargetFramework>
   </PropertyGroup>
 
-  <PropertyGroup>
-    <RefPath>$([MSBuild]::NormalizeDirectory('$(RefRootPath)', '$(TargetFramework)'))</RefPath>  
-  </PropertyGroup>
-
   <Import Project="$(MSBuildThisDirectory)targetframeworksuffix.props" Condition="'$(DesignTimeBuild)' == 'true'" />
 
   <PropertyGroup>

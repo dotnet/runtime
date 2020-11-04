@@ -22,7 +22,7 @@ namespace MS.Internal.Xml.XPath
             base.Reset();
         }
 
-        public override XPathNavigator Advance()
+        public override XPathNavigator? Advance()
         {
             while (true)
             {
@@ -39,6 +39,7 @@ namespace MS.Internal.Xml.XPath
                 }
                 else
                 {
+                    Debug.Assert(currentNode != null);
                     _onAttribute = currentNode.MoveToNextAttribute();
                 }
 
@@ -54,7 +55,7 @@ namespace MS.Internal.Xml.XPath
             } // while
         }
 
-        public override XPathNavigator MatchNode(XPathNavigator context)
+        public override XPathNavigator? MatchNode(XPathNavigator? context)
         {
             if (context != null)
             {

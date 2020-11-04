@@ -43,6 +43,9 @@ nativeStringResourceTable_mscorrc
 #PAL_InitializeDLL
 #PAL_TerminateEx
 #PAL_IsDebuggerPresent
+#PAL_OpenProcessMemory
+#PAL_CloseProcessMemory
+#PAL_ReadProcessMemory
 #PAL_ProbeMemory
 #PAL_Random
 #PAL_memcpy
@@ -82,7 +85,6 @@ nativeStringResourceTable_mscorrc
 #sscanf_s
 
 #CopyFileW
-#CreateFileMappingA
 #CreateFileMappingW
 #CreateFileA
 #CreateFileW
@@ -108,7 +110,6 @@ nativeStringResourceTable_mscorrc
 #FreeLibrary
 #FileTimeToSystemTime
 #GetACP
-#GetCPInfo
 #GetCurrentDirectoryW
 #GetCurrentProcess
 #GetCurrentProcessId
@@ -131,13 +132,11 @@ nativeStringResourceTable_mscorrc
 #GetTempPathA
 #GetTempPathW
 #InitializeCriticalSection
-#IsDBCSLeadByte
 #LeaveCriticalSection
 #LoadLibraryA
 #LoadLibraryW
 #LoadLibraryExW
 #LocalAlloc
-#LocalReAlloc
 #LocalFree
 #MapViewOfFile
 #MoveFileExW

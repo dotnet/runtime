@@ -1335,6 +1335,14 @@ extern "C" PCODE STDCALL StubDispatchFixupWorker(TransitionBlock * pTransitionBl
     pTarget = pMgr->ResolveWorker(&callSite, protectedObj, token, VirtualCallStubManager::SK_LOOKUP);
     _ASSERTE(pTarget != NULL);
 
+#if _DEBUG
+    if (pSDFrame->GetGCRefMap() != NULL)
+    {
+        GCX_PREEMP();
+        _ASSERTE(CheckGCRefMapEqual(pSDFrame->GetGCRefMap(), pSDFrame->GetFunction(), true));
+    }
+#endif // _DEBUG
+
     // Ready to return
 
     UNINSTALL_UNWIND_AND_CONTINUE_HANDLER;
@@ -1652,6 +1660,14 @@ PCODE VSD_ResolveWorker(TransitionBlock * pTransitionBlock,
 
     target = pMgr->ResolveWorker(&callSite, protectedObj, representativeToken, stubKind);
 
+#if _DEBUG
+    if (pSDFrame->GetGCRefMap() != NULL)
+    {
+        GCX_PREEMP();
+        _ASSERTE(CheckGCRefMapEqual(pSDFrame->GetGCRefMap(), pSDFrame->GetFunction(), true));
+    }
+#endif // _DEBUG
+
     GCPROTECT_END();
 
     UNINSTALL_UNWIND_AND_CONTINUE_HANDLER;
@@ -1707,6 +1723,10 @@ PCODE VirtualCallStubManager::ResolveWorker(StubCallSite* pCallSite,
         PRECONDITION(*protectedObj != NULL);
         PRECONDITION(IsProtectedByGCFrame(protectedObj));
     } CONTRACTL_END;
+
+#if defined(HOST_OSX) && defined(HOST_ARM64)
+    auto jitWriteEnableHolder = PAL_JITWriteEnable(true);
+#endif // defined(HOST_OSX) && defined(HOST_ARM64)
 
     MethodTable* objectType = (*protectedObj)->GetMethodTable();
     CONSISTENCY_CHECK(CheckPointer(objectType));
@@ -2765,7 +2785,7 @@ DispatchHolder *VirtualCallStubManager::GenerateDispatchStub(PCODE            ad
         TADDR slot = holder->stub()->implTargetSlot(&slotType);
         pMD->RecordAndBackpatchEntryPointSlot(m_loaderAllocator, slot, slotType);
 
-        // RecordAndBackpatchEntryPointSlot() takes a lock that would exit and reenter cooperative GC mode
+        // RecordAndBackpatchEntryPointSlot() may exit and reenter cooperative GC mode
         *pMayHaveReenteredCooperativeGCMode = true;
     }
 #endif
@@ -2827,7 +2847,7 @@ DispatchHolder *VirtualCallStubManager::GenerateDispatchStubLong(PCODE          
         TADDR slot = holder->stub()->implTargetSlot(&slotType);
         pMD->RecordAndBackpatchEntryPointSlot(m_loaderAllocator, slot, slotType);
 
-        // RecordAndBackpatchEntryPointSlot() takes a lock that would exit and reenter cooperative GC mode
+        // RecordAndBackpatchEntryPointSlot() may exit and reenter cooperative GC mode
         *pMayHaveReenteredCooperativeGCMode = true;
     }
 #endif
@@ -2960,6 +2980,10 @@ LookupHolder *VirtualCallStubManager::GenerateLookupStub(PCODE addrOfResolver, s
         POSTCONDITION(CheckPointer(RETVAL));
     } CONTRACT_END;
 
+#if defined(HOST_OSX) && defined(HOST_ARM64)
+    auto jitWriteEnableHolder = PAL_JITWriteEnable(true);
+#endif // defined(HOST_OSX) && defined(HOST_ARM64)
+
     //allocate from the requisite heap and copy the template over it.
     LookupHolder * holder     = (LookupHolder*) (void*) lookup_heap->AllocAlignedMem(sizeof(LookupHolder), CODE_SIZE_ALIGN);
 
@@ -3020,7 +3044,7 @@ ResolveCacheElem *VirtualCallStubManager::GenerateResolveCacheElem(void *addrOfC
             (TADDR)&e->target,
             EntryPointSlots::SlotType_Normal);
 
-        // RecordAndBackpatchEntryPointSlot() takes a lock that would exit and reenter cooperative GC mode
+        // RecordAndBackpatchEntryPointSlot() may exit and reenter cooperative GC mode
         *pMayHaveReenteredCooperativeGCMode = true;
     }
 #endif

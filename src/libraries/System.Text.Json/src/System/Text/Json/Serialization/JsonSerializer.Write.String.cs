@@ -88,25 +88,25 @@ namespace System.Text.Json
         /// </summary>
         /// <typeparam name="TValue"></typeparam>
         /// <param name="value"></param>
-        /// <param name="jsonClassInfo"></param>
+        /// <param name="jsonTypeInfo"></param>
         /// <returns></returns>
-        public static string Serialize<TValue>(in TValue value, JsonTypeInfo<TValue> jsonClassInfo)
+        public static string Serialize<TValue>(in TValue value, JsonTypeInfo<TValue> jsonTypeInfo)
         {
-            if (jsonClassInfo == null)
+            if (jsonTypeInfo == null)
             {
-                throw new ArgumentNullException(nameof(jsonClassInfo));
+                throw new ArgumentNullException(nameof(jsonTypeInfo));
             }
 
             WriteStack state = default;
-            state.Initialize(jsonClassInfo);
+            state.Initialize(jsonTypeInfo);
 
-            JsonSerializerOptions options = jsonClassInfo.Options;
+            JsonSerializerOptions options = jsonTypeInfo.Options;
 
             using (var output = new PooledByteBufferWriter(options.DefaultBufferSize))
             {
                 using (var writer = new Utf8JsonWriter(output, options.GetWriterOptions()))
                 {
-                    JsonConverter? jsonConverter = jsonClassInfo.PropertyInfoForClassInfo.ConverterBase as JsonConverter<TValue>;
+                    JsonConverter? jsonConverter = jsonTypeInfo.PropertyInfoForClassInfo.ConverterBase as JsonConverter<TValue>;
                     if (jsonConverter == null)
                     {
                         throw new InvalidOperationException("todo: classInfo not compatible");

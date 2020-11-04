@@ -19,11 +19,11 @@ set(EXPORTS_FILE1 ${CMAKE_CURRENT_BINARY_DIR}/dlltest1.exports)
 generate_exports_file(${DEF_SOURCES1} ${EXPORTS_FILE1})
 
 if(CLR_CMAKE_HOST_UNIX)
-  set_exports_linker_option(${EXPORTS_FILE})
+  set_exports_linker_option(${EXPORTS_FILE1})
 endif(CLR_CMAKE_HOST_UNIX)
 
 set(DLL1SOURCES dlltest1.cpp)
-add_library(paltest_pal_sxs_test1_dll1 SHARED ${DLL1SOURCES})
+_add_library(paltest_pal_sxs_test1_dll1 SHARED ${DLL1SOURCES})
 add_custom_target(dlltest1_exports DEPENDS ${EXPORTS_FILE1})
 set_property(TARGET paltest_pal_sxs_test1_dll1 APPEND_STRING PROPERTY LINK_FLAGS ${EXPORTS_LINKER_OPTION1})
 set_property(TARGET paltest_pal_sxs_test1_dll1 APPEND_STRING PROPERTY LINK_DEPENDS ${EXPORTS_FILE1})
@@ -55,7 +55,7 @@ if(CLR_CMAKE_TARGET_OSX)
 endif(CLR_CMAKE_TARGET_OSX)
 
 set(DLL2SOURCES dlltest2.cpp)
-add_library(paltest_pal_sxs_test1_dll2 SHARED ${DLL2SOURCES})
+_add_library(paltest_pal_sxs_test1_dll2 SHARED ${DLL2SOURCES})
 add_custom_target(dlltest2_exports DEPENDS ${EXPORTS_FILE2})
 set_property(TARGET paltest_pal_sxs_test1_dll2 APPEND_STRING PROPERTY LINK_FLAGS ${EXPORTS_LINKER_OPTION2})
 set_property(TARGET paltest_pal_sxs_test1_dll2 APPEND_STRING PROPERTY LINK_DEPENDS ${EXPORTS_FILE2})
@@ -72,7 +72,7 @@ target_link_libraries(paltest_pal_sxs_test1_dll2
 
 set(TESTSOURCES exceptionsxs.cpp)
 
-add_executable(paltest_pal_sxs_test1 ${TESTSOURCES})
+_add_executable(paltest_pal_sxs_test1 ${TESTSOURCES})
 
 add_dependencies(paltest_pal_sxs_test1
    paltest_pal_sxs_test1_dll1
@@ -83,3 +83,7 @@ target_link_libraries(paltest_pal_sxs_test1
    paltest_pal_sxs_test1_dll1
    paltest_pal_sxs_test1_dll2
 )
+
+_install (TARGETS paltest_pal_sxs_test1 DESTINATION paltests/exception_handling/pal_sxs/test1)
+_install (TARGETS paltest_pal_sxs_test1_dll1 DESTINATION paltests/exception_handling/pal_sxs/test1)
+_install (TARGETS paltest_pal_sxs_test1_dll2 DESTINATION paltests/exception_handling/pal_sxs/test1)

@@ -34,7 +34,7 @@ namespace System.Formats.Asn1
             return Asn1Tag.Decode(_span, out _);
         }
 
-        public ReadOnlySpan<byte> PeekEncodedValue()
+        internal ReadOnlySpan<byte> PeekEncodedValue()
         {
             AsnDecoder.ReadEncodedValue(_span, _ruleSet, out _, out _, out int consumed);
             return _span.Slice(0, consumed);
@@ -183,14 +183,14 @@ namespace System.Formats.Asn1
             return ret;
         }
 
-        public DateTimeOffset ReadGeneralizedTime(Asn1Tag? expectedTag = default)
+        internal DateTimeOffset ReadGeneralizedTime(Asn1Tag? expectedTag = default)
         {
             DateTimeOffset ret = AsnDecoder.ReadGeneralizedTime(_span, _ruleSet, out int consumed, expectedTag);
             _span = _span.Slice(consumed);
             return ret;
         }
 
-        public string ReadCharacterString(UniversalTagNumber encodingType, Asn1Tag? expectedTag = default)
+        internal string ReadCharacterString(UniversalTagNumber encodingType, Asn1Tag? expectedTag = default)
         {
             string ret = AsnDecoder.ReadCharacterString(_span, _ruleSet, encodingType, out int consumed, expectedTag);
             _span = _span.Slice(consumed);

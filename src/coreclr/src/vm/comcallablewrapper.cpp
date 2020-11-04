@@ -989,7 +989,7 @@ void SimpleComCallWrapper::InitNew(OBJECTREF oref, ComCallWrapperCache *pWrapper
     // IErrorInfo is valid only for exception classes
     m_rgpVtable[enum_IErrorInfo] = NULL;
 
-    // IDispatchEx is valid only for classes that have expando capabilities.
+    // IDispatchEx is valid only for classes that have IExpando capabilities - which is no longer supported.
     m_rgpVtable[enum_IDispatchEx] = NULL;
 }
 
@@ -1070,9 +1070,9 @@ void SimpleComCallWrapper::InitDispatchExInfo()
         return;
 
     // Create the DispatchExInfo object.
-    NewHolder<DispatchExInfo> pDispExInfo = new DispatchExInfo(this, m_pMT, SupportsIExpando(m_pMT));
+    NewHolder<DispatchExInfo> pDispExInfo = new DispatchExInfo(this, m_pMT);
 
-    // Synchronize the DispatchExInfo with the actual expando object.
+    // Synchronize the DispatchExInfo with the actual object.
     pDispExInfo->SynchWithManagedView();
 
     // Swap the lock into the class member in a thread safe manner.
@@ -1236,7 +1236,7 @@ BOOL SimpleComCallWrapper::SupportsExceptions(MethodTable *pClass)
 
 //--------------------------------------------------------------------------
 // Returns TRUE if the COM+ object that this wrapper represents implements
-// IExpando.
+// IReflect.
 //--------------------------------------------------------------------------
 BOOL SimpleComCallWrapper::SupportsIReflect(MethodTable *pClass)
 {
@@ -1253,36 +1253,17 @@ BOOL SimpleComCallWrapper::SupportsIReflect(MethodTable *pClass)
     if (pClass == g_pRuntimeTypeClass)
         return FALSE;
 
-    if (MscorlibBinder::IsClass(pClass, CLASS__TYPE_BUILDER))
+    if (CoreLibBinder::IsClass(pClass, CLASS__TYPE_BUILDER))
         return FALSE;
 
-    if (MscorlibBinder::IsClass(pClass, CLASS__TYPE))
+    if (CoreLibBinder::IsClass(pClass, CLASS__TYPE))
         return FALSE;
 
-    if (MscorlibBinder::IsClass(pClass, CLASS__ENUM_BUILDER))
+    if (CoreLibBinder::IsClass(pClass, CLASS__ENUM_BUILDER))
         return FALSE;
 
-    // Check to see if the MethodTable associated with the wrapper implements IExpando.
-    return pClass->ImplementsInterface(MscorlibBinder::GetClass(CLASS__IREFLECT));
-}
-
-//--------------------------------------------------------------------------
-// Returns TRUE if the COM+ object that this wrapper represents implements
-// IReflect.
-//--------------------------------------------------------------------------
-BOOL SimpleComCallWrapper::SupportsIExpando(MethodTable *pClass)
-{
-    CONTRACTL
-    {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_ANY;
-        PRECONDITION(CheckPointer(pClass));
-    }
-    CONTRACTL_END;
-
-    // Check to see if the MethodTable associated with the wrapper implements IExpando.
-    return pClass->ImplementsInterface(MscorlibBinder::GetClass(CLASS__IEXPANDO));
+    // Check to see if the MethodTable associated with the wrapper implements IReflect.
+    return pClass->ImplementsInterface(CoreLibBinder::GetClass(CLASS__IREFLECT));
 }
 
 // NOINLINE to prevent RCWHolder from forcing caller to push/pop an FS:0 handler
@@ -4063,7 +4044,7 @@ DispatchInfo *ComMethodTable::GetDispatchInfo()
         // Create the DispatchInfo object.
         NewHolder<DispatchInfo> pDispInfo = new DispatchInfo(m_pMT);
 
-        // Synchronize the DispatchInfo with the actual expando object.
+        // Synchronize the DispatchInfo with the actual object.
         pDispInfo->SynchWithManagedView();
 
         // Swap the lock into the class member in a thread safe manner.
@@ -4089,14 +4070,10 @@ void ComMethodTable::SetITypeInfo(ITypeInfo *pNew)
     }
     CONTRACTL_END;
 
-    SafeComHolder<ITypeInfo> pOld;
-    pOld = InterlockedExchangeT(&m_pITypeInfo, pNew);
-
-    // TypeLibs are refcounted pointers.
-    if (pNew == pOld)
-        pOld.SuppressRelease();
-    else
+    if (InterlockedCompareExchangeT(&m_pITypeInfo, pNew, NULL) == NULL)
+    {
         SafeAddRef(pNew);
+    }
 }
 
 //--------------------------------------------------------------------------
@@ -4480,11 +4457,11 @@ BOOL ComCallWrapperTemplate::IsSafeTypeForMarshalling()
         // System.Reflection.MethodBody, and System.Reflection.ParameterInfo.
         // Some interesting derived types that get blocked as a result are:
         // System.Type, System.Reflection.TypeInfo, System.Reflection.MethodInfo, and System.Reflection.FieldInfo
-        if (pMt->CanCastToClass(MscorlibBinder::GetClass(CLASS__ASSEMBLYBASE)) ||
-        pMt->CanCastToClass(MscorlibBinder::GetClass(CLASS__MEMBER)) ||
-        pMt->CanCastToClass(MscorlibBinder::GetClass(CLASS__MODULEBASE)) ||
-        pMt->CanCastToClass(MscorlibBinder::GetClass(CLASS__RUNTIME_METHOD_BODY)) ||
-        pMt->CanCastToClass(MscorlibBinder::GetClass(CLASS__PARAMETER)))
+        if (pMt->CanCastToClass(CoreLibBinder::GetClass(CLASS__ASSEMBLYBASE)) ||
+        pMt->CanCastToClass(CoreLibBinder::GetClass(CLASS__MEMBER)) ||
+        pMt->CanCastToClass(CoreLibBinder::GetClass(CLASS__MODULEBASE)) ||
+        pMt->CanCastToClass(CoreLibBinder::GetClass(CLASS__RUNTIME_METHOD_BODY)) ||
+        pMt->CanCastToClass(CoreLibBinder::GetClass(CLASS__PARAMETER)))
         {
             isSafe = FALSE;
         }
@@ -5040,7 +5017,7 @@ ComMethodTable *ComCallWrapperTemplate::InitializeForInterface(MethodTable *pPar
 
     // update pItfMT in case code:CreateComMethodTableForInterface decided to redirect the interface
     pItfMT = pItfComMT->GetMethodTable();
-    if (pItfMT == MscorlibBinder::GetExistingClass(CLASS__ICUSTOM_QUERYINTERFACE))
+    if (pItfMT == CoreLibBinder::GetExistingClass(CLASS__ICUSTOM_QUERYINTERFACE))
     {
         m_flags |= enum_ImplementsICustomQueryInterface;
     }
@@ -5152,7 +5129,7 @@ ComCallWrapperTemplate* ComCallWrapperTemplate::CreateTemplate(TypeHandle thClas
         // Eagerly create the interface CMTs.
         // when iterate the interfaces implemented by the methodtable, we can check whether
         // the interface supports ICustomQueryInterface.
-        MscorlibBinder::GetClass(CLASS__ICUSTOM_QUERYINTERFACE);
+        CoreLibBinder::GetClass(CLASS__ICUSTOM_QUERYINTERFACE);
 
         it.Reset();
         while (it.Next())
@@ -5401,7 +5378,7 @@ MethodDesc * ComCallWrapperTemplate::GetICustomQueryInterfaceGetInterfaceMD()
 
     if (m_pICustomQueryInterfaceGetInterfaceMD == NULL)
         m_pICustomQueryInterfaceGetInterfaceMD = m_thClass.GetMethodTable()->GetMethodDescForInterfaceMethod(
-           MscorlibBinder::GetMethod(METHOD__ICUSTOM_QUERYINTERFACE__GET_INTERFACE),
+           CoreLibBinder::GetMethod(METHOD__ICUSTOM_QUERYINTERFACE__GET_INTERFACE),
            TRUE /* throwOnConflict */);
     RETURN m_pICustomQueryInterfaceGetInterfaceMD;
 }

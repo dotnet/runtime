@@ -12,6 +12,12 @@
 #include <mono/metadata/tokentype.h>
 #include <mono/metadata/threads.h>
 #include <mono/metadata/image.h>
+#include <mono/metadata/mono-gc.h>
+// FIXME: unavailable in emscripten
+// #include <mono/metadata/gc-internals.h>
+
+#include <mono/metadata/mono-private-unstable.h>
+
 #include <mono/utils/mono-logger.h>
 #include <mono/utils/mono-dl-fallback.h>
 #include <mono/jit/jit.h>
@@ -24,10 +30,15 @@ void core_initialize_internals ();
 #endif
 
 // Blazor specific custom routines - see dotnet_support.js for backing code
+extern void* mono_wasm_invoke_js_blazor (MonoString **exceptionMessage, void *callInfo, void* arg0, void* arg1, void* arg2);
+// The following two are for back-compat and will eventually be removed
 extern void* mono_wasm_invoke_js_marshalled (MonoString **exceptionMessage, void *asyncHandleLongPtr, MonoString *funcName, MonoString *argsJson);
 extern void* mono_wasm_invoke_js_unmarshalled (MonoString **exceptionMessage, MonoString *funcName, void* arg0, void* arg1, void* arg2);
 
 void mono_wasm_enable_debugging (int);
+
+int mono_wasm_register_root (char *start, size_t size, const char *name);
+void mono_wasm_deregister_root (char *addr);
 
 void mono_ee_interp_init (const char *opts);
 void mono_marshal_ilgen_init (void);
@@ -46,6 +57,12 @@ static MonoClass* datetimeoffset_class;
 static MonoClass* uri_class;
 static MonoClass* task_class;
 static MonoClass* safehandle_class;
+
+static int resolved_datetime_class = 0,
+	resolved_datetimeoffset_class = 0,
+	resolved_uri_class = 0,
+	resolved_task_class = 0,
+	resolved_safehandle_class = 0;
 
 int mono_wasm_enable_gc = 1;
 
@@ -106,22 +123,61 @@ mono_wasm_invoke_js (MonoString *str, int *is_exception)
 }
 
 static void
-wasm_logger (const char *log_domain, const char *log_level, const char *message, mono_bool fatal, void *user_data)
+wasm_trace_logger (const char *log_domain, const char *log_level, const char *message, mono_bool fatal, void *user_data)
 {
-	if (fatal) {
-		EM_ASM(
-			   var err = new Error();
-			   console.log ("Stacktrace: \n");
-			   console.log (err.stack);
-			   );
+	EM_ASM({
+		var log_level = $0;
+		var message = Module.UTF8ToString ($1);
+		var isFatal = $2;
+		var domain = Module.UTF8ToString ($3); // is this always Mono?
+		var dataPtr = $4;
 
-		fprintf (stderr, "%s\n", message);
-		fflush (stderr);
+		if (MONO["logging"] && MONO.logging["trace"]) {
+			MONO.logging.trace(domain, log_level, message, isFatal, dataPtr);
+			return;
+		}
 
-		abort ();
-	} else {
-		fprintf (stdout, "L: %s\n", message);
-	}
+		if (isFatal)
+			console.trace (message);
+
+		switch (Module.UTF8ToString ($0)) {
+			case "critical":
+			case "error":
+				console.error (message);
+				break;
+			case "warning":
+				console.warn (message);
+				break;
+			case "message":
+				console.log (message);
+				break;
+			case "info":
+				console.info (message);
+				break;
+			case "debug":
+				console.debug (message);
+				break;
+			default:
+				console.log (message);
+				break;
+		}
+	}, log_level, message, fatal, log_domain, user_data);
+}
+
+typedef uint32_t target_mword;
+typedef target_mword SgenDescriptor;
+typedef SgenDescriptor MonoGCDescriptor;
+MONO_API int   mono_gc_register_root (char *start, size_t size, MonoGCDescriptor descr, MonoGCRootSource source, void *key, const char *msg);
+void  mono_gc_deregister_root (char* addr);
+
+EMSCRIPTEN_KEEPALIVE int
+mono_wasm_register_root (char *start, size_t size, const char *name) {
+	return mono_gc_register_root (start, size, NULL, MONO_ROOT_SOURCE_EXTERNAL, NULL, name ? name : "mono_wasm_register_root");
+}
+
+EMSCRIPTEN_KEEPALIVE void 
+mono_wasm_deregister_root (char *addr) {
+	mono_gc_deregister_root (addr);
 }
 
 #ifdef DRIVER_GEN
@@ -157,6 +213,43 @@ mono_wasm_add_assembly (const char *name, const unsigned char *data, unsigned in
 	assemblies = entry;
 	++assembly_count;
 	return mono_has_pdb_checksum (data, size);
+}
+
+int
+mono_wasm_assembly_already_added (const char *assembly_name)
+{
+	if (assembly_count == 0)
+		return 0;
+
+	WasmAssembly *entry = assemblies;
+	while (entry != NULL) {
+		int entry_name_minus_extn_len = strlen(entry->assembly.name) - 4;
+		if (entry_name_minus_extn_len == strlen(assembly_name) && strncmp (entry->assembly.name, assembly_name, entry_name_minus_extn_len) == 0)
+			return 1;
+		entry = entry->next;
+	}
+
+	return 0;
+}
+
+typedef struct WasmSatelliteAssembly_ WasmSatelliteAssembly;
+
+struct WasmSatelliteAssembly_ {
+	MonoBundledSatelliteAssembly *assembly;
+	WasmSatelliteAssembly *next;
+};
+
+static WasmSatelliteAssembly *satellite_assemblies;
+static int satellite_assembly_count;
+
+EMSCRIPTEN_KEEPALIVE void
+mono_wasm_add_satellite_assembly (const char *name, const char *culture, const unsigned char *data, unsigned int size)
+{
+	WasmSatelliteAssembly *entry = g_new0 (WasmSatelliteAssembly, 1);
+	entry->assembly = mono_create_new_bundled_satellite_assembly (name, culture, data, size);
+	entry->next = satellite_assemblies;
+	satellite_assemblies = entry;
+	++satellite_assembly_count;
 }
 
 EMSCRIPTEN_KEEPALIVE void
@@ -335,6 +428,8 @@ void mono_initialize_internals ()
 	// TODO: what happens when two types in different assemblies have the same FQN?
 
 	// Blazor specific custom routines - see dotnet_support.js for backing code
+	mono_add_internal_call ("WebAssembly.JSInterop.InternalCalls::InvokeJS", mono_wasm_invoke_js_blazor);
+	// The following two are for back-compat and will eventually be removed
 	mono_add_internal_call ("WebAssembly.JSInterop.InternalCalls::InvokeJSMarshalled", mono_wasm_invoke_js_marshalled);
 	mono_add_internal_call ("WebAssembly.JSInterop.InternalCalls::InvokeJSUnmarshalled", mono_wasm_invoke_js_unmarshalled);
 
@@ -345,7 +440,24 @@ void mono_initialize_internals ()
 }
 
 EMSCRIPTEN_KEEPALIVE void
-mono_wasm_load_runtime (const char *unused, int enable_debugging)
+mono_wasm_register_bundled_satellite_assemblies ()
+{
+	/* In legacy satellite_assembly_count is always false */
+	if (satellite_assembly_count) {
+		MonoBundledSatelliteAssembly **satellite_bundle_array =  g_new0 (MonoBundledSatelliteAssembly *, satellite_assembly_count + 1);
+		WasmSatelliteAssembly *cur = satellite_assemblies;
+		int i = 0;
+		while (cur) {
+			satellite_bundle_array [i] = cur->assembly;
+			cur = cur->next;
+			++i;
+		}
+		mono_register_bundled_satellite_assemblies ((const MonoBundledSatelliteAssembly **)satellite_bundle_array);
+	}
+}
+
+EMSCRIPTEN_KEEPALIVE void
+mono_wasm_load_runtime (const char *unused, int debug_level)
 {
 	const char *interp_opts = "";
 
@@ -357,6 +469,16 @@ mono_wasm_load_runtime (const char *unused, int enable_debugging)
     // corlib assemblies.
 	monoeg_g_setenv ("COMPlus_DebugWriteToStdErr", "1", 0);
 #endif
+
+	const char *appctx_keys[2];
+	appctx_keys [0] = "APP_CONTEXT_BASE_DIRECTORY";
+	appctx_keys [1] = "RUNTIME_IDENTIFIER";
+
+	const char *appctx_values[2];
+	appctx_values [0] = "/";
+	appctx_values [1] = "browser-wasm";
+
+	monovm_initialize (2, appctx_keys, appctx_values);
 
 	mini_parse_debug_option ("top-runtime-invoke-unhandled");
 
@@ -372,11 +494,19 @@ mono_wasm_load_runtime (const char *unused, int enable_debugging)
 	mono_jit_set_aot_mode (MONO_AOT_MODE_LLVMONLY);
 #endif
 #else
-	mono_jit_set_aot_mode (MONO_AOT_MODE_INTERP_LLVMONLY);
-	if (enable_debugging) {
+	mono_jit_set_aot_mode (MONO_AOT_MODE_INTERP_ONLY);
+
+	/*
+	 * debug_level > 0 enables debugging and sets the debug log level to debug_level
+	 * debug_level == 0 disables debugging and enables interpreter optimizations
+	 * debug_level < 0 enabled debugging and disables debug logging.
+	 *
+	 * Note: when debugging is enabled interpreter optimizations are disabled.
+	 */
+	if (debug_level) {
 		// Disable optimizations which interfere with debugging
 		interp_opts = "-all";
-		mono_wasm_enable_debugging (enable_debugging);
+		mono_wasm_enable_debugging (debug_level);
 	}
 #endif
 
@@ -413,8 +543,9 @@ mono_wasm_load_runtime (const char *unused, int enable_debugging)
 		mono_register_bundled_assemblies ((const MonoBundledAssembly **)bundle_array);
 	}
 
+	mono_wasm_register_bundled_satellite_assemblies ();
 	mono_trace_init ();
-	mono_trace_set_log_handler (wasm_logger, NULL);
+	mono_trace_set_log_handler (wasm_trace_logger, NULL);
 	root_domain = mono_jit_init_version ("mono", "v4.0.30319");
 
 	mono_initialize_internals();
@@ -489,6 +620,8 @@ mono_wasm_assembly_get_entry_point (MonoAssembly *assembly)
 	uint32_t entry = mono_image_get_entry_point (image);
 	if (!entry)
 		return NULL;
+	
+	mono_domain_ensure_entry_assembly (root_domain, assembly);
 
 	return mono_get_method (image, entry, NULL);
 }
@@ -522,11 +655,24 @@ mono_wasm_string_from_js (const char *str)
 		return NULL;
 }
 
+EMSCRIPTEN_KEEPALIVE MonoString *
+mono_wasm_string_from_utf16 (const mono_unichar2 * chars, int length)
+{
+	assert (length >= 0);
+
+	if (chars)
+		return mono_string_new_utf16 (root_domain, chars, length);
+	else
+		return NULL;
+}
+
 static int
 class_is_task (MonoClass *klass)
 {
-	if (!task_class)
+	if (!task_class && !resolved_task_class) {
 		task_class = mono_class_from_name (mono_get_corlib(), "System.Threading.Tasks", "Task");
+		resolved_task_class = 1;
+	}
 
 	if (task_class && (klass == task_class || mono_class_is_subclass_of(klass, task_class, 0)))
 		return 1;
@@ -558,8 +704,9 @@ MonoClass* mono_get_uri_class(MonoException** exc)
 #define MARSHAL_TYPE_SAFEHANDLE 23
 
 // typed array marshalling
-#define MARSHAL_ARRAY_BYTE 11
-#define MARSHAL_ARRAY_UBYTE 12
+#define MARSHAL_ARRAY_BYTE 10
+#define MARSHAL_ARRAY_UBYTE 11
+#define MARSHAL_ARRAY_UBYTE_C 12
 #define MARSHAL_ARRAY_SHORT 13
 #define MARSHAL_ARRAY_USHORT 14
 #define MARSHAL_ARRAY_INT 15
@@ -573,19 +720,28 @@ mono_wasm_get_obj_type (MonoObject *obj)
 	if (!obj)
 		return 0;
 
-	if (!datetime_class)
-		datetime_class = mono_class_from_name (mono_get_corlib(), "System", "DateTime");
-	if (!datetimeoffset_class)
-		datetimeoffset_class = mono_class_from_name (mono_get_corlib(), "System", "DateTimeOffset");
-	if (!uri_class) {
-		MonoException** exc = NULL;
-		uri_class = mono_get_uri_class(exc);
-	}
-	if (!safehandle_class)
-		safehandle_class = mono_class_from_name (mono_get_corlib(), "System.Runtime.InteropServices", "SafeHandle");
-
+	/* Process obj before calling into the runtime, class_from_name () can invoke managed code */
 	MonoClass *klass = mono_object_get_class (obj);
 	MonoType *type = mono_class_get_type (klass);
+	obj = NULL;
+
+	if (!datetime_class && !resolved_datetime_class) {
+		datetime_class = mono_class_from_name (mono_get_corlib(), "System", "DateTime");
+		resolved_datetime_class = 1;
+	}
+	if (!datetimeoffset_class && !resolved_datetimeoffset_class) {
+		datetimeoffset_class = mono_class_from_name (mono_get_corlib(), "System", "DateTimeOffset");
+		resolved_datetimeoffset_class = 1;
+	}
+	if (!uri_class && !resolved_uri_class) {
+		MonoException** exc = NULL;
+		uri_class = mono_get_uri_class(exc);
+		resolved_uri_class = 1;
+	}
+	if (!safehandle_class && !resolved_safehandle_class) {
+		safehandle_class = mono_class_from_name (mono_get_corlib(), "System.Runtime.InteropServices", "SafeHandle");
+		resolved_safehandle_class = 1;
+	}
 
 	switch (mono_type_get_type (type)) {
 	// case MONO_TYPE_CHAR: prob should be done not as a number?

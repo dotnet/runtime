@@ -14,6 +14,8 @@ namespace System.Data
     /// Represents the collection of tables for the <see cref='System.Data.DataSet'/>.
     /// </summary>
     [DefaultEvent(nameof(CollectionChanged))]
+    [Editor("Microsoft.VSDesigner.Data.Design.TablesCollectionEditor, Microsoft.VSDesigner, Version=10.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a",
+            "System.Drawing.Design.UITypeEditor, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a")]
     [ListBindable(false)]
     public sealed class DataTableCollection : InternalDataCollectionBase
     {
@@ -66,7 +68,7 @@ namespace System.Data
         /// <summary>
         /// Gets the table in the collection with the given name (not case-sensitive).
         /// </summary>
-        public DataTable? this[string name]
+        public DataTable? this[string? name]
         {
             get
             {
@@ -83,7 +85,7 @@ namespace System.Data
             }
         }
 
-        public DataTable? this[string name, string tableNamespace]
+        public DataTable? this[string? name, string tableNamespace]
         {
             get
             {
@@ -195,7 +197,7 @@ namespace System.Data
         /// <summary>
         /// Creates a table with the given name and adds it to the collection.
         /// </summary>
-        public DataTable? Add(string? name)
+        public DataTable Add(string? name)
         {
             DataTable table = new DataTable(name);
             Add(table);
@@ -660,7 +662,7 @@ namespace System.Data
         //      >= 0: find the match
         //        -1: No match
         //        -2: At least two matches with different cases
-        internal int InternalIndexOf(string tableName, string tableNamespace)
+        internal int InternalIndexOf(string? tableName, string tableNamespace)
         {
             int cachedI = -1;
             if ((null != tableName) && (0 < tableName.Length))

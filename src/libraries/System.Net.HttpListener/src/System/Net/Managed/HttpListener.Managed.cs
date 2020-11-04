@@ -192,7 +192,7 @@ namespace System.Net
                 _listenerContexts[context] = context;
             }
 
-            ListenerAsyncResult ares = null;
+            ListenerAsyncResult? ares = null;
             lock ((_asyncWaitQueue as ICollection).SyncRoot)
             {
                 if (_asyncWaitQueue.Count == 0)
@@ -257,7 +257,7 @@ namespace System.Net
             }
         }
 
-        private HttpListenerContext GetContextFromQueue()
+        private HttpListenerContext? GetContextFromQueue()
         {
             lock ((_contextQueue as ICollection).SyncRoot)
             {
@@ -273,7 +273,7 @@ namespace System.Net
             }
         }
 
-        public IAsyncResult BeginGetContext(AsyncCallback callback, object state)
+        public IAsyncResult BeginGetContext(AsyncCallback? callback, object? state)
         {
             CheckDisposed();
             if (_state != State.Started)
@@ -288,7 +288,7 @@ namespace System.Net
             {
                 lock ((_contextQueue as ICollection).SyncRoot)
                 {
-                    HttpListenerContext ctx = GetContextFromQueue();
+                    HttpListenerContext? ctx = GetContextFromQueue();
                     if (ctx != null)
                     {
                         ares.Complete(ctx, true);
@@ -310,7 +310,7 @@ namespace System.Net
                 throw new ArgumentNullException(nameof(asyncResult));
             }
 
-            ListenerAsyncResult ares = asyncResult as ListenerAsyncResult;
+            ListenerAsyncResult? ares = asyncResult as ListenerAsyncResult;
             if (ares == null || !ReferenceEquals(this, ares._parent))
             {
                 throw new ArgumentException(SR.net_io_invalidasyncresult, nameof(asyncResult));
@@ -332,7 +332,7 @@ namespace System.Net
                     _asyncWaitQueue.RemoveAt(idx);
             }
 
-            HttpListenerContext context = ares.GetContext();
+            HttpListenerContext context = ares.GetContext()!;
             context.ParseAuthentication(context.AuthenticationSchemes);
             return context;
         }

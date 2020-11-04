@@ -10,7 +10,7 @@ namespace System.Xml.Serialization
     {
         private const string ImplicitCastOperatorName = "op_Implicit";
 
-        public static bool TryConvertTo(this Type targetType, object data, out object returnValue)
+        public static bool TryConvertTo(this Type targetType, object? data, out object? returnValue)
         {
             if (targetType == null)
             {

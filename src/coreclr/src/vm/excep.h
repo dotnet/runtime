@@ -197,7 +197,7 @@ enum UnhandledExceptionLocation
 #ifdef HOST_WINDOWS
 void InitializeCrashDump();
 bool GenerateCrashDump(LPCWSTR dumpName, int dumpType, bool diag);
-void CreateCrashDumpIfEnabled();
+void CreateCrashDumpIfEnabled(bool stackoverflow = false);
 #endif
 
 // Generates crash dumps if enabled for both Windows and Linux

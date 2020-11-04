@@ -3,8 +3,10 @@ parameters:
   osGroup: ''
   osSubgroup: ''
   archType: ''
+  targetRid: ''
+  crossBuild: false
   crossrootfsDir: ''
-  framework: ''
+  framework: 'net6.0'
   isOfficialBuild: false
   isOfficialAllConfigurations: false
   runtimeVariant: ''
@@ -35,6 +37,7 @@ jobs:
       osGroup:  ${{ parameters.osGroup }}
       osSubgroup:  ${{ parameters.osSubgroup }}
       archType:  ${{ parameters.archType }}
+      crossBuild: ${{ parameters.crossBuild }}
       crossrootfsDir: ${{ parameters.crossrootfsDir }}
       framework:  ${{ parameters.framework }}
       isOfficialBuild: ${{ parameters.isOfficialBuild }}
@@ -62,10 +65,8 @@ jobs:
         - _subset: libs
         - _additionalBuildArguments: ''
         - ${{ parameters.variables }}
-        - ${{ if eq(parameters.osGroup, 'Browser') }}:
-          - EMSDK_PATH: /usr/local/emscripten
 
-        # Tests only run for 'allConfiguration' and 'net472' build-jobs
+        # Tests only run for 'allConfiguration' and 'net48' build-jobs
         # If platform is in testBuildPlatforms we build tests as well.
         - ${{ if or(eq(parameters.runTests, true), containsValue(parameters.testBuildPlatforms, parameters.platform)) }}:
           - _subset: libs+libs.tests
@@ -78,7 +79,7 @@ jobs:
           - template: /eng/pipelines/common/restore-internal-tools.yml
 
         - ${{ if in(parameters.osGroup, 'OSX', 'iOS', 'tvOS') }}:
-          - script: $(Build.SourcesDirectory)/eng/install-native-dependencies.sh ${{ parameters.osGroup }}
+          - script: $(Build.SourcesDirectory)/eng/install-native-dependencies.sh ${{ parameters.osGroup }} ${{ parameters.archType }} azDO
             displayName: Install Build Dependencies
 
           - script: |
@@ -136,6 +137,7 @@ jobs:
           - template: /eng/pipelines/libraries/helix.yml
             parameters:
               osGroup: ${{ parameters.osGroup }}
+              targetRid: ${{ parameters.targetRid }}
               archType: ${{ parameters.archType }}
               buildConfig: ${{ parameters.buildConfig }}
               helixQueues: ${{ parameters.helixQueues }}

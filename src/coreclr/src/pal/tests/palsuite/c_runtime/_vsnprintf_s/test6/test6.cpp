@@ -17,7 +17,7 @@
  * Notes: memcmp is used, as is strlen.
  */
 
-int __cdecl main(int argc, char *argv[])
+PALTEST(c_runtime__vsnprintf_s_test6_paltest_vsnprintf_test6, "c_runtime/_vsnprintf_s/test6/paltest_vsnprintf_test6")
 {
     WCHAR wc = (WCHAR) 'c';
     

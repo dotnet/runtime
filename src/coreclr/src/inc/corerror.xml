@@ -2201,12 +2201,6 @@
 	<Comment> File is PE32 </Comment>
 </HRESULT>
 
-<HRESULT NumericValue="0x80131f06">
-	<SymbolicName>NGEN_E_SYS_ASM_NI_MISSING</SymbolicName>
-	<Message>"NGen cannot proceed because Mscorlib.dll does not have a native image"</Message>
-	<Comment>Compiling any assembly other than mscorlib in the absence of mscorlib.ni.dll is not allowed.</Comment>
-</HRESULT>
-
 <HRESULT NumericValue="0x80131fff">
 	<SymbolicName>CLDB_E_INTERNALERROR</SymbolicName>
 </HRESULT>
@@ -2249,8 +2243,8 @@
 
 <HRESULT NumericValue="0x80132006">
 	<SymbolicName>CLR_E_BIND_SYS_ASM_NI_MISSING</SymbolicName>
-	<Message>"Could not use native image because Mscorlib.dll is missing a native image"</Message>
-	<Comment>Returned when loading an assembly that only has a native image and no IL and cannot hardbind to mscorlib.ni.dll.</Comment>
+	<Message>"Could not use native image because System.Private.CoreLib.dll is missing a native image"</Message>
+	<Comment>Returned when loading an assembly that only has a native image and no IL and cannot hardbind to System.Private.CoreLib.ni.dll.</Comment>
 </HRESULT>
 
 <HRESULT NumericValue="0x80132007">

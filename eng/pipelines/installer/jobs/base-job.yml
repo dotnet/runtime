@@ -4,12 +4,15 @@ parameters:
   archType: ''
   osSubgroup: ''
   platform: ''
+  crossBuild: false
   crossrootfsDir: ''
   timeoutInMinutes: 120
   condition: true
   container: ''
   buildSteps: []
   dependsOn: []
+  dependsOnGlobalBuild: false
+  globalBuildSuffix: ''
   variables: []
   name: ''
   displayName: ''
@@ -65,7 +68,7 @@ jobs:
       not(in(parameters.archType, 'x64', 'x86')),
       eq(parameters.runtimeFlavor, 'mono'),
       eq(parameters.isOfficialBuild, true),
-      ne(parameters.crossrootfsDir, '')) }}
+      eq(parameters.crossBuild, true)) }}
 
   - name: BuildAction
     value: -test
@@ -128,13 +131,16 @@ jobs:
         /p:PortableBuild=true
         /p:SkipTests=$(SkipTests)
         /p:RuntimeFlavor=${{ parameters.runtimeFlavor }}
+        /p:TargetArchitecture=${{ parameters.archType }}
+        /p:CrossBuild=${{ parameters.crossBuild }}
         $(llvmParameter)
 
     - name: BaseJobBuildCommand
       value: >-
-        $(Build.SourcesDirectory)/build.sh -subset installer -ci
+        $(Build.SourcesDirectory)/build.sh -ci
         $(BuildAction)
         -configuration $(_BuildConfig)
+        -arch ${{ parameters.archType }}
         $(LiveOverridePathArgs)
         $(CommonMSBuildArgs)
         $(OfficialBuildArg)
@@ -213,7 +219,7 @@ jobs:
       value: >-
         -subset installer -ci
         $(BuildAction)
-        /p:CrossBuild=${{ ne(parameters.crossrootfsDir, '') }}
+        /p:CrossBuild=${{ parameters.crossBuild }}
         /p:PortableBuild=$(_PortableBuild)
         /p:SkipTests=$(SkipTests)
         $(LiveOverridePathArgs)
@@ -332,26 +338,38 @@ jobs:
   dependsOn:
   - checkout
   - ${{ parameters.dependsOn }}
-  - ${{ if ne(parameters.liveRuntimeBuildConfig, '') }}:
-    - ${{ format('{0}_{1}_product_build_{2}{3}_{4}_{5}',
-        parameters.runtimeFlavor,
-        parameters.runtimeVariant,
-        parameters.osGroup,
-        parameters.osSubgroup,
-        parameters.archType,
-        parameters.liveRuntimeBuildConfig) }}
-  - ${{ if ne(parameters.liveLibrariesBuildConfig, '') }}:
-    - libraries_build_${{ format('{0}{1}_{2}_{3}',
-        parameters.osGroup,
-        parameters.osSubgroup,
-        parameters.archType,
-        parameters.liveLibrariesBuildConfig) }}
-  - ${{ if eq(parameters.useOfficialAllConfigurations, true) }}:
-    - libraries_build_allconfigurations_Windows_NT_x64_Release
-  - ${{ if eq(parameters.buildFullPlatformManifest, true) }}:
-    - ${{ each platform in parameters.platforms }}:
-      - ${{ parameters.runtimeFlavor }}_${{ parameters.runtimeVariant }}_product_build_${{ platform }}_${{ parameters.liveRuntimeBuildConfig }}
-      - libraries_build_${{ platform }}_${{ parameters.liveLibrariesBuildConfig }}
+  - ${{ if eq(parameters.dependsOnGlobalBuild, false) }}:
+    - ${{ if ne(parameters.liveRuntimeBuildConfig, '') }}:
+        - ${{ format('{0}_{1}_product_build_{2}{3}_{4}_{5}',
+            parameters.runtimeFlavor,
+            parameters.runtimeVariant,
+            parameters.osGroup,
+            parameters.osSubgroup,
+            parameters.archType,
+            parameters.liveRuntimeBuildConfig) }}
+    - ${{ if ne(parameters.liveLibrariesBuildConfig, '') }}:
+      - libraries_build_${{ format('{0}{1}_{2}_{3}',
+          parameters.osGroup,
+          parameters.osSubgroup,
+          parameters.archType,
+          parameters.liveLibrariesBuildConfig) }}
+    - ${{ if eq(parameters.useOfficialAllConfigurations, true) }}:
+      - libraries_build_allconfigurations_Windows_NT_x64_Release
+    - ${{ if eq(parameters.buildFullPlatformManifest, true) }}:
+      - ${{ each platform in parameters.platforms }}:
+        - ${{ parameters.runtimeFlavor }}_${{ parameters.runtimeVariant }}_product_build_${{ platform }}_${{ parameters.liveRuntimeBuildConfig }}
+        - libraries_build_${{ platform }}_${{ parameters.liveLibrariesBuildConfig }}
+
+  - ${{ if eq(parameters.dependsOnGlobalBuild, true) }}:
+    - ${{ if ne(parameters.liveRuntimeBuildConfig, '') }}:
+        - ${{ format('build_{0}{1}_{2}_{3}_{4}',
+            parameters.osGroup,
+            parameters.osSubgroup,
+            parameters.archType,
+            parameters.liveRuntimeBuildConfig,
+            parameters.globalBuildSuffix) }}
+    - ${{ if eq(parameters.useOfficialAllConfigurations, true) }}:
+      - build_Windows_NT_x64_${{ parameters.liveLibrariesBuildConfig }}_AllConfigurations
 
   steps:
 
@@ -409,14 +427,14 @@ jobs:
         displayName: 'Unzip $(runtimeFlavorName) artifacts: ${{ platform }}'
         inputs:
           archiveFilePatterns: |
-            $(Build.SourcesDirectory)/__download__/AllPlatforms/$(runtimeFlavorName)Product_${{ platform }}_${{ parameters.liveRuntimeBuildConfig }}.*
+            $(Build.SourcesDirectory)/__download__/AllPlatforms/**/$(runtimeFlavorName)Product_${{ platform }}_${{ parameters.liveRuntimeBuildConfig }}.*
           destinationFolder: $(AllArtifactsDownloadPath)/$(runtimeFlavorName)Product_${{ platform }}_${{ parameters.liveRuntimeBuildConfig }}/
           cleanUnpackFolder: false
       - task: ExtractFiles@1
         displayName: 'Unzip Libraries artifacts: ${{ platform }}'
         inputs:
           archiveFilePatterns: |
-            $(Build.SourcesDirectory)/__download__/AllPlatforms/libraries_bin_${{ platform }}_${{ parameters.liveLibrariesBuildConfig }}.*
+            $(Build.SourcesDirectory)/__download__/AllPlatforms/**/libraries_bin_${{ platform }}_${{ parameters.liveLibrariesBuildConfig }}.*
           destinationFolder: $(AllArtifactsDownloadPath)/libraries_bin_${{ platform }}_${{ parameters.liveLibrariesBuildConfig }}/
           cleanUnpackFolder: false
 
@@ -448,7 +466,7 @@ jobs:
         cleanUnpackFolder: false
 
   - ${{ if in(parameters.osGroup, 'OSX', 'iOS', 'tvOS') }}:
-    - script: $(Build.SourcesDirectory)/eng/install-native-dependencies.sh ${{ parameters.osGroup }}
+    - script: $(Build.SourcesDirectory)/eng/install-native-dependencies.sh ${{ parameters.osGroup }} ${{ parameters.archType }} azDO
       displayName: Install Build Dependencies
 
     - script: |
@@ -456,8 +474,29 @@ jobs:
         df -h
       displayName: Disk Usage before Build
 
-  - script: $(BaseJobBuildCommand)
-    displayName: Build
+  # Build the default subset non-MacOS platforms
+  - ${{ if ne(parameters.osGroup, 'OSX') }}:
+    - script: $(BaseJobBuildCommand)
+      displayName: Build
+
+  # Build corehost, sign and add entitlements to MacOS binaries
+  - ${{ if eq(parameters.osGroup, 'OSX') }}:
+    - script: $(BaseJobBuildCommand) -subset corehost
+      displayName: Build CoreHost
+
+    - ${{ if and(ne(variables['System.TeamProject'], 'public'), notin(variables['Build.Reason'], 'PullRequest')) }}:
+      - template: /eng/pipelines/common/macos-sign-with-entitlements.yml
+        parameters:
+          filesToSign: 
+          - name: dotnet
+            path: $(Build.SourcesDirectory)/artifacts/bin/osx-${{ parameters.archType }}.$(_BuildConfig)/corehost
+            entitlementsFile: $(Build.SourcesDirectory)/eng/pipelines/common/entitlements.plist
+          - name: apphost
+            path: $(Build.SourcesDirectory)/artifacts/bin/osx-${{ parameters.archType }}.$(_BuildConfig)/corehost
+            entitlementsFile: $(Build.SourcesDirectory)/eng/pipelines/common/entitlements.plist
+
+    - script: $(BaseJobBuildCommand) -subset installer.nocorehost
+      displayName: Build and Package
 
   - ${{ if in(parameters.osGroup, 'OSX', 'iOS','tvOS') }}: 
     - script: |

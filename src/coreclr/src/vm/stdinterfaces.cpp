@@ -56,7 +56,7 @@ static const GUID LIBID_STDOLE2 = { 0x00020430, 0x0000, 0x0000, { 0xc0, 0x00, 0x
 
 // Until the Windows SDK is updated, just hard-code the IAgileObject IID
 #ifndef __IAgileObject_INTERFACE_DEFINED__
-EXTERN_C constexpr GUID IID_IAgileObject = { 0x94ea2b94, 0xe9cc, 0x49e0, { 0xc0, 0xff, 0xee, 0x64, 0xca, 0x8f, 0x5b, 0x90 } };
+EXTERN_C const GUID IID_IAgileObject = { 0x94ea2b94, 0xe9cc, 0x49e0, { 0xc0, 0xff, 0xee, 0x64, 0xca, 0x8f, 0x5b, 0x90 } };
 #endif // !__IAgileObject_INTERFACE_DEFINED__
 
 // Until the Windows SDK is updated, just hard-code the INoMarshal IID
@@ -799,7 +799,7 @@ HRESULT GetITypeInfoForMT(ComMethodTable *pMT, ITypeInfo **ppTI)
 
     pTI = pMT->GetITypeInfo();
 
-    if (pTI == 0)
+    if (pTI == NULL)
     {
         MethodTable *pClass = pMT->GetMethodTable();
 
@@ -809,6 +809,7 @@ HRESULT GetITypeInfoForMT(ComMethodTable *pMT, ITypeInfo **ppTI)
         {
             pMT->SetITypeInfo(pTI);
             SafeReleasePreemp(pTI);
+            pTI = pMT->GetITypeInfo();
         }
     }
 
@@ -1694,29 +1695,8 @@ HRESULT __stdcall   DispatchEx_DeleteMemberByDispID (
     }
     CONTRACTL_END;
 
-    HRESULT hr = S_OK;
-
-    // Retrieve the dispatch info and the simpler wrapper for this IDispatchEx.
-    SimpleComCallWrapper *pSimpleWrap = SimpleComCallWrapper::GetWrapperFromIP(pDisp);
-
-    DispatchExInfo *pDispExInfo = pSimpleWrap->GetDispatchExInfo();
-
-    // If the member does not support expando operations then we cannot remove the member.
-    if (!pDispExInfo->SupportsExpando())
-        return E_NOTIMPL;
-
-    BEGIN_EXTERNAL_ENTRYPOINT(&hr)
-    {
-        GCX_COOP_THREAD_EXISTS(GET_THREAD());
-
-        // Delete the member from the IExpando. This method takes care of synchronizing with
-        // the managed view to make sure the member gets deleted.
-        pDispExInfo->DeleteMember(id);
-        hr = S_OK;
-    }
-    END_EXTERNAL_ENTRYPOINT;
-
-    return hr;
+    // Legacy IExpando support.
+    return E_NOTIMPL;
 }
 
 // IDispatchEx::DeleteMemberByName
@@ -1736,34 +1716,8 @@ HRESULT __stdcall   DispatchEx_DeleteMemberByName (
     }
     CONTRACTL_END;
 
-    HRESULT hr = S_OK;
-    DISPID DispID;
-
-    if (!bstrName)
-        return E_POINTER;
-
-    // The only two supported flags are fdexNameCaseSensitive and fdexNameCaseInsensitive.
-    if (grfdex & ~(fdexNameCaseSensitive | fdexNameCaseInsensitive))
-        return E_INVALIDARG;
-
-    // Ensure both fdexNameCaseSensitive and fdexNameCaseInsensitive aren't both set.
-    if ((grfdex & (fdexNameCaseSensitive | fdexNameCaseInsensitive)) == (fdexNameCaseSensitive | fdexNameCaseInsensitive))
-        return E_INVALIDARG;
-
-    // Retrieve the dispatch info and the simpler wrapper for this IDispatchEx.
-    SimpleComCallWrapper *pSimpleWrap = SimpleComCallWrapper::GetWrapperFromIP(pDisp);
-    DispatchExInfo *pDispExInfo = pSimpleWrap->GetDispatchExInfo();
-
-    // If the member does not support expando operations then we cannot remove the member.
-    if (!pDispExInfo->SupportsExpando())
-        return E_NOTIMPL;
-
-    // Simply find the associated DISPID and delegate the call to DeleteMemberByDispID.
-    hr = DispatchEx_GetDispID(pDisp, bstrName, grfdex, &DispID);
-    if (SUCCEEDED(hr))
-        hr = DispatchEx_DeleteMemberByDispID(pDisp, DispID);
-
-    return hr;
+    // Legacy IExpando support.
+    return E_NOTIMPL;
 }
 
 // IDispatchEx::GetDispID
@@ -1817,21 +1771,13 @@ HRESULT __stdcall   DispatchEx_GetDispID (
         DispatchMemberInfo *pDispMemberInfo = pDispExInfo->SynchFindMember(sName, grfdex & fdexNameCaseSensitive);
 
         // If we still have not found a match and the fdexNameEnsure flag is set then we
-        // need to add the member to the expando object.
+        // need to error out since the IExpando API is no longer supported.
         if (!pDispMemberInfo)
         {
             if (grfdex & fdexNameEnsure)
             {
-                if (pDispExInfo->SupportsExpando())
-                {
-                    pDispMemberInfo = pDispExInfo->AddMember(sName, grfdex);
-                    if (!pDispMemberInfo)
-                        hr = E_UNEXPECTED;
-                }
-                else
-                {
-                    hr = E_NOTIMPL;
-                }
+                // Legacy IExpando support.
+                hr = E_NOTIMPL;
             }
             else
             {

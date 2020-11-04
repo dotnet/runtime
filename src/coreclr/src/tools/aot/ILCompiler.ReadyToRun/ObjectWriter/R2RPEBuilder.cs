@@ -159,7 +159,7 @@ namespace ILCompiler.PEWriter
         /// If non-null, the PE file will be laid out such that it can naturally be mapped with a higher alignment than 4KB
         /// This is used to support loading via large pages on Linux
         /// </summary>
-        private readonly int? _customPESectionAlignment;
+        private readonly int _customPESectionAlignment;
 
         /// <summary>
         /// Constructor initializes the various control structures and combines the section list.
@@ -173,8 +173,9 @@ namespace ILCompiler.PEWriter
             ISymbolNode r2rHeaderExportSymbol,
             string outputFileSimpleName,
             Func<RuntimeFunctionsTableNode> getRuntimeFunctionsTable,
-            int? customPESectionAlignment)
-            : base(peHeaderBuilder, deterministicIdProvider: null)
+            int customPESectionAlignment,
+            Func<IEnumerable<Blob>, BlobContentId> deterministicIdProvider)
+            : base(peHeaderBuilder, deterministicIdProvider: deterministicIdProvider)
         {
             _target = target;
             _getRuntimeFunctionsTable = getRuntimeFunctionsTable;
@@ -288,7 +289,7 @@ namespace ILCompiler.PEWriter
         /// </summary>
         /// <param name="outputStream">Output stream for the final R2R PE file</param>
         /// <param name="timeDateStamp">Timestamp to set in the PE header of the output R2R executable</param>
-        public void Write(Stream outputStream, int timeDateStamp)
+        public void Write(Stream outputStream, int? timeDateStamp)
         {
             BlobBuilder outputPeFile = new BlobBuilder();
             Serialize(outputPeFile);
@@ -297,12 +298,13 @@ namespace ILCompiler.PEWriter
 
             UpdateSectionRVAs(outputStream);
 
-            if (_customPESectionAlignment.HasValue)
-                SetPEHeaderSectionAlignment(outputStream, _customPESectionAlignment.Value);
+            if (_customPESectionAlignment != 0)
+                SetPEHeaderSectionAlignment(outputStream, _customPESectionAlignment);
 
             ApplyMachineOSOverride(outputStream);
 
-            SetPEHeaderTimeStamp(outputStream, timeDateStamp);
+            if (timeDateStamp.HasValue)
+                SetPEHeaderTimeStamp(outputStream, timeDateStamp.Value);
 
             _written = true;
         }
@@ -401,7 +403,7 @@ namespace ILCompiler.PEWriter
             int sectionCount = _sectionRVAs.Length;
             for (int sectionIndex = 0; sectionIndex < sectionCount; sectionIndex++)
             {
-                if (_customPESectionAlignment != null)
+                if (_customPESectionAlignment != 0)
                 {
                     // When _customPESectionAlignment is set, the physical and virtual sizes are the same
                     byte[] sizeBytes = BitConverter.GetBytes(_sectionRawSizes[sectionIndex]);
@@ -576,15 +578,15 @@ namespace ILCompiler.PEWriter
             }
 
             int injectedPadding = 0;
-            if (_customPESectionAlignment.HasValue && _customPESectionAlignment.Value != 0)
+            if (_customPESectionAlignment != 0)
             {
                 if (outputSectionIndex > 0)
                 {
                     sectionStartRva = Math.Max(sectionStartRva, _sectionRVAs[outputSectionIndex - 1] + _sectionRawSizes[outputSectionIndex - 1]);
                 }
 
-                int newSectionStartRva = AlignmentHelper.AlignUp(sectionStartRva, _customPESectionAlignment.Value);
-                int newSectionPointerToRawData = AlignmentHelper.AlignUp(location.PointerToRawData, _customPESectionAlignment.Value);
+                int newSectionStartRva = AlignmentHelper.AlignUp(sectionStartRva, _customPESectionAlignment);
+                int newSectionPointerToRawData = AlignmentHelper.AlignUp(location.PointerToRawData, _customPESectionAlignment);
                 if (newSectionPointerToRawData > location.PointerToRawData)
                 {
                     sectionDataBuilder = new BlobBuilder();
@@ -644,10 +646,10 @@ namespace ILCompiler.PEWriter
 
             int sectionRawSize = sectionDataBuilder.Count - injectedPadding;
 
-            if (_customPESectionAlignment.HasValue && _customPESectionAlignment.Value != 0)
+            if (_customPESectionAlignment != 0)
             {
                 // Align the end of the section to the padding offset
-                int count = AlignmentHelper.AlignUp(sectionRawSize, _customPESectionAlignment.Value);
+                int count = AlignmentHelper.AlignUp(sectionRawSize, _customPESectionAlignment);
                 sectionDataBuilder.WriteBytes(0, count - sectionRawSize);
                 sectionRawSize = count;
             }

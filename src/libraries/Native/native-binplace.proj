@@ -2,10 +2,11 @@
   <Import Sdk="Microsoft.NET.Sdk" Project="Sdk.props" />
 
   <PropertyGroup>
-    <TargetFrameworks>$(NetCoreAppCurrent);netstandard2.0;$(NetFrameworkCurrent)</TargetFrameworks>
+    <TargetFrameworks>$(NetCoreAppCurrent)</TargetFrameworks>
     <TargetFramework>$(BuildTargetFramework)</TargetFramework>
     <BinPlaceRuntime>false</BinPlaceRuntime>
     <BinPlaceNative>true</BinPlaceNative>
+    <DisableImplicitFrameworkReferences>true</DisableImplicitFrameworkReferences>
   </PropertyGroup>
 
   <Import Sdk="Microsoft.NET.Sdk" Project="Sdk.targets" />
@@ -22,10 +23,6 @@
       <BinPlaceItem Include="$(NativeBinDir)*.dbg" />
       <BinPlaceItem Include="$(NativeBinDir)*.dylib" />
       <BinPlaceItem Include="$(NativeBinDir)*.dwarf" />
-      <BinPlaceItem Condition="'$(TargetOS)' == 'Browser'" Include="$(NativeBinDir)dotnet.js" />
-      <BinPlaceItem Condition="'$(TargetOS)' == 'Browser'" Include="$(NativeBinDir)dotnet.wasm" />
-      <BinPlaceItem Condition="'$(TargetOS)' == 'Browser'" Include="$(NativeBinDir)dotnet.timezones.blat" />
-      <BinPlaceItem Condition="'$(TargetOS)' == 'Browser'" Include="$(NativeBinDir)icudt.dat" />
       <FileWrites Include="@(BinPlaceItem)" />
     </ItemGroup>
   </Target>

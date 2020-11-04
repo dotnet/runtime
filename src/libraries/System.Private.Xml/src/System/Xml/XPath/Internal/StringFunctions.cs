@@ -1,7 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Globalization;
@@ -79,7 +78,7 @@ namespace MS.Internal.Xml.XPath
                 switch (GetXPathType(argVal))
                 {
                     case XPathResultType.NodeSet:
-                        XPathNavigator value = _argList[0].Advance();
+                        XPathNavigator? value = _argList[0].Advance();
                         return value != null ? value.Value : string.Empty;
                     case XPathResultType.String:
                         return (string)argVal;
@@ -92,6 +91,7 @@ namespace MS.Internal.Xml.XPath
                         return toString((double)argVal);
                 }
             }
+            Debug.Assert(nodeIterator.Current != null);
             return nodeIterator.Current.Value;
         }
 
@@ -127,8 +127,9 @@ namespace MS.Internal.Xml.XPath
 
         private bool StartsWith(XPathNodeIterator nodeIterator)
         {
-            string s1 = _argList[0].Evaluate(nodeIterator).ToString();
-            string s2 = _argList[1].Evaluate(nodeIterator).ToString();
+            Debug.Assert(_argList.Count > 1);
+            string s1 = _argList[0].Evaluate(nodeIterator).ToString()!;
+            string s2 = _argList[1].Evaluate(nodeIterator).ToString()!;
             return s1.Length >= s2.Length && string.CompareOrdinal(s1, 0, s2, 0, s2.Length) == 0;
         }
 
@@ -136,15 +137,17 @@ namespace MS.Internal.Xml.XPath
 
         private bool Contains(XPathNodeIterator nodeIterator)
         {
-            string s1 = _argList[0].Evaluate(nodeIterator).ToString();
-            string s2 = _argList[1].Evaluate(nodeIterator).ToString();
+            Debug.Assert(_argList.Count > 1);
+            string s1 = _argList[0].Evaluate(nodeIterator).ToString()!;
+            string s2 = _argList[1].Evaluate(nodeIterator).ToString()!;
             return s_compareInfo.IndexOf(s1, s2, CompareOptions.Ordinal) >= 0;
         }
 
         private string SubstringBefore(XPathNodeIterator nodeIterator)
         {
-            string s1 = _argList[0].Evaluate(nodeIterator).ToString();
-            string s2 = _argList[1].Evaluate(nodeIterator).ToString();
+            Debug.Assert(_argList.Count > 1);
+            string s1 = _argList[0].Evaluate(nodeIterator).ToString()!;
+            string s2 = _argList[1].Evaluate(nodeIterator).ToString()!;
             if (s2.Length == 0) { return s2; }
             int idx = s_compareInfo.IndexOf(s1, s2, CompareOptions.Ordinal);
             return (idx < 1) ? string.Empty : s1.Substring(0, idx);
@@ -152,8 +155,9 @@ namespace MS.Internal.Xml.XPath
 
         private string SubstringAfter(XPathNodeIterator nodeIterator)
         {
-            string s1 = _argList[0].Evaluate(nodeIterator).ToString();
-            string s2 = _argList[1].Evaluate(nodeIterator).ToString();
+            Debug.Assert(_argList.Count > 1);
+            string s1 = _argList[0].Evaluate(nodeIterator).ToString()!;
+            string s2 = _argList[1].Evaluate(nodeIterator).ToString()!;
             if (s2.Length == 0) { return s1; }
             int idx = s_compareInfo.IndexOf(s1, s2, CompareOptions.Ordinal);
             return (idx < 0) ? string.Empty : s1.Substring(idx + s2.Length);
@@ -161,7 +165,8 @@ namespace MS.Internal.Xml.XPath
 
         private string Substring(XPathNodeIterator nodeIterator)
         {
-            string str1 = _argList[0].Evaluate(nodeIterator).ToString();
+            Debug.Assert(_argList.Count > 0);
+            string str1 = _argList[0].Evaluate(nodeIterator).ToString()!;
             double num = XmlConvert.XPathRound(XmlConvert.ToXPathDouble(_argList[1].Evaluate(nodeIterator))) - 1;
 
             if (double.IsNaN(num) || str1.Length <= num)
@@ -203,8 +208,9 @@ namespace MS.Internal.Xml.XPath
         {
             if (_argList.Count > 0)
             {
-                return _argList[0].Evaluate(nodeIterator).ToString().Length;
+                return _argList[0].Evaluate(nodeIterator).ToString()!.Length;
             }
+            Debug.Assert(nodeIterator!.Current != null);
             return nodeIterator.Current.Value.Length;
         }
 
@@ -213,20 +219,20 @@ namespace MS.Internal.Xml.XPath
             string value;
             if (_argList.Count > 0)
             {
-                value = _argList[0].Evaluate(nodeIterator).ToString();
+                value = _argList[0].Evaluate(nodeIterator).ToString()!;
             }
             else
             {
+                Debug.Assert(nodeIterator!.Current != null);
                 value = nodeIterator.Current.Value;
             }
             int modifyPos = -1;
             char[] chars = value.ToCharArray();
             bool firstSpace = false; // Start false to trim the beginning
-            XmlCharType xmlCharType = XmlCharType.Instance;
 
             for (int comparePos = 0; comparePos < chars.Length; comparePos++)
             {
-                if (!xmlCharType.IsWhiteSpace(chars[comparePos]))
+                if (!XmlCharType.IsWhiteSpace(chars[comparePos]))
                 {
                     firstSpace = true;
                     modifyPos++;
@@ -249,9 +255,10 @@ namespace MS.Internal.Xml.XPath
 
         private string Translate(XPathNodeIterator nodeIterator)
         {
-            string value = _argList[0].Evaluate(nodeIterator).ToString();
-            string mapFrom = _argList[1].Evaluate(nodeIterator).ToString();
-            string mapTo = _argList[2].Evaluate(nodeIterator).ToString();
+            Debug.Assert(_argList.Count > 2);
+            string value = _argList[0].Evaluate(nodeIterator).ToString()!;
+            string mapFrom = _argList[1].Evaluate(nodeIterator).ToString()!;
+            string mapTo = _argList[2].Evaluate(nodeIterator).ToString()!;
             int modifyPos = -1;
             char[] chars = value.ToCharArray();
 

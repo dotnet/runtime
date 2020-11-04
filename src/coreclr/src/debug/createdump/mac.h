@@ -68,6 +68,7 @@ typedef struct elf64_note {
   Elf64_Word n_type;    /* Content type */
 } Elf64_Nhdr;
 
+#if defined(TARGET_AMD64)
 struct user_fpregs_struct
 {
   unsigned short int    cwd;
@@ -113,6 +114,25 @@ struct user_regs_struct
   unsigned long long int fs;
   unsigned long long int gs;
 };
+#elif defined(TARGET_ARM64)
+struct user_fpsimd_struct
+{
+  uint64_t vregs[2*32];
+  uint32_t fpcr;
+  uint32_t fpsr;
+};
+
+struct user_regs_struct
+{
+  uint64_t regs[31];
+  uint64_t sp;
+  uint64_t pc;
+  uint32_t pstate;
+};
+#else
+#error Unexpected architecture
+#endif
+
 
 typedef pid_t __pid_t;
 

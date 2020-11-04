@@ -35,7 +35,7 @@ namespace Microsoft.Extensions.Configuration.Json
             {
                 if (doc.RootElement.ValueKind != JsonValueKind.Object)
                 {
-                    throw new FormatException(SR.Format(SR.Error_UnsupportedJSONToken, doc.RootElement.ValueKind));
+                    throw new FormatException(SR.Format(SR.Error_InvalidTopLevelJSONElement, doc.RootElement.ValueKind));
                 }
                 VisitElement(doc.RootElement);
             }
@@ -43,12 +43,21 @@ namespace Microsoft.Extensions.Configuration.Json
             return _data;
         }
 
-        private void VisitElement(JsonElement element) {
+        private void VisitElement(JsonElement element)
+        {
+            var isEmpty = true;
+
             foreach (JsonProperty property in element.EnumerateObject())
             {
+                isEmpty = false;
                 EnterContext(property.Name);
                 VisitValue(property.Value);
                 ExitContext();
+            }
+
+            if (isEmpty && _currentPath != null)
+            {
+                _data[_currentPath] = null;
             }
         }
 

@@ -6,6 +6,7 @@ parameters:
   compilerName: ''
   condition: true
   container: ''
+  crossBuild: false
   crossrootfsDir: ''
   isOfficialBuild: false
   osGroup: ''
@@ -52,6 +53,7 @@ jobs:
 
     timeoutInMinutes: ${{ parameters.timeoutInMinutes }}
 
+    crossBuild: ${{ parameters.crossBuild }}
     crossrootfsDir: ${{ parameters.crossrootfsDir }}
 
     gatherAssetManifests: true
@@ -109,6 +111,18 @@ jobs:
     - ${{ if eq(parameters.testGroup, 'clrinterpreter') }}:
       - name: clrInterpreterBuildArg
         value: '-cmakeargs "-DFEATURE_INTERPRETER=1"'
+    
+    - name: clrBuildPALTestsBuildArg
+      value: ''
+    - ${{ if ne(parameters.testGroup, 'innerloop') }}:
+      - name: clrBuildPALTestsBuildArg
+        value: '-paltests '
+
+    - name: ninjaArg
+      value: ''
+    - ${{ if eq(parameters.osGroup, 'Windows_NT') }}:
+      - name: ninjaArg
+        value: '-ninja'
 
     - ${{ parameters.variables }}
 
@@ -119,7 +133,7 @@ jobs:
     # and FreeBSD builds use a build agent with dependencies
     # preinstalled, so we only need this step for OSX and Windows.
     - ${{ if eq(parameters.osGroup, 'OSX') }}:
-      - script: $(Build.SourcesDirectory)/eng/install-native-dependencies.sh $(osGroup)
+      - script: $(Build.SourcesDirectory)/eng/install-native-dependencies.sh $(osGroup) ${{ parameters.archType }} azDO
         displayName: Install native dependencies
     - ${{ if eq(parameters.osGroup, 'Windows_NT') }}:
       # Necessary to install python
@@ -139,12 +153,17 @@ jobs:
           df -h
         displayName: Disk Usage before Build
 
+    # Build DacTableGen (Windows-only)
+    - ${{ if eq(parameters.osGroup, 'Windows_NT') }}:
+      - script: $(Build.SourcesDirectory)$(dir)build$(scriptExt) -subset clr.dactools $(crossArg) -arch $(archType) $(osArg) -c $(buildConfig) $(officialBuildIdArg) -ci /bl:$(Build.SourcesDirectory)artifacts/logs/$(buildConfig)/DacTools.binlog
+        displayName: Build managed product components and packages
+
     # Build CoreCLR Runtime
     - ${{ if ne(parameters.osGroup, 'Windows_NT') }}:
-      - script: $(coreClrRepoRootDir)build-runtime$(scriptExt) $(buildConfig) $(archType) $(crossArg) $(osArg) -ci $(compilerArg) $(officialBuildIdArg) $(clrInterpreterBuildArg)
+      - script: $(Build.SourcesDirectory)/src/coreclr/build-runtime$(scriptExt) $(buildConfig) $(archType) $(crossArg) $(osArg) -ci $(compilerArg) $(clrBuildPALTestsBuildArg) $(ninjaArg) $(officialBuildIdArg) $(clrInterpreterBuildArg)
         displayName: Build CoreCLR Runtime
     - ${{ if eq(parameters.osGroup, 'Windows_NT') }}:
-      - script: set __TestIntermediateDir=int&&$(coreClrRepoRootDir)build-runtime$(scriptExt) $(buildConfig) $(archType) -ci $(enforcePgoArg) $(officialBuildIdArg) $(clrInterpreterBuildArg)
+      - script: set __TestIntermediateDir=int&&$(Build.SourcesDirectory)/src/coreclr/build-runtime$(scriptExt) $(buildConfig) $(archType) -ci $(ninjaArg) $(enforcePgoArg) $(officialBuildIdArg) $(clrInterpreterBuildArg)
         displayName: Build CoreCLR Runtime
 
     - ${{ if in(parameters.osGroup, 'OSX', 'iOS','tvOS') }}:
@@ -154,7 +173,7 @@ jobs:
         displayName: Disk Usage after Build
 
     # Build CoreCLR Managed Components
-    - script: $(Build.SourcesDirectory)$(dir)build$(scriptExt) -subset clr.corelib+clr.nativecorelib+clr.tools+clr.packages $(crossArg) -arch $(archType) $(osArg) -c $(buildConfig) $(officialBuildIdArg) -ci
+    - script: $(Build.SourcesDirectory)$(dir)build$(scriptExt) -subset clr.corelib+clr.nativecorelib+clr.tools+clr.packages+clr.paltestlist $(crossArg) -arch $(archType) $(osArg) -c $(buildConfig) $(officialBuildIdArg) -ci
       displayName: Build managed product components and packages
 
     # Run CoreCLR Tools unit tests
@@ -164,8 +183,30 @@ jobs:
 
     # Build native test components
     - ${{ if ne(parameters.isOfficialBuild, true) }}:
-      - script: $(coreClrRepoRootDir)build-test$(scriptExt) skipstressdependencies skipmanaged skipgeneratelayout $(buildConfig) $(archType) $(crossArg) $(osArg) $(priorityArg) $(compilerArg)
+      - script: $(Build.SourcesDirectory)/src/tests/build$(scriptExt) skipstressdependencies skipmanaged skipgeneratelayout $(buildConfig) $(archType) $(crossArg) $(osArg) $(priorityArg) $(compilerArg)
         displayName: Build native test components
+
+    # Sign and add entitlements to these MacOS binaries
+    - ${{ if and(ne(variables['System.TeamProject'], 'public'), notin(variables['Build.Reason'], 'PullRequest')) }}:
+      - ${{ if eq(parameters.osGroup, 'OSX') }}:
+
+        - template: /eng/pipelines/common/macos-sign-with-entitlements.yml
+          parameters:
+            filesToSign:
+            - name: createdump
+              path: $(buildProductRootFolderPath)
+              entitlementsFile: $(Build.SourcesDirectory)/eng/pipelines/common/createdump-entitlements.plist
+            - name: corerun
+              path: $(buildProductRootFolderPath)
+              entitlementsFile: $(Build.SourcesDirectory)/eng/pipelines/common/entitlements.plist
+
+        - task: CopyFiles@2
+          displayName: 'Copy signed createdump to sharedFramework'
+          inputs:
+            contents: createdump
+            sourceFolder: $(buildProductRootFolderPath)
+            targetFolder: $(buildProductRootFolderPath)/sharedFramework
+            overWrite: true
 
     # Sign on Windows
     - ${{ if and(eq(parameters.osGroup, 'Windows_NT'), eq(parameters.signBinaries, 'true'), ne(parameters.testGroup, 'clrTools')) }}:
@@ -193,7 +234,7 @@ jobs:
           artifactName: $(buildProductArtifactName)
           displayName: 'product build'
 
-    - ${{ if and(ne(parameters.osGroup, 'OSX'), ne(parameters.archType, 'x86'), ne(parameters.compilerName, 'gcc'), ne(parameters.testGroup, 'clrTools')) }}:
+    - ${{ if and(in(parameters.osGroup, 'Windows_NT', 'Linux'), ne(parameters.archType, 'x86'), ne(parameters.compilerName, 'gcc'), ne(parameters.testGroup, 'clrTools')) }}:
       - template: /eng/pipelines/coreclr/templates/crossdac-build.yml
         parameters:
           archType: ${{ parameters.archType }}

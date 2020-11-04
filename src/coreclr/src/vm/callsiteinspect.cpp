@@ -53,7 +53,7 @@ namespace
                 if (ELEMENT_TYPE_PTR == eType)
                     COMPlusThrow(kNotSupportedException);
 
-                MethodTable *pMT = MscorlibBinder::GetElementType(eType);
+                MethodTable *pMT = CoreLibBinder::GetElementType(eType);
 
                 OBJECTREF pObj = pMT->Allocate();
                 if (fIsByRef)
@@ -337,7 +337,7 @@ void CallsiteInspect::GetCallsiteArgs(
 
         // Allocate all needed arrays for callsite arg details
         gc.Args = (PTRARRAYREF)AllocateObjectArray(numArgs, g_pObjectClass);
-        MethodTable *typeMT = MscorlibBinder::GetClass(CLASS__TYPE);
+        MethodTable *typeMT = CoreLibBinder::GetClass(CLASS__TYPE);
         gc.ArgsTypes = (PTRARRAYREF)AllocateObjectArray(numArgs, typeMT);
         gc.ArgsIsByRef = (BOOLARRAYREF)AllocatePrimitiveArray(ELEMENT_TYPE_BOOLEAN, numArgs);
 

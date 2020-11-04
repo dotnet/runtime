@@ -16,26 +16,27 @@ namespace System.Xml.Serialization
     using System.Security;
     using System.Net;
     using System.Reflection;
+    using System.Diagnostics.CodeAnalysis;
 
     public class XmlSchemas : CollectionBase, IEnumerable<XmlSchema>
     {
-        private XmlSchemaSet _schemaSet;
-        private Hashtable _references;
-        private SchemaObjectCache _cache; // cached schema top-level items
+        private XmlSchemaSet? _schemaSet;
+        private Hashtable? _references;
+        private SchemaObjectCache? _cache; // cached schema top-level items
         private bool _shareTypes;
-        private Hashtable _mergedSchemas;
+        private Hashtable? _mergedSchemas;
         internal Hashtable delayedSchemas = new Hashtable();
         private bool _isCompiled;
-        private static volatile XmlSchema s_xsd;
-        private static volatile XmlSchema s_xml;
+        private static volatile XmlSchema? s_xsd;
+        private static volatile XmlSchema? s_xml;
 
         public XmlSchema this[int index]
         {
-            get { return (XmlSchema)List[index]; }
+            get { return (XmlSchema)List[index]!; }
             set { List[index] = value; }
         }
 
-        public XmlSchema this[string ns]
+        public XmlSchema? this[string? ns]
         {
             get
             {
@@ -43,13 +44,13 @@ namespace System.Xml.Serialization
                 if (values.Count == 0)
                     return null;
                 if (values.Count == 1)
-                    return (XmlSchema)values[0];
+                    return (XmlSchema?)values[0];
 
                 throw new InvalidOperationException(SR.Format(SR.XmlSchemaDuplicateNamespace, ns));
             }
         }
 
-        public IList GetSchemas(string ns)
+        public IList GetSchemas(string? ns)
         {
             return (IList)SchemaSet.Schemas(ns);
         }
@@ -118,7 +119,7 @@ namespace System.Xml.Serialization
             return List.Add(schema);
         }
 
-        public int Add(XmlSchema schema, Uri baseUri)
+        public int Add(XmlSchema schema, Uri? baseUri)
         {
             if (List.Contains(schema))
                 return List.IndexOf(schema);
@@ -155,7 +156,7 @@ namespace System.Xml.Serialization
             return List.Contains(schema);
         }
 
-        public bool Contains(string targetNamespace)
+        public bool Contains(string? targetNamespace)
         {
             return SchemaSet.Contains(targetNamespace);
         }
@@ -170,14 +171,14 @@ namespace System.Xml.Serialization
             List.CopyTo(array, index);
         }
 
-        protected override void OnInsert(int index, object value)
+        protected override void OnInsert(int index, object? value)
         {
-            AddName((XmlSchema)value);
+            AddName((XmlSchema)value!);
         }
 
-        protected override void OnRemove(int index, object value)
+        protected override void OnRemove(int index, object? value)
         {
-            RemoveName((XmlSchema)value);
+            RemoveName((XmlSchema)value!);
         }
 
         protected override void OnClear()
@@ -185,10 +186,10 @@ namespace System.Xml.Serialization
             _schemaSet = null;
         }
 
-        protected override void OnSet(int index, object oldValue, object newValue)
+        protected override void OnSet(int index, object? oldValue, object? newValue)
         {
-            RemoveName((XmlSchema)oldValue);
-            AddName((XmlSchema)newValue);
+            RemoveName((XmlSchema)oldValue!);
+            AddName((XmlSchema)newValue!);
         }
 
         private void AddName(XmlSchema schema)
@@ -207,7 +208,7 @@ namespace System.Xml.Serialization
         {
             // need to remove illegal <import> externals;
             ArrayList removes = new ArrayList();
-            string ns = schema.TargetNamespace;
+            string? ns = schema.TargetNamespace;
             foreach (XmlSchemaExternal external in schema.Includes)
             {
                 if (external is XmlSchemaImport)
@@ -229,11 +230,11 @@ namespace System.Xml.Serialization
             SchemaSet.Remove(schema);
         }
 
-        public object Find(XmlQualifiedName name, Type type)
+        public object? Find(XmlQualifiedName name, Type type)
         {
             return Find(name, type, true);
         }
-        internal object Find(XmlQualifiedName name, Type type, bool checkCache)
+        internal object? Find(XmlQualifiedName name, Type type, bool checkCache)
         {
             if (!IsCompiled)
             {
@@ -249,7 +250,7 @@ namespace System.Xml.Serialization
             {
                 Preprocess(schema);
 
-                XmlSchemaObject ret = null;
+                XmlSchemaObject? ret = null;
                 if (typeof(XmlSchemaType).IsAssignableFrom(type))
                 {
                     ret = schema.SchemaTypes[name];
@@ -359,7 +360,7 @@ namespace System.Xml.Serialization
             }
         }
 
-        private void AddImport(IList schemas, string ns)
+        private void AddImport(IList schemas, string? ns)
         {
             foreach (XmlSchema s in schemas)
             {
@@ -429,7 +430,7 @@ namespace System.Xml.Serialization
             for (int i = 0; i < schema.Items.Count; i++)
             {
                 XmlSchemaObject o = schema.Items[i];
-                XmlSchemaObject dest = Find(o, originals);
+                XmlSchemaObject? dest = Find(o, originals);
                 if (dest != null)
                 {
                     if (!Cache.Match(dest, o, _shareTypes))
@@ -442,7 +443,7 @@ namespace System.Xml.Serialization
             }
             if (count != schema.Items.Count)
             {
-                XmlSchema destination = (XmlSchema)originals[0];
+                XmlSchema destination = (XmlSchema)originals[0]!;
                 for (int i = 0; i < schema.Items.Count; i++)
                 {
                     if (!matchedItems[i])
@@ -455,7 +456,7 @@ namespace System.Xml.Serialization
             }
         }
 
-        private static string ItemName(XmlSchemaObject o)
+        private static string? ItemName(XmlSchemaObject o)
         {
             if (o is XmlSchemaNotation)
             {
@@ -501,7 +502,8 @@ namespace System.Xml.Serialization
             return XmlQualifiedName.Empty;
         }
 
-        private static string GetSchemaItem(XmlSchemaObject o, string ns, string details)
+        [return: NotNullIfNotNull("o")]
+        private static string? GetSchemaItem(XmlSchemaObject? o, string? ns, string? details)
         {
             if (o == null)
             {
@@ -523,7 +525,7 @@ namespace System.Xml.Serialization
                     ns = ((XmlSchema)tmp).TargetNamespace;
                 }
             }
-            string item = null;
+            string? item = null;
             if (o is XmlSchemaNotation)
             {
                 item = SR.Format(SR.XmlSchemaNamedItem, ns, "notation", ((XmlSchemaNotation)o).Name, details);
@@ -604,7 +606,7 @@ namespace System.Xml.Serialization
             s.Serialize(xmlWriter, o, ns);
             return sw.ToString();
         }
-        private static string MergeFailedMessage(XmlSchemaObject src, XmlSchemaObject dest, string ns)
+        private static string MergeFailedMessage(XmlSchemaObject src, XmlSchemaObject dest, string? ns)
         {
             string err = SR.Format(SR.XmlSerializableMergeItem, ns, GetSchemaItem(src, ns, null));
             err += "\r\n" + Dump(src);
@@ -612,9 +614,9 @@ namespace System.Xml.Serialization
             return err;
         }
 
-        internal XmlSchemaObject Find(XmlSchemaObject o, IList originals)
+        internal XmlSchemaObject? Find(XmlSchemaObject o, IList originals)
         {
-            string name = ItemName(o);
+            string? name = ItemName(o);
             if (name == null)
                 return null;
 
@@ -638,7 +640,7 @@ namespace System.Xml.Serialization
             get { return _isCompiled; }
         }
 
-        public void Compile(ValidationEventHandler handler, bool fullCompile)
+        public void Compile(ValidationEventHandler? handler, bool fullCompile)
         {
             if (_isCompiled)
                 return;
@@ -706,14 +708,14 @@ namespace System.Xml.Serialization
 
         internal static Exception CreateValidationException(XmlSchemaException exception, string message)
         {
-            XmlSchemaObject source = exception.SourceSchemaObject;
+            XmlSchemaObject? source = exception.SourceSchemaObject;
             if (exception.LineNumber == 0 && exception.LinePosition == 0)
             {
                 throw new InvalidOperationException(GetSchemaItem(source, null, message), exception);
             }
             else
             {
-                string ns = null;
+                string? ns = null;
                 if (source != null)
                 {
                     while (source.Parent != null)
@@ -729,7 +731,7 @@ namespace System.Xml.Serialization
             }
         }
 
-        internal static void IgnoreCompileErrors(object sender, ValidationEventArgs args)
+        internal static void IgnoreCompileErrors(object? sender, ValidationEventArgs args)
         {
             return;
         }
@@ -752,7 +754,7 @@ namespace System.Xml.Serialization
             {
                 if (s_xml == null)
                 {
-                    s_xml = XmlSchema.Read(new StringReader(xmlSchema), null);
+                    s_xml = XmlSchema.Read(new StringReader(xmlSchema), null)!;
                 }
                 return s_xml;
             }

@@ -2,11 +2,9 @@
   <PropertyGroup>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <IncludePartialFacadeTests>true</IncludePartialFacadeTests>
-    <TargetFrameworks>$(NetCoreAppCurrent);$(NetFrameworkCurrent)</TargetFrameworks>
+    <TargetFrameworks>$(NetCoreAppCurrent);net461</TargetFrameworks>
     <TestRuntime>true</TestRuntime>
     <IncludeRemoteExecutor>true</IncludeRemoteExecutor>
-    <!-- Must reference the Utf8String reference assembly, which is normally excluded from unit test projects. -->
-    <IncludeUtf8StringAsmRef>true</IncludeUtf8StringAsmRef>
   </PropertyGroup>
   <ItemGroup Condition="'$(IsPrerelease)' != 'false'">
     <Compile Include="System\Char8Tests.cs" />
@@ -43,7 +41,13 @@
     <Compile Include="System\Utf8ExtensionsTests.netcoreapp.cs" />
     <Compile Include="System\Utf8StringTests.Ctor.netcoreapp.cs" />
   </ItemGroup>
-  <ItemGroup Condition="'$(IsPrerelease)' != 'false' and '$(TargetFramework)' == '$(NetFrameworkCurrent)'">
+  <ItemGroup Condition="'$(IsPrerelease)' != 'false' and '$(TargetFramework)' == 'net461'">
     <Compile Include="System\MemoryTests.netfx.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\src\System.Utf8String.Experimental.csproj" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(TargetFramework)' == 'net461'">
+    <Reference Include="System.Net.Http" />
   </ItemGroup>
 </Project>

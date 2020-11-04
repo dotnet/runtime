@@ -200,3 +200,17 @@ void ExportILToNativeMap(ULONG32 cMap,             // [in] Min size of mapExt, m
 #endif // _DEBUG
     }
 }
+
+const IPCEventTypeNameMapping DbgIPCEventTypeNames[] =
+{
+    #define IPC_EVENT_TYPE0(type, val)  { type, #type },
+    #define IPC_EVENT_TYPE1(type, val)  { type, #type },
+    #define IPC_EVENT_TYPE2(type, val)  { type, #type },
+    #include "dbgipceventtypes.h"
+    #undef IPC_EVENT_TYPE2
+    #undef IPC_EVENT_TYPE1
+    #undef IPC_EVENT_TYPE0
+    { DB_IPCE_INVALID_EVENT, "DB_IPCE_Error" }
+};
+
+const size_t nameCount = sizeof(DbgIPCEventTypeNames) / sizeof(DbgIPCEventTypeNames[0]);

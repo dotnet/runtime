@@ -144,4 +144,4 @@ void
 ep_event_metdata_event_free (EventPipeEventMetadataEvent *metadata_event);
 
 #endif /* ENABLE_PERFTRACING */
-#endif /** __EVENTPIPE_CONFIGURATION_H__ **/
+#endif /* __EVENTPIPE_CONFIGURATION_H__ */

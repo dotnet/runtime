@@ -316,6 +316,12 @@ const_int32 (int v)
 	return LLVMConstInt (LLVMInt32Type (), v, FALSE);
 }
 
+static LLVMValueRef
+const_int64 (int64_t v)
+{
+	return LLVMConstInt (LLVMInt64Type (), v, FALSE);
+}
+
 /*
  * IntPtrType:
  *
@@ -548,7 +554,8 @@ type_to_llvm_type (EmitContext *ctx, MonoType *t)
 		return LLVMVoidType ();
 	case MONO_TYPE_OBJECT:
 		return ObjRefType ();
-	case MONO_TYPE_PTR: {
+	case MONO_TYPE_PTR:
+	case MONO_TYPE_FNPTR: {
 		MonoClass *klass = mono_class_from_mono_type_internal (t);
 		MonoClass *ptr_klass = m_class_get_element_class (klass);
 		MonoType *ptr_type = m_class_get_byval_arg (ptr_klass);
@@ -4797,6 +4804,14 @@ call_intrins (EmitContext *ctx, int id, LLVMValueRef *args, const char *name)
 {
 	LLVMValueRef intrins = get_intrins (ctx, id);
 	int nargs = LLVMCountParamTypes (LLVMGetElementType (LLVMTypeOf (intrins)));
+
+	for (int i = 0; i < nargs; ++i) {
+		LLVMTypeRef t1 = LLVMTypeOf (args [i]);
+		LLVMTypeRef t2 = LLVMTypeOf (LLVMGetParam (intrins, i));
+		if (t1 != t2)
+			args [i] = convert (ctx, args [i], t2);
+	}
+
 	return LLVMBuildCall (ctx->builder, intrins, args, nargs, name);
 }
 
@@ -5710,6 +5725,28 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 			v1 = LLVMBuildMul (builder, convert (ctx, rhs, IntPtrType ()), LLVMConstInt (IntPtrType (), ((unsigned long long)1 << ins->backend.shift_amount), FALSE), "");
 			v2 = LLVMBuildAdd (builder, convert (ctx, lhs, IntPtrType ()), v1, "");
 			values [ins->dreg] = LLVMBuildAdd (builder, v2, LLVMConstInt (IntPtrType (), ins->inst_imm, FALSE), dname);
+			break;
+		}
+		case OP_X86_BSF32:
+		case OP_X86_BSF64: {
+			LLVMValueRef args [] = {
+				lhs,
+				LLVMConstInt (LLVMInt1Type (), 1, TRUE),
+			};
+			int op = ins->opcode == OP_X86_BSF32 ? INTRINS_CTTZ_I32 : INTRINS_CTTZ_I64;
+			values [ins->dreg] = call_intrins (ctx, op, args, dname);
+			break;
+		}
+		case OP_X86_BSR32:
+		case OP_X86_BSR64: {
+			LLVMValueRef args [] = {
+				lhs,
+				LLVMConstInt (LLVMInt1Type (), 1, TRUE),
+			};
+			int op = ins->opcode == OP_X86_BSR32 ? INTRINS_CTLZ_I32 : INTRINS_CTLZ_I64;
+			LLVMValueRef width = ins->opcode == OP_X86_BSR32 ? const_int32 (31) : const_int64 (63);
+			LLVMValueRef tz = call_intrins (ctx, op, args, "");
+			values [ins->dreg] = LLVMBuildXor (builder, tz, width, dname);
 			break;
 		}
 #endif
@@ -8001,7 +8038,6 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 		}
 		case OP_XOP_X_I:
 		case OP_XOP_X_X: {
-			gboolean to_i1_t = FALSE;
 			IntrinsicId id = (IntrinsicId)0;
 			switch (ins->inst_c0) {
 			case SIMD_OP_SSE_SQRTPS: id = INTRINS_SSE_SQRT_PS; break;
@@ -8009,13 +8045,11 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 			case SIMD_OP_SSE_RSQRTPS: id = INTRINS_SSE_RSQRT_PS; break;
 			case SIMD_OP_SSE_SQRTPD: id = INTRINS_SSE_SQRT_PD; break;
 			case SIMD_OP_SSE_LDDQU: id = INTRINS_SSE_LDU_DQ; break;
-			case SIMD_OP_SSE_PHMINPOSUW: id = INTRINS_SSE_PHMINPOSUW; to_i1_t = TRUE; break;
+			case SIMD_OP_SSE_PHMINPOSUW: id = INTRINS_SSE_PHMINPOSUW; break;
 			case SIMD_OP_AES_IMC: id = INTRINS_AESNI_AESIMC; break;
 			default: g_assert_not_reached (); break;
 			}
 			LLVMValueRef arg0 = lhs;
-			if (to_i1_t)
-				arg0 = convert (ctx, arg0, sse_i1_t);
 			values [ins->dreg] = call_intrins (ctx, id, &arg0, "");
 			break;
 		}
@@ -8123,6 +8157,7 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 			case SIMD_OP_AES_ENCLAST: id = INTRINS_AESNI_AESENCLAST; break;
 			default: g_assert_not_reached (); break;
 			}
+
 			values [ins->dreg] = call_intrins (ctx, id, args, "");
 			break;
 		}
@@ -8429,7 +8464,7 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 		case OP_SSSE3_ALIGNR: {
 			LLVMValueRef mask_values [16];
 			for (int i = 0; i < 16; i++)
-				mask_values [i] = LLVMConstInt (LLVMInt8Type (), i + ins->inst_c0, FALSE);
+				mask_values [i] = LLVMConstInt (LLVMInt32Type (), i + ins->inst_c0, FALSE);
 			LLVMValueRef shuffled = LLVMBuildShuffleVector (builder, 
 				convert (ctx, rhs, sse_i1_t),
 				convert (ctx, lhs, sse_i1_t),
@@ -8458,7 +8493,7 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 		case OP_SSE41_ROUNDS: {
 			LLVMValueRef args [3];
 			args [0] = lhs;
-			args [1] = ins->sreg2 != -1 ? values [ins->sreg2] : lhs;
+			args [1] = rhs;
 			args [2] = LLVMConstInt (LLVMInt32Type (), ins->inst_c0, FALSE);
 			values [ins->dreg] = call_intrins (ctx, ins->inst_c1 == MONO_TYPE_R4 ? INTRINS_SSE_ROUNDSS : INTRINS_SSE_ROUNDSD, args, dname);
 			break;
@@ -8808,9 +8843,21 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 		case OP_XEXTRACT_I32:
 		case OP_XEXTRACT_I64:
 		case OP_XEXTRACT_R8:
-		case OP_XEXTRACT_R4:
-			values [ins->dreg] = LLVMBuildExtractElement (builder, lhs, rhs, "");
+		case OP_XEXTRACT_R4: {
+			LLVMTypeRef rhst = LLVMTypeOf (rhs);
+			LLVMValueRef mask = NULL;
+			switch (ins->opcode) {
+			case OP_XEXTRACT_I32: case OP_XEXTRACT_R4:
+				mask = LLVMConstInt (rhst, 0x3, FALSE); break;
+			case OP_XEXTRACT_I64: case OP_XEXTRACT_R8:
+				mask = LLVMConstInt (rhst, 0x1, FALSE); break;
+			default:
+				g_assert_not_reached ();
+			}
+			LLVMValueRef selector = LLVMBuildAnd (builder, rhs, mask, "");
+			values [ins->dreg] = LLVMBuildExtractElement (builder, lhs, selector, "");
 			break;
+		}
 		case OP_POPCNT32:
 			values [ins->dreg] = call_intrins (ctx, INTRINS_CTPOP_I32, &lhs, "");
 			break;
@@ -9405,7 +9452,7 @@ emit_method_inner (EmitContext *ctx)
 		return;
 	}
 
-#if 1
+#if 0
 	{
 		static int count = 0;
 		count ++;
@@ -11287,11 +11334,6 @@ mono_llvm_emit_aot_module (const char *filename, const char *cu_name)
 		g_hash_table_destroy (specializable);
 	}
 
-	/* Note: You can still dump an invalid bitcode file by running `llvm-dis`
-	 * in a debugger, set a breakpoint on `LLVMVerifyModule` and fake its
-	 * result to 0 (indicating success). */
-	LLVMWriteBitcodeToFile (module->lmodule, filename);
-
 #if 0
 	{
 		char *verifier_err;
@@ -11302,6 +11344,11 @@ mono_llvm_emit_aot_module (const char *filename, const char *cu_name)
 		}
 	}
 #endif
+
+	/* Note: You can still dump an invalid bitcode file by running `llvm-dis`
+	 * in a debugger, set a breakpoint on `LLVMVerifyModule` and fake its
+	 * result to 0 (indicating success). */
+	LLVMWriteBitcodeToFile (module->lmodule, filename);
 }
 
 
@@ -11675,8 +11722,10 @@ llvm_jit_finalize_method (EmitContext *ctx)
 	while (g_hash_table_iter_next (&iter, NULL, (void**)&var))
 		callee_vars [i ++] = var;
 
+	mono_codeman_enable_write ();
 	cfg->native_code = (guint8*)mono_llvm_compile_method (ctx->module->mono_ee, cfg, ctx->lmethod, nvars, callee_vars, callee_addrs, &eh_frame);
 	mono_llvm_remove_gc_safepoint_poll (ctx->lmodule);
+	mono_codeman_disable_write ();
 	if (cfg->verbose_level > 1) {
 		g_print ("\n*** Optimized LLVM IR for %s ***\n", mono_method_full_name (cfg->method, TRUE));
 		if (cfg->compile_aot) {

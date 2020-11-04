@@ -878,7 +878,7 @@ REFLECTFIELDREF FieldDesc::GetStubFieldInfo()
     CONTRACTL_END;
 
     REFLECTFIELDREF retVal;
-    REFLECTFIELDREF fieldRef = (REFLECTFIELDREF)AllocateObject(MscorlibBinder::GetClass(CLASS__STUBFIELDINFO));
+    REFLECTFIELDREF fieldRef = (REFLECTFIELDREF)AllocateObject(CoreLibBinder::GetClass(CLASS__STUBFIELDINFO));
     GCPROTECT_BEGIN(fieldRef);
 
     fieldRef->SetField(this);

@@ -3,8 +3,9 @@ parameters:
   osGroup: ''
   archType: ''
   osSubgroup: ''
+  crossBuild: false
   crossrootfsDir: ''
-  framework: ''
+  framework: 'net6.0'
   isOfficialAllConfigurations: false
   isSourceBuild: false
   liveRuntimeBuildConfig: ''
@@ -25,10 +26,10 @@ parameters:
 jobs:
   - template: /eng/common/templates/job/job.yml
     parameters:
-      ${{ if notIn(parameters.framework, 'allConfigurations', 'net472') }}:
+      ${{ if notIn(parameters.framework, 'allConfigurations', 'net48') }}:
         displayName: ${{ format('Libraries {0} {1}{2} {3} {4}', parameters.displayName, parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.buildConfig) }}
         name: ${{ format('libraries_{0}_{1}{2}_{3}_{4}', parameters.name, parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.buildConfig) }}
-      ${{ if in(parameters.framework, 'allConfigurations', 'net472') }}:
+      ${{ if in(parameters.framework, 'allConfigurations', 'net48') }}:
         displayName: ${{ format('Libraries {0} {1} {2} {3} {4}', parameters.displayName, parameters.osGroup, parameters.framework, parameters.archType, parameters.buildConfig) }}
         name: ${{ format('libraries_{0}_{1}_{2}{3}_{4}_{5}', parameters.name, parameters.framework, parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.buildConfig) }}
 
@@ -56,8 +57,8 @@ jobs:
         - ${{ if ne(parameters.testScope, '') }}:
           - _testScopeArg: -testscope ${{ parameters.testScope }}
 
-        - ${{ if in(parameters.osGroup, 'Linux', 'FreeBSD') }}:
-          - _crossBuildPropertyArg: /p:CrossBuild=${{ ne(parameters.crossrootfsDir, '') }}
+        - ${{ if eq(parameters.crossBuild, true) }}:
+          - _crossBuildPropertyArg: /p:CrossBuild=true
 
         - ${{ if and(eq(parameters.osGroup, 'Linux'), eq(parameters.osSubGroup, '_musl')) }}:
           - _runtimeOSArg: /p:RuntimeOS=linux-musl

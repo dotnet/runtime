@@ -26,11 +26,11 @@ private:
     uint64_t corJitFlags;
 };
 
-static const GUID JITEEVersionIdentifier = { /* 7af97117-55be-4c76-afb2-e26261cb140e */
-    0x7af97117,
-    0x55be,
-    0x4c76,
-    { 0xaf, 0xb2, 0xe2, 0x62, 0x61, 0xcb, 0x14, 0x0e }
+static const GUID JITEEVersionIdentifier = { /* 062114d0-bd20-483f-8a3e-c4ee39706ae8 */
+    0x062114d0,
+    0xbd20,
+    0x483f,
+    {0x8a, 0x3e, 0xc4, 0xee, 0x39, 0x70, 0x6a, 0xe8}
 };
 
 class Jit

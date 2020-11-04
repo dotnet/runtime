@@ -31,23 +31,23 @@ namespace System.Xml.Xsl.Qil
         /// </summary>
         protected override QilNode VisitChildren(QilNode parent)
         {
-            XmlQueryType oldParentType = parent.XmlType;
+            XmlQueryType oldParentType = parent.XmlType!;
             bool recalcType = false;
 
             // Visit children
             for (int i = 0; i < parent.Count; i++)
             {
                 QilNode oldChild = parent[i], newChild;
-                XmlQueryType oldChildType = oldChild != null ? oldChild.XmlType : null;
+                XmlQueryType? oldChildType = oldChild != null ? oldChild.XmlType : null;
 
                 // Visit child
                 if (IsReference(parent, i))
-                    newChild = VisitReference(oldChild);
+                    newChild = VisitReference(oldChild!);
                 else
-                    newChild = Visit(oldChild);
+                    newChild = Visit(oldChild!);
 
                 // Only replace child and recalculate type if oldChild != newChild or oldChild.XmlType != newChild.XmlType
-                if ((object)oldChild != (object)newChild || (newChild != null && (object)oldChildType != (object)newChild.XmlType))
+                if ((object?)oldChild != (object)newChild || (newChild != null && (object?)oldChildType != (object?)newChild.XmlType))
                 {
                     recalcType = true;
                     parent[i] = newChild;

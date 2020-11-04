@@ -2030,7 +2030,7 @@ HRESULT interceptor_ICJI::allocMethodBlockCounts(UINT32          count, // The n
 {
     mc->cr->AddCall("allocMethodBlockCounts");
     HRESULT result = original_ICorJitInfo->allocMethodBlockCounts(count, pBlockCounts);
-    mc->cr->recAllocMethodBlockCounts(count, pBlockCounts, result);
+    mc->recAllocMethodBlockCounts(count, pBlockCounts, result);
     return result;
 }
 

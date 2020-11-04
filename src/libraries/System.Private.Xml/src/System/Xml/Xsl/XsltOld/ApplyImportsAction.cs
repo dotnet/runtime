@@ -10,8 +10,8 @@ namespace System.Xml.Xsl.XsltOld
 
     internal class ApplyImportsAction : CompiledAction
     {
-        private XmlQualifiedName _mode;
-        private Stylesheet _stylesheet;
+        private XmlQualifiedName? _mode;
+        private Stylesheet? _stylesheet;
         private const int TemplateProcessed = 2;
         internal override void Compile(Compiler compiler)
         {

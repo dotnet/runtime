@@ -1,11 +1,11 @@
 set(CMAKE_INCLUDE_CURRENT_DIR ON)
 
-# Local GC meta-issue: https://github.com/dotnet/coreclr/issues/11518
+# Local GC meta-issue: https://github.com/dotnet/runtime/issues/8061
 
-# https://github.com/dotnet/coreclr/issues/11516
+# https://github.com/dotnet/runtime/issues/8059
 remove_definitions(-DSTRESS_HEAP)
 
-# https://github.com/dotnet/coreclr/issues/11519
+# https://github.com/dotnet/runtime/issues/8062
 remove_definitions(-DWRITE_BARRIER_CHECK)
 
 set( GC_SOURCES
@@ -42,7 +42,7 @@ endif(CLR_CMAKE_HOST_UNIX)
 if (CLR_CMAKE_TARGET_ARCH_AMD64 AND CLR_CMAKE_TARGET_WIN32)
   set ( GC_SOURCES
     ${GC_SOURCES}
-    vxsort/isa_detection_dummy.cpp
+    vxsort/isa_detection.cpp
     vxsort/do_vxsort_avx2.cpp
     vxsort/do_vxsort_avx512.cpp
     vxsort/machine_traits.avx2.cpp
@@ -50,6 +50,7 @@ if (CLR_CMAKE_TARGET_ARCH_AMD64 AND CLR_CMAKE_TARGET_WIN32)
     vxsort/smallsort/bitonic_sort.AVX2.int32_t.generated.cpp
     vxsort/smallsort/bitonic_sort.AVX512.int64_t.generated.cpp
     vxsort/smallsort/bitonic_sort.AVX512.int32_t.generated.cpp
+    vxsort/smallsort/avx2_load_mask_tables.cpp
 )
 endif (CLR_CMAKE_TARGET_ARCH_AMD64 AND CLR_CMAKE_TARGET_WIN32)
 
@@ -112,7 +113,7 @@ target_link_libraries(clrgc ${GC_LINK_LIBRARIES})
 install_clr(TARGETS clrgc)
 
 if(CLR_CMAKE_HOST_UNIX)
-  # dprintf causes many warnings (https://github.com/dotnet/coreclr/issues/13367)
+  # dprintf causes many warnings (https://github.com/dotnet/runtime/issues/8737)
   add_compile_options(-Wno-format)
 endif(CLR_CMAKE_HOST_UNIX)
 

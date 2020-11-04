@@ -22,7 +22,7 @@
 
 
 
-int __cdecl main( int argc, char **argv ) 
+PALTEST(threading_ResetEvent_test2_paltest_resetevent_test2, "threading/ResetEvent/test2/paltest_resetevent_test2")
 
 {
     /* local variables */

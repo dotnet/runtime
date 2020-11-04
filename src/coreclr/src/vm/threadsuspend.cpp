@@ -191,7 +191,7 @@ Thread::SuspendThreadResult Thread::SuspendThread(BOOL fOneTryOnly, DWORD *pdwSu
     }
 #endif
 
-    Volatile<HANDLE> hThread;
+    HANDLE hThread;
     SuspendThreadResult str = (SuspendThreadResult) -1;
     DWORD dwSuspendCount = 0;
     DWORD tries = 1;
@@ -218,32 +218,30 @@ Thread::SuspendThreadResult Thread::SuspendThread(BOOL fOneTryOnly, DWORD *pdwSu
 
     while (TRUE) {
         StateHolder<MyEnterLogLock, MyLeaveLogLock> LogLockHolder(FALSE);
-
         CounterHolder handleHolder(&m_dwThreadHandleBeingUsed);
-
-        // Whether or not "goto retry" should YieldProcessor and __SwitchToThread
-        BOOL doSwitchToThread = TRUE;
 
         hThread = GetThreadHandle();
         if (hThread == INVALID_HANDLE_VALUE) {
             str = STR_UnstartedOrDead;
             break;
         }
-        else if (hThread == SWITCHOUT_HANDLE_VALUE) {
-            str = STR_SwitchedOut;
-            break;
-        }
 
         {
             // We do not want to suspend the target thread while it is holding the log lock.
             // By acquiring the lock ourselves, we know that this is not the case.
+            // Note: LogLock is a noop when not logging, do not assume the rest is running under a lock.
             LogLockHolder.Acquire();
 
             // It is important to avoid two threads suspending each other.
             // Before a thread suspends another, it increments its own m_dwForbidSuspendThread count first,
             // then it checks the target thread's m_dwForbidSuspendThread.
             ForbidSuspendThreadHolder forbidSuspend;
-            if ((m_dwForbidSuspendThread != 0))
+
+            // We need a total order between write/read of our/their m_dwForbidSuspendThread here, thus a full fence.
+            // Note - this is just to prevent mutual suspension of two threads executing this same sequence.
+            // The other thread may still set its m_dwForbidSuspendThread for other reasons asynchronously.
+            // We will check on that once the thread is suspended.
+            if (InterlockedOr(&m_dwForbidSuspendThread, 0))
             {
 #if defined(_DEBUG)
                 // Enable the diagnostic ::SuspendThread() if the
@@ -273,108 +271,95 @@ Thread::SuspendThreadResult Thread::SuspendThread(BOOL fOneTryOnly, DWORD *pdwSu
                 }
             }
         }
+
         if ((int)dwSuspendCount >= 0)
         {
-            if (hThread == GetThreadHandle())
+            // read m_dwForbidSuspendThread again after suspension, it may have changed.
+            if (m_dwForbidSuspendThread.LoadWithoutBarrier() != 0)
             {
-                if (m_dwForbidSuspendThread != 0)
-                {
 #if defined(_DEBUG)
-                    // Log diagnostic below 8 times during the i64TimestampTicksMax period
-                    if (i64TimestampCur-i64TimestampStart >= nCnt*(i64TimestampTicksMax>>3) )
-                    {
-                        CONTEXT ctx;
-                        SetIP(&ctx, -1);
-                        ctx.ContextFlags = CONTEXT_CONTROL;
-                        this->GetThreadContext(&ctx);
-                        STRESS_LOG7(LF_SYNC, LL_INFO1000,
-                            "Thread::SuspendThread[%p]:  EIP=%p. nCnt=%d. result=%d.\n"
-                            "\t\t\t\t\t\t\t\t\t     forbidSuspend=%d. coop=%d. state=%x.\n",
-                            this, GetIP(&ctx), nCnt, dwSuspendCount,
-                            (LONG)this->m_dwForbidSuspendThread, (ULONG)this->m_fPreemptiveGCDisabled, this->GetSnapshotState());
-
-                        // Enable a preemptive assert in diagnostic mode: before we
-                        // resume the target thread to get its current state in the debugger
-                        if (bDiagSuspend)
-                        {
-                            // triggered after 6 * 250msec
-                            _ASSERTE(nCnt < 6 && "Timing out in Thread::SuspendThread");
-                        }
-
-                        ++nCnt;
-                    }
-#endif // _DEBUG
-                    ::ResumeThread(hThread);
-
-#if defined(_DEBUG)
-                    // If the suspend diagnostics are enabled we need to spin here in order to avoid
-                    // the case where we Suspend/Resume the target thread without giving it a chance to run.
-                    if ((!fOneTryOnly) && bDiagSuspend)
-                    {
-                        while ( m_dwForbidSuspendThread != 0 &&
-                            CLRGetTickCount64()-i64TimestampStart < nCnt*(i64TimestampTicksMax>>3) )
-                        {
-                            if (g_SystemInfo.dwNumberOfProcessors > 1)
-                            {
-                                if ((tries++) % 20 != 0) {
-                                    YieldProcessorNormalized(); // play nice on hyperthreaded CPUs
-                                } else {
-                                    __SwitchToThread(0, ++dwSwitchCount);
-                                }
-                            }
-                            else
-                            {
-                                __SwitchToThread(0, ++dwSwitchCount); // don't spin on uniproc machines
-                            }
-                        }
-                    }
-#endif // _DEBUG
-                    goto retry;
-                }
-                // We suspend the right thread
-#ifdef _DEBUG
-                Thread * pCurThread = GetThread();
-                if (pCurThread != NULL)
+                // Log diagnostic below 8 times during the i64TimestampTicksMax period
+                if (i64TimestampCur-i64TimestampStart >= nCnt*(i64TimestampTicksMax>>3) )
                 {
-                    pCurThread->dbg_m_cSuspendedThreads ++;
-                    _ASSERTE(pCurThread->dbg_m_cSuspendedThreads > 0);
-                }
-#endif
-                IncCantAllocCount();
+                    CONTEXT ctx;
+                    SetIP(&ctx, -1);
+                    ctx.ContextFlags = CONTEXT_CONTROL;
+                    this->GetThreadContext(&ctx);
+                    STRESS_LOG7(LF_SYNC, LL_INFO1000,
+                        "Thread::SuspendThread[%p]:  EIP=%p. nCnt=%d. result=%d.\n"
+                        "\t\t\t\t\t\t\t\t\t     forbidSuspend=%d. coop=%d. state=%x.\n",
+                        this, GetIP(&ctx), nCnt, dwSuspendCount,
+                        (LONG)this->m_dwForbidSuspendThread, (ULONG)this->m_fPreemptiveGCDisabled, this->GetSnapshotState());
 
-                m_ThreadHandleForResume = hThread;
-                str = STR_Success;
-                break;
-            }
-            else
-            {
-                // A thread was switch out but in again.
-                // We suspend a wrong thread.
+                    // Enable a preemptive assert in diagnostic mode: before we
+                    // resume the target thread to get its current state in the debugger
+                    if (bDiagSuspend)
+                    {
+                        // triggered after 6 * 250msec
+                        _ASSERTE(nCnt < 6 && "Timing out in Thread::SuspendThread");
+                    }
+
+                    ++nCnt;
+                }
+#endif // _DEBUG
                 ::ResumeThread(hThread);
-                doSwitchToThread = FALSE;
+
+#if defined(_DEBUG)
+                // If the suspend diagnostics are enabled we need to spin here in order to avoid
+                // the case where we Suspend/Resume the target thread without giving it a chance to run.
+                if ((!fOneTryOnly) && bDiagSuspend)
+                {
+                    while ( m_dwForbidSuspendThread != 0 &&
+                        CLRGetTickCount64()-i64TimestampStart < nCnt*(i64TimestampTicksMax>>3) )
+                    {
+                        if (g_SystemInfo.dwNumberOfProcessors > 1)
+                        {
+                            if ((tries++) % 20 != 0) {
+                                YieldProcessorNormalized(); // play nice on hyperthreaded CPUs
+                            } else {
+                                __SwitchToThread(0, ++dwSwitchCount);
+                            }
+                        }
+                        else
+                        {
+                            __SwitchToThread(0, ++dwSwitchCount); // don't spin on uniproc machines
+                        }
+                    }
+                }
+#endif // _DEBUG
                 goto retry;
             }
-        }
-        else {
-            // We can get here either SuspendThread fails
-            // Or the fiber thread dies after this fiber switched out.
+            // We suspend the right thread
+#ifdef _DEBUG
+            Thread * pCurThread = GetThread();
+            if (pCurThread != NULL)
+            {
+                pCurThread->dbg_m_cSuspendedThreads ++;
+                _ASSERTE(pCurThread->dbg_m_cSuspendedThreads > 0);
+            }
+#endif
+            IncCantAllocCount();
 
-            if ((int)dwSuspendCount != -1) {
+            m_ThreadHandleForResume = hThread;
+            str = STR_Success;
+            break;
+        }
+        else
+        {
+            // SuspendThread failed
+            if ((int)dwSuspendCount != -1)
+            {
                 STRESS_LOG1(LF_SYNC, LL_INFO1000, "In Thread::SuspendThread ::SuspendThread returned %x\n", dwSuspendCount);
             }
-            if (GetThreadHandle() == SWITCHOUT_HANDLE_VALUE) {
-                str = STR_SwitchedOut;
-                break;
-            }
-            else {
-                // Our callers generally expect that STR_Failure means that
-                // the thread has exited.
+
+            // Our callers generally expect that STR_Failure means that
+            // the thread has exited.
 #ifndef TARGET_UNIX
-                _ASSERTE(NtCurrentTeb()->LastStatusValue != STATUS_SUSPEND_COUNT_EXCEEDED);
+            _ASSERTE(NtCurrentTeb()->LastStatusValue != STATUS_SUSPEND_COUNT_EXCEEDED);
 #endif // !TARGET_UNIX
-                str = STR_Failure;
-                break;
-            }
+
+            str = STR_Failure;
+            break;
         }
 
 retry:
@@ -404,26 +389,18 @@ retry:
         }
 #endif // _DEBUG
 
-        if (doSwitchToThread)
+        // Allow the target thread to run in order to make some progress.
+        // On multi processor machines we saw the suspending thread resuming immediately after the __SwitchToThread()
+        // because it has another few processors available.  As a consequence the target thread was being Resumed and
+        // Suspended right away, w/o a real chance to make any progress.
+        if (g_SystemInfo.dwNumberOfProcessors > 1 && (tries++) % 20 != 0)
         {
-            // When looking for deadlocks we need to allow the target thread to run in order to make some progress.
-            // On multi processor machines we saw the suspending thread resuming immediately after the __SwitchToThread()
-            // because it has another few processors available.  As a consequence the target thread was being Resumed and
-            // Suspended right away, w/o a real chance to make any progress.
-            if (g_SystemInfo.dwNumberOfProcessors > 1)
-            {
-                if ((tries++) % 20 != 0) {
-                    YieldProcessorNormalized(); // play nice on hyperthreaded CPUs
-                } else {
-                    __SwitchToThread(0, ++dwSwitchCount);
-                }
-            }
-            else
-            {
-                __SwitchToThread(0, ++dwSwitchCount); // don't spin on uniproc machines
-            }
+            YieldProcessorNormalized(); // play nice on hyperthreaded CPUs
         }
-
+        else
+        {
+            __SwitchToThread(0, ++dwSwitchCount); // don't spin on uniproc machines
+        }
     }
 
 #ifdef PROFILING_SUPPORTED
@@ -460,8 +437,6 @@ DWORD Thread::ResumeThread()
     CONTRACTL_END;
 
     _ASSERTE (m_ThreadHandleForResume != INVALID_HANDLE_VALUE);
-
-    _ASSERTE (GetThreadHandle() != SWITCHOUT_HANDLE_VALUE);
 
     //DWORD res = ::ResumeThread(GetThreadHandle());
     DWORD res = ::ResumeThread(m_ThreadHandleForResume);
@@ -1230,8 +1205,7 @@ void Thread::SetAbortEndTime(ULONGLONG endTime, BOOL fRudeAbort)
 HRESULT
 Thread::UserAbort(ThreadAbortRequester requester,
                   EEPolicy::ThreadAbortTypes abortType,
-                  DWORD timeout,
-                  UserAbort_Client client
+                  DWORD timeout
                  )
 {
     CONTRACTL
@@ -1299,13 +1273,6 @@ Thread::UserAbort(ThreadAbortRequester requester,
     }
 
     _ASSERTE(this != pCurThread);      // Aborting another thread.
-
-    if (client == UAC_Host)
-    {
-        // A host may call ICLRTask::Abort on a critical thread.  We don't want to
-        // block this thread.
-        return S_OK;
-    }
 
 #ifdef _DEBUG
     DWORD elapsed_time = 0;
@@ -1511,28 +1478,6 @@ LRetry:
             __SwitchToThread(0, ++dwSwitchCount);
             continue;
 
-        case STR_SwitchedOut:
-            // If the thread is in preemptive gc mode, we can erect a barrier to block the
-            // thread to return to cooperative mode.  Then we can do stack crawl and make decision.
-            if (!m_fPreemptiveGCDisabled)
-            {
-                checkForAbort.NeedStackCrawl();
-                if (GetThreadHandle() != SWITCHOUT_HANDLE_VALUE || m_fPreemptiveGCDisabled)
-                {
-                    checkForAbort.Release();
-                    __SwitchToThread(0, ++dwSwitchCount);
-                    continue;
-                }
-                else
-                {
-                    goto LStackCrawl;
-                }
-            }
-            else
-            {
-                goto LPrepareRetry;
-            }
-
         default:
             UNREACHABLE();
         }
@@ -1655,10 +1600,6 @@ LRetry:
         {
             goto LPrepareRetry;
         }
-
-#ifndef DISABLE_THREADSUSPEND
-LStackCrawl:
-#endif // DISABLE_THREADSUSPEND
 
         if (!ReadyForAbort()) {
             goto LPrepareRetry;
@@ -1902,7 +1843,7 @@ void Thread::SetAbortRequestBit()
     WRAPPER_NO_CONTRACT;
     while (TRUE)
     {
-        Volatile<LONG> curValue = (LONG)m_State;
+        LONG curValue = (LONG)m_State;
         if ((curValue & TS_AbortRequested) != 0)
         {
             break;
@@ -1932,7 +1873,7 @@ void Thread::RemoveAbortRequestBit()
 #endif
     while (TRUE)
     {
-        Volatile<LONG> curValue = (LONG)m_State;
+        LONG curValue = (LONG)m_State;
         if ((curValue & TS_AbortRequested) == 0)
         {
             break;
@@ -2037,6 +1978,7 @@ void ThreadSuspend::LockThreadStore(ThreadSuspend::SUSPEND_REASON reason)
 {
     CONTRACTL {
         NOTHROW;
+    // any thread entering with `PreemptiveGCDisabled` should be prepared to switch mode, thus GC_TRIGGERS
         if ((GetThread() != NULL) && GetThread()->PreemptiveGCDisabled()) {GC_TRIGGERS;} else {DISABLED(GC_NOTRIGGER);}
     }
     CONTRACTL_END;
@@ -2054,14 +1996,12 @@ void ThreadSuspend::LockThreadStore(ThreadSuspend::SUSPEND_REASON reason)
 
         gcOnTransitions = GC_ON_TRANSITIONS(FALSE);                // dont do GC for GCStress 3
 
-        BOOL toggleGC = (   pCurThread != NULL
-                         && pCurThread->PreemptiveGCDisabled()
-                         && reason != ThreadSuspend::SUSPEND_FOR_GC);
-
-        // Note: there is logic in gc.cpp surrounding suspending all
-        // runtime threads for a GC that depends on the fact that we
-        // do an EnablePreemptiveGC and a DisablePreemptiveGC around
-        // taking this lock.
+        // There are two ways to get blocked here:
+        //      1) we may be blocked on s_pThreadStore
+        //      2) threads with reasons other than GC, GC_PREP, and DEBUGGER_SWEEP may also be blocked on s_hAbortEvt
+        // In either case we should be in preemptive mode when blocked or we could cause suspension in progress
+        // to loop forever because it needs to see all threads in preemptive mode.
+        BOOL toggleGC = (pCurThread != NULL && pCurThread->PreemptiveGCDisabled());
         if (toggleGC)
             pCurThread->EnablePreemptiveGC();
 
@@ -2073,7 +2013,7 @@ void ThreadSuspend::LockThreadStore(ThreadSuspend::SUSPEND_REASON reason)
         if (pCurThread)
             IncCantStopCount();
 
-        // This is used to avoid thread starvation if non-GC threads are competing for
+        // This is used to avoid GC starvation if non-GC threads are competing for
         // the thread store lock when there is a real GC-thread waiting to get in.
         // This is initialized lazily when the first non-GC thread backs out because of
         // a waiting GC thread.
@@ -2098,7 +2038,6 @@ void ThreadSuspend::LockThreadStore(ThreadSuspend::SUSPEND_REASON reason)
         // then this will not take the lock and just block forever.
         ThreadStore::s_pThreadStore->Enter();
 
-
         _ASSERTE(ThreadStore::s_pThreadStore->m_holderthreadid.IsUnknown());
         ThreadStore::s_pThreadStore->m_holderthreadid.SetToCurrentThread();
 
@@ -2108,10 +2047,8 @@ void ThreadSuspend::LockThreadStore(ThreadSuspend::SUSPEND_REASON reason)
         // A thread attempting to suspend us asynchronously already holds this lock.
         ThreadStore::s_pThreadStore->m_HoldingThread = pCurThread;
 
-#ifndef _PREFAST_
         if (toggleGC)
             pCurThread->DisablePreemptiveGC();
-#endif
 
         GC_ON_TRANSITIONS(gcOnTransitions);
     }
@@ -2262,7 +2199,14 @@ void Thread::RareDisablePreemptiveGC()
     // waiting for GC
     _ASSERTE ((m_StateNC & Thread::TSNC_OwnsSpinLock) == 0);
 
+    _ASSERTE(!MethodDescBackpatchInfoTracker::IsLockOwnedByCurrentThread() || IsInForbidSuspendForDebuggerRegion());
+
     if (!GCHeapUtilities::IsGCHeapInitialized())
+    {
+        goto Exit;
+    }
+
+    if (ThreadStore::HoldingThreadStore(this))
     {
         goto Exit;
     }
@@ -2270,108 +2214,106 @@ void Thread::RareDisablePreemptiveGC()
     // Note IsGCInProgress is also true for say Pause (anywhere SuspendEE happens) and GCThread is the
     // thread that did the Pause. While in Pause if another thread attempts Rev/Pinvoke it should get inside the following and
     // block until resume
-    if ((GCHeapUtilities::IsGCInProgress()  && (this != ThreadSuspend::GetSuspensionThread())) ||
-        (m_State & (TS_DebugSuspendPending | TS_StackCrawlNeeded)))
+    if ((GCHeapUtilities::IsGCInProgress() && (this != ThreadSuspend::GetSuspensionThread())) ||
+        ((m_State & TS_DebugSuspendPending) && !IsInForbidSuspendForDebuggerRegion()) ||
+        (m_State & TS_StackCrawlNeeded))
     {
-        if (!ThreadStore::HoldingThreadStore(this))
+        STRESS_LOG1(LF_SYNC, LL_INFO1000, "RareDisablePreemptiveGC: entering. Thread state = %x\n", m_State.Load());
+
+        DWORD dwSwitchCount = 0;
+
+        for (;;)
         {
-            STRESS_LOG1(LF_SYNC, LL_INFO1000, "RareDisablePreemptiveGC: entering. Thread state = %x\n", m_State.Load());
+            EnablePreemptiveGC();
 
-            DWORD dwSwitchCount = 0;
+            // Cannot use GCX_PREEMP_NO_DTOR here because we're inside of the thread
+            // PREEMP->COOP switch mechanism and GCX_PREEMP's assert's will fire.
+            // Instead we use BEGIN_GCX_ASSERT_PREEMP to inform Scan of the mode
+            // change here.
+            BEGIN_GCX_ASSERT_PREEMP;
 
-            do
+            // just wait until the GC is over.
+            if (this != ThreadSuspend::GetSuspensionThread())
             {
-                EnablePreemptiveGC();
-
-                // Cannot use GCX_PREEMP_NO_DTOR here because we're inside of the thread
-                // PREEMP->COOP switch mechanism and GCX_PREEMP's assert's will fire.
-                // Instead we use BEGIN_GCX_ASSERT_PREEMP to inform Scan of the mode
-                // change here.
-                BEGIN_GCX_ASSERT_PREEMP;
-
-                // just wait until the GC is over.
-                if (this != ThreadSuspend::GetSuspensionThread())
+#ifdef PROFILING_SUPPORTED
+                // If profiler desires GC events, notify it that this thread is waiting until the GC is over
+                // Do not send suspend notifications for debugger suspensions
                 {
-#ifdef PROFILING_SUPPORTED
-                    // If profiler desires GC events, notify it that this thread is waiting until the GC is over
-                    // Do not send suspend notifications for debugger suspensions
+                    BEGIN_PIN_PROFILER(CORProfilerTrackSuspends());
+                    if (!(m_State & TS_DebugSuspendPending))
                     {
-                        BEGIN_PIN_PROFILER(CORProfilerTrackSuspends());
-                        if (!(m_State & TS_DebugSuspendPending))
-                        {
-                            g_profControlBlock.pProfInterface->RuntimeThreadSuspended((ThreadID)this);
-                        }
-                        END_PIN_PROFILER();
+                        g_profControlBlock.pProfInterface->RuntimeThreadSuspended((ThreadID)this);
                     }
+                    END_PIN_PROFILER();
+                }
 #endif // PROFILING_SUPPORTED
 
+                DWORD status = S_OK;
+                SetThreadStateNC(TSNC_WaitUntilGCFinished);
+                status = GCHeapUtilities::GetGCHeap()->WaitUntilGCComplete();
+                ResetThreadStateNC(TSNC_WaitUntilGCFinished);
 
-
-                    DWORD status = S_OK;
-                    SetThreadStateNC(TSNC_WaitUntilGCFinished);
-                    status = GCHeapUtilities::GetGCHeap()->WaitUntilGCComplete();
-                    ResetThreadStateNC(TSNC_WaitUntilGCFinished);
-
-                    if (status == (DWORD)COR_E_STACKOVERFLOW)
+                if (status == (DWORD)COR_E_STACKOVERFLOW)
+                {
+                    // One of two things can happen here:
+                    // 1. Spin until EE restarts.
+                    // 2. Suspending thread lets us to cooperative mode and waits until we suspend.
+                    SetThreadState(TS_BlockGCForSO);
+                    while (GCHeapUtilities::IsGCInProgress() && m_fPreemptiveGCDisabled.Load() == 0)
                     {
-                        // One of two things can happen here:
-                        // 1. GC is suspending the process.  GC needs to wait.
-                        // 2. GC is proceeding after suspension.  The current thread needs to spin.
-                        SetThreadState(TS_BlockGCForSO);
-                        while (GCHeapUtilities::IsGCInProgress() && m_fPreemptiveGCDisabled.Load() == 0)
-                        {
+                        // We can not go to a host for blocking operation due ot lack of stack.
+                        // Instead we will spin here until
+                        // 1. GC is finished; Or
+                        // 2. GC lets this thread to run and will wait for it
 #undef Sleep
-                            // We can not go to a host for blocking operation due ot lack of stack.
-                            // Instead we will spin here until
-                            // 1. GC is finished; Or
-                            // 2. GC lets this thread to run and will wait for it
-                            Sleep(10);
+                        Sleep(10);
 #define Sleep(a) Dont_Use_Sleep(a)
-                        }
-                        ResetThreadState(TS_BlockGCForSO);
-                        if (m_fPreemptiveGCDisabled.Load() == 1)
-                        {
-                            // GC suspension has allowed this thread to switch back to cooperative mode.
-                            break;
-                        }
                     }
-                    if (!GCHeapUtilities::IsGCInProgress())
+                    ResetThreadState(TS_BlockGCForSO);
+                    if (m_fPreemptiveGCDisabled.Load() == 1)
                     {
-                        if (HasThreadState(TS_StackCrawlNeeded))
-                        {
-                            SetThreadStateNC(TSNC_WaitUntilGCFinished);
-                            ThreadStore::WaitForStackCrawlEvent();
-                            ResetThreadStateNC(TSNC_WaitUntilGCFinished);
-                        }
-                        else
-                        {
-                            __SwitchToThread(0, ++dwSwitchCount);
-                        }
+                        // GC suspension has allowed this thread to switch back to cooperative mode.
+                        break;
                     }
-
-#ifdef PROFILING_SUPPORTED
-                    // Let the profiler know that this thread is resuming
+                }
+                if (!GCHeapUtilities::IsGCInProgress())
+                {
+                    if (HasThreadState(TS_StackCrawlNeeded))
                     {
-                        BEGIN_PIN_PROFILER(CORProfilerTrackSuspends());
-                        g_profControlBlock.pProfInterface->RuntimeThreadResumed((ThreadID)this);
-                        END_PIN_PROFILER();
+                        SetThreadStateNC(TSNC_WaitUntilGCFinished);
+                        ThreadStore::WaitForStackCrawlEvent();
+                        ResetThreadStateNC(TSNC_WaitUntilGCFinished);
                     }
-#endif // PROFILING_SUPPORTED
                 }
 
-                END_GCX_ASSERT_PREEMP;
+#ifdef PROFILING_SUPPORTED
+                // Let the profiler know that this thread is resuming
+                {
+                    BEGIN_PIN_PROFILER(CORProfilerTrackSuspends());
+                    g_profControlBlock.pProfInterface->RuntimeThreadResumed((ThreadID)this);
+                    END_PIN_PROFILER();
+                }
+#endif // PROFILING_SUPPORTED
+            }
 
-                // disable preemptive gc.
-                FastInterlockOr(&m_fPreemptiveGCDisabled, 1);
+            END_GCX_ASSERT_PREEMP;
 
-                // The fact that we check whether 'this' is the GC thread may seem
-                // strange.  After all, we determined this before entering the method.
-                // However, it is possible for the current thread to become the GC
-                // thread while in this loop.  This happens if you use the COM+
-                // debugger to suspend this thread and then release it.
+            // disable preemptive gc.
+            FastInterlockOr(&m_fPreemptiveGCDisabled, 1);
 
-            } while ((GCHeapUtilities::IsGCInProgress()  && (this != ThreadSuspend::GetSuspensionThread())) ||
-                     (m_State & (TS_DebugSuspendPending | TS_StackCrawlNeeded)));
+            // The fact that we check whether 'this' is the GC thread may seem
+            // strange.  After all, we determined this before entering the method.
+            // However, it is possible for the current thread to become the GC
+            // thread while in this loop.  This happens if you use the COM+
+            // debugger to suspend this thread and then release it.
+            if (! ((GCHeapUtilities::IsGCInProgress() && (this != ThreadSuspend::GetSuspensionThread())) ||
+                    ((m_State & TS_DebugSuspendPending) && !IsInForbidSuspendForDebuggerRegion()) ||
+                    (m_State & TS_StackCrawlNeeded)) )
+            {
+                break;
+            }
+
+            __SwitchToThread(0, ++dwSwitchCount);
         }
         STRESS_LOG0(LF_SYNC, LL_INFO1000, "RareDisablePreemptiveGC: leaving\n");
     }
@@ -2552,16 +2494,12 @@ void Thread::RareEnablePreemptiveGC()
     if (IsAtProcessExit())
         return;
 
-    // EnablePreemptiveGC already set us to preemptive mode before triggering the Rare path.
-    // Force other threads to see this update, since the Rare path implies that someone else
-    // is observing us (e.g. SuspendRuntime).
-
     _ASSERTE (!m_fPreemptiveGCDisabled);
 
     // holding a spin lock in coop mode and transit to preemp mode will cause deadlock on GC
     _ASSERTE ((m_StateNC & Thread::TSNC_OwnsSpinLock) == 0);
 
-    FastInterlockOr (&m_fPreemptiveGCDisabled, 0);
+    _ASSERTE(!MethodDescBackpatchInfoTracker::IsLockOwnedByCurrentThread() || IsInForbidSuspendForDebuggerRegion());
 
 #if defined(STRESS_HEAP) && defined(_DEBUG)
     if (!IsDetached())
@@ -2576,13 +2514,15 @@ void Thread::RareEnablePreemptiveGC()
         UnhijackThread();
 #endif // FEATURE_HIJACK
 
-        // wake up any threads waiting to suspend us, like the GC thread.
+        // EnablePreemptiveGC already set us to preemptive mode before triggering the Rare path.
+        // the Rare path implies that someone else is observing us (e.g. SuspendRuntime).
+        // we have changed to preemptive mode, so signal that there was a suspension progress.
         ThreadSuspend::g_pGCSuspendEvent->Set();
 
         // for GC, the fact that we are leaving the EE means that it no longer needs to
         // suspend us.  But if we are doing a non-GC suspend, we need to block now.
         // Give the debugger precedence over user suspensions:
-        while (m_State & TS_DebugSuspendPending)
+        while ((m_State & TS_DebugSuspendPending) && !IsInForbidSuspendForDebuggerRegion())
         {
 
 #ifdef DEBUGGING_SUPPORTED
@@ -3477,14 +3417,6 @@ HRESULT ThreadSuspend::SuspendRuntime(ThreadSuspend::SUSPEND_REASON reason)
     // This thread
     Thread  *pCurThread = GetThread();
 
-    // The thread we're working on (suspending, etc.) right now.
-    Thread  *thread = NULL;
-
-    // The number of threads we found in COOP mode.
-    LONG     countThreads = 0;
-
-    DWORD    res;
-
     // Caller is expected to be holding the ThreadStore lock.  Also, caller must
     // have set GcInProgress before coming here, or things will break;
     _ASSERTE(ThreadStore::HoldingThreadStore() || IsAtProcessExit());
@@ -3516,6 +3448,26 @@ HRESULT ThreadSuspend::SuspendRuntime(ThreadSuspend::SUSPEND_REASON reason)
     }
 #endif // PROFILING_SUPPORTED
 
+    // If m_pThreadAttemptingSuspendForGC is set, it means:
+    // 1) someone is trying to suspend for GC and
+    // 2) it is not us.
+    // In such case, before doing much work, we back off with ERROR_TIMEOUT and will try again later
+    // This should be rare, but if too many non-GC suspensions are trying to happen, GC could starve.
+    if (m_pThreadAttemptingSuspendForGC != NULL)
+    {
+#ifdef PROFILING_SUPPORTED
+        // Must let the profiler know that this thread is aborting its attempt at suspending
+        {
+            BEGIN_PIN_PROFILER(CORProfilerTrackSuspends());
+            g_profControlBlock.pProfInterface->RuntimeSuspendAborted();
+            END_PIN_PROFILER();
+        }
+#endif // PROFILING_SUPPORTED
+
+        STRESS_LOG0(LF_SYNC, LL_ALWAYS, "Thread::SuspendRuntime() - Yielding to GC.\n");
+        return (ERROR_TIMEOUT);
+    }
+
     //
     // If this thread is running at low priority, boost its priority.  We remember the old
     // priority so that we can restore it in ResumeRuntime.
@@ -3538,44 +3490,102 @@ HRESULT ThreadSuspend::SuspendRuntime(ThreadSuspend::SUSPEND_REASON reason)
     // in such a case.
     SuspendRuntimeInProgressHolder hldSuspendRuntimeInProgress;
 
-
     // Flush the store buffers on all CPUs, to ensure two things:
     // - we get a reliable reading of the threads' m_fPreemptiveGCDisabled state
     // - other threads see that g_TrapReturningThreads is set
     // See VSW 475315 and 488918 for details.
-
     ::FlushProcessWriteBuffers();
 
     //
     // Make a pass through all threads.  We do a couple of things here:
     // 1) we count the number of threads that are observed to be in cooperative mode.
     // 2) for threads currently running managed code, we try to redirect/jihack them.
-    //
-    // Later we will make more passes where we do roughly the same thing.  We should combine the two loops.
-    //
 
-    while ((thread = ThreadStore::GetThreadList(thread)) != NULL)
+    // counts of cooperative threads
+    int previousCount = 0;
+    int countThreads = 0;
+
+    // we will iterate over threads and check which are left in coop mode
+    // while checking, we also will try suspending and hijacking
+    // unless we have just done that, then we can observeOnly and see if situation improves
+    // we do not on uniprocessor though (spin-checking is pointless on uniprocessor)
+    bool observeOnly = false;
+
+    _ASSERTE(!pCurThread || !pCurThread->HasThreadState(Thread::TS_GCSuspendFlags));
+#ifdef _DEBUG
+    DWORD dbgStartTimeout = GetTickCount();
+#endif
+
+    while (true)
     {
-        if (thread->HasThreadState(Thread::TS_GCSuspendPending))
+        Thread* thread = NULL;
+        while ((thread = ThreadStore::GetThreadList(thread)) != NULL)
         {
-            thread->ResetThreadState(Thread::TS_GCSuspendPending);
-        }
+            if (thread == pCurThread)
+                continue;
 
-        if (thread == pCurThread)
-            continue;
+            // on the first iteration check m_fPreemptiveGCDisabled unconditionally and
+            // mark interesting threads as TS_GCSuspendPending
+            if (previousCount == 0)
+            {
+                STRESS_LOG3(LF_SYNC, LL_INFO10000, "    Inspecting thread 0x%x ID 0x%x coop mode = %d\n",
+                    thread, thread->GetThreadId(), thread->m_fPreemptiveGCDisabled.LoadWithoutBarrier());
 
-        STRESS_LOG3(LF_SYNC, LL_INFO10000, "    Inspecting thread 0x%x ID 0x%x coop mode = %d\n",
-            thread, thread->GetThreadId(), thread->m_fPreemptiveGCDisabled.Load());
+                // ::FlushProcessWriteBuffers above guarantees that the state that we see here
+                // is after the trap flag is visible to the other thread.
+                //
+                // In other words: any threads seen in preemptive mode are no longer interesting to us.
+                // if they try switch to cooperative, they would see the flag set. 
+                if (!thread->m_fPreemptiveGCDisabled.LoadWithoutBarrier())
+                {
+                    _ASSERTE(!thread->HasThreadState(Thread::TS_GCSuspendFlags));
+                    continue;
+                }
+                else
+                {
+                    countThreads++;
+                    thread->SetThreadState(Thread::TS_GCSuspendPending);
+                }
+            }
 
-        // Nothing confusing left over from last time.
-        _ASSERTE((thread->m_State & Thread::TS_GCSuspendPending) == 0);
+            if (thread->HasThreadState(Thread::TS_BlockGCForSO))
+            {
+                // The thread has seen the trap while going to cooperative but does not have enough stack to block.
+                // It can't continue to cooperative mode either - per contract with us, so it does Sleep(10)
+                // in a loop until EE restarts.
+                // If we happen to catch a thread in such state, we can try unwedge it earlier than that.
+                if (thread->m_fPreemptiveGCDisabled.Load() == 0)
+                {
+                    if (!thread->HasThreadState(Thread::TS_GCSuspendPending))
+                    {
+                        thread->SetThreadState(Thread::TS_GCSuspendPending);
+                        countThreads ++;
+                    }
+                    thread->ResetThreadState(Thread::TS_BlockGCForSO);
+                    FastInterlockOr (&thread->m_fPreemptiveGCDisabled, 1);
+                }
+                continue;
+            }
 
-        // Threads can be in Preemptive or Cooperative GC mode.  Threads cannot switch
-        // to Cooperative mode without special treatment when a GC is happening.
-        if (thread->m_fPreemptiveGCDisabled)
-        {
-            // Check a little more carefully.  Threads might sneak out without telling
-            // us, because of inlined PInvoke which doesn't go through RareEnablePreemptiveGC.
+            if (!thread->HasThreadStateOpportunistic(Thread::TS_GCSuspendPending))
+            {
+                continue;
+            }
+
+            if (!thread->m_fPreemptiveGCDisabled.LoadWithoutBarrier())
+            {
+                STRESS_LOG1(LF_SYNC, LL_INFO1000, "    Thread %x went preemptive it is at a GC safe point\n", thread);
+                countThreads--;
+                thread->ResetThreadState(Thread::TS_GCSuspendFlags);
+                continue;
+            }
+
+            if (observeOnly)
+            {
+                continue;
+            }
+
+            // this is an interesting thread in cooperative mode, let's guide it to preemptive
 
 #ifdef DISABLE_THREADSUSPEND
             // On platforms that do not support safe thread suspension, we do one of two things:
@@ -3587,34 +3597,22 @@ HRESULT ThreadSuspend::SuspendRuntime(ThreadSuspend::SUSPEND_REASON reason)
             //     - Otherwise, we rely on the GCPOLL mechanism enabled by
             //       TrapReturningThreads.
 
-            // When reading shared state we need to erect appropriate memory barriers.
-            // The interlocked operation below ensures that any future reads on this
-            // thread will happen after any earlier writes on a different thread.
-            //
-            // <TODO> Need more careful review of this </TODO>
-            //
-            FastInterlockOr(&thread->m_fPreemptiveGCDisabled, 0);
-
-            if (thread->m_fPreemptiveGCDisabled)
-            {
-                FastInterlockOr((ULONG *) &thread->m_State, Thread::TS_GCSuspendPending);
-                countThreads++;
-
 #if defined(FEATURE_HIJACK) && defined(TARGET_UNIX)
-                bool gcSuspensionSignalSuccess = thread->InjectGcSuspension();
-                if (!gcSuspensionSignalSuccess)
-                {
-                    STRESS_LOG1(LF_SYNC, LL_INFO1000, "Thread::SuspendRuntime() -   Failed to raise GC suspension signal for thread %p.\n", thread);
-                }
-#endif // FEATURE_HIJACK && TARGET_UNIX
+            bool gcSuspensionSignalSuccess = thread->InjectGcSuspension();
+            if (!gcSuspensionSignalSuccess)
+            {
+                STRESS_LOG1(LF_SYNC, LL_INFO1000, "Thread::SuspendRuntime() -   Failed to raise GC suspension signal for thread %p.\n", thread);
             }
+#endif // FEATURE_HIJACK && TARGET_UNIX
 
 #else // DISABLE_THREADSUSPEND
 
-#if defined(FEATURE_HIJACK) && !defined(TARGET_UNIX)
-            DWORD dwSwitchCount = 0;
-    RetrySuspension:
-#endif
+            if (thread->HasThreadStateOpportunistic(Thread::TS_GCSuspendRedirected))
+            {
+                // We have seen this thead before and have redirected it.
+                // No point in suspending it again. It will not run hijackable code until it parks itself. 
+                continue;
+            }
 
             // We can not allocate memory after we suspend a thread.
             // Otherwise, we may deadlock the process, because the thread we just suspended
@@ -3628,13 +3626,13 @@ HRESULT ThreadSuspend::SuspendRuntime(ThreadSuspend::SUSPEND_REASON reason)
             //
             // Suspend the native thread.
             //
-            Thread::SuspendThreadResult str = thread->SuspendThread();
+            Thread::SuspendThreadResult str = thread->SuspendThread(/*fOneTryOnly*/ TRUE);
 
             // We should just always build with this TIME_SUSPEND stuff, and report the results via ETW.
 #ifdef TIME_SUSPEND
             g_SuspendStatistics.osSuspend.Accumulate(
                     SuspendStatistics::GetElapsed(startSuspend,
-                                                  g_SuspendStatistics.GetTime()));
+                                                    g_SuspendStatistics.GetTime()));
 
             if (str == Thread::STR_Success)
                 g_SuspendStatistics.cntOSSuspendResume++;
@@ -3642,210 +3640,127 @@ HRESULT ThreadSuspend::SuspendRuntime(ThreadSuspend::SUSPEND_REASON reason)
                 g_SuspendStatistics.cntFailedSuspends++;
 #endif
 
-            if (str == Thread::STR_NoStressLog)
+            switch (str)
             {
+            case Thread::STR_Success:
+                // let's check the state of this one.
+                break;
+
+            case Thread::STR_Forbidden:
+                STRESS_LOG1(LF_SYNC, LL_INFO1000, "    Suspending thread 0x%x forbidden\n", thread);
+                continue;
+
+            case Thread::STR_NoStressLog:
                 STRESS_LOG2(LF_SYNC, LL_ERROR, "    ERROR: Could not suspend thread 0x%x, result = %d\n", thread, str);
+                continue;
+
+            case Thread::STR_UnstartedOrDead:
+            case Thread::STR_Failure:
+                 STRESS_LOG3(LF_SYNC, LL_ERROR, "    ERROR: Could not suspend thread 0x%x, result = %d, lastError = 0x%x\n", thread, str, GetLastError());
+                 continue;
             }
-            else
-            if (thread->m_fPreemptiveGCDisabled)
+
+            // the thread is suspended here, we can hijack, if platform supports.
+
+            if (!thread->m_fPreemptiveGCDisabled.LoadWithoutBarrier())
             {
-                // We now know for sure that the thread is still in cooperative mode.  If it's in JIT'd code, here
-                // is where we try to hijack/redirect the thread.  If it's in VM code, we have to just let the VM
-                // finish what it's doing.
+                // actually, we are done with this one
+                STRESS_LOG1(LF_SYNC, LL_INFO1000, "    Thread %x went preemptive while suspending it is at a GC safe point\n", thread);
+                countThreads--;
+                thread->ResetThreadState(Thread::TS_GCSuspendFlags);
+                thread->ResumeThread();
+                continue;
+            }
+
+            // We now know for sure that the thread is still in cooperative mode.  If it's in JIT'd code, here
+            // is where we try to hijack/redirect the thread.  If it's in VM code, we have to just let the VM
+            // finish what it's doing.
 
 #if defined(FEATURE_HIJACK) && !defined(TARGET_UNIX)
-                // Only check for HandledJITCase if we actually suspended the thread.
-                if (str == Thread::STR_Success)
-                {
-                    Thread::WorkingOnThreadContextHolder workingOnThreadContext(thread);
+            {
+                Thread::WorkingOnThreadContextHolder workingOnThreadContext(thread);
 
-                    //
-                    // Note that thread->HandledJITCase is not a simple predicate - it actually will hijack the thread if that's possible.
-                    // So HandledJITCase can do one of these:
-                    //
-                    //   - Return TRUE, in which case it's our responsibility to redirect the thread
-                    //   - Return FALSE after hijacking the thread - we shouldn't try to redirect
-                    //   - Return FALSE but not hijack the thread - there's nothing we can do either
-                    //
-                    // Here is another great opportunity for refactoring :)
-                    //
-                    if (workingOnThreadContext.Acquired() && thread->HandledJITCase())
+                // Note that thread->HandledJITCase is not a simple predicate - it actually will hijack the thread if that's possible.
+                // So HandledJITCase can do one of these:
+                //   - Return TRUE, in which case it's our responsibility to redirect the thread
+                //   - Return FALSE after hijacking the thread - we shouldn't try to redirect
+                //   - Return FALSE but not hijack the thread - there's nothing we can do either
+                if (workingOnThreadContext.Acquired() && thread->HandledJITCase())
+                {
+                    // Thread is in cooperative state and stopped in interruptible code.
+                    // Redirect thread so we can capture a good thread context
+                    // (GetThreadContext is not sufficient, due to an OS bug).
+                    if (!thread->CheckForAndDoRedirectForGC())
                     {
-                        // Redirect thread so we can capture a good thread context
-                        // (GetThreadContext is not sufficient, due to an OS bug).
-                        if (!thread->CheckForAndDoRedirectForGC())
-                        {
 #ifdef TIME_SUSPEND
-                            g_SuspendStatistics.cntFailedRedirections++;
+                        g_SuspendStatistics.cntFailedRedirections++;
 #endif
-                            STRESS_LOG1(LF_SYNC, LL_INFO1000, "Failed to CheckForAndDoRedirectForGC(). Retry suspension for thread %p\n", thread);
-                            thread->ResumeThread();
-                            __SwitchToThread(0, ++dwSwitchCount);
-                            goto RetrySuspension;
-                        }
+                        STRESS_LOG1(LF_SYNC, LL_INFO1000, "Failed to CheckForAndDoRedirectForGC(). Thread %p\n", thread);
+                    }
+                    else
+                    {
 #ifdef TIME_SUSPEND
-                        else
-                            g_SuspendStatistics.cntRedirections++;
+                        g_SuspendStatistics.cntRedirections++;
 #endif
+                        thread->SetThreadState(Thread::TS_GCSuspendRedirected);
                         STRESS_LOG1(LF_SYNC, LL_INFO1000, "Thread::SuspendRuntime() -   Thread %p redirected().\n", thread);
                     }
                 }
+            }
 #endif // FEATURE_HIJACK && !TARGET_UNIX
 
-                FastInterlockOr((ULONG *) &thread->m_State, Thread::TS_GCSuspendPending);
-
-                countThreads++;
-
-                // Only resume if we actually suspended the thread above.
-                if (str == Thread::STR_Success)
-                    thread->ResumeThread();
-
-                STRESS_LOG1(LF_SYNC, LL_INFO1000, "    Thread 0x%x is in cooperative needs to rendezvous\n", thread);
-            }
-            else
-            if (str == Thread::STR_Success)
-            {
-                STRESS_LOG1(LF_SYNC, LL_WARNING, "    Inspecting thread 0x%x was in cooperative, but now is not\n", thread);
-                // Oops.
-                thread->ResumeThread();
-            }
-            else
-            if (str == Thread::STR_SwitchedOut) {
-                STRESS_LOG1(LF_SYNC, LL_WARNING, "    Inspecting thread 0x%x was in cooperative, but now is switched out\n", thread);
-            }
-            else {
-                _ASSERTE(str == Thread::STR_Failure || str == Thread::STR_UnstartedOrDead);
-                STRESS_LOG3(LF_SYNC, LL_ERROR, "    ERROR: Could not suspend thread 0x%x, result = %d, lastError = 0x%x\n", thread, str, GetLastError());
-            }
-
+            thread->ResumeThread();
+            STRESS_LOG1(LF_SYNC, LL_INFO1000, "    Thread 0x%x is in cooperative needs to rendezvous\n", thread);
 #endif // DISABLE_THREADSUSPEND
-
-        }
-    }
-
-#ifdef _DEBUG
-
-    {
-        int     countCheck = 0;
-        Thread *InnerThread = NULL;
-
-        while ((InnerThread = ThreadStore::GetThreadList(InnerThread)) != NULL)
-        {
-            if (InnerThread != pCurThread &&
-                (InnerThread->m_State & Thread::TS_GCSuspendPending) != 0)
-            {
-                countCheck++;
-            }
-        }
-        _ASSERTE(countCheck == countThreads);
-    }
-
-#endif
-
-    //
-    // Now we keep retrying until we find that no threads are in cooperative mode.  This should be merged into
-    // the first loop.
-    //
-    while (countThreads)
-    {
-        _ASSERTE (thread == NULL);
-        STRESS_LOG1(LF_SYNC, LL_INFO1000, "    A total of %d threads need to rendezvous\n", countThreads);
-        while ((thread = ThreadStore::GetThreadList(thread)) != NULL)
-        {
-            if (thread == pCurThread)
-                continue;
-
-            if (thread->HasThreadState(Thread::TS_BlockGCForSO))
-            {
-                // The thread is trying to block for GC.  But we don't have enough stack to do
-                // this operation.
-                // We will let the thread switch back to cooperative mode, and continue running.
-                if (thread->m_fPreemptiveGCDisabled.Load() == 0)
-                {
-                    if (!thread->HasThreadState(Thread::TS_GCSuspendPending))
-                    {
-                        thread->SetThreadState(Thread::TS_GCSuspendPending);
-                        countThreads ++;
-                    }
-                    thread->ResetThreadState(Thread::TS_BlockGCForSO);
-                    FastInterlockOr (&thread->m_fPreemptiveGCDisabled, 1);
-                }
-                continue;
-            }
-            if ((thread->m_State & Thread::TS_GCSuspendPending) == 0)
-                continue;
-
-            if (!thread->m_fPreemptiveGCDisabled)
-            {
-                // Inlined N/Direct can sneak out to preemptive without actually checking.
-                // If we find one, we can consider it suspended (since it can't get back in).
-                STRESS_LOG1(LF_SYNC, LL_INFO1000, "    Thread %x went preemptive it is at a GC safe point\n", thread);
-                countThreads--;
-                thread->ResetThreadState(Thread::TS_GCSuspendPending);
-            }
         }
 
         if (countThreads == 0)
         {
+            // SUCCESS!!
             break;
         }
 
-#ifdef _DEBUG
-        DWORD dbgStartTimeout = GetTickCount();
-#endif
+        bool hasProgress = previousCount != countThreads;
+        previousCount = countThreads;
 
-        // If another thread is trying to do a GC, there is a chance of deadlock
-        // because this thread holds the threadstore lock and the GC thread is stuck
-        // trying to get it, so this thread must bail and do a retry after the GC completes.
+        // If we have just updated hijacks/redirects, then do a pass while only observing.
+        // Repeat observing only as long as we see progress. Most threads react to hijack/redirect very fast and
+        // typically we can avoid waiting on an event. (except on uniprocessor where we do not spin)
         //
-        // <REVISIT> Shouldn't we do this only if *this* thread isn't attempting a GC?  We're mostly
-        //  done suspending the EE at this point - why give up just because another thread wants
-        //  to do exactly the same thing?  Note that GetGCThreadAttemptingSuspend will never (AFAIK)
-        //  return the current thread here, because we NULL it out after obtaining the thread store lock. </REVISIT>
-        //
-        if (m_pThreadAttemptingSuspendForGC != NULL && m_pThreadAttemptingSuspendForGC != pCurThread)
+        // Otherwise redo hijacks, but check g_pGCSuspendEvent event on the way.
+        // Re-hijacking unconditionally is likely to execute exactly the same hijacks,
+        // while not letting the other threads to run much.
+        // Thus we require either PING_JIT_TIMEOUT or some progress between active suspension attempts.
+        if (g_SystemInfo.dwNumberOfProcessors > 1 && (hasProgress || !observeOnly))
         {
-#ifdef PROFILING_SUPPORTED
-            // Must let the profiler know that this thread is aborting its attempt at suspending
-            {
-                BEGIN_PIN_PROFILER(CORProfilerTrackSuspends());
-                g_profControlBlock.pProfInterface->RuntimeSuspendAborted();
-                END_PIN_PROFILER();
-            }
-#endif // PROFILING_SUPPORTED
+            // small pause
+            YieldProcessorNormalized();
 
-            STRESS_LOG0(LF_SYNC, LL_ALWAYS, "Thread::SuspendRuntime() - Timing out.\n");
-            return (ERROR_TIMEOUT);
+            STRESS_LOG1(LF_SYNC, LL_INFO1000, "Spinning, %d threads remaining\n", countThreads);
+            observeOnly = true;
+            continue;
         }
 
 #ifdef TIME_SUSPEND
         DWORD startWait = g_SuspendStatistics.GetTime();
 #endif
 
-        //
         // Wait for at least one thread to tell us it's left cooperative mode.
         // we do this by waiting on g_pGCSuspendEvent.  We cannot simply wait forever, because we
         // might have done return-address hijacking on a thread, and that thread might not
         // return from the method we hijacked (maybe it calls into some other managed code that
-        // executes a long loop, for example).  We we wait with a timeout, and retry hijacking/redirection.
+        // executes a long loop, for example).  We wait with a timeout, and retry hijacking/redirection.
         //
         // This is unfortunate, because it means that in some cases we wait for PING_JIT_TIMEOUT
         // milliseconds, causing long GC pause times.
-        //
-        // We should fix this, by calling SwitchToThread/Sleep(0) a few times before waiting on the event.
-        // This will not fix it 100% of the time (we may still have to wait on the event), but
-        // the event is needed to work around limitations of SwitchToThread/Sleep(0).
-        //
-        // For now, we simply wait.
-        //
 
-        res = g_pGCSuspendEvent->Wait(PING_JIT_TIMEOUT, FALSE);
-
+        STRESS_LOG1(LF_SYNC, LL_INFO1000, "Waiting for suspend event %d threads remaining\n", countThreads);
+        DWORD res = g_pGCSuspendEvent->Wait(PING_JIT_TIMEOUT, FALSE);
 
 #ifdef TIME_SUSPEND
         g_SuspendStatistics.wait.Accumulate(
                 SuspendStatistics::GetElapsed(startWait,
-                                              g_SuspendStatistics.GetTime()));
+                                                g_SuspendStatistics.GetTime()));
 
         g_SuspendStatistics.cntWaits++;
         if (res == WAIT_TIMEOUT)
@@ -3868,7 +3783,8 @@ HRESULT ThreadSuspend::SuspendRuntime(ThreadSuspend::SUSPEND_REASON reason)
                 DebugBreak();
                 _ASSERTE(!"Timed out trying to suspend EE due to thread");
                 char message[256];
-                _ASSERTE (thread == NULL);
+
+                Thread* thread = NULL;
                 while ((thread = ThreadStore::GetThreadList(thread)) != NULL)
                 {
                     if (thread == pCurThread)
@@ -3883,12 +3799,12 @@ HRESULT ThreadSuspend::SuspendRuntime(ThreadSuspend::SUSPEND_REASON reason)
                         if (id == 0xbaadf00d)
                         {
                             sprintf_s (message, COUNTOF(message), "Thread CLR ID=%x cannot be suspended",
-                                     thread->GetThreadId());
+                                        thread->GetThreadId());
                         }
                         else
                         {
                             sprintf_s (message, COUNTOF(message), "Thread OS ID=%x cannot be suspended",
-                                     id);
+                                        id);
                         }
                         DbgAssertDialog(__FILE__, __LINE__, message);
                     }
@@ -3897,135 +3813,37 @@ HRESULT ThreadSuspend::SuspendRuntime(ThreadSuspend::SUSPEND_REASON reason)
                 dbgStartTimeout = GetTickCount();
             }
 #endif
-
-#if defined(FEATURE_HIJACK) && defined(TARGET_UNIX)
-            _ASSERTE (thread == NULL);
-            while ((thread = ThreadStore::GetThreadList(thread)) != NULL)
-            {
-                if (thread == pCurThread)
-                    continue;
-
-                if ((thread->m_State & Thread::TS_GCSuspendPending) == 0)
-                    continue;
-
-                if (!thread->m_fPreemptiveGCDisabled)
-                    continue;
-
-                // When we tried to inject the suspension before, we may have been in a place
-                // where it wasn't possible. Try one more time.
-                bool gcSuspensionSignalSuccess = thread->InjectGcSuspension();
-                if (!gcSuspensionSignalSuccess)
-                {
-                    // If we failed to raise the signal for some reason, just log it and move on.
-                    STRESS_LOG1(LF_SYNC, LL_INFO1000, "Thread::SuspendRuntime() -   Failed to raise GC suspension signal for thread %p.\n", thread);
-                }
-            }
-#endif
-
-#ifndef DISABLE_THREADSUSPEND
-            // all these threads should be in cooperative mode unless they have
-            // set their SafeEvent on the way out.  But there's a race between
-            // when we time out and when they toggle their mode, so sometimes
-            // we will suspend a thread that has just left.
-            _ASSERTE (thread == NULL);
-            while ((thread = ThreadStore::GetThreadList(thread)) != NULL)
-            {
-                if (thread == pCurThread)
-                    continue;
-
-                if ((thread->m_State & Thread::TS_GCSuspendPending) == 0)
-                    continue;
-
-                if (!thread->m_fPreemptiveGCDisabled)
-                    continue;
-
-#if defined(FEATURE_HIJACK) && !defined(TARGET_UNIX)
-            RetrySuspension2:
-#endif
-                // We can not allocate memory after we suspend a thread.
-                // Otherwise, we may deadlock the process when CLR is hosted.
-                ThreadStore::AllocateOSContext();
-
-#ifdef TIME_SUSPEND
-                DWORD startSuspend = g_SuspendStatistics.GetTime();
-#endif
-
-                Thread::SuspendThreadResult str = thread->SuspendThread();
-
-#ifdef TIME_SUSPEND
-                g_SuspendStatistics.osSuspend.Accumulate(
-                    SuspendStatistics::GetElapsed(startSuspend,
-                                                  g_SuspendStatistics.GetTime()));
-
-                if (str == Thread::STR_Success)
-                    g_SuspendStatistics.cntOSSuspendResume++;
-                else
-                    g_SuspendStatistics.cntFailedSuspends++;
-#endif
-
-#if defined(FEATURE_HIJACK) && !defined(TARGET_UNIX)
-                // Only check HandledJITCase if we actually suspended the thread, and
-                // the thread is in cooperative mode.
-                // See comment at the previous invocation of HandledJITCase - it does
-                // more than you think!
-                if (str == Thread::STR_Success && thread->m_fPreemptiveGCDisabled)
-                {
-                    Thread::WorkingOnThreadContextHolder workingOnThreadContext(thread);
-                    if (workingOnThreadContext.Acquired() && thread->HandledJITCase())
-                    {
-                        // Redirect thread so we can capture a good thread context
-                        // (GetThreadContext is not sufficient, due to an OS bug).
-                        if (!thread->CheckForAndDoRedirectForGC())
-                        {
-#ifdef TIME_SUSPEND
-                            g_SuspendStatistics.cntFailedRedirections++;
-#endif
-                            STRESS_LOG1(LF_SYNC, LL_INFO1000, "Failed to CheckForAndDoRedirectForGC(). Retry suspension 2 for thread %p\n", thread);
-                            thread->ResumeThread();
-                            goto RetrySuspension2;
-                        }
-#ifdef TIME_SUSPEND
-                        else
-                            g_SuspendStatistics.cntRedirections++;
-#endif
-                    }
-                }
-#endif // FEATURE_HIJACK && !TARGET_UNIX
-
-                if (str == Thread::STR_Success)
-                    thread->ResumeThread();
-            }
-#endif // DISABLE_THREADSUSPEND
-        }
-        else
-        if (res == WAIT_OBJECT_0)
+       }
+        else if (res == WAIT_OBJECT_0)
         {
-            g_pGCSuspendEvent->Reset();
-            continue;
         }
         else
         {
             // No WAIT_FAILED, WAIT_ABANDONED, etc.
             _ASSERTE(!"unexpected wait termination during gc suspension");
         }
+
+        observeOnly = false;
+        g_pGCSuspendEvent->Reset();
     }
 
 #ifdef PROFILING_SUPPORTED
     // If a profiler is keeping track of GC events, notify it
     {
-        BEGIN_PIN_PROFILER(CORProfilerTrackSuspends());
-        g_profControlBlock.pProfInterface->RuntimeSuspendFinished();
-        END_PIN_PROFILER();
+    BEGIN_PIN_PROFILER(CORProfilerTrackSuspends());
+    g_profControlBlock.pProfInterface->RuntimeSuspendFinished();
+    END_PIN_PROFILER();
     }
 #endif // PROFILING_SUPPORTED
 
 #ifdef _DEBUG
-    if (reason == ThreadSuspend::SUSPEND_FOR_GC) {
-        thread = NULL;
+    if (reason == ThreadSuspend::SUSPEND_FOR_GC)
+    {
+        Thread* thread = NULL;
         while ((thread = ThreadStore::GetThreadList(thread)) != NULL)
         {
             thread->DisableStressHeap();
-            _ASSERTE (!thread->HasThreadState(Thread::TS_GCSuspendPending));
+            _ASSERTE(!thread->HasThreadState(Thread::TS_GCSuspendPending));
         }
     }
 #endif
@@ -4039,7 +3857,7 @@ HRESULT ThreadSuspend::SuspendRuntime(ThreadSuspend::SUSPEND_REASON reason)
     // gcstress instruction updates need to occur.  Each thread can
     // have only one pending at a time.
     //
-    thread = NULL;
+    Thread* thread = NULL;
     while ((thread = ThreadStore::GetThreadList(thread)) != NULL)
     {
         thread->CommitGCStressInstructionUpdate();
@@ -4609,7 +4427,11 @@ bool Thread::SysStartSuspendForDebug(AppDomain *pAppDomain)
             // and the moment we enable TrapReturningThreads in MarkForSuspension.  However,
             // nothing bad happens if the thread has transitioned to preemptive before marking
             // the thread for suspension; the thread will later be identified as Synced in
-            // SysSweepThreadsForDebug
+            // SysSweepThreadsForDebug.
+            //
+            // If the thread transitions to preemptive mode and into a forbid-suspend-for-debugger
+            // region, SysSweepThreadsForDebug would similarly identify the thread as synced
+            // after it leaves the forbid region.
 #else  // DISABLE_THREADSUSPEND
             // Resume the thread and let it run to a safe point
             thread->ResumeThread();
@@ -4625,23 +4447,32 @@ bool Thread::SysStartSuspendForDebug(AppDomain *pAppDomain)
             // they attempt to re-enter they will trip.
             thread->MarkForSuspension(TS_DebugSuspendPending);
 
+            if (
 #ifdef DISABLE_THREADSUSPEND
-            // There'a a race above between the moment we first check m_fPreemptiveGCDisabled
-            // and the moment we enable TrapReturningThreads in MarkForSuspension.  To account
-            // for that we check whether the thread moved into cooperative mode, and if it had
-            // we mark it as a DebugWillSync thread, that will be handled later in
-            // SysSweepThreadsForDebug
-            if (thread->m_fPreemptiveGCDisabled)
+                // There'a a race above between the moment we first check m_fPreemptiveGCDisabled
+                // and the moment we enable TrapReturningThreads in MarkForSuspension.  To account
+                // for that we check whether the thread moved into cooperative mode, and if it had
+                // we mark it as a DebugWillSync thread, that will be handled later in
+                // SysSweepThreadsForDebug.
+                thread->m_fPreemptiveGCDisabled ||
+#endif // DISABLE_THREADSUSPEND
+                // The thread may have been suspended in a forbid-suspend-for-debugger region, or
+                // before the state change to set TS_DebugSuspendPending is made visible to other
+                // threads, the thread may have transitioned into a forbid region. In either case,
+                // flag the thread as TS_DebugWillSync and let SysSweepThreadsForDebug later
+                // identify the thread as synced after the thread leaves the forbid region.
+                thread->IsInForbidSuspendForDebuggerRegion())
             {
                 // Remember that this thread will be running to a safe point
                 FastInterlockIncrement(&m_DebugWillSyncCount);
                 thread->SetThreadState(TS_DebugWillSync);
             }
-#else  // DISABLE_THREADSUSPEND
+
+#ifndef DISABLE_THREADSUSPEND
             if (str == STR_Success) {
                 thread->ResumeThread();
             }
-#endif // DISABLE_THREADSUSPEND
+#endif // !DISABLE_THREADSUSPEND
 
             LOG((LF_CORDB, LL_INFO1000,
                  "[0x%x] SUSPEND: gc enabled.\n", thread->GetThreadId()));
@@ -4720,9 +4551,10 @@ bool Thread::SysSweepThreadsForDebug(bool forceSync)
         // this thread will happen after any earlier writes on a different
         // thread.
         FastInterlockOr(&thread->m_fPreemptiveGCDisabled, 0);
-        if (!thread->m_fPreemptiveGCDisabled)
+        if (!thread->m_fPreemptiveGCDisabled && !thread->IsInForbidSuspendForDebuggerRegion())
         {
-            // If the thread toggled to preemptive mode, then it's synced.
+            // If the thread toggled to preemptive mode and is not in a
+            // forbid-suspend-for-debugger region, then it's synced.
             goto Label_MarkThreadAsSynced;
         }
         else
@@ -4753,33 +4585,33 @@ RetrySuspension:
             // If the thread has gone, we can't wait on it.
             goto Label_MarkThreadAsSynced;
         }
-        else if (str == STR_SwitchedOut)
-        {
-            // The thread was switched b/c of fiber-mode stuff.
-            if (!thread->m_fPreemptiveGCDisabled)
-            {
-                goto Label_MarkThreadAsSynced;
-            }
-            else
-            {
-                goto RetrySuspension;
-            }
-        }
         else if (str == STR_NoStressLog)
         {
             goto RetrySuspension;
         }
         else if (!thread->m_fPreemptiveGCDisabled)
         {
-            // If the thread toggled to preemptive mode, then it's synced.
+            // If the thread toggled to preemptive mode and is not in a
+            // forbid-suspend-for-debugger region, then it's synced.
 
             // We can safely resume the thread here b/c it's in PreemptiveMode and the
             // EE will trap anybody trying to re-enter cooperative. So letting it run free
             // won't hurt the runtime.
+            //
+            // If the thread is in a forbid-suspend-for-debugger region, the thread needs to
+            // be resumed to give it a chance to leave the forbid region. The EE will also
+            // trap the thread if it tries to re-enter a forbid region.
             _ASSERTE(str == STR_Success);
             thread->ResumeThread();
 
-            goto Label_MarkThreadAsSynced;
+            if (!thread->IsInForbidSuspendForDebuggerRegion())
+            {
+                goto Label_MarkThreadAsSynced;
+            }
+            else
+            {
+                continue;
+            }
         }
 #if defined(FEATURE_HIJACK) && !defined(TARGET_UNIX)
         // If the thread is in jitted code, HandledJitCase will try to hijack it; and the hijack
@@ -4804,7 +4636,7 @@ RetrySuspension:
 
                 // The hijack will toggle our GC mode, and thus we could wait for the next sweep,
                 // and the GC-mode check above would catch and sync us. But there's no reason to wait,
-                // if the thread is hijacked, it's as good as synced, so mark it now.
+                // if the thread is redirected, it's as good as synced, so mark it now.
                 thread->ResumeThread();
                 goto Label_MarkThreadAsSynced;
             }
@@ -5790,18 +5622,7 @@ BOOL Thread::HandledJITCase()
 
             if (GetReturnAddressHijackInfo(&codeInfo, &returnKind))
             {
-
-#ifdef FEATURE_ENABLE_GCPOLL
-                // On platforms that support both hijacking and GC polling
-                // decide whether to hijack based on a configuration value.
-                // COMPlus_GCPollType = 1 is the setting that enables hijacking
-                // in GCPOLL enabled builds.
-                EEConfig::GCPollType pollType = g_pConfig->GetGCPollType();
-                if (EEConfig::GCPOLL_TYPE_HIJACK == pollType || EEConfig::GCPOLL_TYPE_DEFAULT == pollType)
-#endif // FEATURE_ENABLE_GCPOLL
-                {
-                    HijackThread(returnKind, &esb);
-                }
+                HijackThread(returnKind, &esb);
             }
         }
     }
@@ -5874,6 +5695,16 @@ void ThreadSuspend::RestartEE(BOOL bFinishedGC, BOOL SuspendSucceded)
 #endif //TIME_SUSPEND
 
     FireEtwGCRestartEEBegin_V1(GetClrInstanceId());
+
+#if defined(TARGET_ARM) || defined(TARGET_ARM64)
+    // Flush the store buffers on all CPUs, to ensure that they all see changes made
+    // by the GC threads. This only matters on weak memory ordered processors as 
+    // the strong memory ordered processors wouldn't have reordered the relevant reads.
+    // This is needed to synchronize threads that were running in preemptive mode while
+    // the runtime was suspended and that will return to cooperative mode after the runtime 
+    // is restarted. 
+    ::FlushProcessWriteBuffers();
+#endif //TARGET_ARM || TARGET_ARM64
 
     //
     // SyncClean holds a list of things to be cleaned up when it's possible.
@@ -6006,13 +5837,6 @@ retry_for_debugger:
     if (reason == ThreadSuspend::SUSPEND_FOR_GC || reason == ThreadSuspend::SUSPEND_FOR_GC_PREP)
     {
         m_pThreadAttemptingSuspendForGC = pCurThread;
-
-        //
-        // also unblock any thread waiting around for this thread to suspend. This prevents us from completely
-        // starving other suspension clients, such as the debugger, which we otherwise would do because of
-        // the priority we just established.
-        //
-        g_pGCSuspendEvent->Set();
     }
 
 #ifdef TIME_SUSPEND
@@ -6055,7 +5879,7 @@ retry_for_debugger:
     {
         //
         // Now we're going to acquire an exclusive lock on managed code execution (including
-        // "maunally managed" code in GCX_COOP regions).
+        // "manually managed" code in GCX_COOP regions).
         //
         // First, we reset the event that we're about to tell other threads to wait for.
         //
@@ -6083,14 +5907,9 @@ retry_for_debugger:
             // I wonder how much confusion this has caused....)
             // It seems like much of the above is redundant.  We should investigate reducing the number
             // of mechanisms we use to indicate that a suspension is in progress.
-            //
             GCHeapUtilities::GetGCHeap()->SetGCInProgress(true);
 
-            //
-            // Gratuitous memory barrier.  (may be needed - but I'm not sure why.)
-            //
-            MemoryBarrier();
-
+            // set tls flags for compat with SOS
             ClrFlsSetThreadType (ThreadType_DynamicSuspendEE);
         }
 
@@ -6116,26 +5935,24 @@ retry_for_debugger:
         if (hr == ERROR_TIMEOUT)
             STRESS_LOG0(LF_SYNC, LL_INFO1000, "SysSuspension colission");
 
-        // If the debugging services are attached, then its possible
-        // that there is a thread which appears to be stopped at a gc
-        // safe point, but which really is not. If that is the case,
-        // back off and try again.
-
         // If this is not the GC thread and another thread has triggered
-        // a GC, then we may have bailed out of SuspendRuntime, so we
-        // must resume all of the threads and tell the GC that we are
-        // at a safepoint - since this is the exact same behaviour
-        // that the debugger needs, just use it's code.
+        // a GC, then we yield by resuming all the threads and trying again.
         if ((hr == ERROR_TIMEOUT)
 #ifdef DEBUGGING_SUPPORTED
-             || (CORDebuggerAttached() &&
+            // If the debugging services are attached, then its possible
+            // that there is a thread which appears to be stopped at a gc
+            // safe point, but which really is not. If that is the case,
+            // back off and try again.
+            //
             // When the debugger is synchronizing, trying to perform a GC could deadlock. The GC has the
             // threadstore lock and synchronization cannot complete until the debugger can get the
             // threadstore lock. However the GC can not complete until it sends the BeforeGarbageCollection
             // event, and the event can not be sent until the debugger is synchronized. In order to break
             // this deadlock cycle the GC must give up the threadstore lock, allow the debugger to synchronize,
             // then try again.
-                 (g_pDebugInterface->ThreadsAtUnsafePlaces() || g_pDebugInterface->IsSynchronizing()))
+            // 
+            || (CORDebuggerAttached() &&
+                (g_pDebugInterface->ThreadsAtUnsafePlaces() || g_pDebugInterface->IsSynchronizing()))
 #endif // DEBUGGING_SUPPORTED
             )
         {
@@ -6166,7 +5983,7 @@ retry_for_debugger:
             LOG((LF_GCROOTS | LF_GC | LF_CORDB,
                  LL_INFO10,
                  "***** Giving up on current GC suspension due "
-                 "to debugger or timeout *****\n"));
+                 "to debugger or yielding to a GC suspension *****\n"));
 
             if (s_hAbortEvtCache == NULL)
             {
@@ -6232,6 +6049,16 @@ retry_for_debugger:
     g_SuspendStatistics.EndSuspend(reason == SUSPEND_FOR_GC || reason == SUSPEND_FOR_GC_PREP);
 #endif //TIME_SUSPEND
     ThreadSuspend::s_fSuspended = true;
+
+#if defined(TARGET_ARM) || defined(TARGET_ARM64)
+    // Flush the store buffers on all CPUs, to ensure that all changes made so far are seen
+    // by the GC threads. This only matters on weak memory ordered processors as 
+    // the strong memory ordered processors wouldn't have reordered the relevant writes.
+    // This is needed to synchronize threads that were running in preemptive mode thus were
+    // left alone by suspension to flush their writes that they made before they switched to
+    // preemptive mode.
+    ::FlushProcessWriteBuffers();
+#endif //TARGET_ARM || TARGET_ARM64
 }
 
 #if defined(FEATURE_HIJACK) && defined(TARGET_UNIX)
@@ -6365,9 +6192,8 @@ bool Thread::InjectGcSuspension()
     if (injectionEnabled.val(CLRConfig::INTERNAL_ThreadSuspendInjection) == 0)
         return false;
 
-    Volatile<HANDLE> hThread;
-    hThread = GetThreadHandle();
-    if (hThread != INVALID_HANDLE_VALUE && hThread != SWITCHOUT_HANDLE_VALUE)
+    HANDLE hThread = GetThreadHandle();
+    if (hThread != INVALID_HANDLE_VALUE)
     {
         ::PAL_InjectActivation(hThread);
         return true;

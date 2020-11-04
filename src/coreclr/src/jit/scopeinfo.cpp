@@ -487,7 +487,7 @@ CodeGenInterface::siVarLoc CodeGenInterface::getSiVarLoc(const LclVarDsc* varDsc
     // For stack vars, find the base register, and offset
 
     regNumber baseReg;
-    signed    offset = varDsc->lvStkOffs;
+    signed    offset = varDsc->GetStackOffset();
 
     if (!varDsc->lvFramePointerBased)
     {
@@ -603,7 +603,7 @@ CodeGenInterface::siVarLoc CodeGen::getSiVarLoc(const LclVarDsc* varDsc, const s
     // For stack vars, find the base register, and offset
 
     regNumber baseReg;
-    signed    offset = varDsc->lvStkOffs;
+    signed    offset = varDsc->GetStackOffset();
 
     if (!varDsc->lvFramePointerBased)
     {
@@ -1487,17 +1487,17 @@ NATIVE_OFFSET CodeGen::psiGetVarStackOffset(const LclVarDsc* lclVarDsc) const
 #ifdef TARGET_AMD64
     // scOffset = offset from caller SP - REGSIZE_BYTES
     // TODO-Cleanup - scOffset needs to be understood.  For now just matching with the existing definition.
-    stackOffset =
-        compiler->lvaToCallerSPRelativeOffset(lclVarDsc->lvStkOffs, lclVarDsc->lvFramePointerBased) + REGSIZE_BYTES;
+    stackOffset = compiler->lvaToCallerSPRelativeOffset(lclVarDsc->GetStackOffset(), lclVarDsc->lvFramePointerBased) +
+                  REGSIZE_BYTES;
 #else  // !TARGET_AMD64
     if (doubleAlignOrFramePointerUsed())
     {
         // REGSIZE_BYTES - for the pushed value of EBP
-        stackOffset = lclVarDsc->lvStkOffs - REGSIZE_BYTES;
+        stackOffset = lclVarDsc->GetStackOffset() - REGSIZE_BYTES;
     }
     else
     {
-        stackOffset = lclVarDsc->lvStkOffs - genTotalFrameSize();
+        stackOffset = lclVarDsc->GetStackOffset() - genTotalFrameSize();
     }
 #endif // !TARGET_AMD64
 
@@ -1550,7 +1550,7 @@ void CodeGen::psiBegProlog()
             SYSTEMV_AMD64_CORINFO_STRUCT_REG_PASSING_DESCRIPTOR structDesc;
             if (varTypeIsStruct(lclVarDsc))
             {
-                CORINFO_CLASS_HANDLE typeHnd = lclVarDsc->lvVerTypeInfo.GetClassHandle();
+                CORINFO_CLASS_HANDLE typeHnd = lclVarDsc->GetStructHnd();
                 assert(typeHnd != nullptr);
                 compiler->eeGetSystemVAmd64PassStructInRegisterDescriptor(typeHnd, &structDesc);
                 if (structDesc.passedInRegisters)
@@ -1673,7 +1673,7 @@ void CodeGen::psiEndProlog()
  We still report all the arguments at the very start of the method so that
  the user can see the arguments at the very start of the method (offset=0).
 
- Disabling this decreased the debug maps in mscorlib by 10% (01/2003)
+ Disabling this decreased the debug maps in CoreLib by 10% (01/2003)
  */
 
 #if 0
@@ -1867,7 +1867,7 @@ void CodeGen::psiMoveToStack(unsigned varNum)
         psiScope* newScope     = psiNewPrologScope(scope->scLVnum, scope->scSlotNum);
         newScope->scRegister   = false;
         newScope->u2.scBaseReg = (compiler->lvaTable[varNum].lvFramePointerBased) ? REG_FPBASE : REG_SPBASE;
-        newScope->u2.scOffset  = compiler->lvaTable[varNum].lvStkOffs;
+        newScope->u2.scOffset  = compiler->lvaTable[varNum].GetStackOffset();
 
         psiEndPrologScope(scope);
         return;

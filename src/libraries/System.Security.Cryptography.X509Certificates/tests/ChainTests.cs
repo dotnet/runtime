@@ -4,7 +4,6 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading;
 using Test.Cryptography;
@@ -249,7 +248,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
                 Assert.False(chain.Build(microsoftDotCom));
 
                 // Linux and Windows do not search the default system root stores when CustomRootTrust is enabled
-                if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
+                if (OperatingSystem.IsMacOS())
                 {
                     Assert.Equal(3, chain.ChainElements.Count);
                     Assert.Equal(X509ChainStatusFlags.UntrustedRoot, chain.AllStatusFlags());
@@ -711,117 +710,6 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         }
 
         [Fact]
-        [OuterLoop( /* May require using the network, to download CRLs and intermediates */)]
-        public static void VerifyWithRevocation()
-        {
-            using (var cert = new X509Certificate2(Path.Combine("TestData", "MS.cer")))
-            using (var onlineChainHolder = new ChainHolder())
-            using (var offlineChainHolder = new ChainHolder())
-            {
-                X509Chain onlineChain = onlineChainHolder.Chain;
-                X509Chain offlineChain = offlineChainHolder.Chain;
-
-                onlineChain.ChainPolicy.VerificationFlags =
-                    X509VerificationFlags.AllowUnknownCertificateAuthority;
-
-                onlineChain.ChainPolicy.VerificationTime = cert.NotBefore.AddHours(2);
-                onlineChain.ChainPolicy.RevocationMode = X509RevocationMode.Online;
-                onlineChain.ChainPolicy.RevocationFlag = X509RevocationFlag.EntireChain;
-
-                // Attempt the online test a couple of times, in case there was just a CRL
-                // download failure.
-                const int RetryLimit = 3;
-                bool valid = false;
-
-                for (int i = 0; i < RetryLimit; i++)
-                {
-                    valid = onlineChain.Build(cert);
-
-                    if (valid)
-                    {
-                        break;
-                    }
-
-                    for (int j = 0; j < onlineChain.ChainElements.Count; j++)
-                    {
-                        X509ChainStatusFlags chainFlags = onlineChain.AllStatusFlags();
-
-                        const X509ChainStatusFlags WontCheck =
-                            X509ChainStatusFlags.RevocationStatusUnknown | X509ChainStatusFlags.UntrustedRoot;
-
-                        if (chainFlags == WontCheck)
-                        {
-                            Console.WriteLine($"{nameof(VerifyWithRevocation)}: online chain failed with {{{chainFlags}}}, skipping");
-                            return;
-                        }
-
-                        X509ChainElement chainElement = onlineChain.ChainElements[j];
-
-                        // Since `NoError` gets mapped as the empty array, just look for non-empty arrays
-                        if (chainElement.ChainElementStatus.Length > 0)
-                        {
-                            X509ChainStatusFlags allFlags = chainElement.AllStatusFlags();
-
-                            Console.WriteLine(
-                                $"{nameof(VerifyWithRevocation)}: online attempt {i} - errors at depth {j}: {allFlags}");
-                        }
-
-                        chainElement.Certificate.Dispose();
-                    }
-
-                    Thread.Sleep(1000); // For network flakiness
-                }
-
-                if (TestEnvironmentConfiguration.RunManualTests)
-                {
-                    Assert.True(valid, $"Online Chain Built Validly within {RetryLimit} tries");
-                }
-                else if (!valid)
-                {
-                    Console.WriteLine($"SKIP [{nameof(VerifyWithRevocation)}]: Chain failed to build within {RetryLimit} tries.");
-                    return;
-                }
-
-                // Since the network was enabled, we should get the whole chain.
-                Assert.Equal(3, onlineChain.ChainElements.Count);
-
-                Assert.Equal(0, onlineChain.ChainElements[0].ChainElementStatus.Length);
-                Assert.Equal(0, onlineChain.ChainElements[1].ChainElementStatus.Length);
-
-                // The root CA is not expected to be installed on everyone's machines,
-                // so allow for it to report UntrustedRoot, but nothing else..
-                X509ChainStatus[] rootElementStatus = onlineChain.ChainElements[2].ChainElementStatus;
-
-                if (rootElementStatus.Length != 0)
-                {
-                    Assert.Equal(1, rootElementStatus.Length);
-                    Assert.Equal(X509ChainStatusFlags.UntrustedRoot, rootElementStatus[0].Status);
-                }
-
-                // Now that everything is cached, try again in Offline mode.
-                offlineChain.ChainPolicy.VerificationFlags = onlineChain.ChainPolicy.VerificationFlags;
-                offlineChain.ChainPolicy.VerificationTime = onlineChain.ChainPolicy.VerificationTime;
-                offlineChain.ChainPolicy.RevocationMode = X509RevocationMode.Offline;
-                offlineChain.ChainPolicy.RevocationFlag = onlineChain.ChainPolicy.RevocationFlag;
-
-                valid = offlineChain.Build(cert);
-                Assert.True(valid, "Offline Chain Built Validly");
-
-                // Everything should look just like the online chain:
-                Assert.Equal(onlineChain.ChainElements.Count, offlineChain.ChainElements.Count);
-
-                for (int i = 0; i < offlineChain.ChainElements.Count; i++)
-                {
-                    X509ChainElement onlineElement = onlineChain.ChainElements[i];
-                    X509ChainElement offlineElement = offlineChain.ChainElements[i];
-
-                    Assert.Equal(onlineElement.ChainElementStatus, offlineElement.ChainElementStatus);
-                    Assert.Equal(onlineElement.Certificate, offlineElement.Certificate);
-                }
-            }
-        }
-
-        [Fact]
         public static void Create()
         {
             using (var chain = X509Chain.Create())
@@ -843,11 +731,11 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         {
             X509ChainStatusFlags expectedFlags;
 
-            if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+            if (OperatingSystem.IsWindows())
             {
                 expectedFlags = X509ChainStatusFlags.NotSignatureValid;
             }
-            else if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
+            else if (OperatingSystem.IsMacOS())
             {
                 // For OSX alone expectedFlags here means OR instead of AND.
                 // Because the error code changed in 10.13.4 from UntrustedRoot to PartialChain
@@ -879,7 +767,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
 
                 X509ChainStatusFlags allFlags = chain.AllStatusFlags();
 
-                if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
+                if (OperatingSystem.IsMacOS())
                 {
                     // If we're on 10.13.3 or older we get UntrustedRoot.
                     // If we're on 10.13.4 or newer we get PartialChain.
@@ -1023,7 +911,7 @@ tHP28fj0LUop/QFojSZPsaPAW6JvoQ0t4hd6WoyX6z7FsA==
                     bool valid = chain.Build(cert);
                     X509ChainStatusFlags allFlags = chain.AllStatusFlags();
 
-                    if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
+                    if (OperatingSystem.IsMacOS())
                     {
                         // OSX considers this to be valid because it doesn't report NotSignatureValid,
                         // just PartialChain ("I couldn't find an issuer that made the signature work"),

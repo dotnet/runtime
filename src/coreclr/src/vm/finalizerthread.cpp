@@ -7,6 +7,7 @@
 #include "finalizerthread.h"
 #include "threadsuspend.h"
 #include "jithost.h"
+#include "genanalysis.h"
 
 #ifdef FEATURE_COMINTEROP
 #include "runtimecallablewrapper.h"
@@ -214,11 +215,7 @@ void FinalizerThread::WaitForFinalizerEvent (CLREvent *event)
     }
 }
 
-
-
 static BOOL s_FinalizerThreadOK = FALSE;
-
-
 
 VOID FinalizerThread::FinalizerThreadWorker(void *args)
 {
@@ -267,6 +264,18 @@ VOID FinalizerThread::FinalizerThreadWorker(void *args)
             g_TriggerHeapDump = FALSE;
         }
 #endif
+        if (gcGenAnalysisState == GcGenAnalysisState::Done)
+        {
+            gcGenAnalysisState = GcGenAnalysisState::Disabled;
+            EventPipe::Disable(gcGenAnalysisEventPipeSessionId);
+            // Writing an empty file to indicate completion
+            fclose(fopen(GENAWARE_COMPLETION_FILE_NAME,"w+"));
+#ifdef GEN_ANALYSIS_STRESS
+            {
+                GenAnalysis::EnableGenerationalAwareSession();
+            }
+#endif
+        }
 
         if (!bPriorityBoosted)
         {

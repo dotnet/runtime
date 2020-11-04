@@ -191,6 +191,18 @@ typedef PVOID NATIVE_LIBRARY_HANDLE;
 #endif
 #endif
 
+#ifndef __has_cpp_attribute
+#define __has_cpp_attribute(x) (0)
+#endif
+
+#ifndef FALLTHROUGH
+#if __has_cpp_attribute(fallthrough)
+#define FALLTHROUGH [[fallthrough]]
+#else // __has_cpp_attribute(fallthrough)
+#define FALLTHROUGH
+#endif // __has_cpp_attribute(fallthrough)
+#endif // FALLTHROUGH
+
 #ifndef PAL_STDCPP_COMPAT
 
 #if __GNUC__
@@ -376,7 +388,7 @@ PALIMPORT
 DWORD
 PALAPI
 PAL_InitializeCoreCLR(
-    const char *szExePath, bool runningInExe);
+    const char *szExePath, BOOL runningInExe);
 
 /// <summary>
 /// This function shuts down PAL WITHOUT exiting the current process.
@@ -498,11 +510,8 @@ PALAPI
 PAL_GetPALDirectoryW(
     OUT LPWSTR lpDirectoryName,
     IN OUT UINT* cchDirectoryName);
-#ifdef UNICODE
+
 #define PAL_GetPALDirectory PAL_GetPALDirectoryW
-#else
-#define PAL_GetPALDirectory PAL_GetPALDirectoryA
-#endif
 
 PALIMPORT
 VOID
@@ -510,6 +519,32 @@ PALAPI
 PAL_Random(
     IN OUT LPVOID lpBuffer,
     IN DWORD dwLength);
+
+PALIMPORT
+BOOL
+PALAPI
+PAL_OpenProcessMemory(
+    IN DWORD processId,
+    OUT DWORD* pHandle
+);
+
+PALIMPORT
+VOID
+PALAPI
+PAL_CloseProcessMemory(
+    IN DWORD handle
+);
+
+PALIMPORT
+BOOL
+PALAPI
+PAL_ReadProcessMemory(
+    IN DWORD handle,
+    IN ULONG64 address,
+    IN LPVOID buffer,
+    IN SIZE_T size,
+    OUT SIZE_T* numberOfBytesRead
+);
 
 PALIMPORT
 BOOL
@@ -685,13 +720,8 @@ SearchPathW(
     OUT LPWSTR lpBuffer,
     OUT LPWSTR *lpFilePart
     );
-#ifdef UNICODE
+
 #define SearchPath  SearchPathW
-#else
-#define SearchPath  SearchPathA
-#endif // !UNICODE
-
-
 
 PALIMPORT
 BOOL
@@ -707,7 +737,6 @@ CopyFileW(
 #define CopyFile CopyFileA
 #endif
 
-
 PALIMPORT
 BOOL
 PALAPI
@@ -720,11 +749,8 @@ DeleteFileW(
 #define DeleteFile DeleteFileA
 #endif
 
-
-
 #define MOVEFILE_REPLACE_EXISTING      0x00000001
 #define MOVEFILE_COPY_ALLOWED          0x00000002
-
 
 PALIMPORT
 BOOL
@@ -1056,15 +1082,6 @@ GetCurrentDirectoryW(
 PALIMPORT
 HANDLE
 PALAPI
-CreateSemaphoreW(
-         IN LPSECURITY_ATTRIBUTES lpSemaphoreAttributes,
-         IN LONG lInitialCount,
-         IN LONG lMaximumCount,
-         IN LPCWSTR lpName);
-
-PALIMPORT
-HANDLE
-PALAPI
 CreateSemaphoreExW(
         IN LPSECURITY_ATTRIBUTES lpSemaphoreAttributes,
         IN LONG lInitialCount,
@@ -1081,13 +1098,7 @@ OpenSemaphoreW(
     IN BOOL bInheritHandle,
     IN LPCWSTR lpName);
 
-#ifdef UNICODE
-#define CreateSemaphore CreateSemaphoreW
 #define CreateSemaphoreEx CreateSemaphoreExW
-#else
-#define CreateSemaphore CreateSemaphoreA
-#define CreateSemaphoreEx CreateSemaphoreExA
-#endif
 
 PALIMPORT
 BOOL
@@ -1119,11 +1130,7 @@ CreateEventExW(
 #define CREATE_EVENT_MANUAL_RESET ((DWORD)0x1)
 #define CREATE_EVENT_INITIAL_SET ((DWORD)0x2)
 
-#ifdef UNICODE
 #define CreateEvent CreateEventW
-#else
-#define CreateEvent CreateEventA
-#endif
 
 PALIMPORT
 BOOL
@@ -1169,11 +1176,7 @@ CreateMutexExW(
 // CreateMutexExW: dwFlags
 #define CREATE_MUTEX_INITIAL_OWNER ((DWORD)0x1)
 
-#ifdef UNICODE
 #define CreateMutex CreateMutexW
-#else
-#define CreateMutex CreateMutexA
-#endif
 
 PALIMPORT
 HANDLE
@@ -1183,12 +1186,9 @@ OpenMutexW(
        IN BOOL bInheritHandle,
        IN LPCWSTR lpName);
 
-
 #ifdef UNICODE
 #define OpenMutex  OpenMutexW
-#else
-#define OpenMutex  OpenMutexA
-#endif // UNICODE
+#endif
 
 PALIMPORT
 BOOL
@@ -1252,34 +1252,8 @@ typedef struct _STARTUPINFOW {
     HANDLE hStdError;
 } STARTUPINFOW, *LPSTARTUPINFOW;
 
-typedef struct _STARTUPINFOA {
-    DWORD cb;
-    LPSTR lpReserved_PAL_Undefined;
-    LPSTR lpDesktop_PAL_Undefined;
-    LPSTR lpTitle_PAL_Undefined;
-    DWORD dwX_PAL_Undefined;
-    DWORD dwY_PAL_Undefined;
-    DWORD dwXSize_PAL_Undefined;
-    DWORD dwYSize_PAL_Undefined;
-    DWORD dwXCountChars_PAL_Undefined;
-    DWORD dwYCountChars_PAL_Undefined;
-    DWORD dwFillAttribute_PAL_Undefined;
-    DWORD dwFlags;
-    WORD wShowWindow_PAL_Undefined;
-    WORD cbReserved2_PAL_Undefined;
-    LPBYTE lpReserved2_PAL_Undefined;
-    HANDLE hStdInput;
-    HANDLE hStdOutput;
-    HANDLE hStdError;
-} STARTUPINFOA, *LPSTARTUPINFOA;
-
-#ifdef UNICODE
 typedef STARTUPINFOW STARTUPINFO;
 typedef LPSTARTUPINFOW LPSTARTUPINFO;
-#else
-typedef STARTUPINFOA STARTUPINFO;
-typedef LPSTARTUPINFOW LPSTARTUPINFO;
-#endif
 
 #define CREATE_NEW_CONSOLE          0x00000010
 
@@ -1307,11 +1281,7 @@ CreateProcessW(
            IN LPSTARTUPINFOW lpStartupInfo,
            OUT LPPROCESS_INFORMATION lpProcessInformation);
 
-#ifdef UNICODE
 #define CreateProcess CreateProcessW
-#else
-#define CreateProcess CreateProcessA
-#endif
 
 PALIMPORT
 PAL_NORETURN
@@ -2442,11 +2412,7 @@ CreateFileMappingW(
            IN DWORD dwMaximumSizeLow,
            IN LPCWSTR lpName);
 
-#ifdef UNICODE
 #define CreateFileMapping CreateFileMappingW
-#else
-#define CreateFileMapping CreateFileMappingA
-#endif
 
 #define SECTION_QUERY       0x0001
 #define SECTION_MAP_WRITE   0x0002
@@ -2466,11 +2432,7 @@ OpenFileMappingW(
          IN BOOL bInheritHandle,
          IN LPCWSTR lpName);
 
-#ifdef UNICODE
 #define OpenFileMapping OpenFileMappingW
-#else
-#define OpenFileMapping OpenFileMappingA
-#endif
 
 typedef INT_PTR (PALAPI_NOEXPORT *FARPROC)();
 
@@ -2527,6 +2489,11 @@ BOOL
 PALAPI
 PAL_FreeLibraryDirect(
         IN NATIVE_LIBRARY_HANDLE dl_handle);
+
+PALIMPORT
+HMODULE
+PALAPI
+PAL_GetPalHostModule();
 
 PALIMPORT
 FARPROC
@@ -2688,6 +2655,33 @@ VirtualFree(
         IN SIZE_T dwSize,
         IN DWORD dwFreeType);
 
+#if defined(HOST_OSX) && defined(HOST_ARM64)
+#ifdef __cplusplus
+extern "C++" {
+struct PAL_JITWriteEnableHolder
+{
+public:
+  PAL_JITWriteEnableHolder(bool jitWriteEnable)
+  {
+      m_jitWriteEnableRestore = JITWriteEnable(jitWriteEnable);
+  };
+  ~PAL_JITWriteEnableHolder()
+  {
+      JITWriteEnable(m_jitWriteEnableRestore);
+  }
+
+private:
+  bool JITWriteEnable(bool enable);
+  bool m_jitWriteEnableRestore;
+};
+
+inline
+PAL_JITWriteEnableHolder
+PAL_JITWriteEnable(IN bool enable) { return PAL_JITWriteEnableHolder(enable); }
+}
+#endif // __cplusplus
+#endif // defined(HOST_OSX) && defined(HOST_ARM64)
+
 PALIMPORT
 BOOL
 PALAPI
@@ -2753,14 +2747,6 @@ LocalAlloc(
 PALIMPORT
 HLOCAL
 PALAPI
-LocalReAlloc(
-       IN HLOCAL hMem,
-       IN SIZE_T uBytes,
-       IN UINT   uFlags);
-
-PALIMPORT
-HLOCAL
-PALAPI
 LocalFree(
       IN HLOCAL hMem);
 
@@ -2785,26 +2771,6 @@ typedef struct _cpinfo {
     BYTE DefaultChar[MAX_DEFAULTCHAR];
     BYTE LeadByte[MAX_LEADBYTES];
 } CPINFO, *LPCPINFO;
-
-PALIMPORT
-BOOL
-PALAPI
-GetCPInfo(
-      IN UINT CodePage,
-      OUT LPCPINFO lpCPInfo);
-
-PALIMPORT
-BOOL
-PALAPI
-IsDBCSLeadByteEx(
-         IN UINT CodePage,
-         IN BYTE TestChar);
-
-PALIMPORT
-BOOL
-PALAPI
-IsDBCSLeadByte(
-        IN BYTE TestChar);
 
 #define MB_PRECOMPOSED            0x00000001
 #define MB_ERR_INVALID_CHARS      0x00000008
@@ -2998,11 +2964,7 @@ LPWSTR
 PALAPI
 GetEnvironmentStringsW();
 
-#ifdef UNICODE
 #define GetEnvironmentStrings GetEnvironmentStringsW
-#else
-#define GetEnvironmentStrings GetEnvironmentStringsA
-#endif
 
 PALIMPORT
 BOOL
@@ -3010,11 +2972,7 @@ PALAPI
 FreeEnvironmentStringsW(
             IN LPWSTR);
 
-#ifdef UNICODE
 #define FreeEnvironmentStrings FreeEnvironmentStringsW
-#else
-#define FreeEnvironmentStrings FreeEnvironmentStringsA
-#endif
 
 PALIMPORT
 BOOL
@@ -3995,9 +3953,6 @@ PALIMPORT DLLEXPORT int __cdecl _stricmp(const char *, const char *);
 PALIMPORT DLLEXPORT int __cdecl vsprintf_s(char *, size_t, const char *, va_list);
 PALIMPORT char * __cdecl _gcvt_s(char *, int, double, int);
 PALIMPORT int __cdecl __iscsym(int);
-PALIMPORT unsigned char * __cdecl _mbsinc(const unsigned char *);
-PALIMPORT unsigned char * __cdecl _mbsninc(const unsigned char *, size_t);
-PALIMPORT unsigned char * __cdecl _mbsdec(const unsigned char *, const unsigned char *);
 PALIMPORT DLLEXPORT int __cdecl _wcsicmp(const WCHAR *, const WCHAR*);
 PALIMPORT int __cdecl _wcsnicmp(const WCHAR *, const WCHAR *, size_t);
 PALIMPORT int __cdecl _vsnprintf(char *, size_t, const char *, va_list);
@@ -4030,7 +3985,7 @@ PALIMPORT int __cdecl PAL_swscanf(const WCHAR *, const WCHAR *, ...);
 PALIMPORT DLLEXPORT ULONG __cdecl PAL_wcstoul(const WCHAR *, WCHAR **, int);
 PALIMPORT double __cdecl PAL_wcstod(const WCHAR *, WCHAR **);
 
-PALIMPORT WCHAR * __cdecl _wcslwr(WCHAR *);
+PALIMPORT errno_t __cdecl _wcslwr_s(WCHAR *, size_t sz);
 PALIMPORT DLLEXPORT ULONGLONG _wcstoui64(const WCHAR *, WCHAR **, int);
 PALIMPORT DLLEXPORT errno_t __cdecl _i64tow_s(long long, WCHAR *, size_t, int);
 PALIMPORT int __cdecl _wtoi(const WCHAR *);

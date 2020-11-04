@@ -5,6 +5,7 @@
 // WARNING: This file is generated and should not be modified directly.
 // Instead, modify TextRawTextWriterGenerator.ttinclude
 
+#nullable disable
 using System;
 using System.IO;
 using System.Text;
@@ -20,12 +21,13 @@ namespace System.Xml
     // operation with serialization in order to achieve better performance.
     // </summary>
     internal class <#= ClassName #> : <#= BaseClassName #>
-    {<#
-if (WriterType == RawTextWriterType.Encoded) { #>
+    {
+<# if (WriterType == RawTextWriterType.Encoded) { #>
         // Construct an instance of this class that outputs text to the TextWriter interface.
         public <#= ClassName #>(TextWriter writer, XmlWriterSettings settings) : base(writer, settings)
         {
         }
+
 <# } #>
         // Construct an instance of this class that serializes to a Stream interface.
         public <#= ClassName #>(Stream stream, XmlWriterSettings settings) : base(stream, settings)

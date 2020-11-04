@@ -2533,7 +2533,7 @@ public:
 
     // Unique objects that represent the use of some
                                          // basic ELEMENT_TYPE's as type parameters.  These
-                                         // are shared acrosss the entire process.  We could
+                                         // are shared across the entire process.  We could
                                          // go and try to find the classes corresponding to these
                                          // element types but it seems simpler just to keep
                                          // them as special cases.
@@ -4139,7 +4139,8 @@ private:
 class CordbModule : public CordbBase,
                     public ICorDebugModule,
                     public ICorDebugModule2,
-                    public ICorDebugModule3
+                    public ICorDebugModule3,
+                    public ICorDebugModule4
 {
 public:
     CordbModule(CordbProcess *      process,
@@ -4233,6 +4234,11 @@ public:
     //-----------------------------------------------------------
     COM_METHOD CreateReaderForInMemorySymbols(REFIID riid,
                                               void** ppObj);
+
+    //-----------------------------------------------------------
+    // ICorDebugModule4
+    //-----------------------------------------------------------
+    COM_METHOD IsMappedLayout(BOOL *isMapped);
 
     //-----------------------------------------------------------
     // Internal members

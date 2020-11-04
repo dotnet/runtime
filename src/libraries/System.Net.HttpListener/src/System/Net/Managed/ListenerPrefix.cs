@@ -1,5 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
+
 //
 // System.Net.ListenerPrefix
 //
@@ -34,12 +35,12 @@ namespace System.Net
     internal sealed class ListenerPrefix
     {
         private string _original;
-        private string _host;
+        private string? _host;
         private ushort _port;
-        private string _path;
+        private string? _path;
         private bool _secure;
-        private IPAddress[] _addresses;
-        internal HttpListener _listener;
+        private IPAddress[]? _addresses;
+        internal HttpListener? _listener;
 
         public ListenerPrefix(string prefix)
         {
@@ -52,7 +53,7 @@ namespace System.Net
             return _original;
         }
 
-        public IPAddress[] Addresses
+        public IPAddress[]? Addresses
         {
             get { return _addresses; }
             set { _addresses = value; }
@@ -62,7 +63,7 @@ namespace System.Net
             get { return _secure; }
         }
 
-        public string Host
+        public string? Host
         {
             get { return _host; }
         }
@@ -72,15 +73,15 @@ namespace System.Net
             get { return _port; }
         }
 
-        public string Path
+        public string? Path
         {
             get { return _path; }
         }
 
         // Equals and GetHashCode are required to detect duplicates in HttpListenerPrefixCollection.
-        public override bool Equals(object o)
+        public override bool Equals(object? o)
         {
-            ListenerPrefix other = o as ListenerPrefix;
+            ListenerPrefix? other = o as ListenerPrefix;
             if (other == null)
                 return false;
 

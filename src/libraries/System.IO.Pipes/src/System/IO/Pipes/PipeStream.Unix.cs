@@ -220,7 +220,7 @@ namespace System.IO.Pipes
         }
 
         // Blocks until the other end of the pipe has read in all written buffer.
-        [MinimumOSPlatform("windows7.0")]
+        [SupportedOSPlatform("windows")]
         public void WaitForPipeDrain()
         {
             CheckWriteOperations();

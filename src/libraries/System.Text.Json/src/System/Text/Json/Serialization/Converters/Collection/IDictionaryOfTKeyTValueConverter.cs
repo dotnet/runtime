@@ -7,7 +7,7 @@ using System.Text.Json.Serialization.Metadata;
 namespace System.Text.Json.Serialization.Converters
 {
     /// <summary>
-    /// Converter for <cref>System.Collections.Generic.IDictionary{string, TValue}</cref> that
+    /// Converter for <cref>System.Collections.Generic.IDictionary{TKey, TValue}</cref> that
     /// (de)serializes as a JSON object with properties representing the dictionary element key and value.
     /// </summary>
     internal sealed class IDictionaryOfTKeyTValueConverter<TCollection, TKey, TValue>
@@ -17,7 +17,12 @@ namespace System.Text.Json.Serialization.Converters
     {
         protected override void Add(TKey key, in TValue value, JsonSerializerOptions options, ref ReadStack state)
         {
-            ((TCollection)state.Current.ReturnValue!)[key] = value;
+            TCollection collection = (TCollection)state.Current.ReturnValue!;
+            collection[key] = value;
+            if (IsValueType)
+            {
+                state.Current.ReturnValue = collection;
+            };
         }
 
         protected override void CreateCollection(ref Utf8JsonReader reader, ref ReadStack state)
@@ -31,7 +36,7 @@ namespace System.Text.Json.Serialization.Converters
                     ThrowHelper.ThrowNotSupportedException_CannotPopulateCollection(TypeToConvert, ref reader, ref state);
                 }
 
-                state.Current.ReturnValue = new Dictionary<string, TValue>();
+                state.Current.ReturnValue = new Dictionary<TKey, TValue>();
             }
             else
             {

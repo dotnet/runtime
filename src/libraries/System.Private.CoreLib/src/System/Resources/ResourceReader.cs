@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 #nullable enable
+using System.Buffers.Binary;
 using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -157,11 +158,11 @@ namespace System.Resources
                     // Close the stream in a thread-safe way.  This fix means
                     // that we may call Close n times, but that's safe.
                     BinaryReader copyOfStore = _store;
-                    _store = null!; // TODO-NULLABLE: Avoid nulling out in Dispose
+                    _store = null!;
                     if (copyOfStore != null)
                         copyOfStore.Close();
                 }
-                _store = null!; // TODO-NULLABLE: Avoid nulling out in Dispose
+                _store = null!;
                 _namePositions = null;
                 _nameHashes = null;
                 _ums = null;
@@ -172,11 +173,8 @@ namespace System.Resources
 
         internal static unsafe int ReadUnalignedI4(int* p)
         {
-            byte* buffer = (byte*)p;
-            // Unaligned, little endian format
-            return buffer[0] | (buffer[1] << 8) | (buffer[2] << 16) | (buffer[3] << 24);
+            return BinaryPrimitives.ReadInt32LittleEndian(new ReadOnlySpan<byte>(p, sizeof(int)));
         }
-
 
         private void SkipString()
         {

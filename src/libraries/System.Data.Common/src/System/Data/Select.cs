@@ -491,7 +491,7 @@ namespace System.Data
                 {
                     if (!_candidateColumns[i].flag)
                     {
-                        if (_candidateColumns[i].expr is { } expr)
+                        if (_candidateColumns[i].expr is BinaryNode expr)
                         {
                             _linearExpression = (_linearExpression == null ? _candidateColumns[i].expr : new BinaryNode(_table, Operators.And, expr, _linearExpression));
                         }

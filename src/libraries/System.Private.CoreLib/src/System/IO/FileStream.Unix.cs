@@ -267,6 +267,20 @@ namespace System.IO
                         // name will be removed immediately.
                         Interop.Sys.Unlink(_path); // ignore errors; it's valid that the path may no longer exist
                     }
+
+                    // Closing the file handle can fail, e.g. due to out of disk space
+                    // Throw these errors as exceptions when disposing
+                    if (_fileHandle != null && !_fileHandle.IsClosed && disposing)
+                    {
+                        SafeFileHandle.t_lastCloseErrorInfo = null;
+
+                        _fileHandle.Dispose();
+
+                        if (SafeFileHandle.t_lastCloseErrorInfo != null)
+                        {
+                            throw Interop.GetExceptionForIoErrno(SafeFileHandle.t_lastCloseErrorInfo.GetValueOrDefault(), _path, isDirectory: false);
+                        }
+                    }
                 }
             }
             finally
@@ -387,28 +401,14 @@ namespace System.IO
                 throw new IOException(SR.IO_SetLengthAppendTruncate);
             }
 
-            long origPos = _filePosition;
-
             VerifyOSHandlePosition();
-
-            if (_filePosition != value)
-            {
-                SeekCore(_fileHandle, value, SeekOrigin.Begin);
-            }
 
             CheckFileCall(Interop.Sys.FTruncate(_fileHandle, value));
 
-            // Return file pointer to where it was before setting length
-            if (origPos != value)
+            // Set file pointer to end of file
+            if (_filePosition > value)
             {
-                if (origPos < value)
-                {
-                    SeekCore(_fileHandle, origPos, SeekOrigin.Begin);
-                }
-                else
-                {
-                    SeekCore(_fileHandle, 0, SeekOrigin.End);
-                }
+                SeekCore(_fileHandle, 0, SeekOrigin.End);
             }
         }
 

@@ -70,6 +70,8 @@ namespace Internal.TypeSystem.Interop
 
                 TypeDesc parameterType = (i == 0) ? methodSig.ReturnType : methodSig[i - 1];  //first item is the return type
                 marshallers[i] = CreateMarshaller(parameterType,
+                                                    parameterIndex,
+                                                    methodSig.GetEmbeddedSignatureData(),
                                                     MarshallerType.Argument,
                                                     parameterMetadata.MarshalAsDescriptor,
                                                     direction,
@@ -121,6 +123,8 @@ namespace Internal.TypeSystem.Interop
 
                 MarshallerKind marshallerKind = MarshalHelpers.GetMarshallerKind(
                     parameterType,
+                    parameterIndex: i,
+                    customModifierData: methodSig.GetEmbeddedSignatureData(),
                     parameterMetadata.MarshalAsDescriptor,
                     parameterMetadata.Return,
                     isAnsi: true,

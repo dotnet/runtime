@@ -234,6 +234,48 @@ namespace System
 
                 internal MethodBase AddMethod(RuntimeType declaringType, RuntimeMethodHandleInternal method, CacheType cacheType)
                 {
+                    // First, see if we've already cached an RuntimeMethodInfo or
+                    // RuntimeConstructorInfo that corresponds to this member. Since another
+                    // thread could be updating the backing store at the same time it's
+                    // possible that the check below will result in a false negative. That's
+                    // ok; we'll handle any concurrency issues in the later call to Insert.
+
+                    T?[]? allMembersLocal = m_allMembers;
+                    if (allMembersLocal != null)
+                    {
+                        // if not a Method or a Constructor, fall through
+                        if (cacheType == CacheType.Method)
+                        {
+                            foreach (T? candidate in allMembersLocal)
+                            {
+                                if (candidate is null)
+                                {
+                                    break; // end of list; stop iteration and fall through to slower path
+                                }
+
+                                if (candidate is RuntimeMethodInfo candidateRMI && candidateRMI.MethodHandle.Value == method.Value)
+                                {
+                                    return candidateRMI; // match!
+                                }
+                            }
+                        }
+                        else if (cacheType == CacheType.Constructor)
+                        {
+                            foreach (T? candidate in allMembersLocal)
+                            {
+                                if (candidate is null)
+                                {
+                                    break; // end of list; stop iteration and fall through to slower path
+                                }
+
+                                if (candidate is RuntimeConstructorInfo candidateRCI && candidateRCI.MethodHandle.Value == method.Value)
+                                {
+                                    return candidateRCI; // match!
+                                }
+                            }
+                        }
+                    }
+
                     T[] list = null!;
                     MethodAttributes methodAttributes = RuntimeMethodHandle.GetAttributes(method);
                     bool isPublic = (methodAttributes & MethodAttributes.MemberAccessMask) == MethodAttributes.Public;
@@ -264,6 +306,29 @@ namespace System
 
                 internal FieldInfo AddField(RuntimeFieldHandleInternal field)
                 {
+                    // First, see if we've already cached an RtFieldInfo that corresponds
+                    // to this field. Since another thread could be updating the backing
+                    // store at the same time it's possible that the check below will
+                    // result in a false negative. That's ok; we'll handle any concurrency
+                    // issues in the later call to Insert.
+
+                    T?[]? allMembersLocal = m_allMembers;
+                    if (allMembersLocal != null)
+                    {
+                        foreach (T? candidate in allMembersLocal)
+                        {
+                            if (candidate is null)
+                            {
+                                break; // end of list; stop iteration and fall through to slower path
+                            }
+
+                            if (candidate is RtFieldInfo candidateRtFI && candidateRtFI.GetFieldHandle() == field.Value)
+                            {
+                                return candidateRtFI; // match!
+                            }
+                        }
+                    }
+
                     // create the runtime field info
                     FieldAttributes fieldAttributes = RuntimeFieldHandle.GetAttributes(field);
                     bool isPublic = (fieldAttributes & FieldAttributes.FieldAccessMask) == FieldAttributes.Public;
@@ -507,7 +572,7 @@ namespace System
                             }
 
                             Debug.Assert(cachedMembers![freeSlotIndex] == null);
-                            cachedMembers[freeSlotIndex] = newMemberInfo;
+                            Volatile.Write(ref cachedMembers[freeSlotIndex], newMemberInfo); // value may be read outside of lock
                             freeSlotIndex++;
                         }
                     }
@@ -1679,6 +1744,9 @@ namespace System
             return retval;
         }
 
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2070:UnrecognizedReflectionPattern",
+            Justification = "The code in this method looks up the method by name, but it always starts with a method handle." +
+                            "To get here something somwhere had to get the method handle and thus the method must exist.")]
         internal static MethodBase? GetMethodBase(RuntimeType? reflectedType, RuntimeMethodHandleInternal methodHandle)
         {
             Debug.Assert(!methodHandle.IsNullHandle());
@@ -2138,7 +2206,7 @@ namespace System
         private static bool FilterApplyType(
             Type type, BindingFlags bindingFlags, string name, bool prefixLookup, string? ns)
         {
-            Debug.Assert((object)type != null);
+            Debug.Assert(type is not null);
             Debug.Assert(type is RuntimeType);
 
             bool isPublic = type.IsNestedPublic || type.IsPublic;
@@ -2276,7 +2344,7 @@ namespace System
                             for (int i = 0; i < parameterInfos.Length; i++)
                             {
                                 // a null argument type implies a null arg which is always a perfect match
-                                if ((object)argumentTypes[i] != null && !argumentTypes[i].MatchesParameterTypeExactly(parameterInfos[i]))
+                                if (argumentTypes[i] is Type t && !t.MatchesParameterTypeExactly(parameterInfos[i]))
                                     return false;
                             }
                         }
@@ -2769,7 +2837,7 @@ namespace System
                 {
                     PropertyInfo firstCandidate = candidates[0];
 
-                    if ((object?)returnType != null && !returnType.IsEquivalentTo(firstCandidate.PropertyType))
+                    if (returnType is not null && !returnType.IsEquivalentTo(firstCandidate.PropertyType))
                         return null;
 
                     return firstCandidate;
@@ -3798,7 +3866,9 @@ namespace System
                 throw new NotSupportedException(SR.Acc_CreateVoid);
         }
 
-        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2006:UnrecognizedReflectionPattern",
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2082:UnrecognizedReflectionPattern",
+            Justification = "Implementation detail of Activator that linker intrinsically recognizes")]
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2085:UnrecognizedReflectionPattern",
             Justification = "Implementation detail of Activator that linker intrinsically recognizes")]
         internal object? CreateInstanceImpl(
             BindingFlags bindingAttr, Binder? binder, object?[]? args, CultureInfo? culture)
@@ -4018,24 +4088,6 @@ namespace System
             bool[]? byrefModifiers, int culture, string[]? namedParameters);
 #endif // FEATURE_COMINTEROP
 
-#if FEATURE_COMINTEROP_UNMANAGED_ACTIVATION
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        internal static extern Type? GetTypeFromProgIDImpl(string progID, string? server, bool throwOnError);
-
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        internal static extern Type? GetTypeFromCLSIDImpl(Guid clsid, string? server, bool throwOnError);
-#else // FEATURE_COMINTEROP_UNMANAGED_ACTIVATION
-        internal static Type GetTypeFromProgIDImpl(string progID, string? server, bool throwOnError)
-        {
-            throw new NotImplementedException("CoreCLR_REMOVED -- Unmanaged activation removed");
-        }
-
-        internal static Type GetTypeFromCLSIDImpl(Guid clsid, string? server, bool throwOnError)
-        {
-            throw new NotImplementedException("CoreCLR_REMOVED -- Unmanaged activation removed");
-        }
-#endif // FEATURE_COMINTEROP_UNMANAGED_ACTIVATION
-
         #endregion
 
 #if FEATURE_COMINTEROP
@@ -4185,6 +4237,7 @@ namespace System
                             aArgs[i] = new UnknownWrapper(aArgs[i]);
                             break;
                         case DispatchWrapperType.Dispatch:
+                            Debug.Assert(OperatingSystem.IsWindows());
                             aArgs[i] = new DispatchWrapper(aArgs[i]);
                             break;
                         case DispatchWrapperType.Error:

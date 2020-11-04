@@ -7,9 +7,6 @@ namespace System.Drawing
 {
     internal class UnsafeNativeMethods
     {
-        [DllImport(ExternDll.Kernel32, SetLastError = true, ExactSpelling = true, EntryPoint = "RtlMoveMemory")]
-        public static extern void CopyMemory(HandleRef destData, HandleRef srcData, int size);
-
         [DllImport(ExternDll.Kernel32, SetLastError = true)]
         public static extern int GetSystemDefaultLCID();
 

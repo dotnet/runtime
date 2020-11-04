@@ -6,6 +6,8 @@
     tell Microsoft.Common.targets not to import Directory.Build.targets again
     -->
     <ImportDirectoryBuildTargets>false</ImportDirectoryBuildTargets>
+
+    <EnableNETAnalyzers Condition="'$(EnableAnalyzers)' != 'true'">false</EnableNETAnalyzers>
   </PropertyGroup>
 
   <Import Project="$(RepositoryEngineeringDir)liveBuilds.targets" />
@@ -20,4 +22,27 @@
     <NETCoreAppMaximumVersion>$(MajorVersion).$(MinorVersion)</NETCoreAppMaximumVersion>
   </PropertyGroup>
 
+  <!--
+    SDK currently does not know about net6.0 TargetFramework.
+    We need to manually add these to correctly resolve the targeting packs.
+    https://github.com/dotnet/sdk/issues/13950  
+  -->
+  <ItemGroup>
+    <KnownFrameworkReference Include="Microsoft.NETCore.App"
+      DefaultRuntimeFrameworkVersion="5.0.0-rc.1.20451.14"
+      IsTrimmable="true"
+      LatestRuntimeFrameworkVersion="5.0.0-rc.1.20451.14"
+      RuntimeFrameworkName="Microsoft.NETCore.App"
+      RuntimePackNamePatterns="Microsoft.NETCore.App.Runtime.**RID**"
+      RuntimePackRuntimeIdentifiers="linux-arm;linux-arm64;linux-musl-arm64;linux-musl-x64;linux-x64;osx-x64;rhel.6-x64;tizen.4.0.0-armel;tizen.5.0.0-armel;win-arm;win-arm64;win-x64;win-x86;ios-arm64;ios-arm;ios-x64;ios-x86;tvos-arm64;tvos-x64;android-arm64;android-arm;android-x64;android-x86;browser-wasm"
+      TargetFramework="$(NetCoreAppCurrent)"
+      TargetingPackName="Microsoft.NETCore.App.Ref"
+      TargetingPackVersion="5.0.0-rc.1.20451.14" />
+
+    <KnownAppHostPack Include="Microsoft.NETCore.App" 
+      AppHostPackNamePattern="Microsoft.NETCore.App.Host.**RID**"
+      AppHostPackVersion="5.0.0-rc.1.20451.14"
+      AppHostRuntimeIdentifiers="linux-arm;linux-arm64;linux-musl-arm64;linux-musl-x64;linux-x64;osx-x64;rhel.6-x64;tizen.4.0.0-armel;tizen.5.0.0-armel;win-arm;win-arm64;win-x64;win-x86"
+      TargetFramework="$(NetCoreAppCurrent)" />
+  </ItemGroup>
 </Project>

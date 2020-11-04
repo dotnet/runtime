@@ -107,6 +107,7 @@ namespace System.Text.Json
             {
                 _propertyNameCaseInsensitive = true;
                 _jsonPropertyNamingPolicy = JsonNamingPolicy.CamelCase;
+                _numberHandling = JsonNumberHandling.AllowReadingFromString;
             }
             else if (defaults != JsonSerializerDefaults.General)
             {
@@ -209,7 +210,7 @@ namespace System.Text.Json
         /// Thrown if this property is set after serialization or deserialization has occurred.
         /// or <see cref="DefaultIgnoreCondition"/> has been set to a non-default value. These properties cannot be used together.
         /// </exception>
-        [Obsolete("To ignore null values when serializing, set DefaultIgnoreCondition to JsonIgnoreCondition.WhenWritingDefault.", error: false)]
+        [Obsolete("To ignore null values when serializing, set DefaultIgnoreCondition to JsonIgnoreCondition.WhenWritingNull.", error: false)]
         [EditorBrowsable(EditorBrowsableState.Never)]
         public bool IgnoreNullValues
         {
@@ -278,7 +279,7 @@ namespace System.Text.Json
             {
                 VerifyMutable();
 
-                if (!JsonSerializer.IsValidNumberHandlingValue(value))
+                if (!JsonHelpers.IsValidNumberHandlingValue(value))
                 {
                     throw new ArgumentOutOfRangeException(nameof(value));
                 }

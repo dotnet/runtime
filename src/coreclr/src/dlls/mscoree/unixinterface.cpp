@@ -27,6 +27,9 @@ typedef NewArrayHolder<const WCHAR> ConstWStringHolder;
 // Specifies whether coreclr is embedded or standalone
 extern bool g_coreclr_embedded;
 
+// Specifies whether hostpolicy is embedded in executable or standalone
+extern bool g_hostpolicy_embedded;
+
 // Holder for array of wide strings
 class ConstWStringArrayHolder : public NewArrayHolder<LPCWSTR>
 {
@@ -116,7 +119,8 @@ static void ConvertConfigPropertiesToUnicode(
     int propertyCount,
     LPCWSTR** propertyKeysWRef,
     LPCWSTR** propertyValuesWRef,
-    BundleProbe** bundleProbe)
+    BundleProbe** bundleProbe,
+    bool* hostPolicyEmbedded)
 {
     LPCWSTR* propertyKeysW = new (nothrow) LPCWSTR[propertyCount];
     ASSERTE_ALL_BUILDS(propertyKeysW != nullptr);
@@ -134,6 +138,11 @@ static void ConvertConfigPropertiesToUnicode(
             // If this application is a single-file bundle, the bundle-probe callback 
             // is passed in as the value of "BUNDLE_PROBE" property (encoded as a string).
             *bundleProbe = (BundleProbe*)_wcstoui64(propertyValuesW[propertyIndex], nullptr, 0);
+        }
+        else if (strcmp(propertyKeys[propertyIndex], "HOSTPOLICY_EMBEDDED") == 0)
+        {
+            // The HOSTPOLICY_EMBEDDED property indicates if the executable has hostpolicy statically linked in
+            *hostPolicyEmbedded = (wcscmp(propertyValuesW[propertyIndex], W("true")) == 0);
         }
     }
 
@@ -177,6 +186,7 @@ int coreclr_initialize(
     LPCWSTR* propertyKeysW;
     LPCWSTR* propertyValuesW;
     BundleProbe* bundleProbe = nullptr;
+    bool hostPolicyEmbedded = false;
 
     ConvertConfigPropertiesToUnicode(
         propertyKeys,
@@ -184,7 +194,8 @@ int coreclr_initialize(
         propertyCount,
         &propertyKeysW,
         &propertyValuesW,
-        &bundleProbe);
+        &bundleProbe,
+        &hostPolicyEmbedded);
 
 #ifdef TARGET_UNIX
     DWORD error = PAL_InitializeCoreCLR(exePath, g_coreclr_embedded);
@@ -197,6 +208,8 @@ int coreclr_initialize(
         return hr;
     }
 #endif
+
+    g_hostpolicy_embedded = hostPolicyEmbedded;
 
     ReleaseHolder<ICLRRuntimeHost4> host;
 

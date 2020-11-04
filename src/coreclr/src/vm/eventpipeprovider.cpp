@@ -194,7 +194,7 @@ void EventPipeProvider::AddEvent(EventPipeEvent &event)
     event.RefreshState();
 }
 
-/* static */ void EventPipeProvider::InvokeCallback(EventPipeProviderCallbackData eventPipeProviderCallbackData)
+/* static */ void EventPipeProvider::InvokeCallback(EventPipeProviderCallbackData *pEventPipeProviderCallbackData)
 {
     CONTRACTL
     {
@@ -205,12 +205,12 @@ void EventPipeProvider::AddEvent(EventPipeEvent &event)
     }
     CONTRACTL_END;
 
-    LPCWSTR pFilterData = eventPipeProviderCallbackData.pFilterData;
-    EventPipeCallback pCallbackFunction = eventPipeProviderCallbackData.pCallbackFunction;
-    bool enabled = eventPipeProviderCallbackData.enabled;
-    INT64 keywords = eventPipeProviderCallbackData.keywords;
-    EventPipeEventLevel providerLevel = eventPipeProviderCallbackData.providerLevel;
-    void *pCallbackData = eventPipeProviderCallbackData.pCallbackData;
+    LPCWSTR pFilterData = pEventPipeProviderCallbackData->GetFilterData();
+    EventPipeCallback pCallbackFunction = pEventPipeProviderCallbackData->GetCallbackFunction();
+    bool enabled = pEventPipeProviderCallbackData->GetEnabled();
+    INT64 keywords = pEventPipeProviderCallbackData->GetKeywords();
+    EventPipeEventLevel providerLevel = pEventPipeProviderCallbackData->GetProviderLevel();
+    void *pCallbackData = pEventPipeProviderCallbackData->GetCallbackData();
 
     bool isEventFilterDescriptorInitialized = false;
     EventFilterDescriptor eventFilterDescriptor{};
@@ -286,13 +286,13 @@ EventPipeProviderCallbackData EventPipeProvider::PrepareCallbackData(
     }
     CONTRACTL_END;
 
-    EventPipeProviderCallbackData result;
-    result.pFilterData = pFilterData;
-    result.pCallbackFunction = m_pCallbackFunction;
-    result.enabled = (m_sessions != 0);
-    result.providerLevel = providerLevel;
-    result.keywords = keywords;
-    result.pCallbackData = m_pCallbackData;
+    EventPipeProviderCallbackData result(pFilterData,
+                                         m_pCallbackFunction,
+                                         (m_sessions != 0),
+                                         keywords,
+                                         providerLevel,
+                                         m_pCallbackData,
+                                         this);
     return result;
 }
 
@@ -306,6 +306,9 @@ void EventPipeProvider::SetDeleteDeferred()
 {
     LIMITED_METHOD_CONTRACT;
     m_deleteDeferred = true;
+    // EventSources will be collected once they ungregister themselves,
+    // so we can't call back in to them.
+    m_pCallbackFunction = NULL;
 }
 
 void EventPipeProvider::RefreshAllEvents()

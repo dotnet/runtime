@@ -12,7 +12,7 @@
   </PropertyGroup>
   <!-- Do not reference these assemblies from the TargetingPack since we are building part of the source code for tests. -->
   <ItemGroup>
-    <DefaultReferenceExclusions Include="System.Net.Primitives" />
+    <DefaultReferenceExclusion Include="System.Net.Primitives" />
   </ItemGroup>
   <ItemGroup>
     <Compile Include="CookieInternalTest.cs" />
@@ -56,8 +56,6 @@
     <Compile Include="Fakes\IPv6AddressHelper.cs" />
     <Compile Include="$(CommonPath)System\StringExtensions.cs"
              Link="Common\System\StringExtensions.cs" />
-    <Compile Include="$(CommonPath)System\Net\ByteOrder.cs"
-             Link="ProductionCode\Common\System\Net\ByteOrder.cs" />
     <Compile Include="$(CommonPath)System\Net\HttpKnownHeaderNames.cs"
              Link="ProductionCode\Common\System\Net\HttpKnownHeaderNames.cs" />
     <Compile Include="$(CommonPath)System\Net\IPAddressParserStatics.cs"

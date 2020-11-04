@@ -1211,6 +1211,14 @@ void emitter::appendToCurIG(instrDesc* id)
 
 #ifdef DEBUG
 
+void emitter::emitDispInsAddr(BYTE* code)
+{
+    if (emitComp->opts.disAddr)
+    {
+        printf(FMT_ADDR, DBG_ADDR(code));
+    }
+}
+
 void emitter::emitDispInsOffs(unsigned offs, bool doffs)
 {
     if (doffs)
@@ -3172,12 +3180,157 @@ const BYTE emitter::emitFmtToOps[] = {
 const unsigned emitter::emitFmtCount = _countof(emitFmtToOps);
 #endif
 
+//------------------------------------------------------------------------
+// Interleaved GC info dumping.
+// We'll attempt to line this up with the opcode, which indented differently for
+// diffable and non-diffable dumps.
+// This is approximate, and is better tuned for disassembly than for jitdumps.
+// See emitDispInsHex().
+#ifdef TARGET_AMD64
+const size_t basicIndent     = 7;
+const size_t hexEncodingSize = 21;
+#elif defined(TARGET_X86)
+const size_t basicIndent     = 7;
+const size_t hexEncodingSize = 13;
+#elif defined(TARGET_ARM64)
+const size_t basicIndent     = 12;
+const size_t hexEncodingSize = 19;
+#elif defined(TARGET_ARM)
+const size_t basicIndent     = 12;
+const size_t hexEncodingSize = 11;
+#endif
+
+#ifdef DEBUG
+//------------------------------------------------------------------------
+// emitDispGCDeltaTitle: Print an appropriately indented title for a GC info delta
+//
+// Arguments:
+//    title - The type of GC info delta we're printing
+//
+void emitter::emitDispGCDeltaTitle(const char* title)
+{
+    size_t indent = emitComp->opts.disDiffable ? basicIndent : basicIndent + hexEncodingSize;
+    printf("%.*s; %s", indent, "                             ", title);
+}
+
+//------------------------------------------------------------------------
+// emitDispGCRegDelta: Print a delta for GC registers
+//
+// Arguments:
+//    title    - The type of GC info delta we're printing
+//    prevRegs - The live GC registers before the recent instruction.
+//    curRegs  - The live GC registers after the recent instruction.
+//
+void emitter::emitDispGCRegDelta(const char* title, regMaskTP prevRegs, regMaskTP curRegs)
+{
+    if (prevRegs != curRegs)
+    {
+        emitDispGCDeltaTitle(title);
+        regMaskTP sameRegs    = prevRegs & curRegs;
+        regMaskTP removedRegs = prevRegs - sameRegs;
+        regMaskTP addedRegs   = curRegs - sameRegs;
+        if (removedRegs != RBM_NONE)
+        {
+            printf(" -");
+            dspRegMask(removedRegs);
+        }
+        if (addedRegs != RBM_NONE)
+        {
+            printf(" +");
+            dspRegMask(addedRegs);
+        }
+        printf("\n");
+    }
+}
+
+//------------------------------------------------------------------------
+// emitDispGCVarDelta: Print a delta for GC variables
+//
+// Notes:
+//    Uses the debug-only variables 'debugThisGCrefVars', 'debugPrevGCrefVars'
+//    and 'debugPrevRegPtrDsc' to print deltas from the last time this was
+//    called.
+//
+void emitter::emitDispGCVarDelta()
+{
+    if (!VarSetOps::Equal(emitComp, debugPrevGCrefVars, debugThisGCrefVars))
+    {
+        emitDispGCDeltaTitle("GC ptr vars");
+        VARSET_TP sameGCrefVars(VarSetOps::Intersection(emitComp, debugPrevGCrefVars, debugThisGCrefVars));
+        VARSET_TP GCrefVarsRemoved(VarSetOps::Diff(emitComp, debugPrevGCrefVars, debugThisGCrefVars));
+        VARSET_TP GCrefVarsAdded(VarSetOps::Diff(emitComp, debugThisGCrefVars, debugPrevGCrefVars));
+        if (!VarSetOps::IsEmpty(emitComp, GCrefVarsRemoved))
+        {
+            printf(" -");
+            dumpConvertedVarSet(emitComp, GCrefVarsRemoved);
+        }
+        if (!VarSetOps::IsEmpty(emitComp, GCrefVarsAdded))
+        {
+            printf(" +");
+            dumpConvertedVarSet(emitComp, GCrefVarsAdded);
+        }
+        VarSetOps::Assign(emitComp, debugPrevGCrefVars, debugThisGCrefVars);
+        printf("\n");
+    }
+    // Dump any deltas in regPtrDsc's for outgoing args; these aren't captured in the other sets.
+    if (debugPrevRegPtrDsc != codeGen->gcInfo.gcRegPtrLast)
+    {
+        for (regPtrDsc* dsc = (debugPrevRegPtrDsc == nullptr) ? codeGen->gcInfo.gcRegPtrList
+                                                              : debugPrevRegPtrDsc->rpdNext;
+             dsc != nullptr; dsc = dsc->rpdNext)
+        {
+            // The non-arg regPtrDscs are reflected in the register sets debugPrevGCrefRegs/emitThisGCrefRegs
+            // and debugPrevByrefRegs/emitThisByrefRegs, and dumped using those sets.
+            if (!dsc->rpdArg)
+            {
+                continue;
+            }
+            emitDispGCDeltaTitle(GCtypeStr((GCtype)dsc->rpdGCtype));
+            switch (dsc->rpdArgType)
+            {
+                case GCInfo::rpdARG_PUSH:
+#if FEATURE_FIXED_OUT_ARGS
+                    // For FEATURE_FIXED_OUT_ARGS, we report a write to the outgoing arg area
+                    // as a 'rpdARG_PUSH' even though it doesn't actually push. Note that
+                    // we also have 'rpdARG_POP's even though we don't actually pop, and
+                    // we can have those even if there's no stack arg.
+                    printf(" arg write");
+                    break;
+#else
+                    printf(" arg push %u", dsc->rpdPtrArg);
+                    break;
+#endif
+                case GCInfo::rpdARG_POP:
+                    printf(" arg pop %u", dsc->rpdPtrArg);
+                    break;
+                case GCInfo::rpdARG_KILL:
+                    printf(" arg kill %u", dsc->rpdPtrArg);
+                    break;
+                default:
+                    printf(" arg ??? %u", dsc->rpdPtrArg);
+            }
+            printf("\n");
+        }
+        debugPrevRegPtrDsc = codeGen->gcInfo.gcRegPtrLast;
+    }
+}
+
+//------------------------------------------------------------------------
+// emitDispGCInfoDelta: Print a delta for GC info
+//
+void emitter::emitDispGCInfoDelta()
+{
+    emitDispGCRegDelta("gcrRegs", debugPrevGCrefRegs, emitThisGCrefRegs);
+    emitDispGCRegDelta("byrRegs", debugPrevByrefRegs, emitThisByrefRegs);
+    debugPrevGCrefRegs = emitThisGCrefRegs;
+    debugPrevByrefRegs = emitThisByrefRegs;
+    emitDispGCVarDelta();
+}
+
 /*****************************************************************************
  *
  *  Display the current instruction group list.
  */
-
-#ifdef DEBUG
 
 void emitter::emitDispIGflags(unsigned flags)
 {
@@ -3228,7 +3381,13 @@ void emitter::emitDispIG(insGroup* ig, insGroup* igPrev, bool verbose)
 
     sprintf_s(buff, TEMP_BUFFER_LEN, "G_M%03u_IG%02u:        ", emitComp->compMethodID, ig->igNum);
     printf("%s; ", buff);
-    if ((igPrev == nullptr) || (igPrev->igFuncIdx != ig->igFuncIdx))
+
+    // We dump less information when we're only interleaving GC info with a disassembly listing,
+    // than we do in the jitdump case. (Note that the verbose argument to this method is
+    // distinct from the verbose on Compiler.)
+    bool jitdump = emitComp->verbose;
+
+    if (jitdump && ((igPrev == nullptr) || (igPrev->igFuncIdx != ig->igFuncIdx)))
     {
         printf("func=%02u, ", ig->igFuncIdx);
     }
@@ -3316,29 +3475,37 @@ void emitter::emitDispIG(insGroup* ig, insGroup* igPrev, bool verbose)
     }
     else
     {
-        printf("offs=%06XH, size=%04XH", ig->igOffs, ig->igSize);
+        const char* separator = "";
+        if (jitdump)
+        {
+            printf("offs=%06XH, size=%04XH", ig->igOffs, ig->igSize);
+            separator = ", ";
+        }
 
         if (emitComp->compCodeGenDone)
         {
-            printf(", bbWeight=%s PerfScore %.2f", refCntWtd2str(ig->igWeight), ig->igPerfScore);
+            printf("%sbbWeight=%s PerfScore %.2f", separator, refCntWtd2str(ig->igWeight), ig->igPerfScore);
+            separator = ", ";
         }
 
         if (ig->igFlags & IGF_GC_VARS)
         {
-            printf(", gcVars=%s ", VarSetOps::ToString(emitComp, ig->igGCvars()));
+            printf("%sgcVars=%s ", separator, VarSetOps::ToString(emitComp, ig->igGCvars()));
             dumpConvertedVarSet(emitComp, ig->igGCvars());
+            separator = ", ";
         }
 
         if (!(ig->igFlags & IGF_EXTEND))
         {
-            printf(", gcrefRegs=");
+            printf("%sgcrefRegs=", separator);
             printRegMaskInt(ig->igGCregs);
             emitDispRegSet(ig->igGCregs);
+            separator = ", ";
         }
 
         if (ig->igFlags & IGF_BYREF_REGS)
         {
-            printf(", byrefRegs=");
+            printf("%sbyrefRegs=", separator);
             printRegMaskInt(ig->igByrefRegs());
             emitDispRegSet(ig->igByrefRegs());
         }
@@ -3867,7 +4034,7 @@ AGAIN:
             {
                 if (tgtIG)
                 {
-                    printf("to G_M%03u_IG%02u\n", emitComp->compMethodID, tgtIG->igNum);
+                    printf(" to G_M%03u_IG%02u\n", emitComp->compMethodID, tgtIG->igNum);
                 }
                 else
                 {
@@ -4470,7 +4637,7 @@ unsigned emitter::emitEndCodeGen(Compiler* comp,
                                  unsigned* epilogSize,
                                  void**    codeAddr,
                                  void**    coldCodeAddr,
-                                 void**    consAddr)
+                                 void** consAddr DEBUGARG(unsigned* instrCount))
 {
 #ifdef DEBUG
     if (emitComp->verbose)
@@ -4612,10 +4779,11 @@ unsigned emitter::emitEndCodeGen(Compiler* comp,
 #endif
 
 #ifdef TARGET_XARCH
-    // For x64/x86, align Tier1 methods to 32 byte boundaries if
+    // For x64/x86, align methods that are "optimizations enabled" to 32 byte boundaries if
     // they are larger than 16 bytes and contain a loop.
     //
-    if (emitComp->opts.jitFlags->IsSet(JitFlags::JIT_FLAG_TIER1) && (emitTotalHotCodeSize > 16) && emitComp->fgHasLoops)
+    if (emitComp->opts.OptimizationEnabled() && !emitComp->opts.jitFlags->IsSet(JitFlags::JIT_FLAG_PREJIT) &&
+        (emitTotalHotCodeSize > 16) && emitComp->fgHasLoops)
     {
         allocMemFlag = CORJIT_ALLOCMEM_FLG_32BYTE_ALIGN;
     }
@@ -4679,6 +4847,11 @@ unsigned emitter::emitEndCodeGen(Compiler* comp,
     /* Assume no live GC ref variables on entry */
 
     VarSetOps::ClearD(emitComp, emitThisGCrefVars); // This is initialized to Empty at the start of codegen.
+#if defined(DEBUG) && defined(JIT32_ENCODER)
+    VarSetOps::ClearD(emitComp, debugThisGCRefVars);
+    VarSetOps::ClearD(emitComp, debugPrevGCRefVars);
+    debugPrevRegPtrDsc = nullptr;
+#endif
     emitThisGCrefRegs = emitThisByrefRegs = RBM_NONE;
     emitThisGCrefVset                     = true;
 
@@ -4802,7 +4975,7 @@ unsigned emitter::emitEndCodeGen(Compiler* comp,
             }
 #endif // FEATURE_FIXED_OUT_ARGS
 
-            int offs = dsc->lvStkOffs;
+            int offs = dsc->GetStackOffset();
 
             /* Is it within the interesting range of offsets */
 
@@ -4874,6 +5047,9 @@ unsigned emitter::emitEndCodeGen(Compiler* comp,
 
 #define DEFAULT_CODE_BUFFER_INIT 0xcc
 
+#ifdef DEBUG
+    *instrCount = 0;
+#endif
     for (insGroup* ig = emitIGlist; ig != nullptr; ig = ig->igNext)
     {
         assert(!(ig->igFlags & IGF_PLACEHOLDER)); // There better not be any placeholder groups left
@@ -4886,7 +5062,7 @@ unsigned emitter::emitEndCodeGen(Compiler* comp,
             assert(coldCodeBlock);
             cp = coldCodeBlock;
 #ifdef DEBUG
-            if (emitComp->opts.disAsm || emitComp->opts.dspEmit || emitComp->verbose)
+            if (emitComp->opts.disAsm || emitComp->verbose)
             {
                 printf("\n************** Beginning of cold code **************\n");
             }
@@ -4909,16 +5085,21 @@ unsigned emitter::emitEndCodeGen(Compiler* comp,
 #ifdef DEBUG
         /* Print the IG label, but only if it is a branch label */
 
-        if (emitComp->opts.disAsm || emitComp->opts.dspEmit || emitComp->verbose)
+        if (emitComp->opts.disAsm || emitComp->verbose)
         {
-            if (emitComp->verbose)
+            if (emitComp->verbose || emitComp->opts.disasmWithGC)
             {
                 printf("\n");
                 emitDispIG(ig); // Display the flags, IG data, etc.
             }
             else
             {
-                printf("\nG_M%03u_IG%02u:\n", emitComp->compMethodID, ig->igNum);
+                printf("\nG_M%03u_IG%02u:", emitComp->compMethodID, ig->igNum);
+                if (!emitComp->opts.disDiffable)
+                {
+                    printf("              ;; offset=%04XH", emitCurCodeOffs(cp));
+                }
+                printf("\n");
             }
         }
 #endif // DEBUG
@@ -4992,6 +5173,12 @@ unsigned emitter::emitEndCodeGen(Compiler* comp,
                     emitUpdateLiveGCregs(GCT_BYREF, byrefRegs, cp);
                 }
             }
+#ifdef DEBUG
+            if (EMIT_GC_VERBOSE || emitComp->opts.disasmWithGC)
+            {
+                emitDispGCInfoDelta();
+            }
+#endif // DEBUG
         }
         else
         {
@@ -5010,10 +5197,11 @@ unsigned emitter::emitEndCodeGen(Compiler* comp,
         }
 
 #ifdef DEBUG
-        if (emitComp->opts.disAsm || emitComp->opts.dspEmit || emitComp->verbose)
+        if (emitComp->opts.disAsm || emitComp->verbose)
         {
             printf("\t\t\t\t\t\t;; bbWeight=%s PerfScore %.2f", refCntWtd2str(ig->igWeight), ig->igPerfScore);
         }
+        *instrCount += ig->igInsCnt;
 #endif // DEBUG
 
         emitCurIG = nullptr;
@@ -5320,54 +5508,57 @@ UNATIVE_OFFSET emitter::emitFindOffset(insGroup* ig, unsigned insNum)
     return of;
 }
 
-/*****************************************************************************
- *
- *  Start generating a constant data section for the current
- *  function. Returns the offset of the section in the appropriate data
- *  block.
- */
-
-UNATIVE_OFFSET emitter::emitDataGenBeg(UNATIVE_OFFSET size, UNATIVE_OFFSET alignment)
+//---------------------------------------------------------------------------
+// emitDataGenBeg:
+//   - Allocate space for a constant or block of the size and alignment requested
+//     Returns the offset in the data section to use
+//
+// Arguments:
+//    size       - The size in bytes of the constant or block
+//    alignment  - The requested alignment for the data
+//    dataType   - The type of the constant int/float/etc
+//
+// Note: This method only allocate the space for the constant or block.  It doesn't
+//       initialize the value. You call emitDataGenData to initialize the value.
+//
+UNATIVE_OFFSET emitter::emitDataGenBeg(unsigned size, unsigned alignment, var_types dataType)
 {
     unsigned     secOffs;
     dataSection* secDesc;
 
     assert(emitDataSecCur == nullptr);
 
-    // The size must not be zero and must be a multiple of 4 bytes
-    // Additionally, 4 bytes is the minimum alignment that will
+    // The size must not be zero and must be a multiple of MIN_DATA_ALIGN
+    // Additionally, MIN_DATA_ALIGN is the minimum alignment that will
     // actually be used. That is, if the user requests an alignment
-    // of 1 or 2, they will get  something that is at least 4-byte
-    // aligned. We allow the others since 4 is at least 1/2 and its
-    // simpler to allow it than to check and block.
-    assert((size != 0) && ((size % 4) == 0));
-
-    // This restricts the alignment to: 1, 2, 4, 8, 16, or 32 bytes
-    // Alignments greater than 32 would require VM support in ICorJitInfo::allocMem
-
-    const size_t MaxAlignment = 32;
-    assert(isPow2(alignment) && (alignment <= MaxAlignment));
+    // less than MIN_DATA_ALIGN, they will get  something that is at least
+    // MIN_DATA_ALIGN. We allow smaller alignment to be specified since it is
+    // simpler to allow it than to check and block it.
+    //
+    assert((size != 0) && ((size % dataSection::MIN_DATA_ALIGN) == 0));
+    assert(isPow2(alignment) && (alignment <= dataSection::MAX_DATA_ALIGN));
 
     /* Get hold of the current offset */
     secOffs = emitConsDsc.dsdOffs;
 
-    if (alignment > 4)
+    if (((secOffs % alignment) != 0) && (alignment > dataSection::MIN_DATA_ALIGN))
     {
-        // As per the above comment, the minimum alignment is actually 4
+        // As per the above comment, the minimum alignment is actually (MIN_DATA_ALIGN)
         // bytes so we don't need to make any adjustments if the requested
-        // alignment is 1, 2, or 4.
+        // alignment is less than MIN_DATA_ALIGN.
         //
         // The maximum requested alignment is tracked and the memory allocator
         // will end up ensuring offset 0 is at an address matching that
-        // alignment. So if the requested alignment is greater than 4, we need
-        // to pad the space out so the offset is a multiple of the requested.
+        // alignment.  So if the requested alignment is greater than MIN_DATA_ALIGN,
+        // we need to pad the space out so the offset is a multiple of the requested.
+        //
+        uint8_t zeros[dataSection::MAX_DATA_ALIGN] = {}; // auto initialize to all zeros
 
-        uint8_t zero[MaxAlignment] = {};
+        unsigned  zeroSize  = alignment - (secOffs % alignment);
+        unsigned  zeroAlign = dataSection::MIN_DATA_ALIGN;
+        var_types zeroType  = TYP_INT;
 
-        UNATIVE_OFFSET zeroSize  = alignment - (secOffs % alignment);
-        UNATIVE_OFFSET zeroAlign = 4;
-
-        emitAnyConst(&zero, zeroSize, zeroAlign);
+        emitBlkConst(&zeros, zeroSize, zeroAlign, zeroType);
         secOffs = emitConsDsc.dsdOffs;
     }
 
@@ -5384,6 +5575,8 @@ UNATIVE_OFFSET emitter::emitDataGenBeg(UNATIVE_OFFSET size, UNATIVE_OFFSET align
     secDesc->dsSize = size;
 
     secDesc->dsType = dataSection::data;
+
+    secDesc->dsDataType = dataType;
 
     secDesc->dsNext = nullptr;
 
@@ -5440,6 +5633,8 @@ UNATIVE_OFFSET emitter::emitBBTableDataGenBeg(unsigned numEntries, bool relative
     secDesc->dsSize = emittedSize;
 
     secDesc->dsType = relativeAddr ? dataSection::blockRelative32 : dataSection::blockAbsoluteAddr;
+
+    secDesc->dsDataType = TYP_UNKNOWN;
 
     secDesc->dsNext = nullptr;
 
@@ -5503,39 +5698,109 @@ void emitter::emitDataGenEnd()
 #endif
 }
 
-/********************************************************************************
- * Generates a data section constant
- *
- * Parameters:
- *     cnsAddr  - memory location containing constant value
- *     cnsSize  - size of constant in bytes
- *     cnsAlign - alignment of constant in bytes
- *
- * Returns constant number as offset into data section.
- */
-UNATIVE_OFFSET emitter::emitDataConst(const void* cnsAddr, UNATIVE_OFFSET cnsSize, UNATIVE_OFFSET cnsAlign)
+//---------------------------------------------------------------------------
+// emitDataGenFind:
+//   - Returns the offset of an existing constant in the data section
+//     or INVALID_UNATIVE_OFFSET if there was no matching constant
+//
+// Arguments:
+//    cnsAddr    - A pointer to the value of the constant that we need
+//    cnsSize    - The size in bytes of the constant
+//    alignment  - The requested alignment for the data
+//    dataType   - The type of the constant int/float/etc
+//
+UNATIVE_OFFSET emitter::emitDataGenFind(const void* cnsAddr, unsigned cnsSize, unsigned alignment, var_types dataType)
 {
-    UNATIVE_OFFSET cnum = emitDataGenBeg(cnsSize, cnsAlign);
-    emitDataGenData(0, cnsAddr, cnsSize);
-    emitDataGenEnd();
+    UNATIVE_OFFSET cnum     = INVALID_UNATIVE_OFFSET;
+    unsigned       cmpCount = 0;
+    unsigned       curOffs  = 0;
+    dataSection*   secDesc  = emitConsDsc.dsdList;
+    while (secDesc != nullptr)
+    {
+        // Search the existing secDesc entries
+
+        // We can match as smaller 'cnsSize' value at the start of a larger 'secDesc->dsSize' block
+        // We match the bit pattern, so the dataType can be different
+        // Only match constants when the dsType is 'data'
+        //
+        if ((secDesc->dsType == dataSection::data) && (secDesc->dsSize >= cnsSize) && ((curOffs % alignment) == 0))
+        {
+            if (memcmp(cnsAddr, secDesc->dsCont, cnsSize) == 0)
+            {
+                cnum = curOffs;
+
+                // We also might want to update the dsDataType
+                //
+                if ((secDesc->dsDataType != dataType) && (secDesc->dsSize == cnsSize))
+                {
+                    // If the subsequent dataType is floating point then change the original dsDataType
+                    //
+                    if (varTypeIsFloating(dataType))
+                    {
+                        secDesc->dsDataType = dataType;
+                    }
+                }
+                break;
+            }
+        }
+
+        curOffs += secDesc->dsSize;
+        secDesc = secDesc->dsNext;
+
+        if (++cmpCount > 64)
+        {
+            // If we don't find a match in the first 64, then we just add the new constant
+            // This prevents an O(n^2) search cost
+            break;
+        }
+    }
 
     return cnum;
 }
 
-//------------------------------------------------------------------------
-// emitAnyConst: Create a data section constant of arbitrary size.
+//---------------------------------------------------------------------------
+// emitDataConst:
+//   - Returns the valid offset in the data section to use for the constant
+//     described by the arguments to this method
 //
 // Arguments:
-//    cnsAddr   - pointer to the data to be placed in the data section
-//    cnsSize   - size of the data in bytes
+//    cnsAddr    - A pointer to the value of the constant that we need
+//    cnsSize    - The size in bytes of the constant
+//    alignment  - The requested alignment for the data
+//    dataType   - The type of the constant int/float/etc
+//
+//
+// Notes:  we call the method emitDataGenFind() to see if we already have
+//   a matching constant that can be reused.
+//
+UNATIVE_OFFSET emitter::emitDataConst(const void* cnsAddr, unsigned cnsSize, unsigned cnsAlign, var_types dataType)
+{
+    UNATIVE_OFFSET cnum = emitDataGenFind(cnsAddr, cnsSize, cnsAlign, dataType);
+
+    if (cnum == INVALID_UNATIVE_OFFSET)
+    {
+        cnum = emitDataGenBeg(cnsSize, cnsAlign, dataType);
+        emitDataGenData(0, cnsAddr, cnsSize);
+        emitDataGenEnd();
+    }
+    return cnum;
+}
+
+//------------------------------------------------------------------------
+// emitBlkConst: Create a data section constant of arbitrary size.
+//
+// Arguments:
+//    cnsAddr   - pointer to the block of data to be placed in the data section
+//    cnsSize   - total size of the block of data in bytes
 //    cnsAlign  - alignment of the data in bytes
+//    elemType  - The type of the elements in the constant
 //
 // Return Value:
 //    A field handle representing the data offset to access the constant.
 //
-CORINFO_FIELD_HANDLE emitter::emitAnyConst(const void* cnsAddr, UNATIVE_OFFSET cnsSize, UNATIVE_OFFSET cnsAlign)
+CORINFO_FIELD_HANDLE emitter::emitBlkConst(const void* cnsAddr, unsigned cnsSize, unsigned cnsAlign, var_types elemType)
 {
-    UNATIVE_OFFSET cnum = emitDataGenBeg(cnsSize, cnsAlign);
+    UNATIVE_OFFSET cnum = emitDataGenBeg(cnsSize, cnsAlign, elemType);
     emitDataGenData(0, cnsAddr, cnsSize);
     emitDataGenEnd();
 
@@ -5560,25 +5825,28 @@ CORINFO_FIELD_HANDLE emitter::emitFltOrDblConst(double constValue, emitAttr attr
 {
     assert((attr == EA_4BYTE) || (attr == EA_8BYTE));
 
-    void* cnsAddr;
-    float f;
+    void*     cnsAddr;
+    float     f;
+    var_types dataType;
 
     if (attr == EA_4BYTE)
     {
-        f       = forceCastToFloat(constValue);
-        cnsAddr = &f;
+        f        = forceCastToFloat(constValue);
+        cnsAddr  = &f;
+        dataType = TYP_FLOAT;
     }
     else
     {
-        cnsAddr = &constValue;
+        cnsAddr  = &constValue;
+        dataType = TYP_DOUBLE;
     }
 
     // Access to inline data is 'abstracted' by a special type of static member
     // (produced by eeFindJitDataOffs) which the emitter recognizes as being a reference
     // to constant data, not a real static field.
 
-    UNATIVE_OFFSET cnsSize  = (attr == EA_4BYTE) ? 4 : 8;
-    UNATIVE_OFFSET cnsAlign = cnsSize;
+    unsigned cnsSize  = (attr == EA_4BYTE) ? sizeof(float) : sizeof(double);
+    unsigned cnsAlign = cnsSize;
 
 #ifdef TARGET_XARCH
     if (emitComp->compCodeOpt() == Compiler::SMALL_CODE)
@@ -5586,11 +5854,11 @@ CORINFO_FIELD_HANDLE emitter::emitFltOrDblConst(double constValue, emitAttr attr
         // Some platforms don't require doubles to be aligned and so
         // we can use a smaller alignment to help with smaller code
 
-        cnsAlign = 1;
+        cnsAlign = dataSection::MIN_DATA_ALIGN;
     }
 #endif // TARGET_XARCH
 
-    UNATIVE_OFFSET cnum = emitDataConst(cnsAddr, cnsSize, cnsAlign);
+    UNATIVE_OFFSET cnum = emitDataConst(cnsAddr, cnsSize, cnsAlign, dataType);
     return emitComp->eeFindJitDataOffs(cnum);
 }
 
@@ -5622,6 +5890,7 @@ void emitter::emitOutputDataSec(dataSecDsc* sec, BYTE* dst)
     /* Walk and emit the contents of all the data blocks */
 
     dataSection* dsc;
+    size_t       curOffs = 0;
 
     for (dsc = sec->dsdList; dsc; dsc = dsc->dsNext)
     {
@@ -5648,7 +5917,7 @@ void emitter::emitOutputDataSec(dataSecDsc* sec, BYTE* dst)
 #ifdef TARGET_ARM
                 target = (BYTE*)((size_t)target | 1); // Or in thumb bit
 #endif
-                bDst[i] = (target_size_t)target;
+                bDst[i] = (target_size_t)(size_t)target;
                 if (emitComp->opts.compReloc)
                 {
                     emitRecordRelocation(&(bDst[i]), target, IMAGE_REL_BASED_HIGHLOW);
@@ -5682,8 +5951,6 @@ void emitter::emitOutputDataSec(dataSecDsc* sec, BYTE* dst)
         }
         else
         {
-            JITDUMP("  section %u, size %u, raw data\n", secNum++, dscSize);
-
             // Simple binary data: copy the bytes to the target
             assert(dsc->dsType == dataSection::data);
 
@@ -5692,19 +5959,33 @@ void emitter::emitOutputDataSec(dataSecDsc* sec, BYTE* dst)
 #ifdef DEBUG
             if (EMITVERBOSE)
             {
-                printf("  ");
+                printf("  section %3u, size %2u, RWD%2u:\t", secNum++, dscSize, curOffs);
+
                 for (size_t i = 0; i < dscSize; i++)
                 {
                     printf("%02x ", dsc->dsCont[i]);
                     if ((((i + 1) % 16) == 0) && (i + 1 != dscSize))
                     {
-                        printf("\n  ");
+                        printf("\n\t\t\t\t\t");
                     }
+                }
+                switch (dsc->dsDataType)
+                {
+                    case TYP_FLOAT:
+                        printf(" ; float  %9.6g", (double)*reinterpret_cast<float*>(&dsc->dsCont));
+                        break;
+                    case TYP_DOUBLE:
+                        printf(" ; double %12.9g", *reinterpret_cast<double*>(&dsc->dsCont));
+                        break;
+                    default:
+                        break;
                 }
                 printf("\n");
             }
 #endif // DEBUG
         }
+
+        curOffs += dscSize;
         dst += dscSize;
     }
 }
@@ -5762,11 +6043,11 @@ void emitter::emitDispDataSec(dataSecDsc* section)
                 {
                     if (emitComp->opts.disDiffable)
                     {
-                        printf("dd\t%s - %s\n", blockLabel, firstLabel);
+                        printf("\tdd\t%s - %s\n", blockLabel, firstLabel);
                     }
                     else
                     {
-                        printf("dd\t%08Xh", ig->igOffs - igFirst->igOffs);
+                        printf("\tdd\t%08Xh", ig->igOffs - igFirst->igOffs);
                     }
                 }
                 else
@@ -5775,21 +6056,21 @@ void emitter::emitDispDataSec(dataSecDsc* section)
                     // We have a 32-BIT target
                     if (emitComp->opts.disDiffable)
                     {
-                        printf("dd\t%s\n", blockLabel);
+                        printf("\tdd\t%s\n", blockLabel);
                     }
                     else
                     {
-                        printf("dd\t%08Xh", reinterpret_cast<uint32_t>(emitOffsetToPtr(ig->igOffs)));
+                        printf("\tdd\t%08Xh", (uint32_t)(size_t)emitOffsetToPtr(ig->igOffs));
                     }
 #else  // TARGET_64BIT
                     // We have a 64-BIT target
                     if (emitComp->opts.disDiffable)
                     {
-                        printf("dq\t%s\n", blockLabel);
+                        printf("\tdq\t%s\n", blockLabel);
                     }
                     else
                     {
-                        printf("dq\t%016llXh", reinterpret_cast<uint64_t>(emitOffsetToPtr(ig->igOffs)));
+                        printf("\tdq\t%016llXh", reinterpret_cast<uint64_t>(emitOffsetToPtr(ig->igOffs)));
                     }
 #endif // TARGET_64BIT
                 }
@@ -5803,24 +6084,106 @@ void emitter::emitDispDataSec(dataSecDsc* section)
         else
         {
             assert(data->dsType == dataSection::data);
-            switch (data->dsSize)
+            unsigned elemSize = genTypeSize(data->dsDataType);
+            if (elemSize == 0)
             {
-                case 2:
-                    printf("dw\t%04Xh\n", *reinterpret_cast<uint16_t*>(&data->dsCont));
-                    break;
-                case 4:
-                    printf("dd\t%08Xh\n", *reinterpret_cast<uint32_t*>(&data->dsCont));
-                    break;
-                case 8:
-                    printf("dq\t%016llXh\n", *reinterpret_cast<uint64_t*>(&data->dsCont));
-                    break;
-                default:
-                    printf("db\t");
-                    for (UNATIVE_OFFSET i = 0; i < data->dsSize; i++)
-                    {
-                        printf("%s0%02Xh", i > 0 ? ", " : "", data->dsCont[i]);
-                    }
-                    printf("\n");
+                if ((data->dsSize % 8) == 0)
+                {
+                    elemSize = 8;
+                }
+                else if ((data->dsSize % 4) == 0)
+                {
+                    elemSize = 4;
+                }
+                else if ((data->dsSize % 2) == 0)
+                {
+                    elemSize = 2;
+                }
+                else
+                {
+                    elemSize = 1;
+                }
+            }
+
+            unsigned i = 0;
+            unsigned j;
+            while (i < data->dsSize)
+            {
+                switch (data->dsDataType)
+                {
+                    case TYP_FLOAT:
+                        assert(data->dsSize >= 4);
+                        printf("\tdd\t%08llXh\t", *reinterpret_cast<uint32_t*>(&data->dsCont[i]));
+                        printf("\t; %9.6g", *reinterpret_cast<float*>(&data->dsCont[i]));
+                        i += 4;
+                        break;
+
+                    case TYP_DOUBLE:
+                        assert(data->dsSize >= 8);
+                        printf("\tdq\t%016llXh", *reinterpret_cast<uint64_t*>(&data->dsCont[i]));
+                        printf("\t; %12.9g", *reinterpret_cast<double*>(&data->dsCont[i]));
+                        i += 8;
+                        break;
+
+                    default:
+                        switch (elemSize)
+                        {
+                            case 1:
+                                printf("\tdb\t%02Xh", *reinterpret_cast<uint8_t*>(&data->dsCont[i]));
+                                for (j = 1; j < 16; j++)
+                                {
+                                    if (i + j >= data->dsSize)
+                                        break;
+                                    printf(", %02Xh", *reinterpret_cast<uint8_t*>(&data->dsCont[i + j]));
+                                }
+                                i += j;
+                                break;
+
+                            case 2:
+                                assert((data->dsSize % 2) == 0);
+                                printf("\tdw\t%04Xh", *reinterpret_cast<uint16_t*>(&data->dsCont[i]));
+                                for (j = 2; j < 24; j += 2)
+                                {
+                                    if (i + j >= data->dsSize)
+                                        break;
+                                    printf(", %04Xh", *reinterpret_cast<uint16_t*>(&data->dsCont[i + j]));
+                                }
+                                i += j;
+                                break;
+
+                            case 12:
+                            case 4:
+                                assert((data->dsSize % 4) == 0);
+                                printf("\tdd\t%08Xh", *reinterpret_cast<uint32_t*>(&data->dsCont[i]));
+                                for (j = 4; j < 24; j += 4)
+                                {
+                                    if (i + j >= data->dsSize)
+                                        break;
+                                    printf(", %08Xh", *reinterpret_cast<uint32_t*>(&data->dsCont[i + j]));
+                                }
+                                i += j;
+                                break;
+
+                            case 32:
+                            case 16:
+                            case 8:
+                                assert((data->dsSize % 8) == 0);
+                                printf("\tdq\t%016llXh", *reinterpret_cast<uint64_t*>(&data->dsCont[i]));
+                                for (j = 8; j < 32; j += 8)
+                                {
+                                    if (i + j >= data->dsSize)
+                                        break;
+                                    printf(", %016llXh", *reinterpret_cast<uint64_t*>(&data->dsCont[i + j]));
+                                }
+                                i += j;
+                                break;
+
+                            default:
+                                assert(!"unexpected elemSize");
+                                break;
+                        }
+                }
+                printf("\n");
             }
         }
     }
@@ -5896,24 +6259,6 @@ void emitter::emitGCvarLiveSet(int offs, GCtype gcType, BYTE* addr, ssize_t disp
     assert(emitGCrFrameLiveTab[disp] == nullptr);
     emitGCrFrameLiveTab[disp] = desc;
 
-#ifdef DEBUG
-    if (EMITVERBOSE)
-    {
-        printf("[%08X] %s var born at [%s", dspPtr(desc), GCtypeStr(gcType), emitGetFrameReg());
-
-        if (offs < 0)
-        {
-            printf("-%02XH", -offs);
-        }
-        else if (offs > 0)
-        {
-            printf("+%02XH", +offs);
-        }
-
-        printf("]\n");
-    }
-#endif
-
     /* The "global" live GC variable mask is no longer up-to-date */
 
     emitThisGCrefVset = false;
@@ -5954,35 +6299,6 @@ void emitter::emitGCvarDeadSet(int offs, BYTE* addr, ssize_t disp)
     assert(desc->vpdEndOfs == 0xFACEDEAD);
     desc->vpdEndOfs = emitCurCodeOffs(addr);
 
-#ifdef DEBUG
-    if (EMITVERBOSE)
-    {
-        GCtype gcType = (desc->vpdVarNum & byref_OFFSET_FLAG) ? GCT_BYREF : GCT_GCREF;
-#if !defined(JIT32_GCENCODER) || !defined(FEATURE_EH_FUNCLETS)
-        bool isThis = (desc->vpdVarNum & this_OFFSET_FLAG) != 0;
-
-        printf("[%08X] %s%s var died at [%s", dspPtr(desc), GCtypeStr(gcType), isThis ? "this-ptr" : "",
-               emitGetFrameReg());
-#else
-        bool isPinned = (desc->vpdVarNum & pinned_OFFSET_FLAG) != 0;
-
-        printf("[%08X] %s%s var died at [%s", dspPtr(desc), GCtypeStr(gcType), isPinned ? "pinned" : "",
-               emitGetFrameReg());
-#endif
-
-        if (offs < 0)
-        {
-            printf("-%02XH", -offs);
-        }
-        else if (offs > 0)
-        {
-            printf("+%02XH", +offs);
-        }
-
-        printf("]\n");
-    }
-#endif
-
     /* The "global" live GC variable mask is no longer up-to-date */
 
     emitThisGCrefVset = false;
@@ -6013,9 +6329,7 @@ void emitter::emitUpdateLiveGCvars(VARSET_VALARG_TP vars, BYTE* addr)
 #ifdef DEBUG
     if (EMIT_GC_VERBOSE)
     {
-        printf("New GC ref live vars=%s ", VarSetOps::ToString(emitComp, vars));
-        dumpConvertedVarSet(emitComp, vars);
-        printf("\n");
+        VarSetOps::Assign(emitComp, debugThisGCrefVars, vars);
     }
 #endif
 
@@ -6047,11 +6361,11 @@ void emitter::emitUpdateLiveGCvars(VARSET_VALARG_TP vars, BYTE* addr)
                 if (VarSetOps::IsMember(emitComp, vars, num))
                 {
                     GCtype gcType = (val & byref_OFFSET_FLAG) ? GCT_BYREF : GCT_GCREF;
-                    emitGCvarLiveUpd(offs, INT_MAX, gcType, addr);
+                    emitGCvarLiveUpd(offs, INT_MAX, gcType, addr DEBUG_ARG(num));
                 }
                 else
                 {
-                    emitGCvarDeadUpd(offs, addr);
+                    emitGCvarDeadUpd(offs, addr DEBUG_ARG(num));
                 }
             }
         }
@@ -6223,16 +6537,6 @@ void emitter::emitUpdateLiveGCregs(GCtype gcType, regMaskTP regs, BYTE* addr)
     regMaskTP dead;
     regMaskTP chg;
 
-#ifdef DEBUG
-    if (EMIT_GC_VERBOSE)
-    {
-        printf("New %sReg live regs=", GCtypeStr(gcType));
-        printRegMaskInt(regs);
-        emitDispRegSet(regs);
-        printf("\n");
-    }
-#endif
-
     assert(needsGC(gcType));
 
     regMaskTP& emitThisXXrefRegs = (gcType == GCT_GCREF) ? emitThisGCrefRegs : emitThisByrefRegs;
@@ -6356,10 +6660,6 @@ unsigned char emitter::emitOutputByte(BYTE* dst, ssize_t val)
     *castto(dst, unsigned char*) = (unsigned char)val;
 
 #ifdef DEBUG
-    if (emitComp->opts.dspEmit)
-    {
-        printf("; emit_byte 0%02XH\n", val & 0xFF);
-    }
 #ifdef TARGET_AMD64
     // if we're emitting code bytes, ensure that we've already emitted the rex prefix!
     assert(((val & 0xFF00000000LL) == 0) || ((val & 0xFFFFFFFF00000000LL) == 0xFFFFFFFF00000000LL));
@@ -6379,10 +6679,6 @@ unsigned char emitter::emitOutputWord(BYTE* dst, ssize_t val)
     MISALIGNED_WR_I2(dst, (short)val);
 
 #ifdef DEBUG
-    if (emitComp->opts.dspEmit)
-    {
-        printf("; emit_word 0%02XH,0%02XH\n", (val & 0xFF), (val >> 8) & 0xFF);
-    }
 #ifdef TARGET_AMD64
     // if we're emitting code bytes, ensure that we've already emitted the rex prefix!
     assert(((val & 0xFF00000000LL) == 0) || ((val & 0xFFFFFFFF00000000LL) == 0xFFFFFFFF00000000LL));
@@ -6402,10 +6698,6 @@ unsigned char emitter::emitOutputLong(BYTE* dst, ssize_t val)
     MISALIGNED_WR_I4(dst, (int)val);
 
 #ifdef DEBUG
-    if (emitComp->opts.dspEmit)
-    {
-        printf("; emit_long 0%08XH\n", (int)val);
-    }
 #ifdef TARGET_AMD64
     // if we're emitting code bytes, ensure that we've already emitted the rex prefix!
     assert(((val & 0xFF00000000LL) == 0) || ((val & 0xFFFFFFFF00000000LL) == 0xFFFFFFFF00000000LL));
@@ -6422,18 +6714,11 @@ unsigned char emitter::emitOutputLong(BYTE* dst, ssize_t val)
 
 unsigned char emitter::emitOutputSizeT(BYTE* dst, ssize_t val)
 {
+#if !defined(TARGET_64BIT)
+    MISALIGNED_WR_I4(dst, (int)val);
+#else
     MISALIGNED_WR_ST(dst, val);
-
-#ifdef DEBUG
-    if (emitComp->opts.dspEmit)
-    {
-#ifdef TARGET_AMD64
-        printf("; emit_size_t 0%016llXH\n", val);
-#else  // TARGET_AMD64
-        printf("; emit_size_t 0%08XH\n", val);
-#endif // TARGET_AMD64
-    }
-#endif // DEBUG
+#endif
 
     return TARGET_POINTER_SIZE;
 }
@@ -6450,6 +6735,7 @@ unsigned char emitter::emitOutputSizeT(BYTE* dst, ssize_t val)
 //    Same as wrapped function.
 //
 
+#if !defined(HOST_64BIT)
 #if defined(TARGET_X86)
 unsigned char emitter::emitOutputByte(BYTE* dst, size_t val)
 {
@@ -6491,6 +6777,7 @@ unsigned char emitter::emitOutputSizeT(BYTE* dst, unsigned __int64 val)
     return emitOutputSizeT(dst, (ssize_t)val);
 }
 #endif // defined(TARGET_X86)
+#endif // !defined(HOST_64BIT)
 
 /*****************************************************************************
  *
@@ -6592,13 +6879,6 @@ void emitter::emitGCregLiveUpd(GCtype gcType, regNumber reg, BYTE* addr)
         }
 
         emitThisXXrefRegs |= regMask;
-
-#ifdef DEBUG
-        if (EMIT_GC_VERBOSE)
-        {
-            printf("%sReg +[%s]\n", GCtypeStr(gcType), emitRegName(reg));
-        }
-#endif
     }
 
     // The 2 GC reg masks can't be overlapping
@@ -6639,17 +6919,6 @@ void emitter::emitGCregDeadUpdMask(regMaskTP regs, BYTE* addr)
         }
 
         emitThisGCrefRegs &= ~gcrefRegs;
-
-#ifdef DEBUG
-        if (EMIT_GC_VERBOSE)
-        {
-            printf("gcrReg ");
-            printRegMaskInt(gcrefRegs);
-            printf(" -");
-            emitDispRegSet(gcrefRegs);
-            printf("\n");
-        }
-#endif
     }
 
     // Second, handle the byref regs going dead
@@ -6666,17 +6935,6 @@ void emitter::emitGCregDeadUpdMask(regMaskTP regs, BYTE* addr)
         }
 
         emitThisByrefRegs &= ~byrefRegs;
-
-#ifdef DEBUG
-        if (EMIT_GC_VERBOSE)
-        {
-            printf("byrReg ");
-            printRegMaskInt(byrefRegs);
-            printf(" -");
-            emitDispRegSet(byrefRegs);
-            printf("\n");
-        }
-#endif
     }
 }
 
@@ -6707,13 +6965,6 @@ void emitter::emitGCregDeadUpd(regNumber reg, BYTE* addr)
         }
 
         emitThisGCrefRegs &= ~regMask;
-
-#ifdef DEBUG
-        if (EMIT_GC_VERBOSE)
-        {
-            printf("%s -[%s]\n", "gcrReg", emitRegName(reg));
-        }
-#endif
     }
     else if ((emitThisByrefRegs & regMask) != 0)
     {
@@ -6723,13 +6974,6 @@ void emitter::emitGCregDeadUpd(regNumber reg, BYTE* addr)
         }
 
         emitThisByrefRegs &= ~regMask;
-
-#ifdef DEBUG
-        if (EMIT_GC_VERBOSE)
-        {
-            printf("%s -[%s]\n", "byrReg", emitRegName(reg));
-        }
-#endif
     }
 }
 
@@ -6741,7 +6985,7 @@ void emitter::emitGCregDeadUpd(regNumber reg, BYTE* addr)
  *    need a valid value to check if the variable is tracked or not.
  */
 
-void emitter::emitGCvarLiveUpd(int offs, int varNum, GCtype gcType, BYTE* addr)
+void emitter::emitGCvarLiveUpd(int offs, int varNum, GCtype gcType, BYTE* addr DEBUG_ARG(unsigned actualVarNum))
 {
     assert(abs(offs) % sizeof(int) == 0);
     assert(needsGC(gcType));
@@ -6764,13 +7008,6 @@ void emitter::emitGCvarLiveUpd(int offs, int varNum, GCtype gcType, BYTE* addr)
             regPtrNext->rpdPtrArg  = (unsigned short)offs;
             regPtrNext->rpdArgType = (unsigned short)GCInfo::rpdARG_PUSH;
             regPtrNext->rpdIsThis  = FALSE;
-
-#ifdef DEBUG
-            if (EMIT_GC_VERBOSE)
-            {
-                printf("[%04X] %s arg write\n", offs, GCtypeStr(gcType));
-            }
-#endif
         }
     }
     else
@@ -6823,6 +7060,13 @@ void emitter::emitGCvarLiveUpd(int offs, int varNum, GCtype gcType, BYTE* addr)
             if (emitGCrFrameLiveTab[disp] == nullptr)
             {
                 emitGCvarLiveSet(offs, gcType, addr, disp);
+#ifdef DEBUG
+                if ((EMIT_GC_VERBOSE || emitComp->opts.disasmWithGC) && (actualVarNum < emitComp->lvaCount) &&
+                    emitComp->lvaGetDesc(actualVarNum)->lvTracked)
+                {
+                    VarSetOps::AddElemD(emitComp, debugThisGCrefVars, emitComp->lvaGetDesc(actualVarNum)->lvVarIndex);
+                }
+#endif
             }
         }
     }
@@ -6833,7 +7077,7 @@ void emitter::emitGCvarLiveUpd(int offs, int varNum, GCtype gcType, BYTE* addr)
  *  Record the fact that the given variable no longer contains a live GC ref.
  */
 
-void emitter::emitGCvarDeadUpd(int offs, BYTE* addr)
+void emitter::emitGCvarDeadUpd(int offs, BYTE* addr DEBUG_ARG(unsigned varNum))
 {
     assert(emitIssuing);
     assert(abs(offs) % sizeof(int) == 0);
@@ -6855,6 +7099,13 @@ void emitter::emitGCvarDeadUpd(int offs, BYTE* addr)
         {
             assert(!emitComp->lvaKeepAliveAndReportThis() || (offs != emitSyncThisObjOffs));
             emitGCvarDeadSet(offs, addr, disp);
+#ifdef DEBUG
+            if ((EMIT_GC_VERBOSE || emitComp->opts.disasmWithGC) && (varNum < emitComp->lvaCount) &&
+                emitComp->lvaGetDesc(varNum)->lvTracked)
+            {
+                VarSetOps::RemoveElemD(emitComp, debugThisGCrefVars, emitComp->lvaGetDesc(varNum)->lvVarIndex);
+            }
+#endif
         }
     }
 }
@@ -7022,7 +7273,7 @@ void emitter::emitNxtIG(bool extend)
  *  emitGetInsSC: Get the instruction's constant value.
  */
 
-target_ssize_t emitter::emitGetInsSC(instrDesc* id)
+cnsval_ssize_t emitter::emitGetInsSC(instrDesc* id)
 {
 #ifdef TARGET_ARM // should it be TARGET_ARMARCH? Why do we need this? Note that on ARM64 we store scaled immediates
                   // for some formats
@@ -7218,13 +7469,6 @@ void emitter::emitStackPushLargeStk(BYTE* addr, GCtype gcType, unsigned count)
                 regPtrNext->rpdPtrArg  = (unsigned short)level.Value();
                 regPtrNext->rpdArgType = (unsigned short)GCInfo::rpdARG_PUSH;
                 regPtrNext->rpdIsThis  = FALSE;
-
-#ifdef DEBUG
-                if (EMIT_GC_VERBOSE)
-                {
-                    printf("[%08X] %s arg push %u\n", dspPtr(regPtrNext), GCtypeStr(gcType), level.Value());
-                }
-#endif
             }
 
             /* This is an "interesting" argument push */
@@ -7357,13 +7601,6 @@ void emitter::emitStackPopLargeStk(BYTE* addr, bool isCall, unsigned char callIn
     regPtrNext->rpdArg           = TRUE;
     regPtrNext->rpdArgType       = (unsigned short)GCInfo::rpdARG_POP;
     regPtrNext->rpdPtrArg        = argRecCnt.Value();
-
-#ifdef DEBUG
-    if (EMIT_GC_VERBOSE)
-    {
-        printf("[%08X] ptr arg pop  %u\n", dspPtr(regPtrNext), count);
-    }
-#endif
 }
 
 /*****************************************************************************
@@ -7444,13 +7681,6 @@ void emitter::emitStackKillArgs(BYTE* addr, unsigned count, unsigned char callIn
             regPtrNext->rpdArg     = TRUE;
             regPtrNext->rpdArgType = (unsigned short)GCInfo::rpdARG_KILL;
             regPtrNext->rpdPtrArg  = gcCnt.Value();
-
-#ifdef DEBUG
-            if (EMIT_GC_VERBOSE)
-            {
-                printf("[%08X] ptr arg kill %u\n", dspPtr(regPtrNext), count);
-            }
-#endif
         }
 
         /* Now that ptr args have been marked as non-ptrs, we need to record
@@ -7692,7 +7922,12 @@ regMaskTP emitter::emitGetGCRegsKilledByNoGCCall(CorInfoHelpFunc helper)
             break;
 
         case CORINFO_HELP_PROF_FCN_LEAVE:
+#if defined(TARGET_ARM)
+            // profiler scratch remains gc live
+            result = RBM_PROFILER_LEAVE_TRASH & ~RBM_PROFILER_RET_SCRATCH;
+#else
             result = RBM_PROFILER_LEAVE_TRASH;
+#endif
             break;
 
         case CORINFO_HELP_PROF_FCN_TAILCALL:

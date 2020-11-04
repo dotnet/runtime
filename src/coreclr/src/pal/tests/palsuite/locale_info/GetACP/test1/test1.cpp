@@ -19,7 +19,7 @@
 
 #define EXPECTED_CP     65001
 
-int __cdecl main(int argc, char *argv[])
+PALTEST(locale_info_GetACP_test1_paltest_getacp_test1, "locale_info/GetACP/test1/paltest_getacp_test1")
 {
     int ret;
 

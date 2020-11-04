@@ -60,7 +60,7 @@ namespace System.Data.ProviderBase
             Validate(offset, 2);
             Debug.Assert(0 == offset % ADP.PtrSize, "invalid alignment");
 
-            string value = null;
+            string? value = null;
             bool mustRelease = false;
 
             try
@@ -69,7 +69,7 @@ namespace System.Data.ProviderBase
 
                 IntPtr ptr = ADP.IntPtrOffset(DangerousGetHandle(), offset);
                 value = Marshal.PtrToStringUni(ptr);
-                Validate(offset, (2 * (value.Length + 1)));
+                Validate(offset, (2 * (value!.Length + 1)));
             }
             finally
             {
@@ -88,7 +88,7 @@ namespace System.Data.ProviderBase
             Validate(offset, 2 * length);
             Debug.Assert(0 == offset % ADP.PtrSize, "invalid alignment");
 
-            string value = null;
+            string? value = null;
             bool mustRelease = false;
 
             try

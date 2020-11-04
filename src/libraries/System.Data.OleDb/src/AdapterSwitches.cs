@@ -9,13 +9,13 @@ namespace System.Data.Common
 {
     internal static class AdapterSwitches
     {
-        private static TraceSwitch _dataSchema;
+        private static TraceSwitch? _dataSchema;
 
         internal static TraceSwitch DataSchema
         {
             get
             {
-                TraceSwitch dataSchema = _dataSchema;
+                TraceSwitch? dataSchema = _dataSchema;
                 if (null == dataSchema)
                 {
                     _dataSchema = dataSchema = new TraceSwitch("Data.Schema", "Enable tracing for schema actions.");

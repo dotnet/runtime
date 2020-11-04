@@ -4173,7 +4173,7 @@ void emitter::emitIns_R_R(
                 }
                 break;
             }
-            __fallthrough;
+            FALLTHROUGH;
 
         case INS_negs:
             assert(insOptsNone(opt));
@@ -4184,7 +4184,7 @@ void emitter::emitIns_R_R(
 
         case INS_sxtw:
             assert(size == EA_8BYTE);
-            __fallthrough;
+            FALLTHROUGH;
 
         case INS_sxtb:
         case INS_sxth:
@@ -4236,7 +4236,7 @@ void emitter::emitIns_R_R(
                 break;
             }
 
-            __fallthrough;
+            FALLTHROUGH;
 
         case INS_rev:
             assert(insOptsNone(opt));
@@ -4291,7 +4291,7 @@ void emitter::emitIns_R_R(
                 fmt = IF_DV_2L;
                 break;
             }
-            __fallthrough;
+            FALLTHROUGH;
 
         case INS_xtn:
             // Vector operation
@@ -4321,7 +4321,7 @@ void emitter::emitIns_R_R(
         case INS_stlr:
             assert(isValidGeneralDatasize(size));
 
-            __fallthrough;
+            FALLTHROUGH;
 
         case INS_ldarb:
         case INS_ldaxrb:
@@ -4716,7 +4716,7 @@ void emitter::emitIns_R_R(
         case INS_st3:
         case INS_st4:
             assert(opt != INS_OPTS_1D); // .1D format only permitted with LD1 & ST1
-            __fallthrough;
+            FALLTHROUGH;
 
         case INS_ld1:
         case INS_ld1_2regs:
@@ -4835,7 +4835,7 @@ void emitter::emitIns_R_I_I(
 
         case INS_mov:
             ins = INS_movz; // INS_mov with LSL is an alias for INS_movz LSL
-            __fallthrough;
+            FALLTHROUGH;
 
         case INS_movk:
         case INS_movn:
@@ -5086,7 +5086,7 @@ void emitter::emitIns_R_R_I(
         case INS_sxtl:
         case INS_uxtl:
             assert(imm == 0);
-            __fallthrough;
+            FALLTHROUGH;
 
         case INS_rshrn:
         case INS_shrn:
@@ -5108,7 +5108,7 @@ void emitter::emitIns_R_R_I(
         case INS_sxtl2:
         case INS_uxtl2:
             assert(imm == 0);
-            __fallthrough;
+            FALLTHROUGH;
 
         case INS_rshrn2:
         case INS_shrn2:
@@ -5265,7 +5265,7 @@ void emitter::emitIns_R_R_I(
                     break;
                 }
             }
-            __fallthrough;
+            FALLTHROUGH;
 
         case INS_ins: // (MOV from general)
             assert(insOptsNone(opt));
@@ -5412,7 +5412,7 @@ void emitter::emitIns_R_R_I(
         case INS_st3:
         case INS_st4:
             assert(opt != INS_OPTS_1D); // .1D format only permitted with LD1 & ST1
-            __fallthrough;
+            FALLTHROUGH;
 
         case INS_ld1:
         case INS_ld1_2regs:
@@ -5537,6 +5537,15 @@ void emitter::emitIns_R_R_I(
             {
                 assert(!"Instruction cannot be encoded: IF_LS_2B");
             }
+        }
+
+        // Is the ldr/str even necessary?
+        // For volatile load/store, there will be memory barrier instruction before/after the load/store
+        // and in such case, IsRedundantLdStr() returns false, because the method just checks for load/store
+        // pair next to each other.
+        if (emitComp->opts.OptimizationEnabled() && IsRedundantLdStr(ins, reg1, reg2, imm, size, fmt))
+        {
+            return;
         }
     }
     else if (isAddSub)
@@ -5695,7 +5704,7 @@ void emitter::emitIns_R_R_R(
                 break;
             }
             // Base instruction
-            __fallthrough;
+            FALLTHROUGH;
 
         case INS_lsl:
         case INS_lsr:
@@ -5758,7 +5767,7 @@ void emitter::emitIns_R_R_R(
                 break;
             }
             // Base instruction
-            __fallthrough;
+            FALLTHROUGH;
 
         case INS_adds:
         case INS_subs:
@@ -5936,7 +5945,7 @@ void emitter::emitIns_R_R_R(
                 fmt = IF_DV_3C;
                 break;
             }
-            __fallthrough;
+            FALLTHROUGH;
 
         case INS_ands:
         case INS_bics:
@@ -6127,7 +6136,7 @@ void emitter::emitIns_R_R_R(
         case INS_st3:
         case INS_st4:
             assert(opt != INS_OPTS_1D); // .1D format only permitted with LD1 & ST1
-            __fallthrough;
+            FALLTHROUGH;
 
         case INS_ld1:
         case INS_ld1_2regs:
@@ -6475,7 +6484,7 @@ void emitter::emitIns_R_R_R_I(instruction ins,
         case INS_ldnp:
         case INS_stnp:
             assert(insOptsNone(opt)); // Can't use Pre/Post index on these two instructions
-            __fallthrough;
+            FALLTHROUGH;
 
         case INS_ldp:
         case INS_stp:
@@ -7525,6 +7534,12 @@ void emitter::emitIns_R_S(instruction ins, emitAttr attr, regNumber reg1, int va
         }
     }
 
+    // Is the ldr/str even necessary?
+    if (emitComp->opts.OptimizationEnabled() && IsRedundantLdStr(ins, reg1, reg2, imm, size, fmt))
+    {
+        return;
+    }
+
     assert(fmt != IF_NONE);
 
     instrDesc* id = emitNewInstrCns(attr, imm);
@@ -7748,6 +7763,12 @@ void emitter::emitIns_S_R(instruction ins, emitAttr attr, regNumber reg1, int va
         regNumber rsvdReg = codeGen->rsGetRsvdReg();
         codeGen->instGen_Set_Reg_To_Imm(EA_PTRSIZE, rsvdReg, imm);
         fmt = IF_LS_3A;
+    }
+
+    // Is the ldr/str even necessary?
+    if (emitComp->opts.OptimizationEnabled() && IsRedundantLdStr(ins, reg1, reg2, imm, size, fmt))
+    {
+        return;
     }
 
     assert(fmt != IF_NONE);
@@ -11389,7 +11410,7 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
         int      adr = emitComp->lvaFrameAddress(varNum, &FPbased);
         if (id->idGCref() != GCT_NONE)
         {
-            emitGCvarLiveUpd(adr + ofs, varNum, id->idGCref(), dst);
+            emitGCvarLiveUpd(adr + ofs, varNum, id->idGCref(), dst DEBUG_ARG(varNum));
         }
         else
         {
@@ -11406,14 +11427,14 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
                 vt              = tmpDsc->tdTempType();
             }
             if (vt == TYP_REF || vt == TYP_BYREF)
-                emitGCvarDeadUpd(adr + ofs, dst);
+                emitGCvarDeadUpd(adr + ofs, dst DEBUG_ARG(varNum));
         }
         if (emitInsWritesToLclVarStackLocPair(id))
         {
             unsigned ofs2 = ofs + TARGET_POINTER_SIZE;
             if (id->idGCrefReg2() != GCT_NONE)
             {
-                emitGCvarLiveUpd(adr + ofs2, varNum, id->idGCrefReg2(), dst);
+                emitGCvarLiveUpd(adr + ofs2, varNum, id->idGCrefReg2(), dst DEBUG_ARG(varNum));
             }
             else
             {
@@ -11430,7 +11451,7 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
                     vt              = tmpDsc->tdTempType();
                 }
                 if (vt == TYP_REF || vt == TYP_BYREF)
-                    emitGCvarDeadUpd(adr + ofs2, dst);
+                    emitGCvarDeadUpd(adr + ofs2, dst DEBUG_ARG(varNum));
             }
         }
     }
@@ -11441,7 +11462,7 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
     size_t expected = emitSizeOfInsDsc(id);
     assert(sz == expected);
 
-    if (emitComp->opts.disAsm || emitComp->opts.dspEmit || emitComp->verbose)
+    if (emitComp->opts.disAsm || emitComp->verbose)
     {
         emitDispIns(id, false, dspOffs, true, emitCurCodeOffs(odst), *dp, (dst - *dp), ig);
     }
@@ -11454,6 +11475,12 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
         {
             assert(!"JitBreakEmitOutputInstr reached");
         }
+    }
+
+    // Output any delta in GC info.
+    if (EMIT_GC_VERBOSE || emitComp->opts.disasmWithGC)
+    {
+        emitDispGCInfoDelta();
     }
 #endif
 
@@ -12080,8 +12107,14 @@ void emitter::emitDispIns(
     if (pCode == NULL)
         sz = 0;
 
-    if (!emitComp->opts.dspEmit && !isNew && !asmfm && sz)
+    if (!isNew && !asmfm && sz)
+    {
         doffs = true;
+    }
+
+    /* Display the instruction address */
+
+    emitDispInsAddr(pCode);
 
     /* Display the instruction offset */
 
@@ -12288,7 +12321,15 @@ void emitter::emitDispIns(
                     {
                         targetName = "SetGlobalSecurityCookie";
                     }
-                    else if ((idFlags == GTF_ICON_STR_HDL) || (idFlags == GTF_ICON_PSTR_HDL))
+                    else if (idFlags == GTF_ICON_CONST_PTR)
+                    {
+                        targetName = "const ptr";
+                    }
+                    else if (idFlags == GTF_ICON_GLOBAL_PTR)
+                    {
+                        targetName = "global ptr";
+                    }
+                    else if (idFlags == GTF_ICON_STR_HDL)
                     {
                         stringLiteral = emitComp->eeGetCPString(targetHandle);
                         // Note that eGetCPString isn't currently implemented on Linux/ARM
@@ -13763,7 +13804,7 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
             }
             // otherwise we should have a br_tail instruction
             assert(ins == INS_br_tail);
-            __fallthrough;
+            FALLTHROUGH;
         case IF_BR_1A: // ret, br
             result.insThroughput = PERFSCORE_THROUGHPUT_1C;
             result.insLatency    = PERFSCORE_LATENCY_1C;
@@ -13879,6 +13920,7 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
                     perfScoreUnhandledInstruction(id, &result);
                     break;
             }
+            break;
 
         // ALU, basic immediate
         case IF_DI_1A: // cmp, cmn
@@ -15456,6 +15498,92 @@ bool emitter::IsRedundantMov(instruction ins, emitAttr size, regNumber dst, regN
             }
 
             // For mov of other sizes, don't optimize because it has side-effect of clearing the upper bits.
+        }
+    }
+
+    return false;
+}
+
+//----------------------------------------------------------------------------------------
+// IsRedundantLdStr:
+//    For ldr/str pair next to each other, check if the current load or store is needed or is
+//    the value already present as of previous instruction.
+//
+//    ldr x1,  [x2, #56]
+//    str x1,  [x2, #56]   <-- redundant
+//
+//          OR
+//
+//    str x1,  [x2, #56]
+//    ldr x1,  [x2, #56]   <-- redundant
+
+// Arguments:
+//    ins  - The current instruction
+//    dst  - The current destination
+//    src  - The current source
+//    imm  - Immediate offset
+//    size - Operand size
+//    fmt  - Format of instruction
+// Return Value:
+//    true if previous instruction already has desired value in register/memory location.
+
+bool emitter::IsRedundantLdStr(
+    instruction ins, regNumber reg1, regNumber reg2, ssize_t imm, emitAttr size, insFormat fmt)
+{
+    bool isFirstInstrInBlock = (emitCurIGinsCnt == 0) && ((emitCurIG->igFlags & IGF_EXTEND) == 0);
+
+    if (((ins != INS_ldr) && (ins != INS_str)) || (isFirstInstrInBlock) || (emitLastIns == nullptr))
+    {
+        return false;
+    }
+
+    regNumber prevReg1   = emitLastIns->idReg1();
+    regNumber prevReg2   = emitLastIns->idReg2();
+    insFormat lastInsfmt = emitLastIns->idInsFmt();
+    emitAttr  prevSize   = emitLastIns->idOpSize();
+    ssize_t prevImm = emitLastIns->idIsLargeCns() ? ((instrDescCns*)emitLastIns)->idcCnsVal : emitLastIns->idSmallCns();
+
+    // Only optimize if:
+    // 1. "base" or "base plus immediate offset" addressing modes.
+    // 2. Addressing mode matches with previous instruction.
+    // 3. The operand size matches with previous instruction
+    if (((fmt != IF_LS_2A) && (fmt != IF_LS_2B)) || (fmt != lastInsfmt) || (prevSize != size))
+    {
+        return false;
+    }
+
+    if ((ins == INS_ldr) && (emitLastIns->idIns() == INS_str))
+    {
+        // If reg1 is of size less than 8-bytes, then eliminating the 'ldr'
+        // will not zero the upper bits of reg1.
+
+        // Make sure operand size is 8-bytes
+        //  str w0, [x1, #4]
+        //  ldr w0, [x1, #4]  <-- can't eliminate because upper-bits of x0 won't get set.
+        if (size != EA_8BYTE)
+        {
+            return false;
+        }
+
+        if ((prevReg1 == reg1) && (prevReg2 == reg2) && (imm == prevImm))
+        {
+            JITDUMP("\n -- suppressing 'ldr reg%u [reg%u, #%u]' as previous 'str reg%u [reg%u, #%u]' was from same "
+                    "location.\n",
+                    reg1, reg2, imm, prevReg1, prevReg2, prevImm);
+            return true;
+        }
+    }
+    else if ((ins == INS_str) && (emitLastIns->idIns() == INS_ldr))
+    {
+        // Make sure src and dst registers are not same.
+        //  ldr x0, [x0, #4]
+        //  str x0, [x0, #4]  <-- can't eliminate because [x0+3] is not same destination as previous source.
+        if ((reg1 != reg2) && (prevReg1 == reg1) && (prevReg2 == reg2) && (imm == prevImm))
+        {
+            JITDUMP("\n -- suppressing 'str reg%u [reg%u, #%u]' as previous 'ldr reg%u [reg%u, #%u]' was from same "
+                    "location.\n",
+                    reg1, reg2, imm, prevReg1, prevReg2, prevImm);
+            return true;
         }
     }
 

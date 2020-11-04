@@ -52,4 +52,7 @@
     <Compile Include="System\IO\IsolatedStorage\TestHelper.cs" />
     <Compile Include="System\IO\IsolatedStorage\RemoveTests.cs" />
   </ItemGroup>
+  <ItemGroup Condition="$(TargetFramework.StartsWith('$(NetCoreAppCurrent)'))">
+    <ProjectReference Include="$(LibrariesProjectRoot)System.DirectoryServices\src\System.DirectoryServices.csproj" />
+  </ItemGroup>
 </Project>

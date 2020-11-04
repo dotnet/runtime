@@ -22,25 +22,25 @@ namespace ILCompiler.Reflection.ReadyToRun
     /// </summary>
     public struct FixupCell
     {
-        public int Index { get; set; }
+        public int Index { get; }
 
         /// <summary>
         /// Zero-based index of the import table within the import tables section.
         /// </summary>
-        public uint TableIndex;
+        public uint TableIndex { get; }
 
         /// <summary>
         /// Zero-based offset of the entry in the import table; it must be a multiple
         /// of the target architecture pointer size.
         /// </summary>
-        public uint CellOffset;
+        public uint CellOffset { get; }
 
         /// <summary>
-        /// Fixup cell signature (textual representation of the typesystem object).
+        /// Fixup cell signature
         /// </summary>
-        public string Signature;
+        public ReadyToRunSignature Signature { get; }
 
-        public FixupCell(int index, uint tableIndex, uint cellOffset, string signature)
+        public FixupCell(int index, uint tableIndex, uint cellOffset, ReadyToRunSignature signature)
         {
             Index = index;
             TableIndex = tableIndex;
@@ -144,9 +144,21 @@ namespace ILCompiler.Reflection.ReadyToRun
             {
                 if (_debugInfo == null)
                 {
-                    _readyToRunReader.RuntimeFunctionToDebugInfo.TryGetValue(Id, out _debugInfo);
+                    int offset;
+                    if (_readyToRunReader.RuntimeFunctionToDebugInfo.TryGetValue(Id, out offset))
+                    {
+                        this._debugInfo = new DebugInfo(this, offset);
+                    }
                 }
                 return _debugInfo;
+            }
+        }
+
+        internal ReadyToRunReader ReadyToRunReader
+        {
+            get
+            {
+                return _readyToRunReader;
             }
         }
 
@@ -202,9 +214,9 @@ namespace ILCompiler.Reflection.ReadyToRun
         private const int _mdtMethodDef = 0x06000000;
 
         /// <summary>
-        /// MetadataReader representing the method module.
+        /// MSIL module containing the method.
         /// </summary>
-        public MetadataReader MetadataReader { get; private set; }
+        public IAssemblyMetadata ComponentReader { get; private set; }
 
         /// <summary>
         /// The name of the method
@@ -217,6 +229,8 @@ namespace ILCompiler.Reflection.ReadyToRun
         public string SignatureString { get; set; }
 
         public MethodSignature<string> Signature { get; }
+
+        public ImmutableArray<string> LocalSignature { get; }
 
         /// <summary>
         /// The type that the method belongs to
@@ -282,7 +296,7 @@ namespace ILCompiler.Reflection.ReadyToRun
         /// </summary>
         public ReadyToRunMethod(
             ReadyToRunReader readyToRunReader,
-            MetadataReader metadataReader,
+            IAssemblyMetadata componentReader,
             EntityHandle methodHandle,
             int entryPointId,
             string owningType,
@@ -295,7 +309,7 @@ namespace ILCompiler.Reflection.ReadyToRun
             MethodHandle = methodHandle;
             EntryPointRuntimeFunctionId = entryPointId;
 
-            MetadataReader = metadataReader;
+            ComponentReader = componentReader;
 
             EntityHandle owningTypeHandle;
             GenericParameterHandleCollection genericParams = default(GenericParameterHandleCollection);
@@ -308,8 +322,17 @@ namespace ILCompiler.Reflection.ReadyToRun
             {
                 case HandleKind.MethodDefinition:
                     {
-                        MethodDefinition methodDef = MetadataReader.GetMethodDefinition((MethodDefinitionHandle)MethodHandle);
-                        Name = MetadataReader.GetString(methodDef.Name);
+                        MethodDefinition methodDef = ComponentReader.MetadataReader.GetMethodDefinition((MethodDefinitionHandle)MethodHandle);
+                        if (methodDef.RelativeVirtualAddress != 0)
+                        {
+                            MethodBodyBlock mbb = ComponentReader.ImageReader.GetMethodBody(methodDef.RelativeVirtualAddress);
+                            if (!mbb.LocalSignature.IsNil)
+                            {
+                                StandaloneSignature ss = ComponentReader.MetadataReader.GetStandaloneSignature(mbb.LocalSignature);
+                                LocalSignature = ss.DecodeLocalSignature(typeProvider, genericContext);
+                            }
+                        }
+                        Name = ComponentReader.MetadataReader.GetString(methodDef.Name);
                         Signature = methodDef.DecodeSignature<string, DisassemblingGenericContext>(typeProvider, genericContext);
                         owningTypeHandle = methodDef.GetDeclaringType();
                         genericParams = methodDef.GetGenericParameters();
@@ -318,8 +341,8 @@ namespace ILCompiler.Reflection.ReadyToRun
 
                 case HandleKind.MemberReference:
                     {
-                        MemberReference memberRef = MetadataReader.GetMemberReference((MemberReferenceHandle)MethodHandle);
-                        Name = MetadataReader.GetString(memberRef.Name);
+                        MemberReference memberRef = ComponentReader.MetadataReader.GetMemberReference((MemberReferenceHandle)MethodHandle);
+                        Name = ComponentReader.MetadataReader.GetString(memberRef.Name);
                         Signature = memberRef.DecodeMethodSignature<string, DisassemblingGenericContext>(typeProvider, genericContext);
                         owningTypeHandle = memberRef.Parent;
                     }
@@ -335,7 +358,7 @@ namespace ILCompiler.Reflection.ReadyToRun
             }
             else
             {
-                DeclaringType = MetadataNameFormatter.FormatHandle(MetadataReader, owningTypeHandle);
+                DeclaringType = MetadataNameFormatter.FormatHandle(ComponentReader.MetadataReader, owningTypeHandle);
             }
 
             StringBuilder sb = new StringBuilder();
@@ -435,20 +458,26 @@ namespace ILCompiler.Reflection.ReadyToRun
         {
             int runtimeFunctionId = EntryPointRuntimeFunctionId;
             int runtimeFunctionSize = _readyToRunReader.CalculateRuntimeFunctionSize();
-            int runtimeFunctionOffset = _readyToRunReader.PEReader.GetOffset(_readyToRunReader.ReadyToRunHeader.Sections[ReadyToRunSectionType.RuntimeFunctions].RelativeVirtualAddress);
+            int runtimeFunctionOffset = _readyToRunReader.CompositeReader.GetOffset(_readyToRunReader.ReadyToRunHeader.Sections[ReadyToRunSectionType.RuntimeFunctions].RelativeVirtualAddress);
             int curOffset = runtimeFunctionOffset + runtimeFunctionId * runtimeFunctionSize;
             BaseGcInfo gcInfo = null;
             int codeOffset = 0;
             for (int i = 0; i < RuntimeFunctionCount; i++)
             {
                 int startRva = NativeReader.ReadInt32(_readyToRunReader.Image, ref curOffset);
+                if (_readyToRunReader.Machine == Machine.ArmThumb2)
+                {
+                    // The low bit of this address is set since the function contains thumb code.
+                    // Clear this bit in order to get the "real" RVA of the start of the function.
+                    startRva = (int)(startRva & ~1);
+                }
                 int endRva = -1;
                 if (_readyToRunReader.Machine == Machine.Amd64)
                 {
                     endRva = NativeReader.ReadInt32(_readyToRunReader.Image, ref curOffset);
                 }
                 int unwindRva = NativeReader.ReadInt32(_readyToRunReader.Image, ref curOffset);
-                int unwindOffset = _readyToRunReader.PEReader.GetOffset(unwindRva);
+                int unwindOffset = _readyToRunReader.CompositeReader.GetOffset(unwindRva);
 
                 BaseUnwindInfo unwindInfo = null;
                 if (_readyToRunReader.Machine == Machine.Amd64)

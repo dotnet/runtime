@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Diagnostics;
 using System.IO;
 using System.Net.Cache;
 using System.Net.Sockets;
@@ -220,6 +221,7 @@ namespace System.Net
         private LazyAsyncResult? _readAsyncResult;
         private LazyAsyncResult? _requestCompleteAsyncResult;
 
+        // [SuppressMessage("Microsoft.Security", "CS002:SecretInNextLine", Justification="Anonymous FTP credential in production code.")]
         private static readonly NetworkCredential s_defaultFtpNetworkCredential = new NetworkCredential("anonymous", "anonymous@", string.Empty);
         private const int s_DefaultTimeout = 100000;  // 100 seconds
         private static readonly TimerThread.Queue s_DefaultTimerQueue = TimerThread.GetOrCreateQueue(s_DefaultTimeout);
@@ -478,7 +480,9 @@ namespace System.Net
             }
         }
 
+#pragma warning disable SYSLIB0014
         public ServicePoint ServicePoint => _servicePoint ??= ServicePointManager.FindServicePoint(_uri);
+#pragma warning restore SYSLIB0014
 
         internal bool Aborted
         {
@@ -488,7 +492,9 @@ namespace System.Net
             }
         }
 
+#pragma warning disable SYSLIB0014
         internal FtpWebRequest(Uri uri)
+#pragma warning restore SYSLIB0014
         {
             if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, uri);
 
@@ -1473,15 +1479,11 @@ namespace System.Net
 
                 if (stream != null)
                 {
-                    if (!(stream is ICloseEx))
-                    {
-                        NetEventSource.Fail(this, "The _stream member is not CloseEx hence the risk of connection been orphaned.");
-                    }
-
+                    Debug.Assert(stream is ICloseEx, "The _stream member is not CloseEx hence the risk of connection been orphaned.");
                     ((ICloseEx)stream).CloseEx(CloseExState.Abort | CloseExState.Silent);
                 }
-                if (connection != null)
-                    connection.Abort(ExceptionHelper.RequestAbortedException);
+
+                connection?.Abort(ExceptionHelper.RequestAbortedException);
             }
             catch (Exception exception)
             {

@@ -13,6 +13,7 @@ namespace System.Security.Cryptography.Encryption.Rijndael.Tests
     /// Since RijndaelImplementation (from Rijndael.Create()) and RijndaelManaged classes wrap Aes,
     /// we only test minimally here.
     /// </summary>
+    [SkipOnMono("Not supported on Browser", TestPlatforms.Browser)]
     public class RijndaelTests
     {
         [Fact]

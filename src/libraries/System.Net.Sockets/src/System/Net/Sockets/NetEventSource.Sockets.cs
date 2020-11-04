@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Diagnostics;
 using System.Diagnostics.Tracing;
 using System.Net.Sockets;
 using System.Runtime.CompilerServices;
@@ -8,7 +9,7 @@ using System.Runtime.InteropServices;
 
 namespace System.Net
 {
-    [EventSource(Name = "Microsoft-System-Net-Sockets", Guid = "e03c0352-f9c9-56ff-0ea7-b94ba8cabc6b", LocalizationResources = "FxResources.System.Net.Sockets.SR")]
+    [EventSource(Name = "Private.InternalDiagnostics.System.Net.Sockets", LocalizationResources = "FxResources.System.Net.Sockets.SR")]
     internal sealed partial class NetEventSource
     {
         private const int AcceptedId = NextAvailableEventId;
@@ -99,7 +100,7 @@ namespace System.Net
             {
                 if (offset < 0 || offset > buffer.Length - count)
                 {
-                    Fail(thisOrContextObject, $"Invalid {nameof(DumpBuffer)} Args. Length={buffer.Length}, Offset={offset}, Count={count}", memberName);
+                    Debug.Fail($"Invalid {nameof(DumpBuffer)} Args. Length={buffer.Length}, Offset={offset}, Count={count}");
                     return;
                 }
 

@@ -11,14 +11,6 @@ enum class InstructionSet
 void InitSupportedInstructionSet (int32_t configSetting);
 bool IsSupportedInstructionSet (InstructionSet instructionSet);
 
-void do_vxsort_avx2 (uint8_t** low, uint8_t** high);
-void do_vxsort_avx2 (int32_t* low, int32_t* high);
+void do_vxsort_avx2 (uint8_t** low, uint8_t** high, uint8_t *range_low, uint8_t *range_high);
 
-void do_pack_avx2 (uint8_t** mem, size_t len, uint8_t* base);
-void do_unpack_avx2 (int32_t* mem, size_t len, uint8_t* base);
-
-void do_vxsort_avx512 (uint8_t** low, uint8_t** high);
-void do_vxsort_avx512 (int32_t* low, int32_t* high);
-
-void do_pack_avx512 (uint8_t** mem, size_t len, uint8_t* base);
-void do_unpack_avx512 (int32_t* mem, size_t len, uint8_t* base);
+void do_vxsort_avx512 (uint8_t** low, uint8_t** high, uint8_t* range_low, uint8_t* range_high);

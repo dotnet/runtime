@@ -260,13 +260,13 @@ VARTYPE OleVariant::GetVarTypeForComVariant(VariantData *pComVariant)
 
 #ifdef FEATURE_COMINTEROP
         // SafeHandle's or CriticalHandle's cannot be stored in VARIANT's.
-        if (pMT->CanCastToClass(MscorlibBinder::GetClass(CLASS__SAFE_HANDLE)))
+        if (pMT->CanCastToClass(CoreLibBinder::GetClass(CLASS__SAFE_HANDLE)))
             COMPlusThrow(kArgumentException, IDS_EE_SH_IN_VARIANT_NOT_SUPPORTED);
-        if (pMT->CanCastToClass(MscorlibBinder::GetClass(CLASS__CRITICAL_HANDLE)))
+        if (pMT->CanCastToClass(CoreLibBinder::GetClass(CLASS__CRITICAL_HANDLE)))
             COMPlusThrow(kArgumentException, IDS_EE_CH_IN_VARIANT_NOT_SUPPORTED);
 
         // VariantWrappers cannot be stored in VARIANT's.
-        if (MscorlibBinder::IsClass(pMT, CLASS__VARIANT_WRAPPER))
+        if (CoreLibBinder::IsClass(pMT, CLASS__VARIANT_WRAPPER))
             COMPlusThrow(kArgumentException, IDS_EE_VAR_WRAP_IN_VAR_NOT_SUPPORTED);
 
         // We are dealing with a normal object (not a wrapper) so we will
@@ -311,37 +311,37 @@ VARTYPE OleVariant::GetVarTypeForTypeHandle(TypeHandle type)
         return VT_VARIANT;
 
     // We need to make sure the CVClasses table is populated.
-    if(MscorlibBinder::IsClass(pMT, CLASS__DATE_TIME))
+    if(CoreLibBinder::IsClass(pMT, CLASS__DATE_TIME))
         return VT_DATE;
-    if(MscorlibBinder::IsClass(pMT, CLASS__DECIMAL))
+    if(CoreLibBinder::IsClass(pMT, CLASS__DECIMAL))
         return VT_DECIMAL;
 
 #ifdef HOST_64BIT
-    if (MscorlibBinder::IsClass(pMT, CLASS__INTPTR))
+    if (CoreLibBinder::IsClass(pMT, CLASS__INTPTR))
         return VT_I8;
-    if (MscorlibBinder::IsClass(pMT, CLASS__UINTPTR))
+    if (CoreLibBinder::IsClass(pMT, CLASS__UINTPTR))
         return VT_UI8;
 #else
-    if (MscorlibBinder::IsClass(pMT, CLASS__INTPTR))
+    if (CoreLibBinder::IsClass(pMT, CLASS__INTPTR))
         return VT_INT;
-    if (MscorlibBinder::IsClass(pMT, CLASS__UINTPTR))
+    if (CoreLibBinder::IsClass(pMT, CLASS__UINTPTR))
         return VT_UINT;
 #endif
 
 #ifdef FEATURE_COMINTEROP
-    if (MscorlibBinder::IsClass(pMT, CLASS__DISPATCH_WRAPPER))
+    if (CoreLibBinder::IsClass(pMT, CLASS__DISPATCH_WRAPPER))
         return VT_DISPATCH;
-    if (MscorlibBinder::IsClass(pMT, CLASS__UNKNOWN_WRAPPER))
+    if (CoreLibBinder::IsClass(pMT, CLASS__UNKNOWN_WRAPPER))
         return VT_UNKNOWN;
-    if (MscorlibBinder::IsClass(pMT, CLASS__ERROR_WRAPPER))
+    if (CoreLibBinder::IsClass(pMT, CLASS__ERROR_WRAPPER))
         return VT_ERROR;
-    if (MscorlibBinder::IsClass(pMT, CLASS__CURRENCY_WRAPPER))
+    if (CoreLibBinder::IsClass(pMT, CLASS__CURRENCY_WRAPPER))
         return VT_CY;
-    if (MscorlibBinder::IsClass(pMT, CLASS__BSTR_WRAPPER))
+    if (CoreLibBinder::IsClass(pMT, CLASS__BSTR_WRAPPER))
         return VT_BSTR;
 
     // VariantWrappers cannot be stored in VARIANT's.
-    if (MscorlibBinder::IsClass(pMT, CLASS__VARIANT_WRAPPER))
+    if (CoreLibBinder::IsClass(pMT, CLASS__VARIANT_WRAPPER))
         COMPlusThrow(kArgumentException, IDS_EE_COM_UNSUPPORTED_SIG);
 #endif // FEATURE_COMINTEROP
 
@@ -357,9 +357,9 @@ VARTYPE OleVariant::GetVarTypeForTypeHandle(TypeHandle type)
 #ifdef FEATURE_COMINTEROP
     // There is no VT corresponding to SafeHandles as they cannot be stored in
     // VARIANTs or Arrays. The same applies to CriticalHandle.
-    if (type.CanCastTo(TypeHandle(MscorlibBinder::GetClass(CLASS__SAFE_HANDLE))))
+    if (type.CanCastTo(TypeHandle(CoreLibBinder::GetClass(CLASS__SAFE_HANDLE))))
         COMPlusThrow(kArgumentException, IDS_EE_COM_UNSUPPORTED_SIG);
-    if (type.CanCastTo(TypeHandle(MscorlibBinder::GetClass(CLASS__CRITICAL_HANDLE))))
+    if (type.CanCastTo(TypeHandle(CoreLibBinder::GetClass(CLASS__CRITICAL_HANDLE))))
         COMPlusThrow(kArgumentException, IDS_EE_COM_UNSUPPORTED_SIG);
 
     if (pMT->IsInterface())
@@ -639,15 +639,15 @@ TypeHandle OleVariant::GetArrayForVarType(VARTYPE vt, TypeHandle elemType, unsig
             break;
 
         case VT_CY:
-            baseType = TypeHandle(MscorlibBinder::GetClass(CLASS__DECIMAL));
+            baseType = TypeHandle(CoreLibBinder::GetClass(CLASS__DECIMAL));
             break;
 
         case VT_DATE:
-            baseType = TypeHandle(MscorlibBinder::GetClass(CLASS__DATE_TIME));
+            baseType = TypeHandle(CoreLibBinder::GetClass(CLASS__DATE_TIME));
             break;
 
         case VT_DECIMAL:
-            baseType = TypeHandle(MscorlibBinder::GetClass(CLASS__DECIMAL));
+            baseType = TypeHandle(CoreLibBinder::GetClass(CLASS__DECIMAL));
             break;
 
         case VT_VARIANT:
@@ -702,7 +702,7 @@ TypeHandle OleVariant::GetArrayForVarType(VARTYPE vt, TypeHandle elemType, unsig
     }
 
     if (baseType.IsNull())
-        baseType = TypeHandle(MscorlibBinder::GetElementType(baseElement));
+        baseType = TypeHandle(CoreLibBinder::GetElementType(baseElement));
 
     _ASSERTE(!baseType.IsNull());
 
@@ -806,21 +806,21 @@ MethodTable* OleVariant::GetNativeMethodTableForVarType(VARTYPE vt, MethodTable*
 
     if (vt & VT_ARRAY)
     {
-        return MscorlibBinder::GetClass(CLASS__INTPTR);
+        return CoreLibBinder::GetClass(CLASS__INTPTR);
     }
 
     switch (vt)
     {
         case VT_DATE:
-            return MscorlibBinder::GetClass(CLASS__DOUBLE);
+            return CoreLibBinder::GetClass(CLASS__DOUBLE);
         case VT_CY:
-            return MscorlibBinder::GetClass(CLASS__CURRENCY);
+            return CoreLibBinder::GetClass(CLASS__CURRENCY);
         case VTHACK_WINBOOL:
-            return MscorlibBinder::GetClass(CLASS__INT32);
+            return CoreLibBinder::GetClass(CLASS__INT32);
         case VT_BOOL:
-            return MscorlibBinder::GetClass(CLASS__INT16);
+            return CoreLibBinder::GetClass(CLASS__INT16);
         case VTHACK_CBOOL:
-            return MscorlibBinder::GetClass(CLASS__BYTE);
+            return CoreLibBinder::GetClass(CLASS__BYTE);
         case VT_DISPATCH:
         case VT_UNKNOWN:
         case VT_LPSTR:
@@ -829,19 +829,19 @@ MethodTable* OleVariant::GetNativeMethodTableForVarType(VARTYPE vt, MethodTable*
         case VT_USERDEFINED:
         case VT_SAFEARRAY:
         case VT_CARRAY:
-            return MscorlibBinder::GetClass(CLASS__INTPTR);
+            return CoreLibBinder::GetClass(CLASS__INTPTR);
         case VT_VARIANT:
-            return MscorlibBinder::GetClass(CLASS__NATIVEVARIANT);
+            return CoreLibBinder::GetClass(CLASS__NATIVEVARIANT);
         case VTHACK_ANSICHAR:
-            return MscorlibBinder::GetClass(CLASS__BYTE);
+            return CoreLibBinder::GetClass(CLASS__BYTE);
         case VT_UI2:
             // When CharSet = CharSet.Unicode, System.Char arrays are marshaled as VT_UI2.
             // However, since System.Char itself is CharSet.Ansi, the native size of
             // System.Char is 1 byte instead of 2. So here we explicitly return System.UInt16's
             // MethodTable to ensure the correct size.
-            return MscorlibBinder::GetClass(CLASS__UINT16);
+            return CoreLibBinder::GetClass(CLASS__UINT16);
         case VT_DECIMAL:
-            return MscorlibBinder::GetClass(CLASS__NATIVEDECIMAL);
+            return CoreLibBinder::GetClass(CLASS__NATIVEDECIMAL);
         default:
             PREFIX_ASSUME(pManagedMT != NULL);
             return pManagedMT;
@@ -1136,7 +1136,7 @@ void VariantData::NewVariant(VariantData * const& dest, const CVTypes type, INT6
 
         case CV_NULL:
         {
-            FieldDesc * pFD = MscorlibBinder::GetField(FIELD__NULL__VALUE);
+            FieldDesc * pFD = CoreLibBinder::GetField(FIELD__NULL__VALUE);
             _ASSERTE(pFD);
 
             pFD->CheckRunClassInitThrowing();
@@ -2520,7 +2520,7 @@ void OleVariant::MarshalDecimalVariantOleToCom(VARIANT *pOleVariant,
     }
     CONTRACTL_END;
 
-    OBJECTREF pDecimalRef = AllocateObject(MscorlibBinder::GetClass(CLASS__DECIMAL));
+    OBJECTREF pDecimalRef = AllocateObject(CoreLibBinder::GetClass(CLASS__DECIMAL));
 
     DECIMAL* pDecimal = (DECIMAL *) pDecimalRef->UnBox();
     *pDecimal = V_DECIMAL(pOleVariant);
@@ -2563,7 +2563,7 @@ void OleVariant::MarshalDecimalVariantOleRefToCom(VARIANT *pOleVariant,
     }
     CONTRACTL_END;
 
-    OBJECTREF pDecimalRef = AllocateObject(MscorlibBinder::GetClass(CLASS__DECIMAL));
+    OBJECTREF pDecimalRef = AllocateObject(CoreLibBinder::GetClass(CLASS__DECIMAL));
 
     DECIMAL* pDecimal = (DECIMAL *) pDecimalRef->UnBox();
     *pDecimal = *V_DECIMALREF(pOleVariant);
@@ -2781,7 +2781,7 @@ void OleVariant::MarshalOleVariantForObject(OBJECTREF * const & pObj, VARIANT *p
     else
     {
         MethodTable *pMT = (*pObj)->GetMethodTable();
-        if (pMT == MscorlibBinder::GetElementType(ELEMENT_TYPE_I4))
+        if (pMT == CoreLibBinder::GetElementType(ELEMENT_TYPE_I4))
         {
             V_I4(pOle) = *(LONG*)( (*pObj)->GetData() );
             V_VT(pOle) = VT_I4;
@@ -2802,52 +2802,52 @@ void OleVariant::MarshalOleVariantForObject(OBJECTREF * const & pObj, VARIANT *p
 
             V_VT(pOle) = VT_BSTR;
         }
-        else if (pMT == MscorlibBinder::GetElementType(ELEMENT_TYPE_I2))
+        else if (pMT == CoreLibBinder::GetElementType(ELEMENT_TYPE_I2))
         {
             V_I2(pOle) = *(SHORT*)( (*pObj)->GetData() );
             V_VT(pOle) = VT_I2;
         }
-        else if (pMT == MscorlibBinder::GetElementType(ELEMENT_TYPE_I1))
+        else if (pMT == CoreLibBinder::GetElementType(ELEMENT_TYPE_I1))
         {
             V_I1(pOle) = *(CHAR*)( (*pObj)->GetData() );
             V_VT(pOle) = VT_I1;
         }
-        else if (pMT == MscorlibBinder::GetElementType(ELEMENT_TYPE_U4))
+        else if (pMT == CoreLibBinder::GetElementType(ELEMENT_TYPE_U4))
         {
             V_UI4(pOle) = *(ULONG*)( (*pObj)->GetData() );
             V_VT(pOle) = VT_UI4;
         }
-        else if (pMT == MscorlibBinder::GetElementType(ELEMENT_TYPE_U2))
+        else if (pMT == CoreLibBinder::GetElementType(ELEMENT_TYPE_U2))
         {
             V_UI2(pOle) = *(USHORT*)( (*pObj)->GetData() );
             V_VT(pOle) = VT_UI2;
         }
-        else if (pMT == MscorlibBinder::GetElementType(ELEMENT_TYPE_U1))
+        else if (pMT == CoreLibBinder::GetElementType(ELEMENT_TYPE_U1))
         {
             V_UI1(pOle) = *(BYTE*)( (*pObj)->GetData() );
             V_VT(pOle) = VT_UI1;
         }
-        else if (pMT == MscorlibBinder::GetElementType(ELEMENT_TYPE_R4))
+        else if (pMT == CoreLibBinder::GetElementType(ELEMENT_TYPE_R4))
         {
             V_R4(pOle) = *(FLOAT*)( (*pObj)->GetData() );
             V_VT(pOle) = VT_R4;
         }
-        else if (pMT == MscorlibBinder::GetElementType(ELEMENT_TYPE_R8))
+        else if (pMT == CoreLibBinder::GetElementType(ELEMENT_TYPE_R8))
         {
             V_R8(pOle) = *(DOUBLE*)( (*pObj)->GetData() );
             V_VT(pOle) = VT_R8;
         }
-        else if (pMT == MscorlibBinder::GetElementType(ELEMENT_TYPE_BOOLEAN))
+        else if (pMT == CoreLibBinder::GetElementType(ELEMENT_TYPE_BOOLEAN))
         {
             V_BOOL(pOle) = *(U1*)( (*pObj)->GetData() ) ? VARIANT_TRUE : VARIANT_FALSE;
             V_VT(pOle) = VT_BOOL;
         }
-        else if (pMT == MscorlibBinder::GetElementType(ELEMENT_TYPE_I))
+        else if (pMT == CoreLibBinder::GetElementType(ELEMENT_TYPE_I))
         {
             *(LPVOID*)&(V_INT(pOle)) = *(LPVOID*)( (*pObj)->GetData() );
             V_VT(pOle) = VT_INT;
         }
-        else if (pMT == MscorlibBinder::GetElementType(ELEMENT_TYPE_U))
+        else if (pMT == CoreLibBinder::GetElementType(ELEMENT_TYPE_U))
         {
             *(LPVOID*)&(V_UINT(pOle)) = *(LPVOID*)( (*pObj)->GetData() );
             V_VT(pOle) = VT_UINT;
@@ -2972,49 +2972,49 @@ HRESULT OleVariant::MarshalCommonOleRefVariantForObject(OBJECTREF *pObj, VARIANT
     // Let's try to handle the common trivial cases quickly first before
     // running the generalized stuff.
     MethodTable *pMT = (*pObj) == NULL ? NULL : (*pObj)->GetMethodTable();
-    if ( (V_VT(pOle) == (VT_BYREF | VT_I4) || V_VT(pOle) == (VT_BYREF | VT_UI4)) && (pMT == MscorlibBinder::GetElementType(ELEMENT_TYPE_I4) || pMT == MscorlibBinder::GetElementType(ELEMENT_TYPE_U4)) )
+    if ( (V_VT(pOle) == (VT_BYREF | VT_I4) || V_VT(pOle) == (VT_BYREF | VT_UI4)) && (pMT == CoreLibBinder::GetElementType(ELEMENT_TYPE_I4) || pMT == CoreLibBinder::GetElementType(ELEMENT_TYPE_U4)) )
     {
         // deallocation of old value optimized away since there's nothing to
         // deallocate for this vartype.
 
         *(V_I4REF(pOle)) = *(LONG*)( (*pObj)->GetData() );
     }
-    else if ( (V_VT(pOle) == (VT_BYREF | VT_I2) || V_VT(pOle) == (VT_BYREF | VT_UI2)) && (pMT == MscorlibBinder::GetElementType(ELEMENT_TYPE_I2) || pMT == MscorlibBinder::GetElementType(ELEMENT_TYPE_U2)) )
+    else if ( (V_VT(pOle) == (VT_BYREF | VT_I2) || V_VT(pOle) == (VT_BYREF | VT_UI2)) && (pMT == CoreLibBinder::GetElementType(ELEMENT_TYPE_I2) || pMT == CoreLibBinder::GetElementType(ELEMENT_TYPE_U2)) )
     {
         // deallocation of old value optimized away since there's nothing to
         // deallocate for this vartype.
 
         *(V_I2REF(pOle)) = *(SHORT*)( (*pObj)->GetData() );
     }
-    else if ( (V_VT(pOle) == (VT_BYREF | VT_I1) || V_VT(pOle) == (VT_BYREF | VT_UI1)) && (pMT == MscorlibBinder::GetElementType(ELEMENT_TYPE_I1) || pMT == MscorlibBinder::GetElementType(ELEMENT_TYPE_U1)) )
+    else if ( (V_VT(pOle) == (VT_BYREF | VT_I1) || V_VT(pOle) == (VT_BYREF | VT_UI1)) && (pMT == CoreLibBinder::GetElementType(ELEMENT_TYPE_I1) || pMT == CoreLibBinder::GetElementType(ELEMENT_TYPE_U1)) )
     {
         // deallocation of old value optimized away since there's nothing to
         // deallocate for this vartype.
 
         *(V_I1REF(pOle)) = *(CHAR*)( (*pObj)->GetData() );
     }
-    else if ( V_VT(pOle) == (VT_BYREF | VT_R4) && pMT == MscorlibBinder::GetElementType(ELEMENT_TYPE_R4) )
+    else if ( V_VT(pOle) == (VT_BYREF | VT_R4) && pMT == CoreLibBinder::GetElementType(ELEMENT_TYPE_R4) )
     {
         // deallocation of old value optimized away since there's nothing to
         // deallocate for this vartype.
 
         *(V_R4REF(pOle)) = *(FLOAT*)( (*pObj)->GetData() );
     }
-    else if ( V_VT(pOle) == (VT_BYREF | VT_R8) && pMT == MscorlibBinder::GetElementType(ELEMENT_TYPE_R8) )
+    else if ( V_VT(pOle) == (VT_BYREF | VT_R8) && pMT == CoreLibBinder::GetElementType(ELEMENT_TYPE_R8) )
     {
         // deallocation of old value optimized away since there's nothing to
         // deallocate for this vartype.
 
         *(V_R8REF(pOle)) = *(DOUBLE*)( (*pObj)->GetData() );
     }
-    else if ( V_VT(pOle) == (VT_BYREF | VT_BOOL) && pMT == MscorlibBinder::GetElementType(ELEMENT_TYPE_BOOLEAN) )
+    else if ( V_VT(pOle) == (VT_BYREF | VT_BOOL) && pMT == CoreLibBinder::GetElementType(ELEMENT_TYPE_BOOLEAN) )
     {
         // deallocation of old value optimized away since there's nothing to
         // deallocate for this vartype.
 
         *(V_BOOLREF(pOle)) =  ( *(U1*)( (*pObj)->GetData() ) ) ? VARIANT_TRUE : VARIANT_FALSE;
     }
-    else if ( (V_VT(pOle) == (VT_BYREF | VT_INT) || V_VT(pOle) == (VT_BYREF | VT_UINT)) && (pMT == MscorlibBinder::GetElementType(ELEMENT_TYPE_I4) || pMT == MscorlibBinder::GetElementType(ELEMENT_TYPE_U4)) )
+    else if ( (V_VT(pOle) == (VT_BYREF | VT_INT) || V_VT(pOle) == (VT_BYREF | VT_UINT)) && (pMT == CoreLibBinder::GetElementType(ELEMENT_TYPE_I4) || pMT == CoreLibBinder::GetElementType(ELEMENT_TYPE_U4)) )
     {
         // deallocation of old value optimized away since there's nothing to
         // deallocate for this vartype.
@@ -3122,112 +3122,112 @@ void OleVariant::MarshalObjectForOleVariant(const VARIANT * pOle, OBJECTREF * co
         case VT_I4:
         case VT_INT:
             SetObjectReference( pObj,
-                                AllocateObject(MscorlibBinder::GetElementType(ELEMENT_TYPE_I4)) );
+                                AllocateObject(CoreLibBinder::GetElementType(ELEMENT_TYPE_I4)) );
             *(LONG*)((*pObj)->GetData()) = V_I4(pOle);
             break;
 
         case VT_BYREF|VT_I4:
         case VT_BYREF|VT_INT:
             SetObjectReference( pObj,
-                                AllocateObject(MscorlibBinder::GetElementType(ELEMENT_TYPE_I4)) );
+                                AllocateObject(CoreLibBinder::GetElementType(ELEMENT_TYPE_I4)) );
             *(LONG*)((*pObj)->GetData()) = *(V_I4REF(pOle));
             break;
 
         case VT_UI4:
         case VT_UINT:
             SetObjectReference( pObj,
-                                AllocateObject(MscorlibBinder::GetElementType(ELEMENT_TYPE_U4)) );
+                                AllocateObject(CoreLibBinder::GetElementType(ELEMENT_TYPE_U4)) );
             *(ULONG*)((*pObj)->GetData()) = V_UI4(pOle);
             break;
 
         case VT_BYREF|VT_UI4:
         case VT_BYREF|VT_UINT:
             SetObjectReference( pObj,
-                                AllocateObject(MscorlibBinder::GetElementType(ELEMENT_TYPE_U4)) );
+                                AllocateObject(CoreLibBinder::GetElementType(ELEMENT_TYPE_U4)) );
             *(ULONG*)((*pObj)->GetData()) = *(V_UI4REF(pOle));
             break;
 
         case VT_I2:
             SetObjectReference( pObj,
-                                AllocateObject(MscorlibBinder::GetElementType(ELEMENT_TYPE_I2)) );
+                                AllocateObject(CoreLibBinder::GetElementType(ELEMENT_TYPE_I2)) );
             (*(SHORT*)((*pObj)->GetData())) = V_I2(pOle);
             break;
 
         case VT_BYREF|VT_I2:
             SetObjectReference( pObj,
-                                AllocateObject(MscorlibBinder::GetElementType(ELEMENT_TYPE_I2)) );
+                                AllocateObject(CoreLibBinder::GetElementType(ELEMENT_TYPE_I2)) );
             *(SHORT*)((*pObj)->GetData()) = *(V_I2REF(pOle));
             break;
 
         case VT_UI2:
             SetObjectReference( pObj,
-                                AllocateObject(MscorlibBinder::GetElementType(ELEMENT_TYPE_U2)) );
+                                AllocateObject(CoreLibBinder::GetElementType(ELEMENT_TYPE_U2)) );
             *(USHORT*)((*pObj)->GetData()) = V_UI2(pOle);
             break;
 
         case VT_BYREF|VT_UI2:
             SetObjectReference( pObj,
-                                AllocateObject(MscorlibBinder::GetElementType(ELEMENT_TYPE_U2)) );
+                                AllocateObject(CoreLibBinder::GetElementType(ELEMENT_TYPE_U2)) );
             *(USHORT*)((*pObj)->GetData()) = *(V_UI2REF(pOle));
             break;
 
         case VT_I1:
             SetObjectReference( pObj,
-                                AllocateObject(MscorlibBinder::GetElementType(ELEMENT_TYPE_I1)) );
+                                AllocateObject(CoreLibBinder::GetElementType(ELEMENT_TYPE_I1)) );
             *(CHAR*)((*pObj)->GetData()) = V_I1(pOle);
             break;
 
         case VT_BYREF|VT_I1:
             SetObjectReference( pObj,
-                                AllocateObject(MscorlibBinder::GetElementType(ELEMENT_TYPE_I1)) );
+                                AllocateObject(CoreLibBinder::GetElementType(ELEMENT_TYPE_I1)) );
             *(CHAR*)((*pObj)->GetData()) = *(V_I1REF(pOle));
             break;
 
         case VT_UI1:
             SetObjectReference( pObj,
-                                AllocateObject(MscorlibBinder::GetElementType(ELEMENT_TYPE_U1)) );
+                                AllocateObject(CoreLibBinder::GetElementType(ELEMENT_TYPE_U1)) );
             *(BYTE*)((*pObj)->GetData()) = V_UI1(pOle);
             break;
 
         case VT_BYREF|VT_UI1:
             SetObjectReference( pObj,
-                                AllocateObject(MscorlibBinder::GetElementType(ELEMENT_TYPE_U1)) );
+                                AllocateObject(CoreLibBinder::GetElementType(ELEMENT_TYPE_U1)) );
             *(BYTE*)((*pObj)->GetData()) = *(V_UI1REF(pOle));
             break;
 
         case VT_R4:
             SetObjectReference( pObj,
-                                AllocateObject(MscorlibBinder::GetElementType(ELEMENT_TYPE_R4)) );
+                                AllocateObject(CoreLibBinder::GetElementType(ELEMENT_TYPE_R4)) );
             *(FLOAT*)((*pObj)->GetData()) = V_R4(pOle);
             break;
 
         case VT_BYREF|VT_R4:
             SetObjectReference( pObj,
-                                AllocateObject(MscorlibBinder::GetElementType(ELEMENT_TYPE_R4)) );
+                                AllocateObject(CoreLibBinder::GetElementType(ELEMENT_TYPE_R4)) );
             *(FLOAT*)((*pObj)->GetData()) = *(V_R4REF(pOle));
             break;
 
         case VT_R8:
             SetObjectReference( pObj,
-                                AllocateObject(MscorlibBinder::GetElementType(ELEMENT_TYPE_R8)) );
+                                AllocateObject(CoreLibBinder::GetElementType(ELEMENT_TYPE_R8)) );
             *(DOUBLE*)((*pObj)->GetData()) = V_R8(pOle);
             break;
 
         case VT_BYREF|VT_R8:
             SetObjectReference( pObj,
-                                AllocateObject(MscorlibBinder::GetElementType(ELEMENT_TYPE_R8)) );
+                                AllocateObject(CoreLibBinder::GetElementType(ELEMENT_TYPE_R8)) );
             *(DOUBLE*)((*pObj)->GetData()) = *(V_R8REF(pOle));
             break;
 
         case VT_BOOL:
             SetObjectReference( pObj,
-                                AllocateObject(MscorlibBinder::GetElementType(ELEMENT_TYPE_BOOLEAN)) );
+                                AllocateObject(CoreLibBinder::GetElementType(ELEMENT_TYPE_BOOLEAN)) );
             *(VARIANT_BOOL*)((*pObj)->GetData()) = V_BOOL(pOle) ? 1 : 0;
             break;
 
         case VT_BYREF|VT_BOOL:
             SetObjectReference( pObj,
-                                AllocateObject(MscorlibBinder::GetElementType(ELEMENT_TYPE_BOOLEAN)) );
+                                AllocateObject(CoreLibBinder::GetElementType(ELEMENT_TYPE_BOOLEAN)) );
             *(VARIANT_BOOL*)((*pObj)->GetData()) = *(V_BOOLREF(pOle)) ? 1 : 0;
             break;
 
@@ -3800,7 +3800,7 @@ void OleVariant::MarshalCurrencyVariantOleToCom(VARIANT *pOleVariant,
     }
     CONTRACTL_END;
 
-    OBJECTREF pDecimalRef = AllocateObject(MscorlibBinder::GetClass(CLASS__DECIMAL));
+    OBJECTREF pDecimalRef = AllocateObject(CoreLibBinder::GetClass(CLASS__DECIMAL));
     DECIMAL DecVal;
 
     // Convert the currency to a decimal.
@@ -3848,7 +3848,7 @@ void OleVariant::MarshalCurrencyVariantOleRefToCom(VARIANT *pOleVariant,
     }
     CONTRACTL_END;
 
-    OBJECTREF pDecimalRef = AllocateObject(MscorlibBinder::GetClass(CLASS__DECIMAL));
+    OBJECTREF pDecimalRef = AllocateObject(CoreLibBinder::GetClass(CLASS__DECIMAL));
     DECIMAL DecVal;
 
     // Convert the currency to a decimal.
@@ -4867,16 +4867,16 @@ BOOL OleVariant::IsArrayOfWrappers(BASEARRAYREF *pArray, BOOL *pbOfInterfaceWrap
 
     if (!hndElemType.IsTypeDesc())
     {
-        if (hndElemType == TypeHandle(MscorlibBinder::GetClass(CLASS__DISPATCH_WRAPPER)) ||
-            hndElemType == TypeHandle(MscorlibBinder::GetClass(CLASS__UNKNOWN_WRAPPER)))
+        if (hndElemType == TypeHandle(CoreLibBinder::GetClass(CLASS__DISPATCH_WRAPPER)) ||
+            hndElemType == TypeHandle(CoreLibBinder::GetClass(CLASS__UNKNOWN_WRAPPER)))
         {
             *pbOfInterfaceWrappers = TRUE;
             return TRUE;
         }
 
-        if (hndElemType == TypeHandle(MscorlibBinder::GetClass(CLASS__ERROR_WRAPPER)) ||
-            hndElemType == TypeHandle(MscorlibBinder::GetClass(CLASS__CURRENCY_WRAPPER)) ||
-            hndElemType == TypeHandle(MscorlibBinder::GetClass(CLASS__BSTR_WRAPPER)))
+        if (hndElemType == TypeHandle(CoreLibBinder::GetClass(CLASS__ERROR_WRAPPER)) ||
+            hndElemType == TypeHandle(CoreLibBinder::GetClass(CLASS__CURRENCY_WRAPPER)) ||
+            hndElemType == TypeHandle(CoreLibBinder::GetClass(CLASS__BSTR_WRAPPER)))
         {
             *pbOfInterfaceWrappers = FALSE;
             return TRUE;
@@ -4906,20 +4906,20 @@ BASEARRAYREF OleVariant::ExtractWrappedObjectsFromArray(BASEARRAYREF *pArray)
     BASEARRAYREF RetArray = NULL;
 
     // Retrieve the element type handle for the array to create.
-    if (hndWrapperType == TypeHandle(MscorlibBinder::GetClass(CLASS__DISPATCH_WRAPPER)))
+    if (hndWrapperType == TypeHandle(CoreLibBinder::GetClass(CLASS__DISPATCH_WRAPPER)))
         hndElemType = TypeHandle(g_pObjectClass);
 
-    else if (hndWrapperType == TypeHandle(MscorlibBinder::GetClass(CLASS__UNKNOWN_WRAPPER)))
+    else if (hndWrapperType == TypeHandle(CoreLibBinder::GetClass(CLASS__UNKNOWN_WRAPPER)))
         hndElemType = TypeHandle(g_pObjectClass);
 
-    else if (hndWrapperType == TypeHandle(MscorlibBinder::GetClass(CLASS__BSTR_WRAPPER)))
+    else if (hndWrapperType == TypeHandle(CoreLibBinder::GetClass(CLASS__BSTR_WRAPPER)))
         hndElemType = TypeHandle(g_pStringClass);
 
-    else if (hndWrapperType == TypeHandle(MscorlibBinder::GetClass(CLASS__ERROR_WRAPPER)))
-        hndElemType = TypeHandle(MscorlibBinder::GetClass(CLASS__INT32));
+    else if (hndWrapperType == TypeHandle(CoreLibBinder::GetClass(CLASS__ERROR_WRAPPER)))
+        hndElemType = TypeHandle(CoreLibBinder::GetClass(CLASS__INT32));
 
-    else if (hndWrapperType == TypeHandle(MscorlibBinder::GetClass(CLASS__CURRENCY_WRAPPER)))
-        hndElemType = TypeHandle(MscorlibBinder::GetClass(CLASS__DECIMAL));
+    else if (hndWrapperType == TypeHandle(CoreLibBinder::GetClass(CLASS__CURRENCY_WRAPPER)))
+        hndElemType = TypeHandle(CoreLibBinder::GetClass(CLASS__DECIMAL));
 
     else
         _ASSERTE(!"Invalid wrapper type");
@@ -4961,7 +4961,7 @@ BASEARRAYREF OleVariant::ExtractWrappedObjectsFromArray(BASEARRAYREF *pArray)
     {
         SIZE_T NumComponents = (*pArray)->GetNumComponents();
 
-        if (hndWrapperType == TypeHandle(MscorlibBinder::GetClass(CLASS__DISPATCH_WRAPPER)))
+        if (hndWrapperType == TypeHandle(CoreLibBinder::GetClass(CLASS__DISPATCH_WRAPPER)))
         {
             DISPATCHWRAPPEROBJECTREF *pSrc = (DISPATCHWRAPPEROBJECTREF *)(*pArray)->GetDataPtr();
             DISPATCHWRAPPEROBJECTREF *pSrcEnd = pSrc + NumComponents;
@@ -4969,7 +4969,7 @@ BASEARRAYREF OleVariant::ExtractWrappedObjectsFromArray(BASEARRAYREF *pArray)
             for (; pSrc < pSrcEnd; pSrc++, pDest++)
                 SetObjectReference(pDest, (*pSrc) != NULL ? (*pSrc)->GetWrappedObject() : NULL);
         }
-        else if (hndWrapperType == TypeHandle(MscorlibBinder::GetClass(CLASS__UNKNOWN_WRAPPER)))
+        else if (hndWrapperType == TypeHandle(CoreLibBinder::GetClass(CLASS__UNKNOWN_WRAPPER)))
         {
             UNKNOWNWRAPPEROBJECTREF *pSrc = (UNKNOWNWRAPPEROBJECTREF *)(*pArray)->GetDataPtr();
             UNKNOWNWRAPPEROBJECTREF *pSrcEnd = pSrc + NumComponents;
@@ -4977,7 +4977,7 @@ BASEARRAYREF OleVariant::ExtractWrappedObjectsFromArray(BASEARRAYREF *pArray)
             for (; pSrc < pSrcEnd; pSrc++, pDest++)
                 SetObjectReference(pDest, (*pSrc) != NULL ? (*pSrc)->GetWrappedObject() : NULL);
         }
-        else if (hndWrapperType == TypeHandle(MscorlibBinder::GetClass(CLASS__ERROR_WRAPPER)))
+        else if (hndWrapperType == TypeHandle(CoreLibBinder::GetClass(CLASS__ERROR_WRAPPER)))
         {
             ERRORWRAPPEROBJECTREF *pSrc = (ERRORWRAPPEROBJECTREF *)(*pArray)->GetDataPtr();
             ERRORWRAPPEROBJECTREF *pSrcEnd = pSrc + NumComponents;
@@ -4985,7 +4985,7 @@ BASEARRAYREF OleVariant::ExtractWrappedObjectsFromArray(BASEARRAYREF *pArray)
             for (; pSrc < pSrcEnd; pSrc++, pDest++)
                 *pDest = (*pSrc) != NULL ? (*pSrc)->GetErrorCode() : NULL;
         }
-        else if (hndWrapperType == TypeHandle(MscorlibBinder::GetClass(CLASS__CURRENCY_WRAPPER)))
+        else if (hndWrapperType == TypeHandle(CoreLibBinder::GetClass(CLASS__CURRENCY_WRAPPER)))
         {
             CURRENCYWRAPPEROBJECTREF *pSrc = (CURRENCYWRAPPEROBJECTREF *)(*pArray)->GetDataPtr();
             CURRENCYWRAPPEROBJECTREF *pSrcEnd = pSrc + NumComponents;
@@ -4998,7 +4998,7 @@ BASEARRAYREF OleVariant::ExtractWrappedObjectsFromArray(BASEARRAYREF *pArray)
                     memset(pDest, 0, sizeof(DECIMAL));
             }
         }
-        else if (hndWrapperType == TypeHandle(MscorlibBinder::GetClass(CLASS__BSTR_WRAPPER)))
+        else if (hndWrapperType == TypeHandle(CoreLibBinder::GetClass(CLASS__BSTR_WRAPPER)))
         {
             BSTRWRAPPEROBJECTREF *pSrc = (BSTRWRAPPEROBJECTREF *)(*pArray)->GetDataPtr();
             BSTRWRAPPEROBJECTREF *pSrcEnd = pSrc + NumComponents;
@@ -5034,22 +5034,22 @@ TypeHandle OleVariant::GetWrappedArrayElementType(BASEARRAYREF *pArray)
     TypeHandle hndWrapperType = (*pArray)->GetArrayElementTypeHandle();
     TypeHandle pWrappedObjType;
 
-    if (hndWrapperType == TypeHandle(MscorlibBinder::GetClass(CLASS__DISPATCH_WRAPPER)) ||
-        hndWrapperType == TypeHandle(MscorlibBinder::GetClass(CLASS__UNKNOWN_WRAPPER)))
+    if (hndWrapperType == TypeHandle(CoreLibBinder::GetClass(CLASS__DISPATCH_WRAPPER)) ||
+        hndWrapperType == TypeHandle(CoreLibBinder::GetClass(CLASS__UNKNOWN_WRAPPER)))
     {
         // There's no need to traverse the array up front. We'll use the default interface
         // for each element in code:OleVariant::MarshalInterfaceArrayComToOleHelper.
         pWrappedObjType = TypeHandle(g_pObjectClass);
     }
-    else if (hndWrapperType == TypeHandle(MscorlibBinder::GetClass(CLASS__ERROR_WRAPPER)))
+    else if (hndWrapperType == TypeHandle(CoreLibBinder::GetClass(CLASS__ERROR_WRAPPER)))
     {
-        pWrappedObjType = TypeHandle(MscorlibBinder::GetClass(CLASS__INT32));
+        pWrappedObjType = TypeHandle(CoreLibBinder::GetClass(CLASS__INT32));
     }
-    else if (hndWrapperType == TypeHandle(MscorlibBinder::GetClass(CLASS__CURRENCY_WRAPPER)))
+    else if (hndWrapperType == TypeHandle(CoreLibBinder::GetClass(CLASS__CURRENCY_WRAPPER)))
     {
-        pWrappedObjType = TypeHandle(MscorlibBinder::GetClass(CLASS__DECIMAL));
+        pWrappedObjType = TypeHandle(CoreLibBinder::GetClass(CLASS__DECIMAL));
     }
-    else if (hndWrapperType == TypeHandle(MscorlibBinder::GetClass(CLASS__BSTR_WRAPPER)))
+    else if (hndWrapperType == TypeHandle(CoreLibBinder::GetClass(CLASS__BSTR_WRAPPER)))
     {
         pWrappedObjType = TypeHandle(g_pStringClass);
     }

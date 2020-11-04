@@ -12,6 +12,8 @@ namespace System.Data
     /// Represents a collection of constraints for a <see cref='System.Data.DataTable'/>.
     /// </summary>
     [DefaultEvent(nameof(CollectionChanged))]
+    [Editor("Microsoft.VSDesigner.Data.Design.ConstraintsCollectionEditor, Microsoft.VSDesigner, Version=10.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a",
+            "System.Drawing.Design.UITypeEditor, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a")]
     public sealed class ConstraintCollection : InternalDataCollectionBase
     {
         private readonly DataTable _table;
@@ -87,7 +89,7 @@ namespace System.Data
             }
 
             // It is an error if we find an equivalent constraint already in collection
-            if (FindConstraint(constraint) is { } matchedConstraint)
+            if (FindConstraint(constraint) is Constraint matchedConstraint)
             {
                 throw ExceptionBuilder.DuplicateConstraint(matchedConstraint.ConstraintName);
             }

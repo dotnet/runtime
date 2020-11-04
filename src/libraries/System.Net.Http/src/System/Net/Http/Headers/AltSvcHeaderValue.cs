@@ -1,6 +1,9 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Globalization;
+using System.Text;
+
 namespace System.Net.Http.Headers
 {
     /// <remarks>
@@ -44,5 +47,30 @@ namespace System.Net.Http.Headers
         /// </summary>
         /// <remarks>TODO: if made public, this should be made internal as Persist is left open-ended and can be non-boolean in the future.</remarks>
         public bool Persist { get; }
+
+        public override string ToString()
+        {
+            StringBuilder sb = StringBuilderCache.Acquire(capacity: AlpnProtocolName.Length + (Host?.Length ?? 0) + 64);
+
+            sb.Append(AlpnProtocolName);
+            sb.Append("=\"");
+            if (Host != null) sb.Append(Host);
+            sb.Append(':');
+            sb.Append(Port.ToString(CultureInfo.InvariantCulture));
+            sb.Append('"');
+
+            if (MaxAge != TimeSpan.FromTicks(AltSvcHeaderParser.DefaultMaxAgeTicks))
+            {
+                sb.Append("; ma=");
+                sb.Append((MaxAge.Ticks / TimeSpan.TicksPerSecond).ToString(CultureInfo.InvariantCulture));
+            }
+
+            if (Persist)
+            {
+                sb.Append("; persist=1");
+            }
+
+            return StringBuilderCache.GetStringAndRelease(sb);
+        }
     }
 }

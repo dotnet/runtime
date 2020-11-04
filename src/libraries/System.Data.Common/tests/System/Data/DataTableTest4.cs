@@ -870,7 +870,7 @@ namespace System.Data.Tests
             Assert.Equal(3, row["ParentID"]);
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotInvariantGlobalization))]
         public void XmlTest8()
         {
             MakeParentTable1();
@@ -910,7 +910,7 @@ namespace System.Data.Tests
             Assert.Equal("3", row["DepartmentID"]);
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotInvariantGlobalization))]
         public void XmlTest9()
         {
             MakeParentTable1();

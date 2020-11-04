@@ -5,6 +5,7 @@ using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices.ComTypes;
+using System.Runtime.Versioning;
 using System.StubHelpers;
 
 namespace System.Runtime.InteropServices
@@ -25,7 +26,7 @@ namespace System.Runtime.InteropServices
         [MethodImpl(MethodImplOptions.InternalCall)]
         internal static extern int SizeOfHelper(Type t, bool throwIfNotMarshalable);
 
-        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2006:UnrecognizedReflectionPattern",
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2070:UnrecognizedReflectionPattern",
             Justification = "Trimming doesn't affect types eligible for marshalling. Different exception for invalid inputs doesn't matter.")]
         public static IntPtr OffsetOf(Type t, string fieldName)
         {
@@ -249,52 +250,6 @@ namespace System.Runtime.InteropServices
         [MethodImpl(MethodImplOptions.InternalCall)]
         internal static extern Exception GetExceptionForHRInternal(int errorCode, IntPtr errorInfo);
 
-        public static IntPtr AllocHGlobal(IntPtr cb)
-        {
-            // For backwards compatibility on 32 bit platforms, ensure we pass values between
-            // int.MaxValue and uint.MaxValue to Windows.  If the binary has had the
-            // LARGEADDRESSAWARE bit set in the PE header, it may get 3 or 4 GB of user mode
-            // address space.  It is remotely that those allocations could have succeeded,
-            // though I couldn't reproduce that.  In either case, that means we should continue
-            // throwing an OOM instead of an ArgumentOutOfRangeException for "negative" amounts of memory.
-            UIntPtr numBytes;
-#if TARGET_64BIT
-            numBytes = new UIntPtr(unchecked((ulong)cb.ToInt64()));
-#else // 32
-            numBytes = new UIntPtr(unchecked((uint)cb.ToInt32()));
-#endif
-
-            IntPtr pNewMem = Interop.Kernel32.LocalAlloc(Interop.Kernel32.LMEM_FIXED, unchecked(numBytes));
-            if (pNewMem == IntPtr.Zero)
-            {
-                throw new OutOfMemoryException();
-            }
-
-            return pNewMem;
-        }
-
-        public static void FreeHGlobal(IntPtr hglobal)
-        {
-            if (!IsNullOrWin32Atom(hglobal))
-            {
-                if (IntPtr.Zero != Interop.Kernel32.LocalFree(hglobal))
-                {
-                    ThrowExceptionForHR(GetHRForLastWin32Error());
-                }
-            }
-        }
-
-        public static IntPtr ReAllocHGlobal(IntPtr pv, IntPtr cb)
-        {
-            IntPtr pNewMem = Interop.Kernel32.LocalReAlloc(pv, cb, Interop.Kernel32.LMEM_MOVEABLE);
-            if (pNewMem == IntPtr.Zero)
-            {
-                throw new OutOfMemoryException();
-            }
-
-            return pNewMem;
-        }
-
 #if FEATURE_COMINTEROP
         /// <summary>
         /// Converts the CLR exception to an HRESULT. This function also sets
@@ -306,6 +261,7 @@ namespace System.Runtime.InteropServices
         /// <summary>
         /// Given a managed object that wraps an ITypeInfo, return its name.
         /// </summary>
+        [SupportedOSPlatform("windows")]
         public static string GetTypeInfoName(ITypeInfo typeInfo)
         {
             if (typeInfo is null)
@@ -319,12 +275,24 @@ namespace System.Runtime.InteropServices
 
         // This method is identical to Type.GetTypeFromCLSID. Since it's interop specific, we expose it
         // on Marshal for more consistent API surface.
-        public static Type? GetTypeFromCLSID(Guid clsid) => RuntimeType.GetTypeFromCLSIDImpl(clsid, null, throwOnError: false);
+        internal static Type? GetTypeFromCLSID(Guid clsid, string? server, bool throwOnError)
+        {
+            // Note: "throwOnError" is a vacuous parameter. Any errors due to the CLSID not being registered or the server not being found will happen
+            // on the Activator.CreateInstance() call. GetTypeFromCLSID() merely wraps the data in a Type object without any validation.
+
+            Type? type = null;
+            GetTypeFromCLSID(clsid, server, ObjectHandleOnStack.Create(ref type));
+            return type;
+        }
+
+        [DllImport(RuntimeHelpers.QCall, CharSet = CharSet.Unicode)]
+        private static extern void GetTypeFromCLSID(in Guid clsid, string? server, ObjectHandleOnStack retType);
 
         /// <summary>
         /// Return the IUnknown* for an Object if the current context is the one
         /// where the RCW was first seen. Will return null otherwise.
         /// </summary>
+        [SupportedOSPlatform("windows")]
         public static IntPtr /* IUnknown* */ GetIUnknownForObject(object o)
         {
             if (o is null)
@@ -348,6 +316,7 @@ namespace System.Runtime.InteropServices
         /// <summary>
         /// Return the IDispatch* for an Object.
         /// </summary>
+        [SupportedOSPlatform("windows")]
         public static IntPtr /* IDispatch */ GetIDispatchForObject(object o)
         {
             if (o is null)
@@ -365,6 +334,7 @@ namespace System.Runtime.InteropServices
         /// Return the IUnknown* representing the interface for the Object.
         /// Object o should support Type T
         /// </summary>
+        [SupportedOSPlatform("windows")]
         public static IntPtr /* IUnknown* */ GetComInterfaceForObject(object o, Type T)
         {
             if (o is null)
@@ -380,6 +350,7 @@ namespace System.Runtime.InteropServices
             return GetComInterfaceForObjectNative(o, T, false, true);
         }
 
+        [SupportedOSPlatform("windows")]
         public static IntPtr GetComInterfaceForObject<T, TInterface>([DisallowNull] T o) => GetComInterfaceForObject(o!, typeof(TInterface));
 
         /// <summary>
@@ -387,6 +358,7 @@ namespace System.Runtime.InteropServices
         /// Object o should support Type T, it refer the value of mode to
         /// invoke customized QueryInterface or not.
         /// </summary>
+        [SupportedOSPlatform("windows")]
         public static IntPtr /* IUnknown* */ GetComInterfaceForObject(object o, Type T, CustomQueryInterfaceMode mode)
         {
             if (o is null)
@@ -409,6 +381,7 @@ namespace System.Runtime.InteropServices
         /// <summary>
         /// Return the managed object representing the IUnknown*
         /// </summary>
+        [SupportedOSPlatform("windows")]
         public static object GetObjectForIUnknown(IntPtr /* IUnknown* */ pUnk)
         {
             if (pUnk == IntPtr.Zero)
@@ -422,6 +395,7 @@ namespace System.Runtime.InteropServices
         [MethodImpl(MethodImplOptions.InternalCall)]
         private static extern object GetObjectForIUnknownNative(IntPtr /* IUnknown* */ pUnk);
 
+        [SupportedOSPlatform("windows")]
         public static object GetUniqueObjectForIUnknown(IntPtr unknown)
         {
             if (unknown == IntPtr.Zero)
@@ -445,12 +419,15 @@ namespace System.Runtime.InteropServices
         /// Return an Object for IUnknown, using the Type T.
         /// Type T should be either a COM imported Type or a sub-type of COM imported Type
         /// </summary>
+        [SupportedOSPlatform("windows")]
         [MethodImpl(MethodImplOptions.InternalCall)]
         public static extern object GetTypedObjectForIUnknown(IntPtr /* IUnknown* */ pUnk, Type t);
 
+        [SupportedOSPlatform("windows")]
         [MethodImpl(MethodImplOptions.InternalCall)]
         public static extern IntPtr CreateAggregatedObject(IntPtr pOuter, object o);
 
+        [SupportedOSPlatform("windows")]
         public static IntPtr CreateAggregatedObject<T>(IntPtr pOuter, T o) where T : notnull
         {
             return CreateAggregatedObject(pOuter, (object)o);
@@ -468,87 +445,11 @@ namespace System.Runtime.InteropServices
         [MethodImpl(MethodImplOptions.InternalCall)]
         public static extern bool IsComObject(object o);
 
-#endif // FEATURE_COMINTEROP
-
-        public static IntPtr AllocCoTaskMem(int cb)
-        {
-            IntPtr pNewMem = Interop.Ole32.CoTaskMemAlloc(new UIntPtr((uint)cb));
-            if (pNewMem == IntPtr.Zero)
-            {
-                throw new OutOfMemoryException();
-            }
-
-            return pNewMem;
-        }
-
-        public static void FreeCoTaskMem(IntPtr ptr)
-        {
-            if (!IsNullOrWin32Atom(ptr))
-            {
-                Interop.Ole32.CoTaskMemFree(ptr);
-            }
-        }
-
-        public static IntPtr ReAllocCoTaskMem(IntPtr pv, int cb)
-        {
-            IntPtr pNewMem = Interop.Ole32.CoTaskMemRealloc(pv, new UIntPtr((uint)cb));
-            if (pNewMem == IntPtr.Zero && cb != 0)
-            {
-                throw new OutOfMemoryException();
-            }
-
-            return pNewMem;
-        }
-
-        internal static IntPtr AllocBSTR(int length)
-        {
-            IntPtr bstr = Interop.OleAut32.SysAllocStringLen(null, length);
-            if (bstr == IntPtr.Zero)
-            {
-                throw new OutOfMemoryException();
-            }
-            return bstr;
-        }
-
-        public static void FreeBSTR(IntPtr ptr)
-        {
-            if (!IsNullOrWin32Atom(ptr))
-            {
-                Interop.OleAut32.SysFreeString(ptr);
-            }
-        }
-
-        public static IntPtr StringToBSTR(string? s)
-        {
-            if (s is null)
-            {
-                return IntPtr.Zero;
-            }
-
-            IntPtr bstr = Interop.OleAut32.SysAllocStringLen(s, s.Length);
-            if (bstr == IntPtr.Zero)
-            {
-                throw new OutOfMemoryException();
-            }
-
-            return bstr;
-        }
-
-        public static string PtrToStringBSTR(IntPtr ptr)
-        {
-            if (ptr == IntPtr.Zero)
-            {
-                throw new ArgumentNullException(nameof(ptr));
-            }
-
-            return PtrToStringUni(ptr, (int)(SysStringByteLen(ptr) / sizeof(char)));
-        }
-
-#if FEATURE_COMINTEROP
         /// <summary>
         /// Release the COM component and if the reference hits 0 zombie this object.
         /// Further usage of this Object might throw an exception
         /// </summary>
+        [SupportedOSPlatform("windows")]
         public static int ReleaseComObject(object o)
         {
             if (o is null)
@@ -571,6 +472,7 @@ namespace System.Runtime.InteropServices
         /// Release the COM component and zombie this object.
         /// Further usage of this Object might throw an exception
         /// </summary>
+        [SupportedOSPlatform("windows")]
         public static int FinalReleaseComObject(object o)
         {
             if (o is null)
@@ -589,6 +491,7 @@ namespace System.Runtime.InteropServices
         [MethodImpl(MethodImplOptions.InternalCall)]
         internal static extern void InternalFinalReleaseComObject(object o);
 
+        [SupportedOSPlatform("windows")]
         public static object? GetComObjectData(object obj, object key)
         {
             if (obj is null)
@@ -614,6 +517,7 @@ namespace System.Runtime.InteropServices
         /// false if the data could not be added because there already was data for the
         /// specified key.
         /// </summary>
+        [SupportedOSPlatform("windows")]
         public static bool SetComObjectData(object obj, object key, object? data)
         {
             if (obj is null)
@@ -637,6 +541,7 @@ namespace System.Runtime.InteropServices
         /// This method takes the given COM object and wraps it in an object
         /// of the specified type. The type must be derived from __ComObject.
         /// </summary>
+        [SupportedOSPlatform("windows")]
         [return: NotNullIfNotNull("o")]
         public static object? CreateWrapperOfType(object? o, Type t)
         {
@@ -680,14 +585,15 @@ namespace System.Runtime.InteropServices
                 if (!SetComObjectData(o, t, Wrapper))
                 {
                     // Another thead already cached the wrapper so use that one instead.
-                    Wrapper = GetComObjectData(o, t);
+                    Wrapper = GetComObjectData(o, t)!;
                 }
             }
 
             return Wrapper;
         }
 
-        public static TWrapper CreateWrapperOfType<T, TWrapper>([AllowNull] T o)
+        [SupportedOSPlatform("windows")]
+        public static TWrapper CreateWrapperOfType<T, TWrapper>(T? o)
         {
             return (TWrapper)CreateWrapperOfType(o, typeof(TWrapper))!;
         }
@@ -701,6 +607,7 @@ namespace System.Runtime.InteropServices
         [MethodImpl(MethodImplOptions.InternalCall)]
         public static extern bool IsTypeVisibleFromCom(Type t);
 
+        [SupportedOSPlatform("windows")]
         public static unsafe int QueryInterface(IntPtr pUnk, ref Guid iid, out IntPtr ppv)
         {
             if (pUnk == IntPtr.Zero)
@@ -709,46 +616,53 @@ namespace System.Runtime.InteropServices
             fixed (Guid* pIID = &iid)
             fixed (IntPtr* p = &ppv)
             {
-                return ((delegate * stdcall <IntPtr, Guid*, IntPtr*, int>)(*(*(void***)pUnk + 0 /* IUnknown.QueryInterface slot */)))(pUnk, pIID, p);
+                return ((delegate* unmanaged<IntPtr, Guid*, IntPtr*, int>)(*(*(void***)pUnk + 0 /* IUnknown.QueryInterface slot */)))(pUnk, pIID, p);
             }
         }
 
+        [SupportedOSPlatform("windows")]
         public static unsafe int AddRef(IntPtr pUnk)
         {
             if (pUnk == IntPtr.Zero)
                 throw new ArgumentNullException(nameof(pUnk));
 
-            return ((delegate * stdcall <IntPtr, int>)(*(*(void***)pUnk + 1 /* IUnknown.AddRef slot */)))(pUnk);
+            return ((delegate* unmanaged<IntPtr, int>)(*(*(void***)pUnk + 1 /* IUnknown.AddRef slot */)))(pUnk);
         }
 
+        [SupportedOSPlatform("windows")]
         public static unsafe int Release(IntPtr pUnk)
         {
             if (pUnk == IntPtr.Zero)
                 throw new ArgumentNullException(nameof(pUnk));
 
-            return ((delegate * stdcall <IntPtr, int>)(*(*(void***)pUnk + 2 /* IUnknown.Release slot */)))(pUnk);
+            return ((delegate* unmanaged<IntPtr, int>)(*(*(void***)pUnk + 2 /* IUnknown.Release slot */)))(pUnk);
         }
 
+        [SupportedOSPlatform("windows")]
         [MethodImpl(MethodImplOptions.InternalCall)]
         public static extern void GetNativeVariantForObject(object? obj, /* VARIANT * */ IntPtr pDstNativeVariant);
 
-        public static void GetNativeVariantForObject<T>([AllowNull] T obj, IntPtr pDstNativeVariant)
+        [SupportedOSPlatform("windows")]
+        public static void GetNativeVariantForObject<T>(T? obj, IntPtr pDstNativeVariant)
         {
             GetNativeVariantForObject((object?)obj, pDstNativeVariant);
         }
 
+        [SupportedOSPlatform("windows")]
         [MethodImpl(MethodImplOptions.InternalCall)]
         public static extern object? GetObjectForNativeVariant(/* VARIANT * */ IntPtr pSrcNativeVariant);
 
-        [return: MaybeNull]
-        public static T GetObjectForNativeVariant<T>(IntPtr pSrcNativeVariant)
+        [SupportedOSPlatform("windows")]
+        public static T? GetObjectForNativeVariant<T>(IntPtr pSrcNativeVariant)
         {
-            return (T)GetObjectForNativeVariant(pSrcNativeVariant)!;
+            return (T?)GetObjectForNativeVariant(pSrcNativeVariant);
         }
 
+        [SupportedOSPlatform("windows")]
         [MethodImpl(MethodImplOptions.InternalCall)]
         public static extern object?[] GetObjectsForNativeVariants(/* VARIANT * */ IntPtr aSrcNativeVariant, int cVars);
 
+        [SupportedOSPlatform("windows")]
         public static T[] GetObjectsForNativeVariants<T>(IntPtr aSrcNativeVariant, int cVars)
         {
             object?[] objects = GetObjectsForNativeVariants(aSrcNativeVariant, cVars);
@@ -763,15 +677,18 @@ namespace System.Runtime.InteropServices
         /// <para>Returns the first valid COM slot that GetMethodInfoForSlot will work on
         /// This will be 3 for IUnknown based interfaces and 7 for IDispatch based interfaces. </para>
         /// </summary>
+        [SupportedOSPlatform("windows")]
         [MethodImpl(MethodImplOptions.InternalCall)]
         public static extern int GetStartComSlot(Type t);
 
         /// <summary>
         /// <para>Returns the last valid COM slot that GetMethodInfoForSlot will work on. </para>
         /// </summary>
+        [SupportedOSPlatform("windows")]
         [MethodImpl(MethodImplOptions.InternalCall)]
         public static extern int GetEndComSlot(Type t);
 
+        [SupportedOSPlatform("windows")]
         public static object BindToMoniker(string monikerName)
         {
             CreateBindCtx(0, out IBindCtx bindctx);
@@ -791,6 +708,7 @@ namespace System.Runtime.InteropServices
         [DllImport(Interop.Libraries.Ole32, PreserveSig = false)]
         private static extern void BindMoniker(IMoniker pmk, uint grfOpt, ref Guid iidResult, [MarshalAs(UnmanagedType.Interface)] out object ppvResult);
 
+        [SupportedOSPlatform("windows")]
         [MethodImpl(MethodImplOptions.InternalCall)]
         public static extern void ChangeWrapperHandleStrength(object otp, bool fIsWeak);
 #endif // FEATURE_COMINTEROP

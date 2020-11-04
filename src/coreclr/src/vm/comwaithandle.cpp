@@ -35,6 +35,25 @@ FCIMPL2(INT32, WaitHandleNative::CorWaitOneNative, HANDLE handle, INT32 timeout)
 }
 FCIMPLEND
 
+#ifdef TARGET_UNIX
+INT32 QCALLTYPE WaitHandleNative::CorWaitOnePrioritizedNative(HANDLE handle, INT32 timeoutMs)
+{
+    QCALL_CONTRACT;
+
+    DWORD result = WAIT_FAILED;
+
+    BEGIN_QCALL;
+
+    _ASSERTE(handle != NULL);
+    _ASSERTE(handle != INVALID_HANDLE_VALUE);
+
+    result = PAL_WaitForSingleObjectPrioritized(handle, timeoutMs);
+
+    END_QCALL;
+    return (INT32)result;
+}
+#endif
+
 FCIMPL4(INT32, WaitHandleNative::CorWaitMultipleNative, HANDLE *handleArray, INT32 numHandles, CLR_BOOL waitForAll, INT32 timeout)
 {
     FCALL_CONTRACT;
@@ -46,7 +65,7 @@ FCIMPL4(INT32, WaitHandleNative::CorWaitMultipleNative, HANDLE *handleArray, INT
 
 #ifdef FEATURE_COMINTEROP_APARTMENT_SUPPORT
     // There are some issues with wait-all from an STA thread
-    // - https://github.com/dotnet/coreclr/issues/17787#issuecomment-385117537
+    // - https://github.com/dotnet/runtime/issues/10243#issuecomment-385117537
     if (waitForAll && numHandles > 1 && pThread->GetApartment() == Thread::AS_InSTA)
     {
         COMPlusThrow(kNotSupportedException, W("NotSupported_WaitAllSTAThread"));

@@ -19,7 +19,7 @@
  * Depends on memcmp and strlen
  */
 
-int __cdecl main(int argc, char *argv[])
+PALTEST(c_runtime_sprintf_s_test18_paltest_sprintf_test18, "c_runtime/sprintf_s/test18/paltest_sprintf_test18")
 {
     double val = 2560.001;
     double neg = -2560.001;

@@ -3,7 +3,6 @@
 
 using Microsoft.Win32.SafeHandles;
 using System.Collections.Generic;
-using System.Runtime.InteropServices;
 using Microsoft.DotNet.XUnitExtensions;
 using Xunit;
 
@@ -697,13 +696,13 @@ namespace System.IO.MemoryMappedFiles.Tests
         public void WriteToReadOnlyFile_ReadWrite(MemoryMappedFileAccess access)
         {
             WriteToReadOnlyFile(access, access == MemoryMappedFileAccess.Read ||
-                            (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows) && PlatformDetection.IsSuperUser));
+                            PlatformDetection.IsSuperUser);
         }
 
         [Fact]
         public void WriteToReadOnlyFile_CopyOnWrite()
         {
-            WriteToReadOnlyFile(MemoryMappedFileAccess.CopyOnWrite, (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows) && PlatformDetection.IsSuperUser));
+            WriteToReadOnlyFile(MemoryMappedFileAccess.CopyOnWrite, PlatformDetection.IsSuperUser);
         }
 
         /// <summary>

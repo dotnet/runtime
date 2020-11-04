@@ -16,7 +16,7 @@ namespace System.Reflection.Emit
         #region Private Data Members
         // Identity
         internal string m_strName; // The name of the method
-        private MethodToken m_tkMethod; // The token of this method
+        private int m_token; // The token of this method
         private readonly ModuleBuilder m_module;
 
         [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)]
@@ -98,20 +98,6 @@ namespace System.Reflection.Emit
                 throw new ArgumentException(SR.Arg_NoStaticVirtual);
             }
 
-#if !FEATURE_DEFAULT_INTERFACES
-            if ((attributes & MethodAttributes.SpecialName) != MethodAttributes.SpecialName)
-            {
-                if ((type.Attributes & TypeAttributes.Interface) == TypeAttributes.Interface)
-                {
-                    // methods on interface have to be abstract + virtual except special name methods such as type initializer
-                    if ((attributes & (MethodAttributes.Abstract | MethodAttributes.Virtual)) !=
-                        (MethodAttributes.Abstract | MethodAttributes.Virtual) &&
-                        (attributes & MethodAttributes.Static) == 0)
-                        throw new ArgumentException(SR.Argument_BadAttributeOnInterfaceMethod);
-                }
-            }
-#endif
-
             m_callingConvention = callingConvention;
 
             if (parameterTypes != null)
@@ -148,16 +134,6 @@ namespace System.Reflection.Emit
         #endregion
 
         #region Internal Members
-
-        internal void CheckContext(params Type[]?[]? typess)
-        {
-            m_module.CheckContext(typess);
-        }
-
-        internal void CheckContext(params Type?[]? types)
-        {
-            m_module.CheckContext(types);
-        }
 
         internal void CreateMethodBodyHelper(ILGenerator il)
         {
@@ -230,7 +206,7 @@ namespace System.Reflection.Emit
                         int tkExceptionClass = 0;
                         if (catchClass[j] != null)
                         {
-                            tkExceptionClass = dynMod.GetTypeTokenInternal(catchClass[j]).Token;
+                            tkExceptionClass = dynMod.GetTypeTokenInternal(catchClass[j]);
                         }
 
                         switch (type[j])
@@ -256,7 +232,7 @@ namespace System.Reflection.Emit
                 // set the debugging information such as scope and line number
                 // if it is in a debug module
                 //
-                SymbolToken tk = new SymbolToken(MetadataTokenInternal);
+                SymbolToken tk = new SymbolToken(MetadataToken);
                 ISymbolWriter symWriter = dynMod.GetSymWriter()!;
 
                 // call OpenMethod to make this method the current method
@@ -311,9 +287,9 @@ namespace System.Reflection.Emit
             }
         }
 
-        internal void SetToken(MethodToken token)
+        internal void SetToken(int token)
         {
-            m_tkMethod = token;
+            m_token = token;
         }
 
         internal byte[]? GetBody()
@@ -459,7 +435,7 @@ namespace System.Reflection.Emit
         #region MemberInfo Overrides
         public override string Name => m_strName;
 
-        internal int MetadataTokenInternal => GetToken().Token;
+        public override int MetadataToken => GetToken();
 
         public override Module Module => m_containingType.Module;
 
@@ -584,7 +560,7 @@ namespace System.Reflection.Emit
                 if (names[i] == null)
                     throw new ArgumentNullException(nameof(names));
 
-            if (m_tkMethod.Token != 0)
+            if (m_token != 0)
                 throw new InvalidOperationException(SR.InvalidOperation_MethodBuilderBaked);
 
             m_bIsGenMethDef = true;
@@ -599,7 +575,7 @@ namespace System.Reflection.Emit
         #endregion
 
         #region Public Members
-        public MethodToken GetToken()
+        private int GetToken()
         {
             // We used to always "tokenize" a MethodBuilder when it is constructed. After change list 709498
             // we only "tokenize" a method when requested. But the order in which the methods are tokenized
@@ -611,13 +587,13 @@ namespace System.Reflection.Emit
             // I don't fully understand this change. So I will keep the logic and only fix the recursion and
             // the race condition.
 
-            if (m_tkMethod.Token != 0)
+            if (m_token != 0)
             {
-                return m_tkMethod;
+                return m_token;
             }
 
             MethodBuilder? currentMethod = null;
-            MethodToken currentToken = new MethodToken(0);
+            int currentToken = 0;
             int i;
 
             // We need to lock here to prevent a method from being "tokenized" twice.
@@ -625,9 +601,9 @@ namespace System.Reflection.Emit
             // constructed MethodBuilders to the end of m_listMethods
             lock (m_containingType.m_listMethods!)
             {
-                if (m_tkMethod.Token != 0)
+                if (m_token != 0)
                 {
-                    return m_tkMethod;
+                    return m_token;
                 }
 
                 // If m_tkMethod is still 0 when we obtain the lock, m_lastTokenizedMethod must be smaller
@@ -645,20 +621,20 @@ namespace System.Reflection.Emit
             }
 
             Debug.Assert(currentMethod == this, "We should have found this method in m_containingType.m_listMethods");
-            Debug.Assert(currentToken.Token != 0, "The token should not be 0");
+            Debug.Assert(currentToken != 0, "The token should not be 0");
 
             return currentToken;
         }
 
-        private MethodToken GetTokenNoLock()
+        private int GetTokenNoLock()
         {
-            Debug.Assert(m_tkMethod.Token == 0, "m_tkMethod should not have been initialized");
+            Debug.Assert(m_token == 0, "m_token should not have been initialized");
 
             byte[] sigBytes = GetMethodSignature().InternalGetSignature(out int sigLength);
             ModuleBuilder module = m_module;
 
-            int token = TypeBuilder.DefineMethod(new QCallModule(ref module), m_containingType.MetadataTokenInternal, m_strName, sigBytes, sigLength, Attributes);
-            m_tkMethod = new MethodToken(token);
+            int token = TypeBuilder.DefineMethod(new QCallModule(ref module), m_containingType.MetadataToken, m_strName, sigBytes, sigLength, Attributes);
+            m_token = token;
 
             if (m_inst != null)
                 foreach (GenericTypeParameterBuilder tb in m_inst)
@@ -666,19 +642,19 @@ namespace System.Reflection.Emit
 
             TypeBuilder.SetMethodImpl(new QCallModule(ref module), token, m_dwMethodImplFlags);
 
-            return m_tkMethod;
+            return m_token;
         }
 
         public void SetParameters(params Type[] parameterTypes)
         {
-            CheckContext(parameterTypes);
+            AssemblyBuilder.CheckContext(parameterTypes);
 
             SetSignature(null, null, null, parameterTypes, null, null);
         }
 
         public void SetReturnType(Type? returnType)
         {
-            CheckContext(returnType);
+            AssemblyBuilder.CheckContext(returnType);
 
             SetSignature(returnType, null, null, null, null, null);
         }
@@ -689,13 +665,13 @@ namespace System.Reflection.Emit
         {
             // We should throw InvalidOperation_MethodBuilderBaked here if the method signature has been baked.
             // But we cannot because that would be a breaking change from V2.
-            if (m_tkMethod.Token != 0)
+            if (m_token != 0)
                 return;
 
-            CheckContext(returnType);
-            CheckContext(returnTypeRequiredCustomModifiers, returnTypeOptionalCustomModifiers, parameterTypes);
-            CheckContext(parameterTypeRequiredCustomModifiers);
-            CheckContext(parameterTypeOptionalCustomModifiers);
+            AssemblyBuilder.CheckContext(returnType);
+            AssemblyBuilder.CheckContext(returnTypeRequiredCustomModifiers, returnTypeOptionalCustomModifiers, parameterTypes);
+            AssemblyBuilder.CheckContext(parameterTypeRequiredCustomModifiers);
+            AssemblyBuilder.CheckContext(parameterTypeOptionalCustomModifiers);
 
             ThrowIfGeneric();
 
@@ -742,7 +718,7 @@ namespace System.Reflection.Emit
             m_canBeRuntimeImpl = true;
 
             ModuleBuilder module = m_module;
-            TypeBuilder.SetMethodImpl(new QCallModule(ref module), MetadataTokenInternal, attributes);
+            TypeBuilder.SetMethodImpl(new QCallModule(ref module), MetadataToken, attributes);
         }
 
         public ILGenerator GetILGenerator()
@@ -797,8 +773,8 @@ namespace System.Reflection.Emit
 
             ThrowIfGeneric();
 
-            TypeBuilder.DefineCustomAttribute(m_module, MetadataTokenInternal,
-                ((ModuleBuilder)m_module).GetConstructorToken(con).Token,
+            TypeBuilder.DefineCustomAttribute(m_module, MetadataToken,
+                ((ModuleBuilder)m_module).GetConstructorToken(con),
                 binaryAttribute,
                 false, false);
 
@@ -813,7 +789,7 @@ namespace System.Reflection.Emit
 
             ThrowIfGeneric();
 
-            customBuilder.CreateCustomAttribute((ModuleBuilder)m_module, MetadataTokenInternal);
+            customBuilder.CreateCustomAttribute((ModuleBuilder)m_module, MetadataToken);
 
             if (IsKnownCA(customBuilder.m_con))
                 ParseCA(customBuilder.m_con);

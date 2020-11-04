@@ -4,10 +4,9 @@
 using System.Diagnostics;
 using System.IO;
 using System.Net.Quic;
+using System.Net.Quic.Implementations;
 using System.Net.Security;
 using System.Net.Sockets;
-using System.Runtime.CompilerServices;
-using System.Runtime.ExceptionServices;
 using System.Security.Cryptography.X509Certificates;
 using System.Threading;
 using System.Threading.Tasks;
@@ -33,58 +32,31 @@ namespace System.Net.Http
             }
         }
 
-        public static ValueTask<Stream> ConnectAsync(string host, int port, bool async, CancellationToken cancellationToken)
+        public static async ValueTask<Stream> ConnectAsync(Func<SocketsHttpConnectionContext, CancellationToken, ValueTask<Stream>> callback, DnsEndPoint endPoint, HttpRequestMessage requestMessage, CancellationToken cancellationToken)
         {
-            return async ? ConnectAsync(host, port, cancellationToken) : new ValueTask<Stream>(Connect(host, port, cancellationToken));
-        }
-
-        private static async ValueTask<Stream> ConnectAsync(string host, int port, CancellationToken cancellationToken)
-        {
-            // Rather than creating a new Socket and calling ConnectAsync on it, we use the static
-            // Socket.ConnectAsync with a SocketAsyncEventArgs, as we can then use Socket.CancelConnectAsync
-            // to cancel it if needed.
-            var saea = new ConnectEventArgs();
+            Stream stream;
             try
             {
-                saea.Initialize(cancellationToken);
-
-                // Configure which server to which to connect.
-                saea.RemoteEndPoint = new DnsEndPoint(host, port);
-
-                // Initiate the connection.
-                if (Socket.ConnectAsync(SocketType.Stream, ProtocolType.Tcp, saea))
-                {
-                    // Connect completing asynchronously. Enable it to be canceled and wait for it.
-                    using (cancellationToken.UnsafeRegister(static s => Socket.CancelConnectAsync((SocketAsyncEventArgs)s!), saea))
-                    {
-                        await saea.Builder.Task.ConfigureAwait(false);
-                    }
-                }
-                else if (saea.SocketError != SocketError.Success)
-                {
-                    // Connect completed synchronously but unsuccessfully.
-                    throw new SocketException((int)saea.SocketError);
-                }
-
-                Debug.Assert(saea.SocketError == SocketError.Success, $"Expected Success, got {saea.SocketError}.");
-                Debug.Assert(saea.ConnectSocket != null, "Expected non-null socket");
-
-                // Configure the socket and return a stream for it.
-                Socket socket = saea.ConnectSocket;
-                socket.NoDelay = true;
-                return new NetworkStream(socket, ownsSocket: true);
+                stream = await callback(new SocketsHttpConnectionContext(endPoint, requestMessage), cancellationToken).ConfigureAwait(false);
             }
-            catch (Exception error) when (!(error is OperationCanceledException))
+            catch (OperationCanceledException ex) when (ex.CancellationToken == cancellationToken)
             {
-                throw CreateWrappedException(error, host, port, cancellationToken);
+                throw CancellationHelper.CreateOperationCanceledException(innerException: null, cancellationToken);
             }
-            finally
+            catch (Exception ex)
             {
-                saea.Dispose();
+                throw CreateWrappedException(ex, endPoint.Host, endPoint.Port, cancellationToken);
             }
+
+            if (stream == null)
+            {
+                throw new HttpRequestException(SR.net_http_null_from_connect_callback);
+            }
+
+            return stream;
         }
 
-        private static Stream Connect(string host, int port, CancellationToken cancellationToken)
+        public static Stream Connect(string host, int port, CancellationToken cancellationToken)
         {
             // For synchronous connections, we can just create a socket and make the connection.
             cancellationToken.ThrowIfCancellationRequested();
@@ -103,51 +75,6 @@ namespace System.Net.Http
             {
                 socket.Dispose();
                 throw CreateWrappedException(e, host, port, cancellationToken);
-            }
-        }
-
-        /// <summary>SocketAsyncEventArgs that carries with it additional state for a Task builder and a CancellationToken.</summary>
-        private sealed class ConnectEventArgs : SocketAsyncEventArgs
-        {
-            internal ConnectEventArgs() :
-                // The OnCompleted callback serves just to complete a task that's awaited in ConnectAsync,
-                // so we don't need to also flow ExecutionContext again into the OnCompleted callback.
-                base(unsafeSuppressExecutionContextFlow: true)
-            {
-            }
-
-            public AsyncTaskMethodBuilder Builder { get; private set; }
-            public CancellationToken CancellationToken { get; private set; }
-
-            public void Initialize(CancellationToken cancellationToken)
-            {
-                CancellationToken = cancellationToken;
-                AsyncTaskMethodBuilder b = default;
-                _ = b.Task; // force initialization
-                Builder = b;
-            }
-
-            protected override void OnCompleted(SocketAsyncEventArgs _)
-            {
-                switch (SocketError)
-                {
-                    case SocketError.Success:
-                        Builder.SetResult();
-                        break;
-
-                    case SocketError.OperationAborted:
-                    case SocketError.ConnectionAborted:
-                        if (CancellationToken.IsCancellationRequested)
-                        {
-                            Builder.SetException(ExceptionDispatchInfo.SetCurrentStackTrace(CancellationHelper.CreateOperationCanceledException(null, CancellationToken)));
-                            break;
-                        }
-                        goto default;
-
-                    default:
-                        Builder.SetException(ExceptionDispatchInfo.SetCurrentStackTrace(new SocketException((int)SocketError)));
-                        break;
-                }
             }
         }
 
@@ -219,34 +146,19 @@ namespace System.Net.Http
             return sslStream;
         }
 
-        public static async ValueTask<QuicConnection> ConnectQuicAsync(string host, int port, SslClientAuthenticationOptions? clientAuthenticationOptions, CancellationToken cancellationToken)
+        public static async ValueTask<QuicConnection> ConnectQuicAsync(QuicImplementationProvider quicImplementationProvider, DnsEndPoint endPoint, SslClientAuthenticationOptions? clientAuthenticationOptions, CancellationToken cancellationToken)
         {
-            IPAddress[] addresses = await Dns.GetHostAddressesAsync(host).ConfigureAwait(false);
-            Exception? lastException = null;
-
-            foreach (IPAddress address in addresses)
+            QuicConnection con = new QuicConnection(quicImplementationProvider, endPoint, clientAuthenticationOptions);
+            try
             {
-                QuicConnection con = new QuicConnection(new IPEndPoint(address, port), clientAuthenticationOptions);
-                try
-                {
-                    await con.ConnectAsync(cancellationToken).ConfigureAwait(false);
-                    return con;
-                }
-                // TODO: it would be great to catch a specific exception here... QUIC implementation dependent.
-                catch (Exception ex) when (!(ex is OperationCanceledException))
-                {
-                    con.Dispose();
-                    lastException = ex;
-                }
+                await con.ConnectAsync(cancellationToken).ConfigureAwait(false);
+                return con;
             }
-
-            if (lastException != null)
+            catch (Exception ex)
             {
-                throw CreateWrappedException(lastException, host, port, cancellationToken);
+                con.Dispose();
+                throw CreateWrappedException(ex, endPoint.Host, endPoint.Port, cancellationToken);
             }
-
-            // TODO: find correct exception to throw here.
-            throw new HttpRequestException("No host found.");
         }
 
         private static Exception CreateWrappedException(Exception error, string host, int port, CancellationToken cancellationToken)

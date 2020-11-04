@@ -620,7 +620,27 @@ void Zapper::InitEE(BOOL fForceDebug, BOOL fForceProfile, BOOL fForceInstrument)
 
         if (altName == NULL)
         {
-            altName = MAKEDLLNAME_W(W("protojit"));
+            #ifdef TARGET_WINDOWS
+#ifdef TARGET_X86
+            altName = MAKEDLLNAME_W(W("clrjit_win_x86_x86"));
+#elif defined(TARGET_AMD64)
+            altName = MAKEDLLNAME_W(W("clrjit_win_x64_x64"));
+#elif defined(TARGET_ARM)
+            altName = MAKEDLLNAME_W(W("clrjit_win_arm_arm"));
+#elif defined(TARGET_ARM64)
+            altName = MAKEDLLNAME_W(W("clrjit_win_arm64_arm64"));
+#endif
+#else // TARGET_WINDOWS
+#ifdef TARGET_X86
+            altName = MAKEDLLNAME_W(W("clrjit_unix_x86_x86"));
+#elif defined(TARGET_AMD64)
+            altName = MAKEDLLNAME_W(W("clrjit_unix_x64_x64"));
+#elif defined(TARGET_ARM)
+            altName = MAKEDLLNAME_W(W("clrjit_unix_arm_arm"));
+#elif defined(TARGET_ARM64)
+            altName = MAKEDLLNAME_W(W("clrjit_unix_arm64_arm64"));
+#endif
+#endif // TARGET_WINDOWS
         }
 
         LoadAndInitializeJITForNgen(altName, &m_hAltJITCompiler, &m_alternateJit);
@@ -805,10 +825,10 @@ BOOL Zapper::IsAssembly(LPCWSTR path)
 
 void Zapper::SetContextInfo(LPCWSTR assemblyName)
 {
-    // A special case:  If we're compiling mscorlib, ignore m_exeName and don't set any context.
-    // There can only be one mscorlib in the runtime, independent of any context.  If we don't
-    // check for mscorlib, and isExe == true, then CompilationDomain::SetContextInfo will call
-    // into mscorlib and cause the resulting mscorlib.ni.dll to be slightly different (checked
+    // A special case:  If we're compiling CoreLib, ignore m_exeName and don't set any context.
+    // There can only be one CoreLib in the runtime, independent of any context.  If we don't
+    // check for CoreLib, and isExe == true, then CompilationDomain::SetContextInfo will call
+    // into CoreLib and cause the resulting System.Private.CoreLib.ni.dll to be slightly different (checked
     // build only).
     if (assemblyName != NULL && _wcsnicmp(assemblyName, CoreLibName_W, CoreLibNameLen) == 0 && (wcslen(assemblyName) == CoreLibNameLen || assemblyName[CoreLibNameLen] == W(',')))
     {
@@ -975,18 +995,18 @@ HRESULT Zapper::Compile(LPCWSTR string, CORCOMPILE_NGEN_SIGNATURE * pNativeImage
 {
     HRESULT hr = S_OK;
 
-    bool fMscorlib = false;
+    bool fCoreLib = false;
     LPCWSTR fileName = PathFindFileName(string);
     if (fileName != NULL && SString::_wcsicmp(fileName, g_pwBaseLibrary) == 0)
     {
-        fMscorlib = true;
+        fCoreLib = true;
     }
 
 
-    if (fMscorlib)
+    if (fCoreLib)
     {
         //
-        // Disallow use of native image to force a new native image generation for mscorlib
+        // Disallow use of native image to force a new native image generation for CoreLib
         //
         g_fAllowNativeImages = false;
     }
@@ -1180,7 +1200,7 @@ void Zapper::InitializeCompilerFlags(CORCOMPILE_VERSION_INFO * pVersionInfo)
     // That way the actual support checks will always be jitted.
     // We only do this for CoreLib because forgetting to wrap intrinsics under IsSupported
     // checks can lead to illegal instruction traps (instead of a nice managed exception).
-    if (m_pEECompileInfo->GetAssemblyModule(m_hAssembly) == m_pEECompileInfo->GetLoaderModuleForMscorlib())
+    if (m_pEECompileInfo->GetAssemblyModule(m_hAssembly) == m_pEECompileInfo->GetLoaderModuleForCoreLib())
     {
         m_pOpt->m_compilerFlags.Set(CORJIT_FLAGS::CORJIT_FLAG_FEATURE_SIMD);
 

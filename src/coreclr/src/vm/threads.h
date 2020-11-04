@@ -239,6 +239,19 @@ public:
 #endif
 };
 
+// TailCallArgBuffer states
+#define TAILCALLARGBUFFER_ACTIVE       0
+#define TAILCALLARGBUFFER_INSTARG_ONLY 1
+#define TAILCALLARGBUFFER_ABANDONED    2
+
+struct TailCallArgBuffer
+{
+    int State;
+    int Size;
+    void* GCDesc;
+    BYTE Args[1];
+};
+
 #ifdef CROSSGEN_COMPILE
 
 #include "asmconstants.h"
@@ -580,19 +593,7 @@ enum ThreadpoolThreadType
 //---------------------------------------------------------------------------
 //
 //---------------------------------------------------------------------------
-Thread* SetupThread(BOOL fInternal);
-inline Thread* SetupThread()
-{
-    WRAPPER_NO_CONTRACT;
-    return SetupThread(FALSE);
-}
-// A host can deny a thread entering runtime by returning a NULL IHostTask.
-// But we do want threads used by threadpool.
-inline Thread* SetupInternalThread()
-{
-    WRAPPER_NO_CONTRACT;
-    return SetupThread(TRUE);
-}
+Thread* SetupThread();
 Thread* SetupThreadNoThrow(HRESULT *phresult = NULL);
 // WARNING : only GC calls this with bRequiresTSL set to FALSE.
 Thread* SetupUnstartedThread(BOOL bRequiresTSL=TRUE);
@@ -977,21 +978,17 @@ struct PortableTailCallFrame
 
 class TailCallTls
 {
-    friend class MscorlibBinder;
+    friend class CoreLibBinder;
 
     PortableTailCallFrame* m_frame;
-    char* m_argBuffer;
-    size_t m_argBufferSize;
-    void* m_argBufferGCDesc;
-    char m_argBufferInline[64];
+    TailCallArgBuffer* m_argBuffer;
 
 public:
     TailCallTls();
-    void* AllocArgBuffer(size_t size, void* gcDesc);
-    void FreeArgBuffer();
-    char* GetArgBuffer(void** gcDesc)
+    TailCallArgBuffer* AllocArgBuffer(int size, void* gcDesc);
+    void FreeArgBuffer() { delete[] (BYTE*)m_argBuffer; m_argBuffer = NULL; }
+    TailCallArgBuffer* GetArgBuffer()
     {
-        *gcDesc = m_argBufferGCDesc;
         return m_argBuffer;
     }
     const PortableTailCallFrame* GetFrame() { return m_frame; }
@@ -1001,9 +998,6 @@ public:
 //
 // A code:Thread contains all the per-thread information needed by the runtime.  You can get at this
 // structure throught the and OS TLS slot see code:#RuntimeThreadLocals for more
-// Implementing IUnknown would prevent the field (e.g. m_Context) layout from being rearranged (which will need to be fixed in
-// "asmconstants.h" for the respective architecture). As it is, ICLRTask derives from IUnknown and would have got IUnknown implemented
-// here - so doing this explicitly and maintaining layout sanity should be just fine.
 class Thread
 {
     friend struct ThreadQueue;  // used to enqueue & dequeue threads onto SyncBlocks
@@ -1103,7 +1097,11 @@ public:
         TS_Unknown                = 0x00000000,    // threads are initialized this way
 
         TS_AbortRequested         = 0x00000001,    // Abort the thread
-        TS_GCSuspendPending       = 0x00000002,    // waiting to get to safe spot for GC
+
+        TS_GCSuspendPending       = 0x00000002,    // ThreadSuspend::SuspendRuntime watches this thread to leave coop mode.
+        TS_GCSuspendRedirected    = 0x00000004,    // ThreadSuspend::SuspendRuntime has redirected the thread to suspention routine.
+        TS_GCSuspendFlags         = TS_GCSuspendPending | TS_GCSuspendRedirected, // used to track suspension progress. Only SuspendRuntime writes/resets these.
+
         TS_DebugSuspendPending    = 0x00000008,    // Is the debugger suspending threads?
         TS_GCOnTransitions        = 0x00000010,    // Force a GC on stub transitions (GCStress only)
 
@@ -1662,9 +1660,12 @@ private:
     EEThreadId m_Creater;
 #endif
 
-    // After we suspend a thread, we may need to call EEJitManager::JitCodeToMethodInfo
-    // or StressLog which may waits on a spinlock.  It is unsafe to suspend a thread while it
-    // is in this state.
+    // A thread may forbid its own suspension. For example when holding certain locks.
+    // The state is a counter to allow nested forbids.
+    // The state is only modified by the current thread.
+    // Other threads may read this state, but must mind the races.
+    // It must be assumed that a running thread (or one that may start running) may change this state at any time.
+    // One exception: SuspendThread can read this "reliably" from other threads by temporarily suspending them, reading, and releasing if != 0.
     Volatile<LONG> m_dwForbidSuspendThread;
 
 public:
@@ -1690,7 +1691,8 @@ public:
             STRESS_LOG2(LF_SYNC, LL_INFO100000, "Set forbid suspend [%d] for thread %p.\n", pThread->m_dwForbidSuspendThread.Load(), pThread);
             }
 #endif
-            FastInterlockIncrement(&pThread->m_dwForbidSuspendThread);
+            // modified only by the current thread, so ++ is ok
+            pThread->m_dwForbidSuspendThread.RawValue()++;
         }
 #endif //!DACCESS_COMPILE
     }
@@ -1709,8 +1711,10 @@ public:
         Thread * pThread = GetThreadNULLOk();
         if (pThread)
         {
-            _ASSERTE (pThread->m_dwForbidSuspendThread != (LONG)0);
-            FastInterlockDecrement(&pThread->m_dwForbidSuspendThread);
+            _ASSERTE (pThread->m_dwForbidSuspendThread >= (LONG)0);
+
+            // modified only by the current thread, so -- is ok
+            pThread->m_dwForbidSuspendThread.RawValue()--;
 #ifdef _DEBUG
             {
                 //DEBUG_ONLY;
@@ -1721,9 +1725,11 @@ public:
 #endif //!DACCESS_COMPILE
     }
 
+    // Returns the state of m_dwForbidSuspendThread as it was at the time of the call.
+    // It may asynchronously change if there are no additional guarantees (i.e. it is the current thread or the thread is suspended)
     bool IsInForbidSuspendRegion()
     {
-        return m_dwForbidSuspendThread != (LONG)0;
+        return m_dwForbidSuspendThread.LoadWithoutBarrier() != (LONG)0;
     }
 
     typedef StateHolder<Thread::IncForbidSuspendThread, Thread::DecForbidSuspendThread> ForbidSuspendThreadHolder;
@@ -1793,7 +1799,7 @@ public:
     //--------------------------------------------------------------
     // Failable initialization occurs here.
     //--------------------------------------------------------------
-    BOOL InitThread(BOOL fInternal);
+    BOOL InitThread();
     BOOL AllocHandles();
 
     //--------------------------------------------------------------
@@ -2403,10 +2409,6 @@ public:
         // that either we are not allowed to call into the host, or we ran
         // out of memory.
         STR_NoStressLog,
-
-        // The EE thread is currently switched out.  This can only happen
-        // if we are hosted and the host schedules EE threads on fibers.
-        STR_SwitchedOut,
     };
 
 #if defined(FEATURE_HIJACK) && defined(TARGET_UNIX)
@@ -2511,6 +2513,12 @@ public:
         return m_State & (Thread::TS_TPWorkerThread | Thread::TS_CompletionPortThread);
     }
 
+    void        SetIsThreadPoolThread()
+    {
+        LIMITED_METHOD_CONTRACT;
+        FastInterlockOr((ULONG *)&m_State, Thread::TS_TPWorkerThread);
+    }
+
     // public suspend functions.  System ones are internal, like for GC.  User ones
     // correspond to suspend/resume calls on the exposed System.Thread object.
     static bool    SysStartSuspendForDebug(AppDomain *pAppDomain);
@@ -2597,16 +2605,9 @@ public:
 
 
 public:
-    enum UserAbort_Client
-    {
-        UAC_Normal,
-        UAC_Host,       // Called by host through IClrTask::Abort
-    };
-
     HRESULT        UserAbort(ThreadAbortRequester requester,
                              EEPolicy::ThreadAbortTypes abortType,
-                             DWORD timeout,
-                             UserAbort_Client client
+                             DWORD timeout
                             );
 
     BOOL    HandleJITCaseForAbort();
@@ -3235,16 +3236,6 @@ public:
     static UINT_PTR GetLastNormalStackAddress(UINT_PTR stackBase);
     UINT_PTR GetLastNormalStackAddress();
 
-    UINT_PTR GetLastAllowableStackAddress()
-    {
-        return m_LastAllowableStackAddress;
-    }
-
-    UINT_PTR GetProbeLimit()
-    {
-        return m_ProbeLimit;
-    }
-
     void ResetStackLimits()
     {
         CONTRACTL
@@ -3260,8 +3251,6 @@ public:
         }
         SetStackLimits(fAllowableOnly);
     }
-
-    BOOL IsSPBeyondLimit();
 
     INDEBUG(static void DebugLogStackMBIs());
 
@@ -3525,7 +3514,6 @@ private:
             CounterHolder handleHolder(&m_dwThreadHandleBeingUsed);
             HANDLE handle = m_ThreadHandle;
             _ASSERTE ( handle == INVALID_HANDLE_VALUE
-                || handle == SWITCHOUT_HANDLE_VALUE
                 || m_OSThreadId == 0
                 || m_OSThreadId == 0xbaadf00d
                 || ::MatchThreadHandleToOsId(handle, (DWORD)m_OSThreadId) );
@@ -3541,7 +3529,6 @@ private:
         LIMITED_METHOD_CONTRACT;
 #if defined(_DEBUG)
         _ASSERTE ( h == INVALID_HANDLE_VALUE
-            || h == SWITCHOUT_HANDLE_VALUE
             || m_OSThreadId == 0
             || m_OSThreadId == 0xbaadf00d
             || ::MatchThreadHandleToOsId(h, (DWORD)m_OSThreadId) );
@@ -3671,16 +3658,6 @@ private:
     void SetLastThrownObjectHandle(OBJECTHANDLE h);
 
     ThreadExceptionState  m_ExceptionState;
-
-    //-----------------------------------------------------------
-    // For stack probing.  These are the last allowable addresses that a thread
-    // can touch.  Going beyond is a stack overflow.  The ProbeLimit will be
-    // set based on whether SO probing is enabled.  The LastAllowableAddress
-    // will always represent the true stack limit.
-    //-----------------------------------------------------------
-    UINT_PTR             m_ProbeLimit;
-
-    UINT_PTR             m_LastAllowableStackAddress;
 
 private:
     //---------------------------------------------------------------
@@ -3963,7 +3940,7 @@ public:
             UnhijackThread();
 #endif // FEATURE_HIJACK
 
-        ResetThreadState(TS_GCSuspendPending);
+        _ASSERTE(!HasThreadStateOpportunistic(Thread::TS_GCSuspendPending));
     }
 
     static LPVOID GetStaticFieldAddress(FieldDesc *pFD);
@@ -4750,6 +4727,21 @@ public:
 
 private:
     PrepareCodeConfig *m_currentPrepareCodeConfig;
+
+#ifndef DACCESS_COMPILE
+public:
+    bool IsInForbidSuspendForDebuggerRegion() const
+    {
+        LIMITED_METHOD_CONTRACT;
+        return m_isInForbidSuspendForDebuggerRegion;
+    }
+
+    void EnterForbidSuspendForDebuggerRegion();
+    void ExitForbidSuspendForDebuggerRegion();
+#endif
+
+private:
+    bool m_isInForbidSuspendForDebuggerRegion;
 };
 
 // End of class Thread
@@ -4782,7 +4774,7 @@ class ThreadStore
 {
     friend class Thread;
     friend class ThreadSuspend;
-    friend Thread* SetupThread(BOOL);
+    friend Thread* SetupThread();
     friend class AppDomain;
 #ifdef DACCESS_COMPILE
     friend class ClrDataAccess;

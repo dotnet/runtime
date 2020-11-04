@@ -43,6 +43,9 @@ namespace System
                 100000,     // 10^5
                 1000000,    // 10^6
                 10000000,   // 10^7
+                // These last two are accessed only by MultiplyPow10.
+                100000000,  // 10^8
+                1000000000  // 10^9
             };
 
             private static readonly int[] s_Pow10BigNumTableIndices = new int[]
@@ -686,15 +689,22 @@ namespace System
 
             public static void Multiply(ref BigInteger lhs, uint value, out BigInteger result)
             {
-                if (lhs.IsZero() || (value == 1))
+                if (lhs._length <= 1)
                 {
-                    SetValue(out result, ref lhs);
+                    SetUInt64(out result, (ulong)lhs.ToUInt32() * value);
                     return;
                 }
 
-                if (value == 0)
+                if (value <= 1)
                 {
-                    SetZero(out result);
+                    if (value == 0)
+                    {
+                        SetZero(out result);
+                    }
+                    else
+                    {
+                        SetValue(out result, ref lhs);
+                    }
                     return;
                 }
 
@@ -725,15 +735,15 @@ namespace System
 
             public static void Multiply(ref BigInteger lhs, ref BigInteger rhs, out BigInteger result)
             {
-                if (lhs.IsZero() || rhs.IsOne())
+                if (lhs._length <= 1)
                 {
-                    SetValue(out result, ref lhs);
+                    Multiply(ref rhs, lhs.ToUInt32(), out result);
                     return;
                 }
 
-                if (rhs.IsZero())
+                if (rhs._length <= 1)
                 {
-                    SetZero(out result);
+                    Multiply(ref lhs, rhs.ToUInt32(), out result);
                     return;
                 }
 
@@ -757,7 +767,7 @@ namespace System
 
                 // Zero out result internal blocks.
                 result._length = maxResultLength;
-                Buffer.ZeroMemory((byte*)result.GetBlocksPointer(), (uint)maxResultLength * sizeof(uint));
+                result.Clear((uint)maxResultLength);
 
                 int smallIndex = 0;
                 int resultStartIndex = 0;
@@ -803,7 +813,7 @@ namespace System
                 Debug.Assert(unchecked((uint)result._length) <= MaxBlockCount);
                 if (blocksToShift > 0)
                 {
-                    Buffer.ZeroMemory((byte*)result.GetBlocksPointer(), blocksToShift * sizeof(uint));
+                    result.Clear(blocksToShift);
                 }
                 result._blocks[blocksToShift] = 1U << (int)(remainingBitsToShift);
             }
@@ -1006,12 +1016,6 @@ namespace System
                 return _length;
             }
 
-            public bool IsOne()
-            {
-                return (_length == 1)
-                    && (_blocks[0] == 1);
-            }
-
             public bool IsZero()
             {
                 return _length == 0;
@@ -1024,8 +1028,15 @@ namespace System
 
             public void Multiply(ref BigInteger value)
             {
-                SetValue(out BigInteger temp, ref this);
-                Multiply(ref temp, ref value, out this);
+                if (value._length <= 1)
+                {
+                    Multiply(ref this, value.ToUInt32(), out this);
+                }
+                else
+                {
+                    SetValue(out BigInteger temp, ref this);
+                    Multiply(ref temp, ref value, out this);
+                }
             }
 
             public void Multiply10()
@@ -1039,7 +1050,7 @@ namespace System
                 int length = _length;
                 ulong carry = 0;
 
-                while (index < length)
+                do
                 {
                     ulong block = (ulong)(_blocks[index]);
                     ulong product = (block << 3) + (block << 1) + carry;
@@ -1047,7 +1058,7 @@ namespace System
                     _blocks[index] = (uint)(product);
 
                     index++;
-                }
+                } while (index < length);
 
                 if (carry != 0)
                 {
@@ -1059,19 +1070,13 @@ namespace System
 
             public void MultiplyPow10(uint exponent)
             {
-                if (IsZero())
+                if (exponent <= 9)
                 {
-                    return;
+                    Multiply(s_Pow10UInt32Table[exponent]);
                 }
-
-                Pow10(exponent, out BigInteger poweredValue);
-
-                if (poweredValue._length == 1)
+                else if (!IsZero())
                 {
-                    Multiply(poweredValue._blocks[0]);
-                }
-                else
-                {
+                    Pow10(exponent, out BigInteger poweredValue);
                     Multiply(ref poweredValue);
                 }
             }
@@ -1108,7 +1113,7 @@ namespace System
             {
                 int rhsLength = value._length;
                 result._length = rhsLength;
-                Buffer.Memcpy((byte*)result.GetBlocksPointer(), (byte*)value.GetBlocksPointer(), rhsLength * sizeof(uint));
+                Buffer.Memmove(ref result._blocks[0], ref value._blocks[0], (nuint)rhsLength);
             }
 
             public static void SetZero(out BigInteger result)
@@ -1147,7 +1152,7 @@ namespace System
                     _length += (int)(blocksToShift);
 
                     // Zero the remaining low blocks
-                    Buffer.ZeroMemory((byte*)GetBlocksPointer(), blocksToShift * sizeof(uint));
+                    Clear(blocksToShift);
                 }
                 else
                 {
@@ -1180,7 +1185,7 @@ namespace System
                     _blocks[writeIndex - 1] = block << (int)(remainingBitsToShift);
 
                     // Zero the remaining low blocks
-                    Buffer.ZeroMemory((byte*)GetBlocksPointer(), blocksToShift * sizeof(uint));
+                    Clear(blocksToShift);
 
                     // Check if the terminating block has no set bits
                     if (_blocks[_length - 1] == 0)
@@ -1188,6 +1193,16 @@ namespace System
                         _length--;
                     }
                 }
+            }
+
+            public uint ToUInt32()
+            {
+                if (_length > 0)
+                {
+                    return _blocks[0];
+                }
+
+                return 0;
             }
 
             public ulong ToUInt64()
@@ -1205,11 +1220,10 @@ namespace System
                 return 0;
             }
 
-            private uint* GetBlocksPointer()
-            {
-                // This is safe to do since we are a ref struct
-                return (uint*)(Unsafe.AsPointer(ref _blocks[0]));
-            }
+            private void Clear(uint length) =>
+                Buffer.ZeroMemory(
+                    (byte*)Unsafe.AsPointer(ref _blocks[0]), // This is safe to do since we are a ref struct
+                    length * sizeof(uint));
 
             private static uint DivRem32(uint value, out uint remainder)
             {

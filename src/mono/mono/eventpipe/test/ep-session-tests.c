@@ -108,7 +108,10 @@ test_add_session_providers (void)
 
 	test_location = 4;
 
-	ep_session_add_session_provider (test_session, test_session_provider);
+	EP_LOCK_ENTER (section2)
+		ep_session_add_session_provider (test_session, test_session_provider);
+	EP_LOCK_EXIT (section2)
+
 	test_session_provider = NULL;
 
 	if (!ep_session_is_valid (test_session)) {

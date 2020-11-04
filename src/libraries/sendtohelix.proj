@@ -6,7 +6,7 @@
      is used to run the tests. If a set of comma-separated scenarios are specified in the `_Scenarios`
      property, then each test is run for each of the specified CoreCLR scenarios (e.g., COMPlus_JitStress=1;
      COMPlus_JitStressRegs=4; COMPlus_JitStress=2 + COMPlus_JitStressRegs=0x1000). The set of acceptable
-     scenario names is defined and interpreted by src\coreclr\tests\testenvironment.proj.
+     scenario names is defined and interpreted by src\tests\Common\testenvironment.proj.
 
     "RunInParallelForEachScenario" is the "root" target for this Project. It first creates the
     "correlation payload", which is the set of files used by all Helix submissions
@@ -18,7 +18,7 @@
   <!-- Helix auto-magically imports local *.props files. We're not going to import the Helix Sdk,
        so we need to import those files manually so we can reference the properties defined there.
   -->
-  <Import Project="$(MSBuildThisFileDirectory)/*.props" />
+  <Import Project="Directory.Build.props" />
 
   <Target Name="RunInParallelForEachScenario">
 
@@ -30,6 +30,7 @@
         TargetArchitecture=$(TargetArchitecture);
         Configuration=$(Configuration);
         TargetOS=$(TargetOS);
+        TargetRuntimeIdentifier=$(TargetRuntimeIdentifier);
         TestRunNamePrefixSuffix=$(TestRunNamePrefixSuffix);
         Creator=$(Creator);
         HelixAccessToken=$(HelixAccessToken);
@@ -47,7 +48,7 @@
     <Message Importance="High" Text="TestHostRootPath: $(TestHostRootPath)" />
     <Message Importance="High" Text="TestArchiveRoot: $(TestArchiveRoot)" />
     <Message Importance="High" Text="TestArchiveRuntimeRoot: $(TestArchiveRuntimeRoot)" />
-    <Message Importance="High" Text="TestArchiveRuntimeFile: $(TestArchiveRuntimeFile)" />
+    <Message Condition="'$(TestArchiveRuntimeFile)' != ''" Importance="High" Text="TestArchiveRuntimeFile: $(TestArchiveRuntimeFile)" />
 
     <!-- Re-invoke MSBuild on this project to create the correlation payload -->
     <MSBuild Projects="$(MSBuildProjectFile)" Targets="PrepareCorrelationPayloadDirectory" Properties="Scenarios=$(_Scenarios)" />
@@ -78,9 +79,11 @@
 
   <PropertyGroup>
     <TargetsWindows Condition="'$(TargetOS)' == 'Windows_NT'">true</TargetsWindows>
+    <BuildTargetFramework Condition="'$(TestPackages)' != 'true'">$([MSBuild]::ValueOrDefault('$(BuildTargetFramework)', '$(NetCoreAppCurrent)'))</BuildTargetFramework>
 
     <!-- The Helix correlation payload file -->
-    <TestArchiveRuntimeFile Condition="'$(TestPackages)' != 'true'">$(TestArchiveRuntimeRoot)test-runtime-$(BuildSettings).zip</TestArchiveRuntimeFile>
+    <TestArchiveRuntimeFile Condition="'$(TestPackages)' != 'true' and
+                                       '$(BuildTargetFramework)' == '$(NetCoreAppCurrent)'">$(TestArchiveRuntimeRoot)test-runtime-$(BuildSettings).zip</TestArchiveRuntimeFile>
     <TestArchiveRuntimeFile Condition="'$(TestPackages)' == 'true'">$(TestArchiveRuntimeRoot)packages-testPayload-$(Configuration).zip</TestArchiveRuntimeFile>
   </PropertyGroup>
 
@@ -102,7 +105,7 @@
     </PropertyGroup>
 
     <ItemGroup>
-      <_ProjectsToBuild Include="$(RepoRoot)\src\coreclr\tests\testenvironment.proj">
+      <_ProjectsToBuild Include="$(RepoRoot)\src\tests\Common\testenvironment.proj">
         <Properties>Scenario=$(Scenario);TestEnvFileName=$(TestEnvFilePath);TargetsWindows=$(TargetsWindows)</Properties>
       </_ProjectsToBuild>
     </ItemGroup>
@@ -114,7 +117,7 @@
     <Error Condition="!Exists('$(TestEnvFilePath)')" Text="File $(TestEnvFilePath) not found!" />
   </Target>
 
-  <Target Condition="'$(Scenarios)' != ''" Name="CreateAllScenarioTestEnvFiles">
+  <Target Condition="'$(Scenarios)' != '' and '$(TargetOS)' != 'Browser'" Name="CreateAllScenarioTestEnvFiles">
     <!-- This target creates one __TestEnv file for each of the scenarios in the $(Scenarios) comma-separated list. -->
 
     <Message Importance="High" Text="Creating per-scenario TestEnv files for scenarios $(Scenarios)" />
@@ -144,7 +147,9 @@
   <Target Name="CompressRuntimeDirectory"
           Inputs="@(_RuntimeInputs);@(TestArchiveRuntimeDependency)"
           Outputs="$(TestArchiveRuntimeFile)"
-          Condition="'$(TestPackages)' != 'true' and '$(TargetsMobile)' != 'true'">
+          Condition="'$(TestPackages)' != 'true' and
+                     '$(TargetsMobile)' != 'true' and
+                     '$(TestArchiveRuntimeFile)' != ''">
 
     <!-- Compress the test files, testhost, and per-scenario scripts into a single ZIP file for sending to the Helix machines. -->
 

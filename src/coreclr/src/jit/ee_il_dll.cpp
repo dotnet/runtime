@@ -316,7 +316,8 @@ unsigned CILJit::getMaxIntrinsicSIMDVectorLength(CORJIT_FLAGS cpuCompileFlags)
         // ensure that AVX2 is actually supported. Otherwise, we will end up getting asserts downstream.
         if ((JitConfig.EnableAVX2() != 0) && (JitConfig.EnableAVX() != 0) && (JitConfig.EnableSSE42() != 0) &&
             (JitConfig.EnableSSE41() != 0) && (JitConfig.EnableSSSE3() != 0) && (JitConfig.EnableSSE3_4() != 0) &&
-            (JitConfig.EnableSSE3() != 0) && (JitConfig.EnableSSE2() != 0) && (JitConfig.EnableSSE() != 0))
+            (JitConfig.EnableSSE3() != 0) && (JitConfig.EnableSSE2() != 0) && (JitConfig.EnableSSE() != 0) &&
+            (JitConfig.EnableHWIntrinsic() != 0))
         {
             if (GetJitTls() != nullptr && JitTls::GetCompiler() != nullptr)
             {
@@ -804,8 +805,18 @@ void Compiler::eeDispVar(ICorDebugInfo::NativeVarInfo* var)
 // Same parameters as ICorStaticInfo::setVars().
 void Compiler::eeDispVars(CORINFO_METHOD_HANDLE ftn, ULONG32 cVars, ICorDebugInfo::NativeVarInfo* vars)
 {
-    printf("*************** Variable debug info\n");
-    printf("%d live ranges\n", cVars);
+    ALLVARSET_TP uniqueVars(AllVarSetOps::MakeEmpty(this));
+    for (unsigned i = 0; i < cVars; i++)
+    {
+        // ignore "special vars" and out of bounds vars
+        if ((((int)vars[i].varNumber) >= 0) && (vars[i].varNumber < lclMAX_ALLSET_TRACKED))
+        {
+            AllVarSetOps::AddElemD(this, uniqueVars, vars[i].varNumber);
+        }
+    }
+    printf("; Variable debug info: %d live range(s), %d var(s) for method %s\n", cVars,
+           AllVarSetOps::Count(this, uniqueVars), info.compFullName);
+
     for (unsigned i = 0; i < cVars; i++)
     {
         eeDispVar(&vars[i]);
@@ -1057,10 +1068,10 @@ bool Compiler::eeIsJitDataOffs(CORINFO_FIELD_HANDLE field)
     unsigned value = static_cast<unsigned>(reinterpret_cast<uintptr_t>(field));
     if (((CORINFO_FIELD_HANDLE)(size_t)value) != field)
     {
-        return false; // upper bits were set, not a jit data offset
+        return false; // some bits in the upper 32 bits were set, not a jit data offset
     }
 
-    // Data offsets are marked by the fact that the low two bits are 0b01 0x1
+    // Data offsets are marked by the fact that the low two bits are 0b01
     return (value & iaut_MASK) == iaut_DATA_OFFSET;
 }
 
@@ -1072,6 +1083,8 @@ int Compiler::eeGetJitDataOffs(CORINFO_FIELD_HANDLE field)
         unsigned dataOffs = static_cast<unsigned>(reinterpret_cast<uintptr_t>(field));
         assert(((CORINFO_FIELD_HANDLE)(size_t)dataOffs) == field);
         assert(dataOffs < 0x40000000);
+
+        // Shift away the low two bits
         return (static_cast<int>(reinterpret_cast<intptr_t>(field))) >> iaut_SHIFT;
     }
     else
@@ -1316,7 +1329,7 @@ const char* Compiler::eeGetClassName(CORINFO_CLASS_HANDLE clsHnd)
 
 const WCHAR* Compiler::eeGetCPString(size_t strHandle)
 {
-#ifdef TARGET_UNIX
+#ifdef HOST_UNIX
     return nullptr;
 #else
     char buff[512 + sizeof(CORINFO_String)];
@@ -1340,7 +1353,7 @@ const WCHAR* Compiler::eeGetCPString(size_t strHandle)
     }
 
     return (asString->chars);
-#endif // TARGET_UNIX
+#endif // HOST_UNIX
 }
 
 #endif // DEBUG

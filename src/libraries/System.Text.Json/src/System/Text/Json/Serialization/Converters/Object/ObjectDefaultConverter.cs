@@ -78,10 +78,11 @@ namespace System.Text.Json.Serialization.Converters
                 {
                     if (options.ReferenceHandler != null)
                     {
-                        if (JsonSerializer.ResolveMetadataForJsonObject(ref reader, ref state, options))
+                        if (JsonSerializer.ResolveMetadataForJsonObject<T>(ref reader, ref state, options))
                         {
                             if (state.Current.ObjectState == StackFrameObjectState.ReadRefEndObject)
                             {
+                                // This will never throw since it was previously validated in ResolveMetadataForJsonObject.
                                 value = (T)state.Current.ReturnValue!;
                                 return true;
                             }

@@ -56,6 +56,7 @@ namespace System.Net.Sockets
             bool suppressFlow = !ExecutionContext.IsFlowSuppressed();
             try
             {
+                Debug.Assert(OperatingSystem.IsWindows());
                 if (suppressFlow) ExecutionContext.SuppressFlow();
                 _preAllocatedOverlapped = new PreAllocatedOverlapped(s_completionPortCallback, _strongThisRef, null);
             }
@@ -75,6 +76,7 @@ namespace System.Net.Sockets
 
         private unsafe NativeOverlapped* AllocateNativeOverlapped()
         {
+            Debug.Assert(OperatingSystem.IsWindows());
             Debug.Assert(_operating == InProgress, $"Expected {nameof(_operating)} == {nameof(InProgress)}, got {_operating}");
             Debug.Assert(_currentSocket != null, "_currentSocket is null");
             Debug.Assert(_currentSocket.SafeHandle != null, "_currentSocket.SafeHandle is null");
@@ -86,6 +88,7 @@ namespace System.Net.Sockets
 
         private unsafe void FreeNativeOverlapped(NativeOverlapped* overlapped)
         {
+            Debug.Assert(OperatingSystem.IsWindows());
             Debug.Assert(overlapped != null, "overlapped is null");
             Debug.Assert(_operating == InProgress, $"Expected _operating == InProgress, got {_operating}");
             Debug.Assert(_currentSocket != null, "_currentSocket is null");
@@ -155,6 +158,9 @@ namespace System.Net.Sockets
                     // so we can set the results right now.
                     FreeNativeOverlapped(overlapped);
                     FinishOperationSyncSuccess(bytesTransferred, SocketFlags.None);
+
+                    if (SocketsTelemetry.Log.IsEnabled() && !_disableTelemetry) AfterConnectAcceptTelemetry();
+
                     return SocketError.Success;
                 }
 
@@ -170,6 +176,9 @@ namespace System.Net.Sockets
                     // Completed synchronously with a failure.
                     FreeNativeOverlapped(overlapped);
                     FinishOperationSyncFailure(socketError, bytesTransferred, SocketFlags.None);
+
+                    if (SocketsTelemetry.Log.IsEnabled() && !_disableTelemetry) AfterConnectAcceptTelemetry();
+
                     return socketError;
                 }
 
@@ -202,6 +211,9 @@ namespace System.Net.Sockets
                     _singleBufferHandleState = SingleBufferHandleState.None;
                     FreeNativeOverlapped(overlapped);
                     FinishOperationSyncSuccess(bytesTransferred, SocketFlags.None);
+
+                    if (SocketsTelemetry.Log.IsEnabled() && !_disableTelemetry) AfterConnectAcceptTelemetry();
+
                     return SocketError.Success;
                 }
 
@@ -218,6 +230,9 @@ namespace System.Net.Sockets
                     _singleBufferHandleState = SingleBufferHandleState.None;
                     FreeNativeOverlapped(overlapped);
                     FinishOperationSyncFailure(socketError, bytesTransferred, SocketFlags.None);
+
+                    if (SocketsTelemetry.Log.IsEnabled() && !_disableTelemetry) AfterConnectAcceptTelemetry();
+
                     return socketError;
                 }
 
@@ -349,7 +364,7 @@ namespace System.Net.Sockets
                     SocketFlags flags = _socketFlags;
                     SocketError socketError = Interop.Winsock.WSARecv(
                         handle,
-                        ref wsaBuffer,
+                        &wsaBuffer,
                         1,
                         out int bytesTransferred,
                         ref flags,
@@ -486,13 +501,13 @@ namespace System.Net.Sockets
             bool ipv4 = (_currentSocket!.AddressFamily == AddressFamily.InterNetwork || (ipAddress != null && ipAddress.IsIPv4MappedToIPv6)); // DualMode
             bool ipv6 = _currentSocket.AddressFamily == AddressFamily.InterNetworkV6;
 
-            if (ipv4 && (_controlBufferPinned == null || _controlBufferPinned.Length != sizeof(Interop.Winsock.ControlData)))
-            {
-                _controlBufferPinned = GC.AllocateUninitializedArray<byte>(sizeof(Interop.Winsock.ControlData), pinned: true);
-            }
-            else if (ipv6 && (_controlBufferPinned == null || _controlBufferPinned.Length != sizeof(Interop.Winsock.ControlDataIPv6)))
+            if (ipv6 && (_controlBufferPinned == null || _controlBufferPinned.Length != sizeof(Interop.Winsock.ControlDataIPv6)))
             {
                 _controlBufferPinned = GC.AllocateUninitializedArray<byte>(sizeof(Interop.Winsock.ControlDataIPv6), pinned: true);
+            }
+            else if (ipv4 && (_controlBufferPinned == null || _controlBufferPinned.Length != sizeof(Interop.Winsock.ControlData)))
+            {
+                _controlBufferPinned = GC.AllocateUninitializedArray<byte>(sizeof(Interop.Winsock.ControlData), pinned: true);
             }
 
             // If single buffer we need a single element WSABuffer.
@@ -583,7 +598,7 @@ namespace System.Net.Sockets
 
                     SocketError socketError = Interop.Winsock.WSASend(
                         handle,
-                        ref wsaBuffer,
+                        &wsaBuffer,
                         1,
                         out int bytesTransferred,
                         _socketFlags,
@@ -904,6 +919,7 @@ namespace System.Net.Sockets
             // any pinned buffers.
             if (_preAllocatedOverlapped != null)
             {
+                Debug.Assert(OperatingSystem.IsWindows());
                 _preAllocatedOverlapped.Dispose();
                 _preAllocatedOverlapped = null!;
             }
@@ -1219,7 +1235,9 @@ namespace System.Net.Sockets
 
         private static readonly unsafe IOCompletionCallback s_completionPortCallback = delegate (uint errorCode, uint numBytes, NativeOverlapped* nativeOverlapped)
         {
-            var saeaBox = (StrongBox<SocketAsyncEventArgs>)ThreadPoolBoundHandle.GetNativeOverlappedState(nativeOverlapped)!;
+            Debug.Assert(OperatingSystem.IsWindows());
+            var saeaBox = (StrongBox<SocketAsyncEventArgs>)(ThreadPoolBoundHandle.GetNativeOverlappedState(nativeOverlapped)!);
+
             Debug.Assert(saeaBox.Value != null);
             SocketAsyncEventArgs saea = saeaBox.Value;
 
