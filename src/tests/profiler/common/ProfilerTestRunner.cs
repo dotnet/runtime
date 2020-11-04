@@ -83,17 +83,20 @@ namespace Profiler.Tests
             process.BeginOutputReadLine();
 
             process.WaitForExit();
-            if (process.ExitCode == 100 && verifier.HasPassingOutput)
-            {
-                return 100;
-            }
-            else
+
+            if (!verifier.HasPassingOutput)
             {
                 LogTestFailure("Profiler tests are expected to contain the text \'" + verifier.SuccessPhrase + "\' in the console output " +
                     "of the profilee app to indicate a passing test. Usually it is printed from the Shutdown() method of the profiler implementation. This " +
                     "text was not found in the output above.");
-                return process.ExitCode == 100 ? process.ExitCode : -1;
             }
+
+            if (process.ExitCode != 100)
+            {
+                LogTestFailure($"Profilee returned exit code {process.ExitCode} instead of expected exit code 100.");
+            }
+
+            return 100;
         }
 
         private static string GetProfilerPath()
