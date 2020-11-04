@@ -325,20 +325,20 @@ namespace System.Net.Sockets.Tests
                 
                 serverSocket.Dispose();
 
-                CheckIoException(() => server.Read(new byte[1], 0, 1), false);
-                CheckIoException(() => server.Write(new byte[1], 0, 1), true);
+                ExpectIOException(() => server.Read(new byte[1], 0, 1), write: false);
+                ExpectIOException(() => server.Write(new byte[1], 0, 1), write: true);
 
-                Assert.Throws<IOException>(() => server.Read((Span<byte>)new byte[1]));
-                Assert.Throws<IOException>(() => server.Write((ReadOnlySpan<byte>)new byte[1]));
+                ExpectIOException(() => server.Read((Span<byte>)new byte[1]), write: false);
+                ExpectIOException(() => server.Write((ReadOnlySpan<byte>)new byte[1]), write: true);
 
-                Assert.Throws<IOException>(() => server.BeginRead(new byte[1], 0, 1, null, null));
-                Assert.Throws<IOException>(() => server.BeginWrite(new byte[1], 0, 1, null, null));
+                ExpectIOException(() => server.BeginRead(new byte[1], 0, 1, null, null), write: false);
+                ExpectIOException(() => server.BeginWrite(new byte[1], 0, 1, null, null), write: true);
 
-                Assert.Throws<IOException>(() => { server.ReadAsync(new byte[1], 0, 1); });
-                Assert.Throws<IOException>(() => { server.WriteAsync(new byte[1], 0, 1); });
+                ExpectIOException(() => { server.ReadAsync(new byte[1], 0, 1); }, write: false);
+                ExpectIOException(() => { server.WriteAsync(new byte[1], 0, 1); }, write: true);
             }
 
-            static void CheckIoException(Action action, bool write)
+            static void ExpectIOException(Action action, bool write)
             {
                 IOException ex = Assert.Throws<IOException>(action);
                 string expectedSubstring = write ? "write data" : "read data";
