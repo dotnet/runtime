@@ -39,7 +39,6 @@
         PALTestsDir=$(_PALTestsDir)
       </_PropertiesToPass>
 
-      
       <_PropertiesToPass Condition="'$(TargetOS)' == 'Browser' Or '$(TargetOS)' == 'Android'">
         $(_PropertiesToPass);
         IncludeDotNetCli=$(IncludeDotNetCli);
@@ -47,7 +46,7 @@
         DotNetCliPackageType=$(DotNetCliPackageType);
         DotNetCliVersion=$(DotNetCliVersion)
       </_PropertiesToPass>
-    </PropertyGroup>  
+    </PropertyGroup>
     <Message Text="DotNetCliVersion: $(DotNetCliVersion)" Importance="High" />
     <Message Text="DotNetCliPackageType: $(DotNetCliPackageType)" Importance="High" />
     <Message Text="HelixRuntimeRid: $(HelixRuntimeRid)" Importance="High" />
@@ -71,6 +70,14 @@
       <_BuildInParallel Condition=" '@(_ProjectsToBuild->Count())' &gt; '1' ">true</_BuildInParallel>
     </PropertyGroup>
 
+    <PropertyGroup>
+      <PdbArtifactPath>$(HelixRuntimeRid)</PdbArtifactPath>
+      <PdbArtifactPath>$(PdbArtifactPath)-$(RuntimeFlavorDisplayName)</PdbArtifactPath>
+      <PdbArtifactPath>$(PdbArtifactPath)-$(Configuration)</PdbArtifactPath>
+    </PropertyGroup>
+
+    <Message Text="##vso[artifact.upload containerfolder=$(PdbArtifactPath);artifactname=HelixPdbs;]$(PayloadPdbsDirectory)" Importance="High"/>
+
     <MSBuild Projects="@(_ProjectsToBuild)" Targets="Test" BuildInParallel="$(_BuildInParallel)" StopOnFirstFailure="false" Properties="UsesHelixSdk=true" />
   </Target>
 
@@ -89,13 +96,15 @@
     <CoreRootDirectory>$(TestBinDir)Tests\Core_Root\</CoreRootDirectory>
     <PayloadsRootDirectory>$(TestBinDir)Payloads\</PayloadsRootDirectory>
     <PayloadsRootDirectory>$([MSBuild]::NormalizeDirectory($(PayloadsRootDirectory)))</PayloadsRootDirectory>
+    <PayloadPdbsDirectory>$(TestBinDir)PayloadPdbs\</PayloadPdbsDirectory>
+    <PayloadPdbsDirectory>$([MSBuild]::NormalizeDirectory($(PayloadsRootDirectory)))</PayloadPdbsDirectory>
     <TestEnvFileName Condition=" '$(TargetsWindows)' == 'true' ">SetStressModes_$(Scenario).cmd</TestEnvFileName>
     <TestEnvFileName Condition=" '$(TargetsWindows)' != 'true' ">SetStressModes_$(Scenario).sh</TestEnvFileName>
 
     <IncludeDotNetCli>true</IncludeDotNetCli>
     <DotNetCliPackageType>runtime</DotNetCliPackageType>
     <DotNetCliVersion>$(BundledNETCoreAppPackageVersion)</DotNetCliVersion>
-    <DotNetCliRuntime>$(HelixRuntimeRid)</DotNetCliRuntime> 
+    <DotNetCliRuntime>$(HelixRuntimeRid)</DotNetCliRuntime>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(TargetOS)' == 'Browser' Or '$(TargetOS)' == 'Android'">
@@ -167,12 +176,14 @@
       <!-- Remove the managed pdbs from our payloads.
            This is for performance reasons to reduce our helix payload size  -->
       <ReducedPayloadFiles Include="@(_PayloadFiles)" Condition=" '%(Extension)' != '.pdb' " />
-      
+      <DebugSymbolArchive Include="@(_PayloadFiles)" Condition=" '%(Extension)' == '.pdb' " />
+
       <ReducedPayloadFilesFinal Include="@(ReducedPayloadFiles)" Condition=" '%(Extension)' != '.sh' and '$(TargetsWindows)' == 'true' "/>
       <ReducedPayloadFilesFinal Include="@(ReducedPayloadFiles)" Condition=" '%(Extension)' != '.cmd' and '$(TargetsWindows)' != 'true' "/>
     </ItemGroup>
 
     <Copy SourceFiles="@(ReducedPayloadFilesFinal)" DestinationFiles="@(ReducedPayloadFilesFinal->'$(PayloadsRootDirectory)%(FileRelativeToPayloadsRootDirectory)')" />
+    <Copy SourceFiles="@(DebugSymbolArchive)" DestinationFiles="@(DebugSymbolArchive->'$(PayloadPdbsDirectory)%(FileRelativeToPayloadsRootDirectory)')" SkipUnchangedFiles="true" />
   </Target>
 
   <Target Name="PrepareCorrelationPayloadDirectory">
@@ -201,7 +212,7 @@
   </Target>
 
   <Target Name="PreparePALTestArchive">
-    <Exec Condition="'$(PALTestsDir)' != '' and '$(TargetsWindows)' != 'true'" 
+    <Exec Condition="'$(PALTestsDir)' != '' and '$(TargetsWindows)' != 'true'"
           WorkingDirectory="$(PALTestsDir)"
           Command="tar -czvf $(PayloadsRootDirectory)paltests.tar.gz `ls -A`"/>
   </Target>
@@ -234,7 +245,7 @@
     <RunCrossGen2 Condition=" '$(RunCrossGen2)' != 'true' ">false</RunCrossGen2>
     <LongRunningGCTests Condition=" '$(LongRunningGCTests)' != 'true' ">false</LongRunningGCTests>
     <GcSimulatorTests Condition=" '$(GcSimulatorTests)' != 'true' ">false</GcSimulatorTests>
-    <TestRunNamePrefix Condition="'$(RuntimeFlavorDisplayName)' != ''">$(RuntimeFlavorDisplayName) </TestRunNamePrefix> 
+    <TestRunNamePrefix Condition="'$(RuntimeFlavorDisplayName)' != ''">$(RuntimeFlavorDisplayName) </TestRunNamePrefix>
     <TestRunNamePrefix Condition=" '$(RunCrossGen)' == 'true' ">R2R </TestRunNamePrefix>
     <TestRunNamePrefix Condition=" '$(RunCrossGen2)' == 'true' ">R2R-CG2 </TestRunNamePrefix>
     <TestRunNamePrefix Condition=" '$(Scenario)' == 'normal' ">$(TestRunNamePrefix)$(TargetOS) $(TargetArchitecture) $(Configuration) @ </TestRunNamePrefix>
