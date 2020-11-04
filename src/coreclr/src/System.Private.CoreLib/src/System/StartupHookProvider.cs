@@ -3,6 +3,7 @@
 
 using System;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Reflection;
 using System.Runtime.Loader;
@@ -102,6 +103,8 @@ namespace System
 
         // Load the specified assembly, and call the specified type's
         // "static void Initialize()" method.
+        [RequiresUnreferencedCode("Trimming may remove assemblies, types or members used by startup hooks. " +
+                                  "These can be disabled using the StartupHookSupport feature switch")]
         private static void CallStartupHook(StartupHookNameOrPath startupHook)
         {
             Assembly assembly;
