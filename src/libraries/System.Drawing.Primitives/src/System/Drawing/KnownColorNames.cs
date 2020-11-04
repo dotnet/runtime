@@ -7,6 +7,7 @@ namespace System.Drawing
 {
     internal static class KnownColorNames
     {
+        //  Names of all colors (in order of definition in the KnownColor enum).
         private static readonly string[] s_colorNameTable = new string[]
         {
             "ActiveBorder",
@@ -149,7 +150,6 @@ namespace System.Drawing
             "Plum",
             "PowderBlue",
             "Purple",
-            "RebeccaPurple",
             "Red",
             "RosyBrown",
             "RoyalBlue",
