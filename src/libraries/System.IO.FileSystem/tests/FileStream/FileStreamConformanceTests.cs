@@ -8,6 +8,64 @@ using Xunit;
 
 namespace System.IO.Tests
 {
+    [PlatformSpecific(~TestPlatforms.Browser)]
+    public abstract class BaseClassWithPlatformSpecific
+    {
+        [Fact]
+        public void Test1()
+        {
+            if (OperatingSystem.IsBrowser()) throw new Exception("Shouldn't have run" + PlatformDetection.IsNotBrowser);
+        }
+    }
+
+    public class DerivedClassWithBasePlatformSpecific : BaseClassWithPlatformSpecific
+    {
+        [Fact]
+        public void Test2()
+        {
+            if (OperatingSystem.IsBrowser()) throw new Exception("Shouldn't have run" + PlatformDetection.IsNotBrowser);
+        }
+    }
+
+    [PlatformSpecific(~TestPlatforms.Browser)]
+    public class PlatformSpecificWithoutBase
+    {
+        [Fact]
+        public void Test3()
+        {
+            if (OperatingSystem.IsBrowser()) throw new Exception("Shouldn't have run" + PlatformDetection.IsNotBrowser);
+        }
+    }
+
+    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]
+    public abstract class BaseClassWithConditionalClass
+    {
+        [Fact]
+        public void Test4()
+        {
+            if (OperatingSystem.IsBrowser()) throw new Exception("Shouldn't have run. " + PlatformDetection.IsNotBrowser);
+        }
+    }
+
+    public class DerivedClassWithBaseConditionalClass : BaseClassWithConditionalClass
+    {
+        [Fact]
+        public void Test5()
+        {
+            if (OperatingSystem.IsBrowser()) throw new Exception("Shouldn't have run" + PlatformDetection.IsNotBrowser);
+        }
+    }
+
+    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]
+    public class ConditionalClassWithoutBase
+    {
+        [Fact]
+        public void Test6()
+        {
+            if (OperatingSystem.IsBrowser()) throw new Exception("Shouldn't have run" + PlatformDetection.IsNotBrowser);
+        }
+    }
+
     public abstract class FileStreamStandaloneConformanceTests : StandaloneStreamConformanceTests
     {
         protected abstract FileOptions Options { get; }
