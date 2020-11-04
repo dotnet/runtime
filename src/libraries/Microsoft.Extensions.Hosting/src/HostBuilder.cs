@@ -50,7 +50,8 @@ namespace Microsoft.Extensions.Hosting
         /// <summary>
         /// Sets up the configuration for the remainder of the build process and application. This can be called multiple times and
         /// the results will be additive. The results will be available at <see cref="HostBuilderContext.Configuration"/> for
-        /// subsequent operations, as well as in <see cref="IHost.Services"/>.
+        /// subsequent operations, as well as in <see cref="IHost.Services"/>. Delegate execution does not affect current <see cref="HostBuilderContext.Configuration"/>.
+        /// The resulting <see cref="IConfiguration"/> will be created and replace current <see cref="HostBuilderContext.Configuration"/> only after all delegates are executed.
         /// </summary>
         /// <param name="configureDelegate">The delegate for configuring the <see cref="IConfigurationBuilder"/> that will be used
         /// to construct the <see cref="IConfiguration"/> for the host.</param>
