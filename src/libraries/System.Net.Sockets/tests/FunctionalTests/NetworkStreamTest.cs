@@ -325,8 +325,8 @@ namespace System.Net.Sockets.Tests
                 
                 serverSocket.Dispose();
 
-                Assert.Throws<IOException>(() => server.Read(new byte[1], 0, 1));
-                Assert.Throws<IOException>(() => server.Write(new byte[1], 0, 1));
+                CheckIoException(() => server.Read(new byte[1], 0, 1), false);
+                CheckIoException(() => server.Write(new byte[1], 0, 1), true);
 
                 Assert.Throws<IOException>(() => server.Read((Span<byte>)new byte[1]));
                 Assert.Throws<IOException>(() => server.Write((ReadOnlySpan<byte>)new byte[1]));
@@ -336,6 +336,13 @@ namespace System.Net.Sockets.Tests
 
                 Assert.Throws<IOException>(() => { server.ReadAsync(new byte[1], 0, 1); });
                 Assert.Throws<IOException>(() => { server.WriteAsync(new byte[1], 0, 1); });
+            }
+
+            static void CheckIoException(Action action, bool write)
+            {
+                IOException ex = Assert.Throws<IOException>(action);
+                string expectedSubstring = write ? "write data" : "read data";
+                Assert.Contains(expectedSubstring, ex.Message);
             }
         }
 

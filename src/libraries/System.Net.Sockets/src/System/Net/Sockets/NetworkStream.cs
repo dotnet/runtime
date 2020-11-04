@@ -50,15 +50,15 @@ namespace System.Net.Sockets
                 // allowing non-blocking sockets could result in non-deterministic failures from those
                 // operations. A developer that requires using NetworkStream with a non-blocking socket can
                 // temporarily flip Socket.Blocking as a workaround.
-                throw GetCustomException(SR.net_sockets_blocking);
+                throw new IOException(SR.net_sockets_blocking);
             }
             if (!socket.Connected)
             {
-                throw GetCustomException(SR.net_notconnected);
+                throw new IOException(SR.net_notconnected);
             }
             if (socket.SocketType != SocketType.Stream)
             {
-                throw GetCustomException(SR.net_notstream);
+                throw new IOException(SR.net_notstream);
             }
 
             _streamSocket = socket;
@@ -227,13 +227,9 @@ namespace System.Net.Sockets
             {
                 return _streamSocket.Receive(buffer, offset, count, 0);
             }
-            catch (SocketException socketException)
-            {
-                throw GetExceptionFromSocketException(SR.Format(SR.net_io_readfailure, socketException.Message), socketException);
-            }
             catch (Exception exception) when (!(exception is OutOfMemoryException))
             {
-                throw GetCustomException(SR.Format(SR.net_io_readfailure, exception.Message), exception);
+                throw WrapException(SR.net_io_readfailure, exception);
             }
         }
 
@@ -250,23 +246,14 @@ namespace System.Net.Sockets
             ThrowIfDisposed();
             if (!CanRead) throw new InvalidOperationException(SR.net_writeonlystream);
 
-            int bytesRead;
-            SocketError errorCode;
             try
             {
-                bytesRead = _streamSocket.Receive(buffer, SocketFlags.None, out errorCode);
+                return _streamSocket.Receive(buffer, SocketFlags.None);
             }
             catch (Exception exception) when (!(exception is OutOfMemoryException))
             {
-                throw GetCustomException(SR.Format(SR.net_io_readfailure, exception.Message), exception);
+                throw WrapException(SR.net_io_readfailure, exception);
             }
-
-            if (errorCode != SocketError.Success)
-            {
-                var socketException = new SocketException((int)errorCode);
-                throw GetExceptionFromSocketException(SR.Format(SR.net_io_readfailure, socketException.Message), socketException);
-            }
-            return bytesRead;
         }
 
         public override unsafe int ReadByte()
@@ -306,13 +293,9 @@ namespace System.Net.Sockets
                 // after ALL the requested number of bytes was transferred.
                 _streamSocket.Send(buffer, offset, count, SocketFlags.None);
             }
-            catch (SocketException socketException)
-            {
-                throw GetExceptionFromSocketException(SR.Format(SR.net_io_writefailure, socketException.Message), socketException);
-            }
             catch (Exception exception) when (!(exception is OutOfMemoryException))
             {
-                throw GetCustomException(SR.Format(SR.net_io_writefailure, exception.Message), exception);
+                throw WrapException(SR.net_io_writefailure, exception);
             }
         }
 
@@ -728,14 +711,19 @@ namespace System.Net.Sockets
             void ThrowObjectDisposedException() => throw new ObjectDisposedException(GetType().FullName);
         }
 
-        private static IOException GetExceptionFromSocketException(string message, SocketException innerException)
-        {
-            return new IOException(message, innerException);
-        }
+        //private static IOException GetExceptionFromSocketException(string message, SocketException innerException)
+        //{
+        //    return new IOException(message, innerException);
+        //}
 
-        private static IOException GetCustomException(string message, Exception? innerException = null)
+        //private static IOException GetCustomException(string message, Exception? innerException = null)
+        //{
+        //    return new IOException(message, innerException);
+        //}
+
+        private static IOException WrapException(string ioFailureMessage, Exception innerException)
         {
-            return new IOException(message, innerException);
+            return new IOException(SR.Format(ioFailureMessage, innerException.Message), innerException);
         }
     }
 }
