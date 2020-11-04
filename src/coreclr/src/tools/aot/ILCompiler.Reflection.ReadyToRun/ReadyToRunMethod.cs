@@ -116,15 +116,15 @@ namespace ILCompiler.Reflection.ReadyToRun
         {
             get
             {
-                if (_sizeCache < 0)
+                if (_size < 0)
                 {
-                    _sizeCache = GetSize();
+                    _size = GetSize();
                 }
-                return _sizeCache;
+                return _size;
             }
         }
 
-        private int _sizeCache;
+        private int _size = -1;
 
         /// <summary>
         /// The relative virtual address to the unwind info
@@ -301,15 +301,15 @@ namespace ILCompiler.Reflection.ReadyToRun
         {
             get
             {
-                if (_gcInfoCache == null && GetGcInfo != null)
+                if (_gcInfo == null && GetGcInfo != null)
                 {
-                    _gcInfoCache = GetGcInfo();
+                    _gcInfo = GetGcInfo();
                 }
-                return _gcInfoCache;
+                return _gcInfo;
             }
         }
 
-        private BaseGcInfo _gcInfoCache;
+        private BaseGcInfo _gcInfo;
 
 
         private ReadyToRunReader _readyToRunReader;
