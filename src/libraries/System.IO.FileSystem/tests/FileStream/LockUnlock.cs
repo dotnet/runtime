@@ -168,9 +168,7 @@ namespace System.IO.Tests
             }
         }
 
-        private static bool IsNotWindowsSubsystemForLinuxAndRemoteExecutorSupported => PlatformDetection.IsNotWindowsSubsystemForLinux && RemoteExecutor.IsSupported;
-
-        [ConditionalTheory(nameof(IsNotWindowsSubsystemForLinuxAndRemoteExecutorSupported))] // https://github.com/dotnet/runtime/issues/28330
+        [ConditionalTheory(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         [InlineData(10, 0, 10, 1, 2)]
         [InlineData(10, 3, 5, 3, 5)]
         [InlineData(10, 3, 5, 3, 4)]
@@ -208,7 +206,7 @@ namespace System.IO.Tests
             }
         }
 
-        [Fact]
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         [PlatformSpecific(TestPlatforms.Linux)]
         public void OverlappingRegionsFromOtherProcess_With_ReadLock_AllowedOnLinux()
         {
@@ -229,7 +227,7 @@ namespace System.IO.Tests
             fs1.Unlock(0, 100);            
         }
 
-        [Theory]
+        [ConditionalTheory(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         [InlineData(FileAccess.Read)]
         [InlineData(FileAccess.Write)]
         [InlineData(FileAccess.ReadWrite)]
