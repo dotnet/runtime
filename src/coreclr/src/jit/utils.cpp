@@ -846,9 +846,6 @@ void ConfigMethodRange::InitRanges(const WCHAR* rangeStr, unsigned capacity)
 //------------------------------------------------------------------------
 // Dump: dump hash ranges to stdout
 //
-// Arguments:
-//    hash -- hash value to check
-
 void ConfigMethodRange::Dump()
 {
     if (m_inited != 1)
