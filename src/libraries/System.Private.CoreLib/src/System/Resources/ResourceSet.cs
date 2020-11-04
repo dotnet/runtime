@@ -20,14 +20,14 @@ namespace System.Resources
     {
         protected IResourceReader Reader = null!;
 
-        private Dictionary<string, object?>? _table;
+        private Dictionary<object, object?>? _table;
         private Dictionary<string, object?>? _caseInsensitiveTable;  // For case-insensitive lookups.
 
         protected ResourceSet()
         {
             // To not inconvenience people subclassing us, we should allocate a new
             // hashtable here just so that Table is set to something.
-            _table = new Dictionary<string, object?>();
+            _table = new Dictionary<object, object?>();
         }
 
         // For RuntimeResourceSet, ignore the Table parameter - it's a wasted
@@ -190,10 +190,7 @@ namespace System.Resources
             IDictionaryEnumerator en = Reader.GetEnumerator();
             while (en.MoveNext())
             {
-                if (en.Key is not string key)
-                    continue;
-
-                _table.Add(key, en.Value);
+                _table.Add(en.Key, en.Value);
             }
             // While technically possible to close the Reader here, don't close it
             // to help with some WinRes lifetime issues.
@@ -204,7 +201,7 @@ namespace System.Resources
             if (name == null)
                 throw new ArgumentNullException(nameof(name));
 
-            Dictionary<string, object?>? copyOfTable = _table;  // Avoid a race with Dispose
+            Dictionary<object, object?>? copyOfTable = _table;  // Avoid a race with Dispose
 
             if (copyOfTable == null)
                 throw new ObjectDisposedException(null, SR.ObjectDisposed_ResourceSet);
@@ -215,7 +212,7 @@ namespace System.Resources
 
         private object? GetCaseInsensitiveObjectInternal(string name)
         {
-            Dictionary<string, object?>? copyOfTable = _table;  // Avoid a race with Dispose
+            Dictionary<object, object?>? copyOfTable = _table;  // Avoid a race with Dispose
 
             if (copyOfTable == null)
                 throw new ObjectDisposedException(null, SR.ObjectDisposed_ResourceSet);
@@ -223,7 +220,14 @@ namespace System.Resources
             Dictionary<string, object?>? caseTable = _caseInsensitiveTable;  // Avoid a race condition with Close
             if (caseTable == null)
             {
-                caseTable = new Dictionary<string, object?>(copyOfTable, StringComparer.OrdinalIgnoreCase);
+                caseTable = new Dictionary<string, object?>(copyOfTable.Count, StringComparer.OrdinalIgnoreCase);
+                foreach (var item in copyOfTable)
+                {
+                    if (item.Key is not string s)
+                        continue;
+
+                    caseTable.Add(s, item.Value);
+                }
                 _caseInsensitiveTable = caseTable;
             }
 
