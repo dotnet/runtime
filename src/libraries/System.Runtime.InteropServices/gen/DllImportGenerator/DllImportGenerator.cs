@@ -30,6 +30,13 @@ namespace Microsoft.Interop
                 return;
             }
 
+            // Get the symbol for GeneratedDllImportAttribute. If it doesn't exist in the compilation, the generator has nothing to do.
+            INamedTypeSymbol? generatedDllImportAttrType = context.Compilation.GetTypeByMetadataName(TypeNames.GeneratedDllImportAttribute);
+            if (generatedDllImportAttrType == null)
+                return;
+
+            INamedTypeSymbol? lcidConversionAttrType = context.Compilation.GetTypeByMetadataName(TypeNames.LCIDConversionAttribute);
+
             // Fire the start/stop pair for source generation
             using var _ = Diagnostics.Events.SourceGenerationStartStop(synRec.Methods.Count);
 
@@ -63,10 +70,44 @@ namespace Microsoft.Interop
                 // Process the method syntax and get its SymbolInfo.
                 var methodSymbolInfo = sm.GetDeclaredSymbol(methodSyntax, context.CancellationToken)!;
 
-                // Process the attributes on the method.
+                // Get any attributes of interest on the method
+                AttributeData? generatedDllImportAttr = null;
+                AttributeData? lcidConversionAttr = null;
+                foreach (var attr in methodSymbolInfo.GetAttributes())
+                {
+                    if (SymbolEqualityComparer.Default.Equals(attr.AttributeClass, generatedDllImportAttrType))
+                    {
+                        generatedDllImportAttr = attr;
+                    }
+                    else if (lcidConversionAttrType != null && SymbolEqualityComparer.Default.Equals(attr.AttributeClass, lcidConversionAttrType))
+                    {
+                        lcidConversionAttr = attr;
+                    }
+                }
+
+                if (generatedDllImportAttr == null)
+                    continue;
+
+                // Process the GeneratedDllImport attribute
                 DllImportStub.GeneratedDllImportData dllImportData;
-                AttributeSyntax dllImportAttr = this.ProcessAttributes(methodSymbolInfo, context.CancellationToken, out dllImportData);
+                AttributeSyntax dllImportAttr = this.ProcessGeneratedDllImportAttribute(methodSymbolInfo, generatedDllImportAttr, out dllImportData);
                 Debug.Assert((dllImportAttr is not null) && (dllImportData is not null));
+
+                if (dllImportData!.IsUserDefined.HasFlag(DllImportStub.DllImportMember.BestFitMapping))
+                {
+                    generatorDiagnostics.ReportConfigurationNotSupported(generatedDllImportAttr, nameof(DllImportStub.GeneratedDllImportData.BestFitMapping));
+                }
+
+                if (dllImportData!.IsUserDefined.HasFlag(DllImportStub.DllImportMember.ThrowOnUnmappableChar))
+                {
+                    generatorDiagnostics.ReportConfigurationNotSupported(generatedDllImportAttr, nameof(DllImportStub.GeneratedDllImportData.ThrowOnUnmappableChar));
+                }
+
+                if (lcidConversionAttr != null)
+                {
+                    // Using LCIDConversion with GeneratedDllImport is not supported
+                    generatorDiagnostics.ReportConfigurationNotSupported(lcidConversionAttr, nameof(TypeNames.LCIDConversionAttribute));
+                }
 
                 // Create the stub.
                 var dllImportStub = DllImportStub.Create(methodSymbolInfo, dllImportData!, context.Compilation, generatorDiagnostics, context.CancellationToken);
@@ -163,127 +204,107 @@ namespace Microsoft.Interop
                 || attrName.EndsWith(PrefixedGeneratedDllImportAttribute);
         }
 
-        private AttributeSyntax ProcessAttributes(
+        private AttributeSyntax ProcessGeneratedDllImportAttribute(
             IMethodSymbol method,
-            CancellationToken cancelToken,
+            AttributeData attrData,
             out DllImportStub.GeneratedDllImportData dllImportData)
         {
             dllImportData = new DllImportStub.GeneratedDllImportData();
 
-            // Process all attributes
-            foreach (AttributeData attrData in method.GetAttributes())
+            // Found the GeneratedDllImport, but it has an error so report the error.
+            // This is most likely an issue with targeting an incorrect TFM.
+            if (attrData.AttributeClass?.TypeKind is null or TypeKind.Error)
             {
-                if (attrData.ApplicationSyntaxReference is null)
-                {
-                    continue;
-                }
-
-                var attrSyntax = (AttributeSyntax)attrData.ApplicationSyntaxReference.GetSyntax(cancelToken);
-
-                // Skip the attribute if not GeneratedDllImport.
-                if (!IsGeneratedDllImportAttribute(attrSyntax))
-                {
-                    continue;
-                }
-
-                // Found the GeneratedDllImport, but it has an error so report the error.
-                // This is most likely an issue with targeting an incorrect TFM.
-                if (attrData.AttributeClass?.TypeKind is null or TypeKind.Error)
-                {
-                    // [TODO] Report GeneratedDllImport has an error - corrupt metadata?
-                    throw new InvalidProgramException();
-                }
-
-                var newAttributeArgs = new List<AttributeArgumentSyntax>();
-
-                // Populate the DllImport data from the GeneratedDllImportAttribute attribute.
-                dllImportData.ModuleName = attrData.ConstructorArguments[0].Value!.ToString();
-
-                newAttributeArgs.Add(SyntaxFactory.AttributeArgument(SyntaxFactory.LiteralExpression(
-                        SyntaxKind.StringLiteralExpression,
-                        SyntaxFactory.Literal(dllImportData.ModuleName))));
-
-                // All other data on attribute is defined as NamedArguments.
-                foreach (var namedArg in attrData.NamedArguments)
-                {
-                    ExpressionSyntax? expSyntaxMaybe = null;
-                    switch (namedArg.Key)
-                    {
-                        default:
-                            Debug.Fail($"An unknown member was found on {GeneratedDllImport}");
-                            continue;
-                        case nameof(DllImportStub.GeneratedDllImportData.BestFitMapping):
-                            dllImportData.BestFitMapping = (bool)namedArg.Value.Value!;
-                            expSyntaxMaybe = CreateBoolExpressionSyntax(dllImportData.BestFitMapping);
-                            dllImportData.IsUserDefined |= DllImportStub.DllImportMember.BestFitMapping;
-                            break;
-                        case nameof(DllImportStub.GeneratedDllImportData.CallingConvention):
-                            dllImportData.CallingConvention = (CallingConvention)namedArg.Value.Value!;
-                            expSyntaxMaybe = CreateEnumExpressionSyntax(dllImportData.CallingConvention);
-                            dllImportData.IsUserDefined |= DllImportStub.DllImportMember.CallingConvention;
-                            break;
-                        case nameof(DllImportStub.GeneratedDllImportData.CharSet):
-                            dllImportData.CharSet = (CharSet)namedArg.Value.Value!;
-                            expSyntaxMaybe = CreateEnumExpressionSyntax(dllImportData.CharSet);
-                            dllImportData.IsUserDefined |= DllImportStub.DllImportMember.CharSet;
-                            break;
-                        case nameof(DllImportStub.GeneratedDllImportData.EntryPoint):
-                            dllImportData.EntryPoint = (string)namedArg.Value.Value!;
-                            expSyntaxMaybe = CreateStringExpressionSyntax(dllImportData.EntryPoint!);
-                            dllImportData.IsUserDefined |= DllImportStub.DllImportMember.EntryPoint;
-                            break;
-                        case nameof(DllImportStub.GeneratedDllImportData.ExactSpelling):
-                            dllImportData.ExactSpelling = (bool)namedArg.Value.Value!;
-                            expSyntaxMaybe = CreateBoolExpressionSyntax(dllImportData.ExactSpelling);
-                            dllImportData.IsUserDefined |= DllImportStub.DllImportMember.ExactSpelling;
-                            break;
-                        case nameof(DllImportStub.GeneratedDllImportData.PreserveSig):
-                            dllImportData.PreserveSig = (bool)namedArg.Value.Value!;
-                            expSyntaxMaybe = CreateBoolExpressionSyntax(dllImportData.PreserveSig);
-                            dllImportData.IsUserDefined |= DllImportStub.DllImportMember.PreserveSig;
-                            break;
-                        case nameof(DllImportStub.GeneratedDllImportData.SetLastError):
-                            dllImportData.SetLastError = (bool)namedArg.Value.Value!;
-                            expSyntaxMaybe = CreateBoolExpressionSyntax(dllImportData.SetLastError);
-                            dllImportData.IsUserDefined |= DllImportStub.DllImportMember.SetLastError;
-                            break;
-                        case nameof(DllImportStub.GeneratedDllImportData.ThrowOnUnmappableChar):
-                            dllImportData.ThrowOnUnmappableChar = (bool)namedArg.Value.Value!;
-                            expSyntaxMaybe = CreateBoolExpressionSyntax(dllImportData.ThrowOnUnmappableChar);
-                            dllImportData.IsUserDefined |= DllImportStub.DllImportMember.ThrowOnUnmappableChar;
-                            break;
-                    }
-
-                    Debug.Assert(expSyntaxMaybe is not null);
-
-                    // Defer the name equals syntax till we know the value means something. If we created
-                    // an expression we know the key value was valid.
-                    NameEqualsSyntax nameSyntax = SyntaxFactory.NameEquals(namedArg.Key);
-                    newAttributeArgs.Add(SyntaxFactory.AttributeArgument(nameSyntax, null, expSyntaxMaybe!));
-                }
-
-                // If the EntryPoint property is not set, we will compute and
-                // add it based on existing semantics (i.e. method name).
-                //
-                // N.B. The export discovery logic is identical regardless of where
-                // the name is defined (i.e. method name vs EntryPoint property).
-                if (!dllImportData.IsUserDefined.HasFlag(DllImportStub.DllImportMember.EntryPoint))
-                {
-                    var entryPointName = SyntaxFactory.NameEquals(nameof(DllImportAttribute.EntryPoint));
-
-                    // The name of the method is the entry point name to use.
-                    var entryPointValue = CreateStringExpressionSyntax(method.Name);
-                    newAttributeArgs.Add(SyntaxFactory.AttributeArgument(entryPointName, null, entryPointValue));
-                }
-
-                // Create new attribute
-                return SyntaxFactory.Attribute(
-                    SyntaxFactory.ParseName(typeof(DllImportAttribute).FullName),
-                    SyntaxFactory.AttributeArgumentList(SyntaxFactory.SeparatedList(newAttributeArgs)));
+                // [TODO] Report GeneratedDllImport has an error - corrupt metadata?
+                throw new InvalidProgramException();
             }
 
-            // [TODO] Report the missing GeneratedDllImportAttribute
-            throw new NotSupportedException();
+            var newAttributeArgs = new List<AttributeArgumentSyntax>();
+
+            // Populate the DllImport data from the GeneratedDllImportAttribute attribute.
+            dllImportData.ModuleName = attrData.ConstructorArguments[0].Value!.ToString();
+
+            newAttributeArgs.Add(SyntaxFactory.AttributeArgument(SyntaxFactory.LiteralExpression(
+                    SyntaxKind.StringLiteralExpression,
+                    SyntaxFactory.Literal(dllImportData.ModuleName))));
+
+            // All other data on attribute is defined as NamedArguments.
+            foreach (var namedArg in attrData.NamedArguments)
+            {
+                ExpressionSyntax? expSyntaxMaybe = null;
+                switch (namedArg.Key)
+                {
+                    default:
+                        Debug.Fail($"An unknown member was found on {GeneratedDllImport}");
+                        continue;
+                    case nameof(DllImportStub.GeneratedDllImportData.BestFitMapping):
+                        dllImportData.BestFitMapping = (bool)namedArg.Value.Value!;
+                        expSyntaxMaybe = CreateBoolExpressionSyntax(dllImportData.BestFitMapping);
+                        dllImportData.IsUserDefined |= DllImportStub.DllImportMember.BestFitMapping;
+                        break;
+                    case nameof(DllImportStub.GeneratedDllImportData.CallingConvention):
+                        dllImportData.CallingConvention = (CallingConvention)namedArg.Value.Value!;
+                        expSyntaxMaybe = CreateEnumExpressionSyntax(dllImportData.CallingConvention);
+                        dllImportData.IsUserDefined |= DllImportStub.DllImportMember.CallingConvention;
+                        break;
+                    case nameof(DllImportStub.GeneratedDllImportData.CharSet):
+                        dllImportData.CharSet = (CharSet)namedArg.Value.Value!;
+                        expSyntaxMaybe = CreateEnumExpressionSyntax(dllImportData.CharSet);
+                        dllImportData.IsUserDefined |= DllImportStub.DllImportMember.CharSet;
+                        break;
+                    case nameof(DllImportStub.GeneratedDllImportData.EntryPoint):
+                        dllImportData.EntryPoint = (string)namedArg.Value.Value!;
+                        expSyntaxMaybe = CreateStringExpressionSyntax(dllImportData.EntryPoint!);
+                        dllImportData.IsUserDefined |= DllImportStub.DllImportMember.EntryPoint;
+                        break;
+                    case nameof(DllImportStub.GeneratedDllImportData.ExactSpelling):
+                        dllImportData.ExactSpelling = (bool)namedArg.Value.Value!;
+                        expSyntaxMaybe = CreateBoolExpressionSyntax(dllImportData.ExactSpelling);
+                        dllImportData.IsUserDefined |= DllImportStub.DllImportMember.ExactSpelling;
+                        break;
+                    case nameof(DllImportStub.GeneratedDllImportData.PreserveSig):
+                        dllImportData.PreserveSig = (bool)namedArg.Value.Value!;
+                        expSyntaxMaybe = CreateBoolExpressionSyntax(dllImportData.PreserveSig);
+                        dllImportData.IsUserDefined |= DllImportStub.DllImportMember.PreserveSig;
+                        break;
+                    case nameof(DllImportStub.GeneratedDllImportData.SetLastError):
+                        dllImportData.SetLastError = (bool)namedArg.Value.Value!;
+                        expSyntaxMaybe = CreateBoolExpressionSyntax(dllImportData.SetLastError);
+                        dllImportData.IsUserDefined |= DllImportStub.DllImportMember.SetLastError;
+                        break;
+                    case nameof(DllImportStub.GeneratedDllImportData.ThrowOnUnmappableChar):
+                        dllImportData.ThrowOnUnmappableChar = (bool)namedArg.Value.Value!;
+                        expSyntaxMaybe = CreateBoolExpressionSyntax(dllImportData.ThrowOnUnmappableChar);
+                        dllImportData.IsUserDefined |= DllImportStub.DllImportMember.ThrowOnUnmappableChar;
+                        break;
+                }
+
+                Debug.Assert(expSyntaxMaybe is not null);
+
+                // Defer the name equals syntax till we know the value means something. If we created
+                // an expression we know the key value was valid.
+                NameEqualsSyntax nameSyntax = SyntaxFactory.NameEquals(namedArg.Key);
+                newAttributeArgs.Add(SyntaxFactory.AttributeArgument(nameSyntax, null, expSyntaxMaybe!));
+            }
+
+            // If the EntryPoint property is not set, we will compute and
+            // add it based on existing semantics (i.e. method name).
+            //
+            // N.B. The export discovery logic is identical regardless of where
+            // the name is defined (i.e. method name vs EntryPoint property).
+            if (!dllImportData.IsUserDefined.HasFlag(DllImportStub.DllImportMember.EntryPoint))
+            {
+                var entryPointName = SyntaxFactory.NameEquals(nameof(DllImportAttribute.EntryPoint));
+
+                // The name of the method is the entry point name to use.
+                var entryPointValue = CreateStringExpressionSyntax(method.Name);
+                newAttributeArgs.Add(SyntaxFactory.AttributeArgument(entryPointName, null, entryPointValue));
+            }
+
+            // Create new attribute
+            return SyntaxFactory.Attribute(
+                SyntaxFactory.ParseName(typeof(DllImportAttribute).FullName),
+                SyntaxFactory.AttributeArgumentList(SyntaxFactory.SeparatedList(newAttributeArgs)));
 
             static ExpressionSyntax CreateBoolExpressionSyntax(bool trueOrFalse)
             {

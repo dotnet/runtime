@@ -17,7 +17,7 @@ namespace DllImportGenerator.UnitTests
             yield return new[] { CodeSnippets.NestedNamespace };
             yield return new[] { CodeSnippets.NestedTypes };
             yield return new[] { CodeSnippets.UserDefinedEntryPoint };
-            yield return new[] { CodeSnippets.AllDllImportNamedArguments };
+            yield return new[] { CodeSnippets.AllSupportedDllImportNamedArguments };
             yield return new[] { CodeSnippets.DefaultParameters };
             yield return new[] { CodeSnippets.UseCSharpFeaturesForConstants };
             yield return new[] { CodeSnippets.BasicParametersAndModifiers<byte>() };

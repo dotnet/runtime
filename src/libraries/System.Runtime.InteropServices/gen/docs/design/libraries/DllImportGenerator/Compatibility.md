@@ -12,7 +12,9 @@ The default value of [`CharSet`](https://docs.microsoft.com/dotnet/api/system.ru
 
 The built-in system treats `CharSet.None` as `CharSet.Ansi`. The P/Invoke source generator will treat `CharSet.None` as if the `CharSet` was not set.
 
-### `char` marshaller
+[`BestFitMapping`](https://docs.microsoft.com/dotnet/api/system.runtime.interopservices.dllimportattribute.bestfitmapping) and [`ThrowOnUnmappableChar`](https://docs.microsoft.com/dotnet/api/system.runtime.interopservices.dllimportattribute.throwonunmappablechar) will not be supported for `GeneratedDllImportAttribute`. These values only have meaning on Windows when marshalling string data (`char`, `string`, `StringBuilder`) as [ANSI](https://docs.microsoft.com/windows/win32/intl/code-pages). As the general recommendation - including from Windows - is to move away from ANSI, the P/Invoke source generator will not support these fields.
+
+### `char` marshalling
 
 Marshalling of `char` will not be supported when configured with any of the following:
   - [`CharSet.Ansi`, `CharSet.Auto`, or `CharSet.None`](https://docs.microsoft.com/dotnet/api/system.runtime.interopservices.charset) will not be supported.
@@ -23,7 +25,7 @@ For `CharSet.Ansi` and `CharSet.None`, the built-in system used the [system defa
 
 For `CharSet.Auto`, the built-in system relied upon detection at runtime of the platform when determining the targeted encoding. Performing this check in generated code violates the "pay-for-play" principle. Given that there are no scenarios for this feature in `NetCoreApp` it will not be supported.
 
-### `string` marshaller
+### `string` marshalling
 
 Marshalling of `string` will not be supported when configured with any of the following:
   - [`CharSet.None`](https://docs.microsoft.com/dotnet/api/system.runtime.interopservices.charset)
@@ -44,7 +46,7 @@ On Windows, marshalling using `CharSet.Auto` is treated as UTF-16. When marshall
 
 Using a custom marshaller (i.e. [`ICustomMarshaler`](https://docs.microsoft.com/dotnet/api/system.runtime.interopservices.icustommarshaler)) with the `UnmanagedType.CustomMarshaler` value on `MarshalAsAttribute` is not supported. This also implies `MarshalAsAttribute` fields: [`MarshalTypeRef`](https://docs.microsoft.com/dotnet/api/system.runtime.interopservices.marshalasattribute.marshaltyperef), [`MarshalType`](https://docs.microsoft.com/dotnet/api/system.runtime.interopservices.marshalasattribute.marshaltype), and [`MarshalCookie`](https://docs.microsoft.com/dotnet/api/system.runtime.interopservices.marshalasattribute.marshalcookie) are unsupported.
 
-### Array marshaller support
+### Array marshalling
 
 Marshalling of arrays will not be supported when using [`UnmangedType.SafeArray`](https://docs.microsoft.com/dotnet/api/system.runtime.interopservices.unmanagedtype). This implies that the following `MarshalAsAttribute` fields are unsupported: [`SafeArraySubType`](https://docs.microsoft.com/dotnet/api/system.runtime.interopservices.marshalasattribute.safearraysubtype) and [`SafeArrayUserDefinedSubType`](https://docs.microsoft.com/dotnet/api/system.runtime.interopservices.marshalasattribute.safearrayuserdefinedsubtype)
 
@@ -53,6 +55,10 @@ Specifying array-specific marshalling members on the `MarshalAsAttribute` such a
 Only single-dimensional arrays are supported for source generated marshalling.
 
 In the source-generated marshalling, arrays will be allocated on the stack (instead of through [`AllocCoTaskMem`](https://docs.microsoft.com/dotnet/api/system.runtime.interopservices.marshal.alloccotaskmem)) if they are passed by value or by read-only reference if they contain at most 256 bytes of data. The built-in system does not support this optimization for arrays.
+
+### `LCIDConversion` support
+
+[`LCIDConversionAttribute`](`https://docs.microsoft.com/dotnet/api/system.runtime.interopservices.lcidconversionattribute`) will not be supported for methods marked with `GeneratedDllImportAttribute`.
 
 ## Verison 0
 

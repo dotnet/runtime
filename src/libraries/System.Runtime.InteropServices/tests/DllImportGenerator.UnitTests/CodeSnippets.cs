@@ -171,6 +171,24 @@ partial class Test
 ";
 
         /// <summary>
+        /// Declaration with all supported DllImport named arguments.
+        /// </summary>
+        public static readonly string AllSupportedDllImportNamedArguments = @"
+using System.Runtime.InteropServices;
+partial class Test
+{
+    [GeneratedDllImport(""DoesNotExist"",
+        CallingConvention = CallingConvention.Cdecl,
+        CharSet = CharSet.Unicode,
+        EntryPoint = ""UserDefinedEntryPoint"",
+        ExactSpelling = true,
+        PreserveSig = false,
+        SetLastError = true)]
+    public static partial void Method();
+}
+";
+
+        /// <summary>
         /// Declaration using various methods to compute constants in C#.
         /// </summary>
         public static readonly string UseCSharpFeaturesForConstants = @"
@@ -180,17 +198,26 @@ partial class Test
     private const bool IsTrue = true;
     private const bool IsFalse = false;
     private const string EntryPointName = nameof(Test) + nameof(IsFalse);
+    private const int One = 1;
+    private const int Two = 2;
 
     [GeneratedDllImport(nameof(Test),
-        BestFitMapping = 0 != 1,
         CallingConvention = (CallingConvention)1,
         CharSet = (CharSet)2,
         EntryPoint = EntryPointName,
-        ExactSpelling = IsTrue,
+        ExactSpelling = 0 != 1,
         PreserveSig = IsFalse,
-        SetLastError = !IsFalse,
-        ThrowOnUnmappableChar = !IsTrue)]
-    public static partial void Method();
+        SetLastError = IsTrue)]
+    public static partial void Method1();
+
+    [GeneratedDllImport(nameof(Test),
+        CallingConvention = (CallingConvention)One,
+        CharSet = (CharSet)Two,
+        EntryPoint = EntryPointName,
+        ExactSpelling = One != Two,
+        PreserveSig = !IsFalse,
+        SetLastError = !IsTrue)]
+    public static partial void Method2();
 }
 ";
 
@@ -203,6 +230,19 @@ partial class Test
 {
     [GeneratedDllImport(""DoesNotExist"")]
     public static partial void Method(int t = 0);
+}
+";
+
+        /// <summary>
+        /// Declaration with LCIDConversionAttribute.
+        /// </summary>
+        public static readonly string LCIDConversionAttribute = @"
+using System.Runtime.InteropServices;
+partial class Test
+{
+    [LCIDConversion(0)]
+    [GeneratedDllImport(""DoesNotExist"")]
+    public static partial void Method();
 }
 ";
 

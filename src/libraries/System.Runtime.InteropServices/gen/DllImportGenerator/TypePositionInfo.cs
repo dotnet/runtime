@@ -32,7 +32,6 @@ namespace Microsoft.Interop
         {
             this.ManagedIndex = UnsetIndex;
             this.NativeIndex = UnsetIndex;
-            this.UnmanagedLCIDConversionArgIndex = UnsetIndex;
         }
 #pragma warning restore
 
@@ -49,7 +48,6 @@ namespace Microsoft.Interop
 
         public int ManagedIndex { get; init; }
         public int NativeIndex { get; init; }
-        public int UnmanagedLCIDConversionArgIndex { get; init; }
 
         public MarshallingInfo MarshallingAttributeInfo { get; init; }
 

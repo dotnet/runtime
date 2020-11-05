@@ -35,6 +35,13 @@ namespace DllImportGenerator.UnitTests
             // Unsupported MarshalAsAttribute usage
             //  * UnmanagedType.CustomMarshaler, MarshalTypeRef, MarshalType, MarshalCookie
             yield return new object[] { CodeSnippets.MarshalAsCustomMarshalerOnTypes, 16, 0 };
+
+            // Unsupported named arguments
+            //  * BestFitMapping, ThrowOnUnmappableChar
+            yield return new object[] { CodeSnippets.AllDllImportNamedArguments, 2, 0 };
+
+            // LCIDConversion
+            yield return new object[] { CodeSnippets.LCIDConversionAttribute, 1, 0 };
         }
 
         [Theory]
