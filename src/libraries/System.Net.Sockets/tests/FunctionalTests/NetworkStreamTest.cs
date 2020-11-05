@@ -326,25 +326,22 @@ namespace System.Net.Sockets.Tests
 
                 serverSocket.Dispose();
 
-                ExpectIOException(() => server.Read(new byte[1], 0, 1), isWriteOperation: false);
-                ExpectIOException(() => server.Write(new byte[1], 0, 1), isWriteOperation: true);
+                ExpectIOException(() => server.Read(new byte[1], 0, 1));
+                ExpectIOException(() => server.Write(new byte[1], 0, 1));
 
-                ExpectIOException(() => server.Read((Span<byte>)new byte[1]), isWriteOperation: false);
-                ExpectIOException(() => server.Write((ReadOnlySpan<byte>)new byte[1]), isWriteOperation: true);
+                ExpectIOException(() => server.Read((Span<byte>)new byte[1]));
+                ExpectIOException(() => server.Write((ReadOnlySpan<byte>)new byte[1]));
 
-                ExpectIOException(() => server.BeginRead(new byte[1], 0, 1, null, null), isWriteOperation: false);
-                ExpectIOException(() => server.BeginWrite(new byte[1], 0, 1, null, null), isWriteOperation: true);
+                ExpectIOException(() => server.BeginRead(new byte[1], 0, 1, null, null));
+                ExpectIOException(() => server.BeginWrite(new byte[1], 0, 1, null, null));
 
-                ExpectIOException(() => { _ = server.ReadAsync(new byte[1], 0, 1); }, isWriteOperation: false);
-                ExpectIOException(() => { _ = server.WriteAsync(new byte[1], 0, 1); }, isWriteOperation: true);
+                ExpectIOException(() => { _ = server.ReadAsync(new byte[1], 0, 1); });
+                ExpectIOException(() => { _ = server.WriteAsync(new byte[1], 0, 1); });
             }
 
-            static void ExpectIOException(Action action, bool isWriteOperation)
+            static void ExpectIOException(Action action)
             {
                 IOException ex = Assert.Throws<IOException>(action);
-                string expectedSubstring = isWriteOperation ? "write data" : "read data";
-                Assert.Contains(expectedSubstring, ex.Message);
-                Assert.NotNull(ex.InnerException);
                 Assert.IsType<ObjectDisposedException>(ex.InnerException);
             }
         }
