@@ -448,7 +448,7 @@ struct BasicBlock : private LIR::Range
 
 #define BBF_PATCHPOINT                     MAKE_BBFLAG(36) // Block is a patchpoint
 #define BBF_HAS_CLASS_PROFILE              MAKE_BBFLAG(37) // BB contains a call needing a class profile
-#define BBF_FIRST_BLOCK_IN_INNERLOOP      0x8000000000 // Block is lexically the fist block within the innermost loop.
+#define BBF_FIRST_BLOCK_IN_INNERLOOP       MAKE_BBFLAG(39) // Block is lexically the fist block within the innermost loop.
 
 // clang-format on
 
