@@ -773,7 +773,7 @@ void CodeGen::genCodeForBBlist()
             {
                 printf("Adding 'align' instruction to align loop header block " FMT_BB, block->bbNext->bbNum);
             }
-            if (compiler->compJitAlignLoopBoundary > 16)
+            if ((compiler->compJitAlignLoopBoundary > 16) && (!compiler->compJitAlignLoopAdaptive))
             {
 #if defined(TARGET_XARCH)
                 //TODO: Only do this if we are confident that the loop size doesn't exceed the heuristics threshold

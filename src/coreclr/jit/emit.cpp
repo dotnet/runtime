@@ -5235,6 +5235,7 @@ unsigned emitter::emitEndCodeGen(Compiler* comp,
                     printf("; ");
                     instruction lastIns = lastId->idIns();
 
+#if defined(TARGET_XARCH)
                     // https://www.intel.com/content/dam/support/us/en/documents/processors/mitigations-jump-conditional-code-erratum.pdf
                     bool isJccAffectedIns = ((lastIns >= INS_i_jmp && lastIns < INS_align) || (lastIns == INS_call) ||
                                             (lastIns == INS_ret));
@@ -5247,6 +5248,9 @@ unsigned emitter::emitEndCodeGen(Compiler* comp,
                             isJccAffectedIns |= (currIns >= INS_i_jmp && currIns < INS_align);
                         }
                     }
+#else
+                    bool isJccAffectedIns = false;
+#endif
 
                     // Indicate if instruction is at or split at 32B boundary
                     unsigned bytesCrossedBoundary = ((size_t)cp & 0x1f);

@@ -2246,6 +2246,7 @@ public:
     unsigned compJitAlignLoopMaxCodeSize;
     unsigned compJitAlignLoopBoundary;
     bool     compJitAlignLoopForJcc;
+    bool     compJitAlignLoopAdaptive;
 
 #ifdef DEBUG
     bool verbose;
