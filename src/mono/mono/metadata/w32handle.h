@@ -17,6 +17,8 @@
 #include "mono/utils/mono-coop-mutex.h"
 #include "mono/utils/mono-error.h"
 
+G_BEGIN_DECLS
+
 #define MONO_W32HANDLE_MAXIMUM_WAIT_OBJECTS 64
 #define MONO_INFINITE_WAIT ((guint32) 0xFFFFFFFF)
 
@@ -188,5 +190,6 @@ mono_w32handle_convert_wait_ret (guint32 res, guint32 numobjects)
 }
 #endif
 
+G_END_DECLS
 
 #endif /* _MONO_METADATA_W32HANDLE_H_ */

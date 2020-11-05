@@ -17,6 +17,8 @@
 #include "mono/utils/mono-error-internals.h"
 #include "mono/utils/mono-memory-model.h"
 
+G_BEGIN_DECLS
+
 #define MONO_CLASS_IS_ARRAY(c) (m_class_get_rank (c))
 
 #define MONO_CLASS_HAS_STATIC_METADATA(klass) (m_class_get_type_token (klass) && !m_class_get_image (klass)->dynamic && !mono_class_is_ginst (klass))
@@ -1169,15 +1171,6 @@ void
 mono_register_jit_icall_info (MonoJitICallInfo *info, gconstpointer func, const char *name,
 			      MonoMethodSignature *sig, gboolean no_wrapper, const char *c_symbol);
 
-#ifdef __cplusplus
-template <typename T>
-inline void
-mono_register_jit_icall_info (MonoJitICallInfo *info, T func, const char *name, MonoMethodSignature *sig, gboolean no_wrapper, const char *c_symbol)
-{
-	mono_register_jit_icall_info (info, (gconstpointer)func, name, sig, no_wrapper, c_symbol);
-}
-#endif // __cplusplus
-
 #define mono_register_jit_icall(func, sig, no_wrapper) (mono_register_jit_icall_info (&mono_get_jit_icall_info ()->func, func, #func, (sig), (no_wrapper), NULL))
 
 gboolean
@@ -1651,6 +1644,18 @@ m_method_alloc0 (MonoDomain *domain, MonoMethod *method, guint size)
 {
 	return mono_mem_manager_alloc0 (m_method_get_mem_manager (domain, method), size);
 }
+
+G_END_DECLS
+
+// This must be outside G_END_DECLS because it requires C++ linkage
+#ifdef __cplusplus
+template <typename T>
+inline void
+mono_register_jit_icall_info (MonoJitICallInfo *info, T func, const char *name, MonoMethodSignature *sig, gboolean no_wrapper, const char *c_symbol)
+{
+	mono_register_jit_icall_info (info, (gconstpointer)func, name, sig, no_wrapper, c_symbol);
+}
+#endif // __cplusplus
 
 // Enum and static storage for JIT icalls.
 #include "jit-icall-reg.h"

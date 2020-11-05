@@ -24,6 +24,8 @@
 #include "mono/metadata/class-internals.h"
 #include <mono/metadata/icalls.h>
 
+G_BEGIN_DECLS
+
 /* This is a copy of System.Threading.ThreadState */
 typedef enum {
 	ThreadState_Running = 0x00000000,
@@ -85,26 +87,8 @@ typedef enum {
 MonoInternalThread*
 mono_thread_create_internal (MonoDomain *domain, gpointer func, gpointer arg, MonoThreadCreateFlags flags, MonoError *error);
 
-#ifdef __cplusplus
-template <typename T>
-inline MonoInternalThread*
-mono_thread_create_internal (MonoDomain *domain, T func, gpointer arg, MonoThreadCreateFlags flags, MonoError *error)
-{
-	return mono_thread_create_internal(domain, (gpointer)func, arg, flags, error);
-}
-#endif
-
 MonoInternalThreadHandle
 mono_thread_create_internal_handle (MonoDomain *domain, gpointer func, gpointer arg, MonoThreadCreateFlags flags, MonoError *error);
-
-#ifdef __cplusplus
-template <typename T>
-inline MonoInternalThreadHandle
-mono_thread_create_internal_handle (MonoDomain *domain, T func, gpointer arg, MonoThreadCreateFlags flags, MonoError *error)
-{
-	return mono_thread_create_internal_handle(domain, (gpointer)func, arg, flags, error);
-}
-#endif
 
 void
 mono_thread_manage_internal (void);
@@ -412,14 +396,6 @@ void mono_threads_perform_thread_dump (void);
 gboolean
 mono_thread_create_checked (MonoDomain *domain, gpointer func, gpointer arg, MonoError *error);
 
-#ifdef __cplusplus
-template <typename T>
-inline gboolean
-mono_thread_create_checked (MonoDomain *domain, T func, gpointer arg, MonoError *error)
-{
-	return mono_thread_create_checked (domain, (gpointer)func, arg, error);
-}
-#endif
 
 void mono_threads_add_joinable_runtime_thread (MonoThreadInfo *thread_info);
 void mono_threads_add_joinable_thread (gpointer tid);
@@ -592,5 +568,37 @@ mono_interlocked_unlock(void) {
 	mono_os_mutex_unlock (&mono_interlocked_mutex);
 }
 #endif
+
+G_END_DECLS
+
+
+// These must be outside of G_END_DECLS because they require C++ linkage
+#ifdef __cplusplus
+template <typename T>
+inline MonoInternalThread*
+mono_thread_create_internal (MonoDomain *domain, T func, gpointer arg, MonoThreadCreateFlags flags, MonoError *error)
+{
+	return mono_thread_create_internal(domain, (gpointer)func, arg, flags, error);
+}
+#endif
+
+#ifdef __cplusplus
+template <typename T>
+inline MonoInternalThreadHandle
+mono_thread_create_internal_handle (MonoDomain *domain, T func, gpointer arg, MonoThreadCreateFlags flags, MonoError *error)
+{
+	return mono_thread_create_internal_handle(domain, (gpointer)func, arg, flags, error);
+}
+#endif
+
+
+#ifdef __cplusplus
+template <typename T>
+inline gboolean
+mono_thread_create_checked (MonoDomain *domain, T func, gpointer arg, MonoError *error)
+{
+	return mono_thread_create_checked (domain, (gpointer)func, arg, error);
+}
+#endif // __cplusplus */
 
 #endif /* _MONO_METADATA_THREADS_TYPES_H_ */

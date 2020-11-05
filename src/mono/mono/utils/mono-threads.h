@@ -11,6 +11,7 @@
 #ifndef __MONO_THREADS_H__
 #define __MONO_THREADS_H__
 
+
 #include <mono/utils/mono-forward-internal.h>
 #include <mono/utils/mono-os-semaphore.h>
 #include <mono/utils/mono-stack-unwinding.h>
@@ -26,6 +27,12 @@
 
 #include <glib.h>
 #include <config.h>
+
+G_BEGIN_DECLS
+
+
+
+
 #ifdef HOST_WIN32
 
 #include <windows.h>
@@ -669,14 +676,7 @@ mono_native_thread_id_equals (MonoNativeThreadId id1, MonoNativeThreadId id2);
 MONO_API gboolean
 mono_native_thread_create (MonoNativeThreadId *tid, gpointer func, gpointer arg);
 
-#ifdef __cplusplus
-template <typename T>
-inline gboolean
-mono_native_thread_create (MonoNativeThreadId *tid, T func, gpointer arg)
-{
-	return  mono_native_thread_create (tid, (gpointer)func, arg);
-}
-#endif
+
 
 MONO_API void
 mono_native_thread_set_name (MonoNativeThreadId tid, const char *name);
@@ -889,5 +889,17 @@ mono_win32_abort_blocking_io_call (THREAD_INFO_TYPE *info);
 #define W32_RESTORE_LAST_ERROR_FROM_RESTORE_POINT /* nothing */
 
 #endif
+
+G_END_DECLS
+
+// This is outside G_END_DECLS because it must have C++ linkage
+#ifdef __cplusplus
+template <typename T>
+inline gboolean
+mono_native_thread_create (MonoNativeThreadId *tid, T func, gpointer arg)
+{
+	return  mono_native_thread_create (tid, (gpointer)func, arg);
+}
+#endif /* __cplusplus */
 
 #endif /* __MONO_THREADS_H__ */
