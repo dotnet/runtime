@@ -43,7 +43,7 @@ function(process_enable_minimal)
 endfunction()
 
 if(ENABLE_MINIMAL)
-  process_enable_ minimal()
+  process_enable_minimal()
 endif()
 
 function(extract_mono_corlib_version)
