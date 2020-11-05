@@ -207,7 +207,7 @@ if(CLR_CMAKE_TARGET_WIN32)
         DEPENDS coreclr mscordaccore mscordbi ${CLR_DIR}/src/debug/daccess/daccess.cpp
         OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/${CMAKE_CFG_INTDIR}/inject_debug_resources.timestamp
         COMMAND ${CMAKE_CXX_COMPILER} /P /EP /TP ${PREPROCESS_DEFINITIONS} ${INC_DIR} /Fi${CMAKE_CURRENT_BINARY_DIR}/daccess.i  ${CLR_DIR}/src/debug/daccess/daccess.cpp
-        COMMAND ${CLR_REPO_ROOT_DIR}/dotnet.cmd exec ${CMAKE_INSTALL_PREFIX}/DacTableGen/DacTableGen.dll /dac:${CMAKE_CURRENT_BINARY_DIR}/daccess.i /pdb:$<TARGET_PDB_FILE:coreclr> /dll:$<TARGET_FILE:coreclr> /bin:${CMAKE_CURRENT_BINARY_DIR}/wks.bin
+        COMMAND cmd /c ${CLR_REPO_ROOT_DIR}/dotnet.cmd exec ${CMAKE_INSTALL_PREFIX}/DacTableGen/DacTableGen.dll /dac:${CMAKE_CURRENT_BINARY_DIR}/daccess.i /pdb:$<TARGET_PDB_FILE:coreclr> /dll:$<TARGET_FILE:coreclr> /bin:${CMAKE_CURRENT_BINARY_DIR}/wks.bin
         COMMAND InjectResource /bin:${CMAKE_CURRENT_BINARY_DIR}/wks.bin /dll:$<TARGET_FILE:coreclr>
         COMMAND GenClrDebugResource /dac:$<TARGET_FILE:mscordaccore> /dbi:$<TARGET_FILE:mscordbi> /sku:onecoreclr /out:${CMAKE_CURRENT_BINARY_DIR}/clrDebugResource.bin
         COMMAND InjectResource /bin:${CMAKE_CURRENT_BINARY_DIR}/clrDebugResource.bin /dll:$<TARGET_FILE:coreclr> /name:CLRDEBUGINFO

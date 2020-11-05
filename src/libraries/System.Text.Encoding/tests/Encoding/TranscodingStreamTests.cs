@@ -2,7 +2,9 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
+using System.IO.Tests;
 using System.Threading;
 using System.Threading.Tasks;
 using Moq;
@@ -10,8 +12,20 @@ using Xunit;
 
 namespace System.Text.Tests
 {
-    public class TranscodingStreamTests
+    public class TranscodingStreamTests : ConnectedStreamConformanceTests
     {
+        protected override bool FlushRequiredToWriteData => true;
+        protected override bool FlushGuaranteesAllDataWritten => false;
+        protected override bool BlocksOnZeroByteReads => true;
+
+        protected override Task<StreamPair> CreateConnectedStreamsAsync()
+        {
+            (Stream stream1, Stream stream2) = ConnectedStreams.CreateBidirectional();
+            return Task.FromResult<StreamPair>(
+                (Encoding.CreateTranscodingStream(stream1, new IdentityEncoding(), new IdentityEncoding()),
+                 Encoding.CreateTranscodingStream(stream2, new IdentityEncoding(), new IdentityEncoding())));
+        }
+
         public static IEnumerable<object[]> ReadWriteTestBufferLengths
         {
             get
@@ -668,7 +682,7 @@ namespace System.Text.Tests
         }
 
         [Fact]
-        public async Task WriteAsync()
+        public async Task WriteAsync_WithFullData()
         {
             MemoryStream sink = new MemoryStream();
             CancellationToken expectedFlushAsyncCancellationToken = new CancellationTokenSource().Token;
@@ -891,6 +905,42 @@ namespace System.Text.Tests
                     return true;
                 }
             }
+        }
+
+        /// <summary>A custom encoding that's used to roundtrip from bytes to bytes through a string.</summary>
+        private sealed class IdentityEncoding : Encoding
+        {
+            public override int GetByteCount(char[] chars, int index, int count) => count;
+
+            public override int GetBytes(char[] chars, int charIndex, int charCount, byte[] bytes, int byteIndex)
+            {
+                Span<char> span = chars.AsSpan(charIndex, charCount);
+                for (int i = 0; i < span.Length; i++)
+                {
+                    Debug.Assert(span[i] <= 0xFF);
+                    bytes[byteIndex + i] = (byte)span[i];
+                }
+                return charCount;
+            }
+
+            public override int GetCharCount(byte[] bytes, int index, int count) => count;
+
+            public override int GetChars(byte[] bytes, int byteIndex, int byteCount, char[] chars, int charIndex)
+            {
+                Span<byte> span = bytes.AsSpan(byteIndex, byteCount);
+                for (int i = 0; i < span.Length; i++)
+                {
+                    Debug.Assert(span[i] <= 0xFF);
+                    chars[charIndex + i] = (char)span[i];
+                }
+                return byteCount;
+            }
+
+            public override int GetMaxByteCount(int charCount) => charCount;
+
+            public override int GetMaxCharCount(int byteCount) => byteCount;
+
+            public override byte[] GetPreamble() => Array.Empty<byte>();
         }
     }
 }
