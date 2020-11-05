@@ -37,8 +37,14 @@
     call native int a::byrefsubbyref(class ctest&, class ctest&)
     stloc V_3
     ldloc V_3
-    call       void [System.Console]System.Console::WriteLine(int32)
+    call       void a::KeepA(native int)
     ldc.i4.s   100    
+    ret
+  }
+  
+  .method public hidebysig static void  KeepA(native int a) cil managed noinlining
+  {
+    .maxstack  8
     ret
   }
 }
