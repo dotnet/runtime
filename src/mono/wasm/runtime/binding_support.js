@@ -227,15 +227,13 @@ var BindingSupportLib = {
 			return null;
 		},
 
-		conv_string: function (mono_obj) {
-			var interned_ptr = this._find_interned_string (mono_obj);
-			
-			var interned_instance = this._managed_pointer_to_interned_string_table.get (interned_ptr || mono_obj);
+		conv_string: function (mono_obj, interned) {
+			var interned_instance = this._managed_pointer_to_interned_string_table.get (mono_obj);
 			if (interned_instance)
 				return interned_instance;
 
 			var result = MONO.string_decoder.copy (mono_obj);
-			if (interned_ptr) {
+			if (interned) {
 				// This string is interned on the managed side but we didn't have it in our cache.
 				this._store_string_in_intern_table (result, mono_obj, false);
 			}
@@ -375,8 +373,10 @@ var BindingSupportLib = {
 				case 27: // uint64
 					// TODO: Fix this once emscripten offers HEAPI64/HEAPU64 or can return them
 					throw new Error ("int64 not available");
-				case 3: //string
-					return this.conv_string (mono_obj);
+				case 3: // string
+					return this.conv_string (mono_obj, false);
+				case 29: // interned string
+					return this.conv_string (mono_obj, true);
 				case 4: //vts
 					throw new Error ("no idea on how to unbox value types");
 				case 5: // delegate
@@ -1159,7 +1159,7 @@ var BindingSupportLib = {
 			if (exception === 0)
 				return null;
 
-			var msg = this.conv_string (result);
+			var msg = this.conv_string (result, false);
 			var err = new Error (msg); //the convention is that invoke_method ToString () any outgoing exception
 			// console.warn ("error", msg, "at location", err.stack);
 			return err;
@@ -1658,7 +1658,7 @@ var BindingSupportLib = {
 			return BINDING.js_string_to_mono_string ("Invalid JS object handle '" + js_handle + "'");
 		}
 
-		var js_name = BINDING.conv_string (method_name);
+		var js_name = BINDING.conv_string (method_name, false);
 		if (!js_name) {
 			setValue (is_exception, 1, "i32");
 			return BINDING.js_string_to_mono_string ("Invalid method name object '" + method_name + "'");
@@ -1692,7 +1692,7 @@ var BindingSupportLib = {
 			return BINDING.js_string_to_mono_string ("Invalid JS object handle '" + js_handle + "'");
 		}
 
-		var js_name = BINDING.conv_string (property_name);
+		var js_name = BINDING.conv_string (property_name, false);
 		if (!js_name) {
 			setValue (is_exception, 1, "i32");
 			return BINDING.js_string_to_mono_string ("Invalid property name object '" + js_name + "'");
@@ -1723,7 +1723,7 @@ var BindingSupportLib = {
 			return BINDING.js_string_to_mono_string ("Invalid JS object handle '" + js_handle + "'");
 		}
 
-		var property = BINDING.conv_string (property_name);
+		var property = BINDING.conv_string (property_name, false);
 		if (!property) {
 			setValue (is_exception, 1, "i32");
 			return BINDING.js_string_to_mono_string ("Invalid property name object '" + property_name + "'");
@@ -1807,7 +1807,7 @@ var BindingSupportLib = {
 	mono_wasm_get_global_object: function(global_name, is_exception) {
 		BINDING.bindings_lazy_init ();
 
-		var js_name = BINDING.conv_string (global_name);
+		var js_name = BINDING.conv_string (global_name, false);
 
 		var globalObj;
 
@@ -1865,7 +1865,7 @@ var BindingSupportLib = {
 	mono_wasm_new: function (core_name, args, is_exception) {
 		BINDING.bindings_lazy_init ();
 
-		var js_name = BINDING.conv_string (core_name);
+		var js_name = BINDING.conv_string (core_name, false);
 
 		if (!js_name) {
 			setValue (is_exception, 1, "i32");
