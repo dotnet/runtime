@@ -71,12 +71,10 @@
     </PropertyGroup>
 
     <PropertyGroup>
-      <PdbArtifactPath>$(HelixRuntimeRid)</PdbArtifactPath>
-      <PdbArtifactPath>$(PdbArtifactPath)-$(RuntimeFlavorDisplayName)</PdbArtifactPath>
-      <PdbArtifactPath>$(PdbArtifactPath)-$(Configuration)</PdbArtifactPath>
+
     </PropertyGroup>
 
-    <Message Text="##vso[artifact.upload containerfolder=$(PdbArtifactPath);artifactname=HelixPdbs;]$(PayloadPdbsDirectory)" Importance="High"/>
+    <Message Text="##vso[artifact.upload containerfolder=HelixPdbs;artifactname=HelixPdbs;]$(PayloadPdbsDirectory)" Importance="High"/>
 
     <MSBuild Projects="@(_ProjectsToBuild)" Targets="Test" BuildInParallel="$(_BuildInParallel)" StopOnFirstFailure="false" Properties="UsesHelixSdk=true" />
   </Target>
@@ -95,9 +93,9 @@
   <PropertyGroup>
     <CoreRootDirectory>$(TestBinDir)Tests\Core_Root\</CoreRootDirectory>
     <PayloadsRootDirectory>$(TestBinDir)Payloads\</PayloadsRootDirectory>
+    <PdbArtifactPath>$(RuntimeFlavorDisplayName)-$(HelixRuntimeRid)-$(Configuration)-pdbs</PdbArtifactPath>
     <PayloadsRootDirectory>$([MSBuild]::NormalizeDirectory($(PayloadsRootDirectory)))</PayloadsRootDirectory>
-    <PayloadPdbsDirectory>$(TestBinDir)PayloadPdbs\</PayloadPdbsDirectory>
-    <PayloadPdbsDirectory>$([MSBuild]::NormalizeDirectory($(PayloadsRootDirectory)))</PayloadPdbsDirectory>
+    <PayloadPdbsDirectory>$([MSBuild]::NormalizeDirectory('$(TestBinDir)', '$(PayloadsRootDirectory)')</PayloadPdbsDirectory>
     <TestEnvFileName Condition=" '$(TargetsWindows)' == 'true' ">SetStressModes_$(Scenario).cmd</TestEnvFileName>
     <TestEnvFileName Condition=" '$(TargetsWindows)' != 'true' ">SetStressModes_$(Scenario).sh</TestEnvFileName>
 
