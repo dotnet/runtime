@@ -6,9 +6,14 @@
 #ifndef __MONO_COREGC_MONO_H__
 #define __MONO_COREGC_MONO_H__
 
-#include "../coreclr/src/inc/debugmacros.h"
+// TODO: This is kind of a hack.
+typedef void HINSTANCE;
+
+#include <cstddef>
+#include <sys/sysctl.h>
 #include "mono/coregc/gcenv.mono.h"
 #include <../coreclr/src/gc/env/gcenv.base.h>
+#include "gcinterface.h"
 
 
 
