@@ -18,7 +18,7 @@ terminology.
 | CLR | Common Language Runtime. |
 | COMPlus | An early name for the .NET platform, back when it was envisioned as a successor to the COM platform (hence, "COM+"). Used in various places in the CLR infrastructure, most prominently as a common prefix for the names of internal configuration settings. Note that this is different from the product that eventually ended up being named [COM+](https://msdn.microsoft.com/en-us/library/windows/desktop/ms685978.aspx). |
 | COR | [Common Object Runtime](http://www.danielmoth.com/Blog/mscorlibdll.aspx). The name of .NET before it was named .NET. |
-| CoreFX | Core Framework. Original roject name for open source and cross-platform version of [.NET runtime libraries](https://github.com/dotnet/runtime/tree/master/src/libraries) |
+| CoreFX | Core Framework. Original project name for open source and cross-platform version of [.NET runtime libraries](https://github.com/dotnet/runtime/tree/master/src/libraries) |
 | DAC | Data Access Component. An abstraction layer over the internal structures in the runtime. |
 | EE | Execution Engine. |
 | GC | [Garbage Collector](https://github.com/dotnet/runtime/blob/master/docs/design/coreclr/botr/garbage-collection.md). |
