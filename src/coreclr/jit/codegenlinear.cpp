@@ -767,6 +767,7 @@ void CodeGen::genCodeForBBlist()
                 break;
         }
 
+#if defined(TARGET_XARCH)
         if ((block->bbNext != nullptr) && (block->bbNext->bbFlags & BBF_FIRST_BLOCK_IN_INNERLOOP))
         {
             if (verbose)
@@ -775,10 +776,9 @@ void CodeGen::genCodeForBBlist()
             }
             if ((compiler->compJitAlignLoopBoundary > 16) && (!compiler->compJitAlignLoopAdaptive))
             {
-#if defined(TARGET_XARCH)
                 //TODO: Only do this if we are confident that the loop size doesn't exceed the heuristics threshold
                 GetEmitter()->emitVariableLoopAlign();
-#endif
+
             }
             else
             {
@@ -789,6 +789,7 @@ void CodeGen::genCodeForBBlist()
             // all IGs that follows this IG and participate in a loop.
             GetEmitter()->emitCurIG->igFlags |= IGF_ALIGN_LOOP;
         }
+#endif
 
 #if defined(DEBUG) && defined(USING_VARIABLE_LIVE_RANGE)
         if (compiler->verbose)

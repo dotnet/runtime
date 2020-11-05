@@ -1470,21 +1470,6 @@ void emitter::emitIns(instruction ins)
 
 /*****************************************************************************
  *
- *  Add a NOP instructions to pad the instruction stream by (size / 4) bytes.
- */
-
-void emitter::emitLoopAlign()
-{
-    // Max out at 28 bytes of nop...
-    // 32 is the largest method entry alignment we support.
-    for (unsigned i = 0; i < 4; i++)
-    {
-        emitIns(INS_nop);
-    }
-}
-
-/*****************************************************************************
- *
  *  Add an instruction with a single immediate value.
  */
 

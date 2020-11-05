@@ -2543,6 +2543,7 @@ NO_MORE_LOOPS:
             assert(blk->bbNext != nullptr); // We should never reach nullptr.
         }
 
+#if defined(TARGET_XARCH)
         //TODO: Move should align loops flag to jitconfigvalues.h
         if (codeGen->ShouldAlignLoops())
         {
@@ -2554,6 +2555,7 @@ NO_MORE_LOOPS:
             }
         }
     }
+#endif
 
     // Make sure that loops are canonical: that every loop has a unique "top", by creating an empty "nop"
     // one, if necessary, for loops containing others that share a "top."
