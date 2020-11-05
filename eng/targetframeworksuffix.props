@@ -1,5 +1,10 @@
 <Project>
   
+  <PropertyGroup>
+    <TargetPlatformSupported>true</TargetPlatformSupported>
+    <TargetPlatformVersionSupported>true</TargetPlatformVersionSupported>
+  </PropertyGroup>
+
   <PropertyGroup Condition="'$(TargetFrameworkSuffix)' != '' and '$(TargetFrameworkSuffix)' != 'windows'">
     <TargetPlatformIdentifier>$(TargetFrameworkSuffix)</TargetPlatformIdentifier>
     <TargetPlatformVersion>0.0</TargetPlatformVersion>
