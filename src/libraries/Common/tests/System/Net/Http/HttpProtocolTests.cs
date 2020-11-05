@@ -118,7 +118,7 @@ namespace System.Net.Http.Functional.Tests
                     var requestLines = await serverTask;
                     Assert.Equal($"GET {url.PathAndQuery} HTTP/1.1", requestLines[0]);
                 }
-            }, new LoopbackServer.Options { StreamWrapper = GetStream_ClientDisconnectOk });
+            });
         }
 
         [Theory]
