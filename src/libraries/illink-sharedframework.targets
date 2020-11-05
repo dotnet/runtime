@@ -28,7 +28,7 @@
       <LinkerNoWarn Condition="'$(TargetOS)' != 'windows'">$(LinkerNoWarn);IL2008</LinkerNoWarn>
       <LinkerNoWarn Condition="'$(Platform)' != 'x64' AND '$(Platform)' != 'arm64'">$(LinkerNoWarn);IL2012</LinkerNoWarn>
       <ILLinkArgs>$(ILLinkArgs) --nowarn $(LinkerNoWarn)</ILLinkArgs>
-      <ILLinkArgs>$(ILLinkArgs) --generate-warning-suppressions xml</ILLinkArgs>
+      <ILLinkArgs Condition="'$(GenerateLinkerWarningSuppressions)' == 'true'">$(ILLinkArgs) --generate-warning-suppressions xml</ILLinkArgs>
     </PropertyGroup>
 
      <!-- Retrieve CoreLib's targetpath via GetTargetPath as it isn't binplaced yet. -->
