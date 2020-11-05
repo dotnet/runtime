@@ -10,14 +10,12 @@
 #include "config.h"
 
 #define THREAD_INFO_TYPE CoreGCThreadInfo
-
 struct _CoreGCThreadInfo;
 
 typedef struct _CoreGCThreadInfo CoreGCThreadInfo;
 
 #include <glib.h>
-
-#include "../coreclr/src/inc/debugmacros.h"
+#include <sys/sysctl.h>
 #include "sgen/sgen-archdep.h"
 #include <mono/metadata/mono-gc.h>
 #include <mono/metadata/gc-internals.h>
@@ -31,7 +29,8 @@ typedef struct _CoreGCThreadInfo CoreGCThreadInfo;
 #include <mono/utils/mono-threads.h>
 #include <mono/utils/mono-counters.h>
 #include <mono/utils/mono-forward.h>
-#include <mono/metadata/null-gc-handles.h>
+#include <mono/metadata/null-gc-handles.h>"
+
 #include "coregc-mono.h"
 
 struct _CoreGCThreadInfo {
@@ -288,11 +287,6 @@ mono_gc_deregister_root (char* addr)
 	coregc_deregister_root (addr);
 }
 
-typedef struct {
-	uint16_t m_componentSize;
-	uint16_t m_flags;
-	uint32_t m_baseSize;
-} mono_gc_descr;
 
 typedef union {
 	mono_gc_descr struct_gc_descr;

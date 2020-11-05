@@ -4,6 +4,9 @@
 #ifndef __GCENV_OBJECT_MONO_H__
 #define __GCENV_OBJECT_MONO_H__
 
+
+#include "gcenv.interlocked.h"
+
 // ARM requires that 64-bit primitive types are aligned at 64-bit boundaries for interlocked-like operations.
 // Additionally the platform ABI requires these types and composite type containing them to be similarly
 // aligned when passed as arguments.

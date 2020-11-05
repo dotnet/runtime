@@ -15,6 +15,8 @@
 // TODO: Mono uses a different naem for config.h; sort this out.
 #ifdef HAVE_CORE_GC
 #include "config.h"
+#include <sys/sysctl.h>
+typedef long long INT64;
 #else
 #include "config.gc.h"
 #endif // USE_CORE
