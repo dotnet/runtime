@@ -2554,8 +2554,8 @@ NO_MORE_LOOPS:
                 first->bbFlags |= BBF_FIRST_BLOCK_IN_INNERLOOP;
             }
         }
-    }
 #endif
+    }
 
     // Make sure that loops are canonical: that every loop has a unique "top", by creating an empty "nop"
     // one, if necessary, for loops containing others that share a "top."

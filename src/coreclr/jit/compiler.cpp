@@ -2615,10 +2615,10 @@ void Compiler::compInitOptions(JitFlags* jitFlags)
     opts.compDbgInfo = jitFlags->IsSet(JitFlags::JIT_FLAG_DEBUG_INFO);
     opts.compDbgEnC  = jitFlags->IsSet(JitFlags::JIT_FLAG_DEBUG_EnC);
 
-    compJitAlignLoopMinBlockWeight = JitConfig.JitAlignLoopMinBlockWeight();
-    compJitAlignLoopMaxCodeSize    = JitConfig.JitAlignLoopMaxCodeSize();
-    compJitAlignLoopBoundary       = ReinterpretHexAsDecimal(JitConfig.JitAlignLoopBoundary());
-    compJitAlignLoopForJcc         = JitConfig.JitAlignLoopForJcc() == 1;
+    compJitAlignLoopMinBlockWeight = 10; //JitConfig.JitAlignLoopMinBlockWeight();
+    compJitAlignLoopMaxCodeSize    = 0x60; //JitConfig.JitAlignLoopMaxCodeSize();
+    compJitAlignLoopBoundary       = 32; //ReinterpretHexAsDecimal(JitConfig.JitAlignLoopBoundary());
+    compJitAlignLoopForJcc         = false; //JitConfig.JitAlignLoopForJcc() == 1;
     // TODO: Default loop adaptive
     compJitAlignLoopAdaptive       = true; //JitConfig.JitAlignLoopAdaptive() == 1;
     assert(isPow2(compJitAlignLoopBoundary));

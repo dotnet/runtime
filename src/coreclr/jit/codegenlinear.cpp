@@ -754,10 +754,12 @@ void CodeGen::genCodeForBBlist()
                     if (dstIG != nullptr && dstIG->igNum <= srcIG->igNum)
                     {
                         srcIG->igLoopBackEdge = dstIG;
+#ifdef DEBUG
                         if (verbose)
                         {
                             printf("** IG_%d jumps back to IG_%d forming a loop.\n", srcIG->igNum, dstIG->igNum);
                         }
+#endif
                     }
                 }
                 break;
@@ -770,10 +772,12 @@ void CodeGen::genCodeForBBlist()
 #if defined(TARGET_XARCH)
         if ((block->bbNext != nullptr) && (block->bbNext->bbFlags & BBF_FIRST_BLOCK_IN_INNERLOOP))
         {
+#ifdef DEBUG
             if (verbose)
             {
                 printf("Adding 'align' instruction to align loop header block " FMT_BB, block->bbNext->bbNum);
             }
+#endif
             if ((compiler->compJitAlignLoopBoundary > 16) && (!compiler->compJitAlignLoopAdaptive))
             {
                 //TODO: Only do this if we are confident that the loop size doesn't exceed the heuristics threshold
