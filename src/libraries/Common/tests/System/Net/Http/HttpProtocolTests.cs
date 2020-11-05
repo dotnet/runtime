@@ -186,29 +186,9 @@ namespace System.Net.Http.Functional.Tests
         }
 
         [Theory]
-        [InlineData(0)]
-        [InlineData(1)]
-        [InlineData(9)]
-        public async Task GetAsync_ResponseVersion0X_ThrowsOr10(int responseMinorVersion)
-        {
-            await LoopbackServer.CreateServerAsync(async (server, url) =>
-            {
-                using (HttpClient client = CreateHttpClient())
-                {
-                    HttpRequestMessage request = new HttpRequestMessage(HttpMethod.Get, url);
-                    request.Version = HttpVersion.Version11;
-
-                    Task<HttpResponseMessage> getResponseTask = client.SendAsync(TestAsync, request);
-                    Task<List<string>> serverTask =
-                        server.AcceptConnectionSendCustomResponseAndCloseAsync(
-                            $"HTTP/0.{responseMinorVersion} 200 OK\r\nConnection: close\r\nDate: {DateTimeOffset.UtcNow:R}\r\nContent-Length: 0\r\n\r\n");
-
-                    await Assert.ThrowsAsync<HttpRequestException>(async () => await TestHelper.WhenAllCompletedOrAnyFailed(getResponseTask, serverTask));
-                }
-            }, new LoopbackServer.Options { StreamWrapper = GetStream_ClientDisconnectOk });
-        }
-
-        [Theory]
+        [InlineData(0, 0)]
+        [InlineData(0, 1)]
+        [InlineData(0, 9)]
         [InlineData(2, 0)]
         [InlineData(2, 1)]
         [InlineData(3, 0)]
