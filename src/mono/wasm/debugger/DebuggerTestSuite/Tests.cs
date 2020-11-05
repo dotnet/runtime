@@ -1984,10 +1984,9 @@ namespace DebuggerTests
         }
 
         [Fact]
-        public async Task StepOverHiddenSequencePoint()
+        public async Task BreakOnDebuggerBreak()
         {
             var insp = new Inspector();
-
             //Collect events
             var scripts = SubscribeToScripts(insp);
 
@@ -1996,6 +1995,23 @@ namespace DebuggerTests
             {
                 ctx = new DebugTestContext(cli, insp, token, scripts);
 
+                await EvaluateAndCheck(
+                    "window.setTimeout(function() { invoke_static_method_async('[debugger-test] UserBreak:BreakOnDebuggerBreakCommand'); }, 1);",
+                    "dotnet://debugger-test.dll/debugger-test2.cs", 56, 4,
+                    "BreakOnDebuggerBreakCommand");
+            });
+        }
+
+        [Fact]
+        public async Task StepOverHiddenSequencePoint()
+        {
+            var insp = new Inspector();
+
+            var scripts = SubscribeToScripts(insp);
+
+            await Ready();
+            await insp.Ready(async (cli, token) =>
+            {
                 var bp = await SetBreakpointInMethod("debugger-test.dll", "HiddenSequencePointTest", "StepOverHiddenSP2", 0);
 
                 var pause_location = await EvaluateAndCheck(
