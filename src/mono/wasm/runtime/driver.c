@@ -1080,3 +1080,9 @@ mono_wasm_enable_on_demand_gc (int enable)
 {
 	mono_wasm_enable_gc = enable ? 1 : 0;
 }
+
+EMSCRIPTEN_KEEPALIVE MonoString *
+mono_wasm_intern_string (MonoString *string) 
+{
+	return mono_string_intern (string);
+}

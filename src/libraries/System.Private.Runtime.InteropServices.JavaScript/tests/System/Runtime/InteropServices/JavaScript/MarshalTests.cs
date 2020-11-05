@@ -795,7 +795,7 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
         {
             HelperMarshal._stringResource = HelperMarshal._stringResource2 = null;
             Runtime.InvokeJS(@"
-                var sym = BINDING.intern_string(""interned string 3"");
+                var sym = BINDING.mono_intern_string(""interned string 3"");
                 App.call_test_method (""InvokeString"", [ sym ], ""s"");
                 App.call_test_method (""InvokeString2"", [ sym ], ""s"");
             ");
@@ -812,12 +812,25 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
                 var s = ""long interned string"";
                 for (var i = 0; i < 1024; i++)
                     s += String(i % 10);
-                var sym = BINDING.intern_string(s);
+                var sym = BINDING.mono_intern_string(s);
                 App.call_test_method (""InvokeString"", [ sym ], ""S"");
                 App.call_test_method (""InvokeString2"", [ sym ], ""s"");
             ");
             Assert.Equal(HelperMarshal._stringResource, HelperMarshal._stringResource2);
             Assert.False(Object.ReferenceEquals(HelperMarshal._stringResource, HelperMarshal._stringResource2));
+        }
+
+        [Fact]
+        public static void CanInternVeryManyStrings()
+        {
+            HelperMarshal._stringResource = null;
+            Runtime.InvokeJS(@"
+                for (var i = 0; i < 10240; i++)
+                    BINDING.mono_intern_string('s' + i);
+                App.call_test_method (""InvokeString"", [ 's5000' ], ""S"");
+            ");
+            Assert.Equal("s5000", HelperMarshal._stringResource);
+            Assert.Equal(HelperMarshal._stringResource, string.IsInterned(HelperMarshal._stringResource));
         }
     }
 }

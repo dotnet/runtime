@@ -25,7 +25,7 @@ var BindingSupportLib = {
 			module ["mono_call_static_method"] = BINDING.call_static_method.bind(BINDING);
 			module ["mono_bind_assembly_entry_point"] = BINDING.bind_assembly_entry_point.bind(BINDING);
 			module ["mono_call_assembly_entry_point"] = BINDING.call_assembly_entry_point.bind(BINDING);
-			module ["mono_intern_string"] = BINDING.intern_string.bind(BINDING);
+			module ["mono_intern_string"] = BINDING.mono_intern_string.bind(BINDING);
 		},
 
 		bindings_lazy_init: function () {
@@ -67,6 +67,7 @@ var BindingSupportLib = {
 			this.mono_wasm_register_bundled_satellite_assemblies = Module.cwrap ('mono_wasm_register_bundled_satellite_assemblies', 'void', [ ]);
 			this.mono_wasm_try_unbox_primitive_and_get_type = Module.cwrap ('mono_wasm_try_unbox_primitive_and_get_type', 'number', ['number', 'number']);
 			this.mono_wasm_box_primitive = Module.cwrap ('mono_wasm_box_primitive', 'number', ['number', 'number', 'number']);
+			this.mono_wasm_intern_string = Module.cwrap ('mono_wasm_intern_string', 'number', ['number']);
 			this.assembly_get_entry_point = Module.cwrap ('mono_wasm_assembly_get_entry_point', 'number', ['number']);
 
 			this._box_buffer = Module._malloc(16);
@@ -154,7 +155,7 @@ var BindingSupportLib = {
 
 		// Ensures the string is already interned on both the managed and JavaScript sides,
 		//  then returns the interned string value (to provide fast reference comparisons like C#)
-		intern_string: function (string) {
+		mono_intern_string: function (string) {
 			var ptr = this.js_string_to_mono_string_interned (string);
 			var result = this._managed_pointer_to_interned_string_table.get (ptr);
 			return result;
@@ -167,7 +168,7 @@ var BindingSupportLib = {
 			//  provide a different managed object than the one we passed in, so update our
 			//  pointer (stored in the root) with the result.
 			if (internIt)
-				resultRoot.value = this._intern_string (ptr);
+				resultRoot.value = this.mono_wasm_intern_string (ptr);
 
 			this._interned_string_table.set (string, resultRoot);
 			this._managed_pointer_to_interned_string_table.set (resultRoot.value, string);
