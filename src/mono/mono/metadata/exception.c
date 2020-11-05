@@ -875,17 +875,14 @@ mono_get_exception_thread_start_handle (MonoException* inner_raw, MonoError *err
 {
 	HANDLE_FUNCTION_ENTER ();
 
-	MonoClass *klass;
-	MonoMethod *method;
-	gpointer iter;
 	MONO_HANDLE_DCL (MonoException, inner);
 
 	error_init (error);
 
-	MONO_STATIC_POINTER_INIT (MonoMethod, method);
 	MonoClass *klass = mono_class_load_from_name (mono_get_corlib (), "System.Threading", "ThreadStartException");
-
 	mono_class_init_internal (klass);
+
+	MONO_STATIC_POINTER_INIT (MonoMethod, method);
 
 	gpointer iter = NULL;
 	while ((method = mono_class_get_methods (klass, &iter))) {
