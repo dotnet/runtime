@@ -1969,8 +1969,7 @@ namespace System.Diagnostics.Tests
             {
                 // On some distros sleep is implemented using a script/symlink, which causes this test to fail.
                 // Instead of using sleep directly, we wrap it with a script.
-                string scriptName = GetTestFileName();
-                sleepPath = Path.Combine(TestDirectory, scriptName);
+                string sleepPath = GetTestFilePath();
                 File.WriteAllText(sleepPath, $"#!/bin/sh\nsleep 600\n"); // sleep 10 min.
                 ChMod(sleepPath, "744");
             }
