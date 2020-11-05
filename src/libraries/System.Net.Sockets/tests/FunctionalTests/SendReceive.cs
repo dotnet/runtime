@@ -49,7 +49,7 @@ namespace System.Net.Sockets.Tests
             from addr in Loopbacks
             from b in new[] { false, true }
             from dummy in Enumerable.Repeat(0, 100)
-            select new object[] { addr[0], b };
+            select new object[] { addr[0], b, dummy };
 
         [Theory]
         [MemberData(nameof(LoopbackWithBool))]
