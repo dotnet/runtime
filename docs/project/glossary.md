@@ -91,10 +91,10 @@ In this document, the following terms are used:
 
 .NET Core has been the name for the open source, cross-platform stack that 
 ASP.NET Core and UWP applications are built on. For more details, 
-read [this blog post][introducing-net-core].
+read [Introducing .NET Core][introducing-net-core].
 
 .NET Core has become future of the platform, and we refer to it just as .NET today. 
-For more details, read [this blog post][introducing-net-5].
+For more details, read [Introducing .NET 5][introducing-net-5].
 
 ### .NET Framework
 
