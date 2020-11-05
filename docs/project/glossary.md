@@ -82,8 +82,8 @@ In this document, the following terms are used:
     [ECMA-355][ECMA-355].
 
 * **CLR**. Common Language Runtime: The runtime/environment that .NET code
-  executes in. Is also commonly used to refer to the Microsoft .NET Framework
-  Windows only implementation.
+  executes in. It is also commonly used to refer to the Microsoft .NET Framework
+  Windows-only implementation.
 
 ## .NET Runtimes
 
@@ -93,14 +93,14 @@ In this document, the following terms are used:
 ASP.NET Core and UWP applications are built on. For more details, 
 read [this blog post][introducing-net-core].
 
-.NET Core has become future of the platform and we refer to it just as .NET today. 
+.NET Core has become future of the platform, and we refer to it just as .NET today. 
 For more details, read [this blog post][introducing-net-5].
 
 ### .NET Framework
 
 **Also referred to as**: Desktop, full framework
 
-.NET Framework was the very first .NET runtime. It first shipped in 2002 and it has been
+.NET Framework was the very first .NET runtime. It first shipped in 2002, and it has been
 updated on a regular basis since then.
 
 The .NET Framework was designed to run on Windows only. Some versions of the
@@ -146,7 +146,7 @@ desktop (e.g. WinForms, WPF) scenarios.
 
 ## Ahead-Of-Time Compilation (AOT)
 
-Most flavors of .NET runtime come with at least partial AOT compilation. Variety of AOT technologies 
+Most flavors of .NET runtime come with at least partial AOT compilation. A variety of AOT technologies 
 with unique characteristics were developed for .NET runtimes over the years.
 
 ### ReadyToRun
@@ -154,14 +154,14 @@ with unique characteristics were developed for .NET runtimes over the years.
 **Also referred to as**: R2R
 
 [ReadyToRun](https://github.com/dotnet/runtime/blob/master/docs/design/coreclr/botr/readytorun-overview.md)
-is a file format used by CoreCLR runtime to store AOT compiled code. `crossgen` is the AOT compiler that
+is a file format used by the CoreCLR runtime to store AOT compiled code. `crossgen` is the AOT compiler that
 produces binaries in the ReadyToRun file format.
 
 ### NGen
 
 [NGen](https://docs.microsoft.com/en-us/dotnet/framework/tools/ngen-exe-native-image-generator)
-is AOT technology included in .NET Framework. It usually compiles code on the machine where
-the code will be executed at install time.
+is AOT technology included in .NET Framework. It usually compiles code at install time on the machine where
+the code will be executed.
 
 ### Full AOT
 
@@ -177,7 +177,7 @@ by Mono runtime in environment that allow fallback to JIT.
 
 [Native AOT](https://github.com/dotnet/designs/blob/main/accepted/2020/form-factors.md#native-aot-form-factors) is
 a .NET runtime form factor with key performance characteristics (startup time, binary size and steady state throughput) competitive
-with statically compiled languages. .NET runtime flavor based on CoreCLR with these characteristics is being developed as
+with statically compiled languages. A .NET runtime flavor based on CoreCLR with these characteristics is being developed as
 experimental project in [dotnet/runtimelab](https://github.com/dotnet/runtimelab/tree/feature/NativeAOT) repo.
 
 ## Frameworks
