@@ -403,7 +403,7 @@ partial class Test
                 TargetFramework.Framework => ReferenceAssemblies.NetFramework.Net48.Default,
                 TargetFramework.Standard => ReferenceAssemblies.NetStandard.NetStandard21,
                 TargetFramework.Core => ReferenceAssemblies.NetCore.NetCoreApp31,
-                TargetFramework.Net => ReferenceAssemblies.NetCore.NetCoreApp50,
+                TargetFramework.Net => ReferenceAssemblies.Net.Net50,
                 _ => ReferenceAssemblies.Default
             };
         }

@@ -4,17 +4,20 @@ using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 using static Microsoft.CodeAnalysis.CSharp.SyntaxFactory;
 
+using static Microsoft.Interop.MarshallerHelpers;
+
 namespace Microsoft.Interop
 {
-    internal class Utf16StringMarshaller : ConditionalStackallocMarshallingGenerator
+    internal sealed class Utf16StringMarshaller : ConditionalStackallocMarshallingGenerator
     {
         // [Compat] Equivalent of MAX_PATH on Windows to match built-in system
         // The assumption is file paths are the most common case for marshalling strings,
         // so the threshold for optimized allocation is based on that length.
         private const int StackAllocBytesThreshold = 260 * sizeof(ushort);
 
-        private static readonly TypeSyntax InteropServicesMarshalType = ParseTypeName(TypeNames.System_Runtime_InteropServices_Marshal);
         private static readonly TypeSyntax NativeType = PointerType(PredefinedType(Token(SyntaxKind.UShortKeyword)));
+
+        private static string PinnedIdentifier(string nativeIdentifier) => $"{nativeIdentifier}__pinned";
 
         public override ArgumentSyntax AsArgument(TypePositionInfo info, StubCodeContext context)
         {
@@ -29,11 +32,11 @@ namespace Microsoft.Interop
             }
             else if (context.PinningSupported)
             {
-                // (ushort*)<nativeIdentifier>
+                // (ushort*)<pinned>
                 return Argument(
                     CastExpression(
                         AsNativeType(info),
-                        IdentifierName(identifier)));
+                        IdentifierName(PinnedIdentifier(identifier))));
             }
 
             // <nativeIdentifier>
@@ -65,12 +68,12 @@ namespace Microsoft.Interop
             {
                 if (context.CurrentStage == StubCodeContext.Stage.Pin)
                 {
-                    // fixed (char* <nativeIdentifier> = <managedIdentifier>)
+                    // fixed (char* <pinned> = <managedIdentifier>)
                     yield return FixedStatement(
                         VariableDeclaration(
                             PointerType(PredefinedType(Token(SyntaxKind.CharKeyword))),
                             SingletonSeparatedList(
-                                VariableDeclarator(Identifier(nativeIdentifier))
+                                VariableDeclarator(Identifier(PinnedIdentifier(nativeIdentifier)))
                                     .WithInitializer(EqualsValueClause(IdentifierName(managedIdentifier))))),
                         EmptyStatement());
                 }
@@ -86,6 +89,10 @@ namespace Microsoft.Interop
                         VariableDeclaration(
                             AsNativeType(info),
                             SingletonSeparatedList(VariableDeclarator(nativeIdentifier))));
+
+                    if (TryGenerateSetupSyntax(info, context, out StatementSyntax conditionalAllocSetup))
+                        yield return conditionalAllocSetup;
+
                     break;
                 case StubCodeContext.Stage.Marshal:
                     if (info.RefKind != RefKind.Out)
@@ -139,17 +146,9 @@ namespace Microsoft.Interop
             out bool allocationRequiresByteLength)
         {
             allocationRequiresByteLength = false;
-            // (byte*)Marshal.StringToCoTaskMemUni(<managed>)
             return CastExpression(
                 AsNativeType(info),
-                InvocationExpression(
-                    MemberAccessExpression(
-                        SyntaxKind.SimpleMemberAccessExpression,
-                        InteropServicesMarshalType,
-                        IdentifierName("StringToCoTaskMemUni")),
-                    ArgumentList(
-                        SingletonSeparatedList<ArgumentSyntax>(
-                            Argument(IdentifierName(context.GetIdentifiers(info).managed))))));
+                StringMarshaller.AllocationExpression(CharEncoding.Utf16, context.GetIdentifiers(info).managed));
         }
 
         protected override ExpressionSyntax GenerateByteLengthCalculationExpression(TypePositionInfo info, StubCodeContext context)
@@ -208,17 +207,7 @@ namespace Microsoft.Interop
             TypePositionInfo info,
             StubCodeContext context)
         {
-            // Marshal.FreeCoTaskMem((IntPtr)<nativeIdentifier>)
-            return InvocationExpression(
-                MemberAccessExpression(
-                    SyntaxKind.SimpleMemberAccessExpression,
-                    InteropServicesMarshalType,
-                    IdentifierName("FreeCoTaskMem")),
-                ArgumentList(SingletonSeparatedList(
-                    Argument(
-                        CastExpression(
-                            ParseTypeName("System.IntPtr"),
-                            IdentifierName(context.GetIdentifiers(info).native))))));
+            return StringMarshaller.FreeExpression(context.GetIdentifiers(info).native);
         }
     }
 }

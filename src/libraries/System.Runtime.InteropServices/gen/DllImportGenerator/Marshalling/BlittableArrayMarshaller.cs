@@ -83,6 +83,10 @@ namespace Microsoft.Interop
                         VariableDeclaration(
                             AsNativeType(info),
                             SingletonSeparatedList(VariableDeclarator(nativeIdentifier))));
+
+                    if (TryGenerateSetupSyntax(info, context, out StatementSyntax conditionalAllocSetup))
+                        yield return conditionalAllocSetup;
+
                     break;
                 case StubCodeContext.Stage.Marshal:
                     if (info.RefKind != RefKind.Out)

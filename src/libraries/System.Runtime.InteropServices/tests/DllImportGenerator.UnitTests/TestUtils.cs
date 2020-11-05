@@ -67,7 +67,7 @@ namespace DllImportGenerator.UnitTests
         public static (ReferenceAssemblies, MetadataReference) GetReferenceAssemblies()
         {
             // TODO: When .NET 5.0 releases, we can simplify this.
-            var referenceAssemblies = ReferenceAssemblies.NetCore.NetCoreApp50;
+            var referenceAssemblies = ReferenceAssemblies.Net.Net50;
 
             // Include the assembly containing the new attribute and all of its references.
             // [TODO] Remove once the attribute has been added to the BCL

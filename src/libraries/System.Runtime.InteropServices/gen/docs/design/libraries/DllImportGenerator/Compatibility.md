@@ -8,7 +8,7 @@ The focus of version 1 is to support `NetCoreApp`. This implies that anything no
 
 ### Semantic changes compared to `DllImportAttribute`
 
-The default value of `CharSet` is runtime/language-defined. In the built-in system, the default value of the `CharSet` property is `CharSet.Ansi`. The P/Invoke source generator makes no assumptions about the `CharSet` if it is not explicitly set on `GeneratedDllImportAttribute`. Marshalling of `char` or `string` requires explicitly specifying marshalling information.
+The default value of [`CharSet`](https://docs.microsoft.com/dotnet/api/system.runtime.interopservices.dllimportattribute.charset) is runtime/language-defined. In the built-in system, the default value of the `CharSet` property is `CharSet.Ansi`. The P/Invoke source generator makes no assumptions about the `CharSet` if it is not explicitly set on `GeneratedDllImportAttribute`. Marshalling of `char` or `string` requires explicitly specifying marshalling information.
 
 The built-in system treats `CharSet.None` as `CharSet.Ansi`. The P/Invoke source generator will treat `CharSet.None` as if the `CharSet` was not set.
 
@@ -33,6 +33,12 @@ Marshalling of `string` will not be supported when configured with any of the fo
 When converting from native to managed, the built-in system would throw a [`MarshalDirectiveException`](https://docs.microsoft.com/dotnet/api/system.runtime.interopservices.marshaldirectiveexception) if the string's length is over 0x7ffffff0. The generated marshalling code will no longer perform this check.
 
 In the built-in system, marshalling a `string` contains an optimization for parameters passed by value to allocate on the stack (instead of through [`AllocCoTaskMem`](https://docs.microsoft.com/dotnet/api/system.runtime.interopservices.marshal.alloccotaskmem)) if the string is below a certain length (MAX_PATH). For UTF-16, this optimization was also applied for parameters passed by read-only reference. The generated marshalling code will include this optimization for read-only reference parameters for non-UTF-16 as well.
+
+When marshalling as [ANSI](https://docs.microsoft.com/windows/win32/intl/code-pages) on Windows (using `CharSet.Ansi`, `CharSet.Auto`, or `UnmanagedType.LPStr`):
+  - Best-fit mapping will be disabled and no exception will be thrown for unmappable characters. In the built-in system, this behaviour was configured through [`DllImportAttribute.BestFitMapping`] and [`DllImportAttribute.ThrowOnUnmappableChar`]. The generated marshalling code will have the equivalent behaviour of `BestFitMapping=false` and `ThrowOnUnmappableChar=false`.
+  - No optimization for stack allocation will be performed. Marshalling will always allocate through `AllocCoTaskMem`.
+
+On Windows, marshalling using `CharSet.Auto` is treated as UTF-16. When marshalling a string as UTF-16 by value or by read-only reference, the string is pinned and the pointer passed to the P/Invoke. The generated marshalling code will always pin the input string - even on non-Windows.
 
 ### Custom marshaller support
 

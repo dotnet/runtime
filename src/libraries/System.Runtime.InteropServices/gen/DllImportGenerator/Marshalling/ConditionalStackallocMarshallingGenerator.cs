@@ -8,11 +8,38 @@ namespace Microsoft.Interop
 {
     internal abstract class ConditionalStackallocMarshallingGenerator : IMarshallingGenerator
     {
-        private static string GetAllocationMarkerIdentifier(string managedIdentifier) => $"{managedIdentifier}__allocated";
+        protected static string GetAllocationMarkerIdentifier(string managedIdentifier) => $"{managedIdentifier}__allocated";
 
         private static string GetByteLengthIdentifier(string managedIdentifier) => $"{managedIdentifier}__bytelen";
 
         private static string GetStackAllocIdentifier(string managedIdentifier) => $"{managedIdentifier}__stackptr";
+
+        protected bool UsesConditionalStackAlloc(TypePositionInfo info, StubCodeContext context)
+        {
+            return context.CanUseAdditionalTemporaryState
+                && context.StackSpaceUsable
+                && (!info.IsByRef || info.RefKind == RefKind.In)
+                && !info.IsManagedReturnPosition;
+        }
+
+        protected bool TryGenerateSetupSyntax(TypePositionInfo info, StubCodeContext context, out StatementSyntax statement)
+        {
+            statement = EmptyStatement();
+
+            if (!UsesConditionalStackAlloc(info, context))
+                return false;
+
+            string allocationMarkerIdentifier = GetAllocationMarkerIdentifier(context.GetIdentifiers(info).managed);
+
+            // bool <allocationMarker> = false;
+            statement = LocalDeclarationStatement(
+                VariableDeclaration(
+                    PredefinedType(Token(SyntaxKind.BoolKeyword)),
+                    SingletonSeparatedList(
+                        VariableDeclarator(allocationMarkerIdentifier)
+                            .WithInitializer(EqualsValueClause(LiteralExpression(SyntaxKind.FalseLiteralExpression))))));
+            return true;
+        }
 
         protected IEnumerable<StatementSyntax> GenerateConditionalAllocationSyntax(
             TypePositionInfo info, 
@@ -39,8 +66,8 @@ namespace Microsoft.Interop
                         VariableDeclarator(byteLenIdentifier)
                             .WithInitializer(EqualsValueClause(
                                 GenerateByteLengthCalculationExpression(info, context))))));
-            
-            if (!context.CanUseAdditionalTemporaryState || !context.StackSpaceUsable || (info.IsByRef && info.RefKind != RefKind.In))
+
+            if (!UsesConditionalStackAlloc(info, context))
             {
                 List<StatementSyntax> statements = new List<StatementSyntax>();
                 if (allocationRequiresByteLength)
@@ -58,13 +85,6 @@ namespace Microsoft.Interop
                     Block(statements));
                 yield break;
             }
-            // <allocationMarkerIdentifier> = false;
-            yield return LocalDeclarationStatement(
-                VariableDeclaration(
-                    PredefinedType(Token(SyntaxKind.BoolKeyword)),
-                    SingletonSeparatedList(
-                        VariableDeclarator(allocationMarkerIdentifier)
-                            .WithInitializer(EqualsValueClause(LiteralExpression(SyntaxKind.FalseLiteralExpression))))));
 
             // Code block for stackalloc if number of bytes is below threshold size
             var marshalOnStack = Block(
@@ -94,6 +114,7 @@ namespace Microsoft.Interop
             //   if (<byteLen> > <StackAllocBytesThreshold>)
             //   {
             //       <allocationStatement>;
+            //       <allocationMarker> = true;
             //   }
             //   else
             //   {
@@ -135,7 +156,7 @@ namespace Microsoft.Interop
         {
             (string managedIdentifier, string nativeIdentifier) = context.GetIdentifiers(info);
             string allocationMarkerIdentifier = GetAllocationMarkerIdentifier(managedIdentifier);
-            if (!context.CanUseAdditionalTemporaryState || (info.IsByRef && info.RefKind != RefKind.In))
+            if (!UsesConditionalStackAlloc(info, context))
             {
                 return ExpressionStatement(GenerateFreeExpression(info, context));
             }

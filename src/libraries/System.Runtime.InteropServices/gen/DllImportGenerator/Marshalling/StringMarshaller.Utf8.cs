@@ -4,6 +4,8 @@ using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 using static Microsoft.CodeAnalysis.CSharp.SyntaxFactory;
 
+using static Microsoft.Interop.MarshallerHelpers;
+
 namespace Microsoft.Interop
 {
     internal sealed class Utf8StringMarshaller : ConditionalStackallocMarshallingGenerator
@@ -21,7 +23,6 @@ namespace Microsoft.Interop
         // maximum number of bytes per 'char' is 3.
         private const int MaxByteCountPerChar = 3;
 
-        private static readonly TypeSyntax InteropServicesMarshalType = ParseTypeName(TypeNames.System_Runtime_InteropServices_Marshal);
         private static readonly TypeSyntax NativeType = PointerType(PredefinedType(Token(SyntaxKind.ByteKeyword)));
         private static readonly TypeSyntax UTF8EncodingType = ParseTypeName("System.Text.Encoding.UTF8");
 
@@ -60,6 +61,10 @@ namespace Microsoft.Interop
                         VariableDeclaration(
                             AsNativeType(info),
                             SingletonSeparatedList(VariableDeclarator(nativeIdentifier))));
+
+                    if (TryGenerateSetupSyntax(info, context, out StatementSyntax conditionalAllocSetup))
+                        yield return conditionalAllocSetup;
+
                     break;
                 case StubCodeContext.Stage.Marshal:
                     if (info.RefKind != RefKind.Out)
@@ -108,17 +113,9 @@ namespace Microsoft.Interop
             out bool allocationRequiresByteLength)
         {
             allocationRequiresByteLength = false;
-            // (byte*)Marshal.StringToCoTaskMemUTF8(<managed>)
             return CastExpression(
                 AsNativeType(info),
-                InvocationExpression(
-                    MemberAccessExpression(
-                        SyntaxKind.SimpleMemberAccessExpression,
-                        InteropServicesMarshalType,
-                        IdentifierName("StringToCoTaskMemUTF8")),
-                    ArgumentList(
-                        SingletonSeparatedList<ArgumentSyntax>(
-                            Argument(IdentifierName(context.GetIdentifiers(info).managed))))));
+                StringMarshaller.AllocationExpression(CharEncoding.Utf8, context.GetIdentifiers(info).managed));
         }
 
         protected override ExpressionSyntax GenerateByteLengthCalculationExpression(TypePositionInfo info, StubCodeContext context)
@@ -189,17 +186,7 @@ namespace Microsoft.Interop
             TypePositionInfo info,
             StubCodeContext context)
         {
-            // Marshal.FreeCoTaskMem((IntPtr)<nativeIdentifier>)
-            return InvocationExpression(
-                MemberAccessExpression(
-                    SyntaxKind.SimpleMemberAccessExpression,
-                    InteropServicesMarshalType,
-                    IdentifierName("FreeCoTaskMem")),
-                ArgumentList(SingletonSeparatedList(
-                    Argument(
-                        CastExpression(
-                            ParseTypeName("System.IntPtr"),
-                            IdentifierName(context.GetIdentifiers(info).native))))));
+            return StringMarshaller.FreeExpression(context.GetIdentifiers(info).native);
         }
     }
 }
