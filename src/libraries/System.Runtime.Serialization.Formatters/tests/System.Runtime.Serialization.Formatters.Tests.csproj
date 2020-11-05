@@ -5,6 +5,7 @@
     <TargetFrameworks>$(NetCoreAppCurrent)-windows;$(NetCoreAppCurrent)-FreeBSD;$(NetCoreAppCurrent)-illumos;$(NetCoreAppCurrent)-Solaris;$(NetCoreAppCurrent)-Linux;$(NetCoreAppCurrent)-OSX;$(NetCoreAppCurrent)-iOS;$(NetCoreAppCurrent)-tvOS;net48</TargetFrameworks>
   </PropertyGroup>
   <ItemGroup>
+    <!-- temporary change to trigger tests -->
     <Compile Include="BinaryFormatterTestData.cs" />
     <Compile Include="BinaryFormatterTests.cs" />
     <Compile Include="DisableBitTests.cs" />
