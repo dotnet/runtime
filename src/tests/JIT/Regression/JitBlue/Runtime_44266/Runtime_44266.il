@@ -37,6 +37,8 @@
     call native int a::byrefsubbyref(class ctest&, class ctest&)
     stloc V_3
     ldloc V_3
+    call       void [System.Console]System.Console::WriteLine(int32)
+    ldc.i4.s   100    
     ret
   }
 }
