@@ -3792,7 +3792,7 @@ abort_threads (gpointer key, gpointer value, gpointer user)
 		g_warning ("%s: Failed aborting id: %p, mono_thread_manage will ignore it\n", __func__, (void*)(intptr_t)(gsize)thread->tid);
 		/* close the handle, we're not going to wait for the thread to be aborted */
 		mono_threads_close_thread_handle (handle);
-	} else {
+	} else if (!(thread->state & ThreadState_Background)) {
 		/* commit to waiting for the thread to be aborted */
 		wait->handles[wait->num] = handle;
 		wait->threads[wait->num] = thread;
