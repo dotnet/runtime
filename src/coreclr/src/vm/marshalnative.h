@@ -71,7 +71,7 @@ public:
     //====================================================================
     // return the IUnknown* for an Object
     //====================================================================
-    static FCDECL2(IUnknown*, GetIUnknownForObjectNative, Object* orefUNSAFE, CLR_BOOL fOnlyInContext);
+    static FCDECL1(IUnknown*, GetIUnknownForObjectNative, Object* orefUNSAFE);
 
     //====================================================================
     // return the raw IUnknown* for a COM Object not related to current
@@ -83,13 +83,13 @@ public:
     //====================================================================
     // return the IDispatch* for an Object
     //====================================================================
-    static FCDECL2(IDispatch*, GetIDispatchForObjectNative, Object* orefUNSAFE, CLR_BOOL fOnlyInContext);
+    static FCDECL1(IDispatch*, GetIDispatchForObjectNative, Object* orefUNSAFE);
 
     //====================================================================
     // return the IUnknown* representing the interface for the Object
     // Object o should support Type T
     //====================================================================
-    static FCDECL4(IUnknown*, GetComInterfaceForObjectNative, Object* orefUNSAFE, ReflectClassBaseObject* refClassUNSAFE, CLR_BOOL fOnlyInContext, CLR_BOOL bEnableCustomizedQueryInterface);
+    static FCDECL3(IUnknown*, GetComInterfaceForObjectNative, Object* orefUNSAFE, ReflectClassBaseObject* refClassUNSAFE, CLR_BOOL bEnableCustomizedQueryInterface);
 
     //====================================================================
     // return an Object for IUnknown
@@ -175,7 +175,6 @@ public:
 
 private:
     static int GetComSlotInfo(MethodTable *pMT, MethodTable **ppDefItfMT);
-    static BOOL IsObjectInContext(OBJECTREF *pObj);
 #endif // FEATURE_COMINTEROP
 };
 

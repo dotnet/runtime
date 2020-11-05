@@ -45,10 +45,6 @@
 #include "stubhelpers.h"
 #endif // FEATURE_COMINTEROP
 
-#ifdef FEATURE_COMINTEROP_APARTMENT_SUPPORT
-#include "olecontexthelpers.h"
-#endif // FEATURE_COMINTEROP_APARTMENT_SUPPORT
-
 //
 // NumParamBytes
 // Counts # of parameter bytes
@@ -697,7 +693,7 @@ FCIMPLEND
 //====================================================================
 // return the IUnknown* for an Object.
 //====================================================================
-FCIMPL2(IUnknown*, MarshalNative::GetIUnknownForObjectNative, Object* orefUNSAFE, CLR_BOOL fOnlyInContext)
+FCIMPL1(IUnknown*, MarshalNative::GetIUnknownForObjectNative, Object* orefUNSAFE)
 {
     FCALL_CONTRACT;
 
@@ -709,10 +705,7 @@ FCIMPL2(IUnknown*, MarshalNative::GetIUnknownForObjectNative, Object* orefUNSAFE
     // Ensure COM is started up.
     EnsureComStarted();
 
-    if (fOnlyInContext && !IsObjectInContext(&oref))
-        retVal = NULL;
-    else
-        retVal = GetComIPFromObjectRef(&oref, ComIpType_OuterUnknown, NULL);
+    retVal = GetComIPFromObjectRef(&oref, ComIpType_OuterUnknown, NULL);
 
     HELPER_METHOD_FRAME_END();
     return retVal;
@@ -759,7 +752,7 @@ FCIMPLEND
 //====================================================================
 // return the IDispatch* for an Object.
 //====================================================================
-FCIMPL2(IDispatch*, MarshalNative::GetIDispatchForObjectNative, Object* orefUNSAFE, CLR_BOOL fOnlyInContext)
+FCIMPL1(IDispatch*, MarshalNative::GetIDispatchForObjectNative, Object* orefUNSAFE)
 {
     FCALL_CONTRACT;
 
@@ -771,10 +764,7 @@ FCIMPL2(IDispatch*, MarshalNative::GetIDispatchForObjectNative, Object* orefUNSA
     // Ensure COM is started up.
     EnsureComStarted();
 
-    if (fOnlyInContext && !IsObjectInContext(&oref))
-        retVal = NULL;
-    else
-        retVal = (IDispatch*)GetComIPFromObjectRef(&oref, ComIpType_Dispatch, NULL);
+    retVal = (IDispatch*)GetComIPFromObjectRef(&oref, ComIpType_Dispatch, NULL);
 
     HELPER_METHOD_FRAME_END();
     return retVal;
@@ -785,7 +775,7 @@ FCIMPLEND
 // return the IUnknown* representing the interface for the Object
 // Object o should support Type T
 //====================================================================
-FCIMPL4(IUnknown*, MarshalNative::GetComInterfaceForObjectNative, Object* orefUNSAFE, ReflectClassBaseObject* refClassUNSAFE, CLR_BOOL fOnlyInContext, CLR_BOOL bEnableCustomizedQueryInterface)
+FCIMPL3(IUnknown*, MarshalNative::GetComInterfaceForObjectNative, Object* orefUNSAFE, ReflectClassBaseObject* refClassUNSAFE, CLR_BOOL bEnableCustomizedQueryInterface)
 {
     FCALL_CONTRACT;
 
@@ -820,10 +810,7 @@ FCIMPL4(IUnknown*, MarshalNative::GetComInterfaceForObjectNative, Object* orefUN
     if (!::IsTypeVisibleFromCom(th))
         COMPlusThrowArgumentException(W("t"), W("Argument_TypeMustBeVisibleFromCom"));
 
-    if (fOnlyInContext && !IsObjectInContext(&oref))
-        retVal = NULL;
-    else
-        retVal = GetComIPFromObjectRef(&oref, th.GetMethodTable(), bEnableCustomizedQueryInterface);
+    retVal = GetComIPFromObjectRef(&oref, th.GetMethodTable(), bEnableCustomizedQueryInterface);
 
     HELPER_METHOD_FRAME_END();
     return retVal;
@@ -1509,43 +1496,6 @@ int MarshalNative::GetComSlotInfo(MethodTable *pMT, MethodTable **ppDefItfMT)
     {
         // We are dealing with an IClassX which are always IDispatch based.
         return ComMethodTable::GetNumExtraSlots(ifDispatch);
-    }
-}
-
-BOOL MarshalNative::IsObjectInContext(OBJECTREF *pObj)
-{
-    CONTRACTL
-    {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_COOPERATIVE;
-        PRECONDITION(pObj != NULL);
-    }
-    CONTRACTL_END;
-
-    SyncBlock* pBlock = (*pObj)->GetSyncBlock();
-
-    InteropSyncBlockInfo* pInteropInfo = pBlock->GetInteropInfo();
-
-    ComCallWrapper* pCCW = pInteropInfo->GetCCW();
-
-    if((pCCW) || (!pInteropInfo->RCWWasUsed()))
-    {
-        // We are dealing with a CCW. Since CCW's are agile, they are always in the
-        // correct context.
-        return TRUE;
-    }
-    else
-    {
-        RCWHolder pRCW(GetThread());
-        pRCW.Init(pBlock);
-
-        // We are dealing with an RCW, we need to check to see if the current
-        // context is the one it was first seen in.
-        LPVOID pCtxCookie = GetCurrentCtxCookie();
-        _ASSERTE(pCtxCookie != NULL);
-
-        return pCtxCookie == pRCW->GetWrapperCtxCookie();
     }
 }
 
