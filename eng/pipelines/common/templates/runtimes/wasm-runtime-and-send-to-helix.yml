@@ -51,10 +51,6 @@ steps:
         helixBuild: $(Build.BuildNumber)
         helixSource: $(_HelixSource)
 
-        # REVIEW: not sure why "cli" is part of the names here. Leave it for the ones that already had it,
-        # but don't add it to new ones.
-        ${{ if eq(parameters.readyToRun, true) }}:
-          helixType: 'test/functional/r2r/cli/'
         ${{ if ne(parameters.readyToRun, true) }}:
           helixType: 'test/functional/cli/'
 

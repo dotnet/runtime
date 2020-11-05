@@ -1089,15 +1089,16 @@ namespace System.Collections.Concurrent
             List<CancellationToken> tokensList = new List<CancellationToken>(collections.Length + 1); // + 1 for the external token
             tokensList.Add(externalCancellationToken);
 
-            //Read the appropriate WaitHandle based on the operation mode.
+            // Read the appropriate WaitHandle based on the operation mode.
             if (isAddOperation)
             {
                 for (int i = 0; i < collections.Length; i++)
                 {
-                    if (collections[i]._freeNodes != null)
+                    BlockingCollection<T> c = collections[i];
+                    if (c._freeNodes != null)
                     {
-                        handlesList.Add(collections[i]._freeNodes!.AvailableWaitHandle); // TODO-NULLABLE: Indexer nullability tracked (https://github.com/dotnet/roslyn/issues/34644)
-                        tokensList.Add(collections[i]._producersCancellationTokenSource.Token);
+                        handlesList.Add(c._freeNodes.AvailableWaitHandle);
+                        tokensList.Add(c._producersCancellationTokenSource.Token);
                     }
                 }
             }

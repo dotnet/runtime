@@ -123,6 +123,8 @@ namespace System.Net.Sockets.Tests
         [InlineData(6)]
         [InlineData(7)]
         [InlineData(8)]
+        [InlineData(9)]
+        [InlineData(10)]
         public async Task ConnectAsync_DnsEndPoint_Success(int mode)
         {
             using (var client = new DerivedTcpClient())
@@ -168,6 +170,14 @@ namespace System.Net.Sockets.Tests
                         await client.ConnectAsync(addresses[0], port, CancellationToken.None);
                         break;
                     case 8:
+                        addresses = await Dns.GetHostAddressesAsync(host);
+                        await client.ConnectAsync(new IPEndPoint(addresses[0], port));
+                        break;
+                    case 9:
+                        addresses = await Dns.GetHostAddressesAsync(host);
+                        await client.ConnectAsync(new IPEndPoint(addresses[0], port), CancellationToken.None);
+                        break;
+                    case 10:
                         addresses = await Dns.GetHostAddressesAsync(host);
                         await client.ConnectAsync(addresses, port, CancellationToken.None);
                         break;

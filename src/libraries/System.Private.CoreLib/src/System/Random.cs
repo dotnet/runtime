@@ -5,187 +5,83 @@ namespace System
 {
     public class Random
     {
-        //
-        // Private Constants
-        //
-        private const int MBIG = int.MaxValue;
-        private const int MSEED = 161803398;
+        private static readonly Random s_globalRandom = new Random(GenerateGlobalSeed());
+        [ThreadStatic]
+        private static Random? t_threadRandom;
 
-        //
-        // Member Variables
-        //
+        private readonly int[] _seedArray = new int[56];
         private int _inext;
         private int _inextp;
-        private readonly int[] _seedArray = new int[56];
 
-        //
-        // Public Constants
-        //
-
-        //
-        // Native Declarations
-        //
-
-        //
-        // Constructors
-        //
-
-        /*=========================================================================================
-        **Action: Initializes a new instance of the Random class, using a default seed value
-        ===========================================================================================*/
-        public Random()
-          : this(GenerateSeed())
+        public Random() : this(ThreadStaticRandom.Next())
         {
         }
 
-        /*=========================================================================================
-        **Action: Initializes a new instance of the Random class, using a specified seed value
-        ===========================================================================================*/
         public Random(int Seed)
         {
-            int ii = 0;
-            int mj, mk;
+            // Initialize seed array.
 
-            // Initialize our Seed array.
             int subtraction = (Seed == int.MinValue) ? int.MaxValue : Math.Abs(Seed);
-            mj = MSEED - subtraction;
+            int mj = 161803398 - subtraction; // magic number based on Phi (golden ratio)
             _seedArray[55] = mj;
-            mk = 1;
+            int mk = 1;
+
+            int ii = 0;
             for (int i = 1; i < 55; i++)
-            {  // Apparently the range [1..55] is special (Knuth) and so we're wasting the 0'th position.
-                if ((ii += 21) >= 55) ii -= 55;
+            {
+                // The range [1..55] is special (Knuth) and so we're wasting the 0'th position.
+                if ((ii += 21) >= 55)
+                {
+                    ii -= 55;
+                }
+
                 _seedArray[ii] = mk;
                 mk = mj - mk;
-                if (mk < 0) mk += MBIG;
+                if (mk < 0)
+                {
+                    mk += int.MaxValue;
+                }
+
                 mj = _seedArray[ii];
             }
+
             for (int k = 1; k < 5; k++)
             {
                 for (int i = 1; i < 56; i++)
                 {
                     int n = i + 30;
-                    if (n >= 55) n -= 55;
+                    if (n >= 55)
+                    {
+                        n -= 55;
+                    }
+
                     _seedArray[i] -= _seedArray[1 + n];
-                    if (_seedArray[i] < 0) _seedArray[i] += MBIG;
+                    if (_seedArray[i] < 0)
+                    {
+                        _seedArray[i] += int.MaxValue;
+                    }
                 }
             }
+
             _inextp = 21;
         }
 
-        //
-        // Package Private Methods
-        //
+        protected virtual double Sample() =>
+            // Including the division at the end gives us significantly improved random number distribution.
+            InternalSample() * (1.0 / int.MaxValue);
 
-        /*====================================Sample====================================
-        **Action: Return a new random number [0..1) and reSeed the Seed array.
-        **Returns: A double [0..1)
-        **Arguments: None
-        **Exceptions: None
-        ==============================================================================*/
-        protected virtual double Sample()
+        public virtual int Next() => InternalSample();
+
+        public virtual int Next(int maxValue)
         {
-            // Including this division at the end gives us significantly improved
-            // random number distribution.
-            return InternalSample() * (1.0 / MBIG);
-        }
-
-        private int InternalSample()
-        {
-            int retVal;
-            int locINext = _inext;
-            int locINextp = _inextp;
-
-            if (++locINext >= 56) locINext = 1;
-            if (++locINextp >= 56) locINextp = 1;
-
-            retVal = _seedArray[locINext] - _seedArray[locINextp];
-
-            if (retVal == MBIG) retVal--;
-            if (retVal < 0) retVal += MBIG;
-
-            _seedArray[locINext] = retVal;
-
-            _inext = locINext;
-            _inextp = locINextp;
-
-            return retVal;
-        }
-
-        [ThreadStatic]
-        private static Random? t_threadRandom;
-        private static readonly Random s_globalRandom = new Random(GenerateGlobalSeed());
-
-        /*=====================================GenerateSeed=====================================
-        **Returns: An integer that can be used as seed values for consecutively
-                   creating lots of instances on the same thread within a short period of time.
-        ========================================================================================*/
-        private static int GenerateSeed()
-        {
-            Random? rnd = t_threadRandom;
-            if (rnd == null)
+            if (maxValue < 0)
             {
-                int seed;
-                lock (s_globalRandom)
-                {
-                    seed = s_globalRandom.Next();
-                }
-                rnd = new Random(seed);
-                t_threadRandom = rnd;
+                throw new ArgumentOutOfRangeException(nameof(maxValue), SR.Format(SR.ArgumentOutOfRange_MustBePositive, nameof(maxValue)));
             }
-            return rnd.Next();
+
+            return (int)(Sample() * maxValue);
         }
 
-        /*==================================GenerateGlobalSeed====================================
-        **Action:  Creates a number to use as global seed.
-        **Returns: An integer that is safe to use as seed values for thread-local seed generators.
-        ==========================================================================================*/
-        private static unsafe int GenerateGlobalSeed()
-        {
-            int result;
-            Interop.GetRandomBytes((byte*)&result, sizeof(int));
-            return result;
-        }
-
-        //
-        // Public Instance Methods
-        //
-
-        /*=====================================Next=====================================
-        **Returns: An int [0..int.MaxValue)
-        **Arguments: None
-        **Exceptions: None.
-        ==============================================================================*/
-        public virtual int Next()
-        {
-            return InternalSample();
-        }
-
-        private double GetSampleForLargeRange()
-        {
-            // The distribution of double value returned by Sample
-            // is not distributed well enough for a large range.
-            // If we use Sample for a range [int.MinValue..int.MaxValue)
-            // We will end up getting even numbers only.
-
-            int result = InternalSample();
-            // Note we can't use addition here. The distribution will be bad if we do that.
-            bool negative = (InternalSample() % 2 == 0) ? true : false;  // decide the sign based on second sample
-            if (negative)
-            {
-                result = -result;
-            }
-            double d = result;
-            d += (int.MaxValue - 1); // get a number in range [0 .. 2 * Int32MaxValue - 1)
-            d /= 2 * (uint)int.MaxValue - 1;
-            return d;
-        }
-
-        /*=====================================Next=====================================
-        **Returns: An int [minvalue..maxvalue)
-        **Arguments: minValue -- the least legal value for the Random number.
-        **           maxValue -- One greater than the greatest legal return value.
-        **Exceptions: None.
-        ==============================================================================*/
         public virtual int Next(int minValue, int maxValue)
         {
             if (minValue > maxValue)
@@ -194,49 +90,20 @@ namespace System
             }
 
             long range = (long)maxValue - minValue;
-            if (range <= int.MaxValue)
-            {
-                return (int)(Sample() * range) + minValue;
-            }
-            else
-            {
-                return (int)((long)(GetSampleForLargeRange() * range) + minValue);
-            }
+            return range <= int.MaxValue ?
+                (int)(Sample() * range) + minValue :
+                (int)((long)(GetSampleForLargeRange() * range) + minValue);
         }
 
-        /*=====================================Next=====================================
-        **Returns: An int [0..maxValue)
-        **Arguments: maxValue -- One more than the greatest legal return value.
-        **Exceptions: None.
-        ==============================================================================*/
-        public virtual int Next(int maxValue)
-        {
-            if (maxValue < 0)
-            {
-                throw new ArgumentOutOfRangeException(nameof(maxValue), SR.Format(SR.ArgumentOutOfRange_MustBePositive, nameof(maxValue)));
-            }
-            return (int)(Sample() * maxValue);
-        }
+        public virtual double NextDouble() => Sample();
 
-        /*=====================================Next=====================================
-        **Returns: A double [0..1)
-        **Arguments: None
-        **Exceptions: None
-        ==============================================================================*/
-        public virtual double NextDouble()
-        {
-            return Sample();
-        }
-
-        /*==================================NextBytes===================================
-        **Action:  Fills the byte array with random bytes [0..0x7f].  The entire array is filled.
-        **Returns:Void
-        **Arguments:  buffer -- the array to be filled.
-        **Exceptions: None
-        ==============================================================================*/
         public virtual void NextBytes(byte[] buffer)
         {
-            if (buffer == null) throw new ArgumentNullException(nameof(buffer));
+            if (buffer is null)
+            {
+                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.buffer);
+            }
+
             for (int i = 0; i < buffer.Length; i++)
             {
                 buffer[i] = (byte)InternalSample();
@@ -249,6 +116,82 @@ namespace System
             {
                 buffer[i] = (byte)Next();
             }
+        }
+
+        private int InternalSample()
+        {
+            int locINext = _inext;
+            if (++locINext >= 56)
+            {
+                locINext = 1;
+            }
+
+            int locINextp = _inextp;
+            if (++locINextp >= 56)
+            {
+                locINextp = 1;
+            }
+
+            int retVal = _seedArray[locINext] - _seedArray[locINextp];
+
+            if (retVal == int.MaxValue)
+            {
+                retVal--;
+            }
+            if (retVal < 0)
+            {
+                retVal += int.MaxValue;
+            }
+
+            _seedArray[locINext] = retVal;
+            _inext = locINext;
+            _inextp = locINextp;
+
+            return retVal;
+        }
+
+        private static Random ThreadStaticRandom
+        {
+            get
+            {
+                return t_threadRandom ??= CreateThreadStaticRandom();
+
+                static Random CreateThreadStaticRandom()
+                {
+                    int seed;
+                    lock (s_globalRandom)
+                    {
+                        seed = s_globalRandom.Next();
+                    }
+
+                    return new Random(seed);
+                }
+            }
+        }
+
+        private static unsafe int GenerateGlobalSeed()
+        {
+            int result;
+            Interop.GetRandomBytes((byte*)&result, sizeof(int));
+            return result;
+        }
+
+        private double GetSampleForLargeRange()
+        {
+            // The distribution of the double returned by Sample is not good enough for a large range.
+            // If we use Sample for a range [int.MinValue..int.MaxValue), we will end up getting even numbers only.
+            int result = InternalSample();
+
+            // We can't use addition here: the distribution will be bad if we do that.
+            if (InternalSample() % 2 == 0) // decide the sign based on second sample
+            {
+                result = -result;
+            }
+
+            double d = result;
+            d += int.MaxValue - 1; // get a number in range [0..2*int.MaxValue-1)
+            d /= 2u * int.MaxValue - 1;
+            return d;
         }
     }
 }

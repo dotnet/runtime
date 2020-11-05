@@ -151,7 +151,7 @@ namespace System.Xml
             }
         }
 
-        public override string? BaseURI
+        public override string BaseURI
         {
             get
             {

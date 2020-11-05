@@ -1671,7 +1671,7 @@ GenTree* Compiler::impNormStructVal(GenTree*             structVal,
             structLcl = structVal->AsLclVarCommon();
             // Wrap it in a GT_OBJ.
             structVal = gtNewObjNode(structHnd, gtNewOperNode(GT_ADDR, TYP_BYREF, structVal));
-            __fallthrough;
+            FALLTHROUGH;
 
         case GT_OBJ:
         case GT_BLK:
@@ -4303,6 +4303,27 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
                 break;
             }
 
+            // Fold PopCount for constant input
+            case NI_System_Numerics_BitOperations_PopCount:
+            {
+                assert(sig->numArgs == 1);
+                if (impStackTop().val->IsIntegralConst())
+                {
+                    typeInfo argType = verParseArgSigToTypeInfo(sig, sig->args).NormaliseForStack();
+                    ssize_t  cns     = impPopStack().val->AsIntConCommon()->IconValue();
+                    if (argType.IsType(TI_LONG))
+                    {
+                        retNode = gtNewIconNode(genCountBits(cns), callType);
+                    }
+                    else
+                    {
+                        assert(argType.IsType(TI_INT));
+                        retNode = gtNewIconNode(genCountBits(static_cast<unsigned>(cns)), callType);
+                    }
+                }
+                break;
+            }
+
             case NI_System_GC_KeepAlive:
             {
                 retNode = gtNewOperNode(GT_KEEPALIVE, TYP_VOID, impPopStack().val);
@@ -4648,6 +4669,13 @@ NamedIntrinsic Compiler::lookupNamedIntrinsic(CORINFO_METHOD_HANDLE method)
         if ((strcmp(className, "EqualityComparer`1") == 0) && (strcmp(methodName, "get_Default") == 0))
         {
             result = NI_System_Collections_Generic_EqualityComparer_get_Default;
+        }
+    }
+    else if ((strcmp(namespaceName, "System.Numerics") == 0) && (strcmp(className, "BitOperations") == 0))
+    {
+        if (strcmp(methodName, "PopCount") == 0)
+        {
+            result = NI_System_Numerics_BitOperations_PopCount;
         }
     }
 #ifdef FEATURE_HW_INTRINSICS
@@ -5629,7 +5657,8 @@ void Compiler::verVerifyCall(OPCODE                  opcode,
                 goto DONE_ARGS;
             }
         }
-        // fall thru to default checks
+            // fall thru to default checks
+            FALLTHROUGH;
         default:
             VerifyOrReturn(!(mflags & CORINFO_FLG_ABSTRACT), "method abstract");
     }
@@ -6146,8 +6175,12 @@ int Compiler::impBoxPatternMatch(CORINFO_RESOLVED_TOKEN* pResolvedToken, const B
                     if (((treeToBox->gtFlags & GTF_SIDE_EFFECT) == GTF_EXCEPT) &&
                         treeToBox->OperIs(GT_OBJ, GT_BLK, GT_IND))
                     {
-                        // Yes, we just need to perform a null check.
-                        treeToNullcheck = treeToBox->AsOp()->gtOp1;
+                        // Yes, we just need to perform a null check if needed.
+                        GenTree* const addr = treeToBox->AsOp()->gtGetOp1();
+                        if (fgAddrCouldBeNull(addr))
+                        {
+                            treeToNullcheck = addr;
+                        }
                     }
                     else
                     {
@@ -13158,6 +13191,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                         case CEE_CONV_OVF_U_UN:
                         case CEE_CONV_U:
                             isNative = true;
+                            break;
                         default:
                             // leave 'isNative' = false;
                             break;
@@ -14125,7 +14159,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                     }
                 }
 
-            // fall through
+                FALLTHROUGH;
 
             case CEE_CALLVIRT:
             case CEE_CALL:
@@ -14551,7 +14585,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
 #else
                         fieldInfo.fieldAccessor = CORINFO_FIELD_STATIC_ADDR_HELPER;
 
-                        __fallthrough;
+                        FALLTHROUGH;
 #endif
 
                     case CORINFO_FIELD_STATIC_ADDR_HELPER:
@@ -14593,7 +14627,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                             }
                         }
 
-                        __fallthrough;
+                        FALLTHROUGH;
 
                     case CORINFO_FIELD_STATIC_RVA_ADDRESS:
                     case CORINFO_FIELD_STATIC_SHARED_STATIC_HELPER:
@@ -14858,7 +14892,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
 #else
                         fieldInfo.fieldAccessor = CORINFO_FIELD_STATIC_ADDR_HELPER;
 
-                        __fallthrough;
+                        FALLTHROUGH;
 #endif
 
                     case CORINFO_FIELD_STATIC_ADDR_HELPER:
@@ -16365,6 +16399,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
 
             case 0xCC:
                 OutputDebugStringA("CLR: Invalid x86 breakpoint in IL stream\n");
+                FALLTHROUGH;
 
             case CEE_ILLEGAL:
             case CEE_MACRO_END:

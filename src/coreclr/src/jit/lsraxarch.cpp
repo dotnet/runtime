@@ -90,7 +90,7 @@ int LinearScan::BuildNode(GenTree* tree)
             {
                 return 0;
             }
-            __fallthrough;
+            FALLTHROUGH;
 
         case GT_LCL_FLD:
         {
@@ -323,7 +323,7 @@ int LinearScan::BuildNode(GenTree* tree)
 #if defined(TARGET_X86)
         case GT_MUL_LONG:
             dstCount = 2;
-            __fallthrough;
+            FALLTHROUGH;
 #endif
         case GT_MUL:
         case GT_MULHI:

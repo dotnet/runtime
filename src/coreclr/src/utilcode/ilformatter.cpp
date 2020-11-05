@@ -242,7 +242,7 @@ void ILFormatter::formatInstrArgs(OpInfo op, OpArgsVal arg, OutString* out, size
                 hr = meta->GetNameFromToken(mdType, &typeName);
             }
         }
-            // FALL THROUGH
+            FALLTHROUGH;
         case InlineType: {
             // FIX handle case if (TypeFromToken(arg.i) == mdtTypeSpec)
             MDUTF8CSTR name;
@@ -400,7 +400,7 @@ const BYTE* ILFormatter::formatStatement(const BYTE* instrPtr, OutString* out) {
             case CEE_LDC_I4_7:
             case CEE_LDC_I4_8:
                 inlineArg.i = op.getOpcode() - CEE_LDC_I4_0;
-                // FALL THROUGH
+                FALLTHROUGH;
             case CEE_LDC_I4:
             case CEE_LDC_I4_S:
                 result << inlineArg.i;
@@ -472,7 +472,7 @@ const BYTE* ILFormatter::formatStatement(const BYTE* instrPtr, OutString* out) {
                     *lhs << '\n' << result;     // put the result in front of anything else
                     result.swap(*lhs);
                 }
-                    /* fall through */
+                FALLTHROUGH;
             case CEE_BR_S:
             case CEE_BR:
             DO_BR: {
@@ -621,7 +621,7 @@ const BYTE* ILFormatter::formatStatement(const BYTE* instrPtr, OutString* out) {
 
             case CEE_NEWOBJ:
                 result << "new ";
-                // FALL THROUGH
+                FALLTHROUGH;
             case CEE_CALL:
             case CEE_CALLVIRT: {
                 formatInstrArgs(op, inlineArg, &result);

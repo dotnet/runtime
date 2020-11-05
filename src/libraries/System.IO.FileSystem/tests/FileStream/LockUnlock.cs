@@ -1,7 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.Diagnostics;
 using Microsoft.DotNet.RemoteExecutor;
 using Xunit;
 
@@ -70,6 +69,22 @@ namespace System.IO.Tests
                 fs.Lock(position, length);
                 fs.Unlock(position, length);
             }
+        }
+
+        [Theory]
+        [InlineData(FileAccess.Read)]
+        [InlineData(FileAccess.Write)]
+        [InlineData(FileAccess.ReadWrite)]
+        [PlatformSpecific(~TestPlatforms.OSX)]
+        public void Lock_Unlock_Successful_AlternateFileAccess(FileAccess fileAccess)
+        {
+            string path = GetTestFilePath();
+            File.WriteAllBytes(path, new byte[100]);
+
+            using FileStream fs = File.Open(path, FileMode.Open, fileAccess);
+
+            fs.Lock(0, 100);
+            fs.Unlock(0, 100);
         }
 
         [Theory]
@@ -153,9 +168,7 @@ namespace System.IO.Tests
             }
         }
 
-        private static bool IsNotWindowsSubsystemForLinuxAndRemoteExecutorSupported => PlatformDetection.IsNotWindowsSubsystemForLinux && RemoteExecutor.IsSupported;
-
-        [ConditionalTheory(nameof(IsNotWindowsSubsystemForLinuxAndRemoteExecutorSupported))] // https://github.com/dotnet/runtime/issues/28330
+        [ConditionalTheory(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         [InlineData(10, 0, 10, 1, 2)]
         [InlineData(10, 3, 5, 3, 5)]
         [InlineData(10, 3, 5, 3, 4)]
@@ -191,6 +204,58 @@ namespace System.IO.Tests
                     }
                 }, path, secondPosition.ToString(), secondLength.ToString()).Dispose();
             }
+        }
+
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        [PlatformSpecific(TestPlatforms.Linux)]
+        public void OverlappingRegionsFromOtherProcess_With_ReadLock_AllowedOnLinux()
+        {
+            string path = GetTestFilePath();
+            File.WriteAllBytes(path, new byte[100]);
+
+            using FileStream fs1 = File.Open(path, FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
+            fs1.Lock(0, 100);
+
+            RemoteExecutor.Invoke((path) =>
+            {
+                using FileStream fs2 = File.Open(path, FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
+                fs2.Lock(0, 100);
+                fs2.Unlock(0, 100);
+
+            }, path).Dispose();
+
+            fs1.Unlock(0, 100);            
+        }
+
+        [ConditionalTheory(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        [InlineData(FileAccess.Read)]
+        [InlineData(FileAccess.Write)]
+        [InlineData(FileAccess.ReadWrite)]
+        [PlatformSpecific(~TestPlatforms.OSX)]
+        public void OverlappingRegionsFromOtherProcess_With_WriteLock_ThrowsException(FileAccess fileAccess)
+        {
+            string path = GetTestFilePath();
+            File.WriteAllBytes(path, new byte[100]);
+
+            using FileStream fs1 = File.Open(path, FileMode.Open, fileAccess, FileShare.ReadWrite);
+            fs1.Lock(0, 100);
+
+            RemoteExecutor.Invoke((path) =>
+            {
+                using FileStream fs2 = File.Open(path, FileMode.Open, FileAccess.Write, FileShare.ReadWrite);
+                Assert.Throws<IOException>(() => fs2.Lock(0, 100));
+
+            }, path).Dispose();
+
+            fs1.Unlock(0, 100);
+
+            RemoteExecutor.Invoke((path) =>
+            {
+                using FileStream fs2 = File.Open(path, FileMode.Open, FileAccess.Write, FileShare.ReadWrite);
+                fs2.Lock(0, 100);
+                fs2.Unlock(0, 100);
+
+            }, path).Dispose();
         }
     }
 }

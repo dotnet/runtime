@@ -247,7 +247,7 @@ GenTree* Lowering::LowerNode(GenTree* node)
                 LowerStoreSingleRegCallStruct(node->AsBlk());
                 break;
             }
-            __fallthrough;
+            FALLTHROUGH;
         case GT_STORE_DYN_BLK:
             LowerBlockStoreCommon(node->AsBlk());
             break;
@@ -307,7 +307,7 @@ GenTree* Lowering::LowerNode(GenTree* node)
 
         case GT_STORE_LCL_VAR:
             WidenSIMD12IfNecessary(node->AsLclVarCommon());
-            __fallthrough;
+            FALLTHROUGH;
 
         case GT_STORE_LCL_FLD:
             LowerStoreLocCommon(node->AsLclVarCommon());
@@ -3300,7 +3300,7 @@ void Lowering::LowerRetStruct(GenTreeUnOp* ret)
 
         case GT_OBJ:
             retVal->ChangeOper(GT_IND);
-            __fallthrough;
+            FALLTHROUGH;
         case GT_IND:
             retVal->ChangeType(nativeReturnType);
             LowerIndir(retVal->AsIndir());
@@ -6278,6 +6278,7 @@ void Lowering::ContainCheckNode(GenTree* node)
             break;
         case GT_STOREIND:
             ContainCheckStoreIndir(node->AsIndir());
+            break;
         case GT_IND:
             ContainCheckIndir(node->AsIndir());
             break;

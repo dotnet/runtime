@@ -364,9 +364,6 @@ mini_profiler_context_get_result (MonoProfilerCallContext *ctx)
 {
 	MonoType *ret = mono_method_signature_internal (ctx->method)->ret;
 
-	if (ctx->interp_frame)
-		ctx->return_value = mini_get_interp_callbacks ()->frame_get_res (ctx->interp_frame);
-
 	if (!ctx->return_value)
 		return NULL;
 

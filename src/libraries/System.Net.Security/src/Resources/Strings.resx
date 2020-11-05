@@ -242,9 +242,6 @@
   <data name="net_frame_max_size" xml:space="preserve">
     <value>The payload size is limited to {0}, attempted set it to {1}.</value>
   </data>
-  <data name="net_offset_plus_count" xml:space="preserve">
-    <value>Sum of offset and count cannot be greater than the length of the buffer.</value>
-  </data>
   <data name="net_invalid_enum" xml:space="preserve">
     <value>The specified value is not valid in the '{0}' enumeration.</value>
   </data>

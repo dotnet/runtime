@@ -767,7 +767,7 @@ namespace System
 
                 // Zero out result internal blocks.
                 result._length = maxResultLength;
-                Buffer.ZeroMemory((byte*)result.GetBlocksPointer(), (uint)maxResultLength * sizeof(uint));
+                result.Clear((uint)maxResultLength);
 
                 int smallIndex = 0;
                 int resultStartIndex = 0;
@@ -813,7 +813,7 @@ namespace System
                 Debug.Assert(unchecked((uint)result._length) <= MaxBlockCount);
                 if (blocksToShift > 0)
                 {
-                    Buffer.ZeroMemory((byte*)result.GetBlocksPointer(), blocksToShift * sizeof(uint));
+                    result.Clear(blocksToShift);
                 }
                 result._blocks[blocksToShift] = 1U << (int)(remainingBitsToShift);
             }
@@ -1113,7 +1113,7 @@ namespace System
             {
                 int rhsLength = value._length;
                 result._length = rhsLength;
-                Buffer.Memcpy((byte*)result.GetBlocksPointer(), (byte*)value.GetBlocksPointer(), rhsLength * sizeof(uint));
+                Buffer.Memmove(ref result._blocks[0], ref value._blocks[0], (nuint)rhsLength);
             }
 
             public static void SetZero(out BigInteger result)
@@ -1152,7 +1152,7 @@ namespace System
                     _length += (int)(blocksToShift);
 
                     // Zero the remaining low blocks
-                    Buffer.ZeroMemory((byte*)GetBlocksPointer(), blocksToShift * sizeof(uint));
+                    Clear(blocksToShift);
                 }
                 else
                 {
@@ -1185,7 +1185,7 @@ namespace System
                     _blocks[writeIndex - 1] = block << (int)(remainingBitsToShift);
 
                     // Zero the remaining low blocks
-                    Buffer.ZeroMemory((byte*)GetBlocksPointer(), blocksToShift * sizeof(uint));
+                    Clear(blocksToShift);
 
                     // Check if the terminating block has no set bits
                     if (_blocks[_length - 1] == 0)
@@ -1220,11 +1220,10 @@ namespace System
                 return 0;
             }
 
-            private uint* GetBlocksPointer()
-            {
-                // This is safe to do since we are a ref struct
-                return (uint*)(Unsafe.AsPointer(ref _blocks[0]));
-            }
+            private void Clear(uint length) =>
+                Buffer.ZeroMemory(
+                    (byte*)Unsafe.AsPointer(ref _blocks[0]), // This is safe to do since we are a ref struct
+                    length * sizeof(uint));
 
             private static uint DivRem32(uint value, out uint remainder)
             {

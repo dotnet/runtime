@@ -1852,7 +1852,7 @@ AGAIN:
             {
                 return true;
             }
-            __fallthrough;
+            FALLTHROUGH;
         case GT_DYN_BLK:
             if (gtHasRef(tree->AsDynBlk()->Addr(), lclNum, defOnly))
             {
@@ -2258,7 +2258,7 @@ AGAIN:
 
         case GT_STORE_DYN_BLK:
             hash = genTreeHashAdd(hash, gtHashValue(tree->AsDynBlk()->Data()));
-            __fallthrough;
+            FALLTHROUGH;
         case GT_DYN_BLK:
             hash = genTreeHashAdd(hash, gtHashValue(tree->AsDynBlk()->Addr()));
             hash = genTreeHashAdd(hash, gtHashValue(tree->AsDynBlk()->gtDynamicSize));
@@ -3974,7 +3974,7 @@ unsigned Compiler::gtSetEvalOrder(GenTree* tree)
                     }
                 }
 
-                __fallthrough;
+                FALLTHROUGH;
 
             case GT_DIV:
             case GT_UDIV:
@@ -4183,7 +4183,8 @@ unsigned Compiler::gtSetEvalOrder(GenTree* tree)
                         break;
                     }
 
-                // fall through and set GTF_REVERSE_OPS
+                    // fall through and set GTF_REVERSE_OPS
+                    FALLTHROUGH;
 
                 case GT_LCL_VAR:
                 case GT_LCL_FLD:
@@ -4350,7 +4351,7 @@ unsigned Compiler::gtSetEvalOrder(GenTree* tree)
                             tree->SetOper(GenTree::SwapRelop(oper), GenTree::PRESERVE_VN);
                         }
 
-                        __fallthrough;
+                        FALLTHROUGH;
 
                     case GT_ADD:
                     case GT_MUL:
@@ -5689,9 +5690,9 @@ bool GenTree::OperMayThrow(Compiler* comp)
                 //
                 return true;
             }
+            break;
         }
 #endif // FEATURE_HW_INTRINSICS
-
         default:
             break;
     }
@@ -6152,7 +6153,7 @@ GenTree* Compiler::gtNewZeroConNode(var_types type)
             break;
 
         case TYP_BYREF:
-            __fallthrough;
+            FALLTHROUGH;
 
         case TYP_REF:
             zero         = gtNewIconNode(0);
@@ -9549,7 +9550,7 @@ void          GenTreeUseEdgeIterator::AdvanceCall()
                 m_edge = &call->gtCallThisArg->NodeRef();
                 return;
             }
-            __fallthrough;
+            FALLTHROUGH;
 
         case CALL_ARGS:
             if (m_statePtr != nullptr)
@@ -9561,7 +9562,7 @@ void          GenTreeUseEdgeIterator::AdvanceCall()
             }
             m_statePtr = call->gtCallLateArgs;
             m_advance  = &GenTreeUseEdgeIterator::AdvanceCall<CALL_LATE_ARGS>;
-            __fallthrough;
+            FALLTHROUGH;
 
         case CALL_LATE_ARGS:
             if (m_statePtr != nullptr)
@@ -9572,7 +9573,7 @@ void          GenTreeUseEdgeIterator::AdvanceCall()
                 return;
             }
             m_advance = &GenTreeUseEdgeIterator::AdvanceCall<CALL_CONTROL_EXPR>;
-            __fallthrough;
+            FALLTHROUGH;
 
         case CALL_CONTROL_EXPR:
             if (call->gtControlExpr != nullptr)
@@ -9593,7 +9594,7 @@ void          GenTreeUseEdgeIterator::AdvanceCall()
                 m_state = -1;
                 return;
             }
-            __fallthrough;
+            FALLTHROUGH;
 
         case CALL_COOKIE:
             assert(call->gtCallType == CT_INDIRECT);
@@ -9604,7 +9605,7 @@ void          GenTreeUseEdgeIterator::AdvanceCall()
                 m_edge = &call->gtCallCookie;
                 return;
             }
-            __fallthrough;
+            FALLTHROUGH;
 
         case CALL_ADDRESS:
             assert(call->gtCallType == CT_INDIRECT);
@@ -10148,7 +10149,7 @@ void Compiler::gtDispNode(GenTree* tree, IndentStack* indentStack, __in __in_z _
                         break;
                     }
                 }
-                __fallthrough;
+                FALLTHROUGH;
 
             case GT_INDEX:
             case GT_INDEX_ADDR:
@@ -11140,7 +11141,7 @@ void Compiler::gtDispLeaf(GenTree* tree, IndentStack* indentStack)
         case GT_LCL_FLD_ADDR:
         case GT_STORE_LCL_FLD:
             isLclFld = true;
-            __fallthrough;
+            FALLTHROUGH;
 
         case GT_PHI_ARG:
         case GT_LCL_VAR:
@@ -11320,6 +11321,7 @@ void Compiler::gtDispLeaf(GenTree* tree, IndentStack* indentStack)
         case GT_JCMP:
             printf(" cond=%s%s", (tree->gtFlags & GTF_JCMP_TST) ? "TEST_" : "",
                    (tree->gtFlags & GTF_JCMP_EQ) ? "EQ" : "NE");
+            break;
 
         default:
             assert(!"don't know how to display tree leaf node");
@@ -11852,7 +11854,7 @@ void Compiler::gtDispTree(GenTree*     tree,
                 for (GenTreeCall::Use& use : call->LateArgs())
                 {
                     IndentInfo arcType = (use.GetNext() == nullptr) ? IIArcBottom : IIArc;
-                    gtGetLateArgMsg(call, use.GetNode(), lateArgIndex, -1, bufp, sizeof(buf));
+                    gtGetLateArgMsg(call, use.GetNode(), lateArgIndex, bufp, sizeof(buf));
                     gtDispChild(use.GetNode(), indentStack, arcType, bufp, topOnly);
                     lateArgIndex++;
                 }
@@ -11951,8 +11953,6 @@ void Compiler::gtDispTree(GenTree*     tree,
 //    call      - The call for which 'arg' is an argument
 //    arg       - The argument for which a message should be constructed
 //    argNum    - The ordinal number of the arg in the argument list
-//    listCount - When printing in LIR form this is the count for a GT_FIELD_LIST
-//                or -1 if we are not printing in LIR form
 //    bufp      - A pointer to the buffer into which the message is written
 //    bufLength - The length of the buffer pointed to by bufp
 //
@@ -11963,8 +11963,7 @@ void Compiler::gtDispTree(GenTree*     tree,
 //    'call' must be a call node
 //    'arg' must be an argument to 'call' (else gtArgEntryByNode will assert)
 
-void Compiler::gtGetArgMsg(
-    GenTreeCall* call, GenTree* arg, unsigned argNum, int listCount, char* bufp, unsigned bufLength)
+void Compiler::gtGetArgMsg(GenTreeCall* call, GenTree* arg, unsigned argNum, char* bufp, unsigned bufLength)
 {
     if (call->gtCallLateArgs != nullptr)
     {
@@ -11981,77 +11980,36 @@ void Compiler::gtGetArgMsg(
             if (curArgTabEntry->IsSplit())
             {
                 regNumber firstReg = curArgTabEntry->GetRegNum();
-                if (listCount == -1)
+                if (curArgTabEntry->numRegs == 1)
                 {
-                    if (curArgTabEntry->numRegs == 1)
-                    {
-                        sprintf_s(bufp, bufLength, "arg%d %s out+%02x%c", argNum, compRegVarName(firstReg),
-                                  (curArgTabEntry->slotNum) * TARGET_POINTER_SIZE, 0);
-                    }
-                    else
-                    {
-                        regNumber lastReg   = REG_STK;
-                        char      separator = (curArgTabEntry->numRegs == 2) ? ',' : '-';
-                        if (curArgTabEntry->IsHfaRegArg())
-                        {
-                            unsigned lastRegNum = genMapFloatRegNumToRegArgNum(firstReg) + curArgTabEntry->numRegs - 1;
-                            lastReg             = genMapFloatRegArgNumToRegNum(lastRegNum);
-                        }
-                        else
-                        {
-                            unsigned lastRegNum = genMapIntRegNumToRegArgNum(firstReg) + curArgTabEntry->numRegs - 1;
-                            lastReg             = genMapIntRegArgNumToRegNum(lastRegNum);
-                        }
-                        sprintf_s(bufp, bufLength, "arg%d %s%c%s out+%02x%c", argNum, compRegVarName(firstReg),
-                                  separator, compRegVarName(lastReg), (curArgTabEntry->slotNum) * TARGET_POINTER_SIZE,
-                                  0);
-                    }
+                    sprintf_s(bufp, bufLength, "arg%d %s out+%02x%c", argNum, compRegVarName(firstReg),
+                              (curArgTabEntry->slotNum) * TARGET_POINTER_SIZE, 0);
                 }
                 else
                 {
-                    unsigned curArgNum = BAD_VAR_NUM;
-                    bool     isFloat   = curArgTabEntry->IsHfaRegArg();
-                    if (isFloat)
+                    regNumber lastReg   = REG_STK;
+                    char      separator = (curArgTabEntry->numRegs == 2) ? ',' : '-';
+                    if (curArgTabEntry->IsHfaRegArg())
                     {
-                        curArgNum = genMapFloatRegNumToRegArgNum(firstReg) + listCount;
+                        unsigned lastRegNum = genMapFloatRegNumToRegArgNum(firstReg) + curArgTabEntry->numRegs - 1;
+                        lastReg             = genMapFloatRegArgNumToRegNum(lastRegNum);
                     }
                     else
                     {
-                        curArgNum = genMapIntRegNumToRegArgNum(firstReg) + listCount;
+                        unsigned lastRegNum = genMapIntRegNumToRegArgNum(firstReg) + curArgTabEntry->numRegs - 1;
+                        lastReg             = genMapIntRegArgNumToRegNum(lastRegNum);
                     }
-
-                    if (!isFloat && curArgNum < MAX_REG_ARG)
-                    {
-                        regNumber curReg = genMapIntRegArgNumToRegNum(curArgNum);
-                        sprintf_s(bufp, bufLength, "arg%d m%d %s%c", argNum, listCount, compRegVarName(curReg), 0);
-                    }
-                    else if (isFloat && curArgNum < MAX_FLOAT_REG_ARG)
-                    {
-                        regNumber curReg = genMapFloatRegArgNumToRegNum(curArgNum);
-                        sprintf_s(bufp, bufLength, "arg%d m%d %s%c", argNum, listCount, compRegVarName(curReg), 0);
-                    }
-                    else
-                    {
-                        unsigned stackSlot = listCount - curArgTabEntry->numRegs;
-                        sprintf_s(bufp, bufLength, "arg%d m%d out+%02x%c", argNum, listCount,
-                                  stackSlot * TARGET_POINTER_SIZE, 0);
-                    }
+                    sprintf_s(bufp, bufLength, "arg%d %s%c%s out+%02x%c", argNum, compRegVarName(firstReg), separator,
+                              compRegVarName(lastReg), (curArgTabEntry->slotNum) * TARGET_POINTER_SIZE, 0);
                 }
+
                 return;
             }
 #endif // TARGET_ARM
 #if FEATURE_FIXED_OUT_ARGS
-            if (listCount == -1)
-            {
-                sprintf_s(bufp, bufLength, "arg%d out+%02x%c", argNum, curArgTabEntry->slotNum * TARGET_POINTER_SIZE,
-                          0);
-            }
-            else // listCount is 0,1,2 or 3
-            {
-                assert(listCount <= MAX_ARG_REG_COUNT);
-                sprintf_s(bufp, bufLength, "arg%d out+%02x%c", argNum,
-                          (curArgTabEntry->slotNum + listCount) * TARGET_POINTER_SIZE, 0);
-            }
+
+            sprintf_s(bufp, bufLength, "arg%d out+%02x%c", argNum, curArgTabEntry->slotNum * TARGET_POINTER_SIZE, 0);
+
 #else
             sprintf_s(bufp, bufLength, "arg%d on STK%c", argNum, 0);
 #endif
@@ -12070,8 +12028,6 @@ void Compiler::gtGetArgMsg(
 //    call         - The call for which 'arg' is an argument
 //    argx         - The argument for which a message should be constructed
 //    lateArgIndex - The ordinal number of the arg in the lastArg  list
-//    listCount    - When printing in LIR form this is the count for a multireg GT_FIELD_LIST
-//                   or -1 if we are not printing in LIR form
 //    bufp         - A pointer to the buffer into which the message is written
 //    bufLength    - The length of the buffer pointed to by bufp
 //
@@ -12082,8 +12038,7 @@ void Compiler::gtGetArgMsg(
 //    'call' must be a call node
 //    'arg' must be an argument to 'call' (else gtArgEntryByNode will assert)
 
-void Compiler::gtGetLateArgMsg(
-    GenTreeCall* call, GenTree* argx, int lateArgIndex, int listCount, char* bufp, unsigned bufLength)
+void Compiler::gtGetLateArgMsg(GenTreeCall* call, GenTree* argx, int lateArgIndex, char* bufp, unsigned bufLength)
 {
     assert(!argx->IsArgPlaceHolderNode()); // No place holders nodes are in gtCallLateArgs;
 
@@ -12112,60 +12067,27 @@ void Compiler::gtGetLateArgMsg(
         {
             regNumber firstReg = curArgTabEntry->GetRegNum();
             unsigned  argNum   = curArgTabEntry->argNum;
-            if (listCount == -1)
+            if (curArgTabEntry->numRegs == 1)
             {
-                if (curArgTabEntry->numRegs == 1)
-                {
-                    sprintf_s(bufp, bufLength, "arg%d %s out+%02x%c", argNum, compRegVarName(firstReg),
-                              (curArgTabEntry->slotNum) * TARGET_POINTER_SIZE, 0);
-                }
-                else
-                {
-                    regNumber lastReg   = REG_STK;
-                    char      separator = (curArgTabEntry->numRegs == 2) ? ',' : '-';
-                    if (curArgTabEntry->IsHfaRegArg())
-                    {
-                        unsigned lastRegNum = genMapFloatRegNumToRegArgNum(firstReg) + curArgTabEntry->numRegs - 1;
-                        lastReg             = genMapFloatRegArgNumToRegNum(lastRegNum);
-                    }
-                    else
-                    {
-                        unsigned lastRegNum = genMapIntRegNumToRegArgNum(firstReg) + curArgTabEntry->numRegs - 1;
-                        lastReg             = genMapIntRegArgNumToRegNum(lastRegNum);
-                    }
-                    sprintf_s(bufp, bufLength, "arg%d %s%c%s out+%02x%c", argNum, compRegVarName(firstReg), separator,
-                              compRegVarName(lastReg), (curArgTabEntry->slotNum) * TARGET_POINTER_SIZE, 0);
-                }
+                sprintf_s(bufp, bufLength, "arg%d %s out+%02x%c", argNum, compRegVarName(firstReg),
+                          (curArgTabEntry->slotNum) * TARGET_POINTER_SIZE, 0);
             }
             else
             {
-                unsigned curArgNum = BAD_VAR_NUM;
-                bool     isFloat   = curArgTabEntry->IsHfaRegArg();
-                if (isFloat)
+                regNumber lastReg   = REG_STK;
+                char      separator = (curArgTabEntry->numRegs == 2) ? ',' : '-';
+                if (curArgTabEntry->IsHfaRegArg())
                 {
-                    curArgNum = genMapFloatRegNumToRegArgNum(firstReg) + listCount;
+                    unsigned lastRegNum = genMapFloatRegNumToRegArgNum(firstReg) + curArgTabEntry->numRegs - 1;
+                    lastReg             = genMapFloatRegArgNumToRegNum(lastRegNum);
                 }
                 else
                 {
-                    curArgNum = genMapIntRegNumToRegArgNum(firstReg) + listCount;
+                    unsigned lastRegNum = genMapIntRegNumToRegArgNum(firstReg) + curArgTabEntry->numRegs - 1;
+                    lastReg             = genMapIntRegArgNumToRegNum(lastRegNum);
                 }
-
-                if (!isFloat && curArgNum < MAX_REG_ARG)
-                {
-                    regNumber curReg = genMapIntRegArgNumToRegNum(curArgNum);
-                    sprintf_s(bufp, bufLength, "arg%d m%d %s%c", argNum, listCount, compRegVarName(curReg), 0);
-                }
-                else if (isFloat && curArgNum < MAX_FLOAT_REG_ARG)
-                {
-                    regNumber curReg = genMapFloatRegArgNumToRegNum(curArgNum);
-                    sprintf_s(bufp, bufLength, "arg%d m%d %s%c", argNum, listCount, compRegVarName(curReg), 0);
-                }
-                else
-                {
-                    unsigned stackSlot = listCount - curArgTabEntry->numRegs;
-                    sprintf_s(bufp, bufLength, "arg%d m%d out+%02x%c", argNum, listCount,
-                              stackSlot * TARGET_POINTER_SIZE, 0);
-                }
+                sprintf_s(bufp, bufLength, "arg%d %s%c%s out+%02x%c", argNum, compRegVarName(firstReg), separator,
+                          compRegVarName(lastReg), (curArgTabEntry->slotNum) * TARGET_POINTER_SIZE, 0);
             }
             return;
         }
@@ -12175,8 +12097,6 @@ void Compiler::gtGetLateArgMsg(
 #if FEATURE_MULTIREG_ARGS
             if (curArgTabEntry->numRegs >= 2)
             {
-                // listCount could be -1 but it is signed, so this comparison is OK.
-                assert(listCount <= MAX_ARG_REG_COUNT);
                 char separator = (curArgTabEntry->numRegs == 2) ? ',' : '-';
                 sprintf_s(bufp, bufLength, "arg%d %s%c%s%c", curArgTabEntry->argNum, compRegVarName(argReg), separator,
                           compRegVarName(curArgTabEntry->GetRegNum(curArgTabEntry->numRegs - 1)), 0);
@@ -12218,7 +12138,7 @@ void Compiler::gtDispArgList(GenTreeCall* call, IndentStack* indentStack)
         if (!argNode->IsNothingNode() && !argNode->IsArgPlaceHolderNode())
         {
             char buf[256];
-            gtGetArgMsg(call, argNode, argnum, -1, buf, sizeof(buf));
+            gtGetArgMsg(call, argNode, argnum, buf, sizeof(buf));
             gtDispChild(argNode, indentStack, (argNode == lastArgNode) ? IIArcBottom : IIArc, buf, false);
         }
         argnum++;
@@ -12391,40 +12311,18 @@ void Compiler::gtDispLIRNode(GenTree* node, const char* prefixMsg /* = nullptr *
             {
                 fgArgTabEntry* curArgTabEntry = gtArgEntryByNode(call, operand);
                 assert(curArgTabEntry);
+                assert(operand->OperGet() != GT_LIST);
 
-                if (operand->OperGet() == GT_LIST)
+                if (!curArgTabEntry->isLateArg())
                 {
-                    int listIndex = 0;
-                    for (GenTreeArgList* element = operand->AsArgList(); element != nullptr; element = element->Rest())
-                    {
-                        operand = element->Current();
-                        if (curArgTabEntry->GetLateArgInx() == (unsigned)-1)
-                        {
-                            gtGetArgMsg(call, operand, curArgTabEntry->argNum, listIndex, buf, sizeof(buf));
-                        }
-                        else
-                        {
-                            gtGetLateArgMsg(call, operand, curArgTabEntry->GetLateArgInx(), listIndex, buf,
-                                            sizeof(buf));
-                        }
-
-                        displayOperand(operand, buf, operandArc, indentStack, prefixIndent);
-                        operandArc = IIArc;
-                    }
+                    gtGetArgMsg(call, operand, curArgTabEntry->argNum, buf, sizeof(buf));
                 }
                 else
                 {
-                    if (!curArgTabEntry->isLateArg())
-                    {
-                        gtGetArgMsg(call, operand, curArgTabEntry->argNum, -1, buf, sizeof(buf));
-                    }
-                    else
-                    {
-                        gtGetLateArgMsg(call, operand, curArgTabEntry->GetLateArgInx(), -1, buf, sizeof(buf));
-                    }
-
-                    displayOperand(operand, buf, operandArc, indentStack, prefixIndent);
+                    gtGetLateArgMsg(call, operand, curArgTabEntry->GetLateArgInx(), buf, sizeof(buf));
                 }
+
+                displayOperand(operand, buf, operandArc, indentStack, prefixIndent);
             }
         }
         else if (node->OperIsDynBlkOp())
@@ -13254,7 +13152,7 @@ GenTree* Compiler::gtFoldExprSpecial(GenTree* tree)
                 // unsigned (0 > x) is always false
                 return NewMorphedIntConNode(0);
             }
-            __fallthrough;
+            FALLTHROUGH;
         case GT_EQ:
         case GT_NE:
 
@@ -14529,12 +14427,26 @@ GenTree* Compiler::gtFoldExprConst(GenTree* tree)
 
             /* String nodes are an RVA at this point */
 
-            if (op1->gtOper == GT_CNS_STR || op2->gtOper == GT_CNS_STR)
+            if (op1->OperIs(GT_CNS_STR) || op2->OperIs(GT_CNS_STR))
             {
+                // Fold "ldstr" ==/!= null
+                if (op2->IsIntegralConst(0))
+                {
+                    if (tree->OperIs(GT_EQ))
+                    {
+                        i1 = 0;
+                        goto FOLD_COND;
+                    }
+                    if (tree->OperIs(GT_NE) || (tree->OperIs(GT_GT) && tree->IsUnsigned()))
+                    {
+                        i1 = 1;
+                        goto FOLD_COND;
+                    }
+                }
                 return tree;
             }
 
-            __fallthrough;
+            FALLTHROUGH;
 
         case TYP_BYREF:
 
@@ -14581,6 +14493,7 @@ GenTree* Compiler::gtFoldExprConst(GenTree* tree)
 #endif
                         goto DONE;
                     }
+                    break;
 
                 default:
                     break;
@@ -17456,8 +17369,8 @@ GenTree* Compiler::gtGetSIMDZero(var_types simdType, var_types baseType, CORINFO
                         break;
                     case TYP_UINT:
                         assert(simdHandle == m_simdHandleCache->Vector64UIntHandle);
-                        break;
 #endif // defined(TARGET_ARM64) && defined(FEATURE_HW_INTRINSICS)
+                        break;
                     default:
                         break;
                 }
@@ -19242,7 +19155,7 @@ void ReturnTypeDesc::InitializeStructReturnType(Compiler* comp, CORINFO_CLASS_HA
     {
         case Compiler::SPK_EnclosingType:
             m_isEnclosingType = true;
-            __fallthrough;
+            FALLTHROUGH;
 
         case Compiler::SPK_PrimitiveType:
         {
