@@ -207,7 +207,7 @@ namespace System.Net.Http.Functional.Tests
                         server.AcceptConnectionSendCustomResponseAndCloseAsync(
                             $"HTTP/{responseMajorVersion}.{responseMinorVersion} 200 OK\r\nConnection: close\r\nDate: {DateTimeOffset.UtcNow:R}\r\nContent-Length: 0\r\n\r\n");
 
-                    await Assert.ThrowsAsync<HttpRequestException>(async () => await TestHelper.WhenAllCompletedOrAnyFailed(getResponseTask, serverTask));
+                    await Assert.ThrowsAsync<HttpRequestException>(() => getResponseTask);
                 }
             }, new LoopbackServer.Options { StreamWrapper = GetStream_ClientDisconnectOk });
         }
