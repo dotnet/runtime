@@ -417,6 +417,7 @@
       <_MonoRuntimeFilePath Condition="'$(TargetstvOS)' == 'true'">$(MonoObjDir)out\lib\libmonosgen-2.0.dylib</_MonoRuntimeFilePath>
       <_MonoRuntimeFilePath Condition="'$(TargetsAndroid)' == 'true'">$(MonoObjDir)out\lib\libmonosgen-2.0.so</_MonoRuntimeFilePath>
       <_MonoRuntimeFilePath Condition="'$(TargetsBrowser)' == 'true'">$(MonoObjDir)out\lib\libmonosgen-2.0.a</_MonoRuntimeFilePath>
+      <_MonoRuntimeFilePath Condition="'$(_MonoRuntimeFilePath)' == '' and '$(TargetsLinux)' == 'true' and '$(TargetArchitecture)' == 'x64'">$(MonoObjDir)out\lib64\libmonosgen-2.0.so</_MonoRuntimeFilePath>
       <_MonoRuntimeFilePath Condition="'$(_MonoRuntimeFilePath)' == ''">$(MonoObjDir)out\lib\libmonosgen-2.0.so</_MonoRuntimeFilePath>
       <_MonoRuntimeStaticFilePath Condition="'$(TargetsiOS)' == 'true' or '$(TargetstvOS)' == 'true' or '$(TargetsAndroid)' == 'true'">$(MonoObjDir)out\lib\libmonosgen-2.0.a</_MonoRuntimeStaticFilePath>
       <_MonoIncludeInterpStaticFiles Condition="'$(TargetsBrowser)' == 'true' or ('$(TargetsiOS)' == 'true' and '$(TargetsiOSSimulator)' != 'true')">true</_MonoIncludeInterpStaticFiles>
