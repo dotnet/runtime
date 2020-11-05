@@ -186,7 +186,7 @@ namespace System.Collections.Concurrent
                 }
 
                 // Lost a race. Spin a bit, then try again.
-                spinner.SpinOnce(sleep1Threshold: _sleep1Threshold);
+                spinner.SpinOnce(Sleep1Threshold);
             }
         }
 
