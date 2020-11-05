@@ -132,8 +132,11 @@ the same time the .NET Framework was first released. Since Microsoft didn't
 release Rotor as open source, Mono was forced to start from scratch and was thus
 a complete re-implementation of the .NET Framework with no shared code.
 
-Today, the [Mono runtime](https://github.com/dotnet/runtime/tree/master/src/mono) is part
+Today, the [Mono VM](https://github.com/dotnet/runtime/tree/master/src/mono) is part
 of the unified .NET platform. It is optimized for mobile (e.g. Xamarin) and browser (e.g. Blazor) scenarios.
+
+"C# powered by Mono" has been scripting engine of choice for a number of game engines.
+Unity - the world's most popular game engine - is scripted by C#, powered by a customized Mono runtime.
 
 ### CoreCLR
 
@@ -153,7 +156,7 @@ with unique characteristics were developed for .NET runtimes over the years.
 
 **Also referred to as**: R2R
 
-[ReadyToRun](https://github.com/dotnet/runtime/blob/master/docs/design/coreclr/botr/readytorun-overview.md)
+[ReadyToRun](.../design/coreclr/botr/readytorun-overview.md)
 is a file format used by the CoreCLR runtime to store AOT compiled code. `crossgen` is the AOT compiler that
 produces binaries in the ReadyToRun file format.
 
@@ -171,13 +174,13 @@ by Mono runtime in environments that prohibit fallback to JIT.
 ### Hybrid AOT
 
 [Hybrid AOT](https://docs.microsoft.com/en-us/xamarin/mac/internals/aot#hybrid-aot) is used
-by Mono runtime in environments that allow fallback to JIT. 
+by Mono runtime in environments that allow fallback to JIT or need IL interpreter.
 
 ### Native AOT
 
 [Native AOT](https://github.com/dotnet/designs/blob/main/accepted/2020/form-factors.md#native-aot-form-factors) is
-a .NET runtime form factor with key performance characteristics (startup time, binary size and steady state throughput) competitive
-with statically compiled languages. A .NET runtime flavor based on CoreCLR with these characteristics is being developed as
+a .NET runtime form factor with key performance characteristics (startup time, binary size and steady state throughput and predictability)
+competitive with statically compiled languages. A .NET runtime flavor based on CoreCLR with these characteristics is being developed as
 experimental project in [dotnet/runtimelab](https://github.com/dotnet/runtimelab/tree/feature/NativeAOT) repo.
 
 ## Frameworks
