@@ -493,6 +493,5 @@ namespace System.Net.Http.Functional.Tests
         public HttpProtocolTests_Dribble(ITestOutputHelper output) : base(output) { }
 
         protected override Stream GetStream(Stream s) => new DribbleStream(s);
-        protected override Stream GetStream_ClientDisconnectOk(Stream s) => new DribbleStream(s, true);
     }
 }
