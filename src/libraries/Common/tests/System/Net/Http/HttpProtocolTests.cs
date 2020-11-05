@@ -15,7 +15,6 @@ namespace System.Net.Http.Functional.Tests
     public abstract class HttpProtocolTests : HttpClientHandlerTestBase
     {
         protected virtual Stream GetStream(Stream s) => s;
-        protected virtual Stream GetStream_ClientDisconnectOk(Stream s) => s;
 
         public HttpProtocolTests(ITestOutputHelper output) : base(output) { }
 
@@ -209,7 +208,7 @@ namespace System.Net.Http.Functional.Tests
 
                     await Assert.ThrowsAsync<HttpRequestException>(() => getResponseTask);
                 }
-            }, new LoopbackServer.Options { StreamWrapper = GetStream_ClientDisconnectOk });
+            }, new LoopbackServer.Options { StreamWrapper = GetStream });
         }
 
         [Theory]
