@@ -48,13 +48,20 @@ namespace System.Net.Sockets.Tests
         public static IEnumerable<object[]> LoopbackWithBool =>
             from addr in Loopbacks
             from b in new[] { false, true }
+            from dummy in Enumerable.Repeat(0, 100)
             select new object[] { addr[0], b };
 
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/1712")]
+        [Theory]
+        [MemberData(nameof(LoopbackWithBool))]
+        public Task SendToRecvFrom_Datagram_UDP_INNERLOOP(IPAddress loopbackAddress, bool useClone, int dummy)
+            => SendToRecvFrom_Datagram_UDP(loopbackAddress, useClone, dummy);
+
         [OuterLoop]
         [Theory]
         [MemberData(nameof(LoopbackWithBool))]
-        public async Task SendToRecvFrom_Datagram_UDP(IPAddress loopbackAddress, bool useClone)
+#pragma warning disable xUnit1026 // Theory methods should use all of their parameters
+        public async Task SendToRecvFrom_Datagram_UDP(IPAddress loopbackAddress, bool useClone, int dummy)
+#pragma warning restore xUnit1026 // Theory methods should use all of their parameters
         {
             IPAddress leftAddress = loopbackAddress, rightAddress = loopbackAddress;
 
