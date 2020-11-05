@@ -307,13 +307,6 @@ namespace System.Runtime.InteropServices
         private static extern IntPtr /* IUnknown* */ GetIUnknownForObjectNative(object o);
 
         /// <summary>
-        /// Return the raw IUnknown* for a COM Object not related to current.
-        /// Does not call AddRef.
-        /// </summary>
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        internal static extern IntPtr /* IUnknown* */ GetRawIUnknownForComObjectNoAddRef(object o);
-
-        /// <summary>
         /// Return the IDispatch* for an Object.
         /// </summary>
         [SupportedOSPlatform("windows")]

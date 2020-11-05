@@ -37,12 +37,10 @@
 
 #ifdef FEATURE_COMINTEROP
 #include "comcallablewrapper.h"
-#include "cominterfacemarshaler.h"
 #include "commtmemberinfomap.h"
 #include "runtimecallablewrapper.h"
 #include "olevariant.h"
 #include "interoputil.h"
-#include "stubhelpers.h"
 #endif // FEATURE_COMINTEROP
 
 //
@@ -713,43 +711,6 @@ FCIMPL1(IUnknown*, MarshalNative::GetIUnknownForObjectNative, Object* orefUNSAFE
 FCIMPLEND
 
 //====================================================================
-// return the raw IUnknown* for a COM Object not related to current
-// context.
-// Does not AddRef the returned pointer
-//====================================================================
-FCIMPL1(IUnknown*, MarshalNative::GetRawIUnknownForComObjectNoAddRef, Object* orefUNSAFE)
-{
-    FCALL_CONTRACT;
-
-    IUnknown* retVal = NULL;
-    OBJECTREF oref = (OBJECTREF) orefUNSAFE;
-    HELPER_METHOD_FRAME_BEGIN_RET_1(oref);
-
-    HRESULT hr = S_OK;
-
-    if(!oref)
-        COMPlusThrowArgumentNull(W("o"));
-
-    MethodTable* pMT = oref->GetMethodTable();
-    PREFIX_ASSUME(pMT != NULL);
-    if(!pMT->IsComObjectType())
-        COMPlusThrow(kArgumentException, IDS_EE_SRC_OBJ_NOT_COMOBJECT);
-
-    // Ensure COM is started up.
-    EnsureComStarted();
-
-    RCWHolder pRCW(GetThread());
-    pRCW.Init(oref);
-
-    // Retrieve raw IUnknown * without AddRef for better performance
-    retVal = pRCW->GetRawIUnknown_NoAddRef();
-
-    HELPER_METHOD_FRAME_END();
-    return retVal;
-}
-FCIMPLEND
-
-//====================================================================
 // return the IDispatch* for an Object.
 //====================================================================
 FCIMPL1(IDispatch*, MarshalNative::GetIDispatchForObjectNative, Object* orefUNSAFE)
@@ -856,28 +817,6 @@ FCIMPL1(Object*, MarshalNative::GetUniqueObjectForIUnknownNative, IUnknown* pUnk
     HELPER_METHOD_FRAME_BEGIN_RET_1(oref);
 
     HRESULT hr = S_OK;
-
-    // Ensure COM is started up.
-    EnsureComStarted();
-
-    GetObjectRefFromComIP(&oref, pUnk, NULL, NULL, ObjFromComIP::UNIQUE_OBJECT);
-
-    HELPER_METHOD_FRAME_END();
-    return OBJECTREFToObject(oref);
-}
-FCIMPLEND
-
-FCIMPL1(Object*, MarshalNative::GetUniqueObjectForIUnknownWithoutUnboxing, IUnknown* pUnk)
-{
-    FCALL_CONTRACT;
-
-    OBJECTREF oref = NULL;
-    HELPER_METHOD_FRAME_BEGIN_RET_1(oref);
-
-    HRESULT hr = S_OK;
-
-    if(!pUnk)
-        COMPlusThrowArgumentNull(W("pUnk"));
 
     // Ensure COM is started up.
     EnsureComStarted();
@@ -1380,44 +1319,6 @@ FCIMPL1(int, MarshalNative::GetEndComSlot, ReflectClassBaseObject* tUNSAFE)
 
     HELPER_METHOD_FRAME_END();
     return retVal;
-}
-FCIMPLEND
-
-//+----------------------------------------------------------------------------
-//
-//  Method:     MarshalNative::WrapIUnknownWithComObject
-//  Synopsis:   unmarshal the buffer and return IUnknown
-//
-
-//
-//+----------------------------------------------------------------------------
-FCIMPL1(Object*, MarshalNative::WrapIUnknownWithComObject, IUnknown* pUnk)
-{
-    CONTRACTL
-    {
-        FCALL_CHECK;
-        PRECONDITION(CheckPointer(pUnk, NULL_OK));
-    }
-    CONTRACTL_END;
-
-    OBJECTREF cref = NULL;
-    HELPER_METHOD_FRAME_BEGIN_RET_0();
-
-    if(pUnk == NULL)
-        COMPlusThrowArgumentNull(W("punk"));
-
-    EnsureComStarted();
-
-    COMInterfaceMarshaler marshaler;
-    marshaler.Init(pUnk, g_pBaseCOMObject, GET_THREAD());
-
-    cref = marshaler.WrapWithComObject();
-
-    if (cref == NULL)
-        COMPlusThrowOM();
-
-    HELPER_METHOD_FRAME_END();
-    return OBJECTREFToObject(cref);
 }
 FCIMPLEND
 

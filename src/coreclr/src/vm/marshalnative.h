@@ -74,13 +74,6 @@ public:
     static FCDECL1(IUnknown*, GetIUnknownForObjectNative, Object* orefUNSAFE);
 
     //====================================================================
-    // return the raw IUnknown* for a COM Object not related to current
-    // context
-    // Does not AddRef the returned pointer
-    //====================================================================
-    static FCDECL1(IUnknown*, GetRawIUnknownForComObjectNoAddRef, Object* orefUNSAFE);
-
-    //====================================================================
     // return the IDispatch* for an Object
     //====================================================================
     static FCDECL1(IDispatch*, GetIDispatchForObjectNative, Object* orefUNSAFE);
@@ -100,11 +93,6 @@ public:
     // return a unique cacheless Object for IUnknown
     //====================================================================
     static FCDECL1(Object*, GetUniqueObjectForIUnknownNative, IUnknown* pUnk);
-
-    //====================================================================
-    // return a unique cacheless Object for IUnknown
-    //====================================================================
-    static FCDECL1(Object*, GetUniqueObjectForIUnknownWithoutUnboxing, IUnknown* pUnk);
 
     //====================================================================
     // return an Object for IUnknown, using the Type T,
@@ -163,8 +151,6 @@ public:
     //====================================================================
     static FCDECL1(int, GetStartComSlot, ReflectClassBaseObject* tUNSAFE);
     static FCDECL1(int, GetEndComSlot, ReflectClassBaseObject* tUNSAFE);
-
-    static FCDECL1(Object*, WrapIUnknownWithComObject, IUnknown* pUnk);
 
     static FCDECL2(void, ChangeWrapperHandleStrength, Object* orefUNSAFE, CLR_BOOL fIsWeak);
 
