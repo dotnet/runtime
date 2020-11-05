@@ -122,6 +122,9 @@ void Compiler::fgInit()
     /* This global flag is set whenever we add a throw block for a RngChk */
     fgRngChkThrowAdded = false; /* reset flag for fgIsCodeAdded() */
 
+    /* Keep track of whether or not EH statements have been optimized */
+    fgOptimizedFinally = false;
+
     /* We will record a list of all BBJ_RETURN blocks here */
     fgReturnBlocks = nullptr;
 
@@ -25436,6 +25439,7 @@ PhaseStatus Compiler::fgCloneFinally()
     if (cloneCount > 0)
     {
         JITDUMP("fgCloneFinally() cloned %u finally handlers\n", cloneCount);
+        fgOptimizedFinally = true;
 
 #ifdef DEBUG
         if (verbose)
