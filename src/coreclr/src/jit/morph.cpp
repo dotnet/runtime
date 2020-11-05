@@ -13354,7 +13354,7 @@ DONE_MORPHING_CHILDREN:
                 /* Check for "op1 - cns2" , we change it to "op1 + (-cns2)" */
 
                 noway_assert(op2);
-                if (op2->IsCnsIntOrI() && varTypeIsIntOrI(op2))
+                if (op2->IsCnsIntOrI() && !op2->IsIConHandle())
                 {
                     // Negate the constant and change the node to be "+",
                     // except when `op2` is a const byref.
