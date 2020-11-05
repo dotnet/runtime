@@ -15,13 +15,9 @@
   </PropertyGroup>
 
   <PropertyGroup>
-    <PackageId>DllImportGenerator</PackageId>
-    <PackageVersion>1.0.0.0</PackageVersion>
     <Authors>Microsoft</Authors>
-    <PackageLicenseUrl>http://LICENSE_URL_HERE_OR_DELETE_THIS_LINE</PackageLicenseUrl>
-    <PackageProjectUrl>http://PROJECT_URL_HERE_OR_DELETE_THIS_LINE</PackageProjectUrl>
-    <PackageIconUrl>http://ICON_URL_HERE_OR_DELETE_THIS_LINE</PackageIconUrl>
-    <RepositoryUrl>http://REPOSITORY_URL_HERE_OR_DELETE_THIS_LINE</RepositoryUrl>
+    <PackageProjectUrl>https://github.com/dotnet/runtimelab/tree/feature/DllImportGenerator</PackageProjectUrl>
+    <RepositoryUrl>https://github.com/dotnet/runtimelab/tree/feature/DllImportGenerator</RepositoryUrl>
     <PackageRequireLicenseAcceptance>false</PackageRequireLicenseAcceptance>
     <Description>DllImportGenerator</Description>
     <PackageReleaseNotes>Summary of changes made in this release of the package.</PackageReleaseNotes>
