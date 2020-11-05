@@ -23,6 +23,7 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 			TestRequiresOnPropertyGetterAndSetter ();
 			TestRequiresSuppressesWarningsFromReflectionAnalysis ();
 			TestDuplicateRequiresAttribute ();
+			TestRequiresUnreferencedCodeOnlyThroughReflection ();
 		}
 
 		[ExpectedWarning ("IL2026",
@@ -155,6 +156,21 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 		[ExpectedWarning ("IL2027", "RequiresUnreferencedCodeAttribute", nameof (MethodWithDuplicateRequiresAttribute))]
 		static void MethodWithDuplicateRequiresAttribute ()
 		{
+		}
+
+		[RequiresUnreferencedCode ("Message for --RequiresUnreferencedCodeOnlyThroughReflection--")]
+		static void RequiresUnreferencedCodeOnlyThroughReflection ()
+		{
+		}
+
+		// issue: https://github.com/mono/linker/issues/1607
+		// Linker currently doesn't report a warning in this case
+		// [ExpectedWarning ("IL2026", "--RequiresUnreferencedCodeOnlyThroughReflection--")]
+		static void TestRequiresUnreferencedCodeOnlyThroughReflection ()
+		{
+			typeof (RequiresUnreferencedCodeAttribute)
+				.GetMethod (nameof (RequiresUnreferencedCodeOnlyThroughReflection), System.Reflection.BindingFlags.Static | System.Reflection.BindingFlags.NonPublic)
+				.Invoke (null, new object[0]);
 		}
 	}
 }
