@@ -48,16 +48,16 @@ namespace System.Net.Sockets.Tests
         public static IEnumerable<object[]> LoopbackWithBool =>
             from addr in Loopbacks
             from b in new[] { false, true }
-            from dummy in Enumerable.Repeat(0, 100)
+            from dummy in Enumerable.Repeat(0, 10)
             select new object[] { addr[0], b, dummy };
 
-        [Theory]
+        [Theory(Timeout = 60000)]
         [MemberData(nameof(LoopbackWithBool))]
         public Task SendToRecvFrom_Datagram_UDP_INNERLOOP(IPAddress loopbackAddress, bool useClone, int dummy)
             => SendToRecvFrom_Datagram_UDP(loopbackAddress, useClone, dummy);
 
         [OuterLoop]
-        [Theory]
+        [Theory(Timeout = 60000)]
         [MemberData(nameof(LoopbackWithBool))]
 #pragma warning disable xUnit1026 // Theory methods should use all of their parameters
         public async Task SendToRecvFrom_Datagram_UDP(IPAddress loopbackAddress, bool useClone, int dummy)
