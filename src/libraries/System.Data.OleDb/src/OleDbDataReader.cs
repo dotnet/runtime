@@ -1022,7 +1022,7 @@ namespace System.Data.OleDb
         {
             if (null != _metadata)
             {
-                Type? fieldType = _metadata[index].type.dataType!;
+                Type? fieldType = _metadata[index].type.dataType;
                 Debug.Assert(fieldType != null);
                 return fieldType;
             }
