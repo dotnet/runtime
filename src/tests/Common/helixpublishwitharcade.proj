@@ -93,9 +93,9 @@
   <PropertyGroup>
     <CoreRootDirectory>$(TestBinDir)Tests\Core_Root\</CoreRootDirectory>
     <PayloadsRootDirectory>$(TestBinDir)Payloads\</PayloadsRootDirectory>
-    <PdbArtifactPath>$(RuntimeFlavorDisplayName)-$(HelixRuntimeRid)-$(Configuration)-pdbs</PdbArtifactPath>
     <PayloadsRootDirectory>$([MSBuild]::NormalizeDirectory($(PayloadsRootDirectory)))</PayloadsRootDirectory>
-    <PayloadPdbsDirectory>$([MSBuild]::NormalizeDirectory('$(TestBinDir)', '$(PayloadsRootDirectory)')</PayloadPdbsDirectory>
+    <PdbArtifactPath>$(RuntimeFlavorDisplayName)-$(HelixRuntimeRid)-$(Configuration)-pdbs</PdbArtifactPath>
+    <PayloadPdbsDirectory>$([MSBuild]::NormalizeDirectory('$(TestBinDir)', '$(PdbArtifactPath)')</PayloadPdbsDirectory>
     <TestEnvFileName Condition=" '$(TargetsWindows)' == 'true' ">SetStressModes_$(Scenario).cmd</TestEnvFileName>
     <TestEnvFileName Condition=" '$(TargetsWindows)' != 'true' ">SetStressModes_$(Scenario).sh</TestEnvFileName>
 
