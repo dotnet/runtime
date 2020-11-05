@@ -70,31 +70,22 @@ namespace System.Net.Http.Functional.Tests
         [InlineData(0)]
         [InlineData(1)]
         [InlineData(9)]
-        public async Task GetAsync_RequestVersion0X_ThrowsOr11(int minorVersion)
+        public async Task GetAsync_RequestVersion0X_ThrowsNotSupportedException(int minorVersion)
         {
-            await LoopbackServer.CreateServerAsync(async (server, url) =>
+            if (IsWinHttpHandler)
             {
-                using (HttpClient client = CreateHttpClient())
-                {
-                    HttpRequestMessage request = new HttpRequestMessage(HttpMethod.Get, url);
-                    request.Version = new Version(0, minorVersion);
+                return;
+            }
 
-                    Task<HttpResponseMessage> getResponseTask = client.SendAsync(TestAsync, request);
-                    Task<List<string>> serverTask = server.AcceptConnectionSendResponseAndCloseAsync();
+            using (HttpClient client = CreateHttpClient())
+            {
+                HttpRequestMessage request = new HttpRequestMessage(HttpMethod.Get, "http://bing.com");
+                request.Version = new Version(0, minorVersion);
 
-                    if (IsWinHttpHandler)
-                    {
-                        await TestHelper.WhenAllCompletedOrAnyFailed(getResponseTask, serverTask);
-                        var requestLines = await serverTask;
-                        Assert.Equal($"GET {url.PathAndQuery} HTTP/1.1", requestLines[0]);
-                    }
-                    else
-                    {
-                        // Await only client side that will throw. Nothing will get to the server side due to this exception thus do not await it at all.
-                        await Assert.ThrowsAsync<NotSupportedException>(() => getResponseTask);
-                    }
-                }
-            }, new LoopbackServer.Options { StreamWrapper = GetStream_ClientDisconnectOk});
+                Task<HttpResponseMessage> getResponseTask = client.SendAsync(TestAsync, request);
+
+                await Assert.ThrowsAsync<NotSupportedException>(() => getResponseTask);
+            }
         }
 
         [Theory]
@@ -105,7 +96,7 @@ namespace System.Net.Http.Functional.Tests
         [InlineData(2, 7)]
         [InlineData(3, 0)]
         [InlineData(4, 2)]
-        public async Task GetAsync_UnknownRequestVersion_ThrowsOrDegradesTo11(int majorVersion, int minorVersion)
+        public async Task GetAsync_UnknownRequestVersion_DegradesTo11(int majorVersion, int minorVersion)
         {
             // Sync API supported only up to HTTP/1.1
             if (!TestAsync && majorVersion >= 2)
