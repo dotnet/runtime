@@ -38,7 +38,7 @@ namespace System.Collections.Concurrent
 #pragma warning restore 0649
 
         /// <summary>Threshold to spin before allowing threads to sleep when there is contention.</summary>
-        internal const int _sleep1Threshold = 8;
+        private const int Sleep1Threshold = 8;
 
         /// <summary>Creates the segment.</summary>
         /// <param name="boundedLength">
@@ -247,7 +247,7 @@ namespace System.Collections.Concurrent
                 }
 
                 // Lost a race. Spin a bit, then try again.
-                spinner.SpinOnce(sleep1Threshold: _sleep1Threshold);
+                spinner.SpinOnce(Sleep1Threshold);
             }
         }
 
@@ -304,7 +304,7 @@ namespace System.Collections.Concurrent
                 }
 
                 // Lost a race. Spin a bit, then try again.
-                spinner.SpinOnce(sleep1Threshold: _sleep1Threshold);
+                spinner.SpinOnce(Sleep1Threshold);
             }
         }
 
