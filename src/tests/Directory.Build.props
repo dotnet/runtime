@@ -112,7 +112,7 @@
       <PropertyGroup>
       </PropertyGroup>
     </When>
-    <When Condition="'$(TargetOS)'=='Windows_NT'">
+    <When Condition="'$(TargetOS)'=='windows'">
       <PropertyGroup>
         <!-- Since cross compilation of test builds on Windows is possible, the
              TargetsWindows property may already be set. Only set the property if

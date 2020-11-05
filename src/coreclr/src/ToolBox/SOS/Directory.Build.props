@@ -1,9 +1,7 @@
 <Project>
-
   <PropertyGroup>
-    <UseMicrosoftNETCoreAppInternalWorkaround>false</UseMicrosoftNETCoreAppInternalWorkaround>
+    <Platform>AnyCPU</Platform>
   </PropertyGroup>
-
+     
   <Import Project="$([MSBuild]::GetPathOfFileAbove(Directory.Build.props, $(MSBuildThisFileDirectory)..))" />
-
 </Project>

@@ -174,6 +174,8 @@ precompile_coreroot_fx()
 
     if [[ "$__CompositeBuildMode" != 0 ]]; then
         crossgenCmd="$crossgenCmd --composite"
+    else
+        crossgenCmd="$crossgenCmd --crossgen2-parallelism 1"
     fi
 
     local crossgenDir="$__BinDir"
@@ -184,7 +186,7 @@ precompile_coreroot_fx()
     if [[ "$__DoCrossgen" != 0 ]]; then
         crossgenCmd="$crossgenCmd --crossgen --nocrossgen2 --crossgen-path \"$crossgenDir/crossgen\""
     else
-        crossgenCmd="$crossgenCmd --verify-type-and-field-layout --crossgen2-parallelism 1 --crossgen2-path \"$crossgenDir/crossgen2/crossgen2.dll\""
+        crossgenCmd="$crossgenCmd --verify-type-and-field-layout --crossgen2-path \"$crossgenDir/crossgen2/crossgen2.dll\""
     fi
 
     echo "Running $crossgenCmd"

@@ -610,9 +610,11 @@ namespace System.Net.Sockets
         public System.Threading.Tasks.Task ConnectAsync(System.Net.IPAddress address, int port) { throw null; }
         public System.Threading.Tasks.Task ConnectAsync(System.Net.IPAddress[] addresses, int port) { throw null; }
         public System.Threading.Tasks.Task ConnectAsync(string host, int port) { throw null; }
+        public System.Threading.Tasks.Task ConnectAsync(System.Net.IPEndPoint remoteEP) { throw null; }
         public System.Threading.Tasks.ValueTask ConnectAsync(System.Net.IPAddress address, int port, System.Threading.CancellationToken cancellationToken) { throw null; }
         public System.Threading.Tasks.ValueTask ConnectAsync(System.Net.IPAddress[] addresses, int port, System.Threading.CancellationToken cancellationToken) { throw null; }
         public System.Threading.Tasks.ValueTask ConnectAsync(string host, int port, System.Threading.CancellationToken cancellationToken) { throw null; }
+        public System.Threading.Tasks.ValueTask ConnectAsync(System.Net.IPEndPoint remoteEP, System.Threading.CancellationToken cancellationToken) { throw null; }
         public void Dispose() { }
         protected virtual void Dispose(bool disposing) { }
         public void EndConnect(System.IAsyncResult asyncResult) { }

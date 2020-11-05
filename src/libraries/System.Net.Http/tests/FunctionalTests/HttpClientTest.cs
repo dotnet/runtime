@@ -479,7 +479,7 @@ namespace System.Net.Http.Functional.Tests
                 },
                 async server =>
                 {
-                    await server.AcceptConnectionAsync(async connection =>
+                    Task serverHandling = server.AcceptConnectionAsync(async connection =>
                     {
                         await connection.ReadRequestDataAsync(readBody: false);
                         await connection.SendResponseAsync(HttpStatusCode.OK, headers: new HttpHeaderData[] { new HttpHeaderData("Content-Length", "5") });
@@ -497,11 +497,20 @@ namespace System.Net.Http.Functional.Tests
                                 httpClient.CancelPendingRequests();
                                 break;
 
-                            // case 2: timeout fires on its own
+                                // case 2: timeout fires on its own
                         }
 
                         await tcs.Task;
                     });
+
+                    // The client may have completed before even sending a request when testing HttpClient.Timeout.
+                    await Task.WhenAny(serverHandling, tcs.Task);
+                    if (cancelMode != 2)
+                    {
+                        // If using a timeout to cancel requests, it's possible the server's processing could have gotten interrupted,
+                        // so we want to ignore any exceptions from the server when in that mode.  For anything else, let exceptions propagate.
+                        await serverHandling;
+                    }
                 });
         }
 

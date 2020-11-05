@@ -129,4 +129,7 @@
   <data name="net_quic_streamaborted" xml:space="preserve">
     <value>Stream aborted by peer ({0}).</value>
   </data>
+  <data name="SystemNetQuic_PlatformNotSupported" xml:space="preserve">
+    <value>System.Net.Quic is not supported on this platform.</value>
+  </data>
 </root>

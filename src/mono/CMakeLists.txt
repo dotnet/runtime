@@ -72,7 +72,6 @@ if(ENABLE_NETCORE)
   set(DISABLE_GAC 1)
   set(DISABLE_PERFCOUNTERS 1)
   set(DISABLE_ATTACH 1)
-  set(DISABLE_DLLMAP 1)
   set(DISABLE_CONFIG 1)
   set(DISABLE_CFGDIR_CONFIG 1)
   set(DISABLE_VERIFIER 1)
@@ -200,9 +199,6 @@ if(CMAKE_SYSTEM_NAME STREQUAL "Darwin")
   set(HOST_DARWIN 1)
   set(PTHREAD_POINTER_ID 1)
   set(USE_MACH_SEMA 1)
-  if (GC_SUSPEND STREQUAL "default")
-    set(GC_SUSPEND "hybrid")
-  endif()
 elseif(CMAKE_SYSTEM_NAME STREQUAL "iOS" OR CMAKE_SYSTEM_NAME STREQUAL "tvOS")
   # See man cmake-toolchains(7) on which variables
   # control cross-compiling to ios
@@ -280,6 +276,9 @@ endif()
 if(TARGET_SYSTEM_NAME STREQUAL "Darwin")
   set(TARGET_MACH 1)
   set(TARGET_OSX 1)
+  if (GC_SUSPEND STREQUAL "default")
+    set(GC_SUSPEND "hybrid")
+  endif()
 elseif(TARGET_SYSTEM_NAME STREQUAL "iOS" OR TARGET_SYSTEM_NAME STREQUAL "tvOS")
   set(TARGET_MACH 1)
   set(TARGET_IOS 1)
@@ -574,6 +573,19 @@ if (CMAKE_BUILD_TYPE STREQUAL "Debug")
 endif()
 ### End of debug build checks
 
+
+######################################
+# OS SPECIFIC CHECKS
+######################################
+if(ENABLE_NETCORE)
+  if(TARGET_IOS OR TARGET_ANDROID)
+    # FIXME: the mobile products use mono_dllmap_insert so allow this
+    unset(DISABLE_DLLMAP)
+  else()
+    set(DISABLE_DLLMAP 1)
+  endif()
+endif()
+### End of OS specific checks
 
 add_subdirectory(mono)
 

@@ -171,12 +171,14 @@ MONO_API int   mono_gc_register_root (char *start, size_t size, MonoGCDescriptor
 void  mono_gc_deregister_root (char* addr);
 
 EMSCRIPTEN_KEEPALIVE int
-mono_wasm_register_root (char *start, size_t size, const char *name) {
-	return mono_gc_register_root (start, size, NULL, MONO_ROOT_SOURCE_EXTERNAL, NULL, name ? name : "mono_wasm_register_root");
+mono_wasm_register_root (char *start, size_t size, const char *name)
+{
+	return mono_gc_register_root (start, size, (MonoGCDescriptor)NULL, MONO_ROOT_SOURCE_EXTERNAL, NULL, name ? name : "mono_wasm_register_root");
 }
 
 EMSCRIPTEN_KEEPALIVE void 
-mono_wasm_deregister_root (char *addr) {
+mono_wasm_deregister_root (char *addr)
+{
 	mono_gc_deregister_root (addr);
 }
 
@@ -212,7 +214,7 @@ mono_wasm_add_assembly (const char *name, const unsigned char *data, unsigned in
 	entry->next = assemblies;
 	assemblies = entry;
 	++assembly_count;
-	return mono_has_pdb_checksum (data, size);
+	return mono_has_pdb_checksum ((char*)data, size);
 }
 
 int
@@ -622,8 +624,34 @@ mono_wasm_assembly_get_entry_point (MonoAssembly *assembly)
 		return NULL;
 	
 	mono_domain_ensure_entry_assembly (root_domain, assembly);
+	method = mono_get_method (image, entry, NULL);
 
-	return mono_get_method (image, entry, NULL);
+	/*
+	 * If the entry point looks like a compiler generated wrapper around
+	 * an async method in the form "<Name>" then try to look up the async method
+	 * "Name" it is wrapping.  We do this because the generated sync wrapper will
+	 * call task.GetAwaiter().GetResult() when we actually want to yield
+	 * to the host runtime.
+	 */
+	if (mono_method_get_flags (method, NULL) & 0x0800 /* METHOD_ATTRIBUTE_SPECIAL_NAME */) {
+		const char *name = mono_method_get_name (method);
+		int name_length = strlen (name);
+
+		if ((*name != '<') || (name [name_length - 1] != '>'))
+			return method;
+
+		MonoClass *klass = mono_method_get_class (method);
+		char *async_name = strdup (name);
+
+		async_name [name_length - 1] = '\0';
+
+		MonoMethodSignature *sig = mono_method_get_signature (method, image, mono_method_get_token (method));
+		MonoMethod *async_method = mono_class_get_method_from_name (klass, async_name + 1, mono_signature_get_param_count (sig));
+		free (async_name);
+		if (async_method != NULL)
+			return async_method;
+	}
+	return method;
 }
 
 EMSCRIPTEN_KEEPALIVE char *
@@ -925,28 +953,4 @@ EMSCRIPTEN_KEEPALIVE void
 mono_wasm_enable_on_demand_gc (int enable)
 {
 	mono_wasm_enable_gc = enable ? 1 : 0;
-}
-
-// Returns the local timezone default is UTC.
-EM_JS(size_t, mono_wasm_timezone_get_local_name, (),
-{
-	var res = "UTC";
-	try {
-		res = Intl.DateTimeFormat().resolvedOptions().timeZone;
-	} catch(e) {}
-
-	var buff = Module._malloc((res.length + 1) * 2);
-	stringToUTF16 (res, buff, (res.length + 1) * 2);
-	return buff;
-})
-
-void
-mono_timezone_get_local_name (MonoString **result)
-{
-	// WASM returns back an int pointer to a string UTF16 buffer.
-	// We then cast to `mono_unichar2*`.  Returning `mono_unichar2*` from the JavaScript call will
-	// result in cast warnings from the compiler.
-	mono_unichar2 *tzd_local_name = (mono_unichar2*)mono_wasm_timezone_get_local_name ();
-	*result = mono_string_from_utf16 (tzd_local_name);
-	free (tzd_local_name);
 }
