@@ -12011,22 +12011,17 @@ void CEEJitInfo::allocMem (
 
     if (EventEnabledMethodJitMemoryAllocatedForCode())
     {
-        SString methodBeingCompiledNames[3];
-        MethodDesc* methodBeingCompiled = m_pMethodBeingCompiled;
-        if (methodBeingCompiled)
+        ULONGLONG ullMethodIdentifier = 0;
+        ULONGLONG ullModuleID = 0;
+
+        if (m_pMethodBeingCompiled)
         {
-            (methodBeingCompiled)->GetMethodInfo((methodBeingCompiledNames)[0], (methodBeingCompiledNames)[1], (methodBeingCompiledNames)[2]);
-        }
-        else
-        {
-            (methodBeingCompiledNames)[0].Set(W("<null>"));
-            (methodBeingCompiledNames)[1].Set(W("<null>"));
-            (methodBeingCompiledNames)[2].Set(W("<null>"));
+            Module* pModule = m_pMethodBeingCompiled->GetModule_NoLogging();
+            ullModuleID = (ULONGLONG)(TADDR)pModule;
+            ullMethodIdentifier = (ULONGLONG)m_pMethodBeingCompiled;
         }
 
-        FireEtwMethodJitMemoryAllocatedForCode(methodBeingCompiledNames[0].GetUnicode(),
-            methodBeingCompiledNames[1].GetUnicode(),
-            methodBeingCompiledNames[2].GetUnicode(),
+        FireEtwMethodJitMemoryAllocatedForCode(ullMethodIdentifier, ullModuleID,
             hotCodeSize + coldCodeSize, roDataSize, totalSize.Value(), flag, GetClrInstanceId());
     }
 
