@@ -13343,12 +13343,10 @@ DONE_MORPHING_CHILDREN:
                     GenTree* op2Child = op2->AsOp()->gtOp1; // b
                     oper              = GT_ADD;
                     tree->SetOper(oper, GenTree::PRESERVE_VN);
-                    tree->AsOp()->gtOp1 = op1; // no change
                     tree->AsOp()->gtOp2 = op2Child;
 
                     DEBUG_DESTROY_NODE(op2);
 
-                    // op1 = op1;   // no change
                     op2 = op2Child;
                 }
 
@@ -13365,8 +13363,6 @@ DONE_MORPHING_CHILDREN:
 
                     GenTree* op1Child = op1->AsOp()->gtOp1; // a
                     GenTree* op2Child = op2->AsOp()->gtOp1; // b
-                    // oper              = GT_SUB;                // no change
-                    // tree->SetOper(oper, GenTree::PRESERVE_VN); // no change
                     tree->AsOp()->gtOp1 = op2Child;
                     tree->AsOp()->gtOp2 = op1Child;
 
@@ -13631,12 +13627,10 @@ DONE_MORPHING_CHILDREN:
                         GenTree* op2Child = op2->AsOp()->gtOp1; // a
                         oper              = GT_SUB;
                         tree->SetOper(oper, GenTree::PRESERVE_VN);
-                        // tree->AsOp()->gtOp1 = op1;   // no change
                         tree->AsOp()->gtOp2 = op2Child;
 
                         DEBUG_DESTROY_NODE(op2);
 
-                        // op1 = op2;
                         op2 = op2Child;
                     }
                 }
