@@ -2928,6 +2928,9 @@ namespace Mono.Linker.Steps
 					if (type.IsInterface)
 						break;
 
+					if (!_context.IsOptimizationEnabled (CodeOptimizations.UnusedTypeChecks, method.DeclaringType))
+						break;
+
 					if (!Annotations.IsInstantiated (type)) {
 						_pending_isinst_instr.Add ((type, method.Body, instruction));
 						return;
