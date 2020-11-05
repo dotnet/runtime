@@ -84,6 +84,11 @@ namespace Profiler.Tests
 
             process.WaitForExit();
 
+            // There are two conditions for profiler tests to pass, the output of the profiled program
+            // must contain the phrase "PROFILER TEST PASSES" and the return code must be 100. This is
+            // because lots of verification happen in the profiler code, where it is hard to change the
+            // program return value.
+
             if (!verifier.HasPassingOutput)
             {
                 LogTestFailure("Profiler tests are expected to contain the text \'" + verifier.SuccessPhrase + "\' in the console output " +

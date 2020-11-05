@@ -8,6 +8,8 @@
 #include <cctype>
 #include <iomanip>
 #include <algorithm>
+#include <thread>
+#include <chrono>
 
 using std::shared_ptr;
 using std::vector;
@@ -45,6 +47,7 @@ public:
     static void Initialize()
     {
         s_preventHooks = false;
+        s_hooksInProgress = 0;
     }
 
     static bool HasShutdownStarted()
@@ -63,8 +66,8 @@ public:
     }
 };
 
-atomic<bool> ELTGuard::s_preventHooks = false;
-atomic<int> ELTGuard::s_hooksInProgress = 0;
+atomic<bool> ELTGuard::s_preventHooks;
+atomic<int> ELTGuard::s_hooksInProgress;
 
 PROFILER_STUB EnterStub(FunctionIDOrClientID functionId, COR_PRF_ELT_INFO eltInfo)
 {
