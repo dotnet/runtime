@@ -25,7 +25,7 @@ include_directories(
 include(../eglib/CMakeLists.txt)
 include(../utils/CMakeLists.txt)
 include(../metadata/CMakeLists.txt)
-<<<<<<< HEAD
+
 include(../sgen/CMakeLists.txt)
 if(TARGET_WIN32)  # TODO: hook up HAVE_SYS_ZLIB instead
   include(../zlib/CMakeLists.txt)
@@ -46,13 +46,14 @@ if(ENABLE_PERFTRACING)
 
 endif(ENABLE_PERFTRACING)
 include(../coregc/CMakeLists.txt)
-=======
+
+
 if (HAVE_CORE_GC)
   include(../coregc/CMakeLists.txt)
 else()
   include(../sgen/CMakeLists.txt)
 endif()
->>>>>>> 4927ab7e1d5... Make sgen/core_gc mutually exclusive.
+
 include(../eventpipe/CMakeLists.txt)
 
 # ICU
