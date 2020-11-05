@@ -18,7 +18,7 @@ using Xunit;
 namespace System.IO.Tests
 {
     /// <summary>Base class providing tests for any Stream-derived type.</summary>
-    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))] // lots of operations aren't supported on browser
+    [PlatformSpecific(~TestPlatforms.Browser)] // lots of operations aren't supported on browser
     public abstract class StreamConformanceTests : FileCleanupTestBase
     {
         /// <summary>Gets the name of the byte[] argument to Read/Write methods.</summary>
