@@ -199,6 +199,8 @@
         <Targets Condition="'$(TargetArchitecture)' == 'x86'">x86</Targets>
         <AndroidPackageName>net.dot.%(Filename)</AndroidPackageName>
         <AndroidInstrumentationName>net.dot.MonoRunner</AndroidInstrumentationName>
+
+        <TestTimeout>$(_workItemTimeout)</TestTimeout>
       </XHarnessApkToTest>
     </ItemGroup>
 
