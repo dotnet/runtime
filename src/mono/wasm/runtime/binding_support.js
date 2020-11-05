@@ -149,6 +149,11 @@ var BindingSupportLib = {
 
 			this._are_promises_supported = ((typeof Promise === "object") || (typeof Promise === "function")) && (typeof Promise.resolve === "function");
 
+			this._empty_string = "";
+			this._empty_string_ptr = 0;
+			this._interned_string_full_root_buffers = [];
+			this._interned_string_current_root_buffer = null;
+			this._interned_string_current_root_buffer_count = 0;
 			this._interned_string_table = new Map ();
 			this._managed_pointer_to_interned_string_table = new Map ();
 		},
@@ -156,37 +161,70 @@ var BindingSupportLib = {
 		// Ensures the string is already interned on both the managed and JavaScript sides,
 		//  then returns the interned string value (to provide fast reference comparisons like C#)
 		mono_intern_string: function (string) {
+			if (string.length === 0)
+				return this._empty_string;
+
 			var ptr = this.js_string_to_mono_string_interned (string);
 			var result = this._managed_pointer_to_interned_string_table.get (ptr);
 			return result;
 		},
 
 		_store_string_in_intern_table: function (string, ptr, internIt) {
-			var resultRoot = MONO.mono_wasm_new_root (ptr);
+			var originalArg = ptr;
+			
+			const internBufferSize = 8192;
+
+			if (this._interned_string_current_root_buffer_count >= internBufferSize) {
+				this._interned_string_full_root_buffers.push (this._interned_string_current_root_buffer);
+				this._interned_string_current_root_buffer = null;
+			}
+			if (!this._interned_string_current_root_buffer) {
+				this._interned_string_current_root_buffer = MONO.mono_wasm_new_root_buffer (internBufferSize, "interned strings");
+				this._interned_string_current_root_buffer_count = 0;
+			}
+
+			var rootBuffer = this._interned_string_current_root_buffer;
+			var index = this._interned_string_current_root_buffer_count++;
+			rootBuffer.set (index, ptr);
 
 			// Store the managed string into the managed intern table. This can theoretically
 			//  provide a different managed object than the one we passed in, so update our
 			//  pointer (stored in the root) with the result.
 			if (internIt)
-				resultRoot.value = this.mono_wasm_intern_string (ptr);
+				rootBuffer.set (index, ptr = this.mono_wasm_intern_string (ptr));
 
-			this._interned_string_table.set (string, resultRoot);
-			this._managed_pointer_to_interned_string_table.set (resultRoot.value, string);
-			return resultRoot.value;
+			this._interned_string_table.set (string, ptr);
+			this._managed_pointer_to_interned_string_table.set (ptr, string);
+
+			if ((string.length === 0) && !this._empty_string_ptr)
+				this._empty_string_ptr = ptr;
+			
+			if (!ptr)
+				throw new Error("what");
+			return ptr;
 		},
 
 		js_string_to_mono_string_interned: function (string) {
-			var resultRoot = this._interned_string_table.get (string);
-			if (resultRoot) {
-				return resultRoot.value;
-			} else {
-				var ptr = this.js_string_to_mono_string_new (string);
-				ptr = this._store_string_in_intern_table (string, ptr, true);
+			if ((string.length === 0) && this._empty_string_ptr)
+				return this._empty_string_ptr;
+
+			var ptr = this._interned_string_table.get (string);
+			if (ptr)
 				return ptr;
-			}
+
+			ptr = this.js_string_to_mono_string_new (string);
+			ptr = this._store_string_in_intern_table (string, ptr, true);
+			if (!ptr)
+				throw new Error("what");
+
+			return ptr;
 		},
 
 		js_string_to_mono_string: function (string) {
+			// Always use an interned pointer for empty strings
+			if (string.length === 0)
+				return this.js_string_to_mono_string_interned (string);
+
 			// Looking up large strings in the intern table will require the JS runtime to
 			//  potentially hash them and then do full byte-by-byte comparisons, which is
 			//  very expensive. Because we can not guarantee it won't happen, try to minimize
@@ -194,7 +232,7 @@ var BindingSupportLib = {
 			if (string.length <= 256) {
 				var interned = this._interned_string_table.get (string);
 				if (interned)
-					return interned.value;
+					return interned;
 			}
 
 			return this.js_string_to_mono_string_new (string);
@@ -229,7 +267,7 @@ var BindingSupportLib = {
 
 		conv_string: function (mono_obj, interned) {
 			var interned_instance = this._managed_pointer_to_interned_string_table.get (mono_obj);
-			if (interned_instance)
+			if (interned_instance !== undefined)
 				return interned_instance;
 
 			var result = MONO.string_decoder.copy (mono_obj);
@@ -1204,6 +1242,7 @@ var BindingSupportLib = {
 		f: float
 		d: double
 		s: string
+		S: interned string
 		o: js object will be converted to a C# object (this will box numbers/bool/promises)
 		m: raw mono object. Don't use it unless you know what you're doing
 
