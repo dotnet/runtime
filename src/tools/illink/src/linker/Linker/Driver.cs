@@ -983,6 +983,9 @@ namespace Mono.Linker
 			case "unusedinterfaces":
 				optimization = CodeOptimizations.UnusedInterfaces;
 				return true;
+			case "unusedtypechecks":
+				optimization = CodeOptimizations.UnusedTypeChecks;
+				return true;
 			case "ipconstprop":
 				optimization = CodeOptimizations.IPConstantPropagation;
 				return true;
@@ -1154,6 +1157,7 @@ namespace Mono.Linker
 			Console.WriteLine ("                              overrideremoval: Overrides of virtual methods on types that are never instantiated are removed");
 			Console.WriteLine ("                              unreachablebodies: Instance methods that are marked but not executed are converted to throws");
 			Console.WriteLine ("                              unusedinterfaces: Removes interface types from declaration when not used");
+			Console.WriteLine ("                              unusedtypechecks: Inlines never successful type checks");
 			Console.WriteLine ("  --enable-opt NAME [ASM]   Enable one of the additional optimizations globaly or for a specific assembly name");
 			Console.WriteLine ("                              sealer: Any method or type which does not have override is marked as sealed");
 #if !FEATURE_ILLINK

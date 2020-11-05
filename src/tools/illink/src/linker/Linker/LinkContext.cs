@@ -255,6 +255,7 @@ namespace Mono.Linker
 				CodeOptimizations.BeforeFieldInit |
 				CodeOptimizations.OverrideRemoval |
 				CodeOptimizations.UnusedInterfaces |
+				CodeOptimizations.UnusedTypeChecks |
 				CodeOptimizations.IPConstantPropagation;
 
 			Optimizations = new CodeOptimizationsSettings (defaultOptimizations);
@@ -732,6 +733,11 @@ namespace Mono.Linker
 		/// <summary>
 		/// Devirtualizes methods and seals types
 		/// </summary>
-		Sealer = 1 << 5
+		Sealer = 1 << 5,
+
+		/// <summary>
+		/// Option to inline typechecks for never instantiated types
+		/// </summary>
+		UnusedTypeChecks = 1 << 6
 	}
 }
