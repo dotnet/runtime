@@ -171,7 +171,7 @@ by Mono runtime in environments that prohibit fallback to JIT.
 ### Hybrid AOT
 
 [Hybrid AOT](https://docs.microsoft.com/en-us/xamarin/mac/internals/aot#hybrid-aot) is used
-by Mono runtime in environment that allow fallback to JIT. 
+by Mono runtime in environments that allow fallback to JIT. 
 
 ### Native AOT
 
