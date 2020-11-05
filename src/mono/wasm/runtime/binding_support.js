@@ -145,7 +145,6 @@ var BindingSupportLib = {
 			this.safehandle_release_by_handle = get_method ("SafeHandleReleaseByHandle");
 
 			this._intern_string = bind_runtime_method ("InternString", "m!");
-			this._find_interned_string = bind_runtime_method ("FindInternedString", "m!");
 
 			this._are_promises_supported = ((typeof Promise === "object") || (typeof Promise === "function")) && (typeof Promise.resolve === "function");
 

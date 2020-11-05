@@ -502,10 +502,6 @@ namespace System.Runtime.InteropServices.JavaScript
             return safeHandle.DangerousGetHandle();
         }
 
-        private static string? FindInternedString (string str) {
-            return string.IsInterned(str);
-        }
-
         private static string InternString (string str) {
             return string.Intern(str);
         }
