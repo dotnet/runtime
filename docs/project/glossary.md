@@ -133,7 +133,7 @@ release Rotor as open source, Mono was forced to start from scratch and was thus
 a complete re-implementation of the .NET Framework with no shared code.
 
 Today, the [Mono runtime](https://github.com/dotnet/runtime/tree/master/src/mono) is part
-of unified .NET platform. It is optimized for mobile (e.g. Xamarin) and browser (e.g. Blazor) scenarios.
+of the unified .NET platform. It is optimized for mobile (e.g. Xamarin) and browser (e.g. Blazor) scenarios.
 
 ### CoreCLR
 
