@@ -951,15 +951,15 @@ namespace System.Data.OleDb
             return GetData(ordinal);
         }
 
-        internal OleDbDataReader? ResetChapter(int bindingIndex, int index, RowBinding rowbinding, int valueOffset)
+        internal OleDbDataReader ResetChapter(int bindingIndex, int index, RowBinding rowbinding, int valueOffset)
         {
             return GetDataForReader(_metadata![bindingIndex + index].ordinal, rowbinding, valueOffset);
         }
 
-        private OleDbDataReader? GetDataForReader(IntPtr ordinal, RowBinding rowbinding, int valueOffset)
+        private OleDbDataReader GetDataForReader(IntPtr ordinal, RowBinding rowbinding, int valueOffset)
         {
             UnsafeNativeMethods.IRowsetInfo rowsetInfo = IRowsetInfo();
-            UnsafeNativeMethods.IRowset? result;
+            UnsafeNativeMethods.IRowset result;
             OleDbHResult hr;
             hr = rowsetInfo.GetReferencedRowset((IntPtr)ordinal, ref ODB.IID_IRowset, out result);
 
@@ -1022,8 +1022,9 @@ namespace System.Data.OleDb
         {
             if (null != _metadata)
             {
-                // TODO-NULLABLE: Should throw if null (empty), though it probably doesn't happen
-                return _metadata[index].type.dataType!;
+                Type? fieldType = _metadata[index].type.dataType!;
+                Debug.Assert(fieldType != null);
+                return fieldType;
             }
             throw ADP.DataReaderNoData();
         }
@@ -2273,7 +2274,6 @@ namespace System.Data.OleDb
             using (OleDbDataReader dataReader = new OleDbDataReader(_connection, _command, int.MinValue, 0))
             {
                 dataReader.InitializeIRowset(rowset, ChapterHandle.DB_NULL_HCHAPTER, IntPtr.Zero);
-                // TODO-NULLABLE: BuildSchemaTableInfo asserts that rowset isn't null, but doesn't do anything with it
                 dataReader.BuildSchemaTableInfo(rowset!, true, false);
 
                 hiddenColumns = GetPropertyValue(ODB.DBPROP_HIDDENCOLUMNS);

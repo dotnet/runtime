@@ -378,7 +378,7 @@ namespace System.Xml.Linq
                         case XmlNodeType.ProcessingInstruction:
                             return ((XProcessingInstruction)o).Data;
                         case XmlNodeType.DocumentType:
-                            return ((XDocumentType)o).InternalSubset;
+                            return ((XDocumentType)o).InternalSubset ?? string.Empty;
                         default:
                             return string.Empty;
                     }
@@ -552,9 +552,11 @@ namespace System.Xml.Linq
             return null;
         }
 
-        // TODO-NULLABLE: decide if base signature should be switched to return string?
         public override string GetAttribute(int index)
         {
+            // https://github.com/dotnet/runtime/issues/44287
+            //     We should replace returning null with ArgumentOutOfRangeException
+            //     In case of not interactive state likely we should throw InvalidOperationException
             if (!IsInteractive)
             {
                 return null!;

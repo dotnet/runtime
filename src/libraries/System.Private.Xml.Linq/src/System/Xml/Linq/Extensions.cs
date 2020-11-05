@@ -277,8 +277,6 @@ namespace System.Xml.Linq
             return DocumentOrderIterator<T>(source);
         }
 
-        // TODO-NULLABLE: Consider changing to T? instead.
-        // If we do it, we will also need to change XNodeDocumentOrderComparer to implement IComparer<XNode?> instead.
         private static IEnumerable<T> DocumentOrderIterator<T>(IEnumerable<T> source) where T : XNode
         {
             int count;

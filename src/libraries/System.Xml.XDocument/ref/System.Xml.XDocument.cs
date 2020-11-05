@@ -212,9 +212,9 @@ namespace System.Xml.Linq
     }
     public partial class XDocumentType : System.Xml.Linq.XNode
     {
-        public XDocumentType(string name, string? publicId, string? systemId, string internalSubset) { }
+        public XDocumentType(string name, string? publicId, string? systemId, string? internalSubset) { }
         public XDocumentType(System.Xml.Linq.XDocumentType other) { }
-        public string InternalSubset { get { throw null; } set { } }
+        public string? InternalSubset { get { throw null; } set { } }
         public string Name { get { throw null; } set { } }
         public override System.Xml.XmlNodeType NodeType { get { throw null; } }
         public string? PublicId { get { throw null; } set { } }
