@@ -1,5 +1,7 @@
 project(mini)
 
+include(FindPython3)
+
 function(addprefix var prefix list)
   set(f)
   foreach(i ${list})
@@ -304,13 +306,17 @@ endif()
 if(NOT DISABLE_SHARED_LIBS)
   add_library(monosgen SHARED $<TARGET_OBJECTS:monosgen-objects>)
   set_target_properties(monosgen PROPERTIES OUTPUT_NAME monosgen-2.0)
-  set_target_properties(monosgen PROPERTIES LIBRARY_OUTPUT_DIRECTORY .libs)
   target_link_libraries(monosgen ${OS_LIBS} ${ICONV_LIB} ${LLVM_LIBS} ${ICU_LIBS})
   if(ICU_LDFLAGS)
-    set_target_properties(monosgen PROPERTIES LINK_FLAGS ${ICU_LDFLAGS})
+    set_property(TARGET monosgen APPEND_STRING PROPERTY LINK_FLAGS ${ICU_LDFLAGS})
+  endif()
+  if(TARGET_DARWIN OR TARGET_IOS OR TARGET_TVOS)
+    set_property(TARGET monosgen APPEND_STRING PROPERTY LINK_FLAGS "-Wl,-compatibility_version -Wl,2.0 -Wl,-current_version -Wl,2.0")
   endif()
   install(TARGETS monosgen LIBRARY)
 endif()
+
+find_package(Python3 COMPONENTS Interpreter)
 
 # FIXME: Always rebuilds, creates non-deterministic builds
 # FIXME: Use the previous format
@@ -335,40 +341,40 @@ add_custom_command(
 
 add_custom_command(
   OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/cpu-amd64.h
-  COMMAND python ${CMAKE_CURRENT_SOURCE_DIR}/genmdesc.py TARGET_AMD64 ${CMAKE_CURRENT_SOURCE_DIR} cpu-amd64.h amd64_desc ${CMAKE_CURRENT_SOURCE_DIR}/cpu-amd64.md
+  COMMAND ${Python3_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/genmdesc.py TARGET_AMD64 ${CMAKE_CURRENT_SOURCE_DIR} cpu-amd64.h amd64_desc ${CMAKE_CURRENT_SOURCE_DIR}/cpu-amd64.md
   VERBATIM
 )
 
 add_custom_command(
   OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/cpu-x86.h
-  COMMAND python ${CMAKE_CURRENT_SOURCE_DIR}/genmdesc.py TARGET_X86 ${CMAKE_CURRENT_SOURCE_DIR} cpu-x86.h x86_desc ${CMAKE_CURRENT_SOURCE_DIR}/cpu-x86.md
+  COMMAND ${Python3_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/genmdesc.py TARGET_X86 ${CMAKE_CURRENT_SOURCE_DIR} cpu-x86.h x86_desc ${CMAKE_CURRENT_SOURCE_DIR}/cpu-x86.md
   VERBATIM
 )
 
 add_custom_command(
   OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/cpu-arm64.h
-  COMMAND python ${CMAKE_CURRENT_SOURCE_DIR}/genmdesc.py TARGET_ARM64 ${CMAKE_CURRENT_SOURCE_DIR} cpu-arm64.h arm64_cpu_desc ${CMAKE_CURRENT_SOURCE_DIR}/cpu-arm64.md
+  COMMAND ${Python3_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/genmdesc.py TARGET_ARM64 ${CMAKE_CURRENT_SOURCE_DIR} cpu-arm64.h arm64_cpu_desc ${CMAKE_CURRENT_SOURCE_DIR}/cpu-arm64.md
   VERBATIM
 )
 
 add_custom_command(
   OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/cpu-arm.h
-  COMMAND python ${CMAKE_CURRENT_SOURCE_DIR}/genmdesc.py TARGET_ARM ${CMAKE_CURRENT_SOURCE_DIR} cpu-arm.h arm_cpu_desc ${CMAKE_CURRENT_SOURCE_DIR}/cpu-arm.md
+  COMMAND ${Python3_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/genmdesc.py TARGET_ARM ${CMAKE_CURRENT_SOURCE_DIR} cpu-arm.h arm_cpu_desc ${CMAKE_CURRENT_SOURCE_DIR}/cpu-arm.md
   VERBATIM
 )
 
 add_custom_command(
   OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/cpu-wasm.h
-  COMMAND python ${CMAKE_CURRENT_SOURCE_DIR}/genmdesc.py TARGET_WASM ${CMAKE_CURRENT_SOURCE_DIR} cpu-wasm.h wasm_desc ${CMAKE_CURRENT_SOURCE_DIR}/cpu-wasm.md
+  COMMAND ${Python3_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/genmdesc.py TARGET_WASM ${CMAKE_CURRENT_SOURCE_DIR} cpu-wasm.h wasm_desc ${CMAKE_CURRENT_SOURCE_DIR}/cpu-wasm.md
   VERBATIM
 )
 
 if(NOT DISABLE_EXECUTABLES)
-set(CMAKE_SKIP_RPATH 1)
-add_executable(mono-sgen "main-sgen.c")
-target_link_libraries(mono-sgen monosgen-static ${OS_LIBS} ${ICONV_LIB} ${LLVM_LIBS} ${ICU_LIBS})
-if(ICU_LDFLAGS)
-  set_target_properties(mono-sgen PROPERTIES LINK_FLAGS ${ICU_LDFLAGS})
-endif()
-install(TARGETS mono-sgen RUNTIME)
+  set(CMAKE_SKIP_RPATH 1)
+  add_executable(mono-sgen "main-sgen.c")
+  target_link_libraries(mono-sgen monosgen-static ${OS_LIBS} ${ICONV_LIB} ${LLVM_LIBS} ${ICU_LIBS})
+  if(ICU_LDFLAGS)
+    set_target_properties(mono-sgen PROPERTIES LINK_FLAGS ${ICU_LDFLAGS})
+  endif()
+  install(TARGETS mono-sgen RUNTIME)
 endif()

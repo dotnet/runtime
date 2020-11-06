@@ -73,11 +73,6 @@ public:
 
     static FCDECL0(FC_BOOL_RET, IsServerGC);
 
-#ifdef FEATURE_COMINTEROP
-    static
-    BOOL QCALLTYPE WinRTSupported();
-#endif // FEATURE_COMINTEROP
-
     // Return a method info for the method were the exception was thrown
     static FCDECL1(ReflectMethodObject*, GetMethodFromStackTrace, ArrayBase* pStackTraceUNSAFE);
 
