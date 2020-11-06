@@ -271,13 +271,13 @@ namespace System.Xml.Linq
         /// for each <see cref="XElement"/> in this <see cref="IEnumerable"/> of <see cref="XElement"/>.
         /// in document order
         /// </returns>
-        public static IEnumerable<T> InDocumentOrder<T>(this IEnumerable<T> source) where T : XNode
+        public static IEnumerable<T> InDocumentOrder<T>(this IEnumerable<T> source) where T : XNode?
         {
             if (source == null) throw new ArgumentNullException(nameof(source));
             return DocumentOrderIterator<T>(source);
         }
 
-        private static IEnumerable<T> DocumentOrderIterator<T>(IEnumerable<T> source) where T : XNode
+        private static IEnumerable<T> DocumentOrderIterator<T>(IEnumerable<T> source) where T : XNode?
         {
             int count;
             T[] items = EnumerableHelpers.ToArray(source, out count);
