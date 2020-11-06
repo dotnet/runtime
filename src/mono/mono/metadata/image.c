@@ -616,12 +616,14 @@ load_tables (MonoImage *image)
 	image->idx_guid_wide   = ((heap_sizes & 0x02) == 2);
 	image->idx_blob_wide   = ((heap_sizes & 0x04) == 4);
 
-	if (image->minimal_delta) {
+#ifdef ENABLE_METADATA_UPDATE
+	if (G_UNLIKELY (image->minimal_delta)) {
 		/* sanity check */
 		g_assert (image->idx_string_wide);
 		g_assert (image->idx_guid_wide);
 		g_assert (image->idx_blob_wide);
 	}
+#endif
 	
 	valid_mask = read64 (heap_tables + 8);
 	rows = (const guint32 *) (heap_tables + 24);
@@ -637,7 +639,6 @@ load_tables (MonoImage *image)
 			g_warning("bits in valid must be zero above 0x37 (II - 23.1.6)");
 		} else {
 			image->tables [table].rows = read32 (rows);
-			mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_ASSEMBLY, "found %s in image %s with rows = %d", mono_meta_table_name (table), image->assembly_name, image->tables [table].rows);
 		}
 		rows++;
 		valid++;
@@ -1472,6 +1473,7 @@ mono_is_problematic_image (MonoImage *image)
 	return FALSE;
 }
 
+#ifdef ENABLE_METADATA_UPDATE
 static void
 dump_encmap (MonoImage *image)
 {
@@ -1479,14 +1481,17 @@ dump_encmap (MonoImage *image)
 	if (!encmap || !encmap->rows)
 		return;
 
-	mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_METADATA_UPDATE, "ENCMAP for %s", image->filename);
-	for (int i = 0; i < encmap->rows; ++i) {
-		guint32 cols [MONO_ENCMAP_SIZE];
-		mono_metadata_decode_row (encmap, i, cols, MONO_ENCMAP_SIZE);
-		int token = cols [MONO_ENCMAP_TOKEN];
-		mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_METADATA_UPDATE, "\t0x%08x: 0x%08x table: %s", i+1, token, mono_meta_table_name (mono_metadata_token_table (token)));
+	if (mono_trace_is_traced (G_LOG_LEVEL_DEBUG, MONO_TRACE_METADATA_UPDATE)) {
+		mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_METADATA_UPDATE, "ENCMAP for %s", image->filename);
+		for (int i = 0; i < encmap->rows; ++i) {
+			guint32 cols [MONO_ENCMAP_SIZE];
+			mono_metadata_decode_row (encmap, i, cols, MONO_ENCMAP_SIZE);
+			int token = cols [MONO_ENCMAP_TOKEN];
+			mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_METADATA_UPDATE, "\t0x%08x: 0x%08x table: %s", i+1, token, mono_meta_table_name (mono_metadata_token_table (token)));
+		}
 	}
 }
+#endif
 
 static MonoImage *
 do_mono_image_load (MonoImage *image, MonoImageOpenStatus *status,
@@ -1552,7 +1557,9 @@ do_mono_image_load (MonoImage *image, MonoImageOpenStatus *status,
 	if (image->loader == &pe_loader && !image->metadata_only && !mono_verifier_verify_table_data (image, error))
 		goto invalid_image;
 
+#ifdef ENABLE_METADATA_UPDATE
 	dump_encmap (image);
+#endif
 
 	mono_image_load_names (image);
 
@@ -2541,6 +2548,7 @@ mono_image_close_except_pools_all (MonoImage**images, int image_count)
 	}
 }
 
+#ifdef ENABLE_METADATA_UPDATE
 static void
 mono_image_close_except_pools_all_list (GSList *images)
 {
@@ -2552,6 +2560,7 @@ mono_image_close_except_pools_all_list (GSList *images)
 		}
 	}
 }
+#endif
 
 /*
  * Returns whether mono_image_close_finish() must be called as well.
@@ -2592,7 +2601,9 @@ mono_image_close_except_pools (MonoImage *image)
 
 	mono_metadata_clean_for_image (image);
 
+#ifdef ENABLE_METADATA_UPDATE
 	mono_metadata_update_cleanup_on_close (image);
+#endif
 
 	/*
 	 * The caches inside a MonoImage might refer to metadata which is stored in referenced 
@@ -2721,8 +2732,10 @@ mono_image_close_except_pools (MonoImage *image)
 	mono_image_close_except_pools_all (image->modules, image->module_count);
 	g_free (image->modules_loaded);
 
+#ifdef ENABLE_METADATA_UPDATE
 	if (image->delta_image)
 		mono_image_close_except_pools_all_list (image->delta_image);
+#endif
 
 	mono_os_mutex_destroy (&image->szarray_cache_lock);
 	mono_os_mutex_destroy (&image->lock);
@@ -2750,6 +2763,7 @@ mono_image_close_all (MonoImage**images, int image_count)
 		g_free (images);
 }
 
+#ifdef ENABLE_METADATA_UPDATE
 static void
 mono_image_close_all_list (GSList *images)
 {
@@ -2761,6 +2775,7 @@ mono_image_close_all_list (GSList *images)
 
 	g_slist_free (images);
 }
+#endif
 
 void
 mono_image_close_finish (MonoImage *image)
@@ -2780,7 +2795,9 @@ mono_image_close_finish (MonoImage *image)
 	mono_image_close_all (image->files, image->file_count);
 	mono_image_close_all (image->modules, image->module_count);
 
+#ifdef ENABLE_METADATA_UPDATE
 	mono_image_close_all_list (image->delta_image);
+#endif
 
 #ifndef DISABLE_PERFCOUNTERS
 	/* FIXME: use an explicit subtraction method as soon as it's available */

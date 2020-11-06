@@ -919,8 +919,12 @@ mono_cleanup (void)
 void
 mono_close_exe_image (void)
 {
-	/* EnC: shutdown hack. We mess something up and try to double-close/free it. */
-	if (exe_image && !exe_image->delta_image)
+	gboolean do_close = exe_image != NULL;
+#ifdef ENABLE_METADATA_UPDATE
+	/* FIXME: shutdown hack. We mess something up and try to double-close/free it. */
+	do_close = do_close && !exe_image->delta_image;
+#endif
+	if (do_close)
 		mono_image_close (exe_image);
 }
 

@@ -9,6 +9,8 @@
 #include "mono/metadata/loader-internals.h"
 #include "mono/metadata/metadata-internals.h"
 
+#ifdef ENABLE_METADATA_UPDATE
+
 void
 mono_metadata_update_init (void);
 
@@ -32,5 +34,7 @@ mono_metadata_update_cleanup_on_close (MonoImage *base_image);
 
 MonoImage *
 mono_table_info_get_base_image (const MonoTableInfo *t);
+
+#endif /* ENABLE_METADATA_UPDATE */
 
 #endif /*__MONO_METADATA_UPDATE_H__*/

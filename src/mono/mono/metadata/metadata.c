@@ -990,11 +990,12 @@ mono_metadata_compute_size (MonoImage *meta, int tableindex, guint32 *result_bit
 	return size;
 }
 
+#ifdef ENABLE_METADATA_UPDATE
 /* returns true if given index is not in bounds with provided table/index pair */
 gboolean
 mono_metadata_table_bounds_check (MonoImage *image, int table_index, int token_index)
 {
-	if (token_index <= image->tables [table_index].rows)
+	if (G_LIKELY (token_index <= image->tables [table_index].rows))
 		return FALSE;
 
 	GSList *list = image->delta_image;
@@ -1014,6 +1015,7 @@ mono_metadata_table_bounds_check (MonoImage *image, int table_index, int token_i
 
 	return FALSE;
 }
+#endif
 
 /**
  * mono_metadata_compute_table_bases:
@@ -1879,7 +1881,9 @@ mono_metadata_init (void)
 	mono_counters_register ("ImgSet Cache Miss", MONO_COUNTER_METADATA | MONO_COUNTER_INT, &img_set_cache_miss);
 	mono_counters_register ("ImgSet Count", MONO_COUNTER_METADATA | MONO_COUNTER_INT, &img_set_count);
 
+#ifdef ENABLE_METADATA_UPDATE
 	mono_metadata_update_init ();
+#endif
 }
 
 /**

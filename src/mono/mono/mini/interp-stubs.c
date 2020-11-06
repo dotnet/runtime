@@ -80,7 +80,7 @@ stub_set_optimizations (guint32 i)
 }
 
 static void
-stub_metadata_update_init (void)
+stub_metadata_update_init (MonoError *error)
 {
 }
 

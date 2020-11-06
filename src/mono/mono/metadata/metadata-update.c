@@ -8,6 +8,10 @@
  */
 
 #include <config.h>
+#include "mono/utils/mono-compiler.h"
+
+#ifdef ENABLE_METADATA_UPDATE
+
 #include <glib.h>
 #include "mono/metadata/metadata-internals.h"
 #include "mono/metadata/metadata-update.h"
@@ -30,6 +34,9 @@ typedef struct _EncRecs {
 	uint32_t enc_recs [MONO_TABLE_NUM + 1];
 } EncRecs;
 
+
+static void
+mono_metadata_update_ee_init (MonoError *error);
 
 /* Maps each MonoTableInfo* to the MonoImage that it belongs to.  This is
  * mapping the base image MonoTableInfos to the base MonoImage.  We don't need
@@ -111,10 +118,20 @@ void
 mono_metadata_update_init (void)
 {
 	table_to_image_init ();
-	if (mono_get_runtime_callbacks ()->metadata_update_init)
-		mono_get_runtime_callbacks ()->metadata_update_init ();
 }
 
+/* Inform the execution engine that updates are coming */
+static void
+mono_metadata_update_ee_init (MonoError *error)
+{
+	static gboolean inited = FALSE;
+
+	if (inited)
+		return;
+	if (mono_get_runtime_callbacks ()->metadata_update_init)
+		mono_get_runtime_callbacks ()->metadata_update_init (error);
+	inited = TRUE;
+}
 
 static
 void
@@ -307,7 +324,7 @@ dump_update_summary (MonoImage *image_base, MonoImage *image_dmeta)
 void
 mono_image_effective_table (const MonoTableInfo **t, int *idx)
 {
-	if (*idx < (*t)->rows)
+	if (G_LIKELY (*idx < (*t)->rows))
 		return;
 
 	MonoImage *base = mono_table_info_get_base_image (*t);
@@ -628,6 +645,10 @@ append_heap (MonoStreamHeader *base, MonoStreamHeader *appendix)
 void
 mono_image_load_enc_delta (MonoDomain *domain, MonoImage *image_base, gconstpointer dmeta_bytes, uint32_t dmeta_length, gconstpointer dil_bytes, uint32_t dil_length, MonoError *error)
 {
+	mono_metadata_update_ee_init (error);
+	if (!is_ok (error))
+		return;
+
 	const char *basename = image_base->filename;
 	/* FIXME:
 	 * (1) do we need to memcpy dmeta_bytes ? (maybe)
@@ -729,3 +750,7 @@ mono_image_load_enc_delta (MonoDomain *domain, MonoImage *image_base, gconstpoin
 
 	mono_trace (G_LOG_LEVEL_INFO, MONO_TRACE_METADATA_UPDATE, ">>> EnC delta for base=%s (generation %d) applied", basename, generation);
 }
+
+#else /* ENABLE_METADATA_UPDATE */
+MONO_EMPTY_SOURCE_FILE (metadata_update);
+#endif /* ENABLE_METADATA_UPDATE */

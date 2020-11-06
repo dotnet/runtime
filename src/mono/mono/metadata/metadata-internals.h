@@ -587,6 +587,7 @@ struct _MonoImage {
 	/* Contains 1 based indexes */
 	GHashTable *weak_field_indexes;
 
+#ifdef ENABLE_METADATA_UPDATE
 	GHashTable *method_table_delta_index; /* EnC index for method updates */
 
 	/* List of MonoImages of deltas.  Parent image owns 1 refcount ref of the delta image */
@@ -596,6 +597,7 @@ struct _MonoImage {
 
 	/* Metadata delta images only */
 	uint32_t generation;
+#endif
 
 	/*
 	 * No other runtime locks must be taken while holding this lock.
@@ -897,6 +899,12 @@ mono_install_image_loader (const MonoImageLoader *loader);
 void
 mono_image_append_class_to_reflection_info_set (MonoClass *klass);
 
+#ifndef ENABLE_METADATA_UPDATE
+static inline void
+mono_image_effective_table (const MonoTableInfo **t, int *idx)
+{
+}
+#else /* ENABLE_METADATA_UPDATE */
 void
 mono_image_effective_table (const MonoTableInfo **t, int *idx);
 
@@ -905,6 +913,7 @@ mono_image_relative_delta_index (MonoImage *image_dmeta, int token);
 
 void
 mono_image_load_enc_delta (MonoDomain *domain, MonoImage *base_image, gconstpointer dmeta, uint32_t dmeta_len, gconstpointer dil, uint32_t dil_len, MonoError *error);
+#endif /* ENABLE_METADATA_UPDATE */
 
 gpointer
 mono_image_set_alloc  (MonoImageSet *set, guint size);
@@ -962,8 +971,17 @@ mono_metadata_clean_generic_classes_for_image (MonoImage *image);
 MONO_API void
 mono_metadata_cleanup (void);
 
+#ifndef ENABLE_METADATA_UPDATE
+static inline gboolean
+mono_metadata_table_bounds_check (MonoImage *image, int table_index, int token_index)
+{
+	/* token_index is 1-based. TRUE means the token is out of bounds */
+	return token_index > image->tables [table_index].rows;
+}
+#else
 gboolean
 mono_metadata_table_bounds_check (MonoImage *image, int table_index, int token_index);
+#endif
 
 const char *   mono_meta_table_name              (int table);
 void           mono_metadata_compute_table_bases (MonoImage *meta);

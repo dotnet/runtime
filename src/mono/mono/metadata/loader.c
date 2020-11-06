@@ -2024,7 +2024,6 @@ mono_method_get_header_internal (MonoMethod *method, MonoError *error)
 {
 	int idx;
 	guint32 rva;
-	gboolean from_dmeta_image = FALSE;
 	MonoImage* img;
 	gpointer loc = NULL;
 	MonoGenericContainer *container;
@@ -2072,12 +2071,13 @@ mono_method_get_header_internal (MonoMethod *method, MonoError *error)
 	g_assert (mono_metadata_token_table (method->token) == MONO_TABLE_METHOD);
 	idx = mono_metadata_token_index (method->token);
 
+#ifdef ENABLE_METADATA_UPDATE
 	/* EnC case */
 	if (G_UNLIKELY (img->method_table_delta_index)) {
 		/* pre-computed rva pointer into delta IL image */
 		loc = g_hash_table_lookup (img->method_table_delta_index, GUINT_TO_POINTER (idx));
-		from_dmeta_image = !!loc;
 	}
+#endif
 
 	if (!loc) {
 		rva = mono_metadata_decode_row_col (&img->tables [MONO_TABLE_METHOD], idx - 1, MONO_METHOD_RVA);

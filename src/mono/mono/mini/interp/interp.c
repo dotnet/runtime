@@ -7568,14 +7568,19 @@ copy_imethod_for_frame (MonoDomain *domain, InterpFrame *frame)
 }
 
 static void
-interp_metadata_update_init (void)
+interp_metadata_update_init (MonoError *error)
 {
-	g_assertf ((mono_interp_opt & INTERP_OPT_INLINE) == 0, "Interpreter inlining must be turned off for metadata updates");
+	if ((mono_interp_opt & INTERP_OPT_INLINE) != 0)
+		mono_error_set_execution_engine (error, "Interpreter inlining must be turned off for metadata updates");
 }
 
 static void
 interp_invalidate_transformed (MonoDomain *domain)
 {
+	gboolean need_stw_restart = FALSE;
+#ifdef ENABLE_METADATA_UPDATE
+	need_stw_restart = TRUE;
+
 	mono_gc_stop_world ();
 	/* (1) make a copy of imethod for every interpframe that is on the stack,
 	 * so we do not invalidate currently running methods */
@@ -7602,12 +7607,14 @@ interp_invalidate_transformed (MonoDomain *domain)
 	} FOREACH_THREAD_END
 
 	/* (2) invalidate all the registered imethods */
+#endif
 	MonoJitDomainInfo *info = domain_jit_info (domain);
 	mono_domain_jit_code_hash_lock (domain);
 	mono_internal_hash_table_apply (&info->interp_code_hash, invalidate_transform);
 	mono_domain_jit_code_hash_unlock (domain);
 
-	mono_gc_restart_world ();
+	if (need_stw_restart)
+		mono_gc_restart_world ();
 }
 
 static void
