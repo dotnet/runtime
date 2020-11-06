@@ -11,6 +11,14 @@ endif()
 #
 # This library contains runtime IL code generation
 #
+if (HAVE_CORE_GC)
+set(ilgen_base_sources
+    method-builder-ilgen.c
+    method-builder-ilgen.h
+    method-builder-ilgen-internals.h
+    marshal-ilgen.c
+    marshal-ilgen.h)
+else()
 set(ilgen_base_sources
     method-builder-ilgen.c
     method-builder-ilgen.h
@@ -19,6 +27,7 @@ set(ilgen_base_sources
     marshal-ilgen.h
     sgen-mono-ilgen.c
     sgen-mono-ilgen.h)
+endif()
 
 if(NOT ENABLE_ILGEN)
 addprefix(mono_ilgen_sources ../metadata "${ilgen_base_sources}")
