@@ -4717,7 +4717,7 @@ typedef TADDR HMODULE_TGT;
 typedef HMODULE HMODULE_TGT;
 #endif
 
-BOOL IsIPInModule(HMODULE_TGT hModule, PCODE ip);
+BOOL IsIPInModule(PTR_VOID pModule, PCODE ip);
 
 #ifdef HOST_WINDOWS
 extern HINSTANCE g_hmodCoreCLR;

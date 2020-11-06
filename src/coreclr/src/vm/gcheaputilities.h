@@ -199,7 +199,7 @@ public:
 
 #ifndef DACCESS_COMPILE
     // Gets the module that contains the GC.
-    static HMODULE GetGCModule();
+    static PTR_VOID GetGCModule();
 
     // Loads (if using a standalone GC) and initializes the GC.
     static HRESULT LoadAndInitialize();

@@ -460,12 +460,12 @@ void LeftSideResourceCleanupList::SweepNeuterLeftSideResources(CordbProcess * pP
 extern "C" IMAGE_DOS_HEADER __ImageBase;
 #endif
 
-SIZE_T GetModuleBase()
+PTR_VOID GetModuleBase()
 {
 #if HOST_WINDOWS
-    return (SIZE_T)&__ImageBase;
+    return (PTR_VOID)&__ImageBase;
 #else // !HOST_UNIX
-    return (SIZE_T)PAL_GetSymbolModuleBase((void*)GetModuleBase);
+    return (PTR_VOID)PAL_GetSymbolModuleBase((void*)GetModuleBase);
 #endif // !HOST_UNIX
 }
 

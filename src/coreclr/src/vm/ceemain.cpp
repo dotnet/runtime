@@ -842,7 +842,7 @@ void EEStartupHelper()
 #ifndef TARGET_UNIX
         {
             // Record mscorwks geometry
-            PEDecoder pe(g_hThisInst);
+            PEDecoder pe(GetModuleBase());
 
             g_runtimeLoadedBaseAddress = (SIZE_T)pe.GetBase();
             g_runtimeVirtualSize = (SIZE_T)pe.GetVirtualSize();

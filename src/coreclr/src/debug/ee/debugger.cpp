@@ -12363,7 +12363,7 @@ void Debugger::GetAndSendTransitionStubInfo(CORDB_ADDRESS_TYPE *stubAddress)
     // If its not a stub, then maybe its an address in mscoree?
     if (result == false)
     {
-        result = (IsIPInModule(g_hThisInst, (PCODE)stubAddress) == TRUE);
+        result = (IsIPInModule((PTR_VOID)g_hThisInst, (PCODE)stubAddress) == TRUE);
     }
 
     // This is a synchronous event (reply required)

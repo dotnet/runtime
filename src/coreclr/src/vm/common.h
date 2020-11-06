@@ -371,7 +371,7 @@ HRESULT EnsureRtlFunctions();
 HINSTANCE GetModuleInst();
 
 // Helper function returns the base of this module.
-SIZE_T GetModuleBase();
+PTR_VOID GetModuleBase();
 
 #if defined(TARGET_X86) || defined(TARGET_AMD64)
 //

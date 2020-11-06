@@ -56,7 +56,7 @@ GC_LOAD_STATUS g_gc_load_status = GC_LOAD_STATUS_BEFORE_START;
 VersionInfo g_gc_version_info;
 
 // The module that contains the GC.
-HMODULE g_gc_module;
+PTR_VOID g_gc_module;
 
 // GC entrypoints for the the linked-in GC. These symbols are invoked
 // directly if we are not using a standalone GC.
@@ -70,7 +70,7 @@ extern "C" HRESULT GC_Initialize(
 
 #ifndef DACCESS_COMPILE
 
-HMODULE GCHeapUtilities::GetGCModule()
+PTR_VOID GCHeapUtilities::GetGCModule()
 {
     assert(g_gc_module);
     return g_gc_module;
@@ -101,7 +101,7 @@ BOOL g_gcEventTracingInitialized = FALSE;
 // to "publish" it by assigning it to g_pGCHeap.
 //
 // This function can proceed concurrently with StashKeywordAndLevel below.
-void FinalizeLoad(IGCHeap* gcHeap, IGCHandleManager* handleMgr, HMODULE gcModule)
+void FinalizeLoad(IGCHeap* gcHeap, IGCHandleManager* handleMgr, PTR_VOID gcModule)
 {
     g_pGCHeap = gcHeap;
 
@@ -238,7 +238,7 @@ HRESULT LoadAndInitializeGC(LPWSTR standaloneGcLocation)
     HRESULT initResult = initFunc(gcToClr, &heap, &manager, &g_gc_dac_vars);
     if (initResult == S_OK)
     {
-        FinalizeLoad(heap, manager, hMod);
+        FinalizeLoad(heap, manager, (PTR_VOID)hMod);
     }
     else
     {
@@ -277,7 +277,7 @@ HRESULT InitializeDefaultGC()
     HRESULT initResult = GC_Initialize(nullptr, &heap, &manager, &g_gc_dac_vars);
     if (initResult == S_OK)
     {
-        FinalizeLoad(heap, manager, GetModuleInst());
+        FinalizeLoad(heap, manager, GetModuleBase());
     }
     else
     {

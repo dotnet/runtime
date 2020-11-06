@@ -141,7 +141,7 @@ void StressLog::Leave(CRITSEC_COOKIE) {
 
 /*********************************************************************************/
 void StressLog::Initialize(unsigned facilities,  unsigned level, unsigned maxBytesPerThread,
-            unsigned maxBytesTotal, SIZE_T moduleBase)
+            unsigned maxBytesTotal, void* moduleBase)
 {
     STATIC_CONTRACT_LEAF;
 
@@ -173,7 +173,7 @@ void StressLog::Initialize(unsigned facilities,  unsigned level, unsigned maxByt
 
     GetSystemTimeAsFileTime (&theLog.startTime);
     theLog.startTimeStamp = getTimeStamp();
-    theLog.moduleOffset = moduleBase;
+    theLog.moduleOffset = (SIZE_T)moduleBase;
 
 #ifndef HOST_UNIX
 #ifdef _DEBUG
