@@ -640,6 +640,14 @@ mono_gc_alloc_pinned_obj (MonoVTable *vtable, size_t size)
 	return o;
 }
 
+MonoArray*
+mono_gc_alloc_pinned_vector (MonoVTable *vtable, size_t size, uintptr_t max_length){
+	MonoArray *arr = (MonoArray*) mono_gc_alloc_obj (vtable, size);
+	arr->max_length = max_length;
+	pGCHandleManager->CreateGlobalHandleOfType ((Object*)arr, HNDTYPE_PINNED);
+	return arr;
+}
+
 static int
 get_size_for_vtable (gpointer vtable, gpointer o)
 {
