@@ -648,6 +648,14 @@ mono_gc_alloc_pinned_vector (MonoVTable *vtable, size_t size, uintptr_t max_leng
 	return arr;
 }
 
+
+void mono_gc_get_gcmemoryinfo (gint64* fragmented_bytes,
+						       gint64* heap_size_bytes,
+						       gint64* high_memory_load_threshold_bytes,
+						       gint64* memory_load_bytes,
+ 						       gint64* total_available_memory_bytes){									
+}
+
 static int
 get_size_for_vtable (gpointer vtable, gpointer o)
 {
@@ -1145,6 +1153,19 @@ mono_gchandle_new_weakref_internal (MonoObject* obj, gboolean track_resurrection
 		return pGCHandleManager->CreateGlobalHandleOfType ((Object*)obj, HNDTYPE_WEAK_LONG);
 	else
 		return pGCHandleManager->CreateGlobalHandleOfType ((Object*)obj, HNDTYPE_WEAK_SHORT);
+}
+
+void  
+mono_gc_finalize_domain (MonoDomain *domain){
+}
+
+void  
+mono_gc_register_for_finalization (MonoObject *obj, MonoFinalizationProc user_data){
+}
+
+void
+mono_gc_thread_detach (THREAD_INFO_TYPE *info)
+{
 }
 
 void
@@ -1721,4 +1742,8 @@ inline bool GCToEEInterface::AnalyzeSurvivorsRequested(int condemnedGeneration)
 inline void GCToEEInterface::AnalyzeSurvivorsFinished(int condemnedGeneration)
 {
 
+}
+
+void DiagWalkUOHSurvivors(void* gcContext, int gen)
+{
 }
