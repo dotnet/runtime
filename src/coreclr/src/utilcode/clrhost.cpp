@@ -23,7 +23,7 @@ void* GetModuleBase()
 #if HOST_WINDOWS
     return (void*)&__ImageBase;
 #else // !HOST_UNIX
-    return (PTR_VOID)PAL_GetSymbolModuleBase((void*)GetModuleBase);
+    return (void*)PAL_GetSymbolModuleBase((void*)GetModuleBase);
 #endif // !HOST_UNIX
 }
 
