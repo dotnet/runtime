@@ -250,19 +250,21 @@ set(metadata_gc_dependent_sources
      gc.c
      monitor.c)
 
-set(metadata_sgen_sources
-    sgen-bridge.c
-    sgen-bridge.h
-    sgen-bridge-internals.h
-    sgen-old-bridge.c
-    sgen-new-bridge.c
-    sgen-tarjan-bridge.c
-    sgen-toggleref.c
-    sgen-toggleref.h
-    sgen-stw.c
-    sgen-mono.c
-    sgen-mono.h
-    sgen-client-mono.h)
+if(NOT HAVE_CORE_GC)    
+    set(metadata_sgen_sources
+        sgen-bridge.c
+        sgen-bridge.h
+        sgen-bridge-internals.h
+        sgen-old-bridge.c
+        sgen-new-bridge.c
+        sgen-tarjan-bridge.c
+        sgen-toggleref.c
+        sgen-toggleref.h
+        sgen-stw.c
+        sgen-mono.c
+        sgen-mono.h
+        sgen-client-mono.h)
+endif()
 
 addprefix(metadata_gc_dependent_real_sources ../metadata "${metadata_gc_dependent_sources}")
 addprefix(metadata_sgen_real_sources ../metadata "${metadata_sgen_sources}")
