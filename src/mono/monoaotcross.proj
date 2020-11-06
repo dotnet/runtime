@@ -1,0 +1,32 @@
+<Project Sdk="Microsoft.Build.Traversal" DefaultTargets="BuildMonoCrossAllTargets">
+  <PropertyGroup>
+    <MonoAotDefaultTargets>android-x64;android-arm64</MonoAotDefaultTargets>
+    <MonoAotTargets Condition="'$(MonoAotTargets)' == ''">$(MonoAotDefaultTargets)</MonoAotTargets>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <MonoAotTargetRids Include="$(MonoAotTargets.Split(';'))" />
+  </ItemGroup>
+
+  <Target Name="BuildMonoCrossAllTargets">
+    <MSBuild Targets="BuildMonoCrossTarget"
+             Projects="$(MSBuildThisFileFullPath)"
+             BuildInParallel="true"
+             Properties="MonoAotTargetRid=%(MonoAotTargetRids.Identity)" />
+  </Target>
+
+  <Target Name="BuildMonoCrossTarget">
+    <PropertyGroup>
+      <MonoAotTargetOS>$(MonoAotTargetRid.Split('-')[0])</MonoAotTargetOS>
+      <MonoAotTargetArchitecture>$(MonoAotTargetRid.Split('-')[1])</MonoAotTargetArchitecture>
+    </PropertyGroup>
+
+    <MSBuild Targets="Build"
+             Projects="$(MSBuildThisFileDirectory)llvm\llvm-init.proj"
+             Properties="TargetArchitecture=$(MonoAotTargetArchitecture);TargetOS=$(MonoAotTargetOS)" />
+
+    <MSBuild Targets="BuildMonoCrossUnix"
+             Projects="$(MSBuildThisFileDirectory)mono.proj"
+             Properties="MonoAotCrossTarget='$(MonoAotTargets)';BuildMonoAOTCrossCompilerOnly=true;TargetArchitecture=$(MonoAotTargetArchitecture);TargetOS=$(MonoAotTargetOS)" />
+  </Target>
+</Project>
