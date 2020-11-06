@@ -16,6 +16,18 @@ namespace System.Net.NetworkInformation
         private static readonly object s_gate = new object();
         private static readonly Interop.Sys.NetworkChangeEvent s_networkChangeCallback = ProcessEvent;
 
+        // The list of current address-changed subscribers.
+        private static readonly Dictionary<NetworkAddressChangedEventHandler, ExecutionContext?> s_addressChangedSubscribers =
+            new Dictionary<NetworkAddressChangedEventHandler, ExecutionContext?>();
+
+        // The list of current availability-changed subscribers.
+        private static readonly Dictionary<NetworkAvailabilityChangedEventHandler, ExecutionContext?> s_availabilityChangedSubscribers =
+            new Dictionary<NetworkAvailabilityChangedEventHandler, ExecutionContext?>();
+
+        private static readonly ContextCallback s_runHandlerAvailable = new ContextCallback(RunAvailabilityHandlerAvailable!);
+        private static readonly ContextCallback s_runHandlerNotAvailable = new ContextCallback(RunAvailabilityHandlerNotAvailable!);
+        private static readonly ContextCallback s_runAddressChangedHandler = new ContextCallback(RunAddressChangedHandler!);
+
         // The "leniency" window for NetworkAvailabilityChanged socket events.
         // All socket events received within this duration will be coalesced into a
         // single event. Generally, many route changed events are fired in succession,

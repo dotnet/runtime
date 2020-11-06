@@ -32,6 +32,18 @@ namespace System.Net.NetworkInformation
         // The listener thread's CFRunLoop.
         private static CFRunLoopRef s_runLoop;
 
+        // The list of current address-changed subscribers.
+        private static readonly Dictionary<NetworkAddressChangedEventHandler, ExecutionContext?> s_addressChangedSubscribers =
+            new Dictionary<NetworkAddressChangedEventHandler, ExecutionContext?>();
+
+        // The list of current availability-changed subscribers.
+        private static readonly Dictionary<NetworkAvailabilityChangedEventHandler, ExecutionContext?> s_availabilityChangedSubscribers =
+            new Dictionary<NetworkAvailabilityChangedEventHandler, ExecutionContext?>();
+
+        private static readonly ContextCallback s_runHandlerAvailable = new ContextCallback(RunAvailabilityHandlerAvailable!);
+        private static readonly ContextCallback s_runHandlerNotAvailable = new ContextCallback(RunAvailabilityHandlerNotAvailable!);
+        private static readonly ContextCallback s_runAddressChangedHandler = new ContextCallback(RunAddressChangedHandler!);
+
         // Use an event to try to prevent StartRaisingEvents from returning before the
         // RunLoop actually begins. This will mitigate a race condition where the watcher
         // thread hasn't completed initialization and stop is called before the RunLoop has even started.
