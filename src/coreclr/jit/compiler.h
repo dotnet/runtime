@@ -2234,20 +2234,6 @@ class Compiler
 public:
     hashBvGlobalData hbvGlobalData; // Used by the hashBv bitvector package.
 
-/*
-* Loop alignment heuristics
-* These are overriden by the COMPlus_ variables, but in future, 
-*/
-
-//#define ALIGN_LOOP_MIN_BB_WEIGHT 100 // Minimum average hits a block should get in order to be considered as hot for loop alignment.
-//#define ALIGN_LOOP_MAX_CODE_SIZE 20 // Maximum code size of a loop for which loop alignment will be done.
-
-    unsigned compJitAlignLoopMinBlockWeight;
-    unsigned compJitAlignLoopMaxCodeSize;
-    unsigned compJitAlignLoopBoundary;
-    bool     compJitAlignLoopForJcc;
-    bool     compJitAlignLoopAdaptive;
-
 #ifdef DEBUG
     bool verbose;
     bool verboseTrees;
@@ -9048,6 +9034,25 @@ public:
         bool compLongAddress; // Force using large pseudo instructions for long address
                               // (IF_LARGEJMP/IF_LARGEADR/IF_LARGLDC)
         bool dspGCtbls;       // Display the GC tables
+#endif
+
+#define DEFAULT_ALIGN_LOOP_MIN_BLOCK_WEIGHT 10
+#define DEFAULT_ALIGN_LOOP_BOUNDARY 32
+
+#ifdef DEBUG
+        // Loop alignment variables
+        unsigned compJitAlignLoopMinBlockWeight; // Minimum weight needed for the first block of a loop to make it a
+                                                 // candidate for alignment.
+        unsigned compJitAlignLoopMaxCodeSize;    // For non-adaptive alignment, minimum loop size (in bytes) for which
+                                                 // alignment will be done.
+        unsigned compJitAlignLoopBoundary;       // For non-adaptive alignment, address boundary (power of 2) at which
+                                                 // loop alignment should be done. By default, 32B.
+        bool     compJitAlignLoopForJcc;         // If set, for non-adaptive alignment, ensure loop jmps are not on or
+                                                 // cross alignment boundary.
+        bool     compJitAlignLoopAdaptive;       // If set, perform adaptive loop alignment that limits number of padding
+                                                 // based on loop size.
+#else
+        #define ADAPTIVE_LOOP_ALIGNMENT
 #endif
 
 #ifdef LATE_DISASM

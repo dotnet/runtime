@@ -2544,12 +2544,17 @@ NO_MORE_LOOPS:
         }
 
 #if defined(TARGET_XARCH)
-        //TODO: Move should align loops flag to jitconfigvalues.h
         if (codeGen->ShouldAlignLoops())
         {
             // An innerloop candidate that might need alignment
             if ((optLoopTable[loopInd].lpChild == BasicBlock::NOT_IN_LOOP) &&
-                (compJitAlignLoopMinBlockWeight <= first->getBBWeight(this)))
+                (
+#ifdef ADAPTIVE_LOOP_ALIGNMENT
+                    DEFAULT_ALIGN_LOOP_MIN_BLOCK_WEIGHT
+#else
+                    opts.compJitAlignLoopMinBlockWeight
+#endif
+                    <= first->getBBWeight(this)))
             {
                 first->bbFlags |= BBF_FIRST_BLOCK_IN_INNERLOOP;
             }

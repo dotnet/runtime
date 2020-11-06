@@ -41,20 +41,24 @@ CONFIG_INTEGER(JitDebugLogLoopCloning, W("JitDebugLogLoopCloning"), 0) // In deb
                                                                        // optimizations are performed on the fast path.
 CONFIG_INTEGER(JitDefaultFill, W("JitDefaultFill"), 0xdd) // In debug builds, initialize the memory allocated by the nra
                                                           // with this byte.
-CONFIG_INTEGER(JitAlignLoopMinBlockWeight, W("JitAlignLoopMinBlockWeight"), 10) // Minimum weight needed of the first block of a loop to trigger its alignment.
+CONFIG_INTEGER(JitAlignLoopMinBlockWeight,
+               W("JitAlignLoopMinBlockWeight"),
+               DEFAULT_ALIGN_LOOP_MIN_BLOCK_WEIGHT) // Minimum weight needed for the first block of a loop to make it a
+                                                    // candidate for alignment.
 CONFIG_INTEGER(JitAlignLoopMaxCodeSize,
                W("JitAlignLoopMaxCodeSize"),
-               0x60)  // Maximum code size (in bytes) of the loop after which the the code alignment for that loop will be disabled.
+               0x60)  // For non-adaptive alignment, minimum loop size (in bytes) for which alignment will be done. Defaults to 3 blocks of 32 bytes chunks = 96 bytes.
 CONFIG_INTEGER(JitAlignLoopBoundary,
                W("JitAlignLoopBoundary"),
-               0x32) // Boundary (multiples of 2) at which inner loops should be aliged. By default, it is set to 32B.
+               DEFAULT_ALIGN_LOOP_BOUNDARY) // For non-adaptive alignment, address boundary (power of 2) at which loop
+                                            // alignment should be done. By default, 32B.
 CONFIG_INTEGER(JitAlignLoopForJcc,
                W("JitAlignLoopForJcc"),
-               0) // If set, while doing loop alignment, ensure loop jmps don't cross alignment boundary.
+               0) // If set, for non-adaptive alignment, ensure loop jmps are not on or cross alignment boundary.
 
 CONFIG_INTEGER(JitAlignLoopAdaptive,
             W("JitAlignLoopAdaptive"),
-            1) // If set, perform loop alignment adaptive to limit number of padding added.
+            1) // If set, perform adaptive loop alignment that limits number of padding based on loop size.
 
 CONFIG_INTEGER(JitDirectAlloc, W("JitDirectAlloc"), 0)
 CONFIG_INTEGER(JitDoubleAlign, W("JitDoubleAlign"), 1)
@@ -217,7 +221,9 @@ CONFIG_INTEGER(EnableIncompleteISAClass, W("EnableIncompleteISAClass"), 0) // En
                                                                            // intrinsic classes
 #endif                                                                     // defined(DEBUG)
 
-///
+CONFIG_INTEGER(JitAlignLoops, W("JitAlignLoops"), 1) // If set, align inner loops
+
+                                                    ///
 /// JIT
 ///
 #ifdef FEATURE_ENABLE_NO_RANGE_CHECKS

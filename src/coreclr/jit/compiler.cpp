@@ -2615,13 +2615,14 @@ void Compiler::compInitOptions(JitFlags* jitFlags)
     opts.compDbgInfo = jitFlags->IsSet(JitFlags::JIT_FLAG_DEBUG_INFO);
     opts.compDbgEnC  = jitFlags->IsSet(JitFlags::JIT_FLAG_DEBUG_EnC);
 
-    compJitAlignLoopMinBlockWeight = 10; //JitConfig.JitAlignLoopMinBlockWeight();
-    compJitAlignLoopMaxCodeSize    = 0x60; //JitConfig.JitAlignLoopMaxCodeSize();
-    compJitAlignLoopBoundary       = 32; //ReinterpretHexAsDecimal(JitConfig.JitAlignLoopBoundary());
-    compJitAlignLoopForJcc         = false; //JitConfig.JitAlignLoopForJcc() == 1;
-    // TODO: Default loop adaptive
-    compJitAlignLoopAdaptive       = true; //JitConfig.JitAlignLoopAdaptive() == 1;
-    assert(isPow2(compJitAlignLoopBoundary));
+#ifdef DEBUG
+    opts.compJitAlignLoopMinBlockWeight = JitConfig.JitAlignLoopMinBlockWeight();
+    opts.compJitAlignLoopMaxCodeSize    = JitConfig.JitAlignLoopMaxCodeSize();
+    opts.compJitAlignLoopBoundary       = JitConfig.JitAlignLoopBoundary();
+    opts.compJitAlignLoopForJcc = JitConfig.JitAlignLoopForJcc() == 1;
+    opts.compJitAlignLoopAdaptive = JitConfig.JitAlignLoopAdaptive() == 1;
+    assert(isPow2(opts.compJitAlignLoopBoundary));
+#endif
 
 
 #if REGEN_SHORTCUTS || REGEN_CALLPAT
@@ -3934,9 +3935,7 @@ _SetMinOpts:
         }
         else
         {
-            codeGen->SetAlignLoops(opts.jitFlags->IsSet(JitFlags::JIT_FLAG_ALIGN_LOOPS));
-            // TODO: Default AlignLoop
-            codeGen->SetAlignLoops(true);
+            codeGen->SetAlignLoops(JitConfig.JitAlignLoops() == 1);
         }
     }
 
