@@ -13361,8 +13361,8 @@ DONE_MORPHING_CHILDREN:
                     // op2: NEG
                     // op2Child: b
 
-                    GenTree* op1Child = op1->AsOp()->gtOp1; // a
-                    GenTree* op2Child = op2->AsOp()->gtOp1; // b
+                    GenTree* op1Child   = op1->AsOp()->gtOp1; // a
+                    GenTree* op2Child   = op2->AsOp()->gtOp1; // b
                     tree->AsOp()->gtOp1 = op2Child;
                     tree->AsOp()->gtOp2 = op1Child;
 
