@@ -32,6 +32,8 @@ typedef struct _CoreGCThreadInfo CoreGCThreadInfo;
 #include <mono/metadata/null-gc-handles.h>"
 
 #include "coregc-mono.h"
+#include "volatile.h"
+#include "gceventstatus.h"
 
 struct _CoreGCThreadInfo {
 	MonoThreadInfo info;
@@ -1627,10 +1629,6 @@ void GCToEEInterface::DiagWalkSurvivors(void* gcContext, bool fCompacting)
 {
 }
 
-void GCToEEInterface::DiagWalkLOHSurvivors(void* gcContext)
-{
-}
-
 void GCToEEInterface::DiagWalkBGCSurvivors(void* gcContext)
 {
 }
@@ -1651,21 +1649,6 @@ void GCToEEInterface::HandleFatalError(unsigned int exitCode)
 }
 
 bool GCToEEInterface::EagerFinalized(Object* obj)
-{
-	return false;
-}
-
-bool GCToEEInterface::GetBooleanConfigValue(const char* key, bool* value)
-{
-    return false;
-}
-
-bool GCToEEInterface::GetIntConfigValue(const char* key, int64_t* value)
-{
-	return false;
-}
-
-bool GCToEEInterface::GetStringConfigValue(const char* key, const char** value)
 {
 	return false;
 }
@@ -1739,11 +1722,29 @@ inline bool GCToEEInterface::AnalyzeSurvivorsRequested(int condemnedGeneration)
 	return false;
 }
 
-inline void GCToEEInterface::AnalyzeSurvivorsFinished(int condemnedGeneration)
-{
-
-}
-
 void DiagWalkUOHSurvivors(void* gcContext, int gen)
 {
 }
+
+bool GCToEEInterface::GetIntConfigValue(char const*, char const*, long long*)
+{
+	return false;
+}
+
+void GCToEEInterface::DiagWalkUOHSurvivors(void*, int) 
+{
+}
+
+bool GCToEEInterface::GetStringConfigValue(char const*, char const*, char const**)
+{
+	return false;
+}
+
+bool GCToEEInterface::GetBooleanConfigValue(char const*, char const*, bool*)
+{
+	return false;
+}
+
+
+Volatile<GCEventLevel> GCEventStatus::enabledLevels[2] = {GCEventLevel_None, GCEventLevel_None};
+Volatile<GCEventKeyword> GCEventStatus::enabledKeywords[2] = {GCEventKeyword_None, GCEventKeyword_None};

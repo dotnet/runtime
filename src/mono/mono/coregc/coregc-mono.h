@@ -20,6 +20,7 @@ typedef void HINSTANCE;
 /* FIXME: what's the correct struct? */
 #define COREGC_CLIENT_OBJECT_HEADER_SIZE (sizeof (MonoObject))
 
+/*
 class GCToEEInterface
 {
 public:
@@ -103,5 +104,5 @@ public:
 	static void VerifySyncTableEntry();
 	static void UpdateGCEventStatus(int publicLevel, int publicKeywords, int privateLevel, int privateKeywords);
 };
-
+*/
 #endif
