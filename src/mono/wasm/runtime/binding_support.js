@@ -143,7 +143,7 @@ var BindingSupportLib = {
 			this.safehandle_get_handle = get_method ("SafeHandleGetHandle");
 			this.safehandle_release_by_handle = get_method ("SafeHandleReleaseByHandle");
 
-			this._are_promises_supported = (typeof Promise === "object") && (typeof Promise.resolve === "function");
+			this._are_promises_supported = ((typeof Promise === "object") || (typeof Promise === "function")) && (typeof Promise.resolve === "function");
 		},
 
 		js_string_to_mono_string: function (string) {
