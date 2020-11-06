@@ -1,8 +1,0 @@
-<Project>
-
-  <PropertyGroup>
-    <CompilerPlatformVersion>3.8.0-3.final</CompilerPlatformVersion>
-    <XunitVersion>2.4.1</XunitVersion>
-  </PropertyGroup>
-
-</Project>
