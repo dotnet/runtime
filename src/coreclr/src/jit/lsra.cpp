@@ -280,10 +280,12 @@ void LinearScan::updateNextFixedRef(RegRecord* regRecord, RefPosition* nextRefPo
     if (nextRefPosition == nullptr)
     {
         nextLocation = MaxLocation;
+        fixedRegs &= ~genRegMask(regRecord->regNum);
     }
     else
     {
         nextLocation = nextRefPosition->nodeLocation;
+        fixedRegs |= genRegMask(regRecord->regNum);
     }
     nextFixedRef[regRecord->regNum] = nextLocation;
 }
@@ -3047,502 +3049,617 @@ regNumber LinearScan::allocateReg(Interval* currentInterval, RefPosition* refPos
     //
     enum RegisterScore
     {
-        FREE = 0x8000, // It is not currently assigned to an *active* interval
+        FREE              = 0x10000, // It is not currently assigned to an *active* interval
 
         // These are the original criteria for comparing registers that are free.
-        VALUE_AVAILABLE = 0x4000, // It is a constant value that is already in an acceptable register.
-        THIS_ASSIGNED   = 0x2000, // It is in the interval's preference set and it is already assigned to this interval.
-        COVERS          = 0x1000, // It is in the interval's preference set and it covers the current range.
-        OWN_PREFERENCE  = 0x0800, // It is in the preference set of this interval.
-        COVERS_RELATED  = 0x0400, // It is in the preference set of the related interval and covers its entire lifetime.
-        RELATED_PREFERENCE = 0x0200, // It is in the preference set of the related interval.
-        CALLER_CALLEE      = 0x0100, // It is in the right "set" for the interval (caller or callee-save).
-        UNASSIGNED         = 0x0080, // It is not currently assigned to any (active or inactive) interval
-        COVERS_FULL        = 0x0040,
-        BEST_FIT           = 0x0020,
-        IS_PREV_REG        = 0x0010,
-        REG_ORDER          = 0x0008,
+        VALUE_AVAILABLE    = 0x8000, // It is a constant value that is already in an acceptable register.
+        THIS_ASSIGNED      = 0x4000, // It is in the interval's preference set and it is already assigned to this interval.
+        COVERS             = 0x2000, // It is in the interval's preference set and it covers the current range.
+        OWN_PREFERENCE     = 0x1000, // It is in the preference set of this interval.
+        COVERS_RELATED     = 0x0800, // It is in the preference set of the related interval and covers its entire lifetime.
+        RELATED_PREFERENCE = 0x0400, // It is in the preference set of the related interval.
+        CALLER_CALLEE      = 0x0200, // It is in the right "set" for the interval (caller or callee-save).
+        UNASSIGNED         = 0x0100, // It is not currently assigned to any (active or inactive) interval
+        COVERS_FULL        = 0x0080,
+        BEST_FIT           = 0x0040,
+        IS_PREV_REG        = 0x0020,
+        REG_ORDER          = 0x0010,
 
         // These are the original criteria for comparing registers that are in use.
-        SPILL_COST_THIS   = 0x004, // Its spill cost is lower than 'thisSpillCost'
-        SPILL_COST_OTHERS = 0x002, // It has a lower spill cost than the best candidate thus far
-        FAR_NEXT_REF      = 0x001, // It has a farther next reference than the best candidate thus far.
+        SPILL_COST         = 0x0008, // It has the lowest cost of all the candidates.
+        FAR_NEXT_REF       = 0x0004, // It has a farther next reference than the best candidate thus far.
+        PREV_REG_OPT       = 0x0002, // The previous RefPosition of its current assigned interval is RegOptional.
+        REG_NUM            = 0x0001, // It has a lower register number.
     };
 
     int          bestScore = 0;
-    unsigned int bestSpillWeight;
     LsraLocation bestLocation        = MinLocation;
     LsraLocation farRefLocation      = MinLocation;
-    LsraLocation nextPhysRefLocation = MaxLocation;
 
-    // Eliminate candidates that are in-use or busy.
-    // Note that a fixed reference will appear to be in use due to the RefTypeFixedReg before it,
-    // but we ignore those.
-    regMaskTP busyRegs = regsBusyUntilKill | regsInUseThisLocation;
-    candidates &= ~busyRegs;
+    // These are used in the post-selection updates, and must be set for any selection.
+    regMaskTP freeCandidates     = RBM_NONE;
+    regMaskTP matchingConstants  = RBM_NONE;
 
-    // Also eliminate as busy any register with a conflicting fixed reference at this or
-    // the next location.
-    // Note that this will eliminate the fixedReg, if any, but we'll add it back below.
-    regMaskTP checkConflictMask = candidates;
-    while (checkConflictMask != RBM_NONE)
-    {
-        regMaskTP checkConflictBit = genFindLowestBit(checkConflictMask);
-        checkConflictMask &= ~checkConflictBit;
-        regNumber    checkConflictReg    = genRegNumFromMask(checkConflictBit);
-        LsraLocation nextPhysRefLocation = nextFixedRef[checkConflictReg];
-        if ((nextPhysRefLocation == currentLocation) ||
-            (refPosition->delayRegFree && nextPhysRefLocation == (currentLocation + 1)))
-        {
-            candidates &= ~checkConflictBit;
-        }
-        // By chance, is this register already holding this interval, as a copyReg or having
-        // been restored as inactive after a kill?
-        else if (getRegisterRecord(checkConflictReg)->assignedInterval == currentInterval)
-        {
-            candidates = checkConflictBit;
-            break;
-        }
-    }
+    // These are set prior to their use in the associated heuristics.
+    unsigned int thisSpillWeight = 0;
+    regMaskTP unassignedSet = RBM_NONE;
 
-    // Add back the fixedReg, if any.
+    // We'll set this to short-circuit remaining heuristics when we have a single candidate.
+    bool found = false;
+
+    // Is this a fixedReg?
     regMaskTP fixedRegMask = RBM_NONE;
     if (refPosition->isFixedRegRef)
     {
         assert(genMaxOneBit(refPosition->registerAssignment));
-        candidates |= refPosition->registerAssignment;
-    }
-
-    // At this pointwe have determined all the candidates that can be considered,
-    // and we'll being to apply the heuristics in order.
-
-    // Apply the FREE heuristic.
-    regMaskTP freeCandidates = applyFreeHeuristic(candidates, currentInterval->registerType);
-    if (candidates == RBM_NONE)
-    {
-        assert(refPosition->RegOptional());
-        return REG_NA;
-    }
-
-    // Apply the VALUE_AVAILABLE (matching constant) heuristic.
-    regMaskTP matchingConstants = RBM_NONE;
-    if (freeCandidates != RBM_NONE)
-    {
-        candidates = freeCandidates;
-        if (currentInterval->isConstant && RefTypeIsDef(refPosition->refType))
+        fixedRegMask = refPosition->registerAssignment;
+        if (candidates == refPosition->registerAssignment)
         {
-            matchingConstants = getMatchingConstants(candidates, currentInterval, refPosition);
+            found = true;
+            if (nextIntervalRef[genRegNumFromMask(candidates)] > lastLocation)
+            {
+                unassignedSet = candidates;
+            }
         }
     }
 
-    // Compute the best possible score so we can stop looping early if we find it.
-    // TODO-Throughput: At some point we may want to short-circuit the computation of each score, but
-    // probably not until we've tuned the order of these criteria.  At that point,
-    // we'll need to avoid the short-circuit if we've got a stress option to reverse
-    // the selection.
-    int bestPossibleScore = COVERS + UNASSIGNED + OWN_PREFERENCE + THIS_ASSIGNED + CALLER_CALLEE + FREE +
-                            SPILL_COST_THIS + SPILL_COST_OTHERS;
-    if (currentInterval->isConstant)
+    // Eliminate candidates that are in-use or busy.
+    if (!found)
     {
-        bestPossibleScore |= VALUE_AVAILABLE;
-    }
-    if (relatedPreferences != RBM_NONE)
-    {
-        bestPossibleScore |= RELATED_PREFERENCE + COVERS_RELATED;
+        regMaskTP busyRegs = regsBusyUntilKill | regsInUseThisLocation;
+        candidates &= ~busyRegs;
+
+        // Also eliminate as busy any register with a conflicting fixed reference at this or
+        // the next location.
+        // Note that this will eliminate the fixedReg, if any, but we'll add it back below.
+        regMaskTP checkConflictMask = candidates & fixedRegs;
+        while (checkConflictMask != RBM_NONE)
+        {
+            regMaskTP checkConflictBit = genFindLowestBit(checkConflictMask);
+            checkConflictMask &= ~checkConflictBit;
+            regNumber    checkConflictReg = genRegNumFromMask(checkConflictBit);
+            LsraLocation checkConflictLocation = nextFixedRef[checkConflictReg];
+
+            if ((checkConflictLocation == currentLocation) ||
+                (refPosition->delayRegFree && (checkConflictLocation == (currentLocation + 1))))
+            {
+                candidates &= ~checkConflictBit;
+            }
+        }
+        candidates |= fixedRegMask;
+        found = isSingleRegister(candidates);
     }
 
+    // By chance, is prevRegRec already holding this interval, as a copyReg or having
+    // been restored as inactive after a kill?
+    regMaskTP prevRegBit = RBM_NONE;
+    if (!found && (prevRegRec != nullptr))
+    {
+        prevRegBit = genRegMask(prevRegRec->regNum);
+        if ((prevRegRec->assignedInterval == currentInterval) && ((candidates & prevRegBit) != RBM_NONE))
+        {
+            candidates = prevRegBit;
+            found = true;
+        }
+    }
+
+    if (!found && (candidates == RBM_NONE))
+    {
+        assert(refPosition->RegOptional());
+        currentInterval->assignedReg = nullptr;
+        return REG_NA;
+    }
+
+    // TODO-Cleanup: Previously, the "reverseSelect" stress mode modified some of the heuristics.
+    // that needs to be re-engineered with this refactoring.
     // In non-debug builds, this will simply get optimized away
     bool reverseSelect = false;
 #ifdef DEBUG
     reverseSelect = doReverseSelect();
 #endif // DEBUG
 
-    // The spill weight for 'refPosition' (the one we're allocating now).
-    unsigned int thisSpillWeight = refPosition->IsActualRef() ? getWeight(refPosition) : 0;
-    // 'bestSpillWeight' is the  spill weight for the best candidate we've found so far.
-    // If allocating a reg is optional, we will consider those ref positions
-    // whose weight is less than 'refPosition' for spilling.
-    // If allocating a reg is a must, we start off with max weight so that the first spill
-    // candidate will be selected based on farthest distance alone.
-    // Since we start off with 'farRefLocation' initialized to 'MinLocation', the first available
-    // RefPosition will be selected as spill candidate and its weight as the bestSpillWeight.
-    bestSpillWeight = refPosition->RegOptional() ? thisSpillWeight : BB_MAX_WEIGHT;
+    // At this point we have determined all the candidates that CAN be considered,
+    // and we'll begin to apply the heuristics in order.
 
-    while (candidates != RBM_NONE)
+    // Apply the FREE heuristic.
+    freeCandidates = applyFreeHeuristic(candidates, currentInterval->registerType);
+    if (freeCandidates == RBM_NONE)
     {
-        regMaskTP candidateBit = genFindLowestBit(candidates);
-        candidates &= ~candidateBit;
-        regNumber regNum = genRegNumFromMask(candidateBit);
-
-        // The spill weight for the register we're currently evaluating.
-        unsigned int currentSpillWeight = BB_ZERO_WEIGHT;
-
-        RegRecord* physRegRecord = getRegisterRecord(regNum);
-
-        int  score    = 0;
-        bool isBetter = false;
-
-        int comparisonScore = bestScore;
-
-        // Find the next RefPosition of the physical register
-        nextPhysRefLocation = Min(nextFixedRef[regNum], nextIntervalRef[regNum]);
-#ifdef TARGET_ARM
-        if (currentInterval->registerType == TYP_DOUBLE)
+        // We won't spill if this refPosition is not an actual ref.
+        if (!refPosition->IsActualRef())
         {
-            LsraLocation otherNextPhysRefLocation = Min(nextFixedRef[regNum + 1], nextIntervalRef[regNum + 1]);
-            nextPhysRefLocation                   = Min(nextPhysRefLocation, otherNextPhysRefLocation);
+            currentInterval->assignedReg = nullptr;
+            return REG_NA;
         }
-#endif // TARGET_ARM
+    }
+    else if (!found)
+    {
+        bestScore |= FREE;
+        candidates = freeCandidates;
+        found = isSingleRegister(candidates);
+    }
 
-        if ((freeCandidates & candidateBit) != RBM_NONE)
+    // Apply the VALUE_AVAILABLE (matching constant) heuristic. Only applies if we have freeCandidates.
+    // Note that we always need to define the 'matchingConstants' set.
+    if (freeCandidates != RBM_NONE)
+    {
+        if (currentInterval->isConstant && RefTypeIsDef(refPosition->refType))
         {
-            score |= FREE;
-
-            // If this is a definition of a constant interval, check to see if its value is already in this register.
-            if (currentInterval->isConstant && RefTypeIsDef(refPosition->refType) &&
-                isMatchingConstant(physRegRecord, refPosition))
+            matchingConstants = getMatchingConstants(candidates, currentInterval, refPosition);
+            if (matchingConstants != RBM_NONE)
             {
-                score |= VALUE_AVAILABLE;
+                bestScore |= VALUE_AVAILABLE;
+                candidates = matchingConstants;
+                found = isSingleRegister(candidates);
             }
-            else if (bestScore & VALUE_AVAILABLE)
-            {
-                continue;
-            }
+        }
+    }
 
+    // Apply the THIS_ASSIGNED heuristic. Only applies if we have freeCandidates.
+    if (!found && (prevRegRec != nullptr) && (freeCandidates != RBM_NONE))
+    {
+        regMaskTP freePrefCandidates = (candidates & preferences & freeCandidates);
+        if (freePrefCandidates != RBM_NONE)
+        {
+            regMaskTP prevRegMask = genRegMask(prevRegRec->regNum);
+            if ((freePrefCandidates & prevRegMask) != RBM_NONE)
+            {
+                bestScore |= THIS_ASSIGNED;
+                candidates = prevRegMask;
+                found = true;
+            }
+        }
+    }
+
+    // Apply the COVERS heuristic. Only applies if we have freeCandidates in the preference set.
+    // We will also compute the OWN_PREFERENCE, COVERS_RELATED, COVERS_FULL and UNASSIGNED sets, as they all
+    // require similar computation.
+    regMaskTP preferenceSet = RBM_NONE;
+    regMaskTP coversRelatedSet = RBM_NONE;
+    regMaskTP coversFullSet = RBM_NONE;
+    if (freeCandidates != RBM_NONE)
+    {
+        preferenceSet = (candidates & preferences);
+        regMaskTP coversSet = RBM_NONE;
+        regMaskTP coversCandidates = (preferenceSet == RBM_NONE) ? candidates : preferenceSet;
+        for (; coversCandidates != RBM_NONE; )
+        {
+            regMaskTP coversCandidateBit = genFindLowestBit(coversCandidates);
+            coversCandidates &= ~coversCandidateBit;
+            regNumber coversCandidateRegNum = genRegNumFromMask(coversCandidateBit);
+
+            // If we have a single candidate we don't need to compute the preference-related sets, but we
+            // do need to compute the unassignedSet.
+            if (!found)
+            {
+                // Find the next RefPosition of the register.
+                LsraLocation nextIntervalLocation = nextIntervalRef[coversCandidateRegNum];
+                LsraLocation coversCandidateLocation = Min(nextFixedRef[coversCandidateRegNum], nextIntervalLocation);
+#ifdef TARGET_ARM
+                if (currentInterval->registerType == TYP_DOUBLE)
+                {
+                    LsraLocation otherNextPhysRefLocation = Min(nextFixedRef[coversCandidateRegNum + 1], nextIntervalRef[coversCandidateRegNum + 1]);
+                    coversCandidateLocation = Min(coversCandidateLocation, otherNextPhysRefLocation);
+                }
+#endif // TARGET_ARM
+                // If the nextPhysRefLocation is a fixedRef for the rangeEndRefPosition, increment it so that
+                // we don't think it isn't covering the live range.
+                // This doesn't handle the case where earlier RefPositions for this Interval are also
+                // FixedRefs of this regNum, but at least those are only interesting in the case where those
+                // are "local last uses" of the Interval - otherwise the liveRange would interfere with the reg.
+                if (coversCandidateLocation == rangeEndLocation && rangeEndRefPosition->isFixedRefOfReg(coversCandidateRegNum))
+                {
+                    INDEBUG(dumpLsraAllocationEvent(LSRA_EVENT_INCREMENT_RANGE_END, currentInterval));
+                    coversCandidateLocation++;
+                }
+                if (coversCandidateLocation > rangeEndLocation)
+                {
+                    coversSet |= coversCandidateBit;
+                }
+                if ((coversCandidateBit & relatedPreferences) != RBM_NONE)
+                {
+                    if (coversCandidateLocation > relatedInterval->lastRefPosition->nodeLocation)
+                    {
+                        coversRelatedSet |= coversCandidateBit;
+                    }
+                }
+                else if (coversCandidateBit == refPosition->registerAssignment)
+                {
+                    // If we had a fixed-reg def of a reg that will be killed before the use, prefer it to any other
+                    // registers with the same score.  (Note that we haven't changed the original registerAssignment
+                    // on the RefPosition).
+                    // Overload the RELATED_PREFERENCE value.
+                    // TODO-CQ: Consider if this should be split out.
+                    coversRelatedSet |= coversCandidateBit;
+                }
+                // Does this cover the full range of the interval?
+                if (coversCandidateLocation > lastLocation)
+                {
+                    coversFullSet |= coversCandidateBit;
+                }
+            }
+            // The register is considered unassigned if it has no assignedInterval, OR
+            // if its next reference is beyond the range of this interval.
+            if (nextIntervalRef[coversCandidateRegNum] > lastLocation)
+            {
+                unassignedSet |= coversCandidateBit;
+            }
+        }
+        if ((coversSet & preferences) != RBM_NONE)
+        {
+            bestScore |= COVERS;
+            candidates = coversSet & preferences;
+            found = isSingleRegister(candidates);
+        }
+    }
+
+    // Apply the OWN_PREFERENCE heuristic. Only applies if we have freeCandidates.
+    if (!found && (preferenceSet != RBM_NONE))
+    {
+        preferenceSet = candidates & preferenceSet;
+        if (preferenceSet != RBM_NONE)
+        {
+            bestScore |= OWN_PREFERENCE;
+            candidates = preferenceSet;
+            found = isSingleRegister(candidates);
+        }
+    }
+
+    // Apply the COVERS_RELATED heuristic. Only applies if we have freeCandidates.
+    if (!found && (coversRelatedSet != RBM_NONE))
+    {
+        coversRelatedSet = candidates & coversRelatedSet;
+        if (coversRelatedSet != RBM_NONE)
+        {
+            bestScore |= COVERS_RELATED;
+            candidates = coversRelatedSet;
+            found = isSingleRegister(candidates);
+        }
+    }
+
+    // Apply the RELATED_PREFERENCE heuristic. Only applies if we have freeCandidates.
+    if (!found && (freeCandidates != RBM_NONE))
+    {
+        regMaskTP relatedPreferenceSet = candidates & relatedPreferences;
+        if (relatedPreferenceSet != RBM_NONE)
+        {
+            bestScore |= RELATED_PREFERENCE;
+            candidates = relatedPreferenceSet;
+            found = isSingleRegister(candidates);
+        }
+    }
+
+    // Apply the CALLER_CALLEE heuristic. Only applies if we have freeCandidates.
+    if (!found && (freeCandidates != RBM_NONE))
+    {
+        regMaskTP callerCalleeSet = candidates & callerCalleePrefs;
+        if (callerCalleeSet != RBM_NONE)
+        {
+            bestScore |= CALLER_CALLEE;
+            candidates = callerCalleeSet;
+            found = isSingleRegister(candidates);
+        }
+    }
+
+    // Apply the UNASSIGNED heuristic. Only applies if we have freeCandidates.
+    if (!found && (freeCandidates != RBM_NONE))
+    {
+        unassignedSet &= candidates;
+        if (unassignedSet != RBM_NONE)
+        {
+            bestScore |= UNASSIGNED;
+            candidates = unassignedSet;
+            found = isSingleRegister(candidates);
+        }
+    }
+
+    // Apply the COVERS_FULL heuristic. Only applies if we have freeCandidates.
+    if (!found && (coversFullSet != RBM_NONE))
+    {
+        coversFullSet &= candidates;
+        if (coversFullSet != RBM_NONE)
+        {
+            bestScore |= COVERS_FULL;
+            candidates = coversFullSet;
+            found = isSingleRegister(candidates);
+        }
+    }
+
+    // Apply the BEST_FIT heuristic. Only applies if we have freeCandidates.
+    if (!found && (freeCandidates != RBM_NONE))
+    {
+        regMaskTP bestFitSet = RBM_NONE;
+        // If the best score includes COVERS_FULL, pick the one that's killed soonest.
+        // If none cover the full range, the BEST_FIT is the one that's killed later.
+        bool earliestIsBest = ((bestScore & COVERS_FULL) != 0);
+        LsraLocation bestFitLocation = earliestIsBest ? MaxLocation : MinLocation;
+        for (regMaskTP bestFitCandidates = candidates; bestFitCandidates != RBM_NONE; )
+        {
+            regMaskTP bestFitCandidateBit = genFindLowestBit(bestFitCandidates);
+            bestFitCandidates &= ~bestFitCandidateBit;
+            regNumber bestFitCandidateRegNum = genRegNumFromMask(bestFitCandidateBit);
+
+            // Find the next RefPosition of the register.
+            LsraLocation nextIntervalLocation = nextIntervalRef[bestFitCandidateRegNum];
+            LsraLocation nextPhysRefLocation = Min(nextFixedRef[bestFitCandidateRegNum], nextIntervalLocation);
             // If the nextPhysRefLocation is a fixedRef for the rangeEndRefPosition, increment it so that
             // we don't think it isn't covering the live range.
             // This doesn't handle the case where earlier RefPositions for this Interval are also
             // FixedRefs of this regNum, but at least those are only interesting in the case where those
             // are "local last uses" of the Interval - otherwise the liveRange would interfere with the reg.
-            if (nextPhysRefLocation == rangeEndLocation && rangeEndRefPosition->isFixedRefOfReg(regNum))
+            // TODO: This duplicates code in an earlier loop, and is basically here to duplicate previous
+            // behavior; see if we can avoid this.
+            if (nextPhysRefLocation == rangeEndLocation && rangeEndRefPosition->isFixedRefOfReg(bestFitCandidateRegNum))
             {
                 INDEBUG(dumpLsraAllocationEvent(LSRA_EVENT_INCREMENT_RANGE_END, currentInterval));
                 nextPhysRefLocation++;
             }
 
-            if ((candidateBit & preferences) != RBM_NONE)
+            if (nextPhysRefLocation == bestFitLocation)
             {
-                score |= OWN_PREFERENCE;
-
-                if (prevRegRec == physRegRecord)
-                {
-                    score |= THIS_ASSIGNED;
-                }
-
-                if (nextPhysRefLocation > rangeEndLocation)
-                {
-                    score |= COVERS;
-                }
-                else if ((bestScore & ~(COVERS - 1)) > score)
-                {
-                    continue;
-                }
-            }
-            else if ((bestScore & ~(OWN_PREFERENCE - 1)) > score)
-            {
-                continue;
-            }
-
-            if ((candidateBit & relatedPreferences) != RBM_NONE)
-            {
-                score |= RELATED_PREFERENCE;
-                if (nextPhysRefLocation > relatedInterval->lastRefPosition->nodeLocation)
-                {
-                    score |= COVERS_RELATED;
-                }
-            }
-            else if (candidateBit == refPosition->registerAssignment)
-            {
-                // If we had a fixed-reg def of a reg that will be killed before the use, prefer it to any other
-                // registers with the same score.  (Note that we haven't changed the original registerAssignment
-                // on the RefPosition).
-                // Overload the RELATED_PREFERENCE value.
-                score |= RELATED_PREFERENCE;
-            }
-
-            if ((candidateBit & callerCalleePrefs) != RBM_NONE)
-            {
-                score |= CALLER_CALLEE;
-            }
-
-            // The register is considered unassigned if it has no assignedInterval, OR
-            // if its next reference is beyond the range of this interval.
-
-            // Unfortunately, we can't just look at the nextIntervalLoc, because there are
-            // cases where it's not strictly assigned, but neither is it unassigned (cases
-            // where it's inactive but we don't update nextIntervalRef).
-            // TODO-Cleanup: See whether we can unify this.
-            LsraLocation nextIntervalLoc = getNextIntervalRefLocation(regNum ARM_ARG(currentInterval->registerType));
-            if (nextIntervalLoc == MaxLocation)
-            {
-                assert((physRegRecord->assignedInterval == nullptr) ||
-                       (physRegRecord->assignedInterval->physReg != regNum) ||
-                       (physRegRecord->assignedInterval->getNextRefLocation() > lastLocation));
-            }
-            if (nextIntervalLoc > lastLocation)
-            {
-                score |= UNASSIGNED;
-            }
-
-            // Does this cover the full range of the interval?
-            if (nextPhysRefLocation > lastLocation)
-            {
-                score |= COVERS_FULL;
-            }
-
-            int bestPartialScore = (bestScore & ~(COVERS_FULL - 1));
-            if (bestPartialScore > score)
-            {
-                continue;
-            }
-            else if ((score > bestPartialScore) || (bestScore < FREE))
-            {
-                // At this point if we have a higher score, it is by definition the BEST_FIT.
-                score |= BEST_FIT;
-            }
-            else if (nextPhysRefLocation == bestLocation)
-            {
-                assert((comparisonScore & BEST_FIT) != 0);
-                score |= BEST_FIT;
-            }
-            else if ((score & COVERS_FULL) != 0)
-            {
-                // All things equal, if both cover the full range, pick the one that's killed soonest.
-                if (nextPhysRefLocation < bestLocation)
-                {
-                    score |= BEST_FIT;
-                    comparisonScore &= ~BEST_FIT;
-                }
+                bestFitSet |= bestFitCandidateBit;
             }
             else
             {
-                // Neither cover the full range, so the BEST_FIT is the one that's killed later.
-                if (nextPhysRefLocation > bestLocation)
+                bool isBetter = false;
+                if (nextPhysRefLocation > lastLocation)
                 {
-                    score |= BEST_FIT;
-                    comparisonScore &= ~BEST_FIT;
+                    // This covers the full range; favor it if the other doesn't, or if it's a closer match.
+                    if ((bestFitLocation <= lastLocation) || (nextPhysRefLocation < bestFitLocation))
+                    {
+                        isBetter = true;
+                    }
                 }
                 else
                 {
-                    assert((comparisonScore & BEST_FIT) != 0);
-                }
-            }
-
-            // Oddly, the previous heuristics only considered this if both covered the range.
-            if ((prevRegRec != nullptr) && (prevRegRec->regNum == regNum) && ((score & COVERS_FULL) != 0))
-            {
-                score |= IS_PREV_REG;
-            }
-
-            if ((availablePhysRegRecord == nullptr) || (physRegRecord->regOrder < availablePhysRegRecord->regOrder))
-            {
-                score |= REG_ORDER;
-                comparisonScore &= ~REG_ORDER;
-            }
-        }
-        else
-        {
-            assert(isAssigned(physRegRecord ARM_ARG(regType)));
-
-            // We would have to spill this register.
-            if (comparisonScore >= FREE)
-            {
-                continue;
-            }
-
-            // We can't spill a register that's next used at this location, unless it's regOptional.
-            // TODO: Make this cheaper?
-            if (!refPosition->isFixedRegRef)
-            {
-                if ((nextPhysRefLocation == refPosition->nodeLocation) ||
-                    (refPosition->delayRegFree && nextPhysRefLocation == (refPosition->nodeLocation + 1)))
-                {
-                    if (!physRegRecord->assignedInterval->getNextRefPosition()->RegOptional())
+                    // This doesn't cover the full range; favor it if the other doesn't either, but this ends later.
+                    if ((bestFitLocation <= lastLocation) && (nextPhysRefLocation > bestFitLocation))
                     {
-                        continue;
-                    }
-                }
-
-                // Can and should the interval in this register be spilled for this one,
-                // if we don't find a better alternative?
-                if (!isSpillCandidate(currentInterval, refPosition, physRegRecord))
-                {
-                    continue;
-                }
-            }
-
-            currentSpillWeight = spillCost[regNum];
-#ifdef TARGET_ARM
-            if (currentInterval->registerType == TYP_DOUBLE)
-            {
-                currentSpillWeight = max(currentSpillWeight, spillCost[REG_NEXT(regNum)]);
-            }
-#endif
-            if (currentSpillWeight >= thisSpillWeight)
-            {
-                if (refPosition->RegOptional() || ((comparisonScore & SPILL_COST_THIS) != 0))
-                {
-                    continue;
-                }
-            }
-            else
-            {
-                score |= SPILL_COST_THIS;
-            }
-
-            if (currentSpillWeight < bestSpillWeight)
-            {
-                score |= SPILL_COST_OTHERS;
-                comparisonScore &= ~SPILL_COST_OTHERS;
-            }
-            else if (currentSpillWeight == bestSpillWeight)
-            {
-                // All else is equal so finally consider:
-                // - farthest reference location.
-                // - To duplicate previous behavior:
-                //   - IF this is a higher register number than the current best:
-                //     - pick it if the recentAssignedRef is a reload of a reg-optional
-                //   - otherwise, select the lower register number, to match old behavior of 'allocateBusyReg',
-                //     which traversed in regNumber order.
-                if (nextPhysRefLocation < farRefLocation)
-                {
-                    continue;
-                }
-                bool isBetter = (availablePhysRegRecord == nullptr) || (nextPhysRefLocation > farRefLocation);
-                if (!isBetter)
-                {
-                    RefPosition* recentAssignedRef = physRegRecord->assignedInterval->recentRefPosition;
-                    if (regNum > foundReg)
-                    {
-                        isBetter = (recentAssignedRef != nullptr) && recentAssignedRef->reload &&
-                                   recentAssignedRef->RegOptional();
-                    }
-                    else
-                    {
-                        RefPosition* otherRecentAssignedRef =
-                            availablePhysRegRecord->assignedInterval->recentRefPosition;
-                        isBetter = !((otherRecentAssignedRef != nullptr) && otherRecentAssignedRef->reload &&
-                                     otherRecentAssignedRef->RegOptional());
+                        isBetter = true;
                     }
                 }
                 if (isBetter)
                 {
-                    score |= (FAR_NEXT_REF | SPILL_COST_OTHERS);
-                    comparisonScore &= ~FAR_NEXT_REF;
+                    bestFitSet = bestFitCandidateBit;
+                    bestFitLocation = nextPhysRefLocation;
                 }
             }
         }
+        assert(bestFitSet != RBM_NONE);
+        bestScore |= BEST_FIT;
+        candidates = bestFitSet;
+        found = isSingleRegister(candidates);
+    }
 
-        bool foundBetterCandidate = (score > comparisonScore);
-
-#ifdef DEBUG
-        if (doReverseSelect() && bestScore != 0)
+    // Apply the IS_PREV_REG heuristic. Only applies if we have freeCandidates.
+    // Oddly, the previous heuristics only considered this if it covered the range.
+    if ((prevRegRec != nullptr) && ((bestScore & COVERS_FULL) != 0))
+    {
+        prevRegBit &= candidates;
+        if (prevRegBit != RBM_NONE)
         {
-            foundBetterCandidate = !foundBetterCandidate;
+            bestScore |= IS_PREV_REG;
+            candidates = prevRegBit;
+            found = true;
         }
-#endif // DEBUG
+    }
 
-        if (foundBetterCandidate)
+    // Apply the REG_ORDER heuristic. Only applies if we have freeCandidates.
+    if (!found && (freeCandidates != RBM_NONE))
+    {
+        // This will always result in a single candidate. That is, it is the tie-breaker
+        // for free candidates, and doesn't make sense as anything other than the last
+        // heuristic for free registers.
+        unsigned lowestRegOrder     = MAXUINT;
+        regMaskTP lowestRegOrderBit = RBM_NONE;
+        for (regMaskTP regOrderCandidates = candidates; regOrderCandidates != RBM_NONE; )
         {
-            bestSpillWeight        = currentSpillWeight;
-            bestLocation           = nextPhysRefLocation;
-            farRefLocation         = nextPhysRefLocation;
-            availablePhysRegRecord = physRegRecord;
-            foundReg               = regNum;
-            bestScore              = score;
-            // These are relative scorings, so we set them on whatever's best so far.
-            if (score & FREE)
+            regMaskTP regOrderCandidateBit = genFindLowestBit(regOrderCandidates);
+            regOrderCandidates &= ~regOrderCandidateBit;
+            regNumber regOrderCandidateRegNum = genRegNumFromMask(regOrderCandidateBit);
+            unsigned thisRegOrder = getRegisterRecord(regOrderCandidateRegNum)->regOrder;
+            if (thisRegOrder < lowestRegOrder)
             {
-                bestScore |= (REG_ORDER | BEST_FIT);
+                lowestRegOrder = thisRegOrder;
+                lowestRegOrderBit = regOrderCandidateBit;
             }
-            else
+        }
+        assert(lowestRegOrderBit != RBM_NONE);
+        bestScore |= REG_ORDER;
+        candidates = lowestRegOrderBit;
+        found = true;
+    }
+
+    // Apply the SPILL_COST heuristic and eliminate regs that can't be spilled.
+    if (!found)
+    {
+        // The spill weight for 'refPosition' (the one we're allocating now).
+        unsigned int thisSpillWeight = getWeight(refPosition);
+        // The  spill weight for the best candidate we've found so far.
+        unsigned int bestSpillWeight = BB_MAX_WEIGHT;
+        // True if we found registers with lower spill weight than this refPosition.
+        bool foundLowerSpillWeight = false;
+        // The set of registers with the lowest spill weight.
+        regMaskTP lowestCostSpillSet = RBM_NONE;
+
+        for (regMaskTP spillCandidates = candidates; spillCandidates != RBM_NONE; )
+        {
+            regMaskTP spillCandidateBit = genFindLowestBit(spillCandidates);
+            spillCandidates &= ~spillCandidateBit;
+            regNumber spillCandidateRegNum = genRegNumFromMask(spillCandidateBit);
+            RegRecord* spillCandidateRegRecord = &physRegs[spillCandidateRegNum];
+
+            // Can and should the interval in this register be spilled for this one,
+            // if we don't find a better alternative?
+            if ((getNextIntervalRefLocation(spillCandidateRegNum ARM_ARG(regType)) == currentLocation) &&
+                !spillCandidateRegRecord->assignedInterval->getNextRefPosition()->RegOptional())
             {
-                bestScore |= (FAR_NEXT_REF | SPILL_COST_OTHERS);
+                continue;
             }
-        }
-
-        // If there is no way we can get a better score, break out
-        if (!reverseSelect && (score == bestPossibleScore) && (bestLocation == lastLocation + 1) &&
-            (bestSpillWeight == 0))
-        {
-            break;
-        }
-    }
-
-    if ((prevRegRec != nullptr) && (foundReg != prevRegRec->regNum) && !refPosition->copyReg)
-    {
-        if ((prevRegRec->assignedInterval == currentInterval))
-        {
-            unassignPhysReg(prevRegRec, nullptr);
-        }
-        currentInterval->assignedReg = nullptr;
-    }
-
-    if (foundReg == REG_NA)
-    {
-        assert(refPosition->RegOptional());
-        return REG_NA;
-    }
-
-    // FOUND:
-    availablePhysRegRecord = getRegisterRecord(foundReg);
-    regMaskTP foundRegBit  = genRegMask(foundReg);
-    {
-        Interval* assignedInterval = availablePhysRegRecord->assignedInterval;
-        if ((assignedInterval != currentInterval) && isAssigned(availablePhysRegRecord ARM_ARG(regType)))
-        {
-            if ((foundRegBit & freeCandidates) == RBM_NONE)
+            if (!isSpillCandidate(currentInterval, refPosition, spillCandidateRegRecord))
             {
-// We're spilling.
+                continue;
+            }
+
+            unsigned currentSpillWeight = spillCost[spillCandidateRegNum];
 #ifdef TARGET_ARM
-                if (currentInterval->registerType == TYP_DOUBLE)
-                {
-                    assert(genIsValidDoubleReg(availablePhysRegRecord->regNum));
-                    unassignDoublePhysReg(availablePhysRegRecord);
-                }
-                else if (assignedInterval->registerType == TYP_DOUBLE)
-                {
-                    // Make sure we spill both halves of the double register.
-                    assert(genIsValidDoubleReg(assignedInterval->assignedReg->regNum));
-                    unassignPhysReg(assignedInterval->assignedReg, assignedInterval->recentRefPosition);
-                }
-                else
+            if (currentInterval->registerType == TYP_DOUBLE)
+            {
+                currentSpillWeight = max(currentSpillWeight, spillCost[REG_NEXT(spillCandidateRegNum)]);
+            }
 #endif
+            if (currentSpillWeight < bestSpillWeight)
+            {
+                bestSpillWeight = currentSpillWeight;
+                lowestCostSpillSet = spillCandidateBit;
+            }
+            else if (currentSpillWeight == bestSpillWeight)
+            {
+                lowestCostSpillSet |= spillCandidateBit;
+            }
+        }
+
+        // We won't spill if this refPosition is RegOptional() and we have no candidates
+        // with a lower spill cost.
+        if ((bestSpillWeight >= thisSpillWeight) && refPosition->RegOptional())
+        {
+            currentInterval->assignedReg = nullptr;
+            return REG_NA;
+        }
+        // We must have at least one with the lowest spill cost.
+        assert(lowestCostSpillSet != RBM_NONE);
+        bestScore |= SPILL_COST;
+        candidates = lowestCostSpillSet;
+        found = isSingleRegister(candidates);
+    }
+
+    // Apply the FAR_NEXT_REF heuristic.
+    if (!found)
+    {
+        LsraLocation farthestLocation = MinLocation;
+        regMaskTP farthestSet = RBM_NONE;
+        for (regMaskTP farthestCandidates = candidates; farthestCandidates != RBM_NONE; )
+        {
+            regMaskTP farthestCandidateBit = genFindLowestBit(farthestCandidates);
+            farthestCandidates &= ~farthestCandidateBit;
+            regNumber farthestCandidateRegNum = genRegNumFromMask(farthestCandidateBit);
+
+            // Find the next RefPosition of the register.
+            LsraLocation nextIntervalLocation = nextIntervalRef[farthestCandidateRegNum];
+            LsraLocation nextPhysRefLocation = Min(nextFixedRef[farthestCandidateRegNum], nextIntervalLocation);
+            if (nextPhysRefLocation == farthestLocation)
+            {
+                farthestSet |= farthestCandidateBit;
+            }
+            else if (nextPhysRefLocation > farthestLocation)
+            {
+                farthestSet = farthestCandidateBit;
+                farthestLocation = nextPhysRefLocation;
+            }
+        }
+        // We must have at least one with the lowest spill cost.
+        assert(farthestSet != RBM_NONE);
+        bestScore |= FAR_NEXT_REF;
+        candidates = farthestSet;
+        found = isSingleRegister(candidates);
+    }
+
+    // Apply the PREV_REG_OPT heuristic.
+    if (!found)
+    {
+        regMaskTP prevRegOptSet = RBM_NONE;
+        for (regMaskTP prevRegOptCandidates = candidates; prevRegOptCandidates != RBM_NONE; )
+        {
+            regMaskTP prevRegOptCandidateBit = genFindLowestBit(prevRegOptCandidates);
+            prevRegOptCandidates &= ~prevRegOptCandidateBit;
+            regNumber prevRegOptCandidateRegNum = genRegNumFromMask(prevRegOptCandidateBit);
+            Interval* assignedInterval = physRegs[prevRegOptCandidateRegNum].assignedInterval;
+            // The assigned should be non-null, and should have a recentRefPosition, however since
+            // this is a heuristic, we don't want a fatal error, so we just assert (not noway_assert).
+            if ((assignedInterval != nullptr) && (assignedInterval->recentRefPosition != nullptr))
+            {
+                if (assignedInterval->recentRefPosition->reload && assignedInterval->recentRefPosition->RegOptional())
                 {
-                    unassignPhysReg(availablePhysRegRecord, assignedInterval->recentRefPosition);
+                    prevRegOptSet |= prevRegOptCandidateBit;
                 }
             }
             else
             {
-                // If we considered this "unassigned" because this interval's lifetime ends before
-                // the next ref, remember it.
-                // For historical reasons (due to former short-circuiting of this case), if we're reassigning
-                // the current interval to a previous assignment, we don't remember the previous interval.
-                // Note that we need to compute this condition before calling unassignPhysReg, which wil reset
-                // assignedInterval->physReg.
-                bool wasAssigned = (((bestScore & UNASSIGNED) != 0) && ((bestScore & THIS_ASSIGNED) == 0) &&
-                                    (assignedInterval != nullptr) && (assignedInterval->physReg == foundReg));
-                unassignPhysReg(availablePhysRegRecord ARM_ARG(currentInterval->registerType));
-                if ((matchingConstants & foundRegBit) != RBM_NONE)
-                {
-                    assert(assignedInterval->isConstant);
-                    refPosition->treeNode->SetReuseRegVal();
-                }
-                else if (wasAssigned)
-                {
-                    updatePreviousInterval(availablePhysRegRecord, assignedInterval, assignedInterval->registerType);
-                }
-                else
-                {
-                    assert((bestScore & VALUE_AVAILABLE) == 0);
-                }
+                assert(!"Spill candidate has no assignedInterval recentRefPosition");
             }
         }
-        assignPhysReg(availablePhysRegRecord, currentInterval);
-        regMaskTP foundRegMask          = genRegMask(foundReg);
-        refPosition->registerAssignment = foundRegMask;
+        if (prevRegOptSet != RBM_NONE)
+        {
+            bestScore |= PREV_REG_OPT;
+            candidates = prevRegOptSet;
+            found = isSingleRegister(candidates);
+        }
     }
 
+    // Apply the REG_NUM heuristic.
+    if (!found)
+    {
+        candidates = genFindLowestBit(candidates);
+    }
+
+    assert(isSingleRegister(candidates));
+    regMaskTP foundRegBit = candidates;
+    foundReg = genRegNumFromMask(foundRegBit);
+    availablePhysRegRecord = getRegisterRecord(foundReg);
+    Interval* assignedInterval = availablePhysRegRecord->assignedInterval;
+    if ((assignedInterval != currentInterval) && isAssigned(availablePhysRegRecord ARM_ARG(regType)))
+    {
+        if ((foundRegBit & freeCandidates) == RBM_NONE)
+        {
+            // We're spilling.
+            CLANG_FORMAT_COMMENT_ANCHOR;
+
+#ifdef TARGET_ARM
+            if (currentInterval->registerType == TYP_DOUBLE)
+            {
+                assert(genIsValidDoubleReg(availablePhysRegRecord->regNum));
+                unassignDoublePhysReg(availablePhysRegRecord);
+            }
+            else if (assignedInterval->registerType == TYP_DOUBLE)
+            {
+                // Make sure we spill both halves of the double register.
+                assert(genIsValidDoubleReg(assignedInterval->assignedReg->regNum));
+                unassignPhysReg(assignedInterval->assignedReg, assignedInterval->recentRefPosition);
+            }
+            else
+#endif
+            {
+                unassignPhysReg(availablePhysRegRecord, assignedInterval->recentRefPosition);
+            }
+        }
+        else
+        {
+            // If we considered this "unassigned" because this interval's lifetime ends before
+            // the next ref, remember it.
+            // For historical reasons (due to former short-circuiting of this case), if we're reassigning
+            // the current interval to a previous assignment, we don't remember the previous interval.
+            // Note that we need to compute this condition before calling unassignPhysReg, which wil reset
+            // assignedInterval->physReg.
+            bool wasAssigned = (((foundRegBit & unassignedSet) != RBM_NONE) && ((bestScore & THIS_ASSIGNED) == 0) &&
+                                (assignedInterval != nullptr) && (assignedInterval->physReg == foundReg));
+            unassignPhysReg(availablePhysRegRecord ARM_ARG(currentInterval->registerType));
+            if ((matchingConstants & foundRegBit) != RBM_NONE)
+            {
+                assert(assignedInterval->isConstant);
+                refPosition->treeNode->SetReuseRegVal();
+            }
+            else if (wasAssigned)
+            {
+                updatePreviousInterval(availablePhysRegRecord, assignedInterval, assignedInterval->registerType);
+            }
+            else
+            {
+                assert((bestScore & VALUE_AVAILABLE) == 0);
+            }
+        }
+    }
+    assignPhysReg(availablePhysRegRecord, currentInterval);
+    refPosition->registerAssignment = foundRegBit;
     return foundReg;
 }
 
@@ -3816,23 +3933,6 @@ bool LinearScan::isSpillCandidate(Interval* current, RefPosition* refPosition, R
     {
         return false;
     }
-    Interval* assignedInterval = physRegRecord->assignedInterval;
-#ifdef TARGET_ARM
-    RegRecord* physRegRecord2    = nullptr;
-    Interval*  assignedInterval2 = nullptr;
-
-    // For ARM32, a double occupies a consecutive even/odd pair of float registers.
-    if (current->registerType == TYP_DOUBLE)
-    {
-        assert(genIsValidDoubleReg(physRegRecord->regNum));
-        physRegRecord2    = getSecondHalfRegRec(physRegRecord);
-        assignedInterval2 = physRegRecord2->assignedInterval;
-    }
-#endif
-
-    // TODO: Delete; This is a duplicate of above.
-    assert(!isRegInUse(physRegRecord, refPosition));
-
     return true;
 }
 

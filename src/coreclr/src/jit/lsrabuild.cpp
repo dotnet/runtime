@@ -1806,19 +1806,21 @@ const unsigned         lsraRegOrderFltSize = ArrLen(lsraRegOrderFlt);
 
 void LinearScan::buildPhysRegRecords()
 {
-    RegisterType regType = IntRegisterType;
+    for (regNumber reg = REG_FIRST; reg < ACTUAL_REG_COUNT; reg = REG_NEXT(reg))
+    {
+        RegRecord* curr = &physRegs[reg];
+        curr->init(reg);
+    }
     for (unsigned int i = 0; i < lsraRegOrderSize; i++)
     {
         regNumber  reg  = lsraRegOrder[i];
         RegRecord* curr = &physRegs[reg];
-        curr->init(reg);
         curr->regOrder = (unsigned char)i;
     }
     for (unsigned int i = 0; i < lsraRegOrderFltSize; i++)
     {
         regNumber  reg  = lsraRegOrderFlt[i];
         RegRecord* curr = &physRegs[reg];
-        curr->init(reg);
         curr->regOrder = (unsigned char)i;
     }
 }
