@@ -8,7 +8,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="DNNE" Version="1.0.15" />
+    <PackageReference Include="DNNE" Version="1.0.16" />
   </ItemGroup>
 
   <ItemGroup>
