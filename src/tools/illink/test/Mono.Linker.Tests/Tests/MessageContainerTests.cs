@@ -10,11 +10,11 @@ namespace Mono.Linker.Tests
 		{
 			LinkContext context = new LinkContext (new Pipeline ());
 
-			var msg = MessageContainer.CreateErrorMessage ("text", 1000);
-			Assert.AreEqual ("ILLink: error IL1000: text", msg.ToMSBuildString ());
+			var msg = MessageContainer.CreateCustomErrorMessage ("text", 6001);
+			Assert.AreEqual ("ILLink: error IL6001: text", msg.ToMSBuildString ());
 
-			msg = MessageContainer.CreateWarningMessage (context, "message", 2001, new MessageOrigin ("logtest", 1, 1), WarnVersion.Latest);
-			Assert.AreEqual ("logtest(1,1): warning IL2001: message", msg.ToMSBuildString ());
+			msg = MessageContainer.CreateCustomWarningMessage (context, "message", 6002, new MessageOrigin ("logtest", 1, 1), WarnVersion.Latest);
+			Assert.AreEqual ("logtest(1,1): warning IL6002: message", msg.ToMSBuildString ());
 
 			msg = MessageContainer.CreateInfoMessage ("log test");
 			Assert.AreEqual ("ILLink: log test", msg.ToMSBuildString ());

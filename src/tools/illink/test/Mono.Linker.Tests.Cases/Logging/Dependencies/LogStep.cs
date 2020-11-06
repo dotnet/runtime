@@ -8,8 +8,8 @@ namespace Log
 	{
 		public void Process (LinkContext context)
 		{
-			var msgError = MessageContainer.CreateErrorMessage ("Error", 1004);
-			var msgWarning = MessageContainer.CreateWarningMessage (context, "Warning", 2001, origin: new MessageOrigin ("logtest", 1, 1), version: WarnVersion.Latest);
+			var msgError = MessageContainer.CreateCustomErrorMessage ("Error", 6001);
+			var msgWarning = MessageContainer.CreateCustomWarningMessage (context, "Warning", 6002, origin: new MessageOrigin ("logtest", 1, 1), version: WarnVersion.Latest);
 			var msgInfo = MessageContainer.CreateInfoMessage ("Info");
 			var msgDiagnostics = MessageContainer.CreateDiagnosticMessage ("Diagnostics");
 			context.LogMessage (msgError);

@@ -11,8 +11,8 @@ namespace Mono.Linker.Tests.Cases.Logging
 #endif
 	[SetupLinkerArgument ("--custom-step", "Log.LogStep,LogStep.dll")]
 	[SetupLinkerArgument ("--verbose")]
-	[LogContains ("ILLink: error IL1004: Error")]
-	[LogContains ("logtest(1,1): warning IL2001: Warning")]
+	[LogContains ("ILLink: error IL6001: Error")]
+	[LogContains ("logtest(1,1): warning IL6002: Warning")]
 	[LogContains ("ILLink: Info")]
 	[LogContains ("ILLink: Diagnostics")]
 	public class CommonLogs

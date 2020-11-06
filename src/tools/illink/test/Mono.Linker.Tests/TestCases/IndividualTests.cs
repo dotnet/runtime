@@ -100,6 +100,18 @@ namespace Mono.Linker.Tests.TestCases
 		}
 
 		[Test]
+		public void InvalidWarningCodeThrows ()
+		{
+			var testcase = CreateIndividualCase (typeof (CustomStepWithWarnings));
+			try {
+				var result = Run (testcase);
+			} catch (ArgumentException ex) {
+				Assert.AreEqual ("The provided code '2500' does not fall into the permitted range for external warnings. To avoid possible " +
+					"collisions with existing and future ILLink warnings, external messages should use codes starting from 6001.", ex.Message);
+			}
+		}
+
+		[Test]
 		public void CanEnableDependenciesDump ()
 		{
 			var testcase = CreateIndividualCase (typeof (CanEnableDependenciesDump));
