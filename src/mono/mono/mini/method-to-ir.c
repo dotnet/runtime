@@ -10594,7 +10594,7 @@ field_access_end:
 				MONO_START_BB (cfg, next_bb);
 			} else {
 				if (token == MONO_JIT_ICALL_mono_threads_detach_coop) {
-					/* can't emit profilng code after a detach, so emit it now */
+					/* can't emit profiling code after a detach, so emit it now */
 					mini_profiler_emit_leave (cfg, NULL);
 					detached_before_ret = TRUE;
 				}
@@ -11597,6 +11597,7 @@ mono_ldptr:
 	/* emit profiler enter code after a jit attach if there is one */
 	cfg->cbb = init_localsbb2;
 	mini_profiler_emit_enter (cfg);
+	cfg->cbb = init_localsbb;
 
 	if (seq_points) {
 		MonoBasicBlock *bb;
