@@ -147,6 +147,20 @@ namespace Microsoft.Interop
                     or { ManagedType: { SpecialType: SpecialType.System_Double }, MarshallingAttributeInfo: NoMarshallingInfo or MarshalAsInfo(UnmanagedType.R8, _) }:
                     return Blittable;
 
+                // Enum with no marshalling info
+                case { ManagedType: { TypeKind: TypeKind.Enum }, MarshallingAttributeInfo: NoMarshallingInfo }:
+                    // Check that the underlying type is not bool or char. C# does not allow this, but ECMA-335 does.
+                    var underlyingSpecialType = ((INamedTypeSymbol)info.ManagedType).EnumUnderlyingType!.SpecialType;
+                    if (underlyingSpecialType == SpecialType.System_Boolean || underlyingSpecialType == SpecialType.System_Char)
+                    {
+                        throw new MarshallingNotSupportedException(info, context);
+                    }
+                    return Blittable;
+
+                // Pointer with no marshalling info
+                case { ManagedType: { TypeKind: TypeKind.Pointer }, MarshallingAttributeInfo: NoMarshallingInfo }:
+                    return Blittable;
+
                 case { ManagedType: { SpecialType: SpecialType.System_Boolean }, MarshallingAttributeInfo: NoMarshallingInfo }:
                     return WinBool; // [Compat] Matching the default for the built-in runtime marshallers.
                 case { ManagedType: { SpecialType: SpecialType.System_Boolean }, MarshallingAttributeInfo: MarshalAsInfo(UnmanagedType.I1 or UnmanagedType.U1, _) }:

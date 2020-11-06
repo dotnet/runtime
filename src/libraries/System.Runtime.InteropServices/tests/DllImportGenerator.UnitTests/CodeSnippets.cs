@@ -395,6 +395,21 @@ partial class Test
 }}";
 
         /// <summary>
+        /// Declaration with pointer parameters.
+        /// </summary>
+        public static string PointerParameters<T>() => @$"
+using System.Runtime.InteropServices;
+partial class Test
+{{
+    [GeneratedDllImport(""DoesNotExist"")]
+    public static unsafe partial {typeof(T)}* Method(
+        {typeof(T)}* p,
+        in {typeof(T)}* pIn,
+        ref {typeof(T)}* pRef,
+        out {typeof(T)}* pOut);
+}}";
+
+        /// <summary>
         /// Declaration with PreserveSig = false.
         /// </summary>
         public static string PreserveSigFalse(string typeName) => @$"
