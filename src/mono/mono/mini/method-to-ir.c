@@ -6083,6 +6083,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 	MonoBitSet *seq_point_locs = NULL;
 	MonoBitSet *seq_point_set_locs = NULL;
 	gboolean emitted_funccall_seq_point = FALSE;
+	gboolean detached_before_ret = FALSE;
 
 	cfg->disable_inline = (method->iflags & METHOD_IMPL_ATTRIBUTE_NOOPTIMIZATION) || is_jit_optimizer_disabled (method);
 	cfg->current_method = method;
@@ -8037,7 +8038,8 @@ calli_end:
 			break;
 		}
 		case MONO_CEE_RET:
-			mini_profiler_emit_leave (cfg, sig->ret->type != MONO_TYPE_VOID ? sp [-1] : NULL);
+			if (!detached_before_ret)
+				mini_profiler_emit_leave (cfg, sig->ret->type != MONO_TYPE_VOID ? sp [-1] : NULL);
 
 			g_assert (!method_does_not_return (method));
 
@@ -10585,11 +10587,17 @@ field_access_end:
 
 				/*
 				 * Parts of the initlocals code needs to come after this, since it might call methods like memset.
+				 * Also profiling needs to be after attach.
 				 */
 				init_localsbb2 = cfg->cbb;
 				NEW_BBLOCK (cfg, next_bb);
 				MONO_START_BB (cfg, next_bb);
 			} else {
+				if (token == MONO_JIT_ICALL_mono_threads_detach_coop) {
+					/* can't emit profilng code after a detach, so emit it now */
+					mini_profiler_emit_leave (cfg, NULL);
+					detached_before_ret = TRUE;
+				}
 				ins = mono_emit_jit_icall_id (cfg, jit_icall_id, sp);
 			}
 
@@ -10757,7 +10765,8 @@ mono_ldptr:
 			if (sp != stack_start)
 				UNVERIFIED;
 
-			mini_profiler_emit_leave (cfg, sp [0]);
+			if (!detached_before_ret)
+				mini_profiler_emit_leave (cfg, sp [0]);
 
 			MONO_INST_NEW (cfg, ins, OP_BR);
 			ins->inst_target_bb = end_bblock;
@@ -11585,7 +11594,8 @@ mono_ldptr:
 		emit_push_lmf (cfg);
 	}
 
-	cfg->cbb = init_localsbb;
+	/* emit profiler enter code after a jit attach if there is one */
+	cfg->cbb = init_localsbb2;
 	mini_profiler_emit_enter (cfg);
 
 	if (seq_points) {
