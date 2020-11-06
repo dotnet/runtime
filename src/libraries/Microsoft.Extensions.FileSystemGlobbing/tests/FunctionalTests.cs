@@ -365,10 +365,7 @@ namespace Microsoft.Extensions.FileSystemGlobbing.Tests
                 "compiler/shared/sub/sub/sharedsub.cs"
             };
 
-            Assert.Equal(
-                expected.OrderBy(e => e),
-                actual.OrderBy(e => e),
-                StringComparer.OrdinalIgnoreCase);
+            AssertCollection(expected.OrderBy(e => e), actual.OrderBy(e => e));
         }
 
         [Fact]
@@ -398,10 +395,7 @@ namespace Microsoft.Extensions.FileSystemGlobbing.Tests
                 "compiler/shared/sub/sub/sharedsub.cs"
             };
 
-            Assert.Equal(
-                expected.OrderBy(e => e),
-                actual.OrderBy(e => e),
-                StringComparer.OrdinalIgnoreCase);
+            AssertCollection(expected.OrderBy(e => e), actual.OrderBy(e => e));
         }
 
         [Fact]
@@ -424,10 +418,7 @@ namespace Microsoft.Extensions.FileSystemGlobbing.Tests
                 "shared/sub/sub/sharedsub.cs"
             };
 
-            Assert.Equal(
-                expected.OrderBy(e => e),
-                actual.OrderBy(e => e),
-                StringComparer.OrdinalIgnoreCase);
+            AssertCollection(expected.OrderBy(e => e), actual.OrderBy(e => e));
         }
 
         [Fact]
@@ -451,10 +442,7 @@ namespace Microsoft.Extensions.FileSystemGlobbing.Tests
                 "shared/sub/sub/sharedsub.cs"
             };
 
-            Assert.Equal(
-                expected.OrderBy(e => e),
-                actual.OrderBy(e => e),
-                StringComparer.OrdinalIgnoreCase);
+            AssertCollection(expected.OrderBy(e => e), actual.OrderBy(e => e));
         }
 
         private List<string> GetFileList()
@@ -530,10 +518,13 @@ namespace Microsoft.Extensions.FileSystemGlobbing.Tests
             var actual = results.Files.Select(match => Path.GetFullPath(Path.Combine(_context.RootPath, directoryPath, match.Path)));
             var expected = expectFiles.Select(relativePath => Path.GetFullPath(Path.Combine(_context.RootPath, relativePath)));
 
-            Assert.Equal(
-                expected.OrderBy(e => e),
-                actual.OrderBy(e => e),
-                StringComparer.OrdinalIgnoreCase);
+            AssertCollection(expected.OrderBy(e => e), actual.OrderBy(e => e));
+        }
+		
+        private static void AssertCollection(IEnumerable<string> expected, IEnumerable<string> actual)
+        {
+            var elementInspectors = expected.Select(exp => new Action<string>(act => Assert.Equal(exp, act, StringComparer.OrdinalIgnoreCase))).ToArray();
+            Assert.Collection(actual, elementInspectors);
         }
     }
 }
