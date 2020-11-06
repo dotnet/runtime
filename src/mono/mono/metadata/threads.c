@@ -1321,6 +1321,29 @@ start_wrapper (gpointer data)
 	g_assert_not_reached ();
 }
 
+static void
+throw_thread_start_exception (guint32 error_code, MonoError *error)
+{
+	ERROR_DECL (method_error);
+
+	MONO_STATIC_POINTER_INIT (MonoMethod, throw)
+
+	throw = mono_class_get_method_from_name_checked (mono_defaults.thread_class, "ThrowThreadStartException", 1, 0, method_error);
+	mono_error_assert_ok (method_error);
+
+	MONO_STATIC_POINTER_INIT_END (MonoMethod, throw)
+	g_assert (throw);
+
+	char *msg = g_strdup_printf ("0x%x", error_code);
+	MonoException *ex = mono_get_exception_execution_engine (msg);
+	g_free (msg);
+
+	gpointer args [1];
+	args [0] = ex;
+
+	mono_runtime_invoke_checked (throw, NULL, args, error);
+}
+
 /*
  * create_thread:
  *
@@ -1403,7 +1426,12 @@ create_thread (MonoThread *thread, MonoInternalThread *internal, MonoObject *sta
 		mono_threads_lock ();
 		mono_g_hash_table_remove (threads_starting_up, thread);
 		mono_threads_unlock ();
+
+#ifdef ENABLE_NETCORE
+		throw_thread_start_exception (mono_w32error_get_last(), error);
+#else
 		mono_error_set_execution_engine (error, "Couldn't create thread. Error 0x%x", mono_w32error_get_last());
+#endif
 		/* ref is not going to be decremented in start_wrapper_internal */
 		mono_atomic_dec_i32 (&start_info->ref);
 		ret = FALSE;
