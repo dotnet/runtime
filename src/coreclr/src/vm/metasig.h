@@ -174,7 +174,7 @@
 DEFINE_METASIG_T(SM(Int_IntPtr_Obj_RetException, i I j, C(EXCEPTION)))
 DEFINE_METASIG_T(SM(Type_ArrType_IntPtr_int_RetType, C(TYPE) a(C(TYPE)) I i, C(TYPE) ))
 DEFINE_METASIG_T(SM(Type_RetIntPtr, C(TYPE), I))
-DEFINE_METASIG(SM(IntPtr_IntPtr_IntPtr_Int_RetObj, I I I i, j))
+DEFINE_METASIG(SM(RefIntPtr_IntPtr_IntPtr_Int_RetObj, r(I) I I i, j))
 DEFINE_METASIG(SM(Obj_IntPtr_RetIntPtr, j I, I))
 DEFINE_METASIG(SM(Obj_IntPtr_RetObj, j I, j))
 DEFINE_METASIG(SM(Obj_RefIntPtr_RetVoid, j r(I), v))
