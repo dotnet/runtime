@@ -28,25 +28,5 @@
         "Name": "Microsoft.NETCore.DotNetHost",
         "Description": "Provides an executable implementation of the Microsoft DotNet Framework and SDK launcher module",
         "CommonTypes": [ ]
-    },
-    {
-        "Name": "Microsoft.NETCore",
-        "Description": "Provides a set of packages that can be used when building portable libraries on .NETCore based platforms.",
-        "CommonTypes": [ ]
-    },
-    {
-        "Name": "Microsoft.NETCore.App",
-        "Description": "A set of .NET APIs that are included in the default .NET application model.",
-        "CommonTypes": [ ]
-    },
-    {
-        "Name": "Microsoft.NETCore.App.Internal",
-        "Description": "Transport package for .NET App runtime assets.",
-        "CommonTypes": [ ]
-    },
-    {
-        "Name": "Microsoft.NETCore.App.Ref",
-        "Description": "A set of .NET APIs that are included in the default .NET application model. Contains reference assemblies, documentation, and other design-time assets.",
-        "CommonTypes": [ ]
     }
 ]
