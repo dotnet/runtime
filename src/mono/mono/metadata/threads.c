@@ -1423,7 +1423,7 @@ create_thread (MonoThread *thread, MonoInternalThread *internal, MonoObject *sta
 	else
 		stack_set_size = 0;
 
-	if (!mono_thread_platform_create_thread (start_wrapper, start_info, &stack_set_size, &tid)) {
+	if (mono_thread_platform_create_thread (start_wrapper, start_info, &stack_set_size, &tid)) {
 		/* The thread couldn't be created, so set an exception */
 		mono_threads_lock ();
 		mono_g_hash_table_remove (threads_starting_up, thread);
