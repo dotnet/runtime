@@ -48,7 +48,7 @@ namespace System.Runtime.Serialization
 
         // Throws a SerializationException if dangerous deserialization is currently
         // in progress
-        internal static void ThrowIfDeserializationInProgress()
+        public static void ThrowIfDeserializationInProgress()
         {
             if (DeserializationInProgress)
             {
@@ -62,7 +62,7 @@ namespace System.Runtime.Serialization
         // 0: No value cached
         // 1: The switch is true
         // -1: The switch is false
-        internal static void ThrowIfDeserializationInProgress(string switchSuffix, ref int cachedValue)
+        public static void ThrowIfDeserializationInProgress(string switchSuffix, ref int cachedValue)
         {
             const string SwitchPrefix = "Switch.System.Runtime.Serialization.SerializationGuard.";
             Debug.Assert(!string.IsNullOrEmpty(switchSuffix));
