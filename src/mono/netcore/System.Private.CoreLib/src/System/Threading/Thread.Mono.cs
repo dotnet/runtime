@@ -289,8 +289,11 @@ namespace System.Threading
             }
         }
 
+        // Called from the runtime
+        internal static void ThrowThreadStartException(Exception ex) => throw new ThreadStartException(ex);
+
         [DynamicDependency(nameof(StartCallback))]
-        [DynamicDependency("#ctor(System.Exception)", typeof(ThreadStartException))]
+        [DynamicDependency(nameof(ThrowThreadStartException))]
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         private static extern void StartInternal(Thread runtime_thread);
 #endif

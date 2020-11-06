@@ -1321,6 +1321,31 @@ start_wrapper (gpointer data)
 	g_assert_not_reached ();
 }
 
+static void
+throw_thread_start_exception (guint32 error_code)
+{
+	ERROR_DECL (error);
+
+	MONO_STATIC_POINTER_INIT (MonoMethod, throw)
+
+	throw = mono_class_get_method_from_name_checked (mono_defaults.thread_class, "ThrowThreadStartException", 1, 0, error);
+	mono_error_assert_ok (error);
+
+	MONO_STATIC_POINTER_INIT_END (MonoMethod, throw)
+	g_assert (throw);
+
+	char *msg = g_strdup_printf ("0x%x", error_code);
+	MonoException *ex = mono_get_exception_execution_engine (msg);
+	g_free (msg);
+
+	gpointer args [1];
+	args [0] = ex;
+
+	error_init_reuse (error);
+	mono_runtime_invoke_checked (throw, NULL, args, error);
+	mono_error_assert_ok (error);
+}
+
 /*
  * create_thread:
  *
@@ -1405,10 +1430,7 @@ create_thread (MonoThread *thread, MonoInternalThread *internal, MonoObject *sta
 		mono_threads_unlock ();
 
 #ifdef ENABLE_NETCORE
-		char *msg = g_strdup_printf ("0x%x", mono_w32error_get_last());
-		mono_error_set_exception_handle (error, mono_get_exception_thread_start_handle (
-			mono_get_exception_execution_engine (msg), error));
-		g_free (msg);
+		throw_thread_start_exception (mono_w32error_get_last());
 #else
 		mono_error_set_execution_engine (error, "Couldn't create thread. Error 0x%x", mono_w32error_get_last());
 #endif
