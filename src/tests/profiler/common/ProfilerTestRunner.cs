@@ -53,7 +53,7 @@ namespace Profiler.Tests
 
             if(!File.Exists(profilerPath))
             {
-                LogTestFailure("Profiler library not found at expected path: " + profilerPath);
+                FailFastWithMessage("Profiler library not found at expected path: " + profilerPath);
             }
 
             ProfileeOutputVerifier verifier = new ProfileeOutputVerifier();
@@ -91,14 +91,14 @@ namespace Profiler.Tests
 
             if (!verifier.HasPassingOutput)
             {
-                LogTestFailure("Profiler tests are expected to contain the text \'" + verifier.SuccessPhrase + "\' in the console output " +
+                FailFastWithMessage("Profiler tests are expected to contain the text \'" + verifier.SuccessPhrase + "\' in the console output " +
                     "of the profilee app to indicate a passing test. Usually it is printed from the Shutdown() method of the profiler implementation. This " +
                     "text was not found in the output above.");
             }
 
             if (process.ExitCode != 100)
             {
-                LogTestFailure($"Profilee returned exit code {process.ExitCode} instead of expected exit code 100.");
+                FailFastWithMessage($"Profilee returned exit code {process.ExitCode} instead of expected exit code 100.");
             }
 
             return 100;
@@ -140,7 +140,7 @@ namespace Profiler.Tests
             return Path.Combine(Environment.GetEnvironmentVariable("CORE_ROOT"), corerunName);
         }
 
-        private static void LogTestFailure(string error)
+        private static void FailFastWithMessage(string error)
         {
             Console.WriteLine("Test failed: " + error);
             throw new Exception(error);
