@@ -532,23 +532,30 @@ namespace System.IO.Tests
             }
         }
 
-        protected async Task ValidateCancelableReads_AfterInvocation_ThrowsCancellationException(Stream stream)
+        protected async Task ValidateCancelableReadAsyncTask_AfterInvocation_ThrowsCancellationException(Stream stream)
         {
             if (!stream.CanRead || !FullyCancelableOperations)
             {
                 return;
             }
 
-            CancellationTokenSource cts;
+            var cts = new CancellationTokenSource();
+            Task<int> t = stream.ReadAsync(new byte[1], 0, 1, cts.Token);
+            cts.Cancel();
+            await AssertCanceledAsync(cts.Token, () => t);
+        }
 
-            cts = new CancellationTokenSource(1);
-            await AssertCanceledAsync(cts.Token, () => stream.ReadAsync(new byte[1], 0, 1, cts.Token));
-
-            if (UsableAfterCanceledReads)
+        protected async Task ValidateCancelableReadAsyncValueTask_AfterInvocation_ThrowsCancellationException(Stream stream)
+        {
+            if (!stream.CanRead || !FullyCancelableOperations)
             {
-                cts = new CancellationTokenSource(1);
-                await AssertCanceledAsync(cts.Token, async () => { await stream.ReadAsync(new Memory<byte>(new byte[1]), cts.Token); });
+                return;
             }
+
+            var cts = new CancellationTokenSource();
+            Task<int> t = stream.ReadAsync(new byte[1], cts.Token).AsTask();
+            cts.Cancel();
+            await AssertCanceledAsync(cts.Token, () => t);
         }
 
         protected async Task WhenAllOrAnyFailed(Task task1, Task task2)
@@ -1624,15 +1631,32 @@ namespace System.IO.Tests
         }
 
         [Fact]
-        public virtual async Task ReadWriteAsync_Canceled_ThrowsOperationCanceledException()
+        public virtual async Task ReadWriteAsync_PrecanceledOperations_ThrowsCancellationException()
         {
             using StreamPair streams = await CreateConnectedStreamsAsync();
 
             foreach (Stream stream in streams)
             {
                 await ValidatePrecanceledOperations_ThrowsCancellationException(stream);
-                await ValidateCancelableReads_AfterInvocation_ThrowsCancellationException(stream);
             }
+        }
+
+        [Fact]
+        public virtual async Task ReadAsync_CancelPendingTask_ThrowsCancellationException()
+        {
+            using StreamPair streams = await CreateConnectedStreamsAsync();
+            (Stream writeable, Stream readable) = GetReadWritePair(streams);
+
+            await ValidateCancelableReadAsyncTask_AfterInvocation_ThrowsCancellationException(readable);
+        }
+
+        [Fact]
+        public virtual async Task ReadAsync_CancelPendingValueTask_ThrowsCancellationException()
+        {
+            using StreamPair streams = await CreateConnectedStreamsAsync();
+            (Stream writeable, Stream readable) = GetReadWritePair(streams);
+
+            await ValidateCancelableReadAsyncValueTask_AfterInvocation_ThrowsCancellationException(readable);
         }
 
         [Fact]
