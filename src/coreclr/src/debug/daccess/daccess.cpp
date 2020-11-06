@@ -5622,18 +5622,6 @@ ClrDataAccess::Initialize(void)
     // Do some validation
     IfFailRet(VerifyDlls());
 
-    // To support EH SxS, utilcode requires the base address of the runtime
-    // as part of its initialization so that functions like "WasThrownByUs" work correctly since
-    // they use the CLR base address to check if an exception was raised by a given instance of the runtime
-    // or not.
-    //
-    // Thus, when DAC is initialized, initialize utilcode with the base address of the runtime loaded in the
-    // target process. This is similar to work done in CorDB::SetTargetCLR for mscordbi.
-
-#if HOST_WINDOWS
-    g_hmodCoreCLR = (HINSTANCE)m_globalBase; // Base address of the runtime in the target process
-#endif
-
     return S_OK;
 }
 

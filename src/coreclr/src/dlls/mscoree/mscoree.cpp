@@ -47,20 +47,7 @@ BOOL WINAPI DllMain(HANDLE hInstance, DWORD dwReason, LPVOID lpReserved)
 
 #endif // !defined(CROSSGEN_COMPILE) && !defined(CORECLR_EMBEDDED)
 
-#if HOST_WINDOWS
-extern "C" IMAGE_DOS_HEADER __ImageBase;
-#endif
-
-PTR_VOID GetModuleBase()
-{
-    LIMITED_METHOD_CONTRACT;
-
-#if HOST_WINDOWS
-    return (PTR_VOID)&__ImageBase;
-#else // !HOST_UNIX
-    return (PTR_VOID)PAL_GetSymbolModuleBase((void*)GetModuleBase);
-#endif // !HOST_UNIX
-}
+extern void* GetModuleBase();
 
 // ---------------------------------------------------------------------------
 // %%Function: MetaDataGetDispenser

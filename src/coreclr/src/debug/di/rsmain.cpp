@@ -456,18 +456,7 @@ void LeftSideResourceCleanupList::SweepNeuterLeftSideResources(CordbProcess * pP
 /* ------------------------------------------------------------------------- *
  * CordbBase class
  * ------------------------------------------------------------------------- */
-#if HOST_WINDOWS
-extern "C" IMAGE_DOS_HEADER __ImageBase;
-#endif
-
-PTR_VOID GetModuleBase()
-{
-#if HOST_WINDOWS
-    return (PTR_VOID)&__ImageBase;
-#else // !HOST_UNIX
-    return (PTR_VOID)PAL_GetSymbolModuleBase((void*)GetModuleBase);
-#endif // !HOST_UNIX
-}
+extern void* GetModuleBase();
 
 // Do any initialization necessary for both CorPublish and CorDebug
 // This includes enabling logging and adding the SEDebug priv.
@@ -1433,15 +1422,6 @@ HRESULT Cordb::SetTargetCLR(HMODULE hmodTargetCLR)
 
 #ifdef FEATURE_CORESYSTEM
     m_targetCLR = hmodTargetCLR;
-#endif
-
-    // @REVIEW: are we happy with this workaround?  It allows us to use the existing
-    // infrastructure for instance name decoration, but it really doesn't fit
-    // the same model because coreclr.dll isn't in this process and hmodTargetCLR
-    // is the debuggee target, not the coreclr.dll to bind utilcode to..
-
-#if HOST_WINDOWS
-    g_hmodCoreCLR = hmodTargetCLR;
 #endif
 
     return S_OK;

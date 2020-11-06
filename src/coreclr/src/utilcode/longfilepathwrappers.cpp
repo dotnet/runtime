@@ -768,10 +768,6 @@ FindFirstFileExWrapper(
 
 #ifdef HOST_WINDOWS
 
-#if ! defined(DACCESS_COMPILE) && !defined(SELF_NO_HOST)
-extern HINSTANCE            g_hThisInst;
-#endif// ! defined(DACCESS_COMPILE) && !defined(SELF_NO_HOST)
-
 BOOL PAL_GetPALDirectoryWrapper(SString& pbuffer)
 {
 

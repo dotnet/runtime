@@ -4707,21 +4707,7 @@ FORCEINLINE void HolderSysFreeString(BSTR str) { CONTRACT_VIOLATION(ThrowsViolat
 
 typedef Wrapper<BSTR, DoNothing, HolderSysFreeString> BSTRHolder;
 
-// HMODULE_TGT represents a handle to a module in the target process.  In non-DAC builds this is identical
-// to HMODULE (HINSTANCE), which is the base address of the module.  In DAC builds this must be a target address,
-// and so is represented by TADDR.
-
-#ifdef DACCESS_COMPILE
-typedef TADDR HMODULE_TGT;
-#else
-typedef HMODULE HMODULE_TGT;
-#endif
-
 BOOL IsIPInModule(PTR_VOID pModule, PCODE ip);
-
-#ifdef HOST_WINDOWS
-extern HINSTANCE g_hmodCoreCLR;
-#endif
 
 namespace UtilCode
 {

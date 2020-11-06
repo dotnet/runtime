@@ -18,7 +18,7 @@ __attribute__((visibility("default"))) DECLARE_NATIVE_STRING_RESOURCE_TABLE(NATI
 #include <stdlib.h>
 
 // External prototypes.
-extern PTR_VOID GetModuleBase();
+extern void* GetModuleBase();
 
 //*****************************************************************************
 // Do the mapping from an langId to an hinstance node

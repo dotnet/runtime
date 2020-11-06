@@ -12,9 +12,20 @@
 #include "clrnt.h"
 #include "contract.h"
 
-#ifdef HOST_WINDOWS
-HINSTANCE g_hmodCoreCLR;
+#if HOST_WINDOWS
+extern "C" IMAGE_DOS_HEADER __ImageBase;
 #endif
+
+void* GetModuleBase()
+{
+    LIMITED_METHOD_CONTRACT;
+
+#if HOST_WINDOWS
+    return (void*)&__ImageBase;
+#else // !HOST_UNIX
+    return (PTR_VOID)PAL_GetSymbolModuleBase((void*)GetModuleBase);
+#endif // !HOST_UNIX
+}
 
 thread_local int t_CantAllocCount;
 
@@ -94,7 +105,7 @@ int RFS_HashStack ()
 DWORD GetClrModulePathName(SString& buffer)
 {
 #ifdef HOST_WINDOWS
-    return WszGetModuleFileName(g_hmodCoreCLR, buffer);
+    return WszGetModuleFileName((HINSTANCE)GetModuleBase(), buffer);
 #else
     return WszGetModuleFileName(PAL_GetPalHostModule(), buffer);
 #endif
