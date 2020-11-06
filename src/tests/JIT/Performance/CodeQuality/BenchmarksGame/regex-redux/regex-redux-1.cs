@@ -64,7 +64,7 @@ namespace BenchmarksGame
             int initialLength = sequence.Length;
 
             // remove FASTA sequence descriptions and new-lines
-            Regex r = new Regex(">.*\n|\n", RegexOptions.Compiled);
+            Regex r = new Regex(">.*\n|\n|\r\n", RegexOptions.Compiled);
             sequence = r.Replace(sequence, "");
             int codeLength = sequence.Length;
 

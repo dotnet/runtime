@@ -75,7 +75,7 @@ namespace BenchmarksGame
         {
             var sequences = inputReader.ReadToEnd();
             var initialLength = sequences.Length;
-            sequences = Regex.Replace(sequences, ">.*\n|\n", "");
+            sequences = Regex.Replace(sequences, ">.*\n|\n|\r\n", "");
 
             var magicTask = Task.Run(() =>
             {
