@@ -6,11 +6,8 @@ using System.Collections.Generic;
 
 namespace MonoDelta {
 	public class DeltaHelper {
-#if true
 		const string name = "System.Runtime.CompilerServices.RuntimeFeature";
-#else
-		const string name = "Mono.Runtime";
-#endif
+
 		private static MethodBase _updateMethod;
 
 		private static MethodBase UpdateMethod => _updateMethod ?? InitUpdateMethod();
@@ -20,7 +17,7 @@ namespace MonoDelta {
 			var monoType = Type.GetType (name, throwOnError: true);
 			if (monoType == null)
 				throw new Exception ($"Couldn't get the type {name}");
-			_updateMethod = monoType.GetMethod ("LoadMetadataUpdate");
+			_updateMethod = monoType.GetMethod ("LoadMetadataUpdate", BindingFlags.NonPublic | BindingFlags.Static);
 			if (_updateMethod == null)
 				throw new Exception ($"Couldn't get LoadMetadataUpdate from {name}");
 			return _updateMethod;
