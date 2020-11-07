@@ -194,11 +194,10 @@ namespace System.Diagnostics
 
             if (length == 0)
             {
-#if DEBUG
-                // We never used to throw here, want to surface possible mistakes on our part
                 int error = Marshal.GetLastWin32Error();
-                Debug.Assert(error == 0, $"Failed GetWindowTextLengthW(): { new Win32Exception(error).Message }");
-#endif
+                if (error != 0)
+                    throw new Win32Exception(error, $"Failed GetWindowTextLengthW(): { new Win32Exception(error).Message }");
+
                 return string.Empty;
             }
 
@@ -211,14 +210,14 @@ namespace System.Diagnostics
                     length = Interop.User32.GetWindowTextW(handle, titlePtr, title.Length); // returned length does not include null terminator
                 }
             }
-#if DEBUG
+
             if (length == 0)
             {
-                // We never used to throw here, want to surface possible mistakes on our part
                 int error = Marshal.GetLastWin32Error();
-                Debug.Assert(error == 0, $"Failed GetWindowTextW(): { new Win32Exception(error).Message }");
+                if (error != 0)
+                    throw new Win32Exception(error, $"Failed GetWindowTextW(): { new Win32Exception(error).Message }");
             }
-#endif
+
             return title.Slice(0, length).ToString();
         }
 
