@@ -2679,7 +2679,7 @@ void emitter::emitLoopAlign()
 
 void emitter::emitVariableLoopAlign()
 {
-    unsigned insAlignCount = (emitComp->opts.compJitAlignLoopBoundary - 1) / 15;
+    unsigned insAlignCount    = (emitComp->opts.compJitAlignLoopBoundary - 1) / 15;
     unsigned lastInsAlignSize = (emitComp->opts.compJitAlignLoopBoundary - 1) % 15;
 
     while (insAlignCount)
@@ -12638,7 +12638,7 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
 #else
                 unsigned alignmentBoundary = emitComp->opts.compJitAlignLoopBoundary;
 #endif
-                sz                         = SMALL_IDSC_SIZE;
+                sz = SMALL_IDSC_SIZE;
 
                 // If already at alignment boundary, no need to emit anything.
                 if (((size_t)dst & (alignmentBoundary - 1)) == 0)
@@ -12656,7 +12656,7 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
                 {
                     bool     skipPadding             = false;
                     int      maxBlocksAllowedForLoop = genLog2(alignmentBoundary) - 1;
-                    unsigned maxLoopSize             = DEFAULT_ALIGN_LOOP_BOUNDARY * maxBlocksAllowedForLoop; 
+                    unsigned maxLoopSize             = DEFAULT_ALIGN_LOOP_BOUNDARY * maxBlocksAllowedForLoop;
 
                     // calculate the loop size
                     unsigned  loopSize     = 0;
@@ -12671,9 +12671,9 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
                     }
 
                     // Start to align on 32B boundary with a fallback to 16B boundary
-                    int      minBlocksNeededForLoop  = (loopSize + alignmentBoundary - 1) / alignmentBoundary;
-                    unsigned nMaxPaddingBytes        = (1 << (maxBlocksAllowedForLoop - minBlocksNeededForLoop + 1)) - 1;
-                    unsigned nPaddingBytes    = (-(int)(size_t)dst) & (alignmentBoundary - 1);
+                    int      minBlocksNeededForLoop = (loopSize + alignmentBoundary - 1) / alignmentBoundary;
+                    unsigned nMaxPaddingBytes       = (1 << (maxBlocksAllowedForLoop - minBlocksNeededForLoop + 1)) - 1;
+                    unsigned nPaddingBytes          = (-(int)(size_t)dst) & (alignmentBoundary - 1);
 
                     if (loopSize > maxLoopSize)
                     {
@@ -12681,8 +12681,8 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
 #if DEBUG
                         if (displayAlignmentDetails)
                         {
-                            printf("\t\t;; Skip alignment: 'Loopsize= %d, MaxLoopSize= %d.' in (%s)\n",
-                                   loopSize, maxLoopSize, emitComp->info.compFullName);
+                            printf("\t\t;; Skip alignment: 'Loopsize= %d, MaxLoopSize= %d.' in (%s)\n", loopSize,
+                                   maxLoopSize, emitComp->info.compFullName);
                         }
 #endif
                     }
@@ -12699,8 +12699,10 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
 #if DEBUG
                             if (displayAlignmentDetails)
                             {
-                                printf("\t\t;; Skip alignment: 'PaddingNeeded= %d, MaxPadding= %d, LoopSize= %d, AlignmentBoundary= %dB.' in (%s)\n",
-                                    nPaddingBytes, nMaxPaddingBytes, loopSize, alignmentBoundary, emitComp->info.compFullName);
+                                printf("\t\t;; Skip alignment: 'PaddingNeeded= %d, MaxPadding= %d, LoopSize= %d, "
+                                       "AlignmentBoundary= %dB.' in (%s)\n",
+                                       nPaddingBytes, nMaxPaddingBytes, loopSize, alignmentBoundary,
+                                       emitComp->info.compFullName);
                             }
 #endif
                         }
@@ -12708,8 +12710,9 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
 
                     if (!skipPadding && (nPaddingBytes > 0))
                     {
-                        size_t extraBytesNotInLoop = (32 * minBlocksNeededForLoop) - loopSize; // Still have it at alignmentboundary=32
-                        size_t currentOffset       = (size_t)dst % alignmentBoundary;
+                        size_t extraBytesNotInLoop =
+                            (32 * minBlocksNeededForLoop) - loopSize; // Still have it at alignmentboundary=32
+                        size_t currentOffset = (size_t)dst % alignmentBoundary;
 
                         // Padding is needed only if loop starts at or after the current offset.
                         // Otherwise, the loop just fits in minBlocksNeededForLoop and so no alignment needed.
@@ -12731,8 +12734,10 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
 #if DEBUG
                             if (displayAlignmentDetails)
                             {
-                                printf("\t\t;; Add alignment: 'Padding= %d, LoopSize= %d, MinBlocks= %d, AlignmentBoundary= %dB.' in (%s)\n",
-                                       nPaddingBytes, loopSize, minBlocksNeededForLoop, alignmentBoundary, emitComp->info.compFullName);
+                                printf("\t\t;; Add alignment: 'Padding= %d, LoopSize= %d, MinBlocks= %d, "
+                                       "AlignmentBoundary= %dB.' in (%s)\n",
+                                       nPaddingBytes, loopSize, minBlocksNeededForLoop, alignmentBoundary,
+                                       emitComp->info.compFullName);
                             }
 #endif
                         }
@@ -12744,7 +12749,7 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
                         id->idCodeSize(0);
                         ig->igFlags |= IGF_UPD_ISZ;
                     }
-                    else if(nPaddingBytes != id->idCodeSize())
+                    else if (nPaddingBytes != id->idCodeSize())
                     {
                         id->idCodeSize(nPaddingBytes);
                         ig->igFlags |= IGF_UPD_ISZ;
@@ -12833,8 +12838,8 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
                             if (displayAlignmentDetails)
                             {
                                 printf("\t\t;; Add alignment: 'Padding= %d, LoopSize= %d, MinBlocks= %d, "
-                                       "AlignmentBoundary= %dB.' in (%s)\n", nBytes,
-                                       loopSize, minimumBlocksNeeded, alignmentBoundary,
+                                       "AlignmentBoundary= %dB.' in (%s)\n",
+                                       nBytes, loopSize, minimumBlocksNeeded, alignmentBoundary,
                                        emitComp->info.compFullName);
                             }
                             // In the end dst should be at alignment boundary
@@ -12845,9 +12850,8 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
                     {
                         if (displayAlignmentDetails)
                         {
-                            printf("\t\t;; Skip alignment: 'Loopsize= %d, AllowedMaxSize= %d.' in (%s)\n",
-                                   loopSize, emitComp->opts.compJitAlignLoopMaxCodeSize,
-                                   emitComp->info.compFullName);
+                            printf("\t\t;; Skip alignment: 'Loopsize= %d, AllowedMaxSize= %d.' in (%s)\n", loopSize,
+                                   emitComp->opts.compJitAlignLoopMaxCodeSize, emitComp->info.compFullName);
                         }
                         // If next instruction is align, skip it so
                         // we do not check the heuristics again.

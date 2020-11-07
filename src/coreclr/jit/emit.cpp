@@ -4804,7 +4804,7 @@ unsigned emitter::emitEndCodeGen(Compiler* comp,
     // they are larger than 16 bytes and contain a loop.
     //
     if (
-        //emitComp->opts.jitFlags->IsSet(JitFlags::JIT_FLAG_TIER1) &&
+        // emitComp->opts.jitFlags->IsSet(JitFlags::JIT_FLAG_TIER1) &&
         emitComp->opts.OptimizationEnabled() && !emitComp->opts.jitFlags->IsSet(JitFlags::JIT_FLAG_PREJIT) &&
         (emitTotalHotCodeSize > 16) && emitComp->fgHasLoops)
     {
@@ -5217,12 +5217,12 @@ unsigned emitter::emitEndCodeGen(Compiler* comp,
         for (unsigned cnt = ig->igInsCnt; cnt; cnt--)
         {
 #ifdef DEBUG
-            size_t lastCp = (size_t) cp;
+            size_t     lastCp = (size_t)cp;
             instrDesc* lastId = id;
 #endif
             castto(id, BYTE*) += emitIssue1Instr(ig, id, &cp);
 #ifdef DEBUG
-            
+
             if ((emitComp->opts.disAsm || emitComp->verbose) && emitComp->opts.disAddr)
             {
                 size_t lastBoundaryAddr = (size_t)cp & ~((size_t)emitComp->opts.compJitAlignLoopBoundary - 1);
@@ -5236,12 +5236,13 @@ unsigned emitter::emitEndCodeGen(Compiler* comp,
 #if defined(TARGET_XARCH)
                     // https://www.intel.com/content/dam/support/us/en/documents/processors/mitigations-jump-conditional-code-erratum.pdf
                     bool isJccAffectedIns = ((lastIns >= INS_i_jmp && lastIns < INS_align) || (lastIns == INS_call) ||
-                                            (lastIns == INS_ret));
+                                             (lastIns == INS_ret));
                     if (cnt)
                     {
                         instruction currIns = id->idIns();
-                        if ((lastIns == INS_cmp) || (lastIns == INS_test) || (lastIns == INS_add) || (lastIns == INS_sub) ||
-                            (lastIns == INS_and) || (lastIns == INS_inc) || (lastIns == INS_dec))
+                        if ((lastIns == INS_cmp) || (lastIns == INS_test) || (lastIns == INS_add) ||
+                            (lastIns == INS_sub) || (lastIns == INS_and) || (lastIns == INS_inc) ||
+                            (lastIns == INS_dec))
                         {
                             isJccAffectedIns |= (currIns >= INS_i_jmp && currIns < INS_align);
                         }
@@ -5254,13 +5255,15 @@ unsigned emitter::emitEndCodeGen(Compiler* comp,
                     unsigned bytesCrossedBoundary = ((size_t)cp & 0x1f);
                     if ((bytesCrossedBoundary != 0) || (isJccAffectedIns && bytesCrossedBoundary == 0))
                     {
-                        printf("^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ (%s: %d)", codeGen->genInsName(lastId->idIns()), bytesCrossedBoundary);
+                        printf("^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ (%s: %d)", codeGen->genInsName(lastId->idIns()),
+                               bytesCrossedBoundary);
                     }
                     else
                     {
                         printf("...............................");
                     }
-                    printf(" %dB boundary ...............................\n", (emitComp->opts.compJitAlignLoopBoundary));
+                    printf(" %dB boundary ...............................\n",
+                           (emitComp->opts.compJitAlignLoopBoundary));
                 }
             }
 #endif
@@ -7269,9 +7272,9 @@ void emitter::emitInitIG(insGroup* ig)
        sure we act the same in non-DEBUG builds.
     */
 
-    ig->igSize   = 0;
-    ig->igGCregs = RBM_NONE;
-    ig->igInsCnt = 0;
+    ig->igSize         = 0;
+    ig->igGCregs       = RBM_NONE;
+    ig->igInsCnt       = 0;
     ig->igLoopBackEdge = nullptr;
 }
 

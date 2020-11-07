@@ -309,7 +309,7 @@ struct insGroup
 #endif
 
     unsigned char igInsCnt; // # of instructions  in this group
-    // TODO: Add loopBackEdge?
+                            // TODO: Add loopBackEdge?
 
 #endif // REGMASK_BITS
 

@@ -2619,11 +2619,10 @@ void Compiler::compInitOptions(JitFlags* jitFlags)
     opts.compJitAlignLoopMinBlockWeight = JitConfig.JitAlignLoopMinBlockWeight();
     opts.compJitAlignLoopMaxCodeSize    = JitConfig.JitAlignLoopMaxCodeSize();
     opts.compJitAlignLoopBoundary       = JitConfig.JitAlignLoopBoundary();
-    opts.compJitAlignLoopForJcc = JitConfig.JitAlignLoopForJcc() == 1;
-    opts.compJitAlignLoopAdaptive = JitConfig.JitAlignLoopAdaptive() == 1;
+    opts.compJitAlignLoopForJcc         = JitConfig.JitAlignLoopForJcc() == 1;
+    opts.compJitAlignLoopAdaptive       = JitConfig.JitAlignLoopAdaptive() == 1;
     assert(isPow2(opts.compJitAlignLoopBoundary));
 #endif
-
 
 #if REGEN_SHORTCUTS || REGEN_CALLPAT
     // We never want to have debugging enabled when regenerating GC encoding patterns

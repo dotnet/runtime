@@ -9047,12 +9047,12 @@ public:
                                                  // alignment will be done.
         unsigned compJitAlignLoopBoundary;       // For non-adaptive alignment, address boundary (power of 2) at which
                                                  // loop alignment should be done. By default, 32B.
-        bool     compJitAlignLoopForJcc;         // If set, for non-adaptive alignment, ensure loop jmps are not on or
+        bool compJitAlignLoopForJcc;             // If set, for non-adaptive alignment, ensure loop jmps are not on or
                                                  // cross alignment boundary.
-        bool     compJitAlignLoopAdaptive;       // If set, perform adaptive loop alignment that limits number of padding
-                                                 // based on loop size.
+        bool compJitAlignLoopAdaptive; // If set, perform adaptive loop alignment that limits number of padding
+                                       // based on loop size.
 #else
-        #define ADAPTIVE_LOOP_ALIGNMENT
+#define ADAPTIVE_LOOP_ALIGNMENT
 #endif
 
 #ifdef LATE_DISASM

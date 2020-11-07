@@ -2547,14 +2547,13 @@ NO_MORE_LOOPS:
         if (codeGen->ShouldAlignLoops())
         {
             // An innerloop candidate that might need alignment
-            if ((optLoopTable[loopInd].lpChild == BasicBlock::NOT_IN_LOOP) &&
-                (
+            if ((optLoopTable[loopInd].lpChild == BasicBlock::NOT_IN_LOOP) && (
 #ifdef ADAPTIVE_LOOP_ALIGNMENT
-                    DEFAULT_ALIGN_LOOP_MIN_BLOCK_WEIGHT
+                                                                                  DEFAULT_ALIGN_LOOP_MIN_BLOCK_WEIGHT
 #else
-                    opts.compJitAlignLoopMinBlockWeight
+                                                                                  opts.compJitAlignLoopMinBlockWeight
 #endif
-                    <= first->getBBWeight(this)))
+                                                                                  <= first->getBBWeight(this)))
             {
                 first->bbFlags |= BBF_FIRST_BLOCK_IN_INNERLOOP;
             }
@@ -2916,7 +2915,7 @@ bool Compiler::optCanonicalizeLoop(unsigned char loopInd)
     {
         optLoopTable[loopInd].lpEntry = newT;
     }
-    //assert((optLoopTable[loopInd].lpFirst->bbFlags & BBF_FIRST_BLOCK_IN_INNERLOOP) == 0);
+    // assert((optLoopTable[loopInd].lpFirst->bbFlags & BBF_FIRST_BLOCK_IN_INNERLOOP) == 0);
     optLoopTable[loopInd].lpTop   = newT;
     optLoopTable[loopInd].lpFirst = newT;
     // Something to investigate
