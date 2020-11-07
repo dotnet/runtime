@@ -18,7 +18,7 @@ __attribute__((visibility("default"))) DECLARE_NATIVE_STRING_RESOURCE_TABLE(NATI
 #include <stdlib.h>
 
 // External prototypes.
-extern void* GetModuleBase();
+extern void* GetClrModuleBase();
 
 //*****************************************************************************
 // Do the mapping from an langId to an hinstance node
@@ -677,7 +677,7 @@ HRESULT CCompRC::LoadLibraryThrows(HRESOURCEDLL * pHInst)
 
 #ifdef CROSSGEN_COMPILE
     // The resources are embeded into the .exe itself for crossgen
-    *pHInst = (HINSTANCE)GetModuleBase();
+    *pHInst = (HINSTANCE)GetClrModuleBase();
 #else
 
 #ifdef SELF_NO_HOST

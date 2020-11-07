@@ -16,7 +16,7 @@
 extern "C" IMAGE_DOS_HEADER __ImageBase;
 #endif
 
-void* GetModuleBase()
+void* GetClrModuleBase()
 {
     LIMITED_METHOD_CONTRACT;
 
@@ -105,7 +105,7 @@ int RFS_HashStack ()
 DWORD GetClrModulePathName(SString& buffer)
 {
 #ifdef HOST_WINDOWS
-    return WszGetModuleFileName((HINSTANCE)GetModuleBase(), buffer);
+    return WszGetModuleFileName((HINSTANCE)GetClrModuleBase(), buffer);
 #else
     return WszGetModuleFileName(PAL_GetPalHostModule(), buffer);
 #endif

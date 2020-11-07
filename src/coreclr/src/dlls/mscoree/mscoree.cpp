@@ -47,7 +47,7 @@ BOOL WINAPI DllMain(HANDLE hInstance, DWORD dwReason, LPVOID lpReserved)
 
 #endif // !defined(CROSSGEN_COMPILE) && !defined(CORECLR_EMBEDDED)
 
-extern void* GetModuleBase();
+extern void* GetClrModuleBase();
 
 // ---------------------------------------------------------------------------
 // %%Function: MetaDataGetDispenser

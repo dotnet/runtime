@@ -370,8 +370,8 @@ namespace Loader
 HRESULT EnsureRtlFunctions();
 HINSTANCE GetModuleInst();
 
-// Helper function returns the base of this module.
-void* GetModuleBase();
+// Helper function returns the base of clr module.
+void* GetClrModuleBase();
 
 #if defined(TARGET_X86) || defined(TARGET_AMD64)
 //

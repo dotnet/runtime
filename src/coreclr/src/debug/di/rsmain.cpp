@@ -456,7 +456,7 @@ void LeftSideResourceCleanupList::SweepNeuterLeftSideResources(CordbProcess * pP
 /* ------------------------------------------------------------------------- *
  * CordbBase class
  * ------------------------------------------------------------------------- */
-extern void* GetModuleBase();
+extern void* GetClrModuleBase();
 
 // Do any initialization necessary for both CorPublish and CorDebug
 // This includes enabling logging and adding the SEDebug priv.
@@ -489,7 +489,7 @@ void CordbCommonBase::InitializeCommon()
             unsigned level = REGUTIL::GetConfigDWORD_DontUse_(CLRConfig::EXTERNAL_LogLevel, LL_INFO1000);
             unsigned bytesPerThread = REGUTIL::GetConfigDWORD_DontUse_(CLRConfig::UNSUPPORTED_StressLogSize, STRESSLOG_CHUNK_SIZE * 2);
             unsigned totalBytes = REGUTIL::GetConfigDWORD_DontUse_(CLRConfig::UNSUPPORTED_TotalStressLogSize, STRESSLOG_CHUNK_SIZE * 1024);
-            StressLog::Initialize(facilities, level, bytesPerThread, totalBytes, GetModuleBase());
+            StressLog::Initialize(facilities, level, bytesPerThread, totalBytes, GetClrModuleBase());
         }
     }
 

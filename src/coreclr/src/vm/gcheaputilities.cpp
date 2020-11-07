@@ -277,7 +277,7 @@ HRESULT InitializeDefaultGC()
     HRESULT initResult = GC_Initialize(nullptr, &heap, &manager, &g_gc_dac_vars);
     if (initResult == S_OK)
     {
-        FinalizeLoad(heap, manager, GetModuleBase());
+        FinalizeLoad(heap, manager, GetClrModuleBase());
     }
     else
     {
