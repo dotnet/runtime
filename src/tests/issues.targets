@@ -1556,6 +1556,9 @@
         <ExcludeList Include="$(XunitTestBinBase)/profiler/rejit/rejit/rejit.sh">
             <Issue>needs triage</Issue>
         </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/r2rdump/R2RDumpTests/*">
+            <Issue>These tests are not supposed to be run with mono.</Issue>
+        </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/readytorun/crossgen2/crossgen2smoke/**">
             <Issue>needs triage</Issue>
         </ExcludeList>
