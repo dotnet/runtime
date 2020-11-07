@@ -12633,10 +12633,10 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
                 // Candidate for loop alignment
                 assert(codeGen->ShouldAlignLoops());
                 assert(ig->igFlags & IGF_ALIGN_LOOP);
-#ifdef DEBUG
-                unsigned alignmentBoundary = emitComp->opts.compJitAlignLoopBoundary;
-#else
+#ifdef ADAPTIVE_LOOP_ALIGNMENT
                 unsigned alignmentBoundary = DEFAULT_ALIGN_LOOP_BOUNDARY;
+#else
+                unsigned alignmentBoundary = emitComp->opts.compJitAlignLoopBoundary;
 #endif
                 sz                         = SMALL_IDSC_SIZE;
 
@@ -12647,50 +12647,50 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
                 }
 
 #if DEBUG
-                bool displayAlignmentDetails = (emitComp->opts.disAsm & emitComp->opts.disAddr) || emitComp->verbose;
+                bool displayAlignmentDetails = (emitComp->opts.disAsm && emitComp->opts.disAddr) || emitComp->verbose;
 #endif
 
 #ifndef ADAPTIVE_LOOP_ALIGNMENT
                 if (emitComp->opts.compJitAlignLoopAdaptive)
 #endif
                 {
+                    bool     skipPadding             = false;
+                    int      maxBlocksAllowedForLoop = genLog2(alignmentBoundary) - 1;
+                    unsigned maxLoopSize             = DEFAULT_ALIGN_LOOP_BOUNDARY * maxBlocksAllowedForLoop; 
+
                     // calculate the loop size
                     unsigned  loopSize     = 0;
                     insGroup* loopHeaderIg = ig->igNext;
                     for (insGroup* igInLoop = loopHeaderIg; igInLoop; igInLoop = igInLoop->igNext)
                     {
                         loopSize += igInLoop->igSize;
-                        if ((igInLoop->igLoopBackEdge == loopHeaderIg))
+                        if (igInLoop->igLoopBackEdge == loopHeaderIg || loopSize > maxLoopSize)
                         {
                             break;
                         }
                     }
-                    //TODO: See if comparing loopSize > 128 would be sensible instead?
-                    //TODO: code cleanup
-                    // Start to align on 32B boundary with a fallback to 16B boundary
-                    alignmentBoundary                = 32;
-                    int      minBlocksNeededForLoop  = (loopSize + alignmentBoundary - 1) / alignmentBoundary;
-                    int      maxBlocksAllowedForLoop = genLog2(alignmentBoundary);
-                    unsigned nMaxPaddingBytes        = (1 << (maxBlocksAllowedForLoop - minBlocksNeededForLoop)) - 1;
-                    unsigned nPaddingBytes           = (-(int)(size_t)dst) & (alignmentBoundary - 1);
-                    bool     skipPadding             = false;
 
-                    if (minBlocksNeededForLoop > maxBlocksAllowedForLoop)
+                    // Start to align on 32B boundary with a fallback to 16B boundary
+                    int      minBlocksNeededForLoop  = (loopSize + alignmentBoundary - 1) / alignmentBoundary;
+                    unsigned nMaxPaddingBytes        = (1 << (maxBlocksAllowedForLoop - minBlocksNeededForLoop + 1)) - 1;
+                    unsigned nPaddingBytes    = (-(int)(size_t)dst) & (alignmentBoundary - 1);
+
+                    if (loopSize > maxLoopSize)
                     {
                         skipPadding = true;
 #if DEBUG
                         if (displayAlignmentDetails)
                         {
-                            printf("\t\t;; Skip alignment: 'Loopsize= %d bytes.' in (%s)\n",
-                                   loopSize, emitComp->info.compFullName);
+                            printf("\t\t;; Skip alignment: 'Loopsize= %d, MaxLoopSize= %d.' in (%s)\n",
+                                   loopSize, maxLoopSize, emitComp->info.compFullName);
                         }
 #endif
                     }
                     else if (nPaddingBytes > nMaxPaddingBytes)
                     {
-                        // Now try to align to 16B boundary
+                        // Cannot add large padding to align to 32B, so try to align to 16B boundary.
                         alignmentBoundary = 16;
-                        nMaxPaddingBytes  = 1 << (maxBlocksAllowedForLoop - minBlocksNeededForLoop);
+                        nMaxPaddingBytes  = 1 << (maxBlocksAllowedForLoop - minBlocksNeededForLoop + 1);
                         nPaddingBytes     = (-(int)(size_t)dst) & (alignmentBoundary - 1);
 
                         if (nPaddingBytes > nMaxPaddingBytes)
@@ -12708,7 +12708,7 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
 
                     if (!skipPadding && (nPaddingBytes > 0))
                     {
-                        int    extraBytesNotInLoop = (32 * minBlocksNeededForLoop) - loopSize; // Still have it at alignmentboundary=32
+                        size_t extraBytesNotInLoop = (32 * minBlocksNeededForLoop) - loopSize; // Still have it at alignmentboundary=32
                         size_t currentOffset       = (size_t)dst % alignmentBoundary;
 
                         // Padding is needed only if loop starts at or after the current offset.
@@ -12774,8 +12774,8 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
                     for (insGroup* igInLoop = loopHeaderIg; igInLoop; igInLoop = igInLoop->igNext)
                     {
                         loopSize += igInLoop->igSize;
-                        if ((igInLoop->igLoopBackEdge == loopHeaderIg) ||
-                            (loopSize > emitComp->opts.compJitAlignLoopMaxCodeSize))
+                        if (igInLoop->igLoopBackEdge == loopHeaderIg ||
+                            loopSize > emitComp->opts.compJitAlignLoopMaxCodeSize)
                         {
                             break;
                         }

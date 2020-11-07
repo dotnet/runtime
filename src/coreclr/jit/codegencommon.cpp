@@ -2345,9 +2345,10 @@ void CodeGen::genEmitMachineCode()
 #ifdef DEBUG
     if (compiler->opts.disAsm || verbose)
     {
-        printf("\n; Total bytes of code %d, prolog size %d, PerfScore %.2f, instruction count %d (MethodHash=%08x) for "
+        printf("\n; Total bytes of code %d, prolog size %d, PerfScore %.2f, instruction count %d, allocated bytes for code %d (MethodHash=%08x) for "
                "method %s\n",
-               codeSize, prologSize, compiler->info.compPerfScore, instrCount, compiler->info.compMethodHash(),
+               codeSize, prologSize, compiler->info.compPerfScore, instrCount,
+               GetEmitter()->emitTotalHotCodeSize, compiler->info.compMethodHash(),
                compiler->info.compFullName);
         printf("; ============================================================\n\n");
         printf(""); // in our logic this causes a flush
