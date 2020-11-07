@@ -12790,7 +12790,7 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
                     if (loopSize <= emitComp->opts.compJitAlignLoopMaxCodeSize)
                     {
                         int    minimumBlocksNeeded = (loopSize + alignmentBoundary - 1) / alignmentBoundary;
-                        int    extraBytesNotInLoop = (alignmentBoundary * minimumBlocksNeeded) - loopSize;
+                        size_t extraBytesNotInLoop = (alignmentBoundary * minimumBlocksNeeded) - loopSize;
                         size_t currentOffset       = (size_t)dst % alignmentBoundary;
 
                         // Mitigate JCC erratum by making sure the jmp doesn't fall on the boundary
