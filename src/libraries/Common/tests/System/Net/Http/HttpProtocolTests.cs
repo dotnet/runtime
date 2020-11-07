@@ -78,7 +78,7 @@ namespace System.Net.Http.Functional.Tests
 
             using (HttpClient client = CreateHttpClient())
             {
-                HttpRequestMessage request = new HttpRequestMessage(HttpMethod.Get, "http://bing.com");
+                HttpRequestMessage request = new HttpRequestMessage(HttpMethod.Get, "http://nosuchhost.invalid");
                 request.Version = new Version(0, minorVersion);
 
                 Task<HttpResponseMessage> getResponseTask = client.SendAsync(TestAsync, request);
