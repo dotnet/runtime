@@ -104,12 +104,8 @@ namespace System.Threading
         }
 
         [DynamicDependency("Callback")]
-        [DynamicDependency("PumpThreadPool")]
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         private static extern void QueueCallback();
-
-        [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        private static extern void PumpThreadPool(); // NOTE: this method is called via reflection by test code
 
         private static void Callback()
         {

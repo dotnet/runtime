@@ -58,7 +58,7 @@ add_definitions(-DFEATURE_STATIC_HOST=1)
 if(CLR_CMAKE_TARGET_WIN32)
     # Disable manifest generation into the file .exe on Windows
     add_linker_flag("/MANIFEST:NO")
-       
+
     get_property(ALL_COMPILE_OPTIONS TARGET ${PROJECT_NAME} PROPERTY COMPILE_OPTIONS)
     string(TOUPPER ${RUNTIME_CONFIG} UPPERCASE_RUNTIME_CONFIG)
 
@@ -143,22 +143,24 @@ if(CLR_CMAKE_TARGET_OSX)
    find_library(CORESERVICES CoreServices)
    find_library(SECURITY Security)
    find_library(SYSTEM System)
- 
+
    LIST(APPEND CORECLR_LIBRARIES
      ${COREFOUNDATION}
      ${CORESERVICES}
      ${SECURITY}
      ${SYSTEM}
    )
-endif(CLR_CMAKE_TARGET_OSX)
- 
-if(CLR_CMAKE_TARGET_NETBSD)
+elseif(CLR_CMAKE_TARGET_NETBSD)
      find_library(KVM kvm)
- 
+
      LIST(APPEND CORECLR_LIBRARIES
        ${KVM}
      )
-endif(CLR_CMAKE_TARGET_NETBSD)
+elseif (CLR_CMAKE_TARGET_SUNOS)
+     LIST(APPEND CORECLR_LIBRARIES
+         socket
+     )
+endif(CLR_CMAKE_TARGET_OSX)
 
 # On *BSD, we always use the libunwind that's part of the OS
 if(CLR_CMAKE_TARGET_FREEBSD)
@@ -199,7 +201,7 @@ else()
     # elseif (CLR_CMAKE_TARGET_UNIX)
     #     find_package(ZLIB REQUIRED)
     # endif ()
-    
+
     # Additional requirements for System.Net.Security.Native
     if (HAVE_GSSFW_HEADERS)
        find_library(LIBGSS NAMES GSS)
@@ -217,7 +219,7 @@ else()
          message(FATAL_ERROR "Cannot find libgssapi_krb5 and System.Net.Security.Native cannot build without it. Try installing libkrb5-dev (or the appropriate package for your platform)")
        endif()
     endif()
-    
+
     # Additional requirements for System.Native
     if (CLR_CMAKE_TARGET_LINUX AND NOT CLR_CMAKE_TARGET_ANDROID)
         set(NATIVE_LIBS_EXTRA
