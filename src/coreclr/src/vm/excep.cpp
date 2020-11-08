@@ -7473,7 +7473,7 @@ VEH_ACTION WINAPI CLRVectoredExceptionHandlerPhase3(PEXCEPTION_POINTERS pExcepti
             if ((!fAVisOk) && !(pExceptionRecord->ExceptionFlags & EXCEPTION_UNWINDING))
             {
                 PCODE ip = (PCODE)GetIP(pContext);
-                if (IsIPInModule(GetClrModuleBase(), ip) || IsIPInModule(GCHeapUtilities::GetGCModule(), ip))
+                if (IsIPInModule(GetClrModuleBase(), ip) || IsIPInModule(GCHeapUtilities::GetGCModuleBase(), ip))
                 {
                     CONTRACT_VIOLATION(ThrowsViolation|FaultViolation);
 
