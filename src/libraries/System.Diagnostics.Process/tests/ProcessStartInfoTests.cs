@@ -947,9 +947,6 @@ namespace System.Diagnostics.Tests
 
                 try
                 {
-                    process.WaitForInputIdle(); // Give the file a chance to load
-                    Assert.Equal("notepad", process.ProcessName);
-
                     VerifyNotepadMainWindowTitle(process, tempFile);
                 }
                 finally
@@ -984,11 +981,10 @@ namespace System.Diagnostics.Tests
 
                 try
                 {
-                    process.WaitForInputIdle(); // Give the file a chance to load
-                    Assert.Equal("notepad", process.ProcessName);
-
                     if (PlatformDetection.IsInAppContainer)
                     {
+                        process.WaitForInputIdle(); // Give the file a chance to load
+                        Assert.Equal("notepad", process.ProcessName);
                         Assert.Throws<PlatformNotSupportedException>(() => process.MainWindowTitle);
                     }
                     else
@@ -1170,9 +1166,6 @@ namespace System.Diagnostics.Tests
 
                 try
                 {
-                    process.WaitForInputIdle(); // Give the file a chance to load
-                    Assert.Equal("notepad", process.ProcessName);
-
                     VerifyNotepadMainWindowTitle(process, tempFile);
                 }
                 finally
@@ -1186,6 +1179,9 @@ namespace System.Diagnostics.Tests
         {
             // On some Windows versions, the file extension is not included in the title
             string expected = Path.GetFileNameWithoutExtension(filename);
+
+            process.WaitForInputIdle(); // Give the file a chance to load
+            Assert.Equal("notepad", process.ProcessName);
 
             // Notepad calls CreateWindowEx with pWindowName of empty string, then calls SetWindowTextW
             // with "Untitled - Notepad" then finally if you're opening a file, calls SetWindowTextW
