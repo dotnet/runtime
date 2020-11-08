@@ -950,8 +950,18 @@ namespace System.Diagnostics.Tests
                     process.WaitForInputIdle(); // Give the file a chance to load
                     Assert.Equal("notepad", process.ProcessName);
 
+                    string title = process.MainWindowTitle;
+                    if (title.Length == 0)
+                    {
+                        // Notepad calls CreateWindowEx with pWindowName of empty string, then calls SetWindowTextW
+                        // with "Untitled - Notepad" then finally if you're opening a file, calls SetWindowTextW
+                        // with something similar to "myfilename - Notepad". So there's a race between input idle
+                        // and reading MainWindowTitle because of how Notepad is implemented.
+                        Thread.Sleep(5000);
+                        title = process.MainWindowTitle;
+                    }
                     // On some Windows versions, the file extension is not included in the title
-                    Assert.StartsWith(Path.GetFileNameWithoutExtension(tempFile), process.MainWindowTitle);
+                    Assert.StartsWith(Path.GetFileNameWithoutExtension(tempFile), title);
                 }
                 finally
                 {
@@ -994,8 +1004,18 @@ namespace System.Diagnostics.Tests
                     }
                     else
                     {
+                        string title = process.MainWindowTitle;
+                        if (title.Length == 0)
+                        {
+                            // Notepad calls CreateWindowEx with pWindowName of empty string, then calls SetWindowTextW
+                            // with "Untitled - Notepad" then finally if you're opening a file, calls SetWindowTextW
+                            // with something similar to "myfilename - Notepad". So there's a race between input idle
+                            // and reading MainWindowTitle because of how Notepad is implemented.
+                            Thread.Sleep(5000);
+                            title = process.MainWindowTitle;
+                        }
                         // On some Windows versions, the file extension is not included in the title
-                        Assert.StartsWith(Path.GetFileNameWithoutExtension(tempFile), process.MainWindowTitle);
+                        Assert.StartsWith(Path.GetFileNameWithoutExtension(tempFile), title);
                     }
                 }
                 finally
@@ -1175,7 +1195,6 @@ namespace System.Diagnostics.Tests
                     process.WaitForInputIdle(); // Give the file a chance to load
                     Assert.Equal("notepad", process.ProcessName);
 
-                    // On some Windows versions, the file extension is not included in the title
                     string title = process.MainWindowTitle;
                     if (title.Length == 0)
                     {
@@ -1186,7 +1205,8 @@ namespace System.Diagnostics.Tests
                         Thread.Sleep(5000);
                         title = process.MainWindowTitle;
                     }
-                    Assert.StartsWith(Path.GetFileNameWithoutExtension(tempFile), process.MainWindowTitle);
+                    // On some Windows versions, the file extension is not included in the title
+                    Assert.StartsWith(Path.GetFileNameWithoutExtension(tempFile), title);
                 }
                 finally
                 {
