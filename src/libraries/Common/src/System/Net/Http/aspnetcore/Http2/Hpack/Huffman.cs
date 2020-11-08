@@ -292,33 +292,34 @@ namespace System.Net.Http.HPack
             // -----------------------------------------------------------------
             //  15  14  13  12  11  10   9   8   7   6   5   4   3   2   1   0
             // +---+---+---+---+---+---+---+---+---+---+---+---+---+---+---+---+
-            // | 0 |   next_lookup_table_index |            not_used           |
+            // | 1 |   next_lookup_table_index |            not_used           |
             // +---+---------------------------+-------------------------------+
             // or
             // +---+---+---+---+---+---+---+---+---+---+---+---+---+---+---+---+
-            // | 1 |     number_of_used_bits   |              octet            |
+            // | 0 |     number_of_used_bits   |              octet            |
             // +---+---------------------------+-------------------------------+
 
-            // Bit 15 set indicates a leaf value of decoding tree.
-            // For example value 0x8241 means that we have reached end of huffman code
-            // with result byte 0x41 'A' and from lookup bits count only rightmost 2 bites was used
+            // Bit 15 unset indicates a leaf value of decoding tree.
+            // For example value 0x0241 means that we have reached end of huffman code
+            // with result byte 0x41 'A' and from lookup bits only rightmost 2 bits were used
             // and rest of bits are part of next huffman code.
 
-            // Bit 15 unset indicates that code is not yet decoded and next lookup table index shall be used
+            // Bit 15 set indicates that code is not yet decoded and next lookup table index shall be used
             // for next n bits of huffman code.
             // 0 in 'next lookup table index' is considered as decoding error - invalid huffman code
 
             // Because HPack uses static huffman code defined in RFC https://httpwg.org/specs/rfc7541.html#huffman.code
-            // it is guaranteed that for this huffman code generated decoding lookup tree MUST consist of 15 lookup tables
-            var lut = new ushort[15 * 256];
+            // it is guaranteed that for this huffman code generated decoding lookup tree MUST consist of exactly 15 lookup tables
+            var decodingTree = new ushort[15 * 256];
 
             int allocatedLookupTableIndex = 0;
             // Create traverse path for all 0..256 octets, 256 is EOS, see: http://httpwg.org/specs/rfc7541.html#rfc.section.5.2
             for (int octet = 0; octet <= 256; octet++)
             {
-                (uint code, int bitsLeft) = Encode(octet);
+                (uint code, int bitLength) = Encode(octet);
 
                 int lookupTableIndex = 0;
+                int bitsLeft = bitLength;
                 while (bitsLeft > 0)
                 {
                     // read next 8 bits from huffman code
@@ -349,39 +350,39 @@ namespace System.Net.Http.HPack
 
                                 // Invalid huffman code - EOS
                                 // +---+---+---+---+---+---+---+---+---+---+---+---+---+---+---+---+
-                                // | 0 | 0   0   0   0   0   0   0 | 1   1   1   1   1   1   1   1 |
+                                // | 1 | 0   0   0   0   0   0   0 | 1   1   1   1   1   1   1   1 |
                                 // +---+---------------------------+-------------------------------+
-                                lut[(lookupTableIndex << 8) + (indexInLookupTable | suffix)] = 0x00ff;
+                                decodingTree[(lookupTableIndex << 8) + (indexInLookupTable | suffix)] = 0x80ff;
                             }
                             else
                             {
                                 // Leaf lookup value
                                 // +---+---+---+---+---+---+---+---+---+---+---+---+---+---+---+---+
-                                // | 1 |     number_of_used_bits   |              code             |
+                                // | 0 |     number_of_used_bits   |              code             |
                                 // +---+---------------------------+-------------------------------+
-                                lut[(lookupTableIndex << 8) + (indexInLookupTable | suffix)] = (ushort)(((0x80 | bitsLeft) << 8) | octet);
+                                decodingTree[(lookupTableIndex << 8) + (indexInLookupTable | suffix)] = (ushort)((bitsLeft << 8) | octet);
                             }
                         }
                     }
                     else
                     {
                         // More than 8 bits left in huffman code means that we need to traverse to another lookup table for next 8 bits
-                        ushort lookupValue = lut[(lookupTableIndex << 8) + indexInLookupTable];
+                        ushort lookupValue = decodingTree[(lookupTableIndex << 8) + indexInLookupTable];
 
                         // Because next_lookup_table_index can not be 0, as 0 is index of root table, default value of array element
                         // means that we have not initialized it yet => lookup table MUST be allocated and its index assigned to that lookup value
                         // +---+---+---+---+---+---+---+---+---+---+---+---+---+---+---+---+
-                        // | 0 |   next_lookup_table_index |            not_used           |
+                        // | 1 |   next_lookup_table_index |            not_used           |
                         // +---+---------------------------+-------------------------------+
                         if (lookupValue == default(ushort))
                         {
                             ++allocatedLookupTableIndex;
-                            lut[(lookupTableIndex << 8) + indexInLookupTable] = (ushort)(allocatedLookupTableIndex << 8);
+                            decodingTree[(lookupTableIndex << 8) + indexInLookupTable] = (ushort)((0x80 | allocatedLookupTableIndex) << 8);
                             lookupTableIndex = allocatedLookupTableIndex;
                         }
                         else
                         {
-                            lookupTableIndex = lookupValue >> 8;
+                            lookupTableIndex = (lookupValue & 0x7f00) >> 8;
                         }
                     }
 
@@ -390,7 +391,7 @@ namespace System.Net.Http.HPack
                 }
             }
 
-            return lut;
+            return decodingTree;
         }
 
         /// <summary>
@@ -444,11 +445,11 @@ namespace System.Net.Http.HPack
 
                     ushort lookupValue = decodingTree[(lookupTableIndex << 8) + lookupIndex];
 
-                    if (lookupValue >= 0x80_00)
+                    if (lookupValue < 0x80_00)
                     {
                         // Octet found.
                         // +---+---+---+---+---+---+---+---+---+---+---+---+---+---+---+---+
-                        // | 1 |     number_of_used_bits   |              octet            |
+                        // | 0 |     number_of_used_bits   |              octet            |
                         // +---+---------------------------+-------------------------------+
                         if (j >= dst.Length)
                         {
@@ -459,15 +460,15 @@ namespace System.Net.Http.HPack
 
                         // Start lookup of next symbol
                         lookupTableIndex = 0;
-                        bitsInAcc -= (lookupValue & 0x7f00) >> 8;
+                        bitsInAcc -= lookupValue >> 8;
                     }
                     else
                     {
                         // Traverse to next lookup table.
                         // +---+---+---+---+---+---+---+---+---+---+---+---+---+---+---+---+
-                        // | 0 |   next_lookup_table_index |            not_used           |
+                        // | 1 |   next_lookup_table_index |            not_used           |
                         // +---+---------------------------+-------------------------------+
-                        lookupTableIndex = lookupValue >> 8;
+                        lookupTableIndex = (lookupValue & 0x7f00) >> 8;
                         if (lookupTableIndex == 0)
                         {
                             // No valid symbol could be decoded or EOS was decoded
@@ -504,13 +505,13 @@ namespace System.Net.Http.HPack
 
                 ushort lookupValue = decodingTree[(lookupTableIndex << 8) + lookupIndex];
 
-                if (lookupValue >= 0x80_00)
+                if (lookupValue < 0x80_00)
                 {
                     // Octet found.
                     // +---+---+---+---+---+---+---+---+---+---+---+---+---+---+---+---+
-                    // | 1 |     number_of_used_bits   |              octet            |
+                    // | 0 |     number_of_used_bits   |              octet            |
                     // +---+---------------------------+-------------------------------+
-                    bitsInAcc -= (lookupValue & 0x7f00) >> 8;
+                    bitsInAcc -= lookupValue >> 8;
 
                     if (bitsInAcc < 0)
                     {
