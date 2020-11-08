@@ -215,39 +215,6 @@ STDAPI ReOpenMetaDataWithMemoryEx(
     return hr;
 }
 
-STDAPI GetCORSystemDirectoryInternaL(SString& pBuffer)
-{
-    CONTRACTL {
-        NOTHROW;
-        GC_NOTRIGGER;
-        ENTRY_POINT;
-    } CONTRACTL_END;
-
-    HRESULT hr = S_OK;
-    BEGIN_ENTRYPOINT_NOTHROW;
-
-
-#ifdef CROSSGEN_COMPILE
-
-    if (WszGetModuleFileName(NULL, pBuffer) > 0)
-    {
-        hr = CopySystemDirectory(pBuffer, pBuffer);
-    }
-    else {
-        hr = HRESULT_FROM_GetLastError();
-    }
-
-#else
-
-    if (!PAL_GetPALDirectoryWrapper(pBuffer)) {
-        hr = HRESULT_FROM_GetLastError();
-    }
-#endif
-
-    END_ENTRYPOINT_NOTHROW;
-    return hr;
-}
-
 static DWORD g_dwSystemDirectory = 0;
 static WCHAR * g_pSystemDirectory = NULL;
 
@@ -320,7 +287,15 @@ HRESULT SetInternalSystemDirectory()
             // use local buffer for thread safety
             PathString wzSystemDirectory;
 
-            hr = GetCORSystemDirectoryInternaL(wzSystemDirectory);
+#ifdef TARGET_UNIX
+
+            // REVIEW: If I do not do this, I get linker errors about PAL_Random missing. Why?
+
+            GUID g;
+            PAL_Random(&g, sizeof(GUID));
+#endif
+
+            hr = GetClrModuleDirectory(wzSystemDirectory);
 
             if (FAILED(hr)) {
                 wzSystemDirectory.Set(W('\0'));

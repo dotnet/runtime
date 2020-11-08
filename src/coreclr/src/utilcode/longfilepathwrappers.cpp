@@ -765,52 +765,6 @@ FindFirstFileExWrapper(
 }
 #endif // HOST_WINDOWS
 
-
-#ifdef HOST_WINDOWS
-
-BOOL PAL_GetPALDirectoryWrapper(SString& pbuffer)
-{
-
-    HRESULT hr = S_OK;
-
-    PathString pPath;
-    DWORD dwPath;
-
-    dwPath = GetClrModulePathName(pPath);
-
-    if(dwPath == 0)
-    {
-        hr = HRESULT_FROM_GetLastErrorNA();
-    }
-    else
-    {
-        hr = CopySystemDirectory(pPath, pbuffer);
-    }
-
-    return (hr == S_OK);
-}
-
-#else
-
-BOOL PAL_GetPALDirectoryWrapper(SString& pbuffer)
-{
-    BOOL retval = FALSE;
-    COUNT_T size  = MAX_LONGPATH;
-
-    if(!(retval = PAL_GetPALDirectoryW(pbuffer.OpenUnicodeBuffer(size - 1), &size)))
-    {
-        pbuffer.CloseBuffer(0);
-        retval = PAL_GetPALDirectoryW(pbuffer.OpenUnicodeBuffer(size - 1), &size);
-    }
-
-    pbuffer.CloseBuffer(size);
-
-    return retval;
-}
-
-#endif // HOST_WINDOWS
-
-
 //Implementation of LongFile Helpers
 const WCHAR LongFile::DirectorySeparatorChar = W('\\');
 const WCHAR LongFile::AltDirectorySeparatorChar = W('/');

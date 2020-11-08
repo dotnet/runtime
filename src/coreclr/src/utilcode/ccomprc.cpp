@@ -688,7 +688,7 @@ HRESULT CCompRC::LoadLibraryThrows(HRESOURCEDLL * pHInst)
 
     // Try first in the same directory as this dll.
 
-    hr = GetCORSystemDirectoryInternaL(rcPath);
+    hr = GetClrModuleDirectory(rcPath);
     if (FAILED(hr))
         return hr;
 

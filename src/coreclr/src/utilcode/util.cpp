@@ -2951,18 +2951,18 @@ LPWSTR *SegmentCommandLine(LPCWSTR lpCmdLine, DWORD *pNumArgs)
 //======================================================================
 // This function returns true, if it can determine that the instruction pointer
 // refers to a code address that belongs in the range of the given image.
-BOOL IsIPInModule(PTR_VOID pModule, PCODE ip)
+BOOL IsIPInModule(PTR_VOID pModuleBaseAddress, PCODE ip)
 {
     STATIC_CONTRACT_LEAF;
     SUPPORTS_DAC;
 
     struct Param
     {
-        PTR_VOID pModule;
+        PTR_VOID pModuleBaseAddress;
         PCODE ip;
         BOOL fRet;
     } param;
-    param.pModule = pModule;
+    param.pModuleBaseAddress = pModuleBaseAddress;
     param.ip = ip;
     param.fRet = FALSE;
 
@@ -2970,7 +2970,7 @@ BOOL IsIPInModule(PTR_VOID pModule, PCODE ip)
 #ifdef HOST_WINDOWS
     PAL_TRY(Param *, pParam, &param)
     {
-        PTR_BYTE pBase = dac_cast<PTR_BYTE>(pParam->pModule);
+        PTR_BYTE pBase = dac_cast<PTR_BYTE>(pParam->pModuleBaseAddress);
 
         PTR_IMAGE_DOS_HEADER pDOS = NULL;
         PTR_IMAGE_NT_HEADERS pNT  = NULL;

@@ -4707,7 +4707,7 @@ FORCEINLINE void HolderSysFreeString(BSTR str) { CONTRACT_VIOLATION(ThrowsViolat
 
 typedef Wrapper<BSTR, DoNothing, HolderSysFreeString> BSTRHolder;
 
-BOOL IsIPInModule(PTR_VOID pModule, PCODE ip);
+BOOL IsIPInModule(PTR_VOID pModuleBaseAddress, PCODE ip);
 
 namespace UtilCode
 {
