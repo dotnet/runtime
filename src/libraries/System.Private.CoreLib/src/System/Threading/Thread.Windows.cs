@@ -5,7 +5,10 @@ namespace System.Threading
 {
     public sealed partial class Thread
     {
-        private static Exception GetApartmentStateChangeFailedException() =>
-            new InvalidOperationException(SR.Thread_ApartmentState_ChangeFailed);
+        private static Exception GetApartmentStateChangeFailedException()
+        {
+            string msg = SR.Format(SR.Thread_ApartmentState_ChangeFailed, Thread.CurrentThread.GetApartmentState());
+            return new InvalidOperationException(msg);
+        }
     }
 }
