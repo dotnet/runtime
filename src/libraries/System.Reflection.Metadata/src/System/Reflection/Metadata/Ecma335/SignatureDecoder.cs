@@ -14,7 +14,7 @@ namespace System.Reflection.Metadata.Ecma335
     {
         private readonly ISignatureTypeProvider<TType, TGenericContext> _provider;
         private readonly MetadataReader _metadataReaderOpt;
-        private readonly TGenericContext _genericContext;
+        private readonly TGenericContext? _genericContext;
 
         /// <summary>
         /// Creates a new SignatureDecoder.
@@ -29,7 +29,7 @@ namespace System.Reflection.Metadata.Ecma335
         public SignatureDecoder(
             ISignatureTypeProvider<TType, TGenericContext> provider,
             MetadataReader metadataReader,
-            TGenericContext genericContext)
+            TGenericContext? genericContext)
         {
             if (provider == null)
             {

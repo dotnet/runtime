@@ -13,12 +13,12 @@ namespace System.Reflection.Metadata
         /// <summary>
         /// Gets the type symbol for the generic method parameter at the given zero-based index.
         /// </summary>
-        TType GetGenericMethodParameter(TGenericContext genericContext, int index);
+        TType GetGenericMethodParameter(TGenericContext? genericContext, int index);
 
         /// <summary>
         /// Gets the type symbol for the generic type parameter at the given zero-based index.
         /// </summary>
-        TType GetGenericTypeParameter(TGenericContext genericContext, int index);
+        TType GetGenericTypeParameter(TGenericContext? genericContext, int index);
 
         /// <summary>
         /// Gets the type symbol for a type with a custom modifier applied.
@@ -49,6 +49,6 @@ namespace System.Reflection.Metadata
         /// The kind of the type as specified in the signature. To interpret this value use <see cref="Ecma335.MetadataReaderExtensions.ResolveSignatureTypeKind(MetadataReader, EntityHandle, byte)"/>
         /// Note that when the signature comes from a WinMD file additional processing is needed to determine whether the target type is a value type or a reference type.
         /// </param>
-        TType GetTypeFromSpecification(MetadataReader reader, TGenericContext genericContext, TypeSpecificationHandle handle, byte rawTypeKind);
+        TType GetTypeFromSpecification(MetadataReader reader, TGenericContext? genericContext, TypeSpecificationHandle handle, byte rawTypeKind);
     }
 }
