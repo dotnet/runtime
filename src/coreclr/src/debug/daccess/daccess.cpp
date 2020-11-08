@@ -95,12 +95,6 @@ BOOL WINAPI DllMain(HANDLE instance, DWORD reason, LPVOID reserved)
     return TRUE;
 }
 
-HINSTANCE
-GetModuleInst(void)
-{
-    return g_thisModule;
-}
-
 HRESULT
 ConvertUtf8(__in LPCUTF8 utf8,
             ULONG32 bufLen,

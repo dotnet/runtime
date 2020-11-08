@@ -368,7 +368,6 @@ namespace Loader
 #include "gcstress.h"
 
 HRESULT EnsureRtlFunctions();
-HINSTANCE GetModuleInst();
 
 // Helper function returns the base of clr module.
 void* GetClrModuleBase();

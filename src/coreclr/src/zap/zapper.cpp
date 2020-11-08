@@ -465,14 +465,11 @@ void Zapper::LoadAndInitializeJITForNgen(LPCWSTR pwzJitName, OUT HINSTANCE* phJi
     }
     else
 #endif // !defined(FEATURE_MERGE_JIT_AND_ENGINE)
-    if (GetClrModulePathName(CoreClrFolder))
+    hr = GetClrModuleDirectory(CoreClrFolder);
+    if (SUCCEEDED(hr))
     {
-        hr = CopySystemDirectory(CoreClrFolder, CoreClrFolder);
-        if (SUCCEEDED(hr))
-        {
-            CoreClrFolder.Append(pwzJitName);
+        CoreClrFolder.Append(pwzJitName);
 
-        }
     }
 
     if (SUCCEEDED(hr))
