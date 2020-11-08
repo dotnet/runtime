@@ -950,16 +950,7 @@ namespace System.Diagnostics.Tests
                     process.WaitForInputIdle(); // Give the file a chance to load
                     Assert.Equal("notepad", process.ProcessName);
 
-                    string title = process.MainWindowTitle;
-                    if (title.Length == 0)
-                    {
-                        // Notepad calls CreateWindowEx with pWindowName of empty string, then calls SetWindowTextW
-                        // with "Untitled - Notepad" then finally if you're opening a file, calls SetWindowTextW
-                        // with something similar to "myfilename - Notepad". So there's a race between input idle
-                        // and reading MainWindowTitle because of how Notepad is implemented.
-                        Thread.Sleep(5000);
-                        title = process.MainWindowTitle;
-                    }
+                    string title = GetNotepadMainWindowTitle(process);
                     // On some Windows versions, the file extension is not included in the title
                     Assert.StartsWith(Path.GetFileNameWithoutExtension(tempFile), title);
                 }
@@ -1004,16 +995,7 @@ namespace System.Diagnostics.Tests
                     }
                     else
                     {
-                        string title = process.MainWindowTitle;
-                        if (title.Length == 0)
-                        {
-                            // Notepad calls CreateWindowEx with pWindowName of empty string, then calls SetWindowTextW
-                            // with "Untitled - Notepad" then finally if you're opening a file, calls SetWindowTextW
-                            // with something similar to "myfilename - Notepad". So there's a race between input idle
-                            // and reading MainWindowTitle because of how Notepad is implemented.
-                            Thread.Sleep(5000);
-                            title = process.MainWindowTitle;
-                        }
+                        string title = GetNotepadMainWindowTitle(process);
                         // On some Windows versions, the file extension is not included in the title
                         Assert.StartsWith(Path.GetFileNameWithoutExtension(tempFile), title);
                     }
@@ -1195,16 +1177,7 @@ namespace System.Diagnostics.Tests
                     process.WaitForInputIdle(); // Give the file a chance to load
                     Assert.Equal("notepad", process.ProcessName);
 
-                    string title = process.MainWindowTitle;
-                    if (title.Length == 0)
-                    {
-                        // Notepad calls CreateWindowEx with pWindowName of empty string, then calls SetWindowTextW
-                        // with "Untitled - Notepad" then finally if you're opening a file, calls SetWindowTextW
-                        // with something similar to "myfilename - Notepad". So there's a race between input idle
-                        // and reading MainWindowTitle because of how Notepad is implemented.
-                        Thread.Sleep(5000);
-                        title = process.MainWindowTitle;
-                    }
+                    string title = GetNotepadMainWindowTitle(process);
                     // On some Windows versions, the file extension is not included in the title
                     Assert.StartsWith(Path.GetFileNameWithoutExtension(tempFile), title);
                 }
@@ -1213,6 +1186,23 @@ namespace System.Diagnostics.Tests
                     process?.Kill();
                 }
             }
+        }
+
+        private string GetNotepadMainWindowTitle(Process process)
+        {
+            Thread.Sleep(250);
+            string title = process.MainWindowTitle;
+            if (title.Length == 0)
+            {
+                // Notepad calls CreateWindowEx with pWindowName of empty string, then calls SetWindowTextW
+                // with "Untitled - Notepad" then finally if you're opening a file, calls SetWindowTextW
+                // with something similar to "myfilename - Notepad". So there's a race between input idle
+                // and reading MainWindowTitle because of how Notepad is implemented.
+                Thread.Sleep(5000);
+                title = process.MainWindowTitle;
+            }
+
+            return title;
         }
     }
 }
