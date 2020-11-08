@@ -1537,6 +1537,29 @@ struct CORINFO_RESOLVED_TOKEN
     ULONG                   cbMethodSpec;
 };
 
+struct CORINFO_VIRTUAL_METHOD_CALLER_CONTEXT
+{
+    //
+    // [In] arguments of tryResolveVirtualMethod
+    //
+    CORINFO_METHOD_HANDLE       virtualMethod;
+    CORINFO_CLASS_HANDLE        implementingClass;
+    CORINFO_CONTEXT_HANDLE      ownerType;
+
+
+    //
+    // [Out] arguments of tryResolveVirtualMethod.
+    // - devirtualizedMethod is set to MethodDesc of devirt'ed method iff we were able to devirtualize.
+    //      invariant is `tryResolveVirtualMethod(...) == (devirtualizedMethod != nullptr)`.
+    // - requiresInstMethodTableArg is set to TRUE iff jit has to pass "secret" type handle arg.
+    // - patchedOwnerType is set to wrapped CORINFO_CLASS_HANDLE of devirt'ed method table.
+    // - (!) two last out params have their meaning only when we devirt'ed into DIM.
+    //
+    CORINFO_METHOD_HANDLE       devirtualizedMethod;
+    bool                        requiresInstMethodTableArg;
+    CORINFO_CONTEXT_HANDLE      patchedOwnerType;
+};
+
 struct CORINFO_CALL_INFO
 {
     CORINFO_METHOD_HANDLE   hMethod;            //target method handle
@@ -2042,14 +2065,13 @@ public:
     // or the method in info->objClass that implements the interface method
     // represented by info->virtualMethod.
     //
-    // Return null if devirtualization is not possible. Owner type is optional
+    // Return true if devirtualization is possible. `virtualMethodContext.ownerType` is optional
     // and provides additional context for shared interface devirtualization.
-    virtual CORINFO_METHOD_HANDLE resolveVirtualMethod(
-            CORINFO_METHOD_HANDLE       virtualMethod,                  /* IN */
-            CORINFO_CLASS_HANDLE        implementingClass,              /* IN */
-            bool*                       requiresInstMethodTableArg,     /* OUT */
-            CORINFO_CONTEXT_HANDLE*     ownerType = NULL                /* IN, OUT */
-            ) = 0;
+    virtual bool tryResolveVirtualMethod(
+        CORINFO_VIRTUAL_METHOD_CALLER_CONTEXT * virtualMethodContext /* IN, OUT */
+        ) = 0;
+
+    
 
     // Get the unboxed entry point for a method, if possible.
     virtual CORINFO_METHOD_HANDLE getUnboxedEntry(

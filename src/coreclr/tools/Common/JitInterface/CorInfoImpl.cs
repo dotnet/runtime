@@ -945,10 +945,11 @@ namespace Internal.JitInterface
         }
 
         // crossgen2smoke is passing now but I'm still not sure in this code
-        private CORINFO_METHOD_STRUCT_* resolveVirtualMethod(CORINFO_METHOD_STRUCT_* baseMethod, CORINFO_CLASS_STRUCT_* derivedClass, bool* requiresInstMethodTableArg, CORINFO_CONTEXT_STRUCT** ownerType)
+        private bool tryResolveVirtualMethod(ref CORINFO_VIRTUAL_METHOD_CALLER_CONTEXT virtualMethodContext)
         {
-            TypeDesc implType = HandleToObject(derivedClass);
-            *requiresInstMethodTableArg = false;
+            TypeDesc implType = (TypeDesc)HandleToObject((IntPtr)virtualMethodContext.implementingClass);
+            virtualMethodContext.requiresInstMethodTableArg = false;
+            virtualMethodContext.patchedOwnerType = null;
 
             // __Canon cannot be devirtualized
             if (objType.IsCanonicalDefinitionType(CanonicalFormKind.Any))
@@ -956,18 +957,18 @@ namespace Internal.JitInterface
                 return false;
             }
 
-            MethodDesc decl = HandleToObject(info->virtualMethod);
+            MethodDesc decl = (MethodDesc)HandleToObject(virtualMethodContext.virtualMethod);
             Debug.Assert(!decl.HasInstantiation);
 
-            if (*ownerType != null)
+            if (virtualMethodContext.ownerType != null)
             {
-                TypeDesc ownerTypeDesc = typeFromContext(*ownerType);
+                TypeDesc ownerTypeDesc = typeFromContext(virtualMethodContext.ownerType);
                 if (decl.OwningType != ownerTypeDesc)
                 {
                     Debug.Assert(ownerTypeDesc is InstantiatedType);
                     decl = _compilation.TypeSystemContext.GetMethodForInstantiatedType(decl.GetTypicalMethodDefinition(), (InstantiatedType)ownerTypeDesc);
-                    *ownerType = contextFromType(decl.OwningType);
-                    *requiresInstMethodTableArg = true;
+                    virtualMethodContext.patchedOwnerType = contextFromType(decl.OwningType);
+                    virtualMethodContext.requiresInstMethodTableArg = true;
                 }
             }
 
@@ -978,16 +979,11 @@ namespace Internal.JitInterface
                 return false;
             }
 
-            if (impl.OwningType.IsValueType)
-            {
-                impl = getUnboxingThunk(impl);
+                virtualMethodContext.devirtualizedMethod = ObjectToHandle(impl);
+                return true;
             }
 
-            info->devirtualizedMethod = ObjectToHandle(impl);
-            info->requiresInstMethodTableArg = false;
-            info->exactContext = contextFromType(impl.OwningType);
-
-            return true;
+            return false;
         }
 
         private CORINFO_METHOD_STRUCT_* getUnboxedEntry(CORINFO_METHOD_STRUCT_* ftn, ref bool requiresInstMethodTableArg)

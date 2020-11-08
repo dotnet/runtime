@@ -3996,13 +3996,9 @@ void ZapInfo::getMethodVTableOffset(CORINFO_METHOD_HANDLE method,
     m_pEEJitInfo->getMethodVTableOffset(method, pOffsetOfIndirection, pOffsetAfterIndirection, isRelative);
 }
 
-CORINFO_METHOD_HANDLE ZapInfo::resolveVirtualMethod(
-        CORINFO_METHOD_HANDLE virtualMethod,
-        CORINFO_CLASS_HANDLE implementingClass,
-        bool* requiresInstMethodTableArg,
-        CORINFO_CONTEXT_HANDLE* ownerType)
+bool ZapInfo::tryResolveVirtualMethod(CORINFO_VIRTUAL_METHOD_CALLER_CONTEXT* virtualMethodContext)
 {
-    return m_pEEJitInfo->resolveVirtualMethod(virtualMethod, implementingClass, requiresInstMethodTableArg, ownerType);
+    return m_pEEJitInfo->tryResolveVirtualMethod(virtualMethodContext);
 }
 
 CORINFO_METHOD_HANDLE ZapInfo::getUnboxedEntry(

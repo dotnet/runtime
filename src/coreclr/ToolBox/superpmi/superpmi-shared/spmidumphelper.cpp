@@ -38,6 +38,24 @@ std::string SpmiDumpHelper::DumpAgnostic_CORINFO_RESOLVED_TOKEN(
            DumpAgnostic_CORINFO_RESOLVED_TOKENout(token.outValue);
 }
 
+std::string SpmiDumpHelper::DumpAgnostic_CORINFO_VIRTUAL_METHOD_CALLER_CONTEXTin(
+    const MethodContext::Agnostic_CORINFO_VIRTUAL_METHOD_CALLER_CONTEXTin& contextIn)
+{
+    char buffer[MAX_BUFFER_SIZE];
+    sprintf_s(buffer, MAX_BUFFER_SIZE, "cls-%016llX vmeth-%016llX ownrcls-%016llX", contextIn.implementingClass,
+              contextIn.virtualMethod, contextIn.ownerType);
+    return std::string(buffer);
+}
+
+std::string SpmiDumpHelper::DumpAgnostic_CORINFO_VIRTUAL_METHOD_CALLER_CONTEXTout(
+    const MethodContext::Agnostic_CORINFO_VIRTUAL_METHOD_CALLER_CONTEXTout& contextOut)
+{
+    char buffer[MAX_BUFFER_SIZE];
+    sprintf_s(buffer, MAX_BUFFER_SIZE, "meth-%016llX needarg-%08X ownrcls-%016llX", contextOut.devirtualizedMethod,
+              contextOut.requiresInstMethodTableArg, contextOut.patchedOwnerType);
+    return std::string(buffer);
+}
+
 std::string SpmiDumpHelper::DumpAgnostic_CORINFO_LOOKUP_KIND(
     const MethodContext::Agnostic_CORINFO_LOOKUP_KIND& lookupKind)
 {

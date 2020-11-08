@@ -43,6 +43,24 @@ public:
                                                   MethodContext::Agnostic_CORINFO_RESOLVED_TOKENout& token,
                                                   LightWeightMap<key, value>* buffers);
 
+    static MethodContext::Agnostic_CORINFO_VIRTUAL_METHOD_CALLER_CONTEXTin
+    CreateAgnostic_CORINFO_VIRTUAL_METHOD_CALLER_CONTEXTin(CORINFO_VIRTUAL_METHOD_CALLER_CONTEXT* pResolvedMethod);
+
+    static MethodContext::Agnostic_CORINFO_VIRTUAL_METHOD_CALLER_CONTEXTout
+    CreateAgnostic_CORINFO_VIRTUAL_METHOD_CALLER_CONTEXTout_without_buffers(
+        CORINFO_VIRTUAL_METHOD_CALLER_CONTEXT* pResolvedMethod);
+
+    template <typename key, typename value>
+    static MethodContext::Agnostic_CORINFO_VIRTUAL_METHOD_CALLER_CONTEXTout
+    StoreAgnostic_CORINFO_VIRTUAL_METHOD_CALLER_CONTEXTout(
+        CORINFO_VIRTUAL_METHOD_CALLER_CONTEXT* pResolvedMethod, LightWeightMap<key, value>* buffers);
+
+    template <typename key, typename value>
+    static void Restore_CORINFO_VIRTUAL_METHOD_CALLER_CONTEXTout(
+        CORINFO_VIRTUAL_METHOD_CALLER_CONTEXT*                            pResolvedMethod,
+        MethodContext::Agnostic_CORINFO_VIRTUAL_METHOD_CALLER_CONTEXTout& contextOut,
+        LightWeightMap<key, value>*                                       buffers);
+
     static MethodContext::Agnostic_CORINFO_SIG_INFO CreateAgnostic_CORINFO_SIG_INFO_without_buffers(
         CORINFO_SIG_INFO& sigInfo);
 
@@ -170,6 +188,52 @@ inline void SpmiRecordsHelper::Restore_CORINFO_RESOLVED_TOKENout(
     pResolvedToken->cbTypeSpec   = (ULONG)tokenOut.cbTypeSpec;
     pResolvedToken->pMethodSpec  = (PCCOR_SIGNATURE)buffers->GetBuffer(tokenOut.pMethodSpec_Index);
     pResolvedToken->cbMethodSpec = (ULONG)tokenOut.cbMethodSpec;
+}
+
+inline MethodContext::Agnostic_CORINFO_VIRTUAL_METHOD_CALLER_CONTEXTin SpmiRecordsHelper::
+    CreateAgnostic_CORINFO_VIRTUAL_METHOD_CALLER_CONTEXTin(CORINFO_VIRTUAL_METHOD_CALLER_CONTEXT* pResolvedMethod)
+{
+    MethodContext::Agnostic_CORINFO_VIRTUAL_METHOD_CALLER_CONTEXTin contextIn;
+    ZeroMemory(&contextIn, sizeof(contextIn));
+    contextIn.virtualMethod     = (DWORDLONG)pResolvedMethod->virtualMethod;
+    contextIn.implementingClass = (DWORDLONG)pResolvedMethod->implementingClass;
+    contextIn.ownerType         = (DWORDLONG)pResolvedMethod->ownerType;
+    return contextIn;
+}
+
+inline MethodContext::Agnostic_CORINFO_VIRTUAL_METHOD_CALLER_CONTEXTout SpmiRecordsHelper::
+    CreateAgnostic_CORINFO_VIRTUAL_METHOD_CALLER_CONTEXTout_without_buffers(
+        CORINFO_VIRTUAL_METHOD_CALLER_CONTEXT* pResolvedMethod)
+{
+    MethodContext::Agnostic_CORINFO_VIRTUAL_METHOD_CALLER_CONTEXTout contextOut;
+    ZeroMemory(&contextOut, sizeof(contextOut));
+    contextOut.devirtualizedMethod        = (DWORDLONG)pResolvedMethod->devirtualizedMethod;
+    contextOut.requiresInstMethodTableArg = (DWORD)pResolvedMethod->requiresInstMethodTableArg;
+    contextOut.patchedOwnerType           = (DWORDLONG)pResolvedMethod->patchedOwnerType;
+
+    return contextOut;
+}
+
+template <typename key, typename value>
+inline MethodContext::Agnostic_CORINFO_VIRTUAL_METHOD_CALLER_CONTEXTout SpmiRecordsHelper::
+    StoreAgnostic_CORINFO_VIRTUAL_METHOD_CALLER_CONTEXTout(
+        CORINFO_VIRTUAL_METHOD_CALLER_CONTEXT* pResolvedMethod, LightWeightMap<key, value>* buffers)
+{
+    MethodContext::Agnostic_CORINFO_VIRTUAL_METHOD_CALLER_CONTEXTout contextOut(
+        CreateAgnostic_CORINFO_VIRTUAL_METHOD_CALLER_CONTEXTout_without_buffers(pResolvedMethod));
+
+    return contextOut;
+}
+
+template <typename key, typename value>
+inline void SpmiRecordsHelper::Restore_CORINFO_VIRTUAL_METHOD_CALLER_CONTEXTout(
+    CORINFO_VIRTUAL_METHOD_CALLER_CONTEXT*                            pResolvedMethod,
+    MethodContext::Agnostic_CORINFO_VIRTUAL_METHOD_CALLER_CONTEXTout& contextOut,
+    LightWeightMap<key, value>*                                       buffers)
+{
+    pResolvedMethod->devirtualizedMethod        = (CORINFO_METHOD_HANDLE)contextOut.devirtualizedMethod;
+    pResolvedMethod->requiresInstMethodTableArg = contextOut.requiresInstMethodTableArg == 1;
+    pResolvedMethod->patchedOwnerType           = (CORINFO_CONTEXT_HANDLE)contextOut.patchedOwnerType;
 }
 
 inline MethodContext::Agnostic_CORINFO_SIG_INFO SpmiRecordsHelper::CreateAgnostic_CORINFO_SIG_INFO_without_buffers(

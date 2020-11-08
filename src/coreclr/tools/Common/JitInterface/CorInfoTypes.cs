@@ -295,7 +295,29 @@ namespace Internal.JitInterface
         public byte* pMethodSpec;
         public uint cbMethodSpec;
     }
+    
+    public unsafe struct CORINFO_VIRTUAL_METHOD_CALLER_CONTEXT
+    {
+        //
+        // [In] arguments of tryResolveVirtualMethod
+        //
+        public CORINFO_CLASS_STRUCT_* implementingClass;
+        public CORINFO_METHOD_STRUCT_* virtualMethod;
+        public CORINFO_CONTEXT_STRUCT* ownerType;
 
+        //
+        // [Out] arguments of tryResolveVirtualMethod.
+        // - devirtualizedMethod is set to MethodDesc of devirt'ed method iff we were able to devirtualize.
+        //      invariant is `tryResolveVirtualMethod(...) == (devirtualizedMethod != nullptr)`.
+        // - requiresInstMethodTableArg is set to TRUE iff jit has to pass "secret" type handle arg.
+        // - patchedOwnerType is set to wrapped CORINFO_CLASS_HANDLE of devirt'ed method table.
+        // - (!) two last out params have their meaning only when we devirt'ed into DIM.
+        //
+        public CORINFO_METHOD_STRUCT_* devirtualizedMethod;
+        public byte _requiresInstMethodTableArg;
+        public bool requiresInstMethodTableArg { get { return _requiresInstMethodTableArg != 0; } set { _requiresInstMethodTableArg = value ? (byte)1 : (byte)0; } }
+        public CORINFO_CONTEXT_STRUCT* patchedOwnerType;
+    }
 
     // Flags computed by a runtime compiler
     public enum CorInfoMethodRuntimeFlags

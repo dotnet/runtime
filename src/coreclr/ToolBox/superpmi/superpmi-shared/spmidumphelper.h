@@ -20,6 +20,10 @@ public:
     static std::string DumpAgnostic_CORINFO_RESOLVED_TOKENout(
         const MethodContext::Agnostic_CORINFO_RESOLVED_TOKENout& tokenOut);
     static std::string DumpAgnostic_CORINFO_RESOLVED_TOKEN(const MethodContext::Agnostic_CORINFO_RESOLVED_TOKEN& token);
+    static std::string DumpAgnostic_CORINFO_VIRTUAL_METHOD_CALLER_CONTEXTin(
+        const MethodContext::Agnostic_CORINFO_VIRTUAL_METHOD_CALLER_CONTEXTin& contextIn);
+    static std::string DumpAgnostic_CORINFO_VIRTUAL_METHOD_CALLER_CONTEXTout(
+        const MethodContext::Agnostic_CORINFO_VIRTUAL_METHOD_CALLER_CONTEXTout& contextOut);
     static std::string DumpAgnostic_CORINFO_LOOKUP_KIND(const MethodContext::Agnostic_CORINFO_LOOKUP_KIND& lookupKind);
     static std::string DumpAgnostic_CORINFO_CONST_LOOKUP(
         const MethodContext::Agnostic_CORINFO_CONST_LOOKUP& constLookup);

@@ -1313,7 +1313,7 @@ void MethodContext::recTryResolveToken(CORINFO_RESOLVED_TOKEN* pResolvedToken, b
 
     TryResolveTokenValue value;
 
-    value.tokenOut = SpmiRecordsHelper::StoreAgnostic_CORINFO_RESOLVED_TOKENout(pResolvedToken, ResolveToken);
+    value.tokenOut = SpmiRecordsHelper::StoreAgnostic_CORINFO_RESOLVED_TOKENout(pResolvedToken, TryResolveToken); // copypaste artifacts?
     value.success  = success ? 0 : 1;
 
     TryResolveToken->Add(key, value);
@@ -1335,7 +1335,8 @@ bool MethodContext::repTryResolveToken(CORINFO_RESOLVED_TOKEN* pResolvedToken)
 
     TryResolveTokenValue value = TryResolveToken->Get(key);
 
-    SpmiRecordsHelper::Restore_CORINFO_RESOLVED_TOKENout(pResolvedToken, value.tokenOut, ResolveToken);
+    // why not RestoreAgnostic_CORINFO_RESOLVED_TOKENout
+    SpmiRecordsHelper::Restore_CORINFO_RESOLVED_TOKENout(pResolvedToken, value.tokenOut, TryResolveToken); // copypaste artifacts?
 
     DEBUG_REP(dmpTryResolveToken(key, value));
     return (DWORD)value.success == 0;
@@ -3073,59 +3074,56 @@ void MethodContext::repGetMethodVTableOffset(CORINFO_METHOD_HANDLE method,
     DEBUG_REP(dmpGetMethodVTableOffset((DWORDLONG)method, value));
 }
 
-void MethodContext::recResolveVirtualMethod(CORINFO_METHOD_HANDLE   virtMethod,
-                                            CORINFO_CLASS_HANDLE    implClass,
-                                            bool*                   requiresInstMethodTableArg,
-                                            CORINFO_CONTEXT_HANDLE* ownerType,
-                                            CORINFO_METHOD_HANDLE   result)
+void MethodContext::recTryResolveVirtualMethod(CORINFO_VIRTUAL_METHOD_CALLER_CONTEXT* pResolvedMethod, bool success)
 {
-    if (ResolveVirtualMethod == nullptr)
+    if (TryResolveVirtualMethod == nullptr)
     {
-        ResolveVirtualMethod = new LightWeightMap<Agnostic_ResolveVirtualMethodKey, Agnostic_ResolveVirtualMethodResult>();
+        TryResolveVirtualMethod =
+            new LightWeightMap<Agnostic_CORINFO_VIRTUAL_METHOD_CALLER_CONTEXTin, TryResolveVirtualMethodValue>();
     }
 
-    Agnostic_ResolveVirtualMethod key;
-    key.virtualMethod               = (DWORDLONG)virtMethod;
-    key.implementingClass           = (DWORDLONG)implClass;
-    key.ownerType                   = (DWORDLONG)(*ownerType);
-    key.requiresInstMethodTableArg  = *requiresInstMethodTableArg ? 1 : 0; // it's out param, do we need this stuff idk
-    
-    ResolveVirtualMethod->Add(key, (DWORDLONG)result);
-    DEBUG_REC(dmpResolveVirtualMethod(key, (DWORDLONG)result));
+    Agnostic_CORINFO_VIRTUAL_METHOD_CALLER_CONTEXTin key;
+    ZeroMemory(&key, sizeof(Agnostic_CORINFO_VIRTUAL_METHOD_CALLER_CONTEXTin)); // We use the input structs as a key and
+                                                                                // use memcmp to compare..
+                                                                                // so we need to zero out padding too
+
+    key = SpmiRecordsHelper::CreateAgnostic_CORINFO_VIRTUAL_METHOD_CALLER_CONTEXTin(pResolvedMethod);
+
+    TryResolveVirtualMethodValue value;
+
+    value.contextOut =
+        SpmiRecordsHelper::StoreAgnostic_CORINFO_VIRTUAL_METHOD_CALLER_CONTEXTout(pResolvedMethod,
+                                                                                  TryResolveVirtualMethod);
+    value.success  = success ? 0 : 1;
+
+    TryResolveVirtualMethod->Add(key, value);
+    DEBUG_REC(dmpTryResolveVirtualMethod(key, value));
 }
-
-void MethodContext::dmpResolveVirtualMethod(const Agnostic_ResolveVirtualMethodKey& key, const Agnostic_ResolveVirtualMethodResult& result)
+void MethodContext::dmpTryResolveVirtualMethod(const Agnostic_CORINFO_VIRTUAL_METHOD_CALLER_CONTEXTin& key,
+                                               const TryResolveVirtualMethodValue&                     value)
 {
-    printf("ResolveVirtualMethod virtMethod-%016llX, implClass-%016llX, requiresInstMethodTableArg-%016lX, ownerType-%016llX, result-%016llX",
-           key.virtualMethod, key.implementingClass, key.requiresInstMethodTableArg, key.ownerType, value);
+    printf("TryResolveVirtualMethod key: %s\n",
+           SpmiDumpHelper::DumpAgnostic_CORINFO_VIRTUAL_METHOD_CALLER_CONTEXTin(key).c_str());
+    printf(", value: %s failed-%u",
+           SpmiDumpHelper::DumpAgnostic_CORINFO_VIRTUAL_METHOD_CALLER_CONTEXTout(value.contextOut).c_str(),
+           value.success);
 }
-
-CORINFO_METHOD_HANDLE MethodContext::repResolveVirtualMethod(CORINFO_METHOD_HANDLE   virtMethod,
-                                                             CORINFO_CLASS_HANDLE    implClass,
-                                                             bool*                   requiresInstMethodTableArg,
-                                                             CORINFO_CONTEXT_HANDLE* ownerType)
+bool MethodContext::repTryResolveVirtualMethod(CORINFO_VIRTUAL_METHOD_CALLER_CONTEXT* pResolvedMethod)
 {
-    Agnostic_ResolveVirtualMethod key;
-    key.virtualMethod               = (DWORDLONG)virtMethod;
-    key.implementingClass           = (DWORDLONG)implClass;
-    key.ownerType                   = (DWORDLONG)(*ownerType);
-    key.requiresInstMethodTableArg  = *requiresInstMethodTableArg ? 1 : 0;
+    Agnostic_CORINFO_VIRTUAL_METHOD_CALLER_CONTEXTin key;
+    ZeroMemory(&key, sizeof(Agnostic_CORINFO_VIRTUAL_METHOD_CALLER_CONTEXTin)); // We use the input structs as a key and
+                                                                                // use memcmp to compare..
+                                                                                // so we need to zero out padding too
 
-    AssertCodeMsg(ResolveVirtualMethod != nullptr, EXCEPTIONCODE_MC,
-                  "No ResolveVirtualMap map for %016llX-%016llX-%016llX-%016llX", key.virtualMethod,
-                  key.implementingClass, key.requiresInstMethodTableArg, key.ownerType);
-    AssertCodeMsg(ResolveVirtualMethod->GetIndex(key) != -1, EXCEPTIONCODE_MC, "Didn't find %016llX-%016llx-%016lX-%016llX",
-                  key.virtualMethod, key.implementingClass, key.requiresInstMethodTableArg, key.ownerType);
-    DWORDLONG result = ResolveVirtualMethod->Get(key);
+    key = SpmiRecordsHelper::CreateAgnostic_CORINFO_VIRTUAL_METHOD_CALLER_CONTEXTin(pResolvedMethod);
 
-    Agnostic_ResolveVirtualMethodResult result = ResolveVirtualMethod->Get(key);
-    DEBUG_REP(dmpResolveVirtualMethod(key, result));
-    info->devirtualizedMethod = (CORINFO_METHOD_HANDLE) result.devirtualizedMethod;
-    info->requiresInstMethodTableArg = result.requiresInstMethodTableArg;
-    info->exactContext = (CORINFO_CONTEXT_HANDLE) result.exactContext;
+    TryResolveVirtualMethodValue value = TryResolveVirtualMethod->Get(key);
 
-    *requiresInstMethodTableArg = (key.requiresInstMethodTableArg != 0);
-    return (CORINFO_METHOD_HANDLE)result;
+    SpmiRecordsHelper::Restore_CORINFO_VIRTUAL_METHOD_CALLER_CONTEXTout(pResolvedMethod, value.contextOut,
+                                                                        TryResolveVirtualMethod);
+
+    DEBUG_REP(dmpTryResolveVirtualMethod(key, value));
+    return (DWORD)value.success == 0;
 }
 
 void MethodContext::recGetUnboxedEntry(CORINFO_METHOD_HANDLE ftn,

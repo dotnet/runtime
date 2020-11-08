@@ -3810,6 +3810,10 @@ protected:
     bool impILConsumesAddr(const BYTE* codeAddr);
 
     void impResolveToken(const BYTE* addr, CORINFO_RESOLVED_TOKEN* pResolvedToken, CorInfoTokenKind kind);
+    CORINFO_METHOD_HANDLE impResolveVirtualMethod(CORINFO_METHOD_HANDLE   virtualMethod,
+                                                  CORINFO_CLASS_HANDLE    implementingClass,
+                                                  bool*                   requiresInstMethodTableArg,
+                                                  CORINFO_CONTEXT_HANDLE* ownerType);
 
     void impPushOnStack(GenTree* tree, typeInfo ti);
     void        impPushNullObjRefOnStack();

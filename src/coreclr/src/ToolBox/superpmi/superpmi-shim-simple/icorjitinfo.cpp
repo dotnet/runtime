@@ -147,14 +147,10 @@ CORINFO_METHOD_HANDLE interceptor_ICJI::getUnboxedEntry(CORINFO_METHOD_HANDLE ft
 }
 
 // Find the virtual method in implementingClass that overrides virtualMethod.
-// Return null if devirtualization is not possible.
-CORINFO_METHOD_HANDLE interceptor_ICJI::resolveVirtualMethod(CORINFO_METHOD_HANDLE   virtualMethod,
-                                                             CORINFO_CLASS_HANDLE    implementingClass,
-                                                             bool*                   requiresInstMethodTableArg,
-                                                             CORINFO_CONTEXT_HANDLE* ownerType)
+// Return false if devirtualization is not possible.
+bool interceptor_ICJI::tryResolveVirtualMethod(CORINFO_VIRTUAL_METHOD_CALLER_CONTEXT* virtualMethodContext /* IN, OUT */)
 {
-    return original_ICorJitInfo->resolveVirtualMethod(virtualMethod, implementingClass, requiresInstMethodTableArg,
-                                                      ownerType);
+    return original_ICorJitInfo->tryResolveVirtualMethod(virtualMethodContext);
 }
 
 // Given T, return the type of the default EqualityComparer<T>.

@@ -116,11 +116,8 @@ void getMethodVTableOffset(CORINFO_METHOD_HANDLE method,                /* IN */
                            );
 
 // Find the virtual method in implementingClass that overrides virtualMethod.
-// Return null if devirtualization is not possible.
-CORINFO_METHOD_HANDLE resolveVirtualMethod(CORINFO_METHOD_HANDLE   virtualMethod,
-                                           CORINFO_CLASS_HANDLE    implementingClass,
-                                           bool*                   requiresInstMethodTableArg,
-                                           CORINFO_CONTEXT_HANDLE* ownerType);
+// Return false if devirtualization is not possible.
+bool tryResolveVirtualMethod(CORINFO_VIRTUAL_METHOD_CALLER_CONTEXT* virtualMethodContext /* IN, OUT */);
 
 // Get the unboxed entry point for a method, if possible.
 CORINFO_METHOD_HANDLE getUnboxedEntry(

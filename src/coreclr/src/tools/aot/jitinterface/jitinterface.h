@@ -18,7 +18,7 @@ struct JitInterfaceCallbacks
     void* (* getMethodClass)(void * thisHandle, CorInfoException** ppException, void* method);
     void* (* getMethodModule)(void * thisHandle, CorInfoException** ppException, void* method);
     void (* getMethodVTableOffset)(void * thisHandle, CorInfoException** ppException, void* method, unsigned* offsetOfIndirection, unsigned* offsetAfterIndirection, bool* isRelative);
-    void* (* resolveVirtualMethod)(void * thisHandle, CorInfoException** ppException, void* virtualMethod, void* implementingClass, bool* requiresInstMethodTableArg, void* ownerType);
+    bool (* tryResolveVirtualMethod)(void * thisHandle, CorInfoException** ppException, void* pResolvedMethod);
     void* (* getUnboxedEntry)(void * thisHandle, CorInfoException** ppException, void* ftn, bool* requiresInstMethodTableArg);
     void* (* getDefaultEqualityComparerClass)(void * thisHandle, CorInfoException** ppException, void* elemType);
     void (* expandRawHandleIntrinsic)(void * thisHandle, CorInfoException** ppException, void* pResolvedToken, void* pResult);
@@ -34,7 +34,7 @@ struct JitInterfaceCallbacks
     void (* setPatchpointInfo)(void * thisHandle, CorInfoException** ppException, void* patchpointInfo);
     void* (* getOSRInfo)(void * thisHandle, CorInfoException** ppException, unsigned* ilOffset);
     void (* resolveToken)(void * thisHandle, CorInfoException** ppException, void* pResolvedToken);
-    void (* tryResolveToken)(void * thisHandle, CorInfoException** ppException, void* pResolvedToken);
+    bool (* tryResolveToken)(void * thisHandle, CorInfoException** ppException, void* pResolvedToken);
     void (* findSig)(void * thisHandle, CorInfoException** ppException, void* module, unsigned sigTOK, void* context, void* sig);
     void (* findCallSiteSig)(void * thisHandle, CorInfoException** ppException, void* module, unsigned methTOK, void* context, void* sig);
     void* (* getTokenTypeAsHandle)(void * thisHandle, CorInfoException** ppException, void* pResolvedToken);
@@ -292,10 +292,10 @@ public:
             throw pException;
     }
 
-    virtual void* resolveVirtualMethod(void* virtualMethod, void* implementingClass, bool* requiresInstMethodTableArg, void* ownerType)
+    virtual bool tryResolveVirtualMethod(void* pResolvedMethod)
     {
         CorInfoException* pException = nullptr;
-        void* _ret = _callbacks->resolveVirtualMethod(_thisHandle, &pException, virtualMethod, implementingClass, requiresInstMethodTableArg, ownerType);
+        bool _ret = _callbacks->tryResolveVirtualMethod(_thisHandle, &pException, pResolvedMethod);
         if (pException != nullptr)
             throw pException;
         return _ret;
@@ -431,12 +431,13 @@ public:
             throw pException;
     }
 
-    virtual void tryResolveToken(void* pResolvedToken)
+    virtual bool tryResolveToken(void* pResolvedToken)
     {
         CorInfoException* pException = nullptr;
-        _callbacks->tryResolveToken(_thisHandle, &pException, pResolvedToken);
+        bool _ret = _callbacks->tryResolveToken(_thisHandle, &pException, pResolvedToken);
         if (pException != nullptr)
             throw pException;
+        return _ret;
     }
 
     virtual void findSig(void* module, unsigned sigTOK, void* context, void* sig)
