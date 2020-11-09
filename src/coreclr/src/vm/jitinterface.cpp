@@ -12009,7 +12009,7 @@ void CEEJitInfo::allocMem (
         COMPlusThrowHR(CORJIT_OUTOFMEM);
     }
 
-    if (EventEnabledMethodJitMemoryAllocatedForCode())
+    if (ETW_EVENT_ENABLED(MICROSOFT_WINDOWS_DOTNETRUNTIME_PROVIDER_DOTNET_Context, MethodJitMemoryAllocatedForCode))
     {
         ULONGLONG ullMethodIdentifier = 0;
         ULONGLONG ullModuleID = 0;
