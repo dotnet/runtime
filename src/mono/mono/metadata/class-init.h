@@ -20,6 +20,9 @@ void
 mono_classes_cleanup (void);
 
 MonoClass *
+mono_class_create_from_invalid_typeref (MonoImage *image, guint32 type_token, MonoError *error);
+
+MonoClass *
 mono_class_create_from_typedef (MonoImage *image, guint32 type_token, MonoError *error);
 
 MonoClass*

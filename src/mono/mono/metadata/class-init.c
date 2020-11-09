@@ -353,15 +353,6 @@ mono_class_setup_fields (MonoClass *klass)
 				break;
 			}
 		}
-		if (mono_type_has_exceptions (field->type)) {
-			char *class_name = mono_type_get_full_name (klass);
-			char *type_name = mono_type_full_name (field->type);
-
-			mono_class_set_type_load_failure (klass, "Invalid type %s for instance field %s:%s", type_name, class_name, field->name);
-			g_free (class_name);
-			g_free (type_name);
-			break;
-		}
 		/* The def_value of fields is compute lazily during vtable creation */
 	}
 
@@ -401,6 +392,71 @@ mono_class_set_failure_and_error (MonoClass *klass, MonoError *error, const char
 {
 	mono_class_set_type_load_failure (klass, "%s", msg);
 	mono_error_set_type_load_class (error, klass, "%s", msg);
+}
+
+MonoClass *
+mono_class_create_from_invalid_typeref (MonoImage *image, guint32 type_token, MonoError *error)
+{
+	MonoTableInfo *tt = &image->tables [MONO_TABLE_TYPEREF];
+	MonoClass *klass;
+	guint32 cols [MONO_TYPEDEF_SIZE];
+	guint tidx = mono_metadata_token_index (type_token);
+	const char *name, *nspace;
+
+	if (mono_metadata_token_table (type_token) != MONO_TABLE_TYPEREF || tidx > tt->rows) {
+		mono_error_set_bad_image (error, image, "Invalid typeref token %x", type_token);
+		return NULL;
+	}
+
+	mono_loader_lock ();
+
+	if ((klass = (MonoClass *)mono_internal_hash_table_lookup (&image->class_cache, GUINT_TO_POINTER (type_token)))) {
+		mono_loader_unlock ();
+		error_init (error);
+		return klass;
+	}
+
+	mono_metadata_decode_row (tt, tidx - 1, cols, MONO_TYPEREF_SIZE);
+
+	name = mono_metadata_string_heap (image, cols [MONO_TYPEREF_NAME]);
+	nspace = mono_metadata_string_heap (image, cols [MONO_TYPEREF_NAMESPACE]);
+
+	klass = (MonoClass*)mono_image_alloc0 (image, sizeof (MonoClassDef));
+	klass->class_kind = MONO_CLASS_DEF;
+	UnlockedAdd (&classes_size, sizeof (MonoClassDef));
+	++class_def_count;
+
+	klass->name = name;
+	klass->name_space = nspace;
+
+	MONO_PROFILER_RAISE (class_loading, (klass));
+
+	klass->image = image;
+	klass->type_token = type_token;
+
+	mono_internal_hash_table_insert (&image->class_cache, GUINT_TO_POINTER (type_token), klass);
+
+	mono_class_setup_parent (klass, NULL);
+
+	/* uses ->valuetype, which is initialized by mono_class_setup_parent above */
+	mono_class_setup_mono_type (klass);
+
+	klass->cast_class = klass->element_class = klass;
+
+	klass->interfaces = NULL;
+	klass->interface_count = 0;
+	klass->interfaces_inited = 1;
+
+	/*g_print ("Load class %s\n", name);*/
+
+	mono_loader_unlock ();
+
+	MONO_PROFILER_RAISE (class_loaded, (klass));
+
+	mono_class_set_type_load_failure (klass, "%s", mono_error_get_message (error));
+	error_init (error);
+
+	return klass;
 }
 
 /**

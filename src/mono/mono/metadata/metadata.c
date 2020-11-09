@@ -21,7 +21,7 @@
 #include "mono-endian.h"
 #include "cil-coff.h"
 #include "tokentype.h"
-#include "class-internals.h"
+#include "class-init.h"
 #include "metadata-internals.h"
 #include "verify-internals.h"
 #include "class.h"
@@ -4128,6 +4128,10 @@ do_mono_metadata_parse_type (MonoType *type, MonoImage *m, MonoGenericContainer 
 		MonoClass *klass;
 		token = mono_metadata_parse_typedef_or_ref (m, ptr, &ptr);
 		klass = mono_class_get_checked (m, token, error);
+
+		if (!klass && type->type == MONO_TYPE_CLASS && mono_metadata_token_table (token) == MONO_TABLE_TYPEREF)
+			klass = mono_class_create_from_invalid_typeref (m, token, error);
+
 		type->data.klass = klass;
 		if (!klass)
 			return FALSE;
