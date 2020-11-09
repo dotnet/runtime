@@ -283,7 +283,7 @@ namespace System.Net.Http.HPack
             // Decoding lookup tree is a tree of 8 bit lookup tables stored in
             // one dimensional array of ushort to reduce allocations.
             // First 256 ushort is lookup table with index 0, next 256 ushort is lookup table with index 1, etc...
-            // loopk_value = [(lookup_table_index << 8) + lookup_index]
+            // lookup_value = [(lookup_table_index << 8) + lookup_index]
 
             // lookup_index is next 8 bits of huffman code, if there is less than 8 bits in source.
             // lookup_index MUST be aligned to 8 bits with LSB bits set to anything (zeros are recommended).
