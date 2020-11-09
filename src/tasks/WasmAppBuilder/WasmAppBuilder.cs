@@ -44,7 +44,6 @@ public class WasmAppBuilder : Task
     public bool InvariantGlobalization { get; set; }
 
     private SortedDictionary<string, Assembly>? _assemblies;
-    private Resolver? _resolver;
 
     private class WasmAppConfig
     {
@@ -106,62 +105,38 @@ public class WasmAppBuilder : Task
             throw new ArgumentException($"File MainJS='{MainJS}' doesn't exist.");
         if (!InvariantGlobalization && string.IsNullOrEmpty(IcuDataFileName))
             throw new ArgumentException("IcuDataFileName property shouldn't be empty if InvariantGlobalization=false");
-        if (AssemblySearchPaths == null && Assemblies == null)
-            throw new ArgumentException("Either the AssemblySearchPaths or the Assemblies property needs to be set.");
 
         var paths = new List<string>();
         _assemblies = new SortedDictionary<string, Assembly>();
         var runtimeSourceDir = Path.Join (MicrosoftNetCoreAppRuntimePackDir, "native");
 
-        if (AssemblySearchPaths != null)
+        if (Assemblies != null)
         {
-            // Collect and load assemblies used by the app
-            foreach (var v in AssemblySearchPaths!)
+            foreach (var v in Assemblies!)
             {
-                var dir = v.ItemSpec;
-                if (!Directory.Exists(dir))
-                    throw new ArgumentException($"Directory '{dir}' doesn't exist or not a directory.");
-                paths.Add(dir);
-            }
-            _resolver = new Resolver(paths);
-            var mlc = new MetadataLoadContext(_resolver, "System.Private.CoreLib");
-
-            var mainAssembly = mlc.LoadFromAssemblyPath(MainAssembly);
-            Add(mlc, mainAssembly);
-
-            if (ExtraAssemblies != null)
-            {
-                foreach (var item in ExtraAssemblies)
-                {
-                    try
-                    {
-                        var refAssembly = mlc.LoadFromAssemblyPath(item.ItemSpec);
-                        Add(mlc, refAssembly);
-                    }
-                    catch (System.IO.FileLoadException)
-                    {
-                        if (!SkipMissingAssemblies)
-                            throw;
-                    }
-                }
+                var assembly = Assembly.LoadFrom(v.ItemSpec);
+                Add(assembly);
             }
         }
-        else
+        else if (MainAssembly != null)
         {
-            string corelibPath = string.Empty;
-            foreach (var v in Assemblies!)
+            var mainAssembly = Assembly.LoadFrom(MainAssembly!);
+            Add(mainAssembly);
+        }
+        if (ExtraAssemblies != null)
+        {
+            foreach (var item in ExtraAssemblies)
             {
-                if (v.ItemSpec.EndsWith ("System.Private.CoreLib.dll"))
-                    corelibPath = Path.GetDirectoryName (v.ItemSpec)!;
-            }
-            runtimeSourceDir = corelibPath!;
-            _resolver = new Resolver(new List<string>() { corelibPath });
-            var mlc = new MetadataLoadContext(_resolver, "System.Private.CoreLib");
-
-            foreach (var v in Assemblies!)
-            {
-                var assembly = mlc.LoadFromAssemblyPath(v.ItemSpec);
-                Add(mlc, assembly);
+                try
+                {
+                    var refAssembly = Assembly.LoadFrom(item.ItemSpec);
+                    Add(refAssembly);
+                }
+                catch (System.IO.FileLoadException)
+                {
+                    if (!SkipMissingAssemblies)
+                        throw;
+                }
             }
         }
 
@@ -271,7 +246,9 @@ public class WasmAppBuilder : Task
         return true;
     }
 
-    private void Add(MetadataLoadContext mlc, Assembly assembly)
+    // Add primarily adds assembly and (recursively) all the assemblies it references to _assemblies
+    // It uses MLC to access the Assembly by AssemblyName
+    private void Add(Assembly assembly)
     {
         if (_assemblies!.ContainsKey(assembly.GetName().Name!))
             return;
@@ -280,36 +257,12 @@ public class WasmAppBuilder : Task
         {
             try
             {
-                Assembly refAssembly = mlc.LoadFromAssemblyName(aname);
-                Add(mlc, refAssembly);
+                Assembly refAssembly = Assembly.Load(aname);
+                Add(refAssembly);
             }
             catch (FileNotFoundException)
             {
             }
         }
-    }
-}
-
-internal class Resolver : MetadataAssemblyResolver
-{
-    private List<string> _searchPaths;
-
-    public Resolver(List<string> searchPaths)
-    {
-        _searchPaths = searchPaths;
-    }
-
-    public override Assembly? Resolve(MetadataLoadContext context, AssemblyName assemblyName)
-    {
-        var name = assemblyName.Name;
-        foreach (var dir in _searchPaths)
-        {
-            var path = Path.Combine(dir, name + ".dll");
-            if (File.Exists(path))
-            {
-                return context.LoadFromAssemblyPath(path);
-            }
-        }
-        return null;
     }
 }
