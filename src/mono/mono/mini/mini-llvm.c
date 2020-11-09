@@ -3543,7 +3543,10 @@ emit_entry_bb (EmitContext *ctx, LLVMBuilderRef builder)
 				return;
 			/* Could be already created by an OP_VPHI */
 			if (!ctx->addresses [var->dreg]) {
-				ctx->addresses [var->dreg] = build_alloca (ctx, var->inst_vtype);
+				if (var->flags & MONO_INST_LMF)
+					ctx->addresses [var->dreg] = build_alloca_llvm_type (ctx, LLVMArrayType (LLVMInt8Type (), MONO_ABI_SIZEOF (MonoLMF)), sizeof (target_mgreg_t));
+				else
+					ctx->addresses [var->dreg] = build_alloca (ctx, var->inst_vtype);
 				//LLVMSetValueName (ctx->addresses [var->dreg], g_strdup_printf ("vreg_loc_%d", var->dreg));
 			}
 			ctx->vreg_cli_types [var->dreg] = var->inst_vtype;
@@ -10143,6 +10146,8 @@ mono_llvm_create_vars (MonoCompile *cfg)
 	} else {
 		mono_arch_create_vars (cfg);
 	}
+
+	cfg->lmf_ir = TRUE;
 }
 
 /*
