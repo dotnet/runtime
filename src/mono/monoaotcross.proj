@@ -12,7 +12,7 @@
     <MSBuild Targets="BuildMonoCrossTarget"
              Projects="$(MSBuildThisFileFullPath)"
              BuildInParallel="true"
-             Properties="MonoAotTargetRid=%(MonoAotTargetRids.Identity)" />
+             Properties="MonoAotTargetRid=%(MonoAotTargetRids.Identity);RealRuntimeBinDir=$(RuntimeBinDir)" />
   </Target>
 
   <Target Name="BuildMonoCrossTarget">
@@ -25,8 +25,16 @@
              Projects="$(MSBuildThisFileDirectory)llvm\llvm-init.proj"
              Properties="TargetArchitecture=$(MonoAotTargetArchitecture);TargetOS=$(MonoAotTargetOS)" />
 
-    <MSBuild Targets="BuildMonoCrossUnix"
+    <MSBuild Targets="BuildMono"
              Projects="$(MSBuildThisFileDirectory)mono.proj"
              Properties="MonoAotCrossTarget='$(MonoAotTargets)';BuildMonoAOTCrossCompilerOnly=true;TargetArchitecture=$(MonoAotTargetArchitecture);TargetOS=$(MonoAotTargetOS)" />
+
+    <ItemGroup>
+      <_MonoAOTCrossFiles Include="$(ArtifactsBinDir)mono\$(MonoAotTargetOS).$(MonoAotTargetArchitecture).$(Configuration)\cross\$(MonoAotTargetRid)\**" />
+    </ItemGroup>
+
+    <Copy SourceFiles="@(_MonoAOTCrossFiles)" DestinationFolder="$(RealRuntimeBinDir)cross\$(MonoAotTargetRid)">
+      <Output TaskParameter="DestinationFiles" ItemName="FileWrites"/>
+    </Copy>
   </Target>
 </Project>
