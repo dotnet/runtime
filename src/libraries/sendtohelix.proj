@@ -36,7 +36,8 @@
         HelixAccessToken=$(HelixAccessToken);
         HelixTargetQueues=$(HelixTargetQueues);
         BuildTargetFramework=$(BuildTargetFramework);
-        BuildSettings=$(BuildSettings)
+        BuildSettings=$(BuildSettings);
+        HelixBaseUri=https://helix.int-dot.net/
       </_PropertiesToPass>
     </PropertyGroup>
 
