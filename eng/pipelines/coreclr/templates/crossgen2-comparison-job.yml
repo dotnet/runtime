@@ -157,7 +157,7 @@ jobs:
             --diff_dir   $HELIX_WORKITEM_PAYLOAD/log
         ${{ if eq(parameters.osGroup, 'windows') }}:
           WorkItemCommand:
-            echo $(displayname_comparison_job)
+            echo $(displayname_comparison_job) &
             echo Targeting $(targetFlavor) &
             md        %HELIX_WORKITEM_PAYLOAD%\log &
             set CORE_ROOT=%HELIX_CORRELATION_PAYLOAD% &
