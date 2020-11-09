@@ -14,6 +14,8 @@
 
 #if HOST_WINDOWS
 extern "C" IMAGE_DOS_HEADER __ImageBase;
+#else
+static void* pImageBase = NULL;
 #endif
 
 void* GetClrModuleBase()
@@ -22,9 +24,16 @@ void* GetClrModuleBase()
 
 #if HOST_WINDOWS
     return (void*)&__ImageBase;
-#else // !HOST_UNIX
-    return (void*)PAL_GetSymbolModuleBase((void*)GetClrModuleBase);
-#endif // !HOST_UNIX
+#else // HOST_WINDOWS
+    // PAL_GetSymbolModuleBase defers to dladdr, which is typically a hash lookup through symbols.
+    // It should be fairly fast, however it may take a loader lock, so we will cache the result.
+    if (!pImageBase)
+    {
+        pImageBase = (void*)PAL_GetSymbolModuleBase((void*)GetClrModuleBase);
+    }
+
+    return pImageBase;
+#endif // HOST_WINDOWS
 }
 
 thread_local int t_CantAllocCount;
