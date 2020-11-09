@@ -457,10 +457,6 @@ DEFINE_CLASS(ICOLLECTION,           Collections,            ICollection)
 DEFINE_CLASS(ILIST,                 Collections,            IList)
 DEFINE_CLASS(IDISPOSABLE,           System,                 IDisposable)
 
-DEFINE_CLASS(IEXPANDO,              Expando,                IExpando)
-DEFINE_METHOD(IEXPANDO,             ADD_FIELD,              AddField,                   IM_Str_RetFieldInfo)
-DEFINE_METHOD(IEXPANDO,             REMOVE_MEMBER,          RemoveMember,               IM_MemberInfo_RetVoid)
-
 DEFINE_CLASS(IREFLECT,              Reflection,             IReflect)
 DEFINE_METHOD(IREFLECT,             GET_PROPERTIES,         GetProperties,              IM_BindingFlags_RetArrPropertyInfo)
 DEFINE_METHOD(IREFLECT,             GET_FIELDS,             GetFields,                  IM_BindingFlags_RetArrFieldInfo)
@@ -1065,7 +1061,7 @@ DEFINE_METHOD(OBJECTMARSHALER,      CLEAR_NATIVE,           ClearNative,        
 
 DEFINE_CLASS(INTERFACEMARSHALER,    StubHelpers,            InterfaceMarshaler)
 DEFINE_METHOD(INTERFACEMARSHALER,   CONVERT_TO_NATIVE,      ConvertToNative,            SM_Obj_IntPtr_IntPtr_Int_RetIntPtr)
-DEFINE_METHOD(INTERFACEMARSHALER,   CONVERT_TO_MANAGED,     ConvertToManaged,           SM_IntPtr_IntPtr_IntPtr_Int_RetObj)
+DEFINE_METHOD(INTERFACEMARSHALER,   CONVERT_TO_MANAGED,     ConvertToManaged,           SM_RefIntPtr_IntPtr_IntPtr_Int_RetObj)
 DEFINE_METHOD(INTERFACEMARSHALER,   CLEAR_NATIVE,           ClearNative,                SM_IntPtr_RetVoid)
 
 

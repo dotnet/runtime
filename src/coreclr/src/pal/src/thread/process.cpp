@@ -1192,7 +1192,7 @@ ExitProcess(
 
     /* this should never get executed */
     ASSERT("ExitProcess should not return!\n");
-    for (;;);
+    while (true);
 }
 
 /*++

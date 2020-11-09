@@ -33,7 +33,6 @@
 
 #define g_InteropNS         g_RuntimeNS ".InteropServices"
 #define g_InteropTCENS      g_InteropNS ".TCEAdapterGen"
-#define g_ExpandoNS         g_InteropNS ".Expando"
 
 #define g_IntrinsicsNS g_RuntimeNS ".Intrinsics"
 #define g_NumericsNS   g_SystemNS  ".Numerics"

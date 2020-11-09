@@ -773,7 +773,7 @@ namespace System.Xml
     {
         protected XmlReader() { }
         public abstract int AttributeCount { get; }
-        public abstract string? BaseURI { get; }
+        public abstract string BaseURI { get; }
         public virtual bool CanReadBinaryContent { get { throw null; } }
         public virtual bool CanReadValueChunk { get { throw null; } }
         public virtual bool CanResolveEntity { get { throw null; } }
@@ -1012,7 +1012,7 @@ namespace System.Xml
         public XmlTextReader(string xmlFragment, System.Xml.XmlNodeType fragType, System.Xml.XmlParserContext? context) { }
         protected XmlTextReader(System.Xml.XmlNameTable nt) { }
         public override int AttributeCount { get { throw null; } }
-        public override string? BaseURI { get { throw null; } }
+        public override string BaseURI { get { throw null; } }
         public override bool CanReadBinaryContent { get { throw null; } }
         public override bool CanReadValueChunk { get { throw null; } }
         public override bool CanResolveEntity { get { throw null; } }
@@ -1151,7 +1151,7 @@ namespace System.Xml
         public XmlValidatingReader(string xmlFragment, System.Xml.XmlNodeType fragType, System.Xml.XmlParserContext context) { }
         public XmlValidatingReader(System.Xml.XmlReader reader) { }
         public override int AttributeCount { get { throw null; } }
-        public override string? BaseURI { get { throw null; } }
+        public override string BaseURI { get { throw null; } }
         public override bool CanReadBinaryContent { get { throw null; } }
         public override bool CanResolveEntity { get { throw null; } }
         public override int Depth { get { throw null; } }

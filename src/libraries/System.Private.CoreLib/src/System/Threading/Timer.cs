@@ -422,8 +422,8 @@ namespace System.Threading
         // reaches zero.  Same applies if Timer.DisposeAsync() is used, except with a Task<bool>
         // instead of with a provided WaitHandle.
         private int _callbacksRunning;
-        private volatile bool _canceled;
-        private volatile object? _notifyWhenNoCallbacksRunning; // may be either WaitHandle or Task<bool>
+        private bool _canceled;
+        private object? _notifyWhenNoCallbacksRunning; // may be either WaitHandle or Task<bool>
 
 
         internal TimerQueueTimer(TimerCallback timerCallback, object? state, uint dueTime, uint period, bool flowExecutionContext)
@@ -487,6 +487,8 @@ namespace System.Threading
 
         public bool Close(WaitHandle toSignal)
         {
+            Debug.Assert(toSignal != null);
+
             bool success;
             bool shouldSignal = false;
 
@@ -588,12 +590,11 @@ namespace System.Threading
 
             CallCallback(isThreadPool);
 
-            bool shouldSignal = false;
+            bool shouldSignal;
             lock (_associatedTimerQueue)
             {
                 _callbacksRunning--;
-                if (_canceled && _callbacksRunning == 0 && _notifyWhenNoCallbacksRunning != null)
-                    shouldSignal = true;
+                shouldSignal = _canceled && _callbacksRunning == 0 && _notifyWhenNoCallbacksRunning != null;
             }
 
             if (shouldSignal)

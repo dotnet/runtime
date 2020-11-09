@@ -1281,7 +1281,7 @@ public:
         int ch = 0;
         DecoderFallbackBuffer *fallback = nullptr;
 
-        for (;;)
+        while (true)
         {
             // SLOWLOOP: does all range checks, handles all special cases, but it is slow
             if (pSrc >= pEnd) {
@@ -1651,7 +1651,7 @@ public:
 
         DecoderFallbackBuffer *fallback = nullptr;
 
-        for (;;)
+        while (true)
         {
             // SLOWLOOP: does all range checks, handles all special cases, but it is slow
 
@@ -2158,7 +2158,7 @@ public:
 
         // assume that JIT will enregister pSrc, pTarget and ch
 
-        for (;;) {
+        while (true) {
             // SLOWLOOP: does all range checks, handles all special cases, but it is slow
 
             if (pSrc >= pEnd) {
@@ -2541,7 +2541,7 @@ public:
 
         int ch = 0;
 
-        for (;;) {
+        while (true) {
             // SLOWLOOP: does all range checks, handles all special cases, but it is slow
             if (pSrc >= pEnd) {
 
