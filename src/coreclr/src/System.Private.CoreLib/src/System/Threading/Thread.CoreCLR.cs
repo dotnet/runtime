@@ -434,7 +434,7 @@ namespace System.Threading
             {
                 if (throwOnError)
                 {
-                    string msg = SR.Format(SR.Thread_ApartmentState_ChangeFailed, Thread.CurrentThread.GetApartmentState());
+                    string msg = SR.Format(SR.Thread_ApartmentState_ChangeFailed, retState);
                     throw new InvalidOperationException(msg);
                 }
 
@@ -456,8 +456,7 @@ namespace System.Threading
              {
                 if (throwOnError)
                 {
-                    string msg = SR.Format(SR.Thread_ApartmentState_ChangeFailed, Thread.CurrentThread.GetApartmentState());
-                    throw new InvalidOperationException(msg);
+                    throw new PlatformNotSupportedException(SR.PlatformNotSupported_ComInterop);
                 }
 
                 return false;
