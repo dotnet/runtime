@@ -1246,6 +1246,8 @@ install_pe_loader (void)
 	mono_install_image_loader (&pe_loader);
 }
 
+#ifndef DISABLE_DESKTOP_LOADER
+
 /*
 Ignored assemblies.
 
@@ -1397,9 +1399,12 @@ static const IgnoredAssemblyVersion ignored_assembly_versions [] = {
 	IGNORED_ASM_VER (SYS_THREADING_OVERLAPPED, 4, 1, 0, 0)
 };
 
+#endif /* DISABLE_DESKTOP_LOADER */
+
 gboolean
 mono_assembly_is_problematic_version (const char *name, guint16 major, guint16 minor, guint16 build, guint16 revision)
 {
+#ifndef DISABLE_DESKTOP_LOADER
 	for (int i = 0; i < G_N_ELEMENTS (ignored_assembly_versions); ++i) {
 		if (ignored_assembly_versions [i].major != major ||
 			ignored_assembly_versions [i].minor != minor ||
@@ -1409,6 +1414,7 @@ mono_assembly_is_problematic_version (const char *name, guint16 major, guint16 m
 		if (!strcmp (ignored_assemblies_names [ignored_assembly_versions [i].assembly_name], name))
 			return TRUE;
 	}
+#endif
 	return FALSE;
 }
 
@@ -1438,6 +1444,7 @@ hash_guid (const char *str)
 gboolean
 mono_is_problematic_image (MonoImage *image)
 {
+#ifndef DISABLE_DESKTOP_LOADER
 	int h = hash_guid (image->guid);
 
 	//TODO make this more cache effiecient.
@@ -1451,6 +1458,7 @@ mono_is_problematic_image (MonoImage *image)
 				return TRUE;
 		}
 	}
+#endif
 	return FALSE;
 }
 

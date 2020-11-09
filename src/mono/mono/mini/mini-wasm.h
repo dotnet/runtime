@@ -111,6 +111,7 @@ void mono_wasm_set_timeout (int timeout, int id);
 
 void mono_wasm_single_step_hit (void);
 void mono_wasm_breakpoint_hit (void);
+void mono_wasm_user_break (void);
 
 int mono_wasm_assembly_already_added (const char *assembly_name);
 

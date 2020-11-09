@@ -1,6 +1,6 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <TargetFrameworks>$(NetCoreAppCurrent)-Windows_NT;net461-Windows_NT</TargetFrameworks>
+    <TargetFrameworks>$(NetCoreAppCurrent)-windows;net461-windows</TargetFrameworks>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="DirectoryObjectSecurityTests.cs" />

@@ -27,7 +27,7 @@
     '$(AllArtifactsDownloadPath)' != ''">
     <!-- Convert the OS component in the RID into names that match the job IDs. -->
     <ArtifactPlatform>$(RuntimeIdentifier)</ArtifactPlatform>
-    <ArtifactPlatform>$(ArtifactPlatform.Replace('win-', 'Windows_NT-'))</ArtifactPlatform>
+    <ArtifactPlatform>$(ArtifactPlatform.Replace('win-', 'windows-'))</ArtifactPlatform>
     <ArtifactPlatform>$(ArtifactPlatform.Replace('unix-', 'Unix-'))</ArtifactPlatform>
     <ArtifactPlatform>$(ArtifactPlatform.Replace('linux-', 'Linux-'))</ArtifactPlatform>
     <ArtifactPlatform>$(ArtifactPlatform.Replace('osx-', 'OSX-'))</ArtifactPlatform>

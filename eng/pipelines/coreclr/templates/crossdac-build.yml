@@ -5,13 +5,13 @@ parameters:
 
 steps:
   # Always build the crossdac, that way we know in CI/PR if things break to build.
-  - ${{ if eq(parameters.osGroup, 'Windows_NT') }}:
+  - ${{ if eq(parameters.osGroup, 'windows') }}:
     - ${{ if notin(parameters.archType, 'x86') }}:
       - script: set __TestIntermediateDir=int&&$(Build.SourcesDirectory)/src/coreclr/build-runtime$(scriptExt) $(buildConfig) $(archType) -ci -linuxdac $(officialBuildIdArg)
         displayName: Build Cross OS Linux DAC for Windows
 
 
-  - ${{ if eq(parameters.osGroup, 'Windows_NT') }}:
+  - ${{ if eq(parameters.osGroup, 'windows') }}:
     - ${{ if notin(parameters.archType, 'x86') }}:
       - script: set __TestIntermediateDir=int&&$(Build.SourcesDirectory)/src/coreclr/build-runtime$(scriptExt) $(buildConfig) $(archType) -ci -alpinedac $(officialBuildIdArg)
         displayName: Build Cross OS Linux-musl DAC for Windows

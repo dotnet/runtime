@@ -3645,7 +3645,8 @@ emit_entry_bb (EmitContext *ctx, LLVMBuilderRef builder)
 		}
 		case LLVMArgGsharedvtVariable:
 			/* The IR treats these as variables with addresses */
-			ctx->addresses [reg] = LLVMGetParam (ctx->lmethod, pindex);
+			if (!ctx->addresses [reg])
+				ctx->addresses [reg] = LLVMGetParam (ctx->lmethod, pindex);
 			break;
 		default: {
 			LLVMTypeRef t;
@@ -9435,7 +9436,6 @@ emit_method_inner (EmitContext *ctx)
 	LLVMValueRef method = NULL;
 	LLVMValueRef *values = ctx->values;
 	int i, max_block_num, bb_index;
-	gboolean last = FALSE;
 	gboolean llvmonly_fail = FALSE;
 	LLVMCallInfo *linfo;
 	LLVMModuleRef lmodule = ctx->lmodule;
@@ -9464,7 +9464,6 @@ emit_method_inner (EmitContext *ctx)
 			if (count == lcount) {
 				printf ("LAST: %s\n", mono_method_full_name (cfg->method, TRUE));
 				fflush (stdout);
-				last = TRUE;
 			}
 			if (count > lcount) {
 				set_failure (ctx, "count");

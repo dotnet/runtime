@@ -429,7 +429,8 @@ function(add_jit jitName)
         target_compile_definitions(${jitName} PRIVATE FX_VER_INTERNALNAME_STR=${jitName}.dll)
     endif(CLR_CMAKE_TARGET_WIN32)
 
-    target_precompile_header(TARGET ${jitName} HEADER jitpch.h ADDITIONAL_INCLUDE_DIRECTORIES ${JIT_SOURCE_DIR})
+    target_include_directories(${jitName} PRIVATE ${JIT_SOURCE_DIR})
+    target_precompile_headers(${jitName} PRIVATE "$<$<COMPILE_LANGUAGE:CXX>:jitpch.h>")
 
     add_dependencies(${jitName} jit_exports)
 

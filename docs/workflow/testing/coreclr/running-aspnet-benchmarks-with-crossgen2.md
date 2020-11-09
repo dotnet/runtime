@@ -185,7 +185,7 @@ using the following command.
 On Windows:
 
 ```powershell
-CoreRun.exe \runtime\artifacts\bin\coreclr\Windows_NT.x64.Release\crossgen2\crossgen2.dll
+CoreRun.exe \runtime\artifacts\bin\coreclr\windows.x64.Release\crossgen2\crossgen2.dll
 --Os --composite -o \path\to\results\composite\TotalComposite.dll \path\to\results\application\*.dll
 ```
 

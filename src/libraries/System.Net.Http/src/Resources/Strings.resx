@@ -606,4 +606,10 @@
   <data name="net_http_null_from_plaintext_filter" xml:space="preserve">
     <value>The user-supplied PlaintextStreamFilter returned null.</value>
   </data>
+  <data name="net_http_marshalling_response_promise_from_fetch" xml:space="preserve">
+    <value>Internal error marshalling the response Promise from `fetch`.</value>
+  </data>
+  <data name="net_http_synchronous_reads_not_supported" xml:space="preserve">
+    <value>Synchronous reads are not supported, use ReadAsync instead.</value>
+  </data>
 </root>
