@@ -1038,7 +1038,7 @@ private:
     static MethodHandleToInterpMethInfoPtrMap* GetMethodHandleToInterpMethInfoPtrMap();
 
     static InterpreterMethodInfo* RecordInterpreterMethodInfoForMethodHandle(CORINFO_METHOD_HANDLE md, InterpreterMethodInfo* methInfo);
-    static InterpreterMethodInfo* Interpreter::MethodHandleToInterpreterMethInfoPtr(CORINFO_METHOD_HANDLE md);
+    static InterpreterMethodInfo* MethodHandleToInterpreterMethInfoPtr(CORINFO_METHOD_HANDLE md);
 
 public:
     static unsigned s_interpreterStubNum;

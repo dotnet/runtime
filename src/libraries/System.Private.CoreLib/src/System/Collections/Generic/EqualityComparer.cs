@@ -32,6 +32,34 @@ namespace System.Collections.Generic
             ThrowHelper.ThrowArgumentException(ExceptionResource.Argument_InvalidArgumentForComparison);
             return false;
         }
+
+#if !CORERT
+        internal virtual int IndexOf(T[] array, T value, int startIndex, int count)
+        {
+            int endIndex = startIndex + count;
+            for (int i = startIndex; i < endIndex; i++)
+            {
+                if (Equals(array[i], value))
+                {
+                    return i;
+                }
+            }
+            return -1;
+        }
+
+        internal virtual int LastIndexOf(T[] array, T value, int startIndex, int count)
+        {
+            int endIndex = startIndex - count + 1;
+            for (int i = startIndex; i >= endIndex; i--)
+            {
+                if (Equals(array[i], value))
+                {
+                    return i;
+                }
+            }
+            return -1;
+        }
+#endif
     }
 
     // The methods in this class look identical to the inherited methods, but the calls

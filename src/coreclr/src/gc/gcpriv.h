@@ -66,7 +66,7 @@ inline void FATAL_GC_ERROR()
 // We need the lower 3 bits in the MT to do our bookkeeping so doubly linked free list is only for 64-bit
 #ifdef HOST_64BIT
 // To be enabled.
-//#define DOUBLY_LINKED_FL
+// #define DOUBLY_LINKED_FL
 #endif //HOST_64BIT
 
 #ifndef FEATURE_REDHAWK
@@ -4091,6 +4091,9 @@ protected:
     // accounting into the alloc_list class.
     PER_HEAP
     size_t gen2_removed_no_undo;
+
+    PER_HEAP
+    size_t saved_pinned_plug_index;
 #endif //DOUBLY_LINKED_FL
 
     PER_HEAP

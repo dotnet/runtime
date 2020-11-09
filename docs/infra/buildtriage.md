@@ -8,9 +8,19 @@ This directly impacts developer productivity and the need to promptly fix such b
 
 This role will work on a rotation basis. There are six people in the role and each rotation will last for a calendar month.
 
+## Prerequisites
+Please make sure that you are part of the following groups before you start the rotation:
+- Runtime Infrastructure Github group: https://github.com/orgs/dotnet/teams/runtime-infrastructure
+- Internal distribution list: runtimerepo-infra
+- Internal teams channel: dotnet/runtime repo -> Infrastructure Team
+
+Unfortunately, the teams channel's members need to be listed individually. Ping @ViktorHofer if you need access.
+
 ## Tracking Build Failures
 All the CI failures can be tracked through the CI Council dashboards i.e.  [Public](https://dev.azure.com/dnceng/public/_dashboards/dashboard/40ac4990-3498-4b3a-85dd-2ffde961d672), [Internal](https://dev.azure.com/dnceng/internal/_dashboards/dashboard/e1bb572d-a2b0-488f-a58a-54c73a547f0d).
-We have different dashboards for public(Rolling & PR Builds) and internal builds. 
+We have different dashboards for public(Rolling & PR Builds) and internal builds.
+
+In addition to the dashboards, official build failure notifications are sent to the internal runtime infrastructure alias. For every of these mail notifications, a matching issue should exist (either in the runtime repository or in core-eng or arcade). This guarantees that we are following-up on infrastructure issues immediately. If a build failure's cause isn't trivial to identify, consider looping in dnceng. 
 
 Tests are not run during the internal builds. Publishing and signing steps are run only during  internal builds. Rolling builds run tests for the full matrix. 
 

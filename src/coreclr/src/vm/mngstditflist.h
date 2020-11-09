@@ -94,23 +94,6 @@ MNGSTDITF_BEGIN_INTERFACE(StdMngIReflect, g_ReflectionReflectItfName, "System.Ru
     MNGSTDITF_DEFINE_METH(StdMngIReflect, get_UnderlyingSystemType, &gsig_IM_RetType,               MNGSTDITF_IREFLECT_DECL__GET_UNDERLYING_SYSTEM_TYPE)
 MNGSTDITF_END_INTERFACE(StdMngIReflect)
 
-
-//
-// IExpando
-//
-
-#define MNGSTDITF_IEXPANDO_DECL__ADD_FIELD      FCDECL2(Object*, AddField, Object* refThisUNSAFE, StringObject* refNameUNSAFE)
-#define MNGSTDITF_IEXPANDO_DECL__ADD_PROPERTY   FCDECL2(Object*, AddProperty, Object* refThisUNSAFE, StringObject* refNameUNSAFE)
-#define MNGSTDITF_IEXPANDO_DECL__ADD_METHOD     FCDECL3(Object*, AddMethod, Object* refThisUNSAFE, StringObject* refNameUNSAFE, Object* refDelegateUNSAFE)
-#define MNGSTDITF_IEXPANDO_DECL__REMOVE_MEMBER  FCDECL2(void, RemoveMember, Object* refThisUNSAFE, Object* refMemberInfoUNSAFE)
-
-MNGSTDITF_BEGIN_INTERFACE(StdMngIExpando, g_ReflectionExpandoItfName, "System.Runtime.InteropServices.ComTypes.IExpando", g_CMExpandoToDispatchExMarshaler, "IExpando", g_CMExpandoViewOfDispatchEx, IID_IDispatchEx, TRUE)
-    MNGSTDITF_DEFINE_METH(StdMngIExpando, AddField,     &gsig_IM_Str_RetFieldInfo,          MNGSTDITF_IEXPANDO_DECL__ADD_FIELD)
-    MNGSTDITF_DEFINE_METH(StdMngIExpando, AddProperty,  &gsig_IM_Str_RetPropertyInfo,       MNGSTDITF_IEXPANDO_DECL__ADD_PROPERTY)
-    MNGSTDITF_DEFINE_METH(StdMngIExpando, AddMethod,    &gsig_IM_Str_Delegate_RetMethodInfo,MNGSTDITF_IEXPANDO_DECL__ADD_METHOD)
-    MNGSTDITF_DEFINE_METH(StdMngIExpando, RemoveMember, &gsig_IM_MemberInfo_RetVoid,        MNGSTDITF_IEXPANDO_DECL__REMOVE_MEMBER)
-MNGSTDITF_END_INTERFACE(StdMngIExpando)
-
 //
 // IEnumerator
 //

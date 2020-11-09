@@ -846,9 +846,6 @@ void ConfigMethodRange::InitRanges(const WCHAR* rangeStr, unsigned capacity)
 //------------------------------------------------------------------------
 // Dump: dump hash ranges to stdout
 //
-// Arguments:
-//    hash -- hash value to check
-
 void ConfigMethodRange::Dump()
 {
     if (m_inited != 1)
@@ -866,7 +863,14 @@ void ConfigMethodRange::Dump()
     printf("<method range with %d entries>\n", m_lastRange);
     for (unsigned i = 0; i < m_lastRange; i++)
     {
-        printf("%i [%u-%u]\n", i, m_ranges[i].m_low, m_ranges[i].m_high);
+        if (m_ranges[i].m_low == m_ranges[i].m_high)
+        {
+            printf("%i [0x%08x]\n", i, m_ranges[i].m_low);
+        }
+        else
+        {
+            printf("%i [0x%08x-0x%08x]\n", i, m_ranges[i].m_low, m_ranges[i].m_high);
+        }
     }
 }
 

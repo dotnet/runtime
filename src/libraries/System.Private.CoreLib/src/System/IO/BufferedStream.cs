@@ -487,15 +487,7 @@ namespace System.IO
 
         public override int Read(byte[] buffer, int offset, int count)
         {
-            if (buffer == null)
-                throw new ArgumentNullException(nameof(buffer), SR.ArgumentNull_Buffer);
-            if (offset < 0)
-                throw new ArgumentOutOfRangeException(nameof(offset), SR.ArgumentOutOfRange_NeedNonNegNum);
-            if (count < 0)
-                throw new ArgumentOutOfRangeException(nameof(count), SR.ArgumentOutOfRange_NeedNonNegNum);
-            if (buffer.Length - offset < count)
-                throw new ArgumentException(SR.Argument_InvalidOffLen);
-
+            ValidateBufferArguments(buffer, offset, count);
             EnsureNotClosed();
             EnsureCanRead();
             Debug.Assert(_stream != null);
@@ -611,14 +603,7 @@ namespace System.IO
 
         public override Task<int> ReadAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
         {
-            if (buffer == null)
-                throw new ArgumentNullException(nameof(buffer), SR.ArgumentNull_Buffer);
-            if (offset < 0)
-                throw new ArgumentOutOfRangeException(nameof(offset), SR.ArgumentOutOfRange_NeedNonNegNum);
-            if (count < 0)
-                throw new ArgumentOutOfRangeException(nameof(count), SR.ArgumentOutOfRange_NeedNonNegNum);
-            if (buffer.Length - offset < count)
-                throw new ArgumentException(SR.Argument_InvalidOffLen);
+            ValidateBufferArguments(buffer, offset, count);
 
             // Fast path check for cancellation already requested
             if (cancellationToken.IsCancellationRequested)
@@ -838,15 +823,7 @@ namespace System.IO
 
         public override void Write(byte[] buffer, int offset, int count)
         {
-            if (buffer == null)
-                throw new ArgumentNullException(nameof(buffer), SR.ArgumentNull_Buffer);
-            if (offset < 0)
-                throw new ArgumentOutOfRangeException(nameof(offset), SR.ArgumentOutOfRange_NeedNonNegNum);
-            if (count < 0)
-                throw new ArgumentOutOfRangeException(nameof(count), SR.ArgumentOutOfRange_NeedNonNegNum);
-            if (buffer.Length - offset < count)
-                throw new ArgumentException(SR.Argument_InvalidOffLen);
-
+            ValidateBufferArguments(buffer, offset, count);
             EnsureNotClosed();
             EnsureCanWrite();
             Debug.Assert(_stream != null);
@@ -1048,14 +1025,7 @@ namespace System.IO
 
         public override Task WriteAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
         {
-            if (buffer == null)
-                throw new ArgumentNullException(nameof(buffer), SR.ArgumentNull_Buffer);
-            if (offset < 0)
-                throw new ArgumentOutOfRangeException(nameof(offset), SR.ArgumentOutOfRange_NeedNonNegNum);
-            if (count < 0)
-                throw new ArgumentOutOfRangeException(nameof(count), SR.ArgumentOutOfRange_NeedNonNegNum);
-            if (buffer.Length - offset < count)
-                throw new ArgumentException(SR.Argument_InvalidOffLen);
+            ValidateBufferArguments(buffer, offset, count);
 
             return WriteAsync(new ReadOnlyMemory<byte>(buffer, offset, count), cancellationToken).AsTask();
         }
@@ -1288,7 +1258,9 @@ namespace System.IO
 
         public override void CopyTo(Stream destination, int bufferSize)
         {
-            StreamHelpers.ValidateCopyToArgs(this, destination, bufferSize);
+            ValidateCopyToArguments(destination, bufferSize);
+            EnsureNotClosed();
+            EnsureCanRead();
             Debug.Assert(_stream != null);
 
             int readBytes = _readLen - _readPos;
@@ -1313,7 +1285,10 @@ namespace System.IO
 
         public override Task CopyToAsync(Stream destination, int bufferSize, CancellationToken cancellationToken)
         {
-            StreamHelpers.ValidateCopyToArgs(this, destination, bufferSize);
+            ValidateCopyToArguments(destination, bufferSize);
+            EnsureNotClosed();
+            EnsureCanRead();
+
             return cancellationToken.IsCancellationRequested ?
                 Task.FromCanceled<int>(cancellationToken) :
                 CopyToAsyncCore(destination, bufferSize, cancellationToken);

@@ -4,7 +4,7 @@
     <DefineConstants>$(DefineConstants);NOSPAN;SERIAL_PORTS</DefineConstants>
     <IncludeDllSafeSearchPathAttribute>true</IncludeDllSafeSearchPathAttribute>
     <Nullable>annotations</Nullable>
-    <TargetFrameworks>netstandard2.0-Windows_NT;netstandard2.0-Linux;netstandard2.0-OSX;netstandard2.0;net461-Windows_NT;netstandard2.0-FreeBSD</TargetFrameworks>
+    <TargetFrameworks>netstandard2.0-windows;netstandard2.0-Linux;netstandard2.0-OSX;netstandard2.0;net461-windows;netstandard2.0-FreeBSD</TargetFrameworks>
   </PropertyGroup>
   <!-- DesignTimeBuild requires all the TargetFramework Derived Properties to not be present in the first property group. -->
   <PropertyGroup>

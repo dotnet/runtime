@@ -1421,11 +1421,10 @@ mono_gsharedvt_constrained_call (gpointer mp, MonoMethod *cmethod, MonoClass *kl
 	gpointer new_args [16];
 
 #ifdef ENABLE_NETCORE
-	if (!mono_class_is_ginst (cmethod->klass) && !cmethod->is_inflated) {
+	/* Object.GetType () is an intrinsic under netcore */
+	if (!mono_class_is_ginst (cmethod->klass) && !cmethod->is_inflated && !strcmp (cmethod->name, "GetType")) {
 		MonoVTable *vt;
 
-		/* Object.GetType () is an intrinsic under netcore */
-		g_assertf (!strcmp (cmethod->name, "GetType"), "%s.%s", m_class_get_name (cmethod->klass), cmethod->name);
 		vt = mono_class_vtable_checked (mono_domain_get (), klass, error);
 		if (!is_ok (error)) {
 			mono_error_set_pending_exception (error);

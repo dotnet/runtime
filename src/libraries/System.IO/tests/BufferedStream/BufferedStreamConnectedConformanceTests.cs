@@ -5,6 +5,22 @@ using System.Threading.Tasks;
 
 namespace System.IO.Tests
 {
+    public class BufferedStreamStandaloneConformanceTests : StandaloneStreamConformanceTests
+    {
+        private const int BufferSize = 4;
+
+        protected override Task<Stream> CreateReadOnlyStreamCore(byte[] initialData) =>
+            Task.FromResult<Stream>(new BufferedStream(new MemoryStream(initialData ?? Array.Empty<byte>(), writable: false), BufferSize));
+
+        protected override Task<Stream> CreateReadWriteStreamCore(byte[] initialData) =>
+            Task.FromResult<Stream>(
+                initialData != null ? new BufferedStream(new MemoryStream(initialData), BufferSize) :
+                new BufferedStream(new MemoryStream(), BufferSize));
+
+        protected override Task<Stream> CreateWriteOnlyStreamCore(byte[] initialData) =>
+            Task.FromResult<Stream>(null);
+    }
+
     public class BufferedStreamConnectedConformanceTests : WrappingConnectedStreamConformanceTests
     {
         protected override Task<StreamPair> CreateConnectedStreamsAsync() =>
@@ -17,8 +33,8 @@ namespace System.IO.Tests
             return Task.FromResult<StreamPair>((b1, b2));
         }
 
+        protected override int BufferedSize => 1024 + 16384;
         protected override bool SupportsLeaveOpen => false;
         protected override Type UnsupportedConcurrentExceptionType => null;
-        protected override int BufferedSize => 1024 + 16384;
     }
 }
