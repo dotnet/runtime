@@ -87,7 +87,7 @@ namespace System.Drawing
 
                 if (destinationType == typeof(InstanceDescriptor))
                 {
-                    ConstructorInfo? met = typeof(Font).GetTypeInfo().GetConstructor(new Type[] { typeof(string), typeof(float), typeof(FontStyle), typeof(GraphicsUnit) });
+                    ConstructorInfo? met = typeof(Font).GetConstructor(new Type[] { typeof(string), typeof(float), typeof(FontStyle), typeof(GraphicsUnit) });
                     object[] args = new object[4];
                     args[0] = font.Name;
                     args[1] = font.Size;
