@@ -402,7 +402,7 @@ namespace System.Net.Http.HPack
         /// <returns>The number of decoded symbols.</returns>
         public static int Decode(ReadOnlySpan<byte> src, ref byte[] dstArray)
         {
-            // The code below implements the decoding logic for a HPack huffman encoded literal values.
+            // The code below implements the decoding logic for an HPack huffman encoded literal values.
             // https://httpwg.org/specs/rfc7541.html#string.literal.representation
             //
             // To decode a symbol, we traverse the decoding lookup table tree by 8 bits for each lookup
