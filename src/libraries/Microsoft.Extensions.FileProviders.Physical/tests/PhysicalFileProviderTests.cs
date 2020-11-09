@@ -95,40 +95,45 @@ namespace Microsoft.Extensions.FileProviders
         public void PollingFileProviderShouldntConsumeINotifyInstances()
         {
             List<IDisposable> disposables = new List<IDisposable>();
-            using var root = new DisposableFileSystem();
-
-            string maxInstancesFile = "/proc/sys/fs/inotify/max_user_instances";
-            Assert.True(File.Exists(maxInstancesFile));
-            int maxInstances = int.Parse(File.ReadAllText(maxInstancesFile));
-
-            // choose an arbitrary number that exceeds max
-            int instances = maxInstances + 16;
-
-            AutoResetEvent are = new AutoResetEvent(false);
-            try
+            using (var root = new DisposableFileSystem())
             {
-                for (int i = 0; i < instances; i++)
+                string maxInstancesFile = "/proc/sys/fs/inotify/max_user_instances";
+                Assert.True(File.Exists(maxInstancesFile));
+                int maxInstances = int.Parse(File.ReadAllText(maxInstancesFile));
+
+                // choose an arbitrary number that exceeds max
+                int instances = maxInstances + 16;
+
+                AutoResetEvent are = new AutoResetEvent(false);
+
+                var oldPollingInterval = PhysicalFilesWatcher.DefaultPollingInterval;
+                try
                 {
-                    PhysicalFileProvider pfp = new PhysicalFileProvider(root.RootPath)
+                    PhysicalFilesWatcher.DefaultPollingInterval = TimeSpan.FromMilliseconds(WaitTimeForTokenToFire);
+                    for (int i = 0; i < instances; i++)
                     {
-                        UsePollingFileWatcher = true,
-                        UseActivePolling = true
-                    };
-                    disposables.Add(pfp);
-                    disposables.Add(pfp.Watch("*").RegisterChangeCallback(_ => are.Set(), null));
+                        PhysicalFileProvider pfp = new PhysicalFileProvider(root.RootPath)
+                        {
+                            UsePollingFileWatcher = true,
+                            UseActivePolling = true
+                        };
+                        disposables.Add(pfp);
+                        disposables.Add(pfp.Watch("*").RegisterChangeCallback(_ => are.Set(), null));
+                    }
+
+                    // trigger an event
+                    root.CreateFile("test.txt");
+
+                    // wait for at least one event.
+                    Assert.True(are.WaitOne(WaitTimeForTokenCallback));
                 }
-
-                // trigger an event
-                root.CreateFile("test.txt");
-
-                // wait for at least one event.
-                Assert.True(are.WaitOne(WaitTimeForTokenCallback));
-            }
-            finally
-            {
-                foreach (var disposable in disposables)
+                finally
                 {
-                    disposable.Dispose();
+                    PhysicalFilesWatcher.DefaultPollingInterval = oldPollingInterval;
+                    foreach (var disposable in disposables)
+                    {
+                        disposable.Dispose();
+                    }
                 }
             }
         }
@@ -1523,6 +1528,32 @@ namespace Microsoft.Extensions.FileProviders
                 // Assert
                 Assert.True(fileWatcher.PollForChanges);
                 Assert.True(fileWatcher.UseActivePolling);
+            }
+        }
+
+        [Theory]
+        [InlineData(false, false)]
+        [InlineData(false, true)]
+        [InlineData(true, true)]
+        public async Task CanDeleteWatchedDirectory(bool usePolling, bool useActivePolling)
+        {
+            using (var root = new DisposableFileSystem())
+            using (var provider = new PhysicalFileProvider(root.RootPath))
+            {
+                var fileName = Path.GetRandomFileName();
+                var fileLocation = Path.Combine(root.RootPath, fileName);
+                PollingFileChangeToken.PollingInterval = TimeSpan.FromMilliseconds(10);
+
+                provider.UsePollingFileWatcher = usePolling;
+                provider.UseActivePolling = useActivePolling;
+
+                root.CreateFile(fileName);
+                var token = provider.Watch(fileName);
+                Directory.Delete(root.RootPath, true);
+
+                await Task.Delay(WaitTimeForTokenToFire);
+
+                Assert.True(token.HasChanged);
             }
         }
     }
