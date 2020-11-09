@@ -3902,7 +3902,7 @@ HRESULT ClrDataAccess::GetDacModuleHandle(HMODULE *phModule)
     *phModule = (HMODULE)&__ImageBase;
     return S_OK;
 #else
-    //  hModule is not avaialable under TARGET_UNIX
+    //  hModule is not available under TARGET_UNIX
     return E_FAIL;
 #endif
 }

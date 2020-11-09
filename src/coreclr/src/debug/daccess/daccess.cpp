@@ -40,7 +40,6 @@ extern bool TryGetSymbol(ICorDebugDataTarget* dataTarget, uint64_t baseAddress, 
 
 CRITICAL_SECTION g_dacCritSec;
 ClrDataAccess* g_dacImpl;
-HINSTANCE g_thisModule;
 
 EXTERN_C
 #ifdef TARGET_UNIX
@@ -72,9 +71,6 @@ BOOL WINAPI DllMain(HANDLE instance, DWORD reason, LPVOID reserved)
         {
             return FALSE;
         }
-#else
-        // Save the module handle.
-        g_thisModule = (HINSTANCE)instance;
 #endif
         InitializeCriticalSection(&g_dacCritSec);
 
