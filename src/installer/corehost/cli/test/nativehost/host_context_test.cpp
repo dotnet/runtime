@@ -692,6 +692,7 @@ bool host_context_test::non_context_mixed(
     const pal::char_t *config_path,
     int argc,
     const pal::char_t *argv[],
+    bool launch_as_if_dotnet,
     pal::stringstream_t &test_output)
 {
     hostfxr_exports hostfxr { hostfxr_path };
@@ -706,13 +707,18 @@ bool host_context_test::non_context_mixed(
     block_mock_execute_assembly block_mock;
 
     std::vector<const pal::char_t*> argv_local;
+    if (launch_as_if_dotnet)
+        argv_local.push_back(host_path.c_str());
+
     argv_local.push_back(app_path);
     for (int i = 0; i < argc; ++i)
         argv_local.push_back(argv[i]);
 
     pal::stringstream_t run_app_output;
     auto run_app = [&]{
-        int rc = hostfxr.main_startupinfo(argv_local.size(), argv_local.data(), host_path.c_str(), get_dotnet_root_from_fxr_path(hostfxr_path).c_str(), app_path);
+        // Imitate running as dotnet by passing empty as app_path to hostfxr_main_startupinfo
+        const pal::char_t *app_path_local = launch_as_if_dotnet ? _X("") : app_path;
+        int rc = hostfxr.main_startupinfo(argv_local.size(), argv_local.data(), host_path.c_str(), get_dotnet_root_from_fxr_path(hostfxr_path).c_str(), app_path_local);
         if (rc != StatusCode::Success)
             run_app_output << _X("hostfxr_main_startupinfo failed: ") << std::hex << std::showbase << rc << std::endl;
     };

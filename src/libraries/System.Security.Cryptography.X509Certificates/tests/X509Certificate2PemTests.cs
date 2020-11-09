@@ -400,6 +400,52 @@ MII
                 X509Certificate2.CreateFromEncryptedPemFile(null, default));
         }
 
+        [Fact]
+        public static void CreateFromPem_PublicOnly_IgnoresPrivateKey()
+        {
+            using X509Certificate2 cert = X509Certificate2.CreateFromPem($"{TestData.RsaCertificate}\n{TestData.RsaPkcs1Key}");
+            Assert.Equal("A33348E44A047A121F44E810E888899781E1FF19", cert.Thumbprint);
+            Assert.False(cert.HasPrivateKey);
+        }
+
+        [Fact]
+        public static void CreateFromPem_PublicOnly()
+        {
+            using X509Certificate2 cert = X509Certificate2.CreateFromPem(TestData.RsaCertificate);
+            Assert.Equal("A33348E44A047A121F44E810E888899781E1FF19", cert.Thumbprint);
+            Assert.False(cert.HasPrivateKey);
+        }
+
+        [Fact]
+        public static void CreateFromPem_PublicOnly_CryptographicException_Empty()
+        {
+            Assert.Throws<CryptographicException>(() => X509Certificate2.CreateFromPem(default));
+        }
+
+        [Fact]
+        public static void CreateFromPem_PublicOnly_CryptographicException_MalformedCertificate()
+        {
+            const string CertContents = @"
+-----BEGIN CERTIFICATE-----
+MII
+-----END CERTIFICATE-----
+";
+            Assert.Throws<CryptographicException>(() => X509Certificate2.CreateFromPem(CertContents));
+        }
+
+        [Fact]
+        public static void CreateFromPem_PublicOnly_CryptographicException_CertIsPkcs7()
+        {
+            string content = Convert.ToBase64String(TestData.Pkcs7ChainDerBytes);
+            string certContents = $@"
+-----BEGIN CERTIFICATE-----
+{content}
+-----END CERTIFICATE-----
+";
+            Assert.Throws<CryptographicException>(() =>
+                X509Certificate2.CreateFromPem(certContents));
+        }
+
         private static void AssertKeysMatch<T>(string keyPem, Func<T> keyLoader, string password = null) where T : AsymmetricAlgorithm
         {
             AsymmetricAlgorithm key = keyLoader();

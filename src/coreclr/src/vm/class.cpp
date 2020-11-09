@@ -1171,9 +1171,12 @@ void ClassLoader::ValidateMethodsWithCovariantReturnTypes(MethodTable* pMT)
             if (!pMD->RequiresCovariantReturnTypeChecking() && !pParentMD->RequiresCovariantReturnTypeChecking())
                 continue;
 
-            // The context used to load the return type of the parent method has to use the generic method arguments
-            // of the overriding method, otherwise the type comparison below will not work correctly
-            SigTypeContext context1(pParentMD->GetClassInstantiation(), pMD->GetMethodInstantiation());
+            Instantiation classInst = pParentMD->GetClassInstantiation();
+            if (ClassLoader::IsTypicalSharedInstantiation(classInst))
+            {
+                classInst = pParentMT->GetInstantiation();
+            }
+            SigTypeContext context1(classInst, pMD->GetMethodInstantiation());
             MetaSig methodSig1(pParentMD);
             TypeHandle hType1 = methodSig1.GetReturnProps().GetTypeHandleThrowing(pParentMD->GetModule(), &context1, ClassLoader::LoadTypesFlag::LoadTypes, CLASS_LOAD_EXACTPARENTS);
 

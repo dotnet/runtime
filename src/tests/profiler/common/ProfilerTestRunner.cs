@@ -53,7 +53,7 @@ namespace Profiler.Tests
 
             if(!File.Exists(profilerPath))
             {
-                LogTestFailure("Profiler library not found at expected path: " + profilerPath);
+                FailFastWithMessage("Profiler library not found at expected path: " + profilerPath);
             }
 
             ProfileeOutputVerifier verifier = new ProfileeOutputVerifier();
@@ -83,17 +83,25 @@ namespace Profiler.Tests
             process.BeginOutputReadLine();
 
             process.WaitForExit();
-            if (process.ExitCode == 100 && verifier.HasPassingOutput)
+
+            // There are two conditions for profiler tests to pass, the output of the profiled program
+            // must contain the phrase "PROFILER TEST PASSES" and the return code must be 100. This is
+            // because lots of verification happen in the profiler code, where it is hard to change the
+            // program return value.
+
+            if (!verifier.HasPassingOutput)
             {
-                return 100;
-            }
-            else
-            {
-                LogTestFailure("Profiler tests are expected to contain the text \'" + verifier.SuccessPhrase + "\' in the console output " +
+                FailFastWithMessage("Profiler tests are expected to contain the text \'" + verifier.SuccessPhrase + "\' in the console output " +
                     "of the profilee app to indicate a passing test. Usually it is printed from the Shutdown() method of the profiler implementation. This " +
                     "text was not found in the output above.");
-                return process.ExitCode == 100 ? process.ExitCode : -1;
             }
+
+            if (process.ExitCode != 100)
+            {
+                FailFastWithMessage($"Profilee returned exit code {process.ExitCode} instead of expected exit code 100.");
+            }
+
+            return 100;
         }
 
         private static string GetProfilerPath()
@@ -132,7 +140,7 @@ namespace Profiler.Tests
             return Path.Combine(Environment.GetEnvironmentVariable("CORE_ROOT"), corerunName);
         }
 
-        private static void LogTestFailure(string error)
+        private static void FailFastWithMessage(string error)
         {
             Console.WriteLine("Test failed: " + error);
             throw new Exception(error);

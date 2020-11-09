@@ -39,8 +39,6 @@ namespace System
         private static int s_windowHeight;  // Cached WindowHeight, invalid when s_windowWidth == -1.
         private static int s_invalidateCachedSettings = 1; // Tracks whether we should invalidate the cached settings.
 
-        private static readonly Interop.Sys.TerminalInvalidationCallback s_invalidateTerminalSettings = InvalidateTerminalSettings;
-
         public static Stream OpenStandardInput()
         {
             return new UnixConsoleStream(SafeFileHandleHelper.Open(() => Interop.Sys.Dup(Interop.Sys.FileDescriptors.STDIN_FILENO)), FileAccess.Read,
@@ -919,7 +917,7 @@ namespace System
         }
 
         /// <summary>Ensures that the console has been initialized for use.</summary>
-        private static void EnsureInitializedCore()
+        private static unsafe void EnsureInitializedCore()
         {
             // Initialization is only needed when input isn't redirected.
             if (Console.IsInputRedirected)
@@ -939,7 +937,7 @@ namespace System
 
                     // Register a callback for signals that may invalidate our cached terminal settings.
                     // This includes: SIGCONT, SIGCHLD, SIGWINCH.
-                    Interop.Sys.SetTerminalInvalidationHandler(s_invalidateTerminalSettings);
+                    Interop.Sys.SetTerminalInvalidationHandler(&InvalidateTerminalSettings);
 
                     // Provide the native lib with the correct code from the terminfo to transition us into
                     // "application mode".  This will both transition it immediately, as well as allow
@@ -1364,6 +1362,7 @@ namespace System
             }
         }
 
+        [UnmanagedCallersOnly]
         private static void InvalidateTerminalSettings()
         {
             Volatile.Write(ref s_invalidateCachedSettings, 1);
@@ -1460,12 +1459,12 @@ namespace System
         {
             private bool _handlerRegistered;
 
-            internal void Register()
+            internal unsafe void Register()
             {
                 EnsureConsoleInitialized();
 
                 Debug.Assert(!_handlerRegistered);
-                Interop.Sys.RegisterForCtrl(c => OnBreakEvent(c));
+                Interop.Sys.RegisterForCtrl(&OnBreakEvent);
                 _handlerRegistered = true;
             }
 
@@ -1476,6 +1475,7 @@ namespace System
                 Interop.Sys.UnregisterForCtrl();
             }
 
+            [UnmanagedCallersOnly]
             private static void OnBreakEvent(Interop.Sys.CtrlCode ctrlCode)
             {
                 // This is called on the native signal handling thread. We need to move to another thread so

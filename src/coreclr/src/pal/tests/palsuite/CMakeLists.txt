@@ -513,7 +513,7 @@ _add_executable(paltests
   c_runtime/_vsnwprintf_s/test8/test8.cpp
   c_runtime/_vsnwprintf_s/test9/test9.cpp
   c_runtime/_wcsicmp/test1/test1.cpp
-  c_runtime/_wcslwr/test1/test1.cpp
+  c_runtime/_wcslwr_s/test1/test1.cpp
   c_runtime/_wcsnicmp/test1/test1.cpp
   c_runtime/_wfopen/test1/test1.cpp
   c_runtime/_wfopen/test2/test2.cpp

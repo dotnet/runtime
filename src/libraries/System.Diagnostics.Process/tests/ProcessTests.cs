@@ -1964,23 +1964,27 @@ namespace System.Diagnostics.Tests
         [Fact]
         public void LongProcessNamesAreSupported()
         {
-            // Alpine implements sleep as a symlink to the busybox executable.
-            // If we rename it, the program will no longer sleep.
-            if (PlatformDetection.IsAlpine)
+            string sleepPath;
+            if (OperatingSystem.IsLinux())
             {
-                return;
+                // On some distros sleep is implemented using a script/symlink, which causes this test to fail.
+                // Instead of using sleep directly, we wrap it with a script.
+                sleepPath = GetTestFilePath();
+                File.WriteAllText(sleepPath, $"#!/bin/sh\nsleep 600\n"); // sleep 10 min.
+                ChMod(sleepPath, "744");
             }
-
-            string programPath = GetProgramPath("sleep");
-
-            if (programPath == null)
+            else
             {
-                return;
+                sleepPath = GetProgramPath("sleep");
+                if (sleepPath == null)
+                {
+                    return;
+                }
             }
 
             const string LongProcessName = "123456789012345678901234567890";
             string sleepCommandPathFileName = Path.Combine(TestDirectory, LongProcessName);
-            File.Copy(programPath, sleepCommandPathFileName);
+            File.Copy(sleepPath, sleepCommandPathFileName);
 
             using (Process px = Process.Start(sleepCommandPathFileName, "600"))
             {

@@ -26,7 +26,6 @@ namespace System.Text.Json
         // Since a converter's TypeToConvert (which is the T value in this type) can be different than
         // the property's type, we track that and whether the property type can be null.
         private bool _propertyTypeEqualsTypeToConvert;
-        private bool _propertyTypeCanBeNull;
 
         public Func<object, T>? Get { get; private set; }
         public Action<object, T>? Set { get; private set; }
@@ -105,10 +104,10 @@ namespace System.Text.Json
             }
 
             _converterIsExternalAndPolymorphic = !converter.IsInternalConverter && DeclaredPropertyType != converter.TypeToConvert;
-            _propertyTypeCanBeNull = DeclaredPropertyType.CanBeNull();
+            PropertyTypeCanBeNull = DeclaredPropertyType.CanBeNull();
             _propertyTypeEqualsTypeToConvert = typeof(T) == DeclaredPropertyType;
 
-            GetPolicies(ignoreCondition, parentTypeNumberHandling, defaultValueIsNull: _propertyTypeCanBeNull);
+            GetPolicies(ignoreCondition, parentTypeNumberHandling, defaultValueIsNull: PropertyTypeCanBeNull);
         }
 
         public override JsonConverter ConverterBase
@@ -147,7 +146,7 @@ namespace System.Text.Json
                     return true;
                 }
 
-                if (!_propertyTypeCanBeNull)
+                if (!PropertyTypeCanBeNull)
                 {
                     if (_propertyTypeEqualsTypeToConvert)
                     {
@@ -172,7 +171,7 @@ namespace System.Text.Json
 
             if (value == null)
             {
-                Debug.Assert(_propertyTypeCanBeNull);
+                Debug.Assert(PropertyTypeCanBeNull);
 
                 if (Converter.HandleNullOnWrite)
                 {
@@ -235,7 +234,7 @@ namespace System.Text.Json
             bool isNullToken = reader.TokenType == JsonTokenType.Null;
             if (isNullToken && !Converter.HandleNullOnRead && !state.IsContinuation)
             {
-                if (!_propertyTypeCanBeNull)
+                if (!PropertyTypeCanBeNull)
                 {
                     ThrowHelper.ThrowJsonException_DeserializeUnableToConvertValue(Converter.TypeToConvert);
                 }
@@ -255,7 +254,7 @@ namespace System.Text.Json
                 // CanUseDirectReadOrWrite == false when using streams
                 Debug.Assert(!state.IsContinuation);
 
-                if (!isNullToken || !IgnoreDefaultValuesOnRead || !_propertyTypeCanBeNull)
+                if (!isNullToken || !IgnoreDefaultValuesOnRead || !PropertyTypeCanBeNull)
                 {
                     // Optimize for internal converters by avoiding the extra call to TryRead.
                     T fastValue = Converter.Read(ref reader, RuntimePropertyType!, Options);
@@ -267,7 +266,7 @@ namespace System.Text.Json
             else
             {
                 success = true;
-                if (!isNullToken || !IgnoreDefaultValuesOnRead || !_propertyTypeCanBeNull || state.IsContinuation)
+                if (!isNullToken || !IgnoreDefaultValuesOnRead || !PropertyTypeCanBeNull || state.IsContinuation)
                 {
                     success = Converter.TryRead(ref reader, RuntimePropertyType!, Options, ref state, out T value);
                     if (success)
@@ -284,7 +283,7 @@ namespace System.Text.Json
                                     ThrowHelper.ThrowInvalidCastException_DeserializeUnableToAssignValue(typeOfValue, DeclaredPropertyType);
                                 }
                             }
-                            else if (!_propertyTypeCanBeNull)
+                            else if (!PropertyTypeCanBeNull)
                             {
                                 ThrowHelper.ThrowInvalidOperationException_DeserializeUnableToAssignNull(DeclaredPropertyType);
                             }
@@ -304,7 +303,7 @@ namespace System.Text.Json
             bool isNullToken = reader.TokenType == JsonTokenType.Null;
             if (isNullToken && !Converter.HandleNullOnRead && !state.IsContinuation)
             {
-                if (!_propertyTypeCanBeNull)
+                if (!PropertyTypeCanBeNull)
                 {
                     ThrowHelper.ThrowJsonException_DeserializeUnableToConvertValue(Converter.TypeToConvert);
                 }

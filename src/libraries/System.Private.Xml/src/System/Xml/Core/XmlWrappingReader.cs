@@ -39,7 +39,7 @@ namespace System.Xml
         public override bool HasValue { get { return reader.HasValue; } }
         public override string Value { get { return reader.Value; } }
         public override int Depth { get { return reader.Depth; } }
-        public override string? BaseURI { get { return reader.BaseURI; } }
+        public override string BaseURI { get { return reader.BaseURI; } }
         public override bool IsEmptyElement { get { return reader.IsEmptyElement; } }
         public override bool IsDefault { get { return reader.IsDefault; } }
         public override XmlSpace XmlSpace { get { return reader.XmlSpace; } }

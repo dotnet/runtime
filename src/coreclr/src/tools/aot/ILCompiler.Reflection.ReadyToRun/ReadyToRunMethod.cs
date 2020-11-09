@@ -101,13 +101,27 @@ namespace ILCompiler.Reflection.ReadyToRun
         public int StartAddress { get; }
 
         /// <summary>
+        /// The relative virtual address to the end of the code block
+        /// </summary>
+        public int EndAddress { get;  }
+
+        /// <summary>
         /// The size of the code block in bytes
         /// </summary>
         /// /// <remarks>
         /// The EndAddress field in the runtime functions section is conditional on machine type
         /// Size is -1 for images without the EndAddress field
         /// </remarks>
-        public int Size { get; }
+        public int Size
+        {
+            get
+            {
+                EnsureInitialized();
+                return _size;
+            }
+        }
+
+        private int _size = -1;
 
         /// <summary>
         /// The relative virtual address to the unwind info
@@ -171,41 +185,54 @@ namespace ILCompiler.Reflection.ReadyToRun
             int codeOffset,
             ReadyToRunMethod method,
             BaseUnwindInfo unwindInfo,
-            BaseGcInfo gcInfo)
+            Func<BaseGcInfo> gcInfo)
         {
             _readyToRunReader = readyToRunReader;
+
             Id = id;
             StartAddress = startRva;
+            EndAddress = endRva;
             UnwindRVA = unwindRva;
             Method = method;
             UnwindInfo = unwindInfo;
+            CodeOffset = codeOffset;
+            method.GetGcInfo = gcInfo;
+        }
 
-            if (endRva != -1)
+        private void EnsureInitialized()
+        {
+            if (_size < 0)
             {
-                Size = endRva - startRva;
+                _size = GetSize();
             }
-            else if (unwindInfo is x86.UnwindInfo)
+        }
+
+        private int GetSize()
+        {
+            if (EndAddress != -1)
             {
-                Size = (int)((x86.UnwindInfo)unwindInfo).FunctionLength;
+                return EndAddress - StartAddress;
             }
-            else if (unwindInfo is Arm.UnwindInfo)
+            else if (UnwindInfo is x86.UnwindInfo)
             {
-                Size = (int)((Arm.UnwindInfo)unwindInfo).FunctionLength;
+                return (int)((x86.UnwindInfo)UnwindInfo).FunctionLength;
             }
-            else if (unwindInfo is Arm64.UnwindInfo)
+            else if (UnwindInfo is Arm.UnwindInfo)
             {
-                Size = (int)((Arm64.UnwindInfo)unwindInfo).FunctionLength;
+                return (int)((Arm.UnwindInfo)UnwindInfo).FunctionLength;
             }
-            else if (gcInfo != null)
+            else if (UnwindInfo is Arm64.UnwindInfo)
             {
-                Size = gcInfo.CodeLength;
+                return (int)((Arm64.UnwindInfo)UnwindInfo).FunctionLength;
+            }
+            else if (Method.GcInfo != null)
+            {
+                return Method.GcInfo.CodeLength; 
             }
             else
             {
-                Size = -1;
+                return -1;
             }
-            CodeOffset = codeOffset;
-            method.GcInfo = gcInfo;
         }
     }
 
@@ -273,7 +300,19 @@ namespace ILCompiler.Reflection.ReadyToRun
         /// </summary>
         public int EntryPointRuntimeFunctionId { get; set; }
 
-        public BaseGcInfo GcInfo { get; set; }
+        public Func<BaseGcInfo> GetGcInfo { get; set; }
+
+        public BaseGcInfo GcInfo
+        {
+            get
+            {
+                EnsureInitialized();
+                return _gcInfo;
+            }
+        }
+
+        private BaseGcInfo _gcInfo;
+
 
         private ReadyToRunReader _readyToRunReader;
         private List<FixupCell> _fixupCells;
@@ -404,6 +443,14 @@ namespace ILCompiler.Reflection.ReadyToRun
             SignatureString = sb.ToString();
         }
 
+        private void EnsureInitialized()
+        {
+            if (_gcInfo == null && GetGcInfo != null)
+            {
+                _gcInfo = GetGcInfo();
+            }
+        }
+
         private void EnsureFixupCells()
         {
             if (_fixupCells != null)
@@ -460,7 +507,7 @@ namespace ILCompiler.Reflection.ReadyToRun
             int runtimeFunctionSize = _readyToRunReader.CalculateRuntimeFunctionSize();
             int runtimeFunctionOffset = _readyToRunReader.CompositeReader.GetOffset(_readyToRunReader.ReadyToRunHeader.Sections[ReadyToRunSectionType.RuntimeFunctions].RelativeVirtualAddress);
             int curOffset = runtimeFunctionOffset + runtimeFunctionId * runtimeFunctionSize;
-            BaseGcInfo gcInfo = null;
+            Func<BaseGcInfo> gcInfo = default(Func<BaseGcInfo>);
             int codeOffset = 0;
             for (int i = 0; i < RuntimeFunctionCount; i++)
             {
@@ -485,7 +532,7 @@ namespace ILCompiler.Reflection.ReadyToRun
                     unwindInfo = new Amd64.UnwindInfo(_readyToRunReader.Image, unwindOffset);
                     if (i == 0)
                     {
-                        gcInfo = new Amd64.GcInfo(_readyToRunReader.Image, unwindOffset + unwindInfo.Size, _readyToRunReader.Machine, _readyToRunReader.ReadyToRunHeader.MajorVersion);
+                        gcInfo = new Func<BaseGcInfo>(() => new Amd64.GcInfo(_readyToRunReader.Image, unwindOffset + unwindInfo.Size, _readyToRunReader.Machine, _readyToRunReader.ReadyToRunHeader.MajorVersion));
                     }
                 }
                 else if (_readyToRunReader.Machine == Machine.I386)
@@ -493,7 +540,7 @@ namespace ILCompiler.Reflection.ReadyToRun
                     unwindInfo = new x86.UnwindInfo(_readyToRunReader.Image, unwindOffset);
                     if (i == 0)
                     {
-                        gcInfo = new x86.GcInfo(_readyToRunReader.Image, unwindOffset, _readyToRunReader.Machine, _readyToRunReader.ReadyToRunHeader.MajorVersion);
+                        gcInfo = new Func<BaseGcInfo>(() => new x86.GcInfo(_readyToRunReader.Image, unwindOffset, _readyToRunReader.Machine, _readyToRunReader.ReadyToRunHeader.MajorVersion));
                     }
                 }
                 else if (_readyToRunReader.Machine == Machine.ArmThumb2)
@@ -501,7 +548,7 @@ namespace ILCompiler.Reflection.ReadyToRun
                     unwindInfo = new Arm.UnwindInfo(_readyToRunReader.Image, unwindOffset);
                     if (i == 0)
                     {
-                        gcInfo = new Amd64.GcInfo(_readyToRunReader.Image, unwindOffset + unwindInfo.Size, _readyToRunReader.Machine, _readyToRunReader.ReadyToRunHeader.MajorVersion); // Arm and Arm64 use the same GcInfo format as x64
+                        gcInfo = new Func<BaseGcInfo>(() => new Amd64.GcInfo(_readyToRunReader.Image, unwindOffset + unwindInfo.Size, _readyToRunReader.Machine, _readyToRunReader.ReadyToRunHeader.MajorVersion)); // Arm and Arm64 use the same GcInfo format as x6
                     }
                 }
                 else if (_readyToRunReader.Machine == Machine.Arm64)
@@ -509,7 +556,7 @@ namespace ILCompiler.Reflection.ReadyToRun
                     unwindInfo = new Arm64.UnwindInfo(_readyToRunReader.Image, unwindOffset);
                     if (i == 0)
                     {
-                        gcInfo = new Amd64.GcInfo(_readyToRunReader.Image, unwindOffset + unwindInfo.Size, _readyToRunReader.Machine, _readyToRunReader.ReadyToRunHeader.MajorVersion);
+                        gcInfo = new Func<BaseGcInfo>(() => new Amd64.GcInfo(_readyToRunReader.Image, unwindOffset + unwindInfo.Size, _readyToRunReader.Machine, _readyToRunReader.ReadyToRunHeader.MajorVersion));
                     }
                 }
 

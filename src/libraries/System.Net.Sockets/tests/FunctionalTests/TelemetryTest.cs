@@ -168,12 +168,6 @@ namespace System.Net.Sockets.Tests
         [MemberData(nameof(SocketMethods_WithBools_MemberData))]
         public void EventSource_SocketConnectFailure_LogsConnectFailed(string connectMethod, bool useDnsEndPoint)
         {
-            if (connectMethod == "Sync" && PlatformDetection.IsRedHatFamily7)
-            {
-                // [ActiveIssue("https://github.com/dotnet/runtime/issues/42686")]
-                throw new SkipTestException("Disposing a Socket performing a sync operation can hang on RedHat7 systems");
-            }
-
             RemoteExecutor.Invoke(async (connectMethod, useDnsEndPointString) =>
             {
                 EndPoint endPoint = await GetRemoteEndPointAsync(useDnsEndPointString, port: 12345);
@@ -371,7 +365,7 @@ namespace System.Net.Sockets.Tests
                         await new SendReceiveUdpClient().SendToRecvFromAsync_Datagram_UDP_UdpClient(IPAddress.Loopback).ConfigureAwait(false);
 
                         await new NetworkStreamTest().CopyToAsync_AllDataCopied(4096, true).ConfigureAwait(false);
-                        await new NetworkStreamTest().Timeout_ValidData_Roundtrips().ConfigureAwait(false);
+                        await new NetworkStreamTest().Timeout_Roundtrips().ConfigureAwait(false);
 
                         await WaitForEventCountersAsync(events);
                     });
