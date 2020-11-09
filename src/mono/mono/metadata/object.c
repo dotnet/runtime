@@ -2004,6 +2004,7 @@ mono_class_create_runtime_vtable (MonoDomain *domain, MonoClass *klass, MonoErro
 	char *t;
 	int i, vtable_slots;
 	size_t imt_table_bytes;
+	size_t gc_descr_full_bytes;
 	int gc_bits;
 	guint32 vtable_size, class_size;
 	gpointer iter;
@@ -2078,23 +2079,40 @@ mono_class_create_runtime_vtable (MonoDomain *domain, MonoClass *klass, MonoErro
 	if (class_size)
 		vtable_slots++;
 
-	if (m_class_get_interface_offsets_count (klass)) {
+	mono_class_compute_gc_descriptor (klass);
+
+	if (m_class_get_interface_offsets_count (klass)  || klass->gc_descr_full) {
 		imt_table_bytes = sizeof (gpointer) * (MONO_IMT_SIZE);
 		/* Interface table for the interpreter */
-		if (use_interpreter)
-			imt_table_bytes *= 2;
+
+		imt_table_bytes *= 2;
+
+		if (klass->gc_descr_full)
+			gc_descr_full_bytes = klass->gc_descr_full->len * sizeof (gpointer);
+		else
+			gc_descr_full_bytes = 0;
+
 		UnlockedIncrement (&mono_stats.imt_number_of_tables);
 		UnlockedAdd (&mono_stats.imt_tables_size, imt_table_bytes);
 	} else {
 		imt_table_bytes = 0;
+		gc_descr_full_bytes = 0;
 	}
 
-	vtable_size = imt_table_bytes + MONO_SIZEOF_VTABLE + vtable_slots * sizeof (gpointer);
+	vtable_size = gc_descr_full_bytes + imt_table_bytes + MONO_SIZEOF_VTABLE + vtable_slots * sizeof (gpointer);
 
 	UnlockedIncrement (&mono_stats.used_class_count);
 	UnlockedAdd (&mono_stats.class_vtable_size, vtable_size);
 
-	interface_offsets = alloc_vtable (domain, vtable_size, imt_table_bytes);
+	gpointer *gc_descr_full_mem = alloc_vtable (domain, vtable_size, imt_table_bytes);
+
+	if (gc_descr_full_bytes)
+		memcpy (gc_descr_full_mem, klass->gc_descr_full->pdata, gc_descr_full_bytes);
+		
+	interface_offsets = (gpointer*)((char*)gc_descr_full_mem + gc_descr_full_bytes);
+
+
+
 	vt = (MonoVTable*) ((char*)interface_offsets + imt_table_bytes);
 	/* If on interp, skip the interp interface table */
 	if (use_interpreter)
@@ -2114,8 +2132,6 @@ mono_class_create_runtime_vtable (MonoDomain *domain, MonoClass *klass, MonoErro
 		vt->flags |= MONO_VT_FLAG_ARRAY_IS_PRIMITIVE;
 
 	MONO_PROFILER_RAISE (vtable_loading, (vt));
-
-	mono_class_compute_gc_descriptor (klass);
 	/*
 	 * For Boehm:
 	 * We can't use typed allocation in the non-root domains, since the
