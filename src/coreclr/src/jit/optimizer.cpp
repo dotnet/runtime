@@ -3635,27 +3635,22 @@ void Compiler::optUnrollLoops()
             continue;
         }
 
-#ifdef DEBUG
-        if (compStressCompile(STRESS_UNROLL_LOOPS, 50))
+        if (INDEBUG(compStressCompile(STRESS_UNROLL_LOOPS, 50) || )false)
         {
             // In stress mode, quadruple the size limit, and drop
             // the restriction that loop limit must be vector element count.
-
             unrollLimitSz *= 4;
         }
-        else
-#endif
-            // Unroll only if limit is 0, 1, or Vector_.Length (as a heuristic, not for correctness/structural reasons)
-            if (!(loopFlags & LPFLG_SIMD_LIMIT))
+        else if (totalIter <= 1)
         {
-            if (totalIter <= 1)
-            {
-                unrollLimitSz *= 4;
-            }
-            else
-            {
-                continue;
-            }
+            // No limit for single iteration loops
+            unrollLimitSz = INT_MAX;
+        }
+        else if (!(loopFlags & LPFLG_SIMD_LIMIT))
+        {
+            // Otherwise unroll only if limit is Vector_.Length
+            // (as a heuristic, not for correctness/structural reasons)
+            continue;
         }
 
         GenTree* incr = incrStmt->GetRootNode();
