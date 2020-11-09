@@ -286,15 +286,6 @@ HRESULT SetInternalSystemDirectory()
 
             // use local buffer for thread safety
             PathString wzSystemDirectory;
-
-#ifdef TARGET_UNIX
-
-            // REVIEW: If I do not do this, I get linker errors about PAL_Random missing. Why?
-
-            GUID g;
-            PAL_Random(&g, sizeof(GUID));
-#endif
-
             hr = GetClrModuleDirectory(wzSystemDirectory);
 
             if (FAILED(hr)) {
