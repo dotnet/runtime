@@ -448,7 +448,7 @@ namespace System.Net.Http.HPack
                         // +---+---+---+---+---+---+---+---+---+---+---+---+---+---+---+---+
                         // | 0 |     number_of_used_bits   |              octet            |
                         // +---+---------------------------+-------------------------------+
-                        if (j >= dst.Length)
+                        if (j == dst.Length)
                         {
                             Array.Resize(ref dstArray, dst.Length * 2);
                             dst = dstArray;
@@ -515,7 +515,7 @@ namespace System.Net.Http.HPack
                         throw new HuffmanDecodingException(SR.net_http_hpack_huffman_decode_failed);
                     }
 
-                    if (j >= dst.Length)
+                    if (j == dst.Length)
                     {
                         Array.Resize(ref dstArray, dst.Length * 2);
                         dst = dstArray;
