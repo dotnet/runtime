@@ -195,10 +195,18 @@
         $(LibrariesNativeArtifactsPath)dotnet.js;
         $(LibrariesNativeArtifactsPath)dotnet.wasm;
         $(LibrariesNativeArtifactsPath)dotnet.timezones.blat;
-        $(LibrariesNativeArtifactsPath)*.dat;
-        $(LibrariesNativeArtifactsPath)*.c;
-        $(LibrariesNativeArtifactsPath)*.h;
-        $(LibrariesNativeArtifactsPath)*.js;"
+        $(LibrariesNativeArtifactsPath)*.dat;"
+        IsNative="true" />
+      <LibrariesRuntimeFiles Condition="'$(TargetOS)' == 'Browser'"
+                             Include="
+        $(LibrariesNativeArtifactsPath)src\*.c;
+        $(LibrariesNativeArtifactsPath)src\*.js;"
+        NativeSubDirectory="src"
+        IsNative="true" />
+      <LibrariesRuntimeFiles Condition="'$(TargetOS)' == 'Browser'"
+                             Include="
+        $(LibrariesNativeArtifactsPath)include\wasm\*.h;"
+        NativeSubDirectory="include\wasm"
         IsNative="true" />
     </ItemGroup>
 

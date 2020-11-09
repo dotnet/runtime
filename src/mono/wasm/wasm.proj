@@ -93,28 +93,31 @@
     <Exec Command="make -C $(MonoProjectRoot)wasm all SHELL=/bin/bash BINDIR=$(ArtifactsBinDir) MONO_BIN_DIR=$(MonoArtifactsPath) OBJDIR=$(ArtifactsObjDir) NATIVE_BIN_DIR=$(NativeBinDir) CONFIG=$(Configuration) PINVOKE_TABLE=$(WasmPInvokeTablePath) ICU_LIBDIR=$(_IcuLibdir) ENABLE_ES6=$(WasmEnableES6)"
           IgnoreStandardErrorWarningFormat="true" />
 
+    <ItemGroup>
+      <IcuDataFiles Include="$(NativeBinDir)*.dat" />
+      <WasmSrcFiles Include="$(NativeBinDir)src\*.c;
+                             $(NativeBinDir)src\*.js;" />
+      <WasmHeaderFiles Include="$(NativeBinDir)include\wasm\*.h" />
+    </ItemGroup>
+
     <Copy SourceFiles="$(NativeBinDir)dotnet.js;
                        $(NativeBinDir)dotnet.wasm;
                        $(NativeBinDir)dotnet.timezones.blat;
-                       $(MonoProjectRoot)wasm\runtime\driver.c;
-                       $(MonoProjectRoot)wasm\runtime\pinvoke.c;
-                       $(MonoProjectRoot)wasm\runtime\corebindings.c;
-                       $(MonoProjectRoot)wasm\runtime\pinvoke.h;
-                       $(MonoProjectRoot)wasm\runtime\binding_support.js;
-                       $(MonoProjectRoot)wasm\runtime\dotnet_support.js;
-                       $(MonoProjectRoot)wasm\runtime\library_mono.js;
-                       $(LibrariesProjectRoot)Native\Unix\System.Native\pal_random.js;
-                       $(ArtifactsObjDir)wasm\pinvoke-table.h;
-                       $(_IcuLibdir)\libicui18n.a;
-                       $(_IcuLibdir)\libicuuc.a"
+                       $(NativeBinDir)libicuuc.a;
+                       $(NativeBinDir)libicui18n.a"
           DestinationFolder="$(MicrosoftNetCoreAppRuntimePackNativeDir)"
           SkipUnchangedFiles="true" />
 
-    <ItemGroup>
-      <IcuDataFiles Include="$(NativeBinDir)*.dat"/>
-    </ItemGroup>
     <Copy SourceFiles="@(IcuDataFiles)"
           DestinationFolder="$(MicrosoftNetCoreAppRuntimePackNativeDir)"
+          SkipUnchangedFiles="true" />
+
+    <Copy SourceFiles="@(WasmSrcFiles)"
+          DestinationFolder="$(MicrosoftNetCoreAppRuntimePackNativeDir)src"
+          SkipUnchangedFiles="true" />
+
+    <Copy SourceFiles="@(WasmHeaderFiles)"
+          DestinationFolder="$(MicrosoftNetCoreAppRuntimePackNativeDir)include\wasm"
           SkipUnchangedFiles="true" />
   </Target>
 
