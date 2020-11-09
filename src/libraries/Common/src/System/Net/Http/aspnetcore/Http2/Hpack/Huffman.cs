@@ -477,9 +477,8 @@ namespace System.Net.Http.HPack
             }
 
             // Finish decoding last < 8 bits of src.
-            // Although bellow code could be inserted in above do..while,
-            // processing of last byte has to handle several corner cases was decided, for performance reasons,
-            // to not have in main decoding loop.
+            // Processing of the last byte has to handle several corner cases 
+            // so it's extracted outside of the main loop for performance reasons.
             while (bitsInAcc > 0)
             {
                 Debug.Assert(bitsInAcc < 8);
