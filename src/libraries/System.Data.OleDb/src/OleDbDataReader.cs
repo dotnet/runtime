@@ -959,14 +959,15 @@ namespace System.Data.OleDb
         private OleDbDataReader GetDataForReader(IntPtr ordinal, RowBinding rowbinding, int valueOffset)
         {
             UnsafeNativeMethods.IRowsetInfo rowsetInfo = IRowsetInfo();
-            UnsafeNativeMethods.IRowset result;
+            UnsafeNativeMethods.IRowset? result;
             OleDbHResult hr;
             hr = rowsetInfo.GetReferencedRowset((IntPtr)ordinal, ref ODB.IID_IRowset, out result);
 
             ProcessResults(hr);
+            // Per docs result can be null only when hr is DB_E_NOTAREFERENCECOLUMN which in most of the cases will cause the exception in ProcessResult
 
             OleDbDataReader? reader = null;
-            // TODO: Not sure if GetReferenceRowset above actually returns null, calling code seems to assume it doesn't
+
             if (null != result)
             {
                 // only when the first datareader is closed will the connection close
@@ -983,6 +984,7 @@ namespace System.Data.OleDb
                     _connection.AddWeakReference(reader, OleDbReferenceCollection.DataReaderTag);
                 }
             }
+
             return reader;
         }
 

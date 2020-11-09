@@ -182,7 +182,7 @@ namespace System.Xml.Linq
             return _name.GetHashCode() ^
                 (_publicId != null ? _publicId.GetHashCode() : 0) ^
                 (_systemId != null ? _systemId.GetHashCode() : 0) ^
-                (_internalSubset != null ? _internalSubset.GetHashCode() : 0);
+                _internalSubset.GetHashCode();
         }
     }
 }
