@@ -35,10 +35,6 @@ namespace System.Net.Security
             _handshakeCompleted = false;
         }
 
-        private void ValidateParameters(byte[] buffer, int offset, int count)
-        {
-        }
-
         private void ValidateCreateContext(SslAuthenticationOptions sslAuthenticationOptions)
         {
             _sslAuthenticationOptions = new FakeOptions() { TargetHost = sslAuthenticationOptions.TargetHost };

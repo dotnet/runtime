@@ -65,45 +65,6 @@ static int __cdecl vscan_fn (
         return(retval);
 }
 
-static int __cdecl vnscan_fn (
-        INPUTFN inputfn,
-        const char *string,
-        size_t count,
-        const char *format,
-        va_list arglist
-        )
-{
-        miniFILE str;
-        miniFILE *infile = &str;
-        int retval;
-        size_t length = strlen(string);
-
-        _VALIDATE_RETURN( (string != NULL), EINVAL, EOF);
-        _VALIDATE_RETURN( (format != NULL), EINVAL, EOF);
-
-        infile->_flag = _IOREAD|_IOSTRG|_IOMYBUF;
-        infile->_ptr = infile->_base = (char *) string;
-
-        if ( count > length )
-        {
-            count = length;
-        }
-
-        if(count>(INT_MAX/sizeof(char)))
-        {
-            /* old-style functions allow any large value to mean unbounded */
-            infile->_cnt = INT_MAX;
-        }
-        else
-        {
-            infile->_cnt = (int)count*sizeof(char);
-        }
-
-        retval = (inputfn(infile, ( const unsigned char* )format, arglist));
-
-        return(retval);
-}
-
 static int __cdecl vwscan_fn (
         WINPUTFN inputfn,
         const char16_t *string,
@@ -136,46 +97,6 @@ static int __cdecl vwscan_fn (
 
         return(retval);
 }
-
-static int __cdecl vnwscan_fn (
-        WINPUTFN inputfn,
-        const char16_t *string,
-        size_t count,
-        const char16_t *format,
-        va_list arglist
-        )
-{
-        miniFILE str;
-        miniFILE *infile = &str;
-        int retval;
-        size_t length = PAL_wcsnlen(string, INT_MAX);
-
-        _VALIDATE_RETURN( (string != NULL), EINVAL, EOF);
-        _VALIDATE_RETURN( (format != NULL), EINVAL, EOF);
-
-        infile->_flag = _IOREAD|_IOSTRG|_IOMYBUF;
-        infile->_ptr = infile->_base = (char *) string;
-
-        if ( count > length )
-        {
-            count = length;
-        }
-
-        if(count>(INT_MAX/sizeof(char16_t)))
-        {
-            /* old-style functions allow any large value to mean unbounded */
-            infile->_cnt = INT_MAX;
-        }
-        else
-        {
-            infile->_cnt = (int)count*sizeof(char16_t);
-        }
-
-        retval = (inputfn(infile, format, arglist));
-
-        return(retval);
-}
-
 
 /***
 *int sscanf_s(string, format, ...)

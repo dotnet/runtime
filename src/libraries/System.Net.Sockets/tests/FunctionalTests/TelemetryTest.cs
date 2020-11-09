@@ -365,7 +365,7 @@ namespace System.Net.Sockets.Tests
                         await new SendReceiveUdpClient().SendToRecvFromAsync_Datagram_UDP_UdpClient(IPAddress.Loopback).ConfigureAwait(false);
 
                         await new NetworkStreamTest().CopyToAsync_AllDataCopied(4096, true).ConfigureAwait(false);
-                        await new NetworkStreamTest().Timeout_ValidData_Roundtrips().ConfigureAwait(false);
+                        await new NetworkStreamTest().Timeout_Roundtrips().ConfigureAwait(false);
 
                         await WaitForEventCountersAsync(events);
                     });

@@ -5,7 +5,7 @@ function print_usage {
     echo 'CoreCLR parallel test runner script.'
     echo ''
     echo 'Required arguments:'
-    echo '  --testRootDir=<path>             : Root directory of the test build (e.g. coreclr/artifacts/tests/Windows_NT.x64.Debug).'
+    echo '  --testRootDir=<path>             : Root directory of the test build (e.g. coreclr/artifacts/tests/windows.x64.Debug).'
     echo '  --coreOverlayDir=<path>          : Directory containing core binaries and test dependencies. If not specified, the'
     echo '                                     default is testRootDir/Tests/coreoverlay. This switch overrides --coreClrBinDir,'
     echo '                                     --mscorlibDir, --coreFxBinDir, and --coreFxNativeBinDir.'

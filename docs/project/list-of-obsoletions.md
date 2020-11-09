@@ -25,3 +25,4 @@ Currently the identifiers `SYSLIB0001` through `SYSLIB0999` are carved out for o
 |  __`SYSLIB0010`__ | This Remoting API is not supported and throws PlatformNotSupportedException. |
 |  __`SYSLIB0011`__ | `BinaryFormatter` serialization is obsolete and should not be used. See https://aka.ms/binaryformatter for recommended alternatives. |
 |  __`SYSLIB0012`__ | Assembly.CodeBase and Assembly.EscapedCodeBase are only included for .NET Framework compatibility. Use Assembly.Location instead. |
+|  __`SYSLIB0013`__ | Uri.EscapeUriString can corrupt the Uri string in some cases. Consider using Uri.EscapeDataString for query string components instead. |

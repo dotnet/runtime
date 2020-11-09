@@ -140,7 +140,7 @@ namespace System.Xml
         public abstract int Depth { get; }
 
         // Gets the base URI of the current node.
-        public abstract string? BaseURI { get; }
+        public abstract string BaseURI { get; }
 
         // Gets a value indicating whether the current node is an empty element (for example, <MyElement/>).
         public abstract bool IsEmptyElement { get; }

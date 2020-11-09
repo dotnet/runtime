@@ -6,11 +6,14 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
+using System.Reflection;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Configuration.UserSecrets;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 using Xunit;
 
 namespace Microsoft.Extensions.Hosting.Tests
@@ -201,6 +204,70 @@ namespace Microsoft.Extensions.Hosting.Tests
             await Task.WhenAny(Task.Delay(TimeSpan.FromMinutes(1), configReloadedCancelToken)); // Task.WhenAny ignores the task throwing on cancellation.
             Assert.NotEqual(dynamicConfigMessage1, dynamicConfigMessage2); // Messages are different.
             Assert.Equal(dynamicConfigMessage2, config["Hello"]); // Config DID reload from disk
+        }
+
+        [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/34580", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
+        public async Task CreateDefaultBuilder_SecretsDoesReload()
+        {
+            var secretId = Assembly.GetExecutingAssembly().GetName().Name;
+            var reloadFlagConfig = new Dictionary<string, string>() { { "hostbuilder:reloadConfigOnChange", "true" } };
+            var secretPath = PathHelper.GetSecretsPathFromSecretsId(secretId);
+
+            var secretFileInfo = new FileInfo(secretPath);
+            Directory.CreateDirectory(secretFileInfo.Directory.FullName);
+
+            string SaveRandomSecret()
+            {
+                var newMessage = $"Hello ASP.NET Core: {Guid.NewGuid():N}";
+                File.WriteAllText(secretPath, $"{{ \"Hello\": \"{newMessage}\" }}");
+                return newMessage;
+            }
+
+            string dynamicSecretMessage1 = SaveRandomSecret();
+
+            var host = Host.CreateDefaultBuilder(new[] { "environment=Development", $"applicationName={secretId}" })
+                .ConfigureHostConfiguration(builder =>
+                {
+                    builder.AddInMemoryCollection(reloadFlagConfig);
+                })
+                .Build();
+
+            var config = host.Services.GetRequiredService<IConfiguration>();
+
+            Assert.Equal(dynamicSecretMessage1, config["Hello"]);
+
+            string dynamicSecretMessage2 = SaveRandomSecret();
+
+            var configReloadedCancelTokenSource = new CancellationTokenSource();
+            var configReloadedCancelToken = configReloadedCancelTokenSource.Token;
+
+            config.GetReloadToken().RegisterChangeCallback(o =>
+            {
+                configReloadedCancelTokenSource.Cancel();
+            }, null);
+            // Wait for up to 1 minute, if config reloads at any time, cancel the wait.
+            await Task.WhenAny(Task.Delay(TimeSpan.FromMinutes(1), configReloadedCancelToken)); // Task.WhenAny ignores the task throwing on cancellation.
+            Assert.NotEqual(dynamicSecretMessage1, dynamicSecretMessage2); // Messages are different.
+            Assert.Equal(dynamicSecretMessage2, config["Hello"]);
+        }
+
+        [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/34580", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
+        public void CreateDefaultBuilder_RespectShutdownTimeout()
+        {
+            var notDefaultTimeoutSeconds = 99;
+            Assert.True(notDefaultTimeoutSeconds != new HostOptions().ShutdownTimeout.TotalSeconds, "Test value must be not equal to default");
+            var host = Host.CreateDefaultBuilder().ConfigureHostConfiguration(configBuilder =>
+            {
+                configBuilder.AddInMemoryCollection(new KeyValuePair<string, string>[]
+                {
+                    new KeyValuePair<string, string>("SHUTDOWNTIMEOUTSECONDS", notDefaultTimeoutSeconds.ToString())
+                });
+            }).Build();
+
+            var hostOptions = host.Services.GetRequiredService<IOptions<HostOptions>>();
+            Assert.Equal(notDefaultTimeoutSeconds, hostOptions.Value.ShutdownTimeout.TotalSeconds);
         }
 
         internal class ServiceA { }

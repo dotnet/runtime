@@ -1696,33 +1696,61 @@ namespace System.Net.Sockets.Tests
             }
         }
 
-        [Fact]
-        public async Task CanceledDuringOperation_Throws()
+        [Theory]
+        [InlineData(false)]
+        [InlineData(true)]
+        public async Task SendAsync_CanceledDuringOperation_Throws(bool ipv6)
         {
-            using (var listener = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp))
-            using (var client = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp))
+            const int CancelAfter = 200; // ms
+            const int NumOfSends = 100;
+            const int SendBufferSize = 1024;
+
+            (Socket client, Socket server) = SocketTestExtensions.CreateConnectedSocketPair(ipv6);
+            byte[] buffer = new byte[1024 * 64];
+            using (client)
+            using (server)
             {
-                listener.BindToAnonymousPort(IPAddress.Loopback);
-                listener.Listen(1);
+                client.SendBufferSize = SendBufferSize;
+                CancellationTokenSource cts = new CancellationTokenSource();
 
-                await client.ConnectAsync(listener.LocalEndPoint);
-                using (Socket server = await listener.AcceptAsync())
+                List<Task> tasks = new List<Task>();
+
+                // After flooding the socket with a high number of send tasks,
+                // we assume some of them won't complete before the "CancelAfter" period expires.
+                for (int i=0; i < NumOfSends; i++)
                 {
-                    CancellationTokenSource cts;
-
-                    for (int len = 0; len < 2; len++)
-                    {
-                        cts = new CancellationTokenSource();
-                        ValueTask<int> vt = server.ReceiveAsync((Memory<byte>)new byte[len], SocketFlags.None, cts.Token);
-                        Assert.False(vt.IsCompleted);
-                        cts.Cancel();
-                        await Assert.ThrowsAnyAsync<OperationCanceledException>(async () => await vt);
-                    }
-
-                    // Make sure subsequent operations aren't canceled.
-                    await server.SendAsync((ReadOnlyMemory<byte>)new byte[1], SocketFlags.None);
-                    Assert.Equal(1, await client.ReceiveAsync((Memory<byte>)new byte[10], SocketFlags.None));
+                    var task = client.SendAsync(buffer, SocketFlags.None, cts.Token).AsTask();
+                    tasks.Add(task);
                 }
+
+                cts.CancelAfter(CancelAfter);
+
+                // We shall see at least one cancelletion amongst all the scheduled sends:
+                await Assert.ThrowsAnyAsync<OperationCanceledException>(() => Task.WhenAll(tasks));
+            }
+        }
+
+        [Theory]
+        [InlineData(false)]
+        [InlineData(true)]
+        public async Task ReceiveAsync_CanceledDuringOperation_Throws(bool ipv6)
+        {
+            (Socket client, Socket server) = SocketTestExtensions.CreateConnectedSocketPair(ipv6);
+            using (client)
+            using (server)
+            {
+                for (int len = 0; len < 2; len++)
+                {
+                    CancellationTokenSource cts = new CancellationTokenSource();
+                    ValueTask<int> vt = server.ReceiveAsync((Memory<byte>)new byte[len], SocketFlags.None, cts.Token);
+                    Assert.False(vt.IsCompleted);
+                    cts.Cancel();
+                    await Assert.ThrowsAnyAsync<OperationCanceledException>(async () => await vt);
+                }
+
+                // Make sure subsequent operations aren't canceled.
+                await server.SendAsync((ReadOnlyMemory<byte>)new byte[1], SocketFlags.None);
+                Assert.Equal(1, await client.ReceiveAsync((Memory<byte>)new byte[10], SocketFlags.None));
             }
         }
 

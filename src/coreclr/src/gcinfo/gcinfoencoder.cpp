@@ -22,6 +22,7 @@
 #include "simplerhash.h"
 #include "bitposition.h"
 #endif
+#include "../jit/jitstd/algorithm.h"
 
 #ifdef MEASURE_GCINFO
 #define GCINFO_WRITE(writer, val, numBits, counter) \
@@ -791,88 +792,93 @@ struct GcSlotDescAndId
     UINT32 m_SlotId;
 };
 
-int __cdecl CompareSlotDescAndIdBySlotDesc(const void* p1, const void* p2)
+struct CompareSlotDescAndIdBySlotDesc
 {
-    const GcSlotDesc* pFirst = &reinterpret_cast<const GcSlotDescAndId*>(p1)->m_SlotDesc;
-    const GcSlotDesc* pSecond = &reinterpret_cast<const GcSlotDescAndId*>(p2)->m_SlotDesc;
-
-    int firstFlags = pFirst->Flags ^ GC_SLOT_UNTRACKED;
-    int secondFlags = pSecond->Flags ^ GC_SLOT_UNTRACKED;
-
-    // All registers come before all stack slots
-    // All untracked come last
-    // Then sort them by flags, ensuring that the least-frequent interior/pinned flag combinations are first
-    // This is accomplished in the comparison of flags, since we encode IsRegister in the highest flag bit
-    // And we XOR the UNTRACKED flag to place them last in the second highest flag bit
-    if( firstFlags > secondFlags ) return -1;
-    if( firstFlags < secondFlags ) return 1;
-
-    // Then sort them by slot
-    if( pFirst->IsRegister() )
+    bool operator()(const GcSlotDescAndId& first, const GcSlotDescAndId& second)
     {
-        _ASSERTE( pSecond->IsRegister() );
-        if( pFirst->Slot.RegisterNumber < pSecond->Slot.RegisterNumber ) return -1;
-        if( pFirst->Slot.RegisterNumber > pSecond->Slot.RegisterNumber ) return 1;
+        const GcSlotDesc* pFirst = &first.m_SlotDesc;
+        const GcSlotDesc* pSecond = &second.m_SlotDesc;
+
+        int firstFlags = pFirst->Flags ^ GC_SLOT_UNTRACKED;
+        int secondFlags = pSecond->Flags ^ GC_SLOT_UNTRACKED;
+
+        // All registers come before all stack slots
+        // All untracked come last
+        // Then sort them by flags, ensuring that the least-frequent interior/pinned flag combinations are first
+        // This is accomplished in the comparison of flags, since we encode IsRegister in the highest flag bit
+        // And we XOR the UNTRACKED flag to place them last in the second highest flag bit
+        if( firstFlags != secondFlags )
+            return firstFlags > secondFlags;
+
+        // Then sort them by slot
+        if( pFirst->IsRegister() )
+        {
+            _ASSERTE( pSecond->IsRegister() );
+            if( pFirst->Slot.RegisterNumber != pSecond->Slot.RegisterNumber )
+                return pFirst->Slot.RegisterNumber < pSecond->Slot.RegisterNumber;
+        }
+        else
+        {
+            _ASSERTE( !pSecond->IsRegister() );
+            if( pFirst->Slot.Stack.SpOffset != pSecond->Slot.Stack.SpOffset )
+                return pFirst->Slot.Stack.SpOffset < pSecond->Slot.Stack.SpOffset;
+
+            // This is arbitrary, but we want to make sure they are considered separate slots
+            if( pFirst->Slot.Stack.Base != pSecond->Slot.Stack.Base )
+                return pFirst->Slot.Stack.Base < pSecond->Slot.Stack.Base;
+        }
+
+        // If we get here, the slots are identical
+        _ASSERTE(!"Duplicate slots definitions found in GC information!");
+        return false;
     }
-    else
-    {
-        _ASSERTE( !pSecond->IsRegister() );
-        if( pFirst->Slot.Stack.SpOffset < pSecond->Slot.Stack.SpOffset ) return -1;
-        if( pFirst->Slot.Stack.SpOffset > pSecond->Slot.Stack.SpOffset ) return 1;
+};
 
-        // This is arbitrary, but we want to make sure they are considered separate slots
-        if( pFirst->Slot.Stack.Base < pSecond->Slot.Stack.Base ) return -1;
-        if( pFirst->Slot.Stack.Base > pSecond->Slot.Stack.Base ) return 1;
-    }
-
-    // If we get here, the slots are identical
-    _ASSERTE(!"Duplicate slots definitions found in GC information!");
-    return 0;
-}
-
-
-int __cdecl CompareLifetimeTransitionsByOffsetThenSlot(const void* p1, const void* p2)
+struct CompareLifetimeTransitionsByOffsetThenSlot
 {
-    const GcInfoEncoder::LifetimeTransition* pFirst = (const GcInfoEncoder::LifetimeTransition*) p1;
-    const GcInfoEncoder::LifetimeTransition* pSecond = (const GcInfoEncoder::LifetimeTransition*) p2;
-
-    UINT32 firstOffset  = pFirst->CodeOffset;
-    UINT32 secondOffset = pSecond->CodeOffset;
-
-    if (firstOffset == secondOffset)
+    bool operator()(const GcInfoEncoder::LifetimeTransition& first, const GcInfoEncoder::LifetimeTransition& second)
     {
-        return pFirst->SlotId - pSecond->SlotId;
-    }
-    else
-    {
-        return firstOffset - secondOffset;
-    }
-}
+        UINT32 firstOffset  = first.CodeOffset;
+        UINT32 secondOffset = second.CodeOffset;
 
+        if (firstOffset == secondOffset)
+        {
+            return first.SlotId < second.SlotId;
+        }
+        else
+        {
+            return firstOffset < secondOffset;
+        }
+    }
+};
 
-int __cdecl CompareLifetimeTransitionsBySlot(const void* p1, const void* p2)
+struct CompareLifetimeTransitionsBySlot
 {
-    const GcInfoEncoder::LifetimeTransition* pFirst = (const GcInfoEncoder::LifetimeTransition*) p1;
-    const GcInfoEncoder::LifetimeTransition* pSecond = (const GcInfoEncoder::LifetimeTransition*) p2;
-
-    UINT32 firstOffset  = pFirst->CodeOffset;
-    UINT32 secondOffset = pSecond->CodeOffset;
-
-    _ASSERTE(GetNormCodeOffsetChunk(firstOffset) == GetNormCodeOffsetChunk(secondOffset));
-
-    // Sort them by slot
-    if( pFirst->SlotId < pSecond->SlotId ) return -1;
-    if( pFirst->SlotId > pSecond->SlotId ) return 1;
-
-    // Then sort them by code offset
-    if( firstOffset < secondOffset )
-        return -1;
-    else
+    bool operator()(const GcInfoEncoder::LifetimeTransition& first, const GcInfoEncoder::LifetimeTransition& second)
     {
-        _ASSERTE(( firstOffset > secondOffset ) && "Redundant transitions found in GC info!");
-        return 1;
+        UINT32 firstOffset  = first.CodeOffset;
+        UINT32 secondOffset = second.CodeOffset;
+
+        _ASSERTE(GetNormCodeOffsetChunk(firstOffset) == GetNormCodeOffsetChunk(secondOffset));
+
+        // Sort them by slot
+        if( first.SlotId != second.SlotId)
+        {
+            return first.SlotId < second.SlotId;
+        }
+
+        // Then sort them by code offset
+        if( firstOffset < secondOffset )
+        {
+            return true;
+        }
+        else
+        {
+            _ASSERTE(( firstOffset > secondOffset ) && "Redundant transitions found in GC info!");
+            return false;
+        }
     }
-}
+};
 
 BitStreamWriter::MemoryBlockList::MemoryBlockList()
     : m_head(nullptr),
@@ -1284,11 +1290,10 @@ void GcInfoEncoder::Build()
     //-----------------------------------------------------------------
 
     // Don't use the CQuickSort algorithm, it's prone to stack overflows
-    qsort(
+    jitstd::sort(
         pTransitions,
-        numTransitions,
-        sizeof(LifetimeTransition),
-        CompareLifetimeTransitionsByOffsetThenSlot
+        pTransitions + numTransitions,
+        CompareLifetimeTransitionsByOffsetThenSlot()
         );
 
     // Eliminate transitions outside the method
@@ -1322,7 +1327,7 @@ void GcInfoEncoder::Build()
             sortedSlots[i].m_SlotId = i;
         }
 
-        qsort(sortedSlots, m_NumSlots, sizeof(GcSlotDescAndId), CompareSlotDescAndIdBySlotDesc);
+        jitstd::sort(sortedSlots, sortedSlots + m_NumSlots, CompareSlotDescAndIdBySlotDesc());
 
         for(UINT32 i = 0; i < m_NumSlots; i++)
         {
@@ -2089,11 +2094,10 @@ void GcInfoEncoder::Build()
             _ASSERTE(numTransitionsInCurrentChunk > 0);
 
             // Sort the transitions in this chunk by slot
-            qsort(
+            jitstd::sort(
                 pCurrent - numTransitionsInCurrentChunk,
-                numTransitionsInCurrentChunk,
-                sizeof(LifetimeTransition),
-                CompareLifetimeTransitionsBySlot
+                pCurrent,
+                CompareLifetimeTransitionsBySlot()
                 );
 
             // Save chunk pointer
