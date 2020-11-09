@@ -42,6 +42,21 @@
       <CoreCLRCrossTargetItemsToSign Include="$(CoreCLRArtifactsPath)$(CoreCLRCrossTargetComponentDirName)/sharedFramework/*.exe" />
     </ItemGroup>
 
+    <!-- Ensure that we don't miss the DAC or DBI with the globbing below -->
+    <PropertyGroup Condition="'$(SignDiagnostics)' == 'true'">
+      <AllowEmptySignList>false</AllowEmptySignList>
+    </PropertyGroup>
+
+    <ItemGroup Condition="'$(SignDiagnostics)' == 'true'">
+      <ItemsToSign Include="$(DiagnosticsFilesRoot)/**/mscordaccore*.dll" />
+      <ItemsToSign Include="$(DiagnosticsFilesRoot)/**/mscordbi.dll" />
+      <!-- The DAC should be signed with the SHA2 cert (both long and short name) -->
+      <DacFileSignInfo Include="@(ItemsToSign->'%(FileName)%(Extension)')"
+                    Condition="$([System.String]::new('%(FileName)').StartsWith('mscordaccore'))" />
+      <FileSignInfo Include="@(DacFileSignInfo->ClearMetadata()->Distinct())"
+                    CertificateName="MicrosoftSHA2" />
+    </ItemGroup>
+
     <ItemGroup Condition="'$(SignBinaries)' == 'true'">
       <!-- Sign CoreCLR. -->
       <ItemsToSign Include="$(CoreCLRSharedFrameworkDir)*.dll" />
