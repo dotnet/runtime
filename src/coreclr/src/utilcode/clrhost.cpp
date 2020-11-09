@@ -27,12 +27,13 @@ void* GetClrModuleBase()
 #else // HOST_WINDOWS
     // PAL_GetSymbolModuleBase defers to dladdr, which is typically a hash lookup through symbols.
     // It should be fairly fast, however it may take a loader lock, so we will cache the result.
-    if (!pImageBase)
+    void* pRet = VolatileLoadWithoutBarrier(&pImageBase);
+    if (!pRet)
     {
-        pImageBase = (void*)PAL_GetSymbolModuleBase((void*)GetClrModuleBase);
+        pImageBase = pRet = (void*)PAL_GetSymbolModuleBase((void*)GetClrModuleBase);
     }
 
-    return pImageBase;
+    return pRet;
 #endif // HOST_WINDOWS
 }
 
