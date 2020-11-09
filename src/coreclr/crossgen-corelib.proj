@@ -4,14 +4,8 @@
 
   <Target Name="Build">
     <PropertyGroup>
-      <!-- When the 'Crossgen1' or 'Crossgen2' environment variable it set to 'true', -->
-      <!-- it will force the script to use the specified compiler to build System.Private.CoreLib. -->
-      <!-- In absence of these variables, the script uses its own default. -->
-      <UseCrossgen2ByDefault>true</UseCrossgen2ByDefault>
-
-      <UseCrossgen2 Condition="'$(Crossgen1)' == 'true'">false</UseCrossgen2>
-      <UseCrossgen2 Condition="'$(Crossgen2)' == 'true'">true</UseCrossgen2>
-      <UseCrossgen2 Condition="'$(UseCrossgen2)' == ''">$(UseCrossgen2ByDefault)</UseCrossgen2>
+      <!-- Default for using Crossgen2 when not set externally -->
+      <UseCrossgen2 Condition="'$(UseCrossgen2)' == ''">true</UseCrossgen2>
 
       <OSPlatformConfig>$(TargetOS).$(TargetArchitecture).$(Configuration)</OSPlatformConfig>
       <RootBinDir>$(RepoRoot)\artifacts</RootBinDir>
@@ -29,8 +23,8 @@
 
       <CrossDir></CrossDir>
       <CrossDir Condition="'$(TargetArchitecture)' == 'arm' or '$(TargetArchitecture)' == 'arm64'">x64</CrossDir>
-      <CrossDir Condition="'$(TargetArchitecture)' == 'arm' and !$(UseCrossgen2) and '$(OS)' == 'Windows_NT'">x86</CrossDir>
-      <CrossDir Condition="'$(TargetArchitecture)' == 'x86' and '$(BuildArchitecture)' != '$(TargetArchitecture)' and $(UseCrossgen2)">$(BuildArchitecture)</CrossDir>
+      <CrossDir Condition="'$(TargetArchitecture)' == 'arm' and '$(UseCrossgen2)' != 'true' and '$(OS)' == 'Windows_NT'">x86</CrossDir>
+      <CrossDir Condition="'$(TargetArchitecture)' == 'x86' and '$(BuildArchitecture)' != '$(TargetArchitecture)' and '$(UseCrossgen2)' == 'true'">$(BuildArchitecture)</CrossDir>
 
       <BuildDll>true</BuildDll>
       <BuildDll Condition="'$(CrossBuild)' == 'true' and '$(CrossDir)' == ''">false</BuildDll>
