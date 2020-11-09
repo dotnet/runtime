@@ -417,7 +417,7 @@ namespace System.Threading
         /// single-threaded or multi-threaded apartment.
         /// </summary>
 #if FEATURE_COMINTEROP_APARTMENT_SUPPORT
-        private bool TrySetApartmentStateUnchecked(ApartmentState state)
+        private bool SetApartmentStateUnchecked(ApartmentState state, bool throwOnError)
         {
             ApartmentState retState = (ApartmentState)SetApartmentStateNative((int)state);
 
@@ -432,6 +432,12 @@ namespace System.Threading
 
             if (retState != state)
             {
+                if (throwOnError)
+                {
+                    string msg = SR.Format(SR.Thread_ApartmentState_ChangeFailed, Thread.CurrentThread.GetApartmentState());
+                    throw new InvalidOperationException(msg);
+                }
+
                 return false;
             }
 
@@ -444,9 +450,20 @@ namespace System.Threading
         [MethodImpl(MethodImplOptions.InternalCall)]
         internal extern int SetApartmentStateNative(int state);
 #else // FEATURE_COMINTEROP_APARTMENT_SUPPORT
-        private static bool TrySetApartmentStateUnchecked(ApartmentState state)
+        private static bool SetApartmentStateUnchecked(ApartmentState state, bool throwOnError)
         {
-            return state == ApartmentState.Unknown;
+             if (state != ApartmentState.Unknown)
+             {
+                if (throwOnError)
+                {
+                    string msg = SR.Format(SR.Thread_ApartmentState_ChangeFailed, Thread.CurrentThread.GetApartmentState());
+                    throw new InvalidOperationException(msg);
+                }
+
+                return false;
+             }
+
+             return true;
         }
 #endif // FEATURE_COMINTEROP_APARTMENT_SUPPORT
 

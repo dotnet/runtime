@@ -309,7 +309,21 @@ namespace System.Threading
             return YieldInternal();
         }
 
-        private static bool TrySetApartmentStateUnchecked(ApartmentState state) => state == ApartmentState.Unknown;
+        private static bool SetApartmentStateUnchecked(ApartmentState state, bool throwOnError)
+        {
+             if (state != ApartmentState.Unknown)
+             {
+                if (throwOnError)
+                {
+                    string msg = SR.Format(SR.Thread_ApartmentState_ChangeFailed, Thread.CurrentThread.GetApartmentState());
+                    throw new InvalidOperationException(msg);
+                }
+
+                return false;
+             }
+
+             return true;
+        }
 
         private ThreadState ValidateThreadState()
         {

@@ -288,13 +288,15 @@ namespace System.Threading
         [SupportedOSPlatform("windows")]
         public void SetApartmentState(ApartmentState state)
         {
-            if (!TrySetApartmentState(state))
-            {
-                throw GetApartmentStateChangeFailedException();
-            }
+            SetApartmentState(state, throwOnError:true);
         }
 
         public bool TrySetApartmentState(ApartmentState state)
+        {
+            return SetApartmentState(state, throwOnError:false);
+        }
+
+        private bool SetApartmentState(ApartmentState state, bool throwOnError)
         {
             switch (state)
             {
@@ -307,7 +309,7 @@ namespace System.Threading
                     throw new ArgumentOutOfRangeException(nameof(state), SR.ArgumentOutOfRange_Enum);
             }
 
-            return TrySetApartmentStateUnchecked(state);
+            return SetApartmentStateUnchecked(state, throwOnError);
         }
 
         [Obsolete("Thread.GetCompressedStack is no longer supported. Please use the System.Threading.CompressedStack class")]
