@@ -422,7 +422,7 @@ namespace System.Net.Http.HPack
             int lookupTableIndex = 0;
             int lookupIndex;
 
-            ulong acc = 0;
+            ushort acc = 0;
             int bitsInAcc = 0;
 
 
@@ -430,13 +430,10 @@ namespace System.Net.Http.HPack
             int j = 0;
             while (i < src.Length)
             {
-                // Load bits into accumulator.
-                do
-                {
-                    acc <<= 8;
-                    acc |= src[i++];
-                    bitsInAcc += 8;
-                } while (i < src.Length && bitsInAcc + 8 <= 64);
+                // Load next 8 bits into accumulator.
+                acc <<= 8;
+                acc |= src[i++];
+                bitsInAcc += 8;
 
                 // Decode bits in accumulator.
                 do
@@ -492,7 +489,7 @@ namespace System.Net.Http.HPack
                 if (lookupTableIndex == 0)
                 {
                     // Check if all remaining bits are ones.
-                    uint ones = uint.MaxValue >> (64 - bitsInAcc);
+                    uint ones = uint.MaxValue >> (32 - bitsInAcc);
                     if ((acc & ones) == ones)
                     {
                         // Is it a EOS. See: http://httpwg.org/specs/rfc7541.html#rfc.section.5.2
