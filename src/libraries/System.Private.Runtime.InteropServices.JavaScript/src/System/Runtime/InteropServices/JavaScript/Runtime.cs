@@ -323,6 +323,10 @@ namespace System.Runtime.InteropServices.JavaScript
                         {
                             res[c] = 'h';
                         }
+                        else if (t == typeof(string[]))
+                        {
+                            res[c] = 'm';
+                        }
                         else
                         {
                             if (t.IsValueType)
