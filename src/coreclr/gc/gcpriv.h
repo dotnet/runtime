@@ -5093,6 +5093,7 @@ struct gap_reloc_pair
     size_t gap;
     size_t   reloc;
     pair        m_pair;
+    size_t mono_pad; // the gc expects this structure to be at least the object size. Umm, why ?
 };
 
 #define min_pre_pin_obj_size (sizeof (gap_reloc_pair) + min_obj_size)
