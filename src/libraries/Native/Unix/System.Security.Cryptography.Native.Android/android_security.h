@@ -6,6 +6,7 @@
 
 #include "pal_compiler.h"
 
+#define FAIL 0
 #define SUCCESS 1
 
 PALEXPORT int32_t CryptoNative_EnsureOpenSslInitialized(void);

@@ -59,8 +59,8 @@ static jmethodID g_ivPsCtor = NULL;
 
 static jobject ToGRef(JNIEnv *env, jobject lref)
 {
-    if (lref == 0)
-        return 0;
+    if (!lref)
+        return NULL;
     jobject gref = (*env)->NewGlobalRef(env, lref);
     (*env)->DeleteLocalRef(env, lref);
     return gref;
@@ -81,6 +81,16 @@ static jclass GetClassGRef(JNIEnv *env, const char* name)
         assert(klass);
     }
     return klass;
+}
+
+static void CheckPendingExceptions(JNIEnv* env)
+{
+    if ((*env)->ExceptionCheck(env))
+    {
+        (*env)->ExceptionDescribe(env); 
+        (*env)->ExceptionClear(env);
+        assert(0 && "JNI: Unhandled exception");
+    }
 }
 
 static jmethodID GetMethod(JNIEnv *env, bool isStatic, jclass klass, const char* name, const char* sig)
@@ -146,6 +156,7 @@ JNI_OnLoad(JavaVM *vm, void *reserved)
     g_ivPsClass =               GetClassGRef(env, "javax/crypto/spec/IvParameterSpec");
     g_ivPsCtor =                GetMethod(env, false, g_ivPsClass, "<init>", "([B)V");
 
+    CheckPendingExceptions(env);
     return JNI_VERSION_1_6;
 }
 
@@ -167,6 +178,8 @@ int32_t CryptoNative_GetRandomBytes(uint8_t* buff, int32_t len)
 
     (*env)->DeleteLocalRef(env, buffArray);
     (*env)->DeleteLocalRef(env, randObj);
+
+    CheckPendingExceptions(env);
     return SUCCESS;
 }
 
@@ -211,7 +224,6 @@ int32_t CryptoNative_EvpMdSize(intptr_t md)
     if (md == CryptoNative_EvpSha384()) return 48;
     if (md == CryptoNative_EvpSha512()) return 64;
     if (md == CryptoNative_EvpMd5()) return 16;
-
     assert(0 && "unexpected type");
     return -1;
 }
@@ -239,19 +251,21 @@ static jobject GetMessageDigestInstance(JNIEnv* env, intptr_t type)
 
     jobject mdObj = (*env)->CallStaticObjectMethod(env, g_mdClass, g_mdGetInstanceMethod, mdName);
     (*env)->DeleteLocalRef(env, mdName);
+
+    CheckPendingExceptions(env);
     return mdObj;
 }
 
 int32_t CryptoNative_EvpDigestOneShot(intptr_t type, void* source, int32_t sourceSize, uint8_t* md, uint32_t* mdSize)
 {
     if (!type || !md || !mdSize || sourceSize < 0)
-        return 0;
+        return FAIL;
 
     JNIEnv* env = GetJniEnv();
 
     jobject mdObj = GetMessageDigestInstance(env, type);
     if (!mdObj)
-        return 0;
+        return FAIL;
 
     jbyteArray bytes = (*env)->NewByteArray(env, sourceSize);
     (*env)->SetByteArrayRegion(env, bytes, 0, sourceSize, (jbyte*) source);
@@ -265,35 +279,36 @@ int32_t CryptoNative_EvpDigestOneShot(intptr_t type, void* source, int32_t sourc
     (*env)->DeleteLocalRef(env, bytes);
     (*env)->DeleteLocalRef(env, hashedBytes);
     (*env)->DeleteLocalRef(env, mdObj);
+
+    CheckPendingExceptions(env);
     return SUCCESS;
 }
 
 void* CryptoNative_EvpMdCtxCreate(intptr_t type)
 {
     JNIEnv* env = GetJniEnv();
-    jobject md = ToGRef(env, GetMessageDigestInstance(env, type));
-    // md can be null (caller will handle it as an error)
-    // global ref is released in CryptoNative_EvpMdCtxDestroy
-    return (void*)md;
+    return (void*)ToGRef(env, GetMessageDigestInstance(env, type));
 }
 
 int32_t CryptoNative_EvpDigestReset(void* ctx, intptr_t type)
 {
     if (!ctx)
-        return 0;
+        return FAIL;
 
     (void)type; // not used
 
     JNIEnv* env = GetJniEnv();
     jobject mdObj = (jobject)ctx;
     (*env)->CallVoidMethod(env, mdObj, g_mdResetMethod);
+
+    CheckPendingExceptions(env);
     return SUCCESS;
 }
 
 int32_t CryptoNative_EvpDigestUpdate(void* ctx, void* d, int32_t cnt)
 {
     if (!ctx)
-        return 0;
+        return FAIL;
 
     JNIEnv* env = GetJniEnv();
     jobject mdObj = (jobject)ctx;
@@ -302,6 +317,8 @@ int32_t CryptoNative_EvpDigestUpdate(void* ctx, void* d, int32_t cnt)
     (*env)->SetByteArrayRegion(env, bytes, 0, cnt, (jbyte*) d);
     (*env)->CallVoidMethod(env, mdObj, g_mdUpdateMethod, bytes);
     (*env)->DeleteLocalRef(env, bytes);
+
+    CheckPendingExceptions(env);
     return SUCCESS;
 }
 
@@ -313,7 +330,7 @@ int32_t CryptoNative_EvpDigestFinalEx(void* ctx, uint8_t* md, uint32_t* s)
 int32_t CryptoNative_EvpDigestCurrent(void* ctx, uint8_t* md, uint32_t* s)
 {
     if (!ctx)
-        return 0;
+        return FAIL;
 
     JNIEnv* env = GetJniEnv();
     jobject mdObj = (jobject)ctx;
@@ -324,6 +341,8 @@ int32_t CryptoNative_EvpDigestCurrent(void* ctx, uint8_t* md, uint32_t* s)
     *s = (uint32_t)bytesLen;
     (*env)->GetByteArrayRegion(env, bytes, 0, bytesLen, (jbyte*) md);
     (*env)->DeleteLocalRef(env, bytes);
+
+    CheckPendingExceptions(env);
     return SUCCESS;
 }
 
@@ -367,24 +386,27 @@ void* CryptoNative_HmacCreate(uint8_t* key, int32_t keyLen, intptr_t type)
     (*env)->DeleteLocalRef(env, sksObj);
     (*env)->DeleteLocalRef(env, macName);
 
+    CheckPendingExceptions(env);
     return macObj;
 }
 
 int32_t CryptoNative_HmacReset(void* ctx)
 {
     if (!ctx)
-        return 0;
+        return FAIL;
 
     JNIEnv* env = GetJniEnv();
     jobject macObj = (jobject)ctx;
     (*env)->CallVoidMethod(env, macObj, g_macResetMethod);
+
+    CheckPendingExceptions(env);
     return SUCCESS;
 }
 
 int32_t CryptoNative_HmacUpdate(void* ctx, uint8_t* data, int32_t len)
 {
     if (!ctx)
-        return 0;
+        return FAIL;
 
     JNIEnv* env = GetJniEnv();
     jobject macObj = (jobject)ctx;
@@ -392,6 +414,8 @@ int32_t CryptoNative_HmacUpdate(void* ctx, uint8_t* data, int32_t len)
     (*env)->SetByteArrayRegion(env, dataBytes, 0, len, (jbyte*)data);
     (*env)->CallVoidMethod(env, macObj, g_macUpdateMethod, dataBytes);
     (*env)->DeleteLocalRef(env, dataBytes);
+
+    CheckPendingExceptions(env);
     return SUCCESS;
 }
 
@@ -403,7 +427,7 @@ int32_t CryptoNative_HmacFinal(void* ctx, uint8_t* data, int32_t* len)
 int32_t CryptoNative_HmacCurrent(void* ctx, uint8_t* data, int32_t* len)
 {
     if (!ctx)
-        return 0;
+        return FAIL;
 
     JNIEnv* env = GetJniEnv();
     jobject macObj = (jobject)ctx;
@@ -412,6 +436,8 @@ int32_t CryptoNative_HmacCurrent(void* ctx, uint8_t* data, int32_t* len)
     *len = (int32_t)dataBytesLen;
     (*env)->GetByteArrayRegion(env, dataBytes, 0, dataBytesLen, (jbyte*) data);
     (*env)->DeleteLocalRef(env, dataBytes);
+
+    CheckPendingExceptions(env);
     return SUCCESS;
 }
 
@@ -467,7 +493,10 @@ void* CryptoNative_EvpCipherCreate2(intptr_t type, uint8_t* key, int32_t keyLeng
     else if (type == CryptoNative_EvpDesCbc())       algName = (*env)->NewStringUTF(env, "DES/CBC/NoPadding");
     else if (type == CryptoNative_EvpDesCfb8())      algName = (*env)->NewStringUTF(env, "DES/CFB8/NoPadding");
     else
-        assert(0 && "unknown type");
+    {
+        LOG_ERROR("unexpected type: %d", (int)type);
+        return FAIL;
+    }
 
     jobject cipherObj = ToGRef(env, (*env)->CallStaticObjectMethod(env, g_cipherClass, g_cipherGetInstanceMethod, algName));
 
@@ -486,6 +515,8 @@ void* CryptoNative_EvpCipherCreate2(intptr_t type, uint8_t* key, int32_t keyLeng
     (*env)->DeleteLocalRef(env, ivPsObj);
     (*env)->DeleteLocalRef(env, keyBytes);
     (*env)->DeleteLocalRef(env, ivBytes);
+
+    CheckPendingExceptions(env);
     return cipherObj;
 }
 
@@ -493,7 +524,7 @@ void* CryptoNative_EvpCipherCreate2(intptr_t type, uint8_t* key, int32_t keyLeng
 int32_t CryptoNative_EvpCipherUpdate(void* ctx, uint8_t* outm, int32_t* outl, uint8_t* in, int32_t inl)
 {
     if (!ctx)
-        return 0;
+        return FAIL;
 
     JNIEnv* env = GetJniEnv();
     jobject cipherObj = (jobject)ctx;
@@ -510,13 +541,15 @@ int32_t CryptoNative_EvpCipherUpdate(void* ctx, uint8_t* outm, int32_t* outl, ui
     }
 
     (*env)->DeleteLocalRef(env, inDataBytes);
+
+    CheckPendingExceptions(env);
     return SUCCESS;
 }
 
 int32_t CryptoNative_EvpCipherFinalEx(void* ctx, uint8_t* outm, int32_t* outl)
 {
     if (!ctx)
-        return 0;
+        return FAIL;
 
     JNIEnv* env = GetJniEnv();
     jobject cipherObj = (jobject)ctx;
@@ -524,13 +557,12 @@ int32_t CryptoNative_EvpCipherFinalEx(void* ctx, uint8_t* outm, int32_t* outl)
     int blockSize = (*env)->CallIntMethod(env, cipherObj, g_getBlockSizeMethod);
     jbyteArray outBytes = (*env)->NewByteArray(env, blockSize);
     int written = (*env)->CallIntMethod(env, cipherObj, g_cipherDoFinalMethod, outBytes, 0 /*offset*/);
-
     if (written > 0)
         (*env)->GetByteArrayRegion(env, outBytes, 0, blockSize, (jbyte*) outm);
-
     *outl = written;
-
     (*env)->DeleteLocalRef(env, outBytes);
+
+    CheckPendingExceptions(env);
     return SUCCESS;
 }
 
