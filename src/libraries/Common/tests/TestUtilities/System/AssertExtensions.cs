@@ -378,6 +378,19 @@ namespace System
             }
         }
 
+        /// <summary>
+        /// Validates that the actual collection is equal to the expected collection. This will display count if two collection count is different;
+        /// or what point the equality assertion failed, if the test fails.
+        /// </summary>
+        /// <param name="expected">The collection that <paramref name="actual"/> should be equal to.</param>
+        /// <param name="actual"></param>
+        /// <param name="comparer">The comparer used to compare the items in two collections</param>
+        public static void CollectionEqual<T>(IEnumerable<T> expected, IEnumerable<T> actual, IEqualityComparer<T> comparer)
+        {
+            var elementInspectors = expected.Select(exp => new Action<T>(act => Assert.Equal(exp, act, comparer))).ToArray();
+            Assert.Collection(actual, elementInspectors);
+        }
+		
         public static void AtLeastOneEquals<T>(T expected1, T expected2, T value)
         {
             EqualityComparer<T> comparer = EqualityComparer<T>.Default;
