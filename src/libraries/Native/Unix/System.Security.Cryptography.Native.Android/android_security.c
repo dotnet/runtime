@@ -139,9 +139,8 @@ JNI_OnLoad(JavaVM *vm, void *reserved)
     g_cipherClass =             GetClassGRef(env, "javax/crypto/Cipher");
     g_cipherGetInstanceMethod = GetMethod(env, true,  g_cipherClass, "getInstance", "(Ljava/lang/String;)Ljavax/crypto/Cipher;");
     g_getBlockSizeMethod =      GetMethod(env, false, g_cipherClass, "getBlockSize", "()I");
-    g_cipherDoFinalMethod =     GetMethod(env, false, g_cipherClass, "doFinal", "()[B");
+    g_cipherDoFinalMethod =     GetMethod(env, false, g_cipherClass, "doFinal", "([BI)I");
     g_cipherUpdateMethod =      GetMethod(env, false, g_cipherClass, "update", "([B)[B");
-    //void init(int opmode, Key key, AlgorithmParameterSpec params)
     g_cipherInitMethod =        GetMethod(env, false, g_cipherClass, "init", "(ILjava/security/Key;Ljava/security/spec/AlgorithmParameterSpec;)V");
 
     g_ivPsClass =               GetClassGRef(env, "javax/crypto/spec/IvParameterSpec");
@@ -171,19 +170,55 @@ int32_t CryptoNative_GetRandomBytes(uint8_t* buff, int32_t len)
     return SUCCESS;
 }
 
-// return some unique ids - e.g. max sizes
-intptr_t CryptoNative_EvpMd5()       { return 16; }
-intptr_t CryptoNative_EvpSha1()      { return 20; }
-intptr_t CryptoNative_EvpSha256()    { return 32; }
-intptr_t CryptoNative_EvpSha384()    { return 48; }
-intptr_t CryptoNative_EvpSha512()    { return 64; }
-int32_t  CryptoNative_GetMaxMdSize() { return 64; }
+ // just some unique numbers
+intptr_t CryptoNative_EvpMd5()          { return 101; }
+intptr_t CryptoNative_EvpSha1()         { return 102; }
+intptr_t CryptoNative_EvpSha256()       { return 103; }
+intptr_t CryptoNative_EvpSha384()       { return 104; }
+intptr_t CryptoNative_EvpSha512()       { return 105; }
+intptr_t CryptoNative_EvpAes128Ecb()    { return 1001; }
+intptr_t CryptoNative_EvpAes128Cbc()    { return 1002; }
+intptr_t CryptoNative_EvpAes128Cfb8()   { return 1003; }
+intptr_t CryptoNative_EvpAes128Cfb128() { return 1004; }
+intptr_t CryptoNative_EvpAes128Gcm()    { return 1005; }
+intptr_t CryptoNative_EvpAes128Ccm()    { return 1006; }
+intptr_t CryptoNative_EvpAes192Ecb()    { return 1007; }
+intptr_t CryptoNative_EvpAes192Cbc()    { return 1008; }
+intptr_t CryptoNative_EvpAes192Cfb8()   { return 1009; }
+intptr_t CryptoNative_EvpAes192Cfb128() { return 1010; }
+intptr_t CryptoNative_EvpAes192Gcm()    { return 1011; }
+intptr_t CryptoNative_EvpAes192Ccm()    { return 1012; }
+intptr_t CryptoNative_EvpAes256Ecb()    { return 1013; }
+intptr_t CryptoNative_EvpAes256Cbc()    { return 1014; }
+intptr_t CryptoNative_EvpAes256Cfb8()   { return 1015; }
+intptr_t CryptoNative_EvpAes256Cfb128() { return 1016; }
+intptr_t CryptoNative_EvpAes256Gcm()    { return 1017; }
+intptr_t CryptoNative_EvpAes256Ccm()    { return 1018; }
+intptr_t CryptoNative_EvpDes3Ecb()      { return 1019; }
+intptr_t CryptoNative_EvpDes3Cbc()      { return 1020; }
+intptr_t CryptoNative_EvpDes3Cfb8()     { return 1021; }
+intptr_t CryptoNative_EvpDes3Cfb64()    { return 1022; }
+intptr_t CryptoNative_EvpDesEcb()       { return 1023; }
+intptr_t CryptoNative_EvpDesCfb8()      { return 1024; }
+intptr_t CryptoNative_EvpDesCbc()       { return 1025; }
+intptr_t CryptoNative_EvpRC2Ecb()       { return 1026; }
+intptr_t CryptoNative_EvpRC2Cbc()       { return 1027; }
 
 int32_t CryptoNative_EvpMdSize(intptr_t md)
 {
-    // we can call "MessageDigest.getInstance("...").getDigestLength()" to make sure
-    // but md id is already the actual size we need.
-    return (int32_t)md;
+    if (md == CryptoNative_EvpSha1()) return 20;
+    if (md == CryptoNative_EvpSha256()) return 32;
+    if (md == CryptoNative_EvpSha384()) return 48;
+    if (md == CryptoNative_EvpSha512()) return 64;
+    if (md == CryptoNative_EvpMd5()) return 16;
+
+    assert(0 && "unexpected type");
+    return -1;
+}
+
+int32_t CryptoNative_GetMaxMdSize()
+{
+    return 64; // EVP_MAX_MD_SIZE
 }
 
 static jobject GetMessageDigestInstance(JNIEnv* env, intptr_t type)
@@ -213,9 +248,6 @@ int32_t CryptoNative_EvpDigestOneShot(intptr_t type, void* source, int32_t sourc
         return 0;
 
     JNIEnv* env = GetJniEnv();
-
-    // MessageDigest md = MessageDigest.getInstance("...");
-    // hashed = md.digest(src);
 
     jobject mdObj = GetMessageDigestInstance(env, type);
     if (!mdObj)
@@ -390,66 +422,66 @@ void CryptoNative_HmacDestroy(void* ctx)
 
 // TODO: AES/DES
 
-intptr_t CryptoNative_EvpAes128Ecb()    { return 1001; } // just some unique numbers
-intptr_t CryptoNative_EvpAes128Cbc()    { return 1002; }
-intptr_t CryptoNative_EvpAes128Cfb8()   { return 1003; }
-intptr_t CryptoNative_EvpAes128Cfb128() { return 1004; }
-intptr_t CryptoNative_EvpAes128Gcm()    { return 1005; }
-intptr_t CryptoNative_EvpAes128Ccm()    { return 1006; }
-intptr_t CryptoNative_EvpAes192Ecb()    { return 1007; }
-intptr_t CryptoNative_EvpAes192Cbc()    { return 1008; }
-intptr_t CryptoNative_EvpAes192Cfb8()   { return 1009; }
-intptr_t CryptoNative_EvpAes192Cfb128() { return 1010; }
-intptr_t CryptoNative_EvpAes192Gcm()    { return 1011; }
-intptr_t CryptoNative_EvpAes192Ccm()    { return 1012; }
-intptr_t CryptoNative_EvpAes256Ecb()    { return 1013; }
-intptr_t CryptoNative_EvpAes256Cbc()    { return 1014; }
-intptr_t CryptoNative_EvpAes256Cfb8()   { return 1015; }
-intptr_t CryptoNative_EvpAes256Cfb128() { return 1016; }
-intptr_t CryptoNative_EvpAes256Gcm()    { return 1017; }
-intptr_t CryptoNative_EvpAes256Ccm()    { return 1018; }
-intptr_t CryptoNative_EvpDes3Ecb()      { return 1019; }
-intptr_t CryptoNative_EvpDes3Cbc()      { return 1020; }
-intptr_t CryptoNative_EvpDes3Cfb8()     { return 1021; }
-intptr_t CryptoNative_EvpDes3Cfb64()    { return 1022; }
-intptr_t CryptoNative_EvpDesEcb()       { return 1023; }
-intptr_t CryptoNative_EvpDesCfb8()      { return 1024; }
-intptr_t CryptoNative_EvpDesCbc()       { return 1025; }
-intptr_t CryptoNative_EvpRC2Ecb()       { return 1026; }
-intptr_t CryptoNative_EvpRC2Cbc()       { return 1027; }
-
 void* CryptoNative_EvpCipherCreate2(intptr_t type, uint8_t* key, int32_t keyLength, int32_t effectiveKeyLength, uint8_t* iv, int32_t enc)
 {
-    assert(enc == 0 || enc == 1);
     assert(effectiveKeyLength == 0 && "Not supported");
+    // input:  0 for Decrypt, 1 for Encrypt
+    // Cipher: 2 for Decrypt, 1 for Encrypt
+    assert(enc == 0 || enc == 1);
+    int encMode = enc == 0 ? 2 : 1;
 
     JNIEnv* env = GetJniEnv();
-
-    LOG_INFO("EGOR: keyLength = %d", keyLength);
-
     // Cipher cipher = Cipher.getInstance("AES");
     // int ivSize = cipher.getBlockSize();
     // SecretKeySpec keySpec = new SecretKeySpec(key.getEncoded(), "AES");
     // IvParameterSpec ivSpec = new IvParameterSpec(IV);
-    // cipher.init(Cipher.ENCRYPT_MODE, keySpec, ivSpec);
+    // cipher.init(encMode, keySpec, ivSpec);
 
-    // TODO: table for "type"
-    jstring algName = (jstring)(*env)->NewStringUTF(env, "AES");
+    jobject algName = NULL;
+    // AES128
+         if (type == CryptoNative_EvpAes128Ecb())    algName = (*env)->NewStringUTF(env, "AES/ECB/NoPadding");
+    else if (type == CryptoNative_EvpAes128Cbc())    algName = (*env)->NewStringUTF(env, "AES/CBC/NoPadding");
+    else if (type == CryptoNative_EvpAes128Cfb8())   algName = (*env)->NewStringUTF(env, "AES/CFB8/NoPadding");
+    else if (type == CryptoNative_EvpAes128Cfb128()) algName = (*env)->NewStringUTF(env, "AES/CFB128/NoPadding");
+    else if (type == CryptoNative_EvpAes128Gcm())    algName = (*env)->NewStringUTF(env, "AES/GCM/NoPadding");
+    else if (type == CryptoNative_EvpAes128Ccm())    algName = (*env)->NewStringUTF(env, "AES/CCM/NoPadding");
+
+    // AES192
+    else if (type == CryptoNative_EvpAes192Ecb())    algName = (*env)->NewStringUTF(env, "AES/ECB/NoPadding");
+    else if (type == CryptoNative_EvpAes192Cbc())    algName = (*env)->NewStringUTF(env, "AES/CBC/NoPadding");
+    else if (type == CryptoNative_EvpAes192Cfb8())   algName = (*env)->NewStringUTF(env, "AES/CFB8/NoPadding");
+    else if (type == CryptoNative_EvpAes192Cfb128()) algName = (*env)->NewStringUTF(env, "AES/CFB128/NoPadding");
+    else if (type == CryptoNative_EvpAes192Gcm())    algName = (*env)->NewStringUTF(env, "AES/GCM/NoPadding");
+    else if (type == CryptoNative_EvpAes192Ccm())    algName = (*env)->NewStringUTF(env, "AES/CCM/NoPadding");
+
+    // AES256
+    else if (type == CryptoNative_EvpAes256Ecb())    algName = (*env)->NewStringUTF(env, "AES/ECB/NoPadding");
+    else if (type == CryptoNative_EvpAes256Cbc())    algName = (*env)->NewStringUTF(env, "AES/CBC/NoPadding");
+    else if (type == CryptoNative_EvpAes256Cfb8())   algName = (*env)->NewStringUTF(env, "AES/CFB8/NoPadding");
+    else if (type == CryptoNative_EvpAes256Cfb128()) algName = (*env)->NewStringUTF(env, "AES/CFB128/NoPadding");
+    else if (type == CryptoNative_EvpAes256Gcm())    algName = (*env)->NewStringUTF(env, "AES/GCM/NoPadding");
+    else if (type == CryptoNative_EvpAes256Ccm())    algName = (*env)->NewStringUTF(env, "AES/CCM/NoPadding");
+
+    // DES
+    else if (type == CryptoNative_EvpDesEcb())       algName = (*env)->NewStringUTF(env, "DES/ECB/NoPadding");
+    else if (type == CryptoNative_EvpDesCbc())       algName = (*env)->NewStringUTF(env, "DES/CBC/NoPadding");
+    else if (type == CryptoNative_EvpDesCfb8())      algName = (*env)->NewStringUTF(env, "DES/CFB8/NoPadding");
+    else
+        assert(0 && "unknown type");
 
     jobject cipherObj = ToGRef(env, (*env)->CallStaticObjectMethod(env, g_cipherClass, g_cipherGetInstanceMethod, algName));
+
     int blockSize = (*env)->CallIntMethod(env, cipherObj, g_getBlockSizeMethod);
-
-    jbyteArray keyBytes = (*env)->NewByteArray(env, keyLength / 8);
+    jbyteArray keyBytes = (*env)->NewByteArray(env, keyLength / 8); // bits to bytes, e.g. 256 -> 32
     (*env)->SetByteArrayRegion(env, keyBytes, 0, keyLength / 8, (jbyte*)key);
-
     jbyteArray ivBytes = (*env)->NewByteArray(env, blockSize);
     (*env)->SetByteArrayRegion(env, ivBytes, 0, blockSize, (jbyte*)iv);
-    
+
     jobject sksObj = (*env)->NewObject(env, g_sksClass, g_sksCtor, keyBytes, algName);
     jobject ivPsObj = (*env)->NewObject(env, g_ivPsClass, g_ivPsCtor, ivBytes);
+    (*env)->CallVoidMethod(env, cipherObj, g_cipherInitMethod, encMode, sksObj, ivPsObj);
 
-    (*env)->CallVoidMethod(env, cipherObj, g_cipherInitMethod, enc, sksObj, ivPsObj);
-
+    (*env)->DeleteLocalRef(env, algName);
     (*env)->DeleteLocalRef(env, sksObj);
     (*env)->DeleteLocalRef(env, ivPsObj);
     (*env)->DeleteLocalRef(env, keyBytes);
@@ -463,14 +495,11 @@ int32_t CryptoNative_EvpCipherUpdate(void* ctx, uint8_t* outm, int32_t* outl, ui
     if (!ctx)
         return 0;
 
-    LOG_INFO("EGOR:UPD: inl = %d", inl);
-
     JNIEnv* env = GetJniEnv();
     jobject cipherObj = (jobject)ctx;
     jbyteArray inDataBytes = (*env)->NewByteArray(env, inl);
     (*env)->SetByteArrayRegion(env, inDataBytes, 0, inl, (jbyte*)in);
     jbyteArray outDataBytes = (jbyteArray)(*env)->CallObjectMethod(env, cipherObj, g_cipherUpdateMethod, inDataBytes);
-    // outDataBytes can be null
     if (outDataBytes) {
         jsize outDataBytesLen = (*env)->GetArrayLength(env, outDataBytes);
         *outl = (int32_t)outDataBytesLen;
@@ -479,6 +508,7 @@ int32_t CryptoNative_EvpCipherUpdate(void* ctx, uint8_t* outm, int32_t* outl, ui
     } else {
         *outl = 0;
     }
+
     (*env)->DeleteLocalRef(env, inDataBytes);
     return SUCCESS;
 }
@@ -490,22 +520,31 @@ int32_t CryptoNative_EvpCipherFinalEx(void* ctx, uint8_t* outm, int32_t* outl)
 
     JNIEnv* env = GetJniEnv();
     jobject cipherObj = (jobject)ctx;
-    jbyteArray dataBytes = (jbyteArray)(*env)->CallObjectMethod(env, cipherObj, g_cipherDoFinalMethod);
-    assert(dataBytes);
-    jsize dataBytesLen = (*env)->GetArrayLength(env, dataBytes);
-    *outl = (int32_t)dataBytesLen;
-    (*env)->GetByteArrayRegion(env, dataBytes, 0, dataBytesLen, (jbyte*) outm);
-    (*env)->DeleteLocalRef(env, dataBytes);
+
+    int blockSize = (*env)->CallIntMethod(env, cipherObj, g_getBlockSizeMethod);
+    jbyteArray outBytes = (*env)->NewByteArray(env, blockSize);
+    int written = (*env)->CallIntMethod(env, cipherObj, g_cipherDoFinalMethod, outBytes, 0 /*offset*/);
+
+    if (written > 0)
+        (*env)->GetByteArrayRegion(env, outBytes, 0, blockSize, (jbyte*) outm);
+
+    *outl = written;
+
+    (*env)->DeleteLocalRef(env, outBytes);
     return SUCCESS;
 }
 
 int32_t CryptoNative_EvpCipherCtxSetPadding(void* x, int32_t padding)
 {
+    // .NET always provide 0 here, and it's already handled in 
+    // CryptoNative_EvpCipherCreate2 (see "NoPadding")
+    assert(padding == 0 && "unexpected padding");
     return SUCCESS;
 }
 
 int32_t CryptoNative_EvpCipherReset(void* ctx)
 {
+    // there is no "reset()" API for an existing Cipher object
     return SUCCESS;
 }
 
