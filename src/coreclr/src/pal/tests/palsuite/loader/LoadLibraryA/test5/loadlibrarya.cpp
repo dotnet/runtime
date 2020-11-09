@@ -13,7 +13,7 @@
 **============================================================*/
 #include <palsuite.h>
 
-int __cdecl main(int argc, char *argv[])
+PALTEST(loader_LoadLibraryA_test5_paltest_loadlibrarya_test5, "loader/LoadLibraryA/test5/paltest_loadlibrarya_test5")
 {
     HMODULE ModuleHandle;
     char ModuleName[_MAX_FNAME];

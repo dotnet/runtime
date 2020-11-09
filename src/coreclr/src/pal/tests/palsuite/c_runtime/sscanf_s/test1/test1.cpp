@@ -16,7 +16,7 @@
 #include "../sscanf_s.h"
 
 
-int __cdecl main(int argc, char *argv[])
+PALTEST(c_runtime_sscanf_s_test1_paltest_sscanf_test1, "c_runtime/sscanf_s/test1/paltest_sscanf_test1")
 {
     int num;
     int ret;

@@ -4240,7 +4240,7 @@ void LinearScan::spillInterval(Interval* interval, RefPosition* fromRefPosition 
 //                         an active interval, without spilling.
 //
 // Arguments:
-//    regRec           - the RegRecord to be unasssigned
+//    regRec           - the RegRecord to be unassigned
 //
 // Return Value:
 //    None.
@@ -4266,7 +4266,7 @@ void LinearScan::unassignPhysRegNoSpill(RegRecord* regRec)
 //                        physical register record
 //
 // Arguments:
-//    regRec           - the physical RegRecord to be unasssigned
+//    regRec           - the physical RegRecord to be unassigned
 //    spillRefPosition - The RefPosition at which the assignedInterval is to be spilled
 //                       or nullptr if we aren't spilling
 //
@@ -4304,7 +4304,7 @@ void LinearScan::checkAndClearInterval(RegRecord* regRec, RefPosition* spillRefP
 //                  assignedInterval at the given spillRefPosition, if any.
 //
 // Arguments:
-//    regRec           - The RegRecord to be unasssigned
+//    regRec           - The RegRecord to be unassigned
 //    newRegType       - The RegisterType of interval that would be assigned
 //
 // Return Value:
@@ -4356,7 +4356,7 @@ void LinearScan::unassignPhysReg(RegRecord* regRec ARM_ARG(RegisterType newRegTy
 //                  assignedInterval at the given spillRefPosition, if any.
 //
 // Arguments:
-//    regRec           - the RegRecord to be unasssigned
+//    regRec           - the RegRecord to be unassigned
 //    spillRefPosition - The RefPosition at which the assignedInterval is to be spilled
 //
 // Return Value:

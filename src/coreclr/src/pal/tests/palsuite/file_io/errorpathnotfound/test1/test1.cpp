@@ -36,7 +36,7 @@
 
 
 
-int __cdecl main(int argc, char *argv[])
+PALTEST(file_io_errorpathnotfound_test1_paltest_errorpathnotfound_test1, "file_io/errorpathnotfound/test1/paltest_errorpathnotfound_test1")
 
 {
 

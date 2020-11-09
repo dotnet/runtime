@@ -24,14 +24,14 @@
 #define THREAD_COUNT  10
 #define REPEAT_COUNT  1000
 #define TIMEOUT       60000
-void PALAPI Run_Thread(LPVOID lpParam);
+void PALAPI Run_Thread_switchtothread_test1(LPVOID lpParam);
 
 /**
  * main
  *
  * executable entry point
  */
-INT __cdecl main( INT argc, CHAR **argv )
+PALTEST(threading_SwitchToThread_test1_paltest_switchtothread_test1, "threading/SwitchToThread/test1/paltest_switchtothread_test1")
 {
     DWORD  dwParam;
     HANDLE hThread[THREAD_COUNT];
@@ -54,7 +54,7 @@ INT __cdecl main( INT argc, CHAR **argv )
         hThread[i] = CreateThread(
                                     NULL,                   /* no security attributes */
                                     0,                      /* use default stack size */
-                                    (LPTHREAD_START_ROUTINE)Run_Thread,/* thread function */
+                                    (LPTHREAD_START_ROUTINE)Run_Thread_switchtothread_test1,/* thread function */
                                     (LPVOID)dwParam,  /* argument to thread function */
                                     0,                      /* use default creation flags  */
                                     &threadId[i]     /* returns the thread identifier*/                                  
@@ -79,7 +79,7 @@ INT __cdecl main( INT argc, CHAR **argv )
 
 }
 
-void  PALAPI Run_Thread (LPVOID lpParam)
+void  PALAPI Run_Thread_switchtothread_test1 (LPVOID lpParam)
 {
     int i = 0;
     int Id=(int)(SIZE_T)lpParam;

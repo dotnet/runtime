@@ -13,7 +13,7 @@
 
 #include <palsuite.h>
 
-int __cdecl main(int argc, char **argv)
+PALTEST(samples_test1_paltest_samples_test1, "samples/test1/paltest_samples_test1")
 {
     /* Initialize the PAL.
      */

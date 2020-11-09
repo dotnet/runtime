@@ -12,7 +12,7 @@
 
 #include <palsuite.h>
 
-int __cdecl main(int argc, char *argv[])
+PALTEST(debug_api_DebugBreak_test1_paltest_debugbreak_test1, "debug_api/DebugBreak/test1/paltest_debugbreak_test1")
 {
     BOOL bTry = FALSE;
 

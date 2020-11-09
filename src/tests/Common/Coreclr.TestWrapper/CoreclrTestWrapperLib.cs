@@ -284,7 +284,7 @@ namespace CoreclrTestLib
             return children;
         }
 
-        public int RunTest(string executable, string outputFile, string errorFile)
+        public int RunTest(string executable, string outputFile, string errorFile, string nameSpace)
         {
             Debug.Assert(outputFile != errorFile);
 
@@ -319,6 +319,7 @@ namespace CoreclrTestLib
                 process.StartInfo.UseShellExecute = false;
                 process.StartInfo.RedirectStandardOutput = true;
                 process.StartInfo.RedirectStandardError = true;
+                process.StartInfo.EnvironmentVariables.Add("__NameSpace", nameSpace);
 
                 DateTime startTime = DateTime.Now;
                 process.Start();

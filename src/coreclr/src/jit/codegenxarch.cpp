@@ -1481,7 +1481,7 @@ void CodeGen::genCodeForTreeNode(GenTree* treeNode)
 #ifdef TARGET_X86
             assert(!treeNode->IsIconHandle(GTF_ICON_TLS_HDL));
 #endif // TARGET_X86
-            __fallthrough;
+            FALLTHROUGH;
 
         case GT_CNS_DBL:
             genSetRegToConst(targetReg, targetType, treeNode);
@@ -1504,7 +1504,7 @@ void CodeGen::genCodeForTreeNode(GenTree* treeNode)
                 genCodeForBinary(treeNode->AsOp());
                 break;
             }
-            __fallthrough;
+            FALLTHROUGH;
         case GT_MOD:
         case GT_UMOD:
         case GT_UDIV:
@@ -1516,7 +1516,7 @@ void CodeGen::genCodeForTreeNode(GenTree* treeNode)
         case GT_AND:
             assert(varTypeIsIntegralOrI(treeNode));
 
-            __fallthrough;
+            FALLTHROUGH;
 
 #if !defined(TARGET_64BIT)
         case GT_ADD_LO:
@@ -3689,18 +3689,28 @@ void CodeGen::genRangeCheck(GenTree* oper)
     noway_assert(oper->OperIsBoundsCheck());
     GenTreeBoundsChk* bndsChk = oper->AsBoundsChk();
 
-    GenTree* arrIndex  = bndsChk->gtIndex;
-    GenTree* arrLen    = bndsChk->gtArrLen;
-    GenTree* arrRef    = nullptr;
-    int      lenOffset = 0;
+    GenTree* arrIndex = bndsChk->gtIndex;
+    GenTree* arrLen   = bndsChk->gtArrLen;
 
     GenTree *    src1, *src2;
     emitJumpKind jmpKind;
+    instruction  cmpKind;
 
     genConsumeRegs(arrIndex);
     genConsumeRegs(arrLen);
 
-    if (arrIndex->isContainedIntOrIImmed())
+    if (arrIndex->IsIntegralConst(0) && arrLen->isUsedFromReg())
+    {
+        // arrIndex is 0 and arrLen is in a reg. In this case
+        // we can generate
+        //      test reg, reg
+        // since arrLen is non-negative
+        src1    = arrLen;
+        src2    = arrLen;
+        jmpKind = EJ_je;
+        cmpKind = INS_test;
+    }
+    else if (arrIndex->isContainedIntOrIImmed())
     {
         // arrIndex is a contained constant.  In this case
         // we will generate one of the following
@@ -3713,6 +3723,7 @@ void CodeGen::genRangeCheck(GenTree* oper)
         src1    = arrLen;
         src2    = arrIndex;
         jmpKind = EJ_jbe;
+        cmpKind = INS_cmp;
     }
     else
     {
@@ -3721,7 +3732,7 @@ void CodeGen::genRangeCheck(GenTree* oper)
         //      cmp  [mem], immed   (if arrLen is a constant)
         //      cmp  [mem], reg     (if arrLen is in a reg)
         //      cmp  reg, immed     (if arrIndex is in a reg)
-        //      cmp  reg1, reg2     (if arraIndex is in reg1)
+        //      cmp  reg1, reg2     (if arrIndex is in reg1)
         //      cmp  reg, [mem]     (if arrLen is a memory op)
         //
         // That is only one of arrIndex or arrLen can be a memory op.
@@ -3730,6 +3741,7 @@ void CodeGen::genRangeCheck(GenTree* oper)
         src1    = arrIndex;
         src2    = arrLen;
         jmpKind = EJ_jae;
+        cmpKind = INS_cmp;
     }
 
     var_types bndsChkType = src2->TypeGet();
@@ -3741,7 +3753,7 @@ void CodeGen::genRangeCheck(GenTree* oper)
     assert(emitTypeSize(bndsChkType) >= emitTypeSize(src1->TypeGet()));
 #endif // DEBUG
 
-    GetEmitter()->emitInsBinary(INS_cmp, emitTypeSize(bndsChkType), src1, src2);
+    GetEmitter()->emitInsBinary(cmpKind, emitTypeSize(bndsChkType), src1, src2);
     genJumpToThrowHlpBlk(jmpKind, bndsChk->gtThrowKind, bndsChk->gtIndRngFailBB);
 }
 
@@ -4068,10 +4080,11 @@ void CodeGen::genCodeForShift(GenTree* tree)
 
     if (shiftBy->isContainedIntOrIImmed())
     {
+        emitAttr size = emitTypeSize(tree);
+
         // Optimize "X<<1" to "lea [reg+reg]" or "add reg, reg"
         if (tree->OperIs(GT_LSH) && !tree->gtOverflowEx() && !tree->gtSetFlags() && shiftBy->IsIntegralConst(1))
         {
-            emitAttr size = emitTypeSize(tree);
             if (tree->GetRegNum() == operandReg)
             {
                 GetEmitter()->emitIns_R_R(INS_add, size, tree->GetRegNum(), operandReg);
@@ -4083,6 +4096,21 @@ void CodeGen::genCodeForShift(GenTree* tree)
         }
         else
         {
+            int shiftByValue = (int)shiftBy->AsIntConCommon()->IconValue();
+
+#if defined(TARGET_64BIT)
+            // Try to emit rorx if BMI2 is available instead of mov+rol
+            // it makes sense only for 64bit integers
+            if ((genActualType(targetType) == TYP_LONG) && (tree->GetRegNum() != operandReg) &&
+                compiler->compOpportunisticallyDependsOn(InstructionSet_BMI2) && tree->OperIs(GT_ROL, GT_ROR) &&
+                (shiftByValue > 0) && (shiftByValue < 64))
+            {
+                const int value = tree->OperIs(GT_ROL) ? (64 - shiftByValue) : shiftByValue;
+                GetEmitter()->emitIns_R_R_I(INS_rorx, size, tree->GetRegNum(), operandReg, value);
+                genProduceReg(tree);
+                return;
+            }
+#endif
             // First, move the operand to the destination register and
             // later on perform the shift in-place.
             // (LSRA will try to avoid this situation through preferencing.)
@@ -4090,9 +4118,7 @@ void CodeGen::genCodeForShift(GenTree* tree)
             {
                 inst_RV_RV(INS_mov, tree->GetRegNum(), operandReg, targetType);
             }
-
-            int shiftByValue = (int)shiftBy->AsIntConCommon()->IconValue();
-            inst_RV_SH(ins, emitTypeSize(tree), tree->GetRegNum(), shiftByValue);
+            inst_RV_SH(ins, size, tree->GetRegNum(), shiftByValue);
         }
     }
     else
@@ -5635,7 +5661,7 @@ void CodeGen::genJmpMethod(GenTree* jmp)
 #if defined(UNIX_AMD64_ABI)
         if (varTypeIsStruct(varDsc))
         {
-            CORINFO_CLASS_HANDLE typeHnd = varDsc->lvVerTypeInfo.GetClassHandle();
+            CORINFO_CLASS_HANDLE typeHnd = varDsc->GetStructHnd();
             assert(typeHnd != nullptr);
 
             SYSTEMV_AMD64_CORINFO_STRUCT_REG_PASSING_DESCRIPTOR structDesc;
@@ -5931,6 +5957,27 @@ void CodeGen::genCompareInt(GenTree* treeNode)
     }
     else if (op1->isUsedFromReg() && op2->IsIntegralConst(0))
     {
+        emitAttr targetSize = emitActualTypeSize(op1->TypeGet());
+        emitAttr op1Size    = emitActualTypeSize(op1->TypeGet());
+
+        // Optimize "x<0" and "x>=0" to "x>>31" if "x" is not a jump condition and in a reg.
+        // Morph/Lowering are responsible to rotate "0<x" to "x>0" so we won't handle it here.
+        if ((targetSize >= 4) && (op1Size >= 4) && (targetReg != REG_NA) && tree->OperIs(GT_LT, GT_GE))
+        {
+            if (targetReg != op1->GetRegNum())
+            {
+                inst_RV_RV(INS_mov, targetReg, op1->GetRegNum(), op1->TypeGet());
+            }
+            if (tree->OperIs(GT_GE))
+            {
+                // emit "not" for "x>=0" case
+                inst_RV(INS_not, targetReg, tree->TypeGet(), op1Size);
+            }
+            inst_RV_IV(INS_shr_N, targetReg, (int)op1Size * 8 - 1, op1Size);
+            genProduceReg(tree);
+            return;
+        }
+
         if (compiler->opts.OptimizationEnabled())
         {
             canReuseFlags = true;
@@ -6743,105 +6790,47 @@ int CodeGenInterface::genCallerSPtoInitialSPdelta() const
 void CodeGen::genSSE2BitwiseOp(GenTree* treeNode)
 {
     regNumber targetReg  = treeNode->GetRegNum();
-    var_types targetType = treeNode->TypeGet();
-    assert(varTypeIsFloating(targetType));
+    regNumber operandReg = genConsumeReg(treeNode->gtGetOp1());
+    emitAttr  size       = emitTypeSize(treeNode);
 
-    float                 f;
-    double                d;
-    CORINFO_FIELD_HANDLE* bitMask  = nullptr;
-    instruction           ins      = INS_invalid;
-    void*                 cnsAddr  = nullptr;
-    bool                  dblAlign = false;
+    assert(varTypeIsFloating(treeNode->TypeGet()));
+    assert(treeNode->gtGetOp1()->isUsedFromReg());
 
-    switch (treeNode->OperGet())
+    CORINFO_FIELD_HANDLE* maskFld = nullptr;
+    UINT64                mask    = 0;
+    instruction           ins     = INS_invalid;
+
+    if (treeNode->OperIs(GT_NEG))
     {
-        case GT_NEG:
-            // Neg(x) = flip the sign bit.
-            // Neg(f) = f ^ 0x80000000
-            // Neg(d) = d ^ 0x8000000000000000
-            ins = INS_xorps;
-            if (targetType == TYP_FLOAT)
-            {
-                bitMask = &negBitmaskFlt;
-
-                static_assert_no_msg(sizeof(float) == sizeof(int));
-                *((int*)&f) = 0x80000000;
-                cnsAddr     = &f;
-            }
-            else
-            {
-                bitMask = &negBitmaskDbl;
-
-                static_assert_no_msg(sizeof(double) == sizeof(__int64));
-                *((__int64*)&d) = 0x8000000000000000LL;
-                cnsAddr         = &d;
-                dblAlign        = true;
-            }
-            break;
-
-        case GT_INTRINSIC:
-            assert(treeNode->AsIntrinsic()->gtIntrinsicName == NI_System_Math_Abs);
-
-            // Abs(x) = set sign-bit to zero
-            // Abs(f) = f & 0x7fffffff
-            // Abs(d) = d & 0x7fffffffffffffff
-            ins = INS_andps;
-            if (targetType == TYP_FLOAT)
-            {
-                bitMask = &absBitmaskFlt;
-
-                static_assert_no_msg(sizeof(float) == sizeof(int));
-                *((int*)&f) = 0x7fffffff;
-                cnsAddr     = &f;
-            }
-            else
-            {
-                bitMask = &absBitmaskDbl;
-
-                static_assert_no_msg(sizeof(double) == sizeof(__int64));
-                *((__int64*)&d) = 0x7fffffffffffffffLL;
-                cnsAddr         = &d;
-                dblAlign        = true;
-            }
-            break;
-
-        default:
-            assert(!"genSSE2: unsupported oper");
-            unreached();
-            break;
+        // Neg(x) = flip the sign bit.
+        // Neg(f) = f ^ 0x80000000 x4 (packed)
+        // Neg(d) = d ^ 0x8000000000000000 x2 (packed)
+        ins     = INS_xorps;
+        mask    = treeNode->TypeIs(TYP_FLOAT) ? 0x8000000080000000UL : 0x8000000000000000UL;
+        maskFld = treeNode->TypeIs(TYP_FLOAT) ? &negBitmaskFlt : &negBitmaskDbl;
+    }
+    else if (treeNode->OperIs(GT_INTRINSIC))
+    {
+        assert(treeNode->AsIntrinsic()->gtIntrinsicName == NI_System_Math_Abs);
+        // Abs(x) = set sign-bit to zero
+        // Abs(f) = f & 0x7fffffff x4 (packed)
+        // Abs(d) = d & 0x7fffffffffffffff x2 (packed)
+        ins     = INS_andps;
+        mask    = treeNode->TypeIs(TYP_FLOAT) ? 0x7fffffff7fffffffUL : 0x7fffffffffffffffUL;
+        maskFld = treeNode->TypeIs(TYP_FLOAT) ? &absBitmaskFlt : &absBitmaskDbl;
+    }
+    else
+    {
+        assert(!"genSSE2BitwiseOp: unsupported oper");
     }
 
-    if (*bitMask == nullptr)
+    if (*maskFld == nullptr)
     {
-        assert(cnsAddr != nullptr);
-
-        UNATIVE_OFFSET cnsSize  = genTypeSize(targetType);
-        UNATIVE_OFFSET cnsAlign = (compiler->compCodeOpt() != Compiler::SMALL_CODE) ? cnsSize : 1;
-
-        *bitMask = GetEmitter()->emitAnyConst(cnsAddr, cnsSize, cnsAlign);
+        UINT64 maskPack[] = {mask, mask};
+        *maskFld          = GetEmitter()->emitBlkConst(&maskPack, 16, 16, treeNode->TypeGet());
     }
 
-    // We need an additional register for bitmask.
-    regNumber tmpReg = treeNode->GetSingleTempReg();
-
-    // Move operand into targetReg only if the reg reserved for
-    // internal purpose is not the same as targetReg.
-    GenTree* op1 = treeNode->AsOp()->gtOp1;
-    assert(op1->isUsedFromReg());
-    regNumber operandReg = genConsumeReg(op1);
-    if (tmpReg != targetReg)
-    {
-        if (operandReg != targetReg)
-        {
-            inst_RV_RV(ins_Copy(targetType), targetReg, operandReg, targetType);
-        }
-
-        operandReg = tmpReg;
-    }
-
-    GetEmitter()->emitIns_R_C(ins_Load(targetType, false), emitTypeSize(targetType), tmpReg, *bitMask, 0);
-    assert(ins != INS_invalid);
-    inst_RV_RV(ins, targetReg, operandReg, targetType);
+    GetEmitter()->emitIns_SIMD_R_R_C(ins, size, targetReg, operandReg, *maskFld, 0);
 }
 
 //-----------------------------------------------------------------------------------------
@@ -8238,7 +8227,7 @@ void CodeGen::genCreateAndStoreGCInfoX64(unsigned codeSize, unsigned prologSize 
         unsigned reversePInvokeFrameVarNumber = compiler->lvaReversePInvokeFrameVar;
         assert(reversePInvokeFrameVarNumber != BAD_VAR_NUM && reversePInvokeFrameVarNumber < compiler->lvaRefCount);
         LclVarDsc& reversePInvokeFrameVar = compiler->lvaTable[reversePInvokeFrameVarNumber];
-        gcInfoEncoder->SetReversePInvokeFrameSlot(reversePInvokeFrameVar.lvStkOffs);
+        gcInfoEncoder->SetReversePInvokeFrameSlot(reversePInvokeFrameVar.GetStackOffset());
     }
 
     gcInfoEncoder->Build();
@@ -8514,7 +8503,7 @@ void CodeGen::genProfilingEnterCallback(regNumber initReg, bool* pInitRegZeroed)
                       EA_UNKNOWN); // retSize
 
     // Check that we have place for the push.
-    assert(compiler->fgPtrArgCntMax >= 1);
+    assert(compiler->fgGetPtrArgCntMax() >= 1);
 
 #if defined(UNIX_X86_ABI)
     // Restoring alignment manually. This is similar to CodeGen::genRemoveAlignmentAfterCall
@@ -8595,7 +8584,7 @@ void CodeGen::genProfilingLeaveCallback(unsigned helper)
     genEmitHelperCall(helper, argSize, EA_UNKNOWN /* retSize */);
 
     // Check that we have place for the push.
-    assert(compiler->fgPtrArgCntMax >= 1);
+    assert(compiler->fgGetPtrArgCntMax() >= 1);
 
 #if defined(UNIX_X86_ABI)
     // Restoring alignment manually. This is similar to CodeGen::genRemoveAlignmentAfterCall

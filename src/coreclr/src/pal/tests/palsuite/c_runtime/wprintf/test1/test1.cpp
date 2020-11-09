@@ -16,7 +16,7 @@
 #include <palsuite.h>
 #include "../wprintf.h"
 
-int __cdecl main(int argc, char *argv[])
+PALTEST(c_runtime_wprintf_test1_paltest_wprintf_test1, "c_runtime/wprintf/test1/paltest_wprintf_test1")
 {
     char checkstr[] = "hello world";
     WCHAR *wcheckstr;

@@ -425,7 +425,7 @@ c_runtime/_vsnwprintf_s/test6/paltest_vsnwprintf_test6
 c_runtime/_vsnwprintf_s/test8/paltest_vsnwprintf_test8
 c_runtime/_vsnwprintf_s/test9/paltest_vsnwprintf_test9
 c_runtime/_wcsicmp/test1/paltest_wcsicmp_test1
-c_runtime/_wcslwr/test1/paltest_wcslwr_test1
+c_runtime/_wcslwr_s/test1/paltest_wcslwr_s_test1
 c_runtime/_wcsnicmp/test1/paltest_wcsnicmp_test1
 c_runtime/_wfopen/test1/paltest_wfopen_test1
 c_runtime/_wfopen/test2/paltest_wfopen_test2

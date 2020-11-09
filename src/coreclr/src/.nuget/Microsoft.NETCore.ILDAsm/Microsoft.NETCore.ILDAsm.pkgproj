@@ -4,11 +4,11 @@
 
   <PropertyGroup Condition="'$(PackageTargetRuntime)' == ''">
     <IsLineupPackage Condition="'$(IsLineupPackage)' == ''">true</IsLineupPackage>
-    <PackageTargetRuntime Condition="'$(_packageTargetOSGroup)' == 'Windows_NT'">$(MinOSForArch)-$(PackagePlatform)</PackageTargetRuntime>
+    <PackageTargetRuntime Condition="'$(_packageTargetOSGroup)' == 'windows'">$(MinOSForArch)-$(PackagePlatform)</PackageTargetRuntime>
   </PropertyGroup>
 
   <ItemGroup>
-    <NativeBinary Include="$(BinDir)ildasm$(ApplicationFileExtension)" />
+    <NativeBinary Include="$(RuntimeBinDir)ildasm$(ApplicationFileExtension)" />
   </ItemGroup>
 
   <Import Project="$([MSBuild]::GetPathOfFileAbove(Directory.Build.targets))" />

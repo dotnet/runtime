@@ -9,7 +9,7 @@ namespace Internal.TypeSystem
     /// <summary>
     /// A integer type used for layout calculations. Supports addition, max, min, comparison and alignup operations
     /// A custom type is used to allow the concept of an indeterminate value. (Some types representable in the
-    /// type system do not have a known size. This type is used to make such sizes viral through the type layout 
+    /// type system do not have a known size. This type is used to make such sizes viral through the type layout
     /// computations)
     /// </summary>
     public struct LayoutInt
@@ -74,12 +74,20 @@ namespace Internal.TypeSystem
             return left._value != right._value;
         }
 
-        public static LayoutInt operator+(LayoutInt left, LayoutInt right)
+        public static LayoutInt operator +(LayoutInt left, LayoutInt right)
         {
             if (left.IsIndeterminate || right.IsIndeterminate)
                 return Indeterminate;
 
             return new LayoutInt(checked(left._value + right._value));
+        }
+
+        public static LayoutInt operator -(LayoutInt left, LayoutInt right)
+        {
+            if (left.IsIndeterminate || right.IsIndeterminate)
+                return Indeterminate;
+
+            return new LayoutInt(checked(left._value - right._value));
         }
 
         public override bool Equals(object obj)
@@ -116,7 +124,7 @@ namespace Internal.TypeSystem
         {
             if (value.IsIndeterminate || alignment.IsIndeterminate)
             {
-                // If value is already aligned to maximum possible alignment, then whatever 
+                // If value is already aligned to maximum possible alignment, then whatever
                 // alignment is can't change value
                 if (!value.IsIndeterminate)
                 {

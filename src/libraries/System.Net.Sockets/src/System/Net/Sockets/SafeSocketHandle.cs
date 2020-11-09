@@ -119,7 +119,7 @@ namespace System.Net.Sockets
             }
             catch (Exception exception) when (!ExceptionCheck.IsFatal(exception))
             {
-                NetEventSource.Fail(this, $"handle:{handle}, error:{exception}");
+                Debug.Fail($"handle:{handle}, error:{exception}");
                 throw;
             }
 #endif
@@ -150,11 +150,7 @@ namespace System.Net.Sockets
             }
             catch (Exception exception)
             {
-                if (!ExceptionCheck.IsFatal(exception))
-                {
-                    NetEventSource.Fail(this, $"handle:{handle}, error:{exception}");
-                }
-
+                Debug.Assert(ExceptionCheck.IsFatal(exception), $"handle:{handle}, error:{exception}");
                 ret = true;  // Avoid a second assert.
                 throw;
             }
@@ -162,10 +158,7 @@ namespace System.Net.Sockets
             {
                 _closeSocketThread = Environment.CurrentManagedThreadId;
                 _closeSocketTick = Environment.TickCount;
-                if (!ret)
-                {
-                    NetEventSource.Fail(this, $"ReleaseHandle failed. handle:{handle}");
-                }
+                Debug.Assert(ret, $"ReleaseHandle failed. handle:{handle}");
             }
 #endif
         }

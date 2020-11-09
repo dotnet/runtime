@@ -25,6 +25,12 @@ namespace System
             return new OperatingSystem(PlatformID.Other, new Version(1, 0, 0, 0));
         }
 
-        private static int GetCurrentProcessId() => 42;
+        private static int GetProcessId() => 42;
+
+        /// <summary>
+        /// Returns the path of the executable that started the currently executing process. Returns null when the path is not available.
+        /// </summary>
+        /// <returns>Path of the executable that started the currently executing process</returns>
+        private static string? GetProcessPath() => null;
     }
 }

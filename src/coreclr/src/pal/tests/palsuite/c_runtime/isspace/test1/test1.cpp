@@ -22,7 +22,7 @@ struct testCase
 
 
 
-int __cdecl main(int argc, char *argv[])
+PALTEST(c_runtime_isspace_test1_paltest_isspace_test1, "c_runtime/isspace/test1/paltest_isspace_test1")
 {
     int i=0;
     long result = 0;

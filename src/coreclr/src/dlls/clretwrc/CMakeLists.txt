@@ -20,6 +20,6 @@ add_library_clr(clretwrc SHARED
 )
 
 # add the install targets
-install_clr(TARGETS clretwrc ADDITIONAL_DESTINATION sharedFramework)
+install_clr(TARGETS clretwrc ADDITIONAL_DESTINATIONS sharedFramework)
 
 add_dependencies(clretwrc eventing_headers)

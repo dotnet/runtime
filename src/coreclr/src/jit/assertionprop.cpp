@@ -1625,7 +1625,6 @@ void Compiler::optDebugCheckAssertion(AssertionDsc* assertion)
                     assert(assertion->op2.u1.iconFlags != 0);
                     break;
                 case O1K_LCLVAR:
-                case O1K_ARR_BND:
                     assert((lvaTable[assertion->op1.lcl.lclNum].lvType != TYP_REF) || (assertion->op2.u1.iconVal == 0));
                     break;
                 case O1K_VALUE_NUMBER:
@@ -1959,11 +1958,57 @@ AssertionInfo Compiler::optAssertionGenJtrue(GenTree* tree)
     {
         std::swap(op1, op2);
     }
+
+    ValueNum op1VN = vnStore->VNConservativeNormalValue(op1->gtVNPair);
+    ValueNum op2VN = vnStore->VNConservativeNormalValue(op2->gtVNPair);
     // If op1 is lcl and op2 is const or lcl, create assertion.
     if ((op1->gtOper == GT_LCL_VAR) &&
         ((op2->OperKind() & GTK_CONST) || (op2->gtOper == GT_LCL_VAR))) // Fix for Dev10 851483
     {
         return optCreateJtrueAssertions(op1, op2, assertionKind);
+    }
+    else if (vnStore->IsVNCheckedBound(op1VN) && vnStore->IsVNInt32Constant(op2VN))
+    {
+        assert(relop->OperIs(GT_EQ, GT_NE));
+
+        int con = vnStore->ConstantValue<int>(op2VN);
+        if (con >= 0)
+        {
+            AssertionDsc dsc;
+
+            // For arr.Length != 0, we know that 0 is a valid index
+            // For arr.Length == con, we know that con - 1 is the greatest valid index
+            if (con == 0)
+            {
+                dsc.assertionKind = OAK_NOT_EQUAL;
+                dsc.op1.bnd.vnIdx = vnStore->VNForIntCon(0);
+            }
+            else
+            {
+                dsc.assertionKind = OAK_EQUAL;
+                dsc.op1.bnd.vnIdx = vnStore->VNForIntCon(con - 1);
+            }
+
+            dsc.op1.vn           = op1VN;
+            dsc.op1.kind         = O1K_ARR_BND;
+            dsc.op1.bnd.vnLen    = op1VN;
+            dsc.op2.vn           = vnStore->VNConservativeNormalValue(op2->gtVNPair);
+            dsc.op2.kind         = O2K_CONST_INT;
+            dsc.op2.u1.iconFlags = 0;
+            dsc.op2.u1.iconVal   = 0;
+
+            // when con is not zero, create an assertion on the arr.Length == con edge
+            // when con is zero, create an assertion on the arr.Length != 0 edge
+            AssertionIndex index = optAddAssertion(&dsc);
+            if (relop->OperIs(GT_NE) != (con == 0))
+            {
+                return AssertionInfo::ForNextEdge(index);
+            }
+            else
+            {
+                return index;
+            }
+        }
     }
 
     // Check op1 and op2 for an indirection of a GT_LCL_VAR and keep it in op1.
@@ -2683,7 +2728,7 @@ GenTree* Compiler::optConstantAssertionProp(AssertionDsc*        curAssertion,
                     var_types  simdType = tree->TypeGet();
                     assert(varDsc->TypeGet() == simdType);
                     var_types baseType = varDsc->lvBaseType;
-                    newTree            = gtGetSIMDZero(simdType, baseType, varDsc->lvVerTypeInfo.GetClassHandle());
+                    newTree            = gtGetSIMDZero(simdType, baseType, varDsc->GetStructHnd());
                     if (newTree == nullptr)
                     {
                         return nullptr;
@@ -3158,17 +3203,174 @@ GenTree* Compiler::optAssertionProp_RelOp(ASSERT_VALARG_TP assertions, GenTree* 
     return optAssertionPropLocal_RelOp(assertions, tree, stmt);
 }
 
-/*************************************************************************************
- *
- *  Given the set of "assertions" to look up a relop assertion about the relop "tree",
- *  perform Value numbering based relop assertion propagation on the tree.
- *
- */
+//------------------------------------------------------------------------
+// optAssertionProp: try and optimize a relop via assertion propagation
+//    (and dominator based redundant branch elimination)
+//
+// Arguments:
+//   assertions  - set of live assertions
+//   tree        - tree to possibly optimize
+//   stmt        - statement containing the tree
+//
+// Returns:
+//   The modified tree, or nullptr if no assertion prop took place.
+//
+// Notes:
+//   Redundant branch elimination doesn't rely on assertions currently,
+//   it is done here out of convenience.
+//
 GenTree* Compiler::optAssertionPropGlobal_RelOp(ASSERT_VALARG_TP assertions, GenTree* tree, Statement* stmt)
 {
     GenTree* newTree = tree;
     GenTree* op1     = tree->AsOp()->gtOp1;
     GenTree* op2     = tree->AsOp()->gtOp2;
+
+    // First, walk up the dom tree and see if any dominating block has branched on
+    // exactly this tree's VN...
+    //
+    BasicBlock* prevBlock  = compCurBB;
+    BasicBlock* domBlock   = compCurBB->bbIDom;
+    int         relopValue = -1;
+
+    while (domBlock != nullptr)
+    {
+        if (prevBlock == compCurBB)
+        {
+            JITDUMP("\nVN relop, checking " FMT_BB " for redundancy\n", compCurBB->bbNum);
+        }
+
+        // Check the current dominator
+        //
+        JITDUMP(" ... checking dom " FMT_BB "\n", domBlock->bbNum);
+
+        if (domBlock->bbJumpKind == BBJ_COND)
+        {
+            Statement* const domJumpStmt = domBlock->lastStmt();
+            GenTree* const   domJumpTree = domJumpStmt->GetRootNode();
+            assert(domJumpTree->OperIs(GT_JTRUE));
+            GenTree* const domCmpTree = domJumpTree->AsOp()->gtGetOp1();
+
+            if (domCmpTree->OperKind() & GTK_RELOP)
+            {
+                ValueNum domCmpVN = domCmpTree->GetVN(VNK_Conservative);
+
+                // Note we could also infer the tree relop's value from similar relops higher in the dom tree.
+                // For example, (x >= 0) dominating (x > 0), or (x < 0) dominating (x > 0).
+                //
+                // That is left as a future enhancement.
+                //
+                if (domCmpVN == tree->GetVN(VNK_Conservative))
+                {
+                    // Thes compare in "tree" is redundant.
+                    // Is there a unique path from the dominating compare?
+                    JITDUMP(" Redundant compare; current relop:\n");
+                    DISPTREE(tree);
+                    JITDUMP(" dominating relop in " FMT_BB " with same VN:\n", domBlock->bbNum);
+                    DISPTREE(domCmpTree);
+
+                    BasicBlock* trueSuccessor  = domBlock->bbJumpDest;
+                    BasicBlock* falseSuccessor = domBlock->bbNext;
+
+                    const bool trueReaches  = fgReachable(trueSuccessor, compCurBB);
+                    const bool falseReaches = fgReachable(falseSuccessor, compCurBB);
+
+                    if (trueReaches && falseReaches)
+                    {
+                        // Both dominating compare outcomes reach the current block so we can't infer the
+                        // value of the relop.
+                        //
+                        // If the dominating compare is close to the current compare, this may be a missed
+                        // opportunity to tail duplicate.
+                        //
+                        JITDUMP("Both successors of " FMT_BB " reach, can't optimize\n", domBlock->bbNum);
+
+                        if ((trueSuccessor->GetUniqueSucc() == compCurBB) ||
+                            (falseSuccessor->GetUniqueSucc() == compCurBB))
+                        {
+                            JITDUMP("Perhaps we should have tail duplicated " FMT_BB "\n", compCurBB->bbNum);
+                        }
+                    }
+                    else if (trueReaches)
+                    {
+                        // Taken jump in dominator reaches, fall through doesn't; relop must be true.
+                        //
+                        JITDUMP("Jump successor " FMT_BB " of " FMT_BB " reaches, relop must be true\n",
+                                domBlock->bbJumpDest->bbNum, domBlock->bbNum);
+                        relopValue = 1;
+                        break;
+                    }
+                    else if (falseReaches)
+                    {
+                        // Fall through from dominator reaches, taken jump doesn't; relop must be false.
+                        //
+                        JITDUMP("Fall through successor " FMT_BB " of " FMT_BB " reaches, relop must be false\n",
+                                domBlock->bbNext->bbNum, domBlock->bbNum);
+                        relopValue = 0;
+                        break;
+                    }
+                    else
+                    {
+                        // No apparent path from the dominating BB.
+                        //
+                        // If domBlock or compCurBB is in an EH handler we may fail to find a path.
+                        // Just ignore those cases.
+                        //
+                        // No point in looking further up the tree.
+                        //
+                        break;
+                    }
+                }
+            }
+        }
+
+        // Keep looking higher up in the tree
+        //
+        prevBlock = domBlock;
+        domBlock  = domBlock->bbIDom;
+    }
+
+    // Did we determine the relop value via dominance checks? If so, optimize.
+    //
+    if (relopValue == -1)
+    {
+        JITDUMP("Failed to find a suitable dominating compare, so we won't optimize\n");
+    }
+    else
+    {
+        // Bail out if tree is has certain side effects
+        //
+        // Note we really shouldn't get here if the tree has non-exception effects,
+        // as they should have impacted the value number.
+        //
+        if ((tree->gtFlags & GTF_SIDE_EFFECT) != 0)
+        {
+            // Bail if there is a non-exception effect.
+            //
+            if ((tree->gtFlags & GTF_SIDE_EFFECT) != GTF_EXCEPT)
+            {
+                JITDUMP("Current relop has non-exception side effects, so we won't optimize\n");
+                return nullptr;
+            }
+
+            // Be conservative if there is an exception effect and we're in an EH region
+            // as we might not model the full extent of EH flow.
+            //
+            if (compCurBB->hasTryIndex())
+            {
+                JITDUMP("Current relop has exception side effect and is in a try, so we won't optimize\n");
+                return nullptr;
+            }
+        }
+
+        JITDUMP("\nVN relop based redundant branch opt in " FMT_BB ":\n", compCurBB->bbNum);
+
+        tree->ChangeOperConst(GT_CNS_INT);
+        tree->AsIntCon()->gtIconVal = relopValue;
+
+        newTree = fgMorphTree(tree);
+        DISPTREE(newTree);
+        return optAssertionProp_Update(newTree, tree, stmt);
+    }
 
     // Look for assertions of the form (tree EQ/NE 0)
     AssertionIndex index = optGlobalAssertionIsEqualOrNotEqualZero(assertions, tree);
@@ -4501,7 +4703,7 @@ void Compiler::optImpliedByCopyAssertion(AssertionDsc* copyAssertion, AssertionD
                 // This is the ngen case where we have an indirection of an address.
                 noway_assert((impAssertion->op1.kind == O1K_EXACT_TYPE) || (impAssertion->op1.kind == O1K_SUBTYPE));
 
-                __fallthrough;
+                FALLTHROUGH;
 
             case O2K_CONST_INT:
                 usable = op1MatchesCopy && (impAssertion->op2.u1.iconVal == depAssertion->op2.u1.iconVal);

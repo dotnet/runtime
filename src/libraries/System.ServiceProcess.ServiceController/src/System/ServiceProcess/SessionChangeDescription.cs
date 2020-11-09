@@ -14,32 +14,18 @@ namespace System.ServiceProcess
             _id = id;
         }
 
-        public SessionChangeReason Reason
-        {
-            get
-            {
-                return _reason;
-            }
-        }
+        public SessionChangeReason Reason => _reason;
 
-        public int SessionId
-        {
-            get
-            {
-                return _id;
-            }
-        }
+        public int SessionId => _id;
 
         public override bool Equals(object? obj)
         {
-            if (obj == null || !(obj is SessionChangeDescription))
+            if (!(obj is SessionChangeDescription))
             {
                 return false;
             }
-            else
-            {
-                return Equals((SessionChangeDescription)obj);
-            }
+
+            return Equals((SessionChangeDescription)obj);
         }
 
         public override int GetHashCode()

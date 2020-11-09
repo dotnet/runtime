@@ -51,7 +51,7 @@ namespace System.Reflection.TypeLoading
         // assembly binding unification rules.
         public bool Equals(RoAssemblyName? other)
         {
-            Debug.Assert(other is object);
+            Debug.Assert(other is not null);
             if (Name != other.Name)
                 return false;
             if (Version != other.Version)

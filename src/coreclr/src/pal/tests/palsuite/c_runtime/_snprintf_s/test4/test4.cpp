@@ -20,7 +20,7 @@
  */
 
 
-int __cdecl main(int argc, char *argv[])
+PALTEST(c_runtime__snprintf_s_test4_paltest_snprintf_test4, "c_runtime/_snprintf_s/test4/paltest_snprintf_test4")
 {
     void *ptr = (void*) 0x123456;
     INT64 lptr = I64(0x1234567887654321);

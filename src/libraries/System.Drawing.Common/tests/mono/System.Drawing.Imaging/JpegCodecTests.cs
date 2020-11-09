@@ -67,13 +67,13 @@ namespace MonoTests.System.Drawing.Imaging
                 Assert.Equal(72, bmp.HorizontalResolution);
                 Assert.Equal(72, bmp.VerticalResolution);
 
-                // This value is not consistent accross Windows & Unix
+                // This value is not consistent across Windows & Unix
                 // Assert.Equal(77896, bmp.Flags);
 
                 ColorPalette cp = bmp.Palette;
                 Assert.Equal(256, cp.Entries.Length);
 
-                // This value is not consistent accross Windows & Unix
+                // This value is not consistent across Windows & Unix
                 // Assert.Equal(0, cp.Flags);
                 for (int i = 0; i < 256; i++)
                 {

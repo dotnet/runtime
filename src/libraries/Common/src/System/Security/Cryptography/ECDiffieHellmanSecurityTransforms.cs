@@ -114,7 +114,7 @@ namespace System.Security.Cryptography
                 KeySizeValue = _ecc.GenerateKey(curve);
             }
 
-            private SecKeyPair GetKeys()
+            internal SecKeyPair GetKeys()
             {
                 return _ecc.GetOrGenerateKeys(KeySize);
             }

@@ -158,6 +158,9 @@ namespace System.Net.Sockets
                     // so we can set the results right now.
                     FreeNativeOverlapped(overlapped);
                     FinishOperationSyncSuccess(bytesTransferred, SocketFlags.None);
+
+                    if (SocketsTelemetry.Log.IsEnabled() && !_disableTelemetry) AfterConnectAcceptTelemetry();
+
                     return SocketError.Success;
                 }
 
@@ -173,6 +176,9 @@ namespace System.Net.Sockets
                     // Completed synchronously with a failure.
                     FreeNativeOverlapped(overlapped);
                     FinishOperationSyncFailure(socketError, bytesTransferred, SocketFlags.None);
+
+                    if (SocketsTelemetry.Log.IsEnabled() && !_disableTelemetry) AfterConnectAcceptTelemetry();
+
                     return socketError;
                 }
 
@@ -205,6 +211,9 @@ namespace System.Net.Sockets
                     _singleBufferHandleState = SingleBufferHandleState.None;
                     FreeNativeOverlapped(overlapped);
                     FinishOperationSyncSuccess(bytesTransferred, SocketFlags.None);
+
+                    if (SocketsTelemetry.Log.IsEnabled() && !_disableTelemetry) AfterConnectAcceptTelemetry();
+
                     return SocketError.Success;
                 }
 
@@ -221,6 +230,9 @@ namespace System.Net.Sockets
                     _singleBufferHandleState = SingleBufferHandleState.None;
                     FreeNativeOverlapped(overlapped);
                     FinishOperationSyncFailure(socketError, bytesTransferred, SocketFlags.None);
+
+                    if (SocketsTelemetry.Log.IsEnabled() && !_disableTelemetry) AfterConnectAcceptTelemetry();
+
                     return socketError;
                 }
 
@@ -352,7 +364,7 @@ namespace System.Net.Sockets
                     SocketFlags flags = _socketFlags;
                     SocketError socketError = Interop.Winsock.WSARecv(
                         handle,
-                        ref wsaBuffer,
+                        &wsaBuffer,
                         1,
                         out int bytesTransferred,
                         ref flags,
@@ -586,7 +598,7 @@ namespace System.Net.Sockets
 
                     SocketError socketError = Interop.Winsock.WSASend(
                         handle,
-                        ref wsaBuffer,
+                        &wsaBuffer,
                         1,
                         out int bytesTransferred,
                         _socketFlags,

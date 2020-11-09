@@ -338,13 +338,14 @@ namespace System
         public static int Compare(Uri? uri1, Uri? uri2, UriComponents partsToCompare, UriFormat compareFormat,
             StringComparison comparisonType)
         {
-            if ((object?)uri1 == null)
+            if (uri1 is null)
             {
-                if (uri2 == null)
+                if (uri2 is null)
                     return 0; // Equal
                 return -1;    // null < non-null
             }
-            if ((object?)uri2 == null)
+
+            if (uri2 is null)
                 return 1;     // non-null > null
 
             // a relative uri is always less than an absolute one
@@ -523,7 +524,7 @@ namespace System
 
         public static string UnescapeDataString(string stringToUnescape)
         {
-            if ((object)stringToUnescape == null)
+            if (stringToUnescape is null)
                 throw new ArgumentNullException(nameof(stringToUnescape));
 
             if (stringToUnescape.Length == 0)
@@ -652,7 +653,7 @@ namespace System
 
             string relativeStr;
 
-            if ((object?)relativeUri != null)
+            if (relativeUri is not null)
             {
                 if (relativeUri.IsAbsoluteUri)
                     return relativeUri;
@@ -661,7 +662,9 @@ namespace System
                 userEscaped = relativeUri.UserEscaped;
             }
             else
+            {
                 relativeStr = string.Empty;
+            }
 
             // Here we can assert that passed "relativeUri" is indeed a relative one
 
@@ -821,7 +824,7 @@ namespace System
 
         public bool IsBaseOf(Uri uri)
         {
-            if ((object)uri == null)
+            if (uri is null)
                 throw new ArgumentNullException(nameof(uri));
 
             if (!IsAbsoluteUri)

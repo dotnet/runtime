@@ -14,7 +14,7 @@
 
 #include <palsuite.h>
 
-int __cdecl main(int argc, char *argv[])
+PALTEST(file_io_CopyFileA_test2_paltest_copyfilea_test2, "file_io/CopyFileA/test2/paltest_copyfilea_test2")
 {
 
     BOOL bRc = TRUE;

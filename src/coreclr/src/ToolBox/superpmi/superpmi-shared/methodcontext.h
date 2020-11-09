@@ -1329,6 +1329,17 @@ private:
     bool IsEnvironmentHeaderEqual(const Environment& prevEnv);
     bool IsEnvironmentContentEqual(const Environment& prevEnv);
 
+    enum class ReadyToRunCompilation
+    {
+        Uninitialized,
+        ReadyToRun,
+        NotReadyToRun
+    };
+
+    ReadyToRunCompilation isReadyToRunCompilation;
+
+    void InitReadyToRunFlag(const CORJIT_FLAGS* jitFlags);
+
     template <typename key, typename value>
     static bool AreLWMHeadersEqual(LightWeightMap<key, value>* prev, LightWeightMap<key, value>* curr);
     static bool IsIntConfigContentEqual(LightWeightMap<Agnostic_ConfigIntInfo, DWORD>* prev,
@@ -1525,7 +1536,9 @@ enum mcPackets
     PacketCR_SetMethodAttribs                  = 129,
     PacketCR_SetVars                           = 130,
     PacketCR_SetPatchpointInfo                 = 176, // added 8/5/2019
-    PacketCR_RecordCallSite                    = 146, // Added 10/28/2013 - to support indirect calls
+    PacketCR_RecordCallSite                    = 146, // Retired 9/13/2020
+    PacketCR_RecordCallSiteWithSignature       = 179, // Added 9/13/2020
+    PacketCR_RecordCallSiteWithoutSignature    = 180, // Added 9/13/2020
 };
 
 #endif

@@ -495,9 +495,8 @@ void InlineContext::DumpXml(FILE* file, unsigned indent)
     {
         Compiler* compiler = m_InlineStrategy->GetCompiler();
 
-        mdMethodDef calleeToken = compiler->info.compCompHnd->getMethodDefFromMethod(m_Callee);
-        unsigned    calleeHash  = compiler->info.compCompHnd->getMethodHash(m_Callee);
-
+        mdMethodDef calleeToken  = compiler->info.compCompHnd->getMethodDefFromMethod(m_Callee);
+        unsigned    calleeHash   = compiler->compMethodHash(m_Callee);
         const char* inlineReason = InlGetObservationString(m_Observation);
 
         int offset = -1;

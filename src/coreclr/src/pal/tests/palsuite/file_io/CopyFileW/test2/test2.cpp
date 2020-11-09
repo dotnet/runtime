@@ -13,7 +13,7 @@
 
 #include <palsuite.h>
 
-int __cdecl main(int argc, char *argv[])
+PALTEST(file_io_CopyFileW_test2_paltest_copyfilew_test2, "file_io/CopyFileW/test2/paltest_copyfilew_test2")
 {
     LPSTR szSrcExisting = "src_existing.tmp";
     WCHAR* wcSource;

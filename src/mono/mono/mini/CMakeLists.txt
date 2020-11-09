@@ -1,6 +1,9 @@
 project(mini)
 
+include(FindPython3)
+
 function(addprefix var prefix list)
+  set(f)
   foreach(i ${list})
     set(f ${f} ${prefix}/${i})
   endforeach()
@@ -11,7 +14,7 @@ include_directories(
   ${PROJECT_BINARY_DIR}/
   ${PROJECT_BINARY_DIR}/../..
   ${PROJECT_BINARY_DIR}/../../mono/eglib
-  ${CMAKE_SOURCE_DIR}/
+  ${CMAKE_CURRENT_SOURCE_DIR}/../..
   ${PROJECT_SOURCE_DIR}/../
   ${PROJECT_SOURCE_DIR}/../eglib
   ${PROJECT_SOURCE_DIR}/../sgen)
@@ -49,9 +52,10 @@ set(icu_shim_sources_base
     ${pal_icushim_sources_base})
 addprefix(icu_shim_sources "${ICU_SHIM_PATH}" "${icu_shim_sources_base}")
 set_source_files_properties(${icu_shim_sources} PROPERTIES COMPILE_DEFINITIONS OSX_ICU_LIBRARY_PATH="${OSX_ICU_LIBRARY_PATH}")
-set_source_files_properties(${icu_shim_sources} PROPERTIES COMPILE_FLAGS "-I${ICU_INCLUDEDIR} -I${CMAKE_SOURCE_DIR}/../libraries/Native/Unix/System.Globalization.Native/ -I${CMAKE_SOURCE_DIR}/../libraries/Native/Unix/Common/ ${ICU_FLAGS}")
-set(ICU_LIBS "icucore")
-set(ICU_LDFLAGS "-L${ICU_LIBDIR}")
+set_source_files_properties(${icu_shim_sources} PROPERTIES COMPILE_FLAGS "-I${ICU_INCLUDEDIR} -I${CMAKE_CURRENT_SOURCE_DIR}/../../../libraries/Native/Unix/System.Globalization.Native/ -I${CMAKE_CURRENT_SOURCE_DIR}/../../../libraries/Native/Unix/Common/ ${ICU_FLAGS}")
+if(ICU_LIBDIR)
+  set(ICU_LDFLAGS "-L${ICU_LIBDIR}")
+endif()
 endif()
 
 #
@@ -182,7 +186,6 @@ set(arm_sources
     exceptions-arm.c
     tramp-arm.c
     mini-arm-gsharedvt.c
-    mini-arm-gsharedvt.h
     tramp-arm-gsharedvt.c
     cpu-arm.h)
 
@@ -221,6 +224,8 @@ set(posix_sources
 
 if(HOST_DARWIN)
 set(os_sources "${darwin_sources};${posix_sources}")
+elseif(HOST_LINUX)
+set(os_sources "${posix_sources}")
 endif()
 
 set(interp_sources
@@ -251,6 +256,8 @@ set(llvm_sources
     mini-llvm.c
     mini-llvm-cpp.cpp
     llvm-jit.cpp)
+else()
+set(llvm_sources)
 endif()
 
 if(ENABLE_LLVM)
@@ -259,6 +266,8 @@ set(llvm_runtime_sources
 elseif(ENABLE_LLVM_RUNTIME)
 set(llvm_runtime_sources
     llvm-runtime.cpp)
+else()
+set(llvm_runtime_sources)
 endif()
 
 set(mini_public_headers_base
@@ -274,10 +283,12 @@ endif()
 
 if(HOST_DARWIN)
 set(OS_LIBS "-framework CoreFoundation" "-framework Foundation")
-endif()
-
-if(HOST_IOS)
+elseif(HOST_IOS)
 set(OS_LIBS "-framework CoreFoundation" "-lobjc" "-lc++")
+elseif(HOST_ANDROID)
+set(OS_LIBS m dl log)
+elseif(HOST_LINUX)
+set(OS_LIBS pthread m dl)
 endif()
 
 add_library(monosgen-objects OBJECT "${eglib_sources};${metadata_sources};${utils_sources};${sgen_sources};${icu_shim_sources};${eventpipe_sources};${mini_sources}")
@@ -295,13 +306,17 @@ endif()
 if(NOT DISABLE_SHARED_LIBS)
   add_library(monosgen SHARED $<TARGET_OBJECTS:monosgen-objects>)
   set_target_properties(monosgen PROPERTIES OUTPUT_NAME monosgen-2.0)
-  set_target_properties(monosgen PROPERTIES LIBRARY_OUTPUT_DIRECTORY .libs)
-  target_link_libraries(monosgen ${OS_LIBS} "iconv" ${LLVM_LIBS} ${ICU_LIBS})
+  target_link_libraries(monosgen ${OS_LIBS} ${ICONV_LIB} ${LLVM_LIBS} ${ICU_LIBS})
   if(ICU_LDFLAGS)
-    set_target_properties(monosgen PROPERTIES LINK_FLAGS ${ICU_LDFLAGS})
+    set_property(TARGET monosgen APPEND_STRING PROPERTY LINK_FLAGS ${ICU_LDFLAGS})
+  endif()
+  if(TARGET_DARWIN OR TARGET_IOS OR TARGET_TVOS)
+    set_property(TARGET monosgen APPEND_STRING PROPERTY LINK_FLAGS "-Wl,-compatibility_version -Wl,2.0 -Wl,-current_version -Wl,2.0")
   endif()
   install(TARGETS monosgen LIBRARY)
 endif()
+
+find_package(Python3 COMPONENTS Interpreter)
 
 # FIXME: Always rebuilds, creates non-deterministic builds
 # FIXME: Use the previous format
@@ -326,40 +341,40 @@ add_custom_command(
 
 add_custom_command(
   OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/cpu-amd64.h
-  COMMAND python ${CMAKE_CURRENT_SOURCE_DIR}/genmdesc.py TARGET_AMD64 ${CMAKE_CURRENT_SOURCE_DIR} cpu-amd64.h amd64_desc ${CMAKE_CURRENT_SOURCE_DIR}/cpu-amd64.md
+  COMMAND ${Python3_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/genmdesc.py TARGET_AMD64 ${CMAKE_CURRENT_SOURCE_DIR} cpu-amd64.h amd64_desc ${CMAKE_CURRENT_SOURCE_DIR}/cpu-amd64.md
   VERBATIM
 )
 
 add_custom_command(
   OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/cpu-x86.h
-  COMMAND python ${CMAKE_CURRENT_SOURCE_DIR}/genmdesc.py TARGET_X86 ${CMAKE_CURRENT_SOURCE_DIR} cpu-x86.h x86_desc ${CMAKE_CURRENT_SOURCE_DIR}/cpu-x86.md
+  COMMAND ${Python3_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/genmdesc.py TARGET_X86 ${CMAKE_CURRENT_SOURCE_DIR} cpu-x86.h x86_desc ${CMAKE_CURRENT_SOURCE_DIR}/cpu-x86.md
   VERBATIM
 )
 
 add_custom_command(
   OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/cpu-arm64.h
-  COMMAND python ${CMAKE_CURRENT_SOURCE_DIR}/genmdesc.py TARGET_ARM64 ${CMAKE_CURRENT_SOURCE_DIR} cpu-arm64.h arm64_cpu_desc ${CMAKE_CURRENT_SOURCE_DIR}/cpu-arm64.md
+  COMMAND ${Python3_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/genmdesc.py TARGET_ARM64 ${CMAKE_CURRENT_SOURCE_DIR} cpu-arm64.h arm64_cpu_desc ${CMAKE_CURRENT_SOURCE_DIR}/cpu-arm64.md
   VERBATIM
 )
 
 add_custom_command(
   OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/cpu-arm.h
-  COMMAND python ${CMAKE_CURRENT_SOURCE_DIR}/genmdesc.py TARGET_ARM ${CMAKE_CURRENT_SOURCE_DIR} cpu-arm.h arm_cpu_desc ${CMAKE_CURRENT_SOURCE_DIR}/cpu-arm.md
+  COMMAND ${Python3_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/genmdesc.py TARGET_ARM ${CMAKE_CURRENT_SOURCE_DIR} cpu-arm.h arm_cpu_desc ${CMAKE_CURRENT_SOURCE_DIR}/cpu-arm.md
   VERBATIM
 )
 
 add_custom_command(
   OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/cpu-wasm.h
-  COMMAND python ${CMAKE_CURRENT_SOURCE_DIR}/genmdesc.py TARGET_WASM ${CMAKE_CURRENT_SOURCE_DIR} cpu-wasm.h wasm_desc ${CMAKE_CURRENT_SOURCE_DIR}/cpu-wasm.md
+  COMMAND ${Python3_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/genmdesc.py TARGET_WASM ${CMAKE_CURRENT_SOURCE_DIR} cpu-wasm.h wasm_desc ${CMAKE_CURRENT_SOURCE_DIR}/cpu-wasm.md
   VERBATIM
 )
 
 if(NOT DISABLE_EXECUTABLES)
-set(CMAKE_SKIP_RPATH 1)
-add_executable(mono-sgen "main-sgen.c")
-target_link_libraries(mono-sgen monosgen-static ${OS_LIBS} "iconv" ${LLVM_LIBS} ${ICU_LIBS})
-if(ICU_LDFLAGS)
-  set_target_properties(mono-sgen PROPERTIES LINK_FLAGS ${ICU_LDFLAGS})
-endif()
-install(TARGETS mono-sgen RUNTIME)
+  set(CMAKE_SKIP_RPATH 1)
+  add_executable(mono-sgen "main-sgen.c")
+  target_link_libraries(mono-sgen monosgen-static ${OS_LIBS} ${ICONV_LIB} ${LLVM_LIBS} ${ICU_LIBS})
+  if(ICU_LDFLAGS)
+    set_target_properties(mono-sgen PROPERTIES LINK_FLAGS ${ICU_LDFLAGS})
+  endif()
+  install(TARGETS mono-sgen RUNTIME)
 endif()

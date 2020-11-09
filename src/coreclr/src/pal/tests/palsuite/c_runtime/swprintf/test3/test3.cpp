@@ -19,7 +19,7 @@
  * Uses memcmp & wcslen
  */
 
-int __cdecl main(int argc, char *argv[])
+PALTEST(c_runtime_swprintf_test3_paltest_swprintf_test3, "c_runtime/swprintf/test3/paltest_swprintf_test3")
 {
     if (PAL_Initialize(argc, argv) != 0)
     {

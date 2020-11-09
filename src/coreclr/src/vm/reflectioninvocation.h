@@ -62,8 +62,6 @@ public:
     static FCDECL1(Object*, TypedReferenceToObject, TypedByRef * value);
 
 #ifdef FEATURE_COMINTEROP
-    static FCDECL3(Object*, GetClassFromProgID, StringObject* classNameUNSAFE, StringObject* serverUNSAFE, CLR_BOOL bThrowOnError);
-    static FCDECL3(Object*, GetClassFromCLSID, GUID clsid, StringObject* serverUNSAFE, CLR_BOOL bThrowOnError);
     static FCDECL8(Object*, InvokeDispMethod, ReflectClassBaseObject* refThisUNSAFE, StringObject* nameUNSAFE, INT32 invokeAttr, Object* targetUNSAFE, PTRArray* argsUNSAFE, PTRArray* byrefModifiersUNSAFE, LCID lcid, PTRArray* namedParametersUNSAFE);
 #endif  // FEATURE_COMINTEROP
     static FCDECL2(void, GetGUID, ReflectClassBaseObject* refThisUNSAFE, GUID * result);

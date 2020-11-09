@@ -4086,12 +4086,15 @@ ves_icall_TypeBuilder_create_runtime_class (MonoReflectionTypeBuilderHandle ref_
 	 *
 	 * Together with this we must ensure the contents of all instances to match the created type.
 	 */
-	if (domain->type_hash && mono_class_is_gtd (klass)) {
+	if (mono_class_is_gtd (klass)) {
+		MonoMemoryManager *memory_manager = mono_domain_ambient_memory_manager (domain);
 		struct remove_instantiations_user_data data;
 		data.klass = klass;
 		data.error = error;
 		mono_error_assert_ok (error);
-		mono_g_hash_table_foreach_remove (domain->type_hash, remove_instantiations_of_and_ensure_contents, &data);
+		mono_mem_manager_lock (memory_manager);
+		mono_g_hash_table_foreach_remove (memory_manager->type_hash, remove_instantiations_of_and_ensure_contents, &data);
+		mono_mem_manager_unlock (memory_manager);
 		goto_if_nok (error, failure);
 	}
 

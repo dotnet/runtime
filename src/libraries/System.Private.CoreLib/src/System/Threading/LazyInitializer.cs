@@ -143,7 +143,7 @@ namespace System.Threading
                 return target!;
             }
 
-            return EnsureInitializedCore(ref target, ref initialized, ref syncLock);
+            return EnsureInitializedCore<T>(ref target, ref initialized, ref syncLock);
         }
 
         /// <summary>

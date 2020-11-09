@@ -3,6 +3,7 @@ trigger:
   branches:
     include:
     - master
+    - release/*
   paths:
     include:
     - '*'
@@ -33,8 +34,8 @@ jobs:
     buildConfig: release
     platforms:
     - Linux_x64
-    - Windows_NT_x64
-    - Windows_NT_x86
+    - windows_x64
+    - windows_x86
     jobParameters:
       testGroup: perf
 
@@ -127,8 +128,8 @@ jobs:
     runtimeFlavor: coreclr
     platforms:
     - Linux_x64
-    - Windows_NT_x64
-    - Windows_NT_x86
+    - windows_x64
+    - windows_x86
     jobParameters:
       testGroup: perf
       liveLibrariesBuildConfig: Release
@@ -144,8 +145,8 @@ jobs:
     runtimeFlavor: coreclr
     platforms:
     - Linux_x64
-    - Windows_NT_x64
-    - Windows_NT_x86
+    - windows_x64
+    - windows_x86
     jobParameters:
       testGroup: perf
       liveLibrariesBuildConfig: Release

@@ -7,7 +7,6 @@
 '
 
 Imports System.Resources
-Imports System.Text
 
 Namespace System
 

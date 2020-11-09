@@ -9,7 +9,7 @@ namespace System.DirectoryServices.Protocols
 {
     public static partial class BerConverter
     {
-        private static unsafe int DecodeBitStringHelper(ArrayList resultList, SafeBerHandle berElement)
+        private static int DecodeBitStringHelper(ArrayList resultList, SafeBerHandle berElement)
         {
             int error;
             // return a bitstring and its length

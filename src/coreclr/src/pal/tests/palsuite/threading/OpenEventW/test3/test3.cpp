@@ -33,7 +33,7 @@
 
 #define TIMEOUT 60000
 
-int __cdecl main( int argc, char **argv )
+PALTEST(threading_OpenEventW_test3_paltest_openeventw_test3, "threading/OpenEventW/test3/paltest_openeventw_test3")
 {
     BOOL ret = FAIL;
     LPSECURITY_ATTRIBUTES   lpEventAttributes = NULL;

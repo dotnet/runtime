@@ -42,7 +42,7 @@ namespace System.Security.Cryptography.Encryption.TripleDes.Tests
             }
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindows7))]
+        [Fact]
         public static void VerifyKnownTransform_CFB8_NoPadding_0()
         {
             // NIST CAVS TDESMMT.ZIP TCFB8MMT2.rsp, [DECRYPT] COUNT=0
@@ -57,7 +57,7 @@ namespace System.Security.Cryptography.Encryption.TripleDes.Tests
             );
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindows7))]
+        [Fact]
         public static void VerifyKnownTransform_CFB8_NoPadding_1()
         {
             // NIST CAVS TDESMMT.ZIP TCFB8MMT2.rsp, [DECRYPT] COUNT=1
@@ -72,7 +72,7 @@ namespace System.Security.Cryptography.Encryption.TripleDes.Tests
             );
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindows7))]
+        [Fact]
         public static void VerifyKnownTransform_CFB8_NoPadding_2()
         {
             // NIST CAVS TDESMMT.ZIP TCFB8MMT2.rsp, [DECRYPT] COUNT=2
@@ -87,7 +87,7 @@ namespace System.Security.Cryptography.Encryption.TripleDes.Tests
             );
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindows7))]
+        [Fact]
         public static void VerifyKnownTransform_CFB8_PKCS7_2()
         {
             // NIST CAVS TDESMMT.ZIP TCFB8MMT2.rsp, [DECRYPT] COUNT=2
@@ -117,7 +117,7 @@ namespace System.Security.Cryptography.Encryption.TripleDes.Tests
             );
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindows7))]
+        [Fact]
         public static void VerifyKnownTransform_CFB8_NoPadding_3()
         {
             // NIST CAVS TDESMMT.ZIP TCFB8MMT2.rsp, [DECRYPT] COUNT=3
@@ -132,7 +132,7 @@ namespace System.Security.Cryptography.Encryption.TripleDes.Tests
             );
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindows7))]
+        [Fact]
         public static void VerifyKnownTransform_CFB8_NoPadding_4()
         {
             // NIST CAVS TDESMMT.ZIP TCFB8MMT2.rsp, [DECRYPT] COUNT=4
@@ -147,7 +147,7 @@ namespace System.Security.Cryptography.Encryption.TripleDes.Tests
             );
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindows7))]
+        [Fact]
         public static void VerifyKnownTransform_CFB8_NoPadding_5()
         {
             // NIST CAVS TDESMMT.ZIP TCFB8MMT2.rsp, [DECRYPT] COUNT=5
@@ -162,7 +162,7 @@ namespace System.Security.Cryptography.Encryption.TripleDes.Tests
             );
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindows7))]
+        [Fact]
         public static void VerifyKnownTransform_CFB8_NoPadding_6()
         {
             // NIST CAVS TDESMMT.ZIP TCFB8MMT2.rsp, [DECRYPT] COUNT=6
@@ -177,7 +177,7 @@ namespace System.Security.Cryptography.Encryption.TripleDes.Tests
             );
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindows7))]
+        [Fact]
         public static void VerifyKnownTransform_CFB8_NoPadding_7()
         {
             // NIST CAVS TDESMMT.ZIP TCFB8MMT2.rsp, [DECRYPT] COUNT=7
@@ -192,7 +192,7 @@ namespace System.Security.Cryptography.Encryption.TripleDes.Tests
             );
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindows7))]
+        [Fact]
         public static void VerifyKnownTransform_CFB8_NoPadding_8()
         {
             // NIST CAVS TDESMMT.ZIP TCFB8MMT2.rsp, [DECRYPT] COUNT=8
@@ -207,7 +207,7 @@ namespace System.Security.Cryptography.Encryption.TripleDes.Tests
             );
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindows7))]
+        [Fact]
         public static void VerifyKnownTransform_CFB8_NoPadding_9()
         {
             // NIST CAVS TDESMMT.ZIP TCFB8MMT2.rsp, [DECRYPT] COUNT=9
@@ -826,6 +826,28 @@ namespace System.Security.Cryptography.Encryption.TripleDes.Tests
 
             string decrypted = Encoding.ASCII.GetString(outputBytes, 0, outputOffset);
             Assert.Equal(ExpectedOutput, decrypted);
+        }
+
+        [Fact]
+        public static void VerifyNetFxCompat_CFB8_PKCS7Padding()
+        {
+            // .NET Framework would always pad to the nearest block
+            // with CFB8 and PKCS7 padding even though the shortest possible
+            // padding is always 1 byte. This ensures we can continue to decrypt
+            // .NET Framework encrypted data with the excessive padding.
+
+            byte[] key = "531bd715cbf785c10169b6e4926562b8e1e5c4c8884ed791".HexToByteArray();
+            byte[] iv = "dbeba40532a5304a".HexToByteArray();
+            byte[] plaintext = "70656e6e79".HexToByteArray();
+            byte[] ciphertext = "8798c2da055c9ea0".HexToByteArray();
+
+            using TripleDES tdes = TripleDESFactory.Create();
+            tdes.Mode = CipherMode.CFB;
+            tdes.Padding = PaddingMode.PKCS7;
+            tdes.FeedbackSize = 8;
+
+            byte[] decrypted = TripleDESDecryptDirectKey(tdes, key, iv, ciphertext);
+            Assert.Equal(plaintext, decrypted);
         }
     }
 }

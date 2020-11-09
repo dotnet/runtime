@@ -1,6 +1,6 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <TargetFrameworks>netstandard2.0-Windows_NT;net461-Windows_NT;netstandard2.0</TargetFrameworks>
+    <TargetFrameworks>netstandard2.0-windows;net461-windows;netstandard2.0</TargetFrameworks>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <Nullable>enable</Nullable>
   </PropertyGroup>
@@ -34,6 +34,8 @@
              Link="Interop\Windows\Kernel32\Interop.Semaphore.cs" />
     <Compile Include="$(CommonPath)System\IO\Win32Marshal.cs"
              Link="Common\System\IO\Win32Marshal.cs" />
+    <Compile Include="$(CommonPath)System\Threading\OpenExistingResult.cs"
+             Link="Common\System\Threading\OpenExistingResult.cs" />
     <Compile Include="System\Security\AccessControl\MutexSecurity.cs" />
     <Compile Include="System\Security\AccessControl\EventWaitHandleSecurity.cs" />
     <Compile Include="System\Security\AccessControl\SemaphoreSecurity.cs" />

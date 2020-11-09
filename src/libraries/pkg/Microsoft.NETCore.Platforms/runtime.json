@@ -1195,6 +1195,12 @@
         "unix-armel"
       ]
     },
+    "linux-mips64": {
+      "#import": [
+        "linux",
+        "unix-mips64"
+      ]
+    },
     "linux-musl": {
       "#import": [
         "linux"
@@ -2779,6 +2785,11 @@
       ]
     },
     "unix-armel": {
+      "#import": [
+        "unix"
+      ]
+    },
+    "unix-mips64": {
       "#import": [
         "unix"
       ]

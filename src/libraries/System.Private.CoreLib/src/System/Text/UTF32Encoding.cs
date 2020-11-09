@@ -119,7 +119,9 @@ namespace System.Text
         {
             // Validate input
             if (s == null)
-                throw new ArgumentNullException(nameof(s));
+            {
+                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.s);
+            }
 
             fixed (char* pChars = s)
                 return GetByteCount(pChars, s.Length, null);
@@ -1045,17 +1047,17 @@ namespace System.Text
             return (int)(chars - charStart);
         }
 
-        private uint GetSurrogate(char cHigh, char cLow)
+        private static uint GetSurrogate(char cHigh, char cLow)
         {
             return (((uint)cHigh - 0xD800) * 0x400) + ((uint)cLow - 0xDC00) + 0x10000;
         }
 
-        private char GetHighSurrogate(uint iChar)
+        private static char GetHighSurrogate(uint iChar)
         {
             return (char)((iChar - 0x10000) / 0x400 + 0xD800);
         }
 
-        private char GetLowSurrogate(uint iChar)
+        private static char GetLowSurrogate(uint iChar)
         {
             return (char)((iChar - 0x10000) % 0x400 + 0xDC00);
         }

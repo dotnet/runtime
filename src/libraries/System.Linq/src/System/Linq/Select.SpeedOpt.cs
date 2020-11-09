@@ -11,7 +11,7 @@ namespace System.Linq
     public static partial class Enumerable
     {
         static partial void CreateSelectIPartitionIterator<TResult, TSource>(
-            Func<TSource, TResult> selector, IPartition<TSource> partition, ref IEnumerable<TResult>? result) // TODO-NULLABLE: https://github.com/dotnet/roslyn/issues/38327
+            Func<TSource, TResult> selector, IPartition<TSource> partition, ref IEnumerable<TResult>? result)
         {
             result = partition is EmptyPartition<TSource> ?
                 EmptyPartition<TResult>.Instance :

@@ -16,7 +16,7 @@
 
 #include <palsuite.h>
 
-int __cdecl main(int argc, char **argv)
+PALTEST(threading_WaitForSingleObject_WFSOProcessTest_paltest_waitforsingleobject_wfsoprocesstest_child, "threading/WaitForSingleObject/WFSOProcessTest/paltest_waitforsingleobject_wfsoprocesstest_child")
 {
 
 //Declare local variables

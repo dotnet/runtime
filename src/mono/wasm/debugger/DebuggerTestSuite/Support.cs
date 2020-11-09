@@ -6,6 +6,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Net.WebSockets;
+using System.Reflection;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
@@ -116,22 +117,26 @@ namespace DebuggerTests
     {
         protected Task startTask;
 
-        static string FindTestPath()
+        static string s_debuggerTestAppPath;
+        protected static string DebuggerTestAppPath
         {
-            //FIXME how would I locate it otherwise?
-            var test_path = Environment.GetEnvironmentVariable("TEST_SUITE_PATH");
-            //Lets try to guest
-            if (test_path != null && Directory.Exists(test_path))
-                return test_path;
+            get
+            {
+                if (s_debuggerTestAppPath == null)
+                    s_debuggerTestAppPath = FindTestPath();
 
-            var cwd = Environment.CurrentDirectory;
-            Console.WriteLine("guessing from {0}", cwd);
-            //tests run from DebuggerTestSuite/bin/Debug/netcoreapp2.1
-            var new_path = Path.Combine(cwd, "../../../../bin/debugger-test-suite");
-            if (File.Exists(Path.Combine(new_path, "debugger-driver.html")))
-                return new_path;
+                return s_debuggerTestAppPath;
+            }
+        }
 
-            throw new Exception("Missing TEST_SUITE_PATH env var and could not guess path from CWD");
+        static protected string FindTestPath()
+        {
+            var asm_dir = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
+            var test_app_path = Path.Combine(asm_dir, "..", "..", "..", "debugger-test", "Debug", "publish");
+            if (File.Exists(Path.Combine(test_app_path, "debugger-driver.html")))
+                return test_app_path;
+
+            throw new Exception($"Could not figure out debugger-test app path ({test_app_path}) based on the test suite location ({asm_dir})");
         }
 
         static string[] PROBE_LIST = {
@@ -162,7 +167,7 @@ namespace DebuggerTests
 
         public DebuggerTestBase(string driver = "debugger-driver.html")
         {
-            startTask = TestHarnessProxy.Start(FindChromePath(), FindTestPath(), driver);
+            startTask = TestHarnessProxy.Start(FindChromePath(), DebuggerTestAppPath, driver);
         }
 
         public Task Ready() => startTask;
@@ -468,14 +473,15 @@ namespace DebuggerTests
         internal async Task<JObject> StepAndCheck(StepKind kind, string script_loc, int line, int column, string function_name,
             Func<JObject, Task> wait_for_event_fn = null, Action<JToken> locals_fn = null, int times = 1)
         {
+            string method = (kind == StepKind.Resume ? "Debugger.resume" : $"Debugger.step{kind}");
             for (int i = 0; i < times - 1; i++)
             {
-                await SendCommandAndCheck(null, $"Debugger.step{kind.ToString()}", null, -1, -1, null);
+                await SendCommandAndCheck(null, method, null, -1, -1, null);
             }
 
             // Check for method/line etc only at the last step
             return await SendCommandAndCheck(
-                null, $"Debugger.step{kind.ToString()}", script_loc, line, column, function_name,
+                null, method, script_loc, line, column, function_name,
                 wait_for_event_fn: wait_for_event_fn,
                 locals_fn: locals_fn);
         }
@@ -498,12 +504,15 @@ namespace DebuggerTests
             }
 
             var wait_res = await ctx.insp.WaitFor(waitForEvent);
-
+            JToken top_frame = wait_res["callFrames"]?[0];
             if (function_name != null)
-                Assert.Equal(function_name, wait_res["callFrames"]?[0]?["functionName"]?.Value<string>());
+            {
+                AssertEqual(function_name, wait_res["callFrames"]?[0]?["functionName"]?.Value<string>(), top_frame?.ToString());
+            }
 
-            if (script_loc != null)
-                CheckLocation(script_loc, line, column, ctx.scripts, wait_res["callFrames"][0]["location"]);
+            Console.WriteLine (top_frame);
+            if (script_loc != null && line >= 0)
+                CheckLocation(script_loc, line, column, ctx.scripts, top_frame["location"]);
 
             if (wait_for_event_fn != null)
                 await wait_for_event_fn(wait_res);
@@ -1082,6 +1091,7 @@ namespace DebuggerTests
     {
         Into,
         Over,
-        Out
+        Out,
+        Resume
     }
 }

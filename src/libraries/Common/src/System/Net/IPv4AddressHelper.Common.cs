@@ -1,6 +1,8 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Buffers.Binary;
+
 namespace System
 {
     internal static partial class IPv4AddressHelper
@@ -14,11 +16,25 @@ namespace System
         private const int NumberOfLabels = 4;
 
         // Only called from the IPv6Helper, only parse the canonical format
-        internal static unsafe int ParseHostNumber(ReadOnlySpan<char> str, int start, int end)
+        internal static int ParseHostNumber(ReadOnlySpan<char> str, int start, int end)
         {
-            byte* numbers = stackalloc byte[NumberOfLabels];
-            ParseCanonical(str, numbers, start, end);
-            return (numbers[0] << 24) + (numbers[1] << 16) + (numbers[2] << 8) + numbers[3];
+            Span<byte> numbers = stackalloc byte[NumberOfLabels];
+
+            for (int i = 0; i < numbers.Length; ++i)
+            {
+                int b = 0;
+                char ch;
+
+                for (; (start < end) && (ch = str[start]) != '.' && ch != ':'; ++start)
+                {
+                    b = (b * 10) + ch - '0';
+                }
+
+                numbers[i] = (byte)b;
+                ++start;
+            }
+
+            return BinaryPrimitives.ReadInt32BigEndian(numbers);
         }
 
         //
@@ -74,27 +90,6 @@ namespace System
             {
                 return ParseNonCanonical(name, start, ref end, notImplicitFile) != Invalid;
             }
-        }
-
-        // Assumes:
-        //  <Name> has been validated and contains only decimal digits in groups
-        //  of 8-bit numbers and the characters '.'
-        //  Address may terminate with ':' or with the end of the string
-        //
-        private static unsafe bool ParseCanonical(ReadOnlySpan<char> name, byte* numbers, int start, int end)
-        {
-            for (int i = 0; i < NumberOfLabels; ++i)
-            {
-                int b = 0;
-                char ch;
-                for (; (start < end) && (ch = name[start]) != '.' && ch != ':'; ++start)
-                {
-                    b = (b * 10) + ch - '0';
-                }
-                numbers[i] = (byte)b;
-                ++start;
-            }
-            return numbers[0] == 127;
         }
 
         //

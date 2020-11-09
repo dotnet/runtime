@@ -42,7 +42,7 @@ namespace System.Diagnostics.Tracing
             {
                 bufferedValues[i] = UnusedBufferSlotValue;
             }
-            Volatile.Write(ref _bufferedValues, bufferedValues);
+            _bufferedValues = bufferedValues;
 
             Publish();
         }

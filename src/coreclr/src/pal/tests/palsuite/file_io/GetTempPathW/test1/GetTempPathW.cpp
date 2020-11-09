@@ -62,7 +62,7 @@ static void SetAndCheckLength(const WCHAR tmpDirPath [], int bufferLength, int e
     }
 }
 
-int __cdecl main(int argc, char *argv[])
+PALTEST(file_io_GetTempPathW_test1_paltest_gettemppathw_test1, "file_io/GetTempPathW/test1/paltest_gettemppathw_test1")
 {
     if (0 != PAL_Initialize(argc, argv))
     {

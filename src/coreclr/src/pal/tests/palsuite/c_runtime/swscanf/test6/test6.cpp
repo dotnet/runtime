@@ -16,7 +16,7 @@
 #include "../swscanf.h"
 
 
-int __cdecl main(int argc, char *argv[])
+PALTEST(c_runtime_swscanf_test6_paltest_swscanf_test6, "c_runtime/swscanf/test6/paltest_swscanf_test6")
 {
     int n65535 = 65535; /* Walkaround compiler strictness */
 

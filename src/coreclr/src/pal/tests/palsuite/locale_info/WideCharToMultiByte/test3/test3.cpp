@@ -16,7 +16,7 @@
 #include <palsuite.h>
 
 
-int __cdecl main(int argc, char *argv[])
+PALTEST(locale_info_WideCharToMultiByte_test3_paltest_widechartomultibyte_test3, "locale_info/WideCharToMultiByte/test3/paltest_widechartomultibyte_test3")
 {    
     char mbStr[128];
     WCHAR wideStr[128];

@@ -43,7 +43,7 @@ namespace System.Net.NetworkInformation
             for (int attempt = 0; attempt < MaxTries; attempt++)
             {
                 // Because these callbacks are executed in a reverse-PInvoke, we do not want any exceptions
-                // to propogate out, because they will not be catchable. Instead, we track all the exceptions
+                // to propagate out, because they will not be catchable. Instead, we track all the exceptions
                 // that are thrown in these callbacks, and aggregate them at the end.
                 int result = Interop.Sys.EnumerateInterfaceAddresses(
                     (name, ipAddr) =>

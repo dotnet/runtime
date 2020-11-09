@@ -13,7 +13,7 @@
 #define UNICODE
 #include <palsuite.h>
 
-int __cdecl main(int argc, char *argv[])
+PALTEST(loader_LoadLibraryW_test2_paltest_loadlibraryw_test2, "loader/LoadLibraryW/test2/paltest_loadlibraryw_test2")
 {
     HMODULE ModuleHandle;
     int err;

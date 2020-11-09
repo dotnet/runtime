@@ -29,7 +29,7 @@ struct testcase
     BOOL bNegativeTest;
 };
 
-struct testcase testCases[] =
+struct testcase testCases_CreateSemaphoreW_ReleaseSemaphore_test3[] =
 {
     {NULL, -1, 1, NULL, TRUE},
     {NULL, 1, -1, NULL, TRUE},
@@ -41,25 +41,25 @@ struct testcase testCases[] =
     {NULL, INT_MAX, INT_MAX, NULL, FALSE}
 };
 
-HANDLE hSemaphore[sizeof(testCases)/sizeof(struct testcase)];
+HANDLE hSemaphore_CreateSemaphoreW_ReleaseSemaphore_test3[sizeof(testCases_CreateSemaphoreW_ReleaseSemaphore_test3)/sizeof(struct testcase)];
 
-BOOL cleanup(int index)
+BOOL cleanup_ReleaseSemaphore_test3(int index)
 {
     int i;
     BOOL bRet = TRUE;
     for (i = 0; i < index; i++)
     {
-        if (!CloseHandle(hSemaphore[i]))
+        if (!CloseHandle(hSemaphore_CreateSemaphoreW_ReleaseSemaphore_test3[i]))
         {
             bRet = FALSE;
             Trace("PALSUITE ERROR: CloseHandle(%p) call failed for index %d\n",
-                  hSemaphore[i], i);
+                  hSemaphore_CreateSemaphoreW_ReleaseSemaphore_test3[i], i);
         }
     }
     return(bRet);
 }
 
-int __cdecl main (int argc, char **argv)
+PALTEST(threading_CreateSemaphoreW_ReleaseSemaphore_test3_paltest_createsemaphorew_releasesemaphore_test3, "threading/CreateSemaphoreW_ReleaseSemaphore/test3/paltest_createsemaphorew_releasesemaphore_test3")
 {
     int i;
     int j;
@@ -69,16 +69,18 @@ int __cdecl main (int argc, char **argv)
 	return (FAIL);
     }
     /* create semaphores */
-    for (i = 0; i < sizeof(testCases)/sizeof(struct testcase); i++)
+    testcase* testCases = testCases_CreateSemaphoreW_ReleaseSemaphore_test3;
+
+    for (i = 0; i < sizeof(testCases_CreateSemaphoreW_ReleaseSemaphore_test3)/sizeof(struct testcase); i++)
     {
-        hSemaphore[i] = CreateSemaphoreExW (testCases[i].lpSemaphoreAttributes,
+        hSemaphore_CreateSemaphoreW_ReleaseSemaphore_test3[i] = CreateSemaphoreExW (testCases[i].lpSemaphoreAttributes,
             testCases[i].lInitialCount,
             testCases[i].lMaximumCount,
             testCases[i].lpName,
             0,
             0);
 
-        if (NULL == hSemaphore[i])
+        if (NULL == hSemaphore_CreateSemaphoreW_ReleaseSemaphore_test3[i])
         {
             if (!testCases[i].bNegativeTest)
             {
@@ -89,7 +91,7 @@ int __cdecl main (int argc, char **argv)
                       testCases[i].lpName, i, GetLastError());
                 if (i > 0)
                 {
-                    cleanup(i - 1);
+                    cleanup_ReleaseSemaphore_test3(i - 1);
                 }
                 Fail("");
             }
@@ -107,21 +109,22 @@ int __cdecl main (int argc, char **argv)
             {
                 /* Call ReleaseSemaphore once more to ensure ReleaseSemaphore
                    fails */
-                if(ReleaseSemaphore(hSemaphore[i], 1, NULL))
+                if(ReleaseSemaphore(hSemaphore_CreateSemaphoreW_ReleaseSemaphore_test3[i], 1, NULL))
                 {
                     Trace("PALSUITE ERROR: ReleaseSemaphore('%p' '%ld' '%p') "
                           "call returned %d\nwhen it should have returned "
                           "%d.\nThe semaphore's count was %d.\nGetLastError "
-                          "returned %d.\n", hSemaphore[i], 1, NULL, TRUE,
+                          "returned %d.\n", hSemaphore_CreateSemaphoreW_ReleaseSemaphore_test3[i], 1, NULL, TRUE,
+
                           FALSE, j, GetLastError());
-                    cleanup(i);
+                    cleanup_ReleaseSemaphore_test3(i);
                     Fail("");
                 }
             }
             else
             {
                 int previous;
-                BOOL bRet = ReleaseSemaphore(hSemaphore[i], 1, &previous);
+                BOOL bRet = ReleaseSemaphore(hSemaphore_CreateSemaphoreW_ReleaseSemaphore_test3[i], 1, &previous);
                 DWORD dwError = GetLastError();
 
                 if(!bRet)
@@ -130,9 +133,9 @@ int __cdecl main (int argc, char **argv)
                           "call returned %d\nwhen it should have returned "
                           "%d.\nThe semaphore count was %d and it's "
                           "lMaxCount was %d.\nGetLastError returned %d.\n",
-                          hSemaphore[i], 1, &previous, bRet, TRUE, j,
+                          hSemaphore_CreateSemaphoreW_ReleaseSemaphore_test3[i], 1, &previous, bRet, TRUE, j,
                           testCases[i].lMaximumCount, dwError);
-                    cleanup(i);
+                    cleanup_ReleaseSemaphore_test3(i);
                     Fail("");
                 }
                 if (previous != j)
@@ -140,9 +143,9 @@ int __cdecl main (int argc, char **argv)
                     Trace("PALSUITE ERROR: ReleaseSemaphore('%p' '%ld' '%p') "
                           "call set %p to %d instead of %d.\n The semaphore "
                           "count was %d and GetLastError returned %d.\n",
-                          hSemaphore[i], 1, &previous, &previous, previous,
+                          hSemaphore_CreateSemaphoreW_ReleaseSemaphore_test3[i], 1, &previous, &previous, previous,
                           j, j, dwError);
-                    cleanup(i);
+                    cleanup_ReleaseSemaphore_test3(i);
                     Fail("");
                 }
             }
@@ -157,7 +160,7 @@ int __cdecl main (int argc, char **argv)
         /* decrement semaphore count to 0 */
         for (j = testCases[i].lMaximumCount; j >= 0; j--)
         {
-            DWORD dwRet = WaitForSingleObject(hSemaphore[i], 0);
+            DWORD dwRet = WaitForSingleObject(hSemaphore_CreateSemaphoreW_ReleaseSemaphore_test3[i], 0);
             DWORD dwError = GetLastError();
 
             if (0 == j)
@@ -169,9 +172,9 @@ int __cdecl main (int argc, char **argv)
                     Trace("PALSUITE ERROR: WaitForSingleObject('%p' '%u') "
                           "call returned %d\nwhen it should have returned "
                           "%d.\nThe semaphore's count was %d.\nGetLastError "
-                          "returned %d.\n", hSemaphore[i], 0, dwRet,
+                          "returned %d.\n", hSemaphore_CreateSemaphoreW_ReleaseSemaphore_test3[i], 0, dwRet,
                           WAIT_TIMEOUT, j, dwError);
-                    cleanup(i);
+                    cleanup_ReleaseSemaphore_test3(i);
                     Fail("");
                 }
             }
@@ -184,9 +187,9 @@ int __cdecl main (int argc, char **argv)
                     Trace("PALSUITE ERROR: WaitForSingleObject('%p' '%u') "
                           "call returned %d\nwhen it should have returned "
                           "%d.\nThe semaphore's count was %d.\nGetLastError "
-                          "returned %d.\n", hSemaphore[i], 0, dwRet,
+                          "returned %d.\n", hSemaphore_CreateSemaphoreW_ReleaseSemaphore_test3[i], 0, dwRet,
                           WAIT_OBJECT_0, j, dwError);
-                    cleanup(i);
+                    cleanup_ReleaseSemaphore_test3(i);
                     Fail("");
                 }
             }

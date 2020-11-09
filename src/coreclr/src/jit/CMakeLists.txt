@@ -12,9 +12,10 @@ add_compile_options($<$<CXX_COMPILER_ID:MSVC>:-W4>)
 
 function(create_standalone_jit)
 
-  set(oneValueArgs TARGET OS ARCH ADDITIONAL_DESTINATION)
+  set(oneValueArgs TARGET OS ARCH)
+  set(multiValueArgs ADDITIONAL_DESTINATIONS)
   set(options NOALTJIT)
-  cmake_parse_arguments(TARGETDETAILS "${options}" "${oneValueArgs}" "" ${ARGN})
+  cmake_parse_arguments(TARGETDETAILS "${options}" "${oneValueArgs}" "${multiValueArgs}" ${ARGN})
 
   set(JIT_ARCH_LINK_LIBRARIES gcinfo_${TARGETDETAILS_OS}_${TARGETDETAILS_ARCH})
 
@@ -30,10 +31,10 @@ function(create_standalone_jit)
     clr_unknown_arch()
   endif()
 
-  if (TARGETDETAILS_ADDITIONAL_DESTINATION STREQUAL "")
+  if (TARGETDETAILS_ADDITIONAL_DESTINATIONS STREQUAL "")
     add_jit(${TARGETDETAILS_TARGET})
   else()
-    add_jit(${TARGETDETAILS_TARGET} ADDITIONAL_DESTINATION "${TARGETDETAILS_ADDITIONAL_DESTINATION}")
+    add_jit(${TARGETDETAILS_TARGET} ADDITIONAL_DESTINATIONS "${TARGETDETAILS_ADDITIONAL_DESTINATIONS}")
   endif()
 
   set_target_definitions_to_custom_os_and_arch(${ARGN})
@@ -411,7 +412,7 @@ else()
 endif(CLR_CMAKE_HOST_UNIX)
 
 # Shared function for generating JIT
-# optional arguments: ADDITIONAL_DESTINATION path
+# optional arguments: ADDITIONAL_DESTINATIONS path
 function(add_jit jitName)
 
     set_source_files_properties(${JIT_EXPORTS_FILE} PROPERTIES GENERATED TRUE)
@@ -428,7 +429,8 @@ function(add_jit jitName)
         target_compile_definitions(${jitName} PRIVATE FX_VER_INTERNALNAME_STR=${jitName}.dll)
     endif(CLR_CMAKE_TARGET_WIN32)
 
-    target_precompile_header(TARGET ${jitName} HEADER jitpch.h ADDITIONAL_INCLUDE_DIRECTORIES ${JIT_SOURCE_DIR})
+    target_include_directories(${jitName} PRIVATE ${JIT_SOURCE_DIR})
+    target_precompile_headers(${jitName} PRIVATE "$<$<COMPILE_LANGUAGE:CXX>:jitpch.h>")
 
     add_dependencies(${jitName} jit_exports)
 
@@ -459,7 +461,7 @@ else()
 set(TARGET_OS_NAME win)
 endif()
 
-create_standalone_jit(TARGET clrjit OS ${TARGET_OS_NAME} ARCH ${ARCH_TARGET_NAME} NOALTJIT ADDITIONAL_DESTINATION sharedFramework)
+create_standalone_jit(TARGET clrjit OS ${TARGET_OS_NAME} ARCH ${ARCH_TARGET_NAME} NOALTJIT ADDITIONAL_DESTINATIONS sharedFramework)
 
 # Enable profile guided optimization
 add_pgo(clrjit)

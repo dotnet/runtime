@@ -12,7 +12,7 @@
 
 #include <palsuite.h>
 
-int __cdecl main (int argc, char **argv) 
+PALTEST(threading_QueueUserAPC_test3_paltest_queueuserapc_test3, "threading/QueueUserAPC/test3/paltest_queueuserapc_test3")
 {    
     int ret;
 

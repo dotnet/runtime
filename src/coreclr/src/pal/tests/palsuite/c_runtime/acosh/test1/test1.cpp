@@ -45,11 +45,11 @@ struct test
 };
 
 /**
- * validate
+ * acosh_test1_validate
  *
  * test validation function
  */
-void __cdecl validate(double value, double expected, double variance)
+void __cdecl acosh_test1_validate(double value, double expected, double variance)
 {
     double result = acosh(value);
 
@@ -67,11 +67,11 @@ void __cdecl validate(double value, double expected, double variance)
 }
 
 /**
- * validate
+ * acosh_test1_validate
  *
  * test validation function for values returning NaN
  */
-void __cdecl validate_isnan(double value)
+void __cdecl acosh_test1_validate_isnan(double value)
 {
     double result = acosh(value);
 
@@ -87,7 +87,7 @@ void __cdecl validate_isnan(double value)
  * 
  * executable entry point
  */
-int __cdecl main(int argc, char **argv)
+PALTEST(c_runtime_acosh_test1_paltest_acosh_test1, "c_runtime/acosh/test1/paltest_acosh_test1")
 {
     struct test tests[] = 
     {
@@ -118,10 +118,10 @@ int __cdecl main(int argc, char **argv)
 
     for (int i = 0; i < (sizeof(tests) / sizeof(struct test)); i++)
     {
-        validate(tests[i].value, tests[i].expected, tests[i].variance);
+        acosh_test1_validate(tests[i].value, tests[i].expected, tests[i].variance);
     }
 
-    validate_isnan(PAL_NAN);
+    acosh_test1_validate_isnan(PAL_NAN);
 
     PAL_Terminate();
     return PASS;

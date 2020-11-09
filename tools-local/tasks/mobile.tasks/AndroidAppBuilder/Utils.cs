@@ -77,7 +77,7 @@ internal class Utils
         if (!ignoreErrors && process.ExitCode != 0)
             throw new Exception("Error: " + errorBuilder);
 
-        return outputBuilder.ToString().Trim('\r','\n');
+        return outputBuilder.ToString().Trim('\r', '\n');
     }
 
     public static void DirectoryCopy(string sourceDir, string destDir, Func<string, bool> predicate)

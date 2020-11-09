@@ -51,7 +51,15 @@ The build has a number of options that you can learn about using build -?.
 
 ### WebAssembly
 
-See the instructions in [../libraries/webassembly-instructions.md].
+See the instructions for [Building WebAssembly](../../building/libraries/webassembly-instructions.md).
+
+### Android
+
+See the instructions for [Testing Android](../../testing/libraries/testing-android.md)
+
+### iOS
+
+See the instructions for [Testing iOS](../../testing/libraries/testing-apple.md)
 
 ## Packages
 
@@ -71,6 +79,14 @@ The following packages will be created under `artifacts\packages\<configuration>
 - `runtime.<OS>.Microsoft.NETCore.Runtime.Mono.<version>-dev.<number>.1.nupkg`
 - `transport.Microsoft.NETCore.Runtime.Mono.<version>-dev.<number>.1.nupkg`
 - `transport.runtime.<OS>.Microsoft.NETCore.Runtime.Mono.<version>-dev.<number>.1.nupkg`
+
+## To get started with "Hello World"
+
+Try the sample at `src/mono/netcore/sample/HelloWorld`.
+To run this sample, from the above folder
+```cd ../..
+make run-sample
+```
 
 ## Important Notes
 

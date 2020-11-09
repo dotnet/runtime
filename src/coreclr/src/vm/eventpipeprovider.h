@@ -113,7 +113,7 @@ private:
         LPCWSTR pFilterData);
 
     // Invoke the provider callback.
-    static void InvokeCallback(EventPipeProviderCallbackData eventPipeProviderCallbackData);
+    static void InvokeCallback(EventPipeProviderCallbackData *pEventPipeProviderCallbackData);
 
     // Specifies whether or not the provider was deleted, but that deletion
     // was deferred until after tracing is stopped.
