@@ -65,7 +65,7 @@ namespace System.Runtime.Serialization
         public static void ThrowIfDeserializationInProgress(string switchSuffix, ref int cachedValue)
         {
             const string SwitchPrefix = "Switch.System.Runtime.Serialization.SerializationGuard.";
-            Debug.Assert(!string.IsNullOrEmpty(switchSuffix));
+            Debug.Assert(!string.IsNullOrWhiteSpace(switchSuffix));
 
             if (cachedValue == 0)
             {
