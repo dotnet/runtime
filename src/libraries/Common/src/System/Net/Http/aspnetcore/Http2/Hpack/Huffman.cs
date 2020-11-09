@@ -374,7 +374,7 @@ namespace System.Net.Http.HPack
                         // +---+---+---+---+---+---+---+---+---+---+---+---+---+---+---+---+
                         // | 1 |   next_lookup_table_index |            not_used           |
                         // +---+---------------------------+-------------------------------+
-                        if (lookupValue == default(ushort))
+                        if (lookupValue == 0)
                         {
                             ++allocatedLookupTableIndex;
                             decodingTree[(lookupTableIndex << 8) + indexInLookupTable] = (ushort)((0x80 | allocatedLookupTableIndex) << 8);
