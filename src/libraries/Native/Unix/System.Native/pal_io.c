@@ -1314,10 +1314,10 @@ int32_t SystemNative_ReadProcessStatusInfo(pid_t pid, ProcessStatus* processStat
 
     psinfo_t status;
     int result = Common_Read(fd, &status, sizeof(psinfo_t));
-    while (close(fd) < 0 && errno == EINTR);
+    close(fd);
     if (result >= 0)
     {
-        processStatus->ResidentSetSize = status.pr_rssize * 100; // pr_rssize is in Kbytes
+        processStatus->ResidentSetSize = status.pr_rssize * 1024; // pr_rssize is in Kbytes
         return 1;
     }
 

@@ -13,18 +13,6 @@ namespace System.Net.NetworkInformation
     {
         private static readonly object s_globalLock = new object();
 
-        // The list of current address-changed subscribers.
-        private static readonly Dictionary<NetworkAddressChangedEventHandler, ExecutionContext?> s_addressChangedSubscribers =
-            new Dictionary<NetworkAddressChangedEventHandler, ExecutionContext?>();
-
-        // The list of current availability-changed subscribers.
-        private static readonly Dictionary<NetworkAvailabilityChangedEventHandler, ExecutionContext?> s_availabilityChangedSubscribers =
-            new Dictionary<NetworkAvailabilityChangedEventHandler, ExecutionContext?>();
-
-        private static readonly ContextCallback s_runHandlerAvailable = new ContextCallback(RunAvailabilityHandlerAvailable!);
-        private static readonly ContextCallback s_runHandlerNotAvailable = new ContextCallback(RunAvailabilityHandlerNotAvailable!);
-        private static readonly ContextCallback s_runAddressChangedHandler = new ContextCallback(RunAddressChangedHandler!);
-
         public static event NetworkAvailabilityChangedEventHandler? NetworkAvailabilityChanged
         {
             add
