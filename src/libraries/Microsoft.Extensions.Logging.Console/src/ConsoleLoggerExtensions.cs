@@ -13,13 +13,13 @@ using Microsoft.Extensions.Options;
 
 namespace Microsoft.Extensions.Logging
 {
+    [UnsupportedOSPlatform("browser")]
     public static class ConsoleLoggerExtensions
     {
         /// <summary>
         /// Adds a console logger named 'Console' to the factory.
         /// </summary>
         /// <param name="builder">The <see cref="ILoggingBuilder"/> to use.</param>
-        [UnsupportedOSPlatform("browser")]
         public static ILoggingBuilder AddConsole(this ILoggingBuilder builder)
         {
             builder.AddConfiguration();
@@ -39,7 +39,6 @@ namespace Microsoft.Extensions.Logging
         /// </summary>
         /// <param name="builder">The <see cref="ILoggingBuilder"/> to use.</param>
         /// <param name="configure">A delegate to configure the <see cref="ConsoleLogger"/>.</param>
-        [UnsupportedOSPlatform("browser")]
         public static ILoggingBuilder AddConsole(this ILoggingBuilder builder, Action<ConsoleLoggerOptions> configure)
         {
             if (configure == null)
@@ -57,7 +56,6 @@ namespace Microsoft.Extensions.Logging
         /// Add the default console log formatter named 'simple' to the factory with default properties.
         /// </summary>
         /// <param name="builder">The <see cref="ILoggingBuilder"/> to use.</param>
-        [UnsupportedOSPlatform("browser")]
         public static ILoggingBuilder AddSimpleConsole(this ILoggingBuilder builder) =>
             builder.AddFormatterWithName(ConsoleFormatterNames.Simple);
 
@@ -66,7 +64,6 @@ namespace Microsoft.Extensions.Logging
         /// </summary>
         /// <param name="builder">The <see cref="ILoggingBuilder"/> to use.</param>
         /// <param name="configure">A delegate to configure the <see cref="ConsoleLogger"/> options for the built-in default log formatter.</param>
-        [UnsupportedOSPlatform("browser")]
         public static ILoggingBuilder AddSimpleConsole(this ILoggingBuilder builder, Action<SimpleConsoleFormatterOptions> configure)
         {
             return builder.AddConsoleWithFormatter<SimpleConsoleFormatterOptions>(ConsoleFormatterNames.Simple, configure);
@@ -76,7 +73,6 @@ namespace Microsoft.Extensions.Logging
         /// Add a console log formatter named 'json' to the factory with default properties.
         /// </summary>
         /// <param name="builder">The <see cref="ILoggingBuilder"/> to use.</param>
-        [UnsupportedOSPlatform("browser")]
         public static ILoggingBuilder AddJsonConsole(this ILoggingBuilder builder) =>
             builder.AddFormatterWithName(ConsoleFormatterNames.Json);
 
@@ -85,7 +81,6 @@ namespace Microsoft.Extensions.Logging
         /// </summary>
         /// <param name="builder">The <see cref="ILoggingBuilder"/> to use.</param>
         /// <param name="configure">A delegate to configure the <see cref="ConsoleLogger"/> options for the built-in json log formatter.</param>
-        [UnsupportedOSPlatform("browser")]
         public static ILoggingBuilder AddJsonConsole(this ILoggingBuilder builder, Action<JsonConsoleFormatterOptions> configure)
         {
             return builder.AddConsoleWithFormatter<JsonConsoleFormatterOptions>(ConsoleFormatterNames.Json, configure);
@@ -96,7 +91,6 @@ namespace Microsoft.Extensions.Logging
         /// </summary>
         /// <param name="builder">The <see cref="ILoggingBuilder"/> to use.</param>
         /// <param name="configure">A delegate to configure the <see cref="ConsoleLogger"/> options for the built-in systemd log formatter.</param>
-        [UnsupportedOSPlatform("browser")]
         public static ILoggingBuilder AddSystemdConsole(this ILoggingBuilder builder, Action<ConsoleFormatterOptions> configure)
         {
             return builder.AddConsoleWithFormatter<ConsoleFormatterOptions>(ConsoleFormatterNames.Systemd, configure);
@@ -106,11 +100,9 @@ namespace Microsoft.Extensions.Logging
         /// Add a console log formatter named 'systemd' to the factory with default properties.
         /// </summary>
         /// <param name="builder">The <see cref="ILoggingBuilder"/> to use.</param>
-        [UnsupportedOSPlatform("browser")]
         public static ILoggingBuilder AddSystemdConsole(this ILoggingBuilder builder) =>
             builder.AddFormatterWithName(ConsoleFormatterNames.Systemd);
 
-        [UnsupportedOSPlatform("browser")]
         internal static ILoggingBuilder AddConsoleWithFormatter<TOptions>(this ILoggingBuilder builder, string name, Action<TOptions> configure)
             where TOptions : ConsoleFormatterOptions
         {
@@ -124,7 +116,6 @@ namespace Microsoft.Extensions.Logging
             return builder;
         }
 
-        [UnsupportedOSPlatform("browser")]
         private static ILoggingBuilder AddFormatterWithName(this ILoggingBuilder builder, string name) =>
             builder.AddConsole((ConsoleLoggerOptions options) => options.FormatterName = name);
 
@@ -165,6 +156,7 @@ namespace Microsoft.Extensions.Logging
         }
     }
 
+    [UnsupportedOSPlatform("browser")]
     internal class ConsoleLoggerFormatterConfigureOptions<TFormatter, TOptions> : ConfigureFromConfigurationOptions<TOptions>
         where TOptions : ConsoleFormatterOptions
         where TFormatter : ConsoleFormatter
@@ -175,6 +167,7 @@ namespace Microsoft.Extensions.Logging
         }
     }
 
+    [UnsupportedOSPlatform("browser")]
     internal class ConsoleLoggerFormatterOptionsChangeTokenSource<TFormatter, TOptions> : ConfigurationChangeTokenSource<TOptions>
         where TOptions : ConsoleFormatterOptions
         where TFormatter : ConsoleFormatter
