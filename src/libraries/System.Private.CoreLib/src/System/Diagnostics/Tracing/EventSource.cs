@@ -1508,17 +1508,13 @@ namespace System.Diagnostics.Tracing
                 if (this.Name != "System.Diagnostics.Eventing.FrameworkEventSource" || Environment.IsWindows8OrAbove)
 #endif
                 {
-                    int setInformationResult;
-                    System.Runtime.InteropServices.GCHandle metadataHandle =
-                        System.Runtime.InteropServices.GCHandle.Alloc(this.providerMetadata, System.Runtime.InteropServices.GCHandleType.Pinned);
-                    IntPtr providerMetadata = metadataHandle.AddrOfPinnedObject();
-
-                    setInformationResult = m_etwProvider.SetInformation(
-                        Interop.Advapi32.EVENT_INFO_CLASS.SetTraits,
-                        providerMetadata,
-                        (uint)this.providerMetadata.Length);
-
-                    metadataHandle.Free();
+                    fixed (byte* providerMetadata = this.providerMetadata)
+                    {
+                        m_etwProvider.SetInformation(
+                            Interop.Advapi32.EVENT_INFO_CLASS.SetTraits,
+                            providerMetadata,
+                            (uint)this.providerMetadata.Length);
+                    }
                 }
 #endif // TARGET_WINDOWS
 #endif // FEATURE_MANAGED_ETW
