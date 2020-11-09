@@ -337,7 +337,7 @@ namespace System.Threading
         public static long VolatileRead(ref long address) => Volatile.Read(ref address);
         public static IntPtr VolatileRead(ref IntPtr address) => Volatile.Read(ref address);
         [return: NotNullIfNotNull("address")]
-        public static object? VolatileRead(ref object? address) => Volatile.Read(ref address);
+        public static object? VolatileRead([NotNullIfNotNull("address")] ref object? address) => Volatile.Read(ref address);
         [CLSCompliant(false)]
         public static sbyte VolatileRead(ref sbyte address) => Volatile.Read(ref address);
         public static float VolatileRead(ref float address) => Volatile.Read(ref address);

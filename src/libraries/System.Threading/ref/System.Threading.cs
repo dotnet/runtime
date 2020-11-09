@@ -478,7 +478,7 @@ namespace System.Threading
         [System.CLSCompliantAttribute(false)]
         public static System.UIntPtr Read(ref System.UIntPtr location) { throw null; }
         [return: System.Diagnostics.CodeAnalysis.NotNullIfNotNullAttribute("location")]
-        public static T Read<T>(ref T location) where T : class? { throw null; }
+        public static T Read<T>([System.Diagnostics.CodeAnalysis.NotNullIfNotNullAttribute("location")] ref T location) where T : class? { throw null; }
         public static void Write(ref bool location, bool value) { }
         public static void Write(ref byte location, byte value) { }
         public static void Write(ref double location, double value) { }
