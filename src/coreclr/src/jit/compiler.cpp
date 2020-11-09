@@ -5508,6 +5508,12 @@ int Compiler::compCompile(CORINFO_MODULE_HANDLE classPtr,
 }
 
 #if defined(DEBUG) || defined(INLINE_DATA)
+//------------------------------------------------------------------------
+// compMethodHash: get hash code for currently jitted method
+//
+// Returns:
+//    Hash based on method's full name
+//
 unsigned Compiler::Info::compMethodHash() const
 {
     if (compMethodHashPrivate == 0)
@@ -5521,6 +5527,42 @@ unsigned Compiler::Info::compMethodHash() const
     }
     return compMethodHashPrivate;
 }
+
+//------------------------------------------------------------------------
+// compMethodHash: get hash code for specified method
+//
+// Arguments:
+//    methodHnd - method of interest
+//
+// Returns:
+//    Hash based on method's full name
+//
+unsigned Compiler::compMethodHash(CORINFO_METHOD_HANDLE methodHnd)
+{
+    // If this is the root method, delegate to the caching version
+    //
+    if (methodHnd == info.compMethodHnd)
+    {
+        return info.compMethodHash();
+    }
+
+    // Else compute from scratch. Might consider caching this too.
+    //
+    unsigned    methodHash = 0;
+    const char* calleeName = eeGetMethodFullName(methodHnd);
+
+    if (calleeName != nullptr)
+    {
+        methodHash = HashStringA(calleeName);
+    }
+    else
+    {
+        methodHash = info.compCompHnd->getMethodHash(methodHnd);
+    }
+
+    return methodHash;
+}
+
 #endif // defined(DEBUG) || defined(INLINE_DATA)
 
 void Compiler::compCompileFinish()

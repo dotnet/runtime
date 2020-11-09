@@ -576,7 +576,7 @@ namespace System.Xml.Serialization
                     if (m.CheckShouldPersist)
                     {
                         string methodInvoke = "ShouldSerialize" + m.Name;
-                        MethodInfo method = o!.GetType().GetTypeInfo().GetDeclaredMethod(methodInvoke)!;
+                        MethodInfo method = o!.GetType().GetMethod(methodInvoke, BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.Static | BindingFlags.DeclaredOnly)!;
                         shouldPersist = (bool)method.Invoke(o, Array.Empty<object>())!;
                     }
 
@@ -608,7 +608,7 @@ namespace System.Xml.Serialization
                     if (m.CheckShouldPersist)
                     {
                         string methodInvoke = "ShouldSerialize" + m.Name;
-                        MethodInfo method = o!.GetType().GetTypeInfo().GetDeclaredMethod(methodInvoke)!;
+                        MethodInfo method = o!.GetType().GetMethod(methodInvoke, BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.Static | BindingFlags.DeclaredOnly)!;
                         shouldPersist = (bool)method.Invoke(o, Array.Empty<object>())!;
                     }
 

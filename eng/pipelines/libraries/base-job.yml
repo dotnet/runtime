@@ -44,6 +44,7 @@ jobs:
         - _msbuildCommonParameters: ''
         # rename this variable, due to collision with build-native.proj
         - _runtimeOSArg: ''
+        - _osArg: ''
         - _finalFrameworkArg: ''
         - _testModeArg: ''
         - _buildScript: $(_buildScriptFileName)$(scriptExt)
@@ -68,7 +69,7 @@ jobs:
 
         # force a value for OS when cross-building
         - ${{ if in(parameters.osGroup, 'Browser', 'iOS', 'tvOS', 'Android', 'FreeBSD') }}:
-          - _runtimeOSArg: -os ${{ parameters.osGroup }}
+          - _osArg: -os ${{ parameters.osGroup }}
 
         - ${{ if ne(parameters.framework, '') }}:
           - _finalFrameworkArg: -framework ${{ parameters.framework }}
@@ -109,7 +110,7 @@ jobs:
         - ${{ if ne(parameters.osGroup, 'windows') }}:
           - _buildScript: ./$(_buildScriptFileName)$(scriptExt)
 
-        - _buildArguments: $(_runtimeConfigurationArg) -configuration ${{ parameters.buildConfig }} -ci -arch ${{ parameters.archType }} $(_finalFrameworkArg) $(_testModeArg) $(_testScopeArg) $(_runtimeOSArg) $(_msbuildCommonParameters) $(_runtimeArtifactsPathArg) $(_crossBuildPropertyArg)
+        - _buildArguments: $(_runtimeConfigurationArg) -configuration ${{ parameters.buildConfig }} -ci -arch ${{ parameters.archType }} $(_finalFrameworkArg) $(_testModeArg) $(_testScopeArg) $(_osArg) $(_runtimeOSArg) $(_msbuildCommonParameters) $(_runtimeArtifactsPathArg) $(_crossBuildPropertyArg)
         - ${{ parameters.variables }}
 
         # we need to override this value to support build-coreclr-and-libraries-job.yml

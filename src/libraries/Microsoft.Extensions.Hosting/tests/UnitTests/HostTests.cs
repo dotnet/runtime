@@ -13,6 +13,7 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Configuration.UserSecrets;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 using Xunit;
 
 namespace Microsoft.Extensions.Hosting.Tests
@@ -249,6 +250,24 @@ namespace Microsoft.Extensions.Hosting.Tests
             await Task.WhenAny(Task.Delay(TimeSpan.FromMinutes(1), configReloadedCancelToken)); // Task.WhenAny ignores the task throwing on cancellation.
             Assert.NotEqual(dynamicSecretMessage1, dynamicSecretMessage2); // Messages are different.
             Assert.Equal(dynamicSecretMessage2, config["Hello"]);
+        }
+
+        [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/34580", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
+        public void CreateDefaultBuilder_RespectShutdownTimeout()
+        {
+            var notDefaultTimeoutSeconds = 99;
+            Assert.True(notDefaultTimeoutSeconds != new HostOptions().ShutdownTimeout.TotalSeconds, "Test value must be not equal to default");
+            var host = Host.CreateDefaultBuilder().ConfigureHostConfiguration(configBuilder =>
+            {
+                configBuilder.AddInMemoryCollection(new KeyValuePair<string, string>[]
+                {
+                    new KeyValuePair<string, string>("SHUTDOWNTIMEOUTSECONDS", notDefaultTimeoutSeconds.ToString())
+                });
+            }).Build();
+
+            var hostOptions = host.Services.GetRequiredService<IOptions<HostOptions>>();
+            Assert.Equal(notDefaultTimeoutSeconds, hostOptions.Value.ShutdownTimeout.TotalSeconds);
         }
 
         internal class ServiceA { }

@@ -22,7 +22,7 @@ namespace System.Xml.Linq
         public static System.Collections.Generic.IEnumerable<System.Xml.Linq.XElement> Descendants<T>(this System.Collections.Generic.IEnumerable<T?> source, System.Xml.Linq.XName? name) where T : System.Xml.Linq.XContainer { throw null; }
         public static System.Collections.Generic.IEnumerable<System.Xml.Linq.XElement> Elements<T>(this System.Collections.Generic.IEnumerable<T?> source) where T : System.Xml.Linq.XContainer { throw null; }
         public static System.Collections.Generic.IEnumerable<System.Xml.Linq.XElement> Elements<T>(this System.Collections.Generic.IEnumerable<T?> source, System.Xml.Linq.XName? name) where T : System.Xml.Linq.XContainer { throw null; }
-        public static System.Collections.Generic.IEnumerable<T> InDocumentOrder<T>(this System.Collections.Generic.IEnumerable<T> source) where T : System.Xml.Linq.XNode { throw null; }
+        public static System.Collections.Generic.IEnumerable<T> InDocumentOrder<T>(this System.Collections.Generic.IEnumerable<T> source) where T : System.Xml.Linq.XNode? { throw null; }
         public static System.Collections.Generic.IEnumerable<System.Xml.Linq.XNode> Nodes<T>(this System.Collections.Generic.IEnumerable<T?> source) where T : System.Xml.Linq.XContainer { throw null; }
         public static void Remove(this System.Collections.Generic.IEnumerable<System.Xml.Linq.XAttribute?> source) { }
         public static void Remove<T>(this System.Collections.Generic.IEnumerable<T?> source) where T : System.Xml.Linq.XNode { }
@@ -212,8 +212,9 @@ namespace System.Xml.Linq
     }
     public partial class XDocumentType : System.Xml.Linq.XNode
     {
-        public XDocumentType(string name, string? publicId, string? systemId, string internalSubset) { }
+        public XDocumentType(string name, string? publicId, string? systemId, string? internalSubset) { }
         public XDocumentType(System.Xml.Linq.XDocumentType other) { }
+        [System.Diagnostics.CodeAnalysis.AllowNull]
         public string InternalSubset { get { throw null; } set { } }
         public string Name { get { throw null; } set { } }
         public override System.Xml.XmlNodeType NodeType { get { throw null; } }
@@ -425,7 +426,7 @@ namespace System.Xml.Linq
         public abstract void WriteTo(System.Xml.XmlWriter writer);
         public abstract System.Threading.Tasks.Task WriteToAsync(System.Xml.XmlWriter writer, System.Threading.CancellationToken cancellationToken);
     }
-    public sealed partial class XNodeDocumentOrderComparer : System.Collections.Generic.IComparer<System.Xml.Linq.XNode>, System.Collections.IComparer
+    public sealed partial class XNodeDocumentOrderComparer : System.Collections.Generic.IComparer<System.Xml.Linq.XNode?>, System.Collections.IComparer
     {
         public XNodeDocumentOrderComparer() { }
         public int Compare(System.Xml.Linq.XNode? x, System.Xml.Linq.XNode? y) { throw null; }

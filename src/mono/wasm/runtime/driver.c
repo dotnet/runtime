@@ -94,6 +94,8 @@ mono_wasm_invoke_js (MonoString *str, int *is_exception)
 
 	mono_unichar2 *native_val = mono_string_chars (str);
 	int native_len = mono_string_length (str) * 2;
+	int native_res_len;
+	int *p_native_res_len = &native_res_len;
 
 	mono_unichar2 *native_res = (mono_unichar2*)EM_ASM_INT ({
 		var str = MONO.string_decoder.decode ($0, $0 + $1);
@@ -111,13 +113,14 @@ mono_wasm_invoke_js (MonoString *str, int *is_exception)
 		}
 		var buff = Module._malloc((res.length + 1) * 2);
 		stringToUTF16 (res, buff, (res.length + 1) * 2);
+		setValue ($3, res.length, "i32");
 		return buff;
-	}, (int)native_val, native_len, is_exception);
+	}, (int)native_val, native_len, is_exception, p_native_res_len);
 
 	if (native_res == NULL)
 		return NULL;
 
-	MonoString *res = mono_string_from_utf16 (native_res);
+	MonoString *res = mono_string_new_utf16 (mono_domain_get (), native_res, native_res_len);
 	free (native_res);
 	return res;
 }
@@ -624,8 +627,34 @@ mono_wasm_assembly_get_entry_point (MonoAssembly *assembly)
 		return NULL;
 	
 	mono_domain_ensure_entry_assembly (root_domain, assembly);
+	method = mono_get_method (image, entry, NULL);
 
-	return mono_get_method (image, entry, NULL);
+	/*
+	 * If the entry point looks like a compiler generated wrapper around
+	 * an async method in the form "<Name>" then try to look up the async method
+	 * "Name" it is wrapping.  We do this because the generated sync wrapper will
+	 * call task.GetAwaiter().GetResult() when we actually want to yield
+	 * to the host runtime.
+	 */
+	if (mono_method_get_flags (method, NULL) & 0x0800 /* METHOD_ATTRIBUTE_SPECIAL_NAME */) {
+		const char *name = mono_method_get_name (method);
+		int name_length = strlen (name);
+
+		if ((*name != '<') || (name [name_length - 1] != '>'))
+			return method;
+
+		MonoClass *klass = mono_method_get_class (method);
+		char *async_name = strdup (name);
+
+		async_name [name_length - 1] = '\0';
+
+		MonoMethodSignature *sig = mono_method_get_signature (method, image, mono_method_get_token (method));
+		MonoMethod *async_method = mono_class_get_method_from_name (klass, async_name + 1, mono_signature_get_param_count (sig));
+		free (async_name);
+		if (async_method != NULL)
+			return async_method;
+	}
+	return method;
 }
 
 EMSCRIPTEN_KEEPALIVE char *
@@ -927,28 +956,4 @@ EMSCRIPTEN_KEEPALIVE void
 mono_wasm_enable_on_demand_gc (int enable)
 {
 	mono_wasm_enable_gc = enable ? 1 : 0;
-}
-
-// Returns the local timezone default is UTC.
-EM_JS(size_t, mono_wasm_timezone_get_local_name, (),
-{
-	var res = "UTC";
-	try {
-		res = Intl.DateTimeFormat().resolvedOptions().timeZone;
-	} catch(e) {}
-
-	var buff = Module._malloc((res.length + 1) * 2);
-	stringToUTF16 (res, buff, (res.length + 1) * 2);
-	return buff;
-})
-
-void
-mono_timezone_get_local_name (MonoString **result)
-{
-	// WASM returns back an int pointer to a string UTF16 buffer.
-	// We then cast to `mono_unichar2*`.  Returning `mono_unichar2*` from the JavaScript call will
-	// result in cast warnings from the compiler.
-	mono_unichar2 *tzd_local_name = (mono_unichar2*)mono_wasm_timezone_get_local_name ();
-	*result = mono_string_from_utf16 (tzd_local_name);
-	free (tzd_local_name);
 }

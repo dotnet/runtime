@@ -1653,6 +1653,11 @@ var MonoSupportLib = {
 				load_runtime ("unused", args.debug_level);
 			}
 
+			let tz;
+			try {
+				tz = Intl.DateTimeFormat().resolvedOptions().timeZone;
+			} catch {}
+			MONO.mono_wasm_setenv ("TZ", tz || "UTC");
 			MONO.mono_wasm_runtime_ready ();
 			args.loaded_cb ();
 		},

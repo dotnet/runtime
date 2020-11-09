@@ -76,7 +76,7 @@ namespace System.Runtime.Serialization
         public override bool HasValue { get { return InnerReader.HasValue; } }
         public override string Value { get { return InnerReader.Value; } }
         public override int Depth { get { return InnerReader.Depth; } }
-        public override string? BaseURI { get { return InnerReader.BaseURI; } }
+        public override string BaseURI { get { return InnerReader.BaseURI; } }
         public override bool IsEmptyElement { get { return InnerReader.IsEmptyElement; } }
         public override bool IsDefault { get { return InnerReader.IsDefault; } }
         public override XmlSpace XmlSpace { get { return InnerReader.XmlSpace; } }

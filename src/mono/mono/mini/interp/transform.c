@@ -1713,7 +1713,7 @@ interp_handle_intrinsics (TransformData *td, MonoMethod *target_method, MonoClas
 			ERROR_DECL(error);
 			MonoVTable *vtable = mono_class_vtable_checked (td->rtm->domain, target_method->klass, error);
 			if (!is_ok (error)) {
-				mono_error_cleanup (error);
+				mono_interp_error_cleanup (error);
 				return FALSE;
 			}
 			/* Don't use intrinsic if cctor not yet run */
@@ -1899,6 +1899,14 @@ interp_handle_intrinsics (TransformData *td, MonoMethod *target_method, MonoClas
 			push_simple_type (td, STACK_TYPE_I4);
 			td->ip += 5;
 			return TRUE;
+		} else if (!strcmp (tm, "GetRawData")) {
+			interp_add_ins (td, MINT_LDFLDA_UNSAFE);
+			td->last_ins->data [0] = (gint16) MONO_ABI_SIZEOF (MonoObject);
+
+			SET_SIMPLE_TYPE (td->sp - 1, STACK_TYPE_MP);
+
+			td->ip += 5;
+			return TRUE;
 		} else if (!strcmp (tm, "IsBitwiseEquatable")) {
 			g_assert (csignature->param_count == 0);
 			MonoGenericContext *ctx = mono_method_get_context (target_method);
@@ -1951,22 +1959,6 @@ interp_handle_intrinsics (TransformData *td, MonoMethod *target_method, MonoClas
 #endif
 				)
 			*op = MINT_INTRINS_GET_TYPE;
-#ifdef ENABLE_NETCORE
-		else if (!strcmp (tm, "GetRawData")) {
-#if SIZEOF_VOID_P == 8
-			interp_add_ins (td, MINT_LDC_I8_S);
-#else
-			interp_add_ins (td, MINT_LDC_I4_S);
-#endif
-			td->last_ins->data [0] = (gint16) MONO_ABI_SIZEOF (MonoObject);
-
-			interp_add_ins (td, MINT_ADD_P);
-			SET_SIMPLE_TYPE (td->sp - 1, STACK_TYPE_MP);
-
-			td->ip += 5;
-			return TRUE;
-		}
-#endif
 	} else if (in_corlib && target_method->klass == mono_defaults.enum_class && !strcmp (tm, "HasFlag")) {
 		gboolean intrinsify = FALSE;
 		MonoClass *base_klass = NULL;
@@ -2269,7 +2261,7 @@ interp_method_check_inlining (TransformData *td, MonoMethod *method, MonoMethodS
 			return FALSE;
 		vtable = mono_class_vtable_checked (td->rtm->domain, method->klass, error);
 		if (!is_ok (error)) {
-			mono_error_cleanup (error);
+			mono_interp_error_cleanup (error);
 			return FALSE;
 		}
 		if (!vtable->initialized)
@@ -2355,7 +2347,7 @@ interp_inline_method (TransformData *td, MonoMethod *target_method, MonoMethodHe
 
 	if (!ret) {
 		if (!is_ok (error))
-			mono_error_cleanup (error);
+			mono_interp_error_cleanup (error);
 
 		if (td->verbose_level)
 			g_print ("Inline aborted method %s.%s\n", m_class_get_name (target_method->klass), target_method->name);
@@ -6433,7 +6425,7 @@ generate_code (TransformData *td, MonoMethod *method, MonoMethodHeader *header, 
 						/* Generate a call that will throw an exception if the
 						 * UnmanagedCallersOnly attribute is used incorrectly */
 						interp_generate_ipe_throw_with_msg (td, wrapper_error);
-						mono_error_cleanup (wrapper_error);
+						mono_interp_error_cleanup (wrapper_error);
 						interp_add_ins (td, MINT_LDNULL);
 					} else {
 						/* push a pointer to a trampoline that calls m */
