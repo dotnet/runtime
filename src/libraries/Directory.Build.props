@@ -39,7 +39,7 @@
 
     <!-- Initialize BuildSettings from the individual properties. -->
     <Configuration Condition="'$(Configuration)' == ''">Debug</Configuration>
-    <BuildTargetFramework Condition="'$(BuildTargetFramework)' == '' and '$(TargetFramework)' != ''">$(TargetFramework)</BuildTargetFramework>
+    <BuildTargetFramework Condition="'$(BuildTargetFramework)' == '' and '$(TargetFramework)' != ''">$([System.Text.RegularExpressions.Regex]::Replace('$(TargetFramework)', '(-[^;]+)', ''))</BuildTargetFramework>
     <!-- Build all .NET Framework configurations when net48 is passed in. This is for convenience. -->
     <AdditionalBuildTargetFrameworks Condition="'$(BuildTargetFramework)' == 'net48'">net45;net451;net452;net46;net461;net462;net47;net471;net472</AdditionalBuildTargetFrameworks>
     <AdditionalBuildTargetFrameworks Condition="'$(DotNetBuildFromSource)' == 'true' and '$(BuildAllProjects)' == 'true'">$(AdditionalBuildTargetFrameworks);netstandard2.0</AdditionalBuildTargetFrameworks>

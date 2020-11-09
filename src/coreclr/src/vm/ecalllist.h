@@ -164,9 +164,6 @@ FCFuncStart(gEnvironmentFuncs)
     QCFuncElement("GetProcessorCount", SystemNative::GetProcessorCount)
     FCFuncElement("GetCommandLineArgsNative", SystemNative::GetCommandLineArgs)
 
-#if defined(FEATURE_COMINTEROP)
-    QCFuncElement("WinRTSupported", SystemNative::WinRTSupported)
-#endif // FEATURE_COMINTEROP
     FCFuncElementSig("FailFast", &gsig_SM_Str_RetVoid, SystemNative::FailFast)
     FCFuncElementSig("FailFast", &gsig_SM_Str_Exception_RetVoid, SystemNative::FailFastWithException)
     FCFuncElementSig("FailFast", &gsig_SM_Str_Exception_Str_RetVoid, SystemNative::FailFastWithExceptionAndSource)

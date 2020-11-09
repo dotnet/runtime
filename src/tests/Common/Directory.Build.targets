@@ -56,6 +56,9 @@
     <ItemGroup>
       <RunTimeArtifactsIncludeFolders Include="/" />
 
+      <!-- Experiment -->
+      <RunTimeArtifactsIncludeFolders Include="R2RDump/" />
+
       <!-- Used by the Crossgen comparison job -->
       <RunTimeArtifactsIncludeFolders Include="IL/" />
 

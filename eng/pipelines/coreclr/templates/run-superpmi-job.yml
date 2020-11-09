@@ -105,7 +105,7 @@ jobs:
     - template: /eng/pipelines/coreclr/templates/superpmi-send-to-helix.yml
       parameters:
         HelixSource: '$(HelixSourcePrefix)/$(Build.Repository.Name)/$(Build.SourceBranch)' # sources must start with pr/, official/, prodcon/, or agent/
-        HelixType: 'test/superpmi/$(Kind)/$(_Framework)/$(Architecture)'
+        HelixType: 'test/superpmi/$(CollectionName)/$(_Framework)/$(Architecture)'
         HelixAccessToken: $(HelixApiAccessToken)
         HelixTargetQueues: $(Queue)
         HelixPreCommands: $(HelixPreCommand)
