@@ -24,6 +24,8 @@
 #define USE_INTROSORT
 #endif
 
+#define FEATURE_CONSERVATIVE_GC 1
+
 // We just needed a simple random number generator for testing.
 class gc_rand
 {
@@ -4068,7 +4070,13 @@ size_t gcard_of ( uint8_t*);
 
 #define free_object_base_size (plug_skew + sizeof(ArrayBase))
 
+#ifdef HAVE_CORE_GC
+// second word contains the free object length. Don't want to dirty that
+#define free_list_slot(x) ((uint8_t**)(x))[1]
+#else
 #define free_list_slot(x) ((uint8_t**)(x))[2]
+#endif // HAVe_CORE_GC
+
 #define free_list_undo(x) ((uint8_t**)(x))[-1]
 #define UNDO_EMPTY ((uint8_t*)1)
 
@@ -4173,6 +4181,12 @@ public:
 
     void SetMarked()
     {
+        #ifdef HAVE_CORE_GC
+	    // Conservative GC marks object that points to free object method table. Why and what is going on ?
+	    if (RawGetMethodTable () == g_gc_pFreeObjectMethodTable)
+            return;
+        #endif
+
         _ASSERTE(RawGetMethodTable());
         RawSetMethodTable((MethodTable *) (((size_t) RawGetMethodTable()) | GC_MARKED));
     }
