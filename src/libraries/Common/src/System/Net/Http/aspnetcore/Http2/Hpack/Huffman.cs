@@ -283,7 +283,7 @@ namespace System.Net.Http.HPack
             // Decoding lookup tree is a tree of 8 bit lookup tables stored in
             // one dimensional array of ushort to reduce allocations.
             // First 256 ushort is lookup table with index 0, next 256 ushort is lookup table with index 1, etc...
-            // loopk_value = [(lookup_table_index << 8) + lookup_index]
+            // lookup_value = [(lookup_table_index << 8) + lookup_index]
 
             // lookup_index is next 8 bits of huffman code, if there is less than 8 bits in source.
             // lookup_index MUST be aligned to 8 bits with LSB bits set to anything (zeros are recommended).
@@ -402,7 +402,7 @@ namespace System.Net.Http.HPack
         /// <returns>The number of decoded symbols.</returns>
         public static int Decode(ReadOnlySpan<byte> src, ref byte[] dstArray)
         {
-            // The code below implements the decoding logic for a HPack huffman encoded literal values.
+            // The code below implements the decoding logic for an HPack huffman encoded literal values.
             // https://httpwg.org/specs/rfc7541.html#string.literal.representation
             //
             // To decode a symbol, we traverse the decoding lookup table tree by 8 bits for each lookup
@@ -477,9 +477,8 @@ namespace System.Net.Http.HPack
             }
 
             // Finish decoding last < 8 bits of src.
-            // Although bellow code could be inserted in above do..while,
-            // processing of last byte has to handle several corner cases was decided, for performance reasons,
-            // to not have in main decoding loop.
+            // Processing of the last byte has to handle several corner cases 
+            // so it's extracted outside of the main loop for performance reasons.
             while (bitsInAcc > 0)
             {
                 Debug.Assert(bitsInAcc < 8);
