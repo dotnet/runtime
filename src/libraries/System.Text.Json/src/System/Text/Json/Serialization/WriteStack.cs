@@ -8,11 +8,8 @@ using System.Text.Json.Serialization.Metadata;
 
 namespace System.Text.Json
 {
-    /// <summary>
-    /// todo
-    /// </summary>
     [DebuggerDisplay("Path:{PropertyPath()} Current: ClassType.{Current.JsonClassInfo.ClassType}, {Current.JsonClassInfo.Type.Name}")]
-    public struct WriteStack
+    internal struct WriteStack
     {
         /// <summary>
         /// The number of stack frames when the continuation started.
@@ -27,23 +24,23 @@ namespace System.Text.Json
         private List<WriteStackFrame> _previous;
 
         // A field is used instead of a property to avoid value semantics.
-        internal WriteStackFrame Current;
+        public WriteStackFrame Current;
 
         /// <summary>
         /// The amount of bytes to write before the underlying Stream should be flushed and the
         /// current buffer adjusted to remove the processed bytes.
         /// </summary>
-        internal int FlushThreshold;
+        public int FlushThreshold;
 
-        internal bool IsContinuation => _continuationCount != 0;
+        public bool IsContinuation => _continuationCount != 0;
 
         // The bag of preservable references.
-        internal ReferenceResolver ReferenceResolver;
+        public ReferenceResolver ReferenceResolver;
 
         /// <summary>
         /// Internal flag to let us know that we need to read ahead in the inner read loop.
         /// </summary>
-        internal bool SupportContinuation;
+        public bool SupportContinuation;
 
         private void AddCurrent()
         {
@@ -69,15 +66,9 @@ namespace System.Text.Json
         /// <summary>
         /// Initialize the state without delayed initialization of the JsonClassInfo.
         /// </summary>
-        internal JsonConverter Initialize(Type type, JsonSerializerOptions options, bool supportContinuation)
+        public JsonConverter Initialize(Type type, JsonSerializerOptions options, bool supportContinuation)
         {
             JsonClassInfo jsonClassInfo = options.GetOrAddClassForRootType(type);
-            return Initialize(jsonClassInfo, options, supportContinuation);
-        }
-
-        private JsonConverter Initialize(JsonClassInfo jsonClassInfo, JsonSerializerOptions options, bool supportContinuation)
-        {
-            Current.JsonClassInfo = jsonClassInfo;
 
             Current.JsonClassInfo = jsonClassInfo;
             Current.DeclaredJsonPropertyInfo = jsonClassInfo.PropertyInfoForClassInfo;
@@ -93,26 +84,7 @@ namespace System.Text.Json
             return jsonClassInfo.PropertyInfoForClassInfo.ConverterBase;
         }
 
-        /// <summary>
-        /// Initialize the state without delayed initialization of the JsonClassInfo.
-        /// </summary>
-        internal void Initialize(JsonClassInfo jsonClassInfo)
-        {
-            Current.JsonClassInfo = jsonClassInfo;
-
-            if ((jsonClassInfo.ClassType & (ClassType.Enumerable | ClassType.Dictionary)) == 0)
-            {
-                Current.DeclaredJsonPropertyInfo = jsonClassInfo.PropertyInfoForClassInfo;
-            }
-
-            JsonSerializerOptions options = jsonClassInfo.Options;
-            if (options.ReferenceHandler != null)
-            {
-                ReferenceResolver = options.ReferenceHandler!.CreateResolver(writing: true);
-            }
-        }
-
-        internal void Push()
+        public void Push()
         {
             if (_continuationCount == 0)
             {
@@ -158,7 +130,7 @@ namespace System.Text.Json
             }
         }
 
-        internal void Pop(bool success)
+        public void Pop(bool success)
         {
             Debug.Assert(_count > 0);
 
@@ -208,12 +180,9 @@ namespace System.Text.Json
             }
         }
 
-        /// <summary>
-        /// Return a property path as a simple JSONPath using dot-notation when possible. When special characters are present, bracket-notation is used:
-        /// $.x.y.z
-        /// $['PropertyName.With.Special.Chars']
-        /// </summary>
-        /// <returns></returns>
+        // Return a property path as a simple JSONPath using dot-notation when possible. When special characters are present, bracket-notation is used:
+        // $.x.y.z
+        // $['PropertyName.With.Special.Chars']
         public string PropertyPath()
         {
             StringBuilder sb = new StringBuilder("$");

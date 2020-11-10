@@ -4,9 +4,9 @@
 using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Text.Json.Serialization;
+using System.Text.Json.Serialization.Metadata;
 using System.Threading;
 using System.Threading.Tasks;
-using System.Text.Json.Serialization.Metadata;
 
 namespace System.Text.Json
 {
@@ -123,7 +123,7 @@ namespace System.Text.Json
                 {
                     state.FlushThreshold = (int)(bufferWriter.Capacity * FlushThreshold);
 
-                    isFinalBlock = WriteCore(converterBase, writer, value, ref state, options);
+                    isFinalBlock = WriteCore(converterBase, writer, value, options, ref state);
 
                     await bufferWriter.WriteToStreamAsync(utf8Json, cancellationToken).ConfigureAwait(false);
 

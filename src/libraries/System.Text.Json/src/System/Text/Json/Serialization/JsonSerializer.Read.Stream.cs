@@ -6,7 +6,6 @@ using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Text.Json.Serialization;
-using System.Text.Json.Serialization.Metadata;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -46,56 +45,7 @@ namespace System.Text.Json
                 throw new ArgumentNullException(nameof(utf8Json));
             }
 
-            if (options == null)
-            {
-                options = JsonSerializerOptions.s_defaultOptions;
-            }
-
-            ReadStack state = default;
-            state.Initialize(typeof(TValue), options, supportContinuation: true);
-            JsonConverter converter = state.Current.JsonPropertyInfo!.ConverterBase;
-
-            return ReadAsync<TValue>(
-                converter,
-                utf8Json,
-                options,
-                cancellationToken,
-                state);
-        }
-
-        /// <summary>
-        /// todo
-        /// </summary>
-        /// <typeparam name="TValue"></typeparam>
-        /// <param name="utf8Json"></param>
-        /// <param name="jsonTypeInfo"></param>
-        /// <param name="cancellationToken"></param>
-        /// <returns></returns>
-        public static ValueTask<TValue?> DeserializeAsync<TValue>(
-            Stream utf8Json,
-            JsonTypeInfo<TValue> jsonTypeInfo,
-            CancellationToken cancellationToken = default)
-        {
-            if (utf8Json == null)
-            {
-                throw new ArgumentNullException(nameof(utf8Json));
-            }
-
-            if (jsonTypeInfo == null)
-            {
-                throw new ArgumentNullException(nameof(jsonTypeInfo));
-            }
-
-            ReadStack state = default;
-            state.Initialize(jsonTypeInfo, supportContinuation: true);
-            JsonConverter converter = jsonTypeInfo.PropertyInfoForClassInfo.ConverterBase;
-
-            return ReadAsync<TValue>(
-                converter,
-                utf8Json,
-                jsonTypeInfo.Options,
-                cancellationToken,
-                state);
+            return ReadAsync<TValue>(utf8Json, typeof(TValue), options, cancellationToken);
         }
 
         /// <summary>
@@ -133,27 +83,25 @@ namespace System.Text.Json
             if (returnType == null)
                 throw new ArgumentNullException(nameof(returnType));
 
-            options ??= JsonSerializerOptions.s_defaultOptions;
-
-            ReadStack state = default;
-            state.Initialize(returnType, options, supportContinuation: true);
-            JsonConverter converter = state.Current.JsonPropertyInfo!.ConverterBase;
-
-            return ReadAsync<object?>(
-                converter,
-                utf8Json,
-                options,
-                cancellationToken,
-                state);
+            return ReadAsync<object?>(utf8Json, returnType, options, cancellationToken);
         }
 
         private static async ValueTask<TValue?> ReadAsync<TValue>(
-            JsonConverter converter,
             Stream utf8Json,
-            JsonSerializerOptions options,
-            CancellationToken cancellationToken,
-            ReadStack state) // todo: we can't use ref in async methods; pass all paramters with 'if' check?
+            Type returnType,
+            JsonSerializerOptions? options,
+            CancellationToken cancellationToken)
         {
+            if (options == null)
+            {
+                options = JsonSerializerOptions.s_defaultOptions;
+            }
+
+            ReadStack state = default;
+            state.Initialize(returnType, options, supportContinuation: true);
+
+            JsonConverter converter = state.Current.JsonPropertyInfo!.ConverterBase;
+
             var readerState = new JsonReaderState(options.GetReaderOptions());
 
             // todo: https://github.com/dotnet/runtime/issues/32355

@@ -68,16 +68,6 @@ namespace System.Text.Json
             //  UseExtensionProperty
         }
 
-        public void EndPropertyFast()
-        {
-            JsonPropertyInfo = null!;
-            ValidateEndTokenOnArray = false;
-
-            Debug.Assert(JsonPropertyName == null);
-            Debug.Assert(JsonPropertyNameAsString == null);
-            Debug.Assert(PropertyState == StackFramePropertyState.None);
-        }
-
         public void EndElement()
         {
             JsonPropertyNameAsString = null;

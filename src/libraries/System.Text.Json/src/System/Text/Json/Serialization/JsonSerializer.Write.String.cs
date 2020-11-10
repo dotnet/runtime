@@ -3,9 +3,6 @@
 
 using System.Diagnostics.CodeAnalysis;
 
-using System.Text.Json.Serialization;
-using System.Text.Json.Serialization.Metadata;
-
 namespace System.Text.Json
 {
     public static partial class JsonSerializer
@@ -77,42 +74,6 @@ namespace System.Text.Json
                 using (var writer = new Utf8JsonWriter(output, options.GetWriterOptions()))
                 {
                     WriteCore(writer, value, inputType, options);
-                }
-
-                return JsonReaderHelper.TranscodeHelper(output.WrittenMemory.Span);
-            }
-        }
-
-        /// <summary>
-        /// todo
-        /// </summary>
-        /// <typeparam name="TValue"></typeparam>
-        /// <param name="value"></param>
-        /// <param name="jsonTypeInfo"></param>
-        /// <returns></returns>
-        public static string Serialize<TValue>(in TValue value, JsonTypeInfo<TValue> jsonTypeInfo)
-        {
-            if (jsonTypeInfo == null)
-            {
-                throw new ArgumentNullException(nameof(jsonTypeInfo));
-            }
-
-            WriteStack state = default;
-            state.Initialize(jsonTypeInfo);
-
-            JsonSerializerOptions options = jsonTypeInfo.Options;
-
-            using (var output = new PooledByteBufferWriter(options.DefaultBufferSize))
-            {
-                using (var writer = new Utf8JsonWriter(output, options.GetWriterOptions()))
-                {
-                    JsonConverter? jsonConverter = jsonTypeInfo.PropertyInfoForClassInfo.ConverterBase as JsonConverter<TValue>;
-                    if (jsonConverter == null)
-                    {
-                        throw new InvalidOperationException("todo: classInfo not compatible");
-                    }
-
-                    WriteCore(jsonConverter, writer, value, ref state, options);
                 }
 
                 return JsonReaderHelper.TranscodeHelper(output.WrittenMemory.Span);

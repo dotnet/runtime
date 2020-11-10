@@ -8,124 +8,28 @@ using System.Runtime.CompilerServices;
 
 namespace System.Text.Json.Serialization.Metadata
 {
-    /// <summary>
-    /// todo
-    /// </summary>
     [DebuggerDisplay("ClassType.{ClassType}, {Type.Name}")]
-    // todo: add JsonObjectInfo and JsonArrayInfo classes deriving from JsonClassInfo
-    // also add a sealed version of these for internal use (JsonObjectInfoInternal JsonClassInfoInternal)
-    public partial class JsonClassInfo
+    internal sealed partial class JsonClassInfo
     {
-        internal bool _isInitialized;
-        // todo: add immutable checks in all setters like we do in JsonSerializerOptions
-
-        /// <summary>
-        /// todo
-        /// </summary>
-        /// <returns></returns>
         public delegate object? ConstructorDelegate();
 
-        internal delegate T ParameterizedConstructorDelegate<T>(object[] arguments);
+        public delegate T ParameterizedConstructorDelegate<T>(object[] arguments);
 
-        internal delegate T ParameterizedConstructorDelegate<T, TArg0, TArg1, TArg2, TArg3>(TArg0 arg0, TArg1 arg1, TArg2 arg2, TArg3 arg3);
+        public delegate T ParameterizedConstructorDelegate<T, TArg0, TArg1, TArg2, TArg3>(TArg0 arg0, TArg1 arg1, TArg2 arg2, TArg3 arg3);
 
-        /// <summary>
-        /// todo
-        /// </summary>
-        /// <param name="writer"></param>
-        /// <param name="value"></param>
-        /// <param name="writeStack"></param>
-        /// <param name="options"></param>
-        public delegate void SerializeDelegate(Utf8JsonWriter writer, object value, ref WriteStack writeStack, JsonSerializerOptions options);
+        public ConstructorDelegate? CreateObject { get; private set; }
 
-        /// <summary>
-        /// todo
-        /// </summary>
-        /// <param name="reader"></param>
-        /// <param name="readStack"></param>
-        /// <param name="options"></param>
-        /// <returns></returns>
-        public delegate object DeserializeDelegate(ref Utf8JsonReader reader, ref ReadStack readStack, JsonSerializerOptions options);
-
-        private ConstructorDelegate? _createObject;
-        /// <summary>
-        /// todo
-        /// </summary>
-        public ConstructorDelegate? CreateObject
-        {
-            get
-            {
-                return _createObject;
-            }
-            set
-            {
-                if (_isInitialized)
-                {
-                    throw new InvalidOperationException("todo");
-                }
-
-                _createObject = value;
-            }
-        }
-
-        private SerializeDelegate? _serialize;
-
-        /// <summary>
-        /// todo
-        /// </summary>
-        public SerializeDelegate? Serialize
-        {
-            get
-            {
-                return _serialize;
-            }
-            set
-            {
-                if (_isInitialized)
-                {
-                    throw new InvalidOperationException("todo");
-                }
-
-                _serialize = value;
-            }
-        }
-
-        private DeserializeDelegate? _deserialize;
-        /// <summary>
-        /// todo
-        /// </summary>
-        public DeserializeDelegate? Deserialize
-        {
-            get
-            {
-                return _deserialize;
-            }
-            set
-            {
-                if (_isInitialized)
-                {
-                    throw new InvalidOperationException("todo");
-                }
-                _deserialize = value;
-            }
-        }
+        public object? CreateObjectWithArgs { get; set; }
 
         // Add method delegate for non-generic Stack and Queue; and types that derive from them.
-        internal object? AddMethodDelegate { get; set; }
+        public object? AddMethodDelegate { get; set; }
 
-        internal object? CreateObjectWithArgs { get; set; }
+        public ClassType ClassType { get; private set; }
 
-        internal ClassType ClassType { get; private set; }
-
-        internal JsonPropertyInfo? DataExtensionProperty { get; private set; }
+        public JsonPropertyInfo? DataExtensionProperty { get; private set; }
 
         // If enumerable, the JsonClassInfo for the element type.
         private JsonClassInfo? _elementClassInfo;
-
-        /// <summary>
-        /// todo
-        /// </summary>
-        public JsonConverter ConverterBase { get; internal set; }
 
         /// <summary>
         /// Return the JsonClassInfo for the element type, or null if the type is not an enumerable or dictionary.
@@ -134,7 +38,7 @@ namespace System.Text.Json.Serialization.Metadata
         /// This should not be called during warm-up (initial creation of JsonClassInfos) to avoid recursive behavior
         /// which could result in a StackOverflowException.
         /// </remarks>
-        internal JsonClassInfo? ElementClassInfo
+        public JsonClassInfo? ElementClassInfo
         {
             get
             {
@@ -148,24 +52,12 @@ namespace System.Text.Json.Serialization.Metadata
 
                 return _elementClassInfo;
             }
-            set
-            {
-                // Used with code-gen scenarios.
-                Debug.Assert(_elementClassInfo == null);
-                _elementClassInfo = value;
-            }
         }
 
-        internal Type? ElementType { get; set; }
+        public Type? ElementType { get; set; }
 
-        /// <summary>
-        /// todo
-        /// </summary>
         public JsonSerializerOptions Options { get; private set; }
 
-        /// <summary>
-        /// todo
-        /// </summary>
         public Type Type { get; private set; }
 
         /// <summary>
@@ -184,14 +76,13 @@ namespace System.Text.Json.Serialization.Metadata
         /// ClassInfo (for the cases mentioned above). In addition, methods that have a JsonPropertyInfo argument would also likely
         /// need to add an argument for JsonClassInfo.
         /// </remarks>
-        internal JsonPropertyInfo PropertyInfoForClassInfo { get; set; }
+        public JsonPropertyInfo PropertyInfoForClassInfo { get; private set; }
 
         private GenericMethodHolder? _genericMethods;
-
         /// <summary>
         /// Returns a helper class used when generic methods need to be invoked on Type.
         /// </summary>
-        internal GenericMethodHolder GenericMethods
+        public GenericMethodHolder GenericMethods
         {
             get
             {
@@ -205,33 +96,7 @@ namespace System.Text.Json.Serialization.Metadata
             }
         }
 
-        internal JsonClassInfo(Type type, JsonSerializerOptions? options, ClassType classType)
-        {
-            Type = type;
-
-            if (options == null)
-            {
-                options = JsonSerializerOptions.s_defaultOptions;
-            }
-
-            Options = options;
-
-            // todo: fix up nullability to avoid this.
-            PropertyInfoForClassInfo = null!;
-            ConverterBase = null!;
-
-            if (classType == ClassType.Object)
-            {
-                PropertyCache = new Dictionary<string, JsonPropertyInfo>(
-                    Options.PropertyNameCaseInsensitive
-                        ? StringComparer.OrdinalIgnoreCase
-                        : StringComparer.Ordinal);
-            }
-
-            ClassType = classType;
-        }
-
-        internal JsonClassInfo(Type type, JsonSerializerOptions options)
+        public JsonClassInfo(Type type, JsonSerializerOptions options)
         {
             Type = type;
             Options = options;
@@ -243,7 +108,6 @@ namespace System.Text.Json.Serialization.Metadata
                 out Type runtimeType,
                 Options);
 
-            ConverterBase = converter;
             ClassType = converter.ClassType;
             JsonNumberHandling? typeNumberHandling = GetNumberHandlingForType(Type);
 
@@ -253,8 +117,8 @@ namespace System.Text.Json.Serialization.Metadata
             {
                 case ClassType.Object:
                     {
-                        CreateObject = options.MemberAccessorStrategy.CreateConstructor(type);
-                        PropertyCache = new Dictionary<string, JsonPropertyInfo>(
+                        CreateObject = Options.MemberAccessorStrategy.CreateConstructor(type);
+                        Dictionary<string, JsonPropertyInfo> cache = new Dictionary<string, JsonPropertyInfo>(
                             Options.PropertyNameCaseInsensitive
                                 ? StringComparer.OrdinalIgnoreCase
                                 : StringComparer.Ordinal);
@@ -282,7 +146,7 @@ namespace System.Text.Json.Serialization.Metadata
                                 if (propertyInfo.GetMethod?.IsPublic == true ||
                                     propertyInfo.SetMethod?.IsPublic == true)
                                 {
-                                    CacheMember(currentType, propertyInfo.PropertyType, propertyInfo, typeNumberHandling, PropertyCache, ref ignoredMembers);
+                                    CacheMember(currentType, propertyInfo.PropertyType, propertyInfo, typeNumberHandling, cache, ref ignoredMembers);
                                 }
                                 else
                                 {
@@ -308,7 +172,7 @@ namespace System.Text.Json.Serialization.Metadata
                                 {
                                     if (hasJsonInclude || Options.IncludeFields)
                                     {
-                                        CacheMember(currentType, fieldInfo.FieldType, fieldInfo, typeNumberHandling, PropertyCache, ref ignoredMembers);
+                                        CacheMember(currentType, fieldInfo.FieldType, fieldInfo, typeNumberHandling, cache, ref ignoredMembers);
                                     }
                                 }
                                 else
@@ -323,18 +187,36 @@ namespace System.Text.Json.Serialization.Metadata
                             }
                         }
 
-                        if (DetermineExtensionDataProperty(PropertyCache))
+                        JsonPropertyInfo[] cacheArray;
+                        if (DetermineExtensionDataProperty(cache))
                         {
                             // Remove from cache since it is handled independently.
-                            PropertyCache.Remove(DataExtensionProperty!.NameAsString);
+                            cache.Remove(DataExtensionProperty!.NameAsString);
 
-                            PropertyCacheArray = new JsonPropertyInfo[PropertyCache.Count + 1];
+                            cacheArray = new JsonPropertyInfo[cache.Count + 1];
 
                             // Set the last element to the extension property.
-                            PropertyCacheArray[PropertyCache.Count] = DataExtensionProperty;
+                            cacheArray[cache.Count] = DataExtensionProperty;
+                        }
+                        else
+                        {
+                            cacheArray = new JsonPropertyInfo[cache.Count];
                         }
 
-                        CompleteObjectInitialization();
+                        // Copy the dictionary cache to the array cache.
+                        cache.Values.CopyTo(cacheArray, 0);
+
+                        // These are not accessed by other threads until the current JsonClassInfo instance
+                        // is finished initializing and added to the cache on JsonSerializerOptions.
+                        PropertyCache = cache;
+                        PropertyCacheArray = cacheArray;
+
+                        // Allow constructor parameter logic to remove items from the dictionary since the JSON
+                        // property values will be passed to the constructor and do not call a property setter.
+                        if (converter.ConstructorIsParameterized)
+                        {
+                            InitializeConstructorParameters(converter.ConstructorInfo!);
+                        }
                     }
                     break;
                 case ClassType.Enumerable:
@@ -359,8 +241,6 @@ namespace System.Text.Json.Serialization.Metadata
                     Debug.Fail($"Unexpected class type: {ClassType}");
                     throw new InvalidOperationException();
             }
-
-            _isInitialized = true;
         }
 
         private void CacheMember(
@@ -406,28 +286,6 @@ namespace System.Text.Json.Serialization.Metadata
             {
                 (ignoredMembers ??= new Dictionary<string, MemberInfo>()).Add(memberName, memberInfo);
             }
-        }
-
-        internal void CompleteObjectInitialization()
-        {
-            if (PropertyCacheArray == null)
-            {
-                PropertyCacheArray = new JsonPropertyInfo[PropertyCache!.Count];
-            }
-
-            // Copy the dictionary cache to the array cache.
-            PropertyCache!.Values.CopyTo(PropertyCacheArray, 0);
-
-            JsonConverter converter = PropertyInfoForClassInfo.ConverterBase;
-
-            // Allow constructor parameter logic to remove items from the dictionary since the JSON
-            // property values will be passed to the constructor and do not call a property setter.
-            if (converter.ConstructorIsParameterized)
-            {
-                InitializeConstructorParameters(converter.ConstructorInfo!);
-            }
-
-            _isInitialized = true;
         }
 
         private sealed class ParameterLookupKey
@@ -568,7 +426,7 @@ namespace System.Text.Json.Serialization.Metadata
             return propertyInfo != null && (propertyInfo.GetMethod?.IsVirtual == true || propertyInfo.SetMethod?.IsVirtual == true);
         }
 
-        internal bool DetermineExtensionDataProperty(Dictionary<string, JsonPropertyInfo> cache)
+        public bool DetermineExtensionDataProperty(Dictionary<string, JsonPropertyInfo> cache)
         {
             JsonPropertyInfo? jsonPropertyInfo = GetPropertyWithUniqueAttribute(Type, typeof(JsonExtensionDataAttribute), cache);
             if (jsonPropertyInfo != null)
@@ -642,7 +500,7 @@ namespace System.Text.Json.Serialization.Metadata
         // - runtime type,
         // - element type (if the type is a collection),
         // - the converter (either native or custom), if one exists.
-        internal static JsonConverter GetConverter(
+        public static JsonConverter GetConverter(
             Type type,
             Type? parentClassType,
             MemberInfo? memberInfo,

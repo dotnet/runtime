@@ -6,7 +6,7 @@ trigger:
   batch: true
   branches:
     include:
-    - feature/JsonCodeGen
+    - feature/*
   paths:
     include:
     - '*'
@@ -26,7 +26,7 @@ trigger:
 pr:
   branches:
     include:
-    - feature/JsonCodeGen
+    - feature/*
   paths:
     include:
     - '*'

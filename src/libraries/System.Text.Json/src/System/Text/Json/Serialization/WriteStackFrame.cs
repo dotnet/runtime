@@ -67,7 +67,7 @@ namespace System.Text.Json
         /// For objects, it is the <see cref="JsonClassInfo.PropertyInfoForClassInfo"/> for the class and current property.
         /// For collections, it is the <see cref="JsonClassInfo.PropertyInfoForClassInfo"/> for the class and current element.
         /// </remarks>
-        internal JsonPropertyInfo? PolymorphicJsonPropertyInfo;
+        private JsonPropertyInfo? PolymorphicJsonPropertyInfo;
 
         // Whether to use custom number handling.
         public JsonNumberHandling? NumberHandling;
@@ -83,14 +83,6 @@ namespace System.Text.Json
             JsonPropertyNameAsString = null;
             PolymorphicJsonPropertyInfo = null;
             PropertyState = StackFramePropertyState.None;
-        }
-
-        public void EndPropertyFast()
-        {
-            DeclaredJsonPropertyInfo = null!;
-            JsonPropertyNameAsString = null;
-            Debug.Assert(JsonPropertyNameAsString == null);
-            Debug.Assert(PropertyState == StackFramePropertyState.None);
         }
 
         /// <summary>

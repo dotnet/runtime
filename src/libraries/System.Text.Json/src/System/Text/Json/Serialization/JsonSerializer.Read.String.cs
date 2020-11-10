@@ -4,8 +4,6 @@
 using System.Buffers;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
-using System.Text.Json.Serialization;
-using System.Text.Json.Serialization.Metadata;
 
 namespace System.Text.Json
 {
@@ -79,36 +77,6 @@ namespace System.Text.Json
             // default/null span is treated as empty
 
             return Deserialize<TValue>(json, typeof(TValue), options);
-        }
-
-        /// <summary>
-        /// todo
-        /// </summary>
-        /// <typeparam name="TValue"></typeparam>
-        /// <param name="json"></param>
-        /// <param name="jsonTypeInfo"></param>
-        /// <returns></returns>
-        public static TValue? Deserialize<[DynamicallyAccessedMembers(MembersAccessedOnRead)] TValue>(string json, JsonTypeInfo<TValue> jsonTypeInfo)
-        {
-            if (json == null)
-            {
-                throw new ArgumentNullException(nameof(json));
-            }
-
-            if (jsonTypeInfo == null)
-            {
-                throw new ArgumentNullException(nameof(jsonTypeInfo));
-            }
-
-            ReadStack state = default;
-            state.Initialize(jsonTypeInfo);
-
-            return Deserialize<TValue>(
-                jsonTypeInfo.PropertyInfoForClassInfo.ConverterBase,
-                json.AsSpan(),
-                typeof(TValue),
-                jsonTypeInfo.Options,
-                ref state);
         }
 
         /// <summary>
@@ -198,26 +166,12 @@ namespace System.Text.Json
 
         private static TValue? Deserialize<TValue>(ReadOnlySpan<char> json, Type returnType, JsonSerializerOptions? options)
         {
+            const long ArrayPoolMaxSizeBeforeUsingNormalAlloc = 1024 * 1024;
+
             if (options == null)
             {
                 options = JsonSerializerOptions.s_defaultOptions;
             }
-
-            ReadStack state = default;
-            state.Initialize(returnType, options, supportContinuation: false);
-
-            JsonConverter jsonConverter = state.Current.JsonPropertyInfo!.ConverterBase;
-            return Deserialize<TValue>(jsonConverter, json, returnType, options, ref state);
-        }
-
-        private static TValue? Deserialize<TValue>(
-            JsonConverter jsonConverter,
-            ReadOnlySpan<char> json,
-            Type returnType,
-            JsonSerializerOptions options,
-            ref ReadStack state)
-        {
-            const long ArrayPoolMaxSizeBeforeUsingNormalAlloc = 1024 * 1024;
 
             byte[]? tempArray = null;
 

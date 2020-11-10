@@ -30,7 +30,7 @@ namespace System.Text.Json
             WriteStack state = default;
             JsonConverter jsonConverter = state.Initialize(inputType, options, supportContinuation: false);
 
-            bool success = WriteCore(jsonConverter, writer, value, ref state, options);
+            bool success = WriteCore(jsonConverter, writer, value, options, ref state);
             Debug.Assert(success);
         }
 
@@ -38,8 +38,8 @@ namespace System.Text.Json
             JsonConverter jsonConverter,
             Utf8JsonWriter writer,
             in TValue value,
-            ref WriteStack state,
-            JsonSerializerOptions options)
+            JsonSerializerOptions options,
+            ref WriteStack state)
         {
             Debug.Assert(writer != null);
 

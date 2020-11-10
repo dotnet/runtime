@@ -16,9 +16,8 @@ namespace System.Text.Json
         private static TValue? ReadCore<TValue>(ref Utf8JsonReader reader, Type returnType, JsonSerializerOptions options)
         {
             ReadStack state = default;
-
-            JsonConverter jsonConverter = state.Initialize(returnType, options, supportContinuation: false);
-
+            state.Initialize(returnType, options, supportContinuation: false);
+            JsonConverter jsonConverter = state.Current.JsonPropertyInfo!.ConverterBase;
             return ReadCore<TValue>(jsonConverter, ref reader, options, ref state);
         }
 

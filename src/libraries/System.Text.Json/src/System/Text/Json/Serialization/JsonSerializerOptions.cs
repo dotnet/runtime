@@ -4,8 +4,8 @@
 using System.Collections.Concurrent;
 using System.ComponentModel;
 using System.Diagnostics;
-using System.Text.Json.Serialization;
 using System.Text.Encodings.Web;
+using System.Text.Json.Serialization;
 using System.Text.Json.Serialization.Metadata;
 
 namespace System.Text.Json
@@ -508,16 +508,6 @@ namespace System.Text.Json
             }
         }
 
-        internal void AddJsonClassInfo(JsonClassInfo jsonClassInfo)
-        {
-            _haveTypesBeenCreated = true;
-
-            // todo: for performance, consider not adding to internal dictionary.
-            // For compat, calling options.GetConverter() however would need to lazily populate
-            // the dictionary from the context(s) assoicated with the options class.
-            _classes.GetOrAdd(jsonClassInfo.Type, jsonClassInfo);
-        }
-
         internal JsonClassInfo GetOrAddClass(Type type)
         {
             _haveTypesBeenCreated = true;
@@ -547,9 +537,6 @@ namespace System.Text.Json
 
             return jsonClassInfo;
         }
-
-        // todo:
-        // internal bool HasCustomConverters => _converters.Count > 0;
 
         internal bool TypeIsCached(Type type)
         {
