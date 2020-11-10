@@ -30,6 +30,7 @@
       release, increase this number by one.
     -->
     <NETStandardPatchVersion>0</NETStandardPatchVersion>
+    <MicrosoftNetCompilersToolsetVersion>3.9.0-2.20560.8</MicrosoftNetCompilersToolsetVersion>
   </PropertyGroup>
   <!--
     Servicing build settings for Setup/Installer packages. Instructions:
