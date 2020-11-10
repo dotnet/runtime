@@ -2237,6 +2237,11 @@ namespace System.Diagnostics.Tracing
                     {
                         if (m_writeEventStringEventHandle == IntPtr.Zero)
                         {
+                            if (m_createEventLock is null)
+                            {
+                                Interlocked.CompareExchange(ref m_createEventLock, new object(), null);
+                            }
+
                             lock (m_createEventLock)
                             {
                                 if (m_writeEventStringEventHandle == IntPtr.Zero)
@@ -3767,7 +3772,7 @@ namespace System.Diagnostics.Tracing
         private volatile OverideEventProvider m_etwProvider = null!;   // This hooks up ETW commands to our 'OnEventCommand' callback
 #endif
 #if FEATURE_PERFTRACING
-        private object m_createEventLock = new object();
+        private object? m_createEventLock;
         private IntPtr m_writeEventStringEventHandle = IntPtr.Zero;
         private volatile OverideEventProvider m_eventPipeProvider = null!;
 #endif
