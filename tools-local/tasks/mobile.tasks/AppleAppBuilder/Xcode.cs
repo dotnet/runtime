@@ -100,9 +100,7 @@ internal class Xcode
             .Append(" -B").Append(projectName)
             .Append(" -GXcode")
             .Append(" -DCMAKE_SYSTEM_NAME=iOS")
-            .Append(" \"-DCMAKE_OSX_ARCHITECTURES=arm64;x86_64\"")
-            .Append(" -DCMAKE_OSX_DEPLOYMENT_TARGET=10.1")
-            .Append(" -DCMAKE_XCODE_ATTRIBUTE_ONLY_ACTIVE_ARCH=NO");
+            .Append(" -DCMAKE_OSX_DEPLOYMENT_TARGET=10.1");
 
         File.WriteAllText(Path.Combine(binDir, "runtime.h"),
             Utils.GetEmbeddedResource("runtime.h"));
@@ -134,7 +132,7 @@ internal class Xcode
     {
         string sdk = "";
         var args = new StringBuilder();
-        args.Append("ONLY_ACTIVE_ARCH=NO");
+        args.Append("ONLY_ACTIVE_ARCH=YES");
         if (architecture == "arm64")
         {
             sdk = "iphoneos";

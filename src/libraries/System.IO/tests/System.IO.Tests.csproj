@@ -10,18 +10,15 @@
     <Compile Include="IndentedTextWriter.cs" />
     <Compile Include="BinaryReader\BinaryReaderTests.cs" />
     <Compile Include="MemoryStream\MemoryStream.GetBufferTests.cs" />
-    <Compile Include="Stream\Stream.cs" />
     <Compile Include="StreamReader\StreamReader.cs" />
     <Compile Include="StreamReader\StreamReader.StringCtorTests.cs" />
     <Compile Include="StreamWriter\StreamWriter.cs" />
     <Compile Include="StreamWriter\StreamWriter.StringCtorTests.cs" />
-    <Compile Include="Stream\Stream.APMMethodsTests.cs" />
     <Compile Include="BinaryWriter\BinaryWriter.DisposeAsync.cs" />
     <Compile Include="BinaryWriter\BinaryWriter.WriteByteCharTests.cs" />
     <Compile Include="BinaryWriter\BinaryWriter.WriteTests.cs" />
     <Compile Include="BinaryWriter\BinaryWriterTests.cs" />
-    <Compile Include="BufferedStream\BufferedStream.FlushTests.cs" />
-    <Compile Include="BufferedStream\BufferedStream.InvalidParameters.cs" />
+    <Compile Include="BufferedStream\BufferedStreamConnectedConformanceTests.cs" />
     <Compile Include="BufferedStream\BufferedStreamTests.cs" />
     <Compile Include="InvalidDataException\InvalidDataExceptionTests.cs" />
     <Compile Include="MemoryStream\MemoryStream.ConstructorTests.cs" />
@@ -38,25 +35,26 @@
     <Compile Include="Stream\Stream.DisposeAsync.cs" />
     <Compile Include="Stream\Stream.ReadWriteSpan.cs" />
     <Compile Include="Stream\Stream.NullTests.cs" />
-    <Compile Include="Stream\Stream.AsyncTests.cs" />
     <Compile Include="Stream\Stream.CopyToTests.cs" />
-    <Compile Include="Stream\Stream.Methods.cs" />
+    <Compile Include="Stream\SyncStreamConformanceTests.cs" />
     <Compile Include="Stream\Stream.TestLeaveOpen.cs" />
     <Compile Include="Stream\Stream.TimeoutTests.cs" />
+    <Compile Include="Stream\Stream.ValidateArguments.cs" />
     <Compile Include="StringReader\StringReader.CtorTests.cs" />
     <Compile Include="StringWriter\StringWriterTests.cs" />
-    <Compile Include="$(CommonTestPath)System\Buffers\NativeMemoryManager.cs"
-             Link="Common\System\Buffers\NativeMemoryManager.cs" />
-    <Compile Include="$(CommonTestPath)System\IO\CallTrackingStream.cs"
-             Link="Common\System\IO\CallTrackingStream.cs" />
-    <Compile Include="$(CommonTestPath)System\IO\DelegateStream.cs"
-             Link="Common\System\IO\DelegateStream.cs" />
-    <Compile Include="$(CommonTestPath)System\IO\WrappedMemoryStream.cs"
-             Link="Common\System\IO\WrappedMemoryStream.cs" />
+    <Compile Include="$(CommonTestPath)System\Buffers\NativeMemoryManager.cs" Link="Common\System\Buffers\NativeMemoryManager.cs" />
+    <Compile Include="$(CommonTestPath)System\IO\CallTrackingStream.cs" Link="Common\System\IO\CallTrackingStream.cs" />
+    <Compile Include="$(CommonTestPath)System\IO\DelegateStream.cs" Link="Common\System\IO\DelegateStream.cs" />
+    <Compile Include="$(CommonTestPath)System\IO\WrappedMemoryStream.cs" Link="Common\System\IO\WrappedMemoryStream.cs" />
     <Compile Include="TestDataProvider\TestDataProvider.cs" />
     <Compile Include="TextReader\CharArrayTextReader.cs" />
     <Compile Include="TextReader\TextReaderTests.cs" />
     <Compile Include="TextWriter\CharArrayTextWriter.cs" />
     <Compile Include="TextWriter\TextWriterTests.cs" />
+    <Compile Include="$(CommonTestPath)Tests\System\IO\StreamConformanceTests.cs" Link="Common\System\IO\StreamConformanceTests.cs" />
+    <Compile Include="$(CommonTestPath)System\IO\ConnectedStreams.cs" Link="Common\System\IO\ConnectedStreams.cs" />
+    <Compile Include="$(CommonPath)System\Net\ArrayBuffer.cs" Link="ProductionCode\Common\System\Net\ArrayBuffer.cs" />
+    <Compile Include="$(CommonPath)System\Net\StreamBuffer.cs" Link="ProductionCode\Common\System\Net\StreamBuffer.cs" />
+    <Compile Include="$(CommonPath)System\Threading\Tasks\TaskToApm.cs" Link="Common\System\Threading\Tasks\TaskToApm.cs" />
   </ItemGroup>
 </Project>

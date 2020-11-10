@@ -101,8 +101,8 @@ jobs:
     - ${{ if in(parameters.platform, 'iOS_x64', 'iOS_x86') }}:
       - OSX.1015.Amd64.Open
 
-    # Windows_NT x64
-    - ${{ if eq(parameters.platform, 'Windows_NT_x64') }}:
+    # windows x64
+    - ${{ if eq(parameters.platform, 'windows_x64') }}:
       # netcoreapp
       - ${{ if notIn(parameters.jobParameters.framework, 'allConfigurations', 'net48') }}:
         - ${{ if and(eq(parameters.jobParameters.testScope, 'outerloop'), eq(parameters.jobParameters.runtimeFlavor, 'mono')) }}:
@@ -130,8 +130,8 @@ jobs:
       - ${{ if eq(parameters.jobParameters.framework, 'allConfigurations') }}:
         - Windows.10.Amd64.Server19H1.Open
 
-    # Windows_NT x86
-    - ${{ if eq(parameters.platform, 'Windows_NT_x86') }}:
+    # windows x86
+    - ${{ if eq(parameters.platform, 'windows_x86') }}:
       # netcoreapp
       - ${{ if notIn(parameters.jobParameters.framework, 'allConfigurations', 'net48') }}:
         - ${{ if and(eq(parameters.jobParameters.testScope, 'outerloop'), eq(parameters.jobParameters.runtimeFlavor, 'mono')) }}:
@@ -153,12 +153,12 @@ jobs:
       - ${{ if eq(parameters.jobParameters.framework, 'net48') }}:
         - Windows.10.Amd64.Client19H1.Open
 
-    # Windows_NT arm
-    - ${{ if eq(parameters.platform, 'Windows_NT_arm') }}:
+    # windows arm
+    - ${{ if eq(parameters.platform, 'windows_arm') }}:
       - Windows.10.Arm64v8.Open
 
-    # Windows_NT arm64
-    - ${{ if eq(parameters.platform, 'Windows_NT_arm64') }}:
+    # windows arm64
+    - ${{ if eq(parameters.platform, 'windows_arm64') }}:
       - Windows.10.Arm64.Open
 
     # WebAssembly

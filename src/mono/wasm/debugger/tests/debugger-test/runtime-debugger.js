@@ -6,6 +6,15 @@ var Module = {
 		config.loaded_cb = function () {
 			App.init ();
 		};
+		// For custom logging patch the functions below
+		/*
+		MONO.logging = {
+			trace: function (domain, log_level, message, isFatal, dataPtr) {},
+			debugger: function (level, message) {}
+		};
+		MONO.mono_wasm_setenv ("MONO_LOG_LEVEL", "debug");
+		MONO.mono_wasm_setenv ("MONO_LOG_MASK", "all");
+		*/
 		MONO.mono_load_runtime_and_bcl_args (config)
 	},
 };

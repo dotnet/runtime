@@ -343,7 +343,6 @@ namespace System.IO
             {
                 if (_hasWaiter != 0)
                 {
-                    Debug.Fail("Concurrent use is not supported");
                     throw new InvalidOperationException("Concurrent use is not supported");
                 }
 

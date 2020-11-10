@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics;
+using System.Runtime.InteropServices;
 
 namespace System.Text
 {
@@ -104,58 +105,8 @@ namespace System.Text
         /// Copies the contents of this builder to the specified buffer.
         /// </summary>
         /// <param name="dest">The destination buffer.</param>
-        /// <param name="len">The number of bytes in the destination buffer.</param>
-        internal unsafe void InternalCopy(IntPtr dest, int len)
-        {
-            if (len == 0)
-            {
-                return;
-            }
-
-            bool isLastChunk = true;
-            byte* dstPtr = (byte*)dest.ToPointer();
-            StringBuilder? currentSrc = FindChunkForByte(len);
-
-            do
-            {
-                int chunkOffsetInBytes = currentSrc.m_ChunkOffset * sizeof(char);
-                int chunkLengthInBytes = currentSrc.m_ChunkLength * sizeof(char);
-                fixed (char* charPtr = &currentSrc.m_ChunkChars[0])
-                {
-                    byte* srcPtr = (byte*)charPtr;
-                    if (isLastChunk)
-                    {
-                        isLastChunk = false;
-                        Buffer.Memcpy(dstPtr + chunkOffsetInBytes, srcPtr, len - chunkOffsetInBytes);
-                    }
-                    else
-                    {
-                        Buffer.Memcpy(dstPtr + chunkOffsetInBytes, srcPtr, chunkLengthInBytes);
-                    }
-                }
-
-                currentSrc = currentSrc.m_ChunkPrevious;
-            }
-            while (currentSrc != null);
-        }
-
-        /// <summary>
-        /// Gets the chunk corresponding to the logical byte index in this builder.
-        /// </summary>
-        /// <param name="byteIndex">The logical byte index in this builder.</param>
-        private StringBuilder FindChunkForByte(int byteIndex)
-        {
-            Debug.Assert(0 <= byteIndex && byteIndex <= Length * sizeof(char));
-
-            StringBuilder result = this;
-            while (result.m_ChunkOffset * sizeof(char) > byteIndex)
-            {
-                Debug.Assert(result.m_ChunkPrevious != null);
-                result = result.m_ChunkPrevious;
-            }
-
-            Debug.Assert(result != null);
-            return result;
-        }
+        /// <param name="charLen">The number of chars in the destination buffer.</param>
+        internal unsafe void InternalCopy(IntPtr dest, int charLen) =>
+            CopyTo(0, new Span<char>((char*)dest, charLen), charLen);
     }
 }

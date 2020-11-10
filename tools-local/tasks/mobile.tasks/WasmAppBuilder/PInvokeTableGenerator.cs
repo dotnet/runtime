@@ -24,11 +24,12 @@ public class PInvokeTableGenerator : Task
 
     public override bool Execute()
     {
+        Log.LogMessage(MessageImportance.Normal, $"Generating pinvoke table to '{OutputPath}'.");
         GenPInvokeTable(Modules!.Select(item => item.ItemSpec).ToArray(), Assemblies!.Select(item => item.ItemSpec).ToArray());
         return true;
     }
 
-    private void GenPInvokeTable(string[] pinvokeModules, string[] assemblies)
+    public void GenPInvokeTable(string[] pinvokeModules, string[] assemblies)
     {
         var modules = new Dictionary<string, string>();
         foreach (var module in pinvokeModules)
@@ -45,8 +46,6 @@ public class PInvokeTableGenerator : Task
             foreach (var type in a.GetTypes())
                 CollectPInvokes(pinvokes, callbacks, type);
         }
-
-        Log.LogMessage(MessageImportance.Normal, $"Generating pinvoke table to '{OutputPath}'.");
 
         using (var w = File.CreateText(OutputPath!))
         {
@@ -154,6 +153,12 @@ public class PInvokeTableGenerator : Task
     {
         var sb = new StringBuilder();
         var method = pinvoke.Method;
+        if (method.Name == "EnumCalendarInfo") {
+            // FIXME: System.Reflection.MetadataLoadContext can't decode function pointer types
+            // https://github.com/dotnet/runtime/issues/43791
+            sb.Append($"int {pinvoke.EntryPoint} (int, int, int, int, int);");
+            return sb.ToString();
+        }
         sb.Append(MapType(method.ReturnType));
         sb.Append($" {pinvoke.EntryPoint} (");
         int pindex = 0;

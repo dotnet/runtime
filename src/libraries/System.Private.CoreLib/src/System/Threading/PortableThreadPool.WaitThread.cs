@@ -6,6 +6,21 @@ using Microsoft.Win32.SafeHandles;
 
 namespace System.Threading
 {
+    /// <summary>
+    /// The info for a completed wait on a specific <see cref="RegisteredWaitHandle"/>.
+    /// </summary>
+    internal sealed partial class CompleteWaitThreadPoolWorkItem : IThreadPoolWorkItem
+    {
+        private RegisteredWaitHandle _registeredWaitHandle;
+        private bool _timedOut;
+
+        public CompleteWaitThreadPoolWorkItem(RegisteredWaitHandle registeredWaitHandle, bool timedOut)
+        {
+            _registeredWaitHandle = registeredWaitHandle;
+            _timedOut = timedOut;
+        }
+    }
+
     internal partial class PortableThreadPool
     {
         /// <summary>
