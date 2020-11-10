@@ -134,12 +134,6 @@ class DbgTransportSession;
 // These hooks must be removed before shipping.
 class ShimProcess;
 
-
-#ifndef TARGET_UNIX
-extern HINSTANCE GetModuleInst();
-#endif
-
-
 template <class T>
 class CordbSafeHashTable;
 

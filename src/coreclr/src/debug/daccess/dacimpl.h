@@ -127,9 +127,6 @@ enum DAC_USAGE_TYPE
     DAC_PAL,
 };
 
-// mscordacwks's module handle
-extern HINSTANCE g_thisModule;
-
 class ReflectionModule;
 
 struct DAC_MD_IMPORT
