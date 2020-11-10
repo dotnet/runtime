@@ -8,6 +8,7 @@
 
 #define FAIL 0
 #define SUCCESS 1
+#define EVP_MAX_MD_SIZE 64
 
 PALEXPORT int32_t CryptoNative_EnsureOpenSslInitialized(void);
 

@@ -83,14 +83,15 @@ static jclass GetClassGRef(JNIEnv *env, const char* name)
     return klass;
 }
 
-static void CheckPendingExceptions(JNIEnv* env)
+static bool CheckJNIExceptions(JNIEnv* env)
 {
     if ((*env)->ExceptionCheck(env))
     {
         (*env)->ExceptionDescribe(env); 
         (*env)->ExceptionClear(env);
-        assert(0 && "JNI: Unhandled exception");
+        return true;
     }
+    return false;
 }
 
 static jmethodID GetMethod(JNIEnv *env, bool isStatic, jclass klass, const char* name, const char* sig)
@@ -156,7 +157,6 @@ JNI_OnLoad(JavaVM *vm, void *reserved)
     g_ivPsClass =               GetClassGRef(env, "javax/crypto/spec/IvParameterSpec");
     g_ivPsCtor =                GetMethod(env, false, g_ivPsClass, "<init>", "([B)V");
 
-    CheckPendingExceptions(env);
     return JNI_VERSION_1_6;
 }
 
@@ -179,8 +179,7 @@ int32_t CryptoNative_GetRandomBytes(uint8_t* buff, int32_t len)
     (*env)->DeleteLocalRef(env, buffArray);
     (*env)->DeleteLocalRef(env, randObj);
 
-    CheckPendingExceptions(env);
-    return SUCCESS;
+    return CheckJNIExceptions(env) ? FAIL : SUCCESS;
 }
 
  // just some unique numbers
@@ -230,30 +229,29 @@ int32_t CryptoNative_EvpMdSize(intptr_t md)
 
 int32_t CryptoNative_GetMaxMdSize()
 {
-    return 64; // EVP_MAX_MD_SIZE
+    return EVP_MAX_MD_SIZE;
 }
 
 static jobject GetMessageDigestInstance(JNIEnv* env, intptr_t type)
 {
-    jstring mdName = NULL;
+    jobject mdName = NULL;
     if (type == CryptoNative_EvpSha1())
-        mdName = (jstring)(*env)->NewStringUTF(env, "SHA-1");
+        mdName = (*env)->NewStringUTF(env, "SHA-1");
     else if (type == CryptoNative_EvpSha256())
-        mdName = (jstring)(*env)->NewStringUTF(env, "SHA-256");
+        mdName = (*env)->NewStringUTF(env, "SHA-256");
     else if (type == CryptoNative_EvpSha384())
-        mdName = (jstring)(*env)->NewStringUTF(env, "SHA-384");
+        mdName = (*env)->NewStringUTF(env, "SHA-384");
     else if (type == CryptoNative_EvpSha512())
-        mdName = (jstring)(*env)->NewStringUTF(env, "SHA-512");
+        mdName = (*env)->NewStringUTF(env, "SHA-512");
     else if (type == CryptoNative_EvpMd5())
-        mdName = (jstring)(*env)->NewStringUTF(env, "MD5");
+        mdName = (*env)->NewStringUTF(env, "MD5");
     else
         return NULL;
 
     jobject mdObj = (*env)->CallStaticObjectMethod(env, g_mdClass, g_mdGetInstanceMethod, mdName);
     (*env)->DeleteLocalRef(env, mdName);
 
-    CheckPendingExceptions(env);
-    return mdObj;
+    return CheckJNIExceptions(env) ? FAIL : mdObj;
 }
 
 int32_t CryptoNative_EvpDigestOneShot(intptr_t type, void* source, int32_t sourceSize, uint8_t* md, uint32_t* mdSize)
@@ -280,8 +278,7 @@ int32_t CryptoNative_EvpDigestOneShot(intptr_t type, void* source, int32_t sourc
     (*env)->DeleteLocalRef(env, hashedBytes);
     (*env)->DeleteLocalRef(env, mdObj);
 
-    CheckPendingExceptions(env);
-    return SUCCESS;
+    return CheckJNIExceptions(env) ? FAIL : SUCCESS;
 }
 
 void* CryptoNative_EvpMdCtxCreate(intptr_t type)
@@ -301,8 +298,7 @@ int32_t CryptoNative_EvpDigestReset(void* ctx, intptr_t type)
     jobject mdObj = (jobject)ctx;
     (*env)->CallVoidMethod(env, mdObj, g_mdResetMethod);
 
-    CheckPendingExceptions(env);
-    return SUCCESS;
+    return CheckJNIExceptions(env) ? FAIL : SUCCESS;
 }
 
 int32_t CryptoNative_EvpDigestUpdate(void* ctx, void* d, int32_t cnt)
@@ -318,8 +314,7 @@ int32_t CryptoNative_EvpDigestUpdate(void* ctx, void* d, int32_t cnt)
     (*env)->CallVoidMethod(env, mdObj, g_mdUpdateMethod, bytes);
     (*env)->DeleteLocalRef(env, bytes);
 
-    CheckPendingExceptions(env);
-    return SUCCESS;
+    return CheckJNIExceptions(env) ? FAIL : SUCCESS;
 }
 
 int32_t CryptoNative_EvpDigestFinalEx(void* ctx, uint8_t* md, uint32_t* s)
@@ -342,8 +337,7 @@ int32_t CryptoNative_EvpDigestCurrent(void* ctx, uint8_t* md, uint32_t* s)
     (*env)->GetByteArrayRegion(env, bytes, 0, bytesLen, (jbyte*) md);
     (*env)->DeleteLocalRef(env, bytes);
 
-    CheckPendingExceptions(env);
-    return SUCCESS;
+    return CheckJNIExceptions(env) ? FAIL : SUCCESS;
 }
 
 void CryptoNative_EvpMdCtxDestroy(void* ctx)
@@ -374,7 +368,7 @@ void* CryptoNative_HmacCreate(uint8_t* key, int32_t keyLen, intptr_t type)
     else if (type == CryptoNative_EvpMd5())
         macName = (jstring)(*env)->NewStringUTF(env, "HmacMD5");
     else
-        return NULL;
+        return FAIL;
 
     jbyteArray keyBytes = (*env)->NewByteArray(env, keyLen);
     (*env)->SetByteArrayRegion(env, keyBytes, 0, keyLen, (jbyte*)key);
@@ -386,8 +380,7 @@ void* CryptoNative_HmacCreate(uint8_t* key, int32_t keyLen, intptr_t type)
     (*env)->DeleteLocalRef(env, sksObj);
     (*env)->DeleteLocalRef(env, macName);
 
-    CheckPendingExceptions(env);
-    return macObj;
+    return CheckJNIExceptions(env) ? FAIL : macObj;
 }
 
 int32_t CryptoNative_HmacReset(void* ctx)
@@ -399,8 +392,7 @@ int32_t CryptoNative_HmacReset(void* ctx)
     jobject macObj = (jobject)ctx;
     (*env)->CallVoidMethod(env, macObj, g_macResetMethod);
 
-    CheckPendingExceptions(env);
-    return SUCCESS;
+    return CheckJNIExceptions(env) ? FAIL : SUCCESS;
 }
 
 int32_t CryptoNative_HmacUpdate(void* ctx, uint8_t* data, int32_t len)
@@ -415,8 +407,7 @@ int32_t CryptoNative_HmacUpdate(void* ctx, uint8_t* data, int32_t len)
     (*env)->CallVoidMethod(env, macObj, g_macUpdateMethod, dataBytes);
     (*env)->DeleteLocalRef(env, dataBytes);
 
-    CheckPendingExceptions(env);
-    return SUCCESS;
+    return CheckJNIExceptions(env) ? FAIL : SUCCESS;
 }
 
 int32_t CryptoNative_HmacFinal(void* ctx, uint8_t* data, int32_t* len)
@@ -437,8 +428,7 @@ int32_t CryptoNative_HmacCurrent(void* ctx, uint8_t* data, int32_t* len)
     (*env)->GetByteArrayRegion(env, dataBytes, 0, dataBytesLen, (jbyte*) data);
     (*env)->DeleteLocalRef(env, dataBytes);
 
-    CheckPendingExceptions(env);
-    return SUCCESS;
+    return CheckJNIExceptions(env) ? FAIL : SUCCESS;
 }
 
 void CryptoNative_HmacDestroy(void* ctx)
@@ -450,7 +440,12 @@ void CryptoNative_HmacDestroy(void* ctx)
 
 void* CryptoNative_EvpCipherCreate2(intptr_t type, uint8_t* key, int32_t keyLength, int32_t effectiveKeyLength, uint8_t* iv, int32_t enc)
 {
-    assert(effectiveKeyLength == 0 && "Not supported");
+    if (effectiveKeyLength == 0)
+    {
+        LOG_ERROR("Non-zero effectiveKeyLength is not supported");
+        return FAIL;
+    }
+
     // input:  0 for Decrypt, 1 for Encrypt
     // Cipher: 2 for Decrypt, 1 for Encrypt
     assert(enc == 0 || enc == 1);
@@ -464,34 +459,27 @@ void* CryptoNative_EvpCipherCreate2(intptr_t type, uint8_t* key, int32_t keyLeng
     // cipher.init(encMode, keySpec, ivSpec);
 
     jobject algName = NULL;
-    // AES128
-         if (type == CryptoNative_EvpAes128Ecb())    algName = (*env)->NewStringUTF(env, "AES/ECB/NoPadding");
-    else if (type == CryptoNative_EvpAes128Cbc())    algName = (*env)->NewStringUTF(env, "AES/CBC/NoPadding");
-    else if (type == CryptoNative_EvpAes128Cfb8())   algName = (*env)->NewStringUTF(env, "AES/CFB8/NoPadding");
-    else if (type == CryptoNative_EvpAes128Cfb128()) algName = (*env)->NewStringUTF(env, "AES/CFB128/NoPadding");
-    else if (type == CryptoNative_EvpAes128Gcm())    algName = (*env)->NewStringUTF(env, "AES/GCM/NoPadding");
-    else if (type == CryptoNative_EvpAes128Ccm())    algName = (*env)->NewStringUTF(env, "AES/CCM/NoPadding");
 
-    // AES192
-    else if (type == CryptoNative_EvpAes192Ecb())    algName = (*env)->NewStringUTF(env, "AES/ECB/NoPadding");
-    else if (type == CryptoNative_EvpAes192Cbc())    algName = (*env)->NewStringUTF(env, "AES/CBC/NoPadding");
-    else if (type == CryptoNative_EvpAes192Cfb8())   algName = (*env)->NewStringUTF(env, "AES/CFB8/NoPadding");
-    else if (type == CryptoNative_EvpAes192Cfb128()) algName = (*env)->NewStringUTF(env, "AES/CFB128/NoPadding");
-    else if (type == CryptoNative_EvpAes192Gcm())    algName = (*env)->NewStringUTF(env, "AES/GCM/NoPadding");
-    else if (type == CryptoNative_EvpAes192Ccm())    algName = (*env)->NewStringUTF(env, "AES/CCM/NoPadding");
-
-    // AES256
-    else if (type == CryptoNative_EvpAes256Ecb())    algName = (*env)->NewStringUTF(env, "AES/ECB/NoPadding");
-    else if (type == CryptoNative_EvpAes256Cbc())    algName = (*env)->NewStringUTF(env, "AES/CBC/NoPadding");
-    else if (type == CryptoNative_EvpAes256Cfb8())   algName = (*env)->NewStringUTF(env, "AES/CFB8/NoPadding");
-    else if (type == CryptoNative_EvpAes256Cfb128()) algName = (*env)->NewStringUTF(env, "AES/CFB128/NoPadding");
-    else if (type == CryptoNative_EvpAes256Gcm())    algName = (*env)->NewStringUTF(env, "AES/GCM/NoPadding");
-    else if (type == CryptoNative_EvpAes256Ccm())    algName = (*env)->NewStringUTF(env, "AES/CCM/NoPadding");
-
-    // DES
-    else if (type == CryptoNative_EvpDesEcb())       algName = (*env)->NewStringUTF(env, "DES/ECB/NoPadding");
-    else if (type == CryptoNative_EvpDesCbc())       algName = (*env)->NewStringUTF(env, "DES/CBC/NoPadding");
-    else if (type == CryptoNative_EvpDesCfb8())      algName = (*env)->NewStringUTF(env, "DES/CFB8/NoPadding");
+    if ((type == CryptoNative_EvpAes128Cbc()) ||
+        (type == CryptoNative_EvpAes192Cbc()) ||
+        (type == CryptoNative_EvpAes256Cbc()))
+    {
+        algName = (*env)->NewStringUTF(env, "AES/CBC/NoPadding");
+    }
+    else if (
+        (type == CryptoNative_EvpAes128Ecb()) ||
+        (type == CryptoNative_EvpAes192Ecb()) ||
+        (type == CryptoNative_EvpAes256Ecb()))
+    {
+        algName = (*env)->NewStringUTF(env, "AES/ECB/NoPadding");
+    }
+    else if (
+        (type == CryptoNative_EvpAes128Cfb8()) ||
+        (type == CryptoNative_EvpAes192Cfb8()) ||
+        (type == CryptoNative_EvpAes256Cfb8()))
+    {
+        algName = (*env)->NewStringUTF(env, "AES/CFB/NoPadding");
+    }
     else
     {
         LOG_ERROR("unexpected type: %d", (int)type);
@@ -516,8 +504,7 @@ void* CryptoNative_EvpCipherCreate2(intptr_t type, uint8_t* key, int32_t keyLeng
     (*env)->DeleteLocalRef(env, keyBytes);
     (*env)->DeleteLocalRef(env, ivBytes);
 
-    CheckPendingExceptions(env);
-    return cipherObj;
+    return CheckJNIExceptions(env) ? FAIL : cipherObj;
 }
 
 
@@ -542,8 +529,7 @@ int32_t CryptoNative_EvpCipherUpdate(void* ctx, uint8_t* outm, int32_t* outl, ui
 
     (*env)->DeleteLocalRef(env, inDataBytes);
 
-    CheckPendingExceptions(env);
-    return SUCCESS;
+    return CheckJNIExceptions(env) ? FAIL : SUCCESS;
 }
 
 int32_t CryptoNative_EvpCipherFinalEx(void* ctx, uint8_t* outm, int32_t* outl)
@@ -562,16 +548,20 @@ int32_t CryptoNative_EvpCipherFinalEx(void* ctx, uint8_t* outm, int32_t* outl)
     *outl = written;
     (*env)->DeleteLocalRef(env, outBytes);
 
-    CheckPendingExceptions(env);
-    return SUCCESS;
+    return CheckJNIExceptions(env) ? FAIL : SUCCESS;
 }
 
 int32_t CryptoNative_EvpCipherCtxSetPadding(void* x, int32_t padding)
 {
-    // .NET always provide 0 here, and it's already handled in 
-    // CryptoNative_EvpCipherCreate2 (see "NoPadding")
-    assert(padding == 0 && "unexpected padding");
-    return SUCCESS;
+    if (padding == 0)
+    {
+        return SUCCESS;
+    }
+    else
+    {
+        LOG_ERROR("Non-zero padding (%d) is not supported", (int)padding);
+        return FAIL;
+    }
 }
 
 int32_t CryptoNative_EvpCipherReset(void* ctx)
