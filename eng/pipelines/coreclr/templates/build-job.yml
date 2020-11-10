@@ -123,6 +123,9 @@ jobs:
     - ${{ if eq(parameters.osGroup, 'windows') }}:
       - name: ninjaArg
         value: '-ninja'
+  
+    - name: SignType
+      value: $[ coalesce(variables.OfficialSignType, 'real') ]
 
     - ${{ parameters.variables }}
 
