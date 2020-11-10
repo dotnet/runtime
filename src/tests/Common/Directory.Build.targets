@@ -10,6 +10,14 @@
 
   <Import Project="$(RepoRoot)eng/liveBuilds.targets" />
 
+  <PropertyGroup>
+    <GCStressDependsOnCoreDisTools>false</GCStressDependsOnCoreDisTools>
+    <GCStressDependsOnCoreDisTools Condition="'$(TargetOS)' == 'Windows' And ('$(TargetArchitecture)' == 'x64' Or '$(TargetArchitecture)' == 'x86')">true</GCStressDependsOnCoreDisTools>
+    <GCStressDependsOnCoreDisTools Condition="'$(TargetOS)' == 'Linux' And '$(TargetArchitecture)' == 'x64'">true</GCStressDependsOnCoreDisTools>
+  </PropertyGroup>
+
+  <Import Project="$(RepoRoot)eng/coredistools.targets" Condition="$(GCStressDependsOnCoreDisTools)" />
+
   <ItemGroup>
     <KnownFrameworkReference Remove="Microsoft.AspNetCore.App" />
     <KnownFrameworkReference Remove="Microsoft.WindowsDesktop.App" />
@@ -130,6 +138,10 @@
         <RunTimeDependencyCopyLocal
           Include="$(MonoProjectRoot)\wasm\runtime-test.js"
           TargetDir="runtime-test/"/>
+    </ItemGroup>
+
+    <ItemGroup>
+      <RunTimeDependencyCopyLocal Include="$(CoreDisToolsLibrary)" Condition="$(GCStressDependsOnCoreDisTools)" />
     </ItemGroup>
 
     <Copy
