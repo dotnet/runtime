@@ -12,6 +12,9 @@ using Internal.Cryptography;
 
 namespace System.Security.Cryptography.Pkcs
 {
+    /// <summary>
+    /// Represents time stamp token info class defined in RFC3161 as TSTInfo.
+    /// </summary>
     public sealed class Rfc3161TimestampTokenInfo
     {
         private readonly byte[] _encodedBytes;
@@ -20,6 +23,20 @@ namespace System.Security.Cryptography.Pkcs
         private Oid? _hashAlgorithmId;
         private ReadOnlyMemory<byte>? _tsaNameBytes;
 
+        /// <summary>
+        /// Initializes a new instance of the Rfc3161TimestampTokenInfo class.
+        /// </summary>
+        /// <param name="policyId">An OID representing TSA's policy under which the response was produced.</param>
+        /// <param name="hashAlgorithmId">A hash algorithm OID of the data to be time-stamped./param>
+        /// <param name="messageHash">A hash value of the data to be time-stamped.</param>
+        /// <param name="serialNumber">An integer assigned by the TSA to the <see cref="Rfc3161TimestampTokenInfo"/>.</param>
+        /// <param name="timestamp">Timestamp encoded in the token.</param>
+        /// <param name="accuracyInMicroseconds">Accuracy with which <paramref name="timestamp"/> is compared. Also see <paramref name="isOrdering"/>.</param>
+        /// <param name="isOrdering">true to ensure that every time-stamp token from the same TSA can always be ordered based on the <paramref name="timestamp"/>, regardless of the accuracy; false to make <paramref name="timestamp"/> indicate when token has been created by the TSA.</param>
+        /// <param name="nonce">An arbitrary number that can be used only once. Using a nonce always allows to detect replays, and hence its use is recommended.</param>
+        /// <param name="tsaName">Hint in the TSA name identification. The actual identification of the entity that signed the response will always occur through the use of the certificate identifier.</param>
+        /// <param name="extensions">Collection of X509 extensions.</param>
+        /// <remarks>If hash OID, message hash, policy or nonce is present in the <see cref="Rfc3161TimestampRequest"/>, then the same value should be used. If <paramref name="accuracyInMicroseconds"/> is not provided, then the accuracy may be available through other means such as i.e. policy.</remarks>
         public Rfc3161TimestampTokenInfo(
             Oid policyId,
             Oid hashAlgorithmId,
@@ -57,17 +74,62 @@ namespace System.Security.Cryptography.Pkcs
             _parsedData = tstInfo;
         }
 
+        /// <summary>
+        /// version of the Time-Stamp request.
+        /// </summary>
         public int Version => _parsedData.Version;
+
+        /// <summary>
+        /// An OID representing TSA's policy under which the response was produced.
+        /// </summary>
         public Oid PolicyId => (_policyOid ??= new Oid(_parsedData.Policy, null));
+
+        /// <summary>
+        /// An OID of the hash algorithm.
+        /// </summary>
         public Oid HashAlgorithmId => (_hashAlgorithmId ??= new Oid(_parsedData.MessageImprint.HashAlgorithm.Algorithm, null));
+
+        /// <summary>
+        /// Data representing message hash.
+        /// </summary>
         public ReadOnlyMemory<byte> GetMessageHash() => _parsedData.MessageImprint.HashedMessage;
+
+        /// <summary>
+        /// An integer assigned by the TSA to the <see cref="Rfc3161TimestampTokenInfo"/>.
+        /// </summary>
         public ReadOnlyMemory<byte> GetSerialNumber() => _parsedData.SerialNumber;
+
+        /// <summary>
+        /// Timestamp encoded in the token.
+        /// </summary>
         public DateTimeOffset Timestamp => _parsedData.GenTime;
+
+        /// <summary>
+        /// Accuracy with which <see cref="Timestamp"/> is compared. Also see <see cref="IsOrdering"/>.
+        /// </summary>
         public long? AccuracyInMicroseconds => _parsedData.Accuracy?.TotalMicros;
+
+        /// <summary>
+        /// Gets a value indicating if every time-stamp token from the same TSA can always be ordered based on the <see cref="Timestamp"/>, regardless of the accuracy; If false <see cref="Timestamp"/> indicate when token has been created by the TSA.
+        /// </summary>
         public bool IsOrdering => _parsedData.Ordering;
+
+        /// <summary>
+        /// An arbitrary number that can be used only once.
+        /// </summary>
         public ReadOnlyMemory<byte>? GetNonce() => _parsedData.Nonce;
+
+        /// <summary>
+        /// Gets a value indicating whether there are any X509 extensions.
+        /// </summary>
         public bool HasExtensions => _parsedData.Extensions?.Length > 0;
 
+        /// <summary>
+        /// Gets data representing hint in the TSA name identification.
+        /// The actual identification of the entity that signed the response
+        /// will always occur through the use of the certificate identifier (ESSCertID Attribute)
+        /// inside a SigningCertificate attribute which is part of the signer info.
+        /// </summary>
         public ReadOnlyMemory<byte>? GetTimestampAuthorityName()
         {
             if (_tsaNameBytes == null)
@@ -88,6 +150,9 @@ namespace System.Security.Cryptography.Pkcs
             return _tsaNameBytes.Value;
         }
 
+        /// <summary>
+        /// Returns collection of X509 certificates.
+        /// </summary>
         public X509ExtensionCollection GetExtensions()
         {
             var coll = new X509ExtensionCollection();
@@ -115,11 +180,20 @@ namespace System.Security.Cryptography.Pkcs
             return coll;
         }
 
+        /// <summary>
+        /// Returns byte array representing ASN.1 encoded data.
+        /// </summary>
         public byte[] Encode()
         {
             return _encodedBytes.CloneByteArray();
         }
 
+        /// <summary>
+        /// Gets ASN.1 encoded data.
+        /// </summary>
+        /// <param name="destination">Destination buffer.</param>
+        /// <param name="bytesWritten">Outputs bytes written to destination buffer.</param>
+        /// <returns>true if operation succeeded; false if buffer size was insufficient.</returns>
         public bool TryEncode(Span<byte> destination, out int bytesWritten)
         {
             if (destination.Length < _encodedBytes.Length)
@@ -133,6 +207,13 @@ namespace System.Security.Cryptography.Pkcs
             return true;
         }
 
+        /// <summary>
+        /// Decodes ASN.1 encoded data.
+        /// </summary>
+        /// <param name="source">Input or source buffer.</param>
+        /// <param name="timestampTokenInfo">Class representing decoded data or null when data could not be decoded.</param>
+        /// <param name="bytesConsumed">Number of bytes used for decoding.</param>
+        /// <returns>true if operation succeeded; false otherwise.</returns>
         public static bool TryDecode(
             ReadOnlyMemory<byte> source,
             [NotNullWhen(true)] out Rfc3161TimestampTokenInfo? timestampTokenInfo,
