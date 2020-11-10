@@ -48,8 +48,70 @@ namespace System.Net.Sockets.Tests
         public static IEnumerable<object[]> LoopbackWithBool =>
             from addr in Loopbacks
             from b in new[] { false, true }
-            from dummy in Enumerable.Repeat(0, 10)
+            from dummy in Enumerable.Range(0, 10)
             select new object[] { addr[0], b, dummy };
+
+        [Fact]
+        public void StressTestEnvironmentMore()
+        {
+            DoBurnCpu(60, 4);
+        }
+
+        [OuterLoop]
+        [Fact]
+        public void StressTestEnvironmentMore_OuterLoop()
+        {
+            DoBurnCpu(60, 4);
+        }
+
+        private static void DoBurnCpu(int seconds, int parallelism)
+        {
+            List<Task> tasks = new List<Task>();
+
+            for (int i = 0; i < parallelism; i++)
+            {
+                tasks.Add(Task.Factory.StartNew(BurnPlease, TaskCreationOptions.LongRunning));
+            }
+
+            Task.WhenAll(tasks).GetAwaiter().GetResult();
+
+            void BurnPlease()
+            {
+                TimeSpan dt = TimeSpan.FromSeconds(seconds);
+                DateTime end = DateTime.Now + dt;
+
+                while (DateTime.Now < end)
+                {
+                    FindPrimeNumber(500);
+                }
+            }
+        }
+
+        private static long FindPrimeNumber(int n)
+        {
+            int count = 0;
+            long a = 2;
+            while (count < n)
+            {
+                long b = 2;
+                int prime = 1;// to check if found a prime
+                while (b * b <= a)
+                {
+                    if (a % b == 0)
+                    {
+                        prime = 0;
+                        break;
+                    }
+                    b++;
+                }
+                if (prime > 0)
+                {
+                    count++;
+                }
+                a++;
+            }
+            return (--a);
+        }
 
         [Theory(Timeout = 60000)]
         [MemberData(nameof(LoopbackWithBool))]
