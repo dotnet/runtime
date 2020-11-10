@@ -302,6 +302,10 @@
       <Compile Include="$(BclSourcesRoot)\System\TypeSpec.cs" />
   </ItemGroup>
 
+  <ItemGroup Condition="'$(TargetsBrowser)' != 'true'">
+    <SupportedPlatform Include="browser"/>
+  </ItemGroup>
+
   <Import Project="$(LibrariesProjectRoot)\System.Private.CoreLib\src\System.Private.CoreLib.Shared.projitems" Label="Shared" />
 
   <Target Name="CopyCoreLibToBinDir" AfterTargets="Build">

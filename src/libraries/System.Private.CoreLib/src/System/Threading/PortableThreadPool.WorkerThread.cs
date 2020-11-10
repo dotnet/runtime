@@ -1,6 +1,8 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Runtime.Versioning;
+
 namespace System.Threading
 {
     internal partial class PortableThreadPool
@@ -158,12 +160,13 @@ namespace System.Threading
                 // but reduced the worker count *after* the request came in.  In this case, we might
                 // miss the notification of a thread request.  So we wake up a thread (maybe this one!)
                 // if there is work to do.
-                if (threadPoolInstance._separated.numRequestedWorkers > 0)
+                if (threadPoolInstance._separated.numRequestedWorkers > 0 && !OperatingSystem.IsBrowser())
                 {
                     MaybeAddWorkingWorker(threadPoolInstance);
                 }
             }
 
+            [UnsupportedOSPlatform("browser")]
             internal static void MaybeAddWorkingWorker(PortableThreadPool threadPoolInstance)
             {
                 ThreadCounts counts = threadPoolInstance._separated.counts.VolatileRead();
@@ -279,6 +282,7 @@ namespace System.Threading
                 return false;
             }
 
+            [UnsupportedOSPlatform("browser")]
             private static bool TryCreateWorkerThread()
             {
                 try

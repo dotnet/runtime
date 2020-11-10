@@ -4,6 +4,7 @@
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Diagnostics.Tracing;
+using System.Runtime.Versioning;
 using System.Threading.Tasks;
 
 namespace System.Threading
@@ -58,6 +59,7 @@ namespace System.Threading
         private long _currentTimerStartTicks;
         private uint _currentTimerDuration;
 
+        [UnsupportedOSPlatform("browser")]
         private bool EnsureTimerFiresBy(uint requestedDuration)
         {
             // The VM's timer implementation does not work well for very long-duration timers.
@@ -119,6 +121,7 @@ namespace System.Threading
         // We're in a thread pool work item here, and if there are multiple timers to be fired, we want
         // to queue all but the first one.  The first may can then be invoked synchronously or queued,
         // a task left up to our caller, which might be firing timers from multiple queues.
+        [UnsupportedOSPlatform("browser")]
         private void FireNextTimers()
         {
             // We fire the first timer on this thread; any other timers that need to be fired
@@ -280,6 +283,7 @@ namespace System.Threading
 
         public long ActiveCount { get; private set; }
 
+        [UnsupportedOSPlatform("browser")]
         public bool UpdateTimer(TimerQueueTimer timer, uint dueTime, uint period)
         {
             long nowTicks = TickCount64;
@@ -446,7 +450,7 @@ namespace System.Threading
 
         internal bool Change(uint dueTime, uint period)
         {
-            bool success;
+            bool success = false;
 
             lock (_associatedTimerQueue)
             {
@@ -464,7 +468,8 @@ namespace System.Threading
                 {
                     if (FrameworkEventSource.Log.IsEnabled(EventLevel.Informational, FrameworkEventSource.Keywords.ThreadTransfer))
                         FrameworkEventSource.Log.ThreadTransferSendObj(this, 1, string.Empty, true, (int)dueTime, (int)period);
-                    success = _associatedTimerQueue.UpdateTimer(this, dueTime, period);
+                    if (!OperatingSystem.IsBrowser())
+                        success = _associatedTimerQueue.UpdateTimer(this, dueTime, period);
                 }
             }
 

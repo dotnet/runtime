@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics;
+using System.Runtime.Versioning;
 using Microsoft.Win32.SafeHandles;
 
 namespace System.Threading
@@ -19,6 +20,7 @@ namespace System.Threading
         /// Register a wait handle on a <see cref="WaitThread"/>.
         /// </summary>
         /// <param name="handle">A description of the requested registration.</param>
+        [UnsupportedOSPlatform("browser")]
         internal void RegisterWaitHandle(RegisteredWaitHandle handle)
         {
             if (PortableThreadPoolEventSource.Log.IsEnabled())
@@ -58,6 +60,7 @@ namespace System.Threading
             }
         }
 
+        [UnsupportedOSPlatform("browser")]
         internal static void CompleteWait(RegisteredWaitHandle handle, bool timedOut)
         {
             if (PortableThreadPoolEventSource.Log.IsEnabled())
@@ -165,6 +168,7 @@ namespace System.Threading
 
             internal bool AnyUserWaits => _numUserWaits != 0;
 
+            [UnsupportedOSPlatform("browser")]
             public WaitThread()
             {
                 _waitHandles[0] = _changeHandlesEvent.SafeWaitHandle;
@@ -178,6 +182,7 @@ namespace System.Threading
             /// <summary>
             /// The main routine for the wait thread.
             /// </summary>
+            [UnsupportedOSPlatform("browser")]
             private void WaitThreadStart()
             {
                 while (true)
@@ -269,6 +274,7 @@ namespace System.Threading
             /// Go through the <see cref="_pendingRemoves"/> array and remove those registered wait handles from the <see cref="_registeredWaits"/>
             /// and <see cref="_waitHandles"/> arrays, filling the holes along the way.
             /// </summary>
+            [UnsupportedOSPlatform("browser")]
             private int ProcessRemovals()
             {
                 PortableThreadPool threadPoolInstance = ThreadPoolInstance;
@@ -349,6 +355,7 @@ namespace System.Threading
             /// </summary>
             /// <param name="registeredHandle">The handle that completed.</param>
             /// <param name="timedOut">Whether or not the wait timed out.</param>
+            [UnsupportedOSPlatform("browser")]
             private void QueueWaitCompletion(RegisteredWaitHandle registeredHandle, bool timedOut)
             {
                 registeredHandle.RequestCallback();
@@ -371,6 +378,7 @@ namespace System.Threading
             /// </summary>
             /// <param name="handle">The handle to register.</param>
             /// <returns>If the handle was successfully registered on this wait thread.</returns>
+            [UnsupportedOSPlatform("browser")]
             public bool RegisterWaitHandle(RegisteredWaitHandle handle)
             {
                 ThreadPoolInstance._waitThreadLock.VerifyIsLocked();
@@ -402,6 +410,7 @@ namespace System.Threading
             /// into <see cref="RegisteredWaitHandle.Unregister(WaitHandle)"/>, then the unregistration of the wait handle is blocking.
             /// Otherwise, the unregistration of the wait handle is queued on the wait thread.
             /// </remarks>
+            [UnsupportedOSPlatform("browser")]
             public void UnregisterWait(RegisteredWaitHandle handle)
             {
                 UnregisterWait(handle, true);
@@ -412,6 +421,7 @@ namespace System.Threading
             /// </summary>
             /// <param name="handle">The wait handle to unregister.</param>
             /// <param name="blocking">Should the unregistration block at all.</param>
+            [UnsupportedOSPlatform("browser")]
             private void UnregisterWait(RegisteredWaitHandle handle, bool blocking)
             {
                 bool pendingRemoval = false;

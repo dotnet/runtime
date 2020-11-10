@@ -3,6 +3,7 @@
 
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Runtime.Versioning;
 
 namespace System.Threading
 {
@@ -27,6 +28,7 @@ namespace System.Threading
         {
         }
 
+        [UnsupportedOSPlatform("browser")]
         private static List<TimerQueue> InitializeScheduledTimerManager_Locked()
         {
             Debug.Assert(s_scheduledTimers == null);
@@ -43,6 +45,7 @@ namespace System.Threading
             return timers;
         }
 
+        [UnsupportedOSPlatform("browser")]
         private bool SetTimer(uint actualDuration)
         {
             Debug.Assert((int)actualDuration >= 0);
@@ -133,6 +136,7 @@ namespace System.Threading
             }
         }
 
+        [UnsupportedOSPlatform("browser")]
         void IThreadPoolWorkItem.Execute() => FireNextTimers();
     }
 }

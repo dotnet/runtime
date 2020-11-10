@@ -454,7 +454,7 @@ namespace System.Threading
             while (count < Environment.ProcessorCount)
             {
                 int prev = Interlocked.CompareExchange(ref _separated.numOutstandingThreadRequests, count + 1, count);
-                if (prev == count)
+                if (prev == count && !OperatingSystem.IsBrowser())
                 {
                     ThreadPool.RequestWorkerThread();
                     break;
@@ -1449,6 +1449,7 @@ namespace System.Threading
             return RegisterWaitForSingleObject(waitObject, callBack, state, (uint)tm, executeOnlyOnce, false);
         }
 
+        [UnsupportedOSPlatform("browser")]
         private static RegisteredWaitHandle RegisterWaitForSingleObject(
              WaitHandle? waitObject,
              WaitOrTimerCallback? callBack,

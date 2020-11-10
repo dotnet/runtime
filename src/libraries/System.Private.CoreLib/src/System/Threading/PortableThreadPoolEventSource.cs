@@ -3,6 +3,7 @@
 
 using System.Diagnostics.Tracing;
 using System.Runtime.CompilerServices;
+using System.Runtime.Versioning;
 using Internal.Runtime.CompilerServices;
 
 namespace System.Threading
@@ -247,6 +248,7 @@ namespace System.Threading
         // FrameworkEventSource's thread transfer send/receive events instead at callers.
         [NonEvent]
         [MethodImpl(MethodImplOptions.NoInlining)]
+        [UnsupportedOSPlatform("browser")]
         public void ThreadPoolIOEnqueue(RegisteredWaitHandle registeredWaitHandle) =>
             ThreadPoolIOEnqueue((IntPtr)registeredWaitHandle.GetHashCode(), IntPtr.Zero, registeredWaitHandle.Repeating);
 

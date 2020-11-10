@@ -47,7 +47,9 @@ namespace System.Threading.Tasks
                 // Run LongRunning tasks on their own dedicated thread.
                 Thread thread = new Thread(s_longRunningThreadWork);
                 thread.IsBackground = true; // Keep this thread from blocking process shutdown
+#pragma warning disable CA1416 // Validate platform compatibility, Thread.IsThreadStartSupported true means not browser
                 thread.Start(task);
+#pragma warning restore CA1416 // Validate platform compatibility
             }
             else
             {
