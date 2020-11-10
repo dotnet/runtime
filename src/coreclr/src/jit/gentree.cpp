@@ -3255,7 +3255,6 @@ unsigned Compiler::gtSetEvalOrder(GenTree* tree)
                 costSz = 8;
                 costEx = 2;
                 goto COMMON_CNS;
-            }
 
             case GT_CNS_LNG:
             {
