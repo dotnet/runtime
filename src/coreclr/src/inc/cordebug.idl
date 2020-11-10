@@ -3307,6 +3307,9 @@ interface ICorDebugProcess10 : IUnknown
     // Enable or disable the GC notification events. The GC notification events are turned off by default
     // They will be delivered through ICorDebugManagedCallback4
     //
+    // This interface is deprecated. The EnableGCNotificationEvents(true) occasionally deadlocked debug sessions
+    // in .NET Core 5.0 and later. Please use the IID_ICorDebugHeapValue4 to pin an object and prevent its relocation
+    //
     // Parameters
     //   fEnable - true to enable the events, false to disable
     //
