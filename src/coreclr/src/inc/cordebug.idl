@@ -159,6 +159,7 @@ interface ICorDebugReferenceValue;
 interface ICorDebugHeapValue;
 interface ICorDebugHeapValue2;
 interface ICorDebugHeapValue3;
+interface ICorDebugHeapValue4;
 interface ICorDebugHandleValue;
 interface ICorDebugObjectValue;
 interface ICorDebugStringValue;
@@ -1603,13 +1604,15 @@ typedef enum CorDebugCreateProcessFlags
 
 
 /* ICorDebugHeapValue::CreateHandle takes a handle flavor.
- * A strong handle will keep an object alive while a weak track resurrection
- * will not.
+ *   - A strong handle will keep an object alive while allowing GC relocation
+ *   - A weak handle will not keep an object alive
+ *   - A pinned handle will keep an object alive and disallow GC relocation
  */
 typedef enum CorDebugHandleType
 {
     HANDLE_STRONG = 1,
-    HANDLE_WEAK_TRACK_RESURRECTION = 2
+    HANDLE_WEAK_TRACK_RESURRECTION = 2,
+    HANDLE_PINNED = 3
 } CorDebugHandleType;
 
 #pragma warning(push)
@@ -6470,6 +6473,27 @@ interface ICorDebugHeapValue3 : IUnknown
      * Gets the list of threads waiting on a monitor event
      */
     HRESULT GetMonitorEventWaitList([out] ICorDebugThreadEnum **ppThreadEnum);
+};
+
+/*
+ * ICorDebugHeapValue4
+ */
+
+[
+    object,
+    local,
+    uuid(B35DD495-A555-463B-9BE9-C55338486BB8),
+    pointer_default(unique)
+]
+interface ICorDebugHeapValue4 : IUnknown
+{
+
+    /*
+      * Creates a handle of the given type for this heap value.
+      *
+      */
+    HRESULT CreatePinnedHandle([out] ICorDebugHandleValue ** ppHandle);
+
 };
 
 /*
