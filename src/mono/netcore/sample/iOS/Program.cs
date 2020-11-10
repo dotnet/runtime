@@ -48,6 +48,6 @@ public static class Program
         }
 
         Console.WriteLine("Done!");
-        await Task.Delay(-1);
+        await Task.Delay(5000);
     }
 }
