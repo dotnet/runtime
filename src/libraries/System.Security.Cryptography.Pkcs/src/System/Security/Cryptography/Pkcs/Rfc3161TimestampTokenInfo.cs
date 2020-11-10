@@ -27,7 +27,7 @@ namespace System.Security.Cryptography.Pkcs
         /// Initializes a new instance of the Rfc3161TimestampTokenInfo class.
         /// </summary>
         /// <param name="policyId">An OID representing TSA's policy under which the response was produced.</param>
-        /// <param name="hashAlgorithmId">A hash algorithm OID of the data to be time-stamped./param>
+        /// <param name="hashAlgorithmId">A hash algorithm OID of the data to be time-stamped.</param>
         /// <param name="messageHash">A hash value of the data to be time-stamped.</param>
         /// <param name="serialNumber">An integer assigned by the TSA to the <see cref="Rfc3161TimestampTokenInfo"/>.</param>
         /// <param name="timestamp">Timestamp encoded in the token.</param>
