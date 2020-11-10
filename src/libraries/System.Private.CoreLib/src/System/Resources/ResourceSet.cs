@@ -1,8 +1,18 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+/*============================================================
+**
+**
+**
+**
+**
+** Purpose: Culture-specific collection of resources.
+**
+**
+===========================================================*/
+
 using System.Collections;
-using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.IO;
@@ -19,15 +29,15 @@ namespace System.Resources
     public class ResourceSet : IDisposable, IEnumerable
     {
         protected IResourceReader Reader = null!;
+        internal Hashtable? Table;
 
-        private Dictionary<object, object?>? _table;
-        private Dictionary<string, object?>? _caseInsensitiveTable;  // For case-insensitive lookups.
+        private Hashtable? _caseInsensitiveTable;  // For case-insensitive lookups.
 
         protected ResourceSet()
         {
             // To not inconvenience people subclassing us, we should allocate a new
             // hashtable here just so that Table is set to something.
-            _table = new Dictionary<object, object?>();
+            Table = new Hashtable();
         }
 
         // For RuntimeResourceSet, ignore the Table parameter - it's a wasted
@@ -86,7 +96,7 @@ namespace System.Resources
             }
             Reader = null!;
             _caseInsensitiveTable = null;
-            _table = null;
+            Table = null;
         }
 
         public void Dispose()
@@ -124,8 +134,10 @@ namespace System.Resources
 
         private IDictionaryEnumerator GetEnumeratorHelper()
         {
-            // Avoid a race with Dispose
-            return _table?.GetEnumerator() ?? throw new ObjectDisposedException(null, SR.ObjectDisposed_ResourceSet);
+            Hashtable? copyOfTable = Table;  // Avoid a race with Dispose
+            if (copyOfTable == null)
+                throw new ObjectDisposedException(null, SR.ObjectDisposed_ResourceSet);
+            return copyOfTable.GetEnumerator();
         }
 
         // Look up a string value for a resource given its name.
@@ -133,37 +145,48 @@ namespace System.Resources
         public virtual string? GetString(string name)
         {
             object? obj = GetObjectInternal(name);
-            if (obj is string s)
-                return s;
-
-            if (obj is null)
-                return null;
-
-            throw new InvalidOperationException(SR.Format(SR.InvalidOperation_ResourceNotString_Name, name));
+            try
+            {
+                return (string?)obj;
+            }
+            catch (InvalidCastException)
+            {
+                throw new InvalidOperationException(SR.Format(SR.InvalidOperation_ResourceNotString_Name, name));
+            }
         }
 
         public virtual string? GetString(string name, bool ignoreCase)
         {
+            object? obj;
+            string? s;
+
             // Case-sensitive lookup
-            object? obj = GetObjectInternal(name);
-            if (obj is string s)
-                return s;
-
-            if (obj is not null)
+            obj = GetObjectInternal(name);
+            try
+            {
+                s = (string?)obj;
+            }
+            catch (InvalidCastException)
+            {
                 throw new InvalidOperationException(SR.Format(SR.InvalidOperation_ResourceNotString_Name, name));
+            }
 
-            if (!ignoreCase)
-                return null;
+            // case-sensitive lookup succeeded
+            if (s != null || !ignoreCase)
+            {
+                return s;
+            }
 
             // Try doing a case-insensitive lookup
             obj = GetCaseInsensitiveObjectInternal(name);
-            if (obj is string si)
-                return si;
-
-            if (obj is null)
-                return null;
-
-            throw new InvalidOperationException(SR.Format(SR.InvalidOperation_ResourceNotString_Name, name));
+            try
+            {
+                return (string?)obj;
+            }
+            catch (InvalidCastException)
+            {
+                throw new InvalidOperationException(SR.Format(SR.InvalidOperation_ResourceNotString_Name, name));
+            }
         }
 
         // Look up an object value for a resource given its name.
@@ -185,12 +208,13 @@ namespace System.Resources
 
         protected virtual void ReadResources()
         {
-            Debug.Assert(_table != null);
+            Debug.Assert(Table != null);
             Debug.Assert(Reader != null);
             IDictionaryEnumerator en = Reader.GetEnumerator();
             while (en.MoveNext())
             {
-                _table.Add(en.Key, en.Value);
+                object? value = en.Value;
+                Table.Add(en.Key, value);
             }
             // While technically possible to close the Reader here, don't close it
             // to help with some WinRes lifetime issues.
@@ -201,38 +225,35 @@ namespace System.Resources
             if (name == null)
                 throw new ArgumentNullException(nameof(name));
 
-            Dictionary<object, object?>? copyOfTable = _table;  // Avoid a race with Dispose
+            Hashtable? copyOfTable = Table;  // Avoid a race with Dispose
 
             if (copyOfTable == null)
                 throw new ObjectDisposedException(null, SR.ObjectDisposed_ResourceSet);
 
-            copyOfTable.TryGetValue(name, out object? value);
-            return value;
+            return copyOfTable[name];
         }
 
         private object? GetCaseInsensitiveObjectInternal(string name)
         {
-            Dictionary<object, object?>? copyOfTable = _table;  // Avoid a race with Dispose
+            Hashtable? copyOfTable = Table;  // Avoid a race with Dispose
 
             if (copyOfTable == null)
                 throw new ObjectDisposedException(null, SR.ObjectDisposed_ResourceSet);
 
-            Dictionary<string, object?>? caseTable = _caseInsensitiveTable;  // Avoid a race condition with Close
+            Hashtable? caseTable = _caseInsensitiveTable;  // Avoid a race condition with Close
             if (caseTable == null)
             {
-                caseTable = new Dictionary<string, object?>(copyOfTable.Count, StringComparer.OrdinalIgnoreCase);
-                foreach (var item in copyOfTable)
-                {
-                    if (item.Key is not string s)
-                        continue;
+                caseTable = new Hashtable(StringComparer.OrdinalIgnoreCase);
 
-                    caseTable.Add(s, item.Value);
+                IDictionaryEnumerator en = copyOfTable.GetEnumerator();
+                while (en.MoveNext())
+                {
+                    caseTable.Add(en.Key, en.Value);
                 }
                 _caseInsensitiveTable = caseTable;
             }
 
-            caseTable.TryGetValue(name, out object? value);
-            return value;
+            return caseTable[name];
         }
     }
 }
