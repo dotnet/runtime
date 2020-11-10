@@ -54,14 +54,14 @@ namespace System.Net.Sockets.Tests
         [Fact]
         public void StressTestEnvironmentMore()
         {
-            DoBurnCpu(60, 4);
+            DoBurnCpu(30, 4);
         }
 
         [OuterLoop]
         [Fact]
         public void StressTestEnvironmentMore_OuterLoop()
         {
-            DoBurnCpu(60, 4);
+            DoBurnCpu(30, 4);
         }
 
         private static void DoBurnCpu(int seconds, int parallelism)
