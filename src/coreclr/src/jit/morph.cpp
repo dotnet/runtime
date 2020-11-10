@@ -9086,26 +9086,6 @@ GenTree* Compiler::fgMorphCall(GenTreeCall* call)
         }
     }
 
-    // Optimize get_ManagedThreadId(get_CurrentThread)
-    if ((call->gtCallMoreFlags & GTF_CALL_M_SPECIAL_INTRINSIC) &&
-        info.compCompHnd->getIntrinsicID(call->gtCallMethHnd) == CORINFO_INTRINSIC_GetManagedThreadId)
-    {
-        noway_assert(origDest == nullptr);
-        noway_assert(call->gtCallLateArgs->GetNode() != nullptr);
-
-        GenTree* innerCall = call->gtCallLateArgs->GetNode();
-
-        if (innerCall->gtOper == GT_CALL && (innerCall->AsCall()->gtCallMoreFlags & GTF_CALL_M_SPECIAL_INTRINSIC) &&
-            info.compCompHnd->getIntrinsicID(innerCall->AsCall()->gtCallMethHnd) ==
-                CORINFO_INTRINSIC_GetCurrentManagedThread)
-        {
-            // substitute expression with call to helper
-            GenTree* newCall = gtNewHelperCallNode(CORINFO_HELP_GETCURRENTMANAGEDTHREADID, TYP_INT);
-            JITDUMP("get_ManagedThreadId(get_CurrentThread) folding performed\n");
-            return fgMorphTree(newCall);
-        }
-    }
-
     if (origDest != nullptr)
     {
         GenTree* retValVarAddr = gtNewOperNode(GT_ADDR, TYP_BYREF, gtNewLclvNode(retValTmpNum, TYP_STRUCT));
