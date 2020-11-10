@@ -12,6 +12,7 @@
 // DefaultPolicy        - default inliner policy
 // DiscretionaryPolicy  - default variant with uniform size policy
 // ModelPolicy          - policy based on statistical modelling
+// ProfilePolicy        - policy based on statistical modelling and profile feedback
 //
 // These experimental policies are available only in
 // DEBUG or release+INLINE_DATA builds of the jit.
@@ -315,7 +316,7 @@ public:
 class ProfilePolicy : public DiscretionaryPolicy
 {
 public:
-    // Construct a ModelPolicy
+    // Construct a ProfilePolicy
     ProfilePolicy(Compiler* compiler, bool isPrejitRoot);
 
     // Policy observations
