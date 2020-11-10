@@ -103,8 +103,8 @@ namespace System
 
         // Load the specified assembly, and call the specified type's
         // "static void Initialize()" method.
-        [RequiresUnreferencedCode("Trimming may remove assemblies, types or members used by startup hooks. " +
-                                  "These can be disabled using the StartupHookSupport feature switch")]
+        [RequiresUnreferencedCode("The StartupHookSupport feature switch has been enabled for this app which is being trimmed. " +
+            "Startup hook code is not observable by the trimmer and so required assemblies, types and members may be removed")]
         private static void CallStartupHook(StartupHookNameOrPath startupHook)
         {
             Assembly assembly;
