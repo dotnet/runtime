@@ -373,21 +373,7 @@ namespace System.IO
                 return Task.FromException(e);
             }
 
-            // We then separately flush to disk asynchronously.  This is only
-            // necessary if we support writing; otherwise, we're done.
-            if (CanWrite)
-            {
-                return Task.Factory.StartNew(
-                    static state => ((FileStream)state!).FlushOSBuffer(),
-                    this,
-                    cancellationToken,
-                    TaskCreationOptions.DenyChildAttach,
-                    TaskScheduler.Default);
-            }
-            else
-            {
-                return Task.CompletedTask;
-            }
+            return Task.CompletedTask;
         }
 
         /// <summary>Sets the length of this stream to the given value.</summary>
