@@ -1532,10 +1532,10 @@ namespace Microsoft.Extensions.FileProviders
         }
 
         [Theory]
-        [InlineData(false, false)]
-        [InlineData(false, true)]
-        [InlineData(true, true)]
-        public async Task CanDeleteWatchedDirectory(bool usePolling, bool useActivePolling)
+        [InlineData(false)]
+        [InlineData(true)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/34580", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
+        public async Task CanDeleteWatchedDirectory(bool useActivePolling)
         {
             using (var root = new DisposableFileSystem())
             using (var provider = new PhysicalFileProvider(root.RootPath))
@@ -1544,14 +1544,14 @@ namespace Microsoft.Extensions.FileProviders
                 var fileLocation = Path.Combine(root.RootPath, fileName);
                 PollingFileChangeToken.PollingInterval = TimeSpan.FromMilliseconds(10);
 
-                provider.UsePollingFileWatcher = usePolling;
+                provider.UsePollingFileWatcher = true;  // We must use polling due to https://github.com/dotnet/runtime/issues/44484
                 provider.UseActivePolling = useActivePolling;
 
                 root.CreateFile(fileName);
                 var token = provider.Watch(fileName);
                 Directory.Delete(root.RootPath, true);
 
-                await Task.Delay(WaitTimeForTokenToFire);
+                await Task.Delay(WaitTimeForTokenToFire).ConfigureAwait(false);
 
                 Assert.True(token.HasChanged);
             }
