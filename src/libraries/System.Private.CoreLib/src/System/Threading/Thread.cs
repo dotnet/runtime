@@ -155,7 +155,14 @@ namespace System.Threading
             }
         }
 
-        public static Thread CurrentThread => t_currentThread ?? InitializeCurrentThread();
+        public static Thread CurrentThread
+        {
+            [Intrinsic]
+            get
+            {
+                return t_currentThread ?? InitializeCurrentThread();
+            }
+        }
 
         public ExecutionContext? ExecutionContext => ExecutionContext.Capture();
 

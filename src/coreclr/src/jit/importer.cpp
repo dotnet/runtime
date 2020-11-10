@@ -4189,14 +4189,6 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
             break;
         }
 
-        case CORINFO_INTRINSIC_GetCurrentManagedThread:
-        case CORINFO_INTRINSIC_GetManagedThreadId:
-        {
-            // Retry optimizing these during morph
-            isSpecial = true;
-            break;
-        }
-
         default:
             /* Unknown intrinsic */
             intrinsicID = CORINFO_INTRINSIC_Illegal;
@@ -4273,6 +4265,25 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
                                                   ? 1
                                                   : 0);
                             impPopStack(); // drop CORINFO_HELP_TYPEHANDLE_TO_RUNTIMETYPE call
+                        }
+                    }
+                }
+                break;
+            }
+
+            case NI_System_Threading_Thread_get_ManagedThreadId:
+            {
+                if (opts.OptimizationEnabled() && impStackTop().val->OperIs(GT_RET_EXPR))
+                {
+                    GenTreeCall* call = impStackTop().val->AsRetExpr()->gtInlineCandidate->AsCall();
+                    if (call->gtFlags & CORINFO_FLG_JIT_INTRINSIC)
+                    {
+                        if (lookupNamedIntrinsic(call->gtCallMethHnd) == NI_System_Threading_Thread_get_CurrentThread)
+                        {
+                            // drop get_CurrentThread() call
+                            impPopStack();
+                            call->ReplaceWith(gtNewNothingNode(), this);
+                            retNode = gtNewHelperCallNode(CORINFO_HELP_GETCURRENTMANAGEDTHREADID, TYP_INT);
                         }
                     }
                 }
@@ -4764,6 +4775,20 @@ NamedIntrinsic Compiler::lookupNamedIntrinsic(CORINFO_METHOD_HANDLE method)
             else if (strcmp(methodName, "IsAssignableTo") == 0)
             {
                 result = NI_System_Type_IsAssignableTo;
+            }
+        }
+    }
+    else if (strcmp(namespaceName, "System.Threading") == 0)
+    {
+        if (strcmp(className, "Thread") == 0)
+        {
+            if (strcmp(methodName, "get_CurrentThread") == 0)
+            {
+                result = NI_System_Threading_Thread_get_CurrentThread;
+            }
+            else if (strcmp(methodName, "get_ManagedThreadId") == 0)
+            {
+                result = NI_System_Threading_Thread_get_ManagedThreadId;
             }
         }
     }

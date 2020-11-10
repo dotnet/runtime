@@ -4399,21 +4399,6 @@ HCIMPL1(void, IL_VerificationError,  int ilOffset)
 HCIMPLEND
 
 /*********************************************************************/
-HCIMPL1(void, JIT_SecurityUnmanagedCodeException, CORINFO_CLASS_HANDLE typeHnd_)
-{
-    FCALL_CONTRACT;
-
-    FC_GC_POLL_NOT_NEEDED();    // throws always open up for GC
-
-    HELPER_METHOD_FRAME_BEGIN_ATTRIB_NOPOLL(Frame::FRAME_ATTR_EXCEPTION);    // Set up a frame
-
-    COMPlusThrow(kSecurityException);
-
-    HELPER_METHOD_FRAME_END();
-}
-HCIMPLEND
-
-/*********************************************************************/
 static RuntimeExceptionKind MapCorInfoExceptionToRuntimeExceptionKind(unsigned exceptNum)
 {
     LIMITED_METHOD_CONTRACT;
