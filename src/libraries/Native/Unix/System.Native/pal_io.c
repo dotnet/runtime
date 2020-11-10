@@ -636,7 +636,7 @@ int32_t SystemNative_FSync(intptr_t fd)
 
     int32_t result;
     while ((result = 
-#if HAVE_F_FULLFSYNC
+#if defined(TARGET_OSX) && HAVE_F_FULLFSYNC
     fcntl(fileDescriptor, F_FULLFSYNC)
 #else
     fsync(fileDescriptor)
