@@ -43,52 +43,6 @@
 #include "interoputil.h"
 #endif // FEATURE_COMINTEROP
 
-//
-// NumParamBytes
-// Counts # of parameter bytes
-INT32 QCALLTYPE MarshalNative::NumParamBytes(MethodDesc * pMD)
-{
-    QCALL_CONTRACT;
-
-    // Arguments are check on managed side
-    PRECONDITION(pMD != NULL);
-
-    INT32 cbParamBytes = 0;
-
-    BEGIN_QCALL;
-
-    if (!(pMD->IsNDirect()))
-        COMPlusThrow(kArgumentException, IDS_EE_NOTNDIRECT);
-
-    // Read the unmanaged stack size from the stub MethodDesc. For vararg P/Invoke,
-    // this function returns size of the fixed portion of the stack.
-    // Note that the following code does not throw if the DllImport declaration is
-    // incorrect (such as a vararg method not marked as CallingConvention.Cdecl).
-
-    MethodDesc * pStubMD = NULL;
-
-    PCODE pTempStub = NULL;
-    pTempStub = GetStubForInteropMethod(pMD, NDIRECTSTUB_FL_FOR_NUMPARAMBYTES, &pStubMD);
-    _ASSERTE(pTempStub == NULL);
-
-    _ASSERTE(pStubMD != NULL && pStubMD->IsILStub());
-
-    cbParamBytes = pStubMD->AsDynamicMethodDesc()->GetNativeStackArgSize();
-
-#ifdef HOST_X86
-    if (((NDirectMethodDesc *)pMD)->IsThisCall())
-    {
-        // The size of 'this' is not included in native stack arg size.
-        cbParamBytes += sizeof(LPVOID);
-    }
-#endif // HOST_X86
-
-    END_QCALL;
-
-    return cbParamBytes;
-}
-
-
 // Prelink
 // Does advance loading of an N/Direct library
 VOID QCALLTYPE MarshalNative::Prelink(MethodDesc * pMD)

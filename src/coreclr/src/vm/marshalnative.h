@@ -16,28 +16,9 @@
 
 #define MAX_UTF8_CHAR_SIZE 3
 
-//!!! Must be kept in sync with ArrayWithOffset class layout.
-struct ArrayWithOffsetData
-{
-    BASEARRAYREF    m_Array;
-    INT32           m_cbOffset;
-    INT32           m_cbCount;
-};
-
-
-#ifdef FEATURE_COMINTEROP
-enum ComMemberType
-{
-    CMT_Method              = 0,
-    CMT_PropGet             = 1,
-    CMT_PropSet             = 2
-};
-#endif // FEATURE_COMINTEROP
-
 class MarshalNative
 {
 public:
-    static INT32 QCALLTYPE NumParamBytes(MethodDesc * pMD);
     static VOID QCALLTYPE Prelink(MethodDesc * pMD);
 
     //====================================================================
