@@ -1179,9 +1179,6 @@
 /* F_DUPFD_CLOEXEC */
 #cmakedefine HAVE_F_DUPFD_CLOEXEC 1
 
-/* F_FULLFSYNC */
-#cmakedefine HAVE_F_FULLFSYNC 1
-
 /* Qp2getifaddrs */
 #cmakedefine HAVE_QP2GETIFADDRS 1
 
