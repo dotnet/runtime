@@ -197,6 +197,7 @@ namespace System.Net.Sockets.Tests
                 Assert.NotNull(receivedChecksums[i]);
                 Assert.Equal(sentChecksums[i], (uint)receivedChecksums[i]);
             }
+            _output.WriteLine("- REACHED END -");
         }
 
         [OuterLoop]
