@@ -11529,7 +11529,6 @@ void Compiler::gtDispTree(GenTree*     tree,
 #else
             printf(" (%d slots), (%d stackByteSize), (%d slot), (%d byteOffset)", putArg->gtNumSlots,
                    putArg->GetStackByteSize(), putArg->gtSlotNum, putArg->getArgOffset());
-
 #endif
             if (putArg->gtPutArgStkKind != GenTreePutArgStk::Kind::Invalid)
             {
@@ -11552,6 +11551,19 @@ void Compiler::gtDispTree(GenTree*     tree,
                 }
             }
         }
+#if FEATURE_ARG_SPLIT
+        else if (tree->OperGet() == GT_PUTARG_SPLIT)
+        {
+            const GenTreePutArgSplit* putArg = tree->AsPutArgSplit();
+#if !defined(DEBUG_ARG_SLOTS)
+            printf(" (%d stackByteSize), (%d byteOffset), (%d numRegs)", putArg->GetStackByteSize(),
+                   putArg->getArgOffset(), putArg->gtNumRegs);
+#else
+            printf(" (%d slots), (%d stackByteSize), (%d slot), (%d byteOffset), (%d numRegs)", putArg->gtNumSlots,
+                   putArg->GetStackByteSize(), putArg->gtSlotNum, putArg->getArgOffset(), putArg->gtNumRegs);
+#endif
+        }
+#endif // FEATURE_ARG_SPLIT
 #endif // FEATURE_PUT_STRUCT_ARG_STK
 
         if (tree->gtOper == GT_INTRINSIC)
