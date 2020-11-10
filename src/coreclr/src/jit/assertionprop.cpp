@@ -2168,7 +2168,7 @@ void Compiler::optAssertionGen(GenTree* tree)
             // with a GTF_CALL_NULLCHECK flag set.
             // Ignore tail calls because they have 'this` pointer in the regular arg list and an implicit null check.
             GenTreeCall* const call = tree->AsCall();
-            if (call->NeedsNullCheck() || call->IsVirtual())
+            if (call->NeedsNullCheck() || (call->IsVirtual() && !call->IsTailCall()))
             {
                 //  Retrieve the 'this' arg.
                 GenTree* thisArg = gtGetThisArg(call);
