@@ -379,16 +379,57 @@ namespace System
         }
 
         /// <summary>
-        /// Validates that the actual collection is equal to the expected collection. This will display count if two collection count is different;
-        /// or what point the equality assertion failed, if the test fails.
+        /// Validates that the actual collection contains same items as expected collection. If the test fails, this will display:
+        /// 1. Count if two collection count are different;
+        /// 2. Missed expected collection item when found
         /// </summary>
-        /// <param name="expected">The collection that <paramref name="actual"/> should be equal to.</param>
+        /// <param name="expected">The collection that <paramref name="actual"/> should contain same items as</param>
         /// <param name="actual"></param>
         /// <param name="comparer">The comparer used to compare the items in two collections</param>
         public static void CollectionEqual<T>(IEnumerable<T> expected, IEnumerable<T> actual, IEqualityComparer<T> comparer)
         {
-            var elementInspectors = expected.Select(exp => new Action<T>(act => Assert.Equal(exp, act, comparer))).ToArray();
-            Assert.Collection(actual, elementInspectors);
+            var actualItemCountMapping = new Dictionary<T, ItemCount>(comparer);
+            var actualCount = 0;
+            foreach (var actualItem in actual)
+            {
+                if (actualItemCountMapping.TryGetValue(actualItem, out var countInfo))
+                {
+                    countInfo.Original++;
+                    countInfo.Remain++;
+                }
+                else
+                {
+                    countInfo = new ItemCount(1, 1);
+                }
+
+                actualItemCountMapping[actualItem] = countInfo;
+                actualCount++;
+            }
+
+            var expectedArray = expected.ToArray();
+            var expectedCount = expectedArray.Length;
+
+            if (expectedCount != actualCount)
+            {
+                throw new XunitException($"Expected count: {expectedCount}{Environment.NewLine}Actual count: {actualCount}");
+            }
+
+            for (var i = 0; i < expectedCount; i++)
+            {
+                var currentExpectedItem = expectedArray[i];
+                if (!actualItemCountMapping.TryGetValue(currentExpectedItem, out var countInfo))
+                {
+                    throw new XunitException($"Not found: {currentExpectedItem}");
+                }
+
+                if (countInfo.Remain == 0)
+                {
+                    throw new XunitException($"Expected more: {currentExpectedItem}{Environment.NewLine}Actual: totally {countInfo.Original} {currentExpectedItem}");
+                }
+
+                countInfo.Remain--;
+                actualItemCountMapping[currentExpectedItem] = countInfo;
+            }
         }
 		
         public static void AtLeastOneEquals<T>(T expected1, T expected2, T value)
@@ -467,6 +508,18 @@ namespace System
             E exception = AssertThrows<E, T>(span, action);
             Assert.Equal(expectedParamName, exception.ParamName);
             return exception;
+        }
+		
+		private struct ItemCount
+        {
+            public int Original;
+            public int Remain;
+
+            public ItemCount(int original, int remain)
+            {
+                Original = original;
+                Remain = remain;
+            }
         }
     }
 }

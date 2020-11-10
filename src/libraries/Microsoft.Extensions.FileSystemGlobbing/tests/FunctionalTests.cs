@@ -365,7 +365,7 @@ namespace Microsoft.Extensions.FileSystemGlobbing.Tests
                 "compiler/shared/sub/sub/sharedsub.cs"
             };
 
-            AssertExtensions.CollectionEqual(expected.OrderBy(e => e), actual.OrderBy(e => e), StringComparer.OrdinalIgnoreCase);
+            AssertExtensions.CollectionEqual(expected, actual, StringComparer.OrdinalIgnoreCase);
         }
 
         [Fact]
@@ -395,7 +395,7 @@ namespace Microsoft.Extensions.FileSystemGlobbing.Tests
                 "compiler/shared/sub/sub/sharedsub.cs"
             };
 
-            AssertExtensions.CollectionEqual(expected.OrderBy(e => e), actual.OrderBy(e => e), StringComparer.OrdinalIgnoreCase);
+            AssertExtensions.CollectionEqual(expected, actual, StringComparer.OrdinalIgnoreCase);
         }
 
         [Fact]
@@ -418,7 +418,7 @@ namespace Microsoft.Extensions.FileSystemGlobbing.Tests
                 "shared/sub/sub/sharedsub.cs"
             };
 
-            AssertExtensions.CollectionEqual(expected.OrderBy(e => e), actual.OrderBy(e => e), StringComparer.OrdinalIgnoreCase);
+            AssertExtensions.CollectionEqual(expected, actual, StringComparer.OrdinalIgnoreCase);
         }
 
         [Fact]
@@ -442,7 +442,7 @@ namespace Microsoft.Extensions.FileSystemGlobbing.Tests
                 "shared/sub/sub/sharedsub.cs"
             };
 
-            AssertExtensions.CollectionEqual(expected.OrderBy(e => e), actual.OrderBy(e => e), StringComparer.OrdinalIgnoreCase);
+            AssertExtensions.CollectionEqual(expected, actual, StringComparer.OrdinalIgnoreCase);
         }
 
         private List<string> GetFileList()
@@ -518,7 +518,7 @@ namespace Microsoft.Extensions.FileSystemGlobbing.Tests
             var actual = results.Files.Select(match => Path.GetFullPath(Path.Combine(_context.RootPath, directoryPath, match.Path)));
             var expected = expectFiles.Select(relativePath => Path.GetFullPath(Path.Combine(_context.RootPath, relativePath)));
 
-            AssertExtensions.CollectionEqual(expected.OrderBy(e => e), actual.OrderBy(e => e), StringComparer.OrdinalIgnoreCase);
+            AssertExtensions.CollectionEqual(expected, actual, StringComparer.OrdinalIgnoreCase);
         }
     }
 }
