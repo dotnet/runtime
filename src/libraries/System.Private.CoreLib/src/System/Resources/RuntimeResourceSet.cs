@@ -272,7 +272,6 @@ namespace System.Resources
 
             ResourceReader? reader = _defaultReader;
             Dictionary<string, ResourceLocator>? cache = _resCache;
-            Dictionary<string, ResourceLocator>? caseInsensitiveTable = _caseInsensitiveTable;
             if (reader is null || cache is null)
                 throw new ObjectDisposedException(null, SR.ObjectDisposed_ResourceSet);
 
@@ -311,6 +310,7 @@ namespace System.Resources
             // We haven't found the particular resource we're looking for
             // and may have to search for it in a case-insensitive way.
             bool initialize = false;
+            Dictionary<string, ResourceLocator>? caseInsensitiveTable = _caseInsensitiveTable;
             if (caseInsensitiveTable == null)
             {
                 caseInsensitiveTable = new Dictionary<string, ResourceLocator>(StringComparer.OrdinalIgnoreCase);
