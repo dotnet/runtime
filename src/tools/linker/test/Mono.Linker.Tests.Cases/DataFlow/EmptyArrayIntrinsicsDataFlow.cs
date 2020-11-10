@@ -17,6 +17,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			TestGetPublicParameterlessConstructorWithEmptyTypes ();
 			TestGetPublicParameterlessConstructorWithArrayEmpty ();
 			TestGetPublicParameterlessConstructorWithUnknownArray ();
+			TestGetConstructorOverloads ();
 		}
 
 		[UnrecognizedReflectionAccessPattern (typeof (Type), nameof (Type.GetMethod), new Type[] { typeof (string) }, messageCode: "IL2080")]
@@ -37,6 +38,14 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 		static void TestGetPublicParameterlessConstructorWithUnknownArray ()
 		{
 			s_typeWithKeptPublicParameterlessConstructor.GetConstructor (s_localEmptyArrayInvisibleToAnalysis);
+		}
+
+		[UnrecognizedReflectionAccessPattern (typeof (Type), nameof (Type.GetMethod), new Type[] { typeof (string) }, messageCode: "IL2080")]
+		static void TestGetConstructorOverloads ()
+		{
+			s_typeWithKeptPublicParameterlessConstructor.GetConstructor (BindingFlags.Public, null, Type.EmptyTypes, null);
+			s_typeWithKeptPublicParameterlessConstructor.GetConstructor (BindingFlags.Public, null, CallingConventions.Any, Type.EmptyTypes, null);
+			s_typeWithKeptPublicParameterlessConstructor.GetMethod ("Foo");
 		}
 
 		static Type[] s_localEmptyArrayInvisibleToAnalysis = Type.EmptyTypes;

@@ -842,7 +842,7 @@ namespace Mono.Linker.Dataflow
 						int? ctorParameterCount = parameters.Count switch
 						{
 							1 => (methodParams[1] as ArrayValue)?.Size.AsConstInt (),
-							2 => (methodParams[3] as ArrayValue)?.Size.AsConstInt (),
+							4 => (methodParams[3] as ArrayValue)?.Size.AsConstInt (),
 							5 => (methodParams[4] as ArrayValue)?.Size.AsConstInt (),
 							_ => null,
 						};
