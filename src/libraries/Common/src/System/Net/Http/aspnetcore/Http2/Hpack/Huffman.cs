@@ -477,7 +477,7 @@ namespace System.Net.Http.HPack
             }
 
             // Finish decoding last < 8 bits of src.
-            // Processing of the last byte has to handle several corner cases 
+            // Processing of the last byte has to handle several corner cases
             // so it's extracted outside of the main loop for performance reasons.
             while (bitsInAcc > 0)
             {
