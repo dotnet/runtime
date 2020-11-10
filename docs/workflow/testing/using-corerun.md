@@ -31,7 +31,7 @@ Consider that you already have a .NET application DLL called HelloWorld.dll and 
 
 If you execute the following
 ```bat
-    set PATH=%PATH%;%CoreCLR%\artifacts\tests\coreclr\Windows_NT.x64.Debug\Tests\Core_Root\
+    set PATH=%PATH%;%CoreCLR%\artifacts\tests\coreclr\windows.x64.Debug\Tests\Core_Root\
     set CORE_LIBRARIES=%ProgramFiles%\dotnet\shared\Microsoft.NETCore.App\1.0.0
 
 
@@ -73,11 +73,11 @@ variable CORE_ROOT to this directory
 (running src\tests\build from the repository base) and running 'src\tests\run') you can do the following
 
 ```bat
-    set PATH=%PATH%;%CoreCLR%\artifacts\Product\Windows_NT.x64.Debug
-    set CORE_ROOT=%CoreCLR%\artifacts\tests\coreclr\Windows_NT.x64.Debug\Tests\Core_Root
+    set PATH=%PATH%;%CoreCLR%\artifacts\Product\windows.x64.Debug
+    set CORE_ROOT=%CoreCLR%\artifacts\tests\coreclr\windows.x64.Debug\Tests\Core_Root
 ```
 sets you up so that corerun can run any of the test.   For example
 ```bat
-    corerun artifacts\tests\coreclr\Windows_NT.X64.Debug\GC\Features\Finalizer\finalizeio\finalizeio\finalizeio.exe
+    corerun artifacts\tests\coreclr\windows.X64.Debug\GC\Features\Finalizer\finalizeio\finalizeio\finalizeio.exe
 ```
 runs the finalizerio test.

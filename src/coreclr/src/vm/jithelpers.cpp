@@ -5624,10 +5624,10 @@ void InitJitHelperLogging()
     {
 
 #ifdef TARGET_X86
-        IMAGE_DOS_HEADER *pDOS = (IMAGE_DOS_HEADER *)g_hThisInst;
+        IMAGE_DOS_HEADER *pDOS = (IMAGE_DOS_HEADER *)GetClrModuleBase();
         _ASSERTE(pDOS->e_magic == VAL16(IMAGE_DOS_SIGNATURE) && pDOS->e_lfanew != 0);
 
-        IMAGE_NT_HEADERS *pNT = (IMAGE_NT_HEADERS*)((LPBYTE)g_hThisInst + VAL32(pDOS->e_lfanew));
+        IMAGE_NT_HEADERS *pNT = (IMAGE_NT_HEADERS*)((LPBYTE)GetClrModuleBase() + VAL32(pDOS->e_lfanew));
 #ifdef HOST_64BIT
         _ASSERTE(pNT->Signature == VAL32(IMAGE_NT_SIGNATURE)
             && pNT->FileHeader.SizeOfOptionalHeader == VAL16(sizeof(IMAGE_OPTIONAL_HEADER64))
@@ -5731,7 +5731,7 @@ void InitJitHelperLogging()
 #else // TARGET_X86
                     // Is the address in mscoree.dll at all? (All helpers are in
                     // mscoree.dll)
-                    if (dynamicHlpFunc->pfnHelper >= (LPBYTE*)g_hThisInst && dynamicHlpFunc->pfnHelper < (LPBYTE*)g_hThisInst + VAL32(pNT->OptionalHeader.SizeOfImage))
+                    if (dynamicHlpFunc->pfnHelper >= (LPBYTE*)GetClrModuleBase() && dynamicHlpFunc->pfnHelper < (LPBYTE*)GetClrModuleBase() + VAL32(pNT->OptionalHeader.SizeOfImage))
                     {
                         // See note above. How do I get the size on x86 for a static method?
                         hlpFuncCount->helperSize = 0;

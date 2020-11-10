@@ -369,35 +369,13 @@ void DefaultPolicy::NoteBool(InlineObservation obs, bool value)
                 // "reestablishes" candidacy rather than alters
                 // candidacy ... so instead we bail out here.
                 //
-                if (!m_IsPrejitRoot)
+                bool overBudget = this->BudgetCheck();
+
+                if (overBudget)
                 {
-                    InlineStrategy* strategy   = m_RootCompiler->m_inlineStrategy;
-                    const bool      overBudget = strategy->BudgetCheck(m_CodeSize);
-
-                    if (overBudget)
-                    {
-                        // If the candidate is a forceinline and the callsite is
-                        // not too deep, allow the inline even if it goes over budget.
-                        //
-                        // For now, "not too deep" means a top-level inline. Note
-                        // depth 0 is used for the root method, so inline candidate depth
-                        // will be 1 or more.
-                        //
-                        assert(m_IsForceInlineKnown);
-                        assert(m_CallsiteDepth > 0);
-                        const bool allowOverBudget = m_IsForceInline && (m_CallsiteDepth == 1);
-
-                        if (allowOverBudget)
-                        {
-                            JITDUMP("Allowing over-budget top-level forceinline\n");
-                        }
-                        else
-                        {
-                            SetFailure(InlineObservation::CALLSITE_OVER_BUDGET);
-                        }
-                    }
+                    SetFailure(InlineObservation::CALLSITE_OVER_BUDGET);
+                    return;
                 }
-
                 break;
             }
 
@@ -459,6 +437,53 @@ void DefaultPolicy::NoteBool(InlineObservation obs, bool value)
     {
         NoteInternal(obs);
     }
+}
+
+//------------------------------------------------------------------------
+// BudgetCheck: see if this inline would exceed the current budget
+//
+// Returns:
+//   True if inline would exceed the budget.
+//
+bool DefaultPolicy::BudgetCheck() const
+{
+    // Only relevant if we're actually inlining.
+    //
+    if (m_IsPrejitRoot)
+    {
+        return false;
+    }
+
+    // The strategy tracks the amout of inlining done so far,
+    // so it performs the actual check.
+    //
+    InlineStrategy* strategy   = m_RootCompiler->m_inlineStrategy;
+    const bool      overBudget = strategy->BudgetCheck(m_CodeSize);
+
+    if (overBudget)
+    {
+        // If the candidate is a forceinline and the callsite is
+        // not too deep, allow the inline even if it goes over budget.
+        //
+        // For now, "not too deep" means a top-level inline. Note
+        // depth 0 is used for the root method, so inline candidate depth
+        // will be 1 or more.
+        //
+        assert(m_IsForceInlineKnown);
+        assert(m_CallsiteDepth > 0);
+        const bool allowOverBudget = m_IsForceInline && (m_CallsiteDepth == 1);
+
+        if (allowOverBudget)
+        {
+            JITDUMP("Allowing over-budget top-level forceinline\n");
+        }
+        else
+        {
+            return true;
+        }
+    }
+
+    return false;
 }
 
 //------------------------------------------------------------------------
@@ -1012,15 +1037,11 @@ void RandomPolicy::DetermineProfitability(CORINFO_METHOD_INFO* methodInfo)
     assert(m_Observation == InlineObservation::CALLEE_IS_DISCRETIONARY_INLINE);
 
     // Budget check.
-    if (!m_IsPrejitRoot)
+    const bool overBudget = this->BudgetCheck();
+    if (overBudget)
     {
-        InlineStrategy* strategy   = m_RootCompiler->m_inlineStrategy;
-        bool            overBudget = strategy->BudgetCheck(m_CodeSize);
-        if (overBudget)
-        {
-            SetFailure(InlineObservation::CALLSITE_OVER_BUDGET);
-            return;
-        }
+        SetFailure(InlineObservation::CALLSITE_OVER_BUDGET);
+        return;
     }
 
     // If we're also dumping inline data, make additional observations
@@ -2181,6 +2202,19 @@ FullPolicy::FullPolicy(Compiler* compiler, bool isPrejitRoot) : DiscretionaryPol
 }
 
 //------------------------------------------------------------------------
+// BudgetCheck: see if this inline would exceed the current budget
+//
+// Returns:
+//   True if inline would exceed the budget.
+//
+bool FullPolicy::BudgetCheck() const
+{
+    // There are no budget restrictions for the full policy.
+    //
+    return false;
+}
+
+//------------------------------------------------------------------------
 // DetermineProfitability: determine if this inline is profitable
 //
 // Arguments:
@@ -2482,7 +2516,7 @@ bool ReplayPolicy::FindContext(InlineContext* context)
     //
     // Token and Hash we're looking for.
     mdMethodDef contextToken  = m_RootCompiler->info.compCompHnd->getMethodDefFromMethod(context->GetCallee());
-    unsigned    contextHash   = m_RootCompiler->info.compCompHnd->getMethodHash(context->GetCallee());
+    unsigned    contextHash   = m_RootCompiler->compMethodHash(context->GetCallee());
     unsigned    contextOffset = (unsigned)context->GetOffset();
 
     return FindInline(contextToken, contextHash, contextOffset);
@@ -2666,7 +2700,7 @@ bool ReplayPolicy::FindInline(CORINFO_METHOD_HANDLE callee)
 {
     // Token and Hash we're looking for
     mdMethodDef calleeToken = m_RootCompiler->info.compCompHnd->getMethodDefFromMethod(callee);
-    unsigned    calleeHash  = m_RootCompiler->info.compCompHnd->getMethodHash(callee);
+    unsigned    calleeHash  = m_RootCompiler->compMethodHash(callee);
 
     // Abstract this or just pass through raw bits
     // See matching code in xml writer

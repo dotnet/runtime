@@ -10,7 +10,7 @@
       <XUnitWrapperDll>$(TestBinDir)JIT\jit64\JIT.jit64.XUnitWrapper.dll</XUnitWrapperDll>
     </TestGrouping>
 
-    <TestGrouping Condition="'$(TargetOS)' == 'Windows_NT'" Include="$(TestBinDir)JIT\jit64\mcc\**">
+    <TestGrouping Condition="'$(TargetOS)' == 'windows'" Include="$(TestBinDir)JIT\jit64\mcc\**">
       <TestGroup>JIT.jit64.mcc</TestGroup>
       <XUnitWrapperDll>$(TestBinDir)JIT\jit64\JIT.jit64.XUnitWrapper.dll</XUnitWrapperDll>
     </TestGrouping>

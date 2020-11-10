@@ -171,6 +171,9 @@
   <data name="CatchByRef" xml:space="preserve">
     <value>ByRef not allowed as catch type.</value>
   </data>
+  <data name="ThrowOrCatchOnlyExceptionType" xml:space="preserve">
+    <value>The type caught or thrown must be derived from System.Exception.</value>
+  </data>
   <data name="CodeSizeZero" xml:space="preserve">
     <value>Code size is zero.</value>
   </data>

@@ -505,20 +505,37 @@ PAL_UnregisterModule(
     IN HINSTANCE hInstance);
 
 PALIMPORT
-BOOL
-PALAPI
-PAL_GetPALDirectoryW(
-    OUT LPWSTR lpDirectoryName,
-    IN OUT UINT* cchDirectoryName);
-
-#define PAL_GetPALDirectory PAL_GetPALDirectoryW
-
-PALIMPORT
 VOID
 PALAPI
 PAL_Random(
     IN OUT LPVOID lpBuffer,
     IN DWORD dwLength);
+
+PALIMPORT
+BOOL
+PALAPI
+PAL_OpenProcessMemory(
+    IN DWORD processId,
+    OUT DWORD* pHandle
+);
+
+PALIMPORT
+VOID
+PALAPI
+PAL_CloseProcessMemory(
+    IN DWORD handle
+);
+
+PALIMPORT
+BOOL
+PALAPI
+PAL_ReadProcessMemory(
+    IN DWORD handle,
+    IN ULONG64 address,
+    IN LPVOID buffer,
+    IN SIZE_T size,
+    OUT SIZE_T* numberOfBytesRead
+);
 
 PALIMPORT
 BOOL

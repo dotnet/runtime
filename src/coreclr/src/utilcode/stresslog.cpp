@@ -141,7 +141,7 @@ void StressLog::Leave(CRITSEC_COOKIE) {
 
 /*********************************************************************************/
 void StressLog::Initialize(unsigned facilities,  unsigned level, unsigned maxBytesPerThread,
-            unsigned maxBytesTotal, HMODULE hMod)
+            unsigned maxBytesTotal, void* moduleBase)
 {
     STATIC_CONTRACT_LEAF;
 
@@ -173,18 +173,14 @@ void StressLog::Initialize(unsigned facilities,  unsigned level, unsigned maxByt
 
     GetSystemTimeAsFileTime (&theLog.startTime);
     theLog.startTimeStamp = getTimeStamp();
+    theLog.moduleOffset = (SIZE_T)moduleBase;
 
 #ifndef HOST_UNIX
-    theLog.moduleOffset = (SIZE_T)hMod; // HMODULES are base addresses.
-
 #ifdef _DEBUG
     HMODULE hModNtdll = GetModuleHandleA("ntdll.dll");
     theLog.RtlCaptureStackBackTrace = reinterpret_cast<PFNRtlCaptureStackBackTrace>(
             GetProcAddress(hModNtdll, "RtlCaptureStackBackTrace"));
 #endif // _DEBUG
-
-#else // !HOST_UNIX
-    theLog.moduleOffset = (SIZE_T)PAL_GetSymbolModuleBase((void *)StressLog::Initialize);
 #endif // !HOST_UNIX
 
 #if !defined (STRESS_LOG_READONLY) && defined(HOST_WINDOWS)

@@ -83,7 +83,7 @@
       <argument>ILLink</argument>
       <argument>IL2070</argument>
       <property name="Scope">member</property>
-      <property name="Target">M:System.Xml.Serialization.ReflectionXmlSerializationReader.FindDefaultConstructor(System.Reflection.TypeInfo)</property>
+      <property name="Target">M:System.Xml.Serialization.ReflectionXmlSerializationReader.GetDefaultConstructor(System.Type)</property>
     </attribute>
     <attribute fullname="System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessageAttribute">
       <argument>ILLink</argument>

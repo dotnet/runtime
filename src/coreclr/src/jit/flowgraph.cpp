@@ -122,6 +122,9 @@ void Compiler::fgInit()
     /* This global flag is set whenever we add a throw block for a RngChk */
     fgRngChkThrowAdded = false; /* reset flag for fgIsCodeAdded() */
 
+    /* Keep track of whether or not EH statements have been optimized */
+    fgOptimizedFinally = false;
+
     /* We will record a list of all BBJ_RETURN blocks here */
     fgReturnBlocks = nullptr;
 
@@ -23773,7 +23776,7 @@ Statement* Compiler::fgInlinePrependStatements(InlineInfo* inlineInfo)
         GenTree* thisOp = impInlineFetchArg(0, inlArgInfo, lclVarInfo);
         if (fgAddrCouldBeNull(thisOp))
         {
-            nullcheck = gtNewNullCheck(impInlineFetchArg(0, inlArgInfo, lclVarInfo), block);
+            nullcheck = gtNewNullCheck(thisOp, block);
             // The NULL-check statement will be inserted to the statement list after those statements
             // that assign arguments to temps and before the actual body of the inlinee method.
         }
@@ -25436,6 +25439,7 @@ PhaseStatus Compiler::fgCloneFinally()
     if (cloneCount > 0)
     {
         JITDUMP("fgCloneFinally() cloned %u finally handlers\n", cloneCount);
+        fgOptimizedFinally = true;
 
 #ifdef DEBUG
         if (verbose)

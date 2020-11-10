@@ -717,7 +717,7 @@ void EEStartupHelper()
             unsigned level = REGUTIL::GetConfigDWORD_DontUse_(CLRConfig::EXTERNAL_LogLevel, LL_INFO1000);
             unsigned bytesPerThread = REGUTIL::GetConfigDWORD_DontUse_(CLRConfig::UNSUPPORTED_StressLogSize, STRESSLOG_CHUNK_SIZE * 4);
             unsigned totalBytes = REGUTIL::GetConfigDWORD_DontUse_(CLRConfig::UNSUPPORTED_TotalStressLogSize, STRESSLOG_CHUNK_SIZE * 1024);
-            StressLog::Initialize(facilities, level, bytesPerThread, totalBytes, GetModuleInst());
+            StressLog::Initialize(facilities, level, bytesPerThread, totalBytes, GetClrModuleBase());
             g_pStressLog = &StressLog::theLog;
         }
 #endif
@@ -842,7 +842,7 @@ void EEStartupHelper()
 #ifndef TARGET_UNIX
         {
             // Record mscorwks geometry
-            PEDecoder pe(g_hThisInst);
+            PEDecoder pe(GetClrModuleBase());
 
             g_runtimeLoadedBaseAddress = (SIZE_T)pe.GetBase();
             g_runtimeVirtualSize = (SIZE_T)pe.GetVirtualSize();
@@ -1847,14 +1847,6 @@ BOOL STDMETHODCALLTYPE EEDllMain( // TRUE on success, FALSE on error.
 
     switch (pParam->dwReason)
         {
-            case DLL_PROCESS_ATTACH:
-            {
-                g_hmodCoreCLR = pParam->hInst;
-                // Save the module handle.
-                g_hThisInst = pParam->hInst;
-                break;
-            }
-
             case DLL_PROCESS_DETACH:
             {
                 // lpReserved is NULL if we're here because someone called FreeLibrary

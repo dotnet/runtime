@@ -1067,46 +1067,6 @@ LPCWSTR CorCompileGetRuntimeDllName(CorCompileRuntimeDlls id)
     return CorCompileRuntimeDllNames[id];
 }
 
-#ifndef CROSSGEN_COMPILE
-
-//==============================================================================
-// Will always return a valid HMODULE for CLR_INFO, but will return NULL for NGEN_COMPILER_INFO
-// if the DLL has not yet been loaded (it does not try to cause a load).
-
-extern HMODULE CorCompileGetRuntimeDll(CorCompileRuntimeDlls id)
-{
-    CONTRACTL
-    {
-        THROWS;
-        GC_NOTRIGGER;
-        MODE_ANY;
-        INJECT_FAULT(COMPlusThrowOM(););
-    }
-    CONTRACTL_END;
-
-    // Currently special cased for every entry.
-    static_assert_no_msg(NUM_RUNTIME_DLLS == 2);
-    static_assert_no_msg(CORECLR_INFO == 0);
-
-    HMODULE hMod = NULL;
-
-    // Try to load the correct DLL
-    switch (id)
-    {
-    case CORECLR_INFO:
-        hMod = GetCLRModule();
-        break;
-
-    default:
-        COMPlusThrowNonLocalized(kExecutionEngineException,
-            W("Invalid runtime DLL ID"));
-        break;
-    }
-
-    return hMod;
-}
-#endif // CROSSGEN_COMPILE
-
 //===========================================================================================================
 // Validates that an NI matches the running CLR, OS, CPU, etc.
 //

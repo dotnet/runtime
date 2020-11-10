@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Diagnostics.CodeAnalysis;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -19,12 +20,12 @@ namespace System.Xml.Linq
         /// <summary>
         /// Initializes an empty instance of the <see cref="XDocumentType"/> class.
         /// </summary>
-        public XDocumentType(string name, string? publicId, string? systemId, string internalSubset)
+        public XDocumentType(string name, string? publicId, string? systemId, string? internalSubset)
         {
             _name = XmlConvert.VerifyName(name);
             _publicId = publicId;
             _systemId = systemId;
-            _internalSubset = internalSubset;
+            _internalSubset = internalSubset ?? string.Empty;
         }
 
         /// <summary>
@@ -53,6 +54,7 @@ namespace System.Xml.Linq
         /// <summary>
         /// Gets or sets the internal subset for this Document Type Definition (DTD).
         /// </summary>
+        [AllowNull]
         public string InternalSubset
         {
             get
@@ -66,7 +68,7 @@ namespace System.Xml.Linq
             set
             {
                 bool notify = NotifyChanging(this, XObjectChangeEventArgs.Value);
-                _internalSubset = value;
+                _internalSubset = value ?? string.Empty;
                 if (notify) NotifyChanged(this, XObjectChangeEventArgs.Value);
             }
         }
@@ -184,7 +186,7 @@ namespace System.Xml.Linq
             return _name.GetHashCode() ^
                 (_publicId != null ? _publicId.GetHashCode() : 0) ^
                 (_systemId != null ? _systemId.GetHashCode() : 0) ^
-                (_internalSubset != null ? _internalSubset.GetHashCode() : 0);
+                _internalSubset.GetHashCode();
         }
     }
 }
