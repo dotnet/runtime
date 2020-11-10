@@ -536,7 +536,7 @@ namespace System.Collections.Concurrent
         /// <remarks>A call to <see cref="Take()"/> may block until an item is available to be removed.</remarks>
         public T Take()
         {
-            T item;
+            T? item;
 
             if (!TryTake(out item, Timeout.Infinite, CancellationToken.None))
             {
@@ -560,7 +560,7 @@ namespace System.Collections.Concurrent
         /// <remarks>A call to <see cref="Take(CancellationToken)"/> may block until an item is available to be removed.</remarks>
         public T Take(CancellationToken cancellationToken)
         {
-            T item;
+            T? item;
 
             if (!TryTake(out item, Timeout.Infinite, cancellationToken))
             {
@@ -1658,7 +1658,7 @@ namespace System.Collections.Concurrent
                 linkedTokenSource = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken, _consumersCancellationTokenSource.Token);
                 while (!IsCompleted)
                 {
-                    T item;
+                    T? item;
                     if (TryTakeWithNoTimeValidation(out item, Timeout.Infinite, cancellationToken, linkedTokenSource))
                     {
                         yield return item;
