@@ -422,9 +422,8 @@ namespace System.Net.Http.HPack
             int lookupTableIndex = 0;
             int lookupIndex;
 
-            ushort acc = 0;
+            uint acc = 0;
             int bitsInAcc = 0;
-
 
             int i = 0;
             int j = 0;
@@ -440,7 +439,7 @@ namespace System.Net.Http.HPack
                 {
                     lookupIndex = (byte)(acc >> (bitsInAcc - 8));
 
-                    ushort lookupValue = decodingTree[(lookupTableIndex << 8) + lookupIndex];
+                    int lookupValue = decodingTree[(lookupTableIndex << 8) + lookupIndex];
 
                     if (lookupValue < 0x80_00)
                     {
@@ -499,7 +498,7 @@ namespace System.Net.Http.HPack
                 // Lookup index has to be 8 bits aligned to MSB
                 lookupIndex = (byte)(acc << (8 - bitsInAcc));
 
-                ushort lookupValue = decodingTree[(lookupTableIndex << 8) + lookupIndex];
+                int lookupValue = decodingTree[(lookupTableIndex << 8) + lookupIndex];
 
                 if (lookupValue < 0x80_00)
                 {
