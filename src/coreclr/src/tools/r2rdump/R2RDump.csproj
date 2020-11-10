@@ -15,15 +15,16 @@
     <Platforms>AnyCPU;x64</Platforms>
   </PropertyGroup>
 
+  <Import Project="$(RepositoryEngineeringDir)coredistools.targets" />
   <Import Project="$(RepositoryEngineeringDir)DiaSymReaderNative.targets" />
 
   <ItemGroup>
-    <PackageReference Include="Microsoft.NETCore.CoreDisTools">
-      <Version>1.0.1-prerelease-00005</Version>
-    </PackageReference>
     <PackageReference Include="System.CommandLine">
       <Version>$(SystemCommandLineVersion)</Version>
     </PackageReference>
     <ProjectReference Include="..\aot\ILCompiler.Reflection.ReadyToRun\ILCompiler.Reflection.ReadyToRun.csproj" />
+    <Content Include="$(CoreDisToolsLibrary)" Condition="Exists('$(CoreDisToolsLibrary)')">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
   </ItemGroup>
 </Project>
