@@ -440,7 +440,7 @@ void CryptoNative_HmacDestroy(void* ctx)
 
 void* CryptoNative_EvpCipherCreate2(intptr_t type, uint8_t* key, int32_t keyLength, int32_t effectiveKeyLength, uint8_t* iv, int32_t enc)
 {
-    if (effectiveKeyLength == 0)
+    if (effectiveKeyLength != 0)
     {
         LOG_ERROR("Non-zero effectiveKeyLength is not supported");
         return FAIL;
