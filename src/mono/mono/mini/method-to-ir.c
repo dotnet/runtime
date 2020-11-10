@@ -1790,6 +1790,13 @@ emit_push_lmf (MonoCompile *cfg)
 	if (!cfg->lmf_addr_var)
 		cfg->lmf_addr_var = mono_compile_create_var (cfg, mono_get_int_type (), OP_LOCAL);
 
+	if (!cfg->lmf_var) {
+		MonoInst *lmf_var = mono_compile_create_var (cfg, mono_get_int_type (), OP_LOCAL);
+		lmf_var->flags |= MONO_INST_VOLATILE;
+		lmf_var->flags |= MONO_INST_LMF;
+		cfg->lmf_var = lmf_var;
+	}
+
 	lmf_ins = mono_create_tls_get (cfg, TLS_KEY_LMF_ADDR);
 	g_assert (lmf_ins);
 
@@ -7139,6 +7146,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			gboolean direct_icall; direct_icall = FALSE;
 			gboolean tailcall_calli; tailcall_calli = FALSE;
 			gboolean noreturn; noreturn = FALSE;
+			gboolean needs_stack_walk; needs_stack_walk = FALSE;
 
 			// Variables shared by CEE_CALLI and CEE_CALL/CEE_CALLVIRT.
 			common_call = FALSE;
@@ -7223,6 +7231,9 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 
 			if (mono_security_core_clr_enabled ())
 				ensure_method_is_allowed_to_call_method (cfg, method, cil_method);
+
+			if (cfg->llvm_only && cmethod && method_needs_stack_walk (cfg, cmethod))
+				needs_stack_walk = TRUE;
 
 			if (!virtual_ && (cmethod->flags & METHOD_ATTRIBUTE_ABSTRACT)) {
 				if (!mono_class_is_interface (method->klass))
@@ -7923,6 +7934,23 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 				INLINE_FAILURE ("call");
 			common_call = TRUE;
 
+#ifdef TARGET_WASM
+			/* Push an LMF so these frames can be enumerated during stack walks by mono_arch_unwind_frame () */
+			if (needs_stack_walk) {
+				MonoInst *method_ins;
+				int lmf_reg;
+
+				emit_push_lmf (cfg);
+
+				EMIT_NEW_VARLOADA (cfg, ins, cfg->lmf_var, NULL);
+				lmf_reg = ins->dreg;
+
+				/* The lmf->method field will be used to look up the MonoJitInfo for this method */
+				method_ins = emit_get_rgctx_method (cfg, mono_method_check_context_used (cfg->method), cfg->method, MONO_RGCTX_INFO_METHOD);
+				EMIT_NEW_STORE_MEMBASE (cfg, ins, OP_STORE_MEMBASE_REG, lmf_reg, MONO_STRUCT_OFFSET (MonoLMF, method), method_ins->dreg);
+			}
+#endif
+
 call_end:
 			// Check that the decision to tailcall would not have changed.
 			g_assert (!called_is_supported_tailcall || tailcall_method == method);
@@ -7943,6 +7971,11 @@ call_end:
 			 */
 			if (cmethod)
 				ins = handle_call_res_devirt (cfg, cmethod, ins);
+
+#ifdef TARGET_WASM
+			if (common_call && needs_stack_walk)
+				emit_pop_lmf (cfg);
+#endif
 
 			if (noreturn) {
 				MONO_INST_NEW (cfg, ins, OP_NOT_REACHED);

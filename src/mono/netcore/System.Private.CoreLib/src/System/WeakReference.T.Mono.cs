@@ -16,7 +16,7 @@ namespace System
             get
             {
                 GCHandle h = handle;
-                return h.IsAllocated ? (T)h.Target : null;
+                return h.IsAllocated ? (T?)h.Target : null;
             }
         }
 

@@ -26,11 +26,6 @@
 #define SUPPORT_LOCAL_DEBUGGING 1
 #endif
 
-//********** Globals. *********************************************************
-#ifndef HOST_UNIX
-HINSTANCE       g_hInst;                // Instance handle to this piece of code.
-#endif
-
 //-----------------------------------------------------------------------------
 // SxS Versioning story for Mscordbi (ICorDebug + friends)
 //-----------------------------------------------------------------------------
@@ -200,9 +195,7 @@ BOOL WINAPI DbgDllMain(HINSTANCE hInstance, DWORD dwReason, LPVOID lpReserved)
 
         case DLL_PROCESS_ATTACH:
         {
-#ifndef HOST_UNIX
-            g_hInst = hInstance;
-#else
+#ifdef HOST_UNIX
             int err = PAL_InitializeDLL();
             if(err != 0)
             {
@@ -436,17 +429,6 @@ HRESULT STDMETHODCALLTYPE CClassFactory::LockServer(
 //<TODO>@todo: hook up lock server logic.</TODO>
     return (S_OK);
 }
-
-
-//*****************************************************************************
-// This helper provides access to the instance handle of the loaded image.
-//*****************************************************************************
-#ifndef TARGET_UNIX
-HINSTANCE GetModuleInst()
-{
-    return g_hInst;
-}
-#endif
 
 
 //-----------------------------------------------------------------------------

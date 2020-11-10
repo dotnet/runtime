@@ -3,14 +3,11 @@
     <OutputType>Exe</OutputType>
     <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
     <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
-    <TargetArchitecture Condition="'$(TargetArchitecture)'==''">x64</TargetArchitecture>
     <EnableTargetingPackDownload>false</EnableTargetingPackDownload>
     <RuntimeIdentifier>android-$(TargetArchitecture)</RuntimeIdentifier>
-    <PublishTrimmed Condition="'$(Configuration)' == 'Release'">true</PublishTrimmed>
-    <_TrimmerDefaultAction Condition="'$(Configuration)' == 'Release'">link</_TrimmerDefaultAction>
-    <Optimized Condition="'$(Configuration)' == 'Release'">True</Optimized>
+    <PublishTrimmed>true</PublishTrimmed>
+    <TrimMode>Link</TrimMode>
     <MicrosoftNetCoreAppRuntimePackDir>$(ArtifactsBinDir)microsoft.netcore.app.runtime.$(RuntimeIdentifier)\$(Configuration)\runtimes\android-$(TargetArchitecture)\</MicrosoftNetCoreAppRuntimePackDir>
-    <NoWarn>$(NoWarn),CA1050</NoWarn>
   </PropertyGroup>
 
   <!-- Redirect 'dotnet publish' to in-tree runtime pack -->

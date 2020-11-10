@@ -346,7 +346,6 @@ GARY_DECL(TypeHandle, g_pPredefinedArrayTypes, ELEMENT_TYPE_MAX);
 
 extern "C" Volatile<LONG>   g_TrapReturningThreads;
 
-EXTERN HINSTANCE            g_hThisInst;
 EXTERN BBSweep              g_BBSweep;
 EXTERN IBCLogger            g_IBCLogger;
 

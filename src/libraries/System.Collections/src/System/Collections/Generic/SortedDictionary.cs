@@ -326,7 +326,7 @@ namespace System.Collections.Generic
             {
                 if (IsCompatibleKey(key))
                 {
-                    TValue value;
+                    TValue? value;
                     if (TryGetValue((TKey)key, out value))
                     {
                         return value;

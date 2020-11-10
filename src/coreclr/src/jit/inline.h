@@ -239,6 +239,7 @@ public:
 
     // Policy determinations
     virtual void DetermineProfitability(CORINFO_METHOD_INFO* methodInfo) = 0;
+    virtual bool BudgetCheck() const                                     = 0;
 
     // Policy policies
     virtual bool PropagateNeverToRuntime() const = 0;

@@ -44,7 +44,7 @@ namespace System
                 Func<string, object> createDirectory = LazyInitializer.EnsureInitialized(ref s_directoryCreateDirectory, static () =>
                 {
                     Type dirType = Type.GetType("System.IO.Directory, System.IO.FileSystem, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a", throwOnError: true)!;
-                    MethodInfo mi = dirType.GetTypeInfo().GetDeclaredMethod("CreateDirectory")!;
+                    MethodInfo mi = dirType.GetMethod("CreateDirectory", BindingFlags.Public | BindingFlags.Static)!;
                     return mi.CreateDelegate<Func<string, object>>();
                 });
                 createDirectory(path);

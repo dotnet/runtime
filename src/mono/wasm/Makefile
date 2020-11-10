@@ -19,7 +19,7 @@ ICU_LIBDIR?=
 SYSTEM_NATIVE_LIBDIR?=$(TOP)/src/libraries/Native/Unix/System.Native
 ENABLE_ES6?=false
 
-all: build-native icu-data
+all: build-native icu-files source-files header-files
 
 #
 # EMSCRIPTEN SETUP
@@ -82,6 +82,12 @@ define InterpBuildTemplate
 $(NATIVE_BIN_DIR):
 	mkdir -p $$@
 
+$(NATIVE_BIN_DIR)/src:
+	mkdir -p $$@
+
+$(NATIVE_BIN_DIR)/include/wasm:
+	mkdir -p $$@
+
 $(BUILDS_OBJ_DIR):
 	mkdir -p $$@
 
@@ -119,8 +125,14 @@ clean:
 # Helper targets
 .PHONY: runtime
 
-icu-data:
-	cp $(ICU_LIBDIR)/*.dat $(NATIVE_BIN_DIR)
+icu-files: $(wildcard $(ICU_LIBDIR)/*.dat) $(ICU_LIBDIR)/libicuuc.a $(ICU_LIBDIR)/libicui18n.a | $(NATIVE_BIN_DIR)
+	cp $^ $(NATIVE_BIN_DIR)
+
+source-files: runtime/driver.c runtime/pinvoke.c runtime/corebindings.c runtime/binding_support.js runtime/dotnet_support.js runtime/library_mono.js $(SYSTEM_NATIVE_LIBDIR)/pal_random.js | $(NATIVE_BIN_DIR)/src
+	cp $^ $(NATIVE_BIN_DIR)/src
+
+header-files: runtime/pinvoke.h $(BUILDS_OBJ_DIR)/pinvoke-table.h | $(NATIVE_BIN_DIR)/include/wasm
+	cp $^ $(NATIVE_BIN_DIR)/include/wasm
 
 build:
 	EMSDK_PATH=$(EMSDK_PATH) $(TOP)/build.sh mono+libs.pretest -os Browser -c $(CONFIG) /p:ContinueOnError=false /p:StopOnFirstFailure=true
