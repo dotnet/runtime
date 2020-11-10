@@ -3635,7 +3635,7 @@ void Compiler::optUnrollLoops()
             continue;
         }
 
-        if (INDEBUG(compStressCompile(STRESS_UNROLL_LOOPS, 50) || )false)
+        if (INDEBUG(compStressCompile(STRESS_UNROLL_LOOPS, 50) ||) false)
         {
             // In stress mode, quadruple the size limit, and drop
             // the restriction that loop limit must be vector element count.
