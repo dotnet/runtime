@@ -1547,34 +1547,6 @@ namespace System.IO
             }
         }
 
-        private Task FlushAsyncInternal(CancellationToken cancellationToken)
-        {
-            if (cancellationToken.IsCancellationRequested)
-                return Task.FromCanceled(cancellationToken);
-
-            if (_fileHandle.IsClosed)
-                throw Error.GetFileNotOpen();
-
-            // TODO: https://github.com/dotnet/runtime/issues/27643 (stop doing this synchronous work!!).
-            // The always synchronous data transfer between the OS and the internal buffer is intentional
-            // because this is needed to allow concurrent async IO requests. Concurrent data transfer
-            // between the OS and the internal buffer will result in race conditions. Since FlushWrite and
-            // FlushRead modify internal state of the stream and transfer data between the OS and the
-            // internal buffer, they cannot be truly async. We will, however, flush the OS file buffers
-            // asynchronously because it doesn't modify any internal state of the stream and is potentially
-            // a long running process.
-            try
-            {
-                FlushInternalBuffer();
-            }
-            catch (Exception e)
-            {
-                return Task.FromException(e);
-            }
-
-            return Task.CompletedTask;
-        }
-
         private void LockInternal(long position, long length)
         {
             int positionLow = unchecked((int)(position));
