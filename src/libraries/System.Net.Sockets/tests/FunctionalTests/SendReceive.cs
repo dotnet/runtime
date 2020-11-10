@@ -129,8 +129,8 @@ namespace System.Net.Sockets.Tests
 
             const int DatagramSize = 256;
             const int DatagramsToSend = 256;
-            const int AckTimeout = 10000;
-            const int TestTimeout = 30000;
+            const int AckTimeout = 2000;
+            //const int TestTimeout = 30000;
 
             using var origLeft = new Socket(leftAddress.AddressFamily, SocketType.Dgram, ProtocolType.Udp);
             using var origRight = new Socket(rightAddress.AddressFamily, SocketType.Dgram, ProtocolType.Udp);
@@ -165,8 +165,8 @@ namespace System.Net.Sockets.Tests
                     receivedChecksums[datagramId] = Fletcher32.Checksum(recvBuffer, 0, result.ReceivedBytes);
 
                     receiverAck.Release();
-                    bool gotAck = await senderAck.WaitAsync(TestTimeout);
-                    Assert.True(gotAck, $"{DateTime.Now}: Timeout waiting {TestTimeout} for senderAck in iteration {i}");
+                    bool gotAck = await senderAck.WaitAsync(AckTimeout);
+                    Assert.True(gotAck, $"{DateTime.Now}: Timeout waiting {AckTimeout} for senderAck in iteration {i}");
                 }
             });
 
