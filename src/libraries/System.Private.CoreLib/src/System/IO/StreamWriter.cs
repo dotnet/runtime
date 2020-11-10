@@ -32,7 +32,7 @@ namespace System.IO
         private readonly Stream _stream;
         private readonly Encoding _encoding;
         private readonly Encoder _encoder;
-        private readonly byte[] _byteBuffer;
+        private byte[]? _byteBuffer;
         private readonly char[] _charBuffer;
         private int _charPos;
         private int _charLen;
@@ -123,7 +123,6 @@ namespace System.IO
             }
 
             _charBuffer = new char[bufferSize];
-            _byteBuffer = new byte[_encoding.GetMaxByteCount(bufferSize)];
             _charLen = bufferSize;
             // If we're appending to a Stream that already has data, don't write
             // the preamble.
@@ -275,15 +274,28 @@ namespace System.IO
                 }
             }
 
-            int count = _encoder.GetBytes(_charBuffer, 0, _charPos, _byteBuffer, 0, flushEncoder);
+            // For sufficiently small char data being flushed, try to encode to the stack.
+            // For anything else, fall back to allocating the byte[] buffer.
+            Span<byte> byteBuffer = stackalloc byte[0];
+            if (_byteBuffer is not null)
+            {
+                byteBuffer = _byteBuffer;
+            }
+            else
+            {
+                int maxBytesForCharPos = _encoding.GetMaxByteCount(_charPos);
+                byteBuffer = maxBytesForCharPos <= 1024 ? // arbitrary threshold
+                    stackalloc byte[1024] :
+                    (_byteBuffer = new byte[_encoding.GetMaxByteCount(_charBuffer.Length)]);
+            }
+
+            int count = _encoder.GetBytes(new ReadOnlySpan<char>(_charBuffer, 0, _charPos), byteBuffer, flushEncoder);
             _charPos = 0;
             if (count > 0)
             {
-                _stream.Write(_byteBuffer, 0, count);
+                _stream.Write(byteBuffer.Slice(0, count));
             }
-            // By definition, calling Flush should flush the stream, but this is
-            // only necessary if we passed in true for flushStream.  The Web
-            // Services guys have some perf tests where flushing needlessly hurts.
+
             if (flushStream)
             {
                 _stream.Flush();
@@ -1025,42 +1037,38 @@ namespace System.IO
                 return Task.CompletedTask;
             }
 
-            Task flushTask = FlushAsyncInternal(this, flushStream, flushEncoder, sCharBuffer, sCharPos, _haveWrittenPreamble,
-                                                _encoding, _encoder, _byteBuffer, _stream, cancellationToken);
+            Task flushTask = Core(flushStream, flushEncoder, sCharBuffer, sCharPos, cancellationToken);
 
             _charPos = 0;
             return flushTask;
-        }
 
-
-        // We pass in private instance fields of this MarshalByRefObject-derived type as local params
-        // to ensure performant access inside the state machine that corresponds this async method.
-        private static async Task FlushAsyncInternal(StreamWriter _this, bool flushStream, bool flushEncoder,
-                                                     char[] charBuffer, int charPos, bool haveWrittenPreamble,
-                                                     Encoding encoding, Encoder encoder, byte[] byteBuffer, Stream stream, CancellationToken cancellationToken)
-        {
-            if (!haveWrittenPreamble)
+            async Task Core(bool flushStream, bool flushEncoder, char[] charBuffer, int charPos, CancellationToken cancellationToken)
             {
-                _this._haveWrittenPreamble = true;
-                byte[] preamble = encoding.GetPreamble();
-                if (preamble.Length > 0)
+                if (!_haveWrittenPreamble)
                 {
-                    await stream.WriteAsync(new ReadOnlyMemory<byte>(preamble), cancellationToken).ConfigureAwait(false);
+                    _haveWrittenPreamble = true;
+                    byte[] preamble = _encoding.GetPreamble();
+                    if (preamble.Length > 0)
+                    {
+                        await _stream.WriteAsync(new ReadOnlyMemory<byte>(preamble), cancellationToken).ConfigureAwait(false);
+                    }
                 }
-            }
 
-            int count = encoder.GetBytes(charBuffer, 0, charPos, byteBuffer, 0, flushEncoder);
-            if (count > 0)
-            {
-                await stream.WriteAsync(new ReadOnlyMemory<byte>(byteBuffer, 0, count), cancellationToken).ConfigureAwait(false);
-            }
+                byte[] byteBuffer = _byteBuffer ??= new byte[_encoding.GetMaxByteCount(_charBuffer.Length)];
 
-            // By definition, calling Flush should flush the stream, but this is
-            // only necessary if we passed in true for flushStream.  The Web
-            // Services guys have some perf tests where flushing needlessly hurts.
-            if (flushStream)
-            {
-                await stream.FlushAsync(cancellationToken).ConfigureAwait(false);
+                int count = _encoder.GetBytes(new ReadOnlySpan<char>(charBuffer, 0, charPos), byteBuffer, flushEncoder);
+                if (count > 0)
+                {
+                    await _stream.WriteAsync(new ReadOnlyMemory<byte>(byteBuffer, 0, count), cancellationToken).ConfigureAwait(false);
+                }
+
+                // By definition, calling Flush should flush the stream, but this is
+                // only necessary if we passed in true for flushStream.  The Web
+                // Services guys have some perf tests where flushing needlessly hurts.
+                if (flushStream)
+                {
+                    await _stream.FlushAsync(cancellationToken).ConfigureAwait(false);
+                }
             }
         }
 
