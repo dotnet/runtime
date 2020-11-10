@@ -124,6 +124,12 @@
         <ExcludeList Include="$(XunitTestBinBase)/readytorun/crossgen2/crossgen2smoke_donotalwaysusecrossgen2/*">
             <Issue>https://github.com/dotnet/runtime/issues/44234</Issue>
         </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/JIT/Regression/JitBlue/DevDiv_255294/DevDiv_255294/*">
+            <Issue>https://github.com/dotnet/runtime/issues/44341</Issue>
+        </ExcludeList>   
+        <ExcludeList Include="$(XunitTestBinBase)/Interop/COM/NativeClients/Dispatch/*">
+            <Issue>https://github.com/dotnet/runtime/issues/44186</Issue>
+        </ExcludeList>        
     </ItemGroup>
 
     <!-- All Unix targets on all runtimes -->
