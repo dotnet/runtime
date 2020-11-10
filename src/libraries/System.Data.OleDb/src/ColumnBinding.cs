@@ -948,7 +948,6 @@ namespace System.Data.OleDb
             Debug.Assert(NativeDBType.HCHAPTER == DbType, "Value_HCHAPTER");
             Debug.Assert(DBStatus.S_OK == StatusValue(), "Value_HCHAPTER");
 
-            // TODO-NULLABLE: This shouldn't return null
             return DataReader().ResetChapter(IndexForAccessor, IndexWithinAccessor, RowBinding, ValueOffset)!;
         }
 

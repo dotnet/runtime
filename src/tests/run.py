@@ -177,6 +177,7 @@ class DebugEnv:
             args
             env                     : env for the repro
             test ({})               : The test metadata
+
         """
         self.unique_name = "%s_%s_%s_%s" % (test["name"],
                                             args.host_os,
@@ -203,6 +204,7 @@ class DebugEnv:
         self.repro_location = repro_location
 
         self.path = os.path.join(repro_location, self.path)
+
         exe_location = os.path.splitext(self.test_location)[0] + ".exe"
         if os.path.isfile(exe_location):
             self.exe_location = exe_location
@@ -241,6 +243,7 @@ class DebugEnv:
         launch_json = None
         with open(launch_json_location) as file_handle:
             launch_json = file_handle.read()
+
         launch_json = json.loads(launch_json)
 
         configurations = launch_json["configurations"]
@@ -257,6 +260,7 @@ class DebugEnv:
             self.env = defaultdict(lambda: None, self.env)
             for key, value in env.items():
                 self.env[key] = value
+
         else:
             self.env = env
 
@@ -313,6 +317,7 @@ class DebugEnv:
     def __create_batch_wrapper__(self):
         """ Create a windows batch wrapper
         """
+
         wrapper = \
 """@echo off
 REM ============================================================================
@@ -414,6 +419,7 @@ fi
 ################################################################################
 # Helper Functions
 ################################################################################
+
 def create_and_use_test_env(_os, env, func):
     """ Create a test env based on the env passed
 
@@ -526,6 +532,7 @@ def create_and_use_test_env(_os, env, func):
 
 def get_environment(test_env=None):
     """ Get all the COMPlus_* Environment variables
+
     Notes:
         All COMPlus variables need to be captured as a test_env script to avoid
         influencing the test runner.
@@ -536,6 +543,7 @@ def get_environment(test_env=None):
     global gc_stress
 
     complus_vars = defaultdict(lambda: "")
+
     for key in os.environ:
         if "complus" in key.lower():
             complus_vars[key] = os.environ[key]
@@ -678,6 +686,7 @@ def setup_coredump_generation(host_os):
     if isinstance(coredump_pattern, bytes):
         print("Binary data found. Decoding.")
         coredump_pattern = coredump_pattern.decode('ascii')
+
     print("CoreDump Pattern: {}".format(coredump_pattern))
 
     # resource is only available on Unix platforms
@@ -826,6 +835,7 @@ def inspect_and_delete_coredump_files(host_os, arch, test_location):
     coredump_name_uses_pid=False
 
     print("Looking for coredumps...")
+
     if "%P" in coredump_pattern:
         coredump_name_uses_pid=True
     elif host_os == "Linux" and os.path.isfile("/proc/sys/kernel/core_uses_pid"):
@@ -856,6 +866,7 @@ def inspect_and_delete_coredump_files(host_os, arch, test_location):
 def run_tests(args,
               test_env_script_path=None):
     """ Run the coreclr tests
+
     Args:
         args
         test_env_script_path  : Path to script to use to set the test environment, if any.
@@ -876,6 +887,7 @@ def run_tests(args,
         per_test_timeout = 20*60*1000
         print("Setting RunningLongGCTests=1")
         os.environ["RunningLongGCTests"] = "1"
+
     if args.gcsimulator:
         print("Running GCSimulator tests, extending timeout to one hour.")
         per_test_timeout = 60*60*1000
@@ -1045,6 +1057,7 @@ def setup_args(args):
                               "long_gc",
                               lambda arg: True,
                               "Error setting long_gc")
+
     coreclr_setup_args.verify(args,
                               "gcsimulator",
                               lambda arg: True,
@@ -1059,6 +1072,7 @@ def setup_args(args):
                               "large_version_bubble",
                               lambda arg: True,
                               "Error setting large_version_bubble")
+
     coreclr_setup_args.verify(args,
                               "run_crossgen_tests",
                               lambda arg: True,
@@ -1083,6 +1097,7 @@ def setup_args(args):
                               "sequential",
                               lambda arg: True,
                               "Error setting sequential")
+
     coreclr_setup_args.verify(args,
                               "verbose",
                               lambda arg: True,
@@ -1092,6 +1107,7 @@ def setup_args(args):
                               "limited_core_dumps",
                               lambda arg: True,
                               "Error setting limited_core_dumps")
+
     coreclr_setup_args.verify(args,
                               "test_native_bin_location",
                               lambda arg: True,
@@ -1121,6 +1137,7 @@ def setup_args(args):
             test_native_bin_location = os.path.join(os.path.join(coreclr_setup_args.artifacts_location, "tests", "coreclr", "obj", "%s.%s.%s" % (coreclr_setup_args.host_os, coreclr_setup_args.arch, coreclr_setup_args.build_type)))
         else:
             test_native_bin_location = args.test_native_bin_location
+
         coreclr_setup_args.verify(test_native_bin_location,
                                   "test_native_bin_location",
                                   lambda test_native_bin_location: os.path.isdir(test_native_bin_location),
@@ -1248,6 +1265,7 @@ def find_test_from_name(host_os, test_location, test_name):
         test_location (str) :path to the coreclr tests
         test_name (str)     : Name of the test, all special characters will have
                             : been replaced with underscores.
+
     Return:
         test_path (str): Path of the test based on its name
     """
@@ -1305,6 +1323,7 @@ def find_test_from_name(host_os, test_location, test_name):
         for item in dir_contents:
             if test_item in item:
                 count += 1
+
         return count > 1
 
     # Find the test by searching down the directory list.
@@ -1335,6 +1354,7 @@ def find_test_from_name(host_os, test_location, test_name):
                         break
                     elif size_of_largest_name_file < len(os.path.basename(added_path)):
                         break
+
         starting_path = test_path
 
     location = starting_path
@@ -1491,6 +1511,7 @@ def print_summary(tests):
         print("%d failed tests:" % len(failed_tests))
         print("")
         print_tests_helper(failed_tests, None)
+
     # The following code is currently disabled, as it produces too much verbosity in a normal
     # test run. It could be put under a switch, or else just enabled as needed when investigating
     # test slowness.
@@ -1510,6 +1531,7 @@ def print_summary(tests):
         for item in failed_tests:
             print("[%s]: " % item["test_path"])
             print("")
+
             test_output = item["test_output"]
 
             # XUnit results are captured as escaped characters.
@@ -1564,6 +1586,7 @@ def create_repro(args, env, tests):
     failed_tests = [tests[item] for item in tests if tests[item]["failed"] == "1"]
     if len(failed_tests) == 0:
         return
+
     repro_location = os.path.join(args.artifacts_location, "repro", "%s.%s.%s" % (args.host_os, args.arch, args.build_type))
     if os.path.isdir(repro_location):
         shutil.rmtree(repro_location)

@@ -257,43 +257,6 @@ mono_wasm_add_satellite_assembly (const char *name, const char *culture, const u
 	++satellite_assembly_count;
 }
 
-int
-mono_wasm_assembly_already_added (const char *assembly_name)
-{
-	if (assembly_count == 0)
-		return 0;
-
-	WasmAssembly *entry = assemblies;
-	while (entry != NULL) {
-		int entry_name_minus_extn_len = strlen(entry->assembly.name) - 4;
-		if (entry_name_minus_extn_len == strlen(assembly_name) && strncmp (entry->assembly.name, assembly_name, entry_name_minus_extn_len) == 0)
-			return 1;
-		entry = entry->next;
-	}
-
-	return 0;
-}
-
-typedef struct WasmSatelliteAssembly_ WasmSatelliteAssembly;
-
-struct WasmSatelliteAssembly_ {
-	MonoBundledSatelliteAssembly *assembly;
-	WasmSatelliteAssembly *next;
-};
-
-static WasmSatelliteAssembly *satellite_assemblies;
-static int satellite_assembly_count;
-
-EMSCRIPTEN_KEEPALIVE void
-mono_wasm_add_satellite_assembly (const char *name, const char *culture, const unsigned char *data, unsigned int size)
-{
-	WasmSatelliteAssembly *entry = g_new0 (WasmSatelliteAssembly, 1);
-	entry->assembly = mono_create_new_bundled_satellite_assembly (name, culture, data, size);
-	entry->next = satellite_assemblies;
-	satellite_assemblies = entry;
-	++satellite_assembly_count;
-}
-
 EMSCRIPTEN_KEEPALIVE void
 mono_wasm_setenv (const char *name, const char *value)
 {

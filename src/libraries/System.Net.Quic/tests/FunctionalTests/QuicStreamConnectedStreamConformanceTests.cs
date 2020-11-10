@@ -20,6 +20,7 @@ namespace System.Net.Quic.Tests
     public sealed class MsQuicQuicStreamConformanceTests : QuicStreamConformanceTests
     {
         protected override QuicImplementationProvider Provider => QuicImplementationProviders.MsQuic;
+
         // TODO: These are all hanging, likely due to Stream close behavior.
         [ActiveIssue("https://github.com/dotnet/runtime/issues/756")]
         public override Task Read_Eof_Returns0(ReadWriteMode mode, bool dataAvailableFirst) => base.Read_Eof_Returns0(mode, dataAvailableFirst);

@@ -115,6 +115,4 @@ void mono_wasm_user_break (void);
 
 int mono_wasm_assembly_already_added (const char *assembly_name);
 
-int mono_wasm_assembly_already_added (const char *assembly_name);
-
 #endif /* __MONO_MINI_WASM_H__ */  

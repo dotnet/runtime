@@ -58,6 +58,7 @@ add_definitions(-DFEATURE_STATIC_HOST=1)
 if(CLR_CMAKE_TARGET_WIN32)
     # Disable manifest generation into the file .exe on Windows
     add_linker_flag("/MANIFEST:NO")
+
     get_property(ALL_COMPILE_OPTIONS TARGET ${PROJECT_NAME} PROPERTY COMPILE_OPTIONS)
     string(TOUPPER ${RUNTIME_CONFIG} UPPERCASE_RUNTIME_CONFIG)
 
@@ -142,6 +143,7 @@ if(CLR_CMAKE_TARGET_OSX)
    find_library(CORESERVICES CoreServices)
    find_library(SECURITY Security)
    find_library(SYSTEM System)
+
    LIST(APPEND CORECLR_LIBRARIES
      ${COREFOUNDATION}
      ${CORESERVICES}

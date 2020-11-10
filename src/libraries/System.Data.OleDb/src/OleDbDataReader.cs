@@ -951,12 +951,12 @@ namespace System.Data.OleDb
             return GetData(ordinal);
         }
 
-        internal OleDbDataReader? ResetChapter(int bindingIndex, int index, RowBinding rowbinding, int valueOffset)
+        internal OleDbDataReader ResetChapter(int bindingIndex, int index, RowBinding rowbinding, int valueOffset)
         {
             return GetDataForReader(_metadata![bindingIndex + index].ordinal, rowbinding, valueOffset);
         }
 
-        private OleDbDataReader? GetDataForReader(IntPtr ordinal, RowBinding rowbinding, int valueOffset)
+        private OleDbDataReader GetDataForReader(IntPtr ordinal, RowBinding rowbinding, int valueOffset)
         {
             UnsafeNativeMethods.IRowsetInfo rowsetInfo = IRowsetInfo();
             UnsafeNativeMethods.IRowset? result;

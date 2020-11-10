@@ -462,10 +462,12 @@ namespace System.Xml.XPath
                 {
                     return false; // backcompat
                 }
+
                 if (localName != null && localName.Length == 0)
                 {
                     localName = "xmlns"; // backcompat
                 }
+
                 XAttribute? a = GetFirstNamespaceDeclarationGlobal(e);
                 while (a != null)
                 {

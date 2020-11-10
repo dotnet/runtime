@@ -552,7 +552,6 @@ namespace System.Xml.Linq
             return null;
         }
 
-        // TODO-NULLABLE: decide if base signature should be switched to return string?
         public override string GetAttribute(int index)
         {
             // https://github.com/dotnet/runtime/issues/44287

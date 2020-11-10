@@ -59,10 +59,6 @@ namespace System.Xml.Linq
         {
             get
             {
-                // TODO-NULLABLE: As per documentation, this should return string.Empty.
-                // Should we check for null here?
-                // This is also referenced by XNodeReader.Value which overrides XmlReader.Value, which is non-nullable.
-                // There is one case that passes a nullable parameter (XNodeBuilder.WriteDocType), currently we are just asserting that the nullable parameter does not receive null.
                 return _internalSubset;
             }
             set

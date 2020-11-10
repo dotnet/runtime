@@ -219,6 +219,7 @@ namespace System.Xml
                            && nextSibling.IsText);
                     value = builder.ToString();
                 }
+
                 Debug.Assert(value != null);
                 return value;
             }
