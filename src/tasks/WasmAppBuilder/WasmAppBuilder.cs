@@ -25,10 +25,6 @@ public class WasmAppBuilder : Task
     [Required]
     public string? MainJS { get; set; }
 
-    // If true, continue when a referenced assembly cannot be found.
-    // If false, throw an exception.
-    public bool SkipMissingAssemblies { get; set; }
-
     // full list of ICU data files we produce can be found here:
     // https://github.com/dotnet/icu/tree/maint/maint-67/icu-filters
     public string? IcuDataFileName { get; set; } = "icudt.dat";
@@ -43,7 +39,7 @@ public class WasmAppBuilder : Task
     public ITaskItem[]? RemoteSources { get; set; }
     public bool InvariantGlobalization { get; set; }
 
-    private SortedDictionary<string, Assembly>? _assemblies;
+    private List<string>? _assemblies;
 
     private class WasmAppConfig
     {
@@ -106,36 +102,33 @@ public class WasmAppBuilder : Task
         if (!InvariantGlobalization && string.IsNullOrEmpty(IcuDataFileName))
             throw new ArgumentException("IcuDataFileName property shouldn't be empty if InvariantGlobalization=false");
 
-        var paths = new List<string>();
-        _assemblies = new SortedDictionary<string, Assembly>();
+        _assemblies = new List<string>();
         var runtimeSourceDir = Path.Join (MicrosoftNetCoreAppRuntimePackDir, "native");
 
         if (Assemblies != null)
         {
-            foreach (var v in Assemblies!)
+            foreach (var asm in Assemblies!)
             {
-                var assembly = Assembly.LoadFrom(v.ItemSpec);
-                Add(assembly);
+                if (!_assemblies.Contains(asm.ItemSpec))
+                {
+                    _assemblies.Add(asm.ItemSpec);
+                }
             }
         }
-        else if (MainAssembly != null)
+        if (MainAssembly != null)
         {
-            var mainAssembly = Assembly.LoadFrom(MainAssembly!);
-            Add(mainAssembly);
+            if (!_assemblies.Contains(MainAssembly))
+            {
+                _assemblies.Add(MainAssembly);
+            }
         }
         if (ExtraAssemblies != null)
         {
             foreach (var item in ExtraAssemblies)
             {
-                try
+                if (!_assemblies.Contains(item.ItemSpec))
                 {
-                    var refAssembly = Assembly.LoadFrom(item.ItemSpec);
-                    Add(refAssembly);
-                }
-                catch (System.IO.FileLoadException)
-                {
-                    if (!SkipMissingAssemblies)
-                        throw;
+                    _assemblies.Add(item.ItemSpec);
                 }
             }
         }
@@ -145,10 +138,10 @@ public class WasmAppBuilder : Task
         // Create app
         Directory.CreateDirectory(AppDir!);
         Directory.CreateDirectory(Path.Join(AppDir, config.AssemblyRoot));
-        foreach (var assembly in _assemblies!.Values) {
-            File.Copy(assembly.Location, Path.Join(AppDir, config.AssemblyRoot, Path.GetFileName(assembly.Location)), true);
+        foreach (var assembly in _assemblies!) {
+            File.Copy(assembly, Path.Join(AppDir, config.AssemblyRoot, Path.GetFileName(assembly)), true);
             if (DebugLevel > 0) {
-                var pdb = assembly.Location;
+                var pdb = assembly;
                 pdb = Path.ChangeExtension(pdb, ".pdb");
                 if (File.Exists(pdb))
                     File.Copy(pdb, Path.Join(AppDir, config.AssemblyRoot, Path.GetFileName(pdb)), true);
@@ -167,10 +160,10 @@ public class WasmAppBuilder : Task
         var html = @"<html><body><script type=""text/javascript"" src=""runtime.js""></script></body></html>";
         File.WriteAllText(Path.Join(AppDir, "index.html"), html);
 
-        foreach (var assembly in _assemblies.Values) {
-            config.Assets.Add(new AssemblyEntry(Path.GetFileName(assembly.Location)));
+        foreach (var assembly in _assemblies) {
+            config.Assets.Add(new AssemblyEntry(Path.GetFileName(assembly)));
             if (DebugLevel > 0) {
-                var pdb = assembly.Location;
+                var pdb = assembly;
                 pdb = Path.ChangeExtension(pdb, ".pdb");
                 if (File.Exists(pdb))
                     config.Assets.Add(new AssemblyEntry(Path.GetFileName(pdb)));
@@ -244,25 +237,5 @@ public class WasmAppBuilder : Task
         }
 
         return true;
-    }
-
-    // Add primarily adds assembly and (recursively) all the assemblies it references to _assemblies
-    // It uses MLC to access the Assembly by AssemblyName
-    private void Add(Assembly assembly)
-    {
-        if (_assemblies!.ContainsKey(assembly.GetName().Name!))
-            return;
-        _assemblies![assembly.GetName().Name!] = assembly;
-        foreach (var aname in assembly.GetReferencedAssemblies())
-        {
-            try
-            {
-                Assembly refAssembly = Assembly.Load(aname);
-                Add(refAssembly);
-            }
-            catch (FileNotFoundException)
-            {
-            }
-        }
     }
 }
