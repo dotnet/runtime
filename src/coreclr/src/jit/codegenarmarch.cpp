@@ -1313,13 +1313,12 @@ void CodeGen::genPutArgSplit(GenTreePutArgSplit* treeNode)
             assert(!compiler->IsHfa(source->AsObj()->GetLayout()->GetClassHandle()));
         }
 
-        unsigned     structSize = treeNode->GetStackByteSize();
-        ClassLayout* layout     = source->AsObj()->GetLayout();
+        ClassLayout* layout = source->AsObj()->GetLayout();
 
         // Put on stack first
         unsigned nextIndex     = treeNode->gtNumRegs;
         unsigned structOffset  = nextIndex * TARGET_POINTER_SIZE;
-        int      remainingSize = structSize - structOffset;
+        int      remainingSize = treeNode->GetStackByteSize();
 
         // remainingSize is always multiple of TARGET_POINTER_SIZE
         assert(remainingSize % TARGET_POINTER_SIZE == 0);

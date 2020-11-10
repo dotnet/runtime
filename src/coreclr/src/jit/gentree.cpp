@@ -11556,11 +11556,10 @@ void Compiler::gtDispTree(GenTree*     tree,
         {
             const GenTreePutArgSplit* putArg = tree->AsPutArgSplit();
 #if !defined(DEBUG_ARG_SLOTS)
-            printf(" (%d stackByteSize), (%d byteOffset), (%d numRegs)", putArg->GetStackByteSize(),
-                   putArg->getArgOffset(), putArg->gtNumRegs);
+            printf(" (%d stackByteSize), (%d numRegs)", putArg->GetStackByteSize(), putArg->gtNumRegs);
 #else
-            printf(" (%d slots), (%d stackByteSize), (%d slot), (%d byteOffset), (%d numRegs)", putArg->gtNumSlots,
-                   putArg->GetStackByteSize(), putArg->gtSlotNum, putArg->getArgOffset(), putArg->gtNumRegs);
+            printf(" (%d slots), (%d stackByteSize), (%d numRegs)", putArg->gtNumSlots, putArg->GetStackByteSize(),
+                   putArg->gtNumRegs);
 #endif
         }
 #endif // FEATURE_ARG_SPLIT
