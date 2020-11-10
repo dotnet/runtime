@@ -374,7 +374,7 @@ namespace System.Net.Http.HPack
                         // +---+---+---+---+---+---+---+---+---+---+---+---+---+---+---+---+
                         // | 1 |   next_lookup_table_index |            not_used           |
                         // +---+---------------------------+-------------------------------+
-                        if (lookupValue == default(ushort))
+                        if (lookupValue == 0)
                         {
                             ++allocatedLookupTableIndex;
                             decodingTree[(lookupTableIndex << 8) + indexInLookupTable] = (ushort)((0x80 | allocatedLookupTableIndex) << 8);
@@ -448,7 +448,7 @@ namespace System.Net.Http.HPack
                         // +---+---+---+---+---+---+---+---+---+---+---+---+---+---+---+---+
                         // | 0 |     number_of_used_bits   |              octet            |
                         // +---+---------------------------+-------------------------------+
-                        if (j >= dst.Length)
+                        if (j == dst.Length)
                         {
                             Array.Resize(ref dstArray, dst.Length * 2);
                             dst = dstArray;
@@ -515,7 +515,7 @@ namespace System.Net.Http.HPack
                         throw new HuffmanDecodingException(SR.net_http_hpack_huffman_decode_failed);
                     }
 
-                    if (j >= dst.Length)
+                    if (j == dst.Length)
                     {
                         Array.Resize(ref dstArray, dst.Length * 2);
                         dst = dstArray;
