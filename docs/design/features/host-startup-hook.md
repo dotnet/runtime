@@ -254,9 +254,9 @@ The type should be made `internal` to prevent exposing it as API
 surface to any managed code that happens to have access to the startup
 hook dll. However, the feature will also work if the type is `public`.
 
-### Linker unfriendly
+### Incompatible with trimming
 
 Startup hooks are disabled by default on trimmed apps. The usage of
 startup hooks on a trimmed app is potentially dangerous since these
 could make use of assemblies, types or members that were removed by
-the linker, causing the app to crash.
+trimming, causing the app to crash.
