@@ -43,7 +43,7 @@ jobs:
       - name: _BuildConfig
         value: $(buildConfigUpper)
 
-      - ${{ if eq(parameters.osGroup, 'Windows_NT') }}:
+      - ${{ if eq(parameters.osGroup, 'windows') }}:
         - name: archiveExtension
           value: '.zip'
         - name: archiveType
@@ -59,7 +59,7 @@ jobs:
         - name: setScriptToEchoAndFailOnNonZero
           value: ''
 
-      - ${{ if ne(parameters.osGroup, 'Windows_NT') }}:
+      - ${{ if ne(parameters.osGroup, 'windows') }}:
         - name: archiveExtension
           value: '.tar.gz'
         - name: archiveType
@@ -119,12 +119,12 @@ jobs:
           vmImage: 'macOS-10.15'
 
         # Official Build Windows Pool
-        ${{ if and(eq(parameters.osGroup, 'Windows_NT'), ne(variables['System.TeamProject'], 'public')) }}:
+        ${{ if and(eq(parameters.osGroup, 'windows'), ne(variables['System.TeamProject'], 'public')) }}:
           name: NetCoreInternal-Pool
           queue: BuildPool.Windows.10.Amd64.VS2019
 
         # Public Windows Build Pool
-        ${{ if and(eq(parameters.osGroup, 'Windows_NT'), eq(variables['System.TeamProject'], 'public')) }}:
+        ${{ if and(eq(parameters.osGroup, 'windows'), eq(variables['System.TeamProject'], 'public')) }}:
           name: NetCorePublic-Pool
           queue: BuildPool.Windows.10.Amd64.VS2019.Open
 

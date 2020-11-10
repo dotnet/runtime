@@ -16,6 +16,9 @@ namespace System.Text.Json.Tests
                 yield return new object[] { "true", JsonValueKind.True };
                 yield return new object[] { "false", JsonValueKind.False };
                 yield return new object[] { "\"MyString\"", JsonValueKind.String };
+                yield return new object[] { @"""\u0033\u002e\u0031""", JsonValueKind.String }; // "3.12"
+                yield return new object[] { "1", JsonValueKind.Number };
+                yield return new object[] { "3.125e7", JsonValueKind.Number };
                 yield return new object[] { "{}", JsonValueKind.Object };
                 yield return new object[] { "[]", JsonValueKind.Array };
             }
@@ -29,6 +32,7 @@ namespace System.Text.Json.Tests
 
             JsonElement? element = JsonElement.ParseValue(ref reader);
             Assert.Equal(kind, element!.Value.ValueKind);
+            Assert.Equal(json.Length, reader.BytesConsumed);
         }
 
         [Theory]
@@ -40,6 +44,7 @@ namespace System.Text.Json.Tests
             bool success = JsonElement.TryParseValue(ref reader, out JsonElement? element);
             Assert.True(success);
             Assert.Equal(kind, element!.Value.ValueKind);
+            Assert.Equal(json.Length, reader.BytesConsumed);
         }
 
         public static IEnumerable<object[]> ElementParsePartialDataCases
@@ -49,6 +54,7 @@ namespace System.Text.Json.Tests
                 yield return new object[] { "\"MyString"};
                 yield return new object[] { "{" };
                 yield return new object[] { "[" };
+                yield return new object[] { " \n" };
             }
         }
 
@@ -58,12 +64,21 @@ namespace System.Text.Json.Tests
         {
             var reader = new Utf8JsonReader(Encoding.UTF8.GetBytes(json));
 
+            Exception ex;
             try
             {
                 JsonElement.ParseValue(ref reader);
-                Assert.True(false, "Expected exception.");
+                ex = null;
             }
-            catch (JsonException) { }
+            catch (Exception e)
+            {
+                ex = e;
+            }
+
+            Assert.NotNull(ex);
+            Assert.IsAssignableFrom<JsonException>(ex);
+
+            Assert.Equal(0, reader.BytesConsumed);
         }
 
         [Theory]
@@ -72,12 +87,21 @@ namespace System.Text.Json.Tests
         {
             var reader = new Utf8JsonReader(Encoding.UTF8.GetBytes(json));
 
+            Exception ex;
             try
             {
                 JsonElement.TryParseValue(ref reader, out JsonElement? element);
-                Assert.True(false, "Expected exception.");
+                ex = null;
             }
-            catch (JsonException) { }
+            catch (Exception e)
+            {
+                ex = e;
+            }
+
+            Assert.NotNull(ex);
+            Assert.IsAssignableFrom<JsonException>(ex);
+
+            Assert.Equal(0, reader.BytesConsumed);
         }
 
         [Theory]
@@ -86,12 +110,21 @@ namespace System.Text.Json.Tests
         {
             var reader = new Utf8JsonReader(Encoding.UTF8.GetBytes(json), isFinalBlock: false, new JsonReaderState());
 
+            Exception ex;
             try
             {
                 JsonElement.ParseValue(ref reader);
-                Assert.True(false, "Expected exception.");
+                ex = null;
             }
-            catch (JsonException) { }
+            catch (Exception e)
+            {
+                ex = e;
+            }
+
+            Assert.NotNull(ex);
+            Assert.IsAssignableFrom<JsonException>(ex);
+
+            Assert.Equal(0, reader.BytesConsumed);
         }
 
         [Theory]
@@ -100,6 +133,8 @@ namespace System.Text.Json.Tests
         {
             var reader = new Utf8JsonReader(Encoding.UTF8.GetBytes(json), isFinalBlock: false, new JsonReaderState());
             Assert.False(JsonElement.TryParseValue(ref reader, out JsonElement? element));
+            Assert.Null(element);
+            Assert.Equal(0, reader.BytesConsumed);
         }
 
         public static IEnumerable<object[]> ElementParseInvalidDataCases
@@ -117,12 +152,21 @@ namespace System.Text.Json.Tests
         {
             var reader = new Utf8JsonReader(Encoding.UTF8.GetBytes(json));
 
+            Exception ex;
             try
             {
                 JsonElement.ParseValue(ref reader);
-                Assert.True(false, "Expected exception.");
+                ex = null;
             }
-            catch (JsonException) { }
+            catch (Exception e)
+            {
+                ex = e;
+            }
+
+            Assert.NotNull(ex);
+            Assert.IsAssignableFrom<JsonException>(ex);
+
+            Assert.Equal(0, reader.BytesConsumed);
         }
 
         [Theory]
@@ -131,12 +175,21 @@ namespace System.Text.Json.Tests
         {
             var reader = new Utf8JsonReader(Encoding.UTF8.GetBytes(json));
 
+            Exception ex;
             try
             {
                 JsonElement.TryParseValue(ref reader, out JsonElement? element);
-                Assert.True(false, "Expected exception.");
+                ex = null;
             }
-            catch (JsonException) { }
+            catch (Exception e)
+            {
+                ex = e;
+            }
+
+            Assert.NotNull(ex);
+            Assert.IsAssignableFrom<JsonException>(ex);
+
+            Assert.Equal(0, reader.BytesConsumed);
         }
     }
 }

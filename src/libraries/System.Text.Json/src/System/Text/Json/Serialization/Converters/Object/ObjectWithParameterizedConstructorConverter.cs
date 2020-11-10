@@ -56,6 +56,7 @@ namespace System.Text.Json.Serialization.Converters
 
                         state.Current.JsonPropertyName = propertyNameArray;
                         state.Current.JsonPropertyInfo = jsonPropertyInfo;
+                        state.Current.NumberHandling = jsonPropertyInfo.NumberHandling;
 
                         bool useExtensionProperty = dataExtKey != null;
 

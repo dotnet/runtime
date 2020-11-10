@@ -119,6 +119,7 @@ public:
 
     // Policy determinations
     void DetermineProfitability(CORINFO_METHOD_INFO* methodInfo) override;
+    bool BudgetCheck() const override;
 
     // Policy policies
     bool PropagateNeverToRuntime() const override;
@@ -350,6 +351,7 @@ public:
 
     // Policy determinations
     void DetermineProfitability(CORINFO_METHOD_INFO* methodInfo) override;
+    bool BudgetCheck() const override;
 
     // Miscellaneous
     const char* GetName() const override

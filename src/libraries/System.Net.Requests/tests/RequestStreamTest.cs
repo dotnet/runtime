@@ -57,7 +57,7 @@ namespace System.Net.Tests
         {
             await GetRequestStream((stream) =>
             {
-                AssertExtensions.Throws<ArgumentOutOfRangeException>("offset", () => stream.Write(buffer, int.MaxValue, int.MaxValue));
+                AssertExtensions.Throws<ArgumentOutOfRangeException>("count", () => stream.Write(buffer, int.MaxValue, int.MaxValue));
             });
         }
 
@@ -106,7 +106,7 @@ namespace System.Net.Tests
         {
             await GetRequestStream((stream) =>
             {
-                AssertExtensions.Throws<ArgumentOutOfRangeException>("offset", () => { stream.WriteAsync(buffer, int.MaxValue, int.MaxValue); });
+                AssertExtensions.Throws<ArgumentOutOfRangeException>("count", () => { stream.WriteAsync(buffer, int.MaxValue, int.MaxValue); });
             });
         }
 
@@ -177,7 +177,7 @@ namespace System.Net.Tests
         {
             await GetRequestStream((stream) =>
             {
-                AssertExtensions.Throws<ArgumentOutOfRangeException>("offset", () => stream.BeginWrite(buffer, int.MaxValue, int.MaxValue, null, null));
+                AssertExtensions.Throws<ArgumentOutOfRangeException>("count", () => stream.BeginWrite(buffer, int.MaxValue, int.MaxValue, null, null));
             });
         }
 

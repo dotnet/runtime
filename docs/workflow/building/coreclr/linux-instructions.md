@@ -53,7 +53,7 @@ This table of images might often become stale as we change our images as our req
 | Alpine                      | x64             | `mcr.microsoft.com/dotnet-buildtools/prereqs:alpine-3.9-WithNode-0fc54a3-20190918214015`             | -                    | -clang9       |
 | CentOS 7 (build for RHEL 7) | x64             | `mcr.microsoft.com/dotnet-buildtools/prereqs:centos-7-359e48e-20200313130914`                        | -                    | -clang9       |
 | Ubuntu 16.04                | arm32 (armhf)   | `mcr.microsoft.com/dotnet-buildtools/prereqs:ubuntu-16.04-cross-20200413125008-09ec757`              | `/crossrootfs/arm`   | -clang9       |
-| Ubuntu 16.04                | arm64 (arm64v8) | `mcr.microsoft.com/dotnet-buildtools/prereqs:ubuntu-16.04-cross-arm64-20200413125008-cfdd435`        | `/crossrootfs/arm64` | -clang9       |
+| Ubuntu 16.04                | arm64 (arm64v8) | `mcr.microsoft.com/dotnet-buildtools/prereqs:ubuntu-16.04-cross-arm64-20201022204150-b2c2436`        | `/crossrootfs/arm64` | -clang9       |
 | Alpine                      | arm64 (arm64v8) | `mcr.microsoft.com/dotnet-buildtools/prereqs:ubuntu-16.04-cross-arm64-alpine-20200413125008-406629a` | `/crossrootfs/arm64` | -clang5.0     |
 
 Environment

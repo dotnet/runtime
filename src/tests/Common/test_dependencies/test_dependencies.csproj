@@ -16,7 +16,7 @@
 
   <Target Name="Build" DependsOnTargets="$(TraversalBuildDependsOn)" />
 
-  <Target Name="AddUcrtFilesToCoreRoot" BeforeTargets="CopyDependencyToCoreRoot" Condition="'$(TargetOS)' == 'Windows_NT'">
+  <Target Name="AddUcrtFilesToCoreRoot" BeforeTargets="CopyDependencyToCoreRoot" Condition="'$(TargetOS)' == 'windows'">
     <ItemGroup>
       <NativeCopyLocalItems Include="$(UniversalCRTSDKDir)Redist\ucrt\DLLs\$(TargetArchitecture)\*.dll" />
     </ItemGroup>

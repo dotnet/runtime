@@ -237,7 +237,7 @@ namespace ILCompiler
 
         public ReadyToRunSymbolNodeFactory SymbolNodeFactory { get; }
         public ReadyToRunCompilationModuleGroupBase CompilationModuleGroup { get; }
-        private readonly int? _customPESectionAlignment;
+        private readonly int _customPESectionAlignment;
         /// <summary>
         /// Determining whether a type's layout is fixed is a little expensive and the question can be asked many times
         /// for the same type during compilation so preserve the computed value.
@@ -261,7 +261,7 @@ namespace ILCompiler
             ProfileDataManager profileData,
             ReadyToRunMethodLayoutAlgorithm methodLayoutAlgorithm,
             ReadyToRunFileLayoutAlgorithm fileLayoutAlgorithm,
-            int? customPESectionAlignment,
+            int customPESectionAlignment,
             bool verifyTypeAndFieldLayout)
             : base(
                   dependencyGraph,
@@ -372,7 +372,7 @@ namespace ILCompiler
             }
             componentGraph.ComputeMarkedNodes();
             componentFactory.Header.Add(Internal.Runtime.ReadyToRunSectionType.OwnerCompositeExecutable, ownerExecutableNode, ownerExecutableNode);
-            ReadyToRunObjectWriter.EmitObject(outputFile, componentModule: inputModule, componentGraph.MarkedNodeList, componentFactory, generateMapFile: false, generateMapCsvFile: false, customPESectionAlignment: null);
+            ReadyToRunObjectWriter.EmitObject(outputFile, componentModule: inputModule, componentGraph.MarkedNodeList, componentFactory, generateMapFile: false, generateMapCsvFile: false, customPESectionAlignment: 0);
         }
 
         public override void WriteDependencyLog(string outputFileName)

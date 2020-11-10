@@ -93,10 +93,6 @@ endif(CLR_CMAKE_HOST_ALPINE_LINUX)
 # turn off capability to remove unused functions (which was enabled in debug build with sanitizers)
 set(CMAKE_SHARED_LINKER_FLAGS_DEBUG "${CMAKE_SHARED_LINKER_FLAGS_DEBUG} -Wl,--no-gc-sections")
 
-if (CMAKE_CXX_COMPILER_ID MATCHES "GNU")
-  add_compile_options(-Wno-unused-result)
-endif(CMAKE_CXX_COMPILER_ID MATCHES "GNU")
-
 set(ARCH_SOURCES
   arch/${PAL_ARCH_SOURCES_DIR}/context2.S
   arch/${PAL_ARCH_SOURCES_DIR}/debugbreak.S
@@ -199,6 +195,7 @@ set(SOURCES
   safecrt/wcscat_s.cpp
   safecrt/wcscpy_s.cpp
   safecrt/wcslen_s.cpp
+  safecrt/wcslwr_s.cpp
   safecrt/wcsncat_s.cpp
   safecrt/wcsncpy_s.cpp
   safecrt/wcstok_s.cpp

@@ -3889,12 +3889,22 @@ HRESULT ClrDataAccess::GetTLSIndex(ULONG *pIndex)
     return hr;
 }
 
+#ifndef TARGET_UNIX
+extern "C" IMAGE_DOS_HEADER __ImageBase;
+#endif
+
 HRESULT ClrDataAccess::GetDacModuleHandle(HMODULE *phModule)
 {
     if(phModule == NULL)
         return E_INVALIDARG;
-    *phModule = GetModuleInst();
+
+#ifndef TARGET_UNIX
+    *phModule = (HMODULE)&__ImageBase;
     return S_OK;
+#else
+    //  hModule is not available under TARGET_UNIX
+    return E_FAIL;
+#endif
 }
 
 HRESULT ClrDataAccess::GetRCWData(CLRDATA_ADDRESS addr, struct DacpRCWData *rcwData)
