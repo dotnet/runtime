@@ -676,7 +676,7 @@ namespace System.ServiceProcess
     /// <summary>
     /// Opens a handle for the current service. The handle must be Dispose()'d.
     /// </summary>
-    /// <param name="desiredAccess"></param>
+    /// <param name="desiredAccess">Access level to pass to OpenService()</param>
     /// <returns></returns>
     private SafeServiceHandle GetServiceHandle(int desiredAccess)
     {
