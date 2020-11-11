@@ -133,7 +133,7 @@ namespace System.Collections.Generic
             else if (type.IsAssignableTo(typeof(IEquatable<>).MakeGenericType(type)))
             {
                 // If T implements IEquatable<T> return a GenericEqualityComparer<T>
-                result = CreateInstanceForAnotherGenericParameter((RuntimeType)typeof(GenericEqualityComparer<int>), runtimeType);
+                result = CreateInstanceForAnotherGenericParameter((RuntimeType)typeof(GenericEqualityComparer<string>), runtimeType);
             }
             else if (type.IsGenericType)
             {
