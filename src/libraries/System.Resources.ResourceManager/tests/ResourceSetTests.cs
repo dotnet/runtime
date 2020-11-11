@@ -175,7 +175,7 @@ namespace System.Resources.Tests
 
             foreach (DictionaryEntry entry in rs)
             {
-                Assert.True (expected.Contains(entry.Key), entry.Key.ToString());
+                Assert.Contains(entry.Key, expected);
                 expected.Remove(entry.Key);
             }
 
