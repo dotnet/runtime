@@ -290,6 +290,16 @@ namespace Microsoft.Extensions.Caching.Memory
             StartScanForExpiredItems();
         }
 
+        /// <inheritdoc />
+        public void Clear()
+        {
+            CheckDisposed();
+            if (!_entries.IsEmpty)
+            {
+                _entries.Clear();
+            }
+        }
+
         private void RemoveEntry(CacheEntry entry)
         {
             if (EntriesCollection.Remove(new KeyValuePair<object, CacheEntry>(entry.Key, entry)))
@@ -511,5 +521,7 @@ namespace Microsoft.Extensions.Caching.Memory
                 throw new ArgumentNullException(nameof(key));
             }
         }
+
+
     }
 }

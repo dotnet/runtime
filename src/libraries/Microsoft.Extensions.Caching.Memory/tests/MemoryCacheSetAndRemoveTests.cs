@@ -361,6 +361,41 @@ namespace Microsoft.Extensions.Caching.Memory
         }
 
         [Fact]
+        public void Clear_ClearAllEntries()
+        {
+            var cache = CreateCache();
+
+            var obj = new object();
+            string key = "myKey";
+            var result = cache.Set(key, obj);
+            Assert.Same(obj, result);
+
+            var secondObject = new object();
+            string secondKey = "mySecondKey";
+            var secondResult = cache.Set(secondKey, secondObject);
+            Assert.Same(secondObject, secondResult);
+
+            cache.Clear();
+
+            result = cache.Get(key);
+            secondResult = cache.Get(secondKey);
+
+            Assert.Null(result);
+            Assert.Null(secondResult);
+        }
+
+        [Fact]
+        public void Clear_ThrowsExceptionIfCalledAfterDisposed()
+        {
+            var cache = CreateCache();
+            cache.Dispose();
+
+            Assert.Throws<ObjectDisposedException>(() => {
+                cache.Clear();
+            });
+        }
+
+        [Fact]
         public void RemoveRemovesAndInvokesCallback()
         {
             var cache = CreateCache();

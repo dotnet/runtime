@@ -103,6 +103,7 @@ namespace Microsoft.Extensions.Caching.Memory
         Microsoft.Extensions.Caching.Memory.ICacheEntry CreateEntry(object key);
         void Remove(object key);
         bool TryGetValue(object key, out object value);
+        void Clear();
     }
     public static partial class MemoryCacheEntryExtensions
     {

@@ -30,5 +30,10 @@ namespace Microsoft.Extensions.Caching.Memory
         /// </summary>
         /// <param name="key">An object identifying the entry.</param>
         void Remove(object key);
+
+        /// <summary>
+        /// Removes all <see cref="ICacheEntry"/> object instances.
+        /// </summary>
+        void Clear();
     }
 }
