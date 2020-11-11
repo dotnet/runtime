@@ -66,7 +66,7 @@ dotnet build /t:Test /p:RuntimeFlavor=mono /p:Configuration=<Release/Debug>
 
 * Build and run library tests against iOS. See instructions for [Testing iOS](../libraries/testing-apple.md)
 
-# Test with sample program
+# Running the Mono samples
 There is a HelloWorld sample program lives at
 ```
 $(REPO_ROOT)/src/mono/netcore/sample/HelloWorld
