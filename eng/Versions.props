@@ -12,7 +12,7 @@
          as for the patches and revisions should be manually updated per assembly if it is serviced. -->
     <!-- Changing assembly versions without changing TFM lead to broken packages.
          This shoud be incremented after introducing the 6.0 TFM. -->
-    <AssemblyVersion>5.0.0.0</AssemblyVersion>
+    <AssemblyVersion>6.0.0.0</AssemblyVersion>
     <!-- Enable to remove prerelease label. -->
     <StabilizePackageVersion Condition="'$(StabilizePackageVersion)' == ''">false</StabilizePackageVersion>
     <DotNetFinalVersionKind Condition="'$(StabilizePackageVersion)' == 'true'">release</DotNetFinalVersionKind>
