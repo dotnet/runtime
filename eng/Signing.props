@@ -50,11 +50,6 @@
     <FileExtensionSignInfo Include=".deb;.rpm" CertificateName="LinuxSign" />
   </ItemGroup>
 
-  <ItemGroup Condition="'$(CoreCLRCrossTargetComponentDirName)' != ''">
-    <CoreCLRCrossTargetItemsToSign Include="$(CoreCLRArtifactsPath)$(CoreCLRCrossTargetComponentDirName)/sharedFramework/*.dll" />
-    <CoreCLRCrossTargetItemsToSign Include="$(CoreCLRArtifactsPath)$(CoreCLRCrossTargetComponentDirName)/sharedFramework/*.exe" />
-  </ItemGroup>
-
   <!-- When doing post build signing, the file containers (e.g. nupkg, msi, etc.) are
        processed for signing (opened up, individually signed, etc.) and these individual ItemsToSign
        elements are unnecessary. When signing within the build, we need to individually process
@@ -81,7 +76,8 @@
         <ItemsToSign Condition="'$(TargetOS)' == 'Windows_NT'" Include="$(CoreCLRCrossgen2Dir)clrjit-win-$(TargetArchitecture).dll" />
         <ItemsToSign Condition="'$(TargetOS)' != 'Windows_NT'" Include="$(CoreCLRCrossgen2Dir)clrjit-unix-$(TargetArchitecture).dll" />
 
-        <ItemsToSign Include="@(CoreCLRCrossTargetItemsToSign)" />
+        <ItemsToSign Include="$(CoreCLRArtifactsPath)$(CoreCLRCrossTargetComponentDirName)/sharedFramework/*.dll" Condition="'$(CoreCLRCrossTargetComponentDirName)' != ''" />
+        <ItemsToSign Include="$(CoreCLRArtifactsPath)$(CoreCLRCrossTargetComponentDirName)/sharedFramework/*.exe" Condition="'$(CoreCLRCrossTargetComponentDirName)' != ''" />
 
         <!-- Sign api-ms-win-core-xstate-l2-1-0 binary as it is only catalog signed in the current SDK. -->
         <ItemsToSign
@@ -158,6 +154,8 @@
       <ItemGroup Condition="'$(SignBinaries)' == 'true'">
         <ItemsToSign Include="$(CoreCLRSharedFrameworkDir)mscordaccore*.dll" />
         <ItemsToSign Include="$(CoreCLRSharedFrameworkDir)mscordbi.dll" />
+        <ItemsToSign Include="$(CoreCLRArtifactsPath)$(CoreCLRCrossTargetComponentDirName)/sharedFramework/mscordaccore*.dll" Condition="'$(CoreCLRCrossTargetComponentDirName)' != ''" />
+        <ItemsToSign Include="$(CoreCLRArtifactsPath)$(CoreCLRCrossTargetComponentDirName)/sharedFramework/mscordbi.dll" Condition="'$(CoreCLRCrossTargetComponentDirName)' != ''" />
       </ItemGroup>
 
       <ItemGroup Condition="'$(SignFinalPackages)' == 'true'">
