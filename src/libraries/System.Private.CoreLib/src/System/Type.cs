@@ -151,7 +151,7 @@ namespace System
         /// A <see cref="ConstructorInfo"/> object representing the constructor that matches the specified requirements, if found; otherwise, null.
         /// </returns>
         [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors | DynamicallyAccessedMemberTypes.NonPublicConstructors)]
-        public ConstructorInfo? GetConstructor(BindingFlags bindingAttr, Type[] types) => GetConstructor(bindingAttr, null, types, null);
+        public ConstructorInfo? GetConstructor(BindingFlags bindingAttr, Type[] types) => GetConstructor(bindingAttr, binder: null, types, modifiers: null);
 
         [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors | DynamicallyAccessedMemberTypes.NonPublicConstructors)]
         public ConstructorInfo? GetConstructor(BindingFlags bindingAttr, Binder? binder, Type[] types, ParameterModifier[]? modifiers) => GetConstructor(bindingAttr, binder, CallingConventions.Any, types, modifiers);
@@ -258,7 +258,7 @@ namespace System
         /// </param>
         /// <returns>An object representing the method that matches the specified requirements, if found; otherwise, null.</returns>
         [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicMethods | DynamicallyAccessedMemberTypes.NonPublicMethods)]
-        public MethodInfo? GetMethod(string name, BindingFlags bindingAttr, Type[] types) => GetMethod(name, bindingAttr, null, types, null);
+        public MethodInfo? GetMethod(string name, BindingFlags bindingAttr, Type[] types) => GetMethod(name, bindingAttr, binder: null, types, modifiers: null);
 
         [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicMethods)]
         public MethodInfo? GetMethod(string name, Type[] types) => GetMethod(name, types, null);

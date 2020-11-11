@@ -42,7 +42,6 @@ namespace System.Reflection.Tests
         [Fact]
         public static void ConstructorInvokeStringCtorTwoArgs()
         {
-            // Code coverage: Project N - String constructors go through a separate code path.
             ConstructorInfo c = typeof(string).GetConstructor(BindingFlags.Public | BindingFlags.Instance, new Type[] { typeof(char[]), typeof(int), typeof(int) });
             TestDoNotWrap<ArgumentNullException>((bf) => c.Invoke(bf, null, new object[] { null, 0, 0 }, null));
         }
