@@ -875,7 +875,11 @@ mono_thread_attach_internal (MonoThread *thread, gboolean force_attach, gboolean
 	 *  - the MonoThreadInfo TLS key is destroyed: calls mono_thread_info_detach
 	 *    - it calls MonoThreadInfoCallbacks.thread_detach
 	 *      - mono_thread_internal_current returns NULL -> fails to detach the MonoInternalThread. */
+#ifdef HAVE_CORE_GC
+    mono_thread_info_set_internal_thread_gchandle (info, mono_gchandle_new_internal ((MonoObject*) internal, TRUE));
+#else
 	mono_thread_info_set_internal_thread_gchandle (info, mono_gchandle_new_internal ((MonoObject*) internal, FALSE));
+#endif
 
 	internal->handle = mono_threads_open_thread_handle (info->handle);
 	internal->native_handle = MONO_NATIVE_THREAD_HANDLE_TO_GPOINTER (mono_threads_open_native_thread_handle (info->native_handle));
