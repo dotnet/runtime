@@ -28,5 +28,20 @@ namespace System.Text.Json
         public abstract Func<object, TProperty> CreateFieldGetter<TProperty>(FieldInfo fieldInfo);
 
         public abstract Action<object, TProperty> CreateFieldSetter<TProperty>(FieldInfo fieldInfo);
+
+#if DEBUG
+        public static bool HasConstructor(Type type, ConstructorInfo constructor)
+        {
+            foreach (ConstructorInfo candidate in type.GetConstructors(BindingFlags.Public | BindingFlags.Instance))
+            {
+                if (ReferenceEquals(candidate, constructor))
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+#endif
     }
 }

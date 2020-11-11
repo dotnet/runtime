@@ -65,7 +65,7 @@ namespace System.Text.Json.Serialization
 
             Debug.Assert(type != null);
             Debug.Assert(!type.IsAbstract);
-            Debug.Assert(type.GetConstructors(BindingFlags.Public | BindingFlags.Instance).Contains(constructor));
+            Debug.Assert(HasConstructor(type, constructor));
 
             ParameterInfo[] parameters = constructor.GetParameters();
             int parameterCount = parameters.Length;
@@ -111,7 +111,7 @@ namespace System.Text.Json.Serialization
 
             Debug.Assert(type != null);
             Debug.Assert(!type.IsAbstract);
-            Debug.Assert(type.GetConstructors(BindingFlags.Public | BindingFlags.Instance).Contains(constructor));
+            Debug.Assert(HasConstructor(type, constructor));
 
             ParameterInfo[] parameters = constructor.GetParameters();
             int parameterCount = parameters.Length;
