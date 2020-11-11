@@ -178,6 +178,9 @@ Crst DataTest2
     AcquiredAfter DataTest1
 End
 
+Crst DbgTransport
+End
+
 Crst DelegateToFPtrHash
 End
 
@@ -380,7 +383,6 @@ End
 
 Crst ExternalObjectContextCache
 End
-
 
 Crst Reflection
     AcquiredBefore LoaderHeap UnresolvedClassLock
