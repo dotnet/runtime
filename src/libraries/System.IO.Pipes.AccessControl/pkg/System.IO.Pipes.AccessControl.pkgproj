@@ -2,7 +2,7 @@
   <Import Project="$([MSBuild]::GetPathOfFileAbove(Directory.Build.props))" />
   <ItemGroup>
     <ProjectReference Include="..\ref\System.IO.Pipes.AccessControl.csproj">
-      <SupportedFramework>$(NetCoreAppCurrent)</SupportedFramework>
+      <SupportedFramework>net5.0</SupportedFramework>
     </ProjectReference>
     <HarvestIncludePaths Include="ref/net46;lib/net46;runtimes/win/lib/net46" />
     <HarvestIncludePaths Include="ref/net461;lib/net461;runtimes/win/lib/net461" />
