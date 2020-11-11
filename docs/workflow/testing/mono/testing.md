@@ -49,7 +49,7 @@ src/tests/build.sh -skipstressdependencies -excludemonofailures os Android x64 <
 
 For more details about internals of the runtime tests, please refer to the [CoreCLR testing documents](../coreclr)
 
-## Running Library Tests
+## Libraries tests
 * Build and run library tests against Mono JIT:
 
 1. cd into the test library of your choice (`cd src/libraries/<library>/tests`)
