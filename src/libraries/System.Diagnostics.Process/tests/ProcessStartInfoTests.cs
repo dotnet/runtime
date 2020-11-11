@@ -981,16 +981,7 @@ namespace System.Diagnostics.Tests
 
                 try
                 {
-                    if (PlatformDetection.IsInAppContainer)
-                    {
-                        process.WaitForInputIdle(); // Give the file a chance to load
-                        Assert.Equal("notepad", process.ProcessName);
-                        Assert.Throws<PlatformNotSupportedException>(() => process.MainWindowTitle);
-                    }
-                    else
-                    {
-                        VerifyNotepadMainWindowTitle(process, tempFile);
-                    }
+                    VerifyNotepadMainWindowTitle(process, tempFile);
                 }
                 finally
                 {
@@ -1187,12 +1178,14 @@ namespace System.Diagnostics.Tests
             // with "Untitled - Notepad" then finally if you're opening a file, calls SetWindowTextW
             // with something similar to "myfilename - Notepad". So there's a race between input idle
             // and the expected MainWindowTitle because of how Notepad is implemented.
-            Thread.Sleep(500);
             string title = process.MainWindowTitle;
-            if (!title.Contains(expected))
+            int count = 0;
+            while (!title.StartsWith(expected) && count < 500)
             {
-                Thread.Sleep(5000);
+                Thread.Sleep(10);
+                process.Refresh();
                 title = process.MainWindowTitle;
+                count++;
             }
 
             Assert.StartsWith(expected, title);
