@@ -1041,16 +1041,20 @@ GenTree* Lowering::NewPutArg(GenTreeCall* call, GenTree* arg, fgArgTabEntry* inf
 #endif // TARGET_ARM
         }
 
-        unsigned slotNumber = info->GetByteOffset() / TARGET_POINTER_SIZE;
+        const unsigned slotNumber = info->GetByteOffset() / TARGET_POINTER_SIZE;
         DEBUG_ARG_SLOTS_ASSERT(slotNumber == info->slotNum);
+        const bool putInIncomingArgArea = call->IsFastTailCall();
 
         putArg = new (comp, GT_PUTARG_SPLIT)
-            GenTreePutArgSplit(arg,
-                               info->GetByteOffset() PUT_STRUCT_ARG_STK_ONLY_ARG(info->GetStackByteSize())
-                                   DEBUG_ARG_SLOTS_ARG(slotNumber)
-                                       DEBUG_ARG_SLOTS_ONLY(PUT_STRUCT_ARG_STK_ONLY_ARG(info->GetStackSlotsNumber())),
-                               info->numRegs, call->IsFastTailCall(), call);
-
+            GenTreePutArgSplit(arg, info->GetByteOffset(),
+#if defined(DEBUG_ARG_SLOTS) && defined(FEATURE_PUT_STRUCT_ARG_STK)
+                               info->GetStackByteSize(), slotNumber, info->GetStackSlotsNumber(),
+#elif defined(DEBUG_ARG_SLOTS) && !defined(FEATURE_PUT_STRUCT_ARG_STK)
+                               slotNumber,
+#elif !defined(DEBUG_ARG_SLOTS) && defined(FEATURE_PUT_STRUCT_ARG_STK)
+                               info->GetStackByteSize(),
+#endif
+                               info->numRegs, call, putInIncomingArgArea);
         // If struct argument is morphed to GT_FIELD_LIST node(s),
         // we can know GC info by type of each GT_FIELD_LIST node.
         // So we skip setting GC Pointer info.
@@ -1155,14 +1159,19 @@ GenTree* Lowering::NewPutArg(GenTreeCall* call, GenTree* arg, fgArgTabEntry* inf
                     assert(genActualType(arg->TypeGet()) == type);
                 }
             }
-            unsigned slotNumber = info->GetByteOffset() / TARGET_POINTER_SIZE;
+            const unsigned slotNumber           = info->GetByteOffset() / TARGET_POINTER_SIZE;
+            const bool     putInIncomingArgArea = call->IsFastTailCall();
 
             putArg = new (comp, GT_PUTARG_STK)
-                GenTreePutArgStk(GT_PUTARG_STK, TYP_VOID, arg,
-                                 info->GetByteOffset() PUT_STRUCT_ARG_STK_ONLY_ARG(info->GetStackByteSize())
-                                     DEBUG_ARG_SLOTS_ARG(slotNumber)
-                                         DEBUG_ARG_SLOTS_ONLY(PUT_STRUCT_ARG_STK_ONLY_ARG(info->GetStackSlotsNumber())),
-                                 call->IsFastTailCall(), call);
+                GenTreePutArgStk(GT_PUTARG_STK, TYP_VOID, arg, info->GetByteOffset(),
+#if defined(DEBUG_ARG_SLOTS) && defined(FEATURE_PUT_STRUCT_ARG_STK)
+                                 info->GetStackByteSize(), slotNumber, info->GetStackSlotsNumber(),
+#elif defined(DEBUG_ARG_SLOTS) && !defined(FEATURE_PUT_STRUCT_ARG_STK)
+                                 slotNumber,
+#elif !defined(DEBUG_ARG_SLOTS) && defined(FEATURE_PUT_STRUCT_ARG_STK)
+                                 info->GetStackByteSize(),
+#endif
+                                 call, putInIncomingArgArea);
 
 #ifdef FEATURE_PUT_STRUCT_ARG_STK
             // If the ArgTabEntry indicates that this arg is a struct
