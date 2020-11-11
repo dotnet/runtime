@@ -2,7 +2,10 @@ MONO_CONFIG=Release
 MONO_ARCH=x64
 DOTNET := ../../../../.././dotnet.sh
 
-all: run
+all: runtimepack run
+
+runtimepack:
+	../../../../.././build.sh Mono+Libs -os Android -arch $(MONO_ARCH) -c $(MONO_CONFIG)
 
 run:
 	$(DOTNET) publish \
