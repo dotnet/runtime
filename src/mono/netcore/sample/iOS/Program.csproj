@@ -34,21 +34,21 @@
       <AppDir>$(MSBuildThisFileDirectory)$(PublishDir)\app</AppDir>
       <IosSimulator Condition="'$(TargetArchitecture)' == 'x64' or '$(TargetArchitecture)' == 'x86'">iPhone 11</IosSimulator>
       <Optimized Condition="'$(Configuration)' == 'Release'">True</Optimized>
-      <UseAot Condition="'$(IosSimulator)' == '' or '$(UseAotForSimulator)' == 'true'">true</UseAot>
+      <RunAOTCompilation Condition="'$(IosSimulator)' == '' or '$(UseAotForSimulator)' == 'true'">true</RunAOTCompilation>
     </PropertyGroup>
 
     <RemoveDir Directories="$(AppDir)" />
 
     <ItemGroup>
-      <BundleAssemblies Condition="'$(UseAot)' != 'true'" Include="$(MSBuildThisFileDirectory)$(PublishDir)\*.dll" />
-      <AotInputAssemblies Condition="'$(UseAot)' == 'true'" Include="$(MSBuildThisFileDirectory)$(PublishDir)\*.dll">
+      <BundleAssemblies Condition="'$(RunAOTCompilation)' != 'true'" Include="$(MSBuildThisFileDirectory)$(PublishDir)\*.dll" />
+      <AotInputAssemblies Condition="'$(RunAOTCompilation)' == 'true'" Include="$(MSBuildThisFileDirectory)$(PublishDir)\*.dll">
         <AotArguments>@(MonoAOTCompilerDefaultAotArguments, ';')</AotArguments>
         <ProcessArguments>@(MonoAOTCompilerDefaultProcessArguments, ';')</ProcessArguments>
       </AotInputAssemblies>
     </ItemGroup>
 
     <MonoAOTCompiler
-        Condition="'$(UseAot)' == 'true'"
+        Condition="'$(RunAOTCompilation)' == 'true'"
         CompilerBinaryPath="$(MicrosoftNetCoreAppRuntimePackDir)native\cross\mono-aot-cross"
         Mode="Full"
         OutputType="AsmOnly"

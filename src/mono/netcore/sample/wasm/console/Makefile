@@ -8,8 +8,8 @@ DOTNET_Q_ARGS=--nologo
 DOTNET_MONO_LOG_LEVEL=--setenv=MONO_LOG_LEVEL=debug
 endif
 
-ifneq ($(USE_AOT),)
-DOTNET_USE_AOT_ARGS=/p:UseAot=true
+ifneq ($(AOT),)
+DOTNET_RUN_AOT_COMPILATION_ARGS=/p:RunAOTCompilation=true
 endif
 
 CONFIG?=Release
@@ -17,7 +17,7 @@ CONFIG?=Release
 all: build
 
 build:
-	$(DOTNET) publish $(DOTNET_Q_ARGS) $(DOTNET_USE_AOT_ARGS) /p:TargetArchitecture=wasm /p:TargetOS=Browser /p:Configuration=$(CONFIG) WasmSample.csproj
+	$(DOTNET) publish $(DOTNET_Q_ARGS) $(DOTNET_RUN_AOT_COMPILATION_ARGS) /p:TargetArchitecture=wasm /p:TargetOS=Browser /p:Configuration=$(CONFIG) WasmSample.csproj
 
 clean:
 	rm -rf bin
