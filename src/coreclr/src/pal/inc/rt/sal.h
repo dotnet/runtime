@@ -17,7 +17,7 @@
 
    The comments in this file are intended to give basic understanding of
    the usage of SAL, the Microsoft Source Code Annotation Language.
-   For more details, please see http://go.microsoft.com/fwlink/?LinkID=242134
+   For more details, please see https://go.microsoft.com/fwlink/?LinkID=242134
 
    The macros are defined in 3 layers, plus the structural set:
 
