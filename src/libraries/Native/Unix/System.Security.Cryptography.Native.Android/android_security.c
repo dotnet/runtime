@@ -182,7 +182,7 @@ int32_t CryptoNative_GetRandomBytes(uint8_t* buff, int32_t len)
     return CheckJNIExceptions(env) ? FAIL : SUCCESS;
 }
 
- // just some unique numbers
+// just some unique numbers
 intptr_t CryptoNative_EvpMd5()          { return 101; }
 intptr_t CryptoNative_EvpSha1()         { return 102; }
 intptr_t CryptoNative_EvpSha256()       { return 103; }
