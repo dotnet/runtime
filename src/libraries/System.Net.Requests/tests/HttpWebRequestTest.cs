@@ -522,6 +522,8 @@ namespace System.Net.Tests
                 WebException exception = Assert.Throws<WebException>(() => request.GetResponse());
                 sw.Stop();
 
+                _output.WriteLine(exception.ToString());
+
                 Assert.InRange(sw.ElapsedMilliseconds, 1, 15 * 1000);
                 Assert.Equal(WebExceptionStatus.Timeout, exception.Status);
                 Assert.Null(exception.InnerException);
