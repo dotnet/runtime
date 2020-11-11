@@ -229,7 +229,7 @@ namespace System.Diagnostics.Tracing
 #pragma warning restore CA1823
 #endif //FEATURE_EVENTSOURCE_XPLAT
 
-        private static bool IsSupported { get; } = InitializeIsSupported();
+        internal static bool IsSupported { get; } = InitializeIsSupported();
 
         private static bool InitializeIsSupported() =>
             AppContext.TryGetSwitch("System.Diagnostics.Tracing.EventSource.IsSupported", out bool isSupported) ? isSupported : true;
@@ -4117,18 +4117,17 @@ namespace System.Diagnostics.Tracing
         {
             lock (EventListenersLock)
             {
-                s_EventSources ??= new List<WeakReference<EventSource>>(2);
+                Debug.Assert(s_EventSources != null);
 
+#if ES_BUILD_STANDALONE
+                // netcoreapp build calls DisposeOnShutdown directly from AppContext.OnProcessExit
                 if (!s_EventSourceShutdownRegistered)
                 {
                     s_EventSourceShutdownRegistered = true;
-#if ES_BUILD_STANDALONE
                     AppDomain.CurrentDomain.ProcessExit += DisposeOnShutdown;
                     AppDomain.CurrentDomain.DomainUnload += DisposeOnShutdown;
-#else
-                    AppContext.ProcessExit += DisposeOnShutdown;
-#endif
                 }
+#endif
 
                 // Periodically search the list for existing entries to reuse, this avoids
                 // unbounded memory use if we keep recycling eventSources (an unlikely thing).
@@ -4185,8 +4184,17 @@ namespace System.Diagnostics.Tracing
         // such callbacks on process shutdown or appdomain so that unmanaged code will never
         // do this.  This is what this callback is for.
         // See bug 724140 for more
+#if ES_BUILD_STANDALONE
         private static void DisposeOnShutdown(object? sender, EventArgs e)
+#else
+        internal static void DisposeOnShutdown()
+#endif
         {
+            if (!EventSource.IsSupported)
+            {
+                return;
+            }
+
             lock (EventListenersLock)
             {
                 Debug.Assert(s_EventSources != null);
@@ -4421,10 +4429,12 @@ namespace System.Diagnostics.Tracing
         private static bool s_ConnectingEventSourcesAndListener;
 #endif
 
+#if ES_BUILD_STANDALONE
         /// <summary>
         /// Used to register AD/Process shutdown callbacks.
         /// </summary>
         private static bool s_EventSourceShutdownRegistered;
+#endif
 #endregion
     }
 
