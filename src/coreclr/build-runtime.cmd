@@ -659,7 +659,7 @@ if %__BuildNative% EQU 1 (
         set __CmakeBuildToolArgs=/nologo /m !__Logging!
     )
 
-    "%CMakePath%" --build %__IntermediatesDir% --target install --config %__BuildType% -- !__CmakeBuildToolArgs!
+    "%CMakePath%" --build "%__IntermediatesDir%" --target install --config %__BuildType% -- !__CmakeBuildToolArgs!
 
     if not !errorlevel! == 0 (
         set __exitCode=!errorlevel!
