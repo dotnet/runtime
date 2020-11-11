@@ -411,6 +411,7 @@ public:
     virtual void SuspendForGarbageCollectionStarted() = 0;
     virtual void SuspendForGarbageCollectionCompleted() = 0;
     virtual void ResumeForGarbageCollectionStarted() = 0;
+    virtual BOOL AreGarbageCollectionEventsEnabledForNextSuspension() = 0;
 #endif
     virtual BOOL IsSynchronizing() = 0;
 };

@@ -5946,13 +5946,24 @@ retry_for_debugger:
             //
             // When the debugger is synchronizing, trying to perform a GC could deadlock. The GC has the
             // threadstore lock and synchronization cannot complete until the debugger can get the
-            // threadstore lock. However the GC can not complete until it sends the BeforeGarbageCollection
-            // event, and the event can not be sent until the debugger is synchronized. In order to break
-            // this deadlock cycle the GC must give up the threadstore lock, allow the debugger to synchronize,
-            // then try again.
+            // threadstore lock. However, if GC events are enabled, the GC can not complete until it sends the
+            // BeforeGarbageCollection event, and the event can not be sent until the debugger is synchronized. In order to
+            // break this deadlock cycle the GC must give up the threadstore lock, allow the debugger to synchronize,
+            // then try again. At the same time, currently a thread in a forbid-suspend-for-debugger region cannot suspend for
+            // the debugger at this point. To break both deadlocks, sending GC events would be deprecated and typically
+            // AreGarbageCollectionEventsEnabledForNextSuspension() would be false.
             // 
-            || (CORDebuggerAttached() &&
-                (g_pDebugInterface->ThreadsAtUnsafePlaces() || g_pDebugInterface->IsSynchronizing()))
+            ||
+            (
+                CORDebuggerAttached() &&
+                (
+                    g_pDebugInterface->ThreadsAtUnsafePlaces() ||
+                    (
+                        g_pDebugInterface->AreGarbageCollectionEventsEnabledForNextSuspension() &&
+                        g_pDebugInterface->IsSynchronizing()
+                    )
+                )
+            )
 #endif // DEBUGGING_SUPPORTED
             )
         {

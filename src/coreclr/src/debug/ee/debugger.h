@@ -2187,6 +2187,13 @@ public:
                             unsigned int errorLine,
                             bool exitThread);
 
+    virtual BOOL AreGarbageCollectionEventsEnabledForNextSuspension(void)
+    {
+        LIMITED_METHOD_CONTRACT;
+
+        return m_isGarbageCollectionEventsEnabledLatch;
+    }
+
     virtual BOOL IsSynchronizing(void)
     {
         LIMITED_METHOD_CONTRACT;
