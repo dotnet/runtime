@@ -67,7 +67,7 @@ ep_buffer_free (EventPipeBuffer *buffer)
 bool
 ep_buffer_write_event (
 	EventPipeBuffer *buffer,
-	EventPipeThread *thread,
+	ep_rt_thread_handle_t thread,
 	EventPipeSession *session,
 	EventPipeEvent *ep_event,
 	EventPipeEventPayload *payload,
@@ -110,7 +110,7 @@ ep_buffer_write_event (
 		(EventPipeEventInstance *)buffer->current,
 		ep_event,
 		proc_number,
-		(thread == NULL) ? ep_rt_current_thread_get_id () : ep_thread_get_os_thread_id (thread),
+		(thread == NULL) ? ep_rt_current_thread_get_id () : ep_rt_thread_get_id (thread),
 		data_dest,
 		ep_event_payload_get_size (payload),
 		(thread == NULL) ? NULL : activity_id,

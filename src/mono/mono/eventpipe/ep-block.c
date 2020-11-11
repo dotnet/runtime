@@ -131,7 +131,7 @@ stack_block_serialize_header_func (void *object, FastSerializer *fast_serializer
  */
 
 static
-int32_t
+uint32_t
 block_get_block_version (EventPipeSerializationFormat format)
 {
 	switch (format) {
@@ -146,7 +146,7 @@ block_get_block_version (EventPipeSerializationFormat format)
 }
 
 static
-int32_t
+uint32_t
 block_get_block_minimum_version (EventPipeSerializationFormat format)
 {
 	switch (format) {
@@ -514,7 +514,7 @@ ep_event_block_base_write_event (
 	EventPipeEventInstance *event_instance,
 	uint64_t capture_thread_id,
 	uint32_t sequence_number,
-	int32_t stack_id,
+	uint32_t stack_id,
 	bool is_sorted_event)
 {
 	bool result = true;
@@ -548,7 +548,7 @@ ep_event_block_base_write_event (
 		write_pointer += sizeof (metadata_id);
 
 		if (block->format == EP_SERIALIZATION_FORMAT_NETPERF_V3) {
-			int32_t thread_id = (int32_t)ep_event_instance_get_thread_id (event_instance);
+			uint32_t thread_id = (uint32_t)ep_event_instance_get_thread_id (event_instance);
 			memcpy (write_pointer, &thread_id, sizeof (thread_id));
 			write_pointer += sizeof (thread_id);
 		} else if (block->format == EP_SERIALIZATION_FORMAT_NETTRACE_V4) {
@@ -601,7 +601,7 @@ ep_event_block_base_write_event (
 		if (last_header->sequence_number + (ep_event_instance_get_metadata_id (event_instance) != 0 ? 1 : 0) != sequence_number ||
 			last_header->capture_thread_id != capture_thread_id || last_header->capture_proc_number != capture_proc_number) {
 			header_write_pointer = event_block_base_write_var_uint32 (header_write_pointer, sequence_number - last_header->sequence_number - 1);
-			header_write_pointer = event_block_base_write_var_uint32 (header_write_pointer, (uint32_t)capture_thread_id);
+			header_write_pointer = event_block_base_write_var_uint64 (header_write_pointer, capture_thread_id);
 			header_write_pointer = event_block_base_write_var_uint32 (header_write_pointer, capture_proc_number);
 			flags |= (1 << 1);
 		}
@@ -677,7 +677,7 @@ ep_event_block_base_write_event (
 		write_pointer += sizeof (stack_size);
 
 		if (stack_size > 0) {
-			memcpy (write_pointer, ep_event_instance_get_stack_contents_ref (event_instance), stack_size);
+			memcpy (write_pointer, ep_stack_contents_get_pointer (ep_event_instance_get_stack_contents_ref (event_instance)), stack_size);
 			write_pointer += stack_size;
 		}
 	}
@@ -917,10 +917,9 @@ ep_sequence_point_block_init (
 	memcpy (sequence_point_block->block.write_pointer, &thread_count, sizeof (thread_count));
 	sequence_point_block->block.write_pointer += sizeof (thread_count);
 
-	ep_rt_thread_sequence_number_hash_map_iterator_t iterator;
-	for (ep_rt_thread_sequence_number_map_iterator_begin (ep_sequence_point_get_thread_sequence_numbers_cref (sequence_point), &iterator);
+	for (ep_rt_thread_sequence_number_hash_map_iterator_t iterator = ep_rt_thread_sequence_number_map_iterator_begin (ep_sequence_point_get_thread_sequence_numbers_cref (sequence_point));
 		!ep_rt_thread_sequence_number_map_iterator_end (ep_sequence_point_get_thread_sequence_numbers_cref (sequence_point), &iterator);
-		ep_rt_thread_sequence_number_map_iterator_next (ep_sequence_point_get_thread_sequence_numbers_cref (sequence_point), &iterator)) {
+		ep_rt_thread_sequence_number_map_iterator_next (&iterator)) {
 
 		const EventPipeThreadSessionState *key = ep_rt_thread_sequence_number_map_iterator_key (&iterator);
 
@@ -992,7 +991,7 @@ stack_block_get_header_size_func (void *object)
 {
 	EP_ASSERT (object != NULL);
 	return	sizeof (uint32_t) + // start index
-			sizeof (uint32_t); // count of indices
+		sizeof (uint32_t); // count of indices
 }
 
 static
@@ -1053,7 +1052,7 @@ ep_stack_block_free (EventPipeStackBlock *stack_block)
 bool
 ep_stack_block_write_stack (
 	EventPipeStackBlock *stack_block,
-	int32_t stack_id,
+	uint32_t stack_id,
 	EventPipeStackContents *stack)
 {
 	bool result = true;

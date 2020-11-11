@@ -88,7 +88,7 @@ ds_ipc_alloc (
 			ep_rt_current_process_get_id ());
 	}
 
-	if (characters_written == -1) {
+	if (characters_written <= 0 || characters_written >= DS_IPC_WIN32_MAX_NAMED_PIPE_LEN) {
 		if (callback)
 			callback ("Failed to generate the named pipe name", characters_written);
 		ep_raise_error ();
@@ -124,12 +124,14 @@ ds_ipc_poll (
 	DiagnosticsIpcPollHandle * poll_handles_data = ds_rt_ipc_poll_handle_array_data (poll_handles);
 	size_t poll_handles_data_len = ds_rt_ipc_poll_handle_array_size (poll_handles);
 
+	EP_ASSERT (poll_handles_data_len <= MAXIMUM_WAIT_OBJECTS);
+
 	HANDLE handles [MAXIMUM_WAIT_OBJECTS];
 	for (size_t i = 0; i < poll_handles_data_len; ++i) {
 		ds_ipc_poll_handle_set_events (&poll_handles_data [i], 0); // ignore any input on events.
 		if (ds_ipc_poll_handle_get_ipc (&poll_handles_data [i])) {
 			// SERVER
-			EP_ASSERT (poll_handles_data [i].ipc->mode == DS_IPC_CONNECTION_MODE_LISTEN);
+			EP_ASSERT (ds_ipc_poll_handle_get_ipc (&(poll_handles_data [i]))->mode == DS_IPC_CONNECTION_MODE_LISTEN);
 			handles [i] = ds_ipc_poll_handle_get_ipc (&poll_handles_data [i])->overlap.hEvent;
 		} else {
 			// CLIENT
@@ -177,9 +179,9 @@ ds_ipc_poll (
 	DWORD wait = WAIT_FAILED;
 	DS_ENTER_BLOCKING_PAL_SECTION;
 	wait = WaitForMultipleObjects (
-		poll_handles_data_len,      // count
-		handles,                    // handles
-		false,                      // don't wait all
+		(DWORD)poll_handles_data_len,      // count
+		handles,                           // handles
+		false,                             // don't wait all
 		timeout_ms);
 	DS_EXIT_BLOCKING_PAL_SECTION;
 
@@ -314,7 +316,7 @@ ds_ipc_listen (
 
 	EP_ASSERT (ipc->overlap.hEvent == INVALID_HANDLE_VALUE);
 
-	ipc->overlap.hEvent = CreateEvent (NULL, true, false, NULL);
+	ipc->overlap.hEvent = CreateEventW (NULL, true, false, NULL);
 	if (!ipc->overlap.hEvent) {
 		if (callback)
 			callback ("Failed to create overlap event", GetLastError());
@@ -511,7 +513,8 @@ ds_ipc_to_string (
 	EP_ASSERT (ipc != NULL);
 	EP_ASSERT (buffer != NULL);
 	EP_ASSERT (buffer_len <= DS_IPC_MAX_TO_STRING_LEN);
-	return ep_rt_utf8_string_snprintf (buffer, buffer_len, "{ _hPipe = %d, _oOverlap.hEvent = %d }", ipc->pipe, ipc->overlap.hEvent);
+	int32_t result = ep_rt_utf8_string_snprintf (buffer, buffer_len, "{ _hPipe = %d, _oOverlap.hEvent = %d }", (int32_t)(size_t)ipc->pipe, (int32_t)(size_t)ipc->overlap.hEvent);
+	return (result > 0 && result < (int32_t)buffer_len) ? result : 0;
 }
 
 /*
@@ -717,7 +720,7 @@ ipc_stream_alloc (
 	// All memory zeroed on alloc.
 	//memset (&instance->overlap, 0, sizeof (OVERLAPPED));
 
-	instance->overlap.hEvent = CreateEvent (NULL, true, false, NULL);
+	instance->overlap.hEvent = CreateEventW (NULL, true, false, NULL);
 
 ep_on_exit:
 	return instance;
@@ -726,6 +729,12 @@ ep_on_error:
 	ds_ipc_stream_free (instance);
 	instance = NULL;
 	ep_exit_error_handler ();
+}
+
+int32_t
+ds_ipc_stream_get_handle_int32_t (DiagnosticsIpcStream *ipc_stream)
+{
+	return (int32_t)(size_t)ipc_stream->pipe;
 }
 
 IpcStream *
@@ -826,7 +835,8 @@ ds_ipc_stream_to_string (
 	EP_ASSERT (ipc_stream != NULL);
 	EP_ASSERT (buffer != NULL);
 	EP_ASSERT (buffer_len <= DS_IPC_MAX_TO_STRING_LEN);
-	return ep_rt_utf8_string_snprintf (buffer, buffer_len, "{ _hPipe = %d, _oOverlap.hEvent = %d }", ipc_stream->pipe, ipc_stream->overlap.hEvent);
+	int32_t result = ep_rt_utf8_string_snprintf (buffer, buffer_len, "{ _hPipe = %d, _oOverlap.hEvent = %d }", (int32_t)(size_t)ipc_stream->pipe, (int32_t)(size_t)ipc_stream->overlap.hEvent);
+	return (result > 0 && result < (int32_t)buffer_len) ? result : 0;
 }
 
 #endif /* !defined(DS_INCLUDE_SOURCE_FILES) || defined(DS_FORCE_INCLUDE_SOURCE_FILES) */

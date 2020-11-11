@@ -67,25 +67,25 @@ eventpipe_collect_tracing2_command_try_parse_payload (
 	uint16_t buffer_len);
 
 static
-void
+bool
 eventpipe_protocol_helper_stop_tracing (
 	DiagnosticsIpcMessage *message,
 	DiagnosticsIpcStream *stream);
 
 static
-void
+bool
 eventpipe_protocol_helper_collect_tracing (
 	DiagnosticsIpcMessage *message,
 	DiagnosticsIpcStream *stream);
 
 static
-void
+bool
 eventpipe_protocol_helper_collect_tracing_2 (
 	DiagnosticsIpcMessage *message,
 	DiagnosticsIpcStream *stream);
 
 static
-void
+bool
 eventpipe_protocol_helper_unknown_command (
 	DiagnosticsIpcMessage *message,
 	DiagnosticsIpcStream *stream);
@@ -194,11 +194,15 @@ eventpipe_collect_tracing_command_try_parse_config (
 		}
 
 		EventPipeProviderConfiguration provider_config;
-		ep_provider_config_init (&provider_config, provider_name_utf8, keywords, (EventPipeEventLevel)log_level, filter_data_utf8);
-		ep_rt_provider_config_array_append (result, provider_config);
-
-		provider_name_utf8 = NULL;
-		filter_data_utf8 = NULL;
+		if (ep_provider_config_init (&provider_config, provider_name_utf8, keywords, (EventPipeEventLevel)log_level, filter_data_utf8)) {
+			if (ep_rt_provider_config_array_append (result, provider_config)) {
+				// Ownership transfered.
+				provider_name_utf8 = NULL;
+				filter_data_utf8 = NULL;
+			}
+			ep_provider_config_fini (&provider_config);
+		}
+		ep_raise_error_if_nok (provider_name_utf8 == NULL && filter_data_utf8 == NULL);
 	}
 
 ep_on_exit:
@@ -332,13 +336,15 @@ eventpipe_protocol_helper_send_stop_tracing_success (
 {
 	EP_ASSERT (stream != NULL);
 
+	bool result = false;
 	DiagnosticsIpcMessage success_message;
-	ds_ipc_message_init (&success_message);
-	bool success = ds_ipc_message_initialize_header_uint64_t_payload (&success_message, ds_ipc_header_get_generic_success (), (uint64_t)session_id);
-	if (success)
-		ds_ipc_message_send (&success_message, stream);
-	ds_ipc_message_fini (&success_message);
-	return success;
+	if (ds_ipc_message_init (&success_message)) {
+		result = ds_ipc_message_initialize_header_uint64_t_payload (&success_message, ds_ipc_header_get_generic_success (), (uint64_t)session_id);
+		if (result)
+			result = ds_ipc_message_send (&success_message, stream);
+		ds_ipc_message_fini (&success_message);
+	}
+	return result;
 }
 
 static
@@ -349,23 +355,26 @@ eventpipe_protocol_helper_send_start_tracing_success (
 {
 	EP_ASSERT (stream != NULL);
 
+	bool result = false;
 	DiagnosticsIpcMessage success_message;
-	ds_ipc_message_init (&success_message);
-	bool success = ds_ipc_message_initialize_header_uint64_t_payload (&success_message, ds_ipc_header_get_generic_success (), (uint64_t)session_id);
-	if (success)
-		ds_ipc_message_send (&success_message, stream);
-	ds_ipc_message_fini (&success_message);
-	return success;
+	if (ds_ipc_message_init (&success_message)) {
+		result = ds_ipc_message_initialize_header_uint64_t_payload (&success_message, ds_ipc_header_get_generic_success (), (uint64_t)session_id);
+		if (result)
+			result = ds_ipc_message_send (&success_message, stream);
+		ds_ipc_message_fini (&success_message);
+	}
+	return result;
 }
 
 static
-void
+bool
 eventpipe_protocol_helper_stop_tracing (
 	DiagnosticsIpcMessage *message,
 	DiagnosticsIpcStream *stream)
 {
-	ep_return_void_if_nok (message != NULL && stream != NULL);
+	ep_return_false_if_nok (message != NULL && stream != NULL);
 
+	bool result = false;
 	EventPipeStopTracingCommandPayload *payload;
 	payload = (EventPipeStopTracingCommandPayload *)ds_ipc_message_try_parse_payload (message, NULL);
 
@@ -379,23 +388,27 @@ eventpipe_protocol_helper_stop_tracing (
 	eventpipe_protocol_helper_send_stop_tracing_success (stream, payload->session_id);
 	ds_ipc_stream_flush (stream);
 
+	result = true;
+
 ep_on_exit:
 	ds_eventpipe_stop_tracing_command_payload_free (payload);
 	ds_ipc_stream_free (stream);
-	return;
+	return result;
 
 ep_on_error:
+	EP_ASSERT (result == false);
 	ep_exit_error_handler ();
 }
 
 static
-void
+bool
 eventpipe_protocol_helper_collect_tracing (
 	DiagnosticsIpcMessage *message,
 	DiagnosticsIpcStream *stream)
 {
-	ep_return_void_if_nok (message != NULL && stream != NULL);
+	ep_return_false_if_nok (message != NULL && stream != NULL);
 
+	bool result = false;
 	EventPipeCollectTracingCommandPayload *payload;
 	payload = (EventPipeCollectTracingCommandPayload *)ds_ipc_message_try_parse_payload (message, eventpipe_collect_tracing_command_try_parse_payload);
 
@@ -424,23 +437,27 @@ eventpipe_protocol_helper_collect_tracing (
 		ep_start_streaming (session_id);
 	}
 
+	result = true;
+
 ep_on_exit:
 	ds_eventpipe_collect_tracing_command_payload_free (payload);
-	return;
+	return result;
 
 ep_on_error:
+	EP_ASSERT (result == false);
 	ds_ipc_stream_free (stream);
 	ep_exit_error_handler ();
 }
 
 static
-void
+bool
 eventpipe_protocol_helper_collect_tracing_2 (
 	DiagnosticsIpcMessage *message,
 	DiagnosticsIpcStream *stream)
 {
-	ep_return_void_if_nok (message != NULL && stream != NULL);
+	ep_return_false_if_nok (message != NULL && stream != NULL);
 
+	bool result = false;
 	EventPipeCollectTracing2CommandPayload *payload;
 	payload = (EventPipeCollectTracing2CommandPayload *)ds_ipc_message_try_parse_payload (message, eventpipe_collect_tracing2_command_try_parse_payload);
 
@@ -469,17 +486,20 @@ eventpipe_protocol_helper_collect_tracing_2 (
 		ep_start_streaming (session_id);
 	}
 
+	result = true;
+
 ep_on_exit:
 	ds_eventpipe_collect_tracing2_command_payload_free (payload);
-	return;
+	return result;
 
 ep_on_error:
+	EP_ASSERT (result == false);
 	ds_ipc_stream_free (stream);
 	ep_exit_error_handler ();
 }
 
 static
-void
+bool
 eventpipe_protocol_helper_unknown_command (
 	DiagnosticsIpcMessage *message,
 	DiagnosticsIpcStream *stream)
@@ -487,6 +507,7 @@ eventpipe_protocol_helper_unknown_command (
 	DS_LOG_WARNING_1 ("Received unknown request type (%d)\n", ds_ipc_header_get_commandset (ds_ipc_message_get_header_cref (message)));
 	ds_ipc_message_send_error (stream, DS_IPC_E_UNKNOWN_COMMAND);
 	ds_ipc_stream_free (stream);
+	return true;
 }
 
 void
@@ -496,27 +517,31 @@ ds_eventpipe_stop_tracing_command_payload_free (EventPipeStopTracingCommandPaylo
 	ep_rt_byte_array_free ((uint8_t *)payload);
 }
 
-void
+bool
 ds_eventpipe_protocol_helper_handle_ipc_message (
 	DiagnosticsIpcMessage *message,
 	DiagnosticsIpcStream *stream)
 {
-	ep_return_void_if_nok (message != NULL && stream != NULL);
+	ep_return_false_if_nok (message != NULL && stream != NULL);
+
+	bool result = false;
 
 	switch ((EventPipeCommandId)ds_ipc_header_get_commandid (ds_ipc_message_get_header_cref (message))) {
 	case EP_COMMANDID_COLLECT_TRACING:
-		eventpipe_protocol_helper_collect_tracing (message, stream);
+		result = eventpipe_protocol_helper_collect_tracing (message, stream);
 		break;
 	case EP_COMMANDID_COLLECT_TRACING_2:
-		eventpipe_protocol_helper_collect_tracing_2 (message, stream);
+		result = eventpipe_protocol_helper_collect_tracing_2 (message, stream);
 		break;
 	case EP_COMMANDID_STOP_TRACING:
-		eventpipe_protocol_helper_stop_tracing (message, stream);
+		result = eventpipe_protocol_helper_stop_tracing (message, stream);
 		break;
 	default:
-		eventpipe_protocol_helper_unknown_command (message, stream);
+		result = eventpipe_protocol_helper_unknown_command (message, stream);
 		break;
 	}
+
+	return result;
 }
 
 #endif /* !defined(DS_INCLUDE_SOURCE_FILES) || defined(DS_FORCE_INCLUDE_SOURCE_FILES) */

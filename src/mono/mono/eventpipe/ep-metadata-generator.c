@@ -108,12 +108,12 @@ metadata_generator_get_metadata_len (
 	bool has_v2_types = metadata_generator_has_v2_param_types (params, params_len);
 	*v2_len = 0;
 
-	// eventID			: 4 bytes
-	// eventName		: (eventName.Length + 1) * 2 bytes
-	// keywords			: 8 bytes
-	// eventVersion		: 4 bytes
-	// level			: 4 bytes
-	// parameterCount	: 4 bytes
+	// eventID              : 4 bytes
+	// eventName            : (eventName.Length + 1) * 2 bytes
+	// keywords             : 8 bytes
+	// eventVersion         : 4 bytes
+	// level                : 4 bytes
+	// parameterCount       : 4 bytes
 	*total_len = 24 + ((event_name_len + 1) * sizeof (ep_char16_t));
 
 	if (opcode != 0)

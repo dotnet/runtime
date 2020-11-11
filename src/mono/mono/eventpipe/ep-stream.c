@@ -154,7 +154,7 @@ fast_serializer_write_serialization_type (
 	// Write the SerializationType TypeName field.
 	const ep_char8_t *type_name = ep_fast_serializable_object_get_type_name_vcall (fast_serializable_ojbect);
 	if (type_name)
-		ep_fast_serializer_write_string (fast_serializer, type_name, (uint32_t)ep_rt_utf8_string_len (type_name));
+		ep_fast_serializer_write_string (fast_serializer, type_name, (uint32_t)strlen (type_name));
 
 	// Write the EndObject tag.
 	ep_fast_serializer_write_tag (fast_serializer, FAST_SERIALIZER_TAGS_END_OBJECT, NULL, 0);
@@ -247,7 +247,7 @@ ep_fast_serializer_write_string (
 	const ep_char8_t *contents,
 	uint32_t contents_len)
 {
-	// Write teh string length.
+	// Write the string length.
 	ep_fast_serializer_write_buffer (fast_serializer, (const uint8_t *)&contents_len, sizeof (contents_len));
 
 	//Wirte the string contents.
@@ -298,7 +298,7 @@ ep_file_stream_open_write (
 	ep_rt_file_handle_t rt_file = ep_rt_file_open_write (path);
 	ep_raise_error_if_nok (rt_file != NULL);
 
-	ep_file_stream_set_rt_file (file_stream, rt_file);
+	file_stream->rt_file = rt_file;
 	return true;
 
 ep_on_error:
@@ -309,7 +309,9 @@ bool
 ep_file_stream_close (FileStream *file_stream)
 {
 	ep_return_false_if_nok (file_stream != NULL);
-	return ep_rt_file_close (ep_file_stream_get_rt_file (file_stream));
+	bool result = ep_rt_file_close (file_stream->rt_file);
+	file_stream->rt_file = NULL;
+	return result;
 }
 
 bool
@@ -324,7 +326,7 @@ ep_file_stream_write (
 	EP_ASSERT (bytes_to_write > 0);
 	EP_ASSERT (bytes_written != NULL);
 
-	return ep_rt_file_write (ep_file_stream_get_rt_file (file_stream), buffer, bytes_to_write, bytes_written);
+	return ep_rt_file_write (file_stream->rt_file, buffer, bytes_to_write, bytes_written);
 }
 
 /*
@@ -592,6 +594,8 @@ ep_ipc_stream_writer_write (
 	EP_ASSERT (buffer != NULL);
 	EP_ASSERT (bytes_to_write > 0);
 	EP_ASSERT (bytes_written != NULL);
+
+	ep_return_false_if_nok (buffer != NULL && bytes_to_write != 0);
 
 	bool result = false;
 

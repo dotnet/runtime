@@ -37,40 +37,45 @@ EP_RT_DEFINE_THREAD_FUNC (streaming_thread)
 	if (data == NULL)
 		return 1;
 
-	EventPipeSession *const session = (EventPipeSession *)data;
+	ep_rt_thread_params_t *thread_params = (ep_rt_thread_params_t *)data;
+
+	EventPipeSession *const session = (EventPipeSession *)thread_params->thread_params;
 	if (session->session_type != EP_SESSION_TYPE_IPCSTREAM)
 		return 1;
 
-	ep_rt_thread_setup (true);
+	if (!thread_params->thread || !ep_rt_thread_has_started (thread_params->thread))
+		return 1;
+
 	session->ipc_streaming_thread = ep_thread_get_or_create ();
 
 	bool success = true;
-	ep_rt_wait_event_handle_t *wait_event = (ep_rt_wait_event_handle_t *)ep_session_get_wait_event (session);
+	ep_rt_wait_event_handle_t *wait_event = ep_session_get_wait_event (session);
 
-	while (ep_session_get_ipc_streaming_enabled (session)) {
-		bool events_written = false;
-		if (!ep_session_write_all_buffers_to_file (session, &events_written)) {
-			success = false;
-			break;
+	EP_GCX_PREEMP_ENTER
+		while (ep_session_get_ipc_streaming_enabled (session)) {
+			bool events_written = false;
+			if (!ep_session_write_all_buffers_to_file (session, &events_written)) {
+				success = false;
+				break;
+			}
+
+			if (!events_written) {
+				// No events were available, sleep until more are available
+				ep_rt_wait_event_wait (wait_event, EP_INFINITE_WAIT, false);
+			}
+
+			// Wait until it's time to sample again.
+			const uint32_t timeout_ns = 100000000; // 100 msec.
+			ep_rt_thread_sleep (timeout_ns);
 		}
 
-		if (!events_written) {
-			// No events were available, sleep until more are available
-			ep_rt_wait_event_wait (wait_event, EP_INFINITE_WAIT, false);
-		}
-
-		// Wait until it's time to sample again.
-		const uint32_t timeout_ns = 100000000; // 100 msec.
-		ep_rt_thread_sleep (timeout_ns);
-	}
-
-	ep_rt_wait_event_set (&session->rt_thread_shutdown_event);
+		ep_rt_wait_event_set (&session->rt_thread_shutdown_event);
+	EP_GCX_PREEMP_EXIT
 
 	if (!success)
 		ep_disable ((EventPipeSessionID)session);
 
 	session->ipc_streaming_thread = NULL;
-	ep_rt_thread_teardown ();
 
 	return (ep_rt_thread_start_func_return_t)0;
 }
@@ -86,9 +91,11 @@ session_create_ipc_streaming_thread (EventPipeSession *session)
 
 	ep_session_set_ipc_streaming_enabled (session, true);
 	ep_rt_wait_event_alloc (&session->rt_thread_shutdown_event, true, false);
+	if (!ep_rt_wait_event_is_valid (&session->rt_thread_shutdown_event))
+		EP_ASSERT (!"Unable to create IPC stream flushing thread shutdown event.");
 
 	ep_rt_thread_id_t thread_id = 0;
-	if (!ep_rt_thread_create ((void *)streaming_thread, (void *)session, &thread_id))
+	if (!ep_rt_thread_create ((void *)streaming_thread, (void *)session, EP_THREAD_TYPE_SESSION, &thread_id))
 		EP_ASSERT (!"Unable to create IPC stream flushing thread.");
 }
 
@@ -192,6 +199,7 @@ ep_session_alloc (
 
 	instance->session_start_time = ep_system_timestamp_get ();
 	instance->session_start_timestamp = ep_perf_timestamp_get ();
+	instance->paused = false;
 
 ep_on_exit:
 	ep_requires_lock_held ();
@@ -246,12 +254,14 @@ ep_session_get_session_provider (
 	return session_provider;
 }
 
-void
+bool
 ep_session_enable_rundown (EventPipeSession *session)
 {
 	EP_ASSERT (session != NULL);
 
 	ep_requires_lock_held ();
+
+	bool result = false;
 
 	//! This is CoreCLR specific keywords for native ETW events (ending up in event pipe).
 	//! The keywords below seems to correspond to:
@@ -280,20 +290,32 @@ ep_session_enable_rundown (EventPipeSession *session)
 			ep_provider_config_get_logging_level (config),
 			ep_provider_config_get_filter_data (config));
 
-		ep_session_add_session_provider (session, session_provider);
+		ep_raise_error_if_nok (ep_session_add_session_provider (session, session_provider) == true);
 	}
 
 	ep_session_set_rundown_enabled (session, true);
+	result = true;
 
+ep_on_exit:
 	ep_requires_lock_held ();
-	return;
+	return result;
+
+ep_on_error:
+	EP_ASSERT (result == false);
+	ep_exit_error_handler ();
 }
 
 void
 ep_session_execute_rundown (EventPipeSession *session)
 {
-	// TODO: Implement. This is mainly runtime specific implementation
-	//since it will emit native trace events into the pipe (using CoreCLR's ETW support).
+	EP_ASSERT (session != NULL);
+
+	// Lock must be held by ep_disable.
+	ep_requires_lock_held ();
+
+	ep_return_void_if_nok (session->file != NULL);
+
+	ep_rt_execute_rundown ();
 }
 
 void
@@ -309,8 +331,7 @@ ep_session_suspend_write_event (EventPipeSession *session)
 
 	ep_thread_get_threads (&threads);
 
-	ep_rt_thread_array_iterator_t threads_iterator;
-	ep_rt_thread_array_iterator_begin (&threads, &threads_iterator);
+	ep_rt_thread_array_iterator_t threads_iterator = ep_rt_thread_array_iterator_begin (&threads);
 	while (!ep_rt_thread_array_iterator_end (&threads, &threads_iterator)) {
 		EventPipeThread *thread = ep_rt_thread_array_iterator_value (&threads_iterator);
 		if (thread) {
@@ -321,7 +342,7 @@ ep_session_suspend_write_event (EventPipeSession *session)
 			// session once its done with the current write
 			ep_thread_release (thread);
 		}
-		ep_rt_thread_array_iterator_next (&threads, &threads_iterator);
+		ep_rt_thread_array_iterator_next (&threads_iterator);
 	}
 
 	ep_rt_thread_array_free (&threads);
@@ -371,17 +392,20 @@ bool
 ep_session_is_valid (const EventPipeSession *session)
 {
 	EP_ASSERT (session != NULL);
+
+	ep_requires_lock_held ();
+
 	return !ep_session_provider_list_is_empty (session->providers);
 }
 
-void
+bool
 ep_session_add_session_provider (EventPipeSession *session, EventPipeSessionProvider *session_provider)
 {
 	EP_ASSERT (session != NULL);
 
 	ep_requires_lock_held ();
 
-	ep_session_provider_list_add_session_provider (session->providers, session_provider);
+	return ep_session_provider_list_add_session_provider (session->providers, session_provider);
 }
 
 void
@@ -416,16 +440,19 @@ ep_session_write_all_buffers_to_file (EventPipeSession *session, bool *events_wr
 bool
 ep_session_write_event (
 	EventPipeSession *session,
-	EventPipeThread *thread,
+	ep_rt_thread_handle_t thread,
 	EventPipeEvent *ep_event,
 	EventPipeEventPayload *payload,
 	const uint8_t *activity_id,
 	const uint8_t *related_activity_id,
-	EventPipeThread *event_thread,
+	ep_rt_thread_handle_t event_thread,
 	EventPipeStackContents *stack)
 {
 	EP_ASSERT (session != NULL);
 	EP_ASSERT (ep_event != NULL);
+
+	if (session->paused)
+		return true;
 
 	bool result = false;
 
@@ -478,17 +505,17 @@ ep_session_get_next_event (EventPipeSession *session)
 	return ep_buffer_manager_get_next_event (session->buffer_manager);
 }
 
-EventPipeWaitHandle
+ep_rt_wait_event_handle_t *
 ep_session_get_wait_event (EventPipeSession *session)
 {
 	EP_ASSERT (session != NULL);
 
 	if (!session->buffer_manager) {
 		EP_ASSERT (!"Shouldn't call get_wait_event on a synchronous session.");
-		return (EventPipeWaitHandle)NULL;
+		return NULL;
 	}
 
-	return ep_rt_wait_event_get_wait_handle (ep_buffer_manager_get_rt_wait_event_ref (session->buffer_manager));
+	return ep_buffer_manager_get_rt_wait_event_ref (session->buffer_manager);
 }
 
 uint64_t
@@ -528,6 +555,20 @@ ep_session_set_ipc_streaming_enabled (
 {
 	EP_ASSERT (session != NULL);
 	ep_rt_volatile_store_uint32_t (&session->ipc_streaming_enabled, (enabled) ? 1 : 0);
+}
+
+void
+ep_session_pause (EventPipeSession *session)
+{
+	EP_ASSERT (session != NULL);
+	session->paused = true;
+}
+
+void
+ep_session_resume (EventPipeSession *session)
+{
+	EP_ASSERT (session != NULL);
+	session->paused = false;
 }
 
 #endif /* !defined(EP_INCLUDE_SOURCE_FILES) || defined(EP_FORCE_INCLUDE_SOURCE_FILES) */
