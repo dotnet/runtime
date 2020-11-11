@@ -351,7 +351,7 @@ jobs:
     - Linux_x64
     jobParameters:
       testGroup: innerloop
-      nameSuffix: AllSubsets_Mono
+      nameSuffix: SingleFile
       buildArgs: -s clr+corehost+libs+libs.tests -c $(_BuildConfig) /p:TestSingleFile=true
       timeoutInMinutes: 120
       # extra steps, run tests
@@ -1108,6 +1108,11 @@ jobs:
       dependsOnTestArchitecture: x64
       condition: >-
         or(
+<<<<<<< HEAD
           eq(dependencies.evaluate_paths.outputs['SetPathVars_coreclr.containsChange'], true),
           eq(dependencies.evaluate_paths.outputs['SetPathVars_libraries.containsChange'], true),
+=======
+          eq(dependencies.checkout.outputs['SetPathVars_coreclr.containsChange'], true),
+          eq(dependencies.checkout.outputs['SetPathVars_libraries.containsChange'], true),
+>>>>>>> d6278e0e6b5 (Change yml suffix name to SingleFile)
           eq(variables['isFullMatrix'], true))
