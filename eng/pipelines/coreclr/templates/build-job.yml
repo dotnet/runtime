@@ -234,7 +234,7 @@ jobs:
     - ${{ if and(eq(parameters.osGroup, 'windows'), ne(variables['System.TeamProject'], 'public'), notin(variables['Build.Reason'], 'PullRequest'), ne(parameters.testGroup, 'clrTools')) }}:
       - powershell: >-
           eng\common\build.ps1 -ci -sign -restore -configuration:$(buildConfig) -warnaserror:0
-          /p:DiagnosticsFilesRoot="$(buildProductRootFolderPath)/sharedFramework"
+          /p:DiagnosticsFilesRoot="$(buildProductRootFolderPath)"
           /p:SignDiagnostics=true
           /p:DotNetSignType=$(SignType)
           -projects $(Build.SourcesDirectory)\eng\empty.csproj
