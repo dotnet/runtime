@@ -21,7 +21,8 @@ make run-tests-coreclr-all
 ```
 src/tests/build.sh -skipstressdependencies -excludemonofailures os Browser wasm <Release/Debug>
 ```
-    * From the last few lines of the build log, you will see something like this
+
+The last few lines of the build log should contain something like this:
 ```
 --------------------------------------------------
  Example run.sh command
