@@ -501,5 +501,6 @@ namespace System.Runtime.InteropServices.JavaScript
             if (addRef && !SafeHandleAddRef(safeHandle)) return IntPtr.Zero;
             return safeHandle.DangerousGetHandle();
         }
+
     }
 }

@@ -168,6 +168,9 @@ var BindingSupportLib = {
 		},
 
 		_store_string_in_intern_table: function (string, ptr, internIt) {
+			if (!ptr)
+				throw new Error ("null pointer passed to _store_string_in_intern_table");
+
 			var originalArg = ptr;
 			
 			const internBufferSize = 8192;
@@ -191,14 +194,15 @@ var BindingSupportLib = {
 			if (internIt)
 				rootBuffer.set (index, ptr = this.mono_wasm_intern_string (ptr));
 
+			if (!ptr)
+				throw new Error ("mono_wasm_intern_string produced a null pointer");
+
 			this._interned_string_table.set (string, ptr);
 			this._managed_pointer_to_interned_string_table.set (ptr, string);
 
 			if ((string.length === 0) && !this._empty_string_ptr)
 				this._empty_string_ptr = ptr;
 			
-			if (!ptr)
-				throw new Error("what");
 			return ptr;
 		},
 
@@ -212,8 +216,6 @@ var BindingSupportLib = {
 
 			ptr = this.js_string_to_mono_string_new (string);
 			ptr = this._store_string_in_intern_table (string, ptr, true);
-			if (!ptr)
-				throw new Error("what");
 
 			return ptr;
 		},
