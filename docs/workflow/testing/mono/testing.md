@@ -1,7 +1,6 @@
 # Running Tests using Mono Runtime
 
-Before running any tests, build mono in the way that you would like to test with.
-See the instructions for [Building Mono](../../building/mono/README.md)
+Before running tests, [build Mono](../../building/mono/README.md) using the desired configuration.
 
 ## Running Runtime Tests
 * Build and run runtime tests against Mono JIT:
