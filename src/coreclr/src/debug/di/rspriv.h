@@ -9168,6 +9168,7 @@ class CordbObjectValue : public CordbValue,
                          public ICorDebugValue3,
                          public ICorDebugHeapValue2,
                          public ICorDebugHeapValue3,
+                         public ICorDebugHeapValue4,
                          public ICorDebugExceptionObjectValue,
                          public ICorDebugComObjectValue,
                          public ICorDebugDelegateObjectValue
@@ -9242,6 +9243,11 @@ public:
     //-----------------------------------------------------------
     COM_METHOD GetThreadOwningMonitorLock(ICorDebugThread **ppThread, DWORD *pAcquisitionCount);
     COM_METHOD GetMonitorEventWaitList(ICorDebugThreadEnum **ppThreadEnum);
+
+    //-----------------------------------------------------------
+    // ICorDebugHeapValue4
+    //-----------------------------------------------------------
+    COM_METHOD CreatePinnedHandle(ICorDebugHandleValue ** ppHandle);
 
     //-----------------------------------------------------------
     // ICorDebugObjectValue
@@ -9492,7 +9498,8 @@ class CordbBoxValue : public CordbValue,
                       public ICorDebugValue2,
                       public ICorDebugValue3,
                       public ICorDebugHeapValue2,
-                      public ICorDebugHeapValue3
+                      public ICorDebugHeapValue3,
+                      public ICorDebugHeapValue4
 {
 public:
     CordbBoxValue(CordbAppDomain *  appdomain,
@@ -9583,6 +9590,11 @@ public:
     COM_METHOD GetMonitorEventWaitList(ICorDebugThreadEnum **ppThreadEnum);
 
     //-----------------------------------------------------------
+    // ICorDebugHeapValue4
+    //-----------------------------------------------------------
+    COM_METHOD CreatePinnedHandle(ICorDebugHandleValue ** ppHandle);
+
+    //-----------------------------------------------------------
     // ICorDebugGenericValue
     //-----------------------------------------------------------
 
@@ -9620,7 +9632,8 @@ class CordbArrayValue : public CordbValue,
                         public ICorDebugValue2,
                         public ICorDebugValue3,
                         public ICorDebugHeapValue2,
-                        public ICorDebugHeapValue3
+                        public ICorDebugHeapValue3,
+                        public ICorDebugHeapValue4
 {
 public:
     CordbArrayValue(CordbAppDomain *          appdomain,
@@ -9705,6 +9718,11 @@ public:
     //-----------------------------------------------------------
     COM_METHOD GetThreadOwningMonitorLock(ICorDebugThread **ppThread, DWORD *pAcquisitionCount);
     COM_METHOD GetMonitorEventWaitList(ICorDebugThreadEnum **ppThreadEnum);
+
+    //-----------------------------------------------------------
+    // ICorDebugHeapValue4
+    //-----------------------------------------------------------
+    COM_METHOD CreatePinnedHandle(ICorDebugHandleValue ** ppHandle);
 
     //-----------------------------------------------------------
     // ICorDebugArrayValue
