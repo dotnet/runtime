@@ -5596,7 +5596,9 @@ void LinearScan::allocateRegisters()
             {
                 allocate = false;
             }
-            else if (refType == RefTypeParamDef && (!currentRefPosition->lastUse || (currentInterval->physReg == REG_STK)) && varDsc->lvRefCntWtd() <= BB_UNITY_WEIGHT)
+            else if (refType == RefTypeParamDef &&
+                     (!currentRefPosition->lastUse || (currentInterval->physReg == REG_STK)) &&
+                     varDsc->lvRefCntWtd() <= BB_UNITY_WEIGHT)
             {
                 // If this is a low ref-count parameter, and either it is *not* a last used (i.e. unused) or it's
                 // passed on the stack, don't allocate a register.
