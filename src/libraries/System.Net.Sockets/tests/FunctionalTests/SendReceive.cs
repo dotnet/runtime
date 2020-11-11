@@ -1,7 +1,9 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Runtime.InteropServices;
 using System.Threading;
@@ -14,9 +16,130 @@ using Xunit.Sdk;
 
 namespace System.Net.Sockets.Tests
 {
+    public static class UdpStressRepro
+    {
+        public const int Parallelism = 10;
+
+        public const int StressParallelism = 4;
+
+        public const int StressTimeSeconds = 30;
+
+        private static readonly ConcurrentBag<(long SendTime, long RecvTime)> _allTimes = new ConcurrentBag<(long SendTime, long RecvTime)>();
+
+        internal static async Task SendToRecvFrom_Datagram_UDP(
+            IPAddress loopbackAddress,
+            bool useClone,
+            SocketHelperBase helper,
+            ITestOutputHelper _output)
+        {
+            IPAddress leftAddress = loopbackAddress, rightAddress = loopbackAddress;
+
+            const int DatagramSize = 256;
+            const int DatagramsToSend = 256;
+            const int AckTimeout = 60000;
+            const int TestTimeout = 120000;
+
+            long maxSendTime = 0;
+            long maxRcvTime = 0;
+
+            using var origLeft = new Socket(leftAddress.AddressFamily, SocketType.Dgram, ProtocolType.Udp);
+            using var origRight = new Socket(rightAddress.AddressFamily, SocketType.Dgram, ProtocolType.Udp);
+            origLeft.BindToAnonymousPort(leftAddress);
+            origRight.BindToAnonymousPort(rightAddress);
+
+            using var left = useClone ? new Socket(origLeft.SafeHandle) : origLeft;
+            using var right = useClone ? new Socket(origRight.SafeHandle) : origRight;
+
+            var leftEndpoint = (IPEndPoint)left.LocalEndPoint;
+            var rightEndpoint = (IPEndPoint)right.LocalEndPoint;
+
+            var receiverAck = new SemaphoreSlim(0);
+            var senderAck = new SemaphoreSlim(0);
+
+            _output.WriteLine($"{DateTime.Now}: Sending data from {rightEndpoint} to {leftEndpoint}");
+
+            var receivedChecksums = new uint?[DatagramsToSend];
+            Task leftThread = Task.Run(async () =>
+            {
+                EndPoint remote = leftEndpoint.Create(leftEndpoint.Serialize());
+                var recvBuffer = new byte[DatagramSize];
+                Stopwatch sw = new Stopwatch();
+                for (int i = 0; i < DatagramsToSend; i++)
+                {
+                    sw.Restart();
+                    SocketReceiveFromResult result = await helper.ReceiveFromAsync(
+                        left, new ArraySegment<byte>(recvBuffer), remote);
+                    maxRcvTime = Math.Max(maxRcvTime, sw.ElapsedMilliseconds);
+
+                    Assert.Equal(DatagramSize, result.ReceivedBytes);
+                    Assert.Equal(rightEndpoint, result.RemoteEndPoint);
+
+                    int datagramId = recvBuffer[0];
+                    Assert.Null(receivedChecksums[datagramId]);
+                    receivedChecksums[datagramId] = Fletcher32.Checksum(recvBuffer, 0, result.ReceivedBytes);
+
+                    receiverAck.Release();
+                    bool gotAck = await senderAck.WaitAsync(TestTimeout);
+                    Assert.True(gotAck, $"{DateTime.Now}: Timeout waiting {TestTimeout} for senderAck in iteration {i}");
+                }
+            });
+
+            var sentChecksums = new uint[DatagramsToSend];
+            using (right)
+            {
+                var random = new Random();
+                var sendBuffer = new byte[DatagramSize];
+                Stopwatch sw = new Stopwatch();
+                for (int i = 0; i < DatagramsToSend; i++)
+                {
+                    random.NextBytes(sendBuffer);
+                    sendBuffer[0] = (byte)i;
+
+                    sw.Restart();
+                    int sent = await helper.SendToAsync(right, new ArraySegment<byte>(sendBuffer), leftEndpoint);
+                    maxSendTime = Math.Max(maxSendTime, sw.ElapsedMilliseconds);
+
+                    bool gotAck = await receiverAck.WaitAsync(AckTimeout);
+                    Assert.True(gotAck, $"{DateTime.Now}: Timeout waiting {AckTimeout} for receiverAck in iteration {i} after sending {sent}. Receiver is in {leftThread.Status}");
+                    senderAck.Release();
+
+                    Assert.Equal(DatagramSize, sent);
+                    sentChecksums[i] = Fletcher32.Checksum(sendBuffer, 0, sent);
+                }
+            }
+
+            await leftThread;
+            for (int i = 0; i < DatagramsToSend; i++)
+            {
+                Assert.NotNull(receivedChecksums[i]);
+                Assert.Equal(sentChecksums[i], (uint)receivedChecksums[i]);
+            }
+
+            _allTimes.Add((maxSendTime, maxRcvTime));
+
+            throw new Exception($"maxSendTime={maxSendTime} ms | maxRecvTime={maxRcvTime} ms");
+        }
+
+        //[Fact]
+        //public static async Task ReportTimes()
+        //{
+        //    await Task.Delay(TimeSpan.FromMinutes(1));
+
+        //    var times = _allTimes.ToArray();
+        //    long maxSendTime = times.Select(t => t.SendTime).Max();
+        //    long maxRecvTime = times.Select(t => t.RecvTime).Max();
+
+        //    throw new Exception($"maxSendTime={maxSendTime} ms | maxRecvTime={maxRecvTime} ms");
+        //}
+
+        //[OuterLoop]
+        //[Fact]
+        //public static Task ReportTimes_OuterLoop() => ReportTimes();
+    }
+
     public abstract class SendReceive<T> : SocketTestHelperBase<T> where T : SocketHelperBase, new()
     {
-        public SendReceive(ITestOutputHelper output) : base(output) {}
+        public SendReceive(ITestOutputHelper output) : base(output) { }
 
         [Theory]
         [InlineData(null, 0, 0)] // null array
@@ -48,156 +171,87 @@ namespace System.Net.Sockets.Tests
         public static IEnumerable<object[]> LoopbackWithBool =>
             from addr in Loopbacks
             from b in new[] { false, true }
-            from dummy in Enumerable.Range(0, 10)
-            select new object[] { addr[0], b, dummy };
-
-        [Fact]
-        public void StressTestEnvironmentMore()
-        {
-            DoBurnCpu(30, 4);
-        }
+            select new object[] { addr[0], b };
 
         [OuterLoop]
-        [Fact]
-        public void StressTestEnvironmentMore_OuterLoop()
-        {
-            DoBurnCpu(30, 4);
-        }
-
-        private static void DoBurnCpu(int seconds, int parallelism)
-        {
-            List<Task> tasks = new List<Task>();
-
-            for (int i = 0; i < parallelism; i++)
-            {
-                tasks.Add(Task.Factory.StartNew(BurnPlease, TaskCreationOptions.LongRunning));
-            }
-
-            Task.WhenAll(tasks).GetAwaiter().GetResult();
-
-            void BurnPlease()
-            {
-                TimeSpan dt = TimeSpan.FromSeconds(seconds);
-                DateTime end = DateTime.Now + dt;
-
-                while (DateTime.Now < end)
-                {
-                    FindPrimeNumber(500);
-                }
-            }
-        }
-
-        private static long FindPrimeNumber(int n)
-        {
-            int count = 0;
-            long a = 2;
-            while (count < n)
-            {
-                long b = 2;
-                int prime = 1;// to check if found a prime
-                while (b * b <= a)
-                {
-                    if (a % b == 0)
-                    {
-                        prime = 0;
-                        break;
-                    }
-                    b++;
-                }
-                if (prime > 0)
-                {
-                    count++;
-                }
-                a++;
-            }
-            return (--a);
-        }
-
-        [Theory(Timeout = 60000)]
+        [Theory]
         [MemberData(nameof(LoopbackWithBool))]
-        public Task SendToRecvFrom_Datagram_UDP_INNERLOOP(IPAddress loopbackAddress, bool useClone, int dummy)
-            => SendToRecvFrom_Datagram_UDP(loopbackAddress, useClone, dummy);
-
-        [OuterLoop]
-        [Theory(Timeout = 60000)]
-        [MemberData(nameof(LoopbackWithBool))]
-#pragma warning disable xUnit1026 // Theory methods should use all of their parameters
-        public async Task SendToRecvFrom_Datagram_UDP(IPAddress loopbackAddress, bool useClone, int dummy)
-#pragma warning restore xUnit1026 // Theory methods should use all of their parameters
+        public Task SendToRecvFrom_Datagram_UDP(IPAddress loopbackAddress, bool useClone)
         {
-            IPAddress leftAddress = loopbackAddress, rightAddress = loopbackAddress;
+            return UdpStressRepro.SendToRecvFrom_Datagram_UDP(loopbackAddress, useClone, this._socketHelper, _output);
 
-            const int DatagramSize = 256;
-            const int DatagramsToSend = 256;
-            const int AckTimeout = 2000;
+            //IPAddress leftAddress = loopbackAddress, rightAddress = loopbackAddress;
+
+            //const int DatagramSize = 256;
+            //const int DatagramsToSend = 256;
+            //const int AckTimeout = 10000;
             //const int TestTimeout = 30000;
 
-            using var origLeft = new Socket(leftAddress.AddressFamily, SocketType.Dgram, ProtocolType.Udp);
-            using var origRight = new Socket(rightAddress.AddressFamily, SocketType.Dgram, ProtocolType.Udp);
-            origLeft.BindToAnonymousPort(leftAddress);
-            origRight.BindToAnonymousPort(rightAddress);
+            //using var origLeft = new Socket(leftAddress.AddressFamily, SocketType.Dgram, ProtocolType.Udp);
+            //using var origRight = new Socket(rightAddress.AddressFamily, SocketType.Dgram, ProtocolType.Udp);
+            //origLeft.BindToAnonymousPort(leftAddress);
+            //origRight.BindToAnonymousPort(rightAddress);
 
-            using var left = useClone ? new Socket(origLeft.SafeHandle) : origLeft;
-            using var right = useClone ? new Socket(origRight.SafeHandle) : origRight;
+            //using var left = useClone ? new Socket(origLeft.SafeHandle) : origLeft;
+            //using var right = useClone ? new Socket(origRight.SafeHandle) : origRight;
 
-            var leftEndpoint = (IPEndPoint)left.LocalEndPoint;
-            var rightEndpoint = (IPEndPoint)right.LocalEndPoint;
+            //var leftEndpoint = (IPEndPoint)left.LocalEndPoint;
+            //var rightEndpoint = (IPEndPoint)right.LocalEndPoint;
 
-            var receiverAck = new SemaphoreSlim(0);
-            var senderAck = new SemaphoreSlim(0);
+            //var receiverAck = new SemaphoreSlim(0);
+            //var senderAck = new SemaphoreSlim(0);
 
-            _output.WriteLine($"{DateTime.Now}: Sending data from {rightEndpoint} to {leftEndpoint}");
+            //_output.WriteLine($"{DateTime.Now}: Sending data from {rightEndpoint} to {leftEndpoint}");
 
-            var receivedChecksums = new uint?[DatagramsToSend];
-            Task leftThread = Task.Run(async () =>
-            {
-                EndPoint remote = leftEndpoint.Create(leftEndpoint.Serialize());
-                var recvBuffer = new byte[DatagramSize];
-                for (int i = 0; i < DatagramsToSend; i++)
-                {
-                    SocketReceiveFromResult result = await ReceiveFromAsync(
-                        left, new ArraySegment<byte>(recvBuffer), remote);
-                    Assert.Equal(DatagramSize, result.ReceivedBytes);
-                    Assert.Equal(rightEndpoint, result.RemoteEndPoint);
+            //var receivedChecksums = new uint?[DatagramsToSend];
+            //Task leftThread = Task.Run(async () =>
+            //{
+            //    EndPoint remote = leftEndpoint.Create(leftEndpoint.Serialize());
+            //    var recvBuffer = new byte[DatagramSize];
+            //    for (int i = 0; i < DatagramsToSend; i++)
+            //    {
+            //        SocketReceiveFromResult result = await ReceiveFromAsync(
+            //            left, new ArraySegment<byte>(recvBuffer), remote);
+            //        Assert.Equal(DatagramSize, result.ReceivedBytes);
+            //        Assert.Equal(rightEndpoint, result.RemoteEndPoint);
 
-                    int datagramId = recvBuffer[0];
-                    Assert.Null(receivedChecksums[datagramId]);
-                    receivedChecksums[datagramId] = Fletcher32.Checksum(recvBuffer, 0, result.ReceivedBytes);
+            //        int datagramId = recvBuffer[0];
+            //        Assert.Null(receivedChecksums[datagramId]);
+            //        receivedChecksums[datagramId] = Fletcher32.Checksum(recvBuffer, 0, result.ReceivedBytes);
 
-                    receiverAck.Release();
-                    bool gotAck = await senderAck.WaitAsync(AckTimeout);
-                    Assert.True(gotAck, $"{DateTime.Now}: Timeout waiting {AckTimeout} for senderAck in iteration {i}");
-                }
-            });
+            //        receiverAck.Release();
+            //        bool gotAck = await senderAck.WaitAsync(TestTimeout);
+            //        Assert.True(gotAck, $"{DateTime.Now}: Timeout waiting {TestTimeout} for senderAck in iteration {i}");
+            //    }
+            //});
 
-            var sentChecksums = new uint[DatagramsToSend];
-            using (right)
-            {
-                var random = new Random();
-                var sendBuffer = new byte[DatagramSize];
-                for (int i = 0; i < DatagramsToSend; i++)
-                {
-                    random.NextBytes(sendBuffer);
-                    sendBuffer[0] = (byte)i;
+            //var sentChecksums = new uint[DatagramsToSend];
+            //using (right)
+            //{
+            //    var random = new Random();
+            //    var sendBuffer = new byte[DatagramSize];
+            //    for (int i = 0; i < DatagramsToSend; i++)
+            //    {
+            //        random.NextBytes(sendBuffer);
+            //        sendBuffer[0] = (byte)i;
 
-                    int sent = await SendToAsync(right, new ArraySegment<byte>(sendBuffer), leftEndpoint);
+            //        int sent = await SendToAsync(right, new ArraySegment<byte>(sendBuffer), leftEndpoint);
 
-                    bool gotAck = await receiverAck.WaitAsync(AckTimeout);
-                    Assert.True(gotAck, $"{DateTime.Now}: Timeout waiting {AckTimeout} for receiverAck in iteration {i} after sending {sent}. Receiver is in {leftThread.Status}");
-                    senderAck.Release();
+            //        bool gotAck = await receiverAck.WaitAsync(AckTimeout);
+            //        Assert.True(gotAck, $"{DateTime.Now}: Timeout waiting {AckTimeout} for receiverAck in iteration {i} after sending {sent}. Receiver is in {leftThread.Status}");
+            //        senderAck.Release();
 
-                    Assert.Equal(DatagramSize, sent);
-                    sentChecksums[i] = Fletcher32.Checksum(sendBuffer, 0, sent);
-                }
-            }
+            //        Assert.Equal(DatagramSize, sent);
+            //        sentChecksums[i] = Fletcher32.Checksum(sendBuffer, 0, sent);
+            //    }
+            //}
 
-            await leftThread;
-            for (int i = 0; i < DatagramsToSend; i++)
-            {
-                Assert.NotNull(receivedChecksums[i]);
-                Assert.Equal(sentChecksums[i], (uint)receivedChecksums[i]);
-            }
-            _output.WriteLine("- REACHED END -");
+            //await leftThread;
+            //for (int i = 0; i < DatagramsToSend; i++)
+            //{
+            //    Assert.NotNull(receivedChecksums[i]);
+            //    Assert.Equal(sentChecksums[i], (uint)receivedChecksums[i]);
+            //}
         }
 
         [OuterLoop]
@@ -1713,22 +1767,22 @@ namespace System.Net.Sockets.Tests
 
     public sealed class SendReceiveSyncForceNonBlocking : SendReceive<SocketHelperSyncForceNonBlocking>
     {
-        public SendReceiveSyncForceNonBlocking(ITestOutputHelper output) : base(output) {}
+        public SendReceiveSyncForceNonBlocking(ITestOutputHelper output) : base(output) { }
     }
 
     public sealed class SendReceiveApm : SendReceive<SocketHelperApm>
     {
-        public SendReceiveApm(ITestOutputHelper output) : base(output) {}
+        public SendReceiveApm(ITestOutputHelper output) : base(output) { }
     }
 
     public sealed class SendReceiveTask : SendReceive<SocketHelperTask>
     {
-        public SendReceiveTask(ITestOutputHelper output) : base(output) {}
+        public SendReceiveTask(ITestOutputHelper output) : base(output) { }
     }
 
     public sealed class SendReceiveEap : SendReceive<SocketHelperEap>
     {
-        public SendReceiveEap(ITestOutputHelper output) : base(output) {}
+        public SendReceiveEap(ITestOutputHelper output) : base(output) { }
     }
 
     public sealed class SendReceiveSpanSync : SendReceive<SocketHelperSpanSync>
@@ -1787,7 +1841,7 @@ namespace System.Net.Sockets.Tests
 
                 // After flooding the socket with a high number of send tasks,
                 // we assume some of them won't complete before the "CancelAfter" period expires.
-                for (int i=0; i < NumOfSends; i++)
+                for (int i = 0; i < NumOfSends; i++)
                 {
                     var task = client.SendAsync(buffer, SocketFlags.None, cts.Token).AsTask();
                     tasks.Add(task);
