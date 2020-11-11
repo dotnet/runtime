@@ -389,8 +389,6 @@ void UnmarshalObjectFromInterface(OBJECTREF *ppObjectDest, IUnknown **ppUnkSrc, 
 
 #define DEFINE_ASM_QUAL_TYPE_NAME(varname, typename, asmname)          static const char varname##[] = { typename##", "##asmname## };
 
-class ICOMInterfaceMarshalerCallback;
-
 #else // FEATURE_COMINTEROP
 inline HRESULT EnsureComStartedNoThrow()
 {

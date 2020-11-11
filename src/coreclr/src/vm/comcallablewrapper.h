@@ -470,8 +470,8 @@ enum Masks
     enum_ClassVtableMask                = 0x00000004,
     enum_LayoutComplete                 = 0x00000010,
     enum_ComVisible                     = 0x00000040,
-    enum_SigClassCannotLoad             = 0x00000080,
-    enum_SigClassLoadChecked            = 0x00000100,
+    // enum_unused                      = 0x00000080,
+    // enum_unused                      = 0x00000100,
     enum_ComClassItf                    = 0x00000200,
     enum_GuidGenerated                  = 0x00000400,
     // enum_unused                      = 0x00001000,
@@ -585,30 +585,6 @@ struct ComMethodTable
     {
         LIMITED_METHOD_CONTRACT;
         return ((ComCallWrapperTemplate*)m_pMT->GetComCallWrapperTemplate())->HasInvisibleParent();
-    }
-
-    BOOL IsSigClassLoadChecked()
-    {
-        LIMITED_METHOD_CONTRACT;
-        return (m_Flags & enum_SigClassLoadChecked) != 0;
-    }
-
-    BOOL IsSigClassCannotLoad()
-    {
-        LIMITED_METHOD_CONTRACT;
-        return 0 != (m_Flags & enum_SigClassCannotLoad);
-    }
-
-    VOID SetSigClassCannotLoad()
-    {
-        LIMITED_METHOD_CONTRACT;
-        m_Flags |= enum_SigClassCannotLoad;
-    }
-
-    VOID SetSigClassLoadChecked()
-    {
-        LIMITED_METHOD_CONTRACT;
-        m_Flags |= enum_SigClassLoadChecked;
     }
 
     DWORD GetSlots()
@@ -1456,16 +1432,6 @@ public:
         CONTRACT_END;
 
         RETURN m_pWrap;
-    }
-
-    inline PTR_ComCallWrapper GetClassWrapper()
-    {
-        LIMITED_METHOD_CONTRACT;
-
-        _ASSERTE(m_pMT->IsInterface());
-        _ASSERTE(m_pClassWrap != NULL);
-
-        return m_pClassWrap;
     }
 
     inline ULONG GetRefCount()

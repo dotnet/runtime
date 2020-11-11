@@ -401,9 +401,9 @@ VOID COMInterfaceMarshaler::InitializeObjectClass(IUnknown *pIncomingIP)
     // If the marshaller's type handle is null, compute what it should be.
     if (m_typeHandle.IsNull())
     {
-        // We no longer support the mapping from IUnknown to Type via
-        // IProvideClassinfo in CoreCLR., so if the type handle isn't
-        // set then fallback to the __ComObject type.
+        // We no longer support the mapping from ITypeInfo to Type (i.e. MethodTable*).
+        // This was previously provided by IProvideClassinfo. If the type handle isn't
+        // set fallback to the opaque __ComObject type.
         m_typeHandle = TypeHandle(g_pBaseCOMObject);
     }
 }
