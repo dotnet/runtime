@@ -521,7 +521,5 @@ namespace Microsoft.Extensions.Caching.Memory
                 throw new ArgumentNullException(nameof(key));
             }
         }
-
-
     }
 }
