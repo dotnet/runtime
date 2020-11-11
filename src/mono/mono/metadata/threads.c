@@ -3576,6 +3576,15 @@ static void
 thread_detach_with_lock (MonoThreadInfo *info)
 {
 	mono_gc_thread_detach_with_lock (info);
+
+// TODO: WHat is up with this?
+#ifdef HAVE_CORE_GC
+	mono_threads_add_joinable_runtime_thread (info);
+
+	HandleStack *handles = info->handle_stack;
+	info->handle_stack = NULL;
+	mono_handle_stack_free (handles);
+#endif // HAVE_CORE_GC
 }
 
 static gboolean
