@@ -9038,22 +9038,24 @@ public:
 
 #define DEFAULT_ALIGN_LOOP_MIN_BLOCK_WEIGHT 10
 #define DEFAULT_ALIGN_LOOP_BOUNDARY 32
+#define DEFAULT_MAX_LOOPSIZE_FOR_ALIGN DEFAULT_ALIGN_LOOP_BOUNDARY * 3
 
 #ifdef DEBUG
         // Loop alignment variables
-        unsigned compJitAlignLoopMinBlockWeight; // Minimum weight needed for the first block of a loop to make it a
-                                                 // candidate for alignment.
-        unsigned compJitAlignLoopMaxCodeSize;    // For non-adaptive alignment, minimum loop size (in bytes) for which
-                                                 // alignment will be done.
-        unsigned compJitAlignLoopBoundary;       // For non-adaptive alignment, address boundary (power of 2) at which
-                                                 // loop alignment should be done. By default, 32B.
         bool compJitAlignLoopForJcc;             // If set, for non-adaptive alignment, ensure loop jmps are not on or
                                                  // cross alignment boundary.
+#endif
+        unsigned compJitAlignLoopMaxCodeSize; // For non-adaptive alignment, minimum loop size (in bytes) for which
+                                              // alignment will be done.
+
+        unsigned compJitAlignLoopMinBlockWeight; // Minimum weight needed for the first block of a loop to make it a
+                                                 // candidate for alignment.
+
+        unsigned compJitAlignLoopBoundary; // For non-adaptive alignment, address boundary (power of 2) at which
+                                           // loop alignment should be done. By default, 32B.
+
         bool compJitAlignLoopAdaptive; // If set, perform adaptive loop alignment that limits number of padding
                                        // based on loop size.
-#else
-#define ADAPTIVE_LOOP_ALIGNMENT
-#endif
 
 #ifdef LATE_DISASM
         bool doLateDisasm; // Run the late disassembler

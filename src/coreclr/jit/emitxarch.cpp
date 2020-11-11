@@ -2669,7 +2669,6 @@ void emitter::emitLoopAlign()
     emitCurIGsize += 15;
 }
 
-#ifndef ADAPTIVE_LOOP_ALIGNMENT
 /*****************************************************************************
  *
  *  The next instruction will be a loop head entry point
@@ -2677,10 +2676,11 @@ void emitter::emitLoopAlign()
  *  the x86 I-cache alignment rule is followed.
  */
 
-void emitter::emitVariableLoopAlign()
+void emitter::emitVariableLoopAlign(unsigned alignmentBoundary)
 {
-    unsigned insAlignCount    = (emitComp->opts.compJitAlignLoopBoundary - 1) / 15;
-    unsigned lastInsAlignSize = (emitComp->opts.compJitAlignLoopBoundary - 1) % 15;
+    unsigned nPaddingBytes    = alignmentBoundary - 1;
+    unsigned insAlignCount    = nPaddingBytes / 15;
+    unsigned lastInsAlignSize = nPaddingBytes % 15;
 
     while (insAlignCount)
     {
@@ -2699,7 +2699,6 @@ void emitter::emitVariableLoopAlign()
         emitCurIGsize += lastInsAlignSize;
     }
 }
-#endif
 
 /*****************************************************************************
  *
@@ -12632,256 +12631,480 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
             {
                 // Candidate for loop alignment
                 assert(codeGen->ShouldAlignLoops());
-                
-#ifdef ADAPTIVE_LOOP_ALIGNMENT
-                unsigned alignmentBoundary = DEFAULT_ALIGN_LOOP_BOUNDARY;
-#else
-                unsigned alignmentBoundary = emitComp->opts.compJitAlignLoopBoundary;
-#endif
                 sz = SMALL_IDSC_SIZE;
+                unsigned alignmentBoundary = emitComp->opts.compJitAlignLoopBoundary;
+                int      maxBlocksAllowedForLoop = genLog2(alignmentBoundary) - 1;
+                unsigned maxLoopSize             = emitComp->opts.compJitAlignLoopAdaptive
+                                           ? alignmentBoundary * maxBlocksAllowedForLoop
+                                           : emitComp->opts.compJitAlignLoopMaxCodeSize;
+                bool     skipPadding       = false;
 
 #if DEBUG
                 bool displayAlignmentDetails =
                     (emitComp->opts.disAsm /*&& emitComp->opts.disAddr*/) || emitComp->verbose;
 #endif
+               // Check if this IG is already detected to not have alignment
                if ((ig->igFlags & IGF_ALIGN_LOOP) == 0)
                 {
-                    id->idCodeSize(0);
-                    ig->igFlags |= IGF_UPD_ISZ;
+                    /*id->idCodeSize(0);
+                    ig->igFlags |= IGF_UPD_ISZ;*/
+                    skipPadding = true;
+#if DEBUG
                     if (displayAlignmentDetails)
                     {
                         printf("\t\t;; Skip alignment: 'Big loop.' in (%s)\n", emitComp->info.compFullName);
                     }
-                    break;
+#endif
+                    //break;
                 }
 
-                // If already at alignment boundary, no need to emit anything.
+                // Check if the loop is already at alignment boundary
                 if (((size_t)dst & (alignmentBoundary - 1)) == 0)
                 {
-                    id->idCodeSize(0);
-                    ig->igFlags |= IGF_UPD_ISZ;
+                    /*id->idCodeSize(0);
+                    ig->igFlags |= IGF_UPD_ISZ;*/
+                    skipPadding = true;
+#if DEBUG
                     if (displayAlignmentDetails)
                     {
-                        printf("\t\t;; Skip alignment: 'Loop already aligned at boundary.' in (%s)\n",
-                               emitComp->info.compMethodName);
+                        printf("\t\t;; Skip alignment: 'Loop already aligned at %dB boundary.' in (%s)\n",
+                               alignmentBoundary, emitComp->info.compMethodName);
                     }
-                    break;
+#endif
+                    //break;
                 }
 
-#ifndef ADAPTIVE_LOOP_ALIGNMENT
-                if (emitComp->opts.compJitAlignLoopAdaptive)
-#endif
+                unsigned paddingAdded = 0;
+                if (!skipPadding)
                 {
-                    bool     skipPadding             = false;
-                    int      maxBlocksAllowedForLoop = genLog2(alignmentBoundary) - 1;
-                    unsigned maxLoopSize             = DEFAULT_ALIGN_LOOP_BOUNDARY * maxBlocksAllowedForLoop;
-
-                    // calculate the loop size
-                    unsigned  loopSize     = 0;
-                    insGroup* loopHeaderIg = ig->igNext;
-                    for (insGroup* igInLoop = loopHeaderIg; igInLoop; igInLoop = igInLoop->igNext)
+                    // Adaptive padding
+                    if (emitComp->opts.compJitAlignLoopAdaptive)
                     {
-                        loopSize += igInLoop->igSize;
-                        if (igInLoop->igLoopBackEdge == loopHeaderIg || loopSize > maxLoopSize)
-                        {
-                            break;
-                        }
-                    }
+                        // Start to align on 32B boundary with a fallback to 16B boundary
+                        unsigned loopSize = getLoopSize(ig->igNext, maxLoopSize);
+                        int      minBlocksNeededForLoop = (loopSize + alignmentBoundary - 1) / alignmentBoundary;
+                        unsigned nMaxPaddingBytes = (1 << (maxBlocksAllowedForLoop - minBlocksNeededForLoop + 1)) - 1;
+                        unsigned nPaddingBytes    = (-(int)(size_t)dst) & (alignmentBoundary - 1);
 
-                    // Start to align on 32B boundary with a fallback to 16B boundary
-                    int      minBlocksNeededForLoop = (loopSize + alignmentBoundary - 1) / alignmentBoundary;
-                    unsigned nMaxPaddingBytes       = (1 << (maxBlocksAllowedForLoop - minBlocksNeededForLoop + 1)) - 1;
-                    unsigned nPaddingBytes          = (-(int)(size_t)dst) & (alignmentBoundary - 1);
-
-                    if (loopSize > maxLoopSize)
-                    {
-                        skipPadding = true;
-                        assert(!"This should have checked before!");
-#if DEBUG
-                        /*if (displayAlignmentDetails)
-                        {
-                            printf("\t\t;; Skip alignment: 'Loopsize= %d, MaxLoopSize= %d, Estimated= %d.' in (%s)\n", loopSize,
-                                   maxLoopSize, ig->loopSize, emitComp->info.compFullName);
-                        }*/
-#endif
-                    }
-                    else if (nPaddingBytes > nMaxPaddingBytes)
-                    {
-                        // Cannot add large padding to align to 32B, so try to align to 16B boundary.
-                        alignmentBoundary = 16;
-                        nMaxPaddingBytes  = 1 << (maxBlocksAllowedForLoop - minBlocksNeededForLoop + 1);
-                        nPaddingBytes     = (-(int)(size_t)dst) & (alignmentBoundary - 1);
-
-                        if (nPaddingBytes > nMaxPaddingBytes)
+                        // Check if the loop exceed maxSize
+                        if (loopSize > maxLoopSize)
                         {
                             skipPadding = true;
-#if DEBUG
-                            if (displayAlignmentDetails)
+                            assert(!"Should never hit maxLoopSize threshold because it should have been predicted "
+                                    "earlier.");
+                        }
+
+                        // Check if the alignment exceeds maxPadding limit
+                        else if (nPaddingBytes > nMaxPaddingBytes)
+                        {
+                            // Cannot align to 32B, so try to align to 16B boundary.
+                            alignmentBoundary >>= 1;
+                            nMaxPaddingBytes  = 1 << (maxBlocksAllowedForLoop - minBlocksNeededForLoop + 1);
+                            nPaddingBytes     = (-(int)(size_t)dst) & (alignmentBoundary - 1);
+
+                            // Check if the loop is already at new alignment boundary
+                            if (nPaddingBytes == 0)
                             {
-                                printf("\t\t;; Skip alignment: 'PaddingNeeded= %d, MaxPadding= %d, LoopSize= %d, "
-                                       "AlignmentBoundary= %dB.' in (%s)\n",
-                                       nPaddingBytes, nMaxPaddingBytes, loopSize, alignmentBoundary,
-                                       emitComp->info.compFullName);
-                            }
-#endif
-                        }
-                    }
-
-                    if (!skipPadding && (nPaddingBytes > 0))
-                    {
-                        size_t extraBytesNotInLoop =
-                            (32 * minBlocksNeededForLoop) - loopSize; // Still have it at alignmentboundary=32
-                        size_t currentOffset = (size_t)dst % alignmentBoundary;
-
-                        // Padding is needed only if loop starts at or after the current offset.
-                        // Otherwise, the loop just fits in minBlocksNeededForLoop and so no alignment needed.
-                        if (currentOffset <= extraBytesNotInLoop)
-                        {
-                            skipPadding = true;
+                                skipPadding = true;
 #if DEBUG
-                            if (displayAlignmentDetails)
-                            {
-                                printf("\t\t;; Skip alignment: 'Loop already aligned.' in (%s)\n",
-                                       emitComp->info.compMethodName);
-                            }
+                                if (displayAlignmentDetails)
+                                {
+                                    printf("\t\t;; Skip alignment: 'Loop already aligned at 16B boundary.' in (%s)\n",
+                                           emitComp->info.compMethodName);
+                                }
 #endif
-                        }
-                        else
-                        {
-                            dst = emitOutputNOP(dst, nPaddingBytes);
-                            assert(((size_t)dst & (alignmentBoundary - 1)) == 0);
+                            }
+                            // Check if the alignment exceeds new maxPadding limit
+                            else if (nPaddingBytes > nMaxPaddingBytes)
+                            {
+                                skipPadding = true;
 #if DEBUG
-                            if (displayAlignmentDetails)
-                            {
-                                printf("\t\t;; Add alignment: 'Padding= %d, LoopSize= %d, MinBlocks= %d, "
-                                       "AlignmentBoundary= %dB.' in (%s)\n",
-                                       nPaddingBytes, loopSize, minBlocksNeededForLoop, alignmentBoundary,
-                                       emitComp->info.compFullName);
-                            }
+                                if (displayAlignmentDetails)
+                                {
+                                    printf("\t\t;; Skip alignment: 'PaddingNeeded= %d, MaxPadding= %d, LoopSize= %d, "
+                                           "AlignmentBoundary= %dB.' in (%s)\n",
+                                           nPaddingBytes, nMaxPaddingBytes, loopSize, alignmentBoundary,
+                                           emitComp->info.compFullName);
+                                }
 #endif
+                            }
                         }
-                    }
 
-                    // Update the code size of id
-                    if (skipPadding)
-                    {
-                        id->idCodeSize(0);
-                        ig->igFlags |= IGF_UPD_ISZ;
-                    }
-                    else if (nPaddingBytes != id->idCodeSize())
-                    {
-                        id->idCodeSize(nPaddingBytes);
-                        ig->igFlags |= IGF_UPD_ISZ;
-                    }
-                }
-#ifndef ADAPTIVE_LOOP_ALIGNMENT
-                else
-                {
-                    instrDesc* nextId = id;
-                    castto(nextId, BYTE*) += sz;
-
-                    // If we already know that the code size heuristics won't match,
-                    // do not bother checking it again. Same applies for next instruction
-                    // if that too is INS_align.
-                    if ((id->idCodeSize() == 0))
-                    {
-                        if (nextId->idIns() == INS_align)
+                        if (!skipPadding)
                         {
-                            assert(alignmentBoundary > 16);
-                            nextId->idCodeSize(0);
+                            // Padding is needed only if loop starts at or after the current offset.
+                            // Otherwise, the loop just fits in minBlocksNeededForLoop and so can skip alignment.
+                            size_t extraBytesNotInLoop = (32 * minBlocksNeededForLoop) - loopSize; // For calculation, use 32B chunks
+                            size_t currentOffset = (size_t)dst % alignmentBoundary;
+
+                            // Check if loop starts from offset such that padding can be skipped.
+                            if (currentOffset <= extraBytesNotInLoop)
+                            {
+                                skipPadding = true;
+#if DEBUG
+                                if (displayAlignmentDetails)
+                                {
+                                    printf("\t\t;; Skip alignment: 'Loop already aligned at %dB boundary.' in (%s)\n",
+                                          alignmentBoundary, emitComp->info.compMethodName);
+                                }
+#endif
+                            }
+                            else
+                            {
+                                // Perform the padding
+                                paddingAdded = nPaddingBytes;
+                                dst = emitOutputNOP(dst, nPaddingBytes);
+                                assert(((size_t)dst & (alignmentBoundary - 1)) == 0);
+#if DEBUG
+                                if (displayAlignmentDetails)
+                                {
+                                    printf("\t\t;; Add alignment: 'Padding= %d, LoopSize= %d, MinBlocks= %d, "
+                                           "AlignmentBoundary= %dB.' in (%s)\n",
+                                           nPaddingBytes, loopSize, minBlocksNeededForLoop, alignmentBoundary,
+                                           emitComp->info.compFullName);
+                                }
+#endif
+                            }
                         }
-                        break;
-                    }
 
-                    unsigned  loopSize     = 0;
-                    insGroup* loopHeaderIg = ig->igNext;
-                    for (insGroup* igInLoop = loopHeaderIg; igInLoop; igInLoop = igInLoop->igNext)
+                        //// Update the code size of id
+                        //if (skipPadding)
+                        //{
+                        //    id->idCodeSize(0);
+                        //    ig->igFlags |= IGF_UPD_ISZ;
+                        //}
+                        //else if (nPaddingBytes != id->idCodeSize())
+                        //{
+                        //    id->idCodeSize(nPaddingBytes);
+                        //    ig->igFlags |= IGF_UPD_ISZ;
+                        //}
+                    }
+                    // Non-adaptive padding
+                    else
                     {
-                        loopSize += igInLoop->igSize;
-                        if (igInLoop->igLoopBackEdge == loopHeaderIg ||
-                            loopSize > emitComp->opts.compJitAlignLoopMaxCodeSize)
+                        instrDesc* nextId = id;
+                        castto(nextId, BYTE*) += sz;
+
+                        // For padding > 15 bytes, check if we already performed/skipped
+                        // padding during previous INS_align instruction.
+                        // If yes, skip for current instruction as well as next, if that
+                        // too is INS_align.
+                        if ((id->idCodeSize() == 0))
                         {
+                            if (nextId->idIns() == INS_align)
+                            {
+                                assert(alignmentBoundary > 16);
+                                nextId->idCodeSize(0);
+                            }
                             break;
                         }
-                    }
 
-                    // Only align if it matches the heuristics
-                    if (loopSize <= emitComp->opts.compJitAlignLoopMaxCodeSize)
-                    {
-                        int    minimumBlocksNeeded = (loopSize + alignmentBoundary - 1) / alignmentBoundary;
-                        size_t extraBytesNotInLoop = (alignmentBoundary * minimumBlocksNeeded) - loopSize;
-                        size_t currentOffset       = (size_t)dst % alignmentBoundary;
+                        unsigned loopSize            = getLoopSize(ig->igNext, maxLoopSize);
+                        unsigned minimumBlocksNeeded = (loopSize + alignmentBoundary - 1) / alignmentBoundary;
+                        unsigned extraBytesNotInLoop = (alignmentBoundary * minimumBlocksNeeded) - loopSize;
+                        unsigned currentOffset       = (size_t)dst % alignmentBoundary;
 
+#ifdef DEBUG
                         // Mitigate JCC erratum by making sure the jmp doesn't fall on the boundary
                         if (emitComp->opts.compJitAlignLoopForJcc)
                         {
                             // TODO: See if extra padding we might end up adding to mitigate JCC erratum is worth doing?
                             currentOffset++;
                         }
-
-                        // TODO: Revisit nop sequence we emit in case of 31 bytes
+#endif
+                        // Check if the loop exceed maxSize
+                        if (loopSize > maxLoopSize)
+                        {
+                            skipPadding = true;
+                            assert(!"Should never hit maxLoopSize threshold because it should have been predicted "
+                                    "earlier.");
+                        }
 
                         // Padding is needed only if loop starts at or after the current offset.
-                        // Otherwise, the loop just fits in minBlocksNeededForLoop and so no alignment needed.
-                        if (currentOffset <= extraBytesNotInLoop)
+                        // Otherwise, the loop just fits in minBlocksNeededForLoop and so can skip alignment.
+                        else if (currentOffset <= extraBytesNotInLoop)
                         {
+                            skipPadding = true;
+#if DEBUG
                             if (displayAlignmentDetails)
                             {
-                                printf("\t\t;; Skip alignment: 'Loop already aligned.' in (%s)\n",
-                                       emitComp->info.compMethodName);
+                                printf("\t\t;; Skip alignment: 'Loop already aligned at %dB boundary.' in (%s)\n",
+                                       alignmentBoundary, emitComp->info.compMethodName);
                             }
+#endif
+                        }
+                        else
+                        {
+                            // Perform the padding
+
+                            unsigned nPaddingBytes = (-(int)(size_t)dst) & (alignmentBoundary - 1);
+                            unsigned padCounts     = nPaddingBytes / 15;
+                            unsigned lastPadding   = nPaddingBytes % 15;
+
+                            while (padCounts)
+                            {
+                                dst = emitOutputNOP(dst, 15);
+                                padCounts--;
+                            }
+
+                            dst = emitOutputNOP(dst, lastPadding);
+                            paddingAdded = nPaddingBytes;
+
+                            ///* Insert a pseudo-instruction to ensure that we align
+                            //   the next instruction properly */
+
+                            //if (lastInsAlignSize > 0)
+                            //{
+                            //    instrDesc* id = emitNewInstrSmall(EA_1BYTE);
+                            //    id->idIns(INS_align);
+                            //    id->idCodeSize(lastInsAlignSize);
+                            //    emitCurIGsize += lastInsAlignSize;
+                            //}
+
+                            //// TODO: Revisit nop sequence we emit in case of 31 bytes
+                            //size_t nBytes = (-(int)(size_t)dst) & 0x0f;
+                            //dst           = emitOutputNOP(dst, nBytes);z
+
+                            //if (nextId->idIns() == INS_align)
+                            //{
+                            //    // If next instruction is also alignment, this better be 32B padding.
+                            //    assert(alignmentBoundary > 16);
+
+                            //    // Align further to 32B boundary, if it is not yet.
+                            //    if (((size_t)dst & 0x1f) != 0)
+                            //    {
+                            //        dst = emitOutputNOP(dst, 15);
+                            //        dst = emitOutputNOP(dst, 1);
+                            //        nBytes += 16;
+                            //    }
+                            //}
+                            //paddingAdded = nBytes;
+
+#if DEBUG
+                            if (displayAlignmentDetails)
+                            {
+                                printf("\t\t;; Add alignment: 'Padding= %d, LoopSize= %d, AlignmentBoundary= %dB.' in (%s)\n",
+                                       nPaddingBytes, loopSize, alignmentBoundary, emitComp->info.compFullName);
+                            }
+#endif
+                            // In the end dst should be at alignment boundary
+                            assert(((size_t)dst & (alignmentBoundary - 1)) == 0);
+                        }
+
+                        // For padding > 15 bytes, multiple INS_align(15) are emitted.
+                        // If decided to skipPadding, just mark it so for future INS_align
+                        // instructions as well.
+                        if (!skipPadding)
+                        {
                             if (nextId->idIns() == INS_align)
                             {
                                 assert(alignmentBoundary > 16);
                                 nextId->idCodeSize(0);
                             }
                         }
-                        else
-                        {
-                            size_t nBytes = (-(int)(size_t)dst) & 0x0f;
-                            dst           = emitOutputNOP(dst, nBytes);
-
-                            if (nextId->idIns() == INS_align)
-                            {
-                                // If next instruction is also alignment, this better be 32B padding.
-                                assert(alignmentBoundary > 16);
-
-                                // Align further to 32B boundary, if it is not yet.
-                                if (((size_t)dst & 0x1f) != 0)
-                                {
-                                    dst = emitOutputNOP(dst, 15);
-                                    dst = emitOutputNOP(dst, 1);
-                                    nBytes += 16;
-                                }
-                            }
-                            if (displayAlignmentDetails)
-                            {
-                                printf("\t\t;; Add alignment: 'Padding= %d, LoopSize= %d, MinBlocks= %d, "
-                                       "AlignmentBoundary= %dB.' in (%s)\n",
-                                       nBytes, loopSize, minimumBlocksNeeded, alignmentBoundary,
-                                       emitComp->info.compFullName);
-                            }
-                            // In the end dst should be at alignment boundary
-                            assert(((size_t)dst & (alignmentBoundary - 1)) == 0);
-                        }
-                    }
-                    else
-                    {
-                        if (displayAlignmentDetails)
-                        {
-                            printf("\t\t;; Skip alignment: 'Loopsize= %d, AllowedMaxSize= %d.' in (%s)\n", loopSize,
-                                   emitComp->opts.compJitAlignLoopMaxCodeSize, emitComp->info.compFullName);
-                        }
-                        // If next instruction is align, skip it so
-                        // we do not check the heuristics again.
-                        if (nextId->idIns() == INS_align)
-                        {
-                            assert(alignmentBoundary > 16);
-                            nextId->idCodeSize(0);
-                        }
                     }
                 }
-#endif
+
+                // If we didn't add as much padding as we thought, update the code size and flag.
+                if (paddingAdded != id->idCodeSize())
+                {
+                    assert(paddingAdded != 0 || skipPadding);
+                    id->idCodeSize(paddingAdded);
+                    ig->igFlags |= IGF_UPD_ISZ;
+                }
+
+//
+//                ///--------------------------------------------------------------
+//                if (!skipPadding && emitComp->opts.compJitAlignLoopAdaptive)
+//                {
+//                    unsigned loopSize                = getLoopSize(ig->igNext, maxLoopSize);
+//
+//                    // Start to align on 32B boundary with a fallback to 16B boundary
+//                    int      minBlocksNeededForLoop = (loopSize + alignmentBoundary - 1) / alignmentBoundary;
+//                    unsigned nMaxPaddingBytes       = (1 << (maxBlocksAllowedForLoop - minBlocksNeededForLoop + 1)) - 1;
+//                    unsigned nPaddingBytes          = (-(int)(size_t)dst) & (alignmentBoundary - 1);
+//
+//                    if (nPaddingBytes > nMaxPaddingBytes)
+//                    {
+//                        // Cannot add large padding to align to 32B, so try to align to 16B boundary.
+//                        alignmentBoundary = 16;
+//                        nMaxPaddingBytes  = 1 << (maxBlocksAllowedForLoop - minBlocksNeededForLoop + 1);
+//                        nPaddingBytes     = (-(int)(size_t)dst) & (alignmentBoundary - 1);
+//
+//                        if (nPaddingBytes > nMaxPaddingBytes)
+//                        {
+//                            skipPadding = true;
+//#if DEBUG
+//                            if (displayAlignmentDetails)
+//                            {
+//                                printf("\t\t;; Skip alignment: 'PaddingNeeded= %d, MaxPadding= %d, LoopSize= %d, "
+//                                       "AlignmentBoundary= %dB.' in (%s)\n",
+//                                       nPaddingBytes, nMaxPaddingBytes, loopSize, alignmentBoundary,
+//                                       emitComp->info.compFullName);
+//                            }
+//#endif
+//                        }
+//                    }
+//
+//                    if (!skipPadding && (nPaddingBytes > 0))
+//                    {
+//                        size_t extraBytesNotInLoop =
+//                            (32 * minBlocksNeededForLoop) - loopSize; // Still have it at alignmentboundary=32
+//                        size_t currentOffset = (size_t)dst % alignmentBoundary;
+//
+//                        // Padding is needed only if loop starts at or after the current offset.
+//                        // Otherwise, the loop just fits in minBlocksNeededForLoop and so no alignment needed.
+//                        if (currentOffset <= extraBytesNotInLoop)
+//                        {
+//                            skipPadding = true;
+//#if DEBUG
+//                            if (displayAlignmentDetails)
+//                            {
+//                                printf("\t\t;; Skip alignment: 'Loop already aligned.' in (%s)\n",
+//                                       emitComp->info.compMethodName);
+//                            }
+//#endif
+//                        }
+//                        else
+//                        {
+//                            dst = emitOutputNOP(dst, nPaddingBytes);
+//                            assert(((size_t)dst & (alignmentBoundary - 1)) == 0);
+//#if DEBUG
+//                            if (displayAlignmentDetails)
+//                            {
+//                                printf("\t\t;; Add alignment: 'Padding= %d, LoopSize= %d, MinBlocks= %d, "
+//                                       "AlignmentBoundary= %dB.' in (%s)\n",
+//                                       nPaddingBytes, loopSize, minBlocksNeededForLoop, alignmentBoundary,
+//                                       emitComp->info.compFullName);
+//                            }
+//#endif
+//                        }
+//                    }
+//
+//                    // Update the code size of id
+//                    if (skipPadding)
+//                    {
+//                        id->idCodeSize(0);
+//                        ig->igFlags |= IGF_UPD_ISZ;
+//                    }
+//                    else if (nPaddingBytes != id->idCodeSize())
+//                    {
+//                        id->idCodeSize(nPaddingBytes);
+//                        ig->igFlags |= IGF_UPD_ISZ;
+//                    }
+//                }
+//                else
+//                {
+//                    instrDesc* nextId      = id;
+//                    castto(nextId, BYTE*) += sz;
+//
+//                    // If we already know that the code size heuristics won't match,
+//                    // do not bother checking it again. Same applies for next instruction
+//                    // if that too is INS_align.
+//                    if ((id->idCodeSize() == 0))
+//                    {
+//                        if (nextId->idIns() == INS_align)
+//                        {
+//                            assert(alignmentBoundary > 16);
+//                            nextId->idCodeSize(0);
+//                        }
+//                        break;
+//                    }
+//
+//                    unsigned  loopSize     = 0;
+//                    insGroup* loopHeaderIg = ig->igNext;
+//                    for (insGroup* igInLoop = loopHeaderIg; igInLoop; igInLoop = igInLoop->igNext)
+//                    {
+//                        loopSize += igInLoop->igSize;
+//                        if (igInLoop->igLoopBackEdge == loopHeaderIg || loopSize > maxLoopSize)
+//                        {
+//                            break;
+//                        }
+//                    }
+//
+//                    if (loopSize > maxLoopSize)
+//                    {
+//                        skipPadding = true;
+//                        assert(
+//                            !"Should never hit maxLoopSize threshold because it should have been predicted earlier.");
+//                    }
+//                    else
+//                    {
+//                        unsigned minimumBlocksNeeded = (loopSize + alignmentBoundary - 1) / alignmentBoundary;
+//                        unsigned extraBytesNotInLoop = (alignmentBoundary * minimumBlocksNeeded) - loopSize;
+//                        unsigned currentOffset       = (size_t)dst % alignmentBoundary;
+//
+//                        // Mitigate JCC erratum by making sure the jmp doesn't fall on the boundary
+//                        if (emitComp->opts.compJitAlignLoopForJcc)
+//                        {
+//                            // TODO: See if extra padding we might end up adding to mitigate JCC erratum is worth doing?
+//                            currentOffset++;
+//                        }
+//
+//                        // TODO: Revisit nop sequence we emit in case of 31 bytes
+//
+//                        // Padding is needed only if loop starts at or after the current offset.
+//                        // Otherwise, the loop just fits in minBlocksNeededForLoop and so no alignment needed.
+//                        if (currentOffset <= extraBytesNotInLoop)
+//                        {
+//                            if (displayAlignmentDetails)
+//                            {
+//                                printf("\t\t;; Skip alignment: 'Loop already aligned.' in (%s)\n",
+//                                       emitComp->info.compMethodName);
+//                            }
+//                            if (nextId->idIns() == INS_align)
+//                            {
+//                                assert(alignmentBoundary > 16);
+//                                nextId->idCodeSize(0);
+//                            }
+//                        }
+//                        else
+//                        {
+//                            size_t nBytes = (-(int)(size_t)dst) & 0x0f;
+//                            dst           = emitOutputNOP(dst, nBytes);
+//
+//                            if (nextId->idIns() == INS_align)
+//                            {
+//                                // If next instruction is also alignment, this better be 32B padding.
+//                                assert(alignmentBoundary > 16);
+//
+//                                // Align further to 32B boundary, if it is not yet.
+//                                if (((size_t)dst & 0x1f) != 0)
+//                                {
+//                                    dst = emitOutputNOP(dst, 15);
+//                                    dst = emitOutputNOP(dst, 1);
+//                                    nBytes += 16;
+//                                }
+//                            }
+//                            if (displayAlignmentDetails)
+//                            {
+//                                printf("\t\t;; Add alignment: 'Padding= %d, LoopSize= %d, MinBlocks= %d, "
+//                                       "AlignmentBoundary= %dB.' in (%s)\n",
+//                                       nBytes, loopSize, minimumBlocksNeeded, alignmentBoundary,
+//                                       emitComp->info.compFullName);
+//                            }
+//                            // In the end dst should be at alignment boundary
+//                            assert(((size_t)dst & (alignmentBoundary - 1)) == 0);
+//                        }
+//                    }
+//
+//
+//                    else
+//                    {
+//                        if (displayAlignmentDetails)
+//                        {
+//                            printf("\t\t;; Skip alignment: 'Loopsize= %d, AllowedMaxSize= %d.' in (%s)\n", loopSize,
+//                                   emitComp->opts.compJitAlignLoopMaxCodeSize, emitComp->info.compFullName);
+//                        }
+//                        // If next instruction is align, skip it so
+//                        // we do not check the heuristics again.
+//                        if (nextId->idIns() == INS_align)
+//                        {
+//                            assert(alignmentBoundary > 16);
+//                            nextId->idCodeSize(0);
+//                        }
+//                    }
+//                }
 
                 break;
             }

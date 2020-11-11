@@ -2616,12 +2616,18 @@ void Compiler::compInitOptions(JitFlags* jitFlags)
     opts.compDbgEnC  = jitFlags->IsSet(JitFlags::JIT_FLAG_DEBUG_EnC);
 
 #ifdef DEBUG
-    opts.compJitAlignLoopMinBlockWeight = JitConfig.JitAlignLoopMinBlockWeight();
-    opts.compJitAlignLoopMaxCodeSize    = JitConfig.JitAlignLoopMaxCodeSize();
-    opts.compJitAlignLoopBoundary       = JitConfig.JitAlignLoopBoundary();
-    opts.compJitAlignLoopForJcc         = JitConfig.JitAlignLoopForJcc() == 1;
     opts.compJitAlignLoopAdaptive       = JitConfig.JitAlignLoopAdaptive() == 1;
+    opts.compJitAlignLoopBoundary       = ReinterpretHexAsDecimal(JitConfig.JitAlignLoopBoundary());
+    opts.compJitAlignLoopMinBlockWeight = JitConfig.JitAlignLoopMinBlockWeight();
+
+    opts.compJitAlignLoopForJcc         = JitConfig.JitAlignLoopForJcc() == 1;
+    opts.compJitAlignLoopMaxCodeSize    = JitConfig.JitAlignLoopMaxCodeSize();
+
     assert(isPow2(opts.compJitAlignLoopBoundary));
+#else
+    opts.compJitAlignLoopAdaptive = true;
+    opts.compJitAlignLoopBoundary = DEFAULT_ALIGN_LOOP_BOUNDARY;
+    opts.compJitAlignLoopMinBlockWeight = DEFAULT_ALIGN_LOOP_MIN_BLOCK_WEIGHT;
 #endif
 
 #if REGEN_SHORTCUTS || REGEN_CALLPAT

@@ -774,19 +774,12 @@ void CodeGen::genCodeForBBlist()
         {
             assert(ShouldAlignLoops());
 
-#ifndef ADAPTIVE_LOOP_ALIGNMENT
-            if (verbose)
-            {
-                printf("Adding 'align' instruction to align loop header block " FMT_BB, block->bbNext->bbNum);
-            }
-
             if ((compiler->opts.compJitAlignLoopBoundary > 16) && (!compiler->opts.compJitAlignLoopAdaptive))
             {
                 // TODO: Only do this if we are confident that the loop size doesn't exceed the heuristics threshold
-                GetEmitter()->emitVariableLoopAlign();
+                GetEmitter()->emitVariableLoopAlign(compiler->opts.compJitAlignLoopBoundary);
             }
             else
-#endif
             {
                 GetEmitter()->emitLoopAlign();
             }
@@ -794,6 +787,12 @@ void CodeGen::genCodeForBBlist()
             // Mark this IG as need alignment so during emitter we can check the instruction count heuristics of
             // all IGs that follows this IG and participate in a loop.
             GetEmitter()->emitCurIG->igFlags |= IGF_ALIGN_LOOP;
+
+            if (verbose)
+            {
+                printf("Adding 'align' instruction of %d bytes in G_M%03u_IG%02u to align loop header block.\n" FMT_BB,
+                       compiler->opts.compJitAlignLoopBoundary, compiler->compMethodID, GetEmitter()->emitCurIG->igNum);
+            }
         }
 #endif
 

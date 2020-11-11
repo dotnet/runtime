@@ -47,7 +47,8 @@ CONFIG_INTEGER(JitAlignLoopMinBlockWeight,
                                                     // candidate for alignment.
 CONFIG_INTEGER(JitAlignLoopMaxCodeSize,
                W("JitAlignLoopMaxCodeSize"),
-               0x60) // For non-adaptive alignment, minimum loop size (in bytes) for which alignment will be done.
+               DEFAULT_MAX_LOOPSIZE_FOR_ALIGN) // For non-adaptive alignment, minimum loop size (in bytes) for which
+                                                // alignment will be done.
                      // Defaults to 3 blocks of 32 bytes chunks = 96 bytes.
 CONFIG_INTEGER(JitAlignLoopBoundary,
                W("JitAlignLoopBoundary"),
