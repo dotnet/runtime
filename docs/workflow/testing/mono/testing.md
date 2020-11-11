@@ -17,7 +17,7 @@ cd src/mono/netcore
 make run-tests-coreclr-all
 ```
 
-* Build and run runtime tests for Webassembly. From the root directory run the following command:
+### Testing on WebAssembly:
 ```
 src/tests/build.sh -skipstressdependencies -excludemonofailures os Browser wasm <Release/Debug>
 ```
