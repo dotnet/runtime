@@ -125,7 +125,7 @@ namespace System.Resources
         private IDictionaryEnumerator GetEnumeratorHelper()
         {
             // Avoid a race with Dispose
-            return _table?.GetEnumerator() ?? throw new ObjectDisposedException(null, SR.ObjectDisposed_ResourceSet);
+            return (_table as IDictionary)?.GetEnumerator() ?? throw new ObjectDisposedException(null, SR.ObjectDisposed_ResourceSet);
         }
 
         // Look up a string value for a resource given its name.
