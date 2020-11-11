@@ -388,6 +388,9 @@ ep_rt_mono_system_time_get (EventPipeSystemTime *system_time);
 int64_t
 ep_rt_mono_system_timestamp_get (void);
 
+void
+ep_rt_mono_os_environment_get_utf16 (ep_rt_env_array_utf16_t *env_array);
+
 #ifndef EP_RT_MONO_USE_STATIC_RUNTIME
 static
 inline
@@ -1553,22 +1556,7 @@ inline
 void
 ep_rt_os_environment_get_utf16 (ep_rt_env_array_utf16_t *env_array)
 {
-	EP_ASSERT (env_array != NULL);
-#ifdef HOST_WIN32
-	LPWSTR envs = GetEnvironmentStringsW ();
-	if (envs) {
-		LPWSTR next = envs;
-		while (*next) {
-			ep_rt_env_array_utf16_append (env_array, ep_rt_utf16_string_dup (next));
-			next += ep_rt_utf16_string_len (next) + 1;
-		}
-		FreeEnvironmentStringsW (envs);
-	}
-#else
-	gchar **next = NULL;
-	for (next = environ; *next != NULL; ++next)
-		ep_rt_env_array_utf16_append (env_array, ep_rt_utf8_to_utf16_string (*next, -1));
-#endif
+	ep_rt_mono_os_environment_get_utf16 (env_array);
 }
 
 /*
@@ -1863,7 +1851,7 @@ inline
 size_t
 ep_rt_thread_get_id (ep_rt_thread_handle_t thread_handle)
 {
-	return mono_thread_info_get_tid (thread_handle);
+	return MONO_NATIVE_THREAD_ID_TO_UINT (mono_thread_info_get_tid (thread_handle));
 }
 
 static
