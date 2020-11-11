@@ -1,4 +1,4 @@
-# Running Tests using Mono Runtime
+# Running test suites using Mono
 
 Before running tests, [build Mono](../../building/mono/README.md) using the desired configuration.
 
