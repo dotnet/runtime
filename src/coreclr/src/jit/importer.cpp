@@ -18894,6 +18894,25 @@ void Compiler::impMakeDiscretionaryInlineObservations(InlineInfo* pInlineInfo, I
 
     inlineResult->NoteInt(InlineObservation::CALLSITE_FREQUENCY, static_cast<int>(frequency));
     inlineResult->NoteInt(InlineObservation::CALLSITE_WEIGHT, static_cast<int>(weight));
+
+    // If the call site has profile data, report the relative frequency of the site.
+    //
+    if ((pInlineInfo != nullptr) && pInlineInfo->iciBlock->hasProfileWeight())
+    {
+        double callSiteWeight = (double)pInlineInfo->iciBlock->bbWeight;
+        double entryWeight    = (double)impInlineRoot()->fgFirstBB->bbWeight;
+
+        assert(callSiteWeight >= 0);
+        assert(entryWeight >= 0);
+
+        if (entryWeight != 0)
+        {
+            inlineResult->NoteBool(InlineObservation::CALLSITE_HAS_PROFILE, true);
+
+            double frequency = callSiteWeight / entryWeight;
+            inlineResult->NoteDouble(InlineObservation::CALLSITE_PROFILE_FREQUENCY, frequency);
+        }
+    }
 }
 
 /*****************************************************************************

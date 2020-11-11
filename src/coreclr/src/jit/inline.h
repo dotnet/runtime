@@ -225,7 +225,8 @@ public:
     virtual void NoteSuccess() = 0;
     virtual void NoteBool(InlineObservation obs, bool value) = 0;
     virtual void NoteFatal(InlineObservation obs) = 0;
-    virtual void NoteInt(InlineObservation obs, int value) = 0;
+    virtual void NoteInt(InlineObservation obs, int value)       = 0;
+    virtual void NoteDouble(InlineObservation obs, double value) = 0;
 
     // Optional observations. Most policies ignore these.
     virtual void NoteContext(InlineContext* context)
@@ -394,6 +395,12 @@ public:
     void NoteInt(InlineObservation obs, int value)
     {
         m_Policy->NoteInt(obs, value);
+    }
+
+    // Make an observation with a double value
+    void NoteDouble(InlineObservation obs, double value)
+    {
+        m_Policy->NoteDouble(obs, value);
     }
 
 #if defined(DEBUG) || defined(INLINE_DATA)
