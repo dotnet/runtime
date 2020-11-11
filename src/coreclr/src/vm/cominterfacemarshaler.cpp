@@ -457,35 +457,6 @@ VOID COMInterfaceMarshaler::InitializeExistingComObject(OBJECTREF *pComObj, IUnk
 }
 
 //--------------------------------------------------------------------------------
-// Helper to wrap an IUnknown with COM object
-//--------------------------------------------------------------------------------
-OBJECTREF COMInterfaceMarshaler::WrapWithComObject()
-{
-    CONTRACTL
-    {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_COOPERATIVE;
-    }
-    CONTRACTL_END;
-
-    OBJECTREF oref = NULL;
-    GCPROTECT_BEGIN(oref)
-    {
-        CreateObjectRef(
-            TRUE,       // fDuplicate
-            &oref,      // pComObj
-            NULL,       // ppIncomingIP
-            NULL,       // pIncomingItfMT
-            false       // bIncomingIPAddRefed
-            );
-    }
-    GCPROTECT_END();
-
-    return oref;
-}
-
-//--------------------------------------------------------------------------------
 // VOID EnsureCOMInterfacesSupported(OBJECTREF oref, MethodTable* pClassMT)
 // Make sure the oref supports all the COM interfaces in the class
 VOID COMInterfaceMarshaler::EnsureCOMInterfacesSupported(OBJECTREF oref, MethodTable* pClassMT)
