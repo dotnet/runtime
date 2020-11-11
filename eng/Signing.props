@@ -159,7 +159,7 @@
         <ItemsToSign Include="$(CoreCLRSharedFrameworkDir)mscordaccore*.dll" />
         <ItemsToSign Include="$(CoreCLRSharedFrameworkDir)mscordbi.dll" />
         <ItemsToSign Include="$(CoreCLRArtifactsPath)$(CoreCLRCrossTargetComponentDirName)/sharedFramework/mscordaccore*.dll" Condition="'$(CoreCLRCrossTargetComponentDirName)' != ''" />
-        <ItemsToSign Include="$(CoreCLRArtifactsPath)$(CoreCLRCrossTargetComponentDirName)/sharedFramework/mscordbi*.dll" Condition="'$(CoreCLRCrossTargetComponentDirName)' != ''" />
+        <ItemsToSign Include="$(CoreCLRArtifactsPath)$(CoreCLRCrossTargetComponentDirName)/sharedFramework/mscordbi.dll" Condition="'$(CoreCLRCrossTargetComponentDirName)' != ''" />
       </ItemGroup>
 
       <ItemGroup Condition="'$(SignFinalPackages)' == 'true'">
