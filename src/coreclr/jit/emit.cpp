@@ -4493,21 +4493,34 @@ void emitter::emitLoopAlignAdjustments()
 {
 #ifdef TARGET_XARCH
 
-#ifdef ADAPTIVE_LOOP_ALIGNMENT
-    unsigned alignmentBoundary = DEFAULT_ALIGN_LOOP_BOUNDARY;
-#else
-    unsigned alignmentBoundary = emitComp->opts.compJitAlignLoopBoundary;
+    unsigned maxLoopSize = 0, alignmentBoundary = 0;
+#ifndef ADAPTIVE_LOOP_ALIGNMENT
+    if (emitComp->opts.compJitAlignLoopAdaptive)
 #endif
-    unsigned removeAlignment         = 0;
-    bool     skipPadding             = false;
-    int      maxBlocksAllowedForLoop = genLog2(alignmentBoundary) - 1;
-    unsigned maxLoopSize             = DEFAULT_ALIGN_LOOP_BOUNDARY * maxBlocksAllowedForLoop;
-    size_t   dst                     = 0, of = 0;
-    unsigned minBlocksNeededForLoop = 0, nMaxPaddingBytes = 0, nPaddingBytes = 0, loopSize = 0;
+    {
+        // For adaptive, adjust the loop size depending on the alignment boundary
+        int maxBlocksAllowedForLoop = genLog2(alignmentBoundary) - 1;
+        alignmentBoundary           = DEFAULT_ALIGN_LOOP_BOUNDARY;
+        maxLoopSize                 = alignmentBoundary * maxBlocksAllowedForLoop;
+    }
+#ifndef ADAPTIVE_LOOP_ALIGNMENT
+    else
+    {
+        // For non-adaptive, just take whatever is supplied using COMPlus_ variables
+        alignmentBoundary = emitComp->opts.compJitAlignLoopBoundary;
+        maxLoopSize       = emitComp->opts.compJitAlignLoopMaxCodeSize;
+    }
+#endif
+
+    unsigned alignBytesRemoved = 0, loopSize;
+    bool     skipPadding       = false;
+    
+    /*size_t   dst                     = 0, of = 0;
+    unsigned minBlocksNeededForLoop = 0, nMaxPaddingBytes = 0, nPaddingBytes = 0, loopSize = 0;*/
     for (insGroup* ig = emitIGlist; ig != nullptr; ig = ig->igNext)
     {
-        ig->igOffs -= removeAlignment;
-        dst += ig->igSize;
+        ig->igOffs -= alignBytesRemoved;
+        //dst += ig->igSize;
 
         // Below is not needed because we just care about the igSize
         // and that gets adjusted in emitJumpDst when we add IGF_UPD_ISZ
@@ -4555,64 +4568,64 @@ void emitter::emitLoopAlignAdjustments()
         // TODO: Add logging for Skip/Add?
         // TODO: I am about to align so (dst -= 15)
 
-        if ((dst & (alignmentBoundary - 1)) == 0)
+       /* if ((dst & (alignmentBoundary - 1)) == 0)
         {
             skipPadding = true;
         }
-        else
+        else*/
         {
             loopSize               = 0;
             insGroup* loopHeaderIg = ig->igNext;
             for (insGroup* igInLoop = loopHeaderIg; igInLoop; igInLoop = igInLoop->igNext)
             {
                 loopSize += igInLoop->igSize;
-                if (igInLoop->igLoopBackEdge == loopHeaderIg)
+                if (igInLoop->igLoopBackEdge == loopHeaderIg || loopSize > maxLoopSize)
                 {
                     break;
                 }
             }
 
-            minBlocksNeededForLoop = (loopSize + alignmentBoundary - 1) / alignmentBoundary;
+           /* minBlocksNeededForLoop = (loopSize + alignmentBoundary - 1) / alignmentBoundary;
             nMaxPaddingBytes       = (1 << (maxBlocksAllowedForLoop - minBlocksNeededForLoop + 1)) - 1;
-            nPaddingBytes          = (-(int)dst) & (alignmentBoundary - 1);
+            nPaddingBytes          = (-(int)dst) & (alignmentBoundary - 1);*/
 
             if (loopSize > maxLoopSize)
             {
                 skipPadding = true;
             }
-            else if (nPaddingBytes > nMaxPaddingBytes)
-            {
-                alignmentBoundary = 16;
-                nMaxPaddingBytes  = 1 << (maxBlocksAllowedForLoop - minBlocksNeededForLoop + 1);
-                nPaddingBytes     = (-(int)dst) & (alignmentBoundary - 1);
+            //else if (nPaddingBytes > nMaxPaddingBytes)
+            //{
+            //    alignmentBoundary = 16;
+            //    nMaxPaddingBytes  = 1 << (maxBlocksAllowedForLoop - minBlocksNeededForLoop + 1);
+            //    nPaddingBytes     = (-(int)dst) & (alignmentBoundary - 1);
 
-                if (nPaddingBytes > nMaxPaddingBytes)
-                {
-                    //skipPadding = true;
-                }
-            }
+            //    if (nPaddingBytes > nMaxPaddingBytes)
+            //    {
+            //        //skipPadding = true;
+            //    }
+            //}
         }
 
-        if (!skipPadding && (nPaddingBytes > 0))
-        {
-            size_t extraBytesNotInLoop =
-                (32 * minBlocksNeededForLoop) - loopSize;   // Still have it at alignmentboundary=32
-            size_t currentOffset = dst % alignmentBoundary; // TODO: Change to & (boundary - 1)
-            if (currentOffset <= extraBytesNotInLoop)
-            {
-                //skipPadding = true;
+        //if (!skipPadding && (nPaddingBytes > 0))
+        //{
+        //    size_t extraBytesNotInLoop =
+        //        (32 * minBlocksNeededForLoop) - loopSize;   // Still have it at alignmentboundary=32
+        //    size_t currentOffset = dst % alignmentBoundary; // TODO: Change to & (boundary - 1)
+        //    if (currentOffset <= extraBytesNotInLoop)
+        //    {
+        //        //skipPadding = true;
 
-                // TODO: Detect actual no. of padding bytes.
-                // TODO: Figure out how to update size of align instructions so they just add padding in emitter.
-            }
-        }
+        //        // TODO: Detect actual no. of padding bytes.
+        //        // TODO: Figure out how to update size of align instructions so they just add padding in emitter.
+        //    }
+        //}
 
         if (skipPadding)
         {
-            dst -= 15;
+            //dst -= 15;
             ig->igSize -= 15;
             ig->igFlags |= IGF_UPD_ISZ;
-            removeAlignment += 15;
+            alignBytesRemoved += 15;
             emitTotalCodeSize -= 15;
 
             // remove the flag
