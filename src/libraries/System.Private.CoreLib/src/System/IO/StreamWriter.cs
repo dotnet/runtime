@@ -653,7 +653,7 @@ namespace System.IO
                 }
             }
 
-            if (AutoFlush)
+            if (_autoFlush)
             {
                 await FlushAsyncInternal(flushStream: true, flushEncoder: false).ConfigureAwait(false);
             }
@@ -744,9 +744,6 @@ namespace System.IO
             return task;
         }
 
-        // We pass in private instance fields of this MarshalByRefObject-derived type as local params
-        // to ensure performant access inside the state machine that corresponds this async method.
-        // Fields that are written to must be assigned at the end of the method *and* before instance invocations.
         private async Task WriteAsyncInternal(ReadOnlyMemory<char> source, bool appendNewLine, CancellationToken cancellationToken)
         {
             int copied = 0;
@@ -778,7 +775,7 @@ namespace System.IO
                 }
             }
 
-            if (AutoFlush)
+            if (_autoFlush)
             {
                 await FlushAsyncInternal(flushStream: true, flushEncoder: false, cancellationToken).ConfigureAwait(false);
             }
