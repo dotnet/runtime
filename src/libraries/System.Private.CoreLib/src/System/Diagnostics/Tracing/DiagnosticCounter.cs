@@ -6,6 +6,7 @@ using System;
 using System.Diagnostics;
 #endif
 using System.Collections.Generic;
+using System.Runtime.Versioning;
 using System.Text;
 using System.Threading;
 
@@ -48,6 +49,7 @@ namespace System.Diagnostics.Tracing
         /// Must only be invoked once, and only after the instance has been fully initialized.
         /// This should be invoked by a derived type's ctor as the last thing it does.
         /// </remarks>
+        [UnsupportedOSPlatform("browser")]
         private protected void Publish()
         {
             Debug.Assert(_group is null);

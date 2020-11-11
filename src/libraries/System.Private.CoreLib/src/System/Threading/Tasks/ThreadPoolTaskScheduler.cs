@@ -47,7 +47,9 @@ namespace System.Threading.Tasks
                 // Run LongRunning tasks on their own dedicated thread.
                 Thread thread = new Thread(s_longRunningThreadWork);
                 thread.IsBackground = true; // Keep this thread from blocking process shutdown
+#if !TARGET_BROWSER
                 thread.Start(task);
+#endif
             }
             else
             {

@@ -677,6 +677,7 @@ namespace System.Threading.Tasks
             }
             else
             {
+#pragma warning disable CA1416 // Validate platform compatibility, need proper handling
                 ThreadPool.RegisterWaitForSingleObject(
                     asyncResult.AsyncWaitHandle,
                     delegate
@@ -687,6 +688,7 @@ namespace System.Threading.Tasks
                     null,
                     Timeout.Infinite,
                     true);
+#pragma warning restore CA1416
             }
 
             return promise;

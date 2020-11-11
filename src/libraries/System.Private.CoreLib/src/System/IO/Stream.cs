@@ -212,7 +212,9 @@ namespace System.IO
             }
             else
             {
+#pragma warning disable CA1416 // Validate platform compatibility, need proper handling
                 semaphore.Wait();
+#pragma warning restore CA1416
             }
 
             // Create the task to asynchronously do a Read.  This task serves both
@@ -367,7 +369,9 @@ namespace System.IO
             }
             else
             {
+#pragma warning disable CA1416 // Validate platform compatibility, need proper handling
                 semaphore.Wait(); // synchronously wait here
+#pragma warning restore CA1416
             }
 
             // Create the task to asynchronously do a Write.  This task serves both
