@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics;
-using System.Runtime.Versioning;
 
 namespace System.Threading
 {
@@ -558,9 +557,6 @@ namespace System.Threading
                             // operation which provides a full memory barrier.
                             // If we see IsSet=false, then we are guaranteed that Set() will see that we are
                             // waiting and will pulse the monitor correctly.
-
-                            if (OperatingSystem.IsBrowser())
-                                return false;
 
                             Waiters++;
 

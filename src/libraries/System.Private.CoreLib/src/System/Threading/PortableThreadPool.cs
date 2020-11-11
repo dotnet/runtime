@@ -4,7 +4,6 @@
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
-using System.Runtime.Versioning;
 
 namespace System.Threading
 {
@@ -133,7 +132,7 @@ namespace System.Threading
                     ThreadCounts oldCounts = _separated.counts.InterlockedCompareExchange(newCounts, counts);
                     if (oldCounts == counts)
                     {
-                        if (_separated.numRequestedWorkers > 0 && !OperatingSystem.IsBrowser())
+                        if (_separated.numRequestedWorkers > 0)
                         {
                             WorkerThread.MaybeAddWorkingWorker(this);
                         }
@@ -297,7 +296,7 @@ namespace System.Threading
                             //
                             // If we're reducing the max, whichever threads notice this first will sleep and timeout themselves.
                             //
-                            if (newMax > oldCounts.NumThreadsGoal && !OperatingSystem.IsBrowser())
+                            if (newMax > oldCounts.NumThreadsGoal)
                             {
                                 WorkerThread.MaybeAddWorkingWorker(this);
                             }
@@ -347,7 +346,6 @@ namespace System.Threading
             return false;
         }
 
-        [UnsupportedOSPlatform("browser")]
         internal void RequestWorker()
         {
             // The order of operations here is important. MaybeAddWorkingWorker() and EnsureRunning() use speculative checks to

@@ -454,7 +454,7 @@ namespace System.Threading
             while (count < Environment.ProcessorCount)
             {
                 int prev = Interlocked.CompareExchange(ref _separated.numOutstandingThreadRequests, count + 1, count);
-                if (prev == count && !OperatingSystem.IsBrowser())
+                if (prev == count)
                 {
                     ThreadPool.RequestWorkerThread();
                     break;

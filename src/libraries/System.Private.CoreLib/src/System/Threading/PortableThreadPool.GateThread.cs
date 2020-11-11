@@ -5,7 +5,6 @@ using System.Diagnostics;
 using System.Diagnostics.Tracing;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
-using System.Runtime.Versioning;
 
 namespace System.Threading
 {
@@ -91,7 +90,7 @@ namespace System.Threading
                                     newCounts.NumThreadsGoal = newNumThreadsGoal;
 
                                     ThreadCounts oldCounts = threadPoolInstance._separated.counts.InterlockedCompareExchange(newCounts, counts);
-                                    if (oldCounts == counts && !OperatingSystem.IsBrowser())
+                                    if (oldCounts == counts)
                                     {
                                         HillClimbing.ThreadPoolHillClimber.ForceChange(newNumThreadsGoal, HillClimbing.StateOrTransition.Starvation);
                                         WorkerThread.MaybeAddWorkingWorker(threadPoolInstance);
@@ -136,7 +135,6 @@ namespace System.Threading
             }
 
             // This is called by a worker thread
-            [UnsupportedOSPlatform("browser")]
             internal static void EnsureRunning(PortableThreadPool threadPoolInstance)
             {
                 // The callers ensure that this speculative load is sufficient to ensure that the gate thread is activated when
@@ -148,7 +146,6 @@ namespace System.Threading
             }
 
             [MethodImpl(MethodImplOptions.NoInlining)]
-            [UnsupportedOSPlatform("browser")]
             internal static void EnsureRunningSlow(PortableThreadPool threadPoolInstance)
             {
                 int numRunsMask = Interlocked.Exchange(ref threadPoolInstance._separated.gateThreadRunningState, GetRunningStateForNumRuns(MaxRuns));
@@ -170,7 +167,6 @@ namespace System.Threading
             }
 
             [MethodImpl(MethodImplOptions.NoInlining)]
-            [UnsupportedOSPlatform("browser")]
             private static void CreateGateThread(PortableThreadPool threadPoolInstance)
             {
                 bool created = false;
@@ -193,7 +189,6 @@ namespace System.Threading
             }
         }
 
-        [UnsupportedOSPlatform("browser")]
         internal static void EnsureGateThreadRunning() => GateThread.EnsureRunning(ThreadPoolInstance);
     }
 }

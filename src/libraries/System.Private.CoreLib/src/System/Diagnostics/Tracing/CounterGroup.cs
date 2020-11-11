@@ -144,7 +144,7 @@ namespace System.Diagnostics.Tracing
                     _nextPollingTimeStamp = DateTime.UtcNow + new TimeSpan(0, 0, (int)pollingIntervalInSeconds);
 
                     // Create the polling thread and init all the shared state if needed
-                    if (s_pollingThread == null && !OperatingSystem.IsBrowser())
+                    if (s_pollingThread == null)
                     {
                         s_pollingThreadSleepEvent = new AutoResetEvent(false);
                         s_counterGroupEnabledList = new List<CounterGroup>();

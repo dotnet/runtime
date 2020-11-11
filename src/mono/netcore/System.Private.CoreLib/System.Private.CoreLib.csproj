@@ -294,7 +294,7 @@
       <Compile Include="$(BclSourcesRoot)\System\TypeSpec.cs" />
   </ItemGroup>
 
-  <ItemGroup Condition="'$(TargetsBrowser)' != 'true'">
+  <ItemGroup Condition="'$(TargetsBrowser)' == 'true'">
     <SupportedPlatform Include="browser"/>
   </ItemGroup>
 

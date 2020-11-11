@@ -3,7 +3,6 @@
 
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
-using System.Runtime.Versioning;
 
 namespace System.Threading
 {
@@ -11,7 +10,6 @@ namespace System.Threading
     // Portable implementation of ThreadPool
     //
 
-    [UnsupportedOSPlatform("browser")]
     internal sealed partial class CompleteWaitThreadPoolWorkItem : IThreadPoolWorkItem
     {
         void IThreadPoolWorkItem.Execute() => PortableThreadPool.CompleteWait(_registeredWaitHandle, _timedOut);
@@ -87,7 +85,6 @@ namespace System.Threading
         /// <summary>
         /// This method is called to request a new thread pool worker to handle pending work.
         /// </summary>
-        [UnsupportedOSPlatform("browser")]
         internal static void RequestWorkerThread() => PortableThreadPool.ThreadPoolInstance.RequestWorker();
 
         /// <summary>
@@ -106,7 +103,6 @@ namespace System.Threading
         internal static object GetOrCreateThreadLocalCompletionCountObject() =>
             PortableThreadPool.ThreadPoolInstance.GetOrCreateThreadLocalCompletionCountObject();
 
-        [UnsupportedOSPlatform("browser")]
         private static RegisteredWaitHandle RegisterWaitForSingleObject(
              WaitHandle? waitObject,
              WaitOrTimerCallback? callBack,

@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics;
-using System.Runtime.Versioning;
 
 namespace System.Threading.Tasks
 {
@@ -671,7 +670,7 @@ namespace System.Threading.Tasks
             if (Task.s_asyncDebuggingEnabled)
                 Task.AddToActiveTasks(t);
 
-            if (asyncResult.IsCompleted || OperatingSystem.IsBrowser())
+            if (asyncResult.IsCompleted)
             {
                 try { t.InternalRunSynchronously(scheduler, waitForCompletion: false); }
                 catch (Exception e) { promise.TrySetException(e); } // catch and log any scheduler exceptions
