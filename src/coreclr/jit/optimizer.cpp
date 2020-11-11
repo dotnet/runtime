@@ -2546,14 +2546,15 @@ NO_MORE_LOOPS:
 #if defined(TARGET_XARCH)
         if (codeGen->ShouldAlignLoops())
         {
-            // An innerloop candidate that might need alignment
-            if ((optLoopTable[loopInd].lpChild == BasicBlock::NOT_IN_LOOP) && (
 #ifdef ADAPTIVE_LOOP_ALIGNMENT
-                                                                                  DEFAULT_ALIGN_LOOP_MIN_BLOCK_WEIGHT
+            unsigned minBlockWeight = DEFAULT_ALIGN_LOOP_MIN_BLOCK_WEIGHT;
 #else
-                                                                                  opts.compJitAlignLoopMinBlockWeight
+            unsigned minBlockWeight = opts.compJitAlignLoopMinBlockWeight;
 #endif
-                                                                                  <= first->getBBWeight(this)))
+
+            // An innerloop candidate that might need alignment
+            if ((optLoopTable[loopInd].lpChild == BasicBlock::NOT_IN_LOOP) &&
+                minBlockWeight <= first->getBBWeight(this))
             {
                 first->bbFlags |= BBF_FIRST_BLOCK_IN_INNERLOOP;
             }

@@ -1740,6 +1740,7 @@ private:
     instrDescJmp* emitJumpList;       // list of local jumps in method
     instrDescJmp* emitJumpLast;       // last of local jumps in method
     void          emitJumpDistBind(); // Bind all the local jumps in method
+    void          emitLoopAlignAdjustments(); // Predict if loop alignment is needed and make appropriate adjustments
 
     void emitCheckFuncletBranch(instrDesc* jmp, insGroup* jmpIG); // Check for illegal branches between funclets
 

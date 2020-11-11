@@ -773,6 +773,7 @@ void CodeGen::genCodeForBBlist()
         if ((block->bbNext != nullptr) && (block->bbNext->bbFlags & BBF_FIRST_BLOCK_IN_INNERLOOP))
         {
             assert(ShouldAlignLoops());
+
 #ifndef ADAPTIVE_LOOP_ALIGNMENT
             if (verbose)
             {

@@ -12632,7 +12632,7 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
             {
                 // Candidate for loop alignment
                 assert(codeGen->ShouldAlignLoops());
-                assert(ig->igFlags & IGF_ALIGN_LOOP);
+                
 #ifdef ADAPTIVE_LOOP_ALIGNMENT
                 unsigned alignmentBoundary = DEFAULT_ALIGN_LOOP_BOUNDARY;
 #else
@@ -12640,15 +12640,33 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
 #endif
                 sz = SMALL_IDSC_SIZE;
 
-                // If already at alignment boundary, no need to emit anything.
-                if (((size_t)dst & (alignmentBoundary - 1)) == 0)
+#if DEBUG
+                bool displayAlignmentDetails =
+                    (emitComp->opts.disAsm /*&& emitComp->opts.disAddr*/) || emitComp->verbose;
+#endif
+               if ((ig->igFlags & IGF_ALIGN_LOOP) == 0)
                 {
+                    id->idCodeSize(0);
+                    ig->igFlags |= IGF_UPD_ISZ;
+                    if (displayAlignmentDetails)
+                    {
+                        printf("\t\t;; Skip alignment: 'Big loop.' in (%s)\n", emitComp->info.compFullName);
+                    }
                     break;
                 }
 
-#if DEBUG
-                bool displayAlignmentDetails = (emitComp->opts.disAsm && emitComp->opts.disAddr) || emitComp->verbose;
-#endif
+                // If already at alignment boundary, no need to emit anything.
+                if (((size_t)dst & (alignmentBoundary - 1)) == 0)
+                {
+                    id->idCodeSize(0);
+                    ig->igFlags |= IGF_UPD_ISZ;
+                    if (displayAlignmentDetails)
+                    {
+                        printf("\t\t;; Skip alignment: 'Loop already aligned at boundary.' in (%s)\n",
+                               emitComp->info.compMethodName);
+                    }
+                    break;
+                }
 
 #ifndef ADAPTIVE_LOOP_ALIGNMENT
                 if (emitComp->opts.compJitAlignLoopAdaptive)
@@ -12678,12 +12696,13 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
                     if (loopSize > maxLoopSize)
                     {
                         skipPadding = true;
+                        assert(!"This should have checked before!");
 #if DEBUG
-                        if (displayAlignmentDetails)
+                        /*if (displayAlignmentDetails)
                         {
-                            printf("\t\t;; Skip alignment: 'Loopsize= %d, MaxLoopSize= %d.' in (%s)\n", loopSize,
-                                   maxLoopSize, emitComp->info.compFullName);
-                        }
+                            printf("\t\t;; Skip alignment: 'Loopsize= %d, MaxLoopSize= %d, Estimated= %d.' in (%s)\n", loopSize,
+                                   maxLoopSize, ig->loopSize, emitComp->info.compFullName);
+                        }*/
 #endif
                     }
                     else if (nPaddingBytes > nMaxPaddingBytes)

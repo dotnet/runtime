@@ -2258,6 +2258,9 @@ void CodeGen::genGenerateMachineCode()
 
     GetEmitter()->emitJumpDistBind();
 
+    /* Perform alignment adjustments */
+    GetEmitter()->emitLoopAlignAdjustments();
+
     /* The code is now complete and final; it should not change after this. */
 }
 
@@ -2348,7 +2351,8 @@ void CodeGen::genEmitMachineCode()
         printf("\n; Total bytes of code %d, prolog size %d, PerfScore %.2f, instruction count %d, allocated bytes for "
                "code %d (MethodHash=%08x) for "
                "method %s\n",
-               codeSize, prologSize, compiler->info.compPerfScore, instrCount, GetEmitter()->emitTotalHotCodeSize,
+               codeSize, prologSize, compiler->info.compPerfScore, instrCount,
+               GetEmitter()->emitTotalHotCodeSize + GetEmitter()->emitTotalColdCodeSize,
                compiler->info.compMethodHash(), compiler->info.compFullName);
         printf("; ============================================================\n\n");
         printf(""); // in our logic this causes a flush
