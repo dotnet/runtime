@@ -54,53 +54,26 @@ namespace InteropLib
             ManagedObjectWrapper::Destroy(wrapper);
         }
 
-        HRESULT IsActiveWrapper(_In_ IUnknown* wrapperMaybe) noexcept
+        HRESULT IsWrapperRooted(_In_ IUnknown* wrapperMaybe) noexcept
         {
             ManagedObjectWrapper* wrapper = ManagedObjectWrapper::MapFromIUnknown(wrapperMaybe);
             if (wrapper == nullptr)
                 return E_INVALIDARG;
 
-            ULONG count = wrapper->IsActiveAddRef();
-            if (count == 1 || wrapper->Target == nullptr)
-            {
-                // The wrapper isn't active.
-                (void)wrapper->Release();
-                return S_FALSE;
-            }
-
-            return S_OK;
-        }
-
-        HRESULT ReactivateWrapper(_In_ IUnknown* wrapperMaybe, _In_ OBJECTHANDLE handle) noexcept
-        {
-            ManagedObjectWrapper* wrapper = ManagedObjectWrapper::MapFromIUnknown(wrapperMaybe);
-            if (wrapper == nullptr || handle == nullptr)
-                return E_INVALIDARG;
-
-            // Take an AddRef() as an indication of ownership.
-            (void)wrapper->AddRef();
-
-            // If setting this object handle fails, then the race
-            // was lost and we will cleanup the handle.
-            if (!wrapper->TrySetObjectHandle(handle))
-                InteropLibImports::DeleteObjectInstanceHandle(handle);
-
-            return S_OK;
+            return wrapper->IsRooted() ? S_OK : S_FALSE;
         }
 
         HRESULT GetObjectForWrapper(_In_ IUnknown* wrapper, _Outptr_result_maybenull_ OBJECTHANDLE* object) noexcept
         {
-            if (object == nullptr)
-                return E_POINTER;
-
+            _ASSERTE(wrapper != nullptr && object != nullptr);
             *object = nullptr;
 
-            HRESULT hr = IsActiveWrapper(wrapper);
-            if (hr != S_OK)
-                return hr;
-
+            // Attempt to get the managed object wrapper.
             ManagedObjectWrapper *mow = ManagedObjectWrapper::MapFromIUnknown(wrapper);
-            _ASSERTE(mow != nullptr);
+            if (mow == nullptr)
+                return E_INVALIDARG;
+
+            (void)mow->AddRef();
 
             *object = mow->Target;
             return S_OK;
@@ -125,8 +98,43 @@ namespace InteropLib
             return wrapper->IsSet(CreateComInterfaceFlagsEx::IsComActivated) ? S_OK : S_FALSE;
         }
 
+        HRESULT GetIdentityForCreateWrapperForExternal(
+            _In_ IUnknown* external,
+            _In_ enum CreateObjectFlags flags,
+            _Outptr_ IUnknown** identity) noexcept
+        {
+            _ASSERTE(external != nullptr && identity != nullptr);
+
+            IUnknown* checkForIdentity = external;
+
+            // Check if the flags indicate we are creating
+            // an object for an external IReferenceTracker instance
+            // that we are aggregating with.
+            bool refTrackerInnerScenario = (flags & CreateObjectFlags_TrackerObject)
+                && (flags & CreateObjectFlags_Aggregated);
+
+            ComHolder<IReferenceTracker> trackerObject;
+            if (refTrackerInnerScenario)
+            {
+                // We are checking the supplied external value
+                // for IReferenceTracker since in .NET 5 this could
+                // actually be the inner and we want the true identity
+                // not the inner . This is a trick since the only way
+                // to get identity from an inner is through a non-IUnknown
+                // interface QI. Once we have the IReferenceTracker
+                // instance we can be sure the QI for IUnknown will really
+                // be the true identity.
+                HRESULT hr = external->QueryInterface(&trackerObject);
+                if (SUCCEEDED(hr))
+                    checkForIdentity = trackerObject.p;
+            }
+
+            return checkForIdentity->QueryInterface(identity);
+        }
+
         HRESULT CreateWrapperForExternal(
             _In_ IUnknown* external,
+            _In_opt_ IUnknown* inner,
             _In_ enum CreateObjectFlags flags,
             _In_ size_t contextSize,
             _Out_ ExternalWrapperResult* result) noexcept
@@ -136,10 +144,11 @@ namespace InteropLib
             HRESULT hr;
 
             NativeObjectWrapperContext* wrapperContext;
-            RETURN_IF_FAILED(NativeObjectWrapperContext::Create(external, flags, contextSize, &wrapperContext));
+            RETURN_IF_FAILED(NativeObjectWrapperContext::Create(external, inner, flags, contextSize, &wrapperContext));
 
             result->Context = wrapperContext->GetRuntimeContext();
             result->FromTrackerRuntime = (wrapperContext->GetReferenceTracker() != nullptr);
+            result->ManagedObjectWrapper = (ManagedObjectWrapper::MapFromIUnknown(external) != nullptr);
             return S_OK;
         }
 
@@ -149,17 +158,6 @@ namespace InteropLib
 
             // A caller should not be destroying a context without knowing if the context is valid.
             _ASSERTE(context != nullptr);
-
-            // Check if the tracker object manager should be informed prior to being destroyed.
-            IReferenceTracker* trackerMaybe = context->GetReferenceTracker();
-            if (trackerMaybe != nullptr)
-            {
-                // We only call this during a GC so ignore the failure as
-                // there is no way we can handle it at this point.
-                HRESULT hr = TrackerObjectManager::BeforeWrapperDestroyed(trackerMaybe);
-                _ASSERTE(SUCCEEDED(hr));
-                (void)hr;
-            }
 
             NativeObjectWrapperContext::Destroy(context);
         }
