@@ -2,7 +2,7 @@
 
 Before running tests, [build Mono](../../building/mono/README.md) using the desired configuration.
 
-## Running Runtime Tests
+## Runtime Tests
 * Build and run runtime tests against Mono JIT:
 
     * Build and run one specific runtime test. From the root directory run the following command:
