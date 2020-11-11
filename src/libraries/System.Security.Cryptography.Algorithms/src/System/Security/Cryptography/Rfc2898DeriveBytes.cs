@@ -28,7 +28,7 @@ namespace System.Security.Cryptography
         private int _endIndex;
 
         /// <summary>
-        /// Gets the hash algorithm used for byte derivation
+        /// Gets the hash algorithm used for byte derivation.
         /// </summary>
         public HashAlgorithmName HashAlgorithm { get; }
 
