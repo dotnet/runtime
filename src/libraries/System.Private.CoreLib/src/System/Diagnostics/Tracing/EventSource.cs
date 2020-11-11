@@ -4190,10 +4190,7 @@ namespace System.Diagnostics.Tracing
         internal static void DisposeOnShutdown()
 #endif
         {
-            if (!EventSource.IsSupported)
-            {
-                return;
-            }
+            Debug.Assert(EventSource.IsSupported);
 
             lock (EventListenersLock)
             {
