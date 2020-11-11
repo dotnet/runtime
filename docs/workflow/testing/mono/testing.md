@@ -30,7 +30,8 @@ The last few lines of the build log should contain something like this:
  src/tests/run.sh --coreOverlayDir=<repo_root>artifacts/tests/coreclr/Browser.wasm.Release/Tests/Core_Root --testNativeBinDir=<repo_root>/artifacts/obj/coreclr/Browser.wasm.Release/tests --testRootDir=<repo_root>/artifacts/tests/coreclr/Browser.wasm.Release --copyNativeTestBin Release
 --------------------------------------------------
 ```
-    * To run the tests, copy that command and add `wasm` at the end.
+
+Run that command, adding `wasm` to the end.
 
 * Build and run Runtime Tests for Android x64. From the root directory run the following command:
 ```
