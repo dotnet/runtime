@@ -16,8 +16,6 @@
              Link="System\Resources\Extensions\ResourceReader.cs" />
     <Compile Include="$(CoreLibSharedDir)System\Resources\ResourceTypeCode.cs"
              Link="System\Resources\ResourceTypeCode.cs" />
-    <Compile Include="$(CoreLibSharedDir)System\Resources\RuntimeResourceSet.cs"
-             Link="System\Resources\Extensions\RuntimeResourceSet.cs" />
     <Compile Include="BinaryReaderExtensions.cs" />
     <Compile Include="BinaryWriterExtensions.cs" />
     <Compile Include="System\Resources\Extensions\DeserializingResourceReader.cs" />
@@ -36,7 +34,7 @@
     <_packageTargetsFile>$(IntermediateOutputPath)$(AssemblyName).targets</_packageTargetsFile>
   </PropertyGroup>
 
-  <Target Name="GeneratePackageTargetsFile" 
+  <Target Name="GeneratePackageTargetsFile"
           Condition="'$(TargetFramework)' == 'net461'"
           Inputs="$(MSBuildAllProjects)"
           Outputs="$(_packageTargetsFile)"

@@ -790,8 +790,12 @@ namespace System.Resources
             // Read RuntimeResourceSet header
             // Do file version check
             int version = _store.ReadInt32();
-            if (version != RuntimeResourceSet.Version && version != 1)
-                throw new ArgumentException(SR.Format(SR.Arg_ResourceFileUnsupportedVersion, RuntimeResourceSet.Version, version));
+
+            // File format version number
+            const int CurrentVersion = 2;
+
+            if (version != CurrentVersion && version != 1)
+                throw new ArgumentException(SR.Format(SR.Arg_ResourceFileUnsupportedVersion, CurrentVersion, version));
             _version = version;
 
             _numResources = _store.ReadInt32();
