@@ -2676,11 +2676,19 @@ void emitter::emitLoopAlign()
  *  the x86 I-cache alignment rule is followed.
  */
 
-void emitter::emitVariableLoopAlign(unsigned alignmentBoundary)
+void emitter::emitVariableLoopAlign(unsigned short alignmentBoundary)
 {
-    unsigned nPaddingBytes    = alignmentBoundary - 1;
-    unsigned insAlignCount    = nPaddingBytes / 15;
-    unsigned lastInsAlignSize = nPaddingBytes % 15;
+    unsigned short nPaddingBytes    = alignmentBoundary - 1;
+    unsigned short nAlignInstr      = (nPaddingBytes + (15 - 1)) / 15;
+    unsigned short instrDescSize    = nAlignInstr * SMALL_IDSC_SIZE;
+    unsigned short insAlignCount    = nPaddingBytes / 15;
+    unsigned short lastInsAlignSize = nPaddingBytes % 15;
+
+    // Ensure that all align instructions fall in same IG.
+    if (emitCurIGfreeNext + instrDescSize >= emitCurIGfreeEndp)
+    {
+        emitForceNewIG = true;
+    }
 
     while (insAlignCount)
     {
@@ -12769,7 +12777,7 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
                             break;
                         }
 
-                        unsigned maxLoopSize         = emitComp->opts.compJitAlignLoopMaxCodeSize;
+                        unsigned short maxLoopSize   = emitComp->opts.compJitAlignLoopMaxCodeSize;
                         unsigned loopSize            = getLoopSize(ig->igNext, maxLoopSize);
                         unsigned minimumBlocksNeeded = (loopSize + alignmentBoundary - 1) / alignmentBoundary;
                         unsigned extraBytesNotInLoop = (alignmentBoundary * minimumBlocksNeeded) - loopSize;

@@ -4517,18 +4517,20 @@ void emitter::emitLoopAlignAdjustments()
 {
 #ifdef TARGET_XARCH
 
-    unsigned alignmentBoundary = emitComp->opts.compJitAlignLoopBoundary;
-    unsigned maxLoopSize = 0;
+    unsigned short maxPaddingAdded, alignmentBoundary = emitComp->opts.compJitAlignLoopBoundary;
+    unsigned       maxLoopSize = 0;
     if (emitComp->opts.compJitAlignLoopAdaptive)
     {
         // For adaptive, adjust the loop size depending on the alignment boundary
-        int maxBlocksAllowedForLoop = genLog2(alignmentBoundary) - 1;
+        int maxBlocksAllowedForLoop = genLog2((unsigned)alignmentBoundary) - 1;
         maxLoopSize                 = alignmentBoundary * maxBlocksAllowedForLoop;
+        maxPaddingAdded             = (alignmentBoundary >> 1) - 1;
     }
     else
     {
         // For non-adaptive, just take whatever is supplied using COMPlus_ variables
         maxLoopSize       = emitComp->opts.compJitAlignLoopMaxCodeSize;
+        maxPaddingAdded = alignmentBoundary - 1;
     }
 
     unsigned alignBytesRemoved = 0;
@@ -4544,9 +4546,11 @@ void emitter::emitLoopAlignAdjustments()
 
         if (getLoopSize(ig->igNext, maxLoopSize) > maxLoopSize)
         {
-            ig->igSize -= 15;
-            alignBytesRemoved += 15;
-            emitTotalCodeSize -= 15;
+            assert(ig->igSize >= maxPaddingAdded);
+
+            ig->igSize -= maxPaddingAdded;
+            alignBytesRemoved += maxPaddingAdded;
+            emitTotalCodeSize -= maxPaddingAdded;
 
             // Update the flags
             ig->igFlags |= IGF_UPD_ISZ;

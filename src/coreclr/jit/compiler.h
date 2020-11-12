@@ -9045,13 +9045,13 @@ public:
         bool compJitAlignLoopForJcc;             // If set, for non-adaptive alignment, ensure loop jmps are not on or
                                                  // cross alignment boundary.
 #endif
-        unsigned compJitAlignLoopMaxCodeSize; // For non-adaptive alignment, minimum loop size (in bytes) for which
+        unsigned short compJitAlignLoopMaxCodeSize; // For non-adaptive alignment, minimum loop size (in bytes) for which
                                               // alignment will be done.
 
-        unsigned compJitAlignLoopMinBlockWeight; // Minimum weight needed for the first block of a loop to make it a
+        unsigned short compJitAlignLoopMinBlockWeight; // Minimum weight needed for the first block of a loop to make it a
                                                  // candidate for alignment.
 
-        unsigned compJitAlignLoopBoundary; // For non-adaptive alignment, address boundary (power of 2) at which
+        unsigned short compJitAlignLoopBoundary; // For non-adaptive alignment, address boundary (power of 2) at which
                                            // loop alignment should be done. By default, 32B.
 
         bool compJitAlignLoopAdaptive; // If set, perform adaptive loop alignment that limits number of padding

@@ -2617,11 +2617,11 @@ void Compiler::compInitOptions(JitFlags* jitFlags)
 
 #ifdef DEBUG
     opts.compJitAlignLoopAdaptive       = JitConfig.JitAlignLoopAdaptive() == 1;
-    opts.compJitAlignLoopBoundary       = JitConfig.JitAlignLoopBoundary();
-    opts.compJitAlignLoopMinBlockWeight = JitConfig.JitAlignLoopMinBlockWeight();
+    opts.compJitAlignLoopBoundary       = (unsigned short) JitConfig.JitAlignLoopBoundary();
+    opts.compJitAlignLoopMinBlockWeight = (unsigned short) JitConfig.JitAlignLoopMinBlockWeight();
 
     opts.compJitAlignLoopForJcc         = JitConfig.JitAlignLoopForJcc() == 1;
-    opts.compJitAlignLoopMaxCodeSize    = JitConfig.JitAlignLoopMaxCodeSize();
+    opts.compJitAlignLoopMaxCodeSize    = (unsigned short) JitConfig.JitAlignLoopMaxCodeSize();
 #else
     opts.compJitAlignLoopAdaptive = true;
     opts.compJitAlignLoopMinBlockWeight = DEFAULT_ALIGN_LOOP_MIN_BLOCK_WEIGHT;
