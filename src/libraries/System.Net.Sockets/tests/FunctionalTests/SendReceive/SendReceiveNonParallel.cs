@@ -10,6 +10,7 @@ using Xunit.Abstractions;
 
 namespace System.Net.Sockets.Tests
 {
+    [Collection(nameof(NoParallelTests))]
     public abstract class SendReceiveNonParallel<T> : SocketTestHelperBase<T> where T : SocketHelperBase, new()
     {
         public SendReceiveNonParallel(ITestOutputHelper output) : base(output) { }
@@ -19,7 +20,7 @@ namespace System.Net.Sockets.Tests
             from b in new[] { false, true }
             select new object[] { addr[0], b };
 
-        [OuterLoop]
+        [OuterLoop("Serial execution of all variants takes long")]
         [Theory]
         [MemberData(nameof(LoopbackWithBool))]
         public async Task SendToRecvFrom_Datagram_UDP(IPAddress loopbackAddress, bool useClone)
