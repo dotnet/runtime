@@ -250,7 +250,6 @@
       <Compile Include="$(BclSourcesRoot)\System\Runtime\Loader\AssemblyLoadContext.Mono.cs" />
       <Compile Include="$(BclSourcesRoot)\System\Runtime\Remoting\Contexts\Context.cs" />
       <Compile Include="$(BclSourcesRoot)\System\Security\DynamicSecurityMethodAttribute.cs" />
-      <Compile Include="$(BclSourcesRoot)\System\Text\Utf8Span.cs" />
       <Compile Include="$(BclSourcesRoot)\System\Threading\Interlocked.Mono.cs" />
       <Compile Include="$(BclSourcesRoot)\System\Threading\Monitor.Mono.cs" />
       <Compile Include="$(BclSourcesRoot)\System\Threading\Overlapped.cs" />

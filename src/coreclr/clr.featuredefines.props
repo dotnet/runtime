@@ -38,7 +38,6 @@
 
     <!-- Features we're currently flighting, but don't intend to ship in officially supported releases -->
     <PropertyGroup Condition="'$(IsPrerelease)' == 'true'">
-        <FeatureUtf8String>true</FeatureUtf8String>
         <!-- FeatureXXX>true</FeatureXXX -->
     </PropertyGroup>
 
@@ -60,7 +59,6 @@
         <DefineConstants Condition="'$(FeatureTypeEquivalence)' == 'true'">$(DefineConstants);FEATURE_TYPEEQUIVALENCE</DefineConstants>
         <DefineConstants Condition="'$(FeatureBasicFreeze)' == 'true'">$(DefineConstants);FEATURE_BASICFREEZE</DefineConstants>
         <DefineConstants Condition="'$(FeaturePortableShuffleThunks)' == 'true'">$(DefineConstants);FEATURE_PORTABLE_SHUFFLE_THUNKS</DefineConstants>
-        <DefineConstants Condition="'$(FeatureUtf8String)' == 'true'">$(DefineConstants);FEATURE_UTF8STRING</DefineConstants>
 
         <DefineConstants Condition="'$(ProfilingSupportedBuild)' == 'true'">$(DefineConstants);PROFILING_SUPPORTED</DefineConstants>
         <DefineConstants Condition="'$(FeatureProfAttach)' == 'true'">$(DefineConstants);FEATURE_PROFAPI_ATTACH_DETACH</DefineConstants>
