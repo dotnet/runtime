@@ -23,9 +23,9 @@ namespace System.Xml.Serialization
 {
     internal class CodeGenerator
     {
-        internal static BindingFlags InstancePublicBindingFlags = BindingFlags.Instance | BindingFlags.Public;
-        internal static BindingFlags InstanceBindingFlags = BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic;
-        internal static BindingFlags StaticBindingFlags = BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic;
+        internal const BindingFlags InstancePublicBindingFlags = BindingFlags.Instance | BindingFlags.Public;
+        internal const BindingFlags InstanceBindingFlags = BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic;
+        internal const BindingFlags StaticBindingFlags = BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic;
         internal static MethodAttributes PublicMethodAttributes = MethodAttributes.Public | MethodAttributes.HideBySig;
         internal static MethodAttributes PublicOverrideMethodAttributes = MethodAttributes.Public | MethodAttributes.Virtual | MethodAttributes.HideBySig;
         internal static MethodAttributes ProtectedOverrideMethodAttributes = MethodAttributes.Family | MethodAttributes.Virtual | MethodAttributes.HideBySig;
@@ -1242,7 +1242,13 @@ namespace System.Xml.Serialization
         {
             return assemblyBuilder.DefineDynamicModule(name);
         }
-        internal static TypeBuilder CreateTypeBuilder(ModuleBuilder moduleBuilder, string name, TypeAttributes attributes, Type parent, Type[] interfaces)
+
+        internal static TypeBuilder CreateTypeBuilder(
+            ModuleBuilder moduleBuilder,
+            string name,
+            TypeAttributes attributes,
+            [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type parent,
+            Type[] interfaces)
         {
             // parent is nullable if no base class
             return moduleBuilder.DefineType(TempAssembly.GeneratedAssemblyNamespace + "." + name,
