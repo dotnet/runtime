@@ -2,7 +2,6 @@ include(clrfeatures.cmake)
 
 # Features we're currently flighting, but don't intend to ship in officially supported releases
 if (PRERELEASE)
-  add_definitions(-DFEATURE_UTF8STRING)
   # add_definitions(-DFEATURE_XXX)
 endif (PRERELEASE)
 
