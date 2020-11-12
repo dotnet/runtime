@@ -1,40 +1,10 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-//
 
 #pragma once
 
-#include "pal_compiler.h"
-
-#define FAIL 0
-#define SUCCESS 1
-#define EVP_MAX_MD_SIZE 64
-
-PALEXPORT int32_t CryptoNative_EnsureOpenSslInitialized(void);
-
-PALEXPORT int32_t CryptoNative_GetRandomBytes(uint8_t* buf, int32_t num);
-PALEXPORT int32_t CryptoNative_EvpMdSize(intptr_t md);
-PALEXPORT intptr_t CryptoNative_EvpMd5(void);
-PALEXPORT intptr_t CryptoNative_EvpSha1(void);
-PALEXPORT intptr_t CryptoNative_EvpSha256(void);
-PALEXPORT intptr_t CryptoNative_EvpSha384(void);
-PALEXPORT intptr_t CryptoNative_EvpSha512(void);
-PALEXPORT int32_t CryptoNative_GetMaxMdSize(void);
-PALEXPORT int32_t CryptoNative_EvpDigestOneShot(intptr_t type, void* source, int32_t sourceSize, uint8_t* md, uint32_t* mdSize);
-
-PALEXPORT void* CryptoNative_EvpMdCtxCreate(intptr_t type);
-PALEXPORT int32_t CryptoNative_EvpDigestReset(void* ctx, intptr_t type);
-PALEXPORT int32_t CryptoNative_EvpDigestUpdate(void* ctx, void* d, int32_t cnt);
-PALEXPORT int32_t CryptoNative_EvpDigestFinalEx(void* ctx, uint8_t* md, uint32_t* s);
-PALEXPORT int32_t CryptoNative_EvpDigestCurrent(void* ctx, uint8_t* md, uint32_t* s);
-PALEXPORT void CryptoNative_EvpMdCtxDestroy(void* ctx);
-
-PALEXPORT void* CryptoNative_HmacCreate(uint8_t* key, int32_t keyLen, intptr_t md);
-PALEXPORT int32_t CryptoNative_HmacReset(void* ctx);
-PALEXPORT int32_t CryptoNative_HmacUpdate(void* ctx, uint8_t* data, int32_t len);
-PALEXPORT int32_t CryptoNative_HmacFinal(void* ctx, uint8_t* md, int32_t* len);
-PALEXPORT int32_t CryptoNative_HmacCurrent(void* ctx, uint8_t* md, int32_t* len);
-PALEXPORT void CryptoNative_HmacDestroy(void* ctx);
+#include "pal_jni.h"
+#include "pal_evp.h"
 
 PALEXPORT void* CryptoNative_EvpCipherCreate2(intptr_t type, uint8_t* key, int32_t keyLength, int32_t effectiveKeyLength, uint8_t* iv, int32_t enc);
 PALEXPORT void* CryptoNative_EvpCipherCreatePartial(intptr_t type);
