@@ -30,7 +30,7 @@ namespace Microsoft.Extensions.Configuration.Xml
         /// <returns>The <see cref="IDictionary{String, String}"/> which was read from the stream.</returns>
         public static IDictionary<string, string> Read(Stream stream, XmlDocumentDecryptor decryptor)
         {
-            var data = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+            var configurationValues = new List<IXmlConfigurationValue>();
 
             var readerSettings = new XmlReaderSettings()
             {
@@ -42,13 +42,11 @@ namespace Microsoft.Extensions.Configuration.Xml
 
             using (XmlReader reader = decryptor.CreateDecryptingXmlReader(stream, readerSettings))
             {
-                var prefixStack = new Stack<string>();
+                // record all elements we encounter to check for repeated elements
+                var allElements = new List<XmlConfigurationElement>();
 
-                SkipUntilRootElement(reader);
-
-                // We process the root element individually since it doesn't contribute to prefix
-                ProcessAttributes(reader, prefixStack, data, AddNamePrefix);
-                ProcessAttributes(reader, prefixStack, data, AddAttributePair);
+                // keep track of the tree we followed to get where we are (breadcrumb style)
+                var currentPath = new Stack<XmlConfigurationElement>();
 
                 XmlNodeType preNodeType = reader.NodeType;
                 while (reader.Read())
@@ -56,43 +54,50 @@ namespace Microsoft.Extensions.Configuration.Xml
                     switch (reader.NodeType)
                     {
                         case XmlNodeType.Element:
-                            prefixStack.Push(reader.LocalName);
-                            ProcessAttributes(reader, prefixStack, data, AddNamePrefix);
-                            ProcessAttributes(reader, prefixStack, data, AddAttributePair);
+                            XmlConfigurationElement parent = currentPath.Any() ? currentPath.Peek() : null;
+
+                            var element = new XmlConfigurationElement(parent, reader.LocalName, GetName(reader), GetLineInfo(reader));
+
+                            // check if this element has appeared before
+                            XmlConfigurationElement sibling = allElements.Where(e => e.IsSibling(element)).OrderByDescending(e => e.Index).FirstOrDefault();
+                            if (sibling != null)
+                            {
+                                sibling.Multiple = element.Multiple = true;
+                                element.Index = sibling.Index + 1;
+                            }
+
+                            currentPath.Push(element);
+                            allElements.Add(element);
+
+                            ProcessAttributes(reader, currentPath, configurationValues);
 
                             // If current element is self-closing
                             if (reader.IsEmptyElement)
                             {
-                                prefixStack.Pop();
+                                currentPath.Pop();
                             }
                             break;
 
                         case XmlNodeType.EndElement:
-                            if (prefixStack.Any())
+                            if (currentPath.Any())
                             {
                                 // If this EndElement node comes right after an Element node,
                                 // it means there is no text/CDATA node in current element
                                 if (preNodeType == XmlNodeType.Element)
                                 {
-                                    string key = ConfigurationPath.Combine(prefixStack.Reverse());
-                                    data[key] = string.Empty;
+                                    var configurationValue = new XmlConfigurationElementContent(currentPath, string.Empty, GetLineInfo(reader));
+                                    configurationValues.Add(configurationValue);
                                 }
 
-                                prefixStack.Pop();
+                                currentPath.Pop();
                             }
                             break;
 
                         case XmlNodeType.CDATA:
                         case XmlNodeType.Text:
                             {
-                                string key = ConfigurationPath.Combine(prefixStack.Reverse());
-                                if (data.ContainsKey(key))
-                                {
-                                    throw new FormatException(SR.Format(SR.Error_KeyIsDuplicated, key,
-                                        GetLineInfo(reader)));
-                                }
-
-                                data[key] = reader.Value;
+                                var configurationValue = new XmlConfigurationElementContent(currentPath, reader.Value, GetLineInfo(reader));
+                                configurationValues.Add(configurationValue);
                                 break;
                             }
                         case XmlNodeType.XmlDeclaration:
@@ -107,6 +112,7 @@ namespace Microsoft.Extensions.Configuration.Xml
                                 GetLineInfo(reader)));
                     }
                     preNodeType = reader.NodeType;
+
                     // If this element is a self-closing element,
                     // we pretend that we just processed an EndElement node
                     // because a self-closing element contains an end within itself
@@ -117,6 +123,19 @@ namespace Microsoft.Extensions.Configuration.Xml
                     }
                 }
             }
+
+            var data = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+
+            foreach (var configurationValue in configurationValues)
+            {
+                var key = configurationValue.Key;
+                if (data.ContainsKey(key))
+                {
+                    throw new FormatException(SR.Format(SR.Error_KeyIsDuplicated, key, configurationValue.LineInfo));
+                }
+                data[key] = configurationValue.Value;
+            }
+
             return data;
         }
 
@@ -129,18 +148,6 @@ namespace Microsoft.Extensions.Configuration.Xml
             Data = Read(stream, XmlDocumentDecryptor.Instance);
         }
 
-        private static void SkipUntilRootElement(XmlReader reader)
-        {
-            while (reader.Read())
-            {
-                if (reader.NodeType != XmlNodeType.XmlDeclaration &&
-                    reader.NodeType != XmlNodeType.ProcessingInstruction)
-                {
-                    break;
-                }
-            }
-        }
-
         private static string GetLineInfo(XmlReader reader)
         {
             var lineInfo = reader as IXmlLineInfo;
@@ -148,8 +155,7 @@ namespace Microsoft.Extensions.Configuration.Xml
                 SR.Format(SR.Msg_LineInfo, lineInfo.LineNumber, lineInfo.LinePosition);
         }
 
-        private static void ProcessAttributes(XmlReader reader, Stack<string> prefixStack, IDictionary<string, string> data,
-            Action<XmlReader, Stack<string>, IDictionary<string, string>, XmlWriter> act, XmlWriter writer = null)
+        private static void ProcessAttributes(XmlReader reader, Stack<XmlConfigurationElement> elementPath, IList<IXmlConfigurationValue> data)
         {
             for (int i = 0; i < reader.AttributeCount; i++)
             {
@@ -161,7 +167,7 @@ namespace Microsoft.Extensions.Configuration.Xml
                     throw new FormatException(SR.Format(SR.Error_NamespaceIsNotSupported, GetLineInfo(reader)));
                 }
 
-                act(reader, prefixStack, data, writer);
+                data.Add(new XmlConfigurationElementAttributeValue(elementPath, reader.LocalName, reader.Value, GetLineInfo(reader)));
             }
 
             // Go back to the element containing the attributes we just processed
@@ -169,41 +175,30 @@ namespace Microsoft.Extensions.Configuration.Xml
         }
 
         // The special attribute "Name" only contributes to prefix
-        // This method adds a prefix if current node in reader represents a "Name" attribute
-        private static void AddNamePrefix(XmlReader reader, Stack<string> prefixStack,
-            IDictionary<string, string> data, XmlWriter writer)
+        // This method retrieves the Name of the element, if the attribute is present
+        // Unfortunately XmlReader.GetAttribute cannot be used, as it does not support looking for attributes in a case insensitive manner
+        private static string GetName(XmlReader reader)
         {
-            if (!string.Equals(reader.LocalName, NameAttributeKey, StringComparison.OrdinalIgnoreCase))
+            string name = null;
+
+            while (reader.MoveToNextAttribute())
             {
-                return;
+                if (string.Equals(reader.LocalName, NameAttributeKey, StringComparison.OrdinalIgnoreCase))
+                {
+                    // If there is a namespace attached to current attribute
+                    if (!string.IsNullOrEmpty(reader.NamespaceURI))
+                    {
+                        throw new FormatException(SR.Format(SR.Error_NamespaceIsNotSupported, GetLineInfo(reader)));
+                    }
+                    name = reader.Value;
+                    break;
+                }
             }
 
-            // If current element is not root element
-            if (prefixStack.Any())
-            {
-                string lastPrefix = prefixStack.Pop();
-                prefixStack.Push(ConfigurationPath.Combine(lastPrefix, reader.Value));
-            }
-            else
-            {
-                prefixStack.Push(reader.Value);
-            }
-        }
+            // Go back to the element containing the name we just processed
+            reader.MoveToElement();
 
-        // Common attributes contribute to key-value pairs
-        // This method adds a key-value pair if current node in reader represents a common attribute
-        private static void AddAttributePair(XmlReader reader, Stack<string> prefixStack,
-            IDictionary<string, string> data, XmlWriter writer)
-        {
-            prefixStack.Push(reader.LocalName);
-            string key = ConfigurationPath.Combine(prefixStack.Reverse());
-            if (data.ContainsKey(key))
-            {
-                throw new FormatException(SR.Format(SR.Error_KeyIsDuplicated, key, GetLineInfo(reader)));
-            }
-
-            data[key] = reader.Value;
-            prefixStack.Pop();
+            return name;
         }
     }
 }

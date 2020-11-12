@@ -20,6 +20,16 @@ namespace Microsoft.Extensions.Configuration.Xml.Test
             // Disabled test due to XML handling of empty section.
         }
 
+        public override void Load_from_single_provider_with_duplicates_throws()
+        {
+            AssertConfig(BuildConfigRoot(LoadThroughProvider(TestSection.DuplicatesTestConfig)));
+        }
+
+        public override void Load_from_single_provider_with_differing_case_duplicates_throws()
+        {
+            AssertConfig(BuildConfigRoot(LoadThroughProvider(TestSection.DuplicatesTestConfig)));
+        }
+
         public override void Has_debug_view()
         {
             var configRoot = BuildConfigRoot(LoadThroughProvider(TestSection.TestConfig));
