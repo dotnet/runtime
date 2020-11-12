@@ -113,11 +113,7 @@ namespace System.IO.Pipes
             {
                 return ReadAsync(buffer, offset, count, CancellationToken.None).GetAwaiter().GetResult();
             }
-#if NET5_0
-            CheckReadWriteArgs(buffer, offset, count);
-#else
             ValidateBufferArguments(buffer, offset, count);
-#endif
             if (!CanRead)
             {
                 throw Error.GetReadNotSupported();
@@ -145,11 +141,7 @@ namespace System.IO.Pipes
 
         public override Task<int> ReadAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
         {
-#if NET5_0
-            CheckReadWriteArgs(buffer, offset, count);
-#else
             ValidateBufferArguments(buffer, offset, count);
-#endif
             if (!CanRead)
             {
                 throw Error.GetReadNotSupported();
@@ -228,11 +220,7 @@ namespace System.IO.Pipes
                 return;
             }
 
-#if NET5_0
-            CheckReadWriteArgs(buffer, offset, count);
-#else
             ValidateBufferArguments(buffer, offset, count);
-#endif
             if (!CanWrite)
             {
                 throw Error.GetWriteNotSupported();
@@ -261,11 +249,7 @@ namespace System.IO.Pipes
 
         public override Task WriteAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
         {
-#if NET5_0
-            CheckReadWriteArgs(buffer, offset, count);
-#else
             ValidateBufferArguments(buffer, offset, count);
-#endif
             if (!CanWrite)
             {
                 throw Error.GetWriteNotSupported();
@@ -332,18 +316,6 @@ namespace System.IO.Pipes
                 TaskToApm.End(asyncResult);
             else
                 base.EndWrite(asyncResult);
-        }
-
-        private void CheckReadWriteArgs(byte[] buffer, int offset, int count)
-        {
-            if (buffer == null)
-                throw new ArgumentNullException(nameof(buffer), SR.ArgumentNull_Buffer);
-            if (offset < 0)
-                throw new ArgumentOutOfRangeException(nameof(offset), SR.ArgumentOutOfRange_NeedNonNegNum);
-            if (count < 0)
-                throw new ArgumentOutOfRangeException(nameof(count), SR.ArgumentOutOfRange_NeedNonNegNum);
-            if (buffer.Length - offset < count)
-                throw new ArgumentException(SR.Argument_InvalidOffLen);
         }
 
         [Conditional("DEBUG")]
