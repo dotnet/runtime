@@ -54,15 +54,24 @@ if (PRERELEASE)
     add_compile_options(-Werror)
 endif()
 
+if(STATIC_LIBS_ONLY)
+    set(STATIC_LIB_DESTINATION lib)
+    set(GEN_SHARED_LIB 0)
+else()
+    set(STATIC_LIB_DESTINATION .)
+    set(GEN_SHARED_LIB 1)
+endif()
+
 if(CLR_CMAKE_TARGET_BROWSER)
     # The emscripten build has additional warnings so -Werror breaks
     add_compile_options(-Wno-unused-parameter)
     add_compile_options(-Wno-unused-function)
     add_compile_options(-Wno-alloca)
     add_compile_options(-Wno-implicit-int-float-conversion)
-else()
-  set(GEN_SHARED_LIB 1)
-endif(CLR_CMAKE_TARGET_BROWSER)
+
+    set(GEN_SHARED_LIB 0)
+    set(STATIC_LIB_DESTINATION .)
+endif()
 
 if (CLR_CMAKE_TARGET_ARCH_AMD64)
     add_definitions(-DTARGET_64BIT=1)

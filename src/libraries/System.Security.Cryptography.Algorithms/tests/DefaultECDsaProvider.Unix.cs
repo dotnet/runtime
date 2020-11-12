@@ -57,7 +57,8 @@ internal static partial class Interop
     internal static partial class Crypto
     {
         [DllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_EcKeyCreateByOid")]
-        internal static extern System.IntPtr EcKeyCreateByOid(string oid);
+        private static extern System.IntPtr CryptoNative_EcKeyCreateByOid(string oid);
+        internal static System.IntPtr EcKeyCreateByOid(string oid) => CryptoNative_EcKeyCreateByOid(oid);
 
         [DllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_EcKeyDestroy")]
         internal static extern void EcKeyDestroy(System.IntPtr r);

@@ -116,6 +116,7 @@ if(CLR_CMAKE_TARGET_WIN32)
     set(CORECLR_LIBRARIES
         ${CORECLR_STATIC_LIB_LOCATION}/coreclr_static.lib
         ${CORECLR_STATIC_LIB_LOCATION}/System.Globalization.Native.lib
+        ${CORECLR_STATIC_LIB_LOCATION}/libclrcompression.lib
         kernel32.lib
         advapi32.lib
         ole32.lib
@@ -131,6 +132,7 @@ else()
     set(CORECLR_LIBRARIES
         ${CORECLR_STATIC_LIB_LOCATION}/libcoreclr_static.a
         ${CORECLR_STATIC_LIB_LOCATION}/libSystem.Globalization.Native.a
+        ${CORECLR_STATIC_LIB_LOCATION}/libSystem.IO.Compression.Native.a
         ${CORECLR_STATIC_LIB_LOCATION}/libpalrt.a
         ${CORECLR_STATIC_LIB_LOCATION}/libcoreclrpal.a
         ${CORECLR_STATIC_LIB_LOCATION}/libeventprovider.a
@@ -186,7 +188,6 @@ if(NOT CLR_CMAKE_TARGET_LINUX)
     )
 else()
     set(NATIVE_LIBS
-      ${NATIVE_LIBS_LOCATION}/libSystem.IO.Compression.Native.a
       ${NATIVE_LIBS_LOCATION}/libSystem.Native.a
       ${NATIVE_LIBS_LOCATION}/libSystem.Net.Security.Native.a
       ${NATIVE_LIBS_LOCATION}/libSystem.Security.Cryptography.Native.OpenSsl.a
@@ -265,7 +266,6 @@ target_link_libraries(singlefilehost
     ${ZLIB_LIBRARIES}
     ${LIBGSS}
     ${NATIVE_LIBS_EXTRA}
-
 )
 
 if(NOT FEATURE_DISTRO_AGNOSTIC_SSL)

@@ -52,6 +52,7 @@ if (NOT CLR_CMAKE_TARGET_BROWSER)
         ../../AnyOS/brotli/enc/metablock.c
         ../../AnyOS/brotli/enc/static_dict.c
         ../../AnyOS/brotli/enc/utf8_util.c
+        ../../AnyOS/System.IO.Compression.Native/entrypoints.c
     )
 
     # Disable implicit fallthrough warning for Brotli
@@ -78,4 +79,4 @@ add_library(System.IO.Compression.Native-Static
 
 set_target_properties(System.IO.Compression.Native-Static PROPERTIES OUTPUT_NAME System.IO.Compression.Native  CLEAN_DIRECT_OUTPUT 1)
 
-install (TARGETS System.IO.Compression.Native-Static DESTINATION .)
+install (TARGETS System.IO.Compression.Native-Static DESTINATION ${STATIC_LIB_DESTINATION})

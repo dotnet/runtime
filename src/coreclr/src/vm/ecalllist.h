@@ -1116,6 +1116,9 @@ FCClassElement("AssemblyExtensions", "System.Reflection.Metadata", gAssemblyExte
 FCClassElement("AssemblyLoadContext", "System.Runtime.Loader", gAssemblyLoadContextFuncs)
 
 FCClassElement("AssemblyName", "System.Reflection", gAssemblyNameFuncs)
+#ifndef CROSSGEN_COMPILE
+FCClassElement("Brotli", "", gEmbedded_Brotli)
+#endif
 FCClassElement("Buffer", "System", gBufferFuncs)
 FCClassElement("CLRConfig", "System", gClrConfig)
 FCClassElement("CastHelpers", "System.Runtime.CompilerServices", gCastHelpers)
@@ -1223,6 +1226,10 @@ FCClassElement("X86Base", "System.Runtime.Intrinsics.X86", gX86BaseFuncs)
 #if defined(FEATURE_EVENTSOURCE_XPLAT)
 FCClassElement("XplatEventLogger", "System.Diagnostics.Tracing", gEventLogger)
 #endif //defined(FEATURE_EVENTSOURCE_XPLAT)
+
+#ifndef CROSSGEN_COMPILE
+FCClassElement("zlib", "", gEmbedded_zlib)
+#endif
 
 #undef FCFuncElement
 #undef FCFuncElementSig

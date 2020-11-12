@@ -84,6 +84,23 @@ if (CLR_CMAKE_HOST_UNIX)
     set(LIB_UNWINDER unwinder_wks)
 endif (CLR_CMAKE_HOST_UNIX)
 
+if(CLR_CMAKE_HOST_WIN32)
+    set(COMPRESSION_LIB clrcompression-static)
+else()
+    set(COMPRESSION_LIB System.IO.Compression.Native-Static)
+
+    if (CLR_CMAKE_TARGET_BROWSER)
+        add_definitions(-s USE_ZLIB)
+    elseif (CLR_CMAKE_TARGET_ANDROID)
+        # need special case here since we want to link against libz.so but find_package() would resolve libz.a
+        set(ZLIB_LIBRARIES z)
+    elseif (CLR_CMAKE_TARGET_SUNOS)
+        set(ZLIB_LIBRARIES z m)
+    else ()
+        find_package(ZLIB REQUIRED)
+    endif ()
+endif()
+
 # IMPORTANT! Please do not rearrange the order of the libraries. The linker on Linux is
 # order dependent and changing the order can result in undefined symbols in the shared
 # library.
@@ -108,6 +125,8 @@ set(CORECLR_LIBRARIES
     utilcode
     v3binder
     System.Globalization.Native-Static
+    ${COMPRESSION_LIB}
+    ${ZLIB_LIBRARIES}
     interop
 )
 

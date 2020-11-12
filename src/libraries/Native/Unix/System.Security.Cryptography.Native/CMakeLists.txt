@@ -84,46 +84,54 @@ endif()
 
 add_library(objlib OBJECT ${NATIVECRYPTO_SOURCES} ${VERSION_FILE_PATH})
 
-add_library(System.Security.Cryptography.Native.OpenSsl
-    SHARED
-    $<TARGET_OBJECTS:objlib>
-)
+if (GEN_SHARED_LIB)
+    add_library(System.Security.Cryptography.Native.OpenSsl
+        SHARED
+        $<TARGET_OBJECTS:objlib>
+    )
+endif()
 
 add_library(System.Security.Cryptography.Native.OpenSsl-Static
     STATIC
     $<TARGET_OBJECTS:objlib>
+    entrypoints.c
 )
 
 set_target_properties(System.Security.Cryptography.Native.OpenSsl-Static PROPERTIES OUTPUT_NAME System.Security.Cryptography.Native.OpenSsl CLEAN_DIRECT_OUTPUT 1)
 
-if (FEATURE_DISTRO_AGNOSTIC_SSL)
-    # on macOS the link step fails with undefined symbols, and the script doesn't run.
-    # if the build succeeds, the script would succeed, except it uses a Linux-only command.
-    #
-    # on Linux, the build will succeed with undefined symbols, then the script reports them
-    # and fails the build for us.
-    if (NOT APPLE)
-        add_custom_command(TARGET System.Security.Cryptography.Native.OpenSsl POST_BUILD
-            COMMENT "Verifying System.Security.Cryptography.Native.OpenSsl.so dependencies"
-            COMMAND ${CMAKE_CURRENT_SOURCE_DIR}/../verify-so.sh
-                $<TARGET_FILE:System.Security.Cryptography.Native.OpenSsl>
-                "Verification failed. System.Security.Cryptography.Native.OpenSsl.so has undefined dependencies. These are likely OpenSSL APIs that need to be added to opensslshim.h"
-            VERBATIM
+if (GEN_SHARED_LIB)
+    if (FEATURE_DISTRO_AGNOSTIC_SSL)
+        # on macOS the link step fails with undefined symbols, and the script doesn't run.
+        # if the build succeeds, the script would succeed, except it uses a Linux-only command.
+        #
+        # on Linux, the build will succeed with undefined symbols, then the script reports them
+        # and fails the build for us.
+        if (NOT APPLE)
+            add_custom_command(TARGET System.Security.Cryptography.Native.OpenSsl POST_BUILD
+                COMMENT "Verifying System.Security.Cryptography.Native.OpenSsl.so dependencies"
+                COMMAND ${CMAKE_CURRENT_SOURCE_DIR}/../verify-so.sh
+                    $<TARGET_FILE:System.Security.Cryptography.Native.OpenSsl>
+                    "Verification failed. System.Security.Cryptography.Native.OpenSsl.so has undefined dependencies. These are likely OpenSSL APIs that need to be added to opensslshim.h"
+                VERBATIM
+            )
+        endif()
+
+        # Link with libdl.so to get the dlopen / dlsym / dlclose
+        target_link_libraries(System.Security.Cryptography.Native.OpenSsl
+          dl
+        )
+    else()
+        target_link_libraries(System.Security.Cryptography.Native.OpenSsl
+          ${OPENSSL_CRYPTO_LIBRARY}
+          ${OPENSSL_SSL_LIBRARY}
         )
     endif()
-
-    # Link with libdl.so to get the dlopen / dlsym / dlclose
-    target_link_libraries(System.Security.Cryptography.Native.OpenSsl
-      dl
-    )
-else()
-    target_link_libraries(System.Security.Cryptography.Native.OpenSsl
-      ${OPENSSL_CRYPTO_LIBRARY}
-      ${OPENSSL_SSL_LIBRARY}
-    )
 endif()
 
 include(configure.cmake)
 
-install_with_stripped_symbols (System.Security.Cryptography.Native.OpenSsl PROGRAMS .)
-install (TARGETS System.Security.Cryptography.Native.OpenSsl-Static DESTINATION .)
+if (GEN_SHARED_LIB)
+    install_with_stripped_symbols (System.Security.Cryptography.Native.OpenSsl PROGRAMS .)
+endif()
+
+install (TARGETS System.Security.Cryptography.Native.OpenSsl-Static DESTINATION ${STATIC_LIB_DESTINATION})

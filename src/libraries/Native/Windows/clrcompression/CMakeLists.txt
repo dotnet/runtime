@@ -5,7 +5,10 @@ if("${CMAKE_SOURCE_DIR}" STREQUAL "${CMAKE_BINARY_DIR}")
 endif()
 
 set(CMAKE_INCLUDE_CURRENT_DIR ON)
-include (GenerateExportHeader)
+
+if (GEN_SHARED_LIB)
+    include (GenerateExportHeader)
+endif()
 
 if($ENV{__BuildArch} STREQUAL x86 OR $ENV{__BuildArch} STREQUAL x64)
     set(NATIVECOMPRESSION_SOURCES
@@ -71,18 +74,21 @@ set (NATIVECOMPRESSION_SOURCES
     ../../AnyOS/brotli/enc/metablock.c
     ../../AnyOS/brotli/enc/static_dict.c
     ../../AnyOS/brotli/enc/utf8_util.c
-    clrcompression.def
+    ../../AnyOS/System.IO.Compression.Native/entrypoints.c
 )
 
 #Include Brotli include files
 include_directories("../../AnyOS/brotli/include")
 
-add_library(clrcompression
-    SHARED
-    ${NATIVECOMPRESSION_SOURCES}
-    # This will add versioning to the library
-    ${CMAKE_REPO_ROOT}/artifacts/obj/NativeVersion.rc
-)
+if (GEN_SHARED_LIB)
+    add_library(clrcompression
+        SHARED
+        ${NATIVECOMPRESSION_SOURCES}
+        clrcompression.def
+        # This will add versioning to the library
+        ${CMAKE_REPO_ROOT}/artifacts/obj/NativeVersion.rc
+    )
+endif()
 
 add_library(clrcompression-static
     STATIC
@@ -93,21 +99,28 @@ SET_TARGET_PROPERTIES(clrcompression-static PROPERTIES PREFIX "")
 SET_TARGET_PROPERTIES(clrcompression-static PROPERTIES OUTPUT_NAME libclrcompression)
 
 # Allow specification of arguments that should be passed to the linker
-SET_TARGET_PROPERTIES(clrcompression PROPERTIES LINK_OPTIONS "${__LinkArgs};${__SharedLinkArgs}")
+if (GEN_SHARED_LIB)
+    SET_TARGET_PROPERTIES(clrcompression PROPERTIES LINK_OPTIONS "${__LinkArgs};${__SharedLinkArgs}")
+endif()
 SET_TARGET_PROPERTIES(clrcompression-static PROPERTIES STATIC_LIBRARY_OPTIONS "${__LinkArgs}")
 
 # Allow specification of libraries that should be linked against
-target_link_libraries(clrcompression ${__LinkLibraries})
+if (GEN_SHARED_LIB)
+    target_link_libraries(clrcompression ${__LinkLibraries})
+endif()
 target_link_libraries(clrcompression-static ${__LinkLibraries})
 
-GENERATE_EXPORT_HEADER( clrcompression
-     BASE_NAME clrcompression
-     EXPORT_MACRO_NAME clrcompression_EXPORT
-     EXPORT_FILE_NAME clrcompression_Export.h
-     STATIC_DEFINE clrcompression_BUILT_AS_STATIC
-)
+if (GEN_SHARED_LIB)
+    GENERATE_EXPORT_HEADER( clrcompression
+         BASE_NAME clrcompression
+         EXPORT_MACRO_NAME clrcompression_EXPORT
+         EXPORT_FILE_NAME clrcompression_Export.h
+         STATIC_DEFINE clrcompression_BUILT_AS_STATIC
+    )
 
-install (TARGETS clrcompression DESTINATION .)
-install (TARGETS clrcompression-static DESTINATION .)
-install (FILES $<TARGET_PDB_FILE:clrcompression> DESTINATION .)
+    install (TARGETS clrcompression DESTINATION .)
+    install (FILES $<TARGET_PDB_FILE:clrcompression> DESTINATION .)
+endif()
+
+install (TARGETS clrcompression-static DESTINATION ${STATIC_LIB_DESTINATION})
 

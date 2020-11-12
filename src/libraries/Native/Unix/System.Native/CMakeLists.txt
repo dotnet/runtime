@@ -76,6 +76,7 @@ endif ()
 add_library(System.Native-Static
     STATIC
     ${NATIVE_SOURCES}
+    entrypoints.c
 )
 
 if (CLR_CMAKE_TARGET_IOS OR CLR_CMAKE_TARGET_TVOS)
@@ -84,4 +85,4 @@ endif ()
 
 set_target_properties(System.Native-Static PROPERTIES OUTPUT_NAME System.Native CLEAN_DIRECT_OUTPUT 1)
 
-install (TARGETS System.Native-Static DESTINATION .)
+install (TARGETS System.Native-Static DESTINATION ${STATIC_LIB_DESTINATION})
