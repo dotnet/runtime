@@ -637,19 +637,22 @@ namespace System.Collections.Concurrent
         /// </summary>
         public void Clear()
         {
-            int locksAcquired = 0;
-            try
+            if (!IsEmpty)
             {
-                AcquireAllLocks(ref locksAcquired);
+                int locksAcquired = 0;
+                try
+                {
+                    AcquireAllLocks(ref locksAcquired);
 
-                Tables tables = _tables;
-                var newTables = new Tables(new Node[DefaultCapacity], tables._locks, new int[tables._countPerLock.Length]);
-                _tables = newTables;
-                _budget = Math.Max(1, newTables._buckets.Length / newTables._locks.Length);
-            }
-            finally
-            {
-                ReleaseLocks(0, locksAcquired);
+                    Tables tables = _tables;
+                    var newTables = new Tables(new Node[DefaultCapacity], tables._locks, new int[tables._countPerLock.Length]);
+                    _tables = newTables;
+                    _budget = Math.Max(1, newTables._buckets.Length / newTables._locks.Length);
+                }
+                finally
+                {
+                    ReleaseLocks(0, locksAcquired);
+                }
             }
         }
 
