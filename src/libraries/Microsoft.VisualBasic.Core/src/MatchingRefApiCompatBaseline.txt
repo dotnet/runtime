@@ -21,3 +21,15 @@ TypesMustExist : Type 'Microsoft.VisualBasic.CompilerServices.SiteDelegate4' doe
 TypesMustExist : Type 'Microsoft.VisualBasic.CompilerServices.SiteDelegate5' does not exist in the reference but it does exist in the implementation.
 TypesMustExist : Type 'Microsoft.VisualBasic.CompilerServices.SiteDelegate6' does not exist in the reference but it does exist in the implementation.
 TypesMustExist : Type 'Microsoft.VisualBasic.CompilerServices.SiteDelegate7' does not exist in the reference but it does exist in the implementation.
+
+# C# doesn't permit setting the parameter name of the setter.
+ParameterNamesCannotChange : Parameter name on member 'Microsoft.VisualBasic.ComClassAttribute.InterfaceShadows.set(System.Boolean)' is 'value' in the reference but 'AutoPropertyValue' in the implementation.
+ParameterNamesCannotChange : Parameter name on member 'Microsoft.VisualBasic.DateAndTime.DateString.set(System.String)' is 'value' in the reference but 'Value' in the implementation.
+ParameterNamesCannotChange : Parameter name on member 'Microsoft.VisualBasic.DateAndTime.TimeOfDay.set(System.DateTime)' is 'value' in the reference but 'Value' in the implementation.
+ParameterNamesCannotChange : Parameter name on member 'Microsoft.VisualBasic.DateAndTime.TimeString.set(System.String)' is 'value' in the reference but 'Value' in the implementation.
+ParameterNamesCannotChange : Parameter name on member 'Microsoft.VisualBasic.DateAndTime.Today.set(System.DateTime)' is 'value' in the reference but 'Value' in the implementation.
+ParameterNamesCannotChange : Parameter name on member 'Microsoft.VisualBasic.ErrObject.Description.set(System.String)' is 'value' in the reference but 'Value' in the implementation.
+ParameterNamesCannotChange : Parameter name on member 'Microsoft.VisualBasic.ErrObject.HelpContext.set(System.Int32)' is 'value' in the reference but 'Value' in the implementation.
+ParameterNamesCannotChange : Parameter name on member 'Microsoft.VisualBasic.ErrObject.HelpFile.set(System.String)' is 'value' in the reference but 'Value' in the implementation.
+ParameterNamesCannotChange : Parameter name on member 'Microsoft.VisualBasic.ErrObject.Number.set(System.Int32)' is 'value' in the reference but 'Value' in the implementation.
+ParameterNamesCannotChange : Parameter name on member 'Microsoft.VisualBasic.ErrObject.Source.set(System.String)' is 'value' in the reference but 'Value' in the implementation.

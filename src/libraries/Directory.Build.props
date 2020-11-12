@@ -84,6 +84,7 @@
   <PropertyGroup>
     <RunApiCompatForSrc>$(IsSourceProject)</RunApiCompatForSrc>
     <RunMatchingRefApiCompat>$(IsSourceProject)</RunMatchingRefApiCompat>
+    <ApiCompatEnforceOptionalRules>true</ApiCompatEnforceOptionalRules>
     <ApiCompatExcludeAttributeList>$(RepositoryEngineeringDir)DefaultGenApiDocIds.txt,$(RepositoryEngineeringDir)ApiCompatExcludeAttributes.txt</ApiCompatExcludeAttributeList>
   </PropertyGroup>
 
