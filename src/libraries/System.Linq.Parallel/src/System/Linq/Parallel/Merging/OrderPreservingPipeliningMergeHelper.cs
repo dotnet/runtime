@@ -146,6 +146,7 @@ namespace System.Linq.Parallel
         //-----------------------------------------------------------------------------------
         // Schedules execution of the merge itself.
         //
+
         [UnsupportedOSPlatform("browser")]
         void IMergeHelper<TOutput>.Execute()
         {

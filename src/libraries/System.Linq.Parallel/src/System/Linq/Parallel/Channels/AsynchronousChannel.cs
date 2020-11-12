@@ -198,6 +198,7 @@ namespace System.Linq.Parallel
         //-----------------------------------------------------------------------------------
         // Used by a producer to flush out any internal buffers that have been accumulating
         // data, but which hasn't yet been published to the consumer.
+
         [UnsupportedOSPlatform("browser")]
         internal void FlushBuffers()
         {
@@ -253,6 +254,7 @@ namespace System.Linq.Parallel
         //     This API will block until the buffer is non-full. This internally buffers
         //     elements up into chunks, so elements are not immediately available to consumers.
         //
+
         [UnsupportedOSPlatform("browser")]
         internal void Enqueue(T item)
         {
@@ -284,6 +286,7 @@ namespace System.Linq.Parallel
         //     elements; if the chunk wasn't filled, it should be trimmed to size before
         //     enqueueing it for consumers to observe.
         //
+
         [UnsupportedOSPlatform("browser")]
         private void EnqueueChunk(T[] chunk)
         {
@@ -322,6 +325,7 @@ namespace System.Linq.Parallel
         //-----------------------------------------------------------------------------------
         // Just waits until the queue is non-full.
         //
+
         [UnsupportedOSPlatform("browser")]
         private void WaitUntilNonFull()
         {
@@ -373,6 +377,7 @@ namespace System.Linq.Parallel
         // Notes:
         //     This API can block if the channel is currently full.
         //
+
         [UnsupportedOSPlatform("browser")]
         private void FlushCachedChunk()
         {

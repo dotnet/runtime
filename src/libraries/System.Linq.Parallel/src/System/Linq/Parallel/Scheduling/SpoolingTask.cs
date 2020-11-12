@@ -82,6 +82,7 @@ namespace System.Linq.Parallel
         //     channels        - the producer-consumer channels
         //     taskScheduler   - the task manager on which to execute
         //
+
         [UnsupportedOSPlatform("browser")]
         internal static void SpoolPipeline<TInputOutput, TIgnoreKey>(
             QueryTaskGroupState groupState, PartitionedStream<TInputOutput, TIgnoreKey> partitions,

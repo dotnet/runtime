@@ -95,6 +95,7 @@ namespace System.Linq.Parallel
         // Arguments:
         //    ordinalIndexState - the state of the ordinal index of the merged partitions
         //
+
         [UnsupportedOSPlatform("browser")]
         void IMergeHelper<TInputOutput>.Execute()
         {
