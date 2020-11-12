@@ -95,7 +95,7 @@ struct RCW
         // unused               = 0x04,
         CF_NeedUniqueObject     = 0x08, // always create a new RCW/object even if we have one cached already
         // unused               = 0x10,
-        CF_DetectDCOMProxy      = 0x20, // attempt to determine if the RCW is for a DCOM proxy
+        // unused               = 0x20,
     };
 
     static CreationFlags CreationFlagsFromObjForComIPFlags(ObjFromComIP::flags flags);
@@ -301,13 +301,6 @@ struct RCW
         return m_cbRefCount;
     }
 
-    void GetCachedInterfaceTypes(BOOL bIInspectableOnly,
-                        SArray<PTR_MethodTable> * rgItfTables)
-    {
-        LIMITED_METHOD_DAC_CONTRACT;
-
-    }
-
     void GetCachedInterfacePointers(BOOL bIInspectableOnly,
                         SArray<TADDR> * rgItfPtrs)
     {
@@ -380,15 +373,6 @@ struct RCW
         LIMITED_METHOD_DAC_CONTRACT;
 
         return (m_Flags.m_MarshalingType == MarshalingType_FreeThreaded) ;
-    }
-
-    //
-    // Is this COM object a DCOM Proxy? (For WinRT the RCW must have been created with CF_DetectDCOMProxy)
-    //
-    bool IsDCOMProxy()
-    {
-        LIMITED_METHOD_DAC_CONTRACT;
-        return m_Flags.m_fIsDCOMProxy == 1;
     }
 
     //
@@ -584,8 +568,6 @@ public:
             DWORD       m_MarshalingType:2;        // MarshalingBehavior of the COM object.
 
             DWORD       m_Detached:1;              // set if the RCW was found dead during GC
-
-            DWORD       m_fIsDCOMProxy:1;          // Is the object a proxy to a remote process
         };
     }
     m_Flags;

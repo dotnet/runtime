@@ -39,7 +39,6 @@ COMInterfaceMarshaler::COMInterfaceMarshaler()
     m_pUnknown = NULL;
     m_pIdentity = NULL;
     m_flags = RCW::CF_None;
-    m_pCallback = NULL;
     m_pThread = NULL;
 }
 
@@ -88,42 +87,6 @@ VOID COMInterfaceMarshaler::Init(IUnknown* pUnk, MethodTable* pClassMT, Thread *
     m_pThread = pThread;
 
     m_flags = flags;
-}
-
-//--------------------------------------------------------------------------------
-// VOID COMInterfaceMarshaler::InitializeObjectClass()
-//--------------------------------------------------------------------------------
-VOID COMInterfaceMarshaler::InitializeObjectClass(IUnknown *pIncomingIP)
-{
-    CONTRACTL
-    {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_ANY;
-    }
-    CONTRACTL_END;
-
-    if (m_typeHandle.IsNull())
-    {
-        EX_TRY
-        {
-            m_typeHandle = GetClassFromIProvideClassInfo(m_pUnknown);
-
-            if (!m_typeHandle.IsNull() && !m_typeHandle.IsComObjectType())
-            {
-                m_typeHandle = TypeHandle();  // Clear the existing one.
-            }
-        }
-        EX_CATCH
-        {
-        }
-        EX_END_CATCH(RethrowTerminalExceptions);
-        if(!m_typeHandle.IsNull())
-            return;
-    }
-
-    if (m_typeHandle.IsNull())
-        m_typeHandle = TypeHandle(g_pBaseCOMObject);
 }
 
 //--------------------------------------------------------------------------------
@@ -276,20 +239,6 @@ void COMInterfaceMarshaler::CreateObjectRef(BOOL fDuplicate, OBJECTREF *pComObj,
             // a different object!
             BOOL fInsertAsDuplicateWrapper = fExisting;
 
-            if (!fInsertAsDuplicateWrapper)
-            {
-                // Shall we use the RCW that is already in the cache?
-                if (m_pCallback && !m_pCallback->ShouldUseThisRCW(pRCW.GetRawRCWUnsafe()))
-                {
-                    // No - let's insert our wrapper as a duplicate instead
-                    fInsertAsDuplicateWrapper = TRUE;
-
-                    // Initialize pRCW again and make sure sure pRCW is indeed our new wrapper
-                    pRCW.UnInit();
-                    pRCW.InitNoCheck(pNewRCW);
-                }
-            }
-
             if (fInsertAsDuplicateWrapper)
             {
                 // we need to keep this wrapper separate so we'll insert it with the alternate identity
@@ -301,16 +250,9 @@ void COMInterfaceMarshaler::CreateObjectRef(BOOL fDuplicate, OBJECTREF *pComObj,
                 _ASSERTE(fInserted);
 
                 pNewRCW.SuppressRelease();
-
-                if (m_pCallback)
-                    m_pCallback->OnRCWCreated(pRCW.GetRawRCWUnsafe());
             }
             else
             {
-                // Somebody beat us in creating the wrapper. Let's use that
-                if (m_pCallback)
-                    m_pCallback->OnRCWCacheHit(pRCW.GetRawRCWUnsafe());
-
                 // grab the new object
                 *pComObj = (OBJECTREF)pRCW->GetExposedObject();
             }
@@ -319,9 +261,6 @@ void COMInterfaceMarshaler::CreateObjectRef(BOOL fDuplicate, OBJECTREF *pComObj,
         {
             // If we did insert this wrapper in the table, make sure we don't delete it.
             pNewRCW.SuppressRelease();
-
-            if (m_pCallback)
-                m_pCallback->OnRCWCreated(pRCW.GetRawRCWUnsafe());
         }
     }
 
@@ -398,17 +337,7 @@ OBJECTREF COMInterfaceMarshaler::FindOrCreateObjectRefInternal(IUnknown **ppInco
                 &pRCW);
             if (!pRCW.IsNull())
             {
-                bool bShouldUseThisRCW = true;
-
-                if (m_pCallback)
-                    bShouldUseThisRCW = m_pCallback->ShouldUseThisRCW(pRCW.GetRawRCWUnsafe());
-
-                if (bShouldUseThisRCW)
-                {
-                    oref = (OBJECTREF)pRCW->GetExposedObject();
-                    if (m_pCallback)
-                        m_pCallback->OnRCWCacheHit(pRCW.GetRawRCWUnsafe());
-                }
+                oref = (OBJECTREF)pRCW->GetExposedObject();
             }
         }
 
@@ -457,6 +386,28 @@ VOID COMInterfaceMarshaler::InitializeExistingComObject(OBJECTREF *pComObj, IUnk
 }
 
 //--------------------------------------------------------------------------------
+// VOID COMInterfaceMarshaler::InitializeObjectClass()
+//--------------------------------------------------------------------------------
+VOID COMInterfaceMarshaler::InitializeObjectClass(IUnknown *pIncomingIP)
+{
+    CONTRACTL
+    {
+        NOTHROW;
+        GC_NOTRIGGER;
+        MODE_ANY;
+    }
+    CONTRACTL_END;
+
+    // If the marshaller's type handle is null, compute what it should be.
+    if (m_typeHandle.IsNull())
+    {
+        // We no longer support the mapping from ITypeInfo to Type (i.e. MethodTable*).
+        // This was previously provided by IProvideClassinfo. If the type handle isn't
+        // set fallback to the opaque __ComObject type.
+        m_typeHandle = TypeHandle(g_pBaseCOMObject);
+    }
+}
+
 // VOID EnsureCOMInterfacesSupported(OBJECTREF oref, MethodTable* pClassMT)
 // Make sure the oref supports all the COM interfaces in the class
 VOID COMInterfaceMarshaler::EnsureCOMInterfacesSupported(OBJECTREF oref, MethodTable* pClassMT)
