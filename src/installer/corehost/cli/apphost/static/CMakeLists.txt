@@ -138,6 +138,18 @@ else()
         ${CORECLR_STATIC_LIB_LOCATION}/libeventprovider.a
         ${CORECLR_STATIC_LIB_LOCATION}/libnativeresourcestring.a
     )
+
+    # additional requirements for System.IO.Compression.Native
+    if (CLR_CMAKE_TARGET_BROWSER)
+        add_definitions(-s USE_ZLIB)
+    elseif (CLR_CMAKE_TARGET_ANDROID)
+        # need special case here since we want to link against libz.so but find_package() would resolve libz.a
+        set(ZLIB_LIBRARIES z)
+    elseif (CLR_CMAKE_TARGET_SUNOS)
+        set(ZLIB_LIBRARIES z m)
+    else ()
+        find_package(ZLIB REQUIRED)
+    endif ()
 endif()
 
 if(CLR_CMAKE_TARGET_OSX)
@@ -192,16 +204,6 @@ else()
       ${NATIVE_LIBS_LOCATION}/libSystem.Net.Security.Native.a
       ${NATIVE_LIBS_LOCATION}/libSystem.Security.Cryptography.Native.OpenSsl.a
     )
-
-    find_package(ZLIB REQUIRED)
-
-    # Additional requirements for System.System.IO.Compression.Native
-    #
-    # if (CLR_CMAKE_TARGET_SUNOS)
-    #     set(ZLIB_LIBRARIES z m)
-    # elseif (CLR_CMAKE_TARGET_UNIX)
-    #     find_package(ZLIB REQUIRED)
-    # endif ()
 
     # Additional requirements for System.Net.Security.Native
     if (HAVE_GSSFW_HEADERS)
