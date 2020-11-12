@@ -10,7 +10,7 @@ using System.Text;
 
 using Microsoft.DiaSymReader;
 
-namespace ILCompiler.PdbWriter
+namespace ILCompiler.Diagnostics
 {
     // NGEN always generates PDBs with public symbols lists (so tools can map IP ranges to
     // methods).  This bitmask indicates what extra info should be added to the PDB
@@ -22,20 +22,6 @@ namespace ILCompiler.PdbWriter
         // allow tools to map IP ranges to source lines.
         kPDBLines  = 0x00000001,
     };
-
-    struct MethodInfo
-    {
-        public string AssemblyName;
-        public uint MethodToken;
-        public uint HotRVA;
-        public string Name;
-        public uint ColdRVA;
-    }
-
-    interface IModuleData
-    {
-        IEnumerable<MethodInfo> Methods { get; }
-    }
 
     public enum SymChecksumType : byte
     {
@@ -85,7 +71,7 @@ namespace ILCompiler.PdbWriter
         }
     }
 
-    class PdbWriter
+    public class PdbWriter
     {
         string _pdbPath;
         PDBExtraData _pdbExtraData;
