@@ -366,7 +366,7 @@ namespace System.Net.WebSockets
 
             MemoryStream? writtenBuffer = _writeBuffer;
             _writeBuffer = null;
-            
+
             if (writtenBuffer is not null)
             {
                 writtenBuffer.Write(buffer.Array!, buffer.Offset, buffer.Count);
