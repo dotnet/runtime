@@ -1669,6 +1669,14 @@ namespace ILCompiler.Reflection.ReadyToRun
                     builder.Append("NEW_MULTI_DIM_ARR__NON_VAR_ARG");
                     break;
 
+                case ReadyToRunHelper.MonitorEnter:
+                    builder.Append("MONITOR_ENTER");
+                    break;
+
+                case ReadyToRunHelper.MonitorExit:
+                    builder.Append("MONITOR_EXIT");
+                    break;
+
                 // Helpers used with generic handle lookup cases
                 case ReadyToRunHelper.NewObject:
                     builder.Append("NEW_OBJECT");
@@ -1879,9 +1887,7 @@ namespace ILCompiler.Reflection.ReadyToRun
                     break;
 
                 default:
-                    // TODO: Something is wrong with helper signature parsing
-                    builder.Append(string.Format("Unknown helper: {0:X2}", helperType));
-                    break;
+                    throw new BadImageFormatException();
             }
         }
 
