@@ -364,7 +364,7 @@ namespace System.Net.WebSockets
                 return Task.CompletedTask;
             }
 
-            MemoryStream writtenBuffer = _writeBuffer;
+            MemoryStream? writtenBuffer = _writeBuffer;
             _writeBuffer = null;
             
             if (writtenBuffer is not null)
