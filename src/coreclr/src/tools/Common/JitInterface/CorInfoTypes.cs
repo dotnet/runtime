@@ -1267,7 +1267,8 @@ namespace Internal.JitInterface
         CORJIT_FLAG_UNUSED4 = 10,
         CORJIT_FLAG_UNUSED5 = 11,
         CORJIT_FLAG_UNUSED6 = 12,
-        CORJIT_FLAG_UNUSED7 = 13,
+        CORJIT_FLAG_OSR = 13, // Generate alternate version for On Stack Replacement
+        CORJIT_FLAG_ALT_JIT = 14, // JIT should consider itself an ALT_JIT
         CORJIT_FLAG_FEATURE_SIMD = 17,
         CORJIT_FLAG_MAKEFINALCODE = 18, // Use the final code generator, i.e., not the interpreter.
         CORJIT_FLAG_READYTORUN = 19, // Use version-resilient code generation
@@ -1294,7 +1295,6 @@ namespace Internal.JitInterface
         CORJIT_FLAG_TIER1 = 40, // This is the final tier (for now) for tiered compilation which should generate high quality code
         CORJIT_FLAG_RELATIVE_CODE_RELOCS = 41, // JIT should generate PC-relative address computations instead of EE relocation records
         CORJIT_FLAG_NO_INLINING = 42, // JIT should not inline any called method into this method
-        CORJIT_FLAG_ALT_JIT = 43, // JIT should consider itself an ALT_JIT
     }
 
     public struct CORJIT_FLAGS

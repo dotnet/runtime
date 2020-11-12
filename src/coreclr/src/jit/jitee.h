@@ -39,7 +39,7 @@ public:
 
         JIT_FLAG_OSR                     = 13, // Generate alternate version for On Stack Replacement
 
-        JIT_FLAG_UNUSED7                 = 14,
+        JIT_FLAG_ALT_JIT                 = 14, // JIT should consider itself an ALT_JIT
         JIT_FLAG_UNUSED8                 = 15,
         JIT_FLAG_UNUSED9                 = 16,
 
@@ -81,7 +81,6 @@ public:
 
         JIT_FLAG_NO_INLINING             = 42, // JIT should not inline any called method into this method
 
-        JIT_FLAG_ALT_JIT                 = 43, // JIT should consider itself an ALT_JIT
         JIT_FLAG_UNUSED14                = 43,
         JIT_FLAG_UNUSED15                = 44,
         JIT_FLAG_UNUSED16                = 45,
@@ -181,6 +180,8 @@ public:
 
 #endif
 
+        FLAGS_EQUAL(CORJIT_FLAGS::CORJIT_FLAG_ALT_JIT, JIT_FLAG_ALT_JIT);
+
 #if defined(TARGET_X86) || defined(TARGET_AMD64) || defined(TARGET_ARM64)
 
         FLAGS_EQUAL(CORJIT_FLAGS::CORJIT_FLAG_FEATURE_SIMD, JIT_FLAG_FEATURE_SIMD);
@@ -216,7 +217,6 @@ public:
 #endif // TARGET_ARM
 
         FLAGS_EQUAL(CORJIT_FLAGS::CORJIT_FLAG_NO_INLINING, JIT_FLAG_NO_INLINING);
-        FLAGS_EQUAL(CORJIT_FLAGS::CORJIT_FLAG_ALT_JIT, JIT_FLAG_ALT_JIT);
 #undef FLAGS_EQUAL
     }
 

@@ -12260,6 +12260,7 @@ CorJitResult invokeCompileMethodHelper(EEJitManager *jitMgr,
     {
         CORJIT_FLAGS altJitFlags = jitFlags;
         altJitFlags.Set(CORJIT_FLAGS::CORJIT_FLAG_ALT_JIT);
+        comp->setJitFlags(altJitFlags);
         ret = jitMgr->m_alternateJit->compileMethod( comp,
                                                      info,
                                                      CORJIT_FLAGS::CORJIT_FLAG_CALL_GETJITFLAGS,

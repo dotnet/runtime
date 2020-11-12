@@ -203,7 +203,6 @@ void notYetImplemented(const char* msg, const char* filename, unsigned line)
     }
 }
 
-
 /*****************************************************************************/
 LONG __JITfilter(PEXCEPTION_POINTERS pExceptionPointers, LPVOID lpvParam)
 {

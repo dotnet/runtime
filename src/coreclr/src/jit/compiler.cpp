@@ -2605,10 +2605,10 @@ void Compiler::compInitOptions(JitFlags* jitFlags)
         altJitVal = JitConfig.AltJit().list();
     }
 
-    if (opts.AltJitRequested)
+    if (opts.compAltJitRequested)
     {
-        // In release mode, you either get all methods or no methods. You must use "*" as the parameter, or we ignore it.
-        // You don't get to give a regular expression of methods to match.
+        // In release mode, you either get all methods or no methods. You must use "*" as the parameter, or we ignore
+        // it. You don't get to give a regular expression of methods to match.
         // (Partially, this is because we haven't computed and stored the method and class name except in debug, and it
         // might be expensive to do so.)
         if ((altJitVal != nullptr) && (strcmp(altJitVal, "*") == 0))
