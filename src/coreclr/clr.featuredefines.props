@@ -36,11 +36,6 @@
         <FeatureInstantiatingStubAsIL Condition="'$(Platform)' != 'x86'">true</FeatureInstantiatingStubAsIL>
     </PropertyGroup>
 
-    <!-- Features we're currently flighting, but don't intend to ship in officially supported releases -->
-    <PropertyGroup Condition="'$(IsPrerelease)' == 'true'">
-        <!-- FeatureXXX>true</FeatureXXX -->
-    </PropertyGroup>
-
     <PropertyGroup>
         <DefineConstants Condition="'$(FeatureArrayStubAsIL)' == 'true'">$(DefineConstants);FEATURE_ARRAYSTUB_AS_IL</DefineConstants>
         <DefineConstants Condition="'$(FeatureMulticastStubAsIL)' == 'true'">$(DefineConstants);FEATURE_MULTICASTSTUB_AS_IL</DefineConstants>
