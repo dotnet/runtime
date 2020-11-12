@@ -250,7 +250,7 @@ struct insGroup
     unsigned int   igFuncIdx; // Which function/funclet does this belong to? (Index into Compiler::compFuncInfos array.)
     unsigned short igFlags;   // see IGF_xxx below
     unsigned short igSize;    // # of bytes of code in this group
-    insGroup*      igLoopBackEdge;
+    insGroup*      igLoopBackEdge; // Back-edge that points to the loop head.
 
 #define IGF_GC_VARS 0x0001    // new set of live GC ref variables
 #define IGF_BYREF_REGS 0x0002 // new set of live by-ref registers
@@ -265,7 +265,8 @@ struct insGroup
 #define IGF_PLACEHOLDER 0x0100    // this is a placeholder group, to be filled in later
 #define IGF_EXTEND 0x0200         // this block is conceptually an extension of the previous block
                                   // and the emitter should continue to track GC info as if there was no new block.
-#define IGF_ALIGN_LOOP 0x0400
+#define IGF_ALIGN_LOOP 0x0400     // this group contains alignment instruction at the end because the next IG points
+                                  // to inner loop that needs alignment.
 
 // Mask of IGF_* flags that should be propagated to new blocks when they are created.
 // This allows prologs and epilogs to be any number of IGs, but still be
@@ -309,7 +310,6 @@ struct insGroup
 #endif
 
     unsigned char igInsCnt; // # of instructions  in this group
-                            // TODO: Add loopBackEdge?
 
 #endif // REGMASK_BITS
 

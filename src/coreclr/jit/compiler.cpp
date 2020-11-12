@@ -2626,9 +2626,14 @@ void Compiler::compInitOptions(JitFlags* jitFlags)
     assert(isPow2(opts.compJitAlignLoopBoundary));
 #else
     opts.compJitAlignLoopAdaptive = true;
-    opts.compJitAlignLoopBoundary = DEFAULT_ALIGN_LOOP_BOUNDARY;
     opts.compJitAlignLoopMinBlockWeight = DEFAULT_ALIGN_LOOP_MIN_BLOCK_WEIGHT;
 #endif
+
+    // Adaptive alignment works on 32B boundary
+    if (opts.compJitAlignLoopAdaptive)
+    {
+        opts.compJitAlignLoopBoundary = DEFAULT_ALIGN_LOOP_BOUNDARY;
+    }
 
 #if REGEN_SHORTCUTS || REGEN_CALLPAT
     // We never want to have debugging enabled when regenerating GC encoding patterns
@@ -3932,11 +3937,10 @@ _SetMinOpts:
         {
             codeGen->SetAlignLoops(false); // loop alignment not supported for prejitted code
 
-            // The zapper doesn't set JitFlags::JIT_FLAG_ALIGN_LOOPS, and there is
-            // no reason for it to set it as the JIT doesn't currently support loop alignment
-            // for prejitted images. (The JIT doesn't know the final address of the code, hence
+            // The JIT doesn't currently support loop alignment for prejitted images.
+            // (The JIT doesn't know the final address of the code, hence
             // it can't align code based on unknown addresses.)
-            assert(!opts.jitFlags->IsSet(JitFlags::JIT_FLAG_ALIGN_LOOPS));
+            assert(JitConfig.JitAlignLoops() == 0);
         }
         else
         {

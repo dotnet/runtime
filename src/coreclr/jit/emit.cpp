@@ -3649,14 +3649,11 @@ size_t emitter::emitIssue1Instr(insGroup* ig, instrDesc* id, BYTE** dp)
 
     UNATIVE_OFFSET csz = (UNATIVE_OFFSET)(*dp - curInsAdr);
 
-    if (
-#if defined(TARGET_XARCH)
-        (id->idIns() != INS_align) &&
-#endif
-        (csz != id->idCodeSize()))
+    if (csz != id->idCodeSize())
     {
-        /* It is fatal to under-estimate the instruction size */
-        noway_assert(id->idCodeSize() >= csz);
+        /* It is fatal to under-estimate the instruction size, except it was an alignment instruction */
+        noway_assert(id->idCodeSize() >= csz || (!emitComp->opts.compJitAlignLoopAdaptive && id->idIns() == INS_align &&
+                                                 emitComp->opts.compJitAlignLoopBoundary > 16));
 
 #if DEBUG_EMIT
         if (EMITVERBOSE)
@@ -3665,7 +3662,6 @@ size_t emitter::emitIssue1Instr(insGroup* ig, instrDesc* id, BYTE** dp)
         }
 #endif // DEBUG_EMIT
 
-        //assert(id->idCodeSize() == csz);
 
         /* The instruction size estimate wasn't accurate; remember this */
 
@@ -3684,11 +3680,7 @@ size_t emitter::emitIssue1Instr(insGroup* ig, instrDesc* id, BYTE** dp)
 
 #ifdef DEBUG
     /* Make sure the instruction descriptor size also matches our expectations */
-    if (
-#if defined(TARGET_XARCH)
-        (id->idIns() != INS_align) &&
-#endif
-        (is != emitSizeOfInsDsc(id)))
+    if (is != emitSizeOfInsDsc(id))
     {
         printf("%s at %u: Expected size = %u , actual size = %u\n", emitIfName(id->idInsFmt()),
                id->idDebugOnlyInfo()->idNum, is, emitSizeOfInsDsc(id));
@@ -4882,9 +4874,7 @@ unsigned emitter::emitEndCodeGen(Compiler* comp,
     // For x64/x86, align methods that are "optimizations enabled" to 32 byte boundaries if
     // they are larger than 16 bytes and contain a loop.
     //
-    if (
-        // emitComp->opts.jitFlags->IsSet(JitFlags::JIT_FLAG_TIER1) &&
-        emitComp->opts.OptimizationEnabled() && !emitComp->opts.jitFlags->IsSet(JitFlags::JIT_FLAG_PREJIT) &&
+    if (emitComp->opts.OptimizationEnabled() && !emitComp->opts.jitFlags->IsSet(JitFlags::JIT_FLAG_PREJIT) &&
         (emitTotalHotCodeSize > 16) && emitComp->fgHasLoops)
     {
         allocMemFlag = CORJIT_ALLOCMEM_FLG_32BYTE_ALIGN;

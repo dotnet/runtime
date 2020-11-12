@@ -776,7 +776,6 @@ void CodeGen::genCodeForBBlist()
 
             if ((compiler->opts.compJitAlignLoopBoundary > 16) && (!compiler->opts.compJitAlignLoopAdaptive))
             {
-                // TODO: Only do this if we are confident that the loop size doesn't exceed the heuristics threshold
                 GetEmitter()->emitVariableLoopAlign(compiler->opts.compJitAlignLoopBoundary);
             }
             else

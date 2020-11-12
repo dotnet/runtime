@@ -2910,15 +2910,8 @@ bool Compiler::optCanonicalizeLoop(unsigned char loopInd)
     {
         optLoopTable[loopInd].lpEntry = newT;
     }
-    // assert((optLoopTable[loopInd].lpFirst->bbFlags & BBF_FIRST_BLOCK_IN_INNERLOOP) == 0);
     optLoopTable[loopInd].lpTop   = newT;
     optLoopTable[loopInd].lpFirst = newT;
-    // Something to investigate
-    /*if ((optLoopTable[loopInd].lpFirst->bbFlags & BBF_FIRST_BLOCK_IN_INNERLOOP) != 0)
-    {
-        newT->bbFlags |= BBF_FIRST_BLOCK_IN_INNERLOOP;
-    }
-    newT->bbFlags |= (optLoopTable[loopInd].lpFirst->bbFlags & BBF_FIRST_BLOCK_IN_INNERLOOP);*/
 
     newT->bbNatLoopNum = loopInd;
 
