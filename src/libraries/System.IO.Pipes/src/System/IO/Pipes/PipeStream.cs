@@ -113,6 +113,7 @@ namespace System.IO.Pipes
             {
                 return ReadAsync(buffer, offset, count, CancellationToken.None).GetAwaiter().GetResult();
             }
+
             ValidateBufferArguments(buffer, offset, count);
             if (!CanRead)
             {
