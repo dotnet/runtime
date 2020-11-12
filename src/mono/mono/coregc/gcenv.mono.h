@@ -70,7 +70,7 @@ public:
 public:
     void InitializeFreeObject()
     {
-        gc_descr.m_baseSize = 3 * sizeof(void *);
+        gc_descr.m_baseSize = 4 * sizeof(void *);
         gc_descr.m_flags = MTFlag_HasComponentSize | MTFlag_IsArray;
         gc_descr.m_componentSize = 1;
     }
@@ -151,6 +151,7 @@ public:
 class Object
 {
     MethodTable * m_pMethTab;
+    void* sync_lock;
 
 public:
     ObjHeader * GetHeader()
@@ -173,7 +174,10 @@ public:
         m_pMethTab = pMT;
     }
 };
-#define MIN_OBJECT_SIZE     (3*sizeof(uint8_t*) + sizeof(ObjHeader))
+
+// CoreGC doesn't accept objects smaller than this, since it needs to replace them with array fill
+// vtable which contains header_ptr, vtable_ptr, sync_ptr and length
+#define MIN_OBJECT_SIZE     (4*sizeof(uint8_t*))
 
 class ArrayBase : public Object
 {
