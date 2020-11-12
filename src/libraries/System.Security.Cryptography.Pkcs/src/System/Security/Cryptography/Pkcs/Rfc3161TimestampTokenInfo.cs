@@ -37,6 +37,7 @@ namespace System.Security.Cryptography.Pkcs
         /// <param name="tsaName">The hint in the TSA name identification. The actual identification of the entity that signed the response will always occur through the use of the certificate identifier.</param>
         /// <param name="extensions">A collection of X509 extensions.</param>
         /// <remarks>If <paramref name="hashAlgorithmId" />, <paramref name="messageHash" />, <paramref name="policyId" /> or <paramref name="nonce" /> are present in the <see cref="Rfc3161TimestampRequest"/>, then the same value should be used. If <paramref name="accuracyInMicroseconds"/> is not provided, then the accuracy may be available through other means such as i.e. <paramref name="policyId" />.</remarks>
+        /// <exception cref="CryptographicException">ASN.1 corrupted data.</exception>
         public Rfc3161TimestampTokenInfo(
             Oid policyId,
             Oid hashAlgorithmId,
