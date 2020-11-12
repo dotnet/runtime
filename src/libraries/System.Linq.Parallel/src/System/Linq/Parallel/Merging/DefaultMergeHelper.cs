@@ -11,6 +11,7 @@ using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Diagnostics;
+using System.Runtime.Versioning;
 
 namespace System.Linq.Parallel
 {
@@ -94,7 +95,7 @@ namespace System.Linq.Parallel
         // Arguments:
         //    ordinalIndexState - the state of the ordinal index of the merged partitions
         //
-
+        [UnsupportedOSPlatform("browser")]
         void IMergeHelper<TInputOutput>.Execute()
         {
             if (_asyncChannels != null)

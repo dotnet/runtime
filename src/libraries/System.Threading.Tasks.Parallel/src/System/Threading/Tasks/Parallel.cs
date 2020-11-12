@@ -346,7 +346,9 @@ namespace System.Threading.Tasks
                     // threw an exception.  We let such exceptions go completely unhandled.
                     try
                     {
+#pragma warning disable CA1416 // Validate platform compatibility, proper handling needed
                         Task.WaitAll(tasks);
+#pragma warning restore CA1416
                     }
                     catch (AggregateException aggExp)
                     {

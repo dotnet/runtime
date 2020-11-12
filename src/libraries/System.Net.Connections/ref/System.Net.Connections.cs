@@ -71,7 +71,6 @@ namespace System.Net.Connections
     {
         bool TryGet(System.Type propertyKey, [System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] out object? property);
     }
-    [System.Runtime.Versioning.UnsupportedOSPlatform("browser")]
     public partial class SocketsConnectionFactory : System.Net.Connections.ConnectionFactory
     {
         public SocketsConnectionFactory(System.Net.Sockets.AddressFamily addressFamily, System.Net.Sockets.SocketType socketType, System.Net.Sockets.ProtocolType protocolType) { }

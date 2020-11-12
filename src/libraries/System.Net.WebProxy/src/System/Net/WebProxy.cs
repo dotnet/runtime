@@ -161,7 +161,7 @@ namespace System.Net
 
             string hostString = host.Host;
 
-#pragma warning disable CA1416 // Validate platform compatibility, TODO: its need browser specific implementation
+#pragma warning disable CA1416 // Validate platform compatibility, issue: https://github.com/dotnet/runtime/issues/43751
             if (IPAddress.TryParse(hostString, out IPAddress? hostAddress))
             {
                 return IPAddress.IsLoopback(hostAddress) || IsAddressLocal(hostAddress);

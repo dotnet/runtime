@@ -20,7 +20,9 @@ namespace System.Diagnostics.Tracing
     /// It does not calculate statistics like mean, standard deviation, etc. because it only accumulates
     /// the counter value.
     /// </summary>
+#if NETCOREAPP
     [UnsupportedOSPlatform("browser")]
+#endif
     public partial class IncrementingEventCounter : DiagnosticCounter
     {
         /// <summary>

@@ -10,6 +10,7 @@
 using System.Threading;
 using System.Threading.Tasks;
 using System.Diagnostics;
+using System.Runtime.Versioning;
 
 namespace System.Linq.Parallel
 {
@@ -81,7 +82,7 @@ namespace System.Linq.Parallel
         //     channels        - the producer-consumer channels
         //     taskScheduler   - the task manager on which to execute
         //
-
+        [UnsupportedOSPlatform("browser")]
         internal static void SpoolPipeline<TInputOutput, TIgnoreKey>(
             QueryTaskGroupState groupState, PartitionedStream<TInputOutput, TIgnoreKey> partitions,
             AsynchronousChannel<TInputOutput>[] channels, TaskScheduler taskScheduler)
@@ -285,6 +286,7 @@ namespace System.Linq.Parallel
         //     Source cannot be null, although the other arguments may be.
         //
 
+        [UnsupportedOSPlatform("browser")]
         internal PipelineSpoolingTask(
             int taskIndex, QueryTaskGroupState groupState,
             QueryOperatorEnumerator<TInputOutput, TIgnoreKey> source, AsynchronousChannel<TInputOutput> destination)
@@ -299,7 +301,7 @@ namespace System.Linq.Parallel
         // This method is responsible for enumerating results and enqueueing them to
         // the output channel(s) as appropriate.  Each base class implements its own.
         //
-
+        [UnsupportedOSPlatform("browser")]
         protected override void SpoolingWork()
         {
             // We just enumerate over the entire source data stream, placing each element

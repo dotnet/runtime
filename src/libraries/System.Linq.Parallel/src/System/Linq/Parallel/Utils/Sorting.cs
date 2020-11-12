@@ -13,6 +13,7 @@ using System;
 using System.Collections.Generic;
 using System.Threading;
 using System.Diagnostics;
+using System.Runtime.Versioning;
 
 namespace System.Linq.Parallel
 {
@@ -186,7 +187,7 @@ namespace System.Linq.Parallel
         //     parallel.  If they aren't Sort will end up waiting for certain events that
         //     will never happen -- i.e. we will deadlock.
         //
-
+        [UnsupportedOSPlatform("browser")]
         internal override TInputOutput[] Sort()
         {
             // Step 1.  Accumulate this partitions' worth of input.
@@ -356,7 +357,7 @@ namespace System.Linq.Parallel
         // two boundary).  We handle these, cases, but note that an overabundance of them will probably
         // negatively impact speedups.
         //
-
+        [UnsupportedOSPlatform("browser")]
         private void MergeSortCooperatively()
         {
             CancellationToken cancelToken = _groupState.CancellationState.MergedCancellationToken;

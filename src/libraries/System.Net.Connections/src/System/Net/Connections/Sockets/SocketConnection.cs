@@ -6,13 +6,11 @@ using System.IO;
 using System.IO.Pipelines;
 using System.Net.Sockets;
 using System.Runtime.ExceptionServices;
-using System.Runtime.Versioning;
 using System.Threading;
 using System.Threading.Tasks;
 
 namespace System.Net.Connections
 {
-    [UnsupportedOSPlatform("browser")]
     internal sealed class SocketConnection : Connection, IConnectionProperties
     {
         private readonly Socket _socket;

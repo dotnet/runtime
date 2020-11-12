@@ -3,6 +3,7 @@
 
 using System.Diagnostics;
 using System.Diagnostics.Tracing;
+using System.Runtime.Versioning;
 using System.Threading;
 
 namespace System.Net.Http
@@ -169,6 +170,7 @@ namespace System.Net.Http
         }
 
         [NonEvent]
+        [UnsupportedOSPlatform("browser")]
         public void Http11RequestLeftQueue(double timeOnQueueMilliseconds)
         {
             _http11RequestsQueueDurationCounter!.WriteMetric(timeOnQueueMilliseconds);
@@ -176,12 +178,14 @@ namespace System.Net.Http
         }
 
         [NonEvent]
+        [UnsupportedOSPlatform("browser")]
         public void Http20RequestLeftQueue(double timeOnQueueMilliseconds)
         {
             _http20RequestsQueueDurationCounter!.WriteMetric(timeOnQueueMilliseconds);
             RequestLeftQueue(timeOnQueueMilliseconds, versionMajor: 2, versionMinor: 0);
         }
 
+        [UnsupportedOSPlatform("browser")]
         protected override void OnEventCommand(EventCommandEventArgs command)
         {
             if (command.Command == EventCommand.Enable)

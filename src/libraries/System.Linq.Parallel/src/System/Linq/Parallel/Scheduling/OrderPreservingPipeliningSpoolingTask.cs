@@ -50,6 +50,7 @@ namespace System.Linq.Parallel
         /// <summary>
         /// Constructor
         /// </summary>
+        [UnsupportedOSPlatform("browser")]
         internal OrderPreservingPipeliningSpoolingTask(
             QueryOperatorEnumerator<TOutput, TKey> partition,
             QueryTaskGroupState taskGroupState,
@@ -143,6 +144,7 @@ namespace System.Linq.Parallel
         /// <summary>
         /// Creates and begins execution of a new set of spooling tasks.
         /// </summary>
+        [UnsupportedOSPlatform("browser")]
         public static void Spool(
             QueryTaskGroupState groupState, PartitionedStream<TOutput, TKey> partitions,
             bool[] consumerWaiting, bool[] producerWaiting, bool[] producerDone,

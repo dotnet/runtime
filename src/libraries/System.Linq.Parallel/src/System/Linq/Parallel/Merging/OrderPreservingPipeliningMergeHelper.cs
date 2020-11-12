@@ -10,6 +10,7 @@
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
+using System.Runtime.Versioning;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -145,7 +146,7 @@ namespace System.Linq.Parallel
         //-----------------------------------------------------------------------------------
         // Schedules execution of the merge itself.
         //
-
+        [UnsupportedOSPlatform("browser")]
         void IMergeHelper<TOutput>.Execute()
         {
             OrderPreservingPipeliningSpoolingTask<TOutput, TKey>.Spool(

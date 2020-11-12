@@ -66,6 +66,7 @@ namespace System.Diagnostics.Tracing
         /// If an EventCounter is not explicitly disposed it will be cleaned up automatically when the
         /// EventSource it is attached to dies.
         /// </summary>
+        [UnsupportedOSPlatform("browser")]
         public void Dispose()
         {
             if (_group != null)

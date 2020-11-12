@@ -15,13 +15,13 @@ namespace Microsoft.Diagnostics.Tracing
 namespace System.Diagnostics.Tracing
 #endif
 {
+    [UnsupportedOSPlatform("browser")]
     internal class CounterGroup
     {
         private readonly EventSource _eventSource;
         private readonly List<DiagnosticCounter> _counters;
         private static readonly object s_counterGroupLock = new object();
 
-        [UnsupportedOSPlatform("browser")]
         internal CounterGroup(EventSource eventSource)
         {
             _eventSource = eventSource;
@@ -41,15 +41,13 @@ namespace System.Diagnostics.Tracing
                 _counters.Remove(eventCounter);
         }
 
-        #region EventSource Command Processing
+#region EventSource Command Processing
 
-        [UnsupportedOSPlatform("browser")]
         private void RegisterCommandCallback()
         {
             _eventSource.EventCommandExecuted += OnEventSourceCommand;
         }
 
-        [UnsupportedOSPlatform("browser")]
         private void OnEventSourceCommand(object? sender, EventCommandEventArgs e)
         {
             if (e.Command == EventCommand.Enable || e.Command == EventCommand.Update)
@@ -97,7 +95,6 @@ namespace System.Diagnostics.Tracing
             }
         }
 
-        [UnsupportedOSPlatform("browser")]
         internal static CounterGroup GetCounterGroup(EventSource eventSource)
         {
             lock (s_counterGroupLock)
@@ -123,7 +120,6 @@ namespace System.Diagnostics.Tracing
         private int _pollingIntervalInMilliseconds;
         private DateTime _nextPollingTimeStamp;
 
-        [UnsupportedOSPlatform("browser")]
         private void EnableTimer(float pollingIntervalInSeconds)
         {
             Debug.Assert(Monitor.IsEntered(s_counterGroupLock));
@@ -182,7 +178,6 @@ namespace System.Diagnostics.Tracing
             s_counterGroupEnabledList?.Remove(this);
         }
 
-        [UnsupportedOSPlatform("browser")]
         private void ResetCounters()
         {
             lock (s_counterGroupLock) // Lock the CounterGroup

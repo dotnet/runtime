@@ -171,7 +171,9 @@ namespace System.Linq.Parallel
                 {
                     // We now need to wait at the barrier, in case some other threads aren't done.
                     // Once we wake up, we reset our index and will increment it immediately after.
+#pragma warning disable CA1416 // Validate platform compatibility, issue: https://github.com/dotnet/runtime/issues/43752
                     _barrier.Wait(_cancellationToken);
+#pragma warning restore CA1416 // Validate platform compatibility
                     mutables._currentBufferIndex = ENUMERATION_NOT_STARTED;
                 }
 

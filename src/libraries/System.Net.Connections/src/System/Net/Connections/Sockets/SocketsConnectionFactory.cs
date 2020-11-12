@@ -4,7 +4,6 @@
 using System.IO;
 using System.IO.Pipelines;
 using System.Net.Sockets;
-using System.Runtime.Versioning;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -17,7 +16,6 @@ namespace System.Net.Connections
     /// When constructed with <see cref="ProtocolType.Tcp"/>, this factory will create connections with <see cref="Socket.NoDelay"/> enabled.
     /// In case of IPv6 sockets <see cref="Socket.DualMode"/> is also enabled.
     /// </remarks>
-    [UnsupportedOSPlatform("browser")]
     public class SocketsConnectionFactory : ConnectionFactory
     {
         private readonly AddressFamily _addressFamily;

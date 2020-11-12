@@ -210,7 +210,9 @@ namespace System.Linq.Parallel
                 // Wait only if we may have the result
                 if (_partitionId == _operatorState._partitionId)
                 {
+#pragma warning disable CA1416 // Validate platform compatibility, issue: https://github.com/dotnet/runtime/issues/43752
                     _sharedBarrier.Wait(_cancellationToken);
+#pragma warning restore CA1416
 
                     // Now re-read the shared index. If it's the same as ours, we won and return true.
                     if (_partitionId == _operatorState._partitionId)

@@ -2846,7 +2846,7 @@ namespace System.Threading.Tasks
                 try
                 {
                     AddCompletionAction(mres, addBeforeOthers: true);
-#pragma warning disable CA1416 // Validate platform compatibility, Need proper handling
+#pragma warning disable CA1416 // Validate platform compatibility, migh need proper handling
                     if (infiniteWait)
                     {
                         returnValue = mres.Wait(Timeout.Infinite, cancellationToken);
