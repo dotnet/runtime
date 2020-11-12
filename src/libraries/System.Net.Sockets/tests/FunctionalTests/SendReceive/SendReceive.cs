@@ -1125,9 +1125,9 @@ namespace System.Net.Sockets.Tests
         }
     }
 
-    public sealed class SendReceiveSync_ForceNonBlocking : SendReceive<SocketHelperSyncForceNonBlocking>
+    public sealed class SendReceive_SyncForceNonBlocking : SendReceive<SocketHelperSyncForceNonBlocking>
     {
-        public SendReceiveSync_ForceNonBlocking(ITestOutputHelper output) : base(output) {}
+        public SendReceive_SyncForceNonBlocking(ITestOutputHelper output) : base(output) {}
     }
 
     public sealed class SendReceive_Apm : SendReceive<SocketHelperApm>

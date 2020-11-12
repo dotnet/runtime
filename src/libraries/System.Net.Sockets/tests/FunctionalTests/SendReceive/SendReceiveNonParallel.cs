@@ -19,7 +19,6 @@ namespace System.Net.Sockets.Tests
             from b in new[] { false, true }
             select new object[] { addr[0], b };
 
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/1712")]
         [OuterLoop]
         [Theory]
         [MemberData(nameof(LoopbackWithBool))]
@@ -29,8 +28,8 @@ namespace System.Net.Sockets.Tests
 
             const int DatagramSize = 256;
             const int DatagramsToSend = 256;
-            const int AckTimeout = 10000;
-            const int TestTimeout = 30000;
+            const int ReceiverAckTimeout = 5000;
+            const int SenderAckTimeout = 10000;
 
             using var origLeft = new Socket(leftAddress.AddressFamily, SocketType.Dgram, ProtocolType.Udp);
             using var origRight = new Socket(rightAddress.AddressFamily, SocketType.Dgram, ProtocolType.Udp);
@@ -65,8 +64,8 @@ namespace System.Net.Sockets.Tests
                     receivedChecksums[datagramId] = Fletcher32.Checksum(recvBuffer, 0, result.ReceivedBytes);
 
                     receiverAck.Release();
-                    bool gotAck = await senderAck.WaitAsync(TestTimeout);
-                    Assert.True(gotAck, $"{DateTime.Now}: Timeout waiting {TestTimeout} for senderAck in iteration {i}");
+                    bool gotAck = await senderAck.WaitAsync(SenderAckTimeout);
+                    Assert.True(gotAck, $"{DateTime.Now}: Timeout waiting {SenderAckTimeout} for senderAck in iteration {i}");
                 }
             });
 
@@ -82,8 +81,8 @@ namespace System.Net.Sockets.Tests
 
                     int sent = await SendToAsync(right, new ArraySegment<byte>(sendBuffer), leftEndpoint);
 
-                    bool gotAck = await receiverAck.WaitAsync(AckTimeout);
-                    Assert.True(gotAck, $"{DateTime.Now}: Timeout waiting {AckTimeout} for receiverAck in iteration {i} after sending {sent}. Receiver is in {leftThread.Status}");
+                    bool gotAck = await receiverAck.WaitAsync(ReceiverAckTimeout);
+                    Assert.True(gotAck, $"{DateTime.Now}: Timeout waiting {ReceiverAckTimeout} for receiverAck in iteration {i} after sending {sent}. Receiver is in {leftThread.Status}");
                     senderAck.Release();
 
                     Assert.Equal(DatagramSize, sent);
@@ -98,5 +97,50 @@ namespace System.Net.Sockets.Tests
                 Assert.Equal(sentChecksums[i], (uint)receivedChecksums[i]);
             }
         }
+    }
+
+    public sealed class SendReceiveNonParallel_Sync : SendReceiveNonParallel<SocketHelperArraySync>
+    {
+        public SendReceiveNonParallel_Sync(ITestOutputHelper output) : base(output) { }
+    }
+
+    public sealed class SendReceiveNonParallel_SyncForceNonBlocking : SendReceiveNonParallel<SocketHelperSyncForceNonBlocking>
+    {
+        public SendReceiveNonParallel_SyncForceNonBlocking(ITestOutputHelper output) : base(output) { }
+    }
+
+    public sealed class SendReceiveNonParallel_Apm : SendReceiveNonParallel<SocketHelperApm>
+    {
+        public SendReceiveNonParallel_Apm(ITestOutputHelper output) : base(output) { }
+    }
+
+    public sealed class SendReceiveNonParallel_Task : SendReceiveNonParallel<SocketHelperTask>
+    {
+        public SendReceiveNonParallel_Task(ITestOutputHelper output) : base(output) { }
+    }
+
+    public sealed class SendReceiveNonParallel_Eap : SendReceiveNonParallel<SocketHelperEap>
+    {
+        public SendReceiveNonParallel_Eap(ITestOutputHelper output) : base(output) { }
+    }
+
+    public sealed class SendReceiveNonParallel_SpanSync : SendReceiveNonParallel<SocketHelperSpanSync>
+    {
+        public SendReceiveNonParallel_SpanSync(ITestOutputHelper output) : base(output) { }
+    }
+
+    public sealed class SendReceiveNonParallel_SpanSyncForceNonBlocking : SendReceiveNonParallel<SocketHelperSpanSyncForceNonBlocking>
+    {
+        public SendReceiveNonParallel_SpanSyncForceNonBlocking(ITestOutputHelper output) : base(output) { }
+    }
+
+    public sealed class SendReceiveNonParallel_MemoryArrayTask : SendReceiveNonParallel<SocketHelperMemoryArrayTask>
+    {
+        public SendReceiveNonParallel_MemoryArrayTask(ITestOutputHelper output) : base(output) { }
+    }
+
+    public sealed class SendReceiveNonParallel_MemoryNativeTask : SendReceiveNonParallel<SocketHelperMemoryNativeTask>
+    {
+        public SendReceiveNonParallel_MemoryNativeTask(ITestOutputHelper output) : base(output) { }
     }
 }
