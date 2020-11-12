@@ -1,11 +1,5 @@
 include(clrfeatures.cmake)
 
-# Features we're currently flighting, but don't intend to ship in officially supported releases
-if (PRERELEASE)
-  add_definitions(-DFEATURE_UTF8STRING)
-  # add_definitions(-DFEATURE_XXX)
-endif (PRERELEASE)
-
 add_compile_definitions($<$<BOOL:$<TARGET_PROPERTY:DAC_COMPONENT>>:DACCESS_COMPILE>)
 add_compile_definitions($<$<BOOL:$<TARGET_PROPERTY:CROSSGEN_COMPONENT>>:CROSSGEN_COMPILE>)
 add_compile_definitions($<$<BOOL:$<TARGET_PROPERTY:CROSSGEN_COMPONENT>>:CROSS_COMPILE>)

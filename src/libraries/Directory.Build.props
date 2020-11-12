@@ -91,8 +91,6 @@
   <ItemGroup>
     <!-- Projects which are manually built. -->
     <ProjectExclusions Include="$(CommonTestPath)System\Net\Prerequisites\**\*.csproj" />
-    <!-- TODO: Reenable when mono supports utf8string. -->
-    <ProjectExclusions Include="$(MSBuildThisFileDirectory)\System.Utf8String.Experimental\**\*.csproj" Condition="'$(RuntimeFlavor)' == 'Mono'" />
   </ItemGroup>
 
   <PropertyGroup>
