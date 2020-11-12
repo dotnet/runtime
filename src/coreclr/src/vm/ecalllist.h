@@ -786,7 +786,6 @@ FCFuncStart(gInteropMarshalFuncs)
 
 #ifdef FEATURE_COMINTEROP
     FCFuncElement("GetHRForException", MarshalNative::GetHRForException)
-    FCFuncElement("GetRawIUnknownForComObjectNoAddRef", MarshalNative::GetRawIUnknownForComObjectNoAddRef)
     FCFuncElement("IsComObject", MarshalNative::IsComObject)
     FCFuncElement("GetObjectForIUnknownNative", MarshalNative::GetObjectForIUnknownNative)
     FCFuncElement("GetUniqueObjectForIUnknownNative", MarshalNative::GetUniqueObjectForIUnknownNative)

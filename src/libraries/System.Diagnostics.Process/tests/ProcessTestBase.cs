@@ -19,8 +19,12 @@ namespace System.Diagnostics.Tests
 
         protected Process CreateDefaultProcess()
         {
+            if (_process != null)
+                throw new InvalidOperationException();
+
             _process = CreateProcessLong();
             _process.Start();
+            AddProcessForDispose(_process);
             return _process;
         }
 

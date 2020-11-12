@@ -4353,13 +4353,6 @@ HRESULT ClrDataAccess::IsRCWDCOMProxy(CLRDATA_ADDRESS rcwAddr, BOOL* isDCOMProxy
     *isDCOMProxy = FALSE;
 
 #ifdef FEATURE_COMINTEROP
-    SOSDacEnter();
-
-    PTR_RCW pRCW = dac_cast<PTR_RCW>(CLRDATA_ADDRESS_TO_TADDR(rcwAddr));
-    *isDCOMProxy = pRCW->IsDCOMProxy();
-
-    SOSDacLeave();
-
     return S_OK;
 #else
     return E_NOTIMPL;

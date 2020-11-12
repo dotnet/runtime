@@ -3546,19 +3546,7 @@ void Compiler::optUnrollLoops()
         // Check for required flags:
         // LPFLG_DO_WHILE - required because this transform only handles loops of this form
         // LPFLG_CONST - required because this transform only handles full unrolls
-        // LPFLG_SIMD_LIMIT - included here as a heuristic, not for correctness/structural reasons
-        requiredFlags = LPFLG_DO_WHILE | LPFLG_CONST | LPFLG_SIMD_LIMIT;
-
-#ifdef DEBUG
-        if (compStressCompile(STRESS_UNROLL_LOOPS, 50))
-        {
-            // In stress mode, quadruple the size limit, and drop
-            // the restriction that loop limit must be vector element count.
-
-            unrollLimitSz *= 4;
-            requiredFlags &= ~LPFLG_SIMD_LIMIT;
-        }
-#endif
+        requiredFlags = LPFLG_DO_WHILE | LPFLG_CONST;
 
         /* Ignore the loop if we don't have a do-while
         that has a constant number of iterations */
@@ -3644,6 +3632,24 @@ void Compiler::optUnrollLoops()
 
         if (totalIter > iterLimit)
         {
+            continue;
+        }
+
+        if (INDEBUG(compStressCompile(STRESS_UNROLL_LOOPS, 50) ||) false)
+        {
+            // In stress mode, quadruple the size limit, and drop
+            // the restriction that loop limit must be vector element count.
+            unrollLimitSz *= 4;
+        }
+        else if (totalIter <= 1)
+        {
+            // No limit for single iteration loops
+            unrollLimitSz = INT_MAX;
+        }
+        else if (!(loopFlags & LPFLG_SIMD_LIMIT))
+        {
+            // Otherwise unroll only if limit is Vector_.Length
+            // (as a heuristic, not for correctness/structural reasons)
             continue;
         }
 
