@@ -662,12 +662,13 @@ namespace Internal.JitInterface
                 return (CorInfoType)type.Category;
             }
 
-            typeIfNotPrimitive = type;
-
             if (type.IsPointer || type.IsFunctionPointer)
             {
+                typeIfNotPrimitive = null;
                 return CorInfoType.CORINFO_TYPE_PTR;
             }
+            
+            typeIfNotPrimitive = type;
 
             if (type.IsByRef)
             {
