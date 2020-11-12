@@ -18,14 +18,6 @@ namespace System.Net.Sockets.Tests
 {
     public static class UdpStressRepro
     {
-        public const int Parallelism = 10;
-
-        public const int StressParallelism = 4;
-
-        public const int StressTimeSeconds = 30;
-
-        private static readonly ConcurrentBag<(long SendTime, long RecvTime)> _allTimes = new ConcurrentBag<(long SendTime, long RecvTime)>();
-
         internal static async Task SendToRecvFrom_Datagram_UDP(
             IPAddress loopbackAddress,
             bool useClone,
@@ -36,8 +28,8 @@ namespace System.Net.Sockets.Tests
 
             const int DatagramSize = 256;
             const int DatagramsToSend = 256;
-            const int AckTimeout = 60000;
-            const int TestTimeout = 120000;
+            const int AckTimeout = 30000;
+            const int TestTimeout = 60000;
 
             long maxSendTime = 0;
             long maxRcvTime = 0;
@@ -115,26 +107,11 @@ namespace System.Net.Sockets.Tests
                 Assert.Equal(sentChecksums[i], (uint)receivedChecksums[i]);
             }
 
-            _allTimes.Add((maxSendTime, maxRcvTime));
-
-            throw new Exception($"maxSendTime={maxSendTime} ms | maxRecvTime={maxRcvTime} ms");
+            if (maxSendTime > 10000 || maxRcvTime > 5000)
+            {
+                throw new Exception($"maxSendTime={maxSendTime} ms | maxRecvTime={maxRcvTime} ms");
+            }   
         }
-
-        //[Fact]
-        //public static async Task ReportTimes()
-        //{
-        //    await Task.Delay(TimeSpan.FromMinutes(1));
-
-        //    var times = _allTimes.ToArray();
-        //    long maxSendTime = times.Select(t => t.SendTime).Max();
-        //    long maxRecvTime = times.Select(t => t.RecvTime).Max();
-
-        //    throw new Exception($"maxSendTime={maxSendTime} ms | maxRecvTime={maxRecvTime} ms");
-        //}
-
-        //[OuterLoop]
-        //[Fact]
-        //public static Task ReportTimes_OuterLoop() => ReportTimes();
     }
 
     public abstract class SendReceive<T> : SocketTestHelperBase<T> where T : SocketHelperBase, new()
@@ -170,7 +147,7 @@ namespace System.Net.Sockets.Tests
 
         public static IEnumerable<object[]> LoopbackWithBool =>
             from addr in Loopbacks
-            from b in new[] { false, true }
+            from b in new[] { false, false, false, true }
             select new object[] { addr[0], b };
 
         [OuterLoop]
@@ -1778,6 +1755,51 @@ namespace System.Net.Sockets.Tests
     public sealed class SendReceiveTask : SendReceive<SocketHelperTask>
     {
         public SendReceiveTask(ITestOutputHelper output) : base(output) { }
+    }
+
+    public sealed class SendReceiveTask1 : SendReceive<SocketHelperTask>
+    {
+        public SendReceiveTask1(ITestOutputHelper output) : base(output) { }
+    }
+
+    public sealed class SendReceiveTask2 : SendReceive<SocketHelperTask>
+    {
+        public SendReceiveTask2(ITestOutputHelper output) : base(output) { }
+    }
+
+    public sealed class SendReceiveTask3 : SendReceive<SocketHelperTask>
+    {
+        public SendReceiveTask3(ITestOutputHelper output) : base(output) { }
+    }
+
+    public sealed class SendReceiveTask4 : SendReceive<SocketHelperTask>
+    {
+        public SendReceiveTask4(ITestOutputHelper output) : base(output) { }
+    }
+
+    public sealed class SendReceiveTask5 : SendReceive<SocketHelperTask>
+    {
+        public SendReceiveTask5(ITestOutputHelper output) : base(output) { }
+    }
+
+    public sealed class SendReceiveTask6 : SendReceive<SocketHelperTask>
+    {
+        public SendReceiveTask6(ITestOutputHelper output) : base(output) { }
+    }
+
+    public sealed class SendReceiveTask7 : SendReceive<SocketHelperTask>
+    {
+        public SendReceiveTask7(ITestOutputHelper output) : base(output) { }
+    }
+
+    public sealed class SendReceiveTask8 : SendReceive<SocketHelperTask>
+    {
+        public SendReceiveTask8(ITestOutputHelper output) : base(output) { }
+    }
+
+    public sealed class SendReceiveTask9 : SendReceive<SocketHelperTask>
+    {
+        public SendReceiveTask9(ITestOutputHelper output) : base(output) { }
     }
 
     public sealed class SendReceiveEap : SendReceive<SocketHelperEap>
