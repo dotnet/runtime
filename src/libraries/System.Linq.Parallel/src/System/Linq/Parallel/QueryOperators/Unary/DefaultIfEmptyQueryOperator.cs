@@ -159,9 +159,7 @@ namespace System.Linq.Parallel
                             // actually do a wait-any here: if at least one other partition finds an element,
                             // there is strictly no need to wait.  But this would require extra coordination
                             // which may or may not be worth the trouble.
-#pragma warning disable CA1416 // Validate platform compatibility, issue: https://github.com/dotnet/runtime/issues/43752
                             _sharedLatch.Wait(_cancelToken);
-#pragma warning restore CA1416
                             _sharedLatch.Dispose();
 
                             // Now see if there were any other partitions with data.

@@ -224,9 +224,7 @@ namespace System.Linq.Parallel
 
                     // Before exiting the search phase, we will synchronize with others. This is a barrier.
                     _sharedBarrier.Signal();
-#pragma warning disable CA1416 // Validate platform compatibility, issue: https://github.com/dotnet/runtime/issues/43752
                     _sharedBarrier.Wait(_cancellationToken);
-#pragma warning restore CA1416
 
                     // Publish the buffer and set the index to just before the 1st element.
                     _buffer = buffer;

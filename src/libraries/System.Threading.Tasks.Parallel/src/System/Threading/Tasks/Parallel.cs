@@ -346,7 +346,7 @@ namespace System.Threading.Tasks
                     // threw an exception.  We let such exceptions go completely unhandled.
                     try
                     {
-#pragma warning disable CA1416 // Validate platform compatibility, proper handling needed
+#pragma warning disable CA1416 // Validate platform compatibility, issue: https://github.com/dotnet/runtime/issues/44605
                         Task.WaitAll(tasks);
 #pragma warning restore CA1416
                     }

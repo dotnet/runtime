@@ -223,9 +223,7 @@ namespace System.Linq.Parallel
                             Debug.Assert(_consumerEvent != null);
                             //This Wait() does not require cancellation support as it will wake up when all the producers into the
                             //channel have finished.  Hence, if all the producers wake up on cancellation, so will this.
-#pragma warning disable CA1416 // Validate platform compatibility, affects MoveNext() issue: https://github.com/dotnet/runtime/issues/43752
                             _consumerEvent.Wait();
-#pragma warning restore CA1416 // Validate platform compatibility
                             _channelIndex = currChannelIndex = _consumerEvent.Value;
                             _consumerEvent.Reset();
 

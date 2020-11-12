@@ -13,7 +13,6 @@ using System;
 using System.Collections.Generic;
 using System.Threading;
 using System.Diagnostics;
-using System.Runtime.Versioning;
 
 namespace System.Linq.Parallel
 {
@@ -188,7 +187,6 @@ namespace System.Linq.Parallel
         //     will never happen -- i.e. we will deadlock.
         //
 
-        [UnsupportedOSPlatform("browser")]
         internal override TInputOutput[] Sort()
         {
             // Step 1.  Accumulate this partitions' worth of input.
@@ -359,7 +357,6 @@ namespace System.Linq.Parallel
         // negatively impact speedups.
         //
 
-        [UnsupportedOSPlatform("browser")]
         private void MergeSortCooperatively()
         {
             CancellationToken cancelToken = _groupState.CancellationState.MergedCancellationToken;

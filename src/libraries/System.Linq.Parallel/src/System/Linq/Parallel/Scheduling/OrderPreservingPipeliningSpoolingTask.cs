@@ -15,7 +15,6 @@ using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Diagnostics;
-using System.Runtime.Versioning;
 
 namespace System.Linq.Parallel
 {
@@ -50,7 +49,6 @@ namespace System.Linq.Parallel
         /// <summary>
         /// Constructor
         /// </summary>
-        [UnsupportedOSPlatform("browser")]
         internal OrderPreservingPipeliningSpoolingTask(
             QueryOperatorEnumerator<TOutput, TKey> partition,
             QueryTaskGroupState taskGroupState,
@@ -86,7 +84,6 @@ namespace System.Linq.Parallel
         /// This method is responsible for enumerating results and enqueuing them to
         /// the output buffer as appropriate.  Each base class implements its own.
         /// </summary>
-        [UnsupportedOSPlatform("browser")]
         protected override void SpoolingWork()
         {
             TOutput element = default(TOutput)!;
@@ -144,7 +141,6 @@ namespace System.Linq.Parallel
         /// <summary>
         /// Creates and begins execution of a new set of spooling tasks.
         /// </summary>
-        [UnsupportedOSPlatform("browser")]
         public static void Spool(
             QueryTaskGroupState groupState, PartitionedStream<TOutput, TKey> partitions,
             bool[] consumerWaiting, bool[] producerWaiting, bool[] producerDone,
