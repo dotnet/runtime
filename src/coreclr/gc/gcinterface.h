@@ -178,9 +178,19 @@ struct segment_info
 
 #define LARGE_OBJECT_SIZE ((size_t)(85000))
 
+
+#ifdef HAVE_CORE_GC
+// The minimum size of an object with mono-coregc is four pointers wide: one for the syncblock,
+// one for the object header, one for mono syncblock and one for the first field
+// in the object.
+#define min_obj_size ((2 * sizeof(uint8_t*) + sizeof(uintptr_t) + sizeof(size_t)))
+#else
 // The minimum size of an object is three pointers wide: one for the syncblock,
 // one for the object header, and one for the first field in the object.
 #define min_obj_size ((sizeof(uint8_t*) + sizeof(uintptr_t) + sizeof(size_t)))
+#endif
+
+
 
 // The bit shift used to convert a memory address into an index into the
 // Software Write Watch table.

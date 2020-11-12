@@ -10351,6 +10351,8 @@ inline size_t my_get_size (Object* ob)
 {
     MethodTable* mT = header(ob)->GetMethodTable();
 
+    printf("gc.cpp: my_get_size: ob: %p\n", ob);
+
     return (mT->GetBaseSize() +
             (mT->HasComponentSize() ?
              ((size_t)((CObjectHeader*)ob)->GetNumComponents() * mT->RawGetComponentSize()) : 0));

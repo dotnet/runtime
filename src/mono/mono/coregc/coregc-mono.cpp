@@ -29,7 +29,7 @@ typedef struct _CoreGCThreadInfo CoreGCThreadInfo;
 #include <mono/utils/mono-threads.h>
 #include <mono/utils/mono-counters.h>
 #include <mono/utils/mono-forward.h>
-#include <mono/metadata/null-gc-handles.h>"
+#include <mono/metadata/null-gc-handles.h>
 
 #include "coregc-mono.h"
 #include "volatile.h"
@@ -305,8 +305,6 @@ typedef union {
 
 #define BITMAP_EL_SIZE (sizeof (gsize) * 8)
 
-// CoreGC doesn't accept objects smaller than this, since it needs to replace them with array fill
-// vtable which contains header_ptr, vtable_ptr, sync_ptr and length
 #define MIN_OBJECT_SIZE (4 * sizeof (void*))
 
 MonoGCDescriptor
@@ -564,6 +562,8 @@ mono_gc_alloc_fixed (size_t size, void *descr, MonoGCRootSource source, void *ke
 		g_free (res);
 		res = NULL;
 	}
+
+	printf("mono_gc_alloc_fixed: %p\n", res);
 	return (MonoObject*)res;
 }
 
@@ -600,6 +600,7 @@ mono_gc_alloc_obj (MonoVTable *vtable, size_t size)
 	o = (MonoObject*) pGCHeap->Alloc (&info->alloc_context, size, flags);
 
 	o->vtable = vtable;
+	printf("mono_gc_alloc_obj: %p\n", o);
 	return o;
 }
 

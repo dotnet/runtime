@@ -170,6 +170,7 @@ typedef struct {
 struct _MonoArray {
 	MonoObject obj;
 	/* bounds is NULL for szarrays */
+	// TODO: Do I need to reorder thise for coreclr GC?
 	MonoArrayBounds *bounds;
 	/* total number of elements of the array */
 	mono_array_size_t max_length; 
