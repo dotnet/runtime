@@ -3934,12 +3934,11 @@ _SetMinOpts:
 
         if (opts.jitFlags->IsSet(JitFlags::JIT_FLAG_RELOC))
         {
-            codeGen->SetAlignLoops(false); // loop alignment not supported for prejitted code
-
             // The JIT doesn't currently support loop alignment for prejitted images.
             // (The JIT doesn't know the final address of the code, hence
             // it can't align code based on unknown addresses.)
-            assert(JitConfig.JitAlignLoops() == 0);
+
+            codeGen->SetAlignLoops(false); // loop alignment not supported for prejitted code
         }
         else
         {

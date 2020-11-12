@@ -787,11 +787,13 @@ void CodeGen::genCodeForBBlist()
             // all IGs that follows this IG and participate in a loop.
             GetEmitter()->emitCurIG->igFlags |= IGF_ALIGN_LOOP;
 
+#if defined(DEBUG)
             if (verbose)
             {
                 printf("Adding 'align' instruction of %d bytes in G_M%03u_IG%02u to align loop header block.\n" FMT_BB,
                        compiler->opts.compJitAlignLoopBoundary, compiler->compMethodID, GetEmitter()->emitCurIG->igNum);
             }
+#endif
         }
 #endif
 
