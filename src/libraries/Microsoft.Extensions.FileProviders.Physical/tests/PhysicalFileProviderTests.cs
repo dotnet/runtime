@@ -1541,7 +1541,6 @@ namespace Microsoft.Extensions.FileProviders
             using (var provider = new PhysicalFileProvider(root.RootPath))
             {
                 var fileName = Path.GetRandomFileName();
-                var fileLocation = Path.Combine(root.RootPath, fileName);
                 PollingFileChangeToken.PollingInterval = TimeSpan.FromMilliseconds(10);
 
                 provider.UsePollingFileWatcher = true;  // We must use polling due to https://github.com/dotnet/runtime/issues/44484
