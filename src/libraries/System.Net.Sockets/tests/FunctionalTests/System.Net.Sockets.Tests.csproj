@@ -37,6 +37,7 @@
     <Compile Include="SendReceive\SendReceive.cs" />
     <Compile Include="SendReceive\SendReceiveCommon.cs" />
     <Compile Include="SendReceive\SendReceiveListener.cs" />
+    <Compile Include="SendReceive\SendReceiveNonParallel.cs" />
     <Compile Include="SendReceive\SendReceiveUdpClient.cs" />
     <Compile Include="SendTo.cs" />
     <Compile Include="SocketDuplicationTests.cs" />
