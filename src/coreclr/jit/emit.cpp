@@ -3652,8 +3652,13 @@ size_t emitter::emitIssue1Instr(insGroup* ig, instrDesc* id, BYTE** dp)
     if (csz != id->idCodeSize())
     {
         /* It is fatal to under-estimate the instruction size, except it was an alignment instruction */
-        noway_assert(id->idCodeSize() >= csz || (!emitComp->opts.compJitAlignLoopAdaptive && id->idIns() == INS_align &&
-                                                 emitComp->opts.compJitAlignLoopBoundary > 16));
+        bool validCodeSize = id->idCodeSize() >= csz;
+
+#if defined(TARGET_XARCH)
+        validCodeSize |= (!emitComp->opts.compJitAlignLoopAdaptive && id->idIns() == INS_align &&
+                          emitComp->opts.compJitAlignLoopBoundary > 16);
+#endif
+        noway_assert(validCodeSize);
 
 #if DEBUG_EMIT
         if (EMITVERBOSE)
