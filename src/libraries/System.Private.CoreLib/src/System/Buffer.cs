@@ -90,7 +90,9 @@ namespace System
         {
             // array argument validation done via ByteLength
             if ((uint)index >= (uint)ByteLength(array))
-                throw new ArgumentOutOfRangeException(nameof(index));
+            {
+                ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.index);
+            }
 
             return Unsafe.Add<byte>(ref array.GetRawArrayData(), index);
         }
@@ -99,12 +101,13 @@ namespace System
         {
             // array argument validation done via ByteLength
             if ((uint)index >= (uint)ByteLength(array))
-                throw new ArgumentOutOfRangeException(nameof(index));
+            {
+                ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.index);
+            }
 
             Unsafe.Add<byte>(ref array.GetRawArrayData(), index) = value;
         }
 
-        // This method has different signature for x64 and other platforms and is done for performance reasons.
         internal static unsafe void ZeroMemory(byte* dest, nuint len)
         {
             SpanHelpers.ClearWithoutReferences(ref *dest, len);
@@ -120,7 +123,8 @@ namespace System
             {
                 ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.sourceBytesToCopy);
             }
-            Memmove((byte*)destination, (byte*)source, checked((nuint)sourceBytesToCopy));
+
+            Memmove(ref *(byte*)destination, ref *(byte*)source, checked((nuint)sourceBytesToCopy));
         }
 
         // The attributes on this method are chosen for best JIT performance.
@@ -133,179 +137,11 @@ namespace System
             {
                 ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.sourceBytesToCopy);
             }
-            Memmove((byte*)destination, (byte*)source, checked((nuint)sourceBytesToCopy));
+
+            Memmove(ref *(byte*)destination, ref *(byte*)source, checked((nuint)sourceBytesToCopy));
         }
 
-        // This method has different signature for x64 and other platforms and is done for performance reasons.
-        internal static unsafe void Memmove(byte* dest, byte* src, nuint len)
-        {
-            // P/Invoke into the native version when the buffers are overlapping.
-            if (((nuint)dest - (nuint)src < len) || ((nuint)src - (nuint)dest < len))
-            {
-                goto PInvoke;
-            }
-
-            byte* srcEnd = src + len;
-            byte* destEnd = dest + len;
-
-            if (len <= 16) goto MCPY02;
-            if (len > 64) goto MCPY05;
-
-        MCPY00:
-            // Copy bytes which are multiples of 16 and leave the remainder for MCPY01 to handle.
-            Debug.Assert(len > 16 && len <= 64);
-#if HAS_CUSTOM_BLOCKS
-            *(Block16*)dest = *(Block16*)src;                   // [0,16]
-#elif TARGET_64BIT
-            *(long*)dest = *(long*)src;
-            *(long*)(dest + 8) = *(long*)(src + 8);             // [0,16]
-#else
-            *(int*)dest = *(int*)src;
-            *(int*)(dest + 4) = *(int*)(src + 4);
-            *(int*)(dest + 8) = *(int*)(src + 8);
-            *(int*)(dest + 12) = *(int*)(src + 12);             // [0,16]
-#endif
-            if (len <= 32) goto MCPY01;
-#if HAS_CUSTOM_BLOCKS
-            *(Block16*)(dest + 16) = *(Block16*)(src + 16);     // [0,32]
-#elif TARGET_64BIT
-            *(long*)(dest + 16) = *(long*)(src + 16);
-            *(long*)(dest + 24) = *(long*)(src + 24);           // [0,32]
-#else
-            *(int*)(dest + 16) = *(int*)(src + 16);
-            *(int*)(dest + 20) = *(int*)(src + 20);
-            *(int*)(dest + 24) = *(int*)(src + 24);
-            *(int*)(dest + 28) = *(int*)(src + 28);             // [0,32]
-#endif
-            if (len <= 48) goto MCPY01;
-#if HAS_CUSTOM_BLOCKS
-            *(Block16*)(dest + 32) = *(Block16*)(src + 32);     // [0,48]
-#elif TARGET_64BIT
-            *(long*)(dest + 32) = *(long*)(src + 32);
-            *(long*)(dest + 40) = *(long*)(src + 40);           // [0,48]
-#else
-            *(int*)(dest + 32) = *(int*)(src + 32);
-            *(int*)(dest + 36) = *(int*)(src + 36);
-            *(int*)(dest + 40) = *(int*)(src + 40);
-            *(int*)(dest + 44) = *(int*)(src + 44);             // [0,48]
-#endif
-
-        MCPY01:
-            // Unconditionally copy the last 16 bytes using destEnd and srcEnd and return.
-            Debug.Assert(len > 16 && len <= 64);
-#if HAS_CUSTOM_BLOCKS
-            *(Block16*)(destEnd - 16) = *(Block16*)(srcEnd - 16);
-#elif TARGET_64BIT
-            *(long*)(destEnd - 16) = *(long*)(srcEnd - 16);
-            *(long*)(destEnd - 8) = *(long*)(srcEnd - 8);
-#else
-            *(int*)(destEnd - 16) = *(int*)(srcEnd - 16);
-            *(int*)(destEnd - 12) = *(int*)(srcEnd - 12);
-            *(int*)(destEnd - 8) = *(int*)(srcEnd - 8);
-            *(int*)(destEnd - 4) = *(int*)(srcEnd - 4);
-#endif
-            return;
-
-        MCPY02:
-            // Copy the first 8 bytes and then unconditionally copy the last 8 bytes and return.
-            if ((len & 24) == 0) goto MCPY03;
-            Debug.Assert(len >= 8 && len <= 16);
-#if TARGET_64BIT
-            *(long*)dest = *(long*)src;
-            *(long*)(destEnd - 8) = *(long*)(srcEnd - 8);
-#else
-            *(int*)dest = *(int*)src;
-            *(int*)(dest + 4) = *(int*)(src + 4);
-            *(int*)(destEnd - 8) = *(int*)(srcEnd - 8);
-            *(int*)(destEnd - 4) = *(int*)(srcEnd - 4);
-#endif
-            return;
-
-        MCPY03:
-            // Copy the first 4 bytes and then unconditionally copy the last 4 bytes and return.
-            if ((len & 4) == 0) goto MCPY04;
-            Debug.Assert(len >= 4 && len < 8);
-            *(int*)dest = *(int*)src;
-            *(int*)(destEnd - 4) = *(int*)(srcEnd - 4);
-            return;
-
-            MCPY04:
-            // Copy the first byte. For pending bytes, do an unconditionally copy of the last 2 bytes and return.
-            Debug.Assert(len < 4);
-            if (len == 0) return;
-            *dest = *src;
-            if ((len & 2) == 0) return;
-            *(short*)(destEnd - 2) = *(short*)(srcEnd - 2);
-            return;
-
-            MCPY05:
-            // PInvoke to the native version when the copy length exceeds the threshold.
-            if (len > MemmoveNativeThreshold)
-            {
-                goto PInvoke;
-            }
-
-            // Copy 64-bytes at a time until the remainder is less than 64.
-            // If remainder is greater than 16 bytes, then jump to MCPY00. Otherwise, unconditionally copy the last 16 bytes and return.
-            Debug.Assert(len > 64 && len <= MemmoveNativeThreshold);
-            nuint n = len >> 6;
-
-        MCPY06:
-#if HAS_CUSTOM_BLOCKS
-            *(Block64*)dest = *(Block64*)src;
-#elif TARGET_64BIT
-            *(long*)dest = *(long*)src;
-            *(long*)(dest + 8) = *(long*)(src + 8);
-            *(long*)(dest + 16) = *(long*)(src + 16);
-            *(long*)(dest + 24) = *(long*)(src + 24);
-            *(long*)(dest + 32) = *(long*)(src + 32);
-            *(long*)(dest + 40) = *(long*)(src + 40);
-            *(long*)(dest + 48) = *(long*)(src + 48);
-            *(long*)(dest + 56) = *(long*)(src + 56);
-#else
-            *(int*)dest = *(int*)src;
-            *(int*)(dest + 4) = *(int*)(src + 4);
-            *(int*)(dest + 8) = *(int*)(src + 8);
-            *(int*)(dest + 12) = *(int*)(src + 12);
-            *(int*)(dest + 16) = *(int*)(src + 16);
-            *(int*)(dest + 20) = *(int*)(src + 20);
-            *(int*)(dest + 24) = *(int*)(src + 24);
-            *(int*)(dest + 28) = *(int*)(src + 28);
-            *(int*)(dest + 32) = *(int*)(src + 32);
-            *(int*)(dest + 36) = *(int*)(src + 36);
-            *(int*)(dest + 40) = *(int*)(src + 40);
-            *(int*)(dest + 44) = *(int*)(src + 44);
-            *(int*)(dest + 48) = *(int*)(src + 48);
-            *(int*)(dest + 52) = *(int*)(src + 52);
-            *(int*)(dest + 56) = *(int*)(src + 56);
-            *(int*)(dest + 60) = *(int*)(src + 60);
-#endif
-            dest += 64;
-            src += 64;
-            n--;
-            if (n != 0) goto MCPY06;
-
-            len %= 64;
-            if (len > 16) goto MCPY00;
-#if HAS_CUSTOM_BLOCKS
-            *(Block16*)(destEnd - 16) = *(Block16*)(srcEnd - 16);
-#elif TARGET_64BIT
-            *(long*)(destEnd - 16) = *(long*)(srcEnd - 16);
-            *(long*)(destEnd - 8) = *(long*)(srcEnd - 8);
-#else
-            *(int*)(destEnd - 16) = *(int*)(srcEnd - 16);
-            *(int*)(destEnd - 12) = *(int*)(srcEnd - 12);
-            *(int*)(destEnd - 8) = *(int*)(srcEnd - 8);
-            *(int*)(destEnd - 4) = *(int*)(srcEnd - 4);
-#endif
-            return;
-
-        PInvoke:
-            _Memmove(dest, src, len);
-        }
-
-        // This method has different signature for x64 and other platforms and is done for performance reasons.
-        private static void Memmove(ref byte dest, ref byte src, nuint len)
+        internal static void Memmove(ref byte dest, ref byte src, nuint len)
         {
             // P/Invoke into the native version when the buffers are overlapping.
             if (((nuint)(nint)Unsafe.ByteOffset(ref src, ref dest) < len) || ((nuint)(nint)Unsafe.ByteOffset(ref dest, ref src) < len))
@@ -489,14 +325,6 @@ namespace System
 
         PInvoke:
             _Memmove(ref dest, ref src, len);
-        }
-
-        // Non-inlinable wrapper around the QCall that avoids polluting the fast path
-        // with P/Invoke prolog/epilog.
-        [MethodImpl(MethodImplOptions.NoInlining)]
-        private static unsafe void _Memmove(byte* dest, byte* src, nuint len)
-        {
-            __Memmove(dest, src, len);
         }
 
         // Non-inlinable wrapper around the QCall that avoids polluting the fast path

@@ -390,7 +390,8 @@ void InlineContext::Dump(unsigned indent)
     if (m_Parent == nullptr)
     {
         // Root method
-        printf("Inlines into %08X %s\n", calleeToken, calleeName);
+        InlinePolicy* policy = InlinePolicy::GetPolicy(compiler, true);
+        printf("Inlines into %08X [via %s] %s\n", calleeToken, policy->GetName(), calleeName);
     }
     else
     {
@@ -495,9 +496,8 @@ void InlineContext::DumpXml(FILE* file, unsigned indent)
     {
         Compiler* compiler = m_InlineStrategy->GetCompiler();
 
-        mdMethodDef calleeToken = compiler->info.compCompHnd->getMethodDefFromMethod(m_Callee);
-        unsigned    calleeHash  = compiler->info.compCompHnd->getMethodHash(m_Callee);
-
+        mdMethodDef calleeToken  = compiler->info.compCompHnd->getMethodDefFromMethod(m_Callee);
+        unsigned    calleeHash   = compiler->compMethodHash(m_Callee);
         const char* inlineReason = InlGetObservationString(m_Observation);
 
         int offset = -1;

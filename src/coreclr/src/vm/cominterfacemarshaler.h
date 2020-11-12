@@ -56,8 +56,6 @@ public:
     OBJECTREF FindOrCreateObjectRef(IUnknown **ppIncomingIP, MethodTable *pIncomingItfMT = NULL);
     OBJECTREF FindOrCreateObjectRef(IUnknown *pIncomingIP, MethodTable *pIncomingItfMT = NULL);
 
-    OBJECTREF WrapWithComObject();
-
     VOID InitializeExistingComObject(OBJECTREF *pComObj, IUnknown **ppIncomingIP);
 
 private:

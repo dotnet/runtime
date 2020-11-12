@@ -1610,6 +1610,10 @@ namespace ILCompiler.Reflection.ReadyToRun
                     builder.Append("GCPOLL");
                     break;
 
+                case ReadyToRunHelper.GetCurrentManagedThreadId:
+                    builder.Append("GET_CURRENT_MANAGED_THREAD_ID");
+                    break;
+
                 case ReadyToRunHelper.ReversePInvokeEnter:
                     builder.Append("REVERSE_PINVOKE_ENTER");
                     break;

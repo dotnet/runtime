@@ -5,7 +5,7 @@ add_definitions(-DSELF_NO_HOST)
 
 if(CLR_CMAKE_HOST_WIN32)
   #use static crt
-  add_definitions(-MT)
+  set(CMAKE_MSVC_RUNTIME_LIBRARY MultiThreaded)
 endif(CLR_CMAKE_HOST_WIN32)
 
 include_directories(.)
@@ -49,7 +49,7 @@ set(MCS_SOURCES
 _add_executable(mcs
     ${MCS_SOURCES}
 )
-target_precompile_header(TARGET mcs HEADER standardpch.h)
+target_precompile_headers(mcs PRIVATE "$<$<COMPILE_LANGUAGE:CXX>:standardpch.h>")
 
 if(CLR_CMAKE_HOST_UNIX)
     target_link_libraries(mcs
@@ -65,7 +65,7 @@ else()
         ${STATIC_MT_CPP_LIB}
     )
 
-    _install (FILES ${CMAKE_CURRENT_BINARY_DIR}/$<CONFIG>/mcs.pdb DESTINATION PDB)
+    _install (FILES $<TARGET_PDB_FILE:mcs> DESTINATION PDB)
 endif(CLR_CMAKE_HOST_UNIX)
 
 _install (TARGETS mcs DESTINATION .)

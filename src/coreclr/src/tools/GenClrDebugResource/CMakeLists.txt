@@ -1,4 +1,4 @@
-add_definitions(-MT)
+set(CMAKE_MSVC_RUNTIME_LIBRARY MultiThreaded)
 add_executable(GenClrDebugResource GenClrDebugResource.cpp)
 
 target_link_libraries(GenClrDebugResource

@@ -29,7 +29,6 @@ const char g_psBaseLibrarySatelliteAssemblyName[]  = CoreLibSatelliteName_A;
 
 Volatile<LONG>       g_TrapReturningThreads;
 
-HINSTANCE            g_hThisInst;
 BBSweep              g_BBSweep;
 
 #ifdef _DEBUG

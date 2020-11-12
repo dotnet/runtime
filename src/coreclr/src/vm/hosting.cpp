@@ -173,7 +173,7 @@ BOOL ClrVirtualProtect(LPVOID lpAddress, SIZE_T dwSize, DWORD flNewProtect, PDWO
         CONTRACT_VIOLATION(ThrowsViolation);
 
         // Get reference to MSCORWKS image in memory...
-        PEDecoder pe(g_hThisInst);
+        PEDecoder pe(GetClrModuleBase());
 
         // Find the UEF section from the image
         IMAGE_SECTION_HEADER* pUEFSection = pe.FindSection(CLR_UEF_SECTION_NAME);

@@ -101,11 +101,11 @@ namespace System.Drawing
 
                     if (strFormat != null)
                     {
-                        return new InstanceDescriptor(typeof(ImageFormat).GetTypeInfo().GetProperty(strFormat), null);
+                        return new InstanceDescriptor(typeof(ImageFormat).GetProperty(strFormat), null);
                     }
                     else
                     {
-                        ConstructorInfo? ctor = typeof(ImageFormat).GetTypeInfo().GetConstructor(new Type[] { typeof(Guid) });
+                        ConstructorInfo? ctor = typeof(ImageFormat).GetConstructor(new Type[] { typeof(Guid) });
                         return new InstanceDescriptor(ctor, new object[] { imgFormat.Guid });
                     }
                 }
