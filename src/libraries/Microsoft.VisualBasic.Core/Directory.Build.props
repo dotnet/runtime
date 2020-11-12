@@ -3,7 +3,7 @@
   <PropertyGroup>
     <MajorVersion>$([MSBuild]::Add($(MajorVersion), 6))</MajorVersion>
     <PackageVersion>$(MajorVersion).$(MinorVersion).$(PatchVersion)</PackageVersion>
-    <AssemblyVersion>10.0.6.0</AssemblyVersion>
+    <AssemblyVersion>11.0.0.0</AssemblyVersion>
     <StrongNameKeyId>Microsoft</StrongNameKeyId>
     <IncludePlatformAttributes>true</IncludePlatformAttributes>
   </PropertyGroup>

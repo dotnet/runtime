@@ -18,7 +18,7 @@
     <Nullable>annotations</Nullable>
   </PropertyGroup>
 
-  <ItemGroup Condition="($(TargetFramework.StartsWith('$(NetCoreAppCurrent)')) or $(TargetFramework.StartsWith('netcoreapp2.1')) or '$(TargetFramework)' == 'netstandard2.0') and '$(TargetsWindows)' == 'true'">
+  <ItemGroup Condition="!$(TargetFramework.StartsWith('net4')) and '$(TargetsWindows)' == 'true'">
     <Compile Include="Microsoft\Win32\SafeHandles\SafeAccessTokenHandle.cs" />
     <Compile Include="System\Security\Principal\IdentityNotMappedException.cs" />
     <Compile Include="System\Security\Principal\IdentityReference.cs" />

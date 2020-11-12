@@ -1283,7 +1283,8 @@
       "BaselineVersion": "11.0.0",
       "InboxOn": {
         "netcoreapp3.0": "10.0.4.0",
-        "net5.0": "10.0.6.0"
+        "net5.0": "10.0.6.0",
+        "net6.0": "11.0.0.0"
       }
     },
     "Microsoft.VisualC": {
