@@ -73,8 +73,8 @@ if [ ! -z ${RunCrossGen2+x} ]%3B then
   if [ -d IL-CG2 ]%3B then
     while [ ! -f $compilationDoneFlagFile ]%3B
     do 
-      echo "Waiting for concurrent Crossgen2 compilation of the same project to finish."
-      sleep 5%3B
+      echo "Waiting for concurrent Crossgen2 compilation: $compilationDoneFlagFile"
+      sleep 10%3B
     done
   else
     TakeLock
@@ -216,12 +216,15 @@ if defined RunCrossGen2 (
 
     if defined LargeVersionBubble ( set ExtraCrossGen2Args=!ExtraCrossGen2Args! --inputbubble)
     set CrossGen2Status=0
+    set compilationDoneFlagFile=!ScriptPath!IL-CG2\done
     if exist "IL-CG2" (
       REM We may have come in the middle of a concurrent CG2 compilation, wait for it to finish
       :ProbeCompilationFinished
-      if exist "IL-CG2\done" goto :DoneCrossgen2OperationsNoRelease
-      timeout /t 5 /nobreak
-      goto :ProbeCompilationFinished
+      if !exist "!compilationDoneFlagFile!" (
+        echo Waiting for concurrent Crossgen2 compilation^: !compilationDoneFlagFile!
+        timeout /t 10 /nobreak
+        goto :ProbeCompilationFinished
+      )
     )
     call :TakeLock
     if exist "IL-CG2" goto :DoneCrossgen2Operations
@@ -296,7 +299,7 @@ if defined RunCrossGen2 (
     Exit /b 0
 
 :DoneCrossgen2Operations
-    echo Crossgen2 compilation finished>>IL-CG2\done
+    echo Crossgen2 compilation finished, exit code !CrossGen2Status!>>!compilationDoneFlagFile!
     call :ReleaseLock
 :DoneCrossgen2OperationsNoRelease
     IF NOT !CrossGen2Status!==0 (
