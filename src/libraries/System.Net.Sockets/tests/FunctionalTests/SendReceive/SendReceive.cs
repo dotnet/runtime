@@ -1156,9 +1156,9 @@ namespace System.Net.Sockets.Tests
         }
     }
 
-    public sealed class SendReceiveSync : SendReceive<SocketHelperArraySync>
+    public sealed class SendReceive_Sync : SendReceive<SocketHelperArraySync>
     {
-        public SendReceiveSync(ITestOutputHelper output) : base(output) { }
+        public SendReceive_Sync(ITestOutputHelper output) : base(output) { }
 
         [OuterLoop]
         [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
@@ -1211,39 +1211,39 @@ namespace System.Net.Sockets.Tests
         }
     }
 
-    public sealed class SendReceiveSyncForceNonBlocking : SendReceive<SocketHelperSyncForceNonBlocking>
+    public sealed class SendReceiveSync_ForceNonBlocking : SendReceive<SocketHelperSyncForceNonBlocking>
     {
-        public SendReceiveSyncForceNonBlocking(ITestOutputHelper output) : base(output) {}
+        public SendReceiveSync_ForceNonBlocking(ITestOutputHelper output) : base(output) {}
     }
 
-    public sealed class SendReceiveApm : SendReceive<SocketHelperApm>
+    public sealed class SendReceive_Apm : SendReceive<SocketHelperApm>
     {
-        public SendReceiveApm(ITestOutputHelper output) : base(output) {}
+        public SendReceive_Apm(ITestOutputHelper output) : base(output) {}
     }
 
-    public sealed class SendReceiveTask : SendReceive<SocketHelperTask>
+    public sealed class SendReceive_Task : SendReceive<SocketHelperTask>
     {
-        public SendReceiveTask(ITestOutputHelper output) : base(output) {}
+        public SendReceive_Task(ITestOutputHelper output) : base(output) {}
     }
 
-    public sealed class SendReceiveEap : SendReceive<SocketHelperEap>
+    public sealed class SendReceive_Eap : SendReceive<SocketHelperEap>
     {
-        public SendReceiveEap(ITestOutputHelper output) : base(output) {}
+        public SendReceive_Eap(ITestOutputHelper output) : base(output) {}
     }
 
-    public sealed class SendReceiveSpanSync : SendReceive<SocketHelperSpanSync>
+    public sealed class SendReceive_SpanSync : SendReceive<SocketHelperSpanSync>
     {
-        public SendReceiveSpanSync(ITestOutputHelper output) : base(output) { }
+        public SendReceive_SpanSync(ITestOutputHelper output) : base(output) { }
     }
 
-    public sealed class SendReceiveSpanSyncForceNonBlocking : SendReceive<SocketHelperSpanSyncForceNonBlocking>
+    public sealed class SendReceive_SpanSyncForceNonBlocking : SendReceive<SocketHelperSpanSyncForceNonBlocking>
     {
-        public SendReceiveSpanSyncForceNonBlocking(ITestOutputHelper output) : base(output) { }
+        public SendReceive_SpanSyncForceNonBlocking(ITestOutputHelper output) : base(output) { }
     }
 
-    public sealed class SendReceiveMemoryArrayTask : SendReceive<SocketHelperMemoryArrayTask>
+    public sealed class SendReceive_MemoryArrayTask : SendReceive<SocketHelperMemoryArrayTask>
     {
-        public SendReceiveMemoryArrayTask(ITestOutputHelper output) : base(output) { }
+        public SendReceive_MemoryArrayTask(ITestOutputHelper output) : base(output) { }
 
         [Fact]
         public async Task Precanceled_Throws()
@@ -1429,8 +1429,8 @@ namespace System.Net.Sockets.Tests
         }
     }
 
-    public sealed class SendReceiveMemoryNativeTask : SendReceive<SocketHelperMemoryNativeTask>
+    public sealed class SendReceive_MemoryNativeTask : SendReceive<SocketHelperMemoryNativeTask>
     {
-        public SendReceiveMemoryNativeTask(ITestOutputHelper output) : base(output) { }
+        public SendReceive_MemoryNativeTask(ITestOutputHelper output) : base(output) { }
     }
 }
