@@ -157,6 +157,7 @@
 
     <MakeDir Directories="$(TestArchiveTestsRoot)" />
     <ZipDirectory
+        Condition="'@(SupportedPackage)' != ''"
         SourceDirectory="$(TestProjectDir)%(SupportedPackage.Identity)"
         DestinationFile="$(TestArchiveTestsRoot)%(SupportedPackage.Identity).zip"
         Overwrite="true" />
