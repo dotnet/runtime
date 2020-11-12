@@ -127,7 +127,7 @@ namespace System.Resources
             IDictionary? copyOfTableAsIDictionary = _table;  // Avoid a race with Dispose
             if (copyOfTableAsIDictionary == null)
                 throw new ObjectDisposedException(null, SR.ObjectDisposed_ResourceSet);
-                
+
              // Use IDictionary.GetEnumerator() for backward compatibility. Callers expect the enumerator to return DictionaryEntry instances.
             return copyOfTableAsIDictionary.GetEnumerator();
         }
