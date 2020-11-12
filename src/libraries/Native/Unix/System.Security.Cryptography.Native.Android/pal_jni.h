@@ -59,6 +59,8 @@ extern jmethodID g_toByteArrayMethod;
 #define LOG_DEBUG(fmt, ...) ((void)__android_log_print(ANDROID_LOG_DEBUG, "DOTNET", "%s: " fmt, __FUNCTION__, ## __VA_ARGS__))
 #define LOG_INFO(fmt, ...) ((void)__android_log_print(ANDROID_LOG_INFO, "DOTNET", "%s: " fmt, __FUNCTION__, ## __VA_ARGS__))
 #define LOG_ERROR(fmt, ...) ((void)__android_log_print(ANDROID_LOG_ERROR, "DOTNET", "%s: " fmt, __FUNCTION__, ## __VA_ARGS__))
+#define JSTRING(str) ((jstring)(*env)->NewStringUTF(env, str))
+
 jobject ToGRef(JNIEnv *env, jobject lref);
 void ReleaseGRef(JNIEnv *env, jobject gref);
 jclass GetClassGRef(JNIEnv *env, const char* name);

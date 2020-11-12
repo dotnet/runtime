@@ -17,15 +17,15 @@ jobject CryptoNative_HmacCreate(uint8_t* key, int32_t keyLen, intptr_t type)
 
     jstring macName = NULL;
     if (type == CryptoNative_EvpSha1())
-        macName = (jstring)(*env)->NewStringUTF(env, "HmacSHA1");
+        macName = JSTRING("HmacSHA1");
     else if (type == CryptoNative_EvpSha256())
-        macName = (jstring)(*env)->NewStringUTF(env, "HmacSHA256");
+        macName = JSTRING("HmacSHA256");
     else if (type == CryptoNative_EvpSha384())
-        macName = (jstring)(*env)->NewStringUTF(env, "HmacSHA384");
+        macName = JSTRING("HmacSHA384");
     else if (type == CryptoNative_EvpSha512())
-        macName = (jstring)(*env)->NewStringUTF(env, "HmacSHA512");
+        macName = JSTRING("HmacSHA512");
     else if (type == CryptoNative_EvpMd5())
-        macName = (jstring)(*env)->NewStringUTF(env, "HmacMD5");
+        macName = JSTRING("HmacMD5");
     else
         return FAIL;
 

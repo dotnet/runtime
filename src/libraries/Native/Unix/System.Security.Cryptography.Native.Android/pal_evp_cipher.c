@@ -32,7 +32,7 @@ intptr_t CryptoNative_EvpDesCbc()       { return 1025; }
 intptr_t CryptoNative_EvpRC2Ecb()       { return 1026; }
 intptr_t CryptoNative_EvpRC2Cbc()       { return 1027; }
 
-void* CryptoNative_EvpCipherCreate2(intptr_t type, uint8_t* key, int32_t keyLength, int32_t effectiveKeyLength, uint8_t* iv, int32_t enc)
+jobject CryptoNative_EvpCipherCreate2(intptr_t type, uint8_t* key, int32_t keyLength, int32_t effectiveKeyLength, uint8_t* iv, int32_t enc)
 {
     if (effectiveKeyLength != 0)
     {
@@ -58,21 +58,21 @@ void* CryptoNative_EvpCipherCreate2(intptr_t type, uint8_t* key, int32_t keyLeng
         (type == CryptoNative_EvpAes192Cbc()) ||
         (type == CryptoNative_EvpAes256Cbc()))
     {
-        algName = (*env)->NewStringUTF(env, "AES/CBC/NoPadding");
+        algName = JSTRING("AES/CBC/NoPadding");
     }
     else if (
         (type == CryptoNative_EvpAes128Ecb()) ||
         (type == CryptoNative_EvpAes192Ecb()) ||
         (type == CryptoNative_EvpAes256Ecb()))
     {
-        algName = (*env)->NewStringUTF(env, "AES/ECB/NoPadding");
+        algName = JSTRING("AES/ECB/NoPadding");
     }
     else if (
         (type == CryptoNative_EvpAes128Cfb8()) ||
         (type == CryptoNative_EvpAes192Cfb8()) ||
         (type == CryptoNative_EvpAes256Cfb8()))
     {
-        algName = (*env)->NewStringUTF(env, "AES/CFB/NoPadding");
+        algName = JSTRING("AES/CFB/NoPadding");
     }
     else
     {
@@ -101,16 +101,15 @@ void* CryptoNative_EvpCipherCreate2(intptr_t type, uint8_t* key, int32_t keyLeng
     return CheckJNIExceptions(env) ? FAIL : cipherObj;
 }
 
-int32_t CryptoNative_EvpCipherUpdate(void* ctx, uint8_t* outm, int32_t* outl, uint8_t* in, int32_t inl)
+int32_t CryptoNative_EvpCipherUpdate(jobject ctx, uint8_t* outm, int32_t* outl, uint8_t* in, int32_t inl)
 {
     if (!ctx)
         return FAIL;
 
     JNIEnv* env = GetJNIEnv();
-    jobject cipherObj = (jobject)ctx;
     jbyteArray inDataBytes = (*env)->NewByteArray(env, inl);
     (*env)->SetByteArrayRegion(env, inDataBytes, 0, inl, (jbyte*)in);
-    jbyteArray outDataBytes = (jbyteArray)(*env)->CallObjectMethod(env, cipherObj, g_cipherUpdateMethod, inDataBytes);
+    jbyteArray outDataBytes = (jbyteArray)(*env)->CallObjectMethod(env, ctx, g_cipherUpdateMethod, inDataBytes);
     if (outDataBytes) {
         jsize outDataBytesLen = (*env)->GetArrayLength(env, outDataBytes);
         *outl = (int32_t)outDataBytesLen;
@@ -125,17 +124,16 @@ int32_t CryptoNative_EvpCipherUpdate(void* ctx, uint8_t* outm, int32_t* outl, ui
     return CheckJNIExceptions(env) ? FAIL : SUCCESS;
 }
 
-int32_t CryptoNative_EvpCipherFinalEx(void* ctx, uint8_t* outm, int32_t* outl)
+int32_t CryptoNative_EvpCipherFinalEx(jobject ctx, uint8_t* outm, int32_t* outl)
 {
     if (!ctx)
         return FAIL;
 
     JNIEnv* env = GetJNIEnv();
-    jobject cipherObj = (jobject)ctx;
 
-    int blockSize = (*env)->CallIntMethod(env, cipherObj, g_getBlockSizeMethod);
+    int blockSize = (*env)->CallIntMethod(env, ctx, g_getBlockSizeMethod);
     jbyteArray outBytes = (*env)->NewByteArray(env, blockSize);
-    int written = (*env)->CallIntMethod(env, cipherObj, g_cipherDoFinalMethod, outBytes, 0 /*offset*/);
+    int written = (*env)->CallIntMethod(env, ctx, g_cipherDoFinalMethod, outBytes, 0 /*offset*/);
     if (written > 0)
         (*env)->GetByteArrayRegion(env, outBytes, 0, blockSize, (jbyte*) outm);
     *outl = written;
@@ -144,7 +142,7 @@ int32_t CryptoNative_EvpCipherFinalEx(void* ctx, uint8_t* outm, int32_t* outl)
     return CheckJNIExceptions(env) ? FAIL : SUCCESS;
 }
 
-int32_t CryptoNative_EvpCipherCtxSetPadding(void* x, int32_t padding)
+int32_t CryptoNative_EvpCipherCtxSetPadding(jobject ctx, int32_t padding)
 {
     if (padding == 0)
     {
@@ -157,13 +155,13 @@ int32_t CryptoNative_EvpCipherCtxSetPadding(void* x, int32_t padding)
     }
 }
 
-int32_t CryptoNative_EvpCipherReset(void* ctx)
+int32_t CryptoNative_EvpCipherReset(jobject ctx)
 {
     // there is no "reset()" API for an existing Cipher object
     return SUCCESS;
 }
 
-void CryptoNative_EvpCipherDestroy(void* ctx)
+void CryptoNative_EvpCipherDestroy(jobject ctx)
 {
-    ReleaseGRef(GetJNIEnv(), (jobject)ctx);
+    ReleaseGRef(GetJNIEnv(), ctx);
 }

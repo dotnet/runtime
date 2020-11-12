@@ -30,15 +30,15 @@ static jobject GetMessageDigestInstance(JNIEnv* env, intptr_t type)
 {
     jobject mdName = NULL;
     if (type == CryptoNative_EvpSha1())
-        mdName = (*env)->NewStringUTF(env, "SHA-1");
+        mdName = JSTRING("SHA-1");
     else if (type == CryptoNative_EvpSha256())
-        mdName = (*env)->NewStringUTF(env, "SHA-256");
+        mdName = JSTRING("SHA-256");
     else if (type == CryptoNative_EvpSha384())
-        mdName = (*env)->NewStringUTF(env, "SHA-384");
+        mdName = JSTRING("SHA-384");
     else if (type == CryptoNative_EvpSha512())
-        mdName = (*env)->NewStringUTF(env, "SHA-512");
+        mdName = JSTRING("SHA-512");
     else if (type == CryptoNative_EvpMd5())
-        mdName = (*env)->NewStringUTF(env, "MD5");
+        mdName = JSTRING("MD5");
     else
         return NULL;
 
