@@ -74,7 +74,7 @@ if [ ! -z ${RunCrossGen2+x} ]%3B then
     while [ ! -f $compilationDoneFlagFile ]%3B
     do 
       echo "Waiting for concurrent Crossgen2 compilation: $compilationDoneFlagFile"
-      sleep 10%3B
+      sleep 5%3B
     done
   else
     TakeLock
@@ -220,9 +220,9 @@ if defined RunCrossGen2 (
     if exist "IL-CG2" (
       REM We may have come in the middle of a concurrent CG2 compilation, wait for it to finish
       :ProbeCompilationFinished
-      if !exist "!compilationDoneFlagFile!" (
+      if !exist "%compilationDoneFlagFile%" (
         echo Waiting for concurrent Crossgen2 compilation^: !compilationDoneFlagFile!
-        timeout /t 10 /nobreak
+        timeout /t 5 /nobreak
         goto :ProbeCompilationFinished
       )
     )
