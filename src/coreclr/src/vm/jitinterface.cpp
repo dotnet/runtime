@@ -12246,8 +12246,6 @@ CorJitResult invokeCompileMethodHelper(EEJitManager *jitMgr,
 
     CorJitResult ret = CORJIT_SKIPPED;   // Note that CORJIT_SKIPPED is an error exit status code
 
-    comp->setJitFlags(jitFlags);
-
 #ifdef FEATURE_STACK_SAMPLING
     static ConfigDWORD s_stackSamplingEnabled;
     bool samplingEnabled = (s_stackSamplingEnabled.val(CLRConfig::UNSUPPORTED_StackSamplingEnabled) != 0);
@@ -12260,6 +12258,8 @@ CorJitResult invokeCompileMethodHelper(EEJitManager *jitMgr,
 #endif
        )
     {
+        CORJIT_FLAGS altJitFlags = jitFlags;
+        altJitFlags.Set(CORJIT_FLAGS::CORJIT_FLAG_ALT_JIT);
         ret = jitMgr->m_alternateJit->compileMethod( comp,
                                                      info,
                                                      CORJIT_FLAGS::CORJIT_FLAG_CALL_GETJITFLAGS,
@@ -12283,6 +12283,7 @@ CorJitResult invokeCompileMethodHelper(EEJitManager *jitMgr,
         }
     }
 #endif // defined(ALLOW_SXS_JIT) && !defined(CROSSGEN_COMPILE)
+    comp->setJitFlags(jitFlags);
 
 #ifdef FEATURE_INTERPRETER
     static ConfigDWORD s_InterpreterFallback;

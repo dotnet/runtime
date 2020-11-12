@@ -97,7 +97,7 @@ public:
 
         CORJIT_FLAG_NO_INLINING             = 42, // JIT should not inline any called method into this method
 
-        CORJIT_FLAG_UNUSED14                = 43,
+        CORJIT_FLAG_ALT_JIT                 = 43, // JIT should consider itself an ALT_JIT
         CORJIT_FLAG_UNUSED15                = 44,
         CORJIT_FLAG_UNUSED16                = 45,
         CORJIT_FLAG_UNUSED17                = 46,
