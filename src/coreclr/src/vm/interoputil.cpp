@@ -1331,31 +1331,10 @@ void CleanupSyncBlockComData(InteropSyncBlockInfo* pInteropInfo)
 #endif // FEATURE_COMWRAPPERS
 }
 
-void ReleaseRCWsInCachesNoThrow(LPVOID pCtxCookie)
-{
-    CONTRACTL
-    {
-        DISABLED(NOTHROW);
-        GC_TRIGGERS;
-        MODE_ANY;
-        PRECONDITION(CheckPointer(pCtxCookie, NULL_OK));
-    }
-    CONTRACTL_END;
-
-    EX_TRY
-    {
-        ReleaseRCWsInCaches(pCtxCookie);
-    }
-    EX_CATCH
-    {
-    }
-    EX_END_CATCH(SwallowAllExceptions);
-}
-
 //--------------------------------------------------------------------------------
 //  Helper to release all of the RCWs in the specified context across all caches.
 //  If pCtxCookie is NULL, release all RCWs
-void ReleaseRCWsInCaches(LPVOID pCtxCookie)
+static void ReleaseRCWsInCaches(LPVOID pCtxCookie)
 {
     CONTRACTL
     {
@@ -1387,6 +1366,27 @@ void ReleaseRCWsInCaches(LPVOID pCtxCookie)
         if (FinalizerThread::GetFinalizerThread()->RequireSyncBlockCleanup() || SyncBlockCache::GetSyncBlockCache()->IsSyncBlockCleanupInProgress())
             FinalizerThread::FinalizerThreadWait();
     }
+}
+
+void ReleaseRCWsInCachesNoThrow(LPVOID pCtxCookie)
+{
+    CONTRACTL
+    {
+        DISABLED(NOTHROW);
+        GC_TRIGGERS;
+        MODE_ANY;
+        PRECONDITION(CheckPointer(pCtxCookie, NULL_OK));
+    }
+    CONTRACTL_END;
+
+    EX_TRY
+    {
+        ReleaseRCWsInCaches(pCtxCookie);
+    }
+    EX_CATCH
+    {
+    }
+    EX_END_CATCH(SwallowAllExceptions);
 }
 
 //--------------------------------------------------------------------------------
@@ -1520,47 +1520,6 @@ HRESULT EnsureComStartedNoThrow(BOOL fCoInitCurrentThread)
 
     return hr;
 }
-
-//--------------------------------------------------------------------------------
-// BOOL ExtendsComImport(MethodTable* pMT);
-// check if the class is OR extends a COM Imported class
-BOOL ExtendsComImport(MethodTable* pMT)
-{
-    CONTRACTL
-    {
-        NOTHROW;
-        GC_NOTRIGGER;
-        MODE_ANY;
-        PRECONDITION(CheckPointer(pMT));
-    }
-    CONTRACTL_END;
-
-    while (pMT != NULL && !pMT->IsComImport())
-    {
-        pMT = pMT->GetParentMethodTable();
-    }
-    return pMT != NULL;
-}
-
-#ifdef FEATURE_COMINTEROP
-//--------------------------------------------------------------------------------
-// Gets the CLSID from the specified Prog ID.
-
-HRESULT GetCLSIDFromProgID(__in_z WCHAR *strProgId, GUID *pGuid)
-{
-    CONTRACTL
-    {
-        NOTHROW;
-        GC_TRIGGERS;
-        MODE_PREEMPTIVE;
-    }
-    CONTRACTL_END;
-
-    HRESULT     hr = S_OK;
-
-    return CLSIDFromProgID(strProgId, pGuid);
-}
-#endif // FEATURE_COMINTEROP
 
 #include <optsmallperfcritical.h>
 //--------------------------------------------------------------------------------
@@ -1875,45 +1834,6 @@ OBJECTREF AllocateComObject_ForManaged(MethodTable* pMT)
     return pComClsFac->CreateInstance(pMT, TRUE);
 }
 #endif // FEATURE_COMINTEROP_UNMANAGED_ACTIVATION
-
-#ifdef FEATURE_COMINTEROP
-
-//---------------------------------------------------------------------------
-//  get/load type for a given clsid
-MethodTable* GetTypeForCLSID(REFCLSID rclsid)
-{
-    CONTRACT (MethodTable*)
-    {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_COOPERATIVE;
-        POSTCONDITION(CheckPointer(RETVAL, NULL_OK));
-    }
-    CONTRACT_END;
-
-    // Not supported in .NET Core - requires typelib registration/generation
-    RETURN NULL;
-}
-
-
-//---------------------------------------------------------------------------
-//  get/load a value class for a given guid
-MethodTable* GetValueTypeForGUID(REFCLSID guid)
-{
-    CONTRACT (MethodTable*)
-    {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_COOPERATIVE;
-        POSTCONDITION(CheckPointer(RETVAL, NULL_OK));
-    }
-    CONTRACT_END;
-
-    // Not supported in .NET Core - requires typelib registration/generation
-    RETURN NULL;
-}
-
-#endif // FEATURE_COMINTEROP
 
 #endif //#ifndef CROSSGEN_COMPILE
 
@@ -4343,66 +4263,6 @@ void UnmarshalObjectFromInterface(OBJECTREF *ppObjectDest, IUnknown **ppUnkSrc, 
         }
     }
 }
-
-#ifdef FEATURE_COMINTEROP
-
-//--------------------------------------------------------------------------------
-//  Check if the pUnk implements IProvideClassInfo and try to figure
-// out the class from there
-MethodTable* GetClassFromIProvideClassInfo(IUnknown* pUnk)
-{
-    CONTRACT (MethodTable*)
-    {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_ANY;
-        PRECONDITION(CheckPointer(pUnk));
-        POSTCONDITION(CheckPointer(RETVAL, NULL_OK));
-    }
-    CONTRACT_END;
-
-    MethodTable*                    pClassMT    = NULL;
-    SafeComHolder<ITypeInfo>            pTypeInfo   = NULL;
-    SafeComHolder<IProvideClassInfo>    pclsInfo    = NULL;
-
-    // Use IProvideClassInfo to detect the appropriate class to use for wrapping
-    HRESULT hr = SafeQueryInterface(pUnk, IID_IProvideClassInfo, (IUnknown **)&pclsInfo);
-    LogInteropQI(pUnk, IID_IProvideClassInfo, hr, "GetClassFromIProvideClassInfo: QIing for IProvideClassinfo");
-    if (hr == S_OK && pclsInfo)
-    {
-        hr = E_FAIL;
-
-        // Make sure the class info is not our own
-        if (!IsSimpleTearOff(pclsInfo))
-        {
-            GCX_PREEMP();
-
-            hr = pclsInfo->GetClassInfo(&pTypeInfo);
-        }
-
-        // If we succeded in retrieving the type information then keep going.
-        TYPEATTRHolder ptattr(pTypeInfo);
-        if (hr == S_OK && pTypeInfo)
-        {
-            {
-            GCX_PREEMP();
-            hr = pTypeInfo->GetTypeAttr(&ptattr);
-            }
-
-            // If we succeeded in retrieving the attributes and they represent
-            // a CoClass, then look up the class from the CLSID.
-            if (hr == S_OK && ptattr->typekind == TKIND_COCLASS)
-            {
-                GCX_ASSERT_COOP();
-                pClassMT = GetTypeForCLSID(ptattr->guid);
-            }
-        }
-    }
-
-    RETURN pClassMT;
-}
-
-#endif // FEATURE_COMINTEROP
 
 #endif //#ifndef CROSSGEN_COMPILE
 

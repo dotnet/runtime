@@ -16,10 +16,11 @@ namespace System.Threading
 
         private readonly int _maximumSignalCount;
         private readonly int _spinCount;
+        private readonly Action _onWait;
 
         private const int SpinSleep0Threshold = 10;
 
-        public LowLevelLifoSemaphore(int initialSignalCount, int maximumSignalCount, int spinCount)
+        public LowLevelLifoSemaphore(int initialSignalCount, int maximumSignalCount, int spinCount, Action onWait)
         {
             Debug.Assert(initialSignalCount >= 0);
             Debug.Assert(initialSignalCount <= maximumSignalCount);
@@ -27,16 +28,19 @@ namespace System.Threading
             Debug.Assert(spinCount >= 0);
 
             _separated = default;
-            _separated._counts._signalCount = (uint)initialSignalCount;
+            _separated._counts.SignalCount = (uint)initialSignalCount;
             _maximumSignalCount = maximumSignalCount;
             _spinCount = spinCount;
+            _onWait = onWait;
 
             Create(maximumSignalCount);
         }
 
-        public bool Wait(int timeoutMs)
+        public bool Wait(int timeoutMs, bool spinWait)
         {
             Debug.Assert(timeoutMs >= -1);
+
+            int spinCount = spinWait ? _spinCount : 0;
 
             // Try to acquire the semaphore or
             // a) register as a spinner if spinCount > 0 and timeoutMs > 0
@@ -45,35 +49,33 @@ namespace System.Threading
             Counts counts = _separated._counts;
             while (true)
             {
-                Debug.Assert(counts._signalCount <= _maximumSignalCount);
+                Debug.Assert(counts.SignalCount <= _maximumSignalCount);
                 Counts newCounts = counts;
-
-                if (counts._signalCount != 0)
+                if (counts.SignalCount != 0)
                 {
-                    newCounts._signalCount--;
+                    newCounts.DecrementSignalCount();
                 }
                 else if (timeoutMs != 0)
                 {
-                    if (_spinCount > 0 && newCounts._spinnerCount < byte.MaxValue)
+                    if (spinCount > 0 && newCounts.SpinnerCount < byte.MaxValue)
                     {
-                        newCounts._spinnerCount++;
+                        newCounts.IncrementSpinnerCount();
                     }
                     else
                     {
                         // Maximum number of spinners reached, register as a waiter instead
-                        newCounts._waiterCount++;
-                        Debug.Assert(newCounts._waiterCount != 0); // overflow check, this many waiters is currently not supported
+                        newCounts.IncrementWaiterCount();
                     }
                 }
 
-                Counts countsBeforeUpdate = _separated._counts.CompareExchange(newCounts, counts);
+                Counts countsBeforeUpdate = _separated._counts.InterlockedCompareExchange(newCounts, counts);
                 if (countsBeforeUpdate == counts)
                 {
-                    if (counts._signalCount != 0)
+                    if (counts.SignalCount != 0)
                     {
                         return true;
                     }
-                    if (newCounts._waiterCount != counts._waiterCount)
+                    if (newCounts.WaiterCount != counts.WaiterCount)
                     {
                         return WaitForSignal(timeoutMs);
                     }
@@ -87,22 +89,26 @@ namespace System.Threading
                 counts = countsBeforeUpdate;
             }
 
+#if CORECLR && TARGET_UNIX
+            // The PAL's wait subsystem is slower, spin more to compensate for the more expensive wait
+            spinCount *= 2;
+#endif
             int processorCount = Environment.ProcessorCount;
             int spinIndex = processorCount > 1 ? 0 : SpinSleep0Threshold;
-            while (spinIndex < _spinCount)
+            while (spinIndex < spinCount)
             {
                 LowLevelSpinWaiter.Wait(spinIndex, SpinSleep0Threshold, processorCount);
                 spinIndex++;
 
                 // Try to acquire the semaphore and unregister as a spinner
                 counts = _separated._counts;
-                while (counts._signalCount > 0)
+                while (counts.SignalCount > 0)
                 {
                     Counts newCounts = counts;
-                    newCounts._signalCount--;
-                    newCounts._spinnerCount--;
+                    newCounts.DecrementSignalCount();
+                    newCounts.DecrementSpinnerCount();
 
-                    Counts countsBeforeUpdate = _separated._counts.CompareExchange(newCounts, counts);
+                    Counts countsBeforeUpdate = _separated._counts.InterlockedCompareExchange(newCounts, counts);
                     if (countsBeforeUpdate == counts)
                     {
                         return true;
@@ -112,32 +118,30 @@ namespace System.Threading
                 }
             }
 
-            // Unregister as spinner and acquire the semaphore or register as a waiter
+            // Unregister as spinner, and acquire the semaphore or register as a waiter
             counts = _separated._counts;
             while (true)
             {
                 Counts newCounts = counts;
-                newCounts._spinnerCount--;
-                if (counts._signalCount != 0)
+                newCounts.DecrementSpinnerCount();
+                if (counts.SignalCount != 0)
                 {
-                    newCounts._signalCount--;
+                    newCounts.DecrementSignalCount();
                 }
                 else
                 {
-                    newCounts._waiterCount++;
-                    Debug.Assert(newCounts._waiterCount != 0); // overflow check, this many waiters is currently not supported
+                    newCounts.IncrementWaiterCount();
                 }
 
-                Counts countsBeforeUpdate = _separated._counts.CompareExchange(newCounts, counts);
+                Counts countsBeforeUpdate = _separated._counts.InterlockedCompareExchange(newCounts, counts);
                 if (countsBeforeUpdate == counts)
                 {
-                    return counts._signalCount != 0 || WaitForSignal(timeoutMs);
+                    return counts.SignalCount != 0 || WaitForSignal(timeoutMs);
                 }
 
                 counts = countsBeforeUpdate;
             }
         }
-
 
         public void Release(int releaseCount)
         {
@@ -151,15 +155,14 @@ namespace System.Threading
                 Counts newCounts = counts;
 
                 // Increase the signal count. The addition doesn't overflow because of the limit on the max signal count in constructor.
-                newCounts._signalCount += (uint)releaseCount;
-                Debug.Assert(newCounts._signalCount > counts._signalCount);
+                newCounts.AddSignalCount((uint)releaseCount);
 
                 // Determine how many waiters to wake, taking into account how many spinners and waiters there are and how many waiters
                 // have previously been signaled to wake but have not yet woken
                 countOfWaitersToWake =
-                    (int)Math.Min(newCounts._signalCount, (uint)newCounts._waiterCount + newCounts._spinnerCount) -
-                    newCounts._spinnerCount -
-                    newCounts._countOfWaitersSignaledToWake;
+                    (int)Math.Min(newCounts.SignalCount, (uint)counts.WaiterCount + counts.SpinnerCount) -
+                    counts.SpinnerCount -
+                    counts.CountOfWaitersSignaledToWake;
                 if (countOfWaitersToWake > 0)
                 {
                     // Ideally, limiting to a maximum of releaseCount would not be necessary and could be an assert instead, but since
@@ -173,17 +176,13 @@ namespace System.Threading
 
                     // Cap countOfWaitersSignaledToWake to its max value. It's ok to ignore some woken threads in this count, it just
                     // means some more threads will be woken next time. Typically, it won't reach the max anyway.
-                    newCounts._countOfWaitersSignaledToWake += (byte)Math.Min(countOfWaitersToWake, byte.MaxValue);
-                    if (newCounts._countOfWaitersSignaledToWake <= counts._countOfWaitersSignaledToWake)
-                    {
-                        newCounts._countOfWaitersSignaledToWake = byte.MaxValue;
-                    }
+                    newCounts.AddUpToMaxCountOfWaitersSignaledToWake((uint)countOfWaitersToWake);
                 }
 
-                Counts countsBeforeUpdate = _separated._counts.CompareExchange(newCounts, counts);
+                Counts countsBeforeUpdate = _separated._counts.InterlockedCompareExchange(newCounts, counts);
                 if (countsBeforeUpdate == counts)
                 {
-                    Debug.Assert(releaseCount <= _maximumSignalCount - counts._signalCount);
+                    Debug.Assert(releaseCount <= _maximumSignalCount - counts.SignalCount);
                     if (countOfWaitersToWake > 0)
                         ReleaseCore(countOfWaitersToWake);
                     return;
@@ -197,16 +196,15 @@ namespace System.Threading
         {
             Debug.Assert(timeoutMs > 0 || timeoutMs == -1);
 
+            _onWait();
+
             while (true)
             {
                 if (!WaitCore(timeoutMs))
                 {
                     // Unregister the waiter. The wait subsystem used above guarantees that a thread that wakes due to a timeout does
                     // not observe a signal to the object being waited upon.
-                    Counts toSubtract = default;
-                    toSubtract._waiterCount++;
-                    Counts newCounts = _separated._counts.Subtract(toSubtract);
-                    Debug.Assert(newCounts._waiterCount != ushort.MaxValue); // Check for underflow
+                    _separated._counts.InterlockedDecrementWaiterCount();
                     return false;
                 }
 
@@ -214,24 +212,24 @@ namespace System.Threading
                 Counts counts = _separated._counts;
                 while (true)
                 {
-                    Debug.Assert(counts._waiterCount != 0);
+                    Debug.Assert(counts.WaiterCount != 0);
                     Counts newCounts = counts;
-                    if (counts._signalCount != 0)
+                    if (counts.SignalCount != 0)
                     {
-                        --newCounts._signalCount;
-                        --newCounts._waiterCount;
+                        newCounts.DecrementSignalCount();
+                        newCounts.DecrementWaiterCount();
                     }
 
                     // This waiter has woken up and this needs to be reflected in the count of waiters signaled to wake
-                    if (counts._countOfWaitersSignaledToWake != 0)
+                    if (counts.CountOfWaitersSignaledToWake != 0)
                     {
-                        --newCounts._countOfWaitersSignaledToWake;
+                        newCounts.DecrementCountOfWaitersSignaledToWake();
                     }
 
-                    Counts countsBeforeUpdate = _separated._counts.CompareExchange(newCounts, counts);
+                    Counts countsBeforeUpdate = _separated._counts.InterlockedCompareExchange(newCounts, counts);
                     if (countsBeforeUpdate == counts)
                     {
-                        if (counts._signalCount != 0)
+                        if (counts.SignalCount != 0)
                         {
                             return true;
                         }
@@ -243,44 +241,119 @@ namespace System.Threading
             }
         }
 
-        [StructLayout(LayoutKind.Explicit)]
         private struct Counts
         {
-            [FieldOffset(0)]
-            public uint _signalCount;
-            [FieldOffset(4)]
-            public ushort _waiterCount;
-            [FieldOffset(6)]
-            public byte _spinnerCount;
-            [FieldOffset(7)]
-            public byte _countOfWaitersSignaledToWake;
+            private const byte SignalCountShift = 0;
+            private const byte WaiterCountShift = 32;
+            private const byte SpinnerCountShift = 48;
+            private const byte CountOfWaitersSignaledToWakeShift = 56;
 
-            [FieldOffset(0)]
-            private long _asLong;
+            private ulong _data;
 
-            public Counts CompareExchange(Counts newCounts, Counts oldCounts)
+            private Counts(ulong data) => _data = data;
+
+            private uint GetUInt32Value(byte shift) => (uint)(_data >> shift);
+            private void SetUInt32Value(uint value, byte shift) =>
+                _data = (_data & ~((ulong)uint.MaxValue << shift)) | ((ulong)value << shift);
+            private ushort GetUInt16Value(byte shift) => (ushort)(_data >> shift);
+            private void SetUInt16Value(ushort value, byte shift) =>
+                _data = (_data & ~((ulong)ushort.MaxValue << shift)) | ((ulong)value << shift);
+            private byte GetByteValue(byte shift) => (byte)(_data >> shift);
+            private void SetByteValue(byte value, byte shift) =>
+                _data = (_data & ~((ulong)byte.MaxValue << shift)) | ((ulong)value << shift);
+
+            public uint SignalCount
             {
-                return new Counts { _asLong = Interlocked.CompareExchange(ref _asLong, newCounts._asLong, oldCounts._asLong) };
+                get => GetUInt32Value(SignalCountShift);
+                set => SetUInt32Value(value, SignalCountShift);
             }
 
-            public Counts Subtract(Counts subtractCounts)
+            public void AddSignalCount(uint value)
             {
-                return new Counts { _asLong = Interlocked.Add(ref _asLong, -subtractCounts._asLong) };
+                Debug.Assert(value <= uint.MaxValue - SignalCount);
+                _data += (ulong)value << SignalCountShift;
             }
 
-            public static bool operator ==(Counts lhs, Counts rhs) => lhs._asLong == rhs._asLong;
+            public void IncrementSignalCount() => AddSignalCount(1);
 
-            public static bool operator !=(Counts lhs, Counts rhs) => lhs._asLong != rhs._asLong;
-
-            public override bool Equals(object? obj)
+            public void DecrementSignalCount()
             {
-                return obj is Counts counts && this._asLong == counts._asLong;
+                Debug.Assert(SignalCount != 0);
+                _data -= (ulong)1 << SignalCountShift;
             }
 
-            public override int GetHashCode()
+            public ushort WaiterCount
             {
-                return (int)(_asLong >> 8);
+                get => GetUInt16Value(WaiterCountShift);
+                set => SetUInt16Value(value, WaiterCountShift);
             }
+
+            public void IncrementWaiterCount()
+            {
+                Debug.Assert(WaiterCount < ushort.MaxValue);
+                _data += (ulong)1 << WaiterCountShift;
+            }
+
+            public void DecrementWaiterCount()
+            {
+                Debug.Assert(WaiterCount != 0);
+                _data -= (ulong)1 << WaiterCountShift;
+            }
+
+            public void InterlockedDecrementWaiterCount()
+            {
+                var countsAfterUpdate = new Counts(Interlocked.Add(ref _data, unchecked((ulong)-1) << WaiterCountShift));
+                Debug.Assert(countsAfterUpdate.WaiterCount != ushort.MaxValue); // underflow check
+            }
+
+            public byte SpinnerCount
+            {
+                get => GetByteValue(SpinnerCountShift);
+                set => SetByteValue(value, SpinnerCountShift);
+            }
+
+            public void IncrementSpinnerCount()
+            {
+                Debug.Assert(SpinnerCount < byte.MaxValue);
+                _data += (ulong)1 << SpinnerCountShift;
+            }
+
+            public void DecrementSpinnerCount()
+            {
+                Debug.Assert(SpinnerCount != 0);
+                _data -= (ulong)1 << SpinnerCountShift;
+            }
+
+            public byte CountOfWaitersSignaledToWake
+            {
+                get => GetByteValue(CountOfWaitersSignaledToWakeShift);
+                set => SetByteValue(value, CountOfWaitersSignaledToWakeShift);
+            }
+
+            public void AddUpToMaxCountOfWaitersSignaledToWake(uint value)
+            {
+                uint availableCount = (uint)(byte.MaxValue - CountOfWaitersSignaledToWake);
+                if (value > availableCount)
+                {
+                    value = availableCount;
+                }
+                _data += (ulong)value << CountOfWaitersSignaledToWakeShift;
+            }
+
+            public void DecrementCountOfWaitersSignaledToWake()
+            {
+                Debug.Assert(CountOfWaitersSignaledToWake != 0);
+                _data -= (ulong)1 << CountOfWaitersSignaledToWakeShift;
+            }
+
+            public Counts InterlockedCompareExchange(Counts newCounts, Counts oldCounts) =>
+                new Counts(Interlocked.CompareExchange(ref _data, newCounts._data, oldCounts._data));
+
+            public static bool operator ==(Counts lhs, Counts rhs) => lhs._data == rhs._data;
+            public static bool operator !=(Counts lhs, Counts rhs) => lhs._data != rhs._data;
+
+            public override bool Equals(object? obj) => obj is Counts counts && _data == counts._data;
+            public override int GetHashCode() => (int)_data + (int)(_data >> 32);
         }
 
         [StructLayout(LayoutKind.Sequential)]

@@ -742,7 +742,7 @@ private:
         {
             case TYP_REF:
                 assert(0 <= offset && offset <= 1); // Null or exception.
-                __fallthrough;
+                FALLTHROUGH;
 
             case TYP_BYREF:
 
@@ -752,7 +752,7 @@ private:
 
 #endif // _MSC_VER
 
-                __fallthrough;
+                FALLTHROUGH;
 
             case TYP_INT:
             case TYP_LONG:

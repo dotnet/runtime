@@ -14,12 +14,10 @@ internal static partial class Interop
 {
     internal static partial class procfs
     {
-        internal const string RootPath = "/proc/";
         private const string ExeFileName = "/exe";
         private const string CmdLineFileName = "/cmdline";
         private const string StatFileName = "/stat";
         private const string MapsFileName = "/maps";
-        private const string StatusFileName = "/status";
         private const string FileDescriptorDirectoryName = "/fd/";
         private const string TaskDirectoryName = "/task/";
 
@@ -80,19 +78,6 @@ internal static partial class Interop
             //internal long cguest_time;
         }
 
-        internal struct ParsedStatus
-        {
-#if DEBUG
-            internal int Pid;
-#endif
-            internal ulong VmHWM;
-            internal ulong VmRSS;
-            internal ulong VmData;
-            internal ulong VmSwap;
-            internal ulong VmSize;
-            internal ulong VmPeak;
-        }
-
         internal struct ParsedMapsModule
         {
             internal string FileName;
@@ -112,11 +97,6 @@ internal static partial class Interop
         internal static string GetStatFilePathForProcess(int pid)
         {
             return RootPath + pid.ToString(CultureInfo.InvariantCulture) + StatFileName;
-        }
-
-        internal static string GetStatusFilePathForProcess(int pid)
-        {
-            return RootPath + pid.ToString(CultureInfo.InvariantCulture) + StatusFileName;
         }
 
         internal static string GetMapsFilePathForProcess(int pid)
@@ -219,32 +199,23 @@ internal static partial class Interop
             return GetTaskDirectoryPathForProcess(pid) + tid.ToString(CultureInfo.InvariantCulture) + StatFileName;
         }
 
-        internal static bool TryReadStatFile(int pid, out ParsedStat result, ReusableTextReader reusableReader)
+        internal static bool TryReadStatFile(int pid, out ParsedStat result)
         {
-            bool b = TryParseStatFile(GetStatFilePathForProcess(pid), out result, reusableReader);
+            bool b = TryParseStatFile(GetStatFilePathForProcess(pid), out result);
             Debug.Assert(!b || result.pid == pid, "Expected process ID from stat file to match supplied pid");
             return b;
         }
 
-        internal static bool TryReadStatFile(int pid, int tid, out ParsedStat result, ReusableTextReader reusableReader)
+        internal static bool TryReadStatFile(int pid, int tid, out ParsedStat result)
         {
-            bool b = TryParseStatFile(GetStatFilePathForThread(pid, tid), out result, reusableReader);
+            bool b = TryParseStatFile(GetStatFilePathForThread(pid, tid), out result);
             Debug.Assert(!b || result.pid == tid, "Expected thread ID from stat file to match supplied tid");
             return b;
         }
 
-        internal static bool TryReadStatusFile(int pid, out ParsedStatus result, ReusableTextReader reusableReader)
+        internal static bool TryParseStatFile(string statFilePath, out ParsedStat result)
         {
-            bool b = TryParseStatusFile(GetStatusFilePathForProcess(pid), out result, reusableReader);
-#if DEBUG
-            Debug.Assert(!b || result.Pid == pid, "Expected process ID from status file to match supplied pid");
-#endif
-            return b;
-        }
-
-        internal static bool TryParseStatFile(string statFilePath, out ParsedStat result, ReusableTextReader reusableReader)
-        {
-            if (!TryReadFile(statFilePath, reusableReader, out string? statFileContents))
+            if (!TryReadFile(statFilePath, out string? statFileContents))
             {
                 // Between the time that we get an ID and the time that we try to read the associated stat
                 // file(s), the process could be gone.
@@ -309,128 +280,6 @@ internal static partial class Interop
 
             result = results;
             return true;
-        }
-
-        internal static bool TryParseStatusFile(string statusFilePath, out ParsedStatus result, ReusableTextReader reusableReader)
-        {
-            if (!TryReadFile(statusFilePath, reusableReader, out string? fileContents))
-            {
-                // Between the time that we get an ID and the time that we try to read the associated stat
-                // file(s), the process could be gone.
-                result = default(ParsedStatus);
-                return false;
-            }
-
-            ParsedStatus results = default(ParsedStatus);
-            ReadOnlySpan<char> statusFileContents = fileContents.AsSpan();
-            int unitSliceLength = -1;
-#if DEBUG
-            int nonUnitSliceLength = -1;
-#endif
-            while (!statusFileContents.IsEmpty)
-            {
-                int startIndex = statusFileContents.IndexOf(':');
-                if (startIndex == -1)
-                {
-                    // Reached end of file
-                    break;
-                }
-
-                ReadOnlySpan<char> title = statusFileContents.Slice(0, startIndex);
-                statusFileContents = statusFileContents.Slice(startIndex + 1);
-                int endIndex = statusFileContents.IndexOf('\n');
-                if (endIndex == -1)
-                {
-                    endIndex = statusFileContents.Length - 1;
-                    unitSliceLength = statusFileContents.Length - 3;
-#if DEBUG
-                    nonUnitSliceLength = statusFileContents.Length;
-#endif
-                }
-                else
-                {
-                    unitSliceLength = endIndex - 3;
-#if DEBUG
-                    nonUnitSliceLength = endIndex;
-#endif
-                }
-
-                ReadOnlySpan<char> value = default;
-                bool valueParsed = true;
-#if DEBUG
-                if (title.SequenceEqual("Pid".AsSpan()))
-                {
-                    value = statusFileContents.Slice(0, nonUnitSliceLength);
-                    valueParsed = int.TryParse(value, out results.Pid);
-                }
-#endif
-                if (title.SequenceEqual("VmHWM".AsSpan()))
-                {
-                    value = statusFileContents.Slice(0, unitSliceLength);
-                    valueParsed = ulong.TryParse(value, out results.VmHWM);
-                }
-                else if (title.SequenceEqual("VmRSS".AsSpan()))
-                {
-                    value = statusFileContents.Slice(0, unitSliceLength);
-                    valueParsed = ulong.TryParse(value, out results.VmRSS);
-                }
-                else if (title.SequenceEqual("VmData".AsSpan()))
-                {
-                    value = statusFileContents.Slice(0, unitSliceLength);
-                    valueParsed = ulong.TryParse(value, out ulong vmData);
-                    results.VmData += vmData;
-                }
-                else if (title.SequenceEqual("VmSwap".AsSpan()))
-                {
-                    value = statusFileContents.Slice(0, unitSliceLength);
-                    valueParsed = ulong.TryParse(value, out results.VmSwap);
-                }
-                else if (title.SequenceEqual("VmSize".AsSpan()))
-                {
-                    value = statusFileContents.Slice(0, unitSliceLength);
-                    valueParsed = ulong.TryParse(value, out results.VmSize);
-                }
-                else if (title.SequenceEqual("VmPeak".AsSpan()))
-                {
-                    value = statusFileContents.Slice(0, unitSliceLength);
-                    valueParsed = ulong.TryParse(value, out results.VmPeak);
-                }
-                else if (title.SequenceEqual("VmStk".AsSpan()))
-                {
-                    value = statusFileContents.Slice(0, unitSliceLength);
-                    valueParsed = ulong.TryParse(value, out ulong vmStack);
-                    results.VmData += vmStack;
-                }
-
-                Debug.Assert(valueParsed);
-                statusFileContents = statusFileContents.Slice(endIndex + 1);
-            }
-
-            results.VmData *= 1024;
-            results.VmPeak *= 1024;
-            results.VmSize *= 1024;
-            results.VmSwap *= 1024;
-            results.VmRSS *= 1024;
-            results.VmHWM *= 1024;
-            result = results;
-            return true;
-        }
-
-        private static bool TryReadFile(string filePath, ReusableTextReader reusableReader, [NotNullWhen(true)] out string? fileContents)
-        {
-            try
-            {
-                using (var fileStream = new FileStream(filePath, FileMode.Open, FileAccess.Read, FileShare.Read, bufferSize: 1, useAsync: false))
-                {
-                    fileContents = reusableReader.ReadAllText(fileStream);
-                    return true;
-                }
-            }
-            catch (IOException)
-            {
-                fileContents = null;
-                return false;
-            }
         }
     }
 }

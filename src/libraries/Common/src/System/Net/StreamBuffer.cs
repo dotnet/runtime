@@ -333,6 +333,8 @@ namespace System.IO
 
             private void CancelWaiter(CancellationToken cancellationToken)
             {
+                Debug.Assert(cancellationToken.IsCancellationRequested);
+
                 if (Interlocked.Exchange(ref _hasWaiter, 0) == 1)
                 {
                     _waitSource.SetException(ExceptionDispatchInfo.SetCurrentStackTrace(new OperationCanceledException(cancellationToken)));
@@ -343,7 +345,6 @@ namespace System.IO
             {
                 if (_hasWaiter != 0)
                 {
-                    Debug.Fail("Concurrent use is not supported");
                     throw new InvalidOperationException("Concurrent use is not supported");
                 }
 

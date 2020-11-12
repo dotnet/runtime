@@ -1295,27 +1295,9 @@ namespace System.Xml.Serialization
             return obj;
         }
 
-        private ConstructorInfo? GetDefaultConstructor(Type type)
-        {
-            if (type.IsValueType)
-                return null;
-
-            ConstructorInfo? ctor = FindDefaultConstructor(type.GetTypeInfo());
-            return ctor;
-        }
-
-        private static ConstructorInfo? FindDefaultConstructor(TypeInfo ti)
-        {
-            foreach (ConstructorInfo ci in ti.DeclaredConstructors)
-            {
-                if (!ci.IsStatic && ci.GetParameters().Length == 0)
-                {
-                    return ci;
-                }
-            }
-
-            return null;
-        }
+        private ConstructorInfo? GetDefaultConstructor(Type type) =>
+            type.IsValueType ? null :
+            type.GetConstructor(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.DeclaredOnly, null, Type.EmptyTypes, null);
 
         private object? WriteEncodedStructMethod(StructMapping structMapping)
         {

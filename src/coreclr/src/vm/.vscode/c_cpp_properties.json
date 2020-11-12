@@ -3,7 +3,7 @@
         {
             "name": "Win32-Debug",
             "includePath": [
-                "../../../../artifacts/obj/coreclr/Windows_NT.x64.Debug/src/vm/dac",
+                "../../../../artifacts/obj/coreclr/windows.x64.Debug/src/vm/dac",
                 "../../src/vm/dac",
                 "../../src/vm",
                 "../../src/pal/prebuilt/inc",
@@ -16,8 +16,8 @@
                 "../../src/md/inc",
                 "../../src/classlibnative/bcltype",
                 "../../src/classlibnative/inc",
-                "../../../../artifacts/obj/coreclr/Windows_NT.x64.Debug/src/inc",
-                "../../../../artifacts/obj/coreclr/Windows_NT.x64.Debug/src/inc/etw",
+                "../../../../artifacts/obj/coreclr/windows.x64.Debug/src/inc",
+                "../../../../artifacts/obj/coreclr/windows.x64.Debug/src/inc/etw",
                 "../../src/vm/amd64"
             ],
             "defines": [

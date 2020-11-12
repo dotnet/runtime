@@ -1052,27 +1052,28 @@ namespace System.Threading.Tasks.Tests
         [Fact]
         public static void CancellationTokenSourceWithTimer_Negative()
         {
-            TimeSpan bigTimeSpan = new TimeSpan(2000, 0, 0, 0, 0);
+            TimeSpan bigTimeSpan = TimeSpan.FromMilliseconds(uint.MaxValue);
             TimeSpan reasonableTimeSpan = new TimeSpan(0, 0, 1);
-            //
-            // Test exception logic
-            //
-            Assert.Throws<ArgumentOutOfRangeException>(
-               () => { new CancellationTokenSource(-2); });
-            Assert.Throws<ArgumentOutOfRangeException>(
-               () => { new CancellationTokenSource(bigTimeSpan); });
 
-            CancellationTokenSource cts = new CancellationTokenSource();
-            Assert.Throws<ArgumentOutOfRangeException>(
-               () => { cts.CancelAfter(-2); });
-            Assert.Throws<ArgumentOutOfRangeException>(
-               () => { cts.CancelAfter(bigTimeSpan); });
+            Assert.Throws<ArgumentOutOfRangeException>(() => { new CancellationTokenSource(-2); });
+            Assert.Throws<ArgumentOutOfRangeException>(() => { new CancellationTokenSource(bigTimeSpan); });
+
+            var cts = new CancellationTokenSource(TimeSpan.FromMilliseconds(uint.MaxValue - 1));
+            Assert.False(cts.IsCancellationRequested);
+            cts.Dispose();
+
+            cts = new CancellationTokenSource();
+            Assert.Throws<ArgumentOutOfRangeException>(() => { cts.CancelAfter(-2); });
+            Assert.Throws<ArgumentOutOfRangeException>(() => { cts.CancelAfter(bigTimeSpan); });
+
+            cts = new CancellationTokenSource();
+            cts.CancelAfter(TimeSpan.FromMilliseconds(uint.MaxValue - 1));
+            Assert.False(cts.IsCancellationRequested);
+            cts.Dispose();
 
             cts.Dispose();
-            Assert.Throws<ObjectDisposedException>(
-               () => { cts.CancelAfter(1); });
-            Assert.Throws<ObjectDisposedException>(
-               () => { cts.CancelAfter(reasonableTimeSpan); });
+            Assert.Throws<ObjectDisposedException>(() => { cts.CancelAfter(1); });
+            Assert.Throws<ObjectDisposedException>(() => { cts.CancelAfter(reasonableTimeSpan); });
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
@@ -1715,8 +1716,6 @@ namespace System.Threading.Tasks.Tests
                 Task t = new Task(
                     (passedInState) =>
                     {
-                        //Debug.WriteLine(" threadCrossingSyncContext..running callback delegate on threadID = " + Thread.CurrentThread.ManagedThreadId);
-
                         try
                         {
                             d(passedInState);
@@ -1729,9 +1728,6 @@ namespace System.Threading.Tasks.Tests
 
                 t.Start();
                 t.Wait();
-
-                //t.Start(state);
-                //t.Join();
 
                 if (marshalledException != null)
                     throw new AggregateException("DUMMY: ThreadCrossingSynchronizationContext.Send captured and propogated an exception",

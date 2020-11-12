@@ -298,12 +298,46 @@ namespace System.IO
             return FlushAsyncInternal(cancellationToken);
         }
 
-        public override int Read(byte[] array, int offset, int count)
+        /// <summary>Asynchronously clears all buffers for this stream, causing any buffered data to be written to the underlying device.</summary>
+        /// <param name="cancellationToken">The token to monitor for cancellation requests.</param>
+        /// <returns>A task that represents the asynchronous flush operation.</returns>
+        private Task FlushAsyncInternal(CancellationToken cancellationToken)
         {
-            ValidateReadWriteArgs(array, offset, count);
+            if (cancellationToken.IsCancellationRequested)
+            {
+                return Task.FromCanceled(cancellationToken);
+            }
+            if (_fileHandle.IsClosed)
+            {
+                throw Error.GetFileNotOpen();
+            }
+
+            // TODO: https://github.com/dotnet/runtime/issues/27643 (stop doing this synchronous work!!).
+            // The always synchronous data transfer between the OS and the internal buffer is intentional
+            // because this is needed to allow concurrent async IO requests. Concurrent data transfer
+            // between the OS and the internal buffer will result in race conditions. Since FlushWrite and
+            // FlushRead modify internal state of the stream and transfer data between the OS and the
+            // internal buffer, they cannot be truly async. We will, however, flush the OS file buffers
+            // asynchronously because it doesn't modify any internal state of the stream and is potentially
+            // a long running process.
+            try
+            {
+                FlushInternalBuffer();
+            }
+            catch (Exception e)
+            {
+                return Task.FromException(e);
+            }
+
+            return Task.CompletedTask;
+        }
+
+        public override int Read(byte[] buffer, int offset, int count)
+        {
+            ValidateReadWriteArgs(buffer, offset, count);
             return _useAsyncIO ?
-                ReadAsyncTask(array, offset, count, CancellationToken.None).GetAwaiter().GetResult() :
-                ReadSpan(new Span<byte>(array, offset, count));
+                ReadAsyncTask(buffer, offset, count, CancellationToken.None).GetAwaiter().GetResult() :
+                ReadSpan(new Span<byte>(buffer, offset, count));
         }
 
         public override int Read(Span<byte> buffer)
@@ -330,14 +364,7 @@ namespace System.IO
 
         public override Task<int> ReadAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
         {
-            if (buffer == null)
-                throw new ArgumentNullException(nameof(buffer), SR.ArgumentNull_Buffer);
-            if (offset < 0)
-                throw new ArgumentOutOfRangeException(nameof(offset), SR.ArgumentOutOfRange_NeedNonNegNum);
-            if (count < 0)
-                throw new ArgumentOutOfRangeException(nameof(count), SR.ArgumentOutOfRange_NeedNonNegNum);
-            if (buffer.Length - offset < count)
-                throw new ArgumentException(SR.Argument_InvalidOffLen /*, no good single parameter name to pass*/);
+            ValidateBufferArguments(buffer, offset, count);
 
             if (GetType() != typeof(FileStream))
             {
@@ -402,9 +429,9 @@ namespace System.IO
                 new ValueTask<int>(synchronousResult);
         }
 
-        private Task<int> ReadAsyncTask(byte[] array, int offset, int count, CancellationToken cancellationToken)
+        private Task<int> ReadAsyncTask(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
         {
-            Task<int>? t = ReadAsyncInternal(new Memory<byte>(array, offset, count), cancellationToken, out int synchronousResult);
+            Task<int>? t = ReadAsyncInternal(new Memory<byte>(buffer, offset, count), cancellationToken, out int synchronousResult);
 
             if (t == null)
             {
@@ -420,16 +447,16 @@ namespace System.IO
             return t;
         }
 
-        public override void Write(byte[] array, int offset, int count)
+        public override void Write(byte[] buffer, int offset, int count)
         {
-            ValidateReadWriteArgs(array, offset, count);
+            ValidateReadWriteArgs(buffer, offset, count);
             if (_useAsyncIO)
             {
-                WriteAsyncInternal(new ReadOnlyMemory<byte>(array, offset, count), CancellationToken.None).AsTask().GetAwaiter().GetResult();
+                WriteAsyncInternal(new ReadOnlyMemory<byte>(buffer, offset, count), CancellationToken.None).AsTask().GetAwaiter().GetResult();
             }
             else
             {
-                WriteSpan(new ReadOnlySpan<byte>(array, offset, count));
+                WriteSpan(new ReadOnlySpan<byte>(buffer, offset, count));
             }
         }
 
@@ -457,14 +484,7 @@ namespace System.IO
 
         public override Task WriteAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
         {
-            if (buffer == null)
-                throw new ArgumentNullException(nameof(buffer), SR.ArgumentNull_Buffer);
-            if (offset < 0)
-                throw new ArgumentOutOfRangeException(nameof(offset), SR.ArgumentOutOfRange_NeedNonNegNum);
-            if (count < 0)
-                throw new ArgumentOutOfRangeException(nameof(count), SR.ArgumentOutOfRange_NeedNonNegNum);
-            if (buffer.Length - offset < count)
-                throw new ArgumentException(SR.Argument_InvalidOffLen /*, no good single parameter name to pass*/);
+            ValidateBufferArguments(buffer, offset, count);
 
             if (GetType() != typeof(FileStream))
             {
@@ -558,19 +578,12 @@ namespace System.IO
         public override bool CanWrite => !_fileHandle.IsClosed && (_access & FileAccess.Write) != 0;
 
         /// <summary>Validates arguments to Read and Write and throws resulting exceptions.</summary>
-        /// <param name="array">The buffer to read from or write to.</param>
-        /// <param name="offset">The zero-based offset into the array.</param>
+        /// <param name="buffer">The buffer to read from or write to.</param>
+        /// <param name="offset">The zero-based offset into the buffer.</param>
         /// <param name="count">The maximum number of bytes to read or write.</param>
-        private void ValidateReadWriteArgs(byte[] array, int offset, int count)
+        private void ValidateReadWriteArgs(byte[] buffer, int offset, int count)
         {
-            if (array == null)
-                throw new ArgumentNullException(nameof(array), SR.ArgumentNull_Buffer);
-            if (offset < 0)
-                throw new ArgumentOutOfRangeException(nameof(offset), SR.ArgumentOutOfRange_NeedNonNegNum);
-            if (count < 0)
-                throw new ArgumentOutOfRangeException(nameof(count), SR.ArgumentOutOfRange_NeedNonNegNum);
-            if (array.Length - offset < count)
-                throw new ArgumentException(SR.Argument_InvalidOffLen /*, no good single parameter name to pass*/);
+            ValidateBufferArguments(buffer, offset, count);
             if (_fileHandle.IsClosed)
                 throw Error.GetFileNotOpen();
         }
@@ -849,44 +862,28 @@ namespace System.IO
             Dispose(false);
         }
 
-        public override IAsyncResult BeginRead(byte[] array, int offset, int numBytes, AsyncCallback? callback, object? state)
+        public override IAsyncResult BeginRead(byte[] buffer, int offset, int count, AsyncCallback? callback, object? state)
         {
-            if (array == null)
-                throw new ArgumentNullException(nameof(array));
-            if (offset < 0)
-                throw new ArgumentOutOfRangeException(nameof(offset), SR.ArgumentOutOfRange_NeedNonNegNum);
-            if (numBytes < 0)
-                throw new ArgumentOutOfRangeException(nameof(numBytes), SR.ArgumentOutOfRange_NeedNonNegNum);
-            if (array.Length - offset < numBytes)
-                throw new ArgumentException(SR.Argument_InvalidOffLen);
-
+            ValidateBufferArguments(buffer, offset, count);
             if (IsClosed) throw new ObjectDisposedException(SR.ObjectDisposed_FileClosed);
             if (!CanRead) throw new NotSupportedException(SR.NotSupported_UnreadableStream);
 
             if (!IsAsync)
-                return base.BeginRead(array, offset, numBytes, callback, state);
+                return base.BeginRead(buffer, offset, count, callback, state);
             else
-                return TaskToApm.Begin(ReadAsyncTask(array, offset, numBytes, CancellationToken.None), callback, state);
+                return TaskToApm.Begin(ReadAsyncTask(buffer, offset, count, CancellationToken.None), callback, state);
         }
 
-        public override IAsyncResult BeginWrite(byte[] array, int offset, int numBytes, AsyncCallback? callback, object? state)
+        public override IAsyncResult BeginWrite(byte[] buffer, int offset, int count, AsyncCallback? callback, object? state)
         {
-            if (array == null)
-                throw new ArgumentNullException(nameof(array));
-            if (offset < 0)
-                throw new ArgumentOutOfRangeException(nameof(offset), SR.ArgumentOutOfRange_NeedNonNegNum);
-            if (numBytes < 0)
-                throw new ArgumentOutOfRangeException(nameof(numBytes), SR.ArgumentOutOfRange_NeedNonNegNum);
-            if (array.Length - offset < numBytes)
-                throw new ArgumentException(SR.Argument_InvalidOffLen);
-
+            ValidateBufferArguments(buffer, offset, count);
             if (IsClosed) throw new ObjectDisposedException(SR.ObjectDisposed_FileClosed);
             if (!CanWrite) throw new NotSupportedException(SR.NotSupported_UnwritableStream);
 
             if (!IsAsync)
-                return base.BeginWrite(array, offset, numBytes, callback, state);
+                return base.BeginWrite(buffer, offset, count, callback, state);
             else
-                return TaskToApm.Begin(WriteAsyncInternal(new ReadOnlyMemory<byte>(array, offset, numBytes), CancellationToken.None).AsTask(), callback, state);
+                return TaskToApm.Begin(WriteAsyncInternal(new ReadOnlyMemory<byte>(buffer, offset, count), CancellationToken.None).AsTask(), callback, state);
         }
 
         public override int EndRead(IAsyncResult asyncResult)

@@ -13,15 +13,28 @@ namespace System.Net.Sockets
 {
     public partial class Socket
     {
+        private static CachedSerializedEndPoint? s_cachedAnyEndPoint;
+        private static CachedSerializedEndPoint? s_cachedAnyV6EndPoint;
+        private static CachedSerializedEndPoint? s_cachedMappedAnyV6EndPoint;
         private DynamicWinsockMethods? _dynamicWinsockMethods;
 
         internal void ReplaceHandleIfNecessaryAfterFailedConnect() { /* nop on Windows */ }
 
+        private sealed class CachedSerializedEndPoint
+        {
+            public readonly IPEndPoint IPEndPoint;
+            public readonly Internals.SocketAddress SocketAddress;
+
+            public CachedSerializedEndPoint(IPAddress address)
+            {
+                IPEndPoint = new IPEndPoint(address, 0);
+                SocketAddress = IPEndPointExtensions.Serialize(IPEndPoint);
+            }
+        }
+
         [SupportedOSPlatform("windows")]
         public Socket(SocketInformation socketInformation)
         {
-            InitializeSockets();
-
             SocketError errorCode = SocketPal.CreateSocket(socketInformation, out _handle,
                 ref _addressFamily, ref _socketType, ref _protocolType);
 
@@ -83,6 +96,10 @@ namespace System.Net.Sockets
         private unsafe void LoadSocketTypeFromHandle(
             SafeSocketHandle handle, out AddressFamily addressFamily, out SocketType socketType, out ProtocolType protocolType, out bool blocking, out bool isListening)
         {
+            // This can be called without winsock initialized. The handle is not going to be a valid socket handle in that case and the code will throw exception anyway.
+            // Initializing winsock will ensure the error SocketError.NotSocket as opposed to SocketError.NotInitialized.
+            Interop.Winsock.EnsureInitialized();
+
             Interop.Winsock.WSAPROTOCOL_INFOW info = default;
             int optionLength = sizeof(Interop.Winsock.WSAPROTOCOL_INFOW);
 
@@ -221,25 +238,26 @@ namespace System.Net.Sockets
 
             // The socket must be bound before using ConnectEx.
 
-            IPAddress address;
+            CachedSerializedEndPoint csep;
             switch (addressFamily)
             {
                 case AddressFamily.InterNetwork:
-                    address = IsDualMode ? s_IPAddressAnyMapToIPv6 : IPAddress.Any;
+                    csep = IsDualMode ?
+                        s_cachedMappedAnyV6EndPoint ??= new CachedSerializedEndPoint(s_IPAddressAnyMapToIPv6) :
+                        s_cachedAnyEndPoint ??= new CachedSerializedEndPoint(IPAddress.Any);
                     break;
 
                 case AddressFamily.InterNetworkV6:
-                    address = IPAddress.IPv6Any;
+                    csep = s_cachedAnyV6EndPoint ??= new CachedSerializedEndPoint(IPAddress.IPv6Any);
                     break;
 
                 default:
                     return;
             }
 
-            if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, address);
+            if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, csep.IPEndPoint);
 
-            var endPoint = new IPEndPoint(address, 0);
-            DoBind(endPoint, IPEndPointExtensions.Serialize(endPoint));
+            DoBind(csep.IPEndPoint, csep.SocketAddress);
         }
 
         internal unsafe bool ConnectEx(SafeSocketHandle socketHandle,

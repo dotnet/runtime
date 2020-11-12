@@ -19,9 +19,9 @@ CoreCLR supports two different mechanisms for tracing .NET applications on Linux
 
 ## Required Tools ##
 - **perfcollect**: Bash script that automates data collection.
-	- Available at <http://aka.ms/perfcollect>.
+	- Available at <https://aka.ms/perfcollect>.
 - **PerfView**: Windows-based performance tool that can also analyze trace files collected with Perfcollect.
-	- Available at <http://aka.ms/perfview>.
+	- Available at <https://aka.ms/perfview>.
 
 ## Preparing Your Machine ##
 Follow these steps to prepare your machine to collect a performance trace.
@@ -29,7 +29,7 @@ Follow these steps to prepare your machine to collect a performance trace.
 1. Download Perfcollect.
 
 	> ```bash
-	> curl -OL http://aka.ms/perfcollect
+	> curl -OL https://aka.ms/perfcollect
 	> ```
 
 2. Make the script executable.
@@ -212,7 +212,7 @@ Traces are best viewed using PerfView on Windows.  Note that we're currently loo
 
 ### Open the Trace File ###
 1. Copy the trace.zip file from Linux to a Windows machine.
-2. Download PerfView from <http://aka.ms/perfview>.
+2. Download PerfView from <https://aka.ms/perfview>.
 3. Run PerfView.exe
 
 	> ```cmd
@@ -260,7 +260,7 @@ dotnet tool install --global dotnet-trace
 ## Collecting a trace ##
 To see which .NET processes are available for collecting traces on, you can run the following command to get their process IDs (PID):
 ```
-dotnet-trace list-processes
+dotnet-trace ps
 ```
 
 Once you know the PID of the process you want to collect traces, you can run the following command to start tracing:
@@ -269,7 +269,7 @@ dotnet-trace collect --process-id <PID>
 ```
 
 ## Viewing the Trace ##
-The resulting trace can be viewed in [PerfView](http://aka.ms/perfview) on Windows. Alternatively on Linux/macOS, it can be viewed on [SpeedScope](https://speedscope.app) if you convert the trace format to speedscope by passing `--format speedscope` argument when collecting the trace.
+The resulting trace can be viewed in [PerfView](https://aka.ms/perfview) on Windows. Alternatively on Linux/macOS, it can be viewed on [SpeedScope](https://speedscope.app) if you convert the trace format to speedscope by passing `--format speedscope` argument when collecting the trace.
 
 ## More Information ##
 To read more about how to use dotnet-trace, please refer to the [dotnet-trace documentation](https://github.com/dotnet/diagnostics/blob/master/documentation/dotnet-trace-instructions.md).

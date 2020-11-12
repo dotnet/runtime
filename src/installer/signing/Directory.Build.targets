@@ -28,7 +28,10 @@
         ArtifactsBinDir=$(ArtifactsBinDir);
         ArtifactsPackagesDir=$(ArtifactsPackagesDir);
         TargetOS=$(TargetOS);
+        TargetsLinux=$(TargetsLinux);
+        TargetsWindows=$(TargetsWindows);
         TargetArchitecture=$(TargetArchitecture);
+        BuildArchitecture=$(BuildArchitecture);
         NetCoreAppCurrent=$(NetCoreAppCurrent)" />
 
     <PropertyGroup>
@@ -44,7 +47,7 @@
   <Target Name="Build"
           Condition="
             '$(SkipSigning)' != 'true' and
-            '$(TargetOS)' == 'Windows_NT'"
+            '$(TargetOS)' == 'windows'"
           DependsOnTargets="
             EnsureProjectsBuilt;
             RunArcadeSigning" />

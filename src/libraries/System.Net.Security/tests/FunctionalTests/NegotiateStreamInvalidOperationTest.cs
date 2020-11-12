@@ -25,7 +25,7 @@ namespace System.Net.Security.Tests
         [Fact]
         public async Task NegotiateStream_StreamContractTest_Success()
         {
-            (Stream clientStream, Stream serverStream) = ConnectedStreams.CreateBidirectional();
+            (Stream clientStream, Stream serverStream) = TestHelper.GetConnectedStreams();
             using (clientStream)
             using (serverStream)
             using (var client = new NegotiateStream(clientStream))
@@ -33,15 +33,23 @@ namespace System.Net.Security.Tests
             {
                 Assert.False(client.CanSeek);
                 Assert.False(client.CanRead);
-                Assert.False(client.CanTimeout);
+                Assert.Equal(clientStream.CanTimeout, client.CanTimeout);
                 Assert.False(client.CanWrite);
                 Assert.False(server.CanSeek);
                 Assert.False(server.CanRead);
-                Assert.False(server.CanTimeout);
+                Assert.Equal(serverStream.CanTimeout, server.CanTimeout);
                 Assert.False(server.CanWrite);
 
-                Assert.Throws<InvalidOperationException>(() => client.ReadTimeout);
-                Assert.Throws<InvalidOperationException>(() => client.WriteTimeout);
+                if (!client.CanTimeout)
+                {
+                    Assert.Throws<InvalidOperationException>(() => client.ReadTimeout);
+                }
+
+                if (!server.CanTimeout)
+                {
+                    Assert.Throws<InvalidOperationException>(() => client.WriteTimeout);
+                }
+
                 Assert.Throws<NotSupportedException>(() => client.Length);
                 Assert.Throws<NotSupportedException>(() => client.Position);
                 Assert.Throws<NotSupportedException>(() => client.Seek(0, new SeekOrigin()));
@@ -61,7 +69,7 @@ namespace System.Net.Security.Tests
         public async Task NegotiateStream_EndReadEndWriteInvalidParameter_Throws()
         {
             byte[] recvBuf = new byte[s_sampleMsg.Length];
-            (Stream stream1, Stream stream2) = ConnectedStreams.CreateBidirectional();
+            (Stream stream1, Stream stream2) = TestHelper.GetConnectedStreams();
             using (var client = new NegotiateStream(stream1))
             using (var server = new NegotiateStream(stream2))
             {
@@ -97,7 +105,7 @@ namespace System.Net.Security.Tests
         public void NegotiateStream_InvalidPolicy_Throws()
         {
             var policy = new ExtendedProtectionPolicy(PolicyEnforcement.Never);
-            (Stream stream1, Stream stream2) = ConnectedStreams.CreateBidirectional();
+            (Stream stream1, Stream stream2) = TestHelper.GetConnectedStreams();
             using (var client = new NegotiateStream(stream1))
             using (var server = new NegotiateStream(stream2))
             {
@@ -109,7 +117,7 @@ namespace System.Net.Security.Tests
         [Fact]
         public async Task NegotiateStream_TokenImpersonationLevelRequirmentNotMatch_Throws()
         {
-            (Stream stream1, Stream stream2) = ConnectedStreams.CreateBidirectional();
+            (Stream stream1, Stream stream2) = TestHelper.GetConnectedStreams();
             using (var client = new NegotiateStream(stream1))
             using (var server = new NegotiateStream(stream2))
             {
@@ -133,7 +141,7 @@ namespace System.Net.Security.Tests
             // PolicyEnforcement.Always will force clientSpn check.
             var policy = new ExtendedProtectionPolicy(PolicyEnforcement.Always, ProtectionScenario.TransportSelected, new ServiceNameCollection(snc));
 
-            (Stream stream1, Stream stream2) = ConnectedStreams.CreateBidirectional();
+            (Stream stream1, Stream stream2) = TestHelper.GetConnectedStreams();
             using (var client = new NegotiateStream(stream1))
             using (var server = new NegotiateStream(stream2))
             {
@@ -146,7 +154,7 @@ namespace System.Net.Security.Tests
         [Fact]
         public void NegotiateStream_DisposedState_Throws()
         {
-            (Stream stream1, Stream stream2) = ConnectedStreams.CreateBidirectional();
+            (Stream stream1, Stream stream2) = TestHelper.GetConnectedStreams();
             using (var client = new NegotiateStream(stream1))
             using (var server = new NegotiateStream(stream2))
             {
@@ -158,7 +166,7 @@ namespace System.Net.Security.Tests
         [Fact]
         public async Task NegotiateStream_DoubleAuthentication_Throws()
         {
-            (Stream stream1, Stream stream2) = ConnectedStreams.CreateBidirectional();
+            (Stream stream1, Stream stream2) = TestHelper.GetConnectedStreams();
             using (var client = new NegotiateStream(stream1))
             using (var server = new NegotiateStream(stream2))
             {
@@ -175,7 +183,7 @@ namespace System.Net.Security.Tests
         [Fact]
         public void NegotiateStream_NullCredential_Throws()
         {
-            (Stream stream1, Stream stream2) = ConnectedStreams.CreateBidirectional();
+            (Stream stream1, Stream stream2) = TestHelper.GetConnectedStreams();
             using (var client = new NegotiateStream(stream1))
             using (var server = new NegotiateStream(stream2))
             {
@@ -186,7 +194,7 @@ namespace System.Net.Security.Tests
         [Fact]
         public void NegotiateStream_NullServicePrincipalName_Throws()
         {
-            (Stream stream1, Stream stream2) = ConnectedStreams.CreateBidirectional();
+            (Stream stream1, Stream stream2) = TestHelper.GetConnectedStreams();
             using (var client = new NegotiateStream(stream1))
             using (var server = new NegotiateStream(stream2))
             {
@@ -197,7 +205,7 @@ namespace System.Net.Security.Tests
         [Fact]
         public async Task NegotiateStream_SecurityRequirmentNotMeet_Throws()
         {
-            (Stream stream1, Stream stream2) = ConnectedStreams.CreateBidirectional();
+            (Stream stream1, Stream stream2) = TestHelper.GetConnectedStreams();
             using (var client = new NegotiateStream(stream1))
             using (var server = new NegotiateStream(stream2))
             {
@@ -217,7 +225,7 @@ namespace System.Net.Security.Tests
         [Fact]
         public async Task NegotiateStream_EndAuthenticateInvalidParameter_Throws()
         {
-            (Stream stream1, Stream stream2) = ConnectedStreams.CreateBidirectional();
+            (Stream stream1, Stream stream2) = TestHelper.GetConnectedStreams();
             using (var client = new NegotiateStream(stream1))
             using (var server = new NegotiateStream(stream2))
             {
@@ -253,7 +261,7 @@ namespace System.Net.Security.Tests
             int offset = 0;
             int count = s_sampleMsg.Length;
 
-            (Stream stream1, Stream stream2) = ConnectedStreams.CreateBidirectional();
+            (Stream stream1, Stream stream2) = TestHelper.GetConnectedStreams();
             using (var client = new NegotiateStream(stream1))
             using (var server = new NegotiateStream(stream2))
             {

@@ -70,7 +70,7 @@ namespace System.Net.Security.Tests
         [MemberData(nameof(SslStream_StreamToStream_Authentication_Success_MemberData))]
         public async Task SslStream_StreamToStream_Authentication_Success(X509Certificate serverCert = null, X509Certificate clientCert = null)
         {
-            (Stream stream1, Stream stream2) = ConnectedStreams.CreateBidirectional();
+            (Stream stream1, Stream stream2) = TestHelper.GetConnectedStreams();
             using (var client = new SslStream(stream1, false, AllowAnyServerCertificate))
             using (var server = new SslStream(stream2, false, delegate { return true; }))
             {
@@ -86,7 +86,7 @@ namespace System.Net.Security.Tests
         [Fact]
         public async Task SslStream_StreamToStream_Authentication_IncorrectServerName_Fail()
         {
-            (Stream stream1, Stream stream2) = ConnectedStreams.CreateBidirectional();
+            (Stream stream1, Stream stream2) = TestHelper.GetConnectedStreams();
             using (var client = new SslStream(stream1))
             using (var server = new SslStream(stream2))
             using (var certificate = Configuration.Certificates.GetServerCertificate())
@@ -95,7 +95,14 @@ namespace System.Net.Security.Tests
                 Task t2 = server.AuthenticateAsServerAsync(certificate);
 
                 await Assert.ThrowsAsync<AuthenticationException>(() => t1);
-                await t2;
+                try
+                {
+                    await t2;
+                }
+                catch
+                {
+                    // Ignore outcome of t2. It can succeed or fail depending on timing.
+                }
             }
         }
 
@@ -107,7 +114,7 @@ namespace System.Net.Security.Tests
                 return null;
             });
 
-            (Stream stream1, Stream stream2) = ConnectedStreams.CreateBidirectional();
+            (Stream stream1, Stream stream2) = TestHelper.GetConnectedStreams();
             using (var client = new SslStream(stream1, false, AllowAnyServerCertificate))
             using (var server = new SslStream(stream2, false, null, selectionCallback))
             using (X509Certificate2 certificate = Configuration.Certificates.GetServerCertificate())
@@ -121,7 +128,7 @@ namespace System.Net.Security.Tests
         [Fact]
         public async Task Read_CorrectlyUnlocksAfterFailure()
         {
-            (Stream stream1, Stream stream2) = ConnectedStreams.CreateBidirectional();
+            (Stream stream1, Stream stream2) = TestHelper.GetConnectedStreams();
             var clientStream = new ThrowingDelegatingStream(stream1);
             using (var clientSslStream = new SslStream(clientStream, false, AllowAnyServerCertificate))
             using (var serverSslStream = new SslStream(stream2))
@@ -148,7 +155,7 @@ namespace System.Net.Security.Tests
         [Fact]
         public async Task Write_CorrectlyUnlocksAfterFailure()
         {
-            (Stream stream1, Stream stream2) = ConnectedStreams.CreateBidirectional();
+            (Stream stream1, Stream stream2) = TestHelper.GetConnectedStreams();
             var clientStream = new ThrowingDelegatingStream(stream1);
             using (var clientSslStream = new SslStream(clientStream, false, AllowAnyServerCertificate))
             using (var serverSslStream = new SslStream(stream2))
@@ -172,7 +179,7 @@ namespace System.Net.Security.Tests
         [Fact]
         public async Task Read_InvokedSynchronously()
         {
-            (Stream stream1, Stream stream2) = ConnectedStreams.CreateBidirectional();
+            (Stream stream1, Stream stream2) = TestHelper.GetConnectedStreams();
             var clientStream = new PreReadWriteActionDelegatingStream(stream1);
             using (var clientSslStream = new SslStream(clientStream, false, AllowAnyServerCertificate))
             using (var serverSslStream = new SslStream(stream2))
@@ -196,7 +203,7 @@ namespace System.Net.Security.Tests
         [Fact]
         public async Task Write_InvokedSynchronously()
         {
-            (Stream stream1, Stream stream2) = ConnectedStreams.CreateBidirectional();
+            (Stream stream1, Stream stream2) = TestHelper.GetConnectedStreams();
             var clientStream = new PreReadWriteActionDelegatingStream(stream1);
             using (var clientSslStream = new SslStream(clientStream, false, AllowAnyServerCertificate))
             using (var serverSslStream = new SslStream(stream2))
@@ -216,267 +223,6 @@ namespace System.Net.Security.Tests
             }
         }
 
-        [Fact]
-        public async Task SslStream_StreamToStream_Successive_ClientWrite_WithZeroBytes_Success()
-        {
-            byte[] recvBuf = new byte[_sampleMsg.Length];
-
-            (Stream stream1, Stream stream2) = ConnectedStreams.CreateBidirectional();
-            using (var clientSslStream = new SslStream(stream1, false, AllowAnyServerCertificate))
-            using (var serverSslStream = new SslStream(stream2))
-            {
-                await DoHandshake(clientSslStream, serverSslStream);
-
-                await WriteAsync(clientSslStream, Array.Empty<byte>(), 0, 0);
-                await WriteAsync(clientSslStream, _sampleMsg, 0, _sampleMsg.Length);
-
-                int bytesRead = 0;
-                while (bytesRead < _sampleMsg.Length)
-                {
-                    bytesRead += await ReadAsync(serverSslStream, recvBuf, bytesRead, _sampleMsg.Length - bytesRead);
-                }
-
-                Assert.True(VerifyOutput(recvBuf, _sampleMsg), "verify first read data is as expected.");
-
-                await WriteAsync(clientSslStream, _sampleMsg, 0, _sampleMsg.Length);
-                await WriteAsync(clientSslStream, Array.Empty<byte>(), 0, 0);
-
-                bytesRead = 0;
-                while (bytesRead < _sampleMsg.Length)
-                {
-                    bytesRead += await ReadAsync(serverSslStream, recvBuf, bytesRead, _sampleMsg.Length - bytesRead);
-                }
-                Assert.True(VerifyOutput(recvBuf, _sampleMsg), "verify second read data is as expected.");
-            }
-        }
-
-        [Fact]
-        public async Task SslStream_StreamToStream_ZeroByteRead_SucceedsWhenDataAvailable()
-        {
-            (NetworkStream clientStream, NetworkStream serverStream) = TestHelper.GetConnectedTcpStreams();
-            using var clientSslStream = new SslStream(clientStream, leaveInnerStreamOpen: false, AllowAnyServerCertificate);
-            using var serverSslStream = new SslStream(serverStream);
-            await DoHandshake(clientSslStream, serverSslStream);
-
-            for (int iter = 0; iter < 2; iter++)
-            {
-                ValueTask<int> zeroByteRead = clientSslStream.ReadAsync(Memory<byte>.Empty);
-                Assert.False(zeroByteRead.IsCompleted);
-
-                await serverSslStream.WriteAsync(Encoding.UTF8.GetBytes("hello"));
-                Assert.Equal(0, await zeroByteRead);
-
-                var readBytes = new byte[5];
-                int count = 0;
-                while (count < readBytes.Length)
-                {
-                    int n = await clientSslStream.ReadAsync(readBytes.AsMemory(count));
-                    Assert.InRange(n, 1, readBytes.Length - count);
-                    count += n;
-                }
-                Assert.Equal("hello", Encoding.UTF8.GetString(readBytes));
-            }
-        }
-
-        [Theory]
-        [InlineData(false)]
-        [InlineData(true)]
-        public async Task SslStream_StreamToStream_LargeWrites_Success(bool randomizedData)
-        {
-            (Stream stream1, Stream stream2) = ConnectedStreams.CreateBidirectional();
-            using (var clientSslStream = new SslStream(stream1, false, AllowAnyServerCertificate))
-            using (var serverSslStream = new SslStream(stream2))
-            {
-                await DoHandshake(clientSslStream, serverSslStream);
-
-                byte[] largeMsg = new byte[4096 * 5]; // length longer than max read chunk size (16K + headers)
-                if (randomizedData)
-                {
-                    new Random().NextBytes(largeMsg); // not very compressible
-                }
-                else
-                {
-                    for (int i = 0; i < largeMsg.Length; i++)
-                    {
-                        largeMsg[i] = unchecked((byte)i); // very compressible
-                    }
-                }
-                byte[] receivedLargeMsg = new byte[largeMsg.Length];
-
-                // First do a large write and read blocks at a time
-                await WriteAsync(clientSslStream, largeMsg, 0, largeMsg.Length);
-                int bytesRead = 0, totalRead = 0;
-                while (totalRead < largeMsg.Length &&
-                    (bytesRead = await ReadAsync(serverSslStream, receivedLargeMsg, totalRead, receivedLargeMsg.Length - totalRead)) != 0)
-                {
-                    totalRead += bytesRead;
-                }
-                Assert.Equal(receivedLargeMsg.Length, totalRead);
-                Assert.Equal(largeMsg, receivedLargeMsg);
-
-                // Then write again and read bytes at a time
-                await WriteAsync(clientSslStream, largeMsg, 0, largeMsg.Length);
-                foreach (byte b in largeMsg)
-                {
-                    Assert.Equal(b, serverSslStream.ReadByte());
-                }
-            }
-        }
-
-        [Fact]
-        public async Task SslStream_StreamToStream_Successive_ClientWrite_Success()
-        {
-            byte[] recvBuf = new byte[_sampleMsg.Length];
-            (Stream stream1, Stream stream2) = ConnectedStreams.CreateBidirectional();
-            using (var clientSslStream = new SslStream(stream1, false, AllowAnyServerCertificate))
-            using (var serverSslStream = new SslStream(stream2))
-            {
-                await DoHandshake(clientSslStream, serverSslStream);
-
-                await WriteAsync(clientSslStream, _sampleMsg, 0, _sampleMsg.Length)
-                    .TimeoutAfter(TestConfiguration.PassingTestTimeoutMilliseconds);
-
-                int bytesRead = 0;
-                while (bytesRead < _sampleMsg.Length)
-                {
-                    bytesRead += await ReadAsync(serverSslStream, recvBuf, bytesRead, _sampleMsg.Length - bytesRead)
-                        .TimeoutAfter(TestConfiguration.PassingTestTimeoutMilliseconds);
-                }
-
-                Assert.True(VerifyOutput(recvBuf, _sampleMsg), "verify first read data is as expected.");
-
-                await WriteAsync(clientSslStream, _sampleMsg, 0, _sampleMsg.Length)
-                    .TimeoutAfter(TestConfiguration.PassingTestTimeoutMilliseconds);
-
-                bytesRead = 0;
-                while (bytesRead < _sampleMsg.Length)
-                {
-                    bytesRead += await ReadAsync(serverSslStream, recvBuf, bytesRead, _sampleMsg.Length - bytesRead)
-                        .TimeoutAfter(TestConfiguration.PassingTestTimeoutMilliseconds);
-                }
-
-                Assert.True(VerifyOutput(recvBuf, _sampleMsg), "verify second read data is as expected.");
-            }
-        }
-
-        [Fact]
-        public async Task SslStream_StreamToStream_Write_ReadByte_Success()
-        {
-            (Stream stream1, Stream stream2) = ConnectedStreams.CreateBidirectional();
-            using (var clientSslStream = new SslStream(stream1, false, AllowAnyServerCertificate))
-            using (var serverSslStream = new SslStream(stream2))
-            {
-                await DoHandshake(clientSslStream, serverSslStream);
-
-                for (int i = 0; i < 3; i++)
-                {
-                    await WriteAsync(clientSslStream, _sampleMsg, 0, _sampleMsg.Length);
-                    foreach (byte b in _sampleMsg)
-                    {
-                        Assert.Equal(b, serverSslStream.ReadByte());
-                    }
-                }
-            }
-        }
-
-        [Fact]
-        public async Task SslStream_StreamToStream_WriteAsync_ReadByte_Success()
-        {
-            (Stream stream1, Stream stream2) = ConnectedStreams.CreateBidirectional();
-            using (var clientSslStream = new SslStream(stream1, false, AllowAnyServerCertificate))
-            using (var serverSslStream = new SslStream(stream2))
-            {
-                await DoHandshake(clientSslStream, serverSslStream);
-
-                for (int i = 0; i < 3; i++)
-                {
-                    await WriteAsync(clientSslStream, _sampleMsg, 0, _sampleMsg.Length).ConfigureAwait(false);
-                    foreach (byte b in _sampleMsg)
-                    {
-                        Assert.Equal(b, serverSslStream.ReadByte());
-                    }
-                }
-            }
-        }
-
-        [Fact]
-        public async Task SslStream_StreamToStream_WriteAsync_ReadAsync_Pending_Success()
-        {
-            if (this is SslStreamStreamToStreamTest_SyncBase)
-            {
-                // This test assumes operations complete asynchronously.
-                return;
-            }
-
-            (Stream stream1, Stream stream2) = ConnectedStreams.CreateBidirectional();
-            using (var clientSslStream = new SslStream(stream1, false, AllowAnyServerCertificate))
-            using (var serverSslStream = new SslStream(stream2))
-            {
-                await DoHandshake(clientSslStream, serverSslStream);
-
-                var serverBuffer = new byte[1];
-
-                Task readTask = ReadAsync(serverSslStream, serverBuffer, 0, serverBuffer.Length);
-
-                // Should not hang
-                await WriteAsync(serverSslStream, new byte[] { 1 }, 0, 1).TimeoutAfter(TestConfiguration.PassingTestTimeoutMilliseconds);
-
-                // Read in client
-                var clientBuffer = new byte[1];
-                await ReadAsync(clientSslStream, clientBuffer, 0, clientBuffer.Length);
-                Assert.Equal(1, clientBuffer[0]);
-
-                // Complete server read task
-                await WriteAsync(clientSslStream, new byte[] { 2 }, 0, 1);
-                await readTask;
-                Assert.Equal(2, serverBuffer[0]);
-            }
-        }
-
-        [Fact]
-        public async Task SslStream_ConcurrentBidirectionalReadsWrites_Success()
-        {
-            (Stream stream1, Stream stream2) = ConnectedStreams.CreateBidirectional();
-            using (var clientSslStream = new SslStream(stream1, false, AllowAnyServerCertificate))
-            using (var serverSslStream = new SslStream(stream2))
-            {
-                await DoHandshake(clientSslStream, serverSslStream);
-
-                const int BytesPerSend = 100;
-                DateTime endTime = DateTime.UtcNow + TimeSpan.FromSeconds(3);
-                await new Task[]
-                {
-                    Task.Run(async delegate
-                    {
-                        var buffer = new byte[BytesPerSend];
-                        while (DateTime.UtcNow < endTime)
-                        {
-                            await WriteAsync(clientSslStream, buffer, 0, buffer.Length);
-                            int received = 0, bytesRead = 0;
-                            while (received < BytesPerSend && (bytesRead = await ReadAsync(serverSslStream, buffer, 0, buffer.Length)) != 0)
-                            {
-                                received += bytesRead;
-                            }
-                            Assert.NotEqual(0, bytesRead);
-                        }
-                    }),
-                    Task.Run(async delegate
-                    {
-                        var buffer = new byte[BytesPerSend];
-                        while (DateTime.UtcNow < endTime)
-                        {
-                            await WriteAsync(serverSslStream, buffer, 0, buffer.Length);
-                            int received = 0, bytesRead = 0;
-                            while (received < BytesPerSend && (bytesRead = await ReadAsync(clientSslStream, buffer, 0, buffer.Length)) != 0)
-                            {
-                                received += bytesRead;
-                            }
-                            Assert.NotEqual(0, bytesRead);
-                        }
-                    })
-                }.WhenAllOrAnyFailed();
-            }
-        }
 
         [Fact]
         public async Task SslStream_StreamToStream_Dispose_Throws()
@@ -487,7 +233,7 @@ namespace System.Net.Security.Tests
                 return;
             }
 
-            (Stream stream1, Stream stream2) = ConnectedStreams.CreateBidirectional();
+            (Stream stream1, Stream stream2) = TestHelper.GetConnectedStreams();
             using (var clientSslStream = new SslStream(DelegateDelegatingStream.NopDispose(stream1), false, AllowAnyServerCertificate))
             {
                 var serverSslStream = new SslStream(DelegateDelegatingStream.NopDispose(stream2));
@@ -531,35 +277,9 @@ namespace System.Net.Security.Tests
         }
 
         [Fact]
-        public void SslStream_StreamToStream_Flush_Propagated()
-        {
-            var ms = new MemoryStream();
-            var tracking = new CallTrackingStream(ms);
-            using (var sslStream = new SslStream(tracking, false, AllowAnyServerCertificate))
-            {
-                Assert.Equal(0, tracking.TimesCalled(nameof(Stream.Flush)));
-                sslStream.Flush();
-                Assert.NotEqual(0, tracking.TimesCalled(nameof(Stream.Flush)));
-            }
-        }
-
-        [Fact]
-        public async Task SslStream_StreamToStream_FlushAsync_Propagated()
-        {
-            var ms = new MemoryStream();
-            var tracking = new CallTrackingStream(ms);
-            using (var sslStream = new SslStream(tracking, false, AllowAnyServerCertificate))
-            {
-                Assert.Equal(0, tracking.TimesCalled(nameof(Stream.FlushAsync)));
-                await sslStream.FlushAsync();
-                Assert.NotEqual(0, tracking.TimesCalled(nameof(Stream.FlushAsync)));
-            }
-        }
-
-        [Fact]
         public async Task SslStream_StreamToStream_EOFDuringFrameRead_ThrowsIOException()
         {
-            (Stream clientStream, Stream serverStream) = ConnectedStreams.CreateBidirectional();
+            (Stream clientStream, Stream serverStream) = TestHelper.GetConnectedStreams();
             using (clientStream)
             using (serverStream)
             {
@@ -725,42 +445,7 @@ namespace System.Net.Security.Tests
         }
     }
 
-    public abstract class SslStreamStreamToStreamTest_CancelableReadWriteAsync : SslStreamStreamToStreamTest
-    {
-        [Fact]
-        public async Task ReadAsync_WriteAsync_Precanceled_ThrowsOperationCanceledException()
-        {
-            (Stream stream1, Stream stream2) = ConnectedStreams.CreateBidirectional();
-            using (var clientSslStream = new SslStream(stream1, false, AllowAnyServerCertificate))
-            using (var serverSslStream = new SslStream(stream2))
-            {
-                await DoHandshake(clientSslStream, serverSslStream);
-                await Assert.ThrowsAnyAsync<OperationCanceledException>(() => ReadAsync(clientSslStream, new byte[1], 0, 1, new CancellationToken(true)));
-                await Assert.ThrowsAnyAsync<OperationCanceledException>(() => WriteAsync(serverSslStream, new byte[1], 0, 1, new CancellationToken(true)));
-            }
-        }
-
-        [Fact]
-        public async Task ReadAsync_CanceledAfterStart_ThrowsOperationCanceledException()
-        {
-            (Stream stream1, Stream stream2) = ConnectedStreams.CreateBidirectional();
-            using (var clientSslStream = new SslStream(stream1, false, AllowAnyServerCertificate))
-            using (var serverSslStream = new SslStream(stream2))
-            {
-                await DoHandshake(clientSslStream, serverSslStream);
-
-                var cts = new CancellationTokenSource();
-
-                Task t = ReadAsync(clientSslStream, new byte[1], 0, 1, cts.Token);
-                Assert.False(t.IsCompleted);
-
-                cts.Cancel();
-                await Assert.ThrowsAnyAsync<OperationCanceledException>(() => t);
-            }
-        }
-    }
-
-    public sealed class SslStreamStreamToStreamTest_Async : SslStreamStreamToStreamTest_CancelableReadWriteAsync
+    public sealed class SslStreamStreamToStreamTest_Async : SslStreamStreamToStreamTest
     {
         protected override async Task DoHandshake(SslStream clientSslStream, SslStream serverSslStream, X509Certificate serverCertificate = null, X509Certificate clientCertificate = null)
         {
@@ -844,7 +529,7 @@ namespace System.Net.Security.Tests
         [Fact]
         public async Task SslStream_StreamToStream_Handshake_DisposeClient_Throws()
         {
-            (Stream stream1, Stream stream2) = ConnectedStreams.CreateBidirectional();
+            (Stream stream1, Stream stream2) = TestHelper.GetConnectedStreams();
             using (var clientSslStream = new SslStream(stream1, false, AllowAnyServerCertificate))
             using (var serverSslStream = new SslStream(stream2))
             {
@@ -857,7 +542,7 @@ namespace System.Net.Security.Tests
         [Fact]
         public async Task SslStream_StreamToStream_Handshake_DisposeServer_Throws()
         {
-            (Stream stream1, Stream stream2) = ConnectedStreams.CreateBidirectional();
+            (Stream stream1, Stream stream2) = TestHelper.GetConnectedStreams();
             using (var clientSslStream = new SslStream(stream1, false, AllowAnyServerCertificate))
             using (var serverSslStream = new SslStream(stream2))
             {
@@ -870,7 +555,7 @@ namespace System.Net.Security.Tests
         [Fact]
         public async Task SslStream_StreamToStream_Handshake_DisposeClientSsl_Throws()
         {
-            (Stream stream1, Stream stream2) = ConnectedStreams.CreateBidirectional();
+            (Stream stream1, Stream stream2) = TestHelper.GetConnectedStreams();
             using (var serverSslStream = new SslStream(DelegateDelegatingStream.NopDispose(stream1)))
             {
                 var clientSslStream = new SslStream(DelegateDelegatingStream.NopDispose(stream2), false, AllowAnyServerCertificate);
@@ -883,7 +568,7 @@ namespace System.Net.Security.Tests
         [Fact]
         public async Task SslStream_StreamToStream_Handshake_DisposeServerSsl_Throws()
         {
-            (Stream stream1, Stream stream2) = ConnectedStreams.CreateBidirectional();
+            (Stream stream1, Stream stream2) = TestHelper.GetConnectedStreams();
             using (var clientSslStream = new SslStream(DelegateDelegatingStream.NopDispose(stream1), false, AllowAnyServerCertificate))
             {
                 var serverSslStream = new SslStream(DelegateDelegatingStream.NopDispose(stream2));
@@ -932,7 +617,7 @@ namespace System.Net.Security.Tests
         }
     }
 
-    public sealed class SslStreamStreamToStreamTest_MemoryAsync : SslStreamStreamToStreamTest_CancelableReadWriteAsync
+    public sealed class SslStreamStreamToStreamTest_MemoryAsync : SslStreamStreamToStreamTest
     {
         protected override async Task DoHandshake(SslStream clientSslStream, SslStream serverSslStream, X509Certificate serverCertificate = null, X509Certificate clientCertificate = null)
         {
@@ -954,7 +639,7 @@ namespace System.Net.Security.Tests
         [Fact]
         public async Task Authenticate_Precanceled_ThrowsOperationCanceledException()
         {
-            (Stream stream1, Stream stream2) = ConnectedStreams.CreateBidirectional();
+            (Stream stream1, Stream stream2) = TestHelper.GetConnectedStreams();
             using (var clientSslStream = new SslStream(stream1, false, AllowAnyServerCertificate))
             using (var serverSslStream = new SslStream(stream2))
             using (X509Certificate2 certificate = Configuration.Certificates.GetServerCertificate())
@@ -967,7 +652,7 @@ namespace System.Net.Security.Tests
         [Fact]
         public async Task AuthenticateAsClientAsync_MemoryBuffer_CanceledAfterStart_ThrowsOperationCanceledException()
         {
-            (Stream stream1, Stream stream2) = ConnectedStreams.CreateBidirectional();
+            (Stream stream1, Stream stream2) = TestHelper.GetConnectedStreams();
             using (var clientSslStream = new SslStream(stream1, false, AllowAnyServerCertificate))
             using (var serverSslStream = new SslStream(stream2))
             using (X509Certificate2 certificate = Configuration.Certificates.GetServerCertificate())
@@ -1000,7 +685,7 @@ namespace System.Net.Security.Tests
         [Fact]
         public async Task AuthenticateAsServerAsync_VirtualNetwork_CanceledAfterStart_ThrowsOperationCanceledException()
         {
-            (Stream stream1, Stream stream2) = ConnectedStreams.CreateBidirectional();
+            (Stream stream1, Stream stream2) = TestHelper.GetConnectedStreams();
             using (var clientSslStream = new SslStream(stream1, false, AllowAnyServerCertificate))
             using (var serverSslStream = new SslStream(stream2))
             using (X509Certificate2 certificate = Configuration.Certificates.GetServerCertificate())

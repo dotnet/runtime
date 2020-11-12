@@ -338,17 +338,8 @@ var App = {
 				fail_exec ("Error: Missing main executable argument.");
 				return;
 			}
-			main_assembly = assembly_load (args[1]);
-			if (main_assembly == 0) {
-				fail_exec ("Error: Unable to load main executable '" + args[1] + "'");
-				return;
-			}
-			main_method = assembly_get_entry_point (main_assembly);
-			if (main_method == 0) {
-				fail_exec ("Error: Main (string[]) method not found.");
-				return;
-			}
 
+			main_assembly_name = args[1];
 			var app_args = string_array_new (args.length - 2);
 			for (var i = 2; i < args.length; ++i) {
 				obj_array_set (app_args, i - 2, string_from_js (args [i]));
@@ -365,47 +356,51 @@ var App = {
 			}
 			wasm_set_main_args (main_argc, main_argv);
 
+			function isThenable (js_obj) {
+				// When using an external Promise library the Promise.resolve may not be sufficient
+				// to identify the object as a Promise.
+				return Promise.resolve (js_obj) === js_obj ||
+						((typeof js_obj === "object" || typeof js_obj === "function") && typeof js_obj.then === "function")
+			}
+
 			try {
-				var invoke_args = Module._malloc (4);
-				Module.setValue (invoke_args, app_args, "i32");
-				var eh_exc = Module._malloc (4);
-				Module.setValue (eh_exc, 0, "i32");
-				var res = runtime_invoke (main_method, 0, invoke_args, eh_exc);
-				var eh_res = Module.getValue (eh_exc, "i32");
-				if (eh_res != 0) {
-					print ("Exception:" + string_get_utf8 (res));
-					test_exit (1);
+				// Automatic signature isn't working correctly
+				let exit_code = Module.mono_call_assembly_entry_point (main_assembly_name, [app_args], "m");
+
+				if (isThenable (exit_code))
+				{
+					exit_code.then (
+						(result) => {
+							test_exit (result);
+						},
+						(reason) => {
+							console.error (reason);
+							test_exit (1);
+						});
+				} else {
+					test_exit (exit_code);
 					return;
 				}
-				var exit_code = unbox_int (res);
-				test_exit (exit_code);
 			} catch (ex) {
 				print ("JS exception: " + ex);
 				print (ex.stack);
 				test_exit (1);
 				return;
 			}
-
-/*
-			// For testing tp/timers etc.
-			while (true) {
-				// Sleep by busy waiting
-				var start = performance.now ();
-				useconds = 1e6 / 10;
-				while (performance.now() - start < useconds / 1000) {
-					// Do nothing.
-				}
-
-				Module.pump_message ();
-			}
-*/
-
-			return;
 		} else {
 			fail_exec ("Unhandled argument: " + args [0]);
 		}
 	},
 	call_test_method: function (method_name, args) {
-		return BINDING.call_static_method("[System.Private.Runtime.InteropServices.JavaScript.Tests]System.Runtime.InteropServices.JavaScript.Tests.HelperMarshal:" + method_name, args);
+		if (arguments.length > 2)
+			throw new Error("Invalid number of arguments for call_test_method");
+
+		var fqn = "[System.Private.Runtime.InteropServices.JavaScript.Tests]System.Runtime.InteropServices.JavaScript.Tests.HelperMarshal:" + method_name;
+		try {
+			return BINDING.call_static_method(fqn, args || []);
+		} catch (exc) {
+			console.error("exception thrown in", fqn);
+			throw exc;
+		}
 	}
 };

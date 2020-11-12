@@ -9564,6 +9564,17 @@ append_mangled_klass (GString *s, MonoClass *klass)
 	return TRUE;
 }
 
+static const char*
+get_assembly_prefix (MonoImage *image)
+{
+	if (mono_is_corlib_image (image))
+		return "corlib";
+	else if (!strcmp (image->assembly->aname.name, "corlib"))
+		return "__corlib__";
+	else
+		return image->assembly->aname.name;
+}
+
 static gboolean
 append_mangled_method (GString *s, MonoMethod *method);
 
@@ -9573,9 +9584,11 @@ append_mangled_wrapper (GString *s, MonoMethod *method)
 	gboolean success = TRUE;
 	gboolean append_sig = TRUE;
 	WrapperInfo *info = mono_marshal_get_wrapper_info (method);
+	gboolean is_corlib = mono_is_corlib_image (m_class_get_image (method->klass));
+
 	g_string_append_printf (s, "wrapper_");
 	/* Most wrappers are in mscorlib */
-	if (m_class_get_image (method->klass) != mono_get_corlib ())
+	if (!is_corlib)
 		g_string_append_printf (s, "%s_", m_class_get_image (method->klass)->assembly->aname.name);
 
 	if (method->wrapper_type != MONO_WRAPPER_OTHER && method->wrapper_type != MONO_WRAPPER_MANAGED_TO_NATIVE)
@@ -9636,7 +9649,7 @@ append_mangled_wrapper (GString *s, MonoMethod *method)
 		} else if (info->subtype == WRAPPER_SUBTYPE_INTERP_LMF)
 			g_string_append_printf (s, "%s", method->name);
 		else if (info->subtype == WRAPPER_SUBTYPE_AOT_INIT) {
-			g_string_append_printf (s, "%s_%d_", m_class_get_image (method->klass)->assembly->aname.name, info->d.aot_init.subtype);
+			g_string_append_printf (s, "%s_%d_", get_assembly_prefix (m_class_get_image (method->klass)), info->d.aot_init.subtype);
 			append_sig = FALSE;
 		}
 		break;
@@ -9789,10 +9802,10 @@ append_mangled_method (GString *s, MonoMethod *method)
 		g_assert (imethod->context.class_inst != NULL || imethod->context.method_inst != NULL);
 
 		append_mangled_context (s, &imethod->context);
-		g_string_append_printf (s, "_declared_by_%s_", m_class_get_image (imethod->declaring->klass)->assembly->aname.name);
+		g_string_append_printf (s, "_declared_by_%s_", get_assembly_prefix (m_class_get_image (imethod->declaring->klass)));
 		append_mangled_method (s, imethod->declaring);
 	} else if (method->is_generic) {
-		g_string_append_printf (s, "%s_", m_class_get_image (method->klass)->assembly->aname.name);
+		g_string_append_printf (s, "%s_", get_assembly_prefix (m_class_get_image (method->klass)));
 
 		g_string_append_printf (s, "generic_");
 		append_mangled_klass (s, method->klass);
@@ -9804,7 +9817,7 @@ append_mangled_method (GString *s, MonoMethod *method)
 
 		return append_mangled_signature (s, mono_method_signature_internal (method));
 	} else {
-		g_string_append_printf (s, "%s", m_class_get_image (method->klass)->assembly->aname.name);
+		g_string_append_printf (s, "%s", get_assembly_prefix (m_class_get_image (method->klass)));
 		append_mangled_klass (s, method->klass);
 		g_string_append_printf (s, "_%s_", method->name);
 		if (!append_mangled_signature (s, mono_method_signature_internal (method))) {
@@ -9937,16 +9950,12 @@ mono_aot_patch_info_dup (MonoJumpInfo* ji)
 	return res;
 }
 
-#ifdef HOST_WIN32
-#include <mono/utils/w32subset.h>
-#endif
-
 static int
 execute_system (const char * command)
 {
 	int status = 0;
 
-#if defined (HOST_WIN32) && defined (HAVE_SYSTEM)
+#if defined (HOST_WIN32)
 	// We need an extra set of quotes around the whole command to properly handle commands 
 	// with spaces since internally the command is called through "cmd /c.
 	char * quoted_command = g_strdup_printf ("\"%s\"", command);
@@ -11610,7 +11619,7 @@ emit_file_info (MonoAotCompile *acfg)
 	emit_string_symbol (acfg, "assembly_guid" , acfg->image->guid);
 
 	/* Emit a string holding the assembly name */
-	emit_string_symbol (acfg, "assembly_name", acfg->image->assembly->aname.name);
+	emit_string_symbol (acfg, "assembly_name", get_assembly_prefix (acfg->image));
 
 	info = g_new0 (MonoAotFileInfo, 1);
 	init_aot_file_info (acfg, info);
@@ -11624,7 +11633,7 @@ emit_file_info (MonoAotCompile *acfg)
 		 * mono_aot_register_module (). The symbol points to a pointer to the the file info
 		 * structure.
 		 */
-		sprintf (symbol, "%smono_aot_module_%s_info", acfg->user_symbol_prefix, acfg->image->assembly->aname.name);
+		sprintf (symbol, "%smono_aot_module_%s_info", acfg->user_symbol_prefix, get_assembly_prefix (acfg->image));
 
 		/* Get rid of characters which cannot occur in symbols */
 		p = symbol;
@@ -13924,7 +13933,7 @@ mono_compile_assembly (MonoAssembly *ass, guint32 opts, const char *aot_options,
 	if (acfg->aot_opts.llvm_only)
 		acfg->flags = (MonoAotFileFlags)(acfg->flags | MONO_AOT_FILE_FLAG_LLVM_ONLY);
 
-	acfg->assembly_name_sym = g_strdup (acfg->image->assembly->aname.name);
+	acfg->assembly_name_sym = g_strdup (get_assembly_prefix (acfg->image));
 	/* Get rid of characters which cannot occur in symbols */
 	for (p = acfg->assembly_name_sym; *p; ++p) {
 		if (!(isalnum (*p) || *p == '_'))

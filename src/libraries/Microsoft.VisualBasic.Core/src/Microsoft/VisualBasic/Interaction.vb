@@ -494,6 +494,7 @@ Namespace Microsoft.VisualBasic
             End If
         End Sub
 
+        <SupportedOSPlatform("windows")>
         Public Function CreateObject(ByVal ProgId As String, Optional ByVal ServerName As String = "") As Object
             'Creates local or remote COM2 objects.  Should not be used to create COM+ objects.
             'Applications that need to be STA should set STA either on their Sub Main via STAThreadAttribute

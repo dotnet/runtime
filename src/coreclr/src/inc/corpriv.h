@@ -382,21 +382,6 @@ struct CORCOMPILE_VERSION_INFO;
 struct CORCOMPILE_DEPENDENCY;
 typedef GUID CORCOMPILE_NGEN_SIGNATURE;
 
-
-//**********************************************************************
-// Internal versions of shim functions for use by the CLR.
-
-STDAPI GetCORSystemDirectoryInternaL(
-    SString& pBuffer
-      );
-
-//LONGPATH:TODO: Remove this once Desktop usage has been removed
-STDAPI GetCORSystemDirectoryInternal(
-    __out_ecount_part_opt(cchBuffer, *pdwLength) LPWSTR pBuffer,
-    DWORD  cchBuffer,
-    __out_opt DWORD* pdwLength
-    );
-
 #endif  // _CORPRIV_H_
 // EOF =======================================================================
 

@@ -92,7 +92,7 @@ namespace System.Xml.Linq
         /// See XContainer.Add(object content) for details about the content that can be added
         /// using this method.
         /// </remarks>
-        public XElement(XName name, params object[] content) : this(name, (object)content) { }
+        public XElement(XName name, params object?[] content) : this(name, (object)content) { }
 
         /// <summary>
         /// Initializes a new instance of the XElement class from another XElement object.
@@ -983,7 +983,7 @@ namespace System.Xml.Linq
         /// See XContainer.Add(object content) for details about the content that can be added
         /// using this method.
         /// </remarks>
-        public void ReplaceAll(params object[] content)
+        public void ReplaceAll(params object?[] content)
         {
             ReplaceAll((object)content);
         }
@@ -1020,7 +1020,7 @@ namespace System.Xml.Linq
         /// See XContainer.Add(object content) for details about the content that can be added
         /// using this method.
         /// </remarks>
-        public void ReplaceAttributes(params object[] content)
+        public void ReplaceAttributes(params object?[] content)
         {
             ReplaceAttributes((object)content);
         }

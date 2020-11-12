@@ -89,7 +89,7 @@
                             Include="$(ILLinkSuppressionsConfigurationSpecificXmlFile)" />
     <ILLinkSuppressionsXmls Condition="Exists('$(ILLinkSuppressionsTargetOSSpecificXmlFile)')"
                             Include="$(ILLinkSuppressionsTargetOSSpecificXmlFile)" />
-    <ILLinkSuppressionsXmls Condition="'$(TargetOS)' != 'Windows_NT' and Exists('$(ILLinkSuppressionsNonWindowsXmlFile)')"
+    <ILLinkSuppressionsXmls Condition="'$(TargetOS)' != 'windows' and Exists('$(ILLinkSuppressionsNonWindowsXmlFile)')"
                             Include="$(ILLinkSuppressionsNonWindowsXmlFile)" />
     <ILLinkSuppressionsXmls Update="@(ILLinkSuppressionsXmls)" TargetPath="%(FileName).$(AssemblyName).xml" />
   </ItemGroup>
@@ -231,6 +231,8 @@
       <ILLinkArgs>$(ILLinkArgs) --skip-unresolved true</ILLinkArgs>
       <!-- keep interface implementations -->
       <ILLinkArgs>$(ILLinkArgs) --disable-opt unusedinterfaces</ILLinkArgs>
+      <!-- keep any type check -->
+      <ILLinkArgs>$(ILLinkArgs) --disable-opt unusedtypechecks</ILLinkArgs>
     </PropertyGroup>
   </Target>
 

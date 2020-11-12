@@ -166,7 +166,6 @@ CFileMappingImmutableDataCopyRoutine(
     void *pImmDataTarget
     )
 {
-    PAL_ERROR palError = NO_ERROR;
     CFileMappingImmutableData *pImmutableData = (CFileMappingImmutableData *) pImmData;
     CFileMappingImmutableData *pImmutableDataTarget = (CFileMappingImmutableData *) pImmDataTarget;
 
@@ -181,7 +180,6 @@ CFileMappingImmutableDataCleanupRoutine(
     void *pImmData
     )
 {
-    PAL_ERROR palError = NO_ERROR;
     CFileMappingImmutableData *pImmutableData = (CFileMappingImmutableData *) pImmData;
 
     free(pImmutableData->lpFileName);

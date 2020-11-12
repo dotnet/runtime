@@ -9,20 +9,28 @@ Debugging CoreCLR on Windows
 ============================
 
 1. Perform a build of the repo.
-2. Open solution \<reporoot\>\artifacts\obj\coreclr\Windows_NT.\<platform\>.\<configuration\>\CoreCLR.sln in Visual Studio. \<platform\> and \<configuration\> are based
+2. Open solution \<reporoot\>\artifacts\obj\coreclr\windows.\<platform\>.\<configuration\>\CoreCLR.sln in Visual Studio. \<platform\> and \<configuration\> are based
     on type of build you did. By default they are 'x64' and 'Debug'.
 3. Right-click the INSTALL project and choose ‘Set as StartUp Project’
 4. Bring up the properties page for the INSTALL project
 5. Select Configuration Properties->Debugging from the left side tree control
-6. Set Command=`$(SolutionDir)\..\..\..\bin\coreclr\Windows_NT.$(Platform).$(Configuration)\corerun.exe`
+6. Set Command=`$(SolutionDir)\..\..\..\bin\coreclr\windows.$(Platform).$(Configuration)\corerun.exe`
     1. This points to the folder where the built runtime binaries are present.
 7. Set Command Arguments=`<managed app you wish to run>` (e.g. HelloWorld.dll)
-8. Set Working Directory=`$(SolutionDir)\..\..\..\bin\coreclr\Windows_NT.$(Platform).$(Configuration)`
+8. Set Working Directory=`$(SolutionDir)\..\..\..\bin\coreclr\windows.$(Platform).$(Configuration)`
     1. This points to the folder containing CoreCLR binaries.
-9. Press F11 to start debugging at wmain in corerun (or set a breakpoint in source and press F5 to run to it)
+9. Set Environment=`CORE_LIBRARIES=$(SolutionDir)\..\..\..\bin\runtime\<current tfm>-windows-$(Configuration)-$(Platform)`,
+    where '\<current tfm\>' is the target framework of current branch, for example `netcoreapp3.1` `net5.0`.
+    1. This points to the folder containing core libraries except `System.Private.CoreLib`.
+    2. This step can be skipped if you are debugging CLR tests that references only `System.Private.CoreLib`.
+    Otherwise, it's required to debug a realworld application that references anything else, including `System.Runtime`.
+10. Right-click the INSTALL project and choose 'Build'
+    1. This will load necessary information from cmake to Visual Studio.
+11. Press F11 to start debugging at wmain in corerun (or set a breakpoint in source and press F5 to run to it)
     1. As an example, set a breakpoint for the EEStartup function in ceemain.cpp to break into CoreCLR startup.
 
-Steps 1-8 only need to be done once, and then (9) can be repeated whenever you want to start debugging. The above can be done with Visual Studio 2013.
+Steps 1-10 only need to be done once, and then (11) can be repeated whenever you want to start debugging. The above can be done with Visual Studio 2019 as writing.
+Keeping with latest version of Visual Studio is recommended.
 
 ### Using SOS with windbg or cdb on Windows ###
 

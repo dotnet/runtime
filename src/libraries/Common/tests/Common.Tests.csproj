@@ -2,7 +2,7 @@
   <PropertyGroup>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <IncludeRemoteExecutor>true</IncludeRemoteExecutor>
-    <TargetFrameworks>$(NetCoreAppCurrent)-Windows_NT;$(NetCoreAppCurrent)-Linux;$(NetCoreAppCurrent)-Browser;$(NetCoreAppCurrent)-OSX</TargetFrameworks>
+    <TargetFrameworks>$(NetCoreAppCurrent)-windows;$(NetCoreAppCurrent)-Linux;$(NetCoreAppCurrent)-Browser;$(NetCoreAppCurrent)-OSX</TargetFrameworks>
     <Nullable>annotations</Nullable>
   </PropertyGroup>
   <ItemGroup>
@@ -14,6 +14,8 @@
              Link="Common\Interop\Linux\cgroups\Interop.cgroups.cs" />
     <Compile Include="$(CommonPath)Interop\Linux\procfs\Interop.ProcFsStat.cs"
              Link="Common\Interop\Linux\procfs\Interop.ProcFsStat.cs" />
+    <Compile Include="$(CommonPath)Interop\Linux\procfs\Interop.ProcFsStat.TryReadStatusFile.cs"
+             Link="Common\Interop\Linux\Interop.ProcFsStat.TryReadStatusFile.cs" />
     <Compile Include="$(CommonPath)System\CharArrayHelpers.cs"
              Link="Common\System\CharArrayHelpers.cs" />
     <Compile Include="$(CommonPath)System\Marvin.cs"
@@ -64,8 +66,6 @@
              Link="Common\System\Net\Http\aspnetcore\Http2\Hpack\H2StaticTable.cs" />
     <Compile Include="$(CommonPath)System\Net\Http\aspnetcore\Http2\Hpack\StatusCodes.cs"
              Link="Common\System\Net\Http\aspnetcore\Http2\Hpack\StatusCodes.cs" />
-    <Compile Include="$(CommonPath)System\Text\ReusableTextReader.cs"
-             Link="Common\System\Text\ReusableTextReader.cs" />
     <Compile Include="$(CommonPath)System\Text\SimpleRegex.cs"
              Link="Common\System\Text\SimpleRegex.cs" />
     <Compile Include="$(CommonPath)System\Text\ValueStringBuilder.cs"
@@ -102,6 +102,12 @@
              Link="Common\System\Threading\Tasks\TaskToApm.cs" />
     <Compile Include="$(CoreLibSharedDir)System\IO\PathInternal.cs"
              Link="System\IO\PathInternal.cs" />
+    <Compile Include="System\IO\ConnectedStreams.cs" Link="System\IO\ConnectedStreams.cs" />
+    <Compile Include="Tests\System\IO\ConnectedStreamsTests.cs" />
+    <Compile Include="Tests\System\IO\StreamConformanceTests.cs" />
+    <Compile Include="$(CommonPath)System\Net\ArrayBuffer.cs" Link="Common\System\Net\ArrayBuffer.cs" />
+    <Compile Include="$(CommonPath)System\Net\StreamBuffer.cs" Link="Common\System\Net\StreamBuffer.cs" />
+    <Compile Include="$(CommonTestPath)System\IO\CallTrackingStream.cs" Link="Common\System\IO\CallTrackingStream.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetsWindows)'=='true'">
     <Compile Include="$(CoreLibSharedDir)System\IO\PathInternal.Windows.cs"

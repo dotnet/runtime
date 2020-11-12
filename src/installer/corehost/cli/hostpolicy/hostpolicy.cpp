@@ -97,8 +97,10 @@ namespace
 
     int create_hostpolicy_context(
         hostpolicy_init_t &hostpolicy_init,
-        const arguments_t &args,
-        bool breadcrumbs_enabled)
+        const int argc,
+        const pal::char_t *argv[],
+        bool breadcrumbs_enabled,
+        /*out*/ arguments_t *out_args = nullptr)
     {
         {
             std::unique_lock<std::mutex> lock{ g_context_lock };
@@ -116,6 +118,13 @@ namespace
         }
 
         g_context_initializing_cv.notify_all();
+
+        arguments_t args;
+        if (!parse_arguments(hostpolicy_init, argc, argv, args))
+            return StatusCode::LibHostInvalidArgs;
+
+        if (out_args != nullptr)
+            *out_args = args;
 
         std::unique_ptr<hostpolicy_context_t> context_local(new hostpolicy_context_t());
         int rc = context_local->initialize(hostpolicy_init, args, breadcrumbs_enabled);
@@ -320,12 +329,11 @@ SHARED_API int HOSTPOLICY_CALLTYPE corehost_load(host_interface_t* init)
     return StatusCode::Success;
 }
 
-int corehost_init(
+void trace_corehost_init(
     const hostpolicy_init_t &hostpolicy_init,
     const int argc,
     const pal::char_t* argv[],
-    const pal::string_t& location,
-    arguments_t& args)
+    const pal::string_t& location)
 {
     if (trace::is_enabled())
     {
@@ -337,28 +345,41 @@ int corehost_init(
         }
         trace::info(_X("}"));
 
+        const pal::char_t *host_mode_str;
+        switch (hostpolicy_init.host_mode)
+        {
+            case host_mode_t::muxer:
+                host_mode_str = _X("muxer");
+                break;
+            case host_mode_t::apphost:
+                host_mode_str = _X("apphost");
+                break;
+            case host_mode_t::split_fx:
+                host_mode_str = _X("split_fx");
+                break;
+            case host_mode_t::libhost:
+                host_mode_str = _X("libhost");
+                break;
+            case host_mode_t::invalid:
+            default:
+                host_mode_str = _X("invalid");
+                break;
+        }
+
+        trace::info(_X("Mode: %s"), host_mode_str);
         trace::info(_X("Deps file: %s"), hostpolicy_init.deps_file.c_str());
         for (const auto& probe : hostpolicy_init.probe_paths)
         {
             trace::info(_X("Additional probe dir: %s"), probe.c_str());
         }
     }
-
-    if (!parse_arguments(hostpolicy_init, argc, argv, args))
-    {
-        return StatusCode::LibHostInvalidArgs;
-    }
-
-    args.trace();
-    return StatusCode::Success;
 }
 
 int corehost_main_init(
     hostpolicy_init_t& hostpolicy_init,
     const int argc,
     const pal::char_t* argv[],
-    const pal::string_t& location,
-    arguments_t& args)
+    const pal::string_t& location)
 {
     // Take care of arguments
     if (!hostpolicy_init.host_info.is_valid(hostpolicy_init.host_mode))
@@ -386,18 +407,19 @@ int corehost_main_init(
         }
     }
 
-    return corehost_init(hostpolicy_init, argc, argv, location, args);
+    trace_corehost_init(hostpolicy_init, argc, argv, location);
+    return StatusCode::Success;
 }
 
 SHARED_API int HOSTPOLICY_CALLTYPE corehost_main(const int argc, const pal::char_t* argv[])
 {
-    arguments_t args;
-    int rc = corehost_main_init(g_init, argc, argv, _X("corehost_main"), args);
+    int rc = corehost_main_init(g_init, argc, argv, _X("corehost_main"));
     if (rc != StatusCode::Success)
         return rc;
 
+    arguments_t args;
     assert(g_context == nullptr);
-    rc = create_hostpolicy_context(g_init, args, true /* breadcrumbs_enabled */);
+    rc = create_hostpolicy_context(g_init, argc, argv, true /* breadcrumbs_enabled */, &args);
     if (rc != StatusCode::Success)
         return rc;
 
@@ -410,13 +432,16 @@ SHARED_API int HOSTPOLICY_CALLTYPE corehost_main(const int argc, const pal::char
 
 SHARED_API int HOSTPOLICY_CALLTYPE corehost_main_with_output_buffer(const int argc, const pal::char_t* argv[], pal::char_t buffer[], int32_t buffer_size, int32_t* required_buffer_size)
 {
-    arguments_t args;
-    int rc = corehost_main_init(g_init, argc, argv, _X("corehost_main_with_output_buffer"), args);
+    int rc = corehost_main_init(g_init, argc, argv, _X("corehost_main_with_output_buffer"));
     if (rc != StatusCode::Success)
         return rc;
 
     if (g_init.host_command == _X("get-native-search-directories"))
     {
+        arguments_t args;
+        if (!parse_arguments(g_init, argc, argv, args))
+            return StatusCode::LibHostInvalidArgs;
+
         pal::string_t output_string;
         rc = run_host_command(g_init, args, &output_string);
         if (rc != StatusCode::Success)
@@ -448,7 +473,7 @@ SHARED_API int HOSTPOLICY_CALLTYPE corehost_main_with_output_buffer(const int ar
     return rc;
 }
 
-int corehost_libhost_init(const hostpolicy_init_t &hostpolicy_init, const pal::string_t& location, arguments_t& args)
+void trace_corehost_libhost_init(const hostpolicy_init_t &hostpolicy_init, const pal::string_t& location)
 {
     // Host info should always be valid in the delegate scenario
     assert(hostpolicy_init.host_info.is_valid(host_mode_t::libhost));
@@ -456,7 +481,7 @@ int corehost_libhost_init(const hostpolicy_init_t &hostpolicy_init, const pal::s
     // Single-file bundle is only expected in apphost mode.
     assert(!bundle::info_t::is_single_file_bundle());
 
-    return corehost_init(hostpolicy_init, 0, nullptr, location, args);
+    trace_corehost_init(hostpolicy_init, 0, nullptr, location);
 }
 
 namespace
@@ -705,13 +730,11 @@ SHARED_API int HOSTPOLICY_CALLTYPE corehost_initialize(const corehost_initialize
         }
     }
 
-    // Trace entry point information and initialize args using previously set init information.
+    // Trace entry point information using previously set init information.
     // This function does not modify any global state.
-    arguments_t args;
-    int rc = corehost_libhost_init(g_init, _X("corehost_initialize"), args);
-    if (rc != StatusCode::Success)
-        return rc;
+    trace_corehost_libhost_init(g_init, _X("corehost_initialize"));
 
+    int rc;
     if (wait_for_initialized)
     {
         // Wait for context initialization to complete
@@ -740,7 +763,7 @@ SHARED_API int HOSTPOLICY_CALLTYPE corehost_initialize(const corehost_initialize
     }
     else
     {
-        rc = create_hostpolicy_context(g_init, args, g_init.host_mode != host_mode_t::libhost);
+        rc = create_hostpolicy_context(g_init, 0 /*argc*/, nullptr /*argv*/, g_init.host_mode != host_mode_t::libhost);
         if (rc != StatusCode::Success && rc != StatusCode::Success_HostAlreadyInitialized)
             return rc;
     }

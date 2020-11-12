@@ -38,7 +38,7 @@ namespace System.Net.Security.Tests
         [InlineData(1)]
         public async Task NegotiateStream_StreamToStream_Authentication_Success(int delay)
         {
-            (Stream stream1, Stream stream2) = ConnectedStreams.CreateBidirectional();
+            (Stream stream1, Stream stream2) = TestHelper.GetConnectedStreams();
 
             using (var clientStream = new DelayStream(stream1, delay))
             using (var serverStream = new DelayStream(stream2, delay))
@@ -90,7 +90,7 @@ namespace System.Net.Security.Tests
         [InlineData(1)]
         public async Task NegotiateStream_StreamToStream_Authenticated_DisposeAsync(int delay)
         {
-            (Stream stream1, Stream stream2) = ConnectedStreams.CreateBidirectional();
+            (Stream stream1, Stream stream2) = TestHelper.GetConnectedStreams();
             await using (var client = new NegotiateStream(new DelayStream(stream1, delay)))
             await using (var server = new NegotiateStream(new DelayStream(stream2, delay)))
             {
@@ -127,7 +127,7 @@ namespace System.Net.Security.Tests
         {
             string targetName = "testTargetName";
 
-            (Stream stream1, Stream stream2) = ConnectedStreams.CreateBidirectional();
+            (Stream stream1, Stream stream2) = TestHelper.GetConnectedStreams();
             using (var client = new NegotiateStream(stream1))
             using (var server = new NegotiateStream(stream2))
             {
@@ -186,7 +186,7 @@ namespace System.Net.Security.Tests
             Assert.NotEqual(emptyNetworkCredential, CredentialCache.DefaultCredentials);
             Assert.NotEqual(emptyNetworkCredential, CredentialCache.DefaultNetworkCredentials);
 
-            (Stream stream1, Stream stream2) = ConnectedStreams.CreateBidirectional();
+            (Stream stream1, Stream stream2) = TestHelper.GetConnectedStreams();
             using (var client = new NegotiateStream(stream1))
             using (var server = new NegotiateStream(stream2))
             {
@@ -230,142 +230,6 @@ namespace System.Net.Security.Tests
                 // On .NET Desktop: Assert.True(clientIdentity.IsAuthenticated);
 
                 IdentityValidator.AssertHasName(clientIdentity, new SecurityIdentifier(WellKnownSidType.AnonymousSid, null).Translate(typeof(NTAccount)).Value);
-            }
-        }
-
-        [ConditionalTheory(nameof(IsNtlmInstalled))]
-        [InlineData(0)]
-        [InlineData(1)]
-        public async Task NegotiateStream_StreamToStream_Successive_ClientWrite_Success(int delay)
-        {
-            byte[] recvBuf = new byte[s_sampleMsg.Length];
-            int bytesRead = 0;
-
-            (Stream stream1, Stream stream2) = ConnectedStreams.CreateBidirectional();
-            using (var client = new NegotiateStream(new DelayStream(stream1, delay)))
-            using (var server = new NegotiateStream(new DelayStream(stream2, delay)))
-            {
-                Assert.False(client.IsAuthenticated);
-                Assert.False(server.IsAuthenticated);
-
-                Task[] auth = new Task[2];
-                auth[0] = AuthenticateAsClientAsync(client, CredentialCache.DefaultNetworkCredentials, string.Empty);
-                auth[1] = AuthenticateAsServerAsync(server);
-
-                await TestConfiguration.WhenAllOrAnyFailedWithTimeout(auth);
-
-                auth[0] = WriteAsync(client, s_sampleMsg, 0, s_sampleMsg.Length);
-                auth[1] = ReadAsync(server, recvBuf, 0, s_sampleMsg.Length);
-                await TestConfiguration.WhenAllOrAnyFailedWithTimeout(auth);
-                Assert.True(s_sampleMsg.SequenceEqual(recvBuf));
-
-                await WriteAsync(client, s_sampleMsg, 0, s_sampleMsg.Length);
-
-                // Test partial async read.
-                bytesRead = await ReadAsync(server, recvBuf, 0, PartialBytesToRead);
-                Assert.Equal(PartialBytesToRead, bytesRead);
-
-                bytesRead = await ReadAsync(server, recvBuf, PartialBytesToRead, s_sampleMsg.Length - PartialBytesToRead);
-                Assert.Equal(s_sampleMsg.Length - PartialBytesToRead, bytesRead);
-
-                Assert.True(s_sampleMsg.SequenceEqual(recvBuf));
-            }
-        }
-
-        [ConditionalTheory(nameof(IsNtlmInstalled))]
-        [InlineData(0)]
-        [InlineData(1)]
-        public async Task NegotiateStream_ReadWriteLongMsg_Success(int delay)
-        {
-            byte[] recvBuf = new byte[s_longMsg.Length];
-            int bytesRead = 0;
-
-            (Stream stream1, Stream stream2) = ConnectedStreams.CreateBidirectional(4096, int.MaxValue);
-            using (var client = new NegotiateStream(new DelayStream(stream1, delay)))
-            using (var server = new NegotiateStream(new DelayStream(stream2, delay)))
-            {
-                await TestConfiguration.WhenAllOrAnyFailedWithTimeout(
-                    client.AuthenticateAsClientAsync(CredentialCache.DefaultNetworkCredentials, string.Empty),
-                    server.AuthenticateAsServerAsync());
-
-                await WriteAsync(client, s_longMsg, 0, s_longMsg.Length);
-
-                while (bytesRead < s_longMsg.Length)
-                {
-                    bytesRead += await ReadAsync(server, recvBuf, bytesRead, s_longMsg.Length - bytesRead);
-                }
-
-                Assert.True(s_longMsg.SequenceEqual(recvBuf));
-            }
-        }
-
-        [ConditionalFact(nameof(IsNtlmInstalled))]
-        public void NegotiateStream_StreamToStream_Flush_Propagated()
-        {
-            (Stream stream1, Stream stream2) = ConnectedStreams.CreateBidirectional();
-            using (var stream = new CallTrackingStream(stream1))
-            using (var negotiateStream = new NegotiateStream(stream))
-            using (stream2)
-            {
-                Assert.Equal(0, stream.TimesCalled(nameof(Stream.Flush)));
-                negotiateStream.Flush();
-                Assert.NotEqual(0, stream.TimesCalled(nameof(Stream.Flush)));
-            }
-        }
-
-        [ConditionalFact(nameof(IsNtlmInstalled))]
-        public async Task NegotiateStream_StreamToStream_FlushAsync_Propagated()
-        {
-            (Stream stream1, Stream stream2) = ConnectedStreams.CreateBidirectional();
-            var tcs = new TaskCompletionSource();
-
-            using (var stream = new DelegateDelegatingStream(stream1) { FlushAsyncFunc = async cancellationToken => { await tcs.Task.WithCancellation(cancellationToken); await stream1.FlushAsync(cancellationToken); } })
-            using (var negotiateStream = new NegotiateStream(stream))
-            using (stream2)
-            {
-                Task task = negotiateStream.FlushAsync();
-
-                Assert.False(task.IsCompleted);
-                tcs.SetResult();
-
-                await task;
-            }
-        }
-
-        [ConditionalFact(nameof(IsNtlmInstalled))]
-        public async Task NegotiateStream_StreamToStream_Successive_CancelableReadsWrites()
-        {
-            if (!SupportsCancelableReadsWrites)
-            {
-                return;
-            }
-
-            byte[] recvBuf = new byte[s_sampleMsg.Length];
-
-            (Stream stream1, Stream stream2) = ConnectedStreams.CreateBidirectional();
-            using (var clientStream = new DelayStream(stream1))
-            using (var serverStream = new DelayStream(stream2))
-            using (var client = new NegotiateStream(clientStream))
-            using (var server = new NegotiateStream(serverStream))
-            {
-                await TestConfiguration.WhenAllOrAnyFailedWithTimeout(
-                    AuthenticateAsClientAsync(client, CredentialCache.DefaultNetworkCredentials, string.Empty),
-                    AuthenticateAsServerAsync(server));
-
-                clientStream.DelayMilliseconds = int.MaxValue;
-                serverStream.DelayMilliseconds = int.MaxValue;
-
-                var cts = new CancellationTokenSource();
-                Task t = WriteAsync(client, s_sampleMsg, 0, s_sampleMsg.Length, cts.Token);
-                Assert.False(t.IsCompleted);
-                cts.Cancel();
-                await Assert.ThrowsAnyAsync<OperationCanceledException>(() => t);
-
-                cts = new CancellationTokenSource();
-                t = ReadAsync(server, s_sampleMsg, 0, s_sampleMsg.Length, cts.Token);
-                Assert.False(t.IsCompleted);
-                cts.Cancel();
-                await Assert.ThrowsAnyAsync<OperationCanceledException>(() => t);
             }
         }
     }

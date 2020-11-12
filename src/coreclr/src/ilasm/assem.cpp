@@ -1611,16 +1611,26 @@ unsigned hash(
    switch(len)              /* all the case statements fall through */
    {
        case 11: c+=((unsigned)k[10] << 24);
+                FALLTHROUGH;
        case 10: c+=((unsigned)k[9] << 16);
+                FALLTHROUGH;
        case 9 : c+=((unsigned)k[8] << 8);
+                FALLTHROUGH;
           /* the first byte of c is reserved for the length */
        case 8 : b+=((unsigned)k[7] << 24);
+                FALLTHROUGH;
        case 7 : b+=((unsigned)k[6] << 16);
+                FALLTHROUGH;
        case 6 : b+=((unsigned)k[5] << 8);
+                FALLTHROUGH;
        case 5 : b+=k[4];
+                FALLTHROUGH;
        case 4 : a+=((unsigned)k[3] << 24);
+                FALLTHROUGH;
        case 3 : a+=((unsigned)k[2] << 16);
+                FALLTHROUGH;
        case 2 : a+=((unsigned)k[1] << 8);
+                FALLTHROUGH;
        case 1 : a+=k[0];
      /* case 0: nothing left to add */
    }

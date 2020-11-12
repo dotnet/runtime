@@ -46,6 +46,7 @@
     <!-- TaskScheduler -->
     <Compile Include="TaskScheduler\TaskSchedulerTests.cs" />
     <!-- System.Runtime.CompilerServices -->
+    <Compile Include="System.Runtime.CompilerServices\AsyncIteratorMethodBuilderTests.cs" />
     <Compile Include="System.Runtime.CompilerServices\AsyncTaskMethodBuilderTests.cs" />
     <Compile Include="System.Runtime.CompilerServices\ConfiguredAsyncDisposable.cs" />
     <Compile Include="System.Runtime.CompilerServices\ConfiguredCancelableAsyncEnumerableTests.cs" />

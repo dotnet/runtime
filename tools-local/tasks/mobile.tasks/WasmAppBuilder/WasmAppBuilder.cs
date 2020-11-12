@@ -16,8 +16,6 @@ using Microsoft.Build.Utilities;
 
 public class WasmAppBuilder : Task
 {
-    // FIXME: Document
-
     [Required]
     public string? AppDir { get; set; }
     [Required]
@@ -35,8 +33,9 @@ public class WasmAppBuilder : Task
     // https://github.com/dotnet/icu/tree/maint/maint-67/icu-filters
     public string? IcuDataFileName { get; set; } = "icudt.dat";
 
-    [Required]
+    // Either one of these two need to be set
     public ITaskItem[]? AssemblySearchPaths { get; set; }
+    public ITaskItem[]? Assemblies { get; set; }
     public int DebugLevel { get; set; }
     public ITaskItem[]? ExtraAssemblies { get; set; }
     public ITaskItem[]? SatelliteAssemblies { get; set; }
@@ -107,40 +106,60 @@ public class WasmAppBuilder : Task
             throw new ArgumentException($"File MainJS='{MainJS}' doesn't exist.");
         if (!InvariantGlobalization && string.IsNullOrEmpty(IcuDataFileName))
             throw new ArgumentException("IcuDataFileName property shouldn't be empty if InvariantGlobalization=false");
+        if (AssemblySearchPaths == null && Assemblies == null)
+            throw new ArgumentException("Either the AssemblySearchPaths or the Assemblies property needs to be set.");
 
         var paths = new List<string>();
         _assemblies = new SortedDictionary<string, Assembly>();
 
-        // Collect and load assemblies used by the app
-        foreach (var v in AssemblySearchPaths!)
+        if (AssemblySearchPaths != null)
         {
-            var dir = v.ItemSpec;
-            if (!Directory.Exists(dir))
-                throw new ArgumentException($"Directory '{dir}' doesn't exist or not a directory.");
-            paths.Add(dir);
-        }
-        _resolver = new Resolver(paths);
-        var mlc = new MetadataLoadContext(_resolver, "System.Private.CoreLib");
-
-        var mainAssembly = mlc.LoadFromAssemblyPath(MainAssembly);
-        Add(mlc, mainAssembly);
-
-        if (ExtraAssemblies != null)
-        {
-            foreach (var item in ExtraAssemblies)
+            // Collect and load assemblies used by the app
+            foreach (var v in AssemblySearchPaths!)
             {
-                try
+                var dir = v.ItemSpec;
+                if (!Directory.Exists(dir))
+                    throw new ArgumentException($"Directory '{dir}' doesn't exist or not a directory.");
+                paths.Add(dir);
+            }
+            _resolver = new Resolver(paths);
+            var mlc = new MetadataLoadContext(_resolver, "System.Private.CoreLib");
+
+            var mainAssembly = mlc.LoadFromAssemblyPath(MainAssembly);
+            Add(mlc, mainAssembly);
+
+            if (ExtraAssemblies != null)
+            {
+                foreach (var item in ExtraAssemblies)
                 {
-                    var refAssembly = mlc.LoadFromAssemblyPath(item.ItemSpec);
-                    Add(mlc, refAssembly);
-                }
-                catch (System.IO.FileLoadException)
-                {
-                    if (!SkipMissingAssemblies)
+                    try
                     {
-                        throw;
+                        var refAssembly = mlc.LoadFromAssemblyPath(item.ItemSpec);
+                        Add(mlc, refAssembly);
+                    }
+                    catch (System.IO.FileLoadException)
+                    {
+                        if (!SkipMissingAssemblies)
+                            throw;
                     }
                 }
+            }
+        }
+        else
+        {
+            string corelibPath = string.Empty;
+            foreach (var v in Assemblies!)
+            {
+                if (v.ItemSpec.EndsWith ("System.Private.CoreLib.dll"))
+                    corelibPath = Path.GetDirectoryName (v.ItemSpec)!;
+            }
+            _resolver = new Resolver(new List<string>() { corelibPath });
+            var mlc = new MetadataLoadContext(_resolver, "System.Private.CoreLib");
+
+            foreach (var v in Assemblies!)
+            {
+                var assembly = mlc.LoadFromAssemblyPath(v.ItemSpec);
+                Add(mlc, assembly);
             }
         }
 

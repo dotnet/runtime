@@ -489,7 +489,7 @@ void Compiler::optUpdateLoopsBeforeRemoveBlock(BasicBlock* block, bool skipUnmar
                     break;
                 }
 
-                __fallthrough;
+                FALLTHROUGH;
 
             case BBJ_ALWAYS:
                 noway_assert(block->bbJumpDest);
@@ -550,7 +550,7 @@ void Compiler::optUpdateLoopsBeforeRemoveBlock(BasicBlock* block, bool skipUnmar
                             break;
                         }
 
-                        __fallthrough;
+                        FALLTHROUGH;
 
                     case BBJ_ALWAYS:
                         noway_assert(auxBlock->bbJumpDest);
@@ -1392,7 +1392,7 @@ void Compiler::optCheckPreds()
                     {
                         break;
                     }
-                    __fallthrough;
+                    FALLTHROUGH;
                 case BBJ_NONE:
                     noway_assert(blockPred->bbNext == block);
                     break;
@@ -3207,7 +3207,7 @@ bool Compiler::optComputeLoopRep(int        constInit,
             {
                 case GT_SUB:
                     iterInc = -iterInc;
-                    __fallthrough;
+                    FALLTHROUGH;
 
                 case GT_ADD:
                     if (constInitX != constLimitX)
@@ -3254,7 +3254,7 @@ bool Compiler::optComputeLoopRep(int        constInit,
             {
                 case GT_SUB:
                     iterInc = -iterInc;
-                    __fallthrough;
+                    FALLTHROUGH;
 
                 case GT_ADD:
                     if (constInitX < constLimitX)
@@ -3301,7 +3301,7 @@ bool Compiler::optComputeLoopRep(int        constInit,
             {
                 case GT_SUB:
                     iterInc = -iterInc;
-                    __fallthrough;
+                    FALLTHROUGH;
 
                 case GT_ADD:
                     if (constInitX <= constLimitX)
@@ -3348,7 +3348,7 @@ bool Compiler::optComputeLoopRep(int        constInit,
             {
                 case GT_SUB:
                     iterInc = -iterInc;
-                    __fallthrough;
+                    FALLTHROUGH;
 
                 case GT_ADD:
                     if (constInitX > constLimitX)
@@ -3395,7 +3395,7 @@ bool Compiler::optComputeLoopRep(int        constInit,
             {
                 case GT_SUB:
                     iterInc = -iterInc;
-                    __fallthrough;
+                    FALLTHROUGH;
 
                 case GT_ADD:
                     if (constInitX >= constLimitX)
@@ -3546,19 +3546,7 @@ void Compiler::optUnrollLoops()
         // Check for required flags:
         // LPFLG_DO_WHILE - required because this transform only handles loops of this form
         // LPFLG_CONST - required because this transform only handles full unrolls
-        // LPFLG_SIMD_LIMIT - included here as a heuristic, not for correctness/structural reasons
-        requiredFlags = LPFLG_DO_WHILE | LPFLG_CONST | LPFLG_SIMD_LIMIT;
-
-#ifdef DEBUG
-        if (compStressCompile(STRESS_UNROLL_LOOPS, 50))
-        {
-            // In stress mode, quadruple the size limit, and drop
-            // the restriction that loop limit must be vector element count.
-
-            unrollLimitSz *= 4;
-            requiredFlags &= ~LPFLG_SIMD_LIMIT;
-        }
-#endif
+        requiredFlags = LPFLG_DO_WHILE | LPFLG_CONST;
 
         /* Ignore the loop if we don't have a do-while
         that has a constant number of iterations */
@@ -3644,6 +3632,24 @@ void Compiler::optUnrollLoops()
 
         if (totalIter > iterLimit)
         {
+            continue;
+        }
+
+        if (INDEBUG(compStressCompile(STRESS_UNROLL_LOOPS, 50) ||) false)
+        {
+            // In stress mode, quadruple the size limit, and drop
+            // the restriction that loop limit must be vector element count.
+            unrollLimitSz *= 4;
+        }
+        else if (totalIter <= 1)
+        {
+            // No limit for single iteration loops
+            unrollLimitSz = INT_MAX;
+        }
+        else if (!(loopFlags & LPFLG_SIMD_LIMIT))
+        {
+            // Otherwise unroll only if limit is Vector_.Length
+            // (as a heuristic, not for correctness/structural reasons)
             continue;
         }
 
@@ -5780,7 +5786,7 @@ bool Compiler::optNarrowTree(GenTree* tree, var_types srct, var_types dstt, Valu
                     noway_assert(doit == false);
                     return false;
                 }
-                __fallthrough;
+                FALLTHROUGH;
 
             case GT_OR:
             case GT_XOR:
@@ -7522,7 +7528,7 @@ void Compiler::fgCreateLoopPreHeader(unsigned lnum)
                     noway_assert(predBlock->bbJumpDest != top);
                     break;
                 }
-                __fallthrough;
+                FALLTHROUGH;
 
             case BBJ_ALWAYS:
             case BBJ_EHCATCHRET:
@@ -7561,6 +7567,7 @@ void Compiler::fgCreateLoopPreHeader(unsigned lnum)
                         preHead->bbFlags |= BBF_JMP_TARGET | BBF_HAS_LABEL;
                     }
                 } while (++jumpTab, --jumpCnt);
+                break;
 
             default:
                 noway_assert(!"Unexpected bbJumpKind");

@@ -46,6 +46,7 @@ namespace System.Net.Http.Functional.Tests
         [InlineData("deflate", true)]
         [InlineData("br", false)]
         [InlineData("br", true)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/39187", TestPlatforms.Browser)]
         public async Task DecompressedResponse_MethodSpecified_DecompressedContentReturned(string encodingName, bool all)
         {
             Func<Stream, Stream> compress;
@@ -135,6 +136,7 @@ namespace System.Net.Http.Functional.Tests
 
         [Theory]
         [MemberData(nameof(DecompressedResponse_MethodNotSpecified_OriginalContentReturned_MemberData))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/39187", TestPlatforms.Browser)]
         public async Task DecompressedResponse_MethodNotSpecified_OriginalContentReturned(
             string encodingName, Func<Stream, Stream> compress, DecompressionMethods methods)
         {
@@ -169,7 +171,7 @@ namespace System.Net.Http.Functional.Tests
 
         [OuterLoop("Uses external servers")]
         [Theory, MemberData(nameof(RemoteServersAndCompressionUris))]
-        public async Task GetAsync_SetAutomaticDecompression_ContentDecompressed(Configuration.Http.RemoteServer remoteServer, Uri uri)
+        public async Task GetAsync_SetAutomaticDecompression_ContentDecompressed_GZip(Configuration.Http.RemoteServer remoteServer, Uri uri)
         {
             // Sync API supported only up to HTTP/1.1
             if (!TestAsync && remoteServer.HttpVersion.Major >= 2)
@@ -203,10 +205,14 @@ namespace System.Net.Http.Functional.Tests
         [Theory]
         [InlineData("http://httpbin.org/deflate", "\"deflated\": true")]
         [InlineData("https://httpbin.org/deflate", "\"deflated\": true")]
-        [InlineData("http://httpbin.org/gzip", "\"gzipped\": true")]
-        [InlineData("https://httpbin.org/gzip", "\"gzipped\": true")]
-        public async Task GetAsync_SetAutomaticDecompression_ContentDecompressed(string uri, string expectedContent)
+        public async Task GetAsync_SetAutomaticDecompression_ContentDecompressed_Deflate(string uri, string expectedContent)
         {
+            if (IsWinHttpHandler)
+            {
+                // WinHttpHandler targets netstandard2.0 and still erroneously uses DeflateStream rather than ZlibStream for deflate.
+                return;
+            }
+
             HttpClientHandler handler = CreateHttpClientHandler();
             handler.AutomaticDecompression = DecompressionMethods.GZip | DecompressionMethods.Deflate;
             using (HttpClient client = CreateHttpClient(handler))
@@ -254,6 +260,7 @@ namespace System.Net.Http.Functional.Tests
         [InlineData(DecompressionMethods.Deflate, "deflate", "gzip")]
         [InlineData(DecompressionMethods.Deflate, "deflate", "br")]
         [InlineData(DecompressionMethods.GZip | DecompressionMethods.Deflate, "gzip, deflate", "gzip, deflate")]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/39187", TestPlatforms.Browser)]
         public async Task GetAsync_SetAutomaticDecompression_AcceptEncodingHeaderSentWithNoDuplicates(
             DecompressionMethods methods,
             string encodings,

@@ -15,7 +15,7 @@ namespace System.Threading.Channels
     internal sealed class UnboundedChannel<T> : Channel<T>, IDebugEnumerable<T>
     {
         /// <summary>Task that indicates the channel has completed.</summary>
-        private readonly TaskCompletionSource<VoidResult> _completion;
+        private readonly TaskCompletionSource _completion;
         /// <summary>The items in the channel.</summary>
         private readonly ConcurrentQueue<T> _items = new ConcurrentQueue<T>();
         /// <summary>Readers blocked reading from the channel.</summary>
@@ -32,7 +32,7 @@ namespace System.Threading.Channels
         internal UnboundedChannel(bool runContinuationsAsynchronously)
         {
             _runContinuationsAsynchronously = runContinuationsAsynchronously;
-            _completion = new TaskCompletionSource<VoidResult>(runContinuationsAsynchronously ? TaskCreationOptions.RunContinuationsAsynchronously : TaskCreationOptions.None);
+            _completion = new TaskCompletionSource(runContinuationsAsynchronously ? TaskCreationOptions.RunContinuationsAsynchronously : TaskCreationOptions.None);
             Reader = new UnboundedChannelReader(this);
             Writer = new UnboundedChannelWriter(this);
         }
@@ -67,7 +67,7 @@ namespace System.Threading.Channels
 
                 // Dequeue an item if we can.
                 UnboundedChannel<T> parent = _parent;
-                if (parent._items.TryDequeue(out T item))
+                if (parent._items.TryDequeue(out T? item))
                 {
                     CompleteIfDone(parent);
                     return new ValueTask<T>(item);

@@ -12,7 +12,7 @@ internal partial class Interop
         internal static unsafe extern NTSTATUS BCryptHash(nuint hAlgorithm, byte* pbSecret, int cbSecret, byte* pbInput, int cbInput, byte* pbOutput, int cbOutput);
 
         // Pseudo-handles, as defined in bcrypt.h
-        // TODO: This really should be backed by 'nuint' (see https://github.com/dotnet/roslyn/issues/44651)
+        // TODO: This really should be backed by 'nuint' (see https://github.com/dotnet/roslyn/issues/44110)
         public enum BCryptAlgPseudoHandle : uint
         {
             BCRYPT_MD5_ALG_HANDLE = 0x00000021,

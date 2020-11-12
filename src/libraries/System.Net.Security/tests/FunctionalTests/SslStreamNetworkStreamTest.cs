@@ -27,65 +27,6 @@ namespace System.Net.Security.Tests
             (_serverCert, _serverChain) = TestHelper.GenerateCertificates("localhost", nameof(SslStreamNetworkStreamTest));
         }
 
-        [Fact]
-        public async Task SslStream_SendReceiveOverNetworkStream_Ok()
-        {
-            TcpListener listener = new TcpListener(IPAddress.Loopback, 0);
-
-            using (X509Certificate2 serverCertificate = Configuration.Certificates.GetServerCertificate())
-            using (TcpClient client = new TcpClient())
-            {
-                listener.Start();
-
-                Task clientConnectTask = client.ConnectAsync(IPAddress.Loopback, ((IPEndPoint)listener.LocalEndpoint).Port);
-                Task<TcpClient> listenerAcceptTask = listener.AcceptTcpClientAsync();
-
-                await Task.WhenAll(clientConnectTask, listenerAcceptTask);
-
-                TcpClient server = listenerAcceptTask.Result;
-                using (SslStream clientStream = new SslStream(
-                    client.GetStream(),
-                    false,
-                    new RemoteCertificateValidationCallback(ValidateServerCertificate),
-                    null,
-                    EncryptionPolicy.RequireEncryption))
-                using (SslStream serverStream = new SslStream(
-                    server.GetStream(),
-                    false,
-                    null,
-                    null,
-                    EncryptionPolicy.RequireEncryption))
-                {
-
-                    Task clientAuthenticationTask = clientStream.AuthenticateAsClientAsync(
-                        serverCertificate.GetNameInfo(X509NameType.SimpleName, false),
-                        null,
-                        SslProtocols.Tls12,
-                        false);
-
-                    Task serverAuthenticationTask = serverStream.AuthenticateAsServerAsync(
-                        serverCertificate,
-                        false,
-                        SslProtocols.Tls12,
-                        false);
-
-                    await Task.WhenAll(clientAuthenticationTask, serverAuthenticationTask);
-
-                    byte[] writeBuffer = new byte[256];
-                    Task writeTask = clientStream.WriteAsync(writeBuffer, 0, writeBuffer.Length);
-
-                    byte[] readBuffer = new byte[256];
-                    Task<int> readTask = serverStream.ReadAsync(readBuffer, 0, readBuffer.Length);
-
-                    await TestConfiguration.WhenAllOrAnyFailedWithTimeout(writeTask, readTask);
-
-                    Assert.InRange(readTask.Result, 1, 256);
-                }
-            }
-
-            listener.Stop();
-        }
-
         [ConditionalFact]
         [PlatformSpecific(TestPlatforms.Linux)] // This only applies where OpenSsl is used.
         public async Task SslStream_SendReceiveOverNetworkStream_AuthenticationException()
@@ -201,8 +142,7 @@ namespace System.Net.Security.Tests
                 // Initiate Read operation, that results in starting renegotiation as per server response to the above request.
                 int bytesRead = useSync ? ssl.Read(message, 0, message.Length) : await ssl.ReadAsync(message, 0, message.Length);
 
-                // renegotiation will trigger validation callback again.
-                Assert.InRange(validationCount, 2, int.MaxValue);
+                Assert.Equal(1, validationCount);
                 Assert.InRange(bytesRead, 1, message.Length);
                 Assert.Contains("HTTP/1.1 200 OK", Encoding.UTF8.GetString(message));
             }
@@ -211,7 +151,7 @@ namespace System.Net.Security.Tests
         [Fact]
         public async Task SslStream_NestedAuth_Throws()
         {
-            (Stream stream1, Stream stream2) = ConnectedStreams.CreateBidirectional();
+            (Stream stream1, Stream stream2) = TestHelper.GetConnectedStreams();
             using (var ssl = new SslStream(stream1))
             using (stream2)
             {
