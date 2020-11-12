@@ -370,8 +370,15 @@ namespace System.Net.WebSockets
             if (writtenBuffer is not null)
             {
                 writtenBuffer.Write(buffer.Array!, buffer.Offset, buffer.Count);
+                if (writtenBuffer.TryGetBuffer(out var tmpBuffer))
+                {
+                    buffer = tmpBuffer;
+                }
+                else
+                {
+                    buffer = writtenBuffer.ToArray();
+                }
             }
-            buffer = writtenBuffer?.ToArray() ?? buffer;
 
             try
             {
