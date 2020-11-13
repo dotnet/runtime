@@ -16,12 +16,15 @@
     <RuntimeIdentifier>browser-wasm</RuntimeIdentifier>
     <RunAnalyzers>false</RunAnalyzers>
     <RunAOTCompilation Condition="'$(RunAOTCompilation)' == ''">false</RunAOTCompilation>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(Configuration)' != 'Debug'">
     <!-- Runtime feature defaults to trim unnecessary code -->
     <EventSourceSupport>false</EventSourceSupport>
     <UseSystemResourceKeys>true</UseSystemResourceKeys>
     <EnableUnsafeUTF7Encoding>false</EnableUnsafeUTF7Encoding>
     <HttpActivityPropagationSupport>false</HttpActivityPropagationSupport>
-    <DebuggerSupport Condition="'$(Configuration)' != 'Debug'">false</DebuggerSupport>
+    <DebuggerSupport>false</DebuggerSupport>
   </PropertyGroup>
 
   <!-- Redirect 'dotnet publish' to in-tree runtime pack -->
