@@ -5,17 +5,18 @@ Before running tests, [build Mono](../../building/mono/README.md) using the desi
 ## Runtime Tests
 ### Testing against Mono JIT:
 
-    * Build runtime tests by executing the follwiing command from `$(REPO_ROOT)/src/tests`
+* Build runtime tests by executing the follwiing command from `$(REPO_ROOT)/src/tests`
 ```
 ./build.sh excludemonofailures <release|debug>
 ```
-    * Running a single test:
+
+* Running a single test:
 ```
 cd ../mono/netcore
 make run-tests-coreclr CoreClrTest="bash ../../artifacts/tests/coreclr/OSX.x64.Release/JIT/opt/InstructionCombining/DivToMul/DivToMul.sh"
 ```
 
-    * Running all runtime tests:
+ * Running all runtime tests:
 ```
 cd ../mono/netcore
 make run-tests-coreclr-all
@@ -56,10 +57,8 @@ For more details about internals of the runtime tests, please refer to the [Core
 
 ## Libraries tests
 * Build and run library tests against Mono JIT:
-
-1. cd into the test library of your choice (`cd $(REPO_ROOT)/src/libraries/<library>/tests`)
-
-2. Run the tests
+    * cd into the test library of your choice (`cd $(REPO_ROOT)/src/libraries/<library>/tests`)
+    * Run the tests
 
 ```
 $(REPO_ROOT)/dotnet.sh build /t:Test /p:RuntimeFlavor=mono /p:Configuration=<Release/Debug>
