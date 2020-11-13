@@ -4,7 +4,6 @@
     <VersionProp>HostVersion</VersionProp>
 
     <InstallerName>dotnet-host</InstallerName>
-    <SkipBuildOnRuntimePackOnlyOS>true</SkipBuildOnRuntimePackOnlyOS>
   </PropertyGroup>
 
   <ItemGroup Condition="'$(PackageTargetRuntime)' != ''">
