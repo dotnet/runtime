@@ -5508,54 +5508,57 @@ UNATIVE_OFFSET emitter::emitFindOffset(insGroup* ig, unsigned insNum)
     return of;
 }
 
-/*****************************************************************************
- *
- *  Start generating a constant data section for the current
- *  function. Returns the offset of the section in the appropriate data
- *  block.
- */
-
-UNATIVE_OFFSET emitter::emitDataGenBeg(UNATIVE_OFFSET size, UNATIVE_OFFSET alignment)
+//---------------------------------------------------------------------------
+// emitDataGenBeg:
+//   - Allocate space for a constant or block of the size and alignment requested
+//     Returns the offset in the data section to use
+//
+// Arguments:
+//    size       - The size in bytes of the constant or block
+//    alignment  - The requested alignment for the data
+//    dataType   - The type of the constant int/float/etc
+//
+// Note: This method only allocate the space for the constant or block.  It doesn't
+//       initialize the value. You call emitDataGenData to initialize the value.
+//
+UNATIVE_OFFSET emitter::emitDataGenBeg(unsigned size, unsigned alignment, var_types dataType)
 {
     unsigned     secOffs;
     dataSection* secDesc;
 
     assert(emitDataSecCur == nullptr);
 
-    // The size must not be zero and must be a multiple of 4 bytes
-    // Additionally, 4 bytes is the minimum alignment that will
+    // The size must not be zero and must be a multiple of MIN_DATA_ALIGN
+    // Additionally, MIN_DATA_ALIGN is the minimum alignment that will
     // actually be used. That is, if the user requests an alignment
-    // of 1 or 2, they will get  something that is at least 4-byte
-    // aligned. We allow the others since 4 is at least 1/2 and its
-    // simpler to allow it than to check and block.
-    assert((size != 0) && ((size % 4) == 0));
-
-    // This restricts the alignment to: 1, 2, 4, 8, 16, or 32 bytes
-    // Alignments greater than 32 would require VM support in ICorJitInfo::allocMem
-
-    const size_t MaxAlignment = 32;
-    assert(isPow2(alignment) && (alignment <= MaxAlignment));
+    // less than MIN_DATA_ALIGN, they will get  something that is at least
+    // MIN_DATA_ALIGN. We allow smaller alignment to be specified since it is
+    // simpler to allow it than to check and block it.
+    //
+    assert((size != 0) && ((size % dataSection::MIN_DATA_ALIGN) == 0));
+    assert(isPow2(alignment) && (alignment <= dataSection::MAX_DATA_ALIGN));
 
     /* Get hold of the current offset */
     secOffs = emitConsDsc.dsdOffs;
 
-    if (((secOffs % alignment) != 0) && (alignment > 4))
+    if (((secOffs % alignment) != 0) && (alignment > dataSection::MIN_DATA_ALIGN))
     {
-        // As per the above comment, the minimum alignment is actually 4
+        // As per the above comment, the minimum alignment is actually (MIN_DATA_ALIGN)
         // bytes so we don't need to make any adjustments if the requested
-        // alignment is 1, 2, or 4.
+        // alignment is less than MIN_DATA_ALIGN.
         //
         // The maximum requested alignment is tracked and the memory allocator
         // will end up ensuring offset 0 is at an address matching that
-        // alignment. So if the requested alignment is greater than 4, we need
-        // to pad the space out so the offset is a multiple of the requested.
+        // alignment.  So if the requested alignment is greater than MIN_DATA_ALIGN,
+        // we need to pad the space out so the offset is a multiple of the requested.
+        //
+        uint8_t zeros[dataSection::MAX_DATA_ALIGN] = {}; // auto initialize to all zeros
 
-        uint8_t zero[MaxAlignment] = {};
+        unsigned  zeroSize  = alignment - (secOffs % alignment);
+        unsigned  zeroAlign = dataSection::MIN_DATA_ALIGN;
+        var_types zeroType  = TYP_INT;
 
-        UNATIVE_OFFSET zeroSize  = alignment - (secOffs % alignment);
-        UNATIVE_OFFSET zeroAlign = 4;
-
-        emitAnyConst(&zero, zeroSize, zeroAlign);
+        emitBlkConst(&zeros, zeroSize, zeroAlign, zeroType);
         secOffs = emitConsDsc.dsdOffs;
     }
 
@@ -5572,6 +5575,8 @@ UNATIVE_OFFSET emitter::emitDataGenBeg(UNATIVE_OFFSET size, UNATIVE_OFFSET align
     secDesc->dsSize = size;
 
     secDesc->dsType = dataSection::data;
+
+    secDesc->dsDataType = dataType;
 
     secDesc->dsNext = nullptr;
 
@@ -5628,6 +5633,8 @@ UNATIVE_OFFSET emitter::emitBBTableDataGenBeg(unsigned numEntries, bool relative
     secDesc->dsSize = emittedSize;
 
     secDesc->dsType = relativeAddr ? dataSection::blockRelative32 : dataSection::blockAbsoluteAddr;
+
+    secDesc->dsDataType = TYP_UNKNOWN;
 
     secDesc->dsNext = nullptr;
 
@@ -5691,39 +5698,109 @@ void emitter::emitDataGenEnd()
 #endif
 }
 
-/********************************************************************************
- * Generates a data section constant
- *
- * Parameters:
- *     cnsAddr  - memory location containing constant value
- *     cnsSize  - size of constant in bytes
- *     cnsAlign - alignment of constant in bytes
- *
- * Returns constant number as offset into data section.
- */
-UNATIVE_OFFSET emitter::emitDataConst(const void* cnsAddr, UNATIVE_OFFSET cnsSize, UNATIVE_OFFSET cnsAlign)
+//---------------------------------------------------------------------------
+// emitDataGenFind:
+//   - Returns the offset of an existing constant in the data section
+//     or INVALID_UNATIVE_OFFSET if there was no matching constant
+//
+// Arguments:
+//    cnsAddr    - A pointer to the value of the constant that we need
+//    cnsSize    - The size in bytes of the constant
+//    alignment  - The requested alignment for the data
+//    dataType   - The type of the constant int/float/etc
+//
+UNATIVE_OFFSET emitter::emitDataGenFind(const void* cnsAddr, unsigned cnsSize, unsigned alignment, var_types dataType)
 {
-    UNATIVE_OFFSET cnum = emitDataGenBeg(cnsSize, cnsAlign);
-    emitDataGenData(0, cnsAddr, cnsSize);
-    emitDataGenEnd();
+    UNATIVE_OFFSET cnum     = INVALID_UNATIVE_OFFSET;
+    unsigned       cmpCount = 0;
+    unsigned       curOffs  = 0;
+    dataSection*   secDesc  = emitConsDsc.dsdList;
+    while (secDesc != nullptr)
+    {
+        // Search the existing secDesc entries
+
+        // We can match as smaller 'cnsSize' value at the start of a larger 'secDesc->dsSize' block
+        // We match the bit pattern, so the dataType can be different
+        // Only match constants when the dsType is 'data'
+        //
+        if ((secDesc->dsType == dataSection::data) && (secDesc->dsSize >= cnsSize) && ((curOffs % alignment) == 0))
+        {
+            if (memcmp(cnsAddr, secDesc->dsCont, cnsSize) == 0)
+            {
+                cnum = curOffs;
+
+                // We also might want to update the dsDataType
+                //
+                if ((secDesc->dsDataType != dataType) && (secDesc->dsSize == cnsSize))
+                {
+                    // If the subsequent dataType is floating point then change the original dsDataType
+                    //
+                    if (varTypeIsFloating(dataType))
+                    {
+                        secDesc->dsDataType = dataType;
+                    }
+                }
+                break;
+            }
+        }
+
+        curOffs += secDesc->dsSize;
+        secDesc = secDesc->dsNext;
+
+        if (++cmpCount > 64)
+        {
+            // If we don't find a match in the first 64, then we just add the new constant
+            // This prevents an O(n^2) search cost
+            break;
+        }
+    }
 
     return cnum;
 }
 
-//------------------------------------------------------------------------
-// emitAnyConst: Create a data section constant of arbitrary size.
+//---------------------------------------------------------------------------
+// emitDataConst:
+//   - Returns the valid offset in the data section to use for the constant
+//     described by the arguments to this method
 //
 // Arguments:
-//    cnsAddr   - pointer to the data to be placed in the data section
-//    cnsSize   - size of the data in bytes
+//    cnsAddr    - A pointer to the value of the constant that we need
+//    cnsSize    - The size in bytes of the constant
+//    alignment  - The requested alignment for the data
+//    dataType   - The type of the constant int/float/etc
+//
+//
+// Notes:  we call the method emitDataGenFind() to see if we already have
+//   a matching constant that can be reused.
+//
+UNATIVE_OFFSET emitter::emitDataConst(const void* cnsAddr, unsigned cnsSize, unsigned cnsAlign, var_types dataType)
+{
+    UNATIVE_OFFSET cnum = emitDataGenFind(cnsAddr, cnsSize, cnsAlign, dataType);
+
+    if (cnum == INVALID_UNATIVE_OFFSET)
+    {
+        cnum = emitDataGenBeg(cnsSize, cnsAlign, dataType);
+        emitDataGenData(0, cnsAddr, cnsSize);
+        emitDataGenEnd();
+    }
+    return cnum;
+}
+
+//------------------------------------------------------------------------
+// emitBlkConst: Create a data section constant of arbitrary size.
+//
+// Arguments:
+//    cnsAddr   - pointer to the block of data to be placed in the data section
+//    cnsSize   - total size of the block of data in bytes
 //    cnsAlign  - alignment of the data in bytes
+//    elemType  - The type of the elements in the constant
 //
 // Return Value:
 //    A field handle representing the data offset to access the constant.
 //
-CORINFO_FIELD_HANDLE emitter::emitAnyConst(const void* cnsAddr, UNATIVE_OFFSET cnsSize, UNATIVE_OFFSET cnsAlign)
+CORINFO_FIELD_HANDLE emitter::emitBlkConst(const void* cnsAddr, unsigned cnsSize, unsigned cnsAlign, var_types elemType)
 {
-    UNATIVE_OFFSET cnum = emitDataGenBeg(cnsSize, cnsAlign);
+    UNATIVE_OFFSET cnum = emitDataGenBeg(cnsSize, cnsAlign, elemType);
     emitDataGenData(0, cnsAddr, cnsSize);
     emitDataGenEnd();
 
@@ -5748,25 +5825,28 @@ CORINFO_FIELD_HANDLE emitter::emitFltOrDblConst(double constValue, emitAttr attr
 {
     assert((attr == EA_4BYTE) || (attr == EA_8BYTE));
 
-    void* cnsAddr;
-    float f;
+    void*     cnsAddr;
+    float     f;
+    var_types dataType;
 
     if (attr == EA_4BYTE)
     {
-        f       = forceCastToFloat(constValue);
-        cnsAddr = &f;
+        f        = forceCastToFloat(constValue);
+        cnsAddr  = &f;
+        dataType = TYP_FLOAT;
     }
     else
     {
-        cnsAddr = &constValue;
+        cnsAddr  = &constValue;
+        dataType = TYP_DOUBLE;
     }
 
     // Access to inline data is 'abstracted' by a special type of static member
     // (produced by eeFindJitDataOffs) which the emitter recognizes as being a reference
     // to constant data, not a real static field.
 
-    UNATIVE_OFFSET cnsSize  = (attr == EA_4BYTE) ? 4 : 8;
-    UNATIVE_OFFSET cnsAlign = cnsSize;
+    unsigned cnsSize  = (attr == EA_4BYTE) ? sizeof(float) : sizeof(double);
+    unsigned cnsAlign = cnsSize;
 
 #ifdef TARGET_XARCH
     if (emitComp->compCodeOpt() == Compiler::SMALL_CODE)
@@ -5774,11 +5854,11 @@ CORINFO_FIELD_HANDLE emitter::emitFltOrDblConst(double constValue, emitAttr attr
         // Some platforms don't require doubles to be aligned and so
         // we can use a smaller alignment to help with smaller code
 
-        cnsAlign = 1;
+        cnsAlign = dataSection::MIN_DATA_ALIGN;
     }
 #endif // TARGET_XARCH
 
-    UNATIVE_OFFSET cnum = emitDataConst(cnsAddr, cnsSize, cnsAlign);
+    UNATIVE_OFFSET cnum = emitDataConst(cnsAddr, cnsSize, cnsAlign, dataType);
     return emitComp->eeFindJitDataOffs(cnum);
 }
 
@@ -5810,6 +5890,7 @@ void emitter::emitOutputDataSec(dataSecDsc* sec, BYTE* dst)
     /* Walk and emit the contents of all the data blocks */
 
     dataSection* dsc;
+    size_t       curOffs = 0;
 
     for (dsc = sec->dsdList; dsc; dsc = dsc->dsNext)
     {
@@ -5870,8 +5951,6 @@ void emitter::emitOutputDataSec(dataSecDsc* sec, BYTE* dst)
         }
         else
         {
-            JITDUMP("  section %u, size %u, raw data\n", secNum++, dscSize);
-
             // Simple binary data: copy the bytes to the target
             assert(dsc->dsType == dataSection::data);
 
@@ -5880,19 +5959,33 @@ void emitter::emitOutputDataSec(dataSecDsc* sec, BYTE* dst)
 #ifdef DEBUG
             if (EMITVERBOSE)
             {
-                printf("  ");
+                printf("  section %3u, size %2u, RWD%2u:\t", secNum++, dscSize, curOffs);
+
                 for (size_t i = 0; i < dscSize; i++)
                 {
                     printf("%02x ", dsc->dsCont[i]);
                     if ((((i + 1) % 16) == 0) && (i + 1 != dscSize))
                     {
-                        printf("\n  ");
+                        printf("\n\t\t\t\t\t");
                     }
+                }
+                switch (dsc->dsDataType)
+                {
+                    case TYP_FLOAT:
+                        printf(" ; float  %9.6g", (double)*reinterpret_cast<float*>(&dsc->dsCont));
+                        break;
+                    case TYP_DOUBLE:
+                        printf(" ; double %12.9g", *reinterpret_cast<double*>(&dsc->dsCont));
+                        break;
+                    default:
+                        break;
                 }
                 printf("\n");
             }
 #endif // DEBUG
         }
+
+        curOffs += dscSize;
         dst += dscSize;
     }
 }
@@ -5950,11 +6043,11 @@ void emitter::emitDispDataSec(dataSecDsc* section)
                 {
                     if (emitComp->opts.disDiffable)
                     {
-                        printf("dd\t%s - %s\n", blockLabel, firstLabel);
+                        printf("\tdd\t%s - %s\n", blockLabel, firstLabel);
                     }
                     else
                     {
-                        printf("dd\t%08Xh", ig->igOffs - igFirst->igOffs);
+                        printf("\tdd\t%08Xh", ig->igOffs - igFirst->igOffs);
                     }
                 }
                 else
@@ -5963,21 +6056,21 @@ void emitter::emitDispDataSec(dataSecDsc* section)
                     // We have a 32-BIT target
                     if (emitComp->opts.disDiffable)
                     {
-                        printf("dd\t%s\n", blockLabel);
+                        printf("\tdd\t%s\n", blockLabel);
                     }
                     else
                     {
-                        printf("dd\t%08Xh", (uint32_t)(size_t)emitOffsetToPtr(ig->igOffs));
+                        printf("\tdd\t%08Xh", (uint32_t)(size_t)emitOffsetToPtr(ig->igOffs));
                     }
 #else  // TARGET_64BIT
                     // We have a 64-BIT target
                     if (emitComp->opts.disDiffable)
                     {
-                        printf("dq\t%s\n", blockLabel);
+                        printf("\tdq\t%s\n", blockLabel);
                     }
                     else
                     {
-                        printf("dq\t%016llXh", reinterpret_cast<uint64_t>(emitOffsetToPtr(ig->igOffs)));
+                        printf("\tdq\t%016llXh", reinterpret_cast<uint64_t>(emitOffsetToPtr(ig->igOffs)));
                     }
 #endif // TARGET_64BIT
                 }
@@ -5991,24 +6084,106 @@ void emitter::emitDispDataSec(dataSecDsc* section)
         else
         {
             assert(data->dsType == dataSection::data);
-            switch (data->dsSize)
+            unsigned elemSize = genTypeSize(data->dsDataType);
+            if (elemSize == 0)
             {
-                case 2:
-                    printf("dw\t%04Xh\n", *reinterpret_cast<uint16_t*>(&data->dsCont));
-                    break;
-                case 4:
-                    printf("dd\t%08Xh\n", *reinterpret_cast<uint32_t*>(&data->dsCont));
-                    break;
-                case 8:
-                    printf("dq\t%016llXh\n", *reinterpret_cast<uint64_t*>(&data->dsCont));
-                    break;
-                default:
-                    printf("db\t");
-                    for (UNATIVE_OFFSET i = 0; i < data->dsSize; i++)
-                    {
-                        printf("%s0%02Xh", i > 0 ? ", " : "", data->dsCont[i]);
-                    }
-                    printf("\n");
+                if ((data->dsSize % 8) == 0)
+                {
+                    elemSize = 8;
+                }
+                else if ((data->dsSize % 4) == 0)
+                {
+                    elemSize = 4;
+                }
+                else if ((data->dsSize % 2) == 0)
+                {
+                    elemSize = 2;
+                }
+                else
+                {
+                    elemSize = 1;
+                }
+            }
+
+            unsigned i = 0;
+            unsigned j;
+            while (i < data->dsSize)
+            {
+                switch (data->dsDataType)
+                {
+                    case TYP_FLOAT:
+                        assert(data->dsSize >= 4);
+                        printf("\tdd\t%08llXh\t", *reinterpret_cast<uint32_t*>(&data->dsCont[i]));
+                        printf("\t; %9.6g", *reinterpret_cast<float*>(&data->dsCont[i]));
+                        i += 4;
+                        break;
+
+                    case TYP_DOUBLE:
+                        assert(data->dsSize >= 8);
+                        printf("\tdq\t%016llXh", *reinterpret_cast<uint64_t*>(&data->dsCont[i]));
+                        printf("\t; %12.9g", *reinterpret_cast<double*>(&data->dsCont[i]));
+                        i += 8;
+                        break;
+
+                    default:
+                        switch (elemSize)
+                        {
+                            case 1:
+                                printf("\tdb\t%02Xh", *reinterpret_cast<uint8_t*>(&data->dsCont[i]));
+                                for (j = 1; j < 16; j++)
+                                {
+                                    if (i + j >= data->dsSize)
+                                        break;
+                                    printf(", %02Xh", *reinterpret_cast<uint8_t*>(&data->dsCont[i + j]));
+                                }
+                                i += j;
+                                break;
+
+                            case 2:
+                                assert((data->dsSize % 2) == 0);
+                                printf("\tdw\t%04Xh", *reinterpret_cast<uint16_t*>(&data->dsCont[i]));
+                                for (j = 2; j < 24; j += 2)
+                                {
+                                    if (i + j >= data->dsSize)
+                                        break;
+                                    printf(", %04Xh", *reinterpret_cast<uint16_t*>(&data->dsCont[i + j]));
+                                }
+                                i += j;
+                                break;
+
+                            case 12:
+                            case 4:
+                                assert((data->dsSize % 4) == 0);
+                                printf("\tdd\t%08Xh", *reinterpret_cast<uint32_t*>(&data->dsCont[i]));
+                                for (j = 4; j < 24; j += 4)
+                                {
+                                    if (i + j >= data->dsSize)
+                                        break;
+                                    printf(", %08Xh", *reinterpret_cast<uint32_t*>(&data->dsCont[i + j]));
+                                }
+                                i += j;
+                                break;
+
+                            case 32:
+                            case 16:
+                            case 8:
+                                assert((data->dsSize % 8) == 0);
+                                printf("\tdq\t%016llXh", *reinterpret_cast<uint64_t*>(&data->dsCont[i]));
+                                for (j = 8; j < 32; j += 8)
+                                {
+                                    if (i + j >= data->dsSize)
+                                        break;
+                                    printf(", %016llXh", *reinterpret_cast<uint64_t*>(&data->dsCont[i + j]));
+                                }
+                                i += j;
+                                break;
+
+                            default:
+                                assert(!"unexpected elemSize");
+                                break;
+                        }
+                }
+                printf("\n");
             }
         }
     }

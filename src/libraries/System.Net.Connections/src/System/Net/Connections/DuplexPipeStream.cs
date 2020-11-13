@@ -5,7 +5,6 @@ using System;
 using System.Buffers;
 using System.IO;
 using System.IO.Pipelines;
-using System.Runtime.ExceptionServices;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -57,7 +56,7 @@ namespace System.Net.Connections
 
         public override int Read(byte[] buffer, int offset, int count)
         {
-            if (buffer == null) throw new ArgumentNullException(nameof(buffer));
+            ValidateBufferArguments(buffer, offset, count);
 
             ValueTask<int> t = ReadAsync(buffer.AsMemory(offset, count));
             return
@@ -67,7 +66,8 @@ namespace System.Net.Connections
 
         public override Task<int> ReadAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
         {
-            if (buffer == null) return Task.FromException<int>(ExceptionDispatchInfo.SetCurrentStackTrace(new ArgumentNullException(nameof(buffer))));
+            ValidateBufferArguments(buffer, offset, count);
+
             return ReadAsync(buffer.AsMemory(offset, count), cancellationToken).AsTask();
         }
 
@@ -139,6 +139,8 @@ namespace System.Net.Connections
 
         public override Task WriteAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
         {
+            ValidateBufferArguments(buffer, offset, count);
+
             return WriteAsync(buffer.AsMemory(offset, count), cancellationToken).AsTask();
         }
 
@@ -160,6 +162,8 @@ namespace System.Net.Connections
 
         public override Task CopyToAsync(Stream destination, int bufferSize, CancellationToken cancellationToken)
         {
+            ValidateCopyToArguments(destination, bufferSize);
+
             return _reader.CopyToAsync(destination, cancellationToken);
         }
     }

@@ -29,7 +29,7 @@
 #endif
 #endif
 
-static int32_t GetMountInfo(MountPointFound onFound)
+int32_t SystemNative_GetAllMountPoints(MountPointFound onFound)
 {
 #if HAVE_MNTINFO
     // getmntinfo returns pointers to OS-internal structs, so we don't need to worry about free'ing the object
@@ -92,11 +92,6 @@ static int32_t GetMountInfo(MountPointFound onFound)
 }
 
 #endif
-
-int32_t SystemNative_GetAllMountPoints(MountPointFound onFound)
-{
-    return GetMountInfo(onFound);
-}
 
 int32_t SystemNative_GetSpaceInfoForMountPoint(const char* name, MountPointInformation* mpi)
 {

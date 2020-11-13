@@ -12,26 +12,6 @@ namespace System.Collections.Generic
         // To minimize generic instantiation overhead of creating the comparer per type, we keep the generic portion of the code as small
         // as possible and define most of the creation logic in a non-generic class.
         public static EqualityComparer<T> Default { [Intrinsic] get; } = (EqualityComparer<T>)ComparerHelpers.CreateDefaultEqualityComparer(typeof(T));
-
-        internal virtual int IndexOf(T[] array, T value, int startIndex, int count)
-        {
-            int endIndex = startIndex + count;
-            for (int i = startIndex; i < endIndex; i++)
-            {
-                if (Equals(array[i], value)) return i;
-            }
-            return -1;
-        }
-
-        internal virtual int LastIndexOf(T[] array, T value, int startIndex, int count)
-        {
-            int endIndex = startIndex - count + 1;
-            for (int i = startIndex; i >= endIndex; i--)
-            {
-                if (Equals(array[i], value)) return i;
-            }
-            return -1;
-        }
     }
 
     public sealed partial class GenericEqualityComparer<T> : EqualityComparer<T> where T : IEquatable<T>
@@ -136,7 +116,7 @@ namespace System.Collections.Generic
             {
                 for (int i = startIndex; i < endIndex; i++)
                 {
-                    if (array[i] != null && array[i]!.Equals(value)) return i; // TODO-NULLABLE: Indexer nullability tracked (https://github.com/dotnet/roslyn/issues/34644)
+                    if (array[i] != null && array[i]!.Equals(value)) return i;
                 }
             }
             return -1;
@@ -156,7 +136,7 @@ namespace System.Collections.Generic
             {
                 for (int i = startIndex; i >= endIndex; i--)
                 {
-                    if (array[i] != null && array[i]!.Equals(value)) return i; // TODO-NULLABLE: Indexer nullability tracked (https://github.com/dotnet/roslyn/issues/34644)
+                    if (array[i] != null && array[i]!.Equals(value)) return i;
                 }
             }
             return -1;

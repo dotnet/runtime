@@ -229,7 +229,7 @@ namespace System.Diagnostics.Tracing
 #pragma warning restore CA1823
 #endif //FEATURE_EVENTSOURCE_XPLAT
 
-        private static bool IsSupported { get; } = InitializeIsSupported();
+        internal static bool IsSupported { get; } = InitializeIsSupported();
 
         private static bool InitializeIsSupported() =>
             AppContext.TryGetSwitch("System.Diagnostics.Tracing.EventSource.IsSupported", out bool isSupported) ? isSupported : true;
@@ -1508,17 +1508,13 @@ namespace System.Diagnostics.Tracing
                 if (this.Name != "System.Diagnostics.Eventing.FrameworkEventSource" || Environment.IsWindows8OrAbove)
 #endif
                 {
-                    int setInformationResult;
-                    System.Runtime.InteropServices.GCHandle metadataHandle =
-                        System.Runtime.InteropServices.GCHandle.Alloc(this.providerMetadata, System.Runtime.InteropServices.GCHandleType.Pinned);
-                    IntPtr providerMetadata = metadataHandle.AddrOfPinnedObject();
-
-                    setInformationResult = m_etwProvider.SetInformation(
-                        Interop.Advapi32.EVENT_INFO_CLASS.SetTraits,
-                        providerMetadata,
-                        (uint)this.providerMetadata.Length);
-
-                    metadataHandle.Free();
+                    fixed (byte* providerMetadata = this.providerMetadata)
+                    {
+                        m_etwProvider.SetInformation(
+                            Interop.Advapi32.EVENT_INFO_CLASS.SetTraits,
+                            providerMetadata,
+                            (uint)this.providerMetadata.Length);
+                    }
                 }
 #endif // TARGET_WINDOWS
 #endif // FEATURE_MANAGED_ETW
@@ -2241,6 +2237,11 @@ namespace System.Diagnostics.Tracing
                     {
                         if (m_writeEventStringEventHandle == IntPtr.Zero)
                         {
+                            if (m_createEventLock is null)
+                            {
+                                Interlocked.CompareExchange(ref m_createEventLock, new object(), null);
+                            }
+
                             lock (m_createEventLock)
                             {
                                 if (m_writeEventStringEventHandle == IntPtr.Zero)
@@ -2277,8 +2278,8 @@ namespace System.Diagnostics.Tracing
             EventWrittenEventArgs eventCallbackArgs = new EventWrittenEventArgs(this);
             eventCallbackArgs.EventId = 0;
             eventCallbackArgs.Message = msg;
-            eventCallbackArgs.Payload = new ReadOnlyCollection<object?>(new List<object?>() { msg });
-            eventCallbackArgs.PayloadNames = new ReadOnlyCollection<string>(new List<string> { "message" });
+            eventCallbackArgs.Payload = new ReadOnlyCollection<object?>(new object[] { msg });
+            eventCallbackArgs.PayloadNames = new ReadOnlyCollection<string>(new string[] { "message" });
             eventCallbackArgs.EventName = eventName;
 
             for (EventDispatcher? dispatcher = m_Dispatchers; dispatcher != null; dispatcher = dispatcher.m_Next)
@@ -3564,6 +3565,13 @@ namespace System.Diagnostics.Tracing
         /// </summary>
         /// <param name="method">The method to probe.</param>
         /// <returns>The literal value or -1 if the value could not be determined. </returns>
+#if !ES_BUILD_STANDALONE
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
+                   Justification = "The method calls MethodBase.GetMethodBody. Trimming application can change IL of various methods" +
+                                   "which can lead to change of behavior. This method only uses this to validate usage of event source APIs." +
+                                   "In the worst case it will not be able to determine the value it's looking for and will not perform" +
+                                   "any validation.")]
+#endif
         private static int GetHelperCallFirstArg(MethodInfo method)
         {
             // Currently searches for the following pattern
@@ -3764,7 +3772,7 @@ namespace System.Diagnostics.Tracing
         private volatile OverideEventProvider m_etwProvider = null!;   // This hooks up ETW commands to our 'OnEventCommand' callback
 #endif
 #if FEATURE_PERFTRACING
-        private object m_createEventLock = new object();
+        private object? m_createEventLock;
         private IntPtr m_writeEventStringEventHandle = IntPtr.Zero;
         private volatile OverideEventProvider m_eventPipeProvider = null!;
 #endif
@@ -4109,18 +4117,17 @@ namespace System.Diagnostics.Tracing
         {
             lock (EventListenersLock)
             {
-                s_EventSources ??= new List<WeakReference<EventSource>>(2);
+                Debug.Assert(s_EventSources != null);
 
+#if ES_BUILD_STANDALONE
+                // netcoreapp build calls DisposeOnShutdown directly from AppContext.OnProcessExit
                 if (!s_EventSourceShutdownRegistered)
                 {
                     s_EventSourceShutdownRegistered = true;
-#if ES_BUILD_STANDALONE
                     AppDomain.CurrentDomain.ProcessExit += DisposeOnShutdown;
                     AppDomain.CurrentDomain.DomainUnload += DisposeOnShutdown;
-#else
-                    AppContext.ProcessExit += DisposeOnShutdown;
-#endif
                 }
+#endif
 
                 // Periodically search the list for existing entries to reuse, this avoids
                 // unbounded memory use if we keep recycling eventSources (an unlikely thing).
@@ -4177,8 +4184,14 @@ namespace System.Diagnostics.Tracing
         // such callbacks on process shutdown or appdomain so that unmanaged code will never
         // do this.  This is what this callback is for.
         // See bug 724140 for more
+#if ES_BUILD_STANDALONE
         private static void DisposeOnShutdown(object? sender, EventArgs e)
+#else
+        internal static void DisposeOnShutdown()
+#endif
         {
+            Debug.Assert(EventSource.IsSupported);
+
             lock (EventListenersLock)
             {
                 Debug.Assert(s_EventSources != null);
@@ -4413,11 +4426,13 @@ namespace System.Diagnostics.Tracing
         private static bool s_ConnectingEventSourcesAndListener;
 #endif
 
+#if ES_BUILD_STANDALONE
         /// <summary>
         /// Used to register AD/Process shutdown callbacks.
         /// </summary>
         private static bool s_EventSourceShutdownRegistered;
-        #endregion
+#endif
+#endregion
     }
 
     /// <summary>
@@ -4582,11 +4597,13 @@ namespace System.Diagnostics.Tracing
                 // do the lazy init if you know it is contract based (EventID >= 0)
                 if (EventId >= 0 && m_payloadNames == null)
                 {
-                    var names = new List<string>();
                     Debug.Assert(m_eventSource.m_eventData != null);
-                    foreach (ParameterInfo parameter in m_eventSource.m_eventData[EventId].Parameters)
+                    ParameterInfo[] parameters = m_eventSource.m_eventData[EventId].Parameters;
+
+                    string[] names = new string[parameters.Length];
+                    for (int i = 0; i < parameters.Length; i++)
                     {
-                        names.Add(parameter.Name!);
+                        names[i] = parameters[i].Name!;
                     }
 
                     m_payloadNames = new ReadOnlyCollection<string>(names);
@@ -5679,27 +5696,21 @@ namespace System.Diagnostics.Tracing
             // Output the localization information.
             sb.AppendLine("<localization>");
 
-            List<CultureInfo> cultures = (resources != null && (flags & EventManifestOptions.AllCultures) != 0) ?
-                GetSupportedCultures() :
-                new List<CultureInfo>() { CultureInfo.CurrentUICulture };
-
             var sortedStrings = new string[stringTab.Keys.Count];
             stringTab.Keys.CopyTo(sortedStrings, 0);
             Array.Sort<string>(sortedStrings, 0, sortedStrings.Length);
 
-            foreach (CultureInfo ci in cultures)
+            CultureInfo ci = CultureInfo.CurrentUICulture;
+            sb.Append(" <resources culture=\"").Append(ci.Name).AppendLine("\">");
+            sb.AppendLine("  <stringTable>");
+            foreach (string stringKey in sortedStrings)
             {
-                sb.Append(" <resources culture=\"").Append(ci.Name).AppendLine("\">");
-                sb.AppendLine("  <stringTable>");
-
-                foreach (string stringKey in sortedStrings)
-                {
-                    string? val = GetLocalizedMessage(stringKey, ci, etwFormat: true);
-                    sb.Append("   <string id=\"").Append(stringKey).Append("\" value=\"").Append(val).AppendLine("\"/>");
-                }
-                sb.AppendLine("  </stringTable>");
-                sb.AppendLine(" </resources>");
+                string? val = GetLocalizedMessage(stringKey, ci, etwFormat: true);
+                sb.Append("   <string id=\"").Append(stringKey).Append("\" value=\"").Append(val).AppendLine("\"/>");
             }
+            sb.AppendLine("  </stringTable>");
+            sb.AppendLine(" </resources>");
+
             sb.AppendLine("</localization>");
             sb.AppendLine("</instrumentationManifest>");
             return sb.ToString();
@@ -5755,21 +5766,6 @@ namespace System.Diagnostics.Tracing
                 stringTab.TryGetValue(key, out value);
 
             return value;
-        }
-
-        /// <summary>
-        /// There's no API to enumerate all languages an assembly is localized into, so instead
-        /// we enumerate through all the "known" cultures and attempt to load a corresponding satellite
-        /// assembly
-        /// </summary>
-        /// <returns></returns>
-        private static List<CultureInfo> GetSupportedCultures()
-        {
-            var cultures = new List<CultureInfo>();
-
-            if (!cultures.Contains(CultureInfo.CurrentUICulture))
-                cultures.Insert(0, CultureInfo.CurrentUICulture);
-            return cultures;
         }
 
         private static string GetLevelName(EventLevel level)

@@ -39,8 +39,6 @@ namespace System
         private static int s_windowHeight;  // Cached WindowHeight, invalid when s_windowWidth == -1.
         private static int s_invalidateCachedSettings = 1; // Tracks whether we should invalidate the cached settings.
 
-        private static readonly Interop.Sys.TerminalInvalidationCallback s_invalidateTerminalSettings = InvalidateTerminalSettings;
-
         public static Stream OpenStandardInput()
         {
             return new UnixConsoleStream(SafeFileHandleHelper.Open(() => Interop.Sys.Dup(Interop.Sys.FileDescriptors.STDIN_FILENO)), FileAccess.Read,
@@ -919,7 +917,7 @@ namespace System
         }
 
         /// <summary>Ensures that the console has been initialized for use.</summary>
-        private static void EnsureInitializedCore()
+        private static unsafe void EnsureInitializedCore()
         {
             // Initialization is only needed when input isn't redirected.
             if (Console.IsInputRedirected)
@@ -939,7 +937,7 @@ namespace System
 
                     // Register a callback for signals that may invalidate our cached terminal settings.
                     // This includes: SIGCONT, SIGCHLD, SIGWINCH.
-                    Interop.Sys.SetTerminalInvalidationHandler(s_invalidateTerminalSettings);
+                    Interop.Sys.SetTerminalInvalidationHandler(&InvalidateTerminalSettings);
 
                     // Provide the native lib with the correct code from the terminfo to transition us into
                     // "application mode".  This will both transition it immediately, as well as allow
@@ -1214,15 +1212,13 @@ namespace System
         /// <summary>Reads data from the file descriptor into the buffer.</summary>
         /// <param name="fd">The file descriptor.</param>
         /// <param name="buffer">The buffer to read into.</param>
-        /// <param name="offset">The offset at which to start writing into the buffer.</param>
-        /// <param name="count">The maximum number of bytes to read.</param>
         /// <returns>The number of bytes read, or a negative value if there's an error.</returns>
-        internal static unsafe int Read(SafeFileHandle fd, byte[] buffer, int offset, int count)
+        internal static unsafe int Read(SafeFileHandle fd, Span<byte> buffer)
         {
             fixed (byte* bufPtr = buffer)
             {
-                int result = Interop.CheckIo(Interop.Sys.Read(fd, (byte*)bufPtr + offset, count));
-                Debug.Assert(result <= count);
+                int result = Interop.CheckIo(Interop.Sys.Read(fd, bufPtr, buffer.Length));
+                Debug.Assert(result <= buffer.Length);
                 return result;
             }
         }
@@ -1364,6 +1360,7 @@ namespace System
             }
         }
 
+        [UnmanagedCallersOnly]
         private static void InvalidateTerminalSettings()
         {
             Volatile.Write(ref s_invalidateCachedSettings, 1);
@@ -1425,26 +1422,13 @@ namespace System
                 base.Dispose(disposing);
             }
 
-            public override int Read(byte[] buffer, int offset, int count)
-            {
-                ValidateRead(buffer, offset, count);
+            public override int Read(Span<byte> buffer) =>
+                _useReadLine ?
+                    ConsolePal.StdInReader.ReadLine(buffer) :
+                    ConsolePal.Read(_handle, buffer);
 
-                if (_useReadLine)
-                {
-                    return ConsolePal.StdInReader.ReadLine(buffer, offset, count);
-                }
-                else
-                {
-                    return ConsolePal.Read(_handle, buffer, offset, count);
-                }
-            }
-
-            public override void Write(byte[] buffer, int offset, int count)
-            {
-                ValidateWrite(buffer, offset, count);
-
-                ConsolePal.Write(_handle, buffer.AsSpan(offset, count));
-            }
+            public override void Write(ReadOnlySpan<byte> buffer) =>
+                ConsolePal.Write(_handle, buffer);
 
             public override void Flush()
             {
@@ -1460,12 +1444,12 @@ namespace System
         {
             private bool _handlerRegistered;
 
-            internal void Register()
+            internal unsafe void Register()
             {
                 EnsureConsoleInitialized();
 
                 Debug.Assert(!_handlerRegistered);
-                Interop.Sys.RegisterForCtrl(c => OnBreakEvent(c));
+                Interop.Sys.RegisterForCtrl(&OnBreakEvent);
                 _handlerRegistered = true;
             }
 
@@ -1476,6 +1460,7 @@ namespace System
                 Interop.Sys.UnregisterForCtrl();
             }
 
+            [UnmanagedCallersOnly]
             private static void OnBreakEvent(Interop.Sys.CtrlCode ctrlCode)
             {
                 // This is called on the native signal handling thread. We need to move to another thread so

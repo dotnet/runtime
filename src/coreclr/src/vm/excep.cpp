@@ -4041,7 +4041,7 @@ BuildCreateDumpCommandLine(
     const char* DumpGeneratorName = "createdump.exe";
 
     PathString coreclrPath;
-    if (WszGetModuleFileName(GetCLRModule(), coreclrPath))
+    if (GetClrModulePathName(coreclrPath))
     {
         SString::CIterator lastBackslash = coreclrPath.End();
         if (coreclrPath.FindBack(lastBackslash, W('\\')))
@@ -7306,7 +7306,7 @@ LONG WINAPI CLRVectoredExceptionHandlerPhase2(PEXCEPTION_POINTERS pExceptionInfo
             CONTRACT_VIOLATION(TakesLockViolation);
 
             fExternalException = (!ExecutionManager::IsManagedCode(GetIP(pExceptionInfo->ContextRecord)) &&
-                                  !IsIPInModule(g_hThisInst, GetIP(pExceptionInfo->ContextRecord)));
+                                  !IsIPInModule(GetClrModuleBase(), GetIP(pExceptionInfo->ContextRecord)));
         }
 
         if (fExternalException)
@@ -7473,7 +7473,7 @@ VEH_ACTION WINAPI CLRVectoredExceptionHandlerPhase3(PEXCEPTION_POINTERS pExcepti
             if ((!fAVisOk) && !(pExceptionRecord->ExceptionFlags & EXCEPTION_UNWINDING))
             {
                 PCODE ip = (PCODE)GetIP(pContext);
-                if (IsIPInModule(g_hThisInst, ip) || IsIPInModule(GCHeapUtilities::GetGCModule(), ip))
+                if (IsIPInModule(GetClrModuleBase(), ip) || IsIPInModule(GCHeapUtilities::GetGCModuleBase(), ip))
                 {
                     CONTRACT_VIOLATION(ThrowsViolation|FaultViolation);
 

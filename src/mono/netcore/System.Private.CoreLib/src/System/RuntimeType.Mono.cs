@@ -1822,18 +1822,12 @@ namespace System
 
         #endregion
 
-        private TypeCache cache;
+        private TypeCache? cache;
 
-        internal TypeCache Cache
-        {
-            get
-            {
-                if (cache == null)
-                    LazyInitializer.EnsureInitialized(ref cache, () => new TypeCache());
-
-                return cache;
-            }
-        }
+        internal TypeCache Cache =>
+            Volatile.Read(ref cache) ??
+            Interlocked.CompareExchange(ref cache, new TypeCache(), null) ??
+            cache;
 
         internal sealed class TypeCache
         {

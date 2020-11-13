@@ -148,6 +148,24 @@ struct MonoJitTlsData {
 #define MONO_LMFEXT_INTERP_EXIT_WITH_CTX 3
 
 /*
+ * The MonoLMF structure is arch specific, it includes at least these fields.
+ * LMF means 'last-managed-frame'. Originally, these were allocated
+ * on the stack to mark the last frame before transitioning to
+ * native code, but currently, they are used to mark all kinds of
+ * other transitions as well, see MonoLMFExt.
+ */
+#if 0
+typedef struct {
+	/*
+	 * If the second lowest bit is set to 1, then this is a MonoLMFExt structure, and
+	 * the other fields are not valid.
+	 */
+	gpointer previous_lmf;
+	gpointer lmf_addr;
+} MonoLMF;
+#endif
+
+/*
  * This structure is an extension of MonoLMF and contains extra information.
  */
 typedef struct {

@@ -67,7 +67,7 @@ REM ============================================================================
 
 REM Download the package
 echo Downloading CoreDisTools package
-set CoreDisToolsPackagePathOutputFile="%__RepoRootDir%artifacts\obj\coreclr\Windows_NT.%__Arch%\coredistoolspath.txt"
+set CoreDisToolsPackagePathOutputFile="%__RepoRootDir%artifacts\obj\coreclr\windows.%__Arch%\coredistoolspath.txt"
 set CommonMSBuildOptions=/p:TargetArchitecture=%__Arch% /p:Configuration=%__BuildType% /p:RuntimeIdentifier="win-%__Arch%" /p:PackageRuntimeIdentifier="win-%__Arch%"
 
 set DOTNETCMD="%__DotNetCmd%" restore "%__CsprojPath%" %CommonMSBuildOptions%

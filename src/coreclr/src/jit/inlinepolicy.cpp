@@ -84,6 +84,16 @@ InlinePolicy* InlinePolicy::GetPolicy(Compiler* compiler, bool isPrejitRoot)
         return new (compiler, CMK_Inlining) ModelPolicy(compiler, isPrejitRoot);
     }
 
+    // Optionally install the ProfilePolicy, if the method has profile data.
+    //
+    bool enableProfilePolicy = JitConfig.JitInlinePolicyProfile() != 0;
+    bool hasProfileData      = compiler->fgIsUsingProfileWeights();
+
+    if (enableProfilePolicy && hasProfileData)
+    {
+        return new (compiler, CMK_Inlining) ProfilePolicy(compiler, isPrejitRoot);
+    }
+
     // Use the default policy by default
     return new (compiler, CMK_Inlining) DefaultPolicy(compiler, isPrejitRoot);
 }
@@ -369,35 +379,13 @@ void DefaultPolicy::NoteBool(InlineObservation obs, bool value)
                 // "reestablishes" candidacy rather than alters
                 // candidacy ... so instead we bail out here.
                 //
-                if (!m_IsPrejitRoot)
+                bool overBudget = this->BudgetCheck();
+
+                if (overBudget)
                 {
-                    InlineStrategy* strategy   = m_RootCompiler->m_inlineStrategy;
-                    const bool      overBudget = strategy->BudgetCheck(m_CodeSize);
-
-                    if (overBudget)
-                    {
-                        // If the candidate is a forceinline and the callsite is
-                        // not too deep, allow the inline even if it goes over budget.
-                        //
-                        // For now, "not too deep" means a top-level inline. Note
-                        // depth 0 is used for the root method, so inline candidate depth
-                        // will be 1 or more.
-                        //
-                        assert(m_IsForceInlineKnown);
-                        assert(m_CallsiteDepth > 0);
-                        const bool allowOverBudget = m_IsForceInline && (m_CallsiteDepth == 1);
-
-                        if (allowOverBudget)
-                        {
-                            JITDUMP("Allowing over-budget top-level forceinline\n");
-                        }
-                        else
-                        {
-                            SetFailure(InlineObservation::CALLSITE_OVER_BUDGET);
-                        }
-                    }
+                    SetFailure(InlineObservation::CALLSITE_OVER_BUDGET);
+                    return;
                 }
-
                 break;
             }
 
@@ -459,6 +447,53 @@ void DefaultPolicy::NoteBool(InlineObservation obs, bool value)
     {
         NoteInternal(obs);
     }
+}
+
+//------------------------------------------------------------------------
+// BudgetCheck: see if this inline would exceed the current budget
+//
+// Returns:
+//   True if inline would exceed the budget.
+//
+bool DefaultPolicy::BudgetCheck() const
+{
+    // Only relevant if we're actually inlining.
+    //
+    if (m_IsPrejitRoot)
+    {
+        return false;
+    }
+
+    // The strategy tracks the amout of inlining done so far,
+    // so it performs the actual check.
+    //
+    InlineStrategy* strategy   = m_RootCompiler->m_inlineStrategy;
+    const bool      overBudget = strategy->BudgetCheck(m_CodeSize);
+
+    if (overBudget)
+    {
+        // If the candidate is a forceinline and the callsite is
+        // not too deep, allow the inline even if it goes over budget.
+        //
+        // For now, "not too deep" means a top-level inline. Note
+        // depth 0 is used for the root method, so inline candidate depth
+        // will be 1 or more.
+        //
+        assert(m_IsForceInlineKnown);
+        assert(m_CallsiteDepth > 0);
+        const bool allowOverBudget = m_IsForceInline && (m_CallsiteDepth == 1);
+
+        if (allowOverBudget)
+        {
+            JITDUMP("Allowing over-budget top-level forceinline\n");
+        }
+        else
+        {
+            return true;
+        }
+    }
+
+    return false;
 }
 
 //------------------------------------------------------------------------
@@ -608,6 +643,20 @@ void DefaultPolicy::NoteInt(InlineObservation obs, int value)
             // Ignore all other information
             break;
     }
+}
+
+//------------------------------------------------------------------------
+// NoteDouble: handle an observed double value
+//
+// Arguments:
+//    obs      - the current obsevation
+//    value    - the value being observed
+
+void DefaultPolicy::NoteDouble(InlineObservation obs, double value)
+{
+    // By default, ignore this observation.
+    //
+    assert(obs == InlineObservation::CALLSITE_PROFILE_FREQUENCY);
 }
 
 //------------------------------------------------------------------------
@@ -1012,15 +1061,11 @@ void RandomPolicy::DetermineProfitability(CORINFO_METHOD_INFO* methodInfo)
     assert(m_Observation == InlineObservation::CALLEE_IS_DISCRETIONARY_INLINE);
 
     // Budget check.
-    if (!m_IsPrejitRoot)
+    const bool overBudget = this->BudgetCheck();
+    if (overBudget)
     {
-        InlineStrategy* strategy   = m_RootCompiler->m_inlineStrategy;
-        bool            overBudget = strategy->BudgetCheck(m_CodeSize);
-        if (overBudget)
-        {
-            SetFailure(InlineObservation::CALLSITE_OVER_BUDGET);
-            return;
-        }
+        SetFailure(InlineObservation::CALLSITE_OVER_BUDGET);
+        return;
     }
 
     // If we're also dumping inline data, make additional observations
@@ -1128,6 +1173,7 @@ void RandomPolicy::DetermineProfitability(CORINFO_METHOD_INFO* methodInfo)
 // clang-format off
 DiscretionaryPolicy::DiscretionaryPolicy(Compiler* compiler, bool isPrejitRoot)
     : DefaultPolicy(compiler, isPrejitRoot)
+    , m_ProfileFrequency(0.0)
     , m_BlockCount(0)
     , m_Maxstack(0)
     , m_ArgCount(0)
@@ -1168,6 +1214,7 @@ DiscretionaryPolicy::DiscretionaryPolicy(Compiler* compiler, bool isPrejitRoot)
     , m_CallSiteWeight(0)
     , m_ModelCodeSizeEstimate(0)
     , m_PerCallInstructionEstimate(0)
+    , m_HasProfile(false)
     , m_IsClassCtor(false)
     , m_IsSameThis(false)
     , m_CallerHasNewArray(false)
@@ -1212,6 +1259,10 @@ void DiscretionaryPolicy::NoteBool(InlineObservation obs, bool value)
         case InlineObservation::CALLSITE_RARE_GC_STRUCT:
             // This is redundant since this policy tracks call site
             // hotness for all candidates. So ignore.
+            break;
+
+        case InlineObservation::CALLSITE_HAS_PROFILE:
+            m_HasProfile = value;
             break;
 
         default:
@@ -1279,6 +1330,22 @@ void DiscretionaryPolicy::NoteInt(InlineObservation obs, int value)
             DefaultPolicy::NoteInt(obs, value);
             break;
     }
+}
+
+//------------------------------------------------------------------------
+// NoteDouble: handle an observed double value
+//
+// Arguments:
+//    obs      - the current obsevation
+//    value    - the value being observed
+
+void DiscretionaryPolicy::NoteDouble(InlineObservation obs, double value)
+{
+    assert(obs == InlineObservation::CALLSITE_PROFILE_FREQUENCY);
+    assert(value >= 0.0);
+    assert(m_ProfileFrequency == 0.0);
+
+    m_ProfileFrequency = value;
 }
 
 //------------------------------------------------------------------------
@@ -1550,10 +1617,17 @@ void DiscretionaryPolicy::ComputeOpcodeBin(OPCODE opcode)
 bool DiscretionaryPolicy::PropagateNeverToRuntime() const
 {
     // Propagate most failures, but don't propagate when the inline
-    // was viable but unprofitable.
-    bool propagate = (m_Observation != InlineObservation::CALLEE_NOT_PROFITABLE_INLINE);
+    // was viable but unprofitable, or does not return..
+    //
+    switch (m_Observation)
+    {
+        case InlineObservation::CALLEE_NOT_PROFITABLE_INLINE:
+        case InlineObservation::CALLEE_DOES_NOT_RETURN:
+            return false;
 
-    return propagate;
+        default:
+            return true;
+    }
 }
 
 //------------------------------------------------------------------------
@@ -2166,6 +2240,211 @@ void ModelPolicy::DetermineProfitability(CORINFO_METHOD_INFO* methodInfo)
     }
 }
 
+//------------------------------------------------------------------------/
+// ProfilePolicy: construct a new ProfilePolicy
+//
+// Arguments:
+//    compiler -- compiler instance doing the inlining (root compiler)
+//    isPrejitRoot -- true if this compiler is prejitting the root method
+
+ProfilePolicy::ProfilePolicy(Compiler* compiler, bool isPrejitRoot) : DiscretionaryPolicy(compiler, isPrejitRoot)
+{
+    // Empty
+}
+
+//------------------------------------------------------------------------
+// NoteInt: handle an observed integer value
+//
+// Arguments:
+//    obs      - the current obsevation
+//    value    - the value being observed
+//
+// Notes:
+//    The ILSize threshold used here should be large enough that
+//    it does not generally influence inlining decisions -- it only
+//    helps to make them faster.
+//
+//    The value used below is just a guess and needs refinement.
+
+void ProfilePolicy::NoteInt(InlineObservation obs, int value)
+{
+    // Let underlying policy do its thing.
+    DiscretionaryPolicy::NoteInt(obs, value);
+
+    // Fail fast for inlinees that are too large to ever inline.
+    //
+    if (!m_IsForceInline && (obs == InlineObservation::CALLEE_IL_CODE_SIZE) && (value >= 1000))
+    {
+        // Callee too big, not a candidate
+        SetNever(InlineObservation::CALLEE_TOO_MUCH_IL);
+        return;
+    }
+
+    // Safeguard against overly deep inlines
+    if (obs == InlineObservation::CALLSITE_DEPTH)
+    {
+        unsigned depthLimit = m_RootCompiler->m_inlineStrategy->GetMaxInlineDepth();
+
+        if (m_CallsiteDepth > depthLimit)
+        {
+            SetFailure(InlineObservation::CALLSITE_IS_TOO_DEEP);
+            return;
+        }
+    }
+
+    // This observation happens after we determine profitability
+    // so we need to special case it here.
+    //
+    if (obs == InlineObservation::CALLEE_NUMBER_OF_BASIC_BLOCKS)
+    {
+        // Fail if this is a throw helper.
+        //
+        assert(m_IsForceInlineKnown);
+        assert(m_IsNoReturnKnown);
+        assert(value > 0);
+
+        if (!m_IsForceInline && m_IsNoReturn && (value == 1))
+        {
+            SetNever(InlineObservation::CALLEE_DOES_NOT_RETURN);
+            return;
+        }
+
+        // If we're mimicing the default policy because there's no PGO
+        // data for this call, also fail if thereare too many basic blocks.
+        //
+        if (!m_HasProfile && !m_IsForceInline && (value > MAX_BASIC_BLOCKS))
+        {
+            SetNever(InlineObservation::CALLEE_TOO_MANY_BASIC_BLOCKS);
+            return;
+        }
+    }
+}
+
+//------------------------------------------------------------------------
+// DetermineProfitability: determine if this inline is profitable
+//
+// Arguments:
+//    methodInfo -- method info for the callee
+//
+// Notes:
+//    There are currently two parameters that are ad-hoc: the
+//    "global importance" weight and the size/speed threshold. Ideally this
+//    policy would have just one tunable parameter, the threshold,
+//    which describes how willing we are to trade size for speed.
+
+void ProfilePolicy::DetermineProfitability(CORINFO_METHOD_INFO* methodInfo)
+{
+    // We expect to have profile data, otherwise we should not
+    // have used this policy.
+    //
+    if (!m_HasProfile)
+    {
+        // Todo: investigate these cases more carefully.
+        //
+        SetFailure(InlineObservation::CALLSITE_NOT_PROFITABLE_INLINE);
+        return;
+    }
+
+    // Do some homework
+    MethodInfoObservations(methodInfo);
+    EstimateCodeSize();
+    EstimatePerformanceImpact();
+
+    // Preliminary inline model.
+    //
+    // If code size is estimated to increase, look at
+    // the profitability model for guidance.
+    //
+    // If code size will decrease, just inline.
+    //
+    if (m_ModelCodeSizeEstimate <= 0)
+    {
+        // Inline will likely decrease code size
+        JITLOG_THIS(m_RootCompiler, (LL_INFO100000, "Inline profitable, will decrease code size by %g bytes\n",
+                                     (double)-m_ModelCodeSizeEstimate / SIZE_SCALE));
+
+        if (m_IsPrejitRoot)
+        {
+            SetCandidate(InlineObservation::CALLEE_IS_SIZE_DECREASING_INLINE);
+        }
+        else
+        {
+            SetCandidate(InlineObservation::CALLSITE_IS_SIZE_DECREASING_INLINE);
+        }
+
+        return;
+    }
+
+    JITDUMP("Have profile data for call site...\n");
+
+    // This is a (projected) size increasing inline, and we have profile
+    // data available at the call site.
+    //
+    // We estimate that this inline will increase code size.  Only
+    // inline if the performance win is sufficiently large to
+    // justify bigger code.
+
+    // First compute the number of instruction executions saved
+    // via inlining per call to the callee per byte of code size
+    // impact.
+    //
+    // The per call instruction estimate is negative if the inline
+    // will reduce instruction count. Flip the sign here to make
+    // positive be better and negative worse.
+    double perCallBenefit = -((double)m_PerCallInstructionEstimate / (double)m_ModelCodeSizeEstimate);
+
+    // Multiply by the call frequency to scale the benefit by
+    // the local importance.
+    //
+    double localBenefit = perCallBenefit * m_ProfileFrequency;
+
+    // Account for "global importance"
+    //
+    double globalImportance = 1.0;
+    double benefit          = globalImportance * localBenefit;
+
+    // Compare this to the threshold, and inline if greater.
+    //
+    // The threshold is interpretable as a speed/size tradeoff,
+    // roughly the number benefit units needed for one extra byte of code.
+    // to spend to get one unit of benefit.
+    //
+    // Default is 65/245 = 0.25
+    //
+    double threshold    = JitConfig.JitInlinePolicyProfileThreshold() / 256.0;
+    bool   shouldInline = (benefit > threshold);
+
+    JITLOG_THIS(m_RootCompiler,
+                (LL_INFO100000, "Inline %s profitable: benefit=%g (perCall=%g, local=%g, global=%g, size=%g)\n",
+                 shouldInline ? "is" : "is not", benefit, perCallBenefit, localBenefit, globalImportance,
+                 (double)m_PerCallInstructionEstimate / SIZE_SCALE, (double)m_ModelCodeSizeEstimate / SIZE_SCALE));
+
+    if (!shouldInline)
+    {
+        // Fail the inline
+        if (m_IsPrejitRoot)
+        {
+            SetNever(InlineObservation::CALLEE_NOT_PROFITABLE_INLINE);
+        }
+        else
+        {
+            SetFailure(InlineObservation::CALLSITE_NOT_PROFITABLE_INLINE);
+        }
+    }
+    else
+    {
+        // Update candidacy
+        if (m_IsPrejitRoot)
+        {
+            SetCandidate(InlineObservation::CALLEE_IS_PROFITABLE_INLINE);
+        }
+        else
+        {
+            SetCandidate(InlineObservation::CALLSITE_IS_PROFITABLE_INLINE);
+        }
+    }
+}
+
 #if defined(DEBUG) || defined(INLINE_DATA)
 
 //------------------------------------------------------------------------/
@@ -2178,6 +2457,19 @@ void ModelPolicy::DetermineProfitability(CORINFO_METHOD_INFO* methodInfo)
 FullPolicy::FullPolicy(Compiler* compiler, bool isPrejitRoot) : DiscretionaryPolicy(compiler, isPrejitRoot)
 {
     // Empty
+}
+
+//------------------------------------------------------------------------
+// BudgetCheck: see if this inline would exceed the current budget
+//
+// Returns:
+//   True if inline would exceed the budget.
+//
+bool FullPolicy::BudgetCheck() const
+{
+    // There are no budget restrictions for the full policy.
+    //
+    return false;
 }
 
 //------------------------------------------------------------------------
@@ -2482,7 +2774,7 @@ bool ReplayPolicy::FindContext(InlineContext* context)
     //
     // Token and Hash we're looking for.
     mdMethodDef contextToken  = m_RootCompiler->info.compCompHnd->getMethodDefFromMethod(context->GetCallee());
-    unsigned    contextHash   = m_RootCompiler->info.compCompHnd->getMethodHash(context->GetCallee());
+    unsigned    contextHash   = m_RootCompiler->compMethodHash(context->GetCallee());
     unsigned    contextOffset = (unsigned)context->GetOffset();
 
     return FindInline(contextToken, contextHash, contextOffset);
@@ -2666,7 +2958,7 @@ bool ReplayPolicy::FindInline(CORINFO_METHOD_HANDLE callee)
 {
     // Token and Hash we're looking for
     mdMethodDef calleeToken = m_RootCompiler->info.compCompHnd->getMethodDefFromMethod(callee);
-    unsigned    calleeHash  = m_RootCompiler->info.compCompHnd->getMethodHash(callee);
+    unsigned    calleeHash  = m_RootCompiler->compMethodHash(callee);
 
     // Abstract this or just pass through raw bits
     // See matching code in xml writer

@@ -122,6 +122,11 @@ check_symbol_exists(
     HAVE_F_DUPFD_CLOEXEC)
 
 check_symbol_exists(
+    F_FULLFSYNC
+    fcntl.h
+    HAVE_F_FULLFSYNC)
+
+check_symbol_exists(
     getifaddrs
     ifaddrs.h
     HAVE_GETIFADDRS)
@@ -684,7 +689,7 @@ check_c_source_compiles(
     HAVE_MKSTEMP)
 
 if (NOT HAVE_MKSTEMPS AND NOT HAVE_MKSTEMP)
-    message(FATAL_ERROR "Cannot find mkstemp nor mkstemp on this platform.")
+    message(FATAL_ERROR "Cannot find mkstemps nor mkstemp on this platform.")
 endif()
 
 check_c_source_compiles(

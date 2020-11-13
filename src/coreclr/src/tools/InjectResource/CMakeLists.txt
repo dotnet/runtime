@@ -1,6 +1,6 @@
 remove_definitions(-DUNICODE)
 remove_definitions(-D_UNICODE)
-add_definitions(-MT)
+set(CMAKE_MSVC_RUNTIME_LIBRARY MultiThreaded)
 
 add_executable(InjectResource InjectResource.cpp)
 

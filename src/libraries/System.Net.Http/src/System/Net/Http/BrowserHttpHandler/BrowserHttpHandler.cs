@@ -247,7 +247,7 @@ namespace System.Net.Http
                 var response = s_fetch?.Invoke("apply", s_window, args) as Task<object>;
                 args.Dispose();
                 if (response == null)
-                    throw new Exception("Internal error marshalling the response Promise from `fetch`.");
+                    throw new Exception(SR.net_http_marshalling_response_promise_from_fetch);
 
                 JSObject t = (JSObject)await response.ConfigureAwait(continueOnCapturedContext: true);
 
@@ -562,7 +562,7 @@ namespace System.Net.Http
 
             public override int Read(byte[] buffer, int offset, int count)
             {
-                throw new NotSupportedException("Synchronous reads are not supported, use ReadAsync instead");
+                throw new NotSupportedException(SR.net_http_synchronous_reads_not_supported);
             }
 
             public override long Seek(long offset, SeekOrigin origin)

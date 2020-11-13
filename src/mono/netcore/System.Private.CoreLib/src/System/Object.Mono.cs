@@ -13,9 +13,5 @@ namespace System
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         protected extern object MemberwiseClone();
 
-        [Intrinsic]
-        internal ref byte GetRawData() => ref GetRawData();
-
-        internal object CloneInternal() => MemberwiseClone();
     }
 }

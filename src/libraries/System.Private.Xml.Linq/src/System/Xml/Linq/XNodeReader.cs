@@ -552,9 +552,11 @@ namespace System.Xml.Linq
             return null;
         }
 
-        // TODO-NULLABLE: decide if base signature should be switched to return string?
         public override string GetAttribute(int index)
         {
+            // https://github.com/dotnet/runtime/issues/44287
+            //     We should replace returning null with ArgumentOutOfRangeException
+            //     In case of not interactive state likely we should throw InvalidOperationException
             if (!IsInteractive)
             {
                 return null!;

@@ -78,7 +78,7 @@ namespace Microsoft.DotNet.CoreSetup.Test
                 Path.Combine(RepoRoot, ".packages");
 
             CorehostPackages = corehostPackages ?? Path.Combine(Artifacts, "corehost");
-            BuiltDotnet = builtDotnet ?? Path.Combine(BaseObjFolder, osPlatformConfig, "sharedFrameworkPublish");
+            BuiltDotnet = builtDotnet ?? Path.Combine(GetTestContextVariable("TEST_ARTIFACTS"), "sharedFrameworkPublish");
         }
 
         public string GetTestContextVariable(string name)

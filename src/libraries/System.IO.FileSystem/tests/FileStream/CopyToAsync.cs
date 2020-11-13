@@ -1,10 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using Microsoft.Win32.SafeHandles;
 using System.Collections.Generic;
-using System.IO.Pipes;
-using System.Runtime.InteropServices;
 using System.Threading;
 using System.Threading.Tasks;
 using Xunit;
@@ -14,31 +11,6 @@ namespace System.IO.Tests
     [ActiveIssue("https://github.com/dotnet/runtime/issues/34583", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
     public class FileStream_CopyToAsync : FileSystemTest
     {
-        [Theory]
-        [InlineData(false)]
-        [InlineData(true)]
-        public void InvalidArgs_Throws(bool useAsync)
-        {
-            using (FileStream fs = new FileStream(GetTestFilePath(), FileMode.Create, FileAccess.ReadWrite, FileShare.None, 0x100, useAsync))
-            {
-                AssertExtensions.Throws<ArgumentNullException>("destination", () => { fs.CopyToAsync(null); });
-                AssertExtensions.Throws<ArgumentOutOfRangeException>("bufferSize", () => { fs.CopyToAsync(new MemoryStream(), 0); });
-                Assert.Throws<NotSupportedException>(() => { fs.CopyToAsync(new MemoryStream(new byte[1], writable: false)); });
-                fs.Dispose();
-                Assert.Throws<ObjectDisposedException>(() => { fs.CopyToAsync(new MemoryStream()); });
-            }
-            using (FileStream fs = new FileStream(GetTestFilePath(), FileMode.Create, FileAccess.Write))
-            {
-                Assert.Throws<NotSupportedException>(() => { fs.CopyToAsync(new MemoryStream()); });
-            }
-            using (FileStream src = new FileStream(GetTestFilePath(), FileMode.Create, FileAccess.ReadWrite, FileShare.None, 0x100, useAsync))
-            using (FileStream dst = new FileStream(GetTestFilePath(), FileMode.Create, FileAccess.ReadWrite, FileShare.None, 0x100, useAsync))
-            {
-                dst.Dispose();
-                Assert.Throws<ObjectDisposedException>(() => { src.CopyToAsync(dst); });
-            }
-        }
-
         [Theory]
         [InlineData(false)]
         [InlineData(true)]
@@ -55,17 +27,6 @@ namespace System.IO.Tests
                 fs.Write(TestBuffer, 0, TestBuffer.Length);
                 fs.SafeFileHandle.Dispose();
                 Assert.Throws<ObjectDisposedException>(() => { fs.CopyToAsync(new MemoryStream()).Wait(); });
-            }
-        }
-
-        [Theory]
-        [InlineData(false)]
-        [InlineData(true)]
-        public async Task AlreadyCanceled_ReturnsCanceledTask(bool useAsync)
-        {
-            using (FileStream fs = new FileStream(GetTestFilePath(), FileMode.Create, FileAccess.ReadWrite, FileShare.None, 0x100, useAsync))
-            {
-                await Assert.ThrowsAnyAsync<OperationCanceledException>(() => fs.CopyToAsync(fs, 0x1000, new CancellationToken(canceled: true)));
             }
         }
 
@@ -175,108 +136,6 @@ namespace System.IO.Tests
             }
         }
 
-        [Theory]
-        [InlineData(10, 1024)]
-        [PlatformSpecific(~TestPlatforms.Browser)] // IO.Pipes not supported
-        public async Task AnonymousPipeViaFileStream_AllDataCopied(int writeSize, int numWrites)
-        {
-            long totalLength = writeSize * numWrites;
-            var expectedData = new byte[totalLength];
-            new Random(42).NextBytes(expectedData);
-
-            var results = new MemoryStream();
-
-            using (var server = new AnonymousPipeServerStream(PipeDirection.Out))
-            {
-                Task serverTask = Task.Run(async () =>
-                {
-                    for (int i = 0; i < numWrites; i++)
-                    {
-                        await server.WriteAsync(expectedData, i * writeSize, writeSize);
-                    }
-                });
-
-                using (var client = new FileStream(new SafeFileHandle(server.ClientSafePipeHandle.DangerousGetHandle(), false), FileAccess.Read, bufferSize: 3))
-                {
-                    Task copyTask = client.CopyToAsync(results, writeSize);
-                    await await Task.WhenAny(serverTask, copyTask);
-
-                    server.Dispose();
-                    await copyTask;
-                }
-            }
-
-            byte[] actualData = results.ToArray();
-            Assert.Equal(expectedData.Length, actualData.Length);
-            Assert.Equal<byte>(expectedData, actualData);
-        }
-
-        [PlatformSpecific(TestPlatforms.Windows)] // Uses P/Invokes to create async pipe handle
-        [Theory]
-        [InlineData(false, 10, 1024)]
-        [InlineData(true, 10, 1024)]
-        public async Task NamedPipeViaFileStream_AllDataCopied(bool useAsync, int writeSize, int numWrites)
-        {
-            long totalLength = writeSize * numWrites;
-            var expectedData = new byte[totalLength];
-            new Random(42).NextBytes(expectedData);
-
-            var results = new MemoryStream();
-            var pipeOptions = useAsync ? PipeOptions.Asynchronous : PipeOptions.None;
-
-            string name = GetNamedPipeServerStreamName();
-            using (var server = new NamedPipeServerStream(name, PipeDirection.Out, 1, PipeTransmissionMode.Byte, pipeOptions))
-            {
-                Task serverTask = Task.Run(async () =>
-                {
-                    await server.WaitForConnectionAsync();
-                    for (int i = 0; i < numWrites; i++)
-                    {
-                        await server.WriteAsync(expectedData, i * writeSize, writeSize);
-                    }
-                    server.Dispose();
-                });
-
-                Assert.True(WaitNamedPipeW(@"\\.\pipe\" + name, -1));
-                using (SafeFileHandle clientHandle = CreateFileW(@"\\.\pipe\" + name, Interop.Kernel32.GenericOperations.GENERIC_READ, FileShare.None, IntPtr.Zero, FileMode.Open, (int)pipeOptions, IntPtr.Zero))
-                using (var client = new FileStream(clientHandle, FileAccess.Read, bufferSize: 3, isAsync: useAsync))
-                {
-                    Task copyTask = client.CopyToAsync(results, (int)totalLength);
-                    await await Task.WhenAny(serverTask, copyTask);
-                    await copyTask;
-                }
-            }
-
-            byte[] actualData = results.ToArray();
-            Assert.Equal(expectedData.Length, actualData.Length);
-            Assert.Equal<byte>(expectedData, actualData);
-        }
-
-        [PlatformSpecific(TestPlatforms.Windows)] // Uses P/Invokes to create async pipe handle
-        [Fact]
-        public async Task NamedPipeViaFileStream_CancellationRequested_OperationCanceled()
-        {
-            string name = Guid.NewGuid().ToString("N");
-            using (var server = new NamedPipeServerStream(name, PipeDirection.Out, 1, PipeTransmissionMode.Byte, PipeOptions.Asynchronous))
-            {
-                Task serverTask = server.WaitForConnectionAsync();
-
-                Assert.True(WaitNamedPipeW(@"\\.\pipe\" + name, -1));
-                using (SafeFileHandle clientHandle = CreateFileW(@"\\.\pipe\" + name, Interop.Kernel32.GenericOperations.GENERIC_READ, FileShare.None, IntPtr.Zero, FileMode.Open, (int)PipeOptions.Asynchronous, IntPtr.Zero))
-                using (var client = new FileStream(clientHandle, FileAccess.Read, bufferSize: 3, isAsync: true))
-                {
-                    await serverTask;
-
-                    var cts = new CancellationTokenSource();
-                    Task clientTask = client.CopyToAsync(new MemoryStream(), 0x1000, cts.Token);
-                    Assert.False(clientTask.IsCompleted);
-
-                    cts.Cancel();
-                    await Assert.ThrowsAsync<OperationCanceledException>(() => clientTask);
-                }
-            }
-        }
-
         [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         [InlineData(false)]
         [InlineData(true)]
@@ -312,22 +171,5 @@ namespace System.IO.Tests
                 return base.ReadAsync(buffer, offset, count, cancellationToken);
             }
         }
-
-        #region Windows P/Invokes
-        // We need to P/Invoke to test the named pipe async behavior with FileStream
-        // because NamedPipeClientStream internally binds the created handle,
-        // and that then prevents FileStream's constructor from working with the handle
-        // when trying to set isAsync to true.
-
-        [DllImport("kernel32.dll", CharSet = CharSet.Unicode, SetLastError = true)]
-        [return: MarshalAs(UnmanagedType.Bool)]
-        public static extern bool WaitNamedPipeW(string name, int timeout);
-
-        [DllImport("kernel32.dll", CharSet = CharSet.Unicode, SetLastError = true)]
-        internal static extern SafeFileHandle CreateFileW(
-            string lpFileName, int dwDesiredAccess, FileShare dwShareMode,
-            IntPtr securityAttrs, FileMode dwCreationDisposition, int dwFlagsAndAttributes, IntPtr hTemplateFile);
-
-        #endregion
     }
 }

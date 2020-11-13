@@ -67,7 +67,9 @@ jobs:
       value: ${{ parameters.targetarch }}
     - name: crossgencompare_build_artifact
       value: crossgen_comparison_build_${{ parameters.targetos }}_${{ parameters.targetarch }}
-    - ${{ if eq(parameters.targetos, 'Windows_NT') }}:
+    - name: displayname_comparison_job
+      value: ${{ format('Test crossgen2-comparison {0}{1} {2} {3} to {4} {5}', parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.buildConfig, parameters.targetarch, parameters.targetos) }}
+    - ${{ if eq(parameters.targetos, 'windows') }}:
       - name: target_crossgen2_os
         value: windows
     - ${{ if eq(parameters.targetos, 'Linux') }}:
@@ -136,8 +138,9 @@ jobs:
         WorkItemTimeout: 3:00 # 3 hours
         WorkItemDirectory: '$(workItemDirectory)'
         CorrelationPayloadDirectory: '$(Build.SourcesDirectory)/src/tests/Common/scripts'
-        ${{ if ne(parameters.osGroup, 'Windows_NT') }}:
+        ${{ if ne(parameters.osGroup, 'windows') }}:
           WorkItemCommand:
+            echo $(displayname_comparison_job) ;
             echo Targeting $(targetFlavor) ;
             chmod +x     $HELIX_WORKITEM_PAYLOAD/corerun;
             mkdir -p     $HELIX_WORKITEM_PAYLOAD/log;
@@ -152,8 +155,9 @@ jobs:
             python3 -u $HELIX_CORRELATION_PAYLOAD/crossgen2_comparison.py compare
             --base_dir   $HELIX_WORKITEM_PAYLOAD/prebuiltWork/log
             --diff_dir   $HELIX_WORKITEM_PAYLOAD/log
-        ${{ if eq(parameters.osGroup, 'Windows_NT') }}:
+        ${{ if eq(parameters.osGroup, 'windows') }}:
           WorkItemCommand:
+            echo $(displayname_comparison_job) &
             echo Targeting $(targetFlavor) &
             md        %HELIX_WORKITEM_PAYLOAD%\log &
             set CORE_ROOT=%HELIX_CORRELATION_PAYLOAD% &

@@ -78,7 +78,7 @@
   </Target>
 
   <PropertyGroup>
-    <TargetsWindows Condition="'$(TargetOS)' == 'Windows_NT'">true</TargetsWindows>
+    <TargetsWindows Condition="'$(TargetOS)' == 'windows'">true</TargetsWindows>
     <BuildTargetFramework Condition="'$(TestPackages)' != 'true'">$([MSBuild]::ValueOrDefault('$(BuildTargetFramework)', '$(NetCoreAppCurrent)'))</BuildTargetFramework>
 
     <!-- The Helix correlation payload file -->
@@ -144,7 +144,22 @@
     <_RuntimeInputs Condition=" '$(Scenarios)' != '' and '$(TargetsWindows)' != 'true' " Include="$(TestHostRootPath)**/*.sh" />
   </ItemGroup>
 
+  <Target Name="IncludeDumpDocsInTesthost"
+          Condition="'$(RuntimeFlavor)' == 'CoreCLR'">
+    <ItemGroup>
+      <DebugDocsFiles Include="$(RepositoryEngineeringDir)testing\debug-dump-template.md" />
+      <DebugDocsFiles Include="$(RepositoryEngineeringDir)testing\gen-debug-dump-docs.py" />
+
+      <_RuntimeInputs Include="@(DebugDocsFiles)" />
+    </ItemGroup>
+
+    <Copy SourceFiles="@(DebugDocsFiles)"
+          DestinationFolder="$(TestHostRootPath)"
+          SkipUnchangedFiles="true" />
+  </Target>
+
   <Target Name="CompressRuntimeDirectory"
+          DependsOnTargets="IncludeDumpDocsInTesthost"
           Inputs="@(_RuntimeInputs);@(TestArchiveRuntimeDependency)"
           Outputs="$(TestArchiveRuntimeFile)"
           Condition="'$(TestPackages)' != 'true' and

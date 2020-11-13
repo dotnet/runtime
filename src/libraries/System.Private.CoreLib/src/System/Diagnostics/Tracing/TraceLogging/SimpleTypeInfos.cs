@@ -275,7 +275,7 @@ namespace System.Diagnostics.Tracing
             Type[] typeArgs = type.GenericTypeArguments;
             Debug.Assert(typeArgs.Length == 1);
             this.valueInfo = TraceLoggingTypeInfo.GetInstance(typeArgs[0], recursionCheck);
-            this.valueGetter = PropertyValue.GetPropertyGetter(type.GetTypeInfo().GetDeclaredProperty("Value")!);
+            this.valueGetter = PropertyValue.GetPropertyGetter(type.GetProperty("Value")!);
         }
 
         public override void WriteMetadata(
