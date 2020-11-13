@@ -325,6 +325,10 @@ IpcStream *IpcStreamFactory::GetNextAvailableStream(ErrorCallback callback)
                         if (pStream == nullptr) // only use first signaled stream; will get others on subsequent calls
                         {
                             pStream = ((DiagnosticPort*)(rgIpcPollHandles[i].pUserData))->GetConnectedStream(callback);
+                            if (pStream == nullptr)
+                            {
+                                fSawError = true;
+                            }
                             s_currentPort = (DiagnosticPort*)(rgIpcPollHandles[i].pUserData);
                         }
                         STRESS_LOG2(LF_DIAGNOSTICS_PORT, LL_INFO10, "IpcStreamFactory::GetNextAvailableStream - SIG :: Poll attempt: %d, connection %d signalled.\n", nPollAttempts, i);

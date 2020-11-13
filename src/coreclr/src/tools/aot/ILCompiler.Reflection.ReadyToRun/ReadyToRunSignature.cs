@@ -1610,6 +1610,10 @@ namespace ILCompiler.Reflection.ReadyToRun
                     builder.Append("GCPOLL");
                     break;
 
+                case ReadyToRunHelper.GetCurrentManagedThreadId:
+                    builder.Append("GET_CURRENT_MANAGED_THREAD_ID");
+                    break;
+
                 case ReadyToRunHelper.ReversePInvokeEnter:
                     builder.Append("REVERSE_PINVOKE_ENTER");
                     break;
@@ -1663,6 +1667,14 @@ namespace ILCompiler.Reflection.ReadyToRun
 
                 case ReadyToRunHelper.NewMultiDimArr_NonVarArg:
                     builder.Append("NEW_MULTI_DIM_ARR__NON_VAR_ARG");
+                    break;
+
+                case ReadyToRunHelper.MonitorEnter:
+                    builder.Append("MONITOR_ENTER");
+                    break;
+
+                case ReadyToRunHelper.MonitorExit:
+                    builder.Append("MONITOR_EXIT");
                     break;
 
                 // Helpers used with generic handle lookup cases
@@ -1875,9 +1887,7 @@ namespace ILCompiler.Reflection.ReadyToRun
                     break;
 
                 default:
-                    // TODO: Something is wrong with helper signature parsing
-                    builder.Append(string.Format("Unknown helper: {0:X2}", helperType));
-                    break;
+                    throw new BadImageFormatException();
             }
         }
 

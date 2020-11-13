@@ -816,7 +816,6 @@ namespace System.Reflection.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/mono/mono/issues/15029", TestRuntimes.Mono)]
         public void GetMethod()
         {
             MethodInfo[] methods = typeof(MembersClass).GetTypeInfo().GetMethods();
@@ -835,7 +834,6 @@ namespace System.Reflection.Tests
         }
 
         [Theory]
-        [ActiveIssue("https://github.com/mono/mono/issues/15029", TestRuntimes.Mono)]
         [InlineData(BindingFlags.Default, 9)]
         [InlineData(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance, 16)]
         public void GetMethods(BindingFlags bindingAttributes, int length)
@@ -902,7 +900,6 @@ namespace System.Reflection.Tests
         }
 
         [Theory]
-        [ActiveIssue("https://github.com/mono/mono/issues/15029", TestRuntimes.Mono)]
         [InlineData(BindingFlags.Default, 15)]
         [InlineData(BindingFlags.NonPublic | BindingFlags.Instance, 13)]
         [InlineData(BindingFlags.Public | BindingFlags.Instance, 15)]

@@ -560,7 +560,8 @@ jobs:
       condition: and(
         succeeded(),
         eq(variables['_BuildConfig'], 'Release'),
-        ne(variables['DisableVSPublish'], 'true'))
+        ne(variables['DisableVSPublish'], 'true'),
+        ne(variables['PostBuildSign'], 'true'))
 
   - template: steps/upload-job-artifacts.yml
     parameters:

@@ -88,7 +88,7 @@ namespace System.Text.Json.Serialization.Converters
 
                         // Read the value and add.
                         reader.ReadWithVerify();
-                        TValue element = valueConverter.Read(ref reader, ElementType, options);
+                        TValue? element = valueConverter.Read(ref reader, ElementType, options);
                         Add(key, element!, options, ref state);
                     }
                 }
@@ -113,7 +113,7 @@ namespace System.Text.Json.Serialization.Converters
                         reader.ReadWithVerify();
 
                         // Get the value from the converter and add it.
-                        valueConverter.TryRead(ref reader, ElementType, options, ref state, out TValue element);
+                        valueConverter.TryRead(ref reader, ElementType, options, ref state, out TValue? element);
                         Add(key, element!, options, ref state);
                     }
                 }
@@ -214,7 +214,7 @@ namespace System.Text.Json.Serialization.Converters
                     if (state.Current.PropertyState < StackFramePropertyState.TryRead)
                     {
                         // Get the value from the converter and add it.
-                        bool success = elementConverter.TryRead(ref reader, typeof(TValue), options, ref state, out TValue element);
+                        bool success = elementConverter.TryRead(ref reader, typeof(TValue), options, ref state, out TValue? element);
                         if (!success)
                         {
                             value = default;

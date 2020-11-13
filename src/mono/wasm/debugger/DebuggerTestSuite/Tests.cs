@@ -1158,6 +1158,23 @@ namespace DebuggerTests
             Assert.True(load_assemblies_res.IsOk);
         }
 
+        [Fact]
+        public async Task BreakOnDebuggerBreak()
+        {
+            var insp = new Inspector();
+            //Collect events
+            var scripts = SubscribeToScripts(insp);
+
+            await Ready();
+            await insp.Ready(async (cli, token) =>
+            {
+                ctx = new DebugTestContext(cli, insp, token, scripts);
+                await EvaluateAndCheck(
+                    "window.setTimeout(function() { invoke_static_method_async('[debugger-test] UserBreak:BreakOnDebuggerBreakCommand'); }, 1);",
+                    "dotnet://debugger-test.dll/debugger-test2.cs", 56, 4,
+                    "BreakOnDebuggerBreakCommand");
+            });
+        }
         //TODO add tests covering basic stepping behavior as step in/out/over
     }
 }

@@ -505,15 +505,6 @@ PAL_UnregisterModule(
     IN HINSTANCE hInstance);
 
 PALIMPORT
-BOOL
-PALAPI
-PAL_GetPALDirectoryW(
-    OUT LPWSTR lpDirectoryName,
-    IN OUT UINT* cchDirectoryName);
-
-#define PAL_GetPALDirectory PAL_GetPALDirectoryW
-
-PALIMPORT
 VOID
 PALAPI
 PAL_Random(

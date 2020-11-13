@@ -637,6 +637,7 @@ namespace System.Diagnostics.Tests
         }
 
         [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        [OuterLoop("As written, takes 30 seconds")]
         public async Task WaitAsyncForProcess()
         {
             Process p = CreateSleepProcess(WaitInMS);

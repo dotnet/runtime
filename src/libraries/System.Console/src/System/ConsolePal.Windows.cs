@@ -11,6 +11,13 @@ namespace System
     // Provides Windows-based support for System.Console.
     internal static class ConsolePal
     {
+        /// <summary>Hardcoded Encoding.Unicode.CodePage to avoid accessing Encoding.Unicode and forcing it into existence unnecessarily.</summary>
+        private const int UnicodeCodePage = 1200;
+
+#if DEBUG
+        static ConsolePal() => Debug.Assert(UnicodeCodePage == Encoding.Unicode.CodePage);
+#endif
+
         private static IntPtr InvalidHandleValue => new IntPtr(-1);
 
         /// <summary>Ensures that the console has been initialized for use.</summary>
@@ -29,19 +36,19 @@ namespace System
             GetStandardFile(
                 Interop.Kernel32.HandleTypes.STD_INPUT_HANDLE,
                 FileAccess.Read,
-                useFileAPIs: Console.InputEncoding.CodePage != Encoding.Unicode.CodePage || Console.IsInputRedirected);
+                useFileAPIs: Console.InputEncoding.CodePage != UnicodeCodePage || Console.IsInputRedirected);
 
         public static Stream OpenStandardOutput() =>
             GetStandardFile(
                 Interop.Kernel32.HandleTypes.STD_OUTPUT_HANDLE,
                 FileAccess.Write,
-                useFileAPIs: Console.OutputEncoding.CodePage != Encoding.Unicode.CodePage || Console.IsOutputRedirected);
+                useFileAPIs: Console.OutputEncoding.CodePage != UnicodeCodePage || Console.IsOutputRedirected);
 
         public static Stream OpenStandardError() =>
             GetStandardFile(
                 Interop.Kernel32.HandleTypes.STD_ERROR_HANDLE,
                 FileAccess.Write,
-                useFileAPIs: Console.OutputEncoding.CodePage != Encoding.Unicode.CodePage || Console.IsErrorRedirected);
+                useFileAPIs: Console.OutputEncoding.CodePage != UnicodeCodePage || Console.IsErrorRedirected);
 
         private static IntPtr InputHandle =>
             Interop.Kernel32.GetStdHandle(Interop.Kernel32.HandleTypes.STD_INPUT_HANDLE);
@@ -99,7 +106,7 @@ namespace System
 
         public static void SetConsoleInputEncoding(Encoding enc)
         {
-            if (enc.CodePage != Encoding.Unicode.CodePage)
+            if (enc.CodePage != UnicodeCodePage)
             {
                 if (!Interop.Kernel32.SetConsoleCP(enc.CodePage))
                     throw Win32Marshal.GetExceptionForWin32Error(Marshal.GetLastWin32Error());
@@ -113,7 +120,7 @@ namespace System
 
         public static void SetConsoleOutputEncoding(Encoding enc)
         {
-            if (enc.CodePage != Encoding.Unicode.CodePage)
+            if (enc.CodePage != UnicodeCodePage)
             {
                 if (!Interop.Kernel32.SetConsoleOutputCP(enc.CodePage))
                     throw Win32Marshal.GetExceptionForWin32Error(Marshal.GetLastWin32Error());

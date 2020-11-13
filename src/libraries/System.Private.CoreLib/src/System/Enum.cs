@@ -258,11 +258,26 @@ namespace System
             return result;
         }
 
+        private static ulong ToUInt64<TEnum>(TEnum value) where TEnum : struct, Enum =>
+            Type.GetTypeCode(typeof(TEnum)) switch
+            {
+                TypeCode.SByte => (ulong)Unsafe.As<TEnum, sbyte>(ref value),
+                TypeCode.Byte => Unsafe.As<TEnum, byte>(ref value),
+                TypeCode.Boolean => Convert.ToByte(Unsafe.As<TEnum, bool>(ref value)),
+                TypeCode.Int16 => (ulong)Unsafe.As<TEnum, short>(ref value),
+                TypeCode.UInt16 => Unsafe.As<TEnum, ushort>(ref value),
+                TypeCode.Char => Unsafe.As<TEnum, char>(ref value),
+                TypeCode.UInt32 => Unsafe.As<TEnum, uint>(ref value),
+                TypeCode.Int32 => (ulong)Unsafe.As<TEnum, int>(ref value),
+                TypeCode.UInt64 => Unsafe.As<TEnum, ulong>(ref value),
+                TypeCode.Int64 => (ulong)Unsafe.As<TEnum, long>(ref value),
+                _ => throw new InvalidOperationException(SR.InvalidOperation_UnknownEnumType),
+            };
         #endregion
 
         #region Public Static Methods
         public static string? GetName<TEnum>(TEnum value) where TEnum : struct, Enum
-            => GetName(typeof(TEnum), value);
+            => GetEnumName((RuntimeType)typeof(TEnum), ToUInt64(value));
 
         public static string? GetName(Type enumType, object value)
         {
@@ -273,7 +288,7 @@ namespace System
         }
 
         public static string[] GetNames<TEnum>() where TEnum : struct, Enum
-            => GetNames(typeof(TEnum));
+            => new ReadOnlySpan<string>(InternalGetNames((RuntimeType)typeof(TEnum))).ToArray();
 
         public static string[] GetNames(Type enumType)
         {

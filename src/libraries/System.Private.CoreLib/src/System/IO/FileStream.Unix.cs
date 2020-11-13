@@ -349,47 +349,6 @@ namespace System.IO
             }
         }
 
-        /// <summary>Asynchronously clears all buffers for this stream, causing any buffered data to be written to the underlying device.</summary>
-        /// <param name="cancellationToken">The token to monitor for cancellation requests.</param>
-        /// <returns>A task that represents the asynchronous flush operation.</returns>
-        private Task FlushAsyncInternal(CancellationToken cancellationToken)
-        {
-            if (cancellationToken.IsCancellationRequested)
-            {
-                return Task.FromCanceled(cancellationToken);
-            }
-            if (_fileHandle.IsClosed)
-            {
-                throw Error.GetFileNotOpen();
-            }
-
-            // As with Win32FileStream, flush the buffers synchronously to avoid race conditions.
-            try
-            {
-                FlushInternalBuffer();
-            }
-            catch (Exception e)
-            {
-                return Task.FromException(e);
-            }
-
-            // We then separately flush to disk asynchronously.  This is only
-            // necessary if we support writing; otherwise, we're done.
-            if (CanWrite)
-            {
-                return Task.Factory.StartNew(
-                    static state => ((FileStream)state!).FlushOSBuffer(),
-                    this,
-                    cancellationToken,
-                    TaskCreationOptions.DenyChildAttach,
-                    TaskScheduler.Default);
-            }
-            else
-            {
-                return Task.CompletedTask;
-            }
-        }
-
         /// <summary>Sets the length of this stream to the given value.</summary>
         /// <param name="value">The new length of the stream.</param>
         private void SetLengthInternal(long value)
