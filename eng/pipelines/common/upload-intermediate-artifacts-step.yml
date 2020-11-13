@@ -16,5 +16,5 @@ steps:
   displayName: Publish intermediate artifacts
   inputs:
     pathToPublish: '$(Build.StagingDirectory)/IntermediateArtifacts'
-    artifactName: IntermediateIntermediateArtifacts
+    artifactName: IntermediateArtifacts
     artifactType: container
