@@ -132,7 +132,7 @@ ep_on_exit:
 	return result;
 
 ep_on_error:
-	EP_ASSERT (result == false);
+	EP_ASSERT (!result);
 	ep_exit_error_handler ();
 }
 

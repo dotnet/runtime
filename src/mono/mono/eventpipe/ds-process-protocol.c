@@ -360,9 +360,9 @@ process_protocol_helper_get_process_info (
 		ds_ipc_header_get_generic_success (),
 		(void *)process_info_payload,
 		process_info_payload_get_size (process_info_payload),
-		process_info_payload_flatten) == true);
+		process_info_payload_flatten));
 
-	ep_raise_error_if_nok (ds_ipc_message_send (message, stream) == true);
+	ep_raise_error_if_nok (ds_ipc_message_send (message, stream));
 
 	result = true;
 
@@ -375,7 +375,7 @@ ep_on_exit:
 	return result;
 
 ep_on_error:
-	EP_ASSERT (result == false);
+	EP_ASSERT (!result);
 	ds_ipc_message_send_error (stream, DS_IPC_E_FAIL);
 	DS_LOG_WARNING_0 ("Failed to send DiagnosticsIPC response");
 	ep_exit_error_handler ();
@@ -402,10 +402,10 @@ process_protocol_helper_get_process_env (
 		ds_ipc_header_get_generic_success (),
 		(void *)env_info_payload,
 		env_info_payload_get_size (env_info_payload),
-		env_info_payload_flatten) == true);
+		env_info_payload_flatten));
 
-	ep_raise_error_if_nok (ds_ipc_message_send (message, stream) == true);
-	ep_raise_error_if_nok (env_info_stream_env_block (env_info_payload, stream) == true);
+	ep_raise_error_if_nok (ds_ipc_message_send (message, stream));
+	ep_raise_error_if_nok (env_info_stream_env_block (env_info_payload, stream));
 
 	result = true;
 
@@ -415,7 +415,7 @@ ep_on_exit:
 	return result;
 
 ep_on_error:
-	EP_ASSERT (result == false);
+	EP_ASSERT (!result);
 	ds_ipc_message_send_error (stream, DS_IPC_E_FAIL);
 	DS_LOG_WARNING_0 ("Failed to send DiagnosticsIPC response");
 	ep_exit_error_handler ();

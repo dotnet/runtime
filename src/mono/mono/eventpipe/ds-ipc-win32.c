@@ -400,7 +400,7 @@ ds_ipc_accept (
 	memset(&ipc->overlap, 0, sizeof(OVERLAPPED)); // clear the overlapped objects state
 	ipc->overlap.hEvent = INVALID_HANDLE_VALUE;
 
-	ep_raise_error_if_nok (ds_ipc_listen (ipc, callback) == true);
+	ep_raise_error_if_nok (ds_ipc_listen (ipc, callback));
 
 ep_on_exit:
 	return stream;

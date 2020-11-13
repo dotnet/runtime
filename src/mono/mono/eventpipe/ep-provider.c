@@ -183,7 +183,7 @@ ep_provider_alloc (
 	ep_raise_error_if_nok (instance->provider_name_utf16 != NULL);
 
 	ep_rt_event_list_alloc (&instance->event_list);
-	ep_raise_error_if_nok (ep_rt_event_list_is_valid (&instance->event_list) == true);
+	ep_raise_error_if_nok (ep_rt_event_list_is_valid (&instance->event_list));
 
 	instance->keywords = 0;
 	instance->provider_level = EP_EVENT_LEVEL_CRITICAL;
@@ -260,7 +260,7 @@ ep_provider_add_event (
 
 	// Take the config lock before inserting a new event.
 	EP_LOCK_ENTER (section1)
-		ep_raise_error_if_nok_holding_lock (ep_rt_event_list_append (&provider->event_list, instance) == true, section1);
+		ep_raise_error_if_nok_holding_lock (ep_rt_event_list_append (&provider->event_list, instance), section1);
 		provider_refresh_event_state (instance);
 	EP_LOCK_EXIT (section1)
 
@@ -484,7 +484,7 @@ provider_add_event (
 
 	ep_raise_error_if_nok (instance != NULL);
 
-	ep_raise_error_if_nok (ep_rt_event_list_append (&provider->event_list, instance) == true);
+	ep_raise_error_if_nok (ep_rt_event_list_append (&provider->event_list, instance));
 	provider_refresh_event_state (instance);
 
 ep_on_exit:

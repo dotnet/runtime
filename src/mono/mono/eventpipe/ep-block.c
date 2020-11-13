@@ -696,7 +696,7 @@ ep_event_block_base_write_event (
 
 	block->write_pointer = write_pointer;
 
-	EP_ASSERT (result == true);
+	EP_ASSERT (result);
 
 ep_on_exit:
 	return result;
@@ -1083,7 +1083,7 @@ ep_stack_block_write_stack (
 
 	block->write_pointer = write_pointer;
 
-	EP_ASSERT (result == true);
+	EP_ASSERT (result);
 
 ep_on_exit:
 	return result;

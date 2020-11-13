@@ -208,7 +208,7 @@ ep_fast_serializer_write_buffer (
 	EP_ASSERT (buffer != NULL);
 	EP_ASSERT (buffer_len > 0);
 
-	ep_return_void_if_nok (fast_serializer->write_error_encountered != true && fast_serializer->stream_writer != NULL);
+	ep_return_void_if_nok (!fast_serializer->write_error_encountered && fast_serializer->stream_writer != NULL);
 
 	uint32_t bytes_written = 0;
 	bool result = ep_stream_writer_write (fast_serializer->stream_writer, buffer, buffer_len, &bytes_written);
@@ -376,7 +376,7 @@ ep_file_stream_writer_alloc (const ep_char8_t *output_file_path)
 	instance->file_stream = ep_file_stream_alloc ();
 	ep_raise_error_if_nok (instance->file_stream != NULL);
 
-	ep_raise_error_if_nok (ep_file_stream_open_write (instance->file_stream, output_file_path) == true);
+	ep_raise_error_if_nok (ep_file_stream_open_write (instance->file_stream, output_file_path));
 
 ep_on_exit:
 	return instance;

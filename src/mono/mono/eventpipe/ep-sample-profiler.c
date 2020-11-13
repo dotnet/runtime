@@ -200,7 +200,7 @@ sample_profiler_enable (void)
 	ep_requires_lock_held ();
 
 	const bool result = sample_profiler_load_dependecies ();
-	EP_ASSERT (result == true);
+	EP_ASSERT (result);
 
 	if (!sample_profiler_load_profiling_enabled ()) {
 		sample_profiler_store_profiling_enabled (true);

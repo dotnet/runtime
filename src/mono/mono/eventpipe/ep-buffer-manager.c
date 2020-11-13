@@ -188,7 +188,7 @@ ep_buffer_list_insert_tail (
 	ep_return_void_if_nok (buffer_list != NULL);
 
 	EP_ASSERT (buffer != NULL);
-	EP_ASSERT (ep_buffer_list_ensure_consistency (buffer_list) == true);
+	EP_ASSERT (ep_buffer_list_ensure_consistency (buffer_list));
 
 	// Ensure that the input buffer didn't come from another list that was improperly cleaned up.
 	EP_ASSERT ((ep_buffer_get_next_buffer (buffer) == NULL) && (ep_buffer_get_prev_buffer (buffer) == NULL));
@@ -207,7 +207,7 @@ ep_buffer_list_insert_tail (
 
 	buffer_list->buffer_count++;
 
-	EP_ASSERT (ep_buffer_list_ensure_consistency (buffer_list) == true);
+	EP_ASSERT (ep_buffer_list_ensure_consistency (buffer_list));
 }
 
 EventPipeBuffer *
@@ -215,7 +215,7 @@ ep_buffer_list_get_and_remove_head (EventPipeBufferList *buffer_list)
 {
 	ep_return_null_if_nok (buffer_list != NULL);
 
-	EP_ASSERT (ep_buffer_list_ensure_consistency (buffer_list) == true);
+	EP_ASSERT (ep_buffer_list_ensure_consistency (buffer_list));
 
 	EventPipeBuffer *ret_buffer = NULL;
 	if (buffer_list->head_buffer != NULL)
@@ -244,7 +244,7 @@ ep_buffer_list_get_and_remove_head (EventPipeBufferList *buffer_list)
 		buffer_list->buffer_count--;
 	}
 
-	EP_ASSERT (ep_buffer_list_ensure_consistency (buffer_list) == true);
+	EP_ASSERT (ep_buffer_list_ensure_consistency (buffer_list));
 
 	return ret_buffer;
 }
@@ -425,7 +425,7 @@ buffer_manager_allocate_buffer_for_thread (
 			thread_buffer_list = ep_buffer_list_alloc (buffer_manager, ep_thread_session_state_get_thread (thread_session_state));
 			ep_raise_error_if_nok_holding_spin_lock (thread_buffer_list != NULL, section1);
 
-			ep_raise_error_if_nok_holding_spin_lock (ep_rt_thread_session_state_list_append (&buffer_manager->thread_session_state_list, thread_session_state) == true, section1);
+			ep_raise_error_if_nok_holding_spin_lock (ep_rt_thread_session_state_list_append (&buffer_manager->thread_session_state_list, thread_session_state), section1);
 			ep_thread_session_state_set_buffer_list (thread_session_state, thread_buffer_list);
 			thread_buffer_list = NULL;
 		}
@@ -474,7 +474,7 @@ buffer_manager_allocate_buffer_for_thread (
 					sequence_point = ep_sequence_point_alloc ();
 					if (sequence_point) {
 						buffer_manager_init_sequence_point_thread_list (buffer_manager, sequence_point);
-						ep_raise_error_if_nok_holding_spin_lock (buffer_manager_enqueue_sequence_point (buffer_manager, sequence_point) == true, section1);
+						ep_raise_error_if_nok_holding_spin_lock (buffer_manager_enqueue_sequence_point (buffer_manager, sequence_point), section1);
 						sequence_point = NULL;
 					}
 					buffer_manager->remaining_sequence_point_alloc_budget = buffer_manager->sequence_point_alloc_budget;
@@ -759,7 +759,7 @@ ep_on_exit:
 	return result;
 
 ep_on_error:
-	EP_ASSERT (result == false);
+	EP_ASSERT (!result);
 	ep_exit_error_handler ();
 }
 
@@ -773,16 +773,16 @@ ep_buffer_manager_alloc (
 	ep_raise_error_if_nok (instance != NULL);
 
 	ep_rt_thread_session_state_list_alloc (&instance->thread_session_state_list);
-	ep_raise_error_if_nok (ep_rt_thread_session_state_list_is_valid (&instance->thread_session_state_list) == true);
+	ep_raise_error_if_nok (ep_rt_thread_session_state_list_is_valid (&instance->thread_session_state_list));
 
 	ep_rt_sequence_point_list_alloc (&instance->sequence_points);
-	ep_raise_error_if_nok (ep_rt_sequence_point_list_is_valid (&instance->sequence_points) == true);
+	ep_raise_error_if_nok (ep_rt_sequence_point_list_is_valid (&instance->sequence_points));
 
 	ep_rt_spin_lock_alloc (&instance->rt_lock);
-	ep_raise_error_if_nok (ep_rt_spin_lock_is_valid (&instance->rt_lock) == true);
+	ep_raise_error_if_nok (ep_rt_spin_lock_is_valid (&instance->rt_lock));
 
 	ep_rt_wait_event_alloc (&instance->rt_wait_event, false, true);
-	ep_raise_error_if_nok (ep_rt_wait_event_is_valid (&instance->rt_wait_event) == true);
+	ep_raise_error_if_nok (ep_rt_wait_event_is_valid (&instance->rt_wait_event));
 
 	instance->session = session;
 	instance->size_of_all_buffers = 0;
@@ -894,7 +894,7 @@ ep_buffer_manager_write_event (
 	EP_ASSERT (thread == ep_rt_thread_get_handle ());
 
 	// Before we pick a buffer, make sure the event is enabled.
-	ep_return_false_if_nok (ep_event_is_enabled (ep_event) == true);
+	ep_return_false_if_nok (ep_event_is_enabled (ep_event));
 
 	// Check to see an event thread was specified. If not, then use the current thread.
 	if (event_thread == NULL)
@@ -945,7 +945,7 @@ ep_buffer_manager_write_event (
 		if (!buffer) {
 			// We treat this as the write_event call occurring after this session stopped listening for events, effectively the
 			// same as if ep_event_is_enabled test above returned false.
-			ep_raise_error_if_nok (write_suspended == false);
+			ep_raise_error_if_nok (!write_suspended);
 
 			// This lock looks unnecessary for the sequence number, but didn't want to
 			// do a broader refactoring to take it out. If it shows up as a perf
@@ -1004,7 +1004,7 @@ ep_buffer_manager_suspend_write_event (
 	ep_rt_thread_array_t thread_array;
 	ep_rt_thread_array_alloc (&thread_array);
 	EP_SPIN_LOCK_ENTER (&buffer_manager->rt_lock, section1);
-		EP_ASSERT (ep_buffer_manager_ensure_consistency (buffer_manager) == true);
+		EP_ASSERT (ep_buffer_manager_ensure_consistency (buffer_manager));
 		// Find all threads that have used this buffer manager.
 		ep_rt_thread_session_state_list_iterator_t thread_session_state_list_iterator = ep_rt_thread_session_state_list_iterator_begin (&buffer_manager->thread_session_state_list);
 		while (!ep_rt_thread_session_state_list_iterator_end (&buffer_manager->thread_session_state_list, &thread_session_state_list_iterator)) {
@@ -1333,7 +1333,7 @@ ep_buffer_manager_ensure_consistency (EventPipeBufferManager *buffer_manager)
 	ep_rt_thread_session_state_list_iterator_t iterator = ep_rt_thread_session_state_list_iterator_begin (&buffer_manager->thread_session_state_list);
 	while (!ep_rt_thread_session_state_list_iterator_end (&buffer_manager->thread_session_state_list, &iterator)) {
 		EventPipeThreadSessionState *thread_session_state = ep_rt_thread_session_state_list_iterator_value (&iterator);
-		EP_ASSERT (ep_buffer_list_ensure_consistency (ep_thread_session_state_get_buffer_list (thread_session_state)) == true);
+		EP_ASSERT (ep_buffer_list_ensure_consistency (ep_thread_session_state_get_buffer_list (thread_session_state)));
 		ep_rt_thread_session_state_list_iterator_next (&iterator);
 	}
 

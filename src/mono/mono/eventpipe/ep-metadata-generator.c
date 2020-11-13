@@ -270,7 +270,7 @@ ep_metadata_generator_generate_event_metadata (
 		// If we have V2 metadata types, we need to have 0 params for V1
 		metadata_generator_write_uint32_to_buffer (buffer, total_metadata_len, &offset, 0);
 	} else {
-		EP_ASSERT (has_v2_types == false);
+		EP_ASSERT (!has_v2_types);
 
 		// Write the parameter count.
 		metadata_generator_write_uint32_to_buffer (buffer, total_metadata_len, &offset, params_len);

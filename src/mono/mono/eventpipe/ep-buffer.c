@@ -125,7 +125,7 @@ ep_buffer_write_event (
 	if (ep_event_payload_get_size (payload) > 0)
 		ep_event_payload_copy_data (payload, data_dest);
 
-	EP_ASSERT (success == true);
+	EP_ASSERT (success);
 
 	// Advance the current pointer past the event.
 	buffer->current = ep_buffer_get_next_aligned_address (buffer, buffer->current + event_size);

@@ -260,7 +260,7 @@ ep_on_exit:
 	return result;
 
 ep_on_error:
-	EP_ASSERT (result == false);
+	EP_ASSERT (!result);
 	name [0] = '\0';
 	ep_exit_error_handler ();
 }

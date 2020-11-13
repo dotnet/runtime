@@ -84,7 +84,7 @@ ep_session_provider_list_alloc (
 	ep_raise_error_if_nok (instance != NULL);
 
 	ep_rt_session_provider_list_alloc (&instance->providers);
-	ep_raise_error_if_nok (ep_rt_session_provider_list_is_valid (&instance->providers) == true);
+	ep_raise_error_if_nok (ep_rt_session_provider_list_is_valid (&instance->providers));
 
 	instance->catch_all_provider = NULL;
 
@@ -105,7 +105,7 @@ ep_session_provider_list_alloc (
 				ep_provider_config_get_keywords (config),
 				ep_provider_config_get_logging_level (config),
 				ep_provider_config_get_filter_data (config));
-			ep_raise_error_if_nok (ep_rt_session_provider_list_append (&instance->providers, session_provider) == true);
+			ep_raise_error_if_nok (ep_rt_session_provider_list_append (&instance->providers, session_provider));
 		}
 	}
 

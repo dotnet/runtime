@@ -174,7 +174,7 @@ ep_config_init (EventPipeConfiguration *config)
 	EventPipeProviderCallbackDataQueue *provider_callback_data_queue = ep_provider_callback_data_queue_init (&callback_data_queue);
 
 	ep_rt_provider_list_alloc (&config->provider_list);
-	ep_raise_error_if_nok (ep_rt_provider_list_is_valid (&config->provider_list) == true);
+	ep_raise_error_if_nok (ep_rt_provider_list_is_valid (&config->provider_list));
 
 	EP_LOCK_ENTER (section1)
 		config->config_provider = provider_create (ep_config_get_default_provider_name_utf8 (), NULL, NULL, NULL, provider_callback_data_queue);
@@ -392,7 +392,7 @@ ep_config_build_event_metadata_event (
 	ep_raise_error_if_nok (instance != NULL);
 	instance_payload = NULL;
 
-	EP_ASSERT (ep_event_get_need_stack (config->metadata_event) == false);
+	EP_ASSERT (!ep_event_get_need_stack (config->metadata_event));
 
 	// Set the timestamp to match the source event, because the metadata event
 	// will be emitted right before the source event.
@@ -454,7 +454,7 @@ config_get_provider (
 	ep_requires_lock_held ();
 
 	// The provider list should be non-NULL, but can be NULL on shutdown.
-	ep_return_null_if_nok (ep_rt_provider_list_is_empty (&config->provider_list) != true);
+	ep_return_null_if_nok (!ep_rt_provider_list_is_empty (&config->provider_list));
 	EventPipeProvider *provider = ep_rt_provider_list_find_by_name (&config->provider_list, name);
 
 	ep_requires_lock_held ();

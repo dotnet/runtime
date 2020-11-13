@@ -440,7 +440,7 @@ enable (
 		providers_len,
 		sync_callback);
 
-	ep_raise_error_if_nok (session != NULL && ep_session_is_valid (session) == true);
+	ep_raise_error_if_nok (session != NULL && ep_session_is_valid (session));
 
 	session_id = (EventPipeSessionID)session;
 
@@ -459,7 +459,7 @@ enable (
 	ep_sample_profiler_init (provider_callback_data_queue);
 
 	// Enable the EventPipe EventSource.
-	ep_raise_error_if_nok (ep_event_source_enable (ep_event_source_get (), session) == true);
+	ep_raise_error_if_nok (ep_event_source_enable (ep_event_source_get (), session));
 
 	// Save the session.
 	if (ep_volatile_load_session_without_barrier (ep_session_get_index (session)) != NULL) {
@@ -606,7 +606,7 @@ disable_helper (EventPipeSessionID id)
 
 #ifdef EP_CHECKED_BUILD
 		if (ep_volatile_load_number_of_sessions () == 0)
-			EP_ASSERT (ep_rt_providers_validate_all_disabled () == true);
+			EP_ASSERT (ep_rt_providers_validate_all_disabled ());
 #endif
 
 	EP_GCX_PREEMP_EXIT
@@ -634,7 +634,7 @@ write_event (
 	ep_return_void_if_nok (ep_volatile_load_eventpipe_state () == EP_STATE_INITIALIZED);
 
 	// Exit early if the event is not enabled.
-	ep_return_void_if_nok (ep_event_is_enabled (ep_event) == true);
+	ep_return_void_if_nok (ep_event_is_enabled (ep_event));
 
 	// Get current thread.
 	ep_rt_thread_handle_t thread = ep_rt_thread_get_handle ();
@@ -1075,7 +1075,7 @@ ep_get_session (EventPipeSessionID session_id)
 			ep_raise_error_holding_lock (section1);
 		}
 
-		ep_raise_error_if_nok_holding_lock (is_session_id_in_collection (session_id) == true, section1);
+		ep_raise_error_if_nok_holding_lock (is_session_id_in_collection (session_id), section1);
 
 	EP_LOCK_EXIT (section1)
 
@@ -1101,7 +1101,7 @@ ep_start_streaming (EventPipeSessionID session_id)
 	ep_requires_lock_not_held ();
 
 	EP_LOCK_ENTER (section1)
-		ep_raise_error_if_nok_holding_lock (is_session_id_in_collection (session_id) == true, section1);
+		ep_raise_error_if_nok_holding_lock (is_session_id_in_collection (session_id), section1);
 		if (_ep_can_start_threads)
 			ep_session_start_streaming ((EventPipeSession *)session_id);
 		else
@@ -1225,7 +1225,7 @@ ep_add_provider_to_session (
 	bool result = false;
 
 	EP_LOCK_ENTER (section1)
-		ep_raise_error_if_nok_holding_lock (ep_session_add_session_provider (session, provider) == true, section1);
+		ep_raise_error_if_nok_holding_lock (ep_session_add_session_provider (session, provider), section1);
 	EP_LOCK_EXIT (section1)
 
 	result = true;
@@ -1235,7 +1235,7 @@ ep_on_exit:
 	return result;
 
 ep_on_error:
-	EP_ASSERT (result == false);
+	EP_ASSERT (!result);
 	ep_exit_error_handler ();
 }
 
@@ -1476,7 +1476,7 @@ ep_provider_callback_data_queue_enqueue (
 	EP_ASSERT (provider_callback_data_queue != NULL);
 	EventPipeProviderCallbackData *provider_callback_data_copy = ep_provider_callback_data_alloc_copy (provider_callback_data);
 	ep_raise_error_if_nok (provider_callback_data_copy != NULL);
-	ep_raise_error_if_nok (ep_rt_provider_callback_data_queue_push_tail (ep_provider_callback_data_queue_get_queue_ref (provider_callback_data_queue), provider_callback_data_copy) == true);
+	ep_raise_error_if_nok (ep_rt_provider_callback_data_queue_push_tail (ep_provider_callback_data_queue_get_queue_ref (provider_callback_data_queue), provider_callback_data_copy));
 
 	return true;
 
@@ -1492,10 +1492,10 @@ ep_provider_callback_data_queue_try_dequeue (
 {
 	EP_ASSERT (provider_callback_data_queue != NULL);
 
-	ep_return_false_if_nok (ep_rt_provider_callback_data_queue_is_empty (ep_provider_callback_data_queue_get_queue_ref (provider_callback_data_queue)) != true);
+	ep_return_false_if_nok (!ep_rt_provider_callback_data_queue_is_empty (ep_provider_callback_data_queue_get_queue_ref (provider_callback_data_queue)));
 
 	EventPipeProviderCallbackData *value = NULL;
-	ep_raise_error_if_nok (ep_rt_provider_callback_data_queue_pop_head (ep_provider_callback_data_queue_get_queue_ref (provider_callback_data_queue), &value) == true);
+	ep_raise_error_if_nok (ep_rt_provider_callback_data_queue_pop_head (ep_provider_callback_data_queue_get_queue_ref (provider_callback_data_queue), &value));
 	ep_provider_callback_data_init_copy (provider_callback_data, value);
 	ep_provider_callback_data_free (value);
 

@@ -339,10 +339,10 @@ ep_file_alloc (
 	instance->sampling_rate_in_ns = (uint32_t)ep_sample_profiler_get_sampling_rate ();
 
 	ep_rt_metadata_labels_hash_alloc (&instance->metadata_ids, NULL, NULL, NULL, NULL);
-	ep_raise_error_if_nok (ep_rt_metadata_labels_hash_is_valid (&instance->metadata_ids) == true);
+	ep_raise_error_if_nok (ep_rt_metadata_labels_hash_is_valid (&instance->metadata_ids));
 
 	ep_rt_stack_hash_alloc (&instance->stack_hash, ep_stack_hash_key_hash, ep_stack_hash_key_equal, NULL, stack_hash_value_free_func);
-	ep_raise_error_if_nok (ep_rt_stack_hash_is_valid (&instance->stack_hash) == true);
+	ep_raise_error_if_nok (ep_rt_stack_hash_is_valid (&instance->stack_hash));
 
 	// Start at 0 - The value is always incremented prior to use, so the first ID will be 1.
 	ep_rt_volatile_store_uint32_t (&instance->metadata_id_counter, 0);
@@ -428,7 +428,7 @@ ep_file_write_event (
 	EP_ASSERT (file != NULL);
 	EP_ASSERT (event_instance != NULL);
 
-	ep_return_void_if_nok (ep_file_has_errors (file) != true);
+	ep_return_void_if_nok (!ep_file_has_errors (file));
 
 	EventPipeEventMetadataEvent *metadata_instance = NULL;
 
@@ -452,7 +452,7 @@ ep_file_write_event (
 		ep_raise_error_if_nok (metadata_instance != NULL);
 
 		file_write_event_to_block (file, (EventPipeEventInstance *)metadata_instance, 0, 0, 0, 0, true); // metadataId=0 breaks recursion and represents the metadata event.
-		ep_raise_error_if_nok (file_save_metadata_id (file, ep_event_instance_get_ep_event (event_instance), metadata_id) == true);
+		ep_raise_error_if_nok (file_save_metadata_id (file, ep_event_instance_get_ep_event (event_instance), metadata_id));
 	}
 
 	file_write_event_to_block (file, event_instance, metadata_id, capture_thread_id, sequence_number, stack_id, is_sorted_event);
@@ -477,7 +477,7 @@ ep_file_write_sequence_point (
 		return; // sequence points aren't used in NetPerf format
 
 	ep_file_flush (file, EP_FILE_FLUSH_FLAGS_ALL_BLOCKS);
-	ep_raise_error_if_nok (ep_file_has_errors (file) != true);
+	ep_raise_error_if_nok (!ep_file_has_errors (file));
 
 	EP_ASSERT (file->fast_serializer != NULL);
 
@@ -508,7 +508,7 @@ ep_file_flush (
 	EP_ASSERT (file->stack_block != NULL);
 	EP_ASSERT (file->event_block != NULL);
 
-	ep_return_void_if_nok (ep_file_has_errors (file) != true);
+	ep_return_void_if_nok (!ep_file_has_errors (file));
 
 	// we write current blocks to the disk, whether they are full or not
 	if ((ep_metadata_block_get_bytes_written (file->metadata_block) != 0) && ((flags & EP_FILE_FLUSH_FLAGS_METADATA_BLOCK) != 0)) {

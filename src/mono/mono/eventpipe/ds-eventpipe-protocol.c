@@ -141,7 +141,7 @@ eventpipe_collect_tracing_command_try_parse_rundown_requested (
 	EP_ASSERT (buffer_len != NULL);
 	EP_ASSERT (rundown_requested != NULL);
 
-	return ds_ipc_message_try_parse_value (buffer, buffer_len, (uint8_t *)rundown_requested, sizeof (bool));
+	return ds_ipc_message_try_parse_value (buffer, buffer_len, (uint8_t *)rundown_requested, (uint32_t)sizeof (bool));
 }
 
 static
@@ -164,26 +164,26 @@ eventpipe_collect_tracing_command_try_parse_config (
 	ep_char8_t *provider_name_utf8 = NULL;
 	ep_char8_t *filter_data_utf8 = NULL;
 
-	ep_raise_error_if_nok (ds_ipc_message_try_parse_uint32_t (buffer, buffer_len, &count_configs) == true);
+	ep_raise_error_if_nok (ds_ipc_message_try_parse_uint32_t (buffer, buffer_len, &count_configs));
 	ep_raise_error_if_nok (count_configs <= max_count_configs);
 
 	ep_rt_provider_config_array_alloc_capacity (result, count_configs);
 
 	for (uint32_t i = 0; i < count_configs; ++i) {
 		uint64_t keywords = 0;
-		ep_raise_error_if_nok (ds_ipc_message_try_parse_uint64_t (buffer, buffer_len, &keywords) == true);
+		ep_raise_error_if_nok (ds_ipc_message_try_parse_uint64_t (buffer, buffer_len, &keywords));
 
 		uint32_t log_level = 0;
-		ep_raise_error_if_nok (ds_ipc_message_try_parse_uint32_t (buffer, buffer_len, &log_level) == true);
+		ep_raise_error_if_nok (ds_ipc_message_try_parse_uint32_t (buffer, buffer_len, &log_level));
 		ep_raise_error_if_nok (log_level <= EP_EVENT_LEVEL_VERBOSE);
 
 		const ep_char16_t *provider_name = NULL;
-		ep_raise_error_if_nok (ds_ipc_message_try_parse_string_utf16_t (buffer, buffer_len, &provider_name) == true);
+		ep_raise_error_if_nok (ds_ipc_message_try_parse_string_utf16_t (buffer, buffer_len, &provider_name));
 
 		provider_name_utf8 = ep_rt_utf16_to_utf8_string (provider_name, -1);
 		ep_raise_error_if_nok (provider_name_utf8 != NULL);
 
-		ep_raise_error_if_nok (ep_rt_utf8_string_is_null_or_empty (provider_name_utf8) == false);
+		ep_raise_error_if_nok (!ep_rt_utf8_string_is_null_or_empty (provider_name_utf8));
 
 		const ep_char16_t *filter_data = NULL; // This parameter is optional.
 		ds_ipc_message_try_parse_string_utf16_t (buffer, buffer_len, &filter_data);
@@ -396,7 +396,7 @@ ep_on_exit:
 	return result;
 
 ep_on_error:
-	EP_ASSERT (result == false);
+	EP_ASSERT (!result);
 	ep_exit_error_handler ();
 }
 
@@ -444,7 +444,7 @@ ep_on_exit:
 	return result;
 
 ep_on_error:
-	EP_ASSERT (result == false);
+	EP_ASSERT (!result);
 	ds_ipc_stream_free (stream);
 	ep_exit_error_handler ();
 }
@@ -493,7 +493,7 @@ ep_on_exit:
 	return result;
 
 ep_on_error:
-	EP_ASSERT (result == false);
+	EP_ASSERT (!result);
 	ds_ipc_stream_free (stream);
 	ep_exit_error_handler ();
 }

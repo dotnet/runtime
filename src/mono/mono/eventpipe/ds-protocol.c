@@ -115,7 +115,7 @@ ds_icp_advertise_v1_send (DiagnosticsIpcStream *stream)
 	memset (buffer, 0, sizeof (uint16_t));
 
 	uint32_t bytes_written = 0;
-	ep_raise_error_if_nok (ds_ipc_stream_write (stream, advertise_buffer, sizeof (advertise_buffer), &bytes_written, 100 /*ms*/) == true);
+	ep_raise_error_if_nok (ds_ipc_stream_write (stream, advertise_buffer, sizeof (advertise_buffer), &bytes_written, 100 /*ms*/));
 
 	EP_ASSERT (bytes_written == sizeof (advertise_buffer));
 	result = (bytes_written == sizeof (advertise_buffer));
@@ -339,16 +339,16 @@ ds_ipc_message_try_parse_value (
 	uint8_t **buffer,
 	uint32_t *buffer_len,
 	uint8_t *value,
-	size_t value_len)
+	uint32_t value_len)
 {
 	EP_ASSERT (buffer != NULL);
 	EP_ASSERT (buffer_len != NULL);
 	EP_ASSERT (value != NULL);
-	EP_ASSERT ((buffer_len - value_len) >= 0);
+	EP_ASSERT ((buffer_len - value_len) <= buffer_len);
 
 	memcpy (value, *buffer, value_len);
 	*buffer = *buffer + value_len;
-	*buffer_len = *buffer_len - (uint32_t)value_len;
+	*buffer_len = *buffer_len - value_len;
 	return true;
 }
 
@@ -362,7 +362,7 @@ ds_ipc_message_try_parse_uint64_t (
 	EP_ASSERT (buffer_len != NULL);
 	EP_ASSERT (value != NULL);
 
-	bool result = ds_ipc_message_try_parse_value (buffer, buffer_len, (uint8_t *)value, sizeof (uint64_t));
+	bool result = ds_ipc_message_try_parse_value (buffer, buffer_len, (uint8_t *)value, (uint32_t)sizeof (uint64_t));
 	if (result)
 		*value = DS_VAL64 (*value);
 	return result;
@@ -378,7 +378,7 @@ ds_ipc_message_try_parse_uint32_t (
 	EP_ASSERT (buffer_len != NULL);
 	EP_ASSERT (value != NULL);
 
-	bool result = ds_ipc_message_try_parse_value (buffer, buffer_len, (uint8_t*)value, sizeof (uint32_t));
+	bool result = ds_ipc_message_try_parse_value (buffer, buffer_len, (uint8_t*)value, (uint32_t)sizeof (uint32_t));
 	if (result)
 		*value = DS_VAL32 (*value);
 	return result;
@@ -398,7 +398,7 @@ ds_ipc_message_try_parse_string_utf16_t (
 	bool result = false;
 
 	uint32_t string_len = 0;
-	ep_raise_error_if_nok (ds_ipc_message_try_parse_uint32_t (buffer, buffer_len, &string_len) == true);
+	ep_raise_error_if_nok (ds_ipc_message_try_parse_uint32_t (buffer, buffer_len, &string_len));
 
 	if (string_len != 0) {
 		if (string_len > (*buffer_len / sizeof (ep_char16_t)))
@@ -422,7 +422,7 @@ ep_on_exit:
 	return result;
 
 ep_on_error:
-	EP_ASSERT (result == false);
+	EP_ASSERT (!result);
 	ep_exit_error_handler ();
 }
 

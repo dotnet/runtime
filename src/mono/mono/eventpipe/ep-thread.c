@@ -33,13 +33,13 @@ ep_thread_alloc (void)
 	ep_raise_error_if_nok (instance != NULL);
 
 	ep_rt_spin_lock_alloc (&instance->rt_lock);
-	ep_raise_error_if_nok (ep_rt_spin_lock_is_valid (&instance->rt_lock) == true);
+	ep_raise_error_if_nok (ep_rt_spin_lock_is_valid (&instance->rt_lock));
 
 	instance->os_thread_id = ep_rt_current_thread_get_id ();
 	memset (instance->session_state, 0, sizeof (instance->session_state));
 
 	EP_SPIN_LOCK_ENTER (&_ep_threads_lock, section1)
-		ep_raise_error_if_nok_holding_spin_lock (ep_rt_thread_list_append (&_ep_threads, instance) == true, section1);
+		ep_raise_error_if_nok_holding_spin_lock (ep_rt_thread_list_append (&_ep_threads, instance), section1);
 	EP_SPIN_LOCK_EXIT (&_ep_threads_lock, section1)
 
 	instance->writing_event_in_progress = UINT32_MAX;

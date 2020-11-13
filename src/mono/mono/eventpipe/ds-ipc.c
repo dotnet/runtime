@@ -161,12 +161,12 @@ ipc_stream_factory_build_and_add_port (
 	if (builder->type == DS_PORT_TYPE_LISTEN) {
 		ipc = ds_ipc_alloc (builder->path, DS_IPC_CONNECTION_MODE_LISTEN, callback);
 		ep_raise_error_if_nok (ipc != NULL);
-		ep_raise_error_if_nok (ds_ipc_listen (ipc, callback) == true);
-		ep_raise_error_if_nok (ds_rt_port_array_append (&_ds_port_array, (DiagnosticsPort *)ds_listen_port_alloc (ipc, builder)) == true);
+		ep_raise_error_if_nok (ds_ipc_listen (ipc, callback));
+		ep_raise_error_if_nok (ds_rt_port_array_append (&_ds_port_array, (DiagnosticsPort *)ds_listen_port_alloc (ipc, builder)));
 	} else if (builder->type == DS_PORT_TYPE_CONNECT) {
 		ipc = ds_ipc_alloc (builder->path, DS_IPC_CONNECTION_MODE_CONNECT, callback);
 		ep_raise_error_if_nok (ipc != NULL);
-		ep_raise_error_if_nok (ds_rt_port_array_append (&_ds_port_array, (DiagnosticsPort *)ds_connect_port_alloc (ipc, builder)) == true);
+		ep_raise_error_if_nok (ds_rt_port_array_append (&_ds_port_array, (DiagnosticsPort *)ds_connect_port_alloc (ipc, builder)));
 	}
 
 	result = true;
@@ -175,7 +175,7 @@ ep_on_exit:
 	return result;
 
 ep_on_error:
-	EP_ASSERT (result == false);
+	EP_ASSERT (!result);
 	ds_ipc_free (ipc);
 	ep_exit_error_handler ();
 }
@@ -331,7 +331,7 @@ ds_ipc_stream_factory_get_next_available_stream (ds_ipc_error_callback_func call
 
 	// TODO: Convert to stack instance.
 	ds_rt_ipc_poll_handle_array_alloc (&ipc_poll_handles);
-	ep_raise_error_if_nok (ds_rt_ipc_poll_handle_array_is_valid (&ipc_poll_handles) == true);
+	ep_raise_error_if_nok (ds_rt_ipc_poll_handle_array_is_valid (&ipc_poll_handles));
 
 	while (!stream) {
 		connect_success = true;
@@ -339,7 +339,7 @@ ds_ipc_stream_factory_get_next_available_stream (ds_ipc_error_callback_func call
 		while (!ds_rt_port_array_iterator_end (ports, &ports_iterator)) {
 			port = ds_rt_port_array_iterator_value (&ports_iterator);
 			if (ds_port_get_ipc_poll_handle_vcall (port, &ipc_poll_handle, callback))
-				ep_raise_error_if_nok (ds_rt_ipc_poll_handle_array_append (&ipc_poll_handles, ipc_poll_handle) == true);
+				ep_raise_error_if_nok (ds_rt_ipc_poll_handle_array_append (&ipc_poll_handles, ipc_poll_handle));
 			else
 				connect_success = false;
 

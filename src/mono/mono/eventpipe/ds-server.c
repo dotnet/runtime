@@ -114,7 +114,7 @@ server_warning_callback (
 
 EP_RT_DEFINE_THREAD_FUNC (server_thread)
 {
-	EP_ASSERT (server_volatile_load_shutting_down_state () == true || ds_ipc_stream_factory_has_active_ports () == true);
+	EP_ASSERT (server_volatile_load_shutting_down_state () || ds_ipc_stream_factory_has_active_ports ());
 
 	if (!ds_ipc_stream_factory_has_active_ports ()) {
 		DS_LOG_ERROR_0 ("Diagnostics IPC listener was undefined\n");
@@ -202,7 +202,7 @@ ds_server_init (void)
 
 	if (ds_ipc_stream_factory_any_suspended_ports ()) {
 		ep_rt_wait_event_alloc (&_server_resume_runtime_startup_event, true, false);
-		ep_raise_error_if_nok (ep_rt_wait_event_is_valid (&_server_resume_runtime_startup_event) == true);
+		ep_raise_error_if_nok (ep_rt_wait_event_is_valid (&_server_resume_runtime_startup_event));
 	}
 
 	if (ds_ipc_stream_factory_has_active_ports ()) {
@@ -227,7 +227,7 @@ ep_on_exit:
 	return result;
 
 ep_on_error:
-	EP_ASSERT (result == false);
+	EP_ASSERT (!result);
 	ep_exit_error_handler ();
 }
 

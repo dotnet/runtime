@@ -104,7 +104,7 @@ void
 session_disable_ipc_streaming_thread (EventPipeSession *session)
 {
 	EP_ASSERT (session->session_type == EP_SESSION_TYPE_IPCSTREAM);
-	EP_ASSERT (ep_session_get_ipc_streaming_enabled (session) == true);
+	EP_ASSERT (ep_session_get_ipc_streaming_enabled (session));
 
 	EP_ASSERT (!ep_rt_process_detach ());
 	EP_ASSERT (session->buffer_manager != NULL);
@@ -219,7 +219,7 @@ ep_session_free (EventPipeSession *session)
 {
 	ep_return_void_if_nok (session != NULL);
 
-	EP_ASSERT (ep_session_get_ipc_streaming_enabled (session) == false);
+	EP_ASSERT (!ep_session_get_ipc_streaming_enabled (session));
 
 	ep_rt_wait_event_free (&session->rt_thread_shutdown_event);
 
@@ -290,7 +290,7 @@ ep_session_enable_rundown (EventPipeSession *session)
 			ep_provider_config_get_logging_level (config),
 			ep_provider_config_get_filter_data (config));
 
-		ep_raise_error_if_nok (ep_session_add_session_provider (session, session_provider) == true);
+		ep_raise_error_if_nok (ep_session_add_session_provider (session, session_provider));
 	}
 
 	ep_session_set_rundown_enabled (session, true);
@@ -301,7 +301,7 @@ ep_on_exit:
 	return result;
 
 ep_on_error:
-	EP_ASSERT (result == false);
+	EP_ASSERT (!result);
 	ep_exit_error_handler ();
 }
 
@@ -324,7 +324,7 @@ ep_session_suspend_write_event (EventPipeSession *session)
 	EP_ASSERT (session != NULL);
 
 	// Need to disable the session before calling this method.
-	EP_ASSERT (ep_is_session_enabled ((EventPipeSessionID)session) == false);
+	EP_ASSERT (!ep_is_session_enabled ((EventPipeSessionID)session));
 
 	ep_rt_thread_array_t threads;
 	ep_rt_thread_array_alloc (&threads);
