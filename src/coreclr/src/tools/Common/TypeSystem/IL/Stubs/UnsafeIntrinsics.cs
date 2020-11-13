@@ -83,6 +83,8 @@ namespace Internal.IL.Stubs
                         (byte)ILOpcode.ret }, Array.Empty<LocalVariableDefinition>(), null);
                 case "SkipInit":
                     return new ILStubMethodIL(method, new byte[] { (byte)ILOpcode.ret }, Array.Empty<LocalVariableDefinition>(), null);
+                case "Unbox":
+                    return EmitUnbox(method);
             }
 
             return null;
@@ -132,6 +134,22 @@ namespace Internal.IL.Stubs
             if (write) codeStream.EmitLdArg(1);
             if (unaligned) codeStream.EmitUnaligned();
             codeStream.Emit(write ? ILOpcode.stobj : ILOpcode.ldobj,
+                emit.NewToken(context.GetSignatureVariable(0, method: true)));
+            codeStream.Emit(ILOpcode.ret);
+            return emit.Link(method);
+        }
+
+        private static MethodIL EmitUnbox(MethodDesc method)
+        {
+            Debug.Assert(method.Signature.IsStatic && method.Signature.Length == 1);
+
+            TypeSystemContext context = method.Context;
+
+            ILEmitter emit = new ILEmitter();
+            ILCodeStream codeStream = emit.NewCodeStream();
+
+            codeStream.EmitLdArg(0);
+            codeStream.Emit(ILOpcode.unbox,
                 emit.NewToken(context.GetSignatureVariable(0, method: true)));
             codeStream.Emit(ILOpcode.ret);
             return emit.Link(method);

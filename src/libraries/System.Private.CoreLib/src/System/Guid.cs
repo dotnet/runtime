@@ -17,21 +17,21 @@ namespace System
     [Serializable]
     [NonVersionable] // This only applies to field layout
     [TypeForwardedFrom("mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")]
-    public partial struct Guid : IFormattable, IComparable, IComparable<Guid>, IEquatable<Guid>, ISpanFormattable
+    public readonly partial struct Guid : IFormattable, IComparable, IComparable<Guid>, IEquatable<Guid>, ISpanFormattable
     {
         public static readonly Guid Empty;
 
-        private int _a;   // Do not rename (binary serialization)
-        private short _b; // Do not rename (binary serialization)
-        private short _c; // Do not rename (binary serialization)
-        private byte _d;  // Do not rename (binary serialization)
-        private byte _e;  // Do not rename (binary serialization)
-        private byte _f;  // Do not rename (binary serialization)
-        private byte _g;  // Do not rename (binary serialization)
-        private byte _h;  // Do not rename (binary serialization)
-        private byte _i;  // Do not rename (binary serialization)
-        private byte _j;  // Do not rename (binary serialization)
-        private byte _k;  // Do not rename (binary serialization)
+        private readonly int _a;   // Do not rename (binary serialization)
+        private readonly short _b; // Do not rename (binary serialization)
+        private readonly short _c; // Do not rename (binary serialization)
+        private readonly byte _d;  // Do not rename (binary serialization)
+        private readonly byte _e;  // Do not rename (binary serialization)
+        private readonly byte _f;  // Do not rename (binary serialization)
+        private readonly byte _g;  // Do not rename (binary serialization)
+        private readonly byte _h;  // Do not rename (binary serialization)
+        private readonly byte _i;  // Do not rename (binary serialization)
+        private readonly byte _j;  // Do not rename (binary serialization)
+        private readonly byte _k;  // Do not rename (binary serialization)
 
         // Creates a new guid from an array of bytes.
         public Guid(byte[] b) :
@@ -375,31 +375,31 @@ namespace System
 
             ref Guid g = ref result._parsedGuid;
 
-            if (TryParseHex(guidString.Slice(0, 8), out Unsafe.As<int, uint>(ref g._a)) && // _a
+            if (TryParseHex(guidString.Slice(0, 8), out Unsafe.As<int, uint>(ref Unsafe.AsRef(in g._a))) && // _a
                 TryParseHex(guidString.Slice(9, 4), out uint uintTmp)) // _b
             {
-                g._b = (short)uintTmp;
+                Unsafe.AsRef(in g._b) = (short)uintTmp;
 
                 if (TryParseHex(guidString.Slice(14, 4), out uintTmp)) // _c
                 {
-                    g._c = (short)uintTmp;
+                    Unsafe.AsRef(in g._c) = (short)uintTmp;
 
                     if (TryParseHex(guidString.Slice(19, 4), out uintTmp)) // _d, _e
                     {
-                        g._d = (byte)(uintTmp >> 8);
-                        g._e = (byte)uintTmp;
+                        Unsafe.AsRef(in g._d) = (byte)(uintTmp >> 8);
+                        Unsafe.AsRef(in g._e) = (byte)uintTmp;
 
                         if (TryParseHex(guidString.Slice(24, 4), out uintTmp)) // _f, _g
                         {
-                            g._f = (byte)(uintTmp >> 8);
-                            g._g = (byte)uintTmp;
+                            Unsafe.AsRef(in g._f) = (byte)(uintTmp >> 8);
+                            Unsafe.AsRef(in g._g) = (byte)uintTmp;
 
                             if (uint.TryParse(guidString.Slice(28, 8), NumberStyles.AllowHexSpecifier, null, out uintTmp)) // _h, _i, _j, _k
                             {
-                                g._h = (byte)(uintTmp >> 24);
-                                g._i = (byte)(uintTmp >> 16);
-                                g._j = (byte)(uintTmp >> 8);
-                                g._k = (byte)uintTmp;
+                                Unsafe.AsRef(in g._h) = (byte)(uintTmp >> 24);
+                                Unsafe.AsRef(in g._i) = (byte)(uintTmp >> 16);
+                                Unsafe.AsRef(in g._j) = (byte)(uintTmp >> 8);
+                                Unsafe.AsRef(in g._k) = (byte)uintTmp;
 
                                 return true;
                             }
@@ -424,25 +424,25 @@ namespace System
 
             ref Guid g = ref result._parsedGuid;
 
-            if (uint.TryParse(guidString.Slice(0, 8), NumberStyles.AllowHexSpecifier, null, out Unsafe.As<int, uint>(ref g._a)) && // _a
+            if (uint.TryParse(guidString.Slice(0, 8), NumberStyles.AllowHexSpecifier, null, out Unsafe.As<int, uint>(ref Unsafe.AsRef(in g._a))) && // _a
                 uint.TryParse(guidString.Slice(8, 8), NumberStyles.AllowHexSpecifier, null, out uint uintTmp)) // _b, _c
             {
-                g._b = (short)(uintTmp >> 16);
-                g._c = (short)uintTmp;
+                Unsafe.AsRef(in g._b) = (short)(uintTmp >> 16);
+                Unsafe.AsRef(in g._c) = (short)uintTmp;
 
                 if (uint.TryParse(guidString.Slice(16, 8), NumberStyles.AllowHexSpecifier, null, out uintTmp)) // _d, _e, _f, _g
                 {
-                    g._d = (byte)(uintTmp >> 24);
-                    g._e = (byte)(uintTmp >> 16);
-                    g._f = (byte)(uintTmp >> 8);
-                    g._g = (byte)uintTmp;
+                    Unsafe.AsRef(in g._d) = (byte)(uintTmp >> 24);
+                    Unsafe.AsRef(in g._e) = (byte)(uintTmp >> 16);
+                    Unsafe.AsRef(in g._f) = (byte)(uintTmp >> 8);
+                    Unsafe.AsRef(in g._g) = (byte)uintTmp;
 
                     if (uint.TryParse(guidString.Slice(24, 8), NumberStyles.AllowHexSpecifier, null, out uintTmp)) // _h, _i, _j, _k
                     {
-                        g._h = (byte)(uintTmp >> 24);
-                        g._i = (byte)(uintTmp >> 16);
-                        g._j = (byte)(uintTmp >> 8);
-                        g._k = (byte)uintTmp;
+                        Unsafe.AsRef(in g._h) = (byte)(uintTmp >> 24);
+                        Unsafe.AsRef(in g._i) = (byte)(uintTmp >> 16);
+                        Unsafe.AsRef(in g._j) = (byte)(uintTmp >> 8);
+                        Unsafe.AsRef(in g._k) = (byte)uintTmp;
 
                         return true;
                     }
@@ -507,7 +507,7 @@ namespace System
             }
 
             bool overflow = false;
-            if (!TryParseHex(guidString.Slice(numStart, numLen), out Unsafe.As<int, uint>(ref result._parsedGuid._a), ref overflow) || overflow)
+            if (!TryParseHex(guidString.Slice(numStart, numLen), out Unsafe.As<int, uint>(ref Unsafe.AsRef(in result._parsedGuid._a)), ref overflow) || overflow)
             {
                 result.SetFailure(overflow, overflow ? nameof(SR.Overflow_UInt32) : nameof(SR.Format_GuidInvalidChar));
                 return false;
@@ -529,7 +529,7 @@ namespace System
             }
 
             // Read in the number
-            if (!TryParseHex(guidString.Slice(numStart, numLen), out result._parsedGuid._b, ref overflow) || overflow)
+            if (!TryParseHex(guidString.Slice(numStart, numLen), out Unsafe.AsRef(in result._parsedGuid._b), ref overflow) || overflow)
             {
                 result.SetFailure(overflow, overflow ? nameof(SR.Overflow_UInt32) : nameof(SR.Format_GuidInvalidChar));
                 return false;
@@ -551,7 +551,7 @@ namespace System
             }
 
             // Read in the number
-            if (!TryParseHex(guidString.Slice(numStart, numLen), out result._parsedGuid._c, ref overflow) || overflow)
+            if (!TryParseHex(guidString.Slice(numStart, numLen), out Unsafe.AsRef(in result._parsedGuid._c), ref overflow) || overflow)
             {
                 result.SetFailure(overflow, overflow ? nameof(SR.Overflow_UInt32) : nameof(SR.Format_GuidInvalidChar));
                 return false;
@@ -611,7 +611,7 @@ namespace System
                         nameof(SR.Format_GuidInvalidChar));
                     return false;
                 }
-                Unsafe.Add(ref result._parsedGuid._d, i) = (byte)byteVal;
+                Unsafe.Add(ref Unsafe.AsRef(in result._parsedGuid._d), i) = (byte)byteVal;
             }
 
             // Check for last '}'
@@ -728,7 +728,7 @@ namespace System
             var g = new byte[16];
             if (BitConverter.IsLittleEndian)
             {
-                MemoryMarshal.TryWrite<Guid>(g, ref this);
+                MemoryMarshal.TryWrite<Guid>(g, ref Unsafe.AsRef(in this));
             }
             else
             {
@@ -742,7 +742,7 @@ namespace System
         {
             if (BitConverter.IsLittleEndian)
             {
-                return MemoryMarshal.TryWrite(destination, ref this);
+                return MemoryMarshal.TryWrite(destination, ref Unsafe.AsRef(in this));
             }
 
             // slower path for BigEndian
@@ -769,33 +769,33 @@ namespace System
         public override int GetHashCode()
         {
             // Simply XOR all the bits of the GUID 32 bits at a time.
-            return _a ^ Unsafe.Add(ref _a, 1) ^ Unsafe.Add(ref _a, 2) ^ Unsafe.Add(ref _a, 3);
+            ref int r = ref Unsafe.AsRef(in _a);
+            return r ^ Unsafe.Add(ref r, 1) ^ Unsafe.Add(ref r, 2) ^ Unsafe.Add(ref r, 3);
         }
 
         // Returns true if and only if the guid represented
         //  by o is the same as this instance.
         public override bool Equals(object? o)
         {
-            Guid g;
-            // Check that o is a Guid first
-            if (o == null || !(o is Guid))
-                return false;
-            else g = (Guid)o;
-
-            // Now compare each of the elements
-            return g._a == _a &&
-                Unsafe.Add(ref g._a, 1) == Unsafe.Add(ref _a, 1) &&
-                Unsafe.Add(ref g._a, 2) == Unsafe.Add(ref _a, 2) &&
-                Unsafe.Add(ref g._a, 3) == Unsafe.Add(ref _a, 3);
+            return o is Guid
+                && EqualsCore(this, Unsafe.Unbox<Guid>(o));
         }
 
-        public bool Equals(Guid g)
+        public bool Equals(Guid g) => EqualsCore(this, g);
+
+        private static bool EqualsCore(in Guid left, in Guid right)
         {
-            // Now compare each of the elements
-            return g._a == _a &&
-                Unsafe.Add(ref g._a, 1) == Unsafe.Add(ref _a, 1) &&
-                Unsafe.Add(ref g._a, 2) == Unsafe.Add(ref _a, 2) &&
-                Unsafe.Add(ref g._a, 3) == Unsafe.Add(ref _a, 3);
+            ref int rA = ref Unsafe.AsRef(in left._a);
+            ref int rB = ref Unsafe.AsRef(in right._a);
+
+            // Compare each element
+
+            if (rA != rB) { return false; }
+            if (Unsafe.Add(ref rA, 1) != Unsafe.Add(ref rB, 1)) { return false; }
+            if (Unsafe.Add(ref rA, 2) != Unsafe.Add(ref rB, 2)) { return false; }
+            if (Unsafe.Add(ref rA, 3) != Unsafe.Add(ref rB, 3)) { return false; }
+
+            return true;
         }
 
         private static int GetResult(uint me, uint them) => me < them ? -1 : 1;
@@ -930,18 +930,9 @@ namespace System
             return 0;
         }
 
-        public static bool operator ==(Guid a, Guid b) =>
-            a._a == b._a &&
-                Unsafe.Add(ref a._a, 1) == Unsafe.Add(ref b._a, 1) &&
-                Unsafe.Add(ref a._a, 2) == Unsafe.Add(ref b._a, 2) &&
-                Unsafe.Add(ref a._a, 3) == Unsafe.Add(ref b._a, 3);
+        public static bool operator ==(Guid a, Guid b) => EqualsCore(a, b);
 
-        public static bool operator !=(Guid a, Guid b) =>
-            // Now compare each of the elements
-            a._a != b._a ||
-                Unsafe.Add(ref a._a, 1) != Unsafe.Add(ref b._a, 1) ||
-                Unsafe.Add(ref a._a, 2) != Unsafe.Add(ref b._a, 2) ||
-                Unsafe.Add(ref a._a, 3) != Unsafe.Add(ref b._a, 3);
+        public static bool operator !=(Guid a, Guid b) => !EqualsCore(a, b);
 
         public string ToString(string? format)
         {
