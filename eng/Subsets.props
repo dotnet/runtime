@@ -54,7 +54,7 @@
   </PropertyGroup>
 
   <PropertyGroup>
-    <DefaultCoreClrSubsets>clr.runtime+clr.jit+clr.alljits+linuxdac+clr.corelib+clr.nativecorelib+clr.tools+clr.packages</DefaultCoreClrSubsets>
+    <DefaultCoreClrSubsets>clr.runtime+clr.jit+clr.alljits+linuxdac+clr.corelib+clr.tools+clr.nativecorelib+clr.packages</DefaultCoreClrSubsets>
 
     <DefaultMonoSubsets Condition="'$(MonoEnableLLVM)' == 'true' and '$(MonoLLVMDir)' == ''">mono.llvm+</DefaultMonoSubsets>
     <DefaultMonoSubsets Condition="'$(MonoAOTEnableLLVM)' == 'true' and '$(MonoAOTLLVMDir)' == ''">mono.llvm+</DefaultMonoSubsets>
@@ -191,17 +191,19 @@
     <ProjectToBuild Include="$(CoreClrProjectRoot)src\.nuget\Microsoft.CrossOsDiag.Private.CoreCLR\Microsoft.CrossOsDiag.Private.CoreCLR.proj" Category="clr" />
   </ItemGroup>
 
-  <ItemGroup Condition="$(_subset.Contains('+clr.nativecorelib+'))">
-    <ProjectToBuild Include="$(CoreClrProjectRoot)crossgen-corelib.proj" Category="clr" />
-  </ItemGroup>
-
   <ItemGroup Condition="$(_subset.Contains('+clr.tools+'))">
     <ProjectToBuild Include="$(CoreClrProjectRoot)src\tools\runincontext\runincontext.csproj;
                              $(CoreClrProjectRoot)src\tools\r2rdump\R2RDump.csproj;
                              $(CoreClrProjectRoot)src\tools\dotnet-pgo\dotnet-pgo.csproj;
-                             $(CoreClrProjectRoot)src\tools\r2rtest\R2RTest.csproj" Category="clr" BuildInParallel="true" />
-    <ProjectToBuild Include="$(CoreClrProjectRoot)src\tools\aot\crossgen2\crossgen2.csproj" Category="clr" />
-    <ProjectToBuild Include="$(CoreClrProjectRoot)src\tools\aot\ILCompiler.TypeSystem.ReadyToRun.Tests\ILCompiler.TypeSystem.ReadyToRun.Tests.csproj" Test="true" Category="clr" Condition="'$(__DistroRid)' != 'linux-musl-x64'"/>
+                             $(CoreClrProjectRoot)src\tools\r2rtest\R2RTest.csproj;
+                             $(CoreClrProjectRoot)src\tools\aot\crossgen2\crossgen2.csproj" Category="clr" />
+
+    <ProjectToBuild Include="$(CoreClrProjectRoot)src\tools\aot\ILCompiler.TypeSystem.ReadyToRun.Tests\ILCompiler.TypeSystem.ReadyToRun.Tests.csproj"
+      Test="true" Category="clr" Condition="'$(__DistroRid)' != 'linux-musl-x64'"/>
+  </ItemGroup>
+
+  <ItemGroup Condition="$(_subset.Contains('+clr.nativecorelib+'))">
+    <ProjectToBuild Include="$(CoreClrProjectRoot)crossgen-corelib.proj" Category="clr" />
   </ItemGroup>
 
   <ItemGroup Condition="$(_subset.Contains('+clr.packages+'))">

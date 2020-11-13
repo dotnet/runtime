@@ -20,7 +20,7 @@ namespace System
     [Serializable]
     [StructLayout(LayoutKind.Sequential)]
     [System.Runtime.CompilerServices.TypeForwardedFrom("mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")]
-    public readonly struct IntPtr : IEquatable<IntPtr>, IComparable, IComparable<IntPtr>, IFormattable, ISerializable
+    public readonly struct IntPtr : IEquatable<IntPtr>, IComparable, IComparable<IntPtr>, IFormattable, ISpanFormattable, ISerializable
     {
         // WARNING: We allow diagnostic tools to directly inspect this member (_value).
         // See https://github.com/dotnet/corert/blob/master/Documentation/design-docs/diagnostics/diagnostics-tools-contract.md for more details.
@@ -206,6 +206,9 @@ namespace System
         public unsafe string ToString(string? format) => ((nint_t)_value).ToString(format);
         public unsafe string ToString(IFormatProvider? provider) => ((nint_t)_value).ToString(provider);
         public unsafe string ToString(string? format, IFormatProvider? provider) => ((nint_t)_value).ToString(format, provider);
+
+        unsafe bool ISpanFormattable.TryFormat(Span<char> destination, out int charsWritten, ReadOnlySpan<char> format, IFormatProvider? provider) =>
+            ((nint_t)_value).TryFormat(destination, out charsWritten, format, provider);
 
         public static IntPtr Parse(string s) => (IntPtr)nint_t.Parse(s);
         public static IntPtr Parse(string s, NumberStyles style) => (IntPtr)nint_t.Parse(s, style);

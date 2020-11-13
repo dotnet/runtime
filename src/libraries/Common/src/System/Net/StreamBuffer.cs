@@ -333,6 +333,8 @@ namespace System.IO
 
             private void CancelWaiter(CancellationToken cancellationToken)
             {
+                Debug.Assert(cancellationToken.IsCancellationRequested);
+
                 if (Interlocked.Exchange(ref _hasWaiter, 0) == 1)
                 {
                     _waitSource.SetException(ExceptionDispatchInfo.SetCurrentStackTrace(new OperationCanceledException(cancellationToken)));

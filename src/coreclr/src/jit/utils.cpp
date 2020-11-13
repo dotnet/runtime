@@ -1336,7 +1336,7 @@ void HelperCallProperties::init()
                 break;
 
             case CORINFO_HELP_ARE_TYPES_EQUIVALENT:
-
+            case CORINFO_HELP_GETCURRENTMANAGEDTHREADID:
                 isPure  = true;
                 noThrow = true;
                 break;
@@ -1473,7 +1473,6 @@ void HelperCallProperties::init()
             case CORINFO_HELP_INIT_PINVOKE_FRAME:
             case CORINFO_HELP_JIT_PINVOKE_BEGIN:
             case CORINFO_HELP_JIT_PINVOKE_END:
-            case CORINFO_HELP_GETCURRENTMANAGEDTHREADID:
 
                 noThrow = true;
                 break;

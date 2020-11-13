@@ -703,9 +703,11 @@ namespace System.IO
 
         private sealed class NullTextWriter : TextWriter
         {
-            internal NullTextWriter() : base(CultureInfo.InvariantCulture)
+            internal NullTextWriter()
             {
             }
+
+            public override IFormatProvider FormatProvider => CultureInfo.InvariantCulture;
 
             public override Encoding Encoding => Encoding.Unicode;
 
@@ -748,7 +750,7 @@ namespace System.IO
         {
             private readonly TextWriter _out;
 
-            internal SyncTextWriter(TextWriter t) : base(t.FormatProvider)
+            internal SyncTextWriter(TextWriter t)
             {
                 _out = t;
             }
