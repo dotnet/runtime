@@ -758,6 +758,7 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
                 App.call_test_method (""InvokeString"", [ jsLiteral ]);
                 App.call_test_method (""InvokeString2"", [ jsLiteral ]);
             ");
+            Assert.Equal("hello world", HelperMarshal._stringResource);
             Assert.Equal(HelperMarshal._stringResource, HelperMarshal._stringResource2);
             Assert.False(Object.ReferenceEquals(HelperMarshal._stringResource, HelperMarshal._stringResource2));
         }
@@ -831,6 +832,20 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
             ");
             Assert.Equal("s5000", HelperMarshal._stringResource);
             Assert.Equal(HelperMarshal._stringResource, string.IsInterned(HelperMarshal._stringResource));
+        }
+
+        [Fact]
+        public static void SymbolsAreMarshaledAsStrings()
+        {
+            HelperMarshal._stringResource = HelperMarshal._stringResource2 = null;
+            Runtime.InvokeJS(@"
+                var jsLiteral = Symbol(""custom symbol"");
+                App.call_test_method (""InvokeString"", [ jsLiteral ]);
+                App.call_test_method (""InvokeString2"", [ jsLiteral ]);
+            ");
+            Assert.Equal("custom symbol", HelperMarshal._stringResource);
+            Assert.Equal(HelperMarshal._stringResource, HelperMarshal._stringResource2);
+            Assert.True(Object.ReferenceEquals(HelperMarshal._stringResource, HelperMarshal._stringResource2));
         }
     }
 }

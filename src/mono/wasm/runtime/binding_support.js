@@ -207,20 +207,29 @@ var BindingSupportLib = {
 		},
 
 		js_string_to_mono_string_interned: function (string) {
-			if ((string.length === 0) && this._empty_string_ptr)
+			var text = (typeof (string) === "symbol")
+				? (string.description || Symbol.keyFor(string) || "<unknown Symbol>")
+				: string;
+			
+			if ((text.length === 0) && this._empty_string_ptr)
 				return this._empty_string_ptr;
 
 			var ptr = this._interned_string_table.get (string);
 			if (ptr)
 				return ptr;
 
-			ptr = this.js_string_to_mono_string_new (string);
+			ptr = this.js_string_to_mono_string_new (text);
 			ptr = this._store_string_in_intern_table (string, ptr, true);
 
 			return ptr;
 		},
 
 		js_string_to_mono_string: function (string) {
+			if (typeof (string) === "symbol")
+				return this.js_string_to_mono_string_interned (string);
+			else if (typeof (string) !== "string")
+				throw new Error ("Expected string argument");
+
 			// Always use an interned pointer for empty strings
 			if (string.length === 0)
 				return this.js_string_to_mono_string_interned (string);
@@ -555,7 +564,7 @@ var BindingSupportLib = {
 				} case typeof js_obj === "string":
 					return this.js_string_to_mono_string (js_obj);
 				case typeof js_obj === "symbol":
-					return this.js_string_to_mono_string_interned (js_obj.description);
+					return this.js_string_to_mono_string_interned (js_obj.description || Symbol.keyFor(js_obj) || "<unknown Symbol>");
 				case typeof js_obj === "boolean":
 					return this._box_js_bool (js_obj);
 				case isThenable() === true:
@@ -585,10 +594,9 @@ var BindingSupportLib = {
 				case js_obj === null:
 				case typeof js_obj === "undefined":
 					return 0;
+				case typeof js_obj === "symbol":
 				case typeof js_obj === "string":
 					return this.call_method(this.create_uri, null, "s!", [ js_obj ])
-				case typeof js_obj === "symbol":
-					return this.call_method(this.create_uri, null, "s!", [ js_obj.description ])
 				default:
 					return this.extract_mono_obj (js_obj);
 			}
