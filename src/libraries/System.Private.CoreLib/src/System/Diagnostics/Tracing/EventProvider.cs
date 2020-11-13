@@ -1235,7 +1235,7 @@ namespace System.Diagnostics.Tracing
 
         internal unsafe int SetInformation(
             Interop.Advapi32.EVENT_INFO_CLASS eventInfoClass,
-            IntPtr data,
+            void* data,
             uint dataSize)
         {
             int status = Interop.Errors.ERROR_NOT_SUPPORTED;
@@ -1247,8 +1247,8 @@ namespace System.Diagnostics.Tracing
                     status = Interop.Advapi32.EventSetInformation(
                         m_regHandle,
                         eventInfoClass,
-                        (void*)data,
-                        (int)dataSize);
+                        data,
+                        dataSize);
                 }
                 catch (TypeLoadException)
                 {

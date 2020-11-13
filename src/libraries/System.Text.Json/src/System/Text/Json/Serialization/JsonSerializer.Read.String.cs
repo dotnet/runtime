@@ -191,7 +191,7 @@ namespace System.Text.Json
                 var readerState = new JsonReaderState(options.GetReaderOptions());
                 var reader = new Utf8JsonReader(utf8, isFinalBlock: true, readerState);
 
-                TValue value = ReadCore<TValue>(ref reader, returnType, options);
+                TValue? value = ReadCore<TValue>(ref reader, returnType, options);
 
                 // The reader should have thrown if we have remaining bytes.
                 Debug.Assert(reader.BytesConsumed == actualByteCount);

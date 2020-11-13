@@ -53,6 +53,7 @@ namespace ILCompiler
 
         public string SingleMethodTypeName;
         public string SingleMethodName;
+        public int SingleMethodIndex;
         public IReadOnlyList<string> SingleMethodGenericArg;
 
         public IReadOnlyList<string> CodegenOptions;
@@ -107,6 +108,7 @@ namespace ILCompiler
 
                 syntax.DefineOption("singlemethodtypename", ref SingleMethodTypeName, SR.SingleMethodTypeName);
                 syntax.DefineOption("singlemethodname", ref SingleMethodName, SR.SingleMethodMethodName);
+                syntax.DefineOption("singlemethodindex", ref SingleMethodIndex, SR.SingleMethodIndex);
                 syntax.DefineOptionList("singlemethodgenericarg", ref SingleMethodGenericArg, SR.SingleMethodGenericArgs);
 
                 syntax.DefineOption("parallelism", ref Parallelism, SR.ParalellismOption);

@@ -52,15 +52,14 @@ struct MonoLMF {
 	gpointer previous_lmf;
 	gpointer lmf_addr;
 
-	/* This is set to signal this is the top lmf entry */
-	gboolean top_entry;
+	MonoMethod *method;
 };
 
 typedef struct {
 	gpointer cinfo;
 } MonoCompileArch;
 
-#define MONO_ARCH_INIT_TOP_LMF_ENTRY(lmf) do { (lmf)->top_entry = TRUE; } while (0)
+#define MONO_ARCH_INIT_TOP_LMF_ENTRY(lmf) do { } while (0)
 
 #define MONO_CONTEXT_SET_LLVM_EXC_REG(ctx, exc) do { (ctx)->llvm_exc_reg = (gsize)exc; } while (0)
 

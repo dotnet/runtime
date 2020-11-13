@@ -450,7 +450,6 @@ void Zapper::LoadAndInitializeJITForNgen(LPCWSTR pwzJitName, OUT HINSTANCE* phJi
     // Note: FEATURE_MERGE_JIT_AND_ENGINE is defined for the Desktop crossgen compilation as well.
     //
     PathString CoreClrFolder;
-    extern HINSTANCE g_hThisInst;
 
 #if !defined(FEATURE_MERGE_JIT_AND_ENGINE)
     if (m_fDontLoadJit)
@@ -466,13 +465,11 @@ void Zapper::LoadAndInitializeJITForNgen(LPCWSTR pwzJitName, OUT HINSTANCE* phJi
     }
     else
 #endif // !defined(FEATURE_MERGE_JIT_AND_ENGINE)
-    if (WszGetModuleFileName(g_hThisInst, CoreClrFolder))
     {
-        hr = CopySystemDirectory(CoreClrFolder, CoreClrFolder);
+        hr = GetClrModuleDirectory(CoreClrFolder);
         if (SUCCEEDED(hr))
         {
             CoreClrFolder.Append(pwzJitName);
-
         }
     }
 

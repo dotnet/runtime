@@ -16,28 +16,9 @@
 
 #define MAX_UTF8_CHAR_SIZE 3
 
-//!!! Must be kept in sync with ArrayWithOffset class layout.
-struct ArrayWithOffsetData
-{
-    BASEARRAYREF    m_Array;
-    INT32           m_cbOffset;
-    INT32           m_cbCount;
-};
-
-
-#ifdef FEATURE_COMINTEROP
-enum ComMemberType
-{
-    CMT_Method              = 0,
-    CMT_PropGet             = 1,
-    CMT_PropSet             = 2
-};
-#endif // FEATURE_COMINTEROP
-
 class MarshalNative
 {
 public:
-    static INT32 QCALLTYPE NumParamBytes(MethodDesc * pMD);
     static VOID QCALLTYPE Prelink(MethodDesc * pMD);
 
     //====================================================================
@@ -71,25 +52,18 @@ public:
     //====================================================================
     // return the IUnknown* for an Object
     //====================================================================
-    static FCDECL2(IUnknown*, GetIUnknownForObjectNative, Object* orefUNSAFE, CLR_BOOL fOnlyInContext);
-
-    //====================================================================
-    // return the raw IUnknown* for a COM Object not related to current
-    // context
-    // Does not AddRef the returned pointer
-    //====================================================================
-    static FCDECL1(IUnknown*, GetRawIUnknownForComObjectNoAddRef, Object* orefUNSAFE);
+    static FCDECL1(IUnknown*, GetIUnknownForObjectNative, Object* orefUNSAFE);
 
     //====================================================================
     // return the IDispatch* for an Object
     //====================================================================
-    static FCDECL2(IDispatch*, GetIDispatchForObjectNative, Object* orefUNSAFE, CLR_BOOL fOnlyInContext);
+    static FCDECL1(IDispatch*, GetIDispatchForObjectNative, Object* orefUNSAFE);
 
     //====================================================================
     // return the IUnknown* representing the interface for the Object
     // Object o should support Type T
     //====================================================================
-    static FCDECL4(IUnknown*, GetComInterfaceForObjectNative, Object* orefUNSAFE, ReflectClassBaseObject* refClassUNSAFE, CLR_BOOL fOnlyInContext, CLR_BOOL bEnableCustomizedQueryInterface);
+    static FCDECL3(IUnknown*, GetComInterfaceForObjectNative, Object* orefUNSAFE, ReflectClassBaseObject* refClassUNSAFE, CLR_BOOL bEnableCustomizedQueryInterface);
 
     //====================================================================
     // return an Object for IUnknown
@@ -100,11 +74,6 @@ public:
     // return a unique cacheless Object for IUnknown
     //====================================================================
     static FCDECL1(Object*, GetUniqueObjectForIUnknownNative, IUnknown* pUnk);
-
-    //====================================================================
-    // return a unique cacheless Object for IUnknown
-    //====================================================================
-    static FCDECL1(Object*, GetUniqueObjectForIUnknownWithoutUnboxing, IUnknown* pUnk);
 
     //====================================================================
     // return an Object for IUnknown, using the Type T,
@@ -164,8 +133,6 @@ public:
     static FCDECL1(int, GetStartComSlot, ReflectClassBaseObject* tUNSAFE);
     static FCDECL1(int, GetEndComSlot, ReflectClassBaseObject* tUNSAFE);
 
-    static FCDECL1(Object*, WrapIUnknownWithComObject, IUnknown* pUnk);
-
     static FCDECL2(void, ChangeWrapperHandleStrength, Object* orefUNSAFE, CLR_BOOL fIsWeak);
 
     //====================================================================
@@ -175,7 +142,6 @@ public:
 
 private:
     static int GetComSlotInfo(MethodTable *pMT, MethodTable **ppDefItfMT);
-    static BOOL IsObjectInContext(OBJECTREF *pObj);
 #endif // FEATURE_COMINTEROP
 };
 
