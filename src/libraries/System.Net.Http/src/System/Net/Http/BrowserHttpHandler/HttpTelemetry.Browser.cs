@@ -7,12 +7,10 @@ namespace System.Net.Http
 {
     internal sealed partial class HttpTelemetry
     {
-        [NonEvent]
         public void Http11RequestLeftQueue(double timeOnQueueMilliseconds)
         {
         }
 
-        [NonEvent]
         public void Http20RequestLeftQueue(double timeOnQueueMilliseconds)
         {
         }
