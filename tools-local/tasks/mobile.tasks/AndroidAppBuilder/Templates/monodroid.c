@@ -213,7 +213,7 @@ Java_net_dot_MonoRunner_setEnv (JNIEnv* env, jobject thiz, jstring j_key, jstrin
     const char *val = (*env)->GetStringUTFChars(env, j_value, 0);
     setenv (key, val, true);
     (*env)->ReleaseStringUTFChars(env, j_key, key);
-    (*env)->ReleaseStringUTFChars(env, j_key, val);
+    (*env)->ReleaseStringUTFChars(env, j_value, val);
 }
 
 int
