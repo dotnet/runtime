@@ -5,6 +5,7 @@ using System.Buffers.Binary;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
+using System.Numerics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Runtime.Versioning;
@@ -133,17 +134,39 @@ namespace System
         }
 
         // This will store the result of the parsing. And it will eventually be used to construct a Guid instance.
+        // We'll eventually reinterpret_cast<> a GuidResult as a Guid, so we need to give it a sequential
+        // layout and ensure that its early fields match the layout of Guid exactly.
+        [StructLayout(LayoutKind.Explicit)]
         private struct GuidResult
         {
+            [FieldOffset(0)]
+            internal uint _a;
+            [FieldOffset(4)]
+            internal uint _bc;
+            [FieldOffset(4)]
+            internal ushort _b;
+            [FieldOffset(6)]
+            internal ushort _c;
+            [FieldOffset(8)]
+            internal uint _defg;
+            [FieldOffset(8)]
+            internal ushort _de;
+            [FieldOffset(8)]
+            internal byte _d;
+            [FieldOffset(10)]
+            internal ushort _fg;
+            [FieldOffset(12)]
+            internal uint _hijk;
+
+            [FieldOffset(16)]
             private readonly GuidParseThrowStyle _throwStyle;
-            internal Guid _parsedGuid;
 
             internal GuidResult(GuidParseThrowStyle canThrow) : this()
             {
                 _throwStyle = canThrow;
             }
 
-            internal void SetFailure(bool overflow, string failureMessageID)
+            internal readonly void SetFailure(bool overflow, string failureMessageID)
             {
                 if (_throwStyle == GuidParseThrowStyle.None)
                 {
@@ -161,6 +184,12 @@ namespace System
                 }
 
                 throw new FormatException(SR.GetResourceString(failureMessageID));
+            }
+
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            public readonly Guid ToGuid()
+            {
+                return Unsafe.As<GuidResult, Guid>(ref Unsafe.AsRef(in this));
             }
         }
 
@@ -182,7 +211,7 @@ namespace System
             bool success = TryParseGuid(g, ref result);
             Debug.Assert(success, "GuidParseThrowStyle.All means throw on all failures");
 
-            this = result._parsedGuid;
+            this = result.ToGuid();
         }
 
         public static Guid Parse(string input) =>
@@ -194,7 +223,7 @@ namespace System
             bool success = TryParseGuid(input, ref result);
             Debug.Assert(success, "GuidParseThrowStyle.AllButOverflow means throw on all failures");
 
-            return result._parsedGuid;
+            return result.ToGuid();
         }
 
         public static bool TryParse([NotNullWhen(true)] string? input, out Guid result)
@@ -213,7 +242,7 @@ namespace System
             var parseResult = new GuidResult(GuidParseThrowStyle.None);
             if (TryParseGuid(input, ref parseResult))
             {
-                result = parseResult._parsedGuid;
+                result = parseResult.ToGuid();
                 return true;
             }
             else
@@ -249,7 +278,7 @@ namespace System
                 _ => throw new FormatException(SR.Format_InvalidGuidFormatSpecification),
             };
             Debug.Assert(success, "GuidParseThrowStyle.AllButOverflow means throw on all failures");
-            return result._parsedGuid;
+            return result.ToGuid();
         }
 
         public static bool TryParseExact([NotNullWhen(true)] string? input, [NotNullWhen(true)] string? format, out Guid result)
@@ -300,7 +329,7 @@ namespace System
 
             if (success)
             {
-                result = parseResult._parsedGuid;
+                result = parseResult.ToGuid();
                 return true;
             }
             else
@@ -373,33 +402,29 @@ namespace System
                 return false;
             }
 
-            ref Guid g = ref result._parsedGuid;
-
-            if (TryParseHex(guidString.Slice(0, 8), out Unsafe.As<int, uint>(ref Unsafe.AsRef(in g._a))) && // _a
+            if (TryParseHex(guidString.Slice(0, 8), out result._a) && // _a
                 TryParseHex(guidString.Slice(9, 4), out uint uintTmp)) // _b
             {
-                Unsafe.AsRef(in g._b) = (short)uintTmp;
+                result._b = (ushort)uintTmp;
 
                 if (TryParseHex(guidString.Slice(14, 4), out uintTmp)) // _c
                 {
-                    Unsafe.AsRef(in g._c) = (short)uintTmp;
+                    result._c = (ushort)uintTmp;
 
                     if (TryParseHex(guidString.Slice(19, 4), out uintTmp)) // _d, _e
                     {
-                        Unsafe.AsRef(in g._d) = (byte)(uintTmp >> 8);
-                        Unsafe.AsRef(in g._e) = (byte)uintTmp;
+                        // _d, _e must be stored as a big-endian ushort
+                        result._de = (BitConverter.IsLittleEndian) ? BinaryPrimitives.ReverseEndianness((ushort)uintTmp) : (ushort)uintTmp;
 
                         if (TryParseHex(guidString.Slice(24, 4), out uintTmp)) // _f, _g
                         {
-                            Unsafe.AsRef(in g._f) = (byte)(uintTmp >> 8);
-                            Unsafe.AsRef(in g._g) = (byte)uintTmp;
+                            // _f, _g must be stored as a big-endian ushort
+                            result._fg = (BitConverter.IsLittleEndian) ? BinaryPrimitives.ReverseEndianness((ushort)uintTmp) : (ushort)uintTmp;
 
                             if (uint.TryParse(guidString.Slice(28, 8), NumberStyles.AllowHexSpecifier, null, out uintTmp)) // _h, _i, _j, _k
                             {
-                                Unsafe.AsRef(in g._h) = (byte)(uintTmp >> 24);
-                                Unsafe.AsRef(in g._i) = (byte)(uintTmp >> 16);
-                                Unsafe.AsRef(in g._j) = (byte)(uintTmp >> 8);
-                                Unsafe.AsRef(in g._k) = (byte)uintTmp;
+                                // _h, _i, _j, _k must be stored as a big-endian uint
+                                result._hijk = (BitConverter.IsLittleEndian) ? BinaryPrimitives.ReverseEndianness(uintTmp) : uintTmp;
 
                                 return true;
                             }
@@ -422,27 +447,24 @@ namespace System
                 return false;
             }
 
-            ref Guid g = ref result._parsedGuid;
-
-            if (uint.TryParse(guidString.Slice(0, 8), NumberStyles.AllowHexSpecifier, null, out Unsafe.As<int, uint>(ref Unsafe.AsRef(in g._a))) && // _a
+            if (uint.TryParse(guidString.Slice(0, 8), NumberStyles.AllowHexSpecifier, null, out result._a) && // _a
                 uint.TryParse(guidString.Slice(8, 8), NumberStyles.AllowHexSpecifier, null, out uint uintTmp)) // _b, _c
             {
-                Unsafe.AsRef(in g._b) = (short)(uintTmp >> 16);
-                Unsafe.AsRef(in g._c) = (short)uintTmp;
+                // _b, _c are independently in machine-endian order
+                if (BitConverter.IsLittleEndian) { uintTmp = BitOperations.RotateRight(uintTmp, 16); }
+                result._bc = uintTmp;
 
                 if (uint.TryParse(guidString.Slice(16, 8), NumberStyles.AllowHexSpecifier, null, out uintTmp)) // _d, _e, _f, _g
                 {
-                    Unsafe.AsRef(in g._d) = (byte)(uintTmp >> 24);
-                    Unsafe.AsRef(in g._e) = (byte)(uintTmp >> 16);
-                    Unsafe.AsRef(in g._f) = (byte)(uintTmp >> 8);
-                    Unsafe.AsRef(in g._g) = (byte)uintTmp;
+                    // _d, _e, _f, _g must be stored as a big-endian uint
+                    if (BitConverter.IsLittleEndian) { uintTmp = BinaryPrimitives.ReverseEndianness(uintTmp); }
+                    result._defg = uintTmp;
 
                     if (uint.TryParse(guidString.Slice(24, 8), NumberStyles.AllowHexSpecifier, null, out uintTmp)) // _h, _i, _j, _k
                     {
-                        Unsafe.AsRef(in g._h) = (byte)(uintTmp >> 24);
-                        Unsafe.AsRef(in g._i) = (byte)(uintTmp >> 16);
-                        Unsafe.AsRef(in g._j) = (byte)(uintTmp >> 8);
-                        Unsafe.AsRef(in g._k) = (byte)uintTmp;
+                        // _h, _i, _j, _k must be stored as big-endian uint
+                        if (BitConverter.IsLittleEndian) { uintTmp = BinaryPrimitives.ReverseEndianness(uintTmp); }
+                        result._hijk = uintTmp;
 
                         return true;
                     }
@@ -507,7 +529,7 @@ namespace System
             }
 
             bool overflow = false;
-            if (!TryParseHex(guidString.Slice(numStart, numLen), out Unsafe.As<int, uint>(ref Unsafe.AsRef(in result._parsedGuid._a)), ref overflow) || overflow)
+            if (!TryParseHex(guidString.Slice(numStart, numLen), out result._a, ref overflow) || overflow)
             {
                 result.SetFailure(overflow, overflow ? nameof(SR.Overflow_UInt32) : nameof(SR.Format_GuidInvalidChar));
                 return false;
@@ -529,7 +551,7 @@ namespace System
             }
 
             // Read in the number
-            if (!TryParseHex(guidString.Slice(numStart, numLen), out Unsafe.AsRef(in result._parsedGuid._b), ref overflow) || overflow)
+            if (!TryParseHex(guidString.Slice(numStart, numLen), out Unsafe.As<ushort, short>(ref result._b), ref overflow) || overflow)
             {
                 result.SetFailure(overflow, overflow ? nameof(SR.Overflow_UInt32) : nameof(SR.Format_GuidInvalidChar));
                 return false;
@@ -551,7 +573,7 @@ namespace System
             }
 
             // Read in the number
-            if (!TryParseHex(guidString.Slice(numStart, numLen), out Unsafe.AsRef(in result._parsedGuid._c), ref overflow) || overflow)
+            if (!TryParseHex(guidString.Slice(numStart, numLen), out Unsafe.As<ushort, short>(ref result._c), ref overflow) || overflow)
             {
                 result.SetFailure(overflow, overflow ? nameof(SR.Overflow_UInt32) : nameof(SR.Format_GuidInvalidChar));
                 return false;
@@ -611,7 +633,7 @@ namespace System
                         nameof(SR.Format_GuidInvalidChar));
                     return false;
                 }
-                Unsafe.Add(ref Unsafe.AsRef(in result._parsedGuid._d), i) = (byte)byteVal;
+                Unsafe.Add(ref result._d, i) = (byte)byteVal;
             }
 
             // Check for last '}'
@@ -790,12 +812,10 @@ namespace System
 
             // Compare each element
 
-            if (rA != rB) { return false; }
-            if (Unsafe.Add(ref rA, 1) != Unsafe.Add(ref rB, 1)) { return false; }
-            if (Unsafe.Add(ref rA, 2) != Unsafe.Add(ref rB, 2)) { return false; }
-            if (Unsafe.Add(ref rA, 3) != Unsafe.Add(ref rB, 3)) { return false; }
-
-            return true;
+            return rA == rB
+                && Unsafe.Add(ref rA, 1) == Unsafe.Add(ref rB, 1)
+                && Unsafe.Add(ref rA, 2) == Unsafe.Add(ref rB, 2)
+                && Unsafe.Add(ref rA, 3) == Unsafe.Add(ref rB, 3);
         }
 
         private static int GetResult(uint me, uint them) => me < them ? -1 : 1;
