@@ -14,9 +14,11 @@
     <GCStressDependsOnCoreDisTools>false</GCStressDependsOnCoreDisTools>
     <GCStressDependsOnCoreDisTools Condition="'$(TargetOS)' == 'Windows' And ('$(TargetArchitecture)' == 'x64' Or '$(TargetArchitecture)' == 'x86')">true</GCStressDependsOnCoreDisTools>
     <GCStressDependsOnCoreDisTools Condition="'$(TargetOS)' == 'Linux' And '$(TargetArchitecture)' == 'x64'">true</GCStressDependsOnCoreDisTools>
+    <CopyCoreDisToolsToCoreRoot>false</CopyCoreDisToolsToCoreRoot>
+    <CopyCoreDisToolsToCoreRoot Condition="$(GCStressDependsOnCoreDisTools) And '$(DotNetBuildFromSource)' != 'true'">true</CopyCoreDisToolsToCoreRoot>
   </PropertyGroup>
 
-  <Import Project="$(RepoRoot)eng/coredistools.targets" Condition="$(GCStressDependsOnCoreDisTools)" />
+  <Import Project="$(RepositoryEngineeringDir)coredistools.targets" Condition="$(CopyCoreDisToolsToCoreRoot)" />
 
   <ItemGroup>
     <KnownFrameworkReference Remove="Microsoft.AspNetCore.App" />
@@ -141,7 +143,7 @@
     </ItemGroup>
 
     <ItemGroup>
-      <RunTimeDependencyCopyLocal Include="$(CoreDisToolsLibrary)" Condition="$(GCStressDependsOnCoreDisTools)" />
+      <RunTimeDependencyCopyLocal Include="$(CoreDisToolsLibrary)" Condition="$(CopyCoreDisToolsToCoreRoot)" />
     </ItemGroup>
 
     <Copy
