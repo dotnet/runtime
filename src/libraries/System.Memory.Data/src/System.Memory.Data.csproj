@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <TargetFrameworks>net461;netstandard2.0</TargetFrameworks>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
@@ -6,7 +6,8 @@
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="System\BinaryData.cs" />
-    <Compile Include="System\IO\ReadOnlyMemoryStream.cs" />
+    <Compile Include="$(CommonPath)System\IO\ReadOnlyMemoryStream.cs" Link="Common\System\IO\ReadOnlyMemoryStream.cs" />
+    <Compile Include="$(CommonPath)System\Threading\Tasks\TaskToApm.cs" Link="Common\System\Threading\Tasks\TaskToApm.cs" />
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="System.Memory" Version="$(SystemMemoryVersion)" />
