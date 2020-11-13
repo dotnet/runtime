@@ -1877,6 +1877,7 @@ namespace System.Diagnostics.Tests
             Assert.Throws<Win32Exception>(() => Process.Start("exe", string.Empty, new SecureString(), "thisDomain"));
         }
 
+        [OuterLoop("May take many seconds the first time it's run")]
         [Fact]
         [PlatformSpecific(TestPlatforms.Windows)]  // Starting process with authentication not supported on Unix
         public void Process_StartWithInvalidUserNamePassword()

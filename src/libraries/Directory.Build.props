@@ -84,14 +84,13 @@
   <PropertyGroup>
     <RunApiCompatForSrc>$(IsSourceProject)</RunApiCompatForSrc>
     <RunMatchingRefApiCompat>$(IsSourceProject)</RunMatchingRefApiCompat>
+    <ApiCompatEnforceOptionalRules>true</ApiCompatEnforceOptionalRules>
     <ApiCompatExcludeAttributeList>$(RepositoryEngineeringDir)DefaultGenApiDocIds.txt,$(RepositoryEngineeringDir)ApiCompatExcludeAttributes.txt</ApiCompatExcludeAttributeList>
   </PropertyGroup>
 
   <ItemGroup>
     <!-- Projects which are manually built. -->
     <ProjectExclusions Include="$(CommonTestPath)System\Net\Prerequisites\**\*.csproj" />
-    <!-- TODO: Reenable when mono supports utf8string. -->
-    <ProjectExclusions Include="$(MSBuildThisFileDirectory)\System.Utf8String.Experimental\**\*.csproj" Condition="'$(RuntimeFlavor)' == 'Mono'" />
   </ItemGroup>
 
   <PropertyGroup>

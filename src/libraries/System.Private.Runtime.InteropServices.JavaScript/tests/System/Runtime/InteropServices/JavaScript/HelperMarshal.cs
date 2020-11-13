@@ -88,6 +88,11 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
             return _marshalledObject;
         }
 
+        private static object InvokeReturnMarshalObj()
+        {
+            return _marshalledObject;
+        }
+
         internal static int _valOne, _valTwo;
         private static void ManipulateObject(JSObject obj)
         {
@@ -316,6 +321,8 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
         internal static int _sumValue = 0;
         private static void CallFunctionSum()
         {
+            if (_sumFunction == null)
+                throw new Exception("_sumFunction is null");
             _sumValue = (int)_sumFunction.Call(null, 3, 5);
         }
 
@@ -323,6 +330,8 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
         private static void CreateFunctionApply()
         {
             var math = (JSObject)Runtime.GetGlobalObject("Math");
+            if (math == null)
+                throw new Exception("Runtime.GetGlobalObject(Math) returned null");
             _mathMinFunction = (Function)math.GetObjectProperty("min");
 
         }
@@ -330,6 +339,8 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
         internal static int _minValue = 0;
         private static void CallFunctionApply()
         {
+            if (_mathMinFunction == null)
+                throw new Exception("_mathMinFunction is null");
             _minValue = (int)_mathMinFunction.Apply(null, new object[] { 5, 6, 2, 3, 7 });
         }
 
@@ -345,5 +356,32 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
             _blobURI = blobUri;
         }
 
+        internal static uint _uintValue;
+        private static void InvokeUInt(uint value)
+        {
+            _uintValue = value;
+        }
+
+        internal static TestEnum _enumValue;
+        private static void SetEnumValue(TestEnum value)
+        {
+            _enumValue = value;
+        }
+        private static TestEnum GetEnumValue()
+        {
+            return _enumValue;
+        }
+
+        private static UInt64 GetUInt64()
+        {
+            return UInt64.MaxValue;
+        }
+    }
+
+    public enum TestEnum : uint {
+        FirstValue = 1,
+        Zero = 0,
+        Five = 5,
+        BigValue = 0xFFFFFFFEu
     }
 }

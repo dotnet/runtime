@@ -5596,8 +5596,13 @@ void LinearScan::allocateRegisters()
             {
                 allocate = false;
             }
-            else if (refType == RefTypeParamDef && varDsc->lvRefCntWtd() <= BB_UNITY_WEIGHT)
+            else if (refType == RefTypeParamDef && (varDsc->lvRefCntWtd() <= BB_UNITY_WEIGHT) &&
+                     (!currentRefPosition->lastUse || (currentInterval->physReg == REG_STK)))
             {
+                // If this is a low ref-count parameter, and either it is used (def is not the last use) or it's
+                // passed on the stack, don't allocate a register.
+                // Note that if this is an unused register parameter we don't want to set allocate to false because that
+                // will cause us to allocate stack space to spill it.
                 allocate = false;
             }
             else if ((currentInterval->physReg == REG_STK) && nextRefPosition->treeNode->OperIs(GT_BITCAST))

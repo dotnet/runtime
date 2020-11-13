@@ -48,7 +48,7 @@ jobs:
     platforms:
     - Browser_wasm
     jobParameters:
-      buildArgs: -s mono+libs+installer -c $(_BuildConfig)
+      buildArgs: -s mono+libs+host+packs -c $(_BuildConfig)
       nameSuffix: wasm
       isOfficialBuild: ${{ variables.isOfficialBuild }}
       extraStepsTemplate: /eng/pipelines/common/upload-artifact-step.yml

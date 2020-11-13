@@ -6,13 +6,11 @@
 
 
  /* File created by MIDL compiler version 8.01.0622 */
-/* at Mon Jan 18 19:14:07 2038
- */
-/* Compiler settings for runtime/src/coreclr/src/inc/cordebug.idl:
-    Oicf, W1, Zp8, env=Win32 (32b run), target_arch=X86 8.01.0622
+/* Compiler settings for cordebug.idl:
+    Oicf, W1, Zp8, env=Win32 (32b run), target_arch=X86 8.01.0622 
     protocol : dce , ms_ext, c_ext, robust
-    error checks: allocation ref bounds_check enum stub_data
-    VC __declspec() decoration level:
+    error checks: allocation ref bounds_check enum stub_data 
+    VC __declspec() decoration level: 
          __declspec(uuid()), __declspec(selectany), __declspec(novtable)
          DECLSPEC_UUID(), MIDL_INTERFACE()
 */
@@ -23,7 +21,7 @@
 
 #ifdef __cplusplus
 extern "C"{
-#endif
+#endif 
 
 
 #include <rpc.h>
@@ -367,6 +365,9 @@ MIDL_DEFINE_GUID(IID, IID_ICorDebugHeapValue2,0xE3AC4D6C,0x9CB7,0x43e6,0x96,0xCC
 MIDL_DEFINE_GUID(IID, IID_ICorDebugHeapValue3,0xA69ACAD8,0x2374,0x46e9,0x9F,0xF8,0xB1,0xF1,0x41,0x20,0xD2,0x96);
 
 
+MIDL_DEFINE_GUID(IID, IID_ICorDebugHeapValue4,0xB35DD495,0xA555,0x463B,0x9B,0xE9,0xC5,0x53,0x38,0x48,0x6B,0xB8);
+
+
 MIDL_DEFINE_GUID(IID, IID_ICorDebugObjectValue,0x18AD3D6E,0xB7D2,0x11d2,0xBD,0x04,0x00,0x00,0xF8,0x08,0x49,0xBD);
 
 
@@ -479,3 +480,6 @@ MIDL_DEFINE_GUID(CLSID, CLSID_EmbeddedCLRCorDebug,0x211f1254,0xbc7e,0x4af5,0xb9,
 #ifdef __cplusplus
 }
 #endif
+
+
+

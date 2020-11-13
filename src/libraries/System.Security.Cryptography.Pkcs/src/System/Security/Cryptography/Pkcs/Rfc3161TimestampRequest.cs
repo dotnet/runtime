@@ -58,9 +58,9 @@ namespace System.Security.Cryptography.Pkcs
             return coll;
         }
 
-        public Rfc3161TimestampToken ProcessResponse(ReadOnlyMemory<byte> source, out int bytesConsumed)
+        public Rfc3161TimestampToken ProcessResponse(ReadOnlyMemory<byte> responseBytes, out int bytesConsumed)
         {
-            if (ProcessResponse(source, out Rfc3161TimestampToken? token, out Rfc3161RequestResponseStatus status, out int localBytesRead, shouldThrow: true))
+            if (ProcessResponse(responseBytes, out Rfc3161TimestampToken? token, out Rfc3161RequestResponseStatus status, out int localBytesRead, shouldThrow: true))
             {
                 Debug.Assert(status == Rfc3161RequestResponseStatus.Accepted);
                 bytesConsumed = localBytesRead;

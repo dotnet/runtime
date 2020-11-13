@@ -226,11 +226,10 @@ mono_arch_create_vars (MonoCompile *cfg)
 	if (cfg->gen_sdb_seq_points)
 		g_error ("gen_sdb_seq_points not supported");
 
-	if (cfg->method->save_lmf)
+	if (cfg->method->save_lmf) {
 		cfg->create_lmf_var = TRUE;
-
-	if (cfg->method->save_lmf)
 		cfg->lmf_ir = TRUE;
+	}
 }
 
 void

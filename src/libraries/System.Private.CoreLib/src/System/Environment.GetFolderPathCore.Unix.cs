@@ -37,20 +37,21 @@ namespace System
             {
                 return string.Empty;
             }
-            else
+
+            Debug.Assert(option == SpecialFolderOption.Create);
+
+            Func<string, object>? createDirectory = Volatile.Read(ref s_directoryCreateDirectory);
+            if (createDirectory is null)
             {
-                Debug.Assert(option == SpecialFolderOption.Create);
-
-                Func<string, object> createDirectory = LazyInitializer.EnsureInitialized(ref s_directoryCreateDirectory, static () =>
-                {
-                    Type dirType = Type.GetType("System.IO.Directory, System.IO.FileSystem, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a", throwOnError: true)!;
-                    MethodInfo mi = dirType.GetMethod("CreateDirectory", BindingFlags.Public | BindingFlags.Static)!;
-                    return mi.CreateDelegate<Func<string, object>>();
-                });
-                createDirectory(path);
-
-                return path;
+                Type dirType = Type.GetType("System.IO.Directory, System.IO.FileSystem, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a", throwOnError: true)!;
+                MethodInfo mi = dirType.GetMethod("CreateDirectory", BindingFlags.Public | BindingFlags.Static)!;
+                createDirectory = mi.CreateDelegate<Func<string, object>>();
+                Volatile.Write(ref s_directoryCreateDirectory, createDirectory);
             }
+
+            createDirectory(path);
+
+            return path;
         }
 
         private static string GetFolderPathCoreWithoutValidation(SpecialFolder folder)
