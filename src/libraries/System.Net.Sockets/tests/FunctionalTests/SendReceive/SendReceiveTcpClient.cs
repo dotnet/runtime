@@ -6,7 +6,7 @@ using Xunit;
 
 namespace System.Net.Sockets.Tests
 {
-    public sealed class SendReceiveListener : MemberDatas
+    public sealed class SendReceiveTcpClient : MemberDatas
     {
         [OuterLoop]
         [Theory]

@@ -8,7 +8,7 @@ using Xunit;
 
 namespace System.Net.Sockets.Tests
 {
-    public class SendReceiveCommon
+    public class SendReceiveMisc
     {
         [Fact]
         public void SendRecvIovMaxTcp_Success()
