@@ -74,7 +74,11 @@ TADDR DACGetMethodTableFromObjectPointer(TADDR objAddr, ICorDebugDataTarget * ta
         return NULL;
     }
 
+#if TARGET_64BIT
+    Value = Value & ~7; // equivalent to Object::GetGCSafeMethodTable()
+#else
     Value = Value & ~3; // equivalent to Object::GetGCSafeMethodTable()
+#endif
     return Value;
 }
 

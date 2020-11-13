@@ -1706,7 +1706,11 @@ public:
 
         // clear the GC flag bits off the MethodTable
         // equivalent to Object::GetGCSafeMethodTable()
+#if TARGET_64BIT
+        *mt &= ~7;
+#else
         *mt &= ~3;
+#endif
         return true;
     }
 
