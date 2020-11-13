@@ -116,7 +116,7 @@ stages:
       # - windows_arm
       # - windows_arm64
       jobParameters:
-        buildArgs: -s mono+libs+installer -c $(_BuildConfig)
+        buildArgs: -s mono+libs+host+packs -c $(_BuildConfig)
         nameSuffix: AllSubsets_Mono
         isOfficialBuild: ${{ variables.isOfficialBuild }}
         extraStepsTemplate: /eng/pipelines/common/upload-unsigned-artifacts-step.yml
@@ -145,7 +145,7 @@ stages:
         buildConfig: release
         runtimeFlavor: mono
         jobParameters:
-          buildArgs: -s mono+libs+installer -c $(_BuildConfig)
+          buildArgs: -s mono+libs+host+packs -c $(_BuildConfig)
                      /p:MonoEnableLLVM=true /p:MonoBundleLLVMOptimizer=false
           nameSuffix: AllSubsets_Mono_LLVMJIT
           runtimeVariant: LLVMJIT
@@ -158,7 +158,7 @@ stages:
         buildConfig: release
         runtimeFlavor: mono
         jobParameters:
-          buildArgs: -s mono+libs+installer -c $(_BuildConfig)
+          buildArgs: -s mono+libs+host+packs -c $(_BuildConfig)
                       /p:MonoEnableLLVM=true /p:MonoBundleLLVMOptimizer=true
           nameSuffix: AllSubsets_Mono_LLVMAOT
           runtimeVariant: LLVMAOT
@@ -215,8 +215,6 @@ stages:
         liveRuntimeBuildConfig: release
         liveLibrariesBuildConfig: Release
         isOfficialBuild: ${{ variables.isOfficialBuild }}
-        useOfficialAllConfigurations: true
-        buildFullPlatformManifest: true
       platforms:
       - OSX_arm64
       - OSX_x64
