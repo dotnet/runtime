@@ -50,10 +50,7 @@ namespace System
         /// be used to determine the type.</param>
         public BinaryData(object? jsonSerializable, JsonSerializerOptions? options = default, Type? type = default)
         {
-            if (type == null)
-            {
-                type = jsonSerializable == null ? typeof(object) : jsonSerializable.GetType();
-            }
+            type ??= jsonSerializable?.GetType() ?? typeof(object);
 
             _bytes = JsonSerializer.SerializeToUtf8Bytes(jsonSerializable, type, options);
         }
