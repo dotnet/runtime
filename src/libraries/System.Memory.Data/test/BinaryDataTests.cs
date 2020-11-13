@@ -1,10 +1,12 @@
-﻿// Copyright (c) Microsoft Corporation. All rights reserved.
-// Licensed under the MIT License.
+﻿// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
 using System.IO;
 using System.Runtime.InteropServices;
 using System.Text;
+using System.Text.Json;
+using System.Text.Json.Serialization;
 using System.Threading;
 using System.Threading.Tasks;
 using Xunit;
@@ -284,23 +286,24 @@ namespace System.Tests
         public void MaxStreamLengthRespected()
         {
             Assert.Throws<ArgumentOutOfRangeException>(() => BinaryData.FromStream(new OverFlowStream(offset: 0)));
+            Assert.Throws<ArgumentOutOfRangeException>(() => BinaryData.FromStream(new OverFlowStream(offset: int.MaxValue + 2L)));
 
             // should not throw
 
             var data = BinaryData.FromStream(new OverFlowStream(offset: int.MaxValue - 1000));
-
         }
 
         [Fact]
         public void CanCreateBinaryDataFromCustomType()
         {
             TestModel payload = new TestModel { A = "value", B = 5, C = true, D = null };
+            JsonSerializerOptions options = new JsonSerializerOptions { DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull };
 
             AssertData(BinaryData.FromObjectAsJson(payload));
-            AssertData(BinaryData.FromObjectAsJson(payload, new Text.Json.JsonSerializerOptions { IgnoreNullValues = true }));
+            AssertData(BinaryData.FromObjectAsJson(payload, options));
             AssertData(new BinaryData(payload, type: typeof(TestModel)));
             AssertData(new BinaryData(payload, options: null, typeof(TestModel)));
-            AssertData(new BinaryData(payload, new Text.Json.JsonSerializerOptions() { IgnoreNullValues = true }, typeof(TestModel)));
+            AssertData(new BinaryData(payload, options, typeof(TestModel)));
 
             void AssertData(BinaryData data)
             {
