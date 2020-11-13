@@ -1,12 +1,17 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <TargetFrameworks>$(NetCoreAppCurrent)</TargetFrameworks>
+    <TargetFrameworks>$(NetCoreAppCurrent);net5.0</TargetFrameworks>
+    <ExcludeCurrentNetCoreAppFromPackage>true</ExcludeCurrentNetCoreAppFromPackage>
     <Nullable>enable</Nullable>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="System.Formats.Cbor.cs" />
   </ItemGroup>
-  <ItemGroup>
+  <ItemGroup Condition="'$(TargetFramework)' == 'net5.0'">
+    <Reference Include="System.Runtime" />
+    <Reference Include="System.Runtime.Numerics" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(TargetFramework)' != 'net5.0'">
     <ProjectReference Include="$(LibrariesProjectRoot)System.Runtime\ref\System.Runtime.csproj" />
     <ProjectReference Include="$(LibrariesProjectRoot)System.Runtime.Numerics\ref\System.Runtime.Numerics.csproj" />
   </ItemGroup>
