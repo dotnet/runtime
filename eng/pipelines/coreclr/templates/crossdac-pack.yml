@@ -67,7 +67,7 @@ jobs:
           /p:SignDiagnosticsPackages=true
           /p:DotNetSignType=$(SignType)
           -projects $(Build.SourcesDirectory)\eng\empty.csproj
-        displayName: Sign Linux CrossDac
+        displayName: Sign CrossDac package and contents
 
     # Save packages using the prepare-signed-artifacts format.
     - template: /eng/pipelines/common/upload-intermediate-artifacts-step.yml
