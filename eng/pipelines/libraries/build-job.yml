@@ -133,7 +133,6 @@ jobs:
         - ${{ if eq(parameters.runTests, true) }}:
           - template: /eng/pipelines/libraries/helix.yml
             parameters:
-              condition: $[ or(eq(variables['_librariesBuildProducedPackages'], ''), eq(variables['_librariesBuildProducedPackages'], true)) ]
               osGroup: ${{ parameters.osGroup }}
               archType: ${{ parameters.archType }}
               buildConfig: ${{ parameters.buildConfig }}
@@ -142,3 +141,5 @@ jobs:
               creator: dotnet-bot
               testRunNamePrefixSuffix: $(_testRunNamePrefixSuffix)
               extraHelixArguments: $(_extraHelixArguments)
+              ${{ if eq(parameters.framework, 'allConfigurations') }}:
+                condition: $[ eq(variables['_librariesBuildProducedPackages'], true) ]
