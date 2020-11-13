@@ -165,6 +165,27 @@ namespace System.Tests
         }
 
         [Fact]
+        public async Task CanCreateBinaryDataFromEmptyStream()
+        {
+            //completely empty stream
+            using MemoryStream stream = new MemoryStream();
+            BinaryData data = BinaryData.FromStream(stream);
+            Assert.Empty(data.ToArray());
+
+            data = await BinaryData.FromStreamAsync(stream);
+            Assert.Empty(data.ToArray());
+
+            // stream at end
+            byte[] buffer = Encoding.UTF8.GetBytes("some data");
+            stream.Write(buffer, 0, buffer.Length);
+            data = BinaryData.FromStream(stream);
+            Assert.Empty(data.ToArray());
+
+            data = await BinaryData.FromStreamAsync(stream);
+            Assert.Empty(data.ToArray());
+        }
+
+        [Fact]
         public async Task CanCreateBinaryDataFromStreamUsingBackingBuffer()
         {
             byte[] buffer = Encoding.UTF8.GetBytes("some data");

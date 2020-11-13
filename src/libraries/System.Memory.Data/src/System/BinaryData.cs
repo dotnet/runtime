@@ -16,8 +16,6 @@ namespace System
     /// </summary>
     public class BinaryData
     {
-        private const int CopyToBufferSize = 81920;
-
         /// <summary>
         /// The backing store for the <see cref="BinaryData"/> instance.
         /// </summary>
@@ -30,12 +28,7 @@ namespace System
         /// <param name="data">The array to wrap.</param>
         public BinaryData(byte[] data)
         {
-            if (data == null)
-            {
-                throw new ArgumentNullException(nameof(data));
-            }
-
-            _bytes = data;
+            _bytes = data ?? throw new ArgumentNullException(nameof(data));
         }
 
         /// <summary>
@@ -117,7 +110,7 @@ namespace System
                 throw new ArgumentNullException(nameof(stream));
             }
 
-            return FromStreamAsync(stream, false).GetAwaiter().GetResult();
+            return FromStreamAsync(stream, async: false).GetAwaiter().GetResult();
         }
 
         /// <summary>
@@ -134,32 +127,44 @@ namespace System
                 throw new ArgumentNullException(nameof(stream));
             }
 
-            return FromStreamAsync(stream, true, cancellationToken);
+            return FromStreamAsync(stream, async: true, cancellationToken);
         }
 
         private static async Task<BinaryData> FromStreamAsync(Stream stream, bool async, CancellationToken cancellationToken = default)
         {
-            int streamLength = 0;
+            const int CopyToBufferSize = 81920;  // the default used by Stream.CopyToAsync
+            int bufferSize = CopyToBufferSize;
+            MemoryStream memoryStream;
+
             if (stream.CanSeek)
             {
                 long longLength = stream.Length - stream.Position;
-                if (longLength > int.MaxValue)
+                if (longLength > int.MaxValue || longLength < 0)
                 {
-                    throw new ArgumentOutOfRangeException(nameof(stream), SR.ArgumentOutOfRange_StreamLengthMustBeInt32);
+                    throw new ArgumentOutOfRangeException(nameof(stream), SR.ArgumentOutOfRange_StreamLengthMustBeNonNegativeInt32);
                 }
-                streamLength = (int)longLength;
-            }
 
-            using MemoryStream memoryStream = stream.CanSeek ? new MemoryStream(streamLength) : new MemoryStream();
-            if (async)
-            {
-                await stream.CopyToAsync(memoryStream, CopyToBufferSize, cancellationToken).ConfigureAwait(false);
+                // choose a minimum valid (non-zero) buffer size.
+                bufferSize = longLength == 0 ? 1 : Math.Min((int)longLength, CopyToBufferSize);
+                memoryStream = new MemoryStream((int)longLength);
             }
             else
             {
-                stream.CopyTo(memoryStream);
+                memoryStream = new MemoryStream();
             }
-            return new BinaryData(memoryStream.GetBuffer().AsMemory(0, (int)memoryStream.Position));
+
+            using (memoryStream)
+            {
+                if (async)
+                {
+                    await stream.CopyToAsync(memoryStream, bufferSize, cancellationToken).ConfigureAwait(false);
+                }
+                else
+                {
+                    stream.CopyTo(memoryStream, bufferSize);
+                }
+                return new BinaryData(memoryStream.GetBuffer().AsMemory(0, (int)memoryStream.Position));
+            }
         }
 
         /// <summary>
@@ -184,13 +189,13 @@ namespace System
         /// <returns>
         /// A string from the value of this instance, using UTF-8 to decode the bytes.
         /// </returns>
-        public override string ToString()
+        public override unsafe string ToString()
         {
-            if (MemoryMarshal.TryGetArray(_bytes, out ArraySegment<byte> data))
+            ReadOnlySpan<byte> span = _bytes.Span;
+            fixed (byte* ptr = span)
             {
-                return Encoding.UTF8.GetString(data.Array, data.Offset, data.Count);
+                return Encoding.UTF8.GetString(ptr, span.Length);
             }
-            return Encoding.UTF8.GetString(_bytes.ToArray());
         }
 
         /// <summary>
@@ -242,6 +247,7 @@ namespace System
             }
             return data._bytes.Span;
         }
+
         /// <summary>
         /// Determines whether the specified object is equal to the current object.
         /// </summary>
@@ -250,10 +256,7 @@ namespace System
         /// <see langword="true" /> if the specified object is equal to the current object; otherwise, <see langword="false" />.
         /// </returns>
         [EditorBrowsable(EditorBrowsableState.Never)]
-        public override bool Equals(object? obj)
-        {
-            return ReferenceEquals(this, obj);
-        }
+        public override bool Equals(object? obj) => ReferenceEquals(this, obj);
 
         /// <inheritdoc />
         [EditorBrowsable(EditorBrowsableState.Never)]

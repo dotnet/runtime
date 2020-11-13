@@ -117,8 +117,8 @@
   <resheader name="writer">
     <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </resheader>
-  <data name="ArgumentOutOfRange_StreamLengthMustBeInt32" xml:space="preserve">
-    <value>Stream length must be less than or equal to Int32.MaxValue.</value>
+  <data name="ArgumentOutOfRange_StreamLengthMustBeNonNegativeInt32" xml:space="preserve">
+    <value>Stream length must be non-negative and less than or equal to Int32.MaxValue.</value>
   </data>
   <data name="IO_SeekBeforeBegin" xml:space="preserve">
     <value>An attempt was made to move the position before the beginning of the stream.</value>
