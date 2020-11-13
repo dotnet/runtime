@@ -187,10 +187,10 @@ namespace System.Globalization.Tests
                     continue;
                 }
 
-                // Line has format "÷ (XXXX (× YYYY)* ÷)+ # <comment>"
+                // Line has format "Ã· (XXXX (Ã— YYYY)* Ã·)+ # <comment>"
                 // We'll yield return a Rune[][], representing a collection of clusters, where each cluster contains a collection of Runes.
                 //
-                // Example: "÷ AAAA ÷ BBBB × CCCC × DDDD ÷ EEEE × FFFF ÷ # <comment>"
+                // Example: "Ã· AAAA Ã· BBBB Ã— CCCC Ã— DDDD Ã· EEEE Ã— FFFF Ã· # <comment>"
                 // -> [ [ AAAA ], [ BBBB, CCCC, DDDD ], [ EEEE, FFFF ] ]
                 //
                 // We also return the line for ease of debugging any test failures.

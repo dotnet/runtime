@@ -196,7 +196,7 @@ namespace System.Globalization
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.str);
             }
 
-            ValueListBuilder<int> builder = new ValueListBuilder<int>(stackalloc int[16]); // 16 arbitrarily chosen
+            ValueListBuilder<int> builder = new ValueListBuilder<int>(stackalloc int[64]); // 64 arbitrarily chosen
             ReadOnlySpan<char> remaining = str;
 
             while (!remaining.IsEmpty)
