@@ -37,9 +37,9 @@ jobs:
                 in(variables['SignType'], 'real', 'test'))
 
   - task: DownloadBuildArtifacts@0
-    displayName: Download IntermediateUnsignedArtifacts
+    displayName: Download IntermediateIntermediateArtifacts
     inputs:
-      artifactName: IntermediateUnsignedArtifacts
+      artifactName: IntermediateIntermediateArtifacts
       downloadPath: $(Build.SourcesDirectory)\artifacts\PackageDownload
 
   - script: >-

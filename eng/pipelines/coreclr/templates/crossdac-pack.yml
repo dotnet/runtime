@@ -63,14 +63,14 @@ jobs:
     - ${{ if and(ne(variables['System.TeamProject'], 'public'), notin(variables['Build.Reason'], 'PullRequest')) }}:
       - powershell: >-
           eng\common\build.ps1 -ci -sign -restore -configuration:$(buildConfig) -warnaserror:0
-          /p:PackagesFolder="$(Build.SourcesDirectory)/artifacts/packages"
+          /p:PackagesFolder="$(Build.SourcesDirectory)/artifacts/packages/$(buildConfig)"
           /p:SignDiagnosticsPackages=true
           /p:DotNetSignType=$(SignType)
           -projects $(Build.SourcesDirectory)\eng\empty.csproj
         displayName: Sign Linux CrossDac
 
     # Save packages using the prepare-signed-artifacts format.
-    - template: /eng/pipelines/common/upload-unsigned-artifacts-step.yml
+    - template: /eng/pipelines/common/upload-intermediate-artifacts-step.yml
       parameters:
         name: ${{ parameters.platform }}
 
