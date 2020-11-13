@@ -62,9 +62,13 @@ typedef struct {
     uint32_t    m_baseSize;
 } mono_gc_descr;
 
+
+
 class MethodTable
 {
 public:
+    /*The fields of this class need to be congruent with the first two fields of MonoVTable */
+    void *klass;
     mono_gc_descr gc_descr;
 
 public:
@@ -77,6 +81,7 @@ public:
 
     uint32_t GetBaseSize()
     {
+        printf ("gcenv.mono.h: GetBaseSize (based 10): %d\n", gc_descr.m_baseSize);
         return gc_descr.m_baseSize;
     }
 
