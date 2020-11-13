@@ -535,7 +535,7 @@ namespace R2RTest
                             foreach (ProcessInfo[] compilation in folder.Compilations)
                             {
                                 ProcessInfo runnerCompilation = compilation[(int)runner.Index];
-                                if (!runnerCompilation.Succeeded)
+                                if (!runnerCompilation.IsEmpty && !runnerCompilation.Succeeded)
                                 {
                                     compilationsSucceeded = false;
                                     break;
@@ -636,7 +636,7 @@ namespace R2RTest
                         bool anyCompilationFailed = false;
                         foreach (CompilerRunner runner in _compilerRunners)
                         {
-                            if (compilation[(int)runner.Index] != null)
+                            if (!compilation[(int)runner.Index].IsEmpty)
                             {
                                 CompilationOutcome outcome = GetCompilationOutcome(compilation[(int)runner.Index]);
                                 compilationOutcomes[(int)outcome, (int)runner.Index]++;

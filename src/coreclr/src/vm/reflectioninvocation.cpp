@@ -2201,11 +2201,7 @@ FCIMPL1(Object*, ReflectionSerialization::GetUninitializedObject, ReflectClassBa
     PREFIX_ASSUME(pMT != NULL);
 
     //We don't allow unitialized Strings or Utf8Strings.
-    if (pMT == g_pStringClass
-#ifdef FEATURE_UTF8STRING
-        || pMT == g_pUtf8StringClass
-#endif // FEATURE_UTF8STRING
-        ) {
+    if (pMT == g_pStringClass) {
         COMPlusThrow(kArgumentException, W("Argument_NoUninitializedStrings"));
     }
 

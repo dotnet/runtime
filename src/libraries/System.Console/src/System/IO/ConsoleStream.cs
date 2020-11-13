@@ -3,7 +3,6 @@
 
 using System.Diagnostics;
 using System.Runtime.InteropServices;
-using System.Text;
 
 namespace System.IO
 {
@@ -21,6 +20,27 @@ namespace System.IO
             _canWrite = ((access & FileAccess.Write) == FileAccess.Write);
         }
 
+        public override void Write(byte[] buffer, int offset, int count)
+        {
+            ValidateWrite(buffer, offset, count);
+            Write(new ReadOnlySpan<byte>(buffer, offset, count));
+        }
+
+        public override void WriteByte(byte value) => Write(MemoryMarshal.CreateReadOnlySpan(ref value, 1));
+
+        public override int Read(byte[] buffer, int offset, int count)
+        {
+            ValidateRead(buffer, offset, count);
+            return Read(new Span<byte>(buffer, offset, count));
+        }
+
+        public override int ReadByte()
+        {
+            byte b = 0;
+            int result = Read(MemoryMarshal.CreateSpan(ref b, 1));
+            return result != 0 ? b : -1;
+        }
+
         protected override void Dispose(bool disposing)
         {
             _canRead = false;
@@ -28,30 +48,18 @@ namespace System.IO
             base.Dispose(disposing);
         }
 
-        public sealed override bool CanRead
-        {
-            get { return _canRead; }
-        }
+        public sealed override bool CanRead => _canRead;
 
-        public sealed override bool CanWrite
-        {
-            get { return _canWrite; }
-        }
+        public sealed override bool CanWrite => _canWrite;
 
-        public sealed override bool CanSeek
-        {
-            get { return false; }
-        }
+        public sealed override bool CanSeek => false;
 
-        public sealed override long Length
-        {
-            get { throw Error.GetSeekNotSupported(); }
-        }
+        public sealed override long Length => throw Error.GetSeekNotSupported();
 
         public sealed override long Position
         {
-            get { throw Error.GetSeekNotSupported(); }
-            set { throw Error.GetSeekNotSupported(); }
+            get => throw Error.GetSeekNotSupported();
+            set => throw Error.GetSeekNotSupported();
         }
 
         public override void Flush()
@@ -59,28 +67,28 @@ namespace System.IO
             if (!CanWrite) throw Error.GetWriteNotSupported();
         }
 
-        public sealed override void SetLength(long value)
-        {
-            throw Error.GetSeekNotSupported();
-        }
+        public sealed override void SetLength(long value) => throw Error.GetSeekNotSupported();
 
-        public sealed override long Seek(long offset, SeekOrigin origin)
-        {
-            throw Error.GetSeekNotSupported();
-        }
+        public sealed override long Seek(long offset, SeekOrigin origin) => throw Error.GetSeekNotSupported();
 
         protected void ValidateRead(byte[] buffer, int offset, int count)
         {
             ValidateBufferArguments(buffer, offset, count);
 
-            if (!_canRead) throw Error.GetReadNotSupported();
+            if (!_canRead)
+            {
+                throw Error.GetReadNotSupported();
+            }
         }
 
         protected void ValidateWrite(byte[] buffer, int offset, int count)
         {
             ValidateBufferArguments(buffer, offset, count);
 
-            if (!_canWrite) throw Error.GetWriteNotSupported();
+            if (!_canWrite)
+            {
+                throw Error.GetWriteNotSupported();
+            }
         }
     }
 }

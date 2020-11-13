@@ -65,7 +65,7 @@ namespace System.Text.Json.Serialization.Converters
                         }
 
                         // Obtain the CLR value from the JSON and apply to the object.
-                        TElement element = elementConverter.Read(ref reader, elementConverter.TypeToConvert, options);
+                        TElement? element = elementConverter.Read(ref reader, elementConverter.TypeToConvert, options);
                         Add(element!, ref state);
                     }
                 }
@@ -81,7 +81,7 @@ namespace System.Text.Json.Serialization.Converters
                         }
 
                         // Get the value from the converter and add it.
-                        elementConverter.TryRead(ref reader, typeof(TElement), options, ref state, out TElement element);
+                        elementConverter.TryRead(ref reader, typeof(TElement), options, ref state, out TElement? element);
                         Add(element!, ref state);
                     }
                 }
@@ -169,7 +169,7 @@ namespace System.Text.Json.Serialization.Converters
                         if (state.Current.PropertyState < StackFramePropertyState.TryRead)
                         {
                             // Get the value from the converter and add it.
-                            if (!elementConverter.TryRead(ref reader, typeof(TElement), options, ref state, out TElement element))
+                            if (!elementConverter.TryRead(ref reader, typeof(TElement), options, ref state, out TElement? element))
                             {
                                 value = default;
                                 return false;

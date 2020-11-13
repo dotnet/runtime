@@ -496,6 +496,28 @@ namespace System.Globalization
                     CultureInfo culture;
                     string parentName = _cultureData.ParentName;
 
+                    if (parentName == "zh" && _name.Length == 5 && _name[2] == '-')
+                    {
+                        // We need to keep the parent chain for the zh cultures as follows to preserve the resource lookup compatability
+                        //      zh-CN -> zh-Hans -> zh -> Invariant
+                        //      zh-HK -> zh-Hant -> zh -> Invariant
+                        //      zh-MO -> zh-Hant -> zh -> Invariant
+                        //      zh-SG -> zh-Hans -> zh -> Invariant
+                        //      zh-TW -> zh-Hant -> zh -> Invariant
+
+                        if ((_name[3] == 'C' && _name[4] == 'N' ) || // zh-CN
+                            (_name[3] == 'S' && _name[4] == 'G' ))   // zh-SG
+                        {
+                            parentName = "zh-Hans";
+                        }
+                        else if ((_name[3] == 'H' && _name[4] == 'K' ) || // zh-HK
+                                 (_name[3] == 'M' && _name[4] == 'O' ) || // zh-MO
+                                 (_name[3] == 'T' && _name[4] == 'W' ))   // zh-TW
+                        {
+                            parentName = "zh-Hant";
+                        }
+                    }
+
                     if (string.IsNullOrEmpty(parentName))
                     {
                         culture = InvariantCulture;

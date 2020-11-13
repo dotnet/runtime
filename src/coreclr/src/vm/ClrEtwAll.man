@@ -227,6 +227,7 @@
                             <opcode name="MethodDCStartVerbose" message="$(string.RuntimePublisher.MethodDCStartVerboseOpcodeMessage)" symbol="CLR_METHOD_METHODDCSTARTVERBOSE_OPCODE" value="39"> </opcode>
                             <opcode name="MethodDCEndVerbose" message="$(string.RuntimePublisher.MethodDCEndVerboseOpcodeMessage)" symbol="CLR_METHOD_METHODDCENDVERBOSE_OPCODE" value="40"> </opcode>
                             <opcode name="MethodJittingStarted" message="$(string.RuntimePublisher.MethodJittingStartedOpcodeMessage)" symbol="CLR_METHOD_METHODJITTINGSTARTED_OPCODE" value="42"> </opcode>
+                            <opcode name="MemoryAllocatedForJitCode" message="$(string.RuntimePublisher.MemoryAllocatedForJitCodeOpcodeMessage)" symbol="CLR_METHOD_MEMORY_ALLOCATED_FOR_JIT_CODE_OPCODE" value="103"> </opcode>
                             <opcode name="JitInliningSucceeded" message="$(string.RuntimePublisher.JitInliningSucceededOpcodeMessage)" symbol="CLR_JITINLININGSUCCEEDED_OPCODE" value="83"> </opcode>
                             <opcode name="JitInliningFailed" message="$(string.RuntimePublisher.JitInliningFailedOpcodeMessage)" symbol="CLR_JITINLININGFAILED_OPCODE" value="84"> </opcode>
                             <opcode name="JitTailCallSucceeded" message="$(string.RuntimePublisher.JitTailCallSucceededOpcodeMessage)" symbol="CLR_JITTAILCALLSUCCEEDED_OPCODE" value="85"> </opcode>
@@ -2356,6 +2357,28 @@
                         </UserData>
                     </template>
 
+                    <template tid="MethodJitMemoryAllocatedForCode">
+                        <data name="MethodID" inType="win:UInt64" outType="win:HexInt64" />
+                        <data name="ModuleID" inType="win:UInt64" outType="win:HexInt64" />
+                        <data name="JitHotCodeRequestSize" inType="win:UInt64" />
+                        <data name="JitRODataRequestSize" inType="win:UInt64" />
+                        <data name="AllocatedSizeForJitCode" inType="win:UInt64" />
+                        <data name="JitAllocFlag" inType="win:UInt32" />
+                        <data name="ClrInstanceID" inType="win:UInt16" />
+
+                        <UserData>
+                            <MethodJitMemoryAllocatedForCode xmlns="myNs">
+                                <MethodID> %1 </MethodID>
+                                <ModuleID> %2 </ModuleID>
+                                <JitHotCodeRequestSize> %3 </JitHotCodeRequestSize>
+                                <JitRODataRequestSize> %4 </JitRODataRequestSize>
+                                <AllocatedSizeForJitCode> %5 </AllocatedSizeForJitCode>
+                                <JitAllocFlag> %6 </JitAllocFlag>
+                                <ClrInstanceID> %7 </ClrInstanceID>
+                            </MethodJitMemoryAllocatedForCode>
+                        </UserData>
+                    </template>
+
                     <template tid="MethodILToNativeMap">
                       <data name="MethodID" inType="win:UInt64" outType="win:HexInt64" />
                       <data name="ReJITID" inType="win:UInt64" outType="win:HexInt64" />
@@ -3504,6 +3527,11 @@
                            keywords ="JitKeyword" opcode="MethodJittingStarted"
                            task="CLRMethod"
                            symbol="MethodJittingStarted_V1" message="$(string.RuntimePublisher.MethodJittingStarted_V1EventMessage)"/>
+
+                    <event value="146" version="0" level="win:Verbose"  template="MethodJitMemoryAllocatedForCode"
+                           keywords ="JitKeyword" opcode="MemoryAllocatedForJitCode"
+                           task="CLRMethod"
+                           symbol="MethodJitMemoryAllocatedForCode" message="$(string.RuntimePublisher.MethodJitMemoryAllocatedForCodeEventMessage)"/>
 
                     <event value="185" version="0" level="win:Verbose"  template="MethodJitInliningSucceeded"
                            keywords ="JitTracingKeyword" opcode="JitInliningSucceeded"
@@ -7071,6 +7099,7 @@
                 <string id="RuntimePublisher.MethodJitInliningSucceededEventMessage" value="MethodBeingCompiledNamespace=%1;%nMethodBeingCompiledName=%2;%nMethodBeingCompiledNameSignature=%3;%nInlinerNamespace=%4;%nInlinerName=%5;%nInlinerNameSignature=%6;%nInlineeNamespace=%7;%nInlineeName=%8;%nInlineeNameSignature=%9;%nClrInstanceID=%10" />
                 <string id="RuntimePublisher.MethodJitTailCallFailedEventMessage" value="MethodBeingCompiledNamespace=%1;%nMethodBeingCompiledName=%2;%nMethodBeingCompiledNameSignature=%3;%nCallerNamespace=%4;%nCallerName=%5;%nCallerNameSignature=%6;%nCalleeNamespace=%7;%nCalleeName=%8;%nCalleeNameSignature=%9;%nTailPrefix=%10;%nFailReason=%11;%nClrInstanceID=%12" />
                 <string id="RuntimePublisher.MethodJitTailCallSucceededEventMessage" value="MethodBeingCompiledNamespace=%1;%nMethodBeingCompiledName=%2;%nMethodBeingCompiledNameSignature=%3;%nCallerNamespace=%4;%nCallerName=%5;%nCallerNameSignature=%6;%nCalleeNamespace=%7;%nCalleeName=%8;%nCalleeNameSignature=%9;%nTailPrefix=%10;%nTailCallType=%11;%nClrInstanceID=%12" />
+                <string id="RuntimePublisher.MethodJitMemoryAllocatedForCodeEventMessage" value="MethodID=%1;%nModuleID=%2;%nJitHotCodeRequestSize=%3;%nJitRODataRequestSize=%4;%nAllocatedSizeForJitCode=%5;%nJitAllocFlag=%6;%nClrInstanceID=%7" />
                 <string id="RuntimePublisher.SetGCHandleEventMessage" value="HandleID=%1;%nObjectID=%2;%nKind=%3;%nGeneration=%4;%nAppDomainID=%5;%nClrInstanceID=%6" />
                 <string id="RuntimePublisher.DestroyGCHandleEventMessage" value="HandleID=%1;%nClrInstanceID=%2" />
                 <string id="RuntimePublisher.CodeSymbolsEventMessage" value="%nClrInstanceId=%1;%nModuleId=%2;%nTotalChunks=%3;%nChunkNumber=%4;%nChunkLength=%5;%nChunk=%6" />
@@ -7654,6 +7683,7 @@
                 <string id="RuntimePublisher.JitInliningFailedOpcodeMessage" value="InliningFailed" />
                 <string id="RuntimePublisher.JitTailCallSucceededOpcodeMessage" value="TailCallSucceeded" />
                 <string id="RuntimePublisher.JitTailCallFailedOpcodeMessage" value="TailCallFailed" />
+                <string id="RuntimePublisher.MemoryAllocatedForJitCodeOpcodeMessage" value="MemoryAllocatedForJitCode" />
                 <string id="RuntimePublisher.MethodILToNativeMapOpcodeMessage" value="MethodILToNativeMap" />
                 <string id="RuntimePublisher.DomainModuleLoadOpcodeMessage" value="DomainModuleLoad" />
                 <string id="RuntimePublisher.ModuleLoadOpcodeMessage" value="ModuleLoad" />

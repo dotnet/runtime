@@ -300,18 +300,11 @@ namespace System.Runtime.InteropServices
                 throw new ArgumentNullException(nameof(o));
             }
 
-            return GetIUnknownForObjectNative(o, false);
+            return GetIUnknownForObjectNative(o);
         }
 
         [MethodImpl(MethodImplOptions.InternalCall)]
-        private static extern IntPtr /* IUnknown* */ GetIUnknownForObjectNative(object o, bool onlyInContext);
-
-        /// <summary>
-        /// Return the raw IUnknown* for a COM Object not related to current.
-        /// Does not call AddRef.
-        /// </summary>
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        internal static extern IntPtr /* IUnknown* */ GetRawIUnknownForComObjectNoAddRef(object o);
+        private static extern IntPtr /* IUnknown* */ GetIUnknownForObjectNative(object o);
 
         /// <summary>
         /// Return the IDispatch* for an Object.
@@ -324,11 +317,11 @@ namespace System.Runtime.InteropServices
                 throw new ArgumentNullException(nameof(o));
             }
 
-            return GetIDispatchForObjectNative(o, false);
+            return GetIDispatchForObjectNative(o);
         }
 
         [MethodImpl(MethodImplOptions.InternalCall)]
-        private static extern IntPtr /* IDispatch* */ GetIDispatchForObjectNative(object o, bool onlyInContext);
+        private static extern IntPtr /* IDispatch* */ GetIDispatchForObjectNative(object o);
 
         /// <summary>
         /// Return the IUnknown* representing the interface for the Object.
@@ -347,7 +340,7 @@ namespace System.Runtime.InteropServices
                 throw new ArgumentNullException(nameof(T));
             }
 
-            return GetComInterfaceForObjectNative(o, T, false, true);
+            return GetComInterfaceForObjectNative(o, T, true);
         }
 
         [SupportedOSPlatform("windows")]
@@ -372,11 +365,11 @@ namespace System.Runtime.InteropServices
             }
 
             bool bEnableCustomizedQueryInterface = ((mode == CustomQueryInterfaceMode.Allow) ? true : false);
-            return GetComInterfaceForObjectNative(o, T, false, bEnableCustomizedQueryInterface);
+            return GetComInterfaceForObjectNative(o, T, bEnableCustomizedQueryInterface);
         }
 
         [MethodImpl(MethodImplOptions.InternalCall)]
-        private static extern IntPtr /* IUnknown* */ GetComInterfaceForObjectNative(object o, Type t, bool onlyInContext, bool fEnableCustomizedQueryInterface);
+        private static extern IntPtr /* IUnknown* */ GetComInterfaceForObjectNative(object o, Type t, bool fEnableCustomizedQueryInterface);
 
         /// <summary>
         /// Return the managed object representing the IUnknown*

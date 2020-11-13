@@ -74,7 +74,7 @@ namespace System.Drawing
             if (type == null)
                 throw new NullReferenceException();
 
-            Stream? s = type.GetTypeInfo().Assembly.GetManifestResourceStream(type, resource);
+            Stream? s = type.Assembly.GetManifestResourceStream(type, resource);
             if (s == null)
             {
                 string msg = string.Format("Resource '{0}' was not found.", resource);

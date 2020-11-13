@@ -398,14 +398,8 @@ void ComputeTPAListFromPlatformAssembliesPath(LPCWSTR pwzPlatformAssembliesPaths
     }
 }
 
-extern HMODULE g_hThisInst;
-
 int _cdecl wmain(int argc, __in_ecount(argc) WCHAR **argv)
 {
-#ifndef TARGET_UNIX
-    g_hThisInst = WszGetModuleHandle(NULL);
-#endif
-
     /////////////////////////////////////////////////////////////////////////
     //
     // Parse the arguments
