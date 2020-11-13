@@ -323,6 +323,8 @@ namespace System.Tests
             AssertData(BinaryData.FromObjectAsJson(payload));
             AssertData(BinaryData.FromObjectAsJson(payload, options));
             AssertData(new BinaryData(payload, type: typeof(TestModel)));
+            AssertData(new BinaryData(payload));
+            AssertData(new BinaryData(payload, type: null));
             AssertData(new BinaryData(payload, options: null, typeof(TestModel)));
             AssertData(new BinaryData(payload, options, typeof(TestModel)));
 
@@ -343,6 +345,18 @@ namespace System.Tests
             Assert.Null(data.ToObjectFromJson<object>());
             data = BinaryData.FromObjectAsJson<object>(null);
             Assert.Null(data.ToObjectFromJson<object>());
+
+            data = new BinaryData(jsonSerializable: null, type: typeof(TestModel));
+            Assert.Null(data.ToObjectFromJson<TestModel>());
+
+            data = new BinaryData(jsonSerializable: null);
+            Assert.Null(data.ToObjectFromJson<TestModel>());
+
+            data = new BinaryData(jsonSerializable: null, type: null);
+            Assert.Null(data.ToObjectFromJson<TestModel>());
+
+            data = BinaryData.FromObjectAsJson<TestModel>(null);
+            Assert.Null(data.ToObjectFromJson<TestModel>());
         }
 
         [Fact]
