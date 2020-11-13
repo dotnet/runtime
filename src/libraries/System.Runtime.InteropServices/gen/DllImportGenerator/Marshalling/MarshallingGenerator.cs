@@ -84,7 +84,7 @@ namespace Microsoft.Interop
         public TypePositionInfo TypePositionInfo { get; private init; }
 
         /// <summary>
-        /// Context the marshalling is taking place.
+        /// Context in which the marshalling is taking place.
         /// </summary>
         public StubCodeContext StubCodeContext { get; private init; }
 
@@ -309,7 +309,10 @@ namespace Microsoft.Interop
             ExpressionSyntax numElementsExpression;
             if (info.MarshallingAttributeInfo is not ArrayMarshalAsInfo marshalAsInfo)
             {
-                throw new MarshallingNotSupportedException(info, context);
+                throw new MarshallingNotSupportedException(info, context)
+                {
+                    NotSupportedDetails = Resources.ArraySizeMustBeSpecified
+                };
             }
 
             LiteralExpressionSyntax? constSizeExpression = marshalAsInfo.ArraySizeConst != ArrayMarshalAsInfo.UnspecifiedData

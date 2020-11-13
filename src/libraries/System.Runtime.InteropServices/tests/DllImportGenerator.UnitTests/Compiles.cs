@@ -134,26 +134,6 @@ namespace DllImportGenerator.UnitTests
 
         public static IEnumerable<object[]> CodeSnippetsToCompile_WithDiagnostics()
         {
-            yield return new[] { CodeSnippets.BasicParametersAndModifiers<byte[]>() };
-            yield return new[] { CodeSnippets.BasicParametersAndModifiers<sbyte[]>() };
-            yield return new[] { CodeSnippets.BasicParametersAndModifiers<short[]>() };
-            yield return new[] { CodeSnippets.BasicParametersAndModifiers<ushort[]>() };
-            yield return new[] { CodeSnippets.BasicParametersAndModifiers<int[]>() };
-            yield return new[] { CodeSnippets.BasicParametersAndModifiers<uint[]>() };
-            yield return new[] { CodeSnippets.BasicParametersAndModifiers<long[]>() };
-            yield return new[] { CodeSnippets.BasicParametersAndModifiers<ulong[]>() };
-            yield return new[] { CodeSnippets.BasicParametersAndModifiers<float[]>() };
-            yield return new[] { CodeSnippets.BasicParametersAndModifiers<double[]>() };
-            yield return new[] { CodeSnippets.BasicParametersAndModifiers<bool[]>() };
-            yield return new[] { CodeSnippets.BasicParametersAndModifiers<char[]>() };
-            yield return new[] { CodeSnippets.BasicParametersAndModifiers<string[]>() };
-            yield return new[] { CodeSnippets.BasicParametersAndModifiers<IntPtr[]>() };
-            yield return new[] { CodeSnippets.BasicParametersAndModifiers<UIntPtr[]>() };
-
-            yield return new[] { CodeSnippets.ArrayParameterWithSizeParam<float>(isByRef: false) };
-            yield return new[] { CodeSnippets.ArrayParameterWithSizeParam<double>(isByRef: false) };
-            yield return new[] { CodeSnippets.ArrayParameterWithSizeParam<bool>(isByRef: false) };
-
             yield return new[] { CodeSnippets.PreserveSigFalse<byte[]>() };
             yield return new[] { CodeSnippets.PreserveSigFalse<sbyte[]>() };
             yield return new[] { CodeSnippets.PreserveSigFalse<short[]>() };

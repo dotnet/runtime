@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Runtime.InteropServices;
 using System.Threading.Tasks;
@@ -18,6 +19,8 @@ namespace DllImportGenerator.UnitTests
             // No explicit marshalling for char or string
             yield return new object[] { CodeSnippets.BasicParametersAndModifiers<char>(), 5, 0 };
             yield return new object[] { CodeSnippets.BasicParametersAndModifiers<string>(), 5, 0 };
+            yield return new object[] { CodeSnippets.BasicParametersAndModifiers<char[]>(), 5, 0 };
+            yield return new object[] { CodeSnippets.BasicParametersAndModifiers<string[]>(), 5, 0 };
             yield return new object[] { CodeSnippets.PreserveSigFalse<char>(), 3, 0 };
             yield return new object[] { CodeSnippets.PreserveSigFalse<string>(), 3, 0 };
 
@@ -42,6 +45,27 @@ namespace DllImportGenerator.UnitTests
 
             // LCIDConversion
             yield return new object[] { CodeSnippets.LCIDConversionAttribute, 1, 0 };
+
+            // No size information for array marshalling from unmanaged to managed
+            //   * return, out, ref
+            yield return new object[] { CodeSnippets.BasicParametersAndModifiers<byte[]>(), 3, 0 };
+            yield return new object[] { CodeSnippets.BasicParametersAndModifiers<sbyte[]>(), 3, 0 };
+            yield return new object[] { CodeSnippets.BasicParametersAndModifiers<short[]>(), 3, 0 };
+            yield return new object[] { CodeSnippets.BasicParametersAndModifiers<ushort[]>(), 3, 0 };
+            yield return new object[] { CodeSnippets.BasicParametersAndModifiers<int[]>(), 3, 0 };
+            yield return new object[] { CodeSnippets.BasicParametersAndModifiers<uint[]>(), 3, 0 };
+            yield return new object[] { CodeSnippets.BasicParametersAndModifiers<long[]>(), 3, 0 };
+            yield return new object[] { CodeSnippets.BasicParametersAndModifiers<ulong[]>(), 3, 0 };
+            yield return new object[] { CodeSnippets.BasicParametersAndModifiers<float[]>(), 3, 0 };
+            yield return new object[] { CodeSnippets.BasicParametersAndModifiers<double[]>(), 3, 0 };
+            yield return new object[] { CodeSnippets.BasicParametersAndModifiers<bool[]>(), 3, 0 };
+            yield return new object[] { CodeSnippets.BasicParametersAndModifiers<IntPtr[]>(), 3, 0 };
+            yield return new object[] { CodeSnippets.BasicParametersAndModifiers<UIntPtr[]>(), 3, 0 };
+
+            // Array with non-integer size param
+            yield return new object[] { CodeSnippets.ArrayParameterWithSizeParam<float>(isByRef: false), 1, 0 };
+            yield return new object[] { CodeSnippets.ArrayParameterWithSizeParam<double>(isByRef: false), 1, 0 };
+            yield return new object[] { CodeSnippets.ArrayParameterWithSizeParam<bool>(isByRef: false), 1, 0 };
         }
 
         [Theory]

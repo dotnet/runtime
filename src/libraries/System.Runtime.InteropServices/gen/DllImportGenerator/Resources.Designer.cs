@@ -61,7 +61,7 @@ namespace Microsoft.Interop {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to {0} Marshalling the array parameter &apos;{1}&apos; from unmanaged to managed requires either the SizeParamIndex or SizeConst fields to be set on a MarshalAs attribute..
+        ///   Looks up a localized string similar to Marshalling an array from unmanaged to managed requires either the &apos;SizeParamIndex&apos; or &apos;SizeConst&apos; fields to be set on a &apos;MarshalAsAttribute&apos;..
         /// </summary>
         internal static string ArraySizeMustBeSpecified {
             get {
@@ -70,7 +70,7 @@ namespace Microsoft.Interop {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to {0} The SizeParamIndex value in the MarshalAs attribute on &apos;{1}&apos; is out of range..
+        ///   Looks up a localized string similar to The &apos;SizeParamIndex&apos; value in the &apos;MarshalAsAttribute&apos; is out of range..
         /// </summary>
         internal static string ArraySizeParamIndexOutOfRange {
             get {
@@ -79,7 +79,7 @@ namespace Microsoft.Interop {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to {0} The specified array size parameter for the array &apos;{1}&apos; must be an integer type..
+        ///   Looks up a localized string similar to The specified array size parameter for an array must be an integer type..
         /// </summary>
         internal static string ArraySizeParamTypeMustBeIntegral {
             get {

@@ -118,13 +118,13 @@
     <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </resheader>
   <data name="ArraySizeMustBeSpecified" xml:space="preserve">
-    <value>{0} Marshalling the array parameter '{1}' from unmanaged to managed requires either the 'SizeParamIndex' or 'SizeConst' fields to be set on a MarshalAs attribute.</value>
+    <value>Marshalling an array from unmanaged to managed requires either the 'SizeParamIndex' or 'SizeConst' fields to be set on a 'MarshalAsAttribute'.</value>
   </data>
   <data name="ArraySizeParamIndexOutOfRange" xml:space="preserve">
-    <value>{0} The 'SizeParamIndex' value in the 'MarshalAsAttribute' attribute on '{1}' is out of range.</value>
+    <value>The 'SizeParamIndex' value in the 'MarshalAsAttribute' is out of range.</value>
   </data>
   <data name="ArraySizeParamTypeMustBeIntegral" xml:space="preserve">
-    <value>{0} The specified array size parameter for the array '{1}' must be an integer type.</value>
+    <value>The specified array size parameter for an array must be an integer type.</value>
   </data>
   <data name="BlittableTypeMustBeBlittableDescription" xml:space="preserve">
     <value>A type marked with 'BlittableTypeAttribute' must be blittable.</value>
@@ -238,12 +238,16 @@
   </data>
   <data name="TypeNotSupportedMessageParameterWithDetails" xml:space="preserve">
     <value>{0} The generated source will not handle marshalling of parameter '{1}'.</value>
+    <comment>{0} is a message containing additional details about what is not supported
+{1} is the name of the parameter</comment>
   </data>
   <data name="TypeNotSupportedMessageReturn" xml:space="preserve">
     <value>The type '{0}' is not supported by source-generated P/Invokes. The generated source will not handle marshalling of the return value of method '{1}'.</value>
   </data>
   <data name="TypeNotSupportedMessageReturnWithDetails" xml:space="preserve">
     <value>{0} The generated source will not handle marshalling of the return value of method '{1}'.</value>
+    <comment>{0} is a message containing additional details about what is not supported
+{1} is the name of the method</comment>
   </data>
   <data name="TypeNotSupportedTitle" xml:space="preserve">
     <value>Specified type is not supported by source-generated P/Invokes</value>
