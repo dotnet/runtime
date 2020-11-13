@@ -122,7 +122,7 @@ namespace System.Collections.Immutable
             Requires.NotNull(transformer, nameof(transformer));
 
             bool successful;
-            T[]? oldArray = Volatile.Read(ref Unsafe.As<ImmutableArray<T>, T[]?>(ref location));
+            T[]? oldArray = Volatile.Read(ref Unsafe.AsRef(in location.array));
             do
             {
                 ImmutableArray<T> newImmutableArray = transformer(new ImmutableArray<T>(oldArray));
@@ -132,7 +132,7 @@ namespace System.Collections.Immutable
                     return false;
                 }
 
-                T[]? interlockedResult = Interlocked.CompareExchange(ref Unsafe.As<ImmutableArray<T>, T[]?>(ref location), newImmutableArray.array, oldArray);
+                T[]? interlockedResult = Interlocked.CompareExchange(ref Unsafe.AsRef(in location.array), newImmutableArray.array, oldArray);
                 successful = ReferenceEquals(oldArray, interlockedResult);
                 oldArray = interlockedResult; // we already have a volatile read that we can reuse for the next loop
             }
@@ -166,7 +166,7 @@ namespace System.Collections.Immutable
             Requires.NotNull(transformer, nameof(transformer));
 
             bool successful;
-            T[]? oldArray = Volatile.Read(ref Unsafe.As<ImmutableArray<T>, T[]?>(ref location));
+            T[]? oldArray = Volatile.Read(ref Unsafe.AsRef(in location.array));
             do
             {
                 ImmutableArray<T> newImmutableArray = transformer(new ImmutableArray<T>(oldArray), transformerArgument);
@@ -176,7 +176,7 @@ namespace System.Collections.Immutable
                     return false;
                 }
 
-                T[]? interlockedResult = Interlocked.CompareExchange(ref Unsafe.As<ImmutableArray<T>, T[]?>(ref location), newImmutableArray.array, oldArray);
+                T[]? interlockedResult = Interlocked.CompareExchange(ref Unsafe.AsRef(in location.array), newImmutableArray.array, oldArray);
                 successful = ReferenceEquals(oldArray, interlockedResult);
                 oldArray = interlockedResult; // we already have a volatile read that we can reuse for the next loop
             }
@@ -196,7 +196,7 @@ namespace System.Collections.Immutable
         /// <returns>The prior value at the specified <paramref name="location"/>.</returns>
         public static ImmutableArray<T> InterlockedExchange<T>(ref ImmutableArray<T> location, ImmutableArray<T> value)
         {
-            return new ImmutableArray<T>(Interlocked.Exchange(ref Unsafe.As<ImmutableArray<T>, T[]?>(ref location), value.array));
+            return new ImmutableArray<T>(Interlocked.Exchange(ref Unsafe.AsRef(in location.array), value.array));
         }
 
         /// <summary>
@@ -210,7 +210,7 @@ namespace System.Collections.Immutable
         /// <returns>The prior value at the specified <paramref name="location"/>.</returns>
         public static ImmutableArray<T> InterlockedCompareExchange<T>(ref ImmutableArray<T> location, ImmutableArray<T> value, ImmutableArray<T> comparand)
         {
-            return new ImmutableArray<T>(Interlocked.CompareExchange(ref Unsafe.As<ImmutableArray<T>, T[]?>(ref location), value.array, comparand.array));
+            return new ImmutableArray<T>(Interlocked.CompareExchange(ref Unsafe.AsRef(in location.array), value.array, comparand.array));
         }
 
         /// <summary>
