@@ -129,6 +129,19 @@ namespace System.Reflection.Tests
             AssertIsMarked(moo, 3);
         }
 
+        [Fact]
+        public static void GetMethodBindingFlagsAndArgs()
+        {
+            Type t = typeof(SignatureTypeTests);
+            const BindingFlags bf = BindingFlags.Public | BindingFlags.Static | BindingFlags.DeclaredOnly;
+            MethodInfo testMethod = t.GetMethod(nameof(GetMethodBindingFlagsAndArgs), bf, Type.EmptyTypes);
+            Assert.NotNull(testMethod);
+
+            t = typeof(TestClass1);
+            Type[] args = { typeof(int) };
+            Assert.Throws<AmbiguousMatchException>(() => t.GetMethod("Moo", bf, args));
+        }
+
         [Theory]
         [InlineData(true)]
         [InlineData(false)]

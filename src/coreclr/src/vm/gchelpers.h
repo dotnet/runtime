@@ -36,10 +36,6 @@ OBJECTREF AllocateObjectArray(DWORD cElements, TypeHandle ElementType, BOOL bAll
 // Allocate a string
 STRINGREF AllocateString( DWORD cchStringLength );
 
-#ifdef FEATURE_UTF8STRING
-UTF8STRINGREF AllocateUtf8String( DWORD cchStringLength );
-#endif // FEATURE_UTF8STRING
-
 OBJECTREF DupArrayForCloning(BASEARRAYREF pRef);
 
 // The JIT requests the EE to specify an allocation helper to use at each new-site.

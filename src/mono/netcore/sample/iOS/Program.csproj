@@ -9,10 +9,7 @@
     <EnableTargetingPackDownload>false</EnableTargetingPackDownload>
     <RuntimeIdentifier>ios-$(TargetArchitecture)</RuntimeIdentifier>
     <PublishTrimmed>true</PublishTrimmed>
-    <_TrimmerDefaultAction>link</_TrimmerDefaultAction>
-    <Optimized Condition="'$(Configuration)' == 'Release'">True</Optimized>
-    <InvariantGlobalization>true</InvariantGlobalization> <!-- workaround for https://github.com/dotnet/runtime/issues/41866 -->
-    <RunAnalyzers>false</RunAnalyzers>
+    <TrimMode>Link</TrimMode>
   </PropertyGroup>
 
   <!-- Redirect 'dotnet publish' to in-tree runtime pack -->
@@ -36,6 +33,7 @@
     <PropertyGroup>
       <AppDir>$(MSBuildThisFileDirectory)$(PublishDir)\app</AppDir>
       <IosSimulator Condition="'$(TargetArchitecture)' == 'x64' or '$(TargetArchitecture)' == 'x86'">iPhone 11</IosSimulator>
+      <Optimized Condition="'$(Configuration)' == 'Release'">True</Optimized>
     </PropertyGroup>
 
     <RemoveDir Directories="$(AppDir)" />

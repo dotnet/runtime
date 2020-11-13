@@ -1790,6 +1790,13 @@ emit_push_lmf (MonoCompile *cfg)
 	if (!cfg->lmf_addr_var)
 		cfg->lmf_addr_var = mono_compile_create_var (cfg, mono_get_int_type (), OP_LOCAL);
 
+	if (!cfg->lmf_var) {
+		MonoInst *lmf_var = mono_compile_create_var (cfg, mono_get_int_type (), OP_LOCAL);
+		lmf_var->flags |= MONO_INST_VOLATILE;
+		lmf_var->flags |= MONO_INST_LMF;
+		cfg->lmf_var = lmf_var;
+	}
+
 	lmf_ins = mono_create_tls_get (cfg, TLS_KEY_LMF_ADDR);
 	g_assert (lmf_ins);
 
@@ -6083,6 +6090,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 	MonoBitSet *seq_point_locs = NULL;
 	MonoBitSet *seq_point_set_locs = NULL;
 	gboolean emitted_funccall_seq_point = FALSE;
+	gboolean detached_before_ret = FALSE;
 
 	cfg->disable_inline = (method->iflags & METHOD_IMPL_ATTRIBUTE_NOOPTIMIZATION) || is_jit_optimizer_disabled (method);
 	cfg->current_method = method;
@@ -7139,6 +7147,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			gboolean direct_icall; direct_icall = FALSE;
 			gboolean tailcall_calli; tailcall_calli = FALSE;
 			gboolean noreturn; noreturn = FALSE;
+			gboolean needs_stack_walk; needs_stack_walk = FALSE;
 
 			// Variables shared by CEE_CALLI and CEE_CALL/CEE_CALLVIRT.
 			common_call = FALSE;
@@ -7223,6 +7232,9 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 
 			if (mono_security_core_clr_enabled ())
 				ensure_method_is_allowed_to_call_method (cfg, method, cil_method);
+
+			if (cfg->llvm_only && cmethod && method_needs_stack_walk (cfg, cmethod))
+				needs_stack_walk = TRUE;
 
 			if (!virtual_ && (cmethod->flags & METHOD_ATTRIBUTE_ABSTRACT)) {
 				if (!mono_class_is_interface (method->klass))
@@ -7923,6 +7935,23 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 				INLINE_FAILURE ("call");
 			common_call = TRUE;
 
+#ifdef TARGET_WASM
+			/* Push an LMF so these frames can be enumerated during stack walks by mono_arch_unwind_frame () */
+			if (needs_stack_walk) {
+				MonoInst *method_ins;
+				int lmf_reg;
+
+				emit_push_lmf (cfg);
+
+				EMIT_NEW_VARLOADA (cfg, ins, cfg->lmf_var, NULL);
+				lmf_reg = ins->dreg;
+
+				/* The lmf->method field will be used to look up the MonoJitInfo for this method */
+				method_ins = emit_get_rgctx_method (cfg, mono_method_check_context_used (cfg->method), cfg->method, MONO_RGCTX_INFO_METHOD);
+				EMIT_NEW_STORE_MEMBASE (cfg, ins, OP_STORE_MEMBASE_REG, lmf_reg, MONO_STRUCT_OFFSET (MonoLMF, method), method_ins->dreg);
+			}
+#endif
+
 call_end:
 			// Check that the decision to tailcall would not have changed.
 			g_assert (!called_is_supported_tailcall || tailcall_method == method);
@@ -7943,6 +7972,11 @@ call_end:
 			 */
 			if (cmethod)
 				ins = handle_call_res_devirt (cfg, cmethod, ins);
+
+#ifdef TARGET_WASM
+			if (common_call && needs_stack_walk)
+				emit_pop_lmf (cfg);
+#endif
 
 			if (noreturn) {
 				MONO_INST_NEW (cfg, ins, OP_NOT_REACHED);
@@ -8037,7 +8071,8 @@ calli_end:
 			break;
 		}
 		case MONO_CEE_RET:
-			mini_profiler_emit_leave (cfg, sig->ret->type != MONO_TYPE_VOID ? sp [-1] : NULL);
+			if (!detached_before_ret)
+				mini_profiler_emit_leave (cfg, sig->ret->type != MONO_TYPE_VOID ? sp [-1] : NULL);
 
 			g_assert (!method_does_not_return (method));
 
@@ -10585,11 +10620,17 @@ field_access_end:
 
 				/*
 				 * Parts of the initlocals code needs to come after this, since it might call methods like memset.
+				 * Also profiling needs to be after attach.
 				 */
 				init_localsbb2 = cfg->cbb;
 				NEW_BBLOCK (cfg, next_bb);
 				MONO_START_BB (cfg, next_bb);
 			} else {
+				if (token == MONO_JIT_ICALL_mono_threads_detach_coop) {
+					/* can't emit profiling code after a detach, so emit it now */
+					mini_profiler_emit_leave (cfg, NULL);
+					detached_before_ret = TRUE;
+				}
 				ins = mono_emit_jit_icall_id (cfg, jit_icall_id, sp);
 			}
 
@@ -10757,7 +10798,8 @@ mono_ldptr:
 			if (sp != stack_start)
 				UNVERIFIED;
 
-			mini_profiler_emit_leave (cfg, sp [0]);
+			if (!detached_before_ret)
+				mini_profiler_emit_leave (cfg, sp [0]);
 
 			MONO_INST_NEW (cfg, ins, OP_BR);
 			ins->inst_target_bb = end_bblock;
@@ -11585,8 +11627,10 @@ mono_ldptr:
 		emit_push_lmf (cfg);
 	}
 
-	cfg->cbb = init_localsbb;
+	/* emit profiler enter code after a jit attach if there is one */
+	cfg->cbb = init_localsbb2;
 	mini_profiler_emit_enter (cfg);
+	cfg->cbb = init_localsbb;
 
 	if (seq_points) {
 		MonoBasicBlock *bb;

@@ -139,7 +139,7 @@ namespace System.Threading.Channels
             }
 
             ExceptionDispatchInfo? error = _error;
-            TResult result = _result;
+            TResult? result = _result;
             _currentId++;
 
             if (_pooled)

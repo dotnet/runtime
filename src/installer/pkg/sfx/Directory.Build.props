@@ -13,11 +13,13 @@
     <!-- This link should be updated for each release milestone, currently this points to 1.0.0 -->
     <ReleaseNotes>https://go.microsoft.com/fwlink/?LinkID=799417</ReleaseNotes>
     <ProjectUrl>https://dot.net</ProjectUrl>
+    <Authors>Microsoft</Authors>
+    <MinClientVersion>2.12</MinClientVersion>
     <LicenseFile>$(RepoRoot)LICENSE.TXT</LicenseFile>
     <ProductBrandPrefix>Microsoft .NET</ProductBrandPrefix>
     <GenerateInstallers>true</GenerateInstallers>
     <GenerateVSInsertionPackages>true</GenerateVSInsertionPackages>
   </PropertyGroup>
 
-  <Import Project="$(RepoRoot)eng\native\naming.props" />
+  <Import Project="$(RepositoryEngineeringDir)native\naming.props" />
 </Project>

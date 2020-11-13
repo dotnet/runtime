@@ -63,10 +63,10 @@ namespace System.Text.Json.Serialization.Converters
             var info = (JsonParameterInfo<TArg>)jsonParameterInfo;
             var converter = (JsonConverter<TArg>)jsonParameterInfo.ConverterBase;
 
-            bool success = converter.TryRead(ref reader, info.RuntimePropertyType, info.Options!, ref state, out TArg value);
+            bool success = converter.TryRead(ref reader, info.RuntimePropertyType, info.Options!, ref state, out TArg? value);
 
             arg = value == null && jsonParameterInfo.IgnoreDefaultValuesOnRead
-                ? (TArg)info.DefaultValue! // Use default value specified on parameter, if any.
+                ? (TArg?)info.DefaultValue! // Use default value specified on parameter, if any.
                 : value!;
 
             return success;
