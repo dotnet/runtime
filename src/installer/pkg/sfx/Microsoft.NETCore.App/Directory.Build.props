@@ -355,6 +355,7 @@
     <PlatformManifestFileEntry Include="pinvoke.c" IsNative="true" />
     <PlatformManifestFileEntry Include="pinvoke-table.h" IsNative="true" />
     <PlatformManifestFileEntry Include="pinvoke.h" IsNative="true" />
+    <PlatformManifestFileEntry Include="emcc-flags.txt" IsNative="true" />
   </ItemGroup>
 
  <ItemGroup>
