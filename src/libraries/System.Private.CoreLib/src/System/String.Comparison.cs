@@ -858,15 +858,17 @@ namespace System
 
                 while (length > 2)
                 {
-                    if (!Utf16Utility.AllCharsInUInt32AreAscii(ptr[0]) || !Utf16Utility.AllCharsInUInt32AreAscii(ptr[1]))
+                    uint p0 = ptr[0];
+                    uint p1 = ptr[1];
+                    if (!Utf16Utility.AllCharsInUInt32AreAscii(p0 | p1))
                     {
                         goto NotAscii;
                     }
 
                     length -= 4;
                     // Where length is 4n-1 (e.g. 3,7,11,15,19) this additionally consumes the null terminator
-                    hash1 = (BitOperations.RotateLeft(hash1, 5) + hash1) ^ (ptr[0] | NormalizeToLowercase);
-                    hash2 = (BitOperations.RotateLeft(hash2, 5) + hash2) ^ (ptr[1] | NormalizeToLowercase);
+                    hash1 = (BitOperations.RotateLeft(hash1, 5) + hash1) ^ (p0 | NormalizeToLowercase);
+                    hash2 = (BitOperations.RotateLeft(hash2, 5) + hash2) ^ (p1 | NormalizeToLowercase);
                     ptr += 2;
                 }
 
