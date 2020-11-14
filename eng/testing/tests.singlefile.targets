@@ -10,7 +10,7 @@
     <SelfContained>true</SelfContained>
 
     <RunScriptCommand Condition="'$(TargetOS)' == 'windows'">$(AssemblyName).exe</RunScriptCommand>
-    <RunScriptCommand Condition="'$(TargetOS)' != 'windows'">./$(AssemblyName)</RunScriptCommand>
+    <RunScriptCommand Condition="'$(TargetOS)' != 'windows'">chmod +x $(AssemblyName) &amp;&amp; ./$(AssemblyName)</RunScriptCommand>
   </PropertyGroup>
 
   <PropertyGroup>
