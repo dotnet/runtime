@@ -36,7 +36,7 @@ public class MonoRunner extends Instrumentation
 
     static String entryPointLibName = "%EntryPointLibName%";
     static Bundle result = new Bundle();
-    static String isInterpreterEnabled = "%IsInterpreterEnabled%";
+    static boolean isInterpreterEnabled = %IsInterpreterEnabled%;
 
     @Override
     public void onCreate(Bundle arguments) {
@@ -67,7 +67,7 @@ public class MonoRunner extends Instrumentation
         // unzip libs and test files to filesDir
         unzipAssets(context, filesDir, "assets.zip");
 
-        Log.i("DOTNET", "initRuntime, entryPointLibName=" + entryPointLibName);
+        Log.i("DOTNET", "MonoRunner initialize,, entryPointLibName=" + entryPointLibName);
         return initRuntime(filesDir, cacheDir, docsDir, entryPointLibName, isInterpreterEnabled);
     }
 
@@ -129,5 +129,5 @@ public class MonoRunner extends Instrumentation
         }
     }
 
-    static native int initRuntime(String libsDir, String cacheDir, String docsDir, String entryPointLibName, String isInterpreterEnabled);
+    static native int initRuntime(String libsDir, String cacheDir, String docsDir, String entryPointLibName, boolean isInterpreterEnabled);
 }

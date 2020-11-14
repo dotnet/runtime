@@ -183,8 +183,7 @@ mono_droid_runtime_init (void)
         mono_jit_parse_options (1, options);
     }
 
-    int interp_res = strncmp(interp_enabled, "true", strlen(interp_enabled));
-    if (interp_res == 0) {
+    if (interp_enabled) {
         LOG_INFO("Interp Enabled");
         mono_jit_set_aot_mode(MONO_AOT_MODE_INTERP_ONLY);
     }
@@ -214,22 +213,21 @@ strncpy_str (JNIEnv *env, char *buff, jstring str, int nbuff)
 }
 
 int
-Java_net_dot_MonoRunner_initRuntime (JNIEnv* env, jobject thiz, jstring j_files_dir, jstring j_cache_dir, jstring j_docs_dir, jstring j_entryPointLibName, jstring j_isInterpreterEnabled)
+Java_net_dot_MonoRunner_initRuntime (JNIEnv* env, jobject thiz, jstring j_files_dir, jstring j_cache_dir, jstring j_docs_dir, jstring j_entryPointLibName, jboolean j_isInterpreterEnabled)
 {
     char file_dir[2048];
     char cache_dir[2048];
     char docs_dir[2048];
     char entryPointLibName[2048];
-    char isInterpreterEnabled[2048];
     strncpy_str (env, file_dir, j_files_dir, sizeof(file_dir));
     strncpy_str (env, cache_dir, j_cache_dir, sizeof(cache_dir));
     strncpy_str (env, docs_dir, j_docs_dir, sizeof(docs_dir));
     strncpy_str (env, entryPointLibName, j_entryPointLibName, sizeof(entryPointLibName));
-    strncpy_str (env, isInterpreterEnabled, j_isInterpreterEnabled, sizeof(isInterpreterEnabled));
 
     bundle_path = file_dir;
     executable = entryPointLibName;
-    interp_enabled = isInterpreterEnabled;
+    interp_enabled = (bool)j_isInterpreterEnabled;
+
     setenv ("HOME", bundle_path, true);
     setenv ("TMPDIR", cache_dir, true);
     setenv ("DOCSDIR", docs_dir, true);
