@@ -843,6 +843,8 @@ namespace System
 
         private static int GetNonRandomizedHashCodeOrdinalIgnoreCaseStatic(ref char firstChar, int length, bool normalizeNonAscii)
         {
+            Debug.Assert(Unsafe.Add(ref firstChar, length) == '\0', "*(&firstChar + length) == '\\0'");
+
             uint hash1 = (5381 << 16) + 5381;
             uint hash2 = hash1;
 
@@ -857,8 +859,9 @@ namespace System
 
             while (count > 2)
             {
-                uint p0 = Unsafe.ReadUnaligned<uint>(ref Unsafe.Add(ref Unsafe.As<char, byte>(ref firstChar), i));
-                uint p1 = Unsafe.ReadUnaligned<uint>(ref Unsafe.Add(ref Unsafe.As<char, byte>(ref firstChar), i + 4));
+                ref byte firstByte = ref Unsafe.As<char, byte>(ref firstChar);
+                uint p0 = Unsafe.ReadUnaligned<uint>(ref Unsafe.Add(ref firstByte, i));
+                uint p1 = Unsafe.ReadUnaligned<uint>(ref Unsafe.Add(ref firstByte, i + 4));
                 if (normalizeNonAscii && !Utf16Utility.AllCharsInUInt32AreAscii(p0 | p1))
                 {
                     goto NotAscii;
@@ -872,7 +875,8 @@ namespace System
 
             if (count > 0)
             {
-                uint p0 = Unsafe.ReadUnaligned<uint>(ref Unsafe.Add(ref Unsafe.As<char, byte>(ref firstChar), i));
+                uint p0 = Unsafe.ReadUnaligned<uint>(
+                    ref Unsafe.Add(ref Unsafe.As<char, byte>(ref firstChar), i));
                 if (normalizeNonAscii && !Utf16Utility.AllCharsInUInt32AreAscii(p0))
                 {
                     goto NotAscii;
@@ -890,13 +894,16 @@ namespace System
             static int GetNonRandomizedHashCodeOrdinalIgnoreCaseSlow(ref char firstChar, int length)
             {
                 char[]? borrowedArr = null;
-                Span<char> scratch = (uint)length <= 64 ? stackalloc char[64] : (borrowedArr = ArrayPool<char>.Shared.Rent(length));
+                Span<char> scratch = (uint)length <= 64 ?
+                    stackalloc char[64] : (borrowedArr = ArrayPool<char>.Shared.Rent(length));
 
                 int charsWritten = System.Globalization.Ordinal.ToUpperOrdinal(
                     MemoryMarshal.CreateReadOnlySpan(ref firstChar, length), scratch);
 
-                ref char upperCase = ref MemoryMarshal.GetReference(scratch);
-                int hashCode = GetNonRandomizedHashCodeOrdinalIgnoreCaseStatic(ref upperCase, length, false);
+                Debug.Assert(charsWritten == length);
+
+                int hashCode = GetNonRandomizedHashCodeOrdinalIgnoreCaseStatic(
+                    ref MemoryMarshal.GetReference(scratch), length, false);
 
                 if (borrowedArr != null)
                 {
