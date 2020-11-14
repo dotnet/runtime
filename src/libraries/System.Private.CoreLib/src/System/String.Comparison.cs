@@ -853,7 +853,7 @@ namespace System
                 // a very wide net because it will change, e.g., '^' to '~'. But that should
                 // be ok because we expect this to be very rare in practice.
 
-                uint normalizeToLowercase = BitConverter.IsLittleEndian ? 0x0000_0020u : 0x0020_0000u;
+                const uint NormalizeToLowercase = 0x0020_0020u; // valid both for big-endian and for little-endian
 
                 while (length > 2)
                 {
@@ -882,8 +882,10 @@ namespace System
 
                 return (int)(hash1 + (hash2 * 1566083941));
             }
+
+            // Slow Non-ASCII fallback
             NotAscii:
-            return str.GetHashCodeOrdinalIgnoreCase();
+            return Marvin.ComputeHash32OrdinalIgnoreCase(ref _firstChar, _stringLength, 0, 0); // zero seed to make non-random
         }
 
         // Determines whether a specified string is a prefix of the current instance
