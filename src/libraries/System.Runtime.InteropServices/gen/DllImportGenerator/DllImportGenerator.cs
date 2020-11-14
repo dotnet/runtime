@@ -103,6 +103,12 @@ namespace Microsoft.Interop
                     generatorDiagnostics.ReportConfigurationNotSupported(generatedDllImportAttr, nameof(DllImportStub.GeneratedDllImportData.ThrowOnUnmappableChar));
                 }
 
+                // [TODO] Remove once we support SetLastError=true
+                if (dllImportData.SetLastError)
+                {
+                    generatorDiagnostics.ReportConfigurationNotSupported(generatedDllImportAttr, nameof(DllImportStub.GeneratedDllImportData.SetLastError), "true");
+                }
+
                 if (lcidConversionAttr != null)
                 {
                     // Using LCIDConversion with GeneratedDllImport is not supported
@@ -137,7 +143,6 @@ namespace Microsoft.Interop
                 .WithBody(stub.StubCode);
 
             // Create the DllImport declaration.
-            // [TODO] Don't include PreserveSig=false once that is handled by the generated stub
             var dllImport = stub.DllImportDeclaration.AddAttributeLists(
                 AttributeList(
                     SingletonSeparatedList<AttributeSyntax>(dllImportAttr)));
@@ -281,10 +286,13 @@ namespace Microsoft.Interop
 
                 Debug.Assert(expSyntaxMaybe is not null);
 
-                // Defer the name equals syntax till we know the value means something. If we created
-                // an expression we know the key value was valid.
-                NameEqualsSyntax nameSyntax = SyntaxFactory.NameEquals(namedArg.Key);
-                newAttributeArgs.Add(SyntaxFactory.AttributeArgument(nameSyntax, null, expSyntaxMaybe!));
+                if (PassThroughToDllImportAttribute(namedArg.Key))
+                {
+                    // Defer the name equals syntax till we know the value means something. If we created
+                    // an expression we know the key value was valid.
+                    NameEqualsSyntax nameSyntax = SyntaxFactory.NameEquals(namedArg.Key);
+                    newAttributeArgs.Add(SyntaxFactory.AttributeArgument(nameSyntax, null, expSyntaxMaybe!));
+                }
             }
 
             // If the EntryPoint property is not set, we will compute and
@@ -327,6 +335,26 @@ namespace Microsoft.Interop
                     SyntaxKind.SimpleMemberAccessExpression,
                     SyntaxFactory.IdentifierName(typeof(T).FullName),
                     SyntaxFactory.IdentifierName(value.ToString()));
+            }
+
+            static bool PassThroughToDllImportAttribute(string argName)
+            {
+#if GENERATE_FORWARDER
+                return true;
+#else
+                // Certain fields on DllImport will prevent inlining. Their functionality should be handled by the
+                // generated source, so the generated DllImport declaration should not include these fields.
+                return argName switch
+                {
+                    // https://docs.microsoft.com/dotnet/api/system.runtime.interopservices.dllimportattribute.preservesig
+                    // If PreserveSig=false (default is true), the P/Invoke stub checks/converts a returned HRESULT to an exception.
+                    nameof(DllImportStub.GeneratedDllImportData.PreserveSig) => false,
+                    // https://docs.microsoft.com/dotnet/api/system.runtime.interopservices.dllimportattribute.setlasterror
+                    // If SetLastError=true (default is false), the P/Invoke stub gets/caches the last error after invoking the native function.
+                    nameof(DllImportStub.GeneratedDllImportData.SetLastError) => false,
+                    _ => true
+                };
+#endif
             }
         }
 

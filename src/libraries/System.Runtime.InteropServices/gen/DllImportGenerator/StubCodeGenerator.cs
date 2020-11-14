@@ -46,12 +46,14 @@ namespace Microsoft.Interop
         private readonly GeneratorDiagnostics diagnostics;
 
         private readonly IMethodSymbol stubMethod;
+        private readonly DllImportStub.GeneratedDllImportData dllImportData;
         private readonly IEnumerable<TypePositionInfo> paramsTypeInfo;
         private readonly List<(TypePositionInfo TypeInfo, IMarshallingGenerator Generator)> paramMarshallers;
         private readonly (TypePositionInfo TypeInfo, IMarshallingGenerator Generator) retMarshaller;
 
         public StubCodeGenerator(
             IMethodSymbol stubMethod,
+            DllImportStub.GeneratedDllImportData dllImportData,
             IEnumerable<TypePositionInfo> paramsTypeInfo,
             TypePositionInfo retTypeInfo,
             GeneratorDiagnostics generatorDiagnostics)
@@ -59,6 +61,7 @@ namespace Microsoft.Interop
             Debug.Assert(retTypeInfo.IsNativeReturnPosition);
 
             this.stubMethod = stubMethod;
+            this.dllImportData = dllImportData;
             this.paramsTypeInfo = paramsTypeInfo.ToList();
             this.diagnostics = generatorDiagnostics;
 
@@ -108,7 +111,7 @@ namespace Microsoft.Interop
         public (BlockSyntax Code, MethodDeclarationSyntax DllImport) GenerateSyntax()
         {
             string dllImportName = stubMethod.Name + "__PInvoke__";
-            var statements = new List<StatementSyntax>();
+            var setupStatements = new List<StatementSyntax>();
 
             if (retMarshaller.Generator.UsesNativeIdentifier(retMarshaller.TypeInfo, this))
             {
@@ -119,17 +122,23 @@ namespace Microsoft.Interop
             foreach (var marshaller in paramMarshallers)
             {
                 TypePositionInfo info = marshaller.TypeInfo;
-                if (info.RefKind != RefKind.Out || info.IsManagedReturnPosition)
+                if (info.IsManagedReturnPosition)
                     continue;
 
-                // Assign out params to default
-                statements.Add(ExpressionStatement(
-                    AssignmentExpression(
-                        SyntaxKind.SimpleAssignmentExpression,
-                        IdentifierName(info.InstanceIdentifier),
-                        LiteralExpression(
-                            SyntaxKind.DefaultLiteralExpression,
-                            Token(SyntaxKind.DefaultKeyword)))));
+                if (info.RefKind == RefKind.Out)
+                {
+                    // Assign out params to default
+                    setupStatements.Add(ExpressionStatement(
+                        AssignmentExpression(
+                            SyntaxKind.SimpleAssignmentExpression,
+                            IdentifierName(info.InstanceIdentifier),
+                            LiteralExpression(
+                                SyntaxKind.DefaultLiteralExpression,
+                                Token(SyntaxKind.DefaultKeyword)))));
+                }
+
+                // Declare variables for parameters
+                AppendVariableDeclations(setupStatements, info, marshaller.Generator);
             }
 
             bool invokeReturnsVoid = retMarshaller.TypeInfo.ManagedType.SpecialType == SpecialType.System_Void;
@@ -138,31 +147,36 @@ namespace Microsoft.Interop
             // Stub return is not the same as invoke return
             if (!stubReturnsVoid && !retMarshaller.TypeInfo.IsManagedReturnPosition)
             {
-                Debug.Assert(paramMarshallers.Any() && paramMarshallers.Last().TypeInfo.IsManagedReturnPosition);
+                // Should only happen when PreserveSig=false
+                Debug.Assert(!dllImportData.PreserveSig, "Expected PreserveSig=false when invoke return is not the stub return");
 
-                // Declare variable for stub return value
-                TypePositionInfo info = paramMarshallers.Last().TypeInfo;
-                statements.Add(LocalDeclarationStatement(
-                    VariableDeclaration(
-                        info.ManagedType.AsTypeSyntax(),
-                        SingletonSeparatedList(
-                            VariableDeclarator(this.GetIdentifiers(info).managed)))));
+                // Stub return should be the last parameter for the invoke
+                Debug.Assert(paramMarshallers.Any() && paramMarshallers.Last().TypeInfo.IsManagedReturnPosition, "Expected stub return to be the last parameter for the invoke");
+
+                (TypePositionInfo stubRetTypeInfo, IMarshallingGenerator stubRetGenerator) = paramMarshallers.Last();
+                if (stubRetGenerator.UsesNativeIdentifier(stubRetTypeInfo, this))
+                {
+                    // Update the native identifier for the return value
+                    ReturnNativeIdentifier = $"{ReturnIdentifier}{GeneratedNativeIdentifierSuffix}";
+                }
+
+                // Declare variables for stub return value
+                AppendVariableDeclations(setupStatements, stubRetTypeInfo, stubRetGenerator);
             }
 
             if (!invokeReturnsVoid)
             {
-                // Declare variable for invoke return value
-                statements.Add(LocalDeclarationStatement(
-                    VariableDeclaration(
-                        retMarshaller.TypeInfo.ManagedType.AsTypeSyntax(),
-                        SingletonSeparatedList(
-                            VariableDeclarator(this.GetIdentifiers(retMarshaller.TypeInfo).managed)))));
+                // Declare variables for invoke return value
+                AppendVariableDeclations(setupStatements, retMarshaller.TypeInfo, retMarshaller.Generator);
             }
 
+            var tryStatements = new List<StatementSyntax>();
+            var finallyStatements = new List<StatementSyntax>();
             var invoke = InvocationExpression(IdentifierName(dllImportName));
             var fixedStatements = new List<FixedStatementSyntax>();
             foreach (var stage in Stages)
             {
+                var statements = GetStatements(stage);
                 int initialCount = statements.Count;
                 this.CurrentStage = stage;
 
@@ -248,12 +262,24 @@ namespace Microsoft.Interop
                 }
             }
 
+            List<StatementSyntax> allStatements = setupStatements;
+            if (finallyStatements.Count > 0)
+            {
+                // Add try-finally block if there are any statements in the finally block
+                allStatements.Add(
+                    TryStatement(Block(tryStatements), default, FinallyClause(Block(finallyStatements))));
+            }
+            else
+            {
+                allStatements.AddRange(tryStatements);
+            }
+
             // Return
             if (!stubReturnsVoid)
-                statements.Add(ReturnStatement(IdentifierName(ReturnIdentifier)));
+                allStatements.Add(ReturnStatement(IdentifierName(ReturnIdentifier)));
 
             // Wrap all statements in an unsafe block
-            var codeBlock = Block(UnsafeStatement(Block(statements)));
+            var codeBlock = Block(UnsafeStatement(Block(allStatements)));
 
             // Define P/Invoke declaration
             var dllImport = MethodDeclaration(retMarshaller.Generator.AsNativeType(retMarshaller.TypeInfo), dllImportName)
@@ -270,6 +296,17 @@ namespace Microsoft.Interop
             }
 
             return (codeBlock, dllImport);
+
+            List<StatementSyntax> GetStatements(Stage stage)
+            {
+                return stage switch
+                {
+                    Stage.Setup => setupStatements,
+                    Stage.Marshal or Stage.Pin or Stage.Invoke or Stage.KeepAlive or Stage.Unmarshal => tryStatements,
+                    Stage.GuaranteedUnmarshal or Stage.Cleanup => finallyStatements,
+                    _ => throw new ArgumentOutOfRangeException(nameof(stage))
+                };
+            }
         }
 
         public override TypePositionInfo? GetTypePositionInfoForManagedIndex(int index)
@@ -282,6 +319,27 @@ namespace Microsoft.Interop
                 }
             }
             return null;
+        }
+
+        private void AppendVariableDeclations(List<StatementSyntax> statementsToUpdate, TypePositionInfo info, IMarshallingGenerator generator)
+        {
+            var (managed, native) = GetIdentifiers(info);
+
+            // Declare variable for return value
+            if (info.IsManagedReturnPosition || info.IsNativeReturnPosition)
+            {
+                statementsToUpdate.Add(MarshallerHelpers.DeclareWithDefault(
+                    info.ManagedType.AsTypeSyntax(),
+                    managed));
+            }
+
+            // Declare variable with native type for parameter or return value
+            if (generator.UsesNativeIdentifier(info, this))
+            {
+                statementsToUpdate.Add(MarshallerHelpers.DeclareWithDefault(
+                    generator.AsNativeType(info),
+                    native));
+            }
         }
     }
 }

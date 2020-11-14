@@ -4,16 +4,51 @@ The P/Invoke source generator is responsible for finding all methods marked with
 
 1. [Process the symbols and metadata](#symbols-and-metadata-processing) for the method, its parameters, and its return type.
 1. [Determine the marshalling generators](#marshalling-generators) that will be responsible for generating the stub code for each parameter and return
-1. [Generate the stub code](#stub-code-generation) and corresponding P/Invoke
+1. [Generate the stub code](#stub-code-generation)
+1. [Generate the corresponding P/Invoke](#p/invoke)
 1. Add the generated source to the compilation.
 
 The pipeline uses the Roslyn [Syntax APIs](https://docs.microsoft.com/dotnet/api/microsoft.codeanalysis.csharp.syntax) to create the generated code. This imposes some structure for the marshalling generators and allows for easier inspection or modification (if desired) of the generated code.
 
 ## Symbol and metadata processing
 
-The generator processes the method's `GeneratedDllImportAttribute` data, the method's parameter and return types, and the metadata on them (e.g. [`LCIDConversionAttribute`](https://docs.microsoft.com/dotnet/api/system.runtime.interopservices.lcidconversionattribute), [`MarshalAsAttribute`](https://docs.microsoft.com/dotnet/api/system.runtime.interopservices.marshalasattribute), [struct marshalling attributes](StructMarshalling.md)). This information is used to determine the corresponding native type for each managed parameter/return type and how they will be marshalled.
+The generator processes the method's `GeneratedDllImportAttribute` data, the method's parameter and return types, and the metadata on them (e.g. [`LCIDConversionAttribute`](https://docs.microsoft.com/dotnet/api/system.runtime.interopservices.lcidconversionattribute), [`MarshalAsAttribute`][MarshalAsAttribute], [struct marshalling attributes](StructMarshalling.md)). This information is used to determine the corresponding native type for each managed parameter/return type and how they will be marshalled.
 
-A [`TypePositionInfo`](../DllImportGenerator/TypePositionInfo.cs) is created for each type that needs to be marshalled. This includes any implicit parameter/return types that are required for the P/Invoke, but not part of the managed method signature; for example, a method with `PreserveSig=false` requires an HRESULT return type and potentially an out parameter matching the managed method's return type.
+A [`TypePositionInfo`](../DllImportGenerator/TypePositionInfo.cs) is created for each type that needs to be marshalled. For each parameter and return type, this captures the managed type, managed and native positions (return or index in parameter list), and marshalling information.
+
+The marshalling information is represented by various subclasses of [`MarshallingInfo`](../DllImportGenerator/MarshallingAttributeInfo.cs) and represents all user-defined marshalling information for the specific parameter or return type. These classes are intended to simply capture any specified marshalling information, not interpret what that information means in terms of marshalling behaviour; that is handled when determining the [marshalling generator](#marshalling-generators) for each `TypePositionInfo`.
+
+The processing step also includes handling any implicit parameter/return types that are required for the P/Invoke, but not part of the managed method signature; for example, a method with [`PreserveSig=false`][PreserveSig] requires an HRESULT return type and potentially an out parameter matching the managed method's return type. 
+
+### `PreserveSig=false`
+
+The below signature indicates that the native function returns an HRESULT, but has no other return value (out parameter).
+
+```C#
+[GeneratedDllImport("Lib", PreserveSig = false)]
+static partial void Method();
+```
+Processing the above signature would create a `TypePositionInfo` for the HRESULT return type for native call, with properties indicating that it is in the native return position and has no managed position. The actual P/Invoke would be:
+
+```C#
+[DllImport("Lib", EntryPoint = "Method")]
+static partial int Method__PInvoke__();
+```
+
+The below signature indicates that the native function returns an HRESULT and also has an out parameter to be used as the managed return value.
+
+```C#
+[GeneratedDllImport("Lib", PreserveSig = false)]
+[return: MarshalAs(UnmanagedType.U1)]
+static partial bool MethodWithReturn();
+```
+
+Processing the above signature would create a `TypePositionInfo` for the HRESULT return type for native call, with properties indicating that it is in the native return position and has no managed position. The `TypePositionInfo` representing the `bool` return on the managed method would have properties indicating it is the last parameter for the native call and is in the managed return position. The actual P/Invoke would be:
+
+```C#
+[DllImport("Lib", EntryPoint = "MethodWithReturn")]
+static partial int MethodWithReturn__PInvoke__(byte* retVal);
+```
 
 ## Marshalling generators
 
@@ -24,6 +59,11 @@ The marshalling generators are responsible for generating the code for each [sta
 ## Stub code generation
 
 Generation of the stub code happens in stages. The marshalling generator for each parameter and return is called to generate code for each stage of the stub. The statements and syntax provided by each marshalling generator for each stage combine to form the full stub implementation.
+
+The stub code generator itself will handle some initial setup and variable declarations:
+- Assign `out` parameters to `default`
+- Declare variable for managed representation of return value
+- Declare variables for native representation of parameters and return value (if necessary)
 
 ### Stages
 
@@ -47,6 +87,27 @@ Generation of the stub code happens in stages. The marshalling generator for eac
     - Call `Generate` on the marshalling generator for every parameter.
 1. `Cleanup`: free any allocated resources
     - Call `Generate` on the marshalling generator for every parameter
+
+Generated P/Invoke structure (if no code is generated for `GuaranteedUnmarshal` and `Cleanup`, the `try-finally` is omitted):
+```C#
+<< Variable Declarations >>
+<< Setup >>
+try
+{
+    << Marshal >>
+    << Pin >> (fixed)
+    {
+        << Invoke >>
+    }
+    << Keep Alive >>
+    << Unmarshal >>
+}
+finally
+{
+    << GuaranteedUnmarshal >>
+    << Cleanup >>
+}
+```
 
 ### Stub conditional features
 
@@ -78,7 +139,73 @@ These various scenarios have different levels of support for these three feature
 | non-blittable array marshalling in a P/Invoke | unsupported | unsupported (supportable with https://github.com/dotnet/runtime/issues/25423) | unuspported |
 | non-blittable array marshalling not in a P/Invoke | unsupported | unsupported | unuspported |
 
+## P/Invoke
 
-### P/Invoke
+The P/Invoke called by the stub is created based on the user's original declaration of the stub. The signature is generated using the syntax returned by `AsNativeType` and `AsParameter` of the marshalling generators for the return and parameters. Any marshalling attributes on the return and parameters of the managed method - [`MarshalAsAttribute`][MarshalAsAttribute], [`InAttribute`][InAttribute], [`OutAttribute`][OutAttribute] - are dropped.
 
-The P/Invoke called by the stub is created based on the user's original declaration of the stub. The signature is generated using the syntax returned by `AsNativeType` and `AsParameter` of the marshalling generators for the return and parameters.
+The fields of the [`DllImportAttribute`][DllImportAttribute] are set based on the fields of `GeneratedDllImportAttribute` as follows:
+
+| Field                                             | Behaviour |
+| ------------------------------------------------- | --------- |
+| [`BestFitMapping`][BestFitMapping]                | Not supported. See [Compatibility](Compatibility.md).
+| [`CallingConvention`][CallingConvention]          | Passed through to `DllImport`.
+| [`CharSet`][CharSet]                              | Passed through to `DllImport`.
+| [`EntryPoint`][EntryPoint]                        | If set, passed through to `DllImport`. If not set, explicitly set to method name.
+| [`ExactSpelling`][ExactSpelling]                  | Passed through to `DllImport`.
+| [`PreserveSig`][PreserveSig]                      | Handled by generated source. Not on generated `DllImport`.
+| [`SetLastError`][SetLastError]                    | Handled by generated source. Not on generated `DllImport`.
+| [`ThrowOnUnmappableChar`][ThrowOnUnmappableChar]  | Not supported. See [Compatibility](Compatibility.md).
+
+### Examples
+
+Explicit `EntryPoint`:
+
+```C#
+// Original declaration
+[GeneratedDllImport("Lib")]
+static partial void Method(out int i);
+
+// Generated P/Invoke
+[DllImport("Lib", EntryPoint = "Method")]
+static partial void Method__PInvoke__(int* i);
+```
+
+Passed through:
+
+```C#
+// Original declaration
+[GeneratedDllImport("Lib", EntryPoint = "EntryPoint", CharSet = CharSet.Unicode)]
+static partial int Method(string s);
+
+// Generated P/Invoke
+[DllImport("Lib",  EntryPoint = "EntryPoint", CharSet = CharSet.Unicode)]
+static partial int Method__PInvoke__(ushort* s);
+```
+
+Handled by generated source (dropped from `DllImport`):
+
+```C#
+// Original declaration
+[GeneratedDllImport("Lib", SetLastError = true)]
+[return: [MarshalAs(UnmanagedType.U1)]
+static partial bool Method([In][MarshasAs(UnmanagedType.LPWStr)] string s);
+
+// Generated P/Invoke
+[DllImport("Lib", EntryPoint = "Method")]
+static partial byte Method__PInvoke__(ushort* s);
+```
+
+<!-- Links -->
+[DllImportAttribute]: https://docs.microsoft.com/dotnet/api/system.runtime.interopservices.dllimportattribute
+[MarshalAsAttribute]: https://docs.microsoft.com/dotnet/api/system.runtime.interopservices.marshalasattribute
+[InAttribute]: https://docs.microsoft.com/dotnet/api/system.runtime.interopservices.inattribute
+[OutAttribute]: https://docs.microsoft.com/dotnet/api/system.runtime.interopservices.outattribute
+
+[BestFitMapping]: https://docs.microsoft.com/dotnet/api/system.runtime.interopservices.dllimportattribute.bestfitmapping
+[CallingConvention]: https://docs.microsoft.com/dotnet/api/system.runtime.interopservices.dllimportattribute.callingconvention
+[CharSet]: https://docs.microsoft.com/dotnet/api/system.runtime.interopservices.dllimportattribute.charset
+[EntryPoint]: https://docs.microsoft.com/dotnet/api/system.runtime.interopservices.dllimportattribute.entrypoint
+[ExactSpelling]: https://docs.microsoft.com/dotnet/api/system.runtime.interopservices.dllimportattribute.exactspelling
+[PreserveSig]: https://docs.microsoft.com/dotnet/api/system.runtime.interopservices.dllimportattribute.preservesig
+[SetLastError]: https://docs.microsoft.com/dotnet/api/system.runtime.interopservices.dllimportattribute.setlasterror
+[ThrowOnUnmappableChar]: https://docs.microsoft.com/dotnet/api/system.runtime.interopservices.dllimportattribute.throwonunmappablechar

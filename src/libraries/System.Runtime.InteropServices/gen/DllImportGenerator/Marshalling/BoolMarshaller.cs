@@ -58,11 +58,6 @@ namespace Microsoft.Interop
             switch (context.CurrentStage)
             {
                 case StubCodeContext.Stage.Setup:
-                    yield return LocalDeclarationStatement(
-                        VariableDeclaration(
-                            AsNativeType(info),
-                            SingletonSeparatedList(VariableDeclarator(nativeIdentifier))));
-
                     break;
                 case StubCodeContext.Stage.Marshal:
                     // <nativeIdentifier> = (<nativeType>)(<managedIdentifier> ? _trueValue : _falseValue);

@@ -29,7 +29,7 @@ namespace Microsoft.Interop
             {
                 return Argument(IdentifierName(info.InstanceIdentifier));
             }
-            else if (context.PinningSupported)
+            else if (context.PinningSupported && !info.IsManagedReturnPosition)
             {
                 return Argument(IdentifierName(context.GetIdentifiers(info).native));
                 
@@ -71,11 +71,6 @@ namespace Microsoft.Interop
             switch (context.CurrentStage)
             {
                 case StubCodeContext.Stage.Setup:
-                    yield return LocalDeclarationStatement(
-                        VariableDeclaration(
-                            AsNativeType(info),
-                            SingletonSeparatedList(
-                                VariableDeclarator(nativeIdentifier))));
                     break;
                 case StubCodeContext.Stage.Marshal:
                     if (info.RefKind == RefKind.Ref)

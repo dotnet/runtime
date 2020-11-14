@@ -27,9 +27,9 @@ namespace Microsoft.Interop
         }
 #pragma warning restore
 
-        public string? StubTypeNamespace { get; private set; }
+        public string? StubTypeNamespace { get; init; }
 
-        public IEnumerable<TypeDeclarationSyntax> StubContainingTypes { get; private set; }
+        public IEnumerable<TypeDeclarationSyntax> StubContainingTypes { get; init; }
 
         public TypeSyntax StubReturnType { get => this.returnTypeInfo.ManagedType.AsTypeSyntax(); }
 
@@ -50,9 +50,9 @@ namespace Microsoft.Interop
             }
         }
 
-        public BlockSyntax StubCode { get; private set; }
+        public BlockSyntax StubCode { get; init; }
 
-        public MethodDeclarationSyntax DllImportDeclaration { get; private set; }
+        public MethodDeclarationSyntax DllImportDeclaration { get; init; }
 
         /// <summary>
         /// Flags used to indicate members on GeneratedDllImport attribute.
@@ -171,28 +171,40 @@ namespace Microsoft.Interop
                 ManagedIndex = TypePositionInfo.ReturnIndex,
                 NativeIndex = TypePositionInfo.ReturnIndex
             };
+
+            var managedRetTypeInfo = retTypeInfo;
             if (!dllImportData.PreserveSig)
             {
-                // [TODO] Create type info for native HRESULT return
-                // retTypeInfo = ...
+                // Create type info for native HRESULT return
+                retTypeInfo = TypePositionInfo.CreateForType(compilation.GetSpecialType(SpecialType.System_Int32), NoMarshallingInfo.Instance);
+                retTypeInfo = retTypeInfo with
+                {
+                    NativeIndex = TypePositionInfo.ReturnIndex
+                };
 
-                // [TODO] Create type info for native out param
-                // if (!method.ReturnsVoid)
-                // {
-                //     TypePositionInfo nativeOutInfo = ...;
-                //     nativeOutInfo.ManagedIndex = TypePositionInfo.ReturnIndex;
-                //     nativeOutInfo.NativeIndex = paramsTypeInfo.Count;
-                //     paramsTypeInfo.Add(nativeOutInfo);
-                // }
+                // Create type info for native out param
+                if (!method.ReturnsVoid)
+                {
+                    // Transform the managed return type info into an out parameter and add it as the last param
+                    TypePositionInfo nativeOutInfo = managedRetTypeInfo with
+                    {
+                        InstanceIdentifier = StubCodeGenerator.ReturnIdentifier,
+                        RefKind = RefKind.Out,
+                        RefKindSyntax = SyntaxKind.OutKeyword,
+                        ManagedIndex = TypePositionInfo.ReturnIndex,
+                        NativeIndex = paramsTypeInfo.Count
+                    };
+                    paramsTypeInfo.Add(nativeOutInfo);
+                }
             }
 
             // Generate stub code
-            var stubGenerator = new StubCodeGenerator(method, paramsTypeInfo, retTypeInfo, diagnostics);
+            var stubGenerator = new StubCodeGenerator(method, dllImportData, paramsTypeInfo, retTypeInfo, diagnostics);
             var (code, dllImport) = stubGenerator.GenerateSyntax();
 
             return new DllImportStub()
             {
-                returnTypeInfo = retTypeInfo,
+                returnTypeInfo = managedRetTypeInfo,
                 paramsTypeInfo = paramsTypeInfo,
                 StubTypeNamespace = stubTypeNamespace,
                 StubContainingTypes = containingTypes,

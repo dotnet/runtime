@@ -110,6 +110,7 @@ namespace Microsoft.Interop
         public static readonly BlittableMarshaller Blittable = new BlittableMarshaller();
         public static readonly DelegateMarshaller Delegate = new DelegateMarshaller();
         public static readonly SafeHandleMarshaller SafeHandle = new SafeHandleMarshaller();
+        public static readonly HResultExceptionMarshaller HResultException = new HResultExceptionMarshaller();
 
         /// <summary>
         /// Create an <see cref="IMarshallingGenerator"/> instance to marshalling the supplied type.
@@ -126,8 +127,9 @@ namespace Microsoft.Interop
 #else
             if (info.IsNativeReturnPosition && !info.IsManagedReturnPosition)
             {
-                // [TODO] Use marshaller for native HRESULT return / exception throwing
-                // Debug.Assert(info.ManagedType.SpecialType == SpecialType.System_Int32)
+                // Use marshaller for native HRESULT return / exception throwing
+                System.Diagnostics.Debug.Assert(info.ManagedType.SpecialType == SpecialType.System_Int32);
+                return HResultException;
             }
 
             switch (info)

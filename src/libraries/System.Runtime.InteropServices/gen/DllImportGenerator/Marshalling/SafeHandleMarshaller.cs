@@ -9,9 +9,11 @@ namespace Microsoft.Interop
 {
     internal class SafeHandleMarshaller : IMarshallingGenerator
     {
+        private static readonly TypeSyntax NativeType = ParseTypeName("global::System.IntPtr");
+
         public TypeSyntax AsNativeType(TypePositionInfo info)
         {
-            return ParseTypeName("global::System.IntPtr");
+            return NativeType;
         }
 
         public ParameterSyntax AsParameter(TypePositionInfo info)
@@ -64,11 +66,6 @@ namespace Microsoft.Interop
             switch (context.CurrentStage)
             {
                 case StubCodeContext.Stage.Setup:
-                    yield return LocalDeclarationStatement(
-                        VariableDeclaration(
-                            AsNativeType(info),
-                            SingletonSeparatedList(
-                                VariableDeclarator(nativeIdentifier))));
                     if (!info.IsManagedReturnPosition && info.RefKind != RefKind.Out)
                     {
                         yield return LocalDeclarationStatement(
@@ -79,7 +76,19 @@ namespace Microsoft.Interop
                                                         .WithInitializer(EqualsValueClause(LiteralExpression(SyntaxKind.FalseLiteralExpression))))));
                     
                     }
-                    if (info.IsByRef && info.RefKind != RefKind.In)
+                    if (info.IsManagedReturnPosition)
+                    {
+                        yield return ExpressionStatement(
+                            AssignmentExpression(SyntaxKind.SimpleAssignmentExpression,
+                                IdentifierName(managedIdentifier),
+                                InvocationExpression(
+                                    MemberAccessExpression(SyntaxKind.SimpleMemberAccessExpression,
+                                        ParseName(TypeNames.System_Runtime_InteropServices_MarshalEx),
+                                        GenericName(Identifier("CreateSafeHandle"),
+                                            TypeArgumentList(SingletonSeparatedList(info.ManagedType.AsTypeSyntax())))),
+                                    ArgumentList())));
+                    }
+                    else if (info.IsByRef && info.RefKind != RefKind.In)
                     {
                         // We create the new handle in the Setup phase
                         // so we eliminate the possible failure points during unmarshalling, where we would
@@ -95,30 +104,21 @@ namespace Microsoft.Interop
                                                 ParseName(TypeNames.System_Runtime_InteropServices_MarshalEx),
                                                 GenericName(Identifier("CreateSafeHandle"),
                                                     TypeArgumentList(SingletonSeparatedList(info.ManagedType.AsTypeSyntax())))),
-                                            ArgumentList()))))));     
-                        yield return LocalDeclarationStatement(
-                            VariableDeclaration(
-                                AsNativeType(info),
-                                SingletonSeparatedList(
-                                    VariableDeclarator(handleValueBackupIdentifier)
-                                    .WithInitializer(EqualsValueClause(
-                                        InvocationExpression(
-                                            MemberAccessExpression(SyntaxKind.SimpleMemberAccessExpression,
-                                                IdentifierName(newHandleObjectIdentifier),
-                                                IdentifierName(nameof(SafeHandle.DangerousGetHandle))),
                                             ArgumentList()))))));
-                    }
-                    else if (info.IsManagedReturnPosition)
-                    {
-                        yield return ExpressionStatement(
-                            AssignmentExpression(SyntaxKind.SimpleAssignmentExpression,
-                                IdentifierName(managedIdentifier),
-                                InvocationExpression(
-                                            MemberAccessExpression(SyntaxKind.SimpleMemberAccessExpression,
-                                                ParseName(TypeNames.System_Runtime_InteropServices_MarshalEx),
-                                                GenericName(Identifier("CreateSafeHandle"),
-                                                    TypeArgumentList(SingletonSeparatedList(info.ManagedType.AsTypeSyntax())))),
-                                            ArgumentList())));
+                        if (info.RefKind != RefKind.Out)
+                        {
+                            yield return LocalDeclarationStatement(
+                                VariableDeclaration(
+                                    AsNativeType(info),
+                                    SingletonSeparatedList(
+                                        VariableDeclarator(handleValueBackupIdentifier)
+                                        .WithInitializer(EqualsValueClause(
+                                            InvocationExpression(
+                                                MemberAccessExpression(SyntaxKind.SimpleMemberAccessExpression,
+                                                    IdentifierName(newHandleObjectIdentifier),
+                                                    IdentifierName(nameof(SafeHandle.DangerousGetHandle))),
+                                                ArgumentList()))))));
+                        }
                     }
                     break;
                 case StubCodeContext.Stage.Marshal:
@@ -169,7 +169,7 @@ namespace Microsoft.Interop
                                     Argument(IdentifierName(nativeIdentifier))
                                 }))));
 
-                    if(info.IsManagedReturnPosition)
+                    if (info.IsManagedReturnPosition)
                     {
                         yield return unmarshalStatement;
                     }

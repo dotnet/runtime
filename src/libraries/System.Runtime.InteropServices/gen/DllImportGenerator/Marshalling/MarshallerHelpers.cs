@@ -1,6 +1,3 @@
-using System.Collections.Generic;
-
-using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 using static Microsoft.CodeAnalysis.CSharp.SyntaxFactory;
@@ -50,15 +47,28 @@ namespace Microsoft.Interop
                         IdentifierName(indexerIdentifier))));
         }
 
+        public static LocalDeclarationStatementSyntax DeclareWithDefault(TypeSyntax typeSyntax, string identifier)
+        {
+            // <type> <identifier> = default;
+            return LocalDeclarationStatement(
+                VariableDeclaration(
+                    typeSyntax,
+                    SingletonSeparatedList(
+                        VariableDeclarator(identifier)
+                            .WithInitializer(
+                                EqualsValueClause(
+                                    LiteralExpression(SyntaxKind.DefaultLiteralExpression))))));
+        }
+
         public static class StringMarshaller
         {
             public static ExpressionSyntax AllocationExpression(CharEncoding encoding, string managedIdentifier)
             {
                 string methodName = encoding switch
                 {
-                    CharEncoding.Utf8 => "StringToCoTaskMemUTF8",
-                    CharEncoding.Utf16 => "StringToCoTaskMemUni",
-                    CharEncoding.Ansi => "StringToCoTaskMemAnsi",
+                    CharEncoding.Utf8 => "StringToCoTaskMemUTF8", // Not in .NET Standard 2.0, so we use the hard-coded name 
+                    CharEncoding.Utf16 => nameof(System.Runtime.InteropServices.Marshal.StringToCoTaskMemUni),
+                    CharEncoding.Ansi => nameof(System.Runtime.InteropServices.Marshal.StringToCoTaskMemAnsi),
                     _ => throw new System.ArgumentOutOfRangeException(nameof(encoding))
                 };
 
@@ -84,7 +94,7 @@ namespace Microsoft.Interop
                     MemberAccessExpression(
                         SyntaxKind.SimpleMemberAccessExpression,
                         InteropServicesMarshalType,
-                        IdentifierName("FreeCoTaskMem")),
+                        IdentifierName(nameof(System.Runtime.InteropServices.Marshal.FreeCoTaskMem))),
                     ArgumentList(SingletonSeparatedList(
                         Argument(
                             CastExpression(

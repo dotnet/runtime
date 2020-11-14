@@ -41,7 +41,8 @@ namespace DllImportGenerator.UnitTests
 
             // Unsupported named arguments
             //  * BestFitMapping, ThrowOnUnmappableChar
-            yield return new object[] { CodeSnippets.AllDllImportNamedArguments, 2, 0 };
+            // [TODO]: Expected diagnostic count should be 2 once we support SetLastError
+            yield return new object[] { CodeSnippets.AllDllImportNamedArguments, 3, 0 };
 
             // LCIDConversion
             yield return new object[] { CodeSnippets.LCIDConversionAttribute, 1, 0 };
