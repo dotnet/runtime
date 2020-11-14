@@ -193,7 +193,7 @@ namespace System.Collections.Tests
             {
                 string newKey = GenerateCollidingString(i * Stride + StartOfRange);
                 Assert.Equal(0, _lazyGetNonRandomizedHashCodeDel.Value(newKey)); // ensure has a zero hash code Ordinal
-                Assert.Equal(0x24716ca0, _lazyGetNonRandomizedOrdinalIgnoreCaseHashCodeDel.Value(newKey)); // ensure has a zero hash code OrdinalIgnoreCase
+                Assert.Equal(0x6C3F4A5C, _lazyGetNonRandomizedOrdinalIgnoreCaseHashCodeDel.Value(newKey)); // ensure has a zero hash code OrdinalIgnoreCase
 
                 addKeyCallback(collection, newKey);
                 allKeys.Add(newKey);
@@ -212,7 +212,7 @@ namespace System.Collections.Tests
             {
                 string newKey = GenerateCollidingString(i * Stride + StartOfRange);
                 Assert.Equal(0, _lazyGetNonRandomizedHashCodeDel.Value(newKey)); // ensure has a zero hash code Ordinal
-                Assert.Equal(0x24716ca0, _lazyGetNonRandomizedOrdinalIgnoreCaseHashCodeDel.Value(newKey)); // ensure has a zero hash code OrdinalIgnoreCase
+                Assert.Equal(0x6C3F4A5C, _lazyGetNonRandomizedOrdinalIgnoreCaseHashCodeDel.Value(newKey)); // ensure has a zero hash code OrdinalIgnoreCase
 
                 addKeyCallback(collection, newKey);
                 allKeys.Add(newKey);
