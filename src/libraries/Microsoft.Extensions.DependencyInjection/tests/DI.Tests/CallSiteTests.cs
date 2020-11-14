@@ -264,6 +264,32 @@ namespace Microsoft.Extensions.DependencyInjection.Tests
             Assert.NotNull(compileCallSite);
         }
 
+        [Fact]
+        public void NoServiceCallsite_DefaultValueNull_DoesNotThrow()
+        {
+            var descriptors = new ServiceCollection();
+            descriptors.AddTransient<ServiceG>();
+
+            var provider = descriptors.BuildServiceProvider();
+
+            ActivatorUtilities.CreateInstance<ServiceF>(provider);
+            ActivatorUtilities.CreateInstance<ServiceF>(provider);
+        }
+
+        private interface IServiceG
+        {
+        }
+
+        private class ServiceG
+        {
+            public ServiceG(IServiceG service = null) { }
+        }
+
+        private class ServiceF
+        {
+            public ServiceF(ServiceG service) { }
+        }
+
         private class ServiceD
         {
             public ServiceD(IEnumerable<ServiceA> services)
