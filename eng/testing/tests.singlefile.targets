@@ -9,8 +9,8 @@
     <RuntimeIdentifier>$(PackageRID)</RuntimeIdentifier>
     <SelfContained>true</SelfContained>
 
-    <RunScriptCommand Condition="'$(TargetOS)' == 'Windows_NT'">$(AssemblyName).exe</RunScriptCommand>
-    <RunScriptCommand Condition="'$(TargetOS)' != 'Windows_NT'">./$(AssemblyName)</RunScriptCommand>
+    <RunScriptCommand Condition="'$(TargetOS)' == 'windows'">$(AssemblyName).exe</RunScriptCommand>
+    <RunScriptCommand Condition="'$(TargetOS)' != 'windows'">./$(AssemblyName)</RunScriptCommand>
   </PropertyGroup>
 
   <PropertyGroup>
