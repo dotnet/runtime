@@ -855,7 +855,7 @@ namespace System
             const uint NormalizeToLowercase = 0x0020_0020u; // valid both for big-endian and for little-endian
 
             int i = 0;
-            int count = 0;
+            int count = length;
 
             while (count > 2)
             {
@@ -894,14 +894,15 @@ namespace System
             static int GetNonRandomizedHashCodeOrdinalIgnoreCaseSlow(ref char firstChar, int length)
             {
                 char[]? borrowedArr = null;
-                Span<char> scratch = (uint)length <= 64 ?
-                    stackalloc char[64] : (borrowedArr = ArrayPool<char>.Shared.Rent(length));
+                Span<char> scratch = (uint)length < 64 ?
+                    stackalloc char[64] : (borrowedArr = ArrayPool<char>.Shared.Rent(length + 1));
 
                 int charsWritten = System.Globalization.Ordinal.ToUpperOrdinal(
                     MemoryMarshal.CreateReadOnlySpan(ref firstChar, length), scratch);
 
                 Debug.Assert(charsWritten == length);
 
+                scratch[length] = '\0';
                 int hashCode = GetNonRandomizedHashCodeOrdinalIgnoreCaseStatic(
                     ref MemoryMarshal.GetReference(scratch), length, false);
 
