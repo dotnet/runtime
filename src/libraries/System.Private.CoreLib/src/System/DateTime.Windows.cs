@@ -77,8 +77,11 @@ namespace System
 
                 const long MinTicksPerDay = TicksPerDay - TicksPerSecond; // a day is at least 23:59:59 long
 
+                // Caution: Pretending managed calli convention below to work around
+                // lack of API (see https://github.com/dotnet/runtime/issues/38134).
+
                 ulong osTicks;
-                s_pfnGetSystemTimeAsFileTime(&osTicks);
+                ((delegate*<ulong*, void>)s_pfnGetSystemTimeAsFileTime)(&osTicks);
 
                 // If the OS doesn't support leap second handling, short-circuit everything.
 
@@ -88,50 +91,58 @@ namespace System
                 }
 
                 // If it's between 00:00:00 (inclusive) and 23:59:59 (exclusive) on the same day
-                // as the previous call to UtcNow, we can use the cached value. We can't remove
-                // the "is it before midnight?" check below since the system clock may have been
-                // moved backward.
+                // as the previous call to UtcNow, we can use the cached value. Use unsigned locals
+                // below so that negative tick counts resulting from the system clock being set
+                // backward result in integer underflow and cause cache misses.
 
                 if (s_leapSecondCache is LeapSecondCache cache)
                 {
-                    if (osTicks >= cache.WindowsTicksAsOfMidnight && osTicks < (cache.WindowsTicksAsOfMidnight + MinTicksPerDay))
+                    ulong deltaTicksFromMidnight = osTicks - cache.WindowsTicksAsOfMidnight;
+                    if (deltaTicksFromMidnight < MinTicksPerDay)
                     {
-                        return new DateTime((osTicks - cache.WindowsTicksAsOfMidnight + cache.DateTimeTicksAsOfMidnight) | KindUtc);
+                        return new DateTime(deltaTicksFromMidnight + cache.DateTimeDateDataAsOfMidnight); // includes UTC marker
                     }
                 }
 
-                // If we reached this point, one of the following is true:
-                //   a) the cache hasn't yet been initialized; or
-                //   b) the day has changed since the last call to UtcNow; or
-                //   c) the current time is 23:59:59 or 23:59:60.
-                //
-                // In cases (a) and (b), we'll update the cache. In case (c), we
-                // pessimistically assume we might be inside a leap second, so we
-                // won't update the cache.
+                // Move uncommon fallback pack into its own subroutine so that register
+                // allocation in get_UtcNow can stay as optimized as possible.
 
-                DateTime dateTime = FromFileTimeLeapSecondsAware((long)osTicks);
-                ulong ticksIntoDay = (ulong)dateTime.Ticks % (ulong)TicksPerDay;
-                if (ticksIntoDay < MinTicksPerDay)
+                return Fallback(osTicks);
+                static DateTime Fallback(ulong osTicks)
                 {
-                    // It's not yet 23:59:59, so update the cache. It's ok for multiple
-                    // threads to do this concurrently as long as the write to the static
-                    // is published *after* the cache object's fields have been populated.
+                    // If we reached this point, one of the following is true:
+                    //   a) the cache hasn't yet been initialized; or
+                    //   b) the day has changed since the last call to UtcNow; or
+                    //   c) the current time is 23:59:59 or 23:59:60.
+                    //
+                    // In cases (a) and (b), we'll update the cache. In case (c), we
+                    // pessimistically assume we might be inside a leap second, so we
+                    // won't update the cache.
 
-                    Volatile.Write(ref s_leapSecondCache, new LeapSecondCache
+                    DateTime dateTime = FromFileTimeLeapSecondsAware((long)osTicks);
+                    ulong ticksIntoDay = (ulong)dateTime.Ticks % (ulong)TicksPerDay;
+                    if (ticksIntoDay < MinTicksPerDay)
                     {
-                        WindowsTicksAsOfMidnight = osTicks - ticksIntoDay,
-                        DateTimeTicksAsOfMidnight = (ulong)dateTime.Ticks - ticksIntoDay
-                    });
-                }
+                        // It's not yet 23:59:59, so update the cache. It's ok for multiple
+                        // threads to do this concurrently as long as the write to the static
+                        // is published *after* the cache object's fields have been populated.
 
-                return dateTime;
+                        Volatile.Write(ref s_leapSecondCache, new LeapSecondCache
+                        {
+                            WindowsTicksAsOfMidnight = osTicks - ticksIntoDay,
+                            DateTimeDateDataAsOfMidnight = dateTime._dateData - ticksIntoDay // includes UTC marker
+                        });
+                    }
+
+                    return dateTime;
+                }
             }
         }
 
         private sealed class LeapSecondCache
         {
             internal ulong WindowsTicksAsOfMidnight;
-            internal ulong DateTimeTicksAsOfMidnight;
+            internal ulong DateTimeDateDataAsOfMidnight;
         }
 
         internal static readonly bool s_systemSupportsLeapSeconds = SystemSupportsLeapSeconds();
