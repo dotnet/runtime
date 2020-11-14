@@ -55,6 +55,6 @@
   <Target Name="PublishTestAsSingleFile"
           Condition="'$(IsCrossTargetingBuild)' != 'true'"
           AfterTargets="Build"
-          DependsOnTargets="Publish" />
+          DependsOnTargets="Publish;ArchiveTests" />
 
 </Project>

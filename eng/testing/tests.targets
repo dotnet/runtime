@@ -25,7 +25,7 @@
     <!-- For browser we need to hook up the target with DependsOnTargets in PublishTestAsSelfContained
     because we do a Publish which runs after Build, if we run after PrepareForRun we would generated
     an empty zip because we haven't published the selfcontained app.  -->
-    <ArchiveTestsAfterTargets Condition="'$(TargetOS)' == 'Browser'" />
+    <ArchiveTestsAfterTargets Condition="'$(TargetOS)' == 'Browser' or '$(TestSingleFile)' == 'true'" />
   </PropertyGroup>
 
   <!-- Archive test binaries. -->
@@ -37,7 +37,7 @@
 
     <PropertyGroup>
       <_ZipSourceDirectory>$(OutDir)</_ZipSourceDirectory>
-      <_ZipSourceDirectory Condition="'$(TargetOS)' == 'Browser'">$(BundleDir)</_ZipSourceDirectory>
+      <_ZipSourceDirectory Condition="'$(TargetOS)' == 'Browser' or '$(TestSingleFile)' == 'true'">$(BundleDir)</_ZipSourceDirectory>
     </PropertyGroup>
 
     <MakeDir Directories="$(TestArchiveTestsDir)" />

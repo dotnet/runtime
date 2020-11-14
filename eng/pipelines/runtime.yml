@@ -351,8 +351,9 @@ jobs:
     - Linux_x64
     jobParameters:
       testGroup: innerloop
+      isFullMatrix: ${{ variables.isFullMatrix }}
       nameSuffix: SingleFile
-      buildArgs: -s clr+corehost+libs+libs.tests -c $(_BuildConfig) /p:TestSingleFile=true
+      buildArgs: -s clr+corehost+libs+libs.tests -c $(_BuildConfig) /p:TestSingleFile=true /p:ArchiveTests=true
       timeoutInMinutes: 120
       # extra steps, run tests
       extraStepsTemplate: /eng/pipelines/libraries/helix.yml
