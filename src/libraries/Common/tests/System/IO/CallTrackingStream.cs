@@ -71,38 +71,38 @@ namespace System.IO
         // We can just use regular, auto-implemented properties for these,
         // since we know none of them are going to be called by the framework
 
-        public Stream CopyToAsyncDestination { get; private set; }
-        public int CopyToAsyncBufferSize { get; private set; }
-        public CancellationToken CopyToAsyncCancellationToken { get; private set; }
+        public Stream CopyToAsyncDestination { get; }
+        public int CopyToAsyncBufferSize { get; }
+        public CancellationToken CopyToAsyncCancellationToken { get; }
 
-        public bool DisposeDisposing { get; private set; }
+        public bool DisposeDisposing { get; }
 
-        public CancellationToken FlushAsyncCancellationToken { get; private set; }
+        public CancellationToken FlushAsyncCancellationToken { get; }
 
-        public byte[] ReadBuffer { get; private set; }
-        public int ReadOffset { get; private set; }
-        public int ReadCount { get; private set; }
+        public byte[] ReadBuffer { get; }
+        public int ReadOffset { get; }
+        public int ReadCount { get; }
 
-        public byte[] ReadAsyncBuffer { get; private set; }
-        public int ReadAsyncOffset { get; private set; }
-        public int ReadAsyncCount { get; private set; }
-        public CancellationToken ReadAsyncCancellationToken { get; private set; }
+        public byte[] ReadAsyncBuffer { get; }
+        public int ReadAsyncOffset { get; }
+        public int ReadAsyncCount { get; }
+        public CancellationToken ReadAsyncCancellationToken { get; }
 
-        public long SeekOffset { get; private set; }
-        public SeekOrigin SeekOrigin { get; private set; }
+        public long SeekOffset { get; }
+        public SeekOrigin SeekOrigin { get; }
 
-        public long SetLengthValue { get; private set; }
+        public long SetLengthValue { get; }
 
-        public byte[] WriteBuffer { get; private set; }
-        public int WriteOffset { get; private set; }
-        public int WriteCount { get; private set; }
+        public byte[] WriteBuffer { get; }
+        public int WriteOffset { get; }
+        public int WriteCount { get; }
 
-        public byte[] WriteAsyncBuffer { get; private set; }
-        public int WriteAsyncOffset { get; private set; }
-        public int WriteAsyncCount { get; private set; }
-        public CancellationToken WriteAsyncCancellationToken { get; private set; }
+        public byte[] WriteAsyncBuffer { get; }
+        public int WriteAsyncOffset { get; }
+        public int WriteAsyncCount { get; }
+        public CancellationToken WriteAsyncCancellationToken { get; }
 
-        public byte WriteByteValue { get; private set; }
+        public byte WriteByteValue { get; }
 
         // Overridden methods
 

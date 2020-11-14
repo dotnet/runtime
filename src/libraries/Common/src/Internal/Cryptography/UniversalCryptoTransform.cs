@@ -128,7 +128,7 @@ namespace Internal.Cryptography
         protected abstract byte[] UncheckedTransformFinalBlock(byte[] inputBuffer, int inputOffset, int inputCount);
         protected abstract int UncheckedTransformFinalBlock(ReadOnlySpan<byte> inputBuffer, Span<byte> outputBuffer);
 
-        protected PaddingMode PaddingMode { get; private set; }
-        protected BasicSymmetricCipher BasicSymmetricCipher { get; private set; }
+        protected PaddingMode PaddingMode { get; }
+        protected BasicSymmetricCipher BasicSymmetricCipher { get; }
     }
 }

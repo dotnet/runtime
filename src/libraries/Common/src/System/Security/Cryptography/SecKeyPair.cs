@@ -8,8 +8,8 @@ namespace System.Security.Cryptography
 {
     internal sealed class SecKeyPair : IDisposable
     {
-        internal SafeSecKeyRefHandle PublicKey { get; private set; }
-        internal SafeSecKeyRefHandle? PrivateKey { get; private set; }
+        internal SafeSecKeyRefHandle PublicKey { get; }
+        internal SafeSecKeyRefHandle? PrivateKey { get; }
 
         private SecKeyPair(SafeSecKeyRefHandle publicKey, SafeSecKeyRefHandle? privateKey)
         {

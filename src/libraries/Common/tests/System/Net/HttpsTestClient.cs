@@ -43,7 +43,7 @@ User-Agent: Testing application
         private int _requestCount = 0;
         private VerboseTestLogging _log = VerboseTestLogging.GetInstance();
 
-        public SslStream Stream { get; private set; }
+        public SslStream Stream { get; }
 
         public HttpsTestClient(Options options)
         {

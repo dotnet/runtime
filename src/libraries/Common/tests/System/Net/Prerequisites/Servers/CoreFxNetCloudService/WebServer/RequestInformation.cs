@@ -13,23 +13,23 @@ namespace WebServer
 {
     public class RequestInformation
     {
-        public string Method { get; private set; }
+        public string Method { get; }
 
-        public string Url { get; private set; }
+        public string Url { get; }
 
-        public NameValueCollection Headers { get; private set; }
+        public NameValueCollection Headers { get; }
 
-        public NameValueCollection Cookies { get; private set; }
+        public NameValueCollection Cookies { get; }
 
-        public string BodyContent { get; private set; }
+        public string BodyContent { get; }
 
-        public int BodyLength { get; private set; }
+        public int BodyLength { get; }
 
-        public bool SecureConnection { get; private set; }
+        public bool SecureConnection { get; }
 
-        public bool ClientCertificatePresent { get; private set; }
+        public bool ClientCertificatePresent { get; }
 
-        public HttpClientCertificate ClientCertificate { get; private set; }
+        public HttpClientCertificate ClientCertificate { get; }
 
         public static RequestInformation Create(HttpRequest request)
         {
