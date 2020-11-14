@@ -885,7 +885,7 @@ namespace System
 
             // Slow Non-ASCII fallback
             NotAscii:
-            return Marvin.ComputeHash32OrdinalIgnoreCase(ref _firstChar, _stringLength, 0, 0); // zero seed to make non-random
+            return Marvin.ComputeHash32OrdinalIgnoreCase(ref _firstChar, _stringLength, 0, 0); // zero seed to make it non-random
         }
 
         // Determines whether a specified string is a prefix of the current instance
