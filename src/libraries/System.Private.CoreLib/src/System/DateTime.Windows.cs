@@ -3,27 +3,138 @@
 
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using System.Threading;
 
 namespace System
 {
     public readonly partial struct DateTime
     {
-        internal static readonly bool s_systemSupportsLeapSeconds = SystemSupportsLeapSeconds();
+        private static LeapSecondCache? s_leapSecondCache;
+
+        // Question: Can this be [Stdcall, SuppressGCTransition]?
+        private static unsafe delegate* unmanaged[Stdcall]<ulong*, void> s_pfnGetSystemTimeAsFileTime = GetGetSystemTimeAsFileTimeFnPtr();
+
+        private static unsafe delegate* unmanaged[Stdcall]<ulong*, void> GetGetSystemTimeAsFileTimeFnPtr()
+        {
+            IntPtr kernel32Lib = NativeLibrary.Load("kernel32.dll", typeof(DateTime).Assembly, DllImportSearchPath.System32);
+            IntPtr pfnGetSystemTime = NativeLibrary.GetExport(kernel32Lib, "GetSystemTimeAsFileTime"); // will never fail
+
+            if (NativeLibrary.TryGetExport(kernel32Lib, "GetSystemTimePreciseAsFileTime", out IntPtr pfnGetSystemTimePrecise))
+            {
+                // If GetSystemTimePreciseAsFileTime exists, we'd like to use it.  However, on
+                // misconfigured systems, it's possible for the "precise" time to be inaccurate:
+                //     https://github.com/dotnet/runtime/issues/9014
+                // If it's inaccurate, though, we expect it to be wildly inaccurate, so as a
+                // workaround/heuristic, we get both the "normal" and "precise" times, and as
+                // long as they're close, we use the precise one. This workaround can be removed
+                // when we better understand what's causing the drift and the issue is no longer
+                // a problem or can be better worked around on all targeted OSes.
+
+                ulong filetimeStd, filetimePrecise;
+                ((delegate* unmanaged[Stdcall]<ulong*, void>)pfnGetSystemTime)(&filetimeStd);
+                ((delegate* unmanaged[Stdcall]<ulong*, void>)pfnGetSystemTimePrecise)(&filetimePrecise);
+
+                if (Math.Abs((long)(filetimeStd - filetimePrecise)) <= 100 * TicksPerMillisecond)
+                {
+                    pfnGetSystemTime = pfnGetSystemTimePrecise; // use the precise version
+                }
+            }
+
+            return (delegate* unmanaged[Stdcall]<ulong*, void>)pfnGetSystemTime;
+        }
 
         public static unsafe DateTime UtcNow
         {
             get
             {
-                if (s_systemSupportsLeapSeconds)
+                // The OS tick count and .NET's tick count are slightly different. The OS tick
+                // count is the *absolute* number of 100-ns intervals which have elapsed since
+                // January 1, 1601 (UTC). Due to leap second handling, the number of ticks per
+                // day is variable. Dec. 30, 2016 had 864,000,000,000 ticks (a standard 24-hour
+                // day), but Dec. 31, 2016 had 864,010,000,000 ticks due to leap second insertion.
+                // In .NET, *every* day is assumed to have exactly 24 hours (864,000,000,000 ticks).
+                // This means that per the OS, midnight Dec. 31, 2016 + 864 bn ticks = Dec. 31, 2016 23:59:60,
+                // but per .NET, midnight Dec. 31, 2016 + 864 bn ticks = Jan. 1, 2017 00:00:00.
+                //
+                // We can query the OS and have it deconstruct the tick count into (yyyy-mm-dd hh:mm:ss),
+                // constructing a new DateTime object from these components, but this is slow.
+                // So instead we'll rely on the fact that leap seconds only ever adjust the day
+                // by +1 or -1 second, and only at the very end of the day. That is, time rolls
+                // 23:59:58 -> 00:00:00 (negative leap second) or 23:59:59 -> 23:59:60 (positive leap
+                // second). Thus we assume that each day has at least 23 hr 59 min 59 sec, or
+                // 863,990,000,000 ticks.
+                //
+                // We take advantage of this by caching what the OS believes the tick count is at
+                // the beginning of the day vs. what .NET believes the tick count is at the beginning
+                // of the day. When the OS returns a tick count to us, if it's within 23:59:59 of
+                // what midnight was on the current day, then we know that there's no way for a leap
+                // second to have been inserted or removed, and we can short-circuit the leap second
+                // handling logic by performing a quick addition and returning immediately. If the
+                // OS-provided tick count is outside of our cached range, we'll update the cache.
+                // On the off-chance the API is called on the very last second (or two) of the day,
+                // we'll go down the slow path without updating the cache, and once another second
+                // elapses we'll be able to update the cache again.
+
+                const long MinTicksPerDay = TicksPerDay - TicksPerSecond; // a day is at least 23:59:59 long
+
+                ulong osTicks;
+                s_pfnGetSystemTimeAsFileTime(&osTicks);
+
+                // If the OS doesn't support leap second handling, short-circuit everything.
+
+                if (!s_systemSupportsLeapSeconds)
                 {
-                    FullSystemTime time;
-                    GetSystemTimeWithLeapSecondsHandling(&time);
-                    return CreateDateTimeFromSystemTime(in time);
+                    return new DateTime((osTicks + FileTimeOffset) | KindUtc);
                 }
 
-                return new DateTime(((ulong)(GetSystemTimeAsFileTime() + FileTimeOffset)) | KindUtc);
+                // If it's between 00:00:00 (inclusive) and 23:59:59 (exclusive) on the same day
+                // as the previous call to UtcNow, we can use the cached value. We can't remove
+                // the "is it before midnight?" check below since the system clock may have been
+                // moved backward.
+
+                if (s_leapSecondCache is LeapSecondCache cache)
+                {
+                    if (osTicks >= cache.WindowsTicksAsOfMidnight && osTicks < (cache.WindowsTicksAsOfMidnight + MinTicksPerDay))
+                    {
+                        return new DateTime((osTicks - cache.WindowsTicksAsOfMidnight + cache.DateTimeTicksAsOfMidnight) | KindUtc);
+                    }
+                }
+
+                // If we reached this point, one of the following is true:
+                //   a) the cache hasn't yet been initialized; or
+                //   b) the day has changed since the last call to UtcNow; or
+                //   c) the current time is 23:59:59 or 23:59:60.
+                //
+                // In cases (a) and (b), we'll update the cache. In case (c), we
+                // pessimistically assume we might be inside a leap second, so we
+                // won't update the cache.
+
+                DateTime dateTime = FromFileTimeLeapSecondsAware((long)osTicks);
+                ulong ticksIntoDay = (ulong)dateTime.Ticks % (ulong)TicksPerDay;
+                if (ticksIntoDay < MinTicksPerDay)
+                {
+                    // It's not yet 23:59:59, so update the cache. It's ok for multiple
+                    // threads to do this concurrently as long as the write to the static
+                    // is published *after* the cache object's fields have been populated.
+
+                    Volatile.Write(ref s_leapSecondCache, new LeapSecondCache
+                    {
+                        WindowsTicksAsOfMidnight = osTicks - ticksIntoDay,
+                        DateTimeTicksAsOfMidnight = (ulong)dateTime.Ticks - ticksIntoDay
+                    });
+                }
+
+                return dateTime;
             }
         }
+
+        private sealed class LeapSecondCache
+        {
+            internal ulong WindowsTicksAsOfMidnight;
+            internal ulong DateTimeTicksAsOfMidnight;
+        }
+
+        internal static readonly bool s_systemSupportsLeapSeconds = SystemSupportsLeapSeconds();
 
         internal static unsafe bool IsValidTimeWithLeapSeconds(int year, int month, int day, int hour, int minute, int second, DateTimeKind kind)
         {
