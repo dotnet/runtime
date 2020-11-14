@@ -7,6 +7,7 @@ using System.Numerics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Text.Unicode;
+using System.Buffers;
 
 using Internal.Runtime.CompilerServices;
 
@@ -835,60 +836,74 @@ namespace System
             }
         }
 
-        // Use this if and only if 'Denial of Service' attacks are not a concern (i.e. never used for free-form user input),
-        // or are otherwise mitigated
-        internal unsafe int GetNonRandomizedHashCodeOrdinalIgnoreCase()
+        internal int GetNonRandomizedHashCodeOrdinalIgnoreCase()
         {
-            fixed (char* src = &_firstChar)
+            return GetNonRandomizedHashCodeOrdinalIgnoreCaseStatic(ref _firstChar, Length, true);
+        }
+
+        private static int GetNonRandomizedHashCodeOrdinalIgnoreCaseStatic(ref char firstChar, int length, bool normalizeNonAscii)
+        {
+            uint hash1 = (5381 << 16) + 5381;
+            uint hash2 = hash1;
+
+            // We "normalize to lowercase" every char by ORing with 0x0020. This casts
+            // a very wide net because it will change, e.g., '^' to '~'. But that should
+            // be ok because we expect this to be very rare in practice.
+
+            const uint NormalizeToLowercase = 0x0020_0020u; // valid both for big-endian and for little-endian
+
+            int i = 0;
+            int count = 0;
+
+            while (count > 2)
             {
-                Debug.Assert(src[this.Length] == '\0', "src[this.Length] == '\\0'");
-                Debug.Assert(((int)src) % 4 == 0, "Managed string should start at 4 bytes boundary");
-
-                uint hash1 = (5381 << 16) + 5381;
-                uint hash2 = hash1;
-
-                uint* ptr = (uint*)src;
-                int length = this.Length;
-
-                // We "normalize to lowercase" every char by ORing with 0x0020. This casts
-                // a very wide net because it will change, e.g., '^' to '~'. But that should
-                // be ok because we expect this to be very rare in practice.
-
-                const uint NormalizeToLowercase = 0x0020_0020u; // valid both for big-endian and for little-endian
-
-                while (length > 2)
+                uint p0 = Unsafe.ReadUnaligned<uint>(ref Unsafe.Add(ref Unsafe.As<char, byte>(ref firstChar), i));
+                uint p1 = Unsafe.ReadUnaligned<uint>(ref Unsafe.Add(ref Unsafe.As<char, byte>(ref firstChar), i + 4));
+                if (normalizeNonAscii && !Utf16Utility.AllCharsInUInt32AreAscii(p0 | p1))
                 {
-                    uint p0 = ptr[0];
-                    uint p1 = ptr[1];
-                    if (!Utf16Utility.AllCharsInUInt32AreAscii(p0 | p1))
-                    {
-                        goto NotAscii;
-                    }
-
-                    length -= 4;
-                    // Where length is 4n-1 (e.g. 3,7,11,15,19) this additionally consumes the null terminator
-                    hash1 = (BitOperations.RotateLeft(hash1, 5) + hash1) ^ (p0 | NormalizeToLowercase);
-                    hash2 = (BitOperations.RotateLeft(hash2, 5) + hash2) ^ (p1 | NormalizeToLowercase);
-                    ptr += 2;
+                    goto NotAscii;
                 }
-
-                if (length > 0)
-                {
-                    if (!Utf16Utility.AllCharsInUInt32AreAscii(ptr[0]))
-                    {
-                        goto NotAscii;
-                    }
-
-                    // Where length is 4n-3 (e.g. 1,5,9,13,17) this additionally consumes the null terminator
-                    hash2 = (BitOperations.RotateLeft(hash2, 5) + hash2) ^ (ptr[0] | NormalizeToLowercase);
-                }
-
-                return (int)(hash1 + (hash2 * 1566083941));
+                count -= 4;
+                // Where count is 4n-1 (e.g. 3,7,11,15,19) this additionally consumes the null terminator
+                hash1 = (BitOperations.RotateLeft(hash1, 5) + hash1) ^ (p0 | NormalizeToLowercase);
+                hash2 = (BitOperations.RotateLeft(hash2, 5) + hash2) ^ (p1 | NormalizeToLowercase);
+                i += 8;
             }
 
-            // Slow Non-ASCII fallback
-            NotAscii:
-            return Marvin.ComputeHash32OrdinalIgnoreCase(ref _firstChar, _stringLength, 0, 0); // zero seed to make it non-random
+            if (count > 0)
+            {
+                uint p0 = Unsafe.ReadUnaligned<uint>(ref Unsafe.Add(ref Unsafe.As<char, byte>(ref firstChar), i));
+                if (normalizeNonAscii && !Utf16Utility.AllCharsInUInt32AreAscii(p0))
+                {
+                    goto NotAscii;
+                }
+
+                // Where count is 4n-3 (e.g. 1,5,9,13,17) this additionally consumes the null terminator
+                hash2 = (BitOperations.RotateLeft(hash2, 5) + hash2) ^ (p0 | NormalizeToLowercase);
+            }
+
+            return (int)(hash1 + (hash2 * 1566083941));
+
+        NotAscii:
+            return GetNonRandomizedHashCodeOrdinalIgnoreCaseSlow(ref firstChar, length);
+
+            static int GetNonRandomizedHashCodeOrdinalIgnoreCaseSlow(ref char firstChar, int length)
+            {
+                char[]? borrowedArr = null;
+                Span<char> scratch = (uint)length <= 64 ? stackalloc char[64] : (borrowedArr = ArrayPool<char>.Shared.Rent(length));
+
+                int charsWritten = System.Globalization.Ordinal.ToUpperOrdinal(
+                    MemoryMarshal.CreateReadOnlySpan(ref firstChar, length), scratch);
+
+                ref char upperCase = ref MemoryMarshal.GetReference(scratch);
+                int hashCode = GetNonRandomizedHashCodeOrdinalIgnoreCaseStatic(ref upperCase, length, false);
+
+                if (borrowedArr != null)
+                {
+                    ArrayPool<char>.Shared.Return(borrowedArr);
+                }
+                return hashCode;
+            }
         }
 
         // Determines whether a specified string is a prefix of the current instance
