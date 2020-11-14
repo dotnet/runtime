@@ -857,6 +857,11 @@ namespace System
 
                 while (length > 2)
                 {
+                    if (!Utf16Utility.AllCharsInUInt32AreAscii(ptr[0]) || !Utf16Utility.AllCharsInUInt32AreAscii(ptr[1]))
+                    {
+                        goto NotAscii;
+                    }
+
                     length -= 4;
                     // Where length is 4n-1 (e.g. 3,7,11,15,19) this additionally consumes the null terminator
                     hash1 = (BitOperations.RotateLeft(hash1, 5) + hash1) ^ (ptr[0] | normalizeToLowercase);
@@ -866,12 +871,19 @@ namespace System
 
                 if (length > 0)
                 {
+                    if (!Utf16Utility.AllCharsInUInt32AreAscii(ptr[0]))
+                    {
+                        goto NotAscii;
+                    }
+
                     // Where length is 4n-3 (e.g. 1,5,9,13,17) this additionally consumes the null terminator
                     hash2 = (BitOperations.RotateLeft(hash2, 5) + hash2) ^ (ptr[0] | normalizeToLowercase);
                 }
 
                 return (int)(hash1 + (hash2 * 1566083941));
             }
+            NotAscii:
+            return str.GetHashCodeOrdinalIgnoreCase();
         }
 
         // Determines whether a specified string is a prefix of the current instance
