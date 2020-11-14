@@ -3,7 +3,9 @@
 
 using System;
 using System.Collections.Concurrent;
+using System.Collections.Generic;
 using System.Collections.Immutable;
+using System.IO;
 using System.Reflection.Metadata;
 using System.Reflection.Metadata.Ecma335;
 
@@ -44,6 +46,40 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
         public void SetModuleIndexLookup(Func<EcmaModule, int> moduleIndexLookup)
         {
             _moduleIndexLookup = moduleIndexLookup;
+        }
+
+        public void DumpMaps(string fileName)
+        {
+            List<EcmaType> types = new List<EcmaType>(_typeToRefTokens.Keys);
+            TypeSystemComparer comparer = new TypeSystemComparer();
+            Comparison<EcmaType> typeSortHelper = (x, y) => comparer.Compare(x, y);
+            types.MergeSort(typeSortHelper);
+
+            List<FieldDesc> fields = new List<FieldDesc>(_fieldToRefTokens.Keys);
+            Comparison<FieldDesc> fieldSortHelper = (x, y) => comparer.Compare(x, y);
+            fields.MergeSort(fieldSortHelper);
+
+            using (TextWriter writer = File.CreateText(fileName))
+            {
+                writer.WriteLine($"Type -> ModuleToken count: {_typeToRefTokens.Count}");
+                writer.WriteLine($"Field -> ModuleToken count: {_fieldToRefTokens.Count}");
+
+                writer.WriteLine("Types");
+
+                foreach (var type in types)
+                {
+                    ModuleToken mt = _typeToRefTokens[type];
+                    writer.WriteLine($"{type.ToString()} -> {mt.Module.Assembly.GetName().Name}:{mt.Token:X}");
+                }
+
+                writer.WriteLine("Fields");
+
+                foreach (var field in fields)
+                {
+                    ModuleToken mt = _fieldToRefTokens[field];
+                    writer.WriteLine($"{field.ToString()} -> {mt.Module.Assembly.GetName().Name}:{mt.Token:X}");
+                }
+            }
         }
 
         public ModuleToken GetModuleTokenForType(EcmaType type, bool throwIfNotFound = true)
@@ -206,9 +242,42 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             // Collect underlying type tokens for type specifications
             if (token.TokenType == CorTokenType.mdtTypeSpec)
             {
+                //Console.WriteLine($"TypeSpec {type.ToString()}");
                 TypeSpecification typeSpec = token.MetadataReader.GetTypeSpecification((TypeSpecificationHandle)token.Handle);
                 typeSpec.DecodeSignature(new TokenResolverProvider(this, token.Module), this);
                 specialTypeFound = true;
+            }
+
+            if (token.TokenType == CorTokenType.mdtTypeRef &&
+                type.HasInstantiation &&
+                !type.IsGenericDefinition)
+            {
+                Console.WriteLine($"TypeRef {type.ToString()}");
+                TypeReference typeRef = token.MetadataReader.GetTypeReference((TypeReferenceHandle)token.Handle);
+                
+                Object resolutionScope = token.Module.GetObject(typeRef.ResolutionScope);
+                ModuleDesc typeRefResolvedModule;
+                if (resolutionScope is ModuleDesc)
+                {
+                    typeRefResolvedModule = ((ModuleDesc)resolutionScope);
+                }
+                else
+                if (resolutionScope is MetadataType)
+                {
+                    typeRefResolvedModule = ((MetadataType)resolutionScope).Module;
+                }
+                else
+                    throw new NotImplementedException(type.ToString());
+
+                Console.WriteLine($"\tResolved module: {typeRefResolvedModule.ToString()}");
+
+                //
+                // Don't store handles for typerefs whose resolution scope is local to the module group
+                //
+                if (_compilationModuleGroup.VersionsWithModule(typeRefResolvedModule))
+                {
+                    specialTypeFound = true;
+                }
             }
 
             if (_compilationModuleGroup.VersionsWithType(type))

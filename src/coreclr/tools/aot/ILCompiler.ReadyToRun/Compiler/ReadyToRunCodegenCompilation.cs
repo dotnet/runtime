@@ -304,6 +304,9 @@ namespace ILCompiler
 
             nodes = _fileLayoutOptimizer.ApplyProfilerGuidedMethodSort(nodes);
 
+            //var resolverDumpFile = Path.ChangeExtension(outputFile, "resolvermap.txt");
+            //_nodeFactory.Resolver.DumpMaps(resolverDumpFile);
+
             using (PerfEventSource.StartStopEvents.EmittingEvents())
             {
                 NodeFactory.SetMarkingComplete();
