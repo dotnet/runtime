@@ -141,3 +141,5 @@ jobs:
               creator: dotnet-bot
               testRunNamePrefixSuffix: $(_testRunNamePrefixSuffix)
               extraHelixArguments: $(_extraHelixArguments)
+              ${{ if eq(parameters.framework, 'allConfigurations') }}:
+                condition: eq(variables['_librariesBuildProducedPackages'], true)

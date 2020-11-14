@@ -77,6 +77,7 @@
   <PropertyGroup>
     <RestoreSources Condition="Exists('$(LibrariesShippingPackagesDir)')">$(RestoreSources);$(LibrariesShippingPackagesDir)</RestoreSources>
     <RestoreSources Condition="Exists('$(LibrariesNonShippingPackagesDir)')">$(RestoreSources);$(LibrariesNonShippingPackagesDir)</RestoreSources>
+    <RestoreSources>$(RestoreSources);https://api.nuget.org/v3/index.json</RestoreSources>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(LibrariesPackagesDir)' != '$(LibrariesAllConfigPackagesDir)'">
