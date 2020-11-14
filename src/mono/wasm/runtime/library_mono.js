@@ -73,19 +73,19 @@ var MonoSupportLib = {
 		},
 
 		export_functions: function (module) {
-			module ["pump_message"] = MONO.pump_message;
-			module ["mono_load_runtime_and_bcl"] = MONO.mono_load_runtime_and_bcl;
-			module ["mono_load_runtime_and_bcl_args"] = MONO.mono_load_runtime_and_bcl_args;
-			module ["mono_wasm_load_bytes_into_heap"] = MONO.mono_wasm_load_bytes_into_heap;
-			module ["mono_wasm_load_icu_data"] = MONO.mono_wasm_load_icu_data;
-			module ["mono_wasm_get_icudt_name"] = MONO.mono_wasm_get_icudt_name;
-			module ["mono_wasm_globalization_init"] = MONO.mono_wasm_globalization_init;
-			module ["mono_wasm_get_loaded_files"] = MONO.mono_wasm_get_loaded_files;
-			module ["mono_wasm_new_root_buffer"] = MONO.mono_wasm_new_root_buffer;
-			module ["mono_wasm_new_root_buffer_from_pointer"] = MONO.mono_wasm_new_root_buffer_from_pointer;
-			module ["mono_wasm_new_root"] = MONO.mono_wasm_new_root;
-			module ["mono_wasm_new_roots"] = MONO.mono_wasm_new_roots;
-			module ["mono_wasm_release_roots"] = MONO.mono_wasm_release_roots;
+			module ["pump_message"] = MONO.pump_message.bind(MONO);
+			module ["mono_load_runtime_and_bcl"] = MONO.mono_load_runtime_and_bcl.bind(MONO);
+			module ["mono_load_runtime_and_bcl_args"] = MONO.mono_load_runtime_and_bcl_args.bind(MONO);
+			module ["mono_wasm_load_bytes_into_heap"] = MONO.mono_wasm_load_bytes_into_heap.bind(MONO);
+			module ["mono_wasm_load_icu_data"] = MONO.mono_wasm_load_icu_data.bind(MONO);
+			module ["mono_wasm_get_icudt_name"] = MONO.mono_wasm_get_icudt_name.bind(MONO);
+			module ["mono_wasm_globalization_init"] = MONO.mono_wasm_globalization_init.bind(MONO);
+			module ["mono_wasm_get_loaded_files"] = MONO.mono_wasm_get_loaded_files.bind(MONO);
+			module ["mono_wasm_new_root_buffer"] = MONO.mono_wasm_new_root_buffer.bind(MONO);
+			module ["mono_wasm_new_root_buffer_from_pointer"] = MONO.mono_wasm_new_root_buffer_from_pointer.bind(MONO);
+			module ["mono_wasm_new_root"] = MONO.mono_wasm_new_root.bind(MONO);
+			module ["mono_wasm_new_roots"] = MONO.mono_wasm_new_roots.bind(MONO);
+			module ["mono_wasm_release_roots"] = MONO.mono_wasm_release_roots.bind(MONO);
 		},
 
 		_base64Converter: {
