@@ -1,13 +1,13 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Buffers;
 using System.Diagnostics;
 using System.Globalization;
 using System.Numerics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Text.Unicode;
-using System.Buffers;
 
 using Internal.Runtime.CompilerServices;
 
@@ -854,7 +854,7 @@ namespace System
 
             const uint NormalizeToLowercase = 0x0020_0020u; // valid both for big-endian and for little-endian
 
-            int i = 0;
+            nint i = 0;
             int count = length;
 
             while (count > 2)
@@ -889,11 +889,14 @@ namespace System
             return (int)(hash1 + (hash2 * 1566083941));
 
         NotAscii:
+            // Convert the string to upper case using Globalization
+            // and try again the same algorithm (without IsAscii validation this time)
             return GetNonRandomizedHashCodeOrdinalIgnoreCaseSlow(ref firstChar, length);
 
             static int GetNonRandomizedHashCodeOrdinalIgnoreCaseSlow(ref char firstChar, int length)
             {
                 char[]? borrowedArr = null;
+                // Important: add an additional char for '\0'
                 Span<char> scratch = (uint)length < 64 ?
                     stackalloc char[64] : (borrowedArr = ArrayPool<char>.Shared.Rent(length + 1));
 
