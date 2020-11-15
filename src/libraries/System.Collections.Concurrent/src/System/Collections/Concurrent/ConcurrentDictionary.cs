@@ -642,7 +642,7 @@ namespace System.Collections.Concurrent
             {
                 AcquireAllLocks(ref locksAcquired);
 
-                // If underlying bucket is already empty then just return
+                // If the dictionary is already empty, then there's nothing to clear.
                 if (AreAllBucketsEmpty())
                 {
                     return;
