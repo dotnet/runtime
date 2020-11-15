@@ -637,22 +637,25 @@ namespace System.Collections.Concurrent
         /// </summary>
         public void Clear()
         {
-            if (!IsEmpty)
+            int locksAcquired = 0;
+            try
             {
-                int locksAcquired = 0;
-                try
-                {
-                    AcquireAllLocks(ref locksAcquired);
+                AcquireAllLocks(ref locksAcquired);
 
-                    Tables tables = _tables;
-                    var newTables = new Tables(new Node[DefaultCapacity], tables._locks, new int[tables._countPerLock.Length]);
-                    _tables = newTables;
-                    _budget = Math.Max(1, newTables._buckets.Length / newTables._locks.Length);
-                }
-                finally
+                // If underlying bucket is already empty then just return
+                if (AreAllBucketsEmpty())
                 {
-                    ReleaseLocks(0, locksAcquired);
+                    return;
                 }
+
+                Tables tables = _tables;
+                var newTables = new Tables(new Node[DefaultCapacity], tables._locks, new int[tables._countPerLock.Length]);
+                _tables = newTables;
+                _budget = Math.Max(1, newTables._buckets.Length / newTables._locks.Length);
+            }
+            finally
+            {
+                ReleaseLocks(0, locksAcquired);
             }
         }
 
@@ -1424,20 +1427,7 @@ namespace System.Collections.Concurrent
                     ReleaseLocks(0, acquiredLocks);
                 }
 
-                bool AreAllBucketsEmpty()
-                {
-                    int[] countPerLock = _tables._countPerLock;
 
-                    for (int i = 0; i < countPerLock.Length; i++)
-                    {
-                        if (countPerLock[i] != 0)
-                        {
-                            return false;
-                        }
-                    }
-
-                    return true;
-                }
             }
         }
 
@@ -1876,6 +1866,22 @@ namespace System.Collections.Concurrent
         object ICollection.SyncRoot => throw new NotSupportedException(SR.ConcurrentCollection_SyncRoot_NotSupported);
 
         #endregion
+
+
+        private bool AreAllBucketsEmpty()
+        {
+            int[] countPerLock = _tables._countPerLock;
+
+            for (int i = 0; i < countPerLock.Length; i++)
+            {
+                if (countPerLock[i] != 0)
+                {
+                    return false;
+                }
+            }
+
+            return true;
+        }
 
         /// <summary>
         /// Replaces the bucket table with a larger one. To prevent multiple threads from resizing the
