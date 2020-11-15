@@ -1115,21 +1115,33 @@ namespace System.Reflection
         private static bool IsCustomAttributeDefined(
             RuntimeModule decoratedModule, int decoratedMetadataToken, RuntimeType? attributeFilterType, int attributeCtorToken, bool mustBeInheritable)
         {
-            CustomAttributeRecord[] car = CustomAttributeData.GetCustomAttributeRecords(decoratedModule, decoratedMetadataToken);
+            MetadataImport scope = decoratedModule.MetadataImport;
 
+            scope.EnumCustomAttributes(decoratedMetadataToken, out MetadataEnumResult attributeTokens);
+
+            if (attributeTokens.Length == 0)
+            {
+                return false;
+            }
+
+            CustomAttributeRecord record = default;
             if (attributeFilterType != null)
             {
                 Debug.Assert(attributeCtorToken == 0);
 
-                MetadataImport scope = decoratedModule.MetadataImport;
                 RuntimeType.ListBuilder<object> derivedAttributes = default;
 
-                for (int i = 0; i < car.Length; i++)
+                for (int i = 0; i < attributeTokens.Length; i++)
                 {
-                    if (FilterCustomAttributeRecord(car[i].tkCtor, in scope,
+                    scope.GetCustomAttributeProps(attributeTokens[i],
+                        out record.tkCtor.Value, out record.blob);
+
+                    if (FilterCustomAttributeRecord(record.tkCtor, in scope,
                         decoratedModule, decoratedMetadataToken, attributeFilterType, mustBeInheritable, ref derivedAttributes,
                         out _, out _, out _))
+                    {
                         return true;
+                    }
                 }
             }
             else
@@ -1137,10 +1149,15 @@ namespace System.Reflection
                 Debug.Assert(attributeFilterType == null);
                 Debug.Assert(!MetadataToken.IsNullToken(attributeCtorToken));
 
-                for (int i = 0; i < car.Length; i++)
+                for (int i = 0; i < attributeTokens.Length; i++)
                 {
-                    if (car[i].tkCtor == attributeCtorToken)
+                    scope.GetCustomAttributeProps(attributeTokens[i],
+                        out record.tkCtor.Value, out record.blob);
+
+                    if (record.tkCtor == attributeCtorToken)
+                    {
                         return true;
+                    }
                 }
             }
 
