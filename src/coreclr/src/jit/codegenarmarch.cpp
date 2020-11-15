@@ -735,19 +735,17 @@ void CodeGen::genPutArgStk(GenTreePutArgStk* treeNode)
         }
 
 #if defined(OSX_ARM64_ABI)
-        const unsigned if (treeNode->GetStackByteSize() < 4)
+        switch (treeNode->GetStackByteSize())
         {
-            switch (treeNode->GetStackByteSize())
-            {
-                case 1:
-                    targetType = TYP_BYTE;
-                    break;
-                case 2:
-                    targetType = TYP_SHORT;
-                    break;
-                default:
-                    unreached();
-            }
+            case 1:
+                targetType = TYP_BYTE;
+                break;
+            case 2:
+                targetType = TYP_SHORT;
+                break;
+            default:
+                assert(treeNode->GetStackByteSize() >= 4);
+                break;
         }
 #endif
 

@@ -6032,21 +6032,32 @@ public:
     Kind gtPutArgStkKind;
 #endif
 
-#if defined(DEBUG_ARG_SLOTS) && defined(FEATURE_PUT_STRUCT_ARG_STK)
-    GenTreePutArgStk(genTreeOps   oper,
-                     var_types    type,
-                     GenTree*     op1,
-                     unsigned     stackByteOffset,
-                     unsigned     stackByteSize,
-                     unsigned     slotNum,
-                     unsigned     numSlots,
+    GenTreePutArgStk(genTreeOps oper,
+                     var_types  type,
+                     GenTree*   op1,
+                     unsigned   stackByteOffset,
+#if defined(FEATURE_PUT_STRUCT_ARG_STK)
+                     unsigned stackByteSize,
+#endif
+#if defined(DEBUG_ARG_SLOTS)
+                     unsigned slotNum,
+#if defined(FEATURE_PUT_STRUCT_ARG_STK)
+                     unsigned numSlots,
+#endif
+#endif
                      GenTreeCall* callNode,
                      bool         putInIncomingArgArea)
         : GenTreeUnOp(oper, type, op1 DEBUGARG(/*largeNode*/ false))
         , m_byteOffset(stackByteOffset)
+#if defined(FEATURE_PUT_STRUCT_ARG_STK)
         , m_byteSize(stackByteSize)
+#endif
+#if defined(DEBUG_ARG_SLOTS)
         , gtSlotNum(slotNum)
+#if defined(FEATURE_PUT_STRUCT_ARG_STK)
         , gtNumSlots(numSlots)
+#endif
+#endif
 #if defined(UNIX_X86_ABI)
         , gtPadAlign(0)
 #endif
@@ -6056,84 +6067,15 @@ public:
 #if FEATURE_FASTTAILCALL
         , gtPutInIncomingArgArea(putInIncomingArgArea)
 #endif // FEATURE_FASTTAILCALL
+#if defined(FEATURE_PUT_STRUCT_ARG_STK)
         , gtPutArgStkKind(Kind::Invalid)
-
+#endif
     {
         DEBUG_ARG_SLOTS_ASSERT(m_byteOffset == slotNum * TARGET_POINTER_SIZE);
+#if defined(FEATURE_PUT_STRUCT_ARG_STK)
         DEBUG_ARG_SLOTS_ASSERT(m_byteSize == gtNumSlots * TARGET_POINTER_SIZE);
+#endif
     }
-#elif defined(DEBUG_ARG_SLOTS) && !defined(FEATURE_PUT_STRUCT_ARG_STK)
-    GenTreePutArgStk(genTreeOps   oper,
-                     var_types    type,
-                     GenTree*     op1,
-                     unsigned     stackByteOffset,
-                     unsigned     slotNum,
-                     GenTreeCall* callNode,
-                     bool         putInIncomingArgArea)
-        : GenTreeUnOp(oper, type, op1 DEBUGARG(/*largeNode*/ false))
-        , m_byteOffset(stackByteOffset)
-        , gtSlotNum(slotNum)
-#if defined(UNIX_X86_ABI)
-        , gtPadAlign(0)
-#endif
-
-#if defined(DEBUG) || defined(UNIX_X86_ABI)
-        , gtCall(callNode)
-#endif
-#if FEATURE_FASTTAILCALL
-        , gtPutInIncomingArgArea(putInIncomingArgArea)
-#endif // FEATURE_FASTTAILCALL
-    {
-        DEBUG_ARG_SLOTS_ASSERT(m_byteOffset == slotNum * TARGET_POINTER_SIZE);
-    }
-#elif !defined(DEBUG_ARG_SLOTS) && defined(FEATURE_PUT_STRUCT_ARG_STK)
-    GenTreePutArgStk(genTreeOps   oper,
-                     var_types    type,
-                     GenTree*     op1,
-                     unsigned     stackByteOffset,
-                     unsigned     stackByteSize,
-                     GenTreeCall* callNode,
-                     bool         putInIncomingArgArea)
-        : GenTreeUnOp(oper, type, op1 DEBUGARG(/*largeNode*/ false))
-        , m_byteOffset(stackByteOffset)
-        , m_byteSize(stackByteSize)
-#if defined(UNIX_X86_ABI)
-        , gtPadAlign(0)
-#endif
-
-#if defined(DEBUG) || defined(UNIX_X86_ABI)
-        , gtCall(callNode)
-#endif
-#if FEATURE_FASTTAILCALL
-        , gtPutInIncomingArgArea(putInIncomingArgArea)
-#endif // FEATURE_FASTTAILCALL
-        , gtPutArgStkKind(Kind::Invalid)
-
-    {
-    }
-#elif !defined(DEBUG_ARG_SLOTS) && !defined(FEATURE_PUT_STRUCT_ARG_STK)
-    GenTreePutArgStk(genTreeOps   oper,
-                     var_types    type,
-                     GenTree*     op1,
-                     unsigned     stackByteOffset,
-                     GenTreeCall* callNode,
-                     bool         putInIncomingArgArea)
-        : GenTreeUnOp(oper, type, op1 DEBUGARG(/*largeNode*/ false))
-        , m_byteOffset(stackByteOffset)
-#if defined(UNIX_X86_ABI)
-        , gtPadAlign(0)
-#endif
-#if defined(DEBUG) || defined(UNIX_X86_ABI)
-        , gtCall(callNode)
-#endif
-#if FEATURE_FASTTAILCALL
-        , gtPutInIncomingArgArea(putInIncomingArgArea)
-#endif // FEATURE_FASTTAILCALL
-    {
-    }
-#else
-#error Unsupported set of defines.
-#endif
 
 #if FEATURE_FASTTAILCALL
     bool putInIncomingArgArea() const
@@ -6206,7 +6148,7 @@ struct GenTreePutArgSplit : public GenTreePutArgStk
     GenTreePutArgSplit(GenTree* op1,
                        unsigned stackByteOffset,
 #if defined(FEATURE_PUT_STRUCT_ARG_STK)
-                       unsigned byteSize,
+                       unsigned stackByteSize,
 #endif
 #if defined(DEBUG_ARG_SLOTS)
                        unsigned slotNum,
@@ -6222,7 +6164,7 @@ struct GenTreePutArgSplit : public GenTreePutArgStk
                            op1,
                            stackByteOffset,
 #if defined(FEATURE_PUT_STRUCT_ARG_STK)
-                           byteSize,
+                           stackByteSize,
 #endif
 #if defined(DEBUG_ARG_SLOTS)
                            slotNum,
