@@ -864,7 +864,7 @@ namespace System
                     ref byte firstByte = ref Unsafe.As<char, byte>(ref firstChar);
                     uint p0 = Unsafe.ReadUnaligned<uint>(ref Unsafe.Add(ref firstByte, i));
                     uint p1 = Unsafe.ReadUnaligned<uint>(ref Unsafe.Add(ref firstByte, i + 4));
-                    if (!AllCharsInUInt32AreAscii(p0 | p1))
+                    if (!Utf16Utility.AllCharsInUInt32AreAscii(p0 | p1))
                     {
                         goto NotAscii;
                     }
@@ -880,7 +880,7 @@ namespace System
                 if (count > 0)
                 {
                     uint p0 = Unsafe.ReadUnaligned<uint>(ref Unsafe.Add(ref Unsafe.As<char, byte>(ref firstChar), i));
-                    if (!AllCharsInUInt32AreAscii(p0))
+                    if (!Utf16Utility.AllCharsInUInt32AreAscii(p0))
                     {
                         goto NotAscii;
                     }
