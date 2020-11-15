@@ -83,10 +83,10 @@ internal partial class Interop
                     HashSizeInBytes = hashSize;
                 }
 
-                public string HashAlgorithmId { get; }
-                public BCryptOpenAlgorithmProviderFlags Flags { get; }
-                public SafeBCryptAlgorithmHandle Handle { get; }
-                public int HashSizeInBytes { get; }
+                public string HashAlgorithmId { get; private set; }
+                public BCryptOpenAlgorithmProviderFlags Flags { get; private set; }
+                public SafeBCryptAlgorithmHandle Handle { get; private set; }
+                public int HashSizeInBytes { get; private set; }
             }
         }
     }

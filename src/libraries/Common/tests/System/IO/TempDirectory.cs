@@ -14,7 +14,7 @@ namespace System.IO
         public const int MaxNameLength = 255;
 
         /// <summary>Gets the created directory's path.</summary>
-        public string Path { get; }
+        public string Path { get; private set; }
 
         /// <summary>
         /// Construct a random temp directory in the temp folder.

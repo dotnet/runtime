@@ -52,7 +52,7 @@ namespace System.Net.Test.Common
             }
         }
 
-        public SslStream Stream { get; }
+        public SslStream Stream { get; private set; }
 
         public int Port
         {
