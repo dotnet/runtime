@@ -8,6 +8,7 @@
     <UseAppHost>true</UseAppHost>
     <RuntimeIdentifier>$(PackageRID)</RuntimeIdentifier>
     <SelfContained>true</SelfContained>
+    <SingleFileHostSourcePath>$(ArtifactsBinDir)/$(RuntimeIdentifier).$(RuntimeConfiguration)/corehost/singlefilehost</SingleFileHostSourcePath>
 
     <RunScriptCommand Condition="'$(TargetOS)' == 'windows'">$(AssemblyName).exe</RunScriptCommand>
     <RunScriptCommand Condition="'$(TargetOS)' != 'windows'">chmod +x $(AssemblyName) &amp;&amp; ./$(AssemblyName)</RunScriptCommand>
