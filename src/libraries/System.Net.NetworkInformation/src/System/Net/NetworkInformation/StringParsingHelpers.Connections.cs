@@ -42,7 +42,7 @@ namespace System.Net.NetworkInformation
             string tcp6FileContents = File.ReadAllText(tcp6ConnectionsFile);
             string[] v6connections = tcp6FileContents.Split(s_newLineSeparator, StringSplitOptions.RemoveEmptyEntries);
 
-            // First line is header in each file. on WSL, this file may be empty
+            // First line is header in each file. On WSL, this file may be empty.
             int count = 0;
             if (v4connections.Length > 0)
             {
@@ -110,7 +110,7 @@ namespace System.Net.NetworkInformation
             string tcp6FileContents = File.ReadAllText(tcp6ConnectionsFile);
             string[] v6connections = tcp6FileContents.Split(s_newLineSeparator, StringSplitOptions.RemoveEmptyEntries);
 
-            // First line is header in each file. on WSL, this file may be empty
+            // First line is header in each file. On WSL, this file may be empty.
             int count = 0;
             if (v4connections.Length > 0)
             {
@@ -178,7 +178,7 @@ namespace System.Net.NetworkInformation
             string udp6FileContents = File.ReadAllText(udp6File);
             string[] v6connections = udp6FileContents.Split(s_newLineSeparator, StringSplitOptions.RemoveEmptyEntries);
 
-            // First line is header in each file. on WSL, this file may be empty
+            // First line is header in each file. On WSL, this file may be empty.
             int count = 0;
             if (v4connections.Length > 0)
             {
