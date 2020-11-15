@@ -857,33 +857,57 @@ namespace System
             nint i = 0;
             int count = length;
 
-            while (count > 2)
+            if (normalizeNonAscii)
             {
-                ref byte firstByte = ref Unsafe.As<char, byte>(ref firstChar);
-                uint p0 = Unsafe.ReadUnaligned<uint>(ref Unsafe.Add(ref firstByte, i));
-                uint p1 = Unsafe.ReadUnaligned<uint>(ref Unsafe.Add(ref firstByte, i + 4));
-                if (normalizeNonAscii && !Utf16Utility.AllCharsInUInt32AreAscii(p0 | p1))
+                while (count > 2)
                 {
-                    goto NotAscii;
+                    ref byte firstByte = ref Unsafe.As<char, byte>(ref firstChar);
+                    uint p0 = Unsafe.ReadUnaligned<uint>(ref Unsafe.Add(ref firstByte, i));
+                    uint p1 = Unsafe.ReadUnaligned<uint>(ref Unsafe.Add(ref firstByte, i + 4));
+                    if (!AllCharsInUInt32AreAscii(p0 | p1))
+                    {
+                        goto NotAscii;
+                    }
+
+                    // Where count is 4n-1 (e.g. 3,7,11,15,19) this additionally consumes the null terminator
+                    hash1 = (BitOperations.RotateLeft(hash1, 5) + hash1) ^ (p0 | NormalizeToLowercase);
+                    hash2 = (BitOperations.RotateLeft(hash2, 5) + hash2) ^ (p1 | NormalizeToLowercase);
+
+                    count -= 4;
+                    i += 8;
                 }
-                count -= 4;
-                // Where count is 4n-1 (e.g. 3,7,11,15,19) this additionally consumes the null terminator
-                hash1 = (BitOperations.RotateLeft(hash1, 5) + hash1) ^ (p0 | NormalizeToLowercase);
-                hash2 = (BitOperations.RotateLeft(hash2, 5) + hash2) ^ (p1 | NormalizeToLowercase);
-                i += 8;
+
+                if (count > 0)
+                {
+                    uint p0 = Unsafe.ReadUnaligned<uint>(ref Unsafe.Add(ref Unsafe.As<char, byte>(ref firstChar), i));
+                    if (!AllCharsInUInt32AreAscii(p0))
+                    {
+                        goto NotAscii;
+                    }
+
+                    // Where count is 4n-3 (e.g. 1,5,9,13,17) this additionally consumes the null terminator
+                    hash2 = (BitOperations.RotateLeft(hash2, 5) + hash2) ^ (p0 | NormalizeToLowercase);
+                }
             }
-
-            if (count > 0)
+            else
             {
-                uint p0 = Unsafe.ReadUnaligned<uint>(
-                    ref Unsafe.Add(ref Unsafe.As<char, byte>(ref firstChar), i));
-                if (normalizeNonAscii && !Utf16Utility.AllCharsInUInt32AreAscii(p0))
+                // The duplication can be removed once JIT gets "Loop Unswitching" optimization
+                // so the invariant "if (normalizeNonAscii)" check can be done inside the loop
+                while (count > 2)
                 {
-                    goto NotAscii;
+                    ref byte firstByte = ref Unsafe.As<char, byte>(ref firstChar);
+                    uint p0 = Unsafe.ReadUnaligned<uint>(ref Unsafe.Add(ref firstByte, i));
+                    uint p1 = Unsafe.ReadUnaligned<uint>(ref Unsafe.Add(ref firstByte, i + 4));
+                    count -= 4;
+                    hash1 = (BitOperations.RotateLeft(hash1, 5) + hash1) ^ (p0 | NormalizeToLowercase);
+                    hash2 = (BitOperations.RotateLeft(hash2, 5) + hash2) ^ (p1 | NormalizeToLowercase);
+                    i += 8;
                 }
-
-                // Where count is 4n-3 (e.g. 1,5,9,13,17) this additionally consumes the null terminator
-                hash2 = (BitOperations.RotateLeft(hash2, 5) + hash2) ^ (p0 | NormalizeToLowercase);
+                if (count > 0)
+                {
+                    uint p0 = Unsafe.ReadUnaligned<uint>(ref Unsafe.Add(ref Unsafe.As<char, byte>(ref firstChar), i));
+                    hash2 = (BitOperations.RotateLeft(hash2, 5) + hash2) ^ (p0 | NormalizeToLowercase);
+                }
             }
 
             return (int)(hash1 + (hash2 * 1566083941));
@@ -896,7 +920,7 @@ namespace System
             static int GetNonRandomizedHashCodeOrdinalIgnoreCaseSlow(ref char firstChar, int length)
             {
                 char[]? borrowedArr = null;
-                // Important: add an additional char for '\0'
+                // Important: leave an additional space for '\0'
                 Span<char> scratch = (uint)length < 64 ?
                     stackalloc char[64] : (borrowedArr = ArrayPool<char>.Shared.Rent(length + 1));
 
