@@ -420,25 +420,5 @@ namespace Internal.Runtime.CompilerServices
 
             // ret
         }
-
-        /// <summary>
-        /// Returns a mutable reference to the contents of a boxed struct. The caller should take
-        /// care not to reassign the value except through the struct's own mutable API surface.
-        /// </summary>
-        /// <remarks>
-        /// The runtime may check the type of the boxed object, but callers must not depend on
-        /// this check taking place.
-        /// </remarks>
-        [Intrinsic]
-        [NonVersionable]
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static ref T Unbox<T>(object box) where T : struct
-        {
-            return ref Unsafe.As<byte, T>(ref RuntimeHelpers.GetRawData(box));
-
-            // ldarg.0
-            // unbox !!T
-            // ret
-        }
     }
 }

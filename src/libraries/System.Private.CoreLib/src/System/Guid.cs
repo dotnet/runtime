@@ -414,17 +414,17 @@ namespace System
                     if (TryParseHex(guidString.Slice(19, 4), out uintTmp)) // _d, _e
                     {
                         // _d, _e must be stored as a big-endian ushort
-                        result._de = (BitConverter.IsLittleEndian) ? BinaryPrimitives.ReverseEndianness((ushort)uintTmp) : (ushort)uintTmp;
+                        result._de = BitConverter.IsLittleEndian ? BinaryPrimitives.ReverseEndianness((ushort)uintTmp) : (ushort)uintTmp;
 
                         if (TryParseHex(guidString.Slice(24, 4), out uintTmp)) // _f, _g
                         {
                             // _f, _g must be stored as a big-endian ushort
-                            result._fg = (BitConverter.IsLittleEndian) ? BinaryPrimitives.ReverseEndianness((ushort)uintTmp) : (ushort)uintTmp;
+                            result._fg = BitConverter.IsLittleEndian ? BinaryPrimitives.ReverseEndianness((ushort)uintTmp) : (ushort)uintTmp;
 
                             if (uint.TryParse(guidString.Slice(28, 8), NumberStyles.AllowHexSpecifier, null, out uintTmp)) // _h, _i, _j, _k
                             {
                                 // _h, _i, _j, _k must be stored as a big-endian uint
-                                result._hijk = (BitConverter.IsLittleEndian) ? BinaryPrimitives.ReverseEndianness(uintTmp) : uintTmp;
+                                result._hijk = BitConverter.IsLittleEndian ? BinaryPrimitives.ReverseEndianness(uintTmp) : uintTmp;
 
                                 return true;
                             }
@@ -551,7 +551,7 @@ namespace System
             }
 
             // Read in the number
-            if (!TryParseHex(guidString.Slice(numStart, numLen), out Unsafe.As<ushort, short>(ref result._b), ref overflow) || overflow)
+            if (!TryParseHex(guidString.Slice(numStart, numLen), out result._b, ref overflow) || overflow)
             {
                 result.SetFailure(overflow, overflow ? nameof(SR.Overflow_UInt32) : nameof(SR.Format_GuidInvalidChar));
                 return false;
@@ -573,7 +573,7 @@ namespace System
             }
 
             // Read in the number
-            if (!TryParseHex(guidString.Slice(numStart, numLen), out Unsafe.As<ushort, short>(ref result._c), ref overflow) || overflow)
+            if (!TryParseHex(guidString.Slice(numStart, numLen), out result._c, ref overflow) || overflow)
             {
                 result.SetFailure(overflow, overflow ? nameof(SR.Overflow_UInt32) : nameof(SR.Format_GuidInvalidChar));
                 return false;
@@ -653,10 +653,10 @@ namespace System
             return true;
         }
 
-        private static bool TryParseHex(ReadOnlySpan<char> guidString, out short result, ref bool overflow)
+        private static bool TryParseHex(ReadOnlySpan<char> guidString, out ushort result, ref bool overflow)
         {
             bool success = TryParseHex(guidString, out uint tmp, ref overflow);
-            result = (short)tmp;
+            result = (ushort)tmp;
             return success;
         }
 
@@ -797,11 +797,7 @@ namespace System
 
         // Returns true if and only if the guid represented
         //  by o is the same as this instance.
-        public override bool Equals(object? o)
-        {
-            return o is Guid
-                && EqualsCore(this, Unsafe.Unbox<Guid>(o));
-        }
+        public override bool Equals(object? o) => o is Guid g && EqualsCore(this, g);
 
         public bool Equals(Guid g) => EqualsCore(this, g);
 
