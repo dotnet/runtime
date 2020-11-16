@@ -254,8 +254,8 @@ namespace System.Net.WebSockets.Client.Tests
             using (var clientSocket = new ClientWebSocket())
             {
                 var cts = new CancellationTokenSource();
-                cts.Cancel();
                 Task t = clientSocket.ConnectAsync(new Uri("ws://" + Guid.NewGuid().ToString("N")), cts.Token);
+                cts.Cancel();
                 await Assert.ThrowsAnyAsync<OperationCanceledException>(() => t);
             }
         }
