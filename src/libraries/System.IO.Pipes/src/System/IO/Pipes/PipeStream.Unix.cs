@@ -80,26 +80,22 @@ namespace System.IO.Pipes
         /// <param name="safePipeHandle">The handle to validate.</param>
         internal void ValidateHandleIsPipe(SafePipeHandle safePipeHandle)
         {
-            if (safePipeHandle.NamedPipeSocket == null)
+            Interop.Sys.FileStatus status;
+            int result = CheckPipeCall(Interop.Sys.FStat(safePipeHandle, out status));
+            if (result == 0)
             {
-                Interop.Sys.FileStatus status;
-                int result = CheckPipeCall(Interop.Sys.FStat(safePipeHandle, out status));
-                if (result == 0)
+                if ((status.Mode & Interop.Sys.FileTypes.S_IFMT) != Interop.Sys.FileTypes.S_IFIFO &&
+                    (status.Mode & Interop.Sys.FileTypes.S_IFMT) != Interop.Sys.FileTypes.S_IFSOCK)
                 {
-                    if ((status.Mode & Interop.Sys.FileTypes.S_IFMT) != Interop.Sys.FileTypes.S_IFIFO &&
-                        (status.Mode & Interop.Sys.FileTypes.S_IFMT) != Interop.Sys.FileTypes.S_IFSOCK)
-                    {
-                        throw new IOException(SR.IO_InvalidPipeHandle);
-                    }
+                    throw new IOException(SR.IO_InvalidPipeHandle);
                 }
             }
         }
 
         /// <summary>Initializes the handle to be used asynchronously.</summary>
-        /// <param name="handle">The handle.</param>
-        private void InitializeAsyncHandle(SafePipeHandle handle)
+        private void InitializeAsyncHandle(SafePipeHandle handle, bool isAsync)
         {
-            // nop
+            handle.PipeSocket!.Blocking = !isAsync;
         }
 
         internal virtual void DisposeCore(bool disposing)
@@ -112,30 +108,17 @@ namespace System.IO.Pipes
             Debug.Assert(_handle != null);
             DebugAssertHandleValid(_handle);
 
-            // For named pipes, receive on the socket.
-            Socket? socket = _handle.NamedPipeSocket;
-            if (socket != null)
+            // For a blocking socket, we could simply use the same Read syscall as is done
+            // for reading an anonymous pipe.  However, for a non-blocking socket, Read could
+            // end up returning EWOULDBLOCK rather than blocking waiting for data.  Such a case
+            // is already handled by Socket.Receive, so we use it here.
+            try
             {
-                // For a blocking socket, we could simply use the same Read syscall as is done
-                // for reading an anonymous pipe.  However, for a non-blocking socket, Read could
-                // end up returning EWOULDBLOCK rather than blocking waiting for data.  Such a case
-                // is already handled by Socket.Receive, so we use it here.
-                try
-                {
-                    return socket.Receive(buffer, SocketFlags.None);
-                }
-                catch (SocketException e)
-                {
-                    throw GetIOExceptionForSocketException(e);
-                }
+                return _handle.PipeSocket!.Receive(buffer, SocketFlags.None);
             }
-
-            // For anonymous pipes, read from the file descriptor.
-            fixed (byte* bufPtr = &MemoryMarshal.GetReference(buffer))
+            catch (SocketException e)
             {
-                int result = CheckPipeCall(Interop.Sys.Read(_handle, bufPtr, buffer.Length));
-                Debug.Assert(result <= buffer.Length);
-                return result;
+                throw GetIOExceptionForSocketException(e);
             }
         }
 
@@ -144,36 +127,21 @@ namespace System.IO.Pipes
             Debug.Assert(_handle != null);
             DebugAssertHandleValid(_handle);
 
-            // For named pipes, send to the socket.
-            Socket? socket = _handle.NamedPipeSocket;
-            if (socket != null)
-            {
-                // For a blocking socket, we could simply use the same Write syscall as is done
-                // for writing to anonymous pipe.  However, for a non-blocking socket, Write could
-                // end up returning EWOULDBLOCK rather than blocking waiting for space available.
-                // Such a case is already handled by Socket.Send, so we use it here.
-                try
-                {
-                    while (buffer.Length > 0)
-                    {
-                        int bytesWritten = socket.Send(buffer, SocketFlags.None);
-                        buffer = buffer.Slice(bytesWritten);
-                    }
-                }
-                catch (SocketException e)
-                {
-                    throw GetIOExceptionForSocketException(e);
-                }
-            }
-
-            // For anonymous pipes, write the file descriptor.
-            fixed (byte* bufPtr = &MemoryMarshal.GetReference(buffer))
+            // For a blocking socket, we could simply use the same Write syscall as is done
+            // for writing to anonymous pipe.  However, for a non-blocking socket, Write could
+            // end up returning EWOULDBLOCK rather than blocking waiting for space available.
+            // Such a case is already handled by Socket.Send, so we use it here.
+            try
             {
                 while (buffer.Length > 0)
                 {
-                    int bytesWritten = CheckPipeCall(Interop.Sys.Write(_handle, bufPtr, buffer.Length));
+                    int bytesWritten = _handle.PipeSocket!.Send(buffer, SocketFlags.None);
                     buffer = buffer.Slice(bytesWritten);
                 }
+            }
+            catch (SocketException e)
+            {
+                throw GetIOExceptionForSocketException(e);
             }
         }
 
@@ -183,7 +151,7 @@ namespace System.IO.Pipes
 
             try
             {
-                return await InternalHandle!.NamedPipeSocket!.ReceiveAsync(destination, SocketFlags.None, cancellationToken).ConfigureAwait(false);
+                return await InternalHandle!.PipeSocket!.ReceiveAsync(destination, SocketFlags.None, cancellationToken).ConfigureAwait(false);
             }
             catch (SocketException e)
             {
@@ -199,7 +167,7 @@ namespace System.IO.Pipes
             {
                 while (source.Length > 0)
                 {
-                    int bytesWritten = await _handle!.NamedPipeSocket!.SendAsync(source, SocketFlags.None, cancellationToken).ConfigureAwait(false);
+                    int bytesWritten = await _handle!.PipeSocket!.SendAsync(source, SocketFlags.None, cancellationToken).ConfigureAwait(false);
                     Debug.Assert(bytesWritten > 0 && bytesWritten <= source.Length);
                     source = source.Slice(bytesWritten);
                 }
@@ -350,8 +318,8 @@ namespace System.IO.Pipes
             Interop.CheckIo(Interop.Sys.Pipe(fds, Interop.Sys.PipeFlags.O_CLOEXEC));
 
             // Store the file descriptors into our safe handles
-            reader.SetHandle(fds[Interop.Sys.ReadEndOfPipe]);
-            writer.SetHandle(fds[Interop.Sys.WriteEndOfPipe]);
+            reader.SetHandle(new IntPtr(fds[Interop.Sys.ReadEndOfPipe]));
+            writer.SetHandle(new IntPtr(fds[Interop.Sys.WriteEndOfPipe]));
         }
 
         internal int CheckPipeCall(int result)

@@ -43,6 +43,7 @@ namespace System.Net.Sockets
             target.LastConnectFailed = LastConnectFailed;
             target.DualMode = DualMode;
             target.ExposedHandleOrUntrackedConfiguration = ExposedHandleOrUntrackedConfiguration;
+            target.IsPipe = IsPipe;
         }
 
         internal void SetExposed() => ExposedHandleOrUntrackedConfiguration = true;
@@ -238,56 +239,63 @@ namespace System.Net.Sockets
         {
             Interop.Error errorCode = Interop.Error.SUCCESS;
 
-            // If abortive is not set, we're not running on the finalizer thread, so it's safe to block here.
-            // We can honor the linger options set on the socket.  It also means closesocket() might return
-            // EWOULDBLOCK, in which case we need to do some recovery.
-            if (!abortive)
+            if (IsPipe)
             {
-                if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, $"handle:{handle} Following 'non-abortive' branch.");
-
-                // Close, and if its errno is other than EWOULDBLOCK, there's nothing more to do - we either succeeded or failed.
-                errorCode = CloseHandle(handle);
-                if (errorCode != Interop.Error.EWOULDBLOCK)
-                {
-                    return SocketPal.GetSocketErrorForErrorCode(errorCode);
-                }
-
-                // The socket must be non-blocking with a linger timeout set.
-                // We have to set the socket to blocking.
-                if (Interop.Sys.Fcntl.DangerousSetIsNonBlocking(handle, 0) == 0)
-                {
-                    // The socket successfully made blocking; retry the close().
-                    return SocketPal.GetSocketErrorForErrorCode(CloseHandle(handle));
-                }
-
-                // The socket could not be made blocking; fall through to the regular abortive close.
+                return SocketPal.GetSocketErrorForErrorCode(CloseHandle(handle));
             }
-
-            // By default or if the non-abortive path failed, set linger timeout to zero to get an abortive close (RST).
-            var linger = new Interop.Sys.LingerOption
+            else
             {
-                OnOff = 1,
-                Seconds = 0
-            };
+                // If abortive is not set, we're not running on the finalizer thread, so it's safe to block here.
+                // We can honor the linger options set on the socket.  It also means closesocket() might return
+                // EWOULDBLOCK, in which case we need to do some recovery.
+                if (!abortive)
+                {
+                    if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, $"handle:{handle} Following 'non-abortive' branch.");
 
-            errorCode = Interop.Sys.SetLingerOption(handle, &linger);
-#if DEBUG
-            _closeSocketLinger = SocketPal.GetSocketErrorForErrorCode(errorCode);
-#endif
-            if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, $"handle:{handle}, setsockopt():{errorCode}");
-
-            switch (errorCode)
-            {
-                case Interop.Error.SUCCESS:
-                case Interop.Error.EINVAL:
-                case Interop.Error.ENOPROTOOPT:
+                    // Close, and if its errno is other than EWOULDBLOCK, there's nothing more to do - we either succeeded or failed.
                     errorCode = CloseHandle(handle);
-                    break;
+                    if (errorCode != Interop.Error.EWOULDBLOCK)
+                    {
+                        return SocketPal.GetSocketErrorForErrorCode(errorCode);
+                    }
 
-                // For other errors, it's too dangerous to try closesocket() - it might block!
+                    // The socket must be non-blocking with a linger timeout set.
+                    // We have to set the socket to blocking.
+                    if (Interop.Sys.Fcntl.DangerousSetIsNonBlocking(handle, 0) == 0)
+                    {
+                        // The socket successfully made blocking; retry the close().
+                        return SocketPal.GetSocketErrorForErrorCode(CloseHandle(handle));
+                    }
+
+                    // The socket could not be made blocking; fall through to the regular abortive close.
+                }
+
+                // By default or if the non-abortive path failed, set linger timeout to zero to get an abortive close (RST).
+                var linger = new Interop.Sys.LingerOption
+                {
+                    OnOff = 1,
+                    Seconds = 0
+                };
+
+                errorCode = Interop.Sys.SetLingerOption(handle, &linger);
+    #if DEBUG
+                _closeSocketLinger = SocketPal.GetSocketErrorForErrorCode(errorCode);
+    #endif
+                if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, $"handle:{handle}, setsockopt():{errorCode}");
+
+                switch (errorCode)
+                {
+                    case Interop.Error.SUCCESS:
+                    case Interop.Error.EINVAL:
+                    case Interop.Error.ENOPROTOOPT:
+                        errorCode = CloseHandle(handle);
+                        break;
+
+                    // For other errors, it's too dangerous to try closesocket() - it might block!
+                }
+
+                return SocketPal.GetSocketErrorForErrorCode(errorCode);
             }
-
-            return SocketPal.GetSocketErrorForErrorCode(errorCode);
         }
 
         private Interop.Error CloseHandle(IntPtr handle)

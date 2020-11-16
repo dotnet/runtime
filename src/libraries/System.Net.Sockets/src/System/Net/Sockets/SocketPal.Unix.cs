@@ -91,8 +91,23 @@ namespace System.Net.Sockets
             return errorCode;
         }
 
+        private static unsafe int SysRead(SafeSocketHandle socket, Span<byte> buffer, out Interop.Error errno)
+        {
+            int received = 0;
+
+            fixed (byte* b = &MemoryMarshal.GetReference(buffer))
+            {
+                received = Interop.Sys.Read(socket, b, buffer.Length);
+                errno = received != -1 ? Interop.Error.SUCCESS : Interop.Sys.GetLastError();
+            }
+
+            return received;
+        }
+
         private static unsafe int SysReceive(SafeSocketHandle socket, SocketFlags flags, Span<byte> buffer, out Interop.Error errno)
         {
+            Debug.Assert(!socket.IsPipe);
+
             int received = 0;
 
             fixed (byte* b = &MemoryMarshal.GetReference(buffer))
@@ -115,6 +130,8 @@ namespace System.Net.Sockets
 
         private static unsafe int SysReceive(SafeSocketHandle socket, SocketFlags flags, Span<byte> buffer, byte[]? socketAddress, ref int socketAddressLen, out SocketFlags receivedFlags, out Interop.Error errno)
         {
+            Debug.Assert(!socket.IsPipe);
+
             Debug.Assert(socketAddress != null || socketAddressLen == 0, $"Unexpected values: socketAddress={socketAddress}, socketAddressLen={socketAddressLen}");
 
             long received = 0;
@@ -154,8 +171,32 @@ namespace System.Net.Sockets
             return checked((int)received);
         }
 
+        private static unsafe int SysWrite(SafeSocketHandle socket, ReadOnlySpan<byte> buffer, ref int offset, ref int count, out Interop.Error errno)
+        {
+            int sent;
+
+            fixed (byte* b = &MemoryMarshal.GetReference(buffer))
+            {
+                sent = Interop.Sys.Write(socket, &b[offset], buffer.Length);
+                if (sent == -1)
+                {
+                    errno = Interop.Sys.GetLastError();
+                }
+                else
+                {
+                    errno = Interop.Error.SUCCESS;
+                    offset += sent;
+                    count -= sent;
+                }
+            }
+
+            return sent;
+        }
+
         private static unsafe int SysSend(SafeSocketHandle socket, SocketFlags flags, ReadOnlySpan<byte> buffer, ref int offset, ref int count, out Interop.Error errno)
         {
+            Debug.Assert(!socket.IsPipe);
+
             int sent;
             fixed (byte* b = &MemoryMarshal.GetReference(buffer))
             {
@@ -179,6 +220,8 @@ namespace System.Net.Sockets
 
         private static unsafe int SysSend(SafeSocketHandle socket, SocketFlags flags, ReadOnlySpan<byte> buffer, ref int offset, ref int count, byte[] socketAddress, int socketAddressLen, out Interop.Error errno)
         {
+            Debug.Assert(!socket.IsPipe);
+
             int sent;
             fixed (byte* sockAddr = socketAddress)
             fixed (byte* b = &MemoryMarshal.GetReference(buffer))
@@ -219,6 +262,8 @@ namespace System.Net.Sockets
 
         private static unsafe int SysSend(SafeSocketHandle socket, SocketFlags flags, IList<ArraySegment<byte>> buffers, ref int bufferIndex, ref int offset, byte[]? socketAddress, int socketAddressLen, out Interop.Error errno)
         {
+            Debug.Assert(!socket.IsPipe);
+
             // Pin buffers and set up iovecs.
             int startIndex = bufferIndex, startOffset = offset;
 
@@ -313,6 +358,8 @@ namespace System.Net.Sockets
 
         private static unsafe int SysReceive(SafeSocketHandle socket, SocketFlags flags, IList<ArraySegment<byte>> buffers, byte[]? socketAddress, ref int socketAddressLen, out SocketFlags receivedFlags, out Interop.Error errno)
         {
+            Debug.Assert(!socket.IsPipe);
+
             int maxBuffers = buffers.Count;
             bool allocOnStack = maxBuffers <= IovStackThreshold;
 
@@ -412,6 +459,7 @@ namespace System.Net.Sockets
 
         private static unsafe int SysReceiveMessageFrom(SafeSocketHandle socket, SocketFlags flags, Span<byte> buffer, byte[] socketAddress, ref int socketAddressLen, bool isIPv4, bool isIPv6, out SocketFlags receivedFlags, out IPPacketInformation ipPacketInformation, out Interop.Error errno)
         {
+            Debug.Assert(!socket.IsPipe);
             Debug.Assert(socketAddress != null, "Expected non-null socketAddress");
 
             int cmsgBufferLen = Interop.Sys.GetControlMessageBufferSize(Convert.ToInt32(isIPv4), Convert.ToInt32(isIPv6));
@@ -465,6 +513,7 @@ namespace System.Net.Sockets
             byte[] socketAddress, ref int socketAddressLen, bool isIPv4, bool isIPv6,
             out SocketFlags receivedFlags, out IPPacketInformation ipPacketInformation, out Interop.Error errno)
         {
+            Debug.Assert(!socket.IsPipe);
             Debug.Assert(socketAddress != null, "Expected non-null socketAddress");
 
             int buffersCount = buffers.Count;
@@ -678,7 +727,12 @@ namespace System.Net.Sockets
                 Interop.Error errno;
                 int received;
 
-                if (buffer.Length == 0)
+                if (socket.IsPipe)
+                {
+                    Debug.Assert(flags == SocketFlags.None);
+                    received = SysRead(socket, buffer, out errno);
+                }
+                else if (buffer.Length == 0)
                 {
                     // Special case a receive of 0 bytes into a single buffer.  A common pattern is to ReceiveAsync 0 bytes in order
                     // to be asynchronously notified when data is available, without needing to dedicate a buffer.  Some platforms (e.g. macOS),
@@ -732,7 +786,16 @@ namespace System.Net.Sockets
                 Interop.Error errno;
                 int received;
 
-                if (buffers != null)
+                if (socket.IsPipe)
+                {
+                    Debug.Assert(flags == SocketFlags.None);
+                    Debug.Assert(buffers == null);
+                    Debug.Assert(socketAddress == null);
+
+                    receivedFlags = default;
+                    received = SysRead(socket, buffer, out errno);
+                }
+                else if (buffers != null)
                 {
                     // Receive into a set of buffers
                     received = SysReceive(socket, flags, buffers, socketAddress, ref socketAddressLen, out receivedFlags, out errno);
@@ -842,7 +905,7 @@ namespace System.Net.Sockets
             return TryCompleteSendTo(socket, default(ReadOnlySpan<byte>), buffers, ref bufferIndex, ref offset, ref count, flags, socketAddress, socketAddressLen, ref bytesSent, out errorCode);
         }
 
-        public static bool TryCompleteSendTo(SafeSocketHandle socket, ReadOnlySpan<byte> buffer, IList<ArraySegment<byte>>? buffers, ref int bufferIndex, ref int offset, ref int count, SocketFlags flags, byte[]? socketAddress, int socketAddressLen, ref int bytesSent, out SocketError errorCode)
+        public static unsafe bool TryCompleteSendTo(SafeSocketHandle socket, ReadOnlySpan<byte> buffer, IList<ArraySegment<byte>>? buffers, ref int bufferIndex, ref int offset, ref int count, SocketFlags flags, byte[]? socketAddress, int socketAddressLen, ref int bytesSent, out SocketError errorCode)
         {
             bool successfulSend = false;
             long start = socket.IsUnderlyingBlocking && socket.SendTimeout > 0 ? Environment.TickCount64 : 0; // Get ticks only if timeout is set and socket is blocking.
@@ -853,10 +916,19 @@ namespace System.Net.Sockets
                 Interop.Error errno;
                 try
                 {
-                    sent = buffers != null ?
-                        SysSend(socket, flags, buffers, ref bufferIndex, ref offset, socketAddress, socketAddressLen, out errno) :
-                        socketAddress == null ? SysSend(socket, flags, buffer, ref offset, ref count, out errno) :
-                                                SysSend(socket, flags, buffer, ref offset, ref count, socketAddress, socketAddressLen, out errno);
+                    if (socket.IsPipe)
+                    {
+                        Debug.Assert(flags == SocketFlags.None);
+                        Debug.Assert(buffers == null);
+                        sent = SysWrite(socket, buffer, ref offset, ref count, out errno);
+                    }
+                    else
+                    {
+                        sent = buffers != null ?
+                            SysSend(socket, flags, buffers, ref bufferIndex, ref offset, socketAddress, socketAddressLen, out errno) :
+                            socketAddress == null ? SysSend(socket, flags, buffer, ref offset, ref count, out errno) :
+                                                    SysSend(socket, flags, buffer, ref offset, ref count, socketAddress, socketAddressLen, out errno);
+                    }
                 }
                 catch (ObjectDisposedException)
                 {

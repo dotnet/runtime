@@ -38,12 +38,14 @@ namespace System.IO.Pipes
         }
 
         /// <summary>Initializes the handle to be used asynchronously.</summary>
-        /// <param name="handle">The handle.</param>
-        private void InitializeAsyncHandle(SafePipeHandle handle)
+        private void InitializeAsyncHandle(SafePipeHandle handle, bool isAsync)
         {
-            // If the handle is of async type, bind the handle to the ThreadPool so that we can use
-            // the async operations (it's needed so that our native callbacks get called).
-            _threadPoolBinding = ThreadPoolBoundHandle.BindHandle(handle);
+            if (isAsync)
+            {
+                // If the handle is of async type, bind the handle to the ThreadPool so that we can use
+                // the async operations (it's needed so that our native callbacks get called).
+                _threadPoolBinding = ThreadPoolBoundHandle.BindHandle(handle);
+            }
         }
 
         private void DisposeCore(bool disposing)

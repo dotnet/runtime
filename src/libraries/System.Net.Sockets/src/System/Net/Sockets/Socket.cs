@@ -136,95 +136,98 @@ namespace System.Net.Sockets
             try
             {
                 // Get properties like address family and blocking mode from the OS.
-                LoadSocketTypeFromHandle(handle, out _addressFamily, out _socketType, out _protocolType, out _willBlockInternal, out _isListening);
+                LoadSocketTypeFromHandle(handle, out _addressFamily, out _socketType, out _protocolType, out _willBlockInternal, out _isListening, out bool isSocket);
 
-                // We should change stackalloc if this ever grows too big.
-                Debug.Assert(SocketPal.MaximumAddressSize <= 512);
-                // Try to get the address of the socket.
-                Span<byte> buffer = stackalloc byte[SocketPal.MaximumAddressSize];
-                int bufferLength = buffer.Length;
-                fixed (byte* bufferPtr = buffer)
+                if (isSocket)
                 {
-                    if (SocketPal.GetSockName(handle, bufferPtr, &bufferLength) != SocketError.Success)
+                    // We should change stackalloc if this ever grows too big.
+                    Debug.Assert(SocketPal.MaximumAddressSize <= 512);
+                    // Try to get the address of the socket.
+                    Span<byte> buffer = stackalloc byte[SocketPal.MaximumAddressSize];
+                    int bufferLength = buffer.Length;
+                    fixed (byte* bufferPtr = buffer)
                     {
-                        return;
-                    }
-                }
-
-                Debug.Assert(bufferLength <= buffer.Length);
-
-                // Try to get the local end point.  That will in turn enable the remote
-                // end point to be retrieved on-demand when the property is accessed.
-                Internals.SocketAddress? socketAddress = null;
-                switch (_addressFamily)
-                {
-                    case AddressFamily.InterNetwork:
-                        _rightEndPoint = new IPEndPoint(
-                            new IPAddress((long)SocketAddressPal.GetIPv4Address(buffer.Slice(0, bufferLength)) & 0x0FFFFFFFF),
-                            SocketAddressPal.GetPort(buffer));
-                        break;
-
-                    case AddressFamily.InterNetworkV6:
-                        Span<byte> address = stackalloc byte[IPAddressParserStatics.IPv6AddressBytes];
-                        SocketAddressPal.GetIPv6Address(buffer.Slice(0, bufferLength), address, out uint scope);
-                        _rightEndPoint = new IPEndPoint(
-                            new IPAddress(address, scope),
-                            SocketAddressPal.GetPort(buffer));
-                        break;
-
-                    case AddressFamily.Unix:
-                        socketAddress = new Internals.SocketAddress(_addressFamily, buffer.Slice(0, bufferLength));
-                        _rightEndPoint = new UnixDomainSocketEndPoint(IPEndPointExtensions.GetNetSocketAddress(socketAddress));
-                        break;
-                }
-
-                // Try to determine if we're connected, based on querying for a peer, just as we would in RemoteEndPoint,
-                // but ignoring any failures; this is best-effort (RemoteEndPoint also does a catch-all around the Create call).
-                if (_rightEndPoint != null)
-                {
-                    try
-                    {
-                        // Local and remote end points may be different sizes for protocols like Unix Domain Sockets.
-                        bufferLength = buffer.Length;
-                        switch (SocketPal.GetPeerName(handle, buffer, ref bufferLength))
+                        if (SocketPal.GetSockName(handle, bufferPtr, &bufferLength) != SocketError.Success)
                         {
-                            case SocketError.Success:
-                                switch (_addressFamily)
-                                {
-                                    case AddressFamily.InterNetwork:
-                                        _remoteEndPoint = new IPEndPoint(
-                                            new IPAddress((long)SocketAddressPal.GetIPv4Address(buffer.Slice(0, bufferLength)) & 0x0FFFFFFFF),
-                                            SocketAddressPal.GetPort(buffer));
-                                        break;
-
-                                    case AddressFamily.InterNetworkV6:
-                                        Span<byte> address = stackalloc byte[IPAddressParserStatics.IPv6AddressBytes];
-                                        SocketAddressPal.GetIPv6Address(buffer.Slice(0, bufferLength), address, out uint scope);
-                                        _remoteEndPoint = new IPEndPoint(
-                                            new IPAddress(address, scope),
-                                            SocketAddressPal.GetPort(buffer));
-                                        break;
-
-                                    case AddressFamily.Unix:
-                                        socketAddress = new Internals.SocketAddress(_addressFamily, buffer.Slice(0, bufferLength));
-                                        _remoteEndPoint = new UnixDomainSocketEndPoint(IPEndPointExtensions.GetNetSocketAddress(socketAddress));
-                                        break;
-                                }
-
-                                _isConnected = true;
-                                break;
-
-                            case SocketError.InvalidArgument:
-                                // On some OSes (e.g. macOS), EINVAL means the socket has been shut down.
-                                // This can happen if, for example, socketpair was used and the parent
-                                // process closed its copy of the child's socket.  Since we don't know
-                                // whether we're actually connected or not, err on the side of saying
-                                // we're connected.
-                                _isConnected = true;
-                                break;
+                            return;
                         }
                     }
-                    catch { }
+
+                    Debug.Assert(bufferLength <= buffer.Length);
+
+                    // Try to get the local end point.  That will in turn enable the remote
+                    // end point to be retrieved on-demand when the property is accessed.
+                    Internals.SocketAddress? socketAddress = null;
+                    switch (_addressFamily)
+                    {
+                        case AddressFamily.InterNetwork:
+                            _rightEndPoint = new IPEndPoint(
+                                new IPAddress((long)SocketAddressPal.GetIPv4Address(buffer.Slice(0, bufferLength)) & 0x0FFFFFFFF),
+                                SocketAddressPal.GetPort(buffer));
+                            break;
+
+                        case AddressFamily.InterNetworkV6:
+                            Span<byte> address = stackalloc byte[IPAddressParserStatics.IPv6AddressBytes];
+                            SocketAddressPal.GetIPv6Address(buffer.Slice(0, bufferLength), address, out uint scope);
+                            _rightEndPoint = new IPEndPoint(
+                                new IPAddress(address, scope),
+                                SocketAddressPal.GetPort(buffer));
+                            break;
+
+                        case AddressFamily.Unix:
+                            socketAddress = new Internals.SocketAddress(_addressFamily, buffer.Slice(0, bufferLength));
+                            _rightEndPoint = new UnixDomainSocketEndPoint(IPEndPointExtensions.GetNetSocketAddress(socketAddress));
+                            break;
+                    }
+
+                    // Try to determine if we're connected, based on querying for a peer, just as we would in RemoteEndPoint,
+                    // but ignoring any failures; this is best-effort (RemoteEndPoint also does a catch-all around the Create call).
+                    if (_rightEndPoint != null)
+                    {
+                        try
+                        {
+                            // Local and remote end points may be different sizes for protocols like Unix Domain Sockets.
+                            bufferLength = buffer.Length;
+                            switch (SocketPal.GetPeerName(handle, buffer, ref bufferLength))
+                            {
+                                case SocketError.Success:
+                                    switch (_addressFamily)
+                                    {
+                                        case AddressFamily.InterNetwork:
+                                            _remoteEndPoint = new IPEndPoint(
+                                                new IPAddress((long)SocketAddressPal.GetIPv4Address(buffer.Slice(0, bufferLength)) & 0x0FFFFFFFF),
+                                                SocketAddressPal.GetPort(buffer));
+                                            break;
+
+                                        case AddressFamily.InterNetworkV6:
+                                            Span<byte> address = stackalloc byte[IPAddressParserStatics.IPv6AddressBytes];
+                                            SocketAddressPal.GetIPv6Address(buffer.Slice(0, bufferLength), address, out uint scope);
+                                            _remoteEndPoint = new IPEndPoint(
+                                                new IPAddress(address, scope),
+                                                SocketAddressPal.GetPort(buffer));
+                                            break;
+
+                                        case AddressFamily.Unix:
+                                            socketAddress = new Internals.SocketAddress(_addressFamily, buffer.Slice(0, bufferLength));
+                                            _remoteEndPoint = new UnixDomainSocketEndPoint(IPEndPointExtensions.GetNetSocketAddress(socketAddress));
+                                            break;
+                                    }
+
+                                    _isConnected = true;
+                                    break;
+
+                                case SocketError.InvalidArgument:
+                                    // On some OSes (e.g. macOS), EINVAL means the socket has been shut down.
+                                    // This can happen if, for example, socketpair was used and the parent
+                                    // process closed its copy of the child's socket.  Since we don't know
+                                    // whether we're actually connected or not, err on the side of saying
+                                    // we're connected.
+                                    _isConnected = true;
+                                    break;
+                            }
+                        }
+                        catch { }
+                    }
                 }
             }
             catch

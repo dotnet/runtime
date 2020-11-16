@@ -94,9 +94,9 @@ namespace System.IO.Pipes
         // This method may also be called to uninitialize a handle, setting it to null.
         protected void InitializeHandle(SafePipeHandle? handle, bool isExposed, bool isAsync)
         {
-            if (isAsync && handle != null)
+            if (handle != null)
             {
-                InitializeAsyncHandle(handle);
+                InitializeAsyncHandle(handle, isAsync);
             }
 
             _handle = handle;

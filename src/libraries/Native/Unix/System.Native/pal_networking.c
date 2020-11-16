@@ -1504,14 +1504,7 @@ int32_t SystemNative_Receive(intptr_t socket, void* buffer, int32_t bufferLen, i
     }
 
     ssize_t res;
-    if (socketFlags == 0)
-    {
-        while ((res = read(fd, buffer, (size_t)bufferLen)) < 0 && errno == EINTR);
-    }
-    else
-    {
-        while ((res = recv(fd, buffer, (size_t)bufferLen, socketFlags)) < 0 && errno == EINTR);
-    }
+    while ((res = recv(fd, buffer, (size_t)bufferLen, socketFlags)) < 0 && errno == EINTR);
 
     if (res != -1)
     {
@@ -1582,19 +1575,12 @@ int32_t SystemNative_Send(intptr_t socket, void* buffer, int32_t bufferLen, int3
     }
 
     ssize_t res;
-    if (socketFlags == 0)
-    {
-        while ((res = write(fd, buffer, (size_t)bufferLen)) < 0 && errno == EINTR);
-    }
-    else
-    {
 #if defined(__APPLE__) && __APPLE__
-        // possible OSX kernel bug: https://github.com/dotnet/runtime/issues/27221
-        while ((res = send(fd, buffer, (size_t)bufferLen, socketFlags)) < 0 && (errno == EINTR || errno == EPROTOTYPE));
+    // possible OSX kernel bug: https://github.com/dotnet/runtime/issues/27221
+    while ((res = send(fd, buffer, (size_t)bufferLen, socketFlags)) < 0 && (errno == EINTR || errno == EPROTOTYPE));
 #else
-        while ((res = send(fd, buffer, (size_t)bufferLen, socketFlags)) < 0 && errno == EINTR);
+    while ((res = send(fd, buffer, (size_t)bufferLen, socketFlags)) < 0 && errno == EINTR);
 #endif
-    }
     if (res != -1)
     {
         *sent = (int32_t)res;

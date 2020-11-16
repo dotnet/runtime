@@ -223,6 +223,7 @@ namespace System.Net.Sockets
         public SafeSocketHandle() : base (default(bool)) { }
         public SafeSocketHandle(System.IntPtr preexistingHandle, bool ownsHandle) : base (default(bool)) { }
         protected override bool ReleaseHandle() { throw null; }
+        public bool IsPipe { get { throw null; } set { } }
     }
     public enum SelectMode
     {

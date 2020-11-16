@@ -31,6 +31,9 @@ namespace System.Net.Sockets
 #endif
         private int _ownClose;
 
+        // TODO: make this Unix internal.
+        public bool IsPipe { get; set; } // (ab)use Socket class for performing async I/O on pipes.
+
         public SafeSocketHandle(IntPtr preexistingHandle, bool ownsHandle)
             : base(ownsHandle)
         {

@@ -7,6 +7,7 @@ using System.Net.Sockets;
 using System.Reflection;
 using System.Runtime.InteropServices;
 using System.Security;
+using System.Threading;
 
 namespace Microsoft.Win32.SafeHandles
 {
@@ -15,37 +16,35 @@ namespace Microsoft.Win32.SafeHandles
         private const int DefaultInvalidHandle = -1;
 
         // For anonymous pipes, SafePipeHandle.handle is the file descriptor of the pipe, and the
-        // _named* fields remain null. For named pipes, SafePipeHandle.handle is a copy of the file descriptor
-        // extracted from the Socket's SafeHandle, and the _named* fields are the socket and its safe handle.
+        // For named pipes, SafePipeHandle.handle is a copy of the file descriptor
+        // extracted from the Socket's SafeHandle.
         // This allows operations related to file descriptors to be performed directly on the SafePipeHandle,
-        // and operations that should go through the Socket to be done via _namedPipeSocket.  We keep the
+        // and operations that should go through the Socket to be done via PipeSocket. We keep the
         // Socket's SafeHandle alive as long as this SafeHandle is alive.
 
-        private Socket? _namedPipeSocket;
-        private SafeHandle? _namedPipeSocketHandle;
+        private Socket? _pipeSocket;
+        private SafeHandle? _pipeSocketHandle;
+        private volatile int _disposed;
 
         internal SafePipeHandle(Socket namedPipeSocket) : base(ownsHandle: true)
         {
-            Debug.Assert(namedPipeSocket != null);
-            _namedPipeSocket = namedPipeSocket;
-
-            _namedPipeSocketHandle = namedPipeSocket.SafeHandle;
-
-            bool ignored = false;
-            _namedPipeSocketHandle.DangerousAddRef(ref ignored);
-            SetHandle(_namedPipeSocketHandle.DangerousGetHandle());
+            SetPipeSocket(namedPipeSocket, ownsHandle: true);
+            base.SetHandle(_pipeSocketHandle!.DangerousGetHandle());
         }
 
-        internal Socket? NamedPipeSocket => _namedPipeSocket;
-        internal SafeHandle? NamedPipeSocketHandle => _namedPipeSocketHandle;
+        internal Socket? PipeSocket => _pipeSocket ?? CreatePipeSocket();
+
+        internal SafeHandle? PipeSocketHandle => _pipeSocketHandle;
 
         protected override void Dispose(bool disposing)
         {
             base.Dispose(disposing); // must be called before trying to Dispose the socket
-            if (disposing && _namedPipeSocket != null)
+            _disposed = 1;
+            Socket? socket;
+            if (disposing && (socket = Volatile.Read(ref _pipeSocket)) != null)
             {
-                _namedPipeSocket.Dispose();
-                _namedPipeSocket = null;
+                socket.Dispose();
+                _pipeSocket = null;
             }
         }
 
@@ -53,24 +52,95 @@ namespace Microsoft.Win32.SafeHandles
         {
             Debug.Assert(!IsInvalid);
 
-            // Clean up resources for named handles
-            if (_namedPipeSocketHandle != null)
+            if (_pipeSocketHandle != null)
             {
-                SetHandle(DefaultInvalidHandle);
-                _namedPipeSocketHandle.DangerousRelease();
-                _namedPipeSocketHandle = null;
+                base.SetHandle((IntPtr)DefaultInvalidHandle);
+                _pipeSocketHandle.DangerousRelease();
+                _pipeSocketHandle = null;
                 return true;
             }
-
-            // Clean up resources for anonymous handles
-            return (long)handle >= 0 ?
-                Interop.Sys.Close(handle) == 0 :
-                true;
+            else
+            {
+                return (long)handle >= 0 ?
+                    Interop.Sys.Close(handle) == 0 :
+                    true;
+            }
         }
 
         public override bool IsInvalid
         {
-            get { return (long)handle < 0 && _namedPipeSocket == null; }
+            get { return (long)handle < 0 && _pipeSocket == null; }
+        }
+
+        private Socket? CreatePipeSocket(bool ownsHandle = true)
+        {
+            bool refAdded = false;
+            try
+            {
+                if (_disposed == 1)
+                {
+                    return null;
+                }
+
+                DangerousAddRef(ref refAdded);
+
+                var socketHandle = new SafeSocketHandle(handle, ownsHandle);
+                socketHandle.IsPipe = true;
+                var socket = new Socket(socketHandle);
+                socket = SetPipeSocket(socket, ownsHandle);
+
+                if (_disposed == 1)
+                {
+                    Volatile.Write(ref _pipeSocket, null);
+                    socket.Dispose();
+                    socket = null;
+                }
+
+                return socket;
+            }
+            finally
+            {
+                if (refAdded)
+                {
+                    DangerousRelease();
+                }
+            }
+        }
+
+        private Socket SetPipeSocket(Socket socket, bool ownsHandle)
+        {
+            Debug.Assert(socket != null);
+
+            // Multiple threads may try to create the PipeSocket.
+            Socket? current = Interlocked.CompareExchange(ref _pipeSocket, socket, null);
+            if (current != null)
+            {
+                socket.Dispose();
+                return current;
+            }
+
+            // If we own the handle, defer ownership to the SocketHandle.
+            SafeSocketHandle socketHandle = _pipeSocket.SafeHandle;
+            if (ownsHandle)
+            {
+                _pipeSocketHandle = socketHandle;
+
+                bool ignored = false;
+                socketHandle.DangerousAddRef(ref ignored);
+            }
+
+            return socket;
+        }
+
+        internal void SetHandle(IntPtr descriptor, bool ownsHandle = true)
+        {
+            base.SetHandle(descriptor);
+
+            // Avoid throwing when we own the handle by defering pipe creation.
+            if (!ownsHandle)
+            {
+                _pipeSocket = CreatePipeSocket(ownsHandle);
+            }
         }
     }
 }

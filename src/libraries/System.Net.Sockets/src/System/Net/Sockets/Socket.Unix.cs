@@ -75,21 +75,33 @@ namespace System.Net.Sockets
         }
 
         private static unsafe void LoadSocketTypeFromHandle(
-            SafeSocketHandle handle, out AddressFamily addressFamily, out SocketType socketType, out ProtocolType protocolType, out bool blocking, out bool isListening)
+            SafeSocketHandle handle, out AddressFamily addressFamily, out SocketType socketType, out ProtocolType protocolType, out bool blocking, out bool isListening, out bool isSocket)
         {
-            // Validate that the supplied handle is indeed a socket.
-            if (Interop.Sys.FStat(handle, out Interop.Sys.FileStatus stat) == -1 ||
-                (stat.Mode & Interop.Sys.FileTypes.S_IFSOCK) != Interop.Sys.FileTypes.S_IFSOCK)
+            if (handle.IsPipe)
             {
-                throw new SocketException((int)SocketError.NotSocket);
+                addressFamily = AddressFamily.Unknown;
+                socketType = SocketType.Unknown;
+                protocolType = ProtocolType.Unknown;
+                isListening = false;
+                isSocket = false;
             }
+            else
+            {
+                // Validate that the supplied handle is indeed a socket.
+                if (Interop.Sys.FStat(handle, out Interop.Sys.FileStatus stat) == -1 ||
+                    (stat.Mode & Interop.Sys.FileTypes.S_IFSOCK) != Interop.Sys.FileTypes.S_IFSOCK)
+                {
+                    throw new SocketException((int)SocketError.NotSocket);
+                }
+                isSocket = true;
 
-            // On Linux, GetSocketType will be able to query SO_DOMAIN, SO_TYPE, and SO_PROTOCOL to get the
-            // address family, socket type, and protocol type, respectively.  On macOS, this will only succeed
-            // in getting the socket type, and the others will be unknown.  Subsequently the Socket ctor
-            // can use getsockname to retrieve the address family as part of trying to get the local end point.
-            Interop.Error e = Interop.Sys.GetSocketType(handle, out addressFamily, out socketType, out protocolType, out isListening);
-            Debug.Assert(e == Interop.Error.SUCCESS, e.ToString());
+                // On Linux, GetSocketType will be able to query SO_DOMAIN, SO_TYPE, and SO_PROTOCOL to get the
+                // address family, socket type, and protocol type, respectively.  On macOS, this will only succeed
+                // in getting the socket type, and the others will be unknown.  Subsequently the Socket ctor
+                // can use getsockname to retrieve the address family as part of trying to get the local end point.
+                Interop.Error e = Interop.Sys.GetSocketType(handle, out addressFamily, out socketType, out protocolType, out isListening);
+                Debug.Assert(e == Interop.Error.SUCCESS, e.ToString());
+            }
 
             // Get whether the socket is in non-blocking mode.  On Unix, we automatically put the underlying
             // Socket into non-blocking mode whenever an async method is first invoked on the instance, but we
@@ -101,7 +113,7 @@ namespace System.Net.Sockets
             bool nonBlocking;
             int rv = Interop.Sys.Fcntl.GetIsNonBlocking(handle, out nonBlocking);
             blocking = !nonBlocking;
-            Debug.Assert(rv == 0 || blocking, e.ToString()); // ignore failures
+            Debug.Assert(rv == 0 || blocking); // ignore failures
         }
 
         internal void ReplaceHandleIfNecessaryAfterFailedConnect()
