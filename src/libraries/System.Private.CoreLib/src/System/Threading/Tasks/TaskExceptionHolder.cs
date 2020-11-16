@@ -286,7 +286,7 @@ namespace System.Threading.Tasks
             Debug.Assert(exceptions != null, "Expected an initialized list.");
             Debug.Assert(exceptions.Count > 0, "Expected at least one exception.");
             MarkAsHandled(false);
-            return exceptions!;
+            return exceptions;
         }
 
         /// <summary>
