@@ -6185,10 +6185,7 @@ bool Thread::InjectGcSuspension()
 
     HANDLE hThread = GetThreadHandle();
     if (hThread != INVALID_HANDLE_VALUE)
-    {
-        ::PAL_InjectActivation(hThread);
-        return true;
-    }
+        return ::PAL_InjectActivation(hThread);
 
     return false;
 }
