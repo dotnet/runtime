@@ -270,10 +270,10 @@ namespace Microsoft.Extensions.DependencyInjection.Tests
             var descriptors = new ServiceCollection();
             descriptors.AddTransient<ServiceG>();
 
-            var provider = descriptors.BuildServiceProvider();
+            var provider = descriptors.BuildServiceProvider(ServiceProviderMode.ILEmit);
+            ServiceF instance = ActivatorUtilities.CreateInstance<ServiceF>(provider);
 
-            ActivatorUtilities.CreateInstance<ServiceF>(provider);
-            ActivatorUtilities.CreateInstance<ServiceF>(provider);
+            Assert.NotNull(instance);
         }
 
         private interface IServiceG
