@@ -47,7 +47,7 @@ public class AndroidAppBuilderTask : Task
 
     public string? KeyStorePath { get; set; }
 
-    public bool EnableInterpreter { get; set; }
+    public bool ForceInterpreter { get; set; }
 
     [Output]
     public string ApkBundlePath { get; set; } = ""!;
@@ -72,7 +72,7 @@ public class AndroidAppBuilderTask : Task
         apkBuilder.StripDebugSymbols = StripDebugSymbols;
         apkBuilder.NativeMainSource = NativeMainSource;
         apkBuilder.KeyStorePath = KeyStorePath;
-        apkBuilder.EnableInterpreter = EnableInterpreter;
+        apkBuilder.ForceInterpreter = ForceInterpreter;
         (ApkBundlePath, ApkPackageId) = apkBuilder.BuildApk(SourceDir, abi, MainLibraryFileName, MonoRuntimeHeaders);
 
         return true;

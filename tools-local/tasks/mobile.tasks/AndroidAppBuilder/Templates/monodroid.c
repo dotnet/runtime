@@ -22,7 +22,7 @@
 
 static char *bundle_path;
 static char *executable;
-static char *interp_enabled;
+static bool force_interpreter;
 
 #define LOG_INFO(fmt, ...) __android_log_print(ANDROID_LOG_DEBUG, "DOTNET", fmt, ##__VA_ARGS__)
 #define LOG_ERROR(fmt, ...) __android_log_print(ANDROID_LOG_ERROR, "DOTNET", fmt, ##__VA_ARGS__)
@@ -183,7 +183,7 @@ mono_droid_runtime_init (void)
         mono_jit_parse_options (1, options);
     }
 
-    if (interp_enabled) {
+    if (force_interpreter) {
         LOG_INFO("Interp Enabled");
         mono_jit_set_aot_mode(MONO_AOT_MODE_INTERP_ONLY);
     }
@@ -213,7 +213,7 @@ strncpy_str (JNIEnv *env, char *buff, jstring str, int nbuff)
 }
 
 int
-Java_net_dot_MonoRunner_initRuntime (JNIEnv* env, jobject thiz, jstring j_files_dir, jstring j_cache_dir, jstring j_docs_dir, jstring j_entryPointLibName, jboolean j_isInterpreterEnabled)
+Java_net_dot_MonoRunner_initRuntime (JNIEnv* env, jobject thiz, jstring j_files_dir, jstring j_cache_dir, jstring j_docs_dir, jstring j_entryPointLibName, jboolean j_forceInterpreter)
 {
     char file_dir[2048];
     char cache_dir[2048];
@@ -226,7 +226,7 @@ Java_net_dot_MonoRunner_initRuntime (JNIEnv* env, jobject thiz, jstring j_files_
 
     bundle_path = file_dir;
     executable = entryPointLibName;
-    interp_enabled = (bool)j_isInterpreterEnabled;
+    force_interpreter = (bool)j_forceInterpreter;
 
     setenv ("HOME", bundle_path, true);
     setenv ("TMPDIR", cache_dir, true);

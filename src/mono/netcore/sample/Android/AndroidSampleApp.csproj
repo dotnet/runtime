@@ -36,7 +36,7 @@
         RuntimeIdentifier="$(RuntimeIdentifier)"
         SourceDir="$(OutputPath)"
         ProjectName="HelloAndroid"
-        EnableInterpreter="true"
+        ForceInterpreter="$(MonoForceInterpreter)"
         MonoRuntimeHeaders="$(MicrosoftNetCoreAppRuntimePackDir)\native\include\mono-2.0"
         MainLibraryFileName="$(AssemblyName).dll"
         StripDebugSymbols="$(StripDebugSymbols)"
