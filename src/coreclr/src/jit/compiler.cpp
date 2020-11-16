@@ -2478,7 +2478,6 @@ void Compiler::compInitOptions(JitFlags* jitFlags)
     opts.compNeedToAlignFrame = false;
 #endif // UNIX_AMD64_ABI
     memset(&opts, 0, sizeof(opts));
-    opts.compAltJitRequested = jitFlags->IsSet(JitFlags::JIT_FLAG_ALT_JIT);
 
     if (compIsForInlining())
     {
@@ -2579,7 +2578,7 @@ void Compiler::compInitOptions(JitFlags* jitFlags)
         pfAltJit = &JitConfig.AltJit();
     }
 
-    if (opts.compAltJitRequested)
+    if (opts.jitFlags->IsSet(JitFlags::JIT_FLAG_ALT_JIT))
     {
         if (pfAltJit->contains(info.compMethodName, info.compClassName, &info.compMethodInfo->args))
         {
@@ -2605,7 +2604,7 @@ void Compiler::compInitOptions(JitFlags* jitFlags)
         altJitVal = JitConfig.AltJit().list();
     }
 
-    if (opts.compAltJitRequested)
+    if (opts.jitFlags->IsSet(JitFlags::JIT_FLAG_ALT_JIT))
     {
         // In release mode, you either get all methods or no methods. You must use "*" as the parameter, or we ignore
         // it. You don't get to give a regular expression of methods to match.
@@ -5917,7 +5916,7 @@ int Compiler::compCompileHelper(CORINFO_MODULE_HANDLE classPtr,
 
     compInitOptions(compileFlags);
 
-    if (!compIsForInlining() && !opts.altJit && opts.compAltJitRequested)
+    if (!compIsForInlining() && !opts.altJit && opts.jitFlags->IsSet(JitFlags::JIT_FLAG_ALT_JIT))
     {
         // We're an altjit, but the COMPlus_AltJit configuration did not say to compile this method,
         // so skip it.
@@ -6213,7 +6212,7 @@ _Next:
         }
 
 #ifdef DEBUG
-        if (opts.compAltJitRequested && JitConfig.RunAltJitCode() == 0)
+        if (opts.jitFlags->IsSet(JitFlags::JIT_FLAG_ALT_JIT) && JitConfig.RunAltJitCode() == 0)
         {
             return CORJIT_SKIPPED;
         }

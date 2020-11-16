@@ -9009,7 +9009,6 @@ public:
 #else // !ARM_SOFTFP
         static const bool compUseSoftFP = false;
 #endif
-        bool compAltJitRequested;
     } opts;
 
     static bool                s_pAltJitExcludeAssembliesListInitialized;
