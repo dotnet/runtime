@@ -175,18 +175,9 @@ namespace System.IO
 
         protected override void Dispose(bool disposing)
         {
-            try
-            {
-                if (disposing)
-                {
-                    _isOpen = false;
-                    _content = default;
-                }
-            }
-            finally
-            {
-                base.Dispose(disposing);
-            }
+            _isOpen = false;
+            _content = default;
+            base.Dispose(disposing);
         }
 
 #if NETFRAMEWORK || NETSTANDARD2_0
@@ -208,6 +199,5 @@ namespace System.IO
             }
         }
 #endif
-
     }
 }
