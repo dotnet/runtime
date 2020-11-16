@@ -291,7 +291,6 @@
     <Compile Include="$(BclSourcesRoot)\System\Threading\LowLevelLifoSemaphore.Unix.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetsWindows)' == 'true'">
-    <Compile Include="$(BclSourcesRoot)\System\DateTime.Windows.CoreCLR.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\OleAut32\Interop.VariantClear.cs">
       <Link>Common\Interop\Windows\OleAut32\Interop.VariantClear.cs</Link>
     </Compile>

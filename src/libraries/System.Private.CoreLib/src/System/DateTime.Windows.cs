@@ -12,7 +12,6 @@ namespace System
     {
         private static LeapSecondCache? s_leapSecondCache;
 
-        // Question: Can this be [Stdcall, SuppressGCTransition]?
         private static unsafe delegate* unmanaged[Stdcall]<ulong*, void> s_pfnGetSystemTimeAsFileTime = GetGetSystemTimeAsFileTimeFnPtr();
 
         private static unsafe delegate* unmanaged[Stdcall]<ulong*, void> GetGetSystemTimeAsFileTimeFnPtr()
@@ -30,6 +29,9 @@ namespace System
                 // long as they're close, we use the precise one. This workaround can be removed
                 // when we better understand what's causing the drift and the issue is no longer
                 // a problem or can be better worked around on all targeted OSes.
+
+                // TODO: Once https://github.com/dotnet/runtime/issues/38134 is resolved,
+                // the calls below should suppress the GC transition.
 
                 ulong filetimeStd, filetimePrecise;
                 ((delegate* unmanaged[Stdcall]<ulong*, void>)pfnGetSystemTime)(&filetimeStd);
@@ -79,6 +81,9 @@ namespace System
                 // c) At most a single leap second being added or removed per month; and
                 // d) Windows never inserting a historical leap second (into the past) once the
                 //    process is up and running (future insertions are ok).
+
+                // TODO: Once https://github.com/dotnet/runtime/issues/38134 is resolved,
+                // the call below should suppress the GC transition.
 
                 ulong osTicks;
                 s_pfnGetSystemTimeAsFileTime(&osTicks);
@@ -147,9 +152,9 @@ namespace System
 
         private sealed class LeapSecondCache
         {
-            internal ulong OSFileTimeTicksAtStartOfMonth;
-            internal ulong DotNetDateDataAtStartOfMonth;
-            internal ulong CacheValidityPeriodInTicks;
+            internal ulong OSFileTimeTicksAtStartOfMonth; // Windows FILETIME value
+            internal ulong DotNetDateDataAtStartOfMonth; // DateTime._dateData
+            internal ulong CacheValidityPeriodInTicks; // 100-ns intervals from StartOfMonth (inclusive) to cache expiration (exclusive)
         }
 
         internal static readonly bool s_systemSupportsLeapSeconds = SystemSupportsLeapSeconds();
@@ -240,34 +245,6 @@ namespace System
             }
         }
 
-#if !CORECLR
-        internal static readonly bool s_systemSupportsPreciseSystemTime = SystemSupportsPreciseSystemTime();
-
-        private static unsafe bool SystemSupportsPreciseSystemTime()
-        {
-            if (Environment.IsWindows8OrAbove)
-            {
-                // GetSystemTimePreciseAsFileTime exists and we'd like to use it.  However, on
-                // misconfigured systems, it's possible for the "precise" time to be inaccurate:
-                //     https://github.com/dotnet/runtime/issues/9014
-                // If it's inaccurate, though, we expect it to be wildly inaccurate, so as a
-                // workaround/heuristic, we get both the "normal" and "precise" times, and as
-                // long as they're close, we use the precise one. This workaround can be removed
-                // when we better understand what's causing the drift and the issue is no longer
-                // a problem or can be better worked around on all targeted OSes.
-
-                long systemTimeResult;
-                Interop.Kernel32.GetSystemTimeAsFileTime(&systemTimeResult);
-
-                long preciseSystemTimeResult;
-                Interop.Kernel32.GetSystemTimePreciseAsFileTime(&preciseSystemTimeResult);
-
-                return Math.Abs(preciseSystemTimeResult - systemTimeResult) <= 100 * TicksPerMillisecond;
-            }
-
-            return false;
-        }
-
         private static unsafe bool ValidateSystemTime(Interop.Kernel32.SYSTEMTIME* time, bool localTime)
         {
             if (localTime)
@@ -301,43 +278,9 @@ namespace System
             return false;
         }
 
-        private static unsafe void GetSystemTimeWithLeapSecondsHandling(FullSystemTime* time)
-        {
-            if (!FileTimeToSystemTime(GetSystemTimeAsFileTime(), time))
-            {
-                Interop.Kernel32.GetSystemTime(&time->systemTime);
-                time->hundredNanoSecond = 0;
-                if (time->systemTime.Second > 59)
-                {
-                    // we have a leap second, force it to last second in the minute as DateTime doesn't account for leap seconds in its calculation.
-                    // we use the maxvalue from the milliseconds and the 100-nano seconds to avoid reporting two out of order 59 seconds
-                    time->systemTime.Second = 59;
-                    time->systemTime.Milliseconds = 999;
-                    time->hundredNanoSecond = 9999;
-                }
-            }
-        }
-
         private static unsafe bool SystemTimeToFileTime(Interop.Kernel32.SYSTEMTIME* time, long* fileTime)
         {
             return Interop.Kernel32.SystemTimeToFileTime(time, fileTime) != Interop.BOOL.FALSE;
         }
-
-        private static unsafe long GetSystemTimeAsFileTime()
-        {
-            long timestamp;
-
-            if (s_systemSupportsPreciseSystemTime)
-            {
-                Interop.Kernel32.GetSystemTimePreciseAsFileTime(&timestamp);
-            }
-            else
-            {
-                Interop.Kernel32.GetSystemTimeAsFileTime(&timestamp);
-            }
-
-            return timestamp;
-        }
-#endif
     }
 }

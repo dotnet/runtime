@@ -132,13 +132,9 @@ FCFuncStart(gDiagnosticsStackTrace)
 FCFuncEnd()
 
 FCFuncStart(gDateTimeFuncs)
-#if !defined(TARGET_UNIX)
-    FCFuncElement("GetSystemTimeWithLeapSecondsHandling", SystemNative::GetSystemTimeWithLeapSecondsHandling)
-    FCFuncElement("ValidateSystemTime", SystemNative::ValidateSystemTime)
-    FCFuncElement("FileTimeToSystemTime", SystemNative::FileTimeToSystemTime)
-    FCFuncElement("SystemTimeToFileTime", SystemNative::SystemTimeToFileTime)
-#endif // TARGET_UNIX
+#if defined(TARGET_UNIX)
     FCFuncElement("GetSystemTimeAsFileTime", SystemNative::__GetSystemTimeAsFileTime)
+#endif // TARGET_UNIX
 FCFuncEnd()
 
 FCFuncStart(gEnvironmentFuncs)
