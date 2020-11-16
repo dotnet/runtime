@@ -1763,8 +1763,6 @@ namespace Mono.Linker.Steps
 						// TODO: Non-understood DebuggerDisplayAttribute causes us to keep everything. Should this be a warning?
 						MarkMethods (type, new DependencyInfo (DependencyKind.KeptForSpecialAttribute, attribute), type);
 						MarkFields (type, includeStatic: true, new DependencyInfo (DependencyKind.ReferencedBySpecialAttribute, attribute));
-						// This logic would miss generic parameters used in methods/fields for generic types
-						Debug.Assert (!(type.BaseType is GenericInstanceType));
 						type = type.BaseType?.Resolve ();
 					}
 					return;
