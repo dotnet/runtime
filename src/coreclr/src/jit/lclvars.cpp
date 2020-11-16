@@ -1504,7 +1504,7 @@ CORINFO_CLASS_HANDLE Compiler::lvaGetStruct(unsigned varNum)
 }
 
 //--------------------------------------------------------------------------------------------
-// lvaFieldOffsetCmp - a static compare function passed to qsort() by Compiler::StructPromotionHelper;
+// lvaFieldOffsetCmp - a static compare function passed to jitstd::sort() by Compiler::StructPromotionHelper;
 //   compares fields' offsets.
 //
 // Arguments:
@@ -1514,19 +1514,9 @@ CORINFO_CLASS_HANDLE Compiler::lvaGetStruct(unsigned varNum)
 // Return value:
 //   0 if the fields' offsets are equal, 1 if the first field has bigger offset, -1 otherwise.
 //
-int __cdecl Compiler::lvaFieldOffsetCmp(const void* field1, const void* field2)
+bool Compiler::lvaFieldOffsetCmp::operator()(const lvaStructFieldInfo& field1, const lvaStructFieldInfo& field2)
 {
-    lvaStructFieldInfo* pFieldInfo1 = (lvaStructFieldInfo*)field1;
-    lvaStructFieldInfo* pFieldInfo2 = (lvaStructFieldInfo*)field2;
-
-    if (pFieldInfo1->fldOffset == pFieldInfo2->fldOffset)
-    {
-        return 0;
-    }
-    else
-    {
-        return (pFieldInfo1->fldOffset > pFieldInfo2->fldOffset) ? +1 : -1;
-    }
+    return field1.fldOffset < field2.fldOffset;
 }
 
 //------------------------------------------------------------------------
@@ -2029,8 +2019,8 @@ void Compiler::StructPromotionHelper::SortStructFields()
 {
     if (!structPromotionInfo.fieldsSorted)
     {
-        qsort(structPromotionInfo.fields, structPromotionInfo.fieldCnt, sizeof(*structPromotionInfo.fields),
-              lvaFieldOffsetCmp);
+        jitstd::sort(structPromotionInfo.fields, structPromotionInfo.fields + structPromotionInfo.fieldCnt,
+                     lvaFieldOffsetCmp());
         structPromotionInfo.fieldsSorted = true;
     }
 }

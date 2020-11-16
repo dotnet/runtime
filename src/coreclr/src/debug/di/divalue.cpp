@@ -421,7 +421,6 @@ HRESULT CordbValue::InternalCreateHandle(CorDebugHandleType      handleType,
 
     DebuggerIPCEvent      event;
     CordbProcess              *process;
-    BOOL                          fStrong = FALSE;
 
     // @dbgtodo- , as part of inspection, convert this path to throwing.
     if (ppHandle == NULL)
@@ -431,13 +430,14 @@ HRESULT CordbValue::InternalCreateHandle(CorDebugHandleType      handleType,
 
     *ppHandle = NULL;
 
-    if (handleType == HANDLE_STRONG)
+    switch (handleType)
     {
-        fStrong = TRUE;
-    }
-    else
-    {
-        _ASSERTE(handleType == HANDLE_WEAK_TRACK_RESURRECTION);
+        case HANDLE_STRONG:
+        case HANDLE_WEAK_TRACK_RESURRECTION:
+        case HANDLE_PINNED:
+            break;
+        default:
+            return E_INVALIDARG;
     }
 
 
@@ -460,7 +460,7 @@ HRESULT CordbValue::InternalCreateHandle(CorDebugHandleType      handleType,
 
     CORDB_ADDRESS addr = GetValueHome() != NULL ? GetValueHome()->GetAddress() : NULL;
     event.CreateHandle.objectToken = CORDB_ADDRESS_TO_PTR(addr);
-    event.CreateHandle.fStrong = fStrong;
+    event.CreateHandle.handleType = handleType;
 
     // Note: two-way event here...
     HRESULT hr = process->SendIPCEvent(&event, sizeof(DebuggerIPCEvent));
@@ -1827,6 +1827,10 @@ HRESULT CordbObjectValue::QueryInterface(REFIID id, void **pInterface)
     {
         *pInterface = static_cast<ICorDebugHeapValue3*>(this);
     }
+    else if (id == IID_ICorDebugHeapValue4)
+    {
+        *pInterface = static_cast<ICorDebugHeapValue4*>(this);
+    }
     else if ((id == IID_ICorDebugStringValue) &&
              (m_info.objTypeData.elementType == ELEMENT_TYPE_STRING))
     {
@@ -1962,6 +1966,21 @@ HRESULT CordbObjectValue::CreateHandle(
 
     return CordbValue::InternalCreateHandle(handleType, ppHandle);
 }   // CreateHandle
+
+/*
+* Creates a pinned handle for this heap value.
+*
+* Not Implemented In-Proc.
+*/
+HRESULT CordbObjectValue::CreatePinnedHandle(
+    ICorDebugHandleValue ** ppHandle)
+{
+    PUBLIC_API_ENTRY(this);
+    FAIL_IF_NEUTERED(this);
+    ATT_REQUIRE_STOPPED_MAY_FAIL(GetProcess());
+
+    return CordbValue::InternalCreateHandle(HANDLE_PINNED, ppHandle);
+}   // CreatePinnedHandle
 
 // Get class information for this object
 // Arguments:
@@ -3325,6 +3344,10 @@ HRESULT CordbBoxValue::QueryInterface(REFIID id, void **pInterface)
     {
         *pInterface = static_cast<ICorDebugHeapValue3*>(this);
     }
+    else if (id == IID_ICorDebugHeapValue4)
+    {
+        *pInterface = static_cast<ICorDebugHeapValue4*>(this);
+    }
     else if (id == IID_IUnknown)
     {
         *pInterface = static_cast<IUnknown*>(static_cast<ICorDebugBoxValue*>(this));
@@ -3386,6 +3409,24 @@ HRESULT CordbBoxValue::CreateHandle(
 
     return CordbValue::InternalCreateHandle(handleType, ppHandle);
 }   // CordbBoxValue::CreateHandle
+
+// Creates a pinned handle for this heap value.
+// Not Implemented In-Proc.
+// Create a handle for a heap object.
+// @todo: How to prevent this being called by non-heap object?
+// Arguments:
+//     output: ppHandle   - on success, the newly created handle
+// Return Value: S_OK on success or E_INVALIDARG, E_OUTOFMEMORY, or CORDB_E_HELPER_MAY_DEADLOCK
+HRESULT CordbBoxValue::CreatePinnedHandle(
+    ICorDebugHandleValue ** ppHandle)
+{
+    PUBLIC_API_ENTRY(this);
+    FAIL_IF_NEUTERED(this);
+    ATT_REQUIRE_STOPPED_MAY_FAIL(GetProcess());
+
+    return CordbValue::InternalCreateHandle(HANDLE_PINNED, ppHandle);
+}   // CreatePinnedHandle
+
 
 HRESULT CordbBoxValue::GetValue(void *pTo)
 {
@@ -3564,6 +3605,10 @@ HRESULT CordbArrayValue::QueryInterface(REFIID id, void **pInterface)
     else if (id == IID_ICorDebugHeapValue3)
     {
         *pInterface = static_cast<ICorDebugHeapValue3*>(this);
+    }
+    else if (id == IID_ICorDebugHeapValue4)
+    {
+        *pInterface = static_cast<ICorDebugHeapValue4*>(this);
     }
     else if (id == IID_IUnknown)
     {
@@ -3887,6 +3932,23 @@ HRESULT CordbArrayValue::CreateHandle(
 
     return CordbValue::InternalCreateHandle(handleType, ppHandle);
 }   // CordbArrayValue::CreateHandle
+
+/*
+* Creates a pinned handle for this heap value.
+* Not Implemented In-Proc.
+* Arguments:
+*     output: ppHandle   - on success, the newly created handle
+* Return Value: S_OK on success or E_INVALIDARG, E_OUTOFMEMORY, or CORDB_E_HELPER_MAY_DEADLOCK
+*/
+HRESULT CordbArrayValue::CreatePinnedHandle(
+    ICorDebugHandleValue ** ppHandle)
+{
+    PUBLIC_API_ENTRY(this);
+    FAIL_IF_NEUTERED(this);
+    ATT_REQUIRE_STOPPED_MAY_FAIL(GetProcess());
+
+    return CordbValue::InternalCreateHandle(HANDLE_PINNED, ppHandle);
+}   // CreatePinnedHandle
 
 // get a copy of the array
 // Arguments

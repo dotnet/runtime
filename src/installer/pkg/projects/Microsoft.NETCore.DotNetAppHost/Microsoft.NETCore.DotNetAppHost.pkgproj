@@ -1,8 +1,0 @@
-<Project Sdk="Microsoft.NET.Sdk">
-  <PropertyGroup>
-    <VersionProp>AppHostVersion</VersionProp>
-    <SkipBuildOnRuntimePackOnlyOS>true</SkipBuildOnRuntimePackOnlyOS>
-  </PropertyGroup>
-
-  <Import Project="$(MSBuildProjectName).props" />
-</Project>

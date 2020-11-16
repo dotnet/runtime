@@ -1120,7 +1120,7 @@ SearchCompactEncodingSection(
         --personalityIndex; // change 1-based to zero-based index
         if (personalityIndex > sectionHeader.personalityArrayCount)
         {
-            ERROR("Invalid personality index\n"); 
+            ERROR("Invalid personality index\n");
             return false;
         }
         int32_t personalityDelta;
@@ -1222,7 +1222,7 @@ GetProcInfo(unw_word_t ip, unw_proc_info_t *pip, const libunwindInfo* info, bool
             segment_command_64* segment = (segment_command_64*)command;
 
             // Calculate the load bias for the module. This is the value to add to the vmaddr of a
-            // segment to get the actual address. 
+            // segment to get the actual address.
             if (strcmp(segment->segname, SEG_TEXT) == 0)
             {
                 loadBias = info->BaseAddress - segment->vmaddr;
@@ -1859,7 +1859,10 @@ find_proc_info(unw_addr_space_t as, unw_word_t ip, unw_proc_info_t *pip, int nee
             ehFrameHdrLen = ph.p_memsz;
             break;
 
-#ifdef PT_ARM_EXIDX
+#if defined(TARGET_ARM)
+#ifndef PT_ARM_EXIDX
+#define PT_ARM_EXIDX   0x70000001      /* See llvm ELF.h */
+#endif /* !PT_ARM_EXIDX */
         case PT_ARM_EXIDX:
             exidxFrameHdrAddr = loadbias + ph.p_vaddr;
             exidxFrameHdrLen = ph.p_memsz;
@@ -1870,7 +1873,7 @@ find_proc_info(unw_addr_space_t as, unw_word_t ip, unw_proc_info_t *pip, int nee
 
     if (dynamicAddr != nullptr)
     {
-        for (;;)
+        while (true)
         {
             Dyn dyn;
             if (!info->ReadMemory(dynamicAddr, &dyn, sizeof(dyn))) {

@@ -28,7 +28,7 @@ namespace ILVerification.Tests
         void TestMethodsWithInvalidIL(InvalidILTestCase invalidIL)
         {
             IEnumerable<VerificationResult> results = null;
-            
+
             try
             {
                 results = Verify(invalidIL);
@@ -58,7 +58,12 @@ namespace ILVerification.Tests
             EcmaModule module = TestDataLoader.GetModuleForTestAssembly(testCase.ModuleName);
             var methodHandle = (MethodDefinitionHandle) MetadataTokens.EntityHandle(testCase.MetadataToken);
             var method = (EcmaMethod)module.GetMethod(methodHandle);
-            var verifier = new Verifier((ILVerifyTypeSystemContext)method.Context, new VerifierOptions() { IncludeMetadataTokensInErrorMessages = true });
+            var verifier = new Verifier((ILVerifyTypeSystemContext)method.Context, new VerifierOptions
+            {
+                IncludeMetadataTokensInErrorMessages = true,
+                SanityChecks = true
+            });
+
             return verifier.Verify(module.PEReader, methodHandle);
         }
     }

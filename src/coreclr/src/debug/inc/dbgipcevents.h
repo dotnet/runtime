@@ -2297,8 +2297,8 @@ struct MSLAYOUT DebuggerIPCEvent
 
         struct MSLAYOUT
         {
-            void            *objectToken;
-            BOOL          fStrong;
+            void               *objectToken;
+            CorDebugHandleType handleType;
         } CreateHandle;
 
         struct MSLAYOUT

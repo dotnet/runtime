@@ -60,8 +60,6 @@ namespace System.ComponentModel.DataAnnotations
             var display = attributes.OfType<DisplayAttribute>().FirstOrDefault();
             if (display != null)
             {
-                // TODO-NULLABLE: This will return null if [DisplayName] is specified but no Name has been defined - probably a bug.
-                // Should fall back to OtherProperty in this case instead.
                 return display.GetName();
             }
 

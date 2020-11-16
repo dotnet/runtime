@@ -273,14 +273,7 @@ namespace System.Security.Cryptography
 
         private void CheckReadArguments(byte[] buffer, int offset, int count)
         {
-            if (buffer is null)
-                throw new ArgumentNullException(nameof(buffer));
-            if (offset < 0)
-                throw new ArgumentOutOfRangeException(nameof(offset), SR.ArgumentOutOfRange_NeedNonNegNum);
-            if (count < 0)
-                throw new ArgumentOutOfRangeException(nameof(count), SR.ArgumentOutOfRange_NeedNonNegNum);
-            if (buffer.Length - offset < count)
-                throw new ArgumentException(SR.Argument_InvalidOffLen);
+            ValidateBufferArguments(buffer, offset, count);
             if (!CanRead)
                 throw new NotSupportedException(SR.NotSupported_UnreadableStream);
         }
@@ -522,14 +515,7 @@ namespace System.Security.Cryptography
 
         private void CheckWriteArguments(byte[] buffer, int offset, int count)
         {
-            if (buffer is null)
-                throw new ArgumentNullException(nameof(buffer));
-            if (offset < 0)
-                throw new ArgumentOutOfRangeException(nameof(offset), SR.ArgumentOutOfRange_NeedNonNegNum);
-            if (count < 0)
-                throw new ArgumentOutOfRangeException(nameof(count), SR.ArgumentOutOfRange_NeedNonNegNum);
-            if (buffer.Length - offset < count)
-                throw new ArgumentException(SR.Argument_InvalidOffLen);
+            ValidateBufferArguments(buffer, offset, count);
             if (!CanWrite)
                 throw new NotSupportedException(SR.NotSupported_UnwritableStream);
         }

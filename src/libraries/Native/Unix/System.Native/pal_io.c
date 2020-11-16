@@ -632,8 +632,16 @@ int32_t SystemNative_FChMod(intptr_t fd, int32_t mode)
 
 int32_t SystemNative_FSync(intptr_t fd)
 {
+    int fileDescriptor = ToFileDescriptor(fd);
+
     int32_t result;
-    while ((result = fsync(ToFileDescriptor(fd))) < 0 && errno == EINTR);
+    while ((result = 
+#if defined(TARGET_OSX) && HAVE_F_FULLFSYNC
+    fcntl(fileDescriptor, F_FULLFSYNC)
+#else
+    fsync(fileDescriptor)
+#endif
+    < 0) && errno == EINTR);
     return result;
 }
 

@@ -7399,9 +7399,6 @@ bool getILIntrinsicImplementationForRuntimeHelpers(MethodDesc * ftn,
         if (methodTable == CoreLibBinder::GetClass(CLASS__BOOLEAN)
             || methodTable == CoreLibBinder::GetClass(CLASS__BYTE)
             || methodTable == CoreLibBinder::GetClass(CLASS__SBYTE)
-#ifdef FEATURE_UTF8STRING
-            || methodTable == CoreLibBinder::GetClass(CLASS__CHAR8)
-#endif // FEATURE_UTF8STRING
             || methodTable == CoreLibBinder::GetClass(CLASS__CHAR)
             || methodTable == CoreLibBinder::GetClass(CLASS__INT16)
             || methodTable == CoreLibBinder::GetClass(CLASS__UINT16)
@@ -12007,6 +12004,22 @@ void CEEJitInfo::allocMem (
     if( totalSize.IsOverflow() )
     {
         COMPlusThrowHR(CORJIT_OUTOFMEM);
+    }
+
+    if (ETW_EVENT_ENABLED(MICROSOFT_WINDOWS_DOTNETRUNTIME_PROVIDER_DOTNET_Context, MethodJitMemoryAllocatedForCode))
+    {
+        ULONGLONG ullMethodIdentifier = 0;
+        ULONGLONG ullModuleID = 0;
+
+        if (m_pMethodBeingCompiled)
+        {
+            Module* pModule = m_pMethodBeingCompiled->GetModule_NoLogging();
+            ullModuleID = (ULONGLONG)(TADDR)pModule;
+            ullMethodIdentifier = (ULONGLONG)m_pMethodBeingCompiled;
+        }
+
+        FireEtwMethodJitMemoryAllocatedForCode(ullMethodIdentifier, ullModuleID,
+            hotCodeSize + coldCodeSize, roDataSize, totalSize.Value(), flag, GetClrInstanceId());
     }
 
     m_CodeHeader = m_jitManager->allocCode(m_pMethodBeingCompiled, totalSize.Value(), GetReserveForJumpStubs(), flag

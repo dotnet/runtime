@@ -69,3 +69,29 @@ public struct GenericStructForLdtoken<T>
         return inputIntValue;
     }
 }
+
+public class BaseTypeNonGenericMethodActuallyOnBase
+{
+    public string Method()
+    {
+        return "BaseTypeNonGenericMethodActuallyOnBase::Method";
+    }
+
+    public string GenMethod<T>()
+    {
+        return "BaseTypeNonGenericMethodActuallyOnBase::GenMethod<T>";
+    }
+}
+
+public class BaseTypeGenericMethodActuallyOnBase<U>
+{
+    public string Method()
+    {
+        return "BaseTypeGenericMethodActuallyOnBase<U>::Method";
+    }
+
+    public string GenMethod<T>()
+    {
+        return "BaseTypeGenericMethodActuallyOnBase<U>::GenMethod<T>";
+    }
+}

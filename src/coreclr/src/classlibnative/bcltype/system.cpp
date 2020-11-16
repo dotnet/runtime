@@ -590,23 +590,6 @@ FCIMPL0(FC_BOOL_RET, SystemNative::IsServerGC)
 }
 FCIMPLEND
 
-#ifdef FEATURE_COMINTEROP
-
-BOOL QCALLTYPE SystemNative::WinRTSupported()
-{
-    QCALL_CONTRACT;
-
-    BOOL hasWinRT = FALSE;
-
-    BEGIN_QCALL;
-    hasWinRT = ::WinRTSupported();
-    END_QCALL;
-
-    return hasWinRT;
-}
-
-#endif // FEATURE_COMINTEROP
-
 #if defined(TARGET_X86) || defined(TARGET_AMD64)
 
 void QCALLTYPE SystemNative::X86BaseCpuId(int cpuInfo[4], int functionId, int subFunctionId)

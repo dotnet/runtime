@@ -11,6 +11,11 @@ namespace System.Globalization.Tests
         [InlineData("en-US", "en")]
         [InlineData("en", "")]
         [InlineData("", "")]
+        [InlineData("zh-CN", "zh-Hans")]
+        [InlineData("zh-SG", "zh-Hans")]
+        [InlineData("zh-HK", "zh-Hant")]
+        [InlineData("zh-MO", "zh-Hant")]
+        [InlineData("zh-TW", "zh-Hant")]
         public void Parent(string name, string expectedParentName)
         {
             CultureInfo culture = new CultureInfo(name);

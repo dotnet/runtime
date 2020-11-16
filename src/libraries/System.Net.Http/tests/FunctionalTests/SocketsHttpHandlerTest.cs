@@ -2476,22 +2476,26 @@ namespace System.Net.Http.Functional.Tests
                 return new NetworkStream(clientSocket, ownsSocket: true);
             };
 
-            using HttpClient client = CreateHttpClient(handler);
-            client.DefaultVersionPolicy = HttpVersionPolicy.RequestVersionExact;
+            using (HttpClient client = CreateHttpClient(handler))
+            {
+                client.DefaultVersionPolicy = HttpVersionPolicy.RequestVersionExact;
 
-            Task<string> clientTask = client.GetStringAsync($"{(options.UseSsl ? "https" : "http")}://{guid}/foo");
+                Task<string> clientTask = client.GetStringAsync($"{(options.UseSsl ? "https" : "http")}://{guid}/foo");
 
-            Socket serverSocket = await listenSocket.AcceptAsync();
-            using GenericLoopbackConnection loopbackConnection = await LoopbackServerFactory.CreateConnectionAsync(socket: null, new NetworkStream(serverSocket, ownsSocket: true), options);
-            await loopbackConnection.InitializeConnectionAsync();
+                Socket serverSocket = await listenSocket.AcceptAsync();
+                using (GenericLoopbackConnection loopbackConnection = await LoopbackServerFactory.CreateConnectionAsync(socket: null, new NetworkStream(serverSocket, ownsSocket: true), options))
+                {
+                    await loopbackConnection.InitializeConnectionAsync();
 
-            HttpRequestData requestData = await loopbackConnection.ReadRequestDataAsync();
-            Assert.Equal("/foo", requestData.Path);
+                    HttpRequestData requestData = await loopbackConnection.ReadRequestDataAsync();
+                    Assert.Equal("/foo", requestData.Path);
 
-            await loopbackConnection.SendResponseAsync(content: "foo");
+                    await loopbackConnection.SendResponseAsync(content: "foo");
 
-            string response = await clientTask;
-            Assert.Equal("foo", response);
+                    string response = await clientTask;
+                    Assert.Equal("foo", response);
+                }
+            }
         }
 
         [Theory]

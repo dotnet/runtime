@@ -32,6 +32,8 @@ variables:
   value: .NETCore
 - name: _DotNetValidationArtifactsCategory
   value: .NETCoreValidation
+- name: PostBuildSign
+  value: false
 
 stages:
 - stage: Build
@@ -57,12 +59,13 @@ stages:
       - Linux_musl_x64
       - Linux_musl_arm
       - Linux_musl_arm64
-      - Windows_NT_x86
-      - Windows_NT_x64
-      - Windows_NT_arm
-      - Windows_NT_arm64
+      - windows_x86
+      - windows_x64
+      - windows_arm
+      - windows_arm64
       jobParameters:
         isOfficialBuild: ${{ variables.isOfficialBuild }}
+        signBinaries: ${{ variables.isOfficialBuild }}
 
   - template: /eng/pipelines/common/platform-matrix.yml
     parameters:
@@ -79,9 +82,9 @@ stages:
         - Linux_musl_x64
         - Linux_musl_arm
         - Linux_musl_arm64
-        - Windows_NT_x64
-        - Windows_NT_arm
-        - Windows_NT_arm64
+        - windows_x64
+        - windows_arm
+        - windows_arm64
   #
   # Build Mono runtime packs
   #
@@ -109,12 +112,12 @@ stages:
       - Browser_wasm
       # - Linux_musl_arm
       # - Linux_musl_arm64
-      # - Windows_NT_x64 enable once coreclr.dll has a version header: https://github.com/dotnet/runtime/issues/37503
-      # - Windows_NT_x86
-      # - Windows_NT_arm
-      # - Windows_NT_arm64
+      # - windows_x64 enable once coreclr.dll has a version header: https://github.com/dotnet/runtime/issues/37503
+      # - windows_x86
+      # - windows_arm
+      # - windows_arm64
       jobParameters:
-        buildArgs: -s mono+libs+installer -c $(_BuildConfig)
+        buildArgs: -s mono+libs+host+packs -c $(_BuildConfig)
         nameSuffix: AllSubsets_Mono
         isOfficialBuild: ${{ variables.isOfficialBuild }}
         extraStepsTemplate: /eng/pipelines/common/upload-unsigned-artifacts-step.yml
@@ -133,17 +136,17 @@ stages:
       - Linux_arm64
       # - Linux_musl_x64
       # - Linux_musl_arm64
-      # - Windows_NT_x64
-      # - Windows_NT_x86
-      # - Windows_NT_arm
-      # - Windows_NT_arm64
+      # - windows_x64
+      # - windows_x86
+      # - windows_arm
+      # - windows_arm64
       jobTemplates:
       # LLVMJIT
       - jobTemplate: /eng/pipelines/common/global-build-job.yml
         buildConfig: release
         runtimeFlavor: mono
         jobParameters:
-          buildArgs: -s mono+libs+installer -c $(_BuildConfig)
+          buildArgs: -s mono+libs+host+packs -c $(_BuildConfig)
                      /p:MonoEnableLLVM=true /p:MonoBundleLLVMOptimizer=false
           nameSuffix: AllSubsets_Mono_LLVMJIT
           runtimeVariant: LLVMJIT
@@ -156,7 +159,7 @@ stages:
         buildConfig: release
         runtimeFlavor: mono
         jobParameters:
-          buildArgs: -s mono+libs+installer -c $(_BuildConfig)
+          buildArgs: -s mono+libs+host+packs -c $(_BuildConfig)
                       /p:MonoEnableLLVM=true /p:MonoBundleLLVMOptimizer=true
           nameSuffix: AllSubsets_Mono_LLVMAOT
           runtimeVariant: LLVMAOT
@@ -181,10 +184,10 @@ stages:
       - Linux_musl_x64
       - Linux_musl_arm
       - Linux_musl_arm64
-      - Windows_NT_x86
-      - Windows_NT_x64
-      - Windows_NT_arm
-      - Windows_NT_arm64
+      - windows_x86
+      - windows_x64
+      - windows_arm
+      - windows_arm64
       jobParameters:
         isOfficialBuild: ${{ variables.isOfficialBuild }}
         liveRuntimeBuildConfig: release
@@ -197,7 +200,7 @@ stages:
       jobTemplate: /eng/pipelines/libraries/build-job.yml
       buildConfig: Release
       platforms:
-      - Windows_NT_x64
+      - windows_x64
       jobParameters:
         framework: allConfigurations
         isOfficialBuild: ${{ variables.isOfficialBuild }}
@@ -213,8 +216,6 @@ stages:
         liveRuntimeBuildConfig: release
         liveLibrariesBuildConfig: Release
         isOfficialBuild: ${{ variables.isOfficialBuild }}
-        useOfficialAllConfigurations: true
-        buildFullPlatformManifest: true
       platforms:
       - OSX_arm64
       - OSX_x64
@@ -224,10 +225,10 @@ stages:
       - Linux_musl_x64
       - Linux_musl_arm
       - Linux_musl_arm64
-      - Windows_NT_x86
-      - Windows_NT_x64
-      - Windows_NT_arm
-      - Windows_NT_arm64
+      - windows_x86
+      - windows_x64
+      - windows_arm
+      - windows_arm64
 
 - ${{ if eq(variables.isOfficialBuild, true) }}:
   - template: /eng/pipelines/official/stages/publish.yml

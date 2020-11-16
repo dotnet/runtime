@@ -2549,7 +2549,7 @@ GenTree* Lowering::OptimizeConstCompare(GenTree* cmp)
             // into ((x AND mask) NE|EQ 0) when mask is a single bit.
             //
 
-            if (isPow2(static_cast<size_t>(op2Value)) && andOp2->IsIntegralConst(op2Value))
+            if (isPow2<target_size_t>(static_cast<target_size_t>(op2Value)) && andOp2->IsIntegralConst(op2Value))
             {
                 op2Value = 0;
                 op2->SetIconValue(0);

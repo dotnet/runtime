@@ -5,7 +5,7 @@ FROM $SDK_BASE_IMAGE as target
 
 ARG TESTHOST_LOCATION=".\\artifacts\\bin\\testhost"
 ARG TFM=net6.0
-ARG OS=Windows_NT
+ARG OS=windows
 ARG ARCH=x64
 ARG CONFIGURATION=Release
 

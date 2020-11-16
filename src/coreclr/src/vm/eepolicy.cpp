@@ -468,13 +468,13 @@ void EEPolicy::LogFatalError(UINT exitCode, UINT_PTR address, LPCWSTR pszMessage
                 addressString.Printf(W("%p"), pExceptionInfo? (UINT_PTR)pExceptionInfo->ExceptionRecord->ExceptionAddress : address);
 
                 // We should always have the reference to the runtime's instance
-                _ASSERTE(g_hThisInst != NULL);
+                _ASSERTE(GetClrModuleBase() != NULL);
 
                 // Setup the string to contain the runtime's base address. Thus, when customers report FEEE with just
                 // the event log entry containing this string, we can use the absolute and base addresses to determine
                 // where the fault happened inside the runtime.
                 SmallStackSString runtimeBaseAddressString;
-                runtimeBaseAddressString.Printf(W("%p"), g_hThisInst);
+                runtimeBaseAddressString.Printf(W("%p"), GetClrModuleBase());
 
                 SmallStackSString exitCodeString;
                 exitCodeString.Printf(W("%x"), exitCode);

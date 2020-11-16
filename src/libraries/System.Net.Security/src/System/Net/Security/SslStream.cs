@@ -753,7 +753,7 @@ namespace System.Net.Security
         public override int Read(byte[] buffer, int offset, int count)
         {
             ThrowIfExceptionalOrNotAuthenticated();
-            ValidateParameters(buffer, offset, count);
+            ValidateBufferArguments(buffer, offset, count);
             ValueTask<int> vt = ReadAsyncInternal(new SyncReadWriteAdapter(InnerStream), new Memory<byte>(buffer, offset, count));
             Debug.Assert(vt.IsCompleted, "Sync operation must have completed synchronously");
             return vt.GetAwaiter().GetResult();
@@ -764,7 +764,7 @@ namespace System.Net.Security
         public override void Write(byte[] buffer, int offset, int count)
         {
             ThrowIfExceptionalOrNotAuthenticated();
-            ValidateParameters(buffer, offset, count);
+            ValidateBufferArguments(buffer, offset, count);
 
             ValueTask vt = WriteAsyncInternal(new SyncReadWriteAdapter(InnerStream), new ReadOnlyMemory<byte>(buffer, offset, count));
             Debug.Assert(vt.IsCompleted, "Sync operation must have completed synchronously");
@@ -798,7 +798,7 @@ namespace System.Net.Security
         public override Task WriteAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
         {
             ThrowIfExceptionalOrNotAuthenticated();
-            ValidateParameters(buffer, offset, count);
+            ValidateBufferArguments(buffer, offset, count);
             return WriteAsync(new ReadOnlyMemory<byte>(buffer, offset, count), cancellationToken).AsTask();
         }
 
@@ -811,7 +811,7 @@ namespace System.Net.Security
         public override Task<int> ReadAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
         {
             ThrowIfExceptionalOrNotAuthenticated();
-            ValidateParameters(buffer, offset, count);
+            ValidateBufferArguments(buffer, offset, count);
             return ReadAsyncInternal(new AsyncReadWriteAdapter(InnerStream, cancellationToken), new Memory<byte>(buffer, offset, count)).AsTask();
         }
 
