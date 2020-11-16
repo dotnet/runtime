@@ -24,30 +24,111 @@ namespace System.Globalization.Tests
             {
                 // Arrange
 
-                List<int> expected = new List<int>();
-                StringBuilder input = new StringBuilder();
+                StringBuilder inputString = new StringBuilder();
+                List<Range> expectedGraphemeClusterRanges = new List<Range>();
 
                 foreach (Rune[] cluster in clusters)
                 {
-                    expected.Add(input.Length); // we're about to start a new cluster
-                    foreach (Rune scalar in cluster)
+                    int start = inputString.Length;
+                    foreach (Rune rune in cluster)
                     {
-                        input.Append(scalar);
+                        inputString.Append(rune);
                     }
+                    int end = inputString.Length;
+                    expectedGraphemeClusterRanges.Add(start..end);
                 }
 
-                // Act
+                // Act & assert
 
-                int[] actual = StringInfo.ParseCombiningCharacters(input.ToString());
-
-                // Assert
-
-                if (!expected.SequenceEqual(actual))
+                try
                 {
-                    throw new AssertActualExpectedException(
-                        expected: expected.ToArray(),
-                        actual: actual,
-                        userMessage: "Grapheme break test failed on test case: " + line);
+                    RunStringInfoTestCase(inputString.ToString(), expectedGraphemeClusterRanges.ToArray());
+                }
+                catch (Exception ex)
+                {
+                    // include the failing line from the test case file for ease of debugging
+                    throw new Exception("Grapheme break test failed on test case: " + line, ex);
+                }
+            }
+        }
+
+        private static void RunStringInfoTestCase(string input, Range[] expectedGraphemeClusterRanges)
+        {
+            if (expectedGraphemeClusterRanges.Length == 0)
+            {
+                // Handle empty inputs
+
+                Assert.Equal(string.Empty, input); // Shouldn't have zero-length expected grapheme clusters for non-empty inputs
+                Assert.Equal(0, StringInfo.GetNextTextElementLength(input));
+                Assert.Equal(0, StringInfo.GetNextTextElementLength(input, 0));
+                Assert.Equal(0, StringInfo.GetNextTextElementLength(input.AsSpan()));
+                Assert.Equal(string.Empty, StringInfo.GetNextTextElement(input));
+                Assert.Equal(string.Empty, StringInfo.GetNextTextElement(input, 0));
+
+                StringInfo si = new StringInfo(input);
+                Assert.Equal(0, si.LengthInTextElements);
+
+                TextElementEnumerator enumerator = StringInfo.GetTextElementEnumerator(input);
+                Assert.False(enumerator.MoveNext());
+            }
+            else
+            {
+                // Handle non-empty inputs
+
+                // ParseCombiningCharacters returns the offset of each grapheme cluster start
+
+                int[] combiningCharOffsets = StringInfo.ParseCombiningCharacters(input);
+                Assert.Equal(
+                    expected: expectedGraphemeClusterRanges.Select(range => range.GetOffsetAndLength(input.Length).Offset).ToArray(),
+                    actual: combiningCharOffsets);
+
+                // GetNextTextElement[Length] returns the substring [length] of each grapheme cluster
+
+                foreach (Range range in expectedGraphemeClusterRanges)
+                {
+                    string expected = input[range];
+
+                    Assert.Equal(expected, StringInfo.GetNextTextElement(input[range.Start..]));
+                    Assert.Equal(expected, StringInfo.GetNextTextElement(input, range.GetOffsetAndLength(input.Length).Offset));
+                    Assert.Equal(expected.Length, StringInfo.GetNextTextElementLength(input[range.Start..]));
+                    Assert.Equal(expected.Length, StringInfo.GetNextTextElementLength(input, range.GetOffsetAndLength(input.Length).Offset));
+                    Assert.Equal(expected.Length, StringInfo.GetNextTextElementLength(input.AsSpan()[range]));
+                }
+
+                // StringInfo.LengthInTextElements returns the total grapheme cluster count
+
+                Assert.Equal(expectedGraphemeClusterRanges.Length, new StringInfo(input).LengthInTextElements);
+
+                // TextElementEnumerator returns an enumerator over each grapheme cluster
+
+                for (int i = 0; i < expectedGraphemeClusterRanges.Length; i++)
+                {
+                    Span<Range> remainingRanges = expectedGraphemeClusterRanges.AsSpan(i);
+
+                    int baseOffset = remainingRanges[0].GetOffsetAndLength(input.Length).Offset;
+                    TextElementEnumerator enumerator1 = StringInfo.GetTextElementEnumerator(input[baseOffset..]);
+                    TextElementEnumerator enumerator2 = StringInfo.GetTextElementEnumerator(input, baseOffset);
+
+                    foreach (Range innerRange in remainingRanges)
+                    {
+                        Assert.True(enumerator1.MoveNext()); // input string has already been substringed
+                        Assert.True(enumerator2.MoveNext()); // input string has been fully provided; enumerator has substringed
+
+                        string expectedSubstring = input[innerRange];
+                        int expectedRelativeOffset = innerRange.GetOffsetAndLength(input.Length).Offset - baseOffset;
+
+                        Assert.Equal(expectedRelativeOffset, enumerator1.ElementIndex);
+                        Assert.Equal(expectedRelativeOffset, enumerator2.ElementIndex);
+
+                        Assert.Equal(expectedSubstring, enumerator1.Current);
+                        Assert.Equal(expectedSubstring, enumerator1.GetTextElement());
+
+                        Assert.Equal(expectedSubstring, enumerator2.Current);
+                        Assert.Equal(expectedSubstring, enumerator2.GetTextElement());
+                    }
+
+                    Assert.False(enumerator1.MoveNext());
+                    Assert.False(enumerator2.MoveNext());
                 }
             }
         }
@@ -106,10 +187,10 @@ namespace System.Globalization.Tests
                     continue;
                 }
 
-                // Line has format "÷ (XXXX (× YYYY)* ÷)+ # <comment>"
+                // Line has format "Ã· (XXXX (Ã— YYYY)* Ã·)+ # <comment>"
                 // We'll yield return a Rune[][], representing a collection of clusters, where each cluster contains a collection of Runes.
                 //
-                // Example: "÷ AAAA ÷ BBBB × CCCC × DDDD ÷ EEEE × FFFF ÷ # <comment>"
+                // Example: "Ã· AAAA Ã· BBBB Ã— CCCC Ã— DDDD Ã· EEEE Ã— FFFF Ã· # <comment>"
                 // -> [ [ AAAA ], [ BBBB, CCCC, DDDD ], [ EEEE, FFFF ] ]
                 //
                 // We also return the line for ease of debugging any test failures.

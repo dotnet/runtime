@@ -65,13 +65,14 @@ stages:
       - windows_arm64
       jobParameters:
         isOfficialBuild: ${{ variables.isOfficialBuild }}
+        signBinaries: ${{ variables.isOfficialBuild }}
 
   - template: /eng/pipelines/common/platform-matrix.yml
     parameters:
       jobTemplate: /eng/pipelines/coreclr/templates/crossdac-pack.yml
       buildConfig: release
       platforms:
-      - Linux_musl_x64
+      - windows_x64
       jobParameters:
         isOfficialBuild: ${{ variables.isOfficialBuild }}
         crossDacPlatforms:

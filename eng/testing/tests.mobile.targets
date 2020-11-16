@@ -99,6 +99,8 @@
         Mode="Full"
         OutputType="AsmOnly"
         Assemblies="@(AotInputAssemblies)"
+        AotModulesTablePath="$(BundleDir)\modules.m"
+        AotModulesTableLanguage="ObjC"
         UseLLVM="$(MonoEnableLLVM)"
         LLVMPath="$(MicrosoftNetCoreAppRuntimePackNativeDir)cross">
         <Output TaskParameter="CompiledAssemblies" ItemName="BundleAssemblies" />
