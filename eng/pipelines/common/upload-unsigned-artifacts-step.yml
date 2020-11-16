@@ -1,9 +1,11 @@
 parameters:
   name: ''
+  condition: always()
 
 steps:
 - task: CopyFiles@2
   displayName: Prepare job-specific intermediate unsigned artifacts subdirectory
+  condition: and(succeeded(), ${{ parameters.condition }})
   inputs:
     SourceFolder: '$(Build.SourcesDirectory)/artifacts/packages/$(_BuildConfig)'
     Contents: |
@@ -14,6 +16,7 @@ steps:
 
 - task: PublishBuildArtifacts@1
   displayName: Publish intermediate unsigned artifacts
+  condition: and(succeeded(), ${{ parameters.condition }})
   inputs:
     pathToPublish: '$(Build.StagingDirectory)/UnsignedArtifacts'
     artifactName: IntermediateUnsignedArtifacts
