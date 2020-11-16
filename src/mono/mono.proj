@@ -60,6 +60,11 @@
     <Error Condition="'$(TargetsAndroid)' == 'true' and '$(ANDROID_NDK_ROOT)' == ''" Text="Error: You need to set the ANDROID_NDK_ROOT environment variable pointing to the Android NDK root." />
   </Target>
 
+  <!-- CI specific build options -->    
+  <ItemGroup Condition="'$(ContinuousIntegrationBuild)' == 'true' and ('$(TargetsOSX)' == 'true' or '$(TargetsBrowser)' == 'true')">
+    <_MonoCMakeArgs Include="-DENABLE_WERROR=1"/>
+  </ItemGroup>
+
   <!-- Windows Mono runtime build -->
   <Target Name="BuildMonoRuntimeWindows" Condition="'$(OS)' == 'Windows_NT'">
 
