@@ -7,7 +7,6 @@ using System.ComponentModel;
 using System.Diagnostics.CodeAnalysis;
 using System.Runtime.InteropServices;
 using System.Text;
-using System.Threading;
 
 namespace System.ServiceProcess
 {
@@ -17,7 +16,6 @@ namespace System.ServiceProcess
   public class ServiceController : Component
   {
     private string _machineName; // Never null
-    private readonly ManualResetEvent _waitForStatusSignal = new ManualResetEvent(false);
     private const string DefaultMachineName = ".";
 
     private string? _name;
@@ -963,8 +961,6 @@ namespace System.ServiceProcess
       {
         if (DateTime.UtcNow - start > timeout)
           throw new System.ServiceProcess.TimeoutException(SR.Format(SR.Timeout, ServiceName));
-
-        _waitForStatusSignal.WaitOne(250);
         Refresh();
       }
     }
