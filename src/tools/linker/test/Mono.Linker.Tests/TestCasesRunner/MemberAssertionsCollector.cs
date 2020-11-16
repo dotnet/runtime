@@ -5,6 +5,7 @@ using System.Linq;
 using Mono.Cecil;
 using Mono.Linker.Tests.Cases.Expectations.Assertions;
 using Mono.Linker.Tests.Extensions;
+using NUnit.Framework;
 
 namespace Mono.Linker.Tests.TestCasesRunner
 {
@@ -21,6 +22,16 @@ namespace Mono.Linker.Tests.TestCasesRunner
 			var results = new List<(IMemberDefinition, CustomAttribute)> ();
 			CollectMemberAssertions (t, results);
 			return results;
+		}
+
+		public static IEnumerable<TestCaseData> GetMemberAssertionsData (Type type)
+		{
+			return GetMemberAssertions (type).Select (v => {
+				var testCaseData = new TestCaseData (v.member, v.ca);
+				// Sanitize test names to work around https://github.com/nunit/nunit3-vs-adapter/issues/691.
+				testCaseData.SetName ($"{{m}}({v.member.Name},{v.ca.AttributeType.Name})");
+				return testCaseData;
+			});
 		}
 
 		private static bool IsMemberAssertion (TypeReference attributeType)
