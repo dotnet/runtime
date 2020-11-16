@@ -70,10 +70,9 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
             }
         }
 
-        internal ServiceCallSite GetCallSite(Type serviceType, CallSiteChain callSiteChain)
-        {
-            return _callSiteCache.GetOrAdd(serviceType, type => CreateCallSite(type, callSiteChain));
-        }
+        internal ServiceCallSite GetCallSite(Type serviceType, CallSiteChain callSiteChain) =>
+            _callSiteCache.TryGetValue(serviceType, out ServiceCallSite site) ? site :
+            CreateCallSite(serviceType, callSiteChain);
 
         internal ServiceCallSite GetCallSite(ServiceDescriptor serviceDescriptor, CallSiteChain callSiteChain)
         {
