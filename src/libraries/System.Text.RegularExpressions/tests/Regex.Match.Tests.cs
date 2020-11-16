@@ -1139,5 +1139,14 @@ namespace System.Text.RegularExpressions.Tests
 
             AssertExtensions.Throws<ArgumentNullException>("inner", () => System.Text.RegularExpressions.Match.Synchronized(null));
         }
+
+        [Fact]
+        public void Explore()
+        {
+            var regex = new Regex("abc");
+            var match = regex.Match("abcd");
+            var match1 = regex.Match("ababcd");
+            Console.WriteLine("BH");
+        }
     }
 }
