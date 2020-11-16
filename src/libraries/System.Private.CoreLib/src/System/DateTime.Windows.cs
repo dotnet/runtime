@@ -80,11 +80,8 @@ namespace System
                 // d) Windows never inserting a historical leap second (into the past) once the
                 //    process is up and running (future insertions are ok).
 
-                // Caution: Pretending managed calli convention below to work around
-                // lack of API (see https://github.com/dotnet/runtime/issues/38134).
-
                 ulong osTicks;
-                ((delegate*<ulong*, void>)s_pfnGetSystemTimeAsFileTime)(&osTicks);
+                s_pfnGetSystemTimeAsFileTime(&osTicks);
 
                 // If the OS doesn't support leap second handling, short-circuit everything.
 
