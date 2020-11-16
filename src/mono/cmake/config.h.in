@@ -1703,3 +1703,5 @@
 
 /* Enable runtime checks of mempool references between metadata images (must set env var MONO_CHECK_MODE=metadata) */
 #cmakedefine ENABLE_CHECKED_BUILD_METADATA 1
+
+#cmakedefine ENABLE_MONO_CLASS_GETTERS_STATS 1

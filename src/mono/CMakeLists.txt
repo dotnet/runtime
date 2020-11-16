@@ -569,6 +569,7 @@ if (CMAKE_BUILD_TYPE STREQUAL "Debug")
   else()
     set(ENABLE_CHECKED_BUILD 1)
     set(ENABLE_CHECKED_BUILD_PRIVATE_TYPES 1)
+    set(ENABLE_MONO_CLASS_GETTERS_STATS 1)
   endif()
 endif()
 ### End of debug build checks

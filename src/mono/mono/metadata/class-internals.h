@@ -309,6 +309,11 @@ union _MonoClassSizes {
 #undef MONO_CLASS_GETTER
 #undef MONO_CLASS_OFFSET
 
+#if defined (ENABLE_MONO_CLASS_GETTERS_STATS) &&  defined (MONO_CLASS_DEF_PRIVATE)
+void
+mono_getter_stats_dump (void);
+#endif
+
 #ifdef COMPRESSED_INTERFACE_BITMAP
 int mono_compress_bitmap (uint8_t *dest, const uint8_t *bitmap, int size);
 int mono_class_interface_match (const uint8_t *bitmap, int id);

@@ -551,6 +551,45 @@ mono_class_publish_gc_descriptor (MonoClass *klass, MonoGCDescriptor gc_descr)
 	return ret;
 }
 
+#if defined (ENABLE_MONO_CLASS_GETTERS_STATS) &&  defined (MONO_CLASS_DEF_PRIVATE)
+struct mono_getter_stats {
+#define MONO_CLASS_GETTER(funcname, rettype, optref, argtype, fieldname) int32_t used_ ## funcname;
+#define MONO_CLASS_OFFSET(funcname, argtype, fieldname) int32_t used_ ## funcname;
+#include "class-getters.h"
+#undef MONO_CLASS_GETTER
+#undef MONO_CLASS_OFFSET
+};
+
+static struct mono_getter_stats mono_getter_stats  = {0};
+
+#define MONO_CLASS_GETTER(funcname, rettype, optref, argtype, fieldname) rettype funcname (argtype *klass) { \
+		mono_atomic_inc_i32 (&mono_getter_stats.used_ ## funcname); \
+		return optref klass-> fieldname ;			\
+	}
+#define MONO_CLASS_OFFSET(funcname, argtype, fieldname) intptr_t funcname (void) { \
+		mono_atomic_inc_i32 (&mono_getter_stats.used_ ## funcname); \
+		return MONO_STRUCT_OFFSET (argtype, fieldname);		\
+	}
+#include "class-getters.h"
+#undef MONO_CLASS_GETTER
+#undef MONO_CLASS_OFFSET
+
+
+void
+mono_getter_stats_dump (void)
+{
+	fprintf (stderr, "Field\tUsed\n");
+#define MONO_CLASS_GETTER(funcname, rettype, optref, argtype, fieldname) \
+	fprintf (stderr, "%s\t%d\n", #funcname, mono_getter_stats.used_ ## funcname);
+#define MONO_CLASS_OFFSET(funcname, argtype, fieldname) \
+	fprintf (stderr, "%s\t%d\n", #funcname, mono_getter_stats.used_ ## funcname);
+#include "class-getters.h"
+#undef MONO_CLASS_GETTER
+#undef MONO_CLASS_OFFSET
+
+}
+#else
+
 #ifdef MONO_CLASS_DEF_PRIVATE
 #define MONO_CLASS_GETTER(funcname, rettype, optref, argtype, fieldname) rettype funcname (argtype *klass) { return optref klass-> fieldname ; }
 #define MONO_CLASS_OFFSET(funcname, argtype, fieldname) intptr_t funcname (void) { return MONO_STRUCT_OFFSET (argtype, fieldname); }
@@ -558,3 +597,5 @@ mono_class_publish_gc_descriptor (MonoClass *klass, MonoGCDescriptor gc_descr)
 #undef MONO_CLASS_GETTER
 #undef MONO_CLASS_OFFSET
 #endif /* MONO_CLASS_DEF_PRIVATE */
+
+#endif /* defined (ENABLE_MONO_CLASS_GETTERS_STATS) && defined (MONO_CLASS_DEF_PRIVATE) */

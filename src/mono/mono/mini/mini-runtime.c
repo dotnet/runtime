@@ -4961,6 +4961,11 @@ mono_runtime_print_stats (void)
 		mono_counters_dump (MONO_COUNTER_SECTION_MASK | MONO_COUNTER_MONOTONIC, NULL);
 		g_print ("\n");
 	}
+#if defined (ENABLE_MONO_CLASS_GETTERS_STATS) &&  defined (MONO_CLASS_DEF_PRIVATE)
+	if (g_hasenv ("MONO_STATS_GETTERS"))
+		mono_getter_stats_dump ();
+#endif
+
 }
 
 static void
