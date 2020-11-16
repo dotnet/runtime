@@ -1135,20 +1135,6 @@ private:
      ****************************************************************************/
     RegisterType getRegisterType(Interval* currentInterval, RefPosition* refPosition);
 
-    regMaskTP applyFreeHeuristic(regMaskTP candidates, var_types regType)
-    {
-        regMaskTP result = candidates & m_AvailableRegs;
-#ifdef TARGET_ARM
-        // For TYP_DOUBLE on ARM, we can only use register for which the odd half is
-        // also available.
-        if (regType == TYP_DOUBLE)
-        {
-            result &= (m_AvailableRegs << 1);
-        }
-#endif // TARGET_ARM
-        return result;
-    }
-
     regNumber allocateReg(Interval* current, RefPosition* refPosition);
     regNumber assignCopyReg(RefPosition* refPosition);
 
@@ -1177,6 +1163,59 @@ private:
     void spillInterval(Interval* interval, RefPosition* fromRefPosition DEBUGARG(RefPosition* toRefPosition));
 
     void spillGCRefs(RefPosition* killRefPosition);
+
+    /*****************************************************************************
+    * Register selection
+    ****************************************************************************/
+    regMaskTP getFreeCandidates(regMaskTP candidates, var_types regType)
+    {
+        regMaskTP result = candidates & m_AvailableRegs;
+#ifdef TARGET_ARM
+        // For TYP_DOUBLE on ARM, we can only use register for which the odd half is
+        // also available.
+        if (regType == TYP_DOUBLE)
+        {
+            result &= (m_AvailableRegs >> 1);
+        }
+#endif // TARGET_ARM
+        return result;
+    }
+
+    struct registerSelector
+    {
+        regMaskTP candidates;
+        int       score;
+#ifdef TARGET_ARM
+        var_types regType;
+#endif // TARGET_ARM
+
+        // Apply a simple mask-based selection heuristic, and return 'true' if we now have a single candidate.
+        bool applySelection(int selectionScore, regMaskTP selectionCandidates)
+        {
+            regMaskTP newCandidates = candidates & selectionCandidates;
+            if (newCandidates != RBM_NONE)
+            {
+                score += selectionScore;
+                candidates = newCandidates;
+                return isSingleRegister(candidates);
+            }
+            return false;
+        }
+
+        // Select a single register, if it is in the candidate set.
+        // Return true if so.
+        bool applySingleRegSelection(int selectionScore, regMaskTP selectionCandidate)
+        {
+            assert(isSingleRegister(selectionCandidate));
+            regMaskTP newCandidates = candidates & selectionCandidate;
+            if (newCandidates != RBM_NONE)
+            {
+                candidates = newCandidates;
+                return true;
+            }
+            return false;
+        }
+    };
 
     /*****************************************************************************
      * For Resolution phase
@@ -1583,11 +1622,39 @@ private:
     }
     regMaskTP getMatchingConstants(regMaskTP mask, Interval* currentInterval, RefPosition* refPosition);
 
-    regMaskTP fixedRegs;
+    regMaskTP    fixedRegs;
     LsraLocation nextFixedRef[REG_COUNT];
     void updateNextFixedRef(RegRecord* regRecord, RefPosition* nextRefPosition);
+    LsraLocation getNextFixedRef(regNumber regNum, var_types regType)
+    {
+        LsraLocation loc = nextFixedRef[regNum];
+#ifdef TARGET_ARM
+        if (regType == TYP_DOUBLE)
+        {
+            // The following is what you'd *expect* this to be (or at least some form of combining
+            // the two), but the existing heuristics always use the location of the odd (second) half.
+            // loc = Min(loc, nextFixedRef[regNum + 1]);
+            loc = nextFixedRef[regNum + 1];
+        }
+#endif
+        return loc;
+    }
 
     LsraLocation nextIntervalRef[REG_COUNT];
+    LsraLocation getNextIntervalRef(regNumber regNum, var_types regType)
+    {
+        LsraLocation loc = nextIntervalRef[regNum];
+#ifdef TARGET_ARM
+        if (regType == TYP_DOUBLE)
+        {
+            // The following is what you'd *expect* this to be (or at least some form of combining
+            // the two), but the existing heuristics always use the location of the odd (second) half.
+            // loc = Min(loc, nextIntervalRef[regNum + 1]);
+            loc = nextIntervalRef[regNum + 1];
+        }
+#endif
+        return loc;
+    }
     unsigned int spillCost[REG_COUNT];
 
     regMaskTP regsBusyUntilKill;

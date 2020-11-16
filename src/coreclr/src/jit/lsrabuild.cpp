@@ -1815,13 +1815,13 @@ void LinearScan::buildPhysRegRecords()
     {
         regNumber  reg  = lsraRegOrder[i];
         RegRecord* curr = &physRegs[reg];
-        curr->regOrder = (unsigned char)i;
+        curr->regOrder  = (unsigned char)i;
     }
     for (unsigned int i = 0; i < lsraRegOrderFltSize; i++)
     {
         regNumber  reg  = lsraRegOrderFlt[i];
         RegRecord* curr = &physRegs[reg];
-        curr->regOrder = (unsigned char)i;
+        curr->regOrder  = (unsigned char)i;
     }
 }
 
