@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Threading;
@@ -65,17 +66,19 @@ namespace System
                 // 863,990,000,000 ticks.
                 //
                 // We take advantage of this by caching what the OS believes the tick count is at
-                // the beginning of the day vs. what .NET believes the tick count is at the beginning
-                // of the day. When the OS returns a tick count to us, if it's within 23:59:59 of
-                // what midnight was on the current day, then we know that there's no way for a leap
-                // second to have been inserted or removed, and we can short-circuit the leap second
-                // handling logic by performing a quick addition and returning immediately. If the
-                // OS-provided tick count is outside of our cached range, we'll update the cache.
-                // On the off-chance the API is called on the very last second (or two) of the day,
-                // we'll go down the slow path without updating the cache, and once another second
-                // elapses we'll be able to update the cache again.
-
-                const long MinTicksPerDay = TicksPerDay - TicksPerSecond; // a day is at least 23:59:59 long
+                // the beginning of the month vs. what .NET believes the tick count is at the beginning
+                // of the month. When the OS returns a tick count to us, if it's before 23:59:59 on the
+                // last day of the month, then we know that there's no way for a leap second to have been
+                // inserted or removed, and we can short-circuit the leap second handling logic by
+                // performing a quick addition and returning immediately.
+                //
+                // This relies on:
+                // a) Leap seconds only ever taking place on the last day of the month
+                //    (historically these are Jun. & Dec., but we support any month);
+                // b) Leap seconds only ever occurring at 23:59:59;
+                // c) At most a single leap second being added or removed per month; and
+                // d) Windows never inserting a historical leap second (into the past) once the
+                //    process is up and running (future insertions are ok).
 
                 // Caution: Pretending managed calli convention below to work around
                 // lack of API (see https://github.com/dotnet/runtime/issues/38134).
@@ -90,17 +93,17 @@ namespace System
                     return new DateTime((osTicks + FileTimeOffset) | KindUtc);
                 }
 
-                // If it's between 00:00:00 (inclusive) and 23:59:59 (exclusive) on the same day
-                // as the previous call to UtcNow, we can use the cached value. Use unsigned locals
-                // below so that negative tick counts resulting from the system clock being set
-                // backward result in integer underflow and cause cache misses.
+                // If our cache has been populated and we're within its validity period, rely
+                // solely on the cache. We use unsigned arithmetic below so that if the system
+                // clock is set backward, the resulting value will integer underflow and cause
+                // a cache miss, forcing us down the slow path.
 
                 if (s_leapSecondCache is LeapSecondCache cache)
                 {
-                    ulong deltaTicksFromMidnight = osTicks - cache.WindowsTicksAsOfMidnight;
-                    if (deltaTicksFromMidnight < MinTicksPerDay)
+                    ulong deltaTicksFromStartOfMonth = osTicks - cache.OSFileTimeTicksAtStartOfMonth;
+                    if (deltaTicksFromStartOfMonth < cache.CacheValidityPeriodInTicks)
                     {
-                        return new DateTime(deltaTicksFromMidnight + cache.DateTimeDateDataAsOfMidnight); // includes UTC marker
+                        return new DateTime(deltaTicksFromStartOfMonth + cache.DotNetDateDataAtStartOfMonth); // includes UTC marker
                     }
                 }
 
@@ -112,37 +115,44 @@ namespace System
                 {
                     // If we reached this point, one of the following is true:
                     //   a) the cache hasn't yet been initialized; or
-                    //   b) the day has changed since the last call to UtcNow; or
-                    //   c) the current time is 23:59:59 or 23:59:60.
+                    //   b) the month has changed since the last call to UtcNow; or
+                    //   c) the current time is 23:59:59 or 23:59:60 on the last day of the month.
                     //
                     // In cases (a) and (b), we'll update the cache. In case (c), we
                     // pessimistically assume we might be inside a leap second, so we
                     // won't update the cache.
 
-                    DateTime dateTime = FromFileTimeLeapSecondsAware((long)osTicks);
-                    ulong ticksIntoDay = (ulong)dateTime.Ticks % (ulong)TicksPerDay;
-                    if (ticksIntoDay < MinTicksPerDay)
+                    DateTime utcNow = FromFileTimeLeapSecondsAware((long)osTicks);
+                    DateTime oneSecondBeforeMonthEnd = new DateTime(utcNow.Year, utcNow.Month, DaysInMonth(utcNow.Year, utcNow.Month), 23, 59, 59, DateTimeKind.Utc);
+
+                    if (utcNow < oneSecondBeforeMonthEnd)
                     {
-                        // It's not yet 23:59:59, so update the cache. It's ok for multiple
-                        // threads to do this concurrently as long as the write to the static
-                        // is published *after* the cache object's fields have been populated.
+                        // It's not yet 23:59:59 on the last day of the month, so update the cache.
+                        // It's ok for multiple threads to do this concurrently as long as the write
+                        // to the static field is published *after* the cache's instance fields have
+                        // been populated.
+
+                        DateTime startOfMonth = new DateTime(utcNow.Year, utcNow.Month, 1, 0, 0, 0, DateTimeKind.Utc);
+                        Debug.Assert(startOfMonth <= utcNow);
 
                         Volatile.Write(ref s_leapSecondCache, new LeapSecondCache
                         {
-                            WindowsTicksAsOfMidnight = osTicks - ticksIntoDay,
-                            DateTimeDateDataAsOfMidnight = dateTime._dateData - ticksIntoDay // includes UTC marker
+                            OSFileTimeTicksAtStartOfMonth = osTicks - (ulong)(utcNow.Ticks - startOfMonth.Ticks),
+                            DotNetDateDataAtStartOfMonth = startOfMonth._dateData,
+                            CacheValidityPeriodInTicks = (ulong)(oneSecondBeforeMonthEnd.Ticks - startOfMonth.Ticks)
                         });
                     }
 
-                    return dateTime;
+                    return utcNow;
                 }
             }
         }
 
         private sealed class LeapSecondCache
         {
-            internal ulong WindowsTicksAsOfMidnight;
-            internal ulong DateTimeDateDataAsOfMidnight;
+            internal ulong OSFileTimeTicksAtStartOfMonth;
+            internal ulong DotNetDateDataAtStartOfMonth;
+            internal ulong CacheValidityPeriodInTicks;
         }
 
         internal static readonly bool s_systemSupportsLeapSeconds = SystemSupportsLeapSeconds();
