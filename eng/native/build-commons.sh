@@ -464,7 +464,7 @@ elif [[ "$__TargetOS" == iOS ]]; then
 elif [[ "$__TargetOS" == tvOS ]]; then
     # nothing to do here
     true
-elif [[ "$__TargetOS" == Android && -z "$ROOTFS_DIR" ]]; then
+elif [[ "$__TargetOS" == Android ]]; then
     # nothing to do here
     true
 else
