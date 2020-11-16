@@ -91,7 +91,7 @@ eventpipe_mono_shim_sources = \
 	ep-rt-config-mono.h	\
 	ep-rt-mono.c	\
 	ep-rt-mono.h	\
-	ep-rt-types-mono.h	\
+	ep-rt-types-mono.h
 
 libeventpipe_la_SOURCES = $(shared_eventpipe_sources) $(shared_eventpipe_platform_sources) $(eventpipe_mono_shim_sources)
 
