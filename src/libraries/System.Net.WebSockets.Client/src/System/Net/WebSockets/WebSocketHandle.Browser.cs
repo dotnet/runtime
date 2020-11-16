@@ -31,6 +31,7 @@ namespace System.Net.WebSockets
         {
             try
             {
+                cancellationToken.ThrowIfCancellationRequested();  // avoid allocating a WebSocket object if cancellation was requested before connect
                 CancellationTokenSource? linkedCancellation;
                 CancellationTokenSource externalAndAbortCancellation;
                 if (cancellationToken.CanBeCanceled) // avoid allocating linked source if external token is not cancelable
@@ -61,7 +62,8 @@ namespace System.Net.WebSockets
 
                 Abort();
 
-                if (exc is WebSocketException)
+                if (exc is WebSocketException ||
+                    (exc is OperationCanceledException && cancellationToken.IsCancellationRequested))
                 {
                     throw;
                 }
