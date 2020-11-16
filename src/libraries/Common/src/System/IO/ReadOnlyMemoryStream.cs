@@ -126,23 +126,30 @@ namespace System.IO
         public override Task<int> ReadAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
         {
             ValidateBufferArguments(buffer, offset, count);
+            EnsureNotClosed();
             return cancellationToken.IsCancellationRequested ?
                 Task.FromCanceled<int>(cancellationToken) :
                 Task.FromResult(ReadBuffer(new Span<byte>(buffer, offset, count)));
         }
 
 #if !NETFRAMEWORK && !NETSTANDARD2_0
-        public override ValueTask<int> ReadAsync(Memory<byte> buffer, CancellationToken cancellationToken = default(CancellationToken)) =>
-            cancellationToken.IsCancellationRequested ?
+        public override ValueTask<int> ReadAsync(Memory<byte> buffer, CancellationToken cancellationToken = default(CancellationToken))
+        {
+            EnsureNotClosed();
+            return cancellationToken.IsCancellationRequested ?
                 ValueTask.FromCanceled<int>(cancellationToken) :
                 new ValueTask<int>(ReadBuffer(buffer.Span));
+        }
 #endif
 
         public override IAsyncResult BeginRead(byte[] buffer, int offset, int count, AsyncCallback? callback, object? state) =>
             TaskToApm.Begin(ReadAsync(buffer, offset, count), callback, state);
 
-        public override int EndRead(IAsyncResult asyncResult) =>
-            TaskToApm.End<int>(asyncResult);
+        public override int EndRead(IAsyncResult asyncResult)
+        {
+            EnsureNotClosed();
+            return TaskToApm.End<int>(asyncResult);
+        }
 
 #if !NETFRAMEWORK && !NETSTANDARD2_0
         public override void CopyTo(Stream destination, int bufferSize)
