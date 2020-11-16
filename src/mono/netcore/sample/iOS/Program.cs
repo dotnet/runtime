@@ -33,7 +33,7 @@ public static class Program
         ios_set_text("OnButtonClick! #" + counter++);
     }
 
-    public static async Task Main(string[] args)
+    public static async Task<int> Main(string[] args)
     {
         // Register a managed callback (will be called by UIButton, see main.m)
         // Also, keep the handler alive so GC won't collect it.
@@ -48,6 +48,9 @@ public static class Program
         }
 
         Console.WriteLine("Done!");
+
         await Task.Delay(5000);
+
+        return 42;
     }
 }
