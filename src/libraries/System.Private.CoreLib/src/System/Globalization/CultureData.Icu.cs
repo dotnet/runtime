@@ -238,8 +238,41 @@ namespace System.Globalization
         private static int IcuGetDigitSubstitution(string cultureName)
         {
             Debug.Assert(!GlobalizationMode.UseNls);
-            int digitSubstitution = IcuLocaleData.GetLocaleDataNumericPart(cultureName, IcuLocaleDataParts.DigitSubstitution);
-            return digitSubstitution == -1 ? (int) DigitShapes.None : digitSubstitution;
+            int digitSubstitution = IcuLocaleData.GetLocaleDataNumericPart(cultureName, IcuLocaleDataParts.DigitSubstitutionOrListSeparator);
+            return digitSubstitution == -1 ? (int) DigitShapes.None : (digitSubstitution & 0x0000FFFF);
+        }
+
+        private static string IcuGetListSeparator(string? cultureName)
+        {
+            Debug.Assert(!GlobalizationMode.UseNls);
+            Debug.Assert(cultureName != null);
+
+            int separator = IcuLocaleData.GetLocaleDataNumericPart(cultureName, IcuLocaleDataParts.DigitSubstitutionOrListSeparator);
+            if (separator != -1)
+            {
+                switch (separator & 0xFFFF0000)
+                {
+                    case IcuLocaleData.CommaSep:
+                        return ",";
+
+                    case IcuLocaleData.SemicolonSep:
+                        return ";";
+
+                    case IcuLocaleData.ArabicCommaSep:
+                        return "\u060C";
+
+                    case IcuLocaleData.ArabicSemicolonSep:
+                        return "\u061B";
+
+                    case IcuLocaleData.DoubleCommaSep:
+                        return ",,";
+                    default:
+                        Debug.Assert(false, "[CultureData.IcuGetListSeparator] Unexpected ListSeparator value.");
+                        break;
+                }
+            }
+
+            return ","; // default separator
         }
 
         private static string IcuGetThreeLetterWindowsLanguageName(string cultureName)
