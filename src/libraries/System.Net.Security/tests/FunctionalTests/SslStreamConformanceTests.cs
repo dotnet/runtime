@@ -26,8 +26,8 @@ namespace System.Net.Security.Tests
 
             await new[]
             {
-                ssl1.AuthenticateAsClientAsync(cert.GetNameInfo(X509NameType.SimpleName, false), null, GetSslProtocols(), false),
-                ssl2.AuthenticateAsServerAsync(cert, false, GetSslProtocols(), false)
+                ssl1.AuthenticateAsServerAsync(cert, false, GetSslProtocols(), false),
+                ssl2.AuthenticateAsClientAsync(cert.GetNameInfo(X509NameType.SimpleName, false), null, GetSslProtocols(), false)
             }.WhenAllOrAnyFailed().ConfigureAwait(false);
 
             return new StreamPair(ssl1, ssl2);
