@@ -13,7 +13,7 @@ namespace Mono.Linker.Tests
 	[Parallelizable]
 	public class DocumentationSignatureParserTests
 	{
-		[TestCaseSource (nameof (GetMemberAssertionsAsArray), new object[] { typeof (DocumentationSignatureParserTests) })]
+		[TestCaseSource (nameof (GetMemberAssertions), new object[] { typeof (DocumentationSignatureParserTests) })]
 		public void TestSignatureParsing (IMemberDefinition member, CustomAttribute customAttribute)
 		{
 			var attributeString = (string) customAttribute.ConstructorArguments[0].Value;
@@ -35,10 +35,7 @@ namespace Mono.Linker.Tests
 			}
 		}
 
-		public static IEnumerable<object[]> GetMemberAssertionsAsArray (Type type)
-		{
-			return MemberAssertionsCollector.GetMemberAssertions (type).Select (v => new object[] { v.member, v.ca });
-		}
+		public static IEnumerable<TestCaseData> GetMemberAssertions (Type type) => MemberAssertionsCollector.GetMemberAssertionsData (type);
 
 		public static void CheckUniqueParsedString (IMemberDefinition member, string input)
 		{

@@ -366,7 +366,7 @@ namespace ILLink.Tasks.Tests
 
 		[Theory]
 		[MemberData (nameof (CustomDataCases))]
-		public void TestCustomDta (ITaskItem[] customData)
+		public void TestCustomData (ITaskItem[] customData)
 		{
 			var task = new MockTask () {
 				CustomData = customData
