@@ -5,6 +5,7 @@ namespace Microsoft.Extensions.Logging.Generators
     using System;
     using System.Collections.Generic;
     using System.Linq;
+    using System.Runtime.CompilerServices;
     using Microsoft.CodeAnalysis;
     using Microsoft.CodeAnalysis.CSharp;
     using Microsoft.CodeAnalysis.CSharp.Syntax;
@@ -55,10 +56,10 @@ namespace Microsoft.Extensions.Logging.Generators
             DiagnosticSeverity.Error,
             isEnabledByDefault: true);
 
-        private static readonly DiagnosticDescriptor ErrorMissingAttributeType = new(
+        private static readonly DiagnosticDescriptor ErrorMissingRequiredType = new(
             id: "LG5",
-            title: "Could not find a required attribute definition",
-            messageFormat: "Could not find definition for attribute {0}",
+            title: "Could not find a required type definition",
+            messageFormat: "Could not find definition for type {0}",
             category: DiagnosticCategory,
             DiagnosticSeverity.Error,
             isEnabledByDefault: true);
@@ -71,33 +72,49 @@ namespace Microsoft.Extensions.Logging.Generators
             DiagnosticSeverity.Error,
             isEnabledByDefault: true);
 
+        private static readonly DiagnosticDescriptor ErrorInvalidMethodReturnType = new(
+            id: "LG7",
+            title: "Logging methods must return void",
+            messageFormat: "Logging methods must return void",
+            category: DiagnosticCategory,
+            DiagnosticSeverity.Error,
+            isEnabledByDefault: true);
+
         /// <summary>
         /// Gets the known set of annotated logger classes
         /// </summary>
         private static IEnumerable<LoggerClass> GetLogClasses(GeneratorExecutionContext context, Compilation compilation)
         {
             if (!(context.SyntaxReceiver is SyntaxReceiver receiver))
+            {
                 yield break;
+            }
 
             var logExtensionsAttribute = compilation.GetTypeByMetadataName("Microsoft.Extensions.Logging.LoggerExtensionsAttribute");
             if (logExtensionsAttribute is null)
             {
-                // emit a diagnostic about the attribute not being present but needing to be
-                context.ReportDiagnostic(Diagnostic.Create(ErrorMissingAttributeType, null, "Microsoft.Extensions.Logging.LoggerExtensionsAttribute"));
+                context.ReportDiagnostic(Diagnostic.Create(ErrorMissingRequiredType, null, "Microsoft.Extensions.Logging.LoggerExtensionsAttribute"));
                 yield break;
             }
 
             var loggerMessageAttribute = compilation.GetTypeByMetadataName("Microsoft.Extensions.Logging.LoggerMessageAttribute");
             if (loggerMessageAttribute is null)
             {
-                // emit a diagnostic about the attribute not being present but needing to be
-                context.ReportDiagnostic(Diagnostic.Create(ErrorMissingAttributeType, null, "Microsoft.Extensions.Logging.LoggerMessageAttribute"));
+                context.ReportDiagnostic(Diagnostic.Create(ErrorMissingRequiredType, null, "Microsoft.Extensions.Logging.LoggerMessageAttribute"));
                 yield break;
             }
 
             var exSymbol = compilation.GetTypeByMetadataName("System.Exception");
             if (exSymbol == null)
             {
+                context.ReportDiagnostic(Diagnostic.Create(ErrorMissingRequiredType, null, "System.Exception"));
+                yield break;
+            }
+
+            var voidSymbol = compilation.GetTypeByMetadataName("System.Void");
+            if (voidSymbol == null)
+            {
+                context.ReportDiagnostic(Diagnostic.Create(ErrorMissingRequiredType, null, "System.Void"));
                 yield break;
             }
 
@@ -203,6 +220,11 @@ namespace Microsoft.Extensions.Logging.Generators
                                                 // can't have logging method names that start with __ since that can lead to conflicting symbol names
                                                 // because the generated symbols start with __
                                                 context.ReportDiagnostic(Diagnostic.Create(ErrorInvalidMethodName, method.Identifier.GetLocation()));
+                                            }
+
+                                            if (!compilation.GetSemanticModel(method.ReturnType.SyntaxTree).GetTypeInfo(method.ReturnType!).Type!.Equals(voidSymbol, SymbolEqualityComparer.Default))
+                                            {
+                                                context.ReportDiagnostic(Diagnostic.Create(ErrorInvalidMethodReturnType, method.ReturnType.GetLocation()));
                                             }
 
                                             foreach (var m in lc.Methods)
