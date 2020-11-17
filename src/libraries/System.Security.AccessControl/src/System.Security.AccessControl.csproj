@@ -67,8 +67,8 @@
              Link="Common\Interop\Interop.OpenThreadToken_SafeTokenHandle.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\Advapi32\Interop.OpenProcessToken_IntPtr.cs"
              Link="Common\Interop\Interop.OpenProcessToken_IntPtrs.cs" />
-    <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.GetCurrentProcess_IntPtr.cs"
-             Link="Common\Interop\Interop.GetCurrentProcess_IntPtr.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.GetCurrentProcess.cs"
+             Link="Common\Interop\Interop.GetCurrentProcess.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\Advapi32\Interop.SetThreadToken.cs"
              Link="Common\Interop\Interop.SetThreadToken.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.GetCurrentThread.cs"
