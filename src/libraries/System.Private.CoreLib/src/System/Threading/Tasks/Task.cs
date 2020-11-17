@@ -634,15 +634,14 @@ namespace System.Threading.Tasks
                             // antecedent.RemoveCancellation(continuation) can be invoked.
                             ctr = cancellationToken.UnsafeRegister(static t =>
                             {
-                                var tuple = (Tuple<Task, Task, TaskContinuation>)t!;
+                                var tuple = (TupleSlim<Task, Task, TaskContinuation>)t!;
 
                                 Task targetTask = tuple.Item1;
                                 Task antecedentTask = tuple.Item2;
 
                                 antecedentTask.RemoveContinuation(tuple.Item3);
                                 targetTask.InternalCancel();
-                            },
-                            new Tuple<Task, Task, TaskContinuation>(this, antecedent, continuation));
+                            }, new TupleSlim<Task, Task, TaskContinuation>(this, antecedent, continuation));
                         }
 
                         props.m_cancellationRegistration = new StrongBox<CancellationTokenRegistration>(ctr);
@@ -6667,9 +6666,9 @@ namespace System.Threading.Tasks
             ThreadPool.UnsafeQueueUserWorkItem(static state =>
             {
                 // InvokeCore(completingTask);
-                var tuple = (Tuple<UnwrapPromise<TResult>, Task>)state!;
+                var tuple = (TupleSlim<UnwrapPromise<TResult>, Task>)state!;
                 tuple.Item1.InvokeCore(tuple.Item2);
-            }, Tuple.Create<UnwrapPromise<TResult>, Task>(this, completingTask));
+            }, new TupleSlim<UnwrapPromise<TResult>, Task>(this, completingTask));
         }
 
         /// <summary>Processes the outer task once it's completed.</summary>
