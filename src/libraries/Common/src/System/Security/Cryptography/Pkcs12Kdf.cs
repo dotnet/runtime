@@ -99,6 +99,7 @@ namespace System.Security.Cryptography.Pkcs
             {
                 throw new CryptographicException(SR.Cryptography_UnknownHashAlgorithm, hashAlgorithm.Name);
             }
+
             Debug.Assert(v <= 1024);
 
             //  1. Construct a string, D (the "diversifier"), by concatenating v/8 copies of ID.
