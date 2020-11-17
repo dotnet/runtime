@@ -71,19 +71,19 @@ namespace Microsoft.Extensions.Logging.Generators
             var allNodes = compilation.SyntaxTrees.SelectMany(s => s.GetRoot().DescendantNodes());
             var allInterfaces = allNodes.Where(d => d.IsKind(SyntaxKind.InterfaceDeclaration)).OfType<InterfaceDeclarationSyntax>();
 
-            var logExtensionsAttribute = compilation.GetTypeByMetadataName("Microsoft.Extensions.Logging.Attributes.LoggerExtensionsAttribute");
+            var logExtensionsAttribute = compilation.GetTypeByMetadataName("Microsoft.Extensions.Logging.LoggerExtensionsAttribute");
             if (logExtensionsAttribute is null)
             {
                 // emit a diagnostic about the attribute not being present but needing to be
-                context.ReportDiagnostic(Diagnostic.Create(ErrorMissingAttributeType, null, "Microsoft.Extensions.Logging.Attributes.LoggerExtensionsAttribute"));
+                context.ReportDiagnostic(Diagnostic.Create(ErrorMissingAttributeType, null, "Microsoft.Extensions.Logging.LoggerExtensionsAttribute"));
                 yield break;
             }
 
-            var loggerMessageAttribute = compilation.GetTypeByMetadataName("Microsoft.Extensions.Logging.Attributes.LoggerMessageAttribute");
+            var loggerMessageAttribute = compilation.GetTypeByMetadataName("Microsoft.Extensions.Logging.LoggerMessageAttribute");
             if (loggerMessageAttribute is null)
             {
                 // emit a diagnostic about the attribute not being present but needing to be
-                context.ReportDiagnostic(Diagnostic.Create(ErrorMissingAttributeType, null, "Microsoft.Extensions.Logging.Attributes.LoggerMessageAttribute"));
+                context.ReportDiagnostic(Diagnostic.Create(ErrorMissingAttributeType, null, "Microsoft.Extensions.Logging.LoggerMessageAttribute"));
                 yield break;
             }
 

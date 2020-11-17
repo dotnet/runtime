@@ -4,7 +4,6 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.Logging.Attributes;
 using Xunit;
 
 // Used to test interfaces outside of a namespace
