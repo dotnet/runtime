@@ -259,7 +259,6 @@ jobs:
           archType: ${{ parameters.archType }}
           osGroup: ${{ parameters.osGroup }}
           osSubgroup: ${{ parameters.osSubgroup }}
-          signCrossDac: ${{ parameters.signBinaries }}
 
     - ${{ if and(ne(parameters.compilerName, 'gcc'), ne(parameters.testGroup, ''), ne(parameters.testGroup, 'clrTools')) }}:
       # Publish test native components for consumption by test execution.
@@ -284,7 +283,7 @@ jobs:
 
     # Save packages using the prepare-signed-artifacts format.
     - ${{ if and(eq(parameters.isOfficialBuild, true), ne(parameters.testGroup, 'clrTools')) }}:
-      - template: /eng/pipelines/common/upload-unsigned-artifacts-step.yml
+      - template: /eng/pipelines/common/upload-intermediate-artifacts-step.yml
         parameters:
           name: ${{ parameters.platform }}
 

@@ -9,7 +9,7 @@ parameters:
   isOfficialBuild: false
   uploadLibrariesTests: false
   uploadRuntimeTests: false
-  uploadUnsignedArtifacts: false
+  uploadIntermediateArtifacts: false
 
 steps:
   # Build coreclr native test output
@@ -69,7 +69,7 @@ steps:
       displayName: Build Assets
 
   # Upload unsigned artifacts
-  - ${{ if eq(parameters.uploadUnsignedArtifacts, true) }}:
-    - template: /eng/pipelines/common/upload-unsigned-artifacts-step.yml
+  - ${{ if eq(parameters.uploadIntermediateArtifacts, true) }}:
+    - template: /eng/pipelines/common/upload-intermediate-artifacts-step.yml
       parameters:
         name: ${{ parameters.platform }}${{ parameters.nameSuffix }}

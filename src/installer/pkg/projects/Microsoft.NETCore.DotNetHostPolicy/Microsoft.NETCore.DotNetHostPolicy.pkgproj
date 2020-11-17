@@ -2,7 +2,6 @@
 
   <PropertyGroup>
     <VersionProp>HostPolicyVersion</VersionProp>
-    <SkipBuildOnRuntimePackOnlyOS>true</SkipBuildOnRuntimePackOnlyOS>
   </PropertyGroup>
 
   <ItemGroup>

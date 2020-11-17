@@ -7,7 +7,7 @@ parameters:
 steps:
 # Upload build artifacts (packages) to pipeline only if official, to save storage space.
 - ${{ if eq(parameters.isOfficialBuild, true) }}:
-  - template: /eng/pipelines/common/upload-unsigned-artifacts-step.yml
+  - template: /eng/pipelines/common/upload-intermediate-artifacts-step.yml
     parameters:
       name: ${{ parameters.name }}
 
