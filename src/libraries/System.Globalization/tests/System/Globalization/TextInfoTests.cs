@@ -120,7 +120,7 @@ namespace System.Globalization.Tests
             Assert.Equal(expected, new CultureInfo(name).TextInfo.IsRightToLeft);
         }
 
-        [Theory]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindows7))]
         [InlineData("ar-SA", ";")]
         [InlineData("as-IN", ",")]
         [InlineData("ba-RU", ";")]
