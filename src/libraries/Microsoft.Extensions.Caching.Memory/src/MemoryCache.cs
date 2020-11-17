@@ -246,7 +246,7 @@ namespace Microsoft.Extensions.Caching.Memory
             {
                 // Check if expired due to expiration tokens, timers, etc. and if so, remove it.
                 // Allow a stale Replaced value to be returned due to concurrent calls to SetExpired during SetEntry.
-                if (!(entry.CheckExpired(utcNow) && entry.EvictionReason != EvictionReason.Replaced))
+                if (!entry.CheckExpired(utcNow) || entry.EvictionReason == EvictionReason.Replaced)
                 {
                     entry.LastAccessed = utcNow;
                     result = entry.Value;
