@@ -8,6 +8,7 @@
 #include <sys/types.h>
 
 #include "mini.h"
+#include "mono-private-unstable.h"
 #include "interp/interp.h"
 
 #ifdef TARGET_WASM
@@ -112,6 +113,23 @@ mono_wasm_get_interp_to_native_trampoline (MonoMethodSignature *sig)
 		g_error ("CANNOT HANDLE INTERP ICALL SIG %s\n", cookie);
 	int idx = (const char**)p - (const char**)interp_to_native_signatures;
 	return interp_to_native_invokes [idx];
+}
+
+static MonoWasmGetNativeToInterpTramp get_native_to_interp_tramp_cb;
+
+MONO_API void
+mono_wasm_install_get_native_to_interp_tramp (MonoWasmGetNativeToInterpTramp cb)
+{
+	get_native_to_interp_tramp_cb = cb;
+}
+
+gpointer
+mono_wasm_get_native_to_interp_trampoline (MonoMethod *method, gpointer extra_arg)
+{
+	if (get_native_to_interp_tramp_cb)
+		return get_native_to_interp_tramp_cb (method, extra_arg);
+	else
+		return NULL;
 }
 
 #else /* TARGET_WASM */

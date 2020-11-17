@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.IO;
 using System.Runtime.Serialization;
@@ -29,6 +28,29 @@ namespace System.Threading.Tests
                 ExecutionContext executionContextCopy1 = executionContext.CreateCopy();
                 VerifyExecutionContext(executionContextCopy1, asyncLocal, 1);
             });
+        }
+
+        [Fact]
+        public static void RestoreTest()
+        {
+            ExecutionContext defaultEC = ExecutionContext.Capture();
+            var asyncLocal = new AsyncLocal<int>();
+            Assert.Equal(0, asyncLocal.Value);
+
+            asyncLocal.Value = 1;
+            ExecutionContext oneEC = ExecutionContext.Capture();
+            Assert.Equal(1, asyncLocal.Value);
+
+            ExecutionContext.Restore(defaultEC);
+            Assert.Equal(0, asyncLocal.Value);
+
+            ExecutionContext.Restore(oneEC);
+            Assert.Equal(1, asyncLocal.Value);
+
+            ExecutionContext.Restore(defaultEC);
+            Assert.Equal(0, asyncLocal.Value);
+
+            Assert.Throws<InvalidOperationException>(() => ExecutionContext.Restore(null!));
         }
 
         [Fact]

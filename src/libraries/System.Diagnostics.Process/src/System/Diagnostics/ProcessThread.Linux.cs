@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.ComponentModel;
 using System.Text;
@@ -78,7 +77,7 @@ namespace System.Diagnostics
         private Interop.procfs.ParsedStat GetStat()
         {
             Interop.procfs.ParsedStat stat;
-            if (!Interop.procfs.TryReadStatFile(pid: _processId, tid: Id, result: out stat, reusableReader: new ReusableTextReader(Encoding.UTF8)))
+            if (!Interop.procfs.TryReadStatFile(pid: _processId, tid: Id, result: out stat))
             {
                 throw new InvalidOperationException(SR.Format(SR.ThreadExited, Id));
             }

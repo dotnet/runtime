@@ -158,7 +158,7 @@ struct SeqPointInfo {
 
 #define MONO_INIT_CONTEXT_FROM_FUNC(ctx,func) do {			\
 		MonoS390StackFrame *sframe;				\
-		__asm__ volatile("lgr   %0,15" : "=r" (sframe));	\
+		__asm__ volatile("lgr   %0,%%r15" : "=r" (sframe));	\
 		MONO_CONTEXT_SET_BP ((ctx), sframe->prev);		\
 		MONO_CONTEXT_SET_SP ((ctx), sframe->prev);		\
 		MONO_CONTEXT_SET_IP ((ctx), func);			\

@@ -10,6 +10,7 @@
 #include "ep-config.h"
 #include "ep-event-instance.h"
 #include "ep-file.h"
+#include "ep-sample-profiler.h"
 #include "ep-rt.h"
 
 /*
@@ -27,14 +28,6 @@ file_get_type_name_func (void *object);
 static
 void
 file_free_func (void *object);
-
-static
-uint32_t
-stack_hash_key_hash_func (const void *key);
-
-static
-bool
-stack_hash_key_eq_func (const void *key1, const void *key2);
 
 static
 void
@@ -68,11 +61,19 @@ file_write_event_to_block (
 	bool is_sotred_event);
 
 static
-void
+bool
 file_save_metadata_id (
 	EventPipeFile *file,
 	EventPipeEvent *ep_event,
 	uint32_t metadata_id);
+
+static
+uint32_t
+file_get_file_version (EventPipeSerializationFormat format);
+
+static
+uint32_t
+file_get_file_minimum_version (EventPipeSerializationFormat format);
 
 /*
  * EventPipeFile.
@@ -120,28 +121,6 @@ file_vtable = {
 	file_get_type_name_func };
 
 static
-uint32_t
-stack_hash_key_hash_func (const void *key)
-{
-	EP_ASSERT (key != NULL);
-	return ((const StackHashKey *)key)->hash;
-}
-
-static
-bool
-stack_hash_key_eq_func (const void *key1, const void *key2)
-{
-	EP_ASSERT (key1 != NULL);
-	EP_ASSERT (key2 != NULL);
-
-	const StackHashKey * stack_hash_key1 = (const StackHashKey *)key1;
-	const StackHashKey * stack_hash_key2 = (const StackHashKey *)key2;
-
-	return stack_hash_key1->stack_size_in_bytes == stack_hash_key2->stack_size_in_bytes &&
-		!memcmp (stack_hash_key1->stack_bytes, stack_hash_key2->stack_bytes, stack_hash_key1->stack_size_in_bytes);
-}
-
-static
 void
 stack_hash_value_free_func (void *entry)
 {
@@ -184,8 +163,11 @@ file_get_stack_id (
 		stack_id = file->stack_id_counter + 1;
 		file->stack_id_counter = stack_id;
 		entry = ep_stack_hash_entry_alloc (stack_contents, stack_id, ep_stack_hash_key_get_hash (&key));
-		if (entry)
-			ep_rt_stack_hash_add (stack_hash, ep_stack_hash_entry_get_key_ref (entry), entry);
+		if (entry) {
+			if (!ep_rt_stack_hash_add (stack_hash, ep_stack_hash_entry_get_key_ref (entry), entry))
+				ep_stack_hash_entry_free (entry);
+			entry = NULL;
+		}
 
 		if (!ep_stack_block_write_stack (stack_block, stack_id, stack_contents)) {
 			// we can't write this stack to the current block (it's full)
@@ -211,10 +193,9 @@ file_get_metadata_id (
 {
 	EP_ASSERT (file != NULL);
 	EP_ASSERT (ep_event != NULL);
-	EP_ASSERT (file->metadata_ids.table != NULL);
 
 	uint32_t metadata_ids;
-	if (ep_rt_metadata_labels_lookup (&file->metadata_ids, ep_event, &metadata_ids)) {
+	if (ep_rt_metadata_labels_hash_lookup (&file->metadata_ids, ep_event, &metadata_ids)) {
 		EP_ASSERT (metadata_ids != 0);
 		return metadata_ids;
 	}
@@ -270,7 +251,7 @@ file_write_event_to_block (
 }
 
 static
-void
+bool
 file_save_metadata_id (
 	EventPipeFile *file,
 	EventPipeEvent *ep_event,
@@ -279,15 +260,44 @@ file_save_metadata_id (
 	EP_ASSERT (file != NULL);
 	EP_ASSERT (ep_event != NULL);
 	EP_ASSERT (metadata_id > 0);
-	EP_ASSERT (file->metadata_ids.table != NULL);
 
 	// If a pre-existing metadata label exists, remove it.
 	uint32_t old_id;
-	if (ep_rt_metadata_labels_lookup (&file->metadata_ids, ep_event, &old_id))
-		ep_rt_metadata_labels_remove (&file->metadata_ids, ep_event);
+	if (ep_rt_metadata_labels_hash_lookup (&file->metadata_ids, ep_event, &old_id))
+		ep_rt_metadata_labels_hash_remove (&file->metadata_ids, ep_event);
 
 	// Add the metadata label.
-	ep_rt_metadata_labels_add (&file->metadata_ids, ep_event, metadata_id);
+	return ep_rt_metadata_labels_hash_add (&file->metadata_ids, ep_event, metadata_id);
+}
+
+static
+uint32_t
+file_get_file_version (EventPipeSerializationFormat format)
+{
+	switch (format) {
+	case EP_SERIALIZATION_FORMAT_NETPERF_V3 :
+		return 3;
+	case EP_SERIALIZATION_FORMAT_NETTRACE_V4 :
+		return 4;
+	default :
+		EP_ASSERT (!"Unrecognized EventPipeSerializationFormat");
+		return 0;
+	}
+}
+
+static
+uint32_t
+file_get_file_minimum_version (EventPipeSerializationFormat format)
+{
+	switch (format) {
+	case EP_SERIALIZATION_FORMAT_NETPERF_V3 :
+		return 0;
+	case EP_SERIALIZATION_FORMAT_NETTRACE_V4 :
+		return 4;
+	default :
+		EP_ASSERT (!"Unrecognized EventPipeSerializationFormat");
+		return 0;
+	}
 }
 
 EventPipeFile *
@@ -301,8 +311,8 @@ ep_file_alloc (
 	ep_raise_error_if_nok (ep_fast_serializable_object_init (
 		&instance->fast_serializable_object,
 		&file_vtable,
-		ep_file_get_file_version (format),
-		ep_file_get_file_minimum_version (format),
+		file_get_file_version (format),
+		file_get_file_minimum_version (format),
 		format >= EP_SERIALIZATION_FORMAT_NETTRACE_V4) != NULL);
 
 	instance->stream_writer = stream_writer;
@@ -318,21 +328,21 @@ ep_file_alloc (
 	ep_raise_error_if_nok (instance->stack_block != NULL);
 
 	// File start time information.
-	instance->file_open_system_time = ep_rt_system_time_get ();
-	instance->file_open_timestamp = ep_perf_counter_query ();
+	ep_system_time_get (&instance->file_open_system_time);
+	instance->file_open_timestamp = ep_perf_timestamp_get ();
 	instance->timestamp_frequency = ep_perf_frequency_query ();
 
-	instance->pointer_size = SIZEOF_VOID_P;
+	instance->pointer_size = sizeof (void*);
 	instance->current_process_id = ep_rt_current_process_get_id ();
 	instance->number_of_processors = ep_rt_processors_get_count ();
 
-	instance->sampling_rate_in_ns = ep_rt_sample_profiler_get_sampling_rate ();
+	instance->sampling_rate_in_ns = (uint32_t)ep_sample_profiler_get_sampling_rate ();
 
-	ep_rt_metadata_labels_alloc (&instance->metadata_ids, NULL, NULL, NULL, NULL);
-	ep_raise_error_if_nok (instance->metadata_ids.table);
+	ep_rt_metadata_labels_hash_alloc (&instance->metadata_ids, NULL, NULL, NULL, NULL);
+	ep_raise_error_if_nok (ep_rt_metadata_labels_hash_is_valid (&instance->metadata_ids));
 
-	ep_rt_stack_hash_alloc (&instance->stack_hash, stack_hash_key_hash_func, stack_hash_key_eq_func, NULL, stack_hash_value_free_func);
-	ep_raise_error_if_nok (instance->stack_hash.table);
+	ep_rt_stack_hash_alloc (&instance->stack_hash, ep_stack_hash_key_hash, ep_stack_hash_key_equal, NULL, stack_hash_value_free_func);
+	ep_raise_error_if_nok (ep_rt_stack_hash_is_valid (&instance->stack_hash));
 
 	// Start at 0 - The value is always incremented prior to use, so the first ID will be 1.
 	ep_rt_volatile_store_uint32_t (&instance->metadata_id_counter, 0);
@@ -340,8 +350,10 @@ ep_file_alloc (
 	// Start at 0 - The value is always incremented prior to use, so the first ID will be 1.
 	instance->stack_id_counter = 0;
 
+	ep_rt_volatile_store_uint32_t (&instance->initialized, 0);
+
 #ifdef EP_CHECKED_BUILD
-	instance->last_sorted_timestamp = ep_perf_counter_query ();
+	instance->last_sorted_timestamp = ep_perf_timestamp_get ();
 #endif
 
 ep_on_exit:
@@ -365,12 +377,12 @@ ep_file_free (EventPipeFile *file)
 	ep_metadata_block_free (file->metadata_block);
 	ep_stack_block_free (file->stack_block);
 	ep_fast_serializer_free (file->fast_serializer);
-	ep_rt_metadata_labels_free (&file->metadata_ids);
+	ep_rt_metadata_labels_hash_free (&file->metadata_ids);
 	ep_rt_stack_hash_free (&file->stack_hash);
 
-	// If there's no fast_serializer, stream_writer ownership
+	// If file has not been initialized, stream_writer ownership
 	// have not been passed along and needs to be freed by file.
-	if (!file->fast_serializer)
+	if (ep_rt_volatile_load_uint32_t (&file->initialized) == 0)
 		ep_stream_writer_free_vcall (file->stream_writer);
 
 	ep_fast_serializable_object_fini (&file->fast_serializable_object);
@@ -393,6 +405,7 @@ ep_file_initialize_file (EventPipeFile *file)
 	}
 
 	if (success) {
+		ep_rt_volatile_store_uint32_t (&file->initialized, 1);
 		// Create the file stream and write the FastSerialization header.
 		file->fast_serializer = ep_fast_serializer_alloc (file->stream_writer);
 
@@ -415,7 +428,7 @@ ep_file_write_event (
 	EP_ASSERT (file != NULL);
 	EP_ASSERT (event_instance != NULL);
 
-	ep_return_void_if_nok (ep_file_has_errors (file) != true);
+	ep_return_void_if_nok (!ep_file_has_errors (file));
 
 	EventPipeEventMetadataEvent *metadata_instance = NULL;
 
@@ -439,7 +452,7 @@ ep_file_write_event (
 		ep_raise_error_if_nok (metadata_instance != NULL);
 
 		file_write_event_to_block (file, (EventPipeEventInstance *)metadata_instance, 0, 0, 0, 0, true); // metadataId=0 breaks recursion and represents the metadata event.
-		file_save_metadata_id (file, ep_event_instance_get_ep_event (event_instance), metadata_id);
+		ep_raise_error_if_nok (file_save_metadata_id (file, ep_event_instance_get_ep_event (event_instance), metadata_id));
 	}
 
 	file_write_event_to_block (file, event_instance, metadata_id, capture_thread_id, sequence_number, stack_id, is_sorted_event);
@@ -459,13 +472,14 @@ ep_file_write_sequence_point (
 {
 	EP_ASSERT (file != NULL);
 	EP_ASSERT (sequence_point != NULL);
-	EP_ASSERT (file->fast_serializer != NULL);
 
 	if (file->format < EP_SERIALIZATION_FORMAT_NETTRACE_V4)
 		return; // sequence points aren't used in NetPerf format
 
 	ep_file_flush (file, EP_FILE_FLUSH_FLAGS_ALL_BLOCKS);
-	ep_raise_error_if_nok (ep_file_has_errors (file) != true);
+	ep_raise_error_if_nok (!ep_file_has_errors (file));
+
+	EP_ASSERT (file->fast_serializer != NULL);
 
 	EventPipeSequencePointBlock sequence_point_block;
 	ep_sequence_point_block_init (&sequence_point_block, sequence_point);
@@ -494,7 +508,7 @@ ep_file_flush (
 	EP_ASSERT (file->stack_block != NULL);
 	EP_ASSERT (file->event_block != NULL);
 
-	ep_return_void_if_nok (ep_file_has_errors (file) != true);
+	ep_return_void_if_nok (!ep_file_has_errors (file));
 
 	// we write current blocks to the disk, whether they are full or not
 	if ((ep_metadata_block_get_bytes_written (file->metadata_block) != 0) && ((flags & EP_FILE_FLUSH_FLAGS_METADATA_BLOCK) != 0)) {
@@ -515,37 +529,15 @@ ep_file_flush (
 	}
 }
 
-int32_t
-ep_file_get_file_version (EventPipeSerializationFormat format)
-{
-	switch (format) {
-	case EP_SERIALIZATION_FORMAT_NETPERF_V3 :
-		return 3;
-	case EP_SERIALIZATION_FORMAT_NETTRACE_V4 :
-		return 4;
-	default :
-		EP_ASSERT (!"Unrecognized EventPipeSerializationFormat");
-		return 0;
-	}
-}
-
-int32_t
-ep_file_get_file_minimum_version (EventPipeSerializationFormat format)
-{
-	switch (format) {
-	case EP_SERIALIZATION_FORMAT_NETPERF_V3 :
-		return 0;
-	case EP_SERIALIZATION_FORMAT_NETTRACE_V4 :
-		return 4;
-	default :
-		EP_ASSERT (!"Unrecognized EventPipeSerializationFormat");
-		return 0;
-	}
-}
-
 /*
  * StackHashEntry.
  */
+
+StackHashKey *
+ep_stack_hash_entry_get_key (StackHashEntry *stack_hash_entry)
+{
+	return ep_stack_hash_entry_get_key_ref (stack_hash_entry);
+}
 
 StackHashEntry *
 ep_stack_hash_entry_alloc (
@@ -618,6 +610,26 @@ void
 ep_stack_hash_key_fini (StackHashKey *key)
 {
 	;
+}
+
+uint32_t
+ep_stack_hash_key_hash (const void *key)
+{
+	EP_ASSERT (key != NULL);
+	return ((const StackHashKey *)key)->hash;
+}
+
+bool
+ep_stack_hash_key_equal (const void *key1, const void *key2)
+{
+	EP_ASSERT (key1 != NULL);
+	EP_ASSERT (key2 != NULL);
+
+	const StackHashKey * stack_hash_key1 = (const StackHashKey *)key1;
+	const StackHashKey * stack_hash_key2 = (const StackHashKey *)key2;
+
+	return stack_hash_key1->stack_size_in_bytes == stack_hash_key2->stack_size_in_bytes &&
+		!memcmp (stack_hash_key1->stack_bytes, stack_hash_key2->stack_bytes, stack_hash_key1->stack_size_in_bytes);
 }
 
 #endif /* !defined(EP_INCLUDE_SOURCE_FILES) || defined(EP_FORCE_INCLUDE_SOURCE_FILES) */

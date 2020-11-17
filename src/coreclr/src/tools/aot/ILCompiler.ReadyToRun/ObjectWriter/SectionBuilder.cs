@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System;
 using System.Collections.Generic;
@@ -519,6 +518,20 @@ namespace ILCompiler.PEWriter
             }
         }
 
+        public void AddSymbolForRange(ISymbolNode symbol, ISymbolNode firstNode, ISymbolNode secondNode)
+        {
+            SymbolTarget firstSymbolTarget = _symbolMap[firstNode];
+            SymbolTarget secondSymbolTarget = _symbolMap[secondNode];
+            Debug.Assert(firstSymbolTarget.SectionIndex == secondSymbolTarget.SectionIndex);
+            Debug.Assert(firstSymbolTarget.Offset <= secondSymbolTarget.Offset);
+
+            _symbolMap.Add(symbol, new SymbolTarget(
+                sectionIndex: firstSymbolTarget.SectionIndex,
+                offset: firstSymbolTarget.Offset,
+                size: secondSymbolTarget.Offset - firstSymbolTarget.Offset + secondSymbolTarget.Size
+                ));
+        }
+
         /// <summary>
         /// Get the list of sections that need to be emitted to the output PE file.
         /// We filter out name duplicates as we'll end up merging builder sections with the same name
@@ -743,6 +756,7 @@ namespace ILCompiler.PEWriter
             // Emit the name pointer table; it should be alphabetically sorted.
             // Also, we can now fill in the export address table as we've detected its size
             // in the previous pass.
+            builder.Align(4);
             int namePointerTableRVA = sectionLocation.RelativeVirtualAddress + builder.Count;
             foreach (ExportSymbol symbol in _exportSymbols)
             {
@@ -761,6 +775,7 @@ namespace ILCompiler.PEWriter
             }
 
             // Emit the address table
+            builder.Align(4);
             int addressTableRVA = sectionLocation.RelativeVirtualAddress + builder.Count;
             foreach (int addressTableEntry in addressTable)
             {
@@ -768,6 +783,7 @@ namespace ILCompiler.PEWriter
             }
             
             // Emit the export directory table
+            builder.Align(4);
             int exportDirectoryTableRVA = sectionLocation.RelativeVirtualAddress + builder.Count;
             // +0x00: reserved
             builder.WriteInt32(0);

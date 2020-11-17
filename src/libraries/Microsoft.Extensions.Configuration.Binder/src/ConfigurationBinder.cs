@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System;
 using System.Collections.Generic;
@@ -515,6 +514,19 @@ namespace Microsoft.Extensions.Configuration
                     result = converter.ConvertFromInvariantString(value);
                 }
                 catch (Exception ex)
+                {
+                    error = new InvalidOperationException(SR.Format(SR.Error_FailedBinding, path, type), ex);
+                }
+                return true;
+            }
+
+            if (type == typeof(byte[]))
+            {
+                try
+                {
+                    result = Convert.FromBase64String(value);
+                }
+                catch (FormatException ex)
                 {
                     error = new InvalidOperationException(SR.Format(SR.Error_FailedBinding, path, type), ex);
                 }

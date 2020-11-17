@@ -1,12 +1,12 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.IO.Compression;
 using System.Net.Http.Headers;
+using System.Runtime.CompilerServices;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -122,6 +122,12 @@ namespace System.Net.Http
 
             protected abstract Stream GetDecompressedStream(Stream originalStream);
 
+            protected override void SerializeToStream(Stream stream, TransportContext? context, CancellationToken cancellationToken)
+            {
+                using Stream decompressedStream = CreateContentReadStream(cancellationToken);
+                decompressedStream.CopyTo(stream);
+            }
+
             protected override Task SerializeToStreamAsync(Stream stream, TransportContext? context) =>
                 SerializeToStreamAsync(stream, context, CancellationToken.None);
 
@@ -159,7 +165,7 @@ namespace System.Net.Http
                 }
                 else
                 {
-                    originalStream = _originalContent.ReadAsStream();
+                    originalStream = _originalContent.ReadAsStream(cancellationToken);
                 }
                 return GetDecompressedStream(originalStream);
             }
@@ -205,7 +211,12 @@ namespace System.Net.Http
             { }
 
             protected override Stream GetDecompressedStream(Stream originalStream) =>
-                new DeflateStream(originalStream, CompressionMode.Decompress);
+                // As described in RFC 2616, the deflate content-coding is actually
+                // the "zlib" format (RFC 1950) in combination with the "deflate"
+                // compression algrithm (RFC 1951).  So while potentially
+                // counterintuitive based on naming, this needs to use ZLibStream
+                // rather than DeflateStream.
+                new ZLibStream(originalStream, CompressionMode.Decompress);
         }
 
         private sealed class BrotliDecompressedContent : DecompressedContent

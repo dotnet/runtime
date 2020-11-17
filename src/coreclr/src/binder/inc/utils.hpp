@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 // ============================================================
 //
 // Utils.hpp
@@ -40,6 +39,9 @@ namespace BINDER_SPACE
                                   SBuffer &publicKeyTokenBLOB);
 
     BOOL IsFileNotFound(HRESULT hr);
+
+    HRESULT GetNextPath(SString& paths, SString::Iterator& startPos, SString& outPath);
+    HRESULT GetNextTPAPath(SString& paths, SString::Iterator& startPos, bool dllOnly, SString& outPath, SString& simpleName, bool& isNativeImage);
 };
 
 #endif

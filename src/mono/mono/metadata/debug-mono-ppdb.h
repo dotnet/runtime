@@ -44,4 +44,7 @@ mono_ppdb_get_image (MonoPPDBFile *ppdb);
 char *
 mono_ppdb_get_sourcelink (MonoDebugHandle *handle);
 
+gboolean 
+mono_ppdb_is_embedded (MonoPPDBFile *ppdb);
+
 #endif

@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Security.Cryptography.X509Certificates;
 using Test.Cryptography;
@@ -11,7 +10,7 @@ namespace System.Security.Cryptography.Pkcs.Tests
     public static class SignedCmsWholeDocumentTests
     {
         [Theory]
-#if !NET472
+#if !NETFRAMEWORK
         [InlineData(true)]
 #endif
         [InlineData(false)]
@@ -20,7 +19,7 @@ namespace System.Security.Cryptography.Pkcs.Tests
             SignedCms cms = new SignedCms();
             if (fromSpan)
             {
-#if !NET472
+#if !NETFRAMEWORK
                 cms.Decode(SignedDocuments.RsaPssDocument.AsSpan());
 #else
                 throw new Xunit.Sdk.XunitException(

@@ -1,0 +1,26 @@
+name: Backport PR to branch
+on:
+  issue_comment:
+    types: [created]
+
+jobs:
+  backport:
+    if: github.event.issue.pull_request != '' && contains(github.event.comment.body, '/backport to')
+    runs-on: ubuntu-20.04
+    steps:
+    - name: Checkout repo
+      uses: actions/checkout@v2
+    - name: Run backport
+      uses: ./eng/actions/backport
+      with:
+        auth_token: ${{ secrets.GITHUB_TOKEN }}
+        pr_description_template: |
+          Backport of #%source_pr_number% to %target_branch%
+
+          /cc %cc_users%
+
+          ## Customer Impact
+
+          ## Testing
+
+          ## Risk

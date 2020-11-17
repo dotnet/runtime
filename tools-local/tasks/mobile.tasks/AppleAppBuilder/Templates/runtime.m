@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 #import <Foundation/Foundation.h>
 #include <mono/utils/mono-publib.h>
@@ -199,7 +198,7 @@ register_dllmap (void)
 
 #if TARGET_OS_IPHONE && (!TARGET_IPHONE_SIMULATOR || USE_AOT_FOR_SIMULATOR)
 void mono_jit_set_aot_mode (MonoAotMode mode);
-void mono_ios_register_modules (void);
+void register_aot_modules (void);
 #endif
 
 void
@@ -232,7 +231,7 @@ mono_ios_runtime_init (void)
 #if TARGET_OS_IPHONE && (!TARGET_IPHONE_SIMULATOR || USE_AOT_FOR_SIMULATOR)
     register_dllmap ();
     // register modules
-    mono_ios_register_modules ();
+    register_aot_modules ();
     mono_jit_set_aot_mode (MONO_AOT_MODE_FULL);
 #endif
 

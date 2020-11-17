@@ -1,8 +1,8 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 #nullable enable
+using System.Buffers.Binary;
 using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -27,26 +27,16 @@ namespace System.Resources
     // default file format.
     //
 
-    internal struct ResourceLocator
+    internal readonly struct ResourceLocator
     {
-        internal object? _value;  // Can be null.
-        internal int _dataPos;
-
         internal ResourceLocator(int dataPos, object? value)
         {
-            _dataPos = dataPos;
-            _value = value;
+            DataPosition = dataPos;
+            Value = value;
         }
 
-        internal int DataPosition => _dataPos;
-
-        // Allows adding in profiling data in a future version, or a special
-        // resource profiling build.  We could also use WeakReference.
-        internal object? Value
-        {
-            get => _value;
-            set => _value = value;
-        }
+        internal int DataPosition { get; }
+        internal object? Value { get; }
 
         internal static bool CanCache(ResourceTypeCode value)
         {
@@ -158,11 +148,11 @@ namespace System.Resources
                     // Close the stream in a thread-safe way.  This fix means
                     // that we may call Close n times, but that's safe.
                     BinaryReader copyOfStore = _store;
-                    _store = null!; // TODO-NULLABLE: Avoid nulling out in Dispose
+                    _store = null!;
                     if (copyOfStore != null)
                         copyOfStore.Close();
                 }
-                _store = null!; // TODO-NULLABLE: Avoid nulling out in Dispose
+                _store = null!;
                 _namePositions = null;
                 _nameHashes = null;
                 _ums = null;
@@ -173,11 +163,8 @@ namespace System.Resources
 
         internal static unsafe int ReadUnalignedI4(int* p)
         {
-            byte* buffer = (byte*)p;
-            // Unaligned, little endian format
-            return buffer[0] | (buffer[1] << 8) | (buffer[2] << 16) | (buffer[3] << 24);
+            return BinaryPrimitives.ReadInt32LittleEndian(new ReadOnlySpan<byte>(p, sizeof(int)));
         }
-
 
         private void SkipString()
         {
@@ -803,8 +790,12 @@ namespace System.Resources
             // Read RuntimeResourceSet header
             // Do file version check
             int version = _store.ReadInt32();
-            if (version != RuntimeResourceSet.Version && version != 1)
-                throw new ArgumentException(SR.Format(SR.Arg_ResourceFileUnsupportedVersion, RuntimeResourceSet.Version, version));
+
+            // File format version number
+            const int CurrentVersion = 2;
+
+            if (version != CurrentVersion && version != 1)
+                throw new ArgumentException(SR.Format(SR.Arg_ResourceFileUnsupportedVersion, CurrentVersion, version));
             _version = version;
 
             _numResources = _store.ReadInt32();
@@ -959,7 +950,7 @@ namespace System.Resources
                 }
             }
             Debug.Assert(_typeTable[typeIndex] != null, "Should have found a type!");
-            return _typeTable[typeIndex]!; // TODO-NULLABLE: Indexer nullability tracked (https://github.com/dotnet/roslyn/issues/34644)
+            return _typeTable[typeIndex]!;
         }
 
         private string TypeNameFromTypeCode(ResourceTypeCode typeCode)

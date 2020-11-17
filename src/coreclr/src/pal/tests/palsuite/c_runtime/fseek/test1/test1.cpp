@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 /*============================================================================
 **
@@ -40,7 +39,7 @@ static BOOL Cleanup(HANDLE hFile)
     return result;
 }
 
-int __cdecl main(int argc, char **argv)
+PALTEST(c_runtime_fseek_test1_paltest_fseek_test1, "c_runtime/fseek/test1/paltest_fseek_test1")
 {
     char outBuf[] = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ";
     char inBuf[20];

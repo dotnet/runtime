@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
 using Internal.Text;
@@ -91,7 +90,13 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                 {
                     bool isFilterFunclet = (_methodNode.FrameInfos[frameInfoIndex].Flags & FrameInfoFlags.Filter) != 0;
                     ISymbolNode personalityRoutine = (isFilterFunclet ? factory.FilterFuncletPersonalityRoutine : factory.PersonalityRoutine);
-                    dataBuilder.EmitReloc(personalityRoutine, RelocType.IMAGE_REL_BASED_ADDR32NB);
+                    int codeDelta = 0;
+                    if (targetArch == TargetArchitecture.ARM)
+                    {
+                        // THUMB_CODE
+                        codeDelta = 1;
+                    }
+                    dataBuilder.EmitReloc(personalityRoutine, RelocType.IMAGE_REL_BASED_ADDR32NB, codeDelta);
                 }
 
                 if (frameInfoIndex == 0 && _methodNode.GCInfo != null)

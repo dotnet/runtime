@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 #define FireEtwGCStart(Count, Reason) 0
 #define FireEtwGCStart_V1(Count, Depth, Reason, Type, ClrInstanceID) 0
@@ -130,6 +129,7 @@
 #define FireEtwMethodJitInliningFailed(MethodBeingCompiledNamespace, MethodBeingCompiledName, MethodBeingCompiledNameSignature, InlinerNamespace, InlinerName, InlinerNameSignature, InlineeNamespace, InlineeName, InlineeNameSignature, FailAlways, FailReason, ClrInstanceID) 0
 #define FireEtwMethodJitTailCallSucceeded(MethodBeingCompiledNamespace, MethodBeingCompiledName, MethodBeingCompiledNameSignature, CallerNamespace, CallerName, CallerNameSignature, CalleeNamespace, CalleeName, CalleeNameSignature, TailPrefix, TailCallType, ClrInstanceID) 0
 #define FireEtwMethodJitTailCallFailed(MethodBeingCompiledNamespace, MethodBeingCompiledName, MethodBeingCompiledNameSignature, CallerNamespace, CallerName, CallerNameSignature, CalleeNamespace, CalleeName, CalleeNameSignature, TailPrefix, FailReason, ClrInstanceID) 0
+#define FireEtwMethodJitMemoryAllocatedForCode(MethodID, ModuleID, JitHotCodeRequestSize, JitRODataRequestSize, AllocatedSizeForJitCode, JitAllocFlag, ClrInstanceID) 0
 #define FireEtwMethodILToNativeMap(MethodID, ReJITID, MethodExtent, CountOfMapEntries, ILOffsets, NativeOffsets, ClrInstanceID) 0
 #define FireEtwModuleDCStartV2(ModuleID, AssemblyID, ModuleFlags, Reserved1, ModuleILPath, ModuleNativePath) 0
 #define FireEtwModuleDCEndV2(ModuleID, AssemblyID, ModuleFlags, Reserved1, ModuleILPath, ModuleNativePath) 0

@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Diagnostics;
 using System.IO;
@@ -61,12 +60,7 @@ namespace System.Net.Http
             return copyTask;
         }
 
-#if WINHTTPHANDLER_DLL
-        protected
-#else
-        protected internal
-#endif
-            override bool TryComputeLength(out long length)
+        protected override bool TryComputeLength(out long length)
         {
             length = 0;
             return false;
@@ -82,11 +76,5 @@ namespace System.Net.Http
         }
 
         protected override Task<Stream> CreateContentReadStreamAsync() => Task.FromResult(_content);
-
-#if !WINHTTPHANDLER_DLL
-        internal override Stream TryCreateContentReadStream() => _content;
-
-        internal override bool AllowDuplex => false;
-#endif
     }
 }

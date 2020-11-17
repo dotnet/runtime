@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
 using System.Threading;
@@ -30,10 +29,7 @@ namespace System.Net.Sockets.Tests
 
                     sender.ForceNonBlocking(forceNonBlocking);
 
-                    for (int i = 0; i < TestSettings.UDPRedundancy; i++)
-                    {
-                        sender.SendTo(new byte[1024], new IPEndPoint(IPAddress.Loopback, port));
-                    }
+                    sender.SendTo(new byte[1024], new IPEndPoint(IPAddress.Loopback, port));
 
                     IPPacketInformation packetInformation;
                     SocketFlags flags = SocketFlags.None;
@@ -70,10 +66,7 @@ namespace System.Net.Sockets.Tests
 
                     sender.ForceNonBlocking(forceNonBlocking);
 
-                    for (int i = 0; i < TestSettings.UDPRedundancy; i++)
-                    {
-                        sender.SendTo(new byte[1024], new IPEndPoint(IPAddress.IPv6Loopback, port));
-                    }
+                    sender.SendTo(new byte[1024], new IPEndPoint(IPAddress.IPv6Loopback, port));
 
                     IPPacketInformation packetInformation;
                     SocketFlags flags = SocketFlags.None;
@@ -123,10 +116,7 @@ namespace System.Net.Sockets.Tests
                 receiver.SetSocketOption(level, SocketOptionName.PacketInformation, true);
                 sender.Bind(new IPEndPoint(loopback, 0));
 
-                for (int i = 0; i < TestSettings.UDPRedundancy; i++)
-                {
-                    sender.SendTo(new byte[1024], new IPEndPoint(loopback, port));
-                }
+                sender.SendTo(new byte[1024], new IPEndPoint(loopback, port));
 
                 IPPacketInformation packetInformation;
                 SocketFlags flags = SocketFlags.None;
@@ -204,10 +194,7 @@ namespace System.Net.Sockets.Tests
                 saea.Completed += delegate { mres.Set(); };
 
                 bool pending = receiver.ReceiveMessageFromAsync(saea);
-                for (int i = 0; i < TestSettings.UDPRedundancy; i++)
-                {
-                    sender.SendTo(new byte[1024], new IPEndPoint(loopback, port));
-                }
+                sender.SendTo(new byte[1024], new IPEndPoint(loopback, port));
                 if (pending) Assert.True(mres.Wait(30000), "Expected operation to complete within timeout");
 
                 Assert.Equal(1024, saea.BytesTransferred);

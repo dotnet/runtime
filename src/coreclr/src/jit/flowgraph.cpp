@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 /*XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
@@ -56,9 +55,6 @@ void Compiler::fgInit()
 
     /* We don't know yet which loops will always execute calls */
     fgLoopCallMarked = false;
-
-    /* We haven't created GC Poll blocks yet. */
-    fgGCPollsCreated = false;
 
     /* Initialize the basic block list */
 
@@ -126,6 +122,9 @@ void Compiler::fgInit()
     /* This global flag is set whenever we add a throw block for a RngChk */
     fgRngChkThrowAdded = false; /* reset flag for fgIsCodeAdded() */
 
+    /* Keep track of whether or not EH statements have been optimized */
+    fgOptimizedFinally = false;
+
     /* We will record a list of all BBJ_RETURN blocks here */
     fgReturnBlocks = nullptr;
 
@@ -176,11 +175,42 @@ void Compiler::fgInit()
 #ifdef FEATURE_SIMD
     fgPreviousCandidateSIMDFieldAsgStmt = nullptr;
 #endif
+
+    fgHasSwitch   = false;
+    fgBlockCounts = nullptr;
 }
 
+//------------------------------------------------------------------------
+// fgHaveProfileData: check if profile data is available
+//
+// Returns:
+//   true if so
+//
+// Note:
+//   This now returns true for inlinees. We might consider preserving the
+//   old behavior for crossgen, since crossgen BBINSTRs still do inlining
+//   and don't instrument the inlinees.
+//
+//   Thus if BBINSTR and BBOPT do the same inlines (which can happen)
+//   profile data for an inlinee (if available) will not fully reflect
+//   the behavior of the inlinee when called from this method.
+//
+//   If this inlinee was not inlined by the BBINSTR run then the
+//   profile data for the inlinee will reflect this method's influence.
+//
+//   * for ALWAYS_INLINE and FORCE_INLINE cases it is unlikely we'll find
+//     any profile data, as BBINSTR and BBOPT callers will both inline;
+//     only indirect callers will invoke the instrumented version to run.
+//   * for DISCRETIONARY_INLINE cases we may or may not find relevant
+//     data, depending, but chances are the data is relevant.
+//
+//  TieredPGO data comes from Tier0 methods, which currently do not do
+//  any inlining; thus inlinee profile data should be available and
+//  representative.
+//
 bool Compiler::fgHaveProfileData()
 {
-    if (compIsForInlining() || compIsForImportOnly())
+    if (compIsForImportOnly())
     {
         return false;
     }
@@ -188,6 +218,111 @@ bool Compiler::fgHaveProfileData()
     return (fgBlockCounts != nullptr);
 }
 
+//------------------------------------------------------------------------
+// fgComputeProfileScale: determine how much scaling to apply
+//   to raw profile count data.
+//
+// Notes:
+//   Scaling is only needed for inlinees, and the results of this
+//   computation are recorded in fields of impInlineInfo.
+//
+void Compiler::fgComputeProfileScale()
+{
+    // Only applicable to inlinees
+    assert(compIsForInlining());
+
+    // Have we already determined the scale?
+    if (impInlineInfo->profileScaleState != InlineInfo::ProfileScaleState::UNDETERMINED)
+    {
+        return;
+    }
+
+    // No, not yet -- try and compute the scale.
+    JITDUMP("Computing inlinee profile scale:\n");
+
+    // Call site has profile weight?
+    //
+    // Todo: handle case of unprofiled caller invoking profiled callee.
+    //
+    const BasicBlock* callSiteBlock = impInlineInfo->iciBlock;
+    if (!callSiteBlock->hasProfileWeight())
+    {
+        JITDUMP("   ... call site not profiled\n");
+        impInlineInfo->profileScaleState = InlineInfo::ProfileScaleState::UNAVAILABLE;
+        return;
+    }
+
+    const BasicBlock::weight_t callSiteWeight = callSiteBlock->bbWeight;
+
+    // Call site has zero count?
+    //
+    // Todo: perhaps retain some semblance of callee profile data,
+    // possibly scaled down severely.
+    //
+    if (callSiteWeight == 0)
+    {
+        JITDUMP("   ... zero call site count\n");
+        impInlineInfo->profileScaleState = InlineInfo::ProfileScaleState::UNAVAILABLE;
+        return;
+    }
+
+    // Callee has profile data?
+    //
+    if (!fgHaveProfileData())
+    {
+        JITDUMP("   ... no callee profile data\n");
+        impInlineInfo->profileScaleState = InlineInfo::ProfileScaleState::UNAVAILABLE;
+        return;
+    }
+
+    // Find callee's unscaled entry weight.
+    //
+    // Ostensibly this should be fgCalledCount for the callee, but that's not available
+    // as it requires some analysis.
+    //
+    // For most callees it will be the same as the entry block count.
+    //
+    BasicBlock::weight_t calleeWeight = 0;
+
+    if (!fgGetProfileWeightForBasicBlock(0, &calleeWeight))
+    {
+        JITDUMP("   ... no callee profile data for entry block\n");
+        impInlineInfo->profileScaleState = InlineInfo::ProfileScaleState::UNAVAILABLE;
+        return;
+    }
+
+    // We should generally be able to assume calleeWeight >= callSiteWeight.
+    // If this isn't so, perhaps something is wrong with the profile data
+    // collection or retrieval.
+    //
+    // For now, ignore callee data if we'd need to upscale.
+    //
+    if (calleeWeight < callSiteWeight)
+    {
+        JITDUMP("   ... callee entry count %d is less than call site count %d\n", calleeWeight, callSiteWeight);
+        impInlineInfo->profileScaleState = InlineInfo::ProfileScaleState::UNAVAILABLE;
+        return;
+    }
+
+    // Hence, scale is always in the range (0.0...1.0] -- we are always scaling down callee counts.
+    //
+    const double scale                = ((double)callSiteWeight) / calleeWeight;
+    impInlineInfo->profileScaleFactor = scale;
+    impInlineInfo->profileScaleState  = InlineInfo::ProfileScaleState::KNOWN;
+
+    JITDUMP("   call site count %u callee entry count %u scale %f\n", callSiteWeight, calleeWeight, scale);
+}
+
+//------------------------------------------------------------------------
+// fgGetProfileWeightForBasicBlock: obtain profile data for a block
+//
+// Arguments:
+//   offset       - IL offset of the block
+//   weightWB     - [OUT] weight obtained
+//
+// Returns:
+//   true if data was found
+//
 bool Compiler::fgGetProfileWeightForBasicBlock(IL_OFFSET offset, unsigned* weightWB)
 {
     noway_assert(weightWB != nullptr);
@@ -228,19 +363,16 @@ bool Compiler::fgGetProfileWeightForBasicBlock(IL_OFFSET offset, unsigned* weigh
     }
 #endif // DEBUG
 
-    if (fgHaveProfileData() == false)
+    if (!fgHaveProfileData())
     {
         return false;
     }
 
-    noway_assert(!compIsForInlining());
     for (UINT32 i = 0; i < fgBlockCountsCount; i++)
     {
         if (fgBlockCounts[i].ILOffset == offset)
         {
-            weight = fgBlockCounts[i].ExecutionCount;
-
-            *weightWB = weight;
+            *weightWB = fgBlockCounts[i].ExecutionCount;
             return true;
         }
     }
@@ -477,7 +609,8 @@ void Compiler::fgEnsureFirstBBisScratch()
 
     noway_assert(fgLastBB != nullptr);
 
-    block->bbFlags |= (BBF_INTERNAL | BBF_IMPORTED);
+    // Set the expected flags
+    block->bbFlags |= (BBF_INTERNAL | BBF_IMPORTED | BBF_JMP_TARGET | BBF_HAS_LABEL);
 
     // This new first BB has an implicit ref, and no others.
     block->bbRefs = 1;
@@ -1404,7 +1537,7 @@ void Compiler::fgRemoveBlockAsPred(BasicBlock* block)
                 }
             }
 
-            __fallthrough;
+            FALLTHROUGH;
 
         case BBJ_COND:
         case BBJ_ALWAYS:
@@ -1419,7 +1552,7 @@ void Compiler::fgRemoveBlockAsPred(BasicBlock* block)
             }
 
             /* If BBJ_COND fall through */
-            __fallthrough;
+            FALLTHROUGH;
 
         case BBJ_NONE:
 
@@ -1866,7 +1999,7 @@ bool Compiler::fgReachable(BasicBlock* b1, BasicBlock* b2)
  *  it again.
  */
 
-void Compiler::fgUpdateChangedFlowGraph()
+void Compiler::fgUpdateChangedFlowGraph(bool computeDoms)
 {
     // We need to clear this so we don't hit an assert calling fgRenumberBlocks().
     fgDomsComputed = false;
@@ -1877,7 +2010,10 @@ void Compiler::fgUpdateChangedFlowGraph()
     fgComputePreds();
     fgComputeEnterBlocksSet();
     fgComputeReachabilitySets();
-    fgComputeDoms();
+    if (computeDoms)
+    {
+        fgComputeDoms();
+    }
 }
 
 /*****************************************************************************
@@ -2102,7 +2238,7 @@ bool Compiler::fgRemoveUnreachableBlocks()
             /* Unmark the block as removed, */
             /* clear BBF_INTERNAL as well and set BBJ_IMPORTED */
 
-            block->bbFlags &= ~(BBF_REMOVED | BBF_INTERNAL | BBF_NEEDS_GCPOLL);
+            block->bbFlags &= ~(BBF_REMOVED | BBF_INTERNAL);
             block->bbFlags |= BBF_IMPORTED;
             block->bbJumpKind = BBJ_THROW;
             block->bbSetRunRarely();
@@ -3094,7 +3230,7 @@ void Compiler::fgComputePreds()
                     block->bbNext->bbFlags |= (BBF_JMP_TARGET | BBF_HAS_LABEL);
                 }
 
-                __fallthrough;
+                FALLTHROUGH;
 
             case BBJ_LEAVE: // Sometimes fgComputePreds is called before all blocks are imported, so BBJ_LEAVE
                             // blocks are still in the BB list.
@@ -3117,7 +3253,7 @@ void Compiler::fgComputePreds()
                 noway_assert(block->bbNext);
 
                 /* Fall through, the next block is also reachable */
-                __fallthrough;
+                FALLTHROUGH;
 
             case BBJ_NONE:
 
@@ -3481,73 +3617,6 @@ BasicBlock* Compiler::fgFirstBlockOfHandler(BasicBlock* block)
     return ehGetDsc(block->getHndIndex())->ebdHndBeg;
 }
 
-/*****************************************************************************
- *
- *  Function called to find back edges and return blocks and mark them as needing GC Polls.  This marks all
- *  blocks.
- */
-void Compiler::fgMarkGCPollBlocks()
-{
-    if (GCPOLL_NONE == opts.compGCPollType)
-    {
-        return;
-    }
-
-#ifdef DEBUG
-    /* Check that the flowgraph data (bbNum, bbRefs, bbPreds) is up-to-date */
-    fgDebugCheckBBlist();
-#endif
-
-    BasicBlock* block;
-
-    // Return blocks always need GC polls.  In addition, all back edges (including those from switch
-    // statements) need GC polls.  The poll is on the block with the outgoing back edge (or ret), rather than
-    // on the destination or on the edge itself.
-    for (block = fgFirstBB; block; block = block->bbNext)
-    {
-        bool blockNeedsPoll = false;
-        switch (block->bbJumpKind)
-        {
-            case BBJ_ALWAYS:
-                if (block->isBBCallAlwaysPairTail())
-                {
-                    break;
-                }
-            case BBJ_COND:
-                blockNeedsPoll = (block->bbJumpDest->bbNum <= block->bbNum);
-                break;
-
-            case BBJ_RETURN:
-                blockNeedsPoll = true;
-                break;
-
-            case BBJ_SWITCH:
-                unsigned jumpCnt;
-                jumpCnt = block->bbJumpSwt->bbsCount;
-                BasicBlock** jumpTab;
-                jumpTab = block->bbJumpSwt->bbsDstTab;
-
-                do
-                {
-                    if ((*jumpTab)->bbNum <= block->bbNum)
-                    {
-                        blockNeedsPoll = true;
-                        break;
-                    }
-                } while (++jumpTab, --jumpCnt);
-                break;
-
-            default:
-                break;
-        }
-
-        if (blockNeedsPoll)
-        {
-            block->bbFlags |= BBF_NEEDS_GCPOLL;
-        }
-    }
-}
-
 void Compiler::fgInitBlockVarSets()
 {
     for (BasicBlock* block = fgFirstBB; block; block = block->bbNext)
@@ -3558,15 +3627,72 @@ void Compiler::fgInitBlockVarSets()
     fgBBVarSetsInited = true;
 }
 
-/*****************************************************************************
- *
- *  The following does the final pass on BBF_NEEDS_GCPOLL and then actually creates the GC Polls.
- */
-void Compiler::fgCreateGCPolls()
+//------------------------------------------------------------------------
+// blockNeedsGCPoll: Determine whether the block needs GC poll inserted
+//
+// Arguments:
+//   block         - the block to check
+//
+// Notes:
+//    The GC poll may not be required because of optimizations applied earlier
+//    or because of GC poll done implicitly by regular unmanaged calls.
+//
+// Returns:
+//    Whether the GC poll needs to be inserted after the block
+//
+static bool blockNeedsGCPoll(BasicBlock* block)
 {
-    if (GCPOLL_NONE == opts.compGCPollType)
+    bool blockMayNeedGCPoll = false;
+    for (Statement* stmt = block->FirstNonPhiDef(); stmt != nullptr; stmt = stmt->GetNextStmt())
     {
-        return;
+        if ((stmt->GetRootNode()->gtFlags & GTF_CALL) != 0)
+        {
+            for (GenTree* tree = stmt->GetTreeList(); tree != nullptr; tree = tree->gtNext)
+            {
+                if (tree->OperGet() == GT_CALL)
+                {
+                    GenTreeCall* call = tree->AsCall();
+                    if (call->IsUnmanaged())
+                    {
+                        if (!call->IsSuppressGCTransition())
+                        {
+                            // If the block contains regular unmanaged call, we can depend on it
+                            // to poll for GC. No need to scan further.
+                            return false;
+                        }
+
+                        blockMayNeedGCPoll = true;
+                    }
+                }
+            }
+        }
+    }
+    return blockMayNeedGCPoll;
+}
+
+//------------------------------------------------------------------------------
+// fgInsertGCPolls : Insert GC polls for basic blocks containing calls to methods
+//                   with SuppressGCTransitionAttribute.
+//
+// Notes:
+//    When not optimizing, the method relies on BBF_HAS_SUPPRESSGC_CALL flag to
+//    find the basic blocks that require GC polls; when optimizing the tree nodes
+//    are scanned to find calls to methods with SuppressGCTransitionAttribute.
+//
+//    This must be done after any transformations that would add control flow between
+//    calls.
+//
+// Returns:
+//    PhaseStatus indicating what, if anything, was changed.
+//
+
+PhaseStatus Compiler::fgInsertGCPolls()
+{
+    PhaseStatus result = PhaseStatus::MODIFIED_NOTHING;
+
+    if ((optMethodFlags & OMF_NEEDS_GCPOLLS) == 0)
+    {
+        return result;
     }
 
     bool createdPollBlocks = false;
@@ -3574,201 +3700,28 @@ void Compiler::fgCreateGCPolls()
 #ifdef DEBUG
     if (verbose)
     {
-        printf("*************** In fgCreateGCPolls() for %s\n", info.compFullName);
+        printf("*************** In fgInsertGCPolls() for %s\n", info.compFullName);
         fgDispBasicBlocks(false);
         printf("\n");
     }
 #endif // DEBUG
 
-    if (opts.OptimizationEnabled())
-    {
-        // Remove polls from well formed loops with a constant upper bound.
-        for (unsigned lnum = 0; lnum < optLoopCount; ++lnum)
-        {
-            // Look for constant counted loops that run for a short duration.  This logic is very similar to
-            // what's in code:Compiler::optUnrollLoops, since they have similar constraints.  However, this
-            // logic is much more permissive since we're not doing a complex transformation.
-
-            /* TODO-Cleanup:
-             * I feel bad cloning so much logic from optUnrollLoops
-             */
-
-            // Filter out loops not meeting the obvious preconditions.
-            //
-            if (optLoopTable[lnum].lpFlags & LPFLG_REMOVED)
-            {
-                continue;
-            }
-
-            if (!(optLoopTable[lnum].lpFlags & LPFLG_CONST))
-            {
-                continue;
-            }
-
-            BasicBlock* head   = optLoopTable[lnum].lpHead;
-            BasicBlock* bottom = optLoopTable[lnum].lpBottom;
-
-            // Loops dominated by GC_SAFE_POINT won't have this set.
-            if (!(bottom->bbFlags & BBF_NEEDS_GCPOLL))
-            {
-                continue;
-            }
-
-            /* Get the loop data:
-                - initial constant
-                - limit constant
-                - iterator
-                - iterator increment
-                - increment operation type (i.e. ASG_ADD, ASG_SUB, etc...)
-                - loop test type (i.e. GT_GE, GT_LT, etc...)
-             */
-
-            int        lbeg     = optLoopTable[lnum].lpConstInit;
-            int        llim     = optLoopTable[lnum].lpConstLimit();
-            genTreeOps testOper = optLoopTable[lnum].lpTestOper();
-
-            int        lvar     = optLoopTable[lnum].lpIterVar();
-            int        iterInc  = optLoopTable[lnum].lpIterConst();
-            genTreeOps iterOper = optLoopTable[lnum].lpIterOper();
-
-            var_types iterOperType = optLoopTable[lnum].lpIterOperType();
-            bool      unsTest      = (optLoopTable[lnum].lpTestTree->gtFlags & GTF_UNSIGNED) != 0;
-            if (lvaTable[lvar].lvAddrExposed)
-            { // Can't reason about the value of the iteration variable.
-                continue;
-            }
-
-            unsigned totalIter;
-
-            /* Find the number of iterations - the function returns false if not a constant number */
-
-            if (!optComputeLoopRep(lbeg, llim, iterInc, iterOper, iterOperType, testOper, unsTest,
-                                   // The value here doesn't matter for this variation of the optimization
-                                   true, &totalIter))
-            {
-#ifdef DEBUG
-                if (verbose)
-                {
-                    printf("Could not compute loop iterations for loop from " FMT_BB " to " FMT_BB, head->bbNum,
-                           bottom->bbNum);
-                }
-#endif                      // DEBUG
-                (void)head; // suppress gcc error.
-
-                continue;
-            }
-
-            /* Forget it if there are too many repetitions or not a constant loop */
-
-            static const unsigned ITER_LIMIT = 256;
-            if (totalIter > ITER_LIMIT)
-            {
-                continue;
-            }
-
-            // It is safe to elminate the poll from this loop.
-            bottom->bbFlags &= ~BBF_NEEDS_GCPOLL;
-
-#ifdef DEBUG
-            if (verbose)
-            {
-                printf("Removing poll in block " FMT_BB " because it forms a bounded counted loop\n", bottom->bbNum);
-            }
-#endif // DEBUG
-        }
-    }
-
-    // Final chance to optimize the polls.  Move all polls in loops from the bottom of the loop up to the
-    // loop head.  Also eliminate all epilog polls in non-leaf methods.  This only works if we have dominator
-    // information.
-    if (fgDomsComputed)
-    {
-        for (BasicBlock* block = fgFirstBB; block; block = block->bbNext)
-        {
-            if (!(block->bbFlags & BBF_NEEDS_GCPOLL))
-            {
-                continue;
-            }
-
-            if (block->bbJumpKind == BBJ_COND || block->bbJumpKind == BBJ_ALWAYS)
-            {
-                // make sure that this is loop-like
-                if (!fgReachable(block->bbJumpDest, block))
-                {
-                    block->bbFlags &= ~BBF_NEEDS_GCPOLL;
-#ifdef DEBUG
-                    if (verbose)
-                    {
-                        printf("Removing poll in block " FMT_BB " because it is not loop\n", block->bbNum);
-                    }
-#endif // DEBUG
-                    continue;
-                }
-            }
-            else if (!(block->bbJumpKind == BBJ_RETURN || block->bbJumpKind == BBJ_SWITCH))
-            {
-                noway_assert(!"GC Poll on a block that has no control transfer.");
-#ifdef DEBUG
-                if (verbose)
-                {
-                    printf("Removing poll in block " FMT_BB " because it is not a jump\n", block->bbNum);
-                }
-#endif // DEBUG
-                block->bbFlags &= ~BBF_NEEDS_GCPOLL;
-                continue;
-            }
-
-            // Because of block compaction, it's possible to end up with a block that is both poll and safe.
-            // Clean those up now.
-
-            if (block->bbFlags & BBF_GC_SAFE_POINT)
-            {
-#ifdef DEBUG
-                if (verbose)
-                {
-                    printf("Removing poll in return block " FMT_BB " because it is GC Safe\n", block->bbNum);
-                }
-#endif // DEBUG
-                block->bbFlags &= ~BBF_NEEDS_GCPOLL;
-                continue;
-            }
-
-            if (block->bbJumpKind == BBJ_RETURN)
-            {
-                if (!optReachWithoutCall(fgFirstBB, block))
-                {
-                    // check to see if there is a call along the path between the first block and the return
-                    // block.
-                    block->bbFlags &= ~BBF_NEEDS_GCPOLL;
-#ifdef DEBUG
-                    if (verbose)
-                    {
-                        printf("Removing poll in return block " FMT_BB " because it dominated by a call\n",
-                               block->bbNum);
-                    }
-#endif // DEBUG
-                    continue;
-                }
-            }
-        }
-    }
-
-    noway_assert(!fgGCPollsCreated);
     BasicBlock* block;
-    fgGCPollsCreated = true;
 
-    // Walk through the blocks and hunt for a block that has BBF_NEEDS_GCPOLL
+    // Walk through the blocks and hunt for a block that needs a GC Poll
     for (block = fgFirstBB; block; block = block->bbNext)
     {
-        // Because of block compaction, it's possible to end up with a block that is both poll and safe.
-        // And if !fgDomsComputed, we won't have cleared them, so skip them now
-        if (!(block->bbFlags & BBF_NEEDS_GCPOLL) || (block->bbFlags & BBF_GC_SAFE_POINT))
+        // When optimizations are enabled, we can't rely on BBF_HAS_SUPPRESSGC_CALL flag:
+        // the call could've been moved, e.g., hoisted from a loop, CSE'd, etc.
+        if (opts.OptimizationDisabled() ? ((block->bbFlags & BBF_HAS_SUPPRESSGC_CALL) == 0) : !blockNeedsGCPoll(block))
         {
             continue;
         }
 
-        // This block needs a poll.  We either just insert a callout or we split the block and inline part of
-        // the test.  This depends on the value of opts.compGCPollType.
+        result = PhaseStatus::MODIFIED_EVERYTHING;
+
+        // This block needs a GC poll. We either just insert a callout or we split the block and inline part of
+        // the test.
 
         // If we're doing GCPOLL_CALL, just insert a GT_CALL node before the last node in the block.
         CLANG_FORMAT_COMMENT_ANCHOR;
@@ -3780,17 +3733,19 @@ void Compiler::fgCreateGCPolls()
             case BBJ_ALWAYS:
             case BBJ_COND:
             case BBJ_SWITCH:
+            case BBJ_NONE:
+            case BBJ_THROW:
+            case BBJ_CALLFINALLY:
                 break;
             default:
-                noway_assert(!"Unknown block type for BBF_NEEDS_GCPOLL");
+                assert(!"Unexpected block kind");
         }
 #endif // DEBUG
 
-        noway_assert(opts.compGCPollType);
+        GCPollType pollType = GCPOLL_INLINE;
 
-        GCPollType pollType = opts.compGCPollType;
-        // pollType is set to either CALL or INLINE at this point.  Below is the list of places where we
-        // can't or don't want to emit an inline check.  Check all of those.  If after all of that we still
+        // We'd like to inset an inline poll. Below is the list of places where we
+        // can't or don't want to emit an inline poll. Check all of those. If after all of that we still
         // have INLINE, then emit an inline check.
 
         if (opts.OptimizationDisabled())
@@ -3822,18 +3777,29 @@ void Compiler::fgCreateGCPolls()
 #ifdef DEBUG
             if (verbose)
             {
-                printf("Selecting CALL poll in block " FMT_BB " because it is a loop formed by a SWITCH\n",
-                       block->bbNum);
+                printf("Selecting CALL poll in block " FMT_BB " because it is a SWITCH block\n", block->bbNum);
             }
 #endif // DEBUG
 
-            // I don't want to deal with all the outgoing edges of a switch block.
+            // We don't want to deal with all the outgoing edges of a switch block.
+            pollType = GCPOLL_CALL;
+        }
+        else if ((block->bbFlags & BBF_COLD) != 0)
+        {
+#ifdef DEBUG
+            if (verbose)
+            {
+                printf("Selecting CALL poll in block " FMT_BB " because it is a cold block\n", block->bbNum);
+            }
+#endif // DEBUG
+
+            // We don't want to split a cold block.
             pollType = GCPOLL_CALL;
         }
 
-        // TODO-Cleanup: potentially don't split if we're in an EH region.
-
-        createdPollBlocks |= fgCreateGCPoll(pollType, block);
+        BasicBlock* curBasicBlock = fgCreateGCPoll(pollType, block);
+        createdPollBlocks |= (block != curBasicBlock);
+        block = curBasicBlock;
     }
 
     // If we split a block to create a GC Poll, then rerun fgReorderBlocks to push the rarely run blocks out
@@ -3842,24 +3808,32 @@ void Compiler::fgCreateGCPolls()
     {
         noway_assert(opts.OptimizationEnabled());
         fgReorderBlocks();
-        fgUpdateChangedFlowGraph();
+        constexpr bool computeDoms = false;
+        fgUpdateChangedFlowGraph(computeDoms);
     }
 #ifdef DEBUG
     if (verbose)
     {
-        printf("*************** After fgCreateGCPolls()\n");
+        printf("*************** After fgInsertGCPolls()\n");
         fgDispBasicBlocks(true);
     }
 #endif // DEBUG
+
+    return result;
 }
 
-/*****************************************************************************
- *
- *  Actually create a GCPoll in the given block. Returns true if it created
- *  a basic block.
- */
+//------------------------------------------------------------------------------
+// fgCreateGCPoll : Insert a GC poll of the specified type for the given basic block.
+//
+// Arguments:
+//    pollType  - The type of GC poll to insert
+//    block     - Basic block to insert the poll for
+//
+// Return Value:
+//    If new basic blocks are inserted, the last inserted block; otherwise, the input block.
+//
 
-bool Compiler::fgCreateGCPoll(GCPollType pollType, BasicBlock* block, Statement* stmt)
+BasicBlock* Compiler::fgCreateGCPoll(GCPollType pollType, BasicBlock* block)
 {
     bool createdPollBlocks;
 
@@ -3874,51 +3848,28 @@ bool Compiler::fgCreateGCPoll(GCPollType pollType, BasicBlock* block, Statement*
         pollType = GCPOLL_CALL;
     }
 
-#ifdef DEBUG
-    // If a statment was supplied it should be contained in the block.
-    if (stmt != nullptr)
-    {
-        bool containsStmt = false;
-        for (Statement* stmtMaybe : block->Statements())
-        {
-            containsStmt = (stmtMaybe == stmt);
-            if (containsStmt)
-            {
-                break;
-            }
-        }
-
-        assert(containsStmt);
-    }
-#endif
     // Create the GC_CALL node
     GenTree* call = gtNewHelperCallNode(CORINFO_HELP_POLL_GC, TYP_VOID);
     call          = fgMorphCall(call->AsCall());
     gtSetEvalOrder(call);
 
+    BasicBlock* bottom = nullptr;
+
     if (pollType == GCPOLL_CALL)
     {
         createdPollBlocks = false;
 
-        if (stmt != nullptr)
+        Statement* newStmt = nullptr;
+        if ((block->bbJumpKind == BBJ_ALWAYS) || (block->bbJumpKind == BBJ_CALLFINALLY) ||
+            (block->bbJumpKind == BBJ_NONE))
         {
-            // The GC_POLL should be inserted relative to the supplied statement. The safer
-            // location for the insertion is prior to the current statement since the supplied
-            // statement could be a GT_JTRUE (see fgNewStmtNearEnd() for more details).
-            Statement* newStmt = gtNewStmt(call);
-
-            // Set the GC_POLL statement to have the same IL offset at the subsequent one.
-            newStmt->SetILOffsetX(stmt->GetILOffsetX());
-            fgInsertStmtBefore(block, stmt, newStmt);
-        }
-        else if (block->bbJumpKind == BBJ_ALWAYS)
-        {
-            // for BBJ_ALWAYS I don't need to insert it before the condition.  Just append it.
-            fgNewStmtAtEnd(block, call);
+            // For BBJ_ALWAYS, BBJ_CALLFINALLY, and BBJ_NONE and  we don't need to insert it before the condition.
+            // Just append it.
+            newStmt = fgNewStmtAtEnd(block, call);
         }
         else
         {
-            Statement* newStmt = fgNewStmtNearEnd(block, call);
+            newStmt = fgNewStmtNearEnd(block, call);
             // For DDB156656, we need to associate the GC Poll with the IL offset (and therefore sequence
             // point) of the tree before which we inserted the poll.  One example of when this is a
             // problem:
@@ -3944,6 +3895,12 @@ bool Compiler::fgCreateGCPoll(GCPollType pollType, BasicBlock* block, Statement*
                 // Is it possible for gtNextStmt to be NULL?
                 newStmt->SetILOffsetX(nextStmt->GetILOffsetX());
             }
+        }
+
+        if (fgStmtListThreaded)
+        {
+            gtSetStmtInfo(newStmt);
+            fgSetStmtSeq(newStmt);
         }
 
         block->bbFlags |= BBF_GC_SAFE_POINT;
@@ -3975,8 +3932,8 @@ bool Compiler::fgCreateGCPoll(GCPollType pollType, BasicBlock* block, Statement*
             lpIndexFallThrough = topFallThrough->bbNatLoopNum;
         }
 
-        BasicBlock*   poll        = fgNewBBafter(BBJ_NONE, top, true);
-        BasicBlock*   bottom      = fgNewBBafter(top->bbJumpKind, poll, true);
+        BasicBlock* poll          = fgNewBBafter(BBJ_NONE, top, true);
+        bottom                    = fgNewBBafter(top->bbJumpKind, poll, true);
         BBjumpKinds   oldJumpKind = top->bbJumpKind;
         unsigned char lpIndex     = top->bbNatLoopNum;
 
@@ -3985,9 +3942,12 @@ bool Compiler::fgCreateGCPoll(GCPollType pollType, BasicBlock* block, Statement*
 
         // We are allowed to split loops and we need to keep a few other flags...
         //
-        noway_assert((originalFlags & (BBF_SPLIT_NONEXIST & ~(BBF_LOOP_HEAD | BBF_LOOP_CALL0 | BBF_LOOP_CALL1))) == 0);
-        top->bbFlags = originalFlags & (~BBF_SPLIT_LOST | BBF_GC_SAFE_POINT);
-        bottom->bbFlags |= originalFlags & (BBF_SPLIT_GAINED | BBF_IMPORTED | BBF_GC_SAFE_POINT);
+        noway_assert((originalFlags & (BBF_SPLIT_NONEXIST &
+                                       ~(BBF_LOOP_HEAD | BBF_LOOP_CALL0 | BBF_LOOP_CALL1 | BBF_LOOP_PREHEADER |
+                                         BBF_RETLESS_CALL))) == 0);
+        top->bbFlags = originalFlags & (~(BBF_SPLIT_LOST | BBF_LOOP_PREHEADER | BBF_RETLESS_CALL) | BBF_GC_SAFE_POINT);
+        bottom->bbFlags |= originalFlags & (BBF_SPLIT_GAINED | BBF_IMPORTED | BBF_GC_SAFE_POINT | BBF_LOOP_PREHEADER |
+                                            BBF_RETLESS_CALL);
         bottom->inheritWeight(top);
         poll->bbFlags |= originalFlags & (BBF_SPLIT_GAINED | BBF_IMPORTED | BBF_GC_SAFE_POINT);
 
@@ -4011,12 +3971,16 @@ bool Compiler::fgCreateGCPoll(GCPollType pollType, BasicBlock* block, Statement*
         }
 
         // Add the GC_CALL node to Poll.
-        fgNewStmtAtEnd(poll, call);
-
-        // Remove the last statement from Top and add it to Bottom.
-        if (oldJumpKind != BBJ_ALWAYS)
+        Statement* pollStmt = fgNewStmtAtEnd(poll, call);
+        if (fgStmtListThreaded)
         {
-            // if I'm always jumping to the target, then this is not a condition that needs moving.
+            gtSetStmtInfo(pollStmt);
+            fgSetStmtSeq(pollStmt);
+        }
+
+        // Remove the last statement from Top and add it to Bottom if necessary.
+        if ((oldJumpKind == BBJ_COND) || (oldJumpKind == BBJ_RETURN) || (oldJumpKind == BBJ_THROW))
+        {
             Statement* stmt = top->firstStmt();
             while (stmt->GetNextStmt() != nullptr)
             {
@@ -4043,7 +4007,7 @@ bool Compiler::fgCreateGCPoll(GCPollType pollType, BasicBlock* block, Statement*
         {
             // Use a double indirection
             GenTree* addr =
-                gtNewIndOfIconHandleNode(TYP_I_IMPL, (size_t)pAddrOfCaptureThreadGlobal, GTF_ICON_PTR_HDL, true);
+                gtNewIndOfIconHandleNode(TYP_I_IMPL, (size_t)pAddrOfCaptureThreadGlobal, GTF_ICON_CONST_PTR, true);
 
             value = gtNewOperNode(GT_IND, TYP_INT, addr);
             // This indirection won't cause an exception.
@@ -4052,11 +4016,14 @@ bool Compiler::fgCreateGCPoll(GCPollType pollType, BasicBlock* block, Statement*
         else
         {
             // Use a single indirection
-            value = gtNewIndOfIconHandleNode(TYP_INT, (size_t)addrTrap, GTF_ICON_PTR_HDL, false);
+            value = gtNewIndOfIconHandleNode(TYP_INT, (size_t)addrTrap, GTF_ICON_GLOBAL_PTR, false);
         }
 
-        // Treat the reading of g_TrapReturningThreads as volatile.
-        value->gtFlags |= GTF_IND_VOLATILE;
+        // NOTE: in c++ an equivalent load is done via LoadWithoutBarrier() to ensure that the
+        // program order is preserved. (not hoisted out of a loop or cached in a local, for example)
+        //
+        // Here we introduce the read really late after all major optimizations are done, and the location
+        // is formally unknown, so noone could optimize the load, thus no special flags are needed.
 
         // Compare for equal to zero
         GenTree* trapRelop = gtNewOperNode(GT_EQ, TYP_INT, value, gtNewIconNode(0, TYP_INT));
@@ -4064,7 +4031,12 @@ bool Compiler::fgCreateGCPoll(GCPollType pollType, BasicBlock* block, Statement*
         trapRelop->gtFlags |= GTF_RELOP_JMP_USED | GTF_DONT_CSE;
         GenTree* trapCheck = gtNewOperNode(GT_JTRUE, TYP_VOID, trapRelop);
         gtSetEvalOrder(trapCheck);
-        fgNewStmtAtEnd(top, trapCheck);
+        Statement* trapCheckStmt = fgNewStmtAtEnd(top, trapCheck);
+        if (fgStmtListThreaded)
+        {
+            gtSetStmtInfo(trapCheckStmt);
+            fgSetStmtSeq(trapCheckStmt);
+        }
 
 #ifdef DEBUG
         if (verbose)
@@ -4088,10 +4060,10 @@ bool Compiler::fgCreateGCPoll(GCPollType pollType, BasicBlock* block, Statement*
         switch (oldJumpKind)
         {
             case BBJ_NONE:
-                // nothing to update. This can happen when inserting a GC Poll
-                // when suppressing a GC transition during an unmanaged call.
+                fgReplacePred(bottom->bbNext, top, bottom);
                 break;
             case BBJ_RETURN:
+            case BBJ_THROW:
                 // no successors
                 break;
             case BBJ_COND:
@@ -4100,9 +4072,10 @@ bool Compiler::fgCreateGCPoll(GCPollType pollType, BasicBlock* block, Statement*
                 fgReplacePred(bottom->bbNext, top, bottom);
 
                 // fall through for the jump target
-                __fallthrough;
+                FALLTHROUGH;
 
             case BBJ_ALWAYS:
+            case BBJ_CALLFINALLY:
                 fgReplacePred(bottom->bbJumpDest, top, bottom);
                 break;
             case BBJ_SWITCH:
@@ -4111,10 +4084,6 @@ bool Compiler::fgCreateGCPoll(GCPollType pollType, BasicBlock* block, Statement*
             default:
                 NO_WAY("Unknown block type for updating predecessor lists.");
         }
-
-        top->bbFlags &= ~BBF_NEEDS_GCPOLL;
-        noway_assert(!(poll->bbFlags & BBF_NEEDS_GCPOLL));
-        noway_assert(!(bottom->bbFlags & BBF_NEEDS_GCPOLL));
 
         if (compCurBB == top)
         {
@@ -4137,7 +4106,7 @@ bool Compiler::fgCreateGCPoll(GCPollType pollType, BasicBlock* block, Statement*
 #endif // DEBUG
     }
 
-    return createdPollBlocks;
+    return createdPollBlocks ? bottom : block;
 }
 
 /*****************************************************************************
@@ -4322,7 +4291,7 @@ private:
                 break;
             case 1:
                 ++depth;
-                __fallthrough;
+                FALLTHROUGH;
             case 2:
                 slot1 = slot0;
                 slot0 = type;
@@ -4381,6 +4350,7 @@ void Compiler::fgSwitchToOptimized()
     JITDUMP("****\n**** JIT Tier0 jit request switching to Tier1 because of loop\n****\n");
     assert(opts.jitFlags->IsSet(JitFlags::JIT_FLAG_TIER0));
     opts.jitFlags->Clear(JitFlags::JIT_FLAG_TIER0);
+    opts.jitFlags->Clear(JitFlags::JIT_FLAG_BBINSTR);
 
     // Leave a note for jit diagnostics
     compSwitchedToOptimized = true;
@@ -4928,7 +4898,7 @@ void Compiler::fgFindJumpTargets(const BYTE* codeAddr, IL_OFFSET codeSize, Fixed
                 // If we are inlining, we need to fail for a CEE_JMP opcode, just like
                 // the list of other opcodes (for all platforms).
 
-                __fallthrough;
+                FALLTHROUGH;
             case CEE_MKREFANY:
             case CEE_RETHROW:
                 if (makeInlineObservations)
@@ -5005,6 +4975,7 @@ void Compiler::fgFindJumpTargets(const BYTE* codeAddr, IL_OFFSET codeSize, Fixed
                 break;
             case CEE_RET:
                 retBlocks++;
+                break;
 
             default:
                 break;
@@ -5336,7 +5307,8 @@ void Compiler::fgLinkBasicBlocks()
                     BADCODE("Fall thru the end of a method");
                 }
 
-            // Fall through, the next block is also reachable
+                // Fall through, the next block is also reachable
+                FALLTHROUGH;
 
             case BBJ_NONE:
                 curBBdesc->bbNext->bbRefs++;
@@ -5416,6 +5388,11 @@ unsigned Compiler::fgMakeBasicBlocks(const BYTE* codeAddr, IL_OFFSET codeSize, F
         while (compGetNextExitScope(0))
         { /* do nothing */
         }
+    }
+
+    if (compIsForInlining())
+    {
+        fgComputeProfileScale();
     }
 
     do
@@ -5603,7 +5580,7 @@ unsigned Compiler::fgMakeBasicBlocks(const BYTE* codeAddr, IL_OFFSET codeSize, F
                     return retBlocks;
                 }
 
-                __fallthrough;
+                FALLTHROUGH;
 
             case CEE_READONLY:
             case CEE_CONSTRAINED:
@@ -5682,18 +5659,18 @@ unsigned Compiler::fgMakeBasicBlocks(const BYTE* codeAddr, IL_OFFSET codeSize, F
                 }
             }
 
-            /* For tail call, we just call CORINFO_HELP_TAILCALL, and it jumps to the
-               target. So we don't need an epilog - just like CORINFO_HELP_THROW.
-               Make the block BBJ_RETURN, but we will change it to BBJ_THROW
-               if the tailness of the call is satisfied.
-               NOTE : The next instruction is guaranteed to be a CEE_RET
-               and it will create another BasicBlock. But there may be an
-               jump directly to that CEE_RET. If we want to avoid creating
-               an unnecessary block, we need to check if the CEE_RETURN is
-               the target of a jump.
-             */
+                /* For tail call, we just call CORINFO_HELP_TAILCALL, and it jumps to the
+                   target. So we don't need an epilog - just like CORINFO_HELP_THROW.
+                   Make the block BBJ_RETURN, but we will change it to BBJ_THROW
+                   if the tailness of the call is satisfied.
+                   NOTE : The next instruction is guaranteed to be a CEE_RET
+                   and it will create another BasicBlock. But there may be an
+                   jump directly to that CEE_RET. If we want to avoid creating
+                   an unnecessary block, we need to check if the CEE_RETURN is
+                   the target of a jump.
+                 */
 
-            // fall-through
+                FALLTHROUGH;
 
             case CEE_JMP:
             /* These are equivalent to a return from the current method
@@ -5840,9 +5817,19 @@ unsigned Compiler::fgMakeBasicBlocks(const BYTE* codeAddr, IL_OFFSET codeSize, F
         curBBdesc->bbCodeOffsEnd = nxtBBoffs;
 
         unsigned profileWeight;
+
         if (fgGetProfileWeightForBasicBlock(curBBoffs, &profileWeight))
         {
+            if (compIsForInlining())
+            {
+                if (impInlineInfo->profileScaleState == InlineInfo::ProfileScaleState::KNOWN)
+                {
+                    profileWeight = (unsigned)(impInlineInfo->profileScaleFactor * profileWeight);
+                }
+            }
+
             curBBdesc->setBBProfileWeight(profileWeight);
+
             if (profileWeight == 0)
             {
                 curBBdesc->bbSetRunRarely();
@@ -6979,7 +6966,7 @@ unsigned Compiler::fgGetNestingLevel(BasicBlock* block, unsigned* pFinallyNestin
 }
 
 //------------------------------------------------------------------------
-// fgImport: read the IL forf the method and create jit IR
+// fgImport: read the IL for the method and create jit IR
 //
 // Returns:
 //    phase status
@@ -7070,7 +7057,7 @@ bool Compiler::fgIsThrow(GenTree* tree)
         return true;
     }
 
-    // TODO-CQ: there are a bunch of managed methods in [mscorlib]System.ThrowHelper
+    // TODO-CQ: there are a bunch of managed methods in System.ThrowHelper
     // that would be nice to recognize.
 
     return false;
@@ -7137,13 +7124,15 @@ bool Compiler::fgIsCommaThrow(GenTree* tree, bool forFolding /* = false */)
 //    tree - The tree node under consideration
 //
 // Return Value:
-//    If "tree" is a indirection (GT_IND, GT_BLK, or GT_OBJ) whose arg is an ADDR,
-//    whose arg in turn is a LCL_VAR, return that LCL_VAR node, else nullptr.
+//    If "tree" is a indirection (GT_IND, GT_BLK, or GT_OBJ) whose arg is:
+//    - an ADDR, whose arg in turn is a LCL_VAR, return that LCL_VAR node;
+//    - a LCL_VAR_ADDR, return that LCL_VAR_ADDR;
+//    - else nullptr.
 //
 // static
-GenTree* Compiler::fgIsIndirOfAddrOfLocal(GenTree* tree)
+GenTreeLclVar* Compiler::fgIsIndirOfAddrOfLocal(GenTree* tree)
 {
-    GenTree* res = nullptr;
+    GenTreeLclVar* res = nullptr;
     if (tree->OperIsIndir())
     {
         GenTree* addr = tree->AsIndir()->Addr();
@@ -7176,12 +7165,12 @@ GenTree* Compiler::fgIsIndirOfAddrOfLocal(GenTree* tree)
             GenTree* lclvar = addr->AsOp()->gtOp1;
             if (lclvar->OperGet() == GT_LCL_VAR)
             {
-                res = lclvar;
+                res = lclvar->AsLclVar();
             }
         }
         else if (addr->OperGet() == GT_LCL_VAR_ADDR)
         {
-            res = addr;
+            res = addr->AsLclVar();
         }
     }
     return res;
@@ -7200,31 +7189,31 @@ GenTreeCall* Compiler::fgGetStaticsCCtorHelper(CORINFO_CLASS_HANDLE cls, CorInfo
     {
         case CORINFO_HELP_GETSHARED_GCSTATIC_BASE_NOCTOR:
             bNeedClassID = false;
-            __fallthrough;
+            FALLTHROUGH;
 
         case CORINFO_HELP_GETSHARED_GCTHREADSTATIC_BASE_NOCTOR:
             callFlags |= GTF_CALL_HOISTABLE;
-            __fallthrough;
+            FALLTHROUGH;
 
         case CORINFO_HELP_GETSHARED_GCSTATIC_BASE:
         case CORINFO_HELP_GETSHARED_GCSTATIC_BASE_DYNAMICCLASS:
         case CORINFO_HELP_GETSHARED_NONGCSTATIC_BASE_DYNAMICCLASS:
         case CORINFO_HELP_GETSHARED_GCTHREADSTATIC_BASE:
         case CORINFO_HELP_GETSHARED_GCTHREADSTATIC_BASE_DYNAMICCLASS:
+        case CORINFO_HELP_GETSHARED_NONGCTHREADSTATIC_BASE_DYNAMICCLASS:
             // type = TYP_BYREF;
             break;
 
         case CORINFO_HELP_GETSHARED_NONGCSTATIC_BASE_NOCTOR:
             bNeedClassID = false;
-            __fallthrough;
+            FALLTHROUGH;
 
         case CORINFO_HELP_GETSHARED_NONGCTHREADSTATIC_BASE_NOCTOR:
             callFlags |= GTF_CALL_HOISTABLE;
-            __fallthrough;
+            FALLTHROUGH;
 
         case CORINFO_HELP_GETSHARED_NONGCSTATIC_BASE:
         case CORINFO_HELP_GETSHARED_NONGCTHREADSTATIC_BASE:
-        case CORINFO_HELP_GETSHARED_NONGCTHREADSTATIC_BASE_DYNAMICCLASS:
         case CORINFO_HELP_CLASSINIT_SHARED_DYNAMICCLASS:
             type = TYP_I_IMPL;
             break;
@@ -7296,7 +7285,7 @@ GenTreeCall* Compiler::fgGetStaticsCCtorHelper(CORINFO_CLASS_HANDLE cls, CorInfo
         NamedIntrinsic ni = lookupNamedIntrinsic(info.compMethodHnd);
         if (ni == NI_System_Collections_Generic_EqualityComparer_get_Default)
         {
-            JITDUMP("\nmarking helper call [06%u] as special dce...\n", result->gtTreeID);
+            JITDUMP("\nmarking helper call [%06u] as special dce...\n", result->gtTreeID);
             result->gtCallMoreFlags |= GTF_CALL_M_HELPER_SPECIAL_DCE;
         }
     }
@@ -7335,6 +7324,10 @@ bool Compiler::fgAddrCouldBeNull(GenTree* addr)
 {
     addr = addr->gtEffectiveVal();
     if ((addr->gtOper == GT_CNS_INT) && addr->IsIconHandle())
+    {
+        return false;
+    }
+    else if (addr->OperIs(GT_CNS_STR))
     {
         return false;
     }
@@ -7758,11 +7751,6 @@ inline void Compiler::fgLoopCallTest(BasicBlock* srcBB, BasicBlock* dstBB)
             dstBB->bbFlags |= BBF_LOOP_CALL1;
         }
     }
-    // if this loop will always call, then we can omit the GC Poll
-    if ((GCPOLL_NONE != opts.compGCPollType) && (dstBB->bbFlags & BBF_LOOP_CALL1))
-    {
-        srcBB->bbFlags &= ~BBF_NEEDS_GCPOLL;
-    }
 }
 
 /*****************************************************************************
@@ -7853,8 +7841,6 @@ inline void Compiler::fgMarkLoopHead(BasicBlock* block)
             printf("this block will execute a call\n");
         }
 #endif
-        // single block loops that contain GC safe points don't need polls.
-        block->bbFlags &= ~BBF_NEEDS_GCPOLL;
         return;
     }
 
@@ -7903,26 +7889,13 @@ inline void Compiler::fgMarkLoopHead(BasicBlock* block)
         return;
     }
 
-    // only enable fully interruptible code for if we're hijacking.
-    if (GCPOLL_NONE == opts.compGCPollType)
-    {
 #ifdef DEBUG
-        if (verbose)
-        {
-            printf("no guaranteed callsite exits, marking method as fully interruptible\n");
-        }
-#endif
-        SetInterruptible(true);
-    }
-    else
+    if (verbose)
     {
-#ifdef DEBUG
-        if (verbose)
-        {
-            printf("no guaranteed callsite exits, but we are using GC Poll calls\n");
-        }
-#endif
+        printf("no guaranteed callsite exits, marking method as fully interruptible\n");
     }
+#endif
+    SetInterruptible(true);
 }
 
 GenTree* Compiler::fgGetCritSectOfStaticMethod()
@@ -9174,7 +9147,8 @@ void Compiler::fgAddInternal()
 
     if (dbgHandle || pDbgHandle)
     {
-        GenTree* embNode        = gtNewIconEmbHndNode(dbgHandle, pDbgHandle, GTF_ICON_TOKEN_HDL, info.compMethodHnd);
+        // Test the JustMyCode VM global state variable
+        GenTree* embNode        = gtNewIconEmbHndNode(dbgHandle, pDbgHandle, GTF_ICON_GLOBAL_PTR, info.compMethodHnd);
         GenTree* guardCheckVal  = gtNewOperNode(GT_IND, TYP_INT, embNode);
         GenTree* guardCheckCond = gtNewOperNode(GT_EQ, TYP_INT, guardCheckVal, gtNewZeroConNode(TYP_INT));
 
@@ -9832,6 +9806,8 @@ void Compiler::fgSimpleLowering()
         outgoingArgSpaceSize = roundUp(outgoingArgSpaceSize, STACK_ALIGN);
         JITDUMP("Bumping outgoingArgSpaceSize to %u for localloc", outgoingArgSpaceSize);
     }
+
+    assert((outgoingArgSpaceSize % TARGET_POINTER_SIZE) == 0);
 
     // Publish the final value and mark it as read only so any update
     // attempt later will cause an assert.
@@ -10652,7 +10628,7 @@ void Compiler::fgCompactBlocks(BasicBlock* block, BasicBlock* bNext)
             // Propagate RETLESS property
             block->bbFlags |= (bNext->bbFlags & BBF_RETLESS_CALL);
 
-            __fallthrough;
+            FALLTHROUGH;
 
         case BBJ_COND:
         case BBJ_ALWAYS:
@@ -10883,7 +10859,6 @@ void Compiler::fgRemoveConditionalJump(BasicBlock* block)
 
     // Change the BBJ_COND to BBJ_NONE, and adjust the refCount and dupCount.
     block->bbJumpKind = BBJ_NONE;
-    block->bbFlags &= ~BBF_NEEDS_GCPOLL;
     --block->bbNext->bbRefs;
     --flow->flDupCount;
 
@@ -11171,7 +11146,6 @@ void Compiler::fgRemoveBlock(BasicBlock* block, bool unreachable)
             // because that would violate our invariant that BBJ_CALLFINALLY blocks are followed by
             // BBJ_ALWAYS blocks.
             bPrev->bbJumpKind = BBJ_NONE;
-            bPrev->bbFlags &= ~BBF_NEEDS_GCPOLL;
         }
 
         // If this is the first Cold basic block update fgFirstColdBlock
@@ -11414,7 +11388,7 @@ void Compiler::fgRemoveBlock(BasicBlock* block, bool unreachable)
                     }
 
                     /* Fall through for the jump case */
-                    __fallthrough;
+                    FALLTHROUGH;
 
                 case BBJ_CALLFINALLY:
                 case BBJ_ALWAYS:
@@ -11460,7 +11434,6 @@ void Compiler::fgRemoveBlock(BasicBlock* block, bool unreachable)
                     {
                         // It's safe to change the jump type
                         bPrev->bbJumpKind = BBJ_NONE;
-                        bPrev->bbFlags &= ~BBF_NEEDS_GCPOLL;
                     }
                 }
                 break;
@@ -11608,7 +11581,6 @@ BasicBlock* Compiler::fgConnectFallThrough(BasicBlock* bSrc, BasicBlock* bDst)
                 (bSrc->bbJumpDest == bSrc->bbNext))
             {
                 bSrc->bbJumpKind = BBJ_NONE;
-                bSrc->bbFlags &= ~BBF_NEEDS_GCPOLL;
 #ifdef DEBUG
                 if (verbose)
                 {
@@ -14098,7 +14070,7 @@ bool Compiler::fgOptimizeEmptyBlock(BasicBlock* block)
             /* Can fall through since this is similar with removing
              * a BBJ_NONE block, only the successor is different */
 
-            __fallthrough;
+            FALLTHROUGH;
 
         case BBJ_NONE:
 
@@ -14514,9 +14486,9 @@ bool Compiler::fgOptimizeSwitchBranches(BasicBlock* block)
             LIR::ReadOnlyRange range(zeroConstNode, switchTree);
             m_pLowering->LowerRange(block, range);
         }
-        else
+        else if (fgStmtListThreaded)
         {
-            // Re-link the nodes for this statement.
+            gtSetStmtInfo(switchStmt);
             fgSetStmtSeq(switchStmt);
         }
 
@@ -14855,7 +14827,6 @@ bool Compiler::fgOptimizeBranchToNext(BasicBlock* block, BasicBlock* bNext, Basi
                 {
                     /* the unconditional jump is to the next BB  */
                     block->bbJumpKind = BBJ_NONE;
-                    block->bbFlags &= ~BBF_NEEDS_GCPOLL;
 #ifdef DEBUG
                     if (verbose)
                     {
@@ -14973,7 +14944,6 @@ bool Compiler::fgOptimizeBranchToNext(BasicBlock* block, BasicBlock* bNext, Basi
         /* Conditional is gone - simply fall into the next block */
 
         block->bbJumpKind = BBJ_NONE;
-        block->bbFlags &= ~BBF_NEEDS_GCPOLL;
 
         /* Update bbRefs and bbNum - Conditional predecessors to the same
          * block are counted twice so we have to remove one of them */
@@ -15175,6 +15145,12 @@ bool Compiler::fgOptimizeBranch(BasicBlock* bJump)
         if (stmt == nullptr)
         {
             return false;
+        }
+
+        if (fgStmtListThreaded)
+        {
+            gtSetStmtInfo(stmt);
+            fgSetStmtSeq(stmt);
         }
 
         /* Append the expression to our list */
@@ -16667,6 +16643,7 @@ void Compiler::fgDetermineFirstColdBlock()
             {
                 default:
                     noway_assert(!"Unhandled jumpkind in fgDetermineFirstColdBlock()");
+                    break;
 
                 case BBJ_CALLFINALLY:
                     // A BBJ_CALLFINALLY that falls through is always followed
@@ -19212,8 +19189,7 @@ void Compiler::fgSetBlockOrder()
             }
         }
     }
-    // only enable fully interruptible code for if we're hijacking.
-    else if (GCPOLL_NONE == opts.compGCPollType)
+    else
     {
         /* If we don't have the dominators, use an abbreviated test for fully interruptible.  If there are
          * any back edges, check the source and destination blocks to see if they're GC Safe.  If not, then
@@ -19271,11 +19247,6 @@ void Compiler::fgSetBlockOrder()
         }
     }
 
-    if (!fgGCPollsCreated)
-    {
-        fgCreateGCPolls();
-    }
-
     for (BasicBlock* block = fgFirstBB; block; block = block->bbNext)
     {
 
@@ -19283,15 +19254,6 @@ void Compiler::fgSetBlockOrder()
 #ifndef JIT32_GCENCODER
         if (block->endsWithTailCallOrJmp(this, true) && optReachWithoutCall(fgFirstBB, block))
         {
-            // We have a tail call that is reachable without making any other
-            // 'normal' call that would have counted as a GC Poll.  If we were
-            // using polls, all return blocks meeting this criteria would have
-            // already added polls and then marked as being GC safe
-            // (BBF_GC_SAFE_POINT). Thus we can only reach here when *NOT*
-            // using GC polls, but instead relying on the JIT to generate
-            // fully-interruptible code.
-            noway_assert(GCPOLL_NONE == opts.compGCPollType);
-
             // This tail call might combine with other tail calls to form a
             // loop.  Thus we need to either add a poll, or make the method
             // fully interruptible.  I chose the later because that's what
@@ -19841,16 +19803,21 @@ FILE* Compiler::fgOpenFlowGraphFile(bool* wbDontClose, Phases phase, LPCWSTR typ
 
     ONE_FILE_PER_METHOD:;
 
-        escapedString     = fgProcessEscapes(info.compFullName, s_EscapeFileMapping);
-        size_t wCharCount = strlen(escapedString) + wcslen(phaseName) + 1 + strlen("~999") + wcslen(type) + 1;
+        escapedString = fgProcessEscapes(info.compFullName, s_EscapeFileMapping);
+
+        const char* tierName = compGetTieringName(true);
+        size_t      wCharCount =
+            strlen(escapedString) + wcslen(phaseName) + 1 + strlen("~999") + wcslen(type) + strlen(tierName) + 1;
         if (pathname != nullptr)
         {
             wCharCount += wcslen(pathname) + 1;
         }
         filename = (LPCWSTR)alloca(wCharCount * sizeof(WCHAR));
+
         if (pathname != nullptr)
         {
-            swprintf_s((LPWSTR)filename, wCharCount, W("%s\\%S-%s.%s"), pathname, escapedString, phaseName, type);
+            swprintf_s((LPWSTR)filename, wCharCount, W("%s\\%S-%s-%S.%s"), pathname, escapedString, phaseName, tierName,
+                       type);
         }
         else
         {
@@ -19978,8 +19945,7 @@ bool Compiler::fgDumpFlowGraph(Phases phase)
         return false;
     }
     bool        validWeights  = fgHaveValidEdgeWeights;
-    unsigned    calledCount   = max(fgCalledCount, BB_UNITY_WEIGHT) / BB_UNITY_WEIGHT;
-    double      weightDivisor = (double)(calledCount * BB_UNITY_WEIGHT);
+    double      weightDivisor = (double)fgCalledCount;
     const char* escapedString;
     const char* regionString = "NONE";
 
@@ -19998,8 +19964,9 @@ bool Compiler::fgDumpFlowGraph(Phases phase)
 
     if (createDotFile)
     {
-        fprintf(fgxFile, "digraph %s\n{\n", info.compMethodName);
-        fprintf(fgxFile, "/* Method %d, after phase %s */", Compiler::jitTotalMethodCompiled, PhaseNames[phase]);
+        fprintf(fgxFile, "digraph FlowGraph {\n");
+        fprintf(fgxFile, "    graph [label = \"%s\\nafter\\n%s\"];\n", info.compMethodName, PhaseNames[phase]);
+        fprintf(fgxFile, "    node [shape = \"Box\"];\n");
     }
     else
     {
@@ -20020,7 +19987,7 @@ bool Compiler::fgDumpFlowGraph(Phases phase)
 
         if (fgHaveProfileData())
         {
-            fprintf(fgxFile, "\n    calledCount=\"%d\"", calledCount);
+            fprintf(fgxFile, "\n    calledCount=\"%d\"", fgCalledCount);
             fprintf(fgxFile, "\n    profileData=\"true\"");
         }
         if (compHndBBtabCount > 0)
@@ -20060,24 +20027,37 @@ bool Compiler::fgDumpFlowGraph(Phases phase)
     {
         if (createDotFile)
         {
-            // Add constraint edges to try to keep nodes ordered.
-            // It seems to work best if these edges are all created first.
-            switch (block->bbJumpKind)
+            fprintf(fgxFile, "    BB%02u [label = \"BB%02u\\n\\n", block->bbNum, block->bbNum);
+
+            // "Raw" Profile weight
+            if (block->hasProfileWeight())
             {
-                case BBJ_COND:
-                case BBJ_NONE:
-                    assert(block->bbNext != nullptr);
-                    fprintf(fgxFile, "    " FMT_BB " -> " FMT_BB "\n", block->bbNum, block->bbNext->bbNum);
-                    break;
-                default:
-                    // These may or may not have an edge to the next block.
-                    // Add a transparent edge to keep nodes ordered.
-                    if (block->bbNext != nullptr)
-                    {
-                        fprintf(fgxFile, "    " FMT_BB " -> " FMT_BB " [arrowtail=none,color=transparent]\n",
-                                block->bbNum, block->bbNext->bbNum);
-                    }
+                fprintf(fgxFile, "%7.2f", ((double)block->getBBWeight(this)) / BB_UNITY_WEIGHT);
             }
+
+            // end of block label
+            fprintf(fgxFile, "\"");
+
+            // other node attributes
+            //
+            if (block == fgFirstBB)
+            {
+                fprintf(fgxFile, ", shape = \"house\"");
+            }
+            else if (block->bbJumpKind == BBJ_RETURN)
+            {
+                fprintf(fgxFile, ", shape = \"invhouse\"");
+            }
+            else if (block->bbJumpKind == BBJ_THROW)
+            {
+                fprintf(fgxFile, ", shape = \"trapezium\"");
+            }
+            else if (block->bbFlags & BBF_INTERNAL)
+            {
+                fprintf(fgxFile, ", shape = \"note\"");
+            }
+
+            fprintf(fgxFile, "];\n");
         }
         else
         {
@@ -20124,104 +20104,168 @@ bool Compiler::fgDumpFlowGraph(Phases phase)
         fprintf(fgxFile, ">");
     }
 
-    unsigned    edgeNum = 1;
-    BasicBlock* bTarget;
-    for (bTarget = fgFirstBB; bTarget != nullptr; bTarget = bTarget->bbNext)
+    if (fgComputePredsDone)
     {
-        double targetWeightDivisor;
-        if (bTarget->bbWeight == BB_ZERO_WEIGHT)
+        unsigned    edgeNum = 1;
+        BasicBlock* bTarget;
+        for (bTarget = fgFirstBB; bTarget != nullptr; bTarget = bTarget->bbNext)
         {
-            targetWeightDivisor = 1.0;
-        }
-        else
-        {
-            targetWeightDivisor = (double)bTarget->bbWeight;
-        }
-
-        flowList* edge;
-        for (edge = bTarget->bbPreds; edge != nullptr; edge = edge->flNext, edgeNum++)
-        {
-            BasicBlock* bSource = edge->flBlock;
-            double      sourceWeightDivisor;
-            if (bSource->bbWeight == BB_ZERO_WEIGHT)
+            double targetWeightDivisor;
+            if (bTarget->bbWeight == BB_ZERO_WEIGHT)
             {
-                sourceWeightDivisor = 1.0;
+                targetWeightDivisor = 1.0;
             }
             else
             {
-                sourceWeightDivisor = (double)bSource->bbWeight;
+                targetWeightDivisor = (double)bTarget->bbWeight;
             }
-            if (createDotFile)
+
+            flowList* edge;
+            for (edge = bTarget->bbPreds; edge != nullptr; edge = edge->flNext, edgeNum++)
             {
-                // Don't duplicate the edges we added above.
-                if ((bSource->bbNum == (bTarget->bbNum - 1)) &&
-                    ((bSource->bbJumpKind == BBJ_NONE) || (bSource->bbJumpKind == BBJ_COND)))
+                BasicBlock* bSource = edge->flBlock;
+                double      sourceWeightDivisor;
+                if (bSource->bbWeight == BB_ZERO_WEIGHT)
                 {
-                    continue;
-                }
-                fprintf(fgxFile, "    " FMT_BB " -> " FMT_BB, bSource->bbNum, bTarget->bbNum);
-                if ((bSource->bbNum > bTarget->bbNum))
-                {
-                    fprintf(fgxFile, "[arrowhead=normal,arrowtail=none,color=green]\n");
+                    sourceWeightDivisor = 1.0;
                 }
                 else
                 {
-                    fprintf(fgxFile, "\n");
+                    sourceWeightDivisor = (double)bSource->bbWeight;
                 }
-            }
-            else
-            {
-                fprintf(fgxFile, "\n        <edge");
-                fprintf(fgxFile, "\n            id=\"%d\"", edgeNum);
-                fprintf(fgxFile, "\n            source=\"%d\"", bSource->bbNum);
-                fprintf(fgxFile, "\n            target=\"%d\"", bTarget->bbNum);
-                if (bSource->bbJumpKind == BBJ_SWITCH)
+                if (createDotFile)
                 {
-                    if (edge->flDupCount >= 2)
-                    {
-                        fprintf(fgxFile, "\n            switchCases=\"%d\"", edge->flDupCount);
-                    }
-                    if (bSource->bbJumpSwt->getDefault() == bTarget)
-                    {
-                        fprintf(fgxFile, "\n            switchDefault=\"true\"");
-                    }
-                }
-                if (validWeights)
-                {
-                    unsigned edgeWeight = (edge->edgeWeightMin() + edge->edgeWeightMax()) / 2;
-                    fprintf(fgxFile, "\n            weight=");
-                    fprintfDouble(fgxFile, ((double)edgeWeight) / weightDivisor);
+                    fprintf(fgxFile, "    " FMT_BB " -> " FMT_BB, bSource->bbNum, bTarget->bbNum);
 
-                    if (edge->edgeWeightMin() != edge->edgeWeightMax())
+                    const char* sep = "";
+
+                    if (bSource->bbNum > bTarget->bbNum)
                     {
-                        fprintf(fgxFile, "\n            minWeight=");
-                        fprintfDouble(fgxFile, ((double)edge->edgeWeightMin()) / weightDivisor);
-                        fprintf(fgxFile, "\n            maxWeight=");
-                        fprintfDouble(fgxFile, ((double)edge->edgeWeightMax()) / weightDivisor);
+                        // Lexical backedge
+                        fprintf(fgxFile, " [color=green");
+                        sep = ", ";
+                    }
+                    else if ((bSource->bbNum + 1) == bTarget->bbNum)
+                    {
+                        // Lexical successor
+                        fprintf(fgxFile, " [color=blue, weight=20");
+                        sep = ", ";
+                    }
+                    else
+                    {
+                        fprintf(fgxFile, " [");
                     }
 
-                    if (edgeWeight > 0)
+                    if (validWeights)
                     {
-                        if (edgeWeight < bSource->bbWeight)
+                        unsigned edgeWeight = (edge->edgeWeightMin() + edge->edgeWeightMax()) / 2;
+                        fprintf(fgxFile, "%slabel=\"%7.2f\"", sep, (double)edgeWeight / weightDivisor);
+                    }
+
+                    fprintf(fgxFile, "];\n");
+                }
+                else
+                {
+                    fprintf(fgxFile, "\n        <edge");
+                    fprintf(fgxFile, "\n            id=\"%d\"", edgeNum);
+                    fprintf(fgxFile, "\n            source=\"%d\"", bSource->bbNum);
+                    fprintf(fgxFile, "\n            target=\"%d\"", bTarget->bbNum);
+                    if (bSource->bbJumpKind == BBJ_SWITCH)
+                    {
+                        if (edge->flDupCount >= 2)
                         {
-                            fprintf(fgxFile, "\n            out=");
-                            fprintfDouble(fgxFile, ((double)edgeWeight) / sourceWeightDivisor);
+                            fprintf(fgxFile, "\n            switchCases=\"%d\"", edge->flDupCount);
                         }
-                        if (edgeWeight < bTarget->bbWeight)
+                        if (bSource->bbJumpSwt->getDefault() == bTarget)
                         {
-                            fprintf(fgxFile, "\n            in=");
-                            fprintfDouble(fgxFile, ((double)edgeWeight) / targetWeightDivisor);
+                            fprintf(fgxFile, "\n            switchDefault=\"true\"");
+                        }
+                    }
+                    if (validWeights)
+                    {
+                        unsigned edgeWeight = (edge->edgeWeightMin() + edge->edgeWeightMax()) / 2;
+                        fprintf(fgxFile, "\n            weight=");
+                        fprintfDouble(fgxFile, ((double)edgeWeight) / weightDivisor);
+
+                        if (edge->edgeWeightMin() != edge->edgeWeightMax())
+                        {
+                            fprintf(fgxFile, "\n            minWeight=");
+                            fprintfDouble(fgxFile, ((double)edge->edgeWeightMin()) / weightDivisor);
+                            fprintf(fgxFile, "\n            maxWeight=");
+                            fprintfDouble(fgxFile, ((double)edge->edgeWeightMax()) / weightDivisor);
+                        }
+
+                        if (edgeWeight > 0)
+                        {
+                            if (edgeWeight < bSource->bbWeight)
+                            {
+                                fprintf(fgxFile, "\n            out=");
+                                fprintfDouble(fgxFile, ((double)edgeWeight) / sourceWeightDivisor);
+                            }
+                            if (edgeWeight < bTarget->bbWeight)
+                            {
+                                fprintf(fgxFile, "\n            in=");
+                                fprintfDouble(fgxFile, ((double)edgeWeight) / targetWeightDivisor);
+                            }
                         }
                     }
                 }
-            }
-            if (!createDotFile)
-            {
-                fprintf(fgxFile, ">");
-                fprintf(fgxFile, "\n        </edge>");
+                if (!createDotFile)
+                {
+                    fprintf(fgxFile, ">");
+                    fprintf(fgxFile, "\n        </edge>");
+                }
             }
         }
     }
+
+    // For dot, show edges w/o pred lists, and add invisible bbNext links.
+    //
+    if (createDotFile)
+    {
+        for (BasicBlock* bSource = fgFirstBB; bSource != nullptr; bSource = bSource->bbNext)
+        {
+            // Invisible edge for bbNext chain
+            //
+            if (bSource->bbNext != nullptr)
+            {
+                fprintf(fgxFile, "    " FMT_BB " -> " FMT_BB " [style=\"invis\", weight=25];\n", bSource->bbNum,
+                        bSource->bbNext->bbNum);
+            }
+
+            if (fgComputePredsDone)
+            {
+                // Already emitted pred edges above.
+                //
+                continue;
+            }
+
+            // Emit successor edges
+            //
+            const unsigned numSuccs = bSource->NumSucc();
+
+            for (unsigned i = 0; i < numSuccs; i++)
+            {
+                BasicBlock* const bTarget = bSource->GetSucc(i);
+                fprintf(fgxFile, "    " FMT_BB " -> " FMT_BB, bSource->bbNum, bTarget->bbNum);
+                if (bSource->bbNum > bTarget->bbNum)
+                {
+                    // Lexical backedge
+                    fprintf(fgxFile, " [color=green]\n");
+                }
+                else if ((bSource->bbNum + 1) == bTarget->bbNum)
+                {
+                    // Lexical successor
+                    fprintf(fgxFile, " [color=blue]\n");
+                }
+                else
+                {
+                    fprintf(fgxFile, ";\n");
+                }
+            }
+        }
+    }
+
     if (createDotFile)
     {
         fprintf(fgxFile, "}\n");
@@ -21224,11 +21268,6 @@ void Compiler::fgDebugCheckBBlist(bool checkBBNum /* = false */, bool checkBBRef
             assert(block->lastNode()->gtNext == nullptr &&
                    (block->lastNode()->gtOper == GT_SWITCH || block->lastNode()->gtOper == GT_SWITCH_TABLE));
         }
-        else if (!(block->bbJumpKind == BBJ_ALWAYS || block->bbJumpKind == BBJ_RETURN))
-        {
-            // this block cannot have a poll
-            assert(!(block->bbFlags & BBF_NEEDS_GCPOLL));
-        }
 
         if (block->bbCatchTyp == BBCT_FILTER)
         {
@@ -21411,6 +21450,10 @@ void Compiler::fgDebugCheckFlags(GenTree* tree)
                 chkFlags |= GTF_GLOB_REF | GTF_ASG;
                 break;
 
+            case GT_LCL_VAR:
+                assert((tree->gtFlags & GTF_VAR_FOLDED_IND) == 0);
+                break;
+
             default:
                 break;
         }
@@ -21491,6 +21534,79 @@ void Compiler::fgDebugCheckFlags(GenTree* tree)
                 break;
             case GT_ADDR:
                 assert(!op1->CanCSE());
+                break;
+
+            case GT_IND:
+                // Do we have a constant integer address as op1?
+                //
+                if (op1->OperGet() == GT_CNS_INT)
+                {
+                    // Is this constant a handle of some kind?
+                    //
+                    unsigned handleKind = (op1->gtFlags & GTF_ICON_HDL_MASK);
+                    if (handleKind != 0)
+                    {
+                        // Is the GTF_IND_INVARIANT flag set or unset?
+                        //
+                        bool invariantFlag = (tree->gtFlags & GTF_IND_INVARIANT) != 0;
+                        if (invariantFlag)
+                        {
+                            // Record the state of the GTF_IND_INVARIANT flags into 'chkFlags'
+                            chkFlags |= GTF_IND_INVARIANT;
+                        }
+
+                        // Is the GTF_IND_NONFAULTING flag set or unset?
+                        //
+                        bool nonFaultingFlag = (tree->gtFlags & GTF_IND_NONFAULTING) != 0;
+                        if (nonFaultingFlag)
+                        {
+                            // Record the state of the GTF_IND_NONFAULTING flags into 'chkFlags'
+                            chkFlags |= GTF_IND_NONFAULTING;
+                        }
+                        assert(nonFaultingFlag); // Currently this should always be set for all handle kinds
+
+                        // Some of these aren't handles to invariant data...
+                        //
+                        if ((handleKind == GTF_ICON_STATIC_HDL) || // Pointer to a mutable class Static variable
+                            (handleKind == GTF_ICON_BBC_PTR) ||    // Pointer to a mutable basic block count value
+                            (handleKind == GTF_ICON_GLOBAL_PTR))   // Pointer to mutable data from the VM state
+
+                        {
+                            // We expect the Invariant flag to be unset for this handleKind
+                            // If it is set then we will assert with "unexpected GTF_IND_INVARIANT flag set ...
+                            //
+                            if (handleKind == GTF_ICON_STATIC_HDL)
+                            {
+                                // We expect the GTF_GLOB_REF flag to be set for this handleKind
+                                // If it is not set then we will assert with "Missing flags on tree"
+                                //
+                                treeFlags |= GTF_GLOB_REF;
+                            }
+                        }
+                        else // All the other handle indirections are considered invariant
+                        {
+                            // We expect the Invariant flag to be set for this handleKind
+                            // If it is not set then we will assert with "Missing flags on tree"
+                            //
+                            treeFlags |= GTF_IND_INVARIANT;
+                        }
+
+                        // We currently expect all handle kinds to be nonFaulting
+                        //
+                        treeFlags |= GTF_IND_NONFAULTING;
+
+                        // Matrix for GTF_IND_INVARIANT (treeFlags and chkFlags)
+                        //
+                        //                    chkFlags INVARIANT value
+                        //                       0                 1
+                        //                 +--------------+----------------+
+                        //  treeFlags   0  |    OK        |  Missing Flag  |
+                        //  INVARIANT      +--------------+----------------+
+                        //  value:      1  |  Extra Flag  |       OK       |
+                        //                 +--------------+----------------+
+                    }
+                }
+                break;
 
             default:
                 break;
@@ -21741,6 +21857,27 @@ void Compiler::fgDebugCheckFlags(GenTree* tree)
 }
 
 //------------------------------------------------------------------------------
+// fgDebugCheckDispFlags:
+//    Wrapper function that displays two GTF_IND_ flags
+//      and then calls ftDispFlags to display the rest.
+//
+// Arguments:
+//    tree       - Tree whose flags are being checked
+//    dispFlags  - the first argument for gtDispFlags
+//                 ands hold GTF_IND_INVARIANT and GTF_IND_NONFLUALTING
+//    debugFlags - the second argument to gtDispFlags
+//
+void Compiler::fgDebugCheckDispFlags(GenTree* tree, unsigned dispFlags, unsigned debugFlags)
+{
+    if (tree->OperGet() == GT_IND)
+    {
+        printf("%c", (dispFlags & GTF_IND_INVARIANT) ? '#' : '-');
+        printf("%c", (dispFlags & GTF_IND_NONFAULTING) ? 'n' : '-');
+    }
+    GenTree::gtDispFlags(dispFlags, debugFlags);
+}
+
+//------------------------------------------------------------------------------
 // fgDebugCheckFlagsHelper : Check if all bits that are set in chkFlags are also set in treeFlags.
 //
 //
@@ -21758,7 +21895,7 @@ void Compiler::fgDebugCheckFlagsHelper(GenTree* tree, unsigned treeFlags, unsign
     {
         // Print the tree so we can see it in the log.
         printf("Missing flags on tree [%06d]: ", dspTreeID(tree));
-        GenTree::gtDispFlags(chkFlags & ~treeFlags, GTF_DEBUG_NONE);
+        Compiler::fgDebugCheckDispFlags(tree, chkFlags & ~treeFlags, GTF_DEBUG_NONE);
         printf("\n");
         gtDispTree(tree);
 
@@ -21766,26 +21903,29 @@ void Compiler::fgDebugCheckFlagsHelper(GenTree* tree, unsigned treeFlags, unsign
 
         // Print the tree again so we can see it right after we hook up the debugger.
         printf("Missing flags on tree [%06d]: ", dspTreeID(tree));
-        GenTree::gtDispFlags(chkFlags & ~treeFlags, GTF_DEBUG_NONE);
+        Compiler::fgDebugCheckDispFlags(tree, chkFlags & ~treeFlags, GTF_DEBUG_NONE);
         printf("\n");
         gtDispTree(tree);
     }
     else if (treeFlags & ~chkFlags)
     {
-        // TODO: We are currently only checking extra GTF_EXCEPT, GTF_ASG, and GTF_CALL flags.
-        if ((treeFlags & ~chkFlags & ~GTF_GLOB_REF & ~GTF_ORDER_SIDEEFF) != 0)
+        // We can't/don't consider these flags (GTF_GLOB_REF or GTF_ORDER_SIDEEFF) as being "extra" flags
+        //
+        unsigned flagsToCheck = ~GTF_GLOB_REF & ~GTF_ORDER_SIDEEFF;
+
+        if ((treeFlags & ~chkFlags & flagsToCheck) != 0)
         {
             // Print the tree so we can see it in the log.
-            printf("Extra flags on parent tree [%X]: ", tree);
-            GenTree::gtDispFlags(treeFlags & ~chkFlags, GTF_DEBUG_NONE);
+            printf("Extra flags on tree [%06d]: ", dspTreeID(tree));
+            Compiler::fgDebugCheckDispFlags(tree, treeFlags & ~chkFlags, GTF_DEBUG_NONE);
             printf("\n");
             gtDispTree(tree);
 
             noway_assert(!"Extra flags on tree");
 
             // Print the tree again so we can see it right after we hook up the debugger.
-            printf("Extra flags on parent tree [%X]: ", tree);
-            GenTree::gtDispFlags(treeFlags & ~chkFlags, GTF_DEBUG_NONE);
+            printf("Extra flags on tree [%06d]: ", dspTreeID(tree));
+            Compiler::fgDebugCheckDispFlags(tree, treeFlags & ~chkFlags, GTF_DEBUG_NONE);
             printf("\n");
             gtDispTree(tree);
         }
@@ -23013,6 +23153,8 @@ void Compiler::fgInvokeInlineeCompiler(GenTreeCall* call, InlineResult* inlineRe
     inlineInfo.retExprClassHnd        = nullptr;
     inlineInfo.retExprClassHndIsExact = false;
     inlineInfo.inlineResult           = inlineResult;
+    inlineInfo.profileScaleState      = InlineInfo::ProfileScaleState::UNDETERMINED;
+    inlineInfo.profileScaleFactor     = 0.0;
 #ifdef FEATURE_SIMD
     inlineInfo.hasSIMDTypeArgLocalOrReturn = false;
 #endif // FEATURE_SIMD
@@ -23086,7 +23228,6 @@ void Compiler::fgInvokeInlineeCompiler(GenTreeCall* call, InlineResult* inlineRe
 
                 // The following flags are lost when inlining.
                 // (This is checked in Compiler::compInitOptions().)
-                compileFlagsForInlinee.Clear(JitFlags::JIT_FLAG_BBOPT);
                 compileFlagsForInlinee.Clear(JitFlags::JIT_FLAG_BBINSTR);
                 compileFlagsForInlinee.Clear(JitFlags::JIT_FLAG_PROF_ENTERLEAVE);
                 compileFlagsForInlinee.Clear(JitFlags::JIT_FLAG_DEBUG_EnC);
@@ -23292,7 +23433,9 @@ void Compiler::fgInsertInlineeBlocks(InlineInfo* pInlineInfo)
             const unsigned __int64 inlineeBlockFlags = InlineeCompiler->fgFirstBB->bbFlags;
             noway_assert((inlineeBlockFlags & BBF_HAS_JMP) == 0);
             noway_assert((inlineeBlockFlags & BBF_KEEP_BBJ_ALWAYS) == 0);
-            iciBlock->bbFlags |= inlineeBlockFlags;
+
+            // Todo: we may want to exclude other flags here.
+            iciBlock->bbFlags |= (inlineeBlockFlags & ~BBF_RUN_RARELY);
 
 #ifdef DEBUG
             if (verbose)
@@ -23451,6 +23594,13 @@ void Compiler::fgInsertInlineeBlocks(InlineInfo* pInlineInfo)
                 block->bbJumpKind = BBJ_NONE;
             }
         }
+
+        // Update profile weight for callee blocks, if we didn't do it already.
+        if (pInlineInfo->profileScaleState == InlineInfo::ProfileScaleState::KNOWN)
+        {
+            continue;
+        }
+
         if (inheritWeight)
         {
             block->inheritWeight(iciBlock);
@@ -23625,10 +23775,13 @@ Statement* Compiler::fgInlinePrependStatements(InlineInfo* inlineInfo)
     if (call->gtFlags & GTF_CALL_NULLCHECK && !inlineInfo->thisDereferencedFirst)
     {
         // Call impInlineFetchArg to "reserve" a temp for the "this" pointer.
-        nullcheck = gtNewNullCheck(impInlineFetchArg(0, inlArgInfo, lclVarInfo), block);
-
-        // The NULL-check statement will be inserted to the statement list after those statements
-        // that assign arguments to temps and before the actual body of the inlinee method.
+        GenTree* thisOp = impInlineFetchArg(0, inlArgInfo, lclVarInfo);
+        if (fgAddrCouldBeNull(thisOp))
+        {
+            nullcheck = gtNewNullCheck(thisOp, block);
+            // The NULL-check statement will be inserted to the statement list after those statements
+            // that assign arguments to temps and before the actual body of the inlinee method.
+        }
     }
 
     /* Treat arguments that had to be assigned to temps */
@@ -24684,7 +24837,7 @@ PhaseStatus Compiler::fgRemoveEmptyTry()
                 GenTree* expr = stmt->GetRootNode();
                 if (expr->gtOper == GT_END_LFIN)
                 {
-                    const unsigned nestLevel = expr->AsVal()->gtVal1;
+                    const size_t nestLevel = expr->AsVal()->gtVal1;
                     assert(nestLevel > 0);
                     expr->AsVal()->gtVal1 = nestLevel - 1;
                 }
@@ -25288,6 +25441,7 @@ PhaseStatus Compiler::fgCloneFinally()
     if (cloneCount > 0)
     {
         JITDUMP("fgCloneFinally() cloned %u finally handlers\n", cloneCount);
+        fgOptimizedFinally = true;
 
 #ifdef DEBUG
         if (verbose)
@@ -25809,7 +25963,7 @@ PhaseStatus Compiler::fgMergeFinallyChains()
         {
             JITDUMP("Method had mergeable try-finallys and some callfinally merges were performed.\n");
 
-#if DEBUG
+#ifdef DEBUG
             if (verbose)
             {
                 printf("\n*************** After fgMergeFinallyChains()\n");
@@ -26346,3 +26500,247 @@ void Compiler::fgTailMergeThrowsJumpToHelper(BasicBlock* predBlock,
     // Note there is now a jump to the canonical block
     canonicalBlock->bbFlags |= (BBF_JMP_TARGET | BBF_HAS_LABEL);
 }
+
+#ifdef DEBUG
+
+//------------------------------------------------------------------------
+// fgDebugCheckProfileData: verify profile data is self-consistent
+//   (or nearly so)
+//
+// Notes:
+//   For each profiled block, check that the flow of counts into
+//   the block matches the flow of counts out of the block.
+//
+//   We ignore EH flow as we don't have explicit edges and generally
+//   we expect EH edge counts to be small, so errors from ignoring
+//   them should be rare.
+//
+void Compiler::fgDebugCheckProfileData()
+{
+    // We can't check before we have pred lists built.
+    //
+    assert(fgComputePredsDone);
+
+    JITDUMP("Checking Profile Data\n");
+    unsigned             problemBlocks    = 0;
+    unsigned             unprofiledBlocks = 0;
+    unsigned             profiledBlocks   = 0;
+    bool                 entryProfiled    = false;
+    bool                 exitProfiled     = false;
+    BasicBlock::weight_t entryWeight      = 0;
+    BasicBlock::weight_t exitWeight       = 0;
+
+    // Verify each profiled block.
+    //
+    for (BasicBlock* block = fgFirstBB; block != nullptr; block = block->bbNext)
+    {
+        if (!block->hasProfileWeight())
+        {
+            unprofiledBlocks++;
+            continue;
+        }
+
+        // There is some profile data to check.
+        //
+        profiledBlocks++;
+
+        // Currently using raw counts. Consider using normalized counts instead?
+        //
+        BasicBlock::weight_t blockWeight = block->bbWeight;
+
+        bool verifyIncoming = true;
+        bool verifyOutgoing = true;
+
+        // First, look for blocks that require special treatment.
+
+        // Entry blocks
+        //
+        if (block == fgFirstBB)
+        {
+            entryWeight += blockWeight;
+            entryProfiled  = true;
+            verifyIncoming = false;
+        }
+
+        // Exit blocks
+        //
+        if ((block->bbJumpKind == BBJ_RETURN) || (block->bbJumpKind == BBJ_THROW))
+        {
+            exitWeight += blockWeight;
+            exitProfiled   = true;
+            verifyOutgoing = false;
+        }
+
+        // Handler entries
+        //
+        if (block->hasEHBoundaryIn())
+        {
+            verifyIncoming = false;
+        }
+
+        // Handler exits
+        //
+        if (block->hasEHBoundaryOut())
+        {
+            verifyOutgoing = false;
+        }
+
+        // We generally expect that the incoming flow, block weight and outgoing
+        // flow should all match.
+        //
+        // But we have two edge counts... so for now we simply check if the block
+        // count falls within the [min,max] range.
+        //
+        if (verifyIncoming)
+        {
+            BasicBlock::weight_t incomingWeightMin = 0;
+            BasicBlock::weight_t incomingWeightMax = 0;
+            bool                 foundPreds        = false;
+
+            for (flowList* predEdge = block->bbPreds; predEdge != nullptr; predEdge = predEdge->flNext)
+            {
+                incomingWeightMin += predEdge->edgeWeightMin();
+                incomingWeightMax += predEdge->edgeWeightMax();
+                foundPreds = true;
+            }
+
+            if (!foundPreds)
+            {
+                // Might need to tone this down as we could see unreachable blocks?
+                problemBlocks++;
+                JITDUMP("  " FMT_BB " - expected to see predecessors\n", block->bbNum);
+            }
+            else
+            {
+                if (incomingWeightMin > incomingWeightMax)
+                {
+                    problemBlocks++;
+                    JITDUMP("  " FMT_BB " - incoming min %d > incoming max %d\n", block->bbNum, incomingWeightMin,
+                            incomingWeightMax);
+                }
+                else if (blockWeight < incomingWeightMin)
+                {
+                    problemBlocks++;
+                    JITDUMP("  " FMT_BB " - block weight %d < incoming min %d\n", block->bbNum, blockWeight,
+                            incomingWeightMin);
+                }
+                else if (blockWeight > incomingWeightMax)
+                {
+                    problemBlocks++;
+                    JITDUMP("  " FMT_BB " - block weight %d > incoming max %d\n", block->bbNum, blockWeight,
+                            incomingWeightMax);
+                }
+            }
+        }
+
+        if (verifyOutgoing)
+        {
+            const unsigned numSuccs = block->NumSucc();
+
+            if (numSuccs == 0)
+            {
+                problemBlocks++;
+                JITDUMP("  " FMT_BB " - expected to see successors\n", block->bbNum);
+            }
+            else
+            {
+                BasicBlock::weight_t outgoingWeightMin = 0;
+                BasicBlock::weight_t outgoingWeightMax = 0;
+
+                // Walking successor edges is a bit wonky. Seems like it should be easier.
+                // Note this can also fail to enumerate all the edges, if we have a multigraph
+                //
+                int missingEdges = 0;
+
+                for (unsigned i = 0; i < numSuccs; i++)
+                {
+                    BasicBlock* succBlock = block->GetSucc(i);
+                    flowList*   succEdge  = nullptr;
+
+                    for (flowList* edge = succBlock->bbPreds; edge != nullptr; edge = edge->flNext)
+                    {
+                        if (edge->flBlock == block)
+                        {
+                            succEdge = edge;
+                            break;
+                        }
+                    }
+
+                    if (succEdge == nullptr)
+                    {
+                        missingEdges++;
+                        JITDUMP("  " FMT_BB " can't find successor edge to " FMT_BB "\n", block->bbNum,
+                                succBlock->bbNum);
+                    }
+                    else
+                    {
+                        outgoingWeightMin += succEdge->edgeWeightMin();
+                        outgoingWeightMax += succEdge->edgeWeightMax();
+                    }
+                }
+
+                if (missingEdges > 0)
+                {
+                    JITDUMP("  " FMT_BB " - missing %d successor edges\n", block->bbNum, missingEdges);
+                    problemBlocks++;
+                }
+                if (outgoingWeightMin > outgoingWeightMax)
+                {
+                    problemBlocks++;
+                    JITDUMP("  " FMT_BB " - outgoing min %d > outgoing max %d\n", block->bbNum, outgoingWeightMin,
+                            outgoingWeightMax);
+                }
+                else if (blockWeight < outgoingWeightMin)
+                {
+                    problemBlocks++;
+                    JITDUMP("  " FMT_BB " - block weight %d < outgoing min %d\n", block->bbNum, blockWeight,
+                            outgoingWeightMin);
+                }
+                else if (blockWeight > outgoingWeightMax)
+                {
+                    problemBlocks++;
+                    JITDUMP("  " FMT_BB " - block weight %d > outgoing max %d\n", block->bbNum, blockWeight,
+                            outgoingWeightMax);
+                }
+            }
+        }
+    }
+
+    // Verify overall input-output balance.
+    //
+    if (entryProfiled && exitProfiled)
+    {
+        if (entryWeight != exitWeight)
+        {
+            problemBlocks++;
+            JITDUMP("  Entry %d exit %d mismatch\n", entryWeight, exitWeight);
+        }
+    }
+
+    // Sum up what we discovered.
+    //
+    if (problemBlocks == 0)
+    {
+        if (profiledBlocks == 0)
+        {
+            JITDUMP("No blocks were profiled, so nothing to check\n");
+        }
+        else
+        {
+            JITDUMP("Profile is self-consistent (%d profiled blocks, %d unprofiled)\n", profiledBlocks,
+                    unprofiledBlocks);
+        }
+    }
+    else
+    {
+        JITDUMP("Profile is NOT self-consistent, found %d problems (%d profiled blocks, %d unprofiled)\n",
+                problemBlocks, profiledBlocks, unprofiledBlocks);
+
+        if (JitConfig.JitProfileChecks() == 2)
+        {
+            assert(!"Inconsistent profile");
+        }
+    }
+}
+
+#endif // DEBUG

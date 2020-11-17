@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 // Inlining Support
 //
@@ -28,7 +27,7 @@
 //
 // Enums are used throughout to provide various descriptions.
 //
-// There are 4 sitations where inline candidacy is evaluated.  In each
+// There are 4 situations where inline candidacy is evaluated.  In each
 // case an InlineResult is allocated on the stack to collect
 // information about the inline candidate.  Each InlineResult refers
 // to an InlinePolicy.
@@ -226,7 +225,8 @@ public:
     virtual void NoteSuccess() = 0;
     virtual void NoteBool(InlineObservation obs, bool value) = 0;
     virtual void NoteFatal(InlineObservation obs) = 0;
-    virtual void NoteInt(InlineObservation obs, int value) = 0;
+    virtual void NoteInt(InlineObservation obs, int value)       = 0;
+    virtual void NoteDouble(InlineObservation obs, double value) = 0;
 
     // Optional observations. Most policies ignore these.
     virtual void NoteContext(InlineContext* context)
@@ -240,6 +240,7 @@ public:
 
     // Policy determinations
     virtual void DetermineProfitability(CORINFO_METHOD_INFO* methodInfo) = 0;
+    virtual bool BudgetCheck() const                                     = 0;
 
     // Policy policies
     virtual bool PropagateNeverToRuntime() const = 0;
@@ -394,6 +395,12 @@ public:
     void NoteInt(InlineObservation obs, int value)
     {
         m_Policy->NoteInt(obs, value);
+    }
+
+    // Make an observation with a double value
+    void NoteDouble(InlineObservation obs, double value)
+    {
+        m_Policy->NoteDouble(obs, value);
     }
 
 #if defined(DEBUG) || defined(INLINE_DATA)
@@ -615,6 +622,17 @@ struct InlineInfo
     GenTreeCall* iciCall;  // The GT_CALL node to be inlined.
     Statement*   iciStmt;  // The statement iciCall is in.
     BasicBlock*  iciBlock; // The basic block iciStmt is in.
+
+    // Profile support
+    enum class ProfileScaleState
+    {
+        UNDETERMINED,
+        KNOWN,
+        UNAVAILABLE
+    };
+
+    ProfileScaleState profileScaleState;
+    double            profileScaleFactor;
 };
 
 // InlineContext tracks the inline history in a method.

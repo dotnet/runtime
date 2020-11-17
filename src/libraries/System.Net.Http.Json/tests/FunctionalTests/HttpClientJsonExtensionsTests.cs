@@ -1,6 +1,5 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Threading.Tasks;
 using Xunit;
@@ -14,17 +13,10 @@ namespace System.Net.Http.Json.Functional.Tests
 {
     public class HttpClientJsonExtensionsTests
     {
-        private static readonly JsonSerializerOptions s_defaultSerializerOptions
-            = new JsonSerializerOptions
-            {
-                PropertyNameCaseInsensitive = true,
-                PropertyNamingPolicy = JsonNamingPolicy.CamelCase
-            };
-
-        [Fact]
-        public async Task TestGetFromJsonAsync()
+        [Theory]
+        [MemberData(nameof(ReadFromJsonTestData))]
+        public async Task TestGetFromJsonAsync(string json)
         {
-            const string json = @"{""Name"":""David"",""Age"":24}";
             HttpHeaderData header = new HttpHeaderData("Content-Type", "application/json");
             List<HttpHeaderData> headers = new List<HttpHeaderData> { header };
 
@@ -47,6 +39,13 @@ namespace System.Net.Http.Json.Functional.Tests
                     }
                 },
                 server => server.HandleRequestAsync(content: json, headers: headers));
+        }
+
+        public static IEnumerable<object[]> ReadFromJsonTestData()
+        {
+            Person per = Person.Create();
+            yield return new object[] { per.Serialize() };
+            yield return new object[] { per.SerializeWithNumbersAsStrings() };
         }
 
         [Fact]
@@ -90,7 +89,7 @@ namespace System.Net.Http.Json.Functional.Tests
                 async server => {
                     HttpRequestData request = await server.HandleRequestAsync();
                     ValidateRequest(request);
-                    Person per = JsonSerializer.Deserialize<Person>(request.Body, s_defaultSerializerOptions);
+                    Person per = JsonSerializer.Deserialize<Person>(request.Body, JsonOptions.DefaultSerializerOptions);
                     per.Validate();
                 });
         }
@@ -122,7 +121,14 @@ namespace System.Net.Http.Json.Functional.Tests
                 async server => {
                     HttpRequestData request = await server.HandleRequestAsync();
                     ValidateRequest(request);
-                    Person obj = JsonSerializer.Deserialize<Person>(request.Body, s_defaultSerializerOptions);
+
+                    byte[] json = request.Body;
+
+                    Person obj = JsonSerializer.Deserialize<Person>(json, JsonOptions.DefaultSerializerOptions);
+                    obj.Validate();
+
+                    // Assert numbers are not written as strings - JsonException would be thrown here if written as strings.
+                    obj = JsonSerializer.Deserialize<Person>(json, JsonOptions.DefaultSerializerOptions_StrictNumberHandling);
                     obj.Validate();
                 });
         }

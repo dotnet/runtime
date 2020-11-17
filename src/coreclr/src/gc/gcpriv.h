@@ -1,15 +1,9 @@
-// Copyright (c) Microsoft. All rights reserved.
-// Licensed under the MIT license. See LICENSE file in the project root for full license information.
-//
-//
-// Copyright (c) Microsoft. All rights reserved.
-// Licensed under the MIT license. See LICENSE file in the project root for full license information.
-//
-// optimize for speed
-
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
 
 #ifndef _DEBUG
 #ifdef _MSC_VER
+// optimize for speed
 #pragma optimize( "t", on )
 #endif
 #endif
@@ -68,6 +62,11 @@ inline void FATAL_GC_ERROR()
 
 #define FEATURE_PREMORTEM_FINALIZATION
 #define GC_HISTORY
+
+// We need the lower 3 bits in the MT to do our bookkeeping so doubly linked free list is only for 64-bit
+#ifdef HOST_64BIT
+#define DOUBLY_LINKED_FL
+#endif //HOST_64BIT
 
 #ifndef FEATURE_REDHAWK
 #define HEAP_ANALYZE
@@ -239,7 +238,7 @@ const int policy_expand  = 2;
 #ifdef SIMPLE_DPRINTF
 
 void GCLog (const char *fmt, ... );
-#define dprintf(l,x) {if ((l <= 1) || (l == GTC_LOG)) {GCLog x;}}
+#define dprintf(l,x) {if ((l == 1) || (l == GTC_LOG)) {GCLog x;}}
 #else //SIMPLE_DPRINTF
 // Nobody used the logging mechanism that used to be here. If we find ourselves
 // wanting to inspect GC logs on unmodified builds, we can use this define here
@@ -589,6 +588,11 @@ typedef DPTR(class CFinalize)                  PTR_CFinalize;
 #define MAX_BUCKET_COUNT (20)//Max number of buckets.
 class alloc_list
 {
+#ifdef DOUBLY_LINKED_FL
+    uint8_t* added_head;
+    uint8_t* added_tail;
+#endif //DOUBLY_LINKED_FL
+
     uint8_t* head;
     uint8_t* tail;
 
@@ -598,11 +602,20 @@ public:
     size_t item_count;
 #endif //FL_VERIFICATION
 
+#ifdef DOUBLY_LINKED_FL
+    uint8_t*& added_alloc_list_head () { return added_head;}
+    uint8_t*& added_alloc_list_tail () { return added_tail;}
+#endif //DOUBLY_LINKED_FL
+
     uint8_t*& alloc_list_head () { return head;}
     uint8_t*& alloc_list_tail () { return tail;}
     size_t& alloc_list_damage_count(){ return damage_count; }
     alloc_list()
     {
+#ifdef DOUBLY_LINKED_FL
+        added_head = 0;
+        added_tail = 0;
+#endif //DOUBLY_LINKED_FL
         head = 0;
         tail = 0;
         damage_count = 0;
@@ -616,16 +629,21 @@ class allocator
     unsigned int num_buckets;
     alloc_list first_bucket;
     alloc_list* buckets;
+    int gen_number;
     alloc_list& alloc_list_of (unsigned int bn);
     size_t& alloc_list_damage_count_of (unsigned int bn);
+    void thread_free_item_end (uint8_t* free_item, uint8_t*& head, uint8_t*& tail, int bn);
 
 public:
-    allocator (unsigned int num_b, int fbb, alloc_list* b);
+    allocator (unsigned int num_b, int fbb, alloc_list* b, int gen=-1);
 
     allocator()
     {
         num_buckets = 1;
         first_bucket_bits = sizeof(size_t) * 8 - 1;
+        // for young gens we just set it to 0 since we don't treat
+        // them differently from each other
+        gen_number = 0;
     }
 
     unsigned int number_of_buckets()
@@ -635,7 +653,7 @@ public:
 
     // skip buckets that cannot possibly fit "size" and return the next one
     // there is always such bucket since the last one fits everything
-    unsigned int first_suitable_bucket(size_t size)
+    unsigned int first_suitable_bucket (size_t size)
     {
         // sizes taking first_bucket_bits or less are mapped to bucket 0
         // others are mapped to buckets 0, 1, 2 respectively
@@ -648,7 +666,7 @@ public:
         BitScanReverse(&highest_set_bit_index, size);
     #endif
 
-        return min ((unsigned int)highest_set_bit_index, num_buckets - 1);
+        return min ((unsigned int)highest_set_bit_index, (num_buckets - 1));
     }
 
     size_t first_bucket_size()
@@ -665,6 +683,17 @@ public:
     {
         return alloc_list_of (bn).alloc_list_tail();
     }
+
+#ifdef DOUBLY_LINKED_FL
+    uint8_t*& added_alloc_list_head_of (unsigned int bn)
+    {
+        return alloc_list_of (bn).added_alloc_list_head();
+    }
+    uint8_t*& added_alloc_list_tail_of (unsigned int bn)
+    {
+        return alloc_list_of (bn).added_alloc_list_tail();
+    }
+#endif //DOUBLY_LINKED_FL
 
     void clear();
 
@@ -695,9 +724,16 @@ public:
         }
     }
 
-    void unlink_item (unsigned int bucket_number, uint8_t* item, uint8_t* previous_item, BOOL use_undo_p);
+    void unlink_item (unsigned int bn, uint8_t* item, uint8_t* previous_item, BOOL use_undo_p);
     void thread_item (uint8_t* item, size_t size);
     void thread_item_front (uint8_t* itme, size_t size);
+#ifdef DOUBLY_LINKED_FL
+    int thread_item_front_added (uint8_t* itme, size_t size);
+    void unlink_item_no_undo (uint8_t* item, size_t size);
+    void unlink_item_no_undo (unsigned int bn, uint8_t* item, size_t size);
+    void unlink_item_no_undo_added (unsigned int bn, uint8_t* item, uint8_t* previous_item);
+#endif //DOUBLY_LINKED_FL
+
     void copy_to_alloc_list (alloc_list* toalist);
     void copy_from_alloc_list (alloc_list* fromalist);
     void commit_alloc_list_changes();
@@ -734,6 +770,11 @@ public:
     size_t          pinned_allocation_compact_size;
     size_t          pinned_allocation_sweep_size;
     int             gen_num;
+
+#ifdef DOUBLY_LINKED_FL
+    BOOL            set_bgc_mark_bit_p;
+    uint8_t*        last_free_list_allocated;
+#endif //DOUBLY_LINKED_FL
 
 #ifdef FREE_USAGE_STATS
     size_t          gen_free_spaces[NUM_GEN_POWER2];
@@ -1226,7 +1267,7 @@ public:
     void balance_heaps (alloc_context* acontext);
     PER_HEAP
     ptrdiff_t get_balance_heaps_uoh_effective_budget (int generation_num);
-    static 
+    static
     gc_heap* balance_heaps_uoh (alloc_context* acontext, size_t size, int generation_num);
     // Unlike balance_heaps_uoh, this may return nullptr if we failed to change heaps.
     static
@@ -1239,7 +1280,7 @@ public:
     // context - we don't actually use the ptr/limit from it so I am
     // making this explicit by not passing in the alloc_context.
     // Note: This are instance methods, but the heap instance is only used for
-    // lowest_address and highest_address, which are currently the same accross all heaps.
+    // lowest_address and highest_address, which are currently the same across all heaps.
     PER_HEAP
     CObjectHeader* allocate_uoh_object (size_t size, uint32_t flags, int gen_num, int64_t& alloc_bytes);
 
@@ -1324,7 +1365,7 @@ public:
 
 protected:
     PER_HEAP_ISOLATED
-    BOOL reserve_initial_memory (size_t normal_size, size_t large_size, size_t pinned_size, int num_heaps, bool use_large_pages_p, bool separated_poh_p);
+    BOOL reserve_initial_memory (size_t normal_size, size_t large_size, size_t pinned_size, int num_heaps, bool use_large_pages_p, bool separated_poh_p, uint16_t* heap_no_to_numa_node);
 
     PER_HEAP_ISOLATED
     void destroy_initial_memory();
@@ -1554,7 +1595,7 @@ protected:
     PER_HEAP
     BOOL a_fit_free_list_uoh_p (size_t size,
                                   alloc_context* acontext,
-                                  uint32_t flags, 
+                                  uint32_t flags,
                                   int align_const,
                                   int gen_number);
 
@@ -1609,7 +1650,7 @@ protected:
                       BOOL* short_seg_end_p);
     PER_HEAP
     BOOL uoh_try_fit (int gen_number,
-                      size_t size, 
+                      size_t size,
                       alloc_context* acontext,
                       uint32_t flags,
                       int align_const,
@@ -1905,14 +1946,31 @@ protected:
     PER_HEAP
     void add_gen_plug (int gen_number, size_t plug_size);
 
+    PER_HEAP_ISOLATED
+    int find_bucket (size_t size);
+
     PER_HEAP
     void add_gen_free (int gen_number, size_t free_size);
+
+    PER_HEAP
+    void add_gen_plug_allocated_in_free (int gen_number, size_t plug_size);
 
     PER_HEAP
     void add_item_to_current_pinned_free (int gen_number, size_t free_size);
 
     PER_HEAP
     void remove_gen_free (int gen_number, size_t free_size);
+
+    PER_HEAP
+    void thread_free_item_front (generation* gen, uint8_t* free_start, size_t free_size);
+
+#ifdef DOUBLY_LINKED_FL
+    PER_HEAP
+    void thread_item_front_added (generation* gen, uint8_t* free_start, size_t free_size);
+#endif //DOUBLY_LINKED_FL
+
+    PER_HEAP
+    void make_free_obj (generation* gen, uint8_t* free_start, size_t free_size);
 
     PER_HEAP
     uint8_t* allocate_in_older_generation (generation* gen, size_t size,
@@ -2064,7 +2122,9 @@ protected:
     void set_mem_verify (uint8_t*, uint8_t*, uint8_t);
     PER_HEAP
     void process_background_segment_end (heap_segment*, generation*, uint8_t*,
-                                     heap_segment*, BOOL*);
+                                         heap_segment*, BOOL* delete_p,
+                                         size_t free_obj_size_last_gap);
+
     PER_HEAP
     BOOL fgc_should_consider_object (uint8_t* o,
                                      heap_segment* seg,
@@ -2076,6 +2136,12 @@ protected:
                                 BOOL* consider_bgc_mark_p,
                                 BOOL* check_current_sweep_p,
                                 BOOL* check_saved_sweep_p);
+
+#ifdef DOUBLY_LINKED_FL
+    PER_HEAP
+    BOOL should_set_bgc_mark_bit (uint8_t* o);
+#endif //DOUBLY_LINKED_FL
+
     PER_HEAP
     void background_ephemeral_sweep();
     PER_HEAP
@@ -2643,7 +2709,7 @@ protected:
     mark* get_oldest_pinned_entry (BOOL* has_pre_plug_info_p, BOOL* has_post_plug_info_p);
 
     PER_HEAP
-    void recover_saved_pinned_info();
+    size_t recover_saved_pinned_info();
 
     PER_HEAP
     void compact_phase (int condemned_gen_number, uint8_t*
@@ -2936,13 +3002,18 @@ protected:
 #endif
 #endif //MULTIPLE_HEAPS
 
+#ifdef MARK_LIST
+    PER_HEAP_ISOLATED
+    void grow_mark_list();
+#endif //MARK_LIST
+
 #ifdef BACKGROUND_GC
 
     PER_HEAP
     uint8_t* high_page (heap_segment* seg, BOOL concurrent_p);
 
     PER_HEAP
-    void revisit_written_page (uint8_t* page, uint8_t* end, 
+    void revisit_written_page (uint8_t* page, uint8_t* end,
                                BOOL concurrent_p, uint8_t*& last_page,
                                uint8_t*& last_object, BOOL large_objects_p,
                                size_t& num_marked_objects);
@@ -3336,7 +3407,7 @@ public:
     // because it's very short and by the time we are calling it
     // the settings may have changed and we'd have to do more work
     // to figure out the right GC to record info of.
-    // 
+    //
     // The complications are the GCs triggered without their own
     // SuspendEE, in which case we will record that GC's duration
     // as its pause duration and the rest toward the GC that
@@ -3843,6 +3914,9 @@ protected:
     PER_HEAP_ISOLATED
     size_t mark_list_size;
 
+    PER_HEAP_ISOLATED
+    bool mark_list_overflow;
+
     PER_HEAP
     uint8_t** mark_list_end;
 
@@ -4007,7 +4081,19 @@ protected:
     PER_HEAP
     alloc_list poh_alloc_list[NUM_POH_ALIST-1];
 
-//------------------------------------------    
+#ifdef DOUBLY_LINKED_FL
+    // For bucket 0 added list, we don't want to have to go through
+    // it to count how many bytes it has so we keep a record here.
+    // If we need to sweep in gen1, we discard this added list and
+    // need to deduct the size from free_list_space.
+    // Note that we should really move this and the free_list_space
+    // accounting into the alloc_list class.
+    PER_HEAP
+    size_t gen2_removed_no_undo;
+
+    PER_HEAP
+    size_t saved_pinned_plug_index;
+#endif //DOUBLY_LINKED_FL
 
     PER_HEAP
     dynamic_data dynamic_data_table [total_generation_count];
@@ -4036,6 +4122,20 @@ protected:
 
     PER_HEAP
     int generation_skip_ratio;//in %
+
+#ifdef FEATURE_CARD_MARKING_STEALING
+    PER_HEAP
+    VOLATILE(size_t) n_eph_soh;
+    PER_HEAP
+    VOLATILE(size_t) n_gen_soh;
+    PER_HEAP
+    VOLATILE(size_t) n_eph_loh;
+    PER_HEAP
+    VOLATILE(size_t) n_gen_loh;
+#endif //FEATURE_CARD_MARKING_STEALING
+
+    PER_HEAP_ISOLATED
+    int generation_skip_ratio_threshold;
 
     PER_HEAP
     BOOL gen0_bricks_cleared;
@@ -4132,6 +4232,10 @@ protected:
     PER_HEAP
     uint8_t* current_sweep_pos;
 
+#ifdef DOUBLY_LINKED_FL
+    PER_HEAP
+    heap_segment* current_sweep_seg;
+#endif //DOUBLY_LINKED_FL
 #endif //BACKGROUND_GC
 
     PER_HEAP
@@ -4400,9 +4504,7 @@ public:
     size_t GetPromotedCount();
 
     //Methods used by the shutdown code to call every finalizer
-    void SetSegForShutDown(BOOL fHasLock);
     size_t GetNumberFinalizableObjects();
-    void DiscardNonCriticalObjects();
 
     void CheckFinalizerObjects();
 };
@@ -4674,6 +4776,18 @@ size_t& generation_sweep_allocated (generation* inst)
 {
     return inst->sweep_allocated;
 }
+#ifdef DOUBLY_LINKED_FL
+inline
+BOOL&  generation_set_bgc_mark_bit_p (generation* inst)
+{
+    return inst->set_bgc_mark_bit_p;
+}
+inline
+uint8_t*&  generation_last_free_list_allocated (generation* inst)
+{
+    return inst->last_free_list_allocated;
+}
+#endif //DOUBLY_LINKED_FL
 #ifdef FREE_USAGE_STATS
 inline
 size_t& generation_pinned_free_obj_space (generation* inst)
@@ -4691,6 +4805,7 @@ size_t& generation_allocated_since_last_pin (generation* inst)
     return inst->allocated_since_last_pin;
 }
 #endif //FREE_USAGE_STATS
+
 inline
 float generation_allocator_efficiency (generation* inst)
 {
@@ -4712,6 +4827,7 @@ size_t generation_unusable_fragmentation (generation* inst)
 // We always use USE_PADDING_TAIL when fitting so items on the free list should be
 // twice the min_obj_size.
 #define min_free_list       (2*min_obj_size)
+#define min_free_item_no_prev  (min_obj_size+sizeof(uint8_t*))
 struct plug
 {
     uint8_t *  skew[plug_skew / sizeof(uint8_t *)];
@@ -4917,6 +5033,11 @@ inline
 BOOL heap_segment_decommitted_p (heap_segment * inst)
 {
     return !!(inst->flags & heap_segment_flags_decommitted);
+}
+inline
+BOOL heap_segment_swept_p (heap_segment * inst)
+{
+    return !!(inst->flags & heap_segment_flags_swept);
 }
 #endif //BACKGROUND_GC
 

@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 /*============================================================
 **
@@ -295,7 +294,7 @@ namespace System
 
         public static void WaitForPendingFinalizers()
         {
-            // QCalls can not be exposed from mscorlib directly, need to wrap it.
+            // QCalls can not be exposed directly, need to wrap it.
             _WaitForPendingFinalizers();
         }
 
@@ -486,7 +485,7 @@ namespace System
                     throw new InvalidOperationException("The NoGCRegion mode was already in progress");
                 case StartNoGCRegionStatus.AmountTooLarge:
                     throw new ArgumentOutOfRangeException(nameof(totalSize),
-                        "totalSize is too large. For more information about setting the maximum size, see \"Latency Modes\" in http://go.microsoft.com/fwlink/?LinkId=522706");
+                        "totalSize is too large. For more information about setting the maximum size, see \"Latency Modes\" in https://go.microsoft.com/fwlink/?LinkId=522706");
             }
 
             Debug.Assert(status == StartNoGCRegionStatus.Succeeded);
@@ -660,7 +659,7 @@ namespace System
         /// If pinned is set to true, <typeparamref name="T"/> must not be a reference type or a type that contains object references.
         /// </remarks>
         [MethodImpl(MethodImplOptions.AggressiveInlining)] // forced to ensure no perf drop for small memory buffers (hot path)
-        public static T[] AllocateUninitializedArray<T>(int length, bool pinned = false)
+        public static T[] AllocateUninitializedArray<T>(int length, bool pinned = false) // T[] rather than T?[] to match `new T[length]` behavior
         {
             if (!pinned)
             {
@@ -686,7 +685,7 @@ namespace System
             // kept outside of the small arrays hot path to have inlining without big size growth
             return AllocateNewUninitializedArray(length, pinned);
 
-            // remove the local function when https://github.com/dotnet/coreclr/issues/5329 is implemented
+            // remove the local function when https://github.com/dotnet/runtime/issues/5973 is implemented
             static T[] AllocateNewUninitializedArray(int length, bool pinned)
             {
                 GC_ALLOC_FLAGS flags = GC_ALLOC_FLAGS.GC_ALLOC_ZEROING_OPTIONAL;
@@ -706,7 +705,7 @@ namespace System
         /// <remarks>
         /// If pinned is set to true, <typeparamref name="T"/> must not be a reference type or a type that contains object references.
         /// </remarks>
-        public static T[] AllocateArray<T>(int length, bool pinned = false)
+        public static T[] AllocateArray<T>(int length, bool pinned = false) // T[] rather than T?[] to match `new T[length]` behavior
         {
             GC_ALLOC_FLAGS flags = GC_ALLOC_FLAGS.GC_ALLOC_NO_FLAGS;
 

@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.ComponentModel;
 using System.Diagnostics;
@@ -13,6 +12,7 @@ using System.Threading.Tasks;
 
 namespace System.Media
 {
+    [ToolboxItem(false)]
     public class SoundPlayer : Component, ISerializable
     {
         private const int BlockSize = 1024;
@@ -259,7 +259,9 @@ namespace System.Media
             // setup the http stream
             if (_uri != null && !_uri.IsFile && _stream == null)
             {
+#pragma warning disable SYSLIB0014
                 WebRequest webRequest = WebRequest.Create(_uri);
+#pragma warning restore SYSLIB0014
                 webRequest.Timeout = LoadTimeout;
 
                 WebResponse webResponse;
@@ -479,7 +481,9 @@ namespace System.Media
                 // setup the http stream
                 if (_uri != null && !_uri.IsFile && _stream == null)
                 {
+#pragma warning disable SYSLIB0014
                     WebRequest webRequest = WebRequest.Create(_uri);
+#pragma warning restore SYSLIB0014
                     using (cancellationToken.Register(r => ((WebRequest)r).Abort(), webRequest))
                     {
                         WebResponse webResponse = await webRequest.GetResponseAsync().ConfigureAwait(false);

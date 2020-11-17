@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections;
 using System.Diagnostics;
@@ -78,16 +77,16 @@ namespace System.Collections.Generic.Tests
             // The explicit implementation of IComparer.Compare(object, object) should
             // throw if both inputs are non-null and one of them is not of type T
             IComparer comparer = Comparer<T>.Default;
-            Task<T> notOfTypeT = Task.FromResult(default(T));
+            StrongBox<T> notOfTypeT = new StrongBox<T>(default(T));
             if (default(T) != null) // if default(T) is null these asserts will fail as IComparer.Compare returns early if either side is null
             {
                 AssertExtensions.Throws<ArgumentException>(null, () => comparer.Compare(notOfTypeT, default(T))); // lhs is the problem
                 AssertExtensions.Throws<ArgumentException>(null, () => comparer.Compare(default(T), notOfTypeT)); // rhs is the problem
             }
-            if (!(notOfTypeT is T)) // catch cases where Task<T> actually is a T, like object or non-generic Task
+            if (!(notOfTypeT is T)) // catch cases where StrongBox<T> actually is a T, such as T == object
             {
                 AssertExtensions.Throws<ArgumentException>(null, () => comparer.Compare(notOfTypeT, notOfTypeT)); // The implementation should not attempt to short-circuit if both sides have reference equality
-                AssertExtensions.Throws<ArgumentException>(null, () => comparer.Compare(notOfTypeT, Task.FromResult(default(T)))); // And it should also work when they don't
+                AssertExtensions.Throws<ArgumentException>(null, () => comparer.Compare(notOfTypeT, new StrongBox<T>(default(T)))); // And it should also work when they don't
             }
         }
 

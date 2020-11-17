@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 #include "createdump.h"
 
@@ -216,6 +215,12 @@ DumpWriter::WriteDump()
                 if (!m_crashInfo.ReadProcessMemory((void*)address, m_tempBuffer, bytesToRead, &read)) {
                     fprintf(stderr, "ReadProcessMemory(%" PRIA PRIx64 ", %08x) FAILED\n", address, bytesToRead);
                     return false;
+                }
+
+                // This can happen if the target process dies before createdump is finished
+                if (read == 0) {
+                    TRACE("ReadProcessMemory(%" PRIA PRIx64 ", %08x) return 0 bytes read\n", address, bytesToRead);
+                    break;
                 }
 
                 if (!WriteData(m_tempBuffer, read)) {

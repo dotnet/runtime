@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Globalization;
 using System.Runtime.CompilerServices;
@@ -22,7 +21,7 @@ namespace System
     [CLSCompliant(false)]
     [StructLayout(LayoutKind.Sequential)]
     [System.Runtime.CompilerServices.TypeForwardedFrom("mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")]
-    public readonly struct UIntPtr : IEquatable<UIntPtr>, IComparable, IComparable<UIntPtr>, IFormattable, ISerializable
+    public readonly struct UIntPtr : IEquatable<UIntPtr>, IComparable, IComparable<UIntPtr>, IFormattable, ISpanFormattable, ISerializable
     {
         private readonly unsafe void* _value; // Do not rename (binary serialization)
 
@@ -143,7 +142,7 @@ namespace System
 
         [NonVersionable]
         public static unsafe UIntPtr operator +(UIntPtr pointer, int offset) =>
-            new UIntPtr((nuint)pointer._value + (nuint)offset);
+            (nuint)pointer._value + (nuint)offset;
 
         [NonVersionable]
         public static UIntPtr Subtract(UIntPtr pointer, int offset) =>
@@ -151,7 +150,7 @@ namespace System
 
         [NonVersionable]
         public static unsafe UIntPtr operator -(UIntPtr pointer, int offset) =>
-            new UIntPtr((nuint)pointer._value - (nuint)offset);
+            (nuint)pointer._value - (nuint)offset;
 
         public static int Size
         {
@@ -199,6 +198,9 @@ namespace System
         public unsafe string ToString(string? format) => ((nuint_t)_value).ToString(format);
         public unsafe string ToString(IFormatProvider? provider) => ((nuint_t)_value).ToString(provider);
         public unsafe string ToString(string? format, IFormatProvider? provider) => ((nuint_t)_value).ToString(format, provider);
+
+        unsafe bool ISpanFormattable.TryFormat(Span<char> destination, out int charsWritten, ReadOnlySpan<char> format, IFormatProvider? provider) =>
+            ((nuint_t)_value).TryFormat(destination, out charsWritten, format, provider);
 
         public static UIntPtr Parse(string s) => (UIntPtr)nuint_t.Parse(s);
         public static UIntPtr Parse(string s, NumberStyles style) => (UIntPtr)nuint_t.Parse(s, style);

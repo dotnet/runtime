@@ -2,7 +2,7 @@
 
 #include <mono/utils/mono-threads.h>
 #include <mono/utils/mono-mmap.h>
-
+#include <mono/utils/mono-compiler.h>
 
 #if defined (USE_WASM_BACKEND)
 
@@ -318,5 +318,9 @@ void
 mono_memory_barrier_process_wide (void)
 {
 }
+
+#else
+
+MONO_EMPTY_SOURCE_FILE (mono_threads_wasm);
 
 #endif

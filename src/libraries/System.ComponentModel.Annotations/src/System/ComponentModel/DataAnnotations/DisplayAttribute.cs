@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Globalization;
 
@@ -26,7 +25,7 @@ namespace System.ComponentModel.DataAnnotations
         private bool? _autoGenerateField;
         private bool? _autoGenerateFilter;
         private int? _order;
-        private Type _resourceType;
+        private Type? _resourceType;
 
         #endregion
 
@@ -55,7 +54,7 @@ namespace System.ComponentModel.DataAnnotations
         ///     The short name is generally used as the grid column label for a UI element bound to the member
         ///     bearing this attribute.  A <c>null</c> or empty string is legal, and consumers must allow for that.
         /// </value>
-        public string ShortName
+        public string? ShortName
         {
             get => _shortName.Value;
             set => _shortName.Value = value;
@@ -80,7 +79,7 @@ namespace System.ComponentModel.DataAnnotations
         ///     The name is generally used as the field label for a UI element bound to the member
         ///     bearing this attribute.  A <c>null</c> or empty string is legal, and consumers must allow for that.
         /// </value>
-        public string Name
+        public string? Name
         {
             get => _name.Value;
             set => _name.Value = value;
@@ -105,7 +104,7 @@ namespace System.ComponentModel.DataAnnotations
         ///     Description is generally used as a tool tip or description a UI element bound to the member
         ///     bearing this attribute.  A <c>null</c> or empty string is legal, and consumers must allow for that.
         /// </value>
-        public string Description
+        public string? Description
         {
             get => _description.Value;
             set => _description.Value = value;
@@ -130,7 +129,7 @@ namespace System.ComponentModel.DataAnnotations
         ///     A prompt is generally used as a prompt or watermark for a UI element bound to the member
         ///     bearing this attribute.  A <c>null</c> or empty string is legal, and consumers must allow for that.
         /// </value>
-        public string Prompt
+        public string? Prompt
         {
             get => _prompt.Value;
             set => _prompt.Value = value;
@@ -155,7 +154,7 @@ namespace System.ComponentModel.DataAnnotations
         ///     A group name is used for grouping fields into the UI.  A <c>null</c> or empty string is legal,
         ///     and consumers must allow for that.
         /// </value>
-        public string GroupName
+        public string? GroupName
         {
             get => _groupName.Value;
             set => _groupName.Value = value;
@@ -168,7 +167,7 @@ namespace System.ComponentModel.DataAnnotations
         ///     <see cref="GetName" />, <see cref="GetDescription" />, <see cref="GetPrompt" />, and <see cref="GetGroupName" />
         ///     methods to return localized values.
         /// </summary>
-        public Type ResourceType
+        public Type? ResourceType
         {
             get => _resourceType;
             set
@@ -299,7 +298,7 @@ namespace System.ComponentModel.DataAnnotations
         ///     but a public static property with a name matching the <see cref="ShortName" /> value couldn't be found
         ///     on the <see cref="ResourceType" />.
         /// </exception>
-        public string GetShortName() => _shortName.GetLocalizableValue() ?? GetName();
+        public string? GetShortName() => _shortName.GetLocalizableValue() ?? GetName();
 
         /// <summary>
         ///     Gets the UI display string for Name.
@@ -326,7 +325,7 @@ namespace System.ComponentModel.DataAnnotations
         ///     but a public static property with a name matching the <see cref="Name" /> value couldn't be found
         ///     on the <see cref="ResourceType" />.
         /// </exception>
-        public string GetName() => _name.GetLocalizableValue();
+        public string? GetName() => _name.GetLocalizableValue();
 
         /// <summary>
         ///     Gets the UI display string for Description.
@@ -349,7 +348,7 @@ namespace System.ComponentModel.DataAnnotations
         ///     but a public static property with a name matching the <see cref="Description" /> value couldn't be found
         ///     on the <see cref="ResourceType" />.
         /// </exception>
-        public string GetDescription() => _description.GetLocalizableValue();
+        public string? GetDescription() => _description.GetLocalizableValue();
 
         /// <summary>
         ///     Gets the UI display string for Prompt.
@@ -372,7 +371,7 @@ namespace System.ComponentModel.DataAnnotations
         ///     but a public static property with a name matching the <see cref="Prompt" /> value couldn't be found
         ///     on the <see cref="ResourceType" />.
         /// </exception>
-        public string GetPrompt() => _prompt.GetLocalizableValue();
+        public string? GetPrompt() => _prompt.GetLocalizableValue();
 
         /// <summary>
         ///     Gets the UI display string for GroupName.
@@ -395,7 +394,7 @@ namespace System.ComponentModel.DataAnnotations
         ///     but a public static property with a name matching the <see cref="GroupName" /> value couldn't be found
         ///     on the <see cref="ResourceType" />.
         /// </exception>
-        public string GetGroupName() => _groupName.GetLocalizableValue();
+        public string? GetGroupName() => _groupName.GetLocalizableValue();
 
         /// <summary>
         ///     Gets the value of <see cref="AutoGenerateField" /> if it has been set, or <c>null</c>.

@@ -34,7 +34,7 @@ ep_buffer_alloc (
 	instance->limit = instance->buffer + buffer_size;
 	instance->current = ep_buffer_get_next_aligned_address (instance, instance->buffer);
 
-	instance->creation_timestamp = ep_perf_counter_query ();
+	instance->creation_timestamp = ep_perf_timestamp_get ();
 	EP_ASSERT (instance->creation_timestamp > 0);
 
 	instance->current_read_event = NULL;
@@ -67,7 +67,7 @@ ep_buffer_free (EventPipeBuffer *buffer)
 bool
 ep_buffer_write_event (
 	EventPipeBuffer *buffer,
-	EventPipeThread *thread,
+	ep_rt_thread_handle_t thread,
 	EventPipeSession *session,
 	EventPipeEvent *ep_event,
 	EventPipeEventPayload *payload,
@@ -110,7 +110,7 @@ ep_buffer_write_event (
 		(EventPipeEventInstance *)buffer->current,
 		ep_event,
 		proc_number,
-		(thread == NULL) ? ep_rt_current_thread_get_id () : ep_thread_get_os_thread_id (thread),
+		(thread == NULL) ? ep_rt_current_thread_get_id () : ep_rt_thread_get_id (thread),
 		data_dest,
 		ep_event_payload_get_size (payload),
 		(thread == NULL) ? NULL : activity_id,
@@ -125,7 +125,7 @@ ep_buffer_write_event (
 	if (ep_event_payload_get_size (payload) > 0)
 		ep_event_payload_copy_data (payload, data_dest);
 
-	EP_ASSERT (success == true);
+	EP_ASSERT (success);
 
 	// Advance the current pointer past the event.
 	buffer->current = ep_buffer_get_next_aligned_address (buffer, buffer->current + event_size);

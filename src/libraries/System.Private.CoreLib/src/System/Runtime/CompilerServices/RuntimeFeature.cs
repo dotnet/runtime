@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 namespace System.Runtime.CompilerServices
 {
@@ -11,12 +10,10 @@ namespace System.Runtime.CompilerServices
         /// </summary>
         public const string PortablePdb = nameof(PortablePdb);
 
-#if FEATURE_DEFAULT_INTERFACES
         /// <summary>
         /// Indicates that this version of runtime supports default interface method implementations.
         /// </summary>
         public const string DefaultImplementationsOfInterfaces = nameof(DefaultImplementationsOfInterfaces);
-#endif
 
         /// <summary>
         /// Indicates that this version of runtime supports the Unmanaged calling convention value.
@@ -38,9 +35,7 @@ namespace System.Runtime.CompilerServices
                 case PortablePdb:
                 case CovariantReturnsOfClasses:
                 case UnmanagedSignatureCallingConvention:
-#if FEATURE_DEFAULT_INTERFACES
                 case DefaultImplementationsOfInterfaces:
-#endif
                     return true;
                 case nameof(IsDynamicCodeSupported):
                     return IsDynamicCodeSupported;

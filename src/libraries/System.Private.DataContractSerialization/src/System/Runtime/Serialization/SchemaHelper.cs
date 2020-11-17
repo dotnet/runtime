@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System;
 using System.Xml;
@@ -13,7 +12,7 @@ namespace System.Runtime.Serialization
     internal static class SchemaHelper
     {
 
-        internal static bool NamespacesEqual(string ns1, string ns2)
+        internal static bool NamespacesEqual(string? ns1, string? ns2)
         {
             if (ns1 == null || ns1.Length == 0)
                 return (ns2 == null || ns2.Length == 0);
@@ -21,7 +20,7 @@ namespace System.Runtime.Serialization
                 return ns1 == ns2;
         }
 
-        internal static XmlSchemaType GetSchemaType(XmlSchemaSet schemas, XmlQualifiedName typeQName, out XmlSchema outSchema)
+        internal static XmlSchemaType? GetSchemaType(XmlSchemaSet schemas, XmlQualifiedName typeQName, out XmlSchema? outSchema)
         {
             outSchema = null;
             ICollection currentSchemas = schemas.Schemas();
@@ -33,7 +32,7 @@ namespace System.Runtime.Serialization
                     outSchema = schema;
                     foreach (XmlSchemaObject schemaObj in schema.Items)
                     {
-                        XmlSchemaType schemaType = schemaObj as XmlSchemaType;
+                        XmlSchemaType? schemaType = schemaObj as XmlSchemaType;
                         if (schemaType != null && schemaType.Name == typeQName.Name)
                         {
                             return schemaType;
@@ -44,7 +43,7 @@ namespace System.Runtime.Serialization
             return null;
         }
 
-        internal static XmlSchemaElement GetSchemaElement(XmlSchemaSet schemas, XmlQualifiedName elementQName, out XmlSchema outSchema)
+        internal static XmlSchemaElement? GetSchemaElement(XmlSchemaSet schemas, XmlQualifiedName elementQName, out XmlSchema? outSchema)
         {
             outSchema = null;
             ICollection currentSchemas = schemas.Schemas();
@@ -56,7 +55,7 @@ namespace System.Runtime.Serialization
                     outSchema = schema;
                     foreach (XmlSchemaObject schemaObj in schema.Items)
                     {
-                        XmlSchemaElement schemaElement = schemaObj as XmlSchemaElement;
+                        XmlSchemaElement? schemaElement = schemaObj as XmlSchemaElement;
                         if (schemaElement != null && schemaElement.Name == elementQName.Name)
                         {
                             return schemaElement;

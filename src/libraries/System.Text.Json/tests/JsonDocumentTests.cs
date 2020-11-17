@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Buffers;
 using System.Collections;
@@ -232,77 +231,75 @@ namespace System.Text.Json.Tests
         // If the internals change such that one of these is exercising substantially different
         // code, then it should switch to the full variation set.
         [MemberData(nameof(TestCases))]
-        public static void ParseJson_MemoryBytes(bool compactData, TestCaseType type, string jsonString)
+        public static async Task ParseJson_MemoryBytes(bool compactData, TestCaseType type, string jsonString)
         {
-            ParseJson(
+            await ParseJsonAsync(
                 compactData,
                 type,
                 jsonString,
                 null,
-                bytes => JsonDocument.Parse(bytes.AsMemory()));
+                bytes => Task.FromResult(JsonDocument.Parse(bytes.AsMemory())));
         }
 
         [Theory]
         [MemberData(nameof(ReducedTestCases))]
-        public static void ParseJson_String(bool compactData, TestCaseType type, string jsonString)
+        public static async Task ParseJson_String(bool compactData, TestCaseType type, string jsonString)
         {
-            ParseJson(
+            await ParseJsonAsync(
                 compactData,
                 type,
                 jsonString,
-                str => JsonDocument.Parse(str),
+                str => Task.FromResult(JsonDocument.Parse(str)),
                 null);
         }
 
         [Theory]
         [MemberData(nameof(ReducedTestCases))]
-        public static void ParseJson_SeekableStream(bool compactData, TestCaseType type, string jsonString)
+        public static async Task ParseJson_SeekableStream(bool compactData, TestCaseType type, string jsonString)
         {
-            ParseJson(
+            await ParseJsonAsync(
                 compactData,
                 type,
                 jsonString,
                 null,
-                bytes => JsonDocument.Parse(new MemoryStream(bytes)));
+                bytes => Task.FromResult(JsonDocument.Parse(new MemoryStream(bytes))));
         }
 
         [Theory]
         [MemberData(nameof(ReducedTestCases))]
-        public static void ParseJson_SeekableStream_Async(bool compactData, TestCaseType type, string jsonString)
+        public static async Task ParseJson_SeekableStream_Async(bool compactData, TestCaseType type, string jsonString)
         {
-            ParseJson(
+            await ParseJsonAsync(
                 compactData,
                 type,
                 jsonString,
                 null,
-                bytes => JsonDocument.ParseAsync(new MemoryStream(bytes)).GetAwaiter().GetResult());
+                bytes => JsonDocument.ParseAsync(new MemoryStream(bytes)));
         }
 
         [Theory]
         [MemberData(nameof(ReducedTestCases))]
-        public static void ParseJson_UnseekableStream(bool compactData, TestCaseType type, string jsonString)
+        public static async Task ParseJson_UnseekableStream(bool compactData, TestCaseType type, string jsonString)
         {
-            ParseJson(
-                compactData,
-                type,
-                jsonString,
-                null,
-                bytes => JsonDocument.Parse(
-                    new WrappedMemoryStream(canRead: true, canWrite: false, canSeek: false, bytes)));
-        }
-
-        [Theory]
-        [MemberData(nameof(ReducedTestCases))]
-        public static void ParseJson_UnseekableStream_Async(bool compactData, TestCaseType type, string jsonString)
-        {
-            ParseJson(
+            await ParseJsonAsync(
                 compactData,
                 type,
                 jsonString,
                 null,
                 bytes => JsonDocument.ParseAsync(
-                    new WrappedMemoryStream(canRead: true, canWrite: false, canSeek: false, bytes)).
-                    GetAwaiter().GetResult());
+                    new WrappedMemoryStream(canRead: true, canWrite: false, canSeek: false, bytes)));
+        }
+
+        [Theory]
+        [MemberData(nameof(ReducedTestCases))]
+        public static async Task ParseJson_UnseekableStream_Async(bool compactData, TestCaseType type, string jsonString)
+        {
+            await ParseJsonAsync(
+                compactData,
+                type,
+                jsonString,
+                null,
+                bytes => JsonDocument.ParseAsync(new WrappedMemoryStream(canRead: true, canWrite: false, canSeek: false, bytes)));
         }
 
 
@@ -362,53 +359,52 @@ namespace System.Text.Json.Tests
 
         [Theory]
         [MemberData(nameof(ReducedTestCases))]
-        public static void ParseJson_SeekableStream_WithBOM(bool compactData, TestCaseType type, string jsonString)
+        public static async Task ParseJson_SeekableStream_WithBOM(bool compactData, TestCaseType type, string jsonString)
         {
-            ParseJson(
+            await ParseJsonAsync(
                 compactData,
                 type,
                 jsonString,
                 null,
-                bytes => JsonDocument.Parse(new MemoryStream(Utf8Bom.Concat(bytes).ToArray())));
+                bytes => Task.FromResult(JsonDocument.Parse(new MemoryStream(Utf8Bom.Concat(bytes).ToArray()))));
         }
 
         [Theory]
         [MemberData(nameof(ReducedTestCases))]
-        public static void ParseJson_SeekableStream_Async_WithBOM(bool compactData, TestCaseType type, string jsonString)
+        public static async Task ParseJson_SeekableStream_Async_WithBOM(bool compactData, TestCaseType type, string jsonString)
         {
-            ParseJson(
+            await ParseJsonAsync(
                 compactData,
                 type,
                 jsonString,
                 null,
-                bytes => JsonDocument.ParseAsync(new MemoryStream(Utf8Bom.Concat(bytes).ToArray())).GetAwaiter().GetResult());
+                bytes => JsonDocument.ParseAsync(new MemoryStream(Utf8Bom.Concat(bytes).ToArray())));
         }
 
         [Theory]
         [MemberData(nameof(ReducedTestCases))]
-        public static void ParseJson_UnseekableStream_WithBOM(bool compactData, TestCaseType type, string jsonString)
+        public static async Task ParseJson_UnseekableStream_WithBOM(bool compactData, TestCaseType type, string jsonString)
         {
-            ParseJson(
+            await ParseJsonAsync(
                 compactData,
                 type,
                 jsonString,
                 null,
-                bytes => JsonDocument.Parse(
-                    new WrappedMemoryStream(canRead: true, canWrite: false, canSeek: false, Utf8Bom.Concat(bytes).ToArray())));
+                bytes => Task.FromResult(JsonDocument.Parse(
+                    new WrappedMemoryStream(canRead: true, canWrite: false, canSeek: false, Utf8Bom.Concat(bytes).ToArray()))));
         }
 
         [Theory]
         [MemberData(nameof(ReducedTestCases))]
-        public static void ParseJson_UnseekableStream_Async_WithBOM(bool compactData, TestCaseType type, string jsonString)
+        public static async Task ParseJson_UnseekableStream_Async_WithBOM(bool compactData, TestCaseType type, string jsonString)
         {
-            ParseJson(
+            await ParseJsonAsync(
                 compactData,
                 type,
                 jsonString,
                 null,
                 bytes => JsonDocument.ParseAsync(
-                        new WrappedMemoryStream(canRead: true, canWrite: false, canSeek: false, Utf8Bom.Concat(bytes).ToArray())).
-                    GetAwaiter().GetResult());
+                        new WrappedMemoryStream(canRead: true, canWrite: false, canSeek: false, Utf8Bom.Concat(bytes).ToArray())));
         }
 
         [Fact]
@@ -487,34 +483,34 @@ namespace System.Text.Json.Tests
 
         [Theory]
         [MemberData(nameof(ReducedTestCases))]
-        public static void ParseJson_SequenceBytes_Single(bool compactData, TestCaseType type, string jsonString)
+        public static async Task ParseJson_SequenceBytes_Single(bool compactData, TestCaseType type, string jsonString)
         {
-            ParseJson(
+            await ParseJsonAsync(
                 compactData,
                 type,
                 jsonString,
                 null,
-                bytes => JsonDocument.Parse(new ReadOnlySequence<byte>(bytes)));
+                bytes => Task.FromResult(JsonDocument.Parse(new ReadOnlySequence<byte>(bytes))));
         }
 
         [Theory]
         [MemberData(nameof(ReducedTestCases))]
-        public static void ParseJson_SequenceBytes_Multi(bool compactData, TestCaseType type, string jsonString)
+        public static async Task ParseJson_SequenceBytes_Multi(bool compactData, TestCaseType type, string jsonString)
         {
-            ParseJson(
+            await ParseJsonAsync(
                 compactData,
                 type,
                 jsonString,
                 null,
-                bytes => JsonDocument.Parse(JsonTestHelper.SegmentInto(bytes, 31)));
+                bytes => Task.FromResult(JsonDocument.Parse(JsonTestHelper.SegmentInto(bytes, 31))));
         }
 
-        private static void ParseJson(
+        private static async Task ParseJsonAsync(
             bool compactData,
             TestCaseType type,
             string jsonString,
-            Func<string, JsonDocument> stringDocBuilder,
-            Func<byte[], JsonDocument> bytesDocBuilder)
+            Func<string, Task<JsonDocument>> stringDocBuilder,
+            Func<byte[], Task<JsonDocument>> bytesDocBuilder)
         {
             // One, but not both, must be null.
             if ((stringDocBuilder == null) == (bytesDocBuilder == null))
@@ -528,7 +524,7 @@ namespace System.Text.Json.Tests
 
             byte[] dataUtf8 = Encoding.UTF8.GetBytes(jsonString);
 
-            using (JsonDocument doc = stringDocBuilder?.Invoke(jsonString) ?? bytesDocBuilder?.Invoke(dataUtf8))
+            using (JsonDocument doc = await (stringDocBuilder?.Invoke(jsonString) ?? bytesDocBuilder?.Invoke(dataUtf8)))
             {
                 Assert.NotNull(doc);
 
@@ -3651,7 +3647,7 @@ namespace System.Text.Json.Tests
         }
 
         [Fact]
-        public static void VerifyMultiThreadedDispose()
+        public static async Task VerifyMultiThreadedDispose()
         {
             Action<object> disposeAction = (object document) => ((JsonDocument)document).Dispose();
 
@@ -3670,7 +3666,7 @@ namespace System.Text.Json.Tests
                 }
             }
 
-            Task.WaitAll(tasks);
+            await Task.WhenAll(tasks);
 
             // When ArrayPool gets corrupted, the Rent method might return an already rented array, which is incorrect.
             // So we will rent as many arrays as calls to JsonElement.Dispose and check they are unique.

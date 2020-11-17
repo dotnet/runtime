@@ -1,9 +1,9 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 
 namespace System.Reflection
 {
@@ -32,6 +32,11 @@ namespace System.Reflection
             return false;
         }
 
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
+            Justification = "Module.ResolveMethod is marked as RequiresUnreferencedCode because it relies on tokens" +
+                            "which are not guaranteed to be stable across trimming. So if somebody harcodes a token it could break." +
+                            "The usage here is not like that as all these tokes come from existing metadata loaded from some IL" +
+                            "and so trimming has no effect (the tokens are read AFTER trimming occured).")]
         private static RuntimeMethodInfo? AssignAssociates(
             int tkMethod,
             RuntimeType declaredType,

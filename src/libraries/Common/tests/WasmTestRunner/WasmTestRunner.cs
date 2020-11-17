@@ -1,15 +1,15 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System;
 using System.Collections.Generic;
+using System.Threading.Tasks;
 
 using Microsoft.DotNet.XHarness.TestRunners.Xunit;
 
 public class SimpleWasmTestRunner : WasmApplicationEntryPoint
 {
-    public static int Main(string[] args)
+    public static async Task<int> Main(string[] args)
     {
         var testAssembly = args[0];
         var excludedTraits = new List<string>();
@@ -58,6 +58,6 @@ public class SimpleWasmTestRunner : WasmApplicationEntryPoint
             IncludedMethods = includedMethods
         };
 
-        return runner.Run();
+        return await runner.Run();
     }
 }

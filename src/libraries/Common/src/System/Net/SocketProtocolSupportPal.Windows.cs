@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Net.Sockets;
 using System.Runtime.InteropServices;
@@ -18,6 +17,8 @@ namespace System.Net
 
         private static bool IsSupported(AddressFamily af)
         {
+            Interop.Winsock.EnsureInitialized();
+
             IntPtr INVALID_SOCKET = (IntPtr)(-1);
             IntPtr socket = INVALID_SOCKET;
             try

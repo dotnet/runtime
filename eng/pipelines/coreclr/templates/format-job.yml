@@ -4,6 +4,7 @@ parameters:
   osGroup: ''
   osSubgroup: ''
   container: ''
+  crossBuild: false
   crossrootfsDir: ''
   timeoutInMinutes: ''
   stagedBuild: false
@@ -20,16 +21,17 @@ jobs:
     osGroup: ${{ parameters.osGroup }}
     osSubgroup: ${{ parameters.osSubgroup }}
     container: ${{ parameters.container }}
+    crossBuild: ${{ parameters.crossBuild }}
     crossrootfsDir: ${{ parameters.crossrootfsDir }}
     stagedBuild: ${{ parameters.stagedBuild }}
     timeoutInMinutes: ${{ parameters.timeoutInMinutes }}
     name: ${{ format('format_{0}{1}_{2}', parameters.osGroup, parameters.osSubgroup, parameters.archType) }}
     displayName: ${{ format('Formatting {0}{1} {2}', parameters.osGroup, parameters.osSubgroup, parameters.archType) }}
     helixType: 'format'
-    ${{ if eq(parameters.osGroup, 'Windows_NT') }}:
+    ${{ if eq(parameters.osGroup, 'windows') }}:
       pool: 
         vmImage: 'windows-2019'
-    ${{ if ne(parameters.osGroup, 'Windows_NT') }}:
+    ${{ if ne(parameters.osGroup, 'windows') }}:
       pool: ${{ parameters.pool }}
     variables: ${{ parameters.variables }}
     condition: ${{ parameters.condition }}
@@ -47,17 +49,17 @@ jobs:
         versionSpec: '3.x' 
         addToPath: true 
         architecture: 'x64'
-      condition: ${{ eq(parameters.osGroup, 'Windows_NT') }}
+      condition: ${{ eq(parameters.osGroup, 'windows') }}
     - task: PythonScript@0
       displayName: Run tests/scripts/format.py
       inputs:
         scriptSource: 'filePath'
-        scriptPath: $(coreClrRepoRoot)/tests/scripts/format.py
-        arguments: '-c $(coreClrRepoRoot) -o $(osGroup) -a $(archType)'
+        scriptPath: $(Build.SourcesDirectory)/src/tests/Common/scripts/format.py
+        arguments: '-c $(Build.SourcesDirectory)/src/coreclr -o $(osGroup) -a $(archType)'
     - task: PublishBuildArtifacts@1
       displayName: Publish format.patch
       inputs:
-        PathtoPublish: '$(coreClrRepoRoot)/format.patch'
+        PathtoPublish: '$(Build.SourcesDirectory)/src/coreclr/format.patch'
         ArtifactName: format.$(osGroup).$(archType).patch
       continueOnError: true
       condition: failed()

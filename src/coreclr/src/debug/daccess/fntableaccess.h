@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 //
 
@@ -107,7 +106,7 @@ struct FakeStub
     UINT32  m_signature;
 #else
 #ifdef HOST_64BIT
-    //README ALIGNEMENT: in retail mode UINT m_numCodeBytes does not align to 16byte for the code
+    //README ALIGNMENT: in retail mode UINT m_numCodeBytes does not align to 16byte for the code
     //                   after the Stub struct. This is to pad properly
     UINT    m_pad_code_bytes;
 #endif // HOST_64BIT

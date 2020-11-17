@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 /*XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
@@ -663,7 +662,7 @@ bool ObjectAllocator::CanLclVarEscapeViaParentStack(ArrayStack<GenTree*>* parent
                     canLclVarEscapeViaParentStack = false;
                     break;
                 }
-                __fallthrough;
+                FALLTHROUGH;
             case GT_COLON:
             case GT_QMARK:
             case GT_ADD:
@@ -769,7 +768,7 @@ void ObjectAllocator::UpdateAncestorTypes(GenTree* tree, ArrayStack<GenTree*>* p
                     // Left child of GT_COMMA, it will be discarded
                     break;
                 }
-                __fallthrough;
+                FALLTHROUGH;
             case GT_COLON:
             case GT_QMARK:
             case GT_ADD:

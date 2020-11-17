@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 /*XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
@@ -40,7 +39,7 @@ void CodeGen::genStackPointerConstantAdjustment(ssize_t spDelta)
     // function that does a probe, which will in turn call this function.
     assert((target_size_t)(-spDelta) <= compiler->eeGetPageSize());
 
-    inst_RV_IV(INS_sub, REG_SPBASE, -spDelta, EA_PTRSIZE);
+    inst_RV_IV(INS_sub, REG_SPBASE, (target_ssize_t)-spDelta, EA_PTRSIZE);
 }
 
 //------------------------------------------------------------------------
@@ -208,7 +207,7 @@ void CodeGen::genCodeForTreeNode(GenTree* treeNode)
         case GT_AND:
             assert(varTypeIsIntegralOrI(treeNode));
 
-            __fallthrough;
+            FALLTHROUGH;
 
 #if !defined(TARGET_64BIT)
         case GT_ADD_LO:
@@ -562,14 +561,14 @@ void CodeGen::genSetRegToIcon(regNumber reg, ssize_t val, var_types type, insFla
 // genSetGSSecurityCookie: Set the "GS" security cookie in the prolog.
 //
 // Arguments:
-//     initReg          - register to use as a scratch register
-//     pInitRegModified - OUT parameter. *pInitRegModified is set to 'true' if and only if
-//                        this call sets 'initReg' to a non-zero value.
+//     initReg        - register to use as a scratch register
+//     pInitRegZeroed - OUT parameter. *pInitRegZeroed is set to 'false' if and only if
+//                      this call sets 'initReg' to a non-zero value.
 //
 // Return Value:
 //     None
 //
-void CodeGen::genSetGSSecurityCookie(regNumber initReg, bool* pInitRegModified)
+void CodeGen::genSetGSSecurityCookie(regNumber initReg, bool* pInitRegZeroed)
 {
     assert(compiler->compGeneratingProlog);
 
@@ -594,7 +593,7 @@ void CodeGen::genSetGSSecurityCookie(regNumber initReg, bool* pInitRegModified)
         GetEmitter()->emitIns_S_R(INS_str, EA_PTRSIZE, initReg, compiler->lvaGSSecurityCookie, 0);
     }
 
-    *pInitRegModified = true;
+    *pInitRegZeroed = false;
 }
 
 //---------------------------------------------------------------------
@@ -617,31 +616,31 @@ void CodeGen::genIntrinsic(GenTree* treeNode)
 
     // Right now only Abs/Ceiling/Floor/Round/Sqrt are treated as math intrinsics.
     //
-    switch (treeNode->AsIntrinsic()->gtIntrinsicId)
+    switch (treeNode->AsIntrinsic()->gtIntrinsicName)
     {
-        case CORINFO_INTRINSIC_Abs:
+        case NI_System_Math_Abs:
             genConsumeOperands(treeNode->AsOp());
             GetEmitter()->emitInsBinary(INS_ABS, emitActualTypeSize(treeNode), treeNode, srcNode);
             break;
 
 #ifdef TARGET_ARM64
-        case CORINFO_INTRINSIC_Ceiling:
+        case NI_System_Math_Ceiling:
             genConsumeOperands(treeNode->AsOp());
             GetEmitter()->emitInsBinary(INS_frintp, emitActualTypeSize(treeNode), treeNode, srcNode);
             break;
 
-        case CORINFO_INTRINSIC_Floor:
+        case NI_System_Math_Floor:
             genConsumeOperands(treeNode->AsOp());
             GetEmitter()->emitInsBinary(INS_frintm, emitActualTypeSize(treeNode), treeNode, srcNode);
             break;
 
-        case CORINFO_INTRINSIC_Round:
+        case NI_System_Math_Round:
             genConsumeOperands(treeNode->AsOp());
             GetEmitter()->emitInsBinary(INS_frintn, emitActualTypeSize(treeNode), treeNode, srcNode);
             break;
 #endif // TARGET_ARM64
 
-        case CORINFO_INTRINSIC_Sqrt:
+        case NI_System_Math_Sqrt:
             genConsumeOperands(treeNode->AsOp());
             GetEmitter()->emitInsBinary(INS_SQRT, emitActualTypeSize(treeNode), treeNode, srcNode);
             break;
@@ -666,9 +665,13 @@ void CodeGen::genIntrinsic(GenTree* treeNode)
 void CodeGen::genPutArgStk(GenTreePutArgStk* treeNode)
 {
     assert(treeNode->OperIs(GT_PUTARG_STK));
-    GenTree*  source     = treeNode->gtOp1;
+    GenTree* source = treeNode->gtOp1;
+#if !defined(OSX_ARM64_ABI)
     var_types targetType = genActualType(source->TypeGet());
-    emitter*  emit       = GetEmitter();
+#else
+    var_types targetType = source->TypeGet();
+#endif
+    emitter* emit = GetEmitter();
 
     // This is the varNum for our store operations,
     // typically this is the varNum for the Outgoing arg space
@@ -679,12 +682,12 @@ void CodeGen::genPutArgStk(GenTreePutArgStk* treeNode)
     // Get argument offset to use with 'varNumOut'
     // Here we cross check that argument offset hasn't changed from lowering to codegen since
     // we are storing arg slot number in GT_PUTARG_STK node in lowering phase.
-    unsigned argOffsetOut = treeNode->gtSlotNum * TARGET_POINTER_SIZE;
+    unsigned argOffsetOut = treeNode->getArgOffset();
 
 #ifdef DEBUG
     fgArgTabEntry* curArgTabEntry = compiler->gtArgEntryByNode(treeNode->gtCall, treeNode);
-    assert(curArgTabEntry);
-    assert(argOffsetOut == (curArgTabEntry->slotNum * TARGET_POINTER_SIZE));
+    assert(curArgTabEntry != nullptr);
+    DEBUG_ARG_SLOTS_ASSERT(argOffsetOut == (curArgTabEntry->slotNum * TARGET_POINTER_SIZE));
 #endif // DEBUG
 
     // Whether to setup stk arg in incoming or out-going arg area?
@@ -730,6 +733,21 @@ void CodeGen::genPutArgStk(GenTreePutArgStk* treeNode)
             assert(argOffsetOut <= argOffsetMax); // We can't write beyound the outgoing area area
             return;
         }
+
+#if defined(OSX_ARM64_ABI)
+        switch (treeNode->GetStackByteSize())
+        {
+            case 1:
+                targetType = TYP_BYTE;
+                break;
+            case 2:
+                targetType = TYP_SHORT;
+                break;
+            default:
+                assert(treeNode->GetStackByteSize() >= 4);
+                break;
+        }
+#endif
 
         instruction storeIns  = ins_Store(targetType);
         emitAttr    storeAttr = emitTypeSize(targetType);
@@ -816,11 +834,15 @@ void CodeGen::genPutArgStk(GenTreePutArgStk* treeNode)
                     // so update 'source' to point this GT_LCL_VAR_ADDR node
                     // and continue to the codegen for the LCL_VAR node below
                     //
+                    assert(addrNode->isContained());
                     varNode  = addrNode->AsLclVarCommon();
                     addrNode = nullptr;
                 }
                 else // addrNode is used
                 {
+                    // TODO-Cleanup: `Lowering::NewPutArg` marks only `LCL_VAR_ADDR` as contained nowadays,
+                    // but we use `genConsumeAddress` as a precaution, use `genConsumeReg()` instead.
+                    assert(!addrNode->isContained());
                     // Generate code to load the address that we need into a register
                     genConsumeAddress(addrNode);
                     addrReg = addrNode->GetRegNum();
@@ -1158,7 +1180,7 @@ void CodeGen::genPutArgSplit(GenTreePutArgSplit* treeNode)
     emitter* emit         = GetEmitter();
     unsigned varNumOut    = compiler->lvaOutgoingArgSpaceVar;
     unsigned argOffsetMax = compiler->lvaOutgoingArgSpaceSize;
-    unsigned argOffsetOut = treeNode->gtSlotNum * TARGET_POINTER_SIZE;
+    unsigned argOffsetOut = treeNode->getArgOffset();
 
     if (source->OperGet() == GT_FIELD_LIST)
     {
@@ -1254,6 +1276,7 @@ void CodeGen::genPutArgSplit(GenTreePutArgSplit* treeNode)
 
         if (varNode != nullptr)
         {
+            assert(varNode->isContained());
             srcVarNum = varNode->GetLclNum();
             assert(srcVarNum < compiler->lvaCount);
 
@@ -1271,6 +1294,9 @@ void CodeGen::genPutArgSplit(GenTreePutArgSplit* treeNode)
         else // addrNode is used
         {
             assert(addrNode != nullptr);
+            // TODO-Cleanup: `Lowering::NewPutArg` marks only `LCL_VAR_ADDR` as contained nowadays,
+            // but we use `genConsumeAddress` as a precaution, use `genConsumeReg()` instead.
+            assert(!addrNode->isContained());
 
             // Generate code to load the address that we need into a register
             genConsumeAddress(addrNode);
@@ -1285,13 +1311,12 @@ void CodeGen::genPutArgSplit(GenTreePutArgSplit* treeNode)
             assert(!compiler->IsHfa(source->AsObj()->GetLayout()->GetClassHandle()));
         }
 
-        int          structSize = treeNode->getArgSize();
-        ClassLayout* layout     = source->AsObj()->GetLayout();
+        ClassLayout* layout = source->AsObj()->GetLayout();
 
         // Put on stack first
         unsigned nextIndex     = treeNode->gtNumRegs;
         unsigned structOffset  = nextIndex * TARGET_POINTER_SIZE;
-        int      remainingSize = structSize - structOffset;
+        int      remainingSize = treeNode->GetStackByteSize();
 
         // remainingSize is always multiple of TARGET_POINTER_SIZE
         assert(remainingSize % TARGET_POINTER_SIZE == 0);
@@ -1960,11 +1985,7 @@ void CodeGen::genCodeForInitBlkUnroll(GenTreeBlk* node)
     {
         assert(dstAddr->OperIsLocalAddr());
         dstLclNum = dstAddr->AsLclVarCommon()->GetLclNum();
-
-        if (dstAddr->OperIs(GT_LCL_FLD_ADDR))
-        {
-            dstOffset = dstAddr->AsLclFld()->GetLclOffs();
-        }
+        dstOffset = dstAddr->AsLclVarCommon()->GetLclOffs();
     }
 
     regNumber srcReg;
@@ -2096,11 +2117,7 @@ void CodeGen::genCodeForCpBlkUnroll(GenTreeBlk* node)
 
         assert(dstAddr->OperIsLocalAddr());
         dstLclNum = dstAddr->AsLclVarCommon()->GetLclNum();
-
-        if (dstAddr->OperIs(GT_LCL_FLD_ADDR))
-        {
-            dstOffset = dstAddr->AsLclFld()->GetLclOffs();
-        }
+        dstOffset = dstAddr->AsLclVarCommon()->GetLclOffs();
     }
 
     unsigned  srcLclNum      = BAD_VAR_NUM;
@@ -2113,11 +2130,7 @@ void CodeGen::genCodeForCpBlkUnroll(GenTreeBlk* node)
     if (src->OperIs(GT_LCL_VAR, GT_LCL_FLD))
     {
         srcLclNum = src->AsLclVarCommon()->GetLclNum();
-
-        if (src->OperIs(GT_LCL_FLD))
-        {
-            srcOffset = src->AsLclFld()->GetLclOffs();
-        }
+        srcOffset = src->AsLclVarCommon()->GetLclOffs();
     }
     else
     {
@@ -2137,11 +2150,7 @@ void CodeGen::genCodeForCpBlkUnroll(GenTreeBlk* node)
         {
             assert(srcAddr->OperIsLocalAddr());
             srcLclNum = srcAddr->AsLclVarCommon()->GetLclNum();
-
-            if (srcAddr->OperIs(GT_LCL_FLD_ADDR))
-            {
-                srcOffset = srcAddr->AsLclFld()->GetLclOffs();
-            }
+            srcOffset = srcAddr->AsLclVarCommon()->GetLclOffs();
         }
     }
 
@@ -3290,7 +3299,7 @@ void CodeGen::genCreateAndStoreGCInfo(unsigned codeSize,
         unsigned reversePInvokeFrameVarNumber = compiler->lvaReversePInvokeFrameVar;
         assert(reversePInvokeFrameVarNumber != BAD_VAR_NUM && reversePInvokeFrameVarNumber < compiler->lvaRefCount);
         LclVarDsc& reversePInvokeFrameVar = compiler->lvaTable[reversePInvokeFrameVarNumber];
-        gcInfoEncoder->SetReversePInvokeFrameSlot(reversePInvokeFrameVar.lvStkOffs);
+        gcInfoEncoder->SetReversePInvokeFrameSlot(reversePInvokeFrameVar.GetStackOffset());
     }
 
     gcInfoEncoder->Build();

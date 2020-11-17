@@ -83,6 +83,9 @@ ep_session_provider_list_alloc (
 	EventPipeSessionProviderList *instance = ep_rt_object_alloc (EventPipeSessionProviderList);
 	ep_raise_error_if_nok (instance != NULL);
 
+	ep_rt_session_provider_list_alloc (&instance->providers);
+	ep_raise_error_if_nok (ep_rt_session_provider_list_is_valid (&instance->providers));
+
 	instance->catch_all_provider = NULL;
 
 	for (uint32_t i = 0; i < configs_len; ++i) {
@@ -102,7 +105,7 @@ ep_session_provider_list_alloc (
 				ep_provider_config_get_keywords (config),
 				ep_provider_config_get_logging_level (config),
 				ep_provider_config_get_filter_data (config));
-			ep_rt_session_provider_list_append (&instance->providers, session_provider);
+			ep_raise_error_if_nok (ep_rt_session_provider_list_append (&instance->providers, session_provider));
 		}
 	}
 
@@ -136,10 +139,10 @@ bool
 ep_session_provider_list_is_empty (const EventPipeSessionProviderList *session_provider_list)
 {
 	EP_ASSERT (session_provider_list != NULL);
-	return (ep_rt_provider_list_is_empty (&session_provider_list->providers) && session_provider_list->catch_all_provider == NULL);
+	return (ep_rt_session_provider_list_is_empty (&session_provider_list->providers) && session_provider_list->catch_all_provider == NULL);
 }
 
-void
+bool
 ep_session_provider_list_add_session_provider (
 	EventPipeSessionProviderList *session_provider_list,
 	EventPipeSessionProvider *session_provider)
@@ -147,7 +150,7 @@ ep_session_provider_list_add_session_provider (
 	EP_ASSERT (session_provider_list != NULL);
 	EP_ASSERT (session_provider != NULL);
 
-	ep_rt_session_provider_list_append (&session_provider_list->providers, session_provider);
+	return ep_rt_session_provider_list_append (&session_provider_list->providers, session_provider);
 }
 
 #endif /* !defined(EP_INCLUDE_SOURCE_FILES) || defined(EP_FORCE_INCLUDE_SOURCE_FILES) */

@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 // =================================================================================
 //  Code that works with liveness and related concepts (interference, debug scope)
@@ -350,11 +349,10 @@ void Compiler::fgPerNodeLocalVarLiveness(GenTree* tree)
             // This ensures that the block->bbVarUse will contain
             // the FrameRoot local var if is it a tracked variable.
 
-            if ((tree->AsCall()->IsUnmanaged() || tree->AsCall()->IsTailCallViaJitHelper()) &&
-                compMethodRequiresPInvokeFrame())
+            if ((call->IsUnmanaged() || call->IsTailCallViaJitHelper()) && compMethodRequiresPInvokeFrame())
             {
                 assert((!opts.ShouldUsePInvokeHelpers()) || (info.compLvFrameListRoot == BAD_VAR_NUM));
-                if (!opts.ShouldUsePInvokeHelpers())
+                if (!opts.ShouldUsePInvokeHelpers() && !call->IsSuppressGCTransition())
                 {
                     // Get the FrameRoot local and mark it as used.
 
@@ -1477,7 +1475,7 @@ void Compiler::fgComputeLifeCall(VARSET_TP& life, GenTreeCall* call)
     {
         // Get the FrameListRoot local and make it live.
         assert((!opts.ShouldUsePInvokeHelpers()) || (info.compLvFrameListRoot == BAD_VAR_NUM));
-        if (!opts.ShouldUsePInvokeHelpers())
+        if (!opts.ShouldUsePInvokeHelpers() && !call->IsSuppressGCTransition())
         {
             noway_assert(info.compLvFrameListRoot < lvaCount);
 
@@ -1902,10 +1900,11 @@ void Compiler::fgComputeLifeLIR(VARSET_TP& life, BasicBlock* block, VARSET_VALAR
 
                     blockRange.Remove(node);
 
-                    // Removing a call does not affect liveness unless it is a tail call in a nethod with P/Invokes or
+                    // Removing a call does not affect liveness unless it is a tail call in a method with P/Invokes or
                     // is itself a P/Invoke, in which case it may affect the liveness of the frame root variable.
                     if (!opts.MinOpts() && !opts.ShouldUsePInvokeHelpers() &&
-                        ((call->IsTailCall() && compMethodRequiresPInvokeFrame()) || call->IsUnmanaged()) &&
+                        ((call->IsTailCall() && compMethodRequiresPInvokeFrame()) ||
+                         (call->IsUnmanaged() && !call->IsSuppressGCTransition())) &&
                         lvaTable[info.compLvFrameListRoot].lvTracked)
                     {
                         fgStmtRemoved = true;
@@ -1981,17 +1980,13 @@ void Compiler::fgComputeLifeLIR(VARSET_TP& life, BasicBlock* block, VARSET_VALAR
                             GenTree* data =
                                 store->OperIs(GT_STOREIND) ? store->AsStoreInd()->Data() : store->AsBlk()->Data();
                             data->SetUnusedValue();
+
                             if (data->isIndir())
                             {
-                                // This is a block assignment. An indirection of the rhs is not considered
-                                // to happen until the assignment so mark it as non-faulting.
-                                data->gtFlags |= GTF_IND_NONFAULTING;
+                                Lowering::TransformUnusedIndirection(data->AsIndir(), this, block);
                             }
 
-                            blockRange.Remove(store);
-
-                            assert(!opts.MinOpts());
-                            fgStmtRemoved = true;
+                            fgRemoveDeadStoreLIR(store, block);
                         }
                     }
                 }
@@ -2020,25 +2015,7 @@ void Compiler::fgComputeLifeLIR(VARSET_TP& life, BasicBlock* block, VARSET_VALAR
                     // Remove the store. DCE will iteratively clean up any ununsed operands.
                     lclVarNode->gtOp1->SetUnusedValue();
 
-                    // If the store is marked as a late argument, it is referenced by a call. Instead of removing
-                    // it, bash it to a NOP.
-                    if ((node->gtFlags & GTF_LATE_ARG) != 0)
-                    {
-                        JITDUMP("node is a late arg; replacing with NOP\n");
-                        node->gtBashToNOP();
-
-                        // NOTE: this is a bit of a hack. We need to keep these nodes around as they are
-                        // referenced by the call, but they're considered side-effect-free non-value-producing
-                        // nodes, so they will be removed if we don't do this.
-                        node->gtFlags |= GTF_ORDER_SIDEEFF;
-                    }
-                    else
-                    {
-                        blockRange.Remove(node);
-                    }
-
-                    assert(!opts.MinOpts());
-                    fgStmtRemoved = true;
+                    fgRemoveDeadStoreLIR(node, block);
                 }
 
                 break;
@@ -2110,40 +2087,112 @@ void Compiler::fgComputeLifeLIR(VARSET_TP& life, BasicBlock* block, VARSET_VALAR
                 break;
 
             case GT_NOP:
+            {
                 // NOTE: we need to keep some NOPs around because they are referenced by calls. See the dead store
                 // removal code above (case GT_STORE_LCL_VAR) for more explanation.
                 if ((node->gtFlags & GTF_ORDER_SIDEEFF) != 0)
                 {
                     break;
                 }
-                __fallthrough;
+                fgTryRemoveNonLocal(node, &blockRange);
+            }
+            break;
+
+            case GT_BLK:
+            case GT_OBJ:
+            case GT_DYN_BLK:
+            {
+                bool removed = fgTryRemoveNonLocal(node, &blockRange);
+                if (!removed && node->IsUnusedValue())
+                {
+                    // IR doesn't expect dummy uses of `GT_OBJ/BLK/DYN_BLK`.
+                    JITDUMP("Transform an unused OBJ/BLK node [%06d]\n", dspTreeID(node));
+                    Lowering::TransformUnusedIndirection(node->AsIndir(), this, block);
+                }
+            }
+            break;
 
             default:
-                assert(!node->OperIsLocal());
-                if (!node->IsValue() || node->IsUnusedValue())
-                {
-                    // We are only interested in avoiding the removal of nodes with direct side-effects
-                    // (as opposed to side effects of their children).
-                    // This default case should never include calls or assignments.
-                    assert(!node->OperRequiresAsgFlag() && !node->OperIs(GT_CALL));
-                    if (!node->gtSetFlags() && !node->OperMayThrow(this))
-                    {
-                        JITDUMP("Removing dead node:\n");
-                        DISPNODE(node);
-
-                        node->VisitOperands([](GenTree* operand) -> GenTree::VisitResult {
-                            operand->SetUnusedValue();
-                            return GenTree::VisitResult::Continue;
-                        });
-
-                        blockRange.Remove(node);
-                    }
-                }
+                fgTryRemoveNonLocal(node, &blockRange);
                 break;
         }
     }
 }
 
+//---------------------------------------------------------------------
+// fgTryRemoveNonLocal - try to remove a node if it is unused and has no direct
+//   side effects.
+//
+// Arguments
+//    node       - the non-local node to try;
+//    blockRange - the block range that contains the node.
+//
+// Return value:
+//    None
+//
+// Notes: local nodes are processed independently and are not expected in this function.
+//
+bool Compiler::fgTryRemoveNonLocal(GenTree* node, LIR::Range* blockRange)
+{
+    assert(!node->OperIsLocal());
+    if (!node->IsValue() || node->IsUnusedValue())
+    {
+        // We are only interested in avoiding the removal of nodes with direct side effects
+        // (as opposed to side effects of their children).
+        // This default case should never include calls or assignments.
+        assert(!node->OperRequiresAsgFlag() && !node->OperIs(GT_CALL));
+        if (!node->gtSetFlags() && !node->OperMayThrow(this))
+        {
+            JITDUMP("Removing dead node:\n");
+            DISPNODE(node);
+
+            node->VisitOperands([](GenTree* operand) -> GenTree::VisitResult {
+                operand->SetUnusedValue();
+                return GenTree::VisitResult::Continue;
+            });
+
+            blockRange->Remove(node);
+            return true;
+        }
+    }
+    return false;
+}
+
+//---------------------------------------------------------------------
+// fgRemoveDeadStoreSimple - remove a dead store
+//
+//   pTree          - GenTree** to local, including store-form local or local addr (post-rationalize)
+//   varDsc         - var that is being stored to
+//   life           - current live tracked vars (maintained as we walk backwards)
+//   doAgain        - out parameter, true if we should restart the statement
+//   pStmtInfoDirty - should defer the cost computation to the point after the reverse walk is completed?
+//
+void Compiler::fgRemoveDeadStoreLIR(GenTree* store, BasicBlock* block)
+{
+    LIR::Range& blockRange = LIR::AsRange(block);
+
+    // If the store is marked as a late argument, it is referenced by a call.
+    // Instead of removing it, bash it to a NOP.
+    if ((store->gtFlags & GTF_LATE_ARG) != 0)
+    {
+        JITDUMP("node is a late arg; replacing with NOP\n");
+        store->gtBashToNOP();
+
+        // NOTE: this is a bit of a hack. We need to keep these nodes around as they are
+        // referenced by the call, but they're considered side-effect-free non-value-producing
+        // nodes, so they will be removed if we don't do this.
+        store->gtFlags |= GTF_ORDER_SIDEEFF;
+    }
+    else
+    {
+        blockRange.Remove(store);
+    }
+
+    assert(!opts.MinOpts());
+    fgStmtRemoved = true;
+}
+
+//---------------------------------------------------------------------
 // fgRemoveDeadStore - remove a store to a local which has no exposed uses.
 //
 //   pTree          - GenTree** to local, including store-form local or local addr (post-rationalize)
@@ -2286,17 +2335,6 @@ bool Compiler::fgRemoveDeadStore(GenTree**        pTree,
             }
 #endif // DEBUG
             // Extract the side effects
-            if (rhsNode->TypeGet() == TYP_STRUCT)
-            {
-                // This is a block assignment. An indirection of the rhs is not considered to
-                // happen until the assignment, so we will extract the side effects from only
-                // the address.
-                if (rhsNode->OperIsIndir())
-                {
-                    assert(rhsNode->OperGet() != GT_NULLCHECK);
-                    rhsNode = rhsNode->AsIndir()->Addr();
-                }
-            }
             gtExtractSideEffList(rhsNode, &sideEffList);
         }
 

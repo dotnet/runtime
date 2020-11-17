@@ -1,3 +1,6 @@
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+
 //
 // System.Reflection.Emit.TypeBuilder.cs
 //
@@ -88,7 +91,7 @@ namespace System.Reflection.Emit
         }
 
         [DynamicDependency(nameof(state))]  // Automatically keeps all previous fields too due to StructLayout
-        [DynamicDependency(nameof(IsAssignableTo))] // Used from reflection.c: mono_reflection_call_is_assignable_to
+        [DynamicDependency(nameof(IsAssignableToInternal))] // Used from reflection.c: mono_reflection_call_is_assignable_to
         internal TypeBuilder(ModuleBuilder mb, TypeAttributes attr, int table_idx)
         {
             this.parent = null;
@@ -101,11 +104,11 @@ namespace System.Reflection.Emit
             pmodule = mb;
         }
 
-        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2006:UnrecognizedReflectionPattern",
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2074:UnrecognizedReflectionPattern",
             Justification = "Linker doesn't analyze ResolveUserType but it's an identity function")]
 
         [DynamicDependency(nameof(state))]  // Automatically keeps all previous fields too due to StructLayout
-        [DynamicDependency(nameof(IsAssignableTo))] // Used from reflection.c: mono_reflection_call_is_assignable_to
+        [DynamicDependency(nameof(IsAssignableToInternal))] // Used from reflection.c: mono_reflection_call_is_assignable_to
         internal TypeBuilder(ModuleBuilder mb, string fullname, TypeAttributes attr, [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)]Type? parent, Type[]? interfaces, PackingSize packing_size, int type_size, Type? nesting_type)
         {
             int sep_index;
@@ -484,7 +487,7 @@ namespace System.Reflection.Emit
         }
 
         [ComVisible(true)]
-        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2006:UnrecognizedReflectionPattern",
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2075:UnrecognizedReflectionPattern",
             Justification = "Reflection.Emit is not subject to trimming")]
         public ConstructorBuilder DefineDefaultConstructor(MethodAttributes attributes)
         {
@@ -792,6 +795,8 @@ namespace System.Reflection.Emit
 
         // We require emitted types to have all members on their bases to be accessible.
         // This is basically an identity function for `this`.
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2083:UnrecognizedReflectionPattern",
+            Justification = "Reflection emitted types have all of their members")]
         [return: DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)]
         public
         TypeInfo? CreateTypeInfo()
@@ -983,6 +988,7 @@ namespace System.Reflection.Emit
                 }
         */
         [ComVisible(true)]
+        [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors | DynamicallyAccessedMemberTypes.NonPublicConstructors)]
         public override ConstructorInfo[] GetConstructors(BindingFlags bindingAttr)
         {
             if (is_created)
@@ -1038,6 +1044,7 @@ namespace System.Reflection.Emit
             throw new NotSupportedException();
         }
 
+        [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicEvents | DynamicallyAccessedMemberTypes.NonPublicEvents)]
         public override EventInfo? GetEvent(string name, BindingFlags bindingAttr)
         {
             check_created();
@@ -1046,7 +1053,7 @@ namespace System.Reflection.Emit
 
         /* Needed to keep signature compatibility with MS.NET */
         [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicEvents)]
-        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2006:UnrecognizedReflectionPattern",
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2085:UnrecognizedReflectionPattern",
             Justification = "Linker doesn't recongnize GetEvents(BindingFlags.Public) but this is what the body is doing")]
         public override EventInfo[] GetEvents()
         {
@@ -1054,6 +1061,7 @@ namespace System.Reflection.Emit
             return GetEvents(DefaultBindingFlags);
         }
 
+        [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicEvents | DynamicallyAccessedMemberTypes.NonPublicEvents)]
         public override EventInfo[] GetEvents(BindingFlags bindingAttr)
         {
             if (is_created)
@@ -1061,12 +1069,14 @@ namespace System.Reflection.Emit
             throw new NotSupportedException();
         }
 
+        [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicFields | DynamicallyAccessedMemberTypes.NonPublicFields)]
         public override FieldInfo? GetField(string name, BindingFlags bindingAttr)
         {
             check_created();
             return created!.GetField(name, bindingAttr);
         }
 
+        [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicFields | DynamicallyAccessedMemberTypes.NonPublicFields)]
         public override FieldInfo[] GetFields(BindingFlags bindingAttr)
         {
             check_created();
@@ -1096,6 +1106,7 @@ namespace System.Reflection.Emit
             }
         }
 
+        [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)]
         public override MemberInfo[] GetMember(string name, MemberTypes type,
                                                 BindingFlags bindingAttr)
         {
@@ -1103,13 +1114,14 @@ namespace System.Reflection.Emit
             return created!.GetMember(name, type, bindingAttr);
         }
 
+        [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)]
         public override MemberInfo[] GetMembers(BindingFlags bindingAttr)
         {
             check_created();
             return created!.GetMembers(bindingAttr);
         }
 
-        private MethodInfo[] GetMethodsByName(string? name, BindingFlags bindingAttr, bool ignoreCase, Type reflected_type)
+        private MethodInfo[] GetMethodsByName(string? name, BindingFlags bindingAttr, bool ignoreCase)
         {
             MethodInfo[]? candidates;
             bool match;
@@ -1204,13 +1216,15 @@ namespace System.Reflection.Emit
             return result.ToArray();
         }
 
+        [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicMethods | DynamicallyAccessedMemberTypes.NonPublicMethods)]
         public override MethodInfo[] GetMethods(BindingFlags bindingAttr)
         {
             check_created();
 
-            return GetMethodsByName(null, bindingAttr, false, this);
+            return GetMethodsByName(null, bindingAttr, false);
         }
 
+        [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicMethods | DynamicallyAccessedMemberTypes.NonPublicMethods)]
         protected override MethodInfo? GetMethodImpl(string name, BindingFlags bindingAttr,
                                  Binder? binder,
                                  CallingConventions callConvention,
@@ -1224,6 +1238,7 @@ namespace System.Reflection.Emit
             return created!.GetMethod(name, bindingAttr, binder, callConvention, types, modifiers);
         }
 
+        [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicNestedTypes | DynamicallyAccessedMemberTypes.NonPublicNestedTypes)]
         public override Type? GetNestedType(string name, BindingFlags bindingAttr)
         {
             check_created();
@@ -1252,6 +1267,7 @@ namespace System.Reflection.Emit
             return null;
         }
 
+        [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicNestedTypes | DynamicallyAccessedMemberTypes.NonPublicNestedTypes)]
         public override Type[] GetNestedTypes(BindingFlags bindingAttr)
         {
             if (!is_created)
@@ -1282,12 +1298,14 @@ namespace System.Reflection.Emit
             return result.ToArray();
         }
 
+        [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicProperties | DynamicallyAccessedMemberTypes.NonPublicProperties)]
         public override PropertyInfo[] GetProperties(BindingFlags bindingAttr)
         {
             check_created();
             return created!.GetProperties(bindingAttr);
         }
 
+        [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicProperties | DynamicallyAccessedMemberTypes.NonPublicProperties)]
         protected override PropertyInfo? GetPropertyImpl(string name, BindingFlags bindingAttr, Binder? binder, Type? returnType, Type[]? types, ParameterModifier[]? modifiers)
         {
             throw not_supported();
@@ -1302,6 +1320,7 @@ namespace System.Reflection.Emit
             return created!.HasElementType;
         }
 
+        [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)]
         public override object? InvokeMember(string name, BindingFlags invokeAttr, Binder? binder, object? target, object?[]? args, ParameterModifier[]? modifiers, CultureInfo? culture, string[]? namedParameters)
         {
             check_created();
@@ -1392,7 +1411,7 @@ namespace System.Reflection.Emit
 
             Type[] copy = new Type[typeArguments.Length];
             typeArguments.CopyTo(copy, 0);
-            return pmodule.assemblyb.MakeGenericType(this, copy);
+            return AssemblyBuilder.MakeGenericType(this, copy);
         }
 
         public override Type MakePointerType()
@@ -1593,15 +1612,9 @@ namespace System.Reflection.Emit
             return DefineField(name, datablobtype, attributes | FieldAttributes.Static | FieldAttributes.HasFieldRVA);
         }
 
-        public TypeToken TypeToken
-        {
-            get
-            {
-                return new TypeToken(0x02000000 | table_idx);
-            }
-        }
+        public override int MetadataToken => 0x02000000 | table_idx;
 
-        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2006:UnrecognizedReflectionPattern",
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2074:UnrecognizedReflectionPattern",
             Justification = "Linker doesn't recongnize ResolveUserType")]
         public void SetParent([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type? parent)
         {
@@ -1663,7 +1676,7 @@ namespace System.Reflection.Emit
             }
         }
 
-        private Exception not_supported()
+        private static Exception not_supported()
         {
             return new NotSupportedException("The invoked member is not supported in a dynamic module.");
         }
@@ -1680,7 +1693,7 @@ namespace System.Reflection.Emit
                 throw not_supported();
         }
 
-        private void check_name(string argName, string name)
+        private static void check_name(string argName, string name)
         {
             if (name == null)
                 throw new ArgumentNullException(argName);
@@ -1700,7 +1713,7 @@ namespace System.Reflection.Emit
         }
 
         // FIXME: "arrays"
-        internal bool IsAssignableTo([NotNullWhen(true)] Type? c)
+        internal bool IsAssignableToInternal([NotNullWhen(true)] Type? c)
         {
             if (c == this)
                 return true;
@@ -1819,6 +1832,8 @@ namespace System.Reflection.Emit
             return generic_params;
         }
 
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2070:UnrecognizedReflectionPattern",
+            Justification = "Linker thinks Type.GetConstructor(ConstructorInfo) is one of the public APIs because it doesn't analyze method signatures. We already have ConstructorInfo.")]
         public static ConstructorInfo GetConstructor(Type type, ConstructorInfo constructor)
         {
             /*FIXME I would expect the same checks of GetMethod here*/
@@ -1867,7 +1882,7 @@ namespace System.Reflection.Emit
             return false;
         }
 
-        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2006:UnrecognizedReflectionPattern",
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2055:UnrecognizedReflectionPattern",
             Justification = "Type.MakeGenericType is used to create a typical instantiation")]
         public static MethodInfo GetMethod(Type type, MethodInfo method)
         {

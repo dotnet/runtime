@@ -1,14 +1,14 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
+using System.IO;
+using System.Linq;
 using System.Net.Test.Common;
 using System.Security.Cryptography.X509Certificates;
 using System.Security.Authentication;
 using System.Threading.Tasks;
 using Xunit;
-using System.Linq;
 
 namespace System.Net.Security.Tests
 {
@@ -45,9 +45,9 @@ namespace System.Net.Security.Tests
                 RemoteCertificateValidationCallback serverRemoteCallback = new RemoteCertificateValidationCallback(delegate { return true; });
                 SslStreamCertificateContext certificateContext = SslStreamCertificateContext.Create(serverCert, null, false);
 
-                var network = new VirtualNetwork();
-                using (var client = new SslStream(new VirtualNetworkStream(network, isServer: false)))
-                using (var server = new SslStream(new VirtualNetworkStream(network, isServer: true)))
+                (Stream stream1, Stream stream2) = TestHelper.GetConnectedStreams();
+                using (var client = new SslStream(stream1))
+                using (var server = new SslStream(stream2))
                 {
                     // Create client options
                     var clientOptions = new SslClientAuthenticationOptions
@@ -80,7 +80,7 @@ namespace System.Net.Security.Tests
                     // Authenticate
                     Task clientTask = client.AuthenticateAsClientAsync(TestAuthenticateAsync, clientOptions);
                     Task serverTask = server.AuthenticateAsServerAsync(TestAuthenticateAsync, serverOptions);
-                    await new[] {clientTask, serverTask}.WhenAllOrAnyFailed();
+                    await new[] { clientTask, serverTask }.WhenAllOrAnyFailed();
 
                     // Validate that client options are unchanged
                     Assert.Equal(clientAllowRenegotiation, clientOptions.AllowRenegotiation);

@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 //
 // File: methodtable.h
 //
@@ -1884,7 +1883,7 @@ public:
 #endif
 
 #ifdef FEATURE_64BIT_ALIGNMENT
-    // Returns true iff the native view of this type requires 64-bit aligment.
+    // Returns true iff the native view of this type requires 64-bit alignment.
     bool NativeRequiresAlign8();
 #endif // FEATURE_64BIT_ALIGNMENT
 
@@ -3280,7 +3279,7 @@ protected:
             { LIMITED_METHOD_CONTRACT; return m_pDeclMT->GetNumMethods(); }
 
         virtual void UpdateImplMethodDesc(MethodDesc* pMD, UINT32 slotNumber)
-            { LIMITED_METHOD_CONTRACT; } 
+            { LIMITED_METHOD_CONTRACT; }
 
     };  // class MethodDataInterface
 
@@ -3322,7 +3321,7 @@ protected:
             { WRAPPER_NO_CONTRACT; return m_pDecl->GetNumVirtuals(); }
 
         virtual void UpdateImplMethodDesc(MethodDesc* pMD, UINT32 slotNumber)
-            { LIMITED_METHOD_CONTRACT; } 
+            { LIMITED_METHOD_CONTRACT; }
 
       protected:
         UINT32 MapToImplSlotNumber(UINT32 slotNumber);
@@ -3930,8 +3929,10 @@ private:
     inline DWORD GetInterfaceMapSize();
 
     // The instantiation/dictionary comes at the end of the MethodTable after
-    //  the interface map.
-    inline DWORD GetInstAndDictSize();
+    // the interface map. This is the total number of bytes used by the dictionary.
+    // The pSlotSize argument is used to return the size occupied by slots (not including
+    // the optional back pointer used when expanding dictionaries).
+    inline DWORD GetInstAndDictSize(DWORD *pSlotSize);
 
 private:
     // Helper template to compute the offsets at compile time

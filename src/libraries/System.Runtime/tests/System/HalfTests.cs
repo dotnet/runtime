@@ -1,6 +1,5 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
 using System.Globalization;
@@ -11,14 +10,14 @@ namespace System.Tests
 {
     public partial class HalfTests
     {
-        private static unsafe ushort HalfToUInt16Bits(Half value)
+        private static ushort HalfToUInt16Bits(Half value)
         {
-            return *((ushort*)&value);
+            return (ushort)BitConverter.HalfToInt16Bits(value);
         }
 
-        private static unsafe Half UInt16BitsToHalf(ushort value)
+        private static Half UInt16BitsToHalf(ushort value)
         {
-            return *((Half*)&value);
+            return BitConverter.Int16BitsToHalf((short)value);
         }
 
         [Fact]
@@ -282,6 +281,10 @@ namespace System.Tests
             yield return new object[] { Half.NaN, Half.NaN, 0 };
             yield return new object[] { Half.NaN, UInt16BitsToHalf(0x0000), -1 };
             yield return new object[] { Half.MaxValue, null, 1 };
+            yield return new object[] { Half.MinValue, Half.NegativeInfinity, 1 };
+            yield return new object[] { Half.NegativeInfinity, Half.MinValue, -1 };
+            yield return new object[] { UInt16BitsToHalf(0x8000), Half.NegativeInfinity, 1 }; // Negative zero
+            yield return new object[] { Half.NegativeInfinity, UInt16BitsToHalf(0x8000), -1 }; // Negative zero
         }
 
         [Theory]
@@ -332,7 +335,7 @@ namespace System.Tests
             yield return new object[] { Half.MaxValue, Half.MaxValue, true };
             yield return new object[] { Half.MaxValue, Half.MinValue, false };
             yield return new object[] { Half.MaxValue, UInt16BitsToHalf(0x0000), false };
-            yield return new object[] { Half.NaN, Half.NaN, false };
+            yield return new object[] { Half.NaN, Half.NaN, true };
             yield return new object[] { Half.MaxValue, 789.0f, false };
             yield return new object[] { Half.MaxValue, "789", false };
         }
@@ -928,6 +931,14 @@ namespace System.Tests
         {
             float f = (float)half;
             Assert.Equal(f, verify, precision: 1);
+        }
+
+        [Fact]
+        public static void EqualityMethodAndOperator()
+        {
+            Assert.True(Half.NaN.Equals(Half.NaN));
+            Assert.False(Half.NaN == Half.NaN);
+            Assert.Equal(Half.NaN, Half.NaN);
         }
     }
 }

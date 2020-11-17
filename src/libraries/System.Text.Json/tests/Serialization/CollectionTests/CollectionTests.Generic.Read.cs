@@ -1,6 +1,5 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
 using System.Linq;
@@ -256,6 +255,66 @@ namespace System.Text.Json.Serialization.Tests
 
             result2 = JsonSerializer.Deserialize<StringIListWrapper>(@"[]");
             Assert.Equal(0, result2.Count());
+        }
+
+        [Fact]
+        public static void ReadGenericStructIList()
+        {
+            string json = "[10,20,30]";
+            var wrapper = JsonSerializer.Deserialize<GenericStructIListWrapper<int>>(json);
+            Assert.Equal(3, wrapper.Count);
+            Assert.Equal(10, wrapper[0]);
+            Assert.Equal(20, wrapper[1]);
+            Assert.Equal(30, wrapper[2]);
+        }
+
+        [Fact]
+        public static void ReadNullableGenericStructIList()
+        {
+            string json = "[10,20,30]";
+            var wrapper = JsonSerializer.Deserialize<GenericStructIListWrapper<int>?>(json);
+            Assert.True(wrapper.HasValue);
+            Assert.Equal(3, wrapper.Value.Count);
+            Assert.Equal(10, wrapper.Value[0]);
+            Assert.Equal(20, wrapper.Value[1]);
+            Assert.Equal(30, wrapper.Value[2]);
+        }
+
+        [Fact]
+        public static void ReadNullableGenericStructIListWithNullJson()
+        {
+            var wrapper = JsonSerializer.Deserialize<GenericStructIListWrapper<int>?>("null");
+            Assert.False(wrapper.HasValue);
+        }
+
+        [Fact]
+        public static void ReadGenericStructICollection()
+        {
+            string json = "[10,20,30]";
+            var wrapper = JsonSerializer.Deserialize<GenericStructICollectionWrapper<int>>(json);
+            Assert.Equal(3, wrapper.Count);
+            Assert.Equal(10, wrapper.ElementAt(0));
+            Assert.Equal(20, wrapper.ElementAt(1));
+            Assert.Equal(30, wrapper.ElementAt(2));
+        }
+
+        [Fact]
+        public static void ReadNullableGenericStructICollection()
+        {
+            string json = "[10,20,30]";
+            var wrapper = JsonSerializer.Deserialize<GenericStructICollectionWrapper<int>?>(json);
+            Assert.True(wrapper.HasValue);
+            Assert.Equal(3, wrapper.Value.Count);
+            Assert.Equal(10, wrapper.Value.ElementAt(0));
+            Assert.Equal(20, wrapper.Value.ElementAt(1));
+            Assert.Equal(30, wrapper.Value.ElementAt(2));
+        }
+
+        [Fact]
+        public static void ReadNullableGenericStructICollectionWithNullJson()
+        {
+            var wrapper = JsonSerializer.Deserialize<GenericStructICollectionWrapper<int>?>("null");
+            Assert.False(wrapper.HasValue);
         }
 
         [Fact]
@@ -523,6 +582,36 @@ namespace System.Text.Json.Serialization.Tests
                 Assert.Equal(new HashSet<string> { "3", "4" }, (ISet<string>)result.First());
                 Assert.Equal(new HashSet<string> { "1", "2" }, (ISet<string>)result.Last());
             }
+        }
+
+        [Fact]
+        public static void ReadGenericStructISet()
+        {
+            string json = "[10, 20, 30]";
+            var wrapper = JsonSerializer.Deserialize<GenericStructISetWrapper<int>>(json);
+            Assert.Equal(3, wrapper.Count);
+            Assert.Equal(10, wrapper.ElementAt(0));
+            Assert.Equal(20, wrapper.ElementAt(1));
+            Assert.Equal(30, wrapper.ElementAt(2));
+        }
+
+        [Fact]
+        public static void ReadNullableGenericStructISet()
+        {
+            string json = "[10, 20, 30]";
+            var wrapper = JsonSerializer.Deserialize<GenericStructISetWrapper<int>?>(json);
+            Assert.True(wrapper.HasValue);
+            Assert.Equal(3, wrapper.Value.Count);
+            Assert.Equal(10, wrapper.Value.ElementAt(0));
+            Assert.Equal(20, wrapper.Value.ElementAt(1));
+            Assert.Equal(30, wrapper.Value.ElementAt(2));
+        }
+
+        [Fact]
+        public static void ReadNullableGenericStructISetWithNullJson()
+        {
+            var wrapper = JsonSerializer.Deserialize<GenericStructISetWrapper<int>?>("null");
+            Assert.False(wrapper.HasValue);
         }
 
         [Fact]
@@ -960,6 +1049,46 @@ namespace System.Text.Json.Serialization.Tests
 
             result = JsonSerializer.Deserialize<SortedSet<int>>(Encoding.UTF8.GetBytes(@"[]"));
             Assert.Equal(0, result.Count());
+        }
+
+        [Fact]
+        public static void ReadClass_WithGenericStructCollectionWrapper_NullJson_Throws()
+        {
+            Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<ClassWithGenericStructIListWrapper>(@"{ ""List"": null }"));
+            Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<ClassWithGenericStructICollectionWrapper>(@"{ ""Collection"": null }"));
+            Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<ClassWithGenericStructIDictionaryWrapper>(@"{ ""Dictionary"": null }"));
+            Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<ClassWithGenericStructISetWrapper>(@"{ ""Set"": null }"));
+        }
+
+        [Fact]
+        public static void ReadSimpleTestClass_GenericStructCollectionWrappers()
+        {
+            SimpleTestClassWithGenericStructCollectionWrappers obj = JsonSerializer.Deserialize<SimpleTestClassWithGenericStructCollectionWrappers>(SimpleTestClassWithGenericStructCollectionWrappers.s_json);
+            obj.Verify();
+        }
+
+        [Fact]
+        public static void ReadSimpleTestStruct_NullableGenericStructCollectionWrappers()
+        {
+            {
+                SimpleTestStructWithNullableGenericStructCollectionWrappers obj = JsonSerializer.Deserialize<SimpleTestStructWithNullableGenericStructCollectionWrappers>(SimpleTestStructWithNullableGenericStructCollectionWrappers.s_json);
+                obj.Verify();
+            }
+
+            {
+                string json =
+                        @"{" +
+                        @"""List"" : null," +
+                        @"""Collection"" : null," +
+                        @"""Set"" : null," +
+                        @"""Dictionary"" : null" +
+                        @"}";
+                SimpleTestStructWithNullableGenericStructCollectionWrappers obj = JsonSerializer.Deserialize<SimpleTestStructWithNullableGenericStructCollectionWrappers>(json);
+                Assert.False(obj.List.HasValue);
+                Assert.False(obj.Collection.HasValue);
+                Assert.False(obj.Set.HasValue);
+                Assert.False(obj.Dictionary.HasValue);
+            }
         }
 
         [Fact]

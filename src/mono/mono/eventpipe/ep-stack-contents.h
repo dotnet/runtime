@@ -31,6 +31,10 @@ struct _EventPipeStackContents_Internal {
 	ep_rt_method_desc_t *methods [EP_MAX_STACK_DEPTH];
 #endif
 
+	// TODO: Look at optimizing this when writing into buffer manager.
+	// Only write up to next available frame to better utilize memory.
+	// Even events not requesting a stack will still waste space in buffer manager.
+	// Needs to go first since it dictates size of struct.
 	// The next available slot in stack_frames.
 	uint32_t next_available_frame;
 };
@@ -175,4 +179,4 @@ ep_stack_contents_get_size (const EventPipeStackContents *stack_contents)
 }
 
 #endif /* ENABLE_PERFTRACING */
-#endif /** __EVENTPIPE_STACK_CONTENTS_H__ **/
+#endif /* __EVENTPIPE_STACK_CONTENTS_H__ */

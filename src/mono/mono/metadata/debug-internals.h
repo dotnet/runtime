@@ -53,6 +53,7 @@ typedef struct
 
 typedef enum {
 	DEBUG_DIR_ENTRY_CODEVIEW = 2,
+	DEBUG_DIR_REPRODUCIBLE = 16,
 	DEBUG_DIR_ENTRY_PPDB = 17,
 	DEBUG_DIR_PDB_CHECKSUM = 19
 } DebugDirectoryEntryType;

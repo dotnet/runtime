@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 //
 
 //
@@ -358,11 +357,11 @@ void SetExceptionAVParameters(              // No return.
     GCPROTECT_BEGIN(throwable)
     {
         // This should only be called for AccessViolationException
-        _ASSERTE(MscorlibBinder::GetException(kAccessViolationException) == throwable->GetMethodTable());
+        _ASSERTE(CoreLibBinder::GetException(kAccessViolationException) == throwable->GetMethodTable());
 
-        FieldDesc *pFD_ip = MscorlibBinder::GetField(FIELD__ACCESS_VIOLATION_EXCEPTION__IP);
-        FieldDesc *pFD_target = MscorlibBinder::GetField(FIELD__ACCESS_VIOLATION_EXCEPTION__TARGET);
-        FieldDesc *pFD_access = MscorlibBinder::GetField(FIELD__ACCESS_VIOLATION_EXCEPTION__ACCESSTYPE);
+        FieldDesc *pFD_ip = CoreLibBinder::GetField(FIELD__ACCESS_VIOLATION_EXCEPTION__IP);
+        FieldDesc *pFD_target = CoreLibBinder::GetField(FIELD__ACCESS_VIOLATION_EXCEPTION__TARGET);
+        FieldDesc *pFD_access = CoreLibBinder::GetField(FIELD__ACCESS_VIOLATION_EXCEPTION__ACCESSTYPE);
 
         _ASSERTE(pFD_ip->GetFieldType() == ELEMENT_TYPE_I);
         _ASSERTE(pFD_target->GetFieldType() == ELEMENT_TYPE_I);
@@ -457,12 +456,12 @@ void WrapNonCompliantException(OBJECTREF *ppThrowable)
     {
         // idempotent operations, so the race condition is okay.
         if (pMT_RuntimeWrappedException == NULL)
-            pMT_RuntimeWrappedException = MscorlibBinder::GetException(kRuntimeWrappedException);
+            pMT_RuntimeWrappedException = CoreLibBinder::GetException(kRuntimeWrappedException);
 
         if (pFD_WrappedException == NULL)
-            pFD_WrappedException = MscorlibBinder::GetField(FIELD__RUNTIME_WRAPPED_EXCEPTION__WRAPPED_EXCEPTION);
+            pFD_WrappedException = CoreLibBinder::GetField(FIELD__RUNTIME_WRAPPED_EXCEPTION__WRAPPED_EXCEPTION);
 
-        OBJECTREF orWrapper = AllocateObject(MscorlibBinder::GetException(kRuntimeWrappedException));
+        OBJECTREF orWrapper = AllocateObject(CoreLibBinder::GetException(kRuntimeWrappedException));
 
         GCPROTECT_BEGIN(orWrapper);
 
@@ -578,7 +577,7 @@ void CreateTypeInitializationExceptionObject(LPCWSTR pTypeThatFailed,
         // in the code that follows.
         if (!isAlreadyCreating.GetValue()) {
             pThread->SetIsCreatingTypeInitException();
-            pMT = MscorlibBinder::GetException(kTypeInitializationException);
+            pMT = CoreLibBinder::GetException(kTypeInitializationException);
             methodID = METHOD__TYPE_INIT_EXCEPTION__STR_EX_CTOR;
         }
         else {
@@ -3491,9 +3490,7 @@ BOOL IsExceptionOfType(RuntimeExceptionKind reKind, OBJECTREF *pThrowable)
 
     MethodTable *pThrowableMT = (*pThrowable)->GetMethodTable();
 
-    // IsExceptionOfType is supported for mscorlib exception types only
-    _ASSERTE(reKind <= kLastExceptionInMscorlib);
-    return MscorlibBinder::IsException(pThrowableMT, reKind);
+    return CoreLibBinder::IsException(pThrowableMT, reKind);
 }
 
 BOOL IsAsyncThreadException(OBJECTREF *pThrowable) {
@@ -3838,7 +3835,7 @@ LONG WatsonLastChance(                  // EXCEPTION_CONTINUE_SEARCH, _CONTINUE_
 
                 STRESS_LOG0(LF_CORDB, LL_INFO10, "D::RFFE: About to call RaiseFailFastException\n");
 #ifdef HOST_WINDOWS
-                CreateCrashDumpIfEnabled();
+                CreateCrashDumpIfEnabled(fSOException);
 #endif
                 RaiseFailFastException(pExceptionInfo == NULL ? NULL : pExceptionInfo->ExceptionRecord,
                                        pExceptionInfo == NULL ? NULL : pExceptionInfo->ContextRecord,
@@ -4044,7 +4041,7 @@ BuildCreateDumpCommandLine(
     const char* DumpGeneratorName = "createdump.exe";
 
     PathString coreclrPath;
-    if (WszGetModuleFileName(GetCLRModule(), coreclrPath))
+    if (GetClrModulePathName(coreclrPath))
     {
         SString::CIterator lastBackslash = coreclrPath.End();
         if (coreclrPath.FindBack(lastBackslash, W('\\')))
@@ -4088,10 +4085,10 @@ BuildCreateDumpCommandLine(
     }
 }
 
-static bool
+static DWORD 
 LaunchCreateDump(LPCWSTR lpCommandLine)
 {
-    bool fSuccess = false;
+    DWORD fSuccess = false;
 
     EX_TRY
     {
@@ -4120,12 +4117,26 @@ LaunchCreateDump(LPCWSTR lpCommandLine)
 }
 
 void
-CreateCrashDumpIfEnabled()
+CreateCrashDumpIfEnabled(bool stackoverflow)
 {
-    // If enabled, launch the create minidump utility and wait until it completes
-    if (g_createDumpCommandLine != nullptr)
+    // If enabled, launch the create minidump utility and wait until it completes. Only launch createdump once for this process.
+    LPCWSTR createDumpCommandLine = InterlockedExchangeT<LPCWSTR>(&g_createDumpCommandLine, nullptr);
+    if (createDumpCommandLine != nullptr)
     {
-        LaunchCreateDump(g_createDumpCommandLine);
+        if (stackoverflow)
+        {
+            HandleHolder createDumpThreadHandle = Thread::CreateUtilityThread(Thread::StackSize_Small, (LPTHREAD_START_ROUTINE)LaunchCreateDump, (void*)createDumpCommandLine, W(".NET Stack overflow create dump"));
+            if (createDumpThreadHandle != INVALID_HANDLE_VALUE)
+            {
+                // Wait for the dump to be generated
+                DWORD res = WaitForSingleObject(createDumpThreadHandle, INFINITE);
+                _ASSERTE(res == WAIT_OBJECT_0);
+            }
+        }
+        else
+        {
+            LaunchCreateDump(createDumpCommandLine);
+        }
     }
 }
 
@@ -4151,15 +4162,15 @@ GenerateCrashDump(
 void
 InitializeCrashDump()
 {
-    bool enabled = CLRConfig::IsConfigEnabled(CLRConfig::INTERNAL_DbgEnableMiniDump);
-    if (enabled)
+    DWORD enabled = CLRConfig::GetConfigValue(CLRConfig::INTERNAL_DbgEnableMiniDump);
+    if (enabled == 1)
     {
         LPCWSTR dumpName = CLRConfig::GetConfigValue(CLRConfig::INTERNAL_DbgMiniDumpName);
         int dumpType = CLRConfig::GetConfigValue(CLRConfig::INTERNAL_DbgMiniDumpType);
-        bool diag = CLRConfig::IsConfigEnabled(CLRConfig::INTERNAL_CreateDumpDiagnostics);
+        DWORD diag = CLRConfig::GetConfigValue(CLRConfig::INTERNAL_CreateDumpDiagnostics);
 
         SString commandLine;
-        BuildCreateDumpCommandLine(commandLine, dumpName, dumpType, diag);
+        BuildCreateDumpCommandLine(commandLine, dumpName, dumpType, diag == 1);
         g_createDumpCommandLine = commandLine.GetCopyOfUnicodeString();
     }
 }
@@ -4174,7 +4185,7 @@ InitializeCrashDump()
 void CrashDumpAndTerminateProcess(UINT exitCode)
 {
 #ifdef HOST_WINDOWS
-    CreateCrashDumpIfEnabled();
+    CreateCrashDumpIfEnabled(exitCode == COR_E_STACKOVERFLOW);
 #endif
     TerminateProcess(GetCurrentProcess(), exitCode);
 }
@@ -5863,21 +5874,21 @@ const BYTE *UnparseType(const BYTE *pType, DWORD& csig, StubLinker *psl)
 
         case ELEMENT_TYPE_U1:
             psl->EmitUtf8("unsigned ");
-            //fallthru
+            FALLTHROUGH;
         case ELEMENT_TYPE_I1:
             psl->EmitUtf8("byte");
             break;
 
         case ELEMENT_TYPE_U2:
             psl->EmitUtf8("unsigned ");
-            //fallthru
+            FALLTHROUGH;
         case ELEMENT_TYPE_I2:
             psl->EmitUtf8("short");
             break;
 
         case ELEMENT_TYPE_U4:
             psl->EmitUtf8("unsigned ");
-            //fallthru
+            FALLTHROUGH;
         case ELEMENT_TYPE_I4:
             psl->EmitUtf8("int");
             break;
@@ -5891,7 +5902,7 @@ const BYTE *UnparseType(const BYTE *pType, DWORD& csig, StubLinker *psl)
 
         case ELEMENT_TYPE_U8:
             psl->EmitUtf8("unsigned ");
-            //fallthru
+            FALLTHROUGH;
         case ELEMENT_TYPE_I8:
             psl->EmitUtf8("long");
             break;
@@ -7295,7 +7306,7 @@ LONG WINAPI CLRVectoredExceptionHandlerPhase2(PEXCEPTION_POINTERS pExceptionInfo
             CONTRACT_VIOLATION(TakesLockViolation);
 
             fExternalException = (!ExecutionManager::IsManagedCode(GetIP(pExceptionInfo->ContextRecord)) &&
-                                  !IsIPInModule(g_hThisInst, GetIP(pExceptionInfo->ContextRecord)));
+                                  !IsIPInModule(GetClrModuleBase(), GetIP(pExceptionInfo->ContextRecord)));
         }
 
         if (fExternalException)
@@ -7462,7 +7473,7 @@ VEH_ACTION WINAPI CLRVectoredExceptionHandlerPhase3(PEXCEPTION_POINTERS pExcepti
             if ((!fAVisOk) && !(pExceptionRecord->ExceptionFlags & EXCEPTION_UNWINDING))
             {
                 PCODE ip = (PCODE)GetIP(pContext);
-                if (IsIPInModule(g_hThisInst, ip) || IsIPInModule(GCHeapUtilities::GetGCModule(), ip))
+                if (IsIPInModule(GetClrModuleBase(), ip) || IsIPInModule(GCHeapUtilities::GetGCModuleBase(), ip))
                 {
                     CONTRACT_VIOLATION(ThrowsViolation|FaultViolation);
 
@@ -10896,7 +10907,7 @@ BOOL IsProcessCorruptedStateException(DWORD dwExceptionCode, OBJECTREF throwable
     switch (dwExceptionCode)
     {
     case STATUS_ACCESS_VIOLATION:
-        if (throwable != NULL && MscorlibBinder::IsException(throwable->GetMethodTable(), kNullReferenceException))
+        if (throwable != NULL && CoreLibBinder::IsException(throwable->GetMethodTable(), kNullReferenceException))
             return FALSE;
         break;
     case STATUS_STACK_OVERFLOW:
@@ -10973,7 +10984,7 @@ void ExceptionNotifications::GetEventArgsForNotification(ExceptionNotificationHa
         switch(notificationType)
         {
             case FirstChanceExceptionHandler:
-                pMTEventArgs = MscorlibBinder::GetClass(CLASS__FIRSTCHANCE_EVENTARGS);
+                pMTEventArgs = CoreLibBinder::GetClass(CLASS__FIRSTCHANCE_EVENTARGS);
                 idEventArgsCtor = METHOD__FIRSTCHANCE_EVENTARGS__CTOR;
                 break;
             default:
@@ -11038,7 +11049,7 @@ BOOL ExceptionNotifications::CanDeliverNotificationToCurrentAppDomain(ExceptionN
     // Do we have handler(s) of the specific type wired up?
     if (notificationType == FirstChanceExceptionHandler)
     {
-        return MscorlibBinder::GetField(FIELD__APPCONTEXT__FIRST_CHANCE_EXCEPTION)->GetStaticOBJECTREF() != NULL;
+        return CoreLibBinder::GetField(FIELD__APPCONTEXT__FIRST_CHANCE_EXCEPTION)->GetStaticOBJECTREF() != NULL;
     }
     else
     {
@@ -11136,7 +11147,7 @@ void ExceptionNotifications::DeliverNotificationInternal(ExceptionNotificationHa
     // Get the reference to the delegate based upon the type of notification
     if (notificationType == FirstChanceExceptionHandler)
     {
-        gc.oNotificationDelegate = MscorlibBinder::GetField(FIELD__APPCONTEXT__FIRST_CHANCE_EXCEPTION)->GetStaticOBJECTREF();
+        gc.oNotificationDelegate = CoreLibBinder::GetField(FIELD__APPCONTEXT__FIRST_CHANCE_EXCEPTION)->GetStaticOBJECTREF();
     }
     else
     {

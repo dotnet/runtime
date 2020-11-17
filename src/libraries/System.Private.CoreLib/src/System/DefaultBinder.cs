@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Reflection;
 using System.Diagnostics;
@@ -105,7 +104,7 @@ namespace System
                     continue;
 
                 // Validate the parameters.
-                ParameterInfo[] par = candidates[i]!.GetParametersNoCopy(); // TODO-NULLABLE: Indexer nullability tracked (https://github.com/dotnet/roslyn/issues/34644)
+                ParameterInfo[] par = candidates[i]!.GetParametersNoCopy();
 
 #region Match method by parameter count
                 if (par.Length == 0)
@@ -113,7 +112,7 @@ namespace System
 #region No formal parameters
                     if (args.Length != 0)
                     {
-                        if ((candidates[i]!.CallingConvention & CallingConventions.VarArgs) == 0) // TODO-NULLABLE: Indexer nullability tracked (https://github.com/dotnet/roslyn/issues/34644)
+                        if ((candidates[i]!.CallingConvention & CallingConventions.VarArgs) == 0)
                             continue;
                     }
 

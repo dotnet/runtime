@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 #include <stdint.h>
 
@@ -30,7 +29,6 @@ FCFuncStart(gPalGlobalizationNative)
     QCFuncElement("ChangeCaseTurkish", GlobalizationNative_ChangeCaseTurkish)
     QCFuncElement("CloseSortHandle", GlobalizationNative_CloseSortHandle)
     QCFuncElement("CompareString", GlobalizationNative_CompareString)
-    QCFuncElement("CompareStringOrdinalIgnoreCase", GlobalizationNative_CompareStringOrdinalIgnoreCase)
     QCFuncElement("EndsWith", GlobalizationNative_EndsWith)
     QCFuncElement("EnumCalendarInfo", GlobalizationNative_EnumCalendarInfo)
     QCFuncElement("GetCalendarInfo", GlobalizationNative_GetCalendarInfo)
@@ -50,8 +48,8 @@ FCFuncStart(gPalGlobalizationNative)
     QCFuncElement("GetSortVersion", GlobalizationNative_GetSortVersion)
     QCFuncElement("GetTimeZoneDisplayName", GlobalizationNative_GetTimeZoneDisplayName)
     QCFuncElement("IndexOf", GlobalizationNative_IndexOf)
-    QCFuncElement("IndexOfOrdinalIgnoreCase", GlobalizationNative_IndexOfOrdinalIgnoreCase)
     QCFuncElement("InitICUFunctions", GlobalizationNative_InitICUFunctions)
+    QCFuncElement("InitOrdinalCasingPage", GlobalizationNative_InitOrdinalCasingPage)
     QCFuncElement("IsNormalized", GlobalizationNative_IsNormalized)
     QCFuncElement("IsPredefinedLocale", GlobalizationNative_IsPredefinedLocale)
     QCFuncElement("LastIndexOf", GlobalizationNative_LastIndexOf)

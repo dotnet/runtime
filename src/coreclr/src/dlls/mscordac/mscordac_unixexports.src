@@ -1,6 +1,5 @@
 ; Licensed to the .NET Foundation under one or more agreements.
 ; The .NET Foundation licenses this file to you under the MIT license.
-; See the LICENSE file in the project root for more information.
 
 DacDbiInterfaceInstance
 CLRDataCreateInstance
@@ -31,7 +30,6 @@ nativeStringResourceTable_mscorrc
 #PAL_fwprintf
 #PAL_GetLogicalCpuCountFromOS
 #PAL_GetNumaProcessorNode
-#PAL_GetPALDirectoryW
 #PAL_get_stdout
 #PAL_get_stderr
 #PAL_GetApplicationGroupId
@@ -39,11 +37,15 @@ nativeStringResourceTable_mscorrc
 #PAL_GetCurrentThread
 #PAL_GetCpuLimit
 #PAL_GetNativeExceptionHolderHead
+#PAL_GetPalHostModule
 #PAL_GetSymbolModuleBase
 #PAL_GetTransportPipeName
 #PAL_InitializeDLL
 #PAL_TerminateEx
 #PAL_IsDebuggerPresent
+#PAL_OpenProcessMemory
+#PAL_CloseProcessMemory
+#PAL_ReadProcessMemory
 #PAL_ProbeMemory
 #PAL_Random
 #PAL_memcpy
@@ -83,7 +85,6 @@ nativeStringResourceTable_mscorrc
 #sscanf_s
 
 #CopyFileW
-#CreateFileMappingA
 #CreateFileMappingW
 #CreateFileA
 #CreateFileW
@@ -109,7 +110,6 @@ nativeStringResourceTable_mscorrc
 #FreeLibrary
 #FileTimeToSystemTime
 #GetACP
-#GetCPInfo
 #GetCurrentDirectoryW
 #GetCurrentProcess
 #GetCurrentProcessId
@@ -132,13 +132,11 @@ nativeStringResourceTable_mscorrc
 #GetTempPathA
 #GetTempPathW
 #InitializeCriticalSection
-#IsDBCSLeadByte
 #LeaveCriticalSection
 #LoadLibraryA
 #LoadLibraryW
 #LoadLibraryExW
 #LocalAlloc
-#LocalReAlloc
 #LocalFree
 #MapViewOfFile
 #MoveFileExW

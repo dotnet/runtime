@@ -30,7 +30,7 @@ The vector types supported by one or more target ISAs are supported across platf
 * `Vector256<T>` - A 256-bit vector of type `T`
   * `Vector256<T>` intrinsics are supported only on x86 (and x64).
 
-Note that these are generic types, which distinguishes these from native intrinsic vector types. It also somewhat complicates interop, as the runtime currently doesn't support interop for generic types. See https://github.com/dotnet/coreclr/issues/1685
+Note that these are generic types, which distinguishes these from native intrinsic vector types. It also somewhat complicates interop, as the runtime currently doesn't support interop for generic types. See https://github.com/dotnet/runtime/issues/4547
 
 Not all intrinsics defined on these types support all primitive type parameters. When not supported, they are expected to throw `NotSupportedException`. This is generally handled by the C# implementation code, though for the most part this is a non-issue, as the ISA-specific intrinsics are declared over all supported concrete types (e.g. `Vector128<float>` rather than `Vector128<T>`).
 
@@ -69,7 +69,7 @@ Currently, the JIT determines in the importer whether it will:
 * Generate a call (e.g. if it is a recognized intrinsic but an operand is not immediate as it is expected to be). The `mustExpand` option, which is returned by the VM as an "out" parameter to the `getIntrinsicID` method, must be false in this case.
 * Throw `PlatformNotSupportedException` if it is not a recognized and supported intrinsic for the current platform.
 
-There is some room for improvement here. For example, it may be that an argument that appears to be non-constant could later be determined to be a constant value (https://github.com/dotnet/coreclr/issues/17108).
+There is some room for improvement here. For example, it may be that an argument that appears to be non-constant could later be determined to be a constant value (https://github.com/dotnet/runtime/issues/9989).
 
 ### Hardware Intrinsics Table
 
@@ -114,7 +114,7 @@ The only thing that makes the hardware intrinsics different in the area of instr
 
 The encodings are largely specified by `coreclr\src\jit\instrs{arch}.h`, and most of the target-specific code is in the `emit{arch}.*` files.
 
-This is an area of the JIT that could use some redesign and refactoring (https://github.com/dotnet/coreclr/issues/23006 and https://github.com/dotnet/coreclr/issues/21441 among others).
+This is an area of the JIT that could use some redesign and refactoring (https://github.com/dotnet/runtime/issues/12178 and https://github.com/dotnet/runtime/issues/11631 among others).
 
 ## Testing
 

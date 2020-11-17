@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 //
 // This file is one of a group of files (AesCng.cs, TripleDESCng.cs) that are almost identical except
@@ -107,9 +106,14 @@ namespace System.Security.Cryptography
             return TripleDES.IsWeakKey(key);
         }
 
+        int ICngSymmetricAlgorithm.GetPaddingSize()
+        {
+            return this.GetPaddingSize();
+        }
+
         SafeAlgorithmHandle ICngSymmetricAlgorithm.GetEphemeralModeHandle()
         {
-            return TripleDesBCryptModes.GetSharedHandle(Mode);
+            return TripleDesBCryptModes.GetSharedHandle(Mode, FeedbackSize / 8);
         }
 
         string ICngSymmetricAlgorithm.GetNCryptAlgorithmIdentifier()

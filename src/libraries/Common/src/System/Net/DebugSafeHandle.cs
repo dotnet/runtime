@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 #nullable enable
 using Microsoft.Win32.SafeHandles;
@@ -34,7 +33,7 @@ namespace System.Net
 
         ~DebugSafeHandle()
         {
-            if (NetEventSource.IsEnabled) NetEventSource.Info(this, _trace);
+            if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, _trace);
         }
     }
 #endif // DEBUG

@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 /*============================================================
 **
@@ -96,7 +95,7 @@ struct RCW
         // unused               = 0x04,
         CF_NeedUniqueObject     = 0x08, // always create a new RCW/object even if we have one cached already
         // unused               = 0x10,
-        CF_DetectDCOMProxy      = 0x20, // attempt to determine if the RCW is for a DCOM proxy
+        // unused               = 0x20,
     };
 
     static CreationFlags CreationFlagsFromObjForComIPFlags(ObjFromComIP::flags flags);
@@ -302,13 +301,6 @@ struct RCW
         return m_cbRefCount;
     }
 
-    void GetCachedInterfaceTypes(BOOL bIInspectableOnly,
-                        SArray<PTR_MethodTable> * rgItfTables)
-    {
-        LIMITED_METHOD_DAC_CONTRACT;
-
-    }
-
     void GetCachedInterfacePointers(BOOL bIInspectableOnly,
                         SArray<TADDR> * rgItfPtrs)
     {
@@ -381,15 +373,6 @@ struct RCW
         LIMITED_METHOD_DAC_CONTRACT;
 
         return (m_Flags.m_MarshalingType == MarshalingType_FreeThreaded) ;
-    }
-
-    //
-    // Is this COM object a DCOM Proxy? (For WinRT the RCW must have been created with CF_DetectDCOMProxy)
-    //
-    bool IsDCOMProxy()
-    {
-        LIMITED_METHOD_DAC_CONTRACT;
-        return m_Flags.m_fIsDCOMProxy == 1;
     }
 
     //
@@ -585,8 +568,6 @@ public:
             DWORD       m_MarshalingType:2;        // MarshalingBehavior of the COM object.
 
             DWORD       m_Detached:1;              // set if the RCW was found dead during GC
-
-            DWORD       m_fIsDCOMProxy:1;          // Is the object a proxy to a remote process
         };
     }
     m_Flags;
@@ -708,7 +689,6 @@ protected:
     MethodTable *m_pClassMT;
 };
 
-class ComClassFactoryCreator;
 //-------------------------------------------------------------------------
 // Class that wraps an IClassFactory
 // This class allows a Reflection Class to wrap an IClassFactory
@@ -720,9 +700,7 @@ class ComClassFactoryCreator;
 //
 class ComClassFactory : public ClassFactoryBase
 {
-protected:
-    friend ComClassFactoryCreator;
-
+public:
     // We have two types of ComClassFactory:
     // 1. We build for reflection purpose.  We should not clean up.
     // 2. We build for IClassFactory.  We should clean up.
@@ -732,15 +710,13 @@ protected:
     {
         WRAPPER_NO_CONTRACT;
 
-        m_pwszProgID = NULL;
-        m_pwszServer = NULL;
+        m_wszServer = NULL;
 
         // Default to unmanaged version.
         m_bManagedVersion = FALSE;
         m_rclsid = rclsid;
     }
 
-public :
     //---------------------------------------------------------
     // Mark this instance as Managed Version, so we will not do clean up.
     void SetManagedVersion()
@@ -751,7 +727,7 @@ public :
 
     //--------------------------------------------------------------
     // Init the ComClassFactory
-    void Init(__in_opt WCHAR* pwszProgID, __in_opt WCHAR* pwszServer, MethodTable* pClassMT);
+    void Init(__in_opt PCWSTR wszServer, MethodTable* pClassMT);
 
     //-------------------------------------------------------------
     // create instance, calls IClassFactory::CreateInstance
@@ -787,31 +763,11 @@ private:
     IUnknown *CreateInstanceFromClassFactory(IClassFactory *pClassFact, IUnknown *punkOuter, BOOL *pfDidContainment);
 
 public:;
-    WCHAR*          m_pwszProgID;   // progId
     CLSID           m_rclsid;       // CLSID
-    WCHAR*          m_pwszServer;   // server name
+    PCWSTR          m_wszServer;   // server name
 
 private:
     BOOL            m_bManagedVersion;
-};
-
-//--------------------------------------------------------------
-// Creates the right ComClassFactory for you
-class ComClassFactoryCreator
-{
-public :
-    static ComClassFactory *Create(REFCLSID rclsid)
-    {
-        CONTRACT(ComClassFactory *)
-        {
-            THROWS;
-            GC_NOTRIGGER;
-            MODE_ANY;
-        }
-        CONTRACT_END;
-
-        RETURN new ComClassFactory(rclsid);
-    }
 };
 #endif // FEATURE_COMINTEROP_UNMANAGED_ACTIVATION
 

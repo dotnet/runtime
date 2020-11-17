@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System;
 using System.Collections;
@@ -49,7 +48,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
         public override ObjectData GetData(NodeFactory factory, bool relocsOnly = false)
         {
-            return new ObjectData(_ehInfoBuilder.ToArray(), Array.Empty<Relocation>(), alignment: 1, definedSymbols: new ISymbolDefinitionNode[] { this });
+            return new ObjectData(_ehInfoBuilder.ToArray(), Array.Empty<Relocation>(), alignment: 4, definedSymbols: new ISymbolDefinitionNode[] { this });
         }
 
         protected override string GetName(NodeFactory context)

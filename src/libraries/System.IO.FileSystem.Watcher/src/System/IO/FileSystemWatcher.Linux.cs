@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using Microsoft.Win32.SafeHandles;
 using System.Collections.Generic;
@@ -391,7 +390,12 @@ namespace System.IO
                     // of the world, but there's little that can be done about that.)
                     if (directoryEntry.Parent != parent)
                     {
-                        directoryEntry.Parent?.Children!.Remove (directoryEntry);
+                        // Work around https://github.com/dotnet/csharplang/issues/3393 preventing Parent?.Children!. from behaving as expected
+                        if (directoryEntry.Parent != null)
+                        {
+                            directoryEntry.Parent.Children!.Remove(directoryEntry);
+                        }
+
                         directoryEntry.Parent = parent;
                         if (parent != null)
                         {
@@ -444,7 +448,12 @@ namespace System.IO
                 Debug.Assert (_includeSubdirectories);
                 lock (SyncObj)
                 {
-                    directoryEntry.Parent?.Children!.Remove(directoryEntry);
+                    // Work around https://github.com/dotnet/csharplang/issues/3393 preventing Parent?.Children!. from behaving as expected
+                    if (directoryEntry.Parent != null)
+                    {
+                        directoryEntry.Parent.Children!.Remove(directoryEntry);
+                    }
+
                     RemoveWatchedDirectoryUnlocked (directoryEntry, removeInotify);
                 }
             }

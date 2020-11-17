@@ -6,6 +6,7 @@ parameters:
   name: ''
   helixType: '(unspecified)'
   container: ''
+  crossBuild: false
   crossrootfsDir: ''
   strategy: ''
   pool: ''
@@ -58,8 +59,8 @@ jobs:
       agentOs: FreeBSD
     ${{ if in(parameters.osGroup, 'OSX', 'iOS') }}:
       agentOs: MacOS
-    ${{ if eq(parameters.osGroup, 'Windows_NT') }}:
-      agentOs: Windows_NT
+    ${{ if eq(parameters.osGroup, 'windows') }}:
+      agentOs: windows
 
     # Setting this results in the arcade job template including a step
     # that gathers asset manifests and publishes them to pipeline
@@ -78,12 +79,6 @@ jobs:
 
     - name: osSubgroup
       value: ${{ parameters.osSubgroup }}
-
-    - name: coreClrRepoRoot
-      value: '$(Build.SourcesDirectory)/src/coreclr'
-
-    - name: coreClrRepoRootDir
-      value: '$(coreClrRepoRoot)$(dir)'
 
     - ${{ if and(eq(variables['System.TeamProject'], 'internal'), ne(variables['Build.Reason'], 'PullRequest')) }}:
       - name: _HelixSource

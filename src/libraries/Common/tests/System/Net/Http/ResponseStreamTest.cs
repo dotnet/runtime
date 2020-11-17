@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
 using System.IO;
@@ -253,6 +252,29 @@ namespace System.Net.Http.Functional.Tests
             await StartTransferTypeAndErrorServer(transferType, transferError, async uri =>
             {
                 await ReadAsStreamHelper(uri);
+            });
+        }
+
+        [Theory]
+        [InlineData(TransferType.None, TransferError.None)]
+        [InlineData(TransferType.ContentLength, TransferError.None)]
+        [InlineData(TransferType.Chunked, TransferError.None)]
+        public async Task ReadAsStreamAsync_StreamCanReadIsFalseAfterDispose(
+            TransferType transferType,
+            TransferError transferError)
+        {
+            await StartTransferTypeAndErrorServer(transferType, transferError, async uri =>
+            {
+                using (HttpClient client = CreateHttpClient())
+                using (HttpResponseMessage response = await client.GetAsync(uri, HttpCompletionOption.ResponseHeadersRead))
+                {
+                    Stream stream = await response.Content.ReadAsStreamAsync();
+                    Assert.True(stream.CanRead);
+
+                    stream.Dispose();
+
+                    Assert.False(stream.CanRead);
+                }
             });
         }
 #endif

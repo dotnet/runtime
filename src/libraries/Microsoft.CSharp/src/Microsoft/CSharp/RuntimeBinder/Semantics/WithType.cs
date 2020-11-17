@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
@@ -64,11 +63,11 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             {
                 return true;
             }
-            else if (ReferenceEquals(swt1, null))
+            else if (swt1 is null)
             {
                 return swt2._sym == null;
             }
-            else if (ReferenceEquals(swt2, null))
+            else if (swt2 is null)
             {
                 return swt1._sym == null;
             }

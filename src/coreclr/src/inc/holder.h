@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 
 #ifndef __HOLDER_H_
@@ -116,6 +115,8 @@ struct AutoExpVisibleValue
 template <typename TYPE>
 class HolderBase
 {
+    friend class ClrDataAccess;
+
   protected:
     TYPE    m_value;
 
@@ -228,6 +229,7 @@ template
     >
 class BaseHolder : protected BASE
 {
+    friend class ClrDataAccess;
   protected:
     BOOL    m_acquired;      // Have we acquired the resource?
 
@@ -696,6 +698,7 @@ FORCEINLINE void SafeArrayDoNothing(SAFEARRAY* p)
 template <typename TYPE, void (*ACQUIREF)(TYPE), void (*RELEASEF)(TYPE)>
 class FunctionBase : protected HolderBase<TYPE>
 {
+    friend class ClrDataAccess;
   protected:
 
     FORCEINLINE FunctionBase(TYPE value)

@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using CultureInfo = System.Globalization.CultureInfo;
 
@@ -14,13 +13,12 @@ namespace System.Reflection.Emit
         private string m_name;
         private CallingConventions m_callingConvention;
         private Type m_returnType;
-        private MethodToken m_mdMethod;
+        private int m_token;
         private Type[] m_parameterTypes;
-        private SignatureHelper m_signature;
         #endregion
 
         #region Constructor
-        internal SymbolMethod(ModuleBuilder mod, MethodToken token, Type arrayClass, string methodName,
+        internal SymbolMethod(ModuleBuilder mod, int token, Type arrayClass, string methodName,
             CallingConventions callingConvention, Type? returnType, Type[]? parameterTypes)
         {
             // This is a kind of MethodInfo to represent methods for array type of unbaked type
@@ -30,7 +28,7 @@ namespace System.Reflection.Emit
             // passed into it is this MethodToken. The MethodToken was forged using a TypeSpec for an Array type and
             // the name of the method on Array.
             // As none of the methods on Array have CustomModifiers their is no need to pass those around in here.
-            m_mdMethod = token;
+            m_token = token;
 
             // The ParameterTypes are also a bit interesting in that they may be unbaked TypeBuilders.
             m_returnType = returnType ?? typeof(void);
@@ -49,7 +47,8 @@ namespace System.Reflection.Emit
             m_name = methodName;
             m_callingConvention = callingConvention;
 
-            m_signature = SignatureHelper.GetMethodSigHelper(
+            // Validate signature
+            SignatureHelper.GetMethodSigHelper(
                 mod, callingConvention, returnType, null, null, parameterTypes, null, null);
         }
         #endregion
@@ -60,7 +59,7 @@ namespace System.Reflection.Emit
             return m_parameterTypes;
         }
 
-        internal MethodToken GetToken(ModuleBuilder mod)
+        internal int GetToken(ModuleBuilder mod)
         {
             return mod.GetArrayMethodToken(m_containingType, m_name, m_callingConvention, m_returnType, m_parameterTypes);
         }
@@ -134,11 +133,6 @@ namespace System.Reflection.Emit
         public Module GetModule()
         {
             return m_module;
-        }
-
-        public MethodToken GetToken()
-        {
-            return m_mdMethod;
         }
 
         #endregion

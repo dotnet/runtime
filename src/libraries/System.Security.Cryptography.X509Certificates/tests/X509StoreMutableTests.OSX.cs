@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using Xunit;
 
@@ -22,17 +21,25 @@ namespace System.Security.Cryptography.X509Certificates.Tests
             {
                 const int errSecWrPerm = -61;
                 const int errSecInteractionNotAllowed = -25308;
+                const int kPOSIXErrorBase = 100000;
 
-                if (e.HResult == errSecInteractionNotAllowed)
+                switch (e.HResult)
                 {
-                    Console.WriteLine("Run 'security unlock-keychain' to make tests runable.");
-                    return false;
+                    case errSecInteractionNotAllowed:
+                        Console.WriteLine("Run 'security unlock-keychain' to make tests runable.");
+                        return false;
+                    case kPOSIXErrorBase:
+                        // kPOSIXErrorBase is returned for "unknown error from a subsystem",
+                        // which seems to happen on writes from SSH sessions even if the keychain
+                        // was unlocked.
+                        Console.WriteLine("Writing precondition failed with kPOSIXErrorBase, skipping tests.");
+                        return false;
+                    case errSecWrPerm:
+                        Console.WriteLine("Writing precondition failed with permission denied, skipping tests.");
+                        return false;
                 }
 
-                if (e.HResult == errSecWrPerm)
-                {
-                    return false;
-                }
+                Console.WriteLine($"Precondition test failed with unknown code {e.HResult}, running anyways.");
             }
             catch
             {

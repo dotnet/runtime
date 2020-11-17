@@ -1,0 +1,12 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <DebugType>None</DebugType>
+    <Optimize />
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="TypeIntrinsics.cs" />
+    <Compile Include="TypeIntrinsics.IsAssignableFrom.cs" />
+    <Compile Include="TypeIntrinsics.IsAssignableTo.cs" />
+  </ItemGroup>
+</Project>

@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 #include "jitpch.h"
 
@@ -1022,7 +1021,8 @@ private:
         // otherwise the below layout equality check would be insufficient.
         assert(varDsc->GetLayout() != nullptr);
 
-        if ((val.Offset() == 0) && (structLayout == varDsc->GetLayout()))
+        if ((val.Offset() == 0) && (structLayout != nullptr) &&
+            ClassLayout::AreCompatible(structLayout, varDsc->GetLayout()))
         {
             indir->ChangeOper(GT_LCL_VAR);
             indir->AsLclVar()->SetLclNum(val.LclNum());

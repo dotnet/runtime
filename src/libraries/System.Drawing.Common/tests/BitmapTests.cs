@@ -1,5 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
-// See the LICENSE file in the project root for more information.
+// The .NET Foundation licenses this file to you under the MIT license.
 //
 // (C) 2004 Ximian, Inc.  http://www.ximian.com
 // Copyright (C) 2004,2006-2007 Novell, Inc (http://www.novell.com)
@@ -1212,7 +1212,7 @@ namespace System.Drawing.Tests
                 if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
                 {
                     // "Reserved" is documented as "Reserved. Do not use.", so it's not clear whether we actually need to test this in any unit tests.
-                    // Additionally, the values are not consistent accross Windows (GDI+) and Unix (libgdiplus)
+                    // Additionally, the values are not consistent across Windows (GDI+) and Unix (libgdiplus)
                     Assert.Equal(expectedReserved, data.Reserved);
                 }
 

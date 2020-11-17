@@ -134,7 +134,6 @@ struct _EventPipeBufferManager_Internal {
 	uint32_t num_buffers_stolen;
 	uint32_t num_buffers_leaked;
 #endif
-	volatile uint32_t write_event_suspending;
 };
 
 #if !defined(EP_INLINE_GETTER_SETTER) && !defined(EP_IMPL_BUFFER_MANAGER_GETTER_SETTER)
@@ -179,13 +178,13 @@ ep_buffer_manager_init_sequence_point_thread_list (
 bool
 ep_buffer_manager_write_event (
 	EventPipeBufferManager *buffer_manager,
-	EventPipeThread *thread,
+	ep_rt_thread_handle_t thread,
 	EventPipeSession *session,
 	EventPipeEvent *ep_event,
 	EventPipeEventPayload *payload,
 	const uint8_t *activity_id,
 	const uint8_t *related_activity_id,
-	EventPipeThread *event_thread,
+	ep_rt_thread_handle_t event_thread,
 	EventPipeStackContents *stack);
 
 // READ_ONLY state and no new EventPipeBuffers or EventPipeBufferLists can be created. Calls to
@@ -242,4 +241,4 @@ ep_buffer_manager_ensure_consistency (EventPipeBufferManager *buffer_manager);
 #endif
 
 #endif /* ENABLE_PERFTRACING */
-#endif /** __EVENTPIPE_BUFFERMANAGER_H__ **/
+#endif /* __EVENTPIPE_BUFFERMANAGER_H__ */

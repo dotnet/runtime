@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 
 #ifndef __DBG_TRANSPORT_SESSION_INCLUDED
@@ -794,7 +793,7 @@ private:
 
     // Upon receiving a reply message, signal the event on the message to wake up the thread waiting for
     // the reply message and close the handle to the event.
-    void SignalReplyEvent(Message * pMesssage);
+    void SignalReplyEvent(Message * pMessage);
 
     // Given a message ID, find the matching message in the send queue.  If there is no match, return NULL.
     // If there is a match, remove the message from the send queue and return it.

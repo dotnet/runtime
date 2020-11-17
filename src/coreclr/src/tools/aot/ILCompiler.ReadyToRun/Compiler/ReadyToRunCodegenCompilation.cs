@@ -1,8 +1,8 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
@@ -13,6 +13,7 @@ using System.Threading.Tasks;
 using Internal.IL;
 using Internal.IL.Stubs;
 using Internal.JitInterface;
+using Internal.ReadyToRunConstants;
 using Internal.TypeSystem;
 
 using ILCompiler.DependencyAnalysis;
@@ -229,13 +230,19 @@ namespace ILCompiler
         private int _parallelism;
 
         private bool _generateMapFile;
+        private bool _generateMapCsvFile;
 
         private ProfileDataManager _profileData;
         private ReadyToRunFileLayoutOptimizer _fileLayoutOptimizer;
 
         public ReadyToRunSymbolNodeFactory SymbolNodeFactory { get; }
         public ReadyToRunCompilationModuleGroupBase CompilationModuleGroup { get; }
-        private readonly int? _customPESectionAlignment;
+        private readonly int _customPESectionAlignment;
+        /// <summary>
+        /// Determining whether a type's layout is fixed is a little expensive and the question can be asked many times
+        /// for the same type during compilation so preserve the computed value.
+        /// </summary>
+        private ConcurrentDictionary<TypeDesc, bool> _computedFixedLayoutTypes = new ConcurrentDictionary<TypeDesc, bool>();
 
         internal ReadyToRunCodegenCompilation(
             DependencyAnalyzerBase<NodeFactory> dependencyGraph,
@@ -249,11 +256,12 @@ namespace ILCompiler
             InstructionSetSupport instructionSetSupport,
             bool resilient,
             bool generateMapFile,
+            bool generateMapCsvFile,
             int parallelism,
             ProfileDataManager profileData,
             ReadyToRunMethodLayoutAlgorithm methodLayoutAlgorithm,
             ReadyToRunFileLayoutAlgorithm fileLayoutAlgorithm,
-            int? customPESectionAlignment,
+            int customPESectionAlignment,
             bool verifyTypeAndFieldLayout)
             : base(
                   dependencyGraph,
@@ -268,6 +276,7 @@ namespace ILCompiler
             _resilient = resilient;
             _parallelism = parallelism;
             _generateMapFile = generateMapFile;
+            _generateMapCsvFile = generateMapCsvFile;
             _customPESectionAlignment = customPESectionAlignment;
             SymbolNodeFactory = new ReadyToRunSymbolNodeFactory(nodeFactory, verifyTypeAndFieldLayout);
             _corInfoImpls = new ConditionalWeakTable<Thread, CorInfoImpl>();
@@ -298,7 +307,7 @@ namespace ILCompiler
             using (PerfEventSource.StartStopEvents.EmittingEvents())
             {
                 NodeFactory.SetMarkingComplete();
-                ReadyToRunObjectWriter.EmitObject(outputFile, componentModule: null, nodes, NodeFactory, _generateMapFile, _customPESectionAlignment);
+                ReadyToRunObjectWriter.EmitObject(outputFile, componentModule: null, nodes, NodeFactory, _generateMapFile, _generateMapCsvFile, _customPESectionAlignment);
                 CompilationModuleGroup moduleGroup = _nodeFactory.CompilationModuleGroup;
 
                 if (moduleGroup.IsCompositeBuildMode)
@@ -311,9 +320,9 @@ namespace ILCompiler
                     foreach (string inputFile in _inputFiles)
                     {
                         string relativeMsilPath = Path.GetRelativePath(_compositeRootPath, inputFile);
-                        if (relativeMsilPath.StartsWith(s_folderUpPrefix))
+                        if (relativeMsilPath == inputFile || relativeMsilPath.StartsWith(s_folderUpPrefix, StringComparison.Ordinal))
                         {
-                            // Input file not in the composite root, emit to root output folder
+                            // Input file not under the composite root, emit to root output folder
                             relativeMsilPath = Path.GetFileName(inputFile);
                         }
                         string standaloneMsilOutputFile = Path.Combine(outputDirectory, relativeMsilPath);
@@ -329,6 +338,15 @@ namespace ILCompiler
 
             Directory.CreateDirectory(Path.GetDirectoryName(outputFile));
 
+            ReadyToRunFlags flags =
+                ReadyToRunFlags.READYTORUN_FLAG_Component |
+                ReadyToRunFlags.READYTORUN_FLAG_NonSharedPInvokeStubs;
+
+            if (inputModule.IsPlatformNeutral)
+            {
+                flags |= ReadyToRunFlags.READYTORUN_FLAG_PlatformNeutralSource;
+            }
+
             CopiedCorHeaderNode copiedCorHeader = new CopiedCorHeaderNode(inputModule);
             DebugDirectoryNode debugDirectory = new DebugDirectoryNode(inputModule, outputFile);
             NodeFactory componentFactory = new NodeFactory(
@@ -338,8 +356,7 @@ namespace ILCompiler
                 copiedCorHeader,
                 debugDirectory,
                 win32Resources: new Win32Resources.ResourceData(inputModule),
-                Internal.ReadyToRunConstants.ReadyToRunFlags.READYTORUN_FLAG_Component |
-                Internal.ReadyToRunConstants.ReadyToRunFlags.READYTORUN_FLAG_NonSharedPInvokeStubs);
+                flags);
 
             IComparer<DependencyNodeCore<NodeFactory>> comparer = new SortableDependencyNode.ObjectNodeComparer(new CompilerComparer());
             DependencyAnalyzerBase<NodeFactory> componentGraph = new DependencyAnalyzer<NoLogStrategy<NodeFactory>, NodeFactory>(componentFactory, comparer);
@@ -355,7 +372,7 @@ namespace ILCompiler
             }
             componentGraph.ComputeMarkedNodes();
             componentFactory.Header.Add(Internal.Runtime.ReadyToRunSectionType.OwnerCompositeExecutable, ownerExecutableNode, ownerExecutableNode);
-            ReadyToRunObjectWriter.EmitObject(outputFile, componentModule: inputModule, componentGraph.MarkedNodeList, componentFactory, generateMapFile: false, customPESectionAlignment: null);
+            ReadyToRunObjectWriter.EmitObject(outputFile, componentModule: inputModule, componentGraph.MarkedNodeList, componentFactory, generateMapFile: false, generateMapCsvFile: false, customPESectionAlignment: 0);
         }
 
         public override void WriteDependencyLog(string outputFileName)
@@ -367,7 +384,7 @@ namespace ILCompiler
             }
         }
 
-        public bool IsLayoutFixedInCurrentVersionBubble(TypeDesc type)
+        private bool IsLayoutFixedInCurrentVersionBubbleInternal(TypeDesc type)
         {
             // Primitive types and enums have fixed layout
             if (type.IsPrimitive || type.IsEnum)
@@ -415,6 +432,9 @@ namespace ILCompiler
             return true;
         }
 
+        public bool IsLayoutFixedInCurrentVersionBubble(TypeDesc type) =>
+            _computedFixedLayoutTypes.GetOrAdd(type, (t) => IsLayoutFixedInCurrentVersionBubbleInternal(t));
+
         public bool IsInheritanceChainLayoutFixedInCurrentVersionBubble(TypeDesc type)
         {
             // This method is not expected to be called for value types
@@ -459,11 +479,7 @@ namespace ILCompiler
         {
             using (PerfEventSource.StartStopEvents.JitEvents())
             {
-                ParallelOptions options = new ParallelOptions
-                {
-                    MaxDegreeOfParallelism = _parallelism
-                };
-                Parallel.ForEach(obj, options, dependency =>
+                Action<DependencyNodeCore<NodeFactory>> compileOneMethod = (DependencyNodeCore<NodeFactory> dependency) =>
                 {
                     MethodWithGCInfo methodCodeNodeNeedingCode = dependency as MethodWithGCInfo;
                     MethodDesc method = methodCodeNodeNeedingCode.Method;
@@ -478,6 +494,8 @@ namespace ILCompiler
                     {
                         using (PerfEventSource.StartStopEvents.JitMethodEvents())
                         {
+                            // Create only 1 CorInfoImpl per thread.
+                            // This allows SuperPMI to rely on non-reuse of handles in ObjectToHandle
                             CorInfoImpl corInfoImpl = _corInfoImpls.GetValue(Thread.CurrentThread, thread => new CorInfoImpl(this));
                             corInfoImpl.CompileMethod(methodCodeNodeNeedingCode);
                         }
@@ -485,17 +503,36 @@ namespace ILCompiler
                     catch (TypeSystemException ex)
                     {
                         // If compilation fails, don't emit code for this method. It will be Jitted at runtime
-                        Logger.Writer.WriteLine($"Warning: Method `{method}` was not compiled because: {ex.Message}");
+                        if (Logger.IsVerbose)
+                            Logger.Writer.WriteLine($"Warning: Method `{method}` was not compiled because: {ex.Message}");
                     }
                     catch (RequiresRuntimeJitException ex)
                     {
-                        Logger.Writer.WriteLine($"Info: Method `{method}` was not compiled because `{ex.Message}` requires runtime JIT");
+                        if (Logger.IsVerbose)
+                            Logger.Writer.WriteLine($"Info: Method `{method}` was not compiled because `{ex.Message}` requires runtime JIT");
                     }
                     catch (CodeGenerationFailedException ex) when (_resilient)
                     {
-                        Logger.Writer.WriteLine($"Warning: Method `{method}` was not compiled because `{ex.Message}` requires runtime JIT");
+                        if (Logger.IsVerbose)
+                            Logger.Writer.WriteLine($"Warning: Method `{method}` was not compiled because `{ex.Message}` requires runtime JIT");
                     }
-                });
+                };
+
+                // Use only main thread to compile if parallelism is 1. This allows SuperPMI to rely on non-reuse of handles in ObjectToHandle
+                if (_parallelism == 1)
+                {
+                    foreach (var dependency in obj)
+                        compileOneMethod(dependency);
+                }
+                else
+                {
+                    ParallelOptions options = new ParallelOptions
+                    {
+                        MaxDegreeOfParallelism = _parallelism
+                    };
+
+                    Parallel.ForEach(obj, options, compileOneMethod);
+                }
             }
 
             if (_methodILCache.Count > 1000)

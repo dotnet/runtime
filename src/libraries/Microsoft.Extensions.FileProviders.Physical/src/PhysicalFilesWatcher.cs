@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System;
 using System.Collections.Concurrent;
@@ -43,6 +42,7 @@ namespace Microsoft.Extensions.FileProviders.Physical
         private bool _timerInitialzed;
         private object _timerLock = new object();
         private Func<Timer> _timerFactory;
+        private bool _disposed;
 
         /// <summary>
         /// Initializes an instance of <see cref="PhysicalFilesWatcher" /> that watches files in <paramref name="root" />.
@@ -79,14 +79,23 @@ namespace Microsoft.Extensions.FileProviders.Physical
             bool pollForChanges,
             ExclusionFilters filters)
         {
+            if (fileSystemWatcher == null && !pollForChanges)
+            {
+                throw new ArgumentNullException(nameof(fileSystemWatcher), SR.Error_FileSystemWatcherRequiredWithoutPolling);
+            }
+
             _root = root;
-            _fileWatcher = fileSystemWatcher;
-            _fileWatcher.IncludeSubdirectories = true;
-            _fileWatcher.Created += OnChanged;
-            _fileWatcher.Changed += OnChanged;
-            _fileWatcher.Renamed += OnRenamed;
-            _fileWatcher.Deleted += OnChanged;
-            _fileWatcher.Error += OnError;
+
+            if (fileSystemWatcher != null)
+            {
+                _fileWatcher = fileSystemWatcher;
+                _fileWatcher.IncludeSubdirectories = true;
+                _fileWatcher.Created += OnChanged;
+                _fileWatcher.Changed += OnChanged;
+                _fileWatcher.Renamed += OnRenamed;
+                _fileWatcher.Deleted += OnChanged;
+                _fileWatcher.Error += OnError;
+            }
 
             PollForChanges = pollForChanges;
             _filters = filters;
@@ -232,7 +241,11 @@ namespace Microsoft.Extensions.FileProviders.Physical
         /// <summary>
         /// Disposes the provider. Change tokens may not trigger after the provider is disposed.
         /// </summary>
-        public void Dispose() => Dispose(true);
+        public void Dispose()
+        {
+            Dispose(true);
+            GC.SuppressFinalize(this);
+        }
 
         /// <summary>
         /// Disposes the provider.
@@ -240,14 +253,16 @@ namespace Microsoft.Extensions.FileProviders.Physical
         /// <param name="disposing"><c>true</c> is invoked from <see cref="IDisposable.Dispose"/>.</param>
         protected virtual void Dispose(bool disposing)
         {
-            _fileWatcher.Dispose();
-            _timer?.Dispose();
+            if (!_disposed)
+            {
+                if (disposing)
+                {
+                    _fileWatcher?.Dispose();
+                    _timer?.Dispose();
+                }
+                _disposed = true;
+            }
         }
-
-        /// <summary>
-        /// Destructor for <see cref="PhysicalFilesWatcher"/>.
-        /// </summary>
-        ~PhysicalFilesWatcher() => Dispose(false);
 
         private void OnRenamed(object sender, RenamedEventArgs e)
         {
@@ -355,27 +370,33 @@ namespace Microsoft.Extensions.FileProviders.Physical
 
         private void TryDisableFileSystemWatcher()
         {
-            lock (_fileWatcherLock)
+            if (_fileWatcher != null)
             {
-                if (_filePathTokenLookup.IsEmpty &&
-                    _wildcardTokenLookup.IsEmpty &&
-                    _fileWatcher.EnableRaisingEvents)
+                lock (_fileWatcherLock)
                 {
-                    // Perf: Turn off the file monitoring if no files to monitor.
-                    _fileWatcher.EnableRaisingEvents = false;
+                    if (_filePathTokenLookup.IsEmpty &&
+                        _wildcardTokenLookup.IsEmpty &&
+                        _fileWatcher.EnableRaisingEvents)
+                    {
+                        // Perf: Turn off the file monitoring if no files to monitor.
+                        _fileWatcher.EnableRaisingEvents = false;
+                    }
                 }
             }
         }
 
         private void TryEnableFileSystemWatcher()
         {
-            lock (_fileWatcherLock)
+            if (_fileWatcher != null)
             {
-                if ((!_filePathTokenLookup.IsEmpty || !_wildcardTokenLookup.IsEmpty) &&
-                    !_fileWatcher.EnableRaisingEvents)
+                lock (_fileWatcherLock)
                 {
-                    // Perf: Turn off the file monitoring if no files to monitor.
-                    _fileWatcher.EnableRaisingEvents = true;
+                    if ((!_filePathTokenLookup.IsEmpty || !_wildcardTokenLookup.IsEmpty) &&
+                        !_fileWatcher.EnableRaisingEvents)
+                    {
+                        // Perf: Turn off the file monitoring if no files to monitor.
+                        _fileWatcher.EnableRaisingEvents = true;
+                    }
                 }
             }
         }

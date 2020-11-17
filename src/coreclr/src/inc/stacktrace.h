@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 //-----------------------------------------------------------------------------
 
 //-----------------------------------------------------------------------------
@@ -74,7 +73,7 @@ void GetStringFromStackLevels(UINT ifrStart, UINT cfrTotal, __out_ecount(cchMaxA
 ******************************************************************** robch */
 void GetStringFromAddr(DWORD_PTR dwAddr, __out_ecount(cchMaxAssertStackLevelStringLen) LPSTR szString);
 
-#if defined(TARGET_X86) && !defined(TARGET_UNIX)
+#if defined(HOST_X86) && !defined(TARGET_UNIX)
 /****************************************************************************
 * ClrCaptureContext *
 *-------------------*
@@ -83,9 +82,9 @@ void GetStringFromAddr(DWORD_PTR dwAddr, __out_ecount(cchMaxAssertStackLevelStri
 *       support this, so we need it for CoreCLR 4, if we require Win2K support
 ****************************************************************************/
 extern "C" void __stdcall ClrCaptureContext(__out PCONTEXT ctx);
-#else // TARGET_X86 && !TARGET_UNIX
+#else // HOST_X86 && !TARGET_UNIX
 #define ClrCaptureContext RtlCaptureContext
-#endif // TARGET_X86 && !TARGET_UNIX
+#endif // HOST_X86 && !TARGET_UNIX
 
 
 #endif

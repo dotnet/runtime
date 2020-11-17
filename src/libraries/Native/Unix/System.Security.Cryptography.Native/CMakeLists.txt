@@ -59,7 +59,6 @@ set(NATIVECRYPTO_SOURCES
     pal_evp_cipher.c
     pal_hmac.c
     pal_ocsp.c
-    pal_pkcs12.c
     pal_pkcs7.c
     pal_rsa.c
     pal_ssl.c

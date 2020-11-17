@@ -34,6 +34,24 @@ struct _EventPipeEventSource {
 };
 #endif
 
+static
+inline
+const ep_char8_t *
+ep_event_source_get_os_info (void)
+{
+	extern const ep_char8_t *_ep_os_info;
+	return _ep_os_info;
+}
+
+static
+inline
+const ep_char8_t *
+ep_event_source_get_arch_info (void)
+{
+	extern const ep_char8_t *_ep_arch_info;
+	return _ep_arch_info;
+}
+
 EventPipeEventSource *
 ep_event_source_alloc (void);
 
@@ -46,7 +64,7 @@ ep_event_source_fini (EventPipeEventSource *event_source);
 void
 ep_event_source_free (EventPipeEventSource *event_source);
 
-void
+bool
 ep_event_source_enable (EventPipeEventSource *event_source, EventPipeSession *session);
 
 void
@@ -63,4 +81,4 @@ ep_event_source_get (void)
 }
 
 #endif /* ENABLE_PERFTRACING */
-#endif /** __EVENTPIPE_EVENT_SOURCE_H__ **/
+#endif /* __EVENTPIPE_EVENT_SOURCE_H__ */

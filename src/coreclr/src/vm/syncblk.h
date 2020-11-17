@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 //
 // SYNCBLK.H
 //
@@ -606,9 +605,11 @@ typedef DPTR(class ComCallWrapper)        PTR_ComCallWrapper;
 #include "shash.h"
 #endif // FEATURE_COMINTEROP
 
+using ManagedObjectComWrapperByIdMap = MapSHash<INT64, void*>;
 class InteropSyncBlockInfo
 {
     friend class RCWHolder;
+    friend class ClrDataAccess;
 
 public:
 #ifndef TARGET_UNIX
@@ -878,7 +879,6 @@ private:
     // See InteropLib API for usage.
     void* m_externalComObjectContext;
 
-    using ManagedObjectComWrapperByIdMap = MapSHash<INT64, void*>;
     CrstExplicitInit m_managedObjectComWrapperLock;
     NewHolder<ManagedObjectComWrapperByIdMap> m_managedObjectComWrapperMap;
 #endif // FEATURE_COMINTEROP
@@ -1141,7 +1141,7 @@ class SyncBlock
         return m_Monitor.LeaveCompletely();
     }
 
-    BOOL Wait(INT32 timeOut, BOOL exitContext);
+    BOOL Wait(INT32 timeOut);
     void Pulse();
     void PulseAll();
 
@@ -1570,7 +1570,7 @@ class ObjHeader
         return dac_cast<PTR_Object>(dac_cast<TADDR>(this + 1));
     }
 
-    BOOL Wait(INT32 timeOut, BOOL exitContext);
+    BOOL Wait(INT32 timeOut);
     void Pulse();
     void PulseAll();
 

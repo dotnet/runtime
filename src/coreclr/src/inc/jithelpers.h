@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 //
 // Allow multiple inclusion.
 
@@ -118,9 +117,7 @@
     JITHELPER(CORINFO_HELP_OVERFLOW,            JIT_Overflow,       CORINFO_HELP_SIG_REG_ONLY)
     JITHELPER(CORINFO_HELP_THROWDIVZERO,        JIT_ThrowDivZero,   CORINFO_HELP_SIG_REG_ONLY)
     JITHELPER(CORINFO_HELP_THROWNULLREF,        JIT_ThrowNullRef,   CORINFO_HELP_SIG_REG_ONLY)
-    JITHELPER(CORINFO_HELP_INTERNALTHROW,       JIT_InternalThrow,  CORINFO_HELP_SIG_REG_ONLY)
     JITHELPER(CORINFO_HELP_VERIFICATION,        IL_VerificationError,CORINFO_HELP_SIG_REG_ONLY)
-    JITHELPER(CORINFO_HELP_SEC_UNMGDCODE_EXCPT, JIT_SecurityUnmanagedCodeException, CORINFO_HELP_SIG_REG_ONLY)
     JITHELPER(CORINFO_HELP_FAIL_FAST,           JIT_FailFast,       CORINFO_HELP_SIG_REG_ONLY)
     JITHELPER(CORINFO_HELP_METHOD_ACCESS_EXCEPTION,JIT_ThrowMethodAccessException, CORINFO_HELP_SIG_REG_ONLY)
     JITHELPER(CORINFO_HELP_FIELD_ACCESS_EXCEPTION,JIT_ThrowFieldAccessException, CORINFO_HELP_SIG_REG_ONLY)

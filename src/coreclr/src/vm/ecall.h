@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 // ECALL.H -
 //
 // Handles our private native calling interface.
@@ -38,7 +37,7 @@ enum {
     FCFuncFlag_EndOfArray   = 0x01,
     FCFuncFlag_HasSignature = 0x02,
     FCFuncFlag_Unreferenced = 0x04, // Suppress unused fcall check
-    FCFuncFlag_QCall        = 0x08, // QCall - mscorlib.dll to mscorwks.dll transition implemented as PInvoke
+    FCFuncFlag_QCall        = 0x08, // QCall - CoreLib to VM transition implemented as PInvoke
 };
 
 struct ECFunc {
@@ -119,21 +118,7 @@ class ECall
     DYNAMICALLY_ASSIGNED_FCALL_IMPL(CtorSBytePtrStartLengthEncodingManaged, NULL) \
     DYNAMICALLY_ASSIGNED_FCALL_IMPL(InternalGetCurrentThread,          NULL) \
 
-#define _DYNAMICALLY_ASSIGNED_FCALLS_UTF8STRING() \
-    DYNAMICALLY_ASSIGNED_FCALL_IMPL(FastAllocateUtf8String,            FramedAllocateUtf8String) \
-    DYNAMICALLY_ASSIGNED_FCALL_IMPL(Utf8StringCtorReadOnlySpanOfByteManaged,   NULL) \
-    DYNAMICALLY_ASSIGNED_FCALL_IMPL(Utf8StringCtorReadOnlySpanOfCharManaged,   NULL) \
-    DYNAMICALLY_ASSIGNED_FCALL_IMPL(Utf8StringCtorByteArrayStartLengthManaged, NULL) \
-    DYNAMICALLY_ASSIGNED_FCALL_IMPL(Utf8StringCtorBytePtrManaged,              NULL) \
-    DYNAMICALLY_ASSIGNED_FCALL_IMPL(Utf8StringCtorCharArrayStartLengthManaged, NULL) \
-    DYNAMICALLY_ASSIGNED_FCALL_IMPL(Utf8StringCtorCharPtrManaged,              NULL) \
-    DYNAMICALLY_ASSIGNED_FCALL_IMPL(Utf8StringCtorStringManaged,               NULL) \
-
-#ifdef FEATURE_UTF8STRING
-#define DYNAMICALLY_ASSIGNED_FCALLS() _DYNAMICALLY_ASSIGNED_FCALLS_BASE() _DYNAMICALLY_ASSIGNED_FCALLS_UTF8STRING()
-#else
 #define DYNAMICALLY_ASSIGNED_FCALLS() _DYNAMICALLY_ASSIGNED_FCALLS_BASE()
-#endif // FEATURE_UTF8STRING
 
         enum
         {

@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 /*============================================================
 **
@@ -21,7 +20,8 @@
 
 #define START_VALUE 0
 
-int __cdecl main(int argc, char *argv[]) {
+PALTEST(miscellaneous_InterlockedExchange_test1_paltest_interlockedexchange_test1, "miscellaneous/InterlockedExchange/test1/paltest_interlockedexchange_test1")
+{
 
     int TheValue = START_VALUE;
     int NewValue = 5;

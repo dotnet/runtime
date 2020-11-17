@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Text;
 using Xunit;
@@ -303,9 +302,9 @@ namespace System.IO.Tests
             for (int iLoop = 0; iLoop < iArrLargeValues.Length; iLoop++)
             {
                 // [] Offset out of range
-                AssertExtensions.Throws<ArgumentException>(null, () => dw2.Write(bArr, iArrLargeValues[iLoop], 0));
+                Assert.Throws<ArgumentOutOfRangeException>(() => dw2.Write(bArr, iArrLargeValues[iLoop], 0));
                 // [] Invalid count value
-                AssertExtensions.Throws<ArgumentException>(null, () => dw2.Write(bArr, 0, iArrLargeValues[iLoop]));
+                Assert.Throws<ArgumentOutOfRangeException>(() => dw2.Write(bArr, 0, iArrLargeValues[iLoop]));
             }
             dw2.Dispose();
             mstr.Dispose();

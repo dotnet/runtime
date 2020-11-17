@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
 using System.ComponentModel;
@@ -20,7 +19,7 @@ namespace System.Collections.Immutable
     /// </devremarks>
     [DebuggerDisplay("Count = {Count}")]
     [DebuggerTypeProxy(typeof(ImmutableEnumerableDebuggerProxy<>))]
-    #if !NETSTANDARD1_0 && !NETSTANDARD1_3 && !NETSTANDARD2_0
+    #if !NETSTANDARD1_0 && !NETSTANDARD1_3 && !NETSTANDARD2_0 && !NETFRAMEWORK
     public sealed partial class ImmutableSortedSet<T> : IImmutableSet<T>, ISortKeyCollection<T>, IReadOnlySet<T>, IReadOnlyList<T>, IList<T>, ISet<T>, IList, IStrongEnumerable<T, ImmutableSortedSet<T>.Enumerator>
     #else
     public sealed partial class ImmutableSortedSet<T> : IImmutableSet<T>, ISortKeyCollection<T>, IReadOnlyList<T>, IList<T>, ISet<T>, IList, IStrongEnumerable<T, ImmutableSortedSet<T>.Enumerator>
@@ -85,8 +84,7 @@ namespace System.Collections.Immutable
         /// Gets the maximum value in the collection, as defined by the comparer.
         /// </summary>
         /// <value>The maximum value in the set.</value>
-        [MaybeNull]
-        public T Max
+        public T? Max
         {
             get { return _root.Max; }
         }
@@ -95,8 +93,7 @@ namespace System.Collections.Immutable
         /// Gets the minimum value in the collection, as defined by the comparer.
         /// </summary>
         /// <value>The minimum value in the set.</value>
-        [MaybeNull]
-        public T Min
+        public T? Min
         {
             get { return _root.Min; }
         }

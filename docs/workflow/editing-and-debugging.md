@@ -20,7 +20,7 @@ what are in the repository. In particular
 
    * `src\coreclr\src\System.Private.CoreLib\System.Private.CorLib.sln` - This solution is for all managed (C#) code that is defined
    in the runtime itself.   This is all class library support of one form or another.
-   * `artifacts\obj\coreclr\Windows_NT.<Arch>.<BuildType>\CoreCLR.sln` - this solution contains most native (C++) projects
+   * `artifacts\obj\coreclr\windows.<Arch>.<BuildType>\CoreCLR.sln` - this solution contains most native (C++) projects
    associated with the repository, including
      * `coreclr` - This is the main runtime DLL (the GC, class loader, interop are all here)
      * `corjit` - This is the Just In Time (JIT) compiler that compiles .NET Intermediate language to native code.
@@ -31,7 +31,7 @@ what are in the repository. In particular
 Thus opening one of these two solution files (double clicking on them in Explorer) is typically all you need
 to do most editing.
 
-Notice that the CoreCLR solution is under the 'bin' directory.  This is because it is created as part of the build.
+Notice that the CoreCLR solution is under the `artifacts` directory.  This is because it is created as part of the build.
 Thus you can only launch this solution after you have built at least once.
 
 * See [Debugging CoreCLR](debugging/coreclr/debugging.md)

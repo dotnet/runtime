@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Linq;
 using System.Reflection;
@@ -8,6 +7,7 @@ using System.Runtime.CompilerServices;
 using System.Security.Policy;
 using System.Threading.Tasks.Sources;
 using System.Threading.Tasks.Sources.Tests;
+using Microsoft.DotNet.XUnitExtensions;
 using Xunit;
 
 namespace System.Threading.Tasks.Tests
@@ -774,8 +774,10 @@ namespace System.Threading.Tasks.Tests
         [InlineData(CtorMode.ValueTaskSource)]
         public async Task NonGeneric_Awaiter_ContinuesOnCapturedContext(CtorMode mode)
         {
-            await Task.Run(() =>
+            await Task.Run(async () =>
             {
+                var tcs = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+
                 var tsc = new TrackingSynchronizationContext();
                 SynchronizationContext.SetSynchronizationContext(tsc);
                 try
@@ -785,15 +787,15 @@ namespace System.Threading.Tasks.Tests
                         mode == CtorMode.Task ? new ValueTask(Task.CompletedTask) :
                         new ValueTask(ManualResetValueTaskSourceFactory.Completed(0, null), 0);
 
-                    var mres = new ManualResetEventSlim();
-                    t.GetAwaiter().OnCompleted(() => mres.Set());
-                    Assert.True(mres.Wait(ExpectedSuccessTimeout));
-                    Assert.Equal(1, tsc.Posts);
+                    t.GetAwaiter().OnCompleted(() => tcs.SetResult());
                 }
                 finally
                 {
                     SynchronizationContext.SetSynchronizationContext(null);
                 }
+
+                await tcs.Task;
+                Assert.Equal(1, tsc.Posts);
             });
         }
 
@@ -805,8 +807,10 @@ namespace System.Threading.Tasks.Tests
         [InlineData(CtorMode.ValueTaskSource, true)]
         public async Task Generic_Awaiter_ContinuesOnCapturedContext(CtorMode mode, bool sync)
         {
-            await Task.Run(() =>
+            await Task.Run(async () =>
             {
+                var tcs = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+
                 var tsc = new TrackingSynchronizationContext();
                 SynchronizationContext.SetSynchronizationContext(tsc);
                 try
@@ -816,15 +820,15 @@ namespace System.Threading.Tasks.Tests
                         mode == CtorMode.Task ? new ValueTask<int>(sync ? Task.FromResult(42) : Task.Delay(1).ContinueWith(_ => 42)) :
                         new ValueTask<int>(sync ? ManualResetValueTaskSourceFactory.Completed(42, null) : ManualResetValueTaskSourceFactory.Delay(1, 42, null), 0);
 
-                    var mres = new ManualResetEventSlim();
-                    t.GetAwaiter().OnCompleted(() => mres.Set());
-                    Assert.True(mres.Wait(ExpectedSuccessTimeout));
-                    Assert.Equal(1, tsc.Posts);
+                    t.GetAwaiter().OnCompleted(() => tcs.SetResult());
                 }
                 finally
                 {
                     SynchronizationContext.SetSynchronizationContext(null);
                 }
+
+                await tcs.Task;
+                Assert.Equal(1, tsc.Posts);
             });
         }
 
@@ -841,8 +845,10 @@ namespace System.Threading.Tasks.Tests
         [InlineData(CtorMode.ValueTaskSource, false, true)]
         public async Task NonGeneric_ConfiguredAwaiter_ContinuesOnCapturedContext(CtorMode mode, bool continueOnCapturedContext, bool sync)
         {
-            await Task.Run(() =>
+            await Task.Run(async () =>
             {
+                var tcs = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+
                 var tsc = new TrackingSynchronizationContext();
                 SynchronizationContext.SetSynchronizationContext(tsc);
                 try
@@ -852,15 +858,15 @@ namespace System.Threading.Tasks.Tests
                         mode == CtorMode.Task ? new ValueTask(sync ? Task.CompletedTask : Task.Delay(1)) :
                         new ValueTask(sync ? ManualResetValueTaskSourceFactory.Completed(0, null) : ManualResetValueTaskSourceFactory.Delay(42, 0, null), 0);
 
-                    var mres = new ManualResetEventSlim();
-                    t.ConfigureAwait(continueOnCapturedContext).GetAwaiter().OnCompleted(() => mres.Set());
-                    Assert.True(mres.Wait(ExpectedSuccessTimeout));
-                    Assert.Equal(continueOnCapturedContext ? 1 : 0, tsc.Posts);
+                    t.ConfigureAwait(continueOnCapturedContext).GetAwaiter().OnCompleted(() => tcs.SetResult());
                 }
                 finally
                 {
                     SynchronizationContext.SetSynchronizationContext(null);
                 }
+
+                await tcs.Task;
+                Assert.Equal(continueOnCapturedContext ? 1 : 0, tsc.Posts);
             });
         }
 
@@ -877,8 +883,10 @@ namespace System.Threading.Tasks.Tests
         [InlineData(CtorMode.ValueTaskSource, false, true)]
         public async Task Generic_ConfiguredAwaiter_ContinuesOnCapturedContext(CtorMode mode, bool continueOnCapturedContext, bool sync)
         {
-            await Task.Run(() =>
+            await Task.Run(async () =>
             {
+                var tcs = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+
                 var tsc = new TrackingSynchronizationContext();
                 SynchronizationContext.SetSynchronizationContext(tsc);
                 try
@@ -888,15 +896,15 @@ namespace System.Threading.Tasks.Tests
                         mode == CtorMode.Task ? new ValueTask<int>(sync ? Task.FromResult(42) : Task.Delay(1).ContinueWith(_ => 42)) :
                         new ValueTask<int>(sync ? ManualResetValueTaskSourceFactory.Completed(42, null) : ManualResetValueTaskSourceFactory.Delay(1, 42, null), 0);
 
-                    var mres = new ManualResetEventSlim();
-                    t.ConfigureAwait(continueOnCapturedContext).GetAwaiter().OnCompleted(() => mres.Set());
-                    Assert.True(mres.Wait(ExpectedSuccessTimeout));
-                    Assert.Equal(continueOnCapturedContext ? 1 : 0, tsc.Posts);
+                    t.ConfigureAwait(continueOnCapturedContext).GetAwaiter().OnCompleted(() => tcs.SetResult());
                 }
                 finally
                 {
                     SynchronizationContext.SetSynchronizationContext(null);
                 }
+
+                await tcs.Task;
+                Assert.Equal(continueOnCapturedContext ? 1 : 0, tsc.Posts);
             });
         }
 

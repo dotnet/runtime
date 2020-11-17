@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System;
 using System.Collections.Generic;
@@ -53,12 +52,29 @@ namespace Microsoft.Extensions.Hosting.Internal
             {
                 // Fire IHostedService.Start
                 await hostedService.StartAsync(combinedCancellationToken).ConfigureAwait(false);
+
+                if (hostedService is BackgroundService backgroundService)
+                {
+                    _ = HandleBackgroundException(backgroundService);
+                }
             }
 
             // Fire IHostApplicationLifetime.Started
             _applicationLifetime.NotifyStarted();
 
             _logger.Started();
+        }
+
+        private async Task HandleBackgroundException(BackgroundService backgroundService)
+        {
+            try
+            {
+                await backgroundService.ExecuteTask.ConfigureAwait(false);
+            }
+            catch (Exception ex)
+            {
+                _logger.BackgroundServiceFaulted(ex);
+            }
         }
 
         public async Task StopAsync(CancellationToken cancellationToken = default)
@@ -77,7 +93,6 @@ namespace Microsoft.Extensions.Hosting.Internal
                 {
                     foreach (IHostedService hostedService in _hostedServices.Reverse())
                     {
-                        token.ThrowIfCancellationRequested();
                         try
                         {
                             await hostedService.StopAsync(token).ConfigureAwait(false);
@@ -89,11 +104,17 @@ namespace Microsoft.Extensions.Hosting.Internal
                     }
                 }
 
-                token.ThrowIfCancellationRequested();
-                await _hostLifetime.StopAsync(token).ConfigureAwait(false);
-
                 // Fire IHostApplicationLifetime.Stopped
                 _applicationLifetime.NotifyStopped();
+
+                try
+                {
+                    await _hostLifetime.StopAsync(token).ConfigureAwait(false);
+                }
+                catch (Exception ex)
+                {
+                    exceptions.Add(ex);
+                }
 
                 if (exceptions.Count > 0)
                 {

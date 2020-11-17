@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
 using System.Globalization;
@@ -128,6 +127,19 @@ namespace System.Reflection.Tests
             Type[] args = { Type.MakeGenericMethodParameter(0), Type.MakeGenericMethodParameter(1).MakeArrayType() };
             MethodInfo moo = t.GetMethod("Moo", 2, bf, null, args, null);
             AssertIsMarked(moo, 3);
+        }
+
+        [Fact]
+        public static void GetMethodBindingFlagsAndArgs()
+        {
+            Type t = typeof(SignatureTypeTests);
+            const BindingFlags bf = BindingFlags.Public | BindingFlags.Static | BindingFlags.DeclaredOnly;
+            MethodInfo testMethod = t.GetMethod(nameof(GetMethodBindingFlagsAndArgs), bf, Type.EmptyTypes);
+            Assert.NotNull(testMethod);
+
+            t = typeof(TestClass1);
+            Type[] args = { typeof(int) };
+            Assert.Throws<AmbiguousMatchException>(() => t.GetMethod("Moo", bf, args));
         }
 
         [Theory]

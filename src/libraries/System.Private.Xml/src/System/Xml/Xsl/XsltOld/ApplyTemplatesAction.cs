@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 namespace System.Xml.Xsl.XsltOld
 {
@@ -18,7 +17,7 @@ namespace System.Xml.Xsl.XsltOld
         private const int TemplateProcessed = 5;
 
         private int _selectKey = Compiler.InvalidQueryKey;
-        private XmlQualifiedName _mode;
+        private XmlQualifiedName? _mode;
 
         //
         //  <xsl:template match="*|/" [mode="?"]>
@@ -34,7 +33,7 @@ namespace System.Xml.Xsl.XsltOld
             return s_BuiltInRule;
         }
 
-        internal static ApplyTemplatesAction BuiltInRule(XmlQualifiedName mode)
+        internal static ApplyTemplatesAction BuiltInRule(XmlQualifiedName? mode)
         {
             return (mode == null || mode.IsEmpty) ? BuiltInRule() : new ApplyTemplatesAction(mode);
         }
@@ -105,7 +104,7 @@ namespace System.Xml.Xsl.XsltOld
                                 else if (Ref.Equal(name, input.Atoms.WithParam))
                                 {
                                     WithParamAction par = compiler.CreateWithParamAction();
-                                    CheckDuplicateParams(par.Name);
+                                    CheckDuplicateParams(par.Name!);
                                     AddAction(par);
                                 }
                                 else
@@ -155,7 +154,7 @@ namespace System.Xml.Xsl.XsltOld
                 case ProcessedChildren:
                     if (_selectKey == Compiler.InvalidQueryKey)
                     {
-                        if (!frame.Node.HasChildren)
+                        if (!frame.Node!.HasChildren)
                         {
                             frame.Finished();
                             break;
@@ -164,7 +163,7 @@ namespace System.Xml.Xsl.XsltOld
                     }
                     else
                     {
-                        frame.InitNewNodeSet(processor.StartQuery(frame.NodeSet, _selectKey));
+                        frame.InitNewNodeSet(processor.StartQuery(frame.NodeSet!, _selectKey));
                     }
                     if (processor.SortArray.Count != 0)
                     {

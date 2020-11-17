@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 /*++
 
@@ -67,13 +66,6 @@ using namespace CorUnix;
 
 /* get the full name of a module if available, and the short name otherwise*/
 #define MODNAME(x) ((x)->lib_name)
-
-/* Which path should FindLibrary search? */
-#if defined(__APPLE__)
-#define LIBSEARCHPATH "DYLD_LIBRARY_PATH"
-#else
-#define LIBSEARCHPATH "LD_LIBRARY_PATH"
-#endif
 
 #define LIBC_NAME_WITHOUT_EXTENSION "libc"
 
@@ -604,6 +596,13 @@ PAL_LoadLibraryDirect(
           lpLibFileName ? lpLibFileName : W16_NULLSTRING,
           lpLibFileName ? lpLibFileName : W16_NULLSTRING);
 
+    // Getting nullptr as name indicates redirection to current library
+    if (lpLibFileName == nullptr)
+    {
+        dl_handle = dlopen(NULL, RTLD_LAZY);
+        goto done;
+    }
+
     if (!LOADVerifyLibraryPath(lpLibFileName))
     {
         goto done;
@@ -656,6 +655,22 @@ PAL_FreeLibraryDirect(
     return retValue;
 }
 
+/*++
+Function:
+  PAL_GetPalHostModule
+
+  Returns the module that hosts the PAL.
+  That is typically:
+      - coreclr.dll when coreclr is dynamically linked
+      - containing executable in the statically linked case
+--*/
+HMODULE
+PALAPI
+PAL_GetPalHostModule()
+{
+    return (HMODULE)LOADGetPalLibrary();
+}
+
 /*
 Function:
   PAL_GetProcAddressDirect
@@ -670,7 +685,6 @@ PAL_GetProcAddressDirect(
         IN NATIVE_LIBRARY_HANDLE dl_handle,
         IN LPCSTR lpProcName)
 {
-    INT name_length;
     FARPROC address = nullptr;
 
     PERF_ENTRY(PAL_GetProcAddressDirect);
@@ -1437,18 +1451,6 @@ static LPWSTR LOADGetModuleFileName(MODSTRUCT *module)
     return module->lib_name;
 }
 
-static bool ShouldRedirectToCurrentLibrary(LPCSTR libraryNameOrPath)
-{
-    if (!g_running_in_exe)
-        return false;
-
-    // Getting nullptr as name indicates redirection to current library
-    if (libraryNameOrPath == nullptr)
-        return true;
-
-    return false;
-}
-
 /*
 Function:
     LOADLoadLibraryDirect [internal]
@@ -1465,7 +1467,8 @@ static NATIVE_LIBRARY_HANDLE LOADLoadLibraryDirect(LPCSTR libraryNameOrPath)
 {
     NATIVE_LIBRARY_HANDLE dl_handle;
 
-    if (ShouldRedirectToCurrentLibrary(libraryNameOrPath))
+    // Getting nullptr as name indicates redirection to current library
+    if (libraryNameOrPath == nullptr)
     {
         dl_handle = dlopen(NULL, RTLD_LAZY);
     }

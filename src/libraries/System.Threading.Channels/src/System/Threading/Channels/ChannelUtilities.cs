@@ -1,6 +1,5 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -28,7 +27,7 @@ namespace System.Threading.Channels
         /// If this is an OperationCanceledException, it'll be completed with the exception's token.
         /// Otherwise, it'll be completed as faulted with the exception.
         /// </param>
-        internal static void Complete(TaskCompletionSource<VoidResult> tcs, Exception? error = null)
+        internal static void Complete(TaskCompletionSource tcs, Exception? error = null)
         {
             if (error is OperationCanceledException oce)
             {
@@ -40,7 +39,7 @@ namespace System.Threading.Channels
             }
             else
             {
-                tcs.TrySetResult(default);
+                tcs.TrySetResult();
             }
         }
 

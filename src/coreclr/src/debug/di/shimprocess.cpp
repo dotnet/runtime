@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 //*****************************************************************************
 // File: ShimProcess.cpp
 //
@@ -1825,34 +1824,19 @@ HMODULE ShimProcess::GetDacModule()
     HModuleHolder hDacDll;
     PathString wszAccessDllPath;
 
-#ifdef TARGET_UNIX
-    if (!PAL_GetPALDirectoryWrapper(wszAccessDllPath))
-    {
-        ThrowLastError();
-    }
-    PCWSTR eeFlavor = MAKEDLLNAME_W(W("mscordaccore"));
-#else
     //
     // Load the access DLL from the same directory as the the current CLR Debugging Services DLL.
     //
-
-    if (!WszGetModuleFileName(GetModuleInst(), wszAccessDllPath))
+    if (GetClrModuleDirectory(wszAccessDllPath) != S_OK)
     {
         ThrowLastError();
-    }
-
-	if (!SUCCEEDED(CopySystemDirectory(wszAccessDllPath, wszAccessDllPath)))
-    {
-        ThrowHR(E_INVALIDARG);
     }
 
     // Dac Dll is named:
     //   mscordaccore.dll  <-- coreclr
     //   mscordacwks.dll   <-- desktop
-    PCWSTR eeFlavor =
-        W("mscordaccore.dll");
+    PCWSTR eeFlavor = MAKEDLLNAME_W(W("mscordaccore"));
 
-#endif // TARGET_UNIX
     wszAccessDllPath.Append(eeFlavor);
 
     hDacDll.Assign(WszLoadLibrary(wszAccessDllPath));

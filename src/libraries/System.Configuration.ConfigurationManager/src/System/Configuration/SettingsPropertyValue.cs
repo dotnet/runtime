@@ -1,6 +1,5 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.ComponentModel;
 using System.Diagnostics;
@@ -99,6 +98,7 @@ namespace System.Configuration
                     {
                         using (MemoryStream ms = new MemoryStream((byte[])SerializedValue))
                         {
+                            // Issue https://github.com/dotnet/runtime/issues/39295 tracks finding an alternative to BinaryFormatter
                             value = (new BinaryFormatter()).Deserialize(ms);
                         }
                     }
@@ -196,6 +196,7 @@ namespace System.Configuration
                     byte[] buffer = Convert.FromBase64String(serializedValue);
                     using (MemoryStream ms = new MemoryStream(buffer))
                     {
+                        // Issue https://github.com/dotnet/runtime/issues/39295 tracks finding an alternative to BinaryFormatter
                         return (new BinaryFormatter()).Deserialize(ms);
                     }
                 case SettingsSerializeAs.Xml:
@@ -222,6 +223,7 @@ namespace System.Configuration
 
             using (MemoryStream ms = new MemoryStream())
             {
+                // Issue https://github.com/dotnet/runtime/issues/39295 tracks finding an alternative to BinaryFormatter
                 BinaryFormatter bf = new BinaryFormatter();
                 bf.Serialize(ms, _value);
                 return ms.ToArray();

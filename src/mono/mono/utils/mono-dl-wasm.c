@@ -1,4 +1,5 @@
 #include <config.h>
+#include <mono/utils/mono-compiler.h>
 
 #if defined (HOST_WASM)
 
@@ -55,23 +56,23 @@ mono_dl_current_error_string (void)
 	return g_strdup ("");
 }
 
-
+// Copied from mono-dl-posix.c
 int
-mono_dl_convert_flags (int flags)
+mono_dl_convert_flags (int mono_flags, int native_flags)
 {
-	int lflags = 0;
+	int lflags = native_flags;
 
 #ifdef ENABLE_NETCORE
 	// Specifying both will default to LOCAL
-	if (flags & MONO_DL_LOCAL)
-		lflags |= RTLD_LOCAL;
-	else if (flags & MONO_DL_GLOBAL)
+	if (mono_flags & MONO_DL_GLOBAL && !(mono_flags & MONO_DL_LOCAL))
 		lflags |= RTLD_GLOBAL;
+	else 
+		lflags |= RTLD_LOCAL;
 #else
-	lflags = flags & MONO_DL_LOCAL ? RTLD_LOCAL : RTLD_GLOBAL;
+	lflags = mono_flags & MONO_DL_LOCAL ? RTLD_LOCAL : RTLD_GLOBAL;
 #endif
 
-	if (flags & MONO_DL_LAZY)
+	if (mono_flags & MONO_DL_LAZY)
 		lflags |= RTLD_LAZY;
 	else
 		lflags |= RTLD_NOW;
@@ -90,5 +91,9 @@ void
 mono_dl_close_handle (MonoDl *module)
 {
 }
+
+#else
+
+MONO_EMPTY_SOURCE_FILE (mono_dl_wasm);
 
 #endif

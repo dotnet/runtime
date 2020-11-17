@@ -37,30 +37,6 @@ struct _EventPipeConfiguration {
 
 static
 inline
-const ep_char8_t *
-ep_config_get_default_provider_name_utf8 (void)
-{
-	return "Microsoft-DotNETCore-EventPipeConfiguration";
-}
-
-static
-inline
-const ep_char8_t *
-ep_config_get_public_provider_name_utf8 (void)
-{
-	return "Microsoft-Windows-DotNETRuntime";
-}
-
-static
-inline
-const ep_char8_t *
-ep_config_get_rundown_provider_name_utf8 (void)
-{
-	return "Microsoft-Windows-DotNETRuntimeRundown";
-}
-
-static
-inline
 EventPipeConfiguration *
 ep_config_get (void)
 {
@@ -80,6 +56,7 @@ ep_config_create_provider (
 	EventPipeConfiguration *config,
 	const ep_char8_t *provider_name,
 	EventPipeCallback callback_func,
+	EventPipeCallbackDataFree callback_data_free_func,
 	void *callback_data,
 	EventPipeProviderCallbackDataQueue *provider_callback_data_queue);
 
@@ -143,4 +120,4 @@ void
 ep_event_metdata_event_free (EventPipeEventMetadataEvent *metadata_event);
 
 #endif /* ENABLE_PERFTRACING */
-#endif /** __EVENTPIPE_CONFIGURATION_H__ **/
+#endif /* __EVENTPIPE_CONFIGURATION_H__ */

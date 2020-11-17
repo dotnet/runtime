@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 /*++
 
@@ -54,6 +53,27 @@ Abstract:
 #define PALAPI
 
 #endif // HOST_UNIX
+
+#if defined(TARGET_OSX) && defined(TARGET_ARM64)
+// MacOS uses ARM64 instead of AARCH64 to describe these registers
+// Create aliases to reuse more code
+enum
+{
+    UNW_AARCH64_X19 = UNW_ARM64_X19,
+    UNW_AARCH64_X20 = UNW_ARM64_X20,
+    UNW_AARCH64_X21 = UNW_ARM64_X21,
+    UNW_AARCH64_X22 = UNW_ARM64_X22,
+    UNW_AARCH64_X23 = UNW_ARM64_X23,
+    UNW_AARCH64_X24 = UNW_ARM64_X24,
+    UNW_AARCH64_X25 = UNW_ARM64_X25,
+    UNW_AARCH64_X26 = UNW_ARM64_X26,
+    UNW_AARCH64_X27 = UNW_ARM64_X27,
+    UNW_AARCH64_X28 = UNW_ARM64_X28,
+    UNW_AARCH64_X29 = UNW_ARM64_X29,
+    UNW_AARCH64_X30 = UNW_ARM64_X30
+};
+#endif // defined(TARGET_OSX) && defined(TARGET_ARM64)
+
 
 //----------------------------------------------------------------------
 // Virtual Unwinding
@@ -130,7 +150,7 @@ static void WinContextToUnwindContext(CONTEXT *winContext, unw_context_t *unwCon
     unwContext->regs[13] = winContext->Sp;
     unwContext->regs[14] = winContext->Lr;
     unwContext->regs[15] = winContext->Pc;
-#elif defined(HOST_ARM64)
+#elif defined(HOST_ARM64) && !defined(TARGET_OSX)
     unwContext->uc_mcontext.pc       = winContext->Pc;
     unwContext->uc_mcontext.sp       = winContext->Sp;
     unwContext->uc_mcontext.regs[29] = winContext->Fp;
@@ -167,6 +187,24 @@ static void WinContextToUnwindCursor(CONTEXT *winContext, unw_cursor_t *cursor)
     unw_set_reg(cursor, UNW_X86_EBX, winContext->Ebx);
     unw_set_reg(cursor, UNW_X86_ESI, winContext->Esi);
     unw_set_reg(cursor, UNW_X86_EDI, winContext->Edi);
+#elif defined(HOST_ARM64) && defined(TARGET_OSX)
+    // unw_cursor_t is an opaque data structure on macOS
+    // As noted in WinContextToUnwindContext this didn't work for Linux
+    // TBD whether this will work for macOS.
+    unw_set_reg(cursor, UNW_REG_IP, winContext->Pc);
+    unw_set_reg(cursor, UNW_REG_SP, winContext->Sp);
+    unw_set_reg(cursor, UNW_AARCH64_X29, winContext->Fp);
+    unw_set_reg(cursor, UNW_AARCH64_X30, winContext->Lr);
+    unw_set_reg(cursor, UNW_AARCH64_X19, winContext->X19);
+    unw_set_reg(cursor, UNW_AARCH64_X20, winContext->X20);
+    unw_set_reg(cursor, UNW_AARCH64_X21, winContext->X21);
+    unw_set_reg(cursor, UNW_AARCH64_X22, winContext->X22);
+    unw_set_reg(cursor, UNW_AARCH64_X23, winContext->X23);
+    unw_set_reg(cursor, UNW_AARCH64_X24, winContext->X24);
+    unw_set_reg(cursor, UNW_AARCH64_X25, winContext->X25);
+    unw_set_reg(cursor, UNW_AARCH64_X26, winContext->X26);
+    unw_set_reg(cursor, UNW_AARCH64_X27, winContext->X27);
+    unw_set_reg(cursor, UNW_AARCH64_X28, winContext->X28);
 #endif
 }
 #endif
@@ -216,6 +254,13 @@ void UnwindContextToWinContext(unw_cursor_t *cursor, CONTEXT *winContext)
     unw_get_reg(cursor, UNW_AARCH64_X26, (unw_word_t *) &winContext->X26);
     unw_get_reg(cursor, UNW_AARCH64_X27, (unw_word_t *) &winContext->X27);
     unw_get_reg(cursor, UNW_AARCH64_X28, (unw_word_t *) &winContext->X28);
+
+#if defined(TARGET_OSX) && defined(TARGET_ARM64)
+    // Strip pointer authentication bits which seem to be leaking out of libunwind
+    // Seems like ptrauth_strip() / __builtin_ptrauth_strip() should work, but currently
+    // errors with "this target does not support pointer authentication"
+    winContext->Pc = winContext->Pc & 0x7fffffffffffull;
+#endif // defined(TARGET_OSX) && defined(TARGET_ARM64)
 #else
 #error unsupported architecture
 #endif
@@ -318,7 +363,18 @@ BOOL PAL_VirtualUnwind(CONTEXT *context, KNONVOLATILE_CONTEXT_POINTERS *contextP
     }
 
 #if !UNWIND_CONTEXT_IS_UCONTEXT_T
+// The unw_getcontext is defined in the libunwind headers for ARM as inline assembly with
+// stmia instruction storing SP and PC, which clang complains about as deprecated.
+// However, it is required for atomic restoration of the context, so disable that warning.
+#if defined(__llvm__) && defined(TARGET_ARM)
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Winline-asm"
+#endif
     st = unw_getcontext(&unwContext);
+#if defined(__llvm__) && defined(TARGET_ARM)
+#pragma clang diagnostic pop
+#endif
+
     if (st < 0)
     {
         return FALSE;
@@ -347,7 +403,7 @@ BOOL PAL_VirtualUnwind(CONTEXT *context, KNONVOLATILE_CONTEXT_POINTERS *contextP
     // Check if the frame we have unwound to is a frame that caused
     // synchronous signal, like a hardware exception and record it
     // in the context flags.
-    if (unw_is_signal_frame(&cursor) > 0)
+    if ((st != 0) && (unw_is_signal_frame(&cursor) > 0))
     {
         context->ContextFlags |= CONTEXT_EXCEPTION_ACTIVE;
 #if defined(CONTEXT_UNWOUND_TO_CALL)

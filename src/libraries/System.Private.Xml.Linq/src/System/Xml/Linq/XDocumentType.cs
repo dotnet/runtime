@@ -1,7 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
+using System.Diagnostics.CodeAnalysis;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -13,19 +13,19 @@ namespace System.Xml.Linq
     public class XDocumentType : XNode
     {
         private string _name;
-        private string _publicId;
-        private string _systemId;
+        private string? _publicId;
+        private string? _systemId;
         private string _internalSubset;
 
         /// <summary>
         /// Initializes an empty instance of the <see cref="XDocumentType"/> class.
         /// </summary>
-        public XDocumentType(string name, string publicId, string systemId, string internalSubset)
+        public XDocumentType(string name, string? publicId, string? systemId, string? internalSubset)
         {
             _name = XmlConvert.VerifyName(name);
             _publicId = publicId;
             _systemId = systemId;
-            _internalSubset = internalSubset;
+            _internalSubset = internalSubset ?? string.Empty;
         }
 
         /// <summary>
@@ -54,6 +54,7 @@ namespace System.Xml.Linq
         /// <summary>
         /// Gets or sets the internal subset for this Document Type Definition (DTD).
         /// </summary>
+        [AllowNull]
         public string InternalSubset
         {
             get
@@ -63,7 +64,7 @@ namespace System.Xml.Linq
             set
             {
                 bool notify = NotifyChanging(this, XObjectChangeEventArgs.Value);
-                _internalSubset = value;
+                _internalSubset = value ?? string.Empty;
                 if (notify) NotifyChanged(this, XObjectChangeEventArgs.Value);
             }
         }
@@ -103,7 +104,7 @@ namespace System.Xml.Linq
         /// <summary>
         /// Gets or sets the public identifier for this Document Type Definition (DTD).
         /// </summary>
-        public string PublicId
+        public string? PublicId
         {
             get
             {
@@ -120,7 +121,7 @@ namespace System.Xml.Linq
         /// <summary>
         /// Gets or sets the system identifier for this Document Type Definition (DTD).
         /// </summary>
-        public string SystemId
+        public string? SystemId
         {
             get
             {
@@ -171,7 +172,7 @@ namespace System.Xml.Linq
 
         internal override bool DeepEquals(XNode node)
         {
-            XDocumentType other = node as XDocumentType;
+            XDocumentType? other = node as XDocumentType;
             return other != null && _name == other._name && _publicId == other._publicId &&
                 _systemId == other.SystemId && _internalSubset == other._internalSubset;
         }
@@ -181,7 +182,7 @@ namespace System.Xml.Linq
             return _name.GetHashCode() ^
                 (_publicId != null ? _publicId.GetHashCode() : 0) ^
                 (_systemId != null ? _systemId.GetHashCode() : 0) ^
-                (_internalSubset != null ? _internalSubset.GetHashCode() : 0);
+                _internalSubset.GetHashCode();
         }
     }
 }

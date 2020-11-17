@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 //
 // File: MarshalNative.cpp
 //
@@ -38,63 +37,11 @@
 
 #ifdef FEATURE_COMINTEROP
 #include "comcallablewrapper.h"
-#include "cominterfacemarshaler.h"
 #include "commtmemberinfomap.h"
 #include "runtimecallablewrapper.h"
 #include "olevariant.h"
 #include "interoputil.h"
-#include "stubhelpers.h"
 #endif // FEATURE_COMINTEROP
-
-#ifdef FEATURE_COMINTEROP_APARTMENT_SUPPORT
-#include "olecontexthelpers.h"
-#endif // FEATURE_COMINTEROP_APARTMENT_SUPPORT
-
-//
-// NumParamBytes
-// Counts # of parameter bytes
-INT32 QCALLTYPE MarshalNative::NumParamBytes(MethodDesc * pMD)
-{
-    QCALL_CONTRACT;
-
-    // Arguments are check on managed side
-    PRECONDITION(pMD != NULL);
-
-    INT32 cbParamBytes = 0;
-
-    BEGIN_QCALL;
-
-    if (!(pMD->IsNDirect()))
-        COMPlusThrow(kArgumentException, IDS_EE_NOTNDIRECT);
-
-    // Read the unmanaged stack size from the stub MethodDesc. For vararg P/Invoke,
-    // this function returns size of the fixed portion of the stack.
-    // Note that the following code does not throw if the DllImport declaration is
-    // incorrect (such as a vararg method not marked as CallingConvention.Cdecl).
-
-    MethodDesc * pStubMD = NULL;
-
-    PCODE pTempStub = NULL;
-    pTempStub = GetStubForInteropMethod(pMD, NDIRECTSTUB_FL_FOR_NUMPARAMBYTES, &pStubMD);
-    _ASSERTE(pTempStub == NULL);
-
-    _ASSERTE(pStubMD != NULL && pStubMD->IsILStub());
-
-    cbParamBytes = pStubMD->AsDynamicMethodDesc()->GetNativeStackArgSize();
-
-#ifdef HOST_X86
-    if (((NDirectMethodDesc *)pMD)->IsThisCall())
-    {
-        // The size of 'this' is not included in native stack arg size.
-        cbParamBytes += sizeof(LPVOID);
-    }
-#endif // HOST_X86
-
-    END_QCALL;
-
-    return cbParamBytes;
-}
-
 
 // Prelink
 // Does advance loading of an N/Direct library
@@ -288,11 +235,6 @@ FCIMPL1(FC_BOOL_RET, MarshalNative::IsPinnable, Object* obj)
 
     if (obj->GetMethodTable() == g_pStringClass)
         FC_RETURN_BOOL(TRUE);
-
-#ifdef FEATURE_UTF8STRING
-    if (obj->GetMethodTable() == g_pUtf8StringClass)
-        FC_RETURN_BOOL(TRUE);
-#endif // FEATURE_UTF8STRING
 
     if (obj->GetMethodTable()->IsArray())
     {
@@ -509,11 +451,6 @@ void ValidatePinnedObject(OBJECTREF obj)
     if (obj->GetMethodTable() == g_pStringClass)
         return;
 
-#ifdef FEATURE_UTF8STRING
-    if (obj->GetMethodTable() == g_pUtf8StringClass)
-        return;
-#endif // FEATURE_UTF8STRING
-
     if (obj->GetMethodTable()->IsArray())
     {
         BASEARRAYREF asArray = (BASEARRAYREF) obj;
@@ -698,7 +635,7 @@ FCIMPLEND
 //====================================================================
 // return the IUnknown* for an Object.
 //====================================================================
-FCIMPL2(IUnknown*, MarshalNative::GetIUnknownForObjectNative, Object* orefUNSAFE, CLR_BOOL fOnlyInContext)
+FCIMPL1(IUnknown*, MarshalNative::GetIUnknownForObjectNative, Object* orefUNSAFE)
 {
     FCALL_CONTRACT;
 
@@ -710,47 +647,7 @@ FCIMPL2(IUnknown*, MarshalNative::GetIUnknownForObjectNative, Object* orefUNSAFE
     // Ensure COM is started up.
     EnsureComStarted();
 
-    if (fOnlyInContext && !IsObjectInContext(&oref))
-        retVal = NULL;
-    else
-        retVal = GetComIPFromObjectRef(&oref, ComIpType_OuterUnknown, NULL);
-
-    HELPER_METHOD_FRAME_END();
-    return retVal;
-}
-FCIMPLEND
-
-//====================================================================
-// return the raw IUnknown* for a COM Object not related to current
-// context.
-// Does not AddRef the returned pointer
-//====================================================================
-FCIMPL1(IUnknown*, MarshalNative::GetRawIUnknownForComObjectNoAddRef, Object* orefUNSAFE)
-{
-    FCALL_CONTRACT;
-
-    IUnknown* retVal = NULL;
-    OBJECTREF oref = (OBJECTREF) orefUNSAFE;
-    HELPER_METHOD_FRAME_BEGIN_RET_1(oref);
-
-    HRESULT hr = S_OK;
-
-    if(!oref)
-        COMPlusThrowArgumentNull(W("o"));
-
-    MethodTable* pMT = oref->GetMethodTable();
-    PREFIX_ASSUME(pMT != NULL);
-    if(!pMT->IsComObjectType())
-        COMPlusThrow(kArgumentException, IDS_EE_SRC_OBJ_NOT_COMOBJECT);
-
-    // Ensure COM is started up.
-    EnsureComStarted();
-
-    RCWHolder pRCW(GetThread());
-    pRCW.Init(oref);
-
-    // Retrieve raw IUnknown * without AddRef for better performance
-    retVal = pRCW->GetRawIUnknown_NoAddRef();
+    retVal = GetComIPFromObjectRef(&oref, ComIpType_OuterUnknown, NULL);
 
     HELPER_METHOD_FRAME_END();
     return retVal;
@@ -760,7 +657,7 @@ FCIMPLEND
 //====================================================================
 // return the IDispatch* for an Object.
 //====================================================================
-FCIMPL2(IDispatch*, MarshalNative::GetIDispatchForObjectNative, Object* orefUNSAFE, CLR_BOOL fOnlyInContext)
+FCIMPL1(IDispatch*, MarshalNative::GetIDispatchForObjectNative, Object* orefUNSAFE)
 {
     FCALL_CONTRACT;
 
@@ -772,10 +669,7 @@ FCIMPL2(IDispatch*, MarshalNative::GetIDispatchForObjectNative, Object* orefUNSA
     // Ensure COM is started up.
     EnsureComStarted();
 
-    if (fOnlyInContext && !IsObjectInContext(&oref))
-        retVal = NULL;
-    else
-        retVal = (IDispatch*)GetComIPFromObjectRef(&oref, ComIpType_Dispatch, NULL);
+    retVal = (IDispatch*)GetComIPFromObjectRef(&oref, ComIpType_Dispatch, NULL);
 
     HELPER_METHOD_FRAME_END();
     return retVal;
@@ -786,7 +680,7 @@ FCIMPLEND
 // return the IUnknown* representing the interface for the Object
 // Object o should support Type T
 //====================================================================
-FCIMPL4(IUnknown*, MarshalNative::GetComInterfaceForObjectNative, Object* orefUNSAFE, ReflectClassBaseObject* refClassUNSAFE, CLR_BOOL fOnlyInContext, CLR_BOOL bEnableCustomizedQueryInterface)
+FCIMPL3(IUnknown*, MarshalNative::GetComInterfaceForObjectNative, Object* orefUNSAFE, ReflectClassBaseObject* refClassUNSAFE, CLR_BOOL bEnableCustomizedQueryInterface)
 {
     FCALL_CONTRACT;
 
@@ -821,10 +715,7 @@ FCIMPL4(IUnknown*, MarshalNative::GetComInterfaceForObjectNative, Object* orefUN
     if (!::IsTypeVisibleFromCom(th))
         COMPlusThrowArgumentException(W("t"), W("Argument_TypeMustBeVisibleFromCom"));
 
-    if (fOnlyInContext && !IsObjectInContext(&oref))
-        retVal = NULL;
-    else
-        retVal = GetComIPFromObjectRef(&oref, th.GetMethodTable(), bEnableCustomizedQueryInterface);
+    retVal = GetComIPFromObjectRef(&oref, th.GetMethodTable(), bEnableCustomizedQueryInterface);
 
     HELPER_METHOD_FRAME_END();
     return retVal;
@@ -870,28 +761,6 @@ FCIMPL1(Object*, MarshalNative::GetUniqueObjectForIUnknownNative, IUnknown* pUnk
     HELPER_METHOD_FRAME_BEGIN_RET_1(oref);
 
     HRESULT hr = S_OK;
-
-    // Ensure COM is started up.
-    EnsureComStarted();
-
-    GetObjectRefFromComIP(&oref, pUnk, NULL, NULL, ObjFromComIP::UNIQUE_OBJECT);
-
-    HELPER_METHOD_FRAME_END();
-    return OBJECTREFToObject(oref);
-}
-FCIMPLEND
-
-FCIMPL1(Object*, MarshalNative::GetUniqueObjectForIUnknownWithoutUnboxing, IUnknown* pUnk)
-{
-    FCALL_CONTRACT;
-
-    OBJECTREF oref = NULL;
-    HELPER_METHOD_FRAME_BEGIN_RET_1(oref);
-
-    HRESULT hr = S_OK;
-
-    if(!pUnk)
-        COMPlusThrowArgumentNull(W("pUnk"));
 
     // Ensure COM is started up.
     EnsureComStarted();
@@ -1227,83 +1096,6 @@ FCIMPL1(FC_BOOL_RET, MarshalNative::IsTypeVisibleFromCom, ReflectClassBaseObject
 }
 FCIMPLEND
 
-
-//====================================================================
-// IUnknown Helpers
-//====================================================================
-// IUnknown::QueryInterface
-FCIMPL3(HRESULT, MarshalNative::QueryInterface, IUnknown* pUnk, REFGUID iid, void** ppv)
-{
-    CONTRACTL
-    {
-        FCALL_CHECK;
-        PRECONDITION(CheckPointer(pUnk, NULL_OK));
-        PRECONDITION(CheckPointer(ppv));
-    }
-    CONTRACTL_END;
-
-    HRESULT hr = S_OK;
-    HELPER_METHOD_FRAME_BEGIN_RET_0();
-
-    if (!pUnk)
-        COMPlusThrowArgumentNull(W("pUnk"));
-
-    hr = SafeQueryInterface(pUnk,iid,(IUnknown**)ppv);
-    LogInteropQI(pUnk, iid, hr, "PInvoke::QI");
-
-    HELPER_METHOD_FRAME_END();
-    return hr;
-}
-FCIMPLEND
-
-// IUnknown::AddRef
-FCIMPL1(ULONG, MarshalNative::AddRef, IUnknown* pUnk)
-{
-    CONTRACTL
-    {
-        FCALL_CHECK;
-        PRECONDITION(CheckPointer(pUnk, NULL_OK));
-    }
-    CONTRACTL_END;
-
-    ULONG cbRef = 0;
-    HELPER_METHOD_FRAME_BEGIN_RET_0();
-
-    if (!pUnk)
-        COMPlusThrowArgumentNull(W("pUnk"));
-
-    cbRef = SafeAddRef(pUnk);
-    LogInteropAddRef(pUnk, cbRef, "PInvoke.AddRef");
-
-    HELPER_METHOD_FRAME_END();
-    return cbRef;
-}
-FCIMPLEND
-
-//IUnknown::Release
-FCIMPL1(ULONG, MarshalNative::Release, IUnknown* pUnk)
-{
-    CONTRACTL
-    {
-        FCALL_CHECK;
-        PRECONDITION(CheckPointer(pUnk, NULL_OK));
-    }
-    CONTRACTL_END;
-
-    ULONG cbRef = 0;
-    HELPER_METHOD_FRAME_BEGIN_RET_0();
-
-    if (!pUnk)
-        COMPlusThrowArgumentNull(W("pUnk"));
-
-    cbRef = SafeRelease(pUnk);
-    LogInteropRelease(pUnk, cbRef, "PInvoke.Release");
-
-    HELPER_METHOD_FRAME_END();
-    return cbRef;
-}
-FCIMPLEND
-
 FCIMPL2(void, MarshalNative::GetNativeVariantForObject, Object* ObjUNSAFE, LPVOID pDestNativeVariant)
 {
     CONTRACTL
@@ -1396,171 +1188,6 @@ FCIMPL2(Object*, MarshalNative::GetObjectsForNativeVariants, VARIANT* aSrcNative
 }
 FCIMPLEND
 
-FCIMPL2(void, MarshalNative::DoGetTypeLibGuid, GUID * result, Object* refTlbUNSAFE)
-{
-    FCALL_CONTRACT;
-
-    OBJECTREF refTlb = (OBJECTREF) refTlbUNSAFE;
-    HELPER_METHOD_FRAME_BEGIN_1(refTlb);
-    GCPROTECT_BEGININTERIOR (result);
-
-    if (refTlb == NULL)
-        COMPlusThrowArgumentNull(W("pTLB"));
-
-    // Ensure COM is started up.
-    EnsureComStarted();
-
-    SafeComHolder<ITypeLib> pTLB = (ITypeLib*)GetComIPFromObjectRef(&refTlb, IID_ITypeLib);
-    if (!pTLB)
-        COMPlusThrow(kArgumentException, W("Arg_NoITypeLib"));
-
-    GCX_PREEMP();
-
-    // Retrieve the TLIBATTR.
-    TLIBATTR *pAttr;
-    IfFailThrow(pTLB->GetLibAttr(&pAttr));
-
-    // Extract the guid from the TLIBATTR.
-    *result = pAttr->guid;
-
-    // Release the TLIBATTR now that we have the GUID.
-    pTLB->ReleaseTLibAttr(pAttr);
-
-    GCPROTECT_END ();
-    HELPER_METHOD_FRAME_END();
-}
-FCIMPLEND
-
-FCIMPL1(LCID, MarshalNative::GetTypeLibLcid, Object* refTlbUNSAFE)
-{
-    FCALL_CONTRACT;
-
-    LCID retVal = 0;
-    OBJECTREF refTlb = (OBJECTREF) refTlbUNSAFE;
-    HELPER_METHOD_FRAME_BEGIN_RET_1(refTlb);
-
-    if (refTlb == NULL)
-        COMPlusThrowArgumentNull(W("pTLB"));
-
-    // Ensure COM is started up.
-    EnsureComStarted();
-
-    SafeComHolder<ITypeLib> pTLB = (ITypeLib*)GetComIPFromObjectRef(&refTlb, IID_ITypeLib);
-    if (!pTLB)
-        COMPlusThrow(kArgumentException, W("Arg_NoITypeLib"));
-
-    GCX_PREEMP();
-
-    // Retrieve the TLIBATTR.
-    TLIBATTR *pAttr;
-    IfFailThrow(pTLB->GetLibAttr(&pAttr));
-
-    // Extract the LCID from the TLIBATTR.
-    retVal = pAttr->lcid;
-
-    // Release the TLIBATTR now that we have the LCID.
-    pTLB->ReleaseTLibAttr(pAttr);
-
-    HELPER_METHOD_FRAME_END();
-    return retVal;
-}
-FCIMPLEND
-
-FCIMPL3(void, MarshalNative::GetTypeLibVersion, Object* refTlbUNSAFE, int *pMajor, int *pMinor)
-{
-    FCALL_CONTRACT;
-
-    OBJECTREF refTlb = (OBJECTREF) refTlbUNSAFE;
-    HELPER_METHOD_FRAME_BEGIN_1(refTlb);
-
-    if (refTlb == NULL)
-        COMPlusThrowArgumentNull(W("typeLibrary"));
-
-    // Ensure COM is started up.
-    EnsureComStarted();
-
-    SafeComHolder<ITypeLib> pTLB = (ITypeLib*)GetComIPFromObjectRef(&refTlb, IID_ITypeLib);
-    if (!pTLB)
-        COMPlusThrow(kArgumentException, W("Arg_NoITypeLib"));
-
-    GCX_PREEMP();
-
-    // Retrieve the TLIBATTR.
-    TLIBATTR *pAttr;
-    IfFailThrow(pTLB->GetLibAttr(&pAttr));
-
-    // Extract the LCID from the TLIBATTR.
-    *pMajor = pAttr->wMajorVerNum;
-    *pMinor = pAttr->wMinorVerNum;
-
-    // Release the TLIBATTR now that we have the version numbers.
-    pTLB->ReleaseTLibAttr(pAttr);
-
-    HELPER_METHOD_FRAME_END();
-}
-FCIMPLEND
-
-FCIMPL2(void, MarshalNative::DoGetTypeInfoGuid, GUID * result, Object* refTypeInfoUNSAFE)
-{
-    FCALL_CONTRACT;
-
-    OBJECTREF refTypeInfo = (OBJECTREF) refTypeInfoUNSAFE;
-    HELPER_METHOD_FRAME_BEGIN_1(refTypeInfo);
-    GCPROTECT_BEGININTERIOR (result);
-
-    if (refTypeInfo == NULL)
-        COMPlusThrowArgumentNull(W("typeInfo"));
-
-    // Ensure COM is started up.
-    EnsureComStarted();
-
-    SafeComHolder<ITypeInfo> pTI = (ITypeInfo*)GetComIPFromObjectRef(&refTypeInfo, IID_ITypeInfo);
-    if (!pTI)
-        COMPlusThrow(kArgumentException, W("Arg_NoITypeInfo"));
-
-    GCX_PREEMP();
-
-    // Retrieve the TYPEATTR.
-    TYPEATTR *pAttr;
-    IfFailThrow(pTI->GetTypeAttr(&pAttr));
-
-    // Extract the guid from the TYPEATTR.
-    *result = pAttr->guid;
-
-    // Release the TYPEATTR now that we have the GUID.
-    pTI->ReleaseTypeAttr(pAttr);
-
-    GCPROTECT_END ();
-    HELPER_METHOD_FRAME_END();
-}
-FCIMPLEND
-
-FCIMPL2(void, MarshalNative::DoGetTypeLibGuidForAssembly, GUID * result, AssemblyBaseObject* refAsmUNSAFE)
-{
-    FCALL_CONTRACT;
-
-    // Validate the arguments.
-    _ASSERTE(refAsmUNSAFE != NULL);
-    _ASSERTE(result != NULL);
-
-    ASSEMBLYREF refAsm = (ASSEMBLYREF) refAsmUNSAFE;
-    HELPER_METHOD_FRAME_BEGIN_1(refAsm);
-    GCPROTECT_BEGININTERIOR (result)
-
-    HRESULT hr = S_OK;
-
-    // Retrieve the assembly from the ASSEMBLYREF.
-    Assembly *pAssembly = refAsm->GetAssembly();
-    _ASSERTE(pAssembly);
-
-    // Retrieve the TLBID for the assembly.
-    IfFailThrow(::GetTypeLibGuidForAssembly(pAssembly, result));
-
-    GCPROTECT_END ();
-    HELPER_METHOD_FRAME_END();
-}
-FCIMPLEND
-
 FCIMPL1(int, MarshalNative::GetStartComSlot, ReflectClassBaseObject* tUNSAFE)
 {
     FCALL_CONTRACT;
@@ -1636,44 +1263,6 @@ FCIMPL1(int, MarshalNative::GetEndComSlot, ReflectClassBaseObject* tUNSAFE)
 
     HELPER_METHOD_FRAME_END();
     return retVal;
-}
-FCIMPLEND
-
-//+----------------------------------------------------------------------------
-//
-//  Method:     MarshalNative::WrapIUnknownWithComObject
-//  Synopsis:   unmarshal the buffer and return IUnknown
-//
-
-//
-//+----------------------------------------------------------------------------
-FCIMPL1(Object*, MarshalNative::WrapIUnknownWithComObject, IUnknown* pUnk)
-{
-    CONTRACTL
-    {
-        FCALL_CHECK;
-        PRECONDITION(CheckPointer(pUnk, NULL_OK));
-    }
-    CONTRACTL_END;
-
-    OBJECTREF cref = NULL;
-    HELPER_METHOD_FRAME_BEGIN_RET_0();
-
-    if(pUnk == NULL)
-        COMPlusThrowArgumentNull(W("punk"));
-
-    EnsureComStarted();
-
-    COMInterfaceMarshaler marshaler;
-    marshaler.Init(pUnk, g_pBaseCOMObject, GET_THREAD());
-
-    cref = marshaler.WrapWithComObject();
-
-    if (cref == NULL)
-        COMPlusThrowOM();
-
-    HELPER_METHOD_FRAME_END();
-    return OBJECTREFToObject(cref);
 }
 FCIMPLEND
 
@@ -1755,41 +1344,24 @@ int MarshalNative::GetComSlotInfo(MethodTable *pMT, MethodTable **ppDefItfMT)
     }
 }
 
-BOOL MarshalNative::IsObjectInContext(OBJECTREF *pObj)
+void QCALLTYPE MarshalNative::GetTypeFromCLSID(REFCLSID clsid, PCWSTR wszServer, QCall::ObjectHandleOnStack retType)
 {
-    CONTRACTL
-    {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_COOPERATIVE;
-        PRECONDITION(pObj != NULL);
-    }
-    CONTRACTL_END;
+    QCALL_CONTRACT;
 
-    SyncBlock* pBlock = (*pObj)->GetSyncBlock();
+    BEGIN_QCALL;
 
-    InteropSyncBlockInfo* pInteropInfo = pBlock->GetInteropInfo();
+    // Ensure COM is started up.	
+    EnsureComStarted();
 
-    ComCallWrapper* pCCW = pInteropInfo->GetCCW();
+    GCX_COOP();
 
-    if((pCCW) || (!pInteropInfo->RCWWasUsed()))
-    {
-        // We are dealing with a CCW. Since CCW's are agile, they are always in the
-        // correct context.
-        return TRUE;
-    }
-    else
-    {
-        RCWHolder pRCW(GetThread());
-        pRCW.Init(pBlock);
+    OBJECTREF orType = NULL;
+    GCPROTECT_BEGIN(orType);
+    GetComClassFromCLSID(clsid, wszServer, &orType);
+    retType.Set(orType);
+    GCPROTECT_END();
 
-        // We are dealing with an RCW, we need to check to see if the current
-        // context is the one it was first seen in.
-        LPVOID pCtxCookie = GetCurrentCtxCookie();
-        _ASSERTE(pCtxCookie != NULL);
-
-        return pCtxCookie == pRCW->GetWrapperCtxCookie();
-    }
+    END_QCALL;
 }
 
 #endif // FEATURE_COMINTEROP

@@ -76,7 +76,7 @@ test_fast_serializer_object_fast_serialize (void)
 
 	test_location = 2;
 
-	provider = ep_create_provider (TEST_PROVIDER_NAME, NULL, NULL);
+	provider = ep_create_provider (TEST_PROVIDER_NAME, NULL, NULL, NULL);
 	ep_raise_error_if_nok (provider != NULL);
 
 	test_location = 3;
@@ -331,8 +331,8 @@ ep_on_error:
 	ep_exit_error_handler ();
 }
 
-//TODO: Add perf test just doing write into fast serializer with different event types (no event alloc/instancing). Write into void
-//stream but still write into same memory buffer to do something.
+// TODO: Add perf test just doing write into fast serializer with different event types (no event alloc/instancing). Write into void
+// stream but still write into same memory buffer to do something.
 
 static Test ep_fastserializer_tests [] = {
 	{"fast_serializer_object_fast_serialize", test_fast_serializer_object_fast_serialize},

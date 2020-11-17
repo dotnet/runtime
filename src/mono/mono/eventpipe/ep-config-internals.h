@@ -30,6 +30,7 @@ config_create_provider (
 	EventPipeConfiguration *config,
 	const ep_char8_t *provider_name,
 	EventPipeCallback callback_func,
+	EventPipeCallbackDataFree callback_data_free_func,
 	void *callback_data,
 	EventPipeProviderCallbackDataQueue *provider_callback_data_queue);
 
@@ -52,4 +53,4 @@ config_enable_disable (
 	bool enable);
 
 #endif /* ENABLE_PERFTRACING */
-#endif /** __EVENTPIPE_CONFIGURATION_INTERNALS_H__ **/
+#endif /* __EVENTPIPE_CONFIGURATION_INTERNALS_H__ */

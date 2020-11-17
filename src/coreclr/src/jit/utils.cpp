@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 // ===================================================================================================
 // Portions of the code implemented below are based on the 'Berkeley SoftFloat Release 3e' algorithms.
@@ -129,7 +128,7 @@ const char* varTypeName(var_types vt)
     return varTypeNames[vt];
 }
 
-#if defined(DEBUG) || defined(LATE_DISASM)
+#if defined(DEBUG) || defined(LATE_DISASM) || DUMP_GC_TABLES
 /*****************************************************************************
  *
  *  Return the name of the given register.
@@ -165,7 +164,7 @@ const char* getRegName(unsigned reg,
 {
     return getRegName((regNumber)reg, isFloat);
 }
-#endif // defined(DEBUG) || defined(LATE_DISASM)
+#endif // defined(DEBUG) || defined(LATE_DISASM) || DUMP_GC_TABLES
 
 #if defined(DEBUG)
 
@@ -768,11 +767,11 @@ void ConfigMethodRange::InitRanges(const WCHAR* rangeStr, unsigned capacity)
             }
             else if ((L'A' <= *p) && (*p <= L'F'))
             {
-                n = (*p++) - L'A';
+                n = (*p++) - L'A' + 10;
             }
             else if ((L'a' <= *p) && (*p <= L'f'))
             {
-                n = (*p++) - L'a';
+                n = (*p++) - L'a' + 10;
             }
 
             int j = 16 * i + n;
@@ -847,9 +846,6 @@ void ConfigMethodRange::InitRanges(const WCHAR* rangeStr, unsigned capacity)
 //------------------------------------------------------------------------
 // Dump: dump hash ranges to stdout
 //
-// Arguments:
-//    hash -- hash value to check
-
 void ConfigMethodRange::Dump()
 {
     if (m_inited != 1)
@@ -867,7 +863,14 @@ void ConfigMethodRange::Dump()
     printf("<method range with %d entries>\n", m_lastRange);
     for (unsigned i = 0; i < m_lastRange; i++)
     {
-        printf("%i [%u-%u]\n", i, m_ranges[i].m_low, m_ranges[i].m_high);
+        if (m_ranges[i].m_low == m_ranges[i].m_high)
+        {
+            printf("%i [0x%08x]\n", i, m_ranges[i].m_low);
+        }
+        else
+        {
+            printf("%i [0x%08x-0x%08x]\n", i, m_ranges[i].m_low, m_ranges[i].m_high);
+        }
     }
 }
 
@@ -1333,7 +1336,7 @@ void HelperCallProperties::init()
                 break;
 
             case CORINFO_HELP_ARE_TYPES_EQUIVALENT:
-
+            case CORINFO_HELP_GETCURRENTMANAGEDTHREADID:
                 isPure  = true;
                 noThrow = true;
                 break;
@@ -1470,7 +1473,6 @@ void HelperCallProperties::init()
             case CORINFO_HELP_INIT_PINVOKE_FRAME:
             case CORINFO_HELP_JIT_PINVOKE_BEGIN:
             case CORINFO_HELP_JIT_PINVOKE_END:
-            case CORINFO_HELP_GETCURRENTMANAGEDTHREADID:
 
                 noThrow = true;
                 break;

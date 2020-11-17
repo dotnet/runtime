@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System;
 using System.Collections.Generic;
@@ -23,25 +22,25 @@ namespace ILCompiler.Reflection.ReadyToRun
     /// </summary>
     public struct FixupCell
     {
-        public int Index { get; set; }
+        public int Index { get; }
 
         /// <summary>
         /// Zero-based index of the import table within the import tables section.
         /// </summary>
-        public uint TableIndex;
+        public uint TableIndex { get; }
 
         /// <summary>
         /// Zero-based offset of the entry in the import table; it must be a multiple
         /// of the target architecture pointer size.
         /// </summary>
-        public uint CellOffset;
+        public uint CellOffset { get; }
 
         /// <summary>
-        /// Fixup cell signature (textual representation of the typesystem object).
+        /// Fixup cell signature
         /// </summary>
-        public string Signature;
+        public ReadyToRunSignature Signature { get; }
 
-        public FixupCell(int index, uint tableIndex, uint cellOffset, string signature)
+        public FixupCell(int index, uint tableIndex, uint cellOffset, ReadyToRunSignature signature)
         {
             Index = index;
             TableIndex = tableIndex;
@@ -102,13 +101,27 @@ namespace ILCompiler.Reflection.ReadyToRun
         public int StartAddress { get; }
 
         /// <summary>
+        /// The relative virtual address to the end of the code block
+        /// </summary>
+        public int EndAddress { get;  }
+
+        /// <summary>
         /// The size of the code block in bytes
         /// </summary>
         /// /// <remarks>
         /// The EndAddress field in the runtime functions section is conditional on machine type
         /// Size is -1 for images without the EndAddress field
         /// </remarks>
-        public int Size { get; }
+        public int Size
+        {
+            get
+            {
+                EnsureInitialized();
+                return _size;
+            }
+        }
+
+        private int _size = -1;
 
         /// <summary>
         /// The relative virtual address to the unwind info
@@ -145,9 +158,21 @@ namespace ILCompiler.Reflection.ReadyToRun
             {
                 if (_debugInfo == null)
                 {
-                    _readyToRunReader.RuntimeFunctionToDebugInfo.TryGetValue(Id, out _debugInfo);
+                    int offset;
+                    if (_readyToRunReader.RuntimeFunctionToDebugInfo.TryGetValue(Id, out offset))
+                    {
+                        this._debugInfo = new DebugInfo(this, offset);
+                    }
                 }
                 return _debugInfo;
+            }
+        }
+
+        internal ReadyToRunReader ReadyToRunReader
+        {
+            get
+            {
+                return _readyToRunReader;
             }
         }
 
@@ -160,41 +185,54 @@ namespace ILCompiler.Reflection.ReadyToRun
             int codeOffset,
             ReadyToRunMethod method,
             BaseUnwindInfo unwindInfo,
-            BaseGcInfo gcInfo)
+            Func<BaseGcInfo> gcInfo)
         {
             _readyToRunReader = readyToRunReader;
+
             Id = id;
             StartAddress = startRva;
+            EndAddress = endRva;
             UnwindRVA = unwindRva;
             Method = method;
             UnwindInfo = unwindInfo;
+            CodeOffset = codeOffset;
+            method.GetGcInfo = gcInfo;
+        }
 
-            if (endRva != -1)
+        private void EnsureInitialized()
+        {
+            if (_size < 0)
             {
-                Size = endRva - startRva;
+                _size = GetSize();
             }
-            else if (unwindInfo is x86.UnwindInfo)
+        }
+
+        private int GetSize()
+        {
+            if (EndAddress != -1)
             {
-                Size = (int)((x86.UnwindInfo)unwindInfo).FunctionLength;
+                return EndAddress - StartAddress;
             }
-            else if (unwindInfo is Arm.UnwindInfo)
+            else if (UnwindInfo is x86.UnwindInfo)
             {
-                Size = (int)((Arm.UnwindInfo)unwindInfo).FunctionLength;
+                return (int)((x86.UnwindInfo)UnwindInfo).FunctionLength;
             }
-            else if (unwindInfo is Arm64.UnwindInfo)
+            else if (UnwindInfo is Arm.UnwindInfo)
             {
-                Size = (int)((Arm64.UnwindInfo)unwindInfo).FunctionLength;
+                return (int)((Arm.UnwindInfo)UnwindInfo).FunctionLength;
             }
-            else if (gcInfo != null)
+            else if (UnwindInfo is Arm64.UnwindInfo)
             {
-                Size = gcInfo.CodeLength;
+                return (int)((Arm64.UnwindInfo)UnwindInfo).FunctionLength;
+            }
+            else if (Method.GcInfo != null)
+            {
+                return Method.GcInfo.CodeLength; 
             }
             else
             {
-                Size = -1;
+                return -1;
             }
-            CodeOffset = codeOffset;
-            method.GcInfo = gcInfo;
         }
     }
 
@@ -203,9 +241,9 @@ namespace ILCompiler.Reflection.ReadyToRun
         private const int _mdtMethodDef = 0x06000000;
 
         /// <summary>
-        /// MetadataReader representing the method module.
+        /// MSIL module containing the method.
         /// </summary>
-        public MetadataReader MetadataReader { get; private set; }
+        public IAssemblyMetadata ComponentReader { get; private set; }
 
         /// <summary>
         /// The name of the method
@@ -218,6 +256,8 @@ namespace ILCompiler.Reflection.ReadyToRun
         public string SignatureString { get; set; }
 
         public MethodSignature<string> Signature { get; }
+
+        public ImmutableArray<string> LocalSignature { get; }
 
         /// <summary>
         /// The type that the method belongs to
@@ -260,7 +300,19 @@ namespace ILCompiler.Reflection.ReadyToRun
         /// </summary>
         public int EntryPointRuntimeFunctionId { get; set; }
 
-        public BaseGcInfo GcInfo { get; set; }
+        public Func<BaseGcInfo> GetGcInfo { get; set; }
+
+        public BaseGcInfo GcInfo
+        {
+            get
+            {
+                EnsureInitialized();
+                return _gcInfo;
+            }
+        }
+
+        private BaseGcInfo _gcInfo;
+
 
         private ReadyToRunReader _readyToRunReader;
         private List<FixupCell> _fixupCells;
@@ -283,7 +335,7 @@ namespace ILCompiler.Reflection.ReadyToRun
         /// </summary>
         public ReadyToRunMethod(
             ReadyToRunReader readyToRunReader,
-            MetadataReader metadataReader,
+            IAssemblyMetadata componentReader,
             EntityHandle methodHandle,
             int entryPointId,
             string owningType,
@@ -296,7 +348,7 @@ namespace ILCompiler.Reflection.ReadyToRun
             MethodHandle = methodHandle;
             EntryPointRuntimeFunctionId = entryPointId;
 
-            MetadataReader = metadataReader;
+            ComponentReader = componentReader;
 
             EntityHandle owningTypeHandle;
             GenericParameterHandleCollection genericParams = default(GenericParameterHandleCollection);
@@ -309,8 +361,17 @@ namespace ILCompiler.Reflection.ReadyToRun
             {
                 case HandleKind.MethodDefinition:
                     {
-                        MethodDefinition methodDef = MetadataReader.GetMethodDefinition((MethodDefinitionHandle)MethodHandle);
-                        Name = MetadataReader.GetString(methodDef.Name);
+                        MethodDefinition methodDef = ComponentReader.MetadataReader.GetMethodDefinition((MethodDefinitionHandle)MethodHandle);
+                        if (methodDef.RelativeVirtualAddress != 0)
+                        {
+                            MethodBodyBlock mbb = ComponentReader.ImageReader.GetMethodBody(methodDef.RelativeVirtualAddress);
+                            if (!mbb.LocalSignature.IsNil)
+                            {
+                                StandaloneSignature ss = ComponentReader.MetadataReader.GetStandaloneSignature(mbb.LocalSignature);
+                                LocalSignature = ss.DecodeLocalSignature(typeProvider, genericContext);
+                            }
+                        }
+                        Name = ComponentReader.MetadataReader.GetString(methodDef.Name);
                         Signature = methodDef.DecodeSignature<string, DisassemblingGenericContext>(typeProvider, genericContext);
                         owningTypeHandle = methodDef.GetDeclaringType();
                         genericParams = methodDef.GetGenericParameters();
@@ -319,8 +380,8 @@ namespace ILCompiler.Reflection.ReadyToRun
 
                 case HandleKind.MemberReference:
                     {
-                        MemberReference memberRef = MetadataReader.GetMemberReference((MemberReferenceHandle)MethodHandle);
-                        Name = MetadataReader.GetString(memberRef.Name);
+                        MemberReference memberRef = ComponentReader.MetadataReader.GetMemberReference((MemberReferenceHandle)MethodHandle);
+                        Name = ComponentReader.MetadataReader.GetString(memberRef.Name);
                         Signature = memberRef.DecodeMethodSignature<string, DisassemblingGenericContext>(typeProvider, genericContext);
                         owningTypeHandle = memberRef.Parent;
                     }
@@ -336,7 +397,7 @@ namespace ILCompiler.Reflection.ReadyToRun
             }
             else
             {
-                DeclaringType = MetadataNameFormatter.FormatHandle(MetadataReader, owningTypeHandle);
+                DeclaringType = MetadataNameFormatter.FormatHandle(ComponentReader.MetadataReader, owningTypeHandle);
             }
 
             StringBuilder sb = new StringBuilder();
@@ -380,6 +441,14 @@ namespace ILCompiler.Reflection.ReadyToRun
             sb.Append(")");
 
             SignatureString = sb.ToString();
+        }
+
+        private void EnsureInitialized()
+        {
+            if (_gcInfo == null && GetGcInfo != null)
+            {
+                _gcInfo = GetGcInfo();
+            }
         }
 
         private void EnsureFixupCells()
@@ -436,20 +505,26 @@ namespace ILCompiler.Reflection.ReadyToRun
         {
             int runtimeFunctionId = EntryPointRuntimeFunctionId;
             int runtimeFunctionSize = _readyToRunReader.CalculateRuntimeFunctionSize();
-            int runtimeFunctionOffset = _readyToRunReader.PEReader.GetOffset(_readyToRunReader.ReadyToRunHeader.Sections[ReadyToRunSectionType.RuntimeFunctions].RelativeVirtualAddress);
+            int runtimeFunctionOffset = _readyToRunReader.CompositeReader.GetOffset(_readyToRunReader.ReadyToRunHeader.Sections[ReadyToRunSectionType.RuntimeFunctions].RelativeVirtualAddress);
             int curOffset = runtimeFunctionOffset + runtimeFunctionId * runtimeFunctionSize;
-            BaseGcInfo gcInfo = null;
+            Func<BaseGcInfo> gcInfo = default(Func<BaseGcInfo>);
             int codeOffset = 0;
             for (int i = 0; i < RuntimeFunctionCount; i++)
             {
                 int startRva = NativeReader.ReadInt32(_readyToRunReader.Image, ref curOffset);
+                if (_readyToRunReader.Machine == Machine.ArmThumb2)
+                {
+                    // The low bit of this address is set since the function contains thumb code.
+                    // Clear this bit in order to get the "real" RVA of the start of the function.
+                    startRva = (int)(startRva & ~1);
+                }
                 int endRva = -1;
                 if (_readyToRunReader.Machine == Machine.Amd64)
                 {
                     endRva = NativeReader.ReadInt32(_readyToRunReader.Image, ref curOffset);
                 }
                 int unwindRva = NativeReader.ReadInt32(_readyToRunReader.Image, ref curOffset);
-                int unwindOffset = _readyToRunReader.PEReader.GetOffset(unwindRva);
+                int unwindOffset = _readyToRunReader.CompositeReader.GetOffset(unwindRva);
 
                 BaseUnwindInfo unwindInfo = null;
                 if (_readyToRunReader.Machine == Machine.Amd64)
@@ -457,7 +532,7 @@ namespace ILCompiler.Reflection.ReadyToRun
                     unwindInfo = new Amd64.UnwindInfo(_readyToRunReader.Image, unwindOffset);
                     if (i == 0)
                     {
-                        gcInfo = new Amd64.GcInfo(_readyToRunReader.Image, unwindOffset + unwindInfo.Size, _readyToRunReader.Machine, _readyToRunReader.ReadyToRunHeader.MajorVersion);
+                        gcInfo = new Func<BaseGcInfo>(() => new Amd64.GcInfo(_readyToRunReader.Image, unwindOffset + unwindInfo.Size, _readyToRunReader.Machine, _readyToRunReader.ReadyToRunHeader.MajorVersion));
                     }
                 }
                 else if (_readyToRunReader.Machine == Machine.I386)
@@ -465,7 +540,7 @@ namespace ILCompiler.Reflection.ReadyToRun
                     unwindInfo = new x86.UnwindInfo(_readyToRunReader.Image, unwindOffset);
                     if (i == 0)
                     {
-                        gcInfo = new x86.GcInfo(_readyToRunReader.Image, unwindOffset, _readyToRunReader.Machine, _readyToRunReader.ReadyToRunHeader.MajorVersion);
+                        gcInfo = new Func<BaseGcInfo>(() => new x86.GcInfo(_readyToRunReader.Image, unwindOffset, _readyToRunReader.Machine, _readyToRunReader.ReadyToRunHeader.MajorVersion));
                     }
                 }
                 else if (_readyToRunReader.Machine == Machine.ArmThumb2)
@@ -473,7 +548,7 @@ namespace ILCompiler.Reflection.ReadyToRun
                     unwindInfo = new Arm.UnwindInfo(_readyToRunReader.Image, unwindOffset);
                     if (i == 0)
                     {
-                        gcInfo = new Amd64.GcInfo(_readyToRunReader.Image, unwindOffset + unwindInfo.Size, _readyToRunReader.Machine, _readyToRunReader.ReadyToRunHeader.MajorVersion); // Arm and Arm64 use the same GcInfo format as x64
+                        gcInfo = new Func<BaseGcInfo>(() => new Amd64.GcInfo(_readyToRunReader.Image, unwindOffset + unwindInfo.Size, _readyToRunReader.Machine, _readyToRunReader.ReadyToRunHeader.MajorVersion)); // Arm and Arm64 use the same GcInfo format as x6
                     }
                 }
                 else if (_readyToRunReader.Machine == Machine.Arm64)
@@ -481,7 +556,7 @@ namespace ILCompiler.Reflection.ReadyToRun
                     unwindInfo = new Arm64.UnwindInfo(_readyToRunReader.Image, unwindOffset);
                     if (i == 0)
                     {
-                        gcInfo = new Amd64.GcInfo(_readyToRunReader.Image, unwindOffset + unwindInfo.Size, _readyToRunReader.Machine, _readyToRunReader.ReadyToRunHeader.MajorVersion);
+                        gcInfo = new Func<BaseGcInfo>(() => new Amd64.GcInfo(_readyToRunReader.Image, unwindOffset + unwindInfo.Size, _readyToRunReader.Machine, _readyToRunReader.ReadyToRunHeader.MajorVersion));
                     }
                 }
 

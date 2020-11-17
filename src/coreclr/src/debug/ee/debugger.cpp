@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 //*****************************************************************************
 // File: debugger.cpp
 //
@@ -1751,7 +1750,7 @@ void Debugger::SendRawEvent(const DebuggerIPCEvent * pManagedEvent)
     // The debugger can then use ReadProcessMemory to read through this array.
     ULONG_PTR rgData [] = {
         CLRDBG_EXCEPTION_DATA_CHECKSUM,
-        (ULONG_PTR) g_hThisInst,
+        (ULONG_PTR)GetClrModuleBase(),
         (ULONG_PTR) pManagedEvent
     };
 
@@ -1900,7 +1899,7 @@ void Debugger::CleanupTransportSocket(void)
 // Initialize Left-Side debugger object
 //
 // Return Value:
-//    S_OK on successs. May also throw.
+//    S_OK on success. May also throw.
 //
 // Assumptions:
 //    This is called in the startup path.
@@ -3459,14 +3458,14 @@ void Debugger::getBoundaries(MethodDesc * md,
 
     if (pModule == SystemDomain::SystemModule())
     {
-        // We don't look up PDBs for mscorlib.  This is not quite right, but avoids
+        // We don't look up PDBs for CoreLib.  This is not quite right, but avoids
         // a bootstrapping problem.  When an EXE loads, it has the option of setting
         // the COM apartment model to STA if we need to.  It is important that no
         // other Coinitialize happens before this.  Since loading the PDB reader uses
         // com we can not come first.  However managed code IS run before the COM
         // apartment model is set, and thus we have a problem since this code is
         // called for when JITTing managed code.    We avoid the problem by just
-        // bailing for mscorlib.
+        // bailing for CoreLib.
         return;
     }
 
@@ -5669,7 +5668,7 @@ bool Debugger::FirstChanceNativeException(EXCEPTION_RECORD *exception,
     // Ignore any notification exceptions sent from code:Debugger.SendRawEvent.
     // This is not a common case, but could happen in some cases described
     // in SendRawEvent. Either way, Left-Side and VM should just ignore these.
-    if (IsEventDebuggerNotification(exception, PTR_TO_CORDB_ADDRESS(g_hThisInst)))
+    if (IsEventDebuggerNotification(exception, PTR_TO_CORDB_ADDRESS(GetClrModuleBase())))
     {
         return true;
     }
@@ -7954,7 +7953,7 @@ void Debugger::ProcessAnyPendingEvals(Thread *pThread)
         // Now clear the bit else we'll see it again when we process the Exception notification
         // from this upcoming UserAbort exception.
         pThread->ResetThreadStateNC(Thread::TSNC_DebuggerReAbort);
-        pThread->UserAbort(Thread::TAR_Thread, EEPolicy::TA_Safe, INFINITE, Thread::UAC_Normal);
+        pThread->UserAbort(Thread::TAR_Thread, EEPolicy::TA_Safe, INFINITE);
     }
 
 #endif
@@ -10723,6 +10722,7 @@ bool Debugger::HandleIPCEvent(DebuggerIPCEvent * pEvent)
         //
         // For regular (non-jit) attach, fall through to do an async break.
         //
+        FALLTHROUGH;
 
     case DB_IPCE_ASYNC_BREAK:
         {
@@ -11370,7 +11370,7 @@ bool Debugger::HandleIPCEvent(DebuggerIPCEvent * pEvent)
              Object * pObject = (Object*)pEvent->CreateHandle.objectToken;
              OBJECTREF objref = ObjectToOBJECTREF(pObject);
              AppDomain * pAppDomain = pEvent->vmAppDomain.GetRawPtr();
-             BOOL fStrong = pEvent->CreateHandle.fStrong;
+             CorDebugHandleType handleType = pEvent->CreateHandle.handleType;
              OBJECTHANDLE objectHandle;
 
              // This is a synchronous event (reply required)
@@ -11386,17 +11386,27 @@ bool Debugger::HandleIPCEvent(DebuggerIPCEvent * pEvent)
 
                  if (SUCCEEDED(pEvent->hr))
                  {
-                     if (fStrong == TRUE)
-                     {
-                         // create strong handle
-                         objectHandle = pAppDomain->CreateStrongHandle(objref);
-                     }
-                     else
-                     {
+                    switch (handleType)
+                    {
+                    case HANDLE_STRONG:
+                        // create strong handle
+                        objectHandle = pAppDomain->CreateStrongHandle(objref);
+                        break;
+                    case HANDLE_WEAK_TRACK_RESURRECTION:
                          // create the weak long handle
                          objectHandle = pAppDomain->CreateLongWeakHandle(objref);
-                     }
-                     pEvent->CreateHandleResult.vmObjectHandle.SetRawPtr(objectHandle);
+                        break;
+                    case HANDLE_PINNED:
+                        // create pinning handle
+                        objectHandle = pAppDomain->CreatePinningHandle(objref);
+                        break;
+                    default:
+                        pEvent->hr = E_INVALIDARG;
+                    }
+                 }
+                 if (SUCCEEDED(pEvent->hr))
+                 {
+                    pEvent->CreateHandleResult.vmObjectHandle.SetRawPtr(objectHandle);
                  }
              }
 
@@ -12139,7 +12149,7 @@ void Debugger::TypeHandleToExpandedTypeInfo(AreValueTypesBoxed boxed,
     case ELEMENT_TYPE_VALUETYPE:
         if (boxed == OnlyPrimitivesUnboxed || boxed == AllBoxed)
             res->elementType = ELEMENT_TYPE_CLASS;
-        // drop through
+        FALLTHROUGH;
 
     case ELEMENT_TYPE_CLASS:
         {
@@ -12363,7 +12373,7 @@ void Debugger::GetAndSendTransitionStubInfo(CORDB_ADDRESS_TYPE *stubAddress)
     // If its not a stub, then maybe its an address in mscoree?
     if (result == false)
     {
-        result = (IsIPInModule(g_hThisInst, (PCODE)stubAddress) == TRUE);
+        result = (IsIPInModule(GetClrModuleBase(), (PCODE)stubAddress) == TRUE);
     }
 
     // This is a synchronous event (reply required)
@@ -12897,7 +12907,7 @@ private:
 //
 EnCSequencePointHelper::EnCSequencePointHelper(DebuggerJitInfo *pJitInfo)
     : m_pJitInfo(pJitInfo),
-    m_pOffsetToHandlerInfo(NULL)      
+    m_pOffsetToHandlerInfo(NULL)
 {
     CONTRACTL
     {
@@ -15243,15 +15253,6 @@ HRESULT Debugger::FuncEvalSetup(DebuggerIPCE_FuncEvalInfo *pEvalInfo,
         return CORDBG_E_FUNC_EVAL_BAD_START_POINT;
     }
 
-    if (MethodDescBackpatchInfoTracker::IsLockOwnedByAnyThread())
-    {
-        // A thread may have suspended for the debugger while holding the slot backpatching lock while trying to enter
-        // cooperative GC mode. If the FuncEval calls a method that is eligible for slot backpatching (virtual or interface
-        // methods that are eligible for tiering), the FuncEval may deadlock on trying to acquire the same lock. Fail the
-        // FuncEval to avoid the issue.
-        return CORDBG_E_FUNC_EVAL_BAD_START_POINT;
-    }
-
     // Create a DebuggerEval to hold info about this eval while its in progress. Constructor copies the thread's
     // CONTEXT.
     DebuggerEval *pDE = new (interopsafe, nothrow) DebuggerEval(filterContext, pEvalInfo, fInException);
@@ -15485,7 +15486,7 @@ Debugger::FuncEvalAbort(
             //
             EX_TRY
             {
-                hr = pDE->m_thread->UserAbort(Thread::TAR_FuncEval, EEPolicy::TA_Safe, (DWORD)FUNC_EVAL_DEFAULT_TIMEOUT_VALUE, Thread::UAC_Normal);
+                hr = pDE->m_thread->UserAbort(Thread::TAR_FuncEval, EEPolicy::TA_Safe, (DWORD)FUNC_EVAL_DEFAULT_TIMEOUT_VALUE);
                 if (hr == HRESULT_FROM_WIN32(ERROR_TIMEOUT))
                 {
                     hr = S_OK;
@@ -15551,7 +15552,7 @@ Debugger::FuncEvalRudeAbort(
             //
             EX_TRY
             {
-                hr = pDE->m_thread->UserAbort(Thread::TAR_FuncEval, EEPolicy::TA_Rude, (DWORD)FUNC_EVAL_DEFAULT_TIMEOUT_VALUE, Thread::UAC_Normal);
+                hr = pDE->m_thread->UserAbort(Thread::TAR_FuncEval, EEPolicy::TA_Rude, (DWORD)FUNC_EVAL_DEFAULT_TIMEOUT_VALUE);
                 if (hr == HRESULT_FROM_WIN32(ERROR_TIMEOUT))
                 {
                     hr = S_OK;

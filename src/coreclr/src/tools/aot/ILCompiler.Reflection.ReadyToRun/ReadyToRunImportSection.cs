@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System;
 using System.Collections.Generic;
@@ -22,14 +21,14 @@ namespace ILCompiler.Reflection.ReadyToRun
             public int StartRVA { get; set; }
             public long Section { get; set; }
             public uint SignatureRVA { get; set; }
-            public string Signature { get; set; }
+            public ReadyToRunSignature Signature { get; set; }
             public GCRefMap GCRefMap { get; set; }
 
             public ImportSectionEntry()
             {
             }
 
-            public ImportSectionEntry(int index, int startOffset, int startRVA, long section, uint signatureRVA, string signature)
+            public ImportSectionEntry(int index, int startOffset, int startRVA, long section, uint signatureRVA, ReadyToRunSignature signature)
             {
                 Index = index;
                 StartOffset = startOffset;

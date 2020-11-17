@@ -1,6 +1,5 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
 using System.Diagnostics.Tracing;
@@ -144,6 +143,7 @@ namespace System.Buffers.ArrayPool.Tests
 
         private static bool IsPreciseGcSupportedAndRemoteExecutorSupported => PlatformDetection.IsPreciseGcSupported && RemoteExecutor.IsSupported;
 
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/44037")]
         [ConditionalTheory(nameof(IsPreciseGcSupportedAndRemoteExecutorSupported))]
         [InlineData(true)]
         [InlineData(false)]

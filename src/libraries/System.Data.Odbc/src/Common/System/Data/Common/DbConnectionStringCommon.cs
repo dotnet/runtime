@@ -1,6 +1,5 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Diagnostics;
 using System.Globalization;
@@ -156,7 +155,7 @@ namespace System.Data.Common
         internal static bool ConvertToBoolean(object value)
         {
             Debug.Assert(null != value, "ConvertToBoolean(null)");
-            string svalue = (value as string);
+            string? svalue = (value as string);
             if (null != svalue)
             {
                 if (StringComparer.OrdinalIgnoreCase.Equals(svalue, "true") || StringComparer.OrdinalIgnoreCase.Equals(svalue, "yes"))
@@ -195,7 +194,7 @@ namespace System.Data.Common
         internal static bool ConvertToIntegratedSecurity(object value)
         {
             Debug.Assert(null != value, "ConvertToIntegratedSecurity(null)");
-            string svalue = (value as string);
+            string? svalue = (value as string);
             if (null != svalue)
             {
                 if (StringComparer.OrdinalIgnoreCase.Equals(svalue, "sspi") || StringComparer.OrdinalIgnoreCase.Equals(svalue, "true") || StringComparer.OrdinalIgnoreCase.Equals(svalue, "yes"))

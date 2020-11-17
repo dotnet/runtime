@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 
 #include "common.h"
@@ -1479,7 +1478,7 @@ BOOL RangeSectionStubManager::DoTraceStub(PCODE stubStartAddress, TraceDestinati
             }
         }
 
-        __fallthrough;
+        FALLTHROUGH;
 #endif
 
     case STUB_CODE_BLOCK_METHOD_CALL_THUNK:

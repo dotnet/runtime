@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
 using System.Threading;
@@ -11,12 +10,14 @@ namespace System
     public static partial class RetryHelper
     {
         private static readonly Func<int, int> s_defaultBackoffFunc = i => Math.Min(i * 100, 60_000);
+        private static readonly Predicate<Exception> s_defaultRetryWhenFunc = _ => true;
 
         /// <summary>Executes the <paramref name="test"/> action up to a maximum of <paramref name="maxAttempts"/> times.</summary>
         /// <param name="maxAttempts">The maximum number of times to invoke <paramref name="test"/>.</param>
         /// <param name="test">The test to invoke.</param>
         /// <param name="backoffFunc">After a failure, invoked to determine how many milliseconds to wait before the next attempt.  It's passed the number of iterations attempted.</param>
-        public static void Execute(Action test, int maxAttempts = 5, Func<int, int> backoffFunc = null)
+        /// <param name="retryWhen">Invoked to select the exceptions to retry on. If not set, any exception will trigger a retry.</param>
+        public static void Execute(Action test, int maxAttempts = 5, Func<int, int> backoffFunc = null, Predicate<Exception> retryWhen = null)
         {
             // Validate arguments
             if (maxAttempts < 1)
@@ -28,6 +29,8 @@ namespace System
                 throw new ArgumentNullException(nameof(test));
             }
 
+            retryWhen ??= s_defaultRetryWhenFunc;
+
             // Execute the test until it either passes or we run it maxAttempts times
             var exceptions = new List<Exception>();
             for (int i = 1; i <= maxAttempts; i++)
@@ -37,7 +40,7 @@ namespace System
                     test();
                     return;
                 }
-                catch (Exception e)
+                catch (Exception e) when (retryWhen(e))
                 {
                     exceptions.Add(e);
                     if (i == maxAttempts)
@@ -54,7 +57,8 @@ namespace System
         /// <param name="maxAttempts">The maximum number of times to invoke <paramref name="test"/>.</param>
         /// <param name="test">The test to invoke.</param>
         /// <param name="backoffFunc">After a failure, invoked to determine how many milliseconds to wait before the next attempt.  It's passed the number of iterations attempted.</param>
-        public static async Task ExecuteAsync(Func<Task> test, int maxAttempts = 5, Func<int, int> backoffFunc = null)
+        /// <param name="retryWhen">Invoked to select the exceptions to retry on. If not set, any exception will trigger a retry.</param>
+        public static async Task ExecuteAsync(Func<Task> test, int maxAttempts = 5, Func<int, int> backoffFunc = null, Predicate<Exception> retryWhen = null)
         {
             // Validate arguments
             if (maxAttempts < 1)
@@ -66,6 +70,8 @@ namespace System
                 throw new ArgumentNullException(nameof(test));
             }
 
+            retryWhen ??= s_defaultRetryWhenFunc;
+
             // Execute the test until it either passes or we run it maxAttempts times
             var exceptions = new List<Exception>();
             for (int i = 1; i <= maxAttempts; i++)
@@ -75,7 +81,7 @@ namespace System
                     await test().ConfigureAwait(false);
                     return;
                 }
-                catch (Exception e)
+                catch (Exception e) when (retryWhen(e))
                 {
                     exceptions.Add(e);
                     if (i == maxAttempts)

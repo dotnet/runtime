@@ -1,6 +1,5 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
@@ -58,7 +57,7 @@ namespace System
 
         // Well-defined and commonly used values
 
-        public static Half Epsilon =>  new Half(EpsilonBits);                        //  5.9604645E-08
+        public static Half Epsilon => new Half(EpsilonBits);                        //  5.9604645E-08
 
         public static Half PositiveInfinity => new Half(PositiveInfinityBits);      //  1.0 / 0.0;
 
@@ -117,7 +116,7 @@ namespace System
                 // says they should be equal, even if the signs differ.
                 return leftIsNegative && !AreZero(left, right);
             }
-            return (short)(left._value) < (short)(right._value);
+            return (left._value < right._value) ^ leftIsNegative;
         }
 
         public static bool operator >(Half left, Half right)
@@ -142,7 +141,7 @@ namespace System
                 // says they should be equal, even if the signs differ.
                 return leftIsNegative || AreZero(left, right);
             }
-            return (short)(left._value) <= (short)(right._value);
+            return (left._value <= right._value) ^ leftIsNegative;
         }
 
         public static bool operator >=(Half left, Half right)
@@ -152,12 +151,19 @@ namespace System
 
         public static bool operator ==(Half left, Half right)
         {
-            return left.Equals(right);
+            if (IsNaN(left) || IsNaN(right))
+            {
+                // IEEE defines that NaN is not equal to anything, including itself.
+                return false;
+            }
+
+            // IEEE defines that positive and negative zero are equivalent.
+            return (left._value == right._value) || AreZero(left, right);
         }
 
         public static bool operator !=(Half left, Half right)
         {
-            return !(left.Equals(right));
+            return !(left == right);
         }
 
         /// <summary>Determines whether the specified value is finite (zero, subnormal, or normal).</summary>
@@ -416,14 +422,9 @@ namespace System
         /// </summary>
         public bool Equals(Half other)
         {
-            if (IsNaN(this) || IsNaN(other))
-            {
-                // IEEE defines that NaN is not equal to anything, including itself.
-                return false;
-            }
-
-            // IEEE defines that positive and negative zero are equivalent.
-            return (_value == other._value) || AreZero(this, other);
+            return _value == other._value
+                || AreZero(this, other)
+                || (IsNaN(this) && IsNaN(other));
         }
 
         /// <summary>

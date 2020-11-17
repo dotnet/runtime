@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 namespace System.Text
 {
@@ -42,22 +41,6 @@ namespace System.Text
             }
 
             AppendFormatHelper(provider, format, new ParamsArray(args));
-        }
-
-        private void AppendSpanFormattable<T>(T value) where T : ISpanFormattable
-        {
-            if (value.TryFormat(_chars.Slice(_pos), out int charsWritten, format: default, provider: null))
-            {
-                _pos += charsWritten;
-            }
-            else
-            {
-                string? s = value.ToString();
-                if (s != null)
-                {
-                    Append(s);
-                }
-            }
         }
 
         internal void AppendSpanFormattable<T>(T value, string? format, IFormatProvider? provider) where T : ISpanFormattable, IFormattable

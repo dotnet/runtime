@@ -1,6 +1,5 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System;
 using System.Runtime.InteropServices;
@@ -40,21 +39,6 @@ namespace Microsoft.CSharp.RuntimeBinder.ComInterop
             IntPtr VarResult,
             IntPtr pExcepInfo,
             IntPtr puArgErr);
-    }
-
-    /// <summary>
-    /// Layout of the IDispatch vtable
-    /// </summary>
-    internal enum IDispatchMethodIndices
-    {
-        IUnknown_QueryInterface,
-        IUnknown_AddRef,
-        IUnknown_Release,
-
-        IDispatch_GetTypeInfoCount,
-        IDispatch_GetTypeInfo,
-        IDispatch_GetIDsOfNames,
-        IDispatch_Invoke
     }
 
     [ComImport]

@@ -1,12 +1,12 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 namespace System.Xml.Xsl.XsltOld
 {
     using System.Collections;
     using System.Collections.Generic;
     using System.Diagnostics;
+    using System.Diagnostics.CodeAnalysis;
     using System.Xml;
     using System.Xml.XPath;
     using MS.Internal.Xml.XPath;
@@ -15,25 +15,25 @@ namespace System.Xml.Xsl.XsltOld
     {
         private int _state;         // Action execution state
         private int _counter;       // Counter, for the use of particular action
-        private object[] _variables;     // Store for template local variable values
-        private Hashtable _withParams;
-        private Action _action;        // Action currently being executed
-        private ActionFrame _container;     // Frame of enclosing container action and index within it
+        private object[]? _variables;     // Store for template local variable values
+        private Hashtable? _withParams;
+        private Action? _action;        // Action currently being executed
+        private ActionFrame? _container;     // Frame of enclosing container action and index within it
         private int _currentAction;
-        private XPathNodeIterator _nodeSet;       // Current node set
-        private XPathNodeIterator _newNodeSet;    // Node set for processing children or other templates
+        private XPathNodeIterator? _nodeSet;       // Current node set
+        private XPathNodeIterator? _newNodeSet;    // Node set for processing children or other templates
 
         // Variables to store action data between states:
-        private PrefixQName _calulatedName; // Used in ElementAction and AttributeAction
-        private string _storedOutput;  // Used in NumberAction, CopyOfAction, ValueOfAction and ProcessingInstructionAction
+        private PrefixQName? _calulatedName; // Used in ElementAction and AttributeAction
+        private string? _storedOutput;  // Used in NumberAction, CopyOfAction, ValueOfAction and ProcessingInstructionAction
 
-        internal PrefixQName CalulatedName
+        internal PrefixQName? CalulatedName
         {
             get { return _calulatedName; }
             set { _calulatedName = value; }
         }
 
-        internal string StoredOutput
+        internal string? StoredOutput
         {
             get { return _storedOutput; }
             set { _storedOutput = value; }
@@ -51,12 +51,12 @@ namespace System.Xml.Xsl.XsltOld
             set { _counter = value; }
         }
 
-        internal ActionFrame Container
+        internal ActionFrame? Container
         {
             get { return _container; }
         }
 
-        internal XPathNavigator Node
+        internal XPathNavigator? Node
         {
             get
             {
@@ -68,12 +68,12 @@ namespace System.Xml.Xsl.XsltOld
             }
         }
 
-        internal XPathNodeIterator NodeSet
+        internal XPathNodeIterator? NodeSet
         {
             get { return _nodeSet; }
         }
 
-        internal XPathNodeIterator NewNodeSet
+        internal XPathNodeIterator? NewNodeSet
         {
             get { return _newNodeSet; }
         }
@@ -123,7 +123,7 @@ namespace System.Xml.Xsl.XsltOld
                 _withParams.Clear();
         }
 
-        internal object GetParameter(XmlQualifiedName name)
+        internal object? GetParameter(XmlQualifiedName name)
         {
             if (_withParams != null)
             {
@@ -138,12 +138,14 @@ namespace System.Xml.Xsl.XsltOld
             _nodeSet = nodeSet;
         }
 
+        [MemberNotNull(nameof(_newNodeSet))]
         internal void InitNewNodeSet(XPathNodeIterator nodeSet)
         {
             Debug.Assert(nodeSet != null);
             _newNodeSet = nodeSet;
         }
 
+        [MemberNotNull(nameof(_newNodeSet))]
         internal void SortNewNodeSet(Processor proc, ArrayList sortarray)
         {
             Debug.Assert(0 < sortarray.Count);
@@ -151,7 +153,7 @@ namespace System.Xml.Xsl.XsltOld
             XPathSortComparer comparer = new XPathSortComparer(numSorts);
             for (int i = 0; i < numSorts; i++)
             {
-                Sort sort = (Sort)sortarray[i];
+                Sort sort = (Sort)sortarray[i]!;
                 Query expr = proc.GetCompiledQuery(sort.select);
 
                 comparer.AddSort(expr, new XPathComparerHelper(sort.order, sort.caseOrder, sort.lang, sort.dataType));
@@ -162,10 +164,10 @@ namespace System.Xml.Xsl.XsltOld
 
             while (NewNextNode(proc))
             {
-                XPathNodeIterator savedNodeset = _nodeSet;
+                XPathNodeIterator? savedNodeset = _nodeSet;
                 _nodeSet = _newNodeSet;              // trick proc.Current node
 
-                SortKey key = new SortKey(numSorts, /*originalPosition:*/results.Count, _newNodeSet.Current.Clone());
+                SortKey key = new SortKey(numSorts, /*originalPosition:*/results.Count, _newNodeSet!.Current!.Clone());
 
                 for (int j = 0; j < numSorts; j++)
                 {
@@ -191,7 +193,7 @@ namespace System.Xml.Xsl.XsltOld
             _variables = parent._variables;
         }
 
-        private void Init(Action action, ActionFrame container, XPathNodeIterator nodeSet)
+        private void Init(Action? action, ActionFrame? container, XPathNodeIterator? nodeSet)
         {
             _state = Action.Initialized;
             _action = action;
@@ -201,12 +203,12 @@ namespace System.Xml.Xsl.XsltOld
             _newNodeSet = null;
         }
 
-        internal void Init(Action action, XPathNodeIterator nodeSet)
+        internal void Init(Action action, XPathNodeIterator? nodeSet)
         {
             Init(action, null, nodeSet);
         }
 
-        internal void Init(ActionFrame containerFrame, XPathNodeIterator nodeSet)
+        internal void Init(ActionFrame containerFrame, XPathNodeIterator? nodeSet)
         {
             Init(containerFrame.GetAction(0), containerFrame, nodeSet);
         }
@@ -222,7 +224,7 @@ namespace System.Xml.Xsl.XsltOld
             _state = state;
         }
 
-        private Action GetAction(int actionIndex)
+        private Action? GetAction(int actionIndex)
         {
             Debug.Assert(_action is ContainerAction);
             return ((ContainerAction)_action).GetAction(actionIndex);
@@ -238,6 +240,7 @@ namespace System.Xml.Xsl.XsltOld
          * Execute
          *  return values: true - pop, false - nothing
          */
+        [MemberNotNullWhen(false, nameof(_action))]
         internal bool Execute(Processor processor)
         {
             if (_action == null)
@@ -270,10 +273,10 @@ namespace System.Xml.Xsl.XsltOld
 
         internal bool NextNode(Processor proc)
         {
-            bool next = _nodeSet.MoveNext();
+            bool next = _nodeSet!.MoveNext();
             if (next && proc.Stylesheet.Whitespace)
             {
-                XPathNodeType type = _nodeSet.Current.NodeType;
+                XPathNodeType type = _nodeSet.Current!.NodeType;
                 if (type == XPathNodeType.Whitespace)
                 {
                     XPathNavigator nav = _nodeSet.Current.Clone();
@@ -293,10 +296,10 @@ namespace System.Xml.Xsl.XsltOld
 
         internal bool NewNextNode(Processor proc)
         {
-            bool next = _newNodeSet.MoveNext();
+            bool next = _newNodeSet!.MoveNext();
             if (next && proc.Stylesheet.Whitespace)
             {
-                XPathNodeType type = _newNodeSet.Current.NodeType;
+                XPathNodeType type = _newNodeSet.Current!.NodeType;
                 if (type == XPathNodeType.Whitespace)
                 {
                     XPathNavigator nav = _newNodeSet.Current.Clone();
@@ -330,7 +333,7 @@ namespace System.Xml.Xsl.XsltOld
                 get
                 {
                     Debug.Assert(index > 0, "MoveNext() wasn't called");
-                    return ((SortKey)this.list[this.index - 1]).Node;
+                    return ((SortKey)this.list[this.index - 1]!).Node;
                 }
             }
         }

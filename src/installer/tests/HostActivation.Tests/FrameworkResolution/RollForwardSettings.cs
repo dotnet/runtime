@@ -1,6 +1,5 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using Microsoft.DotNet.Cli.Build;
 using Microsoft.DotNet.Cli.Build.Framework;
@@ -127,66 +126,6 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.FrameworkResolution
                         .With(RollForwardSetting(settingLocation, value)))
                     .Should().Pass()
                     .And.HaveResolvedFramework(MicrosoftNETCoreApp, "5.1.3");
-            }
-        }
-
-        // Verifies that rollForward and rollForwardOnNoCandidateFx can't be used both on a command line
-        [Fact]
-        public void CollisionsOnCommandLine_RollForwardOnNoCandidateFx()
-        {
-            RunTest(
-                new TestSettings()
-                    .WithRuntimeConfigCustomizer(runtimeConfig => runtimeConfig
-                        .WithFramework(MicrosoftNETCoreApp, "4.0.0"))
-                    .WithCommandLine(Constants.RollForwardSetting.CommandLineArgument, Constants.RollForwardSetting.LatestPatch)
-                    .WithCommandLine(Constants.RollForwardOnNoCandidateFxSetting.CommandLineArgument, "2"))
-                .Should().Fail()
-                .And.HaveStdErrContaining(
-                    $"It's invalid to use both '{Constants.RollForwardSetting.CommandLineArgument}' and " +
-                    $"'{Constants.RollForwardOnNoCandidateFxSetting.CommandLineArgument}' command line options.");
-        }
-
-        // Verifies that rollForward can't be used together with rollForwrdOnNoCandidateFx or applyPatches in the same runtime config
-        [Theory] // rollForwardLocation                 rollForwardOnNoCandidateFxLocation  applyPatchesLocation                passes
-        [InlineData(SettingLocation.RuntimeOptions,     SettingLocation.None,               SettingLocation.None,               true )]
-        [InlineData(SettingLocation.RuntimeOptions,     SettingLocation.RuntimeOptions,     SettingLocation.None,               false)]
-        [InlineData(SettingLocation.RuntimeOptions,     SettingLocation.FrameworkReference, SettingLocation.None,               false)]
-        [InlineData(SettingLocation.RuntimeOptions,     SettingLocation.None,               SettingLocation.RuntimeOptions,     false)]
-        [InlineData(SettingLocation.RuntimeOptions,     SettingLocation.None,               SettingLocation.FrameworkReference, false)]
-        [InlineData(SettingLocation.RuntimeOptions,     SettingLocation.RuntimeOptions,     SettingLocation.RuntimeOptions,     false)]
-        [InlineData(SettingLocation.RuntimeOptions,     SettingLocation.FrameworkReference, SettingLocation.FrameworkReference, false)]
-        [InlineData(SettingLocation.FrameworkReference, SettingLocation.None,               SettingLocation.None,               true )]
-        [InlineData(SettingLocation.FrameworkReference, SettingLocation.RuntimeOptions,     SettingLocation.None,               false)]
-        [InlineData(SettingLocation.FrameworkReference, SettingLocation.FrameworkReference, SettingLocation.None,               false)]
-        [InlineData(SettingLocation.FrameworkReference, SettingLocation.None,               SettingLocation.RuntimeOptions,     false)]
-        [InlineData(SettingLocation.FrameworkReference, SettingLocation.None,               SettingLocation.FrameworkReference, false)]
-        [InlineData(SettingLocation.FrameworkReference, SettingLocation.RuntimeOptions,     SettingLocation.RuntimeOptions,     false)]
-        [InlineData(SettingLocation.FrameworkReference, SettingLocation.FrameworkReference, SettingLocation.FrameworkReference, false)]
-        public void CollisionsInRuntimeConfig(
-            SettingLocation rollForwardLocation,
-            SettingLocation rollForwardOnNoCandidateFxLocation,
-            SettingLocation applyPatchesLocation,
-            bool passes)
-        {
-            CommandResult result = RunTest(
-                new TestSettings()
-                    .WithRuntimeConfigCustomizer(runtimeConfig => runtimeConfig
-                        .WithFramework(MicrosoftNETCoreApp, "5.0.0"))
-                    .With(RollForwardSetting(rollForwardLocation, Constants.RollForwardSetting.Minor))
-                    .With(RollForwardOnNoCandidateFxSetting(rollForwardOnNoCandidateFxLocation, 1))
-                    .With(ApplyPatchesSetting(applyPatchesLocation, false)));
-
-            if (passes)
-            {
-                result.ShouldHaveResolvedFramework(MicrosoftNETCoreApp, "5.1.3");
-            }
-            else
-            {
-                result.Should().Fail()
-                      .And.HaveStdErrContaining(
-                        $"It's invalid to use both `{Constants.RollForwardSetting.RuntimeConfigPropertyName}` and one of " +
-                        $"`{Constants.RollForwardOnNoCandidateFxSetting.RuntimeConfigPropertyName}` or " +
-                        $"`{Constants.ApplyPatchesSetting.RuntimeConfigPropertyName}` in the same runtime config.");
             }
         }
 

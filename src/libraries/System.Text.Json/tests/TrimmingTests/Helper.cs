@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System;
 using System.Collections.Generic;
@@ -91,16 +90,18 @@ namespace SerializerTrimmingTest
         }
     }
 
-    internal class MyClass
+    public class MyClass
     {
         public int X { get; set; }
-        public int Y { get; set; }
+        [JsonInclude]
+        public int Y;
     }
 
     internal struct MyStruct
     {
         public int X { get; }
-        public int Y { get; }
+        [JsonInclude]
+        public int Y;
 
         [JsonConstructor]
         public MyStruct(int x, int y) => (X, Y) = (x, y);
@@ -109,7 +110,8 @@ namespace SerializerTrimmingTest
     internal class MyClassWithParameterizedCtor
     {
         public int X { get; set; }
-        public int Y { get; set; }
+        [JsonInclude]
+        public int Y;
 
         public MyClassWithParameterizedCtor(int x, int y) => (X, Y) = (x, y);
     }
@@ -117,11 +119,14 @@ namespace SerializerTrimmingTest
     internal class MyBigClass
     {
         public string A { get; }
-        public string B { get; }
+        [JsonInclude]
+        public string B;
         public string C { get; }
-        public int One { get; }
+        [JsonInclude]
+        public int One;
         public int Two { get; }
-        public int Three { get; }
+        [JsonInclude]
+        public int Three;
 
         public MyBigClass(string a, string b, string c, int one, int two, int three)
         {

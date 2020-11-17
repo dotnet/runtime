@@ -1,10 +1,9 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
 using System.IO;
-using System.Reflection;
+using System.Runtime.CompilerServices;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.DotNet.RemoteExecutor;
@@ -18,10 +17,13 @@ namespace System.Diagnostics.Tests
         protected Process _process;
         protected readonly List<Process> _processes = new List<Process>();
 
-        protected void CreateDefaultProcess()
+        protected Process CreateDefaultProcess([CallerMemberName] string callerName = null)
         {
-            _process = CreateProcessLong();
+            Assert.Null(_process);
+            _process = CreateProcessLong(callerName);
             _process.Start();
+            AddProcessForDispose(_process);
+            return _process;
         }
 
         protected override void Dispose(bool disposing)
@@ -81,8 +83,28 @@ namespace System.Diagnostics.Tests
                 p = handle.Process;
                 handle.Process = null;
             }
+
             if (autoDispose)
+            {
                 AddProcessForDispose(p);
+            }
+
+            return p;
+        }
+
+        protected Process CreateProcess(Func<string, string, int> method, string arg1, string arg2, bool autoDispose = true)
+        {
+            Process p = null;
+            using (RemoteInvokeHandle handle = RemoteExecutor.Invoke(method, arg1, arg2, new RemoteInvokeOptions { Start = false }))
+            {
+                p = handle.Process;
+                handle.Process = null;
+            }
+
+            if (autoDispose)
+            {
+                AddProcessForDispose(p);
+            }
 
             return p;
         }
@@ -103,6 +125,11 @@ namespace System.Diagnostics.Tests
         {
             p.Start();
             Thread.Sleep(200);
+            KillWait(p);
+        }
+
+        protected void KillWait(Process p)
+        {
             p.Kill();
             Assert.True(p.WaitForExit(WaitInMS));
             p.WaitForExit(); // wait for event handlers to complete

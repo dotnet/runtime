@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System;
 using System.Collections.Generic;
@@ -91,13 +90,28 @@ namespace R2RDump
             }
         }
 
+        private bool TryGetMethods(ReadyToRunReader reader, ReadyToRunSection section, out IReadOnlyList<ReadyToRunMethod> methods)
+        {
+            int assemblyIndex = reader.GetAssemblyIndex(section);
+            if (assemblyIndex == -1)
+            {
+                methods = null;
+                return false;
+            }
+            else
+            {
+                methods = reader.ReadyToRunAssemblies[assemblyIndex].Methods;
+                return true;
+            }
+        }
+
         private void DiffMethodsForModule(ReadyToRunSection leftSection, ReadyToRunSection rightSection)
         {
-            if (!_leftDumper.Reader.Methods.TryGetValue(leftSection, out List<ReadyToRunMethod> leftSectionMethods))
+            if (!TryGetMethods(_leftDumper.Reader, leftSection, out IReadOnlyList<ReadyToRunMethod> leftSectionMethods))
             {
                 leftSectionMethods = new List<ReadyToRunMethod>();
             }
-            if (!_rightDumper.Reader.Methods.TryGetValue(rightSection, out List<ReadyToRunMethod> rightSectionMethods))
+            if (!TryGetMethods(_rightDumper.Reader, rightSection, out IReadOnlyList<ReadyToRunMethod> rightSectionMethods))
             {
                 rightSectionMethods = new List<ReadyToRunMethod>();
             }
@@ -256,7 +270,7 @@ namespace R2RDump
         {
             Dictionary<string, int> sectionMap = new Dictionary<string, int>();
 
-            foreach (SectionHeader sectionHeader in reader.PEReader.PEHeaders.SectionHeaders)
+            foreach (SectionHeader sectionHeader in reader.CompositeReader.PEHeaders.SectionHeaders)
             {
                 sectionMap.Add(sectionHeader.Name, sectionHeader.SizeOfRawData);
             }
@@ -291,7 +305,7 @@ namespace R2RDump
         {
             Dictionary<string, int> methodMap = new Dictionary<string, int>();
 
-            if (reader.Methods.TryGetValue(section, out List<ReadyToRunMethod> sectionMethods))
+            if (TryGetMethods(reader, section, out IReadOnlyList<ReadyToRunMethod> sectionMethods))
             {
                 foreach (ReadyToRunMethod method in sectionMethods)
                 {
@@ -310,7 +324,7 @@ namespace R2RDump
         /// <param name="signatureFilter">Set of common signatures of methods to dump</param>
         private void DumpCommonMethods(Dumper dumper, ReadyToRunSection section, Dictionary<string, MethodPair> signatureFilter)
         {
-            if (dumper.Reader.Methods.TryGetValue(section, out List<ReadyToRunMethod> sectionMethods))
+            if (!TryGetMethods(dumper.Reader, section, out IReadOnlyList<ReadyToRunMethod> sectionMethods))
             {
                 IEnumerable<ReadyToRunMethod> filteredMethods = sectionMethods
                     .Where(method => signatureFilter.ContainsKey(method.SignatureString))
@@ -372,7 +386,7 @@ namespace R2RDump
                 {
                     if (first)
                     {
-                        _writer.WriteLine("Methods with identical disasssbly skipped in common method diff:");
+                        _writer.WriteLine("Methods with identical disassembly skipped in common method diff:");
                         first = false;
                     }
                     _writer.WriteLine(commonMethod.Key);

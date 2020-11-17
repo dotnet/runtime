@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 /*============================================================
 **
@@ -26,14 +25,12 @@
 
 #include <palsuite.h>
 
-CRITICAL_SECTION CriticalSection;
-
 volatile BOOL t0_tflag = FAIL;  /* thread 0 timeout flag */
 volatile BOOL t1_aflag = FAIL;  /* thread 1 access flag */
 volatile BOOL t1_cflag = FAIL;  /* thread 1 critical section flag */
 volatile BOOL bTestResult = FAIL;
 
-DWORD PALAPI Thread(LPVOID lpParam)
+DWORD PALAPI Thread_CriticalSectionFunctions_test2(LPVOID lpParam)
 {
     t1_aflag = PASS;
     EnterCriticalSection(&CriticalSection);
@@ -42,7 +39,7 @@ DWORD PALAPI Thread(LPVOID lpParam)
     return 0;
 }
 
-int __cdecl main (int argc, char **argv) 
+PALTEST(threading_CriticalSectionFunctions_test2_paltest_criticalsectionfunctions_test2, "threading/CriticalSectionFunctions/test2/paltest_criticalsectionfunctions_test2")
 {
     HANDLE hThread;
     DWORD dwThreadId;
@@ -64,7 +61,7 @@ int __cdecl main (int argc, char **argv)
      */
     hThread = CreateThread(NULL,
                            0,
-                           &Thread,
+                           &Thread_CriticalSectionFunctions_test2,
                            (LPVOID) NULL,
                            CREATE_SUSPENDED,
                            &dwThreadId);

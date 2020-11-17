@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 
 #ifndef INTERPRETER_H_DEFINED
@@ -1039,7 +1038,7 @@ private:
     static MethodHandleToInterpMethInfoPtrMap* GetMethodHandleToInterpMethInfoPtrMap();
 
     static InterpreterMethodInfo* RecordInterpreterMethodInfoForMethodHandle(CORINFO_METHOD_HANDLE md, InterpreterMethodInfo* methInfo);
-    static InterpreterMethodInfo* Interpreter::MethodHandleToInterpreterMethInfoPtr(CORINFO_METHOD_HANDLE md);
+    static InterpreterMethodInfo* MethodHandleToInterpreterMethInfoPtr(CORINFO_METHOD_HANDLE md);
 
 public:
     static unsigned s_interpreterStubNum;

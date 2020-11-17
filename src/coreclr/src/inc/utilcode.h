@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 //*****************************************************************************
 // UtilCode.h
 //
@@ -747,6 +746,8 @@ public:
     }
 
 private:
+// String resouces packaged as PE files only exist on Windows
+#ifdef HOST_WINDOWS
     HRESULT GetLibrary(LocaleID langId, HRESOURCEDLL* phInst);
 #ifndef DACCESS_COMPILE
     HRESULT LoadLibraryHelper(HRESOURCEDLL *pHInst,
@@ -754,7 +755,8 @@ private:
     HRESULT LoadLibraryThrows(HRESOURCEDLL * pHInst);
     HRESULT LoadLibrary(HRESOURCEDLL * pHInst);
     HRESULT LoadResourceFile(HRESOURCEDLL * pHInst, LPCWSTR lpFileName);
-#endif
+#endif // DACCESS_COMPILE
+#endif // HOST_WINDOWS
 
     // We do not have global constructors any more
     static LONG     m_dwDefaultInitialized;
@@ -1273,6 +1275,7 @@ private:
     static WORD m_nProcessors;
     static BOOL m_enableGCCPUGroups;
     static BOOL m_threadUseAllCpuGroups;
+    static BOOL m_threadAssignCpuGroups;
     static WORD m_initialGroup;
     static CPU_Group_Info *m_CPUGroupInfoArray;
     static bool s_hadSingleProcessorAtStartup;
@@ -1286,6 +1289,7 @@ public:
     static void EnsureInitialized();
     static BOOL CanEnableGCCPUGroups();
     static BOOL CanEnableThreadUseAllCpuGroups();
+    static BOOL CanAssignCpuGroupsToThreads();
     static WORD GetNumActiveProcessors();
     static void GetGroupForProcessor(WORD processor_number,
 		    WORD *group_number, WORD *group_processor_number);
@@ -4072,13 +4076,14 @@ HRESULT GetImageRuntimeVersionString(PVOID pMetaData, LPCSTR* pString);
 // The registry keys and values that contain the information regarding
 // the default registered unmanaged debugger.
 //*****************************************************************************
-SELECTANY const WCHAR kDebugApplicationsPoliciesKey[] = W("SOFTWARE\\Policies\\Microsoft\\Windows\\Windows Error Reporting\\DebugApplications");
-SELECTANY const WCHAR kDebugApplicationsKey[] = W("SOFTWARE\\Microsoft\\Windows\\Windows Error Reporting\\DebugApplications");
 
-SELECTANY const WCHAR kUnmanagedDebuggerKey[] = W("SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion\\AeDebug");
-SELECTANY const WCHAR kUnmanagedDebuggerValue[] = W("Debugger");
-SELECTANY const WCHAR kUnmanagedDebuggerAutoValue[] = W("Auto");
-SELECTANY const WCHAR kUnmanagedDebuggerAutoExclusionListKey[] = W("SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion\\AeDebug\\AutoExclusionList");
+#define kDebugApplicationsPoliciesKey W("SOFTWARE\\Policies\\Microsoft\\Windows\\Windows Error Reporting\\DebugApplications")
+#define kDebugApplicationsKey  W("SOFTWARE\\Microsoft\\Windows\\Windows Error Reporting\\DebugApplications")
+
+#define kUnmanagedDebuggerKey W("SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion\\AeDebug")
+#define kUnmanagedDebuggerValue W("Debugger")
+#define kUnmanagedDebuggerAutoValue W("Auto")
+#define kUnmanagedDebuggerAutoExclusionListKey W("SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion\\AeDebug\\AutoExclusionList")
 
 BOOL GetRegistryLongValue(HKEY    hKeyParent,              // Parent key.
                           LPCWSTR szKey,                   // Key name to look at.
@@ -4702,19 +4707,7 @@ FORCEINLINE void HolderSysFreeString(BSTR str) { CONTRACT_VIOLATION(ThrowsViolat
 
 typedef Wrapper<BSTR, DoNothing, HolderSysFreeString> BSTRHolder;
 
-// HMODULE_TGT represents a handle to a module in the target process.  In non-DAC builds this is identical
-// to HMODULE (HINSTANCE), which is the base address of the module.  In DAC builds this must be a target address,
-// and so is represented by TADDR.
-
-#ifdef DACCESS_COMPILE
-typedef TADDR HMODULE_TGT;
-#else
-typedef HMODULE HMODULE_TGT;
-#endif
-
-BOOL IsIPInModule(HMODULE_TGT hModule, PCODE ip);
-
-extern HINSTANCE g_hmodCoreCLR;
+BOOL IsIPInModule(PTR_VOID pModuleBaseAddress, PCODE ip);
 
 namespace UtilCode
 {
@@ -4901,9 +4894,9 @@ inline T* InterlockedCompareExchangeT(
 #undef InterlockedCompareExchangePointer
 #define InterlockedCompareExchangePointer Use_InterlockedCompareExchangeT
 
-// Returns the directory for HMODULE. So, if HMODULE was for "C:\Dir1\Dir2\Filename.DLL",
+// Returns the directory for clr module. So, if path was for "C:\Dir1\Dir2\Filename.DLL",
 // then this would return "C:\Dir1\Dir2\" (note the trailing backslash).
-HRESULT GetHModuleDirectory(HMODULE hMod, SString& wszPath);
+HRESULT GetClrModuleDirectory(SString& wszPath);
 HRESULT CopySystemDirectory(const SString& pPathString, SString& pbuffer);
 
 HMODULE LoadLocalizedResourceDLLForSDK(_In_z_ LPCWSTR wzResourceDllName, _In_opt_z_ LPCWSTR modulePath=NULL, bool trySelf=true);

@@ -1,8 +1,8 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System;
+using System.Buffers.Binary;
 using System.Linq;
 
 using Internal.TypeSystem;
@@ -281,10 +281,7 @@ namespace TypeSystemTests
 
             Assert.Equal(4, rvaData.Length);
 
-            int value = rvaData[0] |
-                rvaData[1] << 8 |
-                rvaData[2] << 16 |
-                rvaData[3] << 24;
+            int value = BinaryPrimitives.ReadInt32LittleEndian(rvaData);
 
             Assert.Equal(0x78563412, value);
         }

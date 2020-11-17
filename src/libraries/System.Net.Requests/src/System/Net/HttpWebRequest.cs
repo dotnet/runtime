@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
@@ -161,11 +160,7 @@ namespace System.Net
         private const string ContinueHeader = "100-continue";
         private const string ChunkedHeader = "chunked";
 
-        public HttpWebRequest()
-        {
-        }
-
-        [Obsolete("Serialization is obsoleted for this type.  https://go.microsoft.com/fwlink/?linkid=14202")]
+        [Obsolete(Obsoletions.WebRequestMessage, DiagnosticId = Obsoletions.WebRequestDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
         protected HttpWebRequest(SerializationInfo serializationInfo, StreamingContext streamingContext) : base(serializationInfo, streamingContext)
         {
             throw new PlatformNotSupportedException();
@@ -181,10 +176,12 @@ namespace System.Net
             throw new PlatformNotSupportedException();
         }
 
+#pragma warning disable SYSLIB0014
         internal HttpWebRequest(Uri uri)
         {
             _requestUri = uri;
         }
+#pragma warning restore SYSLIB0014
 
         private void SetSpecialHeaders(string HeaderName, string? value)
         {
@@ -754,7 +751,9 @@ namespace System.Net
             }
         }
 
+#pragma warning disable SYSLIB0014
         public ServicePoint ServicePoint => _servicePoint ??= ServicePointManager.FindServicePoint(Address, Proxy);
+#pragma warning restore SYSLIB0014
 
         public RemoteCertificateValidationCallback? ServerCertificateValidationCallback { get; set; }
 

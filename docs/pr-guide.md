@@ -27,7 +27,7 @@ Anyone with write access can merge a pull request manually or by setting the [au
 * The PR successfully builds and passes all tests in the Continuous Integration (CI) system.
     * Depending on your change, you may need to re-run validation. See [rerunning validation](#rerunning-validation) below.
 
-Please always **squash** the pull request unless there are special circumstances. Do so, even if the PR contains only one commit. It creates a simpler history than a Merge Commit. "Special circumstances" are rare, and typically mean that there are a series of cleanly separated changes that will be too hard to understand if squashed together, or for some reason we want to preserve the ability to bisect them.
+Typically, PRs are merged as one commit. It creates a simpler history than a Merge Commit. "Special circumstances" are rare, and typically mean that there are a series of cleanly separated changes that will be too hard to understand if squashed together, or for some reason we want to preserve the ability to bisect them.
 
 ## Rerunning Validation
 
@@ -74,7 +74,7 @@ If you have determined the failure is definitely not caused by changes in your P
 * Search for an [existing issue](https://github.com/dotnet/runtime/issues). Usually the test method name or (if a crash/hang) the test assembly name are good search parameters.
   * If there's an existing issue, add a comment with
     * a) the link to the build
-    * b) the affected configuration (ie `netcoreapp-Windows_NT-Release-x64-Windows.81.Amd64.Open`)
+    * b) the affected configuration (ie `net6.0-windows-Release-x64-Windows.81.Amd64.Open`)
     * c) all console output including the error message and stack trace from the Azure DevOps tab (This is necessary as retention policies are in place that recycle old builds.)
     * d) if there's a dump file (see Attachments tab in Azure DevOps) include that
     * If the issue is already closed, reopen it and update the labels to reflect the current failure state.

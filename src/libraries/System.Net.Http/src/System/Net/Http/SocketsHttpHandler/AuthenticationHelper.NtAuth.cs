@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -45,7 +44,7 @@ namespace System.Net.Http
             if (!isProxyAuth && connection.Kind == HttpConnectionKind.Proxy && !ProxySupportsConnectionAuth(response))
             {
                 // Proxy didn't indicate that it supports connection-based auth, so we can't proceed.
-                if (NetEventSource.IsEnabled)
+                if (NetEventSource.Log.IsEnabled())
                 {
                     NetEventSource.Error(connection, $"Proxy doesn't support connection-based auth, uri={authUri}");
                 }
@@ -64,7 +63,8 @@ namespace System.Net.Http
                         if (response.Headers.ConnectionClose.GetValueOrDefault())
                         {
                             // Server is closing the connection and asking us to authenticate on a new connection.
-#pragma warning disable CS8600 // expression returns null connection on error, was not able to use '!' for the expression
+                            // expression returns null connection on error, was not able to use '!' for the expression
+#pragma warning disable CS8600
                             (connection, response) = await connectionPool.CreateHttp11ConnectionAsync(request, async, cancellationToken).ConfigureAwait(false);
 #pragma warning restore CS8600
                             if (response != null)
@@ -78,9 +78,9 @@ namespace System.Net.Http
                             needDrain = false;
                         }
 
-                        if (NetEventSource.IsEnabled)
+                        if (NetEventSource.Log.IsEnabled())
                         {
-                            NetEventSource.Info(connection, $"Authentication: {challenge.AuthenticationType}, Uri: {authUri.AbsoluteUri.ToString()}");
+                            NetEventSource.Info(connection, $"Authentication: {challenge.AuthenticationType}, Uri: {authUri.AbsoluteUri}");
                         }
 
                         // Calculate SPN (Service Principal Name) using the host name of the request.
@@ -92,7 +92,7 @@ namespace System.Net.Http
                         {
                             // Use the host name without any normalization.
                             hostName = request.Headers.Host;
-                            if (NetEventSource.IsEnabled)
+                            if (NetEventSource.Log.IsEnabled())
                             {
                                 NetEventSource.Info(connection, $"Authentication: {challenge.AuthenticationType}, Host: {hostName}");
                             }
@@ -110,13 +110,18 @@ namespace System.Net.Http
                             }
                             else
                             {
-                                IPHostEntry result = await Dns.GetHostEntryAsync(authUri.IdnHost).ConfigureAwait(false);
+                                IPHostEntry result = await Dns.GetHostEntryAsync(authUri.IdnHost, cancellationToken).ConfigureAwait(false);
                                 hostName = result.HostName;
+                            }
+
+                            if (!isProxyAuth && !authUri.IsDefaultPort)
+                            {
+                                hostName = $"{hostName}:{authUri.Port}";
                             }
                         }
 
                         string spn = "HTTP/" + hostName;
-                        if (NetEventSource.IsEnabled)
+                        if (NetEventSource.Log.IsEnabled())
                         {
                             NetEventSource.Info(connection, $"Authentication: {challenge.AuthenticationType}, SPN: {spn}");
                         }

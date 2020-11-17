@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 /*=====================================================================
 **
@@ -22,7 +21,7 @@
                                                  
 #include <palsuite.h>
 
-int __cdecl main(int argc, char **argv)
+PALTEST(c_runtime__wfopen_test7_paltest_wfopen_test7, "c_runtime/_wfopen/test7/paltest_wfopen_test7")
 {
   
     FILE *fp;

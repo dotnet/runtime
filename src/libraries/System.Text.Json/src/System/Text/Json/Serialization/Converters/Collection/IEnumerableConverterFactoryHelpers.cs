@@ -1,6 +1,5 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
@@ -172,7 +171,7 @@ namespace System.Text.Json.Serialization
 
         [DynamicDependency(CreateRangeMethodNameForDictionary, ImmutableDictionaryTypeName, ImmutableCollectionsAssembly)]
         [DynamicDependency(CreateRangeMethodNameForDictionary, ImmutableSortedDictionaryTypeName, ImmutableCollectionsAssembly)]
-        public static MethodInfo GetImmutableDictionaryCreateRangeMethod(this Type type, Type elementType)
+        public static MethodInfo GetImmutableDictionaryCreateRangeMethod(this Type type, Type keyType, Type valueType)
         {
             Type? constructingType = GetImmutableDictionaryConstructingType(type);
             if (constructingType != null)
@@ -185,7 +184,7 @@ namespace System.Text.Json.Serialization
                         method.IsGenericMethod &&
                         method.GetGenericArguments().Length == 2)
                     {
-                        return method.MakeGenericMethod(typeof(string), elementType);
+                        return method.MakeGenericMethod(keyType, valueType);
                     }
                 }
             }

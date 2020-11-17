@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System;
 using System.Collections.Generic;
@@ -18,15 +17,15 @@ namespace ILCompiler.Reflection.ReadyToRun
     /// </summary>
     public class DebugInfo
     {
-        private readonly ReadyToRunReader _readyToRunReader;
+        private readonly RuntimeFunction _runtimeFunction;
         private readonly int _offset;
         private List<DebugInfoBoundsEntry> _boundsList;
         private List<NativeVarInfo> _variablesList;
         private Machine _machine;
 
-        public DebugInfo(ReadyToRunReader readyToRunReader, int offset)
+        public DebugInfo(RuntimeFunction runtimeFunction, int offset)
         {
-            this._readyToRunReader = readyToRunReader;
+            this._runtimeFunction = runtimeFunction;
             this._offset = offset;
         }
 
@@ -69,6 +68,7 @@ namespace ILCompiler.Reflection.ReadyToRun
                 case Machine.Amd64:
                     return ((Amd64.Registers)regnum).ToString();
                 case Machine.Arm:
+                case Machine.ArmThumb2:
                     return ((Arm.Registers)regnum).ToString();
                 case Machine.Arm64:
                     return ((Arm64.Registers)regnum).ToString();
@@ -83,6 +83,7 @@ namespace ILCompiler.Reflection.ReadyToRun
             {
                 return;
             }
+            ReadyToRunReader _readyToRunReader = _runtimeFunction.ReadyToRunReader;
             int offset = _offset;
             _boundsList = new List<DebugInfoBoundsEntry>();
             _variablesList = new List<NativeVarInfo>();
@@ -156,6 +157,19 @@ namespace ILCompiler.Reflection.ReadyToRun
                 entry.StartOffset = reader.ReadUInt();
                 entry.EndOffset = entry.StartOffset + reader.ReadUInt();
                 entry.VariableNumber = (uint)(reader.ReadUInt() + (int)ImplicitILArguments.Max);
+                entry.Variable = new Variable();
+                // TODO: This is probably incomplete
+                // This does not handle any implicit arguments or var args
+                if (entry.VariableNumber < this._runtimeFunction.Method.Signature.ParameterTypes.Length)
+                {
+                    entry.Variable.Type = VariableType.Parameter;
+                    entry.Variable.Index = (int)entry.VariableNumber;
+                }
+                else
+                {
+                    entry.Variable.Type = VariableType.Local;
+                    entry.Variable.Index = (int)entry.VariableNumber - this._runtimeFunction.Method.Signature.ParameterTypes.Length;
+                }
 
                 var varLoc = new VarLoc();
                 varLoc.VarLocType = (VarLocType)reader.ReadUInt();

@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Linq;
 using System.Security.Cryptography.Pkcs.Tests;
@@ -218,7 +217,7 @@ KoZIhvcNAwcECJ01qtX2EKx6oIAEEM7op+R2U3GQbYwlEj5X+h0AAAAAAAAAAAAA
 
         [Theory]
         [InlineData(false)]
-#if !NET472
+#if !NETFRAMEWORK
         [InlineData(true)]
 #endif
         public static void TestContent(bool fromSpan)
@@ -239,7 +238,7 @@ KoZIhvcNAwcECJ01qtX2EKx6oIAEEM7op+R2U3GQbYwlEj5X+h0AAAAAAAAAAAAA
 
             if (fromSpan)
             {
-#if !NET472
+#if !NETFRAMEWORK
                 cms.Decode(encodedMessage.AsSpan());
 #else
                 throw new Xunit.Sdk.XunitException(

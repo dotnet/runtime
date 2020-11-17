@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Diagnostics;
 using System.Runtime.InteropServices;
@@ -17,6 +16,7 @@ namespace System.Threading
 
             try
             {
+                Debug.Assert(OperatingSystem.IsWindows());
                 // ThreadPool.BindHandle will always return true, otherwise, it throws. See the underlying FCall
                 // implementation in ThreadPoolNative::CorBindIoCompletionCallback to see the implementation.
                 bool succeeded = ThreadPool.BindHandle(handle);

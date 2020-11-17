@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.IO;
 using System.Text;
@@ -12,11 +11,11 @@ namespace System
     {
         public LogcatStream() : base(FileAccess.Write) {}
 
-        public override int Read(byte[] buffer, int offset, int count) => throw Error.GetReadNotSupported();
+        public override int Read(Span<byte> buffer) => throw Error.GetReadNotSupported();
 
-        public override unsafe void Write(byte[] buffer, int offset, int count)
+        public override unsafe void Write(ReadOnlySpan<byte> buffer)
         {
-            string log = ConsolePal.OutputEncoding.GetString(buffer, offset, count);
+            string log = ConsolePal.OutputEncoding.GetString(buffer);
             Interop.Logcat.AndroidLogPrint(Interop.Logcat.LogLevel.Info, "DOTNET", log);
         }
     }

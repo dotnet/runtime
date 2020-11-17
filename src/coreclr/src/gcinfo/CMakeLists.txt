@@ -1,25 +1,36 @@
 set(CMAKE_INCLUDE_CURRENT_DIR ON)
 
-set( GCINFO_SOURCES
+set( GCINFO_ALLARCH_SOURCES
   arraylist.cpp
   gcinfoencoder.cpp
+  simplerhash.cpp
 )
 
+set( GCINFO_I386_SOURCES
+  ../gcdump/gcdump.cpp
+  ../gcdump/i386/gcdumpx86.cpp
+)
 
+convert_to_absolute_path(GCINFO_ALLARCH_SOURCES ${GCINFO_ALLARCH_SOURCES})
+convert_to_absolute_path(GCINFO_I386_SOURCES ${GCINFO_I386_SOURCES})
+
+set( GCINFO_SOURCES
+  ${GCINFO_ALLARCH_SOURCES}
+  )
 if(CLR_CMAKE_TARGET_ARCH_I386)
   list(APPEND GCINFO_SOURCES
-    ../gcdump/gcdump.cpp
-    ../gcdump/${ARCH_SOURCES_DIR}/gcdumpx86.cpp
+    ${GCINFO_I386_SOURCES}
   )
 endif(CLR_CMAKE_TARGET_ARCH_I386)
 
 
-convert_to_absolute_path(GCINFO_SOURCES ${GCINFO_SOURCES})
-
-add_library_clr(gcinfo
+add_library_clr(gcinfo_obj
     OBJECT
     ${GCINFO_SOURCES}
 )
+
+add_library(gcinfo INTERFACE)
+target_sources(gcinfo INTERFACE $<TARGET_OBJECTS:gcinfo_obj>)
 
 add_library_clr(gcinfo_crossgen
     STATIC
@@ -28,21 +39,54 @@ add_library_clr(gcinfo_crossgen
 
 set_target_properties(gcinfo_crossgen PROPERTIES CROSSGEN_COMPONENT TRUE)
 
-
-if (CLR_CMAKE_HOST_ARCH_I386)
-    # On x86, build RyuJIT/ARM32 cross-compiling altjit.
-    add_subdirectory(gcinfo_arm)
-endif ()
-
-if (CLR_CMAKE_HOST_ARCH_I386 AND CLR_CMAKE_TARGET_WIN32)
-    # On x86, build Linux x86 cross-compiling altjit.
-    add_subdirectory(gcinfo_linuxx86)
-endif ()
-
-if (CLR_CMAKE_HOST_ARCH_AMD64)
-    # On amd64, build RyuJIT/ARM64 cross-compiling altjit.
-    add_subdirectory(gcinfo_arm64)
-endif ()
-
 _install (FILES gcinfoencoder.cpp
                DESTINATION gcinfo)
+
+function(create_gcinfo_lib)
+
+  set(oneValueArgs TARGET OS ARCH)
+  cmake_parse_arguments(TARGETDETAILS "${options}" "${oneValueArgs}" "" ${ARGN})
+
+  set( GCINFO_SOURCES
+    ${GCINFO_ALLARCH_SOURCES}
+  )
+
+  if(TARGETDETAILS_ARCH STREQUAL "x86")
+    list(APPEND GCINFO_SOURCES
+      ${GCINFO_I386_SOURCES}
+    )
+  endif(TARGETDETAILS_ARCH STREQUAL "x86")
+
+  add_library_clr("${TARGETDETAILS_TARGET}"
+    STATIC
+    ${GCINFO_SOURCES}
+  )
+
+  set_target_definitions_to_custom_os_and_arch(${ARGN})
+endfunction()
+
+if (CLR_CMAKE_TARGET_UNIX)
+set(TARGET_OS_NAME unix)
+else()
+set(TARGET_OS_NAME win)
+endif()
+
+if (CLR_CMAKE_BUILD_SUBSET_ALLJITS AND NOT CLR_CROSS_COMPONENTS_BUILD)
+  if (CLR_CMAKE_TARGET_ARCH_ARM64 OR CLR_CMAKE_TARGET_ARCH_AMD64)
+    create_gcinfo_lib(TARGET gcinfo_unix_arm64 OS unix ARCH arm64)
+    create_gcinfo_lib(TARGET gcinfo_unix_x64 OS unix ARCH x64)
+    create_gcinfo_lib(TARGET gcinfo_win_arm64 OS win ARCH arm64)
+    create_gcinfo_lib(TARGET gcinfo_win_x64 OS win ARCH x64)
+  endif (CLR_CMAKE_TARGET_ARCH_ARM64 OR CLR_CMAKE_TARGET_ARCH_AMD64)
+
+  create_gcinfo_lib(TARGET gcinfo_unix_arm OS unix ARCH arm)
+  create_gcinfo_lib(TARGET gcinfo_win_arm OS win ARCH arm)
+  create_gcinfo_lib(TARGET gcinfo_win_x86 OS win ARCH x86)
+else()
+  create_gcinfo_lib(TARGET gcinfo_${TARGET_OS_NAME}_${ARCH_TARGET_NAME} OS ${TARGET_OS_NAME} ARCH ${ARCH_TARGET_NAME})
+
+  if (CLR_CMAKE_HOST_ARCH_I386 AND NOT ((TARGET_OS_NAME STREQUAL unix) AND (ARCH_TARGET_NAME STREQUAL "arm")))
+    # On x86, build gcinfo for RyuJIT/ARM32 cross-compiling altjit for ARM_SOFTFP (armel).
+    create_gcinfo_lib(TARGET gcinfo_unix_arm OS unix ARCH arm)
+  endif()
+endif (CLR_CMAKE_BUILD_SUBSET_ALLJITS AND NOT CLR_CROSS_COMPONENTS_BUILD)

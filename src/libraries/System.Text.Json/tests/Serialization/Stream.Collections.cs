@@ -1,6 +1,5 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections;
 using System.Collections.Concurrent;
@@ -19,14 +18,15 @@ namespace System.Text.Json.Serialization.Tests
     {
         [Fact]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/35927", typeof(PlatformDetection), nameof(PlatformDetection.IsMonoInterpreter))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/35927", TestPlatforms.Browser)]
         public static async Task HandleCollectionsAsync()
         {
-            await RunTest<string>();
-            await RunTest<ClassWithKVP>();
-            await RunTest<ImmutableStructWithStrings>();
+            await RunTestAsync<string>();
+            await RunTestAsync<ClassWithKVP>();
+            await RunTestAsync<ImmutableStructWithStrings>();
         }
 
-        private static async Task RunTest<TElement>()
+        private static async Task RunTestAsync<TElement>()
         {
             foreach ((Type, int) pair in CollectionTestData<TElement>())
             {
@@ -60,21 +60,21 @@ namespace System.Text.Json.Serialization.Tests
         {
             string expectedjson = JsonSerializer.Serialize(obj, options);
 
-            using (var memoryStream = new MemoryStream())
-            {
-                await JsonSerializer.SerializeAsync(memoryStream, obj, options);
-                string serialized = Encoding.UTF8.GetString(memoryStream.ToArray());
-                JsonTestHelper.AssertJsonEqual(expectedjson, serialized);
+            using var memoryStream = new MemoryStream();
+            await JsonSerializer.SerializeAsync(memoryStream, obj, options);
+            string serialized = Encoding.UTF8.GetString(memoryStream.ToArray());
+            JsonTestHelper.AssertJsonEqual(expectedjson, serialized);
 
-                memoryStream.Position = 0;
-                await TestDeserialization<TElement>(memoryStream, expectedjson, type, options);
-            }
+            memoryStream.Position = 0;
 
-            // Deserialize with extra whitespace
-            string jsonWithWhiteSpace = GetPayloadWithWhiteSpace(expectedjson);
-            using (var memoryStream = new MemoryStream(Encoding.UTF8.GetBytes(jsonWithWhiteSpace)))
+            if (options.ReferenceHandler == null || !GetTypesNonRoundtrippableWithReferenceHandler().Contains(type))
             {
                 await TestDeserialization<TElement>(memoryStream, expectedjson, type, options);
+
+                // Deserialize with extra whitespace
+                string jsonWithWhiteSpace = GetPayloadWithWhiteSpace(expectedjson);
+                using var memoryStreamWithWhiteSpace = new MemoryStream(Encoding.UTF8.GetBytes(jsonWithWhiteSpace));
+                await TestDeserialization<TElement>(memoryStreamWithWhiteSpace, expectedjson, type, options);
             }
         }
 
@@ -98,7 +98,7 @@ namespace System.Text.Json.Serialization.Tests
 
                 // TODO: https://github.com/dotnet/runtime/issues/35611.
                 // Can't control order of dictionary elements when serializing, so reference metadata might not match up.
-                if(!(DictionaryTypes<TElement>().Contains(type) && options.ReferenceHandler == ReferenceHandler.Preserve))
+                if(!(CollectionTestTypes.DictionaryTypes<TElement>().Contains(type) && options.ReferenceHandler == ReferenceHandler.Preserve))
                 {
                     JsonTestHelper.AssertJsonEqual(expectedJson, serialized);
                 }
@@ -287,7 +287,7 @@ namespace System.Text.Json.Serialization.Tests
 
         private static IEnumerable<Type> CollectionTypes<TElement>()
         {
-            foreach (Type type in EnumerableTypes<TElement>())
+            foreach (Type type in CollectionTestTypes.EnumerableTypes<TElement>())
             {
                 yield return type;
             }
@@ -301,41 +301,15 @@ namespace System.Text.Json.Serialization.Tests
                 yield return type;
             }
             // Dictionary types
-            foreach (Type type in DictionaryTypes<TElement>())
+            foreach (Type type in CollectionTestTypes.DictionaryTypes<TElement>())
             {
                 yield return type;
             }
         }
 
-        private static IEnumerable<Type> EnumerableTypes<TElement>()
-        {
-            yield return typeof(TElement[]); // ArrayConverter
-            yield return typeof(ConcurrentQueue<TElement>); // ConcurrentQueueOfTConverter
-            yield return typeof(GenericICollectionWrapper<TElement>); // ICollectionOfTConverter
-            yield return typeof(WrapperForIEnumerable); // IEnumerableConverter
-            yield return typeof(WrapperForIReadOnlyCollectionOfT<TElement>); // IEnumerableOfTConverter
-            yield return typeof(Queue); // IEnumerableWithAddMethodConverter
-            yield return typeof(WrapperForIList); // IListConverter
-            yield return typeof(Collection<TElement>); // IListOfTConverter
-            yield return typeof(ImmutableList<TElement>); // ImmutableEnumerableOfTConverter
-            yield return typeof(HashSet<TElement>); // ISetOfTConverter
-            yield return typeof(List<TElement>); // ListOfTConverter
-            yield return typeof(Queue<TElement>); // QueueOfTConverter
-        }
-
         private static IEnumerable<Type> ObjectNotationTypes<TElement>()
         {
             yield return typeof(KeyValuePair<TElement, TElement>); // KeyValuePairConverter
-        }
-
-        private static IEnumerable<Type> DictionaryTypes<TElement>()
-        {
-            yield return typeof(Dictionary<string, TElement>); // DictionaryOfStringTValueConverter
-            yield return typeof(Hashtable); // IDictionaryConverter
-            yield return typeof(ConcurrentDictionary<string, TElement>); // IDictionaryOfStringTValueConverter
-            yield return typeof(GenericIDictionaryWrapper<string, TElement>); // IDictionaryOfStringTValueConverter
-            yield return typeof(ImmutableDictionary<string, TElement>); // ImmutableDictionaryOfStringTValueConverter
-            yield return typeof(GenericIReadOnlyDictionaryWrapper<string, TElement>); // IReadOnlyDictionaryOfStringTValueConverter
         }
 
         private static HashSet<Type> StackTypes<TElement>() => new HashSet<Type>
@@ -351,6 +325,16 @@ namespace System.Text.Json.Serialization.Tests
             typeof(WrapperForIEnumerable),
             typeof(WrapperForIReadOnlyCollectionOfT<TElement>),
             typeof(GenericIReadOnlyDictionaryWrapper<string, TElement>)
+        };
+
+        // Non-generic types cannot roundtrip when they contain a $ref written on serialization and they are the root type.
+        private static HashSet<Type> GetTypesNonRoundtrippableWithReferenceHandler() => new HashSet<Type>
+        {
+            typeof(Hashtable),
+            typeof(Queue),
+            typeof(Stack),
+            typeof(WrapperForIList),
+            typeof(WrapperForIEnumerable)
         };
 
         private class ClassWithKVP
@@ -379,7 +363,7 @@ namespace System.Text.Json.Serialization.Tests
         [InlineData("]")]
         public static void DeserializeDictionaryStartsWithInvalidJson(string json)
         {
-            foreach (Type type in DictionaryTypes<string>())
+            foreach (Type type in CollectionTestTypes.DictionaryTypes<string>())
             {
                 Assert.ThrowsAsync<JsonException>(async () =>
                 {
@@ -394,7 +378,7 @@ namespace System.Text.Json.Serialization.Tests
         [Fact]
         public static void SerializeEmptyCollection()
         {
-            foreach (Type type in EnumerableTypes<int>())
+            foreach (Type type in CollectionTestTypes.EnumerableTypes<int>())
             {
                 Assert.Equal("[]", JsonSerializer.Serialize(GetEmptyCollection<int>(type)));
             }
@@ -404,7 +388,7 @@ namespace System.Text.Json.Serialization.Tests
                 Assert.Equal("[]", JsonSerializer.Serialize(GetEmptyCollection<int>(type)));
             }
 
-            foreach (Type type in DictionaryTypes<int>())
+            foreach (Type type in CollectionTestTypes.DictionaryTypes<int>())
             {
                 Assert.Equal("{}", JsonSerializer.Serialize(GetEmptyCollection<int>(type)));
             }

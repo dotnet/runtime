@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System;
 using System.Diagnostics;
@@ -39,9 +38,9 @@ namespace System.Security.Cryptography
 
         public static bool operator ==(CngKeyBlobFormat? left, CngKeyBlobFormat? right)
         {
-            if (object.ReferenceEquals(left, null))
+            if (left is null)
             {
-                return object.ReferenceEquals(right, null);
+                return right is null;
             }
 
             return left.Equals(right);
@@ -49,9 +48,9 @@ namespace System.Security.Cryptography
 
         public static bool operator !=(CngKeyBlobFormat? left, CngKeyBlobFormat? right)
         {
-            if (object.ReferenceEquals(left, null))
+            if (left is null)
             {
-                return !object.ReferenceEquals(right, null);
+                return right is not null;
             }
 
             return !left.Equals(right);
@@ -66,7 +65,7 @@ namespace System.Security.Cryptography
 
         public bool Equals(CngKeyBlobFormat? other)
         {
-            if (object.ReferenceEquals(other, null))
+            if (other is null)
             {
                 return false;
             }

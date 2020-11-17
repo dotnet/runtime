@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 #include <cassert>
 #include "trace.h"
@@ -36,8 +35,13 @@ SHARED_API int HOSTFXR_CALLTYPE hostfxr_main_bundle_startupinfo(const int argc, 
         return bundleStatus;
     }
 
-    host_startup_info_t startup_info(host_path, dotnet_root, app_path);
+    if (host_path == nullptr || dotnet_root == nullptr || app_path == nullptr)
+    {
+        trace::error(_X("Invalid startup info: host_path, dotnet_root, and app_path should not be null."));
+        return StatusCode::InvalidArgFailure;
+    }
 
+    host_startup_info_t startup_info(host_path, dotnet_root, app_path);
     return fx_muxer_t::execute(pal::string_t(), argc, argv, startup_info, nullptr, 0, nullptr);
 }
 
@@ -46,8 +50,13 @@ SHARED_API int HOSTFXR_CALLTYPE hostfxr_main_startupinfo(const int argc, const p
 {
     trace_hostfxr_entry_point(_X("hostfxr_main_startupinfo"));
 
-    host_startup_info_t startup_info(host_path, dotnet_root, app_path);
+    if (host_path == nullptr || dotnet_root == nullptr || app_path == nullptr)
+    {
+        trace::error(_X("Invalid startup info: host_path, dotnet_root, and app_path should not be null."));
+        return StatusCode::InvalidArgFailure;
+    }
 
+    host_startup_info_t startup_info(host_path, dotnet_root, app_path);
     return fx_muxer_t::execute(pal::string_t(), argc, argv, startup_info, nullptr, 0, nullptr);
 }
 

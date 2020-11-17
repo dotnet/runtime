@@ -129,7 +129,4 @@
   <data name="InvalidOperation_IncorrectImplementation" xml:space="preserve">
     <value>The algorithm's implementation is incorrect.</value>
   </data>
-  <data name="Cryptography_PlatformNotSupported_Browser" xml:space="preserve">
-    <value>System.Security.Cryptography is not supported on Browser.</value>
-  </data>
 </root>

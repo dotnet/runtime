@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System;
 using System.Runtime.CompilerServices;
@@ -11,7 +10,9 @@ namespace Internal.TypeSystem
 {
     public abstract partial class FieldDesc : TypeSystemEntity
     {
+#pragma warning disable CA1825 // avoid Array.Empty<T>() instantiation for TypeLoader
         public static readonly FieldDesc[] EmptyFields = new FieldDesc[0];
+#pragma warning restore CA1825
 
         public override int GetHashCode()
         {
@@ -19,11 +20,11 @@ namespace Internal.TypeSystem
             return RuntimeHelpers.GetHashCode(this);
         }
 
-        public override bool Equals(Object o)
+        public override bool Equals(object o)
         {
             // Its only valid to compare two FieldDescs in the same context
-            Debug.Assert(Object.ReferenceEquals(o, null) || !(o is FieldDesc) || Object.ReferenceEquals(((FieldDesc)o).Context, this.Context));
-            return Object.ReferenceEquals(this, o);
+            Debug.Assert(o is not FieldDesc || object.ReferenceEquals(((FieldDesc)o).Context, this.Context));
+            return object.ReferenceEquals(this, o);
         }
 
         public virtual string Name

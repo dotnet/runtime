@@ -1,8 +1,10 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System;
+using System.Diagnostics;
+using System.Reflection.Metadata;
+using System.Reflection.Metadata.Ecma335;
 
 using Internal.JitInterface;
 using Internal.Text;
@@ -19,24 +21,22 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
         private readonly MethodWithToken _method;
 
-        private readonly bool _isUnboxingStub;
-
         private readonly bool _isInstantiatingStub;
 
         public MethodFixupSignature(
             ReadyToRunFixupKind fixupKind, 
-            MethodWithToken method, 
-            bool isUnboxingStub,
+            MethodWithToken method,
             bool isInstantiatingStub)
         {
             _fixupKind = fixupKind;
             _method = method;
-            _isUnboxingStub = isUnboxingStub;
             _isInstantiatingStub = isInstantiatingStub;
 
             // Ensure types in signature are loadable and resolvable, otherwise we'll fail later while emitting the signature
             CompilerTypeSystemContext compilerContext = (CompilerTypeSystemContext)method.Method.Context;
             compilerContext.EnsureLoadableMethod(method.Method);
+            compilerContext.EnsureLoadableType(_method.OwningType);
+
             if (method.ConstrainedType != null)
                 compilerContext.EnsureLoadableType(method.ConstrainedType);
         }
@@ -45,7 +45,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
         public override int ClassCode => 150063499;
 
-        public bool IsUnboxingStub => _isUnboxingStub;
+        public bool IsUnboxingStub => _method.Unboxing;
 
         public override ObjectData GetData(NodeFactory factory, bool relocsOnly = false)
         {
@@ -61,10 +61,10 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             // Optimize some of the fixups into a more compact form
             ReadyToRunFixupKind fixupKind = _fixupKind;
             bool optimized = false;
-            if (!_isUnboxingStub && !_isInstantiatingStub && _method.ConstrainedType == null &&
+            if (!_method.Unboxing && !_isInstantiatingStub && _method.ConstrainedType == null &&
                 fixupKind == ReadyToRunFixupKind.MethodEntry)
             {
-                if (!_method.Method.OwningType.HasInstantiation && !_method.Method.OwningType.IsArray)
+                if (!_method.Method.HasInstantiation && !_method.Method.OwningType.HasInstantiation && !_method.Method.OwningType.IsArray)
                 {
                     if (_method.Token.TokenType == CorTokenType.mdtMethodDef)
                     {
@@ -73,8 +73,11 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                     }
                     else if (_method.Token.TokenType == CorTokenType.mdtMemberRef)
                     {
-                        fixupKind = ReadyToRunFixupKind.MethodEntry_RefToken;
-                        optimized = true;
+                        if (!_method.OwningTypeNotDerivedFromToken)
+                        {
+                            fixupKind = ReadyToRunFixupKind.MethodEntry_RefToken;
+                            optimized = true;
+                        }
                     }
                 }
             }
@@ -85,13 +88,13 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             {
                 if (method.Token.TokenType == CorTokenType.mdtMethodSpec)
                 {
-                    method = new MethodWithToken(method.Method, factory.SignatureContext.GetModuleTokenForMethod(method.Method, throwIfNotFound: false), method.ConstrainedType);
+                    method = new MethodWithToken(method.Method, factory.SignatureContext.GetModuleTokenForMethod(method.Method, throwIfNotFound: false), method.ConstrainedType, unboxing: _method.Unboxing, null);
                 }
                 else if (!optimized && (method.Token.TokenType == CorTokenType.mdtMemberRef))
                 {
                     if (method.Method.OwningType.GetTypeDefinition() is EcmaType)
                     {
-                        method = new MethodWithToken(method.Method, factory.SignatureContext.GetModuleTokenForMethod(method.Method, throwIfNotFound: false), method.ConstrainedType);
+                        method = new MethodWithToken(method.Method, factory.SignatureContext.GetModuleTokenForMethod(method.Method, throwIfNotFound: false), method.ConstrainedType, unboxing: _method.Unboxing, null);
                     }
                 }
             }
@@ -108,7 +111,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             }
             else
             {
-                dataBuilder.EmitMethodSignature(method, enforceDefEncoding: false, enforceOwningType: false, innerContext, _isUnboxingStub, _isInstantiatingStub);
+                dataBuilder.EmitMethodSignature(method, enforceDefEncoding: false, enforceOwningType: false, innerContext, _isInstantiatingStub);
             }
 
             return dataBuilder.ToObjectData();
@@ -119,10 +122,6 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             sb.Append(nameMangler.CompilationUnitPrefix);
             sb.Append($@"MethodFixupSignature(");
             sb.Append(_fixupKind.ToString());
-            if (_isUnboxingStub)
-            {
-                sb.Append(" [UNBOX]");
-            }
             if (_isInstantiatingStub)
             {
                 sb.Append(" [INST]");
@@ -135,10 +134,6 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
         {
             MethodFixupSignature otherNode = (MethodFixupSignature)other;
             int result = ((int)_fixupKind).CompareTo((int)otherNode._fixupKind);
-            if (result != 0)
-                return result;
-
-            result = _isUnboxingStub.CompareTo(otherNode._isUnboxingStub);
             if (result != 0)
                 return result;
 

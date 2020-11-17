@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 /*============================================================================
 **
@@ -18,7 +17,7 @@
  * Notes: uses memcmp and sprintf_s.
  */
 
-int __cdecl main(int argc, char *argv[])
+PALTEST(c_runtime_wcscpy_test1_paltest_wcscpy_test1, "c_runtime/wcscpy/test1/paltest_wcscpy_test1")
 {
     WCHAR str[] = {'f','o','o',0,'b','a','r',0};
     WCHAR dest[80];

@@ -1,6 +1,5 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Text;
 using System.IO;
@@ -38,9 +37,9 @@ namespace System.IO.PortsTests
             Assert.True(false, string.Format(format, args));
         }
 
-#pragma warning disable MSLIB0001 // Encoding.UTF7 property is obsolete
+#pragma warning disable SYSLIB0001 // Encoding.UTF7 property is obsolete
         protected static Encoding LegacyUTF7Encoding => Encoding.UTF7;
-#pragma warning restore MSLIB0001
+#pragma warning restore SYSLIB0001
 
         /// <summary>
         /// Returns a value stating whether <paramref name="encoding"/> is UTF-7.

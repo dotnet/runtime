@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Data.Common;
 using System.Data.ProviderBase;
@@ -20,7 +19,7 @@ namespace System.Data.Odbc
         {
             get
             {
-                OdbcConnection outerConnection = (OdbcConnection)Owner;
+                OdbcConnection? outerConnection = (OdbcConnection?)Owner;
 
                 if (null == outerConnection)
                     throw ODBC.OpenConnectionNoOwner();
@@ -33,7 +32,9 @@ namespace System.Data.Odbc
         {
             get
             {
-                return OuterConnection.Open_GetServerVersion();
+                // https://github.com/dotnet/runtime/issues/44289: This seems like it returns null if the connection is open, whereas the docs say it should throw
+                // InvalidOperationException
+                return OuterConnection.Open_GetServerVersion()!;
             }
         }
 

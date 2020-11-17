@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections;
 using System.ComponentModel;
@@ -8,6 +7,7 @@ using System.Diagnostics;
 using System.Text;
 using System.Runtime.InteropServices;
 using System.Security.Principal;
+using System.Runtime.Versioning;
 
 namespace System.DirectoryServices.Protocols
 {
@@ -1021,6 +1021,7 @@ namespace System.DirectoryServices.Protocols
         public ResultCode Result { get; }
     }
 
+    [SupportedOSPlatform("windows")]
     public class QuotaControl : DirectoryControl
     {
         private byte[] _sid;

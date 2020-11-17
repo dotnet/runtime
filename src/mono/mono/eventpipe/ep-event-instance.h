@@ -32,6 +32,10 @@ struct _EventPipeEventInstance_Internal {
 	uint32_t metadata_id;
 	uint32_t proc_num;
 	uint32_t data_len;
+	// TODO: Look at optimizing this when writing into buffer manager.
+	// Only write up to next available frame to better utilize memory.
+	// Even events not requesting a stack will still waste space in buffer manager.
+	// Needs to go last since number of frames will set size in stream.
 	EventPipeStackContents stack_contents;
 #ifdef EP_CHECKED_BUILD
 	uint32_t debug_event_start;
@@ -93,6 +97,11 @@ ep_event_instance_get_aligned_total_size (
 	const EventPipeEventInstance *ep_event_instance,
 	EventPipeSerializationFormat format);
 
+void
+ep_event_instance_serialize_to_json_file (
+	EventPipeEventInstance *ep_event_instance,
+	EventPipeJsonFile *json_file);
+
 /*
  * EventPipeSequencePoint.
  */
@@ -133,4 +142,4 @@ void
 ep_sequence_point_free (EventPipeSequencePoint *sequence_point);
 
 #endif /* ENABLE_PERFTRACING */
-#endif /** __EVENTPIPE_EVENT_INSTANCE_H__ **/
+#endif /* __EVENTPIPE_EVENT_INSTANCE_H__ */

@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System;
 using System.Collections.Generic;
@@ -96,7 +95,7 @@ public partial class ConsoleEncoding
         check(Encoding.Unicode);
 
         // On full Windows, ASCII is available also
-        if (!PlatformDetection.IsWindowsNanoServer)
+        if (PlatformDetection.IsNotWindowsNanoNorServerCore)
         {
             check(Encoding.ASCII);
         }

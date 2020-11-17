@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections;
 using System.Diagnostics;
@@ -60,7 +59,7 @@ namespace System.ComponentModel.DataAnnotations
         ///     <c>true</c> if the value is null or less than or equal to the specified maximum length, otherwise <c>false</c>
         /// </returns>
         /// <exception cref="InvalidOperationException">Length is zero or less than negative one.</exception>
-        public override bool IsValid(object value)
+        public override bool IsValid(object? value)
         {
             // Check the lengths for legality
             EnsureLegalLengths();
@@ -121,10 +120,10 @@ namespace System.ComponentModel.DataAnnotations
                 return true;
             }
 
-            PropertyInfo property = value.GetType().GetRuntimeProperty("Count");
+            PropertyInfo? property = value.GetType().GetRuntimeProperty("Count");
             if (property != null && property.CanRead && property.PropertyType == typeof(int))
             {
-                count = (int)property.GetValue(value);
+                count = (int)property.GetValue(value)!;
                 return true;
             }
 

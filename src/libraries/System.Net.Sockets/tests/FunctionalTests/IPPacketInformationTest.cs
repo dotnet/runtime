@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Threading;
 
@@ -71,10 +70,7 @@ namespace System.Net.Sockets.Tests
                 Assert.True(receiver.ReceiveMessageFromAsync(receiveArgs), "receiver.ReceiveMessageFromAsync");
 
                 // Send a few packets, in case they aren't delivered reliably.
-                for (int i = 0; i < TestSettings.UDPRedundancy; i++)
-                {
-                    sender.SendTo(new byte[1], new IPEndPoint(IPAddress.Loopback, port));
-                }
+                sender.SendTo(new byte[1], new IPEndPoint(IPAddress.Loopback, port));
 
                 Assert.True(waitHandle.WaitOne(ReceiveTimeout), "waitHandle.WaitOne");
 

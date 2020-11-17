@@ -1,6 +1,5 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using BundleTests.Helpers;
 using Microsoft.DotNet.Cli.Build.Framework;
@@ -12,7 +11,7 @@ using Xunit;
 
 namespace AppHost.Bundle.Tests
 {
-    public class BundleLocalizedApp : IClassFixture<BundleLocalizedApp.SharedTestState>
+    public class BundleLocalizedApp : BundleTestBase, IClassFixture<BundleLocalizedApp.SharedTestState>
     {
         private SharedTestState sharedTestState;
 
@@ -25,7 +24,7 @@ namespace AppHost.Bundle.Tests
         public void Bundled_Localized_App_Run_Succeeds()
         {
             var fixture = sharedTestState.TestFixture.Copy();
-            var singleFile = BundleHelper.BundleApp(fixture);
+            var singleFile = BundleSelfContainedApp(fixture);
 
             if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
             {
@@ -43,20 +42,13 @@ namespace AppHost.Bundle.Tests
                 .HaveStdOutContaining("ನಮಸ್ಕಾರ! வணக்கம்! Hello!");
         }
 
-        public class SharedTestState : IDisposable
+        public class SharedTestState : SharedTestStateBase, IDisposable
         {
             public TestProjectFixture TestFixture { get; set; }
-            public RepoDirectoriesProvider RepoDirectories { get; set; }
 
             public SharedTestState()
             {
-                RepoDirectories = new RepoDirectoriesProvider();
-
-                TestFixture = new TestProjectFixture("LocalizedApp", RepoDirectories);
-                TestFixture
-                    .EnsureRestoredForRid(TestFixture.CurrentRid, RepoDirectories.CorehostPackages)
-                    .PublishProject(runtime: TestFixture.CurrentRid,
-                                    outputDirectory: BundleHelper.GetPublishPath(TestFixture));
+                TestFixture = PreparePublishedSelfContainedTestProject("LocalizedApp");
             }
 
             public void Dispose()

@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System;
 using System.Collections.Generic;
@@ -216,7 +215,7 @@ namespace Microsoft.Extensions.Hosting
             services.AddSingleton<IHostApplicationLifetime, ApplicationLifetime>();
             services.AddSingleton<IHostLifetime, ConsoleLifetime>();
             services.AddSingleton<IHost, Internal.Host>();
-            services.AddOptions();
+            services.AddOptions().Configure<HostOptions>(options => { options.Initialize(_hostConfiguration); });
             services.AddLogging();
 
             foreach (Action<HostBuilderContext, IServiceCollection> configureServicesAction in _configureServicesActions)

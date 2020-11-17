@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 
 /*++---------------------------------------------------------------------------------------
@@ -451,7 +450,7 @@ public:
             WRAPPER_NO_CONTRACT;
             SUPPORTS_DAC;
 
-            _ASSERTE(!m_fEnd); // check we are not alredy at end
+            _ASSERTE(!m_fEnd); // check we are not already at end
             MoveNext();
         }
         // operator --
@@ -463,7 +462,7 @@ public:
         {
             LIMITED_METHOD_CONTRACT;
 
-            _ASSERTE(!m_fEnd); // check we are not alredy at end
+            _ASSERTE(!m_fEnd); // check we are not already at end
             return m_pBucket->m_rgKeys[m_id];
         }
         //accessors : SetDisc() , sets the discriminator
@@ -476,7 +475,7 @@ public:
             WRAPPER_NO_CONTRACT;
             SUPPORTS_DAC;
 
-            _ASSERTE(!m_fEnd); // check we are not alredy at end
+            _ASSERTE(!m_fEnd); // check we are not already at end
             return m_pBucket->GetValue(m_id);
         }
 

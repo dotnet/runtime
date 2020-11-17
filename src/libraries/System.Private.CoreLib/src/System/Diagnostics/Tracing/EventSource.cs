@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 // This program uses code hyperlinks available as part of the HyperAddin Visual Studio plug-in.
 // It is available from http://www.codeplex.com/hyperAddin
@@ -164,17 +163,10 @@
 // opportunity to expose this format to EventListeners in the future.
 //
 
-#if ES_BUILD_STANDALONE
 using System;
-using System.Diagnostics;
-using System.Security.Permissions;
-using EventDescriptor = Microsoft.Diagnostics.Tracing.EventDescriptor;
-using BitOperations = Microsoft.Diagnostics.Tracing.Internal.BitOperations;
-#else
-using System.Threading.Tasks;
-#endif
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Numerics;
@@ -182,7 +174,11 @@ using System.Reflection;
 using System.Resources;
 using System.Text;
 using System.Threading;
-using Microsoft.Reflection;
+using System.Threading.Tasks;
+
+#if ES_BUILD_STANDALONE
+using System.Security.Permissions;
+#endif
 
 #if ES_BUILD_STANDALONE
 namespace Microsoft.Diagnostics.Tracing
@@ -215,7 +211,7 @@ namespace System.Diagnostics.Tracing
     /// <remarks>
     /// This is a minimal definition for a custom event source:
     /// <code>
-    /// [EventSource(Name="Samples-Demos-Minimal")]
+    /// [EventSource(Name="Samples.Demos.Minimal")]
     /// sealed class MinimalEventSource : EventSource
     /// {
     ///     public static MinimalEventSource Log = new MinimalEventSource();
@@ -233,7 +229,7 @@ namespace System.Diagnostics.Tracing
 #pragma warning restore CA1823
 #endif //FEATURE_EVENTSOURCE_XPLAT
 
-        private static bool IsSupported { get; } = InitializeIsSupported();
+        internal static bool IsSupported { get; } = InitializeIsSupported();
 
         private static bool InitializeIsSupported() =>
             AppContext.TryGetSwitch("System.Diagnostics.Tracing.EventSource.IsSupported", out bool isSupported) ? isSupported : true;
@@ -313,13 +309,8 @@ namespace System.Diagnostics.Tracing
             {
                 if (attrib.Guid != null)
                 {
-#if !ES_BUILD_AGAINST_DOTNET_V35
                     if (Guid.TryParse(attrib.Guid, out Guid g))
                         return g;
-#else
-                    try { return new Guid(attrib.Guid); }
-                    catch (Exception) { }
-#endif
                 }
 
                 if (attrib.Name != null)
@@ -555,8 +546,8 @@ namespace System.Diagnostics.Tracing
 #if FEATURE_MANAGED_ETW
 #if FEATURE_PERFTRACING
             // Set the activity id via EventPipe.
-            EventPipeInternal.EventActivityIdControl(
-                (uint)Interop.Advapi32.ActivityControl.EVENT_ACTIVITY_CTRL_SET_ID,
+            EventPipeEventProvider.EventActivityIdControl(
+                Interop.Advapi32.ActivityControl.EVENT_ACTIVITY_CTRL_SET_ID,
                 ref activityId);
 #endif // FEATURE_PERFTRACING
 #if TARGET_WINDOWS
@@ -589,8 +580,8 @@ namespace System.Diagnostics.Tracing
                     Interop.Advapi32.ActivityControl.EVENT_ACTIVITY_CTRL_GET_ID,
                     ref retVal);
 #elif FEATURE_PERFTRACING
-                EventPipeInternal.EventActivityIdControl(
-                    (uint)Interop.Advapi32.ActivityControl.EVENT_ACTIVITY_CTRL_GET_ID,
+                EventPipeEventProvider.EventActivityIdControl(
+                    Interop.Advapi32.ActivityControl.EVENT_ACTIVITY_CTRL_GET_ID,
                     ref retVal);
 #endif // TARGET_WINDOWS
 #endif // FEATURE_MANAGED_ETW
@@ -631,12 +622,12 @@ namespace System.Diagnostics.Tracing
             // Note we can't access m_throwOnWrites because this is a static method.
 
 #if FEATURE_PERFTRACING && TARGET_WINDOWS
-            EventPipeInternal.EventActivityIdControl(
-                (uint)Interop.Advapi32.ActivityControl.EVENT_ACTIVITY_CTRL_SET_ID,
+            EventPipeEventProvider.EventActivityIdControl(
+                Interop.Advapi32.ActivityControl.EVENT_ACTIVITY_CTRL_SET_ID,
                     ref oldActivityThatWillContinue);
 #elif FEATURE_PERFTRACING
-            EventPipeInternal.EventActivityIdControl(
-                (uint)Interop.Advapi32.ActivityControl.EVENT_ACTIVITY_CTRL_GET_SET_ID,
+            EventPipeEventProvider.EventActivityIdControl(
+                Interop.Advapi32.ActivityControl.EVENT_ACTIVITY_CTRL_GET_SET_ID,
                     ref oldActivityThatWillContinue);
 #endif // FEATURE_PERFTRACING && TARGET_WINDOWS
 
@@ -1372,14 +1363,14 @@ namespace System.Diagnostics.Tracing
                 if (m_etwProvider != null)
                 {
                     m_etwProvider.Dispose();
-                    m_etwProvider = null!; // TODO-NULLABLE: Avoid nulling out in Dispose
+                    m_etwProvider = null!;
                 }
 #endif
 #if FEATURE_PERFTRACING
                 if (m_eventPipeProvider != null)
                 {
                     m_eventPipeProvider.Dispose();
-                    m_eventPipeProvider = null!; // TODO-NULLABLE: Avoid nulling out in Dispose
+                    m_eventPipeProvider = null!;
                 }
 #endif
             }
@@ -1517,17 +1508,13 @@ namespace System.Diagnostics.Tracing
                 if (this.Name != "System.Diagnostics.Eventing.FrameworkEventSource" || Environment.IsWindows8OrAbove)
 #endif
                 {
-                    int setInformationResult;
-                    System.Runtime.InteropServices.GCHandle metadataHandle =
-                        System.Runtime.InteropServices.GCHandle.Alloc(this.providerMetadata, System.Runtime.InteropServices.GCHandleType.Pinned);
-                    IntPtr providerMetadata = metadataHandle.AddrOfPinnedObject();
-
-                    setInformationResult = m_etwProvider.SetInformation(
-                        Interop.Advapi32.EVENT_INFO_CLASS.SetTraits,
-                        providerMetadata,
-                        (uint)this.providerMetadata.Length);
-
-                    metadataHandle.Free();
+                    fixed (byte* providerMetadata = this.providerMetadata)
+                    {
+                        m_etwProvider.SetInformation(
+                            Interop.Advapi32.EVENT_INFO_CLASS.SetTraits,
+                            providerMetadata,
+                            (uint)this.providerMetadata.Length);
+                    }
                 }
 #endif // TARGET_WINDOWS
 #endif // FEATURE_MANAGED_ETW
@@ -1870,7 +1857,7 @@ namespace System.Diagnostics.Tracing
                 {
                     m_EventSourceInDecodeObject = true;
 
-                    if (dataType.IsEnum())
+                    if (dataType.IsEnum)
                     {
                         dataType = Enum.GetUnderlyingType(dataType);
 
@@ -2250,6 +2237,11 @@ namespace System.Diagnostics.Tracing
                     {
                         if (m_writeEventStringEventHandle == IntPtr.Zero)
                         {
+                            if (m_createEventLock is null)
+                            {
+                                Interlocked.CompareExchange(ref m_createEventLock, new object(), null);
+                            }
+
                             lock (m_createEventLock)
                             {
                                 if (m_writeEventStringEventHandle == IntPtr.Zero)
@@ -2286,8 +2278,8 @@ namespace System.Diagnostics.Tracing
             EventWrittenEventArgs eventCallbackArgs = new EventWrittenEventArgs(this);
             eventCallbackArgs.EventId = 0;
             eventCallbackArgs.Message = msg;
-            eventCallbackArgs.Payload = new ReadOnlyCollection<object?>(new List<object?>() { msg });
-            eventCallbackArgs.PayloadNames = new ReadOnlyCollection<string>(new List<string> { "message" });
+            eventCallbackArgs.Payload = new ReadOnlyCollection<object?>(new object[] { msg });
+            eventCallbackArgs.PayloadNames = new ReadOnlyCollection<string>(new string[] { "message" });
             eventCallbackArgs.EventName = eventName;
 
             for (EventDispatcher? dispatcher = m_Dispatchers; dispatcher != null; dispatcher = dispatcher.m_Next)
@@ -2844,14 +2836,6 @@ namespace System.Diagnostics.Tracing
                 DefineEventPipeEvents();
 #endif
             }
-            if (s_currentPid == 0)
-            {
-#if ES_BUILD_STANDALONE
-                // for non-BCL EventSource we must assert SecurityPermission
-                new SecurityPermission(PermissionState.Unrestricted).Assert();
-#endif
-                s_currentPid = Interop.GetCurrentProcessId();
-            }
         }
 
         // Send out the ETW manifest XML out to ETW
@@ -2929,13 +2913,6 @@ namespace System.Diagnostics.Tracing
 #endif // FEATURE_MANAGED_ETW
         }
 
-#if (ES_BUILD_PCL)
-        internal static Attribute GetCustomAttributeHelper(Type type, Type attributeType, EventManifestOptions flags = EventManifestOptions.None)
-        {
-            return GetCustomAttributeHelper(type.GetTypeInfo(), attributeType, flags);
-        }
-#endif
-
         // Helper to deal with the fact that the type we are reflecting over might be loaded in the ReflectionOnly context.
         // When that is the case, we have the build the custom assemblies on a member by hand.
         internal static Attribute? GetCustomAttributeHelper(
@@ -2948,7 +2925,7 @@ namespace System.Diagnostics.Tracing
         {
             // AllowEventSourceOverride is an option that allows either Microsoft.Diagnostics.Tracing or
             // System.Diagnostics.Tracing EventSource to be considered valid.  This should not mattter anywhere but in Microsoft.Diagnostics.Tracing (nuget package).
-            if (!member.Module.Assembly.ReflectionOnly() && (flags & EventManifestOptions.AllowEventSourceOverride) == 0)
+            if (!member.Module.Assembly.ReflectionOnly && (flags & EventManifestOptions.AllowEventSourceOverride) == 0)
             {
                 // Let the runtime to the work for us, since we can execute code in this context.
                 Attribute? firstAttribute = null;
@@ -2960,7 +2937,6 @@ namespace System.Diagnostics.Tracing
                 return firstAttribute;
             }
 
-#if (!ES_BUILD_PCL)
             foreach (CustomAttributeData data in CustomAttributeData.GetCustomAttributes(member))
             {
                 if (AttributeTypeNamesMatch(attributeType, data.Constructor.ReflectedType!))
@@ -3000,10 +2976,6 @@ namespace System.Diagnostics.Tracing
             }
 
             return null;
-#else // ES_BUILD_PCL
-            // Don't use nameof here because the resource doesn't exist on some platforms, which results in a compilation error.
-            throw new ArgumentException("EventSource_PCLPlatformNotSupportedReflection", "EventSource");
-#endif
         }
 
         /// <summary>
@@ -3038,15 +3010,15 @@ namespace System.Diagnostics.Tracing
             Type? ret = eventSourceType;
 
             // return false for "object" and interfaces
-            if (ret.BaseType() == null)
+            if (ret.BaseType == null)
                 return null;
 
             // now go up the inheritance chain until hitting a concrete type ("object" at worse)
             do
             {
-                ret = ret.BaseType();
+                ret = ret.BaseType;
             }
-            while (ret != null && ret.IsAbstract());
+            while (ret != null && ret.IsAbstract);
 
             if (ret != null)
             {
@@ -3083,7 +3055,7 @@ namespace System.Diagnostics.Tracing
             Exception? exception = null; // exception that might get raised during validation b/c we couldn't/didn't recover from a previous error
             byte[]? res = null;
 
-            if (eventSourceType.IsAbstract() && (flags & EventManifestOptions.Strict) == 0)
+            if (eventSourceType.IsAbstract && (flags & EventManifestOptions.Strict) == 0)
                 return null;
 
             try
@@ -3103,7 +3075,7 @@ namespace System.Diagnostics.Tracing
                 ResourceManager? resources = null;
                 EventSourceAttribute? eventSourceAttrib = (EventSourceAttribute?)GetCustomAttributeHelper(eventSourceType, typeof(EventSourceAttribute), flags);
                 if (eventSourceAttrib != null && eventSourceAttrib.LocalizationResources != null)
-                    resources = new ResourceManager(eventSourceAttrib.LocalizationResources, eventSourceType.Assembly());
+                    resources = new ResourceManager(eventSourceAttrib.LocalizationResources, eventSourceType.Assembly);
 
                 manifest = new ManifestBuilder(GetName(eventSourceType, flags), GetGuid(eventSourceType), eventSourceDllName,
                                                resources, flags);
@@ -3116,13 +3088,13 @@ namespace System.Diagnostics.Tracing
                 // eventSourceType must be sealed and must derive from this EventSource
                 if ((flags & EventManifestOptions.Strict) != 0)
                 {
-                    bool typeMatch = GetEventSourceBaseType(eventSourceType, (flags & EventManifestOptions.AllowEventSourceOverride) != 0, eventSourceType.Assembly().ReflectionOnly()) != null;
+                    bool typeMatch = GetEventSourceBaseType(eventSourceType, (flags & EventManifestOptions.AllowEventSourceOverride) != 0, eventSourceType.Assembly.ReflectionOnly) != null;
 
                     if (!typeMatch)
                     {
                         manifest.ManifestError(SR.EventSource_TypeMustDeriveFromEventSource);
                     }
-                    if (!eventSourceType.IsAbstract() && !eventSourceType.IsSealed())
+                    if (!eventSourceType.IsAbstract && !eventSourceType.IsSealed)
                     {
                         manifest.ManifestError(SR.EventSource_TypeMustBeSealedOrAbstract);
                     }
@@ -3138,7 +3110,7 @@ namespace System.Diagnostics.Tracing
                     Type? nestedType = eventSourceType.GetNestedType(providerEnumKind);
                     if (nestedType != null)
                     {
-                        if (eventSourceType.IsAbstract())
+                        if (eventSourceType.IsAbstract)
                         {
                             manifest.ManifestError(SR.Format(SR.EventSource_AbstractMustNotDeclareKTOC, nestedType.Name));
                         }
@@ -3179,7 +3151,7 @@ namespace System.Diagnostics.Tracing
                             continue;
                         }
 
-                        if (eventSourceType.IsAbstract())
+                        if (eventSourceType.IsAbstract)
                         {
                             if (eventAttribute != null)
                             {
@@ -3330,7 +3302,7 @@ namespace System.Diagnostics.Tracing
                 }
 
                 // if this is an abstract event source we've already performed all the validation we can
-                if (!eventSourceType.IsAbstract() && (source == null || !source.SelfDescribingEvents))
+                if (!eventSourceType.IsAbstract && (source == null || !source.SelfDescribingEvents))
                 {
                     bNeedsManifest = (flags & EventManifestOptions.OnlyIfNeededForRegistration) == 0
 #if FEATURE_MANAGED_ETW_CHANNELS
@@ -3364,7 +3336,7 @@ namespace System.Diagnostics.Tracing
                     foreach (string error in manifest.Errors)
                     {
                         if (!firstError)
-                            msg += Environment.NewLine;
+                            msg += System.Environment.NewLine;
                         firstError = false;
                         msg += error;
                     }
@@ -3398,7 +3370,7 @@ namespace System.Diagnostics.Tracing
         // to the manifest.
         private static void AddProviderEnumKind(ManifestBuilder manifest, FieldInfo staticField, string providerEnumKind)
         {
-            bool reflectionOnly = staticField.Module.Assembly.ReflectionOnly();
+            bool reflectionOnly = staticField.Module.Assembly.ReflectionOnly;
             Type staticFieldType = staticField.FieldType;
             if (!reflectionOnly && (staticFieldType == typeof(EventOpcode)) || AttributeTypeNamesMatch(staticFieldType, typeof(EventOpcode)))
             {
@@ -3593,9 +3565,15 @@ namespace System.Diagnostics.Tracing
         /// </summary>
         /// <param name="method">The method to probe.</param>
         /// <returns>The literal value or -1 if the value could not be determined. </returns>
+#if !ES_BUILD_STANDALONE
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
+                   Justification = "The method calls MethodBase.GetMethodBody. Trimming application can change IL of various methods" +
+                                   "which can lead to change of behavior. This method only uses this to validate usage of event source APIs." +
+                                   "In the worst case it will not be able to determine the value it's looking for and will not perform" +
+                                   "any validation.")]
+#endif
         private static int GetHelperCallFirstArg(MethodInfo method)
         {
-#if (!ES_BUILD_PCL)
             // Currently searches for the following pattern
             //
             // ...     // CAN ONLY BE THE INSTRUCTIONS BELOW
@@ -3712,7 +3690,6 @@ namespace System.Diagnostics.Tracing
                 }
                 idx++;
             }
-#endif
             return -1;
         }
 
@@ -3724,12 +3701,6 @@ namespace System.Diagnostics.Tracing
         {
             try
             {
-#if (!ES_BUILD_PCL)
-                // send message to debugger without delay
-                System.Diagnostics.Debugger.Log(0, null, string.Format("EventSource Error: {0}{1}", msg, Environment.NewLine));
-#endif
-
-                // Send it to all listeners.
                 if (m_outOfBandMessageCount < 16 - 1)     // Note this is only if size byte
                     m_outOfBandMessageCount++;
                 else
@@ -3740,13 +3711,17 @@ namespace System.Diagnostics.Tracing
                     msg = "Reached message limit.   End of EventSource error messages.";
                 }
 
+                // send message to debugger
+                System.Diagnostics.Debugger.Log(0, null, string.Format("EventSource Error: {0}{1}", msg, System.Environment.NewLine));
+
+                // Send it to all listeners.
                 WriteEventString(msg);
                 WriteStringToAllListeners("EventSourceMessage", msg);
             }
             catch { }      // If we fail during last chance logging, well, we have to give up....
         }
 
-        private EventSourceSettings ValidateSettings(EventSourceSettings settings)
+        private static EventSourceSettings ValidateSettings(EventSourceSettings settings)
         {
             const EventSourceSettings evtFormatMask = EventSourceSettings.EtwManifestEventFormat |
                                 EventSourceSettings.EtwSelfDescribingEventFormat;
@@ -3797,7 +3772,7 @@ namespace System.Diagnostics.Tracing
         private volatile OverideEventProvider m_etwProvider = null!;   // This hooks up ETW commands to our 'OnEventCommand' callback
 #endif
 #if FEATURE_PERFTRACING
-        private object m_createEventLock = new object();
+        private object? m_createEventLock;
         private IntPtr m_writeEventStringEventHandle = IntPtr.Zero;
         private volatile OverideEventProvider m_eventPipeProvider = null!;
 #endif
@@ -3808,7 +3783,6 @@ namespace System.Diagnostics.Tracing
 
         private string[]? m_traits;                      // Used to implement GetTraits
 
-        internal static uint s_currentPid;              // current process id, used in synthesizing quasi-GUIDs
         [ThreadStatic]
         private static byte m_EventSourceExceptionRecurenceCount; // current recursion count inside ThrowEventSourceException
 
@@ -4143,18 +4117,17 @@ namespace System.Diagnostics.Tracing
         {
             lock (EventListenersLock)
             {
-                s_EventSources ??= new List<WeakReference<EventSource>>(2);
+                Debug.Assert(s_EventSources != null);
 
+#if ES_BUILD_STANDALONE
+                // netcoreapp build calls DisposeOnShutdown directly from AppContext.OnProcessExit
                 if (!s_EventSourceShutdownRegistered)
                 {
                     s_EventSourceShutdownRegistered = true;
-#if ES_BUILD_STANDALONE
                     AppDomain.CurrentDomain.ProcessExit += DisposeOnShutdown;
                     AppDomain.CurrentDomain.DomainUnload += DisposeOnShutdown;
-#else
-                    AppContext.ProcessExit += DisposeOnShutdown;
-#endif
                 }
+#endif
 
                 // Periodically search the list for existing entries to reuse, this avoids
                 // unbounded memory use if we keep recycling eventSources (an unlikely thing).
@@ -4211,8 +4184,14 @@ namespace System.Diagnostics.Tracing
         // such callbacks on process shutdown or appdomain so that unmanaged code will never
         // do this.  This is what this callback is for.
         // See bug 724140 for more
+#if ES_BUILD_STANDALONE
         private static void DisposeOnShutdown(object? sender, EventArgs e)
+#else
+        internal static void DisposeOnShutdown()
+#endif
         {
+            Debug.Assert(EventSource.IsSupported);
+
             lock (EventListenersLock)
             {
                 Debug.Assert(s_EventSources != null);
@@ -4447,11 +4426,13 @@ namespace System.Diagnostics.Tracing
         private static bool s_ConnectingEventSourcesAndListener;
 #endif
 
+#if ES_BUILD_STANDALONE
         /// <summary>
         /// Used to register AD/Process shutdown callbacks.
         /// </summary>
         private static bool s_EventSourceShutdownRegistered;
-        #endregion
+#endif
+#endregion
     }
 
     /// <summary>
@@ -4616,11 +4597,13 @@ namespace System.Diagnostics.Tracing
                 // do the lazy init if you know it is contract based (EventID >= 0)
                 if (EventId >= 0 && m_payloadNames == null)
                 {
-                    var names = new List<string>();
                     Debug.Assert(m_eventSource.m_eventData != null);
-                    foreach (ParameterInfo parameter in m_eventSource.m_eventData[EventId].Parameters)
+                    ParameterInfo[] parameters = m_eventSource.m_eventData[EventId].Parameters;
+
+                    string[] names = new string[parameters.Length];
+                    for (int i = 0; i < parameters.Length; i++)
                     {
-                        names.Add(parameter.Name!);
+                        names[i] = parameters[i].Name!;
                     }
 
                     m_payloadNames = new ReadOnlyCollection<string>(names);
@@ -5433,7 +5416,7 @@ namespace System.Diagnostics.Tracing
                 templates.Append(" length=\"").Append(name).Append("Size\"");
             }
             // ETW does not support 64-bit value maps, so we don't specify these as ETW maps
-            if (type.IsEnum() && Enum.GetUnderlyingType(type) != typeof(ulong) && Enum.GetUnderlyingType(type) != typeof(long))
+            if (type.IsEnum && Enum.GetUnderlyingType(type) != typeof(ulong) && Enum.GetUnderlyingType(type) != typeof(long))
             {
                 templates.Append(" map=\"").Append(type.Name).Append('"');
                 mapsTab ??= new Dictionary<string, Type>();
@@ -5713,27 +5696,21 @@ namespace System.Diagnostics.Tracing
             // Output the localization information.
             sb.AppendLine("<localization>");
 
-            List<CultureInfo> cultures = (resources != null && (flags & EventManifestOptions.AllCultures) != 0) ?
-                GetSupportedCultures() :
-                new List<CultureInfo>() { CultureInfo.CurrentUICulture };
-
             var sortedStrings = new string[stringTab.Keys.Count];
             stringTab.Keys.CopyTo(sortedStrings, 0);
             Array.Sort<string>(sortedStrings, 0, sortedStrings.Length);
 
-            foreach (CultureInfo ci in cultures)
+            CultureInfo ci = CultureInfo.CurrentUICulture;
+            sb.Append(" <resources culture=\"").Append(ci.Name).AppendLine("\">");
+            sb.AppendLine("  <stringTable>");
+            foreach (string stringKey in sortedStrings)
             {
-                sb.Append(" <resources culture=\"").Append(ci.Name).AppendLine("\">");
-                sb.AppendLine("  <stringTable>");
-
-                foreach (string stringKey in sortedStrings)
-                {
-                    string? val = GetLocalizedMessage(stringKey, ci, etwFormat: true);
-                    sb.Append("   <string id=\"").Append(stringKey).Append("\" value=\"").Append(val).AppendLine("\"/>");
-                }
-                sb.AppendLine("  </stringTable>");
-                sb.AppendLine(" </resources>");
+                string? val = GetLocalizedMessage(stringKey, ci, etwFormat: true);
+                sb.Append("   <string id=\"").Append(stringKey).Append("\" value=\"").Append(val).AppendLine("\"/>");
             }
+            sb.AppendLine("  </stringTable>");
+            sb.AppendLine(" </resources>");
+
             sb.AppendLine("</localization>");
             sb.AppendLine("</instrumentationManifest>");
             return sb.ToString();
@@ -5789,21 +5766,6 @@ namespace System.Diagnostics.Tracing
                 stringTab.TryGetValue(key, out value);
 
             return value;
-        }
-
-        /// <summary>
-        /// There's no API to enumerate all languages an assembly is localized into, so instead
-        /// we enumerate through all the "known" cultures and attempt to load a corresponding satellite
-        /// assembly
-        /// </summary>
-        /// <returns></returns>
-        private static List<CultureInfo> GetSupportedCultures()
-        {
-            var cultures = new List<CultureInfo>();
-
-            if (!cultures.Contains(CultureInfo.CurrentUICulture))
-                cultures.Insert(0, CultureInfo.CurrentUICulture);
-            return cultures;
         }
 
         private static string GetLevelName(EventLevel level)
@@ -5925,14 +5887,14 @@ namespace System.Diagnostics.Tracing
 
         private string GetTypeName(Type type)
         {
-            if (type.IsEnum())
+            if (type.IsEnum)
             {
                 FieldInfo[] fields = type.GetFields(BindingFlags.NonPublic | BindingFlags.Public | BindingFlags.Instance);
                 string typeName = GetTypeName(fields[0].FieldType);
                 return typeName.Replace("win:Int", "win:UInt"); // ETW requires enums to be unsigned.
             }
 
-            switch (type.GetTypeCode())
+            switch (Type.GetTypeCode(type))
             {
                 case TypeCode.Boolean:
                     return "win:Boolean";

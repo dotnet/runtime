@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 //
 //
 
@@ -201,7 +200,7 @@ FCIMPL2(FC_BOOL_RET, ReflectionInvocation::CanValueSpecialCast, ReflectClassBase
     // the field type is a pointer
     if (targetCorElement == ELEMENT_TYPE_PTR || targetCorElement == ELEMENT_TYPE_FNPTR) {
         // the object must be an IntPtr or a System.Reflection.Pointer
-        if (valueType == TypeHandle(MscorlibBinder::GetClass(CLASS__INTPTR))) {
+        if (valueType == TypeHandle(CoreLibBinder::GetClass(CLASS__INTPTR))) {
             //
             // it's an IntPtr, it's good.
         }
@@ -254,6 +253,11 @@ FCIMPL3(Object*, ReflectionInvocation::AllocateValueType, ReflectClassBaseObject
     if (InvokeUtil::IsPrimitiveType(targetElementType) || targetElementType == ELEMENT_TYPE_VALUETYPE)
     {
         MethodTable* allocMT = targetType.AsMethodTable();
+
+        if (allocMT->IsByRefLike()) {
+            COMPlusThrow(kNotSupportedException, W("NotSupported_ByRefLike"));
+        }
+
         if (gc.value != NULL)
         {
             // ignore the type of the incoming box if fForceTypeChange is set
@@ -328,7 +332,7 @@ FCIMPL7(void, RuntimeFieldHandle::SetValue, ReflectFieldObject *pFieldUNSAFE, Ob
 
     HELPER_METHOD_FRAME_BEGIN_PROTECT(gc);
 
-    InvokeUtil::SetValidField(fieldType.GetSignatureCorElementType(), fieldType, pFieldDesc, &gc.target, &gc.value, declaringType, pDomainInitialized);
+    InvokeUtil::SetValidField(fieldType.GetVerifierCorElementType(), fieldType, pFieldDesc, &gc.target, &gc.value, declaringType, pDomainInitialized);
 
     HELPER_METHOD_FRAME_END();
 }
@@ -600,7 +604,7 @@ void QCALLTYPE RuntimeTypeHandle::GetNewobjHelperFnPtr(
     pMT->EnsureInstanceActive();
 
     // Don't allow creating instances of void or delegates
-    if (pMT == MscorlibBinder::GetElementType(ELEMENT_TYPE_VOID) || pMT->IsDelegate())
+    if (pMT == CoreLibBinder::GetElementType(ELEMENT_TYPE_VOID) || pMT->IsDelegate())
     {
         COMPlusThrow(kArgumentException, W("Argument_InvalidValue"));
     }
@@ -1783,7 +1787,7 @@ FCIMPL5(void, RuntimeFieldHandle::SetValueDirect, ReflectFieldObject *pFieldUNSA
     case ELEMENT_TYPE_PTR:      // pointers
         if (gc.oValue != 0) {
             value = 0;
-            if (MscorlibBinder::IsClass(gc.oValue->GetMethodTable(), CLASS__POINTER)) {
+            if (CoreLibBinder::IsClass(gc.oValue->GetMethodTable(), CLASS__POINTER)) {
                 value = (size_t) InvokeUtil::GetPointerValue(gc.oValue);
 #ifdef _MSC_VER
 #pragma warning(disable: 4267) //work-around for compiler
@@ -1795,7 +1799,7 @@ FCIMPL5(void, RuntimeFieldHandle::SetValueDirect, ReflectFieldObject *pFieldUNSA
                 break;
             }
         }
-    // drop through
+    FALLTHROUGH;
     case ELEMENT_TYPE_FNPTR:
     {
         value = 0;
@@ -2160,113 +2164,6 @@ FCIMPL2_IV(Object*, ReflectionInvocation::CreateEnum, ReflectClassBaseObject *pT
 FCIMPLEND
 
 #ifdef FEATURE_COMINTEROP
-
-static void TryGetClassFromProgID(STRINGREF className, STRINGREF server, OBJECTREF* pRefClass, DWORD bThrowOnError) {
-    CONTRACTL {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_COOPERATIVE;
-    }
-    CONTRACTL_END;
-
-    EX_TRY
-    {
-        // NOTE: this call enables GC
-        GetComClassFromProgID(className, server, pRefClass);
-    }
-    EX_CATCH
-    {
-        if (bThrowOnError)
-        {
-            EX_RETHROW;
-        }
-    }
-    EX_END_CATCH(SwallowAllExceptions)
-}
-
-// GetClassFromProgID
-// This method will return a Class object for a COM Classic object based
-//  upon its ProgID.  The COM Classic object is found and a wrapper object created
-FCIMPL3(Object*, ReflectionInvocation::GetClassFromProgID, StringObject* classNameUNSAFE,
-                                                           StringObject* serverUNSAFE,
-                                                           CLR_BOOL bThrowOnError) {
-    FCALL_CONTRACT;
-
-    REFLECTCLASSBASEREF refClass    = NULL;
-    STRINGREF           className   = (STRINGREF) classNameUNSAFE;
-    STRINGREF           server      = (STRINGREF) serverUNSAFE;
-
-    HELPER_METHOD_FRAME_BEGIN_RET_2(className, server);
-
-    GCPROTECT_BEGIN(refClass)
-
-    // Since we will be returning a type that represents a COM component, we need
-    // to make sure COM is started before we return it.
-    EnsureComStarted();
-
-    // Make sure a prog id was provided
-    if (className == NULL)
-        COMPlusThrowArgumentNull(W("progID"),W("ArgumentNull_String"));
-
-    TryGetClassFromProgID(className, server, (OBJECTREF*) &refClass, bThrowOnError);
-    GCPROTECT_END();
-
-    HELPER_METHOD_FRAME_END();
-    return OBJECTREFToObject(refClass);
-}
-FCIMPLEND
-
-static void TryGetClassFromCLSID(GUID clsid, STRINGREF server, OBJECTREF* pRefClass, DWORD bThrowOnError) {
-    CONTRACTL {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_COOPERATIVE;
-    }
-    CONTRACTL_END;
-
-    EX_TRY
-    {
-        // NOTE: this call enables GC
-        GetComClassFromCLSID(clsid, server, pRefClass);
-    }
-    EX_CATCH
-    {
-        if (bThrowOnError)
-        {
-            EX_RETHROW;
-        }
-    }
-    EX_END_CATCH(SwallowAllExceptions)
-}
-
-// GetClassFromCLSID
-// This method will return a Class object for a COM Classic object based
-//  upon its ProgID.  The COM Classic object is found and a wrapper object created
-FCIMPL3(Object*, ReflectionInvocation::GetClassFromCLSID, GUID clsid, StringObject* serverUNSAFE, CLR_BOOL bThrowOnError) {
-    FCALL_CONTRACT;
-
-    struct _gc {
-        REFLECTCLASSBASEREF refClass;
-        STRINGREF           server;
-    } gc;
-
-    gc.refClass = NULL;
-    gc.server   = (STRINGREF) serverUNSAFE;
-
-    HELPER_METHOD_FRAME_BEGIN_RET_PROTECT(gc.server);
-
-    // Since we will be returning a type that represents a COM component, we need
-    // to make sure COM is started before we return it.
-    EnsureComStarted();
-
-    TryGetClassFromCLSID(clsid, gc.server, (OBJECTREF*) &gc.refClass, bThrowOnError);
-
-    HELPER_METHOD_FRAME_END();
-    return OBJECTREFToObject(gc.refClass);
-}
-FCIMPLEND
-
-
 FCIMPL8(Object*, ReflectionInvocation::InvokeDispMethod, ReflectClassBaseObject* refThisUNSAFE,
                                                          StringObject* nameUNSAFE,
                                                          INT32 invokeAttr,
@@ -2382,14 +2279,6 @@ lExit: ;
 }
 FCIMPLEND
 
-//*************************************************************************************************
-//*************************************************************************************************
-//*************************************************************************************************
-//      ReflectionEnum
-//*************************************************************************************************
-//*************************************************************************************************
-//*************************************************************************************************
-
 FCIMPL1(Object *, ReflectionEnum::InternalGetEnumUnderlyingType, ReflectClassBaseObject *target) {
     FCALL_CONTRACT;
 
@@ -2400,7 +2289,7 @@ FCIMPL1(Object *, ReflectionEnum::InternalGetEnumUnderlyingType, ReflectClassBas
     OBJECTREF result = NULL;
 
     HELPER_METHOD_FRAME_BEGIN_RET_0();
-    MethodTable *pMT = MscorlibBinder::GetElementType(th.AsMethodTable()->GetInternalCorElementType());
+    MethodTable *pMT = CoreLibBinder::GetElementType(th.AsMethodTable()->GetInternalCorElementType());
     result = pMT->GetManagedClassObject();
     HELPER_METHOD_FRAME_END();
 
@@ -2423,7 +2312,6 @@ FCIMPL1(INT32, ReflectionEnum::InternalGetCorElementType, Object *pRefThis) {
     return pMT->GetClass_NoLogging()->GetInternalCorElementType();
 }
 FCIMPLEND
-#include <optdefault.h>
 
 //*******************************************************************************
 struct TempEnumValue
@@ -2679,7 +2567,7 @@ FCIMPL2(FC_BOOL_RET, ReflectionEnum::InternalEquals, Object *pRefThis, Object* p
 }
 FCIMPLEND
 
-// preform (this & flags) != flags
+// perform (this & flags) == flags
 FCIMPL2(FC_BOOL_RET, ReflectionEnum::InternalHasFlag, Object *pRefThis, Object* pRefFlags)
 {
     FCALL_CONTRACT;

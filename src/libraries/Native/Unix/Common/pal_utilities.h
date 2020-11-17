@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 #pragma once
 
@@ -45,6 +44,12 @@
 #define CONST_CAST(TYPE, X) CONST_CAST2(TYPE, const TYPE, (X))
 
 #define ARRAY_SIZE(a) (sizeof(a)/sizeof(a[0]))
+
+#if __has_attribute(fallthrough)
+#define FALLTHROUGH __attribute__((fallthrough))
+#else
+#define FALLTHROUGH
+#endif
 
 /**
  * Abstraction helper method to safely copy strings using strlcpy or strcpy_s

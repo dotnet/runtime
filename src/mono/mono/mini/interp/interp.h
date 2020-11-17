@@ -33,7 +33,8 @@ enum {
 	INTERP_OPT_INLINE = 1,
 	INTERP_OPT_CPROP = 2,
 	INTERP_OPT_SUPER_INSTRUCTIONS = 4,
-	INTERP_OPT_DEFAULT = INTERP_OPT_INLINE | INTERP_OPT_CPROP | INTERP_OPT_SUPER_INSTRUCTIONS
+	INTERP_OPT_BBLOCKS = 8,
+	INTERP_OPT_DEFAULT = INTERP_OPT_INLINE | INTERP_OPT_CPROP | INTERP_OPT_SUPER_INSTRUCTIONS | INTERP_OPT_BBLOCKS
 };
 
 typedef struct _InterpMethodArguments InterpMethodArguments;
@@ -48,6 +49,9 @@ MONO_API void mono_ee_interp_init (const char *);
 
 gpointer
 mono_wasm_get_interp_to_native_trampoline (MonoMethodSignature *sig);
+
+gpointer
+mono_wasm_get_native_to_interp_trampoline (MonoMethod *method, gpointer extra_arg);
 
 #endif
 

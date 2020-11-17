@@ -11,6 +11,7 @@
     <TestArchitectures>$(TargetArchitecture)</TestArchitectures>
     <TestInfraTargetFramework>$(NetCoreAppCurrent)</TestInfraTargetFramework>
     <TestRunnerAdditionalArguments>-notrait category=failing</TestRunnerAdditionalArguments>
+    <RunAnalyzers>false</RunAnalyzers>
   </PropertyGroup>
 
 </Project>

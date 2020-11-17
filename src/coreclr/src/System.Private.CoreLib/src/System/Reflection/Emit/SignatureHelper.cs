@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Buffers.Binary;
 using System.Diagnostics;
@@ -302,7 +301,7 @@ namespace System.Reflection.Emit
 
                     AddElementType(CorElementType.ELEMENT_TYPE_CMOD_OPT);
 
-                    int token = m_module!.GetTypeToken(t).Token;
+                    int token = m_module!.GetTypeToken(t);
                     Debug.Assert(!MetadataToken.IsNullToken(token));
                     AddToken(token);
                 }
@@ -325,7 +324,7 @@ namespace System.Reflection.Emit
 
                     AddElementType(CorElementType.ELEMENT_TYPE_CMOD_REQD);
 
-                    int token = m_module!.GetTypeToken(t).Token;
+                    int token = m_module!.GetTypeToken(t);
                     Debug.Assert(!MetadataToken.IsNullToken(token));
                     AddToken(token);
                 }
@@ -362,7 +361,7 @@ namespace System.Reflection.Emit
             else if (clsArgument is TypeBuilder)
             {
                 TypeBuilder clsBuilder = (TypeBuilder)clsArgument;
-                TypeToken tkType;
+                int tkType;
 
                 if (clsBuilder.Module.Equals(m_module))
                 {
@@ -385,7 +384,7 @@ namespace System.Reflection.Emit
             else if (clsArgument is EnumBuilder)
             {
                 TypeBuilder clsBuilder = ((EnumBuilder)clsArgument).m_typeBuilder;
-                TypeToken tkType;
+                int tkType;
 
                 if (clsBuilder.Module.Equals(m_module))
                 {
@@ -546,11 +545,11 @@ namespace System.Reflection.Emit
             AddData(rid);
         }
 
-        private void InternalAddTypeToken(TypeToken clsToken, CorElementType CorType)
+        private void InternalAddTypeToken(int clsToken, CorElementType CorType)
         {
             // Add a type token into signature. CorType will be either CorElementType.ELEMENT_TYPE_CLASS or CorElementType.ELEMENT_TYPE_VALUETYPE
             AddElementType(CorType);
-            AddToken(clsToken.Token);
+            AddToken(clsToken);
         }
 
         private unsafe void InternalAddRuntimeType(Type type)

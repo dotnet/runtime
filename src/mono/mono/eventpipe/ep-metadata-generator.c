@@ -108,12 +108,12 @@ metadata_generator_get_metadata_len (
 	bool has_v2_types = metadata_generator_has_v2_param_types (params, params_len);
 	*v2_len = 0;
 
-	// eventID			: 4 bytes
-	// eventName		: (eventName.Length + 1) * 2 bytes
-	// keywords			: 8 bytes
-	// eventVersion		: 4 bytes
-	// level			: 4 bytes
-	// parameterCount	: 4 bytes
+	// eventID              : 4 bytes
+	// eventName            : (eventName.Length + 1) * 2 bytes
+	// keywords             : 8 bytes
+	// eventVersion         : 4 bytes
+	// level                : 4 bytes
+	// parameterCount       : 4 bytes
 	*total_len = 24 + ((event_name_len + 1) * sizeof (ep_char16_t));
 
 	if (opcode != 0)
@@ -270,7 +270,7 @@ ep_metadata_generator_generate_event_metadata (
 		// If we have V2 metadata types, we need to have 0 params for V1
 		metadata_generator_write_uint32_to_buffer (buffer, total_metadata_len, &offset, 0);
 	} else {
-		EP_ASSERT (has_v2_types == false);
+		EP_ASSERT (!has_v2_types);
 
 		// Write the parameter count.
 		metadata_generator_write_uint32_to_buffer (buffer, total_metadata_len, &offset, params_len);
@@ -351,7 +351,7 @@ ep_parameter_desc_init (
 	EP_ASSERT (parameter_desc != NULL);
 
 	parameter_desc->type = type;
-	parameter_desc->element_type = 0;
+	parameter_desc->element_type = EP_PARAMETER_TYPE_EMPTY;
 	parameter_desc->name = name;
 
 	return parameter_desc;

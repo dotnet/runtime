@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Diagnostics;
 
@@ -22,6 +21,7 @@ namespace System.Runtime.InteropServices
 
         private IntPtr GetStdMarshaler(ref Guid riid, int dwDestContext, int mshlflags)
         {
+            Debug.Assert(OperatingSystem.IsWindows());
             IntPtr pUnknown = Marshal.GetIUnknownForObject(this);
             if (pUnknown != IntPtr.Zero)
             {
@@ -70,6 +70,7 @@ namespace System.Runtime.InteropServices
             }
             finally
             {
+                Debug.Assert(OperatingSystem.IsWindows());
                 Marshal.Release(pStandardMarshal);
             }
         }
@@ -92,6 +93,7 @@ namespace System.Runtime.InteropServices
             }
             finally
             {
+                Debug.Assert(OperatingSystem.IsWindows());
                 Marshal.Release(pStandardMarshal);
             }
         }

@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections;
 using System.Collections.Generic;
@@ -484,6 +483,7 @@ namespace System
         public extern void Initialize();
     }
 
+#pragma warning disable CA1822 // Mark members as static
     //----------------------------------------------------------------------------------------
     // ! READ THIS BEFORE YOU WORK ON THIS CLASS.
     //
@@ -620,4 +620,5 @@ namespace System
             ThrowHelper.ThrowNotSupportedException(ExceptionResource.NotSupported_FixedSizeCollection);
         }
     }
+#pragma warning restore CA1822
 }

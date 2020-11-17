@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Buffers.Text;
 using System.Diagnostics;
@@ -1353,6 +1352,7 @@ namespace System
 
         internal static unsafe string UInt32ToDecStr(uint value)
         {
+            // Intrinsified in mono interpreter
             int bufferLength = FormattingHelpers.CountDigits(value);
 
             // For single-digit values that are very common, especially 0 and 1, just return cached strings.

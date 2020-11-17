@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using Internal.TypeSystem;
 using Internal.JitInterface;
@@ -15,12 +14,12 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
         private readonly IMethodNode _targetMethod;
 
-        private readonly ModuleToken _methodToken;
+        private readonly MethodWithToken _methodToken;
 
         public DelegateCtorSignature(
             TypeDesc delegateType,
             IMethodNode targetMethod,
-            ModuleToken methodToken)
+            MethodWithToken methodToken)
         {
             _delegateType = delegateType;
             _targetMethod = targetMethod;
@@ -41,14 +40,13 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
             if (!relocsOnly)
             {
-                SignatureContext innerContext = builder.EmitFixup(factory, ReadyToRunFixupKind.DelegateCtor, _methodToken.Module, factory.SignatureContext);
+                SignatureContext innerContext = builder.EmitFixup(factory, ReadyToRunFixupKind.DelegateCtor, _methodToken.Token.Module, factory.SignatureContext);
 
                 builder.EmitMethodSignature(
-                    new MethodWithToken(_targetMethod.Method, _methodToken, constrainedType: null),
+                    _methodToken,
                     enforceDefEncoding: false,
                     enforceOwningType: false,
                     innerContext,
-                    isUnboxingStub: false,
                     isInstantiatingStub: _targetMethod.Method.HasInstantiation);
 
                 builder.EmitTypeSignature(_delegateType, innerContext);
@@ -90,7 +88,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             if (result != 0)
                 return result;
 
-            return _methodToken.CompareTo(otherNode._methodToken);
+            return _methodToken.CompareTo(otherNode._methodToken, comparer);
         }
     }
 }

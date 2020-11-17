@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Runtime.InteropServices;
 using Test.Cryptography;
@@ -186,7 +185,7 @@ MII
         {
             X509Certificate2 cert = X509Certificate2.CreateFromEncryptedPem(
                 TestData.RsaCertificate,
-                TestData.RsaEncryptedPkcs8Key, 
+                TestData.RsaEncryptedPkcs8Key,
                 "test");
 
             using (cert)
@@ -253,6 +252,16 @@ MII
             {
                 Assert.Equal("E844FA74BC8DCE46EF4F8605EA00008F161AB56F", cert.Thumbprint);
                 AssertKeysMatch(TestData.ECDsaEncryptedPkcs8Key, cert.GetECDsaPrivateKey, "test");
+            }
+        }
+
+        [Fact]
+        public static void CreateFromPem_ECDH_Pkcs8_Success()
+        {
+            using (X509Certificate2 cert = X509Certificate2.CreateFromPem(TestData.EcDhCertificate, TestData.EcDhPkcs8Key))
+            {
+                Assert.Equal("6EAE9D3E34F7672106585583AA4623B6CC5AE2F7", cert.Thumbprint);
+                AssertKeysMatch(TestData.EcDhPkcs8Key, cert.GetECDiffieHellmanPrivateKey);
             }
         }
 
@@ -391,6 +400,52 @@ MII
                 X509Certificate2.CreateFromEncryptedPemFile(null, default));
         }
 
+        [Fact]
+        public static void CreateFromPem_PublicOnly_IgnoresPrivateKey()
+        {
+            using X509Certificate2 cert = X509Certificate2.CreateFromPem($"{TestData.RsaCertificate}\n{TestData.RsaPkcs1Key}");
+            Assert.Equal("A33348E44A047A121F44E810E888899781E1FF19", cert.Thumbprint);
+            Assert.False(cert.HasPrivateKey);
+        }
+
+        [Fact]
+        public static void CreateFromPem_PublicOnly()
+        {
+            using X509Certificate2 cert = X509Certificate2.CreateFromPem(TestData.RsaCertificate);
+            Assert.Equal("A33348E44A047A121F44E810E888899781E1FF19", cert.Thumbprint);
+            Assert.False(cert.HasPrivateKey);
+        }
+
+        [Fact]
+        public static void CreateFromPem_PublicOnly_CryptographicException_Empty()
+        {
+            Assert.Throws<CryptographicException>(() => X509Certificate2.CreateFromPem(default));
+        }
+
+        [Fact]
+        public static void CreateFromPem_PublicOnly_CryptographicException_MalformedCertificate()
+        {
+            const string CertContents = @"
+-----BEGIN CERTIFICATE-----
+MII
+-----END CERTIFICATE-----
+";
+            Assert.Throws<CryptographicException>(() => X509Certificate2.CreateFromPem(CertContents));
+        }
+
+        [Fact]
+        public static void CreateFromPem_PublicOnly_CryptographicException_CertIsPkcs7()
+        {
+            string content = Convert.ToBase64String(TestData.Pkcs7ChainDerBytes);
+            string certContents = $@"
+-----BEGIN CERTIFICATE-----
+{content}
+-----END CERTIFICATE-----
+";
+            Assert.Throws<CryptographicException>(() =>
+                X509Certificate2.CreateFromPem(certContents));
+        }
+
         private static void AssertKeysMatch<T>(string keyPem, Func<T> keyLoader, string password = null) where T : AsymmetricAlgorithm
         {
             AsymmetricAlgorithm key = keyLoader();
@@ -400,6 +455,7 @@ MII
                 RSA => RSA.Create(),
                 DSA => DSA.Create(),
                 ECDsa => ECDsa.Create(),
+                ECDiffieHellman => ECDiffieHellman.Create(),
                 _ => null
             };
 
@@ -430,6 +486,21 @@ MII
                     case (DSA dsa, DSA dsaPem):
                         byte[] dsaSignature = dsa.SignData(data, HashAlgorithmName.SHA1);
                         Assert.True(dsaPem.VerifyData(data, dsaSignature, HashAlgorithmName.SHA1));
+                        break;
+                    case (ECDiffieHellman ecdh, ECDiffieHellman ecdhPem):
+                        ECCurve curve = ecdh.KeySize switch {
+                            256 => ECCurve.NamedCurves.nistP256,
+                            384 => ECCurve.NamedCurves.nistP384,
+                            521 => ECCurve.NamedCurves.nistP521,
+                            _ => throw new CryptographicException("Unknown key size")
+                        };
+
+                        using (ECDiffieHellman otherParty = ECDiffieHellman.Create(curve))
+                        {
+                            byte[] key1 = ecdh.DeriveKeyFromHash(otherParty.PublicKey, HashAlgorithmName.SHA256);
+                            byte[] key2 = ecdhPem.DeriveKeyFromHash(otherParty.PublicKey, HashAlgorithmName.SHA256);
+                            Assert.Equal(key1, key2);
+                        }
                         break;
                     default:
                         throw new CryptographicException("Unknown key algorithm");

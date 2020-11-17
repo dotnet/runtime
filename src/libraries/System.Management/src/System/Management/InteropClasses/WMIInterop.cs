@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections;
 using System.Runtime.InteropServices;
@@ -73,58 +72,6 @@ namespace System.Management
         ~IWbemClassObjectFreeThreaded()
         {
             Dispose_(true);
-        }
-
-        private void DeserializeFromBlob(byte[] rg)
-        {
-            IntPtr hGlobal = IntPtr.Zero;
-            System.Runtime.InteropServices.ComTypes.IStream stream = null;
-            try
-            {
-                // If something goes wrong, we want to make sure the object is invalidated
-                pWbemClassObject = IntPtr.Zero;
-
-                hGlobal = Marshal.AllocHGlobal(rg.Length);
-                Marshal.Copy(rg, 0, hGlobal, rg.Length);
-                stream = Interop.Ole32.CreateStreamOnHGlobal(hGlobal, false);
-                pWbemClassObject = Interop.Ole32.CoUnmarshalInterface(stream, IID_IWbemClassObject);
-            }
-            finally
-            {
-                if (stream != null)
-                    Marshal.ReleaseComObject(stream);
-                if (hGlobal != IntPtr.Zero)
-                    Marshal.FreeHGlobal(hGlobal);
-            }
-        }
-
-        private byte[] SerializeToBlob()
-        {
-            byte[] rg = null;
-            System.Runtime.InteropServices.ComTypes.IStream stream = null;
-            IntPtr pData = IntPtr.Zero;
-            try
-            {
-                // Stream will own the HGlobal
-                stream = Interop.Ole32.CreateStreamOnHGlobal(IntPtr.Zero, true);
-
-                Interop.Ole32.CoMarshalInterface(stream, IID_IWbemClassObject, pWbemClassObject, (uint)MSHCTX.MSHCTX_DIFFERENTMACHINE, IntPtr.Zero, (uint)MSHLFLAGS.MSHLFLAGS_TABLEWEAK);
-
-                System.Runtime.InteropServices.ComTypes.STATSTG statstg;
-                stream.Stat(out statstg, (int)STATFLAG.STATFLAG_DEFAULT);
-                rg = new byte[statstg.cbSize];
-                pData = Interop.Kernel32.GlobalLock(Interop.Ole32.GetHGlobalFromStream(stream));
-                Marshal.Copy(pData, rg, 0, (int)statstg.cbSize);
-            }
-            finally
-            {
-                if (pData != IntPtr.Zero)
-                    Interop.Kernel32.GlobalUnlock(pData);
-                if (stream != null)
-                    Marshal.ReleaseComObject(stream);
-            }
-            GC.KeepAlive(this);
-            return rg;
         }
 
         // Interface methods

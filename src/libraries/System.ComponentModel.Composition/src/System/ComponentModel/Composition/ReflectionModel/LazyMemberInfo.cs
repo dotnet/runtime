@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Globalization;
 using System.Linq;
@@ -98,14 +97,13 @@ namespace System.ComponentModel.Composition.ReflectionModel
             {
                 return MemberType.GetHashCode() ^ _accessorsCreator.GetHashCode();
             }
-            else
+
+            if (_accessors != null && _accessors[0] is MemberInfo accessor)
             {
-                if (_accessors == null || _accessors[0] == null)
-                {
-                    throw new Exception(SR.Diagnostic_InternalExceptionMessage);
-                }
-                return MemberType.GetHashCode() ^ _accessors[0]!.GetHashCode(); // TODO-NULLABLE https://github.com/dotnet/roslyn/issues/34644
+                return MemberType.GetHashCode() ^ accessor.GetHashCode();
             }
+
+            throw new Exception(SR.Diagnostic_InternalExceptionMessage);
         }
 
         public override bool Equals(object? obj)

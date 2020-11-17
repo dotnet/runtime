@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 #include "jitpch.h"
 #include "hwintrinsic.h"
@@ -25,16 +24,30 @@ static CORINFO_InstructionSet X64VersionOfIsa(CORINFO_InstructionSet isa)
             return InstructionSet_SSE_X64;
         case InstructionSet_SSE2:
             return InstructionSet_SSE2_X64;
+        case InstructionSet_SSE3:
+            return InstructionSet_SSE3_X64;
+        case InstructionSet_SSSE3:
+            return InstructionSet_SSSE3_X64;
         case InstructionSet_SSE41:
             return InstructionSet_SSE41_X64;
         case InstructionSet_SSE42:
             return InstructionSet_SSE42_X64;
+        case InstructionSet_AVX:
+            return InstructionSet_AVX_X64;
+        case InstructionSet_AVX2:
+            return InstructionSet_AVX2_X64;
+        case InstructionSet_AES:
+            return InstructionSet_AES_X64;
         case InstructionSet_BMI1:
             return InstructionSet_BMI1_X64;
         case InstructionSet_BMI2:
             return InstructionSet_BMI2_X64;
+        case InstructionSet_FMA:
+            return InstructionSet_FMA_X64;
         case InstructionSet_LZCNT:
             return InstructionSet_LZCNT_X64;
+        case InstructionSet_PCLMULQDQ:
+            return InstructionSet_PCLMULQDQ_X64;
         case InstructionSet_POPCNT:
             return InstructionSet_POPCNT_X64;
         default:
@@ -330,16 +343,21 @@ bool HWIntrinsicInfo::isFullyImplementedIsa(CORINFO_InstructionSet isa)
     {
         // These ISAs are fully implemented
         case InstructionSet_AES:
+        case InstructionSet_AES_X64:
         case InstructionSet_AVX:
+        case InstructionSet_AVX_X64:
         case InstructionSet_AVX2:
+        case InstructionSet_AVX2_X64:
         case InstructionSet_BMI1:
-        case InstructionSet_BMI2:
         case InstructionSet_BMI1_X64:
+        case InstructionSet_BMI2:
         case InstructionSet_BMI2_X64:
         case InstructionSet_FMA:
+        case InstructionSet_FMA_X64:
         case InstructionSet_LZCNT:
         case InstructionSet_LZCNT_X64:
         case InstructionSet_PCLMULQDQ:
+        case InstructionSet_PCLMULQDQ_X64:
         case InstructionSet_POPCNT:
         case InstructionSet_POPCNT_X64:
         case InstructionSet_SSE:
@@ -347,7 +365,9 @@ bool HWIntrinsicInfo::isFullyImplementedIsa(CORINFO_InstructionSet isa)
         case InstructionSet_SSE2:
         case InstructionSet_SSE2_X64:
         case InstructionSet_SSE3:
+        case InstructionSet_SSE3_X64:
         case InstructionSet_SSSE3:
+        case InstructionSet_SSSE3_X64:
         case InstructionSet_SSE41:
         case InstructionSet_SSE41_X64:
         case InstructionSet_SSE42:
@@ -380,16 +400,17 @@ bool HWIntrinsicInfo::isScalarIsa(CORINFO_InstructionSet isa)
     switch (isa)
     {
         case InstructionSet_BMI1:
-        case InstructionSet_BMI2:
         case InstructionSet_BMI1_X64:
+        case InstructionSet_BMI2:
         case InstructionSet_BMI2_X64:
         case InstructionSet_LZCNT:
         case InstructionSet_LZCNT_X64:
-        case InstructionSet_POPCNT:
-        case InstructionSet_POPCNT_X64:
         case InstructionSet_X86Base:
         case InstructionSet_X86Base_X64:
         {
+            // InstructionSet_POPCNT and InstructionSet_POPCNT_X64 are excluded
+            // even though they are "scalar" ISA because they depend on SSE4.2
+            // and Popcnt.IsSupported implies Sse42.IsSupported
             return true;
         }
 
@@ -530,7 +551,7 @@ GenTree* Compiler::impBaseIntrinsic(NamedIntrinsic        intrinsic,
                 break;
             }
 
-            __fallthrough;
+            FALLTHROUGH;
         }
 
         case NI_Vector128_As:
@@ -753,11 +774,10 @@ GenTree* Compiler::impBaseIntrinsic(NamedIntrinsic        intrinsic,
 
                 for (unsigned i = 0; i < sig->numArgs; i++)
                 {
-                    tmp        = gtNewArgList(impPopStack().val);
-                    tmp->gtOp2 = op1;
-                    op1        = tmp;
+                    tmp = gtNewListNode(impPopStack().val, tmp);
                 }
 
+                op1     = tmp;
                 retNode = gtNewSimdHWIntrinsicNode(retType, op1, intrinsic, baseType, simdSize);
             }
             break;
@@ -948,7 +968,7 @@ GenTree* Compiler::impBaseIntrinsic(NamedIntrinsic        intrinsic,
                 // Using software fallback if JIT/hardware don't support AVX instructions and YMM registers
                 return nullptr;
             }
-            __fallthrough;
+            FALLTHROUGH;
         }
 
         case NI_Vector128_WithElement:
@@ -1116,7 +1136,7 @@ GenTree* Compiler::impBaseIntrinsic(NamedIntrinsic        intrinsic,
                         valueOp = gtNewSimdHWIntrinsicNode(TYP_SIMD16, valueOp, NI_Vector128_CreateScalarUnsafe,
                                                            TYP_FLOAT, 16);
                         immNode->AsIntCon()->SetIconValue(imm8 * 16);
-                        __fallthrough;
+                        FALLTHROUGH;
                     }
                 }
 
@@ -1172,7 +1192,7 @@ GenTree* Compiler::impBaseIntrinsic(NamedIntrinsic        intrinsic,
                 // Using software fallback if JIT/hardware don't support AVX instructions and YMM registers
                 return nullptr;
             }
-            __fallthrough;
+            FALLTHROUGH;
         }
 
         case NI_Vector128_GetElement:
@@ -1310,7 +1330,7 @@ GenTree* Compiler::impBaseIntrinsic(NamedIntrinsic        intrinsic,
                                                             NI_SSE_Shuffle, TYP_FLOAT, 16);
                         return gtNewSimdHWIntrinsicNode(retType, vectorOp, NI_Vector128_ToScalar, TYP_FLOAT, 16);
                     }
-                    __fallthrough;
+                    FALLTHROUGH;
                 }
 
                 case TYP_UBYTE:

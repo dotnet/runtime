@@ -1,6 +1,5 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Buffers;
 using System.Collections.Generic;
@@ -293,6 +292,7 @@ namespace System.Formats.Cbor
             _keysRequireSorting = false;
             _keyEncodingRanges = null;
             _keyValuePairEncodingRanges = null;
+            _isTagContext = false;
         }
 
         private void PopDataItem(CborMajorType typeToPop)
@@ -314,7 +314,7 @@ namespace System.Formats.Cbor
 
             if (_isTagContext)
             {
-                // writer expecting value after a tag data item , cannot pop the current context
+                // writer expecting value after a tag data item, cannot pop the current context
                 throw new InvalidOperationException(SR.Format(SR.Cbor_PopMajorTypeMismatch, (int)CborMajorType.Tag));
             }
 

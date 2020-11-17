@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -141,6 +140,20 @@ namespace System.Collections.ObjectModel.Tests
             ReadOnlyDictionary<int, string> dictionary = new ReadOnlyDictionary<int, string>(dummyExpectedDict);
             IReadOnlyDictionary_T_Test<int, string> helper = new IReadOnlyDictionary_T_Test<int, string>(dictionary, expectedArr, s_generateItemFunc);
             helper.Values_get_Tests();
+        }
+
+        /// <summary>
+        /// Tests that the explicit IDictionary.Item[] implementation returns null on a non-existing key.
+        /// </summary>
+        [Fact]
+        public static void IDictionaryItemTests()
+        {
+            KeyValuePair<int, string>[] expectedArr = new KeyValuePair<int, string>[] {
+                new KeyValuePair<int, string>(1, "one")
+            };
+            DummyDictionary<int, string> dummyExpectedDict = new DummyDictionary<int, string>(expectedArr);
+            IDictionary dictionary = new ReadOnlyDictionary<int, string>(dummyExpectedDict);
+            Assert.Null(dictionary[2]);
         }
 
         /// <summary>

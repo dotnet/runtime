@@ -37,6 +37,7 @@
 #include <mono/metadata/mono-debug.h>
 #include <mono/utils/mono-mmap.h>
 #include <mono/utils/mono-state.h>
+#include <mono/utils/w32subset.h>
 
 #include "mini.h"
 #include "mini-amd64.h"
@@ -66,12 +67,12 @@ static LONG CALLBACK seh_unhandled_exception_filter(EXCEPTION_POINTERS* ep)
 #endif
 
 	if (mono_dump_start ())
-		mono_handle_native_crash (mono_get_signame (SIGSEGV), NULL, NULL, NULL);
+		mono_handle_native_crash (mono_get_signame (SIGSEGV), NULL, NULL);
 
 	return EXCEPTION_CONTINUE_SEARCH;
 }
 
-#if G_HAVE_API_SUPPORT(HAVE_CLASSIC_WINAPI_SUPPORT)
+#if HAVE_API_SUPPORT_WIN32_RESET_STKOFLW
 static gpointer
 get_win32_restore_stack (void)
 {
@@ -124,7 +125,7 @@ get_win32_restore_stack (void)
 	// _resetstkoflw unsupported on none desktop Windows platforms.
 	return NULL;
 }
-#endif /* G_HAVE_API_SUPPORT(HAVE_CLASSIC_WINAPI_SUPPORT) */
+#endif /* HAVE_API_SUPPORT_WIN32_RESET_STKOFLW */
 
 /*
  * Unhandled Exception Filter
@@ -876,7 +877,7 @@ altstack_handle_and_restore (MonoContext *ctx, MonoObject *obj, guint32 flags)
 
 	if (!ji || (!stack_ovf && !nullref)) {
 		if (mono_dump_start ())
-			mono_handle_native_crash (mono_get_signame (SIGSEGV), ctx, NULL, NULL);
+			mono_handle_native_crash (mono_get_signame (SIGSEGV), ctx, NULL);
 		// if couldn't dump or if mono_handle_native_crash returns, abort
 		abort ();
 	}
@@ -1905,7 +1906,7 @@ void mono_arch_code_chunk_destroy (void *chunk)
 }
 #endif /* MONO_ARCH_HAVE_UNWIND_TABLE */
 
-#if MONO_SUPPORT_TASKLETS && !defined(DISABLE_JIT)
+#if MONO_SUPPORT_TASKLETS && !defined(DISABLE_JIT) && !defined(ENABLE_NETCORE)
 MonoContinuationRestore
 mono_tasklets_arch_restore (void)
 {
@@ -1956,7 +1957,7 @@ mono_tasklets_arch_restore (void)
 	saved = start;
 	return (MonoContinuationRestore)saved;
 }
-#endif /* MONO_SUPPORT_TASKLETS && !defined(DISABLE_JIT) */
+#endif /* MONO_SUPPORT_TASKLETS && !defined(DISABLE_JIT) && !defined(ENABLE_NETCORE) */
 
 /*
  * mono_arch_setup_resume_sighandler_ctx:
@@ -1975,14 +1976,14 @@ mono_arch_setup_resume_sighandler_ctx (MonoContext *ctx, gpointer func)
 	MONO_CONTEXT_SET_IP (ctx, func);
 }
 
-#if !MONO_SUPPORT_TASKLETS || defined(DISABLE_JIT)
+#if (!MONO_SUPPORT_TASKLETS || defined(DISABLE_JIT)) && !defined(ENABLE_NETCORE)
 MonoContinuationRestore
 mono_tasklets_arch_restore (void)
 {
 	g_assert_not_reached ();
 	return NULL;
 }
-#endif /* !MONO_SUPPORT_TASKLETS || defined(DISABLE_JIT) */
+#endif /* (!MONO_SUPPORT_TASKLETS || defined(DISABLE_JIT)) && !defined(ENABLE_NETCORE) */
 
 void
 mono_arch_undo_ip_adjustment (MonoContext *ctx)

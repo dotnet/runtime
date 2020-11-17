@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 /*=====================================================================
 **
@@ -17,7 +16,7 @@
 #include <palsuite.h>
 
 
-int __cdecl main(int argc, char *argv[])
+PALTEST(exception_handling_PAL_TRY_LEAVE_FINALLY_test1_paltest_pal_try_leave_finally_test1, "exception_handling/PAL_TRY_LEAVE_FINALLY/test1/paltest_pal_try_leave_finally_test1")
 {
     BOOL bTry = FALSE;
     BOOL bFinally = FALSE;

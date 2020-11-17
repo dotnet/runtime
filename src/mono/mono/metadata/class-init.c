@@ -1008,8 +1008,6 @@ mono_class_create_bounded_array (MonoClass *eclass, guint32 rank, gboolean bound
 	char *name;
 	MonoImageSet* image_set;
 
-	g_assert (rank <= 255);
-
 	if (rank > 1)
 		/* bounded only matters for one-dimensional arrays */
 		bounded = FALSE;
@@ -1077,15 +1075,16 @@ mono_class_create_bounded_array (MonoClass *eclass, guint32 rank, gboolean bound
 	klass->class_kind = MONO_CLASS_ARRAY;
 
 	nsize = strlen (eclass->name);
-	name = (char *)g_malloc (nsize + 2 + rank + 1);
+	int maxrank = MIN (rank, 32);
+	name = (char *)g_malloc (nsize + 2 + maxrank + 1);
 	memcpy (name, eclass->name, nsize);
 	name [nsize] = '[';
-	if (rank > 1)
-		memset (name + nsize + 1, ',', rank - 1);
+	if (maxrank > 1)
+		memset (name + nsize + 1, ',', maxrank - 1);
 	if (bounded)
-		name [nsize + rank] = '*';
-	name [nsize + rank + bounded] = ']';
-	name [nsize + rank + bounded + 1] = 0;
+		name [nsize + maxrank] = '*';
+	name [nsize + maxrank + bounded] = ']';
+	name [nsize + maxrank + bounded + 1] = 0;
 	klass->name = image_set ? mono_image_set_strdup (image_set, name) : mono_image_strdup (image, name);
 	g_free (name);
 
@@ -2225,7 +2224,7 @@ mono_class_layout_fields (MonoClass *klass, int base_instance_size, int packing_
 
 	/* Publish the data */
 	mono_loader_lock ();
-	if (klass->instance_size && !klass->image->dynamic) {
+	if (klass->instance_size && !klass->image->dynamic && klass_byval_arg->type != MONO_TYPE_FNPTR) {
 		/* Might be already set using cached info */
 		if (klass->instance_size != instance_size) {
 			/* Emit info to help debugging */
@@ -3394,7 +3393,8 @@ mono_class_setup_methods (MonoClass *klass)
 			if (methods [i]->flags & METHOD_ATTRIBUTE_VIRTUAL)
 			{
 				if (method_is_reabstracted (methods[i]->flags)) {
-					methods [i]->is_reabstracted = 1;
+					if (!methods [i]->is_inflated)
+						mono_method_set_is_reabstracted (methods [i]);
 					continue;
 				}
 				methods [i]->slot = slot++;

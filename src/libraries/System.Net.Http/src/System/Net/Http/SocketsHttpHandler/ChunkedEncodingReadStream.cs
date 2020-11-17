@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Buffers.Text;
 using System.Diagnostics;
@@ -57,7 +56,6 @@ namespace System.Net.Http
                     if (_connection == null)
                     {
                         // Fully consumed the response in ReadChunksFromConnectionBuffer.
-                        if (HttpTelemetry.IsEnabled) LogRequestStop();
                         return 0;
                     }
 
@@ -193,7 +191,7 @@ namespace System.Net.Http
 
             public override Task CopyToAsync(Stream destination, int bufferSize, CancellationToken cancellationToken)
             {
-                ValidateCopyToArgs(this, destination, bufferSize);
+                ValidateCopyToArguments(destination, bufferSize);
 
                 return
                     cancellationToken.IsCancellationRequested ? Task.FromCanceled(cancellationToken) :
@@ -363,7 +361,6 @@ namespace System.Net.Http
                                     cancellationRegistration.Dispose();
                                     CancellationHelper.ThrowIfCancellationRequested(cancellationRegistration.Token);
 
-                                    if (HttpTelemetry.IsEnabled) LogRequestStop();
                                     _state = ParsingState.Done;
                                     _connection.CompleteResponse();
                                     _connection = null;
@@ -384,7 +381,7 @@ namespace System.Net.Http
                         default:
                         case ParsingState.Done: // shouldn't be called once we're done
                             Debug.Fail($"Unexpected state: {_state}");
-                            if (NetEventSource.IsEnabled)
+                            if (NetEventSource.Log.IsEnabled())
                             {
                                 NetEventSource.Error(this, $"Unexpected state: {_state}");
                             }
@@ -466,10 +463,16 @@ namespace System.Net.Http
                         if (cts == null) // only create the drain timer if we have to go async
                         {
                             TimeSpan drainTime = _connection._pool.Settings._maxResponseDrainTime;
+
+                            if (drainTime == TimeSpan.Zero)
+                            {
+                                return false;
+                            }
+
                             if (drainTime != Timeout.InfiniteTimeSpan)
                             {
                                 cts = new CancellationTokenSource((int)drainTime.TotalMilliseconds);
-                                ctr = cts.Token.Register(s => ((HttpConnection)s!).Dispose(), _connection);
+                                ctr = cts.Token.Register(static s => ((HttpConnection)s!).Dispose(), _connection);
                             }
                         }
 

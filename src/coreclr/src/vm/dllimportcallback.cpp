@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 //
 // File: DllImportCallback.cpp
 //
@@ -78,6 +77,10 @@ public:
         CONTRACTL_END;
 
         CrstHolder ch(&m_crst);
+
+#if defined(HOST_OSX) && defined(HOST_ARM64)
+        auto jitWriteEnableHolder = PAL_JITWriteEnable(true);
+#endif // defined(HOST_OSX) && defined(HOST_ARM64)
 
         if (m_pHead == NULL)
         {
@@ -1112,6 +1115,10 @@ void UMEntryThunk::Terminate()
 
     if (GetObjectHandle())
     {
+#if defined(HOST_OSX) && defined(HOST_ARM64)
+        auto jitWriteEnableHolder = PAL_JITWriteEnable(true);
+#endif // defined(HOST_OSX) && defined(HOST_ARM64)
+
         DestroyLongWeakHandle(GetObjectHandle());
         m_pObjectHandle = 0;
     }

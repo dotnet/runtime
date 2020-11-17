@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 #if defined(TARGET_ARM64)
 
@@ -119,6 +118,7 @@ static UINT64 Replicate_helper(UINT64 value, unsigned width, emitAttr size);
 // Method to do check if mov is redundant with respect to the last instruction.
 // If yes, the caller of this method can choose to omit current mov instruction.
 bool IsRedundantMov(instruction ins, emitAttr size, regNumber dst, regNumber src);
+bool IsRedundantLdStr(instruction ins, regNumber reg1, regNumber reg2, ssize_t imm, emitAttr size, insFormat fmt);
 
 /************************************************************************
 *

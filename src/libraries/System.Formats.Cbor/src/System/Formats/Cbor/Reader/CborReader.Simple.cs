@@ -1,6 +1,5 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Buffers.Binary;
 
@@ -22,7 +21,7 @@ namespace System.Formats.Cbor
         ///   there was an unexpected end of CBOR encoding data. -or-
         ///   the next value uses a CBOR encoding that is not valid under the current conformance mode.
         /// </exception>
-        internal Half ReadHalf()
+        public Half ReadHalf()
         {
             CborInitialByte header = PeekInitialByte(expectedType: CborMajorType.Simple);
             ReadOnlySpan<byte> buffer = GetRemainingBytes();

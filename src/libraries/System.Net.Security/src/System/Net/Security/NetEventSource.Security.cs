@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Diagnostics.Tracing;
 using System.Globalization;
@@ -12,7 +11,7 @@ using System.Security.Cryptography.X509Certificates;
 
 namespace System.Net
 {
-    [EventSource(Name = "Microsoft-System-Net-Security", LocalizationResources = "FxResources.System.Net.Security.SR")]
+    [EventSource(Name = "Private.InternalDiagnostics.System.Net.Security", LocalizationResources = "FxResources.System.Net.Security.SR")]
     internal sealed partial class NetEventSource
     {
         private const int SecureChannelCtorId = NextAvailableEventId;
@@ -88,7 +87,7 @@ namespace System.Net
         }
 
         [Event(SslStreamCtorId, Keywords = Keywords.Default, Level = EventLevel.Informational)]
-        private unsafe void SslStreamCtor(string thisOrContextObject, string? localId, string? remoteId) =>
+        private void SslStreamCtor(string thisOrContextObject, string? localId, string? remoteId) =>
               WriteEvent(SslStreamCtorId, thisOrContextObject, localId, remoteId);
 
         [NonEvent]
@@ -101,7 +100,7 @@ namespace System.Net
         }
 
         [Event(SecureChannelCtorId, Keywords = Keywords.Default, Level = EventLevel.Informational)]
-        private unsafe void SecureChannelCtor(string sslStream, string hostname, int secureChannelHash, int clientCertificatesCount, EncryptionPolicy encryptionPolicy) =>
+        private void SecureChannelCtor(string sslStream, string hostname, int secureChannelHash, int clientCertificatesCount, EncryptionPolicy encryptionPolicy) =>
             WriteEvent(SecureChannelCtorId, sslStream, hostname, secureChannelHash, clientCertificatesCount, (int)encryptionPolicy);
 
         [NonEvent]
@@ -285,7 +284,7 @@ namespace System.Net
             WriteEvent(UsingCachedCredentialId, secureChannelHash);
 
         [Event(SspiSelectedCipherSuitId, Keywords = Keywords.Default, Level = EventLevel.Informational)]
-        public unsafe void SspiSelectedCipherSuite(
+        public void SspiSelectedCipherSuite(
             string process,
             SslProtocols sslProtocol,
             CipherAlgorithmType cipherAlgorithm,

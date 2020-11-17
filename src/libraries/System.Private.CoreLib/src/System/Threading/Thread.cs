@@ -1,13 +1,14 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
+using System.Runtime.CompilerServices;
 using System.Runtime.ConstrainedExecution;
 using System.Security.Principal;
+using System.Runtime.Versioning;
 
 namespace System.Threading
 {
@@ -154,7 +155,14 @@ namespace System.Threading
             }
         }
 
-        public static Thread CurrentThread => t_currentThread ?? InitializeCurrentThread();
+        public static Thread CurrentThread
+        {
+            [Intrinsic]
+            get
+            {
+                return t_currentThread ?? InitializeCurrentThread();
+            }
+        }
 
         public ExecutionContext? ExecutionContext => ExecutionContext.Capture();
 
@@ -171,22 +179,81 @@ namespace System.Threading
                     }
 
                     _name = value;
-
                     ThreadNameChanged(value);
+                    if (value != null)
+                    {
+                        _mayNeedResetForThreadPool = true;
+                    }
                 }
             }
         }
 
+        internal void SetThreadPoolWorkerThreadName()
+        {
+            Debug.Assert(this == CurrentThread);
+            Debug.Assert(IsThreadPoolThread);
+
+            lock (this)
+            {
+                // Bypass the exception from setting the property
+                _name = ThreadPool.WorkerThreadName;
+                ThreadNameChanged(ThreadPool.WorkerThreadName);
+                _name = null;
+            }
+        }
+
+#if !CORECLR
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal void ResetThreadPoolThread()
+        {
+            Debug.Assert(this == CurrentThread);
+            Debug.Assert(!IsThreadStartSupported || IsThreadPoolThread); // there are no dedicated threadpool threads on runtimes where we can't start threads
+
+            if (_mayNeedResetForThreadPool)
+            {
+                ResetThreadPoolThreadSlow();
+            }
+        }
+#endif
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        private void ResetThreadPoolThreadSlow()
+        {
+            Debug.Assert(this == CurrentThread);
+            Debug.Assert(!IsThreadStartSupported || IsThreadPoolThread); // there are no dedicated threadpool threads on runtimes where we can't start threads
+            Debug.Assert(_mayNeedResetForThreadPool);
+
+            _mayNeedResetForThreadPool = false;
+
+            if (_name != null)
+            {
+                SetThreadPoolWorkerThreadName();
+            }
+
+            if (!IsBackground)
+            {
+                IsBackground = true;
+            }
+
+            if (Priority != ThreadPriority.Normal)
+            {
+                Priority = ThreadPriority.Normal;
+            }
+        }
+
+        [Obsolete(Obsoletions.ThreadAbortMessage, DiagnosticId = Obsoletions.ThreadAbortDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
         public void Abort()
         {
             throw new PlatformNotSupportedException(SR.PlatformNotSupported_ThreadAbort);
         }
 
+        [Obsolete(Obsoletions.ThreadAbortMessage, DiagnosticId = Obsoletions.ThreadAbortDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
         public void Abort(object? stateInfo)
         {
             throw new PlatformNotSupportedException(SR.PlatformNotSupported_ThreadAbort);
         }
 
+        [Obsolete(Obsoletions.ThreadAbortMessage, DiagnosticId = Obsoletions.ThreadAbortDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
         public static void ResetAbort()
         {
             throw new PlatformNotSupportedException(SR.PlatformNotSupported_ThreadAbort);
@@ -225,15 +292,18 @@ namespace System.Threading
             set => TrySetApartmentState(value);
         }
 
+        [SupportedOSPlatform("windows")]
         public void SetApartmentState(ApartmentState state)
         {
-            if (!TrySetApartmentState(state))
-            {
-                throw GetApartmentStateChangeFailedException();
-            }
+            SetApartmentState(state, throwOnError:true);
         }
 
         public bool TrySetApartmentState(ApartmentState state)
+        {
+            return SetApartmentState(state, throwOnError:false);
+        }
+
+        private bool SetApartmentState(ApartmentState state, bool throwOnError)
         {
             switch (state)
             {
@@ -246,7 +316,7 @@ namespace System.Threading
                     throw new ArgumentOutOfRangeException(nameof(state), SR.ArgumentOutOfRange_Enum);
             }
 
-            return TrySetApartmentStateUnchecked(state);
+            return SetApartmentStateUnchecked(state, throwOnError);
         }
 
         [Obsolete("Thread.GetCompressedStack is no longer supported. Please use the System.Threading.CompressedStack class")]
@@ -276,7 +346,7 @@ namespace System.Threading
         public static long VolatileRead(ref long address) => Volatile.Read(ref address);
         public static IntPtr VolatileRead(ref IntPtr address) => Volatile.Read(ref address);
         [return: NotNullIfNotNull("address")]
-        public static object? VolatileRead(ref object? address) => Volatile.Read(ref address);
+        public static object? VolatileRead([NotNullIfNotNull("address")] ref object? address) => Volatile.Read(ref address);
         [CLSCompliant(false)]
         public static sbyte VolatileRead(ref sbyte address) => Volatile.Read(ref address);
         public static float VolatileRead(ref float address) => Volatile.Read(ref address);

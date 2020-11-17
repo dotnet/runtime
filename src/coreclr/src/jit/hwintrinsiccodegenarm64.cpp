@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 #include "jitpch.h"
 #ifdef _MSC_VER
@@ -205,17 +204,17 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
         case 4:
             assert(intrin.op4 != nullptr);
             op4Reg = intrin.op4->GetRegNum();
-            __fallthrough;
+            FALLTHROUGH;
 
         case 3:
             assert(intrin.op3 != nullptr);
             op3Reg = intrin.op3->GetRegNum();
-            __fallthrough;
+            FALLTHROUGH;
 
         case 2:
             assert(intrin.op2 != nullptr);
             op2Reg = intrin.op2->GetRegNum();
-            __fallthrough;
+            FALLTHROUGH;
 
         case 1:
             assert(intrin.op1 != nullptr);
@@ -718,6 +717,16 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
                 }
             }
             break;
+
+            case NI_AdvSimd_Arm64_StorePair:
+            case NI_AdvSimd_Arm64_StorePairNonTemporal:
+                GetEmitter()->emitIns_R_R_R(ins, emitSize, op2Reg, op3Reg, op1Reg);
+                break;
+
+            case NI_AdvSimd_Arm64_StorePairScalar:
+            case NI_AdvSimd_Arm64_StorePairScalarNonTemporal:
+                GetEmitter()->emitIns_R_R_R(ins, emitTypeSize(intrin.baseType), op2Reg, op3Reg, op1Reg);
+                break;
 
             case NI_Vector64_CreateScalarUnsafe:
             case NI_Vector128_CreateScalarUnsafe:

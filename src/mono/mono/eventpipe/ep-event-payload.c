@@ -96,23 +96,22 @@ ep_event_payload_init_2 (
 	event_payload->event_data_len = event_data_len;
 	event_payload->allocated_data = false;
 
-	uint32_t tmp_size = 0;
-	bool overflow = false;
+	size_t tmp_size = 0;
 	for (uint32_t i = 0; i < event_data_len; ++i) {
-		if ((UINT32_MAX - tmp_size) < ep_event_data_get_size (&event_data [i])) {
-			overflow = true;
+		tmp_size += ep_event_data_get_size (&event_data [i]);
+		if (tmp_size < ep_event_data_get_size (&event_data [i])) {
+			tmp_size = (size_t)UINT32_MAX + 1;
 			break;
 		}
-		tmp_size += ep_event_data_get_size (&event_data [i]);
 	}
 
-	if (overflow) {
+	if (tmp_size > UINT32_MAX) {
 		// If there is an overflow, drop the data and create an empty payload
 		event_payload->event_data = NULL;
 		event_payload->event_data_len = 0;
 		event_payload->size = 0;
 	} else {
-		event_payload->size = tmp_size;
+		event_payload->size = (uint32_t)tmp_size;
 	}
 
 	return event_payload;
@@ -140,11 +139,11 @@ ep_event_payload_copy_data (
 	if (event_payload->size > 0) {
 		if (ep_event_payload_is_flattened (event_payload)) {
 			memcpy (dst, event_payload->data, event_payload->size);
-		} else if (event_payload->data != NULL) {
+		} else if (event_payload->event_data != NULL) {
 			uint32_t offset = 0;
 			EventData *event_data = event_payload->event_data;
 			for (uint32_t i = 0; i < event_payload->event_data_len; ++i) {
-				EP_ASSERT ((offset + ep_event_data_get_size (&event_data[i])) < event_payload->size);
+				EP_ASSERT ((offset + ep_event_data_get_size (&event_data[i])) <= event_payload->size);
 				memcpy (dst + offset, (uint8_t *)ep_event_data_get_ptr (&event_data[i]), ep_event_data_get_size (&event_data[i]));
 				offset += ep_event_data_get_size (&event_data[i]);
 			}

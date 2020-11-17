@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System;
 using System.Diagnostics;
@@ -96,6 +95,11 @@ namespace Microsoft.Extensions.Primitives
 
             private void RegisterChangeTokenCallback(IChangeToken token)
             {
+                if (token is null)
+                {
+                    return;
+                }
+
                 IDisposable registraton = token.RegisterChangeCallback(s => ((ChangeTokenRegistration<TState>)s).OnChangeTokenFired(), this);
 
                 SetDisposable(registraton);

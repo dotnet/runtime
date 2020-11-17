@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 //
 // This file is the interface to NGen (*N*ative code *G*eneration),
 // which compiles IL modules to machine code ahead-of-time.
@@ -23,7 +22,7 @@
 // ngen events. (Roughly 200KB of space including secondary log file.)
 #define DEFAULT_APPLOCAL_WIDE_LOG_SIZE (100*1024)
 
-#define NGEN_LOG_HEADER_TEXT W("To learn about increasing the verbosity of the NGen log files please see http://go.microsoft.com/fwlink/?linkid=210113\r\n")
+#define NGEN_LOG_HEADER_TEXT W("To learn about increasing the verbosity of the NGen log files please see https://go.microsoft.com/fwlink/?linkid=210113\r\n")
 
 // supported debug info types
 enum DebugType

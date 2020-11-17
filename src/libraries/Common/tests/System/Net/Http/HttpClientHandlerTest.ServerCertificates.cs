@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -109,7 +108,7 @@ namespace System.Net.Http.Functional.Tests
                 handler.ServerCertificateCustomValidationCallback = TestHelper.AllowAllCertificates;
                 handler.Proxy = new WebProxy(proxyServer.Uri)
                 {
-                    Credentials = new NetworkCredential("rightusername", "rightpassword")
+                    Credentials = new NetworkCredential("user", "password")
                 };
 
                 const string content = "This is a test";
@@ -311,7 +310,6 @@ namespace System.Net.Http.Functional.Tests
         public static readonly object[][] CertificateValidationServersAndExpectedPolicies =
         {
             new object[] { Configuration.Http.ExpiredCertRemoteServer, SslPolicyErrors.RemoteCertificateChainErrors },
-            new object[] { Configuration.Http.SelfSignedCertRemoteServer, SslPolicyErrors.RemoteCertificateChainErrors },
             new object[] { Configuration.Http.WrongHostNameCertRemoteServer , SslPolicyErrors.RemoteCertificateNameMismatch},
         };
 
@@ -363,6 +361,38 @@ namespace System.Net.Http.Functional.Tests
             {
                 // Testing on old Windows versions can hit https://github.com/dotnet/runtime/issues/17005
                 // Ignore SEC_E_BUFFER_TOO_SMALL error on such cases.
+            }
+        }
+
+        [Fact]
+        public async Task UseCallback_SelfSignedCertificate_ExpectedPolicyErrors()
+        {
+            using (HttpClientHandler handler = CreateHttpClientHandler())
+            using (HttpClient client = CreateHttpClient(handler))
+            {
+                bool callbackCalled = false;
+                X509Certificate2 certificate = TestHelper.CreateServerSelfSignedCertificate();
+
+                handler.ServerCertificateCustomValidationCallback = (request, cert, chain, errors) =>
+                {
+                    callbackCalled = true;
+                    Assert.NotNull(request);
+                    Assert.NotNull(cert);
+                    Assert.NotNull(chain);
+                    Assert.Equal(SslPolicyErrors.RemoteCertificateChainErrors, errors);
+                    return true;
+                };
+
+                var options = new LoopbackServer.Options { UseSsl = true, Certificate = certificate };
+
+                await LoopbackServer.CreateServerAsync(async (server, url) =>
+                {
+                    await TestHelper.WhenAllCompletedOrAnyFailed(
+                        server.AcceptConnectionSendResponseAndCloseAsync(),
+                        client.GetAsync($"https://{certificate.GetNameInfo(X509NameType.SimpleName, false)}:{url.Port}/"));
+                }, options);
+
+                Assert.True(callbackCalled);
             }
         }
 

@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System;
 using System.Collections.Concurrent;
@@ -21,7 +20,7 @@ namespace Microsoft.Win32.SystemEventsTests
         /// </summary>
         public const int TimerInterval = 10;
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsNanoServer))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsNanoNorServerCore))]
         public void CreateTimerInvalidInterval()
         {
             Assert.Throws<ArgumentException>(() => SystemEvents.CreateTimer(0));
@@ -30,7 +29,7 @@ namespace Microsoft.Win32.SystemEventsTests
         }
 
         [ActiveIssue("https://github.com/dotnet/runtime/issues/25920")]
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsNanoServer))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsNanoNorServerCore))]
         public void TimerElapsedSignaled()
         {
             var elapsed = new AutoResetEvent(false);
@@ -77,7 +76,7 @@ namespace Microsoft.Win32.SystemEventsTests
             }
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsNanoServer))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsNanoNorServerCore))]
         public void ConcurrentTimers()
         {
             const int NumConcurrentTimers = 10;
@@ -131,7 +130,7 @@ namespace Microsoft.Win32.SystemEventsTests
         }
 
         [OuterLoop]
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsNanoServer))]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsNanoNorServerCore))]
         [InlineData(500)]  // .5s
         [InlineData(1000)]  // 1s
         [InlineData(2000)]  // 2s
@@ -140,7 +139,7 @@ namespace Microsoft.Win32.SystemEventsTests
         public void TimerElapsedIsRoughlyEquivalentToInterval(int interval)
         {
             const double permittedProportionUnder = -0.1;
-            const double permittedProportionOver = 0.5;
+            const double permittedProportionOver = 5.0;
             var elapsed = new AutoResetEvent(false);
             IntPtr timer = IntPtr.Zero;
             var stopwatch = new Stopwatch();

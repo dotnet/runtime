@@ -1,6 +1,5 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System;
 using System.Collections.Generic;
@@ -123,7 +122,7 @@ public class AppleAppBuilderTask : Task
             throw new ArgumentException($"ProjectName='{ProjectName}' should not contain spaces");
         }
 
-        string[] excludes = new string[0];
+        string[] excludes = Array.Empty<string>();
         if (ExcludeFromAppDir != null)
         {
             excludes = ExcludeFromAppDir
@@ -144,7 +143,7 @@ public class AppleAppBuilderTask : Task
         {
             // use AOT files if available
             var obj = file.GetMetadata("AssemblerFile");
-            if (!String.IsNullOrEmpty(obj))
+            if (!string.IsNullOrEmpty(obj))
             {
                 assemblerFiles.Add(obj);
             }
@@ -154,11 +153,6 @@ public class AppleAppBuilderTask : Task
         {
             throw new InvalidOperationException("Need list of AOT files for device builds.");
         }
-
-        // generate modules.m
-        GenerateLinkAllFile(
-            assemblerFiles,
-            Path.Combine(binDir, "modules.m"));
 
         if (GenerateXcodeProject)
         {
@@ -174,66 +168,11 @@ public class AppleAppBuilderTask : Task
                 }
                 else
                 {
-                    AppBundlePath = Xcode.BuildAppBundle(
-                        Path.Combine(binDir, ProjectName, ProjectName + ".xcodeproj"),
-                        Arch, Optimized, DevTeamProvisioning);
+                    AppBundlePath = Xcode.BuildAppBundle(XcodeProjectPath, Arch, Optimized, DevTeamProvisioning);
                 }
             }
         }
 
         return true;
-    }
-
-    private static void GenerateLinkAllFile(IEnumerable<string> asmFiles, string outputFile)
-    {
-        //  Generates 'modules.m' in order to register all managed libraries
-        //
-        //
-        // extern void *mono_aot_module_Lib1_info;
-        // extern void *mono_aot_module_Lib2_info;
-        // ...
-        //
-        // void mono_ios_register_modules (void)
-        // {
-        //     mono_aot_register_module (mono_aot_module_Lib1_info);
-        //     mono_aot_register_module (mono_aot_module_Lib2_info);
-        //     ...
-        // }
-
-        Utils.LogInfo("Generating 'modules.m'...");
-
-        var lsDecl = new StringBuilder();
-        lsDecl
-            .AppendLine("#include <mono/jit/jit.h>")
-            .AppendLine("#include <TargetConditionals.h>")
-            .AppendLine()
-            .AppendLine("#if TARGET_OS_IPHONE && (!TARGET_IPHONE_SIMULATOR || USE_AOT_FOR_SIMULATOR)")
-            .AppendLine();
-
-        var lsUsage = new StringBuilder();
-        lsUsage
-            .AppendLine("void mono_ios_register_modules (void)")
-            .AppendLine("{");
-        foreach (string asmFile in asmFiles)
-        {
-            string symbol = "mono_aot_module_" +
-                            Path.GetFileName(asmFile)
-                                .Replace(".dll.s", "")
-                                .Replace(".", "_")
-                                .Replace("-", "_") + "_info";
-
-            lsDecl.Append("extern void *").Append(symbol).Append(';').AppendLine();
-            lsUsage.Append("\tmono_aot_register_module (").Append(symbol).Append(");").AppendLine();
-        }
-        lsDecl
-            .AppendLine()
-            .Append(lsUsage)
-            .AppendLine("}")
-            .AppendLine()
-            .AppendLine("#endif")
-            .AppendLine();
-
-        File.WriteAllText(outputFile, lsDecl.ToString());
-        Utils.LogInfo($"Saved to {outputFile}.");
     }
 }

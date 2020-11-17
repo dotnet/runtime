@@ -1,0 +1,7 @@
+<linker>
+  <assembly fullname="System.Runtime.Serialization.Formatters">
+    <type fullname="System.LocalAppContextSwitches">
+      <method signature="System.Boolean get_BinaryFormatterEnabled()" body="stub" value="false" feature="System.Runtime.Serialization.EnableUnsafeBinaryFormatterSerialization" featurevalue="false" />
+    </type>
+  </assembly>
+</linker>

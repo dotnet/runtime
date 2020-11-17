@@ -1,6 +1,5 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using Microsoft.DotNet.CoreSetup.Test;
 using NuGet.Packaging;
@@ -35,26 +34,12 @@ namespace Microsoft.DotNet.CoreSetup.Packaging.Tests
         {
             id = id ?? project;
 
-            string nuspecPath = Path.Combine(
-                dirs.BaseArtifactsFolder,
-                "packages",
-                dirs.Configuration,
-                "specs",
-                $"{id}.nuspec");
-
-            if (!File.Exists(nuspecPath))
-            {
-                return null;
-            }
-
-            PackageIdentity builtIdentity = new NuspecReader(nuspecPath).GetIdentity();
-
             string nupkgPath = Path.Combine(
                 dirs.BaseArtifactsFolder,
                 "packages",
                 dirs.Configuration,
                 "Shipping",
-                $"{builtIdentity}.nupkg");
+                $"{id}.{dirs.MicrosoftNETCoreAppVersion}.nupkg");
 
             // If the nuspec exists, the nupkg should exist.
             Assert.True(File.Exists(nupkgPath));
@@ -107,10 +92,7 @@ namespace Microsoft.DotNet.CoreSetup.Packaging.Tests
             IsRuntimeSpecificPack();
 
             HasOnlyTheseDataFiles(
-                "data/RuntimeList.xml",
-                "data/PlatformManifest.txt");
-
-            HasGoodPlatformManifest();
+                "data/RuntimeList.xml");
 
             ContainsFrameworkList("RuntimeList.xml");
         }

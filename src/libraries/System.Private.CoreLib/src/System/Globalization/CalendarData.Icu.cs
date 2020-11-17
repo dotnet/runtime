@@ -1,9 +1,9 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Runtime.InteropServices;
 using System.Text;
 using Internal.Runtime.CompilerServices;
 
@@ -122,7 +122,7 @@ namespace System.Globalization
             Debug.Assert(!GlobalizationMode.Invariant);
 
             return Interop.CallStringMethod(
-                (buffer, locale, id, type) =>
+                static (buffer, locale, id, type) =>
                 {
                     fixed (char* bufferPtr = buffer)
                     {
@@ -425,20 +425,22 @@ namespace System.Globalization
 
         private static unsafe bool EnumCalendarInfo(string localeName, CalendarId calendarId, CalendarDataType dataType, ref IcuEnumCalendarsData callbackContext)
         {
-            return Interop.Globalization.EnumCalendarInfo(EnumCalendarInfoCallback, localeName, calendarId, dataType, (IntPtr)Unsafe.AsPointer(ref callbackContext));
+            return Interop.Globalization.EnumCalendarInfo(&EnumCalendarInfoCallback, localeName, calendarId, dataType, (IntPtr)Unsafe.AsPointer(ref callbackContext));
         }
 
-        private static unsafe void EnumCalendarInfoCallback(string calendarString, IntPtr context)
+        [UnmanagedCallersOnly]
+        private static unsafe void EnumCalendarInfoCallback(char* calendarStringPtr, IntPtr context)
         {
             try
             {
+                var calendarStringSpan = new ReadOnlySpan<char>(calendarStringPtr, string.wcslen(calendarStringPtr));
                 ref IcuEnumCalendarsData callbackContext = ref Unsafe.As<byte, IcuEnumCalendarsData>(ref *(byte*)context);
 
                 if (callbackContext.DisallowDuplicates)
                 {
                     foreach (string existingResult in callbackContext.Results)
                     {
-                        if (string.Equals(calendarString, existingResult, StringComparison.Ordinal))
+                        if (string.CompareOrdinal(calendarStringSpan, existingResult) == 0)
                         {
                             // the value is already in the results, so don't add it again
                             return;
@@ -446,7 +448,7 @@ namespace System.Globalization
                     }
                 }
 
-                callbackContext.Results.Add(calendarString);
+                callbackContext.Results.Add(calendarStringSpan.ToString());
             }
             catch (Exception e)
             {

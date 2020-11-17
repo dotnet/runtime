@@ -106,6 +106,13 @@ while :; do
             __UbuntuRepo="http://ftp.debian.org/debian/"
             __CodeName=jessie
             ;;
+        s390x)
+            __BuildArch=s390x
+            __UbuntuArch=s390x
+            __UbuntuRepo="http://ports.ubuntu.com/ubuntu-ports/"
+            __UbuntuPackages=$(echo ${__UbuntuPackages} | sed 's/ libunwind8-dev//')
+            unset __LLDB_Package
+            ;;
         x86)
             __BuildArch=x86
             __UbuntuArch=i386
@@ -167,8 +174,8 @@ while :; do
             __LLDB_Package="liblldb-6.0-dev"
             ;;
         tizen)
-            if [ "$__BuildArch" != "armel" ]; then
-                echo "Tizen is available only for armel."
+            if [ "$__BuildArch" != "armel" ] && [ "$__BuildArch" != "arm64" ]; then
+                echo "Tizen is available only for armel and arm64."
                 usage;
                 exit 1;
             fi
@@ -329,6 +336,7 @@ elif [[ -n $__CodeName ]]; then
     chroot $__RootfsDir apt-get -f -y install
     chroot $__RootfsDir apt-get -y install $__UbuntuPackages
     chroot $__RootfsDir symlinks -cr /usr
+    chroot $__RootfsDir apt clean
 
     if [ $__SkipUnmount == 0 ]; then
         umount $__RootfsDir/* || true

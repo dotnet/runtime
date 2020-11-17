@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 // ===========================================================================
 // File: JITinterfaceCpu.CPP
@@ -549,9 +548,7 @@ int WriteBarrierManager::UpdateEphemeralBounds(bool isRuntimeSuspended)
                 stompWBCompleteActions |= SWB_ICACHE_FLUSH;
             }
         }
-        //
-        // INTENTIONAL FALL-THROUGH!
-        //
+        FALLTHROUGH;
         case WRITE_BARRIER_PREGROW64:
 #ifdef FEATURE_USE_SOFTWARE_WRITE_WATCH_FOR_GC_HEAP
         case WRITE_BARRIER_WRITE_WATCH_PREGROW64:

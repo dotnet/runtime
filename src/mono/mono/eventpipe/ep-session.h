@@ -24,8 +24,8 @@ struct _EventPipeSession {
 #else
 struct _EventPipeSession_Internal {
 #endif
-	// When the session is of IPC type, this becomes a handle to the streaming thread.
-	EventPipeThread ipc_streaming_thread;
+	// When the session is of IPC type, this becomes a reference to the streaming thread.
+	EventPipeThread *ipc_streaming_thread;
 	// Event object used to signal Disable that the IPC streaming thread is done.
 	ep_rt_wait_event_handle_t rt_thread_shutdown_event;
 	// The set of configurations for each provider in the session.
@@ -34,8 +34,10 @@ struct _EventPipeSession_Internal {
 	EventPipeBufferManager *buffer_manager;
 	// Object used to flush event data (File, IPC stream, etc.).
 	EventPipeFile *file;
+	// For synchoronous sessions.
+	EventPipeSessionSynchronousCallback synchronous_callback;
 	// Start date and time in UTC.
-	ep_systemtime_t session_start_time;
+	ep_system_timestamp_t session_start_time;
 	// Start timestamp.
 	ep_timestamp_t session_start_timestamp;
 	uint32_t index;
@@ -51,6 +53,11 @@ struct _EventPipeSession_Internal {
 	EventPipeSerializationFormat format;
 	// For determininig if a particular session needs rundown events.
 	bool rundown_requested;
+	// Note - access to this field is NOT synchronized
+	// This functionality is a workaround because we couldn't safely enable/disable the session where we wanted to due to lock-leveling.
+	// we expect to remove it in the future once that limitation is resolved other scenarios are discouraged from using this given that
+	// we plan to make it go away
+	bool paused;
 };
 
 #if !defined(EP_INLINE_GETTER_SETTER) && !defined(EP_IMPL_SESSION_GETTER_SETTER)
@@ -64,7 +71,7 @@ EP_DEFINE_GETTER(EventPipeSession *, session, EventPipeSessionProviderList *, pr
 EP_DEFINE_GETTER(EventPipeSession *, session, EventPipeBufferManager *, buffer_manager)
 EP_DEFINE_GETTER_REF(EventPipeSession *, session, volatile uint32_t *, rundown_enabled)
 EP_DEFINE_GETTER(EventPipeSession *, session, bool, rundown_requested)
-EP_DEFINE_GETTER(EventPipeSession *, session, ep_systemtime_t, session_start_time)
+EP_DEFINE_GETTER(EventPipeSession *, session, ep_timestamp_t, session_start_time)
 EP_DEFINE_GETTER(EventPipeSession *, session, ep_timestamp_t, session_start_timestamp)
 EP_DEFINE_GETTER(EventPipeSession *, session, EventPipeFile *, file)
 
@@ -79,7 +86,7 @@ ep_session_alloc (
 	uint32_t circular_buffer_size_in_mb,
 	const EventPipeProviderConfiguration *providers,
 	uint32_t providers_len,
-	bool rundown_enabled);
+	EventPipeSessionSynchronousCallback sync_callback);
 
 void
 ep_session_free (EventPipeSession *session);
@@ -91,7 +98,7 @@ ep_session_get_session_provider (
 	const EventPipeProvider *provider);
 
 // _Requires_lock_held (ep)
-void
+bool
 ep_session_enable_rundown (EventPipeSession *session);
 
 // _Requires_lock_held (ep)
@@ -122,7 +129,7 @@ ep_session_start_streaming (EventPipeSession *session);
 bool
 ep_session_is_valid (const EventPipeSession *session);
 
-void
+bool
 ep_session_add_session_provider (
 	EventPipeSession *session,
 	EventPipeSessionProvider *session_provider);
@@ -137,21 +144,25 @@ ep_session_write_all_buffers_to_file (
 	EventPipeSession *session,
 	bool *events_written);
 
+// If a session is non-synchronous (i.e. a file, pipe, etc) WriteEvent will
+// put the event in a buffer and return as quick as possible. If a session is
+// synchronous (callback to the profiler) then this method will block until the
+// profiler is done parsing and reacting to it.
 bool
-ep_session_write_event_buffered (
+ep_session_write_event (
 	EventPipeSession *session,
-	EventPipeThread *thread,
+	ep_rt_thread_handle_t thread,
 	EventPipeEvent *ep_event,
 	EventPipeEventPayload *payload,
 	const uint8_t *activity_id,
 	const uint8_t *related_activity_id,
-	EventPipeThread *event_thread,
+	ep_rt_thread_handle_t event_thread,
 	EventPipeStackContents *stack);
 
 EventPipeEventInstance *
 ep_session_get_next_event (EventPipeSession *session);
 
-EventPipeWaitHandle
+ep_rt_wait_event_handle_t *
 ep_session_get_wait_event (EventPipeSession *session);
 
 uint64_t
@@ -173,5 +184,13 @@ ep_session_set_ipc_streaming_enabled (
 	EventPipeSession *session,
 	bool enabled);
 
+// Please do not use this function, see EventPipeSession paused field for more information.
+void
+ep_session_pause (EventPipeSession *session);
+
+// Please do not use this function, see EventPipeSession paused field for more information.
+void
+ep_session_resume (EventPipeSession *session);
+
 #endif /* ENABLE_PERFTRACING */
-#endif /** __EVENTPIPE_SESSION_H__ **/
+#endif /* __EVENTPIPE_SESSION_H__ */

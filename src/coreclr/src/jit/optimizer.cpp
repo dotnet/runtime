@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 /*XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
@@ -490,7 +489,7 @@ void Compiler::optUpdateLoopsBeforeRemoveBlock(BasicBlock* block, bool skipUnmar
                     break;
                 }
 
-                __fallthrough;
+                FALLTHROUGH;
 
             case BBJ_ALWAYS:
                 noway_assert(block->bbJumpDest);
@@ -551,7 +550,7 @@ void Compiler::optUpdateLoopsBeforeRemoveBlock(BasicBlock* block, bool skipUnmar
                             break;
                         }
 
-                        __fallthrough;
+                        FALLTHROUGH;
 
                     case BBJ_ALWAYS:
                         noway_assert(auxBlock->bbJumpDest);
@@ -1393,7 +1392,7 @@ void Compiler::optCheckPreds()
                     {
                         break;
                     }
-                    __fallthrough;
+                    FALLTHROUGH;
                 case BBJ_NONE:
                     noway_assert(blockPred->bbNext == block);
                     break;
@@ -2318,8 +2317,8 @@ private:
         }
 
         // Make sure we don't leave around a goto-next unless it's marked KEEP_BBJ_ALWAYS.
-        assert((block->bbJumpKind != BBJ_COND) || (block->bbJumpKind != BBJ_ALWAYS) || (block->bbJumpDest != newNext) ||
-               ((block->bbFlags & BBF_KEEP_BBJ_ALWAYS) != 0));
+        assert(((block->bbJumpKind != BBJ_COND) && (block->bbJumpKind != BBJ_ALWAYS)) ||
+               (block->bbJumpDest != newNext) || ((block->bbFlags & BBF_KEEP_BBJ_ALWAYS) != 0));
         return newBlock;
     }
 
@@ -3208,7 +3207,7 @@ bool Compiler::optComputeLoopRep(int        constInit,
             {
                 case GT_SUB:
                     iterInc = -iterInc;
-                    __fallthrough;
+                    FALLTHROUGH;
 
                 case GT_ADD:
                     if (constInitX != constLimitX)
@@ -3255,7 +3254,7 @@ bool Compiler::optComputeLoopRep(int        constInit,
             {
                 case GT_SUB:
                     iterInc = -iterInc;
-                    __fallthrough;
+                    FALLTHROUGH;
 
                 case GT_ADD:
                     if (constInitX < constLimitX)
@@ -3302,7 +3301,7 @@ bool Compiler::optComputeLoopRep(int        constInit,
             {
                 case GT_SUB:
                     iterInc = -iterInc;
-                    __fallthrough;
+                    FALLTHROUGH;
 
                 case GT_ADD:
                     if (constInitX <= constLimitX)
@@ -3349,7 +3348,7 @@ bool Compiler::optComputeLoopRep(int        constInit,
             {
                 case GT_SUB:
                     iterInc = -iterInc;
-                    __fallthrough;
+                    FALLTHROUGH;
 
                 case GT_ADD:
                     if (constInitX > constLimitX)
@@ -3396,7 +3395,7 @@ bool Compiler::optComputeLoopRep(int        constInit,
             {
                 case GT_SUB:
                     iterInc = -iterInc;
-                    __fallthrough;
+                    FALLTHROUGH;
 
                 case GT_ADD:
                     if (constInitX >= constLimitX)
@@ -3547,19 +3546,7 @@ void Compiler::optUnrollLoops()
         // Check for required flags:
         // LPFLG_DO_WHILE - required because this transform only handles loops of this form
         // LPFLG_CONST - required because this transform only handles full unrolls
-        // LPFLG_SIMD_LIMIT - included here as a heuristic, not for correctness/structural reasons
-        requiredFlags = LPFLG_DO_WHILE | LPFLG_CONST | LPFLG_SIMD_LIMIT;
-
-#ifdef DEBUG
-        if (compStressCompile(STRESS_UNROLL_LOOPS, 50))
-        {
-            // In stress mode, quadruple the size limit, and drop
-            // the restriction that loop limit must be vector element count.
-
-            unrollLimitSz *= 4;
-            requiredFlags &= ~LPFLG_SIMD_LIMIT;
-        }
-#endif
+        requiredFlags = LPFLG_DO_WHILE | LPFLG_CONST;
 
         /* Ignore the loop if we don't have a do-while
         that has a constant number of iterations */
@@ -3645,6 +3632,24 @@ void Compiler::optUnrollLoops()
 
         if (totalIter > iterLimit)
         {
+            continue;
+        }
+
+        if (INDEBUG(compStressCompile(STRESS_UNROLL_LOOPS, 50) ||) false)
+        {
+            // In stress mode, quadruple the size limit, and drop
+            // the restriction that loop limit must be vector element count.
+            unrollLimitSz *= 4;
+        }
+        else if (totalIter <= 1)
+        {
+            // No limit for single iteration loops
+            unrollLimitSz = INT_MAX;
+        }
+        else if (!(loopFlags & LPFLG_SIMD_LIMIT))
+        {
+            // Otherwise unroll only if limit is Vector_.Length
+            // (as a heuristic, not for correctness/structural reasons)
             continue;
         }
 
@@ -3799,8 +3804,6 @@ void Compiler::optUnrollLoops()
                             testCopyStmt->SetRootNode(sideEffList);
                         }
                         newBlock->bbJumpKind = BBJ_NONE;
-                        newBlock->bbFlags &=
-                            ~BBF_NEEDS_GCPOLL; // Clear any NEEDS_GCPOLL flag as this block no longer can be a back edge
 
                         // Exit this loop; we've walked all the blocks.
                         break;
@@ -3843,7 +3846,7 @@ void Compiler::optUnrollLoops()
             {
                 block->bbStmtList = nullptr;
                 block->bbJumpKind = BBJ_NONE;
-                block->bbFlags &= ~(BBF_NEEDS_GCPOLL | BBF_LOOP_HEAD);
+                block->bbFlags &= ~BBF_LOOP_HEAD;
                 if (block->bbJumpDest != nullptr)
                 {
                     block->bbJumpDest = nullptr;
@@ -3872,7 +3875,6 @@ void Compiler::optUnrollLoops()
                 initStmt->SetNextStmt(nullptr);
                 preHeaderStmt->SetPrevStmt(initStmt);
                 head->bbJumpKind = BBJ_NONE;
-                head->bbFlags &= ~BBF_NEEDS_GCPOLL;
             }
             else
             {
@@ -4265,6 +4267,11 @@ void Compiler::fgOptWhileLoop(BasicBlock* block)
     Statement* copyOfCondStmt = fgNewStmtAtEnd(block, condTree);
 
     copyOfCondStmt->SetCompilerAdded();
+
+    if (condTree->gtFlags & GTF_CALL)
+    {
+        block->bbFlags |= BBF_HAS_CALL; // Record that the block has a call
+    }
 
     if (opts.compDbgInfo)
     {
@@ -5779,7 +5786,7 @@ bool Compiler::optNarrowTree(GenTree* tree, var_types srct, var_types dstt, Valu
                     noway_assert(doit == false);
                     return false;
                 }
-                __fallthrough;
+                FALLTHROUGH;
 
             case GT_OR:
             case GT_XOR:
@@ -6199,6 +6206,10 @@ void Compiler::optPerformHoistExpr(GenTree* origExpr, unsigned lnum)
     // Create a copy of the expression and mark it for CSE's.
     GenTree* hoistExpr = gtCloneExpr(origExpr, GTF_MAKE_CSE);
 
+    // The hoist Expr does not have to computed into a specific register,
+    // so clear the RegNum if it was set in the original expression
+    hoistExpr->ClearRegNum();
+
     // At this point we should have a cloned expression, marked with the GTF_MAKE_CSE flag
     assert(hoistExpr != origExpr);
     assert(hoistExpr->gtFlags & GTF_MAKE_CSE);
@@ -6541,6 +6552,7 @@ void Compiler::optHoistThisLoop(unsigned lnum, LoopHoistContext* hoistCtxt)
     {
         printf("optHoistLoopCode for loop L%02u <" FMT_BB ".." FMT_BB ">:\n", lnum, begn, endn);
         printf("  Loop body %s a call\n", pLoopDsc->lpContainsCall ? "contains" : "does not contain");
+        printf("  Loop has %s\n", (pLoopDsc->lpFlags & LPFLG_ONE_EXIT) ? "single exit" : "multiple exits");
     }
 #endif
 
@@ -7516,7 +7528,7 @@ void Compiler::fgCreateLoopPreHeader(unsigned lnum)
                     noway_assert(predBlock->bbJumpDest != top);
                     break;
                 }
-                __fallthrough;
+                FALLTHROUGH;
 
             case BBJ_ALWAYS:
             case BBJ_EHCATCHRET:
@@ -7555,6 +7567,7 @@ void Compiler::fgCreateLoopPreHeader(unsigned lnum)
                         preHead->bbFlags |= BBF_JMP_TARGET | BBF_HAS_LABEL;
                     }
                 } while (++jumpTab, --jumpCnt);
+                break;
 
             default:
                 noway_assert(!"Unexpected bbJumpKind");
@@ -7912,10 +7925,11 @@ bool Compiler::optComputeLoopSideEffectsOfBlock(BasicBlock* blk)
                         }
                         break;
 
-                    case GT_LOCKADD: // Binop
-                    case GT_XADD:    // Binop
-                    case GT_XCHG:    // Binop
-                    case GT_CMPXCHG: // Specialop
+                    case GT_LOCKADD:
+                    case GT_XADD:
+                    case GT_XCHG:
+                    case GT_CMPXCHG:
+                    case GT_MEMORYBARRIER:
                     {
                         assert(!tree->OperIs(GT_LOCKADD) && "LOCKADD should not appear before lowering");
                         memoryHavoc |= memoryKindSet(GcHeap, ByrefExposed);
@@ -9249,7 +9263,7 @@ void Compiler::optRemoveRedundantZeroInits()
             Statement* next = stmt->GetNextStmt();
             for (GenTree* tree = stmt->GetTreeList(); tree != nullptr; tree = tree->gtNext)
             {
-                if (((tree->gtFlags & GTF_CALL) != 0) && (!tree->IsCall() || !tree->AsCall()->IsSuppressGCTransition()))
+                if (((tree->gtFlags & GTF_CALL) != 0))
                 {
                     hasGCSafePoint = true;
                 }

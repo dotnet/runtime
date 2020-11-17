@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections.ObjectModel;
 using System.Diagnostics;
@@ -413,8 +412,7 @@ namespace System.Collections.Generic
         public bool Exists(Predicate<T> match)
             => FindIndex(match) != -1;
 
-        [return: MaybeNull]
-        public T Find(Predicate<T> match)
+        public T? Find(Predicate<T> match)
         {
             if (match == null)
             {
@@ -428,7 +426,7 @@ namespace System.Collections.Generic
                     return _items[i];
                 }
             }
-            return default!;
+            return default;
         }
 
         public List<T> FindAll(Predicate<T> match)
@@ -480,8 +478,7 @@ namespace System.Collections.Generic
             return -1;
         }
 
-        [return: MaybeNull]
-        public T FindLast(Predicate<T> match)
+        public T? FindLast(Predicate<T> match)
         {
             if (match == null)
             {
@@ -495,7 +492,7 @@ namespace System.Collections.Generic
                     return _items[i];
                 }
             }
-            return default!;
+            return default;
         }
 
         public int FindLastIndex(Predicate<T> match)
@@ -1078,7 +1075,7 @@ namespace System.Collections.Generic
             private readonly List<T> _list;
             private int _index;
             private readonly int _version;
-            [AllowNull, MaybeNull] private T _current;
+            private T? _current;
 
             internal Enumerator(List<T> list)
             {

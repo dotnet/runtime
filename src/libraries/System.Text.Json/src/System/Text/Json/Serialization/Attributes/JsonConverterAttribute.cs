@@ -1,22 +1,21 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Diagnostics.CodeAnalysis;
 
 namespace System.Text.Json.Serialization
 {
     /// <summary>
-    /// When placed on a property or type, specifies the converter type to use.
+    /// When placed on a property, field, or type, specifies the converter type to use.
     /// </summary>
     /// <remarks>
     /// The specified converter type must derive from <see cref="JsonConverter"/>.
-    /// When placed on a property, the specified converter will always be used.
+    /// When placed on a property or field, the specified converter will always be used.
     /// When placed on a type, the specified converter will be used unless a compatible converter is added to
-    /// <see cref="JsonSerializerOptions.Converters"/> or there is another <see cref="JsonConverterAttribute"/> on a property
+    /// <see cref="JsonSerializerOptions.Converters"/> or there is another <see cref="JsonConverterAttribute"/> on a property or field
     /// of the same type.
     /// </remarks>
-    [AttributeUsage(AttributeTargets.Class | AttributeTargets.Enum | AttributeTargets.Property | AttributeTargets.Struct, AllowMultiple = false)]
+    [AttributeUsage(AttributeTargets.Class | AttributeTargets.Struct | AttributeTargets.Enum | AttributeTargets.Property | AttributeTargets.Field, AllowMultiple = false)]
     public class JsonConverterAttribute : JsonAttribute
     {
         /// <summary>

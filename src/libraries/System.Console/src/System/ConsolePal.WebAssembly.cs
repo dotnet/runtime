@@ -1,11 +1,12 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.IO;
 using System.Text;
 using System.Runtime.InteropServices;
 using Microsoft.Win32.SafeHandles;
+
+using JSObject = System.Runtime.InteropServices.JavaScript.JSObject;
 
 namespace System
 {
@@ -28,15 +29,13 @@ namespace System
             base.Dispose(disposing);
         }
 
-        public override int Read(byte[] buffer, int offset, int count) => throw Error.GetReadNotSupported();
+        public override int Read(Span<byte> buffer) => throw Error.GetReadNotSupported();
 
-        public override unsafe void Write(byte[] buffer, int offset, int count)
+        public override unsafe void Write(ReadOnlySpan<byte> buffer)
         {
-            ValidateWrite(buffer, offset, count);
-
             fixed (byte* bufPtr = buffer)
             {
-                Write(_handle, bufPtr + offset, count);
+                Write(_handle, bufPtr, buffer.Length);
             }
         }
 
@@ -75,6 +74,9 @@ namespace System
 
     internal static class ConsolePal
     {
+        private static volatile bool s_consoleInitialized;
+        private static JSObject? s_console;
+
         private static Encoding? s_outputEncoding;
 
         internal static void EnsureConsoleInitialized() { }
@@ -164,7 +166,16 @@ namespace System
             char sourceChar, ConsoleColor sourceForeColor,
             ConsoleColor sourceBackColor) => throw new PlatformNotSupportedException();
 
-        public static void Clear() => throw new PlatformNotSupportedException();
+        public static void Clear()
+        {
+            if (!s_consoleInitialized)
+            {
+                s_console = (JSObject)System.Runtime.InteropServices.JavaScript.Runtime.GetGlobalObject("console");
+                s_consoleInitialized = true;
+            }
+
+            s_console?.Invoke("clear");
+        }
 
         public static void SetCursorPosition(int left, int top) => throw new PlatformNotSupportedException();
 

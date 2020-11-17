@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 //
 // vars.hpp
 //
@@ -74,9 +73,6 @@ class LoaderHeap;
 class IGCHeap;
 class Object;
 class StringObject;
-#ifdef FEATURE_UTF8STRING
-class Utf8StringObject;
-#endif // FEATURE_UTF8STRING
 class ArrayClass;
 class MethodTable;
 class MethodDesc;
@@ -310,10 +306,6 @@ class REF : public OBJECTREF
 #define OBJECTREFToObject(objref)  ((objref).operator-> ())
 #define ObjectToSTRINGREF(obj)     (STRINGREF(obj))
 #define STRINGREFToObject(objref)  (*( (StringObject**) &(objref) ))
-#ifdef FEATURE_UTF8STRING
-#define ObjectToUTF8STRINGREF(obj)   (UTF8STRINGREF(obj))
-#define UTF8STRINGREFToObject(objref) (*( (Utf8StringObject**) &(objref) ))
-#endif // FEATURE_UTF8STRING
 
 #else   // _DEBUG_IMPL
 
@@ -324,10 +316,6 @@ class REF : public OBJECTREF
 #define OBJECTREFToObject(objref) ((PTR_Object) (objref))
 #define ObjectToSTRINGREF(obj)    ((PTR_StringObject) (obj))
 #define STRINGREFToObject(objref) ((PTR_StringObject) (objref))
-#ifdef FEATURE_UTF8STRING
-#define ObjectToUTF8STRINGREF(obj)    ((PTR_Utf8StringObject) (obj))
-#define UTF8STRINGREFToObject(objref) ((PTR_Utf8StringObject) (objref))
-#endif // FEATURE_UTF8STRING
 
 #endif // _DEBUG_IMPL
 
@@ -347,7 +335,6 @@ GARY_DECL(TypeHandle, g_pPredefinedArrayTypes, ELEMENT_TYPE_MAX);
 
 extern "C" Volatile<LONG>   g_TrapReturningThreads;
 
-EXTERN HINSTANCE            g_hThisInst;
 EXTERN BBSweep              g_BBSweep;
 EXTERN IBCLogger            g_IBCLogger;
 
@@ -367,9 +354,6 @@ GPTR_DECL(MethodTable,      g_pObjectClass);
 GPTR_DECL(MethodTable,      g_pRuntimeTypeClass);
 GPTR_DECL(MethodTable,      g_pCanonMethodTableClass);  // System.__Canon
 GPTR_DECL(MethodTable,      g_pStringClass);
-#ifdef FEATURE_UTF8STRING
-GPTR_DECL(MethodTable,      g_pUtf8StringClass);
-#endif // FEATURE_UTF8STRING
 GPTR_DECL(MethodTable,      g_pArrayClass);
 GPTR_DECL(MethodTable,      g_pSZArrayHelperClass);
 GPTR_DECL(MethodTable,      g_pNullableClass);
@@ -695,7 +679,7 @@ typedef DPTR(GSCookie) PTR_GSCookie;
 #define READONLY_ATTR
 #else
 #ifdef __APPLE__
-#define READONLY_ATTR_ARGS section("__TEXT,__const")
+#define READONLY_ATTR_ARGS section("__DATA,__const")
 #else
 #define READONLY_ATTR_ARGS section(".rodata")
 #endif

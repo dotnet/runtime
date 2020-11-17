@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Runtime.CompilerServices;
 
@@ -110,7 +109,7 @@ namespace System
 
         private static unsafe void memcpy(byte* dest, byte* src, int size)
         {
-            Buffer.Memcpy(dest, src, size);
+            Buffer.Memmove(ref *dest, ref *src, (nuint)size);
         }
 
         /* Used by the runtime */

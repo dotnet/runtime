@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 #include "jitpch.h"
 #ifdef _MSC_VER
@@ -55,6 +54,10 @@ public:
         {
             if (block->bbFlags & BBF_PATCHPOINT)
             {
+                // Clear the patchpoint flag.
+                //
+                block->bbFlags &= ~BBF_PATCHPOINT;
+
                 // If block is in a handler region, don't insert a patchpoint.
                 // We can't OSR from funclets.
                 //

@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 #ifndef __EVENTPIPE_H__
 #define __EVENTPIPE_H__
@@ -140,7 +139,7 @@ public:
         }
 
         while (eventPipeProviderCallbackDataQueue.TryDequeue(&eventPipeProviderCallbackData))
-            InvokeCallback(eventPipeProviderCallbackData);
+            InvokeCallback(&eventPipeProviderCallbackData);
     }
 
     // Returns the a number 0...N representing the processor number this thread is currently
@@ -159,7 +158,7 @@ public:
     }
 
 private:
-    static void InvokeCallback(EventPipeProviderCallbackData eventPipeProviderCallbackData);
+    static void InvokeCallback(EventPipeProviderCallbackData *pEventPipeProviderCallbackData);
 
     // Get the event used to write metadata to the event stream.
     static EventPipeEventInstance *BuildEventMetadataEvent(EventPipeEventInstance &instance, unsigned int metadataId);
@@ -179,6 +178,8 @@ private:
         LPCGUID pRelatedActivityId,
         Thread *pEventThread = nullptr,
         StackContents *pStack = nullptr);
+
+    static void DisableHelper(EventPipeSessionID id);
 
     static void DisableInternal(EventPipeSessionID id, EventPipeProviderCallbackDataQueue* pEventPipeProviderCallbackDataQueue);
 
@@ -240,7 +241,8 @@ private:
 
     static bool s_CanStartThreads;
 
-    static CQuickArrayList<EventPipeSessionID> s_rgDeferredEventPipeSessionIds;
+    static CQuickArrayList<EventPipeSessionID> s_rgDeferredEnableEventPipeSessionIds;
+    static CQuickArrayList<EventPipeSessionID> s_rgDeferredDisableEventPipeSessionIds;
 
     //! Bitmask tracking EventPipe active sessions.
     // in all groups preceding it. For example if there are three groups with sizes:

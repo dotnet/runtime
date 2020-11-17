@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 /*++
 
@@ -333,6 +332,9 @@ Function:
 --*/
 BOOL IsRunningOnMojaveHardenedRuntime()
 {
+#if defined(TARGET_ARM64)
+    return true;
+#else //  defined(TARGET_ARM64)
     static volatile int isRunningOnMojaveHardenedRuntime = -1;
 
     if (isRunningOnMojaveHardenedRuntime == -1)
@@ -360,6 +362,7 @@ BOOL IsRunningOnMojaveHardenedRuntime()
     }
 
     return (BOOL)isRunningOnMojaveHardenedRuntime;
+#endif  // defined(TARGET_ARM64)
 }
 
 #endif // __APPLE__

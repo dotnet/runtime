@@ -1,6 +1,5 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System;
 using System.Collections.Generic;
@@ -180,7 +179,10 @@ namespace ILVerify
 
             try
             {
-                var importer = new ILImporter(method, methodIL);
+                var importer = new ILImporter(method, methodIL)
+                {
+                    SanityChecks = _verifierOptions.SanityChecks
+                };
 
                 importer.ReportVerificationError = (args, code) =>
                 {
@@ -322,5 +324,6 @@ namespace ILVerify
     public class VerifierOptions
     {
         public bool IncludeMetadataTokensInErrorMessages { get; set; }
+        public bool SanityChecks { get; set; }
     }
 }

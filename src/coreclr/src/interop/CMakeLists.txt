@@ -30,7 +30,10 @@ endif(WIN32)
 
 convert_to_absolute_path(INTEROP_SOURCES ${INTEROP_SOURCES})
 
-add_library_clr(interop
+add_library_clr(interop_obj
     OBJECT
     ${INTEROP_SOURCES}
 )
+
+add_library(interop INTERFACE)
+target_sources(interop INTERFACE $<TARGET_OBJECTS:interop_obj>)

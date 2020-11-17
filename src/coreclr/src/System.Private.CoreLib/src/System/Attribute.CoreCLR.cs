@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Reflection;
 using System.Collections.Generic;
@@ -288,9 +287,9 @@ namespace System
                 count = 0;
                 for (int i = 0; i < objAttr.Length; i++)
                 {
-                    if (objAttr[i] != null)
+                    if (objAttr[i] is object attr)
                     {
-                        attributes[count] = (Attribute)objAttr[i]!; // TODO-NULLABLE: Indexer nullability tracked (https://github.com/dotnet/roslyn/issues/34644)
+                        attributes[count] = (Attribute)attr;
                         count++;
                     }
                 }
@@ -431,27 +430,27 @@ namespace System
         #region Public Statics
 
         #region MemberInfo
-        public static Attribute[] GetCustomAttributes(MemberInfo element, Type type)
+        public static Attribute[] GetCustomAttributes(MemberInfo element, Type attributeType)
         {
-            return GetCustomAttributes(element, type, true);
+            return GetCustomAttributes(element, attributeType, true);
         }
 
-        public static Attribute[] GetCustomAttributes(MemberInfo element, Type type, bool inherit)
+        public static Attribute[] GetCustomAttributes(MemberInfo element, Type attributeType, bool inherit)
         {
             if (element == null)
                 throw new ArgumentNullException(nameof(element));
 
-            if (type == null)
-                throw new ArgumentNullException(nameof(type));
+            if (attributeType == null)
+                throw new ArgumentNullException(nameof(attributeType));
 
-            if (!type.IsSubclassOf(typeof(Attribute)) && type != typeof(Attribute))
+            if (!attributeType.IsSubclassOf(typeof(Attribute)) && attributeType != typeof(Attribute))
                 throw new ArgumentException(SR.Argument_MustHaveAttributeBaseClass);
 
             return element.MemberType switch
             {
-                MemberTypes.Property => InternalGetCustomAttributes((PropertyInfo)element, type, inherit),
-                MemberTypes.Event => InternalGetCustomAttributes((EventInfo)element, type, inherit),
-                _ => (element.GetCustomAttributes(type, inherit) as Attribute[])!,
+                MemberTypes.Property => InternalGetCustomAttributes((PropertyInfo)element, attributeType, inherit),
+                MemberTypes.Event => InternalGetCustomAttributes((EventInfo)element, attributeType, inherit),
+                _ => (element.GetCustomAttributes(attributeType, inherit) as Attribute[])!,
             };
         }
 

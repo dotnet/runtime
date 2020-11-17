@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
 using System.Reflection.Internal;
@@ -46,14 +45,13 @@ namespace System.Reflection.Metadata.Ecma335
 
         protected override void Release()
         {
+#if FEATURE_CER
             // Make sure the current thread isn't aborted in the middle of the operation.
-#if !NETSTANDARD1_1
             RuntimeHelpers.PrepareConstrainedRegions();
-#endif
             try
-            {
-            }
+            { /* intentionally left blank */ }
             finally
+#endif
             {
                 var blobs = Interlocked.Exchange(ref _blobs, null);
 
@@ -95,13 +93,12 @@ namespace System.Reflection.Metadata.Ecma335
             var blobs = GetBlobs();
 
             MemoryBlock result;
-#if !NETSTANDARD1_1
+#if FEATURE_CER
             RuntimeHelpers.PrepareConstrainedRegions();
-#endif
             try
-            {
-            }
+            { /* intentionally left blank */ }
             finally
+#endif
             {
                 var blob = new PinnedBlob(GCHandle.Alloc(value, GCHandleType.Pinned), value.Length);
                 blobs.Add(rawHandle, blob);

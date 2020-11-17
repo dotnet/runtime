@@ -1,8 +1,8 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Buffers;
+using System.Buffers.Binary;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
@@ -106,53 +106,6 @@ namespace System
             }
 
             ValidateTimeZoneInfo(_id, _baseUtcOffset, _adjustmentRules, out _supportsDaylightSavingTime);
-        }
-
-        private unsafe void GetDisplayName(Interop.Globalization.TimeZoneDisplayNameType nameType, string uiCulture, ref string? displayName)
-        {
-            if (GlobalizationMode.Invariant)
-            {
-                displayName = _standardDisplayName;
-                return;
-            }
-
-            string? timeZoneDisplayName;
-            bool result = Interop.CallStringMethod(
-                (buffer, locale, id, type) =>
-                {
-                    fixed (char* bufferPtr = buffer)
-                    {
-                        return Interop.Globalization.GetTimeZoneDisplayName(locale, id, type, bufferPtr, buffer.Length);
-                    }
-                },
-                uiCulture,
-                _id,
-                nameType,
-                out timeZoneDisplayName);
-
-            if (!result && uiCulture != FallbackCultureName)
-            {
-                // Try to fallback using FallbackCultureName just in case we can make it work.
-                result = Interop.CallStringMethod(
-                    (buffer, locale, id, type) =>
-                    {
-                        fixed (char* bufferPtr = buffer)
-                        {
-                            return Interop.Globalization.GetTimeZoneDisplayName(locale, id, type, bufferPtr, buffer.Length);
-                        }
-                    },
-                    FallbackCultureName,
-                    _id,
-                    nameType,
-                    out timeZoneDisplayName);
-            }
-
-            // If there is an unknown error, don't set the displayName field.
-            // It will be set to the abbreviation that was read out of the tzfile.
-            if (result)
-            {
-                displayName = timeZoneDisplayName;
-            }
         }
 
         /// <summary>
@@ -1481,25 +1434,13 @@ namespace System
 
         // Converts an array of bytes into an int - always using standard byte order (Big Endian)
         // per TZif file standard
-        private static unsafe int TZif_ToInt32(byte[] value, int startIndex)
-        {
-            fixed (byte* pbyte = &value[startIndex])
-            {
-                return (*pbyte << 24) | (*(pbyte + 1) << 16) | (*(pbyte + 2) << 8) | (*(pbyte + 3));
-            }
-        }
+        private static int TZif_ToInt32(byte[] value, int startIndex)
+            => BinaryPrimitives.ReadInt32BigEndian(value.AsSpan(startIndex));
 
         // Converts an array of bytes into a long - always using standard byte order (Big Endian)
         // per TZif file standard
-        private static unsafe long TZif_ToInt64(byte[] value, int startIndex)
-        {
-            fixed (byte* pbyte = &value[startIndex])
-            {
-                int i1 = (*pbyte << 24) | (*(pbyte + 1) << 16) | (*(pbyte + 2) << 8) | (*(pbyte + 3));
-                int i2 = (*(pbyte + 4) << 24) | (*(pbyte + 5) << 16) | (*(pbyte + 6) << 8) | (*(pbyte + 7));
-                return (uint)i2 | ((long)i1 << 32);
-            }
-        }
+        private static long TZif_ToInt64(byte[] value, int startIndex)
+            => BinaryPrimitives.ReadInt64BigEndian(value.AsSpan(startIndex));
 
         private static long TZif_ToUnixTime(byte[] value, int startIndex, TZVersion version) =>
             version != TZVersion.V1 ?

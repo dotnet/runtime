@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
 using System.Formats.Asn1;
@@ -30,6 +29,9 @@ namespace System.Security.Cryptography.X509Certificates.Tests.Common
         public string UriPrefix { get; }
 
         public bool RespondEmpty { get; set; }
+
+        public TimeSpan ResponseDelay { get; set; }
+        public DelayedActionsFlag DelayedActions { get; set; }
 
         private RevocationResponder(HttpListener listener, string uriPrefix)
         {
@@ -161,6 +163,12 @@ namespace System.Security.Cryptography.X509Certificates.Tests.Common
 
             if (_aiaPaths.TryGetValue(url, out authority))
             {
+                if (DelayedActions.HasFlag(DelayedActionsFlag.Aia))
+                {
+                    Trace($"Delaying response by {ResponseDelay}.");
+                    Thread.Sleep(ResponseDelay);
+                }
+
                 byte[] certData = RespondEmpty ? Array.Empty<byte>() : authority.GetCertData();
 
                 responded = true;
@@ -173,6 +181,12 @@ namespace System.Security.Cryptography.X509Certificates.Tests.Common
 
             if (_crlPaths.TryGetValue(url, out authority))
             {
+                if (DelayedActions.HasFlag(DelayedActionsFlag.Crl))
+                {
+                    Trace($"Delaying response by {ResponseDelay}.");
+                    Thread.Sleep(ResponseDelay);
+                }
+
                 byte[] crl = RespondEmpty ? Array.Empty<byte>() : authority.GetCrl();
 
                 responded = true;
@@ -211,6 +225,12 @@ namespace System.Security.Cryptography.X509Certificates.Tests.Common
                         }
 
                         byte[] ocspResponse = RespondEmpty ? Array.Empty<byte>() : authority.BuildOcspResponse(certId, nonce);
+
+                        if (DelayedActions.HasFlag(DelayedActionsFlag.Ocsp))
+                        {
+                            Trace($"Delaying response by {ResponseDelay}.");
+                            Thread.Sleep(ResponseDelay);
+                        }
 
                         responded = true;
                         context.Response.StatusCode = 200;
@@ -346,12 +366,23 @@ namespace System.Security.Cryptography.X509Certificates.Tests.Common
             }
         }
 
+        internal void Stop() => _listener.Stop();
+
         private static void Trace(string trace)
         {
             if (s_traceEnabled)
             {
                 Console.WriteLine(trace);
             }
+        }
+
+        internal enum DelayedActionsFlag : byte
+        {
+            None = 0,
+            Ocsp = 0b1,
+            Crl = 0b10,
+            Aia = 0b100,
+            All = 0b11111111
         }
     }
 }

@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 /*
 XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
@@ -4241,7 +4240,7 @@ void LinearScan::spillInterval(Interval* interval, RefPosition* fromRefPosition 
 //                         an active interval, without spilling.
 //
 // Arguments:
-//    regRec           - the RegRecord to be unasssigned
+//    regRec           - the RegRecord to be unassigned
 //
 // Return Value:
 //    None.
@@ -4267,7 +4266,7 @@ void LinearScan::unassignPhysRegNoSpill(RegRecord* regRec)
 //                        physical register record
 //
 // Arguments:
-//    regRec           - the physical RegRecord to be unasssigned
+//    regRec           - the physical RegRecord to be unassigned
 //    spillRefPosition - The RefPosition at which the assignedInterval is to be spilled
 //                       or nullptr if we aren't spilling
 //
@@ -4305,7 +4304,7 @@ void LinearScan::checkAndClearInterval(RegRecord* regRec, RefPosition* spillRefP
 //                  assignedInterval at the given spillRefPosition, if any.
 //
 // Arguments:
-//    regRec           - The RegRecord to be unasssigned
+//    regRec           - The RegRecord to be unassigned
 //    newRegType       - The RegisterType of interval that would be assigned
 //
 // Return Value:
@@ -4357,7 +4356,7 @@ void LinearScan::unassignPhysReg(RegRecord* regRec ARM_ARG(RegisterType newRegTy
 //                  assignedInterval at the given spillRefPosition, if any.
 //
 // Arguments:
-//    regRec           - the RegRecord to be unasssigned
+//    regRec           - the RegRecord to be unassigned
 //    spillRefPosition - The RefPosition at which the assignedInterval is to be spilled
 //
 // Return Value:
@@ -5597,8 +5596,13 @@ void LinearScan::allocateRegisters()
             {
                 allocate = false;
             }
-            else if (refType == RefTypeParamDef && varDsc->lvRefCntWtd() <= BB_UNITY_WEIGHT)
+            else if (refType == RefTypeParamDef && (varDsc->lvRefCntWtd() <= BB_UNITY_WEIGHT) &&
+                     (!currentRefPosition->lastUse || (currentInterval->physReg == REG_STK)))
             {
+                // If this is a low ref-count parameter, and either it is used (def is not the last use) or it's
+                // passed on the stack, don't allocate a register.
+                // Note that if this is an unused register parameter we don't want to set allocate to false because that
+                // will cause us to allocate stack space to spill it.
                 allocate = false;
             }
             else if ((currentInterval->physReg == REG_STK) && nextRefPosition->treeNode->OperIs(GT_BITCAST))

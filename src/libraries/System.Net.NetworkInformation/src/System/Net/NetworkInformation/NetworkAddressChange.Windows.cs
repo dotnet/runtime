@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using Microsoft.Win32.SafeHandles;
 
@@ -122,7 +121,7 @@ namespace System.Net.NetworkInformation
         }
 
         // Helper class for detecting address change events.
-        internal static unsafe class AddressChangeListener
+        internal static class AddressChangeListener
         {
             // Need to keep the reference so it isn't GC'd before the native call executes.
             private static bool s_isListening;
@@ -162,7 +161,7 @@ namespace System.Net.NetworkInformation
                     }
                     catch (NetworkInformationException nie)
                     {
-                        if (NetEventSource.IsEnabled) NetEventSource.Error(null, nie);
+                        if (NetEventSource.Log.IsEnabled()) NetEventSource.Error(null, nie);
                     }
                 }
 

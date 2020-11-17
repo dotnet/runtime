@@ -182,7 +182,7 @@ ep_enable (
 	EventPipeSerializationFormat format,
 	bool rundown_requested,
 	IpcStream *stream,
-	bool enable_sample_profiler);
+	EventPipeSessionSynchronousCallback sync_callback);
 
 EventPipeSessionID
 ep_enable_2 (
@@ -193,13 +193,16 @@ ep_enable_2 (
 	EventPipeSerializationFormat format,
 	bool rundown_requested,
 	IpcStream *stream,
-	bool enable_sample_profiler);
+	EventPipeSessionSynchronousCallback sync_callback);
 
 void
 ep_disable (EventPipeSessionID id);
 
 EventPipeSession *
 ep_get_session (EventPipeSessionID session_id);
+
+bool
+ep_is_session_enabled (EventPipeSessionID session_id);
 
 void
 ep_start_streaming (EventPipeSessionID session_id);
@@ -211,6 +214,7 @@ EventPipeProvider *
 ep_create_provider (
 	const ep_char8_t *provider_name,
 	EventPipeCallback callback_func,
+	EventPipeCallbackDataFree callback_data_free_func,
 	void *callback_data);
 
 void
@@ -218,6 +222,11 @@ ep_delete_provider (EventPipeProvider *provider);
 
 EventPipeProvider *
 ep_get_provider (const ep_char8_t *provider_name);
+
+bool
+ep_add_provider_to_session (
+	EventPipeSessionProvider *provider,
+	EventPipeSession *session);
 
 void
 ep_init (void);
@@ -236,10 +245,27 @@ ep_build_event_metadata_event (
 void
 ep_write_event (
 	EventPipeEvent *ep_event,
+	uint8_t *data,
+	uint32_t data_len,
+	const uint8_t *activity_id,
+	const uint8_t *related_activity_id);
+
+void
+ep_write_event_2 (
+	EventPipeEvent *ep_event,
 	EventData *event_data,
 	uint32_t event_data_len,
 	const uint8_t *activity_id,
 	const uint8_t *related_activity_id);
+
+void
+ep_write_sample_profile_event (
+	ep_rt_thread_handle_t sampling_thread,
+	EventPipeEvent *ep_event,
+	ep_rt_thread_handle_t target_thread,
+	EventPipeStackContents *stack,
+	uint8_t *event_data,
+	uint32_t event_data_len);
 
 EventPipeEventInstance *
 ep_get_next_event (EventPipeSessionID session_id);
@@ -252,20 +278,65 @@ inline
 bool
 ep_walk_managed_stack_for_current_thread (EventPipeStackContents *stack_contents)
 {
-	//TODO: Implement.
+	EP_ASSERT (stack_contents != NULL);
+
 	ep_stack_contents_reset (stack_contents);
-	return ep_rt_walk_managed_stack_for_current_thread (stack_contents);
+
+	ep_rt_thread_handle_t thread = ep_rt_thread_get_handle ();
+	return (thread != NULL) ? ep_rt_walk_managed_stack_for_thread (thread, stack_contents) : false;
+}
+
+static
+inline
+bool
+ep_walk_managed_stack_for_thread (ep_rt_thread_handle_t thread, EventPipeStackContents *stack_contents)
+{
+	EP_ASSERT (thread != NULL);
+	EP_ASSERT (stack_contents != NULL);
+
+	ep_stack_contents_reset (stack_contents);
+	return (thread != NULL) ? ep_rt_walk_managed_stack_for_thread (thread, stack_contents) : false;
 }
 
 /*
  * EventPipePerf.
  */
 
-int64_t
-ep_perf_counter_query (void);
+static
+inline
+ep_timestamp_t
+ep_perf_timestamp_get (void)
+{
+	return (ep_timestamp_t)ep_rt_perf_counter_query ();
+}
 
+static
+inline
 int64_t
-ep_perf_frequency_query (void);
+ep_perf_frequency_query (void)
+{
+	return ep_rt_perf_frequency_query ();
+}
+
+/*
+ * EventPipeSystemTime.
+ */
+
+static
+inline
+ep_system_timestamp_t
+ep_system_timestamp_get (void)
+{
+	return (ep_system_timestamp_t)ep_rt_system_timestamp_get ();
+}
+
+static
+inline
+void
+ep_system_time_get (EventPipeSystemTime *system_time)
+{
+	ep_rt_system_time_get (system_time);
+}
 
 #else /* ENABLE_PERFTRACING */
 
@@ -280,10 +351,18 @@ ep_init (void)
 static
 inline
 void
+ep_finish_init (void)
+{
+	;
+}
+
+static
+inline
+void
 ep_shutdown (void)
 {
 	;
 }
 
 #endif /* ENABLE_PERFTRACING */
-#endif /** __EVENTPIPE_H__ **/
+#endif /* __EVENTPIPE_H__ */

@@ -24,6 +24,8 @@ struct _EventPipeFile {
 struct _EventPipeFile_Internal {
 #endif
 	FastSerializableObject fast_serializable_object;
+	// The system time when the file was opened.
+	EventPipeSystemTime file_open_system_time;
 	// The frequency of the timestamps used for this file.
 	int64_t timestamp_frequency;
 	StreamWriter *stream_writer;
@@ -35,8 +37,6 @@ struct _EventPipeFile_Internal {
 	// Hashtable of metadata labels.
 	ep_rt_metadata_labels_hash_map_t metadata_ids;
 	ep_rt_stack_hash_map_t stack_hash;
-	// The system time when the file was opened.
-	ep_systemtime_t file_open_system_time;
 	// The timestamp when the file was opened.  Used for calculating file-relative timestamps.
 	ep_timestamp_t file_open_timestamp;
 #ifdef EP_CHECKED_BUILD
@@ -48,6 +48,7 @@ struct _EventPipeFile_Internal {
 	uint32_t sampling_rate_in_ns;
 	uint32_t stack_id_counter;
 	volatile uint32_t metadata_id_counter;
+	volatile uint32_t initialized;
 	// The format to serialize.
 	EventPipeSerializationFormat format;
 };
@@ -98,12 +99,6 @@ ep_file_flush (
 	EventPipeFile *file,
 	EventPipeFileFlushFlags flags);
 
-int32_t
-ep_file_get_file_version (EventPipeSerializationFormat format);
-
-int32_t
-ep_file_get_file_minimum_version (EventPipeSerializationFormat format);
-
 /*
  * StackHashKey.
  */
@@ -134,6 +129,12 @@ ep_stack_hash_key_init (
 void
 ep_stack_hash_key_fini (StackHashKey *key);
 
+uint32_t
+ep_stack_hash_key_hash (const void *key);
+
+bool
+ep_stack_hash_key_equal (const void *key1, const void *key2);
+
 /*
  * StackHashEntry.
  */
@@ -158,6 +159,9 @@ struct _StackHashEntry {
 EP_DEFINE_GETTER_REF(StackHashEntry *, stack_hash_entry, StackHashKey *, key)
 EP_DEFINE_GETTER(StackHashEntry *, stack_hash_entry, uint32_t, id)
 
+StackHashKey *
+ep_stack_hash_entry_get_key (StackHashEntry *stack_hash_entry);
+
 StackHashEntry *
 ep_stack_hash_entry_alloc (
 	const EventPipeStackContents *stack_contents,
@@ -168,4 +172,4 @@ void
 ep_stack_hash_entry_free (StackHashEntry *stack_hash_entry);
 
 #endif /* ENABLE_PERFTRACING */
-#endif /** __EVENTPIPE_FILE_H__ **/
+#endif /* __EVENTPIPE_FILE_H__ */

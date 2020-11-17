@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
@@ -30,7 +29,7 @@ namespace System.Security.Cryptography.Pkcs
             long? accuracyInMicroseconds = null,
             bool isOrdering = false,
             ReadOnlyMemory<byte>? nonce = null,
-            ReadOnlyMemory<byte>? tsaName = null,
+            ReadOnlyMemory<byte>? timestampAuthorityName = null,
             X509ExtensionCollection? extensions = null)
         {
             _encodedBytes = Encode(
@@ -42,7 +41,7 @@ namespace System.Security.Cryptography.Pkcs
                 isOrdering,
                 accuracyInMicroseconds,
                 nonce,
-                tsaName,
+                timestampAuthorityName,
                 extensions);
 
             if (!TryDecode(_encodedBytes, true, out _parsedData, out _, out _))
@@ -135,11 +134,11 @@ namespace System.Security.Cryptography.Pkcs
         }
 
         public static bool TryDecode(
-            ReadOnlyMemory<byte> source,
+            ReadOnlyMemory<byte> encodedBytes,
             [NotNullWhen(true)] out Rfc3161TimestampTokenInfo? timestampTokenInfo,
             out int bytesConsumed)
         {
-            if (TryDecode(source, false, out Rfc3161TstInfo tstInfo, out bytesConsumed, out byte[]? copiedBytes))
+            if (TryDecode(encodedBytes, false, out Rfc3161TstInfo tstInfo, out bytesConsumed, out byte[]? copiedBytes))
             {
                 timestampTokenInfo = new Rfc3161TimestampTokenInfo(copiedBytes!, tstInfo);
                 return true;

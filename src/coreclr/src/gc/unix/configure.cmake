@@ -71,21 +71,13 @@ check_cxx_source_runs("
 
 check_library_exists(pthread pthread_condattr_setclock "" HAVE_PTHREAD_CONDATTR_SETCLOCK)
 
-check_cxx_source_runs("
-    #include <stdlib.h>
-    #include <mach/mach_time.h>
-    int main()
-    {
-        int ret;
-        mach_timebase_info_data_t timebaseInfo;
-        ret = mach_timebase_info(&timebaseInfo);
-        mach_absolute_time();
-        exit(ret);
-    }
-    " HAVE_MACH_ABSOLUTE_TIME)
-
+check_symbol_exists(
+    clock_gettime_nsec_np
+    time.h
+    HAVE_CLOCK_GETTIME_NSEC_NP)
 
 check_library_exists(c sched_getaffinity "" HAVE_SCHED_GETAFFINITY)
+check_library_exists(c sched_setaffinity "" HAVE_SCHED_SETAFFINITY)
 check_library_exists(pthread pthread_create "" HAVE_LIBPTHREAD)
 
 if (HAVE_LIBPTHREAD)
@@ -94,7 +86,7 @@ elseif (HAVE_PTHREAD_IN_LIBC)
   set(PTHREAD_LIBRARY c)
 endif()
 
-check_library_exists(${PTHREAD_LIBRARY} pthread_getaffinity_np "" HAVE_PTHREAD_GETAFFINITY_NP)
+check_library_exists(${PTHREAD_LIBRARY} pthread_setaffinity_np "" HAVE_PTHREAD_SETAFFINITY_NP)
 
 check_cxx_symbol_exists(_SC_PHYS_PAGES unistd.h HAVE__SC_PHYS_PAGES)
 check_cxx_symbol_exists(_SC_AVPHYS_PAGES unistd.h HAVE__SC_AVPHYS_PAGES)

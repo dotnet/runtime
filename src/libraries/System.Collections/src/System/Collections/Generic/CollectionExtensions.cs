@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Diagnostics.CodeAnalysis;
 
@@ -8,8 +7,7 @@ namespace System.Collections.Generic
 {
     public static class CollectionExtensions
     {
-        [return: MaybeNull]
-        public static TValue GetValueOrDefault<TKey, TValue>(this IReadOnlyDictionary<TKey, TValue> dictionary, TKey key)
+        public static TValue? GetValueOrDefault<TKey, TValue>(this IReadOnlyDictionary<TKey, TValue> dictionary, TKey key)
         {
             return dictionary.GetValueOrDefault(key, default!);
         }
@@ -21,7 +19,7 @@ namespace System.Collections.Generic
                 throw new ArgumentNullException(nameof(dictionary));
             }
 
-            TValue value;
+            TValue? value;
             return dictionary.TryGetValue(key, out value) ? value : defaultValue;
         }
 
@@ -54,7 +52,7 @@ namespace System.Collections.Generic
                 return true;
             }
 
-            value = default(TValue)!;
+            value = default;
             return false;
         }
     }

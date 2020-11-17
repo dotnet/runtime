@@ -1,6 +1,5 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System;
 using System.Buffers;
@@ -46,10 +45,8 @@ namespace System.IO.Pipelines
         {
         }
 
-        public override int Read(byte[] buffer, int offset, int count)
-        {
-            return ReadAsync(buffer, offset, count).GetAwaiter().GetResult();
-        }
+        public override int Read(byte[] buffer, int offset, int count) =>
+            ReadAsync(buffer, offset, count).GetAwaiter().GetResult();
 
         public override long Seek(long offset, SeekOrigin origin) => throw new NotSupportedException();
 
@@ -65,10 +62,15 @@ namespace System.IO.Pipelines
 
         public override Task<int> ReadAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
         {
+            if (buffer is null)
+            {
+                throw new ArgumentNullException(nameof(buffer));
+            }
+
             return ReadAsyncInternal(new Memory<byte>(buffer, offset, count), cancellationToken).AsTask();
         }
 
-#if !NETSTANDARD2_0
+#if (!NETSTANDARD2_0 && !NETFRAMEWORK)
         public override ValueTask<int> ReadAsync(Memory<byte> buffer, CancellationToken cancellationToken = default)
         {
             return ReadAsyncInternal(buffer, cancellationToken);
@@ -119,6 +121,8 @@ namespace System.IO.Pipelines
 
         public override Task CopyToAsync(Stream destination, int bufferSize, CancellationToken cancellationToken)
         {
+            StreamHelpers.ValidateCopyToArgs(this, destination, bufferSize);
+
             // Delegate to CopyToAsync on the PipeReader
             return _pipeReader.CopyToAsync(destination, cancellationToken);
         }

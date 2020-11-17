@@ -1,16 +1,17 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Formats.Asn1;
-using Internal.Cryptography;
+using System.Runtime.Versioning;
 using System.Security.Cryptography.Asn1;
+using Internal.Cryptography;
 
 namespace System.Security.Cryptography
 {
     /// <summary>
     ///     Abstract base class for implementations of elliptic curve Diffie-Hellman to derive from
     /// </summary>
+    [UnsupportedOSPlatform("browser")]
     public abstract partial class ECDiffieHellman : AsymmetricAlgorithm
     {
         private static readonly string[] s_validOids =

@@ -6,7 +6,6 @@
 #ifdef ENABLE_PERFTRACING
 #include <stdint.h>
 #include <stdbool.h>
-#include "ep-rt-types.h"
 
 #undef EP_IMPL_GETTER_SETTER
 #ifdef EP_IMPL_EP_GETTER_SETTER
@@ -35,6 +34,7 @@ typedef struct _EventPipeEventMetadataEvent EventPipeEventMetadataEvent;
 typedef struct _EventPipeEventPayload EventPipeEventPayload;
 typedef struct _EventPipeEventSource EventPipeEventSource;
 typedef struct _EventPipeFile EventPipeFile;
+typedef struct _EventPipeJsonFile EventPipeJsonFile;
 typedef struct _EventPipeMetadataBlock EventPipeMetadataBlock;
 typedef struct _EventPipeParameterDesc EventPipeParameterDesc;
 typedef struct _EventPipeProvider EventPipeProvider;
@@ -48,6 +48,7 @@ typedef struct _EventPipeSequencePoint EventPipeSequencePoint;
 typedef struct _EventPipeSequencePointBlock EventPipeSequencePointBlock;
 typedef struct _EventPipeStackBlock EventPipeStackBlock;
 typedef struct _EventPipeStackContents EventPipeStackContents;
+typedef struct _EventPipeSystemTime EventPipeSystemTime;
 typedef struct _EventPipeThread EventPipeThread;
 typedef struct _EventPipeThreadHolder EventPipeThreadHolder;
 typedef struct _EventPipeThreadSessionState EventPipeThreadSessionState;
@@ -57,6 +58,7 @@ typedef struct _FastSerializer FastSerializer;
 typedef struct _FileStream FileStream;
 typedef struct _FileStreamWriter FileStreamWriter;
 typedef struct _IpcStream IpcStream;
+typedef struct _IpcStreamVtable IpcStreamVtable;
 typedef struct _IpcStreamWriter IpcStreamWriter;
 typedef struct _StackHashEntry StackHashEntry;
 typedef struct _StackHashKey StackHashKey;
@@ -79,7 +81,7 @@ typedef enum {
 } EventPipeBufferState;
 
 typedef enum {
-	EP_EVENT_LEVEL_LOG_ALWAYS,
+	EP_EVENT_LEVEL_LOGALWAYS,
 	EP_EVENT_LEVEL_CRITICAL,
 	EP_EVENT_LEVEL_ERROR,
 	EP_EVENT_LEVEL_WARNING,
@@ -105,9 +107,9 @@ typedef enum {
 	EP_PARAMETER_TYPE_OBJECT = 1,		// Instance that isn't a value
 	EP_PARAMETER_TYPE_DB_NULL = 2,		// Database null value
 	EP_PARAMETER_TYPE_BOOLEAN = 3,		// Boolean
-	EP_PARAMETER_TYPE_CHAR = 4,			// Unicode character
+	EP_PARAMETER_TYPE_CHAR = 4,		// Unicode character
 	EP_PARAMETER_TYPE_SBYTE = 5,		// Signed 8-bit integer
-	EP_PARAMETER_TYPE_BYTE = 6,			// Unsigned 8-bit integer
+	EP_PARAMETER_TYPE_BYTE = 6,		// Unsigned 8-bit integer
 	EP_PARAMETER_TYPE_INT16 = 7,		// Signed 16-bit integer
 	EP_PARAMETER_TYPE_UINT16 = 8,		// Unsigned 16-bit integer
 	EP_PARAMETER_TYPE_INT32 = 9,		// Signed 32-bit integer
@@ -129,6 +131,12 @@ typedef enum {
 } EventPipeMetadataTag;
 
 typedef enum {
+	EP_SAMPLE_PROFILER_SAMPLE_TYPE_ERROR = 0,
+	EP_SAMPLE_PROFILER_SAMPLE_TYPE_EXTERNAL = 1,
+	EP_SAMPLE_PROFILER_SAMPLE_TYPE_MANAGED = 2
+} EventPipeSampleProfilerSampleType;
+
+typedef enum {
 	// Default format used in .Net Core 2.0-3.0 Preview 6
 	// TBD - it may remain the default format .Net Core 3.0 when
 	// used with private EventPipe managed API via reflection.
@@ -145,7 +153,8 @@ typedef enum {
 typedef enum {
 	EP_SESSION_TYPE_FILE,
 	EP_SESSION_TYPE_LISTENER,
-	EP_SESSION_TYPE_IPCSTREAM
+	EP_SESSION_TYPE_IPCSTREAM,
+	EP_SESSION_TYPE_SYNCHRONOUS
 } EventPipeSessionType ;
 
 typedef enum {
@@ -153,6 +162,12 @@ typedef enum {
 	EP_STATE_INITIALIZED,
 	EP_STATE_SHUTTING_DOWN
 } EventPipeState;
+
+typedef enum {
+	EP_THREAD_TYPE_SERVER,
+	EP_THREAD_TYPE_SESSION,
+	EP_THREAD_TYPE_SAMPLING
+} EventPipeThreadType;
 
 /*
  * EventPipe Basic Types.
@@ -163,7 +178,9 @@ typedef uint64_t EventPipeSessionID;
 typedef char ep_char8_t;
 typedef unsigned short ep_char16_t;
 typedef int64_t ep_timestamp_t;
-typedef int64_t ep_systemtime_t;
+typedef int64_t ep_system_timestamp_t;
+
+#include "ep-rt-types.h"
 
 /*
  * EventPipe Callbacks.
@@ -177,7 +194,25 @@ typedef void (*EventPipeCallback)(
 	uint64_t match_any_keywords,
 	uint64_t match_all_keywords,
 	EventFilterDescriptor *filter_data,
-	void *callback_context);
+	void *callback_data);
+
+typedef void (*EventPipeCallbackDataFree)(
+	EventPipeCallback callback,
+	void *callback_data);
+
+typedef void (*EventPipeSessionSynchronousCallback)(
+	EventPipeProvider *provider,
+	uint32_t event_id,
+	uint32_t event_version,
+	uint32_t metadata_blob_len,
+	const uint8_t *metadata_blob,
+	uint32_t event_data_len,
+	const uint8_t *event_data,
+	const uint8_t *activity_id,
+	const uint8_t *related_activity_id,
+	ep_rt_thread_handle_t event_thread,
+	uint32_t stack_frames_len,
+	uintptr_t *stack_frames);
 
 /*
  * EventFilterDescriptor.
@@ -308,7 +343,7 @@ ep_provider_callback_data_queue_init (EventPipeProviderCallbackDataQueue *provid
 void
 ep_provider_callback_data_queue_fini (EventPipeProviderCallbackDataQueue *provider_callback_data_queue);
 
-void
+bool
 ep_provider_callback_data_queue_enqueue (
 	EventPipeProviderCallbackDataQueue *provider_callback_data_queue,
 	EventPipeProviderCallbackData *provider_callback_data);
@@ -355,6 +390,92 @@ ep_provider_config_init (
 
 void
 ep_provider_config_fini (EventPipeProviderConfiguration *provider_config);
+
+static
+inline
+const ep_char8_t *
+ep_config_get_default_provider_name_utf8 (void)
+{
+	return "Microsoft-DotNETCore-EventPipeConfiguration";
+}
+
+static
+inline
+const ep_char8_t *
+ep_config_get_public_provider_name_utf8 (void)
+{
+	return "Microsoft-Windows-DotNETRuntime";
+}
+
+static
+inline
+const ep_char8_t *
+ep_config_get_private_provider_name_utf8 (void)
+{
+	return "Microsoft-Windows-DotNETRuntimePrivate";
+}
+
+static
+inline
+const ep_char8_t *
+ep_config_get_rundown_provider_name_utf8 (void)
+{
+	return "Microsoft-Windows-DotNETRuntimeRundown";
+}
+
+static
+inline
+const ep_char8_t *
+ep_config_get_sample_profiler_provider_name_utf8 (void)
+{
+	return "Microsoft-DotNETCore-SampleProfiler";
+}
+
+/*
+ * EventPipeSystemTime.
+ */
+
+#if defined(EP_INLINE_GETTER_SETTER) || defined(EP_IMPL_EP_GETTER_SETTER)
+struct _EventPipeSystemTime {
+#else
+struct _EventPipeSystemTime_Internal {
+#endif
+	uint16_t year;
+	uint16_t month;
+	uint16_t day_of_week;
+	uint16_t day;
+	uint16_t hour;
+	uint16_t minute;
+	uint16_t second;
+	uint16_t milliseconds;
+};
+
+#if !defined(EP_INLINE_GETTER_SETTER) && !defined(EP_IMPL_EP_GETTER_SETTER)
+struct _EventPipeSystemTime {
+	uint8_t _internal [sizeof (struct _EventPipeSystemTime_Internal)];
+};
+#endif
+
+EP_DEFINE_GETTER(EventPipeSystemTime *, system_time, uint16_t, year);
+EP_DEFINE_GETTER(EventPipeSystemTime *, system_time, uint16_t, month);
+EP_DEFINE_GETTER(EventPipeSystemTime *, system_time, uint16_t, day_of_week);
+EP_DEFINE_GETTER(EventPipeSystemTime *, system_time, uint16_t, day);
+EP_DEFINE_GETTER(EventPipeSystemTime *, system_time, uint16_t, hour);
+EP_DEFINE_GETTER(EventPipeSystemTime *, system_time, uint16_t, minute);
+EP_DEFINE_GETTER(EventPipeSystemTime *, system_time, uint16_t, second);
+EP_DEFINE_GETTER(EventPipeSystemTime *, system_time, uint16_t, milliseconds);
+
+void
+ep_system_time_set (
+	EventPipeSystemTime *system_time,
+	uint16_t year,
+	uint16_t month,
+	uint16_t day_of_week,
+	uint16_t day,
+	uint16_t hour,
+	uint16_t minute,
+	uint16_t second,
+	uint16_t milliseconds);
 
 #endif /* ENABLE_PERFTRACING */
 #endif /* __EVENTPIPE_TYPES_H__ */

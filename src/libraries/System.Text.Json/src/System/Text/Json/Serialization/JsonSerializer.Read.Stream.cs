@@ -1,6 +1,5 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Buffers;
 using System.Diagnostics;
@@ -36,7 +35,7 @@ namespace System.Text.Json
         /// There is no compatible <see cref="System.Text.Json.Serialization.JsonConverter"/>
         /// for <typeparamref name="TValue"/> or its serializable members.
         /// </exception>
-        public static ValueTask<TValue> DeserializeAsync<[DynamicallyAccessedMembers(MembersAccessedOnRead)] TValue>(
+        public static ValueTask<TValue?> DeserializeAsync<[DynamicallyAccessedMembers(MembersAccessedOnRead)] TValue>(
             Stream utf8Json,
             JsonSerializerOptions? options = null,
             CancellationToken cancellationToken = default)
@@ -87,7 +86,7 @@ namespace System.Text.Json
             return ReadAsync<object?>(utf8Json, returnType, options, cancellationToken);
         }
 
-        private static async ValueTask<TValue> ReadAsync<TValue>(
+        private static async ValueTask<TValue?> ReadAsync<TValue>(
             Stream utf8Json,
             Type returnType,
             JsonSerializerOptions? options,
@@ -234,7 +233,7 @@ namespace System.Text.Json
             state.ReadAhead = !isFinalBlock;
             state.BytesConsumed = 0;
 
-            TValue value = ReadCore<TValue>(converterBase, ref reader, options, ref state);
+            TValue? value = ReadCore<TValue>(converterBase, ref reader, options, ref state);
 
             readerState = reader.CurrentState;
             return value!;

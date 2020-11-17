@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections;
 using System.Collections.Generic;
@@ -20,6 +19,7 @@ using System.Security.Authentication;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
+using Microsoft.Extensions.Internal;
 
 namespace System.Net.Http
 {
@@ -45,21 +45,21 @@ namespace System.Net.Http
         private bool _persistAuthority;
 
         /// <summary>
-        /// When an Alt-Svc authority fails due to 421 Misdirected Request, it is placed in the blacklist to be ignored
-        /// for <see cref="AltSvcBlacklistTimeoutInMilliseconds"/> milliseconds. Initialized on first use.
+        /// When an Alt-Svc authority fails due to 421 Misdirected Request, it is placed in the blocklist to be ignored
+        /// for <see cref="AltSvcBlocklistTimeoutInMilliseconds"/> milliseconds. Initialized on first use.
         /// </summary>
-        private volatile HashSet<HttpAuthority>? _altSvcBlacklist;
-        private CancellationTokenSource? _altSvcBlacklistTimerCancellation;
+        private volatile HashSet<HttpAuthority>? _altSvcBlocklist;
+        private CancellationTokenSource? _altSvcBlocklistTimerCancellation;
         private volatile bool _altSvcEnabled = true;
 
         /// <summary>
-        /// If <see cref="_altSvcBlacklist"/> exceeds this size, Alt-Svc will be disabled entirely for <see cref="AltSvcBlacklistTimeoutInMilliseconds"/> milliseconds.
+        /// If <see cref="_altSvcBlocklist"/> exceeds this size, Alt-Svc will be disabled entirely for <see cref="AltSvcBlocklistTimeoutInMilliseconds"/> milliseconds.
         /// This is to prevent a failing server from bloating the dictionary beyond a reasonable value.
         /// </summary>
         private const int MaxAltSvcIgnoreListSize = 8;
 
-        /// <summary>The time, in milliseconds, that an authority should remain in <see cref="_altSvcBlacklist"/>.</summary>
-        private const int AltSvcBlacklistTimeoutInMilliseconds = 10 * 60 * 1000;
+        /// <summary>The time, in milliseconds, that an authority should remain in <see cref="_altSvcBlocklist"/>.</summary>
+        private const int AltSvcBlocklistTimeoutInMilliseconds = 10 * 60 * 1000;
 
         /// <summary>List of idle connections stored in the pool.</summary>
         private readonly List<CachedConnection> _idleConnections = new List<CachedConnection>();
@@ -67,7 +67,8 @@ namespace System.Net.Http
         private readonly int _maxConnections;
 
         private bool _http2Enabled;
-        private Http2Connection? _http2Connection;
+        // This array must be treated as immutable. It can only be replaced with a new value in AddHttp2Connection method.
+        private volatile Http2Connection[]? _http2Connections;
         private SemaphoreSlim? _http2ConnectionCreateLock;
         private byte[]? _http2AltSvcOriginUri;
         internal readonly byte[]? _http2EncodedAuthorityHostHeader;
@@ -82,6 +83,7 @@ namespace System.Net.Http
         /// <summary>Options specialized and cached for this pool and its key.</summary>
         private readonly SslClientAuthenticationOptions? _sslOptionsHttp11;
         private readonly SslClientAuthenticationOptions? _sslOptionsHttp2;
+        private readonly SslClientAuthenticationOptions? _sslOptionsHttp2Only;
         private readonly SslClientAuthenticationOptions? _sslOptionsHttp3;
 
         /// <summary>Queue of waiters waiting for a connection.  Created on demand.</summary>
@@ -115,15 +117,10 @@ namespace System.Net.Http
             if (host != null)
             {
                 _originAuthority = new HttpAuthority(host, port);
-
-                if (_poolManager.Settings._assumePrenegotiatedHttp3ForTesting)
-                {
-                    _http3Authority = _originAuthority;
-                }
             }
 
             _http2Enabled = _poolManager.Settings._maxHttpVersion >= HttpVersion.Version20;
-            _http3Enabled = _poolManager.Settings._maxHttpVersion >= HttpVersion.Version30;
+            _http3Enabled = _poolManager.Settings._maxHttpVersion >= Http3Connection.HttpVersion30 && (_poolManager.Settings._quicImplementationProvider ?? QuicImplementationProviders.Default).IsSupported;
 
             switch (kind)
             {
@@ -132,7 +129,7 @@ namespace System.Net.Http
                     Debug.Assert(port != 0);
                     Debug.Assert(sslHostName == null);
                     Debug.Assert(proxyUri == null);
-                    _http2Enabled = _poolManager.Settings._allowUnencryptedHttp2;
+
                     _http3Enabled = false;
                     break;
 
@@ -168,6 +165,7 @@ namespace System.Net.Http
                     Debug.Assert(port != 0);
                     Debug.Assert(sslHostName != null);
                     Debug.Assert(proxyUri != null);
+
                     _http3Enabled = false; // TODO: how do we tunnel HTTP3?
                     break;
 
@@ -221,6 +219,8 @@ namespace System.Net.Http
                 {
                     _sslOptionsHttp2 = ConstructSslOptions(poolManager, sslHostName);
                     _sslOptionsHttp2.ApplicationProtocols = s_http2ApplicationProtocols;
+                    _sslOptionsHttp2Only = ConstructSslOptions(poolManager, sslHostName);
+                    _sslOptionsHttp2Only.ApplicationProtocols = s_http2OnlyApplicationProtocols;
 
                     // Note:
                     // The HTTP/2 specification states:
@@ -239,7 +239,6 @@ namespace System.Net.Http
                     Debug.Assert(hostHeader != null);
                     _http2EncodedAuthorityHostHeader = HPackEncoder.EncodeLiteralHeaderFieldWithoutIndexingToAllocatedArray(H2StaticTable.Authority, hostHeader);
                     _http3EncodedAuthorityHostHeader = QPackEncoder.EncodeLiteralHeaderFieldWithStaticNameReferenceToArray(H3StaticTable.Authority, hostHeader);
-
                 }
 
                 if (_http3Enabled)
@@ -255,11 +254,12 @@ namespace System.Net.Http
                 PreAuthCredentials = new CredentialCache();
             }
 
-            if (NetEventSource.IsEnabled) Trace($"{this}");
+            if (NetEventSource.Log.IsEnabled()) Trace($"{this}");
         }
 
-        private static readonly List<SslApplicationProtocol> s_http3ApplicationProtocols = new List<SslApplicationProtocol>() { SslApplicationProtocol.Http3 };
+        private static readonly List<SslApplicationProtocol> s_http3ApplicationProtocols = new List<SslApplicationProtocol>() { Http3Connection.Http3ApplicationProtocol };
         private static readonly List<SslApplicationProtocol> s_http2ApplicationProtocols = new List<SslApplicationProtocol>() { SslApplicationProtocol.Http2, SslApplicationProtocol.Http11 };
+        private static readonly List<SslApplicationProtocol> s_http2OnlyApplicationProtocols = new List<SslApplicationProtocol>() { SslApplicationProtocol.Http2 };
 
         private static SslClientAuthenticationOptions ConstructSslOptions(HttpConnectionPoolManager poolManager, string sslHostName)
         {
@@ -277,7 +277,7 @@ namespace System.Net.Http
             // pretends they're part of the default when running on Win7/2008R2.
             if (s_isWindows7Or2008R2 && sslOptions.EnabledSslProtocols == SslProtocols.None)
             {
-                if (NetEventSource.IsEnabled)
+                if (NetEventSource.Log.IsEnabled())
                 {
                     NetEventSource.Info(poolManager, $"Win7OrWin2K8R2 platform, Changing default TLS protocols to {SecurityProtocol.DefaultSecurityProtocols}");
                 }
@@ -289,8 +289,8 @@ namespace System.Net.Http
 
         public HttpAuthority? OriginAuthority => _originAuthority;
         public HttpConnectionSettings Settings => _poolManager.Settings;
-        public bool IsSecure => _sslOptionsHttp11 != null;
         public HttpConnectionKind Kind => _kind;
+        public bool IsSecure => _kind == HttpConnectionKind.Https || _kind == HttpConnectionKind.SslProxyTunnel;
         public bool AnyProxyKind => (_proxyUri != null);
         public Uri? ProxyUri => _proxyUri;
         public ICredentials? ProxyCredentials => _poolManager.ProxyCredentials;
@@ -330,24 +330,68 @@ namespace System.Net.Http
             }
         }
 
+        public bool EnableMultipleHttp2Connections => _poolManager.Settings.EnableMultipleHttp2Connections;
+
         /// <summary>Object used to synchronize access to state in the pool.</summary>
         private object SyncObj => _idleConnections;
 
         private ValueTask<(HttpConnectionBase? connection, bool isNewConnection, HttpResponseMessage? failureResponse)>
             GetConnectionAsync(HttpRequestMessage request, bool async, CancellationToken cancellationToken)
         {
-            if (_http3Enabled && request.Version.Major >= 3)
+            // Do not even attempt at getting/creating a connection if it's already obvious we cannot provided the one requested.
+            if (request.VersionPolicy != HttpVersionPolicy.RequestVersionOrLower)
+            {
+                if (request.Version.Major == 3 && !_http3Enabled)
+                {
+                    return ValueTask.FromException<(HttpConnectionBase? connection, bool isNewConnection, HttpResponseMessage? failureResponse)>(
+                        new HttpRequestException(SR.Format(SR.net_http_requested_version_not_enabled, request.Version, request.VersionPolicy, 3)));
+                }
+                if (request.Version.Major == 2 && !_http2Enabled)
+                {
+                    return ValueTask.FromException<(HttpConnectionBase? connection, bool isNewConnection, HttpResponseMessage? failureResponse)>(
+                        new HttpRequestException(SR.Format(SR.net_http_requested_version_not_enabled, request.Version, request.VersionPolicy, 2)));
+                }
+            }
+
+            // Either H3 explicitly requested or secured upgraded allowed.
+            if (_http3Enabled && (request.Version.Major >= 3 || (request.VersionPolicy == HttpVersionPolicy.RequestVersionOrHigher && IsSecure)))
             {
                 HttpAuthority? authority = _http3Authority;
+                // H3 is explicitly requested, assume prenegotiated H3.
+                if (request.Version.Major >= 3 && request.VersionPolicy != HttpVersionPolicy.RequestVersionOrLower)
+                {
+                    authority = authority ?? _originAuthority;
+                }
                 if (authority != null)
                 {
+                    if (IsAltSvcBlocked(authority))
+                    {
+                        return ValueTask.FromException<(HttpConnectionBase? connection, bool isNewConnection, HttpResponseMessage? failureResponse)>(
+                            new HttpRequestException(SR.Format(SR.net_http_requested_version_cannot_establish, request.Version, request.VersionPolicy, 3)));
+                    }
+
                     return GetHttp3ConnectionAsync(request, authority, cancellationToken);
                 }
             }
 
-            if (_http2Enabled && request.Version.Major >= 2)
+            // If we got here, we cannot provide HTTP/3 connection. Do not continue if downgrade is not allowed.
+            if (request.Version.Major >= 3 && request.VersionPolicy != HttpVersionPolicy.RequestVersionOrLower)
+            {
+                return ValueTask.FromException<(HttpConnectionBase? connection, bool isNewConnection, HttpResponseMessage? failureResponse)>(
+                    new HttpRequestException(SR.Format(SR.net_http_requested_version_cannot_establish, request.Version, request.VersionPolicy, 3)));
+            }
+
+            if (_http2Enabled && (request.Version.Major >= 2 || (request.VersionPolicy == HttpVersionPolicy.RequestVersionOrHigher && IsSecure)) &&
+               // If the connection is not secured and downgrade is possible, prefer HTTP/1.1.
+               (request.VersionPolicy != HttpVersionPolicy.RequestVersionOrLower || IsSecure))
             {
                 return GetHttp2ConnectionAsync(request, async, cancellationToken);
+            }
+            // If we got here, we cannot provide HTTP/2 connection. Do not continue if downgrade is not allowed.
+            if (request.Version.Major >= 2 && request.VersionPolicy != HttpVersionPolicy.RequestVersionOrLower)
+            {
+                return ValueTask.FromException<(HttpConnectionBase? connection, bool isNewConnection, HttpResponseMessage? failureResponse)>(
+                    new HttpRequestException(SR.Format(SR.net_http_requested_version_cannot_establish, request.Version, request.VersionPolicy, 2)));
             }
 
             return GetHttpConnectionAsync(request, async, cancellationToken);
@@ -430,7 +474,7 @@ namespace System.Net.Http
                     if (validConnection)
                     {
                         // We found a valid connection.  Return it.
-                        if (NetEventSource.IsEnabled) conn.Trace("Found usable connection in pool.");
+                        if (NetEventSource.Log.IsEnabled()) conn.Trace("Found usable connection in pool.");
                         return new ValueTask<HttpConnection?>(conn);
                     }
                 }
@@ -438,15 +482,41 @@ namespace System.Net.Http
                 // We got a connection, but it was already closed by the server or the
                 // server sent unexpected data or the connection is too old.  In any case,
                 // we can't use the connection, so get rid of it and loop around to try again.
-                if (NetEventSource.IsEnabled) conn.Trace("Found invalid connection in pool.");
+                if (NetEventSource.Log.IsEnabled()) conn.Trace("Found invalid connection in pool.");
                 conn.Dispose();
             }
 
             // We are at the connection limit. Wait for an available connection or connection count (indicated by null).
-            if (NetEventSource.IsEnabled) Trace("Connection limit reached, waiting for available connection.");
-            return async ?
-                waiter.WaitWithCancellationAsync(cancellationToken) :
-                new ValueTask<HttpConnection?>(waiter.Task.GetAwaiter().GetResult());
+            if (NetEventSource.Log.IsEnabled()) Trace("Connection limit reached, waiting for available connection.");
+
+            if (HttpTelemetry.Log.IsEnabled())
+            {
+                return WaitOnWaiterWithTelemetryAsync(waiter, async, cancellationToken);
+            }
+            else
+            {
+                return async ?
+                    waiter.WaitWithCancellationAsync(cancellationToken) :
+                    new ValueTask<HttpConnection?>(waiter.Task.GetAwaiter().GetResult());
+            }
+
+            static async ValueTask<HttpConnection?> WaitOnWaiterWithTelemetryAsync(TaskCompletionSourceWithCancellation<HttpConnection?> waiter, bool async, CancellationToken cancellationToken)
+            {
+                ValueStopwatch stopwatch = ValueStopwatch.StartNew();
+                HttpConnection? connection;
+
+                if (async)
+                {
+                    connection = await waiter.WaitWithCancellationAsync(cancellationToken).ConfigureAwait(false);
+                }
+                else
+                {
+                    connection = waiter.Task.GetAwaiter().GetResult();
+                }
+
+                HttpTelemetry.Log.Http11RequestLeftQueue(stopwatch.GetElapsedTime().TotalMilliseconds);
+                return connection;
+            }
         }
 
         private async ValueTask<(HttpConnectionBase? connection, bool isNewConnection, HttpResponseMessage? failureResponse)>
@@ -458,7 +528,7 @@ namespace System.Net.Http
                 return (connection, false, null);
             }
 
-            if (NetEventSource.IsEnabled) Trace("Creating new connection for pool.");
+            if (NetEventSource.Log.IsEnabled()) Trace("Creating new connection for pool.");
 
             try
             {
@@ -484,24 +554,14 @@ namespace System.Net.Http
             Debug.Assert(_kind == HttpConnectionKind.Https || _kind == HttpConnectionKind.SslProxyTunnel || _kind == HttpConnectionKind.Http);
 
             // See if we have an HTTP2 connection
-            Http2Connection? http2Connection = _http2Connection;
+            Http2Connection? http2Connection = GetExistingHttp2Connection();
 
             if (http2Connection != null)
             {
-                TimeSpan pooledConnectionLifetime = _poolManager.Settings._pooledConnectionLifetime;
-                if (http2Connection.LifetimeExpired(Environment.TickCount64, pooledConnectionLifetime))
-                {
-                    // Connection expired.
-                    http2Connection.Dispose();
-                    InvalidateHttp2Connection(http2Connection);
-                }
-                else
-                {
-                    // Connection exist and it is still good to use.
-                    if (NetEventSource.IsEnabled) Trace("Using existing HTTP2 connection.");
-                    _usedSinceLastCleanup = true;
-                    return (http2Connection, false, null);
-                }
+                // Connection exists and it is still good to use.
+                if (NetEventSource.Log.IsEnabled()) Trace("Using existing HTTP2 connection.");
+                _usedSinceLastCleanup = true;
+                return (http2Connection, false, null);
             }
 
             // Ensure that the connection creation semaphore is created
@@ -517,7 +577,7 @@ namespace System.Net.Http
             }
 
             // Try to establish an HTTP2 connection
-            Socket? socket = null;
+            Stream? stream = null;
             SslStream? sslStream = null;
             TransportContext? transportContext = null;
 
@@ -525,73 +585,66 @@ namespace System.Net.Http
             await _http2ConnectionCreateLock.WaitAsync(cancellationToken).ConfigureAwait(false);
             try
             {
-                if (_http2Connection != null)
+                http2Connection = GetExistingHttp2Connection();
+                if (http2Connection != null)
                 {
-                    // Someone beat us to it
-
-                    if (NetEventSource.IsEnabled)
-                    {
-                        Trace("Using existing HTTP2 connection.");
-                    }
-
-                    return (_http2Connection, false, null);
+                    return (http2Connection, false, null);
                 }
 
                 // Recheck if HTTP2 has been disabled by a previous attempt.
                 if (_http2Enabled)
                 {
-                    if (NetEventSource.IsEnabled)
+                    if (NetEventSource.Log.IsEnabled())
                     {
                         Trace("Attempting new HTTP2 connection.");
                     }
 
-                    Stream? stream;
                     HttpResponseMessage? failureResponse;
-                    (socket, stream, transportContext, failureResponse) =
-                        await ConnectAsync(request, async, true, cancellationToken).ConfigureAwait(false);
+
+                    (stream, transportContext, failureResponse) =
+                        await ConnectAsync(request, async, cancellationToken).ConfigureAwait(false);
+
                     if (failureResponse != null)
                     {
                         return (null, true, failureResponse);
                     }
 
+                    Debug.Assert(stream != null);
+
+                    sslStream = stream as SslStream;
+
                     if (_kind == HttpConnectionKind.Http)
                     {
-                        http2Connection = new Http2Connection(this, stream!);
-                        await http2Connection.SetupAsync().ConfigureAwait(false);
+                        http2Connection = await ConstructHttp2Connection(stream, request, cancellationToken).ConfigureAwait(false);
 
-                        Debug.Assert(_http2Connection == null);
-                        _http2Connection = http2Connection;
-
-                        if (NetEventSource.IsEnabled)
+                        if (NetEventSource.Log.IsEnabled())
                         {
                             Trace("New unencrypted HTTP2 connection established.");
                         }
 
-                        return (_http2Connection, true, null);
+                        return (http2Connection, true, null);
                     }
 
-                    sslStream = (SslStream)stream!;
+                    Debug.Assert(sslStream != null);
+
                     if (sslStream.NegotiatedApplicationProtocol == SslApplicationProtocol.Http2)
                     {
                         // The server accepted our request for HTTP2.
 
                         if (sslStream.SslProtocol < SslProtocols.Tls12)
                         {
+                            sslStream.Dispose();
                             throw new HttpRequestException(SR.Format(SR.net_ssl_http2_requires_tls12, sslStream.SslProtocol));
                         }
 
-                        http2Connection = new Http2Connection(this, sslStream);
-                        await http2Connection.SetupAsync().ConfigureAwait(false);
+                        http2Connection = await ConstructHttp2Connection(stream, request, cancellationToken).ConfigureAwait(false);
 
-                        Debug.Assert(_http2Connection == null);
-                        _http2Connection = http2Connection;
-
-                        if (NetEventSource.IsEnabled)
+                        if (NetEventSource.Log.IsEnabled())
                         {
                             Trace("New HTTP2 connection established.");
                         }
 
-                        return (_http2Connection, true, null);
+                        return (http2Connection, true, null);
                     }
                 }
             }
@@ -604,7 +657,7 @@ namespace System.Net.Http
             {
                 // We established an SSL connection, but the server denied our request for HTTP2.
                 // Continue as an HTTP/1.1 connection.
-                if (NetEventSource.IsEnabled)
+                if (NetEventSource.Log.IsEnabled())
                 {
                     Trace("Server does not support HTTP2; disabling HTTP2 use and proceeding with HTTP/1.1 connection");
                 }
@@ -613,6 +666,12 @@ namespace System.Net.Http
                 lock (SyncObj)
                 {
                     _http2Enabled = false;
+
+                    if (request.Version.Major >= 2 && request.VersionPolicy != HttpVersionPolicy.RequestVersionOrLower)
+                    {
+                        sslStream.Close();
+                        throw new HttpRequestException(SR.Format(SR.net_http_requested_version_server_refused, request.Version, request.VersionPolicy));
+                    }
 
                     if (_associatedConnectionCount < _maxConnections)
                     {
@@ -632,21 +691,68 @@ namespace System.Net.Http
 
                 if (canUse)
                 {
-                    return (ConstructHttp11Connection(socket, sslStream, transportContext), true, null);
+                    return (await ConstructHttp11Connection(stream!, transportContext, request, cancellationToken).ConfigureAwait(false), true, null);
                 }
                 else
                 {
-                    if (NetEventSource.IsEnabled)
+                    if (NetEventSource.Log.IsEnabled())
                     {
                         Trace("Discarding downgraded HTTP/1.1 connection because connection limit is exceeded");
                     }
 
-                    sslStream.Close();
+                    stream!.Dispose();
                 }
             }
 
             // If we reach this point, it means we need to fall back to a (new or existing) HTTP/1.1 connection.
             return await GetHttpConnectionAsync(request, async, cancellationToken).ConfigureAwait(false);
+        }
+
+        private Http2Connection? GetExistingHttp2Connection()
+        {
+            Http2Connection[]? localConnections = _http2Connections;
+
+            if (localConnections == null)
+            {
+                return null;
+            }
+
+            for (int i = 0; i < localConnections.Length; i++)
+            {
+                Http2Connection http2Connection = localConnections[i];
+
+                TimeSpan pooledConnectionLifetime = _poolManager.Settings._pooledConnectionLifetime;
+                if (http2Connection.LifetimeExpired(Environment.TickCount64, pooledConnectionLifetime))
+                {
+                    // Connection expired.
+                    http2Connection.Dispose();
+                    InvalidateHttp2Connection(http2Connection);
+                }
+                else if (!EnableMultipleHttp2Connections || http2Connection.CanAddNewStream)
+                {
+                    return http2Connection;
+                }
+            }
+
+            return null;
+        }
+
+        private void AddHttp2Connection(Http2Connection newConnection)
+        {
+            lock (SyncObj)
+            {
+                Http2Connection[]? localHttp2Connections = _http2Connections;
+                int newCollectionSize = localHttp2Connections == null ? 1 : localHttp2Connections.Length + 1;
+                Http2Connection[] newHttp2Connections = new Http2Connection[newCollectionSize];
+                newHttp2Connections[0] = newConnection;
+
+                if (localHttp2Connections != null)
+                {
+                    Array.Copy(localHttp2Connections, 0, newHttp2Connections, 1, localHttp2Connections.Length);
+                }
+
+                _http2Connections = newHttp2Connections;
+            }
         }
 
         private async ValueTask<(HttpConnectionBase? connection, bool isNewConnection, HttpResponseMessage? failureResponse)>
@@ -669,7 +775,7 @@ namespace System.Net.Http
                 else
                 {
                     // Connection exists and it is still good to use.
-                    if (NetEventSource.IsEnabled) Trace("Using existing HTTP3 connection.");
+                    if (NetEventSource.Log.IsEnabled()) Trace("Using existing HTTP3 connection.");
                     _usedSinceLastCleanup = true;
                     return (http3Connection, false, null);
                 }
@@ -694,7 +800,7 @@ namespace System.Net.Http
                 {
                     // Someone beat us to creating the connection.
 
-                    if (NetEventSource.IsEnabled)
+                    if (NetEventSource.Log.IsEnabled())
                     {
                         Trace("Using existing HTTP3 connection.");
                     }
@@ -702,18 +808,28 @@ namespace System.Net.Http
                     return (_http3Connection, false, null);
                 }
 
-                if (NetEventSource.IsEnabled)
+                if (NetEventSource.Log.IsEnabled())
                 {
                     Trace("Attempting new HTTP3 connection.");
                 }
 
-                QuicConnection quicConnection = await ConnectHelper.ConnectQuicAsync(authority.IdnHost, authority.Port, _sslOptionsHttp3, cancellationToken).ConfigureAwait(false);
+                QuicConnection quicConnection;
+                try
+                {
+                    quicConnection = await ConnectHelper.ConnectQuicAsync(Settings._quicImplementationProvider ?? QuicImplementationProviders.Default, new DnsEndPoint(authority.IdnHost, authority.Port), _sslOptionsHttp3, cancellationToken).ConfigureAwait(false);
+                }
+                catch
+                {
+                    // Disables HTTP/3 until server announces it can handle it via Alt-Svc.
+                    BlocklistAuthority(authority);
+                    throw;
+                }
 
                 //TODO: NegotiatedApplicationProtocol not yet implemented.
 #if false
                 if (quicConnection.NegotiatedApplicationProtocol != SslApplicationProtocol.Http3)
                 {
-                    BlacklistAuthority(authority);
+                    BlocklistAuthority(authority);
                     throw new HttpRequestException("QUIC connected but no HTTP/3 indicated via ALPN.", null, RequestRetryType.RetryOnSameOrNextProxy);
                 }
 #endif
@@ -721,7 +837,7 @@ namespace System.Net.Http
                 http3Connection = new Http3Connection(this, _originAuthority, authority, quicConnection);
                 _http3Connection = http3Connection;
 
-                if (NetEventSource.IsEnabled)
+                if (NetEventSource.Log.IsEnabled())
                 {
                     Trace("New HTTP3 connection established.");
                 }
@@ -774,22 +890,37 @@ namespace System.Net.Http
                 }
                 catch (HttpRequestException e) when (e.AllowRetry == RequestRetryType.RetryOnLowerHttpVersion)
                 {
-                    if (NetEventSource.IsEnabled)
+                    // Throw since fallback is not allowed by the version policy.
+                    if (request.VersionPolicy != HttpVersionPolicy.RequestVersionOrLower)
+                    {
+                        throw new HttpRequestException(SR.Format(SR.net_http_requested_version_server_refused, request.Version, request.VersionPolicy), e);
+                    }
+
+                    if (NetEventSource.Log.IsEnabled())
                     {
                         Trace($"Retrying request after exception on existing connection: {e}");
                     }
 
                     // Eat exception and try again on a lower protocol version.
-
                     Debug.Assert(connection is HttpConnection == false, $"{nameof(RequestRetryType.RetryOnLowerHttpVersion)} should not be thrown by HTTP/1 connections.");
                     request.Version = HttpVersion.Version11;
                     continue;
                 }
                 catch (HttpRequestException e) when (!isNewConnection && e.AllowRetry == RequestRetryType.RetryOnSameOrNextProxy)
                 {
-                    if (NetEventSource.IsEnabled)
+                    if (NetEventSource.Log.IsEnabled())
                     {
                         Trace($"Retrying request after exception on existing connection: {e}");
+                    }
+
+                    // Eat exception and try again.
+                    continue;
+                }
+                catch (HttpRequestException e) when (e.AllowRetry == RequestRetryType.RetryOnNextConnection)
+                {
+                    if (NetEventSource.Log.IsEnabled())
+                    {
+                        Trace($"Retrying request on another HTTP/2 connection after active streams limit is reached on existing one: {e}");
                     }
 
                     // Eat exception and try again.
@@ -804,11 +935,11 @@ namespace System.Net.Http
 
                 // If an Alt-Svc authority returns 421, it means it can't actually handle the request.
                 // An authority is supposed to be able to handle ALL requests to the origin, so this is a server bug.
-                // In this case, we blacklist the authority and retry the request at the origin.
+                // In this case, we blocklist the authority and retry the request at the origin.
                 if (response.StatusCode == HttpStatusCode.MisdirectedRequest && connection is Http3Connection h3Connection && h3Connection.Authority != _originAuthority)
                 {
                     response.Dispose();
-                    BlacklistAuthority(h3Connection.Authority);
+                    BlocklistAuthority(h3Connection.Authority);
                     continue;
                 }
 
@@ -830,7 +961,7 @@ namespace System.Net.Http
             {
                 int parseIdx = 0;
 
-                while (AltSvcHeaderParser.Parser.TryParseValue(altSvcHeaderValue, null, ref parseIdx, out object? parsedValue))
+                if (AltSvcHeaderParser.Parser.TryParseValue(altSvcHeaderValue, null, ref parseIdx, out object? parsedValue))
                 {
                     var value = (AltSvcHeaderValue?)parsedValue;
 
@@ -847,16 +978,10 @@ namespace System.Net.Http
                     {
                         var authority = new HttpAuthority(value.Host!, value.Port);
 
-                        if (_altSvcBlacklist != null)
+                        if (IsAltSvcBlocked(authority))
                         {
-                            lock (_altSvcBlacklist)
-                            {
-                                if (_altSvcBlacklist.Contains(authority))
-                                {
-                                    // Skip authorities in our blacklist.
-                                    continue;
-                                }
-                            }
+                            // Skip authorities in our blocklist.
+                            continue;
                         }
 
                         TimeSpan authorityMaxAge = value.MaxAge;
@@ -901,7 +1026,7 @@ namespace System.Net.Http
                                 restoreFlow = true;
                             }
 
-                            _authorityExpireTimer = new Timer(o =>
+                            _authorityExpireTimer = new Timer(static o =>
                             {
                                 var wr = (WeakReference<HttpConnectionPool>)o!;
                                 if (wr.TryGetTarget(out HttpConnectionPool? @this))
@@ -941,46 +1066,61 @@ namespace System.Net.Http
         }
 
         /// <summary>
-        /// Blacklists an authority and resets the current authority back to origin.
-        /// If the number of blacklisted authorities exceeds <see cref="MaxAltSvcIgnoreListSize"/>,
+        /// Checks whether the given <paramref name="authority"/> is on the currext Alt-Svc blocklist.
+        /// </summary>
+        /// <seealso cref="BlocklistAuthority" />
+        private bool IsAltSvcBlocked(HttpAuthority authority)
+        {
+            if (_altSvcBlocklist != null)
+            {
+                lock (_altSvcBlocklist)
+                {
+                    return _altSvcBlocklist.Contains(authority);
+                }
+            }
+            return false;
+        }
+
+        /// <summary>
+        /// Blocklists an authority and resets the current authority back to origin.
+        /// If the number of blocklisted authorities exceeds <see cref="MaxAltSvcIgnoreListSize"/>,
         /// Alt-Svc will be disabled entirely for a period of time.
         /// </summary>
         /// <remarks>
         /// This is called when we get a "421 Misdirected Request" from an alternate authority.
         /// A future strategy would be to retry the individual request on an older protocol, we'd want to have
-        /// some logic to blacklist after some number of failures to avoid doubling our request latency.
+        /// some logic to blocklist after some number of failures to avoid doubling our request latency.
         ///
         /// For now, the spec states alternate authorities should be able to handle ALL requests, so this
-        /// is treated as an exceptional error by immediately blacklisting the authority.
+        /// is treated as an exceptional error by immediately blocklisting the authority.
         /// </remarks>
-        internal void BlacklistAuthority(HttpAuthority badAuthority)
+        internal void BlocklistAuthority(HttpAuthority badAuthority)
         {
             Debug.Assert(badAuthority != null);
-            Debug.Assert(badAuthority != _originAuthority);
 
-            HashSet<HttpAuthority>? altSvcBlacklist = _altSvcBlacklist;
+            HashSet<HttpAuthority>? altSvcBlocklist = _altSvcBlocklist;
 
-            if (altSvcBlacklist == null)
+            if (altSvcBlocklist == null)
             {
                 lock (SyncObj)
                 {
-                    altSvcBlacklist = _altSvcBlacklist;
-                    if (altSvcBlacklist == null)
+                    altSvcBlocklist = _altSvcBlocklist;
+                    if (altSvcBlocklist == null)
                     {
-                        altSvcBlacklist = new HashSet<HttpAuthority>();
-                        _altSvcBlacklistTimerCancellation = new CancellationTokenSource();
-                        _altSvcBlacklist = altSvcBlacklist;
+                        altSvcBlocklist = new HashSet<HttpAuthority>();
+                        _altSvcBlocklistTimerCancellation = new CancellationTokenSource();
+                        _altSvcBlocklist = altSvcBlocklist;
                     }
                 }
             }
 
             bool added, disabled = false;
 
-            lock (altSvcBlacklist)
+            lock (altSvcBlocklist)
             {
-                added = altSvcBlacklist.Add(badAuthority);
+                added = altSvcBlocklist.Add(badAuthority);
 
-                if (added && altSvcBlacklist.Count >= MaxAltSvcIgnoreListSize && _altSvcEnabled)
+                if (added && altSvcBlocklist.Count >= MaxAltSvcIgnoreListSize && _altSvcEnabled)
                 {
                     _altSvcEnabled = false;
                     disabled = true;
@@ -997,26 +1137,26 @@ namespace System.Net.Http
                 }
             }
 
-            Debug.Assert(_altSvcBlacklistTimerCancellation != null);
+            Debug.Assert(_altSvcBlocklistTimerCancellation != null);
             if (added)
             {
-               _ = Task.Delay(AltSvcBlacklistTimeoutInMilliseconds)
+               _ = Task.Delay(AltSvcBlocklistTimeoutInMilliseconds)
                     .ContinueWith(t =>
                     {
-                        lock (altSvcBlacklist)
+                        lock (altSvcBlocklist)
                         {
-                            altSvcBlacklist.Remove(badAuthority);
+                            altSvcBlocklist.Remove(badAuthority);
                         }
-                    }, _altSvcBlacklistTimerCancellation.Token, TaskContinuationOptions.ExecuteSynchronously, TaskScheduler.Default);
+                    }, _altSvcBlocklistTimerCancellation.Token, TaskContinuationOptions.ExecuteSynchronously, TaskScheduler.Default);
             }
 
             if (disabled)
             {
-                _ = Task.Delay(AltSvcBlacklistTimeoutInMilliseconds)
+                _ = Task.Delay(AltSvcBlocklistTimeoutInMilliseconds)
                     .ContinueWith(t =>
                     {
                         _altSvcEnabled = true;
-                    }, _altSvcBlacklistTimerCancellation.Token, TaskContinuationOptions.ExecuteSynchronously, TaskScheduler.Default);
+                    }, _altSvcBlocklistTimerCancellation.Token, TaskContinuationOptions.ExecuteSynchronously, TaskScheduler.Default);
             }
         }
 
@@ -1083,7 +1223,7 @@ namespace System.Net.Http
             return SendWithProxyAuthAsync(request, async, doRequestAuth, cancellationToken);
         }
 
-        private async ValueTask<(Socket?, Stream?, TransportContext?, HttpResponseMessage?)> ConnectAsync(HttpRequestMessage request, bool async, bool allowHttp2, CancellationToken cancellationToken)
+        private async ValueTask<(Stream?, TransportContext?, HttpResponseMessage?)> ConnectAsync(HttpRequestMessage request, bool async, CancellationToken cancellationToken)
         {
             // If a non-infinite connect timeout has been set, create and use a new CancellationToken that will be canceled
             // when either the original token is canceled or a connect timeout occurs.
@@ -1104,11 +1244,11 @@ namespace System.Net.Http
                     case HttpConnectionKind.Https:
                     case HttpConnectionKind.ProxyConnect:
                         Debug.Assert(_originAuthority != null);
-                        stream = await ConnectHelper.ConnectAsync(_originAuthority.IdnHost, _originAuthority.Port, async, cancellationToken).ConfigureAwait(false);
+                        stream = await ConnectToTcpHostAsync(_originAuthority.IdnHost, _originAuthority.Port, request, async, cancellationToken).ConfigureAwait(false);
                         break;
 
                     case HttpConnectionKind.Proxy:
-                        stream = await ConnectHelper.ConnectAsync(_proxyUri!.IdnHost, _proxyUri.Port, async, cancellationToken).ConfigureAwait(false);
+                        stream = await ConnectToTcpHostAsync(_proxyUri!.IdnHost, _proxyUri.Port, request, async, cancellationToken).ConfigureAwait(false);
                         break;
 
                     case HttpConnectionKind.ProxyTunnel:
@@ -1119,22 +1259,22 @@ namespace System.Net.Http
                         {
                             // Return non-success response from proxy.
                             response.RequestMessage = request;
-                            return (null, null, null, response);
+                            return (null, null, response);
                         }
                         break;
                 }
 
-                Socket? socket = (stream as NetworkStream)?.Socket;
+                Debug.Assert(stream != null);
 
                 TransportContext? transportContext = null;
-                if (_kind == HttpConnectionKind.Https || _kind == HttpConnectionKind.SslProxyTunnel)
+                if (IsSecure)
                 {
-                    SslStream sslStream = await ConnectHelper.EstablishSslConnectionAsync(allowHttp2 ? _sslOptionsHttp2! : _sslOptionsHttp11!, request, async, stream!, cancellationToken).ConfigureAwait(false);
-                    stream = sslStream;
+                    SslStream sslStream = await ConnectHelper.EstablishSslConnectionAsync(GetSslOptionsForRequest(request), request, async, stream, cancellationToken).ConfigureAwait(false);
                     transportContext = sslStream.TransportContext;
+                    stream = sslStream;
                 }
 
-                return (socket, stream, transportContext, null);
+                return (stream, transportContext, null);
             }
             finally
             {
@@ -1142,25 +1282,127 @@ namespace System.Net.Http
             }
         }
 
+        private static async ValueTask<Stream> DefaultConnectAsync(SocketsHttpConnectionContext context, CancellationToken cancellationToken)
+        {
+            Socket socket = new Socket(SocketType.Stream, ProtocolType.Tcp);
+            socket.NoDelay = true;
+
+            try
+            {
+                await socket.ConnectAsync(context.DnsEndPoint, cancellationToken).ConfigureAwait(false);
+                return new NetworkStream(socket, ownsSocket: true);
+            }
+            catch
+            {
+                socket.Dispose();
+                throw;
+            }
+        }
+
+        private static readonly Func<SocketsHttpConnectionContext, CancellationToken, ValueTask<Stream>> s_defaultConnectCallback = DefaultConnectAsync;
+
+        private ValueTask<Stream> ConnectToTcpHostAsync(string host, int port, HttpRequestMessage initialRequest, bool async, CancellationToken cancellationToken)
+        {
+            if (async)
+            {
+                Func<SocketsHttpConnectionContext, CancellationToken, ValueTask<Stream>> connectCallback = Settings._connectCallback ?? s_defaultConnectCallback;
+
+                var endPoint = new DnsEndPoint(host, port);
+                return ConnectHelper.ConnectAsync(connectCallback, endPoint, initialRequest, cancellationToken);
+            }
+
+            // Synchronous path.
+
+            if (Settings._connectCallback is not null)
+            {
+                throw new NotSupportedException(SR.net_http_sync_operations_not_allowed_with_connect_callback);
+            }
+
+            try
+            {
+                return new ValueTask<Stream>(ConnectHelper.Connect(host, port, cancellationToken));
+            }
+            catch (Exception ex)
+            {
+                return ValueTask.FromException<Stream>(ex);
+            }
+        }
+
         internal async ValueTask<(HttpConnection?, HttpResponseMessage?)> CreateHttp11ConnectionAsync(HttpRequestMessage request, bool async, CancellationToken cancellationToken)
         {
-            (Socket? socket, Stream? stream, TransportContext? transportContext, HttpResponseMessage? failureResponse) =
-                await ConnectAsync(request, async, false, cancellationToken).ConfigureAwait(false);
+            (Stream? stream, TransportContext? transportContext, HttpResponseMessage? failureResponse) =
+                await ConnectAsync(request, async, cancellationToken).ConfigureAwait(false);
 
             if (failureResponse != null)
             {
                 return (null, failureResponse);
             }
 
-            return (ConstructHttp11Connection(socket, stream!, transportContext), null);
+            return (await ConstructHttp11Connection(stream!, transportContext, request, cancellationToken).ConfigureAwait(false), null);
         }
 
-        private HttpConnection ConstructHttp11Connection(Socket? socket, Stream stream, TransportContext? transportContext)
+        private SslClientAuthenticationOptions GetSslOptionsForRequest(HttpRequestMessage request)
         {
-            return _maxConnections == int.MaxValue ?
-                new HttpConnection(this, socket, stream, transportContext) :
-                new HttpConnectionWithFinalizer(this, socket, stream, transportContext); // finalizer needed to signal the pool when a connection is dropped
+            if (_http2Enabled)
+            {
+                if (request.Version.Major >= 2 && request.VersionPolicy != HttpVersionPolicy.RequestVersionOrLower)
+                {
+                    return _sslOptionsHttp2Only!;
+                }
+
+                if (request.Version.Major >= 2 || request.VersionPolicy == HttpVersionPolicy.RequestVersionOrHigher)
+                {
+                    return _sslOptionsHttp2!;
+                }
+            }
+            return _sslOptionsHttp11!;
         }
+
+        private async ValueTask<Stream> ApplyPlaintextFilter(Stream stream, Version httpVersion, HttpRequestMessage request, CancellationToken cancellationToken)
+        {
+            if (Settings._plaintextStreamFilter is null)
+            {
+                return stream;
+            }
+
+            Stream newStream;
+            try
+            {
+                newStream = await Settings._plaintextStreamFilter(new SocketsHttpPlaintextStreamFilterContext(stream, httpVersion, request), cancellationToken).ConfigureAwait(false);
+            }
+            catch (Exception e)
+            {
+                stream.Dispose();
+                throw new HttpRequestException(SR.net_http_exception_during_plaintext_filter, e);
+            }
+
+            if (newStream == null)
+            {
+                stream.Dispose();
+                throw new HttpRequestException(SR.net_http_null_from_plaintext_filter);
+            }
+
+            return newStream;
+        }
+
+        private async ValueTask<HttpConnection> ConstructHttp11Connection(Stream stream, TransportContext? transportContext, HttpRequestMessage request, CancellationToken cancellationToken)
+        {
+            stream = await ApplyPlaintextFilter(stream, HttpVersion.Version11, request, cancellationToken).ConfigureAwait(false);
+            return new HttpConnection(this, stream, transportContext);
+        }
+
+        private async ValueTask<Http2Connection> ConstructHttp2Connection(Stream stream, HttpRequestMessage request, CancellationToken cancellationToken)
+        {
+            stream = await ApplyPlaintextFilter(stream, HttpVersion.Version20, request, cancellationToken).ConfigureAwait(false);
+
+            Http2Connection http2Connection = new Http2Connection(this, stream);
+            await http2Connection.SetupAsync().ConfigureAwait(false);
+
+            AddHttp2Connection(http2Connection);
+
+            return http2Connection;
+        }
+
 
         // Returns the established stream or an HttpResponseMessage from the proxy indicating failure.
         private async ValueTask<(Stream?, HttpResponseMessage?)> EstablishProxyTunnel(bool async, HttpRequestHeaders? headers, CancellationToken cancellationToken)
@@ -1182,7 +1424,9 @@ namespace System.Net.Http
                 return (null, tunnelResponse);
             }
 
-            return (tunnelResponse.Content!.ReadAsStream(cancellationToken), null);
+            Stream stream = tunnelResponse.Content.ReadAsStream(cancellationToken);
+
+            return (stream, null);
         }
 
         /// <summary>Enqueues a waiter to the waiters list.</summary>
@@ -1224,7 +1468,7 @@ namespace System.Net.Http
         {
             Debug.Assert(Monitor.IsEntered(SyncObj), $"Expected to be holding {nameof(SyncObj)}");
 
-            if (NetEventSource.IsEnabled) Trace(null);
+            if (NetEventSource.Log.IsEnabled()) Trace(null);
             _usedSinceLastCleanup = true;
 
             Debug.Assert(
@@ -1269,7 +1513,7 @@ namespace System.Net.Http
         /// </summary>
         public void DecrementConnectionCount()
         {
-            if (NetEventSource.IsEnabled) Trace(null);
+            if (NetEventSource.Log.IsEnabled()) Trace(null);
             lock (SyncObj)
             {
                 Debug.Assert(_associatedConnectionCount > 0 && _associatedConnectionCount <= _maxConnections,
@@ -1280,7 +1524,7 @@ namespace System.Net.Http
 
                 if (TransferConnection(null))
                 {
-                    if (NetEventSource.IsEnabled) Trace("Transferred connection count to waiter.");
+                    if (NetEventSource.Log.IsEnabled()) Trace("Transferred connection count to waiter.");
                     return;
                 }
 
@@ -1315,7 +1559,7 @@ namespace System.Net.Http
                         receivedUnexpectedData = connection.EnsureReadAheadAndPollRead();
                         if (!receivedUnexpectedData && TransferConnection(connection))
                         {
-                            if (NetEventSource.IsEnabled) connection.Trace("Transferred connection to waiter.");
+                            if (NetEventSource.Log.IsEnabled()) connection.Trace("Transferred connection to waiter.");
                             return;
                         }
                     }
@@ -1333,7 +1577,7 @@ namespace System.Net.Http
                     {
                         // Pool the connection by adding it to the list.
                         list.Add(new CachedConnection(connection));
-                        if (NetEventSource.IsEnabled) connection.Trace("Stored connection in pool.");
+                        if (NetEventSource.Log.IsEnabled()) connection.Trace("Stored connection in pool.");
                         return;
                     }
                 }
@@ -1341,7 +1585,7 @@ namespace System.Net.Http
 
             // The connection could be not be reused.  Dispose of it.
             // Disposing it will alert any waiters that a connection slot has become available.
-            if (NetEventSource.IsEnabled)
+            if (NetEventSource.Log.IsEnabled())
             {
                 connection.Trace(
                     lifetimeExpired ? "Disposing connection return to pool. Connection lifetime expired." :
@@ -1356,9 +1600,39 @@ namespace System.Net.Http
         {
             lock (SyncObj)
             {
-                if (_http2Connection == connection)
+                Http2Connection[]? localHttp2Connections = _http2Connections;
+
+                if (localHttp2Connections == null)
                 {
-                    _http2Connection = null;
+                    return;
+                }
+
+                if (localHttp2Connections.Length == 1)
+                {
+                    // Fast shortcut for the most common case.
+                    if (localHttp2Connections[0] == connection)
+                    {
+                        _http2Connections = null;
+                    }
+                    return;
+                }
+
+                int invalidatedIndex = Array.IndexOf(localHttp2Connections, connection);
+                if (invalidatedIndex >= 0)
+                {
+                    Http2Connection[] newHttp2Connections = new Http2Connection[localHttp2Connections.Length - 1];
+
+                    if (invalidatedIndex > 0)
+                    {
+                        Array.Copy(localHttp2Connections, newHttp2Connections, invalidatedIndex);
+                    }
+
+                    if (invalidatedIndex < localHttp2Connections.Length - 1)
+                    {
+                        Array.Copy(localHttp2Connections, invalidatedIndex + 1, newHttp2Connections, invalidatedIndex, newHttp2Connections.Length - invalidatedIndex);
+                    }
+
+                    _http2Connections = newHttp2Connections;
                 }
             }
         }
@@ -1385,15 +1659,18 @@ namespace System.Net.Http
             {
                 if (!_disposed)
                 {
-                    if (NetEventSource.IsEnabled) Trace("Disposing pool.");
+                    if (NetEventSource.Log.IsEnabled()) Trace("Disposing pool.");
                     _disposed = true;
                     list.ForEach(c => c._connection.Dispose());
                     list.Clear();
 
-                    if (_http2Connection != null)
+                    if (_http2Connections != null)
                     {
-                        _http2Connection.Dispose();
-                        _http2Connection = null;
+                        for (int i = 0; i < _http2Connections.Length; i++)
+                        {
+                            _http2Connections[i].Dispose();
+                        }
+                        _http2Connections = null;
                     }
 
                     if (_authorityExpireTimer != null)
@@ -1402,11 +1679,11 @@ namespace System.Net.Http
                         _authorityExpireTimer = null;
                     }
 
-                    if (_altSvcBlacklistTimerCancellation != null)
+                    if (_altSvcBlocklistTimerCancellation != null)
                     {
-                        _altSvcBlacklistTimerCancellation.Cancel();
-                        _altSvcBlacklistTimerCancellation.Dispose();
-                        _altSvcBlacklistTimerCancellation = null;
+                        _altSvcBlocklistTimerCancellation.Cancel();
+                        _altSvcBlocklistTimerCancellation.Dispose();
+                        _altSvcBlocklistTimerCancellation = null;
                     }
                 }
                 Debug.Assert(list.Count == 0, $"Expected {nameof(list)}.{nameof(list.Count)} == 0");
@@ -1431,21 +1708,57 @@ namespace System.Net.Http
 
             try
             {
-                if (NetEventSource.IsEnabled) Trace("Cleaning pool.");
+                if (NetEventSource.Log.IsEnabled()) Trace("Cleaning pool.");
                 Monitor.Enter(SyncObj, ref tookLock);
 
                 // Get the current time.  This is compared against each connection's last returned
                 // time to determine whether a connection is too old and should be closed.
                 long nowTicks = Environment.TickCount64;
-                Http2Connection? http2Connection = _http2Connection;
+                // Copy the reference to a local variable to simplify the removal logic below.
+                Http2Connection[]? localHttp2Connections = _http2Connections;
 
-                if (http2Connection != null)
+                if (localHttp2Connections != null)
                 {
-                    if (http2Connection.IsExpired(nowTicks, pooledConnectionLifetime, pooledConnectionIdleTimeout))
+                    Http2Connection[]? newHttp2Connections = null;
+                    int newIndex = 0;
+                    for (int i = 0; i < localHttp2Connections.Length; i++)
                     {
-                        http2Connection.Dispose();
-                        // We can set _http2Connection directly while holding lock instead of calling InvalidateHttp2Connection().
-                        _http2Connection = null;
+                        Http2Connection http2Connection = localHttp2Connections[i];
+                        if (http2Connection.IsExpired(nowTicks, pooledConnectionLifetime, pooledConnectionIdleTimeout))
+                        {
+                            http2Connection.Dispose();
+
+                            if (newHttp2Connections == null)
+                            {
+                                newHttp2Connections = new Http2Connection[localHttp2Connections.Length];
+                                if (i > 0)
+                                {
+                                    // Copy valid connections residing at the beggining of the current collection.
+                                    Array.Copy(localHttp2Connections, newHttp2Connections, i);
+                                    newIndex = i;
+                                }
+                            }
+                        }
+                        else if (newHttp2Connections != null)
+                        {
+                            newHttp2Connections[newIndex] = localHttp2Connections[i];
+                            newIndex++;
+                        }
+                    }
+
+                    if (newHttp2Connections != null)
+                    {
+                        //Some connections have been removed, so _http2Connections must be replaced.
+                        if (newIndex > 0)
+                        {
+                            Array.Resize(ref newHttp2Connections, newIndex);
+                            _http2Connections = newHttp2Connections;
+                        }
+                        else
+                        {
+                            // All connections expired.
+                            _http2Connections = null;
+                        }
                     }
                 }
 
@@ -1494,7 +1807,7 @@ namespace System.Net.Http
                     // if a pool was used since the last time we cleaned up, give it another chance. New pools
                     // start out saying they've recently been used, to give them a bit of breathing room and time
                     // for the initial collection to be added to it.
-                    if (_associatedConnectionCount == 0 && !_usedSinceLastCleanup && _http2Connection == null)
+                    if (_associatedConnectionCount == 0 && !_usedSinceLastCleanup && _http2Connections == null)
                     {
                         Debug.Assert(list.Count == 0, $"Expected {nameof(list)}.{nameof(list.Count)} == 0");
                         _disposed = true;
@@ -1533,6 +1846,19 @@ namespace System.Net.Http
             }
             return false;
         }
+
+        internal void HeartBeat()
+        {
+            Http2Connection[]? localHttp2Connections = _http2Connections;
+            if (localHttp2Connections != null)
+            {
+                foreach (Http2Connection http2Connection in localHttp2Connections)
+                {
+                    http2Connection.HeartBeat();
+                }
+            }
+        }
+
 
         // For diagnostic purposes
         public override string ToString() =>
@@ -1593,7 +1919,7 @@ namespace System.Net.Http
                 if ((pooledConnectionIdleTimeout != Timeout.InfiniteTimeSpan) &&
                     ((nowTicks - _returnedTickCount) > pooledConnectionIdleTimeout.TotalMilliseconds))
                 {
-                    if (NetEventSource.IsEnabled) _connection.Trace($"Connection no longer usable. Idle {TimeSpan.FromMilliseconds((nowTicks - _returnedTickCount))} > {pooledConnectionIdleTimeout}.");
+                    if (NetEventSource.Log.IsEnabled()) _connection.Trace($"Connection no longer usable. Idle {TimeSpan.FromMilliseconds((nowTicks - _returnedTickCount))} > {pooledConnectionIdleTimeout}.");
                     return false;
                 }
 
@@ -1606,7 +1932,7 @@ namespace System.Net.Http
                 // Validate that the connection hasn't received any stray data while in the pool.
                 if (poll && _connection.PollRead())
                 {
-                    if (NetEventSource.IsEnabled) _connection.Trace($"Connection no longer usable. Unexpected data received.");
+                    if (NetEventSource.Log.IsEnabled()) _connection.Trace($"Connection no longer usable. Unexpected data received.");
                     return false;
                 }
 

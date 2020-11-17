@@ -1,6 +1,5 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 namespace System.Text.Json
 {
@@ -18,7 +17,6 @@ namespace System.Text.Json
         internal long _bytePositionInLine;
         internal bool _inObject;
         internal bool _isNotPrimitive;
-        internal char _numberFormat;
         internal bool _stringHasEscaping;
         internal bool _trailingCommaBeforeComment;
         internal JsonTokenType _tokenType;
@@ -44,7 +42,6 @@ namespace System.Text.Json
             _bytePositionInLine = default;
             _inObject = default;
             _isNotPrimitive = default;
-            _numberFormat = default;
             _stringHasEscaping = default;
             _trailingCommaBeforeComment = default;
             _tokenType = default;

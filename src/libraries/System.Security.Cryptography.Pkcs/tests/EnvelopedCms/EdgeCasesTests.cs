@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Security.Cryptography.Xml;
 using System.Security.Cryptography.X509Certificates;
@@ -310,7 +309,7 @@ namespace System.Security.Cryptography.Pkcs.EnvelopedCmsTests.Tests
         }
 
         [Theory]
-#if !NET472
+#if !NETFRAMEWORK
         [InlineData(true)]
 #endif
         [InlineData(false)]
@@ -320,7 +319,7 @@ namespace System.Security.Cryptography.Pkcs.EnvelopedCmsTests.Tests
 
             if (useSpan)
             {
-#if !NET472
+#if !NETFRAMEWORK
                 Assert.ThrowsAny<CryptographicException>(() => cms.Decode(ReadOnlySpan<byte>.Empty));
 #else
                 throw new Xunit.Sdk.XunitException(
@@ -503,7 +502,7 @@ namespace System.Security.Cryptography.Pkcs.EnvelopedCmsTests.Tests
 
         [Theory]
         [InlineData(false)]
-#if !NET472
+#if !NETFRAMEWORK
         [InlineData(true)]
 #endif
         public static void ContentInfoGetContentTypeUnknown(bool fromSpan)
@@ -513,7 +512,7 @@ namespace System.Security.Cryptography.Pkcs.EnvelopedCmsTests.Tests
 
             if (fromSpan)
             {
-#if NET472
+#if NETFRAMEWORK
                 throw new Xunit.Sdk.XunitException(
                     "This test should not evaluate for .NET Framework, the API is missing.");
 #else

@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.ComponentModel;
 using System.Runtime.InteropServices;
@@ -949,7 +948,7 @@ namespace System.Management
                 {
                     if (!IsConnected)
                     {
-                        // The locator cannot be marshalled accross apartments, so we must create the locator
+                        // The locator cannot be marshalled across apartments, so we must create the locator
                         // and get the IWbemServices from an MTA thread
                         if (!MTAHelper.IsNoContextMTA())
                         {
@@ -970,8 +969,6 @@ namespace System.Management
         private void InitializeGuts(object o)
         {
             ManagementScope threadParam = (ManagementScope)o;
-            IWbemLocator loc = (IWbemLocator)new WbemLocator();
-            IntPtr punk = IntPtr.Zero;
 
             if (null == threadParam.options)
             {
@@ -987,8 +984,7 @@ namespace System.Management
                 // path here as we do NOT want to trigger an
                 // IdentifierChanged event as a result of this set
 
-                bool bUnused;
-                nsPath = threadParam.prvpath.SetNamespacePath(ManagementPath.DefaultPath.Path, out bUnused);
+                nsPath = threadParam.prvpath.SetNamespacePath(ManagementPath.DefaultPath.Path, out _);
             }
 
             int status = (int)ManagementStatus.NoError;

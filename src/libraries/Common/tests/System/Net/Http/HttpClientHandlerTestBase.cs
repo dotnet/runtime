@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -15,12 +14,11 @@ namespace System.Net.Http.Functional.Tests
 {
     using Configuration = System.Net.Test.Common.Configuration;
 
-#if WINHTTPHANDLER_TEST
-    using HttpClientHandler = System.Net.Http.WinHttpClientHandler;
-#endif
 
     public abstract partial class HttpClientHandlerTestBase : FileCleanupTestBase
     {
+        public static readonly Version HttpVersion30 = new Version(3, 0);
+
         public readonly ITestOutputHelper _output;
 
         protected virtual Version UseVersion => HttpVersion.Version11;
@@ -50,27 +48,6 @@ namespace System.Net.Http.Functional.Tests
                 DefaultRequestVersion = Version.Parse(useVersionString)
 #endif
             };
-
-        protected HttpClientHandler CreateHttpClientHandler() => CreateHttpClientHandler(UseVersion);
-
-        protected static HttpClientHandler CreateHttpClientHandler(string useVersionString) =>
-            CreateHttpClientHandler(Version.Parse(useVersionString));
-
-        protected LoopbackServerFactory LoopbackServerFactory => GetFactoryForVersion(UseVersion);
-
-        protected static LoopbackServerFactory GetFactoryForVersion(Version useVersion)
-        {
-            return useVersion.Major switch
-            {
-#if NETCOREAPP || WINHTTPHANDLER_TEST
-#if HTTP3
-                3 => Http3LoopbackServerFactory.Singleton,
-#endif
-                2 => Http2LoopbackServerFactory.Singleton,
-#endif
-                _ => Http11LoopbackServerFactory.Singleton
-            };
-        }
 
         public static readonly bool[] BoolValues = new[] { true, false };
 
@@ -109,6 +86,25 @@ namespace System.Net.Http.Functional.Tests
             {
                 _expectedVersion = expectedVersion;
             }
+
+#if NETCOREAPP
+            protected override HttpResponseMessage Send(HttpRequestMessage request, CancellationToken cancellationToken)
+            {
+                if (request.Version != _expectedVersion)
+                {
+                    throw new Exception($"Unexpected request version: expected {_expectedVersion}, saw {request.Version}");
+                }
+
+                HttpResponseMessage response = base.Send(request, cancellationToken);
+
+                if (response.Version != _expectedVersion)
+                {
+                    throw new Exception($"Unexpected response version: expected {_expectedVersion}, saw {response.Version}");
+                }
+
+                return response;
+            }
+#endif
 
             protected override async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
             {

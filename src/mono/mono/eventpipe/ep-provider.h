@@ -32,8 +32,10 @@ struct _EventPipeProvider_Internal {
 	// List of every event currently associated with the provider.
 	// New events can be added on-the-fly.
 	ep_rt_event_list_t event_list;
-	// The optional provider callback.
+	// The optional provider callback function.
 	EventPipeCallback callback_func;
+	// The optional provider callback_data free callback function.
+	EventPipeCallbackDataFree callback_data_free_func;
 	// The optional provider callback data pointer.
 	void *callback_data;
 	// The configuration object.
@@ -54,7 +56,6 @@ struct _EventPipeProvider {
 EP_DEFINE_GETTER(EventPipeProvider *, provider, const ep_char8_t *, provider_name)
 EP_DEFINE_GETTER(EventPipeProvider *, provider, const ep_char16_t *, provider_name_utf16)
 EP_DEFINE_GETTER(EventPipeProvider *, provider, bool, delete_deferred)
-EP_DEFINE_SETTER(EventPipeProvider *, provider, bool, delete_deferred)
 EP_DEFINE_GETTER(EventPipeProvider *, provider, uint64_t, sessions)
 
 static
@@ -96,6 +97,7 @@ ep_provider_alloc (
 	EventPipeConfiguration *config,
 	const ep_char8_t *provider_name,
 	EventPipeCallback callback_func,
+	EventPipeCallbackDataFree callback_data_free_func,
 	void *callback_data);
 
 void
@@ -113,5 +115,10 @@ ep_provider_add_event (
 	const uint8_t *metadata,
 	uint32_t metadata_len);
 
+void
+ep_provider_set_delete_deferred (
+	EventPipeProvider *provider,
+	bool deferred);
+
 #endif /* ENABLE_PERFTRACING */
-#endif /** __EVENTPIPE_PROVIDER_H__ **/
+#endif /* __EVENTPIPE_PROVIDER_H__ */

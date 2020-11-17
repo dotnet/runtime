@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 //
 
 //
@@ -535,7 +534,7 @@ VOID ThrowBadFormatWorkerT(UINT resID, T * pImgObj DEBUGARG(__in_z const char *c
     while(0)
 
 
-#define THROW_BAD_FORMAT(resID, imgObj) THROW_BAD_FORMAT_MAYBE(FALSE, resID, imgObj)
+#define THROW_BAD_FORMAT(resID, imgObj) do { THROW_BAD_FORMAT_MAYBE(FALSE, resID, imgObj); UNREACHABLE(); } while(0)
 
 
 // Conditional version of THROW_BAD_FORMAT. Do not use for new callsites. This is really meant to be a drop-in replacement

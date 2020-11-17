@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Buffers;
 using System.Collections.Concurrent;
@@ -440,7 +439,7 @@ namespace System.IO.Pipelines.Tests
 
                         pipe.Writer.Complete();
 
-                        Assert.Equal(Thread.CurrentThread.ManagedThreadId, scheduler.Thread.ManagedThreadId);
+                        Assert.Equal(Environment.CurrentManagedThreadId, scheduler.Thread.ManagedThreadId);
                     };
 
                     Task writing = ExecuteOnNonThreadPoolThread(doWrite);
@@ -471,7 +470,7 @@ namespace System.IO.Pipelines.Tests
 
                         ReadResult result = await pipe.Reader.ReadAsync();
 
-                        Assert.Equal(Thread.CurrentThread.ManagedThreadId, scheduler.Thread.ManagedThreadId);
+                        Assert.Equal(Environment.CurrentManagedThreadId, scheduler.Thread.ManagedThreadId);
 
                         pipe.Reader.AdvanceTo(result.Buffer.End, result.Buffer.End);
 

@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections;
 using System.Diagnostics;
@@ -405,13 +404,13 @@ namespace System.Text.RegularExpressions
             }
         }
 
-        internal void Run<TState>(string input, int startat, ref TState state, MatchCallback<TState> callback)
+        internal void Run<TState>(string input, int startat, ref TState state, MatchCallback<TState> callback, bool reuseMatchObject)
         {
             Debug.Assert((uint)startat <= (uint)input.Length);
             RegexRunner runner = RentRunner();
             try
             {
-                runner.Scan(this, input, startat, ref state, callback, internalMatchTimeout);
+                runner.Scan(this, input, startat, ref state, callback, reuseMatchObject, internalMatchTimeout);
             }
             finally
             {

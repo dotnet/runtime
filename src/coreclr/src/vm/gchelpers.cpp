@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 /*
  * GCHELPERS.CPP
@@ -758,7 +757,7 @@ OBJECTREF AllocatePrimitiveArray(CorElementType type, DWORD cElements)
     // Fetch the proper array type
     if (g_pPredefinedArrayTypes[type] == NULL)
     {
-        TypeHandle elemType = TypeHandle(MscorlibBinder::GetElementType(type));
+        TypeHandle elemType = TypeHandle(CoreLibBinder::GetElementType(type));
         TypeHandle typHnd = ClassLoader::LoadArrayTypeThrowing(elemType, ELEMENT_TYPE_SZARRAY, 0);
         g_pPredefinedArrayTypes[type] = typHnd;
     }
@@ -869,55 +868,6 @@ STRINGREF AllocateString( DWORD cchStringLength )
     PublishObjectAndNotify(orString, flags);
     return ObjectToSTRINGREF(orString);
 }
-
-#ifdef FEATURE_UTF8STRING
-UTF8STRINGREF AllocateUtf8String(DWORD cchStringLength)
-{
-    CONTRACTL{
-        THROWS;
-        GC_TRIGGERS;
-        MODE_COOPERATIVE; // returns an objref without pinning it => cooperative
-    } CONTRACTL_END;
-
-#ifdef _DEBUG
-    if (g_pConfig->ShouldInjectFault(INJECTFAULT_GCHEAP))
-    {
-        char *a = new char;
-        delete a;
-    }
-#endif
-
-    // Limit the maximum string size to <2GB to mitigate risk of security issues caused by 32-bit integer
-    // overflows in buffer size calculations.
-    //
-    // 0x7FFFFFBF is derived from the const 0x3FFFFFDF in SlowAllocateString.
-    // Adding +1 (for null terminator) and multiplying by sizeof(WCHAR) means that
-    // SlowAllocateString allows a maximum of 0x7FFFFFC0 bytes to be used for the
-    // string data itself, with some additional buffer for object headers and other
-    // data. Since we don't have the sizeof(WCHAR) multiplication here, we only need
-    // -1 to account for the null terminator, leading to a max size of 0x7FFFFFBF.
-    if (cchStringLength > 0x7FFFFFBF)
-        ThrowOutOfMemory();
-
-    SIZE_T totalSize = PtrAlign(Utf8StringObject::GetSize(cchStringLength));
-    _ASSERTE(totalSize > cchStringLength);
-
-    SetTypeHandleOnThreadForAlloc(TypeHandle(g_pUtf8StringClass));
-
-    GC_ALLOC_FLAGS flags = GC_ALLOC_NO_FLAGS;
-    if (totalSize >= g_pConfig->GetGCLOHThreshold())
-        flags |= GC_ALLOC_LARGE_OBJECT_HEAP;
-
-    Utf8StringObject* orString = (Utf8StringObject*)Alloc(totalSize, flags);
-
-    // Initialize Object
-    orString->SetMethodTable(g_pUtf8StringClass);
-    orString->SetLength(cchStringLength);
-
-    PublishObjectAndNotify(orString, flags);
-    return ObjectToUTF8STRINGREF(orString);
-}
-#endif // FEATURE_UTF8STRING
 
 #ifdef FEATURE_COMINTEROP_UNMANAGED_ACTIVATION
 // OBJECTREF AllocateComClassObject(ComClassFactory* pComClsFac)

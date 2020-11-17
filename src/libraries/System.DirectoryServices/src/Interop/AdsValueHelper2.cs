@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Text;
 using System.Runtime.InteropServices;
@@ -251,7 +250,7 @@ namespace System.DirectoryServices.Interop
             };
         }
 
-        private unsafe void SetValue(object managedValue, AdsType adsType)
+        private void SetValue(object managedValue, AdsType adsType)
         {
             adsvalue = new AdsValue()
             {

@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 // EEConfig.H
 //
 
@@ -512,15 +511,6 @@ public:
     DWORD  NgenForceFailureCount()    { LIMITED_METHOD_CONTRACT; return dwNgenForceFailureCount; }
     DWORD  NgenForceFailureKind()     { LIMITED_METHOD_CONTRACT; return dwNgenForceFailureKind;  }
 #endif
-    enum GCPollType
-    {
-        GCPOLL_TYPE_DEFAULT,    // Use the default gc poll for the platform
-        GCPOLL_TYPE_HIJACK,     // Depend on thread hijacking for gc suspension
-        GCPOLL_TYPE_POLL,       // Emit function calls to a helper for GC Poll
-        GCPOLL_TYPE_INLINE,     // Emit inlined tests to the helper for GC Poll
-        GCPOLL_TYPE_COUNT
-    };
-    GCPollType GetGCPollType() { LIMITED_METHOD_CONTRACT; return iGCPollType; }
 
 #ifdef _DEBUG
 
@@ -732,8 +722,6 @@ private: //----------------------------------------------------------------
     DWORD dwNgenForceFailureCount;
     DWORD dwNgenForceFailureKind;
 #endif
-
-    GCPollType iGCPollType;
 
 #ifdef _DEBUG
     DWORD fShouldInjectFault;

@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Diagnostics;
 using System.Numerics;
@@ -475,7 +474,7 @@ namespace System.Collections.Generic
                 if (pivot == null)
                 {
                     while (Unsafe.IsAddressLessThan(ref leftRef, ref nextToLastRef) && (leftRef = ref Unsafe.Add(ref leftRef, 1)) == null) ;
-                    while (Unsafe.IsAddressGreaterThan(ref rightRef, ref zeroRef) && (rightRef = ref Unsafe.Add(ref rightRef, -1)) == null) ;
+                    while (Unsafe.IsAddressGreaterThan(ref rightRef, ref zeroRef) && (rightRef = ref Unsafe.Add(ref rightRef, -1)) != null) ;
                 }
                 else
                 {
@@ -553,7 +552,7 @@ namespace System.Collections.Generic
                     j--;
                 }
 
-                Unsafe.Add(ref MemoryMarshal.GetReference(keys), j + 1) = t;
+                Unsafe.Add(ref MemoryMarshal.GetReference(keys), j + 1) = t!;
             }
         }
 
@@ -1055,7 +1054,7 @@ namespace System.Collections.Generic
                     j--;
                 }
 
-                keys[j + 1] = t;
+                keys[j + 1] = t!;
                 values[j + 1] = tValue;
             }
         }

@@ -1,15 +1,8 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <AssemblyName>System.Linq</AssemblyName>
-    <RootNamespace>System.Linq</RootNamespace>
     <TargetFrameworks>$(NetCoreAppCurrent)</TargetFrameworks>
     <Nullable>enable</Nullable>
   </PropertyGroup>
-  <ItemGroup>
-    <ContractProject Include="..\ref\System.Linq.csproj">
-      <BuildTargetFramework>$(NetCoreAppCurrent)</BuildTargetFramework>
-    </ContractProject>
-  </ItemGroup>
   <ItemGroup> <!-- Optimize for speed -->
     <Compile Include="System\Linq\AppendPrepend.SpeedOpt.cs" />
     <Compile Include="System\Linq\Concat.SpeedOpt.cs" />

@@ -207,12 +207,19 @@ void sgen_client_bridge_processing_finish (int generation);
 gboolean sgen_client_bridge_is_bridge_object (GCObject *obj);
 void sgen_client_bridge_register_finalized_object (GCObject *object);
 
+#ifndef DISABLE_SGEN_TOGGLEREF
 /*
  * No action is necessary.
  */
 void sgen_client_mark_togglerefs (char *start, char *end, ScanCopyContext ctx);
 void sgen_client_clear_togglerefs (char *start, char *end, ScanCopyContext ctx);
 void sgen_foreach_toggleref_root (void (*callback)(MonoObject*, gpointer), gpointer data);
+#else
+static inline void sgen_client_mark_togglerefs (char *start, char *end, ScanCopyContext ctx) { }
+static inline void sgen_client_clear_togglerefs (char *start, char *end, ScanCopyContext ctx) { }
+static inline void sgen_foreach_toggleref_root (void (*callback)(MonoObject*, gpointer), gpointer data) { }
+#endif
+
 
 /*
  * Called to handle `MONO_GC_PARAMS` and `MONO_GC_DEBUG` options.  The `handle` functions

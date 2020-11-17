@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 //
 // This file defines namespaces used by the runtime.
 //
@@ -34,7 +33,6 @@
 
 #define g_InteropNS         g_RuntimeNS ".InteropServices"
 #define g_InteropTCENS      g_InteropNS ".TCEAdapterGen"
-#define g_ExpandoNS         g_InteropNS ".Expando"
 
 #define g_IntrinsicsNS g_RuntimeNS ".Intrinsics"
 #define g_NumericsNS   g_SystemNS  ".Numerics"

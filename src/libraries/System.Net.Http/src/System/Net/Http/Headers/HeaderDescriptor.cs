@@ -1,10 +1,10 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Buffers;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
+using System.Text;
 using System.Text.Unicode;
 
 namespace System.Net.Http.Headers
@@ -117,7 +117,7 @@ namespace System.Net.Http.Headers
             return new HeaderDescriptor(_knownHeader.Name);
         }
 
-        public string GetHeaderValue(ReadOnlySpan<byte> headerValue)
+        public string GetHeaderValue(ReadOnlySpan<byte> headerValue, Encoding? valueEncoding)
         {
             if (headerValue.Length == 0)
             {
@@ -157,7 +157,7 @@ namespace System.Net.Http.Headers
                 }
             }
 
-            return HttpRuleParser.DefaultHttpEncoding.GetString(headerValue);
+            return (valueEncoding ?? HttpRuleParser.DefaultHttpEncoding).GetString(headerValue);
         }
 
         internal static string? GetKnownContentType(ReadOnlySpan<byte> contentTypeValue)

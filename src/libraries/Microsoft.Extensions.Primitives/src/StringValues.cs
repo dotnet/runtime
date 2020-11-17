@@ -1,13 +1,13 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Numerics.Hashing;
 using System.Runtime.CompilerServices;
-using Microsoft.Extensions.Internal;
+using System.Text;
 
 namespace Microsoft.Extensions.Primitives
 {
@@ -220,7 +220,7 @@ namespace Microsoft.Extensions.Primitives
                         length += value.Length;
                     }
                 }
-#if NETCOREAPP || NETSTANDARD2_1
+#if NETCOREAPP
                 // Create the new string
                 return string.Create(length, values, (span, strings) => {
                     int offset = 0;
@@ -243,9 +243,7 @@ namespace Microsoft.Extensions.Primitives
                     }
                 });
 #else
-#pragma warning disable CS0618
-                var sb = new InplaceStringBuilder(length);
-#pragma warning restore CS0618
+                var sb = new ValueStringBuilder(length);
                 bool hasAdded = false;
                 // Skip null and empty values
                 for (int i = 0; i < values.Length; i++)
@@ -305,7 +303,7 @@ namespace Microsoft.Extensions.Primitives
         /// Returns the zero-based index of the first occurrence of an item in the <see cref="StringValues" />.
         /// </summary>
         /// <param name="item">The string to locate in the <see cref="StringValues"></see>.</param>
-        /// <returns>the zero-based index of the first occurrence of <paramref name="item" /> within the <see cref="StringValues"></see>, if found; otherwise, –1.</returns>
+        /// <returns>the zero-based index of the first occurrence of <paramref name="item" /> within the <see cref="StringValues"></see>, if found; otherwise, -1.</returns>
         int IList<string>.IndexOf(string item)
         {
             return IndexOf(item);
@@ -742,12 +740,12 @@ namespace Microsoft.Extensions.Primitives
                 {
                     return Unsafe.As<string>(this[0])?.GetHashCode() ?? Count.GetHashCode();
                 }
-                var hcc = default(HashCodeCombiner);
+                int hashCode = 0;
                 for (int i = 0; i < values.Length; i++)
                 {
-                    hcc.Add(values[i]);
+                    hashCode = HashHelpers.Combine(hashCode, values[i]?.GetHashCode() ?? 0);
                 }
-                return hcc.CombinedHash;
+                return hashCode;
             }
             else
             {

@@ -1,4 +1,4 @@
-﻿# Instructions on how to setup database
+# Instructions on how to setup database
 
 ## In Fedora 24 container:
 - `docker ps` shows _id of existing Fedora 24 container
@@ -25,7 +25,7 @@ Get the tag name from https://hub.docker.com/r/microsoft/dotnet-buildtools-prere
 ## Notes on commands used in Linux 14.04
 This section describes the process to install unixODBC libraries and SQLite/MSSQL driver for Ubuntu 14.04.
 
-- `sudo su` 
+- `sudo su`
 - `curl https://packages.microsoft.com/keys/microsoft.asc | apt-key add -`
 - `curl https://packages.microsoft.com/config/ubuntu/14.04/prod.list > /etc/apt/sources.list.d/mssql-release.list`
 - `sudo apt-get update`
@@ -106,7 +106,7 @@ Setup=/usr/local/lib/libsqlite3odbc.so
 Threading=4
 ```
 
-## Notes on commands used in Mac 
+## Notes on commands used in Mac
 - `gunzip unixODBC-2.3.4.tar.gz` download unixodbc
 - `tar xvf unixODBC-2.3.4.tar`
 - `cd unix...`

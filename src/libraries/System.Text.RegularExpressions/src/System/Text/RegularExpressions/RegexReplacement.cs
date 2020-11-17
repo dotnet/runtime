@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections;
 using System.Collections.Generic;
@@ -212,7 +211,7 @@ namespace System.Text.RegularExpressions
                 return input;
             }
 
-            var state = (replacement: this, segments: new SegmentStringBuilder(256), inputMemory: input.AsMemory(), prevat: 0, count);
+            var state = (replacement: this, segments: SegmentStringBuilder.Create(), inputMemory: input.AsMemory(), prevat: 0, count);
 
             if (!regex.RightToLeft)
             {
@@ -222,7 +221,7 @@ namespace System.Text.RegularExpressions
                     state.prevat = match.Index + match.Length;
                     state.thisRef.ReplacementImpl(ref state.segments, match);
                     return --state.count != 0;
-                });
+                }, reuseMatchObject: true);
 
                 if (state.segments.Count == 0)
                 {
@@ -241,7 +240,7 @@ namespace System.Text.RegularExpressions
                     state.prevat = match.Index;
                     state.thisRef.ReplacementImplRTL(ref state.segments, match);
                     return --state.count != 0;
-                });
+                }, reuseMatchObject: true);
 
                 if (state.segments.Count == 0)
                 {

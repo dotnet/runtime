@@ -1,9 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System;
-using System.Runtime.InteropServices;
 using System.Security.Cryptography;
 using System.Security.Cryptography.X509Certificates;
 
@@ -17,7 +15,7 @@ namespace Test.Cryptography
         private static X509KeyStorageFlags GetBestKeyStorageFlags()
         {
 #if NETCOREAPP
-            if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+            if (OperatingSystem.IsWindows())
             {
                 // On Windows 7 ephemeral keys with a key usage embedded in the PFX
                 // are treated differently than Windows 8.  So just use the default
@@ -29,7 +27,7 @@ namespace Test.Cryptography
                     return X509KeyStorageFlags.EphemeralKeySet;
                 }
             }
-            else if (!RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
+            else if (!OperatingSystem.IsMacOS())
             {
                 // OSX doesn't allow ephemeral, but every other Unix does.
                 return X509KeyStorageFlags.EphemeralKeySet;

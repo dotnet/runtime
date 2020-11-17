@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 namespace System.Drawing
 {
@@ -257,7 +256,7 @@ namespace System.Drawing
                     if (s_animationThread == null)
                     {
                         s_animationThread = new Thread(new ThreadStart(AnimateImages50ms));
-                        s_animationThread.Name = typeof(ImageAnimator).Name;
+                        s_animationThread.Name = nameof(ImageAnimator);
                         s_animationThread.IsBackground = true;
                         s_animationThread.Start();
                     }
