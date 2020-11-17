@@ -452,7 +452,9 @@ method_should_be_regression_tested (MonoMethod *method, gboolean interp)
 		if (!is_ok (error))
 			continue;
 
-		char *utf8_str = (char*)(void*)typed_args[0]; //this points into image memory that is constant
+		gpointer arg = typed_args [0];
+		mono_metadata_decode_value (arg, (const char**)&arg);
+		char *utf8_str = (char*)(void*)arg; //this points into image memory that is constant
 		g_free (typed_args);
 		g_free (named_args);
 		g_free (arginfo);
