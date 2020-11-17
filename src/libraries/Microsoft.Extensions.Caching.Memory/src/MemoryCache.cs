@@ -332,7 +332,7 @@ namespace Microsoft.Extensions.Caching.Memory
 
         private static void ScanForExpiredItems(MemoryCache cache)
         {
-            DateTimeOffset now = cache._options.Clock.UtcNow;
+            DateTimeOffset now = cache._lastExpirationScan = cache._options.Clock.UtcNow;
             foreach (CacheEntry entry in cache._entries.Values)
             {
                 if (entry.CheckExpired(now))
