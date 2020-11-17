@@ -3999,6 +3999,7 @@ namespace System
                 delegate*<MethodTable*, object?> pfnNewobj = RuntimeTypeHandle.GetNewobjHelperFnPtr(type, out _pMT, unwrapNullable: false, allowCom: true);
                 if (_pMT->IsNullable)
                 {
+                    static object? GetNull(MethodTable* pMT) => null;
                     pfnNewobj = &GetNull; // Activator.CreateInstance(typeof(Nullable<T>)) => null
                 }
 
@@ -4014,8 +4015,6 @@ namespace System
                     Initialize(type);
                 }
             }
-
-            private static object? GetNull(MethodTable* pMT) => null;
         }
 
         /// <summary>

@@ -136,7 +136,9 @@ namespace System.Runtime.CompilerServices
         [MethodImpl(MethodImplOptions.InternalCall)]
         public static extern bool TryEnsureSufficientExecutionStack();
 
-        private static unsafe object GetUninitializedObjectInternal(Type type)
+        private static unsafe object GetUninitializedObjectInternal(
+            [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors | DynamicallyAccessedMemberTypes.NonPublicConstructors)]
+            Type type)
         {
             RuntimeType rt = (RuntimeType)type;
             Debug.Assert(rt != null);
