@@ -2,6 +2,7 @@ parameters:
   archType: ''
   osGroup: ''
   osSubgroup: ''
+  signCrossDac: false
 
 steps:
   # Always build the crossdac, that way we know in CI/PR if things break to build.
@@ -31,7 +32,7 @@ steps:
         TargetFolder: '$(buildMuslDacStagingPath)'
 
     # Sign diagnostic files on Windows
-    - ${{ if and(ne(variables['System.TeamProject'], 'public'), notin(variables['Build.Reason'], 'PullRequest')) }}:
+    - ${{ if eq(parameters.signCrossDac, true) }}:
       - powershell: >-
           eng\common\build.ps1 -ci -sign -restore -configuration:$(buildConfig) -warnaserror:0
           /p:DiagnosticsFilesRoot="$(buildLinuxDacStagingPath)"

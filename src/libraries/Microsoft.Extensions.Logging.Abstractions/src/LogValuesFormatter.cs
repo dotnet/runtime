@@ -20,6 +20,10 @@ namespace Microsoft.Extensions.Logging
         private readonly string _format;
         private readonly List<string> _valueNames = new List<string>();
 
+        // NOTE: If this assembly ever builds for netcoreapp, the below code should change to:
+        // - Be annotated as [SkipLocalsInit] to avoid zero'ing the stackalloc'd char span
+        // - Format _valueNames.Count directly into a span
+
         public LogValuesFormatter(string format)
         {
             if (format == null)
@@ -29,18 +33,25 @@ namespace Microsoft.Extensions.Logging
 
             OriginalFormat = format;
 
-            var sb = new StringBuilder();
+            var vsb = new ValueStringBuilder(stackalloc char[256]);
             int scanIndex = 0;
             int endIndex = format.Length;
 
             while (scanIndex < endIndex)
             {
                 int openBraceIndex = FindBraceIndex(format, '{', scanIndex, endIndex);
+                if (scanIndex == 0 && openBraceIndex == endIndex)
+                {
+                    // No holes found.
+                    _format = format;
+                    return;
+                }
+
                 int closeBraceIndex = FindBraceIndex(format, '}', openBraceIndex, endIndex);
 
                 if (closeBraceIndex == endIndex)
                 {
-                    sb.Append(format, scanIndex, endIndex - scanIndex);
+                    vsb.Append(format.AsSpan(scanIndex, endIndex - scanIndex));
                     scanIndex = endIndex;
                 }
                 else
@@ -48,16 +59,16 @@ namespace Microsoft.Extensions.Logging
                     // Format item syntax : { index[,alignment][ :formatString] }.
                     int formatDelimiterIndex = FindIndexOfAny(format, FormatDelimiters, openBraceIndex, closeBraceIndex);
 
-                    sb.Append(format, scanIndex, openBraceIndex - scanIndex + 1);
-                    sb.Append(_valueNames.Count.ToString(CultureInfo.InvariantCulture));
+                    vsb.Append(format.AsSpan(scanIndex, openBraceIndex - scanIndex + 1));
+                    vsb.Append(_valueNames.Count.ToString());
                     _valueNames.Add(format.Substring(openBraceIndex + 1, formatDelimiterIndex - openBraceIndex - 1));
-                    sb.Append(format, formatDelimiterIndex, closeBraceIndex - formatDelimiterIndex + 1);
+                    vsb.Append(format.AsSpan(formatDelimiterIndex, closeBraceIndex - formatDelimiterIndex + 1));
 
                     scanIndex = closeBraceIndex + 1;
                 }
             }
 
-            _format = sb.ToString();
+            _format = vsb.ToString();
         }
 
         public string OriginalFormat { get; private set; }

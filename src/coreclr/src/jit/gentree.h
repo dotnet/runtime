@@ -5991,40 +5991,26 @@ struct GenTreePhiArg : public GenTreeLclVarCommon
 
 struct GenTreePutArgStk : public GenTreeUnOp
 {
+private:
+    unsigned m_byteOffset;
+#ifdef FEATURE_PUT_STRUCT_ARG_STK
+    unsigned m_byteSize; // The number of bytes that this argument is occupying on the stack with padding.
+#endif
+
+public:
+#if defined(DEBUG_ARG_SLOTS)
     unsigned gtSlotNum; // Slot number of the argument to be passed on stack
+#if defined(FEATURE_PUT_STRUCT_ARG_STK)
+    unsigned gtNumSlots; // Number of slots for the argument to be passed on stack
+#endif
+#endif
+
 #if defined(UNIX_X86_ABI)
     unsigned gtPadAlign; // Number of padding slots for stack alignment
 #endif
-
-    // Don't let clang-format mess with the GenTreePutArgStk constructor.
-    // clang-format off
-
-    GenTreePutArgStk(genTreeOps   oper,
-                     var_types    type,
-                     GenTree*   op1,
-                     unsigned     slotNum
-                     PUT_STRUCT_ARG_STK_ONLY_ARG(unsigned numSlots),
-                     bool         putInIncomingArgArea = false,
-                     GenTreeCall* callNode = nullptr)
-        : GenTreeUnOp(oper, type, op1 DEBUGARG(/*largeNode*/ false))
-        , gtSlotNum(slotNum)
-#if defined(UNIX_X86_ABI)
-        , gtPadAlign(0)
-#endif
-#if FEATURE_FASTTAILCALL
-        , gtPutInIncomingArgArea(putInIncomingArgArea)
-#endif // FEATURE_FASTTAILCALL
-#ifdef FEATURE_PUT_STRUCT_ARG_STK
-        , gtPutArgStkKind(Kind::Invalid)
-        , gtNumSlots(numSlots)
-#endif // FEATURE_PUT_STRUCT_ARG_STK
 #if defined(DEBUG) || defined(UNIX_X86_ABI)
-        , gtCall(callNode)
+    GenTreeCall* gtCall; // the call node to which this argument belongs
 #endif
-    {
-    }
-
-// clang-format on
 
 #if FEATURE_FASTTAILCALL
 
@@ -6032,7 +6018,66 @@ struct GenTreePutArgStk : public GenTreeUnOp
                                  // By default this is false and will be placed in out-going arg area.
                                  // Fast tail calls set this to true.
                                  // In future if we need to add more such bool fields consider bit fields.
+#endif
 
+#ifdef FEATURE_PUT_STRUCT_ARG_STK
+    // Instruction selection: during codegen time, what code sequence we will be using
+    // to encode this operation.
+    // TODO-Throughput: The following information should be obtained from the child
+    // block node.
+
+    enum class Kind : __int8{
+        Invalid, RepInstr, Unroll, Push, PushAllSlots,
+    };
+    Kind gtPutArgStkKind;
+#endif
+
+    GenTreePutArgStk(genTreeOps oper,
+                     var_types  type,
+                     GenTree*   op1,
+                     unsigned   stackByteOffset,
+#if defined(FEATURE_PUT_STRUCT_ARG_STK)
+                     unsigned stackByteSize,
+#endif
+#if defined(DEBUG_ARG_SLOTS)
+                     unsigned slotNum,
+#if defined(FEATURE_PUT_STRUCT_ARG_STK)
+                     unsigned numSlots,
+#endif
+#endif
+                     GenTreeCall* callNode,
+                     bool         putInIncomingArgArea)
+        : GenTreeUnOp(oper, type, op1 DEBUGARG(/*largeNode*/ false))
+        , m_byteOffset(stackByteOffset)
+#if defined(FEATURE_PUT_STRUCT_ARG_STK)
+        , m_byteSize(stackByteSize)
+#endif
+#if defined(DEBUG_ARG_SLOTS)
+        , gtSlotNum(slotNum)
+#if defined(FEATURE_PUT_STRUCT_ARG_STK)
+        , gtNumSlots(numSlots)
+#endif
+#endif
+#if defined(UNIX_X86_ABI)
+        , gtPadAlign(0)
+#endif
+#if defined(DEBUG) || defined(UNIX_X86_ABI)
+        , gtCall(callNode)
+#endif
+#if FEATURE_FASTTAILCALL
+        , gtPutInIncomingArgArea(putInIncomingArgArea)
+#endif // FEATURE_FASTTAILCALL
+#if defined(FEATURE_PUT_STRUCT_ARG_STK)
+        , gtPutArgStkKind(Kind::Invalid)
+#endif
+    {
+        DEBUG_ARG_SLOTS_ASSERT(m_byteOffset == slotNum * TARGET_POINTER_SIZE);
+#if defined(FEATURE_PUT_STRUCT_ARG_STK)
+        DEBUG_ARG_SLOTS_ASSERT(m_byteSize == gtNumSlots * TARGET_POINTER_SIZE);
+#endif
+    }
+
+#if FEATURE_FASTTAILCALL
     bool putInIncomingArgArea() const
     {
         return gtPutInIncomingArgArea;
@@ -6049,7 +6094,9 @@ struct GenTreePutArgStk : public GenTreeUnOp
 
     unsigned getArgOffset() const
     {
-        return gtSlotNum * TARGET_POINTER_SIZE;
+        DEBUG_ARG_SLOTS_ASSERT(m_byteOffset / TARGET_POINTER_SIZE == gtSlotNum);
+        DEBUG_ARG_SLOTS_ASSERT(m_byteOffset % TARGET_POINTER_SIZE == 0);
+        return m_byteOffset;
     }
 
 #if defined(UNIX_X86_ABI)
@@ -6065,42 +6112,25 @@ struct GenTreePutArgStk : public GenTreeUnOp
 #endif
 
 #ifdef FEATURE_PUT_STRUCT_ARG_STK
-    unsigned getArgSize() const
+    unsigned GetStackByteSize() const
     {
-        return gtNumSlots * TARGET_POINTER_SIZE;
+        return m_byteSize;
     }
 
     // Return true if this is a PutArgStk of a SIMD12 struct.
     // This is needed because such values are re-typed to SIMD16, and the type of PutArgStk is VOID.
     unsigned isSIMD12() const
     {
-        return (varTypeIsSIMD(gtOp1) && (gtNumSlots == 3));
+        return (varTypeIsSIMD(gtOp1) && (GetStackByteSize() == 12));
     }
 
-    // Instruction selection: during codegen time, what code sequence we will be using
-    // to encode this operation.
-    // TODO-Throughput: The following information should be obtained from the child
-    // block node.
-
-    enum class Kind : __int8{
-        Invalid, RepInstr, Unroll, Push, PushAllSlots,
-    };
-
-    Kind gtPutArgStkKind;
     bool isPushKind() const
     {
         return (gtPutArgStkKind == Kind::Push) || (gtPutArgStkKind == Kind::PushAllSlots);
     }
-
-    unsigned gtNumSlots; // Number of slots for the argument to be passed on stack
-
 #else  // !FEATURE_PUT_STRUCT_ARG_STK
-    unsigned getArgSize();
+    unsigned GetStackByteSize() const;
 #endif // !FEATURE_PUT_STRUCT_ARG_STK
-
-#if defined(DEBUG) || defined(UNIX_X86_ABI)
-    GenTreeCall* gtCall; // the call node to which this argument belongs
-#endif
 
 #if DEBUGGABLE_GENTREE
     GenTreePutArgStk() : GenTreeUnOp()
@@ -6116,16 +6146,34 @@ struct GenTreePutArgSplit : public GenTreePutArgStk
     unsigned gtNumRegs;
 
     GenTreePutArgSplit(GenTree* op1,
-                       unsigned slotNum PUT_STRUCT_ARG_STK_ONLY_ARG(unsigned numSlots),
+                       unsigned stackByteOffset,
+#if defined(FEATURE_PUT_STRUCT_ARG_STK)
+                       unsigned stackByteSize,
+#endif
+#if defined(DEBUG_ARG_SLOTS)
+                       unsigned slotNum,
+#if defined(FEATURE_PUT_STRUCT_ARG_STK)
+                       unsigned numSlots,
+#endif
+#endif
                        unsigned     numRegs,
-                       bool         putIncomingArgArea = false,
-                       GenTreeCall* callNode           = nullptr)
+                       GenTreeCall* callNode,
+                       bool         putIncomingArgArea)
         : GenTreePutArgStk(GT_PUTARG_SPLIT,
                            TYP_STRUCT,
                            op1,
-                           slotNum PUT_STRUCT_ARG_STK_ONLY_ARG(numSlots),
-                           putIncomingArgArea,
-                           callNode)
+                           stackByteOffset,
+#if defined(FEATURE_PUT_STRUCT_ARG_STK)
+                           stackByteSize,
+#endif
+#if defined(DEBUG_ARG_SLOTS)
+                           slotNum,
+#if defined(FEATURE_PUT_STRUCT_ARG_STK)
+                           numSlots,
+#endif
+#endif
+                           callNode,
+                           putIncomingArgArea)
         , gtNumRegs(numRegs)
     {
         ClearOtherRegs();
@@ -6245,13 +6293,6 @@ struct GenTreePutArgSplit : public GenTreePutArgStk
     {
         gtSpillFlags = 0;
     }
-
-#ifdef FEATURE_PUT_STRUCT_ARG_STK
-    unsigned getArgSize() const
-    {
-        return (gtNumSlots + gtNumRegs) * TARGET_POINTER_SIZE;
-    }
-#endif // FEATURE_PUT_STRUCT_ARG_STK
 
 #if DEBUGGABLE_GENTREE
     GenTreePutArgSplit() : GenTreePutArgStk()

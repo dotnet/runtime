@@ -32,6 +32,10 @@ private:
     void timeResult(CORINFO_METHOD_INFO info, unsigned flags);
 
 public:
+
+    bool forceClearAltJitFlag;
+    bool forceSetAltJitFlag;
+
     enum Result
     {
         RESULT_ERROR,

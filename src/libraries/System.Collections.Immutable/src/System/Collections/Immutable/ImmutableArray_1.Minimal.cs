@@ -51,7 +51,7 @@ namespace System.Collections.Immutable
         /// This would be private, but we make it internal so that our own extension methods can access it.
         /// </remarks>
         [DebuggerBrowsable(DebuggerBrowsableState.RootHidden)]
-        internal T[]? array;
+        internal readonly T[]? array;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="ImmutableArray{T}"/> struct
