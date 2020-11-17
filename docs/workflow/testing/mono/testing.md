@@ -10,7 +10,7 @@ Build the runtime tests by executing the following command from `$(REPO_ROOT)/sr
 ./build.sh excludemonofailures <release|debug>
 ```
 
-* Running a single test:
+Running a single test:
 ```
 cd ../mono/netcore
 make run-tests-coreclr CoreClrTest="bash ../../artifacts/tests/coreclr/OSX.x64.Release/JIT/opt/InstructionCombining/DivToMul/DivToMul.sh"
