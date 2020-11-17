@@ -510,7 +510,7 @@ namespace Microsoft.Extensions.Caching.Memory
                 Throw();
             }
 
-            void Throw() => throw new ObjectDisposedException(typeof(MemoryCache).FullName);
+            static void Throw() => throw new ObjectDisposedException(typeof(MemoryCache).FullName);
         }
 
         private static void ValidateCacheKey(object key)
@@ -520,7 +520,7 @@ namespace Microsoft.Extensions.Caching.Memory
                 Throw();
             }
 
-            void Throw() => throw new ArgumentNullException(nameof(key));
+            static void Throw() => throw new ArgumentNullException(nameof(key));
         }
     }
 }
