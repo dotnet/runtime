@@ -711,13 +711,13 @@ int GenTree::GetRegisterDstCount(Compiler* compiler) const
     }
 #endif
 
-#if defined(TARGET_XARCH) && defined(FEATURE_HW_INTRINSICS)
-    if (OperIs(GT_HWINTRINSIC))
+    if (OperIsHWIntrinsic())
     {
         assert(TypeGet() == TYP_STRUCT);
+        // TODO-ARM64-NYI: Support hardware intrinsics operating on multiple contiguous registers.
         return 2;
     }
-#endif
+
     if (OperIsScalarLocal())
     {
         return AsLclVar()->GetFieldCount(compiler);

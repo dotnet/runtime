@@ -7243,12 +7243,12 @@ inline bool GenTree::IsMultiRegNode() const
         return true;
     }
 #endif // FEATURE_MULTIREG_RET
-#if defined(TARGET_XARCH) && defined(FEATURE_HW_INTRINSICS)
-    if (OperIs(GT_HWINTRINSIC))
+
+    if (OperIsHWIntrinsic())
     {
         return (TypeGet() == TYP_STRUCT);
     }
-#endif
+
     if (IsMultiRegLclVar())
     {
         return true;
@@ -7291,13 +7291,13 @@ inline unsigned GenTree::GetMultiRegCount()
         return AsCopyOrReload()->GetRegCount();
     }
 #endif // FEATURE_MULTIREG_RET
-#if defined(TARGET_XARCH) && defined(FEATURE_HW_INTRINSICS)
-    if (OperIs(GT_HWINTRINSIC))
+
+    if (OperIsHWIntrinsic())
     {
         assert(TypeGet() == TYP_STRUCT);
         return 2;
     }
-#endif
+
     if (OperIs(GT_LCL_VAR, GT_STORE_LCL_VAR))
     {
         assert((gtFlags & GTF_VAR_MULTIREG) != 0);
@@ -7360,10 +7360,11 @@ inline regNumber GenTree::GetRegByIndex(int regIndex)
         return AsCopyOrReload()->GetRegNumByIdx(regIndex);
     }
 #endif // FEATURE_MULTIREG_RET
-#if defined(TARGET_XARCH) && defined(FEATURE_HW_INTRINSICS)
+#ifdef FEATURE_HW_INTRINSICS
     if (OperIs(GT_HWINTRINSIC))
     {
         assert(regIndex == 1);
+        // TODO-ARM64-NYI: Support hardware intrinsics operating on multiple contiguous registers.
         return AsHWIntrinsic()->GetOtherReg();
     }
 #endif
@@ -7417,15 +7418,27 @@ inline var_types GenTree::GetRegTypeByIndex(int regIndex)
 
 #endif // FEATURE_MULTIREG_RET
 
-#if defined(TARGET_XARCH) && defined(FEATURE_HW_INTRINSICS)
-    if (OperIs(GT_HWINTRINSIC))
+    if (OperIsHWIntrinsic())
     {
+        assert(TypeGet() == TYP_STRUCT);
+
+#ifdef TARGET_XARCH
         // At this time, the only multi-reg HW intrinsics all return the type of their
         // arguments. If this changes, we will need a way to record or determine this.
-        assert(TypeGet() == TYP_STRUCT);
         return gtGetOp1()->TypeGet();
-    }
+#elif defined(TARGET_ARM64)
+        if (AsHWIntrinsic()->gtSIMDSize == 16)
+        {
+            return TYP_SIMD16;
+        }
+        else
+        {
+            assert(AsHWIntrinsic()->gtSIMDSize == 8);
+            return TYP_SIMD8;
+        }
 #endif
+    }
+
     if (OperIs(GT_LCL_VAR, GT_STORE_LCL_VAR))
     {
         if (TypeGet() == TYP_LONG)
