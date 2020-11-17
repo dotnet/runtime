@@ -787,26 +787,30 @@ GenTree* Compiler::impHWIntrinsic(NamedIntrinsic        intrinsic,
     {
         unsigned int sizeBytes = 0;
         baseType               = getBaseTypeAndSizeOfSIMDType(sig->retTypeSigClass, &sizeBytes);
-        bool checkBaseType     = true;
-#ifdef TARGET_XARCH
-        if (sizeBytes == 0)
+
+        if (sizeBytes != 0)
         {
-            assert((intrinsic == NI_BMI2_MultiplyNoFlags2) || (intrinsic == NI_BMI2_X64_MultiplyNoFlags2));
-            assert(retType == TYP_STRUCT);
-            checkBaseType = false;
+            // We want to return early here for cases where retType was TYP_STRUCT as per method signature and
+            // rather than deferring the decision after getting the baseType of arg.
+            if (!isSupportedBaseType(intrinsic, baseType))
+            {
+                return nullptr;
+            }
+
+            retType = getSIMDTypeForSize(sizeBytes);
         }
         else
         {
-            retType = getSIMDTypeForSize(sizeBytes);
-            assert(retType != TYP_STRUCT);
-        }
+#ifdef TARGET_XARCH
+            assert((intrinsic == NI_BMI2_MultiplyNoFlags2) || (intrinsic == NI_BMI2_X64_MultiplyNoFlags2));
+#elif defined(TARGET_ARM64)
+            assert((intrinsic == NI_AdvSimd_Arm64_LoadPairScalarVector64) ||
+                   (intrinsic == NI_AdvSimd_Arm64_LoadPairScalarVector64NonTemporal) ||
+                   (intrinsic == NI_AdvSimd_Arm64_LoadPairVector64) ||
+                   (intrinsic == NI_AdvSimd_Arm64_LoadPairVector64NonTemporal) ||
+                   (intrinsic == NI_AdvSimd_Arm64_LoadPairVector128) ||
+                   (intrinsic == NI_AdvSimd_Arm64_LoadPairVector128NonTemporal));
 #endif
-
-        // We want to return early here for cases where retType was TYP_STRUCT as per method signature and
-        // rather than deferring the decision after getting the baseType of arg.
-        if (checkBaseType && !isSupportedBaseType(intrinsic, baseType))
-        {
-            return nullptr;
         }
     }
 
