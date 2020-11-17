@@ -249,7 +249,7 @@ namespace System.Net.WebSockets.Client.Tests
         }
 
         [ConditionalFact(nameof(WebSocketsSupported))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/44720")]
+        //[ActiveIssue("https://github.com/dotnet/runtime/issues/44720")]
         public async Task ConnectAsync_CancellationRequestedBeforeConnect_ThrowsOperationCanceledException()
         {
             using (var clientSocket = new ClientWebSocket())
