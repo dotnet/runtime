@@ -10,7 +10,6 @@ int32_t CryptoNative_EnsureOpenSslInitialized()
 
 int32_t CryptoNative_GetRandomBytes(uint8_t* buff, int32_t len)
 {
-    LOG_INFO("CryptoNative_GetRandomBytes");
     assert(g_randClass);
     assert(g_randCtor);
     JNIEnv* env = GetJNIEnv();
