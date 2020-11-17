@@ -2211,6 +2211,11 @@ void CodeGen::genGenerateMachineCode()
         {
             printf("; discarded IBC profile data due to mismatch in ILSize\n");
         }
+
+        if (compiler->opts.jitFlags->IsSet(JitFlags::JIT_FLAG_ALT_JIT))
+        {
+            printf("; invoked as altjit\n");
+        }
     }
 #endif // DEBUG
 

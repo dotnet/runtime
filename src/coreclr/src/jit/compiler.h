@@ -9016,10 +9016,8 @@ public:
 #endif
     } opts;
 
-#ifdef ALT_JIT
     static bool                s_pAltJitExcludeAssembliesListInitialized;
     static AssemblyNamesList2* s_pAltJitExcludeAssembliesList;
-#endif // ALT_JIT
 
 #ifdef DEBUG
     static bool                s_pJitDisasmIncludeAssembliesListInitialized;
