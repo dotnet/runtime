@@ -501,11 +501,9 @@ namespace System.Threading.Tasks
         /// A scheduler shim used to queue tasks to the pair and execute those tasks on request of the pair.
         /// </summary>
         [DebuggerDisplay("Count={CountForDebugger}, MaxConcurrencyLevel={m_maxConcurrencyLevel}, Id={Id}")]
-        [DebuggerTypeProxy(typeof(ConcurrentExclusiveTaskScheduler.DebugView))]
+        [DebuggerTypeProxy(typeof(DebugView))]
         private sealed class ConcurrentExclusiveTaskScheduler : TaskScheduler
         {
-            /// <summary>Cached delegate for invoking TryExecuteTaskShim.</summary>
-            private static readonly Func<object?, bool> s_tryExecuteTaskShim = new Func<object?, bool>(TryExecuteTaskShim);
             /// <summary>The parent pair.</summary>
             private readonly ConcurrentExclusiveSchedulerPair m_pair;
             /// <summary>The maximum concurrency level for the scheduler.</summary>
@@ -632,7 +630,11 @@ namespace System.Threading.Tasks
                 // is able to invoke the task, which might account for an additional but unavoidable delay.
                 // Once it's done, we can return whether the task executed by returning the
                 // shim task's Result, which is in turn the result of TryExecuteTask.
-                var t = new Task<bool>(s_tryExecuteTaskShim, Tuple.Create(this, task));
+                var t = new Task<bool>(s =>
+                {
+                    var tuple = (TupleSlim<ConcurrentExclusiveTaskScheduler, Task>)s!;
+                    return tuple.Item1.TryExecuteTask(tuple.Item2);
+                }, new TupleSlim<ConcurrentExclusiveTaskScheduler, Task>(this, task));
                 try
                 {
                     t.RunSynchronously(m_pair.m_underlyingTaskScheduler);
@@ -645,20 +647,6 @@ namespace System.Threading.Tasks
                     throw;
                 }
                 finally { t.Dispose(); }
-            }
-
-            /// <summary>Shim used to invoke this.TryExecuteTask(task).</summary>
-            /// <param name="state">A tuple of the ConcurrentExclusiveTaskScheduler and the task to execute.</param>
-            /// <returns>true if the task was successfully inlined; otherwise, false.</returns>
-            /// <remarks>
-            /// This method is separated out not because of performance reasons but so that
-            /// the SecuritySafeCritical attribute may be employed.
-            /// </remarks>
-            private static bool TryExecuteTaskShim(object? state)
-            {
-                Debug.Assert(state is Tuple<ConcurrentExclusiveTaskScheduler, Task>);
-                var tuple = (Tuple<ConcurrentExclusiveTaskScheduler, Task>)state;
-                return tuple.Item1.TryExecuteTask(tuple.Item2);
             }
 
             /// <summary>Gets for debugging purposes the tasks scheduled to this scheduler.</summary>

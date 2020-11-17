@@ -131,25 +131,6 @@ jobs:
 
     steps:
 
-    # Install MicroBuild for signing the DAC and DBI
-    - ${{ if and(ne(variables['System.TeamProject'], 'public'), notin(variables['Build.Reason'], 'PullRequest')) }}:
-      - task: NuGetAuthenticate@0
-
-      - ${{ if eq(parameters.osGroup, 'windows') }}:
-        # NuGet's http cache lasts 30 minutes. If we're on a static machine, this may interfere with
-        # auto-update PRs by preventing the CI build from fetching the new version. Delete the cache.
-        - powershell: Remove-Item -Recurse -ErrorAction Ignore "$env:LocalAppData\NuGet\v3-cache"
-          displayName: Clear NuGet http cache (if exists)
-
-        - task: MicroBuildSigningPlugin@2
-          displayName: Install MicroBuild plugin for Signing
-          inputs:
-            signType: $(SignType)
-            zipSources: false
-            feedSource: https://dnceng.pkgs.visualstudio.com/_packaging/MicroBuildToolset/nuget/v3/index.json
-          continueOnError: false
-          condition: and(succeeded(), in(variables['SignType'], 'real', 'test'))
-
     # Install native dependencies
     # Linux builds use docker images with dependencies preinstalled,
     # and FreeBSD builds use a build agent with dependencies
@@ -168,6 +149,17 @@ jobs:
     # We can't do this from within the build, so we need to do this as a separate step.
     - ${{ if and(eq(variables['System.TeamProject'], 'internal'), ne(variables['Build.Reason'], 'PullRequest')) }}:
       - template: /eng/pipelines/common/restore-internal-tools.yml
+
+    # Install MicroBuild for signing the DAC and DBI
+    - ${{ if and(eq(variables['System.TeamProject'], 'internal'), eq(parameters.signBinaries, true), eq(parameters.osGroup, 'windows')) }}:
+      - task: MicroBuildSigningPlugin@2
+        displayName: Install MicroBuild plugin for Signing
+        inputs:
+          signType: $(SignType)
+          zipSources: false
+          feedSource: https://dnceng.pkgs.visualstudio.com/_packaging/MicroBuildToolset/nuget/v3/index.json
+        continueOnError: false
+        condition: and(succeeded(), in(variables['SignType'], 'real', 'test'))
 
     - ${{ if in(parameters.osGroup, 'OSX', 'iOS','tvOS') }}:
       - script: |
@@ -231,7 +223,7 @@ jobs:
             overWrite: true
 
     # Sign diagnostic files on Windows
-    - ${{ if and(eq(parameters.osGroup, 'windows'), ne(variables['System.TeamProject'], 'public'), notin(variables['Build.Reason'], 'PullRequest'), ne(parameters.testGroup, 'clrTools')) }}:
+    - ${{ if and(eq(parameters.osGroup, 'windows'), eq(parameters.signBinaries, true)) }}:
       - powershell: >-
           eng\common\build.ps1 -ci -sign -restore -configuration:$(buildConfig) -warnaserror:0
           /p:DiagnosticsFilesRoot="$(buildProductRootFolderPath)"
@@ -267,6 +259,7 @@ jobs:
           archType: ${{ parameters.archType }}
           osGroup: ${{ parameters.osGroup }}
           osSubgroup: ${{ parameters.osSubgroup }}
+          signCrossDac: ${{ parameters.signBinaries }}
 
     - ${{ if and(ne(parameters.compilerName, 'gcc'), ne(parameters.testGroup, ''), ne(parameters.testGroup, 'clrTools')) }}:
       # Publish test native components for consumption by test execution.

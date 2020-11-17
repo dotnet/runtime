@@ -8,13 +8,23 @@
     <TargetOS>Browser</TargetOS>
     <MicrosoftNetCoreAppRuntimePackDir>$(ArtifactsBinDir)microsoft.netcore.app.runtime.browser-wasm\$(Configuration)\runtimes\browser-wasm\</MicrosoftNetCoreAppRuntimePackDir>
     <BuildDir>$(MSBuildThisFileDirectory)obj\$(Configuration)\wasm</BuildDir>
-    <AppDir>$(MSBuildThisFileDirectory)bin\$(Configuration)\publish</AppDir>
+    <AppDir>$(MSBuildThisFileDirectory)bin\$(Configuration)\AppBundle\</AppDir>
     <PublishTrimmed>true</PublishTrimmed>
     <TrimMode>link</TrimMode>
     <EnableTargetingPackDownload>false</EnableTargetingPackDownload>
     <SelfContained>true</SelfContained>
     <RuntimeIdentifier>browser-wasm</RuntimeIdentifier>
     <RunAnalyzers>false</RunAnalyzers>
+    <RunAOTCompilation Condition="'$(RunAOTCompilation)' == ''">false</RunAOTCompilation>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(Configuration)' != 'Debug'">
+    <!-- Runtime feature defaults to trim unnecessary code -->
+    <EventSourceSupport>false</EventSourceSupport>
+    <UseSystemResourceKeys>true</UseSystemResourceKeys>
+    <EnableUnsafeUTF7Encoding>false</EnableUnsafeUTF7Encoding>
+    <HttpActivityPropagationSupport>false</HttpActivityPropagationSupport>
+    <DebuggerSupport>false</DebuggerSupport>
   </PropertyGroup>
 
   <!-- Redirect 'dotnet publish' to in-tree runtime pack -->
@@ -33,28 +43,70 @@
     </ItemGroup>
 
     <MSBuild Projects="@(WasmAppBuildProject)"
-             Properties="Configuration=$(Configuration);MSBuildRestoreSessionId=$([System.Guid]::NewGuid())"
+             Properties="Configuration=Debug;MSBuildRestoreSessionId=$([System.Guid]::NewGuid())"
              Targets="Restore"/>
 
     <MSBuild Projects="@(WasmAppBuildProject)"
-             Properties="Configuration=$(Configuration)"
+             Properties="Configuration=Debug"
              Targets="Build;Publish"/>
   </Target>
 
+  <Import Project="$(RepoTasksDir)mobile.tasks\AotCompilerTask\MonoAOTCompiler.props" />
   <UsingTask TaskName="WasmAppBuilder" 
-             AssemblyFile="$(ArtifactsBinDir)WasmAppBuilder\$(Configuration)\$(NetCoreAppCurrent)\publish\WasmAppBuilder.dll"/>
+             AssemblyFile="$(ArtifactsBinDir)WasmAppBuilder\Debug\$(NetCoreAppCurrent)\publish\WasmAppBuilder.dll"/>
+
+  <UsingTask TaskName="MonoAOTCompiler"
+             AssemblyFile="$(ArtifactsBinDir)MonoAOTCompiler\Debug\$(NetCoreAppCurrent)\MonoAOTCompiler.dll" />
 
   <Target Name="BuildApp" AfterTargets="CopyFilesToPublishDirectory" DependsOnTargets="RebuildWasmAppBuilder;Build">
+    <RemoveDir Directories="$(AppDir)" />
+
     <ItemGroup>
-      <BundleAssemblies Include="$(MSBuildThisFileDirectory)$(PublishDir)\*.dll" />
+      <BundleAssemblies Condition="'$(RunAOTCompilation)' != 'true'" Include="$(MSBuildThisFileDirectory)$(PublishDir)\*.dll" />
+      <AotInputAssemblies Condition="'$(RunAOTCompilation)' == 'true'" Include="$(MSBuildThisFileDirectory)$(PublishDir)\*.dll">
+        <AotArguments>@(MonoAOTCompilerDefaultAotArguments, ';')</AotArguments>
+        <ProcessArguments>@(MonoAOTCompilerDefaultProcessArguments, ';')</ProcessArguments>
+      </AotInputAssemblies>
     </ItemGroup>
+
+    <Error Condition="'$(RunAOTCompilation)' == 'true' and '$(EMSDK_PATH)' == ''" Text="The EMSDK_PATH environment variable should be set pointing to the emscripten SDK root dir when using AOT."/>
+
+    <MonoAOTCompiler
+        Condition="'$(RunAOTCompilation)' == 'true'"
+        CompilerBinaryPath="$(MicrosoftNetCoreAppRuntimePackDir)native\cross\mono-aot-cross"
+        Mode="LLVMOnly"
+        OutputType="AsmOnly"
+        Assemblies="@(AotInputAssemblies)"
+        UseAotDataFile="false"
+        AotModulesTablePath="$(MSBuildThisFileDirectory)$(PublishDir)driver-gen.c"
+        UseLLVM="true"
+        LLVMPath="$(EMSDK_PATH)\upstream\bin">
+        <Output TaskParameter="CompiledAssemblies" ItemName="BundleAssemblies" />
+    </MonoAOTCompiler>
+
+    <ReadLinesFromFile File="$(MicrosoftNetCoreAppRuntimePackDir)native\src\emcc-flags.txt">
+        <Output TaskParameter="Lines" PropertyName="EmccFlags" />
+    </ReadLinesFromFile>
+
+    <Exec Condition="'$(RunAOTCompilation)' == 'true'" Command="source $(EMSDK_PATH)/emsdk_env.sh &amp;&amp; emcc $(EmccFlags) -DCORE_BINDINGS -DENABLE_AOT=1 -DDRIVER_GEN=1 -I$(MicrosoftNetCoreAppRuntimePackDir)native/include/mono-2.0 -I$(MicrosoftNetCoreAppRuntimePackDir)native/include/wasm -I$(MSBuildThisFileDirectory)$(PublishDir) $(MicrosoftNetCoreAppRuntimePackDir)native/src/driver.c -c -o driver.o" IgnoreStandardErrorWarningFormat="true" WorkingDirectory="$(MSBuildThisFileDirectory)$(PublishDir)" />
+    <Exec Condition="'$(RunAOTCompilation)' == 'true'" Command="source $(EMSDK_PATH)/emsdk_env.sh &amp;&amp; emcc $(EmccFlags) -I$(MicrosoftNetCoreAppRuntimePackDir)native/include/mono-2.0 $(MicrosoftNetCoreAppRuntimePackDir)native/src/corebindings.c -c -o corebindings.o" IgnoreStandardErrorWarningFormat="true" WorkingDirectory="$(MSBuildThisFileDirectory)$(PublishDir)" />
+    <Exec Condition="'$(RunAOTCompilation)' == 'true'" Command="source $(EMSDK_PATH)/emsdk_env.sh &amp;&amp; emcc $(EmccFlags) -DGEN_PINVOKE=1 -I$(MicrosoftNetCoreAppRuntimePackDir)native/include/wasm $(MicrosoftNetCoreAppRuntimePackDir)native/src/pinvoke.c -c -o pinvoke.o" IgnoreStandardErrorWarningFormat="true" WorkingDirectory="$(MSBuildThisFileDirectory)$(PublishDir)" />
+    <Exec Condition="'$(RunAOTCompilation)' == 'true'" Command="source $(EMSDK_PATH)/emsdk_env.sh &amp;&amp; emcc $(EmccFlags) --js-library $(MicrosoftNetCoreAppRuntimePackDir)native/src/library_mono.js --js-library $(MicrosoftNetCoreAppRuntimePackDir)native/src/binding_support.js --js-library $(MicrosoftNetCoreAppRuntimePackDir)native/src/dotnet_support.js --js-library $(MicrosoftNetCoreAppRuntimePackDir)native/src/pal_random.js driver.o pinvoke.o corebindings.o @(BundleAssemblies->'%(LlvmBitcodeFile)', ' ') libmono-ee-interp.a libmonosgen-2.0.a libmono-ilgen.a libmono-icall-table.a libSystem.Native.a libSystem.IO.Compression.Native.a libicuuc.a libicui18n.a -o dotnet.js" IgnoreStandardErrorWarningFormat="true" WorkingDirectory="$(MSBuildThisFileDirectory)$(PublishDir)" />
+
     <WasmAppBuilder
       AppDir="$(AppDir)"
       MicrosoftNetCoreAppRuntimePackDir="$(MicrosoftNetCoreAppRuntimePackDir)"
       MainAssembly="$(PublishDir)\WasmSample.dll"
       MainJS="$(MonoProjectRoot)wasm\runtime-test.js"
       Assemblies="@(BundleAssemblies)"/>
-    <Exec Command="chmod a+x $(AppDir)/run-v8.sh" />
+    <Exec Command="chmod a+x $(AppDir)run-v8.sh" />
+
+    <!-- Run mono-cil-strip on the assemblies -->
+    <!-- TODO: replace this with a linker task -->
+    <ItemGroup>
+      <_managedAppAssemblies Include="$(AppDir)managed\*.dll"/>
+    </ItemGroup>
+    <Exec Condition="'$(RunAOTCompilation)' == 'true'" Command="mono-cil-strip %(_managedAppAssemblies.Identity)" />
   </Target>
 
   <ItemGroup>

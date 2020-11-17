@@ -362,7 +362,7 @@
     <value>Property Get method was not found.</value>
   </data>
   <data name="Arg_GuidArrayCtor" xml:space="preserve">
-    <value>Byte array for GUID must be exactly {0} bytes long.</value>
+    <value>Byte array for Guid must be exactly {0} bytes long.</value>
   </data>
   <data name="Arg_HandleNotAsync" xml:space="preserve">
     <value>Handle does not support asynchronous operations. The parameters to the FileStream constructor may need to be changed to indicate that the handle was opened synchronously (that is, it was not opened for overlapped I/O).</value>

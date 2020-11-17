@@ -3,15 +3,6 @@
     <GenerateInstallers Condition="'$(BuildDebPackage)' != 'true'">false</GenerateInstallers>
   </PropertyGroup>
 
-  <PropertyGroup>
-    <DebianIgnoredDependencies>
-      [
-        "liblldb-3.5",
-        "liblldb-3.6"
-      ]
-    </DebianIgnoredDependencies>
-  </PropertyGroup>
-
   <ItemGroup>
     <LinuxPackageDependency Include="libc6;libgcc1;libgssapi-krb5-2;libstdc++6;zlib1g"/>
     <LinuxPackageDependency Include="libssl1.0.0 | libssl1.0.2 | libssl1.1" />
@@ -19,6 +10,5 @@
     <LibIcuPackageDependency Include="libicu" Dependencies="libicu | @(KnownLibIcuVersion -> 'libicu%(Identity)', ' | ')" />
     <LinuxPackageDependency
       Include="@(LibIcuPackageDependency->Metadata('Dependencies'))" />
-    <DebJsonProperty Include="debian_ignored_dependencies" Object="$(DebianIgnoredDependencies)" />
  </ItemGroup>
 </Project>

@@ -96,7 +96,8 @@
     <ItemGroup>
       <IcuDataFiles Include="$(NativeBinDir)*.dat" />
       <WasmSrcFiles Include="$(NativeBinDir)src\*.c;
-                             $(NativeBinDir)src\*.js;" />
+                             $(NativeBinDir)src\*.js;
+                             $(NativeBinDir)src\emcc-flags.txt" />
       <WasmHeaderFiles Include="$(NativeBinDir)include\wasm\*.h" />
     </ItemGroup>
 
