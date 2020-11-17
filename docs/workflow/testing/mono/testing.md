@@ -72,7 +72,7 @@ There are a few convenient samples located in `$(REPO_ROOT)/src/mono/netcore/sam
 ## Sample for desktop Mono
 The desktop sample lives in `HelloWorld` folder.
 
-To run that program, you could simply cd to that directory and execute
+To run the sample, cd to the directory and execute:
 
 ```
 make run
