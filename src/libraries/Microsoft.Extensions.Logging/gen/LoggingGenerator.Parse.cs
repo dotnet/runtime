@@ -76,8 +76,8 @@ namespace Microsoft.Extensions.Logging.Generators
         /// </summary>
         private static IEnumerable<LoggerClass> GetLogClasses(GeneratorExecutionContext context, Compilation compilation)
         {
-            var allNodes = compilation.SyntaxTrees.SelectMany(s => s.GetRoot().DescendantNodes());
-            var allInterfaces = allNodes.Where(d => d.IsKind(SyntaxKind.InterfaceDeclaration)).OfType<InterfaceDeclarationSyntax>();
+            if (!(context.SyntaxReceiver is SyntaxReceiver receiver))
+                yield break;
 
             var logExtensionsAttribute = compilation.GetTypeByMetadataName("Microsoft.Extensions.Logging.LoggerExtensionsAttribute");
             if (logExtensionsAttribute is null)
@@ -98,7 +98,7 @@ namespace Microsoft.Extensions.Logging.Generators
             // Temp work around for https://github.com/dotnet/roslyn/pull/49330
             var semanticModelMap = new Dictionary<SyntaxTree, SemanticModel>();
 
-            foreach (var iface in allInterfaces)
+            foreach (var iface in receiver.InterfaceDeclarations)
             {
                 foreach (var al in iface.AttributeLists)
                 {
