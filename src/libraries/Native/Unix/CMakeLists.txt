@@ -223,12 +223,6 @@ elseif(CLR_CMAKE_TARGET_TVOS)
     #add_subdirectory(System.Net.Security.Native) # no gssapi on tvOS, see https://developer.apple.com/documentation/gss
     # System.Security.Cryptography.Native is intentionally disabled on tvOS
     # it is only used for interacting with OpenSSL which isn't useful there
-elseif(CLR_CMAKE_TARGET_ANDROID AND NOT CROSS_ROOTFS)
-    #add_subdirectory(System.Net.Security.Native) # TODO: reenable
-    if (NOT "$ENV{ANDROID_OPENSSL_AAR}" STREQUAL "")
-        set(PREFER_OPENSSL_ANDROID 1)
-        add_subdirectory(System.Security.Cryptography.Native)
-    endif()
 else()
     add_subdirectory(System.Globalization.Native)
     add_subdirectory(System.Net.Security.Native)
@@ -240,6 +234,6 @@ if(CLR_CMAKE_TARGET_OSX OR CLR_CMAKE_TARGET_IOS OR CLR_CMAKE_TARGET_TVOS)
 endif()
 
 # if ANDROID_OPENSSL_AAR is not set - use Android Native Crypto (it's going to replace openssl eventually)
-if(CLR_CMAKE_TARGET_ANDROID AND NOT PREFER_OPENSSL_ANDROID)
+if(CLR_CMAKE_TARGET_ANDROID)
     add_subdirectory(System.Security.Cryptography.Native.Android)
 endif()
