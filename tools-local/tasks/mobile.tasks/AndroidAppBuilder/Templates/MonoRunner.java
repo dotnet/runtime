@@ -45,6 +45,15 @@ public class MonoRunner extends Instrumentation
             if (lib != null) {
                 entryPointLibName = lib;
             }
+
+            for (String key : arguments.keySet()) {
+                if (key.startsWith("env:")) {
+                    String envName = key.substring("env:".length());
+                    String envValue = arguments.getString(key);
+                    setEnv(envName, envValue);
+                    Log.i("DOTNET", "env:" + envName + "=" + envValue);
+                }
+            }
         }
 
         super.onCreate(arguments);
@@ -130,4 +139,6 @@ public class MonoRunner extends Instrumentation
     }
 
     static native int initRuntime(String libsDir, String cacheDir, String docsDir, String entryPointLibName, boolean forceInterpreter);
+
+    static native int setEnv(String key, String value);
 }

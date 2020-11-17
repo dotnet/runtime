@@ -155,6 +155,7 @@ mono_droid_runtime_init (void)
     //setenv ("XUNIT_VERBOSE", "true", true);
     //setenv ("MONO_LOG_LEVEL", "debug", true);
     //setenv ("MONO_LOG_MASK", "all", true);
+    // NOTE: these options can be set via command line args for adb or xharness, see AndroidSampleApp.csproj
 
     bool wait_for_debugger = false;
     chdir (bundle_path);
@@ -210,6 +211,16 @@ strncpy_str (JNIEnv *env, char *buff, jstring str, int nbuff)
     strncpy (buff, copy_buff, nbuff);
     if (isCopy)
         (*env)->ReleaseStringUTFChars (env, str, copy_buff);
+}
+
+void
+Java_net_dot_MonoRunner_setEnv (JNIEnv* env, jobject thiz, jstring j_key, jstring j_value)
+{
+    const char *key = (*env)->GetStringUTFChars(env, j_key, 0);
+    const char *val = (*env)->GetStringUTFChars(env, j_value, 0);
+    setenv (key, val, true);
+    (*env)->ReleaseStringUTFChars(env, j_key, key);
+    (*env)->ReleaseStringUTFChars(env, j_value, val);
 }
 
 int
