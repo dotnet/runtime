@@ -47,7 +47,7 @@
              Link="Common\Interop\Interop.LSAStructs.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\SspiCli\Interop.SECURITY_LOGON_SESSION_DATA.cs"
              Link="Common\Interop\Interop.SECURITY_LOGON_SESSION_DATA.cs" />
-    <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.GetCurrentProcess_IntPtr.cs"
+    <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.GetCurrentProcess.cs"
              Link="Common\Interop\Interop.GetCurrentProcess.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.GetCurrentThread.cs"
              Link="Common\Interop\Interop.GetCurrentThread.cs" />
@@ -59,8 +59,8 @@
              Link="Common\Interop\Interop.GetTokenInformation.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\Advapi32\Interop.DuplicateTokenEx.cs"
              Link="Common\Interop\Interop.DuplicateTokenEx.cs" />
-    <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.DuplicateHandle.cs"
-             Link="Common\Interop\Interop.DuplicateHandle.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.DuplicateHandle_SafeAccessTokenHandle.cs"
+             Link="Common\Interop\Interop.DuplicateHandle_SafeAccessTokenHandle.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.CloseHandle.cs"
              Link="Common\Interop\Interop.CloseHandle.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\SspiCli\Interop.LsaGetLogonSessionData.cs"
