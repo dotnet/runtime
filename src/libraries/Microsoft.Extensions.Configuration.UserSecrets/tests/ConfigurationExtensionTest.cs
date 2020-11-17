@@ -108,6 +108,19 @@ namespace Microsoft.Extensions.Configuration.UserSecrets.Test
         }
 
         [Fact]
+        public void AddUserSecrets_DoesThrowsIfNotOptionalAndSecretDoesNotExist()
+        {
+            var secretId = Assembly.GetExecutingAssembly().GetName().Name;
+            var secretPath = PathHelper.GetSecretsPathFromSecretsId(secretId);
+            if (File.Exists(secretPath))
+            {
+                File.Delete(secretPath);
+            }
+
+            Assert.Throws<FileNotFoundException>(() => new ConfigurationBuilder().AddUserSecrets(Assembly.GetExecutingAssembly(), false).Build());
+        }
+
+        [Fact]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/34580", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
         public void AddUserSecrets_With_SecretsId_Passed_Explicitly()
         {
