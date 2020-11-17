@@ -843,14 +843,23 @@ GenTree* Compiler::impHWIntrinsic(NamedIntrinsic        intrinsic,
     {
         unsigned int sizeBytes;
         simdBaseJitType = getBaseJitTypeAndSizeOfSIMDType(sig->retTypeSigClass, &sizeBytes);
-        retType         = getSIMDTypeForSize(sizeBytes);
-        assert(sizeBytes != 0);
 
-        // We want to return early here for cases where retType was TYP_STRUCT as per method signature and
-        // rather than deferring the decision after getting the simdBaseJitType of arg.
-        if (!isSupportedBaseType(intrinsic, simdBaseJitType))
+        if (HWIntrinsicInfo::ReturnsStruct(intrinsic))
         {
-            return nullptr;
+            assert(sizeBytes == 0);
+        }
+        else
+        {
+            assert(sizeBytes != 0);
+
+            // We want to return early here for cases where retType was TYP_STRUCT as per method signature and
+            // rather than deferring the decision after getting the simdBaseJitType of arg.
+            if (!isSupportedBaseType(intrinsic, simdBaseJitType))
+            {
+                return nullptr;
+            }
+
+            retType = getSIMDTypeForSize(sizeBytes);
         }
     }
 
@@ -1224,6 +1233,12 @@ GenTree* Compiler::impHWIntrinsic(NamedIntrinsic        intrinsic,
             //
             retNode->gtFlags |= (GTF_GLOB_REF | GTF_EXCEPT);
         }
+
+        if (HWIntrinsicInfo::ReturnsStruct(intrinsic))
+        {
+            retNode->SetLayout(typGetObjLayout(sig->retTypeSigClass));
+        }
+
         return retNode;
     }
 
