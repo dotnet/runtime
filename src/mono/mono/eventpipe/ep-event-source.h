@@ -64,7 +64,7 @@ ep_event_source_fini (EventPipeEventSource *event_source);
 void
 ep_event_source_free (EventPipeEventSource *event_source);
 
-void
+bool
 ep_event_source_enable (EventPipeEventSource *event_source, EventPipeSession *session);
 
 void

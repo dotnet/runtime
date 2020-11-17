@@ -22,6 +22,7 @@
 
 static char *bundle_path;
 static char *executable;
+static bool force_interpreter;
 
 #define LOG_INFO(fmt, ...) __android_log_print(ANDROID_LOG_DEBUG, "DOTNET", fmt, ##__VA_ARGS__)
 #define LOG_ERROR(fmt, ...) __android_log_print(ANDROID_LOG_ERROR, "DOTNET", fmt, ##__VA_ARGS__)
@@ -39,7 +40,7 @@ static char *executable;
 #endif
 
 static MonoAssembly*
-load_assembly (const char *name, const char *culture)
+mono_droid_load_assembly (const char *name, const char *culture)
 {
     char filename [1024];
     char path [1024];
@@ -72,11 +73,11 @@ load_assembly (const char *name, const char *culture)
 }
 
 static MonoAssembly*
-assembly_preload_hook (MonoAssemblyName *aname, char **assemblies_path, void* user_data)
+mono_droid_assembly_preload_hook (MonoAssemblyName *aname, char **assemblies_path, void* user_data)
 {
     const char *name = mono_assembly_name_get_name (aname);
     const char *culture = mono_assembly_name_get_culture (aname);
-    return load_assembly (name, culture);
+    return mono_droid_load_assembly (name, culture);
 }
 
 char *
@@ -91,7 +92,7 @@ strdup_printf (const char *msg, ...)
 }
 
 static MonoObject *
-fetch_exception_property (MonoObject *obj, const char *name, bool is_virtual)
+mono_droid_fetch_exception_property (MonoObject *obj, const char *name, bool is_virtual)
 {
     MonoMethod *get = NULL;
     MonoMethod *get_virt = NULL;
@@ -114,9 +115,9 @@ fetch_exception_property (MonoObject *obj, const char *name, bool is_virtual)
 }
 
 static char *
-fetch_exception_property_string (MonoObject *obj, const char *name, bool is_virtual)
+mono_droid_fetch_exception_property_string (MonoObject *obj, const char *name, bool is_virtual)
 {
-    MonoString *str = (MonoString *) fetch_exception_property (obj, name, is_virtual);
+    MonoString *str = (MonoString *) mono_droid_fetch_exception_property (obj, name, is_virtual);
     return str ? mono_string_to_utf8 (str) : NULL;
 }
 
@@ -125,8 +126,8 @@ unhandled_exception_handler (MonoObject *exc, void *user_data)
 {
     MonoClass *type = mono_object_get_class (exc);
     char *type_name = strdup_printf ("%s.%s", mono_class_get_namespace (type), mono_class_get_name (type));
-    char *trace = fetch_exception_property_string (exc, "get_StackTrace", true);
-    char *message = fetch_exception_property_string (exc, "get_Message", true);
+    char *trace = mono_droid_fetch_exception_property_string (exc, "get_StackTrace", true);
+    char *message = mono_droid_fetch_exception_property_string (exc, "get_Message", true);
     
     LOG_ERROR("UnhandledException: %s %s %s", type_name, message, trace);
 
@@ -147,13 +148,13 @@ log_callback (const char *log_domain, const char *log_level, const char *message
 }
 
 int
-mono_mobile_runtime_init (void)
+mono_droid_runtime_init (void)
 {
     // uncomment for debug output:
     //
-    // setenv ("XUNIT_VERBOSE", "true", true);
-    // setenv ("MONO_LOG_LEVEL", "debug", true);
-    // setenv ("MONO_LOG_MASK", "all", true);
+    //setenv ("XUNIT_VERBOSE", "true", true);
+    //setenv ("MONO_LOG_LEVEL", "debug", true);
+    //setenv ("MONO_LOG_MASK", "all", true);
 
     bool wait_for_debugger = false;
     chdir (bundle_path);
@@ -171,7 +172,7 @@ mono_mobile_runtime_init (void)
     monovm_initialize(2, appctx_keys, appctx_values);
 
     mono_debug_init (MONO_DEBUG_FORMAT_MONO);
-    mono_install_assembly_preload_hook (assembly_preload_hook, NULL);
+    mono_install_assembly_preload_hook (mono_droid_assembly_preload_hook, NULL);
     mono_install_unhandled_exception_hook (unhandled_exception_handler, NULL);
     mono_trace_set_log_handler (log_callback, NULL);
     mono_set_signal_chaining (true);
@@ -181,9 +182,15 @@ mono_mobile_runtime_init (void)
         char* options[] = { "--debugger-agent=transport=dt_socket,server=y,address=0.0.0.0:55555" };
         mono_jit_parse_options (1, options);
     }
+
+    if (force_interpreter) {
+        LOG_INFO("Interp Enabled");
+        mono_jit_set_aot_mode(MONO_AOT_MODE_INTERP_ONLY);
+    }
+
     mono_jit_init_version ("dotnet.android", "mobile");
 
-    MonoAssembly *assembly = load_assembly (executable, NULL);
+    MonoAssembly *assembly = mono_droid_load_assembly (executable, NULL);
     assert (assembly);
     LOG_INFO ("Executable: %s", executable);
 
@@ -206,7 +213,7 @@ strncpy_str (JNIEnv *env, char *buff, jstring str, int nbuff)
 }
 
 int
-Java_net_dot_MonoRunner_initRuntime (JNIEnv* env, jobject thiz, jstring j_files_dir, jstring j_cache_dir, jstring j_docs_dir, jstring j_entryPointLibName)
+Java_net_dot_MonoRunner_initRuntime (JNIEnv* env, jobject thiz, jstring j_files_dir, jstring j_cache_dir, jstring j_docs_dir, jstring j_entryPointLibName, jboolean j_forceInterpreter)
 {
     char file_dir[2048];
     char cache_dir[2048];
@@ -219,8 +226,11 @@ Java_net_dot_MonoRunner_initRuntime (JNIEnv* env, jobject thiz, jstring j_files_
 
     bundle_path = file_dir;
     executable = entryPointLibName;
+    force_interpreter = (bool)j_forceInterpreter;
+
     setenv ("HOME", bundle_path, true);
-    setenv ("TMPDIR", cache_dir, true); 
-    setenv ("DOCSDIR", docs_dir, true); 
-    return mono_mobile_runtime_init ();
+    setenv ("TMPDIR", cache_dir, true);
+    setenv ("DOCSDIR", docs_dir, true);
+
+    return mono_droid_runtime_init ();
 }

@@ -89,6 +89,9 @@ typedef struct _rt_mono_array_iterator_internal_t ep_rt_thread_session_state_arr
 typedef struct _rt_mono_list_internal_t ep_rt_sequence_point_list_t;
 typedef struct _rt_mono_list_iterator_internal_t ep_rt_sequence_point_list_iterator_t;
 
+typedef struct _rt_mono_list_internal_t ep_rt_thread_list_t;
+typedef struct _rt_mono_list_iterator_internal_t ep_rt_thread_list_iterator_t;
+
 typedef struct _rt_mono_queue_internal_t ep_rt_provider_callback_data_queue_t;
 
 typedef struct _rt_mono_table_internal_t ep_rt_metadata_labels_hash_map_t;
@@ -115,7 +118,12 @@ typedef struct _rt_mono_array_iterator_internal_t ep_rt_session_id_array_iterato
 typedef struct _rt_mono_array_internal_t ep_rt_provider_config_array_t;
 typedef struct _rt_mono_array_iterator_internal_t ep_rt_provider_config_array_iterator_t;
 
-typedef MonoThreadHandle ep_rt_thread_handle_t;
+typedef struct _rt_mono_array_internal_t ep_rt_env_array_utf16_t;
+typedef struct _rt_mono_array_iterator_internal_t ep_rt_env_array_utf16_iterator_t;
+
+typedef THREAD_INFO_TYPE * ep_rt_thread_handle_t;
+
+typedef EventPipeThread * ep_rt_thread_activity_id_handle_t;
 
 typedef gpointer ep_rt_file_handle_t;
 

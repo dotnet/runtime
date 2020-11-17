@@ -35,15 +35,16 @@ ep_metadata_generator_generate_event_metadata (
  */
 
 // Contains the metadata associated with an EventPipe event parameter.
+// NOTE, needs to match layout of COR_PRF_EVENTPIPE_PARAM_DESC.
 #if defined(EP_INLINE_GETTER_SETTER) || defined(EP_IMPL_METADATA_GENERATOR_GETTER_SETTER)
 struct _EventPipeParameterDesc {
 #else
 struct _EventPipeParameterDesc_Internal {
 #endif
-	const ep_char16_t *name;
+	EventPipeParameterType type;
 	// Only used for array types to indicate what type the array elements are
 	EventPipeParameterType element_type;
-	EventPipeParameterType type;
+	const ep_char16_t *name;
 };
 
 #if !defined(EP_INLINE_GETTER_SETTER) && !defined(EP_IMPL_METADATA_GENERATOR_GETTER_SETTER)

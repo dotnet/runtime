@@ -1206,7 +1206,7 @@ bool GenTreeCall::Equals(GenTreeCall* c1, GenTreeCall* c2)
 }
 
 #if !defined(FEATURE_PUT_STRUCT_ARG_STK)
-unsigned GenTreePutArgStk::getArgSize()
+unsigned GenTreePutArgStk::GetStackByteSize() const
 {
     return genTypeSize(genActualType(gtOp1->gtType));
 }
@@ -11523,10 +11523,16 @@ void Compiler::gtDispTree(GenTree*     tree,
 #if FEATURE_PUT_STRUCT_ARG_STK
         else if (tree->OperGet() == GT_PUTARG_STK)
         {
-            printf(" (%d slots)", tree->AsPutArgStk()->gtNumSlots);
-            if (tree->AsPutArgStk()->gtPutArgStkKind != GenTreePutArgStk::Kind::Invalid)
+            const GenTreePutArgStk* putArg = tree->AsPutArgStk();
+#if !defined(DEBUG_ARG_SLOTS)
+            printf(" (%d stackByteSize), (%d byteOffset)", putArg->GetStackByteSize(), putArg->getArgOffset());
+#else
+            printf(" (%d slots), (%d stackByteSize), (%d slot), (%d byteOffset)", putArg->gtNumSlots,
+                   putArg->GetStackByteSize(), putArg->gtSlotNum, putArg->getArgOffset());
+#endif
+            if (putArg->gtPutArgStkKind != GenTreePutArgStk::Kind::Invalid)
             {
-                switch (tree->AsPutArgStk()->gtPutArgStkKind)
+                switch (putArg->gtPutArgStkKind)
                 {
                     case GenTreePutArgStk::Kind::RepInstr:
                         printf(" (RepInstr)");
@@ -11545,6 +11551,18 @@ void Compiler::gtDispTree(GenTree*     tree,
                 }
             }
         }
+#if FEATURE_ARG_SPLIT
+        else if (tree->OperGet() == GT_PUTARG_SPLIT)
+        {
+            const GenTreePutArgSplit* putArg = tree->AsPutArgSplit();
+#if !defined(DEBUG_ARG_SLOTS)
+            printf(" (%d stackByteSize), (%d numRegs)", putArg->GetStackByteSize(), putArg->gtNumRegs);
+#else
+            printf(" (%d slots), (%d stackByteSize), (%d numRegs)", putArg->gtNumSlots, putArg->GetStackByteSize(),
+                   putArg->gtNumRegs);
+#endif
+        }
+#endif // FEATURE_ARG_SPLIT
 #endif // FEATURE_PUT_STRUCT_ARG_STK
 
         if (tree->gtOper == GT_INTRINSIC)
@@ -12007,9 +12025,7 @@ void Compiler::gtGetArgMsg(GenTreeCall* call, GenTree* arg, unsigned argNum, cha
             }
 #endif // TARGET_ARM
 #if FEATURE_FIXED_OUT_ARGS
-
             sprintf_s(bufp, bufLength, "arg%d out+%02x%c", argNum, curArgTabEntry->slotNum * TARGET_POINTER_SIZE, 0);
-
 #else
             sprintf_s(bufp, bufLength, "arg%d on STK%c", argNum, 0);
 #endif
@@ -12052,8 +12068,7 @@ void Compiler::gtGetLateArgMsg(GenTreeCall* call, GenTree* argx, int lateArgInde
 #else
     if (argReg == REG_STK)
     {
-        sprintf_s(bufp, bufLength, "arg%d in out+%02x%c", curArgTabEntry->argNum,
-                  curArgTabEntry->slotNum * TARGET_POINTER_SIZE, 0);
+        sprintf_s(bufp, bufLength, "arg%d in out+%02x%c", curArgTabEntry->argNum, curArgTabEntry->GetByteOffset(), 0);
     }
     else
 #endif

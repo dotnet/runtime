@@ -605,11 +605,12 @@ void Compiler::lvaInitUserArgs(InitVarDscInfo* varDscInfo)
         // ARM softfp calling convention should affect only the floating point arguments.
         // Otherwise there appear too many surplus pre-spills and other memory operations
         // with the associated locations .
-        bool      isSoftFPPreSpill = opts.compUseSoftFP && varTypeIsFloating(varDsc->TypeGet());
-        unsigned  argSize          = eeGetArgSize(argLst, &info.compMethodInfo->args);
-        unsigned  cSlots           = argSize / TARGET_POINTER_SIZE; // the total number of slots of this argument
-        bool      isHfaArg         = false;
-        var_types hfaType          = TYP_UNDEF;
+        bool     isSoftFPPreSpill = opts.compUseSoftFP && varTypeIsFloating(varDsc->TypeGet());
+        unsigned argSize          = eeGetArgSize(argLst, &info.compMethodInfo->args);
+        unsigned cSlots =
+            (argSize + TARGET_POINTER_SIZE - 1) / TARGET_POINTER_SIZE; // the total number of slots of this argument
+        bool      isHfaArg = false;
+        var_types hfaType  = TYP_UNDEF;
 
 #if defined(TARGET_ARM64) && defined(TARGET_UNIX)
         // Native varargs on arm64 unix use the regular calling convention.
@@ -1015,7 +1016,11 @@ void Compiler::lvaInitUserArgs(InitVarDscInfo* varDscInfo)
 
 #if FEATURE_FASTTAILCALL
             varDsc->SetStackOffset(varDscInfo->stackArgSize);
+#if defined(OSX_ARM64_ABI)
+            varDscInfo->stackArgSize += argSize;
+#else
             varDscInfo->stackArgSize += roundUp(argSize, TARGET_POINTER_SIZE);
+#endif
 #endif // FEATURE_FASTTAILCALL
         }
 
@@ -5254,7 +5259,9 @@ void Compiler::lvaAssignVirtualFrameOffsetsToArgs()
     /* Update the argOffs to reflect arguments that are passed in registers */
 
     noway_assert(codeGen->intRegState.rsCalleeRegArgCount <= MAX_REG_ARG);
+#if !defined(OSX_ARM64_ABI)
     noway_assert(compArgSize >= codeGen->intRegState.rsCalleeRegArgCount * REGSIZE_BYTES);
+#endif
 
 #ifdef TARGET_X86
     argOffs -= codeGen->intRegState.rsCalleeRegArgCount * REGSIZE_BYTES;

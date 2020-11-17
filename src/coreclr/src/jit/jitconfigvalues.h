@@ -359,10 +359,8 @@ CONFIG_METHODSET(AltJit, W("AltJit"))         // Enables AltJit and selectively 
 CONFIG_METHODSET(AltJitNgen, W("AltJitNgen")) // Enables AltJit for NGEN and selectively limits it
                                               // to the specified methods.
 
-#if defined(ALT_JIT)
 CONFIG_STRING(AltJitExcludeAssemblies, W("AltJitExcludeAssemblies")) // Do not use AltJit on this
                                                                      // semicolon-delimited list of assemblies.
-#endif                                                               // defined(ALT_JIT)
 
 CONFIG_INTEGER(JitMeasureIR, W("JitMeasureIR"), 0) // If set, measure the IR size after some phases and report it in
                                                    // the time log.

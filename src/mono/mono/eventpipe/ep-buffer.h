@@ -119,7 +119,7 @@ ep_buffer_get_next_aligned_address (const EventPipeBuffer *buffer, uint8_t *addr
 bool
 ep_buffer_write_event (
 	EventPipeBuffer *buffer,
-	EventPipeThread *thread,
+	ep_rt_thread_handle_t thread,
 	EventPipeSession *session,
 	EventPipeEvent *ep_event,
 	EventPipeEventPayload *payload,

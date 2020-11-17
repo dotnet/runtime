@@ -19,7 +19,7 @@
  * IpcStreamFactory.
  */
 
-void
+bool
 ds_ipc_stream_factory_init (void);
 
 void
@@ -43,7 +43,7 @@ ds_ipc_stream_factory_has_active_ports (void);
 void
 ds_ipc_stream_factory_close_ports (ds_ipc_error_callback_func callback);
 
-void
+bool
 ds_ipc_stream_factory_shutdown (ds_ipc_error_callback_func callback);
 
 /*

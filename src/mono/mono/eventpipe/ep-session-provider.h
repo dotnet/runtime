@@ -84,7 +84,7 @@ ep_session_provider_list_clear (EventPipeSessionProviderList *session_provider_l
 bool
 ep_session_provider_list_is_empty (const EventPipeSessionProviderList *session_provider_list);
 
-void
+bool
 ep_session_provider_list_add_session_provider (
 	EventPipeSessionProviderList *session_provider_list,
 	EventPipeSessionProvider *session_provider);

@@ -642,6 +642,12 @@ namespace System.Collections.Concurrent
             {
                 AcquireAllLocks(ref locksAcquired);
 
+                // If the dictionary is already empty, then there's nothing to clear.
+                if (AreAllBucketsEmpty())
+                {
+                    return;
+                }
+
                 Tables tables = _tables;
                 var newTables = new Tables(new Node[DefaultCapacity], tables._locks, new int[tables._countPerLock.Length]);
                 _tables = newTables;
@@ -1421,20 +1427,7 @@ namespace System.Collections.Concurrent
                     ReleaseLocks(0, acquiredLocks);
                 }
 
-                bool AreAllBucketsEmpty()
-                {
-                    int[] countPerLock = _tables._countPerLock;
 
-                    for (int i = 0; i < countPerLock.Length; i++)
-                    {
-                        if (countPerLock[i] != 0)
-                        {
-                            return false;
-                        }
-                    }
-
-                    return true;
-                }
             }
         }
 
@@ -1873,6 +1866,22 @@ namespace System.Collections.Concurrent
         object ICollection.SyncRoot => throw new NotSupportedException(SR.ConcurrentCollection_SyncRoot_NotSupported);
 
         #endregion
+
+
+        private bool AreAllBucketsEmpty()
+        {
+            int[] countPerLock = _tables._countPerLock;
+
+            for (int i = 0; i < countPerLock.Length; i++)
+            {
+                if (countPerLock[i] != 0)
+                {
+                    return false;
+                }
+            }
+
+            return true;
+        }
 
         /// <summary>
         /// Replaces the bucket table with a larger one. To prevent multiple threads from resizing the
