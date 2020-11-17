@@ -29,7 +29,7 @@
     </AssemblyAttribute>
   </ItemGroup>
 
-  <ItemGroup Condition="('$(TargetsBrowser)' == 'true' or '$(TargetsAnyOS)' == 'true') and '$(IsTestProject)' != 'true'">
+  <ItemGroup Condition="('$(TargetsBrowser)' == 'true' or ('$(TargetsAnyOS)' == 'true' and !$(TargetFrameworks.Contains('$(TargetFramework)-Browser')))) and '$(IsTestProject)' != 'true'">
     <SupportedPlatform Include="browser"/>
   </ItemGroup>
 
