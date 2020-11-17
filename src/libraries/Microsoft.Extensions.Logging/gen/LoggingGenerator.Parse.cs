@@ -63,6 +63,14 @@ namespace Microsoft.Extensions.Logging.Generators
             DiagnosticSeverity.Error,
             isEnabledByDefault: true);
 
+        private static readonly DiagnosticDescriptor ErrorEventIdReuse = new(
+            id: "LG6",
+            title: "Multiple logging messages cannot use the same event id",
+            messageFormat: "Multiple logging messages are using event id {0}",
+            category: DiagnosticCategory,
+            DiagnosticSeverity.Error,
+            isEnabledByDefault: true);
+
         /// <summary>
         /// Gets the known set of annotated logger classes
         /// </summary>
@@ -188,6 +196,14 @@ namespace Microsoft.Extensions.Logging.Generators
                                                 // can't have logging method names that start with __ since that can lead to conflicting symbol names
                                                 // because the generated symbols start with __
                                                 context.ReportDiagnostic(Diagnostic.Create(ErrorInvalidMethodName, method.Identifier.GetLocation()));
+                                            }
+
+                                            foreach (var m in lc.Methods)
+                                            {
+                                                if (m != lm && m.EventId == lm.EventId)
+                                                {
+                                                    context.ReportDiagnostic(Diagnostic.Create(ErrorEventIdReuse, ma.ArgumentList!.Arguments[0].GetLocation(), m.EventId));
+                                                }
                                             }
 
                                             if (string.IsNullOrWhiteSpace(lm.Message))
