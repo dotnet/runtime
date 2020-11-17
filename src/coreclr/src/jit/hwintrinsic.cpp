@@ -796,11 +796,11 @@ GenTree* Compiler::impHWIntrinsic(NamedIntrinsic        intrinsic,
             checkBaseType = false;
         }
         else
+#endif
         {
             retType = getSIMDTypeForSize(sizeBytes);
             assert(retType != TYP_STRUCT);
         }
-#endif
 
         // We want to return early here for cases where retType was TYP_STRUCT as per method signature and
         // rather than deferring the decision after getting the baseType of arg.
