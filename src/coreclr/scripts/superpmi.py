@@ -2725,7 +2725,7 @@ def setup_args(args):
                             "collection_args",
                             lambda unused: True,
                             "Unable to set collection_args",
-                            modify_arg=lambda collection_args: collection_args.split(" ") if collection_args is not None else collection_args)
+                            modify_arg=lambda collection_args: collection_args.split(" ") if collection_args is not None else [])
 
         coreclr_args.verify(args,
                             "pmi",
