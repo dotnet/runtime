@@ -95,6 +95,12 @@ namespace Microsoft.Extensions.Logging.Generators
                 yield break;
             }
 
+            var exSymbol = compilation.GetTypeByMetadataName("System.Exception");
+            if (exSymbol == null)
+            {
+                yield break;
+            }
+
             // Temp work around for https://github.com/dotnet/roslyn/pull/49330
             var semanticModelMap = new Dictionary<SyntaxTree, SemanticModel>();
 
@@ -211,36 +217,15 @@ namespace Microsoft.Extensions.Logging.Generators
                                                 context.ReportDiagnostic(Diagnostic.Create(ErrorInvalidMessage, ma.GetLocation()));
                                             }
 
-                                            var exSymbol = compilation.GetTypeByMetadataName("System.Exception");
-
                                             foreach (var p in method.ParameterList.Parameters)
                                             {
-                                                bool isExceptionType = false;
-
-                                                var sm = compilation.GetSemanticModel(p.SyntaxTree);
-                                                if (sm != null)
-                                                {
-                                                    var ct = sm.GetTypeInfo(p).ConvertedType;
-                                                    if (ct != null)
-                                                    {
-                                                        var bt = ct.BaseType;
-                                                        while (bt != null)
-                                                        {
-                                                            if (SymbolEqualityComparer.Default.Equals(bt, exSymbol))
-                                                            {
-                                                                isExceptionType = true;
-                                                                break;
-                                                            }
-                                                            bt = bt.BaseType;
-                                                        }
-                                                    }
-                                                }
+                                                var pSymbol = compilation.GetSemanticModel(p.SyntaxTree).GetTypeInfo(p.Type!).Type!;
 
                                                 var lp = new LoggerParameter
                                                 {
                                                     Name = p.Identifier.ToString(),
                                                     Type = p.Type!.ToString(),
-                                                    IsExceptionType = isExceptionType,
+                                                    IsExceptionType = IsBaseOrIdentity(compilation, pSymbol, exSymbol),
                                                 };
                                                 lm.Parameters.Add(lp);
 
@@ -263,6 +248,12 @@ namespace Microsoft.Extensions.Logging.Generators
             }
         }
 
+        static bool IsBaseOrIdentity(Compilation compilation, ITypeSymbol source, ITypeSymbol dest)
+        {
+            var conversion = compilation.ClassifyConversion(source, dest);
+            return conversion.IsIdentity || (conversion.IsReference && conversion.IsImplicit);
+        }
+        
         private static bool HasTemplates(string message)
         {
             for (int i = 0; i < message.Length; i++)

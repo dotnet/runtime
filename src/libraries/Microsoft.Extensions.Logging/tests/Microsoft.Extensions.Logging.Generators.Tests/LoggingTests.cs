@@ -192,25 +192,25 @@ namespace Microsoft.Extensions.Logging.Generators.Tests
 
             logger.Reset();
             ArgTestExtensions.Method4(logger, new InvalidOperationException("A"));
-            //            Assert.Equal("A", logger.LastException!.Message);
+            Assert.Equal("A", logger.LastException!.Message);
             Assert.Equal("M4", logger.LastFormattedString);
             Assert.Equal(1, logger.CallCount);
 
             logger.Reset();
             ArgTestExtensions.Method5(logger, new InvalidOperationException("A"), new InvalidOperationException("B"));
-            //            Assert.Equal("A", logger.LastException!.Message);
+            Assert.Equal("A", logger.LastException!.Message);
             Assert.Equal("M5", logger.LastFormattedString);
             Assert.Equal(1, logger.CallCount);
 
             logger.Reset();
             ArgTestExtensions.Method6(logger, new InvalidOperationException("A"), 2);
-            //            Assert.Equal("A", logger.LastException!.Message);
+            Assert.Equal("A", logger.LastException!.Message);
             Assert.Equal("M6", logger.LastFormattedString);
             Assert.Equal(1, logger.CallCount);
 
             logger.Reset();
             ArgTestExtensions.Method7(logger, 1, new InvalidOperationException("B"));
-            //            Assert.Equal("B", logger.LastException!.Message);
+            Assert.Equal("B", logger.LastException!.Message);
             Assert.Equal("M7", logger.LastFormattedString);
             Assert.Equal(1, logger.CallCount);
         }
