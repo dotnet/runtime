@@ -133,7 +133,7 @@ namespace R2RDump
         internal override void DumpAllMethods()
         {
             WriteDivider("R2R Methods");
-            _writer.WriteLine($"{_r2r.Methods.Sum(kvp => kvp.Value.Count)} methods");
+            _writer.WriteLine($"{_r2r.Methods.Count()} methods");
             SkipLine();
             foreach (ReadyToRunMethod method in NormalizedMethods())
             {
@@ -303,10 +303,11 @@ namespace R2RDump
                         _writer.WriteLine(availableTypes.ToString());
                     }
 
-                    if (_r2r.AvailableTypes.TryGetValue(section, out List<string> sectionTypes))
+                    int assemblyIndex1 = _r2r.GetAssemblyIndex(section);
+                    if (assemblyIndex1 != -1)
                     {
                         _writer.WriteLine();
-                        foreach (string name in sectionTypes)
+                        foreach (string name in _r2r.ReadyToRunAssemblies[assemblyIndex1].AvailableTypes)
                         {
                             _writer.WriteLine(name);
                         }
@@ -319,10 +320,11 @@ namespace R2RDump
                         _writer.Write(methodEntryPoints.ToString());
                     }
 
-                    if (_r2r.Methods.TryGetValue(section, out List<ReadyToRunMethod> sectionMethods))
+                    int assemblyIndex2 = _r2r.GetAssemblyIndex(section);
+                    if (assemblyIndex2 != -1)
                     {
                         _writer.WriteLine();
-                        foreach (ReadyToRunMethod method in sectionMethods)
+                        foreach (ReadyToRunMethod method in _r2r.ReadyToRunAssemblies[assemblyIndex2].Methods)
                         {
                             _writer.WriteLine($@"{MetadataTokens.GetToken(method.MethodHandle):X8}: {method.SignatureString}");
                         }
