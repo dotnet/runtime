@@ -29,6 +29,12 @@
       <argument>ILLink</argument>
       <argument>IL2057</argument>
       <property name="Scope">member</property>
+      <property name="Target">M:System.Xml.Serialization.XmlSerializationWriterCodeGen.WriteCheckDefault(System.Xml.Serialization.TypeMapping,System.String,System.Object,System.Boolean)</property>
+    </attribute>
+    <attribute fullname="System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessageAttribute">
+      <argument>ILLink</argument>
+      <argument>IL2057</argument>
+      <property name="Scope">member</property>
       <property name="Target">M:System.Xml.Xsl.IlGen.XmlILStorageMethods.#ctor(System.Type)</property>
     </attribute>
     <attribute fullname="System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessageAttribute">
@@ -36,6 +42,12 @@
       <argument>IL2060</argument>
       <property name="Scope">member</property>
       <property name="Target">M:System.Xml.Serialization.ReflectionXmlSerializationReader.GetSetMemberValueDelegate(System.Object,System.String)</property>
+    </attribute>
+    <attribute fullname="System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessageAttribute">
+      <argument>ILLink</argument>
+      <argument>IL2067</argument>
+      <property name="Scope">member</property>
+      <property name="Target">M:System.Xml.Serialization.ReflectionXmlSerializationReader.ReflectionCreateObject(System.Type)</property>
     </attribute>
     <attribute fullname="System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessageAttribute">
       <argument>ILLink</argument>
@@ -48,12 +60,6 @@
       <argument>IL2070</argument>
       <property name="Scope">member</property>
       <property name="Target">M:System.Xml.Serialization.ReflectionAwareCodeGen.WriteMappingInfo(System.Xml.Serialization.TypeMapping,System.String,System.Type)</property>
-    </attribute>
-    <attribute fullname="System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessageAttribute">
-      <argument>ILLink</argument>
-      <argument>IL2067</argument>
-      <property name="Scope">member</property>
-      <property name="Target">M:System.Xml.Serialization.ReflectionXmlSerializationReader.ReflectionCreateObject(System.Type)</property>
     </attribute>
     <attribute fullname="System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessageAttribute">
       <argument>ILLink</argument>

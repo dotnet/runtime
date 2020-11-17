@@ -26,10 +26,10 @@ namespace System.Xml.Serialization
         internal const BindingFlags InstancePublicBindingFlags = BindingFlags.Instance | BindingFlags.Public;
         internal const BindingFlags InstanceBindingFlags = BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic;
         internal const BindingFlags StaticBindingFlags = BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic;
-        internal static MethodAttributes PublicMethodAttributes = MethodAttributes.Public | MethodAttributes.HideBySig;
-        internal static MethodAttributes PublicOverrideMethodAttributes = MethodAttributes.Public | MethodAttributes.Virtual | MethodAttributes.HideBySig;
-        internal static MethodAttributes ProtectedOverrideMethodAttributes = MethodAttributes.Family | MethodAttributes.Virtual | MethodAttributes.HideBySig;
-        internal static MethodAttributes PrivateMethodAttributes = MethodAttributes.Private | MethodAttributes.HideBySig;
+        internal const MethodAttributes PublicMethodAttributes = MethodAttributes.Public | MethodAttributes.HideBySig;
+        internal const MethodAttributes PublicOverrideMethodAttributes = MethodAttributes.Public | MethodAttributes.Virtual | MethodAttributes.HideBySig;
+        internal const MethodAttributes ProtectedOverrideMethodAttributes = MethodAttributes.Family | MethodAttributes.Virtual | MethodAttributes.HideBySig;
+        internal const MethodAttributes PrivateMethodAttributes = MethodAttributes.Private | MethodAttributes.HideBySig;
 
         private readonly TypeBuilder _typeBuilder;
         private MethodBuilder? _methodBuilder;
