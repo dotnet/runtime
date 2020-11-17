@@ -327,6 +327,7 @@ namespace System.Net.WebSockets.Client.Tests
 
         [ConditionalFact(nameof(WebSocketsSupported))]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/34690", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
+        [PlatformSpecific(~TestPlatforms.Browser)] // LoopBack not not supported on browser
         public async Task CloseAsync_CancelableEvenWhenPendingReceive_Throws()
         {
             var tcs = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
