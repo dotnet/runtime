@@ -399,6 +399,8 @@ namespace System
         ///
         /// See https://docs.microsoft.com/en-us/visualstudio/debugger/using-the-debuggerdisplay-attribute
         /// </summary>
-        private int InnerExceptionCount => _innerExceptions.Length;
+        internal int InnerExceptionCount => _innerExceptions.Length;
+
+        internal Exception[] IntenalInnerExceptions => _innerExceptions;
     }
 }
