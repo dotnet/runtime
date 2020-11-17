@@ -1566,7 +1566,16 @@ void MyICJI::notifyInstructionSetUsage(CORINFO_InstructionSet instructionSet, bo
 DWORD MyICJI::getJitFlags(CORJIT_FLAGS* jitFlags, DWORD sizeInBytes)
 {
     jitInstance->mc->cr->AddCall("getJitFlags");
-    return jitInstance->mc->repGetJitFlags(jitFlags, sizeInBytes);
+    DWORD ret = jitInstance->mc->repGetJitFlags(jitFlags, sizeInBytes);
+    if (jitInstance->forceClearAltJitFlag)
+    {
+        jitFlags->Clear(CORJIT_FLAGS::CORJIT_FLAG_ALT_JIT);
+    }
+    else if (jitInstance->forceSetAltJitFlag)
+    {
+        jitFlags->Set(CORJIT_FLAGS::CORJIT_FLAG_ALT_JIT);
+    }
+    return ret;
 }
 
 // Runs the given function with the given parameter under an error trap

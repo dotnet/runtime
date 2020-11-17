@@ -65,6 +65,7 @@ RESULT
 buffer_manager_init (
 	EventPipeSerializationFormat format,
 	EventPipeBufferManager **buffer_manager,
+	ep_rt_thread_handle_t *thread_handle,
 	EventPipeThread **thread,
 	EventPipeSession **session,
 	EventPipeProvider **provider,
@@ -81,7 +82,7 @@ buffer_manager_init (
 
 	EventPipeProviderConfiguration provider_config;
 	EventPipeProviderConfiguration *current_provider_config;
-	current_provider_config = ep_provider_config_init (&provider_config, TEST_PROVIDER_NAME, 1, EP_EVENT_LEVEL_LOG_ALWAYS, "");
+	current_provider_config = ep_provider_config_init (&provider_config, TEST_PROVIDER_NAME, 1, EP_EVENT_LEVEL_LOGALWAYS, "");
 	ep_raise_error_if_nok (current_provider_config != NULL);
 
 	test_location = 1;
@@ -125,6 +126,10 @@ buffer_manager_init (
 	*thread = ep_thread_get_or_create ();
 	ep_raise_error_if_nok (*thread != NULL);
 
+	test_location = 6;
+
+	*thread_handle = ep_rt_thread_get_handle ();
+
 ep_on_exit:
 	ep_provider_config_fini (current_provider_config);
 	return result;
@@ -142,7 +147,7 @@ static
 bool
 write_events (
 	EventPipeBufferManager *buffer_manager,
-	EventPipeThread *thread,
+	ep_rt_thread_handle_t thread,
 	EventPipeSession *session,
 	EventPipeEvent *ep_event,
 	uint32_t event_count,
@@ -180,12 +185,13 @@ test_create_free_buffer_manager (void)
 	RESULT result = NULL;
 	uint32_t test_location = 0;
 	EventPipeBufferManager *buffer_manager = NULL;
+	ep_rt_thread_handle_t thread_handle;
 	EventPipeThread *thread = NULL;
 	EventPipeSession *session = NULL;
 	EventPipeProvider *provider = NULL;
 	EventPipeEvent *ep_event = NULL;
 
-	result = buffer_manager_init (EP_SERIALIZATION_FORMAT_NETTRACE_V4, &buffer_manager, &thread, &session, &provider, &ep_event);
+	result = buffer_manager_init (EP_SERIALIZATION_FORMAT_NETTRACE_V4, &buffer_manager, &thread_handle, &thread, &session, &provider, &ep_event);
 
 	ep_raise_error_if_nok (result == NULL);
 
@@ -209,6 +215,7 @@ test_buffer_manager_init_sequence_point (void)
 	RESULT result = NULL;
 	uint32_t test_location = 0;
 	EventPipeBufferManager *buffer_manager = NULL;
+	ep_rt_thread_handle_t thread_handle;
 	EventPipeThread *thread = NULL;
 	EventPipeSession *session = NULL;
 	EventPipeProvider *provider = NULL;
@@ -216,7 +223,7 @@ test_buffer_manager_init_sequence_point (void)
 	EventPipeSequencePoint sequence_point;
 	EventPipeSequencePoint *current_sequence_point = NULL;
 
-	result = buffer_manager_init (EP_SERIALIZATION_FORMAT_NETTRACE_V4, &buffer_manager, &thread, &session, &provider, &ep_event);
+	result = buffer_manager_init (EP_SERIALIZATION_FORMAT_NETTRACE_V4, &buffer_manager, &thread_handle, &thread, &session, &provider, &ep_event);
 
 	ep_raise_error_if_nok (result == NULL);
 
@@ -248,12 +255,13 @@ test_buffer_manager_write_event (void)
 	RESULT result = NULL;
 	uint32_t test_location = 0;
 	EventPipeBufferManager *buffer_manager = NULL;
+	ep_rt_thread_handle_t thread_handle;
 	EventPipeThread *thread = NULL;
 	EventPipeSession *session = NULL;
 	EventPipeProvider *provider = NULL;
 	EventPipeEvent *ep_event = NULL;
 
-	result = buffer_manager_init (EP_SERIALIZATION_FORMAT_NETTRACE_V4, &buffer_manager, &thread, &session, &provider, &ep_event);
+	result = buffer_manager_init (EP_SERIALIZATION_FORMAT_NETTRACE_V4, &buffer_manager,  &thread_handle, &thread, &session, &provider, &ep_event);
 
 	ep_raise_error_if_nok (result == NULL);
 
@@ -263,7 +271,7 @@ test_buffer_manager_write_event (void)
 
 	test_location = 2;
 
-	ep_raise_error_if_nok (write_events (buffer_manager, thread, session, ep_event, 1, NULL) == true);
+	ep_raise_error_if_nok (write_events (buffer_manager, thread_handle, session, ep_event, 1, NULL) == true);
 
 	EP_LOCK_ENTER (section1)
 		ep_buffer_manager_suspend_write_event (buffer_manager, ep_session_get_index (session));
@@ -285,13 +293,14 @@ test_buffer_manager_read_event (void)
 	RESULT result = NULL;
 	uint32_t test_location = 0;
 	EventPipeBufferManager *buffer_manager = NULL;
+	ep_rt_thread_handle_t thread_handle;
 	EventPipeThread *thread = NULL;
 	EventPipeSession *session = NULL;
 	EventPipeProvider *provider = NULL;
 	EventPipeEvent *ep_event = NULL;
 	EventPipeEventInstance *ep_event_instance = NULL;
 
-	result = buffer_manager_init (EP_SERIALIZATION_FORMAT_NETTRACE_V4, &buffer_manager, &thread, &session, &provider, &ep_event);
+	result = buffer_manager_init (EP_SERIALIZATION_FORMAT_NETTRACE_V4, &buffer_manager, &thread_handle, &thread, &session, &provider, &ep_event);
 
 	ep_raise_error_if_nok (result == NULL);
 
@@ -301,7 +310,7 @@ test_buffer_manager_read_event (void)
 
 	test_location = 2;
 
-	ep_raise_error_if_nok (write_events (buffer_manager, thread, session, ep_event, 1, NULL) == true);
+	ep_raise_error_if_nok (write_events (buffer_manager, thread_handle, session, ep_event, 1, NULL) == true);
 
 	EP_LOCK_ENTER (section1)
 		ep_buffer_manager_suspend_write_event (buffer_manager, ep_session_get_index (session));
@@ -338,12 +347,13 @@ test_buffer_manager_deallocate_buffers (void)
 	RESULT result = NULL;
 	uint32_t test_location = 0;
 	EventPipeBufferManager *buffer_manager = NULL;
+	ep_rt_thread_handle_t thread_handle;
 	EventPipeThread *thread = NULL;
 	EventPipeSession *session = NULL;
 	EventPipeProvider *provider = NULL;
 	EventPipeEvent *ep_event = NULL;
 
-	result = buffer_manager_init (EP_SERIALIZATION_FORMAT_NETTRACE_V4, &buffer_manager, &thread, &session, &provider, &ep_event);
+	result = buffer_manager_init (EP_SERIALIZATION_FORMAT_NETTRACE_V4, &buffer_manager, &thread_handle, &thread, &session, &provider, &ep_event);
 
 	ep_raise_error_if_nok (result == NULL);
 
@@ -353,7 +363,7 @@ test_buffer_manager_deallocate_buffers (void)
 
 	test_location = 2;
 
-	ep_raise_error_if_nok (write_events (buffer_manager, thread, session, ep_event, 1, NULL) == true);
+	ep_raise_error_if_nok (write_events (buffer_manager, thread_handle, session, ep_event, 1, NULL) == true);
 
 	EP_LOCK_ENTER (section1)
 		ep_buffer_manager_suspend_write_event (buffer_manager, ep_session_get_index (session));
@@ -377,13 +387,14 @@ test_buffer_manager_write_events_to_file (EventPipeSerializationFormat format)
 	RESULT result = NULL;
 	uint32_t test_location = 0;
 	EventPipeBufferManager *buffer_manager = NULL;
+	ep_rt_thread_handle_t thread_handle;
 	EventPipeThread *thread = NULL;
 	EventPipeSession *session = NULL;
 	EventPipeProvider *provider = NULL;
 	EventPipeEvent *ep_event = NULL;
 	bool events_written = false;
 
-	result = buffer_manager_init (format, &buffer_manager, &thread, &session, &provider, &ep_event);
+	result = buffer_manager_init (format, &buffer_manager, &thread_handle, &thread, &session, &provider, &ep_event);
 
 	ep_raise_error_if_nok (result == NULL);
 
@@ -393,7 +404,7 @@ test_buffer_manager_write_events_to_file (EventPipeSerializationFormat format)
 
 	test_location = 2;
 
-	ep_raise_error_if_nok (write_events (buffer_manager, thread, session, ep_event, 10, NULL) == true);
+	ep_raise_error_if_nok (write_events (buffer_manager, thread_handle, session, ep_event, 10, NULL) == true);
 
 	test_location = 3;
 
@@ -437,12 +448,13 @@ test_buffer_manager_oom (void)
 	RESULT result = NULL;
 	uint32_t test_location = 0;
 	EventPipeBufferManager *buffer_manager = NULL;
+	ep_rt_thread_handle_t thread_handle;
 	EventPipeThread *thread = NULL;
 	EventPipeSession *session = NULL;
 	EventPipeProvider *provider = NULL;
 	EventPipeEvent *ep_event = NULL;
 
-	result = buffer_manager_init (EP_SERIALIZATION_FORMAT_NETTRACE_V4, &buffer_manager, &thread, &session, &provider, &ep_event);
+	result = buffer_manager_init (EP_SERIALIZATION_FORMAT_NETTRACE_V4, &buffer_manager, &thread_handle, &thread, &session, &provider, &ep_event);
 
 	ep_raise_error_if_nok (result == NULL);
 
@@ -452,7 +464,7 @@ test_buffer_manager_oom (void)
 
 	test_location = 2;
 
-	ep_raise_error_if_nok (write_events (buffer_manager, thread, session, ep_event, 1000 * 1000, NULL) == false);
+	ep_raise_error_if_nok (write_events (buffer_manager, thread_handle, session, ep_event, 1000 * 1000, NULL) == false);
 
 	EP_LOCK_ENTER (section1)
 		ep_buffer_manager_suspend_write_event (buffer_manager, ep_session_get_index (session));
@@ -474,6 +486,7 @@ test_buffer_manager_perf (void)
 	RESULT result = NULL;
 	uint32_t test_location = 0;
 	EventPipeBufferManager *buffer_manager = NULL;
+	ep_rt_thread_handle_t thread_handle;
 	EventPipeThread *thread = NULL;
 	EventPipeSession *session = NULL;
 	EventPipeProvider *provider = NULL;
@@ -488,7 +501,7 @@ test_buffer_manager_perf (void)
 	EventPipeFile *null_file = NULL;
 	bool done = false;
 
-	result = buffer_manager_init (EP_SERIALIZATION_FORMAT_NETTRACE_V4, &buffer_manager, &thread, &session, &provider, &ep_event);
+	result = buffer_manager_init (EP_SERIALIZATION_FORMAT_NETTRACE_V4, &buffer_manager, &thread_handle, &thread, &session, &provider, &ep_event);
 
 	ep_raise_error_if_nok (result == NULL);
 
@@ -507,7 +520,7 @@ test_buffer_manager_perf (void)
 
 	while (!done) {
 		int64_t start = ep_perf_timestamp_get ();
-		write_result = write_events (buffer_manager, thread, session, ep_event, 10 * 1000 * 1000, &events_written);
+		write_result = write_events (buffer_manager, thread_handle, session, ep_event, 10 * 1000 * 1000, &events_written);
 		int64_t stop = ep_perf_timestamp_get ();
 
 		accumulted_buffer_manager_write_time_ticks += stop - start;

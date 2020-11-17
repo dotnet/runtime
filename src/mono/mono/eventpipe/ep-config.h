@@ -37,30 +37,6 @@ struct _EventPipeConfiguration {
 
 static
 inline
-const ep_char8_t *
-ep_config_get_default_provider_name_utf8 (void)
-{
-	return "Microsoft-DotNETCore-EventPipeConfiguration";
-}
-
-static
-inline
-const ep_char8_t *
-ep_config_get_public_provider_name_utf8 (void)
-{
-	return "Microsoft-Windows-DotNETRuntime";
-}
-
-static
-inline
-const ep_char8_t *
-ep_config_get_rundown_provider_name_utf8 (void)
-{
-	return "Microsoft-Windows-DotNETRuntimeRundown";
-}
-
-static
-inline
 EventPipeConfiguration *
 ep_config_get (void)
 {

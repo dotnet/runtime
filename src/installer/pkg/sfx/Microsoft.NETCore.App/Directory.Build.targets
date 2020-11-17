@@ -8,7 +8,7 @@
 
   <Target Name="ReturnProductVersion" Returns="$(Version)" />
 
-  <ItemGroup>
+  <ItemGroup Condition="'$(RuntimeFlavor)' != 'Mono'">
     <PackageReference Include="Microsoft.DotNet.Build.Tasks.Installers" Version="$(MicrosoftDotNetBuildTasksInstallersVersion)" />
     <PackageReference Include="Microsoft.DotNet.Build.Tasks.Archives" Version="$(MicrosoftDotNetBuildTasksArchivesVersion)" />
   </ItemGroup>

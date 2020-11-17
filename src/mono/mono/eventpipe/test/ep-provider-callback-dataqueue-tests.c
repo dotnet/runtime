@@ -49,7 +49,7 @@ test_provider_callback_data_queue (void)
 		provider_callback,
 		NULL,
 		1,
-		EP_EVENT_LEVEL_LOG_ALWAYS,
+		EP_EVENT_LEVEL_LOGALWAYS,
 		true);
 
 	for (uint32_t i = 0; i < 1000; ++i)

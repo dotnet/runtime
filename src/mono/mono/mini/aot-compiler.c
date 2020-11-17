@@ -5054,6 +5054,19 @@ MONO_RESTORE_WARNING
 				if (export_name)
 					g_hash_table_insert (acfg->export_names, wrapper, export_name);
 			}
+
+#ifdef ENABLE_NETCORE
+			for (j = 0; j < cattr->num_attrs; ++j)
+				if (cattr->attrs [j].ctor && mono_is_corlib_image (m_class_get_image (cattr->attrs [j].ctor->klass)) && !strcmp (m_class_get_name (cattr->attrs [j].ctor->klass), "UnmanagedCallersOnlyAttribute"))
+					break;
+			if (j < cattr->num_attrs) {
+				MonoMethod *wrapper = mono_marshal_get_managed_wrapper (method, NULL, 0, error);
+				mono_error_assert_ok (error);
+
+				add_method (acfg, wrapper);
+			}
+#endif
+
 			g_free (cattr);
 		}
 
@@ -8484,6 +8497,7 @@ can_encode_method (MonoAotCompile *acfg, MonoMethod *method)
 			case MONO_WRAPPER_MANAGED_TO_NATIVE:
 				break;
 			case MONO_WRAPPER_MANAGED_TO_MANAGED:
+			case MONO_WRAPPER_NATIVE_TO_MANAGED:
 			case MONO_WRAPPER_CASTCLASS: {
 				WrapperInfo *info = mono_marshal_get_wrapper_info (method);
 
@@ -11619,7 +11633,7 @@ emit_file_info (MonoAotCompile *acfg)
 	emit_string_symbol (acfg, "assembly_guid" , acfg->image->guid);
 
 	/* Emit a string holding the assembly name */
-	emit_string_symbol (acfg, "assembly_name", get_assembly_prefix (acfg->image));
+	emit_string_symbol (acfg, "assembly_name", acfg->image->assembly->aname.name);
 
 	info = g_new0 (MonoAotFileInfo, 1);
 	init_aot_file_info (acfg, info);
@@ -11633,7 +11647,7 @@ emit_file_info (MonoAotCompile *acfg)
 		 * mono_aot_register_module (). The symbol points to a pointer to the the file info
 		 * structure.
 		 */
-		sprintf (symbol, "%smono_aot_module_%s_info", acfg->user_symbol_prefix, get_assembly_prefix (acfg->image));
+		sprintf (symbol, "%smono_aot_module_%s_info", acfg->user_symbol_prefix, acfg->image->assembly->aname.name);
 
 		/* Get rid of characters which cannot occur in symbols */
 		p = symbol;

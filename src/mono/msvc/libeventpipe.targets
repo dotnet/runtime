@@ -5,6 +5,9 @@
     <ExcludeEventPipeFromBuild Condition="'$(MONO_ENABLE_PERFTRACING)'=='' Or '$(MONO_ENABLE_PERFTRACING)'!='true'">true</ExcludeEventPipeFromBuild>
   </PropertyGroup>
   <ItemGroup Label="libeventpipe">
+    <ClCompile Include="$(MonoSourceLocation)\mono\eventpipe\ds.c">
+      <ExcludedFromBuild>$(ExcludeEventPipeFromBuild)</ExcludedFromBuild>
+    </ClCompile>
     <ClCompile Include="$(MonoSourceLocation)\mono\eventpipe\ds-dump-protocol.c">
       <ExcludedFromBuild>$(ExcludeEventPipeFromBuild)</ExcludedFromBuild>
     </ClCompile>
@@ -89,6 +92,10 @@
     </ClCompile>
     <ClInclude Include="$(MonoSourceLocation)\mono\eventpipe\ep-file.h"/>
     <ClInclude Include="$(MonoSourceLocation)\mono\eventpipe\ep-getter-setter.h"/>
+    <ClCompile Include="$(MonoSourceLocation)\mono\eventpipe\ep-json-file.c">
+      <ExcludedFromBuild>$(ExcludeEventPipeFromBuild)</ExcludedFromBuild>
+    </ClCompile>
+    <ClInclude Include="$(MonoSourceLocation)\mono\eventpipe\ep-json-file.h"/>
     <ClCompile Include="$(MonoSourceLocation)\mono\eventpipe\ep-metadata-generator.c">
       <ExcludedFromBuild>$(ExcludeEventPipeFromBuild)</ExcludedFromBuild>
     </ClCompile>
@@ -112,6 +119,10 @@
     </ClCompile>
     <ClInclude Include="$(MonoSourceLocation)\mono\eventpipe\ep-thread.h"/>
     <ClInclude Include="$(MonoSourceLocation)\mono\eventpipe\ep-types.h"/>
+    <ClCompile Include="$(MonoSourceLocation)\mono\eventpipe\ep-sample-profiler.c">
+      <ExcludedFromBuild>$(ExcludeEventPipeFromBuild)</ExcludedFromBuild>
+    </ClCompile>
+    <ClInclude Include="$(MonoSourceLocation)\mono\eventpipe\ep-sample-profiler.h"/>
     <ClCompile Include="$(MonoSourceLocation)\mono\eventpipe\ep-session.c">
       <ExcludedFromBuild>$(ExcludeEventPipeFromBuild)</ExcludedFromBuild>
     </ClCompile>

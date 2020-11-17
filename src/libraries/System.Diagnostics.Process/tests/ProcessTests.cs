@@ -147,7 +147,8 @@ namespace System.Diagnostics.Tests
                 BeginInvokeDelegate = (d, args) =>
                 {
                     Assert.Null(beginInvokeTask);
-                    beginInvokeTask = Task.Run(() => d.DynamicInvoke(args));
+                    beginInvokeTask = new Task(() => d.DynamicInvoke(args));
+                    beginInvokeTask.Start(TaskScheduler.Default);
                     return beginInvokeTask;
                 }
             };

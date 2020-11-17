@@ -70,7 +70,7 @@ load_buffer_with_events_init (
 
 	EventPipeProviderConfiguration provider_config;
 	EventPipeProviderConfiguration *current_provider_config;
-	current_provider_config = ep_provider_config_init (&provider_config, TEST_PROVIDER_NAME, 1, EP_EVENT_LEVEL_LOG_ALWAYS, "");
+	current_provider_config = ep_provider_config_init (&provider_config, TEST_PROVIDER_NAME, 1, EP_EVENT_LEVEL_LOGALWAYS, "");
 	ep_raise_error_if_nok (current_provider_config != NULL);
 
 	test_location = 1;
@@ -140,7 +140,7 @@ load_buffer (
 		}
 		if (event_data) {
 			ep_event_payload_init (&payload, (uint8_t *)event_data, event_data_len);
-			result = ep_buffer_write_event (buffer, ep_buffer_get_writer_thread (buffer), session, ep_event, &payload, NULL, NULL, NULL);
+			result = ep_buffer_write_event (buffer, ep_rt_thread_get_handle (), session, ep_event, &payload, NULL, NULL, NULL);
 			ep_event_payload_fini (&payload);
 
 			if (!perf_test)

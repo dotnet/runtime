@@ -123,7 +123,7 @@ ep_event_source_init (EventPipeEventSource *event_source)
 		event_name_utf16,
 		0,		/* keywords */
 		1,		/* version */
-		EP_EVENT_LEVEL_LOG_ALWAYS,
+		EP_EVENT_LEVEL_LOGALWAYS,
 		0,		/* opcode */
 		params,
 		params_len,
@@ -137,13 +137,14 @@ ep_event_source_init (EventPipeEventSource *event_source)
 		1,		/* eventID */
 		0,		/* keywords */
 		0,		/* eventVersion */
-		EP_EVENT_LEVEL_LOG_ALWAYS,
+		EP_EVENT_LEVEL_LOGALWAYS,
 		false,  /* needStack */
 		metadata,
 		(uint32_t)metadata_len);
 
 	ep_raise_error_if_nok (event_source->process_info_event);
 
+ep_on_exit:
 	// Delete the metadata after the event is created.
 	// The metadata blob will be copied into EventPipe-owned memory.
 	ep_rt_byte_array_free (metadata);
@@ -155,13 +156,9 @@ ep_event_source_init (EventPipeEventSource *event_source)
 	ep_rt_utf16_string_free (os_info_arg_utf16);
 	ep_rt_utf16_string_free (command_line_arg_utf16);
 
-ep_on_exit:
 	return event_source;
 
 ep_on_error:
-	ep_rt_byte_array_free (metadata);
-	ep_rt_utf16_string_free (event_name_utf16);
-	ep_rt_utf16_string_free (command_line_arg_utf16);
 	ep_event_source_free (event_source);
 
 	event_source = NULL;
@@ -180,9 +177,10 @@ ep_event_source_free (EventPipeEventSource *event_source)
 {
 	ep_return_void_if_nok (event_source);
 	event_source_fini (event_source);
+	ep_rt_object_free (event_source);
 }
 
-void
+bool
 ep_event_source_enable (
 	EventPipeEventSource *event_source,
 	EventPipeSession *session)
@@ -192,9 +190,11 @@ ep_event_source_enable (
 
 	ep_requires_lock_held ();
 
-	EventPipeSessionProvider *session_provider = ep_session_provider_alloc (event_source->provider_name, (uint64_t)-1, EP_EVENT_LEVEL_LOG_ALWAYS, NULL);
+	bool result = true;
+	EventPipeSessionProvider *session_provider = ep_session_provider_alloc (event_source->provider_name, (uint64_t)-1, EP_EVENT_LEVEL_LOGALWAYS, NULL);
 	if (session_provider != NULL)
-		ep_session_add_session_provider (session, session_provider);
+		result = ep_session_add_session_provider (session, session_provider);
+	return result;
 }
 
 void
@@ -220,7 +220,7 @@ ep_event_source_send_process_info (
 	if (arch_info_utf16)
 		ep_event_data_init (&data[2], (uint64_t)arch_info_utf16, (uint32_t)((ep_rt_utf16_string_len (arch_info_utf16) + 1) * sizeof (ep_char16_t)), 0);
 
-	ep_write_event (event_source->process_info_event, data, EP_ARRAY_SIZE (data), NULL, NULL);
+	ep_write_event_2 (event_source->process_info_event, data, EP_ARRAY_SIZE (data), NULL, NULL);
 
 	ep_rt_utf16_string_free (arch_info_utf16);
 	ep_rt_utf16_string_free (os_info_utf16);

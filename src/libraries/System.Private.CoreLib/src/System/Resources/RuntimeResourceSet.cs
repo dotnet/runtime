@@ -1,18 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-/*============================================================
-**
-**
-**
-**
-**
-** Purpose: CultureInfo-specific collection of resources.
-**
-**
-===========================================================*/
-
-#nullable enable
 using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -169,8 +157,6 @@ namespace System.Resources
 #endif
     sealed class RuntimeResourceSet : ResourceSet, IEnumerable
     {
-        internal const int Version = 2;            // File format version number
-
         // Cache for resources.  Key is the resource name, which can be cached
         // for arbitrarily long times, since the object is usually a string
         // literal that will live for the lifetime of the appdomain.  The
@@ -178,7 +164,7 @@ namespace System.Resources
         private Dictionary<string, ResourceLocator>? _resCache;
 
 
-        // For our special load-on-demand reader, cache the cast.  The
+        // For our special load-on-demand reader. The
         // RuntimeResourceSet's implementation knows how to treat this reader specially.
         private ResourceReader? _defaultReader;
 
@@ -189,32 +175,19 @@ namespace System.Resources
         // don't exist.
         private Dictionary<string, ResourceLocator>? _caseInsensitiveTable;
 
-        // If we're not using our custom reader, then enumerate through all
-        // the resources once, adding them into the table.
-        private bool _haveReadFromReader;
-
 #if !RESOURCES_EXTENSIONS
-        internal RuntimeResourceSet(string fileName) : base(false)
+        internal RuntimeResourceSet(string fileName) :
+            this(new FileStream(fileName, FileMode.Open, FileAccess.Read, FileShare.Read))
         {
-            _resCache = new Dictionary<string, ResourceLocator>(FastResourceComparer.Default);
-            Stream stream = new FileStream(fileName, FileMode.Open, FileAccess.Read, FileShare.Read);
-            _defaultReader = new ResourceReader(stream, _resCache, false);
-            Reader = _defaultReader;
         }
 
-        internal RuntimeResourceSet(Stream stream, bool permitDeserialization = false) : base(false)
+        internal RuntimeResourceSet(Stream stream, bool permitDeserialization = false) :
+            base(false)
         {
             _resCache = new Dictionary<string, ResourceLocator>(FastResourceComparer.Default);
             _defaultReader = new ResourceReader(stream, _resCache, permitDeserialization);
-            Reader = _defaultReader;
         }
 #else
-        private
-#if NETFRAMEWORK
-        new
-#endif
-        IResourceReader Reader => _defaultReader!;
-
         internal RuntimeResourceSet(IResourceReader reader) :
             // explicitly do not call IResourceReader constructor since it caches all resources
             // the purpose of RuntimeResourceSet is to lazily load and cache.
@@ -235,32 +208,18 @@ namespace System.Resources
 
         protected override void Dispose(bool disposing)
         {
-            if (Reader == null)
+            if (_defaultReader is null)
                 return;
 
             if (disposing)
             {
-                lock (Reader)
-                {
-                    _resCache = null;
-                    if (_defaultReader != null)
-                    {
-                        _defaultReader.Close();
-                        _defaultReader = null;
-                    }
-                    _caseInsensitiveTable = null;
-                    // Set Reader to null to avoid a race in GetObject.
-                    base.Dispose(disposing);
-                }
+                _defaultReader?.Close();
             }
-            else
-            {
-                // Just to make sure we always clear these fields in the future...
-                _resCache = null;
-                _caseInsensitiveTable = null;
-                _defaultReader = null;
-                base.Dispose(disposing);
-            }
+
+            _defaultReader = null;
+            _resCache = null;
+            _caseInsensitiveTable = null;
+            base.Dispose(disposing);
         }
 
         public override IDictionaryEnumerator GetEnumerator()
@@ -275,13 +234,12 @@ namespace System.Resources
 
         private IDictionaryEnumerator GetEnumeratorHelper()
         {
-            IResourceReader copyOfReader = Reader;
-            if (copyOfReader == null || _resCache == null)
+            ResourceReader? reader = _defaultReader;
+            if (reader is null)
                 throw new ObjectDisposedException(null, SR.ObjectDisposed_ResourceSet);
 
-            return copyOfReader.GetEnumerator();
+            return reader.GetEnumerator();
         }
-
 
         public override string? GetString(string key)
         {
@@ -309,158 +267,104 @@ namespace System.Resources
         {
             if (key == null)
                 throw new ArgumentNullException(nameof(key));
-            if (Reader == null || _resCache == null)
+
+            ResourceReader? reader = _defaultReader;
+            Dictionary<string, ResourceLocator>? cache = _resCache;
+            if (reader is null || cache is null)
                 throw new ObjectDisposedException(null, SR.ObjectDisposed_ResourceSet);
 
-            object? value = null;
-            ResourceLocator resLocation;
+            object? value;
+            ResourceLocator resEntry;
 
-            lock (Reader)
+            lock (cache)
             {
-                if (Reader == null)
-                    throw new ObjectDisposedException(null, SR.ObjectDisposed_ResourceSet);
-
-                if (_defaultReader != null)
+                // Find the offset within the data section
+                int dataPos;
+                if (cache.TryGetValue(key, out resEntry))
                 {
-                    // Find the offset within the data section
-                    int dataPos = -1;
-                    if (_resCache.TryGetValue(key, out resLocation))
-                    {
-                        value = resLocation.Value;
-                        dataPos = resLocation.DataPosition;
-                    }
+                    value = resEntry.Value;
+                    if (value != null)
+                        return value;
 
-                    if (dataPos == -1 && value == null)
-                    {
-                        dataPos = _defaultReader.FindPosForResource(key);
-                    }
-
-                    if (dataPos != -1 && value == null)
-                    {
-                        Debug.Assert(dataPos >= 0, "data section offset cannot be negative!");
-                        // Normally calling LoadString or LoadObject requires
-                        // taking a lock.  Note that in this case, we took a
-                        // lock on the entire RuntimeResourceSet, which is
-                        // sufficient since we never pass this ResourceReader
-                        // to anyone else.
-                        ResourceTypeCode typeCode;
-                        if (isString)
-                        {
-                            value = _defaultReader.LoadString(dataPos);
-                            typeCode = ResourceTypeCode.String;
-                        }
-                        else
-                        {
-                            value = _defaultReader.LoadObject(dataPos, out typeCode);
-                        }
-
-                        resLocation = new ResourceLocator(dataPos, (ResourceLocator.CanCache(typeCode)) ? value : null);
-                        lock (_resCache)
-                        {
-                            _resCache[key] = resLocation;
-                        }
-                    }
-
-                    if (value != null || !ignoreCase)
-                    {
-                        return value;  // may be null
-                    }
-                }  // if (_defaultReader != null)
-
-                // At this point, we either don't have our default resource reader
-                // or we haven't found the particular resource we're looking for
-                // and may have to search for it in a case-insensitive way.
-                if (!_haveReadFromReader)
-                {
-                    // If necessary, init our case insensitive hash table.
-                    if (ignoreCase)
-                    {
-                        _caseInsensitiveTable ??= new Dictionary<string, ResourceLocator>(StringComparer.OrdinalIgnoreCase);
-                    }
-
-                    if (_defaultReader == null)
-                    {
-                        IDictionaryEnumerator en = Reader.GetEnumerator();
-                        while (en.MoveNext())
-                        {
-                            DictionaryEntry entry = en.Entry;
-                            string readKey = (string)entry.Key;
-                            ResourceLocator resLoc = new ResourceLocator(-1, entry.Value);
-                            _resCache.Add(readKey, resLoc);
-                            if (ignoreCase)
-                            {
-                                Debug.Assert(_caseInsensitiveTable != null);
-                                _caseInsensitiveTable.Add(readKey, resLoc);
-                            }
-                        }
-                        // Only close the reader if it is NOT our default one,
-                        // since we need it around to resolve ResourceLocators.
-                        if (!ignoreCase)
-                            Reader.Close();
-                    }
-                    else
-                    {
-                        Debug.Assert(ignoreCase, "This should only happen for case-insensitive lookups");
-                        Debug.Assert(_caseInsensitiveTable != null);
-                        ResourceReader.ResourceEnumerator en = _defaultReader.GetEnumeratorInternal();
-                        while (en.MoveNext())
-                        {
-                            // Note: Always ask for the resource key before the data position.
-                            string currentKey = (string)en.Key;
-                            int dataPos = en.DataPosition;
-                            ResourceLocator resLoc = new ResourceLocator(dataPos, null);
-                            _caseInsensitiveTable.Add(currentKey, resLoc);
-                        }
-                    }
-                    _haveReadFromReader = true;
+                    // When data type cannot be cached
+                    dataPos = resEntry.DataPosition;
+                    return isString ? reader.LoadString(dataPos) : reader.LoadObject(dataPos, out _);
                 }
-                object? obj = null;
-                bool found = false;
-                bool keyInWrongCase = false;
-                if (_defaultReader != null)
-                {
-                    if (_resCache.TryGetValue(key, out resLocation))
-                    {
-                        found = true;
-                        obj = ResolveResourceLocator(resLocation, key, _resCache, keyInWrongCase);
-                    }
-                }
-                if (!found && ignoreCase)
-                {
-                    Debug.Assert(_caseInsensitiveTable != null);
-                    if (_caseInsensitiveTable.TryGetValue(key, out resLocation))
-                    {
-                        found = true;
-                        keyInWrongCase = true;
-                        obj = ResolveResourceLocator(resLocation, key, _resCache, keyInWrongCase);
-                    }
-                }
-                return obj;
-            } // lock(Reader)
-        }
 
-        // The last parameter indicates whether the lookup required a
-        // case-insensitive lookup to succeed, indicating we shouldn't add
-        // the ResourceLocation to our case-sensitive cache.
-        private object? ResolveResourceLocator(ResourceLocator resLocation, string key, Dictionary<string, ResourceLocator> copyOfCache, bool keyInWrongCase)
-        {
-            // We need to explicitly resolve loosely linked manifest
-            // resources, and we need to resolve ResourceLocators with null objects.
-            object? value = resLocation.Value;
-            if (value == null)
-            {
-                ResourceTypeCode typeCode;
-                lock (Reader)
+                dataPos = reader.FindPosForResource(key);
+                if (dataPos >= 0)
                 {
-                    Debug.Assert(_defaultReader != null);
-                    value = _defaultReader.LoadObject(resLocation.DataPosition, out typeCode);
-                }
-                if (!keyInWrongCase && ResourceLocator.CanCache(typeCode))
-                {
-                    resLocation.Value = value;
-                    copyOfCache[key] = resLocation;
+                    value = ReadValue(reader, dataPos, isString, out resEntry);
+                    cache[key] = resEntry;
+                    return value;
                 }
             }
+
+            if (!ignoreCase)
+            {
+                return null;
+            }
+
+            // We haven't found the particular resource we're looking for
+            // and may have to search for it in a case-insensitive way.
+            bool initialize = false;
+            Dictionary<string, ResourceLocator>? caseInsensitiveTable = _caseInsensitiveTable;
+            if (caseInsensitiveTable == null)
+            {
+                caseInsensitiveTable = new Dictionary<string, ResourceLocator>(StringComparer.OrdinalIgnoreCase);
+                initialize = true;
+            }
+
+            lock (caseInsensitiveTable)
+            {
+                if (initialize)
+                {
+                    ResourceReader.ResourceEnumerator en = reader.GetEnumeratorInternal();
+                    while (en.MoveNext())
+                    {
+                        // The resource key must be read before the data position.
+                        string currentKey = (string)en.Key;
+                        ResourceLocator resLoc = new ResourceLocator(en.DataPosition, null);
+                        caseInsensitiveTable.Add(currentKey, resLoc);
+                    }
+
+                    _caseInsensitiveTable = caseInsensitiveTable;
+                }
+
+                if (!caseInsensitiveTable.TryGetValue(key, out resEntry))
+                    return null;
+
+                if (resEntry.Value != null)
+                    return resEntry.Value;
+
+                value = ReadValue(reader, resEntry.DataPosition, isString, out resEntry);
+
+                if (resEntry.Value != null)
+                    caseInsensitiveTable[key] = resEntry;
+            }
+
+            return value;
+        }
+
+        private static object? ReadValue (ResourceReader reader, int dataPos, bool isString, out ResourceLocator locator)
+        {
+            object? value;
+            ResourceTypeCode typeCode;
+
+            // Normally calling LoadString or LoadObject requires
+            // taking a lock.  Note that in this case, we took a
+            // lock before calling this method.
+            if (isString)
+            {
+                value = reader.LoadString(dataPos);
+                typeCode = ResourceTypeCode.String;
+            }
+            else
+            {
+                value = reader.LoadObject(dataPos, out typeCode);
+            }
+
+            locator = new ResourceLocator(dataPos, ResourceLocator.CanCache(typeCode) ? value : null);
             return value;
         }
     }

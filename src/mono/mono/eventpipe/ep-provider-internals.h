@@ -37,8 +37,36 @@ provider_unset_config (
 	const ep_char8_t *filter_data,
 	EventPipeProviderCallbackData *callback_data);
 
+// _Requires_lock_not_held (ep)
 void
 provider_invoke_callback (EventPipeProviderCallbackData *provider_callback_data);
+
+// _Requires_lock_held (ep)
+EventPipeProvider *
+provider_create (
+	const ep_char8_t *provider_name,
+	EventPipeCallback callback_func,
+	EventPipeCallbackDataFree callback_data_free_func,
+	void *callback_data,
+	EventPipeProviderCallbackDataQueue *provider_callback_data_queue);
+
+// Free provider.
+// _Requires_lock_held (ep)
+void
+provider_free (EventPipeProvider *provider);
+
+// Add event.
+// _Requires_lock_held (ep)
+EventPipeEvent *
+provider_add_event (
+	EventPipeProvider *provider,
+	uint32_t event_id,
+	uint64_t keywords,
+	uint32_t event_version,
+	EventPipeEventLevel level,
+	bool need_stack,
+	const uint8_t *metadata,
+	uint32_t metadata_len);
 
 #endif /* ENABLE_PERFTRACING */
 #endif /* __EVENTPIPE_PROVIDER_INTERNALS_H__ */

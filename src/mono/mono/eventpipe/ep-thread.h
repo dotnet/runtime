@@ -27,9 +27,10 @@ struct _EventPipeThread_Internal {
 	// Some of the data within the ThreadSessionState object can be accessed
 	// without rt_lock however, see the fields of that type for details.
 	EventPipeThreadSessionState *session_state [EP_MAX_NUMBER_OF_SESSIONS];
+#ifdef EP_THREAD_INCLUDE_ACTIVITY_ID
 	uint8_t activity_id [EP_ACTIVITY_ID_SIZE];
+#endif
 	EventPipeSession *rundown_session;
-	ep_rt_thread_handle_t rt_thread;
 	// This lock is designed to have low contention. Normally it is only taken by this thread,
 	// but occasionally it may also be taken by another thread which is trying to collect and drain
 	// buffers from all threads.
@@ -53,7 +54,18 @@ struct _EventPipeThread {
 };
 #endif
 
+#ifdef EP_THREAD_INCLUDE_ACTIVITY_ID
 EP_DEFINE_GETTER_ARRAY_REF(EventPipeThread *, thread, uint8_t *, const uint8_t *, activity_id, activity_id[0]);
+#else
+static
+inline
+const uint8_t *
+ep_thread_get_activity_id_cref (ep_rt_thread_activity_id_handle_t activity_id_handle)
+{
+	return ep_rt_thread_get_activity_id_cref (activity_id_handle);
+}
+#endif
+
 EP_DEFINE_GETTER(EventPipeThread *, thread, EventPipeSession *, rundown_session);
 EP_DEFINE_SETTER(EventPipeThread *, thread, EventPipeSession *, rundown_session);
 EP_DEFINE_GETTER_REF(EventPipeThread *, thread, ep_rt_spin_lock_handle_t *, rt_lock);
@@ -87,22 +99,45 @@ ep_thread_get_or_create (void);
 void
 ep_thread_get_threads (ep_rt_thread_array_t *threads);
 
+static
+inline
 void
 ep_thread_create_activity_id (
 	uint8_t *activity_id,
-	uint32_t activity_id_len);
+	uint32_t activity_id_len)
+{
+	ep_rt_create_activity_id (activity_id, activity_id_len);
+}
 
+static
+inline
+ep_rt_thread_activity_id_handle_t
+ep_thread_get_activity_id_handle (void)
+{
+	return ep_rt_thread_get_activity_id_handle ();
+}
+
+static
+inline
 void
 ep_thread_get_activity_id (
-	EventPipeThread *thread,
+	ep_rt_thread_activity_id_handle_t activity_id_handle,
 	uint8_t *activity_id,
-	uint32_t activity_id_len);
+	uint32_t activity_id_len)
+{
+	ep_rt_thread_get_activity_id (activity_id_handle, activity_id, activity_id_len);
+}
 
+static
+inline
 void
 ep_thread_set_activity_id (
-	EventPipeThread *thread,
+	ep_rt_thread_activity_id_handle_t activity_id_handle,
 	const uint8_t *activity_id,
-	uint32_t activity_id_len);
+	uint32_t activity_id_len)
+{
+	ep_rt_thread_set_activity_id (activity_id_handle, activity_id, activity_id_len);
+}
 
 static
 inline

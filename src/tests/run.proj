@@ -181,14 +181,14 @@ namespace $([System.String]::Copy($(Category)).Replace(".","_").Replace("\","").
             internal static string reportBase%3B
             internal static string testBinaryBase%3B
             internal static string coreRoot%3B
-            internal static string nameSpace%3B
+            internal static string category%3B
 
             static _Global()
             {
                 reportBase = System.Environment.GetEnvironmentVariable(%22XunitTestReportDirBase%22)%3B
                 testBinaryBase = System.IO.Path.GetDirectoryName(new Uri(Assembly.GetExecutingAssembly().CodeBase).LocalPath)%3B
                 coreRoot = System.Environment.GetEnvironmentVariable(%22CORE_ROOT%22)%3B
-                nameSpace = "$([System.String]::Copy($(Category)).Replace(".","_").Replace("\","").Replace("-","_"))"%3B
+                category = "$([System.String]::Copy($(Category)).Replace(".","_").Replace("\","").Replace("-","_"))"%3B
 
                 if (String.IsNullOrEmpty(reportBase)) {
                     reportBase = System.IO.Path.Combine(testBinaryBase, "Reports")%3B
@@ -282,7 +282,7 @@ namespace $([System.String]::Copy($(Category)).Replace(".","_").Replace("\","").
 
                   System.IO.Directory.CreateDirectory(_Global.reportBase + testSubfolder)%3B
 
-                  ret = wrapper.RunTest(testExecutable, outputFile, errorFile, _Global.nameSpace)%3B
+                  ret = wrapper.RunTest(testExecutable, outputFile, errorFile, _Global.category, _Global.testBinaryBase)%3B
                 }
                 catch (Exception ex)
                 {
@@ -344,7 +344,7 @@ namespace $([System.String]::Copy($(Category)).Replace(".","_").Replace("\","").
                     // Add Android app running log to testOutput
                     if (ret != CoreclrTestWrapperLib.EXIT_SUCCESS_CODE)
                     {
-                        string androidLogFile = System.IO.Path.GetFullPath(_Global.coreRoot + "/AndroidApps" + "/" + _Global.nameSpace + "/adb-logcat-net.dot." + _Global.nameSpace + ".log")%3B
+                        string androidLogFile = System.IO.Path.GetDirectoryName(testExecutable) + "/adb-logcat-net.dot." + _Global.category + ".log"%3B
                         if(File.Exists(androidLogFile))
                         {
                             testOutput.AddRange(System.IO.File.ReadAllLines(androidLogFile))%3B
@@ -418,9 +418,9 @@ namespace $([System.String]::Copy($(Category)).Replace(".","_").Replace("\","").
       <CMDDIR_Grandparent>$([System.IO.Path]::GetDirectoryName($([System.IO.Path]::GetDirectoryName($(_CMDDIR)))))</CMDDIR_Grandparent>
       <CategoryWithSlash>$([System.String]::Copy('$(_CMDDIR)').Replace("$(CMDDIR_Grandparent)/",""))</CategoryWithSlash>
       <Category>$([System.String]::Copy('$(CategoryWithSlash)').Replace('/','_'))</Category>
-      <AppDir>$(CORE_ROOT)\AndroidApps\$(Category)</AppDir>
-      <SourceDir>$(AppDir)\SourceDir</SourceDir>
-      <ApkDir>$(AppDir)\apk</ApkDir>
+      <BuildDir>$(IntermediateOutputPath)\AndroidApps\$(Category)</BuildDir>
+      <AppDir>$(BuildDir)\apk</AppDir>
+      <FinalApkPath>$(XUnitTestBinBase)\$(CategoryWithSlash)\$(Category).apk</FinalApkPath>
       <StripDebugSymbols>False</StripDebugSymbols>
       <StripDebugSymbols Condition="'$(Configuration)' == 'Release'">True</StripDebugSymbols>
       <MicrosoftNetCoreAppRuntimePackDir>$(ArtifactsBinDir)microsoft.netcore.app.runtime.android-$(TargetArchitecture)\$(Configuration)\runtimes\android-$(TargetArchitecture)\</MicrosoftNetCoreAppRuntimePackDir>
@@ -431,7 +431,7 @@ namespace $([System.String]::Copy($(Category)).Replace(".","_").Replace("\","").
     </PropertyGroup>
 
     <RemoveDir Directories="$(AppDir)" />
-    <MakeDir Directories="$(SourceDir)"/>
+    <MakeDir Directories="$(BuildDir)"/>
 
     <ItemGroup>
       <AllCMDsPresent Include="$(_CMDDIR)\**\*.sh" />
@@ -447,43 +447,44 @@ namespace $([System.String]::Copy($(Category)).Replace(".","_").Replace("\","").
 
     <Copy 
         SourceFiles="@(TestAssemblies)"
-        DestinationFolder="$(SourceDir)" />
+        DestinationFolder="$(BuildDir)" />
 
     <Copy 
         SourceFiles="@(AssembliesInTestDirs)"
-        DestinationFolder="$(SourceDir)" />
+        DestinationFolder="$(BuildDir)" />
 
     <Copy 
         SourceFiles="@(RuntimePackNativeLibs)"
-        DestinationFolder="$(SourceDir)" />
+        DestinationFolder="$(BuildDir)" />
 
     <Copy 
         SourceFiles="@(RuntimePackLibs)"
-        DestinationFolder="$(SourceDir)" />
+        DestinationFolder="$(BuildDir)" />
     
     <!-- TEMP: consume OpenSSL binaries from external sources via env. variables.-->
     <Copy Condition="'$(ANDROID_OPENSSL_AAR)' != ''"
           SourceFiles="$(ANDROID_OPENSSL_AAR)\prefab\modules\crypto\libs\android.$(AndroidAbi)\libcrypto.so"
-          DestinationFolder="$(SourceDir)" SkipUnchangedFiles="true"/>
+          DestinationFolder="$(BuildDir)" SkipUnchangedFiles="true"/>
 
     <Copy Condition="'$(ANDROID_OPENSSL_AAR)' != ''"
           SourceFiles="$(ANDROID_OPENSSL_AAR)\prefab\modules\ssl\libs\android.$(AndroidAbi)\libssl.so"
-          DestinationFolder="$(SourceDir)" SkipUnchangedFiles="true"/>
+          DestinationFolder="$(BuildDir)" SkipUnchangedFiles="true"/>
 
     <AndroidAppBuilderTask
         RuntimeIdentifier="$(RuntimeIdentifier)"
         ProjectName="$(Category)"
         MonoRuntimeHeaders="$(MicrosoftNetCoreAppRuntimePackDir)/native/include/mono-2.0"
         StripDebugSymbols="$(StripDebugSymbols)"
-        SourceDir="$(SourceDir)"
-        OutputDir="$(ApkDir)">
+        SourceDir="$(BuildDir)"
+        OutputDir="$(AppDir)">
         <Output TaskParameter="ApkBundlePath" PropertyName="ApkBundlePath" />
         <Output TaskParameter="ApkPackageId" PropertyName="ApkPackageId" />
     </AndroidAppBuilderTask>
-    <Message Importance="High" Text="Apk:       $(ApkBundlePath)"/>
+    <Move SourceFiles="$(ApkBundlePath)" DestinationFiles="$(FinalApkPath)" />
+    <Message Importance="High" Text="Apk:       $(FinalApkPath)"/>
     <Message Importance="High" Text="PackageId: $(ApkPackageId)"/>
-    <!-- delete the SourceDir in CI builds to save disk space on build agents since they're no longer needed -->
-    <RemoveDir Condition="'$(ContinuousIntegrationBuild)' == 'true'" Directories="$(SourceDir)" />
+    <!-- delete the BuildDir in CI builds to save disk space on build agents since they're no longer needed -->
+    <RemoveDir Condition="'$(ContinuousIntegrationBuild)' == 'true'" Directories="$(BuildDir)" />
   </Target>
 
   <Target Name="BuildAllAndroidApp" DependsOnTargets="GetListOfTestCmds;FindCmdDirectories">

@@ -195,8 +195,11 @@ namespace System.Xml
 
         internal static int ComputeHash32(string key)
         {
-            ReadOnlySpan<byte> bytes = MemoryMarshal.AsBytes(key.AsSpan());
-            return Marvin.ComputeHash32(bytes, Marvin.DefaultSeed);
+            // We rely on string.GetHashCode(ROS<char>) being randomized.
+            // n.b. not calling string.GetHashCode() because we want hash code computation to match
+            // char[]-based overload later in this file, so we normalize everything to ROS<char>.
+
+            return string.GetHashCode(key.AsSpan());
         }
 
         //
@@ -261,8 +264,9 @@ namespace System.Xml
 
         private static int ComputeHash32(char[] key, int start, int len)
         {
-            ReadOnlySpan<byte> bytes = MemoryMarshal.AsBytes(new ReadOnlySpan<char>(key, start, len));
-            return Marvin.ComputeHash32(bytes, Marvin.DefaultSeed);
+            // We rely on string.GetHashCode(ROS<char>) being randomized.
+
+            return string.GetHashCode(key.AsSpan(start, len));
         }
     }
 }
