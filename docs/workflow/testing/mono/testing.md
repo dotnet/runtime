@@ -70,7 +70,7 @@ $(REPO_ROOT)/dotnet.sh build /t:Test /p:RuntimeFlavor=mono /p:Configuration=<Rel
 There are a few convenient samples located in `$(REPO_ROOT)/src/mono/netcore/sample`, which could help you test your program easily with different flavors of Mono or do a sanity check on the build.
 
 ## Sample for desktop Mono
-It lives in `HelloWorld` folder. 
+The desktop sample lives in `HelloWorld` folder.
 
 To run that program, you could simply cd to that directory and execute
 
