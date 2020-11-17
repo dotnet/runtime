@@ -74,7 +74,11 @@ TADDR DACGetMethodTableFromObjectPointer(TADDR objAddr, ICorDebugDataTarget * ta
         return NULL;
     }
 
+#if TARGET_64BIT
+    Value = Value & ~7; // equivalent to Object::GetGCSafeMethodTable()
+#else
     Value = Value & ~3; // equivalent to Object::GetGCSafeMethodTable()
+#endif
     return Value;
 }
 
@@ -3889,12 +3893,22 @@ HRESULT ClrDataAccess::GetTLSIndex(ULONG *pIndex)
     return hr;
 }
 
+#ifndef TARGET_UNIX
+extern "C" IMAGE_DOS_HEADER __ImageBase;
+#endif
+
 HRESULT ClrDataAccess::GetDacModuleHandle(HMODULE *phModule)
 {
     if(phModule == NULL)
         return E_INVALIDARG;
-    *phModule = GetModuleInst();
+
+#ifndef TARGET_UNIX
+    *phModule = (HMODULE)&__ImageBase;
     return S_OK;
+#else
+    //  hModule is not available under TARGET_UNIX
+    return E_FAIL;
+#endif
 }
 
 HRESULT ClrDataAccess::GetRCWData(CLRDATA_ADDRESS addr, struct DacpRCWData *rcwData)
@@ -4343,13 +4357,6 @@ HRESULT ClrDataAccess::IsRCWDCOMProxy(CLRDATA_ADDRESS rcwAddr, BOOL* isDCOMProxy
     *isDCOMProxy = FALSE;
 
 #ifdef FEATURE_COMINTEROP
-    SOSDacEnter();
-
-    PTR_RCW pRCW = dac_cast<PTR_RCW>(CLRDATA_ADDRESS_TO_TADDR(rcwAddr));
-    *isDCOMProxy = pRCW->IsDCOMProxy();
-
-    SOSDacLeave();
-
     return S_OK;
 #else
     return E_NOTIMPL;

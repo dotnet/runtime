@@ -424,6 +424,10 @@ namespace $([System.String]::Copy($(Category)).Replace(".","_").Replace("\","").
       <StripDebugSymbols>False</StripDebugSymbols>
       <StripDebugSymbols Condition="'$(Configuration)' == 'Release'">True</StripDebugSymbols>
       <MicrosoftNetCoreAppRuntimePackDir>$(ArtifactsBinDir)microsoft.netcore.app.runtime.android-$(TargetArchitecture)\$(Configuration)\runtimes\android-$(TargetArchitecture)\</MicrosoftNetCoreAppRuntimePackDir>
+      <AndroidAbi Condition="'$(TargetArchitecture)' == 'arm64'">arm64-v8a</AndroidAbi>
+      <AndroidAbi Condition="'$(TargetArchitecture)' == 'arm'">armeabi-v7a</AndroidAbi>
+      <AndroidAbi Condition="'$(TargetArchitecture)' == 'x64'">x86_64</AndroidAbi>
+      <AndroidAbi Condition="'$(TargetArchitecture)' == 'x86'">x86</AndroidAbi>
     </PropertyGroup>
 
     <RemoveDir Directories="$(AppDir)" />
@@ -456,6 +460,15 @@ namespace $([System.String]::Copy($(Category)).Replace(".","_").Replace("\","").
     <Copy 
         SourceFiles="@(RuntimePackLibs)"
         DestinationFolder="$(SourceDir)" />
+    
+    <!-- TEMP: consume OpenSSL binaries from external sources via env. variables.-->
+    <Copy Condition="'$(ANDROID_OPENSSL_AAR)' != ''"
+          SourceFiles="$(ANDROID_OPENSSL_AAR)\prefab\modules\crypto\libs\android.$(AndroidAbi)\libcrypto.so"
+          DestinationFolder="$(SourceDir)" SkipUnchangedFiles="true"/>
+
+    <Copy Condition="'$(ANDROID_OPENSSL_AAR)' != ''"
+          SourceFiles="$(ANDROID_OPENSSL_AAR)\prefab\modules\ssl\libs\android.$(AndroidAbi)\libssl.so"
+          DestinationFolder="$(SourceDir)" SkipUnchangedFiles="true"/>
 
     <AndroidAppBuilderTask
         RuntimeIdentifier="$(RuntimeIdentifier)"

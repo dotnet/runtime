@@ -2819,7 +2819,7 @@
     <value>Delegates that are not of type MulticastDelegate may not be combined.</value>
   </data>
   <data name="MustUseCCRewrite" xml:space="preserve">
-    <value>An assembly (probably "{1}") must be rewritten using the code contracts binary rewriter (CCRewrite) because it is calling Contract.{0} and the CONTRACTS_FULL symbol is defined.  Remove any explicit definitions of the CONTRACTS_FULL symbol from your project and rebuild.  CCRewrite can be downloaded from http://go.microsoft.com/fwlink/?LinkID=169180. \r\nAfter the rewriter is installed, it can be enabled in Visual Studio from the project's Properties page on the Code Contracts pane.  Ensure that "Perform Runtime Contract Checking" is enabled, which will define CONTRACTS_FULL.</value>
+    <value>An assembly (probably "{1}") must be rewritten using the code contracts binary rewriter (CCRewrite) because it is calling Contract.{0} and the CONTRACTS_FULL symbol is defined.  Remove any explicit definitions of the CONTRACTS_FULL symbol from your project and rebuild.  CCRewrite can be downloaded from https://go.microsoft.com/fwlink/?LinkID=169180. \r\nAfter the rewriter is installed, it can be enabled in Visual Studio from the project's Properties page on the Code Contracts pane.  Ensure that "Perform Runtime Contract Checking" is enabled, which will define CONTRACTS_FULL.</value>
   </data>
   <data name="NotSupported_AbstractNonCLS" xml:space="preserve">
     <value>This non-CLS method is not implemented.</value>
@@ -3440,7 +3440,7 @@
     <value>An attempt was made to transition a task to a final state when it had already completed.</value>
   </data>
   <data name="Thread_ApartmentState_ChangeFailed" xml:space="preserve">
-    <value>Failed to set the specified COM apartment state.</value>
+    <value>Failed to set the specified COM apartment state. Current apartment state '{0}'.</value>
   </data>
   <data name="Thread_GetSetCompressedStack_NotSupported" xml:space="preserve">
     <value>Use CompressedStack.(Capture/Run) instead.</value>

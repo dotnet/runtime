@@ -25,12 +25,22 @@ namespace System.Net.Quic
         {
         }
 
-        // !!! TEMPORARY: Remove "implementationProvider" before shipping
+        /// <summary>
+        /// Create an outbound QUIC connection.
+        /// </summary>
+        /// <param name="options">The connection options.</param>
+        public QuicConnection(QuicClientConnectionOptions options)
+            : this(QuicImplementationProviders.Default, options)
+        {
+        }
+
+        // !!! TEMPORARY: Remove or make internal before shipping
         public QuicConnection(QuicImplementationProvider implementationProvider, EndPoint remoteEndPoint, SslClientAuthenticationOptions? sslClientAuthenticationOptions, IPEndPoint? localEndPoint = null)
             : this(implementationProvider, new QuicClientConnectionOptions() { RemoteEndPoint = remoteEndPoint, ClientAuthenticationOptions = sslClientAuthenticationOptions, LocalEndPoint = localEndPoint })
         {
         }
 
+        // !!! TEMPORARY: Remove or make internal before shipping
         public QuicConnection(QuicImplementationProvider implementationProvider, QuicClientConnectionOptions options)
         {
             _provider = implementationProvider.CreateConnection(options);

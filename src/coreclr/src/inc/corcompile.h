@@ -814,10 +814,6 @@ typedef enum
 
 extern LPCWSTR CorCompileGetRuntimeDllName(CorCompileRuntimeDlls id);
 
-// Will always return a valid HMODULE for CLR_INFO, but will return NULL for NGEN_COMPILER_INFO
-// if the DLL has not yet been loaded (it does not try to cause a load).
-extern HMODULE CorCompileGetRuntimeDll(CorCompileRuntimeDlls id);
-
 struct CORCOMPILE_RUNTIME_DLL_INFO
 {
     // This structure can only contain information not updated by authenticode signing. It is required

@@ -155,7 +155,14 @@ namespace System.Threading
             }
         }
 
-        public static Thread CurrentThread => t_currentThread ?? InitializeCurrentThread();
+        public static Thread CurrentThread
+        {
+            [Intrinsic]
+            get
+            {
+                return t_currentThread ?? InitializeCurrentThread();
+            }
+        }
 
         public ExecutionContext? ExecutionContext => ExecutionContext.Capture();
 
@@ -288,13 +295,15 @@ namespace System.Threading
         [SupportedOSPlatform("windows")]
         public void SetApartmentState(ApartmentState state)
         {
-            if (!TrySetApartmentState(state))
-            {
-                throw GetApartmentStateChangeFailedException();
-            }
+            SetApartmentState(state, throwOnError:true);
         }
 
         public bool TrySetApartmentState(ApartmentState state)
+        {
+            return SetApartmentState(state, throwOnError:false);
+        }
+
+        private bool SetApartmentState(ApartmentState state, bool throwOnError)
         {
             switch (state)
             {
@@ -307,7 +316,7 @@ namespace System.Threading
                     throw new ArgumentOutOfRangeException(nameof(state), SR.ArgumentOutOfRange_Enum);
             }
 
-            return TrySetApartmentStateUnchecked(state);
+            return SetApartmentStateUnchecked(state, throwOnError);
         }
 
         [Obsolete("Thread.GetCompressedStack is no longer supported. Please use the System.Threading.CompressedStack class")]
@@ -337,7 +346,7 @@ namespace System.Threading
         public static long VolatileRead(ref long address) => Volatile.Read(ref address);
         public static IntPtr VolatileRead(ref IntPtr address) => Volatile.Read(ref address);
         [return: NotNullIfNotNull("address")]
-        public static object? VolatileRead(ref object? address) => Volatile.Read(ref address);
+        public static object? VolatileRead([NotNullIfNotNull("address")] ref object? address) => Volatile.Read(ref address);
         [CLSCompliant(false)]
         public static sbyte VolatileRead(ref sbyte address) => Volatile.Read(ref address);
         public static float VolatileRead(ref float address) => Volatile.Read(ref address);

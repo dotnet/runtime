@@ -1592,10 +1592,9 @@ static void LoadAndInitializeJIT(LPCWSTR pwzJitName, OUT HINSTANCE* phJit, OUT I
     HRESULT hr = E_FAIL;
 
     PathString CoreClrFolderHolder;
-    extern HINSTANCE g_hThisInst;
     bool havePath = false;
 
-    if (WszGetModuleFileName(g_hThisInst, CoreClrFolderHolder))
+    if (GetClrModulePathName(CoreClrFolderHolder))
     {
         // Load JIT from next to CoreCLR binary
         havePath = true;

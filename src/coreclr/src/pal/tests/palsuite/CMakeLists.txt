@@ -800,7 +800,6 @@ _add_executable(paltests
   miscellaneous/SetLastError/test1/test.cpp
   miscellaneous/_i64tow/test1/test1.cpp
   pal_specific/PAL_errno/test1/PAL_errno.cpp
-  pal_specific/PAL_GetPALDirectoryW/test1/PAL_GetPALDirectoryW.cpp
 # pal_specific/PAL_GetUserTempDirectoryW/test1/PAL_GetUserTempDirectoryW.cpp
   #pal_specific/PAL_get_stderr/test1/PAL_get_stderr.cpp
   #pal_specific/PAL_get_stdin/test1/PAL_get_stdin.cpp
