@@ -110,7 +110,7 @@ ds_ipc_message_try_parse_value (
 	uint8_t **buffer,
 	uint32_t *buffer_len,
 	uint8_t *value,
-	size_t value_len);
+	uint32_t value_len);
 
 bool
 ds_ipc_message_try_parse_uint64_t (
@@ -118,11 +118,33 @@ ds_ipc_message_try_parse_uint64_t (
 	uint32_t *buffer_len,
 	uint64_t *value);
 
+static
+inline
+bool
+ds_ipc_message_try_parse_int64_t (
+	uint8_t **buffer,
+	uint32_t *buffer_len,
+	int64_t *value)
+{
+	return ds_ipc_message_try_parse_uint64_t (buffer, buffer_len, (uint64_t *)value);
+}
+
 bool
 ds_ipc_message_try_parse_uint32_t (
 	uint8_t **buffer,
 	uint32_t *buffer_len,
 	uint32_t *value);
+
+static
+inline
+bool
+ds_ipc_message_try_parse_int32_t (
+	uint8_t **buffer,
+	uint32_t *buffer_len,
+	int32_t *value)
+{
+	return ds_ipc_message_try_parse_uint32_t (buffer, buffer_len, (uint32_t *)value);
+}
 
 bool
 ds_ipc_message_try_parse_string_utf16_t (
@@ -136,11 +158,33 @@ ds_ipc_message_initialize_header_uint32_t_payload (
 	const DiagnosticsIpcHeader *header,
 	uint32_t payload);
 
+static
+inline
+bool
+ds_ipc_message_initialize_header_int32_t_payload (
+	DiagnosticsIpcMessage *message,
+	const DiagnosticsIpcHeader *header,
+	int32_t payload)
+{
+	return ds_ipc_message_initialize_header_uint32_t_payload (message, header, (uint32_t)payload);
+}
+
 bool
 ds_ipc_message_initialize_header_uint64_t_payload (
 	DiagnosticsIpcMessage *message,
 	const DiagnosticsIpcHeader *header,
 	uint64_t payload);
+
+static
+inline
+bool
+ds_ipc_message_initialize_header_int64_t_payload (
+	DiagnosticsIpcMessage *message,
+	const DiagnosticsIpcHeader *header,
+	int64_t payload)
+{
+	return ds_ipc_message_initialize_header_uint64_t_payload (message, header, (uint64_t)payload);
+}
 
 bool
 ds_ipc_message_initialize_buffer (
@@ -162,6 +206,11 @@ ds_ipc_message_try_write_string_utf16_t (
 	const ep_char16_t *value);
 
 bool
+ds_ipc_message_try_write_string_utf16_t_to_stream (
+	DiagnosticsIpcStream *stream,
+	const ep_char16_t *value);
+
+bool
 ds_ipc_message_send (
 	DiagnosticsIpcMessage *message,
 	DiagnosticsIpcStream *stream);
@@ -175,30 +224,18 @@ ds_ipc_message_send (
 bool
 ds_ipc_message_send_error (
 	DiagnosticsIpcStream *stream,
-	uint32_t error);
+	ds_ipc_result_t error);
 
 bool
 ds_ipc_message_send_success (
 	DiagnosticsIpcStream *stream,
-	uint32_t code);
+	ds_ipc_result_t code);
 
-static
-inline
 const DiagnosticsIpcHeader *
-ds_ipc_header_get_generic_success (void)
-{
-	extern const DiagnosticsIpcHeader _ds_ipc_generic_success_header;
-	return &_ds_ipc_generic_success_header;
-}
+ds_ipc_header_get_generic_success (void);
 
-static
-inline
 const DiagnosticsIpcHeader *
-ds_ipc_header_get_generic_error (void)
-{
-	extern const DiagnosticsIpcHeader _ds_ipc_generic_error_header;
-	return &_ds_ipc_generic_error_header;
-}
+ds_ipc_header_get_generic_error (void);
 
 #endif /* ENABLE_PERFTRACING */
 #endif /* __DIAGNOSTICS_PROTOCOL_H__ */

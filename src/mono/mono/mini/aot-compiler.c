@@ -11619,7 +11619,7 @@ emit_file_info (MonoAotCompile *acfg)
 	emit_string_symbol (acfg, "assembly_guid" , acfg->image->guid);
 
 	/* Emit a string holding the assembly name */
-	emit_string_symbol (acfg, "assembly_name", get_assembly_prefix (acfg->image));
+	emit_string_symbol (acfg, "assembly_name", acfg->image->assembly->aname.name);
 
 	info = g_new0 (MonoAotFileInfo, 1);
 	init_aot_file_info (acfg, info);
@@ -11633,7 +11633,7 @@ emit_file_info (MonoAotCompile *acfg)
 		 * mono_aot_register_module (). The symbol points to a pointer to the the file info
 		 * structure.
 		 */
-		sprintf (symbol, "%smono_aot_module_%s_info", acfg->user_symbol_prefix, get_assembly_prefix (acfg->image));
+		sprintf (symbol, "%smono_aot_module_%s_info", acfg->user_symbol_prefix, acfg->image->assembly->aname.name);
 
 		/* Get rid of characters which cannot occur in symbols */
 		p = symbol;

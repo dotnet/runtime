@@ -5,7 +5,7 @@
 
 #ifdef ENABLE_PERFTRACING
 
-#include "ds-rt-types-mono.h"
+#include DS_RT_TYPES_H
 
 #endif /* ENABLE_PERFTRACING */
 #endif /* __DIAGNOSTICS_RT_TYPES_H__ */

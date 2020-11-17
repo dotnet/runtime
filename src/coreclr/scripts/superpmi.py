@@ -2720,7 +2720,8 @@ def setup_args(args):
         coreclr_args.verify(args,
                             "output_mch_path",
                             lambda output_mch_path: output_mch_path is None or (not os.path.isdir(os.path.abspath(output_mch_path)) and not os.path.isfile(os.path.abspath(output_mch_path))),
-                            "Invalid output_mch_path; is it an existing directory or file?")
+                            "Invalid output_mch_path \"{}\"; is it an existing directory or file?".format,
+                            modify_arg=lambda output_mch_path: None if output_mch_path is None else os.path.abspath(output_mch_path))
 
         coreclr_args.verify(args,
                             "merge_mch_files",
@@ -3003,7 +3004,8 @@ def setup_args(args):
         coreclr_args.verify(args,
                             "output_mch_path",
                             lambda output_mch_path: not os.path.isdir(os.path.abspath(output_mch_path)) and not os.path.isfile(os.path.abspath(output_mch_path)),
-                            "Invalid output_mch_path; is it an existing directory or file?")
+                            "Invalid output_mch_path \"{}\"; is it an existing directory or file?".format,
+                            modify_arg=lambda output_mch_path: os.path.abspath(output_mch_path))
 
         coreclr_args.verify(args,
                             "pattern",

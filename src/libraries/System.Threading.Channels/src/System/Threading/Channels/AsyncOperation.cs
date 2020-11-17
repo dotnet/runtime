@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Runtime.ExceptionServices;
@@ -274,9 +275,9 @@ namespace System.Threading.Channels
                 {
                     sc.Post(static s =>
                     {
-                        var t = (Tuple<Action<object?>, object>)s!;
-                        t.Item1(t.Item2);
-                    }, Tuple.Create(continuation, state));
+                        var t = (KeyValuePair<Action<object?>, object?>)s!;
+                        t.Key(t.Value);
+                    }, new KeyValuePair<Action<object?>, object?>(continuation, state));
                 }
                 else
                 {

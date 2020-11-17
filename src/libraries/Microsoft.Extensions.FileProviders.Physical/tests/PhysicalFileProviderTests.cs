@@ -91,7 +91,7 @@ namespace Microsoft.Extensions.FileProviders
         }
 
         [Fact]
-        [PlatformSpecific(TestPlatforms.Linux)] 
+        [PlatformSpecific(TestPlatforms.Linux)]
         public void PollingFileProviderShouldntConsumeINotifyInstances()
         {
             List<IDisposable> disposables = new List<IDisposable>();

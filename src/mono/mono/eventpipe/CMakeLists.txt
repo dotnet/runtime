@@ -1,5 +1,6 @@
 
 set(eventpipe_sources_base
+	ds.c
 	ds-dump-protocol.c
 	ds-dump-protocol.h
 	ds-eventpipe-protocol.c
@@ -7,8 +8,6 @@ set(eventpipe_sources_base
 	ds-getter-setter.h
 	ds-ipc.c
 	ds-ipc.h
-	ds-ipc-posix.c
-	ds-ipc-posix.h
 	ds-process-protocol.c
 	ds-process-protocol.h
 	ds-profiler-protocol.c
@@ -46,6 +45,8 @@ set(eventpipe_sources_base
 	ep-file.c
 	ep-file.h
 	ep-getter-setter.h
+	ep-json-file.c
+	ep-json-file.h
 	ep-metadata-generator.c
 	ep-metadata-generator.h
 	ep-provider.c
@@ -61,6 +62,8 @@ set(eventpipe_sources_base
 	ep-thread.c
 	ep-thread.h
 	ep-types.h
+	ep-sample-profiler.c
+	ep-sample-profiler.h
 	ep-session.c
 	ep-session.h
 	ep-session-provider.c
@@ -68,6 +71,17 @@ set(eventpipe_sources_base
 	ep-stack-contents.h
 	ep-stream.c
 	ep-stream.h)
+
+if(HOST_WIN32 OR CLR_CMAKE_TARGET_WIN32)
+	list(APPEND eventpipe_sources_base
+		ds-ipc-win32.c
+		ds-ipc-win32.h)
+else()
+	list(APPEND eventpipe_sources_base
+		ds-ipc-posix.c
+		ds-ipc-posix.h)
+endif()
+
 if(ENABLE_PERFTRACING)
   addprefix(eventpipe_sources ../eventpipe  "${eventpipe_sources_base}")
 endif()

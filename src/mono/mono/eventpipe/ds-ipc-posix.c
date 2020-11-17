@@ -239,11 +239,13 @@ ds_ipc_alloc (
 	server_address->sun_family = AF_UNIX;
 
 	if (pipe_name) {
-		ep_rt_utf8_string_snprintf (
+		int32_t result = ep_rt_utf8_string_snprintf (
 			server_address->sun_path,
 			sizeof (server_address->sun_path),
 			"%s",
 			pipe_name);
+		if (result <= 0 || result >= (int32_t)(sizeof (server_address->sun_path)))
+			server_address->sun_path [0] = '\0';
 	} else {
 		// generate the default socket name
 		ds_rt_transport_get_default_name (
@@ -311,7 +313,7 @@ ds_ipc_poll (
 		int fd = -1;
 		if (ds_ipc_poll_handle_get_ipc (&poll_handles_data [i])) {
 			// SERVER
-			EP_ASSERT (poll_handles_data [i].ipc->mode == DS_IPC_CONNECTION_MODE_LISTEN);
+			EP_ASSERT (ds_ipc_poll_handle_get_ipc (&(poll_handles_data [i]))->mode == DS_IPC_CONNECTION_MODE_LISTEN);
 			fd = ds_ipc_poll_handle_get_ipc (&poll_handles_data [i])->server_socket;
 		} else {
 			// CLIENT
@@ -594,7 +596,8 @@ ds_ipc_to_string (
 	EP_ASSERT (buffer != NULL);
 	EP_ASSERT (buffer_len <= DS_IPC_MAX_TO_STRING_LEN);
 
-	return ep_rt_utf8_string_snprintf (buffer, buffer_len, "{ server_socket = %d }", ipc->server_socket);
+	int32_t result = ep_rt_utf8_string_snprintf (buffer, buffer_len, "{ server_socket = %d }", ipc->server_socket);
+	return (result > 0 && result < (int32_t)buffer_len) ? result : 0;
 }
 
 /*
@@ -793,6 +796,12 @@ ds_ipc_stream_get_stream_ref (DiagnosticsIpcStream *ipc_stream)
 	return &ipc_stream->stream;
 }
 
+int32_t
+ds_ipc_stream_get_handle_int32_t (DiagnosticsIpcStream *ipc_stream)
+{
+	return (int32_t)ipc_stream->client_socket;
+}
+
 void
 ds_ipc_stream_free (DiagnosticsIpcStream *ipc_stream)
 {
@@ -876,8 +885,8 @@ ds_ipc_stream_to_string (
 	EP_ASSERT (buffer != NULL);
 	EP_ASSERT (buffer_len <= DS_IPC_MAX_TO_STRING_LEN);
 
-	//TODO: Implement.
-	return ep_rt_utf8_string_snprintf (buffer, buffer_len, "{ client_socket = %d }", ipc_stream->client_socket);
+	int32_t result = ep_rt_utf8_string_snprintf (buffer, buffer_len, "{ client_socket = %d }", ipc_stream->client_socket);
+	return (result > 0 && result < (int32_t)buffer_len) ? result : 0;
 }
 
 #endif /* !defined(DS_INCLUDE_SOURCE_FILES) || defined(DS_FORCE_INCLUDE_SOURCE_FILES) */
