@@ -52,6 +52,7 @@
         ProjectName="$(AssemblyName)"
         MonoRuntimeHeaders="$(MicrosoftNetCoreAppRuntimePackNativeDir)include\mono-2.0"
         MainLibraryFileName="AndroidTestRunner.dll"
+        ForceInterpreter="$(MonoForceInterpreter)"
         StripDebugSymbols="False"
         OutputDir="$(BundleDir)"
         SourceDir="$(PublishDir)">
