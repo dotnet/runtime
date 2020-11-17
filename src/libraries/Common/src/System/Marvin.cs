@@ -24,49 +24,54 @@ namespace System
         /// <summary>
         /// Computes a 64-hash using the Marvin algorithm.
         /// </summary>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static long ComputeHash(ReadOnlySpan<byte> data, ulong seed)
+            => ComputeHash(ref MemoryMarshal.GetReference(data), (uint)data.Length, p0: (uint)seed, p1: (uint)(seed >> 32));
+
+        private static unsafe long ComputeHash(ref byte rBuffer, nuint cbBuffer, uint p0, uint p1)
         {
-            uint p0 = (uint)seed;
-            uint p1 = (uint)(seed >> 32);
+            nuint currentOffset = 0;
 
-            if (data.Length >= sizeof(uint))
+            fixed (byte* pbBuffer = &rBuffer)
             {
-                ReadOnlySpan<uint> uData = MemoryMarshal.Cast<byte, uint>(data);
+                // Consume as many 4-byte chunks as possible.
 
-                for (int i = 0; i < uData.Length; i++)
+                if (cbBuffer >= 4)
                 {
-                    p0 += uData[i];
-                    Block(ref p0, ref p1);
+                    nuint stopOffset = cbBuffer & ~(nuint)3;
+                    do
+                    {
+                        p0 += Unsafe.ReadUnaligned<uint>(pbBuffer + currentOffset);
+                        currentOffset += 4;
+                        Block(ref p0, ref p1);
+                    } while (currentOffset < stopOffset);
                 }
 
-                // byteOffset = data.Length - data.Length % 4
-                // is equivalent to clearing last 2 bits of length
-                // Using it directly gives a perf hit for short strings making it at least 5% or more slower.
-                int byteOffset = data.Length & (~3);
-                data = data.Slice(byteOffset);
-            }
+                // Fewer than 4 bytes remain; drain remaining bytes.
 
-            switch (data.Length)
-            {
-                case 0:
-                    p0 += 0x80u;
-                    break;
+                Debug.Assert(cbBuffer - currentOffset < 4, "Should have 0 - 3 bytes remaining.");
+                switch ((int)cbBuffer & 3)
+                {
+                    case 0:
+                        p0 += 0x80u;
+                        break;
 
-                case 1:
-                    p0 += 0x8000u | data[0];
-                    break;
+                    case 1:
+                        p0 += 0x8000u | pbBuffer[currentOffset];
+                        break;
 
-                case 2:
-                    p0 += 0x800000u | MemoryMarshal.Cast<byte, ushort>(data)[0];
-                    break;
+                    case 2:
+                        p0 += 0x800000u | Unsafe.ReadUnaligned<ushort>(pbBuffer + currentOffset);
+                        break;
 
-                case 3:
-                    p0 += 0x80000000u | (((uint)data[2]) << 16) | (uint)(MemoryMarshal.Cast<byte, ushort>(data)[0]);
-                    break;
+                    case 3:
+                        p0 += 0x80000000u | Unsafe.ReadUnaligned<ushort>(pbBuffer + currentOffset) | ((uint)pbBuffer[currentOffset + 2] << 16);
+                        break;
 
-                default:
-                    Debug.Fail("Should not get here.");
-                    break;
+                    default:
+                        Debug.Fail("Should not get here.");
+                        break;
+                }
             }
 
             Block(ref p0, ref p1);
