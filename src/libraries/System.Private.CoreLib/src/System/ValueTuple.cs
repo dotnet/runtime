@@ -60,7 +60,7 @@ namespace System
         {
             if (other == null) return 1;
 
-            if (!(other is ValueTuple))
+            if (other is not ValueTuple)
             {
                 ThrowHelper.ThrowArgumentException_TupleIncorrectType(this);
             }
@@ -85,7 +85,7 @@ namespace System
         {
             if (other == null) return 1;
 
-            if (!(other is ValueTuple))
+            if (other is not ValueTuple)
             {
                 ThrowHelper.ThrowArgumentException_TupleIncorrectType(this);
             }
@@ -291,7 +291,7 @@ namespace System
         /// </remarks>
         public override bool Equals(object? obj)
         {
-            return obj is ValueTuple<T1> && Equals((ValueTuple<T1>)obj);
+            return obj is ValueTuple<T1> tuple && Equals(tuple);
         }
 
         /// <summary>
@@ -311,9 +311,7 @@ namespace System
 
         bool IStructuralEquatable.Equals(object? other, IEqualityComparer comparer)
         {
-            if (other == null || !(other is ValueTuple<T1>)) return false;
-
-            var objTuple = (ValueTuple<T1>)other;
+            if (other == null || other is not ValueTuple<T1> objTuple) return false;
 
             return comparer.Equals(Item1, objTuple.Item1);
         }
@@ -322,12 +320,11 @@ namespace System
         {
             if (other == null) return 1;
 
-            if (!(other is ValueTuple<T1>))
+            if (other is not ValueTuple<T1> objTuple)
             {
                 ThrowHelper.ThrowArgumentException_TupleIncorrectType(this);
+                objTuple = default; // work around CS0170: Use of possibly unassigned field
             }
-
-            var objTuple = (ValueTuple<T1>)other;
 
             return Comparer<T1>.Default.Compare(Item1, objTuple.Item1);
         }
@@ -349,12 +346,11 @@ namespace System
         {
             if (other == null) return 1;
 
-            if (!(other is ValueTuple<T1>))
+            if (other is not ValueTuple<T1> objTuple)
             {
                 ThrowHelper.ThrowArgumentException_TupleIncorrectType(this);
+                objTuple = default; // work around CS0170: Use of possibly unassigned field
             }
-
-            var objTuple = (ValueTuple<T1>)other;
 
             return comparer.Compare(Item1, objTuple.Item1);
         }
@@ -466,7 +462,7 @@ namespace System
         /// </remarks>
         public override bool Equals(object? obj)
         {
-            return obj is ValueTuple<T1, T2> && Equals((ValueTuple<T1, T2>)obj);
+            return obj is ValueTuple<T1, T2> tuple && Equals(tuple);
         }
 
         /// <summary>
@@ -504,9 +500,7 @@ namespace System
         /// </remarks>
         bool IStructuralEquatable.Equals(object? other, IEqualityComparer comparer)
         {
-            if (other == null || !(other is ValueTuple<T1, T2>)) return false;
-
-            var objTuple = (ValueTuple<T1, T2>)other;
+            if (other == null || other is not ValueTuple<T1, T2> objTuple) return false;
 
             return comparer.Equals(Item1, objTuple.Item1)
                 && comparer.Equals(Item2, objTuple.Item2);
@@ -516,12 +510,13 @@ namespace System
         {
             if (other == null) return 1;
 
-            if (!(other is ValueTuple<T1, T2>))
+            if (other is not ValueTuple<T1, T2> tuple)
             {
                 ThrowHelper.ThrowArgumentException_TupleIncorrectType(this);
+                tuple = default; // work around CS0170: Use of possibly unassigned field
             }
 
-            return CompareTo((ValueTuple<T1, T2>)other);
+            return CompareTo(tuple);
         }
 
         /// <summary>Compares this instance to a specified instance and returns an indication of their relative values.</summary>
@@ -544,12 +539,11 @@ namespace System
         {
             if (other == null) return 1;
 
-            if (!(other is ValueTuple<T1, T2>))
+            if (other is not ValueTuple<T1, T2> objTuple)
             {
                 ThrowHelper.ThrowArgumentException_TupleIncorrectType(this);
+                objTuple = default; // work around CS0170: Use of possibly unassigned field
             }
-
-            var objTuple = (ValueTuple<T1, T2>)other;
 
             int c = comparer.Compare(Item1, objTuple.Item1);
             if (c != 0) return c;
@@ -673,7 +667,7 @@ namespace System
         /// </remarks>
         public override bool Equals(object? obj)
         {
-            return obj is ValueTuple<T1, T2, T3> && Equals((ValueTuple<T1, T2, T3>)obj);
+            return obj is ValueTuple<T1, T2, T3> tuple && Equals(tuple);
         }
 
         /// <summary>
@@ -695,9 +689,7 @@ namespace System
 
         bool IStructuralEquatable.Equals(object? other, IEqualityComparer comparer)
         {
-            if (other == null || !(other is ValueTuple<T1, T2, T3>)) return false;
-
-            var objTuple = (ValueTuple<T1, T2, T3>)other;
+            if (other == null || other is not ValueTuple<T1, T2, T3> objTuple) return false;
 
             return comparer.Equals(Item1, objTuple.Item1)
                 && comparer.Equals(Item2, objTuple.Item2)
@@ -708,12 +700,13 @@ namespace System
         {
             if (other == null) return 1;
 
-            if (!(other is ValueTuple<T1, T2, T3>))
+            if (other is not ValueTuple<T1, T2, T3> objTuple)
             {
                 ThrowHelper.ThrowArgumentException_TupleIncorrectType(this);
+                objTuple = default; // work around CS0170: Use of possibly unassigned field
             }
 
-            return CompareTo((ValueTuple<T1, T2, T3>)other);
+            return CompareTo(objTuple);
         }
 
         /// <summary>Compares this instance to a specified instance and returns an indication of their relative values.</summary>
@@ -739,12 +732,11 @@ namespace System
         {
             if (other == null) return 1;
 
-            if (!(other is ValueTuple<T1, T2, T3>))
+            if (other is not ValueTuple<T1, T2, T3> objTuple)
             {
                 ThrowHelper.ThrowArgumentException_TupleIncorrectType(this);
+                objTuple = default; // work around CS0170: Use of possibly unassigned field
             }
-
-            var objTuple = (ValueTuple<T1, T2, T3>)other;
 
             int c = comparer.Compare(Item1, objTuple.Item1);
             if (c != 0) return c;
@@ -879,7 +871,7 @@ namespace System
         /// </remarks>
         public override bool Equals(object? obj)
         {
-            return obj is ValueTuple<T1, T2, T3, T4> && Equals((ValueTuple<T1, T2, T3, T4>)obj);
+            return obj is ValueTuple<T1, T2, T3, T4> tuple && Equals(tuple);
         }
 
         /// <summary>
@@ -902,9 +894,7 @@ namespace System
 
         bool IStructuralEquatable.Equals(object? other, IEqualityComparer comparer)
         {
-            if (other == null || !(other is ValueTuple<T1, T2, T3, T4>)) return false;
-
-            var objTuple = (ValueTuple<T1, T2, T3, T4>)other;
+            if (other == null || other is not ValueTuple<T1, T2, T3, T4> objTuple) return false;
 
             return comparer.Equals(Item1, objTuple.Item1)
                 && comparer.Equals(Item2, objTuple.Item2)
@@ -916,12 +906,13 @@ namespace System
         {
             if (other == null) return 1;
 
-            if (!(other is ValueTuple<T1, T2, T3, T4>))
+            if (other is not ValueTuple<T1, T2, T3, T4> objTuple)
             {
                 ThrowHelper.ThrowArgumentException_TupleIncorrectType(this);
+                objTuple = default; // work around CS0170: Use of possibly unassigned field
             }
 
-            return CompareTo((ValueTuple<T1, T2, T3, T4>)other);
+            return CompareTo(objTuple);
         }
 
         /// <summary>Compares this instance to a specified instance and returns an indication of their relative values.</summary>
@@ -950,12 +941,11 @@ namespace System
         {
             if (other == null) return 1;
 
-            if (!(other is ValueTuple<T1, T2, T3, T4>))
+            if (other is not ValueTuple<T1, T2, T3, T4> objTuple)
             {
                 ThrowHelper.ThrowArgumentException_TupleIncorrectType(this);
+                objTuple = default; // work around CS0170: Use of possibly unassigned field
             }
-
-            var objTuple = (ValueTuple<T1, T2, T3, T4>)other;
 
             int c = comparer.Compare(Item1, objTuple.Item1);
             if (c != 0) return c;
@@ -1103,7 +1093,7 @@ namespace System
         /// </remarks>
         public override bool Equals(object? obj)
         {
-            return obj is ValueTuple<T1, T2, T3, T4, T5> && Equals((ValueTuple<T1, T2, T3, T4, T5>)obj);
+            return obj is ValueTuple<T1, T2, T3, T4, T5> tuple && Equals(tuple);
         }
 
         /// <summary>
@@ -1127,9 +1117,7 @@ namespace System
 
         bool IStructuralEquatable.Equals(object? other, IEqualityComparer comparer)
         {
-            if (other == null || !(other is ValueTuple<T1, T2, T3, T4, T5>)) return false;
-
-            var objTuple = (ValueTuple<T1, T2, T3, T4, T5>)other;
+            if (other == null || other is not ValueTuple<T1, T2, T3, T4, T5> objTuple) return false;
 
             return comparer.Equals(Item1, objTuple.Item1)
                 && comparer.Equals(Item2, objTuple.Item2)
@@ -1142,12 +1130,13 @@ namespace System
         {
             if (other == null) return 1;
 
-            if (!(other is ValueTuple<T1, T2, T3, T4, T5>))
+            if (other is not ValueTuple<T1, T2, T3, T4, T5> objTuple)
             {
                 ThrowHelper.ThrowArgumentException_TupleIncorrectType(this);
+                objTuple = default; // work around CS0170: Use of possibly unassigned field
             }
 
-            return CompareTo((ValueTuple<T1, T2, T3, T4, T5>)other);
+            return CompareTo(objTuple);
         }
 
         /// <summary>Compares this instance to a specified instance and returns an indication of their relative values.</summary>
@@ -1179,12 +1168,11 @@ namespace System
         {
             if (other == null) return 1;
 
-            if (!(other is ValueTuple<T1, T2, T3, T4, T5>))
+            if (other is not ValueTuple<T1, T2, T3, T4, T5> objTuple)
             {
                 ThrowHelper.ThrowArgumentException_TupleIncorrectType(this);
+                objTuple = default; // work around CS0170: Use of possibly unassigned field
             }
-
-            var objTuple = (ValueTuple<T1, T2, T3, T4, T5>)other;
 
             int c = comparer.Compare(Item1, objTuple.Item1);
             if (c != 0) return c;
@@ -1345,7 +1333,7 @@ namespace System
         /// </remarks>
         public override bool Equals(object? obj)
         {
-            return obj is ValueTuple<T1, T2, T3, T4, T5, T6> && Equals((ValueTuple<T1, T2, T3, T4, T5, T6>)obj);
+            return obj is ValueTuple<T1, T2, T3, T4, T5, T6> tuple && Equals(tuple);
         }
 
         /// <summary>
@@ -1370,9 +1358,7 @@ namespace System
 
         bool IStructuralEquatable.Equals(object? other, IEqualityComparer comparer)
         {
-            if (other == null || !(other is ValueTuple<T1, T2, T3, T4, T5, T6>)) return false;
-
-            var objTuple = (ValueTuple<T1, T2, T3, T4, T5, T6>)other;
+            if (other == null || other is not ValueTuple<T1, T2, T3, T4, T5, T6> objTuple) return false;
 
             return comparer.Equals(Item1, objTuple.Item1)
                 && comparer.Equals(Item2, objTuple.Item2)
@@ -1386,12 +1372,13 @@ namespace System
         {
             if (other == null) return 1;
 
-            if (!(other is ValueTuple<T1, T2, T3, T4, T5, T6>))
+            if (other is not ValueTuple<T1, T2, T3, T4, T5, T6> objTuple)
             {
                 ThrowHelper.ThrowArgumentException_TupleIncorrectType(this);
+                objTuple = default; // work around CS0170: Use of possibly unassigned field
             }
 
-            return CompareTo((ValueTuple<T1, T2, T3, T4, T5, T6>)other);
+            return CompareTo(objTuple);
         }
 
         /// <summary>Compares this instance to a specified instance and returns an indication of their relative values.</summary>
@@ -1426,12 +1413,11 @@ namespace System
         {
             if (other == null) return 1;
 
-            if (!(other is ValueTuple<T1, T2, T3, T4, T5, T6>))
+            if (other is not ValueTuple<T1, T2, T3, T4, T5, T6> objTuple)
             {
                 ThrowHelper.ThrowArgumentException_TupleIncorrectType(this);
+                objTuple = default; // work around CS0170: Use of possibly unassigned field
             }
-
-            var objTuple = (ValueTuple<T1, T2, T3, T4, T5, T6>)other;
 
             int c = comparer.Compare(Item1, objTuple.Item1);
             if (c != 0) return c;
@@ -1605,7 +1591,7 @@ namespace System
         /// </remarks>
         public override bool Equals(object? obj)
         {
-            return obj is ValueTuple<T1, T2, T3, T4, T5, T6, T7> && Equals((ValueTuple<T1, T2, T3, T4, T5, T6, T7>)obj);
+            return obj is ValueTuple<T1, T2, T3, T4, T5, T6, T7> tuple && Equals(tuple);
         }
 
         /// <summary>
@@ -1631,9 +1617,7 @@ namespace System
 
         bool IStructuralEquatable.Equals(object? other, IEqualityComparer comparer)
         {
-            if (other == null || !(other is ValueTuple<T1, T2, T3, T4, T5, T6, T7>)) return false;
-
-            var objTuple = (ValueTuple<T1, T2, T3, T4, T5, T6, T7>)other;
+            if (other == null || other is not ValueTuple<T1, T2, T3, T4, T5, T6, T7> objTuple) return false;
 
             return comparer.Equals(Item1, objTuple.Item1)
                 && comparer.Equals(Item2, objTuple.Item2)
@@ -1648,12 +1632,13 @@ namespace System
         {
             if (other == null) return 1;
 
-            if (!(other is ValueTuple<T1, T2, T3, T4, T5, T6, T7>))
+            if (other is not ValueTuple<T1, T2, T3, T4, T5, T6, T7> objTuple)
             {
                 ThrowHelper.ThrowArgumentException_TupleIncorrectType(this);
+                objTuple = default; // work around CS0170: Use of possibly unassigned field
             }
 
-            return CompareTo((ValueTuple<T1, T2, T3, T4, T5, T6, T7>)other);
+            return CompareTo(objTuple);
         }
 
         /// <summary>Compares this instance to a specified instance and returns an indication of their relative values.</summary>
@@ -1691,12 +1676,11 @@ namespace System
         {
             if (other == null) return 1;
 
-            if (!(other is ValueTuple<T1, T2, T3, T4, T5, T6, T7>))
+            if (other is not ValueTuple<T1, T2, T3, T4, T5, T6, T7> objTuple)
             {
                 ThrowHelper.ThrowArgumentException_TupleIncorrectType(this);
+                objTuple = default; // work around CS0170: Use of possibly unassigned field
             }
-
-            var objTuple = (ValueTuple<T1, T2, T3, T4, T5, T6, T7>)other;
 
             int c = comparer.Compare(Item1, objTuple.Item1);
             if (c != 0) return c;
@@ -1859,7 +1843,7 @@ namespace System
         /// <param name="rest">The value of the tuple's eight component.</param>
         public ValueTuple(T1 item1, T2 item2, T3 item3, T4 item4, T5 item5, T6 item6, T7 item7, TRest rest)
         {
-            if (!(rest is IValueTupleInternal))
+            if (rest is not IValueTupleInternal)
             {
                 throw new ArgumentException(SR.ArgumentException_ValueTupleLastArgumentNotAValueTuple);
             }
@@ -1889,7 +1873,7 @@ namespace System
         /// </remarks>
         public override bool Equals(object? obj)
         {
-            return obj is ValueTuple<T1, T2, T3, T4, T5, T6, T7, TRest> && Equals((ValueTuple<T1, T2, T3, T4, T5, T6, T7, TRest>)obj);
+            return obj is ValueTuple<T1, T2, T3, T4, T5, T6, T7, TRest> tuple && Equals(tuple);
         }
 
         /// <summary>
@@ -1916,9 +1900,7 @@ namespace System
 
         bool IStructuralEquatable.Equals(object? other, IEqualityComparer comparer)
         {
-            if (other == null || !(other is ValueTuple<T1, T2, T3, T4, T5, T6, T7, TRest>)) return false;
-
-            var objTuple = (ValueTuple<T1, T2, T3, T4, T5, T6, T7, TRest>)other;
+            if (other == null || other is not ValueTuple<T1, T2, T3, T4, T5, T6, T7, TRest> objTuple) return false;
 
             return comparer.Equals(Item1, objTuple.Item1)
                 && comparer.Equals(Item2, objTuple.Item2)
@@ -1934,12 +1916,13 @@ namespace System
         {
             if (other == null) return 1;
 
-            if (!(other is ValueTuple<T1, T2, T3, T4, T5, T6, T7, TRest>))
+            if (other is not ValueTuple<T1, T2, T3, T4, T5, T6, T7, TRest> objTuple)
             {
                 ThrowHelper.ThrowArgumentException_TupleIncorrectType(this);
+                objTuple = default; // work around CS0170: Use of possibly unassigned field
             }
 
-            return CompareTo((ValueTuple<T1, T2, T3, T4, T5, T6, T7, TRest>)other);
+            return CompareTo(objTuple);
         }
 
         /// <summary>Compares this instance to a specified instance and returns an indication of their relative values.</summary>
@@ -1980,12 +1963,11 @@ namespace System
         {
             if (other == null) return 1;
 
-            if (!(other is ValueTuple<T1, T2, T3, T4, T5, T6, T7, TRest>))
+            if (other is not ValueTuple<T1, T2, T3, T4, T5, T6, T7, TRest> objTuple)
             {
                 ThrowHelper.ThrowArgumentException_TupleIncorrectType(this);
+                objTuple = default; // work around CS0170: Use of possibly unassigned field
             }
-
-            var objTuple = (ValueTuple<T1, T2, T3, T4, T5, T6, T7, TRest>)other;
 
             int c = comparer.Compare(Item1, objTuple.Item1);
             if (c != 0) return c;
@@ -2018,7 +2000,7 @@ namespace System
         public override int GetHashCode()
         {
             // We want to have a limited hash in this case. We'll use the first 7 elements of the tuple
-            if (!(Rest is IValueTupleInternal))
+            if (Rest is not IValueTupleInternal)
             {
                 return HashCode.Combine(Item1?.GetHashCode() ?? 0,
                                         Item2?.GetHashCode() ?? 0,
@@ -2097,7 +2079,7 @@ namespace System
         private int GetHashCodeCore(IEqualityComparer comparer)
         {
             // We want to have a limited hash in this case. We'll use the first 7 elements of the tuple
-            if (!(Rest is IValueTupleInternal rest))
+            if (Rest is not IValueTupleInternal rest)
             {
                 return HashCode.Combine(comparer.GetHashCode(Item1!), comparer.GetHashCode(Item2!), comparer.GetHashCode(Item3!),
                                         comparer.GetHashCode(Item4!), comparer.GetHashCode(Item5!), comparer.GetHashCode(Item6!),
