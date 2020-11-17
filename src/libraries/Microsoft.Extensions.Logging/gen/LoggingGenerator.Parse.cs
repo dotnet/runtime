@@ -1,6 +1,6 @@
 // © Microsoft Corporation. All rights reserved.
 
-namespace LoggingGen
+namespace Microsoft.Extensions.Logging.Generators
 {
     using System;
     using System.Collections.Generic;
@@ -11,7 +11,7 @@ namespace LoggingGen
 
     public partial class LoggingGenerator
     {
-        private const string DiagnosticCategory = "R9LoggingGenerator";
+        private const string DiagnosticCategory = "LoggingGenerator";
 
 #pragma warning disable RS2008 // Enable analyzer release tracking
 
@@ -71,19 +71,19 @@ namespace LoggingGen
             var allNodes = compilation.SyntaxTrees.SelectMany(s => s.GetRoot().DescendantNodes());
             var allInterfaces = allNodes.Where(d => d.IsKind(SyntaxKind.InterfaceDeclaration)).OfType<InterfaceDeclarationSyntax>();
 
-            var logExtensionsAttribute = compilation.GetTypeByMetadataName("R9Logging.LoggerExtensionsAttribute");
+            var logExtensionsAttribute = compilation.GetTypeByMetadataName("Microsoft.Extensions.Logging.Attributes.LoggerExtensionsAttribute");
             if (logExtensionsAttribute is null)
             {
                 // emit a diagnostic about the attribute not being present but needing to be
-                context.ReportDiagnostic(Diagnostic.Create(ErrorMissingAttributeType, null, "R9Logging.LoggerExtensionsAttribute"));
+                context.ReportDiagnostic(Diagnostic.Create(ErrorMissingAttributeType, null, "Microsoft.Extensions.Logging.Attributes.LoggerExtensionsAttribute"));
                 yield break;
             }
 
-            var loggerMessageAttribute = compilation.GetTypeByMetadataName("R9Logging.LoggerMessageAttribute");
+            var loggerMessageAttribute = compilation.GetTypeByMetadataName("Microsoft.Extensions.Logging.Attributes.LoggerMessageAttribute");
             if (loggerMessageAttribute is null)
             {
                 // emit a diagnostic about the attribute not being present but needing to be
-                context.ReportDiagnostic(Diagnostic.Create(ErrorMissingAttributeType, null, "R9Logging.LoggerMessageAttribute"));
+                context.ReportDiagnostic(Diagnostic.Create(ErrorMissingAttributeType, null, "Microsoft.Extensions.Logging.Attributes.LoggerMessageAttribute"));
                 yield break;
             }
 

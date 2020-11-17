@@ -1,9 +1,8 @@
 // © Microsoft Corporation. All rights reserved.
 
 using System;
-using Microsoft.Extensions.Logging;
 
-namespace R9Logging.Tests
+namespace Microsoft.Extensions.Logging.Generators.Tests
 {
     /// <summary>
     /// A logger which captures the last log state logged to it.

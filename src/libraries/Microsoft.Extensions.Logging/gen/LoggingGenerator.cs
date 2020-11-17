@@ -1,6 +1,6 @@
 // © Microsoft Corporation. All rights reserved.
 
-namespace LoggingGen
+namespace Microsoft.Extensions.Logging.Generators
 {
     using System.Reflection.Metadata;
     using System.Text;

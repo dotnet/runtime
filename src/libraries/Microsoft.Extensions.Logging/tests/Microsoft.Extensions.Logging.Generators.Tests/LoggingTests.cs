@@ -4,8 +4,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using Microsoft.Extensions.Logging;
-using NuGet.Frameworks;
-using R9Logging;
+using Microsoft.Extensions.Logging.Attributes;
 using Xunit;
 
 // Used to test interfaces outside of a namespace
@@ -16,7 +15,7 @@ interface ILoggerExtensionsNoNamespace
     void CouldNotOpenSocketNoNamespace(string hostName);
 }
 
-namespace R9Logging.Tests
+namespace Microsoft.Extensions.Logging.Generators.Tests
 {
     // used to test interfaces inside a namespace
     [LoggerExtensions]
@@ -75,7 +74,7 @@ namespace R9Logging.Tests
             // same as above, but this time with explicit type references rather than extension method syntax so we can vouch for the namespaces being used
 
             logger.Reset();
-            global::R9Logging.Tests.LoggerExtensions.CouldNotOpenSocket(logger, "microsoft.com");
+            global::Microsoft.Extensions.Logging.Generators.Tests.LoggerExtensions.CouldNotOpenSocket(logger, "microsoft.com");
             Assert.Equal(LogLevel.Critical, logger.LastLogLevel);
             Assert.Null(logger.LastException);
             Assert.Equal("Could not open socket to `microsoft.com`", logger.LastFormattedString);
@@ -95,7 +94,7 @@ namespace R9Logging.Tests
             var logger = new MockLogger();
 
             logger.Reset();
-            var d = global::R9Logging.Tests.LoggerExtensions.Wrap(logger);    // make sure this is using the right namespace
+            var d = global::Microsoft.Extensions.Logging.Generators.Tests.LoggerExtensions.Wrap(logger);    // make sure this is using the right namespace
             d.CouldNotOpenSocket("microsoft.com");
             Assert.Equal(LogLevel.Critical, logger.LastLogLevel);
             Assert.Null(logger.LastException);
