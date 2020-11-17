@@ -10,7 +10,7 @@ namespace System.Net.Http.Headers
     {
         private static volatile EntityTagHeaderValue? s_any;
 
-        private string _tag = null!;
+        private string _tag;
         private bool _isWeak;
 
         public string Tag
@@ -23,7 +23,12 @@ namespace System.Net.Http.Headers
             get { return _isWeak; }
         }
 
-        public static EntityTagHeaderValue Any => s_any ??= new EntityTagHeaderValue() { _tag = "*" };
+        public static EntityTagHeaderValue Any => s_any ??= new EntityTagHeaderValue();
+
+        private EntityTagHeaderValue()
+        {
+            _tag = "*";
+        }
 
         public EntityTagHeaderValue(string tag)
             : this(tag, false)
@@ -55,10 +60,6 @@ namespace System.Net.Http.Headers
 
             _tag = source._tag;
             _isWeak = source._isWeak;
-        }
-
-        private EntityTagHeaderValue()
-        {
         }
 
         public override string ToString()
