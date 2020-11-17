@@ -8,7 +8,7 @@ namespace System.Net.Http.Headers
 {
     public class EntityTagHeaderValue : ICloneable
     {
-        private static EntityTagHeaderValue? s_any;
+        private static volatile EntityTagHeaderValue? s_any;
 
         private string _tag = null!;
         private bool _isWeak;
@@ -23,19 +23,7 @@ namespace System.Net.Http.Headers
             get { return _isWeak; }
         }
 
-        public static EntityTagHeaderValue Any
-        {
-            get
-            {
-                if (s_any == null)
-                {
-                    s_any = new EntityTagHeaderValue();
-                    s_any._tag = "*";
-                    s_any._isWeak = false;
-                }
-                return s_any;
-            }
-        }
+        public static EntityTagHeaderValue Any => s_any ??= new EntityTagHeaderValue() { _tag = "*" };
 
         public EntityTagHeaderValue(string tag)
             : this(tag, false)
