@@ -178,13 +178,13 @@ ep_buffer_manager_init_sequence_point_thread_list (
 bool
 ep_buffer_manager_write_event (
 	EventPipeBufferManager *buffer_manager,
-	EventPipeThread *thread,
+	ep_rt_thread_handle_t thread,
 	EventPipeSession *session,
 	EventPipeEvent *ep_event,
 	EventPipeEventPayload *payload,
 	const uint8_t *activity_id,
 	const uint8_t *related_activity_id,
-	EventPipeThread *event_thread,
+	ep_rt_thread_handle_t event_thread,
 	EventPipeStackContents *stack);
 
 // READ_ONLY state and no new EventPipeBuffers or EventPipeBufferLists can be created. Calls to

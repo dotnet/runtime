@@ -21,7 +21,7 @@
 #define ep_return_false_if_nok(expr) do { if (EP_UNLIKELY(!(expr))) return false; } while (0)
 #define ep_return_zero_if_nok(expr) do { if (EP_UNLIKELY(!(expr))) return 0; } while (0)
 
-#include "ep-rt-types-mono.h"
+#include EP_RT_TYPES_H
 
 #endif /* ENABLE_PERFTRACING */
 #endif /* __EVENTPIPE_RT_TYPES_H__ */

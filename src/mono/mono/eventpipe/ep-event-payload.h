@@ -17,6 +17,7 @@
  * EventData.
  */
 
+//NOTE, layout needs to match COR_PRF_EVENT_DATA.
 #if defined(EP_INLINE_GETTER_SETTER) || defined(EP_IMPL_EVENT_PAYLOAD_GETTER_SETTER)
 struct _EventData {
 #else
