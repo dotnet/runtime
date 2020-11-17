@@ -500,16 +500,20 @@ namespace Microsoft.Extensions.Caching.Memory
         {
             if (_disposed)
             {
-                throw new ObjectDisposedException(typeof(MemoryCache).FullName);
+                Throw();
             }
+
+            void Throw() => throw new ObjectDisposedException(typeof(MemoryCache).FullName);
         }
 
         private static void ValidateCacheKey(object key)
         {
             if (key == null)
             {
-                throw new ArgumentNullException(nameof(key));
+                Throw();
             }
+
+            void Throw() => throw new ArgumentNullException(nameof(key));
         }
     }
 }
