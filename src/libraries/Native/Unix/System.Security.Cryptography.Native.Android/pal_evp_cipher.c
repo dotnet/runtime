@@ -32,26 +32,8 @@ intptr_t CryptoNative_EvpDesCbc()       { return 1025; }
 intptr_t CryptoNative_EvpRC2Ecb()       { return 1026; }
 intptr_t CryptoNative_EvpRC2Cbc()       { return 1027; }
 
-jobject CryptoNative_EvpCipherCreate2(intptr_t type, uint8_t* key, int32_t keyLength, int32_t effectiveKeyLength, uint8_t* iv, int32_t enc)
+static jobject GetAlgorithmName(JNIEnv* env, intptr_t type)
 {
-    if (effectiveKeyLength != 0)
-    {
-        LOG_ERROR("Non-zero effectiveKeyLength is not supported");
-        return FAIL;
-    }
-
-    // input:  0 for Decrypt, 1 for Encrypt
-    // Cipher: 2 for Decrypt, 1 for Encrypt
-    assert(enc == 0 || enc == 1);
-    int encMode = enc == 0 ? 2 : 1;
-
-    JNIEnv* env = GetJNIEnv();
-    // Cipher cipher = Cipher.getInstance("AES");
-    // int ivSize = cipher.getBlockSize();
-    // SecretKeySpec keySpec = new SecretKeySpec(key.getEncoded(), "AES");
-    // IvParameterSpec ivSpec = new IvParameterSpec(IV);
-    // cipher.init(encMode, keySpec, ivSpec);
-
     jobject algName = NULL;
 
     if ((type == CryptoNative_EvpAes128Cbc()) ||
@@ -79,8 +61,40 @@ jobject CryptoNative_EvpCipherCreate2(intptr_t type, uint8_t* key, int32_t keyLe
         LOG_ERROR("unexpected type: %d", (int)type);
         return FAIL;
     }
+    return algName;
+}
 
-    jobject cipherObj = ToGRef(env, (*env)->CallStaticObjectMethod(env, g_cipherClass, g_cipherGetInstanceMethod, algName));
+jobject CryptoNative_EvpCipherCreatePartial(intptr_t type)
+{
+    JNIEnv* env = GetJNIEnv();
+    jobject algName = GetAlgorithmName(env, type);
+    jobject cipher = ToGRef(env, (*env)->CallStaticObjectMethod(env, g_cipherClass, g_cipherGetInstanceMethod, algName));
+    (*env)->DeleteLocalRef(env, algName);
+    return cipher;
+}
+
+jobject CryptoNative_EvpCipherCreate2(intptr_t type, uint8_t* key, int32_t keyLength, int32_t effectiveKeyLength, uint8_t* iv, int32_t enc)
+{
+    if (effectiveKeyLength != 0)
+    {
+        LOG_ERROR("Non-zero effectiveKeyLength is not supported");
+        return FAIL;
+    }
+
+    // input:  0 for Decrypt, 1 for Encrypt
+    // Cipher: 2 for Decrypt, 1 for Encrypt
+    assert(enc == 0 || enc == 1);
+    int encMode = enc == 0 ? 2 : 1;
+
+    JNIEnv* env = GetJNIEnv();
+
+    // int ivSize = cipher.getBlockSize();
+    // SecretKeySpec keySpec = new SecretKeySpec(key.getEncoded(), "AES");
+    // IvParameterSpec ivSpec = new IvParameterSpec(IV);
+    // cipher.init(encMode, keySpec, ivSpec);
+
+    jobject algName = GetAlgorithmName(env, type);
+    jobject cipherObj = CryptoNative_EvpCipherCreatePartial(type);
 
     int blockSize = (*env)->CallIntMethod(env, cipherObj, g_getBlockSizeMethod);
     jbyteArray keyBytes = (*env)->NewByteArray(env, keyLength / 8); // bits to bytes, e.g. 256 -> 32
