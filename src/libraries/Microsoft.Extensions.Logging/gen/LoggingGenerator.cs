@@ -3,7 +3,6 @@
 namespace Microsoft.Extensions.Logging.Generators
 {
     using System.Collections.Generic;
-    using System.Reflection.Metadata;
     using System.Text;
     using Microsoft.CodeAnalysis;
     using Microsoft.CodeAnalysis.CSharp.Syntax;
@@ -59,7 +58,7 @@ using Microsoft.Extensions.Logging;
 
             return $@"
 {namespaceStart}
-    static class {lc.Name}
+    {lc.AccessModifiers} static class {lc.Name}
     {{
         {methods}
         public static {lc.OriginalInterfaceName} Wrap(this ILogger logger) => new __Wrapper__(logger);

@@ -156,6 +156,7 @@ namespace Microsoft.Extensions.Logging.Generators
                                 Namespace = ns?.Name.ToString(),
                                 Name = name,
                                 OriginalInterfaceName = iface.Identifier.ToString(),
+                                AccessModifiers = iface.Modifiers.ToString(),
                             };
 
                             if (string.IsNullOrWhiteSpace(lc.Name))
@@ -293,6 +294,7 @@ namespace Microsoft.Extensions.Logging.Generators
             public string? Namespace;
             public string Name = string.Empty;
             public string OriginalInterfaceName = string.Empty;
+            public string AccessModifiers = string.Empty;
             public List<LoggerMethod> Methods = new();
         }
 
