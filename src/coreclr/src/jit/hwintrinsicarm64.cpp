@@ -502,10 +502,24 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
             break;
         }
 
-        default:
+        case NI_AdvSimd_Arm64_LoadPairScalarVector64:
+        case NI_AdvSimd_Arm64_LoadPairScalarVector64NonTemporal:
+        case NI_AdvSimd_Arm64_LoadPairVector64:
+        case NI_AdvSimd_Arm64_LoadPairVector64NonTemporal:
+        case NI_AdvSimd_Arm64_LoadPairVector128:
+        case NI_AdvSimd_Arm64_LoadPairVector128NonTemporal:
         {
-            return nullptr;
+            assert(retType == TYP_STRUCT);
+            assert(numArgs == 1);
+            op1                          = impPopStack().val;
+            GenTreeHWIntrinsic* hwintrin = gtNewSimdHWIntrinsicNode(retType, op1, intrinsic, baseType, simdSize);
+            hwintrin->SetLayout(typGetObjLayout(sig->retTypeSigClass));
+            retNode = hwintrin;
+            break;
         }
+
+        default:
+            return nullptr;
     }
 
     return retNode;
