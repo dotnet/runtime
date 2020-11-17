@@ -32,9 +32,8 @@ intptr_t CryptoNative_EvpDesCbc()       { return 1025; }
 intptr_t CryptoNative_EvpRC2Ecb()       { return 1026; }
 intptr_t CryptoNative_EvpRC2Cbc()       { return 1027; }
 
-jobject CryptoNative_EvpCipherCreatePartial(intptr_t type)
+static jobject GetAlgorithmName(JNIEnv* env, intptr_t type)
 {
-    JNIEnv* env = GetJNIEnv();
     jobject algName = NULL;
 
     if ((type == CryptoNative_EvpAes128Cbc()) ||
@@ -62,9 +61,16 @@ jobject CryptoNative_EvpCipherCreatePartial(intptr_t type)
         LOG_ERROR("unexpected type: %d", (int)type);
         return FAIL;
     }
+    return algName;
+}
 
-    // call Cipher.getInstance(algName);
-    return ToGRef(env, (*env)->CallStaticObjectMethod(env, g_cipherClass, g_cipherGetInstanceMethod, algName));
+jobject CryptoNative_EvpCipherCreatePartial(intptr_t type)
+{
+    JNIEnv* env = GetJNIEnv();
+    jobject algName = GetAlgorithmName(env, type);
+    jobject cipher = ToGRef(env, (*env)->CallStaticObjectMethod(env, g_cipherClass, g_cipherGetInstanceMethod, algName));
+    (*env)->DeleteLocalRef(env, algName);
+    return cipher;
 }
 
 jobject CryptoNative_EvpCipherCreate2(intptr_t type, uint8_t* key, int32_t keyLength, int32_t effectiveKeyLength, uint8_t* iv, int32_t enc)
@@ -87,6 +93,7 @@ jobject CryptoNative_EvpCipherCreate2(intptr_t type, uint8_t* key, int32_t keyLe
     // IvParameterSpec ivSpec = new IvParameterSpec(IV);
     // cipher.init(encMode, keySpec, ivSpec);
 
+    jobject algName = GetAlgorithmName(env, type);
     jobject cipherObj = CryptoNative_EvpCipherCreatePartial(type);
 
     int blockSize = (*env)->CallIntMethod(env, cipherObj, g_getBlockSizeMethod);
