@@ -1372,7 +1372,7 @@ namespace Microsoft.Extensions.Hosting.Internal
         {
             protected override async Task ExecuteAsync(CancellationToken stoppingToken)
             {
-                await Task.Delay(1);
+                await Task.Yield();
 
                 throw new Exception("Background Exception");
             }

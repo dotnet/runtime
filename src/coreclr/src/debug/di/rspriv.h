@@ -2929,7 +2929,6 @@ class CordbProcess :
     public ICorDebugProcess5,
     public ICorDebugProcess7,
     public ICorDebugProcess8,
-    public ICorDebugProcess10,
     public ICorDebugProcess11,
     public IDacDbiInterface::IAllocator,
     public IDacDbiInterface::IMetaDataLookup,
@@ -3140,7 +3139,7 @@ public:
     COM_METHOD EnableExceptionCallbacksOutsideOfMyCode(BOOL enableExceptionsOutsideOfJMC);
 
     //-----------------------------------------------------------
-    // ICorDebugProcess10
+    // ICorDebugProcess10 (To be removed in .NET 6, in a separate cleanup PR)
     //-----------------------------------------------------------
     COM_METHOD EnableGCNotificationEvents(BOOL fEnable);
 

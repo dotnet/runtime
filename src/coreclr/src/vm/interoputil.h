@@ -181,11 +181,6 @@ void CleanupSyncBlockComData(InteropSyncBlockInfo* pInteropInfo);
 // called by syncblock, during GC, do only minimal work
 void MinorCleanupSyncBlockComData(InteropSyncBlockInfo* pInteropInfo);
 
-// Helper to release all of the RCWs in the specified context, across all caches.
-// If context is null, release all RCWs, otherwise release RCWs created in the
-// given context.
-void ReleaseRCWsInCaches(LPVOID pCtxCookie);
-
 // A wrapper that catches all exceptions - used in the OnThreadTerminate case.
 void ReleaseRCWsInCachesNoThrow(LPVOID pCtxCookie);
 
@@ -261,15 +256,6 @@ BOOL ClassSupportsIClassX(MethodTable *pMT);
  //  Calls COM class factory and instantiates a new RCW.
 OBJECTREF AllocateComObject_ForManaged(MethodTable* pMT);
 #endif // FEATURE_COMINTEROP_UNMANAGED_ACTIVATION
-
-//---------------------------------------------------------------------------
- //  get/load data for a given clsid
-MethodTable* GetTypeForCLSID(REFCLSID rclsid);
-
-
-//---------------------------------------------------------------------------
- //  get/load a value class for a given guid
-MethodTable* GetValueTypeForGUID(REFCLSID guid);
 
 DefaultInterfaceType GetDefaultInterfaceForClassInternal(TypeHandle hndClass, TypeHandle *pHndDefClass);
 DefaultInterfaceType GetDefaultInterfaceForClassWrapper(TypeHandle hndClass, TypeHandle *pHndDefClass);
@@ -398,25 +384,10 @@ VOID LogRCWDestroy(RCW* pWrap);
 HRESULT EnsureComStartedNoThrow(BOOL fCoInitCurrentThread = TRUE);
 VOID EnsureComStarted(BOOL fCoInitCurrentThread = TRUE);
 
-//--------------------------------------------------------------------------------
-// check if the class is OR extends a COM Imported class
-BOOL ExtendsComImport(MethodTable* pMT);
-
-//--------------------------------------------------------------------------------
-// Gets the CLSID from the specified Prog ID.
-HRESULT GetCLSIDFromProgID(__in_z WCHAR *strProgId, GUID *pGuid);
-
-//--------------------------------------------------------------------------------
-// Check if the pUnk implements IProvideClassInfo and try to figure
-// out the class from there
-MethodTable* GetClassFromIProvideClassInfo(IUnknown* pUnk);
-
 IUnknown* MarshalObjectToInterface(OBJECTREF* ppObject, MethodTable* pItfMT, MethodTable* pClassMT, DWORD dwFlags);
 void UnmarshalObjectFromInterface(OBJECTREF *ppObjectDest, IUnknown **ppUnkSrc, MethodTable *pItfMT, MethodTable *pClassMT, DWORD dwFlags);
 
 #define DEFINE_ASM_QUAL_TYPE_NAME(varname, typename, asmname)          static const char varname##[] = { typename##", "##asmname## };
-
-class ICOMInterfaceMarshalerCallback;
 
 #else // FEATURE_COMINTEROP
 inline HRESULT EnsureComStartedNoThrow()

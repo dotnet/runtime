@@ -3440,7 +3440,7 @@
     <value>An attempt was made to transition a task to a final state when it had already completed.</value>
   </data>
   <data name="Thread_ApartmentState_ChangeFailed" xml:space="preserve">
-    <value>Failed to set the specified COM apartment state.</value>
+    <value>Failed to set the specified COM apartment state. Current apartment state '{0}'.</value>
   </data>
   <data name="Thread_GetSetCompressedStack_NotSupported" xml:space="preserve">
     <value>Use CompressedStack.(Capture/Run) instead.</value>

@@ -288,19 +288,19 @@ namespace System.Security.Cryptography.Pkcs
             }
         }
 
-        public static bool TryDecode(ReadOnlyMemory<byte> source, [NotNullWhen(true)] out Rfc3161TimestampToken? token, out int bytesConsumed)
+        public static bool TryDecode(ReadOnlyMemory<byte> encodedBytes, [NotNullWhen(true)] out Rfc3161TimestampToken? token, out int bytesConsumed)
         {
             bytesConsumed = 0;
             token = null;
 
             try
             {
-                AsnValueReader reader = new AsnValueReader(source.Span, AsnEncodingRules.BER);
+                AsnValueReader reader = new AsnValueReader(encodedBytes.Span, AsnEncodingRules.BER);
                 int bytesActuallyRead = reader.PeekEncodedValue().Length;
 
                 ContentInfoAsn.Decode(
                     ref reader,
-                    source,
+                    encodedBytes,
                     out ContentInfoAsn contentInfo);
 
                 // https://tools.ietf.org/html/rfc3161#section-2.4.2
@@ -317,7 +317,7 @@ namespace System.Security.Cryptography.Pkcs
                 }
 
                 SignedCms cms = new SignedCms();
-                cms.Decode(source.Span);
+                cms.Decode(encodedBytes.Span);
 
                 // The fields of type EncapsulatedContentInfo of the SignedData
                 // construct have the following meanings:

@@ -192,12 +192,15 @@ namespace System.Threading.Tasks
         {
             Debug.Assert(task != null, "Null Task objects can't be added to the ActiveTasks collection");
 
-            LazyInitializer.EnsureInitialized(ref s_currentActiveTasks, () => new Dictionary<int, Task>());
+            Dictionary<int, Task> activeTasks =
+                Volatile.Read(ref s_currentActiveTasks) ??
+                Interlocked.CompareExchange(ref s_currentActiveTasks, new Dictionary<int, Task>(), null) ??
+                s_currentActiveTasks;
 
             int taskId = task.Id;
-            lock (s_currentActiveTasks)
+            lock (activeTasks)
             {
-                s_currentActiveTasks[taskId] = task;
+                activeTasks[taskId] = task;
             }
             // always return true to keep signature as bool for backwards compatibility
             return true;
@@ -205,13 +208,14 @@ namespace System.Threading.Tasks
 
         internal static void RemoveFromActiveTasks(Task task)
         {
-            if (s_currentActiveTasks == null)
+            Dictionary<int, Task>? activeTasks = s_currentActiveTasks;
+            if (activeTasks is null)
                 return;
 
             int taskId = task.Id;
-            lock (s_currentActiveTasks)
+            lock (activeTasks)
             {
-                s_currentActiveTasks.Remove(taskId);
+                activeTasks.Remove(taskId);
             }
         }
 
@@ -1316,7 +1320,13 @@ namespace System.Threading.Tasks
         /// <returns>The initialized contingent properties object.</returns>
         internal ContingentProperties EnsureContingentPropertiesInitialized()
         {
-            return LazyInitializer.EnsureInitialized(ref m_contingentProperties, () => new ContingentProperties());
+            return Volatile.Read(ref m_contingentProperties) ?? InitializeContingentProperties();
+
+            ContingentProperties InitializeContingentProperties()
+            {
+                Interlocked.CompareExchange(ref m_contingentProperties, new ContingentProperties(), null);
+                return m_contingentProperties;
+            }
         }
 
         /// <summary>

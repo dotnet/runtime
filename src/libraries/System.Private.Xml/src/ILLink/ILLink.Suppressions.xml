@@ -53,13 +53,7 @@
       <argument>ILLink</argument>
       <argument>IL2070</argument>
       <property name="Scope">member</property>
-      <property name="Target">M:System.Xml.Extensions.ExtensionMethods.GetConstructor(System.Type,System.Reflection.BindingFlags,System.Type[])</property>
-    </attribute>
-    <attribute fullname="System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessageAttribute">
-      <argument>ILLink</argument>
-      <argument>IL2070</argument>
-      <property name="Scope">member</property>
-      <property name="Target">M:System.Xml.Extensions.ExtensionMethods.GetMethod(System.Type,System.String,System.Reflection.BindingFlags,System.Type[])</property>
+      <property name="Target">M:System.Xml.Serialization.ReflectionAwareILGen.ILGenForCreateInstance(System.Xml.Serialization.CodeGenerator,System.Type,System.Boolean,System.Boolean)</property>
     </attribute>
     <attribute fullname="System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessageAttribute">
       <argument>ILLink</argument>
@@ -89,6 +83,12 @@
       <argument>ILLink</argument>
       <argument>IL2070</argument>
       <property name="Scope">member</property>
+      <property name="Target">M:System.Xml.Serialization.SourceInfo.ConvertNullableValue(System.Type,System.Type)</property>
+    </attribute>
+    <attribute fullname="System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessageAttribute">
+      <argument>ILLink</argument>
+      <argument>IL2070</argument>
+      <property name="Scope">member</property>
       <property name="Target">M:System.Xml.Serialization.TempAssembly.GetMethodFromType(System.Type,System.String)</property>
     </attribute>
     <attribute fullname="System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessageAttribute">
@@ -96,6 +96,12 @@
       <argument>IL2070</argument>
       <property name="Scope">member</property>
       <property name="Target">M:System.Xml.Serialization.TypeExtensions.TryConvertTo(System.Type,System.Object,System.Object@)</property>
+    </attribute>
+    <attribute fullname="System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessageAttribute">
+      <argument>ILLink</argument>
+      <argument>IL2070</argument>
+      <property name="Scope">member</property>
+      <property name="Target">M:System.Xml.Serialization.TypeScope.GetConstructorFlags(System.Type,System.Exception@)</property>
     </attribute>
     <attribute fullname="System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessageAttribute">
       <argument>ILLink</argument>
@@ -119,7 +125,7 @@
       <argument>ILLink</argument>
       <argument>IL2070</argument>
       <property name="Scope">member</property>
-      <property name="Target">M:System.Xml.Xsl.IlGen.XmlILConstructors.GetConstructor(System.Type)</property>
+      <property name="Target">M:System.Xml.Serialization.XmlReflectionImporter.GetMethodFromSchemaProvider(System.Xml.Serialization.XmlSchemaProviderAttribute,System.Type)</property>
     </attribute>
     <attribute fullname="System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessageAttribute">
       <argument>ILLink</argument>
@@ -131,7 +137,7 @@
       <argument>ILLink</argument>
       <argument>IL2070</argument>
       <property name="Scope">member</property>
-      <property name="Target">M:System.Xml.Xsl.IlGen.XmlILMethods.GetMethod(System.Type,System.String)</property>
+      <property name="Target">M:System.Xml.Xsl.IlGen.XmlILConstructors.GetConstructor(System.Type)</property>
     </attribute>
     <attribute fullname="System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessageAttribute">
       <argument>ILLink</argument>
@@ -143,19 +149,25 @@
       <argument>ILLink</argument>
       <argument>IL2070</argument>
       <property name="Scope">member</property>
+      <property name="Target">M:System.Xml.Xsl.IlGen.XmlILMethods.GetMethod(System.Type,System.String)</property>
+    </attribute>
+    <attribute fullname="System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessageAttribute">
+      <argument>ILLink</argument>
+      <argument>IL2070</argument>
+      <property name="Scope">member</property>
       <property name="Target">M:System.Xml.Xsl.Runtime.EarlyBoundInfo.#ctor(System.String,System.Type)</property>
     </attribute>
     <attribute fullname="System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessageAttribute">
       <argument>ILLink</argument>
       <argument>IL2070</argument>
       <property name="Scope">member</property>
-      <property name="Target">M:System.Xml.Xsl.Runtime.XsltMethods.GetMethod(System.Type,System.String)</property>
+      <property name="Target">M:System.Xml.Xsl.Runtime.XsltMethods.GetMethod(System.Type,System.String,System.Type[])</property>
     </attribute>
     <attribute fullname="System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessageAttribute">
       <argument>ILLink</argument>
       <argument>IL2070</argument>
       <property name="Scope">member</property>
-      <property name="Target">M:System.Xml.Xsl.Runtime.XsltMethods.GetMethod(System.Type,System.String,System.Type[])</property>
+      <property name="Target">M:System.Xml.Xsl.Runtime.XsltMethods.GetMethod(System.Type,System.String)</property>
     </attribute>
     <attribute fullname="System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessageAttribute">
       <argument>ILLink</argument>
@@ -209,6 +221,12 @@
       <argument>ILLink</argument>
       <argument>IL2075</argument>
       <property name="Scope">member</property>
+      <property name="Target">M:System.Xml.Serialization.ReflectionAwareILGen.ILGenForCreateInstance(System.Xml.Serialization.CodeGenerator,System.Type,System.Type,System.Boolean)</property>
+    </attribute>
+    <attribute fullname="System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessageAttribute">
+      <argument>ILLink</argument>
+      <argument>IL2075</argument>
+      <property name="Scope">member</property>
       <property name="Target">M:System.Xml.Serialization.ReflectionAwareILGen.WriteLocalDecl(System.String,System.Xml.Serialization.SourceInfo)</property>
     </attribute>
     <attribute fullname="System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessageAttribute">
@@ -239,6 +257,12 @@
       <argument>ILLink</argument>
       <argument>IL2075</argument>
       <property name="Scope">member</property>
+      <property name="Target">M:System.Xml.Serialization.SourceInfo.InternalLoad(System.Type,System.Boolean)</property>
+    </attribute>
+    <attribute fullname="System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessageAttribute">
+      <argument>ILLink</argument>
+      <argument>IL2075</argument>
+      <property name="Scope">member</property>
       <property name="Target">M:System.Xml.Serialization.StructModel.GetMemberInfos</property>
     </attribute>
     <attribute fullname="System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessageAttribute">
@@ -257,6 +281,42 @@
       <argument>ILLink</argument>
       <argument>IL2075</argument>
       <property name="Scope">member</property>
+      <property name="Target">M:System.Xml.Serialization.XmlSerializationILGen.GenerateBaseSerializer(System.String,System.String,System.String,System.Xml.Serialization.CodeIdentifiers)</property>
+    </attribute>
+    <attribute fullname="System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessageAttribute">
+      <argument>ILLink</argument>
+      <argument>IL2075</argument>
+      <property name="Scope">member</property>
+      <property name="Target">M:System.Xml.Serialization.XmlSerializationILGen.GenerateGetSerializer(System.Collections.Generic.Dictionary{System.String,System.String},System.Xml.Serialization.XmlMapping[],System.Reflection.Emit.TypeBuilder)</property>
+    </attribute>
+    <attribute fullname="System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessageAttribute">
+      <argument>ILLink</argument>
+      <argument>IL2075</argument>
+      <property name="Scope">member</property>
+      <property name="Target">M:System.Xml.Serialization.XmlSerializationILGen.GenerateSerializerContract(System.String,System.Xml.Serialization.XmlMapping[],System.Type[],System.String,System.String[],System.String,System.String[],System.Collections.Generic.Dictionary{System.String,System.String})</property>
+    </attribute>
+    <attribute fullname="System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessageAttribute">
+      <argument>ILLink</argument>
+      <argument>IL2075</argument>
+      <property name="Scope">member</property>
+      <property name="Target">M:System.Xml.Serialization.XmlSerializationILGen.GenerateTypedSerializer(System.String,System.String,System.Xml.Serialization.XmlMapping,System.Xml.Serialization.CodeIdentifiers,System.String,System.String,System.String)</property>
+    </attribute>
+    <attribute fullname="System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessageAttribute">
+      <argument>ILLink</argument>
+      <argument>IL2075</argument>
+      <property name="Scope">member</property>
+      <property name="Target">M:System.Xml.Serialization.XmlSerializationILGen.GenerateTypedSerializers(System.Collections.Generic.Dictionary{System.String,System.String},System.Reflection.Emit.TypeBuilder)</property>
+    </attribute>
+    <attribute fullname="System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessageAttribute">
+      <argument>ILLink</argument>
+      <argument>IL2075</argument>
+      <property name="Scope">member</property>
+      <property name="Target">M:System.Xml.Serialization.XmlSerializationReaderILGen.WriteAttributes(System.Xml.Serialization.XmlSerializationReaderILGen.Member[],System.Xml.Serialization.XmlSerializationReaderILGen.Member,System.String,System.Reflection.Emit.LocalBuilder)</property>
+    </attribute>
+    <attribute fullname="System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessageAttribute">
+      <argument>ILLink</argument>
+      <argument>IL2075</argument>
+      <property name="Scope">member</property>
       <property name="Target">M:System.Xml.Serialization.XmlSerializationReaderILGen.WriteSourceEnd(System.String,System.Type,System.Type)</property>
     </attribute>
     <attribute fullname="System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessageAttribute">
@@ -264,6 +324,18 @@
       <argument>IL2075</argument>
       <property name="Scope">member</property>
       <property name="Target">M:System.Xml.Serialization.XmlSerializationWriterILGen.WriteArrayItems(System.Xml.Serialization.ElementAccessor[],System.Xml.Serialization.TextAccessor,System.Xml.Serialization.ChoiceIdentifierAccessor,System.Xml.Serialization.TypeDesc,System.String,System.String)</property>
+    </attribute>
+    <attribute fullname="System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessageAttribute">
+      <argument>ILLink</argument>
+      <argument>IL2075</argument>
+      <property name="Scope">member</property>
+      <property name="Target">M:System.Xml.Serialization.XmlSerializationWriterILGen.WriteCheckDefault(System.Xml.Serialization.SourceInfo,System.Object,System.Boolean)</property>
+    </attribute>
+    <attribute fullname="System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessageAttribute">
+      <argument>ILLink</argument>
+      <argument>IL2075</argument>
+      <property name="Scope">member</property>
+      <property name="Target">M:System.Xml.Serialization.XmlSerializationWriterILGen.WriteElement(System.Xml.Serialization.SourceInfo,System.Xml.Serialization.ElementAccessor,System.String,System.Boolean)</property>
     </attribute>
     <attribute fullname="System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessageAttribute">
       <argument>ILLink</argument>
@@ -288,6 +360,12 @@
       <argument>IL2077</argument>
       <property name="Scope">member</property>
       <property name="Target">M:System.Xml.Serialization.SerializableMapping.RetrieveSerializableSchema</property>
+    </attribute>
+    <attribute fullname="System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessageAttribute">
+      <argument>ILLink</argument>
+      <argument>IL2080</argument>
+      <property name="Scope">member</property>
+      <property name="Target">M:System.Xml.Serialization.XmlSerializationWriterILGen.WriteText(System.Xml.Serialization.SourceInfo,System.Xml.Serialization.TextAccessor)</property>
     </attribute>
     <attribute fullname="System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessageAttribute">
       <argument>ILLink</argument>

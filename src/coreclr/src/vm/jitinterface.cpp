@@ -7399,9 +7399,6 @@ bool getILIntrinsicImplementationForRuntimeHelpers(MethodDesc * ftn,
         if (methodTable == CoreLibBinder::GetClass(CLASS__BOOLEAN)
             || methodTable == CoreLibBinder::GetClass(CLASS__BYTE)
             || methodTable == CoreLibBinder::GetClass(CLASS__SBYTE)
-#ifdef FEATURE_UTF8STRING
-            || methodTable == CoreLibBinder::GetClass(CLASS__CHAR8)
-#endif // FEATURE_UTF8STRING
             || methodTable == CoreLibBinder::GetClass(CLASS__CHAR)
             || methodTable == CoreLibBinder::GetClass(CLASS__INT16)
             || methodTable == CoreLibBinder::GetClass(CLASS__UINT16)

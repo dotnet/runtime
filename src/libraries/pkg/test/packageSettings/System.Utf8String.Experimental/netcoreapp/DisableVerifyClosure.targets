@@ -1,7 +1,0 @@
-<Project>
-  <PropertyGroup>
-    <!-- Utf8String reference depends on System.Private.CoreLib on net5.0 so we can't run
-         Verify Closure on it. -->
-    <ShouldVerifyClosure>false</ShouldVerifyClosure>
-  </PropertyGroup>
-</Project>

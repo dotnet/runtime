@@ -226,9 +226,8 @@ namespace R2RDump
                     }
                     _writer.WriteLine();
                 }
-
                 BaseGcInfo gcInfo = (_options.HideTransitions ? null : rtf.Method?.GcInfo);
-                if (gcInfo != null && gcInfo.Transitions.TryGetValue(codeOffset, out List<BaseGcTransition> transitionsForOffset))
+                if (gcInfo != null && gcInfo.Transitions != null && gcInfo.Transitions.TryGetValue(codeOffset, out List<BaseGcTransition> transitionsForOffset))
                 {
                     string[] formattedTransitions = new string[transitionsForOffset.Count];
                     for (int transitionIndex = 0; transitionIndex < formattedTransitions.Length; transitionIndex++)

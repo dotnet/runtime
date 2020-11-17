@@ -147,7 +147,8 @@ namespace System.Diagnostics.Tests
                 BeginInvokeDelegate = (d, args) =>
                 {
                     Assert.Null(beginInvokeTask);
-                    beginInvokeTask = Task.Run(() => d.DynamicInvoke(args));
+                    beginInvokeTask = new Task(() => d.DynamicInvoke(args));
+                    beginInvokeTask.Start(TaskScheduler.Default);
                     return beginInvokeTask;
                 }
             };
@@ -1877,6 +1878,7 @@ namespace System.Diagnostics.Tests
             Assert.Throws<Win32Exception>(() => Process.Start("exe", string.Empty, new SecureString(), "thisDomain"));
         }
 
+        [OuterLoop("May take many seconds the first time it's run")]
         [Fact]
         [PlatformSpecific(TestPlatforms.Windows)]  // Starting process with authentication not supported on Unix
         public void Process_StartWithInvalidUserNamePassword()

@@ -85,6 +85,7 @@ internal class Xcode
 
         cmakeLists = cmakeLists.Replace("%NativeLibrariesToLink%", toLink);
         cmakeLists = cmakeLists.Replace("%AotSources%", aotSources);
+        cmakeLists = cmakeLists.Replace("%AotModulesSource%", string.IsNullOrEmpty(aotSources) ? "" : "modules.m");
         cmakeLists = cmakeLists.Replace("%Defines%",
             useAotForSimulator ? "add_definitions(-DUSE_AOT_FOR_SIMULATOR=1)" : "");
 
