@@ -7691,7 +7691,7 @@ namespace System.Text.Json.Tests
     {
         // Normalize comparisons against Json.NET.
         // The following is performed unless skipSpecialRules is true:
-        // * Uppercases the \u escaped hex characters
+        // * Uppercases the \u escaped hex characters.
         // * Escapes forward slash, greater than, and less than.
         // * Ignores ".0" for decimal values.
         public static string NormalizeToJsonNetFormat(this string json, bool skipSpecialRules)
