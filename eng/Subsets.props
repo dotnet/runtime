@@ -234,32 +234,6 @@
     <ProjectToBuild Include="$(MonoProjectRoot)System.Private.CoreLib\System.Private.CoreLib.csproj" Category="mono" />
   </ItemGroup>
 
-  <!-- Host sets -->
-  <ItemGroup Condition="$(_subset.Contains('+host.native+'))">
-    <CorehostProjectToBuild Include="$(InstallerProjectRoot)corehost\corehost.proj" SignPhase="Binaries" BuildInParallel="false" />
-    <ProjectToBuild Include="@(CorehostProjectToBuild)" Pack="true" Category="host" />
-  </ItemGroup>
-
-  <ItemGroup Condition="$(_subset.Contains('+host.tools+'))">
-    <ManagedProjectToBuild Include="$(InstallerProjectRoot)managed\**\*.csproj" SignPhase="Binaries" />
-    <ProjectToBuild Include="@(ManagedProjectToBuild)" BuildInParallel="true" Pack="true" Category="host" />
-  </ItemGroup>
-
-  <ItemGroup Condition="$(_subset.Contains('+host.pkg+'))">
-    <PkgprojProjectToBuild Include="$(InstallerProjectRoot)pkg\projects\**\*.pkgproj" SignPhase="MsiFiles" BuildInParallel="false" />
-    <ProjectToBuild Include="@(PkgprojProjectToBuild)" Pack="true" Category="host" />
-  </ItemGroup>
-
-  <ItemGroup Condition="$(_subset.Contains('+host.tests+'))">
-    <TestProjectToBuild Include="$(InstallerProjectRoot)tests\Microsoft.NET.HostModel.Tests\AppHost.Bundle.Tests\AppHost.Bundle.Tests.csproj" />
-    <TestProjectToBuild Include="$(InstallerProjectRoot)tests\Microsoft.NET.HostModel.Tests\Microsoft.NET.HostModel.AppHost.Tests\Microsoft.NET.HostModel.AppHost.Tests.csproj" />
-    <TestProjectToBuild Include="$(InstallerProjectRoot)tests\Microsoft.NET.HostModel.Tests\Microsoft.NET.HostModel.Bundle.Tests\Microsoft.NET.HostModel.Bundle.Tests.csproj" />
-    <TestProjectToBuild Include="$(InstallerProjectRoot)tests\Microsoft.NET.HostModel.Tests\Microsoft.NET.HostModel.ComHost.Tests\Microsoft.NET.HostModel.ComHost.Tests.csproj" />
-    <TestProjectToBuild Include="$(InstallerProjectRoot)tests\HostActivation.Tests\HostActivation.Tests.csproj" />
-    <ProjectToBuild Include="@(TestProjectToBuild)" BuildInParallel="true" Test="true" Category="host" />
-  </ItemGroup>
-
-
   <!-- Libraries sets -->
   <ItemGroup Condition="$(_subset.Contains('+libs.native+'))">
     <ProjectToBuild Include="$(LibrariesProjectRoot)Native\build-native.proj" Category="libs" />
@@ -277,6 +251,22 @@
     <ProjectToBuild Include="$(MonoProjectRoot)wasm\wasm.proj" Category="mono" />
   </ItemGroup>
 
+  <!-- Hosts -->
+  <ItemGroup Condition="$(_subset.Contains('+host.native+'))">
+    <CorehostProjectToBuild Include="$(InstallerProjectRoot)corehost\corehost.proj" SignPhase="Binaries" BuildInParallel="false" />
+    <ProjectToBuild Include="@(CorehostProjectToBuild)" Pack="true" Category="host" />
+  </ItemGroup>
+
+  <ItemGroup Condition="$(_subset.Contains('+host.tools+'))">
+    <ManagedProjectToBuild Include="$(InstallerProjectRoot)managed\**\*.csproj" SignPhase="Binaries" />
+    <ProjectToBuild Include="@(ManagedProjectToBuild)" BuildInParallel="true" Pack="true" Category="host" />
+  </ItemGroup>
+
+  <!-- Libs test and packaging -->
+  <ItemGroup Condition="$(_subset.Contains('+libs.tests+'))">
+    <ProjectToBuild Include="$(LibrariesProjectRoot)tests.proj" Category="libs" Test="true" />
+  </ItemGroup>
+
   <ItemGroup Condition="$(_subset.Contains('+libs.pretest+'))">
     <ProjectToBuild Include="$(LibrariesProjectRoot)pretest.proj" Category="libs"  />
   </ItemGroup>
@@ -285,8 +275,20 @@
     <ProjectToBuild Include="$(LibrariesProjectRoot)libraries-packages.proj" Category="libs" Pack="true" />
   </ItemGroup>
 
-  <ItemGroup Condition="$(_subset.Contains('+libs.tests+'))">
-    <ProjectToBuild Include="$(LibrariesProjectRoot)tests.proj" Category="libs" Test="true" />
+
+  <!-- Host test and packaging  -->
+  <ItemGroup Condition="$(_subset.Contains('+host.pkg+'))">
+    <PkgprojProjectToBuild Include="$(InstallerProjectRoot)pkg\projects\**\*.pkgproj" SignPhase="MsiFiles" BuildInParallel="false" />
+    <ProjectToBuild Include="@(PkgprojProjectToBuild)" Pack="true" Category="host" />
+  </ItemGroup>
+
+  <ItemGroup Condition="$(_subset.Contains('+host.tests+'))">
+    <TestProjectToBuild Include="$(InstallerProjectRoot)tests\Microsoft.NET.HostModel.Tests\AppHost.Bundle.Tests\AppHost.Bundle.Tests.csproj" />
+    <TestProjectToBuild Include="$(InstallerProjectRoot)tests\Microsoft.NET.HostModel.Tests\Microsoft.NET.HostModel.AppHost.Tests\Microsoft.NET.HostModel.AppHost.Tests.csproj" />
+    <TestProjectToBuild Include="$(InstallerProjectRoot)tests\Microsoft.NET.HostModel.Tests\Microsoft.NET.HostModel.Bundle.Tests\Microsoft.NET.HostModel.Bundle.Tests.csproj" />
+    <TestProjectToBuild Include="$(InstallerProjectRoot)tests\Microsoft.NET.HostModel.Tests\Microsoft.NET.HostModel.ComHost.Tests\Microsoft.NET.HostModel.ComHost.Tests.csproj" />
+    <TestProjectToBuild Include="$(InstallerProjectRoot)tests\HostActivation.Tests\HostActivation.Tests.csproj" />
+    <ProjectToBuild Include="@(TestProjectToBuild)" BuildInParallel="true" Test="true" Category="host" />
   </ItemGroup>
 
   <!-- Packs sets -->
