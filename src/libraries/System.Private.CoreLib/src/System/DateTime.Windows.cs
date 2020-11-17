@@ -10,7 +10,7 @@ namespace System
 {
     public readonly partial struct DateTime
     {
-        private static LeapSecondCache? s_leapSecondCache;
+        private static LeapSecondCache s_leapSecondCache = new LeapSecondCache(); // dummy value, will be invalidated on first call
 
         private static unsafe delegate* unmanaged[Stdcall]<ulong*, void> s_pfnGetSystemTimeAsFileTime = GetGetSystemTimeAsFileTimeFnPtr();
 
@@ -95,58 +95,66 @@ namespace System
                     return new DateTime((osTicks + FileTimeOffset) | KindUtc);
                 }
 
-                // If our cache has been populated and we're within its validity period, rely
-                // solely on the cache. We use unsigned arithmetic below so that if the system
-                // clock is set backward, the resulting value will integer underflow and cause
-                // a cache miss, forcing us down the slow path.
+                return GetUtcNowFromOSTicksLeapSecondsAwareCached(osTicks);
+            }
+        }
 
-                if (s_leapSecondCache is LeapSecondCache cache)
+        // This method is extracted into its own helper so that unit tests
+        // can call into it via reflection.
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static DateTime GetUtcNowFromOSTicksLeapSecondsAwareCached(ulong osTicks)
+        {
+            Debug.Assert(s_systemSupportsLeapSeconds, "Shouldn't call this helper if OS doesn't support leap seconds.");
+
+            // If our cache has been populated and we're within its validity period, rely
+            // solely on the cache. We use unsigned arithmetic below so that if the system
+            // clock is set backward, the resulting value will integer underflow and cause
+            // a cache miss, forcing us down the slow path.
+
+            LeapSecondCache cache = s_leapSecondCache;
+            ulong deltaTicksFromStartOfMonth = osTicks - cache.OSFileTimeTicksAtStartOfMonth;
+            if (deltaTicksFromStartOfMonth < cache.CacheValidityPeriodInTicks)
+            {
+                return new DateTime(deltaTicksFromStartOfMonth + cache.DotNetDateDataAtStartOfMonth); // includes UTC marker
+            }
+
+            // Move uncommon fallback pack into its own subroutine so that register
+            // allocation in get_UtcNow can stay as optimized as possible.
+
+            return Fallback(osTicks);
+            static DateTime Fallback(ulong osTicks)
+            {
+                // If we reached this point, one of the following is true:
+                //   a) the cache hasn't yet been initialized; or
+                //   b) the month has changed since the last call to UtcNow; or
+                //   c) the current time is 23:59:59 or 23:59:60 on the last day of the month.
+                //
+                // In cases (a) and (b), we'll update the cache. In case (c), we
+                // pessimistically assume we might be inside a leap second, so we
+                // won't update the cache.
+
+                DateTime utcNow = FromFileTimeLeapSecondsAware((long)osTicks);
+                DateTime oneSecondBeforeMonthEnd = new DateTime(utcNow.Year, utcNow.Month, DaysInMonth(utcNow.Year, utcNow.Month), 23, 59, 59, DateTimeKind.Utc);
+
+                if (utcNow < oneSecondBeforeMonthEnd)
                 {
-                    ulong deltaTicksFromStartOfMonth = osTicks - cache.OSFileTimeTicksAtStartOfMonth;
-                    if (deltaTicksFromStartOfMonth < cache.CacheValidityPeriodInTicks)
+                    // It's not yet 23:59:59 on the last day of the month, so update the cache.
+                    // It's ok for multiple threads to do this concurrently as long as the write
+                    // to the static field is published *after* the cache's instance fields have
+                    // been populated.
+
+                    DateTime startOfMonth = new DateTime(utcNow.Year, utcNow.Month, 1, 0, 0, 0, DateTimeKind.Utc);
+                    Debug.Assert(startOfMonth <= utcNow);
+
+                    Volatile.Write(ref s_leapSecondCache, new LeapSecondCache
                     {
-                        return new DateTime(deltaTicksFromStartOfMonth + cache.DotNetDateDataAtStartOfMonth); // includes UTC marker
-                    }
+                        OSFileTimeTicksAtStartOfMonth = osTicks - (ulong)(utcNow.Ticks - startOfMonth.Ticks),
+                        DotNetDateDataAtStartOfMonth = startOfMonth._dateData,
+                        CacheValidityPeriodInTicks = (ulong)(oneSecondBeforeMonthEnd.Ticks - startOfMonth.Ticks)
+                    });
                 }
 
-                // Move uncommon fallback pack into its own subroutine so that register
-                // allocation in get_UtcNow can stay as optimized as possible.
-
-                return Fallback(osTicks);
-                static DateTime Fallback(ulong osTicks)
-                {
-                    // If we reached this point, one of the following is true:
-                    //   a) the cache hasn't yet been initialized; or
-                    //   b) the month has changed since the last call to UtcNow; or
-                    //   c) the current time is 23:59:59 or 23:59:60 on the last day of the month.
-                    //
-                    // In cases (a) and (b), we'll update the cache. In case (c), we
-                    // pessimistically assume we might be inside a leap second, so we
-                    // won't update the cache.
-
-                    DateTime utcNow = FromFileTimeLeapSecondsAware((long)osTicks);
-                    DateTime oneSecondBeforeMonthEnd = new DateTime(utcNow.Year, utcNow.Month, DaysInMonth(utcNow.Year, utcNow.Month), 23, 59, 59, DateTimeKind.Utc);
-
-                    if (utcNow < oneSecondBeforeMonthEnd)
-                    {
-                        // It's not yet 23:59:59 on the last day of the month, so update the cache.
-                        // It's ok for multiple threads to do this concurrently as long as the write
-                        // to the static field is published *after* the cache's instance fields have
-                        // been populated.
-
-                        DateTime startOfMonth = new DateTime(utcNow.Year, utcNow.Month, 1, 0, 0, 0, DateTimeKind.Utc);
-                        Debug.Assert(startOfMonth <= utcNow);
-
-                        Volatile.Write(ref s_leapSecondCache, new LeapSecondCache
-                        {
-                            OSFileTimeTicksAtStartOfMonth = osTicks - (ulong)(utcNow.Ticks - startOfMonth.Ticks),
-                            DotNetDateDataAtStartOfMonth = startOfMonth._dateData,
-                            CacheValidityPeriodInTicks = (ulong)(oneSecondBeforeMonthEnd.Ticks - startOfMonth.Ticks)
-                        });
-                    }
-
-                    return utcNow;
-                }
+                return utcNow;
             }
         }
 
