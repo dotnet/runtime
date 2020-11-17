@@ -5,7 +5,7 @@ Before running tests, [build Mono](../../building/mono/README.md) using the desi
 ## Runtime Tests
 ### Testing against Mono JIT:
 
-* Build runtime tests by executing the follwiing command from `$(REPO_ROOT)/src/tests`
+Build the runtime tests by executing the following command from `$(REPO_ROOT)/src/tests`
 ```
 ./build.sh excludemonofailures <release|debug>
 ```
