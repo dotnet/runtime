@@ -144,7 +144,7 @@ namespace System.Runtime.CompilerServices
             Debug.Assert(rt != null);
 
             // If type is Nullable<T>, get newobj for boxed T instead.
-            delegate*<MethodTable*, object> newobjHelper = RuntimeTypeHandle.GetNewobjHelperFnPtr(rt, out MethodTable* pMT, allowCom: false);
+            delegate*<MethodTable*, object> newobjHelper = RuntimeTypeHandle.GetNewobjHelperFnPtr(rt, out MethodTable* pMT, unwrapNullable: true);
             Debug.Assert(newobjHelper != null);
             Debug.Assert(pMT != null);
 
@@ -380,6 +380,8 @@ namespace System.Runtime.CompilerServices
         public uint BaseSize;
         [FieldOffset(8)]
         public ushort Flags2;
+        [FieldOffset(0x0c)]
+        public ushort VirtualCount;
         [FieldOffset(0x0e)]
         public ushort InterfaceCount;
         [FieldOffset(ParentMethodTableOffset)]
@@ -527,6 +529,14 @@ namespace System.Runtime.CompilerServices
                 // See comment on RawArrayData for details
                 return (int)((BaseSize - (uint)(3 * sizeof(IntPtr))) / (uint)(2 * sizeof(int)));
             }
+        }
+
+        // Gets the slot where the parameterless instance ctor is kept.
+        // Caller must check 'HasDefaultConstructor' first.
+        public int GetDefaultConstructorSlot()
+        {
+            Debug.Assert(HasDefaultConstructor);
+            return VirtualCount + (HasClassConstructor ? 1 : 0);
         }
     }
 

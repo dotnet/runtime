@@ -209,6 +209,7 @@ namespace System
         /// Given a RuntimeType, returns both the address of the JIT's newobj helper for that type and the
         /// MethodTable* corresponding to that type. If the type is <see cref="Nullable{T}"/> closed over
         /// some T, then returns the newobj helper and MethodTable* for the 'T'.
+        /// Return value signature is managed calli (MethodTable* pMT) -> object.
         /// </summary>
         internal static delegate*<MethodTable*, object> GetNewobjHelperFnPtr(
             // This API doesn't call any constructors, but the type needs to be seen as constructed.
@@ -217,7 +218,7 @@ namespace System
             // constructor are an academic problem. Valuetypes with no constructors are a problem,
             // but IL Linker currently treats them as always implicitly boxed.
             [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors | DynamicallyAccessedMemberTypes.NonPublicConstructors)] RuntimeType type,
-            out MethodTable* pMT, bool allowCom)
+            out MethodTable* pMT, bool unwrapNullable)
         {
             Debug.Assert(type != null);
 
@@ -228,14 +229,37 @@ namespace System
                 new QCallTypeHandle(ref type),
                 &pNewobjHelperTemp,
                 &pMTTemp,
-                (allowCom) ? Interop.BOOL.TRUE : Interop.BOOL.FALSE);
+                unwrapNullable ? Interop.BOOL.TRUE : Interop.BOOL.FALSE);
 
             pMT = pMTTemp;
             return pNewobjHelperTemp;
         }
 
         [DllImport(RuntimeHelpers.QCall, CharSet = CharSet.Unicode)]
-        private static extern void GetNewobjHelperFnPtr(QCallTypeHandle typeHandle, delegate*<MethodTable*, object>* ppNewobjHelper, MethodTable** ppMT, Interop.BOOL fAllowCom);
+        private static extern void GetNewobjHelperFnPtr(QCallTypeHandle typeHandle, delegate*<MethodTable*, object>* ppNewobjHelper, MethodTable** ppMT, Interop.BOOL fUnwrapNullable);
+
+        /// <summary>
+        /// Returns the parameterless ctor for this type as a managed calli-invokable address.
+        /// For reference types, signature is (object @this) -> void.
+        /// For value types, signature is (ref T @thisUnboxed) -> void.
+        /// Returns null if no parameterless ctor is defined.
+        /// </summary>
+        internal static IntPtr GetDefaultCtorFnPtr(
+            [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors | DynamicallyAccessedMemberTypes.NonPublicConstructors)] RuntimeType type)
+        {
+            Debug.Assert(type != null);
+
+            return GetDefaultCtor(new QCallTypeHandle(ref type));
+        }
+
+        [DllImport(RuntimeHelpers.QCall, CharSet = CharSet.Unicode)]
+        private static extern IntPtr GetDefaultCtor(QCallTypeHandle typeHandle);
+
+        /// <summary>
+        /// Instantiates a RCW for a COM object.
+        /// </summary>
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        internal static extern object CreateComInstance(RuntimeType type);
 
         internal RuntimeType GetRuntimeType()
         {

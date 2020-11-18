@@ -3883,7 +3883,7 @@ namespace System
             if (args.Length == 0 && (bindingAttr & BindingFlags.Public) != 0 && (bindingAttr & BindingFlags.Instance) != 0
                 && (IsGenericCOMObjectImpl() || IsValueType))
             {
-                instance = CreateInstanceDefaultCtor(publicOnly, skipCheckThis: false, fillCache: true, wrapExceptions);
+                instance = CreateInstanceDefaultCtor(publicOnly, wrapExceptions);
             }
             else
             {
@@ -3953,91 +3953,146 @@ namespace System
         // the cache entry
         private sealed unsafe class ActivatorCache
         {
-            internal volatile delegate*<MethodTable*, object?> _pfnNewobj;
-            internal readonly delegate*<object?, void> _pfnCtor;
-            internal MethodTable* _pMT;
-            internal readonly bool _ctorIsPublic;
+            // The managed calli to the newobj routine, plus its first argument.
+            // First argument is normally a MethodTable* unless we're going through one of our stubs.
+            private readonly delegate*<void*, object?> _pfnNewobj;
+            private readonly void* _newobjState;
 
-            internal ActivatorCache(RuntimeMethodHandleInternal rmh)
+            // The managed calli to the parameterless ctor, plus a state object.
+            // State object depends on the stub being called.
+            private readonly delegate*<object?, void*, void> _pfnCtorStub;
+            private readonly void* _ctorStubState;
+
+#if DEBUG
+            private readonly RuntimeType _originalRT;
+#endif
+
+            internal ActivatorCache(RuntimeType rt)
             {
-                if (rmh.IsNullHandle())
-                {
-                    // Value type with no explicit constructor, which means the "default" ctor
-                    // is implicitly public and no-ops.
+                Debug.Assert(rt != null);
 
-                    _ctorIsPublic = true;
-                    _pfnCtor = &GC.KeepAlive; // a convenient no-op fn
+#if DEBUG
+                _originalRT = rt;
+#endif
+
+                if (rt.IsCOMObject)
+                {
+                    // COM objects go through a special activation procedure coordinated
+                    // by the unmanaged runtime. We'll create a stub to that function.
+
+                    static object? ComNewobjStub(void* state)
+                    {
+                        RuntimeType rt = GetTypeFromHandleUnsafe((IntPtr)state);
+                        Debug.Assert(rt != null);
+                        Debug.Assert(rt.IsCOMObject);
+
+                        return RuntimeTypeHandle.CreateComInstance(rt);
+                    }
+                    _pfnNewobj = &ComNewobjStub;
+                    _newobjState = (void*)rt.TypeHandle.Value;
+
+                    _pfnCtorStub = &CtorNoopStub;
+                    _ctorStubState = null;
+
+                    CtorIsPublic = true; // COM type ctors are always inherently public
                 }
                 else
                 {
-                    // Reference type with a parameterless ctor.
+                    _pfnNewobj = (delegate*<void*, object?>)RuntimeTypeHandle.GetNewobjHelperFnPtr(rt, out MethodTable* pMT, unwrapNullable: false);
+                    _ctorStubState = pMT;
 
-                    _ctorIsPublic = (RuntimeMethodHandle.GetAttributes(rmh) & MethodAttributes.Public) != 0;
-                    _pfnCtor = (delegate*<object?, void>)RuntimeMethodHandle.GetFunctionPointer(rmh);
+                    if (pMT->IsValueType)
+                    {
+                        if (pMT->IsNullable)
+                        {
+                            // Activator.CreateInstance returns null given typeof(Nullable<T>).
+
+                            static object? ReturnNull(void* state) => null;
+                            _pfnNewobj = &ReturnNull;
+                            _newobjState = null;
+
+                            _pfnCtorStub = &CtorNoopStub;
+                            _ctorStubState = null;
+
+                            CtorIsPublic = true; // Returning null is always inherently public
+                        }
+                        else if (pMT->HasDefaultConstructor)
+                        {
+                            // ValueType with explicit parameterless ctor typed as (ref T) -> void.
+                            // We'll pass the actual ctor address as the state object, then create
+                            // an unboxing stub so that we can pass the boxed value to it.
+
+                            static void ValueTypeUnboxingStub(object? @this, void* state)
+                            {
+                                ((delegate*<ref byte, void>)state)(ref @this!.GetRawData());
+                            }
+                            _pfnCtorStub = &ValueTypeUnboxingStub;
+                            _ctorStubState = (void*)RuntimeTypeHandle.GetDefaultCtorFnPtr(rt);
+
+                            CtorIsPublic = (RuntimeMethodHandle.GetAttributes(RuntimeTypeHandle.GetMethodAt(rt, pMT->GetDefaultConstructorSlot())) & MethodAttributes.Public) != 0;
+                        }
+                        else
+                        {
+                            // ValueType with no explicit parameterless ctor; assume ctor returns default(T)
+
+                            _pfnCtorStub = &CtorNoopStub;
+                            _ctorStubState = null;
+
+                            CtorIsPublic = true; // returning default(T) is always inherently public
+                        }
+                    }
+                    else
+                    {
+                        // Reference type - we can't proceed unless there's a default ctor we can call.
+
+                        Debug.Assert(rt.IsClass);
+
+                        if (!pMT->HasDefaultConstructor)
+                        {
+                            throw new MissingMethodException(SR.Format(SR.Arg_NoDefCTor, rt));
+                        }
+
+                        // Reference type with explicit parameterless ctor typed as (object) -> void.
+                        // We'll pass the actual ctor address as the state object.
+
+                        static void ReferenceTypeStub(object? @this, void* state)
+                        {
+                            ((delegate*<object, void>)state)(@this!);
+                        }
+                        _pfnCtorStub = &ReferenceTypeStub;
+                        _ctorStubState = (void*)RuntimeTypeHandle.GetDefaultCtorFnPtr(rt);
+
+                        CtorIsPublic = (RuntimeMethodHandle.GetAttributes(RuntimeTypeHandle.GetMethodAt(rt, pMT->GetDefaultConstructorSlot())) & MethodAttributes.Public) != 0;
+                    }
                 }
 
-                Debug.Assert(_pfnCtor != null);
+                Debug.Assert(_pfnNewobj != null);
+                Debug.Assert(_pfnCtorStub != null);
             }
 
-            private void Initialize(RuntimeType type)
+            internal bool CtorIsPublic { get; }
+
+            private static void CtorNoopStub(object? @this, void* state) { }
+
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            internal object? CreateUninitializedObject(RuntimeType rt)
             {
-                Debug.Assert(type != null);
+                // We don't use RuntimeType, but we force the caller to pass it so
+                // that we can keep it alive on their behalf. Once the object is
+                // constructed, we no longer need the reference to the type instance,
+                // as the object itself will keep the type alive.
 
-                // If we reached this point, we already know that the construction information
-                // can be cached, so all of the runtime reflection checks succeeded. We just
-                // need to special-case Nullable<T> (to return null).
-                //
-                // No synchronization is needed in this method since we have marked the _pfnNewobj
-                // field as volatile, and if there's multi-threaded access all threads will agree
-                // on the values to write anyway.
-                //
-                // !! IMPORTANT !!
-                // Don't assign the function pointer return value of GetNewobjHelperFnPtr directly
-                // to the backing field, as setting the field marks initialization as complete.
-                // Be sure to perform any last-minute checks *before* setting the backing field.
+#if DEBUG
+                Debug.Assert(rt == _originalRT, "Caller passed the wrong RuntimeType to this routine.");
+#endif
 
-                delegate*<MethodTable*, object?> pfnNewobj = RuntimeTypeHandle.GetNewobjHelperFnPtr(type, out _pMT, allowCom: true);
-                if (_pMT->IsNullable)
-                {
-                    static object? GetNull(MethodTable* pMT) => null;
-                    pfnNewobj = &GetNull; // Activator.CreateInstance(typeof(Nullable<T>)) => null
-                }
-
-                Debug.Assert(pfnNewobj != null);
-                _pfnNewobj = pfnNewobj; // setting this field marks the instance as fully initialized
+                object? retVal = _pfnNewobj(_newobjState);
+                GC.KeepAlive(rt);
+                return retVal;
             }
 
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            public void EnsureInitialized(RuntimeType type)
-            {
-                if (_pfnNewobj == null) // use this field's value as the indicator of whether initialization is finished
-                {
-                    Initialize(type);
-                }
-            }
-        }
-
-        /// <summary>
-        /// The slow path of CreateInstanceDefaultCtor
-        /// </summary>
-        private object? CreateInstanceDefaultCtorSlow(bool publicOnly, bool wrapExceptions, bool fillCache)
-        {
-            RuntimeMethodHandleInternal runtimeCtor = default;
-            bool canBeCached = false;
-            bool hasNoDefaultCtor = false;
-
-            object instance = RuntimeTypeHandle.CreateInstance(this, publicOnly, wrapExceptions, ref canBeCached, ref runtimeCtor, ref hasNoDefaultCtor);
-            if (hasNoDefaultCtor)
-            {
-                throw new MissingMethodException(SR.Format(SR.Arg_NoDefCTor, this));
-            }
-
-            if (canBeCached && fillCache)
-            {
-                GenericCache = new ActivatorCache(runtimeCtor);
-            }
-
-            return instance;
+            internal void CallCtorOverUninitializedObject(object? newObj) => _pfnCtorStub(newObj, _ctorStubState);
         }
 
         /// <summary>
@@ -4045,41 +4100,37 @@ namespace System
         /// </summary>
         [DebuggerStepThrough]
         [DebuggerHidden]
-        internal unsafe object? CreateInstanceDefaultCtor(bool publicOnly, bool skipCheckThis, bool fillCache, bool wrapExceptions)
+        internal object? CreateInstanceDefaultCtor(bool publicOnly, bool wrapExceptions)
         {
-            // Call the cached factory if it exists
-            if (GenericCache is ActivatorCache cache)
+            // Get or create the cached factory. Creating the cache will fail if one
+            // of our invariant checks fails; e.g., no appropriate ctor found.
+
+            if (GenericCache is not ActivatorCache cache)
             {
-                cache.EnsureInitialized(this);
-
-                Debug.Assert(cache._pfnNewobj != null);
-                Debug.Assert(cache._pfnCtor != null);
-                Debug.Assert(cache._pMT != null);
-
-                if (!cache._ctorIsPublic && publicOnly)
-                {
-                    throw new MissingMethodException(SR.Format(SR.Arg_NoDefCTor, this));
-                }
-
-                object? obj = cache._pfnNewobj(cache._pMT); // allocation outside the try block (allow OOM to bubble up)
-                GC.KeepAlive(this); // can't allow the type to be collected before the object is created
-
-                try
-                {
-                    cache._pfnCtor(obj);
-                }
-                catch (Exception e) when (wrapExceptions)
-                {
-                    throw new TargetInvocationException(e);
-                }
-
-                return obj;
+                cache = new ActivatorCache(this);
+                GenericCache = cache;
             }
 
-            if (!skipCheckThis)
-                CreateInstanceCheckThis();
+            if (publicOnly & !cache.CtorIsPublic)
+            {
+                throw new MissingMethodException(SR.Format(SR.Arg_NoDefCTor, this));
+            }
 
-            return CreateInstanceDefaultCtorSlow(publicOnly, wrapExceptions, fillCache);
+            // Compat: allocation always takes place outside the try block so that OOMs
+            // bubble up to the caller; the ctor invocation is within the try block so
+            // that it can be wrapped in TIE if needed.
+
+            object? obj = cache.CreateUninitializedObject(this);
+            try
+            {
+                cache.CallCtorOverUninitializedObject(obj);
+            }
+            catch (Exception e) when (wrapExceptions)
+            {
+                throw new TargetInvocationException(e);
+            }
+
+            return obj;
         }
 
         internal void InvalidateCachedNestedType() => Cache.InvalidateCachedNestedType();

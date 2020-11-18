@@ -131,10 +131,12 @@ public:
                                             CLR_BOOL *pbHasNoDefaultCtor);
 
     static
-    void QCALLTYPE GetNewobjHelperFnPtr(QCall::TypeHandle pTypeHandle, PCODE* ppNewobjHelper, MethodTable** ppMT, BOOL fAllowCom);
+    void QCALLTYPE GetNewobjHelperFnPtr(QCall::TypeHandle pTypeHandle, PCODE* ppNewobjHelper, MethodTable** ppMT, BOOL fUnwrapNullable);
 
     static
     MethodDesc* QCALLTYPE GetDefaultCtor(QCall::TypeHandle pTypeHandle);
+
+    static FCDECL1(Object*, CreateComInstance, ReflectClassBaseObject* refThisUNSAFE);
 
     static
     void QCALLTYPE MakeByRef(QCall::TypeHandle pTypeHandle, QCall::ObjectHandleOnStack retType);
