@@ -20,6 +20,7 @@ namespace System.Diagnostics.Tracing
     /// DiagnosticCounter is an abstract class that serves as the parent class for various Counter* classes,
     /// namely EventCounter, PollingCounter, IncrementingEventCounter, and IncrementingPollingCounter.
     /// </summary>
+    [UnsupportedOSPlatform("browser")]
     public abstract class DiagnosticCounter : IDisposable
     {
         /// <summary>
@@ -49,7 +50,6 @@ namespace System.Diagnostics.Tracing
         /// Must only be invoked once, and only after the instance has been fully initialized.
         /// This should be invoked by a derived type's ctor as the last thing it does.
         /// </remarks>
-        [UnsupportedOSPlatform("browser")]
         private protected void Publish()
         {
             Debug.Assert(_group is null);
@@ -66,7 +66,6 @@ namespace System.Diagnostics.Tracing
         /// If an EventCounter is not explicitly disposed it will be cleaned up automatically when the
         /// EventSource it is attached to dies.
         /// </summary>
-        [UnsupportedOSPlatform("browser")]
         public void Dispose()
         {
             if (_group != null)

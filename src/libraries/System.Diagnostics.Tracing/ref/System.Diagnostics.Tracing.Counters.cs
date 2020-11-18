@@ -3,6 +3,7 @@
 
 namespace System.Diagnostics.Tracing
 {
+    [System.Runtime.Versioning.UnsupportedOSPlatform("browser")]
     public abstract partial class DiagnosticCounter : System.IDisposable
     {
         internal DiagnosticCounter() { }
@@ -11,7 +12,6 @@ namespace System.Diagnostics.Tracing
         public System.Diagnostics.Tracing.EventSource EventSource { get { throw null; } }
         public string Name { get { throw null; } }
         public void AddMetadata(string key, string? value) { }
-        [System.Runtime.Versioning.UnsupportedOSPlatform("browser")]
         public void Dispose() { }
     }
     [System.Runtime.Versioning.UnsupportedOSPlatform("browser")]
