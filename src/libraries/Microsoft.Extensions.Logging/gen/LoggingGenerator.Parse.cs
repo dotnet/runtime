@@ -98,14 +98,8 @@ namespace Microsoft.Extensions.Logging.Generators
         /// <summary>
         /// Gets the set of logging classes that should be generated based on the discovered annotated interfaces.
         /// </summary>
-        private static IEnumerable<LoggerClass> GetLogClasses(GeneratorExecutionContext context, Compilation compilation)
+        private static IEnumerable<LoggerClass> GetLogClasses(GeneratorExecutionContext context, Compilation compilation, List<InterfaceDeclarationSyntax> interfaces)
         {
-            if (!(context.SyntaxReceiver is SyntaxReceiver receiver))
-            {
-                // nothing to do yet
-                yield break;
-            }
-
             var logExtensionsAttribute = compilation.GetTypeByMetadataName("Microsoft.Extensions.Logging.LoggerExtensionsAttribute");
             if (logExtensionsAttribute is null)
             {
@@ -136,7 +130,7 @@ namespace Microsoft.Extensions.Logging.Generators
 
             var semanticModelMap = new Dictionary<SyntaxTree, SemanticModel>();
 
-            foreach (var iface in receiver.InterfaceDeclarations)
+            foreach (var iface in interfaces)
             {
                 foreach (var al in iface.AttributeLists)
                 {

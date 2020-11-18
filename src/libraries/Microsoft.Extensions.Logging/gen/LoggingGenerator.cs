@@ -21,8 +21,14 @@ namespace Microsoft.Extensions.Logging.Generators
         /// <inheritdoc />
         public void Execute(GeneratorExecutionContext context)
         {
+            if (!(context.SyntaxReceiver is SyntaxReceiver receiver))
+            {
+                // nothing to do yet
+                return;
+            }
+
             var types = new StringBuilder();
-            foreach (var lc in GetLogClasses(context, context.Compilation))
+            foreach (var lc in GetLogClasses(context, context.Compilation, receiver.InterfaceDeclarations))
             {
                 types.Append(GenType(lc));
             }
@@ -106,8 +112,7 @@ using Microsoft.Extensions.Logging;
             if (lm.MessageHasTemplates)
             {
                 format = $@"
-            public string Format() => $""{lm.Message}"";
-            public override string ToString() => Format();
+            public override string ToString() => $""{lm.Message}"";
 ";
             }
 
@@ -174,7 +179,7 @@ using Microsoft.Extensions.Logging;
             if (logger.IsEnabled((LogLevel){lm.Level}))
             {{
                 var message = new __{lm.Name}Struct__({GenArguments(lm)});
-                logger.Log((LogLevel){lm.Level}, __{lm.Name}EventId__, message, {exceptionArg}, (s, _) => {(lm.MessageHasTemplates ? "s.Format()" : "\"" + lm.Message + "\"")});
+                logger.Log((LogLevel){lm.Level}, __{lm.Name}EventId__, message, {exceptionArg}, (s, _) => {(lm.MessageHasTemplates ? "s.ToString()" : "\"" + lm.Message + "\"")});
             }}
         }}
 ";
