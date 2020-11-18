@@ -5453,7 +5453,8 @@ GenTree* Compiler::fgMorphArrayIndex(GenTree* tree)
     if (opts.OptimizationEnabled() && asIndex->Arr()->OperIs(GT_CNS_STR) && asIndex->Index()->IsIntCnsFitsInI32())
     {
         const int cnsIndex = static_cast<int>(asIndex->Index()->AsIntConCommon()->IconValue());
-        if (cnsIndex >= 0)
+        // NOTE: don't fold it for string.Empty[cns_index] or negative indices - it's going to crash anyway
+        if ((cnsIndex >= 0) && !asIndex->Arr()->AsStrCon()->IsStringEmptyField())
         {
             int     length;
             LPCWSTR str = info.compCompHnd->getStringLiteral(asIndex->Arr()->AsStrCon()->gtScpHnd,
@@ -9276,12 +9277,20 @@ GenTree* Compiler::fgMorphConst(GenTree* tree)
         return tree;
     }
 
+    if (tree->AsStrCon()->IsStringEmptyField())
+    {
+        LPVOID         pValue;
+        InfoAccessType iat = info.compCompHnd->emptyStringLiteral(&pValue);
+        return fgMorphTree(gtNewStringLiteralNode(iat, pValue));
+    }
+
     // TODO-CQ: Do this for compCurBB->isRunRarely(). Doing that currently will
     // guarantee slow performance for that block. Instead cache the return value
     // of CORINFO_HELP_STRCNS and go to cache first giving reasonable perf.
 
     if (compCurBB->bbJumpKind == BBJ_THROW)
     {
+        assert(!tree->AsStrCon()->IsStringEmptyField());
         CorInfoHelpFunc helper = info.compCompHnd->getLazyStringLiteralHelper(tree->AsStrCon()->gtScpHnd);
         if (helper != CORINFO_HELP_UNDEF)
         {
