@@ -29,8 +29,6 @@ public class WasmAppBuilder : Task
     // https://github.com/dotnet/icu/tree/maint/maint-67/icu-filters
     public string? IcuDataFileName { get; set; } = "icudt.dat";
 
-    // Either one of these two need to be set
-    public ITaskItem[]? AssemblySearchPaths { get; set; }
     public ITaskItem[]? Assemblies { get; set; }
     public int DebugLevel { get; set; }
     public ITaskItem[]? ExtraAssemblies { get; set; }
