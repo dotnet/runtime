@@ -390,19 +390,18 @@ namespace System
         {
             var actualItemCountMapping = new Dictionary<T, ItemCount>(comparer);
             var actualCount = 0;
-            foreach (var actualItem in actual)
+            foreach (T actualItem in actual)
             {
-                if (actualItemCountMapping.TryGetValue(actualItem, out var countInfo))
+                if (actualItemCountMapping.TryGetValue(actualItem, out ItemCount countInfo))
                 {
                     countInfo.Original++;
                     countInfo.Remain++;
                 }
                 else
                 {
-                    countInfo = new ItemCount(1, 1);
+                    actualItemCountMapping[actualItem] = new ItemCount(1, 1);
                 }
-
-                actualItemCountMapping[actualItem] = countInfo;
+                
                 actualCount++;
             }
 
@@ -416,10 +415,10 @@ namespace System
 
             for (var i = 0; i < expectedCount; i++)
             {
-                var currentExpectedItem = expectedArray[i];
-                if (!actualItemCountMapping.TryGetValue(currentExpectedItem, out var countInfo))
+                T currentExpectedItem = expectedArray[i];
+                if (!actualItemCountMapping.TryGetValue(currentExpectedItem, out ItemCount countInfo))
                 {
-                    throw new XunitException($"Not found: {currentExpectedItem}");
+                    throw new XunitException($"Expected: {currentExpectedItem} but Not found");
                 }
 
                 if (countInfo.Remain == 0)
@@ -428,7 +427,6 @@ namespace System
                 }
 
                 countInfo.Remain--;
-                actualItemCountMapping[currentExpectedItem] = countInfo;
             }
         }
 		
@@ -510,10 +508,10 @@ namespace System
             return exception;
         }
 		
-		private struct ItemCount
+        private class ItemCount
         {
-            public int Original;
-            public int Remain;
+            public int Original { get; set; }
+            public int Remain { get; set; }
 
             public ItemCount(int original, int remain)
             {
