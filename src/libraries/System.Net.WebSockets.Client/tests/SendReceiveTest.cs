@@ -389,7 +389,8 @@ namespace System.Net.WebSockets.Client.Tests
 
         [OuterLoop("Uses external servers")]
         [ConditionalFact(nameof(WebSocketsSupported))]
-        [PlatformSpecific(~TestPlatforms.Browser)] // LoopBack not not supported on browser
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/34690", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/34690", TestPlatforms.Browser)]
         public async Task SendReceive_ConnectionClosedPrematurely_ReceiveAsyncFailsAndWebSocketStateUpdated()
         {
             var options = new LoopbackServer.Options { WebSocketEndpoint = true };

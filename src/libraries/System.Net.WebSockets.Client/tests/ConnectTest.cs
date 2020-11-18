@@ -89,7 +89,7 @@ namespace System.Net.WebSockets.Client.Tests
 
         [ConditionalFact(nameof(WebSocketsSupported))]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/34690", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
-        [PlatformSpecific(~TestPlatforms.Browser)] // Loopback not supported on browser
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/34690", TestPlatforms.Browser)]
         public async Task ConnectAsync_AddHostHeader_Success()
         {
             string expectedHost = null;
@@ -209,7 +209,7 @@ namespace System.Net.WebSockets.Client.Tests
 
         [ConditionalFact(nameof(WebSocketsSupported))]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/34690", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
-        [PlatformSpecific(~TestPlatforms.Browser)] // Loopback not supported on browser
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/34690", TestPlatforms.Browser)]
         public async Task ConnectAsync_NonStandardRequestHeaders_HeadersAddedWithoutValidation()
         {
             await LoopbackServer.CreateClientAndServerAsync(async uri =>
@@ -229,7 +229,6 @@ namespace System.Net.WebSockets.Client.Tests
 
         [OuterLoop("Uses external servers")]
         [ConditionalTheory(nameof(WebSocketsSupported)), MemberData(nameof(EchoServers))]
-        [PlatformSpecific(~TestPlatforms.Browser)] // Loopback not supported on browser
         public async Task ConnectAndCloseAsync_UseProxyServer_ExpectedClosedState(Uri server)
         {
             using (var cws = new ClientWebSocket())
@@ -263,7 +262,7 @@ namespace System.Net.WebSockets.Client.Tests
 
         [ConditionalFact(nameof(WebSocketsSupported))]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/34690", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
-        [PlatformSpecific(~TestPlatforms.Browser)] // Loopback not supported on browser
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/34690", TestPlatforms.Browser)]
         public async Task ConnectAsync_CancellationRequestedAfterConnect_ThrowsOperationCanceledException()
         {
             var releaseServer = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
