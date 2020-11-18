@@ -2186,7 +2186,6 @@ void QCALLTYPE RuntimeTypeHandle::GetNewobjHelperFnPtr(
         QCall::TypeHandle pTypeHandle,
         PCODE* ppNewobjHelper,
         MethodTable** ppMT,
-        BOOL fUnwrapNullable,
         BOOL fAllowCom)
 {
     CONTRACTL{
@@ -2203,7 +2202,7 @@ void QCALLTYPE RuntimeTypeHandle::GetNewobjHelperFnPtr(
     TypeHandle typeHandle = pTypeHandle.AsTypeHandle();
 
     // Don't allow void, arrays, pointers, byrefs, or function pointers.
-    if (typeHandle.IsTypeDesc() || typeHandle.IsArray() || type.GetSignatureCorElementType() == ELEMENT_TYPE_VOID)
+    if (typeHandle.IsTypeDesc() || typeHandle.IsArray() || typeHandle.GetSignatureCorElementType() == ELEMENT_TYPE_VOID)
     {
         COMPlusThrow(kArgumentException, W("Argument_InvalidValue"));
     }
@@ -2255,9 +2254,8 @@ void QCALLTYPE RuntimeTypeHandle::GetNewobjHelperFnPtr(
     }
 #endif // FEATURE_COMINTEROP
 
-    // If the caller passed Nullable<T> but asked us to unwrap nullable types,
-    // instead pretend they had passed the 'T' directly.
-    if (fUnwrapNullable && Nullable::IsNullableType(pMT))
+    // If the caller passed Nullable<T>, instead pretend they had passed the 'T' directly.
+    if (Nullable::IsNullableType(pMT))
     {
         pMT = pMT->GetInstantiation()[0].GetMethodTable();
     }

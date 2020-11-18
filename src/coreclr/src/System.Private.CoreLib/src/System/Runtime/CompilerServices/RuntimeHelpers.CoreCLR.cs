@@ -143,8 +143,8 @@ namespace System.Runtime.CompilerServices
             RuntimeType rt = (RuntimeType)type;
             Debug.Assert(rt != null);
 
-            // If somebody asks us to create a Nullable<T>, create a T instead.
-            delegate*<MethodTable*, object> newobjHelper = RuntimeTypeHandle.GetNewobjHelperFnPtr(rt, out MethodTable* pMT, unwrapNullable: true, allowCom: false);
+            // If type is Nullable<T>, get newobj for boxed T instead.
+            delegate*<MethodTable*, object> newobjHelper = RuntimeTypeHandle.GetNewobjHelperFnPtr(rt, out MethodTable* pMT, allowCom: false);
             Debug.Assert(newobjHelper != null);
             Debug.Assert(pMT != null);
 

@@ -208,7 +208,7 @@ namespace System
         /// <summary>
         /// Given a RuntimeType, returns both the address of the JIT's newobj helper for that type and the
         /// MethodTable* corresponding to that type. If the type is <see cref="Nullable{T}"/> closed over
-        /// some T and <paramref name="unwrapNullable"/> is true, then returns the values for the 'T'.
+        /// some T, then returns the newobj helper and MethodTable* for the 'T'.
         /// </summary>
         internal static delegate*<MethodTable*, object> GetNewobjHelperFnPtr(
             // This API doesn't call any constructors, but the type needs to be seen as constructed.
@@ -217,7 +217,7 @@ namespace System
             // constructor are an academic problem. Valuetypes with no constructors are a problem,
             // but IL Linker currently treats them as always implicitly boxed.
             [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors | DynamicallyAccessedMemberTypes.NonPublicConstructors)] RuntimeType type,
-            out MethodTable* pMT, bool unwrapNullable, bool allowCom)
+            out MethodTable* pMT, bool allowCom)
         {
             Debug.Assert(type != null);
 
@@ -228,7 +228,6 @@ namespace System
                 new QCallTypeHandle(ref type),
                 &pNewobjHelperTemp,
                 &pMTTemp,
-                (unwrapNullable) ? Interop.BOOL.TRUE : Interop.BOOL.FALSE,
                 (allowCom) ? Interop.BOOL.TRUE : Interop.BOOL.FALSE);
 
             pMT = pMTTemp;
@@ -236,7 +235,7 @@ namespace System
         }
 
         [DllImport(RuntimeHelpers.QCall, CharSet = CharSet.Unicode)]
-        private static extern void GetNewobjHelperFnPtr(QCallTypeHandle typeHandle, delegate*<MethodTable*, object>* ppNewobjHelper, MethodTable** ppMT, Interop.BOOL fUnwrapNullable, Interop.BOOL fAllowCom);
+        private static extern void GetNewobjHelperFnPtr(QCallTypeHandle typeHandle, delegate*<MethodTable*, object>* ppNewobjHelper, MethodTable** ppMT, Interop.BOOL fAllowCom);
 
         internal RuntimeType GetRuntimeType()
         {

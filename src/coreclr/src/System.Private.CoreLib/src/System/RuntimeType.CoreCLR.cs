@@ -3996,7 +3996,7 @@ namespace System
                 // to the backing field, as setting the field marks initialization as complete.
                 // Be sure to perform any last-minute checks *before* setting the backing field.
 
-                delegate*<MethodTable*, object?> pfnNewobj = RuntimeTypeHandle.GetNewobjHelperFnPtr(type, out _pMT, unwrapNullable: false, allowCom: true);
+                delegate*<MethodTable*, object?> pfnNewobj = RuntimeTypeHandle.GetNewobjHelperFnPtr(type, out _pMT, allowCom: true);
                 if (_pMT->IsNullable)
                 {
                     static object? GetNull(MethodTable* pMT) => null;
