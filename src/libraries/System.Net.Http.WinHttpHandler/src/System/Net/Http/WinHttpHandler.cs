@@ -413,12 +413,14 @@ namespace System.Net.Http
             }
         }
 
-
         public bool TcpKeepAliveEnabled { get; set; }
 
         public TimeSpan TcpKeepAliveTime
         {
-            get { return _tcpKeepAliveTime; }
+            get
+            {
+                return _tcpKeepAliveTime;
+            }
             set
             {
                 CheckTimeSpanPropertyValue(value);
@@ -429,7 +431,10 @@ namespace System.Net.Http
 
         public TimeSpan TcpKeepAliveInterval
         {
-            get { return _tcpKeepAliveInterval; }
+            get
+            {
+                return _tcpKeepAliveInterval;
+            }
             set
             {
                 CheckTimeSpanPropertyValue(value);
