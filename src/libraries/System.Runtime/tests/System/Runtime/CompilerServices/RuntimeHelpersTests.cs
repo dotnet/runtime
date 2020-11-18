@@ -209,7 +209,6 @@ namespace System.Runtime.CompilerServices.Tests
             yield return new[] { typeof(List<>).GetGenericArguments()[0], typeof(ArgumentException) }; // 'T' placeholder typedesc
 
             yield return new[] { typeof(Delegate), typeof(MemberAccessException) }; // abstract type
-            yield return new[] { typeof(Action), typeof(ArgumentException) }; // delegate type
 
             yield return new[] { typeof(void), typeof(ArgumentException) }; // explicit block in place
             yield return new[] { typeof(int).MakePointerType(), typeof(ArgumentException) }; // pointer typedesc
@@ -218,16 +217,20 @@ namespace System.Runtime.CompilerServices.Tests
             yield return new[] { typeof(ReadOnlySpan<int>), typeof(NotSupportedException) }; // byref type
             yield return new[] { typeof(ArgIterator), typeof(NotSupportedException) }; // byref type
 
-            if (PlatformDetection.IsNetCore)
+            Type canonType = typeof(object).Assembly.GetType("System.__Canon", throwOnError: false);
+            if (canonType != null)
             {
-                Type canonType = typeof(object).Assembly.GetType("System.__Canon", throwOnError: true);
-                yield return new[] { typeof(List<>).MakeGenericType(canonType), typeof(NotSupportedException) }; // shared by generic instantiations
+                yield return new[] { typeof(List<>).MakeGenericType(canonType), typeof(NotSupportedException) }; // shared by generic instantiations                
+            }
+
+            Type comObjType = typeof(object).Assembly.GetType("System.__ComObject", throwOnError: false);
+            if (comObjType != null)
+            {
+                yield return new[] { comObjType, typeof(NotSupportedException) }; // COM type
             }
 
             if (PlatformDetection.SupportsComInterop)
             {
-                Type comObjType = typeof(object).Assembly.GetType("System.__ComObject", throwOnError: true);
-                yield return new[] { comObjType, typeof(NotSupportedException) }; // COM type
                 yield return new[] { typeof(WbemContext), typeof(NotSupportedException) }; // COM type
             }
         }
