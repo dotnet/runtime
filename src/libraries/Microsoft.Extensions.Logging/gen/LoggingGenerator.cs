@@ -27,8 +27,10 @@ namespace Microsoft.Extensions.Logging.Generators
                 return;
             }
 
+            var p = new Parser(context);
+
             var types = new StringBuilder();
-            foreach (var lc in GetLogClasses(context, context.Compilation, receiver.InterfaceDeclarations))
+            foreach (var lc in p.GetLogClasses(receiver.InterfaceDeclarations))
             {
                 types.Append(GenType(lc));
             }
