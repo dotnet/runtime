@@ -2193,8 +2193,8 @@ FCIMPL1(Object*, ReflectionSerialization::GetUninitializedObject, ReflectClassBa
 
     TypeHandle type = objType->GetType();
 
-    // Don't allow arrays, pointers, byrefs or function pointers.
-    if (type.IsTypeDesc() || type.IsArray())
+    // Don't allow void, arrays, pointers, byrefs or function pointers.
+    if (type.IsTypeDesc() || type.IsArray() || type.GetSignatureCorElementType() == ELEMENT_TYPE_VOID)
         COMPlusThrow(kArgumentException, W("Argument_InvalidValue"));
 
     MethodTable *pMT = type.AsMethodTable();
