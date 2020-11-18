@@ -2276,6 +2276,37 @@ void QCALLTYPE RuntimeTypeHandle::GetNewobjHelperFnPtr(
     END_QCALL;
 }
 
+/*
+ * Given a TypeHandle, returns the MethodDesc* for the default (parameterless) ctor,
+ * or nullptr if the parameterless ctor doesn't exist. For reference types, the parameterless
+ * ctor has a managed (object @this) -> void calling convention. For value types,
+ * the parameterless ctor has a managed (ref T @this) -> void calling convention.
+ * The returned MethodDesc* is appropriately instantiated over any necessary generic args.
+ */
+MethodDesc* QCALLTYPE RuntimeTypeHandle::GetDefaultCtor(
+    QCall::TypeHandle pTypeHandle)
+{
+    QCALL_CONTRACT;
+
+    MethodDesc* pMethodDesc = NULL;
+
+    BEGIN_QCALL;
+
+    TypeHandle typeHandle = pTypeHandle.AsTypeHandle();
+    MethodTable* pMT = typeHandle.AsMethodTable();
+    PREFIX_ASSUME(pMT != NULL);
+
+    pMT->EnsureInstanceActive();
+    if (pMT->HasDefaultConstructor())
+    {
+        pMethodDesc = pMT->GetDefaultConstructor();
+    }
+
+    END_QCALL;
+
+    return pMethodDesc;
+}
+
 //*************************************************************************************************
 //*************************************************************************************************
 //*************************************************************************************************

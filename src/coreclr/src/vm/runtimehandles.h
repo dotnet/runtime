@@ -134,6 +134,9 @@ public:
     void QCALLTYPE GetNewobjHelperFnPtr(QCall::TypeHandle pTypeHandle, PCODE* ppNewobjHelper, MethodTable** ppMT, BOOL fAllowCom);
 
     static
+    MethodDesc* QCALLTYPE GetDefaultCtor(QCall::TypeHandle pTypeHandle);
+
+    static
     void QCALLTYPE MakeByRef(QCall::TypeHandle pTypeHandle, QCall::ObjectHandleOnStack retType);
 
     static
