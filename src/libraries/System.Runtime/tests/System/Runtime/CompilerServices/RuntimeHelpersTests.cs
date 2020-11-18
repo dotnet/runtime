@@ -203,6 +203,7 @@ namespace System.Runtime.CompilerServices.Tests
             yield return new[] { typeof(Enum), typeof(MemberAccessException) }; // abstract type
 
             yield return new[] { typeof(Stream), typeof(MemberAccessException) }; // abstract type
+            yield return new[] { typeof(Buffer), typeof(MemberAccessException) }; // static type (runtime sees it as abstract)
             yield return new[] { typeof(IDisposable), typeof(MemberAccessException) }; // interface type
 
             yield return new[] { typeof(List<>), typeof(MemberAccessException) }; // open generic type
@@ -276,6 +277,7 @@ namespace System.Runtime.CompilerServices.Tests
             Assert.Null(AppDomain.CurrentDomain.GetData("ClassWithBeforeFieldInitCctor_CctorRan"));
         }
 
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/44852", TestRuntimes.Mono)]
         [Fact]
         public static void GetUninitalizedObject_RunsNormalStaticCtors()
         {
