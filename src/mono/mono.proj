@@ -2,7 +2,7 @@
 
   <!--
       Build properties:
-      - MonoEnableInterpreter - enable the interpreter
+      - MonoForceInterpreter - enable the interpreter
       - MonoEnableLLVM - enable LLVM
       - MonoLLVMDir - [optional] the directory where LLVM is located
       - MonoAOTEnableLLVM - enable LLVM for an AOT-only Mono
@@ -12,7 +12,7 @@
 
   <PropertyGroup>
     <MonoCrossDir Condition="'$(MonoCrossDir)' == '' and '$(ROOTFS_DIR)' != ''">$(ROOTFS_DIR)</MonoCrossDir>
-    <MonoEnableInterpreter Condition="'$(MonoEnableInterpreter)' == ''">false</MonoEnableInterpreter>
+    <MonoForceInterpreter Condition="'$(MonoForceInterpreter)' == ''">false</MonoForceInterpreter>
     <ScriptExt Condition="'$(OS)' == 'Windows_NT'">.cmd</ScriptExt>
     <ScriptExt Condition="'$(OS)' != 'Windows_NT'">.sh</ScriptExt>
     <CoreClrFileName Condition="'$(TargetsWindows)' == 'true'">coreclr.dll</CoreClrFileName>
@@ -252,7 +252,7 @@
       <_MonoCMakeArgs Condition="'$(Platform)' == 'arm'" Include="-DCMAKE_ANDROID_ARCH_ABI=armeabi-v7a" />
       <_MonoCMakeArgs Condition="'$(Platform)' == 'x86'" Include="-DCMAKE_ANDROID_ARCH_ABI=x86" />
       <_MonoCMakeArgs Condition="'$(Platform)' == 'x64'" Include="-DCMAKE_ANDROID_ARCH_ABI=x86_64" />
-      <_MonoCMakeArgs Include="-DENABLE_MINIMAL=ssa,portability,attach,verifier,sgen_remset,sgen_marksweep_par,sgen_marksweep_fixed,sgen_marksweep_fixed_par,sgen_copying,logging,security,shared_handles,interpreter,gac,cfgdir_config" />
+      <_MonoCMakeArgs Include="-DENABLE_MINIMAL=ssa,portability,attach,verifier,sgen_remset,sgen_marksweep_par,sgen_marksweep_fixed,sgen_marksweep_fixed_par,sgen_copying,logging,security,shared_handles,gac,cfgdir_config" />
       <_MonoCMakeArgs Include="-DENABLE_SIGALTSTACK=1"/>
       <_MonoCMakeArgs Include="-DDISABLE_CRASH_REPORTING=1"/>
       <_MonoCMakeArgs Include="-DENABLE_PERFTRACING=0"/>

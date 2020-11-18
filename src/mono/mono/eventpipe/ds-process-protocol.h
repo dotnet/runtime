@@ -60,10 +60,39 @@ void
 ds_process_info_payload_fini (DiagnosticsProcessInfoPayload *payload);
 
 /*
+* DiagnosticsEnvironmentInfoPayload
+*/
+
+#if defined(DS_INLINE_GETTER_SETTER) || defined(DS_IMPL_PROCESS_PROTOCOL_GETTER_SETTER)
+struct _DiagnosticsEnvironmentInfoPayload {
+#else
+struct _DiagnosticsEnvironmentInfoPayload_Internal {
+#endif
+	// The environemnt is sent back as an optional continuation stream of data.
+	// It is encoded in the typical length-prefixed array format as defined in
+	// the Diagnostics IPC Spec: https://github.com/dotnet/diagnostics/blob/master/documentation/design-docs/ipc-protocol.md
+	uint32_t incoming_bytes;
+	uint16_t future;
+	ep_rt_env_array_utf16_t env_array;
+};
+
+#if !defined(DS_INLINE_GETTER_SETTER) && !defined(DS_IMPL_PROCESS_PROTOCOL_GETTER_SETTER)
+struct _DiagnosticsEnvironmentInfoPayload {
+	uint8_t _internal [sizeof (struct _DiagnosticsEnvironmentInfoPayload_Internal)];
+};
+#endif
+
+DiagnosticsEnvironmentInfoPayload *
+ds_env_info_payload_init (DiagnosticsEnvironmentInfoPayload *payload);
+
+void
+ds_env_info_payload_fini (DiagnosticsEnvironmentInfoPayload *payload);
+
+/*
  * DiagnosticsProcessProtocolHelper.
  */
 
-void
+bool
 ds_process_protocol_helper_handle_ipc_message (
 	DiagnosticsIpcMessage *message,
 	DiagnosticsIpcStream *stream);

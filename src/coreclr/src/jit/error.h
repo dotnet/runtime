@@ -118,6 +118,7 @@ extern void RecordNowayAssertGlobal(const char* filename, unsigned line, const c
 #define unreached() noWayAssertBody("unreached", __FILE__, __LINE__)
 
 #define NOWAY_MSG(msg) noWayAssertBodyConditional(msg, __FILE__, __LINE__)
+#define NOWAY_MSG_FILE_AND_LINE(msg, file, line) noWayAssertBodyConditional(msg, file, line)
 
 // IMPL_LIMITATION is called when we encounter valid IL that is not
 // supported by our current implementation because of various
@@ -153,23 +154,16 @@ extern void RecordNowayAssertGlobal(const char* filename, unsigned line, const c
 #define unreached() noWayAssertBody()
 
 #define NOWAY_MSG(msg) noWayAssertBodyConditional(NOWAY_ASSERT_BODY_ARGUMENTS)
+#define NOWAY_MSG_FILE_AND_LINE(msg, file, line) noWayAssertBodyConditional(NOWAY_ASSERT_BODY_ARGUMENTS)
 
 #endif // !DEBUG
 
 
 #if 1 // All platforms currently enable NYI; this should be a tighter condition to exclude some platforms from NYI
 
-#if defined(ALT_JIT)
-
 // This can return based on Config flag/Debugger
 extern void notYetImplemented(const char* msg, const char* file, unsigned line);
 #define NYIRAW(msg) notYetImplemented(msg, __FILE__, __LINE__)
-
-#else // !defined(ALT_JIT)
-
-#define NYIRAW(msg) NOWAY_MSG(msg)
-
-#endif // !defined(ALT_JIT)
 
 #define NYI(msg)                    NYIRAW("NYI: " msg)
 #define NYI_IF(cond, msg) if (cond) NYIRAW("NYI: " msg)

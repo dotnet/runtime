@@ -3908,6 +3908,16 @@
         "4.1.0.0": "4.6.0"
       }
     },
+    "System.Memory.Data": {
+      "StableVersions": [
+        "1.0.0"
+      ],
+      "InboxOn": {},
+      "AssemblyVersionInPackageVersion": {
+        "1.0.0.0": "1.0.0",
+        "6.0.0.0": "6.0.0"
+      }
+    },
     "System.Messaging": {
       "InboxOn": {
         "net45": "4.0.0.0"

@@ -30,7 +30,7 @@ test_create_delete_session (void)
 	EventPipeSession *test_session = NULL;
 
 	EventPipeProviderConfiguration provider_config;
-	EventPipeProviderConfiguration *current_provider_config = ep_provider_config_init (&provider_config, TEST_PROVIDER_NAME, 1, EP_EVENT_LEVEL_LOG_ALWAYS, "");
+	EventPipeProviderConfiguration *current_provider_config = ep_provider_config_init (&provider_config, TEST_PROVIDER_NAME, 1, EP_EVENT_LEVEL_LOGALWAYS, "");
 	ep_raise_error_if_nok (current_provider_config != NULL);
 
 	test_location = 1;
@@ -71,7 +71,7 @@ test_add_session_providers (void)
 	EventPipeSessionProvider *test_session_provider = NULL;
 
 	EventPipeProviderConfiguration provider_config;
-	EventPipeProviderConfiguration *current_provider_config = ep_provider_config_init (&provider_config, TEST_PROVIDER_NAME, 1, EP_EVENT_LEVEL_LOG_ALWAYS, "");
+	EventPipeProviderConfiguration *current_provider_config = ep_provider_config_init (&provider_config, TEST_PROVIDER_NAME, 1, EP_EVENT_LEVEL_LOGALWAYS, "");
 	ep_raise_error_if_nok (current_provider_config != NULL);
 
 	test_location = 1;
@@ -96,37 +96,43 @@ test_add_session_providers (void)
 
 	test_location = 2;
 
-	if (!ep_session_is_valid (test_session)) {
-		result = FAILED ("ep_session_is_valid returned false with session providers");
-		ep_raise_error ();
-	}
+	EP_LOCK_ENTER (section2)
+		if (!ep_session_is_valid (test_session)) {
+			result = FAILED ("ep_session_is_valid returned false with session providers");
+			ep_raise_error_holding_lock (section2);
+		}
+	EP_LOCK_EXIT (section2)
 
 	test_location = 3;
 
-	test_session_provider = ep_session_provider_alloc (TEST_PROVIDER_NAME, 1, EP_EVENT_LEVEL_LOG_ALWAYS, "");
+	test_session_provider = ep_session_provider_alloc (TEST_PROVIDER_NAME, 1, EP_EVENT_LEVEL_LOGALWAYS, "");
 	ep_raise_error_if_nok (test_session_provider != NULL);
 
 	test_location = 4;
 
-	EP_LOCK_ENTER (section2)
+	EP_LOCK_ENTER (section3)
 		ep_session_add_session_provider (test_session, test_session_provider);
-	EP_LOCK_EXIT (section2)
+	EP_LOCK_EXIT (section3)
 
 	test_session_provider = NULL;
 
-	if (!ep_session_is_valid (test_session)) {
-		result = FAILED ("ep_session_is_valid returned false with session providers");
-		ep_raise_error ();
-	}
+	EP_LOCK_ENTER (section4)
+		if (!ep_session_is_valid (test_session)) {
+			result = FAILED ("ep_session_is_valid returned false with session providers");
+			ep_raise_error_holding_lock (section4);
+		}
+	EP_LOCK_EXIT (section4)
 
 	test_location = 5;
 
 	ep_session_disable (test_session);
 
-	if (ep_session_is_valid (test_session)) {
-		result = FAILED ("ep_session_is_valid returned true without session providers");
-		ep_raise_error ();
-	}
+	EP_LOCK_ENTER (section5)
+		if (ep_session_is_valid (test_session)) {
+			result = FAILED ("ep_session_is_valid returned true without session providers");
+			ep_raise_error_holding_lock (section5);
+		}
+	EP_LOCK_EXIT (section5)
 
 ep_on_exit:
 	ep_session_free (test_session);
@@ -147,7 +153,7 @@ test_session_special_get_set (void)
 	EventPipeSession *test_session = NULL;
 
 	EventPipeProviderConfiguration provider_config;
-	EventPipeProviderConfiguration *current_provider_config = ep_provider_config_init (&provider_config, TEST_PROVIDER_NAME, 1, EP_EVENT_LEVEL_LOG_ALWAYS, "");
+	EventPipeProviderConfiguration *current_provider_config = ep_provider_config_init (&provider_config, TEST_PROVIDER_NAME, 1, EP_EVENT_LEVEL_LOGALWAYS, "");
 	ep_raise_error_if_nok (current_provider_config != NULL);
 
 	test_location = 1;

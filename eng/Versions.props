@@ -60,7 +60,7 @@
     <MicrosoftDotNetGenFacadesVersion>6.0.0-beta.20552.5</MicrosoftDotNetGenFacadesVersion>
     <MicrosoftDotNetXUnitExtensionsVersion>6.0.0-beta.20552.5</MicrosoftDotNetXUnitExtensionsVersion>
     <MicrosoftDotNetXUnitConsoleRunnerVersion>2.5.1-beta.20552.5</MicrosoftDotNetXUnitConsoleRunnerVersion>
-    <MicrosoftDotNetBuildTasksArchivesVersion>6.0.0-beta.20552.5</MicrosoftDotNetBuildTasksArchivesVersion>
+    <MicrosoftDotNetBuildTasksArchivesVersion>6.0.0-beta.20567.2</MicrosoftDotNetBuildTasksArchivesVersion>
     <MicrosoftDotNetBuildTasksPackagingVersion>6.0.0-beta.20552.5</MicrosoftDotNetBuildTasksPackagingVersion>
     <MicrosoftDotNetBuildTasksInstallersVersion>6.0.0-beta.20562.3</MicrosoftDotNetBuildTasksInstallersVersion>
     <MicrosoftDotNetRemoteExecutorVersion>6.0.0-beta.20552.5</MicrosoftDotNetRemoteExecutorVersion>
@@ -138,6 +138,7 @@
     <RefOnlyNugetProjectModelVersion>4.9.4</RefOnlyNugetProjectModelVersion>
     <RefOnlyNugetPackagingVersion>4.9.4</RefOnlyNugetPackagingVersion>
     <!-- Testing -->
+    <MicrosoftNETCoreCoreDisToolsVersion>1.0.1-prerelease-00006</MicrosoftNETCoreCoreDisToolsVersion>
     <MicrosoftNETTestSdkVersion>16.8.0-release-20201022-02</MicrosoftNETTestSdkVersion>
     <MicrosoftDotNetXHarnessTestRunnersXunitVersion>1.0.0-prerelease.20559.2</MicrosoftDotNetXHarnessTestRunnersXunitVersion>
     <MicrosoftDotNetXHarnessCLIVersion>1.0.0-prerelease.20559.2</MicrosoftDotNetXHarnessCLIVersion>

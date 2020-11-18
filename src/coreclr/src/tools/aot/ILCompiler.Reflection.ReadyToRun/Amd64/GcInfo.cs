@@ -103,7 +103,6 @@ namespace ILCompiler.Reflection.ReadyToRun.Amd64
 
             Version = ReadyToRunVersionToGcInfoVersion(majorVersion);
             int bitOffset = offset * 8;
-            int startBitOffset = bitOffset;
 
             ParseHeaderFlags(image, ref bitOffset);
 
@@ -185,17 +184,23 @@ namespace ILCompiler.Reflection.ReadyToRun.Amd64
 
             SlotTable = new GcSlotTable(image, machine, _gcInfoTypes, ref bitOffset);
 
-            // Try partially interruptible first
-            if (NumSafePoints > 0)
+            if (SlotTable.NumSlots > 0)
             {
-                LiveSlotsAtSafepoints = GetLiveSlotsAtSafepoints(image, ref bitOffset);
-            }
-            else
-            {
-                Transitions = GetTransitions(image, ref bitOffset);
+                if (NumSafePoints > 0)
+                {
+                    // Partially interruptible code
+                    LiveSlotsAtSafepoints = GetLiveSlotsAtSafepoints(image, ref bitOffset);
+                }
+                else
+                {
+                    // Fully interruptible code
+                    Debug.Assert(NumInterruptibleRanges > 0);
+                    Transitions = GetTransitions(image, ref bitOffset);
+                }
             }
 
-            Size = bitOffset - startBitOffset;
+            int nextByteOffset = (bitOffset + 7) >> 3;
+            Size = nextByteOffset - offset;
         }
 
         public override string ToString()
@@ -482,7 +487,7 @@ namespace ILCompiler.Reflection.ReadyToRun.Amd64
         /// <summary>
         /// based on end of <a href="https://github.com/dotnet/coreclr/blob/master/src/vm/gcinfodecoder.cpp">GcInfoDecoder::EnumerateLiveSlots and GcInfoEncoder::Build</a>
         /// </summary>
-        public Dictionary<int, List<BaseGcTransition>> GetTransitions(byte[] image, ref int bitOffset)
+        private Dictionary<int, List<BaseGcTransition>> GetTransitions(byte[] image, ref int bitOffset)
         {
             int totalInterruptibleLength = 0;
             if (NumInterruptibleRanges == 0)
@@ -511,8 +516,8 @@ namespace ILCompiler.Reflection.ReadyToRun.Amd64
                 chunkPointers[i] = NativeReader.ReadBits(image, numBitsPerPointer, ref bitOffset);
             }
 
-            // Offset to m_Info2 containing all the info on register liveness
-            int info2Offset = (int)Math.Ceiling(bitOffset / 8.0) * 8;
+            // Offset to m_Info2 containing all the info on register liveness, which starts at the next byte
+            int info2Offset = (bitOffset + 7) & ~7;
 
             List<GcTransition> transitions = new List<GcTransition>();
             bool[] liveAtEnd = new bool[SlotTable.NumTracked]; // true if slot is live at the end of the chunk
