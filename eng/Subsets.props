@@ -251,6 +251,10 @@
     <ProjectToBuild Include="$(MonoProjectRoot)wasm\wasm.proj" Category="mono" />
   </ItemGroup>
 
+  <ItemGroup Condition="$(_subset.Contains('+libs.pretest+'))">
+    <ProjectToBuild Include="$(LibrariesProjectRoot)pretest.proj" Category="libs"  />
+  </ItemGroup>
+
   <!-- Hosts -->
   <ItemGroup Condition="$(_subset.Contains('+host.native+'))">
     <CorehostProjectToBuild Include="$(InstallerProjectRoot)corehost\corehost.proj" SignPhase="Binaries" BuildInParallel="false" />
@@ -270,10 +274,6 @@
   <!-- Libs test and packaging -->
   <ItemGroup Condition="$(_subset.Contains('+libs.tests+'))">
     <ProjectToBuild Include="$(LibrariesProjectRoot)tests.proj" Category="libs" Test="true" />
-  </ItemGroup>
-
-  <ItemGroup Condition="$(_subset.Contains('+libs.pretest+'))">
-    <ProjectToBuild Include="$(LibrariesProjectRoot)pretest.proj" Category="libs"  />
   </ItemGroup>
 
   <ItemGroup Condition="$(_subset.Contains('+libs.packages+'))">
