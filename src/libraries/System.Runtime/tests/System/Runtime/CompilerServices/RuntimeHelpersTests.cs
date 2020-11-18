@@ -198,18 +198,18 @@ namespace System.Runtime.CompilerServices.Tests
             yield return new[] { typeof(string), typeof(ArgumentException) }; // variable-length type
             yield return new[] { typeof(int[]), typeof(ArgumentException) }; // variable-length type
             yield return new[] { typeof(int[,]), typeof(ArgumentException) }; // variable-length type
-            yield return new[] { Array.CreateInstance(typeof(int), new[] { 1 }, new [] { 1 }).GetType(), typeof(ArgumentException) }; // variable-length type (non-szarray)
+            yield return new[] { Array.CreateInstance(typeof(int), new[] { 1 }, new[] { 1 }).GetType(), typeof(ArgumentException) }; // variable-length type (non-szarray)
             yield return new[] { typeof(Array), typeof(MemberAccessException) }; // abstract type
             yield return new[] { typeof(Enum), typeof(MemberAccessException) }; // abstract type
 
             yield return new[] { typeof(Stream), typeof(MemberAccessException) }; // abstract type
+            yield return new[] { typeof(Buffer), typeof(MemberAccessException) }; // static type (runtime sees it as abstract)
             yield return new[] { typeof(IDisposable), typeof(MemberAccessException) }; // interface type
 
             yield return new[] { typeof(List<>), typeof(MemberAccessException) }; // open generic type
-            yield return new[] { typeof(List<>).GetGenericArguments()[0], typeof(ArgumentException) }; // 'T' placeholder typedesc
+            yield return new[] { typeof(List<>).GetGenericArguments()[0], PlatformDetection.IsMonoRuntime ? typeof(MemberAccessException) : typeof(ArgumentException) }; // 'T' placeholder typedesc
 
             yield return new[] { typeof(Delegate), typeof(MemberAccessException) }; // abstract type
-            yield return new[] { typeof(Action), typeof(ArgumentException) }; // delegate type
 
             yield return new[] { typeof(void), typeof(ArgumentException) }; // explicit block in place
             yield return new[] { typeof(int).MakePointerType(), typeof(ArgumentException) }; // pointer typedesc
@@ -218,16 +218,20 @@ namespace System.Runtime.CompilerServices.Tests
             yield return new[] { typeof(ReadOnlySpan<int>), typeof(NotSupportedException) }; // byref type
             yield return new[] { typeof(ArgIterator), typeof(NotSupportedException) }; // byref type
 
-            if (PlatformDetection.IsNetCore)
+            Type canonType = typeof(object).Assembly.GetType("System.__Canon", throwOnError: false);
+            if (canonType != null)
             {
-                Type canonType = typeof(object).Assembly.GetType("System.__Canon", throwOnError: true);
-                yield return new[] { typeof(List<>).MakeGenericType(canonType), typeof(NotSupportedException) }; // shared by generic instantiations
+                yield return new[] { typeof(List<>).MakeGenericType(canonType), typeof(NotSupportedException) }; // shared by generic instantiations                
+            }
+
+            Type comObjType = typeof(object).Assembly.GetType("System.__ComObject", throwOnError: false);
+            if (comObjType != null)
+            {
+                yield return new[] { comObjType, typeof(NotSupportedException) }; // COM type
             }
 
             if (PlatformDetection.SupportsComInterop)
             {
-                Type comObjType = typeof(object).Assembly.GetType("System.__ComObject", throwOnError: true);
-                yield return new[] { comObjType, typeof(NotSupportedException) }; // COM type
                 yield return new[] { typeof(WbemContext), typeof(NotSupportedException) }; // COM type
             }
         }
@@ -253,7 +257,9 @@ namespace System.Runtime.CompilerServices.Tests
 
         internal class ClassWithNormalCctor
         {
+#pragma warning disable CS0414 // unused private field
             private static readonly int _theInt;
+#pragma warning restore CS0414
 
             static ClassWithNormalCctor()
             {
@@ -271,6 +277,7 @@ namespace System.Runtime.CompilerServices.Tests
             Assert.Null(AppDomain.CurrentDomain.GetData("ClassWithBeforeFieldInitCctor_CctorRan"));
         }
 
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/44852", TestRuntimes.Mono)]
         [Fact]
         public static void GetUninitalizedObject_RunsNormalStaticCtors()
         {

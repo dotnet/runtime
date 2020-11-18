@@ -440,7 +440,6 @@ build_MSBuild_projects()
 usage_list=()
 
 usage_list+=("-skiprestorepackages: skip package restore.")
-usage_list+=("-skipstressdependencies: Don't install stress dependencies.")
 usage_list+=("-skipgeneratelayout: Do not generate the Core_Root layout.")
 usage_list+=("-skiptestwrappers: Don't generate test wrappers.")
 

@@ -12,7 +12,7 @@
 
   <PropertyGroup>
     <GCStressDependsOnCoreDisTools>false</GCStressDependsOnCoreDisTools>
-    <GCStressDependsOnCoreDisTools Condition="'$(TargetOS)' == 'Windows' And ('$(TargetArchitecture)' == 'x64' Or '$(TargetArchitecture)' == 'x86')">true</GCStressDependsOnCoreDisTools>
+    <GCStressDependsOnCoreDisTools Condition="'$(TargetOS)' == 'windows' And ('$(TargetArchitecture)' == 'x64' Or '$(TargetArchitecture)' == 'x86')">true</GCStressDependsOnCoreDisTools>
     <GCStressDependsOnCoreDisTools Condition="'$(TargetOS)' == 'Linux' And '$(TargetArchitecture)' == 'x64'">true</GCStressDependsOnCoreDisTools>
     <CopyCoreDisToolsToCoreRoot>false</CopyCoreDisToolsToCoreRoot>
     <CopyCoreDisToolsToCoreRoot Condition="$(GCStressDependsOnCoreDisTools) And '$(DotNetBuildFromSource)' != 'true'">true</CopyCoreDisToolsToCoreRoot>

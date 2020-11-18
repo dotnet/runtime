@@ -565,109 +565,6 @@ FCIMPL2(Object*, RuntimeTypeHandle::CreateInstanceForGenericType, ReflectClassBa
 }
 FCIMPLEND
 
-
-/*
- * Given a TypeHandle, returns the address of the NEWOBJ helper function that creates
- * a zero-inited instance of this type. If NEWOBJ is not supported on this TypeHandle,
- * throws an exception. If TypeHandle is a value type, the NEWOBJ helper will create
- * a boxed zero-inited instance of the value type.
- */
-void QCALLTYPE RuntimeTypeHandle::GetNewobjHelperFnPtr(
-        QCall::TypeHandle pTypeHandle,
-        PCODE* ppNewobjHelper,
-        MethodTable** ppMT,
-        BOOL fUnwrapNullable,
-        BOOL fAllowCom)
-{
-    CONTRACTL{
-        QCALL_CHECK;
-        PRECONDITION(CheckPointer(ppNewobjHelper));
-        PRECONDITION(CheckPointer(ppMT));
-        PRECONDITION(*ppNewobjHelper == NULL);
-        PRECONDITION(*ppMT == NULL);
-    }
-    CONTRACTL_END;
-
-    BEGIN_QCALL;
-
-    TypeHandle typeHandle = pTypeHandle.AsTypeHandle();
-
-    // Don't allow arrays, pointers, byrefs, or function pointers.
-    if (typeHandle.IsTypeDesc() || typeHandle.IsArray())
-    {
-        COMPlusThrow(kArgumentException, W("Argument_InvalidValue"));
-    }
-
-    MethodTable* pMT = typeHandle.AsMethodTable();
-    PREFIX_ASSUME(pMT != NULL);
-
-    pMT->EnsureInstanceActive();
-
-    // Don't allow creating instances of void or delegates
-    if (pMT == CoreLibBinder::GetElementType(ELEMENT_TYPE_VOID) || pMT->IsDelegate())
-    {
-        COMPlusThrow(kArgumentException, W("Argument_InvalidValue"));
-    }
-
-    // Don't allow string or string-like (variable length) types.
-    if (pMT->HasComponentSize())
-    {
-        COMPlusThrow(kArgumentException, W("Argument_NoUninitializedStrings"));
-    }
-
-    // Don't allow abstract classes or interface types
-    if (pMT->IsAbstract()) {
-        COMPlusThrow(kMemberAccessException, W("Acc_CreateAbst"));
-    }
-
-    // Don't allow open generics or generics instantiated over __Canon
-    if (pMT->ContainsGenericVariables()) {
-        COMPlusThrow(kMemberAccessException, W("Acc_CreateGeneric"));
-    }
-    if (pMT->IsSharedByGenericInstantiations()) {
-        COMPlusThrow(kNotSupportedException, W("NotSupported_Type"));
-    }
-
-    // Don't allow ref structs
-    if (pMT->IsByRefLike()) {
-        COMPlusThrow(kNotSupportedException, W("NotSupported_ByRefLike"));
-    }
-
-    // Never allow the allocation of an unitialized ContextBoundObject derived type, these must always be created with a paired
-    // transparent proxy or the jit will get confused.
-
-#ifdef FEATURE_COMINTEROP
-    // Unless caller allows, do not allow allocation of uninitialized RCWs (COM objects).
-    // If the caller allows this, getNewHelperStatic will return an appropriate allocator.
-    if (!fAllowCom && pMT->IsComObjectType())
-    {
-        COMPlusThrow(kNotSupportedException, W("NotSupported_ManagedActivation"));
-    }
-#endif // FEATURE_COMINTEROP
-
-    // If the caller passed Nullable<T> but asked us to unwrap nullable types,
-    // instead pretend they had passed the 'T' directly.
-    if (fUnwrapNullable && Nullable::IsNullableType(pMT))
-    {
-        pMT = pMT->GetInstantiation()[0].GetMethodTable();
-    }
-
-    // Run the type's cctor if needed (if not marked beforefieldinit)
-    if (pMT->HasPreciseInitCctors())
-    {
-        pMT->CheckRunClassInitAsIfConstructingThrowing();
-    }
-
-    // And we're done!
-    PCODE pNewobjFn = (PCODE)CEEJitInfo::getHelperFtnStatic(CEEInfo::getNewHelperStatic(pMT));
-    _ASSERTE(pNewobjFn != NULL);
-
-    *ppNewobjHelper = pNewobjFn;
-    *ppMT = pMT;
-
-    END_QCALL;
-}
-
 NOINLINE FC_BOOL_RET IsInstanceOfTypeHelper(OBJECTREF obj, REFLECTCLASSBASEREF refType)
 {
     FCALL_CONTRACT;
@@ -2278,6 +2175,116 @@ lExit: ;
     HELPER_METHOD_FRAME_END();
 }
 FCIMPLEND
+
+/*
+ * Given a TypeHandle, returns the address of the NEWOBJ helper function that creates
+ * a zero-inited instance of this type. If NEWOBJ is not supported on this TypeHandle,
+ * throws an exception. If TypeHandle is a value type, the NEWOBJ helper will create
+ * a boxed zero-inited instance of the value type.
+ */
+void QCALLTYPE RuntimeTypeHandle::GetNewobjHelperFnPtr(
+        QCall::TypeHandle pTypeHandle,
+        PCODE* ppNewobjHelper,
+        MethodTable** ppMT,
+        BOOL fUnwrapNullable,
+        BOOL fAllowCom)
+{
+    CONTRACTL{
+        QCALL_CHECK;
+        PRECONDITION(CheckPointer(ppNewobjHelper));
+        PRECONDITION(CheckPointer(ppMT));
+        PRECONDITION(*ppNewobjHelper == NULL);
+        PRECONDITION(*ppMT == NULL);
+    }
+    CONTRACTL_END;
+
+    BEGIN_QCALL;
+
+    TypeHandle typeHandle = pTypeHandle.AsTypeHandle();
+
+    // Don't allow void, arrays, pointers, byrefs, or function pointers.
+    if (typeHandle.IsTypeDesc() || typeHandle.IsArray() || type.GetSignatureCorElementType() == ELEMENT_TYPE_VOID)
+    {
+        COMPlusThrow(kArgumentException, W("Argument_InvalidValue"));
+    }
+
+    MethodTable* pMT = typeHandle.AsMethodTable();
+    PREFIX_ASSUME(pMT != NULL);
+
+    pMT->EnsureInstanceActive();
+
+    // Don't allow creating instances of void or delegates
+    if (pMT == CoreLibBinder::GetElementType(ELEMENT_TYPE_VOID) || pMT->IsDelegate())
+    {
+        COMPlusThrow(kArgumentException, W("Argument_InvalidValue"));
+    }
+
+    // Don't allow string or string-like (variable length) types.
+    if (pMT->HasComponentSize())
+    {
+        COMPlusThrow(kArgumentException, W("Argument_NoUninitializedStrings"));
+    }
+
+    // Don't allow abstract classes or interface types
+    if (pMT->IsAbstract()) {
+        COMPlusThrow(kMemberAccessException, W("Acc_CreateAbst"));
+    }
+
+    // Don't allow open generics or generics instantiated over __Canon
+    if (pMT->ContainsGenericVariables()) {
+        COMPlusThrow(kMemberAccessException, W("Acc_CreateGeneric"));
+    }
+    if (pMT->IsSharedByGenericInstantiations()) {
+        COMPlusThrow(kNotSupportedException, W("NotSupported_Type"));
+    }
+
+    // Don't allow ref structs
+    if (pMT->IsByRefLike()) {
+        COMPlusThrow(kNotSupportedException, W("NotSupported_ByRefLike"));
+    }
+
+    // Never allow the allocation of an unitialized ContextBoundObject derived type, these must always be created with a paired
+    // transparent proxy or the jit will get confused.
+
+#ifdef FEATURE_COMINTEROP
+    // Unless caller allows, do not allow allocation of uninitialized RCWs (COM objects).
+    // If the caller allows this, getNewHelperStatic will return an appropriate allocator.
+    if (!fAllowCom && pMT->IsComObjectType())
+    {
+        COMPlusThrow(kNotSupportedException, W("NotSupported_ManagedActivation"));
+    }
+#endif // FEATURE_COMINTEROP
+
+    // If the caller passed Nullable<T> but asked us to unwrap nullable types,
+    // instead pretend they had passed the 'T' directly.
+    if (fUnwrapNullable && Nullable::IsNullableType(pMT))
+    {
+        pMT = pMT->GetInstantiation()[0].GetMethodTable();
+    }
+
+    // Run the type's cctor if needed (if not marked beforefieldinit)
+    if (pMT->HasPreciseInitCctors())
+    {
+        pMT->CheckRunClassInitAsIfConstructingThrowing();
+    }
+
+    // And we're done!
+    PCODE pNewobjFn = (PCODE)CEEJitInfo::getHelperFtnStatic(CEEInfo::getNewHelperStatic(pMT));
+    _ASSERTE(pNewobjFn != NULL);
+
+    *ppNewobjHelper = pNewobjFn;
+    *ppMT = pMT;
+
+    END_QCALL;
+}
+
+//*************************************************************************************************
+//*************************************************************************************************
+//*************************************************************************************************
+//      ReflectionEnum
+//*************************************************************************************************
+//*************************************************************************************************
+//*************************************************************************************************
 
 FCIMPL1(Object *, ReflectionEnum::InternalGetEnumUnderlyingType, ReflectClassBaseObject *target) {
     FCALL_CONTRACT;
