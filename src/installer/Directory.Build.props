@@ -274,7 +274,7 @@
     </When>
     <When Condition="$(OutputRid.StartsWith('illumos'))">
       <PropertyGroup>
-        <TargetsIllumos>true</TargetsIllumos>
+        <Targetsillumos>true</Targetsillumos>
         <TargetsUnix>true</TargetsUnix>
       </PropertyGroup>
     </When>
