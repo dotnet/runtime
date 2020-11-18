@@ -218,6 +218,31 @@ namespace System.Net.Http.WinHttpHandlerFunctional.Tests
             }
         }
 
+        // [OuterLoop("Uses external endpoint")]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsWindows10Version2004OrGreater))]
+        public async Task SendAsync_UseTcpKeepAliveOptions()
+        {
+            using var handler = new WinHttpHandler()
+            {
+                TcpKeepAliveEnabled = true,
+                TcpKeepAliveTime = TimeSpan.FromSeconds(2),
+                TcpKeepAliveInterval = TimeSpan.FromSeconds(0.5)
+            };
+
+            using var client = new HttpClient(handler);
+
+            for (int i = 0; i < 10; i++)
+            {
+                var response = client.GetAsync(System.Net.Test.Common.Configuration.Http.RemoteEchoServer).Result;
+                Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+                string responseContent = await response.Content.ReadAsStringAsync();
+                _output.WriteLine(responseContent);
+
+                await Task.Delay(20_000);
+            }
+        }
+
+
         private async Task VerifyResponse(Task<HttpResponseMessage> task, string payloadText)
         {
             Assert.True(task.IsCompleted);

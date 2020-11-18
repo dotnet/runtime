@@ -76,6 +76,12 @@ namespace System.Net.Http
         private TimeSpan _sendTimeout = TimeSpan.FromSeconds(30);
         private TimeSpan _receiveHeadersTimeout = TimeSpan.FromSeconds(30);
         private TimeSpan _receiveDataTimeout = TimeSpan.FromSeconds(30);
+
+        // As per https://docs.microsoft.com/en-us/windows/win32/winsock/sio-keepalive-vals#remarks:
+        // The default settings when a TCP socket is initialized sets the keep-alive timeout to 2 hours and the keep-alive interval to 1 second.
+        private TimeSpan _tcpKeepAliveTime = TimeSpan.FromHours(2);
+        private TimeSpan _tcpKeepAliveInterval = TimeSpan.FromSeconds(1);
+
         private int _maxResponseHeadersLength = HttpHandlerDefaults.DefaultMaxResponseHeadersLength;
         private int _maxResponseDrainSize = 64 * 1024;
         private IDictionary<string, object> _properties; // Only create dictionary when required.
@@ -187,6 +193,7 @@ namespace System.Net.Http
                 _sslProtocols = value;
             }
         }
+
 
         public Func<
             HttpRequestMessage,
@@ -369,15 +376,12 @@ namespace System.Net.Http
 
             set
             {
-                if (value != Timeout.InfiniteTimeSpan && (value <= TimeSpan.Zero || value > s_maxTimeout))
-                {
-                    throw new ArgumentOutOfRangeException(nameof(value));
-                }
-
+                CheckTimeSpanPropertyValue(value);
                 CheckDisposedOrStarted();
                 _sendTimeout = value;
             }
         }
+
 
         public TimeSpan ReceiveHeadersTimeout
         {
@@ -388,11 +392,7 @@ namespace System.Net.Http
 
             set
             {
-                if (value != Timeout.InfiniteTimeSpan && (value <= TimeSpan.Zero || value > s_maxTimeout))
-                {
-                    throw new ArgumentOutOfRangeException(nameof(value));
-                }
-
+                CheckTimeSpanPropertyValue(value);
                 CheckDisposedOrStarted();
                 _receiveHeadersTimeout = value;
             }
@@ -407,13 +407,34 @@ namespace System.Net.Http
 
             set
             {
-                if (value != Timeout.InfiniteTimeSpan && (value <= TimeSpan.Zero || value > s_maxTimeout))
-                {
-                    throw new ArgumentOutOfRangeException(nameof(value));
-                }
-
+                CheckTimeSpanPropertyValue(value);
                 CheckDisposedOrStarted();
                 _receiveDataTimeout = value;
+            }
+        }
+
+
+        public bool TcpKeepAliveEnabled { get; set; }
+
+        public TimeSpan TcpKeepAliveTime
+        {
+            get { return _tcpKeepAliveTime; }
+            set
+            {
+                CheckTimeSpanPropertyValue(value);
+                CheckDisposedOrStarted();
+                _tcpKeepAliveTime = value;
+            }
+        }
+
+        public TimeSpan TcpKeepAliveInterval
+        {
+            get { return _tcpKeepAliveInterval; }
+            set
+            {
+                CheckTimeSpanPropertyValue(value);
+                CheckDisposedOrStarted();
+                _tcpKeepAliveInterval = value;
             }
         }
 
@@ -936,6 +957,23 @@ namespace System.Net.Http
             SetSessionHandleTlsOptions(sessionHandle);
             SetSessionHandleTimeoutOptions(sessionHandle);
             SetDisableHttp2StreamQueue(sessionHandle);
+            SetTcpKeepalive(sessionHandle);
+        }
+
+        private unsafe void SetTcpKeepalive(SafeWinHttpHandle sessionHandle)
+        {
+            if (TcpKeepAliveEnabled)
+            {
+                var tcpKeepalive = new Interop.WinHttp.tcp_keepalive
+                {
+                    onoff = 1,
+                    keepaliveinterval = (uint)_tcpKeepAliveInterval.TotalMilliseconds,
+                    keepalivetime = (uint)_tcpKeepAliveTime.TotalMilliseconds
+                };
+                void* ptr = &tcpKeepalive;
+
+                SetWinHttpOption(sessionHandle, Interop.WinHttp.WINHTTP_OPTION_TCP_KEEPALIVE, (IntPtr)ptr, (uint)sizeof(Interop.WinHttp.tcp_keepalive));
+            }
         }
 
         private void SetSessionHandleConnectionOptions(SafeWinHttpHandle sessionHandle)
@@ -1360,6 +1398,14 @@ namespace System.Net.Http
             if (_operationStarted)
             {
                 throw new InvalidOperationException(SR.net_http_operation_started);
+            }
+        }
+
+        private static void CheckTimeSpanPropertyValue(TimeSpan timeSpan)
+        {
+            if (timeSpan != Timeout.InfiniteTimeSpan && (timeSpan <= TimeSpan.Zero || timeSpan > s_maxTimeout))
+            {
+                throw new ArgumentOutOfRangeException("value");
             }
         }
 

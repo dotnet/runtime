@@ -47,5 +47,10 @@ namespace System.Net.Http
         public System.Net.Http.WindowsProxyUsePolicy WindowsProxyUsePolicy { get { throw null; } set { } }
         protected override void Dispose(bool disposing) { }
         protected override System.Threading.Tasks.Task<System.Net.Http.HttpResponseMessage> SendAsync(System.Net.Http.HttpRequestMessage request, System.Threading.CancellationToken cancellationToken) { throw null; }
+
+
+        public bool TcpKeepAliveEnabled { get { throw null; } set { } }
+        public TimeSpan TcpKeepAliveTime { get { throw null; } set { } }
+        public TimeSpan TcpKeepAliveInterval { get { throw null; } set { } }
     }
 }

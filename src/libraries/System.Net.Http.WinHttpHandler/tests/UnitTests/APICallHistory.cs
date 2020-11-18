@@ -70,6 +70,8 @@ namespace System.Net.Http.WinHttpHandlerUnitTests
 
         public static List<IntPtr> WinHttpOptionClientCertContext { get { return winHttpOptionClientCertContextList; } }
 
+        public static (uint KeepAliveTime, uint KeepAliveInterval)? TcpKeepaliveOptions { get; set; }
+
         public static void Reset()
         {
             sessionProxySettings.AccessType = null;
@@ -93,6 +95,7 @@ namespace System.Net.Http.WinHttpHandlerUnitTests
             WinHttpOptionRedirectPolicy = null;
             WinHttpOptionSendTimeout = null;
             WinHttpOptionReceiveTimeout = null;
+            TcpKeepaliveOptions = null;
             winHttpOptionClientCertContextList.Clear();
         }
 
