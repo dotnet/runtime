@@ -235,11 +235,14 @@ namespace System.Globalization
             return geoId == -1 ? CultureData.Invariant.GeoId : geoId;
         }
 
+        private const uint DigitSubstitutionMask = 0x0000FFFF;
+        private const uint ListSeparatorMask     = 0xFFFF0000;
+
         private static int IcuGetDigitSubstitution(string cultureName)
         {
             Debug.Assert(!GlobalizationMode.UseNls);
             int digitSubstitution = IcuLocaleData.GetLocaleDataNumericPart(cultureName, IcuLocaleDataParts.DigitSubstitutionOrListSeparator);
-            return digitSubstitution == -1 ? (int) DigitShapes.None : (digitSubstitution & 0x0000FFFF);
+            return digitSubstitution == -1 ? (int) DigitShapes.None : (int)(digitSubstitution & DigitSubstitutionMask);
         }
 
         private static string IcuGetListSeparator(string? cultureName)
@@ -250,7 +253,7 @@ namespace System.Globalization
             int separator = IcuLocaleData.GetLocaleDataNumericPart(cultureName, IcuLocaleDataParts.DigitSubstitutionOrListSeparator);
             if (separator != -1)
             {
-                switch (separator & 0xFFFF0000)
+                switch (separator & ListSeparatorMask)
                 {
                     case IcuLocaleData.CommaSep:
                         return ",";
@@ -266,6 +269,7 @@ namespace System.Globalization
 
                     case IcuLocaleData.DoubleCommaSep:
                         return ",,";
+
                     default:
                         Debug.Assert(false, "[CultureData.IcuGetListSeparator] Unexpected ListSeparator value.");
                         break;
