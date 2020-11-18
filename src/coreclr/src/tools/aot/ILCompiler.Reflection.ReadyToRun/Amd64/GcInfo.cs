@@ -199,8 +199,8 @@ namespace ILCompiler.Reflection.ReadyToRun.Amd64
                 }
             }
 
-            int endByteOffset = (bitOffset + 7) >> 3;
-            Size = endByteOffset - offset;
+            int nextByteOffset = (bitOffset + 7) >> 3;
+            Size = nextByteOffset - offset;
         }
 
         public override string ToString()
