@@ -788,6 +788,10 @@ namespace Internal.JitInterface
                     id = ReadyToRunHelper.GCPoll;
                     break;
 
+                case CorInfoHelpFunc.CORINFO_HELP_GETCURRENTMANAGEDTHREADID:
+                    id = ReadyToRunHelper.GetCurrentManagedThreadId;
+                    break;
+
                 case CorInfoHelpFunc.CORINFO_HELP_JIT_REVERSE_PINVOKE_ENTER:
                     id = ReadyToRunHelper.ReversePInvokeEnter;
                     break;

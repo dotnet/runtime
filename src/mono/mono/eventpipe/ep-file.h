@@ -129,6 +129,12 @@ ep_stack_hash_key_init (
 void
 ep_stack_hash_key_fini (StackHashKey *key);
 
+uint32_t
+ep_stack_hash_key_hash (const void *key);
+
+bool
+ep_stack_hash_key_equal (const void *key1, const void *key2);
+
 /*
  * StackHashEntry.
  */
@@ -152,6 +158,9 @@ struct _StackHashEntry {
 
 EP_DEFINE_GETTER_REF(StackHashEntry *, stack_hash_entry, StackHashKey *, key)
 EP_DEFINE_GETTER(StackHashEntry *, stack_hash_entry, uint32_t, id)
+
+StackHashKey *
+ep_stack_hash_entry_get_key (StackHashEntry *stack_hash_entry);
 
 StackHashEntry *
 ep_stack_hash_entry_alloc (

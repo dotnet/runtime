@@ -115,7 +115,7 @@ ds_eventpipe_stop_tracing_command_payload_free (EventPipeStopTracingCommandPaylo
 * EventPipeProtocolHelper
 */
 
-void
+bool
 ds_eventpipe_protocol_helper_handle_ipc_message (
 	DiagnosticsIpcMessage *message,
 	DiagnosticsIpcStream *stream);

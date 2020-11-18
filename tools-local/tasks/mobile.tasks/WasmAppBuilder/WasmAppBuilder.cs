@@ -111,6 +111,7 @@ public class WasmAppBuilder : Task
 
         var paths = new List<string>();
         _assemblies = new SortedDictionary<string, Assembly>();
+        var runtimeSourceDir = Path.Join (MicrosoftNetCoreAppRuntimePackDir, "native");
 
         if (AssemblySearchPaths != null)
         {
@@ -153,6 +154,7 @@ public class WasmAppBuilder : Task
                 if (v.ItemSpec.EndsWith ("System.Private.CoreLib.dll"))
                     corelibPath = Path.GetDirectoryName (v.ItemSpec)!;
             }
+            runtimeSourceDir = corelibPath!;
             _resolver = new Resolver(new List<string>() { corelibPath });
             var mlc = new MetadataLoadContext(_resolver, "System.Private.CoreLib");
 
@@ -184,7 +186,7 @@ public class WasmAppBuilder : Task
             nativeAssets.Add(IcuDataFileName!);
 
         foreach (var f in nativeAssets)
-            File.Copy(Path.Join (MicrosoftNetCoreAppRuntimePackDir, "native", f), Path.Join(AppDir, f), true);
+            File.Copy(Path.Join (runtimeSourceDir, f), Path.Join(AppDir, f), true);
         File.Copy(MainJS!, Path.Join(AppDir, "runtime.js"),  true);
 
         var html = @"<html><body><script type=""text/javascript"" src=""runtime.js""></script></body></html>";

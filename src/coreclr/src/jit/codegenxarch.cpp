@@ -3156,7 +3156,7 @@ void CodeGen::genStructPutArgUnroll(GenTreePutArgStk* putArgNode)
     // in genPutStructArgStk().
     noway_assert(src->TypeGet() == TYP_STRUCT);
 
-    unsigned size = putArgNode->getArgSize();
+    unsigned size = putArgNode->GetStackByteSize();
     assert(size <= CPBLK_UNROLL_LIMIT);
 
     emitter* emit         = GetEmitter();
@@ -5049,7 +5049,7 @@ void CodeGen::genCallInstruction(GenTreeCall* call)
         if (arg->OperIs(GT_PUTARG_STK) && ((arg->gtFlags & GTF_LATE_ARG) == 0))
         {
             GenTree* source = arg->AsPutArgStk()->gtGetOp1();
-            unsigned size   = arg->AsPutArgStk()->getArgSize();
+            unsigned size   = arg->AsPutArgStk()->GetStackByteSize();
             stackArgBytes += size;
 #ifdef DEBUG
             fgArgTabEntry* curArgTabEntry = compiler->gtArgEntryByNode(call, arg);
@@ -7292,7 +7292,7 @@ void CodeGen::genRemoveAlignmentAfterCall(GenTreeCall* call, unsigned bias)
 //
 bool CodeGen::genAdjustStackForPutArgStk(GenTreePutArgStk* putArgStk)
 {
-    const unsigned argSize = putArgStk->getArgSize();
+    const unsigned argSize = putArgStk->GetStackByteSize();
     GenTree*       source  = putArgStk->gtGetOp1();
 
 #ifdef FEATURE_SIMD
@@ -7389,7 +7389,7 @@ void CodeGen::genPutArgStkFieldList(GenTreePutArgStk* putArgStk)
     // If we are pushing the arguments (i.e. we have not pre-adjusted the stack), then we are pushing them
     // in reverse order, so we start with the current field offset at the size of the struct arg (which must be
     // a multiple of the target pointer size).
-    unsigned  currentOffset   = (preAdjustedStack) ? 0 : putArgStk->getArgSize();
+    unsigned  currentOffset   = (preAdjustedStack) ? 0 : putArgStk->GetStackByteSize();
     unsigned  prevFieldOffset = currentOffset;
     regNumber intTmpReg       = REG_NA;
     regNumber simdTmpReg      = REG_NA;
@@ -7601,7 +7601,7 @@ void CodeGen::genPutArgStk(GenTreePutArgStk* putArgStk)
     // On a 32-bit target, all of the long arguments are handled with GT_FIELD_LISTs of TYP_INT.
     assert(targetType != TYP_LONG);
 
-    const unsigned argSize = putArgStk->getArgSize();
+    const unsigned argSize = putArgStk->GetStackByteSize();
     assert((argSize % TARGET_POINTER_SIZE) == 0);
 
     if (data->isContainedIntOrIImmed())
@@ -7653,12 +7653,12 @@ void CodeGen::genPutArgStk(GenTreePutArgStk* putArgStk)
         // Get argument offset on stack.
         // Here we cross check that argument offset hasn't changed from lowering to codegen since
         // we are storing arg slot number in GT_PUTARG_STK node in lowering phase.
-        int            argOffset      = putArgStk->getArgOffset();
+        unsigned       argOffset      = putArgStk->getArgOffset();
 
 #ifdef DEBUG
         fgArgTabEntry* curArgTabEntry = compiler->gtArgEntryByNode(putArgStk->gtCall, putArgStk);
-        assert(curArgTabEntry);
-        assert(argOffset == (int)curArgTabEntry->slotNum * TARGET_POINTER_SIZE);
+        assert(curArgTabEntry != nullptr);
+        assert(argOffset == curArgTabEntry->slotNum * TARGET_POINTER_SIZE);
 #endif
 
         if (data->isContainedIntOrIImmed())
@@ -7899,7 +7899,10 @@ void CodeGen::genPutStructArgStk(GenTreePutArgStk* putArgStk)
         assert(m_pushStkArg);
 
         GenTree*       srcAddr  = source->gtGetOp1();
-        const unsigned numSlots = putArgStk->gtNumSlots;
+        const unsigned byteSize = putArgStk->GetStackByteSize();
+        assert(byteSize % TARGET_POINTER_SIZE == 0);
+        const unsigned numSlots = byteSize / TARGET_POINTER_SIZE;
+        assert(putArgStk->gtNumSlots == numSlots);
 
         regNumber  srcRegNum    = srcAddr->GetRegNum();
         const bool srcAddrInReg = srcRegNum != REG_NA;
@@ -7920,15 +7923,15 @@ void CodeGen::genPutStructArgStk(GenTreePutArgStk* putArgStk)
 
         for (int i = numSlots - 1; i >= 0; --i)
         {
-            emitAttr       slotAttr = emitTypeSize(layout->GetGCPtrType(i));
-            const unsigned offset   = i * TARGET_POINTER_SIZE;
+            emitAttr       slotAttr   = emitTypeSize(layout->GetGCPtrType(i));
+            const unsigned byteOffset = i * TARGET_POINTER_SIZE;
             if (srcAddrInReg)
             {
-                GetEmitter()->emitIns_AR_R(INS_push, slotAttr, REG_NA, srcRegNum, offset);
+                GetEmitter()->emitIns_AR_R(INS_push, slotAttr, REG_NA, srcRegNum, byteOffset);
             }
             else
             {
-                GetEmitter()->emitIns_S(INS_push, slotAttr, srcLclNum, srcLclOffset + offset);
+                GetEmitter()->emitIns_S(INS_push, slotAttr, srcLclNum, srcLclOffset + byteOffset);
             }
             AddStackLevel(TARGET_POINTER_SIZE);
         }
@@ -7945,7 +7948,10 @@ void CodeGen::genPutStructArgStk(GenTreePutArgStk* putArgStk)
         unsigned       numGCSlotsCopied = 0;
 #endif // DEBUG
 
-        const unsigned numSlots = putArgStk->gtNumSlots;
+        const unsigned byteSize = putArgStk->GetStackByteSize();
+        assert(byteSize % TARGET_POINTER_SIZE == 0);
+        const unsigned numSlots = byteSize / TARGET_POINTER_SIZE;
+        assert(putArgStk->gtNumSlots == numSlots);
         for (unsigned i = 0; i < numSlots;)
         {
             if (!layout->IsGCPtr(i))

@@ -365,6 +365,8 @@ enum ReadyToRunHelper
 
     // Stack probing helper
     READYTORUN_HELPER_StackProbe                = 0x111,
+
+    READYTORUN_HELPER_GetCurrentManagedThreadId = 0x112,
 };
 
 #include "readytoruninstructionset.h"

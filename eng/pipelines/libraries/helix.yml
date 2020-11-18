@@ -21,7 +21,7 @@ steps:
             /p:TargetRuntimeIdentifier=${{ parameters.targetRid }}
             /p:Configuration=${{ parameters.buildConfig }}
             /p:TargetOS=${{ parameters.osGroup }}
-            /p:MonoEnableInterpreter=${{ parameters.interpreter }}
+            /p:MonoForceInterpreter=${{ parameters.interpreter }}
             /p:TestScope=${{ parameters.testScope }}
             /p:TestRunNamePrefixSuffix=${{ parameters.testRunNamePrefixSuffix }}
             /p:HelixBuild=$(Build.BuildNumber)

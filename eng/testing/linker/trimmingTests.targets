@@ -2,7 +2,6 @@
   <PropertyGroup>
     <TrimmingTestDir>$([MSBuild]::NormalizeDirectory('$(ArtifactsBinDir)', 'trimmingTests'))</TrimmingTestDir>
     <TrimmingTestProjectsDir>$([MSBuild]::NormalizeDirectory('$(TrimmingTestDir)', 'projects'))</TrimmingTestProjectsDir>
-    <TestDotNetPath>$([MSBuild]::NormalizePath('$(DotNetRoot)', 'dotnet'))</TestDotNetPath>
     <ProjectTemplate>$(MSBuildThisFileDirectory)project.csproj.template</ProjectTemplate>
   </PropertyGroup>
 
@@ -73,6 +72,7 @@
     <MakeDir Directories="$(_projectDir)" />
     <WriteLinesToFile File="$(_projectFile)"
                       Lines="$([System.IO.File]::ReadAllText('$(ProjectTemplate)')
+                                                 .Replace('{MicrosoftNETCoreAppVersion}', '$(MicrosoftNETCoreAppVersion)')
                                                  .Replace('{NetCoreAppCurrent}', '$(NetCoreAppCurrent)')
                                                  .Replace('{NetCoreAppMaximumVersion}', '$(NetCoreAppMaximumVersion)')
                                                  .Replace('{RuntimePackDir}', '%(TestConsoleApps.RuntimePackDirectory)')
@@ -93,7 +93,7 @@
   <Target Name="PublishTrimmedProjects"
           DependsOnTargets="GenerateProjects">
     <PropertyGroup>
-      <TestPublishTrimmedCommand>"$(TestDotNetPath)"</TestPublishTrimmedCommand>
+      <TestPublishTrimmedCommand>"$(DotNetTool)"</TestPublishTrimmedCommand>
       <TestPublishTrimmedCommand>$(TestPublishTrimmedCommand) build /t:PublishTrimmed</TestPublishTrimmedCommand>
       <TestPublishTrimmedCommand>$(TestPublishTrimmedCommand) /nr:false</TestPublishTrimmedCommand>
       <TestPublishTrimmedCommand>$(TestPublishTrimmedCommand) /warnaserror</TestPublishTrimmedCommand>

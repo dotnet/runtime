@@ -6,7 +6,6 @@
 #ifdef ENABLE_PERFTRACING
 #include <stdint.h>
 #include <stdbool.h>
-#include "ep-rt-types.h"
 
 #undef EP_IMPL_GETTER_SETTER
 #ifdef EP_IMPL_EP_GETTER_SETTER
@@ -35,6 +34,7 @@ typedef struct _EventPipeEventMetadataEvent EventPipeEventMetadataEvent;
 typedef struct _EventPipeEventPayload EventPipeEventPayload;
 typedef struct _EventPipeEventSource EventPipeEventSource;
 typedef struct _EventPipeFile EventPipeFile;
+typedef struct _EventPipeJsonFile EventPipeJsonFile;
 typedef struct _EventPipeMetadataBlock EventPipeMetadataBlock;
 typedef struct _EventPipeParameterDesc EventPipeParameterDesc;
 typedef struct _EventPipeProvider EventPipeProvider;
@@ -81,7 +81,7 @@ typedef enum {
 } EventPipeBufferState;
 
 typedef enum {
-	EP_EVENT_LEVEL_LOG_ALWAYS,
+	EP_EVENT_LEVEL_LOGALWAYS,
 	EP_EVENT_LEVEL_CRITICAL,
 	EP_EVENT_LEVEL_ERROR,
 	EP_EVENT_LEVEL_WARNING,
@@ -107,9 +107,9 @@ typedef enum {
 	EP_PARAMETER_TYPE_OBJECT = 1,		// Instance that isn't a value
 	EP_PARAMETER_TYPE_DB_NULL = 2,		// Database null value
 	EP_PARAMETER_TYPE_BOOLEAN = 3,		// Boolean
-	EP_PARAMETER_TYPE_CHAR = 4,			// Unicode character
+	EP_PARAMETER_TYPE_CHAR = 4,		// Unicode character
 	EP_PARAMETER_TYPE_SBYTE = 5,		// Signed 8-bit integer
-	EP_PARAMETER_TYPE_BYTE = 6,			// Unsigned 8-bit integer
+	EP_PARAMETER_TYPE_BYTE = 6,		// Unsigned 8-bit integer
 	EP_PARAMETER_TYPE_INT16 = 7,		// Signed 16-bit integer
 	EP_PARAMETER_TYPE_UINT16 = 8,		// Unsigned 16-bit integer
 	EP_PARAMETER_TYPE_INT32 = 9,		// Signed 32-bit integer
@@ -129,6 +129,12 @@ typedef enum {
 	EP_METADATA_TAG_OPCODE = 1,
 	EP_METADATA_TAG_PARAMETER_PAYLOAD = 2
 } EventPipeMetadataTag;
+
+typedef enum {
+	EP_SAMPLE_PROFILER_SAMPLE_TYPE_ERROR = 0,
+	EP_SAMPLE_PROFILER_SAMPLE_TYPE_EXTERNAL = 1,
+	EP_SAMPLE_PROFILER_SAMPLE_TYPE_MANAGED = 2
+} EventPipeSampleProfilerSampleType;
 
 typedef enum {
 	// Default format used in .Net Core 2.0-3.0 Preview 6
@@ -157,6 +163,12 @@ typedef enum {
 	EP_STATE_SHUTTING_DOWN
 } EventPipeState;
 
+typedef enum {
+	EP_THREAD_TYPE_SERVER,
+	EP_THREAD_TYPE_SESSION,
+	EP_THREAD_TYPE_SAMPLING
+} EventPipeThreadType;
+
 /*
  * EventPipe Basic Types.
  */
@@ -167,6 +179,8 @@ typedef char ep_char8_t;
 typedef unsigned short ep_char16_t;
 typedef int64_t ep_timestamp_t;
 typedef int64_t ep_system_timestamp_t;
+
+#include "ep-rt-types.h"
 
 /*
  * EventPipe Callbacks.
@@ -188,15 +202,15 @@ typedef void (*EventPipeCallbackDataFree)(
 
 typedef void (*EventPipeSessionSynchronousCallback)(
 	EventPipeProvider *provider,
-	int32_t event_id,
-	int32_t event_version,
+	uint32_t event_id,
+	uint32_t event_version,
 	uint32_t metadata_blob_len,
 	const uint8_t *metadata_blob,
 	uint32_t event_data_len,
 	const uint8_t *event_data,
 	const uint8_t *activity_id,
 	const uint8_t *related_activity_id,
-	EventPipeThread *event_thread,
+	ep_rt_thread_handle_t event_thread,
 	uint32_t stack_frames_len,
 	uintptr_t *stack_frames);
 
@@ -329,7 +343,7 @@ ep_provider_callback_data_queue_init (EventPipeProviderCallbackDataQueue *provid
 void
 ep_provider_callback_data_queue_fini (EventPipeProviderCallbackDataQueue *provider_callback_data_queue);
 
-void
+bool
 ep_provider_callback_data_queue_enqueue (
 	EventPipeProviderCallbackDataQueue *provider_callback_data_queue,
 	EventPipeProviderCallbackData *provider_callback_data);
@@ -376,6 +390,46 @@ ep_provider_config_init (
 
 void
 ep_provider_config_fini (EventPipeProviderConfiguration *provider_config);
+
+static
+inline
+const ep_char8_t *
+ep_config_get_default_provider_name_utf8 (void)
+{
+	return "Microsoft-DotNETCore-EventPipeConfiguration";
+}
+
+static
+inline
+const ep_char8_t *
+ep_config_get_public_provider_name_utf8 (void)
+{
+	return "Microsoft-Windows-DotNETRuntime";
+}
+
+static
+inline
+const ep_char8_t *
+ep_config_get_private_provider_name_utf8 (void)
+{
+	return "Microsoft-Windows-DotNETRuntimePrivate";
+}
+
+static
+inline
+const ep_char8_t *
+ep_config_get_rundown_provider_name_utf8 (void)
+{
+	return "Microsoft-Windows-DotNETRuntimeRundown";
+}
+
+static
+inline
+const ep_char8_t *
+ep_config_get_sample_profiler_provider_name_utf8 (void)
+{
+	return "Microsoft-DotNETCore-SampleProfiler";
+}
 
 /*
  * EventPipeSystemTime.

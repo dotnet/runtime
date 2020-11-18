@@ -226,11 +226,10 @@ mono_arch_create_vars (MonoCompile *cfg)
 	if (cfg->gen_sdb_seq_points)
 		g_error ("gen_sdb_seq_points not supported");
 
-	if (cfg->method->save_lmf)
+	if (cfg->method->save_lmf) {
 		cfg->create_lmf_var = TRUE;
-
-	if (cfg->method->save_lmf)
 		cfg->lmf_ir = TRUE;
+	}
 }
 
 void
@@ -614,22 +613,24 @@ tp_cb (void)
 	}
 }
 
+#ifdef HOST_WASM
 void
 mono_wasm_queue_tp_cb (void)
 {
-#ifdef HOST_WASM
 	mono_threads_schedule_background_job (tp_cb);
-#endif
 }
+#endif
 
 void
 mono_arch_register_icall (void)
 {
+#ifdef HOST_WASM
 #ifdef ENABLE_NETCORE
 	mono_add_internal_call_internal ("System.Threading.TimerQueue::SetTimeout", mono_wasm_set_timeout);
 	mono_add_internal_call_internal ("System.Threading.ThreadPool::QueueCallback", mono_wasm_queue_tp_cb);
 #else
 	mono_add_internal_call_internal ("System.Threading.WasmRuntime::SetTimeout", mono_wasm_set_timeout);
+#endif
 #endif
 }
 

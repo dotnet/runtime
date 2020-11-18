@@ -9807,6 +9807,8 @@ void Compiler::fgSimpleLowering()
         JITDUMP("Bumping outgoingArgSpaceSize to %u for localloc", outgoingArgSpaceSize);
     }
 
+    assert((outgoingArgSpaceSize % TARGET_POINTER_SIZE) == 0);
+
     // Publish the final value and mark it as read only so any update
     // attempt later will cause an assert.
     lvaOutgoingArgSpaceSize = outgoingArgSpaceSize;
