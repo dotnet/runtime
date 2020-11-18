@@ -3886,7 +3886,7 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
                     LPCWSTR str;
                     if (op1->AsStrCon()->IsStringEmptyField())
                     {
-                        str    = L"";
+                        str    = _T("");
                         length = 0;
                     }
                     else
