@@ -401,6 +401,6 @@ namespace System
         /// </summary>
         internal int InnerExceptionCount => _innerExceptions.Length;
 
-        internal Exception[] IntenalInnerExceptions => _innerExceptions;
+        internal Exception[] InternalInnerExceptions => _innerExceptions;
     }
 }

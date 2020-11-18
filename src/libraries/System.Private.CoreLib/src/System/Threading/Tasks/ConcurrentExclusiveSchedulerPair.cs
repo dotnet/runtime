@@ -234,7 +234,7 @@ namespace System.Threading.Tasks
             // Store the faulted task's exceptions
             CompletionState cs = EnsureCompletionStateInitialized();
             cs.m_exceptions ??= new List<Exception>(faultedException.InnerExceptionCount);
-            cs.m_exceptions.AddRange(faultedException.IntenalInnerExceptions);
+            cs.m_exceptions.AddRange(faultedException.InternalInnerExceptions);
 
             // Now that we're doomed, request completion
             RequestCompletion();

@@ -4817,7 +4817,7 @@ namespace System.Threading.Tasks
                 t.UpdateExceptionObservedStatus();
 
                 exceptions ??= new List<Exception>(ex.InnerExceptionCount);
-                exceptions.AddRange(ex.IntenalInnerExceptions);
+                exceptions.AddRange(ex.InternalInnerExceptions);
             }
         }
 
