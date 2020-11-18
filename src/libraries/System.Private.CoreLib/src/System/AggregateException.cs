@@ -22,7 +22,7 @@ namespace System
     public class AggregateException : Exception
     {
         private readonly Exception[] _innerExceptions; // Complete set of exceptions.
-        private ReadOnlyCollection<Exception>? _rocView;
+        private ReadOnlyCollection<Exception>? _rocView; // separate from _innerExceptions to enable trimming if InnerExceptions isn't used
 
         /// <summary>
         /// Initializes a new instance of the <see cref="AggregateException"/> class.
