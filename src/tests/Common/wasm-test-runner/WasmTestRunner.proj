@@ -12,6 +12,8 @@
 
   <UsingTask TaskName="WasmAppBuilder" 
       AssemblyFile="$(CORE_ROOT)/WasmAppBuilder/WasmAppBuilder.dll"/>
+  <UsingTask TaskName="WasmAssemblySearcher" 
+             AssemblyFile="$(CORE_ROOT)/WasmAppBuilder/WasmAppBuilder.dll"/>
 
   <Target Name="BuildApp">
     <ItemGroup>
@@ -25,16 +27,20 @@
     <Message Importance="High" Text="TestBinDir: $(TestBinDir)" />
     <Message Importance="High" Text="ArtifactsBinDir: $(ArtifactsBinDir)" />
 
+    <WasmAssemblySearcher
+      MainAssembly="$(TestAssembly)"
+      ExtraAssemblies="$(CORE_ROOT)\System.Private.Runtime.InteropServices.JavaScript.dll"
+      AssemblySearchPaths="@(AssemblySearchPaths)"
+      SkipMissingAssemblies="True">
+      <Output TaskParameter="ReferencedAssemblies" ItemName="ReferencedAssemblies" />
+    </WasmAssemblySearcher>
+
     <WasmAppBuilder
       AppDir="$(AppDir)"
       MicrosoftNetCoreAppRuntimePackDir="$(MicrosoftNetCoreAppRuntimePackDir)"
       MainAssembly="$(TestAssembly)"
       MainJS="$(CORE_ROOT)\runtime-test\runtime-test.js"
-      ExtraAssemblies="$(CORE_ROOT)\System.Private.Runtime.InteropServices.JavaScript.dll"
-      AssemblySearchPaths="@(AssemblySearchPaths)"
-      SkipMissingAssemblies="True"
-      />
-
+      Assemblies="@(ReferencedAssemblies)" />
 
     <Exec Command="chmod a+x $(AppDir)/run-v8.sh" />
   </Target>
