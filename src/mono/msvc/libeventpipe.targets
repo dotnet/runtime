@@ -3,7 +3,7 @@
   <PropertyGroup>
     <ExcludeEventPipeFromBuild Condition="'$(MONO_ENABLE_PERFTRACING)'=='true'">false</ExcludeEventPipeFromBuild>
     <ExcludeEventPipeFromBuild Condition="'$(MONO_ENABLE_PERFTRACING)'=='' Or '$(MONO_ENABLE_PERFTRACING)'!='true'">true</ExcludeEventPipeFromBuild>
-    <SharedEventPipeSourceLocation>$(MonoSourceLocation)\..\common\src\eventpipe\</SharedEventPipeSourceLocation>
+    <SharedEventPipeSourceLocation>$(MonoSourceLocation)\..\native\eventpipe\</SharedEventPipeSourceLocation>
     <MonoEventPipeSourceLocation>$(MonoSourceLocation)\mono\eventpipe\</MonoEventPipeSourceLocation>
   </PropertyGroup>
   <ItemGroup Label="libeventpipe_shared">

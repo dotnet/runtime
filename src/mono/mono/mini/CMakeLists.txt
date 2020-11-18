@@ -29,8 +29,8 @@ include(../sgen/CMakeLists.txt)
 
 if(ENABLE_PERFTRACING)
 
-    set (SHARED_EVENTPIPE_INCLUDE_PATH "../../../common/src/")
-    set (SHARED_EVENTPIPE_SOURCE_PATH "../../../common/src/eventpipe/")
+    set (SHARED_EVENTPIPE_INCLUDE_PATH "../../../native/")
+    set (SHARED_EVENTPIPE_SOURCE_PATH "../../../native/eventpipe/")
     set (MONO_EVENTPIPE_SHIM_SOURCE_PATH "../eventpipe/")
 
     include(${MONO_EVENTPIPE_SHIM_SOURCE_PATH}/CMakeLists.txt)

@@ -27,7 +27,7 @@ if(ENABLE_PERFTRACING)
         )
 
         include_directories(
-            ${PROJECT_SOURCE_DIR}/../../common/src/
+            ${PROJECT_SOURCE_DIR}/../../native/
             ${PROJECT_SOURCE_DIR}/..
             ${PROJECT_SOURCE_DIR}
             ${PROJECT_SOURCE_DIR}/eglib

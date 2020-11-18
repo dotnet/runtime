@@ -3,7 +3,7 @@ MAKEFLAGS := $(MAKEFLAGS) --no-builtin-rules
 if !ENABLE_MSVC_ONLY
 if ENABLE_PERFTRACING
 
-shared_eventpipe_path=$(top_srcdir)/../common/src/eventpipe
+shared_eventpipe_path=$(top_srcdir)/../native/eventpipe
 AM_CPPFLAGS = -I$(top_srcdir) -I$(top_srcdir)/mono $(GLIB_CFLAGS) $(SHARED_CFLAGS)
 
 noinst_LTLIBRARIES = libeventpipe.la
