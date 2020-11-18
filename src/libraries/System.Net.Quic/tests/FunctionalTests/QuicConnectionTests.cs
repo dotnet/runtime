@@ -66,11 +66,12 @@ namespace System.Net.Quic.Tests
             await RunClientServer(
                 clientConnection =>
                 {
+                    return Task.CompletedTask;
                 },
                 async serverConnection =>
                 {
-                    var acceptTask = serverConnection.AcceptAsync();
-                    await serverConnection.CloseAsync();
+                    var acceptTask = serverConnection.AcceptStreamAsync();
+                    await serverConnection.CloseAsync(errorCode: 0);
                     // make sure 
                     await Assert.ThrowsAsync<QuicConnectionAbortedException>(() => acceptTask.AsTask());
                 });
