@@ -58,7 +58,7 @@ namespace System
 
         int IComparable.CompareTo(object? other)
         {
-            if (other == null) return 1;
+            if (other is null) return 1;
 
             if (other is not ValueTuple)
             {
@@ -83,7 +83,7 @@ namespace System
 
         int IStructuralComparable.CompareTo(object? other, IComparer comparer)
         {
-            if (other == null) return 1;
+            if (other is null) return 1;
 
             if (other is not ValueTuple)
             {
@@ -311,19 +311,19 @@ namespace System
 
         bool IStructuralEquatable.Equals(object? other, IEqualityComparer comparer)
         {
-            if (other == null || other is not ValueTuple<T1> objTuple) return false;
+            if (other is not ValueTuple<T1> objTuple) return false;
 
             return comparer.Equals(Item1, objTuple.Item1);
         }
 
         int IComparable.CompareTo(object? other)
         {
-            if (other == null) return 1;
+            if (other is null) return 1;
 
             if (other is not ValueTuple<T1> objTuple)
             {
                 ThrowHelper.ThrowArgumentException_TupleIncorrectType(this);
-                objTuple = default; // work around CS0170: Use of possibly unassigned field
+                return 1; // work around CS0170: Use of possibly unassigned field
             }
 
             return Comparer<T1>.Default.Compare(Item1, objTuple.Item1);
@@ -344,12 +344,12 @@ namespace System
 
         int IStructuralComparable.CompareTo(object? other, IComparer comparer)
         {
-            if (other == null) return 1;
+            if (other is null) return 1;
 
             if (other is not ValueTuple<T1> objTuple)
             {
                 ThrowHelper.ThrowArgumentException_TupleIncorrectType(this);
-                objTuple = default; // work around CS0170: Use of possibly unassigned field
+                return 1; // work around CS0170: Use of possibly unassigned field
             }
 
             return comparer.Compare(Item1, objTuple.Item1);
@@ -500,7 +500,7 @@ namespace System
         /// </remarks>
         bool IStructuralEquatable.Equals(object? other, IEqualityComparer comparer)
         {
-            if (other == null || other is not ValueTuple<T1, T2> objTuple) return false;
+            if (other is not ValueTuple<T1, T2> objTuple) return false;
 
             return comparer.Equals(Item1, objTuple.Item1)
                 && comparer.Equals(Item2, objTuple.Item2);
@@ -508,7 +508,7 @@ namespace System
 
         int IComparable.CompareTo(object? other)
         {
-            if (other == null) return 1;
+            if (other is null) return 1;
 
             if (other is not ValueTuple<T1, T2> tuple)
             {
@@ -537,12 +537,12 @@ namespace System
 
         int IStructuralComparable.CompareTo(object? other, IComparer comparer)
         {
-            if (other == null) return 1;
+            if (other is null) return 1;
 
             if (other is not ValueTuple<T1, T2> objTuple)
             {
                 ThrowHelper.ThrowArgumentException_TupleIncorrectType(this);
-                objTuple = default; // work around CS0170: Use of possibly unassigned field
+                return 1; // work around CS0170: Use of possibly unassigned field
             }
 
             int c = comparer.Compare(Item1, objTuple.Item1);
@@ -689,7 +689,7 @@ namespace System
 
         bool IStructuralEquatable.Equals(object? other, IEqualityComparer comparer)
         {
-            if (other == null || other is not ValueTuple<T1, T2, T3> objTuple) return false;
+            if (other is not ValueTuple<T1, T2, T3> objTuple) return false;
 
             return comparer.Equals(Item1, objTuple.Item1)
                 && comparer.Equals(Item2, objTuple.Item2)
@@ -698,12 +698,12 @@ namespace System
 
         int IComparable.CompareTo(object? other)
         {
-            if (other == null) return 1;
+            if (other is null) return 1;
 
             if (other is not ValueTuple<T1, T2, T3> objTuple)
             {
                 ThrowHelper.ThrowArgumentException_TupleIncorrectType(this);
-                objTuple = default; // work around CS0170: Use of possibly unassigned field
+                return 1; // work around CS0170: Use of possibly unassigned field
             }
 
             return CompareTo(objTuple);
@@ -730,12 +730,12 @@ namespace System
 
         int IStructuralComparable.CompareTo(object? other, IComparer comparer)
         {
-            if (other == null) return 1;
+            if (other is null) return 1;
 
             if (other is not ValueTuple<T1, T2, T3> objTuple)
             {
                 ThrowHelper.ThrowArgumentException_TupleIncorrectType(this);
-                objTuple = default; // work around CS0170: Use of possibly unassigned field
+                return 1; // work around CS0170: Use of possibly unassigned field
             }
 
             int c = comparer.Compare(Item1, objTuple.Item1);
@@ -894,7 +894,7 @@ namespace System
 
         bool IStructuralEquatable.Equals(object? other, IEqualityComparer comparer)
         {
-            if (other == null || other is not ValueTuple<T1, T2, T3, T4> objTuple) return false;
+            if (other is not ValueTuple<T1, T2, T3, T4> objTuple) return false;
 
             return comparer.Equals(Item1, objTuple.Item1)
                 && comparer.Equals(Item2, objTuple.Item2)
@@ -904,12 +904,12 @@ namespace System
 
         int IComparable.CompareTo(object? other)
         {
-            if (other == null) return 1;
+            if (other is null) return 1;
 
             if (other is not ValueTuple<T1, T2, T3, T4> objTuple)
             {
                 ThrowHelper.ThrowArgumentException_TupleIncorrectType(this);
-                objTuple = default; // work around CS0170: Use of possibly unassigned field
+                return 1; // work around CS0170: Use of possibly unassigned field
             }
 
             return CompareTo(objTuple);
@@ -939,12 +939,12 @@ namespace System
 
         int IStructuralComparable.CompareTo(object? other, IComparer comparer)
         {
-            if (other == null) return 1;
+            if (other is null) return 1;
 
             if (other is not ValueTuple<T1, T2, T3, T4> objTuple)
             {
                 ThrowHelper.ThrowArgumentException_TupleIncorrectType(this);
-                objTuple = default; // work around CS0170: Use of possibly unassigned field
+                return 1; // work around CS0170: Use of possibly unassigned field
             }
 
             int c = comparer.Compare(Item1, objTuple.Item1);
@@ -1117,7 +1117,7 @@ namespace System
 
         bool IStructuralEquatable.Equals(object? other, IEqualityComparer comparer)
         {
-            if (other == null || other is not ValueTuple<T1, T2, T3, T4, T5> objTuple) return false;
+            if (other is not ValueTuple<T1, T2, T3, T4, T5> objTuple) return false;
 
             return comparer.Equals(Item1, objTuple.Item1)
                 && comparer.Equals(Item2, objTuple.Item2)
@@ -1128,12 +1128,12 @@ namespace System
 
         int IComparable.CompareTo(object? other)
         {
-            if (other == null) return 1;
+            if (other is null) return 1;
 
             if (other is not ValueTuple<T1, T2, T3, T4, T5> objTuple)
             {
                 ThrowHelper.ThrowArgumentException_TupleIncorrectType(this);
-                objTuple = default; // work around CS0170: Use of possibly unassigned field
+                return 1; // work around CS0170: Use of possibly unassigned field
             }
 
             return CompareTo(objTuple);
@@ -1166,12 +1166,12 @@ namespace System
 
         int IStructuralComparable.CompareTo(object? other, IComparer comparer)
         {
-            if (other == null) return 1;
+            if (other is null) return 1;
 
             if (other is not ValueTuple<T1, T2, T3, T4, T5> objTuple)
             {
                 ThrowHelper.ThrowArgumentException_TupleIncorrectType(this);
-                objTuple = default; // work around CS0170: Use of possibly unassigned field
+                return 1; // work around CS0170: Use of possibly unassigned field
             }
 
             int c = comparer.Compare(Item1, objTuple.Item1);
@@ -1358,7 +1358,7 @@ namespace System
 
         bool IStructuralEquatable.Equals(object? other, IEqualityComparer comparer)
         {
-            if (other == null || other is not ValueTuple<T1, T2, T3, T4, T5, T6> objTuple) return false;
+            if (other is not ValueTuple<T1, T2, T3, T4, T5, T6> objTuple) return false;
 
             return comparer.Equals(Item1, objTuple.Item1)
                 && comparer.Equals(Item2, objTuple.Item2)
@@ -1370,12 +1370,12 @@ namespace System
 
         int IComparable.CompareTo(object? other)
         {
-            if (other == null) return 1;
+            if (other is null) return 1;
 
             if (other is not ValueTuple<T1, T2, T3, T4, T5, T6> objTuple)
             {
                 ThrowHelper.ThrowArgumentException_TupleIncorrectType(this);
-                objTuple = default; // work around CS0170: Use of possibly unassigned field
+                return 1; // work around CS0170: Use of possibly unassigned field
             }
 
             return CompareTo(objTuple);
@@ -1411,12 +1411,12 @@ namespace System
 
         int IStructuralComparable.CompareTo(object? other, IComparer comparer)
         {
-            if (other == null) return 1;
+            if (other is null) return 1;
 
             if (other is not ValueTuple<T1, T2, T3, T4, T5, T6> objTuple)
             {
                 ThrowHelper.ThrowArgumentException_TupleIncorrectType(this);
-                objTuple = default; // work around CS0170: Use of possibly unassigned field
+                return 1; // work around CS0170: Use of possibly unassigned field
             }
 
             int c = comparer.Compare(Item1, objTuple.Item1);
@@ -1617,7 +1617,7 @@ namespace System
 
         bool IStructuralEquatable.Equals(object? other, IEqualityComparer comparer)
         {
-            if (other == null || other is not ValueTuple<T1, T2, T3, T4, T5, T6, T7> objTuple) return false;
+            if (other is not ValueTuple<T1, T2, T3, T4, T5, T6, T7> objTuple) return false;
 
             return comparer.Equals(Item1, objTuple.Item1)
                 && comparer.Equals(Item2, objTuple.Item2)
@@ -1630,12 +1630,12 @@ namespace System
 
         int IComparable.CompareTo(object? other)
         {
-            if (other == null) return 1;
+            if (other is null) return 1;
 
             if (other is not ValueTuple<T1, T2, T3, T4, T5, T6, T7> objTuple)
             {
                 ThrowHelper.ThrowArgumentException_TupleIncorrectType(this);
-                objTuple = default; // work around CS0170: Use of possibly unassigned field
+                return 1; // work around CS0170: Use of possibly unassigned field
             }
 
             return CompareTo(objTuple);
@@ -1674,12 +1674,12 @@ namespace System
 
         int IStructuralComparable.CompareTo(object? other, IComparer comparer)
         {
-            if (other == null) return 1;
+            if (other is null) return 1;
 
             if (other is not ValueTuple<T1, T2, T3, T4, T5, T6, T7> objTuple)
             {
                 ThrowHelper.ThrowArgumentException_TupleIncorrectType(this);
-                objTuple = default; // work around CS0170: Use of possibly unassigned field
+                return 1; // work around CS0170: Use of possibly unassigned field
             }
 
             int c = comparer.Compare(Item1, objTuple.Item1);
@@ -1900,7 +1900,7 @@ namespace System
 
         bool IStructuralEquatable.Equals(object? other, IEqualityComparer comparer)
         {
-            if (other == null || other is not ValueTuple<T1, T2, T3, T4, T5, T6, T7, TRest> objTuple) return false;
+            if (other is not ValueTuple<T1, T2, T3, T4, T5, T6, T7, TRest> objTuple) return false;
 
             return comparer.Equals(Item1, objTuple.Item1)
                 && comparer.Equals(Item2, objTuple.Item2)
@@ -1914,12 +1914,12 @@ namespace System
 
         int IComparable.CompareTo(object? other)
         {
-            if (other == null) return 1;
+            if (other is null) return 1;
 
             if (other is not ValueTuple<T1, T2, T3, T4, T5, T6, T7, TRest> objTuple)
             {
                 ThrowHelper.ThrowArgumentException_TupleIncorrectType(this);
-                objTuple = default; // work around CS0170: Use of possibly unassigned field
+                return 1; // work around CS0170: Use of possibly unassigned field
             }
 
             return CompareTo(objTuple);
@@ -1961,12 +1961,12 @@ namespace System
 
         int IStructuralComparable.CompareTo(object? other, IComparer comparer)
         {
-            if (other == null) return 1;
+            if (other is null) return 1;
 
             if (other is not ValueTuple<T1, T2, T3, T4, T5, T6, T7, TRest> objTuple)
             {
                 ThrowHelper.ThrowArgumentException_TupleIncorrectType(this);
-                objTuple = default; // work around CS0170: Use of possibly unassigned field
+                return 1; // work around CS0170: Use of possibly unassigned field
             }
 
             int c = comparer.Compare(Item1, objTuple.Item1);
