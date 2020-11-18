@@ -325,8 +325,9 @@ int32_t SystemNative_GetNetworkInterfaces(int32_t * interfaceCount, NetworkInter
                 nii->SupportsMulticast = 1;
             }
 
-            // Get administrative state as best guess for now.
-            nii->OperationalState = (ifaddrsEntry->ifa_flags & IFF_UP) ? OperationalStatus_Up : OperationalStatus_Down;
+            // OperationalState returns whether the interface can transmit data packets.
+            // The administrator must have enabled the interface (IFF_UP), and the cable must be plugged in (IFF_RUNNING).
+            nii->OperationalState = ((ifaddrsEntry->ifa_flags & (IFF_UP|IFF_RUNNING)) == (IFF_UP|IFF_RUNNING)) ? OperationalStatus_Up : OperationalStatus_Down;
         }
 
         if (ifaddrsEntry->ifa_addr == NULL)
