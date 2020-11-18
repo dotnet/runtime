@@ -88,7 +88,7 @@ namespace XLinqTests
             AddChild(new TestVariation(CreateXTextReader) { Attribute = new VariationAttribute("XText - Text - from reader/ significant whitespace") { Params = new object[] { 2, XmlNodeType.Text, "\t", "<a xml:space='preserve'>\t<X/></a>" }, Priority = 1 } });
             AddChild(new TestVariation(CreateXTextReader) { Attribute = new VariationAttribute("XText - Text - from reader/ whitespace") { Params = new object[] { 6, XmlNodeType.Text, "\t", "<A><![CDATA[MY_TEXT]]><B/>MY_TEXT<C/>\t<D/></A>" }, Priority = 1 } });
             AddChild(new TestVariation(CreateXTextReader) { Attribute = new VariationAttribute("XText - CDATA - from reader") { Params = new object[] { 2, XmlNodeType.CDATA, "MY_TEXT", "<A><![CDATA[MY_TEXT]]><B/>MY_TEXT<C/>\t<D/></A>" }, Priority = 1 } });
-            AddChild(new TestVariation(DTDConstruct) { Attribute = new VariationAttribute("DTD - all nulls") { Params = new object[] { new[] { "root", null, null, null }, "<!DOCTYPE root >" }, Priority = 1 } });
+            AddChild(new TestVariation(DTDConstruct) { Attribute = new VariationAttribute("DTD - all nulls") { Params = new object[] { new[] { "root", null, null, null }, "<!DOCTYPE root []>" }, Priority = 1 } });
             AddChild(new TestVariation(DTDConstruct) { Attribute = new VariationAttribute("DTD - no publicId") { Params = new object[] { new[] { "root", null, "a2", "a3" }, "<!DOCTYPE root SYSTEM \"a2\"[a3]>" }, Priority = 1 } });
             AddChild(new TestVariation(DTDConstruct) { Attribute = new VariationAttribute("DTD - no systemId") { Params = new object[] { new[] { "root", "a1", null, "a3" }, "<!DOCTYPE root PUBLIC \"a1\" \"\"[a3]>" }, Priority = 1 } });
             AddChild(new TestVariation(DTDConstruct) { Attribute = new VariationAttribute("DTD - no publicId, no systemId") { Params = new object[] { new[] { "root", null, null, "a3" }, "<!DOCTYPE root [a3]>" }, Priority = 1 } });
@@ -923,7 +923,7 @@ namespace XLinqTests
         //[Variation(Priority = 1, Desc = "DTD - no systemId", Params = new object[] { new string[] { "root", "a1", null, "a3" }, "<!DOCTYPE root PUBLIC \"a1\" \"\"[a3]>" })]
         //[Variation(Priority = 1, Desc = "DTD - no publicId", Params = new object[] { new string[] { "root", null, "a2", "a3" }, "<!DOCTYPE root SYSTEM \"a2\"[a3]>" })]
         //[Variation(Priority = 1, Desc = "DTD - no publicId, no systemId", Params = new object[] { new string[] { "root", null, null, "a3" }, "<!DOCTYPE root [a3]>" })]
-        //[Variation(Priority = 1, Desc = "DTD - all nulls", Params = new object[] { new string[] { "root", null, null, null }, "<!DOCTYPE root >" })]
+        //[Variation(Priority = 1, Desc = "DTD - all nulls", Params = new object[] { new string[] { "root", null, null, null }, "<!DDOCTYPE root []>" })]
         public void DTDConstruct()
         {
             var data = Variation.Params[0] as string[];
@@ -933,7 +933,7 @@ namespace XLinqTests
             TestLog.Compare(dtd.Name, data[0], "dtd.Name, data[0]");
             TestLog.Compare(dtd.PublicId, data[1], "dtd.SystemId, data[1]");
             TestLog.Compare(dtd.SystemId, data[2], "dtd.PublicId, data[2]");
-            TestLog.Compare(dtd.InternalSubset, data[3], "dtd.InternalSubset, data[3]");
+            TestLog.Compare(dtd.InternalSubset, data[3] ?? "", "dtd.InternalSubset, data[3]");
             TestLog.Compare(dtd.NodeType, XmlNodeType.DocumentType, "nodetype");
             TestLog.Compare(dtd.ToString(), serial, "DTD construction");
         }
