@@ -13,7 +13,7 @@ namespace System.IO
 {
     internal sealed class StreamBuffer : IDisposable
     {
-        private ArrayBuffer _buffer; // mutable struct, do not make this readonly
+        private MultiArrayBuffer _buffer; // mutable struct, do not make this readonly
         private readonly int _maxBufferSize;
         private bool _writeEnded;
         private bool _readAborted;
@@ -25,7 +25,7 @@ namespace System.IO
 
         public StreamBuffer(int initialBufferSize = DefaultInitialBufferSize, int maxBufferSize = DefaultMaxBufferSize)
         {
-            _buffer = new ArrayBuffer(initialBufferSize, usePool: true);
+            _buffer = new MultiArrayBuffer(initialBufferSize);
             _maxBufferSize = maxBufferSize;
             _readTaskSource = new ResettableValueTaskSource();
             _writeTaskSource = new ResettableValueTaskSource();
@@ -40,7 +40,7 @@ namespace System.IO
                 Debug.Assert(!Monitor.IsEntered(SyncObject));
                 lock (SyncObject)
                 {
-                    return (_writeEnded && _buffer.ActiveLength == 0);
+                    return (_writeEnded && _buffer.ActiveMemory.Length == 0);
                 }
             }
         }
@@ -69,7 +69,7 @@ namespace System.IO
                         return 0;
                     }
 
-                    return _buffer.ActiveLength;
+                    return _buffer.ActiveMemory.Length;
                 }
             }
         }
@@ -86,7 +86,7 @@ namespace System.IO
                         throw new InvalidOperationException();
                     }
 
-                    return _maxBufferSize - _buffer.ActiveLength;
+                    return _maxBufferSize - _buffer.ActiveMemory.Length;
                 }
             }
         }
@@ -110,10 +110,10 @@ namespace System.IO
 
                 _buffer.TryEnsureAvailableSpaceUpToLimit(buffer.Length, _maxBufferSize);
 
-                int bytesWritten = Math.Min(buffer.Length, _buffer.AvailableLength);
+                int bytesWritten = Math.Min(buffer.Length, _buffer.AvailableMemory.Length);
                 if (bytesWritten > 0)
                 {
-                    buffer.Slice(0, bytesWritten).CopyTo(_buffer.AvailableSpan);
+                    _buffer.AvailableMemory.CopyFrom(buffer.Slice(0, bytesWritten));
                     _buffer.Commit(bytesWritten);
 
                     _readTaskSource.SignalWaiter();
@@ -203,10 +203,10 @@ namespace System.IO
                     return (false, 0);
                 }
 
-                if (_buffer.ActiveLength > 0)
+                if (_buffer.ActiveMemory.Length > 0)
                 {
-                    int bytesRead = Math.Min(buffer.Length, _buffer.ActiveLength);
-                    _buffer.ActiveSpan.Slice(0, bytesRead).CopyTo(buffer);
+                    int bytesRead = Math.Min(buffer.Length, _buffer.ActiveMemory.Length);
+                    _buffer.ActiveMemory.Slice(0, bytesRead).CopyTo(buffer);
                     _buffer.Discard(bytesRead);
 
                     _writeTaskSource.SignalWaiter();
@@ -277,9 +277,9 @@ namespace System.IO
                 }
 
                 _readAborted = true;
-                if (_buffer.ActiveLength != 0)
+                if (_buffer.ActiveMemory.Length != 0)
                 {
-                    _buffer.Discard(_buffer.ActiveLength);
+                    _buffer.Discard(_buffer.ActiveMemory.Length);
                 }
 
                 _readTaskSource.SignalWaiter();
