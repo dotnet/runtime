@@ -118,7 +118,6 @@ namespace Microsoft.Extensions.Logging.Generators
                 yield break;
             }
 
-            // Temp work around for https://github.com/dotnet/roslyn/pull/49330
             var semanticModelMap = new Dictionary<SyntaxTree, SemanticModel>();
 
             foreach (var iface in receiver.InterfaceDeclarations)
@@ -127,16 +126,12 @@ namespace Microsoft.Extensions.Logging.Generators
                 {
                     foreach (var a in al.Attributes)
                     {
-                        if (!semanticModelMap.TryGetValue(a.SyntaxTree, out var semanticModel))
-                        {
-                            semanticModel = compilation.GetSemanticModel(a.SyntaxTree);
-                            semanticModelMap[a.SyntaxTree] = semanticModel;
-                        }
-
                         // does this interface have the [LoggerExtensions] atribute?
+                        var semanticModel = GetSemanticModel(compilation, semanticModelMap, a.SyntaxTree);
                         var aSymbol = semanticModel.GetSymbolInfo(a, context.CancellationToken);
                         if (aSymbol.Symbol is IMethodSymbol methodSymbol && logExtensionsAttribute.Equals(methodSymbol.ContainingType, SymbolEqualityComparer.Default))
                         {
+                            // determine the namespace the interface is declared in, if any
                             NamespaceDeclarationSyntax? ns = null;
                             if (iface.Parent != null)
                             {
@@ -148,11 +143,13 @@ namespace Microsoft.Extensions.Logging.Generators
                                 }
                             }
 
+                            // determine the name of the generated type
+
                             string? name = null;
                             if (a.ArgumentList?.Arguments.Count > 0)
                             {
                                 var arg = a.ArgumentList!.Arguments[0];
-                                name = compilation.GetSemanticModel(a.SyntaxTree).GetConstantValue(arg.Expression).ToString();
+                                name = semanticModel.GetConstantValue(arg.Expression).ToString();
                             }
 
                             if (name == null)
@@ -181,29 +178,25 @@ namespace Microsoft.Extensions.Logging.Generators
                                 context.ReportDiagnostic(Diagnostic.Create(ErrorInvalidTypeName, a.GetLocation()));
                             }
 
+                            var ids = new HashSet<string>();
                             foreach (var method in iface.Members.Where(m => m.IsKind(SyntaxKind.MethodDeclaration)).OfType<MethodDeclarationSyntax>())
                             {
                                 foreach (var mal in method.AttributeLists)
                                 {
                                     foreach (var ma in mal.Attributes)
                                     {
-                                        if (!semanticModelMap.TryGetValue(ma.SyntaxTree, out semanticModel))
-                                        {
-                                            semanticModel = compilation.GetSemanticModel(ma.SyntaxTree);
-                                            semanticModelMap[ma.SyntaxTree] = semanticModel;
-                                        }
-
+                                        semanticModel = GetSemanticModel(compilation, semanticModelMap, ma.SyntaxTree);
                                         var maSymbol = semanticModel.GetSymbolInfo(ma, context.CancellationToken);
                                         if (maSymbol.Symbol is IMethodSymbol ms && loggerMessageAttribute.Equals(ms.ContainingType, SymbolEqualityComparer.Default))
                                         {
                                             var arg = ma.ArgumentList!.Arguments[0];
-                                            var eventId = compilation.GetSemanticModel(ma.SyntaxTree).GetConstantValue(arg.Expression).ToString();
+                                            var eventId = semanticModel.GetConstantValue(arg.Expression).ToString();
 
                                             arg = ma.ArgumentList!.Arguments[1];
-                                            var level = compilation.GetSemanticModel(ma.SyntaxTree).GetConstantValue(arg.Expression).ToString();
+                                            var level = semanticModel.GetConstantValue(arg.Expression).ToString();
 
                                             arg = ma.ArgumentList!.Arguments[2];
-                                            var message = compilation.GetSemanticModel(ma.SyntaxTree).GetConstantValue(arg.Expression).ToString();
+                                            var message = semanticModel.GetConstantValue(arg.Expression).ToString();
 
                                             var lm = new LoggerMethod
                                             {
@@ -222,17 +215,19 @@ namespace Microsoft.Extensions.Logging.Generators
                                                 context.ReportDiagnostic(Diagnostic.Create(ErrorInvalidMethodName, method.Identifier.GetLocation()));
                                             }
 
-                                            if (!compilation.GetSemanticModel(method.ReturnType.SyntaxTree).GetTypeInfo(method.ReturnType!).Type!.Equals(voidSymbol, SymbolEqualityComparer.Default))
+                                            if (!GetSemanticModel(compilation, semanticModelMap, method.ReturnType.SyntaxTree).GetTypeInfo(method.ReturnType!).Type!.Equals(voidSymbol, SymbolEqualityComparer.Default))
                                             {
                                                 context.ReportDiagnostic(Diagnostic.Create(ErrorInvalidMethodReturnType, method.ReturnType.GetLocation()));
                                             }
 
-                                            foreach (var m in lc.Methods)
+                                            // ensure there are no duplicate ids.
+                                            if (ids.Contains(lm.EventId))
                                             {
-                                                if (m != lm && m.EventId == lm.EventId)
-                                                {
-                                                    context.ReportDiagnostic(Diagnostic.Create(ErrorEventIdReuse, ma.ArgumentList!.Arguments[0].GetLocation(), m.EventId));
-                                                }
+                                                context.ReportDiagnostic(Diagnostic.Create(ErrorEventIdReuse, ma.ArgumentList!.Arguments[0].GetLocation(), lm.EventId));
+                                            }
+                                            else
+                                            {
+                                                ids.Add(lm.EventId);
                                             }
 
                                             if (string.IsNullOrWhiteSpace(lm.Message))
@@ -242,7 +237,7 @@ namespace Microsoft.Extensions.Logging.Generators
 
                                             foreach (var p in method.ParameterList.Parameters)
                                             {
-                                                var pSymbol = compilation.GetSemanticModel(p.SyntaxTree).GetTypeInfo(p.Type!).Type!;
+                                                var pSymbol = GetSemanticModel(compilation, semanticModelMap, p.SyntaxTree).GetTypeInfo(p.Type!).Type!;
 
                                                 var lp = new LoggerParameter
                                                 {
@@ -269,6 +264,18 @@ namespace Microsoft.Extensions.Logging.Generators
                     }
                 }
             }
+        }
+
+        // Workaround for https://github.com/dotnet/roslyn/pull/49330
+        static SemanticModel GetSemanticModel(Compilation compilation, Dictionary<SyntaxTree, SemanticModel> semanticModelMap, SyntaxTree syntaxTree)
+        {
+            if (!semanticModelMap.TryGetValue(syntaxTree, out var semanticModel))
+            {
+                semanticModel = compilation.GetSemanticModel(syntaxTree);
+                semanticModelMap[syntaxTree] = semanticModel;
+            }
+
+            return semanticModel;
         }
 
         static bool IsBaseOrIdentity(Compilation compilation, ITypeSymbol source, ITypeSymbol dest)
