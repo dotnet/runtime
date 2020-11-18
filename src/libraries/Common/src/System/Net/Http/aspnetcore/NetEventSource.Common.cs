@@ -361,9 +361,6 @@ namespace System.Net
             Debug.Assert(IsEnabled || arg == null, $"Should not be formatting FormattableString \"{arg}\" if tracing isn't enabled");
         }
 
-        public static new bool IsEnabled =>
-            Log.IsEnabled();
-
         [NonEvent]
         public static string IdOf(object? value) => value != null ? value.GetType().Name + "#" + GetHashCode(value) : NullInstance;
 
