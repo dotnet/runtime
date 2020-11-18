@@ -312,6 +312,9 @@ namespace System.Net.Quic.Implementations.MsQuic
 
             Debug.Assert(_shutdownTcs.Task.IsCompleted == false);
 
+            // Stop accepting new streams after calling shutdown.
+            _acceptQueue.Writer.Complete();
+
             return new ValueTask(_shutdownTcs.Task);
         }
 

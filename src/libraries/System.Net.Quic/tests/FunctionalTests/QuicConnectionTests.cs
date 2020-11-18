@@ -59,6 +59,22 @@ namespace System.Net.Quic.Tests
                     Assert.Equal(ExpectedErrorCode, ex.ErrorCode);
                 });
         }
+
+        [Fact]
+        public async Task CloseAsync_ByServer_AcceptThrows()
+        {
+            await RunClientServer(
+                clientConnection =>
+                {
+                },
+                async serverConnection =>
+                {
+                    var acceptTask = serverConnection.AcceptAsync();
+                    await serverConnection.CloseAsync();
+                    // make sure 
+                    await Assert.ThrowsAsync<QuicConnectionAbortedException>(() => acceptTask.AsTask());
+                });
+        }
     }
 
     public sealed class QuicConnectionTests_MockProvider : QuicConnectionTests<MockProviderFactory> { }
