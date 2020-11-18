@@ -147,14 +147,13 @@ namespace Microsoft.Extensions.DependencyInjection
                 => services.ConfigureOptions(typeof(TConfigureOptions));
 
         private static bool IsAction(Type type)
-            => (type.GetTypeInfo().IsGenericType && type.GetGenericTypeDefinition() == typeof(Action<>));
+            => (type.IsGenericType && type.GetGenericTypeDefinition() == typeof(Action<>));
 
         private static IEnumerable<Type> FindConfigurationServices(Type type)
         {
             IEnumerable<Type> serviceTypes = type
-                .GetTypeInfo()
-                .ImplementedInterfaces
-                .Where(t => t.GetTypeInfo().IsGenericType)
+                .GetInterfaces()
+                .Where(t => t.IsGenericType)
                 .Where(t =>
                     t.GetGenericTypeDefinition() == typeof(IConfigureOptions<>) ||
                     t.GetGenericTypeDefinition() == typeof(IPostConfigureOptions<>) ||
