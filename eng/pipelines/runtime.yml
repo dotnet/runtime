@@ -352,6 +352,7 @@ jobs:
     jobParameters:
       testGroup: innerloop
       isFullMatrix: ${{ variables.isFullMatrix }}
+      isSingleFile: true
       nameSuffix: SingleFile
       buildArgs: -s clr+host+libs+libs.tests -c $(_BuildConfig) /p:TestSingleFile=true /p:ArchiveTests=true
       timeoutInMinutes: 120
