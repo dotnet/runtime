@@ -13,6 +13,10 @@ namespace System.Net.WebSockets.Client.Tests
     {
         private static readonly Lazy<bool> s_WebSocketSupported = new Lazy<bool>(InitWebSocketSupported);
         public static bool WebSocketsSupported { get { return s_WebSocketSupported.Value; } }
+        // On browser the JavaScript host object 'WebSocket' is only available when DOM is supported
+        // If DOM is not available then a JavaScript error is thrown
+        // --- System.Runtime.InteropServices.JavaScript.JSException : JavaScript host object 'WebSocket' not found.
+        public static bool WebSocketsSupportedInBrowser { get { return !PlatformDetection.IsBrowser || (PlatformDetection.IsBrowser && PlatformDetection.IsBrowserDomSupported); } }
 
         public static async Task TestEcho(
             Uri server,

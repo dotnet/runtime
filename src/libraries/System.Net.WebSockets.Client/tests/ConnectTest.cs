@@ -254,6 +254,19 @@ namespace System.Net.WebSockets.Client.Tests
             using (var clientSocket = new ClientWebSocket())
             {
                 var cts = new CancellationTokenSource();
+                cts.Cancel();
+                Task t = clientSocket.ConnectAsync(new Uri("ws://" + Guid.NewGuid().ToString("N")), cts.Token);
+                await Assert.ThrowsAnyAsync<OperationCanceledException>(() => t);
+            }
+        }
+
+
+        [ConditionalFact(nameof(WebSocketsSupported), nameof(WebSocketsSupportedInBrowser))]  // On browser the JavaScript host object 'WebSocket' is only available when DOM is supported
+        public async Task ConnectAsync_CancellationRequestedInflightConnect_ThrowsOperationCanceledException()
+        {
+            using (var clientSocket = new ClientWebSocket())
+            {
+                var cts = new CancellationTokenSource();
                 Task t = clientSocket.ConnectAsync(new Uri("ws://" + Guid.NewGuid().ToString("N")), cts.Token);
                 cts.Cancel();
                 await Assert.ThrowsAnyAsync<OperationCanceledException>(() => t);
