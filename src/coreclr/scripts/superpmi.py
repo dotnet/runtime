@@ -141,7 +141,7 @@ Optional. Default is 'spmi' within the repo 'artifacts' directory.
 
 superpmi_collect_help = """\
 Command to run SuperPMI collect over. Note that there cannot be any dotnet CLI commands
-invoked inside this command, as they will fail due to the shim altjit being set.
+invoked inside this command, as they will fail due to the shim JIT being set.
 """
 
 replay_mch_files_help = """\
@@ -750,9 +750,7 @@ class SuperPMICollect:
             env_copy = os.environ.copy()
             env_copy["SuperPMIShimLogPath"] = self.temp_location
             env_copy["SuperPMIShimPath"] = self.jit_path
-            env_copy["COMPlus_AltJit"] = "*"
-            env_copy["COMPlus_AltJitNgen"] = "*"
-            env_copy["COMPlus_AltJitName"] = self.collection_shim_name
+            env_copy["COMPlus_JitName"] = self.collection_shim_name
             env_copy["COMPlus_EnableExtraSuperPmiQueries"] = "1"
             env_copy["COMPlus_TieredCompilation"] = "0"
 
@@ -764,9 +762,7 @@ class SuperPMICollect:
             logging.debug("")
             print_platform_specific_environment_vars(logging.DEBUG, self.coreclr_args, "SuperPMIShimLogPath", self.temp_location)
             print_platform_specific_environment_vars(logging.DEBUG, self.coreclr_args, "SuperPMIShimPath", self.jit_path)
-            print_platform_specific_environment_vars(logging.DEBUG, self.coreclr_args, "COMPlus_AltJit", "*")
-            print_platform_specific_environment_vars(logging.DEBUG, self.coreclr_args, "COMPlus_AltJitNgen", "*")
-            print_platform_specific_environment_vars(logging.DEBUG, self.coreclr_args, "COMPlus_AltJitName", self.collection_shim_name)
+            print_platform_specific_environment_vars(logging.DEBUG, self.coreclr_args, "COMPlus_JitName", self.collection_shim_name)
             print_platform_specific_environment_vars(logging.DEBUG, self.coreclr_args, "COMPlus_EnableExtraSuperPmiQueries", "1")
             print_platform_specific_environment_vars(logging.DEBUG, self.coreclr_args, "COMPlus_TieredCompilation", "0")
             if self.coreclr_args.use_zapdisable:
@@ -1072,36 +1068,48 @@ class SuperPMIReplay:
             logging.debug("Temp Location: %s", temp_location)
             logging.debug("")
 
-            flags = [
+            # `repro_flags` are the subset of flags we tell the user to pass to superpmi when reproducing
+            # a failure. This won't include things like "-p" for parallelism or "-r" to create a repro .mc file.
+            repro_flags = []
+
+            common_flags = [
                 "-v", "ew",  # only display errors and warnings
                 "-r", os.path.join(temp_location, "repro")  # Repro name, create .mc repro files
             ]
 
-            altjit_string = "*" if self.coreclr_args.altjit else ""
-            altjit_replay_flags = [
-                "-jitoption", "force", "AltJit=" + altjit_string,
-                "-jitoption", "force", "AltJitNgen=" + altjit_string,
-                "-jitoption", "force", "EnableExtraSuperPmiQueries=0"
-            ]
-            flags += altjit_replay_flags
+            if self.coreclr_args.altjit:
+                repro_flags += [
+                    "-jitoption", "force", "AltJit=*",
+                    "-jitoption", "force", "AltJitNgen=*"
+                ]
+                if self.coreclr_args.arch == "arm":
+                    repro_flags += [ "-target", "arm" ]
+                elif self.coreclr_args.arch == "arm64":
+                    repro_flags += [ "-target", "arm64" ]
 
             if not self.coreclr_args.sequential:
-                flags += [ "-p" ]
+                common_flags += [ "-p" ]
 
             if self.coreclr_args.break_on_assert:
-                flags += [ "-boa" ]
+                common_flags += [ "-boa" ]
 
             if self.coreclr_args.break_on_error:
-                flags += [ "-boe" ]
+                common_flags += [ "-boe" ]
 
             if self.coreclr_args.spmi_log_file is not None:
-                flags += [ "-w", self.coreclr_args.spmi_log_file ]
+                common_flags += [ "-w", self.coreclr_args.spmi_log_file ]
 
-            if self.coreclr_args.altjit:
-                if self.coreclr_args.arch == "arm":
-                    flags += [ "-target", "arm" ]
-                elif self.coreclr_args.arch == "arm64":
-                    flags += [ "-target", "arm64" ]
+            # TEMPORARY: when we have collections that are done using COMPlus_JitName
+            # instead of COMPlus_AltJit, we can remove these.
+            if not self.coreclr_args.altjit:
+                repro_flags += [
+                    "-jitoption", "force", "AltJit=",
+                    "-jitoption", "force", "AltJitNgen="
+                ]
+            repro_flags += [ "-jitoption", "force", "EnableExtraSuperPmiQueries=0" ]
+            # END TEMPORARY
+
+            common_flags += repro_flags
 
             # For each MCH file that we are going to replay, do the replay and replay post-processing.
             #
@@ -1116,6 +1124,8 @@ class SuperPMIReplay:
             for mch_file in self.mch_files:
 
                 logging.info("Running SuperPMI replay of %s", mch_file)
+
+                flags = common_flags
 
                 fail_mcl_file = os.path.join(temp_location, os.path.basename(mch_file) + "_fail.mcl")
                 flags += [
@@ -1136,7 +1146,7 @@ class SuperPMIReplay:
                     if return_code == 0:
                         logging.warning("Warning: SuperPMI returned a zero exit code, but generated a non-zero-sized mcl file")
                     print_fail_mcl_file_method_numbers(fail_mcl_file)
-                    repro_base_command_line = "{} {} {}".format(self.superpmi_path, " ".join(altjit_replay_flags), self.jit_path)
+                    repro_base_command_line = "{} {} {}".format(self.superpmi_path, " ".join(repro_flags), self.jit_path)
                     save_repro_mc_files(temp_location, self.coreclr_args, repro_base_command_line)
 
                 if not self.coreclr_args.skip_cleanup:
@@ -1238,22 +1248,44 @@ class SuperPMIReplayAsmDiffs:
             "COMPlus_JitDump": "*",
             "COMPlus_NgenDump": "*" }
 
-        altjit_string = "*" if self.coreclr_args.altjit else ""
+        altjit_asm_diffs_flags = []
+        altjit_replay_flags = []
 
-        altjit_asm_diffs_flags = [
-            "-jitoption", "force", "AltJit=" + altjit_string,
-            "-jitoption", "force", "AltJitNgen=" + altjit_string,
-            "-jitoption", "force", "EnableExtraSuperPmiQueries=0",
-            "-jit2option", "force", "AltJit=" + altjit_string,
-            "-jit2option", "force", "AltJitNgen=" + altjit_string,
-            "-jit2option", "force", "EnableExtraSuperPmiQueries=0"
-        ]
+        if self.coreclr_args.altjit:
+            target_flags = []
+            if self.coreclr_args.arch == "arm":
+                target_flags += [ "-target", "arm" ]
+            elif self.coreclr_args.arch == "arm64":
+                target_flags += [ "-target", "arm64" ]
 
-        altjit_replay_flags = [
-            "-jitoption", "force", "AltJit=" + altjit_string,
-            "-jitoption", "force", "AltJitNgen=" + altjit_string,
-            "-jitoption", "force", "EnableExtraSuperPmiQueries=0"
-        ]
+            altjit_asm_diffs_flags = target_flags + [
+                "-jitoption", "force", "AltJit=*",
+                "-jitoption", "force", "AltJitNgen=*",
+                "-jit2option", "force", "AltJit=*",
+                "-jit2option", "force", "AltJitNgen=*"
+            ]
+
+            altjit_replay_flags = target_flags + [
+                "-jitoption", "force", "AltJit=*",
+                "-jitoption", "force", "AltJitNgen=*"
+            ]
+
+        # TEMPORARY: when we have collections that are done using COMPlus_JitName
+        # instead of COMPlus_AltJit, we can remove these.
+        if not self.coreclr_args.altjit:
+            altjit_asm_diffs_flags = [
+                "-jitoption", "force", "AltJit=",
+                "-jitoption", "force", "AltJitNgen=",
+                "-jit2option", "force", "AltJit=",
+                "-jit2option", "force", "AltJitNgen="
+            ]
+            altjit_replay_flags = [
+                "-jitoption", "force", "AltJit=",
+                "-jitoption", "force", "AltJitNgen="
+            ]
+        altjit_asm_diffs_flags += [ "-jitoption", "force", "EnableExtraSuperPmiQueries=0" ]
+        altjit_replay_flags    += [ "-jitoption", "force", "EnableExtraSuperPmiQueries=0" ]
+        # END TEMPORARY
 
         # Keep track if any MCH file replay had asm diffs
         files_with_asm_diffs = []
@@ -1303,12 +1335,6 @@ class SuperPMIReplayAsmDiffs:
 
                     if self.coreclr_args.spmi_log_file is not None:
                         flags += [ "-w", self.coreclr_args.spmi_log_file ]
-
-                    if self.coreclr_args.altjit:
-                        if self.coreclr_args.arch == "arm":
-                            flags += [ "-target", "arm" ]
-                        elif self.coreclr_args.arch == "arm64":
-                            flags += [ "-target", "arm64" ]
 
                     # Change the working directory to the Core_Root we will call SuperPMI from.
                     # This is done to allow libcoredistools to be loaded correctly on unix
@@ -2699,7 +2725,7 @@ def setup_args(args):
                             "collection_args",
                             lambda unused: True,
                             "Unable to set collection_args",
-                            modify_arg=lambda collection_args: collection_args.split(" ") if collection_args is not None else collection_args)
+                            modify_arg=lambda collection_args: collection_args.split(" ") if collection_args is not None else [])
 
         coreclr_args.verify(args,
                             "pmi",

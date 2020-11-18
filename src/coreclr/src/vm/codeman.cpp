@@ -1557,6 +1557,39 @@ struct JIT_LOAD_DATA
 // Here's the global data for JIT load and initialization state.
 JIT_LOAD_DATA g_JitLoadData;
 
+//  Validate that the name used to load the JIT is just a simple file name
+//  and does not contain something that could be used in a non-qualified path.
+//  For example, using the string "..\..\..\myjit.dll" we might attempt to
+//  load a JIT from the root of the drive.
+//
+//  The minimal set of characters that we must check for and exclude are:
+//     '\\' - (backslash)
+//     '/'  - (forward slash)
+//     ':'  - (colon)
+//
+//  Returns false if we find any of these characters in 'pwzJitName'
+//  Returns true if we reach the null terminator without encountering 
+//  any of these characters.
+//
+static bool ValidateJitName(LPCWSTR pwzJitName)
+{
+    LPCWSTR pCurChar = pwzJitName;
+    wchar_t curChar;
+    do {
+        curChar = *pCurChar;
+        if ((curChar == '\\') || (curChar == '/') || (curChar == ':'))
+        {
+            //  Return false if we find any of these character in 'pwzJitName'
+            return false;
+        }
+        pCurChar++;
+    } while (curChar != 0);
+
+    //  Return true; we have reached the null terminator
+    //
+    return true;
+}
+
 // LoadAndInitializeJIT: load the JIT dll into the process, and initialize it (call the UtilCode initialization function,
 // check the JIT-EE interface GUID, etc.)
 //
@@ -1589,34 +1622,40 @@ static void LoadAndInitializeJIT(LPCWSTR pwzJitName, OUT HINSTANCE* phJit, OUT I
     *phJit = NULL;
     *ppICorJitCompiler = NULL;
 
-    HRESULT hr = E_FAIL;
-
-    PathString CoreClrFolderHolder;
-    bool havePath = false;
-
-    if (GetClrModulePathName(CoreClrFolderHolder))
+    if (pwzJitName == nullptr)
     {
-        // Load JIT from next to CoreCLR binary
-        havePath = true;
+        pJitLoadData->jld_hr = E_FAIL;
+        LOG((LF_JIT, LL_FATALERROR, "LoadAndInitializeJIT: pwzJitName is null"));
+        return;
     }
 
-    if (havePath && !CoreClrFolderHolder.IsEmpty())
-    {
-        SString::Iterator iter = CoreClrFolderHolder.End();
-        BOOL findSep = CoreClrFolderHolder.FindBack(iter, DIRECTORY_SEPARATOR_CHAR_W);
-        if (findSep)
-        {
-            SString sJitName(pwzJitName);
-            CoreClrFolderHolder.Replace(iter + 1, CoreClrFolderHolder.End() - (iter + 1), sJitName);
+    HRESULT hr = E_FAIL;
 
-            *phJit = CLRLoadLibrary(CoreClrFolderHolder.GetUnicode());
-            if (*phJit != NULL)
+    if (ValidateJitName(pwzJitName))
+    {
+        // Load JIT from next to CoreCLR binary
+        PathString CoreClrFolderHolder;
+        if (GetClrModulePathName(CoreClrFolderHolder) && !CoreClrFolderHolder.IsEmpty())
+        {
+            SString::Iterator iter = CoreClrFolderHolder.End();
+            BOOL findSep = CoreClrFolderHolder.FindBack(iter, DIRECTORY_SEPARATOR_CHAR_W);
+            if (findSep)
             {
-                hr = S_OK;
+                SString sJitName(pwzJitName);
+                CoreClrFolderHolder.Replace(iter + 1, CoreClrFolderHolder.End() - (iter + 1), sJitName);
+
+                *phJit = CLRLoadLibrary(CoreClrFolderHolder.GetUnicode());
+                if (*phJit != NULL)
+                {
+                    hr = S_OK;
+                }
             }
         }
     }
-
+    else
+    {
+        LOG((LF_JIT, LL_FATALERROR, "LoadAndInitializeJIT: invalid characters in %S\n", pwzJitName));
+    }
 
     if (SUCCEEDED(hr))
     {
@@ -4367,7 +4406,17 @@ LPCWSTR ExecutionManager::GetJitName()
 {
     STANDARD_VM_CONTRACT;
 
-    return MAKEDLLNAME_W(W("clrjit"));
+    LPCWSTR  pwzJitName = NULL;
+
+    // Try to obtain a name for the jit library from the env. variable
+    IfFailThrow(CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_JitName, const_cast<LPWSTR *>(&pwzJitName)));
+    
+    if (NULL == pwzJitName)
+    {
+        pwzJitName = MAKEDLLNAME_W(W("clrjit"));
+    }
+
+    return pwzJitName;
 }
 #endif // !FEATURE_MERGE_JIT_AND_ENGINE
 
