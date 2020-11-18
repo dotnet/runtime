@@ -128,7 +128,7 @@ namespace Microsoft.Extensions.Logging
             return findIndex == -1 ? endIndex : findIndex;
         }
 
-        public string Format(object[] values)
+        public string Format(object?[]? values)
         {
             if (values != null)
             {
@@ -146,22 +146,22 @@ namespace Microsoft.Extensions.Logging
             return _format;
         }
 
-        internal string Format(object arg0)
+        internal string Format(object? arg0)
         {
             return string.Format(CultureInfo.InvariantCulture, _format, FormatArgument(arg0));
         }
 
-        internal string Format(object arg0, object arg1)
+        internal string Format(object? arg0, object? arg1)
         {
             return string.Format(CultureInfo.InvariantCulture, _format, FormatArgument(arg0), FormatArgument(arg1));
         }
 
-        internal string Format(object arg0, object arg1, object arg2)
+        internal string Format(object? arg0, object? arg1, object? arg2)
         {
             return string.Format(CultureInfo.InvariantCulture, _format, FormatArgument(arg0), FormatArgument(arg1), FormatArgument(arg2));
         }
 
-        public KeyValuePair<string, object> GetValue(object[] values, int index)
+        public KeyValuePair<string, object?> GetValue(object?[] values, int index)
         {
             if (index < 0 || index > _valueNames.Count)
             {
@@ -170,25 +170,25 @@ namespace Microsoft.Extensions.Logging
 
             if (_valueNames.Count > index)
             {
-                return new KeyValuePair<string, object>(_valueNames[index], values[index]);
+                return new KeyValuePair<string, object?>(_valueNames[index], values[index]);
             }
 
-            return new KeyValuePair<string, object>("{OriginalFormat}", OriginalFormat);
+            return new KeyValuePair<string, object?>("{OriginalFormat}", OriginalFormat);
         }
 
-        public IEnumerable<KeyValuePair<string, object>> GetValues(object[] values)
+        public IEnumerable<KeyValuePair<string, object?>> GetValues(object[] values)
         {
-            var valueArray = new KeyValuePair<string, object>[values.Length + 1];
+            var valueArray = new KeyValuePair<string, object?>[values.Length + 1];
             for (int index = 0; index != _valueNames.Count; ++index)
             {
-                valueArray[index] = new KeyValuePair<string, object>(_valueNames[index], values[index]);
+                valueArray[index] = new KeyValuePair<string, object?>(_valueNames[index], values[index]);
             }
 
-            valueArray[valueArray.Length - 1] = new KeyValuePair<string, object>("{OriginalFormat}", OriginalFormat);
+            valueArray[valueArray.Length - 1] = new KeyValuePair<string, object?>("{OriginalFormat}", OriginalFormat);
             return valueArray;
         }
 
-        private object FormatArgument(object value)
+        private object FormatArgument(object? value)
         {
             if (value == null)
             {
