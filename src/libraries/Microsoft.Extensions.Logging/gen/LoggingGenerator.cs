@@ -58,6 +58,7 @@ using Microsoft.Extensions.Logging;
 
             return $@"
 {namespaceStart}
+    {lc.Documentation}
     {lc.AccessModifiers} static class {lc.Name}
     {{
         {methods}
@@ -158,6 +159,7 @@ using Microsoft.Extensions.Logging;
             }
 
             return $@"
+        {lm.Documentation}
         public static void {lm.Name}(this ILogger logger{(lm.Parameters.Count > 0 ? ", " : string.Empty)}{GenParameters(lm)})
         {{
             if (logger.IsEnabled((LogLevel){lm.Level}))

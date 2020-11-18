@@ -80,6 +80,22 @@ namespace Microsoft.Extensions.Logging.Generators
             DiagnosticSeverity.Error,
             isEnabledByDefault: true);
 
+        private static readonly DiagnosticDescriptor ErrorInterfaceGeneric = new(
+            id: "LG8",
+            title: "Logging interfaces cannot be generic",
+            messageFormat: "Logging interfaces cannot be generic",
+            category: DiagnosticCategory,
+            DiagnosticSeverity.Error,
+            isEnabledByDefault: true);
+
+        private static readonly DiagnosticDescriptor ErrorMethodGeneric = new(
+            id: "LG9",
+            title: "Logging methods cannot be generic",
+            messageFormat: "Logging methods cannot be generic",
+            category: DiagnosticCategory,
+            DiagnosticSeverity.Error,
+            isEnabledByDefault: true);
+
         /// <summary>
         /// Gets the known set of annotated logger classes
         /// </summary>
@@ -173,9 +189,16 @@ namespace Microsoft.Extensions.Logging.Generators
                                 AccessModifiers = iface.Modifiers.ToString(),
                             };
 
+//                            lc.Documentation = a.GetLeadingTrivia().ToString();
+
                             if (string.IsNullOrWhiteSpace(lc.Name))
                             {
                                 context.ReportDiagnostic(Diagnostic.Create(ErrorInvalidTypeName, a.GetLocation()));
+                            }
+
+                            if (iface.Arity > 0)
+                            {
+                                context.ReportDiagnostic(Diagnostic.Create(ErrorInterfaceGeneric, iface.GetLocation()));
                             }
 
                             var ids = new HashSet<string>();
@@ -218,6 +241,11 @@ namespace Microsoft.Extensions.Logging.Generators
                                             if (!GetSemanticModel(compilation, semanticModelMap, method.ReturnType.SyntaxTree).GetTypeInfo(method.ReturnType!).Type!.Equals(voidSymbol, SymbolEqualityComparer.Default))
                                             {
                                                 context.ReportDiagnostic(Diagnostic.Create(ErrorInvalidMethodReturnType, method.ReturnType.GetLocation()));
+                                            }
+
+                                            if (method.Arity > 0)
+                                            {
+                                                context.ReportDiagnostic(Diagnostic.Create(ErrorMethodGeneric, iface.GetLocation()));
                                             }
 
                                             // ensure there are no duplicate ids.
@@ -325,6 +353,7 @@ namespace Microsoft.Extensions.Logging.Generators
             public string OriginalInterfaceName = string.Empty;
             public string AccessModifiers = string.Empty;
             public List<LoggerMethod> Methods = new();
+            public string Documentation = string.Empty;
         }
 
         // A log method in a logging class
@@ -336,6 +365,7 @@ namespace Microsoft.Extensions.Logging.Generators
             public string EventId = string.Empty;
             public List<LoggerParameter> Parameters = new();
             public bool MessageHasTemplates;
+            public string Documentation = string.Empty;
         }
 
         // A single parameter to a log method
