@@ -5,6 +5,7 @@ using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
+using System.Runtime.CompilerServices;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Internal;
@@ -230,44 +231,45 @@ namespace Microsoft.Extensions.Caching.Memory
                 }
             }
 
-            StartScanForExpiredItems(utcNow);
+            StartScanForExpiredItemsIfNeeded(utcNow);
         }
 
         /// <inheritdoc />
         public bool TryGetValue(object key, out object result)
         {
             ValidateCacheKey(key);
-
             CheckDisposed();
 
-            result = null;
             DateTimeOffset utcNow = _options.Clock.UtcNow;
-            bool found = false;
 
             if (_entries.TryGetValue(key, out CacheEntry entry))
             {
                 // Check if expired due to expiration tokens, timers, etc. and if so, remove it.
                 // Allow a stale Replaced value to be returned due to concurrent calls to SetExpired during SetEntry.
-                if (entry.CheckExpired(utcNow) && entry.EvictionReason != EvictionReason.Replaced)
+                if (!entry.CheckExpired(utcNow) || entry.EvictionReason == EvictionReason.Replaced)
                 {
-                    // TODO: For efficiency queue this up for batch removal
-                    RemoveEntry(entry);
-                }
-                else
-                {
-                    found = true;
                     entry.LastAccessed = utcNow;
                     result = entry.Value;
 
                     // When this entry is retrieved in the scope of creating another entry,
                     // that entry needs a copy of these expiration tokens.
                     entry.PropagateOptions(CacheEntryHelper.Current);
+
+                    StartScanForExpiredItemsIfNeeded(utcNow);
+
+                    return true;
+                }
+                else
+                {
+                    // TODO: For efficiency queue this up for batch removal
+                    RemoveEntry(entry);
                 }
             }
 
-            StartScanForExpiredItems(utcNow);
+            StartScanForExpiredItemsIfNeeded(utcNow);
 
-            return found;
+            result = null;
+            return false;
         }
 
         /// <inheritdoc />
@@ -287,7 +289,7 @@ namespace Microsoft.Extensions.Caching.Memory
                 entry.InvokeEvictionCallbacks();
             }
 
-            StartScanForExpiredItems();
+            StartScanForExpiredItemsIfNeeded(_options.Clock.UtcNow);
         }
 
         private void RemoveEntry(CacheEntry entry)
@@ -306,18 +308,22 @@ namespace Microsoft.Extensions.Caching.Memory
         {
             // TODO: For efficiency consider processing these expirations in batches.
             RemoveEntry(entry);
-            StartScanForExpiredItems();
+            StartScanForExpiredItemsIfNeeded(_options.Clock.UtcNow);
         }
 
         // Called by multiple actions to see how long it's been since we last checked for expired items.
         // If sufficient time has elapsed then a scan is initiated on a background task.
-        private void StartScanForExpiredItems(DateTimeOffset? utcNow = null)
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private void StartScanForExpiredItemsIfNeeded(DateTimeOffset utcNow)
         {
-            // Since fetching time is expensive, minimize it in the hot paths
-            DateTimeOffset now = utcNow ?? _options.Clock.UtcNow;
-            if (_options.ExpirationScanFrequency < now - _lastExpirationScan)
+            if (_options.ExpirationScanFrequency < utcNow - _lastExpirationScan)
             {
-                _lastExpirationScan = now;
+                ScheduleTask(utcNow);
+            }
+
+            void ScheduleTask(DateTimeOffset utcNow)
+            {
+                _lastExpirationScan = utcNow;
                 Task.Factory.StartNew(state => ScanForExpiredItems((MemoryCache)state), this,
                     CancellationToken.None, TaskCreationOptions.DenyChildAttach, TaskScheduler.Default);
             }
@@ -325,7 +331,7 @@ namespace Microsoft.Extensions.Caching.Memory
 
         private static void ScanForExpiredItems(MemoryCache cache)
         {
-            DateTimeOffset now = cache._options.Clock.UtcNow;
+            DateTimeOffset now = cache._lastExpirationScan = cache._options.Clock.UtcNow;
             foreach (CacheEntry entry in cache._entries.Values)
             {
                 if (entry.CheckExpired(now))
@@ -500,16 +506,20 @@ namespace Microsoft.Extensions.Caching.Memory
         {
             if (_disposed)
             {
-                throw new ObjectDisposedException(typeof(MemoryCache).FullName);
+                Throw();
             }
+
+            static void Throw() => throw new ObjectDisposedException(typeof(MemoryCache).FullName);
         }
 
         private static void ValidateCacheKey(object key)
         {
             if (key == null)
             {
-                throw new ArgumentNullException(nameof(key));
+                Throw();
             }
+
+            static void Throw() => throw new ArgumentNullException(nameof(key));
         }
     }
 }
