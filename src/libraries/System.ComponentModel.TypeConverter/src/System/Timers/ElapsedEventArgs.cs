@@ -10,10 +10,6 @@ namespace System.Timers
             SignalTime = localTime;
         }
 
-        internal ElapsedEventArgs(long fileTime) : this(DateTime.FromFileTime(fileTime))
-        {
-        }
-
         public DateTime SignalTime { get; }
     }
 }
