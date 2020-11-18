@@ -223,12 +223,21 @@ namespace Microsoft.Extensions.Logging.Generators
                                             arg = ma.ArgumentList!.Arguments[2];
                                             var message = semanticModel.GetConstantValue(arg.Expression).ToString();
 
+                                            string? eventName = null;
+
+                                            if (ma.ArgumentList?.Arguments is { Count: > 3 } args)
+                                            {
+                                                arg = args[3];
+                                                eventName = semanticModel.GetConstantValue(arg.Expression).ToString();
+                                            }
+
                                             var lm = new LoggerMethod
                                             {
                                                 Name = method.Identifier.ToString(),
                                                 EventId = eventId,
                                                 Level = level,
                                                 Message = message,
+                                                EventName = eventName,
                                                 MessageHasTemplates = HasTemplates(message),
                                                 Documentation = GetDocs(method),
                                             };
@@ -329,7 +338,7 @@ This is not ready yet
             var conversion = compilation.ClassifyConversion(source, dest);
             return conversion.IsIdentity || (conversion.IsReference && conversion.IsImplicit);
         }
-        
+
         private static bool HasTemplates(string message)
         {
             for (int i = 0; i < message.Length; i++)
@@ -381,6 +390,7 @@ This is not ready yet
             public string Message = string.Empty;
             public string Level = string.Empty;
             public string EventId = string.Empty;
+            public string? EventName = null!;
             public List<LoggerParameter> Parameters = new();
             public bool MessageHasTemplates;
             public string Documentation = string.Empty;

@@ -107,6 +107,7 @@ using Microsoft.Extensions.Logging;
             {
                 format = $@"
             public string Format() => $""{lm.Message}"";
+            public override string ToString() => Format();
 ";
             }
 
@@ -144,7 +145,7 @@ using Microsoft.Extensions.Logging;
 
         private static string GenEventId(LoggerMethod lm)
         {
-            return $"        private static readonly EventId __{lm.Name}EventId__ = new({lm.EventId}, nameof({lm.Name}));\n";
+            return $"        private static readonly EventId __{lm.Name}EventId__ = new({lm.EventId}, " + (lm.EventName is null ? $"nameof({lm.Name})" : $"\"{lm.EventName}\"") + ");\n";
         }
 
         private static string GenInstanceLogMethod(LoggerMethod lm)
@@ -172,8 +173,8 @@ using Microsoft.Extensions.Logging;
         {{
             if (logger.IsEnabled((LogLevel){lm.Level}))
             {{
-                var s = new __{lm.Name}Struct__({GenArguments(lm)});
-                logger.Log((LogLevel){lm.Level}, __{lm.Name}EventId__, s, {exceptionArg}, (s, _) => {(lm.MessageHasTemplates ? "s.Format()" : "\"" + lm.Message + "\"")});
+                var message = new __{lm.Name}Struct__({GenArguments(lm)});
+                logger.Log((LogLevel){lm.Level}, __{lm.Name}EventId__, message, {exceptionArg}, (s, _) => {(lm.MessageHasTemplates ? "s.Format()" : "\"" + lm.Message + "\"")});
             }}
         }}
 ";
