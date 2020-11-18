@@ -53,6 +53,24 @@ public class MonoAOTCompiler : Microsoft.Build.Utilities.Task
     public bool UseLLVM { get; set; }
 
     /// <summary>
+    /// Use a separate .aotdata file for the AOT data.
+    /// Defaults to true.
+    /// </summary>
+    public bool UseAotDataFile { get; set; } = true;
+
+    /// <summary>
+    /// Generate a file containing mono_aot_register_module() calls for each AOT module
+    /// Defaults to false.
+    /// </summary>
+    public string? AotModulesTablePath { get; set; }
+
+    /// <summary>
+    /// Source code language of the AOT modules table. Supports "C" or "ObjC".
+    /// Defaults to "C".
+    /// </summary>
+    public string? AotModulesTableLanguage { get; set; } = nameof(MonoAotModulesTableLanguage.C);
+
+    /// <summary>
     /// Choose between 'Normal', 'Full', 'LLVMOnly'.
     /// LLVMOnly means to use only LLVM for FullAOT, AOT result will be a LLVM Bitcode file (the cross-compiler must be built with LLVM support)
     /// </summary>
@@ -78,6 +96,7 @@ public class MonoAOTCompiler : Microsoft.Build.Utilities.Task
     private ConcurrentBag<ITaskItem> compiledAssemblies = new ConcurrentBag<ITaskItem>();
     private MonoAotMode parsedAotMode;
     private MonoAotOutputType parsedOutputType;
+    private MonoAotModulesTableLanguage parsedAotModulesTableLanguage;
 
     public override bool Execute()
     {
@@ -124,6 +143,19 @@ public class MonoAOTCompiler : Microsoft.Build.Utilities.Task
         if (parsedAotMode == MonoAotMode.LLVMOnly && !UseLLVM)
         {
             throw new ArgumentException($"'{nameof(UseLLVM)}' must be true when '{nameof(Mode)}' is {nameof(MonoAotMode.LLVMOnly)}.", nameof(UseLLVM));
+        }
+
+        switch (AotModulesTableLanguage)
+        {
+            case "C": parsedAotModulesTableLanguage = MonoAotModulesTableLanguage.C; break;
+            case "ObjC": parsedAotModulesTableLanguage = MonoAotModulesTableLanguage.ObjC; break;
+            default:
+                throw new ArgumentException($"'{nameof(AotModulesTableLanguage)}' must be one of: '{nameof(MonoAotModulesTableLanguage.C)}', '{nameof(MonoAotModulesTableLanguage.ObjC)}'. Received: '{AotModulesTableLanguage}'.", nameof(AotModulesTableLanguage));
+        }
+
+        if (!string.IsNullOrEmpty(AotModulesTablePath))
+        {
+            GenerateAotModulesTable(Assemblies);
         }
 
         Parallel.ForEach(Assemblies,
@@ -178,8 +210,17 @@ public class MonoAOTCompiler : Microsoft.Build.Utilities.Task
             aotArgs.Add("llvmonly");
 
             string llvmBitcodeFile = Path.ChangeExtension(assembly, ".dll.bc");
-            aotArgs.Add($"outfile={llvmBitcodeFile}");
             aotAssembly.SetMetadata("LlvmBitcodeFile", llvmBitcodeFile);
+
+            if (parsedOutputType == MonoAotOutputType.AsmOnly)
+            {
+                aotArgs.Add("asmonly");
+                aotArgs.Add($"llvm-outfile={llvmBitcodeFile}");
+            }
+            else
+            {
+                aotArgs.Add($"outfile={llvmBitcodeFile}");
+            }
         }
         else
         {
@@ -217,9 +258,12 @@ public class MonoAOTCompiler : Microsoft.Build.Utilities.Task
             aotArgs.Add($"msym-dir={MsymPath}");
         }
 
-        string aotDataFile = Path.ChangeExtension(assembly, ".aotdata");
-        aotArgs.Add($"data-outfile={aotDataFile}");
-        aotAssembly.SetMetadata("AotDataFile", aotDataFile);
+        if (UseAotDataFile)
+        {
+            string aotDataFile = Path.ChangeExtension(assembly, ".aotdata");
+            aotArgs.Add($"data-outfile={aotDataFile}");
+            aotAssembly.SetMetadata("AotDataFile", aotDataFile);
+        }
 
         // we need to quote the entire --aot arguments here to make sure it is parsed
         // on Windows as one argument. Otherwise it will be split up into multiple
@@ -239,6 +283,66 @@ public class MonoAOTCompiler : Microsoft.Build.Utilities.Task
 
         compiledAssemblies.Add(aotAssembly);
     }
+
+    private void GenerateAotModulesTable(ITaskItem[] assemblies)
+    {
+        var symbols = new List<string>();
+        foreach (var asm in assemblies)
+        {
+            var name = Path.GetFileNameWithoutExtension(asm.ItemSpec).Replace ('.', '_').Replace ('-', '_');
+            symbols.Add($"mono_aot_module_{name}_info");
+        }
+
+        Directory.CreateDirectory(Path.GetDirectoryName(AotModulesTablePath!)!);
+
+        using (var writer = File.CreateText(AotModulesTablePath!))
+        {
+            if (parsedAotModulesTableLanguage == MonoAotModulesTableLanguage.C)
+            {
+                foreach (var symbol in symbols)
+                {
+                    writer.WriteLine($"extern void *{symbol};");
+                }
+                writer.WriteLine("static void register_aot_modules ()");
+                writer.WriteLine("{");
+                foreach (var symbol in symbols)
+                {
+                    writer.WriteLine($"\tmono_aot_register_module ({symbol});");
+                }
+                writer.WriteLine("}");
+
+                if (parsedAotMode == MonoAotMode.LLVMOnly)
+                {
+                    writer.WriteLine("#define EE_MODE_LLVMONLY 1");
+                }
+            }
+            else if (parsedAotModulesTableLanguage == MonoAotModulesTableLanguage.ObjC)
+            {
+                writer.WriteLine("#include <mono/jit/jit.h>");
+                writer.WriteLine("#include <TargetConditionals.h>");
+                writer.WriteLine("");
+                writer.WriteLine("#if TARGET_OS_IPHONE && (!TARGET_IPHONE_SIMULATOR || USE_AOT_FOR_SIMULATOR)");
+
+                foreach (var symbol in symbols)
+                {
+                    writer.WriteLine($"extern void *{symbol};");
+                }
+
+                writer.WriteLine("void register_aot_modules (void)");
+                writer.WriteLine("{");
+                foreach (var symbol in symbols)
+                {
+                    writer.WriteLine($"\tmono_aot_register_module ({symbol});");
+                }
+                writer.WriteLine("}");
+                writer.WriteLine("#endif");
+            }
+            else
+            {
+                throw new NotSupportedException();
+            }
+        }
+    }
 }
 
 public enum MonoAotMode
@@ -252,4 +356,10 @@ public enum MonoAotOutputType
 {
     Normal,
     AsmOnly,
+}
+
+public enum MonoAotModulesTableLanguage
+{
+    C,
+    ObjC
 }

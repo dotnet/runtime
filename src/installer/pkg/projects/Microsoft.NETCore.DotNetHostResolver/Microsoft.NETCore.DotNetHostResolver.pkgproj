@@ -4,7 +4,6 @@
     <VersionProp>HostResolverVersion</VersionProp>
 
     <InstallerName>dotnet-hostfxr</InstallerName>
-    <SkipBuildOnRuntimePackOnlyOS>true</SkipBuildOnRuntimePackOnlyOS>
   </PropertyGroup>
 
   <ItemGroup>

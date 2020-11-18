@@ -39,7 +39,7 @@ public:
 
         JIT_FLAG_OSR                     = 13, // Generate alternate version for On Stack Replacement
 
-        JIT_FLAG_UNUSED7                 = 14,
+        JIT_FLAG_ALT_JIT                 = 14, // JIT should consider itself an ALT_JIT
         JIT_FLAG_UNUSED8                 = 15,
         JIT_FLAG_UNUSED9                 = 16,
 
@@ -179,6 +179,8 @@ public:
         FLAGS_EQUAL(CORJIT_FLAGS::CORJIT_FLAG_USE_CMOV, JIT_FLAG_USE_CMOV);
 
 #endif
+
+        FLAGS_EQUAL(CORJIT_FLAGS::CORJIT_FLAG_ALT_JIT, JIT_FLAG_ALT_JIT);
 
 #if defined(TARGET_X86) || defined(TARGET_AMD64) || defined(TARGET_ARM64)
 

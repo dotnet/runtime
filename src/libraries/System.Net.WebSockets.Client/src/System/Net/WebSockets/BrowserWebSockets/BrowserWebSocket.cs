@@ -357,14 +357,28 @@ namespace System.Net.WebSockets
 
             WebSocketValidate.ValidateArraySegment(buffer, nameof(buffer));
 
-            _writeBuffer ??= new MemoryStream();
-            _writeBuffer.Write(buffer.Array!, buffer.Offset, buffer.Count);
-
             if (!endOfMessage)
+            {
+                _writeBuffer ??= new MemoryStream();
+                _writeBuffer.Write(buffer.Array!, buffer.Offset, buffer.Count);
                 return Task.CompletedTask;
+            }
 
-            MemoryStream writtenBuffer = _writeBuffer;
+            MemoryStream? writtenBuffer = _writeBuffer;
             _writeBuffer = null;
+
+            if (writtenBuffer is not null)
+            {
+                writtenBuffer.Write(buffer.Array!, buffer.Offset, buffer.Count);
+                if (writtenBuffer.TryGetBuffer(out var tmpBuffer))
+                {
+                    buffer = tmpBuffer;
+                }
+                else
+                {
+                    buffer = writtenBuffer.ToArray();
+                }
+            }
 
             try
             {

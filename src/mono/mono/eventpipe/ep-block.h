@@ -119,11 +119,11 @@ struct _EventPipeEventHeader {
 	ep_timestamp_t timestamp;
 	uint64_t thread_id;
 	uint64_t capture_thread_id;
-	int32_t metadata_id;
-	int32_t sequence_number;
-	int32_t capture_proc_number;
-	int32_t stack_id;
-	int32_t data_len;
+	uint32_t metadata_id;
+	uint32_t sequence_number;
+	uint32_t capture_proc_number;
+	uint32_t stack_id;
+	uint32_t data_len;
 };
 
 /*
@@ -187,7 +187,7 @@ ep_event_block_base_write_event (
 	EventPipeEventInstance *event_instance,
 	uint64_t capture_thread_id,
 	uint32_t sequence_number,
-	int32_t stack_id,
+	uint32_t stack_id,
 	bool is_sorted_event);
 
 /*
@@ -350,7 +350,7 @@ ep_stack_block_free (EventPipeStackBlock *stack_block);
 bool
 ep_stack_block_write_stack (
 	EventPipeStackBlock *stack_block,
-	int32_t stack_id,
+	uint32_t stack_id,
 	EventPipeStackContents *stack);
 
 static

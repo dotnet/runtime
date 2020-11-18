@@ -13,6 +13,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
     {
         private SharedTestState sharedTestState;
         private string startupHookVarName = "DOTNET_STARTUP_HOOKS";
+        private string startupHookSupport = "System.StartupHookProvider.IsSupported";
 
         public StartupHooks(StartupHooks.SharedTestState fixture)
         {
@@ -637,6 +638,32 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
                 .Execute(fExpectedToFail: true)
                 .Should().Fail()
                 .And.ExitWith(2);
+        }
+
+        [Fact]
+        public void Muxer_activation_of_StartupHook_With_IsSupported_False()
+        {
+            var fixture = sharedTestState.PortableAppFixture.Copy();
+            var dotnet = fixture.BuiltDotnet;
+            var appDll = fixture.TestProject.AppDll;
+
+            var startupHookFixture = sharedTestState.StartupHookFixture.Copy();
+            var startupHookDll = startupHookFixture.TestProject.AppDll;
+
+            RuntimeConfig.FromFile(fixture.TestProject.RuntimeConfigJson)
+                .WithProperty(startupHookSupport, "false")
+                .Save();
+
+            // Startup hooks are not executed when the StartupHookSupport
+            // feature switch is set to false.
+            dotnet.Exec(appDll)
+                .EnvironmentVariable(startupHookVarName, startupHookDll)
+                .CaptureStdOut()
+                .CaptureStdErr()
+                .Execute()
+                .Should().Pass()
+                .And.NotHaveStdOutContaining("Hello from startup hook!")
+                .And.HaveStdOutContaining("Hello World");
         }
 
         public class SharedTestState : IDisposable

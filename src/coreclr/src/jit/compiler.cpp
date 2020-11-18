@@ -40,11 +40,9 @@ unsigned Compiler::jitTotalMethodCompiled = 0;
 LONG Compiler::jitNestingLevel = 0;
 #endif // defined(DEBUG)
 
-#ifdef ALT_JIT
 // static
 bool                Compiler::s_pAltJitExcludeAssembliesListInitialized = false;
 AssemblyNamesList2* Compiler::s_pAltJitExcludeAssembliesList            = nullptr;
-#endif // ALT_JIT
 
 #ifdef DEBUG
 // static
@@ -1353,13 +1351,11 @@ void Compiler::compStartup()
 /* static */
 void Compiler::compShutdown()
 {
-#ifdef ALT_JIT
     if (s_pAltJitExcludeAssembliesList != nullptr)
     {
         s_pAltJitExcludeAssembliesList->~AssemblyNamesList2(); // call the destructor
         s_pAltJitExcludeAssembliesList = nullptr;
     }
-#endif // ALT_JIT
 
 #ifdef DEBUG
     if (s_pJitDisasmIncludeAssembliesList != nullptr)
@@ -2582,18 +2578,19 @@ void Compiler::compInitOptions(JitFlags* jitFlags)
         pfAltJit = &JitConfig.AltJit();
     }
 
-#ifdef ALT_JIT
-    if (pfAltJit->contains(info.compMethodName, info.compClassName, &info.compMethodInfo->args))
+    if (opts.jitFlags->IsSet(JitFlags::JIT_FLAG_ALT_JIT))
     {
-        opts.altJit = true;
-    }
+        if (pfAltJit->contains(info.compMethodName, info.compClassName, &info.compMethodInfo->args))
+        {
+            opts.altJit = true;
+        }
 
-    unsigned altJitLimit = ReinterpretHexAsDecimal(JitConfig.AltJitLimit());
-    if (altJitLimit > 0 && Compiler::jitTotalMethodCompiled >= altJitLimit)
-    {
-        opts.altJit = false;
+        unsigned altJitLimit = ReinterpretHexAsDecimal(JitConfig.AltJitLimit());
+        if (altJitLimit > 0 && Compiler::jitTotalMethodCompiled >= altJitLimit)
+        {
+            opts.altJit = false;
+        }
     }
-#endif // ALT_JIT
 
 #else // !DEBUG
 
@@ -2607,20 +2604,20 @@ void Compiler::compInitOptions(JitFlags* jitFlags)
         altJitVal = JitConfig.AltJit().list();
     }
 
-#ifdef ALT_JIT
-    // In release mode, you either get all methods or no methods. You must use "*" as the parameter, or we ignore it.
-    // You don't get to give a regular expression of methods to match.
-    // (Partially, this is because we haven't computed and stored the method and class name except in debug, and it
-    // might be expensive to do so.)
-    if ((altJitVal != nullptr) && (strcmp(altJitVal, "*") == 0))
+    if (opts.jitFlags->IsSet(JitFlags::JIT_FLAG_ALT_JIT))
     {
-        opts.altJit = true;
+        // In release mode, you either get all methods or no methods. You must use "*" as the parameter, or we ignore
+        // it. You don't get to give a regular expression of methods to match.
+        // (Partially, this is because we haven't computed and stored the method and class name except in debug, and it
+        // might be expensive to do so.)
+        if ((altJitVal != nullptr) && (strcmp(altJitVal, "*") == 0))
+        {
+            opts.altJit = true;
+        }
     }
-#endif // ALT_JIT
 
 #endif // !DEBUG
 
-#ifdef ALT_JIT
     // Take care of COMPlus_AltJitExcludeAssemblies.
     if (opts.altJit)
     {
@@ -2652,7 +2649,6 @@ void Compiler::compInitOptions(JitFlags* jitFlags)
             }
         }
     }
-#endif // ALT_JIT
 
 #ifdef DEBUG
 
@@ -5920,14 +5916,12 @@ int Compiler::compCompileHelper(CORINFO_MODULE_HANDLE classPtr,
 
     compInitOptions(compileFlags);
 
-#ifdef ALT_JIT
-    if (!compIsForInlining() && !opts.altJit)
+    if (!compIsForInlining() && !opts.altJit && opts.jitFlags->IsSet(JitFlags::JIT_FLAG_ALT_JIT))
     {
         // We're an altjit, but the COMPlus_AltJit configuration did not say to compile this method,
         // so skip it.
         return CORJIT_SKIPPED;
     }
-#endif // ALT_JIT
 
 #ifdef DEBUG
 
@@ -6217,14 +6211,12 @@ _Next:
             return CORJIT_SKIPPED;
         }
 
-#ifdef ALT_JIT
 #ifdef DEBUG
-        if (JitConfig.RunAltJitCode() == 0)
+        if (opts.jitFlags->IsSet(JitFlags::JIT_FLAG_ALT_JIT) && JitConfig.RunAltJitCode() == 0)
         {
             return CORJIT_SKIPPED;
         }
 #endif // DEBUG
-#endif // ALT_JIT
     }
 
     /* Success! */

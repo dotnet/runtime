@@ -63,7 +63,7 @@ config_compute_keyword_and_level (
 	ep_requires_lock_held ();
 
 	*keyword_for_all_sessions = 0;
-	*level_for_all_sessions = EP_EVENT_LEVEL_LOG_ALWAYS;
+	*level_for_all_sessions = EP_EVENT_LEVEL_LOGALWAYS;
 
 	for (int i = 0; i < EP_MAX_NUMBER_OF_SESSIONS; i++) {
 		// Entering EventPipe lock gave us a barrier, we don't need more of them.
@@ -102,7 +102,8 @@ config_register_provider (
 		return false;
 
 	// The provider has not been registered, so register it.
-	ep_rt_provider_list_append (&config->provider_list, provider);
+	if (!ep_rt_provider_list_append (&config->provider_list, provider))
+		return false;
 
 	int64_t keyword_for_all_sessions;
 	EventPipeEventLevel level_for_all_sessions;
@@ -168,8 +169,23 @@ ep_config_init (EventPipeConfiguration *config)
 
 	ep_requires_lock_not_held ();
 
-	config->config_provider = ep_create_provider (ep_config_get_default_provider_name_utf8 (), NULL, NULL, NULL);
+	EventPipeProviderCallbackDataQueue callback_data_queue;
+	EventPipeProviderCallbackData provider_callback_data;
+	EventPipeProviderCallbackDataQueue *provider_callback_data_queue = ep_provider_callback_data_queue_init (&callback_data_queue);
+
+	ep_rt_provider_list_alloc (&config->provider_list);
+	ep_raise_error_if_nok (ep_rt_provider_list_is_valid (&config->provider_list));
+
+	EP_LOCK_ENTER (section1)
+		config->config_provider = provider_create (ep_config_get_default_provider_name_utf8 (), NULL, NULL, NULL, provider_callback_data_queue);
+	EP_LOCK_EXIT (section1)
+
 	ep_raise_error_if_nok (config->config_provider != NULL);
+
+	while (ep_provider_callback_data_queue_try_dequeue (provider_callback_data_queue, &provider_callback_data)) {
+		ep_rt_prepare_provider_invoke_callback (&provider_callback_data);
+		provider_invoke_callback (&provider_callback_data);
+	}
 
 	// Create the metadata event.
 	config->metadata_event = ep_provider_add_event (
@@ -177,13 +193,14 @@ ep_config_init (EventPipeConfiguration *config)
 		0, /* event_id */
 		0, /* keywords */
 		0, /* event_version */
-		EP_EVENT_LEVEL_LOG_ALWAYS,
+		EP_EVENT_LEVEL_LOGALWAYS,
 		false, /* need_stack */
 		NULL, /* meatadata */
 		0); /* metadata_len */
 	ep_raise_error_if_nok (config->metadata_event != NULL);
 
 ep_on_exit:
+	ep_provider_callback_data_queue_fini (provider_callback_data_queue);
 	ep_requires_lock_not_held ();
 	return config;
 
@@ -342,7 +359,7 @@ ep_config_build_event_metadata_event (
 	const ep_char16_t *provider_name_utf16 = ep_provider_get_provider_name_utf16 (provider);
 	const uint8_t *payload_data = ep_event_get_metadata (source_event);
 	uint32_t payload_data_len = ep_event_get_metadata_len (source_event);
-	uint32_t provider_name_len = (ep_rt_utf16_string_len (provider_name_utf16) + 1) * sizeof (ep_char16_t);
+	uint32_t provider_name_len = (uint32_t)((ep_rt_utf16_string_len (provider_name_utf16) + 1) * sizeof (ep_char16_t));
 	uint32_t instance_payload_size = sizeof (metadata_id) + provider_name_len + payload_data_len;
 	
 	// Allocate the payload.
@@ -375,7 +392,7 @@ ep_config_build_event_metadata_event (
 	ep_raise_error_if_nok (instance != NULL);
 	instance_payload = NULL;
 
-	EP_ASSERT (ep_event_get_need_stack (config->metadata_event) == false);
+	EP_ASSERT (!ep_event_get_need_stack (config->metadata_event));
 
 	// Set the timestamp to match the source event, because the metadata event
 	// will be emitted right before the source event.
@@ -437,7 +454,7 @@ config_get_provider (
 	ep_requires_lock_held ();
 
 	// The provider list should be non-NULL, but can be NULL on shutdown.
-	ep_return_null_if_nok (ep_rt_provider_list_is_empty (&config->provider_list) != true);
+	ep_return_null_if_nok (!ep_rt_provider_list_is_empty (&config->provider_list));
 	EventPipeProvider *provider = ep_rt_provider_list_find_by_name (&config->provider_list, name);
 
 	ep_requires_lock_held ();
@@ -460,7 +477,8 @@ config_create_provider (
 	
 	EventPipeProvider *provider = ep_provider_alloc (config, provider_name, callback_func, callback_data_free_func, callback_data);
 	ep_raise_error_if_nok (provider != NULL);
-	ep_raise_error_if_nok (config_register_provider (config, provider, provider_callback_data_queue) == true);
+
+	config_register_provider (config, provider, provider_callback_data_queue);
 
 ep_on_exit:
 	ep_requires_lock_held ();
@@ -478,11 +496,12 @@ config_delete_provider (
 	EventPipeProvider *provider)
 {
 	EP_ASSERT (config != NULL);
+	EP_ASSERT (provider != NULL);
 
 	ep_requires_lock_held ();
 
 	config_unregister_provider (config, provider);
-	ep_provider_free (provider);
+	provider_free (provider);
 
 	ep_requires_lock_held ();
 	return;
@@ -498,15 +517,14 @@ config_delete_deferred_providers (EventPipeConfiguration *config)
 	// The provider list should be non-NULL, but can be NULL on shutdown.
 	const ep_rt_provider_list_t *provider_list = &config->provider_list;
 	if (!ep_rt_provider_list_is_empty (provider_list)) {
-		ep_rt_provider_list_iterator_t iterator;
-		ep_rt_provider_list_iterator_begin (provider_list, &iterator);
+		ep_rt_provider_list_iterator_t iterator = ep_rt_provider_list_iterator_begin (provider_list);
 
 		while (!ep_rt_provider_list_iterator_end (provider_list, &iterator)) {
 			EventPipeProvider *provider = ep_rt_provider_list_iterator_value (&iterator);
 			EP_ASSERT (provider != NULL);
 
 			// Get next item before deleting current.
-			ep_rt_provider_list_iterator_next (provider_list, &iterator);
+			ep_rt_provider_list_iterator_next (&iterator);
 			if (ep_provider_get_delete_deferred (provider))
 				config_delete_provider (config, provider);
 		}
@@ -531,8 +549,7 @@ config_enable_disable (
 	// The provider list should be non-NULL, but can be NULL on shutdown.
 	const ep_rt_provider_list_t *provider_list = &config->provider_list;
 	if (!ep_rt_provider_list_is_empty (provider_list)) {
-		ep_rt_provider_list_iterator_t iterator;
-		for (ep_rt_provider_list_iterator_begin (provider_list, &iterator); !ep_rt_provider_list_iterator_end (provider_list, &iterator); ep_rt_provider_list_iterator_next (provider_list, &iterator)) {
+		for (ep_rt_provider_list_iterator_t iterator = ep_rt_provider_list_iterator_begin (provider_list); !ep_rt_provider_list_iterator_end (provider_list, &iterator); ep_rt_provider_list_iterator_next (&iterator)) {
 			EventPipeProvider *provider = ep_rt_provider_list_iterator_value (&iterator);
 			if (provider) {
 				// Enable/Disable the provider if it has been configured.
