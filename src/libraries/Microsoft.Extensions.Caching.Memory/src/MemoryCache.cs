@@ -316,7 +316,6 @@ namespace Microsoft.Extensions.Caching.Memory
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private void StartScanForExpiredItemsIfNeeded(DateTimeOffset utcNow)
         {
-            // Since fetching time is expensive, minimize it in the hot paths
             if (_options.ExpirationScanFrequency < utcNow - _lastExpirationScan)
             {
                 ScheduleTask(utcNow);
