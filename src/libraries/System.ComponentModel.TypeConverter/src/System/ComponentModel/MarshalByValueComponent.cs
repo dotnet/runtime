@@ -11,7 +11,7 @@ namespace System.ComponentModel
     /// which is the base class for all components in Win Forms.
     /// </summary>
     [Designer("System.Windows.Forms.Design.ComponentDocumentDesigner, System.Design, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a",
-              "System.ComponentModel.Design.IRootDesigner, System, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089"]
+              "System.ComponentModel.Design.IRootDesigner, System, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")]
     [DesignerCategory("Component")]
     [TypeConverter(typeof(ComponentConverter))]
     public class MarshalByValueComponent : IComponent, IServiceProvider
