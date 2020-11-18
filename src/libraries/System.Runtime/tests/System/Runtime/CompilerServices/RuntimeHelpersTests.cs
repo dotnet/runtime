@@ -206,7 +206,7 @@ namespace System.Runtime.CompilerServices.Tests
             yield return new[] { typeof(IDisposable), typeof(MemberAccessException) }; // interface type
 
             yield return new[] { typeof(List<>), typeof(MemberAccessException) }; // open generic type
-            yield return new[] { typeof(List<>).GetGenericArguments()[0], typeof(ArgumentException) }; // 'T' placeholder typedesc
+            yield return new[] { typeof(List<>).GetGenericArguments()[0], PlatformDetection.IsMonoRuntime ? typeof(MemberAccessException) : typeof(ArgumentException) }; // 'T' placeholder typedesc
 
             yield return new[] { typeof(Delegate), typeof(MemberAccessException) }; // abstract type
 
