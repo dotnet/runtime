@@ -1878,7 +1878,7 @@ private:
 #endif // FEATURE_SIMD
 
 #ifdef FEATURE_HW_INTRINSICS
-    int BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree);
+    int BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCount);
 #endif // FEATURE_HW_INTRINSICS
 
     int BuildPutArgStk(GenTreePutArgStk* argNode);
