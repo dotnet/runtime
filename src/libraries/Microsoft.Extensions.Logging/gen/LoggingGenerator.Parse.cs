@@ -5,7 +5,6 @@ namespace Microsoft.Extensions.Logging.Generators
     using System;
     using System.Collections.Generic;
     using System.Linq;
-    using System.Runtime.CompilerServices;
     using Microsoft.CodeAnalysis;
     using Microsoft.CodeAnalysis.CSharp;
     using Microsoft.CodeAnalysis.CSharp.Syntax;
@@ -187,9 +186,8 @@ namespace Microsoft.Extensions.Logging.Generators
                                 Name = name,
                                 OriginalInterfaceName = iface.Identifier.ToString(),
                                 AccessModifiers = iface.Modifiers.ToString(),
+                                Documentation = GetDocs(iface),
                             };
-
-//                            lc.Documentation = a.GetLeadingTrivia().ToString();
 
                             if (string.IsNullOrWhiteSpace(lc.Name))
                             {
@@ -228,6 +226,7 @@ namespace Microsoft.Extensions.Logging.Generators
                                                 Level = level,
                                                 Message = message,
                                                 MessageHasTemplates = HasTemplates(message),
+                                                Documentation = GetDocs(method),
                                             };
                                             lc.Methods.Add(lm);
 
@@ -292,6 +291,19 @@ namespace Microsoft.Extensions.Logging.Generators
                     }
                 }
             }
+        }
+
+        static string GetDocs(SyntaxNode node)
+        {
+            foreach (var trivia in node.GetLeadingTrivia().Where(x => x.HasStructure))
+            {
+                if (trivia.GetStructure() is DocumentationCommentTriviaSyntax sTrivia)
+                {
+                    return sTrivia.ToString();
+                }
+            }
+
+            return string.Empty;
         }
 
         // Workaround for https://github.com/dotnet/roslyn/pull/49330

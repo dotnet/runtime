@@ -2,6 +2,7 @@
 
 namespace Microsoft.Extensions.Logging.Generators
 {
+    using System;
     using System.Collections.Generic;
     using System.Text;
     using Microsoft.CodeAnalysis;
@@ -101,13 +102,20 @@ using Microsoft.Extensions.Logging;
 ";
             }
 
+            var format = string.Empty;
+            if (lm.MessageHasTemplates)
+            {
+                format = $@"
+            public string Format() => $""{lm.Message}"";
+";
+            }
+
             return $@"
         private readonly struct __{lm.Name}Struct__ : IReadOnlyList<KeyValuePair<string, object>>
         {{
 {GenFields(lm)}
 {constructor}
-
-            public {(lm.MessageHasTemplates ? string.Empty : "static")} string Format() => $""{lm.Message}"";
+{format}
 
             public int Count => {lm.Parameters.Count};
 
@@ -165,7 +173,7 @@ using Microsoft.Extensions.Logging;
             if (logger.IsEnabled((LogLevel){lm.Level}))
             {{
                 var s = new __{lm.Name}Struct__({GenArguments(lm)});
-                logger.Log((LogLevel){lm.Level}, __{lm.Name}EventId__, s, {exceptionArg}, (s, _) => {(lm.MessageHasTemplates ? "s." : "__" + lm.Name + "Struct__.")}Format());
+                logger.Log((LogLevel){lm.Level}, __{lm.Name}EventId__, s, {exceptionArg}, (s, _) => {(lm.MessageHasTemplates ? "s.Format()" : "\"" + lm.Message + "\"")});
             }}
         }}
 ";
