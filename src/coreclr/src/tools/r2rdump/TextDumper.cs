@@ -161,8 +161,7 @@ namespace R2RDump
 
                 if (_options.Raw)
                 {
-                    // TODO: Output RVAs for consistency with other DumpBytes calls
-                    DumpBytes(gcInfo.Offset, (uint)gcInfo.Size, "", false);
+                    DumpBytes(method.GcInfoRva, (uint)gcInfo.Size);
                 }
             }
             SkipLine();
