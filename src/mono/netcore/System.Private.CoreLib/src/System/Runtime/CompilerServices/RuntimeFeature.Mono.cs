@@ -18,6 +18,11 @@ namespace System.Runtime.CompilerServices
             get => IsDynamicCodeCompiled;
         }
 
+#if !FEATURE_METADATA_UPDATE
+        public static void LoadMetadataUpdate (Assembly assm, byte[] dmeta_data, byte[] dil_data) {
+            throw new NotSupportedException ("Method body replacement not supported in this runtime");
+        }
+#else
         [MethodImplAttribute (MethodImplOptions.InternalCall)]
         private static unsafe extern void LoadMetadataUpdate_internal (Assembly base_assm, byte* dmeta_bytes, int dmeta_length, byte *dil_bytes, int dil_length);
 
@@ -29,5 +34,6 @@ namespace System.Runtime.CompilerServices
                 }
             }
         }
+#endif
     }
 }
