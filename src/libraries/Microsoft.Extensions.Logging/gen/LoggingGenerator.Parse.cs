@@ -26,7 +26,7 @@ namespace Microsoft.Extensions.Logging.Generators
         private static readonly DiagnosticDescriptor ErrorInvalidMessage = new(
             id: "LG1",
             title: "Missing message for logging method",
-            messageFormat: "Missing message for logging method",
+            messageFormat: "Missing message for logging method {0}",
             category: DiagnosticCategory,
             DiagnosticSeverity.Error,
             isEnabledByDefault: true);
@@ -41,8 +41,8 @@ namespace Microsoft.Extensions.Logging.Generators
 
         private static readonly DiagnosticDescriptor ErrorInvalidTypeName = new(
             id: "LG3",
-            title: "Missing generated type name",
-            messageFormat: "Missing generated type name",
+            title: "Unable to automatically derive generated type name",
+            messageFormat: "Unable to automatically derive a generated type name based on the interface name of {0}, please specify an explicit generated type name instead",
             category: DiagnosticCategory,
             DiagnosticSeverity.Error,
             isEnabledByDefault: true);
@@ -96,12 +96,13 @@ namespace Microsoft.Extensions.Logging.Generators
             isEnabledByDefault: true);
 
         /// <summary>
-        /// Gets the known set of annotated logger classes
+        /// Gets the set of logging classes that should be generated based on the discovered annotated interfaces.
         /// </summary>
         private static IEnumerable<LoggerClass> GetLogClasses(GeneratorExecutionContext context, Compilation compilation)
         {
             if (!(context.SyntaxReceiver is SyntaxReceiver receiver))
             {
+                // nothing to do yet
                 yield break;
             }
 
@@ -167,16 +168,19 @@ namespace Microsoft.Extensions.Logging.Generators
                                 name = semanticModel.GetConstantValue(arg.Expression).ToString();
                             }
 
+                            // if no name was specified, try to derive it from the interface name
+                            var ifaceName = iface.Identifier.ToString();
                             if (name == null)
                             {
-                                var ifaceName = iface.Identifier.ToString();
-                                if (ifaceName[0] == 'I' && ifaceName.Length > 1)
+                                if (ifaceName[0] == 'I')
                                 {
+                                    // strip the leading I
                                     name = ifaceName.Substring(1);
                                 }
                                 else
                                 {
-                                    name = ifaceName + "Extensions";
+                                    // fail
+                                    name = string.Empty;
                                 }
                             }
 
@@ -191,7 +195,7 @@ namespace Microsoft.Extensions.Logging.Generators
 
                             if (string.IsNullOrWhiteSpace(lc.Name))
                             {
-                                context.ReportDiagnostic(Diagnostic.Create(ErrorInvalidTypeName, a.GetLocation()));
+                                context.ReportDiagnostic(Diagnostic.Create(ErrorInvalidTypeName, a.GetLocation(), ifaceName));
                             }
 
                             if (iface.Arity > 0)
@@ -244,7 +248,7 @@ namespace Microsoft.Extensions.Logging.Generators
 
                                             if (method.Arity > 0)
                                             {
-                                                context.ReportDiagnostic(Diagnostic.Create(ErrorMethodGeneric, iface.GetLocation()));
+                                                context.ReportDiagnostic(Diagnostic.Create(ErrorMethodGeneric, method.GetLocation()));
                                             }
 
                                             // ensure there are no duplicate ids.
@@ -259,7 +263,7 @@ namespace Microsoft.Extensions.Logging.Generators
 
                                             if (string.IsNullOrWhiteSpace(lm.Message))
                                             {
-                                                context.ReportDiagnostic(Diagnostic.Create(ErrorInvalidMessage, ma.GetLocation()));
+                                                context.ReportDiagnostic(Diagnostic.Create(ErrorInvalidMessage, ma.GetLocation(), method.Identifier.ToString()));
                                             }
 
                                             foreach (var p in method.ParameterList.Parameters)
@@ -293,8 +297,10 @@ namespace Microsoft.Extensions.Logging.Generators
             }
         }
 
-        static string GetDocs(SyntaxNode node)
+        static string GetDocs(SyntaxNode _)
         {
+#if false
+This is not ready yet
             foreach (var trivia in node.GetLeadingTrivia().Where(x => x.HasStructure))
             {
                 if (trivia.GetStructure() is DocumentationCommentTriviaSyntax sTrivia)
@@ -302,7 +308,7 @@ namespace Microsoft.Extensions.Logging.Generators
                     return sTrivia.ToString();
                 }
             }
-
+#endif
             return string.Empty;
         }
 
