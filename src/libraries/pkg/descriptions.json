@@ -1235,6 +1235,13 @@
     ]
   },
   {
+    "Name": "System.Memory.Data",
+    "Description": "A lightweight abstraction for a payload of bytes. Provides methods for converting between strings, streams, JSON, and bytes.",
+    "CommonTypes": [
+        "System.BinaryData"
+    ]
+  },
+  {
     "Name": "Microsoft.Bcl.AsyncInterfaces",
     "Description": "Provides the IAsyncEnumerable<T> and IAsyncDisposable interfaces and helper types for .NET Standard 2.0. This package is not required starting with .NET Standard 2.1 and .NET Core 3.0.",
     "CommonTypes": [

@@ -39,7 +39,7 @@
 
     <!-- Initialize BuildSettings from the individual properties. -->
     <Configuration Condition="'$(Configuration)' == ''">Debug</Configuration>
-    <BuildTargetFramework Condition="'$(BuildTargetFramework)' == '' and '$(TargetFramework)' != ''">$(TargetFramework)</BuildTargetFramework>
+    <BuildTargetFramework Condition="'$(BuildTargetFramework)' == '' and '$(TargetFramework)' != ''">$([System.Text.RegularExpressions.Regex]::Replace('$(TargetFramework)', '(-[^;]+)', ''))</BuildTargetFramework>
     <!-- Build all .NET Framework configurations when net48 is passed in. This is for convenience. -->
     <AdditionalBuildTargetFrameworks Condition="'$(BuildTargetFramework)' == 'net48'">net45;net451;net452;net46;net461;net462;net47;net471;net472</AdditionalBuildTargetFrameworks>
     <AdditionalBuildTargetFrameworks Condition="'$(DotNetBuildFromSource)' == 'true' and '$(BuildAllProjects)' == 'true'">$(AdditionalBuildTargetFrameworks);netstandard2.0</AdditionalBuildTargetFrameworks>
@@ -84,14 +84,13 @@
   <PropertyGroup>
     <RunApiCompatForSrc>$(IsSourceProject)</RunApiCompatForSrc>
     <RunMatchingRefApiCompat>$(IsSourceProject)</RunMatchingRefApiCompat>
+    <ApiCompatEnforceOptionalRules>true</ApiCompatEnforceOptionalRules>
     <ApiCompatExcludeAttributeList>$(RepositoryEngineeringDir)DefaultGenApiDocIds.txt,$(RepositoryEngineeringDir)ApiCompatExcludeAttributes.txt</ApiCompatExcludeAttributeList>
   </PropertyGroup>
 
   <ItemGroup>
     <!-- Projects which are manually built. -->
     <ProjectExclusions Include="$(CommonTestPath)System\Net\Prerequisites\**\*.csproj" />
-    <!-- TODO: Reenable when mono supports utf8string. -->
-    <ProjectExclusions Include="$(MSBuildThisFileDirectory)\System.Utf8String.Experimental\**\*.csproj" Condition="'$(RuntimeFlavor)' == 'Mono'" />
   </ItemGroup>
 
   <PropertyGroup>
@@ -299,9 +298,9 @@
     <EnableCoverageSupport Condition="'$(ContinuousIntegrationBuild)' != 'true'">true</EnableCoverageSupport>
   </PropertyGroup>
 
-  <!-- To enable the interpreter for mono, we need to pass an env switch -->
+  <!-- To enable the interpreter for mono desktop, we need to pass an env switch -->
   <PropertyGroup>
-    <MonoEnvOptions Condition="'$(MonoEnvOptions)' == '' and '$(MonoEnableInterpreter)' == 'true'">--interpreter</MonoEnvOptions>
+    <MonoEnvOptions Condition="'$(MonoEnvOptions)' == '' and '$(TargetsMobile)' != 'true' and '$(MonoForceInterpreter)' == 'true'">--interpreter</MonoEnvOptions>
   </PropertyGroup>
 
   <Import Project="$(RepositoryEngineeringDir)testing\tests.props" Condition="'$(EnableTestSupport)' == 'true'" />

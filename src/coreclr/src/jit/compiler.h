@@ -1630,7 +1630,9 @@ public:
         return 0;
     }
 
-    // Get the number of bytes that this argument is occupying on the stack.
+    // Get the number of bytes that this argument is occupying on the stack,
+    // including padding up to the target pointer size for platforms
+    // where a stack argument can't take less.
     unsigned GetStackByteSize() const
     {
         if (!IsSplit() && numRegs > 0)
@@ -1642,7 +1644,10 @@ public:
 
         assert(GetByteSize() > TARGET_POINTER_SIZE * numRegs);
         unsigned stackByteSize = GetByteSize() - TARGET_POINTER_SIZE * numRegs;
-        return GetByteSize() - TARGET_POINTER_SIZE * numRegs;
+#if !defined(OSX_ARM64_ABI)
+        stackByteSize = roundUp(stackByteSize, TARGET_POINTER_SIZE);
+#endif
+        return stackByteSize;
     }
 
     var_types GetHfaType() const
@@ -1800,7 +1805,7 @@ public:
         return size;
     }
 
-#endif // DEBUG && !OSX_ARM64_ABI
+#endif // DEBUG_ARG_SLOTS
 
 private:
     unsigned m_byteOffset;
@@ -4120,6 +4125,8 @@ private:
     }
 
     GenTreeCall::Use* impPopCallArgs(unsigned count, CORINFO_SIG_INFO* sig, GenTreeCall::Use* prefixArgs = nullptr);
+
+    bool impCheckImplicitArgumentCoercion(var_types sigType, var_types nodeType) const;
 
     GenTreeCall::Use* impPopReverseCallArgs(unsigned count, CORINFO_SIG_INFO* sig, unsigned skipReverseCount = 0);
 
@@ -7370,6 +7377,7 @@ public:
 
     const char* eeGetMethodName(CORINFO_METHOD_HANDLE hnd, const char** className);
     const char* eeGetMethodFullName(CORINFO_METHOD_HANDLE hnd);
+    unsigned compMethodHash(CORINFO_METHOD_HANDLE methodHandle);
 
     bool eeIsNativeMethod(CORINFO_METHOD_HANDLE method);
     CORINFO_METHOD_HANDLE eeGetMethodHandleForNative(CORINFO_METHOD_HANDLE method);
@@ -9008,10 +9016,8 @@ public:
 #endif
     } opts;
 
-#ifdef ALT_JIT
     static bool                s_pAltJitExcludeAssembliesListInitialized;
     static AssemblyNamesList2* s_pAltJitExcludeAssembliesList;
-#endif // ALT_JIT
 
 #ifdef DEBUG
     static bool                s_pJitDisasmIncludeAssembliesListInitialized;

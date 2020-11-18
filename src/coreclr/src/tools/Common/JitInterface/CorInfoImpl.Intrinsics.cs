@@ -103,8 +103,6 @@ namespace Internal.JitInterface
             // table.Add(CorInfoIntrinsics.CORINFO_INTRINSIC_InterlockedCmpXchg64, "CompareExchange", "System.Threading", "Interlocked"); // ambiguous match
             table.Add(CorInfoIntrinsics.CORINFO_INTRINSIC_MemoryBarrier, "MemoryBarrier", "System.Threading", "Interlocked");
             table.Add(CorInfoIntrinsics.CORINFO_INTRINSIC_MemoryBarrierLoad, "LoadBarrier", "System.Threading", "Interlocked");
-            // table.Add(CorInfoIntrinsics.CORINFO_INTRINSIC_GetCurrentManagedThread, "GetCurrentThreadNative", "System", "Thread"); // not in .NET Core
-            // table.Add(CorInfoIntrinsics.CORINFO_INTRINSIC_GetManagedThreadId, "get_ManagedThreadId", "System", "Thread"); // not in .NET Core
             table.Add(CorInfoIntrinsics.CORINFO_INTRINSIC_ByReference_Ctor, ".ctor", "System", "ByReference`1");
             table.Add(CorInfoIntrinsics.CORINFO_INTRINSIC_ByReference_Value, "get_Value", "System", "ByReference`1");
             table.Add(CorInfoIntrinsics.CORINFO_INTRINSIC_Span_GetItem, "get_Item", "System", "Span`1");
@@ -112,9 +110,6 @@ namespace Internal.JitInterface
             table.Add(CorInfoIntrinsics.CORINFO_INTRINSIC_GetRawHandle, "EETypePtrOf", "System", "EETypePtr");
             table.Add(CorInfoIntrinsics.CORINFO_INTRINSIC_GetRawHandle, "DefaultConstructorOf", "System", "Activator");
             table.Add(CorInfoIntrinsics.CORINFO_INTRINSIC_GetRawHandle, "AllocatorOf", "System", "Activator");
-
-            // If this assert fails, make sure to add the new intrinsics to the table above and update the expected count below.
-            Debug.Assert((int)CorInfoIntrinsics.CORINFO_INTRINSIC_Count == 34, "Please update intrinsic hash table");
 
             return table;
         }

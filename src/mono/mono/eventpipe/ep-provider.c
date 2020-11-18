@@ -96,8 +96,7 @@ provider_refresh_all_events (EventPipeProvider *provider)
 	const ep_rt_event_list_t *event_list = &provider->event_list;
 	EP_ASSERT (event_list != NULL);
 
-	ep_rt_event_list_iterator_t iterator;
-	for (ep_rt_event_list_iterator_begin (event_list, &iterator); !ep_rt_provider_list_iterator_end (event_list, &iterator); ep_rt_provider_list_iterator_next (event_list, &iterator))
+	for (ep_rt_event_list_iterator_t iterator = ep_rt_event_list_iterator_begin (event_list); !ep_rt_event_list_iterator_end (event_list, &iterator); ep_rt_event_list_iterator_next (&iterator))
 		provider_refresh_event_state (ep_rt_event_list_iterator_value (&iterator));
 
 	ep_requires_lock_held ();
@@ -152,7 +151,7 @@ provider_compute_event_enable_mask (
 				//  - The event keywords are unspecified in the manifest (== 0) or when masked with the enabled config are != 0.
 				//  - The event level is LogAlways or the provider's verbosity level is set to greater than the event's verbosity level in the manifest.
 				bool keyword_enabled = (keywords == 0) || ((session_keyword & keywords) != 0);
-				bool level_enabled = ((event_level == EP_EVENT_LEVEL_LOG_ALWAYS) || (session_level >= event_level));
+				bool level_enabled = ((event_level == EP_EVENT_LEVEL_LOGALWAYS) || (session_level >= event_level));
 				if (provider_enabled && keyword_enabled && level_enabled)
 					result = result | ep_session_get_mask (session);
 			}
@@ -180,8 +179,11 @@ ep_provider_alloc (
 	instance->provider_name = ep_rt_utf8_string_dup (provider_name);
 	ep_raise_error_if_nok (instance->provider_name != NULL);
 
-	instance->provider_name_utf16 = ep_rt_utf8_to_utf16_string (provider_name, ep_rt_utf8_string_len (provider_name));
+	instance->provider_name_utf16 = ep_rt_utf8_to_utf16_string (provider_name, -1);
 	ep_raise_error_if_nok (instance->provider_name_utf16 != NULL);
+
+	ep_rt_event_list_alloc (&instance->event_list);
+	ep_raise_error_if_nok (ep_rt_event_list_is_valid (&instance->event_list));
 
 	instance->keywords = 0;
 	instance->provider_level = EP_EVENT_LEVEL_CRITICAL;
@@ -206,13 +208,27 @@ ep_provider_free (EventPipeProvider * provider)
 {
 	ep_return_void_if_nok (provider != NULL);
 
+	ep_requires_lock_not_held ();
+
 	if (provider->callback_data_free_func)
 		provider->callback_data_free_func (provider->callback_func, provider->callback_data);
 
-	ep_rt_event_list_free (&provider->event_list, event_free_func);
+	if (!ep_rt_event_list_is_empty (&provider->event_list)) {
+		EP_LOCK_ENTER (section1)
+		ep_rt_event_list_free (&provider->event_list, event_free_func);
+		EP_LOCK_EXIT (section1)
+	}
+
+ep_on_exit:
 	ep_rt_utf16_string_free (provider->provider_name_utf16);
 	ep_rt_utf8_string_free (provider->provider_name);
 	ep_rt_object_free (provider);
+
+	ep_requires_lock_not_held ();
+	return;
+
+ep_on_error:
+	ep_exit_error_handler ();
 }
 
 EventPipeEvent *
@@ -244,7 +260,7 @@ ep_provider_add_event (
 
 	// Take the config lock before inserting a new event.
 	EP_LOCK_ENTER (section1)
-		ep_rt_event_list_append (&provider->event_list, instance);
+		ep_raise_error_if_nok_holding_lock (ep_rt_event_list_append (&provider->event_list, instance), section1);
 		provider_refresh_event_state (instance);
 	EP_LOCK_EXIT (section1)
 
@@ -253,6 +269,7 @@ ep_on_exit:
 	return instance;
 
 ep_on_error:
+	ep_event_free (instance);
 	instance = NULL;
 	ep_exit_error_handler ();
 }
@@ -356,7 +373,7 @@ provider_invoke_callback (EventPipeProviderCallbackData *provider_callback_data)
 		// the key and the second is the value.
 		// To convert to this format we need to convert all '=' and ';'
 		// characters to '\0', except when in a quoted string.
-		const uint32_t filter_data_len = ep_rt_utf8_string_len (filter_data);
+		const uint32_t filter_data_len = (uint32_t)strlen (filter_data);
 		uint32_t buffer_size = filter_data_len + 1;
 
 		buffer = ep_rt_byte_array_alloc (buffer_size);
@@ -387,8 +404,9 @@ provider_invoke_callback (EventPipeProviderCallbackData *provider_callback_data)
 	// NOTE: When we call the callback, we pass in enabled (which is either 1 or 0) as the ControlCode.
 	// If we want to add new ControlCode, we have to make corresponding change in ETW callback signature
 	// to address this. See https://github.com/dotnet/runtime/pull/36733 for more discussions on this.
-	if (callback_function && !ep_rt_process_detach ()) {
-		(*callback_function)(
+	if (callback_function && !ep_rt_process_shutdown ()) {
+		ep_rt_provider_invoke_callback (
+			callback_function,
 			NULL, /* provider_id */
 			enabled ? 1 : 0, /* ControlCode */
 			(uint8_t)provider_level,
@@ -406,6 +424,76 @@ ep_on_exit:
 	return;
 
 ep_on_error:
+	ep_exit_error_handler ();
+}
+
+EventPipeProvider *
+provider_create (
+	const ep_char8_t *provider_name,
+	EventPipeCallback callback_func,
+	EventPipeCallbackDataFree callback_data_free_func,
+	void *callback_data,
+	EventPipeProviderCallbackDataQueue *provider_callback_data_queue)
+{
+	ep_requires_lock_held ();
+	return config_create_provider (ep_config_get (), provider_name, callback_func, callback_data_free_func, callback_data, provider_callback_data_queue);
+}
+
+void
+provider_free (EventPipeProvider * provider)
+{
+	ep_return_void_if_nok (provider != NULL);
+
+	ep_requires_lock_held ();
+
+	if (provider->callback_data_free_func)
+		provider->callback_data_free_func (provider->callback_func, provider->callback_data);
+
+	if (!ep_rt_event_list_is_empty (&provider->event_list))
+		ep_rt_event_list_free (&provider->event_list, event_free_func);
+
+	ep_rt_utf16_string_free (provider->provider_name_utf16);
+	ep_rt_utf8_string_free (provider->provider_name);
+	ep_rt_object_free (provider);
+}
+
+EventPipeEvent *
+provider_add_event (
+	EventPipeProvider *provider,
+	uint32_t event_id,
+	uint64_t keywords,
+	uint32_t event_version,
+	EventPipeEventLevel level,
+	bool need_stack,
+	const uint8_t *metadata,
+	uint32_t metadata_len)
+{
+	EP_ASSERT (provider != NULL);
+
+	ep_requires_lock_held ();
+
+	EventPipeEvent *instance = ep_event_alloc (
+		provider,
+		keywords,
+		event_id,
+		event_version,
+		level,
+		need_stack,
+		metadata,
+		metadata_len);
+
+	ep_raise_error_if_nok (instance != NULL);
+
+	ep_raise_error_if_nok (ep_rt_event_list_append (&provider->event_list, instance));
+	provider_refresh_event_state (instance);
+
+ep_on_exit:
+	ep_requires_lock_held ();
+	return instance;
+
+ep_on_error:
+	ep_event_free (instance);
+	instance = NULL;
 	ep_exit_error_handler ();
 }
 

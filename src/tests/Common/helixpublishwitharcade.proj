@@ -94,7 +94,7 @@
 
     <IncludeDotNetCli>true</IncludeDotNetCli>
     <DotNetCliPackageType>runtime</DotNetCliPackageType>
-    <DotNetCliVersion>$(BundledNETCoreAppPackageVersion)</DotNetCliVersion>
+    <DotNetCliVersion>5.0.0</DotNetCliVersion>
     <DotNetCliRuntime>$(HelixRuntimeRid)</DotNetCliRuntime> 
   </PropertyGroup>
 
@@ -297,9 +297,7 @@
   </PropertyGroup>
 
   <ItemGroup Condition=" '$(UsesHelixSdk)' == 'true' ">
-    <HelixCorrelationPayload Include="$(CoreRootDirectory)" Condition=" '$(TargetOS)' != 'Android' "/>
-    <HelixCorrelationPayload Include="$(CoreRootDirectory)**\*.apk" Condition=" '$(TargetOS)' == 'Android' "/>
-    <HelixCorrelationPayload Include="$(CoreRootDirectory)" Exclude="$(CoreRootDirectory)\AndroidApps" Condition=" '$(TargetOS)' == 'Android' "/>
+    <HelixCorrelationPayload Include="$(CoreRootDirectory)" />
 
     <Payloads Include="$([System.IO.Directory]::GetDirectories($(PayloadsRootDirectory)))" Condition="Exists('$(PayloadsRootDirectory)')" />
     <Payloads Update="@(Payloads)">

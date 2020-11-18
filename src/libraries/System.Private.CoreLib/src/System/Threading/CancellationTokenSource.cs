@@ -826,10 +826,9 @@ namespace System.Threading
             // this work with a callback mechanism will add additional cost to other more common cases.
             return new ValueTask(Task.Factory.StartNew(static s =>
             {
-                Debug.Assert(s is Tuple<CancellationTokenSource, long>);
-                var state = (Tuple<CancellationTokenSource, long>)s;
+                var state = (TupleSlim<CancellationTokenSource, long>)s!;
                 state.Item1.WaitForCallbackToComplete(state.Item2);
-            }, Tuple.Create(this, id), CancellationToken.None, TaskCreationOptions.None, TaskScheduler.Default));
+            }, new TupleSlim<CancellationTokenSource, long>(this, id), CancellationToken.None, TaskCreationOptions.None, TaskScheduler.Default));
         }
 
         private sealed class Linked1CancellationTokenSource : CancellationTokenSource

@@ -10,23 +10,23 @@ using System.Threading;
 namespace Microsoft.Extensions.Logging
 {
     /// <summary>
-    /// LogValues to enable formatting options supported by <see cref="string.Format(IFormatProvider, string, object)"/>.
+    /// LogValues to enable formatting options supported by <see cref="string.Format(IFormatProvider, string, object?)"/>.
     /// This also enables using {NamedformatItem} in the format string.
     /// </summary>
-    internal readonly struct FormattedLogValues : IReadOnlyList<KeyValuePair<string, object>>
+    internal readonly struct FormattedLogValues : IReadOnlyList<KeyValuePair<string, object?>>
     {
         internal const int MaxCachedFormatters = 1024;
         private const string NullFormat = "[null]";
         private static int _count;
         private static ConcurrentDictionary<string, LogValuesFormatter> _formatters = new ConcurrentDictionary<string, LogValuesFormatter>();
-        private readonly LogValuesFormatter _formatter;
-        private readonly object[] _values;
+        private readonly LogValuesFormatter? _formatter;
+        private readonly object?[]? _values;
         private readonly string _originalMessage;
 
         // for testing purposes
-        internal LogValuesFormatter Formatter => _formatter;
+        internal LogValuesFormatter? Formatter => _formatter;
 
-        public FormattedLogValues(string format, params object[] values)
+        public FormattedLogValues(string? format, params object?[]? values)
         {
             if (values != null && values.Length != 0 && format != null)
             {
@@ -55,7 +55,7 @@ namespace Microsoft.Extensions.Logging
             _values = values;
         }
 
-        public KeyValuePair<string, object> this[int index]
+        public KeyValuePair<string, object?> this[int index]
         {
             get
             {
@@ -66,10 +66,10 @@ namespace Microsoft.Extensions.Logging
 
                 if (index == Count - 1)
                 {
-                    return new KeyValuePair<string, object> ("{OriginalFormat}", _originalMessage);
+                    return new KeyValuePair<string, object?> ("{OriginalFormat}", _originalMessage);
                 }
 
-                return _formatter.GetValue(_values, index);
+                return _formatter!.GetValue(_values!, index);
             }
         }
 
@@ -86,7 +86,7 @@ namespace Microsoft.Extensions.Logging
             }
         }
 
-        public IEnumerator<KeyValuePair<string, object>> GetEnumerator()
+        public IEnumerator<KeyValuePair<string, object?>> GetEnumerator()
         {
             for (int i = 0; i < Count; ++i)
             {

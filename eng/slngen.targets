@@ -1,0 +1,13 @@
+<Project>
+  <PropertyGroup>
+    <SlnGenSolutionFolder Condition="'$(IsReferenceAssembly)' == 'true'">ref</SlnGenSolutionFolder>
+    <SlnGenSolutionFolder Condition="'$(IsTestProject)' == 'true' or '$(IsTestSupportProject)' == 'true'">tests</SlnGenSolutionFolder>
+    <SlnGenSolutionFolder Condition="'$(SlnGenSolutionFolder)' == ''">src</SlnGenSolutionFolder>
+
+    <!-- Don't include shared framework projects referenced via a named reference except the leaf's project. -->
+    <IncludeInSolutionFile Condition="'$(IsNETCoreAppRef)' == 'true' and '$(MSBuildProjectName)' != '$(SlnGenMainProject)'">false</IncludeInSolutionFile>
+
+    <!-- Include CompilerServices.Unsafe as it's a transitive test dependency. -->
+    <IncludeInSolutionFile Condition="'$(IsNETCoreAppRef)' == 'true' and '$(MSBuildProjectName)' == 'System.Runtime.CompilerServices.Unsafe'">true</IncludeInSolutionFile>
+  </PropertyGroup>
+</Project>

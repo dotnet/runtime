@@ -390,7 +390,6 @@ private:
     ComMethodTable* CreateComMethodTableForClass(MethodTable *pClassMT);
     ComMethodTable* CreateComMethodTableForInterface(MethodTable* pInterfaceMT);
     ComMethodTable* CreateComMethodTableForBasic(MethodTable* pClassMT);
-    ComMethodTable* CreateComMethodTableForDelegate(MethodTable *pDelegateMT);
 
     void DetermineComVisibility();
     ComCallWrapperTemplate* FindInvisibleParent();
@@ -471,8 +470,8 @@ enum Masks
     enum_ClassVtableMask                = 0x00000004,
     enum_LayoutComplete                 = 0x00000010,
     enum_ComVisible                     = 0x00000040,
-    enum_SigClassCannotLoad             = 0x00000080,
-    enum_SigClassLoadChecked            = 0x00000100,
+    // enum_unused                      = 0x00000080,
+    // enum_unused                      = 0x00000100,
     enum_ComClassItf                    = 0x00000200,
     enum_GuidGenerated                  = 0x00000400,
     // enum_unused                      = 0x00001000,
@@ -586,30 +585,6 @@ struct ComMethodTable
     {
         LIMITED_METHOD_CONTRACT;
         return ((ComCallWrapperTemplate*)m_pMT->GetComCallWrapperTemplate())->HasInvisibleParent();
-    }
-
-    BOOL IsSigClassLoadChecked()
-    {
-        LIMITED_METHOD_CONTRACT;
-        return (m_Flags & enum_SigClassLoadChecked) != 0;
-    }
-
-    BOOL IsSigClassCannotLoad()
-    {
-        LIMITED_METHOD_CONTRACT;
-        return 0 != (m_Flags & enum_SigClassCannotLoad);
-    }
-
-    VOID SetSigClassCannotLoad()
-    {
-        LIMITED_METHOD_CONTRACT;
-        m_Flags |= enum_SigClassCannotLoad;
-    }
-
-    VOID SetSigClassLoadChecked()
-    {
-        LIMITED_METHOD_CONTRACT;
-        m_Flags |= enum_SigClassLoadChecked;
     }
 
     DWORD GetSlots()
@@ -807,9 +782,6 @@ struct ComMethodTable
     }
 
 private:
-    // Helper methods.
-    BOOL CheckSigTypesCanBeLoaded(MethodTable *pItfClass);
-
     SLOT             m_ptReserved; //= (SLOT) 0xDEADC0FF;  reserved
     PTR_MethodTable  m_pMT; // pointer to the VMs method table
     ULONG            m_cbSlots; // number of slots in the interface (excluding IUnk/IDisp)
@@ -1411,9 +1383,6 @@ public:
         FastInterlockOr((ULONG*)&m_flags, enum_IsComActivated);
     }
 
-    // Used for the creation and deletion of simple wrappers
-    static SimpleComCallWrapper* CreateSimpleWrapper();
-
     // Determines if the type associated with the ComCallWrapper supports exceptions.
     static BOOL SupportsExceptions(MethodTable *pMT);
 
@@ -1465,30 +1434,11 @@ public:
         RETURN m_pWrap;
     }
 
-    inline PTR_ComCallWrapper GetClassWrapper()
-    {
-        LIMITED_METHOD_CONTRACT;
-
-        _ASSERTE(m_pMT->IsInterface());
-        _ASSERTE(m_pClassWrap != NULL);
-
-        return m_pClassWrap;
-    }
-
     inline ULONG GetRefCount()
     {
         LIMITED_METHOD_CONTRACT;
 
         return GET_COM_REF(READ_REF(m_llRefCount));
-    }
-
-    // Returns the unmarked raw ref count
-    // Make sure we always make a copy of the value instead of inlining
-    NOINLINE LONGLONG GetRealRefCount()
-    {
-        LIMITED_METHOD_CONTRACT;
-
-        return READ_REF(m_llRefCount);
     }
 
     inline BOOL IsNeutered()
@@ -1968,10 +1918,9 @@ inline BOOL ComCallWrapper::IsWrapperActive()
 
     // Since its called by GCPromote, we assume that this is the start wrapper
 
-    LONGLONG llRefCount = m_pSimpleWrapper->GetRealRefCount();
-    ULONG cbRef = GET_COM_REF(llRefCount);
+    ULONG cbRef = m_pSimpleWrapper->GetRefCount();
 
-    BOOL bHasStrongCOMRefCount = ((cbRef > 0));
+    BOOL bHasStrongCOMRefCount = cbRef > 0;
 
     BOOL bIsWrapperActive = (bHasStrongCOMRefCount && !m_pSimpleWrapper->IsHandleWeak());
 

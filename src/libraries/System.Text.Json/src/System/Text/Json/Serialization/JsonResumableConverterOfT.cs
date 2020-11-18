@@ -22,7 +22,7 @@ namespace System.Text.Json.Serialization
 
             ReadStack state = default;
             state.Initialize(typeToConvert, options, supportContinuation: false);
-            TryRead(ref reader, typeToConvert, options, ref state, out T value);
+            TryRead(ref reader, typeToConvert, options, ref state, out T? value);
             return value;
         }
 

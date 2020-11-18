@@ -634,7 +634,50 @@ namespace ILCompiler
             TypeDesc owningType = FindType(context, _commandLineOptions.SingleMethodTypeName);
 
             // TODO: allow specifying signature to distinguish overloads
-            MethodDesc method = owningType.GetMethod(_commandLineOptions.SingleMethodName, null);
+            MethodDesc method = null;
+            bool printMethodList = false;
+            int curIndex = 0;
+            foreach (var searchMethod in owningType.GetMethods())
+            {
+                if (searchMethod.Name != _commandLineOptions.SingleMethodName)
+                    continue;
+
+                curIndex++;
+                if (_commandLineOptions.SingleMethodIndex != 0)
+                {
+                    if (curIndex == _commandLineOptions.SingleMethodIndex)
+                    {
+                        method = searchMethod;
+                        break;
+                    }
+                }
+                else
+                {
+                    if (method == null)
+                    {
+                        method = searchMethod;
+                    }
+                    else
+                    {
+                        printMethodList = true;
+                    }
+                }
+            }
+
+            if (printMethodList)
+            {
+                curIndex = 0;
+                foreach (var searchMethod in owningType.GetMethods())
+                {
+                    if (searchMethod.Name != _commandLineOptions.SingleMethodName)
+                        continue;
+
+                    curIndex++;
+                    Console.WriteLine($"{curIndex} - {searchMethod}");
+                }
+                throw new CommandLineException(SR.SingleMethodIndexNeeded);
+            }
+
             if (method == null)
                 throw new CommandLineException(string.Format(SR.MethodNotFoundOnType, _commandLineOptions.SingleMethodName, _commandLineOptions.SingleMethodTypeName));
 
@@ -666,6 +709,20 @@ namespace ILCompiler
 
             Console.Write($"--singlemethodtypename \"{formatter.FormatName(failingMethod.OwningType, true)}\"");
             Console.Write($" --singlemethodname {failingMethod.Name}");
+            {
+                int curIndex = 0;
+                foreach (var searchMethod in failingMethod.OwningType.GetMethods())
+                {
+                    if (searchMethod.Name != failingMethod.Name)
+                        continue;
+
+                    curIndex++;
+                    if (searchMethod == failingMethod.GetMethodDefinition())
+                    {
+                        Console.Write($" --singlemethodindex {curIndex}");
+                    }
+                }
+            }
 
             for (int i = 0; i < failingMethod.Instantiation.Length; i++)
                 Console.Write($" --singlemethodgenericarg \"{formatter.FormatName(failingMethod.Instantiation[i], true)}\"");

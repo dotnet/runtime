@@ -132,18 +132,6 @@ generate_layout()
 
     build_MSBuild_projects "Tests_Overlay_Managed" "$__RepoRootDir/src/tests/run.proj" "Creating test overlay" "/t:CreateTestOverlay"
 
-    if [[ "$__TargetOS" != "OSX" && "$__SkipStressDependencies" == 0 ]]; then
-        nextCommand="\"${__RepoRootDir}/src/tests/Common/setup-stress-dependencies.sh\" --arch=$__BuildArch --outputDir=$CORE_ROOT"
-        echo "Resolve runtime dependences via $nextCommand"
-        eval $nextCommand
-
-        local exitCode="$?"
-        if [[ "$exitCode" != 0 ]]; then
-            echo "${__ErrMsgPrefix}${__MsgPrefix}Error: setup-stress-dependencies failed."
-            exit "$exitCode"
-        fi
-    fi
-
     # Precompile framework assemblies with crossgen if required
     if [[ "$__DoCrossgen" != 0 || "$__DoCrossgen2" != 0 ]]; then
         chmod +x "$__CrossgenExe"
@@ -485,7 +473,6 @@ handle_arguments_local() {
             ;;
 
         copynativeonly|-copynativeonly)
-            __SkipStressDependencies=1
             __SkipNative=1
             __SkipManaged=1
             __CopyNativeTestBinaries=1
@@ -533,10 +520,6 @@ handle_arguments_local() {
 
         skiprestorepackages|-skiprestorepackages)
             __SkipRestorePackages=1
-            ;;
-
-        skipstressdependencies|-skipstressdependencies)
-            __SkipStressDependencies=1
             ;;
 
         skipgeneratelayout|-skipgeneratelayout)
@@ -596,7 +579,6 @@ __SkipManaged=0
 __SkipNative=0
 __SkipRestore=""
 __SkipRestorePackages=0
-__SkipStressDependencies=0
 __SkipCrossgenFramework=0
 __SourceDir="$__ProjectDir/src"
 __UnprocessedBuildArgs=

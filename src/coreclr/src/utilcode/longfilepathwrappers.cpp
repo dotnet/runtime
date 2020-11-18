@@ -765,65 +765,6 @@ FindFirstFileExWrapper(
 }
 #endif // HOST_WINDOWS
 
-
-#ifdef HOST_WINDOWS
-
-#if ! defined(DACCESS_COMPILE) && !defined(SELF_NO_HOST)
-extern HINSTANCE            g_hThisInst;
-#endif// ! defined(DACCESS_COMPILE) && !defined(SELF_NO_HOST)
-
-BOOL PAL_GetPALDirectoryWrapper(SString& pbuffer)
-{
-
-    HRESULT hr = S_OK;
-
-    PathString pPath;
-    DWORD dwPath;
-    HINSTANCE hinst = NULL;
-
-#if ! defined(DACCESS_COMPILE) && !defined(SELF_NO_HOST)
-    hinst = g_hThisInst;
-#endif// ! defined(DACCESS_COMPILE) && !defined(SELF_NO_HOST)
-
-#ifndef CROSSGEN_COMPILE
-    _ASSERTE(hinst != NULL);
-#endif
-
-    dwPath = WszGetModuleFileName(hinst, pPath);
-
-    if(dwPath == 0)
-    {
-        hr = HRESULT_FROM_GetLastErrorNA();
-    }
-    else
-    {
-        hr = CopySystemDirectory(pPath, pbuffer);
-    }
-
-    return (hr == S_OK);
-}
-
-#else
-
-BOOL PAL_GetPALDirectoryWrapper(SString& pbuffer)
-{
-    BOOL retval = FALSE;
-    COUNT_T size  = MAX_LONGPATH;
-
-    if(!(retval = PAL_GetPALDirectoryW(pbuffer.OpenUnicodeBuffer(size - 1), &size)))
-    {
-        pbuffer.CloseBuffer(0);
-        retval = PAL_GetPALDirectoryW(pbuffer.OpenUnicodeBuffer(size - 1), &size);
-    }
-
-    pbuffer.CloseBuffer(size);
-
-    return retval;
-}
-
-#endif // HOST_WINDOWS
-
-
 //Implementation of LongFile Helpers
 const WCHAR LongFile::DirectorySeparatorChar = W('\\');
 const WCHAR LongFile::AltDirectorySeparatorChar = W('/');

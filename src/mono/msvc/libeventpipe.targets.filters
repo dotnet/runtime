@@ -1,6 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
 <Project DefaultTargets="Build" ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup Label="libeventpipe">
+    <ClCompile Include="$(MonoSourceLocation)\mono\eventpipe\ds.c">
+      <Filter>Source Files$(MonoRuntimeFilterSubFolder)\eventpipe</Filter>
+    </ClCompile>
     <ClCompile Include="$(MonoSourceLocation)\mono\eventpipe\ds-dump-protocol.c">
       <Filter>Source Files$(MonoRuntimeFilterSubFolder)\eventpipe</Filter>
     </ClCompile>
@@ -139,6 +142,12 @@
     <ClInclude Include="$(MonoSourceLocation)\mono\eventpipe\ep-getter-setter.h">
       <Filter>Header Files$(MonoRuntimeFilterSubFolder)\eventpipe</Filter>
     </ClInclude>
+    <ClCompile Include="$(MonoSourceLocation)\mono\eventpipe\ep-json-file.c">
+      <Filter>Source Files$(MonoRuntimeFilterSubFolder)\eventpipe</Filter>
+    </ClCompile>
+    <ClInclude Include="$(MonoSourceLocation)\mono\eventpipe\ep-json-file.h">
+      <Filter>Header Files$(MonoRuntimeFilterSubFolder)\eventpipe</Filter>
+    </ClInclude>
     <ClCompile Include="$(MonoSourceLocation)\mono\eventpipe\ep-metadata-generator.c">
       <Filter>Source Files$(MonoRuntimeFilterSubFolder)\eventpipe</Filter>
     </ClCompile>
@@ -182,6 +191,12 @@
       <Filter>Header Files$(MonoRuntimeFilterSubFolder)\eventpipe</Filter>
     </ClInclude>
     <ClInclude Include="$(MonoSourceLocation)\mono\eventpipe\ep-types.h">
+      <Filter>Header Files$(MonoRuntimeFilterSubFolder)\eventpipe</Filter>
+    </ClInclude>
+    <ClCompile Include="$(MonoSourceLocation)\mono\eventpipe\ep-sample-profiler.c">
+      <Filter>Source Files$(MonoRuntimeFilterSubFolder)\eventpipe</Filter>
+    </ClCompile>
+    <ClInclude Include="$(MonoSourceLocation)\mono\eventpipe\ep-sample-profiler.h">
       <Filter>Header Files$(MonoRuntimeFilterSubFolder)\eventpipe</Filter>
     </ClInclude>
     <ClCompile Include="$(MonoSourceLocation)\mono\eventpipe\ep-session.c">

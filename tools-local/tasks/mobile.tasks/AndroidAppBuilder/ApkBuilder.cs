@@ -20,6 +20,7 @@ public class ApkBuilder
     public bool StripDebugSymbols { get; set; }
     public string? NativeMainSource { get; set; }
     public string? KeyStorePath { get; set; }
+    public bool ForceInterpreter { get; set; }
 
     public (string apk, string packageId) BuildApk(
         string sourceDir,
@@ -194,7 +195,8 @@ public class ApkBuilder
             File.Copy(NativeMainSource, javaActivityPath, true);
 
         string monoRunner = Utils.GetEmbeddedResource("MonoRunner.java")
-            .Replace("%EntryPointLibName%", Path.GetFileName(entryPointLib));
+            .Replace("%EntryPointLibName%", Path.GetFileName(entryPointLib))
+            .Replace("%ForceInterpreter%", ForceInterpreter.ToString().ToLower());
         File.WriteAllText(monoRunnerPath, monoRunner);
 
         File.WriteAllText(Path.Combine(OutputDir, "AndroidManifest.xml"),

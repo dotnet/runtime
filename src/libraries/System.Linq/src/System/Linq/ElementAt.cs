@@ -17,7 +17,7 @@ namespace System.Linq
 
             if (source is IPartition<TSource> partition)
             {
-                TSource element = partition.TryGetElementAt(index, out bool found);
+                TSource? element = partition.TryGetElementAt(index, out bool found);
                 if (found)
                 {
                     return element!;

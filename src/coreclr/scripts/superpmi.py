@@ -2175,19 +2175,20 @@ def upload_mch(coreclr_args):
 
     files = []
     for item in coreclr_args.mch_files:
-        files += get_files_from_path(item, match_func=lambda path: any(path.endswith(extension) for extension in [".mch", ".mct"]))
+        files += get_files_from_path(item, match_func=lambda path: any(path.endswith(extension) for extension in [".mch"]))
 
+    files_to_upload = []
     # Special case: walk the files list and for every ".mch" file, check to see that either the associated ".mct" file is already
     # in the list, or add it if the ".mct" file exists.
     for file in files.copy():
-        if file.endswith(".mch"):
+        if file.endswith(".mch") and os.stat(file).st_size > 0:
+            files_to_upload.append(file)
             mct_file = file + ".mct"
-            if mct_file not in files:
-                if os.path.isfile(mct_file):
-                    files.append(mct_file)
+            if os.path.isfile(mct_file) and os.stat(mct_file).st_size > 0:
+                files_to_upload.append(mct_file)
 
     logging.info("Uploading:")
-    for item in files:
+    for item in files_to_upload:
         logging.info("  %s", item)
 
     try:
@@ -2205,7 +2206,7 @@ def upload_mch(coreclr_args):
     total_bytes_uploaded = 0
 
     with TempDir() as temp_location:
-        for file in files:
+        for file in files_to_upload:
             # Zip compress the file we will upload
             zip_name = os.path.basename(file) + ".zip"
             zip_path = os.path.join(temp_location, zip_name)
@@ -2719,7 +2720,8 @@ def setup_args(args):
         coreclr_args.verify(args,
                             "output_mch_path",
                             lambda output_mch_path: output_mch_path is None or (not os.path.isdir(os.path.abspath(output_mch_path)) and not os.path.isfile(os.path.abspath(output_mch_path))),
-                            "Invalid output_mch_path; is it an existing directory or file?")
+                            "Invalid output_mch_path \"{}\"; is it an existing directory or file?".format,
+                            modify_arg=lambda output_mch_path: None if output_mch_path is None else os.path.abspath(output_mch_path))
 
         coreclr_args.verify(args,
                             "merge_mch_files",
@@ -3002,7 +3004,8 @@ def setup_args(args):
         coreclr_args.verify(args,
                             "output_mch_path",
                             lambda output_mch_path: not os.path.isdir(os.path.abspath(output_mch_path)) and not os.path.isfile(os.path.abspath(output_mch_path)),
-                            "Invalid output_mch_path; is it an existing directory or file?")
+                            "Invalid output_mch_path \"{}\"; is it an existing directory or file?".format,
+                            modify_arg=lambda output_mch_path: os.path.abspath(output_mch_path))
 
         coreclr_args.verify(args,
                             "pattern",
