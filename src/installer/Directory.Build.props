@@ -114,13 +114,6 @@
     <SharedFrameworkInstallerStart Condition="'$(TargetOS)' == 'OSX'">$(SharedFrameworkInstallerStart)$(InstallerStartSuffix)-</SharedFrameworkInstallerStart>
   </PropertyGroup>
 
-  <!-- Use actual publishable (non-dummy) package name produced by the build system for this RID -->
-  <PropertyGroup Condition="'$(OutputRid)' != ''">
-    <PackageTargetRid>$(OutputRid)</PackageTargetRid>
-    <PackageTargetRid Condition="'$(OutputRid)' == 'osx.10.11-x64'">osx.10.10-x64</PackageTargetRid>
-    <PackageTargetRid Condition="$(OutputRid.StartsWith('rhel.7.')) and $(OutputRid.EndsWith('-x64'))">rhel.7-x64</PackageTargetRid>
-  </PropertyGroup>
-
   <PropertyGroup>
     <!-- Never use the NuGet fallback folder that comes with the SDK we use to build.
          The NuGet fallback folder can/will contain packages we are building in this repo, and we
@@ -128,12 +121,4 @@
     -->
     <DisableImplicitNuGetFallbackFolder>true</DisableImplicitNuGetFallbackFolder>
   </PropertyGroup>
-
-  <PropertyGroup>
-    <CrossGenSymbolExtension>.map</CrossGenSymbolExtension>
-    <CrossGenSymbolExtension Condition="'$(TargetOS)' == 'windows'">.ni.pdb</CrossGenSymbolExtension>
-    <!-- OSX doesn't have crossgen symbols, yet -->
-    <CrossGenSymbolExtension Condition="'$(TargetOS)' == 'OSX' or '$(TargetsMobile)' == 'true' or '$(TargetOS)' == 'FreeBSD'"></CrossGenSymbolExtension>
-  </PropertyGroup>
-
 </Project>
