@@ -5495,6 +5495,12 @@ namespace JIT.HardwareIntrinsics.Arm
 
         public static double Insert(double[] op1, int op2, double op3, int i) => (op2 != i) ? op1[i] : op3;
 
+        public static int LoadPairScalar(int[] op1, int i) => (i == 0) ? op1[0] : (i == op1.Length / 2) ? op1[1] : (int)0;
+
+        public static uint LoadPairScalar(uint[] op1, int i) => (i == 0) ? op1[0] : (i == op1.Length / 2) ? op1[1] : (uint)0;
+
+        public static float LoadPairScalar(float[] op1, int i) => (i == 0) ? op1[0] : (i == op1.Length / 2) ? op1[1] : (float)0;
+
         public static sbyte TableVectorExtension(int i, sbyte[] defaultValues, sbyte[] indices, params sbyte[][] table)
         {
             sbyte[] fullTable = table.SelectMany(x => x).ToArray();
