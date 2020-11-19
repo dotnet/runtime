@@ -3967,7 +3967,7 @@ namespace System
             private readonly RuntimeType _originalRT;
 #endif
 
-            internal ActivatorCache(RuntimeType rt)
+            internal ActivatorCache([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors | DynamicallyAccessedMemberTypes.NonPublicConstructors)] RuntimeType rt)
             {
                 Debug.Assert(rt != null);
 
@@ -3999,7 +3999,7 @@ namespace System
                 else
                 {
                     _pfnNewobj = (delegate*<IntPtr, object?>)RuntimeTypeHandle.GetNewobjHelperFnPtr(rt, out MethodTable* pMT, unwrapNullable: false);
-                    _ctorStubState = (IntPtr)pMT;
+                    _newobjState = (IntPtr)pMT;
 
                     defaultCtorRMH = RuntimeTypeHandle.GetDefaultConstructor(rt);
 
@@ -4060,7 +4060,11 @@ namespace System
                     }
                 }
 
-                if (!defaultCtorRMH.IsNullHandle())
+                if (defaultCtorRMH.IsNullHandle())
+                {
+                    CtorIsPublic = true; // implicit parameterless ctor is always considered public
+                }
+                else
                 {
                     CtorIsPublic = (RuntimeMethodHandle.GetAttributes(defaultCtorRMH) & MethodAttributes.Public) != 0;
                 }
@@ -4099,6 +4103,10 @@ namespace System
         /// </summary>
         [DebuggerStepThrough]
         [DebuggerHidden]
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2082:UnrecognizedReflectionPattern",
+            Justification = "Implementation detail of Activator that linker intrinsically recognizes")]
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2085:UnrecognizedReflectionPattern",
+            Justification = "Implementation detail of Activator that linker intrinsically recognizes")]
         internal object? CreateInstanceDefaultCtor(bool publicOnly, bool wrapExceptions)
         {
             // Get or create the cached factory. Creating the cache will fail if one
