@@ -52,7 +52,6 @@ set __SkipManaged=
 set __SkipTestWrappers=
 set __BuildTestWrappersOnly=
 set __SkipNative=
-set __RuntimeId=
 set __TargetsWindows=1
 set __DoCrossgen=
 set __DoCrossgen2=
@@ -109,7 +108,6 @@ if /i "%1" == "buildagainstpackages"  (echo error: Remove /BuildAgainstPackages 
 if /i "%1" == "crossgen"              (set __DoCrossgen=1&set __TestBuildMode=crossgen&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
 if /i "%1" == "crossgen2"             (set __DoCrossgen2=1&set __TestBuildMode=crossgen2&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
 if /i "%1" == "composite"             (set __CompositeBuildMode=1&set __DoCrossgen2=1&set __TestBuildMode=crossgen2&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
-if /i "%1" == "runtimeid"             (set __RuntimeId=%2&set processedArgs=!processedArgs! %1 %2&shift&shift&goto Arg_Loop)
 if /i "%1" == "targetsNonWindows"     (set __TargetsWindows=0&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
 if /i "%1" == "Exclude"               (set __Exclude=%2&set processedArgs=!processedArgs! %1 %2&shift&shift&goto Arg_Loop)
 if /i "%1" == "-priority"             (set __Priority=%2&shift&set processedArgs=!processedArgs! %1=%2&shift&goto Arg_Loop)
@@ -426,11 +424,6 @@ REM ============================================================================
 
 echo %__MsgPrefix%Creating test overlay
 
-set RuntimeIdArg=
-if defined __RuntimeId (
-    set RuntimeIdArg=/p:RuntimeId="%__RuntimeId%"
-)
-
 set __BuildLogRootName=Tests_Overlay_Managed
 set __BuildLog=%__LogsDir%\%__BuildLogRootName%_%__TargetOS%__%__BuildArch%__%__BuildType%.log
 set __BuildWrn=%__LogsDir%\%__BuildLogRootName%_%__TargetOS%__%__BuildArch%__%__BuildType%.wrn
@@ -445,7 +438,7 @@ powershell -NoProfile -ExecutionPolicy ByPass -NoLogo -File "%__RepoRootDir%\eng
   /p:RestoreDefaultOptimizationDataPackage=false /p:PortableBuild=true^
   /p:UsePartialNGENOptimization=false /maxcpucount^
   %__SkipFXRestoreArg%^
-  !__Logging! %__CommonMSBuildArgs% %RuntimeIdArg% %__PriorityArg% %__BuildNeedTargetArg% %__UnprocessedBuildArgs%
+  !__Logging! %__CommonMSBuildArgs% %__PriorityArg% %__BuildNeedTargetArg% %__UnprocessedBuildArgs%
 if errorlevel 1 (
     echo %__ErrMsgPrefix%%__MsgPrefix%Error: Create Test Overlay failed. Refer to the build log files for details:
     echo     %__BuildLog%
@@ -560,7 +553,6 @@ echo Build type: one of Debug, Checked, Release ^(default: Debug^).
 echo skipmanaged: skip the managed tests build
 echo skipnative: skip the native tests build
 echo skiprestorepackages: skip package restore
-echo runtimeid ^<ID^>: Builds a test overlay for the specified OS ^(Only supported when building against packages^). Supported IDs are:
 echo     alpine.3.4.3-x64: Builds overlay for Alpine 3.4.3
 echo     debian.8-x64: Builds overlay for Debian 8
 echo     fedora.24-x64: Builds overlay for Fedora 24
