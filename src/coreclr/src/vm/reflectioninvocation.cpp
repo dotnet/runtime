@@ -2007,11 +2007,11 @@ FCIMPLEND
  * then if the input type handle is Nullable<T> we'll return the newobj helper and
  * MethodTable* for the underlying T.
  */
-void QCALLTYPE RuntimeTypeHandle::GetNewobjHelperFnPtr(
+void QCALLTYPE RuntimeTypeHandle::GetAllocatorFtn(
     QCall::TypeHandle pTypeHandle,
     PCODE* ppNewobjHelper,
     MethodTable** ppMT,
-    BOOL fUnwrapNullable)
+    BOOL fGetUninitializedInstance)
 {
     CONTRACTL{
         QCALL_CHECK;
@@ -2026,8 +2026,14 @@ void QCALLTYPE RuntimeTypeHandle::GetNewobjHelperFnPtr(
 
     TypeHandle typeHandle = pTypeHandle.AsTypeHandle();
 
-    // Don't allow void, arrays, pointers, byrefs, or function pointers.
-    if (typeHandle.IsTypeDesc() || typeHandle.IsArray() || typeHandle.GetSignatureCorElementType() == ELEMENT_TYPE_VOID)
+    // Don't allow void
+    if (typeHandle.GetSignatureCorElementType() == ELEMENT_TYPE_VOID)
+    {
+        COMPlusThrow(kArgumentException, W("Argument_InvalidValue"));
+    }
+
+    // Don't allow arrays, pointers, byrefs, or function pointers
+    if (typeHandle.IsTypeDesc() || typeHandle.IsArray())
     {
         COMPlusThrow(kArgumentException, W("Argument_InvalidValue"));
     }
@@ -2079,9 +2085,9 @@ void QCALLTYPE RuntimeTypeHandle::GetNewobjHelperFnPtr(
     }
 #endif // FEATURE_COMINTEROP
 
-    // If the caller passed Nullable<T> and wanted nullables unwrapped,
-    // instead pretend they had passed the 'T' directly.
-    if (fUnwrapNullable && Nullable::IsNullableType(pMT))
+    // If the caller is GetUninitializedInstance, they'll want a boxed T instead of a boxed Nullable<T>.
+    // Other callers will get the MethodTable* corresponding to Nullable<T>.
+    if (fGetUninitializedInstance && Nullable::IsNullableType(pMT))
     {
         pMT = pMT->GetInstantiation()[0].GetMethodTable();
     }
