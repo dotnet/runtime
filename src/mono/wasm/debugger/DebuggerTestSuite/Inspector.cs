@@ -22,19 +22,40 @@ namespace DebuggerTests
 
         public Task<JObject> WaitFor(string what)
         {
-            if (notifications.ContainsKey(what))
+            if (notifications.TryGetValue(what, out TaskCompletionSource<JObject> tcs))
+            {
+                if (tcs.Task.IsCompleted)
+                {
+                    notifications.Remove(what);
+                    return tcs.Task;
+                }
+
                 throw new Exception($"Invalid internal state, waiting for {what} while another wait is already setup");
-            var n = new TaskCompletionSource<JObject>();
-            notifications[what] = n;
-            return n.Task;
+            }
+            else
+            {
+                var n = new TaskCompletionSource<JObject>();
+                notifications[what] = n;
+                return n.Task;
+            }
         }
 
         void NotifyOf(string what, JObject args)
         {
-            if (!notifications.ContainsKey(what))
-                throw new Exception($"Invalid internal state, notifying of {what}, but nobody waiting");
-            notifications[what].SetResult(args);
-            notifications.Remove(what);
+            if (notifications.TryGetValue(what, out TaskCompletionSource<JObject> tcs))
+            {
+                if (tcs.Task.IsCompleted)
+                    throw new Exception($"Invalid internal state. Notifying for {what} again, but the previous one hasn't been read.");
+
+                notifications[what].SetResult(args);
+                notifications.Remove(what);
+            }
+            else
+            {
+                var n = new TaskCompletionSource<JObject>();
+                notifications[what] = n;
+                n.SetResult(args);
+            }
         }
 
         public void On(string evtName, Func<JObject, CancellationToken, Task> cb)
