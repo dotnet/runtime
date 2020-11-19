@@ -1402,11 +1402,13 @@ ves_icall_System_Runtime_CompilerServices_RuntimeHelpers_GetUninitializedObjectI
 		return NULL_HANDLE;
 	}
 
-	vtable = mono_class_vtable_checked (mono_domain_get (), klass, error);
-	return_val_if_nok (error, NULL_HANDLE);
+	if (!mono_class_is_before_field_init (klass)) {
+		vtable = mono_class_vtable_checked (mono_domain_get (), klass, error);
+		return_val_if_nok (error, NULL_HANDLE);
 
-	mono_runtime_class_init_full (vtable, error);
-	return_val_if_nok (error, NULL_HANDLE);
+		mono_runtime_class_init_full (vtable, error);
+		return_val_if_nok (error, NULL_HANDLE);
+	}
 
 	if (m_class_is_nullable (klass))
 		return mono_object_new_handle (mono_domain_get (), m_class_get_nullable_elem_class (klass), error);
