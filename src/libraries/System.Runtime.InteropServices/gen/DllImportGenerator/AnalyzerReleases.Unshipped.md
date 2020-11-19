@@ -18,3 +18,4 @@ DLLIMPORTGENANALYZER010 | Usage            | Warning  | GetPinnableReferenceShou
 DLLIMPORTGENANALYZER011 | Usage            | Warning  | StackallocMarshallingShouldSupportAllocatingMarshallingFallback
 DLLIMPORTGENANALYZER012 | Usage            | Error    | StackallocConstructorMustHaveStackBufferSizeConstant
 DLLIMPORTGENANALYZER013 | Usage            | Warning  | GeneratedDllImportMissingRequiredModifiers
+DLLIMPORTGENANALYZER014 | Usage            | Error    | RefValuePropertyUnsupported

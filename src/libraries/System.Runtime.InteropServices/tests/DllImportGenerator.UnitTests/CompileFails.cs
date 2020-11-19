@@ -67,6 +67,13 @@ namespace DllImportGenerator.UnitTests
             yield return new object[] { CodeSnippets.ArrayParameterWithSizeParam<float>(isByRef: false), 1, 0 };
             yield return new object[] { CodeSnippets.ArrayParameterWithSizeParam<double>(isByRef: false), 1, 0 };
             yield return new object[] { CodeSnippets.ArrayParameterWithSizeParam<bool>(isByRef: false), 1, 0 };
+
+            // Custom type marshalling with invalid members
+            yield return new object[] { CodeSnippets.CustomStructMarshallingByRefValueProperty, 3, 0 };
+            yield return new object[] { CodeSnippets.CustomStructMarshallingManagedToNativeOnlyOutParameter, 1, 0 };
+            yield return new object[] { CodeSnippets.CustomStructMarshallingManagedToNativeOnlyReturnValue, 1, 0 };
+            yield return new object[] { CodeSnippets.CustomStructMarshallingNativeToManagedOnlyInParameter, 1, 0 };
+            yield return new object[] { CodeSnippets.CustomStructMarshallingStackallocOnlyRefParameter, 1, 0 };
         }
 
         [Theory]

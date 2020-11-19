@@ -351,6 +351,20 @@ partial class Test
         out {typeName} pOut);
 }}";
 
+        /// <summary>
+        /// Declaration with parameters.
+        /// </summary>
+        public static string BasicParametersAndModifiersNoRef(string typeName) => @$"
+using System.Runtime.InteropServices;
+partial class Test
+{{
+    [GeneratedDllImport(""DoesNotExist"")]
+    public static partial {typeName} Method(
+        {typeName} p,
+        in {typeName} pIn,
+        out {typeName} pOut);
+}}";
+
         public static string BasicParametersAndModifiers<T>() => BasicParametersAndModifiers(typeof(T).ToString());
 
         /// <summary>
@@ -501,7 +515,7 @@ partial class Test
 }}";
 
         public static string ArrayParameterWithNestedMarshalInfo<T>(UnmanagedType nestedMarshalType) => ArrayParameterWithNestedMarshalInfo(typeof(T).ToString(), nestedMarshalType);
-
+        
         public static string ArrayPreserveSigFalse(string elementType) => $@"
 using System.Runtime.InteropServices;
 partial class Test
@@ -516,5 +530,340 @@ partial class Test
 }}";
 
         public static string ArrayPreserveSigFalse<T>() => ArrayPreserveSigFalse(typeof(T).ToString());
+
+        /// <summary>
+        /// Declaration with parameters with MarshalAs.
+        /// </summary>
+        public static string MarshalUsingParametersAndModifiers(string typeName, string nativeTypeName) => @$"
+using System.Runtime.InteropServices;
+partial class Test
+{{
+    [GeneratedDllImport(""DoesNotExist"")]
+    [return: MarshalUsing(typeof({nativeTypeName}))]
+    public static partial {typeName} Method(
+        [MarshalUsing(typeof({nativeTypeName}))] {typeName} p,
+        [MarshalUsing(typeof({nativeTypeName}))] in {typeName} pIn,
+        [MarshalUsing(typeof({nativeTypeName}))] ref {typeName} pRef,
+        [MarshalUsing(typeof({nativeTypeName}))] out {typeName} pOut);
+}}
+";
+
+        public static string CustomStructMarshallingParametersAndModifiers = BasicParametersAndModifiers("S") + @"
+[NativeMarshalling(typeof(Native))]
+struct S
+{
+    public bool b;
+}
+
+struct Native
+{
+    private int i;
+    public Native(S s)
+    {
+        i = s.b ? 1 : 0;
+    }
+
+    public S ToManaged() => new S { b = i != 0 };
+}
+";
+
+        public static string CustomStructMarshallingMarshalUsingParametersAndModifiers = MarshalUsingParametersAndModifiers("S", "Native") + @"
+struct S
+{
+    public bool b;
+}
+
+struct Native
+{
+    private int i;
+    public Native(S s)
+    {
+        i = s.b ? 1 : 0;
+    }
+
+    public S ToManaged() => new S { b = i != 0 };
+}
+";
+
+        public static string CustomStructMarshallingStackallocParametersAndModifiersNoRef = BasicParametersAndModifiersNoRef("S") + @"
+[NativeMarshalling(typeof(Native))]
+struct S
+{
+    public bool b;
+}
+
+struct Native
+{
+    private int i;
+    public Native(S s, System.Span<byte> b)
+    {
+        i = s.b ? 1 : 0;
+    }
+
+    public S ToManaged() => new S { b = i != 0 };
+
+    public const int StackBufferSize = 1;
+}
+";
+        public static string CustomStructMarshallingStackallocOnlyRefParameter = BasicParameterWithByRefModifier("ref", "S") + @"
+[NativeMarshalling(typeof(Native))]
+struct S
+{
+    public bool b;
+}
+
+struct Native
+{
+    private int i;
+    public Native(S s, System.Span<byte> b)
+    {
+        i = s.b ? 1 : 0;
+    }
+
+    public S ToManaged() => new S { b = i != 0 };
+
+    public const int StackBufferSize = 1;
+}
+";
+        public static string CustomStructMarshallingOptionalStackallocParametersAndModifiers = BasicParametersAndModifiers("S") + @"
+[NativeMarshalling(typeof(Native))]
+struct S
+{
+    public bool b;
+}
+
+struct Native
+{
+    private int i;
+    public Native(S s, System.Span<byte> b)
+    {
+        i = s.b ? 1 : 0;
+    }
+    public Native(S s)
+    {
+        i = s.b ? 1 : 0;
+    }
+
+    public S ToManaged() => new S { b = i != 0 };
+
+    public const int StackBufferSize = 1;
+}
+";
+
+        public static string CustomStructMarshallingStackallocValuePropertyParametersAndModifiersNoRef = BasicParametersAndModifiersNoRef("S") + @"
+[NativeMarshalling(typeof(Native))]
+struct S
+{
+    public bool b;
+}
+
+struct Native
+{
+    public Native(S s, System.Span<byte> b)
+    {
+        Value = s.b ? 1 : 0;
+    }
+
+    public S ToManaged() => new S { b = Value != 0 };
+
+    public int Value { get; set; }
+
+    public const int StackBufferSize = 1;
+}
+";
+        public static string CustomStructMarshallingValuePropertyParametersAndModifiers = BasicParametersAndModifiers("S") + @"
+[NativeMarshalling(typeof(Native))]
+struct S
+{
+    public bool b;
+}
+
+struct Native
+{
+    public Native(S s)
+    {
+        Value = s.b ? 1 : 0;
+    }
+
+    public S ToManaged() => new S { b = Value != 0 };
+
+    public int Value { get; set; }
+}
+";
+        public static string CustomStructMarshallingPinnableParametersAndModifiers = BasicParametersAndModifiers("S") + @"
+[NativeMarshalling(typeof(Native))]
+class S
+{
+    public int i;
+
+    public ref int GetPinnableReference() => ref i;
+}
+
+unsafe struct Native
+{
+    private int* ptr;
+    public Native(S s)
+    {
+        ptr = (int*)Marshal.AllocHGlobal(sizeof(int));
+        *ptr = s.i;
+    }
+
+    public S ToManaged() => new S { i = *ptr };
+
+    public nint Value
+    {
+        get => (nint)ptr;
+        set => ptr = (int*)value;
+    }
+}
+";
+
+        public static string CustomStructMarshallingNativeTypePinnable = @"
+using System.Runtime.InteropServices;
+using System;
+
+[NativeMarshalling(typeof(Native))]
+class S
+{
+    public byte c;
+}
+
+unsafe ref struct Native
+{
+    private byte* ptr;
+    private Span<byte> stackBuffer;
+
+    public Native(S s) : this()
+    {
+        ptr = (byte*)Marshal.AllocCoTaskMem(sizeof(byte));
+        *ptr = s.c;
+    }
+
+    public Native(S s, Span<byte> buffer) : this()
+    {
+        stackBuffer = buffer;
+        stackBuffer[0] = s.c;
+    }
+
+    public ref byte GetPinnableReference() => ref (ptr != null ? ref *ptr : ref stackBuffer.GetPinnableReference());
+
+    public S ToManaged()
+    {
+        return new S { c = *ptr };
+    }
+
+    public byte* Value
+    {
+        get => ptr != null ? ptr : throw new InvalidOperationException();
+        set => ptr = value;
+    }
+
+    public void FreeNative()
+    {
+        if (ptr != null)
+        {
+            Marshal.FreeCoTaskMem((IntPtr)ptr);
+        }
+    }
+
+    public const int StackBufferSize = 1;
+}
+
+partial class Test
+{
+    [GeneratedDllImport(""DoesNotExist"")]
+    public static partial void Method(
+        S s,
+        in S sIn);
+}
+";
+
+        public static string CustomStructMarshallingByRefValueProperty = BasicParametersAndModifiers("S") + @"
+[NativeMarshalling(typeof(Native))]
+class S
+{
+    public byte c = 0;
+}
+
+unsafe struct Native
+{
+    private S value;
+
+    public Native(S s) : this()
+    {
+        value = s;
+    }
+
+    public ref byte Value { get => ref value.c; }
+}
+";
+
+        public static string BasicParameterWithByRefModifier(string byRefKind, string typeName) => @$"
+using System.Runtime.InteropServices;
+partial class Test
+{{
+    [GeneratedDllImport(""DoesNotExist"")]
+    public static partial void Method(
+        {byRefKind} {typeName} p);
+}}";
+
+        public static string BasicReturnType(string typeName) => @$"
+using System.Runtime.InteropServices;
+partial class Test
+{{
+    [GeneratedDllImport(""DoesNotExist"")]
+    public static partial {typeName} Method();
+}}";
+
+        public static string CustomStructMarshallingManagedToNativeOnlyOutParameter => BasicParameterWithByRefModifier("out", "S")  + @"
+[NativeMarshalling(typeof(Native))]
+[StructLayout(LayoutKind.Sequential)]
+struct S
+{
+    public bool b;
+}
+
+struct Native
+{
+    private int i;
+    public Native(S s)
+    {
+        i = s.b ? 1 : 0;
+    }
+}
+";
+
+        public static string CustomStructMarshallingManagedToNativeOnlyReturnValue => BasicReturnType("S")  + @"
+[NativeMarshalling(typeof(Native))]
+[StructLayout(LayoutKind.Sequential)]
+struct S
+{
+    public bool b;
+}
+
+struct Native
+{
+    private int i;
+    public Native(S s)
+    {
+        i = s.b ? 1 : 0;
+    }
+}
+";
+
+        public static string CustomStructMarshallingNativeToManagedOnlyInParameter => BasicParameterWithByRefModifier("in", "S")  + @"
+[NativeMarshalling(typeof(Native))]
+struct S
+{
+    public bool b;
+}
+
+[StructLayout(LayoutKind.Sequential)]
+struct Native
+{
+    private int i;
+    public S ToManaged() => new S { b = i != 0 };
+}
+";
     }
 }

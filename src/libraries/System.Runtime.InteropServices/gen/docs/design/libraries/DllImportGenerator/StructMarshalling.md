@@ -61,6 +61,29 @@ The analyzer will report an error if neither the construtor nor the ToManaged me
 
 If the native type `TNative` also has a public `Value` property, then the value of the `Value` property will be passed to native code instead of the `TNative` value itself. As a result, the type `TNative` will be allowed to be non-blittable and the type of the `Value` property will be required to be blittable. If the `Value` property is settable, then when marshalling in the native-to-managed direction, a default value of `TNative` will have its `Value` property set to the native value. If `Value` does not have a setter, then marshalling from native to managed is not supported.
 
+A `ref` or `ref readonly` typed `Value` property is unsupported. If a ref-return is required, the type author can supply a `GetPinnableReference` method on the native type. If a `GetPinnableReference` method is supplied, then the `Value` property must have a pointer-sized primitive type.
+
+```csharp
+[NativeMarshalling(typeof(TMarshaler))]
+public struct TManaged
+{
+     // ...
+}
+
+public struct TMarshaler
+{
+     public TNative(TManaged managed) {}
+     public TManaged ToManaged() {}
+
+     public void FreeNative() {}
+
+     public ref TNative GetPinnableReference() {}
+
+     public TNative Value { get; set; }
+}
+
+```
+
 ### Performance features
 
 #### Pinning
@@ -80,7 +103,9 @@ partial struct TNative
 }
 ```
 
-When these members are both present, the source generator will call the two-parameter constructor with a stack-allocated buffer of `StackBufferSize` bytes when a stack-allocated buffer is usable. As this buffer is guaranteed to be stack allocated and not on the GC heap, it is safe to use `Unsafe.AsPointer` to get a pointer to the stack buffer to pass to native code. As a stack-allocated buffer is not usable in all scenarios, for example Reverse P/Invoke and struct marshalling, a one-parameter constructor must also be provided for usage in those scenarios. This may also be provided by providing a two-parameter constructor with a default value for the second parameter.
+When these members are both present, the source generator will call the two-parameter constructor with a possibly stack-allocated buffer of `StackBufferSize` bytes when a stack-allocated buffer is usable. As a stack-allocated buffer is not usable in all scenarios, for example Reverse P/Invoke and struct marshalling, a one-parameter constructor must also be provided for usage in those scenarios. This may also be provided by providing a two-parameter constructor with a default value for the second parameter.
+
+Type authors can pass down the `stackSpace` pointer to native code by defining a `GetPinnableReference` method on the native type that returns a reference to the first element of the span.
 
 ### Usage
 
@@ -221,7 +246,7 @@ In this case, the underlying native type would actually be an `int`, but the use
 
 > :question: Should we support transparent structures on manually annotated blittable types? If we do, we should do so in an opt-in manner to make it possible to have a `Value` property on the blittable type.
 
-#### Special case: ComWrappers marshalling with Transparent Structures
+#### Example: ComWrappers marshalling with Transparent Structures
 
 Building on this Transparent Structures support, we can also support ComWrappers marshalling with this proposal via the manually-decorated types approach:
 

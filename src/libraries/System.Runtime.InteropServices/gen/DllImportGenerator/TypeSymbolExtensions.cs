@@ -74,6 +74,11 @@ namespace Microsoft.Interop
                 return false;
             }
 
+            if (type is IPointerTypeSymbol { PointedAtType: ITypeSymbol pointedAtType })
+            {
+                return pointedAtType.IsConsideredBlittable();
+            }
+
             bool hasNativeMarshallingAttribute = false;
             bool hasGeneratedMarshallingAttribute = false;
             // [TODO]: Match attributes on full name or symbol, not just on type name.

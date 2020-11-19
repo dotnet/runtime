@@ -172,25 +172,8 @@ namespace Microsoft.Interop
                 case { ManagedType: { SpecialType: SpecialType.System_Boolean }, MarshallingAttributeInfo: MarshalAsInfo(UnmanagedType.VariantBool, _) }:
                     return VariantBool;
 
-                case { ManagedType: { SpecialType: SpecialType.System_Char } }:
-                    return CreateCharMarshaller(info, context);
-
-                case { ManagedType: { SpecialType: SpecialType.System_String } }:
-                    return CreateStringMarshaller(info, context);
-
                 case { ManagedType: { TypeKind: TypeKind.Delegate }, MarshallingAttributeInfo: NoMarshallingInfo or MarshalAsInfo(UnmanagedType.FunctionPtr, _) }:
                     return Delegate;
-
-                case { MarshallingAttributeInfo: BlittableTypeAttributeInfo }:
-                    return Blittable;
-
-                // Marshalling in new model
-                case { MarshallingAttributeInfo: NativeMarshallingAttributeInfo marshalInfo }:
-                    return Forwarder;
-
-                // Simple marshalling with new attribute model, only have type name.
-                case { MarshallingAttributeInfo: GeneratedNativeMarshallingAttributeInfo(string nativeTypeName) }:
-                    return Forwarder;
 
                 case { MarshallingAttributeInfo: SafeHandleMarshallingInfo }:
                     if (!context.CanUseAdditionalTemporaryState)
@@ -199,15 +182,34 @@ namespace Microsoft.Interop
                     }
                     return SafeHandle;
 
-                case { ManagedType: IArrayTypeSymbol { IsSZArray: true, ElementType : ITypeSymbol elementType } , MarshallingAttributeInfo: NoMarshallingInfo}:
+                case { ManagedType: IArrayTypeSymbol { IsSZArray: true, ElementType: ITypeSymbol elementType }, MarshallingAttributeInfo: NoMarshallingInfo }:
                     return CreateArrayMarshaller(info, context, elementType, NoMarshallingInfo.Instance);
 
-                case { ManagedType: IArrayTypeSymbol { IsSZArray: true, ElementType : ITypeSymbol elementType } , MarshallingAttributeInfo: ArrayMarshalAsInfo marshalAsInfo }:
+                case { ManagedType: IArrayTypeSymbol { IsSZArray: true, ElementType: ITypeSymbol elementType }, MarshallingAttributeInfo: ArrayMarshalAsInfo marshalAsInfo }:
                     if (marshalAsInfo.UnmanagedArrayType != UnmanagedArrayType.LPArray)
                     {
                         throw new MarshallingNotSupportedException(info, context);
                     }
                     return CreateArrayMarshaller(info, context, elementType, marshalAsInfo.CreateArraySubTypeMarshalAsInfo());
+
+                // Marshalling in new model.
+                // Must go before the cases that do not explicitly check for marshalling info to support
+                // the user overridding the default marshalling rules with a MarshalUsing attribute.
+                case { MarshallingAttributeInfo: NativeMarshallingAttributeInfo marshalInfo }:
+                    return CreateCustomNativeTypeMarshaller(info, context, marshalInfo);
+
+                case { MarshallingAttributeInfo: BlittableTypeAttributeInfo }:
+                    return Blittable;
+
+                // Simple generated marshalling with new attribute model, only have type name.
+                case { MarshallingAttributeInfo: GeneratedNativeMarshallingAttributeInfo(string nativeTypeName) }:
+                    return Forwarder;
+
+                case { ManagedType: { SpecialType: SpecialType.System_Char } }:
+                    return CreateCharMarshaller(info, context);
+
+                case { ManagedType: { SpecialType: SpecialType.System_String } }:
+                    return CreateStringMarshaller(info, context);
 
                 case { ManagedType: { SpecialType: SpecialType.System_Void } }:
                     return Forwarder;
@@ -373,6 +375,60 @@ namespace Microsoft.Interop
             return elementMarshaller == Blittable
                 ? new BlittableArrayMarshaller(numElementsExpression)
                 : new NonBlittableArrayMarshaller(elementMarshaller, numElementsExpression);
+        }
+
+        private static IMarshallingGenerator CreateCustomNativeTypeMarshaller(TypePositionInfo info, StubCodeContext context, NativeMarshallingAttributeInfo marshalInfo)
+        {
+            // The marshalling method for this type doesn't support marshalling from native to managed,
+            // but our scenario requires marshalling from native to managed.
+            if ((info.RefKind == RefKind.Ref || info.RefKind == RefKind.Out || info.IsManagedReturnPosition) 
+                && (marshalInfo.MarshallingMethods & SupportedMarshallingMethods.NativeToManaged) == 0)
+            {
+                throw new MarshallingNotSupportedException(info, context)
+                {
+                    NotSupportedDetails = string.Format(Resources.CustomTypeMarshallingNativeToManagedUnsupported, marshalInfo.NativeMarshallingType.ToDisplayString())
+                };
+            }
+            // The marshalling method for this type doesn't support marshalling from managed to native by value,
+            // but our scenario requires marshalling from managed to native by value.
+            // Pinning is required for the stackalloc marshalling to enable users to safely pass the stackalloc Span's byref
+            // to native if we ever start using a conditional stackalloc method and cannot guarantee that the Span we provide
+            // the user with is backed by stack allocated memory.
+            else if (!info.IsByRef 
+                && (marshalInfo.MarshallingMethods & SupportedMarshallingMethods.ManagedToNative) == 0 
+                && !(context.PinningSupported && (marshalInfo.MarshallingMethods & SupportedMarshallingMethods.Pinning) == 0) 
+                && !(context.StackSpaceUsable && context.PinningSupported && (marshalInfo.MarshallingMethods & SupportedMarshallingMethods.ManagedToNativeStackalloc) == 0))
+            {
+                throw new MarshallingNotSupportedException(info, context)
+                {
+                    NotSupportedDetails = string.Format(Resources.CustomTypeMarshallingManagedToNativeUnsupported, marshalInfo.NativeMarshallingType.ToDisplayString())
+                };
+            }
+            // The marshalling method for this type doesn't support marshalling from managed to native by reference,
+            // but our scenario requires marshalling from managed to native by reference.
+            // "in" byref supports stack marshalling.
+            else if (info.RefKind == RefKind.In 
+                && (marshalInfo.MarshallingMethods & SupportedMarshallingMethods.ManagedToNative) == 0 
+                && !(context.StackSpaceUsable && context.PinningSupported && (marshalInfo.MarshallingMethods & SupportedMarshallingMethods.ManagedToNativeStackalloc) != 0))
+            {
+                throw new MarshallingNotSupportedException(info, context)
+                {
+                    NotSupportedDetails = string.Format(Resources.CustomTypeMarshallingManagedToNativeUnsupported, marshalInfo.NativeMarshallingType.ToDisplayString())
+                };
+            }
+            // The marshalling method for this type doesn't support marshalling from managed to native by reference,
+            // but our scenario requires marshalling from managed to native by reference.
+            // "ref" byref marshalling doesn't support stack marshalling
+            else if (info.RefKind == RefKind.Ref 
+                && (marshalInfo.MarshallingMethods & SupportedMarshallingMethods.ManagedToNative) == 0)
+            {
+                throw new MarshallingNotSupportedException(info, context)
+                {
+                    NotSupportedDetails = string.Format(Resources.CustomTypeMarshallingManagedToNativeUnsupported, marshalInfo.NativeMarshallingType.ToDisplayString())
+                };
+            }
+            
+            return new CustomNativeTypeMarshaller(marshalInfo);
         }
     }
 }

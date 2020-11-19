@@ -149,6 +149,16 @@ namespace DllImportGenerator.UnitTests
             yield return new[] { CodeSnippets.ArrayPreserveSigFalse<bool>() };
             yield return new[] { CodeSnippets.ArrayPreserveSigFalse<IntPtr>() };
             yield return new[] { CodeSnippets.ArrayPreserveSigFalse<UIntPtr>() };
+            
+            // Custom type marshalling
+            yield return new[] { CodeSnippets.CustomStructMarshallingParametersAndModifiers };
+            yield return new[] { CodeSnippets.CustomStructMarshallingStackallocParametersAndModifiersNoRef };
+            yield return new[] { CodeSnippets.CustomStructMarshallingStackallocValuePropertyParametersAndModifiersNoRef };
+            yield return new[] { CodeSnippets.CustomStructMarshallingOptionalStackallocParametersAndModifiers };
+            yield return new[] { CodeSnippets.CustomStructMarshallingValuePropertyParametersAndModifiers };
+            yield return new[] { CodeSnippets.CustomStructMarshallingPinnableParametersAndModifiers };
+            yield return new[] { CodeSnippets.CustomStructMarshallingNativeTypePinnable };
+            yield return new[] { CodeSnippets.CustomStructMarshallingMarshalUsingParametersAndModifiers };
         }
 
         public static IEnumerable<object[]> CodeSnippetsToCompile_WithDiagnostics()

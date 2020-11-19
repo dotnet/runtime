@@ -7,6 +7,7 @@ namespace Microsoft.Interop
     static class ManualTypeMarshallingHelper
     {
         public const string ValuePropertyName = "Value";
+        public const string GetPinnableReferenceName = "GetPinnableReference";
         public const string StackBufferSizeFieldName = "StackBufferSize";
         public const string ToManagedMethodName = "ToManaged";
         public const string FreeNativeMethodName = "FreeNative";
@@ -44,7 +45,7 @@ namespace Microsoft.Interop
             // fixed statement. We aren't supporting a GetPinnableReference extension method
             // (which is apparently supported in the compiler).
             // https://docs.microsoft.com/en-us/dotnet/csharp/language-reference/proposals/csharp-7.3/pattern-based-fixed
-            return type.GetMembers("GetPinnableReference")
+            return type.GetMembers(GetPinnableReferenceName)
                 .OfType<IMethodSymbol>()
                 .FirstOrDefault(m => m is { Parameters: { Length: 0 } } and
                     ({ ReturnsByRef: true } or { ReturnsByRefReadonly: true }));

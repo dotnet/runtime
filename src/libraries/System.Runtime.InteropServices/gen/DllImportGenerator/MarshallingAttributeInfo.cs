@@ -90,7 +90,7 @@ namespace Microsoft.Interop
         ManagedToNative = 0x1,
         NativeToManaged = 0x2,
         ManagedToNativeStackalloc = 0x4,
-        Pinning = 0x8
+        Pinning = 0x8,
     }
 
     /// <summary>
@@ -99,7 +99,8 @@ namespace Microsoft.Interop
     internal sealed record NativeMarshallingAttributeInfo(
         ITypeSymbol NativeMarshallingType,
         ITypeSymbol? ValuePropertyType,
-        SupportedMarshallingMethods MarshallingMethods) : MarshallingInfo;
+        SupportedMarshallingMethods MarshallingMethods,
+        bool NativeTypePinnable) : MarshallingInfo;
 
     /// <summary>
     /// User-applied System.Runtime.InteropServices.GeneratedMarshallingAttribute

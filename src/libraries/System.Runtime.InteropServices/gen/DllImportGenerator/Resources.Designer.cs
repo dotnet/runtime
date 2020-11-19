@@ -178,6 +178,24 @@ namespace Microsoft.Interop {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to The specified parameter needs to be marshalled from managed to native, but the native type &apos;{0}&apos; does not support it..
+        /// </summary>
+        internal static string CustomTypeMarshallingManagedToNativeUnsupported {
+            get {
+                return ResourceManager.GetString("CustomTypeMarshallingManagedToNativeUnsupported", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to The specified parameter needs to be marshalled from native to managed, but the native type &apos;{0}&apos; does not support it..
+        /// </summary>
+        internal static string CustomTypeMarshallingNativeToManagedUnsupported {
+            get {
+                return ResourceManager.GetString("CustomTypeMarshallingNativeToManagedUnsupported", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to Methods marked with &apos;GeneratedDllImportAttribute&apos; should be &apos;static&apos; and &apos;partial&apos;. P/Invoke source generation will ignore methods that are not &apos;static&apos; and &apos;partial&apos;..
         /// </summary>
         internal static string GeneratedDllImportMissingModifiersDescription {
@@ -327,6 +345,24 @@ namespace Microsoft.Interop {
         internal static string NativeTypeMustHaveRequiredShapeMessage {
             get {
                 return ResourceManager.GetString("NativeTypeMustHaveRequiredShapeMessage", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to The &apos;Value&apos; property must not be a &apos;ref&apos; or &apos;readonly ref&apos; property..
+        /// </summary>
+        internal static string RefValuePropertyUnsupportedDescription {
+            get {
+                return ResourceManager.GetString("RefValuePropertyUnsupportedDescription", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to The &apos;Value&apos; property on the native type &apos;{0}&apos; must not be a &apos;ref&apos; or &apos;readonly ref&apos; property..
+        /// </summary>
+        internal static string RefValuePropertyUnsupportedMessage {
+            get {
+                return ResourceManager.GetString("RefValuePropertyUnsupportedMessage", resourceCulture);
             }
         }
         

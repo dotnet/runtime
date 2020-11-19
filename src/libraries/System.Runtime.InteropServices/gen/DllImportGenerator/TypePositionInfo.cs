@@ -258,16 +258,17 @@ namespace Microsoft.Interop
                 return new NativeMarshallingAttributeInfo(
                     nativeType,
                     valueProperty?.Type,
-                    methods);
+                    methods,
+                    NativeTypePinnable: ManualTypeMarshallingHelper.FindGetPinnableReference(nativeType) is not null);
             }
 
             static bool TryCreateTypeBasedMarshallingInfo(ITypeSymbol type, Compilation compilation, out MarshallingInfo marshallingInfo)
             {
                 var conversion = compilation.ClassifyCommonConversion(type, compilation.GetTypeByMetadataName(TypeNames.System_Runtime_InteropServices_SafeHandle)!);
-                if (conversion.Exists &&
-                    conversion.IsImplicit &&
-                    conversion.IsReference &&
-                    !type.IsAbstract)
+                if (conversion.Exists 
+                    && conversion.IsImplicit 
+                    && conversion.IsReference 
+                    && !type.IsAbstract)
                 {
                     marshallingInfo = new SafeHandleMarshallingInfo();
                     return true;

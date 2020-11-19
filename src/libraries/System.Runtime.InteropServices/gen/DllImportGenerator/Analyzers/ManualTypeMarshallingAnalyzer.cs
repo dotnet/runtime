@@ -134,6 +134,16 @@ namespace Microsoft.Interop.Analyzers
                 isEnabledByDefault: true,
                 description: GetResourceString(nameof(Resources.StackallocConstructorMustHaveStackBufferSizeConstantDescription)));
 
+        public readonly static DiagnosticDescriptor RefValuePropertyUnsupportedRule =
+            new DiagnosticDescriptor(
+                Ids.RefValuePropertyUnsupported,
+                "RefValuePropertyUnsupported",
+                GetResourceString(nameof(Resources.RefValuePropertyUnsupportedMessage)),
+                Category,
+                DiagnosticSeverity.Error,
+                isEnabledByDefault: true,
+                description: GetResourceString(nameof(Resources.RefValuePropertyUnsupportedDescription)));
+
         public override ImmutableArray<DiagnosticDescriptor> SupportedDiagnostics => 
             ImmutableArray.Create(
                 BlittableTypeMustBeBlittableRule,
@@ -147,7 +157,8 @@ namespace Microsoft.Interop.Analyzers
                 ValuePropertyMustHaveGetterRule,
                 GetPinnableReferenceShouldSupportAllocatingMarshallingFallbackRule,
                 StackallocMarshallingShouldSupportAllocatingMarshallingFallbackRule,
-                StackallocConstructorMustHaveStackBufferSizeConstantRule);
+                StackallocConstructorMustHaveStackBufferSizeConstantRule,
+                RefValuePropertyUnsupportedRule);
 
         public override void Initialize(AnalysisContext context)
         {
@@ -242,7 +253,7 @@ namespace Microsoft.Interop.Analyzers
                 }
                 else if (nativeMarshallingAttributeData is not null)
                 {
-                    AnalyzeNativeMarshalerType(context, type, nativeMarshallingAttributeData, validateGetPinnableReference: true, validateAllScenarioSupport: true);
+                    AnalyzeNativeMarshalerType(context, type, nativeMarshallingAttributeData, validateManagedGetPinnableReference: true, validateAllScenarioSupport: true);
                 }
             }
 
@@ -283,7 +294,7 @@ namespace Microsoft.Interop.Analyzers
                 }
             }
 
-            private void AnalyzeNativeMarshalerType(SymbolAnalysisContext context, ITypeSymbol type, AttributeData nativeMarshalerAttributeData, bool validateGetPinnableReference, bool validateAllScenarioSupport)
+            private void AnalyzeNativeMarshalerType(SymbolAnalysisContext context, ITypeSymbol type, AttributeData nativeMarshalerAttributeData, bool validateManagedGetPinnableReference, bool validateAllScenarioSupport)
             {
                 if (nativeMarshalerAttributeData.ConstructorArguments[0].IsNull)
                 {
@@ -342,6 +353,14 @@ namespace Microsoft.Interop.Analyzers
                 }
 
                 IPropertySymbol? valueProperty = ManualTypeMarshallingHelper.FindValueProperty(nativeType);
+                bool valuePropertyIsRefReturn = valueProperty is { ReturnsByRef : true } or { ReturnsByRefReadonly: true };
+
+                if (valuePropertyIsRefReturn)
+                {
+                    context.ReportDiagnostic(Diagnostic.Create(RefValuePropertyUnsupportedRule, GetSyntaxReferenceForDiagnostic(valueProperty!).GetSyntax().GetLocation(),
+                        marshalerType.ToDisplayString()));
+                }
+
                 if (valueProperty is not null)
                 {
                     nativeType = valueProperty.Type;
@@ -370,34 +389,42 @@ namespace Microsoft.Interop.Analyzers
                         type.ToDisplayString()));
                 }
 
-                IMethodSymbol? getPinnableReferenceMethod = type.GetMembers("GetPinnableReference")
-                                                                .OfType<IMethodSymbol>()
-                                                                .FirstOrDefault(m => m is { Parameters: { Length: 0 } } and ({ ReturnsByRef: true } or { ReturnsByRefReadonly: true }));
-                if (validateGetPinnableReference && getPinnableReferenceMethod is not null)
+                IMethodSymbol? managedGetPinnableReferenceMethod = ManualTypeMarshallingHelper.FindGetPinnableReference(type);
+                if (validateManagedGetPinnableReference && managedGetPinnableReferenceMethod is not null)
                 {
-                    if (!getPinnableReferenceMethod.ReturnType.IsConsideredBlittable())
+                    if (!managedGetPinnableReferenceMethod.ReturnType.IsConsideredBlittable())
                     {
-                        context.ReportDiagnostic(Diagnostic.Create(GetPinnableReferenceReturnTypeBlittableRule, getPinnableReferenceMethod.DeclaringSyntaxReferences[0].GetSyntax().GetLocation()));
+                        context.ReportDiagnostic(Diagnostic.Create(GetPinnableReferenceReturnTypeBlittableRule, managedGetPinnableReferenceMethod.DeclaringSyntaxReferences[0].GetSyntax().GetLocation()));
                     }
-                    // Validate that the Value property is a pointer-sized primitive type.
-                    if (valueProperty is null ||
-                        valueProperty.Type is not (
-                            IPointerTypeSymbol _ or
-                            { SpecialType: SpecialType.System_IntPtr } or
-                            { SpecialType: SpecialType.System_UIntPtr }))
-                    {
-                        context.ReportDiagnostic(Diagnostic.Create(NativeTypeMustBePointerSizedRule,
-                            valueProperty is not null
-                            ? GetSyntaxReferenceForDiagnostic(valueProperty).GetSyntax().GetLocation()
-                            : GetSyntaxReferenceForDiagnostic(nativeType).GetSyntax().GetLocation(),
-                            nativeType.ToDisplayString(),
-                            type.ToDisplayString()));
-                    }
-
                     // Validate that our marshaler supports scenarios where GetPinnableReference cannot be used.
                     if (validateAllScenarioSupport && (!hasConstructor || valueProperty is { GetMethod: null }))
                     {
                         context.ReportDiagnostic(Diagnostic.Create(GetPinnableReferenceShouldSupportAllocatingMarshallingFallbackRule, nativeMarshalerAttributeData.ApplicationSyntaxReference!.GetSyntax().GetLocation(), type.ToDisplayString()));
+                    }
+                }
+
+                if ((validateManagedGetPinnableReference && managedGetPinnableReferenceMethod is not null) 
+                    || ManualTypeMarshallingHelper.FindGetPinnableReference(marshalerType) is not null)
+                {
+                    // Validate that the Value property is a pointer-sized primitive type.
+                    if (valueProperty is null 
+                        || (valueProperty.Type is not (
+                            IPointerTypeSymbol _ or
+                            { SpecialType: SpecialType.System_IntPtr } or
+                            { SpecialType: SpecialType.System_UIntPtr })))
+                    {
+                        ITypeSymbol typeWithGetPinnableReference = managedGetPinnableReferenceMethod is not null
+                            ? type
+                            : marshalerType;
+
+                        context.ReportDiagnostic(Diagnostic.Create(NativeTypeMustBePointerSizedRule,
+                            valueProperty is not null
+                                ? GetSyntaxReferenceForDiagnostic(valueProperty).GetSyntax().GetLocation()
+                                : GetSyntaxReferenceForDiagnostic(nativeType).GetSyntax().GetLocation(),
+                            valuePropertyIsRefReturn
+                                ? $"ref {nativeType.ToDisplayString()}"
+                                : nativeType.ToDisplayString(),
+                            typeWithGetPinnableReference.ToDisplayString()));
                     }
                 }
 
