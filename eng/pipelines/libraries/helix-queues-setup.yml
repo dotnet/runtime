@@ -52,7 +52,7 @@ jobs:
 
     # Linux x64
     - ${{ if eq(parameters.platform, 'Linux_x64') }}:
-      - ${{ if and(eq(parameters.jobParameters.interpreter, ''), eq(parameters.jobParameters.isSingleFile, false)) }}:
+      - ${{ if and(eq(parameters.jobParameters.interpreter, ''), neq(parameters.jobParameters.isSingleFile, true)) }}:
         - ${{ if and(eq(parameters.jobParameters.testScope, 'outerloop'), eq(parameters.jobParameters.runtimeFlavor, 'mono')) }}:
           - (Centos.8.Amd64.Open)Ubuntu.1604.Amd64.Open@mcr.microsoft.com/dotnet-buildtools/prereqs:centos-8-helix-20201229003624-c1bf759
           - RedHat.7.Amd64.Open
