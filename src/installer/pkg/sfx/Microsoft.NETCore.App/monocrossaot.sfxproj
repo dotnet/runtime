@@ -1,0 +1,23 @@
+<Project Sdk="Microsoft.Build.Traversal" DefaultTargets="BuildMonoCrossAllTargets">
+  <PropertyGroup>
+    <MonoAotDefaultTargets>android-x64;android-arm64</MonoAotDefaultTargets>
+    <MonoAotTargets Condition="'$(MonoAotTargets)' == ''">$(MonoAotDefaultTargets)</MonoAotTargets>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <MonoAotTargetRids Include="$(MonoAotTargets.Split(';'))" />
+  </ItemGroup>
+
+  <Target Name="BuildMonoCrossAllTargets">
+    <MSBuild Targets="BuildMonoCrossTarget"
+             Projects="$(MSBuildThisFileFullPath)"
+             BuildInParallel="true"
+             Properties="MonoAotTargetRid=%(MonoAotTargetRids.Identity);RealRuntimeBinDir=$(RuntimeBinDir)" />
+  </Target>
+
+  <Target Name="BuildMonoCrossTarget">
+    <MSBuild Targets="GenerateNuspec"
+             Projects="$(MSBuildThisFileDirectory)Microsoft.NETCore.App.MonoCrossAOT.sfxproj"
+             Properties="MonoAotCrossTarget='$(MonoAotTargets)';TargetCrossRid=$(MonoAotTargetRid)" />
+  </Target>
+</Project>

@@ -3,7 +3,6 @@
   <Import Project="Sdk.props" Sdk="Microsoft.DotNet.SharedFramework.Sdk" />
 
   <PropertyGroup>
-    <TargetCrossRid>android-x64</TargetCrossRid>
     <SkipValidatePackage>true</SkipValidatePackage>
     <PlatformPackageType>RuntimePack</PlatformPackageType>
     <SharedFrameworkName>Microsoft.NETCore.App.MonoCrossAOT</SharedFrameworkName>
@@ -20,12 +19,6 @@
     <HostJsonTargetPath>tools/</HostJsonTargetPath>
     <PermitDllAndExeFilesLackingFileVersion>true</PermitDllAndExeFilesLackingFileVersion>
   </PropertyGroup>
-  
-  <PropertyGroup>
-    <TargetOSComponent>unix</TargetOSComponent>
-    <TargetOSComponent Condition="'$(TargetOS)' == 'windows'">win</TargetOSComponent>
-    <TargetSpec>$(TargetOSComponent)-$(TargetArchitecture)</TargetSpec>
-  </PropertyGroup>
 
   <ItemGroup>
     <NativeRuntimeAsset Include="$(MonoCrossAOTDir)$(TargetCrossRid)\**" TargetPath="tools/" />
@@ -39,6 +32,10 @@
 
   <Import Project="Sdk.targets" Sdk="Microsoft.NET.Sdk" />
   <Import Project="Sdk.targets" Sdk="Microsoft.DotNet.SharedFramework.Sdk" />
+
+  <Target Name="ValidateProperties" BeforeTargets="GenerateNuspec">
+    <Error Condition="'$(TargetCrossRid)' == ''" Text="TargetCrossRid not set" />
+  </Target>
 
   <Target Name="GetFilesToPublish">
     <MSBuild Projects="$(MSBuildProjectFullPath)"
