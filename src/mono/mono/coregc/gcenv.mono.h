@@ -62,13 +62,12 @@ typedef struct {
     uint32_t    m_baseSize;
 } mono_gc_descr;
 
-
-
 class MethodTable
 {
 public:
     /*The fields of this class need to be congruent with the first two fields of MonoVTable */
     void *klass;
+    static_assert(sizeof(mono_gc_descr) == sizeof(void*), "mono_gc_descr must be the same size as void*");
     mono_gc_descr gc_descr;
 
 public:

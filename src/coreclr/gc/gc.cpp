@@ -25686,7 +25686,9 @@ void gc_heap::plan_phase (int condemned_gen_number)
                     // references but for now I am just using the next non pinned object for that).
                     if (next_object_marked_p)
                     {
+                        printf(" Before Clear Marked: ((Object*)xl)->m_pMethTab->gc_descr.m_componentSize: %d\n", ((Object*)xl)->RawGetMethodTable()->gc_descr.m_componentSize);
                         clear_marked (xl);
+                        printf(" After Clear Marked: ((Object*)xl)->m_pMethTab->gc_descr.m_componentSize: %d\n", ((Object*)xl)->RawGetMethodTable()->gc_descr.m_componentSize);
                         last_object_in_plug = xl;
                         size_t extra_size = Align (size (xl));
                         xl = xl + extra_size;
@@ -32794,6 +32796,8 @@ uint8_t* gc_heap::find_first_object (uint8_t* start, uint8_t* first_object)
                       brick_address (prev_brick) + brick_entry - 1);
         assert (o <= start);
     }
+
+    printf("gc.cpp: find_first_object: o: %p\n", o);
 
     assert (Align (size (o)) >= Align (min_obj_size));
     uint8_t*  next_o = o + Align (size (o));

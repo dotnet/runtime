@@ -323,6 +323,8 @@ mono_gc_make_descr_for_object (gpointer klass, gsize *bitmap, int numbits, size_
 	if (gc_descr.struct_gc_descr.m_baseSize < MIN_OBJECT_SIZE)
 		gc_descr.struct_gc_descr.m_baseSize = MIN_OBJECT_SIZE;
 
+	printf("mono_gc_make_descr_for_object: gc_descr.struct_gc_descr.m_baseSize (dec): %d\n", gc_descr.struct_gc_descr.m_baseSize);
+
 	GPtrArray *full = g_ptr_array_new ();
 
 	size_t last_start_offset = -1;
@@ -362,6 +364,7 @@ mono_gc_make_descr_for_object (gpointer klass, gsize *bitmap, int numbits, size_
 	*gc_descr_full = full;
 	if (has_ptrs)
 		gc_descr.struct_gc_descr.m_flags |= MTFlag_ContainsPointers;
+
 	return gc_descr.ptr_gc_descr;
 }
 
@@ -600,7 +603,10 @@ mono_gc_alloc_obj (MonoVTable *vtable, size_t size)
 	o = (MonoObject*) pGCHeap->Alloc (&info->alloc_context, size, flags);
 
 	o->vtable = vtable;
-	printf("mono_gc_alloc_obj: %p\n", o);
+
+	// Deubgging
+	MethodTable* mt = (MethodTable*)(o->vtable);
+	printf("mono_gc_alloc_obj: %p o->vtable: %p, o->vtable->gc_descr: %p, o->vtable->gc_descr.m_baseSize: %ld\n", o, o->vtable, o->vtable->gc_descr, mt->GetBaseSize());
 	return o;
 }
 
