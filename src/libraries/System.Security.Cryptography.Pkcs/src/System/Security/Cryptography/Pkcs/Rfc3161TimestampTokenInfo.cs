@@ -127,7 +127,7 @@ namespace System.Security.Cryptography.Pkcs
         /// <summary>
         /// Gets the nonce associated with this timestamp token.
         /// </summary>
-        /// <value>The nonce indicating whether there are any extensions associated with this timestamp token.</value>
+        /// <value>The nonce associated with this timestamp token.</value>
         public ReadOnlyMemory<byte>? GetNonce() => _parsedData.Nonce;
 
         /// <summary>
@@ -139,7 +139,7 @@ namespace System.Security.Cryptography.Pkcs
         /// <summary>
         /// Gets the data representing the hint in the TSA name identification.
         /// </summary>
-        /// <returns>Tthe data representing the hint in the TSA name identification.</returns>
+        /// <returns>The data representing the hint in the TSA name identification.</returns>
         /// <remarks>
         /// The actual identification of the entity that signed the response
         /// will always occur through the use of the certificate identifier (ESSCertID Attribute)
