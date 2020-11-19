@@ -3147,47 +3147,9 @@ BasicBlock::weight_t BasicBlock::getBBWeight(Compiler* comp)
 
         // Normalize the bbWeights by multiplying by BB_UNITY_WEIGHT and dividing by the calledCount.
         //
-        // 1. For methods that do not have IBC data the called weight will always be 100 (BB_UNITY_WEIGHT)
-        //     and the entry point bbWeight value is almost always 100 (BB_UNITY_WEIGHT)
-        // 2.  For methods that do have IBC data the called weight is the actual number of calls
-        //     from the IBC data and the entry point bbWeight value is almost always the actual
-        //     number of calls from the IBC data.
-        //
-        // "almost always" - except for the rare case where a loop backedge jumps to BB01
-        //
-        // We also perform a rounding operation by adding half of the 'calledCount' before performing
-        // the division.
-        //
-        // Thus for both cases we will return 100 (BB_UNITY_WEIGHT) for the entry point BasicBlock
-        //
-        // Note that with a 100 (BB_UNITY_WEIGHT) values between 1 and 99 represent decimal fractions.
-        // (i.e. 33 represents 33% and 75 represents 75%, and values greater than 100 require
-        //  some kind of loop backedge)
-        //
+        weight_t fullResult = this->bbWeight * BB_UNITY_WEIGHT / calledCount;
 
-        if (this->bbWeight < (BB_MAX_WEIGHT / BB_UNITY_WEIGHT))
-        {
-            // Calculate the result using unsigned arithmetic
-            weight_t result = ((this->bbWeight * BB_UNITY_WEIGHT) + (calledCount / 2)) / calledCount;
-
-            // We don't allow a value of zero, as that would imply rarely run
-            return max(1, result);
-        }
-        else
-        {
-            // Calculate the full result using floating point
-            double fullResult = ((double)this->bbWeight * (double)BB_UNITY_WEIGHT) / (double)calledCount;
-
-            if (fullResult < (double)BB_MAX_WEIGHT)
-            {
-                // Add 0.5 and truncate to unsigned
-                return (weight_t)(fullResult + 0.5);
-            }
-            else
-            {
-                return BB_MAX_WEIGHT;
-            }
-        }
+        return fullResult;
     }
 }
 

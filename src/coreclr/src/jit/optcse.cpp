@@ -1965,8 +1965,8 @@ public:
         if (m_pCompiler->verbose)
         {
             printf("\n");
-            printf("Aggressive CSE Promotion cutoff is %u\n", aggressiveRefCnt);
-            printf("Moderate CSE Promotion cutoff is %u\n", moderateRefCnt);
+            printf("Aggressive CSE Promotion cutoff is %f\n", aggressiveRefCnt);
+            printf("Moderate CSE Promotion cutoff is %f\n", moderateRefCnt);
             printf("enregCount is %u\n", enregCount);
             printf("Framesize estimate is 0x%04X\n", frameSize);
             printf("We have a %s frame\n", hugeFrame ? "huge" : (largeFrame ? "large" : "small"));
@@ -2381,7 +2381,7 @@ public:
 #ifdef DEBUG
                 if (m_pCompiler->verbose)
                 {
-                    printf("Aggressive CSE Promotion (%u >= %u)\n", cseRefCnt, aggressiveRefCnt);
+                    printf("Aggressive CSE Promotion (%f >= %f)\n", cseRefCnt, aggressiveRefCnt);
                 }
 #endif
                 // With aggressive promotion we expect that the candidate will be enregistered
@@ -2480,7 +2480,7 @@ public:
 #ifdef DEBUG
                 if (m_pCompiler->verbose)
                 {
-                    printf("Aggressive CSE Promotion (%u >= %u)\n", cseRefCnt, aggressiveRefCnt);
+                    printf("Aggressive CSE Promotion (%f >= %f)\n", cseRefCnt, aggressiveRefCnt);
                 }
 #endif
                 // With aggressive promotion we expect that the candidate will be enregistered
@@ -2499,7 +2499,7 @@ public:
 #ifdef DEBUG
                     if (m_pCompiler->verbose)
                     {
-                        printf("Moderate CSE Promotion (CSE never live at call) (%u >= %u)\n", cseRefCnt,
+                        printf("Moderate CSE Promotion (CSE never live at call) (%f >= %f)\n", cseRefCnt,
                                moderateRefCnt);
                     }
 #endif
@@ -2511,7 +2511,7 @@ public:
 #ifdef DEBUG
                     if (m_pCompiler->verbose)
                     {
-                        printf("Moderate CSE Promotion (%s) (%u >= %u)\n",
+                        printf("Moderate CSE Promotion (%s) (%f >= %f)\n",
                                candidate->LiveAcrossCall() ? "CSE is live across a call" : "not enregisterable",
                                cseRefCnt, moderateRefCnt);
                     }
@@ -2544,7 +2544,7 @@ public:
 #ifdef DEBUG
                     if (m_pCompiler->verbose)
                     {
-                        printf("Conservative CSE Promotion (%s) (%u < %u)\n",
+                        printf("Conservative CSE Promotion (%s) (%f < %f)\n",
                                candidate->LiveAcrossCall() ? "CSE is live across a call" : "not enregisterable",
                                cseRefCnt, moderateRefCnt);
                     }
@@ -2557,7 +2557,7 @@ public:
 #ifdef DEBUG
                     if (m_pCompiler->verbose)
                     {
-                        printf("Conservative CSE Promotion (%u < %u)\n", cseRefCnt, moderateRefCnt);
+                        printf("Conservative CSE Promotion (%f < %f)\n", cseRefCnt, moderateRefCnt);
                     }
 #endif
                     cse_def_cost = 2;
@@ -2649,9 +2649,9 @@ public:
 #ifdef DEBUG
         if (m_pCompiler->verbose)
         {
-            printf("cseRefCnt=%d, aggressiveRefCnt=%d, moderateRefCnt=%d\n", cseRefCnt, aggressiveRefCnt,
+            printf("cseRefCnt=%f, aggressiveRefCnt=%f, moderateRefCnt=%f\n", cseRefCnt, aggressiveRefCnt,
                    moderateRefCnt);
-            printf("defCnt=%d, useCnt=%d, cost=%d, size=%d%s\n", candidate->DefCount(), candidate->UseCount(),
+            printf("defCnt=%f, useCnt=%f, cost=%d, size=%d%s\n", candidate->DefCount(), candidate->UseCount(),
                    candidate->Cost(), candidate->Size(), candidate->LiveAcrossCall() ? ", LiveAcrossCall" : "");
             printf("def_cost=%d, use_cost=%d, extra_no_cost=%d, extra_yes_cost=%d\n", cse_def_cost, cse_use_cost,
                    extra_no_cost, extra_yes_cost);

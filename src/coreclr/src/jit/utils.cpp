@@ -663,16 +663,16 @@ const char* refCntWtd2str(BasicBlock::weight_t refCntWtd)
     }
     else
     {
-        unsigned valueInt  = (unsigned)refCntWtd / BB_UNITY_WEIGHT_UNSIGNED;
-        unsigned valueFrac = (unsigned)refCntWtd % BB_UNITY_WEIGHT_UNSIGNED;
+        float scaledWeight = refCntWtd / BB_UNITY_WEIGHT;
+        float intPart      = floorf(scaledWeight);
 
-        if (valueFrac == 0)
+        if (intPart == scaledWeight)
         {
-            sprintf_s(temp, bufSize, "%u   ", valueInt);
+            sprintf_s(temp, bufSize, "%lld   ", (long long)intPart);
         }
         else
         {
-            sprintf_s(temp, bufSize, "%u.%02u", valueInt, (valueFrac * 100 / BB_UNITY_WEIGHT_UNSIGNED));
+            sprintf_s(temp, bufSize, "%.2f", scaledWeight);
         }
     }
     return temp;

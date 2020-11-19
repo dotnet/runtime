@@ -299,7 +299,7 @@ void Compiler::fgComputeProfileScale()
     //
     if (calleeWeight < callSiteWeight)
     {
-        JITDUMP("   ... callee entry count %d is less than call site count %d\n", calleeWeight, callSiteWeight);
+        JITDUMP("   ... callee entry count %f is less than call site count %f\n", calleeWeight, callSiteWeight);
         impInlineInfo->profileScaleState = InlineInfo::ProfileScaleState::UNAVAILABLE;
         return;
     }
@@ -310,7 +310,7 @@ void Compiler::fgComputeProfileScale()
     impInlineInfo->profileScaleFactor = scale;
     impInlineInfo->profileScaleState  = InlineInfo::ProfileScaleState::KNOWN;
 
-    JITDUMP("   call site count %u callee entry count %u scale %f\n", callSiteWeight, calleeWeight, scale);
+    JITDUMP("   call site count %f callee entry count %f scale %f\n", callSiteWeight, calleeWeight, scale);
 }
 
 //------------------------------------------------------------------------
@@ -13202,7 +13202,7 @@ void Compiler::fgPrintEdgeWeights()
 
                 if (edge->edgeWeightMin() < BB_MAX_WEIGHT)
                 {
-                    printf("(%u", edge->edgeWeightMin());
+                    printf("(%f", edge->edgeWeightMin());
                 }
                 else
                 {
@@ -13212,7 +13212,7 @@ void Compiler::fgPrintEdgeWeights()
                 {
                     if (edge->edgeWeightMax() < BB_MAX_WEIGHT)
                     {
-                        printf("..%u", edge->edgeWeightMax());
+                        printf("..%f", edge->edgeWeightMax());
                     }
                     else
                     {
@@ -13493,7 +13493,7 @@ void Compiler::fgComputeCalledCount(BasicBlock::weight_t returnWeight)
 #if DEBUG
     if (verbose)
     {
-        printf("We are using the Profile Weights and fgCalledCount is %d.\n", fgCalledCount);
+        printf("We are using the Profile Weights and fgCalledCount is %.0f.\n", fgCalledCount);
     }
 #endif
 }
@@ -19988,7 +19988,7 @@ bool Compiler::fgDumpFlowGraph(Phases phase)
 
         if (fgHaveProfileData())
         {
-            fprintf(fgxFile, "\n    calledCount=\"%d\"", fgCalledCount);
+            fprintf(fgxFile, "\n    calledCount=\"%f\"", fgCalledCount);
             fprintf(fgxFile, "\n    profileData=\"true\"");
         }
         if (compHndBBtabCount > 0)
@@ -20419,13 +20419,13 @@ void Compiler::fgTableDispBasicBlock(BasicBlock* block, int ibcColWidth /* = 0 *
             if (weight <= 99999 * BB_UNITY_WEIGHT)
             {
                 // print weight in this format ddddd.
-                printf("%5u.", (weight + (BB_UNITY_WEIGHT / 2)) / BB_UNITY_WEIGHT);
+                printf("%5u.", (unsigned)roundf(weight / BB_UNITY_WEIGHT));
             }
             else // print weight in terms of k (i.e. 156k )
             {
                 // print weight in this format dddddk
                 BasicBlock::weight_t weightK = weight / 1000;
-                printf("%5uk", (weightK + (BB_UNITY_WEIGHT / 2)) / BB_UNITY_WEIGHT);
+                printf("%5uk", (unsigned)roundf(weightK / BB_UNITY_WEIGHT));
             }
         }
         else // print weight in this format ddd.dd
@@ -20433,7 +20433,6 @@ void Compiler::fgTableDispBasicBlock(BasicBlock* block, int ibcColWidth /* = 0 *
             printf("%6s", refCntWtd2str(weight));
         }
     }
-    printf(" ");
 
     //
     // Display optional IBC weight column.
@@ -20444,7 +20443,7 @@ void Compiler::fgTableDispBasicBlock(BasicBlock* block, int ibcColWidth /* = 0 *
     {
         if (block->hasProfileWeight())
         {
-            printf("%*u", ibcColWidth, block->bbWeight);
+            printf("%*u", ibcColWidth, (unsigned)roundf(block->bbWeight));
         }
         else
         {
