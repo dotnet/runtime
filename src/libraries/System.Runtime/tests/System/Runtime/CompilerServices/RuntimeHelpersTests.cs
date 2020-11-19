@@ -277,7 +277,6 @@ namespace System.Runtime.CompilerServices.Tests
             Assert.Null(AppDomain.CurrentDomain.GetData("ClassWithBeforeFieldInitCctor_CctorRan"));
         }
 
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/44852", TestRuntimes.Mono)]
         [Fact]
         public static void GetUninitalizedObject_RunsNormalStaticCtors()
         {
