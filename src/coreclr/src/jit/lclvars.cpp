@@ -3261,17 +3261,19 @@ public:
         // Break the tie by:
         //   - Increasing the weight by 2   if we are a register arg.
         //   - Increasing the weight by 0.5 if we are a GC type.
+        //
+        // Review: seems odd that this is mixing counts and weights.
 
         if (weight1 != 0)
         {
             if (dsc1->lvIsRegArg)
             {
-                weight2 += 2 * BB_UNITY_WEIGHT;
+                weight2 += 2 * BB_UNITY_WEIGHT_UNSIGNED;
             }
 
             if (varTypeIsGC(dsc1->TypeGet()))
             {
-                weight1 += BB_UNITY_WEIGHT / 2;
+                weight1 += BB_UNITY_WEIGHT_UNSIGNED / 2;
             }
         }
 
@@ -3279,12 +3281,12 @@ public:
         {
             if (dsc2->lvIsRegArg)
             {
-                weight2 += 2 * BB_UNITY_WEIGHT;
+                weight2 += 2 * BB_UNITY_WEIGHT_UNSIGNED;
             }
 
             if (varTypeIsGC(dsc2->TypeGet()))
             {
-                weight2 += BB_UNITY_WEIGHT / 2;
+                weight2 += BB_UNITY_WEIGHT_UNSIGNED / 2;
             }
         }
 
@@ -3328,8 +3330,8 @@ public:
         assert(!dsc1->lvRegister);
         assert(!dsc2->lvRegister);
 
-        unsigned weight1 = dsc1->lvRefCntWtd();
-        unsigned weight2 = dsc2->lvRefCntWtd();
+        BasicBlock::weight_t weight1 = dsc1->lvRefCntWtd();
+        BasicBlock::weight_t weight2 = dsc2->lvRefCntWtd();
 
 #ifndef TARGET_ARM
         // ARM-TODO: this was disabled for ARM under !FEATURE_FP_REGALLOC; it was probably a left-over from

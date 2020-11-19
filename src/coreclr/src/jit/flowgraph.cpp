@@ -323,10 +323,10 @@ void Compiler::fgComputeProfileScale()
 // Returns:
 //   true if data was found
 //
-bool Compiler::fgGetProfileWeightForBasicBlock(IL_OFFSET offset, unsigned* weightWB)
+bool Compiler::fgGetProfileWeightForBasicBlock(IL_OFFSET offset, BasicBlock::weight_t* weightWB)
 {
     noway_assert(weightWB != nullptr);
-    unsigned weight = 0;
+    BasicBlock::weight_t weight = 0;
 
 #ifdef DEBUG
     unsigned hashSeed = fgStressBBProf();
@@ -345,17 +345,17 @@ bool Compiler::fgGetProfileWeightForBasicBlock(IL_OFFSET offset, unsigned* weigh
         }
         else if (hash % 11 == 0)
         {
-            weight = (hash % 23) * (hash % 29) * (hash % 31);
+            weight = (BasicBlock::weight_t)(hash % 23) * (hash % 29) * (hash % 31);
         }
         else
         {
-            weight = (hash % 17) * (hash % 19);
+            weight = (BasicBlock::weight_t)(hash % 17) * (hash % 19);
         }
 
         // The first block is never given a weight of zero
         if ((offset == 0) && (weight == 0))
         {
-            weight = 1 + (hash % 5);
+            weight = (BasicBlock::weight_t)1 + (hash % 5);
         }
 
         *weightWB = weight;
@@ -372,7 +372,7 @@ bool Compiler::fgGetProfileWeightForBasicBlock(IL_OFFSET offset, unsigned* weigh
     {
         if (fgBlockCounts[i].ILOffset == offset)
         {
-            *weightWB = fgBlockCounts[i].ExecutionCount;
+            *weightWB = (BasicBlock::weight_t)fgBlockCounts[i].ExecutionCount;
             return true;
         }
     }
@@ -5816,7 +5816,7 @@ unsigned Compiler::fgMakeBasicBlocks(const BYTE* codeAddr, IL_OFFSET codeSize, F
         curBBdesc->bbCodeOffs    = curBBoffs;
         curBBdesc->bbCodeOffsEnd = nxtBBoffs;
 
-        unsigned profileWeight;
+        BasicBlock::weight_t profileWeight;
 
         if (fgGetProfileWeightForBasicBlock(curBBoffs, &profileWeight))
         {
@@ -5824,7 +5824,8 @@ unsigned Compiler::fgMakeBasicBlocks(const BYTE* codeAddr, IL_OFFSET codeSize, F
             {
                 if (impInlineInfo->profileScaleState == InlineInfo::ProfileScaleState::KNOWN)
                 {
-                    profileWeight = (unsigned)(impInlineInfo->profileScaleFactor * profileWeight);
+                    double scaledWeight = impInlineInfo->profileScaleFactor * profileWeight;
+                    profileWeight       = (BasicBlock::weight_t)scaledWeight;
                 }
             }
 
@@ -13691,8 +13692,8 @@ void Compiler::fgComputeEdgeWeights()
                     bDstWeight -= fgCalledCount;
                 }
 
-                UINT64 minEdgeWeightSum = 0;
-                UINT64 maxEdgeWeightSum = 0;
+                BasicBlock::weight_t minEdgeWeightSum = 0;
+                BasicBlock::weight_t maxEdgeWeightSum = 0;
 
                 // Calculate the sums of the minimum and maximum edge weights
                 for (edge = bDst->bbPreds; edge != nullptr; edge = edge->flNext)
@@ -13718,12 +13719,12 @@ void Compiler::fgComputeEdgeWeights()
                     // otherMaxEdgesWeightSum is the sum of all of the other edges flEdgeWeightMax values
                     // This can be used to compute a lower bound for our minimum edge weight
                     noway_assert(maxEdgeWeightSum >= edge->edgeWeightMax());
-                    UINT64 otherMaxEdgesWeightSum = maxEdgeWeightSum - edge->edgeWeightMax();
+                    BasicBlock::weight_t otherMaxEdgesWeightSum = maxEdgeWeightSum - edge->edgeWeightMax();
 
                     // otherMinEdgesWeightSum is the sum of all of the other edges flEdgeWeightMin values
                     // This can be used to compute an upper bound for our maximum edge weight
                     noway_assert(minEdgeWeightSum >= edge->edgeWeightMin());
-                    UINT64 otherMinEdgesWeightSum = minEdgeWeightSum - edge->edgeWeightMin();
+                    BasicBlock::weight_t otherMinEdgesWeightSum = minEdgeWeightSum - edge->edgeWeightMin();
 
                     if (bDstWeight >= otherMaxEdgesWeightSum)
                     {
@@ -20158,7 +20159,7 @@ bool Compiler::fgDumpFlowGraph(Phases phase)
 
                     if (validWeights)
                     {
-                        unsigned edgeWeight = (edge->edgeWeightMin() + edge->edgeWeightMax()) / 2;
+                        BasicBlock::weight_t edgeWeight = (edge->edgeWeightMin() + edge->edgeWeightMax()) / 2;
                         fprintf(fgxFile, "%slabel=\"%7.2f\"", sep, (double)edgeWeight / weightDivisor);
                     }
 
@@ -20183,7 +20184,7 @@ bool Compiler::fgDumpFlowGraph(Phases phase)
                     }
                     if (validWeights)
                     {
-                        unsigned edgeWeight = (edge->edgeWeightMin() + edge->edgeWeightMax()) / 2;
+                        BasicBlock::weight_t edgeWeight = (edge->edgeWeightMin() + edge->edgeWeightMax()) / 2;
                         fprintf(fgxFile, "\n            weight=");
                         fprintfDouble(fgxFile, ((double)edgeWeight) / weightDivisor);
 

@@ -643,6 +643,7 @@ public:
  * Used when outputting strings.
  */
 unsigned CountDigits(unsigned num, unsigned base = 10);
+unsigned CountDigits(float num, unsigned base = 10);
 
 #endif // DEBUG
 

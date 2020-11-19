@@ -646,7 +646,7 @@ const char* genES2str(BitVecTraits* traits, EXPSET_TP set)
     return temp;
 }
 
-const char* refCntWtd2str(unsigned refCntWtd)
+const char* refCntWtd2str(BasicBlock::weight_t refCntWtd)
 {
     const int    bufSize = 17;
     static char  num1[bufSize];
@@ -663,8 +663,8 @@ const char* refCntWtd2str(unsigned refCntWtd)
     }
     else
     {
-        unsigned valueInt  = refCntWtd / BB_UNITY_WEIGHT;
-        unsigned valueFrac = refCntWtd % BB_UNITY_WEIGHT;
+        unsigned valueInt  = (unsigned)refCntWtd / BB_UNITY_WEIGHT_UNSIGNED;
+        unsigned valueFrac = (unsigned)refCntWtd % BB_UNITY_WEIGHT_UNSIGNED;
 
         if (valueFrac == 0)
         {
@@ -672,7 +672,7 @@ const char* refCntWtd2str(unsigned refCntWtd)
         }
         else
         {
-            sprintf_s(temp, bufSize, "%u.%02u", valueInt, (valueFrac * 100 / BB_UNITY_WEIGHT));
+            sprintf_s(temp, bufSize, "%u.%02u", valueInt, (valueFrac * 100 / BB_UNITY_WEIGHT_UNSIGNED));
         }
     }
     return temp;
@@ -1825,6 +1825,18 @@ double PerfCounter::ElapsedTime()
  * Used when outputting strings.
  */
 unsigned CountDigits(unsigned num, unsigned base /* = 10 */)
+{
+    assert(2 <= base && base <= 16); // sanity check
+    unsigned count = 1;
+    while (num >= base)
+    {
+        num /= base;
+        ++count;
+    }
+    return count;
+}
+
+unsigned CountDigits(float num, unsigned base /* = 10 */)
 {
     assert(2 <= base && base <= 16); // sanity check
     unsigned count = 1;
