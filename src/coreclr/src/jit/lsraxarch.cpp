@@ -2398,28 +2398,21 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree)
             }
 #endif // TARGET_X86
 
-            case NI_BMI2_MultiplyNoFlags2:
-            case NI_BMI2_X64_MultiplyNoFlags2:
-                dstCount = 2;
-                __fallthrough;
-
             case NI_BMI2_MultiplyNoFlags:
             case NI_BMI2_X64_MultiplyNoFlags:
             {
-                assert(numArgs == 2);
-                regMaskTP op1Candidates = RBM_EDX;
-                regMaskTP op2Candidates = RBM_NONE;
-                if (op2->OperIs(GT_LCL_VAR))
+                assert(numArgs == 2 || numArgs == 3);
+                srcCount += BuildOperandUses(op1, RBM_EDX);
+                srcCount += BuildOperandUses(op2);
+                if (numArgs == 3)
                 {
-                    LclVarDsc* varDsc = compiler->lvaGetDesc(op2->AsLclVar());
-                    if (isCandidateVar(varDsc) && (getIntervalForLocalVar(varDsc->lvVarIndex)->physReg == REG_EDX))
-                    {
-                        op1Candidates = RBM_NONE;
-                        op2Candidates = RBM_EDX;
-                    }
+                    // op3 reg should be different from target reg to
+                    // store the lower half result after executing the instruction
+                    srcCount += BuildDelayFreeUses(op3);
+                    // Need a internal register different from the dst to take the lower half result
+                    buildInternalIntRegisterDefForNode(intrinsicTree);
+                    setInternalRegsDelayFree = true;
                 }
-                srcCount += BuildOperandUses(op1, op1Candidates);
-                srcCount += BuildOperandUses(op2, op2Candidates);
                 buildUses = false;
                 break;
             }

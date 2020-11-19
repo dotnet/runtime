@@ -44,18 +44,7 @@ namespace System.Runtime.Intrinsics.X86
             /// The above native signature does not directly correspond to the managed signature.
             /// This intrinisc is only available on 64-bit processes
             /// </summary>
-            public static unsafe ulong MultiplyNoFlags(ulong left, ulong right, ulong* low)
-            {
-                var result = MultiplyNoFlags2(left, right); *low = result.Item1; return result.Item2;
-            }
-
-            /// <summary>
-            /// unsigned __int64 _mulx_u64 (unsigned __int64 a, unsigned __int64 b, unsigned __int64* hi)
-            ///   MULX r64a, r64b, reg/m64
-            /// The above native signature does not directly correspond to the managed signature.
-            /// This intrinisc is only available on 64-bit processes
-            /// </summary>
-            private static unsafe (ulong, ulong) MultiplyNoFlags2(ulong left, ulong right) => MultiplyNoFlags2(left, right);
+            public static unsafe ulong MultiplyNoFlags(ulong left, ulong right, ulong* low) => MultiplyNoFlags(left, right, low);
 
             /// <summary>
             /// unsigned __int64 _pdep_u64 (unsigned __int64 a, unsigned __int64 mask)
@@ -90,17 +79,7 @@ namespace System.Runtime.Intrinsics.X86
         ///   MULX r32a, r32b, reg/m32
         /// The above native signature does not directly correspond to the managed signature.
         /// </summary>
-        public static unsafe uint MultiplyNoFlags(uint left, uint right, uint* low)
-        {
-            var result = MultiplyNoFlags2(left, right); *low = result.Item1; return result.Item2;
-        }
-
-        /// <summary>
-        /// unsigned __int64 _mulx_u64 (unsigned __int64 a, unsigned __int64 b, unsigned __int64* hi)
-        ///   MULX r64a, r64b, reg/m64
-        /// The above native signature does not directly correspond to the managed signature.
-        /// </summary>
-        private static unsafe (uint, uint) MultiplyNoFlags2(uint left, uint right) => MultiplyNoFlags2(left, right);
+        public static unsafe uint MultiplyNoFlags(uint left, uint right, uint* low) => MultiplyNoFlags(left, right, low);
 
         /// <summary>
         /// unsigned int _pdep_u32 (unsigned int a, unsigned int mask)

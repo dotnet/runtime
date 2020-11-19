@@ -801,9 +801,7 @@ GenTree* Compiler::impHWIntrinsic(NamedIntrinsic        intrinsic,
         }
         else
         {
-#ifdef TARGET_XARCH
-            assert((intrinsic == NI_BMI2_MultiplyNoFlags2) || (intrinsic == NI_BMI2_X64_MultiplyNoFlags2));
-#elif defined(TARGET_ARM64)
+#ifdef TARGET_ARM64
             assert((intrinsic == NI_AdvSimd_Arm64_LoadPairScalarVector64) ||
                    (intrinsic == NI_AdvSimd_Arm64_LoadPairScalarVector64NonTemporal) ||
                    (intrinsic == NI_AdvSimd_Arm64_LoadPairVector64) ||

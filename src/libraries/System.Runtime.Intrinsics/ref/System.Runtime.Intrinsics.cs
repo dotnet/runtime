@@ -3444,7 +3444,6 @@ namespace System.Runtime.Intrinsics.X86
         public static new bool IsSupported { get { throw null; } }
         public static uint MultiplyNoFlags(uint left, uint right) { throw null; }
         public unsafe static uint MultiplyNoFlags(uint left, uint right, uint* low) { throw null; }
-        private unsafe static (uint, uint) MultiplyNoFlags2(uint left, uint right) { throw null; }
         public static uint ParallelBitDeposit(uint value, uint mask) { throw null; }
         public static uint ParallelBitExtract(uint value, uint mask) { throw null; }
         public static uint ZeroHighBits(uint value, uint index) { throw null; }
@@ -3454,7 +3453,6 @@ namespace System.Runtime.Intrinsics.X86
             public static new bool IsSupported { get { throw null; } }
             public static ulong MultiplyNoFlags(ulong left, ulong right) { throw null; }
             public unsafe static ulong MultiplyNoFlags(ulong left, ulong right, ulong* low) { throw null; }
-            private unsafe static (ulong, ulong) MultiplyNoFlags2(ulong left, ulong right) { throw null; }
             public static ulong ParallelBitDeposit(ulong value, ulong mask) { throw null; }
             public static ulong ParallelBitExtract(ulong value, ulong mask) { throw null; }
             public static ulong ZeroHighBits(ulong value, ulong index) { throw null; }
