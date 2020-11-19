@@ -226,14 +226,15 @@ namespace System.Threading.Tasks
         /// <param name="faultedTask">The faulted worker task that's initiating the shutdown.</param>
         private void FaultWithTask(Task faultedTask)
         {
-            Debug.Assert(faultedTask != null && faultedTask.IsFaulted && faultedTask.Exception!.InnerExceptions.Count > 0,
+            Debug.Assert(faultedTask != null && faultedTask.IsFaulted && faultedTask.Exception!.InnerExceptionCount > 0,
                 "Needs a task in the faulted state and thus with exceptions.");
             ContractAssertMonitorStatus(ValueLock, held: true);
 
+            AggregateException faultedException = faultedTask.Exception;
             // Store the faulted task's exceptions
             CompletionState cs = EnsureCompletionStateInitialized();
-            cs.m_exceptions ??= new List<Exception>();
-            cs.m_exceptions.AddRange(faultedTask.Exception.InnerExceptions);
+            cs.m_exceptions ??= new List<Exception>(faultedException.InnerExceptionCount);
+            cs.m_exceptions.AddRange(faultedException.InternalInnerExceptions);
 
             // Now that we're doomed, request completion
             RequestCompletion();

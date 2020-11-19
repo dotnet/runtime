@@ -4816,8 +4816,8 @@ namespace System.Threading.Tasks
                 // this will make sure it won't throw again in the implicit wait
                 t.UpdateExceptionObservedStatus();
 
-                exceptions ??= new List<Exception>(ex.InnerExceptions.Count);
-                exceptions.AddRange(ex.InnerExceptions);
+                exceptions ??= new List<Exception>(ex.InnerExceptionCount);
+                exceptions.AddRange(ex.InternalInnerExceptions);
             }
         }
 
