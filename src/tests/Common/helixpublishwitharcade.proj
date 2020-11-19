@@ -102,8 +102,9 @@
     <DotNetCliPackageType>sdk</DotNetCliPackageType>
     <GlobalJsonContent>$([System.IO.File]::ReadAllText('$(RepoRoot)global.json'))</GlobalJsonContent>
     <DotNetCliVersion>$([System.Text.RegularExpressions.Regex]::Match($(GlobalJsonContent), '(%3F&lt;="dotnet": ").*(%3F=")'))</DotNetCliVersion>
-    <!-- wasm and Android needs to use the host OS DotnetCliRuntime, which on its queue is linux-x64 -->
+    <!-- wasm and Android needs to use the host OS DotnetCliRuntime -->
     <DotNetCliRuntime>linux-x64</DotNetCliRuntime>
+    <DotNetCliRuntime Condition=" '$(TargetArchitecture)' == 'arm64' ">win-x64</DotNetCliRuntime>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(TargetOS)' == 'Android'">
