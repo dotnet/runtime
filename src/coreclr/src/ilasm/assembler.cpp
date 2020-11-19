@@ -2560,7 +2560,7 @@ void Assembler::AddGenericParamConstraint(int index, char * pStrGenericParam, md
     CheckAddGenericParamConstraint(&m_pCurClass->m_GPCList, index, tkTypeConstraint, true);
 }
 
-// CheckAddGenericParamConstraint is called when we have to handle a generic parameter constariant
+// CheckAddGenericParamConstraint is called when we have to handle a generic parameter constraint
 // When parsing a generic class/method definition isParamDirective is false - we have a generic type constaint
 // for this case we do not setup m_pCustomDescrList as a .custom after a generic class/method definition is
 // for the class/method
