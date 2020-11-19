@@ -112,27 +112,6 @@
     <SharedHostInstallerStart Condition="'$(TargetOS)' == 'OSX'">$(SharedHostInstallerStart)$(InstallerStartSuffix)-</SharedHostInstallerStart>
     <HostFxrInstallerStart Condition="'$(TargetOS)' == 'OSX'">$(HostFxrInstallerStart)$(InstallerStartSuffix)-</HostFxrInstallerStart>
     <SharedFrameworkInstallerStart Condition="'$(TargetOS)' == 'OSX'">$(SharedFrameworkInstallerStart)$(InstallerStartSuffix)-</SharedFrameworkInstallerStart>
-
-  </PropertyGroup>
-
-  <PropertyGroup Condition="'$(PortableBuild)' == 'true'">
-    <HostMachineRidTargetsDebianPackages Condition="
-      $(NonPortableRuntimeOS.StartsWith('debian')) or
-      $(NonPortableRuntimeOS.StartsWith('ubuntu')) or
-      $(NonPortableRuntimeOS.StartsWith('linuxmint'))">true</HostMachineRidTargetsDebianPackages>
-    <!-- If the build machine isn't known to be Debian-based, try to build RPM packages. -->
-    <HostMachineRidTargetsRpmPackages Condition="'$(HostMachineRidTargetsDebianPackages)' != 'true'">true</HostMachineRidTargetsRpmPackages>
-  </PropertyGroup>
-
-  <PropertyGroup>
-    <CompressedFileExtension Condition="'$(TargetOS)' == 'windows'">.zip</CompressedFileExtension>
-    <CompressedFileExtension Condition="'$(TargetOS)' != 'windows'">.tar.gz</CompressedFileExtension>
-    <InstallerExtension Condition="'$(TargetOS)' == 'windows'">.msi</InstallerExtension>
-    <InstallerExtension Condition="'$(TargetOS)' == 'OSX'">.pkg</InstallerExtension>
-    <InstallerExtension Condition="$(OutputRid.StartsWith('debian')) or $(OutputRid.StartsWith('ubuntu')) or $(OutputRid.StartsWith('linuxmint')) or '$(HostMachineRidTargetsDebianPackages)' == 'true'">.deb</InstallerExtension>
-    <InstallerExtension Condition="$(OutputRid.StartsWith('rhel')) or $(OutputRid.StartsWith('centos')) or $(OutputRid.StartsWith('opensuse')) or $(OutputRid.StartsWith('fedora')) or $(OutputRid.StartsWith('oracle')) or $(OutputRid.StartsWith('sles')) or '$(HostMachineRidTargetsRpmPackages)' == 'true'">.rpm</InstallerExtension>
-    <CombinedInstallerExtension Condition="'$(TargetOS)' == 'windows'">.exe</CombinedInstallerExtension>
-    <CombinedInstallerExtension Condition="'$(TargetOS)' != 'windows'">$(InstallerExtension)</CombinedInstallerExtension>
   </PropertyGroup>
 
   <!-- Use actual publishable (non-dummy) package name produced by the build system for this RID -->

@@ -553,19 +553,6 @@ echo Build type: one of Debug, Checked, Release ^(default: Debug^).
 echo skipmanaged: skip the managed tests build
 echo skipnative: skip the native tests build
 echo skiprestorepackages: skip package restore
-echo     alpine.3.4.3-x64: Builds overlay for Alpine 3.4.3
-echo     debian.8-x64: Builds overlay for Debian 8
-echo     fedora.24-x64: Builds overlay for Fedora 24
-echo     linux-x64: Builds overlay for portable linux
-echo     opensuse.42.1-x64: Builds overlay for OpenSUSE 42.1
-echo     osx.10.12-x64: Builds overlay for OSX 10.12
-echo     osx-x64: Builds overlay for portable OSX
-echo     rhel.7-x64: Builds overlay for RHEL 7 or CentOS
-echo     ubuntu.14.04-x64: Builds overlay for Ubuntu 14.04
-echo     ubuntu.16.04-x64: Builds overlay for Ubuntu 16.04
-echo     ubuntu.16.10-x64: Builds overlay for Ubuntu 16.10
-echo     win-x64: Builds overlay for portable Windows
-echo     win7-x64: Builds overlay for Windows 7
 echo crossgen: Precompiles the framework managed assemblies
 echo copynativeonly: Only copy the native test binaries to the managed output. Do not build the native or managed tests.
 echo skipgeneratelayout: Do not generate the Core_Root layout

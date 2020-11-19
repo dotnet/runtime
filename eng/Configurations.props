@@ -100,7 +100,6 @@
     <_portableOS Condition="'$(_runtimeOS)' == 'android'">android</_portableOS>
 
     <_runtimeOS Condition="$(_runtimeOS.StartsWith('tizen'))">linux</_runtimeOS>
-    <NonPortableRuntimeOS Condition="'$(PortableBuild)' == 'true'">$(_runtimeOS)</NonPortableRuntimeOS>
     <_runtimeOS Condition="'$(PortableBuild)' == 'true'">$(_portableOS)</_runtimeOS>
 
     <!-- support cross-targeting by choosing a RID to restore when running on a different machine that what we're build for -->
