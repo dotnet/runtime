@@ -951,19 +951,9 @@ namespace System.Security.Cryptography.Encryption.Aes.Tests
             {
                 aes.Mode = cipherMode;
                 aes.Padding = PaddingMode.Zeros;
+                aes.FeedbackSize = 128;
 
-                int alignBytes;
-
-                if (cipherMode == CipherMode.CFB)
-                {
-                    aes.FeedbackSize = 128;
-                    alignBytes = aes.FeedbackSize / 8;
-                }
-                else
-                {
-                    alignBytes = aes.BlockSize / 8;
-                }
-
+                int alignBytes = aes.BlockSize / 8; // Feedback size is same as block size, both are 128 bits
                 int missingBytes = alignBytes - (s_multiBlockBytes.Length % alignBytes);
 
                 // Zero-padding doesn't have enough information to remove the trailing zeroes.
