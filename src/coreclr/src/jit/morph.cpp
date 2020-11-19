@@ -8428,6 +8428,10 @@ void Compiler::fgMorphTailCallViaJitHelper(GenTreeCall* call)
             thisPtr = objp;
         }
 
+        // TODO-Cleanup: we leave it as a virtual stub call to
+        // use logic in `LowerVirtualStubCall`, clear GTF_CALL_VIRT_KIND_MASK here
+        // and change `LowerCall` to recognize it as a direct call.
+
         // During rationalization tmp="this" and null check will
         // materialize as embedded stmts in right execution order.
         assert(thisPtr != nullptr);
