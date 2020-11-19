@@ -20,7 +20,10 @@
     <Message Text="Packaged ID: %(RuntimePack.PackageDirectory)" Importance="high" />
   </Target>
 
+  <Import Project="$(RepoTasksDir)mobile.tasks\AotCompilerTask\MonoAOTCompiler.props" />
   <UsingTask TaskName="AndroidAppBuilderTask" AssemblyFile="$(AndroidAppBuilderTasksAssemblyPath)"/>
+  <UsingTask TaskName="MonoAOTCompiler"
+             AssemblyFile="$(ArtifactsBinDir)MonoAOTCompiler\Debug\$(NetCoreAppCurrent)\MonoAOTCompiler.dll" />
 
   <Target Name="BuildApp" AfterTargets="CopyFilesToPublishDirectory">
     <PropertyGroup>
@@ -30,8 +33,30 @@
       <ApkDir>$(OutputPath)apk\</ApkDir>
     </PropertyGroup>
 
+    <ItemGroup>
+      <AotInputAssemblies Include="$(PublishDir)\*.dll">
+        <AotArguments>@(MonoAOTCompilerDefaultAotArguments, ';')</AotArguments>
+        <ProcessArguments>@(MonoAOTCompilerDefaultProcessArguments, ';')</ProcessArguments>
+      </AotInputAssemblies>
+    </ItemGroup>
+
     <RemoveDir Directories="$(ApkDir)" />
 
+    <Message Importance="High" Text="Path: $(PublishDir)" />
+    <Message Importance="High" Text="SourceDir: $(OutputPath)" />
+
+    <MonoAOTCompiler
+        Condition="'$(UseAotForSimulator)' == 'true'"
+        CompilerBinaryPath="$(MicrosoftNetCoreAppRuntimePackDir)native\cross\mono-aot-cross"
+        Mode="Full"
+        OutputType="AsmOnly"
+        Assemblies="@(AotInputAssemblies)"
+        UseLLVM="$(UseLLVM)"
+        LLVMPath="$(MicrosoftNetCoreAppRuntimePackDir)native\cross">
+        <Output TaskParameter="CompiledAssemblies" ItemName="BundleAssemblies" />
+    </MonoAOTCompiler>
+
+<!--
     <AndroidAppBuilderTask
         RuntimeIdentifier="$(RuntimeIdentifier)"
         SourceDir="$(OutputPath)"
@@ -44,6 +69,7 @@
         <Output TaskParameter="ApkBundlePath" PropertyName="ApkBundlePath" />
         <Output TaskParameter="ApkPackageId" PropertyName="ApkPackageId" />
     </AndroidAppBuilderTask>
+-->
 
     <Message Importance="High" Text="Apk:       $(ApkBundlePath)"/>
     <Message Importance="High" Text="PackageId: $(ApkPackageId)"/>

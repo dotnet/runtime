@@ -13,6 +13,8 @@ run:
 	/p:TargetOS=Android \
 	/p:Configuration=$(MONO_CONFIG) \
 	/p:DeployAndRun=true \
+	/p:UseAotForSimulator=true \
+	/p:UseLLVM=true \
 	/p:RunActivity=false
 
 clean:
