@@ -378,8 +378,6 @@ namespace System.Runtime.CompilerServices
         private uint Flags;
         [FieldOffset(4)]
         public uint BaseSize;
-        [FieldOffset(8)]
-        public ushort Flags2;
         [FieldOffset(0x0e)]
         public ushort InterfaceCount;
         [FieldOffset(ParentMethodTableOffset)]
@@ -404,9 +402,6 @@ namespace System.Runtime.CompilerServices
                                                              | 0x40000000 // enum_flag_ComObject
                                                              | 0x00400000 // enum_flag_ICastable;
                                                              | 0x00200000;// enum_flag_IDynamicInterfaceCastable;
-
-        // WFLAGS2_ENUM
-        private const ushort enum_flag_HasCctor = 0x0400;
 
         private const int DebugClassNamePtr = // adjust for debug_m_szClassName
 #if DEBUG
@@ -463,14 +458,6 @@ namespace System.Runtime.CompilerServices
             get
             {
                 return (Flags & enum_flag_HasDefaultCtor) != 0;
-            }
-        }
-
-        public bool HasClassConstructor
-        {
-            get
-            {
-                return (Flags2 & enum_flag_HasCctor) != 0;
             }
         }
 

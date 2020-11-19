@@ -4086,6 +4086,21 @@ namespace System
             internal void CallCtorOverUninitializedObject(object? newObj) => _pfnCtorStub(newObj, _ctorStubState);
         }
 
+        // This method mimics the overload present in the mono codebase. It allows shared source callers
+        // to target this overload and work across both runtimes. CoreCLR ignores the 'skipCheckThis' and
+        // 'fillCache' parameters.
+        [DebuggerStepThrough]
+        [DebuggerHidden]
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2082:UnrecognizedReflectionPattern",
+            Justification = "Implementation detail of Activator that linker intrinsically recognizes")]
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2085:UnrecognizedReflectionPattern",
+            Justification = "Implementation detail of Activator that linker intrinsically recognizes")]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal object? CreateInstanceDefaultCtor(bool publicOnly, bool skipCheckThis, bool fillCache, bool wrapExceptions)
+        {
+            return CreateInstanceDefaultCtor(publicOnly, wrapExceptions);
+        }
+
         /// <summary>
         /// Helper to invoke the default (parameterless) constructor.
         /// </summary>
