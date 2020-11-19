@@ -239,12 +239,12 @@ namespace System
         private static extern void GetNewobjHelperFnPtr(QCallTypeHandle typeHandle, delegate*<MethodTable*, object>* ppNewobjHelper, MethodTable** ppMT, Interop.BOOL fUnwrapNullable);
 
         /// <summary>
-        /// Returns the parameterless ctor for this type as a managed calli-invokable address.
+        /// Returns the MethodDesc* for this type's parameterless instance ctor.
         /// For reference types, signature is (object @this) -> void.
         /// For value types, signature is (ref T @thisUnboxed) -> void.
-        /// Returns null if no parameterless ctor is defined.
+        /// Returns nullptr if no parameterless ctor is defined.
         /// </summary>
-        internal static IntPtr GetDefaultCtorFnPtr(
+        internal static RuntimeMethodHandleInternal GetDefaultConstructor(
             [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors | DynamicallyAccessedMemberTypes.NonPublicConstructors)] RuntimeType type)
         {
             Debug.Assert(type != null);
@@ -253,7 +253,7 @@ namespace System
         }
 
         [DllImport(RuntimeHelpers.QCall, CharSet = CharSet.Unicode)]
-        private static extern IntPtr GetDefaultCtor(QCallTypeHandle typeHandle);
+        private static extern RuntimeMethodHandleInternal GetDefaultCtor(QCallTypeHandle typeHandle);
 
         /// <summary>
         /// Instantiates a RCW for a COM object.

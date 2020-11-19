@@ -3955,13 +3955,13 @@ namespace System
         {
             // The managed calli to the newobj routine, plus its first argument.
             // First argument is normally a MethodTable* unless we're going through one of our stubs.
-            private readonly delegate*<void*, object?> _pfnNewobj;
-            private readonly void* _newobjState;
+            private readonly delegate*<IntPtr, object?> _pfnNewobj;
+            private readonly IntPtr _newobjState;
 
             // The managed calli to the parameterless ctor, plus a state object.
             // State object depends on the stub being called.
-            private readonly delegate*<object?, void*, void> _pfnCtorStub;
-            private readonly void* _ctorStubState;
+            private readonly delegate*<object?, IntPtr, void> _pfnCtorStub;
+            private readonly IntPtr _ctorStubState;
 
 #if DEBUG
             private readonly RuntimeType _originalRT;
@@ -3975,31 +3975,33 @@ namespace System
                 _originalRT = rt;
 #endif
 
+                RuntimeMethodHandleInternal defaultCtorRMH = default;
+
                 if (rt.IsCOMObject)
                 {
                     // COM objects go through a special activation procedure coordinated
                     // by the unmanaged runtime. We'll create a stub to that function.
 
-                    static object? ComNewobjStub(void* state)
+                    static object? ComNewobjStub(IntPtr state)
                     {
-                        RuntimeType rt = GetTypeFromHandleUnsafe((IntPtr)state);
+                        RuntimeType rt = GetTypeFromHandleUnsafe(state); // state is a RuntimeType handle
                         Debug.Assert(rt != null);
                         Debug.Assert(rt.IsCOMObject);
 
                         return RuntimeTypeHandle.CreateComInstance(rt);
                     }
                     _pfnNewobj = &ComNewobjStub;
-                    _newobjState = (void*)rt.TypeHandle.Value;
+                    _newobjState = rt.TypeHandle.Value;
 
                     _pfnCtorStub = &CtorNoopStub;
-                    _ctorStubState = null;
-
-                    CtorIsPublic = true; // COM type ctors are always inherently public
+                    _ctorStubState = IntPtr.Zero;
                 }
                 else
                 {
-                    _pfnNewobj = (delegate*<void*, object?>)RuntimeTypeHandle.GetNewobjHelperFnPtr(rt, out MethodTable* pMT, unwrapNullable: false);
-                    _ctorStubState = pMT;
+                    _pfnNewobj = (delegate*<IntPtr, object?>)RuntimeTypeHandle.GetNewobjHelperFnPtr(rt, out MethodTable* pMT, unwrapNullable: false);
+                    _ctorStubState = (IntPtr)pMT;
+
+                    defaultCtorRMH = RuntimeTypeHandle.GetDefaultConstructor(rt);
 
                     if (pMT->IsValueType)
                     {
@@ -4007,14 +4009,12 @@ namespace System
                         {
                             // Activator.CreateInstance returns null given typeof(Nullable<T>).
 
-                            static object? ReturnNull(void* state) => null;
+                            static object? ReturnNull(IntPtr state) => null;
                             _pfnNewobj = &ReturnNull;
-                            _newobjState = null;
+                            _newobjState = IntPtr.Zero;
 
                             _pfnCtorStub = &CtorNoopStub;
-                            _ctorStubState = null;
-
-                            CtorIsPublic = true; // Returning null is always inherently public
+                            _ctorStubState = IntPtr.Zero;
                         }
                         else if (pMT->HasDefaultConstructor)
                         {
@@ -4022,23 +4022,19 @@ namespace System
                             // We'll pass the actual ctor address as the state object, then create
                             // an unboxing stub so that we can pass the boxed value to it.
 
-                            static void ValueTypeUnboxingStub(object? @this, void* state)
+                            static void ValueTypeUnboxingStub(object? @this, IntPtr state)
                             {
                                 ((delegate*<ref byte, void>)state)(ref @this!.GetRawData());
                             }
                             _pfnCtorStub = &ValueTypeUnboxingStub;
-                            _ctorStubState = (void*)RuntimeTypeHandle.GetDefaultCtorFnPtr(rt);
-
-                            CtorIsPublic = (RuntimeMethodHandle.GetAttributes(RuntimeTypeHandle.GetMethodAt(rt, pMT->GetDefaultConstructorSlot())) & MethodAttributes.Public) != 0;
+                            _ctorStubState = RuntimeMethodHandle.GetFunctionPointer(defaultCtorRMH);
                         }
                         else
                         {
                             // ValueType with no explicit parameterless ctor; assume ctor returns default(T)
 
                             _pfnCtorStub = &CtorNoopStub;
-                            _ctorStubState = null;
-
-                            CtorIsPublic = true; // returning default(T) is always inherently public
+                            _ctorStubState = IntPtr.Zero;
                         }
                     }
                     else
@@ -4055,15 +4051,18 @@ namespace System
                         // Reference type with explicit parameterless ctor typed as (object) -> void.
                         // We'll pass the actual ctor address as the state object.
 
-                        static void ReferenceTypeStub(object? @this, void* state)
+                        static void ReferenceTypeStub(object? @this, IntPtr state)
                         {
                             ((delegate*<object, void>)state)(@this!);
                         }
                         _pfnCtorStub = &ReferenceTypeStub;
-                        _ctorStubState = (void*)RuntimeTypeHandle.GetDefaultCtorFnPtr(rt);
-
-                        CtorIsPublic = (RuntimeMethodHandle.GetAttributes(RuntimeTypeHandle.GetMethodAt(rt, pMT->GetDefaultConstructorSlot())) & MethodAttributes.Public) != 0;
+                        _ctorStubState = RuntimeMethodHandle.GetFunctionPointer(defaultCtorRMH);
                     }
+                }
+
+                if (!defaultCtorRMH.IsNullHandle())
+                {
+                    CtorIsPublic = (RuntimeMethodHandle.GetAttributes(defaultCtorRMH) & MethodAttributes.Public) != 0;
                 }
 
                 Debug.Assert(_pfnNewobj != null);
@@ -4072,7 +4071,7 @@ namespace System
 
             internal bool CtorIsPublic { get; }
 
-            private static void CtorNoopStub(object? @this, void* state) { }
+            private static void CtorNoopStub(object? @this, IntPtr state) { }
 
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             internal object? CreateUninitializedObject(RuntimeType rt)
