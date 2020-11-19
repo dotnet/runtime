@@ -21,6 +21,7 @@ internal class Xcode
         bool preferDylibs,
         bool useConsoleUiTemplate,
         bool useAotForSimulator,
+        bool forceInterpreter,
         bool stripDebugSymbols,
         string? nativeMainSource = null)
     {
@@ -86,8 +87,17 @@ internal class Xcode
         cmakeLists = cmakeLists.Replace("%NativeLibrariesToLink%", toLink);
         cmakeLists = cmakeLists.Replace("%AotSources%", aotSources);
         cmakeLists = cmakeLists.Replace("%AotModulesSource%", string.IsNullOrEmpty(aotSources) ? "" : "modules.m");
-        cmakeLists = cmakeLists.Replace("%Defines%",
-            useAotForSimulator ? "add_definitions(-DUSE_AOT_FOR_SIMULATOR=1)" : "");
+
+        string defines = "";
+        if (forceInterpreter)
+        {
+            defines = "add_definitions(-DFORCE_INTERPRETER=1)";
+        }
+        else if (useAotForSimulator)
+        {
+            defines = "add_definitions(-DUSE_AOT_FOR_SIMULATOR=1)";
+        }
+        cmakeLists = cmakeLists.Replace("%Defines%", defines);
 
         string plist = Utils.GetEmbeddedResource("Info.plist.template")
             .Replace("%BundleIdentifier%", projectName);
