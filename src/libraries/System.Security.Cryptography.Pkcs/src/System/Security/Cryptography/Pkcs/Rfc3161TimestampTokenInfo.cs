@@ -33,9 +33,9 @@ namespace System.Security.Cryptography.Pkcs
         /// <param name="timestamp">The timestamp encoded in the token.</param>
         /// <param name="accuracyInMicroseconds">The accuracy with which <paramref name="timestamp"/> is compared. Also see <paramref name="isOrdering"/>.</param>
         /// <param name="isOrdering"><see langword="true" /> to ensure that every timestamp token from the same TSA can always be ordered based on the <paramref name="timestamp"/>, regardless of the accuracy; <see langword="false" /> to make <paramref name="timestamp"/> indicate when token has been created by the TSA.</param>
-        /// <param name="nonce">An arbitrary number that can be used only once. Using a nonce always allows to detect replays, and hence its use is recommended.</param>
+        /// <param name="nonce">The nonce associated with this timestamp token. Using a nonce always allows to detect replays, and hence its use is recommended.</param>
         /// <param name="tsaName">The hint in the TSA name identification. The actual identification of the entity that signed the response will always occur through the use of the certificate identifier.</param>
-        /// <param name="extensions">A collection of X509 extensions.</param>
+        /// <param name="extensions">The extension values associated with the timestamp.</param>
         /// <remarks>If <paramref name="hashAlgorithmId" />, <paramref name="messageHash" />, <paramref name="policyId" /> or <paramref name="nonce" /> are present in the <see cref="Rfc3161TimestampRequest"/>, then the same value should be used. If <paramref name="accuracyInMicroseconds"/> is not provided, then the accuracy may be available through other means such as i.e. <paramref name="policyId" />.</remarks>
         /// <exception cref="CryptographicException">ASN.1 corrupted data.</exception>
         public Rfc3161TimestampTokenInfo(
@@ -76,61 +76,75 @@ namespace System.Security.Cryptography.Pkcs
         }
 
         /// <summary>
-        /// The version of the timestamp request.
+        /// Gets the version of the timestamp token.
         /// </summary>
+        /// <value>The version of the timestamp token.</value>
         public int Version => _parsedData.Version;
 
         /// <summary>
-        /// An OID representing the TSA's policy under which the response was produced.
+        /// Gets an OID representing the TSA's policy under which the response was produced.
         /// </summary>
+        /// <value>An OID representing the TSA's policy under which the response was produced.</value>
         public Oid PolicyId => (_policyOid ??= new Oid(_parsedData.Policy, null));
 
         /// <summary>
-        /// An OID of the hash algorithm.
+        /// Gets an OID of the hash algorithm.
         /// </summary>
+        /// <value>An OID of the hash algorithm.</value>
         public Oid HashAlgorithmId => (_hashAlgorithmId ??= new Oid(_parsedData.MessageImprint.HashAlgorithm.Algorithm, null));
 
         /// <summary>
-        /// The data representing the message hash.
+        /// Gets the data representing the message hash.
         /// </summary>
+        /// <returns>The data representing the message hash.</returns>
         public ReadOnlyMemory<byte> GetMessageHash() => _parsedData.MessageImprint.HashedMessage;
 
         /// <summary>
-        /// An integer assigned by the TSA to the <see cref="Rfc3161TimestampTokenInfo"/>.
+        /// Gets an integer assigned by the TSA to the <see cref="Rfc3161TimestampTokenInfo"/>.
         /// </summary>
+        /// <returns>An integer assigned by the TSA to the <see cref="Rfc3161TimestampTokenInfo"/>.</returns>
         public ReadOnlyMemory<byte> GetSerialNumber() => _parsedData.SerialNumber;
 
         /// <summary>
-        /// The timestamp encoded in the token.
+        /// Gets the timestamp encoded in the token.
         /// </summary>
+        /// <value>The timestamp encoded in the token.</value>
         public DateTimeOffset Timestamp => _parsedData.GenTime;
 
         /// <summary>
-        /// The accuracy with which <see cref="Timestamp"/> is compared. Also see <see cref="IsOrdering"/>.
+        /// Gets the accuracy with which <see cref="Timestamp"/> is compared.
         /// </summary>
+        /// <seealso cref="IsOrdering" />
+        /// <value>The accuracy with which <see cref="Timestamp"/> is compared.</value>
         public long? AccuracyInMicroseconds => _parsedData.Accuracy?.TotalMicros;
 
         /// <summary>
         /// Gets a value indicating if every timestamp token from the same TSA can always be ordered based on the <see cref="Timestamp"/>, regardless of the accuracy; If <see langword="false" />, <see cref="Timestamp"/> indicates when the token has been created by the TSA.
         /// </summary>
+        /// <value>A value indicating if every timestamp token from the same TSA can always be ordered based on the <see cref="Timestamp"/>.</value>
         public bool IsOrdering => _parsedData.Ordering;
 
         /// <summary>
-        /// An arbitrary number that can be used only once.
+        /// Gets the nonce associated with this timestamp token.
         /// </summary>
+        /// <value>The nonce indicating whether there are any extensions associated with this timestamp token.</value>
         public ReadOnlyMemory<byte>? GetNonce() => _parsedData.Nonce;
 
         /// <summary>
-        /// Gets a value indicating whether there are any X509 extensions.
+        /// Gets a value indicating whether there are any extensions associated with this timestamp token.
         /// </summary>
+        /// <value>A value indicating whether there are any extensions associated with this timestamp token.</value>
         public bool HasExtensions => _parsedData.Extensions?.Length > 0;
 
         /// <summary>
         /// Gets the data representing the hint in the TSA name identification.
+        /// </summary>
+        /// <returns>Tthe data representing the hint in the TSA name identification.</returns>
+        /// <remarks>
         /// The actual identification of the entity that signed the response
         /// will always occur through the use of the certificate identifier (ESSCertID Attribute)
         /// inside a SigningCertificate attribute which is part of the signer info.
-        /// </summary>
+        /// </remarks>
         public ReadOnlyMemory<byte>? GetTimestampAuthorityName()
         {
             if (_tsaNameBytes == null)
@@ -152,8 +166,9 @@ namespace System.Security.Cryptography.Pkcs
         }
 
         /// <summary>
-        /// Returns a collection of X509 certificates.
+        /// Gets the extension values associated with the timestamp.
         /// </summary>
+        /// <returns>The extension values associated with the timestamp.</returns>
         public X509ExtensionCollection GetExtensions()
         {
             var coll = new X509ExtensionCollection();
@@ -182,15 +197,16 @@ namespace System.Security.Cryptography.Pkcs
         }
 
         /// <summary>
-        /// Returns a byte array representing ASN.1 encoded data.
+        /// Encodes this object into a TSTInfo value
         /// </summary>
+        /// <returns>The encoded TSTInfo value.</returns>
         public byte[] Encode()
         {
             return _encodedBytes.CloneByteArray();
         }
 
         /// <summary>
-        /// Gets the ASN.1 encoded data.
+        /// Attempts to encode this object as a TSTInfo value, writing the result into the provided buffer.
         /// </summary>
         /// <param name="destination">The destination buffer.</param>
         /// <param name="bytesWritten">When this method returns <see langword="true" />, contains the bytes written to the <paramref name="destination" /> buffer.</param>
@@ -209,7 +225,7 @@ namespace System.Security.Cryptography.Pkcs
         }
 
         /// <summary>
-        /// Decodes the ASN.1 encoded data.
+        /// Decodes an encoded TSTInfo value.
         /// </summary>
         /// <param name="source">The input or source buffer.</param>
         /// <param name="timestampTokenInfo">When this method returns <see langword="true" />, the decoded data. When this method returns <see langword="false" />, the value is <see langword="null" />, meaning the data could not be decoded.</param>
