@@ -3996,6 +3996,8 @@ namespace System
                         // but value types almost never have explicit parameterless ctors, so
                         // this shouldn't be a problem in practice.
 
+                        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2072:UnrecognizedReflectionPattern",
+                            Justification = "The linker requirements are already satisfied by the enclosing method.")]
                         static void CtorUnboxValueTypeStub(object? uninitializedObject)
                         {
                             Debug.Assert(uninitializedObject != null);
@@ -4011,6 +4013,8 @@ namespace System
                     else
                     {
                         // ValueType with no explicit parameterless ctor; assume ctor returns default(T)
+
+                        Debug.Assert(defaultCtorRMH.IsNullHandle());
                     }
                 }
                 else
@@ -4034,6 +4038,8 @@ namespace System
                     else
                     {
                         // Reference type with explicit parameterless ctor
+
+                        Debug.Assert(!defaultCtorRMH.IsNullHandle());
                     }
                 }
 
@@ -4109,7 +4115,7 @@ namespace System
                 GenericCache = cache;
             }
 
-            if (publicOnly & !cache.CtorIsPublic)
+            if (!cache.CtorIsPublic && publicOnly)
             {
                 throw new MissingMethodException(SR.Format(SR.Arg_NoDefCTor, this));
             }
