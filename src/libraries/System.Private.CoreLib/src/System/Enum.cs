@@ -63,26 +63,33 @@ namespace System
         private string ValueToHexString()
         {
             ref byte data = ref this.GetRawData();
+            int size;
             switch (InternalGetCorElementType())
             {
                 case CorElementType.ELEMENT_TYPE_I1:
                 case CorElementType.ELEMENT_TYPE_U1:
-                    return data.ToString("X2", null);
+                    size = 1;
+                    break;
                 case CorElementType.ELEMENT_TYPE_BOOLEAN:
-                    return Convert.ToByte(Unsafe.As<byte, bool>(ref data)).ToString("X2", null);
+                    return Unsafe.As<byte, bool>(ref data) ? "1" : "0";
                 case CorElementType.ELEMENT_TYPE_I2:
                 case CorElementType.ELEMENT_TYPE_U2:
                 case CorElementType.ELEMENT_TYPE_CHAR:
-                    return Unsafe.As<byte, ushort>(ref data).ToString("X4", null);
+                    size = 2;
+                    break;
                 case CorElementType.ELEMENT_TYPE_I4:
                 case CorElementType.ELEMENT_TYPE_U4:
-                    return Unsafe.As<byte, uint>(ref data).ToString("X8", null);
+                    size = 4;
+                    break;
                 case CorElementType.ELEMENT_TYPE_I8:
                 case CorElementType.ELEMENT_TYPE_U8:
-                    return Unsafe.As<byte, ulong>(ref data).ToString("X16", null);
+                    size = 8;
+                    break;
                 default:
                     throw new InvalidOperationException(SR.InvalidOperation_UnknownEnumType);
             }
+
+            return HexConverter.ToString(new ReadOnlySpan<byte>(ref data, size));
         }
 
         private static string ValueToHexString(object value)
