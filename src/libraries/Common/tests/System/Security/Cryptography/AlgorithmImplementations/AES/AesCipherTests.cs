@@ -944,6 +944,12 @@ namespace System.Security.Cryptography.Encryption.Aes.Tests
         [InlineData(CipherMode.CFB)]
         public static void AesZeroPad(CipherMode cipherMode)
         {
+            if (cipherMode == CipherMode.CFB && PlatformDetection.IsWindows7)
+            {
+                // Windows 7 does not support CFB128.
+                return;
+            }
+
             byte[] decryptedBytes;
             byte[] expectedAnswer;
 
