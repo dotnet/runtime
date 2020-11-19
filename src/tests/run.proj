@@ -445,22 +445,22 @@ namespace $([System.String]::Copy($(Category)).Replace(".","_").Replace("\","").
       <RuntimePackNativeLibs Include="$(MicrosoftNetCoreAppRuntimePackDir)/**/*.dll;$(MicrosoftNetCoreAppRuntimePackDir)native/**/*.a;$(MicrosoftNetCoreAppRuntimePackDir)native/**/*.so" />
     </ItemGroup>
 
-    <Copy 
+    <Copy
         SourceFiles="@(TestAssemblies)"
         DestinationFolder="$(BuildDir)" />
 
-    <Copy 
+    <Copy
         SourceFiles="@(AssembliesInTestDirs)"
         DestinationFolder="$(BuildDir)" />
 
-    <Copy 
+    <Copy
         SourceFiles="@(RuntimePackNativeLibs)"
         DestinationFolder="$(BuildDir)" />
 
-    <Copy 
+    <Copy
         SourceFiles="@(RuntimePackLibs)"
         DestinationFolder="$(BuildDir)" />
-    
+
     <!-- TEMP: consume OpenSSL binaries from external sources via env. variables.-->
     <Copy Condition="'$(ANDROID_OPENSSL_AAR)' != ''"
           SourceFiles="$(ANDROID_OPENSSL_AAR)\prefab\modules\crypto\libs\android.$(AndroidAbi)\libcrypto.so"
@@ -505,7 +505,7 @@ namespace $([System.String]::Copy($(Category)).Replace(".","_").Replace("\","").
   <Target Name="CreateTestOverlay">
     <MSBuild Projects="$(MSBuildProjectFile)"
              Targets="CopyDependencyToCoreRoot"
-             Properties="Language=C#;TargetRid=$(TargetRid);RuntimeIdentifier=$(TargetRid)" />
+             Properties="Language=C#;PackageRID=$(PackageRID);RuntimeIdentifier=$(PackageRID)" />
   </Target>
 
   <Target Name="Build">

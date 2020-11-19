@@ -11,7 +11,7 @@
   </ItemGroup>
 
   <ItemGroup Condition="'$(PackageTargetRuntime)' != ''">
-    <NativeBinary Include="$(DotNetHostBinDir)/$(LibraryFilePrefix)hostfxr$(LibraryFileExtension)"/>
+    <NativeBinary Include="$(DotNetHostBinDir)/$(LibPrefix)hostfxr$(LibSuffix)"/>
     <File Include="@(NativeBinary)">
       <TargetPath>runtimes/$(PackageTargetRuntime)/native</TargetPath>
       <IsNative>true</IsNative>

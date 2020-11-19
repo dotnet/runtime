@@ -157,6 +157,4 @@
   <ItemGroup>
     <PackageReference Include="Microsoft.DotNet.Build.Tasks.Packaging" Version="$(MicrosoftDotNetBuildTasksPackagingVersion)" PrivateAssets="all" IsImplicitlyDefined="true" />
   </ItemGroup>
-
-  <Import Project="$(RepoRoot)eng\native\naming.props" />
 </Project>
