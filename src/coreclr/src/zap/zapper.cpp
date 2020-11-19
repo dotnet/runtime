@@ -580,11 +580,15 @@ void Zapper::InitEE(BOOL fForceDebug, BOOL fForceProfile, BOOL fForceInstrument)
     }
 #else
 
-    CorCompileRuntimeDlls ngenDllId;
+    LPCWSTR pwzJitName = nullptr;
 
-    ngenDllId = CROSSGEN_COMPILER_INFO;
+    // Try to obtain a name for the jit library from the env. variable
+    IfFailThrow(CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_JitName, const_cast<LPWSTR*>(&pwzJitName)));
+    if (pwzJitName == nullptr)
+    {
+        pwzJitName = CorCompileGetRuntimeDllName(CROSSGEN_COMPILER_INFO);
+    }
 
-    LPCWSTR pwzJitName = CorCompileGetRuntimeDllName(ngenDllId);
     LoadAndInitializeJITForNgen(pwzJitName, &m_hJitLib, &m_pJitCompiler);
 
 #endif // FEATURE_MERGE_JIT_AND_ENGINE

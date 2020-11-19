@@ -3,6 +3,9 @@
     <OutputType>Exe</OutputType>
     <DisableProjectBuild Condition="'$(RuntimeFlavor)' != 'coreclr'">true</DisableProjectBuild>
     <CLRTestTargetUnsupported Condition="'$(RuntimeFlavor)' != 'coreclr'">true</CLRTestTargetUnsupported>
+    <!-- The test is lengthy as it scans the entire System.Private.CoreLib so that it times out in GC stress runs. -->
+    <!-- The purpose of the test is functional testing of the R2R reader, not runtime stress testing. -->
+    <GCStressIncompatible>true</GCStressIncompatible>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="R2RDumpTester.cs" />

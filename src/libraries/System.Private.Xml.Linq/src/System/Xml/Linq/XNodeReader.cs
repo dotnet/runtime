@@ -378,7 +378,7 @@ namespace System.Xml.Linq
                         case XmlNodeType.ProcessingInstruction:
                             return ((XProcessingInstruction)o).Data;
                         case XmlNodeType.DocumentType:
-                            return ((XDocumentType)o).InternalSubset;
+                            return ((XDocumentType)o).InternalSubset ?? string.Empty;
                         default:
                             return string.Empty;
                     }

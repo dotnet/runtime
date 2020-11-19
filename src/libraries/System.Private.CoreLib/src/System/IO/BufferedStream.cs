@@ -58,14 +58,6 @@ namespace System.IO
                                                             // (perf optimization for successive reads of the same size)
                                                             // Removing a private default constructor is a breaking change for the DataDebugSerializer.
                                                             // Because this ctor was here previously we need to keep it around.
-        private SemaphoreSlim? _asyncActiveSemaphore;
-
-        internal SemaphoreSlim LazyEnsureAsyncActiveSemaphoreInitialized()
-        {
-            // Lazily-initialize _asyncActiveSemaphore.  As we're never accessing the SemaphoreSlim's
-            // WaitHandle, we don't need to worry about Disposing it.
-            return LazyInitializer.EnsureInitialized<SemaphoreSlim>(ref _asyncActiveSemaphore, () => new SemaphoreSlim(1, 1));
-        }
 
         public BufferedStream(Stream stream)
             : this(stream, DefaultBufferSize)
@@ -329,8 +321,7 @@ namespace System.IO
         {
             Debug.Assert(_stream != null);
 
-            SemaphoreSlim sem = LazyEnsureAsyncActiveSemaphoreInitialized();
-            await sem.WaitAsync(cancellationToken).ConfigureAwait(false);
+            await EnsureAsyncActiveSemaphoreInitialized().WaitAsync(cancellationToken).ConfigureAwait(false);
             try
             {
                 if (_writePos > 0)
@@ -371,7 +362,7 @@ namespace System.IO
             }
             finally
             {
-                sem.Release();
+                _asyncActiveSemaphore.Release();
             }
         }
 
@@ -616,7 +607,7 @@ namespace System.IO
             // Try to satisfy the request from the buffer synchronously. But still need a sem-lock in case that another
             // Async IO Task accesses the buffer concurrently. If we fail to acquire the lock without waiting, make this
             // an Async operation.
-            SemaphoreSlim sem = LazyEnsureAsyncActiveSemaphoreInitialized();
+            SemaphoreSlim sem = EnsureAsyncActiveSemaphoreInitialized();
             Task semaphoreLockTask = sem.WaitAsync(cancellationToken);
             if (semaphoreLockTask.IsCompletedSuccessfully)
             {
@@ -667,7 +658,7 @@ namespace System.IO
             EnsureCanRead();
 
             int bytesFromBuffer = 0;
-            SemaphoreSlim sem = LazyEnsureAsyncActiveSemaphoreInitialized();
+            SemaphoreSlim sem = EnsureAsyncActiveSemaphoreInitialized();
             Task semaphoreLockTask = sem.WaitAsync(cancellationToken);
             if (semaphoreLockTask.IsCompletedSuccessfully)
             {
@@ -706,6 +697,7 @@ namespace System.IO
             Debug.Assert(_stream != null);
             Debug.Assert(_stream.CanRead);
             Debug.Assert(_bufferSize > 0);
+            Debug.Assert(_asyncActiveSemaphore != null);
             Debug.Assert(semaphoreLockTask != null);
 
             // Employ async waiting based on the same synchronization used in BeginRead of the abstract Stream.
@@ -750,8 +742,7 @@ namespace System.IO
             }
             finally
             {
-                SemaphoreSlim sem = LazyEnsureAsyncActiveSemaphoreInitialized();
-                sem.Release();
+                _asyncActiveSemaphore.Release();
             }
         }
 
@@ -1042,7 +1033,7 @@ namespace System.IO
             EnsureCanWrite();
 
             // Try to satisfy the request from the buffer synchronously.
-            SemaphoreSlim sem = LazyEnsureAsyncActiveSemaphoreInitialized();
+            SemaphoreSlim sem = EnsureAsyncActiveSemaphoreInitialized();
             Task semaphoreLockTask = sem.WaitAsync(cancellationToken);
             if (semaphoreLockTask.IsCompletedSuccessfully)
             {
@@ -1087,6 +1078,7 @@ namespace System.IO
             Debug.Assert(_stream != null);
             Debug.Assert(_stream.CanWrite);
             Debug.Assert(_bufferSize > 0);
+            Debug.Assert(_asyncActiveSemaphore != null);
             Debug.Assert(semaphoreLockTask != null);
 
             // See the LARGE COMMENT in Write(..) for the explanation of the write buffer algorithm.
@@ -1161,8 +1153,7 @@ namespace System.IO
             }
             finally
             {
-                SemaphoreSlim sem = LazyEnsureAsyncActiveSemaphoreInitialized();
-                sem.Release();
+                _asyncActiveSemaphore.Release();
             }
         }
 
@@ -1299,7 +1290,7 @@ namespace System.IO
             Debug.Assert(_stream != null);
 
             // Synchronize async operations as does Read/WriteAsync.
-            await LazyEnsureAsyncActiveSemaphoreInitialized().WaitAsync(cancellationToken).ConfigureAwait(false);
+            await EnsureAsyncActiveSemaphoreInitialized().WaitAsync(cancellationToken).ConfigureAwait(false);
             try
             {
                 int readBytes = _readLen - _readPos;
@@ -1321,7 +1312,10 @@ namespace System.IO
                 // Our buffer is now clear. Copy data directly from the source stream to the destination stream.
                 await _stream.CopyToAsync(destination, bufferSize, cancellationToken).ConfigureAwait(false);
             }
-            finally { _asyncActiveSemaphore!.Release(); }
+            finally
+            {
+                _asyncActiveSemaphore.Release();
+            }
         }
     }  // class BufferedStream
 }  // namespace

@@ -2193,19 +2193,15 @@ FCIMPL1(Object*, ReflectionSerialization::GetUninitializedObject, ReflectClassBa
 
     TypeHandle type = objType->GetType();
 
-    // Don't allow arrays, pointers, byrefs or function pointers.
-    if (type.IsTypeDesc() || type.IsArray())
+    // Don't allow void, arrays, pointers, byrefs or function pointers.
+    if (type.IsTypeDesc() || type.IsArray() || type.GetSignatureCorElementType() == ELEMENT_TYPE_VOID)
         COMPlusThrow(kArgumentException, W("Argument_InvalidValue"));
 
     MethodTable *pMT = type.AsMethodTable();
     PREFIX_ASSUME(pMT != NULL);
 
     //We don't allow unitialized Strings or Utf8Strings.
-    if (pMT == g_pStringClass
-#ifdef FEATURE_UTF8STRING
-        || pMT == g_pUtf8StringClass
-#endif // FEATURE_UTF8STRING
-        ) {
+    if (pMT == g_pStringClass) {
         COMPlusThrow(kArgumentException, W("Argument_NoUninitializedStrings"));
     }
 

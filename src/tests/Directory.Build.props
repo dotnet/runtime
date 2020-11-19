@@ -152,7 +152,7 @@
     <When Condition="'$(TargetOS)'=='illumos'">
       <PropertyGroup>
         <TargetsUnix>true</TargetsUnix>
-        <TargetsIllumos>true</TargetsIllumos>
+        <Targetsillumos>true</Targetsillumos>
         <TestNugetRuntimeId>ubuntu.14.04-$(TargetArchitecture)</TestNugetRuntimeId>
       </PropertyGroup>
     </When>

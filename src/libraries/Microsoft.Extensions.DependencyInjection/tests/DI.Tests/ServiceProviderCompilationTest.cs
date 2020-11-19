@@ -12,6 +12,7 @@ namespace Microsoft.Extensions.DependencyInjection.Tests
     public class ServiceProviderCompilationTest
     {
         [Theory]
+        [InlineData(ServiceProviderMode.Default, typeof(I999))]
         [InlineData(ServiceProviderMode.Dynamic, typeof(I999))]
         [InlineData(ServiceProviderMode.Runtime, typeof(I999))]
         [InlineData(ServiceProviderMode.ILEmit, typeof(I999))]

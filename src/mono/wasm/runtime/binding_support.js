@@ -1388,6 +1388,13 @@ var BindingSupportLib = {
 				classname = fqn.substring (idx + 1);
 			}
 
+			if (!assembly.trim())
+				throw new Error("No assembly name specified");
+			if (!classname.trim())
+				throw new Error("No class name specified");
+			if (!methodname.trim())
+				throw new Error("No method name specified");
+
 			var asm = this.assembly_load (assembly);
 			if (!asm)
 				throw new Error ("Could not find assembly: " + assembly);

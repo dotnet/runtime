@@ -1,0 +1,17 @@
+<Project>
+  <Target Name="AddLongNameDacToPlatformManifest" DependsOnTargets="GetAssemblyVersion" BeforeTargets="GetFilesToPackage">
+    <ItemGroup>
+      <PlatformManifestFileEntry Include="mscordaccore_$(_hostArch)_$(_longNameTargetArch)_$(FileVersion).dll" />
+      <PlatformManifestFileEntry Include="mscordaccore_$(_longNameTargetArch)_$(_longNameTargetArch)_$(FileVersion).dll" />
+    </ItemGroup>
+  </Target>
+
+  <Target Name="ReturnProductVersion" Returns="$(Version)" />
+
+  <ItemGroup Condition="'$(RuntimeFlavor)' != 'Mono'">
+    <PackageReference Include="Microsoft.DotNet.Build.Tasks.Installers" Version="$(MicrosoftDotNetBuildTasksInstallersVersion)" />
+    <PackageReference Include="Microsoft.DotNet.Build.Tasks.Archives" Version="$(MicrosoftDotNetBuildTasksArchivesVersion)" />
+  </ItemGroup>
+
+  <Import Project="$([MSBuild]::GetPathOfFileAbove(Directory.Build.targets, $(MSBuildThisFileDirectory)..))" />
+</Project>

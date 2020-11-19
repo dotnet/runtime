@@ -182,12 +182,6 @@
 #endif
 #endif
 
-#if (defined(ALT_JIT) && (defined(UNIX_AMD64_ABI) || defined(UNIX_X86_ABI)) && !defined(TARGET_UNIX))
-// If we are building an ALT_JIT targeting Unix, override the TARGET_<os> to TARGET_UNIX
-#undef TARGET_WINDOWS
-#define TARGET_UNIX
-#endif
-
 // --------------------------------------------------------------------------------
 // IMAGE_FILE_MACHINE_TARGET
 // --------------------------------------------------------------------------------
