@@ -243,14 +243,13 @@ void LIR::Use::ReplaceWith(Compiler* compiler, GenTree* replacement)
 //
 // Arguments:
 //    compiler - The Compiler context.
-//    blockWeight - The weight of the basic block that contains the use.
 //    lclNum - The local to use for temporary storage. If BAD_VAR_NUM (the
 //             default) is provided, this method will create and use a new
 //             local var.
 //
 // Return Value: The number of the local var used for temporary storage.
 //
-unsigned LIR::Use::ReplaceWithLclVar(Compiler* compiler, unsigned blockWeight, unsigned lclNum)
+unsigned LIR::Use::ReplaceWithLclVar(Compiler* compiler, unsigned lclNum)
 {
     assert(IsInitialized());
     assert(compiler != nullptr);

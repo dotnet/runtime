@@ -143,7 +143,8 @@ void Compiler::optAddCopies()
         BlockSet paramImportantUseDom(BlockSetOps::MakeFull(this));
 
         // This will be threshold for determining heavier-than-average uses
-        unsigned paramAvgWtdRefDiv2 = (varDsc->lvRefCntWtd() + varDsc->lvRefCnt() / 2) / (varDsc->lvRefCnt() * 2);
+        BasicBlock::weight_t paramAvgWtdRefDiv2 =
+            (varDsc->lvRefCntWtd() + varDsc->lvRefCnt() / 2) / (varDsc->lvRefCnt() * 2);
 
         bool paramFoundImportantUse = false;
 
@@ -306,9 +307,9 @@ void Compiler::optAddCopies()
             /* dominates all the uses of the local variable         */
 
             /* Our default is to use the first block */
-            BasicBlock* bestBlock  = fgFirstBB;
-            unsigned    bestWeight = bestBlock->getBBWeight(this);
-            BasicBlock* block      = bestBlock;
+            BasicBlock*          bestBlock  = fgFirstBB;
+            BasicBlock::weight_t bestWeight = bestBlock->getBBWeight(this);
+            BasicBlock*          block      = bestBlock;
 
 #ifdef DEBUG
             if (verbose)

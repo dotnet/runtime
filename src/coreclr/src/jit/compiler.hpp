@@ -856,7 +856,7 @@ inline unsigned int genCSEnum2bit(unsigned index)
 
 #ifdef DEBUG
 const char* genES2str(BitVecTraits* traits, EXPSET_TP set);
-const char* refCntWtd2str(unsigned refCntWtd);
+const char* refCntWtd2str(BasicBlock::weight_t refCntWtd);
 #endif
 
 /*
@@ -1841,15 +1841,9 @@ inline void LclVarDsc::incRefCnts(BasicBlock::weight_t weight, Compiler* comp, R
                 weight *= 2;
             }
 
-            unsigned newWeight = lvRefCntWtd(state) + weight;
-            if (newWeight >= lvRefCntWtd(state))
-            { // lvRefCntWtd is an "unsigned".  Don't overflow it
-                setLvRefCntWtd(newWeight, state);
-            }
-            else
-            { // On overflow we assign UINT32_MAX
-                setLvRefCntWtd(UINT32_MAX, state);
-            }
+            BasicBlock::weight_t newWeight = lvRefCntWtd(state) + weight;
+            assert(newWeight >= lvRefCntWtd(state));
+            setLvRefCntWtd(newWeight, state);
         }
     }
 
