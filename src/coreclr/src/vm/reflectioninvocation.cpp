@@ -2133,6 +2133,10 @@ MethodDesc* QCALLTYPE RuntimeTypeHandle::GetDefaultCtor(
     return pMethodDesc;
 }
 
+/*
+ * Given a TypeHandle which represents a RCW type, create a RCW instance
+ * and return it to the caller. Fails if the provided type isn't a RCW type.
+ */
 FCIMPL1(Object*, RuntimeTypeHandle::CreateComInstance, ReflectClassBaseObject* refThisUNSAFE)
 {
     CONTRACTL{
@@ -2157,16 +2161,10 @@ FCIMPL1(Object*, RuntimeTypeHandle::CreateComInstance, ReflectClassBaseObject* r
 #ifdef FEATURE_COMINTEROP
 #ifdef FEATURE_COMINTEROP_UNMANAGED_ACTIVATION
     // If this is __ComObject then create the underlying COM object.
-    if (IsComObjectClass(thisTH))
+    if (pMT->IsComObjectType())
     {
-        SyncBlock* pSyncBlock = refThis->GetSyncBlock();
-
-        void* pClassFactory = (void*)pSyncBlock->GetInteropInfo()->GetComClassFactory();
-        if (pClassFactory)
-        {
-            rv = ((ComClassFactory*)pClassFactory)->CreateInstance(NULL);
-            activationSucceeded = TRUE;
-        }
+        rv = AllocateObject(pMT, true /* fHandleCom */);
+        activationSucceeded = TRUE;
     }
 #endif // FEATURE_COMINTEROP_UNMANAGED_ACTIVATION
 #endif // FEATURE_COMINTEROP
