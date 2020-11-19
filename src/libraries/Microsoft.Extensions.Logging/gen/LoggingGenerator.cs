@@ -52,7 +52,10 @@ using Microsoft.Extensions.Logging;
             var methods = new StringBuilder();
             foreach (var lm in lc.Methods)
             {
-                methods.Append(GenStruct(lm));
+                if (lm.Parameters.Count > 0)
+                {
+                    methods.Append(GenStruct(lm));
+                }
                 methods.Append(GenEventId(lm));
                 methods.Append(GenExtensionLogMethod(lc, lm));
             }
@@ -105,16 +108,12 @@ using Microsoft.Extensions.Logging;
 
         private static string GenStruct(LoggerMethod lm)
         {
-            var constructor = string.Empty;
-            if (lm.Parameters.Count > 0)
-            {
-                constructor = $@"
+            var constructor = $@"
             public __{lm.Name}Struct__({GenParameters(lm)})
             {{
 {GenFieldAssignments(lm)}
             }}
 ";
-            }
 
             var format = string.Empty;
             if (lm.MessageHasTemplates)
@@ -181,6 +180,13 @@ using Microsoft.Extensions.Logging;
             }
 
             var loggerArg = lc.IsInterface ? "this ILogger logger" : "ILogger logger";
+            
+            var ctorCall = $"__{lm.Name}Struct__({ GenArguments(lm)})";
+            if (lm.Parameters.Count == 0)
+            {
+                // when no parameters, use the common struct
+                ctorCall = "Microsoft.Extensions.Logging.LogStateHolder()";
+            }
 
             return $@"
         {lm.Documentation}
@@ -188,7 +194,7 @@ using Microsoft.Extensions.Logging;
         {{
             if (logger.IsEnabled((LogLevel){lm.Level}))
             {{
-                var message = new __{lm.Name}Struct__({GenArguments(lm)});
+                var message = new {ctorCall};
                 logger.Log((LogLevel){lm.Level}, __{lm.Name}EventId__, message, {exceptionArg}, (s, _) => {(lm.MessageHasTemplates ? "s.ToString()" : "\"" + lm.Message + "\"")});
             }}
         }}
@@ -241,11 +247,6 @@ using Microsoft.Extensions.Logging;
 
         private static string GenFields(LoggerMethod lm)
         {
-            if (lm.Parameters.Count == 0)
-            {
-                return string.Empty;
-            }
-
             var sb = new StringBuilder();
             foreach (var p in lm.Parameters)
             {
@@ -257,11 +258,6 @@ using Microsoft.Extensions.Logging;
 
         private static string GenFieldAssignments(LoggerMethod lm)
         {
-            if (lm.Parameters.Count == 0)
-            {
-                return string.Empty;
-            }
-
             var sb = new StringBuilder();
             foreach (var p in lm.Parameters)
             {
@@ -273,15 +269,11 @@ using Microsoft.Extensions.Logging;
 
         private static string GenEnumerator(LoggerMethod lm)
         {
-            if (lm.Parameters.Count == 0)
-            {
-                return "                yield break;\n";
-            }
-
             var sb = new StringBuilder();
+            int index = 0;
             foreach (var p in lm.Parameters)
             {
-                sb.Append($"                yield return new KeyValuePair<string, object>(nameof({p.Name}), {p.Name});\n");
+                sb.Append($"                yield return this[{index}];\n");
             }
 
             return sb.ToString();
@@ -289,11 +281,6 @@ using Microsoft.Extensions.Logging;
 
         private static string GenCases(LoggerMethod lm)
         {
-            if (lm.Parameters.Count == 0)
-            {
-                return string.Empty;
-            }
-
             var sb = new StringBuilder();
             var index = 0;
             foreach (var p in lm.Parameters)
