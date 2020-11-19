@@ -41,24 +41,16 @@ namespace Microsoft.Extensions.Logging.Generators
                 DiagnosticSeverity.Error,
                 isEnabledByDefault: true);
 
-            private static readonly DiagnosticDescriptor ErrorInvalidTypeName = new(
-                id: "LG3",
-                title: "Unable to automatically derive generated type name",
-                messageFormat: "Unable to automatically derive a generated type name based on the interface name of {0}, please specify an explicit generated type name instead",
-                category: DiagnosticCategory,
-                DiagnosticSeverity.Error,
-                isEnabledByDefault: true);
-
             private static readonly DiagnosticDescriptor ErrorNestedType = new(
-                id: "LG4",
-                title: "Logging interfaces cannot be in nested types",
-                messageFormat: "Logging interfaces cannot be in nested types",
+                id: "LG3",
+                title: "Logging class cannot be in nested types",
+                messageFormat: "Logging class cannot be in nested types",
                 category: DiagnosticCategory,
                 DiagnosticSeverity.Error,
                 isEnabledByDefault: true);
 
             private static readonly DiagnosticDescriptor ErrorMissingRequiredType = new(
-                id: "LG5",
+                id: "LG4",
                 title: "Could not find a required type definition",
                 messageFormat: "Could not find definition for type {0}",
                 category: DiagnosticCategory,
@@ -66,7 +58,7 @@ namespace Microsoft.Extensions.Logging.Generators
                 isEnabledByDefault: true);
 
             private static readonly DiagnosticDescriptor ErrorEventIdReuse = new(
-                id: "LG6",
+                id: "LG5",
                 title: "Multiple logging messages cannot use the same event id",
                 messageFormat: "Multiple logging messages are using event id {0}",
                 category: DiagnosticCategory,
@@ -74,23 +66,15 @@ namespace Microsoft.Extensions.Logging.Generators
                 isEnabledByDefault: true);
 
             private static readonly DiagnosticDescriptor ErrorInvalidMethodReturnType = new(
-                id: "LG7",
+                id: "LG6",
                 title: "Logging methods must return void",
                 messageFormat: "Logging methods must return void",
                 category: DiagnosticCategory,
                 DiagnosticSeverity.Error,
                 isEnabledByDefault: true);
 
-            private static readonly DiagnosticDescriptor ErrorInterfaceGeneric = new(
-                id: "LG8",
-                title: "Logging interfaces cannot be generic",
-                messageFormat: "Logging interfaces cannot be generic",
-                category: DiagnosticCategory,
-                DiagnosticSeverity.Error,
-                isEnabledByDefault: true);
-
             private static readonly DiagnosticDescriptor ErrorMethodGeneric = new(
-                id: "LG9",
+                id: "LG7",
                 title: "Logging methods cannot be generic",
                 messageFormat: "Logging methods cannot be generic",
                 category: DiagnosticCategory,
@@ -108,17 +92,10 @@ namespace Microsoft.Extensions.Logging.Generators
             }
 
             /// <summary>
-            /// Gets the set of logging classes that should be generated based on the discovered annotated interfaces.
+            /// Gets the set of logging classes contains methods to output.
             /// </summary>
-            public IEnumerable<LoggerClass> GetLogClasses(List<TypeDeclarationSyntax> types)
+            public IEnumerable<LoggerClass> GetLogClasses(List<ClassDeclarationSyntax> classes)
             {
-                var logExtensionsAttribute = _compilation.GetTypeByMetadataName("Microsoft.Extensions.Logging.LoggerExtensionsAttribute");
-                if (logExtensionsAttribute is null)
-                {
-                    Diag(ErrorMissingRequiredType, null, "Microsoft.Extensions.Logging.LoggerExtensionsAttribute");
-                    yield break;
-                }
-
                 var loggerMessageAttribute = _compilation.GetTypeByMetadataName("Microsoft.Extensions.Logging.LoggerMessageAttribute");
                 if (loggerMessageAttribute is null)
                 {
@@ -140,206 +117,134 @@ namespace Microsoft.Extensions.Logging.Generators
                     yield break;
                 }
 
-                foreach (var typeDef in types)
+                foreach (var classDef in classes)
                 {
-                    foreach (var al in typeDef.AttributeLists)
+                    // determine the namespace the class is declared in, if any
+                    NamespaceDeclarationSyntax? ns = null;
+                    if (classDef.Parent != null)
                     {
-                        foreach (var a in al.Attributes)
+                        ns = classDef.Parent as NamespaceDeclarationSyntax;
+                        if (ns == null && classDef.Parent is not CompilationUnitSyntax)
                         {
-                            // does this interface have the [LoggerExtensions] atribute?
-                            var semanticModel = GetSemanticModel(a.SyntaxTree);
-                            var aSymbol = semanticModel.GetSymbolInfo(a, _context.CancellationToken);
-                            if (aSymbol.Symbol is IMethodSymbol methodSymbol && logExtensionsAttribute.Equals(methodSymbol.ContainingType, SymbolEqualityComparer.Default))
+                            // since this generator doesn't know how to generate a nested type...
+                            Diag(ErrorNestedType, classDef.Identifier.GetLocation());
+                        }
+                    }
+
+                    var lc = new LoggerClass
+                    {
+                        Namespace = ns?.Name.ToString(),
+                        Name = classDef.Identifier.ToString(),
+                    };
+
+                    var ids = new HashSet<string>();
+                    foreach (var method in classDef.Members.Where(m => m.IsKind(SyntaxKind.MethodDeclaration)).OfType<MethodDeclarationSyntax>())
+                    {
+                        foreach (var mal in method.AttributeLists)
+                        {
+                            foreach (var ma in mal.Attributes)
                             {
-                                // determine the namespace the interface is declared in, if any
-                                NamespaceDeclarationSyntax? ns = null;
-                                if (typeDef.Parent != null)
+                                var semanticModel = GetSemanticModel(ma.SyntaxTree);
+                                var maSymbol = semanticModel.GetSymbolInfo(ma, _context.CancellationToken);
+                                if (maSymbol.Symbol is IMethodSymbol ms && loggerMessageAttribute.Equals(ms.ContainingType, SymbolEqualityComparer.Default))
                                 {
-                                    ns = typeDef.Parent as NamespaceDeclarationSyntax;
-                                    if (ns == null && typeDef.Parent is not CompilationUnitSyntax)
+                                    var arg = ma.ArgumentList!.Arguments[0];
+                                    var eventId = semanticModel.GetConstantValue(arg.Expression).ToString();
+
+                                    arg = ma.ArgumentList!.Arguments[1];
+                                    var level = semanticModel.GetConstantValue(arg.Expression).ToString();
+
+                                    arg = ma.ArgumentList!.Arguments[2];
+                                    var message = semanticModel.GetConstantValue(arg.Expression).ToString();
+
+                                    string? eventName = null;
+
+                                    if (ma.ArgumentList?.Arguments is { Count: > 3 } args)
                                     {
-                                        // since this generator doesn't know how to generate a nested type...
-                                        Diag(ErrorNestedType, typeDef.Identifier.GetLocation());
+                                        arg = args[3];
+                                        eventName = semanticModel.GetConstantValue(arg.Expression).ToString();
                                     }
-                                }
 
-                                // determine the name of the generated type
-
-                                string? name = null;
-                                if (a.ArgumentList?.Arguments.Count > 0)
-                                {
-                                    var arg = a.ArgumentList!.Arguments[0];
-                                    name = semanticModel.GetConstantValue(arg.Expression).ToString();
-                                }
-
-                                // if no name was specified, try to derive it from the interface name
-                                var ifaceName = typeDef.Identifier.ToString();
-                                if (name == null)
-                                {
-                                    if (typeDef is InterfaceDeclarationSyntax iface)
+                                    var lm = new LoggerMethod
                                     {
-                                        if (ifaceName[0] == 'I' && ifaceName.Length > 1)
-                                        {
-                                            name = ifaceName.Substring(1);
-                                        }
-                                        else
-                                        {
-                                            name = ifaceName + "Extensions";
-                                        }
+                                        Name = method.Identifier.ToString(),
+                                        EventId = eventId,
+                                        Level = level,
+                                        Message = message,
+                                        EventName = eventName,
+                                        MessageHasTemplates = HasTemplates(message),
+                                    };
+                                    lc.Methods.Add(lm);
+
+                                    if (lm.Name.StartsWith("__", StringComparison.Ordinal))
+                                    {
+                                        // can't have logging method names that start with __ since that can lead to conflicting symbol names
+                                        // because the generated symbols start with __
+                                        Diag(ErrorInvalidMethodName, method.Identifier.GetLocation());
+                                    }
+
+                                    if (!GetSemanticModel(method.ReturnType.SyntaxTree).GetTypeInfo(method.ReturnType!).Type!.Equals(voidSymbol, SymbolEqualityComparer.Default))
+                                    {
+                                        Diag(ErrorInvalidMethodReturnType, method.ReturnType.GetLocation());
+                                    }
+
+                                    if (method.Arity > 0)
+                                    {
+                                        Diag(ErrorMethodGeneric, method.GetLocation());
+                                    }
+
+                                    // ensure there are no duplicate ids.
+                                    if (ids.Contains(lm.EventId))
+                                    {
+                                        Diag(ErrorEventIdReuse, ma.ArgumentList!.Arguments[0].GetLocation(), lm.EventId);
                                     }
                                     else
                                     {
-                                        name = typeDef.Identifier.ToString();
+                                        ids.Add(lm.EventId);
                                     }
-                                }
 
-                                var lc = new LoggerClass
-                                {
-                                    Namespace = ns?.Name.ToString(),
-                                    Name = name,
-                                    OriginalInterfaceName = typeDef.Identifier.ToString(),
-                                    AccessModifiers = typeDef.Modifiers.ToString(),
-                                    Documentation = GetDocs(typeDef),
-                                    IsInterface = typeDef is InterfaceDeclarationSyntax
-                                };
-
-                                if (string.IsNullOrWhiteSpace(lc.Name))
-                                {
-                                    Diag(ErrorInvalidTypeName, a.GetLocation(), ifaceName);
-                                }
-
-                                if (typeDef.Arity > 0)
-                                {
-                                    Diag(ErrorInterfaceGeneric, typeDef.GetLocation());
-                                }
-
-                                var ids = new HashSet<string>();
-                                foreach (var method in typeDef.Members.Where(m => m.IsKind(SyntaxKind.MethodDeclaration)).OfType<MethodDeclarationSyntax>())
-                                {
-                                    foreach (var mal in method.AttributeLists)
+                                    if (string.IsNullOrWhiteSpace(lm.Message))
                                     {
-                                        foreach (var ma in mal.Attributes)
+                                        Diag(ErrorInvalidMessage, ma.GetLocation(), method.Identifier.ToString());
+                                    }
+
+                                    foreach (var p in method.ParameterList.Parameters)
+                                    {
+                                        var pSymbol = GetSemanticModel(p.SyntaxTree).GetTypeInfo(p.Type!).Type!;
+
+                                        var lp = new LoggerParameter
                                         {
-                                            semanticModel = GetSemanticModel(ma.SyntaxTree);
-                                            var maSymbol = semanticModel.GetSymbolInfo(ma, _context.CancellationToken);
-                                            if (maSymbol.Symbol is IMethodSymbol ms && loggerMessageAttribute.Equals(ms.ContainingType, SymbolEqualityComparer.Default))
-                                            {
-                                                var arg = ma.ArgumentList!.Arguments[0];
-                                                var eventId = semanticModel.GetConstantValue(arg.Expression).ToString();
-
-                                                arg = ma.ArgumentList!.Arguments[1];
-                                                var level = semanticModel.GetConstantValue(arg.Expression).ToString();
-
-                                                arg = ma.ArgumentList!.Arguments[2];
-                                                var message = semanticModel.GetConstantValue(arg.Expression).ToString();
-
-                                                string? eventName = null;
-
-                                                if (ma.ArgumentList?.Arguments is { Count: > 3 } args)
-                                                {
-                                                    arg = args[3];
-                                                    eventName = semanticModel.GetConstantValue(arg.Expression).ToString();
-                                                }
-
-                                                var lm = new LoggerMethod
-                                                {
-                                                    Name = method.Identifier.ToString(),
-                                                    EventId = eventId,
-                                                    Level = level,
-                                                    Message = message,
-                                                    EventName = eventName,
-                                                    MessageHasTemplates = HasTemplates(message),
-                                                    Documentation = GetDocs(method),
-                                                };
-                                                lc.Methods.Add(lm);
-
-                                                if (lm.Name.StartsWith("__", StringComparison.Ordinal))
-                                                {
-                                                    // can't have logging method names that start with __ since that can lead to conflicting symbol names
-                                                    // because the generated symbols start with __
-                                                    Diag(ErrorInvalidMethodName, method.Identifier.GetLocation());
-                                                }
-
-                                                if (!GetSemanticModel(method.ReturnType.SyntaxTree).GetTypeInfo(method.ReturnType!).Type!.Equals(voidSymbol, SymbolEqualityComparer.Default))
-                                                {
-                                                    Diag(ErrorInvalidMethodReturnType, method.ReturnType.GetLocation());
-                                                }
-
-                                                if (method.Arity > 0)
-                                                {
-                                                    Diag(ErrorMethodGeneric, method.GetLocation());
-                                                }
-
-                                                // ensure there are no duplicate ids.
-                                                if (ids.Contains(lm.EventId))
-                                                {
-                                                    Diag(ErrorEventIdReuse, ma.ArgumentList!.Arguments[0].GetLocation(), lm.EventId);
-                                                }
-                                                else
-                                                {
-                                                    ids.Add(lm.EventId);
-                                                }
-
-                                                if (string.IsNullOrWhiteSpace(lm.Message))
-                                                {
-                                                    Diag(ErrorInvalidMessage, ma.GetLocation(), method.Identifier.ToString());
-                                                }
-
-                                                foreach (var p in method.ParameterList.Parameters)
-                                                {
-                                                    var pSymbol = GetSemanticModel(p.SyntaxTree).GetTypeInfo(p.Type!).Type!;
-
-                                                    var lp = new LoggerParameter
-                                                    {
-                                                        Name = p.Identifier.ToString(),
-                                                        Type = p.Type!.ToString(),
-                                                        IsExceptionType = IsBaseOrIdentity(pSymbol, exSymbol),
-                                                    };
+                                            Name = p.Identifier.ToString(),
+                                            Type = p.Type!.ToString(),
+                                            IsExceptionType = IsBaseOrIdentity(pSymbol, exSymbol),
+                                        };
                                                     
-                                                    if (lp.Type.EndsWith("ILogger", StringComparison.Ordinal))
-                                                    {
-                                                        continue;
-                                                    }
+                                        if (lp.Type.EndsWith("ILogger", StringComparison.Ordinal))
+                                        {
+                                            continue;
+                                        }
 
-                                                    lm.Parameters.Add(lp);
+                                        lm.Parameters.Add(lp);
 
-                                                    if (lp.Name.StartsWith("__", StringComparison.Ordinal))
-                                                    {
-                                                        // can't have logging method parameter names that start with  __ since that can lead to conflicting symbol names
-                                                        // because all generated symbols start with __
-                                                        Diag(ErrorInvalidParameterName, p.Identifier.GetLocation());
-                                                    }
-                                                }
-                                            }
+                                        if (lp.Name.StartsWith("__", StringComparison.Ordinal))
+                                        {
+                                            // can't have logging method parameter names that start with  __ since that can lead to conflicting symbol names
+                                            // because all generated symbols start with __
+                                            Diag(ErrorInvalidParameterName, p.Identifier.GetLocation());
                                         }
                                     }
                                 }
-
-                                yield return lc;
                             }
                         }
                     }
+
+                    yield return lc;
                 }
             }
 
             private void Diag(DiagnosticDescriptor desc, Location? location, params object?[]? messageArgs)
             {
                 _context.ReportDiagnostic(Diagnostic.Create(desc, location, messageArgs));
-            }
-
-            private static string GetDocs(SyntaxNode _)
-            {
-#if false
-    This is not ready yet
-                foreach (var trivia in node.GetLeadingTrivia().Where(x => x.HasStructure))
-                {
-                    if (trivia.GetStructure() is DocumentationCommentTriviaSyntax sTrivia)
-                    {
-                        return sTrivia.ToString();
-                    }
-                }
-#endif
-                return string.Empty;
             }
 
             // Workaround for https://github.com/dotnet/roslyn/pull/49330
@@ -402,11 +307,7 @@ namespace Microsoft.Extensions.Logging.Generators
         {
             public string? Namespace;
             public string Name = string.Empty;
-            public string OriginalInterfaceName = string.Empty;
-            public string AccessModifiers = string.Empty;
             public List<LoggerMethod> Methods = new();
-            public string Documentation = string.Empty;
-            public bool IsInterface { get; set; }
         }
 
         // A log method in a logging class
@@ -419,7 +320,6 @@ namespace Microsoft.Extensions.Logging.Generators
             public string? EventName = null!;
             public List<LoggerParameter> Parameters = new();
             public bool MessageHasTemplates;
-            public string Documentation = string.Empty;
         }
 
         // A single parameter to a log method

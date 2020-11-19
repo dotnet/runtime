@@ -31,7 +31,7 @@ namespace Microsoft.Extensions.Logging.Generators
             var p = new Parser(context);
 
             var types = new StringBuilder();
-            foreach (var lc in p.GetLogClasses(receiver.TypeDeclarations))
+            foreach (var lc in p.GetLogClasses(receiver.ClassDeclarations))
             {
                 types.Append(GenType(lc));
             }
@@ -57,7 +57,7 @@ using Microsoft.Extensions.Logging;
                     methods.Append(GenStruct(lm));
                 }
                 methods.Append(GenEventId(lm));
-                methods.Append(GenExtensionLogMethod(lc, lm));
+                methods.Append(GenExtensionLogMethod(lm));
             }
 
             var namespaceStart = string.Empty;
@@ -71,38 +71,11 @@ using Microsoft.Extensions.Logging;
 
             return $@"
 {namespaceStart}
-    {lc.Documentation}
-    {lc.AccessModifiers} {(lc.IsInterface ? "static" : "")} class {lc.Name}
+    partial class {lc.Name}
     {{
         {methods}
-        {GenWrapper(lc)}
     }}
 {namespaceEnd}
-";
-        }
-
-        private static string GenWrapper(LoggerClass lc)
-        {
-            if (!lc.IsInterface)
-            {
-                return "";
-            }
-            var methods = new StringBuilder();
-            foreach (var lm in lc.Methods)
-            {
-                methods.Append(GenInstanceLogMethod(lm));
-            }
-
-            return $@"
-        public static {lc.OriginalInterfaceName} Wrap(this ILogger logger) => new __Wrapper__(logger);
-
-        private sealed class __Wrapper__ : {lc.OriginalInterfaceName}
-        {{
-            private readonly ILogger __logger;
-
-            public __Wrapper__(ILogger logger) => __logger = logger;
-            {methods}
-        }}
 ";
         }
 
@@ -160,14 +133,7 @@ using Microsoft.Extensions.Logging;
             return $"        private static readonly EventId __{lm.Name}EventId__ = new({lm.EventId}, " + (lm.EventName is null ? $"nameof({lm.Name})" : $"\"{lm.EventName}\"") + ");\n";
         }
 
-        private static string GenInstanceLogMethod(LoggerMethod lm)
-        {
-            return $@"
-            public void {lm.Name}({GenParameters(lm)}) =>  __logger.{lm.Name}({GenArguments(lm)});
-";
-        }
-
-        private static string GenExtensionLogMethod(LoggerClass lc, LoggerMethod lm)
+        private static string GenExtensionLogMethod(LoggerMethod lm)
         {
             string exceptionArg = "null";
             foreach (var p in lm.Parameters)
@@ -179,7 +145,7 @@ using Microsoft.Extensions.Logging;
                 }
             }
 
-            var loggerArg = lc.IsInterface ? "this ILogger logger" : "ILogger logger";
+            var loggerArg = "ILogger logger";
             
             var ctorCall = $"__{lm.Name}Struct__({ GenArguments(lm)})";
             if (lm.Parameters.Count == 0)
@@ -189,13 +155,12 @@ using Microsoft.Extensions.Logging;
             }
 
             return $@"
-        {lm.Documentation}
-        public static {(lc.IsInterface ? "" : "partial")} void {lm.Name}({loggerArg}{(lm.Parameters.Count > 0 ? ", " : string.Empty)}{GenParameters(lm)})
+        public static partial void {lm.Name}({loggerArg}{(lm.Parameters.Count > 0 ? ", " : string.Empty)}{GenParameters(lm)})
         {{
             if (logger.IsEnabled((LogLevel){lm.Level}))
             {{
-                var message = new {ctorCall};
-                logger.Log((LogLevel){lm.Level}, __{lm.Name}EventId__, message, {exceptionArg}, (s, _) => {(lm.MessageHasTemplates ? "s.ToString()" : "\"" + lm.Message + "\"")});
+                var __state = new {ctorCall};
+                logger.Log((LogLevel){lm.Level}, __{lm.Name}EventId__, __state, {exceptionArg}, (s, _) => {(lm.MessageHasTemplates ? "s.ToString()" : "\"" + lm.Message + "\"")});
             }}
         }}
 ";
@@ -294,19 +259,14 @@ using Microsoft.Extensions.Logging;
 
         private sealed class SyntaxReceiver : ISyntaxReceiver
         {
-            public List<TypeDeclarationSyntax> TypeDeclarations { get; } = new();
+            public List<ClassDeclarationSyntax> ClassDeclarations { get; } = new();
 
             public void OnVisitSyntaxNode(SyntaxNode syntaxNode)
             {
-                if (syntaxNode is InterfaceDeclarationSyntax interfaceSyntax && interfaceSyntax.AttributeLists.Count > 0)
-                {
-                    TypeDeclarations.Add(interfaceSyntax);
-                }
-
                 // Any partial class
-                if (syntaxNode is ClassDeclarationSyntax { Modifiers: { Count: > 0 } modifiers } classSyntax && modifiers.Any(SyntaxKind.StaticKeyword) && modifiers.Any(SyntaxKind.PartialKeyword))
+                if (syntaxNode is ClassDeclarationSyntax { Modifiers: { Count: > 0 } modifiers } classSyntax && modifiers.Any(SyntaxKind.PartialKeyword))
                 {
-                    TypeDeclarations.Add(classSyntax);
+                    ClassDeclarations.Add(classSyntax);
                 }
             }
         }
