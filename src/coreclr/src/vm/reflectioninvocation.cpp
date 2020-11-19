@@ -2071,9 +2071,9 @@ void QCALLTYPE RuntimeTypeHandle::GetNewobjHelperFnPtr(
     // transparent proxy or the jit will get confused.
 
 #ifdef FEATURE_COMINTEROP
-    // Unless caller allows, do not allow allocation of uninitialized RCWs (COM objects).
-    // If the caller allows this, getNewHelperStatic will return an appropriate allocator.
-    if (pMT->IsComObjectType())
+    // Never allow instantiation of the __ComObject base type, only RCWs.
+    // In a COM-enabled runitme, getNewHelperStatic will return an RCW-aware allocator.
+    if (IsComObjectClass(typeHandle))
     {
         COMPlusThrow(kNotSupportedException, W("NotSupported_ManagedActivation"));
     }
@@ -2132,52 +2132,6 @@ MethodDesc* QCALLTYPE RuntimeTypeHandle::GetDefaultCtor(
 
     return pMethodDesc;
 }
-
-/*
- * Given a TypeHandle which represents a RCW type, create a RCW instance
- * and return it to the caller. Fails if the provided type isn't a RCW type.
- */
-FCIMPL1(Object*, RuntimeTypeHandle::CreateComInstance, ReflectClassBaseObject* refThisUNSAFE)
-{
-    CONTRACTL{
-        FCALL_CHECK;
-        PRECONDITION(CheckPointer(refThisUNSAFE));
-    }
-    CONTRACTL_END;
-
-    if (refThisUNSAFE == NULL)
-        FCThrow(kNullReferenceException);
-
-    BOOL                activationSucceeded = FALSE;
-    OBJECTREF           rv = NULL;
-    REFLECTCLASSBASEREF refThis = (REFLECTCLASSBASEREF)ObjectToOBJECTREF(refThisUNSAFE);
-    TypeHandle          thisTH = refThis->GetType();
-
-    HELPER_METHOD_FRAME_BEGIN_RET_2(rv, refThis);
-
-    MethodTable* pMT = thisTH.GetMethodTable();
-    pMT->EnsureInstanceActive();
-
-#ifdef FEATURE_COMINTEROP
-#ifdef FEATURE_COMINTEROP_UNMANAGED_ACTIVATION
-    // If this is __ComObject then create the underlying COM object.
-    if (pMT->IsComObjectType())
-    {
-        rv = AllocateObject(pMT, true /* fHandleCom */);
-        activationSucceeded = TRUE;
-    }
-#endif // FEATURE_COMINTEROP_UNMANAGED_ACTIVATION
-#endif // FEATURE_COMINTEROP
-
-    if (!activationSucceeded)
-    {
-        COMPlusThrow(kInvalidComObjectException, IDS_EE_NO_BACKING_CLASS_FACTORY);
-    }
-
-    HELPER_METHOD_FRAME_END();
-    return OBJECTREFToObject(rv);
-}
-FCIMPLEND
 
 //*************************************************************************************************
 //*************************************************************************************************

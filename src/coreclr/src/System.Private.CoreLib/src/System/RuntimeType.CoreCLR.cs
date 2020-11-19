@@ -3953,10 +3953,9 @@ namespace System
         // the cache entry
         private sealed unsafe class ActivatorCache
         {
-            // The managed calli to the newobj routine, plus its first argument.
-            // First argument is normally a MethodTable* unless we're going through one of our stubs.
-            private readonly delegate*<IntPtr, object?> _pfnNewobj;
-            private readonly IntPtr _newobjState;
+            // The managed calli to the newobj routine, plus its first argument (MethodTable*).
+            private readonly delegate*<MethodTable*, object?> _pfnNewobj;
+            private readonly MethodTable* _pMT;
 
             // The managed calli to the parameterless ctor, plus a state object.
             // State object depends on the stub being called.
@@ -3975,75 +3974,64 @@ namespace System
                 _originalRT = rt;
 #endif
 
-                RuntimeMethodHandleInternal defaultCtorRMH = default;
+                _pfnCtorStub = &CtorNoopStub; // by default, no ctor is run
+                _ctorStubState = IntPtr.Zero;
 
-                if (rt.IsCOMObject)
+                _pfnNewobj = RuntimeTypeHandle.GetNewobjHelperFnPtr(rt, out _pMT, unwrapNullable: false);
+
+                RuntimeMethodHandleInternal defaultCtorRMH = RuntimeTypeHandle.GetDefaultConstructor(rt);
+
+                if (_pMT->IsValueType)
                 {
-                    // COM objects go through a special activation procedure coordinated
-                    // by the unmanaged runtime. We'll create a stub to that function.
-
-                    static object? ComNewobjStub(IntPtr state)
+                    if (_pMT->IsNullable)
                     {
-                        RuntimeType rt = GetTypeFromHandleUnsafe(state); // state is a RuntimeType handle
-                        Debug.Assert(rt != null);
-                        Debug.Assert(rt.IsCOMObject);
+                        // Activator.CreateInstance returns null given typeof(Nullable<T>).
 
-                        return RuntimeTypeHandle.CreateComInstance(rt);
+                        static object? ReturnNull(MethodTable* pMT) => null;
+                        _pfnNewobj = &ReturnNull;
+                        _pMT = null;
+
+                        _pfnCtorStub = &CtorNoopStub;
+                        _ctorStubState = IntPtr.Zero;
                     }
-                    _pfnNewobj = &ComNewobjStub;
-                    _newobjState = rt.TypeHandle.Value;
-
-                    _pfnCtorStub = &CtorNoopStub;
-                    _ctorStubState = IntPtr.Zero;
-                }
-                else
-                {
-                    _pfnNewobj = (delegate*<IntPtr, object?>)RuntimeTypeHandle.GetNewobjHelperFnPtr(rt, out MethodTable* pMT, unwrapNullable: false);
-                    _newobjState = (IntPtr)pMT;
-
-                    defaultCtorRMH = RuntimeTypeHandle.GetDefaultConstructor(rt);
-
-                    if (pMT->IsValueType)
+                    else if (_pMT->HasDefaultConstructor)
                     {
-                        if (pMT->IsNullable)
+                        // ValueType with explicit parameterless ctor typed as (ref T) -> void.
+                        // We'll pass the actual ctor address as the state object, then create
+                        // an unboxing stub so that we can pass the boxed value to it.
+
+                        static void ValueTypeUnboxingStub(object? @this, IntPtr state)
                         {
-                            // Activator.CreateInstance returns null given typeof(Nullable<T>).
-
-                            static object? ReturnNull(IntPtr state) => null;
-                            _pfnNewobj = &ReturnNull;
-                            _newobjState = IntPtr.Zero;
-
-                            _pfnCtorStub = &CtorNoopStub;
-                            _ctorStubState = IntPtr.Zero;
+                            ((delegate*<ref byte, void>)state)(ref @this!.GetRawData());
                         }
-                        else if (pMT->HasDefaultConstructor)
-                        {
-                            // ValueType with explicit parameterless ctor typed as (ref T) -> void.
-                            // We'll pass the actual ctor address as the state object, then create
-                            // an unboxing stub so that we can pass the boxed value to it.
-
-                            static void ValueTypeUnboxingStub(object? @this, IntPtr state)
-                            {
-                                ((delegate*<ref byte, void>)state)(ref @this!.GetRawData());
-                            }
-                            _pfnCtorStub = &ValueTypeUnboxingStub;
-                            _ctorStubState = RuntimeMethodHandle.GetFunctionPointer(defaultCtorRMH);
-                        }
-                        else
-                        {
-                            // ValueType with no explicit parameterless ctor; assume ctor returns default(T)
-
-                            _pfnCtorStub = &CtorNoopStub;
-                            _ctorStubState = IntPtr.Zero;
-                        }
+                        _pfnCtorStub = &ValueTypeUnboxingStub;
+                        _ctorStubState = RuntimeMethodHandle.GetFunctionPointer(defaultCtorRMH);
                     }
                     else
                     {
-                        // Reference type - we can't proceed unless there's a default ctor we can call.
+                        // ValueType with no explicit parameterless ctor; assume ctor returns default(T)
 
-                        Debug.Assert(rt.IsClass);
+                        _pfnCtorStub = &CtorNoopStub;
+                        _ctorStubState = IntPtr.Zero;
+                    }
+                }
+                else
+                {
+                    // Reference type - we can't proceed unless there's a default ctor we can call.
 
-                        if (!pMT->HasDefaultConstructor)
+                    Debug.Assert(rt.IsClass);
+
+                    if (_pMT->IsComObject)
+                    {
+                        // COM RCW types go through the runtime's special allocator, but no ctor
+                        // ever gets run over them. We won't overwrite the _pfnCtorStub field.
+
+                        Debug.Assert(!rt.IsGenericCOMObjectImpl(), "__ComObject base class should've been blocked.");
+                        defaultCtorRMH = default; // ignore any parameterless ctor
+                    }
+                    else
+                    {
+                        if (!_pMT->HasDefaultConstructor)
                         {
                             throw new MissingMethodException(SR.Format(SR.Arg_NoDefCTor, rt));
                         }
@@ -4070,7 +4058,7 @@ namespace System
                 }
 
                 Debug.Assert(_pfnNewobj != null);
-                Debug.Assert(_pfnCtorStub != null);
+                Debug.Assert(_pfnCtorStub != null); // we use null singleton pattern if no ctor call is necessary
             }
 
             internal bool CtorIsPublic { get; }
@@ -4089,7 +4077,7 @@ namespace System
                 Debug.Assert(rt == _originalRT, "Caller passed the wrong RuntimeType to this routine.");
 #endif
 
-                object? retVal = _pfnNewobj(_newobjState);
+                object? retVal = _pfnNewobj(_pMT);
                 GC.KeepAlive(rt);
                 return retVal;
             }

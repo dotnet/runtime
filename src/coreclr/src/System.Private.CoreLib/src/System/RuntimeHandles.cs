@@ -255,12 +255,6 @@ namespace System
         [DllImport(RuntimeHelpers.QCall, CharSet = CharSet.Unicode)]
         private static extern RuntimeMethodHandleInternal GetDefaultCtor(QCallTypeHandle typeHandle);
 
-        /// <summary>
-        /// Instantiates a RCW for a COM object.
-        /// </summary>
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        internal static extern object CreateComInstance(RuntimeType type);
-
         internal RuntimeType GetRuntimeType()
         {
             return m_type;

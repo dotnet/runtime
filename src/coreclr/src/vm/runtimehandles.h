@@ -136,8 +136,6 @@ public:
     static
     MethodDesc* QCALLTYPE GetDefaultCtor(QCall::TypeHandle pTypeHandle);
 
-    static FCDECL1(Object*, CreateComInstance, ReflectClassBaseObject* refThisUNSAFE);
-
     static
     void QCALLTYPE MakeByRef(QCall::TypeHandle pTypeHandle, QCall::ObjectHandleOnStack retType);
 
