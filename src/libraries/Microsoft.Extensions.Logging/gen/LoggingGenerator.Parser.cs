@@ -110,7 +110,7 @@ namespace Microsoft.Extensions.Logging.Generators
             /// <summary>
             /// Gets the set of logging classes that should be generated based on the discovered annotated interfaces.
             /// </summary>
-            public IEnumerable<LoggerClass> GetLogClasses(List<InterfaceDeclarationSyntax> interfaces)
+            public IEnumerable<LoggerClass> GetLogClasses(List<TypeDeclarationSyntax> types)
             {
                 var logExtensionsAttribute = _compilation.GetTypeByMetadataName("Microsoft.Extensions.Logging.LoggerExtensionsAttribute");
                 if (logExtensionsAttribute is null)
@@ -140,9 +140,9 @@ namespace Microsoft.Extensions.Logging.Generators
                     yield break;
                 }
 
-                foreach (var iface in interfaces)
+                foreach (var typeDef in types)
                 {
-                    foreach (var al in iface.AttributeLists)
+                    foreach (var al in typeDef.AttributeLists)
                     {
                         foreach (var a in al.Attributes)
                         {
@@ -153,13 +153,13 @@ namespace Microsoft.Extensions.Logging.Generators
                             {
                                 // determine the namespace the interface is declared in, if any
                                 NamespaceDeclarationSyntax? ns = null;
-                                if (iface.Parent != null)
+                                if (typeDef.Parent != null)
                                 {
-                                    ns = iface.Parent as NamespaceDeclarationSyntax;
-                                    if (ns == null && iface.Parent is not CompilationUnitSyntax)
+                                    ns = typeDef.Parent as NamespaceDeclarationSyntax;
+                                    if (ns == null && typeDef.Parent is not CompilationUnitSyntax)
                                     {
                                         // since this generator doesn't know how to generate a nested type...
-                                        Diag(ErrorNestedType, iface.Identifier.GetLocation());
+                                        Diag(ErrorNestedType, typeDef.Identifier.GetLocation());
                                     }
                                 }
 
@@ -173,18 +173,23 @@ namespace Microsoft.Extensions.Logging.Generators
                                 }
 
                                 // if no name was specified, try to derive it from the interface name
-                                var ifaceName = iface.Identifier.ToString();
+                                var ifaceName = typeDef.Identifier.ToString();
                                 if (name == null)
                                 {
-                                    if (ifaceName[0] == 'I')
+                                    if (typeDef is InterfaceDeclarationSyntax iface)
                                     {
-                                        // strip the leading I
-                                        name = ifaceName.Substring(1);
+                                        if (ifaceName[0] == 'I' && ifaceName.Length > 1)
+                                        {
+                                            name = ifaceName.Substring(1);
+                                        }
+                                        else
+                                        {
+                                            name = ifaceName + "Extensions";
+                                        }
                                     }
                                     else
                                     {
-                                        // fail
-                                        name = string.Empty;
+                                        name = typeDef.Identifier.ToString();
                                     }
                                 }
 
@@ -192,9 +197,10 @@ namespace Microsoft.Extensions.Logging.Generators
                                 {
                                     Namespace = ns?.Name.ToString(),
                                     Name = name,
-                                    OriginalInterfaceName = iface.Identifier.ToString(),
-                                    AccessModifiers = iface.Modifiers.ToString(),
-                                    Documentation = GetDocs(iface),
+                                    OriginalInterfaceName = typeDef.Identifier.ToString(),
+                                    AccessModifiers = typeDef.Modifiers.ToString(),
+                                    Documentation = GetDocs(typeDef),
+                                    IsInterface = typeDef is InterfaceDeclarationSyntax
                                 };
 
                                 if (string.IsNullOrWhiteSpace(lc.Name))
@@ -202,13 +208,13 @@ namespace Microsoft.Extensions.Logging.Generators
                                     Diag(ErrorInvalidTypeName, a.GetLocation(), ifaceName);
                                 }
 
-                                if (iface.Arity > 0)
+                                if (typeDef.Arity > 0)
                                 {
-                                    Diag(ErrorInterfaceGeneric, iface.GetLocation());
+                                    Diag(ErrorInterfaceGeneric, typeDef.GetLocation());
                                 }
 
                                 var ids = new HashSet<string>();
-                                foreach (var method in iface.Members.Where(m => m.IsKind(SyntaxKind.MethodDeclaration)).OfType<MethodDeclarationSyntax>())
+                                foreach (var method in typeDef.Members.Where(m => m.IsKind(SyntaxKind.MethodDeclaration)).OfType<MethodDeclarationSyntax>())
                                 {
                                     foreach (var mal in method.AttributeLists)
                                     {
@@ -289,6 +295,12 @@ namespace Microsoft.Extensions.Logging.Generators
                                                         Type = p.Type!.ToString(),
                                                         IsExceptionType = IsBaseOrIdentity(pSymbol, exSymbol),
                                                     };
+                                                    
+                                                    if (lp.Type.EndsWith("ILogger", StringComparison.Ordinal))
+                                                    {
+                                                        continue;
+                                                    }
+
                                                     lm.Parameters.Add(lp);
 
                                                     if (lp.Name.StartsWith("__", StringComparison.Ordinal))
@@ -394,6 +406,7 @@ namespace Microsoft.Extensions.Logging.Generators
             public string AccessModifiers = string.Empty;
             public List<LoggerMethod> Methods = new();
             public string Documentation = string.Empty;
+            public bool IsInterface { get; set; }
         }
 
         // A log method in a logging class

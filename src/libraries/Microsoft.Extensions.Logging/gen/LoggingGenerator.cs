@@ -6,6 +6,7 @@ namespace Microsoft.Extensions.Logging.Generators
     using System.Collections.Generic;
     using System.Text;
     using Microsoft.CodeAnalysis;
+    using Microsoft.CodeAnalysis.CSharp;
     using Microsoft.CodeAnalysis.CSharp.Syntax;
     using Microsoft.CodeAnalysis.Text;
 
@@ -30,7 +31,7 @@ namespace Microsoft.Extensions.Logging.Generators
             var p = new Parser(context);
 
             var types = new StringBuilder();
-            foreach (var lc in p.GetLogClasses(receiver.InterfaceDeclarations))
+            foreach (var lc in p.GetLogClasses(receiver.TypeDeclarations))
             {
                 types.Append(GenType(lc));
             }
@@ -53,7 +54,7 @@ using Microsoft.Extensions.Logging;
             {
                 methods.Append(GenStruct(lm));
                 methods.Append(GenEventId(lm));
-                methods.Append(GenExtensionLogMethod(lm));
+                methods.Append(GenExtensionLogMethod(lc, lm));
             }
 
             var namespaceStart = string.Empty;
@@ -68,10 +69,9 @@ using Microsoft.Extensions.Logging;
             return $@"
 {namespaceStart}
     {lc.Documentation}
-    {lc.AccessModifiers} static class {lc.Name}
+    {lc.AccessModifiers} {(lc.IsInterface ? "static" : "")} class {lc.Name}
     {{
         {methods}
-        public static {lc.OriginalInterfaceName} Wrap(this ILogger logger) => new __Wrapper__(logger);
         {GenWrapper(lc)}
     }}
 {namespaceEnd}
@@ -80,6 +80,10 @@ using Microsoft.Extensions.Logging;
 
         private static string GenWrapper(LoggerClass lc)
         {
+            if (!lc.IsInterface)
+            {
+                return "";
+            }
             var methods = new StringBuilder();
             foreach (var lm in lc.Methods)
             {
@@ -87,6 +91,8 @@ using Microsoft.Extensions.Logging;
             }
 
             return $@"
+        public static {lc.OriginalInterfaceName} Wrap(this ILogger logger) => new __Wrapper__(logger);
+
         private sealed class __Wrapper__ : {lc.OriginalInterfaceName}
         {{
             private readonly ILogger __logger;
@@ -162,7 +168,7 @@ using Microsoft.Extensions.Logging;
 ";
         }
 
-        private static string GenExtensionLogMethod(LoggerMethod lm)
+        private static string GenExtensionLogMethod(LoggerClass lc, LoggerMethod lm)
         {
             string exceptionArg = "null";
             foreach (var p in lm.Parameters)
@@ -174,9 +180,11 @@ using Microsoft.Extensions.Logging;
                 }
             }
 
+            var loggerArg = lc.IsInterface ? "this ILogger logger" : "ILogger logger";
+
             return $@"
         {lm.Documentation}
-        public static void {lm.Name}(this ILogger logger{(lm.Parameters.Count > 0 ? ", " : string.Empty)}{GenParameters(lm)})
+        public static {(lc.IsInterface ? "" : "partial")} void {lm.Name}({loggerArg}{(lm.Parameters.Count > 0 ? ", " : string.Empty)}{GenParameters(lm)})
         {{
             if (logger.IsEnabled((LogLevel){lm.Level}))
             {{
@@ -299,13 +307,19 @@ using Microsoft.Extensions.Logging;
 
         private sealed class SyntaxReceiver : ISyntaxReceiver
         {
-            public List<InterfaceDeclarationSyntax> InterfaceDeclarations { get; } = new();
+            public List<TypeDeclarationSyntax> TypeDeclarations { get; } = new();
 
             public void OnVisitSyntaxNode(SyntaxNode syntaxNode)
             {
                 if (syntaxNode is InterfaceDeclarationSyntax interfaceSyntax && interfaceSyntax.AttributeLists.Count > 0)
                 {
-                    InterfaceDeclarations.Add(interfaceSyntax);
+                    TypeDeclarations.Add(interfaceSyntax);
+                }
+
+                // Any partial class
+                if (syntaxNode is ClassDeclarationSyntax { Modifiers: { Count: > 0 } modifiers } classSyntax && modifiers.Any(SyntaxKind.StaticKeyword) && modifiers.Any(SyntaxKind.PartialKeyword))
+                {
+                    TypeDeclarations.Add(classSyntax);
                 }
             }
         }
