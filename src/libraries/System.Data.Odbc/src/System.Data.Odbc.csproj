@@ -114,7 +114,7 @@
     <Compile Include="$(CommonPath)Interop\Interop.Odbc.cs"
              Link="Common\Interop\Interop.Odbc.cs" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetsLinux)' == 'true' or '$(TargetsFreeBSD)' == 'true' or '$(TargetsIllumos)' == 'true' or '$(TargetsSolaris)' == 'true'">
+  <ItemGroup Condition="'$(TargetsLinux)' == 'true' or '$(TargetsFreeBSD)' == 'true' or '$(Targetsillumos)' == 'true' or '$(TargetsSolaris)' == 'true'">
     <Compile Include="$(CommonPath)Interop\Linux\Interop.Libraries.cs"
              Link="Common\Interop\Linux\Interop.Libraries.cs" />
   </ItemGroup>

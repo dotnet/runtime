@@ -1,7 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <TargetFrameworks>$(NetCoreAppCurrent)-windows;$(NetCoreAppCurrent)-Linux;$(NetCoreAppCurrent)-Browser;$(NetCoreAppCurrent)-OSX;$(NetCoreAppCurrent)-iOS;$(NetCoreAppCurrent)-tvOS;$(NetCoreAppCurrent)-FreeBSD</TargetFrameworks>
+    <TargetFrameworks>$(NetCoreAppCurrent)-windows;$(NetCoreAppCurrent)-Linux;$(NetCoreAppCurrent)-Browser;$(NetCoreAppCurrent)-OSX;$(NetCoreAppCurrent)-iOS;$(NetCoreAppCurrent)-tvOS;$(NetCoreAppCurrent)-FreeBSD;$(NetCoreAppCurrent)-illumos;$(NetCoreAppCurrent)-Solaris</TargetFrameworks>
     <Nullable>enable</Nullable>
   </PropertyGroup>
   <PropertyGroup>
@@ -181,7 +181,7 @@
     <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.NetworkChange.cs" Link="Common\Interop\Unix\System.Native\Interop.NetworkChange.cs" />
   </ItemGroup>
   <!-- Unknown Unix -->
-  <ItemGroup Condition=" '$(TargetsUnknownUnix)' == 'true' ">
+  <ItemGroup Condition=" '$(TargetsUnknownUnix)' == 'true' or '$(Targetsillumos)' == 'true' or '$(TargetsSolaris)' == 'true' ">
     <Compile Include="System\Net\NetworkInformation\IPGlobalPropertiesPal.UnknownUnix.cs" />
     <Compile Include="System\Net\NetworkInformation\NetworkInterfacePal.UnknownUnix.cs" />
     <Compile Include="System\Net\NetworkInformation\NetworkAddressChange.UnknownUnix.cs" />

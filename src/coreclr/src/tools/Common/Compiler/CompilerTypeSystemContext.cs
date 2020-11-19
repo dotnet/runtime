@@ -190,7 +190,7 @@ namespace ILCompiler
             try
             {
                 PEReader peReader = OpenPEFile(filePath, out mappedViewAccessor);
-                pdbReader = OpenAssociatedSymbolFile(filePath, peReader);
+                pdbReader = PortablePdbSymbolReader.TryOpenEmbedded(peReader, GetMetadataStringDecoder()) ?? OpenAssociatedSymbolFile(filePath, peReader);
 
                 EcmaModule module = EcmaModule.Create(this, peReader, containingAssembly: null, pdbReader);
 

@@ -3767,6 +3767,7 @@ GenTree* Lowering::LowerDelegateInvoke(GenTreeCall* call)
         thisArgNode = comp->gtGetThisArg(call);
     }
 
+    assert(thisArgNode != nullptr);
     assert(thisArgNode->gtOper == GT_PUTARG_REG);
     GenTree* originalThisExpr = thisArgNode->AsOp()->gtOp1;
     GenTree* thisExpr         = originalThisExpr;
