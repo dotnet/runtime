@@ -195,6 +195,7 @@ typedef enum {
 #define S390_PARM_SAVE_OFFSET 		16
 #define S390_RET_ADDR_OFFSET		112
 #define S390_FLOAT_SAVE_OFFSET 		128
+#define S390_CFA_OFFSET			160
 
 #define S390_CC_ZR			8
 #define S390_CC_NE			7
