@@ -77,10 +77,11 @@ namespace System.Net.Http
         private TimeSpan _receiveHeadersTimeout = TimeSpan.FromSeconds(30);
         private TimeSpan _receiveDataTimeout = TimeSpan.FromSeconds(30);
 
-        // As per https://docs.microsoft.com/en-us/windows/win32/winsock/sio-keepalive-vals#remarks:
-        // The default settings when a TCP socket is initialized sets the keep-alive timeout to 2 hours and the keep-alive interval to 1 second.
+        // Using OS defaults for "Keep-alive timeout" and "keep-alive interval"
+        // as documented in https://docs.microsoft.com/en-us/windows/win32/winsock/sio-keepalive-vals#remarks
         private TimeSpan _tcpKeepAliveTime = TimeSpan.FromHours(2);
         private TimeSpan _tcpKeepAliveInterval = TimeSpan.FromSeconds(1);
+        private bool _tcpKeepAliveEnabled;
 
         private int _maxResponseHeadersLength = HttpHandlerDefaults.DefaultMaxResponseHeadersLength;
         private int _maxResponseDrainSize = 64 * 1024;
@@ -413,7 +414,18 @@ namespace System.Net.Http
             }
         }
 
-        public bool TcpKeepAliveEnabled { get; set; }
+        public bool TcpKeepAliveEnabled
+        {
+            get
+            {
+                return _tcpKeepAliveEnabled;
+            }
+            set
+            {
+                CheckDisposedOrStarted();
+                _tcpKeepAliveEnabled = value;
+            }
+        }
 
         public TimeSpan TcpKeepAliveTime
         {
@@ -967,7 +979,7 @@ namespace System.Net.Http
 
         private unsafe void SetTcpKeepalive(SafeWinHttpHandle sessionHandle)
         {
-            if (TcpKeepAliveEnabled)
+            if (_tcpKeepAliveEnabled)
             {
                 var tcpKeepalive = new Interop.WinHttp.tcp_keepalive
                 {
@@ -975,9 +987,12 @@ namespace System.Net.Http
                     keepaliveinterval = (uint)_tcpKeepAliveInterval.TotalMilliseconds,
                     keepalivetime = (uint)_tcpKeepAliveTime.TotalMilliseconds
                 };
-                void* ptr = &tcpKeepalive;
 
-                SetWinHttpOption(sessionHandle, Interop.WinHttp.WINHTTP_OPTION_TCP_KEEPALIVE, (IntPtr)ptr, (uint)sizeof(Interop.WinHttp.tcp_keepalive));
+                SetWinHttpOption(
+                    sessionHandle,
+                    Interop.WinHttp.WINHTTP_OPTION_TCP_KEEPALIVE,
+                    (IntPtr)(&tcpKeepalive),
+                    (uint)sizeof(Interop.WinHttp.tcp_keepalive));
             }
         }
 

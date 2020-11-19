@@ -559,7 +559,7 @@ internal static partial class Interop
             else if (option == Interop.WinHttp.WINHTTP_OPTION_TCP_KEEPALIVE)
             {
                 Interop.WinHttp.tcp_keepalive* ptr = (Interop.WinHttp.tcp_keepalive*)optionData;
-                APICallHistory.TcpKeepaliveOptions = (ptr->keepalivetime, ptr->keepaliveinterval);
+                APICallHistory.WinHttpOptionTcpKeepAlive = (ptr->onoff, ptr->keepalivetime, ptr->keepaliveinterval);
             }
 
             return true;

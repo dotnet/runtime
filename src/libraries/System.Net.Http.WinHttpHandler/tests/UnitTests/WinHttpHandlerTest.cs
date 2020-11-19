@@ -122,7 +122,7 @@ namespace System.Net.Http.WinHttpHandlerUnitTests
             SendRequestHelper.Send(
                 handler,
                 () => handler.TcpKeepAliveEnabled = false );
-            Assert.Null(APICallHistory.TcpKeepaliveOptions);
+            Assert.Null(APICallHistory.WinHttpOptionTcpKeepAlive);
         }
 
         [Fact]
@@ -136,8 +136,9 @@ namespace System.Net.Http.WinHttpHandlerUnitTests
                 handler.TcpKeepAliveInterval = TimeSpan.FromSeconds(42);
             });
 
-            (uint keepAliveTime, uint keepAliveInterval) = APICallHistory.TcpKeepaliveOptions.Value;
+            (uint onOff, uint keepAliveTime, uint keepAliveInterval) = APICallHistory.WinHttpOptionTcpKeepAlive.Value;
 
+            Assert.True(onOff != 0);
             Assert.Equal(13_000u * 60u, keepAliveTime);
             Assert.Equal(42_000u, keepAliveInterval);
         }
