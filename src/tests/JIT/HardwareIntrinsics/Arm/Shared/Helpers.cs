@@ -5319,6 +5319,8 @@ namespace JIT.HardwareIntrinsics.Arm
 
         public static sbyte Insert(sbyte[] op1, int op2, sbyte op3, int i) => (op2 != i) ? op1[i] : op3;
 
+        public static sbyte Take(sbyte[] op1, int count, int i) => (i < count) ? op1[i] : 0;
+
         public static byte Concat(byte[] op1, byte[] op2, int i) => (i < op1.Length) ? op1[i] : op2[i - op1.Length];
 
         public static byte ConcatScalar(byte[] op1, byte[] op2, int i)
@@ -5334,6 +5336,8 @@ namespace JIT.HardwareIntrinsics.Arm
         public static byte ExtractVector(byte[] op1, byte[] op2, int op3, int i) => Concat(op1, op2, op3 + i);
 
         public static byte Insert(byte[] op1, int op2, byte op3, int i) => (op2 != i) ? op1[i] : op3;
+
+        public static byte Take(byte[] op1, int count, int i) => (i < count) ? op1[i] : 0;
 
         public static short Concat(short[] op1, short[] op2, int i) => (i < op1.Length) ? op1[i] : op2[i - op1.Length];
 
@@ -5351,6 +5355,8 @@ namespace JIT.HardwareIntrinsics.Arm
 
         public static short Insert(short[] op1, int op2, short op3, int i) => (op2 != i) ? op1[i] : op3;
 
+        public static short Take(short[] op1, int count, int i) => (i < count) ? op1[i] : 0;
+
         public static ushort Concat(ushort[] op1, ushort[] op2, int i) => (i < op1.Length) ? op1[i] : op2[i - op1.Length];
 
         public static ushort ConcatScalar(ushort[] op1, ushort[] op2, int i)
@@ -5366,6 +5372,8 @@ namespace JIT.HardwareIntrinsics.Arm
         public static ushort ExtractVector(ushort[] op1, ushort[] op2, int op3, int i) => Concat(op1, op2, op3 + i);
 
         public static ushort Insert(ushort[] op1, int op2, ushort op3, int i) => (op2 != i) ? op1[i] : op3;
+
+        public static ushort Take(ushort[] op1, int count, int i) => (i < count) ? op1[i] : 0;
 
         public static int Concat(int[] op1, int[] op2, int i) => (i < op1.Length) ? op1[i] : op2[i - op1.Length];
 
@@ -5383,6 +5391,8 @@ namespace JIT.HardwareIntrinsics.Arm
 
         public static int Insert(int[] op1, int op2, int op3, int i) => (op2 != i) ? op1[i] : op3;
 
+        public static int Take(int[] op1, int count, int i) => (i < count) ? op1[i] : 0;
+
         public static uint Concat(uint[] op1, uint[] op2, int i) => (i < op1.Length) ? op1[i] : op2[i - op1.Length];
 
         public static uint ConcatScalar(uint[] op1, uint[] op2, int i)
@@ -5398,6 +5408,8 @@ namespace JIT.HardwareIntrinsics.Arm
         public static uint ExtractVector(uint[] op1, uint[] op2, int op3, int i) => Concat(op1, op2, op3 + i);
 
         public static uint Insert(uint[] op1, int op2, uint op3, int i) => (op2 != i) ? op1[i] : op3;
+
+        public static uint Take(uint[] op1, int count, int i) => (i < count) ? op1[i] : 0;
 
         public static long Concat(long[] op1, long[] op2, int i) => (i < op1.Length) ? op1[i] : op2[i - op1.Length];
 
@@ -5415,6 +5427,8 @@ namespace JIT.HardwareIntrinsics.Arm
 
         public static long Insert(long[] op1, int op2, long op3, int i) => (op2 != i) ? op1[i] : op3;
 
+        public static long Take(long[] op1, int count, int i) => (i < count) ? op1[i] : 0;
+
         public static ulong Concat(ulong[] op1, ulong[] op2, int i) => (i < op1.Length) ? op1[i] : op2[i - op1.Length];
 
         public static ulong ConcatScalar(ulong[] op1, ulong[] op2, int i)
@@ -5430,6 +5444,8 @@ namespace JIT.HardwareIntrinsics.Arm
         public static ulong ExtractVector(ulong[] op1, ulong[] op2, int op3, int i) => Concat(op1, op2, op3 + i);
 
         public static ulong Insert(ulong[] op1, int op2, ulong op3, int i) => (op2 != i) ? op1[i] : op3;
+
+        public static ulong Take(ulong[] op1, int count, int i) => (i < count) ? op1[i] : 0;
 
         public static float Concat(float[] op1, float[] op2, int i) => (i < op1.Length) ? op1[i] : op2[i - op1.Length];
 
@@ -5447,6 +5463,8 @@ namespace JIT.HardwareIntrinsics.Arm
 
         public static float Insert(float[] op1, int op2, float op3, int i) => (op2 != i) ? op1[i] : op3;
 
+        public static float Take(float[] op1, int count, int i) => (i < count) ? op1[i] : 0;
+
         public static double Concat(double[] op1, double[] op2, int i) => (i < op1.Length) ? op1[i] : op2[i - op1.Length];
 
         public static double ConcatScalar(double[] op1, double[] op2, int i)
@@ -5462,6 +5480,8 @@ namespace JIT.HardwareIntrinsics.Arm
         public static double ExtractVector(double[] op1, double[] op2, int op3, int i) => Concat(op1, op2, op3 + i);
 
         public static double Insert(double[] op1, int op2, double op3, int i) => (op2 != i) ? op1[i] : op3;
+
+        public static double Take(double[] op1, int count, int i) => (i < count) ? op1[i] : 0;
 
         public static sbyte TableVectorExtension(int i, sbyte[] defaultValues, sbyte[] indices, params sbyte[][] table)
         {
