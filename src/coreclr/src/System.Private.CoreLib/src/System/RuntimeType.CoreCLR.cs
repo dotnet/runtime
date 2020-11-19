@@ -3953,14 +3953,13 @@ namespace System
         // the cache entry
         private sealed unsafe class ActivatorCache
         {
-            // The managed calli to the newobj routine, plus its first argument (MethodTable*).
-            private readonly delegate*<MethodTable*, object?> _pfnNewobj;
+            // The managed calli to the newobj allocator, plus its first argument (MethodTable*).
+            private readonly delegate*<MethodTable*, object?> _pfnAllocator;
             private readonly MethodTable* _pMT;
 
-            // The managed calli to the parameterless ctor, plus a state object.
-            // State object depends on the stub being called.
-            private readonly delegate*<object?, IntPtr, void> _pfnCtorStub;
-            private readonly IntPtr _ctorStubState;
+            // The managed calli to the parameterless ctor, taking "this" (as object) as its first argument.
+            // For value type ctors, we'll point to a special unboxing stub.
+            private readonly delegate*<object?, void> _pfnCtor;
 
 #if DEBUG
             private readonly RuntimeType _originalRT;
@@ -3974,12 +3973,12 @@ namespace System
                 _originalRT = rt;
 #endif
 
-                _pfnCtorStub = &CtorNoopStub; // by default, no ctor is run
-                _ctorStubState = IntPtr.Zero;
+                _pfnAllocator = RuntimeTypeHandle.GetAllocatorFtn(rt, out _pMT, forGetUninitializedObject: false);
 
-                _pfnNewobj = RuntimeTypeHandle.GetNewobjHelperFnPtr(rt, out _pMT, unwrapNullable: false);
+                static void CtorNoopStub(object? uninitializedObject) { }
+                _pfnCtor = &CtorNoopStub;
 
-                RuntimeMethodHandleInternal defaultCtorRMH = RuntimeTypeHandle.GetDefaultConstructor(rt);
+                RuntimeMethodHandleInternal defaultCtorRMH = RuntimeTypeHandle.GetDefaultConstructor(rt); // could be null
 
                 if (_pMT->IsValueType)
                 {
@@ -3988,31 +3987,30 @@ namespace System
                         // Activator.CreateInstance returns null given typeof(Nullable<T>).
 
                         static object? ReturnNull(MethodTable* pMT) => null;
-                        _pfnNewobj = &ReturnNull;
-                        _pMT = null;
-
-                        _pfnCtorStub = &CtorNoopStub;
-                        _ctorStubState = IntPtr.Zero;
+                        _pfnAllocator = &ReturnNull;
                     }
                     else if (_pMT->HasDefaultConstructor)
                     {
                         // ValueType with explicit parameterless ctor typed as (ref T) -> void.
-                        // We'll pass the actual ctor address as the state object, then create
-                        // an unboxing stub so that we can pass the boxed value to it.
+                        // We'll point the ctor at our unboxing stub. It's not terribly efficient,
+                        // but value types almost never have explicit parameterless ctors, so
+                        // this shouldn't be a problem in practice.
 
-                        static void ValueTypeUnboxingStub(object? @this, IntPtr state)
+                        static void CtorUnboxValueTypeStub(object? uninitializedObject)
                         {
-                            ((delegate*<ref byte, void>)state)(ref @this!.GetRawData());
+                            Debug.Assert(uninitializedObject != null);
+                            Debug.Assert(RuntimeHelpers.GetMethodTable(uninitializedObject)->IsValueType);
+
+                            RuntimeType rt = (RuntimeType)uninitializedObject.GetType();
+                            RuntimeMethodHandleInternal rmh = RuntimeTypeHandle.GetDefaultConstructor(rt);
+                            IntPtr pfnCtor = RuntimeMethodHandle.GetFunctionPointer(rmh);
+                            ((delegate*<ref byte, void>)pfnCtor)(ref uninitializedObject!.GetRawData());
                         }
-                        _pfnCtorStub = &ValueTypeUnboxingStub;
-                        _ctorStubState = RuntimeMethodHandle.GetFunctionPointer(defaultCtorRMH);
+                        _pfnCtor = &CtorUnboxValueTypeStub;
                     }
                     else
                     {
                         // ValueType with no explicit parameterless ctor; assume ctor returns default(T)
-
-                        _pfnCtorStub = &CtorNoopStub;
-                        _ctorStubState = IntPtr.Zero;
                     }
                 }
                 else
@@ -4029,22 +4027,13 @@ namespace System
                         Debug.Assert(!rt.IsGenericCOMObjectImpl(), "__ComObject base class should've been blocked.");
                         defaultCtorRMH = default; // ignore any parameterless ctor
                     }
+                    else if (!_pMT->HasDefaultConstructor)
+                    {
+                        throw new MissingMethodException(SR.Format(SR.Arg_NoDefCTor, rt));
+                    }
                     else
                     {
-                        if (!_pMT->HasDefaultConstructor)
-                        {
-                            throw new MissingMethodException(SR.Format(SR.Arg_NoDefCTor, rt));
-                        }
-
-                        // Reference type with explicit parameterless ctor typed as (object) -> void.
-                        // We'll pass the actual ctor address as the state object.
-
-                        static void ReferenceTypeStub(object? @this, IntPtr state)
-                        {
-                            ((delegate*<object, void>)state)(@this!);
-                        }
-                        _pfnCtorStub = &ReferenceTypeStub;
-                        _ctorStubState = RuntimeMethodHandle.GetFunctionPointer(defaultCtorRMH);
+                        // Reference type with explicit parameterless ctor
                     }
                 }
 
@@ -4057,13 +4046,12 @@ namespace System
                     CtorIsPublic = (RuntimeMethodHandle.GetAttributes(defaultCtorRMH) & MethodAttributes.Public) != 0;
                 }
 
-                Debug.Assert(_pfnNewobj != null);
-                Debug.Assert(_pfnCtorStub != null); // we use null singleton pattern if no ctor call is necessary
+                Debug.Assert(_pfnAllocator != null);
+                Debug.Assert(_pMT != null);
+                Debug.Assert(_pfnCtor != null); // we use null singleton pattern if no ctor call is necessary
             }
 
             internal bool CtorIsPublic { get; }
-
-            private static void CtorNoopStub(object? @this, IntPtr state) { }
 
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             internal object? CreateUninitializedObject(RuntimeType rt)
@@ -4077,13 +4065,13 @@ namespace System
                 Debug.Assert(rt == _originalRT, "Caller passed the wrong RuntimeType to this routine.");
 #endif
 
-                object? retVal = _pfnNewobj(_pMT);
+                object? retVal = _pfnAllocator(_pMT);
                 GC.KeepAlive(rt);
                 return retVal;
             }
 
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            internal void CallCtorOverUninitializedObject(object? newObj) => _pfnCtorStub(newObj, _ctorStubState);
+            internal void CallConstructor(object? uninitializedObject) => _pfnCtor(uninitializedObject);
         }
 
         // This method mimics the overload present in the mono codebase. It allows shared source callers
@@ -4133,7 +4121,7 @@ namespace System
             object? obj = cache.CreateUninitializedObject(this);
             try
             {
-                cache.CallCtorOverUninitializedObject(obj);
+                cache.CallConstructor(obj);
             }
             catch (Exception e) when (wrapExceptions)
             {

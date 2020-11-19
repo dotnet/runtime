@@ -2003,15 +2003,16 @@ FCIMPLEND
  * Given a TypeHandle, returns the address of the NEWOBJ helper function that creates
  * a zero-inited instance of this type. If NEWOBJ is not supported on this TypeHandle,
  * throws an exception. If TypeHandle is a value type, the NEWOBJ helper will create
- * a boxed zero-inited instance of the value type. If fUnwrapNullable is specified,
- * then if the input type handle is Nullable<T> we'll return the newobj helper and
- * MethodTable* for the underlying T.
+ * a boxed zero-inited instance of the value type. The "fGetUninitializedObject"
+ * parameter dictates whether the caller is RuntimeHelpers.GetUninitializedObject or
+ * Activator.CreateInstance, which have different behavior w.r.t. what exceptions are
+ * thrown on failure and how nullables are handled.
  */
 void QCALLTYPE RuntimeTypeHandle::GetAllocatorFtn(
     QCall::TypeHandle pTypeHandle,
     PCODE* ppNewobjHelper,
     MethodTable** ppMT,
-    BOOL fGetUninitializedInstance)
+    BOOL fGetUninitializedObject)
 {
     CONTRACTL{
         QCALL_CHECK;
@@ -2087,7 +2088,7 @@ void QCALLTYPE RuntimeTypeHandle::GetAllocatorFtn(
 
     // If the caller is GetUninitializedInstance, they'll want a boxed T instead of a boxed Nullable<T>.
     // Other callers will get the MethodTable* corresponding to Nullable<T>.
-    if (fGetUninitializedInstance && Nullable::IsNullableType(pMT))
+    if (fGetUninitializedObject && Nullable::IsNullableType(pMT))
     {
         pMT = pMT->GetInstantiation()[0].GetMethodTable();
     }

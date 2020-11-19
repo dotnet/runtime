@@ -206,18 +206,18 @@ namespace System
         internal static extern object CreateInstanceForAnotherGenericParameter(RuntimeType type, RuntimeType genericParameter);
 
         /// <summary>
-        /// Given a RuntimeType, returns both the address of the JIT's newobj helper for that type and the
-        /// MethodTable* corresponding to that type. Return value signature is
+        /// Given a RuntimeType, returns both the address of the JIT's newobj allocator helper for
+        /// that type and the MethodTable* corresponding to that type. Return value signature is
         /// managed calli (MethodTable* pMT) -> object.
         /// </summary>
-        internal static delegate*<MethodTable*, object> GetNewobjHelperFnPtr(
+        internal static delegate*<MethodTable*, object> GetAllocatorFtn(
             // This API doesn't call any constructors, but the type needs to be seen as constructed.
             // A type is seen as constructed if a constructor is kept.
             // This obviously won't cover a type with no constructor. Reference types with no
             // constructor are an academic problem. Valuetypes with no constructors are a problem,
             // but IL Linker currently treats them as always implicitly boxed.
             [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors | DynamicallyAccessedMemberTypes.NonPublicConstructors)] RuntimeType type,
-            out MethodTable* pMT, bool forGetUninitializedInstance)
+            out MethodTable* pMT, bool forGetUninitializedObject)
         {
             Debug.Assert(type != null);
 
@@ -228,14 +228,14 @@ namespace System
                 new QCallTypeHandle(ref type),
                 &pNewobjHelperTemp,
                 &pMTTemp,
-                forGetUninitializedInstance ? Interop.BOOL.TRUE : Interop.BOOL.FALSE);
+                forGetUninitializedObject ? Interop.BOOL.TRUE : Interop.BOOL.FALSE);
 
             pMT = pMTTemp;
             return pNewobjHelperTemp;
         }
 
         [DllImport(RuntimeHelpers.QCall, CharSet = CharSet.Unicode)]
-        private static extern void GetAllocatorFtn(QCallTypeHandle typeHandle, delegate*<MethodTable*, object>* ppNewobjHelper, MethodTable** ppMT, Interop.BOOL fGetUninitializedInstance);
+        private static extern void GetAllocatorFtn(QCallTypeHandle typeHandle, delegate*<MethodTable*, object>* ppNewobjHelper, MethodTable** ppMT, Interop.BOOL fGetUninitializedObject);
 
         /// <summary>
         /// Returns the MethodDesc* for this type's parameterless instance ctor.

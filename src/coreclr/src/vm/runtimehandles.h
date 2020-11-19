@@ -131,7 +131,7 @@ public:
                                             CLR_BOOL *pbHasNoDefaultCtor);
 
     static
-    void QCALLTYPE GetAllocatorFtn(QCall::TypeHandle pTypeHandle, PCODE* ppNewobjHelper, MethodTable** ppMT, BOOL fGetUninitializedInstance);
+    void QCALLTYPE GetAllocatorFtn(QCall::TypeHandle pTypeHandle, PCODE* ppNewobjHelper, MethodTable** ppMT, BOOL fGetUninitializedObject);
 
     static
     MethodDesc* QCALLTYPE GetDefaultCtor(QCall::TypeHandle pTypeHandle);
