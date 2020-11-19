@@ -226,7 +226,7 @@
     </ItemGroup>
     <!-- iOS device specific options -->
     <ItemGroup Condition="'$(TargetsiOS)' == 'true' and '$(TargetsiOSSimulator)' != 'true'">
-      <_MonoCMakeArgs Include="-DENABLE_MINIMAL=ssa,com,jit,portability,assembly_remapping,attach,verifier,appdomains,security,sgen_remset,sgen_marksweep_par,sgen_marksweep_fixed,sgen_marksweep_fixed_par,sgen_copying,logging,remoting,shared_perfcounters,gac" />
+      <_MonoCMakeArgs Include="-DENABLE_MINIMAL=ssa,com,jit,portability,assembly_remapping,attach,verifier,appdomains,security,sgen_remset,sgen_marksweep_par,sgen_marksweep_fixed,sgen_marksweep_fixed_par,sgen_copying,logging,remoting,shared_perfcounters,gac,eventpipe" />
       <_MonoCMakeArgs Include="-DENABLE_VISIBILITY_HIDDEN=1"/>
       <_MonoCMakeArgs Include="-DENABLE_LAZY_GC_THREAD_CREATION=1"/>
       <_MonoCMakeArgs Include="-DENABLE_SIGALTSTACK=0"/>
