@@ -2,54 +2,55 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using System.Net.WebSockets;
 using System.Threading;
 using System.Threading.Tasks;
+
+#nullable enable
 
 namespace Microsoft.WebAssembly.Diagnostics
 {
     internal class DevToolsQueue
     {
-        private Task current_send;
-        private List<byte[]> pending;
+        private Task? current_send;
+        private ConcurrentQueue<byte[]> pending;
 
         public WebSocket Ws { get; private set; }
-        public Task CurrentSend { get { return current_send; } }
+        public Task? CurrentSend { get { return current_send; } }
         public DevToolsQueue(WebSocket sock)
         {
             this.Ws = sock;
-            pending = new List<byte[]>();
+            pending = new ConcurrentQueue<byte[]>();
         }
 
-        public Task Send(byte[] bytes, CancellationToken token)
+        public Task? Send(byte[] bytes, CancellationToken token)
         {
-            pending.Add(bytes);
-            if (pending.Count == 1)
-            {
-                if (current_send != null)
-                    throw new Exception("current_send MUST BE NULL IF THERE'S no pending send");
-                //logger.LogTrace ("sending {0} bytes", bytes.Length);
-                current_send = Ws.SendAsync(new ArraySegment<byte>(bytes), WebSocketMessageType.Text, true, token);
-                return current_send;
-            }
-            return null;
+            if (bytes == null)
+                throw new ArgumentNullException(nameof(bytes));
+
+            pending.Enqueue(bytes);
+            TryPump(token, out Task? sendTask);
+            return sendTask;
         }
 
-        public Task Pump(CancellationToken token)
+        public bool TryPump(CancellationToken token, [NotNullWhen(true)] out Task? sendTask)
         {
+            sendTask = null;
+
+            if (current_send?.IsCompleted == false)
+                return false;
+
             current_send = null;
-            pending.RemoveAt(0);
-
-            if (pending.Count > 0)
+            if (pending.TryDequeue(out byte[]? bytes))
             {
-                if (current_send != null)
-                    throw new Exception("current_send MUST BE NULL IF THERE'S no pending send");
-
-                current_send = Ws.SendAsync(new ArraySegment<byte>(pending[0]), WebSocketMessageType.Text, true, token);
-                return current_send;
+                current_send = Ws.SendAsync(new ArraySegment<byte>(bytes), WebSocketMessageType.Text, true, token);
+                sendTask = current_send;
             }
-            return null;
+
+            return sendTask != null;
         }
     }
 }
