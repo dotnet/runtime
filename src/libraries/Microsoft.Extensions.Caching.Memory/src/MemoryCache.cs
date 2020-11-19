@@ -4,7 +4,6 @@
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
-using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Threading;
 using System.Threading.Tasks;
@@ -451,35 +450,36 @@ namespace Microsoft.Extensions.Caching.Memory
             {
                 RemoveEntry(entry);
             }
-        }
 
-        /// Policy:
-        /// 1. Least recently used objects.
-        /// ?. Items with the soonest absolute expiration.
-        /// ?. Items with the soonest sliding expiration.
-        /// ?. Larger objects - estimated by object graph size, inaccurate.
-        private void ExpirePriorityBucket(ref long removedSize, long removalSizeTarget, Func<CacheEntry, long> computeEntrySize, List<CacheEntry> entriesToRemove, List<CacheEntry> priorityEntries)
-        {
-            // Do we meet our quota by just removing expired entries?
-            if (removalSizeTarget <= removedSize)
+            // Policy:
+            // 1. Least recently used objects.
+            // ?. Items with the soonest absolute expiration.
+            // ?. Items with the soonest sliding expiration.
+            // ?. Larger objects - estimated by object graph size, inaccurate.
+            static void ExpirePriorityBucket(ref long removedSize, long removalSizeTarget, Func<CacheEntry, long> computeEntrySize, List<CacheEntry> entriesToRemove, List<CacheEntry> priorityEntries)
             {
-                // No-op, we've met quota
-                return;
-            }
-
-            // Expire enough entries to reach our goal
-            // TODO: Refine policy
-
-            // LRU
-            foreach (CacheEntry entry in priorityEntries.OrderBy(entry => entry.LastAccessed))
-            {
-                entry.SetExpired(EvictionReason.Capacity);
-                entriesToRemove.Add(entry);
-                removedSize += computeEntrySize(entry);
-
+                // Do we meet our quota by just removing expired entries?
                 if (removalSizeTarget <= removedSize)
                 {
-                    break;
+                    // No-op, we've met quota
+                    return;
+                }
+
+                // Expire enough entries to reach our goal
+                // TODO: Refine policy
+
+                // LRU
+                priorityEntries.Sort((e1, e2) => e1.LastAccessed.CompareTo(e2.LastAccessed));
+                foreach (CacheEntry entry in priorityEntries)
+                {
+                    entry.SetExpired(EvictionReason.Capacity);
+                    entriesToRemove.Add(entry);
+                    removedSize += computeEntrySize(entry);
+
+                    if (removalSizeTarget <= removedSize)
+                    {
+                        break;
+                    }
                 }
             }
         }
