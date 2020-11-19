@@ -44,7 +44,7 @@
     <FileExtensionSignInfo Include=".pkg" CertificateName="8003" />
     <FileExtensionSignInfo Include=".deb;.rpm" CertificateName="LinuxSign" />
   </ItemGroup>
-  <ItemGroup Condition="'$(PrepareArtifacts) == 'true' and '$(PostBuildSign)' == 'true'">
+  <ItemGroup Condition="'$(PrepareArtifacts)' == 'true' and '$(PostBuildSign)' == 'true'">
     <ItemsToSignWithPaths Include="$(DownloadDirectory)**/*.msi" />
     <ItemsToSignWithPaths Include="$(DownloadDirectory)**/*.exe" />
     <ItemsToSignWithPaths Include="$(DownloadDirectory)**/*.nupkg" />
