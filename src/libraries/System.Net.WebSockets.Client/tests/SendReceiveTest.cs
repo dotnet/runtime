@@ -389,8 +389,8 @@ namespace System.Net.WebSockets.Client.Tests
 
         [OuterLoop("Uses external servers")]
         [ConditionalFact(nameof(WebSocketsSupported))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/34690", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/34690", TestPlatforms.Browser)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/34690", TestPlatforms.Windows | TestPlatforms.Browser, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/42852", TestPlatforms.Browser)]
         public async Task SendReceive_ConnectionClosedPrematurely_ReceiveAsyncFailsAndWebSocketStateUpdated()
         {
             var options = new LoopbackServer.Options { WebSocketEndpoint = true };
