@@ -1372,7 +1372,9 @@ namespace Microsoft.Extensions.Hosting.Internal
         {
             protected override async Task ExecuteAsync(CancellationToken stoppingToken)
             {
-                await Task.Yield();
+                // Delay long enough that BackgroundService.StartAsync gets a chance to complete
+                // before the exception is thrown. But don't delay for too long so the test completes quickly.
+                await Task.Delay(50);
 
                 throw new Exception("Background Exception");
             }
