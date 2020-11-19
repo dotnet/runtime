@@ -1462,6 +1462,14 @@ namespace JIT.HardwareIntrinsics.Arm
 <#
         }
 
+        foreach (string typeName in new string[] { "int", "uint", "float" })
+        {
+#>
+        public static <#= typeName #> LoadPairScalar(<#= typeName #>[] op1, int i) => (i == 0) ? op1[0] : (i == op1.Length / 2) ? op1[1] : (<#= typeName #>)0;
+
+<#
+        }
+
         foreach (string typeName in new string[] { "sbyte", "byte" })
         {
 #>
