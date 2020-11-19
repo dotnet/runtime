@@ -2008,10 +2008,10 @@ FCIMPLEND
  * MethodTable* for the underlying T.
  */
 void QCALLTYPE RuntimeTypeHandle::GetNewobjHelperFnPtr(
-        QCall::TypeHandle pTypeHandle,
-        PCODE* ppNewobjHelper,
-        MethodTable** ppMT,
-        BOOL fUnwrapNullable)
+    QCall::TypeHandle pTypeHandle,
+    PCODE* ppNewobjHelper,
+    MethodTable** ppMT,
+    BOOL fUnwrapNullable)
 {
     CONTRACTL{
         QCALL_CHECK;
