@@ -45,8 +45,8 @@ namespace System.Net.Http
         public System.Net.ICredentials? ServerCredentials { get { throw null; } set { } }
         public System.Security.Authentication.SslProtocols SslProtocols { get { throw null; } set { } }
         public bool TcpKeepAliveEnabled { get { throw null; } set { } }
-        public TimeSpan TcpKeepAliveTime { get { throw null; } set { } }
-        public TimeSpan TcpKeepAliveInterval { get { throw null; } set { } }
+        public System.TimeSpan TcpKeepAliveTime { get { throw null; } set { } }
+        public System.TimeSpan TcpKeepAliveInterval { get { throw null; } set { } }
         public System.Net.Http.WindowsProxyUsePolicy WindowsProxyUsePolicy { get { throw null; } set { } }
         protected override void Dispose(bool disposing) { }
         protected override System.Threading.Tasks.Task<System.Net.Http.HttpResponseMessage> SendAsync(System.Net.Http.HttpRequestMessage request, System.Threading.CancellationToken cancellationToken) { throw null; }
