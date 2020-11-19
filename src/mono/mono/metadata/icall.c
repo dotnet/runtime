@@ -1381,6 +1381,16 @@ ves_icall_System_Runtime_CompilerServices_RuntimeHelpers_GetUninitializedObjectI
 		return NULL_HANDLE;
 	}
 
+	if (mono_class_is_array (klass) || mono_class_is_pointer (klass) || handle->byref) {
+		mono_error_set_argument (error, NULL, NULL);
+		return NULL_HANDLE;
+	}
+
+	if (MONO_TYPE_IS_VOID (handle)) {
+		mono_error_set_argument (error, NULL, NULL);
+		return NULL_HANDLE;
+	}
+
 	if (m_class_is_abstract (klass) || m_class_is_interface (klass) || m_class_is_gtd (klass)) {
 		mono_error_set_member_access (error, NULL, NULL);
 		return NULL_HANDLE;

@@ -15,7 +15,7 @@ namespace System.Xml.Linq
         private string _name;
         private string? _publicId;
         private string? _systemId;
-        private string _internalSubset;
+        private string? _internalSubset;
 
         /// <summary>
         /// Initializes an empty instance of the <see cref="XDocumentType"/> class.
@@ -25,7 +25,7 @@ namespace System.Xml.Linq
             _name = XmlConvert.VerifyName(name);
             _publicId = publicId;
             _systemId = systemId;
-            _internalSubset = internalSubset ?? string.Empty;
+            _internalSubset = internalSubset;
         }
 
         /// <summary>
@@ -54,8 +54,7 @@ namespace System.Xml.Linq
         /// <summary>
         /// Gets or sets the internal subset for this Document Type Definition (DTD).
         /// </summary>
-        [AllowNull]
-        public string InternalSubset
+        public string? InternalSubset
         {
             get
             {
@@ -64,7 +63,7 @@ namespace System.Xml.Linq
             set
             {
                 bool notify = NotifyChanging(this, XObjectChangeEventArgs.Value);
-                _internalSubset = value ?? string.Empty;
+                _internalSubset = value;
                 if (notify) NotifyChanged(this, XObjectChangeEventArgs.Value);
             }
         }
@@ -182,7 +181,7 @@ namespace System.Xml.Linq
             return _name.GetHashCode() ^
                 (_publicId != null ? _publicId.GetHashCode() : 0) ^
                 (_systemId != null ? _systemId.GetHashCode() : 0) ^
-                _internalSubset.GetHashCode();
+                (_internalSubset != null ? _internalSubset.GetHashCode() : 0);
         }
     }
 }

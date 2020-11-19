@@ -72,7 +72,7 @@ stages:
       jobTemplate: /eng/pipelines/coreclr/templates/crossdac-pack.yml
       buildConfig: release
       platforms:
-      - Linux_musl_x64
+      - windows_x64
       jobParameters:
         isOfficialBuild: ${{ variables.isOfficialBuild }}
         crossDacPlatforms:
@@ -120,7 +120,7 @@ stages:
         buildArgs: -s mono+libs+host+packs -c $(_BuildConfig)
         nameSuffix: AllSubsets_Mono
         isOfficialBuild: ${{ variables.isOfficialBuild }}
-        extraStepsTemplate: /eng/pipelines/common/upload-unsigned-artifacts-step.yml
+        extraStepsTemplate: /eng/pipelines/common/upload-intermediate-artifacts-step.yml
         extraStepsParameters:
           name: MonoRuntimePacks
 
@@ -151,7 +151,7 @@ stages:
           nameSuffix: AllSubsets_Mono_LLVMJIT
           runtimeVariant: LLVMJIT
           isOfficialBuild: ${{ variables.isOfficialBuild }}
-          extraStepsTemplate: /eng/pipelines/common/upload-unsigned-artifacts-step.yml
+          extraStepsTemplate: /eng/pipelines/common/upload-intermediate-artifacts-step.yml
           extraStepsParameters:
             name: MonoRuntimePacks
       #LLVMAOT
@@ -164,7 +164,7 @@ stages:
           nameSuffix: AllSubsets_Mono_LLVMAOT
           runtimeVariant: LLVMAOT
           isOfficialBuild: ${{ variables.isOfficialBuild }}
-          extraStepsTemplate: /eng/pipelines/common/upload-unsigned-artifacts-step.yml
+          extraStepsTemplate: /eng/pipelines/common/upload-intermediate-artifacts-step.yml
           extraStepsParameters:
             name: MonoRuntimePacks
 

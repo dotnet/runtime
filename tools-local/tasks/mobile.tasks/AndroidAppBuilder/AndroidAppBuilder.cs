@@ -1,4 +1,4 @@
-// Licensed to the .NET Foundation under one or more agreements.
+﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
@@ -47,6 +47,8 @@ public class AndroidAppBuilderTask : Task
 
     public string? KeyStorePath { get; set; }
 
+    public bool ForceInterpreter { get; set; }
+
     [Output]
     public string ApkBundlePath { get; set; } = ""!;
 
@@ -70,6 +72,7 @@ public class AndroidAppBuilderTask : Task
         apkBuilder.StripDebugSymbols = StripDebugSymbols;
         apkBuilder.NativeMainSource = NativeMainSource;
         apkBuilder.KeyStorePath = KeyStorePath;
+        apkBuilder.ForceInterpreter = ForceInterpreter;
         (ApkBundlePath, ApkPackageId) = apkBuilder.BuildApk(SourceDir, abi, MainLibraryFileName, MonoRuntimeHeaders);
 
         return true;
