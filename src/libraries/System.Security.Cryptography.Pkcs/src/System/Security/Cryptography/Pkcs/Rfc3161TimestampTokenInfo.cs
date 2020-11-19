@@ -34,7 +34,7 @@ namespace System.Security.Cryptography.Pkcs
         /// <param name="accuracyInMicroseconds">The accuracy with which <paramref name="timestamp"/> is compared. Also see <paramref name="isOrdering"/>.</param>
         /// <param name="isOrdering"><see langword="true" /> to ensure that every timestamp token from the same TSA can always be ordered based on the <paramref name="timestamp"/>, regardless of the accuracy; <see langword="false" /> to make <paramref name="timestamp"/> indicate when token has been created by the TSA.</param>
         /// <param name="nonce">The nonce associated with this timestamp token. Using a nonce always allows to detect replays, and hence its use is recommended.</param>
-        /// <param name="tsaName">The hint in the TSA name identification. The actual identification of the entity that signed the response will always occur through the use of the certificate identifier.</param>
+        /// <param name="timestampAuthorityName">The hint in the TSA name identification. The actual identification of the entity that signed the response will always occur through the use of the certificate identifier.</param>
         /// <param name="extensions">The extension values associated with the timestamp.</param>
         /// <remarks>If <paramref name="hashAlgorithmId" />, <paramref name="messageHash" />, <paramref name="policyId" /> or <paramref name="nonce" /> are present in the <see cref="Rfc3161TimestampRequest"/>, then the same value should be used. If <paramref name="accuracyInMicroseconds"/> is not provided, then the accuracy may be available through other means such as i.e. <paramref name="policyId" />.</remarks>
         /// <exception cref="CryptographicException">ASN.1 corrupted data.</exception>
@@ -47,7 +47,7 @@ namespace System.Security.Cryptography.Pkcs
             long? accuracyInMicroseconds = null,
             bool isOrdering = false,
             ReadOnlyMemory<byte>? nonce = null,
-            ReadOnlyMemory<byte>? tsaName = null,
+            ReadOnlyMemory<byte>? timestampAuthorityName = null,
             X509ExtensionCollection? extensions = null)
         {
             _encodedBytes = Encode(
@@ -59,7 +59,7 @@ namespace System.Security.Cryptography.Pkcs
                 isOrdering,
                 accuracyInMicroseconds,
                 nonce,
-                tsaName,
+                timestampAuthorityName,
                 extensions);
 
             if (!TryDecode(_encodedBytes, true, out _parsedData, out _, out _))
@@ -227,16 +227,16 @@ namespace System.Security.Cryptography.Pkcs
         /// <summary>
         /// Decodes an encoded TSTInfo value.
         /// </summary>
-        /// <param name="source">The input or source buffer.</param>
+        /// <param name="encodedBytes">The input or source buffer.</param>
         /// <param name="timestampTokenInfo">When this method returns <see langword="true" />, the decoded data. When this method returns <see langword="false" />, the value is <see langword="null" />, meaning the data could not be decoded.</param>
         /// <param name="bytesConsumed">The number of bytes used for decoding.</param>
         /// <returns><see langword="true" /> if the operation succeeded; <see langword="false" /> otherwise.</returns>
         public static bool TryDecode(
-            ReadOnlyMemory<byte> source,
+            ReadOnlyMemory<byte> encodedBytes,
             [NotNullWhen(true)] out Rfc3161TimestampTokenInfo? timestampTokenInfo,
             out int bytesConsumed)
         {
-            if (TryDecode(source, false, out Rfc3161TstInfo tstInfo, out bytesConsumed, out byte[]? copiedBytes))
+            if (TryDecode(encodedBytes, false, out Rfc3161TstInfo tstInfo, out bytesConsumed, out byte[]? copiedBytes))
             {
                 timestampTokenInfo = new Rfc3161TimestampTokenInfo(copiedBytes!, tstInfo);
                 return true;
