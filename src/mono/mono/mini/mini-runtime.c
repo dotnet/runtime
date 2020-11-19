@@ -75,8 +75,8 @@
 #include <mono/metadata/threadpool.h>
 
 #ifdef ENABLE_PERFTRACING
-#include <mono/eventpipe/ep.h>
-#include <mono/eventpipe/ds-server.h>
+#include <eventpipe/ep.h>
+#include <eventpipe/ds-server.h>
 #endif
 
 #include "mini.h"
