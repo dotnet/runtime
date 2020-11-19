@@ -221,7 +221,7 @@ namespace $([System.String]::Copy($(Category)).Replace(".","_").Replace("\","").
     </PropertyGroup>
 
     <PropertyGroup>
-      <TestExecutableReplacement Condition="'$(TargetsWindows)' != 'true' ">testExecutable = testExecutable.Replace("\\", "/")%3B</TestExecutableReplacement>
+      <TestExecutableReplacement Condition="'$(TestWrapperTargetsWindows)' != 'true' ">testExecutable = testExecutable.Replace("\\", "/")%3B</TestExecutableReplacement>
     </PropertyGroup>
 
     <ItemGroup>
@@ -493,8 +493,8 @@ namespace $([System.String]::Copy($(Category)).Replace(".","_").Replace("\","").
 
   <Target Name="GetListOfTestCmds">
     <ItemGroup>
-      <AllRunnableTestPaths Include="$(XunitTestBinBase)\**\*.cmd" Condition="'$(TargetOS)' == 'windows'" />
-      <AllRunnableTestPaths Include="$(XunitTestBinBase)\**\*.sh" Condition="'$(TargetOS)' != 'windows'" />
+      <AllRunnableTestPaths Include="$(XunitTestBinBase)\**\*.cmd" Condition="'$(TestWrapperTargetsWindows)' == 'true'" />
+      <AllRunnableTestPaths Include="$(XunitTestBinBase)\**\*.sh" Condition="'$(TestWrapperTargetsWindows)' == 'false'" />
       <AllRunnableTestPaths Remove="$(XunitTestBinBase)\**\run-v8.sh" Condition="'$(TargetArchitecture)' == 'wasm'" />
     </ItemGroup>
   </Target>
