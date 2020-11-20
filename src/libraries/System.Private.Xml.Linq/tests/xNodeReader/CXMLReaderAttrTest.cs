@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
-using System.IO;
 using System.Xml;
 using Microsoft.Test.ModuleCore;
 
@@ -532,7 +531,15 @@ namespace CoreXml.Test.XLinq
                 {
                     XmlReader DataReader = GetReader();
                     PositionOnElement(DataReader, "ACT1");
-                    string str = DataReader.GetAttribute(-1);
+
+                    try
+                    {
+                        string str = DataReader.GetAttribute(-1);
+                    }
+                    catch (Exception e)
+                    {
+                        TestLog.Compare(e.GetType(), typeof(ArgumentOutOfRangeException), "Error");
+                    }
                 }
 
                 //[Variation("GetAttribute(i) FieldCountOrdinal")]
@@ -556,7 +563,15 @@ namespace CoreXml.Test.XLinq
                 {
                     XmlReader DataReader = GetReader();
                     PositionOnElement(DataReader, "ACT1");
-                    string str = DataReader.GetAttribute(-2);
+                    try
+                    {
+                        string str = DataReader.GetAttribute(-2);
+                    }
+                    catch (Exception e)
+                    {
+                        TestLog.Compare(e.GetType(), typeof(ArgumentOutOfRangeException), "Error");
+                    }
+
                 }
             }
 
@@ -816,7 +831,14 @@ namespace CoreXml.Test.XLinq
                 {
                     XmlReader DataReader = GetReader();
                     PositionOnElement(DataReader, "ACT1");
-                    string str = DataReader[-1];
+                    try
+                    {
+                        string str = DataReader[-1];
+                    }
+                    catch (Exception e)
+                    {
+                        TestLog.Compare(e.GetType(), typeof(ArgumentOutOfRangeException), "Error");
+                    }
                 }
 
                 //[Variation("ThisOrdinal FieldCountOrdinal")]
@@ -840,7 +862,14 @@ namespace CoreXml.Test.XLinq
                 {
                     XmlReader DataReader = GetReader();
                     PositionOnElement(DataReader, "ACT1");
-                    string str = DataReader[-2];
+                    try
+                    {
+                        string str = DataReader[-2];
+                    }
+                    catch (Exception e)
+                    {
+                        TestLog.Compare(e.GetType(), typeof(ArgumentOutOfRangeException), "Error");
+                    }
                 }
             }
 

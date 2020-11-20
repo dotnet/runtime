@@ -1,11 +1,11 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using Microsoft.Test.ModuleCore;
 using System;
 using System.Collections.Generic;
 using System.Xml;
 using System.Xml.Linq;
+using Microsoft.Test.ModuleCore;
 
 namespace CoreXml.Test.XLinq
 {
@@ -22,8 +22,18 @@ namespace CoreXml.Test.XLinq
                     {
                         using (XmlReader r = n.CreateReader())
                         {
-                            TestLog.Compare(r[-100000], null, "Error");
-                            TestLog.Compare(r[-1], null, "Error");
+                            r.Read();
+
+                            try
+                            {
+                                TestLog.Compare(r[-100000], null, "Error");
+                                TestLog.Compare(r[-1], null, "Error");
+                            }
+                            catch (Exception e)
+                            {
+                                TestLog.Compare(e.GetType(), typeof(ArgumentOutOfRangeException), "Error");
+                            }
+
                             TestLog.Compare(r[0], null, "Error");
                             TestLog.Compare(r[100000], null, "Error");
                             TestLog.Compare(r[null], null, "Error");
@@ -41,8 +51,26 @@ namespace CoreXml.Test.XLinq
                     {
                         using (XmlReader r = n.CreateReader())
                         {
-                            TestLog.Compare(r.GetAttribute(-100000), null, "Error");
-                            TestLog.Compare(r.GetAttribute(-1), null, "Error");
+                            try
+                            {
+                                r.GetAttribute(0);
+                            }
+                            catch (Exception e)
+                            {
+                                TestLog.Compare(e.GetType(), typeof(InvalidOperationException), "Error");
+                            }
+
+                            r.Read();
+
+                            try
+                            {
+                                r.GetAttribute(-100000);
+                                r.GetAttribute(-1);
+                            }
+                            catch (Exception e)
+                            {
+                                TestLog.Compare(e.GetType(), typeof(ArgumentOutOfRangeException), "Error");
+                            }
                             TestLog.Compare(r.GetAttribute(0), null, "Error");
                             TestLog.Compare(r.GetAttribute(100000), null, "Error");
                             TestLog.Compare(r.GetAttribute(null), null, "Error");
