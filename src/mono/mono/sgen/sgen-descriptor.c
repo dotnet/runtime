@@ -153,7 +153,7 @@ mono_gc_make_descr_for_object (gsize *bitmap, int numbits, size_t obj_size)
 		 */
 		if (first_set < 256 && num_set < 256 && (first_set + num_set == last_set + 1)) {
 			desc = DESC_TYPE_RUN_LENGTH | stored_size | (first_set << 16) | (num_set << 24);
-			SGEN_LOG (6, "Runlen descriptor %llu, size: %zu, first set: %d, num set: %d", (guint64)desc, stored_size, first_set, num_set);
+			SGEN_LOG (6, "Runlen descriptor %" PRIu64 ", size: %zu, first set: %d, num set: %d", (uint64_t)desc, stored_size, first_set, num_set);
 			return desc;
 		}
 	}
