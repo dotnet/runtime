@@ -1,6 +1,8 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System;
+using System.Net.WebSockets;
 using System.Threading.Tasks;
 using Microsoft.WebAssembly.Diagnostics;
 using Newtonsoft.Json.Linq;
@@ -10,32 +12,51 @@ using Xunit;
 
 namespace DebuggerTests
 {
-    public class HarnessTests : DebuggerTestBase
+    public class HarnessTests : SingleSessionTestBase
     {
+        [Fact]
+        public async Task TimedOutWaitingForInvalidBreakpoint()
+        {
+            await SetBreakpoint("dotnet://debugger-test.dll/debugger-test.cs", 100, 0);
+            await AssertHelpers.ThrowsAsync<TaskCanceledException>(
+                async () => await EvaluateAndCheck("window.setTimeout(function() { invoke_add(); }, 1);", null, -1, -1, null),
+                ex => Assert.Contains("timed out", ex.Message));
+        }
+
+        [Fact]
+        public async Task ExceptionThrown() => await AssertHelpers.ThrowsAsync<ArgumentException>(
+                async () => await EvaluateAndCheck("window.setTimeout(function() { non_existant_fn(); }, 1);", null, -1, -1, null),
+                ex => Assert.Contains("non_existant_fn is not defined", ex.Message));
+
+        [Fact]
+        public async Task BrowserCrash() => await Assert.ThrowsAsync<WebSocketException>(async () =>
+            await SendCommandAndCheck(null, "Browser.crash", null, -1, -1, null));
+
+        [Fact]
+        public async Task BrowserClose() => await Assert.ThrowsAsync<WebSocketException>(async () =>
+                await SendCommandAndCheck(null, "Browser.close", null, -1, -1, null));
+
         [Fact]
         public async Task InspectorWaitForAfterMessageAlreadyReceived()
         {
-            var insp = new Inspector();
-            var scripts = SubscribeToScripts(insp);
+            Result res = await SetBreakpoint("dotnet://debugger-test.dll/debugger-test.cs", 10, 8);
+            Assert.True(res.IsOk, $"setBreakpoint failed with {res}");
 
-            await Ready();
-            await insp.Ready(async (cli, token) =>
-            {
-                ctx = new DebugTestContext(cli, insp, token, scripts);
-                Result res = await SetBreakpoint("dotnet://debugger-test.dll/debugger-test.cs", 10, 8);
-                Assert.True(res.IsOk, $"setBreakpoint failed with {res}");
+            res = await ctx.cli.SendCommand(
+                "Runtime.evaluate",
+                JObject.FromObject(new { expression = "window.setTimeout(function() { invoke_add(); }, 0);" }),
+                ctx.token);
+            Assert.True(res.IsOk, $"evaluating the function failed with {res}");
 
-                res = await ctx.cli.SendCommand(
-                    "Runtime.evaluate",
-                    JObject.FromObject(new { expression = "window.setTimeout(function() { invoke_add(); }, 0);" }),
-                    ctx.token);
-                Assert.True(res.IsOk, $"evaluating the function failed with {res}");
+            // delay, so that we can get the Debugger.pause event
+            await Task.Delay(1000);
 
-                // delay, so that we can get the Debugger.pause event
-                await Task.Delay(1000);
-
-                await insp.WaitFor(Inspector.PAUSE);
-            });
+            await insp.WaitFor(Inspector.PAUSE);
         }
+
+        [Fact]
+        public async Task InspectorWaitForMessageThatNeverArrives() => await AssertHelpers.ThrowsAsync<TaskCanceledException>(
+                async () => await insp.WaitFor("Message.that.never.arrives"),
+                ex => Assert.Contains("timed out", ex.Message));
     }
 }
