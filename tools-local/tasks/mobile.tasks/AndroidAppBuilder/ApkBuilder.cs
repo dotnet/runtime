@@ -286,7 +286,15 @@ public class ApkBuilder
         string aapt = Path.Combine(buildToolsFolder, "aapt");
         string apksigner = Path.Combine(buildToolsFolder, "apksigner");
 
-        string apkPath = Directory.GetFiles(Path.Combine(OutputDir, "bin"), "*.apk").First();
+        string apkPath = "";
+        if (string.IsNullOrEmpty(ProjectName))
+            apkPath = Directory.GetFiles(Path.Combine(OutputDir, "bin"), "*.apk").First();
+        else
+            apkPath = Path.Combine(OutputDir, "bin", $"{apkPath}.apk");
+
+        if (!File.Exists(apkPath))
+            throw new Exception($"{apkPath} was not found");
+
         Utils.RunProcess(aapt, $"remove -v bin/{Path.GetFileName(apkPath)} {file}", workingDir: OutputDir);
         Utils.RunProcess(aapt, $"add -v bin/{Path.GetFileName(apkPath)} {file}", workingDir: OutputDir);
 
