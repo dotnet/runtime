@@ -2033,7 +2033,7 @@ void QCALLTYPE RuntimeTypeHandle::GetAllocatorFtn(
     // Don't allow void
     if (typeHandle.GetSignatureCorElementType() == ELEMENT_TYPE_VOID)
     {
-        COMPlusThrow(kArgumentException, W("NotSupported_Type"));
+        COMPlusThrow(kNotSupportedException, W("NotSupported_Type"));
     }
 
     // Don't allow generic variables (e.g., the 'T' from List<T>)

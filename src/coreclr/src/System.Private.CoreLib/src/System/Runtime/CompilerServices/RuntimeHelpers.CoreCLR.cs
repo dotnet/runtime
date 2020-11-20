@@ -140,8 +140,8 @@ namespace System.Runtime.CompilerServices
             [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors | DynamicallyAccessedMemberTypes.NonPublicConstructors)]
             Type type)
         {
+            Debug.Assert(type != null);
             RuntimeType rt = (RuntimeType)type;
-            Debug.Assert(rt != null);
 
             // If type is Nullable<T>, returns the allocator and MethodTable* for the underlying T.
             delegate*<MethodTable*, object> pfnAllocator = RuntimeTypeHandle.GetAllocatorFtn(rt, out MethodTable* pMT, forGetUninitializedObject: true, wrapExceptions: false);

@@ -150,17 +150,17 @@ namespace System.Tests
 
         public static IEnumerable<object[]> CreateInstance_InvalidType_TestData()
         {
-            yield return new object[] { typeof(void) };
-            yield return new object[] { typeof(void).MakeArrayType() };
-            yield return new object[] { typeof(ArgIterator) };
+            yield return new object[] { typeof(void), typeof(NotSupportedException) };
+            yield return new object[] { typeof(void).MakeArrayType(), typeof(MissingMethodException) };
+            yield return new object[] { typeof(ArgIterator), typeof(NotSupportedException) };
         }
 
         [Theory]
         [MemberData(nameof(CreateInstance_InvalidType_TestData))]
-        public void CreateInstance_InvalidType_ThrowsNotSupportedException(Type type)
+        public void CreateInstance_InvalidType_ThrowsNotSupportedException(Type typeToActivate, Type expectedExceptionType)
         {
-            Assert.Throws<NotSupportedException>(() => Activator.CreateInstance(type));
-            Assert.Throws<NotSupportedException>(() => Activator.CreateInstance(type, new object[0]));
+            Assert.Throws(expectedExceptionType, () => Activator.CreateInstance(typeToActivate));
+            Assert.Throws(expectedExceptionType, () => Activator.CreateInstance(typeToActivate, new object[0]));
         }
 
         [Fact]
