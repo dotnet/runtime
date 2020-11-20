@@ -46,7 +46,9 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                 {
                     TypeDesc baseType = _fieldDesc.OwningType.BaseType;
                     if ((_fieldDesc.OwningType.BaseType != null) && !_fieldDesc.IsStatic && !_fieldDesc.OwningType.IsValueType)
-                        dataBuilder.EmitUInt((uint)_fieldDesc.OwningType.BaseType.InstanceByteCount.AsInt);
+                    {
+                        dataBuilder.EmitUInt((uint)_fieldDesc.OwningType.FieldBaseOffset().AsInt);
+                    }
                     else
                         dataBuilder.EmitUInt(0);
                 }
@@ -66,7 +68,8 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
         public override void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb)
         {
             sb.Append(nameMangler.CompilationUnitPrefix);
-            sb.Append($@"TypeFixupSignature({_fixupKind.ToString()}): {_fieldDesc.ToString()}");
+            sb.Append($@"FieldFixupSignature({_fixupKind.ToString()}): ");
+            sb.Append(nameMangler.GetMangledFieldName(_fieldDesc));
         }
 
         public override int CompareToImpl(ISortableNode other, CompilerComparer comparer)

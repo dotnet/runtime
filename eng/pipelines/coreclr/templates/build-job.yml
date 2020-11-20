@@ -6,6 +6,7 @@ parameters:
   compilerName: ''
   condition: true
   container: ''
+  crossBuild: false
   crossrootfsDir: ''
   isOfficialBuild: false
   osGroup: ''
@@ -52,6 +53,7 @@ jobs:
 
     timeoutInMinutes: ${{ parameters.timeoutInMinutes }}
 
+    crossBuild: ${{ parameters.crossBuild }}
     crossrootfsDir: ${{ parameters.crossrootfsDir }}
 
     gatherAssetManifests: true
@@ -72,7 +74,7 @@ jobs:
         value: '-gcc'
       - name: publishLogsArtifactPrefix
         value: 'BuildLogs_CoreCLR_GCC'
-    - ${{ if and(ne(parameters.osGroup, 'Windows_NT'), ne(parameters.compilerName, 'gcc')) }}:
+    - ${{ if and(ne(parameters.osGroup, 'windows'), ne(parameters.compilerName, 'gcc')) }}:
       - name: compilerArg
         value: '-clang9'
       # Building for x64 MUSL happens on Alpine Linux and we need to use the stable version available there
@@ -100,7 +102,7 @@ jobs:
     - name: enforcePgoArg
       value: ''
     # The EnforcePGO script is only supported on Windows and is not supported on arm or arm64.
-    - ${{ if and(eq(parameters.buildConfig, 'Release'), and(eq(parameters.osGroup, 'Windows_NT'), not(or(eq(parameters.archType, 'arm64'), eq(parameters.archType, 'arm'))))) }}:
+    - ${{ if and(eq(parameters.buildConfig, 'Release'), and(eq(parameters.osGroup, 'windows'), not(or(eq(parameters.archType, 'arm64'), eq(parameters.archType, 'arm'))))) }}:
       - name: enforcePgoArg
         value: '-enforcepgo'
 
@@ -116,18 +118,46 @@ jobs:
       - name: clrBuildPALTestsBuildArg
         value: '-paltests '
 
+    - name: ninjaArg
+      value: ''
+    - ${{ if eq(parameters.osGroup, 'windows') }}:
+      - name: ninjaArg
+        value: '-ninja'
+  
+    - name: SignType
+      value: $[ coalesce(variables.OfficialSignType, 'real') ]
+
     - ${{ parameters.variables }}
 
     steps:
+
+    # Install MicroBuild for signing the DAC and DBI
+    - ${{ if and(ne(variables['System.TeamProject'], 'public'), notin(variables['Build.Reason'], 'PullRequest')) }}:
+      - task: NuGetAuthenticate@0
+
+      - ${{ if eq(parameters.osGroup, 'windows') }}:
+        # NuGet's http cache lasts 30 minutes. If we're on a static machine, this may interfere with
+        # auto-update PRs by preventing the CI build from fetching the new version. Delete the cache.
+        - powershell: Remove-Item -Recurse -ErrorAction Ignore "$env:LocalAppData\NuGet\v3-cache"
+          displayName: Clear NuGet http cache (if exists)
+
+        - task: MicroBuildSigningPlugin@2
+          displayName: Install MicroBuild plugin for Signing
+          inputs:
+            signType: $(SignType)
+            zipSources: false
+            feedSource: https://dnceng.pkgs.visualstudio.com/_packaging/MicroBuildToolset/nuget/v3/index.json
+          continueOnError: false
+          condition: and(succeeded(), in(variables['SignType'], 'real', 'test'))
 
     # Install native dependencies
     # Linux builds use docker images with dependencies preinstalled,
     # and FreeBSD builds use a build agent with dependencies
     # preinstalled, so we only need this step for OSX and Windows.
     - ${{ if eq(parameters.osGroup, 'OSX') }}:
-      - script: $(Build.SourcesDirectory)/eng/install-native-dependencies.sh $(osGroup)
+      - script: $(Build.SourcesDirectory)/eng/install-native-dependencies.sh $(osGroup) ${{ parameters.archType }} azDO
         displayName: Install native dependencies
-    - ${{ if eq(parameters.osGroup, 'Windows_NT') }}:
+    - ${{ if eq(parameters.osGroup, 'windows') }}:
       # Necessary to install python
       - script: $(Build.SourcesDirectory)\eng\common\init-tools-native.cmd -InstallDirectory $(Build.SourcesDirectory)\native-tools -Force
         displayName: Install native dependencies
@@ -145,12 +175,17 @@ jobs:
           df -h
         displayName: Disk Usage before Build
 
+    # Build DacTableGen (Windows-only)
+    - ${{ if eq(parameters.osGroup, 'windows') }}:
+      - script: $(Build.SourcesDirectory)$(dir)build$(scriptExt) -subset clr.dactools $(crossArg) -arch $(archType) $(osArg) -c $(buildConfig) $(officialBuildIdArg) -ci /bl:$(Build.SourcesDirectory)artifacts/logs/$(buildConfig)/DacTools.binlog
+        displayName: Build managed product components and packages
+
     # Build CoreCLR Runtime
-    - ${{ if ne(parameters.osGroup, 'Windows_NT') }}:
-      - script: $(Build.SourcesDirectory)/src/coreclr/build-runtime$(scriptExt) $(buildConfig) $(archType) $(crossArg) $(osArg) -ci $(compilerArg) $(clrBuildPALTestsBuildArg) $(officialBuildIdArg) $(clrInterpreterBuildArg)
+    - ${{ if ne(parameters.osGroup, 'windows') }}:
+      - script: $(Build.SourcesDirectory)/src/coreclr/build-runtime$(scriptExt) $(buildConfig) $(archType) $(crossArg) $(osArg) -ci $(compilerArg) $(clrBuildPALTestsBuildArg) $(ninjaArg) $(officialBuildIdArg) $(clrInterpreterBuildArg)
         displayName: Build CoreCLR Runtime
-    - ${{ if eq(parameters.osGroup, 'Windows_NT') }}:
-      - script: set __TestIntermediateDir=int&&$(Build.SourcesDirectory)/src/coreclr/build-runtime$(scriptExt) $(buildConfig) $(archType) -ci $(enforcePgoArg) $(officialBuildIdArg) $(clrInterpreterBuildArg)
+    - ${{ if eq(parameters.osGroup, 'windows') }}:
+      - script: set __TestIntermediateDir=int&&$(Build.SourcesDirectory)/src/coreclr/build-runtime$(scriptExt) $(buildConfig) $(archType) -ci $(ninjaArg) $(enforcePgoArg) $(officialBuildIdArg) $(clrInterpreterBuildArg)
         displayName: Build CoreCLR Runtime
 
     - ${{ if in(parameters.osGroup, 'OSX', 'iOS','tvOS') }}:
@@ -195,10 +230,15 @@ jobs:
             targetFolder: $(buildProductRootFolderPath)/sharedFramework
             overWrite: true
 
-    # Sign on Windows
-    - ${{ if and(eq(parameters.osGroup, 'Windows_NT'), eq(parameters.signBinaries, 'true'), ne(parameters.testGroup, 'clrTools')) }}:
-      - powershell: eng\common\build.ps1 -ci -sign -restore -configuration:$(buildConfig) -warnaserror:0 /p:ArcadeBuild=true /p:OfficialBuild=true /p:TargetOS=$(osGroup) /p:TargetArchitecture=$(archType) /p:Configuration=$(_BuildConfig) /p:DotNetSignType=$env:_SignType -projects $(Build.SourcesDirectory)\eng\empty.csproj
-        displayName: Sign Binaries
+    # Sign diagnostic files on Windows
+    - ${{ if and(eq(parameters.osGroup, 'windows'), ne(variables['System.TeamProject'], 'public'), notin(variables['Build.Reason'], 'PullRequest'), ne(parameters.testGroup, 'clrTools')) }}:
+      - powershell: >-
+          eng\common\build.ps1 -ci -sign -restore -configuration:$(buildConfig) -warnaserror:0
+          /p:DiagnosticsFilesRoot="$(buildProductRootFolderPath)"
+          /p:SignDiagnostics=true
+          /p:DotNetSignType=$(SignType)
+          -projects $(Build.SourcesDirectory)\eng\empty.csproj
+        displayName: Sign Diagnostic Binaries
 
       - task: PublishPipelineArtifact@1
         displayName: Publish Signing Logs
@@ -221,7 +261,7 @@ jobs:
           artifactName: $(buildProductArtifactName)
           displayName: 'product build'
 
-    - ${{ if and(in(parameters.osGroup, 'Windows_NT', 'Linux'), ne(parameters.archType, 'x86'), ne(parameters.compilerName, 'gcc'), ne(parameters.testGroup, 'clrTools')) }}:
+    - ${{ if and(in(parameters.osGroup, 'windows', 'Linux'), ne(parameters.archType, 'x86'), ne(parameters.compilerName, 'gcc'), ne(parameters.testGroup, 'clrTools')) }}:
       - template: /eng/pipelines/coreclr/templates/crossdac-build.yml
         parameters:
           archType: ${{ parameters.archType }}

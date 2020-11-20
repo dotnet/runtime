@@ -193,8 +193,7 @@ namespace System.Runtime.InteropServices
             {
                 DangerousAddRef(ref mustCallRelease);
 
-                fixed (byte* pStructure = &Unsafe.As<T, byte>(ref value))
-                    Buffer.Memmove(pStructure, ptr, sizeofT);
+                Buffer.Memmove(ref Unsafe.As<T, byte>(ref value), ref *ptr, sizeofT);
             }
             finally
             {
@@ -227,7 +226,6 @@ namespace System.Runtime.InteropServices
             if (_numBytes == Uninitialized)
                 throw NotInitialized();
 
-            uint sizeofT = SizeOf<T>();
             uint alignedSizeofT = AlignedSizeOf<T>();
             byte* ptr = (byte*)handle + byteOffset;
             SpaceCheck(ptr, checked((nuint)(alignedSizeofT * buffer.Length)));
@@ -237,11 +235,9 @@ namespace System.Runtime.InteropServices
             {
                 DangerousAddRef(ref mustCallRelease);
 
-                fixed (byte* pStructure = &Unsafe.As<T, byte>(ref MemoryMarshal.GetReference(buffer)))
-                {
-                    for (int i = 0; i < buffer.Length; i++)
-                        Buffer.Memmove(pStructure + sizeofT * i, ptr + alignedSizeofT * i, sizeofT);
-                }
+                ref T structure = ref MemoryMarshal.GetReference(buffer);
+                for (int i = 0; i < buffer.Length; i++)
+                    Buffer.Memmove(ref Unsafe.Add(ref structure, i), ref Unsafe.AsRef<T>(ptr + alignedSizeofT * i), 1);
             }
             finally
             {
@@ -274,8 +270,7 @@ namespace System.Runtime.InteropServices
             {
                 DangerousAddRef(ref mustCallRelease);
 
-                fixed (byte* pStructure = &Unsafe.As<T, byte>(ref value))
-                    Buffer.Memmove(ptr, pStructure, sizeofT);
+                Buffer.Memmove(ref *ptr, ref Unsafe.As<T, byte>(ref value), sizeofT);
             }
             finally
             {
@@ -307,7 +302,6 @@ namespace System.Runtime.InteropServices
             if (_numBytes == Uninitialized)
                 throw NotInitialized();
 
-            uint sizeofT = SizeOf<T>();
             uint alignedSizeofT = AlignedSizeOf<T>();
             byte* ptr = (byte*)handle + byteOffset;
             SpaceCheck(ptr, checked((nuint)(alignedSizeofT * data.Length)));
@@ -317,11 +311,9 @@ namespace System.Runtime.InteropServices
             {
                 DangerousAddRef(ref mustCallRelease);
 
-                fixed (byte* pStructure = &Unsafe.As<T, byte>(ref MemoryMarshal.GetReference(data)))
-                {
-                    for (int i = 0; i < data.Length; i++)
-                        Buffer.Memmove(ptr + alignedSizeofT * i, pStructure + sizeofT * i, sizeofT);
-                }
+                ref T structure = ref MemoryMarshal.GetReference(data);
+                for (int i = 0; i < data.Length; i++)
+                    Buffer.Memmove(ref Unsafe.AsRef<T>(ptr + alignedSizeofT * i), ref Unsafe.Add(ref structure, i), 1);
             }
             finally
             {

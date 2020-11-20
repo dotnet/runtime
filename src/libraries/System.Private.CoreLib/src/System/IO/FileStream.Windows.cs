@@ -379,28 +379,31 @@ namespace System.IO
 
         // We absolutely need this method broken out so that WriteInternalCoreAsync can call
         // a method without having to go through buffering code that might call FlushWrite.
-        private void SetLengthCore(long value)
+        private unsafe void SetLengthCore(long value)
         {
             Debug.Assert(value >= 0, "value >= 0");
-            long origPos = _filePosition;
-
             VerifyOSHandlePosition();
-            if (_filePosition != value)
-                SeekCore(_fileHandle, value, SeekOrigin.Begin);
-            if (!Interop.Kernel32.SetEndOfFile(_fileHandle))
+
+            var eofInfo = new Interop.Kernel32.FILE_END_OF_FILE_INFO
+            {
+                EndOfFile = value
+            };
+
+            if (!Interop.Kernel32.SetFileInformationByHandle(
+                _fileHandle,
+                Interop.Kernel32.FileEndOfFileInfo,
+                &eofInfo,
+                (uint)sizeof(Interop.Kernel32.FILE_END_OF_FILE_INFO)))
             {
                 int errorCode = Marshal.GetLastWin32Error();
                 if (errorCode == Interop.Errors.ERROR_INVALID_PARAMETER)
                     throw new ArgumentOutOfRangeException(nameof(value), SR.ArgumentOutOfRange_FileLengthTooBig);
                 throw Win32Marshal.GetExceptionForWin32Error(errorCode, _path);
             }
-            // Return file pointer to where it was before setting length
-            if (origPos != value)
+
+            if (_filePosition > value)
             {
-                if (origPos < value)
-                    SeekCore(_fileHandle, origPos, SeekOrigin.Begin);
-                else
-                    SeekCore(_fileHandle, 0, SeekOrigin.End);
+                SeekCore(_fileHandle, 0, SeekOrigin.End);
             }
         }
 
@@ -1249,18 +1252,22 @@ namespace System.IO
                 return base.CopyToAsync(destination, bufferSize, cancellationToken);
             }
 
-            StreamHelpers.ValidateCopyToArgs(this, destination, bufferSize);
-
-            // Bail early for cancellation if cancellation has been requested
-            if (cancellationToken.IsCancellationRequested)
-            {
-                return Task.FromCanceled<int>(cancellationToken);
-            }
+            ValidateCopyToArguments(destination, bufferSize);
 
             // Fail if the file was closed
             if (_fileHandle.IsClosed)
             {
                 throw Error.GetFileNotOpen();
+            }
+            if (!CanRead)
+            {
+                throw Error.GetReadNotSupported();
+            }
+
+            // Bail early for cancellation if cancellation has been requested
+            if (cancellationToken.IsCancellationRequested)
+            {
+                return Task.FromCanceled<int>(cancellationToken);
             }
 
             // Do the async copy, with differing implementations based on whether the FileStream was opened as async or sync
@@ -1538,34 +1545,6 @@ namespace System.IO
                     Task.Run(continuation);
                 }
             }
-        }
-
-        private Task FlushAsyncInternal(CancellationToken cancellationToken)
-        {
-            if (cancellationToken.IsCancellationRequested)
-                return Task.FromCanceled(cancellationToken);
-
-            if (_fileHandle.IsClosed)
-                throw Error.GetFileNotOpen();
-
-            // TODO: https://github.com/dotnet/runtime/issues/27643 (stop doing this synchronous work!!).
-            // The always synchronous data transfer between the OS and the internal buffer is intentional
-            // because this is needed to allow concurrent async IO requests. Concurrent data transfer
-            // between the OS and the internal buffer will result in race conditions. Since FlushWrite and
-            // FlushRead modify internal state of the stream and transfer data between the OS and the
-            // internal buffer, they cannot be truly async. We will, however, flush the OS file buffers
-            // asynchronously because it doesn't modify any internal state of the stream and is potentially
-            // a long running process.
-            try
-            {
-                FlushInternalBuffer();
-            }
-            catch (Exception e)
-            {
-                return Task.FromException(e);
-            }
-
-            return Task.CompletedTask;
         }
 
         private void LockInternal(long position, long length)

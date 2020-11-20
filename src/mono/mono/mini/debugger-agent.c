@@ -515,14 +515,6 @@ typedef struct ReplyPacket {
 	Buffer *data;
 } ReplyPacket;
 
-#define DEBUG(level,s) do { if (G_UNLIKELY ((level) <= log_level)) { s; fflush (log_file); } } while (0)
-
-#ifdef HOST_ANDROID
-#define DEBUG_PRINTF(level, ...) do { if (G_UNLIKELY ((level) <= log_level)) { g_print (__VA_ARGS__); } } while (0)
-#else
-#define DEBUG_PRINTF(level, ...) do { if (G_UNLIKELY ((level) <= log_level)) { fprintf (log_file, __VA_ARGS__); fflush (log_file); } } while (0)
-#endif
-
 #ifdef HOST_WIN32
 #define get_last_sock_error() WSAGetLastError()
 #define MONO_EWOULDBLOCK WSAEWOULDBLOCK
@@ -2822,6 +2814,8 @@ process_suspend (DebuggerTlsData *tls, MonoContext *ctx)
 static gboolean
 try_process_suspend (void *the_tls, MonoContext *ctx, gboolean from_breakpoint)
 {
+	MONO_REQ_GC_UNSAFE_MODE;
+	
 	DebuggerTlsData *tls = (DebuggerTlsData*)the_tls;
 	/* if there is a suspend pending that is not executed yes */
 	if (suspend_count > 0) { 
@@ -4810,7 +4804,13 @@ debugger_agent_single_step_from_context (MonoContext *ctx)
 	mono_thread_state_init_from_monoctx (&tls->restore_state, ctx);
 	memcpy (&tls->handler_ctx, ctx, sizeof (MonoContext));
 
+	/* We might be called while the thread is already running some native
+	 * code after an native-to-managed transition, so the thread might be
+	 * in GC Safe mode.
+	 */
+	MONO_ENTER_GC_UNSAFE;
 	mono_de_process_single_step (tls, FALSE);
+	MONO_EXIT_GC_UNSAFE;
 
 	memcpy (ctx, &tls->restore_state.ctx, sizeof (MonoContext));
 	memcpy (&tls->restore_state, &orig_restore_state, sizeof (MonoThreadUnwindState));
@@ -4840,7 +4840,13 @@ debugger_agent_breakpoint_from_context (MonoContext *ctx)
 	mono_thread_state_init_from_monoctx (&tls->restore_state, ctx);
 	memcpy (&tls->handler_ctx, ctx, sizeof (MonoContext));
 
+	/* We might be called while the thread is already running some native
+	 * code after an native-to-managed transition, so the thread might be
+	 * in GC Safe mode.
+	 */
+	MONO_ENTER_GC_UNSAFE;
 	mono_de_process_breakpoint (tls, FALSE);
+	MONO_EXIT_GC_UNSAFE;
 
 	memcpy (ctx, &tls->restore_state.ctx, sizeof (MonoContext));
 	memcpy (&tls->restore_state, &orig_restore_state, sizeof (MonoThreadUnwindState));

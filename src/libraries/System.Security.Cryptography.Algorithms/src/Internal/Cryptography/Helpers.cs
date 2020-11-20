@@ -31,13 +31,6 @@ namespace Internal.Cryptography
             return null;
         }
 
-        public static byte[] GenerateRandom(int count)
-        {
-            byte[] buffer = new byte[count];
-            RandomNumberGenerator.Fill(buffer);
-            return buffer;
-        }
-
         public static byte[] FixupKeyParity(this byte[] key)
         {
             byte[] oddParityKey = new byte[key.Length];

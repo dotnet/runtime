@@ -40,7 +40,7 @@ namespace System.Net.Quic.Implementations.Mock
 
         private StreamBuffer? ReadStreamBuffer => _isInitiator ? _streamState._inboundStreamBuffer : _streamState._outboundStreamBuffer;
 
-        internal override bool CanRead => ReadStreamBuffer is not null;
+        internal override bool CanRead => !_disposed && ReadStreamBuffer is not null;
 
         internal override int Read(Span<byte> buffer)
         {
@@ -80,7 +80,7 @@ namespace System.Net.Quic.Implementations.Mock
 
         private StreamBuffer? WriteStreamBuffer => _isInitiator ? _streamState._outboundStreamBuffer : _streamState._inboundStreamBuffer;
 
-        internal override bool CanWrite => WriteStreamBuffer is not null;
+        internal override bool CanWrite => !_disposed && WriteStreamBuffer is not null;
 
         internal override void Write(ReadOnlySpan<byte> buffer)
         {
@@ -199,8 +199,9 @@ namespace System.Net.Quic.Implementations.Mock
         {
             if (!_disposed)
             {
-                _disposed = true;
+                Shutdown();
 
+                _disposed = true;
             }
         }
 
@@ -208,6 +209,8 @@ namespace System.Net.Quic.Implementations.Mock
         {
             if (!_disposed)
             {
+                Shutdown();
+
                 _disposed = true;
             }
 
@@ -222,10 +225,22 @@ namespace System.Net.Quic.Implementations.Mock
             public long _outboundErrorCode;
             public long _inboundErrorCode;
 
+            private const int InitialBufferSize =
+#if DEBUG
+                10;
+#else
+                4096;
+#endif
+            private const int MaxBufferSize =
+#if DEBUG
+                4096;
+#else
+                32 * 1024;
+#endif
             public StreamState(long streamId, bool bidirectional)
             {
                 _streamId = streamId;
-                _outboundStreamBuffer = new StreamBuffer();
+                _outboundStreamBuffer = new StreamBuffer(initialBufferSize: InitialBufferSize, maxBufferSize: MaxBufferSize);
                 _inboundStreamBuffer = (bidirectional ? new StreamBuffer() : null);
             }
         }

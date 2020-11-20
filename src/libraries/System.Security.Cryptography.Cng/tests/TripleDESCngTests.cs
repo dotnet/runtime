@@ -11,6 +11,20 @@ namespace System.Security.Cryptography.Cng.Tests
 
         private static readonly CngAlgorithm s_cngAlgorithm = new CngAlgorithm("3DES");
 
+        [Fact]
+        public static void VerifyDefaults()
+        {
+            using TripleDES tdes = new TripleDESCng();
+            Assert.Equal(64, tdes.BlockSize);
+            Assert.Equal(192, tdes.KeySize);
+            Assert.Equal(CipherMode.CBC, tdes.Mode);
+            Assert.Equal(PaddingMode.PKCS7, tdes.Padding);
+
+            // .NET Framework Compat: The default feedback size of TripleDESCng
+            // is 64 while TripleDESCryptoServiceProvider defaults to 8.
+            Assert.Equal(64, tdes.FeedbackSize);
+        }
+
         [OuterLoop(/* Creates/Deletes a persisted key, limit exposure to key leaking */)]
         [ConditionalTheory(nameof(SupportsPersistedSymmetricKeys))]
         // 3DES192-ECB-NoPadding 2 blocks.

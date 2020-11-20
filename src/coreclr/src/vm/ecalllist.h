@@ -111,19 +111,6 @@ FCFuncStart(gStringFuncs)
     FCFuncElement("Intern", AppDomainNative::GetOrInternString)
 FCFuncEnd()
 
-#ifdef FEATURE_UTF8STRING
-FCFuncStart(gUtf8StringFuncs)
-    FCDynamic("FastAllocate", CORINFO_INTRINSIC_Illegal, ECall::FastAllocateUtf8String)
-    FCDynamicSig(COR_CTOR_METHOD_NAME, &gsig_IM_ReadOnlySpanOfByte_RetVoid, CORINFO_INTRINSIC_Illegal, ECall::Utf8StringCtorReadOnlySpanOfByteManaged)
-    FCDynamicSig(COR_CTOR_METHOD_NAME, &gsig_IM_ReadOnlySpanOfChar_RetVoid, CORINFO_INTRINSIC_Illegal, ECall::Utf8StringCtorReadOnlySpanOfCharManaged)
-    FCDynamicSig(COR_CTOR_METHOD_NAME, &gsig_IM_ArrByte_Int_Int_RetVoid, CORINFO_INTRINSIC_Illegal, ECall::Utf8StringCtorByteArrayStartLengthManaged)
-    FCDynamicSig(COR_CTOR_METHOD_NAME, &gsig_IM_PtrByte_RetVoid, CORINFO_INTRINSIC_Illegal, ECall::Utf8StringCtorBytePtrManaged)
-    FCDynamicSig(COR_CTOR_METHOD_NAME, &gsig_IM_ArrChar_Int_Int_RetVoid, CORINFO_INTRINSIC_Illegal, ECall::Utf8StringCtorCharArrayStartLengthManaged)
-    FCDynamicSig(COR_CTOR_METHOD_NAME, &gsig_IM_PtrChar_RetVoid, CORINFO_INTRINSIC_Illegal, ECall::Utf8StringCtorCharPtrManaged)
-    FCDynamicSig(COR_CTOR_METHOD_NAME, &gsig_IM_Str_RetVoid, CORINFO_INTRINSIC_Illegal, ECall::Utf8StringCtorStringManaged)
-FCFuncEnd()
-#endif // FEATURE_UTF8STRING
-
 FCFuncStart(gValueTypeFuncs)
     FCFuncElement("CanCompareBits", ValueTypeHelper::CanCompareBits)
     FCFuncElement("FastEqualsCheck", ValueTypeHelper::FastEqualsCheck)
@@ -164,9 +151,6 @@ FCFuncStart(gEnvironmentFuncs)
     QCFuncElement("GetProcessorCount", SystemNative::GetProcessorCount)
     FCFuncElement("GetCommandLineArgsNative", SystemNative::GetCommandLineArgs)
 
-#if defined(FEATURE_COMINTEROP)
-    QCFuncElement("WinRTSupported", SystemNative::WinRTSupported)
-#endif // FEATURE_COMINTEROP
     FCFuncElementSig("FailFast", &gsig_SM_Str_RetVoid, SystemNative::FailFast)
     FCFuncElementSig("FailFast", &gsig_SM_Str_Exception_RetVoid, SystemNative::FailFastWithException)
     FCFuncElementSig("FailFast", &gsig_SM_Str_Exception_Str_RetVoid, SystemNative::FailFastWithExceptionAndSource)
@@ -596,12 +580,13 @@ FCFuncStart(gThreadFuncs)
 #undef Sleep
     FCFuncElement("SleepInternal", ThreadNative::Sleep)
 #define Sleep(a) Dont_Use_Sleep(a)
+    QCFuncElement("UninterruptibleSleep0", ThreadNative::UninterruptibleSleep0)
     FCFuncElement("SetStart", ThreadNative::SetStart)
     QCFuncElement("InformThreadNameChange", ThreadNative::InformThreadNameChange)
     FCFuncElement("SpinWaitInternal", ThreadNative::SpinWait)
     QCFuncElement("YieldInternal", ThreadNative::YieldThread)
-    FCIntrinsic("GetCurrentThreadNative", ThreadNative::GetCurrentThread, CORINFO_INTRINSIC_GetCurrentManagedThread)
-    FCIntrinsic("get_ManagedThreadId", ThreadNative::GetManagedThreadId, CORINFO_INTRINSIC_GetManagedThreadId)
+    FCFuncElement("GetCurrentThreadNative", ThreadNative::GetCurrentThread)
+    FCFuncElement("get_ManagedThreadId", ThreadNative::GetManagedThreadId)
     FCFuncElement("InternalFinalize", ThreadNative::Finalize)
 #ifdef FEATURE_COMINTEROP_APARTMENT_SUPPORT
     FCFuncElement("StartupSetApartmentStateInternal", ThreadNative::StartupSetApartmentState)
@@ -610,6 +595,7 @@ FCFuncStart(gThreadFuncs)
     FCFuncElement("IsBackgroundNative", ThreadNative::IsBackground)
     FCFuncElement("SetBackgroundNative", ThreadNative::SetBackground)
     FCFuncElement("get_IsThreadPoolThread", ThreadNative::IsThreadpoolThread)
+    FCFuncElement("set_IsThreadPoolThread", ThreadNative::SetIsThreadpoolThread)
     FCFuncElement("GetPriorityNative", ThreadNative::GetPriority)
     FCFuncElement("SetPriorityNative", ThreadNative::SetPriority)
     QCFuncElement("GetCurrentOSThreadId", ThreadNative::GetCurrentOSThreadId)
@@ -629,22 +615,29 @@ FCFuncStart(gThreadFuncs)
 FCFuncEnd()
 
 FCFuncStart(gThreadPoolFuncs)
+    FCFuncElement("GetNextConfigUInt32Value", ThreadPoolNative::GetNextConfigUInt32Value)
     FCFuncElement("PostQueuedCompletionStatus", ThreadPoolNative::CorPostQueuedCompletionStatus)
     FCFuncElement("GetAvailableThreadsNative", ThreadPoolNative::CorGetAvailableThreads)
+    FCFuncElement("CanSetMinIOCompletionThreads", ThreadPoolNative::CorCanSetMinIOCompletionThreads)
+    FCFuncElement("CanSetMaxIOCompletionThreads", ThreadPoolNative::CorCanSetMaxIOCompletionThreads)
     FCFuncElement("SetMinThreadsNative", ThreadPoolNative::CorSetMinThreads)
     FCFuncElement("GetMinThreadsNative", ThreadPoolNative::CorGetMinThreads)
-    FCFuncElement("get_ThreadCount", ThreadPoolNative::GetThreadCount)
+    FCFuncElement("GetThreadCount", ThreadPoolNative::GetThreadCount)
     QCFuncElement("GetCompletedWorkItemCount", ThreadPoolNative::GetCompletedWorkItemCount)
-    FCFuncElement("get_PendingUnmanagedWorkItemCount", ThreadPoolNative::GetPendingUnmanagedWorkItemCount)
+    FCFuncElement("GetPendingUnmanagedWorkItemCount", ThreadPoolNative::GetPendingUnmanagedWorkItemCount)
     FCFuncElement("RegisterWaitForSingleObjectNative", ThreadPoolNative::CorRegisterWaitForSingleObject)
+#ifdef TARGET_WINDOWS // the IO completion thread pool is currently only available on Windows
+    FCFuncElement("QueueWaitCompletionNative", ThreadPoolNative::CorQueueWaitCompletion)
+#endif
     FCFuncElement("BindIOCompletionCallbackNative", ThreadPoolNative::CorBindIoCompletionCallback)
     FCFuncElement("SetMaxThreadsNative", ThreadPoolNative::CorSetMaxThreads)
     FCFuncElement("GetMaxThreadsNative", ThreadPoolNative::CorGetMaxThreads)
-    FCFuncElement("NotifyWorkItemComplete", ThreadPoolNative::NotifyRequestComplete)
+    FCFuncElement("NotifyWorkItemCompleteNative", ThreadPoolNative::NotifyRequestComplete)
     FCFuncElement("NotifyWorkItemProgressNative", ThreadPoolNative::NotifyRequestProgress)
-    FCFuncElement("GetEnableWorkerTracking", ThreadPoolNative::GetEnableWorkerTracking)
-    FCFuncElement("ReportThreadStatus", ThreadPoolNative::ReportThreadStatus)
-    QCFuncElement("RequestWorkerThread", ThreadPoolNative::RequestWorkerThread)
+    FCFuncElement("GetEnableWorkerTrackingNative", ThreadPoolNative::GetEnableWorkerTracking)
+    FCFuncElement("ReportThreadStatusNative", ThreadPoolNative::ReportThreadStatus)
+    QCFuncElement("RequestWorkerThreadNative", ThreadPoolNative::RequestWorkerThread)
+    QCFuncElement("PerformRuntimeSpecificGateActivitiesNative", ThreadPoolNative::PerformGateActivities)
 FCFuncEnd()
 
 FCFuncStart(gTimerFuncs)
@@ -653,10 +646,13 @@ FCFuncStart(gTimerFuncs)
     QCFuncElement("DeleteAppDomainTimer", AppDomainTimerNative::DeleteAppDomainTimer)
 FCFuncEnd()
 
-
 FCFuncStart(gRegisteredWaitHandleFuncs)
     FCFuncElement("UnregisterWaitNative", ThreadPoolNative::CorUnregisterWait)
     FCFuncElement("WaitHandleCleanupNative", ThreadPoolNative::CorWaitHandleCleanupNative)
+FCFuncEnd()
+
+FCFuncStart(gUnmanagedThreadPoolWorkItemFuncs)
+    QCFuncElement("ExecuteUnmanagedThreadPoolWorkItem", ThreadPoolNative::ExecuteUnmanagedThreadPoolWorkItem)
 FCFuncEnd()
 
 FCFuncStart(gWaitHandleFuncs)
@@ -664,6 +660,12 @@ FCFuncStart(gWaitHandleFuncs)
     FCFuncElement("WaitMultipleIgnoringSyncContext", WaitHandleNative::CorWaitMultipleNative)
     FCFuncElement("SignalAndWaitNative", WaitHandleNative::CorSignalAndWaitOneNative)
 FCFuncEnd()
+
+#ifdef TARGET_UNIX
+FCFuncStart(gLowLevelLifoSemaphoreFuncs)
+    QCFuncElement("WaitNative", WaitHandleNative::CorWaitOnePrioritizedNative)
+FCFuncEnd()
+#endif
 
 #ifdef FEATURE_COMINTEROP
 FCFuncStart(gVariantFuncs)
@@ -771,7 +773,6 @@ FCFuncStart(gInteropMarshalFuncs)
 
 #ifdef FEATURE_COMINTEROP
     FCFuncElement("GetHRForException", MarshalNative::GetHRForException)
-    FCFuncElement("GetRawIUnknownForComObjectNoAddRef", MarshalNative::GetRawIUnknownForComObjectNoAddRef)
     FCFuncElement("IsComObject", MarshalNative::IsComObject)
     FCFuncElement("GetObjectForIUnknownNative", MarshalNative::GetObjectForIUnknownNative)
     FCFuncElement("GetUniqueObjectForIUnknownNative", MarshalNative::GetUniqueObjectForIUnknownNative)
@@ -1052,7 +1053,6 @@ FCFuncStart(gPalKernel32Funcs)
     QCFuncElement("FreeEnvironmentStrings", FreeEnvironmentStringsW)
     QCFuncElement("GetEnvironmentStrings", GetEnvironmentStringsW)
     QCFuncElement("GetEnvironmentVariable", GetEnvironmentVariableW)
-    QCFuncElement("GetStdHandle", GetStdHandle)
     QCFuncElement("OpenEvent", OpenEventW)
     QCFuncElement("OpenMutex", OpenMutexW)
     QCFuncElement("OpenSemaphore", OpenSemaphoreW)
@@ -1062,7 +1062,6 @@ FCFuncStart(gPalKernel32Funcs)
     QCFuncElement("ResetEvent", ResetEvent)
     QCFuncElement("SetEnvironmentVariable", SetEnvironmentVariableW)
     QCFuncElement("SetEvent", SetEvent)
-    QCFuncElement("WriteFile", WriteFile)
 FCFuncEnd()
 #endif
 
@@ -1144,7 +1143,6 @@ FCClassElement("Globalization", "", gPalGlobalizationNative)
 #ifdef FEATURE_COMINTEROP
 FCClassElement("IEnumerable", "System.Collections", gStdMngIEnumerableFuncs)
 FCClassElement("IEnumerator", "System.Collections", gStdMngIEnumeratorFuncs)
-FCClassElement("IExpando", "System.Runtime.InteropServices.Expando", gStdMngIExpandoFuncs)
 FCClassElement("IReflect", "System.Reflection", gStdMngIReflectFuncs)
 FCClassElement("InterfaceMarshaler", "System.StubHelpers", gInterfaceMarshalerFuncs)
 #endif
@@ -1153,6 +1151,9 @@ FCClassElement("Interlocked", "System.Threading", gInterlockedFuncs)
 FCClassElement("Kernel32", "", gPalKernel32Funcs)
 #endif
 FCClassElement("LoaderAllocatorScout", "System.Reflection", gLoaderAllocatorFuncs)
+#ifdef TARGET_UNIX
+FCClassElement("LowLevelLifoSemaphore", "System.Threading", gLowLevelLifoSemaphoreFuncs)
+#endif
 FCClassElement("Marshal", "System.Runtime.InteropServices", gInteropMarshalFuncs)
 FCClassElement("Math", "System", gMathFuncs)
 FCClassElement("MathF", "System", gMathFFuncs)
@@ -1180,7 +1181,7 @@ FCClassElement("OverlappedData", "System.Threading", gOverlappedFuncs)
 
 
 FCClassElement("PunkSafeHandle", "System.Reflection.Emit", gSymWrapperCodePunkSafeHandleFuncs)
-FCClassElement("RegisteredWaitHandleSafe", "System.Threading", gRegisteredWaitHandleFuncs)
+FCClassElement("RegisteredWaitHandle", "System.Threading", gRegisteredWaitHandleFuncs)
 
 FCClassElement("RuntimeAssembly", "System.Reflection", gRuntimeAssemblyFuncs)
 FCClassElement("RuntimeFieldHandle", "System", gCOMFieldHandleNewFuncs)
@@ -1204,9 +1205,7 @@ FCClassElement("TypeBuilder", "System.Reflection.Emit", gCOMClassWriter)
 FCClassElement("TypeLoadException", "System", gTypeLoadExceptionFuncs)
 FCClassElement("TypeNameParser", "System", gTypeNameParser)
 FCClassElement("TypedReference", "System", gTypedReferenceFuncs)
-#ifdef FEATURE_UTF8STRING
-FCClassElement("Utf8String", "System", gUtf8StringFuncs)
-#endif // FEATURE_UTF8STRING
+FCClassElement("UnmanagedThreadPoolWorkItem", "System.Threading", gUnmanagedThreadPoolWorkItemFuncs)
 FCClassElement("ValueType", "System", gValueTypeFuncs)
 #ifdef FEATURE_COMINTEROP
 FCClassElement("Variant", "System", gVariantFuncs)

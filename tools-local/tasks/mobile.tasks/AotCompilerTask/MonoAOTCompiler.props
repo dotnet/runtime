@@ -14,4 +14,10 @@
     <MonoAOTCompilerDefaultProcessArguments Include="-O=-float32" />
     <MonoAOTCompilerDefaultProcessArguments Include="-O=gsharedvt" />
   </ItemGroup>
+  <ItemGroup Condition="'$(TargetOS)' == 'Browser'">
+    <MonoAOTCompilerDefaultAotArguments Include="no-opt" />
+    <MonoAOTCompilerDefaultAotArguments Include="static" />
+    <MonoAOTCompilerDefaultAotArguments Include="direct-icalls" />
+    <MonoAOTCompilerDefaultAotArguments Include="deterministic" />
+  </ItemGroup>
 </Project>

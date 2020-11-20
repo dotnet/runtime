@@ -9,7 +9,7 @@ namespace System.IO.Pipes.Tests
     /// <summary>
     /// Tests for the constructors of AnonymousPipeServerStream
     /// </summary>
-    public class AnonymousPipeTest_CreateServer : AnonymousPipeTestBase
+    public class AnonymousPipeTest_CreateServer
     {
         [Fact]
         public static void InOutPipeDirection_Throws_NotSupportedException()

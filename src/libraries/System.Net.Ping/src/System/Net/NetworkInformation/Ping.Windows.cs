@@ -17,8 +17,6 @@ namespace System.Net.NetworkInformation
         private const int MaxUdpPacket = 0xFFFF + 256; // Marshal.SizeOf(typeof(Icmp6EchoReply)) * 2 + ip header info;
 
         private static readonly SafeWaitHandle s_nullSafeWaitHandle = new SafeWaitHandle(IntPtr.Zero, true);
-        private static readonly object s_socketInitializationLock = new object();
-        private static bool s_socketInitialized;
 
         private int _sendSize;  // Needed to determine what the reply size is for ipv6 in callback.
         private bool _ipv6;
@@ -390,25 +388,6 @@ namespace System.Net.NetworkInformation
             }
 
             return new PingReply(address, null, ipStatus, rtt, buffer);
-        }
-
-        static partial void InitializeSockets()
-        {
-            if (!Volatile.Read(ref s_socketInitialized))
-            {
-                lock (s_socketInitializationLock)
-                {
-                    if (!s_socketInitialized)
-                    {
-                        // Ensure that WSAStartup has been called once per process.
-                        // The System.Net.NameResolution contract is responsible with the initialization.
-                        Dns.GetHostName();
-
-                        // Cache some settings locally.
-                        s_socketInitialized = true;
-                    }
-                }
-            }
         }
     }
 }

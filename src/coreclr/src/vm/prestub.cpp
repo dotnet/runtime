@@ -2223,7 +2223,22 @@ PCODE MethodDesc::DoPrestub(MethodTable *pDispatchingMT, CallerGCMode callerGCMo
         }
 
         if (pCode == NULL)
+        {
             pCode = GetStubForInteropMethod(this);
+#ifdef FEATURE_MULTICOREJIT
+            if (pCode)
+            {
+                MulticoreJitManager & mcJitManager = GetAppDomain()->GetMulticoreJitManager();
+                if (mcJitManager.IsRecorderActive())
+                {
+                    if (MulticoreJitManager::IsMethodSupported(this))
+                    {
+                        mcJitManager.RecordMethodJit(this); // Tell multi-core JIT manager to record method on successful JITting
+                    }
+                }
+            }
+#endif // FEATURE_MULTICOREJIT
+        }
 
         GetOrCreatePrecode();
     }
@@ -2481,7 +2496,7 @@ EXTERN_C PCODE STDCALL ExternalMethodFixupWorker(TransitionBlock * pTransitionBl
     // Decode indirection cell from callsite if it is not present
     if (pIndirection == NULL)
     {
-        // Asssume that the callsite is call [xxxxxxxx]
+        // Assume that the callsite is call [xxxxxxxx]
         PCODE retAddr = pEMFrame->GetReturnAddress();
 #ifdef TARGET_X86
         pIndirection = *(((TADDR *)retAddr) - 1);
@@ -3202,6 +3217,7 @@ PCODE DynamicHelperFixup(TransitionBlock * pTransitionBlock, TADDR * pCell, DWOR
     case ENCODE_ISINSTANCEOF_HELPER:
     case ENCODE_CHKCAST_HELPER:
         fReliable = true;
+        FALLTHROUGH;
     case ENCODE_NEW_ARRAY_HELPER:
         th = ZapSig::DecodeType(pModule, pInfoModule, pBlob);
         break;
@@ -3228,6 +3244,7 @@ PCODE DynamicHelperFixup(TransitionBlock * pTransitionBlock, TADDR * pCell, DWOR
     // case ENCODE_VIRTUAL_ENTRY_REF_TOKEN:
     // case ENCODE_VIRTUAL_ENTRY_SLOT:
         fReliable = true;
+        FALLTHROUGH;
     case ENCODE_DELEGATE_CTOR:
         {
             pMD = ZapSig::DecodeMethod(pModule, pInfoModule, pBlob, &th);
@@ -3503,7 +3520,7 @@ extern "C" SIZE_T STDCALL DynamicHelperWorker(TransitionBlock * pTransitionBlock
     // Decode indirection cell from callsite if it is not present
     if (pCell == NULL)
     {
-        // Asssume that the callsite is call [xxxxxxxx]
+        // Assume that the callsite is call [xxxxxxxx]
         PCODE retAddr = pFrame->GetReturnAddress();
 #ifdef TARGET_X86
         pCell = *(((TADDR **)retAddr) - 1);

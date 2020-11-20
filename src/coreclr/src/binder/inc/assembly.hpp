@@ -116,7 +116,7 @@ namespace BINDER_SPACE
 #ifndef CROSSGEN_COMPILE
     protected:
 #endif
-        // Asssembly Flags
+        // Assembly Flags
         enum
         {
             FLAG_NONE = 0x00,

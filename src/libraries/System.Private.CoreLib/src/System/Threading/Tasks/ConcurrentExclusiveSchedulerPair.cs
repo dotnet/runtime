@@ -143,9 +143,17 @@ namespace System.Threading.Tasks
         public Task Completion => EnsureCompletionStateInitialized();
 
         /// <summary>Gets the lazily-initialized completion state.</summary>
-        private CompletionState EnsureCompletionStateInitialized() =>
-            // ValueLock not needed, but it's ok if it's held
-            LazyInitializer.EnsureInitialized(ref m_completionState, () => new CompletionState());
+        private CompletionState EnsureCompletionStateInitialized()
+        {
+            return Volatile.Read(ref m_completionState) ?? InitializeCompletionState();
+
+            CompletionState InitializeCompletionState()
+            {
+                // ValueLock not needed, but it's ok if it's held
+                Interlocked.CompareExchange(ref m_completionState, new CompletionState(), null);
+                return m_completionState;
+            }
+        }
 
         /// <summary>Gets whether completion has been requested.</summary>
         private bool CompletionRequested => m_completionState != null && Volatile.Read(ref m_completionState.m_completionRequested);

@@ -402,9 +402,6 @@ namespace System.Reflection
         internal static extern Type[] InternalGetTypes(IntPtr module);
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        internal static extern IntPtr GetHINSTANCE(IntPtr module);
-
-        [MethodImplAttribute(MethodImplOptions.InternalCall)]
         private static extern void GetGuidInternal(IntPtr module, byte[] guid);
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]

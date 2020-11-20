@@ -3,6 +3,7 @@
 
 using System.Security;
 using System.Threading;
+using System.Diagnostics;
 
 namespace System.Runtime.Serialization
 {
@@ -64,14 +65,7 @@ namespace System.Runtime.Serialization
         public static void ThrowIfDeserializationInProgress(string switchSuffix, ref int cachedValue)
         {
             const string SwitchPrefix = "Switch.System.Runtime.Serialization.SerializationGuard.";
-            if (switchSuffix == null)
-            {
-                throw new ArgumentNullException(nameof(switchSuffix));
-            }
-            if (string.IsNullOrWhiteSpace(switchSuffix))
-            {
-                throw new ArgumentException(SR.Argument_EmptyName, nameof(switchSuffix));
-            }
+            Debug.Assert(!string.IsNullOrWhiteSpace(switchSuffix));
 
             if (cachedValue == 0)
             {

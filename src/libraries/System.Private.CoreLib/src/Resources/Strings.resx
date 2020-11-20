@@ -1843,6 +1843,9 @@
   <data name="ArgumentOutOfRange_RoundingDigits" xml:space="preserve">
     <value>Rounding digits must be between 0 and 15, inclusive.</value>
   </data>
+  <data name="ArgumentOutOfRange_RoundingDigits_MathF" xml:space="preserve">
+    <value>Rounding digits must be between 0 and 6, inclusive.</value>
+  </data>
   <data name="ArgumentOutOfRange_SmallCapacity" xml:space="preserve">
     <value>capacity was less than the current size.</value>
   </data>
@@ -2641,12 +2644,6 @@
   <data name="InvalidOperation_WrongAsyncResultOrEndCalledMultiple" xml:space="preserve">
     <value>Either the IAsyncResult object did not come from the corresponding async method on this type, or the End method was called multiple times with the same IAsyncResult.</value>
   </data>
-  <data name="InvalidOperation_WrongAsyncResultOrEndReadCalledMultiple" xml:space="preserve">
-    <value>Either the IAsyncResult object did not come from the corresponding async method on this type, or EndRead was called multiple times with the same IAsyncResult.</value>
-  </data>
-  <data name="InvalidOperation_WrongAsyncResultOrEndWriteCalledMultiple" xml:space="preserve">
-    <value>Either the IAsyncResult object did not come from the corresponding async method on this type, or EndWrite was called multiple times with the same IAsyncResult.</value>
-  </data>
   <data name="InvalidProgram_Default" xml:space="preserve">
     <value>Common Language Runtime detected an invalid program.</value>
   </data>
@@ -2822,7 +2819,7 @@
     <value>Delegates that are not of type MulticastDelegate may not be combined.</value>
   </data>
   <data name="MustUseCCRewrite" xml:space="preserve">
-    <value>An assembly (probably "{1}") must be rewritten using the code contracts binary rewriter (CCRewrite) because it is calling Contract.{0} and the CONTRACTS_FULL symbol is defined.  Remove any explicit definitions of the CONTRACTS_FULL symbol from your project and rebuild.  CCRewrite can be downloaded from http://go.microsoft.com/fwlink/?LinkID=169180. \r\nAfter the rewriter is installed, it can be enabled in Visual Studio from the project's Properties page on the Code Contracts pane.  Ensure that "Perform Runtime Contract Checking" is enabled, which will define CONTRACTS_FULL.</value>
+    <value>An assembly (probably "{1}") must be rewritten using the code contracts binary rewriter (CCRewrite) because it is calling Contract.{0} and the CONTRACTS_FULL symbol is defined.  Remove any explicit definitions of the CONTRACTS_FULL symbol from your project and rebuild.  CCRewrite can be downloaded from https://go.microsoft.com/fwlink/?LinkID=169180. \r\nAfter the rewriter is installed, it can be enabled in Visual Studio from the project's Properties page on the Code Contracts pane.  Ensure that "Perform Runtime Contract Checking" is enabled, which will define CONTRACTS_FULL.</value>
   </data>
   <data name="NotSupported_AbstractNonCLS" xml:space="preserve">
     <value>This non-CLS method is not implemented.</value>
@@ -3356,7 +3353,7 @@
     <value>The specified TaskContinuationOptions excluded all continuation kinds.</value>
   </data>
   <data name="Task_Delay_InvalidDelay" xml:space="preserve">
-    <value>The value needs to translate in milliseconds to -1 (signifying an infinite timeout), 0 or a positive integer less than or equal to Int32.MaxValue.</value>
+    <value>The value needs to translate in milliseconds to -1 (signifying an infinite timeout), 0 or a positive integer less than or equal to the maximum allowed timer duration.</value>
   </data>
   <data name="Task_Delay_InvalidMillisecondsDelay" xml:space="preserve">
     <value>The value needs to be either -1 (signifying an infinite timeout), 0 or a positive integer.</value>
@@ -3443,7 +3440,7 @@
     <value>An attempt was made to transition a task to a final state when it had already completed.</value>
   </data>
   <data name="Thread_ApartmentState_ChangeFailed" xml:space="preserve">
-    <value>Failed to set the specified COM apartment state.</value>
+    <value>Failed to set the specified COM apartment state. Current apartment state '{0}'.</value>
   </data>
   <data name="Thread_GetSetCompressedStack_NotSupported" xml:space="preserve">
     <value>Use CompressedStack.(Capture/Run) instead.</value>
@@ -3636,6 +3633,9 @@
   </data>
   <data name="InvalidOp_InvalidNewEnumVariant" xml:space="preserve">
     <value>The returned enumerator does not implement IEnumVARIANT.</value>
+  </data>
+  <data name="InvalidSysctl" xml:space="preserve">
+    <value>sysctl {0} failed with {1} error.</value>
   </data>
   <data name="Argument_StructArrayTooLarge" xml:space="preserve">
     <value>Array size exceeds addressing limitations.</value>

@@ -127,9 +127,6 @@ enum DAC_USAGE_TYPE
     DAC_PAL,
 };
 
-// mscordacwks's module handle
-extern HINSTANCE g_thisModule;
-
 class ReflectionModule;
 
 struct DAC_MD_IMPORT
@@ -1482,6 +1479,7 @@ private:
 #endif
 
 #ifdef FEATURE_COMWRAPPERS
+    BOOL DACGetComWrappersCCWVTableQIAddress(CLRDATA_ADDRESS ccwPtr, TADDR *vTableAddress, TADDR *qiAddress);
     BOOL DACIsComWrappersCCW(CLRDATA_ADDRESS ccwPtr);
     TADDR DACGetManagedObjectWrapperFromCCW(CLRDATA_ADDRESS ccwPtr);
     HRESULT DACTryGetComWrappersObjectFromCCW(CLRDATA_ADDRESS ccwPtr, OBJECTREF* objRef);
@@ -1705,7 +1703,11 @@ public:
 
         // clear the GC flag bits off the MethodTable
         // equivalent to Object::GetGCSafeMethodTable()
+#if TARGET_64BIT
+        *mt &= ~7;
+#else
         *mt &= ~3;
+#endif
         return true;
     }
 
@@ -4035,5 +4037,37 @@ extern unsigned __int64 g_nStackWalk;
 extern unsigned __int64 g_nFindStackTotalTime;
 
 #endif // #if defined(DAC_MEASURE_PERF)
+
+#ifdef FEATURE_COMWRAPPERS
+
+// Public contract for ExternalObjectContext, keep in sync with definition in
+// interoplibinterface.cpp
+struct ExternalObjectContextDACnterface
+{
+    PTR_VOID identity;
+    INT_PTR _padding1;
+    DWORD SyncBlockIndex;
+    INT64 _padding3;
+};
+
+typedef DPTR(ExternalObjectContextDACnterface) PTR_ExternalObjectContext;
+
+// Public contract for ManagedObjectWrapper, keep in sync with definition in
+// comwrappers.hpp
+struct ManagedObjectWrapperDACInterface
+{
+    PTR_VOID managedObject;
+    INT32 _padding1;
+    INT32 _padding2;
+    INT_PTR _padding3;
+    INT_PTR _padding4;
+    INT_PTR _padding6;
+    LONGLONG _refCount;
+    INT32 _padding7;
+};
+
+typedef DPTR(ManagedObjectWrapperDACInterface) PTR_ManagedObjectWrapper;
+
+#endif // FEATURE_COMWRAPPERS
 
 #endif // #ifndef __DACIMPL_H__

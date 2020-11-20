@@ -143,10 +143,11 @@ jobs:
     - Linux_musl_arm
     - Linux_musl_arm64
     - Linux_musl_x64
-    - Windows_NT_x86
-    - Windows_NT_x64
-    - Windows_NT_arm
-    - Windows_NT_arm64
+    - OSX_arm64
+    - windows_x86
+    - windows_x64
+    - windows_arm
+    - windows_arm64
     jobParameters:
       testGroup: innerloop
       condition: >-
@@ -201,6 +202,7 @@ jobs:
     jobTemplate: /eng/pipelines/coreclr/templates/build-job.yml
     buildConfig: release
     platforms:
+    - OSX_arm64
     - OSX_x64
     - Linux_x64
     - Linux_arm
@@ -208,10 +210,10 @@ jobs:
     - Linux_musl_x64
     - Linux_musl_arm
     - Linux_musl_arm64
-    - Windows_NT_x64
-    - Windows_NT_x86
-    - Windows_NT_arm
-    - Windows_NT_arm64
+    - windows_x64
+    - windows_x86
+    - windows_arm
+    - windows_arm64
     - FreeBSD_x64
     jobParameters:
       testGroup: innerloop
@@ -226,8 +228,8 @@ jobs:
     jobTemplate: /eng/pipelines/coreclr/templates/format-job.yml
     platforms:
     - Linux_x64
-    # Isssue: https://github.com/dotnet/runtime/issues/40034
-    #- Windows_NT_x64
+    # Issue: https://github.com/dotnet/runtime/issues/40034
+    #- windows_x64
     jobParameters:
       condition: >-
         and(
@@ -262,7 +264,6 @@ jobs:
     runtimeFlavor: mono
     platforms:
     - Android_x86
-    - Android_arm64
     - tvOS_x64
     - iOS_arm64
     - iOS_x86
@@ -270,7 +271,7 @@ jobs:
     jobParameters:
       testGroup: innerloop
       nameSuffix: AllSubsets_Mono
-      buildArgs: -s mono+libs+installer -c $(_BuildConfig)
+      buildArgs: -s mono+libs+host+packs -c $(_BuildConfig)
       condition: >-
         or(
           eq(dependencies.checkout.outputs['SetPathVars_libraries.containsChange'], true),
@@ -284,7 +285,6 @@ jobs:
     buildConfig: Release
     runtimeFlavor: mono
     platforms:
-    - Android_x64
     - Android_arm
     - tvOS_arm64
     - iOS_arm
@@ -292,7 +292,7 @@ jobs:
     jobParameters:
       testGroup: innerloop
       nameSuffix: AllSubsets_Mono
-      buildArgs: -s mono+libs+installer -c $(_BuildConfig)
+      buildArgs: -s mono+libs+host+packs -c $(_BuildConfig)
       condition: >-
         or(
           eq(dependencies.checkout.outputs['SetPathVars_libraries.containsChange'], true),
@@ -320,7 +320,7 @@ jobs:
     jobParameters:
       testGroup: innerloop
       nameSuffix: AllSubsets_Mono
-      buildArgs: -s mono+libs+installer+libs.tests -c $(_BuildConfig) /p:ArchiveTests=true
+      buildArgs: -s mono+libs+host+packs+libs.tests -c $(_BuildConfig) /p:ArchiveTests=true
       timeoutInMinutes: 120
       condition: >-
         or(
@@ -353,6 +353,8 @@ jobs:
     buildConfig: Release
     runtimeFlavor: mono
     platforms:
+    - Android_arm64
+    - Android_x64
     - iOS_x64
     variables:
       # map dependencies variables to local variables
@@ -363,7 +365,7 @@ jobs:
     jobParameters:
       testGroup: innerloop
       nameSuffix: AllSubsets_Mono
-      buildArgs: -s mono+libs+installer+libs.tests -c $(_BuildConfig) /p:ArchiveTests=true
+      buildArgs: -s mono+libs+host+packs+libs.tests -c $(_BuildConfig) /p:ArchiveTests=true
       timeoutInMinutes: 120
       condition: >-
         or(
@@ -421,6 +423,44 @@ jobs:
         testRunNamePrefixSuffix: Mono_$(_BuildConfig)
 
 #
+# Build the whole product using Mono for Android and run runtime tests with Android emulator
+#
+- template: /eng/pipelines/common/platform-matrix.yml
+  parameters:
+    jobTemplate: /eng/pipelines/common/global-build-job.yml
+    helixQueuesTemplate: /eng/pipelines/coreclr/templates/helix-queues-setup.yml
+    buildConfig: Release
+    runtimeFlavor: mono
+    platforms:
+    - Android_x64
+    variables:
+      - ${{ if and(eq(variables['System.TeamProject'], 'public'), eq(variables['Build.Reason'], 'PullRequest')) }}:
+        - name: _HelixSource
+          value: pr/dotnet/runtime/$(Build.SourceBranch)
+      - ${{ if and(eq(variables['System.TeamProject'], 'public'), ne(variables['Build.Reason'], 'PullRequest')) }}:
+        - name: _HelixSource
+          value: ci/dotnet/runtime/$(Build.SourceBranch)
+      - name: timeoutPerTestInMinutes
+        value: 60
+      - name: timeoutPerTestCollectionInMinutes
+        value: 300
+    jobParameters:
+      testGroup: innerloop
+      nameSuffix: AllSubsets_Mono_RuntimeTests
+      buildArgs: -s mono+libs -c $(_BuildConfig)
+      timeoutInMinutes: 300
+      condition: >-
+        or(
+          eq(dependencies.checkout.outputs['SetPathVars_runtimetests.containsChange'], true),
+          eq(dependencies.checkout.outputs['SetPathVars_mono.containsChange'], true),
+          eq(variables['isFullMatrix'], true))
+      # extra steps, run tests
+      extraStepsTemplate: /eng/pipelines/common/templates/runtimes/android-runtime-and-send-to-helix.yml
+      extraStepsParameters:
+        creator: dotnet-bot
+        testRunNamePrefixSuffix: Mono_$(_BuildConfig)
+
+#
 # Build Mono and Installer on LLVMJIT mode
 #
 - template: /eng/pipelines/common/platform-matrix.yml
@@ -433,7 +473,7 @@ jobs:
     jobParameters:
       testGroup: innerloop
       nameSuffix: AllSubsets_Mono_LLVMJIT
-      buildArgs: -s mono+libs+installer -c $(_BuildConfig)
+      buildArgs: -s mono+libs+host+packs -c $(_BuildConfig)
                  /p:MonoEnableLLVM=true /p:MonoBundleLLVMOptimizer=false
       condition: >-
         or(
@@ -453,7 +493,7 @@ jobs:
     jobParameters:
       testGroup: innerloop
       nameSuffix: AllSubsets_Mono_LLVMJIT
-      buildArgs: -s mono+libs+installer -c $(_BuildConfig)
+      buildArgs: -s mono+libs+host+packs -c $(_BuildConfig)
                  /p:MonoEnableLLVM=true /p:MonoBundleLLVMOptimizer=false
       condition: >-
         or(
@@ -476,7 +516,7 @@ jobs:
     jobParameters:
       testGroup: innerloop
       nameSuffix: AllSubsets_Mono_LLVMAOT
-      buildArgs: -s mono+libs+installer -c $(_BuildConfig)
+      buildArgs: -s mono+libs+host+packs -c $(_BuildConfig)
                  /p:MonoEnableLLVM=true /p:MonoBundleLLVMOptimizer=true
       condition: >-
         or(
@@ -495,7 +535,7 @@ jobs:
     jobParameters:
       testGroup: innerloop
       nameSuffix: AllSubsets_Mono_LLVMAOT
-      buildArgs: -s mono+libs+installer -c $(_BuildConfig)
+      buildArgs: -s mono+libs+host+packs -c $(_BuildConfig)
                  /p:MonoEnableLLVM=true /p:MonoBundleLLVMOptimizer=true
       condition: >-
         or(
@@ -518,10 +558,10 @@ jobs:
     - Linux_x64
     - Linux_arm64
     # - Linux_musl_arm64
-    - Windows_NT_x64
-    # - Windows_NT_x86
-    # - Windows_NT_arm
-    # - Windows_NT_arm64
+    - windows_x64
+    # - windows_x86
+    # - windows_arm
+    # - windows_arm64
     jobParameters:
       condition: >-
         or(
@@ -541,10 +581,10 @@ jobs:
     platforms:
     - Linux_x64
     # - Linux_musl_arm64
-    - Windows_NT_x64
-    # - Windows_NT_x86
-    # - Windows_NT_arm
-    # - Windows_NT_arm64
+    - windows_x64
+    # - windows_x86
+    # - windows_arm
+    # - windows_arm64
     jobParameters:
       condition: >-
         or(
@@ -583,6 +623,7 @@ jobs:
     buildConfig: release
     platforms:
     - Linux_x64
+    - Linux_arm64
     jobParameters:
       runtimeVariant: llvmaot
       condition: >-
@@ -605,9 +646,9 @@ jobs:
     - Linux_arm
     - Linux_musl_arm
     - Linux_musl_arm64
-    - Windows_NT_arm
-    - Windows_NT_arm64
-    - Windows_NT_x86
+    - windows_arm
+    - windows_arm64
+    - windows_x86
     jobParameters:
       liveRuntimeBuildConfig: release
 
@@ -619,14 +660,15 @@ jobs:
     - Linux_arm64
     - Linux_musl_x64
     - Linux_x64
+    - OSX_arm64
     - OSX_x64
-    - Windows_NT_x64
+    - windows_x64
     - FreeBSD_x64
     jobParameters:
       testScope: innerloop
       testBuildPlatforms:
       - Linux_x64
-      - Windows_NT_x64
+      - windows_x64
       - OSX_x64
       liveRuntimeBuildConfig: release
 
@@ -639,7 +681,7 @@ jobs:
     buildConfig: ${{ variables.debugOnPrReleaseOnRolling }}
     platforms:
     - ${{ if eq(variables['isFullMatrix'], false) }}:
-      - Windows_NT_x86
+      - windows_x86
     jobParameters:
       liveRuntimeBuildConfig: release
       condition: >-
@@ -652,9 +694,9 @@ jobs:
     jobTemplate: /eng/pipelines/libraries/build-job.yml
     buildConfig: Release
     platforms:
-    - Windows_NT_x86
+    - windows_x86
     - ${{ if eq(variables['isFullMatrix'], true) }}:
-      - Windows_NT_x64
+      - windows_x64
     helixQueuesTemplate: /eng/pipelines/libraries/helix-queues-setup.yml
     jobParameters:
       isFullMatrix: ${{ variables.isFullMatrix }}
@@ -671,7 +713,7 @@ jobs:
     jobTemplate: /eng/pipelines/libraries/build-job.yml
     buildConfig: ${{ variables.debugOnPrReleaseOnRolling }}
     platforms:
-    - Windows_NT_x64
+    - windows_x64
     helixQueuesTemplate: /eng/pipelines/libraries/helix-queues-setup.yml
     jobParameters:
       isFullMatrix: ${{ variables.isFullMatrix }}
@@ -694,9 +736,9 @@ jobs:
       - Linux_arm
       - Linux_musl_arm
       - Linux_musl_arm64
-      - Windows_NT_x86
-      - Windows_NT_arm
-      - Windows_NT_arm64
+      - windows_x86
+      - windows_arm
+      - windows_arm64
     jobParameters:
       liveRuntimeBuildConfig: release
       liveLibrariesBuildConfig: Release
@@ -705,11 +747,12 @@ jobs:
   parameters:
     buildConfig: Release
     platforms:
+      - OSX_arm64
       - OSX_x64
       - Linux_x64
       - Linux_arm64
       - Linux_musl_x64
-      - Windows_NT_x64
+      - windows_x64
       - FreeBSD_x64
     jobParameters:
       liveRuntimeBuildConfig: release
@@ -763,8 +806,8 @@ jobs:
     buildConfig: checked
     platforms:
     - Linux_arm
-    - Windows_NT_x86
-    - Windows_NT_arm64
+    - windows_x86
+    - windows_arm64
     helixQueueGroup: pr
     helixQueuesTemplate: /eng/pipelines/coreclr/templates/helix-queues-setup.yml
     jobParameters:
@@ -784,7 +827,7 @@ jobs:
     - OSX_x64
     - Linux_x64
     - Linux_arm64
-    - Windows_NT_x64
+    - windows_x64
     helixQueueGroup: pr
     helixQueuesTemplate: /eng/pipelines/coreclr/templates/helix-queues-setup.yml
     jobParameters:
@@ -849,6 +892,7 @@ jobs:
     runtimeFlavor: mono
     platforms:
     - Linux_x64
+    - Linux_arm64
     helixQueueGroup: pr
     helixQueuesTemplate: /eng/pipelines/coreclr/templates/helix-queues-setup.yml
     jobParameters:
@@ -872,7 +916,7 @@ jobs:
     runtimeFlavor: mono
     buildConfig: ${{ variables.debugOnPrReleaseOnRolling }}
     platforms:
-    - Windows_NT_x64
+    - windows_x64
     - OSX_x64
     - Linux_arm64
     - Linux_x64
@@ -901,7 +945,7 @@ jobs:
     runtimeFlavor: mono
     buildConfig: ${{ variables.debugOnPrReleaseOnRolling }}
     platforms:
-    # - Windows_NT_x64
+    # - windows_x64
     #- OSX_x64
     - Linux_x64
     helixQueuesTemplate: /eng/pipelines/libraries/helix-queues-setup.yml
@@ -929,9 +973,9 @@ jobs:
     jobTemplate: /eng/pipelines/libraries/run-test-job.yml
     buildConfig: Release
     platforms:
-    - Windows_NT_x86
+    - windows_x86
     - ${{ if eq(variables['isFullMatrix'], true) }}:
-      - Windows_NT_arm64
+      - windows_arm64
     helixQueuesTemplate: /eng/pipelines/libraries/helix-queues-setup.yml
     jobParameters:
       isOfficialBuild: false
@@ -954,14 +998,14 @@ jobs:
     jobTemplate: /eng/pipelines/libraries/run-test-job.yml
     buildConfig: ${{ variables.debugOnPrReleaseOnRolling }}
     platforms:
-    - Windows_NT_x64
+    - windows_x64
     - OSX_x64
     - Linux_x64
     - Linux_musl_x64
     - ${{ if eq(variables['isFullMatrix'], true) }}:
       - Linux_arm64
     - ${{ if eq(variables['isFullMatrix'], false) }}:
-      - Windows_NT_x86
+      - windows_x86
     helixQueuesTemplate: /eng/pipelines/libraries/helix-queues-setup.yml
     jobParameters:
       isOfficialBuild: false
@@ -984,11 +1028,11 @@ jobs:
     jobTemplate: /eng/pipelines/libraries/run-test-job.yml
     buildConfig: Release
     platforms:
-    # - Windows_NT_arm return this when https://github.com/dotnet/runtime/issues/1097 is fixed.
+    # - windows_arm return this when https://github.com/dotnet/runtime/issues/1097 is fixed.
     - Linux_arm
     - Linux_musl_arm
     - Linux_musl_arm64
-    - Windows_NT_x86
+    - windows_x86
     helixQueuesTemplate: /eng/pipelines/coreclr/templates/helix-queues-setup.yml
     helixQueueGroup: libraries
     jobParameters:
@@ -1006,7 +1050,7 @@ jobs:
     jobTemplate: /eng/pipelines/libraries/run-test-job.yml
     buildConfig: ${{ variables.debugOnPrReleaseOnRolling }}
     platforms:
-    - Windows_NT_x64
+    - windows_x64
     - Linux_x64
     - Linux_musl_x64
     helixQueuesTemplate: /eng/pipelines/coreclr/templates/helix-queues-setup.yml

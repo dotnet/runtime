@@ -114,13 +114,13 @@ elif [[ "$__TargetOS" == iOS ]]; then
         # keep in sync with src/mono/Directory.Build.props
         __CMakeArgs="-DCMAKE_OSX_SYSROOT=iphonesimulator -DCMAKE_OSX_DEPLOYMENT_TARGET=8.0 -DCMAKE_OSX_ARCHITECTURES=\"i386\" $__CMakeArgs"
     elif [[ "$__BuildArch" == arm64 ]]; then
-        # set default iOS device deployment target (7.0 is the minimum supported by Xcode 11)
+        # set default iOS device deployment target
         # keep in sync with src/mono/Directory.Build.props
-        __CMakeArgs="-DCMAKE_OSX_SYSROOT=iphoneos -DCMAKE_OSX_DEPLOYMENT_TARGET=7.0 -DCMAKE_OSX_ARCHITECTURES=\"arm64\" $__CMakeArgs"
+        __CMakeArgs="-DCMAKE_OSX_SYSROOT=iphoneos -DCMAKE_OSX_DEPLOYMENT_TARGET=8.0 -DCMAKE_OSX_ARCHITECTURES=\"arm64\" $__CMakeArgs"
     elif [[ "$__BuildArch" == arm ]]; then
-        # set default iOS device deployment target (7.0 is the minimum supported by Xcode 11)
+        # set default iOS device deployment target
         # keep in sync with src/mono/Directory.Build.props
-        __CMakeArgs="-DCMAKE_OSX_SYSROOT=iphoneos -DCMAKE_OSX_DEPLOYMENT_TARGET=7.0 -DCMAKE_OSX_ARCHITECTURES=\"armv7;armv7s\" $__CMakeArgs"
+        __CMakeArgs="-DCMAKE_OSX_SYSROOT=iphoneos -DCMAKE_OSX_DEPLOYMENT_TARGET=8.0 -DCMAKE_OSX_ARCHITECTURES=\"armv7;armv7s\" $__CMakeArgs"
     else
         echo "Error: Unknown iOS architecture $__BuildArch."
         exit 1

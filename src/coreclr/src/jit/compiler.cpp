@@ -22,6 +22,7 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 #include "stacklevelsetter.h"
 #include "jittelemetry.h"
 #include "patchpointinfo.h"
+#include "jitstd/algorithm.h"
 
 #if defined(DEBUG)
 // Column settings for COMPlus_JitDumpIR.  We could(should) make these programmable.
@@ -1112,7 +1113,7 @@ var_types Compiler::getReturnTypeForStruct(CORINFO_CLASS_HANDLE clsHnd,
 
 ///////////////////////////////////////////////////////////////////////////////
 //
-// MEASURE_NOWAY: code to measure and rank dynamic occurences of noway_assert.
+// MEASURE_NOWAY: code to measure and rank dynamic occurrences of noway_assert.
 // (Just the appearances of noway_assert, whether the assert is true or false.)
 // This might help characterize the cost of noway_assert in non-DEBUG builds,
 // or determine which noway_assert should be simple DEBUG-only asserts.
@@ -1207,12 +1208,13 @@ struct NowayAssertCountMap
     {
     }
 
-    static int __cdecl compare(const void* elem1, const void* elem2)
+    struct compare
     {
-        NowayAssertCountMap* e1 = (NowayAssertCountMap*)elem1;
-        NowayAssertCountMap* e2 = (NowayAssertCountMap*)elem2;
-        return (int)((ssize_t)e2->count - (ssize_t)e1->count); // sort in descending order
-    }
+        bool operator()(const NowayAssertCountMap& elem1, const NowayAssertCountMap& elem2)
+        {
+            return (ssize_t)elem2.count < (ssize_t)elem1.count; // sort in descending order
+        }
+    };
 };
 
 void DisplayNowayAssertMap()
@@ -1249,7 +1251,7 @@ void DisplayNowayAssertMap()
             ++i;
         }
 
-        qsort(nacp, count, sizeof(nacp[0]), NowayAssertCountMap::compare);
+        jitstd::sort(nacp, nacp + count, NowayAssertCountMap::compare());
 
         if (fout == jitstdout)
         {
@@ -1689,6 +1691,7 @@ void Compiler::compShutdown()
     fprintf(fout, "---------------------------------------------------\n");
     fprintf(fout, "   badCode:             %u\n", fatal_badCode);
     fprintf(fout, "   noWay:               %u\n", fatal_noWay);
+    fprintf(fout, "   implLimitation:      %u\n", fatal_implLimitation);
     fprintf(fout, "   NOMEM:               %u\n", fatal_NOMEM);
     fprintf(fout, "   noWayAssertBody:     %u\n", fatal_noWayAssertBody);
 #ifdef DEBUG
@@ -1876,7 +1879,6 @@ void Compiler::compInit(ArenaAllocator*       pAlloc,
 
 #ifdef DEBUG
     compCodeGenDone        = false;
-    compRegSetCheckLevel   = 0;
     opts.compMinOptsIsUsed = false;
 #endif
     opts.compMinOptsIsSet = false;
@@ -2813,13 +2815,13 @@ void Compiler::compInitOptions(JitFlags* jitFlags)
 
 #ifdef DEBUG
     opts.dspInstrs       = false;
-    opts.dspEmit         = false;
     opts.dspLines        = false;
     opts.varNames        = false;
     opts.dmpHex          = false;
     opts.disAsm          = false;
     opts.disAsmSpilled   = false;
     opts.disDiffable     = false;
+    opts.disAddr         = false;
     opts.dspCode         = false;
     opts.dspEHTable      = false;
     opts.dspDebugInfo    = false;
@@ -2960,6 +2962,12 @@ void Compiler::compInitOptions(JitFlags* jitFlags)
         {
             opts.disDiffable = true;
             opts.dspDiffable = true;
+        }
+
+        // This one applies to both Ngen/Jit Disasm output: COMPlus_JitDasmWithAddress=1
+        if (JitConfig.JitDasmWithAddress() != 0)
+        {
+            opts.disAddr = true;
         }
 
         if (JitConfig.JitLongAddress() != 0)
@@ -3370,7 +3378,7 @@ bool Compiler::compStressCompile(compStressArea stressArea, unsigned weight)
 //------------------------------------------------------------------------
 // compStressCompileHelper: helper to determine if a stress mode should be enabled
 //
-// Argumemnts:
+// Arguments:
 //   stressArea - stress mode to possibly enable
 //   weight - percent of time this mode should be turned on
 //     (range 0 to 100); weight 0 effectively disables
@@ -4209,9 +4217,7 @@ void Compiler::EndPhase(Phases phase)
         pCompJitTimer->EndPhase(this, phase);
     }
 #endif
-#if DUMP_FLOWGRAPHS
-    fgDumpFlowGraph(phase);
-#endif // DUMP_FLOWGRAPHS
+
     mostRecentlyActivePhase = phase;
 }
 
@@ -5502,6 +5508,12 @@ int Compiler::compCompile(CORINFO_MODULE_HANDLE classPtr,
 }
 
 #if defined(DEBUG) || defined(INLINE_DATA)
+//------------------------------------------------------------------------
+// compMethodHash: get hash code for currently jitted method
+//
+// Returns:
+//    Hash based on method's full name
+//
 unsigned Compiler::Info::compMethodHash() const
 {
     if (compMethodHashPrivate == 0)
@@ -5515,6 +5527,42 @@ unsigned Compiler::Info::compMethodHash() const
     }
     return compMethodHashPrivate;
 }
+
+//------------------------------------------------------------------------
+// compMethodHash: get hash code for specified method
+//
+// Arguments:
+//    methodHnd - method of interest
+//
+// Returns:
+//    Hash based on method's full name
+//
+unsigned Compiler::compMethodHash(CORINFO_METHOD_HANDLE methodHnd)
+{
+    // If this is the root method, delegate to the caching version
+    //
+    if (methodHnd == info.compMethodHnd)
+    {
+        return info.compMethodHash();
+    }
+
+    // Else compute from scratch. Might consider caching this too.
+    //
+    unsigned    methodHash = 0;
+    const char* calleeName = eeGetMethodFullName(methodHnd);
+
+    if (calleeName != nullptr)
+    {
+        methodHash = HashStringA(calleeName);
+    }
+    else
+    {
+        methodHash = info.compCompHnd->getMethodHash(methodHnd);
+    }
+
+    return methodHash;
+}
+
 #endif // defined(DEBUG) || defined(INLINE_DATA)
 
 void Compiler::compCompileFinish()
@@ -6104,7 +6152,7 @@ int Compiler::compCompileHelper(CORINFO_MODULE_HANDLE classPtr,
 #ifdef DEBUG
     /* Give the function a unique number */
 
-    if (opts.disAsm || opts.dspEmit || verbose)
+    if (opts.disAsm || verbose)
     {
         compMethodID = ~info.compMethodHash() & 0xffff;
     }
@@ -6335,15 +6383,21 @@ void Compiler::compInitVarScopeMap()
     }
 }
 
-int __cdecl genCmpLocalVarLifeBeg(const void* elem1, const void* elem2)
+struct genCmpLocalVarLifeBeg
 {
-    return (*((VarScopeDsc**)elem1))->vsdLifeBeg - (*((VarScopeDsc**)elem2))->vsdLifeBeg;
-}
+    bool operator()(const VarScopeDsc* elem1, const VarScopeDsc* elem2)
+    {
+        return elem1->vsdLifeBeg < elem2->vsdLifeBeg;
+    }
+};
 
-int __cdecl genCmpLocalVarLifeEnd(const void* elem1, const void* elem2)
+struct genCmpLocalVarLifeEnd
 {
-    return (*((VarScopeDsc**)elem1))->vsdLifeEnd - (*((VarScopeDsc**)elem2))->vsdLifeEnd;
-}
+    bool operator()(const VarScopeDsc* elem1, const VarScopeDsc* elem2)
+    {
+        return elem1->vsdLifeEnd < elem2->vsdLifeEnd;
+    }
+};
 
 inline void Compiler::compInitScopeLists()
 {
@@ -6363,8 +6417,8 @@ inline void Compiler::compInitScopeLists()
         compEnterScopeList[i] = compExitScopeList[i] = &info.compVarScopes[i];
     }
 
-    qsort(compEnterScopeList, info.compVarScopesCount, sizeof(*compEnterScopeList), genCmpLocalVarLifeBeg);
-    qsort(compExitScopeList, info.compVarScopesCount, sizeof(*compExitScopeList), genCmpLocalVarLifeEnd);
+    jitstd::sort(compEnterScopeList, compEnterScopeList + info.compVarScopesCount, genCmpLocalVarLifeBeg());
+    jitstd::sort(compExitScopeList, compExitScopeList + info.compVarScopesCount, genCmpLocalVarLifeEnd());
 }
 
 void Compiler::compResetScopeLists()
@@ -6822,7 +6876,9 @@ START:
 
         result = param.result;
 
-    if (!inlineInfo && (result == CORJIT_INTERNALERROR || result == CORJIT_RECOVERABLEERROR) && !jitFallbackCompile)
+    if (!inlineInfo &&
+        (result == CORJIT_INTERNALERROR || result == CORJIT_RECOVERABLEERROR || result == CORJIT_IMPLLIMITATION) &&
+        !jitFallbackCompile)
     {
         // If we failed the JIT, reattempt with debuggable code.
         jitFallbackCompile = true;
@@ -8739,7 +8795,7 @@ void cTreeFlags(Compiler* comp, GenTree* tree)
                 {
                     chars += printf("[INX_STRING_LAYOUT]");
                 }
-                __fallthrough;
+                FALLTHROUGH;
             case GT_INDEX_ADDR:
                 if (tree->gtFlags & GTF_INX_RNGCHK)
                 {
@@ -8957,7 +9013,7 @@ void cTreeFlags(Compiler* comp, GenTree* tree)
                 {
                     chars += printf("[BLK_HASGCPTR]");
                 }
-                __fallthrough;
+                FALLTHROUGH;
 
             case GT_BLK:
             case GT_DYN_BLK:

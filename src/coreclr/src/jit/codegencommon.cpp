@@ -1421,7 +1421,7 @@ AGAIN:
                         return false; // Need overflow check
                     }
 
-                    __fallthrough;
+                    FALLTHROUGH;
 
                 case GT_LSH:
 
@@ -1486,7 +1486,7 @@ AGAIN:
                 break;
             }
 
-            __fallthrough;
+            FALLTHROUGH;
 
         case GT_LSH:
 
@@ -1568,7 +1568,7 @@ AGAIN:
                 break;
             }
 
-            __fallthrough;
+            FALLTHROUGH;
 
         case GT_LSH:
 
@@ -8401,7 +8401,7 @@ void CodeGen::genFnEpilog(BasicBlock* block)
 
                     // otherwise the target address doesn't fit in an immediate
                     // so we have to burn a register...
-                    __fallthrough;
+                    FALLTHROUGH;
 
                 case IAT_PVALUE:
                     // Load the address into a register, load indirect and call  through a register
@@ -11840,12 +11840,16 @@ void CodeGen::genMultiRegStoreToLocal(GenTreeLclVar* lclNode)
             }
             else
             {
+                varReg = REG_STK;
+            }
+            if ((varReg == REG_STK) || fieldVarDsc->lvLiveInOutOfHndlr)
+            {
                 if (!lclNode->AsLclVar()->IsLastUse(i))
                 {
                     GetEmitter()->emitIns_S_R(ins_Store(type), emitTypeSize(type), reg, fieldLclNum, 0);
                 }
-                fieldVarDsc->SetRegNum(REG_STK);
             }
+            fieldVarDsc->SetRegNum(varReg);
         }
         else
         {

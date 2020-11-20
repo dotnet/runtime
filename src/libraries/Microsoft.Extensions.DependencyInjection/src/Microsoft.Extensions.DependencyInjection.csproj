@@ -47,6 +47,7 @@
     <Reference Include="System.Reflection.Primitives" />	
     <Reference Include="System.Runtime" />	
     <Reference Include="System.Threading" />	
+    <Reference Include="System.Threading.ThreadPool" />	
   </ItemGroup>
 
   <ItemGroup Condition="'$(TargetFramework)' == 'netstandard2.0' or

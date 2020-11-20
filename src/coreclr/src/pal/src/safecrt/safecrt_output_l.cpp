@@ -766,7 +766,7 @@ int __cdecl _output (
                     flags |= FL_WIDECHAR;   /* ISO std. */
 #endif  /* _UNICODE */
                 /* fall into 'c' case */
-
+                FALLTHROUGH;
             case _T('c'): {
                 /* print a single character specified by int argument */
 #ifdef _UNICODE
@@ -846,6 +846,7 @@ int __cdecl _output (
                 if (!(flags & (FL_SHORT|FL_LONG|FL_WIDECHAR)))
                     flags |= FL_SHORT;
 #endif  /* _UNICODE */
+                FALLTHROUGH;
 
             case _T('s'): {
                 /* print a string --                            */
@@ -945,7 +946,7 @@ int __cdecl _output (
             case _T('A'):
                 capexp = 1;                 /* capitalize exponent */
                 ch += _T('a') - _T('A');    /* convert format char to lower */
-                /* DROP THROUGH */
+                FALLTHROUGH;
             case _T('e'):
             case _T('f'):
             case _T('g'):
@@ -1014,6 +1015,7 @@ int __cdecl _output (
                 flags |= FL_LONG;                   /* assume we're converting a long */
 #endif  /* !PTR_IS_INT */
                 /* DROP THROUGH to hex formatting */
+                FALLTHROUGH;
 
             case _T('X'):
                 /* unsigned upper hex output */

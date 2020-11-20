@@ -4,7 +4,8 @@
     <AssemblyVersion>1.0.0.0</AssemblyVersion>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <OutputType>Exe</OutputType>
-    <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
+    <Platforms>x64;x86;arm64;arm</Platforms>
+    <PlatformTarget>AnyCPU</PlatformTarget>
     <AssemblyKey>Open</AssemblyKey>
     <IsDotNetFrameworkProductAssembly>true</IsDotNetFrameworkProductAssembly>
     <TargetFramework>$(NetCoreAppToolCurrent)</TargetFramework>
@@ -12,7 +13,6 @@
     <NoWarn>8002,NU1701</NoWarn>
     <RuntimeIdentifiers>win-x64;win-x86</RuntimeIdentifiers>
     <OutputPath>$(RuntimeBinDir)/R2RDump</OutputPath>
-    <Platforms>AnyCPU;x64</Platforms>
   </PropertyGroup>
 
   <Import Project="$(RepositoryEngineeringDir)DiaSymReaderNative.targets" />

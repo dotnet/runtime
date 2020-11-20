@@ -729,4 +729,10 @@ const char StackOverflowMessage[] = "Stack overflow.\n";
 
 #endif // __cplusplus
 
+#if __has_cpp_attribute(fallthrough)
+#define FALLTHROUGH [[fallthrough]]
+#else
+#define FALLTHROUGH
+#endif
+
 #endif /* _PAL_INTERNAL_H_ */

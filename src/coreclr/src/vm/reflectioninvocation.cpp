@@ -332,7 +332,7 @@ FCIMPL7(void, RuntimeFieldHandle::SetValue, ReflectFieldObject *pFieldUNSAFE, Ob
 
     HELPER_METHOD_FRAME_BEGIN_PROTECT(gc);
 
-    InvokeUtil::SetValidField(fieldType.GetSignatureCorElementType(), fieldType, pFieldDesc, &gc.target, &gc.value, declaringType, pDomainInitialized);
+    InvokeUtil::SetValidField(fieldType.GetVerifierCorElementType(), fieldType, pFieldDesc, &gc.target, &gc.value, declaringType, pDomainInitialized);
 
     HELPER_METHOD_FRAME_END();
 }
@@ -1696,7 +1696,7 @@ FCIMPL5(void, RuntimeFieldHandle::SetValueDirect, ReflectFieldObject *pFieldUNSA
                 break;
             }
         }
-    // drop through
+    FALLTHROUGH;
     case ELEMENT_TYPE_FNPTR:
     {
         value = 0;
@@ -2201,11 +2201,7 @@ FCIMPL1(Object*, ReflectionSerialization::GetUninitializedObject, ReflectClassBa
     PREFIX_ASSUME(pMT != NULL);
 
     //We don't allow unitialized Strings or Utf8Strings.
-    if (pMT == g_pStringClass
-#ifdef FEATURE_UTF8STRING
-        || pMT == g_pUtf8StringClass
-#endif // FEATURE_UTF8STRING
-        ) {
+    if (pMT == g_pStringClass) {
         COMPlusThrow(kArgumentException, W("Argument_NoUninitializedStrings"));
     }
 

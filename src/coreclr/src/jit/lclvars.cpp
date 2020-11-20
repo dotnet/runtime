@@ -401,7 +401,7 @@ void Compiler::lvaInitArgs(InitVarDscInfo* varDscInfo)
        but it will be very difficult for fully interruptible code */
 
     if (compArgSize != (size_t)(unsigned short)compArgSize)
-        NO_WAY("Too many arguments for the \"ret\" instruction to pop");
+        IMPL_LIMITATION("Too many arguments for the \"ret\" instruction to pop");
 #endif
 }
 
@@ -1504,7 +1504,7 @@ CORINFO_CLASS_HANDLE Compiler::lvaGetStruct(unsigned varNum)
 }
 
 //--------------------------------------------------------------------------------------------
-// lvaFieldOffsetCmp - a static compare function passed to qsort() by Compiler::StructPromotionHelper;
+// lvaFieldOffsetCmp - a static compare function passed to jitstd::sort() by Compiler::StructPromotionHelper;
 //   compares fields' offsets.
 //
 // Arguments:
@@ -1514,19 +1514,9 @@ CORINFO_CLASS_HANDLE Compiler::lvaGetStruct(unsigned varNum)
 // Return value:
 //   0 if the fields' offsets are equal, 1 if the first field has bigger offset, -1 otherwise.
 //
-int __cdecl Compiler::lvaFieldOffsetCmp(const void* field1, const void* field2)
+bool Compiler::lvaFieldOffsetCmp::operator()(const lvaStructFieldInfo& field1, const lvaStructFieldInfo& field2)
 {
-    lvaStructFieldInfo* pFieldInfo1 = (lvaStructFieldInfo*)field1;
-    lvaStructFieldInfo* pFieldInfo2 = (lvaStructFieldInfo*)field2;
-
-    if (pFieldInfo1->fldOffset == pFieldInfo2->fldOffset)
-    {
-        return 0;
-    }
-    else
-    {
-        return (pFieldInfo1->fldOffset > pFieldInfo2->fldOffset) ? +1 : -1;
-    }
+    return field1.fldOffset < field2.fldOffset;
 }
 
 //------------------------------------------------------------------------
@@ -2029,8 +2019,8 @@ void Compiler::StructPromotionHelper::SortStructFields()
 {
     if (!structPromotionInfo.fieldsSorted)
     {
-        qsort(structPromotionInfo.fields, structPromotionInfo.fieldCnt, sizeof(*structPromotionInfo.fields),
-              lvaFieldOffsetCmp);
+        jitstd::sort(structPromotionInfo.fields, structPromotionInfo.fields + structPromotionInfo.fieldCnt,
+                     lvaFieldOffsetCmp());
         structPromotionInfo.fieldsSorted = true;
     }
 }
@@ -3054,9 +3044,6 @@ unsigned Compiler::lvaLclSize(unsigned varNum)
             assert(!"Unknown size");
             NO_WAY("Target doesn't support TYP_LCLBLK");
 
-            // Keep prefast happy
-            __fallthrough;
-
 #endif // FEATURE_FIXED_OUT_ARGS
 
         default: // This must be a primitive var. Fall out of switch statement
@@ -3099,9 +3086,6 @@ unsigned Compiler::lvaLclExactSize(unsigned varNum)
 #else // FEATURE_FIXED_OUT_ARGS
             assert(!"Unknown size");
             NO_WAY("Target doesn't support TYP_LCLBLK");
-
-            // Keep prefast happy
-            __fallthrough;
 
 #endif // FEATURE_FIXED_OUT_ARGS
 
@@ -3539,7 +3523,7 @@ void Compiler::lvaSortByRefCount()
                     noway_assert(!"lvType not set correctly");
                     varDsc->lvType = TYP_INT;
 
-                    __fallthrough;
+                    FALLTHROUGH;
 
                 default:
                     varDsc->lvTracked = 0;
@@ -3848,7 +3832,7 @@ void Compiler::lvaMarkLclRefs(GenTree* tree, BasicBlock* block, Statement* stmt,
                         }
 
                         // Not 0 or 1, fall through ....
-                        __fallthrough;
+                        FALLTHROUGH;
 
                     default:
 
@@ -5628,7 +5612,7 @@ int Compiler::lvaAssignVirtualFrameOffsetToArg(unsigned lclNum,
                     {
                         break;
                     }
-                    __fallthrough;
+                    FALLTHROUGH;
 
                 case TYP_DOUBLE:
                 case TYP_LONG:
@@ -5769,7 +5753,7 @@ int Compiler::lvaAssignVirtualFrameOffsetToArg(unsigned lclNum,
                 if (!varDsc->lvStructDoubleAlign)
                     break;
 
-                __fallthrough;
+                FALLTHROUGH;
 
             case TYP_DOUBLE:
             case TYP_LONG:

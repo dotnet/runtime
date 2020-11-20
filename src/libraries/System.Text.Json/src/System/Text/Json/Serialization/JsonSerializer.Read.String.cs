@@ -23,10 +23,15 @@ namespace System.Text.Json
         /// <paramref name="json"/> is <see langword="null"/>.
         /// </exception>
         /// <exception cref="JsonException">
-        /// Thrown when the JSON is invalid,
-        /// <typeparamref name="TValue"/> is not compatible with the JSON,
-        /// or when there is remaining data in the Stream.
-        /// </exception>
+        /// The JSON is invalid.
+        ///
+        /// -or-
+        ///
+        /// <typeparamref name="TValue" /> is not compatible with the JSON.
+        ///
+        /// -or-
+        ///
+        /// There is remaining data in the string beyond a single JSON value.</exception>
         /// <exception cref="NotSupportedException">
         /// There is no compatible <see cref="System.Text.Json.Serialization.JsonConverter"/>
         /// for <typeparamref name="TValue"/> or its serializable members.
@@ -40,6 +45,36 @@ namespace System.Text.Json
             {
                 throw new ArgumentNullException(nameof(json));
             }
+
+            return Deserialize<TValue>(json.AsSpan(), typeof(TValue), options);
+        }
+
+        /// <summary>
+        /// Parses the text representing a single JSON value into an instance of the type specified by a generic type parameter.
+        /// </summary>
+        /// <returns>A <typeparamref name="TValue"/> representation of the JSON value.</returns>
+        /// <param name="json">The JSON text to parse.</param>
+        /// <param name="options">Options to control the behavior during parsing.</param>
+        /// <exception cref="JsonException">
+        /// The JSON is invalid.
+        ///
+        /// -or-
+        ///
+        /// <typeparamref name="TValue" /> is not compatible with the JSON.
+        ///
+        /// -or-
+        ///
+        /// There is remaining data in the span beyond a single JSON value.</exception>
+        /// <exception cref="NotSupportedException">
+        /// There is no compatible <see cref="System.Text.Json.Serialization.JsonConverter"/>
+        /// for <typeparamref name="TValue"/> or its serializable members.
+        /// </exception>
+        /// <remarks>Using a UTF-16 span is not as efficient as using the
+        /// UTF-8 methods since the implementation natively uses UTF-8.
+        /// </remarks>
+        public static TValue? Deserialize<[DynamicallyAccessedMembers(MembersAccessedOnRead)] TValue>(ReadOnlySpan<char> json, JsonSerializerOptions? options = null)
+        {
+            // default/null span is treated as empty
 
             return Deserialize<TValue>(json, typeof(TValue), options);
         }
@@ -55,10 +90,15 @@ namespace System.Text.Json
         /// <paramref name="json"/> or <paramref name="returnType"/> is <see langword="null"/>.
         /// </exception>
         /// <exception cref="JsonException">
-        /// Thrown when the JSON is invalid,
-        /// the <paramref name="returnType"/> is not compatible with the JSON,
-        /// or when there is remaining data in the Stream.
-        /// </exception>
+        /// The JSON is invalid.
+        ///
+        /// -or-
+        ///
+        /// <paramref name="returnType"/> is not compatible with the JSON.
+        ///
+        /// -or-
+        ///
+        /// There is remaining data in the string beyond a single JSON value.</exception>
         /// <exception cref="NotSupportedException">
         /// There is no compatible <see cref="System.Text.Json.Serialization.JsonConverter"/>
         /// for <paramref name="returnType"/> or its serializable members.
@@ -78,12 +118,53 @@ namespace System.Text.Json
                 throw new ArgumentNullException(nameof(returnType));
             }
 
+            object? value = Deserialize<object?>(json.AsSpan(), returnType, options)!;
+
+            return value;
+        }
+
+        /// <summary>
+        /// Parse the text representing a single JSON value into an instance of a specified type.
+        /// </summary>
+        /// <returns>A <paramref name="returnType"/> representation of the JSON value.</returns>
+        /// <param name="json">The JSON text to parse.</param>
+        /// <param name="returnType">The type of the object to convert to and return.</param>
+        /// <param name="options">Options to control the behavior during parsing.</param>
+        /// <exception cref="System.ArgumentNullException">
+        /// <paramref name="returnType"/> is <see langword="null"/>.
+        /// </exception>
+        /// <exception cref="JsonException">
+        /// The JSON is invalid.
+        ///
+        /// -or-
+        ///
+        /// <paramref name="returnType"/> is not compatible with the JSON.
+        ///
+        /// -or-
+        ///
+        /// There is remaining data in the span beyond a single JSON value.</exception>
+        /// <exception cref="NotSupportedException">
+        /// There is no compatible <see cref="System.Text.Json.Serialization.JsonConverter"/>
+        /// for <paramref name="returnType"/> or its serializable members.
+        /// </exception>
+        /// <remarks>Using a UTF-16 span is not as efficient as using the
+        /// UTF-8 methods since the implementation natively uses UTF-8.
+        /// </remarks>
+        public static object? Deserialize(ReadOnlySpan<char> json, [DynamicallyAccessedMembers(MembersAccessedOnRead)] Type returnType, JsonSerializerOptions? options = null)
+        {
+            // default/null span is treated as empty
+
+            if (returnType == null)
+            {
+                throw new ArgumentNullException(nameof(returnType));
+            }
+
             object? value = Deserialize<object?>(json, returnType, options)!;
 
             return value;
         }
 
-        private static TValue? Deserialize<TValue>(string json, Type returnType, JsonSerializerOptions? options)
+        private static TValue? Deserialize<TValue>(ReadOnlySpan<char> json, Type returnType, JsonSerializerOptions? options)
         {
             const long ArrayPoolMaxSizeBeforeUsingNormalAlloc = 1024 * 1024;
 
@@ -100,17 +181,17 @@ namespace System.Text.Json
                 tempArray = ArrayPool<byte>.Shared.Rent(json.Length * JsonConstants.MaxExpansionFactorWhileTranscoding) :
                 // Use a normal alloc since the pool would create a normal alloc anyway based on the threshold (per current implementation)
                 // and by using a normal alloc we can avoid the Clear().
-                new byte[JsonReaderHelper.GetUtf8ByteCount(json.AsSpan())];
+                new byte[JsonReaderHelper.GetUtf8ByteCount(json)];
 
             try
             {
-                int actualByteCount = JsonReaderHelper.GetUtf8FromText(json.AsSpan(), utf8);
+                int actualByteCount = JsonReaderHelper.GetUtf8FromText(json, utf8);
                 utf8 = utf8.Slice(0, actualByteCount);
 
                 var readerState = new JsonReaderState(options.GetReaderOptions());
                 var reader = new Utf8JsonReader(utf8, isFinalBlock: true, readerState);
 
-                TValue value = ReadCore<TValue>(ref reader, returnType, options);
+                TValue? value = ReadCore<TValue>(ref reader, returnType, options);
 
                 // The reader should have thrown if we have remaining bytes.
                 Debug.Assert(reader.BytesConsumed == actualByteCount);
