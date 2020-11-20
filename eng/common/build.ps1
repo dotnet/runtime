@@ -80,10 +80,6 @@ if ($ci) {
 }
 
 . $PSScriptRoot\tools.ps1
-
-Write-Host $ci
-Write-Host $restore
-
 function InitializeCustomToolset {
   if (-not $restore) {
     return
