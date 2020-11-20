@@ -3705,7 +3705,7 @@ regNumber LinearScan::allocateBusyReg(Interval* current, RefPosition* refPositio
         // initialized to MinLocation, the first available ref position
         // will be selected as spill candidate and its weight as the
         // fathestRefPosWeight.
-        farthestRefPosWeight = BB_MAX_WEIGHT;
+        farthestRefPosWeight = BB_INFINITE_WEIGHT;
     }
 
     for (regNumber regNum : Registers(regType))

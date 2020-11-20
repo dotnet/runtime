@@ -665,14 +665,25 @@ const char* refCntWtd2str(BasicBlock::weight_t refCntWtd)
     {
         float scaledWeight = refCntWtd / BB_UNITY_WEIGHT;
         float intPart      = (float)floor(scaledWeight);
+        bool  isLarge      = intPart > 1e9;
+        bool  isSmall      = (intPart < 1e-2) && (intPart != 0);
 
-        if (intPart == scaledWeight)
+        // Use g format for high dynamic range counts.
+        //
+        if (isLarge || isSmall)
         {
-            sprintf_s(temp, bufSize, "%lld   ", (long long)intPart);
+            sprintf_s(temp, bufSize, "%.2g", scaledWeight);
         }
         else
         {
-            sprintf_s(temp, bufSize, "%.2f", scaledWeight);
+            if (intPart == scaledWeight)
+            {
+                sprintf_s(temp, bufSize, "%lld   ", (long long)intPart);
+            }
+            else
+            {
+                sprintf_s(temp, bufSize, "%.2f", scaledWeight);
+            }
         }
     }
     return temp;

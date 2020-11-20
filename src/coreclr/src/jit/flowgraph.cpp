@@ -13615,8 +13615,8 @@ void Compiler::fgComputeEdgeWeights()
                 slop = BasicBlock::GetSlopFraction(bSrc, bDst) + 1;
                 if (bSrc->bbJumpKind == BBJ_COND)
                 {
-                    int       diff;
-                    flowList* otherEdge;
+                    BasicBlock::weight_t diff;
+                    flowList*            otherEdge;
                     if (bSrc->bbNext == bDst)
                     {
                         otherEdge = fgGetPredForBlock(bSrc->bbJumpDest, bSrc);
@@ -13629,7 +13629,7 @@ void Compiler::fgComputeEdgeWeights()
                     noway_assert(otherEdge->edgeWeightMin() <= otherEdge->edgeWeightMax());
 
                     // Adjust edge->flEdgeWeightMin up or adjust otherEdge->flEdgeWeightMax down
-                    diff = ((int)bSrc->bbWeight) - ((int)edge->edgeWeightMin() + (int)otherEdge->edgeWeightMax());
+                    diff = bSrc->bbWeight - (edge->edgeWeightMin() + otherEdge->edgeWeightMax());
                     if (diff > 0)
                     {
                         assignOK &= edge->setEdgeWeightMinChecked(edge->edgeWeightMin() + diff, slop, &usedSlop);
@@ -13641,7 +13641,7 @@ void Compiler::fgComputeEdgeWeights()
                     }
 
                     // Adjust otherEdge->flEdgeWeightMin up or adjust edge->flEdgeWeightMax down
-                    diff = ((int)bSrc->bbWeight) - ((int)otherEdge->edgeWeightMin() + (int)edge->edgeWeightMax());
+                    diff = bSrc->bbWeight - (otherEdge->edgeWeightMin() + edge->edgeWeightMax());
                     if (diff > 0)
                     {
                         assignOK &=
@@ -13661,12 +13661,12 @@ void Compiler::fgComputeEdgeWeights()
                     }
 #ifdef DEBUG
                     // Now edge->flEdgeWeightMin and otherEdge->flEdgeWeightMax) should add up to bSrc->bbWeight
-                    diff = ((int)bSrc->bbWeight) - ((int)edge->edgeWeightMin() + (int)otherEdge->edgeWeightMax());
-                    noway_assert((-((int)slop) <= diff) && (diff <= ((int)slop)));
+                    diff = bSrc->bbWeight - (edge->edgeWeightMin() + otherEdge->edgeWeightMax());
+                    assert(((-slop) <= diff) && (diff <= slop));
 
                     // Now otherEdge->flEdgeWeightMin and edge->flEdgeWeightMax) should add up to bSrc->bbWeight
-                    diff = ((int)bSrc->bbWeight) - ((int)otherEdge->edgeWeightMin() + (int)edge->edgeWeightMax());
-                    noway_assert((-((int)slop) <= diff) && (diff <= ((int)slop)));
+                    diff = bSrc->bbWeight - (otherEdge->edgeWeightMin() + edge->edgeWeightMax());
+                    assert(((-slop) <= diff) && (diff <= slop));
 #endif // DEBUG
                 }
             }

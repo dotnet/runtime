@@ -522,9 +522,10 @@ struct BasicBlock : private LIR::Range
 #define BB_LOOP_WEIGHT 8.0f          // how much more loops are weighted
 #define BB_ZERO_WEIGHT 0.0f
 #define BB_HOT_WEIGHT 1000000.0f
-#define BB_MAX_WEIGHT FLT_MAX     // maximum weight  -- ???
-#define BB_VERY_HOT_WEIGHT 256.0f // how many average hits a BB has (per BBT scenario run) for this block
-                                  // to be considered as very hot
+#define BB_MAX_WEIGHT FLT_MAX        // maximum finite weight  -- needs rethinking.
+#define BB_VERY_HOT_WEIGHT 256.0f    // how many average hits a BB has (per BBT scenario run) for this block
+                                     // to be considered as very hot
+#define BB_INFINITE_WEIGHT HUGE_VALF // infinite weight
 
     weight_t bbWeight; // The dynamic execution weight of this block
 
