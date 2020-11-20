@@ -282,40 +282,40 @@ namespace DebuggerTests
         // [MemberData(nameof(JSGetPropertiesTestData), parameters: false)]
         public async Task GetPropertiesTestJSAndManaged(bool test_js, bool? own_properties, bool? accessors_only, string[] expected_names)
         {
-                string eval_expr;
-                if (test_js)
-                {
-                    await SetBreakpoint("/other.js", 93, 1);
-                    eval_expr = "window.setTimeout(function() { get_properties_test (); }, 1)";
-                }
-                else
-                {
-                    await SetBreakpointInMethod("debugger-test.dll", "DebuggerTests.GetPropertiesTests.DerivedClassForJSTest", "run", 2);
-                    eval_expr = "window.setTimeout(function() { invoke_static_method ('[debugger-test] DebuggerTests.GetPropertiesTests.DerivedClassForJSTest:run'); }, 1)";
-                }
+            string eval_expr;
+            if (test_js)
+            {
+                await SetBreakpoint("/other.js", 93, 1);
+                eval_expr = "window.setTimeout(function() { get_properties_test (); }, 1)";
+            }
+            else
+            {
+                await SetBreakpointInMethod("debugger-test.dll", "DebuggerTests.GetPropertiesTests.DerivedClassForJSTest", "run", 2);
+                eval_expr = "window.setTimeout(function() { invoke_static_method ('[debugger-test] DebuggerTests.GetPropertiesTests.DerivedClassForJSTest:run'); }, 1)";
+            }
 
-                var result = await ctx.cli.SendCommand("Runtime.evaluate", JObject.FromObject(new { expression = eval_expr }), ctx.token);
-                var pause_location = await ctx.insp.WaitFor(Inspector.PAUSE);
+            var result = await ctx.cli.SendCommand("Runtime.evaluate", JObject.FromObject(new { expression = eval_expr }), ctx.token);
+            var pause_location = await ctx.insp.WaitFor(Inspector.PAUSE);
 
-                var id = pause_location["callFrames"][0]["scopeChain"][0]["object"]["objectId"].Value<string>();
+            var id = pause_location["callFrames"][0]["scopeChain"][0]["object"]["objectId"].Value<string>();
 
-                var frame_locals = await GetProperties(id);
-                var obj = GetAndAssertObjectWithName(frame_locals, "obj");
-                var obj_props = await GetProperties(obj["value"]?["objectId"]?.Value<string>(),
-                                        own_properties: own_properties, accessors_only: accessors_only);
+            var frame_locals = await GetProperties(id);
+            var obj = GetAndAssertObjectWithName(frame_locals, "obj");
+            var obj_props = await GetProperties(obj["value"]?["objectId"]?.Value<string>(),
+                                    own_properties: own_properties, accessors_only: accessors_only);
 
-                IEnumerable<JToken> filtered_props;
-                if (test_js)
-                {
-                    filtered_props = obj_props.Children().Where(jt => jt["enumerable"]?.Value<bool>() == true);
-                }
-                else
-                {
-                    // we don't set `enumerable` right now
-                    filtered_props = obj_props.Children().Where(jt => true);
-                }
+            IEnumerable<JToken> filtered_props;
+            if (test_js)
+            {
+                filtered_props = obj_props.Children().Where(jt => jt["enumerable"]?.Value<bool>() == true);
+            }
+            else
+            {
+                // we don't set `enumerable` right now
+                filtered_props = obj_props.Children().Where(jt => true);
+            }
 
-                var expected_props = new Dictionary<string, (JObject exp_obj, bool is_own)>()
+            var expected_props = new Dictionary<string, (JObject exp_obj, bool is_own)>()
                 {
                     // own
                     {"owner_name", (TString("foo"), true)},
@@ -327,12 +327,12 @@ namespace DebuggerTests
                     {"available", (TGetter("available"), false)},
                 };
 
-                await CheckExpectedProperties(
-                        expected_names,
-                        name => filtered_props.Where(jt => jt["name"]?.Value<string>() == name).SingleOrDefault(),
-                        expected_props);
+            await CheckExpectedProperties(
+                    expected_names,
+                    name => filtered_props.Where(jt => jt["name"]?.Value<string>() == name).SingleOrDefault(),
+                    expected_props);
 
-                AssertEqual(expected_names.Length, filtered_props.Count(), $"expected number of properties");
+            AssertEqual(expected_names.Length, filtered_props.Count(), $"expected number of properties");
         }
 
         private async Task CheckExpectedProperties(string[] expected_names, Func<string, JToken> get_actual_prop, Dictionary<string, (JObject, bool)> all_props)

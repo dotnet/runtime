@@ -409,19 +409,19 @@ namespace DebuggerTests
             var line = 76;
             var col = 1;
 
-                await SetBreakpoint(bp_loc, line, col);
+            await SetBreakpoint(bp_loc, line, col);
 
-                var eval_expr = "window.setTimeout(function() { eval_call_on_frame_test (); }, 1)";
-                var result = await ctx.cli.SendCommand("Runtime.evaluate", JObject.FromObject(new { expression = eval_expr }), ctx.token);
-                var pause_location = await ctx.insp.WaitFor(Inspector.PAUSE);
+            var eval_expr = "window.setTimeout(function() { eval_call_on_frame_test (); }, 1)";
+            var result = await ctx.cli.SendCommand("Runtime.evaluate", JObject.FromObject(new { expression = eval_expr }), ctx.token);
+            var pause_location = await ctx.insp.WaitFor(Inspector.PAUSE);
 
-                var id = pause_location["callFrames"][0]["callFrameId"].Value<string>();
+            var id = pause_location["callFrames"][0]["callFrameId"].Value<string>();
 
-                await EvaluateOnCallFrameFail(id,
-                    ("me.foo", null),
-                    ("obj.foo.bar", null));
+            await EvaluateOnCallFrameFail(id,
+                ("me.foo", null),
+                ("obj.foo.bar", null));
 
-                await EvaluateOnCallFrame(id, "obj.foo", expect_ok: true);
+            await EvaluateOnCallFrame(id, "obj.foo", expect_ok: true);
         }
 
         [Fact]

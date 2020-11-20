@@ -17,82 +17,82 @@ namespace DebuggerTests
         public async Task ExceptionTestAll()
         {
             string entry_method_name = "[debugger-test] DebuggerTests.ExceptionTestsClass:TestExceptions";
-                var debugger_test_loc = "dotnet://debugger-test.dll/debugger-exception-test.cs";
+            var debugger_test_loc = "dotnet://debugger-test.dll/debugger-exception-test.cs";
 
-                await SetPauseOnException("all");
+            await SetPauseOnException("all");
 
-                var eval_expr = "window.setTimeout(function() { invoke_static_method (" +
-                    $"'{entry_method_name}'" +
-                    "); }, 1);";
+            var eval_expr = "window.setTimeout(function() { invoke_static_method (" +
+                $"'{entry_method_name}'" +
+                "); }, 1);";
 
-                var pause_location = await EvaluateAndCheck(eval_expr, null, 0, 0, null);
-                //stop in the managed caught exception
-                pause_location = await WaitForManagedException(pause_location);
+            var pause_location = await EvaluateAndCheck(eval_expr, null, 0, 0, null);
+            //stop in the managed caught exception
+            pause_location = await WaitForManagedException(pause_location);
 
-                AssertEqual("run", pause_location["callFrames"]?[0]?["functionName"]?.Value<string>(), "pause0");
+            AssertEqual("run", pause_location["callFrames"]?[0]?["functionName"]?.Value<string>(), "pause0");
 
-                await CheckValue(pause_location["data"], JObject.FromObject(new
-                {
-                    type = "object",
-                    subtype = "error",
-                    className = "DebuggerTests.CustomException",
-                    uncaught = false
-                }), "exception0.data");
+            await CheckValue(pause_location["data"], JObject.FromObject(new
+            {
+                type = "object",
+                subtype = "error",
+                className = "DebuggerTests.CustomException",
+                uncaught = false
+            }), "exception0.data");
 
-                var exception_members = await GetProperties(pause_location["data"]["objectId"]?.Value<string>());
-                CheckString(exception_members, "message", "not implemented caught");
+            var exception_members = await GetProperties(pause_location["data"]["objectId"]?.Value<string>());
+            CheckString(exception_members, "message", "not implemented caught");
 
-                pause_location = await WaitForManagedException(null);
-                AssertEqual("run", pause_location["callFrames"]?[0]?["functionName"]?.Value<string>(), "pause1");
+            pause_location = await WaitForManagedException(null);
+            AssertEqual("run", pause_location["callFrames"]?[0]?["functionName"]?.Value<string>(), "pause1");
 
-                //stop in the uncaught exception
-                CheckLocation(debugger_test_loc, 28, 16, scripts, pause_location["callFrames"][0]["location"]);
+            //stop in the uncaught exception
+            CheckLocation(debugger_test_loc, 28, 16, scripts, pause_location["callFrames"][0]["location"]);
 
-                await CheckValue(pause_location["data"], JObject.FromObject(new
-                {
-                    type = "object",
-                    subtype = "error",
-                    className = "DebuggerTests.CustomException",
-                    uncaught = true
-                }), "exception1.data");
+            await CheckValue(pause_location["data"], JObject.FromObject(new
+            {
+                type = "object",
+                subtype = "error",
+                className = "DebuggerTests.CustomException",
+                uncaught = true
+            }), "exception1.data");
 
-                exception_members = await GetProperties(pause_location["data"]["objectId"]?.Value<string>());
-                CheckString(exception_members, "message", "not implemented uncaught");
+            exception_members = await GetProperties(pause_location["data"]["objectId"]?.Value<string>());
+            CheckString(exception_members, "message", "not implemented uncaught");
         }
 
         [Fact]
         public async Task JSExceptionTestAll()
         {
-                await SetPauseOnException("all");
+            await SetPauseOnException("all");
 
-                var eval_expr = "window.setTimeout(function () { exceptions_test (); }, 1)";
-                var pause_location = await EvaluateAndCheck(eval_expr, null, 0, 0, "exception_caught_test", null, null);
+            var eval_expr = "window.setTimeout(function () { exceptions_test (); }, 1)";
+            var pause_location = await EvaluateAndCheck(eval_expr, null, 0, 0, "exception_caught_test", null, null);
 
-                Assert.Equal("exception", pause_location["reason"]);
-                await CheckValue(pause_location["data"], JObject.FromObject(new
-                {
-                    type = "object",
-                    subtype = "error",
-                    className = "TypeError",
-                    uncaught = false
-                }), "exception0.data");
+            Assert.Equal("exception", pause_location["reason"]);
+            await CheckValue(pause_location["data"], JObject.FromObject(new
+            {
+                type = "object",
+                subtype = "error",
+                className = "TypeError",
+                uncaught = false
+            }), "exception0.data");
 
-                var exception_members = await GetProperties(pause_location["data"]["objectId"]?.Value<string>());
-                CheckString(exception_members, "message", "exception caught");
+            var exception_members = await GetProperties(pause_location["data"]["objectId"]?.Value<string>());
+            CheckString(exception_members, "message", "exception caught");
 
-                pause_location = await SendCommandAndCheck(null, "Debugger.resume", null, 0, 0, "exception_uncaught_test");
+            pause_location = await SendCommandAndCheck(null, "Debugger.resume", null, 0, 0, "exception_uncaught_test");
 
-                Assert.Equal("exception", pause_location["reason"]);
-                await CheckValue(pause_location["data"], JObject.FromObject(new
-                {
-                    type = "object",
-                    subtype = "error",
-                    className = "RangeError",
-                    uncaught = true
-                }), "exception1.data");
+            Assert.Equal("exception", pause_location["reason"]);
+            await CheckValue(pause_location["data"], JObject.FromObject(new
+            {
+                type = "object",
+                subtype = "error",
+                className = "RangeError",
+                uncaught = true
+            }), "exception1.data");
 
-                exception_members = await GetProperties(pause_location["data"]["objectId"]?.Value<string>());
-                CheckString(exception_members, "message", "exception uncaught");
+            exception_members = await GetProperties(pause_location["data"]["objectId"]?.Value<string>());
+            CheckString(exception_members, "message", "exception uncaught");
         }
 
         // FIXME? BUG? We seem to get the stack trace for Runtime.exceptionThrown at `call_method`,
@@ -102,67 +102,67 @@ namespace DebuggerTests
         {
             //Collect events
             string entry_method_name = "[debugger-test] DebuggerTests.ExceptionTestsClass:TestExceptions";
-                await SetPauseOnException("none");
+            await SetPauseOnException("none");
 
-                var eval_expr = "window.setTimeout(function() { invoke_static_method (" +
-                    $"'{entry_method_name}'" +
-                    "); }, 1);";
+            var eval_expr = "window.setTimeout(function() { invoke_static_method (" +
+                $"'{entry_method_name}'" +
+                "); }, 1);";
 
-                try
+            try
+            {
+                await EvaluateAndCheck(eval_expr, null, 0, 0, "", null, null);
+            }
+            catch (ArgumentException ae)
+            {
+                var eo = JObject.Parse(ae.Message);
+
+                // AssertEqual (line, eo ["exceptionDetails"]?["lineNumber"]?.Value<int> (), "lineNumber");
+                AssertEqual("Uncaught", eo["exceptionDetails"]?["text"]?.Value<string>(), "text");
+
+                await CheckValue(eo["exceptionDetails"]?["exception"], JObject.FromObject(new
                 {
-                    await EvaluateAndCheck(eval_expr, null, 0, 0, "", null, null);
-                }
-                catch (ArgumentException ae)
-                {
-                    var eo = JObject.Parse(ae.Message);
+                    type = "object",
+                    subtype = "error",
+                    className = "Error" // BUG?: "DebuggerTests.CustomException"
+                }), "exception");
 
-                    // AssertEqual (line, eo ["exceptionDetails"]?["lineNumber"]?.Value<int> (), "lineNumber");
-                    AssertEqual("Uncaught", eo["exceptionDetails"]?["text"]?.Value<string>(), "text");
+                return;
+            }
 
-                    await CheckValue(eo["exceptionDetails"]?["exception"], JObject.FromObject(new
-                    {
-                        type = "object",
-                        subtype = "error",
-                        className = "Error" // BUG?: "DebuggerTests.CustomException"
-                    }), "exception");
-
-                    return;
-                }
-
-                Assert.True(false, "Expected to get an ArgumentException from the uncaught user exception");
+            Assert.True(false, "Expected to get an ArgumentException from the uncaught user exception");
         }
 
         [Fact]
         public async Task JSExceptionTestNone()
         {
-                await SetPauseOnException("none");
+            await SetPauseOnException("none");
 
-                var eval_expr = "window.setTimeout(function () { exceptions_test (); }, 1)";
+            var eval_expr = "window.setTimeout(function () { exceptions_test (); }, 1)";
 
-                int line = 44;
-                try
+            int line = 44;
+            try
+            {
+                await EvaluateAndCheck(eval_expr, null, 0, 0, "", null, null);
+            }
+            catch (ArgumentException ae)
+            {
+                Console.WriteLine($"{ae}");
+                var eo = JObject.Parse(ae.Message);
+
+                AssertEqual(line, eo["exceptionDetails"]?["lineNumber"]?.Value<int>(), "lineNumber");
+                AssertEqual("Uncaught", eo["exceptionDetails"]?["text"]?.Value<string>(), "text");
+
+                await CheckValue(eo["exceptionDetails"]?["exception"], JObject.FromObject(new
                 {
-                    await EvaluateAndCheck(eval_expr, null, 0, 0, "", null, null);
-                }
-                catch (ArgumentException ae)
-                {
-                    Console.WriteLine($"{ae}");
-                    var eo = JObject.Parse(ae.Message);
+                    type = "object",
+                    subtype = "error",
+                    className = "RangeError"
+                }), "exception");
 
-                    AssertEqual(line, eo["exceptionDetails"]?["lineNumber"]?.Value<int>(), "lineNumber");
-                    AssertEqual("Uncaught", eo["exceptionDetails"]?["text"]?.Value<string>(), "text");
+                return;
+            }
 
-                    await CheckValue(eo["exceptionDetails"]?["exception"], JObject.FromObject(new
-                    {
-                        type = "object",
-                        subtype = "error",
-                        className = "RangeError"
-                    }), "exception");
-
-                    return;
-                }
-
-                Assert.True(false, "Expected to get an ArgumentException from the uncaught user exception");
+            Assert.True(false, "Expected to get an ArgumentException from the uncaught user exception");
         }
 
         [Theory]
@@ -173,22 +173,22 @@ namespace DebuggerTests
         public async Task ExceptionTestUncaught(string eval_fn, string loc, int line, int col, string fn_name,
             string exception_type, string exception_message)
         {
-                await SetPauseOnException("uncaught");
+            await SetPauseOnException("uncaught");
 
-                var eval_expr = $"window.setTimeout({eval_fn}, 1);";
-                var pause_location = await EvaluateAndCheck(eval_expr, loc, line, col, fn_name);
+            var eval_expr = $"window.setTimeout({eval_fn}, 1);";
+            var pause_location = await EvaluateAndCheck(eval_expr, loc, line, col, fn_name);
 
-                Assert.Equal("exception", pause_location["reason"]);
-                await CheckValue(pause_location["data"], JObject.FromObject(new
-                {
-                    type = "object",
-                    subtype = "error",
-                    className = exception_type,
-                    uncaught = true
-                }), "exception.data");
+            Assert.Equal("exception", pause_location["reason"]);
+            await CheckValue(pause_location["data"], JObject.FromObject(new
+            {
+                type = "object",
+                subtype = "error",
+                className = exception_type,
+                uncaught = true
+            }), "exception.data");
 
-                var exception_members = await GetProperties(pause_location["data"]["objectId"]?.Value<string>());
-                CheckString(exception_members, "message", exception_message);
+            var exception_members = await GetProperties(pause_location["data"]["objectId"]?.Value<string>());
+            CheckString(exception_members, "message", exception_message);
         }
 
         async Task<JObject> WaitForManagedException(JObject pause_location)

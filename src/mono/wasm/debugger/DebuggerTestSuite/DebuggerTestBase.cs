@@ -110,70 +110,70 @@ namespace DebuggerTests
         internal async Task CheckInspectLocalsAtBreakpointSite(string url_key, int line, int column, string function_name, string eval_expression,
             Action<JToken>? test_fn = null, Func<JObject, Task>? wait_for_event_fn = null, bool use_cfo = false)
         {
-                ctx.UseCallFunctionOnBeforeGetProperties = use_cfo;
+            ctx.UseCallFunctionOnBeforeGetProperties = use_cfo;
 
-                var bp = await SetBreakpoint(url_key, line, column);
+            var bp = await SetBreakpoint(url_key, line, column);
 
-                await EvaluateAndCheck(
-                    eval_expression, url_key, line, column,
-                    function_name,
-                    wait_for_event_fn: async (pause_location) =>
-                   {
+            await EvaluateAndCheck(
+                eval_expression, url_key, line, column,
+                function_name,
+                wait_for_event_fn: async (pause_location) =>
+               {
                        //make sure we're on the right bp
 
                        Assert.Equal(bp.Value["breakpointId"]?.ToString(), pause_location["hitBreakpoints"]?[0]?.Value<string>());
 
-                       var top_frame = pause_location!["callFrames"]?[0];
+                   var top_frame = pause_location!["callFrames"]?[0];
 
-                       var scope = top_frame!["scopeChain"]?[0];
-                       if (wait_for_event_fn != null)
-                           await wait_for_event_fn(pause_location);
-                       else
-                           await Task.CompletedTask;
-                   },
-                    locals_fn: (locals) =>
-                    {
-                        if (test_fn != null)
-                            test_fn(locals);
-                    }
-                );
+                   var scope = top_frame!["scopeChain"]?[0];
+                   if (wait_for_event_fn != null)
+                       await wait_for_event_fn(pause_location);
+                   else
+                       await Task.CompletedTask;
+               },
+                locals_fn: (locals) =>
+                {
+                    if (test_fn != null)
+                        test_fn(locals);
+                }
+            );
         }
 
         // sets breakpoint by method name and line offset
         internal async Task CheckInspectLocalsAtBreakpointSite(string type, string method, int line_offset, string bp_function_name, string eval_expression,
             Action<JToken>? locals_fn = null, Func<JObject, Task>? wait_for_event_fn = null, bool use_cfo = false, string assembly = "debugger-test.dll", int col = 0)
         {
-                ctx.UseCallFunctionOnBeforeGetProperties = use_cfo;
+            ctx.UseCallFunctionOnBeforeGetProperties = use_cfo;
 
-                var bp = await SetBreakpointInMethod(assembly, type, method, line_offset, col);
+            var bp = await SetBreakpointInMethod(assembly, type, method, line_offset, col);
 
-                var args = JObject.FromObject(new { expression = eval_expression });
-                var res = await ctx.cli.SendCommand("Runtime.evaluate", args, ctx.token);
-                if (!res.IsOk)
-                {
-                    Console.WriteLine($"Failed to run command {method} with args: {args?.ToString()}\nresult: {res.Error.ToString()}");
-                    Assert.True(false, $"SendCommand for {method} failed with {res.Error.ToString()}");
-                }
+            var args = JObject.FromObject(new { expression = eval_expression });
+            var res = await ctx.cli.SendCommand("Runtime.evaluate", args, ctx.token);
+            if (!res.IsOk)
+            {
+                Console.WriteLine($"Failed to run command {method} with args: {args?.ToString()}\nresult: {res.Error.ToString()}");
+                Assert.True(false, $"SendCommand for {method} failed with {res.Error.ToString()}");
+            }
 
-                var pause_location = await ctx.insp.WaitFor(Inspector.PAUSE);
+            var pause_location = await ctx.insp.WaitFor(Inspector.PAUSE);
 
-                if (bp_function_name != null)
-                    Assert.Equal(bp_function_name, pause_location["callFrames"]?[0]?["functionName"]?.Value<string>());
+            if (bp_function_name != null)
+                Assert.Equal(bp_function_name, pause_location["callFrames"]?[0]?["functionName"]?.Value<string>());
 
-                Assert.Equal(bp.Value["breakpointId"]?.ToString(), pause_location["hitBreakpoints"]?[0]?.Value<string>());
+            Assert.Equal(bp.Value["breakpointId"]?.ToString(), pause_location["hitBreakpoints"]?[0]?.Value<string>());
 
-                var top_frame = pause_location!["callFrames"]?[0];
+            var top_frame = pause_location!["callFrames"]?[0];
 
-                var scope = top_frame?["scopeChain"]?[0];
+            var scope = top_frame?["scopeChain"]?[0];
 
-                if (wait_for_event_fn != null)
-                    await wait_for_event_fn(pause_location);
+            if (wait_for_event_fn != null)
+                await wait_for_event_fn(pause_location);
 
-                if (locals_fn != null)
-                {
-                    var locals = await GetProperties(pause_location?["callFrames"]?[0]?["callFrameId"]?.Value<string>());
-                    locals_fn(locals);
-                }
+            if (locals_fn != null)
+            {
+                var locals = await GetProperties(pause_location?["callFrames"]?[0]?["callFrameId"]?.Value<string>());
+                locals_fn(locals);
+            }
         }
 
         internal void CheckLocation(string script_loc, int line, int column, Dictionary<string, string> scripts, JToken location)
@@ -237,13 +237,13 @@ namespace DebuggerTests
             await CheckDateTimeValue(value, expected, label);
         }
 
-        internal async Task CheckDateTime(JToken locals, string name, DateTime expected, string label="")
+        internal async Task CheckDateTime(JToken locals, string name, DateTime expected, string label = "")
         {
             var obj = GetAndAssertObjectWithName(locals, name, label);
             await CheckDateTimeValue(obj["value"], expected, label);
         }
 
-        internal async Task CheckDateTimeValue(JToken value, DateTime expected, string label="")
+        internal async Task CheckDateTimeValue(JToken value, DateTime expected, string label = "")
         {
             await CheckDateTimeMembers(value, expected, label);
 
@@ -252,7 +252,7 @@ namespace DebuggerTests
 
             // FIXME: check some float properties too
 
-            async Task CheckDateTimeMembers(JToken v, DateTime exp_dt, string label="")
+            async Task CheckDateTimeMembers(JToken v, DateTime exp_dt, string label = "")
             {
                 AssertEqual("System.DateTime", v["className"]?.Value<string>(), $"{label}#className");
                 AssertEqual(exp_dt.ToString(), v["description"]?.Value<string>(), $"{label}#description");
@@ -301,7 +301,7 @@ namespace DebuggerTests
                 GetAndAssertObjectWithName(locals, name)["value"],
                 TArray(class_name, length), name).Wait();
 
-        internal JToken GetAndAssertObjectWithName(JToken obj, string name, string label="")
+        internal JToken GetAndAssertObjectWithName(JToken obj, string name, string label = "")
         {
             var l = obj.FirstOrDefault(jt => jt["name"]?.Value<string>() == name);
             if (l == null)
@@ -399,7 +399,7 @@ namespace DebuggerTests
                 AssertEqual(function_name, wait_res["callFrames"]?[0]?["functionName"]?.Value<string>(), top_frame?.ToString());
             }
 
-            Console.WriteLine (top_frame);
+            Console.WriteLine(top_frame);
             if (script_loc != null && line >= 0)
                 CheckLocation(script_loc, line, column, ctx.scripts, top_frame["location"]);
 
@@ -641,7 +641,7 @@ namespace DebuggerTests
             }
             catch
             {
-                Console.WriteLine ($"Expected: {exp_val}. Actual: {actual_val}");
+                Console.WriteLine($"Expected: {exp_val}. Actual: {actual_val}");
                 throw;
             }
         }
