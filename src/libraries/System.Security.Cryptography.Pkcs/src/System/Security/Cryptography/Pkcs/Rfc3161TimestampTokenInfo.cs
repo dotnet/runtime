@@ -4,7 +4,6 @@
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Formats.Asn1;
-using System.Linq;
 using System.Security.Cryptography.Asn1;
 using System.Security.Cryptography.Pkcs.Asn1;
 using System.Security.Cryptography.X509Certificates;
@@ -362,8 +361,11 @@ namespace System.Security.Cryptography.Pkcs
 
             if (extensions != null)
             {
-                tstInfo.Extensions = extensions.OfType<X509Extension>().
-                    Select(ex => new X509ExtensionAsn(ex)).ToArray();
+                tstInfo.Extensions = new X509ExtensionAsn[extensions.Count];
+                for (int i = 0; i < extensions.Count; i++)
+                {
+                    tstInfo.Extensions[i] = new X509ExtensionAsn(extensions[i]);
+                }
             }
 
             AsnWriter writer = new AsnWriter(AsnEncodingRules.DER);
