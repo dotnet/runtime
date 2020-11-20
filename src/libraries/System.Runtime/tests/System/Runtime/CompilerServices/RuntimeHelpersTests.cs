@@ -211,7 +211,7 @@ namespace System.Runtime.CompilerServices.Tests
 
             yield return new[] { typeof(Delegate), typeof(MemberAccessException) }; // abstract type
 
-            yield return new[] { typeof(void), typeof(NotSupportedException) }; // explicit block in place
+            yield return new[] { typeof(void), typeof(ArgumentException) }; // explicit block in place
             yield return new[] { typeof(int).MakePointerType(), typeof(ArgumentException) }; // pointer typedesc
             yield return new[] { typeof(int).MakeByRefType(), typeof(ArgumentException) }; // byref typedesc
 

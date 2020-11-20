@@ -40,6 +40,12 @@ namespace System
                 _originalRuntimeType = new WeakReference<RuntimeType>(rt);
 #endif
 
+                // The check below is redundant since these same checks are performed at the
+                // unmanaged layer, but this call will throw slightly different exceptions
+                // than the unmanaged layer, and callers might be dependent on this.
+
+                rt.CreateInstanceCheckThis();
+
                 _pfnAllocator = (delegate*<IntPtr, object>)RuntimeTypeHandle.GetAllocatorFtn(rt, out MethodTable* pMT, forGetUninitializedObject: false, wrapExceptions);
                 _allocatorFirstArg = (IntPtr)pMT;
 

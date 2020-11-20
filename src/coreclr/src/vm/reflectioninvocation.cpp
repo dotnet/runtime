@@ -2033,14 +2033,7 @@ void QCALLTYPE RuntimeTypeHandle::GetAllocatorFtn(
     // Don't allow void
     if (typeHandle.GetSignatureCorElementType() == ELEMENT_TYPE_VOID)
     {
-        COMPlusThrow(kNotSupportedException, W("NotSupported_Type"));
-    }
-
-    // Don't allow generic variables (e.g., the 'T' from List<T>)
-    // or open generic types (List<>) - Activator variation of check.
-    if (!fGetUninitializedObject && typeHandle.ContainsGenericVariables())
-    {
-        COMPlusThrow(kArgumentException, W("Acc_CreateGeneric"));
+        COMPlusThrow(kArgumentException, W("NotSupported_Type"));
     }
 
     // Don't allow arrays, pointers, byrefs, or function pointers
@@ -2076,8 +2069,8 @@ void QCALLTYPE RuntimeTypeHandle::GetAllocatorFtn(
     }
 
     // Don't allow generic variables (e.g., the 'T' from List<T>)
-    // or open generic types (List<>) - FormatterServices variation of check.
-    if (fGetUninitializedObject && typeHandle.ContainsGenericVariables())
+    // or open generic types (List<>).
+    if (typeHandle.ContainsGenericVariables())
     {
         COMPlusThrow(kMemberAccessException, W("Acc_CreateGeneric"));
     }
