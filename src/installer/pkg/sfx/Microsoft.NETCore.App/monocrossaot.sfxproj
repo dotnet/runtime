@@ -8,7 +8,12 @@
     <MonoAotTargetRids Include="$(MonoAotTargets.Split(';'))" />
   </ItemGroup>
 
-  <Target Name="BuildMonoCrossAllTargets">
+  <Target Name="RestoreSubProject">
+    <MSBuild Targets="Restore"
+             Projects="$(MSBuildThisFileDirectory)Microsoft.NETCore.App.MonoCrossAOT.sfxproj" />
+  </Target>
+
+  <Target Name="BuildMonoCrossAllTargets" DependsOnTargets="RestoreSubProject">
     <MSBuild Targets="BuildMonoCrossTarget"
              Projects="$(MSBuildThisFileFullPath)"
              BuildInParallel="true"
