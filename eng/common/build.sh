@@ -176,6 +176,14 @@ if [[ "$ci" == true ]]; then
   fi
 fi
 
+if [[ "$restore" == true]] && [[ "$ci" == true]]; then 
+  echo "Using NuGet.CI.config"
+  cp NuGet.CI.config NuGet.config
+else 
+  echo "Using NuGet.dev.config"
+  cp NuGet.dev.config NuGet.config
+fi
+
 . "$scriptroot/tools.sh"
 
 function InitializeCustomToolset {
@@ -197,13 +205,6 @@ function Build {
   local bl=""
   if [[ "$binary_log" == true ]]; then
     bl="/bl:\"$log_dir/Build.binlog\""
-  fi
-
-  if [[ "$restore" == true]]; then 
-    if [[ "$ci" == true]]; then
-      echo "Using NuGet.CI.config"
-      cp NuGet.CI.config NuGet.config
-    fi
   fi
 
   MSBuild $_InitializeToolset \
