@@ -78,26 +78,30 @@ Build and run library tests against Webassembly, Android or iOS. See instruction
 # Running the Mono samples
 There are a few convenient samples located in `$(REPO_ROOT)/src/mono/netcore/sample`, which could help you test your program easily with different flavors of Mono or do a sanity check on the build. The samples are set up to work with a specific configuration; please refer to the relevant Makefile for specifics. If you would like to work with a different configuration, you can edit the Makefile.
 
-* To run the desktop Mono sample, cd to `HelloWorld` and execute:
+## Running the sample for desktop Mono
+To run the desktop Mono sample, cd to `HelloWorld` and execute:
 
 ```
 make run
 ```
 Note that the default configuration of this sample is LLVM JIT.
 
-* To run the WebAssembly sample, cd to `wasm`.  There are two sub-folders `browser` and `console`. One is set up to run the progam in browser, the other is set up to run the program in console. Enter the desirable sub-folder and execute
+## Running the WebAssembly sample
+To run the WebAssembly sample, cd to `wasm`.  There are two sub-folders `browser` and `console`. One is set up to run the progam in browser, the other is set up to run the program in console. Enter the desirable sub-folder and execute
 
 ```
 make build && make run
 ```
 
-* To run the Android sample, cd to `Android` and execute
+## Running the Android sample
+To run the Android sample, cd to `Android` and execute
 
 ```
 make run
 ```
 
-* To run the iOS sample, cd to `iOS` and execute
+## Running the iOS sample
+To run the iOS sample, cd to `iOS` and execute
 
 ```
 make run
