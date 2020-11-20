@@ -11,7 +11,7 @@ using Xunit;
 
 namespace DebuggerTests
 {
-    public class GetPropertiesTests : SingleSessionTestBase
+    public class GetPropertiesTests : DebuggerTestBase
     {
         public static TheoryData<string, bool?, bool?, string[], Dictionary<string, (JObject, bool)>, bool> ClassGetPropertiesTestData(bool is_async)
         {

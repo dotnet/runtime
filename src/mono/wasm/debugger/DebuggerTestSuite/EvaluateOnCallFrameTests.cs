@@ -13,7 +13,7 @@ using Xunit;
 namespace DebuggerTests
 {
     // TODO: static async, static method args
-    public class EvaluateOnCallFrameTests : SingleSessionTestBase
+    public class EvaluateOnCallFrameTests : DebuggerTestBase
     {
         public static IEnumerable<object[]> InstanceMethodsTestData(string type_name)
         {

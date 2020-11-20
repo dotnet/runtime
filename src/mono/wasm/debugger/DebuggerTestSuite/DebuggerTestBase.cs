@@ -20,9 +20,11 @@ using Xunit.Sdk;
 
 namespace DebuggerTests
 {
-    public class DebuggerTestBase
+    public class DebuggerTestBase : IAsyncLifetime
     {
         protected Task startTask;
+        protected Inspector insp;
+        protected Dictionary<string, string> scripts;
 
         static string s_debuggerTestAppPath;
         protected static string DebuggerTestAppPath
@@ -74,8 +76,34 @@ namespace DebuggerTests
 
         public DebuggerTestBase(string driver = "debugger-driver.html")
         {
+            insp = new Inspector();
+            scripts = SubscribeToScripts(insp);
+
             startTask = TestHarnessProxy.Start(FindChromePath(), DebuggerTestAppPath, driver);
         }
+
+        public virtual async Task InitializeAsync()
+        {
+            Func<InspectorClient, CancellationToken, List<(string, Task<Result>)>> fn = (client, token) =>
+            {
+                Func<string, (string, Task<Result>)> getInitCmdFn = (cmd) => (cmd, client.SendCommand(cmd, null, token));
+                var init_cmds = new List<(string, Task<Result>)>
+                {
+                    getInitCmdFn("Profiler.enable"),
+                    getInitCmdFn("Runtime.enable"),
+                    getInitCmdFn("Debugger.enable"),
+                    getInitCmdFn("Runtime.runIfWaitingForDebugger")
+                };
+
+                return init_cmds;
+            };
+
+            await Ready();
+            await insp.OpenSessionAsync(fn);
+            ctx = new DebugTestContext(insp.Client, insp, insp.Token, scripts);
+        }
+
+        public virtual async Task DisposeAsync() => await insp.ShutdownAsync().ConfigureAwait(false);
 
         public Task Ready() => startTask;
 
@@ -108,7 +136,7 @@ namespace DebuggerTests
         }
 
         internal async Task CheckInspectLocalsAtBreakpointSite(string url_key, int line, int column, string function_name, string eval_expression,
-            Action<JToken>? test_fn = null, Func<JObject, Task>? wait_for_event_fn = null, bool use_cfo = false)
+            Action<JToken> test_fn = null, Func<JObject, Task> wait_for_event_fn = null, bool use_cfo = false)
         {
             ctx.UseCallFunctionOnBeforeGetProperties = use_cfo;
 
@@ -141,7 +169,7 @@ namespace DebuggerTests
 
         // sets breakpoint by method name and line offset
         internal async Task CheckInspectLocalsAtBreakpointSite(string type, string method, int line_offset, string bp_function_name, string eval_expression,
-            Action<JToken>? locals_fn = null, Func<JObject, Task>? wait_for_event_fn = null, bool use_cfo = false, string assembly = "debugger-test.dll", int col = 0)
+            Action<JToken> locals_fn = null, Func<JObject, Task> wait_for_event_fn = null, bool use_cfo = false, string assembly = "debugger-test.dll", int col = 0)
         {
             ctx.UseCallFunctionOnBeforeGetProperties = use_cfo;
 

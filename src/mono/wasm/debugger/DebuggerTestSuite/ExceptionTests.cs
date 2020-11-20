@@ -11,7 +11,7 @@ using Xunit;
 namespace DebuggerTests
 {
 
-    public class ExceptionTests : SingleSessionTestBase
+    public class ExceptionTests : DebuggerTestBase
     {
         [Fact]
         public async Task ExceptionTestAll()

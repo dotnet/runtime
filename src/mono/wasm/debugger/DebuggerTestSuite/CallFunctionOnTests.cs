@@ -11,7 +11,7 @@ using Xunit;
 namespace DebuggerTests
 {
 
-    public class CallFunctionOnTests : SingleSessionTestBase
+    public class CallFunctionOnTests : DebuggerTestBase
     {
 
         // This tests `callFunctionOn` with a function that the vscode-js-debug extension uses

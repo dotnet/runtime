@@ -14,7 +14,7 @@ using Xunit;
 namespace DebuggerTests
 {
 
-    public class SourceList : SingleSessionTestBase
+    public class SourceList : DebuggerTestBase
     {
 
         [Fact]

@@ -8,7 +8,7 @@ using Xunit;
 
 namespace DebuggerTests
 {
-    public class DateTimeList : SingleSessionTestBase
+    public class DateTimeList : DebuggerTestBase
     {
 
         [Theory]

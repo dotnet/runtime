@@ -9,7 +9,7 @@ using Xunit;
 
 namespace DebuggerTests
 {
-    public class SteppingTests : SingleSessionTestBase
+    public class SteppingTests : DebuggerTestBase
     {
         [Fact]
         public async Task TrivalStepping()

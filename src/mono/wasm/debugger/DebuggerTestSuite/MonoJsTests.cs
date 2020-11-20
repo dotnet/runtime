@@ -11,7 +11,7 @@ using Xunit;
 
 namespace DebuggerTests
 {
-    public class MonoJsTests : SingleSessionTestBase
+    public class MonoJsTests : DebuggerTestBase
     {
         [Fact]
         public async Task FixupNameValueObjectsWithMissingParts()

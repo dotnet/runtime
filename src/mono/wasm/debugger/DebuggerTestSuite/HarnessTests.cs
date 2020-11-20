@@ -12,7 +12,7 @@ using Xunit;
 
 namespace DebuggerTests
 {
-    public class HarnessTests : SingleSessionTestBase
+    public class HarnessTests : DebuggerTestBase
     {
         [Fact]
         public async Task TimedOutWaitingForInvalidBreakpoint()
