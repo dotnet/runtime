@@ -9,6 +9,7 @@
 #include "ep.h"
 #include "ep-event-instance.h"
 #include "ep-rt.h"
+#include <inttypes.h>
 
 #ifdef EP_CHECKED_BUILD
 
@@ -134,7 +135,7 @@ ep_json_file_write_event_data (
 			json_file_write_string (json_file, buffer);
 	}
 
-	characters_written = ep_rt_utf8_string_snprintf (buffer, EP_ARRAY_SIZE (buffer), "\"Thread (%ld)\"]},", (uint64_t)thread_id);
+	characters_written = ep_rt_utf8_string_snprintf (buffer, EP_ARRAY_SIZE (buffer), "\"Thread (%" PRIu64 ")\"]},", ep_rt_thread_id_t_to_uint64_t (thread_id));
 	if (characters_written > 0 && characters_written < EP_ARRAY_SIZE (buffer))
 		json_file_write_string (json_file, buffer);
 }

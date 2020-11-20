@@ -134,5 +134,7 @@ typedef struct _rt_mono_event_internal_t ep_rt_wait_event_handle_t;
 typedef struct _rt_mono_lock_internal_t ep_rt_lock_handle_t;
 typedef ep_rt_lock_handle_t ep_rt_spin_lock_handle_t;
 
+typedef MonoNativeThreadId ep_rt_thread_id_t;
+
 #endif /* ENABLE_PERFTRACING */
 #endif /* __EVENTPIPE_RT_TYPES_MONO_H__ */

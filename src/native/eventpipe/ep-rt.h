@@ -468,7 +468,7 @@ uint32_t
 ep_rt_processors_get_count (void);
 
 static
-size_t
+ep_rt_thread_id_t
 ep_rt_current_thread_get_id (void);
 
 static
@@ -690,8 +690,16 @@ ep_rt_thread_handle_t
 ep_rt_thread_get_handle (void);
 
 static
-size_t
+ep_rt_thread_id_t
 ep_rt_thread_get_id (ep_rt_thread_handle_t thread_handle);
+
+static
+uint64_t
+ep_rt_thread_id_t_to_uint64_t (ep_rt_thread_id_t thread_id);
+
+static
+ep_rt_thread_id_t
+ep_rt_uint64_t_to_thread_id_t (uint64_t thread_id);
 
 static
 bool
