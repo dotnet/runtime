@@ -2006,7 +2006,7 @@ FCIMPLEND
  * a boxed zero-inited instance of the value type. The "fGetUninitializedObject"
  * parameter dictates whether the caller is RuntimeHelpers.GetUninitializedObject or
  * Activator.CreateInstance, which have different behavior w.r.t. what exceptions are
- * thrown on failure and how nullables are handled.
+ * thrown on failure and how nullables and COM types are handled.
  */
 void QCALLTYPE RuntimeTypeHandle::GetAllocatorFtn(
     QCall::TypeHandle pTypeHandle,
@@ -2058,12 +2058,16 @@ void QCALLTYPE RuntimeTypeHandle::GetAllocatorFtn(
 
     // Don't allow abstract classes or interface types
     if (pMT->IsAbstract()) {
-        COMPlusThrow(kMemberAccessException, W("Acc_CreateAbst"));
+        RuntimeExceptionKind exKind = fGetUninitializedObject ? kMemberAccessException : kMissingMethodException;
+        if (pMT->IsInterface())
+            COMPlusThrow(exKind, W("Acc_CreateInterface"));
+        else
+            COMPlusThrow(exKind, W("Acc_CreateAbst"));
     }
 
     // Don't allow open generics or generics instantiated over __Canon
     if (pMT->ContainsGenericVariables()) {
-        COMPlusThrow(kMemberAccessException, W("Acc_CreateGeneric"));
+        COMPlusThrow(fGetUninitializedObject ? kMemberAccessException : kArgumentException, W("Acc_CreateGeneric"));
     }
     if (pMT->IsSharedByGenericInstantiations()) {
         COMPlusThrow(kNotSupportedException, W("NotSupported_Type"));
@@ -2079,8 +2083,14 @@ void QCALLTYPE RuntimeTypeHandle::GetAllocatorFtn(
 
 #ifdef FEATURE_COMINTEROP
     // COM allocation can involve the __ComObject base type (with attached CLSID) or an RCW type.
-    // We'll optimistically return a reference to the allocator, which will fail if there's not
-    // a legal CLSID associated with the requested type.
+    // For Activator.CreateInstance, we'll optimistically return a reference to the allocator,
+    // which will fail if there's not a legal CLSID associated with the requested type.
+    // For __ComObject, Activator.CreateInstance will special-case this and replace it with a stub.
+    // RuntimeHelpers.GetUninitializedObject always fails when it sees COM objects.
+    if (fGetUninitializedObject && pMT->IsComObjectType())
+    {
+        COMPlusThrow(kNotSupportedException, W("NotSupported_ManagedActivation"));
+    }
 #endif // FEATURE_COMINTEROP
 
     // If the caller is GetUninitializedInstance, they'll want a boxed T instead of a boxed Nullable<T>.
