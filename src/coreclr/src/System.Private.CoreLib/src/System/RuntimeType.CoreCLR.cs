@@ -3883,7 +3883,7 @@ namespace System
             if (args.Length == 0 && (bindingAttr & BindingFlags.Public) != 0 && (bindingAttr & BindingFlags.Instance) != 0
                 && (IsGenericCOMObjectImpl() || IsValueType))
             {
-                instance = CreateInstanceDefaultCtor(publicOnly, wrapExceptions);
+                instance = CreateInstanceDefaultCtor(publicOnly, skipCheckThis: false, fillCache: true, wrapExceptions);
             }
             else
             {
@@ -3959,10 +3959,13 @@ namespace System
             Justification = "Implementation detail of Activator that linker intrinsically recognizes")]
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2085:UnrecognizedReflectionPattern",
             Justification = "Implementation detail of Activator that linker intrinsically recognizes")]
-        internal object? CreateInstanceDefaultCtor(bool publicOnly, bool wrapExceptions)
+        internal object? CreateInstanceDefaultCtor(bool publicOnly, bool skipCheckThis, bool fillCache, bool wrapExceptions)
         {
             // Get or create the cached factory. Creating the cache will fail if one
             // of our invariant checks fails; e.g., no appropriate ctor found.
+            //
+            // n.b. In coreclr we ignore 'skipCheckThis' (assumed to be false)
+            // and 'fillCache' (assumed to be true).
 
             if (GenericCache is not ActivatorCache cache)
             {

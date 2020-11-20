@@ -27,7 +27,7 @@ namespace System.Collections.Generic
 
             if (typeof(IComparable<T>).IsAssignableFrom(typeof(T)))
             {
-                defaultArraySortHelper = (IArraySortHelper<T>)typeof(GenericArraySortHelper<string>).TypeHandle.Instantiate(new Type[] { typeof(T) }).CreateInstanceDefaultCtor(publicOnly: false, wrapExceptions: false)!;
+                defaultArraySortHelper = (IArraySortHelper<T>)typeof(GenericArraySortHelper<string>).TypeHandle.Instantiate(new Type[] { typeof(T) }).CreateInstanceDefaultCtor(publicOnly: false, skipCheckThis: true, fillCache: false, wrapExceptions: false)!;
             }
             else
             {
@@ -62,7 +62,7 @@ namespace System.Collections.Generic
 
             if (typeof(IComparable<TKey>).IsAssignableFrom(typeof(TKey)))
             {
-                defaultArraySortHelper = (IArraySortHelper<TKey, TValue>)typeof(GenericArraySortHelper<string, string>).TypeHandle.Instantiate(new Type[] { typeof(TKey), typeof(TValue) }).CreateInstanceDefaultCtor(publicOnly: false, wrapExceptions: false)!;
+                defaultArraySortHelper = (IArraySortHelper<TKey, TValue>)typeof(GenericArraySortHelper<string, string>).TypeHandle.Instantiate(new Type[] { typeof(TKey), typeof(TValue) }).CreateInstanceDefaultCtor(publicOnly: false, skipCheckThis: true, fillCache: false, wrapExceptions: false)!;
             }
             else
             {

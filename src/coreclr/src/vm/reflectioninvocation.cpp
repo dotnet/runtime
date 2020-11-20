@@ -2192,7 +2192,11 @@ void QCALLTYPE RuntimeTypeHandle::AllocateComObject(
 
     if (!allocated)
     {
+#ifdef FEATURE_COMINTEROP
         COMPlusThrow(kInvalidComObjectException, IDS_EE_NO_BACKING_CLASS_FACTORY);
+#else // FEATURE_COMINTEROP
+        COMPlusThrow(kPlatformNotSupportedException, IDS_EE_NO_BACKING_CLASS_FACTORY);
+#endif // FEATURE_COMINTEROP
     }
 
     END_QCALL;
