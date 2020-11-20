@@ -76,7 +76,6 @@ endif ()
 add_library(System.Native-Static
     STATIC
     ${NATIVE_SOURCES}
-    entrypoints.c
 )
 
 if (CLR_CMAKE_TARGET_IOS OR CLR_CMAKE_TARGET_TVOS)

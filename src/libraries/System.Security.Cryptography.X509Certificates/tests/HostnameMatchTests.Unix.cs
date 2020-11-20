@@ -181,19 +181,13 @@ namespace System.Security.Cryptography.X509Certificates.Tests
 
         private static bool CheckHostname(X509Certificate2 cert, string targetName)
         {
-            int value = Interop.Crypto.CheckX509Hostname(cert.Handle, targetName, targetName.Length);
+            int value = CheckX509Hostname(cert.Handle, targetName, targetName.Length);
             GC.KeepAlive(cert);
             Assert.InRange(value, 0, 1);
             return value != 0;
         }
-    }
-}
 
-internal static partial class Interop
-{
-    internal static partial class Crypto
-    {
         [DllImport(Interop.Libraries.CryptoNative, EntryPoint = "CryptoNative_CheckX509Hostname")]
-        internal static extern int CheckX509Hostname(System.IntPtr x509, string hostname, int cchHostname);
+        private static extern int CheckX509Hostname(IntPtr x509, string hostname, int cchHostname);
     }
 }

@@ -94,7 +94,6 @@ endif()
 add_library(System.Security.Cryptography.Native.OpenSsl-Static
     STATIC
     $<TARGET_OBJECTS:objlib>
-    entrypoints.c
 )
 
 set_target_properties(System.Security.Cryptography.Native.OpenSsl-Static PROPERTIES OUTPUT_NAME System.Security.Cryptography.Native.OpenSsl CLEAN_DIRECT_OUTPUT 1)

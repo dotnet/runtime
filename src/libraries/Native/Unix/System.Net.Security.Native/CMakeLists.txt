@@ -36,7 +36,6 @@ endif()
 add_library(System.Net.Security.Native-Static
     STATIC
     ${NATIVEGSS_SOURCES}
-    entrypoints.c
 )
 
 set_target_properties(System.Net.Security.Native-Static PROPERTIES OUTPUT_NAME System.Net.Security.Native CLEAN_DIRECT_OUTPUT 1)
