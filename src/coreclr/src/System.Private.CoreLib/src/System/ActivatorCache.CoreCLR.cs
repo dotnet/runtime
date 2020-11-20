@@ -81,6 +81,8 @@ namespace System
                             // handles we create live for the lifetime of the app, but that's ok since it
                             // matches coreclr's internal implementation anyway (see GetComClassHelper).
 
+                            [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2072:UnrecognizedReflectionPattern",
+                                Justification = "Linker already saw this type through Activator/Type.CreateInstance.")]
                             static object AllocateComObject(IntPtr runtimeTypeHandle)
                             {
                                 RuntimeType rt = (RuntimeType)GCHandle.FromIntPtr(runtimeTypeHandle).Target!;
