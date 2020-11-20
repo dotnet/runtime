@@ -17,9 +17,12 @@ namespace Microsoft.WebAssembly.Diagnostics
         DevToolsQueue _queue;
         ClientWebSocket socket;
         List<Task> pending_ops = new List<Task>();
-        TaskCompletionSource<bool> side_exit = new TaskCompletionSource<bool>();
+        TaskCompletionSource _clientInitiatedClose = new TaskCompletionSource();
+        TaskCompletionSource _shutdownRequested = new TaskCompletionSource();
         TaskCompletionSource _pendingOpsChanged = new TaskCompletionSource();
         protected readonly ILogger logger;
+
+        public event EventHandler<(RunLoopStopReason reason, Exception ex)> RunLoopStopped;
 
         public DevToolsClient(ILogger logger)
         {
@@ -36,16 +39,31 @@ namespace Microsoft.WebAssembly.Diagnostics
             Dispose(true);
         }
 
-        public async Task Close(CancellationToken cancellationToken)
-        {
-            if (socket.State == WebSocketState.Open)
-                await socket.CloseOutputAsync(WebSocketCloseStatus.NormalClosure, "Closing", cancellationToken);
-        }
-
         protected virtual void Dispose(bool disposing)
         {
             if (disposing)
                 socket.Dispose();
+        }
+
+        public async Task Shutdown(CancellationToken cancellationToken)
+        {
+            if (_shutdownRequested.Task.IsCompleted)
+            {
+                logger.LogDebug($"Shutdown was already requested once. socket: {socket.State}. Ignoring");
+                return;
+            }
+
+            try
+            {
+                _shutdownRequested.SetResult();
+
+                if (!cancellationToken.IsCancellationRequested && socket.State == WebSocketState.Open)
+                    await socket.CloseOutputAsync(WebSocketCloseStatus.NormalClosure, "Closing", cancellationToken);
+            }
+            catch (Exception ex) when (ex is IOException || ex is WebSocketException || ex is OperationCanceledException)
+            {
+                logger.LogDebug($"DevToolsClient.Shutdown: Close failed, but ignoring: {ex}");
+            }
         }
 
         async Task<string> ReadOne(CancellationToken token)
@@ -54,51 +72,53 @@ namespace Microsoft.WebAssembly.Diagnostics
             var mem = new MemoryStream();
             while (true)
             {
-                var result = await this.socket.ReceiveAsync(new ArraySegment<byte>(buff), token);
-                if (result.MessageType == WebSocketMessageType.Close)
+                if (socket.State != WebSocketState.Open)
                 {
+                    logger.LogDebug($"Socket is no longer open");
+                    _clientInitiatedClose.TrySetResult();
                     return null;
                 }
 
+                WebSocketReceiveResult result;
+                try
+                {
+                    result = await socket.ReceiveAsync(new ArraySegment<byte>(buff), token).ConfigureAwait(false);
+                }
+                catch (Exception ex)
+                {
+                    if (token.IsCancellationRequested || _shutdownRequested.Task.IsCompletedSuccessfully)
+                        return null;
+
+                    logger.LogDebug($"DevToolsClient.ReadOne threw {ex.Message}, token: {token.IsCancellationRequested}, _shutdown: {_shutdownRequested.Task.Status}, clientInitiated: {_clientInitiatedClose.Task.Status}");
+                    throw;
+                }
+
+                if (result.MessageType == WebSocketMessageType.Close)
+                {
+                    _clientInitiatedClose.TrySetResult();
+                    return null;
+                }
+
+                mem.Write(buff, 0, result.Count);
                 if (result.EndOfMessage)
                 {
-                    mem.Write(buff, 0, result.Count);
                     return Encoding.UTF8.GetString(mem.GetBuffer(), 0, (int)mem.Length);
-                }
-                else
-                {
-                    mem.Write(buff, 0, result.Count);
                 }
             }
         }
 
         protected void Send(byte[] bytes, CancellationToken token)
         {
-            var sendTask = _queue.Send(bytes, token);
+            Task sendTask = _queue.Send(bytes, token);
             if (sendTask != null)
                 pending_ops.Add(sendTask);
         }
 
-        async Task MarkCompleteAfterward(Func<CancellationToken, Task> send, CancellationToken token)
-        {
-            try
-            {
-                await send(token);
-                side_exit.SetResult(true);
-            }
-            catch (Exception e)
-            {
-                side_exit.SetException(e);
-            }
-        }
-
-        protected async Task<bool> ConnectWithMainLoops(
+        protected async Task ConnectWithMainLoops(
             Uri uri,
             Func<string, CancellationToken, Task> receive,
-            Func<CancellationToken, Task> send,
             CancellationToken token)
         {
-
             logger.LogDebug("connecting to {0}", uri);
             this.socket = new ClientWebSocket();
             this.socket.Options.KeepAliveInterval = Timeout.InfiniteTimeSpan;
@@ -106,43 +126,115 @@ namespace Microsoft.WebAssembly.Diagnostics
             await this.socket.ConnectAsync(uri, token);
             _queue = new DevToolsQueue(socket);
 
-            pending_ops.Add(ReadOne(token));
-            pending_ops.Add(_pendingOpsChanged.Task);
-            pending_ops.Add(side_exit.Task);
-            pending_ops.Add(MarkCompleteAfterward(send, token));
+            var linkedCts = CancellationTokenSource.CreateLinkedTokenSource(token);
 
-            while (!token.IsCancellationRequested)
+            _ = Task.Run(async () =>
             {
-                var task = await Task.WhenAny(pending_ops);
+                try
+                {
+                    RunLoopStopReason reason;
+                    Exception exception;
+
+                    try
+                    {
+                        (reason, exception) = await RunLoop(uri, receive, linkedCts);
+                    }
+                    catch (Exception ex)
+                    {
+                        logger.LogDebug($"RunLoop threw an exception. (parentToken: {token.IsCancellationRequested}, linked: {linkedCts.IsCancellationRequested}): {ex} ");
+                        RunLoopStopped?.Invoke(this, (RunLoopStopReason.Exception, ex));
+                        return;
+                    }
+
+                    try
+                    {
+                        logger.LogDebug($"RunLoop stopped, reason: {reason}. (parentToken: {token.IsCancellationRequested}, linked: {linkedCts.IsCancellationRequested}): {exception?.Message}");
+                        RunLoopStopped?.Invoke(this, (reason, exception));
+                    }
+                    catch (Exception ex)
+                    {
+                        logger.LogError(ex, $"Invoking RunLoopStopped event failed for (reason: {reason}, exception: {exception})");
+                    }
+                }
+                finally
+                {
+                    logger.LogDebug($"Loop ended with pending_ops: {pending_ops?.Count}, socket: {socket.State}");
+                    linkedCts.Cancel();
+                    pending_ops = null;
+                }
+            });
+        }
+
+        private async Task<(RunLoopStopReason, Exception)> RunLoop(
+            Uri uri,
+            Func<string, CancellationToken, Task> receive,
+            CancellationTokenSource linkedCts)
+        {
+            pending_ops.InsertRange(0, new[]
+            {
+                ReadOne(linkedCts.Token),
+                _pendingOpsChanged.Task,
+                _clientInitiatedClose.Task,
+                _shutdownRequested.Task
+            });
+
+            // In case we had a Send called already
+            if (_queue.TryPump(linkedCts.Token, out Task sendTask))
+                pending_ops.Add(sendTask);
+
+            while (!linkedCts.IsCancellationRequested)
+            {
+                var task = await Task.WhenAny(pending_ops.ToArray()).ConfigureAwait(false);
+
+                if (task.IsCanceled && linkedCts.IsCancellationRequested)
+                    return (RunLoopStopReason.Cancelled, null);
+
+                if (_shutdownRequested.Task.IsCompleted)
+                    return (RunLoopStopReason.Shutdown, null);
+
+                if (_clientInitiatedClose.Task.IsCompleted)
+                    return (RunLoopStopReason.ClientInitiatedClose, new TaskCanceledException("Proxy or the browser closed the connection"));
+
                 if (task == pending_ops[0])
-                { //pending_ops[0] is for message reading
-                    var msg = ((Task<string>)task).Result;
-                    pending_ops[0] = ReadOne(token);
-                    Task tsk = receive(msg, token);
-                    if (tsk != null)
-                        pending_ops.Add(tsk);
+                {
+                    //pending_ops[0] is for message reading
+                    var msg = await (Task<string>)task;
+                    pending_ops[0] = ReadOne(linkedCts.Token);
+
+                    if (msg != null)
+                    {
+                        Task tsk = receive(msg, linkedCts.Token);
+                        if (tsk != null)
+                            pending_ops.Add(tsk);
+                    }
                 }
                 else if (task == pending_ops[1])
                 {
-                    // pending ops changed
+                    // Just needed to wake up. the new task has already
+                    // been added to pending_ops
                     _pendingOpsChanged = new TaskCompletionSource();
                     pending_ops[1] = _pendingOpsChanged.Task;
-                }
-                else if (task == pending_ops[2])
-                {
-                    var res = ((Task<bool>)task).Result;
-                    //it might not throw if exiting successfull
-                    return res;
                 }
                 else
                 { //must be a background task
                     pending_ops.Remove(task);
-                    if (_queue.TryPump(token, out Task sendTask))
-                        pending_ops.Add(sendTask);
+                    if (task == _queue.CurrentSend && _queue.TryPump(linkedCts.Token, out Task tsk))
+                        pending_ops.Add(tsk);
                 }
             }
 
-            return false;
+            if (linkedCts.IsCancellationRequested)
+                return (RunLoopStopReason.Cancelled, null);
+
+            return (RunLoopStopReason.Exception, new InvalidOperationException($"This shouldn't ever get thrown. Unsure why the loop stopped"));
         }
+    }
+
+    internal enum RunLoopStopReason
+    {
+        Shutdown,
+        Cancelled,
+        Exception,
+        ClientInitiatedClose
     }
 }
