@@ -1179,6 +1179,12 @@ namespace System.Text
                 return this;
             }
 
+            Span<char> tempBuffer = stackalloc char[24]; // should be enough for all primitives
+            if (value.TryFormat(tempBuffer, out int charsWritten, format: default, provider: null))
+            {
+                return Append(tempBuffer);
+            }
+
             return Append(value.ToString());
         }
 
