@@ -2078,12 +2078,9 @@ void QCALLTYPE RuntimeTypeHandle::GetAllocatorFtn(
     // transparent proxy or the jit will get confused.
 
 #ifdef FEATURE_COMINTEROP
-    // Never allow instantiation of the __ComObject base type, only RCWs.
-    // In a COM-enabled runitme, getNewHelperStatic will return an RCW-aware allocator.
-    if (IsComObjectClass(typeHandle))
-    {
-        COMPlusThrow(kNotSupportedException, W("NotSupported_ManagedActivation"));
-    }
+    // COM allocation can involve the __ComObject base type (with attached CLSID) or an RCW type.
+    // We'll optimistically return a reference to the allocator, which will fail if there's not
+    // a legal CLSID associated with the requested type.
 #endif // FEATURE_COMINTEROP
 
     // If the caller is GetUninitializedInstance, they'll want a boxed T instead of a boxed Nullable<T>.
@@ -2138,6 +2135,46 @@ MethodDesc* QCALLTYPE RuntimeTypeHandle::GetDefaultCtor(
     END_QCALL;
 
     return pMethodDesc;
+}
+
+/*
+ * Given a RuntimeType that represents __ComObject, activates an instance of the
+ * COM object and returns a RCW around it. Throws if activation fails or if the
+ * RuntimeType isn't __ComObject.
+ */
+void QCALLTYPE RuntimeTypeHandle::AllocateComObject(
+    QCall::ObjectHandleOnStack refRuntimeType,
+    QCall::ObjectHandleOnStack retInstance)
+{
+    QCALL_CONTRACT;
+
+    REFLECTCLASSBASEREF refThis = (REFLECTCLASSBASEREF)refRuntimeType.Get();
+    bool allocated = false;
+
+    BEGIN_QCALL;
+
+#ifdef FEATURE_COMINTEROP
+#ifdef FEATURE_COMINTEROP_UNMANAGED_ACTIVATION
+    if (IsComObjectClass(refThis->GetType()))
+    {
+        SyncBlock* pSyncBlock = refThis->GetSyncBlock();
+
+        void* pClassFactory = (void*)pSyncBlock->GetInteropInfo()->GetComClassFactory();
+        if (pClassFactory)
+        {
+            retInstance.Set(((ComClassFactory*)pClassFactory)->CreateInstance(NULL));
+            allocated = true;
+        }
+    }
+#endif // FEATURE_COMINTEROP_UNMANAGED_ACTIVATION
+#endif // FEATURE_COMINTEROP
+
+    if (!allocated)
+    {
+        COMPlusThrow(kInvalidComObjectException, IDS_EE_NO_BACKING_CLASS_FACTORY);
+    }
+
+    END_QCALL;
 }
 
 //*************************************************************************************************

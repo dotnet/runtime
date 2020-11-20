@@ -122,19 +122,15 @@ class RuntimeTypeHandle {
 public:
 
     // Static method on RuntimeTypeHandle
-    static FCDECL1(Object*, Allocate, ReflectClassBaseObject *refType) ; //A.CI work
-    static FCDECL6(Object*, CreateInstance, ReflectClassBaseObject* refThisUNSAFE,
-                                            CLR_BOOL publicOnly,
-                                            CLR_BOOL wrapExceptions,
-                                            CLR_BOOL *pbCanBeCached,
-                                            MethodDesc** pConstructor,
-                                            CLR_BOOL *pbHasNoDefaultCtor);
 
     static
     void QCALLTYPE GetAllocatorFtn(QCall::TypeHandle pTypeHandle, PCODE* ppNewobjHelper, MethodTable** ppMT, BOOL fGetUninitializedObject);
 
     static
     MethodDesc* QCALLTYPE GetDefaultCtor(QCall::TypeHandle pTypeHandle);
+
+    static
+    void QCALLTYPE AllocateComObject(QCall::ObjectHandleOnStack refRuntimeType, QCall::ObjectHandleOnStack retInstance);
 
     static
     void QCALLTYPE MakeByRef(QCall::TypeHandle pTypeHandle, QCall::ObjectHandleOnStack retType);

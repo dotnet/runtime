@@ -200,9 +200,6 @@ namespace System
         internal static extern object CreateInstance(RuntimeType type, bool publicOnly, bool wrapExceptions, ref bool canBeCached, ref RuntimeMethodHandleInternal ctor, ref bool hasNoDefaultCtor);
 
         [MethodImpl(MethodImplOptions.InternalCall)]
-        internal static extern object Allocate(RuntimeType type);
-
-        [MethodImpl(MethodImplOptions.InternalCall)]
         internal static extern object CreateInstanceForAnotherGenericParameter(RuntimeType type, RuntimeType genericParameter);
 
         /// <summary>
@@ -253,6 +250,29 @@ namespace System
 
         [DllImport(RuntimeHelpers.QCall, CharSet = CharSet.Unicode)]
         private static extern RuntimeMethodHandleInternal GetDefaultCtor(QCallTypeHandle typeHandle);
+
+        /// <summary>
+        /// Given a RuntimeType which represents __ComObject, activates the class and creates
+        /// a RCW around it.
+        /// </summary>
+        /// <exception cref="InvalidComObjectException">No CLSID present, or invalid CLSID.</exception>
+        internal static object AllocateComObject(
+            [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors | DynamicallyAccessedMemberTypes.NonPublicConstructors)] RuntimeType type)
+        {
+            Debug.Assert(type != null);
+
+            // n.b. use ObjectHandleOnStack instead of QCallTypeHandle since runtime needs the actual RuntimeType instance,
+            // not just its underlying TypeHandle.
+
+            object activatedInstance = null!;
+            AllocateComObject(ObjectHandleOnStack.Create(ref type), ObjectHandleOnStack.Create(ref activatedInstance));
+
+            Debug.Assert(activatedInstance != null);
+            return activatedInstance;
+        }
+
+        [DllImport(RuntimeHelpers.QCall, CharSet = CharSet.Unicode)]
+        private static extern void AllocateComObject(ObjectHandleOnStack runtimeType, ObjectHandleOnStack activatedInstance);
 
         internal RuntimeType GetRuntimeType()
         {
