@@ -140,15 +140,16 @@ namespace System.Runtime.CompilerServices
             [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors | DynamicallyAccessedMemberTypes.NonPublicConstructors)]
             Type type)
         {
+            Debug.Assert(type != null);
             RuntimeType rt = (RuntimeType)type;
-            Debug.Assert(rt != null);
 
-            // If type is Nullable<T>, get newobj for boxed T instead.
-            delegate*<MethodTable*, object> newobjHelper = RuntimeTypeHandle.GetNewobjHelperFnPtr(rt, out MethodTable* pMT, unwrapNullable: true);
-            Debug.Assert(newobjHelper != null);
+            // If type is Nullable<T>, returns the allocator and MethodTable* for the underlying T.
+            delegate*<MethodTable*, object> pfnAllocator = RuntimeTypeHandle.GetAllocatorFtn(rt, out MethodTable* pMT, forGetUninitializedObject: true, wrapExceptions: false);
+            Debug.Assert(pfnAllocator != null);
             Debug.Assert(pMT != null);
+            Debug.Assert(!pMT->IsNullable, "Should've unwrapped any Nullable<T> input.");
 
-            object retVal = newobjHelper(pMT);
+            object retVal = pfnAllocator(pMT);
             GC.KeepAlive(rt); // don't allow the type to be collected before the object is instantiated
 
             return retVal;

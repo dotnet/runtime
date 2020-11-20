@@ -2,13 +2,11 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics.CodeAnalysis;
-using System.Reflection;
 using System.Globalization;
-using System.Runtime.CompilerServices;
+using System.Reflection;
 using System.Runtime.Loader;
 using System.Runtime.Remoting;
 using System.Threading;
-using System.Diagnostics;
 
 namespace System
 {
@@ -94,7 +92,7 @@ namespace System
                 throw new ArgumentNullException(nameof(type));
 
             if (type.UnderlyingSystemType is RuntimeType rt)
-                return rt.CreateInstanceDefaultCtor(publicOnly: !nonPublic, skipCheckThis: false, fillCache: true, wrapExceptions: wrapExceptions);
+                return rt.CreateInstanceDefaultCtor(publicOnly: !nonPublic, wrapExceptions: wrapExceptions);
 
             throw new ArgumentException(SR.Arg_MustBeType, nameof(type));
         }
@@ -150,7 +148,7 @@ namespace System
         [System.Runtime.CompilerServices.Intrinsic]
         public static T CreateInstance<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)]T>()
         {
-            return (T)((RuntimeType)typeof(T)).CreateInstanceDefaultCtor(publicOnly: true, skipCheckThis: true, fillCache: true, wrapExceptions: true)!;
+            return (T)((RuntimeType)typeof(T)).CreateInstanceDefaultCtor(publicOnly: true, wrapExceptions: true)!;
         }
 
         private static T CreateDefaultInstance<T>() where T : struct => default;

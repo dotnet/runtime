@@ -2003,22 +2003,26 @@ FCIMPLEND
  * Given a TypeHandle, returns the address of the NEWOBJ helper function that creates
  * a zero-inited instance of this type. If NEWOBJ is not supported on this TypeHandle,
  * throws an exception. If TypeHandle is a value type, the NEWOBJ helper will create
- * a boxed zero-inited instance of the value type. If fUnwrapNullable is specified,
- * then if the input type handle is Nullable<T> we'll return the newobj helper and
- * MethodTable* for the underlying T.
+ * a boxed zero-inited instance of the value type. The "fGetUninitializedObject"
+ * parameter dictates whether the caller is RuntimeHelpers.GetUninitializedObject or
+ * Activator.CreateInstance, which have different behavior w.r.t. what exceptions are
+ * thrown on failure and how nullables and COM types are handled.
  */
-void QCALLTYPE RuntimeTypeHandle::GetNewobjHelperFnPtr(
+void QCALLTYPE RuntimeTypeHandle::GetAllocatorFtn(
     QCall::TypeHandle pTypeHandle,
     PCODE* ppNewobjHelper,
     MethodTable** ppMT,
-    BOOL fUnwrapNullable)
+    BOOL fGetUninitializedObject,
+    BOOL* pfFailedWhileRunningCctor)
 {
     CONTRACTL{
         QCALL_CHECK;
         PRECONDITION(CheckPointer(ppNewobjHelper));
         PRECONDITION(CheckPointer(ppMT));
+        PRECONDITION(CheckPointer(pfFailedWhileRunningCctor));
         PRECONDITION(*ppNewobjHelper == NULL);
         PRECONDITION(*ppMT == NULL);
+        PRECONDITION(!*pfFailedWhileRunningCctor);
     }
     CONTRACTL_END;
 
@@ -2026,10 +2030,16 @@ void QCALLTYPE RuntimeTypeHandle::GetNewobjHelperFnPtr(
 
     TypeHandle typeHandle = pTypeHandle.AsTypeHandle();
 
-    // Don't allow void, arrays, pointers, byrefs, or function pointers.
-    if (typeHandle.IsTypeDesc() || typeHandle.IsArray() || typeHandle.GetSignatureCorElementType() == ELEMENT_TYPE_VOID)
+    // Don't allow void
+    if (typeHandle.GetSignatureCorElementType() == ELEMENT_TYPE_VOID)
     {
-        COMPlusThrow(kArgumentException, W("Argument_InvalidValue"));
+        COMPlusThrow(kArgumentException, W("NotSupported_Type"));
+    }
+
+    // Don't allow arrays, pointers, byrefs, or function pointers
+    if (typeHandle.IsTypeDesc() || typeHandle.IsArray())
+    {
+        COMPlusThrow(fGetUninitializedObject ? kArgumentException : kMissingMethodException, W("NotSupported_Type"));
     }
 
     MethodTable* pMT = typeHandle.AsMethodTable();
@@ -2037,27 +2047,35 @@ void QCALLTYPE RuntimeTypeHandle::GetNewobjHelperFnPtr(
 
     pMT->EnsureInstanceActive();
 
-    // Don't allow creating instances of void or delegates
-    if (pMT == CoreLibBinder::GetElementType(ELEMENT_TYPE_VOID) || pMT->IsDelegate())
+    // Don't allow creating instances of delegates
+    if (pMT->IsDelegate())
     {
-        COMPlusThrow(kArgumentException, W("Argument_InvalidValue"));
+        COMPlusThrow(kArgumentException, W("NotSupported_Type"));
     }
 
     // Don't allow string or string-like (variable length) types.
     if (pMT->HasComponentSize())
     {
-        COMPlusThrow(kArgumentException, W("Argument_NoUninitializedStrings"));
+        COMPlusThrow(fGetUninitializedObject ? kArgumentException : kMissingMethodException, W("Argument_NoUninitializedStrings"));
     }
 
     // Don't allow abstract classes or interface types
     if (pMT->IsAbstract()) {
-        COMPlusThrow(kMemberAccessException, W("Acc_CreateAbst"));
+        RuntimeExceptionKind exKind = fGetUninitializedObject ? kMemberAccessException : kMissingMethodException;
+        if (pMT->IsInterface())
+            COMPlusThrow(exKind, W("Acc_CreateInterface"));
+        else
+            COMPlusThrow(exKind, W("Acc_CreateAbst"));
     }
 
-    // Don't allow open generics or generics instantiated over __Canon
-    if (pMT->ContainsGenericVariables()) {
+    // Don't allow generic variables (e.g., the 'T' from List<T>)
+    // or open generic types (List<>).
+    if (typeHandle.ContainsGenericVariables())
+    {
         COMPlusThrow(kMemberAccessException, W("Acc_CreateGeneric"));
     }
+
+    // Don't allow generics instantiated over __Canon
     if (pMT->IsSharedByGenericInstantiations()) {
         COMPlusThrow(kNotSupportedException, W("NotSupported_Type"));
     }
@@ -2071,17 +2089,20 @@ void QCALLTYPE RuntimeTypeHandle::GetNewobjHelperFnPtr(
     // transparent proxy or the jit will get confused.
 
 #ifdef FEATURE_COMINTEROP
-    // Never allow instantiation of the __ComObject base type, only RCWs.
-    // In a COM-enabled runitme, getNewHelperStatic will return an RCW-aware allocator.
-    if (IsComObjectClass(typeHandle))
+    // COM allocation can involve the __ComObject base type (with attached CLSID) or an RCW type.
+    // For Activator.CreateInstance, we'll optimistically return a reference to the allocator,
+    // which will fail if there's not a legal CLSID associated with the requested type.
+    // For __ComObject, Activator.CreateInstance will special-case this and replace it with a stub.
+    // RuntimeHelpers.GetUninitializedObject always fails when it sees COM objects.
+    if (fGetUninitializedObject && pMT->IsComObjectType())
     {
         COMPlusThrow(kNotSupportedException, W("NotSupported_ManagedActivation"));
     }
 #endif // FEATURE_COMINTEROP
 
-    // If the caller passed Nullable<T> and wanted nullables unwrapped,
-    // instead pretend they had passed the 'T' directly.
-    if (fUnwrapNullable && Nullable::IsNullableType(pMT))
+    // If the caller is GetUninitializedInstance, they'll want a boxed T instead of a boxed Nullable<T>.
+    // Other callers will get the MethodTable* corresponding to Nullable<T>.
+    if (fGetUninitializedObject && Nullable::IsNullableType(pMT))
     {
         pMT = pMT->GetInstantiation()[0].GetMethodTable();
     }
@@ -2089,7 +2110,9 @@ void QCALLTYPE RuntimeTypeHandle::GetNewobjHelperFnPtr(
     // Run the type's cctor if needed (if not marked beforefieldinit)
     if (pMT->HasPreciseInitCctors())
     {
+        *pfFailedWhileRunningCctor = TRUE;
         pMT->CheckRunClassInitAsIfConstructingThrowing();
+        *pfFailedWhileRunningCctor = FALSE;
     }
 
     // And we're done!
@@ -2106,11 +2129,13 @@ void QCALLTYPE RuntimeTypeHandle::GetNewobjHelperFnPtr(
  * Given a TypeHandle, returns the MethodDesc* for the default (parameterless) ctor,
  * or nullptr if the parameterless ctor doesn't exist. For reference types, the parameterless
  * ctor has a managed (object @this) -> void calling convention. For value types,
- * the parameterless ctor has a managed (ref T @this) -> void calling convention.
+ * the parameterless ctor has a managed (ref T @this) -> void calling convention, unless
+ * fForceBoxedEntryPoint is set, then managed (object @this) -> void stub is returned.
  * The returned MethodDesc* is appropriately instantiated over any necessary generic args.
  */
 MethodDesc* QCALLTYPE RuntimeTypeHandle::GetDefaultCtor(
-    QCall::TypeHandle pTypeHandle)
+    QCall::TypeHandle pTypeHandle,
+    BOOL fForceBoxedEntryPoint)
 {
     QCALL_CONTRACT;
 
@@ -2125,12 +2150,52 @@ MethodDesc* QCALLTYPE RuntimeTypeHandle::GetDefaultCtor(
     pMT->EnsureInstanceActive();
     if (pMT->HasDefaultConstructor())
     {
-        pMethodDesc = pMT->GetDefaultConstructor();
+        pMethodDesc = pMT->GetDefaultConstructor(fForceBoxedEntryPoint);
     }
 
     END_QCALL;
 
     return pMethodDesc;
+}
+
+/*
+ * Given a RuntimeType that represents __ComObject, activates an instance of the
+ * COM object and returns a RCW around it. Throws if activation fails or if the
+ * RuntimeType isn't __ComObject.
+ */
+void QCALLTYPE RuntimeTypeHandle::AllocateComObject(
+    QCall::ObjectHandleOnStack refRuntimeType,
+    QCall::ObjectHandleOnStack retInstance)
+{
+    QCALL_CONTRACT;
+
+    REFLECTCLASSBASEREF refThis = (REFLECTCLASSBASEREF)refRuntimeType.Get();
+    bool allocated = false;
+
+    BEGIN_QCALL;
+
+#ifdef FEATURE_COMINTEROP
+#ifdef FEATURE_COMINTEROP_UNMANAGED_ACTIVATION
+    if (IsComObjectClass(refThis->GetType()))
+    {
+        SyncBlock* pSyncBlock = refThis->GetSyncBlock();
+
+        void* pClassFactory = (void*)pSyncBlock->GetInteropInfo()->GetComClassFactory();
+        if (pClassFactory)
+        {
+            retInstance.Set(((ComClassFactory*)pClassFactory)->CreateInstance(NULL));
+            allocated = true;
+        }
+    }
+#endif // FEATURE_COMINTEROP_UNMANAGED_ACTIVATION
+#endif // FEATURE_COMINTEROP
+
+    if (!allocated)
+    {
+        COMPlusThrow(kInvalidComObjectException, IDS_EE_NO_BACKING_CLASS_FACTORY);
+    }
+
+    END_QCALL;
 }
 
 //*************************************************************************************************
