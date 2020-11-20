@@ -75,6 +75,7 @@ extern jmethodID g_GCMParameterSpecCtor;
 #define LOG_ERROR(fmt, ...) ((void)__android_log_print(ANDROID_LOG_ERROR, "DOTNET", "%s: " fmt, __FUNCTION__, ## __VA_ARGS__))
 #define JSTRING(str) ((jstring)(*env)->NewStringUTF(env, str))
 
+void SaveTo(uint8_t* src, uint8_t** dst, size_t len);
 jobject ToGRef(JNIEnv *env, jobject lref);
 void ReleaseGRef(JNIEnv *env, jobject gref);
 jclass GetClassGRef(JNIEnv *env, const char* name);

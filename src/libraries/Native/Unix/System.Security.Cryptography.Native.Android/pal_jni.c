@@ -97,6 +97,13 @@ bool CheckJNIExceptions(JNIEnv* env)
     return false;
 }
 
+void SaveTo(uint8_t* src, uint8_t** dst, size_t len)
+{
+    assert(!(*dst));
+    *dst = (uint8_t*)malloc(len * sizeof(uint8_t));
+    memcpy(*dst, src, len);
+}
+
 jmethodID GetMethod(JNIEnv *env, bool isStatic, jclass klass, const char* name, const char* sig)
 {
     LOG_DEBUG("Finding %s method", name);
@@ -151,9 +158,6 @@ JNI_OnLoad(JavaVM *vm, void *reserved)
     g_sksClass =                GetClassGRef(env, "javax/crypto/spec/SecretKeySpec");
     g_sksCtor =                 GetMethod(env, false, g_sksClass, "<init>", "([BLjava/lang/String;)V");
 
-    g_GCMParameterSpecClass =   GetClassGRef(env, "javax/crypto/spec/GCMParameterSpec");
-    g_GCMParameterSpecCtor =    GetMethod(env, false, g_GCMParameterSpecClass, "<init>", "(I[B)V");
-
     g_cipherClass =             GetClassGRef(env, "javax/crypto/Cipher");
     g_cipherGetInstanceMethod = GetMethod(env, true,  g_cipherClass, "getInstance", "(Ljava/lang/String;)Ljavax/crypto/Cipher;");
     g_getBlockSizeMethod =      GetMethod(env, false, g_cipherClass, "getBlockSize", "()I");
@@ -163,6 +167,9 @@ JNI_OnLoad(JavaVM *vm, void *reserved)
 
     g_ivPsClass =               GetClassGRef(env, "javax/crypto/spec/IvParameterSpec");
     g_ivPsCtor =                GetMethod(env, false, g_ivPsClass, "<init>", "([B)V");
+
+    g_GCMParameterSpecClass =   GetClassGRef(env, "javax/crypto/spec/GCMParameterSpec");
+    g_GCMParameterSpecCtor =    GetMethod(env, false, g_GCMParameterSpecClass, "<init>", "(I[B)V");
 
     g_bigNumClass =             GetClassGRef(env, "java/math/BigInteger");
     g_bigNumCtor =              GetMethod(env, false, g_bigNumClass, "<init>", "([B)V");

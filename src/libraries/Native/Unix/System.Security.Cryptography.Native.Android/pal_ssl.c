@@ -3,7 +3,6 @@
 
 #include "pal_ssl.h"
 
-
 int32_t CryptoNative_OpenSslGetProtocolSupport(SslProtocols protocol)
 {
     JNIEnv* env = GetJNIEnv();
@@ -23,8 +22,15 @@ int32_t CryptoNative_OpenSslGetProtocolSupport(SslProtocols protocol)
             (!strcmp(protocolStrPtr, "TLSv1.3") && protocol == PAL_SSL_TLS13))
         {
             supported = 1;
+            (*env)->ReleaseStringUTFChars(env, protocolStr, protocolStrPtr);
+            (*env)->DeleteLocalRef(env, protocolStr);
+            break;
         }
         (*env)->ReleaseStringUTFChars(env, protocolStr, protocolStrPtr);
+        (*env)->DeleteLocalRef(env, protocolStr);
     }
+    (*env)->DeleteLocalRef(env, sslCtxObj);
+    (*env)->DeleteLocalRef(env, sslParametersObj);
+    (*env)->DeleteLocalRef(env, protocols);
     return supported;
 }
