@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+#include <string.h>
 #include <stdint.h>
 
 // Include System.IO.Compression.Native headers
@@ -10,33 +11,47 @@
 #include "../brotli/include/brotli/port.h"
 #include "../brotli/include/brotli/types.h"
 
-#define FCFuncStart(name) EXTERN_C const void* name[]; const void* name[] = {
-#define FCFuncEnd() (void*)0x01 /* FCFuncFlag_EndOfArray */ };
+#ifndef lengthof
+#define lengthof(rg)    (sizeof(rg)/sizeof(rg[0]))
+#endif
 
-#define QCFuncElement(name,impl) \
-    (void*)0x8 /* FCFuncFlag_QCall */, (void*)(impl), (void*)name,
+typedef struct
+{
+    const char* name;
+    const void* method;
+} Entry;
 
-FCFuncStart(gEmbedded_Brotli)
-    QCFuncElement("BrotliDecoderCreateInstance", BrotliDecoderCreateInstance)
-    QCFuncElement("BrotliDecoderDecompress", BrotliDecoderDecompress)
-    QCFuncElement("BrotliDecoderDecompressStream", BrotliDecoderDecompressStream)
-    QCFuncElement("BrotliDecoderDestroyInstance", BrotliDecoderDestroyInstance)
-    QCFuncElement("BrotliDecoderIsFinished", BrotliDecoderIsFinished)
-    QCFuncElement("BrotliEncoderCompress", BrotliEncoderCompress)
-    QCFuncElement("BrotliEncoderCompressStream", BrotliEncoderCompressStream)
-    QCFuncElement("BrotliEncoderCreateInstance", BrotliEncoderCreateInstance)
-    QCFuncElement("BrotliEncoderDestroyInstance", BrotliEncoderDestroyInstance)
-    QCFuncElement("BrotliEncoderHasMoreOutput", BrotliEncoderHasMoreOutput)
-    QCFuncElement("BrotliEncoderSetParameter", BrotliEncoderSetParameter)
-FCFuncEnd()
+static Entry s_compressionNative[] =
+{
+    {"BrotliDecoderCreateInstance", BrotliDecoderCreateInstance},
+    {"BrotliDecoderDecompress", BrotliDecoderDecompress},
+    {"BrotliDecoderDecompressStream", BrotliDecoderDecompressStream},
+    {"BrotliDecoderDestroyInstance", BrotliDecoderDestroyInstance},
+    {"BrotliDecoderIsFinished", BrotliDecoderIsFinished},
+    {"BrotliEncoderCompress", BrotliEncoderCompress},
+    {"BrotliEncoderCompressStream", BrotliEncoderCompressStream},
+    {"BrotliEncoderCreateInstance", BrotliEncoderCreateInstance},
+    {"BrotliEncoderDestroyInstance", BrotliEncoderDestroyInstance},
+    {"BrotliEncoderHasMoreOutput", BrotliEncoderHasMoreOutput},
+    {"BrotliEncoderSetParameter", BrotliEncoderSetParameter},
+    {"CompressionNative_Crc32", CompressionNative_Crc32},
+    {"CompressionNative_Deflate", CompressionNative_Deflate},
+    {"CompressionNative_DeflateEnd", CompressionNative_DeflateEnd},
+    {"CompressionNative_DeflateInit2_", CompressionNative_DeflateInit2_},
+    {"CompressionNative_Inflate", CompressionNative_Inflate},
+    {"CompressionNative_InflateEnd", CompressionNative_InflateEnd},
+    {"CompressionNative_InflateInit2_", CompressionNative_InflateInit2_},
+};
 
-FCFuncStart(gEmbedded_zlib)
-    QCFuncElement("crc32", CompressionNative_Crc32)
-    QCFuncElement("Deflate", CompressionNative_Deflate)
-    QCFuncElement("DeflateEnd", CompressionNative_DeflateEnd)
-    QCFuncElement("DeflateInit2_", CompressionNative_DeflateInit2_)
-    QCFuncElement("Inflate", CompressionNative_Inflate)
-    QCFuncElement("InflateEnd", CompressionNative_InflateEnd)
-    QCFuncElement("InflateInit2_", CompressionNative_InflateInit2_)
-FCFuncEnd()
+extern const void* CompressionResolveDllImport(const char* name)
+{
+    for (int i = 0; i < lengthof(s_compressionNative); i++)
+    {
+        if (strcmp(name, s_compressionNative[i].name) == 0)
+        {
+            return s_compressionNative[i].method;
+        }
+    }
 
+    return NULL;
+}

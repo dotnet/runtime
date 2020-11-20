@@ -18,6 +18,10 @@
 #include "../../vm/gdbjithelpers.h"
 #endif // FEATURE_GDBJIT
 #include "bundle.h"
+#include "pinvokeoverride.h"
+
+// TODO: WIP, this is for testing, will remove later.
+#include "pinvokeoverrideimpl.h"
 
 #define ASSERTE_ALL_BUILDS(expr) _ASSERTE_ALL_BUILDS(__FILE__, (expr))
 
@@ -210,6 +214,14 @@ int coreclr_initialize(
 #endif
 
     g_hostpolicy_embedded = hostPolicyEmbedded;
+
+    // TODO: WIP, fetch this from args similar to Bundle/bundleProbe
+    //
+    // if (overider != nullptr)
+    // {
+    //     PInvokeOverride::SetPInvokeOverride(overrider);
+    // }
+    PInvokeOverride::SetPInvokeOverride(SuperHost::ResolveDllImport);
 
     ReleaseHolder<ICLRRuntimeHost4> host;
 
