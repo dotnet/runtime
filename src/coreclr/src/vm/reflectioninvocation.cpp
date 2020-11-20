@@ -2012,14 +2012,17 @@ void QCALLTYPE RuntimeTypeHandle::GetAllocatorFtn(
     QCall::TypeHandle pTypeHandle,
     PCODE* ppNewobjHelper,
     MethodTable** ppMT,
-    BOOL fGetUninitializedObject)
+    BOOL fGetUninitializedObject,
+    BOOL* pfFailedWhileRunningCctor)
 {
     CONTRACTL{
         QCALL_CHECK;
         PRECONDITION(CheckPointer(ppNewobjHelper));
         PRECONDITION(CheckPointer(ppMT));
+        PRECONDITION(CheckPointer(pfFailedWhileRunningCctor));
         PRECONDITION(*ppNewobjHelper == NULL);
         PRECONDITION(*ppMT == NULL);
+        PRECONDITION(!*pfFailedWhileRunningCctor);
     }
     CONTRACTL_END;
 
@@ -2114,7 +2117,9 @@ void QCALLTYPE RuntimeTypeHandle::GetAllocatorFtn(
     // Run the type's cctor if needed (if not marked beforefieldinit)
     if (pMT->HasPreciseInitCctors())
     {
+        *pfFailedWhileRunningCctor = TRUE;
         pMT->CheckRunClassInitAsIfConstructingThrowing();
+        *pfFailedWhileRunningCctor = FALSE;
     }
 
     // And we're done!

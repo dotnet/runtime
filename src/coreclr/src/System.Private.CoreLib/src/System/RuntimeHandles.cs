@@ -214,12 +214,13 @@ namespace System
             // constructor are an academic problem. Valuetypes with no constructors are a problem,
             // but IL Linker currently treats them as always implicitly boxed.
             [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors | DynamicallyAccessedMemberTypes.NonPublicConstructors)] RuntimeType type,
-            out MethodTable* pMT, bool forGetUninitializedObject)
+            out MethodTable* pMT, bool forGetUninitializedObject, bool wrapExceptions)
         {
             Debug.Assert(type != null);
 
             delegate*<MethodTable*, object> pNewobjHelperTemp = null;
             MethodTable* pMTTemp = null;
+            Interop.BOOL fFailedWhileRunningCctor = Interop.BOOL.FALSE;
 
             try
             {
@@ -227,27 +228,29 @@ namespace System
                     new QCallTypeHandle(ref type),
                     &pNewobjHelperTemp,
                     &pMTTemp,
-                    forGetUninitializedObject ? Interop.BOOL.TRUE : Interop.BOOL.FALSE);
+                    forGetUninitializedObject ? Interop.BOOL.TRUE : Interop.BOOL.FALSE,
+                    &fFailedWhileRunningCctor);
             }
             catch (Exception ex)
             {
-                // If the inner exception is populated, probably a failed cctor, and we should
-                // propagate the exception as-is. If the exception is a type that we understand,
-                // we should make the error message friendlier so as to include the name of the type
-                // that couldn't be instantiated.
+                // If the cctor failed, propagate the exception as-is, wrapping in a TIE
+                // if needed. Otherwise, make the error message friendlier by including
+                // the name of the type that couldn't be instantiated.
 
-                if (ex.InnerException is null)
+                if (fFailedWhileRunningCctor != Interop.BOOL.FALSE)
                 {
-                    string friendlyMessage = SR.Format(SR.ActivatorCache_CannotGetAllocator, type, ex.Message);
+                    if (wrapExceptions) throw new TargetInvocationException(ex);
+                    else throw; // rethrow original, no TIE
+                }
 
-                    switch (ex)
-                    {
-                        case ArgumentException: throw new ArgumentException(friendlyMessage);
-                        case NotSupportedException: throw new NotSupportedException(friendlyMessage);
-                        case MethodAccessException: throw new MethodAccessException(friendlyMessage);
-                        case MissingMethodException: throw new MissingMethodException(friendlyMessage);
-                        case MemberAccessException: throw new MemberAccessException(friendlyMessage);
-                    }
+                string friendlyMessage = SR.Format(SR.ActivatorCache_CannotGetAllocator, type, ex.Message);
+                switch (ex)
+                {
+                    case ArgumentException: throw new ArgumentException(friendlyMessage);
+                    case NotSupportedException: throw new NotSupportedException(friendlyMessage);
+                    case MethodAccessException: throw new MethodAccessException(friendlyMessage);
+                    case MissingMethodException: throw new MissingMethodException(friendlyMessage);
+                    case MemberAccessException: throw new MemberAccessException(friendlyMessage);
                 }
 
                 throw; // can't make a friendlier message, rethrow original exception
@@ -258,7 +261,7 @@ namespace System
         }
 
         [DllImport(RuntimeHelpers.QCall, CharSet = CharSet.Unicode)]
-        private static extern void GetAllocatorFtn(QCallTypeHandle typeHandle, delegate*<MethodTable*, object>* ppNewobjHelper, MethodTable** ppMT, Interop.BOOL fGetUninitializedObject);
+        private static extern void GetAllocatorFtn(QCallTypeHandle typeHandle, delegate*<MethodTable*, object>* ppNewobjHelper, MethodTable** ppMT, Interop.BOOL fGetUninitializedObject, Interop.BOOL* pfFailedWhileRunningCctor);
 
         /// <summary>
         /// Returns the MethodDesc* for this type's parameterless instance ctor.

@@ -30,7 +30,9 @@ namespace System
             private readonly WeakReference<RuntimeType> _originalRuntimeType; // don't prevent the RT from being collected
 #endif
 
-            internal ActivatorCache([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors | DynamicallyAccessedMemberTypes.NonPublicConstructors)] RuntimeType rt)
+            internal ActivatorCache(
+                [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors | DynamicallyAccessedMemberTypes.NonPublicConstructors)] RuntimeType rt,
+                bool wrapExceptions)
             {
                 Debug.Assert(rt != null);
 
@@ -38,7 +40,7 @@ namespace System
                 _originalRuntimeType = new WeakReference<RuntimeType>(rt);
 #endif
 
-                _pfnAllocator = (delegate*<IntPtr, object>)RuntimeTypeHandle.GetAllocatorFtn(rt, out MethodTable* pMT, forGetUninitializedObject: false);
+                _pfnAllocator = (delegate*<IntPtr, object>)RuntimeTypeHandle.GetAllocatorFtn(rt, out MethodTable* pMT, forGetUninitializedObject: false, wrapExceptions);
                 _allocatorFirstArg = (IntPtr)pMT;
 
                 RuntimeMethodHandleInternal ctorHandle = RuntimeMethodHandleInternal.EmptyHandle; // default nullptr

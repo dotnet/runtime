@@ -144,7 +144,7 @@ namespace System.Runtime.CompilerServices
             Debug.Assert(rt != null);
 
             // If type is Nullable<T>, returns the allocator and MethodTable* for the underlying T.
-            delegate*<MethodTable*, object> pfnAllocator = RuntimeTypeHandle.GetAllocatorFtn(rt, out MethodTable* pMT, forGetUninitializedObject: true);
+            delegate*<MethodTable*, object> pfnAllocator = RuntimeTypeHandle.GetAllocatorFtn(rt, out MethodTable* pMT, forGetUninitializedObject: true, wrapExceptions: false);
             Debug.Assert(pfnAllocator != null);
             Debug.Assert(pMT != null);
             Debug.Assert(!pMT->IsNullable, "Should've unwrapped any Nullable<T> input.");

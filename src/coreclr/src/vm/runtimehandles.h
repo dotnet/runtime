@@ -124,7 +124,7 @@ public:
     // Static method on RuntimeTypeHandle
 
     static
-    void QCALLTYPE GetAllocatorFtn(QCall::TypeHandle pTypeHandle, PCODE* ppNewobjHelper, MethodTable** ppMT, BOOL fGetUninitializedObject);
+    void QCALLTYPE GetAllocatorFtn(QCall::TypeHandle pTypeHandle, PCODE* ppNewobjHelper, MethodTable** ppMT, BOOL fGetUninitializedObject, BOOL* pfFailedWhileRunningCctor);
 
     static
     MethodDesc* QCALLTYPE GetDefaultCtor(QCall::TypeHandle pTypeHandle, BOOL fForceBoxedEntryPoint);

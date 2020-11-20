@@ -3966,7 +3966,7 @@ namespace System
 
             if (GenericCache is not ActivatorCache cache)
             {
-                cache = new ActivatorCache(this);
+                cache = new ActivatorCache(this, wrapExceptions);
                 GenericCache = cache;
             }
 
