@@ -253,6 +253,7 @@ namespace System.Security.Cryptography.Pkcs
                 {
                     return false;
                 }
+
                 anyFound = true;
 
                 if (!ekuExt.Critical)
