@@ -120,7 +120,6 @@ ipc_init_listener (
 	result_bind = bind (server_socket, server_address, server_address_len);
 	DS_EXIT_BLOCKING_PAL_SECTION;
 
-	EP_ASSERT (result_bind != -1);
 	if (result_bind == -1) {
 		if (callback)
 			callback (strerror (errno), errno);

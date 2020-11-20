@@ -66,8 +66,8 @@ public:
     static void Initialize()
     {
         s_cgroup_version = FindCGroupVersion();
-        s_memory_cgroup_path = FindCGroupPath(&IsCGroup1MemorySubsystem);
-        s_cpu_cgroup_path = FindCGroupPath(&IsCGroup1CpuSubsystem);
+        s_memory_cgroup_path = FindCGroupPath(s_cgroup_version == 1 ? &IsCGroup1MemorySubsystem : nullptr);
+        s_cpu_cgroup_path = FindCGroupPath(s_cgroup_version == 1 ? &IsCGroup1CpuSubsystem : nullptr);
     }
 
     static void Cleanup()
@@ -257,12 +257,19 @@ private:
 
             if (strncmp(filesystemType, "cgroup", 6) == 0)
             {
-                char* context = nullptr;
-                char* strTok = strtok_r(options, ",", &context);
-                while (strTok != nullptr)
+                bool isSubsystemMatch = is_subsystem == nullptr;
+                if (!isSubsystemMatch)
                 {
-                    if ((s_cgroup_version == 2) || ((s_cgroup_version == 1) && is_subsystem(strTok)))
+                    char* context = nullptr;
+                    char* strTok = strtok_r(options, ",", &context);
+                    while (!isSubsystemMatch && strTok != nullptr)
                     {
+                        isSubsystemMatch = is_subsystem(strTok);
+                        strTok = strtok_r(nullptr, ",", &context);
+                    }
+                }
+                if (isSubsystemMatch)
+                {
                         mountpath = (char*)malloc(lineLen+1);
                         if (mountpath == nullptr)
                             goto done;
@@ -281,9 +288,6 @@ private:
                         *pmountpath = mountpath;
                         *pmountroot = mountroot;
                         mountpath = mountroot = nullptr;
-                        goto done;
-                    }
-                    strTok = strtok_r(nullptr, ",", &context);
                 }
             }
         }

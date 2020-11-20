@@ -12,9 +12,11 @@
     <OutputPath>$(RuntimeBinDir)/crossgen2</OutputPath>
     <GenerateRuntimeConfigurationFiles>true</GenerateRuntimeConfigurationFiles>
     <EnableDefaultEmbeddedResourceItems>false</EnableDefaultEmbeddedResourceItems>
-    <RuntimeIdentifiers>linux-x64;linux-musl-x64;win-x64</RuntimeIdentifiers>
+    <RuntimeIdentifiers>linux-x64;linux-musl-x64;osx-x64;win-x64</RuntimeIdentifiers>
     <Configurations>Debug;Release;Checked</Configurations>
     <ServerGarbageCollection>true</ServerGarbageCollection>
+    <!-- The default value for macOS is false -->
+    <UseAppHost>true</UseAppHost>
   </PropertyGroup>
 
   <ItemGroup Label="Embedded Resources">
