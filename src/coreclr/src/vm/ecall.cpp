@@ -660,7 +660,7 @@ LPVOID ECall::GetQCallImpl(MethodDesc * pMD)
     if (id == 0)
     {
         id = ECall::GetIDForMethod(pMD);
-        _ASSERTE_MSG(id != 0, pMD->m_pszDebugMethodName);
+        _ASSERTE(id != 0);
 
         // Cache the id
         ((NDirectMethodDesc *)pMD)->SetECallID(id);
@@ -683,11 +683,9 @@ LPVOID ECall::GetQCallImpl(MethodDesc * pMD)
     // SuppressUnmanagedCodeSecurityAttribute on QCalls suppresses a full demand, but there's still a link demand
     // for unmanaged code permission. All QCalls should be private or internal and wrapped in a managed method
     // to suppress this link demand.
-
-    // TODO: HACK HACK HACK  uncomment this
-    //CONSISTENCY_CHECK_MSGF(!fPublicOrProtected,
-    //    ("%s::%s has to be private or internal.",
-    //    pMD->m_pszDebugClassName, pMD->m_pszDebugMethodName));
+    CONSISTENCY_CHECK_MSGF(!fPublicOrProtected,
+        ("%s::%s has to be private or internal.",
+        pMD->m_pszDebugClassName, pMD->m_pszDebugMethodName));
 #endif
 
     return cur->m_pImplementation;
