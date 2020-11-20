@@ -3775,7 +3775,7 @@
   <data name="NotSupported_CodeBase" xml:space="preserve">
     <value>CodeBase is not supported on assemblies loaded from a single-file bundle.</value>
   </data>
-  <data name="ActivatorCache_CannotGetAllocator" xml:space="preserve">
+  <data name="Activator_CannotCreateInstance" xml:space="preserve">
     <value>Cannot dynamically create an instance of type '{0}'. Reason: {1}</value>
   </data>
 </root>

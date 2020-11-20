@@ -243,7 +243,7 @@ namespace System
                     else throw; // rethrow original, no TIE
                 }
 
-                string friendlyMessage = SR.Format(SR.ActivatorCache_CannotGetAllocator, type, ex.Message);
+                string friendlyMessage = SR.Format(SR.Activator_CannotCreateInstance, type, ex.Message);
                 switch (ex)
                 {
                     case ArgumentException: throw new ArgumentException(friendlyMessage);

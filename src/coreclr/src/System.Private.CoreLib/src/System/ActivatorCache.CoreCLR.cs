@@ -27,7 +27,7 @@ namespace System
             private readonly delegate*<object?, void> _pfnCtor;
 
 #if DEBUG
-            private readonly WeakReference<RuntimeType> _originalRuntimeType; // don't prevent the RT from being collected
+            private readonly RuntimeType _originalRuntimeType;
 #endif
 
             internal ActivatorCache(
@@ -37,7 +37,7 @@ namespace System
                 Debug.Assert(rt != null);
 
 #if DEBUG
-                _originalRuntimeType = new WeakReference<RuntimeType>(rt);
+                _originalRuntimeType = rt;
 #endif
 
                 // The check below is redundant since these same checks are performed at the
@@ -148,8 +148,12 @@ namespace System
                 // as the object itself will keep the type alive.
 
 #if DEBUG
-                Debug.Assert(_originalRuntimeType.TryGetTarget(out RuntimeType? originalRT) && originalRT == rt,
-                    "Caller passed the wrong RuntimeType to this routine.");
+                if (_originalRuntimeType != rt)
+                {
+                    Debug.Fail("Caller passed the wrong RuntimeType to this routine."
+                        + Environment.NewLineConst + "Expected: " + (_originalRuntimeType ?? (object)"<null>")
+                        + Environment.NewLineConst + "Actual: " + (rt ?? (object)"<null>"));
+                }
 #endif
 
                 object? retVal = _pfnAllocator(_allocatorFirstArg);
