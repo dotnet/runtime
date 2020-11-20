@@ -8,7 +8,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <NativeBinary Include="$(RuntimeBinDir)ildasm$(ApplicationFileExtension)" />
+    <NativeBinary Include="$(RuntimeBinDir)ildasm$(ExeSuffix)" />
   </ItemGroup>
 
   <Import Project="$([MSBuild]::GetPathOfFileAbove(Directory.Build.targets))" />

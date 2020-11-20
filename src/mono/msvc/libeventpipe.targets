@@ -3,140 +3,148 @@
   <PropertyGroup>
     <ExcludeEventPipeFromBuild Condition="'$(MONO_ENABLE_PERFTRACING)'=='true'">false</ExcludeEventPipeFromBuild>
     <ExcludeEventPipeFromBuild Condition="'$(MONO_ENABLE_PERFTRACING)'=='' Or '$(MONO_ENABLE_PERFTRACING)'!='true'">true</ExcludeEventPipeFromBuild>
+    <SharedEventPipeSourceLocation>$(MonoSourceLocation)\..\native\eventpipe\</SharedEventPipeSourceLocation>
+    <MonoEventPipeSourceLocation>$(MonoSourceLocation)\mono\eventpipe\</MonoEventPipeSourceLocation>
   </PropertyGroup>
-  <ItemGroup Label="libeventpipe">
-    <ClCompile Include="$(MonoSourceLocation)\mono\eventpipe\ds.c">
+  <ItemGroup Label="libeventpipe_shared">
+    <ClCompile Include="$(SharedEventPipeSourceLocation)ds.c">
       <ExcludedFromBuild>$(ExcludeEventPipeFromBuild)</ExcludedFromBuild>
     </ClCompile>
-    <ClCompile Include="$(MonoSourceLocation)\mono\eventpipe\ds-dump-protocol.c">
+    <ClCompile Include="$(SharedEventPipeSourceLocation)ds-dump-protocol.c">
       <ExcludedFromBuild>$(ExcludeEventPipeFromBuild)</ExcludedFromBuild>
     </ClCompile>
-    <ClInclude Include="$(MonoSourceLocation)\mono\eventpipe\ds-dump-protocol.h"/>
-    <ClCompile Include="$(MonoSourceLocation)\mono\eventpipe\ds-eventpipe-protocol.c">
+    <ClInclude Include="$(SharedEventPipeSourceLocation)ds-dump-protocol.h"/>
+    <ClCompile Include="$(SharedEventPipeSourceLocation)ds-eventpipe-protocol.c">
       <ExcludedFromBuild>$(ExcludeEventPipeFromBuild)</ExcludedFromBuild>
     </ClCompile>
-    <ClInclude Include="$(MonoSourceLocation)\mono\eventpipe\ds-eventpipe-protocol.h"/>
-    <ClInclude Include="$(MonoSourceLocation)\mono\eventpipe\ds-getter-setter.h"/>
-    <ClCompile Include="$(MonoSourceLocation)\mono\eventpipe\ds-ipc.c">
+    <ClInclude Include="$(SharedEventPipeSourceLocation)ds-eventpipe-protocol.h"/>
+    <ClInclude Include="$(SharedEventPipeSourceLocation)ds-getter-setter.h"/>
+    <ClCompile Include="$(SharedEventPipeSourceLocation)ds-ipc.c">
       <ExcludedFromBuild>$(ExcludeEventPipeFromBuild)</ExcludedFromBuild>
     </ClCompile>
-    <ClInclude Include="$(MonoSourceLocation)\mono\eventpipe\ds-ipc.h"/>
-    <ClCompile Include="$(MonoSourceLocation)\mono\eventpipe\ds-ipc-win32.c">
+    <ClInclude Include="$(SharedEventPipeSourceLocation)ds-ipc.h"/>
+    <ClCompile Include="$(SharedEventPipeSourceLocation)ds-ipc-posix.c">
+      <ExcludedFromBuild>true</ExcludedFromBuild>
+    </ClCompile>
+    <ClInclude Include="$(SharedEventPipeSourceLocation)ds-ipc-posix.h"/>
+    <ClCompile Include="$(SharedEventPipeSourceLocation)ds-ipc-win32.c">
       <ExcludedFromBuild>$(ExcludeEventPipeFromBuild)</ExcludedFromBuild>
     </ClCompile>
-    <ClInclude Include="$(MonoSourceLocation)\mono\eventpipe\ds-ipc-win32.h"/>
-    <ClCompile Include="$(MonoSourceLocation)\mono\eventpipe\ds-process-protocol.c">
+    <ClInclude Include="$(SharedEventPipeSourceLocation)ds-ipc-win32.h"/>
+    <ClCompile Include="$(SharedEventPipeSourceLocation)ds-process-protocol.c">
       <ExcludedFromBuild>$(ExcludeEventPipeFromBuild)</ExcludedFromBuild>
     </ClCompile>
-    <ClInclude Include="$(MonoSourceLocation)\mono\eventpipe\ds-process-protocol.h"/>
-    <ClCompile Include="$(MonoSourceLocation)\mono\eventpipe\ds-profiler-protocol.c">
+    <ClInclude Include="$(SharedEventPipeSourceLocation)ds-process-protocol.h"/>
+    <ClCompile Include="$(SharedEventPipeSourceLocation)ds-profiler-protocol.c">
       <ExcludedFromBuild>$(ExcludeEventPipeFromBuild)</ExcludedFromBuild>
     </ClCompile>
-    <ClInclude Include="$(MonoSourceLocation)\mono\eventpipe\ds-profiler-protocol.h"/>
-    <ClCompile Include="$(MonoSourceLocation)\mono\eventpipe\ds-protocol.c">
+    <ClInclude Include="$(SharedEventPipeSourceLocation)ds-profiler-protocol.h"/>
+    <ClCompile Include="$(SharedEventPipeSourceLocation)ds-protocol.c">
       <ExcludedFromBuild>$(ExcludeEventPipeFromBuild)</ExcludedFromBuild>
     </ClCompile>
-    <ClInclude Include="$(MonoSourceLocation)\mono\eventpipe\ds-protocol.h"/>
-    <ClInclude Include="$(MonoSourceLocation)\mono\eventpipe\ds-rt.h"/>
-    <ClInclude Include="$(MonoSourceLocation)\mono\eventpipe\ds-rt-config.h"/>
-    <ClCompile Include="$(MonoSourceLocation)\mono\eventpipe\ds-rt-mono.c">
+    <ClInclude Include="$(SharedEventPipeSourceLocation)ds-protocol.h"/>
+    <ClInclude Include="$(SharedEventPipeSourceLocation)ds-rt.h"/>
+    <ClInclude Include="$(SharedEventPipeSourceLocation)ds-rt-config.h"/>
+    <ClInclude Include="$(SharedEventPipeSourceLocation)ds-rt-types.h"/>
+    <ClCompile Include="$(SharedEventPipeSourceLocation)ds-server.c">
       <ExcludedFromBuild>$(ExcludeEventPipeFromBuild)</ExcludedFromBuild>
     </ClCompile>
-    <ClInclude Include="$(MonoSourceLocation)\mono\eventpipe\ds-rt-mono.h"/>
-    <ClInclude Include="$(MonoSourceLocation)\mono\eventpipe\ds-rt-types.h"/>
-    <ClInclude Include="$(MonoSourceLocation)\mono\eventpipe\ds-rt-types-mono.h"/>
-    <ClCompile Include="$(MonoSourceLocation)\mono\eventpipe\ds-server.c">
+    <ClInclude Include="$(SharedEventPipeSourceLocation)ds-server.h"/>
+    <ClInclude Include="$(SharedEventPipeSourceLocation)ds-types.h"/>
+    <ClCompile Include="$(SharedEventPipeSourceLocation)ep.c">
       <ExcludedFromBuild>$(ExcludeEventPipeFromBuild)</ExcludedFromBuild>
     </ClCompile>
-    <ClInclude Include="$(MonoSourceLocation)\mono\eventpipe\ds-server.h"/>
-    <ClInclude Include="$(MonoSourceLocation)\mono\eventpipe\ds-types.h"/>
-    <ClCompile Include="$(MonoSourceLocation)\mono\eventpipe\ep.c">
+    <ClInclude Include="$(SharedEventPipeSourceLocation)ep.h"/>
+    <ClCompile Include="$(SharedEventPipeSourceLocation)ep-block.c">
       <ExcludedFromBuild>$(ExcludeEventPipeFromBuild)</ExcludedFromBuild>
     </ClCompile>
-    <ClInclude Include="$(MonoSourceLocation)\mono\eventpipe\ep.h"/>
-    <ClCompile Include="$(MonoSourceLocation)\mono\eventpipe\ep-block.c">
+    <ClInclude Include="$(SharedEventPipeSourceLocation)ep-block.h"/>
+    <ClCompile Include="$(SharedEventPipeSourceLocation)ep-buffer.c">
       <ExcludedFromBuild>$(ExcludeEventPipeFromBuild)</ExcludedFromBuild>
     </ClCompile>
-    <ClInclude Include="$(MonoSourceLocation)\mono\eventpipe\ep-block.h"/>
-    <ClCompile Include="$(MonoSourceLocation)\mono\eventpipe\ep-buffer.c">
+    <ClInclude Include="$(SharedEventPipeSourceLocation)ep-buffer.h"/>
+    <ClCompile Include="$(SharedEventPipeSourceLocation)ep-buffer-manager.c">
       <ExcludedFromBuild>$(ExcludeEventPipeFromBuild)</ExcludedFromBuild>
     </ClCompile>
-    <ClInclude Include="$(MonoSourceLocation)\mono\eventpipe\ep-buffer.h"/>
-    <ClCompile Include="$(MonoSourceLocation)\mono\eventpipe\ep-buffer-manager.c">
+    <ClInclude Include="$(SharedEventPipeSourceLocation)ep-buffer-manager.h"/>
+    <ClCompile Include="$(SharedEventPipeSourceLocation)ep-config.c">
       <ExcludedFromBuild>$(ExcludeEventPipeFromBuild)</ExcludedFromBuild>
     </ClCompile>
-    <ClInclude Include="$(MonoSourceLocation)\mono\eventpipe\ep-buffer-manager.h"/>
-    <ClCompile Include="$(MonoSourceLocation)\mono\eventpipe\ep-config.c">
+    <ClInclude Include="$(SharedEventPipeSourceLocation)ep-config.h"/>
+    <ClInclude Include="$(SharedEventPipeSourceLocation)ep-config-internals.h"/>
+    <ClCompile Include="$(SharedEventPipeSourceLocation)ep-event.c">
       <ExcludedFromBuild>$(ExcludeEventPipeFromBuild)</ExcludedFromBuild>
     </ClCompile>
-    <ClInclude Include="$(MonoSourceLocation)\mono\eventpipe\ep-config.h"/>
-    <ClInclude Include="$(MonoSourceLocation)\mono\eventpipe\ep-config-internals.h"/>
-    <ClCompile Include="$(MonoSourceLocation)\mono\eventpipe\ep-event.c">
+    <ClInclude Include="$(SharedEventPipeSourceLocation)ep-event.h"/>
+    <ClCompile Include="$(SharedEventPipeSourceLocation)ep-event-instance.c">
       <ExcludedFromBuild>$(ExcludeEventPipeFromBuild)</ExcludedFromBuild>
     </ClCompile>
-    <ClInclude Include="$(MonoSourceLocation)\mono\eventpipe\ep-event.h"/>
-    <ClCompile Include="$(MonoSourceLocation)\mono\eventpipe\ep-event-instance.c">
+    <ClInclude Include="$(SharedEventPipeSourceLocation)ep-event-instance.h"/>
+    <ClCompile Include="$(SharedEventPipeSourceLocation)ep-event-payload.c">
       <ExcludedFromBuild>$(ExcludeEventPipeFromBuild)</ExcludedFromBuild>
     </ClCompile>
-    <ClInclude Include="$(MonoSourceLocation)\mono\eventpipe\ep-event-instance.h"/>
-    <ClCompile Include="$(MonoSourceLocation)\mono\eventpipe\ep-event-payload.c">
+    <ClInclude Include="$(SharedEventPipeSourceLocation)ep-event-payload.h"/>
+    <ClCompile Include="$(SharedEventPipeSourceLocation)ep-event-source.c">
       <ExcludedFromBuild>$(ExcludeEventPipeFromBuild)</ExcludedFromBuild>
     </ClCompile>
-    <ClInclude Include="$(MonoSourceLocation)\mono\eventpipe\ep-event-payload.h"/>
-    <ClCompile Include="$(MonoSourceLocation)\mono\eventpipe\ep-event-source.c">
+    <ClInclude Include="$(SharedEventPipeSourceLocation)ep-event-source.h"/>
+    <ClCompile Include="$(SharedEventPipeSourceLocation)ep-file.c">
       <ExcludedFromBuild>$(ExcludeEventPipeFromBuild)</ExcludedFromBuild>
     </ClCompile>
-    <ClInclude Include="$(MonoSourceLocation)\mono\eventpipe\ep-event-source.h"/>
-    <ClCompile Include="$(MonoSourceLocation)\mono\eventpipe\ep-file.c">
+    <ClInclude Include="$(SharedEventPipeSourceLocation)ep-file.h"/>
+    <ClInclude Include="$(SharedEventPipeSourceLocation)ep-getter-setter.h"/>
+    <ClCompile Include="$(SharedEventPipeSourceLocation)ep-json-file.c">
       <ExcludedFromBuild>$(ExcludeEventPipeFromBuild)</ExcludedFromBuild>
     </ClCompile>
-    <ClInclude Include="$(MonoSourceLocation)\mono\eventpipe\ep-file.h"/>
-    <ClInclude Include="$(MonoSourceLocation)\mono\eventpipe\ep-getter-setter.h"/>
-    <ClCompile Include="$(MonoSourceLocation)\mono\eventpipe\ep-json-file.c">
+    <ClInclude Include="$(SharedEventPipeSourceLocation)ep-json-file.h"/>
+    <ClCompile Include="$(SharedEventPipeSourceLocation)ep-metadata-generator.c">
       <ExcludedFromBuild>$(ExcludeEventPipeFromBuild)</ExcludedFromBuild>
     </ClCompile>
-    <ClInclude Include="$(MonoSourceLocation)\mono\eventpipe\ep-json-file.h"/>
-    <ClCompile Include="$(MonoSourceLocation)\mono\eventpipe\ep-metadata-generator.c">
+    <ClInclude Include="$(SharedEventPipeSourceLocation)ep-metadata-generator.h"/>
+    <ClCompile Include="$(SharedEventPipeSourceLocation)ep-provider.c">
       <ExcludedFromBuild>$(ExcludeEventPipeFromBuild)</ExcludedFromBuild>
     </ClCompile>
-    <ClInclude Include="$(MonoSourceLocation)\mono\eventpipe\ep-metadata-generator.h"/>
-    <ClCompile Include="$(MonoSourceLocation)\mono\eventpipe\ep-provider.c">
+    <ClInclude Include="$(SharedEventPipeSourceLocation)ep-provider.h"/>
+    <ClInclude Include="$(SharedEventPipeSourceLocation)ep-provider-internals.h"/>
+    <ClInclude Include="$(SharedEventPipeSourceLocation)ep-rt.h"/>
+    <ClInclude Include="$(SharedEventPipeSourceLocation)ep-rt-config.h"/>
+    <ClInclude Include="$(SharedEventPipeSourceLocation)ep-rt-types.h"/>
+    <ClCompile Include="$(SharedEventPipeSourceLocation)ep-thread.c">
       <ExcludedFromBuild>$(ExcludeEventPipeFromBuild)</ExcludedFromBuild>
     </ClCompile>
-    <ClInclude Include="$(MonoSourceLocation)\mono\eventpipe\ep-provider.h"/>
-    <ClInclude Include="$(MonoSourceLocation)\mono\eventpipe\ep-provider-internals.h"/>
-    <ClInclude Include="$(MonoSourceLocation)\mono\eventpipe\ep-rt.h"/>
-    <ClInclude Include="$(MonoSourceLocation)\mono\eventpipe\ep-rt-config.h"/>
-    <ClInclude Include="$(MonoSourceLocation)\mono\eventpipe\ep-rt-config-mono.h"/>
-    <ClCompile Include="$(MonoSourceLocation)\mono\eventpipe\ep-rt-mono.c">
+    <ClInclude Include="$(SharedEventPipeSourceLocation)ep-thread.h"/>
+    <ClInclude Include="$(SharedEventPipeSourceLocation)ep-types.h"/>
+    <ClCompile Include="$(SharedEventPipeSourceLocation)ep-sample-profiler.c">
       <ExcludedFromBuild>$(ExcludeEventPipeFromBuild)</ExcludedFromBuild>
     </ClCompile>
-    <ClInclude Include="$(MonoSourceLocation)\mono\eventpipe\ep-rt-mono.h"/>
-    <ClInclude Include="$(MonoSourceLocation)\mono\eventpipe\ep-rt-types.h"/>
-    <ClInclude Include="$(MonoSourceLocation)\mono\eventpipe\ep-rt-types-mono.h"/>
-    <ClCompile Include="$(MonoSourceLocation)\mono\eventpipe\ep-thread.c">
+    <ClInclude Include="$(SharedEventPipeSourceLocation)ep-sample-profiler.h"/>
+    <ClCompile Include="$(SharedEventPipeSourceLocation)ep-session.c">
       <ExcludedFromBuild>$(ExcludeEventPipeFromBuild)</ExcludedFromBuild>
     </ClCompile>
-    <ClInclude Include="$(MonoSourceLocation)\mono\eventpipe\ep-thread.h"/>
-    <ClInclude Include="$(MonoSourceLocation)\mono\eventpipe\ep-types.h"/>
-    <ClCompile Include="$(MonoSourceLocation)\mono\eventpipe\ep-sample-profiler.c">
+    <ClInclude Include="$(SharedEventPipeSourceLocation)ep-session.h"/>
+    <ClCompile Include="$(SharedEventPipeSourceLocation)ep-session-provider.c">
       <ExcludedFromBuild>$(ExcludeEventPipeFromBuild)</ExcludedFromBuild>
     </ClCompile>
-    <ClInclude Include="$(MonoSourceLocation)\mono\eventpipe\ep-sample-profiler.h"/>
-    <ClCompile Include="$(MonoSourceLocation)\mono\eventpipe\ep-session.c">
+    <ClCompile Include="$(SharedEventPipeSourceLocation)ep-stack-contents.c">
       <ExcludedFromBuild>$(ExcludeEventPipeFromBuild)</ExcludedFromBuild>
     </ClCompile>
-    <ClInclude Include="$(MonoSourceLocation)\mono\eventpipe\ep-session.h"/>
-    <ClCompile Include="$(MonoSourceLocation)\mono\eventpipe\ep-session-provider.c">
+    <ClInclude Include="$(SharedEventPipeSourceLocation)ep-stack-contents.h"/>
+    <ClCompile Include="$(SharedEventPipeSourceLocation)ep-stream.c">
       <ExcludedFromBuild>$(ExcludeEventPipeFromBuild)</ExcludedFromBuild>
     </ClCompile>
-    <ClCompile Include="$(MonoSourceLocation)\mono\eventpipe\ep-stack-contents.c">
+    <ClInclude Include="$(SharedEventPipeSourceLocation)ep-stream.h"/>
+  </ItemGroup>
+  <ItemGroup Label="libeventpipe_mono_shim">
+    <ClCompile Include="$(MonoEventPipeSourceLocation)ds-rt-mono.c">
       <ExcludedFromBuild>$(ExcludeEventPipeFromBuild)</ExcludedFromBuild>
     </ClCompile>
-    <ClInclude Include="$(MonoSourceLocation)\mono\eventpipe\ep-stack-contents.h"/>
-    <ClCompile Include="$(MonoSourceLocation)\mono\eventpipe\ep-stream.c">
+    <ClInclude Include="$(MonoEventPipeSourceLocation)ds-rt-mono.h"/>
+    <ClInclude Include="$(MonoEventPipeSourceLocation)ds-rt-types-mono.h"/>
+    <ClInclude Include="$(MonoEventPipeSourceLocation)ep-rt-config-mono.h"/>
+    <ClCompile Include="$(MonoEventPipeSourceLocation)ep-rt-mono.c">
       <ExcludedFromBuild>$(ExcludeEventPipeFromBuild)</ExcludedFromBuild>
     </ClCompile>
-    <ClInclude Include="$(MonoSourceLocation)\mono\eventpipe\ep-stream.h"/>
+    <ClInclude Include="$(MonoEventPipeSourceLocation)ep-rt-mono.h"/>
+    <ClInclude Include="$(MonoEventPipeSourceLocation)ep-rt-types-mono.h"/>
   </ItemGroup>
 </Project>

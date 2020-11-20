@@ -482,20 +482,12 @@ namespace System.Reflection.Emit
                                                 Type[][]? optionalCustomModifiers,
                                                 Type[]? optionalParameterTypes)
         {
-            SignatureHelper sig = SignatureHelper.GetMethodSigHelper(call, returnType);
-            if (parameterTypes != null)
-            {
-                for (int i = 0; i < parameterTypes.Length; i++)
-                {
-                    sig.AddArgument(parameterTypes[i], requiredCustomModifiers![i], optionalCustomModifiers![i]);
-                }
-            }
+            SignatureHelper sig = SignatureHelper.GetMethodSigHelper(null, call, returnType, null, null, parameterTypes, requiredCustomModifiers, optionalCustomModifiers);
+
             if (optionalParameterTypes != null && optionalParameterTypes.Length != 0)
             {
-                // add the sentinel
                 sig.AddSentinel();
-                foreach (Type t in optionalParameterTypes)
-                    sig.AddArgument(t);
+                sig.AddArguments(optionalParameterTypes, null, null);
             }
             return sig;
         }

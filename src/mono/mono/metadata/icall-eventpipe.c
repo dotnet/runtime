@@ -6,11 +6,11 @@
 #include <mono/metadata/icall-decl.h>
 
 #if defined(ENABLE_PERFTRACING) && !defined(DISABLE_EVENTPIPE)
-#include <mono/eventpipe/ep-rt-config.h>
-#include <mono/eventpipe/ep.h>
-#include <mono/eventpipe/ep-event.h>
-#include <mono/eventpipe/ep-event-instance.h>
-#include <mono/eventpipe/ep-session.h>
+#include <eventpipe/ep-rt-config.h>
+#include <eventpipe/ep.h>
+#include <eventpipe/ep-event.h>
+#include <eventpipe/ep-event-instance.h>
+#include <eventpipe/ep-session.h>
 
 #include <mono/utils/mono-time.h>
 #include <mono/utils/mono-proclib.h>

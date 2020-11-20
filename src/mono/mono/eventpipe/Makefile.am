@@ -3,87 +3,97 @@ MAKEFLAGS := $(MAKEFLAGS) --no-builtin-rules
 if !ENABLE_MSVC_ONLY
 if ENABLE_PERFTRACING
 
+shared_eventpipe_path=$(top_srcdir)/../native/eventpipe
 AM_CPPFLAGS = -I$(top_srcdir) -I$(top_srcdir)/mono $(GLIB_CFLAGS) $(SHARED_CFLAGS)
 
 noinst_LTLIBRARIES = libeventpipe.la
 
-eventpipe_sources = \
-	ds.c	\
-	ds-dump-protocol.c	\
-	ds-dump-protocol.h	\
-	ds-eventpipe-protocol.c	\
-	ds-eventpipe-protocol.h	\
-	ds-getter-setter.h	\
-	ds-ipc.c	\
-	ds-ipc.h	\
-	ds-ipc-posix.c	\
-	ds-ipc-posix.h	\
-	ds-process-protocol.c	\
-	ds-process-protocol.h	\
-	ds-profiler-protocol.c	\
-	ds-profiler-protocol.h	\
-	ds-protocol.c	\
-	ds-protocol.h	\
-	ds-rt.h	\
-	ds-rt-config.h	\
+shared_eventpipe_sources = \
+	$(shared_eventpipe_path)/ds.c	\
+	$(shared_eventpipe_path)/ds-dump-protocol.c	\
+	$(shared_eventpipe_path)/ds-dump-protocol.h	\
+	$(shared_eventpipe_path)/ds-eventpipe-protocol.c	\
+	$(shared_eventpipe_path)/ds-eventpipe-protocol.h	\
+	$(shared_eventpipe_path)/ds-getter-setter.h	\
+	$(shared_eventpipe_path)/ds-ipc.c	\
+	$(shared_eventpipe_path)/ds-ipc.h	\
+	$(shared_eventpipe_path)/ds-process-protocol.c	\
+	$(shared_eventpipe_path)/ds-process-protocol.h	\
+	$(shared_eventpipe_path)/ds-profiler-protocol.c	\
+	$(shared_eventpipe_path)/ds-profiler-protocol.h	\
+	$(shared_eventpipe_path)/ds-protocol.c	\
+	$(shared_eventpipe_path)/ds-protocol.h	\
+	$(shared_eventpipe_path)/ds-rt.h	\
+	$(shared_eventpipe_path)/ds-rt-config.h	\
+	$(shared_eventpipe_path)/ds-rt-types.h	\
+	$(shared_eventpipe_path)/ds-server.c	\
+	$(shared_eventpipe_path)/ds-server.h	\
+	$(shared_eventpipe_path)/ds-types.h	\
+	$(shared_eventpipe_path)/ep.c	\
+	$(shared_eventpipe_path)/ep.h	\
+	$(shared_eventpipe_path)/ep-block.c	\
+	$(shared_eventpipe_path)/ep-block.h	\
+	$(shared_eventpipe_path)/ep-buffer.c	\
+	$(shared_eventpipe_path)/ep-buffer.h	\
+	$(shared_eventpipe_path)/ep-buffer-manager.c	\
+	$(shared_eventpipe_path)/ep-buffer-manager.h	\
+	$(shared_eventpipe_path)/ep-config.c	\
+	$(shared_eventpipe_path)/ep-config.h	\
+	$(shared_eventpipe_path)/ep-config-internals.h	\
+	$(shared_eventpipe_path)/ep-event.c	\
+	$(shared_eventpipe_path)/ep-event.h	\
+	$(shared_eventpipe_path)/ep-event-instance.h	\
+	$(shared_eventpipe_path)/ep-event-instance.c	\
+	$(shared_eventpipe_path)/ep-event-payload.c	\
+	$(shared_eventpipe_path)/ep-event-payload.h	\
+	$(shared_eventpipe_path)/ep-event-source.c	\
+	$(shared_eventpipe_path)/ep-event-source.h	\
+	$(shared_eventpipe_path)/ep-file.c	\
+	$(shared_eventpipe_path)/ep-file.h	\
+	$(shared_eventpipe_path)/ep-getter-setter.h	\
+	$(shared_eventpipe_path)/ep-json-file.c	\
+	$(shared_eventpipe_path)/ep-json-file.h	\
+	$(shared_eventpipe_path)/ep-metadata-generator.c	\
+	$(shared_eventpipe_path)/ep-metadata-generator.h	\
+	$(shared_eventpipe_path)/ep-provider.c	\
+	$(shared_eventpipe_path)/ep-provider.h	\
+	$(shared_eventpipe_path)/ep-provider-internals.h	\
+	$(shared_eventpipe_path)/ep-rt.h	\
+	$(shared_eventpipe_path)/ep-rt-config.h	\
+	$(shared_eventpipe_path)/ep-rt-types.h	\
+	$(shared_eventpipe_path)/ep-thread.c	\
+	$(shared_eventpipe_path)/ep-thread.h	\
+	$(shared_eventpipe_path)/ep-types.h	\
+	$(shared_eventpipe_path)/ep-sample-profiler.c	\
+	$(shared_eventpipe_path)/ep-sample-profiler.h	\
+	$(shared_eventpipe_path)/ep-session.c	\
+	$(shared_eventpipe_path)/ep-session.h	\
+	$(shared_eventpipe_path)/ep-session-provider.c	\
+	$(shared_eventpipe_path)/ep-stack-contents.c	\
+	$(shared_eventpipe_path)/ep-stack-contents.h	\
+	$(shared_eventpipe_path)/ep-stream.c	\
+	$(shared_eventpipe_path)/ep-stream.h
+
+if HOST_WIN32
+shared_eventpipe_platform_sources = \
+	$(shared_eventpipe_path)/ds-ipc-win32.c	\
+	$(shared_eventpipe_path)/ds-ipc-win32.h
+else
+shared_eventpipe_platform_sources = \
+	$(shared_eventpipe_path)/ds-ipc-posix.c	\
+	$(shared_eventpipe_path)/ds-ipc-posix.h
+endif
+
+eventpipe_mono_shim_sources = \
 	ds-rt-mono.c	\
 	ds-rt-mono.h	\
-	ds-rt-types.h	\
 	ds-rt-types-mono.h	\
-	ds-server.c	\
-	ds-server.h	\
-	ds-types.h	\
-	ep.c	\
-	ep.h	\
-	ep-block.c	\
-	ep-block.h	\
-	ep-buffer.c	\
-	ep-buffer.h	\
-	ep-buffer-manager.c	\
-	ep-buffer-manager.h	\
-	ep-config.c	\
-	ep-config.h	\
-	ep-config-internals.h	\
-	ep-event.c	\
-	ep-event.h	\
-	ep-event-instance.h	\
-	ep-event-instance.c	\
-	ep-event-payload.c	\
-	ep-event-payload.h	\
-	ep-event-source.c	\
-	ep-event-source.h	\
-	ep-file.c	\
-	ep-file.h	\
-	ep-getter-setter.h	\
-	ep-json-file.c	\
-	ep-json-file.h	\
-	ep-metadata-generator.c	\
-	ep-metadata-generator.h	\
-	ep-provider.c	\
-	ep-provider.h	\
-	ep-provider-internals.h	\
-	ep-rt.h	\
-	ep-rt-config.h	\
 	ep-rt-config-mono.h	\
 	ep-rt-mono.c	\
 	ep-rt-mono.h	\
-	ep-rt-types.h	\
-	ep-rt-types-mono.h	\
-	ep-thread.c	\
-	ep-thread.h	\
-	ep-types.h	\
-	ep-sample-profiler.c	\
-	ep-sample-profiler.h	\
-	ep-session.c	\
-	ep-session.h	\
-	ep-session-provider.c	\
-	ep-stack-contents.c	\
-	ep-stack-contents.h	\
-	ep-stream.c	\
-	ep-stream.h
+	ep-rt-types-mono.h
 
-
-libeventpipe_la_SOURCES = $(eventpipe_sources)
+libeventpipe_la_SOURCES = $(shared_eventpipe_sources) $(shared_eventpipe_platform_sources) $(eventpipe_mono_shim_sources)
 
 endif # ENABLE_PERFTRACING
 endif # !ENABLE_MSVC_ONLY

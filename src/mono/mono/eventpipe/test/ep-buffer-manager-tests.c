@@ -1,12 +1,12 @@
-#include "mono/eventpipe/ep.h"
-#include "mono/eventpipe/ep-config.h"
-#include "mono/eventpipe/ep-buffer.h"
-#include "mono/eventpipe/ep-event.h"
-#include "mono/eventpipe/ep-event-payload.h"
-#include "mono/eventpipe/ep-session.h"
-#include "mono/eventpipe/ep-buffer-manager.h"
-#include "mono/eventpipe/ep-file.h"
-#include "eglib/test/test.h"
+#include <eventpipe/ep.h>
+#include <eventpipe/ep-config.h>
+#include <eventpipe/ep-buffer.h>
+#include <eventpipe/ep-event.h>
+#include <eventpipe/ep-event-payload.h>
+#include <eventpipe/ep-session.h>
+#include <eventpipe/ep-buffer-manager.h>
+#include <eventpipe/ep-file.h>
+#include <eglib/test/test.h>
 
 #define TEST_PROVIDER_NAME "MyTestProvider"
 #define TEST_FILE "./ep_test_create_file.txt"
