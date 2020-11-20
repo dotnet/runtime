@@ -276,6 +276,7 @@ namespace ILLink.Tasks.Tests
 		[InlineData ("IL2001,IL2002;IL2003 IL2004", 4)]
 		[InlineData ("IL2001,IL2002,IL8000,IL1003", 4)]
 		[InlineData ("IL20000,IL02000", 2)]
+		[InlineData ("   IL2001\n  IL2002;\n \tIL2003", 3)]
 		public void TestValidNoWarn (string noWarn, int validNoWarns)
 		{
 			var task = new MockTask () {
@@ -313,6 +314,8 @@ namespace ILLink.Tasks.Tests
 			new int[] { 3000 }, new int[] { 2005, 3005 })]
 		[InlineData (true, null, "IL2067", new int[] { }, new int[] { 2067 })]
 		[InlineData (true, "IL2001", "IL2001", new int[] { }, new int[] { 2001 })]
+		[InlineData (false, "IL1001;\n\t IL1002\n\t IL1003", null,
+			new int[] { 1001, 1002, 1003 }, new int[] { })]
 		public void TestWarningsAsErrors (bool treatWarningsAsErrors, string? warningsAsErrors, string? warningsNotAsErrors, int[] warnAsError, int[] warnNotAsError)
 		{
 			var task = new MockTask () {

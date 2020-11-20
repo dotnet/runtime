@@ -1,6 +1,7 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Reflection;
 using Microsoft.Build.Framework;
@@ -24,10 +25,11 @@ namespace ILLink.Tasks.Tests
 
 		public MockDriver CreateDriver ()
 		{
-			string[] responseFileLines = GenerateResponseFileCommands ().Split (Environment.NewLine);
-			var arguments = new Queue<string> ();
-			Driver.ParseResponseFileLines (responseFileLines, arguments);
-			return new MockDriver (arguments);
+			using (var responseFileText = new StringReader (GenerateResponseFileCommands ())) {
+				var arguments = new Queue<string> ();
+				Driver.ParseResponseFile (responseFileText, arguments);
+				return new MockDriver (arguments);
+			}
 		}
 
 		public static string[] OptimizationNames {
