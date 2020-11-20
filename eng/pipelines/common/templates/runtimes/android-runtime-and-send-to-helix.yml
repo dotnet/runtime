@@ -25,7 +25,7 @@ parameters:
   
   
 steps:
-  - script: $(Build.SourcesDirectory)/src/tests/build$(scriptExt) /p:LibrariesConfiguration=${{ parameters.buildConfig }} -ci -skipstressdependencies -excludemonofailures os Android x64 $(buildConfigUpper)
+  - script: $(Build.SourcesDirectory)/src/tests/build$(scriptExt) /p:LibrariesConfiguration=${{ parameters.buildConfig }} -ci -excludemonofailures os Android x64 $(buildConfigUpper)
     displayName: Build Tests
 
   #  Send tests to Helix

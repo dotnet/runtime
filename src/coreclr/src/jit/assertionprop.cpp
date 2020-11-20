@@ -2163,22 +2163,20 @@ void Compiler::optAssertionGen(GenTree* tree)
             break;
 
         case GT_CALL:
+        {
             // A virtual call can create a non-null assertion. We transform some virtual calls into non-virtual calls
             // with a GTF_CALL_NULLCHECK flag set.
-            if ((tree->gtFlags & GTF_CALL_NULLCHECK) || tree->AsCall()->IsVirtual())
+            // Ignore tail calls because they have 'this` pointer in the regular arg list and an implicit null check.
+            GenTreeCall* const call = tree->AsCall();
+            if (call->NeedsNullCheck() || (call->IsVirtual() && !call->IsTailCall()))
             {
-                //  Retrieve the 'this' arg
-                GenTree* thisArg = gtGetThisArg(tree->AsCall());
-                if (thisArg == nullptr)
-                {
-                    // For tail calls we lose the this pointer in the argument list but that's OK because a null check
-                    // was made explicit, so we get the assertion when we walk the GT_IND in the argument list.
-                    noway_assert(tree->AsCall()->IsTailCall());
-                    break;
-                }
+                //  Retrieve the 'this' arg.
+                GenTree* thisArg = gtGetThisArg(call);
+                assert(thisArg != nullptr);
                 assertionInfo = optCreateAssertion(thisArg, nullptr, OAK_NOT_EQUAL);
             }
-            break;
+        }
+        break;
 
         case GT_CAST:
             // We only create this assertion for global assertion prop

@@ -2487,6 +2487,10 @@ BOOL Assembler::IsPortablePdb()
     return (m_pdbFormat == PORTABLE) && (m_pPortablePdbWriter != NULL);
 }
 
+// This method is called after we have parsed the generic type parameters for either
+// a generic class or a generic method.  It calls CheckAddGenericParamConstraint on
+// each generic parameter constraint that was recorded.
+//
 void Assembler::RecordTypeConstraints(GenericParamConstraintList* pGPCList, int numTyPars, TyParDescr* tyPars)
 {
     if (numTyPars > 0)
@@ -2503,13 +2507,18 @@ void Assembler::RecordTypeConstraints(GenericParamConstraintList* pGPCList, int 
                 for (int j = 0; j < numConstraints; j++)
                 {
                     mdToken tkTypeConstraint = ptk[j];
-                    CheckAddGenericParamConstraint(pGPCList, i, tkTypeConstraint);
+
+                    // pass false for isParamDirective, these constraints are from the class or method definition
+                    //
+                    CheckAddGenericParamConstraint(pGPCList, i, tkTypeConstraint, false);
                 }
             }
         }
     }
 }
 
+// AddGenericParamConstraint is called when we have a .param constraint directive after a class definition
+// 
 void Assembler::AddGenericParamConstraint(int index, char * pStrGenericParam, mdToken tkTypeConstraint)
 {
     if (!m_pCurClass)
@@ -2545,13 +2554,20 @@ void Assembler::AddGenericParamConstraint(int index, char * pStrGenericParam, md
             return;
         }
     }
-    bool newlyAdded = CheckAddGenericParamConstraint(&m_pCurClass->m_GPCList, index, tkTypeConstraint);
+
+    // pass true for isParamDirective, we are parsing a .param directive for a class here
+    //
+    CheckAddGenericParamConstraint(&m_pCurClass->m_GPCList, index, tkTypeConstraint, true);
 }
 
-// returns true if we create a new GenericParamConstraintDescriptor
-// reurns false if we return an already existing GenericParamConstraintDescriptor
+// CheckAddGenericParamConstraint is called when we have to handle a generic parameter constraint
+// When parsing a generic class/method definition isParamDirective is false - we have a generic type constaint
+// for this case we do not setup m_pCustomDescrList as a .custom after a generic class/method definition is
+// for the class/method
+// When isParamDirective is true, we have a .param constraint directive and we will setup m_pCustomDescrList
+// and any subsequent .custom is for the generic parameter constrant
 //
-bool Assembler::CheckAddGenericParamConstraint(GenericParamConstraintList* pGPCList, int index, mdToken tkTypeConstraint)
+void Assembler::CheckAddGenericParamConstraint(GenericParamConstraintList* pGPCList, int index, mdToken tkTypeConstraint, bool isParamDirective)
 {
     _ASSERTE(tkTypeConstraint != 0);
     _ASSERTE(index >= 0);
@@ -2578,18 +2594,30 @@ bool Assembler::CheckAddGenericParamConstraint(GenericParamConstraintList* pGPCL
 
     if (match)
     {
-        m_pCustomDescrList = pGPC->CAList();
-        return false;
+        // Found an existing generic parameter constraint
+        //
+        if (isParamDirective)
+        {
+            // Setup the custom descr list so that we can record
+            // custom attributes on this generic param contraint
+            //
+            m_pCustomDescrList = pGPC->CAList();
+        }
     }
     else
     {
-        // not found add it to our list
+        // not found - add it to our pGPCList
         //
         GenericParamConstraintDescriptor* pNewGPCDescr = new GenericParamConstraintDescriptor();
         pNewGPCDescr->Init(index, tkTypeConstraint);
         pGPCList->PUSH(pNewGPCDescr);
-        m_pCustomDescrList = pNewGPCDescr->CAList();
-        return true;
+        if (isParamDirective)
+        {
+            // Setup the custom descr list so that we can record
+            // custom attributes on this generic param contraint
+            //
+            m_pCustomDescrList = pNewGPCDescr->CAList();
+        }
     }
 }
 

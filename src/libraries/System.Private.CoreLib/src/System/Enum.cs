@@ -934,7 +934,7 @@ namespace System
                 case CorElementType.ELEMENT_TYPE_U1:
                     return data;
                 case CorElementType.ELEMENT_TYPE_BOOLEAN:
-                    return Convert.ToUInt64(Unsafe.As<byte, bool>(ref data), CultureInfo.InvariantCulture);
+                    return data != 0 ? 1UL : 0UL;
                 case CorElementType.ELEMENT_TYPE_I2:
                     return (ulong)Unsafe.As<byte, short>(ref data);
                 case CorElementType.ELEMENT_TYPE_U2:

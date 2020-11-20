@@ -19,10 +19,10 @@
   </ItemGroup>
 
   <ItemGroup>
-    <NativeRuntimeAsset Include="$(DotNetHostBinDir)/apphost$(ApplicationFileExtension)" />
-    <NativeRuntimeAsset Include="$(DotNetHostBinDir)/singlefilehost$(ApplicationFileExtension)" />
-    <NativeRuntimeAsset Include="$(DotNetHostBinDir)/$(LibraryFilePrefix)nethost$(LibraryFileExtension)" />
-    <NativeRuntimeAsset Include="$(DotNetHostBinDir)/$(LibraryFilePrefix)nethost$(StaticLibraryFileExtension)" />
+    <NativeRuntimeAsset Include="$(DotNetHostBinDir)/apphost$(ExeSuffix)" />
+    <NativeRuntimeAsset Include="$(DotNetHostBinDir)/singlefilehost$(ExeSuffix)" />
+    <NativeRuntimeAsset Include="$(DotNetHostBinDir)/$(LibPrefix)nethost$(LibSuffix)" />
+    <NativeRuntimeAsset Include="$(DotNetHostBinDir)/$(LibPrefix)nethost$(StaticLibSuffix)" />
     <NativeRuntimeAsset Include="$(DotNetHostBinDir)/nethost.h" />
     <NativeRuntimeAsset Include="$(DotNetHostBinDir)/hostfxr.h" />
     <NativeRuntimeAsset Include="$(DotNetHostBinDir)/coreclr_delegates.h" />
@@ -40,7 +40,7 @@
                     IsSymbolFile="true"
                     IsNative="true" />
     <_SymbolFiles Condition="'$(TargetOS)' != 'windows'"
-                    Include="@(NativeRuntimeAsset->'%(RootDir)%(Directory)PDB/%(Filename)%(Extension)%(SymbolFileExtension)')"
+                    Include="@(NativeRuntimeAsset->'%(RootDir)%(Directory)PDB/%(Filename)%(Extension)%(SymbolsSuffix)')"
                     IsSymbolFile="true"
                     IsNative="true" />
   </ItemGroup>

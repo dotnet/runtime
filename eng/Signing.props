@@ -44,10 +44,19 @@
     <FileExtensionSignInfo Include=".pkg" CertificateName="8003" />
     <FileExtensionSignInfo Include=".deb;.rpm" CertificateName="LinuxSign" />
   </ItemGroup>
+  <ItemGroup Condition="'$(PrepareArtifacts)' == 'true' and '$(PostBuildSign)' == 'true'">
+    <ItemsToSignWithPaths Include="$(DownloadDirectory)**/*.msi" />
+    <ItemsToSignWithPaths Include="$(DownloadDirectory)**/*.exe" />
+    <ItemsToSignWithPaths Include="$(DownloadDirectory)**/*.nupkg" />
+    <ItemsToSignWithPaths Include="$(DownloadDirectory)**/*.zip" />
+
+    <ItemsToSignWithoutPaths Include="@(ItemsToSignWithPaths->'%(Filename)%(Extension)')" />
+    <ItemsToSignPostBuild Include="@(ItemsToSignWithoutPaths->Distinct())" />
+  </ItemGroup>
 
   <Target Name="SetupFilesToSign">
     <!-- Ensure that we don't miss the DAC or DBI with the globbing below -->
-    <PropertyGroup Condition="'$(SignDiagnostics)' == 'true'">
+    <PropertyGroup Condition="'$(SignDiagnostics)' == 'true' or '$(SignDiagnosticsPackages)' == 'true'">
       <AllowEmptySignList>false</AllowEmptySignList>
     </PropertyGroup>
 
@@ -65,11 +74,11 @@
                     CertificateName="MicrosoftSHA2" />
     </ItemGroup>
     
-    <ItemGroup Condition="'$(SignFinalPackages)' == 'true'">
+    <ItemGroup Condition="'$(SignDiagnosticsPackages)' == 'true'">
       <!-- The cross OS diagnostics symbol packages need to be signed as they are the only packages
       that have a specific version of assets that are only meant to be indexed in symbol servers.
       Since only *symbols.nupkg get indexed, and installer doesn't produce these, we need to glob them for signing. -->
-      <ItemsToSign Include="$(DownloadDirectory)**\*CrossOsDiag*.nupkg" />
+      <ItemsToSign Include="$(PackagesFolder)\**\*CrossOsDiag*.nupkg" />
     </ItemGroup>
   </Target>
 

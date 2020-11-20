@@ -16,8 +16,9 @@ namespace ILCompiler.Reflection.ReadyToRun.x86
 
         public UnwindInfo(byte[] image, int offset)
         {
+            int startOffset = offset;
             FunctionLength = NativeReader.DecodeUnsignedGc(image, ref offset);
-            Size = sizeof(int);
+            Size = offset - startOffset;
         }
 
         public override string ToString()
