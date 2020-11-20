@@ -10,7 +10,7 @@ namespace DebuggerTests
     static class AssertHelpers
     {
         public static async Task ThrowsAsync<T>(Func<Task> testCode, Action<Exception> testException)
-            where T: Exception
+            where T : Exception
         {
             try
             {

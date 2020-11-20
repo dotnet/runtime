@@ -39,7 +39,7 @@ namespace DebuggerTests
 
             await AssertHelpers.ThrowsAsync<ArgumentException>(
                     async () => await insp.OpenSessionAsync(fn),
-                    ae => ae.Message.Contains(bad_cmd_name+"Queue"));
+                    ae => ae.Message.Contains(bad_cmd_name + "Queue"));
         }
     }
 }

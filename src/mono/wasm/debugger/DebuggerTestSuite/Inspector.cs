@@ -87,7 +87,7 @@ namespace DebuggerTests
             eventListeners[evtName] = cb;
         }
 
-        void FailAllWaiters(Exception? exception=null)
+        void FailAllWaiters(Exception? exception = null)
         {
             // Because we can create already completed tasks,
             // when we get a NotifyOf before the corresponding
@@ -150,11 +150,13 @@ namespace DebuggerTests
                 await OpenSessionAsync(fn, span);
                 if (cb != null)
                     await cb(Client, _cancellationTokenSource.Token).ConfigureAwait(false);
-            } catch (Exception ex) {
+            }
+            catch (Exception ex)
+            {
                 if (_logger != null)
                     _logger.LogError(ex.ToString());
                 else
-                    Console.WriteLine (ex);
+                    Console.WriteLine(ex);
                 throw;
             }
             finally
@@ -166,7 +168,8 @@ namespace DebuggerTests
         public async Task OpenSessionAsync(Func<InspectorClient, CancellationToken, List<(string, Task<Result>)>> getInitCmds, TimeSpan? span = null)
         {
             var start = DateTime.Now;
-            try {
+            try
+            {
                 _cancellationTokenSource.CancelAfter(span?.Milliseconds ?? DefaultTestTimeoutMs);
 
                 var uri = new Uri($"ws://{TestHarnessProxy.Endpoint.Authority}/launch-chrome-and-connect");
@@ -226,7 +229,9 @@ namespace DebuggerTests
                 }
 
                 _logger.LogInformation("runtime ready, TEST TIME");
-            } catch (Exception ex) {
+            }
+            catch (Exception ex)
+            {
                 _logger.LogDebug(ex.ToString());
                 throw;
             }
@@ -234,7 +239,7 @@ namespace DebuggerTests
             static string RemainingCommandsToString(string cmd_name, IList<(string, Task<Result>)> cmds)
             {
                 var sb = new StringBuilder();
-                for (int i = 0; i < cmds.Count; i ++)
+                for (int i = 0; i < cmds.Count; i++)
                 {
                     var (name, task) = cmds[i];
 
@@ -260,7 +265,9 @@ namespace DebuggerTests
             {
                 _logger?.LogDebug($"- test done,. let's close the client");
                 await Client.Shutdown(_cancellationTokenSource.Token).ConfigureAwait(false);
-            } catch (Exception ex) {
+            }
+            catch (Exception ex)
+            {
                 _logger?.LogError(ex.ToString());
                 throw;
             }
