@@ -127,7 +127,7 @@ public:
     void QCALLTYPE GetAllocatorFtn(QCall::TypeHandle pTypeHandle, PCODE* ppNewobjHelper, MethodTable** ppMT, BOOL fGetUninitializedObject);
 
     static
-    MethodDesc* QCALLTYPE GetDefaultCtor(QCall::TypeHandle pTypeHandle);
+    MethodDesc* QCALLTYPE GetDefaultCtor(QCall::TypeHandle pTypeHandle, BOOL fForceBoxedEntryPoint);
 
     static
     void QCALLTYPE AllocateComObject(QCall::ObjectHandleOnStack refRuntimeType, QCall::ObjectHandleOnStack retInstance);

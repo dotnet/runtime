@@ -237,19 +237,21 @@ namespace System
         /// <summary>
         /// Returns the MethodDesc* for this type's parameterless instance ctor.
         /// For reference types, signature is (object @this) -> void.
-        /// For value types, signature is (ref T @thisUnboxed) -> void.
+        /// For value types, unboxed signature is (ref T @thisUnboxed) -> void.
+        /// For value types, forced boxed signature is (object @this) -> void.
         /// Returns nullptr if no parameterless ctor is defined.
         /// </summary>
         internal static RuntimeMethodHandleInternal GetDefaultConstructor(
-            [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors | DynamicallyAccessedMemberTypes.NonPublicConstructors)] RuntimeType type)
+            [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors | DynamicallyAccessedMemberTypes.NonPublicConstructors)] RuntimeType type,
+            bool forceBoxedEntryPoint)
         {
             Debug.Assert(type != null);
 
-            return GetDefaultCtor(new QCallTypeHandle(ref type));
+            return GetDefaultCtor(new QCallTypeHandle(ref type), (forceBoxedEntryPoint) ? Interop.BOOL.TRUE : Interop.BOOL.FALSE);
         }
 
         [DllImport(RuntimeHelpers.QCall, CharSet = CharSet.Unicode)]
-        private static extern RuntimeMethodHandleInternal GetDefaultCtor(QCallTypeHandle typeHandle);
+        private static extern RuntimeMethodHandleInternal GetDefaultCtor(QCallTypeHandle typeHandle, Interop.BOOL forceBoxedEntryPoint);
 
         /// <summary>
         /// Given a RuntimeType which represents __ComObject, activates the class and creates

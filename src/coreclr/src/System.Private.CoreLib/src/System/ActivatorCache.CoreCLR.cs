@@ -41,10 +41,7 @@ namespace System
                 _pfnAllocator = (delegate*<IntPtr, object>)RuntimeTypeHandle.GetAllocatorFtn(rt, out MethodTable* pMT, forGetUninitializedObject: false);
                 _allocatorFirstArg = (IntPtr)pMT;
 
-                static void CtorNoopStub(object? uninitializedObject) { }
-                _pfnCtor = &CtorNoopStub;
-
-                RuntimeMethodHandleInternal defaultCtorRMH = RuntimeTypeHandle.GetDefaultConstructor(rt); // could be null
+                RuntimeMethodHandleInternal ctorHandle = RuntimeMethodHandleInternal.EmptyHandle; // default nullptr
 
                 if (pMT->IsValueType)
                 {
@@ -57,30 +54,14 @@ namespace System
                     }
                     else if (pMT->HasDefaultConstructor)
                     {
-                        // ValueType with explicit parameterless ctor typed as (ref T) -> void.
-                        // We'll point the ctor at our unboxing stub. It's not terribly efficient,
-                        // but value types almost never have explicit parameterless ctors, so
-                        // this shouldn't be a problem in practice.
+                        // Value type with an explicit default ctor; we'll ask the runtime to create
+                        // an unboxing stub on our behalf.
 
-                        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2072:UnrecognizedReflectionPattern",
-                            Justification = "The linker requirements are already satisfied by the enclosing method.")]
-                        static void CtorUnboxValueTypeStub(object? uninitializedObject)
-                        {
-                            Debug.Assert(uninitializedObject != null);
-                            Debug.Assert(RuntimeHelpers.GetMethodTable(uninitializedObject)->IsValueType);
-
-                            RuntimeType rt = (RuntimeType)uninitializedObject.GetType();
-                            RuntimeMethodHandleInternal rmh = RuntimeTypeHandle.GetDefaultConstructor(rt);
-                            IntPtr pfnCtor = RuntimeMethodHandle.GetFunctionPointer(rmh);
-                            ((delegate*<ref byte, void>)pfnCtor)(ref uninitializedObject!.GetRawData());
-                        }
-                        _pfnCtor = &CtorUnboxValueTypeStub;
+                        ctorHandle = RuntimeTypeHandle.GetDefaultConstructor(rt, forceBoxedEntryPoint: true);
                     }
                     else
                     {
                         // ValueType with no explicit parameterless ctor; assume ctor returns default(T)
-
-                        Debug.Assert(defaultCtorRMH.IsNullHandle());
                     }
                 }
                 else
@@ -114,7 +95,7 @@ namespace System
                         // Neither __ComObject nor any derived type gets its parameterless ctor called.
                         // Activation is handled entirely by the allocator.
 
-                        defaultCtorRMH = default;
+                        ctorHandle = default;
                     }
                     else if (!pMT->HasDefaultConstructor)
                     {
@@ -124,17 +105,21 @@ namespace System
                     {
                         // Reference type with explicit parameterless ctor
 
-                        Debug.Assert(!defaultCtorRMH.IsNullHandle());
+                        ctorHandle = RuntimeTypeHandle.GetDefaultConstructor(rt, forceBoxedEntryPoint: false);
+                        Debug.Assert(!ctorHandle.IsNullHandle());
                     }
                 }
 
-                if (defaultCtorRMH.IsNullHandle())
+                if (ctorHandle.IsNullHandle())
                 {
+                    static void CtorNoopStub(object? uninitializedObject) { }
+                    _pfnCtor = &CtorNoopStub; // we use null singleton pattern if no ctor call is necessary
                     CtorIsPublic = true; // implicit parameterless ctor is always considered public
                 }
                 else
                 {
-                    CtorIsPublic = (RuntimeMethodHandle.GetAttributes(defaultCtorRMH) & MethodAttributes.Public) != 0;
+                    _pfnCtor = (delegate*<object?, void>)RuntimeMethodHandle.GetFunctionPointer(ctorHandle);
+                    CtorIsPublic = (RuntimeMethodHandle.GetAttributes(ctorHandle) & MethodAttributes.Public) != 0;
                 }
 
                 Debug.Assert(_pfnAllocator != null);

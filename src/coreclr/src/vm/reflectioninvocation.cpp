@@ -2110,11 +2110,13 @@ void QCALLTYPE RuntimeTypeHandle::GetAllocatorFtn(
  * Given a TypeHandle, returns the MethodDesc* for the default (parameterless) ctor,
  * or nullptr if the parameterless ctor doesn't exist. For reference types, the parameterless
  * ctor has a managed (object @this) -> void calling convention. For value types,
- * the parameterless ctor has a managed (ref T @this) -> void calling convention.
+ * the parameterless ctor has a managed (ref T @this) -> void calling convention, unless
+ * fForceBoxedEntryPoint is set, then managed (object @this) -> void stub is returned.
  * The returned MethodDesc* is appropriately instantiated over any necessary generic args.
  */
 MethodDesc* QCALLTYPE RuntimeTypeHandle::GetDefaultCtor(
-    QCall::TypeHandle pTypeHandle)
+    QCall::TypeHandle pTypeHandle,
+    BOOL fForceBoxedEntryPoint)
 {
     QCALL_CONTRACT;
 
@@ -2129,7 +2131,7 @@ MethodDesc* QCALLTYPE RuntimeTypeHandle::GetDefaultCtor(
     pMT->EnsureInstanceActive();
     if (pMT->HasDefaultConstructor())
     {
-        pMethodDesc = pMT->GetDefaultConstructor();
+        pMethodDesc = pMT->GetDefaultConstructor(fForceBoxedEntryPoint);
     }
 
     END_QCALL;
