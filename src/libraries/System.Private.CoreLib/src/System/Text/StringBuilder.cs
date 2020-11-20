@@ -1179,16 +1179,18 @@ namespace System.Text
                 return this;
             }
 
-            unsafe
-            {
-                Span<char> tempBuffer = stackalloc char[28]; // should be enough for all primitives
-                if (value.TryFormat(tempBuffer, out int charsWrittenToTmp, format: default, provider: null))
-                {
-                    return Append(tempBuffer.Slice(0, charsWrittenToTmp));
-                }
-            }
+            return AppendSpanFormattableSlow(this, value);
 
-            return Append(value.ToString());
+            static unsafe StringBuilder AppendSpanFormattableSlow<TValue>(StringBuilder sb, TValue value) where TValue : ISpanFormattable
+            {
+                const int bufferLength = 32; // should be enough for all primitives
+                char* buffer = stackalloc char[bufferLength];
+                if (value.TryFormat(new Span<char>(buffer, bufferLength), out int written, format: default, provider: null))
+                {
+                    return sb.Append(buffer, written);
+                }
+                return sb.Append(value.ToString());
+            }
         }
 
         internal StringBuilder AppendSpanFormattable<T>(T value, string? format, IFormatProvider? provider) where T : ISpanFormattable, IFormattable
