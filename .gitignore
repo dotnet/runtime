@@ -36,6 +36,9 @@ msbuild.wrn
 *.lo
 *.o
 
+# selected NuGet.config
+NuGet.config
+
 # Cross building rootfs
 cross/rootfs/
 cross/android-rootfs/
