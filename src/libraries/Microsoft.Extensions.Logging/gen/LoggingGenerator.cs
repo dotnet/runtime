@@ -57,8 +57,6 @@ using Microsoft.Extensions.Logging;
                 {
                     methods.Append(GenStruct(lm));
                 }
-                methods.Append(GenEventId(lm));
-                methods.Append(GenDelegate(lm));
                 methods.Append(GenExtensionLogMethod(lm));
             }
 
@@ -84,26 +82,29 @@ using Microsoft.Extensions.Logging;
         private static string GenStruct(LoggerMethod lm)
         {
             var constructor = $@"
-            public __{lm.Name}Struct__({GenParameters(lm)})
+            public __{lm.Name}State({GenParameters(lm)})
             {{
 {GenFieldAssignments(lm)}
             }}
 ";
 
-            var format = string.Empty;
-            if (lm.MessageHasTemplates)
-            {
-                format = $@"
+            var format = $@"
             public override string ToString() => $""{lm.Message}"";
 ";
+
+            var del = string.Empty;
+            if (lm.MessageHasTemplates)
+            {
+                del = $"            public static readonly Func<__{lm.Name}State, Exception?, string> Format = (s, _) => s.ToString();";
             }
 
             return $@"
-        private readonly struct __{lm.Name}Struct__ : IReadOnlyList<KeyValuePair<string, object>>
+        private readonly struct __{lm.Name}State : IReadOnlyList<KeyValuePair<string, object>>
         {{
 {GenFields(lm)}
 {constructor}
 {format}
+{del}
 
             public int Count => {lm.Parameters.Count};
 
@@ -130,21 +131,6 @@ using Microsoft.Extensions.Logging;
 ";
         }
 
-        private static string GenEventId(LoggerMethod lm)
-        {
-            return $"        private static readonly EventId __{lm.Name}EventId__ = new({lm.EventId}, " + (lm.EventName is null ? $"nameof({lm.Name})" : $"\"{lm.EventName}\"") + ");\n";
-        }
-
-        private static string GenDelegate(LoggerMethod lm)
-        {
-            if (!lm.MessageHasTemplates)
-            {
-                return string.Empty;
-            }
-
-            return $"        private static readonly Func<__{lm.Name}Struct__, Exception?, string> __{lm.Name}Func__ = (s, _) => s.ToString();";
-        }
-
         private static string GenExtensionLogMethod(LoggerMethod lm)
         {
             string exceptionArg = "null";
@@ -158,12 +144,12 @@ using Microsoft.Extensions.Logging;
             }
 
             var loggerArg = "ILogger logger";
-            
-            var ctorCall = $"__{lm.Name}Struct__({ GenArguments(lm)})";
+
+            var ctorCall = $"new __{lm.Name}State({ GenArguments(lm)})";
             if (lm.Parameters.Count == 0)
             {
                 // when no parameters, use the common struct
-                ctorCall = "Microsoft.Extensions.Logging.LogStateHolder()";
+                ctorCall = "new Microsoft.Extensions.Logging.LogStateHolder()";
             }
 
             var formatCall = $"(s, _) => \"{ lm.Message}\"";
@@ -175,17 +161,24 @@ using Microsoft.Extensions.Logging;
                 }
                 else
                 {
-                    formatCall = $"__{lm.Name}Func__";
+                    formatCall = $"__{lm.Name}State.Format";
                 }
             }
+
+            var eventName = $"nameof({lm.Name})";
+            if (lm.EventName != null)
+            {
+                eventName = $"\"{lm.EventName}\"";
+            }
+
+            var eventIdCall = $"new EventId({lm.EventId}, {eventName})";
 
             return $@"
         public static partial void {lm.Name}({loggerArg}{(lm.Parameters.Count > 0 ? ", " : string.Empty)}{GenParameters(lm)})
         {{
             if (logger.IsEnabled((LogLevel){lm.Level}))
             {{
-                var __state = new {ctorCall};
-                logger.Log((LogLevel){lm.Level}, __{lm.Name}EventId__, __state, {exceptionArg}, {formatCall});
+                logger.Log((LogLevel){lm.Level}, {eventIdCall}, {ctorCall}, {exceptionArg}, {formatCall});
             }}
         }}
 ";
