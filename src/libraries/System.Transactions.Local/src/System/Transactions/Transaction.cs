@@ -70,7 +70,7 @@ namespace System.Transactions
         {
             if (currentScope != null)
             {
-#pragma warning disable CA1416 // Validate platform compatibility
+#pragma warning disable CA1416 // Validate platform compatibility, the property is not platform-specific, safe to suppress
                 return currentScope.InteropMode;
 #pragma warning restore CA1416
             }
@@ -163,7 +163,7 @@ namespace System.Transactions
 
                 if (currentScope != null)
                 {
-#pragma warning disable CA1416 // Validate platform compatibility
+#pragma warning disable CA1416 // Validate platform compatibility, the property is not platform-specific, safe to suppress
                     if (currentScope.ScopeComplete)
 #pragma warning restore CA1416
                     {

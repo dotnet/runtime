@@ -29,7 +29,7 @@ namespace System.Xml
             var handler = new HttpClientHandler();
             using (var client = new HttpClient(handler))
             {
-#pragma warning disable CA1416 // Validate platform compatibility, 'handler.Credentials' and 'handler.Proxy' are not supported on browser
+#pragma warning disable CA1416 // Validate platform compatibility, 'credentials' and 'proxy' will not be set for browser, so safe to suppress
                 if (credentials != null)
                 {
                     handler.Credentials = credentials;
