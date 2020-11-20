@@ -337,7 +337,7 @@ namespace System.Collections.Tests
             AssertExtensions.Throws<ArgumentException>(null, () => new Dictionary<string, int>(source, StringComparer.OrdinalIgnoreCase));
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotInvariantGlobalization))]
         // https://github.com/dotnet/runtime/issues/44681
         public void DictionaryOrdinalIgnoreCaseCyrillicKeys()
         {
