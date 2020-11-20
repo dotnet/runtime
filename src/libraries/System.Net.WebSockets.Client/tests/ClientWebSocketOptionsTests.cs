@@ -234,8 +234,7 @@ namespace System.Net.WebSockets.Client.Tests
         }
 
         [ConditionalTheory(nameof(WebSocketsSupported))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/34690", TestPlatforms.Windows | TestPlatforms.Browser, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/42852", TestPlatforms.Browser)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/34690", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
         [InlineData("ws://")]
         [InlineData("wss://")]
         [PlatformSpecific(~TestPlatforms.Browser)] // Credentials not supported on browser
