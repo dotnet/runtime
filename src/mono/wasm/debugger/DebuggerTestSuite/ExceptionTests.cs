@@ -11,20 +11,12 @@ using Xunit;
 namespace DebuggerTests
 {
 
-    public class ExceptionTests : DebuggerTestBase
+    public class ExceptionTests : SingleSessionTestBase
     {
         [Fact]
         public async Task ExceptionTestAll()
         {
-            var insp = new Inspector();
-            //Collect events
-            var scripts = SubscribeToScripts(insp);
             string entry_method_name = "[debugger-test] DebuggerTests.ExceptionTestsClass:TestExceptions";
-
-            await Ready();
-            await insp.Ready(async (cli, token) =>
-            {
-                ctx = new DebugTestContext(cli, insp, token, scripts);
                 var debugger_test_loc = "dotnet://debugger-test.dll/debugger-exception-test.cs";
 
                 await SetPauseOnException("all");
@@ -66,21 +58,11 @@ namespace DebuggerTests
 
                 exception_members = await GetProperties(pause_location["data"]["objectId"]?.Value<string>());
                 CheckString(exception_members, "message", "not implemented uncaught");
-            });
         }
 
         [Fact]
         public async Task JSExceptionTestAll()
         {
-            var insp = new Inspector();
-            //Collect events
-            var scripts = SubscribeToScripts(insp);
-
-            await Ready();
-            await insp.Ready(async (cli, token) =>
-            {
-                ctx = new DebugTestContext(cli, insp, token, scripts);
-
                 await SetPauseOnException("all");
 
                 var eval_expr = "window.setTimeout(function () { exceptions_test (); }, 1)";
@@ -111,7 +93,6 @@ namespace DebuggerTests
 
                 exception_members = await GetProperties(pause_location["data"]["objectId"]?.Value<string>());
                 CheckString(exception_members, "message", "exception uncaught");
-            });
         }
 
         // FIXME? BUG? We seem to get the stack trace for Runtime.exceptionThrown at `call_method`,
@@ -119,16 +100,8 @@ namespace DebuggerTests
         [Fact]
         public async Task ExceptionTestNone()
         {
-            var insp = new Inspector();
             //Collect events
-            var scripts = SubscribeToScripts(insp);
             string entry_method_name = "[debugger-test] DebuggerTests.ExceptionTestsClass:TestExceptions";
-
-            await Ready();
-            await insp.Ready(async (cli, token) =>
-            {
-                ctx = new DebugTestContext(cli, insp, token, scripts);
-
                 await SetPauseOnException("none");
 
                 var eval_expr = "window.setTimeout(function() { invoke_static_method (" +
@@ -157,21 +130,11 @@ namespace DebuggerTests
                 }
 
                 Assert.True(false, "Expected to get an ArgumentException from the uncaught user exception");
-            });
         }
 
         [Fact]
         public async Task JSExceptionTestNone()
         {
-            var insp = new Inspector();
-            //Collect events
-            var scripts = SubscribeToScripts(insp);
-
-            await Ready();
-            await insp.Ready(async (cli, token) =>
-            {
-                ctx = new DebugTestContext(cli, insp, token, scripts);
-
                 await SetPauseOnException("none");
 
                 var eval_expr = "window.setTimeout(function () { exceptions_test (); }, 1)";
@@ -200,7 +163,6 @@ namespace DebuggerTests
                 }
 
                 Assert.True(false, "Expected to get an ArgumentException from the uncaught user exception");
-            });
         }
 
         [Theory]
@@ -211,14 +173,6 @@ namespace DebuggerTests
         public async Task ExceptionTestUncaught(string eval_fn, string loc, int line, int col, string fn_name,
             string exception_type, string exception_message)
         {
-            var insp = new Inspector();
-            //Collect events
-            var scripts = SubscribeToScripts(insp);
-            await Ready();
-            await insp.Ready(async (cli, token) =>
-            {
-                ctx = new DebugTestContext(cli, insp, token, scripts);
-
                 await SetPauseOnException("uncaught");
 
                 var eval_expr = $"window.setTimeout({eval_fn}, 1);";
@@ -235,7 +189,6 @@ namespace DebuggerTests
 
                 var exception_members = await GetProperties(pause_location["data"]["objectId"]?.Value<string>());
                 CheckString(exception_members, "message", exception_message);
-            });
         }
 
         async Task<JObject> WaitForManagedException(JObject pause_location)

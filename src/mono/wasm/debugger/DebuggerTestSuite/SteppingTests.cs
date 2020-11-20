@@ -1,3 +1,6 @@
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+
 using System;
 using System.Linq;
 using System.Threading.Tasks;
@@ -610,7 +613,7 @@ namespace DebuggerTests
 
             AssertEqual("WriteLine", top_frame["functionName"]?.Value<string>(), "Expected to be in WriteLine method");
             var script_id = top_frame["functionLocation"]["scriptId"].Value<string>();
-            Assert.Matches ("^dotnet://(mscorlib|System\\.Console)\\.dll/Console.cs", scripts[script_id]);
+            Assert.Matches("^dotnet://(mscorlib|System\\.Console)\\.dll/Console.cs", scripts[script_id]);
         }
 
         [Fact]
@@ -620,7 +623,7 @@ namespace DebuggerTests
             var bp2 = await SetBreakpoint("dotnet://debugger-test.dll/debugger-test.cs", 12, 8);
             var pause_location = await EvaluateAndCheck(
                 "window.setTimeout(function() { invoke_add(); invoke_add()}, 1);",
-                "dotnet://debugger-test.dll/debugger-test.cs",  10, 8,
+                "dotnet://debugger-test.dll/debugger-test.cs", 10, 8,
                 "IntAdd");
 
             Assert.Equal("other", pause_location["reason"]?.Value<string>());
@@ -638,7 +641,7 @@ namespace DebuggerTests
             var bp2 = await SetBreakpoint("dotnet://debugger-test.dll/debugger-test.cs", 12, 8);
             var pause_location = await EvaluateAndCheck(
                 "window.setTimeout(function() { invoke_add(); invoke_add()}, 1);",
-                "dotnet://debugger-test.dll/debugger-test.cs",  10, 8,
+                "dotnet://debugger-test.dll/debugger-test.cs", 10, 8,
                 "IntAdd");
 
             Assert.Equal("other", pause_location["reason"]?.Value<string>());
@@ -655,7 +658,7 @@ namespace DebuggerTests
             var bp2 = await SetBreakpoint("dotnet://debugger-test.dll/debugger-test.cs", 12, 8);
             var pause_location = await EvaluateAndCheck(
                 "window.setTimeout(function() { invoke_add(); invoke_add(); invoke_add(); invoke_add()}, 1);",
-                "dotnet://debugger-test.dll/debugger-test.cs",  10, 8,
+                "dotnet://debugger-test.dll/debugger-test.cs", 10, 8,
                 "IntAdd");
 
             Assert.Equal("other", pause_location["reason"]?.Value<string>());
@@ -845,7 +848,7 @@ namespace DebuggerTests
                 "window.setTimeout(function() { invoke_static_method ('[debugger-test] HiddenSequencePointTest:StepOverHiddenSP'); }, 1);",
                 "dotnet://debugger-test.dll/debugger-test.cs", 546, 4,
                 "StepOverHiddenSP2");
-    }
+        }
 
         [Fact]
         public async Task BreakpointOnHiddenLineOfMethodWithNoNextVisibleLineShouldNotPause()

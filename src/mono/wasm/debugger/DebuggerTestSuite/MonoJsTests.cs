@@ -1,3 +1,6 @@
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+
 using System;
 using System.IO;
 using System.Linq;
@@ -8,19 +11,11 @@ using Xunit;
 
 namespace DebuggerTests
 {
-    public class MonoJsTests : DebuggerTestBase
+    public class MonoJsTests : SingleSessionTestBase
     {
         [Fact]
         public async Task FixupNameValueObjectsWithMissingParts()
         {
-            var insp = new Inspector();
-            var scripts = SubscribeToScripts(insp);
-
-            await Ready();
-            await insp.Ready(async (cli, token) =>
-            {
-                ctx = new DebugTestContext(cli, insp, token, scripts);
-
                 var bp1_res = await SetBreakpointInMethod("debugger-test.dll", "Math", "IntAdd", 3);
 
                 var names = new JObject[]
@@ -55,7 +50,7 @@ namespace DebuggerTests
 
                 JObject.DeepEquals(getters[1], res.Value["result"]["value"].Values<JObject>().ToArray()[3]);
 
-                JObject GetterRes(string name) => JObject.FromObject(new
+                static JObject GetterRes(string name) => JObject.FromObject(new
                 {
                     get = new
                     {
@@ -64,20 +59,11 @@ namespace DebuggerTests
                         type = "function"
                     }
                 });
-            });
         }
 
         [Fact]
         public async Task GetParamsAndLocalsWithInvalidIndices()
         {
-            var insp = new Inspector();
-            var scripts = SubscribeToScripts(insp);
-
-            await Ready();
-            await insp.Ready(async (cli, token) =>
-            {
-                ctx = new DebugTestContext(cli, insp, token, scripts);
-
                 var bp1_res = await SetBreakpointInMethod("debugger-test.dll", "Math", "IntAdd", 3);
                 var pause_location = await EvaluateAndCheck(
                     "window.setTimeout(function() { invoke_static_method('[debugger-test] Math:IntAdd', 1, 2); })",
@@ -104,20 +90,11 @@ namespace DebuggerTests
                     bad0 = TSymbol("<unreadable value>"),
                     bad1 = TSymbol("<unreadable value>")
                 }, "results");
-            });
         }
 
         [Fact]
         public async Task InvalidScopeId()
         {
-            var insp = new Inspector();
-            var scripts = SubscribeToScripts(insp);
-
-            await Ready();
-            await insp.Ready(async (cli, token) =>
-            {
-                ctx = new DebugTestContext(cli, insp, token, scripts);
-
                 var bp1_res = await SetBreakpointInMethod("debugger-test.dll", "Math", "IntAdd", 3);
                 await EvaluateAndCheck(
                     "window.setTimeout(function() { invoke_static_method('[debugger-test] Math:IntAdd', 1, 2); })",
@@ -137,20 +114,11 @@ namespace DebuggerTests
                 expression = $"MONO.mono_wasm_get_variables({scope_id}, {JsonConvert.SerializeObject(var_ids)})";
                 res = await ctx.cli.SendCommand($"Runtime.evaluate", JObject.FromObject(new { expression, returnByValue = true }), ctx.token);
                 Assert.False(res.IsOk);
-            });
         }
 
         [Fact]
         public async Task BadRaiseDebugEventsTest()
         {
-            var insp = new Inspector();
-            var scripts = SubscribeToScripts(insp);
-
-            await Ready();
-            await insp.Ready(async (cli, token) =>
-            {
-                ctx = new DebugTestContext(cli, insp, token, scripts);
-
                 var bad_expressions = new[]
                 {
                     "MONO.mono_wasm_raise_debug_event('')",
@@ -171,7 +139,6 @@ namespace DebuggerTests
                                 }), ctx.token);
                     Assert.False(res.IsOk, $"Expected to fail for {expression}");
                 }
-            });
         }
 
         [Theory]
@@ -180,16 +147,9 @@ namespace DebuggerTests
         [InlineData(null)]
         public async Task RaiseDebugEventTraceTest(bool? trace)
         {
-            var insp = new Inspector();
-            var scripts = SubscribeToScripts(insp);
-
-            await Ready();
-            await insp.Ready(async (cli, token) =>
-            {
-                ctx = new DebugTestContext(cli, insp, token, scripts);
-
                 var tcs = new TaskCompletionSource<bool>();
-                insp.On("Runtime.consoleAPICalled", async (args, token) => {
+                insp.On("Runtime.consoleAPICalled", async (args, token) =>
+                {
                     if (args?["type"]?.Value<string>() == "debug" &&
                        args?["args"]?.Type == JTokenType.Array &&
                        args?["args"]?[0]?["value"]?.Value<string>()?.StartsWith("mono_wasm_debug_event_raised:") == true)
@@ -211,7 +171,6 @@ namespace DebuggerTests
                     Assert.True(tcs.Task == t, "Timed out waiting for the event to be logged");
                 else
                     Assert.False(tcs.Task == t, "Event should not have been logged");
-            });
         }
 
         [Theory]
@@ -250,8 +209,6 @@ namespace DebuggerTests
 
         async Task AssemblyLoadedEventTest(string asm_name, string asm_path, string pdb_path, string source_file, int expected_count)
         {
-            var insp = new Inspector();
-            var scripts = SubscribeToScripts(insp);
 
             int event_count = 0;
             var tcs = new TaskCompletionSource<bool>();
@@ -262,7 +219,7 @@ namespace DebuggerTests
                     var url = args["url"]?.Value<string>();
                     if (url?.EndsWith(source_file) == true)
                     {
-                        event_count ++;
+                        event_count++;
                         if (event_count > expected_count)
                             tcs.SetResult(false);
                     }
@@ -274,11 +231,6 @@ namespace DebuggerTests
 
                 await Task.CompletedTask;
             });
-
-            await Ready();
-            await insp.Ready(async (cli, token) =>
-            {
-                ctx = new DebugTestContext(cli, insp, token, scripts);
 
                 byte[] bytes = File.ReadAllBytes(asm_path);
                 string asm_base64 = Convert.ToBase64String(bytes);
@@ -308,7 +260,6 @@ namespace DebuggerTests
                     throw t.Exception;
 
                 Assert.True(event_count <= expected_count, $"number of scriptParsed events received. Expected: {expected_count}, Actual: {event_count}");
-            });
         }
     }
 }

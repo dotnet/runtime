@@ -11,7 +11,7 @@ using Xunit;
 namespace DebuggerTests
 {
 
-    public class ArrayTests : DebuggerTestBase
+    public class ArrayTests : SingleSessionTestBase
     {
 
         [Theory]
@@ -202,14 +202,6 @@ namespace DebuggerTests
             string local_var_name_prefix, object[] array, object[] array_elem_props,
             bool test_prev_frame = false, int frame_idx = 0, bool use_cfo = false)
         {
-            var insp = new Inspector();
-            //Collect events
-            var scripts = SubscribeToScripts(insp);
-
-            await Ready();
-            await insp.Ready(async (cli, token) =>
-            {
-                ctx = new DebugTestContext(cli, insp, token, scripts);
                 var debugger_test_loc = "dotnet://debugger-test.dll/debugger-array-test.cs";
                 ctx.UseCallFunctionOnBeforeGetProperties = use_cfo;
 
@@ -272,7 +264,6 @@ namespace DebuggerTests
 
                 var props = await GetObjectOnFrame(pause_location["callFrames"][frame_idx], $"{local_var_name_prefix}_arr_empty");
                 await CheckProps(props, new object[0], "${local_var_name_prefix}_arr_empty");
-            });
 
             async Task<JToken> GetObjectWithCFO(string objectId, JObject fn_args = null)
             {
@@ -298,19 +289,12 @@ namespace DebuggerTests
         [InlineData(true)]
         public async Task InspectObjectArrayMembers(bool use_cfo)
         {
-            var insp = new Inspector();
-            //Collect events
-            var scripts = SubscribeToScripts(insp);
             int line = 227;
             int col = 12;
             string entry_method_name = "[debugger-test] DebuggerTests.ArrayTestsClass:ObjectArrayMembers";
             string method_name = "PlaceholderMethod";
             int frame_idx = 1;
 
-            await Ready();
-            await insp.Ready(async (cli, token) =>
-            {
-                ctx = new DebugTestContext(cli, insp, token, scripts);
                 ctx.UseCallFunctionOnBeforeGetProperties = use_cfo;
                 var debugger_test_loc = "dotnet://debugger-test.dll/debugger-array-test.cs";
 
@@ -370,7 +354,6 @@ namespace DebuggerTests
                             TPoint(123, 0, "PointsField#Id#1", "Blue"),
                     },
                     label: "c#PointsField");
-            });
         }
 
         [Theory]
@@ -378,19 +361,12 @@ namespace DebuggerTests
         [InlineData(true)]
         public async Task InspectValueTypeArrayLocalsStaticAsync(bool use_cfo)
         {
-            var insp = new Inspector();
-            //Collect events
-            var scripts = SubscribeToScripts(insp);
             int line = 157;
             int col = 12;
             string entry_method_name = "[debugger-test] DebuggerTests.ArrayTestsClass:ValueTypeLocalsAsync";
             string method_name = "MoveNext"; // BUG: this should be ValueTypeLocalsAsync
             int frame_idx = 0;
 
-            await Ready();
-            await insp.Ready(async (cli, token) =>
-            {
-                ctx = new DebugTestContext(cli, insp, token, scripts);
                 ctx.UseCallFunctionOnBeforeGetProperties = use_cfo;
                 var debugger_test_loc = "dotnet://debugger-test.dll/debugger-array-test.cs";
 
@@ -441,7 +417,6 @@ namespace DebuggerTests
                 );
                 await CompareObjectPropertiesFor(frame_locals, $"{local_var_name_prefix}_arr_empty",
                     new object[0]);
-            });
         }
 
         // TODO: Check previous frame too
@@ -450,18 +425,12 @@ namespace DebuggerTests
         [InlineData(true)]
         public async Task InspectValueTypeArrayLocalsInstanceAsync(bool use_cfo)
         {
-            var insp = new Inspector();
             //Collect events
-            var scripts = SubscribeToScripts(insp);
             int line = 170;
             int col = 12;
             string entry_method_name = "[debugger-test] DebuggerTests.ArrayTestsClass:ValueTypeLocalsAsync";
             int frame_idx = 0;
 
-            await Ready();
-            await insp.Ready(async (cli, token) =>
-            {
-                ctx = new DebugTestContext(cli, insp, token, scripts);
                 ctx.UseCallFunctionOnBeforeGetProperties = use_cfo;
                 var debugger_test_loc = "dotnet://debugger-test.dll/debugger-array-test.cs";
 
@@ -501,7 +470,6 @@ namespace DebuggerTests
 
                 await CompareObjectPropertiesFor(frame_locals, "point",
                     TPoint(45, 51, "point#Id", "Green"));
-            });
         }
 
         [Theory]
@@ -509,18 +477,11 @@ namespace DebuggerTests
         [InlineData(true)]
         public async Task InspectValueTypeArrayLocalsInAsyncStaticStructMethod(bool use_cfo)
         {
-            var insp = new Inspector();
-            //Collect events
-            var scripts = SubscribeToScripts(insp);
             int line = 244;
             int col = 12;
             string entry_method_name = "[debugger-test] DebuggerTests.ArrayTestsClass:EntryPointForStructMethod";
             int frame_idx = 0;
 
-            await Ready();
-            await insp.Ready(async (cli, token) =>
-            {
-                ctx = new DebugTestContext(cli, insp, token, scripts);
                 ctx.UseCallFunctionOnBeforeGetProperties = use_cfo;
                 var debugger_test_loc = "dotnet://debugger-test.dll/debugger-array-test.cs";
 
@@ -541,7 +502,6 @@ namespace DebuggerTests
                     local_i = TNumber(5),
                     sc = TSimpleClass(10, 45, "sc#Id", "Blue")
                 }, "InspectValueTypeArrayLocalsInAsyncStaticStructMethod#locals");
-            });
         }
 
         [Theory]
@@ -549,18 +509,11 @@ namespace DebuggerTests
         [InlineData(true)]
         public async Task InspectValueTypeArrayLocalsInAsyncInstanceStructMethod(bool use_cfo)
         {
-            var insp = new Inspector();
-            //Collect events
-            var scripts = SubscribeToScripts(insp);
             int line = 251;
             int col = 12;
             string entry_method_name = "[debugger-test] DebuggerTests.ArrayTestsClass:EntryPointForStructMethod";
             int frame_idx = 0;
 
-            await Ready();
-            await insp.Ready(async (cli, token) =>
-            {
-                ctx = new DebugTestContext(cli, insp, token, scripts);
                 ctx.UseCallFunctionOnBeforeGetProperties = use_cfo;
                 var debugger_test_loc = "dotnet://debugger-test.dll/debugger-array-test.cs";
 
@@ -598,7 +551,6 @@ namespace DebuggerTests
                 await CompareObjectPropertiesFor(frame_locals, "this",
                     TPoint(90, -4, "point#Id", "Green"),
                     label: "this#0");
-            });
         }
 
         [Fact]

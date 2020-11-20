@@ -11,7 +11,7 @@ using Xunit;
 namespace DebuggerTests
 {
 
-    public class DelegateTests : DebuggerTestBase
+    public class DelegateTests : SingleSessionTestBase
     {
 
         [Theory]

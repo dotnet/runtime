@@ -11,7 +11,7 @@ using Xunit;
 namespace DebuggerTests
 {
 
-    public class CallFunctionOnTests : DebuggerTestBase
+    public class CallFunctionOnTests : SingleSessionTestBase
     {
 
         // This tests `callFunctionOn` with a function that the vscode-js-debug extension uses
@@ -442,14 +442,6 @@ namespace DebuggerTests
         [InlineData("invoke_static_method ('[debugger-test] DebuggerTests.CallFunctionOnTest:LocalsTest', 10);", "dotnet://debugger-test.dll/debugger-cfo-test.cs", 23, 12, true)]
         public async Task RunOnArrayReturnPrimitive(string eval_fn, string bp_loc, int line, int col, bool return_by_val)
         {
-            var insp = new Inspector();
-            //Collect events
-            var scripts = SubscribeToScripts(insp);
-
-            await Ready();
-            await insp.Ready(async (cli, token) =>
-            {
-                ctx = new DebugTestContext(cli, insp, token, scripts);
                 await SetBreakpoint(bp_loc, line, col);
 
                 // callFunctionOn
@@ -509,7 +501,6 @@ namespace DebuggerTests
                 // callFunctionOn
                 result = await ctx.cli.SendCommand("Runtime.callFunctionOn", cfo_args, ctx.token);
                 await CheckValue(result.Value["result"], JObject.Parse("{ type: 'object', subtype: 'null', value: null }"), "cfo-res");
-            });
         }
 
         public static TheoryData<string, string, int, int, bool?> SilentErrorsTestData(bool? silent) => new TheoryData<string, string, int, int, bool?>
@@ -523,14 +514,6 @@ namespace DebuggerTests
         [MemberData(nameof(SilentErrorsTestData), true)]
         public async Task CFOWithSilentReturnsErrors(string eval_fn, string bp_loc, int line, int col, bool? silent)
         {
-            var insp = new Inspector();
-            //Collect events
-            var scripts = SubscribeToScripts(insp);
-
-            await Ready();
-            await insp.Ready(async (cli, token) =>
-            {
-                ctx = new DebugTestContext(cli, insp, token, scripts);
                 await SetBreakpoint(bp_loc, line, col);
 
                 // callFunctionOn
@@ -561,7 +544,6 @@ namespace DebuggerTests
 
                 var hasErrorMessage = result.Error["exceptionDetails"]?["exception"]?["description"]?.Value<string>()?.Contains(error_msg);
                 Assert.True((hasErrorMessage ?? false), "Exception message not found");
-            });
         }
 
         public static TheoryData<string, string, int, int, string, Func<string[], object>, string, bool> GettersTestData(string local_name, bool use_cfo) => new TheoryData<string, string, int, int, string, Func<string[], object>, string, bool>
@@ -816,14 +798,6 @@ namespace DebuggerTests
         [MemberData(nameof(NegativeTestsData), false)]
         public async Task RunOnInvalidThirdSegmentOfObjectId(string eval_fn, string bp_loc, int line, int col, bool use_cfo)
         {
-            var insp = new Inspector();
-            //Collect events
-            var scripts = SubscribeToScripts(insp);
-
-            await Ready();
-            await insp.Ready(async (cli, token) =>
-            {
-                ctx = new DebugTestContext(cli, insp, token, scripts);
                 ctx.UseCallFunctionOnBeforeGetProperties = use_cfo;
                 await SetBreakpoint(bp_loc, line, col);
 
@@ -844,7 +818,6 @@ namespace DebuggerTests
 
                 var res = await ctx.cli.SendCommand("Runtime.callFunctionOn", cfo_args, ctx.token);
                 Assert.True(res.IsErr);
-            });
         }
 
         [Theory]
@@ -852,14 +825,6 @@ namespace DebuggerTests
         [MemberData(nameof(NegativeTestsData), true)]
         public async Task InvalidPropertyGetters(string eval_fn, string bp_loc, int line, int col, bool use_cfo)
         {
-            var insp = new Inspector();
-            //Collect events
-            var scripts = SubscribeToScripts(insp);
-
-            await Ready();
-            await insp.Ready(async (cli, token) =>
-            {
-                ctx = new DebugTestContext(cli, insp, token, scripts);
                 await SetBreakpoint(bp_loc, line, col);
                 ctx.UseCallFunctionOnBeforeGetProperties = use_cfo;
 
@@ -878,7 +843,6 @@ namespace DebuggerTests
                     var getter_res = await InvokeGetter(JObject.FromObject(new { value = new { objectId = ptd_id } }), invalid_arg);
                     AssertEqual("undefined", getter_res.Value["result"]?["type"]?.ToString(), $"Expected to get undefined result for non-existant accessor - {invalid_arg}");
                 }
-            });
         }
 
         [Theory]
@@ -922,14 +886,6 @@ namespace DebuggerTests
         async Task RunCallFunctionOn(string eval_fn, string fn_decl, string local_name, string bp_loc, int line, int col, int res_array_len = -1,
             Func<Result, Task> test_fn = null, bool returnByValue = false, JArray fn_args = null, bool roundtrip = false)
         {
-            var insp = new Inspector();
-            //Collect events
-            var scripts = SubscribeToScripts(insp);
-
-            await Ready();
-            await insp.Ready(async (cli, token) =>
-            {
-                ctx = new DebugTestContext(cli, insp, token, scripts);
                 await SetBreakpoint(bp_loc, line, col);
 
                 // callFunctionOn
@@ -996,7 +952,6 @@ namespace DebuggerTests
                     else
                         await CheckValue(result.Value["result"], TArray("Array", res_array_len), $"cfo-res");
                 }
-            });
         }
     }
 

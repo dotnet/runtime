@@ -8,7 +8,7 @@ using Xunit;
 
 namespace DebuggerTests
 {
-    public class DateTimeList : DebuggerTestBase
+    public class DateTimeList : SingleSessionTestBase
     {
 
         [Theory]
@@ -18,13 +18,6 @@ namespace DebuggerTests
         [InlineData("de-DE", "dddd, d. MMMM yyyy HH:mm:ss", "dddd, d. MMMM yyyy", "HH:mm:ss", "dd.MM.yyyy", "HH:mm")]
         public async Task CheckDateTimeLocale(string locale, string fdtp, string ldp, string ltp, string sdp, string stp)
         {
-            var insp = new Inspector();
-            var scripts = SubscribeToScripts(insp);
-
-            await Ready();
-            await insp.Ready(async (cli, token) =>
-            {
-                ctx = new DebugTestContext(cli, insp, token, scripts);
                 var debugger_test_loc = "dotnet://debugger-test.dll/debugger-datetime-test.cs";
 
                 await SetBreakpointInMethod("debugger-test", "DebuggerTests.DateTimeTest", "LocaleTest", 15);
@@ -49,8 +42,6 @@ namespace DebuggerTests
                         }, "locals", num_fields: 8);
                     }
                 );
-
-            });
         }
 
     }

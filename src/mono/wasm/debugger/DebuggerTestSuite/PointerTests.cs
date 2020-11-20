@@ -11,7 +11,7 @@ using Xunit;
 namespace DebuggerTests
 {
 
-    public class PointerTests : DebuggerTestBase
+    public class PointerTests : SingleSessionTestBase
     {
 
         public static TheoryData<string, string, string, int, string, bool> PointersTestData =>
