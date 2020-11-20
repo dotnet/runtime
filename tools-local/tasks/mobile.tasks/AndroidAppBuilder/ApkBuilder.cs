@@ -16,10 +16,10 @@ public class ApkBuilder
     public string? MinApiLevel { get; set; }
     public string? BuildApiLevel { get; set; }
     public string? BuildToolsVersion { get; set; }
+    public string OutputDir { get; set; } = ""!;
     public bool StripDebugSymbols { get; set; }
     public string? NativeMainSource { get; set; }
     public string? KeyStorePath { get; set; }
-    public string OutputDir { get; set; } = ""!;
     public bool ForceInterpreter { get; set; }
 
     public (string apk, string packageId) BuildApk(
