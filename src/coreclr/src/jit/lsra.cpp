@@ -1640,7 +1640,7 @@ void LinearScan::identifyCandidates()
 #if DOUBLE_ALIGN
     unsigned             refCntStk       = 0;
     unsigned             refCntReg       = 0;
-    unsigned             refCntWtdReg    = 0;
+    BasicBlock::weight_t refCntWtdReg    = 0;
     unsigned             refCntStkParam  = 0; // sum of     ref counts for all stack based parameters
     BasicBlock::weight_t refCntWtdStkDbl = 0; // sum of wtd ref counts for stack based doubles
     doDoubleAlign                        = false;
