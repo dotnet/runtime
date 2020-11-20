@@ -73,14 +73,12 @@ void DecomposeLongs::DecomposeBlock(BasicBlock* block)
 //
 // Arguments:
 //    compiler    - The compiler context.
-//    blockWeight - The weight of the block into which the range will be
-//                  inserted.
 //    range       - The range to decompose.
 //
 // Return Value:
 //    None.
 //
-void DecomposeLongs::DecomposeRange(Compiler* compiler, unsigned blockWeight, LIR::Range& range)
+void DecomposeLongs::DecomposeRange(Compiler* compiler, LIR::Range& range)
 {
     assert(compiler != nullptr);
 
