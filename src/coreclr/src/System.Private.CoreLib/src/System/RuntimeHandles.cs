@@ -221,11 +221,37 @@ namespace System
             delegate*<MethodTable*, object> pNewobjHelperTemp = null;
             MethodTable* pMTTemp = null;
 
-            GetAllocatorFtn(
-                new QCallTypeHandle(ref type),
-                &pNewobjHelperTemp,
-                &pMTTemp,
-                forGetUninitializedObject ? Interop.BOOL.TRUE : Interop.BOOL.FALSE);
+            try
+            {
+                GetAllocatorFtn(
+                    new QCallTypeHandle(ref type),
+                    &pNewobjHelperTemp,
+                    &pMTTemp,
+                    forGetUninitializedObject ? Interop.BOOL.TRUE : Interop.BOOL.FALSE);
+            }
+            catch (Exception ex)
+            {
+                // If the inner exception is populated, probably a failed cctor, and we should
+                // propagate the exception as-is. If the exception is a type that we understand,
+                // we should make the error message friendlier so as to include the name of the type
+                // that couldn't be instantiated.
+
+                if (ex.InnerException is null)
+                {
+                    string friendlyMessage = SR.Format(SR.ActivatorCache_CannotGetAllocator, type, ex.Message);
+
+                    switch (ex)
+                    {
+                        case ArgumentException: throw new ArgumentException(friendlyMessage);
+                        case NotSupportedException: throw new NotSupportedException(friendlyMessage);
+                        case MethodAccessException: throw new MethodAccessException(friendlyMessage);
+                        case MissingMethodException: throw new MissingMethodException(friendlyMessage);
+                        case MemberAccessException: throw new MemberAccessException(friendlyMessage);
+                    }
+                }
+
+                throw; // can't make a friendlier message, rethrow original exception
+            }
 
             pMT = pMTTemp;
             return pNewobjHelperTemp;

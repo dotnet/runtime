@@ -2033,10 +2033,17 @@ void QCALLTYPE RuntimeTypeHandle::GetAllocatorFtn(
         COMPlusThrow(kArgumentException, W("NotSupported_Type"));
     }
 
+    // Don't allow generic variables (e.g., the 'T' from List<T>)
+    // or open generic types (List<>) - Activator variation of check.
+    if (!fGetUninitializedObject && typeHandle.ContainsGenericVariables())
+    {
+        COMPlusThrow(kArgumentException, W("Acc_CreateGeneric"));
+    }
+
     // Don't allow arrays, pointers, byrefs, or function pointers
     if (typeHandle.IsTypeDesc() || typeHandle.IsArray())
     {
-        COMPlusThrow(kNotSupportedException, W("NotSupported_Type"));
+        COMPlusThrow(fGetUninitializedObject ? kArgumentException : kMissingMethodException, W("NotSupported_Type"));
     }
 
     MethodTable* pMT = typeHandle.AsMethodTable();
@@ -2053,7 +2060,7 @@ void QCALLTYPE RuntimeTypeHandle::GetAllocatorFtn(
     // Don't allow string or string-like (variable length) types.
     if (pMT->HasComponentSize())
     {
-        COMPlusThrow(kArgumentException, W("Argument_NoUninitializedStrings"));
+        COMPlusThrow(fGetUninitializedObject ? kArgumentException : kMissingMethodException, W("Argument_NoUninitializedStrings"));
     }
 
     // Don't allow abstract classes or interface types
@@ -2065,10 +2072,14 @@ void QCALLTYPE RuntimeTypeHandle::GetAllocatorFtn(
             COMPlusThrow(exKind, W("Acc_CreateAbst"));
     }
 
-    // Don't allow open generics or generics instantiated over __Canon
-    if (pMT->ContainsGenericVariables()) {
-        COMPlusThrow(fGetUninitializedObject ? kMemberAccessException : kArgumentException, W("Acc_CreateGeneric"));
+    // Don't allow generic variables (e.g., the 'T' from List<T>)
+    // or open generic types (List<>) - FormatterServices variation of check.
+    if (fGetUninitializedObject && typeHandle.ContainsGenericVariables())
+    {
+        COMPlusThrow(kMemberAccessException, W("Acc_CreateGeneric"));
     }
+
+    // Don't allow generics instantiated over __Canon
     if (pMT->IsSharedByGenericInstantiations()) {
         COMPlusThrow(kNotSupportedException, W("NotSupported_Type"));
     }
