@@ -290,7 +290,7 @@ public class ApkBuilder
         if (string.IsNullOrEmpty(ProjectName))
             apkPath = Directory.GetFiles(Path.Combine(OutputDir, "bin"), "*.apk").First();
         else
-            apkPath = Path.Combine(OutputDir, "bin", $"{apkPath}.apk");
+            apkPath = Path.Combine(OutputDir, "bin", $"{ProjectName}.apk");
 
         if (!File.Exists(apkPath))
             throw new Exception($"{apkPath} was not found");
