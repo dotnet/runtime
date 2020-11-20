@@ -203,7 +203,7 @@ namespace DebuggerTests
             bool test_prev_frame = false, int frame_idx = 0, bool use_cfo = false)
         {
             var debugger_test_loc = "dotnet://debugger-test.dll/debugger-array-test.cs";
-            ctx.UseCallFunctionOnBeforeGetProperties = use_cfo;
+            UseCallFunctionOnBeforeGetProperties = use_cfo;
 
             await SetBreakpoint(debugger_test_loc, line, col);
 
@@ -278,7 +278,7 @@ namespace DebuggerTests
                     cfo_args["arguments"] = fn_args;
 
                 // callFunctionOn
-                var result = await ctx.cli.SendCommand("Runtime.callFunctionOn", cfo_args, ctx.token);
+                var result = await cli.SendCommand("Runtime.callFunctionOn", cfo_args, token);
 
                 return await GetProperties(result.Value["result"]["objectId"]?.Value<string>(), fn_args);
             }
@@ -295,7 +295,7 @@ namespace DebuggerTests
             string method_name = "PlaceholderMethod";
             int frame_idx = 1;
 
-            ctx.UseCallFunctionOnBeforeGetProperties = use_cfo;
+            UseCallFunctionOnBeforeGetProperties = use_cfo;
             var debugger_test_loc = "dotnet://debugger-test.dll/debugger-array-test.cs";
 
             await SetBreakpoint(debugger_test_loc, line, col);
@@ -367,7 +367,7 @@ namespace DebuggerTests
             string method_name = "MoveNext"; // BUG: this should be ValueTypeLocalsAsync
             int frame_idx = 0;
 
-            ctx.UseCallFunctionOnBeforeGetProperties = use_cfo;
+            UseCallFunctionOnBeforeGetProperties = use_cfo;
             var debugger_test_loc = "dotnet://debugger-test.dll/debugger-array-test.cs";
 
             await SetBreakpoint(debugger_test_loc, line, col);
@@ -431,7 +431,7 @@ namespace DebuggerTests
             string entry_method_name = "[debugger-test] DebuggerTests.ArrayTestsClass:ValueTypeLocalsAsync";
             int frame_idx = 0;
 
-            ctx.UseCallFunctionOnBeforeGetProperties = use_cfo;
+            UseCallFunctionOnBeforeGetProperties = use_cfo;
             var debugger_test_loc = "dotnet://debugger-test.dll/debugger-array-test.cs";
 
             await SetBreakpoint(debugger_test_loc, line, col);
@@ -482,7 +482,7 @@ namespace DebuggerTests
             string entry_method_name = "[debugger-test] DebuggerTests.ArrayTestsClass:EntryPointForStructMethod";
             int frame_idx = 0;
 
-            ctx.UseCallFunctionOnBeforeGetProperties = use_cfo;
+            UseCallFunctionOnBeforeGetProperties = use_cfo;
             var debugger_test_loc = "dotnet://debugger-test.dll/debugger-array-test.cs";
 
             await SetBreakpoint(debugger_test_loc, line, col);
@@ -514,7 +514,7 @@ namespace DebuggerTests
             string entry_method_name = "[debugger-test] DebuggerTests.ArrayTestsClass:EntryPointForStructMethod";
             int frame_idx = 0;
 
-            ctx.UseCallFunctionOnBeforeGetProperties = use_cfo;
+            UseCallFunctionOnBeforeGetProperties = use_cfo;
             var debugger_test_loc = "dotnet://debugger-test.dll/debugger-array-test.cs";
 
             await SetBreakpoint(debugger_test_loc, line, col);

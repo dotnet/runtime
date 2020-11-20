@@ -130,7 +130,7 @@ namespace DebuggerTests
                 url = "dotnet://debugger-test.dll/this-file-doesnt-exist.cs",
             });
 
-            var bp1_res = await ctx.cli.SendCommand("Debugger.setBreakpointByUrl", bp1_req, ctx.token);
+            var bp1_res = await cli.SendCommand("Debugger.setBreakpointByUrl", bp1_req, token);
 
             Assert.True(bp1_res.IsOk);
             Assert.Empty(bp1_res.Value["locations"].Values<object>());
@@ -183,7 +183,7 @@ namespace DebuggerTests
                 expression = "invoke_bad_js_test();"
             });
 
-            var eval_res = await ctx.cli.SendCommand("Runtime.evaluate", eval_req, ctx.token);
+            var eval_res = await cli.SendCommand("Runtime.evaluate", eval_req, token);
             Assert.True(eval_res.IsErr);
             Assert.Equal("Uncaught", eval_res.Error["exceptionDetails"]?["text"]?.Value<string>());
         }
@@ -199,7 +199,7 @@ namespace DebuggerTests
             });
 
             var task = insp.WaitFor("Runtime.exceptionThrown");
-            var eval_res = await ctx.cli.SendCommand("Runtime.evaluate", eval_req, ctx.token);
+            var eval_res = await cli.SendCommand("Runtime.evaluate", eval_req, token);
             // Response here will be the id for the timer from JS!
             Assert.True(eval_res.IsOk);
 
@@ -390,7 +390,7 @@ namespace DebuggerTests
                        objectId = "dotnet:scope:23490871",
                    });
 
-                   var frame_props = await ctx.cli.SendCommand("Runtime.getProperties", get_prop_req, ctx.token);
+                   var frame_props = await cli.SendCommand("Runtime.getProperties", get_prop_req, token);
                    Assert.True(frame_props.IsErr);
                }
             );
@@ -401,7 +401,7 @@ namespace DebuggerTests
         [InlineData(true)]
         public async Task InspectLocalsWithStructs(bool use_cfo)
         {
-            ctx.UseCallFunctionOnBeforeGetProperties = use_cfo;
+            UseCallFunctionOnBeforeGetProperties = use_cfo;
             var debugger_test_loc = "dotnet://debugger-test.dll/debugger-valuetypes-test.cs";
 
             await SetBreakpoint(debugger_test_loc, 24, 8);
@@ -595,7 +595,7 @@ namespace DebuggerTests
         [InlineData(true)]
         public async Task InspectLocalsWithStructsStaticAsync(bool use_cfo)
         {
-            ctx.UseCallFunctionOnBeforeGetProperties = use_cfo;
+            UseCallFunctionOnBeforeGetProperties = use_cfo;
             var debugger_test_loc = "dotnet://debugger-test.dll/debugger-valuetypes-test.cs";
 
             await SetBreakpoint(debugger_test_loc, 54, 12);
@@ -812,7 +812,7 @@ namespace DebuggerTests
 
             async Task<string> CreateNewId(string expr)
             {
-                var res = await ctx.cli.SendCommand("Runtime.evaluate", JObject.FromObject(new { expression = expr }), ctx.token);
+                var res = await cli.SendCommand("Runtime.evaluate", JObject.FromObject(new { expression = expr }), token);
                 Assert.True(res.IsOk, "Expected Runtime.evaluate to succeed");
                 AssertEqual("string", res.Value["result"]?["type"]?.Value<string>(), "Expected Runtime.evaluate to return a string type result");
                 return res.Value["result"]?["value"]?.Value<string>();
@@ -821,7 +821,7 @@ namespace DebuggerTests
             async Task<Result> _invoke_getter(string obj_id, string property_name, bool expect_ok)
             {
                 var expr = $"MONO._invoke_getter ('{obj_id}', '{property_name}')";
-                var res = await ctx.cli.SendCommand("Runtime.evaluate", JObject.FromObject(new { expression = expr }), ctx.token);
+                var res = await cli.SendCommand("Runtime.evaluate", JObject.FromObject(new { expression = expr }), token);
                 AssertEqual(expect_ok, res.IsOk, "Runtime.evaluate result not as expected for {expr}");
 
                 return res;
@@ -994,7 +994,7 @@ namespace DebuggerTests
                 expression = $"{{ let asm_b64 = '{asm_base64}'; let pdb_b64 = '{pdb_base64}'; invoke_static_method('[debugger-test] LoadDebuggerTest:LoadLazyAssembly', asm_b64, pdb_b64); }}"
             });
 
-            Result load_assemblies_res = await ctx.cli.SendCommand("Runtime.evaluate", load_assemblies, ctx.token);
+            Result load_assemblies_res = await cli.SendCommand("Runtime.evaluate", load_assemblies, token);
             Assert.True(load_assemblies_res.IsOk);
         }
 

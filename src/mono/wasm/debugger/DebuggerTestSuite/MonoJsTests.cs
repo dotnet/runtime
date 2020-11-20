@@ -38,7 +38,7 @@ namespace DebuggerTests
             };
 
             var list = new[] { names[0], names[1], values[0], names[2], getters[0], getters[1] };
-            var res = await ctx.cli.SendCommand($"Runtime.evaluate", JObject.FromObject(new { expression = $"MONO._fixup_name_value_objects({JsonConvert.SerializeObject(list)})", returnByValue = true }), ctx.token);
+            var res = await cli.SendCommand($"Runtime.evaluate", JObject.FromObject(new { expression = $"MONO._fixup_name_value_objects({JsonConvert.SerializeObject(list)})", returnByValue = true }), token);
             Assert.True(res.IsOk);
 
             await CheckProps(res.Value["result"]["value"], new
@@ -81,7 +81,7 @@ namespace DebuggerTests
 
             var expression = $"MONO.mono_wasm_get_variables({scope}, {JsonConvert.SerializeObject(var_ids)})";
 
-            var res = await ctx.cli.SendCommand($"Runtime.evaluate", JObject.FromObject(new { expression, returnByValue = true }), ctx.token);
+            var res = await cli.SendCommand($"Runtime.evaluate", JObject.FromObject(new { expression, returnByValue = true }), token);
             Assert.True(res.IsOk);
 
             await CheckProps(res.Value["result"]?["value"], new
@@ -107,12 +107,12 @@ namespace DebuggerTests
 
             var scope_id = "-12";
             var expression = $"MONO.mono_wasm_get_variables({scope_id}, {JsonConvert.SerializeObject(var_ids)})";
-            var res = await ctx.cli.SendCommand($"Runtime.evaluate", JObject.FromObject(new { expression, returnByValue = true }), ctx.token);
+            var res = await cli.SendCommand($"Runtime.evaluate", JObject.FromObject(new { expression, returnByValue = true }), token);
             Assert.False(res.IsOk);
 
             scope_id = "30000";
             expression = $"MONO.mono_wasm_get_variables({scope_id}, {JsonConvert.SerializeObject(var_ids)})";
-            res = await ctx.cli.SendCommand($"Runtime.evaluate", JObject.FromObject(new { expression, returnByValue = true }), ctx.token);
+            res = await cli.SendCommand($"Runtime.evaluate", JObject.FromObject(new { expression, returnByValue = true }), token);
             Assert.False(res.IsOk);
         }
 
@@ -131,12 +131,12 @@ namespace DebuggerTests
 
             foreach (var expression in bad_expressions)
             {
-                var res = await ctx.cli.SendCommand($"Runtime.evaluate",
+                var res = await cli.SendCommand($"Runtime.evaluate",
                             JObject.FromObject(new
                             {
                                 expression,
                                 returnByValue = true
-                            }), ctx.token);
+                            }), token);
                 Assert.False(res.IsOk, $"Expected to fail for {expression}");
             }
         }
@@ -162,7 +162,7 @@ namespace DebuggerTests
 
             var trace_str = trace.HasValue ? $"trace: {trace.ToString().ToLower()}" : String.Empty;
             var expression = $"MONO.mono_wasm_raise_debug_event({{ eventName:'qwe' }}, {{ {trace_str} }})";
-            var res = await ctx.cli.SendCommand($"Runtime.evaluate", JObject.FromObject(new { expression }), ctx.token);
+            var res = await cli.SendCommand($"Runtime.evaluate", JObject.FromObject(new { expression }), token);
             Assert.True(res.IsOk, $"Expected to pass for {expression}");
 
             var t = await Task.WhenAny(tcs.Task, Task.Delay(2000));
@@ -249,10 +249,10 @@ namespace DebuggerTests
                     pdb_b64: '{pdb_base64}'
                 }});";
 
-            var res = await ctx.cli.SendCommand($"Runtime.evaluate", JObject.FromObject(new { expression }), ctx.token);
+            var res = await cli.SendCommand($"Runtime.evaluate", JObject.FromObject(new { expression }), token);
             Assert.True(res.IsOk, $"Expected to pass for {expression}");
 
-            res = await ctx.cli.SendCommand($"Runtime.evaluate", JObject.FromObject(new { expression }), ctx.token);
+            res = await cli.SendCommand($"Runtime.evaluate", JObject.FromObject(new { expression }), token);
             Assert.True(res.IsOk, $"Expected to pass for {expression}");
 
             var t = await Task.WhenAny(tcs.Task, Task.Delay(2000));

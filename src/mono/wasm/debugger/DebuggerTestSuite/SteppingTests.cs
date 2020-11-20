@@ -89,7 +89,7 @@ namespace DebuggerTests
         [InlineData(true)]
         public async Task InspectLocalsInPreviousFramesDuringSteppingIn2(bool use_cfo)
         {
-            ctx.UseCallFunctionOnBeforeGetProperties = use_cfo;
+            UseCallFunctionOnBeforeGetProperties = use_cfo;
 
             var dep_cs_loc = "dotnet://debugger-test.dll/dependency.cs";
             await SetBreakpoint(dep_cs_loc, 33, 8);
@@ -156,7 +156,7 @@ namespace DebuggerTests
         [InlineData(true)]
         public async Task InspectLocalsInPreviousFramesDuringSteppingIn(bool use_cfo)
         {
-            ctx.UseCallFunctionOnBeforeGetProperties = use_cfo;
+            UseCallFunctionOnBeforeGetProperties = use_cfo;
 
             var debugger_test_loc = "dotnet://debugger-test.dll/debugger-test.cs";
             await SetBreakpoint(debugger_test_loc, 111, 12);
@@ -316,7 +316,7 @@ namespace DebuggerTests
         [InlineData(true)]
         public async Task InspectLocalsInAsyncMethods(bool use_cfo)
         {
-            ctx.UseCallFunctionOnBeforeGetProperties = use_cfo;
+            UseCallFunctionOnBeforeGetProperties = use_cfo;
             var debugger_test_loc = "dotnet://debugger-test.dll/debugger-test.cs";
 
             await SetBreakpoint(debugger_test_loc, 120, 12);
@@ -372,7 +372,7 @@ namespace DebuggerTests
         [InlineData(true)]
         public async Task InspectValueTypeMethodArgsWhileStepping(bool use_cfo)
         {
-            ctx.UseCallFunctionOnBeforeGetProperties = use_cfo;
+            UseCallFunctionOnBeforeGetProperties = use_cfo;
             var debugger_test_loc = "dotnet://debugger-test.dll/debugger-valuetypes-test.cs";
 
             await SetBreakpoint(debugger_test_loc, 36, 12);
@@ -856,7 +856,7 @@ namespace DebuggerTests
             await SetBreakpoint("dotnet://debugger-test.dll/debugger-test.cs", 554, 12);
 
             string expression = "window.setTimeout(function() { invoke_static_method ('[debugger-test] HiddenSequencePointTest:StepOverHiddenSP'); }, 1);";
-            await ctx.cli.SendCommand($"Runtime.evaluate", JObject.FromObject(new { expression }), ctx.token);
+            await cli.SendCommand($"Runtime.evaluate", JObject.FromObject(new { expression }), token);
 
             Task pause_task = insp.WaitFor(Inspector.PAUSE);
             Task t = await Task.WhenAny(pause_task, Task.Delay(2000));

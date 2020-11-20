@@ -22,9 +22,13 @@ namespace DebuggerTests
 {
     public class DebuggerTestBase : IAsyncLifetime
     {
-        protected Task startTask;
-        protected Inspector insp;
+        internal InspectorClient cli;
+        internal Inspector insp;
+        protected CancellationToken token;
         protected Dictionary<string, string> scripts;
+        protected Task startTask;
+
+        public bool UseCallFunctionOnBeforeGetProperties;
 
         static string s_debuggerTestAppPath;
         protected static string DebuggerTestAppPath
@@ -77,6 +81,7 @@ namespace DebuggerTests
         public DebuggerTestBase(string driver = "debugger-driver.html")
         {
             insp = new Inspector();
+            cli = insp.Client;
             scripts = SubscribeToScripts(insp);
 
             startTask = TestHarnessProxy.Start(FindChromePath(), DebuggerTestAppPath, driver);
@@ -84,7 +89,7 @@ namespace DebuggerTests
 
         public virtual async Task InitializeAsync()
         {
-            Func<InspectorClient, CancellationToken, List<(string, Task<Result>)>> fn = (client, token) =>
+           Func<InspectorClient, CancellationToken, List<(string, Task<Result>)>> fn = (client, token) =>
             {
                 Func<string, (string, Task<Result>)> getInitCmdFn = (cmd) => (cmd, client.SendCommand(cmd, null, token));
                 var init_cmds = new List<(string, Task<Result>)>
@@ -100,14 +105,12 @@ namespace DebuggerTests
 
             await Ready();
             await insp.OpenSessionAsync(fn);
-            ctx = new DebugTestContext(insp.Client, insp, insp.Token, scripts);
         }
 
         public virtual async Task DisposeAsync() => await insp.ShutdownAsync().ConfigureAwait(false);
 
         public Task Ready() => startTask;
 
-        internal DebugTestContext ctx;
         internal Dictionary<string, string> dicScriptsIdToUrl;
         internal Dictionary<string, string> dicFileToUrl;
         internal Dictionary<string, string> SubscribeToScripts(Inspector insp)
@@ -138,7 +141,7 @@ namespace DebuggerTests
         internal async Task CheckInspectLocalsAtBreakpointSite(string url_key, int line, int column, string function_name, string eval_expression,
             Action<JToken> test_fn = null, Func<JObject, Task> wait_for_event_fn = null, bool use_cfo = false)
         {
-            ctx.UseCallFunctionOnBeforeGetProperties = use_cfo;
+            UseCallFunctionOnBeforeGetProperties = use_cfo;
 
             var bp = await SetBreakpoint(url_key, line, column);
 
@@ -171,19 +174,19 @@ namespace DebuggerTests
         internal async Task CheckInspectLocalsAtBreakpointSite(string type, string method, int line_offset, string bp_function_name, string eval_expression,
             Action<JToken> locals_fn = null, Func<JObject, Task> wait_for_event_fn = null, bool use_cfo = false, string assembly = "debugger-test.dll", int col = 0)
         {
-            ctx.UseCallFunctionOnBeforeGetProperties = use_cfo;
+            UseCallFunctionOnBeforeGetProperties = use_cfo;
 
             var bp = await SetBreakpointInMethod(assembly, type, method, line_offset, col);
 
             var args = JObject.FromObject(new { expression = eval_expression });
-            var res = await ctx.cli.SendCommand("Runtime.evaluate", args, ctx.token);
+            var res = await cli.SendCommand("Runtime.evaluate", args, token);
             if (!res.IsOk)
             {
                 Console.WriteLine($"Failed to run command {method} with args: {args?.ToString()}\nresult: {res.Error.ToString()}");
                 Assert.True(false, $"SendCommand for {method} failed with {res.Error.ToString()}");
             }
 
-            var pause_location = await ctx.insp.WaitFor(Inspector.PAUSE);
+            var pause_location = await insp.WaitFor(Inspector.PAUSE);
 
             if (bp_function_name != null)
                 Assert.Equal(bp_function_name, pause_location["callFrames"]?[0]?["functionName"]?.Value<string>());
@@ -339,7 +342,7 @@ namespace DebuggerTests
 
         internal async Task<Result> SendCommand(string method, JObject args)
         {
-            var res = await ctx.cli.SendCommand(method, args, ctx.token);
+            var res = await cli.SendCommand(method, args, token);
             if (!res.IsOk)
             {
                 Console.WriteLine($"Failed to run command {method} with args: {args?.ToString()}\nresult: {res.Error.ToString()}");
@@ -365,7 +368,7 @@ namespace DebuggerTests
             await SetBreakpointInMethod("debugger-test", "DebuggerTest", methodName);
             // This will run all the tests until it hits the bp
             await Evaluate("window.setTimeout(function() { invoke_run_all (); }, 1);");
-            var wait_res = await ctx.insp.WaitFor(Inspector.PAUSE);
+            var wait_res = await insp.WaitFor(Inspector.PAUSE);
             AssertLocation(wait_res, "locals_inner");
             return wait_res;
         }
@@ -381,7 +384,7 @@ namespace DebuggerTests
             if (returnByValue != null)
                 req["returnByValue"] = returnByValue.Value;
 
-            var res = await ctx.cli.SendCommand("Runtime.callFunctionOn", req, ctx.token);
+            var res = await cli.SendCommand("Runtime.callFunctionOn", req, token);
             Assert.True(expect_ok == res.IsOk, $"InvokeGetter failed for {req} with {res}");
 
             return res;
@@ -413,14 +416,14 @@ namespace DebuggerTests
         internal async Task<JObject> SendCommandAndCheck(JObject args, string method, string script_loc, int line, int column, string function_name,
             Func<JObject, Task> wait_for_event_fn = null, Action<JToken> locals_fn = null, string waitForEvent = Inspector.PAUSE)
         {
-            var res = await ctx.cli.SendCommand(method, args, ctx.token);
+            var res = await cli.SendCommand(method, args, token);
             if (!res.IsOk)
             {
                 Console.WriteLine($"Failed to run command {method} with args: {args?.ToString()}\nresult: {res.Error.ToString()}");
                 Assert.True(false, $"SendCommand for {method} failed with {res.Error.ToString()}");
             }
 
-            var wait_res = await ctx.insp.WaitFor(waitForEvent);
+            var wait_res = await insp.WaitFor(waitForEvent);
             JToken top_frame = wait_res["callFrames"]?[0];
             if (function_name != null)
             {
@@ -429,7 +432,7 @@ namespace DebuggerTests
 
             Console.WriteLine(top_frame);
             if (script_loc != null && line >= 0)
-                CheckLocation(script_loc, line, column, ctx.scripts, top_frame["location"]);
+                CheckLocation(script_loc, line, column, scripts, top_frame["location"]);
 
             if (wait_for_event_fn != null)
                 await wait_for_event_fn(wait_res);
@@ -676,7 +679,7 @@ namespace DebuggerTests
 
         internal async Task<JToken> GetLocalsForFrame(JToken frame, string script_loc, int line, int column, string function_name)
         {
-            CheckLocation(script_loc, line, column, ctx.scripts, frame["location"]);
+            CheckLocation(script_loc, line, column, scripts, frame["location"]);
             Assert.Equal(function_name, frame["functionName"].Value<string>());
 
             return await GetProperties(frame["callFrameId"].Value<string>());
@@ -718,7 +721,7 @@ namespace DebuggerTests
         /* @fn_args is for use with `Runtime.callFunctionOn` only */
         internal async Task<JToken> GetProperties(string id, JToken fn_args = null, bool? own_properties = null, bool? accessors_only = null, bool expect_ok = true)
         {
-            if (ctx.UseCallFunctionOnBeforeGetProperties && !id.StartsWith("dotnet:scope:"))
+            if (UseCallFunctionOnBeforeGetProperties && !id.StartsWith("dotnet:scope:"))
             {
                 var fn_decl = "function () { return this; }";
                 var cfo_args = JObject.FromObject(new
@@ -729,7 +732,7 @@ namespace DebuggerTests
                 if (fn_args != null)
                     cfo_args["arguments"] = fn_args;
 
-                var result = await ctx.cli.SendCommand("Runtime.callFunctionOn", cfo_args, ctx.token);
+                var result = await cli.SendCommand("Runtime.callFunctionOn", cfo_args, token);
                 AssertEqual(expect_ok, result.IsOk, $"Runtime.getProperties returned {result.IsOk} instead of {expect_ok}, for {cfo_args.ToString()}, with Result: {result}");
                 if (!result.IsOk)
                     return null;
@@ -749,7 +752,7 @@ namespace DebuggerTests
                 get_prop_req["accessorPropertiesOnly"] = accessors_only.Value;
             }
 
-            var frame_props = await ctx.cli.SendCommand("Runtime.getProperties", get_prop_req, ctx.token);
+            var frame_props = await cli.SendCommand("Runtime.getProperties", get_prop_req, token);
             AssertEqual(expect_ok, frame_props.IsOk, $"Runtime.getProperties returned {frame_props.IsOk} instead of {expect_ok}, for {get_prop_req}, with Result: {frame_props}");
             if (!frame_props.IsOk)
                 return null;
@@ -780,7 +783,7 @@ namespace DebuggerTests
                 expression = expression
             });
 
-            var res = await ctx.cli.SendCommand("Debugger.evaluateOnCallFrame", evaluate_req, ctx.token);
+            var res = await cli.SendCommand("Debugger.evaluateOnCallFrame", evaluate_req, token);
             AssertEqual(expect_ok, res.IsOk, $"Debugger.evaluateOnCallFrame ('{expression}', scope: {id}) returned {res.IsOk} instead of {expect_ok}, with Result: {res}");
             if (res.IsOk)
                 return (res.Value["result"], res);
@@ -795,7 +798,7 @@ namespace DebuggerTests
                 breakpointId = id
             });
 
-            var res = await ctx.cli.SendCommand("Debugger.removeBreakpoint", remove_bp, ctx.token);
+            var res = await cli.SendCommand("Debugger.removeBreakpoint", remove_bp, token);
             Assert.True(expect_ok ? res.IsOk : res.IsErr);
 
             return res;
@@ -807,7 +810,7 @@ namespace DebuggerTests
                 JObject.FromObject(new { lineNumber = line, columnNumber = column, url = dicFileToUrl[url_key], }) :
                 JObject.FromObject(new { lineNumber = line, columnNumber = column, urlRegex = url_key, });
 
-            var bp1_res = await ctx.cli.SendCommand("Debugger.setBreakpointByUrl", bp1_req, ctx.token);
+            var bp1_res = await cli.SendCommand("Debugger.setBreakpointByUrl", bp1_req, token);
             Assert.True(expect_ok ? bp1_res.IsOk : bp1_res.IsErr);
 
             return bp1_res;
@@ -815,7 +818,7 @@ namespace DebuggerTests
 
         internal async Task<Result> SetPauseOnException(string state)
         {
-            var exc_res = await ctx.cli.SendCommand("Debugger.setPauseOnExceptions", JObject.FromObject(new { state = state }), ctx.token);
+            var exc_res = await cli.SendCommand("Debugger.setPauseOnExceptions", JObject.FromObject(new { state = state }), token);
             return exc_res;
         }
 
@@ -824,7 +827,7 @@ namespace DebuggerTests
             var req = JObject.FromObject(new { assemblyName = assembly, typeName = type, methodName = method, lineOffset = lineOffset });
 
             // Protocol extension
-            var res = await ctx.cli.SendCommand("DotnetDebugger.getMethodLocation", req, ctx.token);
+            var res = await cli.SendCommand("DotnetDebugger.getMethodLocation", req, token);
             Assert.True(res.IsOk);
 
             var m_url = res.Value["result"]["url"].Value<string>();
@@ -837,7 +840,7 @@ namespace DebuggerTests
                 url = m_url
             });
 
-            res = await ctx.cli.SendCommand("Debugger.setBreakpointByUrl", bp1_req, ctx.token);
+            res = await cli.SendCommand("Debugger.setBreakpointByUrl", bp1_req, token);
             Assert.True(res.IsOk);
 
             return res;
@@ -925,24 +928,6 @@ namespace DebuggerTests
             __custom_type = "datetime",
             binary = dt.ToBinary()
         });
-    }
-
-    class DebugTestContext
-    {
-        public InspectorClient cli;
-        public Inspector insp;
-        public CancellationToken token;
-        public Dictionary<string, string> scripts;
-
-        public bool UseCallFunctionOnBeforeGetProperties;
-
-        public DebugTestContext(InspectorClient cli, Inspector insp, CancellationToken token, Dictionary<string, string> scripts)
-        {
-            this.cli = cli;
-            this.insp = insp;
-            this.token = token;
-            this.scripts = scripts;
-        }
     }
 
     class DotnetObjectId
