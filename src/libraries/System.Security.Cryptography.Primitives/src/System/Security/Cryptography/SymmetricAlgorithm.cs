@@ -318,7 +318,7 @@ namespace System.Security.Cryptography
             int blockSizeBits = BlockSize; // The BlockSize property is in bits.
 
             if (blockSizeBits <= 0 || (blockSizeBits & 0b111) != 0)
-                throw new CryptographicException(SR.Cryptography_UnsupportedBlockSize);
+                throw new InvalidOperationException(SR.InvalidOperation_UnsupportedBlockSize);
 
             int blockSizeBytes = blockSizeBits >> 3;
             int wholeBlocks = Math.DivRem(plaintextLength, blockSizeBytes, out int remainder) * blockSizeBytes;
@@ -344,7 +344,6 @@ namespace System.Security.Cryptography
                     throw new ArgumentOutOfRangeException(nameof(paddingMode), SR.Cryptography_InvalidPaddingMode);
             }
         }
-
 
         /// <summary>
         /// Gets the length of a ciphertext with a given padding mode and plaintext length in CFB mode.
@@ -389,6 +388,10 @@ namespace System.Security.Cryptography
         ///   <paramref name="feedbackSizeInBits" /> is not a whole number of bytes. It must be divisible by 8.
         ///   </para>
         /// </exception>
+        /// <remarks>
+        /// <paramref name="feedbackSizeInBits" /> accepts any value that is a valid feedback size, regardless if the algorithm
+        /// supports the specified feedback size.
+        /// </remarks>
         public int GetCiphertextLengthCfb(int plaintextLength, PaddingMode paddingMode = PaddingMode.None, int feedbackSizeInBits = 8)
         {
             if (plaintextLength < 0)

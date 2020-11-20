@@ -76,8 +76,8 @@ namespace System.Security.Cryptography.Primitives.Tests
         public static void GetCiphertextLengthBlock_ThrowsForNonByteBlockSize(PaddingMode mode)
         {
             AnySizeAlgorithm alg = new AnySizeAlgorithm { BlockSize = 5 };
-            Assert.Throws<CryptographicException>(() => alg.GetCiphertextLengthCbc(16, mode));
-            Assert.Throws<CryptographicException>(() => alg.GetCiphertextLengthEcb(16, mode));
+            Assert.Throws<InvalidOperationException>(() => alg.GetCiphertextLengthCbc(16, mode));
+            Assert.Throws<InvalidOperationException>(() => alg.GetCiphertextLengthEcb(16, mode));
         }
 
         [Theory]
@@ -94,8 +94,8 @@ namespace System.Security.Cryptography.Primitives.Tests
         public static void GetCiphertextLengthBlock_ThrowsForZeroBlockSize(PaddingMode mode)
         {
             AnySizeAlgorithm alg = new AnySizeAlgorithm { BlockSize = 0 };
-            Assert.Throws<CryptographicException>(() => alg.GetCiphertextLengthCbc(16, mode));
-            Assert.Throws<CryptographicException>(() => alg.GetCiphertextLengthEcb(16, mode));
+            Assert.Throws<InvalidOperationException>(() => alg.GetCiphertextLengthCbc(16, mode));
+            Assert.Throws<InvalidOperationException>(() => alg.GetCiphertextLengthEcb(16, mode));
         }
 
         [Theory]

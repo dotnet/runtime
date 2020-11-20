@@ -111,9 +111,6 @@
   <data name="Cryptography_InvalidHashAlgorithmOid" xml:space="preserve">
     <value>The specified OID ({0}) does not represent a known hash algorithm.</value>
   </data>
-  <data name="Cryptography_UnsupportedBlockSize" xml:space="preserve">
-    <value>The algorithm's block size is not supported.</value>
-  </data>
   <data name="Cryptography_MatchBlockSize" xml:space="preserve">
     <value>The specified plaintext size is not valid for the the padding and block size.</value>
   </data>
@@ -143,5 +140,8 @@
   </data>
   <data name="InvalidOperation_IncorrectImplementation" xml:space="preserve">
     <value>The algorithm's implementation is incorrect.</value>
+  </data>
+  <data name="InvalidOperation_UnsupportedBlockSize" xml:space="preserve">
+    <value>The algorithm's block size is not supported.</value>
   </data>
 </root>
