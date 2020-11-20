@@ -129,7 +129,7 @@ mono_gc_make_descr_for_object (gsize *bitmap, int numbits, size_t obj_size)
 	}
 
 	if (first_set < 0) {
-		SGEN_LOG (6, "Ptrfree descriptor %llu, size: %zu", (guint64)desc, stored_size);
+		SGEN_LOG (6, "Ptrfree descriptor %" PRIu64 ", size: %zu", (uint64_t)desc, stored_size);
 		if (stored_size <= MAX_RUNLEN_OBJECT_SIZE && stored_size <= SGEN_MAX_SMALL_OBJ_SIZE)
 			return DESC_TYPE_SMALL_PTRFREE | stored_size;
 		return DESC_TYPE_COMPLEX_PTRFREE;
