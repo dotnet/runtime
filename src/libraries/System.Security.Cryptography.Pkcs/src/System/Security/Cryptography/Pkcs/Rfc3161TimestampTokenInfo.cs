@@ -127,7 +127,7 @@ namespace System.Security.Cryptography.Pkcs
         /// <summary>
         /// Gets the nonce associated with this timestamp token.
         /// </summary>
-        /// <value>The nonce associated with this timestamp token.</value>
+        /// <returns>The nonce associated with this timestamp token.</returns>
         public ReadOnlyMemory<byte>? GetNonce() => _parsedData.Nonce;
 
         /// <summary>
