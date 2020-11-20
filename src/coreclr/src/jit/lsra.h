@@ -1930,7 +1930,7 @@ public:
     // Prior to the allocation pass, registerAssignment captures the valid registers
     // for this RefPosition.
     // After the allocation pass, this contains the actual assignment
-    regMaskTP    registerAssignment;
+    regMaskTP registerAssignment;
 
     RefType refType;
 
