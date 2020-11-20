@@ -142,7 +142,7 @@ mono_gc_make_descr_for_object (gsize *bitmap, int numbits, size_t obj_size)
 	/* we know the 2-word header is ptr-free */
 	if (last_set < BITMAP_NUM_BITS + OBJECT_HEADER_WORDS && stored_size <= SGEN_MAX_SMALL_OBJ_SIZE) {
 		desc = DESC_TYPE_BITMAP | ((*bitmap >> OBJECT_HEADER_WORDS) << LOW_TYPE_BITS);
-		SGEN_LOG (6, "Largebitmap descriptor %llu, size: %zu, last set: %d", (guint64)desc, stored_size, last_set);
+		SGEN_LOG (6, "Largebitmap descriptor %" PRIu64 ", size: %zu, last set: %d", (uint64_t)desc, stored_size, last_set);
 		return desc;
 	}
 
