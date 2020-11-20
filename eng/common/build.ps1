@@ -71,7 +71,7 @@ function Print-Usage() {
   Write-Host "The above arguments can be shortened as much as to be unambiguous (e.g. -co for configuration, -t for test, etc.)."
 }
 
-if ($ci -and $restore) {
+if ($ci) {
   Write-Host "Using NuGet.CI.config"
   Copy-Item -Path "NuGet.CI.config" -Destination "NuGet.config" -Force
 } else {

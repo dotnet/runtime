@@ -174,12 +174,9 @@ if [[ "$ci" == true ]]; then
   if [[ "$exclude_ci_binary_log" == false ]]; then
     binary_log=true
   fi
-fi
-
-if [[ "$restore" == true]] && [[ "$ci" == true]]; then 
   echo "Using NuGet.CI.config"
   cp NuGet.CI.config NuGet.config
-else 
+else
   echo "Using NuGet.dev.config"
   cp NuGet.dev.config NuGet.config
 fi
