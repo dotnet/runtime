@@ -74,7 +74,8 @@
     <_runtimeOS>$(RuntimeOS)</_runtimeOS>
 
     <_parseDistroRid>$(__DistroRid)</_parseDistroRid>
-    <_parseDistroRid Condition="'$(_parseDistroRid)' == ''">$([System.Runtime.InteropServices.RuntimeInformation]::RuntimeIdentifier)</_parseDistroRid>
+    <_parseDistroRid Condition="'$(_parseDistroRid)' == '' and '$(MSBuildRuntimeType)' == 'core'">$([System.Runtime.InteropServices.RuntimeInformation]::RuntimeIdentifier)</_parseDistroRid>
+    <_parseDistroRid Condition="'$(_parseDistroRid)' == '' and '$(MSBuildRuntimeType)' != 'core'">win-$([System.Runtime.InteropServices.RuntimeInformation]::OSArchitecture.ToString().ToLowerInvariant)</_parseDistroRid>
     <_distroRidIndex>$(_parseDistroRid.LastIndexOfAny("-"))</_distroRidIndex>
 
     <_runtimeOS Condition="'$(_runtimeOS)' == ''">$(_parseDistroRid.SubString(0, $(_distroRidIndex)))</_runtimeOS>
