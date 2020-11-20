@@ -131,40 +131,6 @@ namespace DebuggerTests
             }
         }
 
-        public async Task Ready(Func<InspectorClient, CancellationToken, Task>? cb = null, TimeSpan? span = null)
-        {
-            try
-            {
-                Func<InspectorClient, CancellationToken, List<(string, Task<Result>)>> fn = (_client, _token) =>
-                {
-                    Func<string, (string, Task<Result>)> getInitCmdFn = (cmd_name) => (cmd_name, _client.SendCommand(cmd_name, null, _token));
-                    return new List<(string, Task<Result>)>
-                    {
-                        getInitCmdFn("Profiler.enable"),
-                        getInitCmdFn("Runtime.enable"),
-                        getInitCmdFn("Debugger.enable"),
-                        getInitCmdFn("Runtime.runIfWaitingForDebugger")
-                    };
-                };
-
-                await OpenSessionAsync(fn, span);
-                if (cb != null)
-                    await cb(Client, _cancellationTokenSource.Token).ConfigureAwait(false);
-            }
-            catch (Exception ex)
-            {
-                if (_logger != null)
-                    _logger.LogError(ex.ToString());
-                else
-                    Console.WriteLine(ex);
-                throw;
-            }
-            finally
-            {
-                await ShutdownAsync().ConfigureAwait(false);
-            }
-        }
-
         public async Task OpenSessionAsync(Func<InspectorClient, CancellationToken, List<(string, Task<Result>)>> getInitCmds, TimeSpan? span = null)
         {
             var start = DateTime.Now;
