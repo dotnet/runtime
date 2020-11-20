@@ -47,6 +47,21 @@ namespace DispatchProxyTests
         {
             TestType_InternalInterfaceService proxy = DispatchProxy.Create<TestType_PublicInterfaceService_Implements_Internal, TestDispatchProxy>();
             Assert.NotNull(proxy);
+
+            // ensure we emit a valid attribute definition
+            Type iactAttributeType = proxy.GetType().Assembly.GetType("System.Runtime.CompilerServices.IgnoresAccessChecksToAttribute");
+            Assert.NotNull(iactAttributeType);
+            ConstructorInfo constructor = iactAttributeType.GetConstructor(new[] { typeof(string) });
+            Assert.NotNull(constructor);
+            PropertyInfo propertyInfo = iactAttributeType.GetProperty("AssemblyName");
+            Assert.NotNull(propertyInfo);
+            Assert.NotNull(propertyInfo.GetMethod);
+
+            string name = "anAssemblyName";
+            object attributeInstance = constructor.Invoke(new object[] { name });
+            Assert.NotNull(attributeInstance);
+            object actualName = propertyInfo.GetMethod.Invoke(attributeInstance, null);
+            Assert.Equal(name, actualName);
         }
 
         [Fact]
