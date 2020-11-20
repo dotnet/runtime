@@ -17,6 +17,10 @@
              Link="Common\System\Text\ValueStringBuilder.cs" />
   </ItemGroup>
 
+  <ItemGroup Condition="$(TargetFramework.StartsWith('netcoreapp')) or '$(TargetFramework)' == 'netstandard2.0' or '$(TargetFrameworkIdentifier)' == '.NETFramework'">
+    <Compile Include="$(CoreLibSharedDir)System\Diagnostics\CodeAnalysis\NullableAttributes.cs" Link="System\Diagnostics\CodeAnalysis\NullableAttributes.cs" />
+  </ItemGroup>
+
   <ItemGroup Condition="'$(TargetFramework)' == 'netstandard2.0' or
                         $(TargetFramework.StartsWith('net4'))">
     <PackageReference Include="System.Memory" Version="$(SystemMemoryVersion)" />

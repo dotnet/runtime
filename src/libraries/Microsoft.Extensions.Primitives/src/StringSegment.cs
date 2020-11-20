@@ -1,7 +1,10 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+#nullable enable
+
 using System;
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
 
 namespace Microsoft.Extensions.Primitives
@@ -22,7 +25,7 @@ namespace Microsoft.Extensions.Primitives
         /// <param name="buffer">
         /// The original <see cref="string"/>. The <see cref="StringSegment"/> includes the whole <see cref="string"/>.
         /// </param>
-        public StringSegment(string buffer)
+        public StringSegment(string? buffer)
         {
             Buffer = buffer;
             Offset = 0;
@@ -61,7 +64,7 @@ namespace Microsoft.Extensions.Primitives
         /// <summary>
         /// Gets the <see cref="string"/> buffer for this <see cref="StringSegment"/>.
         /// </summary>
-        public string Buffer { get; }
+        public string? Buffer { get; }
 
         /// <summary>
         /// Gets the offset within the buffer for this <see cref="StringSegment"/>.
@@ -76,7 +79,7 @@ namespace Microsoft.Extensions.Primitives
         /// <summary>
         /// Gets the value of this segment as a <see cref="string"/>.
         /// </summary>
-        public string Value
+        public string? Value
         {
             get
             {
@@ -94,6 +97,7 @@ namespace Microsoft.Extensions.Primitives
         /// <summary>
         /// Gets whether this <see cref="StringSegment"/> contains a valid value.
         /// </summary>
+        [MemberNotNullWhen(true, nameof(Buffer))]
         public bool HasValue
         {
             get { return Buffer != null; }
@@ -116,7 +120,7 @@ namespace Microsoft.Extensions.Primitives
                     ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.index);
                 }
 
-                return Buffer[Offset + index];
+                return Buffer![Offset + index];
             }
         }
 
@@ -157,13 +161,8 @@ namespace Microsoft.Extensions.Primitives
         }
 
         /// <inheritdoc />
-        public override bool Equals(object obj)
+        public override bool Equals(object? obj)
         {
-            if (obj is null)
-            {
-                return false;
-            }
-
             return obj is StringSegment segment && Equals(segment);
         }
 
@@ -596,7 +595,7 @@ namespace Microsoft.Extensions.Primitives
                 }
             }
 
-            return new StringSegment(Buffer, trimmedStart, length - trimmedStart);
+            return new StringSegment(Buffer!, trimmedStart, length - trimmedStart);
         }
 
         /// <summary>
@@ -623,7 +622,7 @@ namespace Microsoft.Extensions.Primitives
                 }
             }
 
-            return new StringSegment(Buffer, offset, trimmedEnd - offset + 1);
+            return new StringSegment(Buffer!, offset, trimmedEnd - offset + 1);
         }
 
         /// <summary>
@@ -666,7 +665,7 @@ namespace Microsoft.Extensions.Primitives
 
         // Methods that do no return (i.e. throw) are not inlined
         // https://github.com/dotnet/coreclr/pull/6103
-        private static void ThrowInvalidArguments(string buffer, int offset, int length)
+        private static void ThrowInvalidArguments(string? buffer, int offset, int length)
         {
             // Only have single throw in method so is marked as "does not return" and isn't inlined to caller
             throw GetInvalidArgumentsException();
@@ -692,6 +691,7 @@ namespace Microsoft.Extensions.Primitives
             }
         }
 
+        [DoesNotReturn]
         private void ThrowInvalidArguments(int offset, int length)
         {
             throw GetInvalidArgumentsException(HasValue);
@@ -716,5 +716,10 @@ namespace Microsoft.Extensions.Primitives
                 return ThrowHelper.GetArgumentException(ExceptionResource.Argument_InvalidOffsetLengthStringSegment);
             }
         }
+
+        // Explicit interface implementation for IEquatable<string> because
+        // the interface's Equals method allows null strings, which we return
+        // as not-equal.
+        bool IEquatable<string>.Equals(string? other) => other != null && Equals(other);
     }
 }
