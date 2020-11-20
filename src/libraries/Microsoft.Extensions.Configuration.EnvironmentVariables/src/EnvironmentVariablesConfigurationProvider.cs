@@ -44,7 +44,7 @@ namespace Microsoft.Extensions.Configuration.EnvironmentVariables
 
             foreach (DictionaryEntry entry in envVariables)
             {
-                string key = entry.Key as string;
+                string key = (string)entry.Key;
                 string provider = null;
                 string prefix;
 
