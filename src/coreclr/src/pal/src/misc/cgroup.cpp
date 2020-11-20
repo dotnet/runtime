@@ -245,18 +245,18 @@ private:
 
             if (strncmp(filesystemType, "cgroup", 6) == 0)
             {
-                bool is_subsystem_match = is_subsystem == nullptr;
-                if (!is_subsystem_match)
+                bool isSubsystemMatch = is_subsystem == nullptr;
+                if (!isSubsystemMatch)
                 {
                     char* context = nullptr;
                     char* strTok = strtok_s(options, ",", &context);
-                    while (!is_subsystem_match && strTok != nullptr)
+                    while (!isSubsystemMatch && strTok != nullptr)
                     {
-                        is_subsystem_match = is_subsystem(strTok);
+                        isSubsystemMatch = is_subsystem(strTok);
                         strTok = strtok_s(nullptr, ",", &context);
                     }
                 }
-                if (is_subsystem_match)
+                if (isSubsystemMatch)
                 {
                     mountpath = (char*)PAL_malloc(lineLen+1);
                     if (mountpath == nullptr)
