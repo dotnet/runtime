@@ -12,7 +12,7 @@
 #include "../brotli/include/brotli/types.h"
 
 #ifndef lengthof
-#define lengthof(rg)    (sizeof(rg)/sizeof(rg[0]))
+#define lengthof(rg)    (int)(sizeof(rg)/sizeof(rg[0]))
 #endif
 
 typedef struct
@@ -23,27 +23,29 @@ typedef struct
 
 static Entry s_compressionNative[] =
 {
-    {"BrotliDecoderCreateInstance", BrotliDecoderCreateInstance},
-    {"BrotliDecoderDecompress", BrotliDecoderDecompress},
-    {"BrotliDecoderDecompressStream", BrotliDecoderDecompressStream},
-    {"BrotliDecoderDestroyInstance", BrotliDecoderDestroyInstance},
-    {"BrotliDecoderIsFinished", BrotliDecoderIsFinished},
-    {"BrotliEncoderCompress", BrotliEncoderCompress},
-    {"BrotliEncoderCompressStream", BrotliEncoderCompressStream},
-    {"BrotliEncoderCreateInstance", BrotliEncoderCreateInstance},
-    {"BrotliEncoderDestroyInstance", BrotliEncoderDestroyInstance},
-    {"BrotliEncoderHasMoreOutput", BrotliEncoderHasMoreOutput},
-    {"BrotliEncoderSetParameter", BrotliEncoderSetParameter},
-    {"CompressionNative_Crc32", CompressionNative_Crc32},
-    {"CompressionNative_Deflate", CompressionNative_Deflate},
-    {"CompressionNative_DeflateEnd", CompressionNative_DeflateEnd},
-    {"CompressionNative_DeflateInit2_", CompressionNative_DeflateInit2_},
-    {"CompressionNative_Inflate", CompressionNative_Inflate},
-    {"CompressionNative_InflateEnd", CompressionNative_InflateEnd},
-    {"CompressionNative_InflateInit2_", CompressionNative_InflateInit2_},
+    {"BrotliDecoderCreateInstance", (void*)BrotliDecoderCreateInstance},
+    {"BrotliDecoderDecompress", (void*)BrotliDecoderDecompress},
+    {"BrotliDecoderDecompressStream", (void*)BrotliDecoderDecompressStream},
+    {"BrotliDecoderDestroyInstance", (void*)BrotliDecoderDestroyInstance},
+    {"BrotliDecoderIsFinished", (void*)BrotliDecoderIsFinished},
+    {"BrotliEncoderCompress", (void*)BrotliEncoderCompress},
+    {"BrotliEncoderCompressStream", (void*)BrotliEncoderCompressStream},
+    {"BrotliEncoderCreateInstance", (void*)BrotliEncoderCreateInstance},
+    {"BrotliEncoderDestroyInstance", (void*)BrotliEncoderDestroyInstance},
+    {"BrotliEncoderHasMoreOutput", (void*)BrotliEncoderHasMoreOutput},
+    {"BrotliEncoderSetParameter", (void*)BrotliEncoderSetParameter},
+    {"CompressionNative_Crc32", (void*)CompressionNative_Crc32},
+    {"CompressionNative_Deflate", (void*)CompressionNative_Deflate},
+    {"CompressionNative_DeflateEnd", (void*)CompressionNative_DeflateEnd},
+    {"CompressionNative_DeflateInit2_", (void*)CompressionNative_DeflateInit2_},
+    {"CompressionNative_Inflate", (void*)CompressionNative_Inflate},
+    {"CompressionNative_InflateEnd", (void*)CompressionNative_InflateEnd},
+    {"CompressionNative_InflateInit2_", (void*)CompressionNative_InflateInit2_},
 };
 
-extern const void* CompressionResolveDllImport(const char* name)
+EXTERN_C const void* CompressionResolveDllImport(const char* name);
+
+EXTERN_C const void* CompressionResolveDllImport(const char* name)
 {
     for (int i = 0; i < lengthof(s_compressionNative); i++)
     {

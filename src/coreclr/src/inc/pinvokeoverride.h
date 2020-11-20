@@ -10,7 +10,7 @@
 #ifndef _PINVOKEOVERRIDE_H_
 #define _PINVOKEOVERRIDE_H_
 
-typedef const void* (__stdcall PInvokeOverrideFn)(const char* libraryName, const char* entrypointName);
+typedef const void* (PInvokeOverrideFn)(const char* libraryName, const char* entrypointName);
 
 class PInvokeOverride
 {
