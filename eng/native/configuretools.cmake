@@ -1,3 +1,4 @@
+include(${CMAKE_CURRENT_LIST_DIR}/configurepaths.cmake)
 include(${CMAKE_CURRENT_LIST_DIR}/configureplatform.cmake)
 
 # Get the version of the compiler that is in the file name for tool location.

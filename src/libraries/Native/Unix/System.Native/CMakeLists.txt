@@ -4,6 +4,8 @@ if (NOT CLR_CMAKE_TARGET_IOS AND NOT CLR_CMAKE_TARGET_TVOS)
     add_definitions(-DHAS_CONSOLE_SIGNALS)
 endif ()
 
+include_directories("${CLR_SRC_NATIVE_DIR}/common")
+
 set(NATIVE_SOURCES
     pal_errno.c
     pal_interfaceaddresses.c

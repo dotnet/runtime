@@ -3,9 +3,6 @@
 
 #include <string>
 
-// Get the path to entrypoint executable
-bool GetEntrypointExecutableAbsolutePath(std::string& entrypointExecutable);
-
 // Get absolute path from the specified path.
 // Return true in case of a success, false otherwise.
 bool GetAbsolutePath(const char* path, std::string& absolutePath);

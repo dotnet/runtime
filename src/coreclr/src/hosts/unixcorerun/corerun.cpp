@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 #include <coreruncommon.h>
+#include <getexepath.h>
 #include <string>
 #include <string.h>
 #include <sys/stat.h>
@@ -125,12 +126,15 @@ int main(const int argc, const char* argv[])
     }
 
     // Make sure we have a full path for argv[0].
-    std::string argv0AbsolutePath;
-    if (!GetEntrypointExecutableAbsolutePath(argv0AbsolutePath))
+    char* path = getexepath();
+    if (!path)
     {
         perror("Could not get full path");
         return -1;
     }
+
+    std::string argv0AbsolutePath(path);
+    free(path);
 
     std::string clrFilesAbsolutePath;
     if(!GetClrFilesAbsolutePath(argv0AbsolutePath.c_str(), clrFilesPath, clrFilesAbsolutePath))

@@ -17,16 +17,6 @@
 #include <string>
 #include <string.h>
 #include <sys/stat.h>
-#if defined(__FreeBSD__)
-#include <sys/types.h>
-#include <sys/param.h>
-#endif
-#if HAVE_GETAUXVAL
-#include <sys/auxv.h>
-#endif
-#if defined(HAVE_SYS_SYSCTL_H) || defined(__FreeBSD__)
-#include <sys/sysctl.h>
-#endif
 #include "coreruncommon.h"
 #include "coreclrhost.h"
 #include <unistd.h>
@@ -49,119 +39,6 @@ static const char* serverGcVar = "COMPlus_gcServer";
 // Name of environment variable to control "System.Globalization.Invariant"
 // Set to 1 for Globalization Invariant mode to be true. Default is false.
 static const char* globalizationInvariantVar = "CORECLR_GLOBAL_INVARIANT";
-
-#if defined(__linux__)
-#define symlinkEntrypointExecutable "/proc/self/exe"
-#elif !defined(__APPLE__)
-#define symlinkEntrypointExecutable "/proc/curproc/exe"
-#endif
-
-bool GetEntrypointExecutableAbsolutePath(std::string& entrypointExecutable)
-{
-    bool result = false;
-
-    entrypointExecutable.clear();
-
-    // Get path to the executable for the current process using
-    // platform specific means.
-#if defined(__APPLE__)
-
-    // On Mac, we ask the OS for the absolute path to the entrypoint executable
-    uint32_t lenActualPath = 0;
-    if (_NSGetExecutablePath(nullptr, &lenActualPath) == -1)
-    {
-        // OSX has placed the actual path length in lenActualPath,
-        // so re-attempt the operation
-        std::string resizedPath(lenActualPath, '\0');
-        char *pResizedPath = const_cast<char *>(resizedPath.c_str());
-        if (_NSGetExecutablePath(pResizedPath, &lenActualPath) == 0)
-        {
-            entrypointExecutable.assign(pResizedPath);
-            result = true;
-        }
-    }
-#elif defined (__FreeBSD__)
-    static const int name[] = {
-        CTL_KERN, KERN_PROC, KERN_PROC_PATHNAME, -1
-    };
-    char path[PATH_MAX];
-    size_t len;
-
-    len = sizeof(path);
-    if (sysctl(name, 4, path, &len, nullptr, 0) == 0)
-    {
-        entrypointExecutable.assign(path);
-        result = true;
-    }
-    else
-    {
-        // ENOMEM
-        result = false;
-    }
-#elif defined(__NetBSD__) && defined(KERN_PROC_PATHNAME)
-    static const int name[] = {
-        CTL_KERN, KERN_PROC_ARGS, -1, KERN_PROC_PATHNAME,
-    };
-    char path[MAXPATHLEN];
-    size_t len;
-
-    len = sizeof(path);
-    if (sysctl(name, __arraycount(name), path, &len, NULL, 0) != -1)
-    {
-        entrypointExecutable.assign(path);
-        result = true;
-    }
-    else
-    {
-        result = false;
-    }
-#elif defined(__sun)
-    const char *path;
-    if ((path = getexecname()) == NULL)
-    {
-        result = false;
-    }
-    else if (*path != '/')
-    {
-        char *cwd;
-        if ((cwd = getcwd(NULL, PATH_MAX)) == NULL)
-        {
-            result = false;
-        }
-        else
-        {
-            entrypointExecutable
-                .assign(cwd)
-                .append("/")
-                .append(path);
-            result = true;
-            free(cwd);
-        }
-    }
-    else
-    {
-        entrypointExecutable.assign(path);
-        result = true;
-    }
-#else
-
-#if HAVE_GETAUXVAL && defined(AT_EXECFN)
-    const char *execfn = (const char *)getauxval(AT_EXECFN);
-
-    if (execfn)
-    {
-        entrypointExecutable.assign(execfn);
-        result = true;
-    }
-    else
-#endif
-    // On other OSs, return the symlink that will be resolved by GetAbsolutePath
-    // to fetch the entrypoint EXE absolute path, inclusive of filename.
-    result = GetAbsolutePath(symlinkEntrypointExecutable, entrypointExecutable);
-#endif
-
-    return result;
-}
 
 bool GetAbsolutePath(const char* path, std::string& absolutePath)
 {

@@ -1,6 +1,7 @@
 project(unixcorerun)
 
 include_directories(../unixcoreruncommon)
+include_directories("${CLR_SRC_NATIVE_DIR}/common")
 
 set(CORERUN_SOURCES
     corerun.cpp

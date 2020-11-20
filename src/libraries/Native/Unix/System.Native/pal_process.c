@@ -38,6 +38,8 @@
 #include <sys/sysctl.h>
 #endif
 
+#include <getexepath.h>
+
 // Validate that our SysLogPriority values are correct for the platform
 c_static_assert(PAL_LOG_EMERG == LOG_EMERG);
 c_static_assert(PAL_LOG_ALERT == LOG_ALERT);
@@ -868,56 +870,7 @@ int32_t SystemNative_SchedGetAffinity(int32_t pid, intptr_t* mask)
 }
 #endif
 
-// Returns the full path to the executable for the current process, resolving symbolic links.
-// The caller is responsible for releasing the buffer. Returns null on error.
 char* SystemNative_GetProcessPath()
 {
-#if defined(__APPLE__)
-    uint32_t path_length = 0;
-    if (_NSGetExecutablePath(NULL, &path_length) != -1)
-    {
-        errno = EINVAL;
-        return NULL;
-    }
-
-    char path_buf[path_length];
-    if (_NSGetExecutablePath(path_buf, &path_length) != 0)
-    {
-        errno = EINVAL;
-        return NULL;
-    }
-
-    return realpath(path_buf, NULL);
-#elif defined(__FreeBSD__)
-    static const int name[] =
-    {
-        CTL_KERN, KERN_PROC, KERN_PROC_PATHNAME, -1
-    };
-
-    char path[PATH_MAX];
-    size_t len;
-
-    len = sizeof(path);
-    if (sysctl(name, 4, path, &len, NULL, 0) != 0)
-    {
-        return NULL;
-    }
-
-    return strdup(path);
-#elif defined(__sun)
-    const char* path = getexecname();
-    if (path == NULL)
-        return NULL;
-    return realpath(path, NULL);
-#else
-
-#ifdef __linux__
-    const char* symlinkEntrypointExecutable = "/proc/self/exe";
-#else
-    const char* symlinkEntrypointExecutable = "/proc/curproc/exe";
-#endif
-
-    // Resolve the symlink to the executable from /proc
-    return realpath(symlinkEntrypointExecutable, NULL);
-#endif
+    return getexepath();
 }

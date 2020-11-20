@@ -8,6 +8,8 @@ set(CoreRun_RESOURCES native.rc)
 add_definitions(-DFX_VER_INTERNALNAME_STR=CoreRun.exe)
 
 if(CLR_CMAKE_HOST_UNIX)
+    include_directories("${CLR_SRC_NATIVE_DIR}/common")
+
     # This does not compile on Linux yet
     if(CAN_BE_COMPILED_ON_LINUX)
         _add_executable(CoreRun
