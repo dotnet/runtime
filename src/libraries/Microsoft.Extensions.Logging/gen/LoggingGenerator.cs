@@ -4,6 +4,7 @@ namespace Microsoft.Extensions.Logging.Generators
 {
     using System;
     using System.Collections.Generic;
+    using System.Data;
     using System.Text;
     using Microsoft.CodeAnalysis;
     using Microsoft.CodeAnalysis.CSharp;
@@ -57,6 +58,7 @@ using Microsoft.Extensions.Logging;
                     methods.Append(GenStruct(lm));
                 }
                 methods.Append(GenEventId(lm));
+                methods.Append(GenDelegate(lm));
                 methods.Append(GenExtensionLogMethod(lm));
             }
 
@@ -133,6 +135,16 @@ using Microsoft.Extensions.Logging;
             return $"        private static readonly EventId __{lm.Name}EventId__ = new({lm.EventId}, " + (lm.EventName is null ? $"nameof({lm.Name})" : $"\"{lm.EventName}\"") + ");\n";
         }
 
+        private static string GenDelegate(LoggerMethod lm)
+        {
+            if (!lm.MessageHasTemplates)
+            {
+                return string.Empty;
+            }
+
+            return $"        private static readonly Func<__{lm.Name}Struct__, Exception?, string> __{lm.Name}Func__ = (s, _) => s.ToString();";
+        }
+
         private static string GenExtensionLogMethod(LoggerMethod lm)
         {
             string exceptionArg = "null";
@@ -154,13 +166,26 @@ using Microsoft.Extensions.Logging;
                 ctorCall = "Microsoft.Extensions.Logging.LogStateHolder()";
             }
 
+            var formatCall = $"(s, _) => \"{ lm.Message}\"";
+            if (lm.MessageHasTemplates)
+            {
+                if (lm.Parameters.Count == 0)
+                {
+                    formatCall = "Microsoft.Extensions.Logging.LogStateHolder.Format";
+                }
+                else
+                {
+                    formatCall = $"__{lm.Name}Func__";
+                }
+            }
+
             return $@"
         public static partial void {lm.Name}({loggerArg}{(lm.Parameters.Count > 0 ? ", " : string.Empty)}{GenParameters(lm)})
         {{
             if (logger.IsEnabled((LogLevel){lm.Level}))
             {{
                 var __state = new {ctorCall};
-                logger.Log((LogLevel){lm.Level}, __{lm.Name}EventId__, __state, {exceptionArg}, (s, _) => {(lm.MessageHasTemplates ? "s.ToString()" : "\"" + lm.Message + "\"")});
+                logger.Log((LogLevel){lm.Level}, __{lm.Name}EventId__, __state, {exceptionArg}, {formatCall});
             }}
         }}
 ";

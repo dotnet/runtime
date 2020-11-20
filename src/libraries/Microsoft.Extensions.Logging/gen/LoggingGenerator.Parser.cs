@@ -208,8 +208,16 @@ namespace Microsoft.Extensions.Logging.Generators
                                         Diag(ErrorInvalidMessage, ma.GetLocation(), method.Identifier.ToString());
                                     }
 
+                                    bool first = true;
                                     foreach (var p in method.ParameterList.Parameters)
                                     {
+                                        if (first)
+                                        {
+                                            // skip the ILogger
+                                            first = false;
+                                            continue;
+                                        }
+
                                         var pSymbol = GetSemanticModel(p.SyntaxTree).GetTypeInfo(p.Type!).Type!;
 
                                         var lp = new LoggerParameter
@@ -219,11 +227,6 @@ namespace Microsoft.Extensions.Logging.Generators
                                             IsExceptionType = IsBaseOrIdentity(pSymbol, exSymbol),
                                         };
                                                     
-                                        if (lp.Type.EndsWith("ILogger", StringComparison.Ordinal))
-                                        {
-                                            continue;
-                                        }
-
                                         lm.Parameters.Add(lp);
 
                                         if (lp.Name.StartsWith("__", StringComparison.Ordinal))
