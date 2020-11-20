@@ -587,6 +587,7 @@ jobs:
     # - windows_arm
     # - windows_arm64
     jobParameters:
+      buildArgs: /p:BuildMonoCrossAOT=true
       condition: >-
         or(
           eq(dependencies.checkout.outputs['SetPathVars_libraries.containsChange'], true),
