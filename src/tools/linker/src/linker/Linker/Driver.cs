@@ -85,8 +85,8 @@ namespace Mono.Linker
 				if (arg.StartsWith ("@")) {
 					try {
 						string responseFileName = arg.Substring (1);
-						IEnumerable<string> responseFileLines = File.ReadLines (responseFileName);
-						ParseResponseFileLines (responseFileLines, result);
+						using (var responseFileText = new StreamReader (responseFileName))
+							ParseResponseFile (responseFileText, result);
 					} catch (Exception e) {
 						Console.Error.WriteLine ("Cannot read response file due to '{0}'", e.Message);
 						return false;
@@ -99,49 +99,55 @@ namespace Mono.Linker
 			return true;
 		}
 
-		public static void ParseResponseFileLines (IEnumerable<string> responseFileLines, Queue<string> result)
+		public static void ParseResponseFile (TextReader reader, Queue<string> result)
 		{
-			foreach (var rawResponseFileText in responseFileLines) {
-				var responseFileText = rawResponseFileText.Trim ();
-				int idx = 0;
-				while (idx < responseFileText.Length) {
-					while (idx < responseFileText.Length && char.IsWhiteSpace (responseFileText[idx])) {
-						idx++;
-					}
-					if (idx == responseFileText.Length) {
+			int cur;
+			while ((cur = reader.Read ()) >= 0) {
+				// skip whitespace
+				while (char.IsWhiteSpace ((char) cur)) {
+					if ((cur = reader.Read ()) < 0)
 						break;
-					}
-					StringBuilder argBuilder = new StringBuilder ();
-					bool inquote = false;
-					while (true) {
-						bool copyChar = true;
-						int numBackslash = 0;
-						while (idx < responseFileText.Length && responseFileText[idx] == '\\') {
-							numBackslash++;
-							idx++;
-						}
-						if (idx < responseFileText.Length && responseFileText[idx] == '"') {
-							if ((numBackslash % 2) == 0) {
-								if (inquote && (idx + 1) < responseFileText.Length && responseFileText[idx + 1] == '"') {
-									idx++;
-								} else {
-									copyChar = false;
-									inquote = !inquote;
-								}
-							}
-							numBackslash /= 2;
-						}
-						argBuilder.Append (new String ('\\', numBackslash));
-						if (idx == responseFileText.Length || (!inquote && Char.IsWhiteSpace (responseFileText[idx]))) {
-							break;
-						}
-						if (copyChar) {
-							argBuilder.Append (responseFileText[idx]);
-						}
-						idx++;
-					}
-					result.Enqueue (argBuilder.ToString ());
 				}
+				if (cur < 0) // EOF
+					break;
+
+				StringBuilder argBuilder = new StringBuilder ();
+				bool inquote = false;
+
+				// build up an argument one character at a time
+				while (true) {
+					bool copyChar = true;
+					int numBackslash = 0;
+
+					// count backslashes
+					while (cur == '\\') {
+						numBackslash++;
+						if ((cur = reader.Read ()) < 0)
+							break;
+					}
+					if (cur == '"') {
+						if ((numBackslash % 2) == 0) {
+							if (inquote && (reader.Peek () == '"')) {
+								// handle "" escape sequence in a quote
+								cur = reader.Read ();
+							} else {
+								// unescaped " begins/ends a quote
+								copyChar = false;
+								inquote = !inquote;
+							}
+						}
+						// treat backslashes before " as escapes
+						numBackslash /= 2;
+					}
+					if (numBackslash > 0)
+						argBuilder.Append (new String ('\\', numBackslash));
+					if (cur < 0 || (!inquote && char.IsWhiteSpace ((char) cur)))
+						break;
+					if (copyChar)
+						argBuilder.Append ((char) cur);
+					cur = reader.Read ();
+				}
+				result.Enqueue (argBuilder.ToString ());
 			}
 		}
 
@@ -789,7 +795,8 @@ namespace Mono.Linker
 
 			value = Unquote (value);
 			string[] values = value.Split (new char[] { ',', ';', ' ' }, StringSplitOptions.RemoveEmptyEntries);
-			foreach (string id in values) {
+			foreach (string v in values) {
+				var id = v.Trim ();
 				if (!id.StartsWith ("IL", StringComparison.Ordinal) || !ushort.TryParse (id.Substring (2), out ushort code))
 					continue;
 

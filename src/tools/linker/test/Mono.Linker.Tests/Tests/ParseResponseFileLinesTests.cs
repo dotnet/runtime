@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using System.IO;
 using NUnit.Framework;
 
 namespace Mono.Linker.Tests
@@ -46,6 +47,12 @@ def", new string[] { @"abc", @"def" });
 		[Test]
 		public void TestTwoSlashesWithQuote ()
 		{
+			TestParseResponseFileLines (@"""Slashes \\ In Quote""", new string[] { @"Slashes \\ In Quote" });
+		}
+
+		[Test]
+		public void TestTwoSlashesAtEndOfQuote ()
+		{
 			TestParseResponseFileLines (@"""Trailing Slash\\""", new string[] { @"Trailing Slash\" });
 		}
 
@@ -79,10 +86,31 @@ def", new string[] { @"abc", @"def" });
 			TestParseResponseFileLines (@"""a b""=c", new string[] { @"a b=c" });
 		}
 
+		[Test]
+		public void TestEscapedQuoteWithBackslash ()
+		{
+			TestParseResponseFileLines (@"""a \"" b""", new string[] { @"a "" b" });
+		}
+
+		[Test]
+		public void TestEscapedQuoteSequence ()
+		{
+			TestParseResponseFileLines (@"""a """" b""", new string[] { @"a "" b" });
+		}
+
+		[Test]
+		public void TestQuotedNewline ()
+		{
+			TestParseResponseFileLines (@"""a
+b""", new string[] { @"a
+b" });
+		}
+
 		private void TestParseResponseFileLines (string v1, string[] v2)
 		{
 			var result = new Queue<string> ();
-			Driver.ParseResponseFileLines (v1.Split ('\n'), result);
+			using (var reader = new StringReader (v1))
+				Driver.ParseResponseFile (reader, result);
 			Assert.That (result, Is.EquivalentTo (v2));
 		}
 	}
