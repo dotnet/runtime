@@ -1181,10 +1181,10 @@ namespace System.Text
 
             unsafe
             {
-                Span<char> tempBuffer = stackalloc char[24]; // should be enough for all primitives
-                if (value.TryFormat(tempBuffer, out int charsWritten, format: default, provider: null))
+                Span<char> tempBuffer = stackalloc char[28]; // should be enough for all primitives
+                if (value.TryFormat(tempBuffer, out int charsWrittenToTmp, format: default, provider: null))
                 {
-                    return Append(tempBuffer.Slice(0, charsWritten));
+                    return Append(tempBuffer.Slice(0, charsWrittenToTmp));
                 }
             }
 
