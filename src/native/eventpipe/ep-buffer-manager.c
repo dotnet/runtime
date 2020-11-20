@@ -1161,7 +1161,7 @@ ep_buffer_manager_write_all_buffers_to_file_v4 (
 			if (buffer_manager->current_event == NULL)
 				break;
 
-			size_t capture_thread_id = ep_thread_get_os_thread_id (ep_buffer_get_writer_thread (buffer_manager->current_buffer));
+			uint64_t capture_thread_id = ep_thread_get_os_thread_id (ep_buffer_get_writer_thread (buffer_manager->current_buffer));
 
 			EventPipeBufferList *buffer_list = buffer_manager->current_buffer_list;
 
