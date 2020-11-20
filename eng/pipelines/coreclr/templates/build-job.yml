@@ -130,6 +130,9 @@ jobs:
     - ${{ parameters.variables }}
 
     steps:
+    # in case it is needed later, authenticate to private feed to prevent throttling
+    - bash: cp NuGet.CI.config NuGet.config
+    - task: NuGetAuthenticate@0
 
     # Install native dependencies
     # Linux builds use docker images with dependencies preinstalled,
@@ -186,9 +189,7 @@ jobs:
           df -h
         displayName: Disk Usage after Build
 
-    # in case it is needed later, authenticate to private feed to prevent throttling
-    - bash: cp NuGet.CI.config NuGet.config
-    - task: NuGetAuthenticate@0
+
 
     # Build CoreCLR Managed Components
     - script: $(Build.SourcesDirectory)$(dir)build$(scriptExt) -subset clr.corelib+clr.nativecorelib+clr.tools+clr.packages+clr.paltestlist $(crossArg) -arch $(archType) $(osArg) -c $(buildConfig) $(officialBuildIdArg) -ci
