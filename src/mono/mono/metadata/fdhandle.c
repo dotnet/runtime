@@ -8,14 +8,6 @@ static MonoCoopMutex fds_mutex;
 static MonoFDHandleCallback fds_callback[MONO_FDTYPE_COUNT];
 static mono_lazy_init_t fds_init = MONO_LAZY_INIT_STATUS_NOT_INITIALIZED;
 
-static const gchar *types_str[] = {
-	"File",
-	"Console",
-	"Pipe",
-	"Socket",
-	NULL
-};
-
 static void
 fds_remove (gpointer data)
 {
@@ -67,6 +59,14 @@ mono_fdhandle_init (MonoFDHandle *fdhandle, MonoFDType type, gint fd)
 void
 mono_fdhandle_insert (MonoFDHandle *fdhandle)
 {
+	static const gchar *types_str[] = {
+		"File",
+		"Console",
+		"Pipe",
+		"Socket",
+		NULL
+	};
+
 	mono_coop_mutex_lock (&fds_mutex);
 
 	if (g_hash_table_lookup_extended (fds, GINT_TO_POINTER(fdhandle->fd), NULL, NULL))
