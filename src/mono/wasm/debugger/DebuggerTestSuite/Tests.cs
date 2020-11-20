@@ -287,15 +287,15 @@ namespace DebuggerTests
                     expression = "window.setTimeout(function() { invoke_bad_js_test(); }, 1);",
                 });
 
+                var task = insp.WaitFor("Runtime.exceptionThrown");
                 var eval_res = await cli.SendCommand("Runtime.evaluate", eval_req, token);
                 // Response here will be the id for the timer from JS!
                 Assert.True(eval_res.IsOk);
 
-                var ex = await Assert.ThrowsAsync<ArgumentException>(async () => await insp.WaitFor("Runtime.exceptionThrown"));
+                var ex = await Assert.ThrowsAsync<ArgumentException>(async () => await task);
                 var ex_json = JObject.Parse(ex.Message);
                 Assert.Equal(dicFileToUrl["/debugger-driver.html"], ex_json["exceptionDetails"]?["url"]?.Value<string>());
             });
-
         }
 
         [Theory]
