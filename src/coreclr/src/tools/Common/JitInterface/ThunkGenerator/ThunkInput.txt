@@ -11,8 +11,10 @@
 ;  then the NORMALTYPES description can be used for a return value.
 ;
 ; TYPES have three fields
-; ThunkDescriptionType,ManagedType,NativeType
-;   If either ManagedType or NativeType are missing, then that form is replaced with ThunkDescriptionType. 
+; ThunkDescriptionType,ManagedType,NativeType,NativeType2
+;   If either ManagedType, NativeType, or NativeType2 are missing, then that form is replaced with ThunkDescriptionType. 
+;   NativeType is used for representing the type in headers which do not include the PAL and corinfo.h
+;   NativeType2 is used for representing the type in headers that are fully integrated with the PAL
 ;   This feature allows reduction in type for enums and other types where the same type can be used in managed an native
 ;
 ;  Specification of a custom native type is done to allow multiple translations of the same native type to managed.
@@ -29,7 +31,7 @@
 ;
 ; If the boilerplate around the individual functions needs adjustment, edit the thunk generator source code, and 
 ;    rebuild with rebuildthunkgen.cmd in the the ThunkGenerator subdir, then rebuildthunks.cmd
-; If this file is editted, rebuild with rebuildthunks.cmd -- DO NOT RUN from within a razzle window.
+; If this file is editted, rebuild with gen.cmd -- DO NOT RUN from within a razzle window.
 ;
 NORMALTYPES
 void
@@ -60,12 +62,12 @@ GSCookie*,IntPtr*,void*
 GSCookie**,IntPtr**,void**
 
 BOOL*,BOOL*,int*
-bool*,ref bool,bool*
-BoolStar,byte*,bool*
+bool*,ref bool
+BoolStar,byte*,bool*,bool*
 UINT32*,ref uint,unsigned int*
 ULONG*,ref uint,unsigned long*
 void **,ref void*
-VOIDSTARSTAR,void **,void **
+VOIDSTARSTAR,void **,void **,void **
 ULONG32*,ref uint,unsigned int*
 LONG*,int*,long*
 char*,byte*
@@ -88,7 +90,7 @@ CORINFO_EH_CLAUSE*,ref CORINFO_EH_CLAUSE,void*
 const CORINFO_EH_CLAUSE*,ref CORINFO_EH_CLAUSE,void*
 CORINFO_SIG_INFO*,,void*
 CORINFO_RESOLVED_TOKEN*,ref CORINFO_RESOLVED_TOKEN,void*
-CORINFO_RESOLVED_TOKEN_PTR,CORINFO_RESOLVED_TOKEN*,void*
+CORINFO_RESOLVED_TOKEN_PTR,CORINFO_RESOLVED_TOKEN*,void*,CORINFO_RESOLVED_TOKEN*
 CORINFO_EE_INFO*,ref CORINFO_EE_INFO,void*
 CORINFO_TAILCALL_HELPERS*,ref CORINFO_TAILCALL_HELPERS,void*
 CORINFO_GENERICHANDLE_RESULT*,ref CORINFO_GENERICHANDLE_RESULT,void*
@@ -154,6 +156,7 @@ ICorDebugInfo::NativeVarInfo*,NativeVarInfo*,void*
 ICorDebugInfo::BoundaryTypes*,BoundaryTypes*,void*
 
 struct _EXCEPTION_POINTERS*,_EXCEPTION_POINTERS*,void*
+ICorJitInfo::errorTrapFunction,void*,void*
 
 FUNCTIONS
     DWORD getMethodAttribs(        CORINFO_METHOD_HANDLE       ftn        );
@@ -184,7 +187,7 @@ FUNCTIONS
     void setPatchpointInfo(PatchpointInfo* patchpointInfo);
     PatchpointInfo* getOSRInfo(unsigned * ilOffset);
     void resolveToken(CORINFO_RESOLVED_TOKEN * pResolvedToken);
-    void tryResolveToken(CORINFO_RESOLVED_TOKEN * pResolvedToken);
+    bool tryResolveToken(CORINFO_RESOLVED_TOKEN * pResolvedToken);
     void findSig(        CORINFO_MODULE_HANDLE       module,        unsigned                    sigTOK,        CORINFO_CONTEXT_HANDLE      context,        CORINFO_SIG_INFO           *sig        );
     void findCallSiteSig(        CORINFO_MODULE_HANDLE       module,unsigned                    methTOK,        CORINFO_CONTEXT_HANDLE      context,        CORINFO_SIG_INFO   *sig)
     CORINFO_CLASS_HANDLE getTokenTypeAsHandle(CORINFO_RESOLVED_TOKEN* pResolvedToken)
@@ -264,7 +267,7 @@ FUNCTIONS
     [ManualNativeWrapper] void HandleException(struct _EXCEPTION_POINTERS* pExceptionPointers);
     void ThrowExceptionForJitResult(HRESULT result);
     void ThrowExceptionForHelper(const CORINFO_HELPER_DESC* throwHelper);
-    [ManualNativeWrapper] bool runWithErrorTrap(void* function, void* parameter);
+    [ManualNativeWrapper] bool runWithErrorTrap(ICorJitInfo::errorTrapFunction function, void* parameter);
     void getEEInfo(CORINFO_EE_INFO* pEEInfoOut);
     LPCWSTR getJitTimeLogFilename();
     mdMethodDef getMethodDefFromMethod(CORINFO_METHOD_HANDLE hMethod);
