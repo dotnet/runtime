@@ -3337,14 +3337,14 @@ bool LinearScan::canSpillReg(RegRecord*            physRegRecord,
 //    This helper is designed to be used only from allocateBusyReg() and canSpillDoubleReg().
 //    The recentAssignedRefWeight is not updated if either register cannot be spilled.
 //
-bool LinearScan::canSpillDoubleReg(RegRecord*   physRegRecord,
-                                   LsraLocation refLocation,
-                                   unsigned*    recentAssignedRefWeight)
+bool LinearScan::canSpillDoubleReg(RegRecord*            physRegRecord,
+                                   LsraLocation          refLocation,
+                                   BasicBlock::weight_t* recentAssignedRefWeight)
 {
     assert(genIsValidDoubleReg(physRegRecord->regNum));
-    bool     retVal  = true;
-    unsigned weight  = BB_ZERO_WEIGHT;
-    unsigned weight2 = BB_ZERO_WEIGHT;
+    bool                 retVal  = true;
+    BasicBlock::weight_t weight  = BB_ZERO_WEIGHT;
+    BasicBlock::weight_t weight2 = BB_ZERO_WEIGHT;
 
     RegRecord* physRegRecord2 = findAnotherHalfRegRec(physRegRecord);
 

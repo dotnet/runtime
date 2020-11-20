@@ -20419,13 +20419,13 @@ void Compiler::fgTableDispBasicBlock(BasicBlock* block, int ibcColWidth /* = 0 *
             if (weight <= 99999 * BB_UNITY_WEIGHT)
             {
                 // print weight in this format ddddd.
-                printf("%5u.", (unsigned)round(weight / BB_UNITY_WEIGHT));
+                printf("%5u.", (unsigned)FloatingPointUtils::round(weight / BB_UNITY_WEIGHT));
             }
             else // print weight in terms of k (i.e. 156k )
             {
                 // print weight in this format dddddk
                 BasicBlock::weight_t weightK = weight / 1000;
-                printf("%5uk", (unsigned)round(weightK / BB_UNITY_WEIGHT));
+                printf("%5uk", (unsigned)FloatingPointUtils::round(weightK / BB_UNITY_WEIGHT));
             }
         }
         else // print weight in this format ddd.dd
@@ -20443,7 +20443,7 @@ void Compiler::fgTableDispBasicBlock(BasicBlock* block, int ibcColWidth /* = 0 *
     {
         if (block->hasProfileWeight())
         {
-            printf("%*u", ibcColWidth, (unsigned)round(block->bbWeight));
+            printf("%*u", ibcColWidth, (unsigned)FloatingPointUtils::round(block->bbWeight));
         }
         else
         {
