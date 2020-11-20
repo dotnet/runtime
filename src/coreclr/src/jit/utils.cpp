@@ -664,7 +664,7 @@ const char* refCntWtd2str(BasicBlock::weight_t refCntWtd)
     else
     {
         float scaledWeight = refCntWtd / BB_UNITY_WEIGHT;
-        float intPart      = floorf(scaledWeight);
+        float intPart      = (float)floor(scaledWeight);
 
         if (intPart == scaledWeight)
         {
