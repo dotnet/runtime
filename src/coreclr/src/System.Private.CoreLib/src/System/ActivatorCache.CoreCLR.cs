@@ -38,7 +38,19 @@ namespace System
                 _originalRuntimeType = new WeakReference<RuntimeType>(rt);
 #endif
 
-                _pfnAllocator = (delegate*<IntPtr, object>)RuntimeTypeHandle.GetAllocatorFtn(rt, out MethodTable* pMT, forGetUninitializedObject: false);
+                MethodTable* pMT;
+
+                try
+                {
+                    _pfnAllocator = (delegate*<IntPtr, object>)RuntimeTypeHandle.GetAllocatorFtn(rt, out pMT, forGetUninitializedObject: false);
+                }
+                catch (Exception ex)
+                {
+                    Exception? friendlyException = CreateAllocatorLookupFailedException(rt, ex);
+                    if (friendlyException != null) { throw friendlyException; }
+                    throw; // throw original exception if we couldn't create a friendly one
+                }
+
                 _allocatorFirstArg = (IntPtr)pMT;
 
                 RuntimeMethodHandleInternal ctorHandle = RuntimeMethodHandleInternal.EmptyHandle; // default nullptr
@@ -151,6 +163,31 @@ namespace System
 
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             internal void CallConstructor(object? uninitializedObject) => _pfnCtor(uninitializedObject);
+
+            [StackTraceHidden]
+            private static Exception? CreateAllocatorLookupFailedException(RuntimeType rt, Exception ex)
+            {
+                // If the inner exception is populated, probably a failed cctor, and we should
+                // propagate the exception as-is. If the exception is a type that we understand,
+                // we should make the error message friendlier so as to include the name of the type
+                // that couldn't be instantiated.
+
+                if (ex.InnerException is null)
+                {
+                    string friendlyMessage = SR.Format(SR.ActivatorCache_CannotGetAllocator, rt, ex.Message);
+
+                    switch (ex)
+                    {
+                        case ArgumentException: return new ArgumentException(friendlyMessage);
+                        case NotSupportedException: return new NotSupportedException(friendlyMessage);
+                        case MethodAccessException: return new MethodAccessException(friendlyMessage);
+                        case MissingMethodException: return new MissingMethodException(friendlyMessage);
+                        case MemberAccessException: return new MemberAccessException(friendlyMessage);
+                    }
+                }
+
+                return null; // caller should rethrow
+            }
         }
     }
 }

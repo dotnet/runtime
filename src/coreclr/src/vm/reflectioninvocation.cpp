@@ -2030,13 +2030,13 @@ void QCALLTYPE RuntimeTypeHandle::GetAllocatorFtn(
     // Don't allow void
     if (typeHandle.GetSignatureCorElementType() == ELEMENT_TYPE_VOID)
     {
-        COMPlusThrow(kArgumentException, W("Argument_InvalidValue"));
+        COMPlusThrow(kArgumentException, W("NotSupported_Type"));
     }
 
     // Don't allow arrays, pointers, byrefs, or function pointers
     if (typeHandle.IsTypeDesc() || typeHandle.IsArray())
     {
-        COMPlusThrow(kArgumentException, W("Argument_InvalidValue"));
+        COMPlusThrow(kNotSupportedException, W("NotSupported_Type"));
     }
 
     MethodTable* pMT = typeHandle.AsMethodTable();
@@ -2044,10 +2044,10 @@ void QCALLTYPE RuntimeTypeHandle::GetAllocatorFtn(
 
     pMT->EnsureInstanceActive();
 
-    // Don't allow creating instances of void or delegates
-    if (pMT == CoreLibBinder::GetElementType(ELEMENT_TYPE_VOID) || pMT->IsDelegate())
+    // Don't allow creating instances of delegates
+    if (pMT->IsDelegate())
     {
-        COMPlusThrow(kArgumentException, W("Argument_InvalidValue"));
+        COMPlusThrow(kArgumentException, W("NotSupported_Type"));
     }
 
     // Don't allow string or string-like (variable length) types.
