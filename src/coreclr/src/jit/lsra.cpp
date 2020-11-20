@@ -1861,8 +1861,8 @@ void LinearScan::identifyCandidates()
         // the lclVars allocated to the frame pointer.
         // => Here, estimate of the EBP refCnt and weighted refCnt is a wild guess.
         //
-        unsigned refCntEBP    = refCntReg / 8;
-        unsigned refCntWtdEBP = refCntWtdReg / 8;
+        unsigned             refCntEBP    = refCntReg / 8;
+        BasicBlock::weight_t refCntWtdEBP = refCntWtdReg / 8;
 
         doDoubleAlign =
             compiler->shouldDoubleAlign(refCntStk, refCntEBP, refCntWtdEBP, refCntStkParam, refCntWtdStkDbl);
