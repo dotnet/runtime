@@ -199,6 +199,13 @@ function Build {
     bl="/bl:\"$log_dir/Build.binlog\""
   fi
 
+  if [[ "$restore" == true]]; then 
+    if [[ "$ci" == true]]; then
+      echo "Using NuGet.CI.config"
+      cp NuGet.CI.config NuGet.config
+    fi
+  fi
+
   MSBuild $_InitializeToolset \
     $bl \
     /p:Configuration=$configuration \
