@@ -47,6 +47,19 @@ jclass    g_bigNumClass;
 jmethodID g_bigNumCtor;
 jmethodID g_toByteArrayMethod;
 
+// javax/net/ssl/SSLParameters
+jclass    g_sslParamsClass;
+jmethodID g_sslParamsGetProtocolsMethod;
+
+// javax/net/ssl/SSLContext
+jclass    g_sslCtxClass;
+jmethodID g_sslCtxGetDefaultMethod;
+jmethodID g_sslCtxGetDefaultSslParamsMethod;
+
+// javax/crypto/spec/GCMParameterSpec
+jclass    g_GCMParameterSpecClass;
+jmethodID g_GCMParameterSpecCtor;
+
 jobject ToGRef(JNIEnv *env, jobject lref)
 {
     if (!lref)
@@ -138,6 +151,9 @@ JNI_OnLoad(JavaVM *vm, void *reserved)
     g_sksClass =                GetClassGRef(env, "javax/crypto/spec/SecretKeySpec");
     g_sksCtor =                 GetMethod(env, false, g_sksClass, "<init>", "([BLjava/lang/String;)V");
 
+    g_GCMParameterSpecClass =   GetClassGRef(env, "javax/crypto/spec/GCMParameterSpec");
+    g_GCMParameterSpecCtor =    GetMethod(env, false, g_GCMParameterSpecClass, "<init>", "(I[B)V");
+
     g_cipherClass =             GetClassGRef(env, "javax/crypto/Cipher");
     g_cipherGetInstanceMethod = GetMethod(env, true,  g_cipherClass, "getInstance", "(Ljava/lang/String;)Ljavax/crypto/Cipher;");
     g_getBlockSizeMethod =      GetMethod(env, false, g_cipherClass, "getBlockSize", "()I");
@@ -151,6 +167,13 @@ JNI_OnLoad(JavaVM *vm, void *reserved)
     g_bigNumClass =             GetClassGRef(env, "java/math/BigInteger");
     g_bigNumCtor =              GetMethod(env, false, g_bigNumClass, "<init>", "([B)V");
     g_toByteArrayMethod =       GetMethod(env, false, g_bigNumClass, "toByteArray", "()[B");
+
+    g_sslParamsClass =              GetClassGRef(env, "javax/net/ssl/SSLParameters");
+    g_sslParamsGetProtocolsMethod = GetMethod(env, false,  g_sslParamsClass, "getProtocols", "()[Ljava/lang/String;");
+
+    g_sslCtxClass =                     GetClassGRef(env, "javax/net/ssl/SSLContext");
+    g_sslCtxGetDefaultMethod =          GetMethod(env, true,  g_sslCtxClass, "getDefault", "()Ljavax/net/ssl/SSLContext;");
+    g_sslCtxGetDefaultSslParamsMethod = GetMethod(env, false, g_sslCtxClass, "getDefaultSSLParameters", "()Ljavax/net/ssl/SSLParameters;");
 
     return JNI_VERSION_1_6;
 }
