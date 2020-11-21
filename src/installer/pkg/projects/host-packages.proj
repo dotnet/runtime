@@ -6,7 +6,7 @@
     <ProjectReference Include="Microsoft.NETCore.DotNetHost\Microsoft.NETCore.DotNetHost.pkgproj" />
     <ProjectReference Include="Microsoft.NETCore.DotNetHostPolicy\Microsoft.NETCore.DotNetHostPolicy.pkgproj" />
     <ProjectReference Include="Microsoft.NETCore.DotNetHostResolver\Microsoft.NETCore.DotNetHostResolver.pkgproj" />
-    <ProjectReference Include="@(ProjectReference)" AdditionalProperties="PackageTargetRuntime=$(PackageRID)" />
+    <ProjectReference Include="@(ProjectReference)" AdditionalProperties="PackageTargetRuntime=$(OutputRid)" />
   </ItemGroup>
 
   <Import Sdk="Microsoft.Build.Traversal" Project="Sdk.targets" />
