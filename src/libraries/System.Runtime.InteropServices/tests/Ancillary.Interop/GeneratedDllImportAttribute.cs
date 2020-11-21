@@ -1,7 +1,14 @@
 ﻿
 namespace System.Runtime.InteropServices
 {
-    // [TODO] Remove once the attribute has been added to the BCL
+    /// <summary>
+    /// Indicates that method will be generated at compile time and invoke into an unmanaged library entry point
+    /// </summary>
+    /// <remarks>
+    /// IL linker/trimming currently has special handling of P/Invokes (pinvokeimpl):
+    ///   - https://github.com/mono/linker/blob/bfab847356063d21eb15e79f2b6c03df5bd6ef3d/src/linker/Linker.Steps/MarkStep.cs#L2623
+    /// We may want to make the linker aware of this attribute as well.
+    /// </remarks>
     [AttributeUsage(AttributeTargets.Method, AllowMultiple = false, Inherited = false)]
     public sealed class GeneratedDllImportAttribute : Attribute
     {
