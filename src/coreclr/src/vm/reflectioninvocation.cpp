@@ -2169,22 +2169,27 @@ void QCALLTYPE RuntimeTypeHandle::AllocateComObject(
 {
     QCALL_CONTRACT;
 
-    REFLECTCLASSBASEREF refThis = (REFLECTCLASSBASEREF)refRuntimeType.Get();
     bool allocated = false;
 
     BEGIN_QCALL;
 
 #ifdef FEATURE_COMINTEROP
 #ifdef FEATURE_COMINTEROP_UNMANAGED_ACTIVATION
-    if (IsComObjectClass(refThis->GetType()))
     {
-        SyncBlock* pSyncBlock = refThis->GetSyncBlock();
+        GCX_COOP();
+        REFLECTCLASSBASEREF refThis = (REFLECTCLASSBASEREF)refRuntimeType.Get();
 
-        void* pClassFactory = (void*)pSyncBlock->GetInteropInfo()->GetComClassFactory();
-        if (pClassFactory)
+        if (IsComObjectClass(refThis->GetType()))
         {
-            retInstance.Set(((ComClassFactory*)pClassFactory)->CreateInstance(NULL));
-            allocated = true;
+            InteropSyncBlockInfo* pSyncBlockInfo = refThis->GetSyncBlock()->GetInteropInfo();
+            refThis = NULL; // GetInteropInfo might trigger GC, assume 'refThis' ref now invalid
+
+            void* pClassFactory = (void*)pSyncBlockInfo->GetComClassFactory();
+            if (pClassFactory)
+            {
+                retInstance.Set(((ComClassFactory*)pClassFactory)->CreateInstance(NULL));
+                allocated = true;
+            }
         }
     }
 #endif // FEATURE_COMINTEROP_UNMANAGED_ACTIVATION
