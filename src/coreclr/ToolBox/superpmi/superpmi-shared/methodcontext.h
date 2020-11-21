@@ -1391,7 +1391,7 @@ private:
 };
 
 // ********************* Please keep this up-to-date to ease adding more ***************
-// Highest packet number: 180
+// Highest packet number: 181
 // *************************************************************************************
 enum mcPackets
 {
