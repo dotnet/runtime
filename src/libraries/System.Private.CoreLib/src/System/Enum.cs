@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Buffers.Binary;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
@@ -63,26 +64,38 @@ namespace System
         private string ValueToHexString()
         {
             ref byte data = ref this.GetRawData();
+            Span<byte> bytes = stackalloc byte[8];
+            int length;
             switch (InternalGetCorElementType())
             {
                 case CorElementType.ELEMENT_TYPE_I1:
                 case CorElementType.ELEMENT_TYPE_U1:
-                    return data.ToString("X2", null);
+                    bytes[0] = data;
+                    length = 1;
+                    break;
                 case CorElementType.ELEMENT_TYPE_BOOLEAN:
                     return data != 0 ? "01" : "00";
                 case CorElementType.ELEMENT_TYPE_I2:
                 case CorElementType.ELEMENT_TYPE_U2:
                 case CorElementType.ELEMENT_TYPE_CHAR:
-                    return Unsafe.As<byte, ushort>(ref data).ToString("X4", null);
+                    BinaryPrimitives.WriteUInt16BigEndian(bytes, Unsafe.As<byte, ushort>(ref data));
+                    length = 2;
+                    break;
                 case CorElementType.ELEMENT_TYPE_I4:
                 case CorElementType.ELEMENT_TYPE_U4:
-                    return Unsafe.As<byte, uint>(ref data).ToString("X8", null);
+                    BinaryPrimitives.WriteUInt32BigEndian(bytes, Unsafe.As<byte, uint>(ref data));
+                    length = 4;
+                    break;
                 case CorElementType.ELEMENT_TYPE_I8:
                 case CorElementType.ELEMENT_TYPE_U8:
-                    return Unsafe.As<byte, ulong>(ref data).ToString("X16", null);
+                    BinaryPrimitives.WriteUInt64BigEndian(bytes, Unsafe.As<byte, ulong>(ref data));
+                    length = 8;
+                    break;
                 default:
                     throw new InvalidOperationException(SR.InvalidOperation_UnknownEnumType);
             }
+
+            return HexConverter.ToString(bytes.Slice(0, length), HexConverter.Casing.Upper);
         }
 
         private static string ValueToHexString(object value)
