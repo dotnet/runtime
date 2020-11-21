@@ -2,23 +2,24 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 //
 
-//
-// REVIEW: THIS IS A TEST-ONLY IMPLEMENTATION AND WILL BE REMOVED.
-// THE ACTUAL IMPLEMENTATION IS PROVIDED BY THE HOST
-//
-
 #include "common.h"
 #include "pinvokeoverrideimpl.h"
 
 extern "C" const void* GlobalizationResolveDllImport(const char* name);
 extern "C" const void* CompressionResolveDllImport(const char* name);
 
-const void* __stdcall SuperHost::ResolveDllImport(const char* libraryName, const char* entrypointName)
+const void* __stdcall DefaultPInvokeOverride::ResolveDllImport(const char* libraryName, const char* entrypointName)
 {
     if (strcmp(libraryName, "libSystem.Globalization.Native") == 0)
     {
         return GlobalizationResolveDllImport(entrypointName);
     }
+
+
+    //
+    // REVIEW: HANDLING IMPORTS OTHER THAN "libSystem.Globalization.Native"
+    //         IS TEST-ONLY AND WILL BE REMOVED.
+    //
 
 #if defined(_WIN32)
     if (strcmp(libraryName, "clrcompression") == 0)
@@ -26,7 +27,7 @@ const void* __stdcall SuperHost::ResolveDllImport(const char* libraryName, const
     if (strcmp(libraryName, "libSystem.IO.Compression.Native") == 0)
 #endif
     {
-        return CompressionResolveDllImport(entrypointName);
+        // return CompressionResolveDllImport(entrypointName);
     }
 
     return nullptr;

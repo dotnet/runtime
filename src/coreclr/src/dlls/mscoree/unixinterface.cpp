@@ -19,8 +19,6 @@
 #endif // FEATURE_GDBJIT
 #include "bundle.h"
 #include "pinvokeoverride.h"
-
-// TODO: WIP, this is for testing, will remove later.
 #include "pinvokeoverrideimpl.h"
 
 #define ASSERTE_ALL_BUILDS(expr) _ASSERTE_ALL_BUILDS(__FILE__, (expr))
@@ -230,11 +228,7 @@ int coreclr_initialize(
     }
     else
     {
-        //
-        // REVIEW: THIS IS A TEST-ONLY IMPLEMENTATION AND WILL BE REMOVED.
-        // THE ACTUAL IMPLEMENTATION IS PROVIDED BY THE HOST
-        //
-        // PInvokeOverride::SetPInvokeOverride(SuperHost::ResolveDllImport);
+        PInvokeOverride::SetPInvokeOverride(DefaultPInvokeOverride::ResolveDllImport);
     }
 
     ReleaseHolder<ICLRRuntimeHost4> host;

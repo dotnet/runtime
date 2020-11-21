@@ -106,10 +106,9 @@ find_index_for_method (MonoMethod *method, const void **impls)
 }
 
 gpointer
-mono_lookup_pinvoke_qcall_internal (MonoMethod *method, MonoLookupPInvokeStatus *status_out)
+mono_lookup_pinvoke_qcall_internal (MonoMethod *method, const char* dllentry, MonoLookupPInvokeStatus *status_out)
 {
-    const char *method_name = method->name;
-    const void *method_impl = GlobalizationResolveDllImport(method_name);
+    const void *method_impl = GlobalizationResolveDllImport(dllentry);
     if (method_impl != NULL)
     {
         return (gpointer)method_impl;
