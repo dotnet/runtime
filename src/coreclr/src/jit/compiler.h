@@ -7264,10 +7264,13 @@ public:
 
     GenTree* eeGetPInvokeCookie(CORINFO_SIG_INFO* szMetaSig);
 
-    // Returns the page size for the target machine as reported by the EE.
+    // The following value is used by the JIT to determine when
+    // to emit a stack probing instruction sequence or a call to the stack probe helper while:
+    //   1. allocating a frame in a method prolog;
+    //   2. allocating a local heap in a method body (i.e. localloc).
     target_size_t eeGetPageSize()
     {
-        return (target_size_t)eeGetEEInfo()->osPageSize;
+        return 0x1000;
     }
 
     // Returns the frame size at which we will generate a loop to probe the stack.
