@@ -70,7 +70,7 @@ namespace System
             {
                 case CorElementType.ELEMENT_TYPE_I1:
                 case CorElementType.ELEMENT_TYPE_U1:
-                    bytes = new Span<byte>(ref data, 1);
+                    bytes[0] = data;
                     length = 1;
                     break;
                 case CorElementType.ELEMENT_TYPE_BOOLEAN:
