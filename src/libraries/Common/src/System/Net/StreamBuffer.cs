@@ -108,7 +108,7 @@ namespace System.IO
                     return (false, buffer.Length);
                 }
 
-                _buffer.TryEnsureAvailableSpaceUpToLimit(buffer.Length, _maxBufferSize);
+                _buffer.EnsureAvailableSpaceUpToLimit(buffer.Length, _maxBufferSize);
 
                 int bytesWritten = Math.Min(buffer.Length, _buffer.AvailableMemory.Length);
                 if (bytesWritten > 0)

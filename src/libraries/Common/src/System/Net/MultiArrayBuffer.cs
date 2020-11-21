@@ -107,8 +107,7 @@ namespace System.Net
             _availableStart += byteCount;
         }
 
-        // Ensure at least [byteCount] bytes to write to, up to the specified limit
-        public void TryEnsureAvailableSpaceUpToLimit(int byteCount, int limit)
+        public void EnsureAvailableSpaceUpToLimit(int byteCount, int limit)
         {
             if (ActiveMemory.Length >= limit)
             {
@@ -116,16 +115,31 @@ namespace System.Net
                 return;
             }
 
+            // Enforce the limit.
             byteCount = Math.Min(byteCount, limit - ActiveMemory.Length);
-            if (byteCount <= AvailableMemory.Length)
+
+            EnsureAvailableSpace(byteCount);
+        }
+
+        public void EnsureAvailableSpace(int byteCount)
+        {
+            Debug.Assert(byteCount >= 0);
+
+            if (byteCount > AvailableMemory.Length)
             {
-                // We have enough space available already.
-                return;
+                GrowAvailableSpace(byteCount);
             }
+        }
+
+        public void GrowAvailableSpace(int byteCount)
+        {
+            Debug.Assert(byteCount > AvailableMemory.Length);
 
             int newBytesNeeded = byteCount - AvailableMemory.Length;
             int newBlocksNeeded = (newBytesNeeded + BlockSize - 1) / BlockSize;
             Debug.Assert(newBlocksNeeded > 0);
+            Debug.Assert(newBlocksNeeded * BlockSize >= newBytesNeeded);
+            Debug.Assert(newBlocksNeeded * BlockSize - newBytesNeeded < BlockSize);
 
             if (_blocks is null)
             {
@@ -145,10 +159,26 @@ namespace System.Net
             {
                 int firstUsedBlock = _activeStart / BlockSize;
                 int usedBlockCount = _blockCount - firstUsedBlock;
+
+#if DEBUG
+                for (int i = 0; i < firstUsedBlock; i++)
+                {
+                    Debug.Assert(_blocks[i] is null);
+                }
+#endif
+
                 if (usedBlockCount + newBlocksNeeded <= _blocks.Length)
                 {
+                    Debug.Assert(firstUsedBlock > 0);
+
                     // We can shift the array down to make enough space
                     _blocks.AsSpan().Slice(firstUsedBlock, usedBlockCount).CopyTo(_blocks);
+
+                    // Null out the part of the array left over from the shift, so that we aren't holding references to those blocks.
+                    for (int i = 0; i < firstUsedBlock; i++)
+                    {
+                        _blocks[usedBlockCount + i] = null;
+                    }
                 }
                 else
                 {
@@ -176,6 +206,7 @@ namespace System.Net
             // Allocate new blocks
             for (int i = 0; i < newBlocksNeeded; i++)
             {
+                Debug.Assert(_blocks[_blockCount + i] is null);
                 _blocks[_blockCount + i] = ArrayPool<byte>.Shared.Rent(BlockSize);
             }
 

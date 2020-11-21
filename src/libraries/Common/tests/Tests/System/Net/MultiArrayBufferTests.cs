@@ -11,6 +11,8 @@ namespace Tests.System.Net
 {
     public sealed class MultiArrayBufferTests
     {
+        const int BlockSize = 16 * 1024;
+
         [Fact]
         public void BasicTest()
         {
@@ -19,7 +21,7 @@ namespace Tests.System.Net
             Assert.Equal(0, buffer.ActiveMemory.Length);
             Assert.Equal(0, buffer.ActiveMemory.BlockCount);
 
-            buffer.TryEnsureAvailableSpaceUpToLimit(3, int.MaxValue);
+            buffer.EnsureAvailableSpace(3);
 
             int available = buffer.AvailableMemory.Length;
             Assert.True(available >= 3);
@@ -75,7 +77,7 @@ namespace Tests.System.Net
 
             for (int i = 0; i < Size; i++)
             {
-                buffer.TryEnsureAvailableSpaceUpToLimit(1, int.MaxValue);
+                buffer.EnsureAvailableSpace(1);
                 buffer.AvailableMemory[0] = (byte)i;
                 buffer.Commit(1);
             }
@@ -99,7 +101,7 @@ namespace Tests.System.Net
 
             for (int i = 0; i < RepeatCount; i++)
             {
-                buffer.TryEnsureAvailableSpaceUpToLimit(ByteCount, int.MaxValue);
+                buffer.EnsureAvailableSpace(ByteCount);
                 for (int j = 0; j < ByteCount; j++)
                 {
                     buffer.AvailableMemory[j] = (byte)(j + 1);
@@ -129,7 +131,7 @@ namespace Tests.System.Net
 
             for (int i = 0; i < RepeatCount; i++)
             {
-                buffer.TryEnsureAvailableSpaceUpToLimit(ByteCount, int.MaxValue);
+                buffer.EnsureAvailableSpace(ByteCount);
                 for (int j = 0; j < ByteCount; j++)
                 {
                     buffer.AvailableMemory.Slice(j)[0] = (byte)(j + 1);
@@ -159,7 +161,7 @@ namespace Tests.System.Net
 
             for (int i = 0; i < RepeatCount; i++)
             {
-                buffer.TryEnsureAvailableSpaceUpToLimit(ByteCount, int.MaxValue);
+                buffer.EnsureAvailableSpace(ByteCount);
                 for (int j = 0; j < ByteCount; j++)
                 {
                     buffer.AvailableMemory.Slice(j, ByteCount - j)[0] = (byte)(j + 1);
@@ -190,7 +192,7 @@ namespace Tests.System.Net
 
             for (int i = 0; i < RepeatCount; i++)
             {
-                buffer.TryEnsureAvailableSpaceUpToLimit(source.Length, int.MaxValue);
+                buffer.EnsureAvailableSpace(source.Length);
                 buffer.AvailableMemory.CopyFrom(source);
                 buffer.Commit(source.Length);
             }
@@ -217,7 +219,7 @@ namespace Tests.System.Net
 
             for (int i = 0; i < RepeatCount; i++)
             {
-                buffer.TryEnsureAvailableSpaceUpToLimit(source.Length, int.MaxValue);
+                buffer.EnsureAvailableSpace(source.Length);
                 buffer.AvailableMemory.CopyFrom(source);
                 buffer.Commit(source.Length);
             }
@@ -246,6 +248,192 @@ namespace Tests.System.Net
             // These should not throw
             mm.CopyTo(new byte[0]);
             mm.CopyFrom(new byte[0]);
+        }
+
+        [Fact]
+        public void EnsureAvailableSpaceTest()
+        {
+            MultiArrayBuffer buffer = new MultiArrayBuffer(0);
+
+            Assert.Equal(0, buffer.ActiveMemory.Length);
+            Assert.Equal(0, buffer.AvailableMemory.Length);
+
+            buffer.EnsureAvailableSpace(0);
+            Assert.Equal(0, buffer.AvailableMemory.Length);
+
+            buffer.EnsureAvailableSpace(1);
+            Assert.Equal(BlockSize, buffer.AvailableMemory.Length);
+
+            buffer.EnsureAvailableSpace(2);
+            Assert.Equal(BlockSize, buffer.AvailableMemory.Length);
+
+            buffer.EnsureAvailableSpace(BlockSize - 1);
+            Assert.Equal(BlockSize, buffer.AvailableMemory.Length);
+
+            buffer.EnsureAvailableSpace(BlockSize);
+            Assert.Equal(BlockSize, buffer.AvailableMemory.Length);
+
+            buffer.EnsureAvailableSpace(BlockSize + 1);
+            Assert.Equal(BlockSize * 2, buffer.AvailableMemory.Length);
+
+            buffer.Commit(BlockSize - 1);
+            Assert.Equal(BlockSize - 1, buffer.ActiveMemory.Length);
+            Assert.Equal(BlockSize + 1, buffer.AvailableMemory.Length);
+
+            buffer.Commit(BlockSize);
+            Assert.Equal(BlockSize * 2 - 1, buffer.ActiveMemory.Length);
+            Assert.Equal(1, buffer.AvailableMemory.Length);
+
+            buffer.EnsureAvailableSpace(0);
+            Assert.Equal(1, buffer.AvailableMemory.Length);
+
+            buffer.EnsureAvailableSpace(1);
+            Assert.Equal(1, buffer.AvailableMemory.Length);
+
+            buffer.EnsureAvailableSpace(2);
+            Assert.Equal(BlockSize + 1, buffer.AvailableMemory.Length);
+
+            buffer.Commit(2);
+            Assert.Equal(BlockSize * 2 + 1, buffer.ActiveMemory.Length);
+            Assert.Equal(BlockSize - 1, buffer.AvailableMemory.Length);
+
+            buffer.Discard(1);
+            Assert.Equal(BlockSize * 2, buffer.ActiveMemory.Length);
+            Assert.Equal(BlockSize - 1, buffer.AvailableMemory.Length);
+
+            buffer.Discard(1);
+            Assert.Equal(BlockSize * 2 - 1, buffer.ActiveMemory.Length);
+            Assert.Equal(BlockSize - 1, buffer.AvailableMemory.Length);
+
+            // This should not free the first block
+            buffer.Discard(BlockSize - 3);
+            Assert.Equal(BlockSize + 2, buffer.ActiveMemory.Length);
+            Assert.Equal(BlockSize - 1, buffer.AvailableMemory.Length);
+
+            // This should free the first block
+            buffer.Discard(1);
+            Assert.Equal(BlockSize + 1, buffer.ActiveMemory.Length);
+            Assert.Equal(BlockSize - 1, buffer.AvailableMemory.Length);
+
+            buffer.EnsureAvailableSpace(BlockSize - 1);
+            Assert.Equal(BlockSize - 1, buffer.AvailableMemory.Length);
+
+            buffer.EnsureAvailableSpace(BlockSize);
+            Assert.Equal(BlockSize * 2 - 1, buffer.AvailableMemory.Length);
+
+            buffer.Discard(BlockSize - 1);
+            Assert.Equal(2, buffer.ActiveMemory.Length);
+            Assert.Equal(BlockSize * 2 - 1, buffer.AvailableMemory.Length);
+
+            // This will cause shifting the block array down, but not reallocating
+            buffer.EnsureAvailableSpace(BlockSize * 2);
+            Assert.Equal(BlockSize * 3 - 1, buffer.AvailableMemory.Length);
+
+            buffer.Commit(BlockSize - 2);
+            Assert.Equal(BlockSize, buffer.ActiveMemory.Length);
+            Assert.Equal(BlockSize * 2 + 1, buffer.AvailableMemory.Length);
+
+            buffer.Commit(1);
+            Assert.Equal(BlockSize + 1, buffer.ActiveMemory.Length);
+            Assert.Equal(BlockSize * 2, buffer.AvailableMemory.Length);
+
+            buffer.Commit(1);
+            Assert.Equal(BlockSize + 2, buffer.ActiveMemory.Length);
+            Assert.Equal(BlockSize * 2 - 1, buffer.AvailableMemory.Length);
+
+            buffer.Discard(1);
+            Assert.Equal(BlockSize + 1, buffer.ActiveMemory.Length);
+            Assert.Equal(BlockSize * 2 - 1, buffer.AvailableMemory.Length);
+
+            // This will cause reallocating the block array, and dealing with an unused block in the first slot
+            buffer.EnsureAvailableSpace(BlockSize * 4);
+            Assert.Equal(BlockSize + 1, buffer.ActiveMemory.Length);
+            Assert.Equal(BlockSize * 5 - 1, buffer.AvailableMemory.Length);
+
+            buffer.Discard(2);
+            Assert.Equal(BlockSize - 1, buffer.ActiveMemory.Length);
+            Assert.Equal(BlockSize * 5 - 1, buffer.AvailableMemory.Length);
+
+            buffer.Commit(1);
+            Assert.Equal(BlockSize, buffer.ActiveMemory.Length);
+            Assert.Equal(BlockSize * 5 - 2, buffer.AvailableMemory.Length);
+
+            // This will trigger re-using the block from the beginning of the block, so our available memory starts from the beginning of the block
+            buffer.Discard(BlockSize);
+            Assert.Equal(0, buffer.ActiveMemory.Length);
+            Assert.Equal(BlockSize * 5, buffer.AvailableMemory.Length);
+
+            buffer.Commit(2);
+            Assert.Equal(2, buffer.ActiveMemory.Length);
+            Assert.Equal(BlockSize * 5 - 2, buffer.AvailableMemory.Length);
+
+            buffer.Discard(1);
+            Assert.Equal(1, buffer.ActiveMemory.Length);
+            Assert.Equal(BlockSize * 5 - 2, buffer.AvailableMemory.Length);
+
+            // Request a very large amount of available space.
+            buffer.EnsureAvailableSpace(BlockSize * 64 + 1);
+            Assert.Equal(1, buffer.ActiveMemory.Length);
+            Assert.Equal(BlockSize * 65 - 2, buffer.AvailableMemory.Length);
+        }
+
+        [Fact]
+        public void EnsureAvailableSpaceUpToLimitTest()
+        {
+            MultiArrayBuffer buffer = new MultiArrayBuffer(0);
+
+            Assert.Equal(0, buffer.ActiveMemory.Length);
+            Assert.Equal(0, buffer.AvailableMemory.Length);
+
+            buffer.EnsureAvailableSpaceUpToLimit(0, 0);
+            Assert.Equal(0, buffer.AvailableMemory.Length);
+
+            buffer.EnsureAvailableSpaceUpToLimit(0, 1);
+            Assert.Equal(0, buffer.AvailableMemory.Length);
+
+            buffer.EnsureAvailableSpaceUpToLimit(1, 0);
+            Assert.Equal(0, buffer.AvailableMemory.Length);
+
+            buffer.EnsureAvailableSpaceUpToLimit(1, 1);
+            Assert.Equal(BlockSize, buffer.AvailableMemory.Length);
+
+            buffer.EnsureAvailableSpaceUpToLimit(1, 2);
+            Assert.Equal(BlockSize, buffer.AvailableMemory.Length);
+
+            buffer.EnsureAvailableSpaceUpToLimit(BlockSize, 0);
+            Assert.Equal(BlockSize, buffer.AvailableMemory.Length);
+
+            buffer.EnsureAvailableSpaceUpToLimit(BlockSize + 1, 0);
+            Assert.Equal(BlockSize, buffer.AvailableMemory.Length);
+
+            buffer.EnsureAvailableSpaceUpToLimit(BlockSize, BlockSize);
+            Assert.Equal(BlockSize, buffer.AvailableMemory.Length);
+
+            buffer.EnsureAvailableSpaceUpToLimit(BlockSize + 1, BlockSize);
+            Assert.Equal(BlockSize, buffer.AvailableMemory.Length);
+
+            buffer.EnsureAvailableSpaceUpToLimit(BlockSize + 1, BlockSize + 1);
+            Assert.Equal(BlockSize * 2, buffer.AvailableMemory.Length);
+
+            buffer.Commit(2);
+            buffer.Discard(1);
+            Assert.Equal(1, buffer.ActiveMemory.Length);
+            Assert.Equal(BlockSize * 2 - 2, buffer.AvailableMemory.Length);
+
+            buffer.EnsureAvailableSpaceUpToLimit(BlockSize * 2 - 2, BlockSize * 2 - 3);
+            Assert.Equal(BlockSize * 2 - 2, buffer.AvailableMemory.Length);
+
+            buffer.EnsureAvailableSpaceUpToLimit(BlockSize * 2 - 2, BlockSize * 2 - 2);
+            Assert.Equal(BlockSize * 2 - 2, buffer.AvailableMemory.Length);
+
+            buffer.EnsureAvailableSpaceUpToLimit(BlockSize * 2 - 2, BlockSize * 2 - 1);
+            Assert.Equal(BlockSize * 2 - 2, buffer.AvailableMemory.Length);
+
+            buffer.EnsureAvailableSpaceUpToLimit(BlockSize * 2 - 1, BlockSize * 2 - 1);
+            Assert.Equal(BlockSize * 2 - 2, buffer.AvailableMemory.Length);
+
+            buffer.EnsureAvailableSpaceUpToLimit(BlockSize * 2 - 1, BlockSize * 2);
+            Assert.Equal(BlockSize * 3 - 2, buffer.AvailableMemory.Length);
         }
     }
 }

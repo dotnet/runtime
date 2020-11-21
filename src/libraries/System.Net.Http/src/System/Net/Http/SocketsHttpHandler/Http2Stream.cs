@@ -810,7 +810,7 @@ namespace System.Net.Http
                         ThrowProtocolError(Http2ProtocolErrorCode.FlowControlError);
                     }
 
-                    _responseBuffer.TryEnsureAvailableSpaceUpToLimit(buffer.Length, int.MaxValue);
+                    _responseBuffer.EnsureAvailableSpace(buffer.Length);
                     _responseBuffer.AvailableMemory.CopyFrom(buffer);
                     _responseBuffer.Commit(buffer.Length);
 
