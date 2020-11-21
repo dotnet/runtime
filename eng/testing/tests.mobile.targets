@@ -155,7 +155,7 @@
              AssemblyFile="$(CreateCreateWasmBundlesAssemblyPath)" />
   <Target Condition="'$(TargetOS)' == 'Browser'" Name="LoadTimeZone" >
     <PropertyGroup>
-      <TimeZoneDataVersion>2020a</TimeZoneDataVersion>
+      <TimeZoneDataVersion>2020d</TimeZoneDataVersion>
     </PropertyGroup>
     <DownloadTimeZoneData
       InputDirectory="$(BundleDir)obj/data/input"

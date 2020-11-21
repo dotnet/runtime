@@ -40,7 +40,7 @@
     <DownloadTimeZoneData
       InputDirectory="$(ArtifactsObjDir)wasm/data/input"
       OutputDirectory="$(ArtifactsObjDir)wasm/data/output"
-      Version="2020a" />
+      Version="2020d" />
   </Target>
 
   <UsingTask TaskName="CreateWasmBundle" AssemblyFile="$([MSBuild]::NormalizePath('$(ArtifactsBinDir)', 'CreateWasmBundle', 'Debug', '$(NetCoreAppCurrent)', 'publish', 'CreateWasmBundle.dll'))"/>
