@@ -124,6 +124,7 @@ static void ConvertConfigPropertiesToUnicode(
     LPCWSTR** propertyKeysWRef,
     LPCWSTR** propertyValuesWRef,
     BundleProbe** bundleProbe,
+    PInvokeOverrideFn** pinvokeOverride,
     bool* hostPolicyEmbedded)
 {
     LPCWSTR* propertyKeysW = new (nothrow) LPCWSTR[propertyCount];
@@ -142,6 +143,12 @@ static void ConvertConfigPropertiesToUnicode(
             // If this application is a single-file bundle, the bundle-probe callback 
             // is passed in as the value of "BUNDLE_PROBE" property (encoded as a string).
             *bundleProbe = (BundleProbe*)_wcstoui64(propertyValuesW[propertyIndex], nullptr, 0);
+        }
+        else if (strcmp(propertyKeys[propertyIndex], "PINVOKE_OVERRIDE") == 0)
+        {
+            // If host provides a PInvoke override (typically in a single-file bundle),
+            // the override callback is passed in as the value of "PINVOKE_OVERRIDE" property (encoded as a string).
+            *pinvokeOverride = (PInvokeOverrideFn*)_wcstoui64(propertyValuesW[propertyIndex], nullptr, 0);
         }
         else if (strcmp(propertyKeys[propertyIndex], "HOSTPOLICY_EMBEDDED") == 0)
         {
@@ -191,6 +198,7 @@ int coreclr_initialize(
     LPCWSTR* propertyValuesW;
     BundleProbe* bundleProbe = nullptr;
     bool hostPolicyEmbedded = false;
+    PInvokeOverrideFn* pinvokeOverride = nullptr;
 
     ConvertConfigPropertiesToUnicode(
         propertyKeys,
@@ -199,6 +207,7 @@ int coreclr_initialize(
         &propertyKeysW,
         &propertyValuesW,
         &bundleProbe,
+        &pinvokeOverride,
         &hostPolicyEmbedded);
 
 #ifdef TARGET_UNIX
@@ -215,13 +224,18 @@ int coreclr_initialize(
 
     g_hostpolicy_embedded = hostPolicyEmbedded;
 
-    // TODO: WIP, fetch this from args similar to Bundle/bundleProbe
-    //
-    // if (overider != nullptr)
-    // {
-    //     PInvokeOverride::SetPInvokeOverride(overrider);
-    // }
-    PInvokeOverride::SetPInvokeOverride(SuperHost::ResolveDllImport);
+    if (pinvokeOverride != nullptr)
+    {
+        PInvokeOverride::SetPInvokeOverride(pinvokeOverride);
+    }
+    else
+    {
+        //
+        // REVIEW: THIS IS A TEST-ONLY IMPLEMENTATION AND WILL BE REMOVED.
+        // THE ACTUAL IMPLEMENTATION IS PROVIDED BY THE HOST
+        //
+        // PInvokeOverride::SetPInvokeOverride(SuperHost::ResolveDllImport);
+    }
 
     ReleaseHolder<ICLRRuntimeHost4> host;
 

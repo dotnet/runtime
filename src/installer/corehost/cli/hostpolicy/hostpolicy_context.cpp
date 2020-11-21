@@ -42,6 +42,32 @@ namespace
 
         return bundle::runner_t::app()->probe(file_path, offset, size);
     }
+
+#if defined(NATIVE_LIBS_EMBEDDED)
+    extern "C" const void* GlobalizationResolveDllImport(const char* name);
+    extern "C" const void* CompressionResolveDllImport(const char* name);
+
+    // pinvoke_override:
+    // Check if given function belongs to one of statically linked libraries and return a pointer if found.
+    const void* STDMETHODCALLTYPE pinvoke_override(const char* libraryName, const char* entrypointName)
+    {
+        if (strcmp(libraryName, "libSystem.Globalization.Native") == 0)
+        {
+            return GlobalizationResolveDllImport(entrypointName);
+        }
+
+#if defined(_WIN32)
+        if (strcmp(libraryName, "clrcompression") == 0)
+#else
+        if (strcmp(libraryName, "libSystem.IO.Compression.Native") == 0)
+#endif
+        {
+            return CompressionResolveDllImport(entrypointName);
+        }
+
+        return nullptr;
+    }
+#endif
 }
 
 int hostpolicy_context_t::initialize(hostpolicy_init_t &hostpolicy_init, const arguments_t &args, bool enable_breadcrumbs)
@@ -240,6 +266,22 @@ int hostpolicy_context_t::initialize(hostpolicy_init_t &hostpolicy_init, const a
             return StatusCode::LibHostDuplicateProperty;
         }
     }
+
+#if defined(NATIVE_LIBS_EMBEDDED)
+    // PInvoke Override
+    if (bundle::info_t::is_single_file_bundle())
+    {
+        // Encode the pinvoke_override function pointer as a string, and pass it to the runtime.
+        pal::stringstream_t ptr_stream;
+        ptr_stream << "0x" << std::hex << (size_t)(&pinvoke_override);
+
+        if (!coreclr_properties.add(common_property::PInvokeOverride, ptr_stream.str().c_str()))
+        {
+            log_duplicate_property_error(coreclr_property_bag_t::common_property_to_string(common_property::StartUpHooks));
+            return StatusCode::LibHostDuplicateProperty;
+        }
+    }
+#endif
 
 #if defined(HOSTPOLICY_EMBEDDED)
     if (!coreclr_properties.add(common_property::HostPolicyEmbedded, _X("true")))

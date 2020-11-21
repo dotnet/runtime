@@ -148,6 +148,7 @@ namespace
         _X("APP_NI_PATHS"),
         _X("RUNTIME_IDENTIFIER"),
         _X("BUNDLE_PROBE"),
+        _X("PINVOKE_OVERRIDE"),
         _X("HOSTPOLICY_EMBEDDED")
     };
 

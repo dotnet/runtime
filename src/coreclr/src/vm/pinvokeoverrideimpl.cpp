@@ -3,7 +3,8 @@
 //
 
 //
-// REVIEW: THE IMPLEMENTATION FOR THE OVERRIDER WILL BE MOVED TO HOST
+// REVIEW: THIS IS A TEST-ONLY IMPLEMENTATION AND WILL BE REMOVED.
+// THE ACTUAL IMPLEMENTATION IS PROVIDED BY THE HOST
 //
 
 #include "common.h"
@@ -12,7 +13,7 @@
 extern "C" const void* GlobalizationResolveDllImport(const char* name);
 extern "C" const void* CompressionResolveDllImport(const char* name);
 
-const void* SuperHost::ResolveDllImport(const char* libraryName, const char* entrypointName)
+const void* __stdcall SuperHost::ResolveDllImport(const char* libraryName, const char* entrypointName)
 {
     if (strcmp(libraryName, "libSystem.Globalization.Native") == 0)
     {

@@ -35,6 +35,7 @@ add_definitions(-D_NO_ASYNCRTIMP)
 add_definitions(-D_NO_PPLXIMP)
 add_definitions(-DEXPORT_SHARED_API=1)
 add_definitions(-DHOSTPOLICY_EMBEDDED)
+add_definitions(-DNATIVE_LIBS_EMBEDDED)
 
 
 include(../../fxr/files.cmake)
