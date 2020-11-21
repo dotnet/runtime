@@ -31,7 +31,7 @@ UITextView* logLabel;
 - (void)viewDidLoad {
     [super viewDidLoad];
 
-    CGRect applicationFrame = [[UIScreen mainScreen] applicationFrame];
+    CGRect applicationFrame = [[UIScreen mainScreen] bounds];
     logLabel = [[UITextView alloc] initWithFrame:
         CGRectMake(2.0, 50.0, applicationFrame.size.width - 2.0, applicationFrame.size.height - 50.0)];
     logLabel.font = [UIFont systemFontOfSize:9.0];
@@ -39,7 +39,9 @@ UITextView* logLabel;
     logLabel.textColor = [UIColor greenColor];
     logLabel.scrollEnabled = YES;
     logLabel.alwaysBounceVertical = YES;
+#ifndef TARGET_OS_TV
     logLabel.editable = NO;
+#endif
     logLabel.clipsToBounds = YES;
 
     summaryLabel = [[UILabel alloc] initWithFrame: CGRectMake(10.0, 0.0, applicationFrame.size.width - 10.0, 50)];

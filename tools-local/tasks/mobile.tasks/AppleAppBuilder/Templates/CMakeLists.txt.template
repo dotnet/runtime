@@ -37,7 +37,7 @@ target_link_libraries(
     "-framework Foundation"
     "-framework Security"
     "-framework UIKit"
-    "-framework GSS"
+    %FrameworksToLink%
     "-lz"
     "-liconv"
 %NativeLibrariesToLink%

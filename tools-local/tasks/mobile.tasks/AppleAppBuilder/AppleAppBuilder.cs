@@ -13,6 +13,12 @@ using Microsoft.Build.Utilities;
 public class AppleAppBuilderTask : Task
 {
     /// <summary>
+    /// The Apple OS we are targeting (iOS or tvOS)
+    /// </summary>
+    [Required]
+    public string TargetOS { get; set; } = Utils.TargetOS.iOS;
+
+    /// <summary>
     /// ProjectName is used as an app name, bundleId and xcode project name
     /// </summary>
     [Required]
@@ -166,7 +172,8 @@ public class AppleAppBuilderTask : Task
 
         if (GenerateXcodeProject)
         {
-            XcodeProjectPath = Xcode.GenerateXCode(ProjectName, MainLibraryFileName, assemblerFiles,
+            Xcode generator = new Xcode(TargetOS);
+            XcodeProjectPath = generator.GenerateXCode(ProjectName, MainLibraryFileName, assemblerFiles,
                 AppDir, binDir, MonoRuntimeHeaders, !isDevice, UseConsoleUITemplate, UseAotForSimulator, ForceInterpreter, Optimized, NativeMainSource);
 
             if (BuildAppBundle)
@@ -178,7 +185,7 @@ public class AppleAppBuilderTask : Task
                 }
                 else
                 {
-                    AppBundlePath = Xcode.BuildAppBundle(XcodeProjectPath, Arch, Optimized, DevTeamProvisioning);
+                    AppBundlePath = generator.BuildAppBundle(XcodeProjectPath, Arch, Optimized, DevTeamProvisioning);
                 }
             }
         }
