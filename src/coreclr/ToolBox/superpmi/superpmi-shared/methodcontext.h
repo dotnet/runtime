@@ -1546,7 +1546,7 @@ enum mcPackets
     Packet_IsMoreSpecificType                            = 174, // Added 2/14/2019
     Packet_PInvokeMarshalingRequired                     = 108,
     Packet_ResolveToken                                  = 109,
-    Packet_TryResolveVirtualMethod                       = 160, // Added 2/13/17 // is it safe to rename?
+    Packet_TryResolveVirtualMethod                       = 160, // Added 2/13/17 // compatibility-wise is it safe to rename?
     Packet_TryResolveToken                               = 158, // Added 4/26/2016
     Packet_SatisfiesClassConstraints                     = 110,
     Packet_SatisfiesMethodConstraints                    = 111,

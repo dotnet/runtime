@@ -301,8 +301,8 @@ namespace Internal.JitInterface
         //
         // [In] arguments of tryResolveVirtualMethod
         //
-        public CORINFO_CLASS_STRUCT_* implementingClass;
         public CORINFO_METHOD_STRUCT_* virtualMethod;
+        public CORINFO_CLASS_STRUCT_* implementingClass;
         public CORINFO_CONTEXT_STRUCT* ownerType;
 
         //

@@ -957,7 +957,7 @@ namespace Internal.JitInterface
                 return false;
             }
 
-            MethodDesc decl = (MethodDesc)HandleToObject(virtualMethodContext.virtualMethod);
+            MethodDesc decl = HandleToObject(virtualMethodContext.virtualMethod);
             Debug.Assert(!decl.HasInstantiation);
 
             if (virtualMethodContext.ownerType != null)

@@ -1313,7 +1313,7 @@ void MethodContext::recTryResolveToken(CORINFO_RESOLVED_TOKEN* pResolvedToken, b
 
     TryResolveTokenValue value;
 
-    value.tokenOut = SpmiRecordsHelper::StoreAgnostic_CORINFO_RESOLVED_TOKENout(pResolvedToken, TryResolveToken); // copypaste artifacts?
+    value.tokenOut = SpmiRecordsHelper::StoreAgnostic_CORINFO_RESOLVED_TOKENout(pResolvedToken, TryResolveToken);
     value.success  = success ? 0 : 1;
 
     TryResolveToken->Add(key, value);
@@ -1335,8 +1335,7 @@ bool MethodContext::repTryResolveToken(CORINFO_RESOLVED_TOKEN* pResolvedToken)
 
     TryResolveTokenValue value = TryResolveToken->Get(key);
 
-    // why not RestoreAgnostic_CORINFO_RESOLVED_TOKENout
-    SpmiRecordsHelper::Restore_CORINFO_RESOLVED_TOKENout(pResolvedToken, value.tokenOut, TryResolveToken); // copypaste artifacts?
+    SpmiRecordsHelper::Restore_CORINFO_RESOLVED_TOKENout(pResolvedToken, value.tokenOut, TryResolveToken);
 
     DEBUG_REP(dmpTryResolveToken(key, value));
     return (DWORD)value.success == 0;
