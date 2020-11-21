@@ -670,6 +670,8 @@ public:
     static bool hasPreciseReciprocal(double x);
 
     static bool hasPreciseReciprocal(float x);
+
+    static float infinite_float();
 };
 
 // The CLR requires that critical section locks be initialized via its ClrCreateCriticalSection API...but

@@ -2102,6 +2102,12 @@ bool FloatingPointUtils::isNormal(float x)
     return (bits < 0x7F800000) && (bits != 0) && ((bits & 0x7F800000) != 0);
 }
 
+float FloatingPointUtils::infinite_float()
+{
+    int32_t bits = 0x7F800000;
+    return *reinterpret_cast<float*>(&bits);
+}
+
 //------------------------------------------------------------------------
 // hasPreciseReciprocal: check double for precise reciprocal. E.g. 2.0 <--> 0.5
 //
