@@ -2,11 +2,12 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Diagnostics.CodeAnalysis;
 using System.Threading.Tasks;
 
 public class Test
 {
-
+    [DynamicDependency(DynamicallyAccessedMemberTypes.All, "System.Runtime.InteropServices.JavaScript.Runtime", "System.Private.Runtime.InteropServices.JavaScript")] 
     public static async Task<int> Main(string[] args)
     {
         await Task.Delay(1);

@@ -3,7 +3,7 @@
     <!-- OutDir is not set early enough to set this property in .props file. -->
     <BundleDir>$([MSBuild]::NormalizeDirectory('$(OutDir)', 'AppBundle'))</BundleDir>
     <RunScriptOutputPath>$([MSBuild]::NormalizePath('$(BundleDir)', '$(RunScriptOutputName)'))</RunScriptOutputPath>
-    <RunAOTCompilation Condition="'$(TargetOS)' == 'iOS' and $(TargetArchitecture.StartsWith('arm'))">true</RunAOTCompilation>
+    <RunAOTCompilation Condition="('$(TargetOS)' == 'iOS' and $(TargetArchitecture.StartsWith('arm'))) or '$(TargetOS)' == 'Browser'">true</RunAOTCompilation>
     <JSEngine Condition="'$(TargetOS)' == 'Browser' and '$(JSEngine)' == ''">V8</JSEngine>
     <JSEngineArgs Condition="'$(JSEngine)' == 'V8'">$(JSEngineArgs) --engine-arg=--stack-trace-limit=1000</JSEngineArgs>
   </PropertyGroup>
@@ -159,6 +159,45 @@
       <WasmGenerateRunV8Script>true</WasmGenerateRunV8Script>
     </PropertyGroup>
 
+<!--
+  <Target Condition="'$(TargetOS)' == 'Browser'" Name="PrepareBundleTestWasmApp">
+    <ItemGroup>
+      <BundleAssemblies Condition="'$(RunAOTCompilation)' != 'true'" Include="$(PublishDir)\*.dll" />
+    </ItemGroup>
+    <PropertyGroup>
+      <EmccFlagsFile>$(MicrosoftNetCoreAppRuntimePackNativeDir)src\emcc-flags.txt</EmccFlagsFile>
+      <RuntimeEmccVersionFile>$(MicrosoftNetCoreAppRuntimePackNativeDir)src\emcc-version.txt</RuntimeEmccVersionFile>
+      <EmccPublishVersionFile>$(PublishDir)\emcc-version.txt</EmccPublishVersionFile>
+      <WasmAotOutDir>$(PublishDir)</WasmAotOutDir>
+    </PropertyGroup>
+  </Target>
+
+  <Target Condition="'$(TargetOS)' == 'Browser'" Name="WasmAOTCompileTestApp" AfterTargets="PrepareBundleTestWasmApp">
+    <ItemGroup>
+      <AotInputAssemblies Condition="'$(RunAOTCompilation)' == 'true'" Include="$(PublishDir)\*.dll">
+        <AotArguments>@(MonoAOTCompilerDefaultAotArguments, ';')</AotArguments>
+        <ProcessArguments>@(MonoAOTCompilerDefaultProcessArguments, ';')</ProcessArguments>
+      </AotInputAssemblies>
+    </ItemGroup>
+
+    <Error Condition="'$(RunAOTCompilation)' == 'true' and '$(EMSDK_PATH)' == ''" Text="The EMSDK_PATH environment variable should be set pointing to the emscripten SDK root dir when using AOT."/>
+
+    <MonoAOTCompiler
+        Condition="'$(RunAOTCompilation)' == 'true'"
+        CompilerBinaryPath="$(MicrosoftNetCoreAppRuntimePackNativeDir)cross\mono-aot-cross"
+        Mode="LLVMOnly"
+        OutputType="AsmOnly"
+        Assemblies="@(AotInputAssemblies)"
+        UseAotDataFile="false"
+        AotModulesTablePath="$(PublishDir)driver-gen.c"
+        UseLLVM="true"
+        LLVMPath="$(EMSDK_PATH)\upstream\bin">
+        <Output TaskParameter="CompiledAssemblies" ItemName="BundleAssemblies" />
+    </MonoAOTCompiler>
+  </Target>
+
+  <Target Condition="'$(TargetOS)' == 'Browser'" Name="BundleTestWasmApp" AfterTargets="WasmAOTCompileTestApp">
+-->
     <ItemGroup>
       <WasmSatelliteAssemblies Include="$(PublishDir)*\*.resources.dll" />
       <WasmSatelliteAssemblies>
@@ -177,6 +216,31 @@
       <!-- Include files specified by test projects from publish dir -->
       <WasmFilesToIncludeInFileSystem Include="@(WasmFilesToIncludeFromPublishDir -> '$(PublishDir)%(Identity)')" />
     </ItemGroup>
+    <!--
+      <!- We need these facades for some tests. ->
+      <BundleAssemblies Include="$(PublishDir)mscorlib.dll" />
+      <BundleAssemblies Include="$(PublishDir)System.Drawing.dll" />
+    </ItemGroup>
+    
+    <Error Condition="!Exists('$(MicrosoftNetCoreAppRuntimePackRidDir)')" Text="MicrosoftNetCoreAppRuntimePackRidDir=$(MicrosoftNetCoreAppRuntimePackRidDir) doesn't exist" />
+    
+    <WasmAppBuilder
+      AppDir="$(BundleDir)"
+      InvariantGlobalization="$(InvariantGlobalization)"
+      MicrosoftNetCoreAppRuntimePackDir="$(MicrosoftNetCoreAppRuntimePackRidDir)"
+      MainAssembly="$(PublishDir)WasmTestRunner.dll"
+      MainJS="$(MonoProjectRoot)\wasm\runtime-test.js"
+      Assemblies="@(BundleAssemblies)"
+      SatelliteAssemblies="@(WasmSatelliteAssemblies)"
+      FilesToIncludeInFileSystem="@(WasmFilesToIncludeInFileSystem)" />
+    
+    <!- Run mono-cil-strip on the assemblies ->
+    <!- TODO: replace this with a linker task ->
+    <ItemGroup>
+      <_managedAppAssemblies Include="$(BundleDir)managed\*.dll"/>
+    </ItemGroup>
+    <Exec Condition="'$(RunAOTCompilation)' == 'true'" Command="mono-cil-strip %(_managedAppAssemblies.Identity)" />
+    -->
   </Target>
 
   <Target Name="AddTestRunnersToPublishedFiles"
@@ -194,5 +258,5 @@
   <Target Name="PublishTestAsSelfContained"
           Condition="'$(IsCrossTargetingBuild)' != 'true'"
           AfterTargets="Build"
-          DependsOnTargets="Publish;BundleTestAppleApp;BundleTestAndroidApp;BundleTestWasmApp;ArchiveTests" />
+          DependsOnTargets="Publish;BundleTestAppleApp;BundleTestAndroidApp;PrepareBundleTestWasmApp;ArchiveTests" />
 </Project>
