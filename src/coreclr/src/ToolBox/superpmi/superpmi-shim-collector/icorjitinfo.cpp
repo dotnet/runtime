@@ -212,7 +212,9 @@ CORINFO_CLASS_HANDLE interceptor_ICJI::getMethodClass(CORINFO_METHOD_HANDLE meth
 CORINFO_MODULE_HANDLE interceptor_ICJI::getMethodModule(CORINFO_METHOD_HANDLE method)
 {
     mc->cr->AddCall("getMethodModule");
-    return original_ICorJitInfo->getMethodModule(method);
+    CORINFO_MODULE_HANDLE temp = original_ICorJitInfo->getMethodModule(method);
+    mc->recGetMethodModule(method, temp);
+    return temp;
 }
 
 // This function returns the offset of the specified method in the
